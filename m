@@ -1,88 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754286Ab3G3N0V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 09:26:21 -0400
-Received: from 7of9.schinagl.nl ([88.159.158.68]:37170 "EHLO 7of9.schinagl.nl"
+	id S1754914Ab3G3N0s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 09:26:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46492 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751287Ab3G3N0T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 09:26:19 -0400
-Message-ID: <51F7BE2F.3060004@schinagl.nl>
-Date: Tue, 30 Jul 2013 15:22:55 +0200
-From: Oliver Schinagl <oliver@schinagl.nl>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S1753599Ab3G3N0q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Jul 2013 09:26:46 -0400
+Message-ID: <51F7BF00.5060703@redhat.com>
+Date: Tue, 30 Jul 2013 15:26:24 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Oliver Schinagl <oliver+list@schinagl.nl>,
-        linux-sunxi@googlegroups.com, arnd@arndb.de,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        andy.shevchenko@gmail.com, linux@arm.linux.org.uk,
-        linus.walleij@linaro.org
-Subject: Re: [linux-sunxi] Re: [PATCH 1/2] Initial support for Allwinner's
- Security ID fuses
-References: <20130624214615.GA17604@kroah.com> <51CAA709.4060801@schinagl.nl> <20130626175144.GC2222@kroah.com> <51D674BF.9030207@schinagl.nl> <20130706193646.GB9778@kroah.com> <51E466A3.4010503@schinagl.nl> <20130716064107.GA10868@kroah.com> <20130717114650.GN3125@lukather> <20130717161758.GA9822@kroah.com> <20130719094211.GD5106@lukather> <20130719234944.GA11498@kroah.com>
-In-Reply-To: <20130719234944.GA11498@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+CC: gleb@redhat.com, avi.kivity@gmail.com, mtosatti@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH 04/12] KVM: MMU: log dirty page after marking spte writable
+References: <1375189330-24066-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <1375189330-24066-5-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+In-Reply-To: <1375189330-24066-5-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Greg!
+Il 30/07/2013 15:02, Xiao Guangrong ha scritto:
+> Make sure we can see the writable spte before the dirt bitmap is visible
+> 
+> We do this is for kvm_vm_ioctl_get_dirty_log() write-protects the spte based
+> on the dirty bitmap, we should ensure the writable spte can be found in rmap
+> before the dirty bitmap is visible. Otherwise, we cleared the dirty bitmap and
+> failed to write-protect the page
+> 
+> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+> ---
+>  arch/x86/kvm/mmu.c | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+> index 35d4b50..0fe56ad 100644
+> --- a/arch/x86/kvm/mmu.c
+> +++ b/arch/x86/kvm/mmu.c
+> @@ -2486,12 +2486,12 @@ static int set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
+>  		}
+>  	}
+>  
+> -	if (pte_access & ACC_WRITE_MASK)
+> -		mark_page_dirty(vcpu->kvm, gfn);
+> -
+>  set_pte:
+>  	if (mmu_spte_update(sptep, spte))
+>  		kvm_flush_remote_tlbs(vcpu->kvm);
+> +
+> +	if (pte_access & ACC_WRITE_MASK)
+> +		mark_page_dirty(vcpu->kvm, gfn);
+>  done:
+>  	return ret;
+>  }
+> 
 
-On 20-07-13 01:49, Greg KH wrote:
-> On Fri, Jul 19, 2013 at 11:42:11AM +0200, Maxime Ripard wrote:
->> On Wed, Jul 17, 2013 at 09:17:58AM -0700, Greg KH wrote:
->>> On Wed, Jul 17, 2013 at 01:46:50PM +0200, Maxime Ripard wrote:
->>>> On Mon, Jul 15, 2013 at 11:41:07PM -0700, Greg KH wrote:
->>>>> On Mon, Jul 15, 2013 at 11:16:19PM +0200, Oliver Schinagl wrote:
->>>>>> So using these new patches for binary attributes, how can I pass data
->>>>>> between my driver and the sysfs files using a platform_driver? Or are
->>>>>> other 'hacks' needed and using the .groups attribute from
->>>>>> platform_driver->device_driver->groups is really the wrong approach.
->>>>>>
->>>>>> I did ask around and still haven't figured it out so far, so I do
->>>>>> apologize if you feel I'm wasting your precious time.
->>>>> How is the platform device not the same thing that was passed to your
->>>>> probe function?
->>>> One thing I don't get here is why it should be set in the
->>>> platform_driver structure. From my understanding of the device model,
->>>> and since what Oliver is trying to do is exposing a few bytes of memory
->>>> to sysfs, shouldn't the sysfs file be attached to the device instead?
->>> It will be created by the driver core for any device attached to the
->>> driver automatically.
->>>
->>>> I mean, here, the sysfs file will be created under something like
->>>> .../drivers/sunxi-sid/eeprom. What happens when you have several
->>>> instances of that driver loaded? I'd expect it to have several sysfs
->>>> files created, one for each instance. So to me, it should be in the
->>>> device structure, not the driver one.
->>> You can't have multiple drivers with the same name loaded (or the same
->>> module loaded multiple times.)  You can have multiple devices for a
->>> single driver, which is what we do all the time.
->> Yes, I know that, and it's actually my point.
->> With the current oliver's code he pasted earlier in this thread:
->>
->> # find /sys/ -name eeprom
->> /sys/bus/platform/drivers/sunxi-sid/eeprom
->>
->> While I'd expect the eeprom file to be located in
->> /sys/bus/platform/devices/X.eeprom/eeprom like it used to be in the v4,
->> since it's an instance-specific content.
-> Oh crap.  You are totally right.  That's why we added the new device
-> create call, to allow this to work properly.
->
-> Right now you are getting the kobject of the driver, not the device, in
-> the callback, which is not what you want (sure, if you only have once
-> instance, you can work around it, but don't it's the driver core's fault
-> for not giving you the correct api...)
->
-> Let me go look at how I can make this work "easier", give me a few days.
-Not wanting to be rude, but it has been a little more then a few days, 
-any progress? Just want to know what I have to modify my driver to so it 
-can go into the next merge window :)
+What about this comment above:
 
-oliver
->
-> greg k-h
+                /*
+                 * Optimization: for pte sync, if spte was writable the hash
+                 * lookup is unnecessary (and expensive). Write protection
+                 * is responsibility of mmu_get_page / kvm_sync_page.
+                 * Same reasoning can be applied to dirty page accounting.
+                 */
+                if (!can_unsync && is_writable_pte(*sptep))
+                        goto set_pte;
 
+                if (mmu_need_write_protect(vcpu, gfn, can_unsync)) {
+
+
+?
+
+Should it be changed to
+
+                if (!can_unsync && is_writable_pte(*sptep))
+                        pte_access &= ~ACC_WRITE_MASK; /* do not mark dirty */
+
+                else if (mmu_need_write_protect(vcpu, gfn, can_unsync)) {
+
+?
+
+Thanks,
+
+Paolo
