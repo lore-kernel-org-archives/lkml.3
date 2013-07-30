@@ -1,96 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757142Ab3G3Eh2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 00:37:28 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:65378 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750863Ab3G3Eh1 (ORCPT
+	id S1757184Ab3G3ElR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 00:41:17 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:48640 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753185Ab3G3ElP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 00:37:27 -0400
-X-AuditID: 9c930197-b7bfbae000000e88-1f-51f7430532f6
-From: Namhyung Kim <namhyung@kernel.org>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH 7/9] perf tools: add support for reading from /proc/kcore
-References: <1374760890-30558-1-git-send-email-adrian.hunter@intel.com>
-	<1374760890-30558-8-git-send-email-adrian.hunter@intel.com>
-Date: Tue, 30 Jul 2013 13:37:24 +0900
-In-Reply-To: <1374760890-30558-8-git-send-email-adrian.hunter@intel.com>
-	(Adrian Hunter's message of "Thu, 25 Jul 2013 17:01:28 +0300")
-Message-ID: <87zjt41x4r.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Tue, 30 Jul 2013 00:41:15 -0400
+Message-ID: <51F73738.6080901@ti.com>
+Date: Mon, 29 Jul 2013 22:47:04 -0500
+From: Joel Fernandes <joelf@ti.com>
+Reply-To: <joelf@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+To: Sekhar Nori <nsekhar@ti.com>
+CC: Tony Lindgren <tony@atomide.com>, Vinod Koul <vinod.koul@intel.com>,
+        Benoit Cousson <benoit.cousson@linaro.org>,
+        Balaji TK <balajitk@ti.com>, Arnd Bergmann <arnd@arndb.de>,
+        Jason Kridner <jkridner@beagleboard.org>,
+        Mark Jackson <mpfj-list@newflow.co.uk>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Pantel Antoniou <panto@antoniou-consulting.com>
+Subject: Re: [PATCH v2] ARM: EDMA: Fix clearing of unused list for DT DMA
+ resources
+References: <1374515989-7391-1-git-send-email-joelf@ti.com> <51F61359.1090309@ti.com>
+In-Reply-To: <51F61359.1090309@ti.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Thu, 25 Jul 2013 17:01:28 +0300, Adrian Hunter wrote:
-> In the absence of vmlinux, perf tools uses kallsyms
-> for symbols.  If the user has access, now also map to
-> /proc/kcore.
+On 07/29/2013 02:01 AM, Sekhar Nori wrote:> On Monday 22 July 2013 11:29
+PM, Joel Fernandes wrote:
+>> HWMOD removal for MMC is breaking edma_start as the events are being
+manually
+>> triggered due to unused channel list not being clear, Thanks to
+Balaji TK for
+>> finding this issue.
 >
-> The dso data_type is now set to either
-> DSO_BINARY_TYPE__KCORE or DSO_BINARY_TYPE__GUEST_KCORE
-> as approprite.
+> So, Reported-by: Balaji T K <balajitk@ti.com>
+>
+> ?
 
-[SNIP]
-> +
-> +static bool is_host_buildid_str(const char *str)
-> +{
-> +	u8 host_build_id[BUILD_ID_SIZE];
-> +	char host_build_id_str[BUILD_ID_SIZE * 2 + 1];
-> +
-> +	if (sysfs__read_build_id("/sys/kernel/notes", host_build_id,
-> +				 sizeof(host_build_id)))
-> +		return false;
-> +
-> +	build_id__sprintf(host_build_id, sizeof(host_build_id),
-> +			  host_build_id_str);
-> +
-> +	return !strcmp(str, host_build_id_str);
-> +}
-> +
-> +/*
-> + * If kallsyms is referenced by name then we look for kcore in the same
-> + * directory.  Otherwise we use /proc/kcore but only if the buildid matches the
-> + * host.
-> + */
-> +static bool kcore_filename_from_kallsyms_filename(char *kcore_filename,
-> +						  const char *kallsyms_filename)
-> +{
-> +	char *name;
-> +
-> +	strcpy(kcore_filename, kallsyms_filename);
-> +	name = strrchr(kcore_filename, '/');
-> +	if (!name)
-> +		return false;
-> +
-> +	if (!strcmp(name, "/kallsyms")) {
-> +		strcpy(name, "/kcore");
-> +		return true;
-> +	}
-> +
-> +	if (is_host_buildid_str(name)) {
+Sure, I'll add that as well.
 
-IIUC the name should start with '/' but build-id is not.  So doesn't it
-always fail?
+>
+>>
+>> This patch fixes the issue, by reading the "dmas" property from the
+DT node if
+>> it exists and clearing the bits in the unused channel list.
+>>
+>> Cc: Balaji T K <balajitk@ti.com>
+>> Cc: Pantel Antoniou <panto@antoniou-consulting.com>
+>> Signed-off-by: Joel Fernandes <joelf@ti.com>
+>> ---
+>> v2 changes: Fixed compiler warning
+>>
+>>  arch/arm/common/edma.c |   31 +++++++++++++++++++++++--------
+>>  1 file changed, 23 insertions(+), 8 deletions(-)
+>>
+>> diff --git a/arch/arm/common/edma.c b/arch/arm/common/edma.c
+>> index a432e6c..765d578 100644
+>> --- a/arch/arm/common/edma.c
+>> +++ b/arch/arm/common/edma.c
+>> @@ -561,14 +561,29 @@ static int reserve_contiguous_slots(int ctlr,
+unsigned int id,
+>>  static int prepare_unused_channel_list(struct device *dev, void *data)
+>>  {
+>>  	struct platform_device *pdev = to_platform_device(dev);
+>> -	int i, ctlr;
+>> -
+>> -	for (i = 0; i < pdev->num_resources; i++) {
+>> -		if ((pdev->resource[i].flags & IORESOURCE_DMA) &&
+>> -				(int)pdev->resource[i].start >= 0) {
+>> -			ctlr = EDMA_CTLR(pdev->resource[i].start);
+>> -			clear_bit(EDMA_CHAN_SLOT(pdev->resource[i].start),
+>> -					edma_cc[ctlr]->edma_unused);
+>> +	int i = 0, ctlr;
+>> +	u32 dma_chan;
+>> +	const __be32 *dma_chan_p;
+>> +	struct property *prop;
+>> +
+>> +	if (dev->of_node) {
+>> +		of_property_for_each_u32(dev->of_node, "dmas", prop, \
+>> +					 dma_chan_p, dma_chan) {
+>> +			if (i++ & 1) {
+>> +				ctlr = EDMA_CTLR(dma_chan);
+>> +				clear_bit(EDMA_CHAN_SLOT(dma_chan),
+>> +						edma_cc[ctlr]->edma_unused);
+>> +			}
+>
+> I think it will be cleaner if you use of_property_count_strings() on
+> dma-names to get the count of DMA channels for this device and then use
+> of_parse_phandle_with_args() to get access to the args. Honestly, I have
+> not used these APIs myself, so if this doesn’t work the way I think it
+> should then let me know and I will try to do some experiments myself.
+>
+> The current way of skipping over even fields really depends on
+> #dma-cells for EDMA to be 1. That in itself is not such a bad
+> assumption, but if you have APIs which already take care of this for
+> you, why not use them?
 
-Thanks,
-Namhyung
+Sure, looks like of_dma_request_slave_channel does same thing in
+drive/dma/of-dma.c. Let me follow up with a patch that does it this way.
+I agree its cleaner.
 
+>> +		}
+>> +	} else {
+>> +		for (; i < pdev->num_resources; i++) {
+>> +			if ((pdev->resource[i].flags & IORESOURCE_DMA) &&
+>> +			    (int)pdev->resource[i].start >= 0) {
+>> +				ctlr = EDMA_CTLR(pdev->resource[i].start);
+>> +				clear_bit(EDMA_CHAN_SLOT(
+>> +					  pdev->resource[i].start),
+>> +					  edma_cc[ctlr]->edma_unused);
+>> +			}
+>
+> So there is very little in common between OF and non-OF versions of this
+> function. Why not have two different versions of this function for the
+> two cases? The OF version can reside under the CONFIG_OF conditional
+> already in use in the file. This will also save you the ugly line breaks
+> you had to resort to due to too deep indentation.
 
-> +		strcpy(kcore_filename, "/proc/kcore");
-> +		return true;
-> +	}
-> +
-> +	return false;
-> +}
+Actually those line breaks are not necessary and wouldn't result in
+compilation errors. I was planning to drop them. I'll go ahead and split
+it out anyway, now that also the OF version of the function is going to
+be bit longer if we use the of_parse functions.
+
+Thanks for your review,
+
+Regards,
+
+-Joel
