@@ -1,48 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758386Ab3G3XcX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 19:32:23 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:53068 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758140Ab3G3XcW (ORCPT
+	id S932085Ab3G3Xdk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 19:33:40 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:41313 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758068Ab3G3Xdi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 19:32:22 -0400
-Date: Tue, 30 Jul 2013 16:32:17 -0700
-From: Stephen Hemminger <stephen@networkplumber.org>
-To: David Miller <davem@davemloft.net>
-Cc: sam8641@gmail.com, mlindner@marvell.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sky2: detect and prevent kernel panic from a possible
- faulty hardware
-Message-ID: <20130730163217.130cbe08@nehalam.linuxnetplumber.net>
-In-Reply-To: <20130730.161906.1898764862564749288.davem@davemloft.net>
-References: <1374957354-10142-1-git-send-email-sam8641@gmail.com>
-	<20130730.161906.1898764862564749288.davem@davemloft.net>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 30 Jul 2013 19:33:38 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130730231533.GA26824@redhat.com>
+References: <CAGXu5jKv9Vt+Hu0mFYaxggLLDZ46U3KR9MKegUoHH8StXCkBtQ@mail.gmail.com>
+	<20130730221435.GA22240@redhat.com>
+	<20130730231120.GC30725@blackmetal.musicnaut.iki.fi>
+	<20130730231533.GA26824@redhat.com>
+Date: Tue, 30 Jul 2013 16:33:38 -0700
+X-Google-Sender-Auth: GbMxqwIml2Iev3l42OKPNRe-s4g
+Message-ID: <CAGXu5jLQxE14Gy3x20XMyFyUQKwMQ+RU9S24H742cQevEF9Aew@mail.gmail.com>
+Subject: Re: [Ksummit-2013-discuss] [ARM ATTEND] catching up on exploit mitigations
+From: Kees Cook <keescook@chromium.org>
+To: Dave Jones <davej@redhat.com>, Aaro Koskinen <aaro.koskinen@iki.fi>,
+        Kees Cook <keescook@chromium.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Jul 2013 16:19:06 -0700 (PDT)
-David Miller <davem@davemloft.net> wrote:
+On Tue, Jul 30, 2013 at 4:15 PM, Dave Jones <davej@redhat.com> wrote:
+> On Wed, Jul 31, 2013 at 02:11:20AM +0300, Aaro Koskinen wrote:
+>  > Hi,
+>  >
+>  > On Tue, Jul 30, 2013 at 06:14:35PM -0400, Dave Jones wrote:
+>  > > On Tue, Jul 30, 2013 at 12:05:40PM -0700, Kees Cook wrote:
+>  > >  > - fuzzing (is anyone running trinity or similar on the ARM tree?)
+>  > >
+>  > > Someone was kind enough to send me an arm chromebook, so I tried this just
+>  > > last week (albeit, on the 3.4 kernel it shipped with). The results make
+>  > > me think the answer is a resounding 'no'.
+>  >
+>  > Shouldn't you run trinity only under QEMU or similar virtual
+>  > environment? Don't know about chromebook, but on some of my ARM boards
+>  > a misbehaving kernel could at least in theory brick the board...
+>
+> I like to live dangerously.  Don't imitate everything you see on TV,
+> or read about on lkml.
+>
+> More seriously, that's true if you're running trinity as root, which
+> yes, I usually advise people only do in qemu etc.
+>
+> If you're running it as a regular user and you can brick the board,
+> you might have bigger problems.
 
-> From: Samuel Williams <sam8641@gmail.com>
-> Date: Sat, 27 Jul 2013 15:35:54 -0500
-> 
-> > A possible faulty hardware might interrupt with a status of 0xffffffff which
-> > may kernel panic if sky2 driver tries to handle it. Detecting this problem
-> > may avoid kernel panic.
-> > 
-> > Signed-off-by: Samuel Williams <sam8641@gmail.com>
-> 
-> Sure, but then the device is basically just going to stop.
-> 
-> I think this change needs to be more comprehensive, for example it
-> needs to fully reset the device and try to get it operational again.
+Exactly, and finding those problems tends to be worth the hardware hassle. :)
 
-Not only that it is going to assert IRQ until the device is hard
-reset. Plus it is not clear that cleaning up after sick hardware
-is possible at all.
+-Kees
+
+-- 
+Kees Cook
+Chrome OS Security
