@@ -1,58 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757660Ab3G3HIT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 03:08:19 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:30567 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753194Ab3G3HIR (ORCPT
+	id S1757637Ab3G3HKE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 03:10:04 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:58203 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750964Ab3G3HKC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 03:08:17 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19puPiME72wJDoeeCvlTH6K
-Date: Tue, 30 Jul 2013 00:08:14 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        george.cherian@ti.com,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH 1/4] usb: phy: rename nop_usb_xceiv => usb_phy_gen_xceiv
-Message-ID: <20130730070814.GF7656@atomide.com>
-References: <1374869757-923-1-git-send-email-bigeasy@linutronix.de>
- <1374869757-923-2-git-send-email-bigeasy@linutronix.de>
- <20130729122022.GF24801@radagast>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130729122022.GF24801@radagast>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 30 Jul 2013 03:10:02 -0400
+Date: Tue, 30 Jul 2013 00:10:01 -0700 (PDT)
+Message-Id: <20130730.001001.618776305200728182.davem@davemloft.net>
+To: joe@perches.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH - diffstat only] include/net: Remove extern from
+ function prototypes
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1374602291.3387.17.camel@joe-AO722>
+References: <1374602291.3387.17.camel@joe-AO722>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Tue, 30 Jul 2013 00:10:01 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Felipe Balbi <balbi@ti.com> [130729 05:27]:
-> On Fri, Jul 26, 2013 at 10:15:54PM +0200, Sebastian Andrzej Siewior wrote:
-> > The "nop" driver isn't a do-nothing-stub but supports a couple functions
-> > like clock on/off or is able to use a voltage regulator. This patch
-> > simply renames the driver to "generic" since it is easy possible to
-> > extend it by a simple function istead of writing a complete driver.
-> > 
-> > Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+From: Joe Perches <joe@perches.com>
+Date: Tue, 23 Jul 2013 10:58:11 -0700
+
+> Function prototypes don't need to be declared
+> extern in .h files.  It's assumed by the compiler
+> and is as unnecessary as using auto is when
+> declaring automatic/local variables in a block.
 > 
-> to me, this is great but I need Tony's Ack for it. Let's Cc Tony and
-> linux-omap
+> I ran a script to remove these unnecessary extern
+> uses from function prototypes in include/net/ as
+> well as reflow the function arguments to 80 cols.
+> 
+> It's 370KB, far too large to submit at once.
+> 
+> Of course it could be broken into multiple patches
+> for the various directories/subsystems.
 
-Looking at this patch there's a pretty high probability of introducing
-pointless merge conflicts.
+No objections from me.
 
-How about do the platform data related changes as a separate follow-up
-series? You can typically do this by keeping the old features around,
-then doing a separate series to rename or remove the users later on.
-This will remove the dependency between platform data and the driver
-changes.
+Please submit a small number at a time so that my already overflowing
+backlog isn't overwhelmed even more.
 
-Regards,
-
-Tony
+Thanks.
