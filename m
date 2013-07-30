@@ -1,257 +1,428 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755465Ab3G3AkJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 20:40:09 -0400
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:46726 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752581Ab3G3AkH convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 20:40:07 -0400
+	id S1756454Ab3G3Am2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 20:42:28 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:41943 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752588Ab3G3AmZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 20:42:25 -0400
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: "lee.jones@linaro.org" <lee.jones@linaro.org>,
+        "Samuel Ortiz (sameo@linux.intel.com)" <sameo@linux.intel.com>
+CC: "broonie@kernel.org" <broonie@kernel.org>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>
+Subject: [PATCH v2 1/4] mfd: add LP3943 MFD driver
+Thread-Topic: [PATCH v2 1/4] mfd: add LP3943 MFD driver
+Thread-Index: Ac6MtTyjOqxscTSbS1eNJ8jjFJq3OQ==
+Date: Tue, 30 Jul 2013 00:42:16 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998F82E849D8@DQHE06.ent.ti.com>
+Accept-Language: en-US, ko-KR
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.16.34.32]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <1369445630-31018-1-git-send-email-jwerner@chromium.org>
-References: <1369445630-31018-1-git-send-email-jwerner@chromium.org>
-From: Yang Bai <hamo.by@gmail.com>
-Date: Tue, 30 Jul 2013 08:39:45 +0800
-Message-ID: <CAO_0yfPpYXaU-FFUvrV+=rqzUdHof0XZp93Z-59xQyGFv3FzBQ@mail.gmail.com>
-Subject: Re: [PATCH] usb: xhci: Fix Command Ring Stopped Event handling
-To: Julius Werner <jwerner@chromium.org>
-Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Elric Fu <elricfu1@gmail.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Vincent Palatin <vpalatin@chromium.org>,
-        haitao.zhang@canonical.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r6U0gW4R030752
 
-Hi there,
+LP3943 has 16 output pins which can be used as GPIO expander and PWM generator.
 
-We met a panic issue with a 3.5-based kernel, code at
-git://kernel.ubuntu.com/ubuntu/ubuntu-quantal.git.
+* Why do we need GPIO and PWM drivers instead of LED driver?
+  To support LED control and general usage, GPIO and PWM drivers are necessary.
 
-call trace as:
-[   27.508480] BUG: unable to handle kernel NULL pointer dereference
-at 00000000000003c8
-[   27.544645] Call Trace:
-[   27.545060]  <IRQ>
-[   27.545353]  [<ffffffff814eb541>]
-handle_set_deq_completion.isra.37+0x61/0x250
-[   27.546610]  [<ffffffff814eb8d5>] ? handle_stopped_cmd_ring+0x175/0x190
-[   27.547785]  [<ffffffff814ecd23>] handle_cmd_completion+0x1d3/0x440
-[   27.548833]  [<ffffffff814ee26d>] xhci_handle_event+0x14d/0x1d0
-[   27.549881]  [<ffffffff814ee398>] xhci_irq+0xa8/0x1d0
-[   27.550800]  [<ffffffff814ee4d1>] xhci_msi_irq+0x11/0x20
-[   27.551722]  [<ffffffff810e2835>] handle_irq_event_percpu+0x55/0x210
-[   27.552899]  [<ffffffff81374ebf>] ? msi_set_mask_bit+0x6f/0x80
-[   27.553959]  [<ffffffff810e2a3e>] handle_irq_event+0x4e/0x80
-[   27.555007]  [<ffffffff810e5384>] handle_edge_irq+0x84/0x130
-[   27.556054]  [<ffffffff810161b2>] handle_irq+0x22/0x40
-[   27.556975]  [<ffffffff816a69ca>] do_IRQ+0x5a/0xe0
-[   27.557770]  [<ffffffff8169c9aa>] common_interrupt+0x6a/0x6a
-[   27.558816]  <EOI>
-[   27.559105]  [<ffffffff813c3a66>] ? arch_local_irq_enable+0xb/0xd
-[   27.561294]  [<ffffffff8108c68a>] ? sched_clock_idle_wakeup_event+0x1a/0x20
-[   27.563067]  [<ffffffff813c4988>] acpi_idle_enter_bm+0x24a/0x28e
-[   27.564709]  [<ffffffff81534f27>] ? menu_select+0xe7/0x2e0
-[   27.566215]  [<ffffffff81533399>] cpuidle_enter+0x19/0x20
-[   27.567716]  [<ffffffff815339bc>] cpuidle_idle_call+0xac/0x2a0
-[   27.569352]  [<ffffffff8101d87f>] cpu_idle+0xcf/0x120
-[   27.570856]  [<ffffffff8167920f>] start_secondary+0xc3/0xc5
-[   27.572342] Code: 8d 44 37 20 48 8d 48 08 74 21 48 8b 49 08 31 c0
-48 85 c9 74 0e 3b 51 08 77 09 48 8b 01 89 d2 48 8b 04 d0 5d c3 66 0f
-1f 44 00 00 <48> 8b 40 08 5d c3 66 2e 0f 1f 84 00 00 00 00 00 55 48 89
-e5 0f
-[   27.581968] RIP  [<ffffffff814e7410>] xhci_stream_id_to_ring+0x40/0x50
+  According to the datasheet(1), it's just a LED driver which has 16 channels.
+  But here is another application, a GPIO expander.(2)
+  (1) http://www.ti.com/lit/ds/snvs256b/snvs256b.pdf
+  (2) http://www.ti.com/lit/an/snva287a/snva287a.pdf
 
-After applying this patch, this issue is fixed. And USB works as normal.
+  Internal two PWM controllers are used for LED dimming effect.
+  And each output pin can be used as a GPIO as well.
+  LED functionality can work with GPIOs or PWMs.
+  LEDs can be controlled with legacy leds-gpio(static brightness) or
+  leds-pwm drivers(dynamic brightness control).
+  Additionally, it can be used for generic GPIO and PWM controller.
+  For example, a GPIO is HW enable pin of a device.
+  PWM is input pin of a backlight device.
 
-Tested-by: Yang Bai <hamo.by@gmail.com>
+  Therefore, LP3943 GPIO and PWM drivers support all application cases.
 
-On Sat, May 25, 2013 at 9:33 AM, Julius Werner <jwerner@chromium.org> wrote:
-> The current XHCI code treats a command completion event with the
-> COMP_CMD_STOP code as a slightly different version of COMP_CMD_ABORT. In
-> particular, it puts the pointed-to command TRB through the normal
-> command completion handlers. This is not how this event works.
->
-> As XHCI spec 4.6.1.1 describes, unlike other command completion events
-> Command Ring Stopped sets the Command TRB Pointer to the *current*
-> Command Ring Dequeue Pointer. This is the command TRB that the XHCI will
-> execute next, and not a command that has already been executed. The
-> driver's internal command ring dequeue pointer should not be increased
-> after this event, since it does not really mark a command completion...
-> it's just a hint for the driver that execution is stopped now and where
-> it will be picked up again if the ring gets restarted.
->
-> This patch gets rid of the handle_stopped_command_ring() function and
-> splits its behavior into two distinct parts for COMP_CMD_STOP and
-> COMP_CMD_ABORT events. It ensures that the former no longer messes with
-> the dequeue pointer, while the latter's behavior is unchanged. This
-> prevents the hardware and software dequeue pointer from going out of
-> sync during command cancellations, which can lead to a variety of
-> problems (up to a total HCD death if the next command after the one that
-> was cancelled is Stop Endpoint, and the stop_endpoint_watchdog won't see
-> the command's completion because it got skipped by the software dequeue
-> pointer).
->
-> This patch should be backported to kernels as far as 3.0 that contain
-> the commit b63f4053cc8aa22a98e3f9a97845afe6c15d0a0d "xHCI: handle
-> command after aborting the command ring".
->
-> Signed-off-by: Julius Werner <jwerner@chromium.org>
-> ---
->  drivers/usb/host/xhci-ring.c | 85 +++++++++++++++++---------------------------
->  1 file changed, 33 insertions(+), 52 deletions(-)
->
-> diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c
-> index 1969c00..98b7673 100644
-> --- a/drivers/usb/host/xhci-ring.c
-> +++ b/drivers/usb/host/xhci-ring.c
-> @@ -1314,47 +1314,11 @@ static int xhci_search_cmd_trb_in_cd_list(struct xhci_hcd *xhci,
->         return 0;
->  }
->
-> -/*
-> - * If the cmd_trb_comp_code is COMP_CMD_ABORT, we just check whether the
-> - * trb pointed by the command ring dequeue pointer is the trb we want to
-> - * cancel or not. And if the cmd_trb_comp_code is COMP_CMD_STOP, we will
-> - * traverse the cancel_cmd_list to trun the all of the commands according
-> - * to command descriptor to NO-OP trb.
-> - */
-> -static int handle_stopped_cmd_ring(struct xhci_hcd *xhci,
-> -               int cmd_trb_comp_code)
-> -{
-> -       int cur_trb_is_good = 0;
-> -
-> -       /* Searching the cmd trb pointed by the command ring dequeue
-> -        * pointer in command descriptor list. If it is found, free it.
-> -        */
-> -       cur_trb_is_good = xhci_search_cmd_trb_in_cd_list(xhci,
-> -                       xhci->cmd_ring->dequeue);
-> -
-> -       if (cmd_trb_comp_code == COMP_CMD_ABORT)
-> -               xhci->cmd_ring_state = CMD_RING_STATE_STOPPED;
-> -       else if (cmd_trb_comp_code == COMP_CMD_STOP) {
-> -               /* traversing the cancel_cmd_list and canceling
-> -                * the command according to command descriptor
-> -                */
-> -               xhci_cancel_cmd_in_cd_list(xhci);
-> -
-> -               xhci->cmd_ring_state = CMD_RING_STATE_RUNNING;
-> -               /*
-> -                * ring command ring doorbell again to restart the
-> -                * command ring
-> -                */
-> -               if (xhci->cmd_ring->dequeue != xhci->cmd_ring->enqueue)
-> -                       xhci_ring_cmd_db(xhci);
-> -       }
-> -       return cur_trb_is_good;
-> -}
-> -
->  static void handle_cmd_completion(struct xhci_hcd *xhci,
->                 struct xhci_event_cmd *event)
->  {
->         int slot_id = TRB_TO_SLOT_ID(le32_to_cpu(event->flags));
-> +       int comp_code = GET_COMP_CODE(le32_to_cpu(event->status));
->         u64 cmd_dma;
->         dma_addr_t cmd_dequeue_dma;
->         struct xhci_input_control_ctx *ctrl_ctx;
-> @@ -1377,16 +1341,34 @@ static void handle_cmd_completion(struct xhci_hcd *xhci,
->                 return;
->         }
->
-> -       if ((GET_COMP_CODE(le32_to_cpu(event->status)) == COMP_CMD_ABORT) ||
-> -               (GET_COMP_CODE(le32_to_cpu(event->status)) == COMP_CMD_STOP)) {
-> -               /* If the return value is 0, we think the trb pointed by
-> -                * command ring dequeue pointer is a good trb. The good
-> -                * trb means we don't want to cancel the trb, but it have
-> -                * been stopped by host. So we should handle it normally.
-> -                * Otherwise, driver should invoke inc_deq() and return.
-> -                */
-> -               if (handle_stopped_cmd_ring(xhci,
-> -                               GET_COMP_CODE(le32_to_cpu(event->status)))) {
-> +       /*
-> +        * Command Ring Stopped events point at the xHC's *current* dequeue
-> +        * pointer, i.e. the next command that will be executed. That TRB may
-> +        * or may not have been issued yet. Just overwrite all canceled commands
-> +        * with NOOPs and restart the ring, leaving our internal dequeue pointer
-> +        * as it is (we will get another event for that position later, when
-> +        * it has actually been executed).
-> +        */
-> +       if (comp_code == COMP_CMD_STOP) {
-> +               xhci_cancel_cmd_in_cd_list(xhci);
-> +               xhci->cmd_ring_state = CMD_RING_STATE_RUNNING;
-> +               if (xhci->cmd_ring->dequeue != xhci->cmd_ring->enqueue)
-> +                       xhci_ring_cmd_db(xhci);
-> +               return;
-> +       }
-> +
-> +       /*
-> +        * If we aborted a command, we check if it is one of the commands we
-> +        * meant to cancel. In that case, it will be freed and we just finish
-> +        * up right here. If we aborted something else instead, we run it
-> +        * through the normal handlers below. At any rate, the command ring is
-> +        * stopped now, but the xHC will issue a Command Ring Stopped event
-> +        * after this that will cause us to restart it.
-> +        */
-> +       if (comp_code == COMP_CMD_ABORT) {
-> +               xhci->cmd_ring_state = CMD_RING_STATE_STOPPED;
-> +               if (xhci_search_cmd_trb_in_cd_list(xhci,
-> +                       xhci->cmd_ring->dequeue)) {
->                         inc_deq(xhci, xhci->cmd_ring);
->                         return;
->                 }
-> @@ -1395,7 +1377,7 @@ static void handle_cmd_completion(struct xhci_hcd *xhci,
->         switch (le32_to_cpu(xhci->cmd_ring->dequeue->generic.field[3])
->                 & TRB_TYPE_BITMASK) {
->         case TRB_TYPE(TRB_ENABLE_SLOT):
-> -               if (GET_COMP_CODE(le32_to_cpu(event->status)) == COMP_SUCCESS)
-> +               if (comp_code == COMP_SUCCESS)
->                         xhci->slot_id = slot_id;
->                 else
->                         xhci->slot_id = 0;
-> @@ -1451,19 +1433,18 @@ static void handle_cmd_completion(struct xhci_hcd *xhci,
->                 }
->  bandwidth_change:
->                 xhci_dbg(xhci, "Completed config ep cmd\n");
-> -               xhci->devs[slot_id]->cmd_status =
-> -                       GET_COMP_CODE(le32_to_cpu(event->status));
-> +               xhci->devs[slot_id]->cmd_status = comp_code;
->                 complete(&xhci->devs[slot_id]->cmd_completion);
->                 break;
->         case TRB_TYPE(TRB_EVAL_CONTEXT):
->                 virt_dev = xhci->devs[slot_id];
->                 if (handle_cmd_in_cmd_wait_list(xhci, virt_dev, event))
->                         break;
-> -               xhci->devs[slot_id]->cmd_status = GET_COMP_CODE(le32_to_cpu(event->status));
-> +               xhci->devs[slot_id]->cmd_status = comp_code;
->                 complete(&xhci->devs[slot_id]->cmd_completion);
->                 break;
->         case TRB_TYPE(TRB_ADDR_DEV):
-> -               xhci->devs[slot_id]->cmd_status = GET_COMP_CODE(le32_to_cpu(event->status));
-> +               xhci->devs[slot_id]->cmd_status = comp_code;
->                 complete(&xhci->addr_dev);
->                 break;
->         case TRB_TYPE(TRB_STOP_RING):
-> --
-> 1.7.12.4
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+                                  LED control    General usage for a device
+                                  ___________   ____________________________
+
+  LP3943 MFD ---- GPIO expander    leds-gpio            eg) HW enable pin
+              |
+              --- PWM generator    leds-pwm             eg) PWM input
 
 
+* Regmap I2C interface for R/W LP3943 registers
 
+* Atomic operations for output pin assignment
+  The driver should check whether requested pin is available or not.
+  If the pin is already used, pin request returns as a failure.
+  A driver data, 'pin_used' is checked when gpio_request() and
+  pwm_request() are called. If the pin is available, then pin_used is set.
+  And it is cleared when gpio_free() and pwm_free().
+
+* Device tree support
+  Compatible strings for GPIO and PWM driver.
+  LP3943 platform data is PWM related, so parsing the device tree is
+  implemented in the PWM driver.
+
+Cc: Lee Jones <lee.jones@linaro.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Cc: Mark Brown <broonie@kernel.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Thierry Reding <thierry.reding@gmail.com>
+Signed-off-by: Milo Kim <milo.kim@ti.com>
+---
+ drivers/mfd/Kconfig        |   11 +++
+ drivers/mfd/Makefile       |    1 +
+ drivers/mfd/lp3943.c       |  165 ++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/mfd/lp3943.h |  115 ++++++++++++++++++++++++++++++
+ 4 files changed, 292 insertions(+)
+ create mode 100644 drivers/mfd/lp3943.c
+ create mode 100644 include/linux/mfd/lp3943.h
+
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index ff553ba..2d47d43 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -506,6 +506,17 @@ config PMIC_ADP5520
+ 	  individual components like LCD backlight, LEDs, GPIOs and Kepad
+ 	  under the corresponding menus.
+ 
++config MFD_LP3943
++	tristate "TI/National Semiconductor LP3943 MFD Driver"
++	depends on I2C
++	select MFD_CORE
++	select REGMAP_I2C
++	help
++	  Support for the TI/National Semiconductor LP3943.
++	  This driver consists of GPIO and PWM drivers.
++	  With these functionality, it can be used for LED string control or
++	  general usage such like a GPIO controller and a PWM controller.
++
+ config MFD_LP8788
+ 	bool "Texas Instruments LP8788 Power Management Unit Driver"
+ 	depends on I2C=y
+diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+index 8b977f8..8f129a4 100644
+--- a/drivers/mfd/Makefile
++++ b/drivers/mfd/Makefile
+@@ -96,6 +96,7 @@ obj-$(CONFIG_PMIC_DA9052)	+= da9052-core.o
+ obj-$(CONFIG_MFD_DA9052_SPI)	+= da9052-spi.o
+ obj-$(CONFIG_MFD_DA9052_I2C)	+= da9052-i2c.o
+ 
++obj-$(CONFIG_MFD_LP3943)	+= lp3943.o
+ obj-$(CONFIG_MFD_LP8788)	+= lp8788.o lp8788-irq.o
+ 
+ da9055-objs			:= da9055-core.o da9055-i2c.o
+diff --git a/drivers/mfd/lp3943.c b/drivers/mfd/lp3943.c
+new file mode 100644
+index 0000000..4658965
+--- /dev/null
++++ b/drivers/mfd/lp3943.c
+@@ -0,0 +1,165 @@
++/*
++ * TI/National Semiconductor LP3943 MFD Core Driver
++ *
++ * Copyright 2013 Texas Instruments
++ *
++ * Author: Milo Kim <milo.kim@ti.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ */
++
++#include <linux/err.h>
++#include <linux/gpio.h>
++#include <linux/i2c.h>
++#include <linux/mfd/core.h>
++#include <linux/mfd/lp3943.h>
++#include <linux/module.h>
++#include <linux/of.h>
++#include <linux/slab.h>
++
++#define LP3943_MAX_REGISTERS		0x09
++
++/* Register configuration for pin MUX */
++static const struct lp3943_reg_cfg lp3943_mux_cfg[] = {
++	/* address, mask, shift */
++	{ LP3943_REG_MUX0, 0x03, 0 },
++	{ LP3943_REG_MUX0, 0x0C, 2 },
++	{ LP3943_REG_MUX0, 0x30, 4 },
++	{ LP3943_REG_MUX0, 0xC0, 6 },
++	{ LP3943_REG_MUX1, 0x03, 0 },
++	{ LP3943_REG_MUX1, 0x0C, 2 },
++	{ LP3943_REG_MUX1, 0x30, 4 },
++	{ LP3943_REG_MUX1, 0xC0, 6 },
++	{ LP3943_REG_MUX2, 0x03, 0 },
++	{ LP3943_REG_MUX2, 0x0C, 2 },
++	{ LP3943_REG_MUX2, 0x30, 4 },
++	{ LP3943_REG_MUX2, 0xC0, 6 },
++	{ LP3943_REG_MUX3, 0x03, 0 },
++	{ LP3943_REG_MUX3, 0x0C, 2 },
++	{ LP3943_REG_MUX3, 0x30, 4 },
++	{ LP3943_REG_MUX3, 0xC0, 6 },
++};
++
++static struct mfd_cell lp3943_devs[] = {
++	{
++		.name = "lp3943-pwm",
++		.of_compatible = "ti,lp3943-pwm",
++	},
++	{
++		.name = "lp3943-gpio",
++		.of_compatible = "ti,lp3943-gpio",
++	},
++};
++
++int lp3943_read_byte(struct lp3943 *lp3943, u8 reg, u8 *read)
++{
++	int ret;
++	unsigned int val;
++
++	ret = regmap_read(lp3943->regmap, reg, &val);
++	if (ret < 0)
++		return ret;
++
++	*read = (u8)val;
++	return 0;
++}
++EXPORT_SYMBOL_GPL(lp3943_read_byte);
++
++int lp3943_write_byte(struct lp3943 *lp3943, u8 reg, u8 data)
++{
++	return regmap_write(lp3943->regmap, reg, data);
++}
++EXPORT_SYMBOL_GPL(lp3943_write_byte);
++
++int lp3943_update_bits(struct lp3943 *lp3943, u8 reg, u8 mask, u8 data)
++{
++	return regmap_update_bits(lp3943->regmap, reg, mask, data);
++}
++EXPORT_SYMBOL_GPL(lp3943_update_bits);
++
++static const struct regmap_config lp3943_regmap_config = {
++	.reg_bits = 8,
++	.val_bits = 8,
++	.max_register = LP3943_MAX_REGISTERS,
++};
++
++static int lp3943_probe(struct i2c_client *cl, const struct i2c_device_id *id)
++{
++	struct lp3943 *lp3943;
++	int ret;
++
++	lp3943 = devm_kzalloc(&cl->dev, sizeof(*lp3943), GFP_KERNEL);
++	if (!lp3943)
++		return -ENOMEM;
++
++	lp3943->regmap = devm_regmap_init_i2c(cl, &lp3943_regmap_config);
++	if (IS_ERR(lp3943->regmap)) {
++		ret = PTR_ERR(lp3943->regmap);
++		dev_err(&cl->dev, "Regmap init error: %d\n", ret);
++		return ret;
++	}
++
++	lp3943->pdata = cl->dev.platform_data;
++	lp3943->dev = &cl->dev;
++	lp3943->mux_cfg = lp3943_mux_cfg;
++	i2c_set_clientdata(cl, lp3943);
++
++	ret = mfd_add_devices(lp3943->dev, -1, lp3943_devs,
++			ARRAY_SIZE(lp3943_devs), NULL, 0, NULL);
++	if (ret) {
++		dev_err(lp3943->dev, "failed to add MFD devices: %d\n", ret);
++		return ret;
++	}
++
++	return 0;
++}
++
++static int lp3943_remove(struct i2c_client *cl)
++{
++	struct lp3943 *lp3943 = i2c_get_clientdata(cl);
++
++	mfd_remove_devices(lp3943->dev);
++	return 0;
++}
++
++static const struct i2c_device_id lp3943_ids[] = {
++	{ "lp3943", 0 },
++	{ }
++};
++MODULE_DEVICE_TABLE(i2c, lp3943_ids);
++
++static const struct of_device_id lp3943_dt_ids[] = {
++	{ .compatible = "ti,lp3943", },
++	{ }
++};
++MODULE_DEVICE_TABLE(of, lp3943_dt_ids);
++
++static struct i2c_driver lp3943_driver = {
++	.driver = {
++		.name = "lp3943",
++		.owner = THIS_MODULE,
++		.of_match_table = of_match_ptr(lp3943_dt_ids),
++	},
++	.probe = lp3943_probe,
++	.remove = lp3943_remove,
++	.id_table = lp3943_ids,
++};
++
++static int __init lp3943_init(void)
++{
++	return i2c_add_driver(&lp3943_driver);
++}
++subsys_initcall(lp3943_init);
++
++static void __exit lp3943_exit(void)
++{
++	i2c_del_driver(&lp3943_driver);
++}
++module_exit(lp3943_exit);
++
++MODULE_DESCRIPTION("LP3943 MFD Core Driver");
++MODULE_AUTHOR("Milo Kim");
++MODULE_LICENSE("GPL");
+diff --git a/include/linux/mfd/lp3943.h b/include/linux/mfd/lp3943.h
+new file mode 100644
+index 0000000..fae320d
+--- /dev/null
++++ b/include/linux/mfd/lp3943.h
+@@ -0,0 +1,115 @@
++/*
++ * TI/National Semiconductor LP3943 Device
++ *
++ * Copyright 2013 Texas Instruments
++ *
++ * Author: Milo Kim <milo.kim@ti.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ */
++
++#ifndef __MFD_LP3943_H__
++#define __MFD_LP3943_H__
++
++#include <linux/gpio.h>
++#include <linux/pwm.h>
++#include <linux/regmap.h>
++
++/* Registers */
++#define LP3943_REG_GPIO_A		0x00
++#define LP3943_REG_GPIO_B		0x01
++#define LP3943_REG_PRESCALE0		0x02
++#define LP3943_REG_PWM0			0x03
++#define LP3943_REG_PRESCALE1		0x04
++#define LP3943_REG_PWM1			0x05
++#define LP3943_REG_MUX0			0x06
++#define LP3943_REG_MUX1			0x07
++#define LP3943_REG_MUX2			0x08
++#define LP3943_REG_MUX3			0x09
++
++/* Bit description for LP3943_REG_MUX0 ~ 3 */
++#define LP3943_GPIO_IN			0x00
++#define LP3943_GPIO_OUT_HIGH		0x00
++#define LP3943_GPIO_OUT_LOW		0x01
++#define LP3943_DIM_PWM0			0x02
++#define LP3943_DIM_PWM1			0x03
++
++enum lp3943_pwm_output {
++	LP3943_PWM_INVALID,
++	LP3943_PWM_OUT0,
++	LP3943_PWM_OUT1,
++	LP3943_PWM_OUT2,
++	LP3943_PWM_OUT3,
++	LP3943_PWM_OUT4,
++	LP3943_PWM_OUT5,
++	LP3943_PWM_OUT6,
++	LP3943_PWM_OUT7,
++	LP3943_PWM_OUT8,
++	LP3943_PWM_OUT9,
++	LP3943_PWM_OUT10,
++	LP3943_PWM_OUT11,
++	LP3943_PWM_OUT12,
++	LP3943_PWM_OUT13,
++	LP3943_PWM_OUT14,
++	LP3943_PWM_OUT15,
++};
++
++/*
++ * struct lp3943_pwm_map
++ * @output: Output pins which are mapped to each PWM controller
++ * @num_outputs: Number of outputs
++ */
++struct lp3943_pwm_map {
++	enum lp3943_pwm_output *output;
++	int num_outputs;
++};
++
++/*
++ * struct lp3943_platform_data
++ * @pwm0: Output channel definitions for PWM 0 controller
++ * @pwm1: Output channel definitions for PWM 1 controller
++ */
++struct lp3943_platform_data {
++	struct lp3943_pwm_map *pwm0;
++	struct lp3943_pwm_map *pwm1;
++};
++
++/*
++ * struct lp3943_reg_cfg
++ * @reg: Register address
++ * @mask: Register bit mask to be updated
++ * @shift: Register bit shift
++ */
++struct lp3943_reg_cfg {
++	u8 reg;
++	u8 mask;
++	u8 shift;
++};
++
++/*
++ * struct lp3943
++ * @dev: Parent device pointer
++ * @regmap: Used for I2C communication on accessing registers
++ * @pdata: LP3943 platform specific data
++ * @mux_cfg: Register configuration for pin MUX
++ * @pin_used: Bit mask for output pin used.
++ *	      This bitmask is used for pin assignment management.
++ *	      1 = pin used, 0 = available.
++ *	      Only LSB 16 bits are used, but it is unsigned long type
++ *	      for atomic bitwise operations.
++ */
++struct lp3943 {
++	struct device *dev;
++	struct regmap *regmap;
++	struct lp3943_platform_data *pdata;
++	const struct lp3943_reg_cfg *mux_cfg;
++	unsigned long pin_used;
++};
++
++int lp3943_read_byte(struct lp3943 *lp3943, u8 reg, u8 *read);
++int lp3943_write_byte(struct lp3943 *lp3943, u8 reg, u8 data);
++int lp3943_update_bits(struct lp3943 *lp3943, u8 reg, u8 mask, u8 data);
++#endif
 -- 
-    """
-    Keep It Simple,Stupid.
-    """
+1.7.9.5
 
-Chinese Name: ÁôΩÊù®
-Nick Name: Hamo
-Homepage: http://hamobai.com/
-GPG KEY ID: 0xA4691A33
-Key fingerprint = 09D5 2D78 8E2B 0995 CF8E  4331 33C4 3D24 A469 1A33
+
+Best Regards,
+Milo
+
+
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
