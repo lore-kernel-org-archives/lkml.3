@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756920Ab3G3Cgj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 22:36:39 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:59101 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753193Ab3G3Cgh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 22:36:37 -0400
-Message-ID: <1375151796.2075.97.camel@joe-AO722>
-Subject: Re: Checkpatch error on trace events macros
-From: Joe Perches <joe@perches.com>
-To: Li Zefan <lizefan@huawei.com>
-Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Andy Whitcroft <apw@canonical.com>, linux-kernel@vger.kernel.org
-Date: Mon, 29 Jul 2013 19:36:36 -0700
-In-Reply-To: <51F71FBC.6030600@huawei.com>
-References: <20130729195201.GC14883@xanatos> <51F7171C.4060100@huawei.com>
-	 <1375149538.2075.95.camel@joe-AO722> <51F71FBC.6030600@huawei.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1756960Ab3G3Cqf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 22:46:35 -0400
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:51769 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753230Ab3G3Cqe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 22:46:34 -0400
+Message-ID: <1375152388.4265.1.camel@phoenix>
+Subject: [PATCH RFT] regulator: pfuze100: Fix n_voltages setting for SW2~SW4
+ with high bit set
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Robin Gong <b38343@freescale.com>, Liam Girdwood <lgirdwood@gmail.com>,
+        linux-kernel@vger.kernel.org
+Date: Tue, 30 Jul 2013 10:46:28 +0800
+Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.6.4-0ubuntu1 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
@@ -24,35 +23,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-07-30 at 10:06 +0800, Li Zefan wrote:
-> On 2013/7/30 9:58, Joe Perches wrote:
-> > So what are these TRACE_<FOO> defines that need
-> > excluding from the "complex values" check?
-> > 
-> > Anything other than 
-> > 
-> > TRACE_SYSTEM
-> > TRACE_INCLUDE_FILE
-> > TRACE_INCLUDE_PATH
-> > 
-> > ?
-> > 
-> > samples/trace_events/trace-events-sample.h
-> > only has those 3.
-> > 
-> 
-> Try:
->   # scripts/checkpatch.pl --file include/trace/events/*
-> 
-> You'll see numerous errors. :)
+Current code adjust min_uV and uV_step but missed adjusting the n_voltages
+setting.
 
-Nope, you'll see numerous whitespace defects, but no
-actual errors.
+When BIT6 is clear:
+        n_voltages = (1975000 - 400000) / 25000 + 1 = 64
+When BIT6 is set:
+        n_voltages = (3300000 - 800000) / 50000 + 1 = 51
 
-If you run with:
+The n_voltages needs update because when BIT6 is set 0x73 ~ 0x7f are reserved.
+When using regulator_list_voltage_linear, the n_voltages does matter here
+because wrong n_voltages setting make the equation return wrong result.
+e.g. if selector is 63, regulator_list_voltage_linear returns
+     800000 + (50000 * 63) = 4000000
+     It should return -EINVAL if the selector is in the range of 51 ~ 63.
 
---ignore=spacing,long_line,code_indent,leading_space,printf_l,split_string,space_before_tab,trailing_whitespace,line_continuations
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+ drivers/regulator/pfuze100-regulator.c | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
-it's flawless.
+diff --git a/drivers/regulator/pfuze100-regulator.c b/drivers/regulator/pfuze100-regulator.c
+index 2dadc31..a77379b 100644
+--- a/drivers/regulator/pfuze100-regulator.c
++++ b/drivers/regulator/pfuze100-regulator.c
+@@ -387,8 +387,11 @@ static int pfuze100_regulator_probe(struct i2c_client *client,
+ 
+ 	for (i = 0; i < PFUZE100_MAX_REGULATOR; i++) {
+ 		struct regulator_init_data *init_data;
++		struct regulator_desc *desc;
+ 		int val;
+ 
++		desc = &pfuze_chip->regulator_descs[i].desc;
++
+ 		if (pdata)
+ 			init_data = pdata->init_data[i];
+ 		else
+@@ -396,13 +399,11 @@ static int pfuze100_regulator_probe(struct i2c_client *client,
+ 
+ 		/* SW2~SW4 high bit check and modify the voltage value table */
+ 		if (i > PFUZE100_SW1C && i < PFUZE100_SWBST) {
+-			regmap_read(pfuze_chip->regmap, PFUZE100_SW2VOL +
+-					(i - PFUZE100_SW2) * 7, &val);
++			regmap_read(pfuze_chip->regmap, desc->vsel_reg, &val);
+ 			if (val & 0x40) {
+-				pfuze_chip->regulator_descs[i].desc.min_uV
+-				= 800000;
+-				pfuze_chip->regulator_descs[i].desc.uV_step
+-				= 50000;
++				desc->min_uV = 800000;
++				desc->uV_step = 50000;
++				desc->n_voltages = 51;
+ 			}
+ 		}
+ 
+@@ -411,8 +412,7 @@ static int pfuze100_regulator_probe(struct i2c_client *client,
+ 		config.driver_data = pfuze_chip;
+ 		config.of_node = match_of_node(i);
+ 
+-		pfuze_chip->regulators[i] = regulator_register(&pfuze_chip
+-			->regulator_descs[i].desc, &config);
++		pfuze_chip->regulators[i] = regulator_register(desc, &config);
+ 		if (IS_ERR(pfuze_chip->regulators[i])) {
+ 			dev_err(&client->dev, "register regulator%s failed\n",
+ 				pfuze100_regulators[i].desc.name);
+-- 
+1.8.1.2
+
 
 
