@@ -1,104 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755651Ab3G3LoF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 07:44:05 -0400
-Received: from mail-vb0-f49.google.com ([209.85.212.49]:45625 "EHLO
-	mail-vb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752800Ab3G3LoE convert rfc822-to-8bit (ORCPT
+	id S1752056Ab3G3LpP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 07:45:15 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:15864 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750736Ab3G3LpN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 07:44:04 -0400
+	Tue, 30 Jul 2013 07:45:13 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 30 Jul 2013 04:45:12 -0700
+From: Bill Huang <bilhuang@nvidia.com>
+To: <sameo@linux.intel.com>
+CC: <rob.herring@calxeda.com>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <swarren@wwwdotorg.org>, <ian.campbell@citrix.com>, <rob@landley.net>,
+        <lee.jones@linaro.org>, <broonie@linaro.org>, <nm@ti.com>,
+        <j-keerthy@ti.com>, <grant.likely@linaro.org>, <ian@slimlogic.co.uk>,
+        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Bill Huang <bilhuang@nvidia.com>,
+        Mallikarjun Kasoju <mkasoju@nvidia.com>
+Subject: [PATCH 1/1] mfd: palmas: Add power off control
+Date: Tue, 30 Jul 2013 05:05:57 -0700
+Message-ID: <1375185957-28212-1-git-send-email-bilhuang@nvidia.com>
+X-Mailer: git-send-email 1.7.9.5
+X-NVConfidentiality: public
 MIME-Version: 1.0
-In-Reply-To: <20130730093519.GP3008@twins.programming.kicks-ass.net>
-References: <1374955447-5051-1-git-send-email-ethan.kernel@gmail.com>
-	<alpine.DEB.2.02.1307291146060.4089@ionos.tec.linutronix.de>
-	<CABawtvP4oLuvHOS3prbbgPShXVziV_wTo7i6KCqJ9KkoVdz0ag@mail.gmail.com>
-	<20130730093519.GP3008@twins.programming.kicks-ass.net>
-Date: Tue, 30 Jul 2013 19:44:03 +0800
-Message-ID: <CABawtvNVeHbe06tbuH6Khgp_5gYmRYtk=sz9U7oE8f_x+6yg1g@mail.gmail.com>
-Subject: Re: [PATCH V3]hrtimer: Fix a performance regression by disable
- reprogramming in remove_hrtimer
-From: Ethan Zhao <ethan.kernel@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, johlstei@codeaurora.org,
-        Yinghai Lu <yinghai@kernel.org>, Jin Feng <joe.jin@oracle.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 30, 2013 at 5:35 PM, Peter Zijlstra <peterz@infradead.org> wrote:
->
-> On Tue, Jul 30, 2013 at 05:12:49PM +0800, Ethan Zhao wrote:
-> > On Mon, Jul 29, 2013 at 6:18 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> > > The test case does not involve anything hrtimer related. Do you have
-> > > CONFIG_SCHED_HRTICK enabled?
-> > >
-> >
-> > Yes.  it is default configured in stable release.
-> > CONFIG_SCHED_HRTICK=y
->
-> Should still be disabled by default even if supported:
->
-> # grep HRTICK kernel/sched/features.h
-> SCHED_FEAT(HRTICK, false)
->
->
-> > > First of all we want to know, which particular hrtimer is causing that
-> > > issue. If it is the hrtick one, then I really have to ask why you want
-> > > to use it at all in such a high performance scenario.
-> > >
-> > >  Any advice about the HZ in high performance scenario ? hrtimer tick
-> > Is not fit for high performance ?
->
-> Hence why its disabled, programming the timer hardware is too expensive.
-> But since you didn't even know that I suspect you aren't in fact using
-> it.
->
-Got it.
-what tglx and you mean
+Hook up "pm_power_off" to palmas power off routine if there is DT
+property "ti,system-power-controller" defined, so platform which is
+powered by this regulator can be powered off properly.
 
- SCHED_FEAT(HRTICK, 0)
+Based on work by:
+Mallikarjun Kasoju <mkasoju@nvidia.com>
 
- then no hrtimer operation in
-  void __sched __schedule(void)
-   {
-      … …
-    if (sched_feat(HRTICK))
-hrtick_clear(rq);
-      … …
+Signed-off-by: Bill Huang <bilhuang@nvidia.com>
+cc: Mallikarjun Kasoju <mkasoju@nvidia.com>
+---
+ .../devicetree/bindings/regulator/palmas-pmic.txt  |    5 +++++
+ drivers/mfd/palmas.c                               |   23 ++++++++++++++++++--
+ include/linux/mfd/palmas.h                         |    1 +
+ 3 files changed, 27 insertions(+), 2 deletions(-)
 
-Yup, So what I am facing is not HRTICK.
-But that doesn't move my eyes away from hrtimer and suspect
-reprogramming delay the scheduling.
-The call stack looks like following :
-
- cpu_idle()
- {
-  … …
-  tick_nohz_stop_sched_tick()
-    --> hrtimer_start(); --> __hrtimer_start_range_ns() -- > remove_hrtimer()
-    -- > raise_softirq_irqoff(TIMER_SOFTIRQ);
----->run_timer_softirq() --> tick_sched_timer() -- >
-hrtimer_start_expires
-  … …
-
-  … ...
-  tick_nohz_restart_sched_tick()
-  … ...
-  schedule()
-  … ...
+diff --git a/Documentation/devicetree/bindings/regulator/palmas-pmic.txt b/Documentation/devicetree/bindings/regulator/palmas-pmic.txt
+index 30b0581..4adca2a 100644
+--- a/Documentation/devicetree/bindings/regulator/palmas-pmic.txt
++++ b/Documentation/devicetree/bindings/regulator/palmas-pmic.txt
+@@ -36,6 +36,9 @@ Optional nodes:
+ 	       ti,smps-range - OTP has the wrong range set for the hardware so override
+ 	       0 - low range, 1 - high range.
+ 
++- ti,system-power-controller: Telling whether or not this pmic is controlling
++			      the system power.
++
+ Example:
+ 
+ #include <dt-bindings/interrupt-controller/irq.h>
+@@ -48,6 +51,8 @@ pmic {
+ 
+ 	ti,ldo6-vibrator;
+ 
++	ti,system-power-controller;
++
+ 	regulators {
+ 		smps12_reg : smps12 {
+ 			regulator-name = "smps12";
+diff --git a/drivers/mfd/palmas.c b/drivers/mfd/palmas.c
+index e4d1c70..0662b21 100644
+--- a/drivers/mfd/palmas.c
++++ b/drivers/mfd/palmas.c
+@@ -229,6 +229,22 @@ static void palmas_dt_to_pdata(struct i2c_client *i2c,
+ 					PALMAS_POWER_CTRL_ENABLE2_MASK;
+ 	if (i2c->irq)
+ 		palmas_set_pdata_irq_flag(i2c, pdata);
++
++	pdata->pm_off = of_property_read_bool(node,
++			"ti,system-power-controller");
++}
++
++static struct palmas *palmas_dev;
++static void palmas_power_off(void)
++{
++	unsigned int addr;
++
++	if (!palmas_dev)
++		return;
++
++	addr = PALMAS_BASE_TO_REG(PALMAS_PMU_CONTROL_BASE, PALMAS_DEV_CTRL);
++
++	regmap_update_bits(palmas_dev->regmap[0], addr, 1, 0);
  }
+ 
+ static unsigned int palmas_features = PALMAS_PMIC_FEATURE_SMPS10_BOOST;
+@@ -423,10 +439,13 @@ no_irq:
+ 	 */
+ 	if (node) {
+ 		ret = of_platform_populate(node, NULL, NULL, &i2c->dev);
+-		if (ret < 0)
++		if (ret < 0) {
+ 			goto err_irq;
+-		else
++		} else if (pdata->pm_off && !pm_power_off) {
++			palmas_dev = palmas;
++			pm_power_off = palmas_power_off;
+ 			return ret;
++		}
+ 	}
+ 
+ 	return ret;
+diff --git a/include/linux/mfd/palmas.h b/include/linux/mfd/palmas.h
+index 1a8dd7a..061cce0 100644
+--- a/include/linux/mfd/palmas.h
++++ b/include/linux/mfd/palmas.h
+@@ -258,6 +258,7 @@ struct palmas_platform_data {
+ 	 */
+ 	int mux_from_pdata;
+ 	u8 pad1, pad2;
++	bool pm_off;
+ 
+ 	struct palmas_pmic_platform_data *pmic_pdata;
+ 	struct palmas_gpadc_platform_data *gpadc_pdata;
+-- 
+1.7.9.5
 
-So the expensive thing maybe not inside the schedule(), but could
-outside the scheduler(), the more bigger forever loop.
-
-This is one part of what I am facing.
-
-Thanks
-Ethan
-
->
-> It would be good if you could do what Thomas suggested and look at which
-> timer is actually active during your workload.
