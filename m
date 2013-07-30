@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932488Ab3G3Jus (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 05:50:48 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53140 "EHLO
+	id S932825Ab3G3JvG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 05:51:06 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53133 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932376Ab3G3JdE (ORCPT
+	with ESMTP id S932370Ab3G3JdC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 05:33:04 -0400
+	Tue, 30 Jul 2013 05:33:02 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Eric Dumazet <edumazet@google.com>,
+Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
         "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 048/106] neighbour: fix a race in neigh_destroy()
-Date: Tue, 30 Jul 2013 10:31:07 +0100
-Message-Id: <1375176725-5825-49-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 047/106] sh_eth: fix unhandled RFE interrupt
+Date: Tue, 30 Jul 2013 10:31:06 +0100
+Message-Id: <1375176725-5825-48-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
 References: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
@@ -28,81 +28,109 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
 
-commit c9ab4d85de222f3390c67aedc9c18a50e767531e upstream.
+commit ca8c35852138ee0585eaffe6b9f10a5261ea7771 upstream.
 
-There is a race in neighbour code, because neigh_destroy() uses
-skb_queue_purge(&neigh->arp_queue) without holding neighbour lock,
-while other parts of the code assume neighbour rwlock is what
-protects arp_queue
+EESR.RFE (receive FIFO overflow) interrupt is enabled by the driver on all SoCs
+and sh_eth_error() handles it but it's not present in any initializer/assignment
+of the 'eesr_err_check' field of 'struct sh_eth_cpu_data'. This leads to that
+interrupt not being handled and cleared, and finally to disabling IRQ and the
+driver being non-functional.
 
-Convert all skb_queue_purge() calls to the __skb_queue_purge() variant
+Modify DEFAULT_EESR_ERR_CHECK macro and all explicit initializers of the above
+mentioned field to contain the EESR.RFE bit. Remove useless backslashes from the
+initializers, while at it.
 
-Use __skb_queue_head_init() instead of skb_queue_head_init()
-to make clear we do not use arp_queue.lock
-
-And hold neigh->lock in neigh_destroy() to close the race.
-
-Reported-by: Joe Jin <joe.jin@oracle.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
+[ luis: backported to 3.5: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/core/neighbour.c | 12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
+ drivers/net/ethernet/renesas/sh_eth.c | 28 +++++++++++++++-------------
+ drivers/net/ethernet/renesas/sh_eth.h |  2 +-
+ 2 files changed, 16 insertions(+), 14 deletions(-)
 
-diff --git a/net/core/neighbour.c b/net/core/neighbour.c
-index 5c2dac3..c09f82b 100644
---- a/net/core/neighbour.c
-+++ b/net/core/neighbour.c
-@@ -239,7 +239,7 @@ static void neigh_flush_dev(struct neigh_table *tbl, struct net_device *dev)
- 				   we must kill timers etc. and move
- 				   it to safe state.
- 				 */
--				skb_queue_purge(&n->arp_queue);
-+				__skb_queue_purge(&n->arp_queue);
- 				n->arp_queue_len_bytes = 0;
- 				n->output = neigh_blackhole;
- 				if (n->nud_state & NUD_VALID)
-@@ -302,7 +302,7 @@ static struct neighbour *neigh_alloc(struct neigh_table *tbl, struct net_device
- 	if (!n)
- 		goto out_entries;
+diff --git a/drivers/net/ethernet/renesas/sh_eth.c b/drivers/net/ethernet/renesas/sh_eth.c
+index 2ff4f0b..8cfba14 100644
+--- a/drivers/net/ethernet/renesas/sh_eth.c
++++ b/drivers/net/ethernet/renesas/sh_eth.c
+@@ -88,8 +88,9 @@ static struct sh_eth_cpu_data sh_eth_my_cpu_data = {
+ 	.eesipr_value	= DMAC_M_RFRMER | DMAC_M_ECI | 0x01ff009f,
  
--	skb_queue_head_init(&n->arp_queue);
-+	__skb_queue_head_init(&n->arp_queue);
- 	rwlock_init(&n->lock);
- 	seqlock_init(&n->ha_lock);
- 	n->updated	  = n->used = now;
-@@ -722,7 +722,9 @@ void neigh_destroy(struct neighbour *neigh)
- 	if (neigh_del_timer(neigh))
- 		pr_warn("Impossible event\n");
+ 	.tx_check	= EESR_FTC | EESR_CND | EESR_DLC | EESR_CD | EESR_RTO,
+-	.eesr_err_check	= EESR_TWB | EESR_TABT | EESR_RABT | EESR_RDE |
+-			  EESR_RFRMER | EESR_TFE | EESR_TDE | EESR_ECI,
++	.eesr_err_check	= EESR_TWB | EESR_TABT | EESR_RABT | EESR_RFE |
++			  EESR_RDE | EESR_RFRMER | EESR_TFE | EESR_TDE |
++			  EESR_ECI,
+ 	.tx_error_check	= EESR_TWB | EESR_TABT | EESR_TDE | EESR_TFE,
  
--	skb_queue_purge(&neigh->arp_queue);
-+	write_lock_bh(&neigh->lock);
-+	__skb_queue_purge(&neigh->arp_queue);
-+	write_unlock_bh(&neigh->lock);
- 	neigh->arp_queue_len_bytes = 0;
+ 	.apr		= 1,
+@@ -137,8 +138,9 @@ static struct sh_eth_cpu_data sh_eth_my_cpu_data = {
+ 	.rmcr_value	= 0x00000001,
  
- 	if (dev->netdev_ops->ndo_neigh_destroy)
-@@ -868,7 +870,7 @@ static void neigh_invalidate(struct neighbour *neigh)
- 		neigh->ops->error_report(neigh, skb);
- 		write_lock(&neigh->lock);
- 	}
--	skb_queue_purge(&neigh->arp_queue);
-+	__skb_queue_purge(&neigh->arp_queue);
- 	neigh->arp_queue_len_bytes = 0;
- }
+ 	.tx_check	= EESR_FTC | EESR_CND | EESR_DLC | EESR_CD | EESR_RTO,
+-	.eesr_err_check	= EESR_TWB | EESR_TABT | EESR_RABT | EESR_RDE |
+-			  EESR_RFRMER | EESR_TFE | EESR_TDE | EESR_ECI,
++	.eesr_err_check	= EESR_TWB | EESR_TABT | EESR_RABT | EESR_RFE |
++			  EESR_RDE | EESR_RFRMER | EESR_TFE | EESR_TDE |
++			  EESR_ECI,
+ 	.tx_error_check	= EESR_TWB | EESR_TABT | EESR_TDE | EESR_TFE,
  
-@@ -1207,7 +1209,7 @@ int neigh_update(struct neighbour *neigh, const u8 *lladdr, u8 new,
+ 	.apr		= 1,
+@@ -252,9 +254,9 @@ static struct sh_eth_cpu_data sh_eth_my_cpu_data_giga = {
+ 	.eesipr_value	= DMAC_M_RFRMER | DMAC_M_ECI | 0x003fffff,
  
- 			write_lock_bh(&neigh->lock);
- 		}
--		skb_queue_purge(&neigh->arp_queue);
-+		__skb_queue_purge(&neigh->arp_queue);
- 		neigh->arp_queue_len_bytes = 0;
- 	}
- out:
+ 	.tx_check	= EESR_TC1 | EESR_FTC,
+-	.eesr_err_check	= EESR_TWB1 | EESR_TWB | EESR_TABT | EESR_RABT | \
+-			  EESR_RDE | EESR_RFRMER | EESR_TFE | EESR_TDE | \
+-			  EESR_ECI,
++	.eesr_err_check	= EESR_TWB1 | EESR_TWB | EESR_TABT | EESR_RABT |
++			  EESR_RFE | EESR_RDE | EESR_RFRMER | EESR_TFE |
++			  EESR_TDE | EESR_ECI,
+ 	.tx_error_check	= EESR_TWB1 | EESR_TWB | EESR_TABT | EESR_TDE | \
+ 			  EESR_TFE,
+ 	.fdr_value	= 0x0000072f,
+@@ -361,9 +363,9 @@ static struct sh_eth_cpu_data sh_eth_my_cpu_data = {
+ 	.eesipr_value	= DMAC_M_RFRMER | DMAC_M_ECI | 0x003fffff,
+ 
+ 	.tx_check	= EESR_TC1 | EESR_FTC,
+-	.eesr_err_check	= EESR_TWB1 | EESR_TWB | EESR_TABT | EESR_RABT | \
+-			  EESR_RDE | EESR_RFRMER | EESR_TFE | EESR_TDE | \
+-			  EESR_ECI,
++	.eesr_err_check	= EESR_TWB1 | EESR_TWB | EESR_TABT | EESR_RABT |
++			  EESR_RFE | EESR_RDE | EESR_RFRMER | EESR_TFE |
++			  EESR_TDE | EESR_ECI,
+ 	.tx_error_check	= EESR_TWB1 | EESR_TWB | EESR_TABT | EESR_TDE | \
+ 			  EESR_TFE,
+ 
+@@ -478,9 +480,9 @@ static struct sh_eth_cpu_data sh_eth_my_cpu_data = {
+ 	.eesipr_value	= DMAC_M_RFRMER | DMAC_M_ECI | 0x003fffff,
+ 
+ 	.tx_check	= EESR_TC1 | EESR_FTC,
+-	.eesr_err_check	= EESR_TWB1 | EESR_TWB | EESR_TABT | EESR_RABT | \
+-			  EESR_RDE | EESR_RFRMER | EESR_TFE | EESR_TDE | \
+-			  EESR_ECI,
++	.eesr_err_check	= EESR_TWB1 | EESR_TWB | EESR_TABT | EESR_RABT |
++			  EESR_RFE | EESR_RDE | EESR_RFRMER | EESR_TFE |
++			  EESR_TDE | EESR_ECI,
+ 	.tx_error_check	= EESR_TWB1 | EESR_TWB | EESR_TABT | EESR_TDE | \
+ 			  EESR_TFE,
+ 
+diff --git a/drivers/net/ethernet/renesas/sh_eth.h b/drivers/net/ethernet/renesas/sh_eth.h
+index 57b8e1f..8369e92 100644
+--- a/drivers/net/ethernet/renesas/sh_eth.h
++++ b/drivers/net/ethernet/renesas/sh_eth.h
+@@ -468,7 +468,7 @@ enum EESR_BIT {
+ 
+ #define DEFAULT_TX_CHECK	(EESR_FTC | EESR_CND | EESR_DLC | EESR_CD | \
+ 				 EESR_RTO)
+-#define DEFAULT_EESR_ERR_CHECK	(EESR_TWB | EESR_TABT | EESR_RABT | \
++#define DEFAULT_EESR_ERR_CHECK	(EESR_TWB | EESR_TABT | EESR_RABT | EESR_RFE | \
+ 				 EESR_RDE | EESR_RFRMER | EESR_ADE | \
+ 				 EESR_TFE | EESR_TDE | EESR_ECI)
+ #define DEFAULT_TX_ERROR_CHECK	(EESR_TWB | EESR_TABT | EESR_ADE | EESR_TDE | \
 -- 
 1.8.3.2
 
