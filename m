@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932429Ab3G3JdM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 05:33:12 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53123 "EHLO
+	id S932502Ab3G3Jd0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 05:33:26 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53183 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932361Ab3G3JdA (ORCPT
+	with ESMTP id S932361Ab3G3JdN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 05:33:00 -0400
+	Tue, 30 Jul 2013 05:33:13 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Eric Dumazet <edumazet@google.com>,
+Cc: Ding Tianhong <dingtianhong@huawei.com>,
         "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 045/106] ipv6: ip6_sk_dst_check() must not assume ipv6 dst
-Date: Tue, 30 Jul 2013 10:31:04 +0100
-Message-Id: <1375176725-5825-46-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 056/106] ifb: fix rcu_sched self-detected stalls
+Date: Tue, 30 Jul 2013 10:31:15 +0100
+Message-Id: <1375176725-5825-57-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
 References: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
@@ -28,55 +28,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: dingtianhong <dingtianhong@huawei.com>
 
-commit a963a37d384d71ad43b3e9e79d68d42fbe0901f3 upstream.
+commit 440d57bc5ff55ec1efb3efc9cbe9420b4bbdfefa upstream.
 
-It's possible to use AF_INET6 sockets and to connect to an IPv4
-destination. After this, socket dst cache is a pointer to a rtable,
-not rt6_info.
+According to the commit 16b0dc29c1af9df341428f4c49ada4f626258082
+(dummy: fix rcu_sched self-detected stalls)
 
-ip6_sk_dst_check() should check the socket dst cache is IPv6, or else
-various corruptions/crashes can happen.
+Eric Dumazet fix the problem in dummy, but the ifb will occur the
+same problem like the dummy modules.
 
-Dave Jones can reproduce immediate crash with
-trinity -q -l off -n -c sendmsg -c connect
+Trying to "modprobe ifb numifbs=30000" triggers :
 
-With help from Hannes Frederic Sowa
+INFO: rcu_sched self-detected stall on CPU
 
-Reported-by: Dave Jones <davej@redhat.com>
-Reported-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+After this splat, RTNL is locked and reboot is needed.
+
+We must call cond_resched() to avoid this, even holding RTNL.
+
+Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/ipv6/ip6_output.c | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ drivers/net/ifb.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/net/ipv6/ip6_output.c b/net/ipv6/ip6_output.c
-index ccb2adb..6c5f1c1 100644
---- a/net/ipv6/ip6_output.c
-+++ b/net/ipv6/ip6_output.c
-@@ -919,11 +919,17 @@ static struct dst_entry *ip6_sk_dst_check(struct sock *sk,
- 					  const struct flowi6 *fl6)
- {
- 	struct ipv6_pinfo *np = inet6_sk(sk);
--	struct rt6_info *rt = (struct rt6_info *)dst;
-+	struct rt6_info *rt;
+diff --git a/drivers/net/ifb.c b/drivers/net/ifb.c
+index 344dceb..04ab337 100644
+--- a/drivers/net/ifb.c
++++ b/drivers/net/ifb.c
+@@ -291,8 +291,10 @@ static int __init ifb_init_module(void)
+ 	rtnl_lock();
+ 	err = __rtnl_link_register(&ifb_link_ops);
  
- 	if (!dst)
- 		goto out;
- 
-+	if (dst->ops->family != AF_INET6) {
-+		dst_release(dst);
-+		return NULL;
+-	for (i = 0; i < numifbs && !err; i++)
++	for (i = 0; i < numifbs && !err; i++) {
+ 		err = ifb_init_one(i);
++		cond_resched();
 +	}
-+
-+	rt = (struct rt6_info *)dst;
- 	/* Yes, checking route validity in not connected
- 	 * case is not very simple. Take into account,
- 	 * that we do not support routing by source, TOS,
+ 	if (err)
+ 		__rtnl_link_unregister(&ifb_link_ops);
+ 	rtnl_unlock();
 -- 
 1.8.3.2
 
