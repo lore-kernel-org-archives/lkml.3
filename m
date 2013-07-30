@@ -1,44 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752416Ab3G3LsI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 07:48:08 -0400
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:63873 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752353Ab3G3LrC (ORCPT
+	id S1751451Ab3G3Lw2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 07:52:28 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:44788 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751074Ab3G3Lw1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 07:47:02 -0400
-Date: Tue, 30 Jul 2013 07:46:58 -0400
-From: Tejun Heo <tj@kernel.org>
-To: shli@kernel.org
-Cc: linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org, neilb@suse.de,
-        djbw@fb.com
-Subject: Re: [patch 1/3] raid5: offload stripe handle to workqueue
-Message-ID: <20130730114658.GA2599@htj.dyndns.org>
-References: <20130730055207.698660010@kernel.org>
- <20130730055257.527231772@kernel.org>
+	Tue, 30 Jul 2013 07:52:27 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130730055257.527231772@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CACxGe6t1MNMcL=0U9Cu7MOvPx-PCkWFf5iWGPZ=eAXSz-uuqEA@mail.gmail.com>
+References: <CACxGe6t1MNMcL=0U9Cu7MOvPx-PCkWFf5iWGPZ=eAXSz-uuqEA@mail.gmail.com>
+From: Florian Fainelli <florian@openwrt.org>
+Date: Tue, 30 Jul 2013 12:51:46 +0100
+X-Google-Sender-Auth: lolCazdXxJ3-vBRFSB4OglDGGRo
+Message-ID: <CAGVrzcYWB7V1JXfxLXExRvvgQ1M7p-AA2L+8xYgBKiPpUeS7Wg@mail.gmail.com>
+Subject: Re: New device tree mailing list
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: devicetree-discuss <devicetree-discuss@lists.ozlabs.org>,
+        devicetree@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hello,
 
-On Tue, Jul 30, 2013 at 01:52:08PM +0800, shli@kernel.org wrote:
->  static int __init raid5_init(void)
->  {
-> +	raid5_wq = alloc_workqueue("raid5wq",
-> +		WQ_NON_REENTRANT|WQ_UNBOUND|WQ_MEM_RECLAIM|
-> +			WQ_CPU_INTENSIVE|WQ_SYSFS, 0);
+2013/7/20 Grant Likely <grant.likely@secretlab.ca>:
+> Hello everyone,
+>
+> The ozlabs devicetree list was requiring too much work to moderate, so
+> I'm closing down that list and replacing it with a list on
+> vger.kernel.org.
+>
+> http://vger.kernel.org/vger-lists.html#devicetree
+>
+> I'll be sending a patch to MAINTAINERS shortly.
 
-Workqueues are now always non-reentrant and WQ_NON_REENTRANT is noop.
-I was planning to remove it and then forgot. :) Will send out patches
-to kill it.
-
-Thanks.
-
+It would have been very nice to prevent the old one from rejecting
+messages right away, especially when replying to old messages which
+have been sent to the old address.
 -- 
-tejun
+Florian
