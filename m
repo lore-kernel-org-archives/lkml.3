@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932440Ab3G3JwZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 05:52:25 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53097 "EHLO
+	id S932405Ab3G3Jwq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 05:52:46 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53094 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758722Ab3G3Jcz (ORCPT
+	with ESMTP id S1758719Ab3G3Jcy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 05:32:55 -0400
+	Tue, 30 Jul 2013 05:32:54 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Andi Kleen <ak@linux.intel.com>,
-        James Bottomley <JBottomley@Parallels.com>,
-        Ben Hutchings <ben@decadent.org.uk>,
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 039/106] [SCSI] Fix incorrect memset in bnx2fc_parse_fcp_rsp
-Date: Tue, 30 Jul 2013 10:30:58 +0100
-Message-Id: <1375176725-5825-40-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 040/106] MAINTAINERS: add stable_kernel_rules.txt to stable maintainer information
+Date: Tue, 30 Jul 2013 10:30:59 +0100
+Message-Id: <1375176725-5825-41-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
 References: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
@@ -29,45 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andi Kleen <andi@firstfloor.org>
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-commit 16da05b1158d1bcb31656e636a8736a663b1cf1f upstream.
+commit 7b175c46720f8e6b92801bb634c93d1016f80c62 upstream.
 
-gcc 4.8 warns because the memset only clears sizeof(char *) bytes, not
-the whole buffer. Use the correct buffer size and clear the whole sense
-buffer.
+This hopefully will help point developers to the proper way that patches
+should be submitted for inclusion in the stable kernel releases.
 
-/backup/lsrc/git/linux-lto-2.6/drivers/scsi/bnx2fc/bnx2fc_io.c: In
-function 'bnx2fc_parse_fcp_rsp':
-/backup/lsrc/git/linux-lto-2.6/drivers/scsi/bnx2fc/bnx2fc_io.c:1810:41:
-warning: argument to 'sizeof' in 'memset' call is the same expression as
-the destination; did you mean to provide an explicit length?
-[-Wsizeof-pointer-memaccess]
-   memset(sc_cmd->sense_buffer, 0, sizeof(sc_cmd->sense_buffer));
-                                         ^
-
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Acked-by: Bhanu Prakash Gollapudi <bprakash@broadcom.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
-Cc: Ben Hutchings <ben@decadent.org.uk>
+Reported-by: David Howells <dhowells@redhat.com>
+Acked-by: David Howells <dhowells@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/scsi/bnx2fc/bnx2fc_io.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ MAINTAINERS | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/scsi/bnx2fc/bnx2fc_io.c b/drivers/scsi/bnx2fc/bnx2fc_io.c
-index 4f7453b..557cfd3 100644
---- a/drivers/scsi/bnx2fc/bnx2fc_io.c
-+++ b/drivers/scsi/bnx2fc/bnx2fc_io.c
-@@ -1814,7 +1814,7 @@ static void bnx2fc_parse_fcp_rsp(struct bnx2fc_cmd *io_req,
- 			fcp_sns_len = SCSI_SENSE_BUFFERSIZE;
- 		}
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 5927882..058777c 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -6466,6 +6466,7 @@ STABLE BRANCH
+ M:	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+ L:	stable@vger.kernel.org
+ S:	Supported
++F:	Documentation/stable_kernel_rules.txt
  
--		memset(sc_cmd->sense_buffer, 0, sizeof(sc_cmd->sense_buffer));
-+		memset(sc_cmd->sense_buffer, 0, SCSI_SENSE_BUFFERSIZE);
- 		if (fcp_sns_len)
- 			memcpy(sc_cmd->sense_buffer, rq_data, fcp_sns_len);
- 
+ STAGING SUBSYSTEM
+ M:	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 -- 
 1.8.3.2
 
