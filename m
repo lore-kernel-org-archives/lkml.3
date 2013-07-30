@@ -1,72 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755714Ab3G3Nsf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 09:48:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40424 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755199Ab3G3Nsd (ORCPT
+	id S1755873Ab3G3Nsq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 09:48:46 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:26102 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755783Ab3G3Nso (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 09:48:33 -0400
-Date: Tue, 30 Jul 2013 06:49:50 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: "Hans J. Koch" <hjk@hansjkoch.de>, linux-kernel@vger.kernel.org,
-        kernel@pengutronix.de, Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm@kvack.org
-Subject: Re: [PATCH v2 1/2] uio: provide vm access to UIO_MEM_PHYS maps
-Message-ID: <20130730134950.GA27962@kroah.com>
-References: <20130727214911.GK1754@pengutronix.de>
- <1374962978-1860-1-git-send-email-u.kleine-koenig@pengutronix.de>
- <20130729200914.GA6146@kroah.com>
- <20130730075239.GN1754@pengutronix.de>
+	Tue, 30 Jul 2013 09:48:44 -0400
+Message-ID: <51F7C433.6070005@atmel.com>
+Date: Tue, 30 Jul 2013 14:48:35 +0100
+From: Rupesh Gujare <rupesh.gujare@atmel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130730075239.GN1754@pengutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Dan Carpenter <dan.carpenter@oracle.com>
+CC: <devel@linuxdriverproject.org>, <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] staging: ozwpan: High resolution timers
+References: <1375187510-28042-1-git-send-email-rupesh.gujare@atmel.com> <20130730131230.GC5002@mwanda>
+In-Reply-To: <20130730131230.GC5002@mwanda>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 30, 2013 at 09:52:39AM +0200, Uwe Kleine-König wrote:
-> [expanding Cc: to also include akpm and linux-mm]
-> 
-> Hello,
-> 
-> On Mon, Jul 29, 2013 at 01:09:14PM -0700, Greg Kroah-Hartman wrote:
-> > On Sun, Jul 28, 2013 at 12:09:37AM +0200, Uwe Kleine-König wrote:
-> > > This makes it possible to let gdb access mappings of the process that is
-> > > being debugged.
-> > > 
-> > > uio_mmap_logical was moved and uio_vm_ops renamed to group related code
-> > > and differentiate to new stuff.
-> > > 
-> > > Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-> > > ---
-> > > Changes since v1:
-> > >     - only use generic_access_phys ifdef CONFIG_HAVE_IOREMAP_PROT
-> > >     - fix all users of renamed struct
-> > 
-> > I still get a build error with this patch:
-> > 
-> >   MODPOST 384 modules
-> > ERROR: "generic_access_phys" [drivers/uio/uio.ko] undefined!
-> > 
-> > So something isn't quite right.
-> Ah, you built as a module and generic_access_phys isn't exported. The
-> other users of generic_access_phys (arch/x86/pci/i386.c and
-> drivers/char/mem.c) can only be builtin.
-> 
-> So the IMHO best option is to add an EXPORT_SYMBOL(generic_access_phys)
-> to mm/memory.c.
+On 30/07/13 14:12, Dan Carpenter wrote:
+> On Tue, Jul 30, 2013 at 01:31:50PM +0100, Rupesh Gujare wrote:
+>> Current implementation assumes HZ = 1000 for calculating
+>> all internal timer intervals, which creates problem on
+>> platforms where HZ != 1000.
+>>
+>> As well we need resolution of less than 10 mSec for heartbeat
+>> calculation, this creates problem on some platforms where HZ is
+>> configured as HZ = 100, or around, which restricts us to timer interval
+>> of 10 mSec. This is particularly found on embedded devices.
+>>
+>> This patch moves on to use high resolution timers to calculate
+>> all timer intervals as it allows us to have very small resolution
+>> of timer interval, removing dependency on HZ.
+>>
+> I am new to this driver.  So we batch all the transfers together and
+> send/recieve them in oz_hcd_heartbeat() every 10msec?  It's a
+> polling interface?
+>
+> Sorry, if I am completely mis-reading what this driver is doing.
+>
+> In other words, could you explain what oz_hcd_heartbeat() does.
+>
+>
+>
 
-EXPORT_SYMBOL_GPL() perhaps?
+Yes, you are right. USB service requests for regular heartbeat when it 
+have URBs queued (at them moment every 8mSsec when ISOC endpoints are
+configured). This heartbeat is also used by EP0 traffic to retransmit 
+packet over WiFi.
 
-And why all of a sudden does the uio driver need this change?  It is
-working just fine right now without it, right?
+At heartbeat expiry, oz_hcd_heartbeat(), goes on to process all received 
+URBs and send it over WiFi.
 
-thanks,
 
-greg k-h
+-- 
+Regards,
+Rupesh Gujare
+
