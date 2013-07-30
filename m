@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932830Ab3G3JxB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 05:53:01 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53090 "EHLO
+	id S1758848Ab3G3JxV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 05:53:21 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53071 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758717Ab3G3Jcy (ORCPT
+	with ESMTP id S1758710Ab3G3Jct (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 05:32:54 -0400
+	Tue, 30 Jul 2013 05:32:49 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dan Carpenter <dan.carpenter@oracle.com>, Eric Paris <eparis@redhat.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Aaron Plattner <aplattner@nvidia.com>, Takashi Iwai <tiwai@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 038/106] fanotify: info leak in copy_event_to_user()
-Date: Tue, 30 Jul 2013 10:30:57 +0100
-Message-Id: <1375176725-5825-39-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 034/106] ALSA: hda - Add new GPU codec ID to snd-hda
+Date: Tue, 30 Jul 2013 10:30:53 +0100
+Message-Id: <1375176725-5825-35-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
 References: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
@@ -30,35 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Aaron Plattner <aplattner@nvidia.com>
 
-commit de1e0c40aceb9d5bff09c3a3b97b2f1b178af53f upstream.
+commit 7ae48b56f8d9c836259bc02f3e2ea4962d6b5d1b upstream.
 
-The ->reserved field isn't cleared so we leak one byte of stack
-information to userspace.
+Vendor ID 0x10de0051 is used by a yet-to-be-named GPU chip.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Eric Paris <eparis@redhat.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Aaron Plattner <aplattner@nvidia.com>
+Acked-by: Andy Ritger <aritger@nvidia.com>
+Reviewed-by: Daniel Dadap <ddadap@nvidia.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/notify/fanotify/fanotify_user.c | 1 +
- 1 file changed, 1 insertion(+)
+ sound/pci/hda/patch_hdmi.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
-index 3568c8a..48bc91d 100644
---- a/fs/notify/fanotify/fanotify_user.c
-+++ b/fs/notify/fanotify/fanotify_user.c
-@@ -120,6 +120,7 @@ static int fill_event_metadata(struct fsnotify_group *group,
- 	metadata->event_len = FAN_EVENT_METADATA_LEN;
- 	metadata->metadata_len = FAN_EVENT_METADATA_LEN;
- 	metadata->vers = FANOTIFY_METADATA_VERSION;
-+	metadata->reserved = 0;
- 	metadata->mask = event->mask & FAN_ALL_OUTGOING_EVENTS;
- 	metadata->pid = pid_vnr(event->tgid);
- 	if (unlikely(event->mask & FAN_Q_OVERFLOW))
+diff --git a/sound/pci/hda/patch_hdmi.c b/sound/pci/hda/patch_hdmi.c
+index 2af1285..5763427 100644
+--- a/sound/pci/hda/patch_hdmi.c
++++ b/sound/pci/hda/patch_hdmi.c
+@@ -1897,6 +1897,7 @@ static const struct hda_codec_preset snd_hda_preset_hdmi[] = {
+ { .id = 0x10de0042, .name = "GPU 42 HDMI/DP",	.patch = patch_generic_hdmi },
+ { .id = 0x10de0043, .name = "GPU 43 HDMI/DP",	.patch = patch_generic_hdmi },
+ { .id = 0x10de0044, .name = "GPU 44 HDMI/DP",	.patch = patch_generic_hdmi },
++{ .id = 0x10de0051, .name = "GPU 51 HDMI/DP",	.patch = patch_generic_hdmi },
+ { .id = 0x10de0067, .name = "MCP67 HDMI",	.patch = patch_nvhdmi_2ch },
+ { .id = 0x10de8001, .name = "MCP73 HDMI",	.patch = patch_nvhdmi_2ch },
+ { .id = 0x80860054, .name = "IbexPeak HDMI",	.patch = patch_generic_hdmi },
+@@ -1943,6 +1944,7 @@ MODULE_ALIAS("snd-hda-codec-id:10de0041");
+ MODULE_ALIAS("snd-hda-codec-id:10de0042");
+ MODULE_ALIAS("snd-hda-codec-id:10de0043");
+ MODULE_ALIAS("snd-hda-codec-id:10de0044");
++MODULE_ALIAS("snd-hda-codec-id:10de0051");
+ MODULE_ALIAS("snd-hda-codec-id:10de0067");
+ MODULE_ALIAS("snd-hda-codec-id:10de8001");
+ MODULE_ALIAS("snd-hda-codec-id:17e80047");
 -- 
 1.8.3.2
 
