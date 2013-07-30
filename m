@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758810Ab3G3JsI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 05:48:08 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53200 "EHLO
+	id S932519Ab3G3Jsb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 05:48:31 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53188 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932440Ab3G3JdQ (ORCPT
+	with ESMTP id S932432Ab3G3JdO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 05:33:16 -0400
+	Tue, 30 Jul 2013 05:33:14 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Nicolas Dichtel <nicolas.dichtel@6wind.com>,
-        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+Cc: dingtianhong <dingtianhong@huawei.com>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
         "David S. Miller" <davem@davemloft.net>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Cong Wang <amwang@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 058/106] ipv6: in case of link failure remove route directly instead of letting it expire
-Date: Tue, 30 Jul 2013 10:31:17 +0100
-Message-Id: <1375176725-5825-59-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 051/106] ipv6,mcast: always hold idev->lock before mca_lock
+Date: Tue, 30 Jul 2013 10:31:10 +0100
+Message-Id: <1375176725-5825-52-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
 References: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
@@ -30,100 +31,246 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+From: Amerigo Wang <amwang@redhat.com>
 
-commit 1eb4f758286884e7566627164bca4c4a16952a83 upstream.
+commit 8965779d2c0e6ab246c82a405236b1fb2adae6b2 upstream.
 
-We could end up expiring a route which is part of an ecmp route set. Doing
-so would invalidate the rt->rt6i_nsiblings calculations and could provoke
-the following panic:
+dingtianhong reported the following deadlock detected by lockdep:
 
-[   80.144667] ------------[ cut here ]------------
-[   80.145172] kernel BUG at net/ipv6/ip6_fib.c:733!
-[   80.145172] invalid opcode: 0000 [#1] SMP
-[   80.145172] Modules linked in: 8021q nf_conntrack_netbios_ns nf_conntrack_broadcast ipt_MASQUERADE ip6table_mangle ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 iptable_nat nf_nat_ipv4 nf_nat iptable_mangle nf_conntrack_ipv4 nf_defrag_ipv4 xt_conntrack nf_conntrack ebtable_filter ebtables ip6table_filter ip6_tables
-+snd_hda_intel snd_hda_codec snd_hwdep snd_seq snd_seq_device snd_pcm snd_page_alloc snd_timer virtio_balloon snd soundcore i2c_piix4 i2c_core virtio_net virtio_blk
-[   80.145172] CPU: 1 PID: 786 Comm: ping6 Not tainted 3.10.0+ #118
-[   80.145172] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-[   80.145172] task: ffff880117fa0000 ti: ffff880118770000 task.ti: ffff880118770000
-[   80.145172] RIP: 0010:[<ffffffff815f3b5d>]  [<ffffffff815f3b5d>] fib6_add+0x75d/0x830
-[   80.145172] RSP: 0018:ffff880118771798  EFLAGS: 00010202
-[   80.145172] RAX: 0000000000000000 RBX: 0000000000000000 RCX: ffff88011350e480
-[   80.145172] RDX: ffff88011350e238 RSI: 0000000000000004 RDI: ffff88011350f738
-[   80.145172] RBP: ffff880118771848 R08: ffff880117903280 R09: 0000000000000001
-[   80.145172] R10: 0000000000000000 R11: 0000000000000000 R12: ffff88011350f680
-[   80.145172] R13: ffff880117903280 R14: ffff880118771890 R15: ffff88011350ef90
-[   80.145172] FS:  00007f02b5127740(0000) GS:ffff88011fd00000(0000) knlGS:0000000000000000
-[   80.145172] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[   80.145172] CR2: 00007f981322a000 CR3: 00000001181b1000 CR4: 00000000000006e0
-[   80.145172] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[   80.145172] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[   80.145172] Stack:
-[   80.145172]  0000000000000001 ffff880100000000 ffff880100000000 ffff880117903280
-[   80.145172]  0000000000000000 ffff880119a4cf00 0000000000000400 00000000000007fa
-[   80.145172]  0000000000000000 0000000000000000 0000000000000000 ffff88011350f680
-[   80.145172] Call Trace:
-[   80.145172]  [<ffffffff815eeceb>] ? rt6_bind_peer+0x4b/0x90
-[   80.145172]  [<ffffffff815ed985>] __ip6_ins_rt+0x45/0x70
-[   80.145172]  [<ffffffff815eee35>] ip6_ins_rt+0x35/0x40
-[   80.145172]  [<ffffffff815ef1e4>] ip6_pol_route.isra.44+0x3a4/0x4b0
-[   80.145172]  [<ffffffff815ef34a>] ip6_pol_route_output+0x2a/0x30
-[   80.145172]  [<ffffffff81616077>] fib6_rule_action+0xd7/0x210
-[   80.145172]  [<ffffffff815ef320>] ? ip6_pol_route_input+0x30/0x30
-[   80.145172]  [<ffffffff81553026>] fib_rules_lookup+0xc6/0x140
-[   80.145172]  [<ffffffff81616374>] fib6_rule_lookup+0x44/0x80
-[   80.145172]  [<ffffffff815ef320>] ? ip6_pol_route_input+0x30/0x30
-[   80.145172]  [<ffffffff815edea3>] ip6_route_output+0x73/0xb0
-[   80.145172]  [<ffffffff815dfdf3>] ip6_dst_lookup_tail+0x2c3/0x2e0
-[   80.145172]  [<ffffffff813007b1>] ? list_del+0x11/0x40
-[   80.145172]  [<ffffffff81082a4c>] ? remove_wait_queue+0x3c/0x50
-[   80.145172]  [<ffffffff815dfe4d>] ip6_dst_lookup_flow+0x3d/0xa0
-[   80.145172]  [<ffffffff815fda77>] rawv6_sendmsg+0x267/0xc20
-[   80.145172]  [<ffffffff815a8a83>] inet_sendmsg+0x63/0xb0
-[   80.145172]  [<ffffffff8128eb93>] ? selinux_socket_sendmsg+0x23/0x30
-[   80.145172]  [<ffffffff815218d6>] sock_sendmsg+0xa6/0xd0
-[   80.145172]  [<ffffffff81524a68>] SYSC_sendto+0x128/0x180
-[   80.145172]  [<ffffffff8109825c>] ? update_curr+0xec/0x170
-[   80.145172]  [<ffffffff81041d09>] ? kvm_clock_get_cycles+0x9/0x10
-[   80.145172]  [<ffffffff810afd1e>] ? __getnstimeofday+0x3e/0xd0
-[   80.145172]  [<ffffffff8152509e>] SyS_sendto+0xe/0x10
-[   80.145172]  [<ffffffff8164efd9>] system_call_fastpath+0x16/0x1b
-[   80.145172] Code: fe ff ff 41 f6 45 2a 06 0f 85 ca fe ff ff 49 8b 7e 08 4c 89 ee e8 94 ef ff ff e9 b9 fe ff ff 48 8b 82 28 05 00 00 e9 01 ff ff ff <0f> 0b 49 8b 54 24 30 0d 00 00 40 00 89 83 14 01 00 00 48 89 53
-[   80.145172] RIP  [<ffffffff815f3b5d>] fib6_add+0x75d/0x830
-[   80.145172]  RSP <ffff880118771798>
-[   80.387413] ---[ end trace 02f20b7a8b81ed95 ]---
-[   80.390154] Kernel panic - not syncing: Fatal exception in interrupt
+ ======================================================
+ [ INFO: possible circular locking dependency detected ]
+ 3.4.24.05-0.1-default #1 Not tainted
+ -------------------------------------------------------
+ ksoftirqd/0/3 is trying to acquire lock:
+  (&ndev->lock){+.+...}, at: [<ffffffff8147f804>] ipv6_get_lladdr+0x74/0x120
 
-Cc: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-Cc: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+ but task is already holding lock:
+  (&mc->mca_lock){+.+...}, at: [<ffffffff8149d130>] mld_send_report+0x40/0x150
+
+ which lock already depends on the new lock.
+
+ the existing dependency chain (in reverse order) is:
+
+ -> #1 (&mc->mca_lock){+.+...}:
+        [<ffffffff810a8027>] validate_chain+0x637/0x730
+        [<ffffffff810a8417>] __lock_acquire+0x2f7/0x500
+        [<ffffffff810a8734>] lock_acquire+0x114/0x150
+        [<ffffffff814f691a>] rt_spin_lock+0x4a/0x60
+        [<ffffffff8149e4bb>] igmp6_group_added+0x3b/0x120
+        [<ffffffff8149e5d8>] ipv6_mc_up+0x38/0x60
+        [<ffffffff81480a4d>] ipv6_find_idev+0x3d/0x80
+        [<ffffffff81483175>] addrconf_notify+0x3d5/0x4b0
+        [<ffffffff814fae3f>] notifier_call_chain+0x3f/0x80
+        [<ffffffff81073471>] raw_notifier_call_chain+0x11/0x20
+        [<ffffffff813d8722>] call_netdevice_notifiers+0x32/0x60
+        [<ffffffff813d92d4>] __dev_notify_flags+0x34/0x80
+        [<ffffffff813d9360>] dev_change_flags+0x40/0x70
+        [<ffffffff813ea627>] do_setlink+0x237/0x8a0
+        [<ffffffff813ebb6c>] rtnl_newlink+0x3ec/0x600
+        [<ffffffff813eb4d0>] rtnetlink_rcv_msg+0x160/0x310
+        [<ffffffff814040b9>] netlink_rcv_skb+0x89/0xb0
+        [<ffffffff813eb357>] rtnetlink_rcv+0x27/0x40
+        [<ffffffff81403e20>] netlink_unicast+0x140/0x180
+        [<ffffffff81404a9e>] netlink_sendmsg+0x33e/0x380
+        [<ffffffff813c4252>] sock_sendmsg+0x112/0x130
+        [<ffffffff813c537e>] __sys_sendmsg+0x44e/0x460
+        [<ffffffff813c5544>] sys_sendmsg+0x44/0x70
+        [<ffffffff814feab9>] system_call_fastpath+0x16/0x1b
+
+ -> #0 (&ndev->lock){+.+...}:
+        [<ffffffff810a798e>] check_prev_add+0x3de/0x440
+        [<ffffffff810a8027>] validate_chain+0x637/0x730
+        [<ffffffff810a8417>] __lock_acquire+0x2f7/0x500
+        [<ffffffff810a8734>] lock_acquire+0x114/0x150
+        [<ffffffff814f6c82>] rt_read_lock+0x42/0x60
+        [<ffffffff8147f804>] ipv6_get_lladdr+0x74/0x120
+        [<ffffffff8149b036>] mld_newpack+0xb6/0x160
+        [<ffffffff8149b18b>] add_grhead+0xab/0xc0
+        [<ffffffff8149d03b>] add_grec+0x3ab/0x460
+        [<ffffffff8149d14a>] mld_send_report+0x5a/0x150
+        [<ffffffff8149f99e>] igmp6_timer_handler+0x4e/0xb0
+        [<ffffffff8105705a>] call_timer_fn+0xca/0x1d0
+        [<ffffffff81057b9f>] run_timer_softirq+0x1df/0x2e0
+        [<ffffffff8104e8c7>] handle_pending_softirqs+0xf7/0x1f0
+        [<ffffffff8104ea3b>] __do_softirq_common+0x7b/0xf0
+        [<ffffffff8104f07f>] __thread_do_softirq+0x1af/0x210
+        [<ffffffff8104f1c1>] run_ksoftirqd+0xe1/0x1f0
+        [<ffffffff8106c7de>] kthread+0xae/0xc0
+        [<ffffffff814fff74>] kernel_thread_helper+0x4/0x10
+
+actually we can just hold idev->lock before taking pmc->mca_lock,
+and avoid taking idev->lock again when iterating idev->addr_list,
+since the upper callers of mld_newpack() already take
+read_lock_bh(&idev->lock).
+
+Reported-by: dingtianhong <dingtianhong@huawei.com>
+Cc: dingtianhong <dingtianhong@huawei.com>
+Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
+Cc: David S. Miller <davem@davemloft.net>
+Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Tested-by: Ding Tianhong <dingtianhong@huawei.com>
+Tested-by: Chen Weilong <chenweilong@huawei.com>
+Signed-off-by: Cong Wang <amwang@redhat.com>
+Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
+[ luis: backported to 3.5, based on the davem's backport to 3.4:
+  - get __ipv6_get_lladdr() from commit b7b1bfce0bb68bd8f6e62a28295922785cc63781
+    ("ipv6: split duplicate address detection and router solicitation timer") ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/ipv6/route.c | 9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ include/net/addrconf.h |  3 +++
+ net/ipv6/addrconf.c    | 28 ++++++++++++++++++----------
+ net/ipv6/mcast.c       | 18 ++++++++++--------
+ 3 files changed, 31 insertions(+), 18 deletions(-)
 
-diff --git a/net/ipv6/route.c b/net/ipv6/route.c
-index 577bb2f..8253206 100644
---- a/net/ipv6/route.c
-+++ b/net/ipv6/route.c
-@@ -1032,10 +1032,13 @@ static void ip6_link_failure(struct sk_buff *skb)
+diff --git a/include/net/addrconf.h b/include/net/addrconf.h
+index 91b2a85..cc24a34 100644
+--- a/include/net/addrconf.h
++++ b/include/net/addrconf.h
+@@ -81,6 +81,9 @@ extern int			ipv6_dev_get_saddr(struct net *net,
+ 					       const struct in6_addr *daddr,
+ 					       unsigned int srcprefs,
+ 					       struct in6_addr *saddr);
++extern int			__ipv6_get_lladdr(struct inet6_dev *idev,
++						  struct in6_addr *addr,
++						  unsigned char banned_flags);
+ extern int			ipv6_get_lladdr(struct net_device *dev,
+ 						struct in6_addr *addr,
+ 						unsigned char banned_flags);
+diff --git a/net/ipv6/addrconf.c b/net/ipv6/addrconf.c
+index c126b0a..5e23f99 100644
+--- a/net/ipv6/addrconf.c
++++ b/net/ipv6/addrconf.c
+@@ -1231,6 +1231,23 @@ try_nextdev:
+ }
+ EXPORT_SYMBOL(ipv6_dev_get_saddr);
  
- 	rt = (struct rt6_info *) skb_dst(skb);
- 	if (rt) {
--		if (rt->rt6i_flags & RTF_CACHE)
--			rt6_update_expires(rt, 0);
--		else if (rt->rt6i_node && (rt->rt6i_flags & RTF_DEFAULT))
-+		if (rt->rt6i_flags & RTF_CACHE) {
-+			dst_hold(&rt->dst);
-+			if (ip6_del_rt(rt))
-+				dst_free(&rt->dst);
-+		} else if (rt->rt6i_node && (rt->rt6i_flags & RTF_DEFAULT)) {
- 			rt->rt6i_node->fn_sernum = -1;
++int __ipv6_get_lladdr(struct inet6_dev *idev, struct in6_addr *addr,
++		      unsigned char banned_flags)
++{
++	struct inet6_ifaddr *ifp;
++	int err = -EADDRNOTAVAIL;
++
++	list_for_each_entry(ifp, &idev->addr_list, if_list) {
++		if (ifp->scope == IFA_LINK &&
++		    !(ifp->flags & banned_flags)) {
++			*addr = ifp->addr;
++			err = 0;
++			break;
 +		}
++	}
++	return err;
++}
++
+ int ipv6_get_lladdr(struct net_device *dev, struct in6_addr *addr,
+ 		    unsigned char banned_flags)
+ {
+@@ -1240,17 +1257,8 @@ int ipv6_get_lladdr(struct net_device *dev, struct in6_addr *addr,
+ 	rcu_read_lock();
+ 	idev = __in6_dev_get(dev);
+ 	if (idev) {
+-		struct inet6_ifaddr *ifp;
+-
+ 		read_lock_bh(&idev->lock);
+-		list_for_each_entry(ifp, &idev->addr_list, if_list) {
+-			if (ifp->scope == IFA_LINK &&
+-			    !(ifp->flags & banned_flags)) {
+-				*addr = ifp->addr;
+-				err = 0;
+-				break;
+-			}
+-		}
++		err = __ipv6_get_lladdr(idev, addr, banned_flags);
+ 		read_unlock_bh(&idev->lock);
  	}
+ 	rcu_read_unlock();
+diff --git a/net/ipv6/mcast.c b/net/ipv6/mcast.c
+index 6d0f5dc..2e97228 100644
+--- a/net/ipv6/mcast.c
++++ b/net/ipv6/mcast.c
+@@ -1334,8 +1334,9 @@ mld_scount(struct ifmcaddr6 *pmc, int type, int gdeleted, int sdeleted)
+ 	return scount;
  }
  
+-static struct sk_buff *mld_newpack(struct net_device *dev, int size)
++static struct sk_buff *mld_newpack(struct inet6_dev *idev, int size)
+ {
++	struct net_device *dev = idev->dev;
+ 	struct net *net = dev_net(dev);
+ 	struct sock *sk = net->ipv6.igmp_sk;
+ 	struct sk_buff *skb;
+@@ -1360,7 +1361,7 @@ static struct sk_buff *mld_newpack(struct net_device *dev, int size)
+ 
+ 	skb_reserve(skb, hlen);
+ 
+-	if (ipv6_get_lladdr(dev, &addr_buf, IFA_F_TENTATIVE)) {
++	if (__ipv6_get_lladdr(idev, &addr_buf, IFA_F_TENTATIVE)) {
+ 		/* <draft-ietf-magma-mld-source-05.txt>:
+ 		 * use unspecified address as the source address
+ 		 * when a valid link-local address is not available.
+@@ -1456,7 +1457,7 @@ static struct sk_buff *add_grhead(struct sk_buff *skb, struct ifmcaddr6 *pmc,
+ 	struct mld2_grec *pgr;
+ 
+ 	if (!skb)
+-		skb = mld_newpack(dev, dev->mtu);
++		skb = mld_newpack(pmc->idev, dev->mtu);
+ 	if (!skb)
+ 		return NULL;
+ 	pgr = (struct mld2_grec *)skb_put(skb, sizeof(struct mld2_grec));
+@@ -1476,7 +1477,8 @@ static struct sk_buff *add_grhead(struct sk_buff *skb, struct ifmcaddr6 *pmc,
+ static struct sk_buff *add_grec(struct sk_buff *skb, struct ifmcaddr6 *pmc,
+ 	int type, int gdeleted, int sdeleted)
+ {
+-	struct net_device *dev = pmc->idev->dev;
++	struct inet6_dev *idev = pmc->idev;
++	struct net_device *dev = idev->dev;
+ 	struct mld2_report *pmr;
+ 	struct mld2_grec *pgr = NULL;
+ 	struct ip6_sf_list *psf, *psf_next, *psf_prev, **psf_list;
+@@ -1505,7 +1507,7 @@ static struct sk_buff *add_grec(struct sk_buff *skb, struct ifmcaddr6 *pmc,
+ 		    AVAILABLE(skb) < grec_size(pmc, type, gdeleted, sdeleted)) {
+ 			if (skb)
+ 				mld_sendpack(skb);
+-			skb = mld_newpack(dev, dev->mtu);
++			skb = mld_newpack(idev, dev->mtu);
+ 		}
+ 	}
+ 	first = 1;
+@@ -1532,7 +1534,7 @@ static struct sk_buff *add_grec(struct sk_buff *skb, struct ifmcaddr6 *pmc,
+ 				pgr->grec_nsrcs = htons(scount);
+ 			if (skb)
+ 				mld_sendpack(skb);
+-			skb = mld_newpack(dev, dev->mtu);
++			skb = mld_newpack(idev, dev->mtu);
+ 			first = 1;
+ 			scount = 0;
+ 		}
+@@ -1587,8 +1589,8 @@ static void mld_send_report(struct inet6_dev *idev, struct ifmcaddr6 *pmc)
+ 	struct sk_buff *skb = NULL;
+ 	int type;
+ 
++	read_lock_bh(&idev->lock);
+ 	if (!pmc) {
+-		read_lock_bh(&idev->lock);
+ 		for (pmc=idev->mc_list; pmc; pmc=pmc->next) {
+ 			if (pmc->mca_flags & MAF_NOREPORT)
+ 				continue;
+@@ -1600,7 +1602,6 @@ static void mld_send_report(struct inet6_dev *idev, struct ifmcaddr6 *pmc)
+ 			skb = add_grec(skb, pmc, type, 0, 0);
+ 			spin_unlock_bh(&pmc->mca_lock);
+ 		}
+-		read_unlock_bh(&idev->lock);
+ 	} else {
+ 		spin_lock_bh(&pmc->mca_lock);
+ 		if (pmc->mca_sfcount[MCAST_EXCLUDE])
+@@ -1610,6 +1611,7 @@ static void mld_send_report(struct inet6_dev *idev, struct ifmcaddr6 *pmc)
+ 		skb = add_grec(skb, pmc, type, 0, 0);
+ 		spin_unlock_bh(&pmc->mca_lock);
+ 	}
++	read_unlock_bh(&idev->lock);
+ 	if (skb)
+ 		mld_sendpack(skb);
+ }
 -- 
 1.8.3.2
 
