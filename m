@@ -1,83 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754746Ab3G3Qgr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 12:36:47 -0400
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:40108 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751633Ab3G3Qgp (ORCPT
+	id S1755602Ab3G3Qh1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 12:37:27 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:48416 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755000Ab3G3QhN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 12:36:45 -0400
+	Tue, 30 Jul 2013 12:37:13 -0400
+Message-ID: <51F7ED20.80202@linux.vnet.ibm.com>
+Date: Tue, 30 Jul 2013 22:13:12 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <1374657972-2456-1-git-send-email-wangyijing@huawei.com>
-References: <1374657972-2456-1-git-send-email-wangyijing@huawei.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 30 Jul 2013 10:36:24 -0600
-Message-ID: <CAErSpo79sEzYXg9yy6bJjpEs2rmhYa+rgh50K76m1RPvn6mJHw@mail.gmail.com>
-Subject: Re: [PATCH] PCI: update NumVFs register properly during
- enable/disable sriov
-To: Yijing Wang <wangyijing@huawei.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Hanjun Guo <guohanjun@huawei.com>, Jiang Liu <jiang.liu@huawei.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Gleb Natapov <gleb@redhat.com>, mingo@redhat.com
+CC: jeremy@goop.org, x86@kernel.org, konrad.wilk@oracle.com, hpa@zytor.com,
+        pbonzini@redhat.com, linux-doc@vger.kernel.org,
+        habanero@linux.vnet.ibm.com, xen-devel@lists.xensource.com,
+        peterz@infradead.org, mtosatti@redhat.com,
+        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
+        attilio.rao@citrix.com, ouyang@cs.pitt.edu, gregkh@suse.de,
+        agraf@suse.de, chegu_vinod@hp.com, torvalds@linux-foundation.org,
+        avi.kivity@gmail.com, tglx@linutronix.de, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, riel@redhat.com, drjones@redhat.com,
+        virtualization@lists.linux-foundation.org,
+        srivatsa.vaddagiri@gmail.com
+Subject: Re: [PATCH RFC V11 15/18] kvm : Paravirtual ticketlocks support for
+ linux guests running on KVM hypervisor
+References: <20130722061631.24737.75508.sendpatchset@codeblue> <20130722062016.24737.54554.sendpatchset@codeblue> <20130723150748.GC6029@redhat.com> <51EFA24E.2060103@linux.vnet.ibm.com> <20130724103907.GF16400@redhat.com> <51EFC1D4.9060800@linux.vnet.ibm.com> <20130724120647.GG16400@redhat.com> <51EFCA42.5020009@linux.vnet.ibm.com> <51F0ED31.3040200@linux.vnet.ibm.com> <20130725091509.GA22735@redhat.com> <51F0F202.5090001@linux.vnet.ibm.com>
+In-Reply-To: <51F0F202.5090001@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13073016-9264-0000-0000-0000043B352C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 24, 2013 at 3:26 AM, Yijing Wang <wangyijing@huawei.com> wrote:
-> Currently, we only update NumVFs register during sriov_enable().
-> This register should also be updated properly during sriov_disable.
-> Otherwise, we will get the stale "Number of VFs" info from lspci.
+On 07/25/2013 03:08 PM, Raghavendra K T wrote:
+> On 07/25/2013 02:45 PM, Gleb Natapov wrote:
+>> On Thu, Jul 25, 2013 at 02:47:37PM +0530, Raghavendra K T wrote:
+>>> On 07/24/2013 06:06 PM, Raghavendra K T wrote:
+>>>> On 07/24/2013 05:36 PM, Gleb Natapov wrote:
+>>>>> On Wed, Jul 24, 2013 at 05:30:20PM +0530, Raghavendra K T wrote:
+>>>>>> On 07/24/2013 04:09 PM, Gleb Natapov wrote:
+>>>>>>> On Wed, Jul 24, 2013 at 03:15:50PM +0530, Raghavendra K T wrote:
+>>>>>>>> On 07/23/2013 08:37 PM, Gleb Natapov wrote:
+>>>>>>>>> On Mon, Jul 22, 2013 at 11:50:16AM +0530, Raghavendra K T wrote:
+>>>>>>>>>> +static void kvm_lock_spinning(struct arch_spinlock *lock,
+>>>>>>>>>> __ticket_t want)
+>>>>>>>> [...]
+>>>>>>>>>> +
+>>>>>>>>>> +    /*
+>>>>>>>>>> +     * halt until it's our turn and kicked. Note that we do safe
+>>>>>>>>>> halt
+>>>>>>>>>> +     * for irq enabled case to avoid hang when lock info is
+>>>>>>>>>> overwritten
+>>>>>>>>>> +     * in irq spinlock slowpath and no spurious interrupt occur
+>>>>>>>>>> to save us.
+>>>>>>>>>> +     */
+>>>>>>>>>> +    if (arch_irqs_disabled_flags(flags))
+>>>>>>>>>> +        halt();
+>>>>>>>>>> +    else
+>>>>>>>>>> +        safe_halt();
+>>>>>>>>>> +
+>>>>>>>>>> +out:
+>>>>>>>>> So here now interrupts can be either disabled or enabled. Previous
+>>>>>>>>> version disabled interrupts here, so are we sure it is safe to
+>>>>>>>>> have them
+>>>>>>>>> enabled at this point? I do not see any problem yet, will keep
+>>>>>>>>> thinking.
+>>>>>>>>
+>>>>>>>> If we enable interrupt here, then
+>>>>>>>>
+>>>>>>>>
+>>>>>>>>>> +    cpumask_clear_cpu(cpu, &waiting_cpus);
+>>>>>>>>
+>>>>>>>> and if we start serving lock for an interrupt that came here,
+>>>>>>>> cpumask clear and w->lock=null may not happen atomically.
+>>>>>>>> if irq spinlock does not take slow path we would have non null
+>>>>>>>> value
+>>>>>>>> for lock, but with no information in waitingcpu.
+>>>>>>>>
+>>>>>>>> I am still thinking what would be problem with that.
+>>>>>>>>
+>>>>>>> Exactly, for kicker waiting_cpus and w->lock updates are
+>>>>>>> non atomic anyway.
+>>>>>>>
+>>>>>>>>>> +    w->lock = NULL;
+>>>>>>>>>> +    local_irq_restore(flags);
+>>>>>>>>>> +    spin_time_accum_blocked(start);
+>>>>>>>>>> +}
+>>>>>>>>>> +PV_CALLEE_SAVE_REGS_THUNK(kvm_lock_spinning);
+>>>>>>>>>> +
+>>>>>>>>>> +/* Kick vcpu waiting on @lock->head to reach value @ticket */
+>>>>>>>>>> +static void kvm_unlock_kick(struct arch_spinlock *lock,
+>>>>>>>>>> __ticket_t ticket)
+>>>>>>>>>> +{
+>>>>>>>>>> +    int cpu;
+>>>>>>>>>> +
+>>>>>>>>>> +    add_stats(RELEASED_SLOW, 1);
+>>>>>>>>>> +    for_each_cpu(cpu, &waiting_cpus) {
+>>>>>>>>>> +        const struct kvm_lock_waiting *w =
+>>>>>>>>>> &per_cpu(lock_waiting, cpu);
+>>>>>>>>>> +        if (ACCESS_ONCE(w->lock) == lock &&
+>>>>>>>>>> +            ACCESS_ONCE(w->want) == ticket) {
+>>>>>>>>>> +            add_stats(RELEASED_SLOW_KICKED, 1);
+>>>>>>>>>> +            kvm_kick_cpu(cpu);
+>>>>>>>>> What about using NMI to wake sleepers? I think it was
+>>>>>>>>> discussed, but
+>>>>>>>>> forgot why it was dismissed.
+>>>>>>>>
+>>>>>>>> I think I have missed that discussion. 'll go back and check. so
+>>>>>>>> what is the idea here? we can easily wake up the halted vcpus that
+>>>>>>>> have interrupt disabled?
+>>>>>>> We can of course. IIRC the objection was that NMI handling path
+>>>>>>> is very
+>>>>>>> fragile and handling NMI on each wakeup will be more expensive then
+>>>>>>> waking up a guest without injecting an event, but it is still
+>>>>>>> interesting
+>>>>>>> to see the numbers.
+>>>>>>>
+>>>>>>
+>>>>>> Haam, now I remember, We had tried request based mechanism. (new
+>>>>>> request like REQ_UNHALT) and process that. It had worked, but had
+>>>>>> some
+>>>>>> complex hacks in vcpu_enter_guest to avoid guest hang in case of
+>>>>>> request cleared.  So had left it there..
+>>>>>>
+>>>>>> https://lkml.org/lkml/2012/4/30/67
+>>>>>>
+>>>>>> But I do not remember performance impact though.
+>>>>> No, this is something different. Wakeup with NMI does not need KVM
+>>>>> changes at
+>>>>> all. Instead of kvm_kick_cpu(cpu) in kvm_unlock_kick you send NMI IPI.
+>>>>>
+>>>>
+>>>> True. It was not NMI.
+>>>> just to confirm, are you talking about something like this to be
+>>>> tried ?
+>>>>
+>>>> apic->send_IPI_mask(cpumask_of(cpu), APIC_DM_NMI);
+>>>
+>>> When I started benchmark, I started seeing
+>>> "Dazed and confused, but trying to continue" from unknown nmi error
+>>> handling.
+>>> Did I miss anything (because we did not register any NMI handler)? or
+>>> is it that spurious NMIs are trouble because we could get spurious NMIs
+>>> if next waiter already acquired the lock.
+>> There is a default NMI handler that tries to detect the reason why NMI
+>> happened (which is no so easy on x86) and prints this message if it
+>> fails. You need to add logic to detect spinlock slow path there. Check
+>> bit in waiting_cpus for instance.
 >
-> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+> aha.. Okay. will check that.
 
-Applied to pci/misc, thanks!
+yes. Thanks.. that did the trick.
 
-> ---
->  drivers/pci/iov.c |    4 +++-
->  1 files changed, 3 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/pci/iov.c b/drivers/pci/iov.c
-> index de8ffac..6e4844b 100644
-> --- a/drivers/pci/iov.c
-> +++ b/drivers/pci/iov.c
-> @@ -286,7 +286,6 @@ static int sriov_enable(struct pci_dev *dev, int nr_virtfn)
->             (!(iov->cap & PCI_SRIOV_CAP_VFM) && (nr_virtfn > initial)))
->                 return -EINVAL;
->
-> -       pci_write_config_word(dev, iov->pos + PCI_SRIOV_NUM_VF, nr_virtfn);
->         pci_read_config_word(dev, iov->pos + PCI_SRIOV_VF_OFFSET, &offset);
->         pci_read_config_word(dev, iov->pos + PCI_SRIOV_VF_STRIDE, &stride);
->         if (!offset || (nr_virtfn > 1 && !stride))
-> @@ -334,6 +333,7 @@ static int sriov_enable(struct pci_dev *dev, int nr_virtfn)
->                         return rc;
->         }
->
-> +       pci_write_config_word(dev, iov->pos + PCI_SRIOV_NUM_VF, nr_virtfn);
->         iov->ctrl |= PCI_SRIOV_CTRL_VFE | PCI_SRIOV_CTRL_MSE;
->         pci_cfg_access_lock(dev);
->         pci_write_config_word(dev, iov->pos + PCI_SRIOV_CTRL, iov->ctrl);
-> @@ -368,6 +368,7 @@ failed:
->         iov->ctrl &= ~(PCI_SRIOV_CTRL_VFE | PCI_SRIOV_CTRL_MSE);
->         pci_cfg_access_lock(dev);
->         pci_write_config_word(dev, iov->pos + PCI_SRIOV_CTRL, iov->ctrl);
-> +       pci_write_config_word(dev, iov->pos + PCI_SRIOV_NUM_VF, 0);
->         ssleep(1);
->         pci_cfg_access_unlock(dev);
->
-> @@ -401,6 +402,7 @@ static void sriov_disable(struct pci_dev *dev)
->                 sysfs_remove_link(&dev->dev.kobj, "dep_link");
->
->         iov->num_VFs = 0;
-> +       pci_write_config_word(dev, iov->pos + PCI_SRIOV_NUM_VF, 0);
->  }
->
->  static int sriov_init(struct pci_dev *dev, int pos)
-> --
-> 1.7.1
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+I did like below in unknown_nmi_error():
+if (cpumask_test_cpu(smp_processor_id(), &waiting_cpus))
+    return;
+
+But I believe you asked NMI method only for experimental purpose to
+check the upperbound. because as I doubted above, for spurious NMI
+(i.e. when unlocker kicks when waiter already got the lock), we would
+still hit unknown NMI error.
+
+I had hit spurious NMI over 1656 times over entire benchmark run.
+along with
+INFO: NMI handler (arch_trigger_all_cpu_backtrace_handler) took too long 
+to run: 24.886 msecs etc...
+
+(and we cannot get away with that too because it means we bypass the
+unknown NMI error even in genuine cases too)
+
+Here was the result for the my dbench test( 32 core  machine with 32
+vcpu guest HT off)
+
+                  ---------- % improvement --------------
+		pvspinlock      pvspin_ipi      pvpsin_nmi
+dbench_1x	0.9016    	0.7442    	0.7522
+dbench_2x	14.7513   	18.0164   	15.9421
+dbench_3x	14.7571   	17.0793   	13.3572
+dbench_4x	6.3625    	8.7897    	5.3800
+
+So I am seeing over 2-4% improvement with IPI method.
+
+Gleb,
+  do you think the current series looks good to you? [one patch I
+have resent with in_nmi() check] or do you think I have to respin the
+series with IPI method etc. or is there any concerns that I have to
+address. Please let me know..
+
+
+PS: [Sorry for the late reply, was quickly checking whether unfair lock
+with lockowner is better. it did not prove to be though. and so far
+all the results are favoring this series.]
+
