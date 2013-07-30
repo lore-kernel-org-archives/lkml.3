@@ -1,110 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757499Ab3G3GZ7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 02:25:59 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:58253 "EHLO bear.ext.ti.com"
+	id S1757555Ab3G3G0K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 02:26:10 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:58262 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751206Ab3G3GZ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 02:25:57 -0400
-Message-ID: <51F75C40.4060406@ti.com>
-Date: Tue, 30 Jul 2013 11:55:04 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1757521Ab3G3G0F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Jul 2013 02:26:05 -0400
+Date: Tue, 30 Jul 2013 09:25:51 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Julius Werner <jwerner@chromium.org>
+CC: Felipe Balbi <balbi@ti.com>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <linux-samsung-soc@vger.kernel.org>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Vivek Gautam <gautam.vivek@samsung.com>, <devicetree@vger.kernel.org>,
+        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
+Subject: Re: [PATCH v3] usb: phy-samsung-usb: Simplify PMU register handling
+Message-ID: <20130730062551.GG9155@radagast>
+Reply-To: <balbi@ti.com>
+References: <1375134253-18406-1-git-send-email-jwerner@chromium.org>
 MIME-Version: 1.0
-To: <balbi@ti.com>
-CC: <tony@atomide.com>, <linux@arm.linux.org.uk>, <eballetbo@gmail.com>,
-        <javier@dowhile0.org>, <gregkh@linuxfoundation.org>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH 2/2] arm: omap: remove *.auto* from device names given
- in usb_bind_phy
-References: <1374829418-27503-1-git-send-email-kishon@ti.com> <1374829418-27503-3-git-send-email-kishon@ti.com> <20130729150638.GD3063@radagast> <51F68A56.8060805@ti.com> <20130729175413.GC4964@radagast> <51F74BC8.7020903@ti.com> <20130730060134.GD9155@radagast> <51F7590B.4020705@ti.com> <20130730061830.GE9155@radagast>
-In-Reply-To: <20130730061830.GE9155@radagast>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="0z5c7mBtSy1wdr4F"
+Content-Disposition: inline
+In-Reply-To: <1375134253-18406-1-git-send-email-jwerner@chromium.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+--0z5c7mBtSy1wdr4F
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Tuesday 30 July 2013 11:48 AM, Felipe Balbi wrote:
-> Hi,
-> 
-> On Tue, Jul 30, 2013 at 11:41:23AM +0530, Kishon Vijay Abraham I wrote:
->>>>>>>> diff --git a/arch/arm/mach-omap2/board-2430sdp.c b/arch/arm/mach-omap2/board-2430sdp.c
->>>>>>>> index 244d8a5..17bb076 100644
->>>>>>>> --- a/arch/arm/mach-omap2/board-2430sdp.c
->>>>>>>> +++ b/arch/arm/mach-omap2/board-2430sdp.c
->>>>>>>> @@ -233,7 +233,7 @@ static void __init omap_2430sdp_init(void)
->>>>>>>>  	omap_hsmmc_init(mmc);
->>>>>>>>  
->>>>>>>>  	omap_mux_init_signal("usb0hs_stp", OMAP_PULL_ENA | OMAP_PULL_UP);
->>>>>>>> -	usb_bind_phy("musb-hdrc.0.auto", 0, "twl4030_usb");
->>>>>>>> +	usb_bind_phy("musb-hdrc.0", 0, "twl4030_usb");
->>>>>>>
->>>>>>> how about moving usb_bind_phy() calls to omap2430.c ?
->>>>>>>
->>>>>>> diff --git a/drivers/usb/musb/omap2430.c b/drivers/usb/musb/omap2430.c
->>>>>>> index f44e8b5..b6abc1a 100644
->>>>>>> --- a/drivers/usb/musb/omap2430.c
->>>>>>> +++ b/drivers/usb/musb/omap2430.c
->>>>>>> @@ -544,6 +544,9 @@ static int omap2430_probe(struct platform_device *pdev)
->>>>>>>  
->>>>>>>  		pdata->board_data	= data;
->>>>>>>  		pdata->config		= config;
->>>>>>> +	} else {
->>>>>>> +		/* bind the PHY */
->>>>>>> +		usb_bind_phy(dev_name(&musb->dev), 0, "twl4030_usb");
->>>>>>
->>>>>> This looks like a hack IMHO to workaround the usb phy library. otherwise it is
->>>>>> similar to get_phy_by_name.
->>>>>
->>>>> actually, this is a workaround to the fact that we're not creating all
->>>>> platform_devices in arch/arm/mach-omap2/ :-)
->>>>>
->>>>> If we had the musb allocation there, we could easily handle
->>>>> usb_bind_phy()
->>>>>
->>>>>>> so that's temporary. It might be better than to reintroduce the IDR in
->>>>>>> musb_core.c.
->>>>>>
->>>>>> that’s needed for generic phy framework anyway :-s
->>>>>
->>>>> right, but generic phy framework can handle everything just fine, the
->>>>> only problem is that names are changing.
->>>>
->>>> right. But if the names change, PHY framework wouldn't be able to return the
->>>> reference to the PHY.
->>>
->>> with my suggestion they can change whenever they want since we're using
->>> dev_name() of the just-created musb platform_device. Right ?
->>
->> right. But the PHY device can be created in a different place from where the
->> musb devices are created. And in the PHY framework, the PHY device should have
-> 
-> this shouldn't be a problem. As long as the phy is created, all should
-> be good.
-> 
->> the list of controller device (names) it can support (PHY framework does not
->> maintain a separate list for binding like how we had in USB PHY library). e.g.
->> http://www.mail-archive.com/linux-omap@vger.kernel.org/msg92817.html. In such
-> 
-> this has nothing to do with $subject though. We talk about generic PHY
-> framework once all these PHY drivers are moved there :-)
-> 
->> cases how do we pass the device names. Also will the MUSB core device be
->> created before twl4030-usb PHY device?
-> 
-> and why would that be a problem ? We're telling the framework that the
-> musb device will use a phy with a name of 'twl4030'. If musb calls
-> usb_get_phy_dev() and doesn't find a phy, it'll return -EPROBE_DEFER and
-> try again later.
+On Mon, Jul 29, 2013 at 02:44:13PM -0700, Julius Werner wrote:
+> This patch simplifies the way the phy-samsung-usb code finds the correct
+> power management register to enable PHY clock gating. Previously, the
+> code would calculate the register address from a device tree supplied
+> base address and add an offset based on the PHY type.
+>=20
+> Since every PHY has its own device tree entry and needs only one
+> register, we can just encode the address itself in the device tree and
+> remove the diffentiation in the code. The bitmask needed to specify the
+> bit within that register stays in place, allowing support for platforms
+> like s3c64xx that use different bits within the same register. Due to
+> this simplification, the whole complication of a Samsung-specific USB
+> PHY type can be removed from the PHY driver.
+>=20
+> Signed-off-by: Julius Werner <jwerner@chromium.org>
 
-I think we are talking about different problems here ;-) I'm trying to tell
-using idr in MUSB core is needed for Generic PHY Framework. So in a way, the
-Generic PHY Framework series depends on this patch series or else MUSB in OMAP3
-platforms wont work after Generic PHY framework gets merged.
+alright, let's try to split this patch down, it's too large.
 
-Thanks
-Kishon
+> diff --git a/arch/arm/boot/dts/exynos5250.dtsi b/arch/arm/boot/dts/exynos=
+5250.dtsi
+> index ef57277..5a754d7 100644
+> --- a/arch/arm/boot/dts/exynos5250.dtsi
+> +++ b/arch/arm/boot/dts/exynos5250.dtsi
+> @@ -473,7 +473,7 @@
+>  		ranges;
+> =20
+>  		usbphy-sys {
+> -			reg =3D <0x10040704 0x8>;
+> +			reg =3D <0x10040704 0x4>;
+>  		};
+>  	};
+> =20
+> @@ -505,7 +505,7 @@
+>  		ranges;
+> =20
+>  		usbphy-sys {
+> -			reg =3D <0x10040704 0x8>,
+> +			reg =3D <0x10040708 0x4>,
+>  			      <0x10050230 0x4>;
+>  		};
+>  	};
+> diff --git a/drivers/usb/phy/phy-samsung-usb.c b/drivers/usb/phy/phy-sams=
+ung-usb.c
+> index ac025ca..32c5264 100644
+> --- a/drivers/usb/phy/phy-samsung-usb.c
+> +++ b/drivers/usb/phy/phy-samsung-usb.c
+> @@ -27,7 +27,6 @@
+>  #include <linux/io.h>
+>  #include <linux/of.h>
+>  #include <linux/of_address.h>
+> -#include <linux/usb/samsung_usb_phy.h>
+> =20
+>  #include "phy-samsung-usb.h"
+> =20
+> @@ -42,9 +41,9 @@ int samsung_usbphy_parse_dt(struct samsung_usbphy *sphy)
+>  		return -ENODEV;
+>  	}
+> =20
+> -	sphy->pmuregs =3D of_iomap(usbphy_sys, 0);
+> +	sphy->pmureg =3D of_iomap(usbphy_sys, 0);
+
+this rename can go in a separate patch.
+
+> @@ -75,35 +74,25 @@ EXPORT_SYMBOL_GPL(samsung_usbphy_parse_dt);
+>   */
+>  void samsung_usbphy_set_isolation_4210(struct samsung_usbphy *sphy, bool=
+ on)
+>  {
+> -	void __iomem *reg =3D NULL;
+>  	u32 reg_val;
+> -	u32 en_mask =3D 0;
+> =20
+> -	if (!sphy->pmuregs) {
+> +	if (!sphy->pmureg) {
+>  		dev_warn(sphy->dev, "Can't set pmu isolation\n");
+>  		return;
+>  	}
+> =20
+> -	if (sphy->phy_type =3D=3D USB_PHY_TYPE_DEVICE) {
+> -		reg =3D sphy->pmuregs + sphy->drv_data->devphy_reg_offset;
+> -		en_mask =3D sphy->drv_data->devphy_en_mask;
+> -	} else if (sphy->phy_type =3D=3D USB_PHY_TYPE_HOST) {
+> -		reg =3D sphy->pmuregs + sphy->drv_data->hostphy_reg_offset;
+> -		en_mask =3D sphy->drv_data->hostphy_en_mask;
+> -	}
+>=20
+> -	reg_val =3D readl(reg);
+> +	reg_val =3D readl(sphy->pmureg);
+> =20
+>  	if (on)
+> -		reg_val &=3D ~en_mask;
+> +		reg_val &=3D ~sphy->drv_data->phy_en_mask;
+>  	else
+> -		reg_val |=3D en_mask;
+> +		reg_val |=3D sphy->drv_data->phy_en_mask;
+
+removing the if case up there and updating this if here could be a patch
+of its own.
+
+> @@ -111,7 +100,7 @@ EXPORT_SYMBOL_GPL(samsung_usbphy_set_isolation_4210);
+>  /*
+>   * Configure the mode of working of usb-phy here: HOST/DEVICE.
+>   */
+> -void samsung_usbphy_cfg_sel(struct samsung_usbphy *sphy)
+> +void samsung_usbphy_cfg_sel(struct samsung_usbphy *sphy, bool device_mod=
+e)
+
+passing this extra parameter could be a patch of its own.
+
+> @@ -122,31 +111,15 @@ void samsung_usbphy_cfg_sel(struct samsung_usbphy *=
+sphy)
+> =20
+>  	reg =3D readl(sphy->sysreg);
+> =20
+> -	if (sphy->phy_type =3D=3D USB_PHY_TYPE_DEVICE)
+> +	if (device_mode)
+>  		reg &=3D ~EXYNOS_USB20PHY_CFG_HOST_LINK;
+> -	else if (sphy->phy_type =3D=3D USB_PHY_TYPE_HOST)
+> +	else
+>  		reg |=3D EXYNOS_USB20PHY_CFG_HOST_LINK;
+> =20
+>  	writel(reg, sphy->sysreg);
+>  }
+>  EXPORT_SYMBOL_GPL(samsung_usbphy_cfg_sel);
+> =20
+> -/*
+> - * PHYs are different for USB Device and USB Host.
+> - * This make sure that correct PHY type is selected before
+> - * any operation on PHY.
+> - */
+> -int samsung_usbphy_set_type(struct usb_phy *phy,
+> -				enum samsung_usb_phy_type phy_type)
+> -{
+> -	struct samsung_usbphy *sphy =3D phy_to_sphy(phy);
+> -
+> -	sphy->phy_type =3D phy_type;
+> -
+> -	return 0;
+> -}
+> -EXPORT_SYMBOL_GPL(samsung_usbphy_set_type);
+
+removing this function should be a patch of its own.
+
+--=20
+balbi
+
+--0z5c7mBtSy1wdr4F
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR91xvAAoJEIaOsuA1yqREUlMP/3+Kq5szEK9694Dy7TebVSub
+KC3D+kOq+jlgiZMOhgVf/hp49C9+N1ZpSIl7tn0Qp5L4TFfrDvVjBssxWjddqY0x
+kO/hQk1g/4CSx+NmaKTGZgo/bFy47x+ZoQphaiDmqnQ6094Q/K75cTr5Bi1SohdI
+2d8+e8MzUvcxPTB/uJ06M6gqVCj4ITN19+rLT3cYndvVqxots9N5ZXwoJ+sE1XV6
+GaNLsxurNzxTRM0rYaXPfsFkVsvdK0Ewlr4vkAG1ErTggSGlR5aYmpIAI+CaxKvV
+37vOeDFRdPQib9ajehpP6MnIhODIAVrDmwqYaTiftH9+2GrAS7CxLCKwbu/POKjS
+TGtMmQXkjbus2RbRlOf1vaCVTiQQl9roxILIt71SLCGmFUl+T+X31tPI6UUWmPwb
+pJrbvquSiQJwwD/+wIJfw1RDqCIhLp0xPH8GyK0foQF8BWGCj7jVIRxsw3/XPycL
+t6Ez+VA1rWi4Z4Lb9aRmb9DugsOIfOjQfWXDeCHDFoc6r7ZECuaVu25pJ1hEADSH
+tlr7MHkMU2Y6k9kr9LE4bug2gYjRR36AjSwgtmqq7aN9mFL1lbtM4fXYSAZegfRg
+NcdBaBPBvt093+PIdWWfiw4OzVaqElcph9l9CIlEST6RQ/AKhNSFekhb1vu88rtH
+4i0/b2k04CSha3FLxHRJ
+=L1qn
+-----END PGP SIGNATURE-----
+
+--0z5c7mBtSy1wdr4F--
