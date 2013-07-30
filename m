@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756921Ab3G3PZw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 11:25:52 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55319 "EHLO
+	id S1756696Ab3G3PZq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 11:25:46 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55329 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755705Ab3G3PSH (ORCPT
+	with ESMTP id S1755737Ab3G3PSJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 11:18:07 -0400
+	Tue, 30 Jul 2013 11:18:09 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 19/75] ext4: fix error handling in ext4_ext_truncate()
-Date: Tue, 30 Jul 2013 08:16:48 -0700
-Message-Id: <1375197464-27962-20-git-send-email-kamal@canonical.com>
+Cc: Toshi Kani <toshi.kani@hp.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 17/75] ACPI / memhotplug: Fix a stale pointer in error path
+Date: Tue, 30 Jul 2013 08:16:46 -0700
+Message-Id: <1375197464-27962-18-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1375197464-27962-1-git-send-email-kamal@canonical.com>
 References: <1375197464-27962-1-git-send-email-kamal@canonical.com>
@@ -26,48 +28,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Toshi Kani <toshi.kani@hp.com>
 
-commit 8acd5e9b1217e58a57124d9e225afa12efeae20d upstream.
+commit d19f503e22316a84c39bc19445e0e4fdd49b3532 upstream.
 
-Previously ext4_ext_truncate() was ignoring potential error returns
-from ext4_es_remove_extent() and ext4_ext_remove_space().  This can
-lead to the on-diks extent tree and the extent status tree cache
-getting out of sync, which is particuarlly bad, and can lead to file
-system corruption and potential data loss.
+device->driver_data needs to be cleared when releasing its data,
+mem_device, in an error path of acpi_memory_device_add().
 
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-[ kamal: backport to 3.8 (context) ]
+The function evaluates the _CRS of memory device objects, and fails
+when it gets an unexpected resource or cannot allocate memory.  A
+kernel crash or data corruption may occur when the kernel accesses
+the stale pointer.
+
+Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/ext4/extents.c | 11 +++++++++++
- 1 file changed, 11 insertions(+)
+ drivers/acpi/acpi_memhotplug.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
-index a5ce6ce..728c8f6 100644
---- a/fs/ext4/extents.c
-+++ b/fs/ext4/extents.c
-@@ -4326,9 +4326,20 @@ void ext4_ext_truncate(struct inode *inode)
- 
- 	last_block = (inode->i_size + sb->s_blocksize - 1)
- 			>> EXT4_BLOCK_SIZE_BITS(sb);
-+retry:
- 	err = ext4_es_remove_extent(inode, last_block,
- 				    EXT_MAX_BLOCKS - last_block);
-+	if (err == ENOMEM) {
-+		cond_resched();
-+		congestion_wait(BLK_RW_ASYNC, HZ/50);
-+		goto retry;
-+	}
-+	if (err) {
-+		ext4_std_error(inode->i_sb, err);
-+		return;
-+	}
- 	err = ext4_ext_remove_space(inode, last_block, EXT_MAX_BLOCKS - 1);
-+	ext4_std_error(inode->i_sb, err);
- 
- 	/* In a multi-transaction truncate, we only make the final
- 	 * transaction synchronous.
+diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
+index b679bf8..6d11ec6 100644
+--- a/drivers/acpi/acpi_memhotplug.c
++++ b/drivers/acpi/acpi_memhotplug.c
+@@ -406,6 +406,7 @@ static int acpi_memory_device_add(struct acpi_device *device)
+ 	/* Get the range from the _CRS */
+ 	result = acpi_memory_get_device_resources(mem_device);
+ 	if (result) {
++		device->driver_data = NULL;
+ 		kfree(mem_device);
+ 		return result;
+ 	}
 -- 
 1.8.1.2
 
