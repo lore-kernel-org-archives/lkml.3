@@ -1,91 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757814Ab3G3V3X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 17:29:23 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:38511 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757248Ab3G3V3V (ORCPT
+	id S1757852Ab3G3VaW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 17:30:22 -0400
+Received: from static-87-79-237-121.netcologne.de ([87.79.237.121]:22674 "EHLO
+	herc.mirbsd.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756870Ab3G3VaV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 17:29:21 -0400
-Message-ID: <51F8302D.406@wwwdotorg.org>
-Date: Tue, 30 Jul 2013 15:29:17 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Tue, 30 Jul 2013 17:30:21 -0400
+Date: Tue, 30 Jul 2013 21:25:27 +0000 (UTC)
+From: Thorsten Glaser <tg@mirbsd.de>
+X-X-Sender: tg@herc.mirbsd.org
+To: Josef Bacik <jbacik@fusionio.com>, Joe Perches <joe@perches.com>
+cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Debian GNU/Linux m68k <debian-68k@lists.debian.org>,
+        linux-btrfs@vger.kernel.org,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>
+Subject: Re: btrfs zero divide
+In-Reply-To: <1375218347.2075.133.camel@joe-AO722>
+Message-ID: <Pine.BSM.4.64L.1307302121050.20305@herc.mirbsd.org>
+References: <Pine.BSM.4.64L.1307300820160.20675@herc.mirbsd.org> 
+ <alpine.DEB.2.02.1307301052010.23107@ayla.of.borg> 
+ <20130730171329.GF24583@localhost.localdomain>  <Pine.BSM.4.64L.1307301741360.20305@herc.mirbsd.org>
+  <20130730204001.GG24583@localhost.localdomain> <1375218347.2075.133.camel@joe-AO722>
+X-Message-Flag: Your mailer is broken. Get an update at http://www.washington.edu/pine/getpine/pcpine.html for free.
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Richard Genoud <richard.genoud@gmail.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Bo Shen <voice.shen@atmel.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org, devicetree@vger.kernel.org,
-        patches@opensource.wolfsonmicro.com
-Subject: Re: [PATCH v6 2/8] ASoC: atmel: machine driver for at91sam9x5-wm8731
- boards
-References: <1375180329-4860-1-git-send-email-richard.genoud@gmail.com> <1375180329-4860-3-git-send-email-richard.genoud@gmail.com> <51F7FBA8.6080400@wwwdotorg.org> <20130730204511.GX9858@sirena.org.uk>
-In-Reply-To: <20130730204511.GX9858@sirena.org.uk>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/30/2013 02:45 PM, Mark Brown wrote:
-> On Tue, Jul 30, 2013 at 11:45:12AM -0600, Stephen Warren wrote:
->> On 07/30/2013 04:32 AM, Richard Genoud wrote:
-> 
->>> +wm8731 pins: +cf
->>> Documentation/devicetree/bindings/sound/wm8731.txt
-> 
->> In the Tegra bindings, I deliberately put the list of CODEC pins
->> into the audio complex binding rather than the CODEC binding.
->> That's because
-> 
-> You really shouldn't do this, it's not accomplishing much.
+Josef Bacik dixit:
 
-What it accomplishes is not polluting the CODEC's binding with a set
-of strings that must always be supported since DT is an ABI. The
-strings are isolated into the specific audio complex binding, which
-might possibly become deprecated and replaced with something better
-and more generic.
+>So stripe_len shouldn't be 0, if it is you have bigger problems :).
 
->> I'm not sure that in the long-term we want to use strings to
->> identify the CODEC pins, rather than using integers. By putting
->> the list orf CODEC pins in the audio complex binding rather than
->> the CODEC binding, I didn't lumber the CODEC binding with a list
->> of strings that it had to support forever.
-> 
-> How would you create the numbers - you can't use the pin numbers
-> since BGA type packages have alphanumeric ball identifiers?
+☺
 
-The numbering would be arbitrary, except perhaps for packages that had
-simple numeric pin IDs in which case those could be used. There would
-be a file in <dt-bindings/audio/...> that defined it, which DTs would
-include to create the properties, and CODEC/... drivers would include
-and use whenever it needed to identify the pins, e.g. in some kind of
-.of_xlate() function.
+>Is this a corrupt fs or something? If there was some sort of
 
-> Even with numerical pin numbering ou'd need to specify some defines
-> for this not to be totally awful at which point you may as well
-> have the strings documented since you'd end up writing a table in
-> the binding document that's basically a mapping of pin names to
-> numbers,
-> 
->> One reason that strings are problematic is because they can't be
->> mixed with integers/phandles in the same property, so if we ever
->> end up with more generic audio bindings where the routing table
->> is expressed more like:
-> 
->> audio-routes = <&component_a $a_pin &component_b $b_pin>;
-> 
->> ... in order to allow completely arbitrary and fully name-spaced
->> routing specification[1], then $a_pin and $b_pin need to be
->> integers not strings.
-> 
-> The above is going to be legibility challenged without defines at
-> which point the strings end up appearing in the binding document
-> anyway.
+I don’t think so, I can access and use that filesystem under 3.2
+just fine (it’s what I created it under, too, so it’s possible
+that it’s indeed corrupt and Linux 3.2 is just the same corrupt
+to happen to make it work, e.g. wrong endianness used for stripe_len
+which makes the upper 32 bit of that 64-bit value (usually 0) become
+the lower 32 bit, or something like that).
 
-Yes, you'd certainly have to use defines not raw integers. The strings
-wouldn't appear in the binding doc so much as the numbers.
+I have access to that system, and it’s currently running as a
+Debian/m68k buildd using said filesystem, but I can run commands
+you tell me to diagnose/analyse it if it won’t get corrupted by
+those.
+
+
+Joe Perches dixit:
+
+>Maybe use a temporary check in do_div
+
+Mh. If nobody finds anything I’ll try that. (Doing things like
+compiling a kernel and testing it takes about two days timeboxed
+and some hours of active human effort, though, so I’d like to
+avoid guessing. Plus it’ll disrupt running the Debian buildd…)
+
+On second thoughts, this sort of check sounds like a good idea
+to add to that file in general, depending on some debugging
+CPPFLAG or Kconfig option. But I’m not the authority on that.
+
+bye,
+//mirabilos
+-- 
+<ch> you introduced a merge commit        │<mika> % g rebase -i HEAD^^
+<mika> sorry, no idea and rebasing just fscked │<mika> Segmentation
+<ch> should have cloned into a clean repo      │  fault (core dumped)
+<ch> if I rebase that now, it's really ugh     │<mika:#grml> wuahhhhhh
