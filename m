@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757426Ab3G3Srb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 14:47:31 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56552 "EHLO
+	id S1757486Ab3G3Srm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 14:47:42 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56584 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756904Ab3G3Spe (ORCPT
+	with ESMTP id S1757435Ab3G3Srl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 14:45:34 -0400
+	Tue, 30 Jul 2013 14:47:41 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mathias Krause <minipli@googlemail.com>,
-        Steffen Klassert <steffen.klassert@secunet.com>,
+Cc: Eric Dumazet <edumazet@google.com>, Patrick McHardy <kaber@trash.net>,
         "David S. Miller" <davem@davemloft.net>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 51/75] af_key: fix info leaks in notify messages
-Date: Tue, 30 Jul 2013 11:44:55 -0700
-Message-Id: <1375209919-1768-18-git-send-email-kamal@canonical.com>
+Subject: [PATCH 75/75] vlan: fix a race in egress prio management
+Date: Tue, 30 Jul 2013 11:45:19 -0700
+Message-Id: <1375209919-1768-42-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1375197464-27962-1-git-send-email-kamal@canonical.com>
 References: <1375197464-27962-1-git-send-email-kamal@canonical.com>
@@ -30,44 +28,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Krause <minipli@googlemail.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit a5cc68f3d63306d0d288f31edfc2ae6ef8ecd887 ]
+[ Upstream commit 3e3aac497513c669e1c62c71e1d552ea85c1d974 ]
 
-key_notify_sa_flush() and key_notify_policy_flush() miss to initialize
-the sadb_msg_reserved member of the broadcasted message and thereby
-leak 2 bytes of heap memory to listeners. Fix that.
+egress_priority_map[] hash table updates are protected by rtnl,
+and we never remove elements until device is dismantled.
 
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Cc: Steffen Klassert <steffen.klassert@secunet.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
+We have to make sure that before inserting an new element in hash table,
+all its fields are committed to memory or else another cpu could
+find corrupt values and crash.
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Patrick McHardy <kaber@trash.net>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/key/af_key.c | 2 ++
- 1 file changed, 2 insertions(+)
+ net/8021q/vlan_dev.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/net/key/af_key.c b/net/key/af_key.c
-index 5b426a6..891db6c 100644
---- a/net/key/af_key.c
-+++ b/net/key/af_key.c
-@@ -1705,6 +1705,7 @@ static int key_notify_sa_flush(const struct km_event *c)
- 	hdr->sadb_msg_version = PF_KEY_V2;
- 	hdr->sadb_msg_errno = (uint8_t) 0;
- 	hdr->sadb_msg_len = (sizeof(struct sadb_msg) / sizeof(uint64_t));
-+	hdr->sadb_msg_reserved = 0;
+diff --git a/net/8021q/vlan_dev.c b/net/8021q/vlan_dev.c
+index 9cbcfcd..4c14e8a 100644
+--- a/net/8021q/vlan_dev.c
++++ b/net/8021q/vlan_dev.c
+@@ -73,6 +73,8 @@ vlan_dev_get_egress_qos_mask(struct net_device *dev, struct sk_buff *skb)
+ {
+ 	struct vlan_priority_tci_mapping *mp;
  
- 	pfkey_broadcast(skb, GFP_ATOMIC, BROADCAST_ALL, NULL, c->net);
- 
-@@ -2689,6 +2690,7 @@ static int key_notify_policy_flush(const struct km_event *c)
- 	hdr->sadb_msg_version = PF_KEY_V2;
- 	hdr->sadb_msg_errno = (uint8_t) 0;
- 	hdr->sadb_msg_len = (sizeof(struct sadb_msg) / sizeof(uint64_t));
-+	hdr->sadb_msg_reserved = 0;
- 	pfkey_broadcast(skb_out, GFP_ATOMIC, BROADCAST_ALL, NULL, c->net);
- 	return 0;
- 
++	smp_rmb(); /* coupled with smp_wmb() in vlan_dev_set_egress_priority() */
++
+ 	mp = vlan_dev_priv(dev)->egress_priority_map[(skb->priority & 0xF)];
+ 	while (mp) {
+ 		if (mp->priority == skb->priority) {
+@@ -248,6 +250,11 @@ int vlan_dev_set_egress_priority(const struct net_device *dev,
+ 	np->next = mp;
+ 	np->priority = skb_prio;
+ 	np->vlan_qos = vlan_qos;
++	/* Before inserting this element in hash table, make sure all its fields
++	 * are committed to memory.
++	 * coupled with smp_rmb() in vlan_dev_get_egress_qos_mask()
++	 */
++	smp_wmb();
+ 	vlan->egress_priority_map[skb_prio & 0xF] = np;
+ 	if (vlan_qos)
+ 		vlan->nr_egress_mappings++;
 -- 
 1.8.1.2
 
