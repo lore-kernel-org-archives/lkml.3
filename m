@@ -1,163 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757220Ab3G3Dvi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 23:51:38 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:60121 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751883Ab3G3Dvh (ORCPT
+	id S1757233Ab3G3Dwg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 23:52:36 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:54200 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754938Ab3G3Dwf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 23:51:37 -0400
-Message-ID: <51F73815.2040406@linux.vnet.ibm.com>
-Date: Tue, 30 Jul 2013 09:20:45 +0530
+	Mon, 29 Jul 2013 23:52:35 -0400
+Message-ID: <51F73847.6090002@linux.vnet.ibm.com>
+Date: Tue, 30 Jul 2013 09:21:35 +0530
 From: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
 To: Daniel Lezcano <daniel.lezcano@linaro.org>
 CC: linux-pm@lists.linux-foundation.org, linuxppc-dev@lists.ozlabs.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] cpuidle/powernv: Enable idle powernv cpu to call
- into the cpuidle framework.
-References: <20130723090111.7291.99479.stgit@deepthi.in.ibm.com> <20130723090150.7291.89879.stgit@deepthi.in.ibm.com> <51F35AC7.8060909@linaro.org> <51F67BE5.10701@linux.vnet.ibm.com> <51F67FDE.6070902@linaro.org>
-In-Reply-To: <51F67FDE.6070902@linaro.org>
+Subject: Re: [linux-pm] [PATCH 1/3] cpuidle/powernv: cpuidle backend driver
+ for powernv
+References: <20130723090111.7291.99479.stgit@deepthi.in.ibm.com> <20130723090137.7291.36657.stgit@deepthi.in.ibm.com> <51F35A2A.1080408@linaro.org> <51F67E96.6040008@linux.vnet.ibm.com> <51F681E7.1060609@linaro.org>
+In-Reply-To: <51F681E7.1060609@linaro.org>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13073014-3568-0000-0000-000004013087
+x-cbid: 13073003-5490-0000-0000-000003E7E896
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/29/2013 08:14 PM, Daniel Lezcano wrote:
-> On 07/29/2013 04:27 PM, Deepthi Dharwar wrote:
->> On 07/27/2013 10:59 AM, Daniel Lezcano wrote:
->>> On 07/23/2013 11:01 AM, Deepthi Dharwar wrote:
->>>> This patch enables idle powernv cpu to hook on to the cpuidle
->>>> framework, if available, else call on to default idle platform
->>>> code.
->>>
->>> Why do you need to do that ?
->>>
->>
+On 07/29/2013 08:23 PM, Daniel Lezcano wrote:
+> On 07/29/2013 04:39 PM, Deepthi Dharwar wrote:
 >> Hi Daniel,
 >>
->> Well, this is needed in case when one does not compile with CPU_IDLE
->> config option.
->>
->> When CPUIDLE is not configured, idle cpus are needed to be running some
->> sort of default idle code or loop ( in the worst case) if cpuidle driver
->> is not registered or if one decides not to have that config enabled.
-> 
-> Hi Deepthi,
-> 
-> ok may be there is some difference with the other platform but the
-> arch_cpu_idle function defined in the other archs do:
-> 
-> void arch_cpu_idle(void)
-> {
->         if (cpuidle_idle_call())
->                 x86_idle();
->         else
->                 local_irq_enable();
-> }
-> 
-> or
-> 
-> void arch_cpu_idle(void)
-> {
->         if (cpuidle_idle_call())
->                 default_idle();
-> }
-> 
-> When the cpuidle driver is not compiled or not loaded, cpuidle_idle_call
-> fails, falling back to the default idle function.
-> 
-> The arch_cpu_idle function is called from the generic code in
-> kernel/cpu/idle.c.
-> 
-> Is there a particular reason to do it in a different way ?
-
-On powerpc, we have another parameter, ppc_md.powersave
-knob.  In arch_cpu_idle, we check for this knob. This is kernel command
-line parameter too. If this is not set then default idle is executed.
-ppc_md is generic powerpc structure, which points to idle routine that
-needs to be executed.
-
-In arch_cpu_idle code for powerpc:
-
-arch_cpu_idle()
-{
-   if (ppc_md.powersave())
-		ppc_md.powersave()
-    } else
-	/* default idle */
-}
-
-Not all flavors of powerpc arch support cpuidle.
-So only those that support, powersave is set to cpuidle backend call.
-And this check is necessary there.
-
-Regards,
-Deepthi
-
-
-
-> Thanks
->   -- Daniel
-> 
->>>
+>> On 07/27/2013 10:57 AM, Daniel Lezcano wrote:
+>>> On 07/23/2013 11:01 AM, Deepthi Dharwar wrote:
+>>>> This patch implements a back-end cpuidle driver for
+>>>> powernv calling power7_nap and snooze idle states.
+>>>> This can be extended by adding more idle states
+>>>> in the future to the existing framework.
+>>>>
 >>>> Signed-off-by: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
->>>> ---
->>>>  arch/powerpc/platforms/powernv/setup.c |   12 +++++++++++-
->>>>  1 file changed, 11 insertions(+), 1 deletion(-)
->>>>
->>>> diff --git a/arch/powerpc/platforms/powernv/setup.c b/arch/powerpc/platforms/powernv/setup.c
->>>> index 84438af..97d0951 100644
->>>> --- a/arch/powerpc/platforms/powernv/setup.c
->>>> +++ b/arch/powerpc/platforms/powernv/setup.c
->>>> @@ -25,6 +25,7 @@
->>>>  #include <linux/of.h>
->>>>  #include <linux/interrupt.h>
->>>>  #include <linux/bug.h>
->>>> +#include <linux/cpuidle.h>
->>>>  
->>>>  #include <asm/machdep.h>
->>>>  #include <asm/firmware.h>
->>>> @@ -196,6 +197,15 @@ static int __init pnv_probe(void)
->>>>  	return 1;
->>>>  }
->>>>  
->>>> +void powernv_idle(void)
+> 
+> [ ... ]
+> 
+>>>> +static int snooze_loop(struct cpuidle_device *dev,
+>>>> +			struct cpuidle_driver *drv,
+>>>> +			int index)
 >>>> +{
->>>> +	/* Hook to cpuidle framework if available, else
->>>> +	 * call on default platform idle code
->>>> +	 */
->>>> +	if (cpuidle_idle_call())
->>>> +		power7_idle();
->>>> +}
+>>>> +	int cpu = dev->cpu;
 >>>> +
->>>>  define_machine(powernv) {
->>>>  	.name			= "PowerNV",
->>>>  	.probe			= pnv_probe,
->>>> @@ -205,7 +215,7 @@ define_machine(powernv) {
->>>>  	.show_cpuinfo		= pnv_show_cpuinfo,
->>>>  	.progress		= pnv_progress,
->>>>  	.machine_shutdown	= pnv_shutdown,
->>>> -	.power_save             = power7_idle,
->>>> +	.power_save             = powernv_idle,
->>>>  	.calibrate_decr		= generic_calibrate_decr,
->>>>  #ifdef CONFIG_KEXEC
->>>>  	.kexec_cpu_down		= pnv_kexec_cpu_down,
->>>>
->>>> --
->>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->>>> the body of a message to majordomo@vger.kernel.org
->>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>>> Please read the FAQ at  http://www.tux.org/lkml/
->>>>
+>>>> +	local_irq_enable();
+>>>> +	set_thread_flag(TIF_POLLING_NRFLAG);
+>>>> +
+>>>> +	while ((!need_resched()) && cpu_online(cpu)) {
+>>>> +		ppc64_runlatch_off();
+>>>> +		HMT_very_low();
+>>>> +	}
 >>>
->>>
+>>> Why are you using the cpu_online test here ?
 >>
+>> Snooze state is an idle state where cpu executes an infinite loop by
+>> reducing the priority of the thread and the idle cpu can come out of it
+>> only if need_resched is set or in case the cpu is offlined. In order to
+>> continue executing this loop to remain in this idle state, we need the
+>> check just to be safe.
 > 
+> Yes, but if the cpu is offline you are no longer executing this code, no ?
 > 
+
+Yes, not needed.
+
+Thanks !
+Deepthi
 
