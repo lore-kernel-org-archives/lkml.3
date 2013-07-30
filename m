@@ -1,94 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756960Ab3G3Cqf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 22:46:35 -0400
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:51769 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753230Ab3G3Cqe (ORCPT
+	id S1757015Ab3G3C5r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 22:57:47 -0400
+Received: from mail-qe0-f44.google.com ([209.85.128.44]:35917 "EHLO
+	mail-qe0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754375Ab3G3C5q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 22:46:34 -0400
-Message-ID: <1375152388.4265.1.camel@phoenix>
-Subject: [PATCH RFT] regulator: pfuze100: Fix n_voltages setting for SW2~SW4
- with high bit set
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Robin Gong <b38343@freescale.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        linux-kernel@vger.kernel.org
-Date: Tue, 30 Jul 2013 10:46:28 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 29 Jul 2013 22:57:46 -0400
+MIME-Version: 1.0
+X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
+Date: Mon, 29 Jul 2013 19:57:44 -0700
+Message-ID: <CAOesGMjG-6x0Qf0_FEQ7Rw5-p6Dyhf+Wi-tZ7x_cj7iq8UmjFg@mail.gmail.com>
+Subject: [ANNOUNCE] ARM kernel summit 2013, Oct 22-23
+From: Olof Johansson <olof@lixom.net>
+To: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Kevin Hilman <khilman@linaro.org>, Mark Brown <broonie@kernel.org>,
+        "ksummit-2013-discuss@lists.linuxfoundation.org" 
+	<ksummit-2013-discuss@lists.linuxfoundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current code adjust min_uV and uV_step but missed adjusting the n_voltages
-setting.
+As previous years, we are planning on hosting a ARM Kernel Summit
+attached to the main Kernel Summit, and we have graciously been given
+space to host it for two days, Oct 22-23 (Oct 23 is the track day for
+the main KS, so we're getting an extra day) in Edinburgh, UK.
 
-When BIT6 is clear:
-        n_voltages = (1975000 - 400000) / 25000 + 1 = 64
-When BIT6 is set:
-        n_voltages = (3300000 - 800000) / 50000 + 1 = 51
+To make sure we get the right set of people invited, we're looking for
+people to propose topics they would like to see covered as part of the
+two-day aganda, as well as general invite requests. To request an
+invite or to propose a topic, please send an email to
+ksummit-2013-discuss@lists.linuxfoundation.org, and cc LAKML/LKML as
+appropriate. Please use the tag "[ARM ATTEND]" in the subject to
+distinguish these from the general KS ATTEND threads.
 
-The n_voltages needs update because when BIT6 is set 0x73 ~ 0x7f are reserved.
-When using regulator_list_voltage_linear, the n_voltages does matter here
-because wrong n_voltages setting make the equation return wrong result.
-e.g. if selector is 63, regulator_list_voltage_linear returns
-     800000 + (50000 * 63) = 4000000
-     It should return -EINVAL if the selector is in the range of 51 ~ 63.
-
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/regulator/pfuze100-regulator.c | 16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/regulator/pfuze100-regulator.c b/drivers/regulator/pfuze100-regulator.c
-index 2dadc31..a77379b 100644
---- a/drivers/regulator/pfuze100-regulator.c
-+++ b/drivers/regulator/pfuze100-regulator.c
-@@ -387,8 +387,11 @@ static int pfuze100_regulator_probe(struct i2c_client *client,
- 
- 	for (i = 0; i < PFUZE100_MAX_REGULATOR; i++) {
- 		struct regulator_init_data *init_data;
-+		struct regulator_desc *desc;
- 		int val;
- 
-+		desc = &pfuze_chip->regulator_descs[i].desc;
-+
- 		if (pdata)
- 			init_data = pdata->init_data[i];
- 		else
-@@ -396,13 +399,11 @@ static int pfuze100_regulator_probe(struct i2c_client *client,
- 
- 		/* SW2~SW4 high bit check and modify the voltage value table */
- 		if (i > PFUZE100_SW1C && i < PFUZE100_SWBST) {
--			regmap_read(pfuze_chip->regmap, PFUZE100_SW2VOL +
--					(i - PFUZE100_SW2) * 7, &val);
-+			regmap_read(pfuze_chip->regmap, desc->vsel_reg, &val);
- 			if (val & 0x40) {
--				pfuze_chip->regulator_descs[i].desc.min_uV
--				= 800000;
--				pfuze_chip->regulator_descs[i].desc.uV_step
--				= 50000;
-+				desc->min_uV = 800000;
-+				desc->uV_step = 50000;
-+				desc->n_voltages = 51;
- 			}
- 		}
- 
-@@ -411,8 +412,7 @@ static int pfuze100_regulator_probe(struct i2c_client *client,
- 		config.driver_data = pfuze_chip;
- 		config.of_node = match_of_node(i);
- 
--		pfuze_chip->regulators[i] = regulator_register(&pfuze_chip
--			->regulator_descs[i].desc, &config);
-+		pfuze_chip->regulators[i] = regulator_register(desc, &config);
- 		if (IS_ERR(pfuze_chip->regulators[i])) {
- 			dev_err(&client->dev, "register regulator%s failed\n",
- 				pfuze100_regulators[i].desc.name);
--- 
-1.8.1.2
+It's pretty obvious that device trees and bindings are hot topics this
+year, with plenty of overlap between ARM and regular kernel summit and
+other subsystems. We are tentatively planning on dedicating Wednesday
+afternoon to the topic, to fit the regular agenda of KS track day to
+make sure as many interested parties as possible can attend. We'd
+still be interested in hearing specific topic requests in that area
+though.
 
 
+The group of us organizing and coordinating this year is:
 
+Arnd Bergmann
+Mark Brown
+Kevin Hilman
+Olof Johansson
+Grant Likely
