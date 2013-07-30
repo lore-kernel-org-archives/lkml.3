@@ -1,63 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932085Ab3G3Xdk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 19:33:40 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:41313 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758068Ab3G3Xdi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 19:33:38 -0400
+	id S1758425Ab3G3XgN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 19:36:13 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:48068 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757174Ab3G3XgL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Jul 2013 19:36:11 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Colin Cross <ccross@android.com>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        Michael Leun <lkml20130126@newton.leun.net>,
+        Pavel Machek <pavel@ucw.cz>, Linux PM list <linux-pm@vger.kernel.org>,
+        Darren Hart <dvhart@linux.intel.com>
+Subject: Re: [PATCH] power: set PF_SUSPEND_TASK flag on tasks that call freeze_processes
+Date: Wed, 31 Jul 2013 01:46:20 +0200
+Message-ID: <4007751.kC1oJrggef@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CA+55aFzGwoYq+BRBx23045AG=fWzVEtGcN-7xBTi9o=rkGhU3A@mail.gmail.com>
+References: <1374712893-14487-1-git-send-email-ccross@android.com> <17002595.Gazy686Cvx@vostro.rjw.lan> <CA+55aFzGwoYq+BRBx23045AG=fWzVEtGcN-7xBTi9o=rkGhU3A@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20130730231533.GA26824@redhat.com>
-References: <CAGXu5jKv9Vt+Hu0mFYaxggLLDZ46U3KR9MKegUoHH8StXCkBtQ@mail.gmail.com>
-	<20130730221435.GA22240@redhat.com>
-	<20130730231120.GC30725@blackmetal.musicnaut.iki.fi>
-	<20130730231533.GA26824@redhat.com>
-Date: Tue, 30 Jul 2013 16:33:38 -0700
-X-Google-Sender-Auth: GbMxqwIml2Iev3l42OKPNRe-s4g
-Message-ID: <CAGXu5jLQxE14Gy3x20XMyFyUQKwMQ+RU9S24H742cQevEF9Aew@mail.gmail.com>
-Subject: Re: [Ksummit-2013-discuss] [ARM ATTEND] catching up on exploit mitigations
-From: Kees Cook <keescook@chromium.org>
-To: Dave Jones <davej@redhat.com>, Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Kees Cook <keescook@chromium.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 30, 2013 at 4:15 PM, Dave Jones <davej@redhat.com> wrote:
-> On Wed, Jul 31, 2013 at 02:11:20AM +0300, Aaro Koskinen wrote:
->  > Hi,
->  >
->  > On Tue, Jul 30, 2013 at 06:14:35PM -0400, Dave Jones wrote:
->  > > On Tue, Jul 30, 2013 at 12:05:40PM -0700, Kees Cook wrote:
->  > >  > - fuzzing (is anyone running trinity or similar on the ARM tree?)
->  > >
->  > > Someone was kind enough to send me an arm chromebook, so I tried this just
->  > > last week (albeit, on the 3.4 kernel it shipped with). The results make
->  > > me think the answer is a resounding 'no'.
->  >
->  > Shouldn't you run trinity only under QEMU or similar virtual
->  > environment? Don't know about chromebook, but on some of my ARM boards
->  > a misbehaving kernel could at least in theory brick the board...
->
-> I like to live dangerously.  Don't imitate everything you see on TV,
-> or read about on lkml.
->
-> More seriously, that's true if you're running trinity as root, which
-> yes, I usually advise people only do in qemu etc.
->
-> If you're running it as a regular user and you can brick the board,
-> you might have bigger problems.
+On Thursday, July 25, 2013 04:51:20 PM Linus Torvalds wrote:
+> On Thu, Jul 25, 2013 at 1:06 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> >
+> > Can we spend an extra process flag on that?
+> 
+> I suspect we can. But if somebody hollers later, we'll need to do some
+> compaction..
 
-Exactly, and finding those problems tends to be worth the hardware hassle. :)
+OK, if we need that flag for something more important, it shouldn't be too
+difficult to recycle.
 
--Kees
+And I'm not seeing any complaints, so I'm going to fast-track this, as it
+fixes a recent regression.
 
--- 
-Kees Cook
-Chrome OS Security
+Rafael
+
