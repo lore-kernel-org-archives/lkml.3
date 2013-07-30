@@ -1,91 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752400Ab3G3OeC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 10:34:02 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:44465 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751084Ab3G3Od7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 10:33:59 -0400
-Date: Tue, 30 Jul 2013 17:33:39 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: George Cherian <george.cherian@ti.com>
-CC: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        <linux-usb@vger.kernel.org>, <balbi@ti.com>,
-        <linux-kernel@vger.kernel.org>, <gregkh@linuxfoundation.org>,
-        <linux-omap@vger.kernel.org>, <kishon@ti.com>
-Subject: Re: [PATCH v2 2/4] phy: phy-amxxxx-usb: Add PHY driver for amxxxx
- platform
-Message-ID: <20130730143339.GM28162@radagast>
-Reply-To: <balbi@ti.com>
-References: <1374237277-17769-1-git-send-email-george.cherian@ti.com>
- <1374237277-17769-3-git-send-email-george.cherian@ti.com>
- <20130729151754.GB827@linutronix.de>
- <51F74CEC.8040407@ti.com>
- <51F77F15.7090306@linutronix.de>
- <51F7CCB7.4040305@ti.com>
+	id S1751758Ab3G3Ohl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 10:37:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40788 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750959Ab3G3Ohk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Jul 2013 10:37:40 -0400
+Date: Tue, 30 Jul 2013 07:38:57 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "Hans J. Koch" <hjk@hansjkoch.de>, linux-kernel@vger.kernel.org,
+        kernel@pengutronix.de, linux-mm@kvack.org
+Subject: Re: [PATCH v2 1/2] uio: provide vm access to UIO_MEM_PHYS maps
+Message-ID: <20130730143857.GA29376@kroah.com>
+References: <20130727214911.GK1754@pengutronix.de>
+ <1374962978-1860-1-git-send-email-u.kleine-koenig@pengutronix.de>
+ <20130729200914.GA6146@kroah.com>
+ <20130730075239.GN1754@pengutronix.de>
+ <20130730134950.GA27962@kroah.com>
+ <20130730143237.GU1754@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="mkHYMT4O8DyWoHkb"
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <51F7CCB7.4040305@ti.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130730143237.GU1754@pengutronix.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---mkHYMT4O8DyWoHkb
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Jul 30, 2013 at 04:32:37PM +0200, Uwe Kleine-König wrote:
+> Hello Greg,
+> 
+> On Tue, Jul 30, 2013 at 06:49:50AM -0700, Greg Kroah-Hartman wrote:
+> > On Tue, Jul 30, 2013 at 09:52:39AM +0200, Uwe Kleine-König wrote:
+> > > [expanding Cc: to also include akpm and linux-mm]
+> > > 
+> > > Hello,
+> > > 
+> > > On Mon, Jul 29, 2013 at 01:09:14PM -0700, Greg Kroah-Hartman wrote:
+> > > > On Sun, Jul 28, 2013 at 12:09:37AM +0200, Uwe Kleine-König wrote:
+> > > > > This makes it possible to let gdb access mappings of the process that is
+> > > > > being debugged.
+> > > > > 
+> > > > > uio_mmap_logical was moved and uio_vm_ops renamed to group related code
+> > > > > and differentiate to new stuff.
+> > > > > 
+> > > > > Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+> > > > > ---
+> > > > > Changes since v1:
+> > > > >     - only use generic_access_phys ifdef CONFIG_HAVE_IOREMAP_PROT
+> > > > >     - fix all users of renamed struct
+> > > > 
+> > > > I still get a build error with this patch:
+> > > > 
+> > > >   MODPOST 384 modules
+> > > > ERROR: "generic_access_phys" [drivers/uio/uio.ko] undefined!
+> > > > 
+> > > > So something isn't quite right.
+> > > Ah, you built as a module and generic_access_phys isn't exported. The
+> > > other users of generic_access_phys (arch/x86/pci/i386.c and
+> > > drivers/char/mem.c) can only be builtin.
+> > > 
+> > > So the IMHO best option is to add an EXPORT_SYMBOL(generic_access_phys)
+> > > to mm/memory.c.
+> > 
+> > EXPORT_SYMBOL_GPL() perhaps?
+> Yeah, that would work just fine, too. Who takes care for mm/memory.c,
+> Andrew? Should I send a separate patch or is it ok to do it in the patch
+> making use of it and let it go in via Greg?
 
-On Tue, Jul 30, 2013 at 07:54:55PM +0530, George Cherian wrote:
-> On 7/30/2013 2:23 PM, Sebastian Andrzej Siewior wrote:
-> >On 07/30/2013 07:19 AM, George Cherian wrote:
-> >>>So from what I see now, it is most likely the easiest thing to just add
-> >>>that wakeup to the phy driver I posted. Do you agree?
-> >>The whole idea of writing a seperate phy driver was to use the generic
-> >>phy framework
-> >>and most of the amxxxx devices have the same phy (eg am335x, am437x).
-> >>Now since the register is shared in am335x for phy_wkup (Not in the case
-> >>of am437x)
-> >>how are you planning to  map it. I feel if omap_control_usb can delegate
-> >>the writes
-> >>to phy_wkup, phy_on and phy_off, it makes the life simpler.
-> >that omap-control driver looks a little strange. It has a compatible
-> >field saying ti,omap-control-usb and then it requires additionally a
-> >ti,type property which should have been avoided.
->=20
-> ti,type property is to differentiate between usb2 and usb3 phy for a
-> single soc.
-> for eg: OMAP5 has both usb2 and usb3 phy
+I can take it, in a patch before this one, if I get the acks from Andrew
+and anyone else who "owns" that file (use get_maintainer.pl to determine
+the proper people please.)
 
-let's try not to add any new TI-specific DT bindings, can you figure
-that out by reading some revision register ? Or perhaps by using
-different compatible strings ?
+> > And why all of a sudden does the uio driver need this change?  It is
+> > working just fine right now without it, right?
+> Yeah it works. But if you gdb your userspace driver, gdb cannot access
+> the mappings without my patch.
 
---=20
-balbi
+Ah, but who needs to use a debugger... :)
 
---mkHYMT4O8DyWoHkb
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+thanks,
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR987DAAoJEIaOsuA1yqRE31UP/1hqCHmPWSh7Uu/t/mp/K3vs
-u4MaavsrJ8+0FhvzuzkqzhWX1Tk9ZlJ+T6srtm/be1LbQ4SF3e+qQB9WYnlBUsgQ
-ucEcgDz/28qzgBE3leHK5uO+wIg/M9qeVIXneXG4Eu7S6mb+cqps9M0vmslY1Aiy
-cZyK3an9hRTRid1heRG5AOGByKUwcQ3W6QVi5dF/xYPKtWqWNBNgH9BIfeYPw7+Q
-QagKa0zTP+QOjKGzxIEqpF3jSKNuAG/51IxCcrPON7WM5/BK/0VM+0SICgHbSjs1
-AvO7rra4sgVfa1RkK8uHmpQpUHo30xvNYxanotnrnw6qWuc4l5zjwlSl+cOUSPnk
-MPRa7Q51M59R/iKEA/uV18YzK3stVaA6mgEWduqOObLIZm28u2LtB90jZL7x3GLO
-zX7DCIcysM9gxKbMt9gLoj4bnQ7+DF9pJMfS1mS8ZOSJlXntEjqVojNW8BQ1henF
-EbBvuPLAItZ1gwPvT6yHMSKZDU76B6Uty7PqrPIMYEFAETMeTmpfGYVnVGtc5Rob
-ENnk323EDnxJz/q8zhzTSUj3SyAwUiqqGAgHQ6jAFIto4ZaBqq51TZoVWzrDPYn/
-LH2NgRF6E9nMWIcaTcRVol95KCklbbH/9Iv0x/bsFflQB0oBJrA/RD19+qTydMFd
-V3t8GTRiit6k2gR5lmyw
-=0xF8
------END PGP SIGNATURE-----
-
---mkHYMT4O8DyWoHkb--
+greg k-h
