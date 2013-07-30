@@ -1,82 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757811Ab3G3S4y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 14:56:54 -0400
-Received: from lunge.queued.net ([173.255.254.236]:37719 "EHLO
-	lunge.queued.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757364Ab3G3S4w (ORCPT
+	id S1757475Ab3G3Sy4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 14:54:56 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56547 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756870Ab3G3Spe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 14:56:52 -0400
-X-Greylist: delayed 484 seconds by postgrey-1.27 at vger.kernel.org; Tue, 30 Jul 2013 14:56:52 EDT
-Date: Tue, 30 Jul 2013 11:48:45 -0700
-From: Andres Salomon <dilinger@queued.net>
-To: Jens Frederich <jfrederich@gmail.com>
-Cc: gregkh@linuxfoundation.org, jon.nettleton@gmail.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: olpc_dcon: provide detailed FB_OLPC_DCON help
- section
-Message-ID: <20130730114845.15ce0307@dev.queued.net>
-In-Reply-To: <1375207894-6106-1-git-send-email-jfrederich@gmail.com>
-References: <1375207894-6106-1-git-send-email-jfrederich@gmail.com>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 30 Jul 2013 14:45:34 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 50/75] ipv6: ip6_sk_dst_check() must not assume ipv6 dst
+Date: Tue, 30 Jul 2013 11:44:54 -0700
+Message-Id: <1375209919-1768-17-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1375197464-27962-1-git-send-email-kamal@canonical.com>
+References: <1375197464-27962-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by: Andres Salomon <dilinger@queued.net>
+3.8.13.6 -stable review patch.  If anyone has any objections, please let me know.
 
-On Tue, 30 Jul 2013
-20:11:34 +0200 Jens Frederich <jfrederich@gmail.com> wrote:
+------------------
 
-> The FB_OLPC_DCON help section is to short according to checkpatch.pl.
-> We want more information about the controller type, its task, its
-> video pipeline position and so on.
-> 
-> There are no style issues, remove checkpatch.pl TODO entry.
-> 
-> Signed-off-by: Jens Frederich <jfrederich@gmail.com>
-> 
-> diff --git a/drivers/staging/olpc_dcon/Kconfig
-> b/drivers/staging/olpc_dcon/Kconfig index fe40e0b..2ff015d 100644
-> --- a/drivers/staging/olpc_dcon/Kconfig
-> +++ b/drivers/staging/olpc_dcon/Kconfig
-> @@ -4,9 +4,14 @@ config FB_OLPC_DCON
->  	select I2C
->  	select BACKLIGHT_CLASS_DEVICE
->  	---help---
-> -	  Add support for the OLPC XO DCON controller.  This
-> controller is
-> -	  only available on OLPC platforms.   Unless you have one of
-> these
-> -	  platforms, you will want to say 'N'.
-> +	  In order to support very low power operation, the XO
-> laptop uses a
-> +	  secondary Display CONtroller, or DCON.  This secondary
-> controller
-> +	  is present in the video pipeline between the primary
-> display
-> +	  controller (integrate into the processor or chipset) and
-> the LCD
-> +	  panel.  It allows the main processor/display controller to
-> be
-> +	  completely powered off while still retaining an image on
-> the display.
-> +	  This controller is only available on OLPC platforms.
-> Unless you have
-> +	  one of these platforms, you will want to say 'N'.
->  
->  config FB_OLPC_DCON_1
->  	bool "OLPC XO-1 DCON support"
-> diff --git a/drivers/staging/olpc_dcon/TODO
-> b/drivers/staging/olpc_dcon/TODO index 35f9cda..f378e84 100644
-> --- a/drivers/staging/olpc_dcon/TODO
-> +++ b/drivers/staging/olpc_dcon/TODO
-> @@ -1,5 +1,4 @@
->  TODO:
-> -	- checkpatch.pl cleanups
->  	- see if vx855 gpio API can be made similar enough to cs5535
-> so we can share more code
->  	- allow simultaneous XO-1 and XO-1.5 support
+From: Eric Dumazet <edumazet@google.com>
+
+[ Upstream commit a963a37d384d71ad43b3e9e79d68d42fbe0901f3 ]
+
+It's possible to use AF_INET6 sockets and to connect to an IPv4
+destination. After this, socket dst cache is a pointer to a rtable,
+not rt6_info.
+
+ip6_sk_dst_check() should check the socket dst cache is IPv6, or else
+various corruptions/crashes can happen.
+
+Dave Jones can reproduce immediate crash with
+trinity -q -l off -n -c sendmsg -c connect
+
+With help from Hannes Frederic Sowa
+
+Reported-by: Dave Jones <davej@redhat.com>
+Reported-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ net/ipv6/ip6_output.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/net/ipv6/ip6_output.c b/net/ipv6/ip6_output.c
+index 2adff32..978e4a3 100644
+--- a/net/ipv6/ip6_output.c
++++ b/net/ipv6/ip6_output.c
+@@ -843,11 +843,17 @@ static struct dst_entry *ip6_sk_dst_check(struct sock *sk,
+ 					  const struct flowi6 *fl6)
+ {
+ 	struct ipv6_pinfo *np = inet6_sk(sk);
+-	struct rt6_info *rt = (struct rt6_info *)dst;
++	struct rt6_info *rt;
+ 
+ 	if (!dst)
+ 		goto out;
+ 
++	if (dst->ops->family != AF_INET6) {
++		dst_release(dst);
++		return NULL;
++	}
++
++	rt = (struct rt6_info *)dst;
+ 	/* Yes, checking route validity in not connected
+ 	 * case is not very simple. Take into account,
+ 	 * that we do not support routing by source, TOS,
+-- 
+1.8.1.2
+
