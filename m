@@ -1,125 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751522Ab3G3Mi4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 08:38:56 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:53491 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750748Ab3G3Miw (ORCPT
+	id S1752049Ab3G3Mk1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 08:40:27 -0400
+Received: from [213.199.154.187] ([213.199.154.187]:50812 "EHLO
+	db8outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1750767Ab3G3MkZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 08:38:52 -0400
-Date: Tue, 30 Jul 2013 13:38:48 +0100
-From: Gustavo Padovan <gustavo@padovan.org>
-To: linville@tuxdriver.com
-Cc: linux-wireless@vger.kernel.org, linux-bluetooth@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: pull request: bluetooth 2013-07-30
-Message-ID: <20130730123848.GE5975@joana>
-Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
-	linville@tuxdriver.com, linux-wireless@vger.kernel.org,
-	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+	Tue, 30 Jul 2013 08:40:25 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 7
+X-BigFish: VS7(zzzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6h1082kz70kd2izz2dh2a8h668h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dc1h1de2h1dfeh1dffh1e23h1155h)
+From: Arpit Goel <B44344@freescale.com>
+To: <linux@arm.linux.org.uk>, <takata@linux-m32r.org>, <philb@gnu.org>,
+        <geert@linux-m68k.org>, <schwidefsky@de.ibm.com>,
+        <heiko.carstens@de.ibm.com>, <linux390@de.ibm.com>,
+        <davem@davemloft.net>, <rob.herring@calxeda.com>, <arnd@arndb.de>,
+        <sboyd@codeaurora.org>, <swarren@nvidia.com>, <john.stultz@linaro.org>,
+        <jesper.nilsson@axis.com>, <gregkh@linuxfoundation.org>,
+        <sam@ravnborg.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-m32r@ml.linux-m32r.org>, <linux-m32r-ja@ml.linux-m32r.org>,
+        <linux-m68k@vger.kernel.org>, <linux-s390@vger.kernel.org>,
+        <sparclinux@vger.kernel.org>, Arpit Goel <B44344@freescale.com>
+Subject: [PATCH 0/2] Make PPC macro spin_event_timeout() architecture independent
+Date: Tue, 30 Jul 2013 18:08:18 +0530
+Message-ID: <1375187900-17582-1-git-send-email-B44344@freescale.com>
+X-Mailer: git-send-email 1.8.1.4
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="d6Gm4EdcadzBjdND"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch-set moves USECS_PER_JIFFY to architecture timex.h from architecture
+specific C files. Patch-set further uses this to make PPC macro
+spin_event_timeout() architecture independent. This change enables drivers to
+use spin_event_timeout() even in non-PowerPC based SoC's.
 
---d6Gm4EdcadzBjdND
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This patchset has been compiled for ARM, PowerPC and x86.
 
-Hi John,
+Patch[1/2] : Moves USECS_PER_JIFFY to architecture specific timex.h files from
+	     architecture specific C files.
 
-A few fixes and devices ID additions for 3.11:=20
+Patch[2/2] : Converts PPC macro spin_event_timeout() in architecture independent
+	     macro.
 
- * There are 4 new ath3k device ids=20
- * Fixed stack memory usage in ath3k.
- * Fixed the init process of BlueFRITZ! devices, they were failing to init
-   due to an unsupported command we sent.=20
- * Fixed wrong use of PTR_ERR in btusb code that was preventing intel devic=
-es
-   to work properly.
- * Fixed race condition between hci_register_dev() and hci_dev_open() that
-   could cause a NULL pointer dereference.
- * Fixed race condition that could call hci_req_cmd_complete() and make some
-   devices to fail as showed in the log added to the commit message.
+Arpit Goel (2):
+  Make USECS_PER_JIFFY available for generic use
+  Convert PowerPC macro spin_event_timeout() to architecture independent
+        macro
 
-Please pull or let me know of any issues. Thanks.
+ arch/arm/include/asm/timex.h      |  2 ++
+ arch/arm/kernel/time.c            |  3 ---
+ arch/m32r/include/asm/timex.h     |  2 ++
+ arch/m32r/kernel/time.c           |  3 ---
+ arch/m68k/hp300/time.c            |  4 +---
+ arch/m68k/include/asm/timex.h     |  2 ++
+ arch/s390/include/asm/timex.h     |  2 ++
+ arch/s390/kernel/time.c           |  2 --
+ arch/sparc/include/asm/timex_32.h |  2 ++
+ arch/sparc/include/asm/timex_64.h |  2 ++
+ arch/sparc/kernel/pcic.c          |  1 -
+ include/linux/delay.h             | 40 +++++++++++++++++++++++++++++++++++++++
+ 12 files changed, 53 insertions(+), 12 deletions(-)
 
-	Gustavo
+-- 
+1.8.1.4
 
---
-The following changes since commit 075163bbb0f51174359947e1bce84f5edb23f21e:
 
-  ath9k_htc: Handle IDLE state transition properly (2013-06-24 13:52:52 -04=
-00)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth master
-
-for you to fetch changes up to 53e21fbc288218a423959f878c86471a0e323a9a:
-
-  Bluetooth: Fix calling request callback more than once (2013-07-29 12:28:=
-04 +0100)
-
-----------------------------------------------------------------
-AceLan Kao (2):
-      Bluetooth: Add support for Atheros [0cf3:3121]
-      Bluetooth: Add support for Atheros [0cf3:e003]
-
-Adam Lee (1):
-      Bluetooth: fix wrong use of PTR_ERR() in btusb
-
-Gustavo Padovan (1):
-      Bluetooth: Fix race between hci_register_dev() and hci_dev_open()
-
-Jaganath Kanakkassery (1):
-      Bluetooth: Fix invalid length check in l2cap_information_rsp()
-
-Johan Hedberg (2):
-      Bluetooth: Fix HCI init for BlueFRITZ! devices
-      Bluetooth: Fix calling request callback more than once
-
-Stanislaw Gruszka (1):
-      Bluetooth: ath3k: don't use stack memory for DMA
-
-Sujith Manoharan (1):
-      Bluetooth: ath3k: Add support for ID 0x13d3/0x3402
-
-Thomas Loo (1):
-      Bluetooth: ath3k: Add support for Fujitsu Lifebook UH5x2 [04c5:1330]
-
- drivers/bluetooth/ath3k.c  | 46 +++++++++++++++++++++++++++++++++++++-----=
-----
- drivers/bluetooth/btusb.c  | 18 +++++++++++-------
- net/bluetooth/hci_core.c   | 26 +++++++++++++++++---------
- net/bluetooth/l2cap_core.c |  2 +-
- 4 files changed, 66 insertions(+), 26 deletions(-)
-
---d6Gm4EdcadzBjdND
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.13 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR97PYAAoJEPs3PUX4s20ocDYP/jkiaZtLDJNxdG6WmcFaciBv
-hgjbraGZ1cW0jXJmOfbpjK0P+YcHcrx2j+RlDNj55rs+JY+GKeAuQUzXuR0vy7cB
-uxAWWaqNbUziLYG+QUD6gq0GnM6AkgGz5I62gVly3UZ0i+qr5Bo8ayEY1ZBSTqws
-jrTNE5FKUQtGjinxxxQalnpjbcnUyw0mfQ6xmbF+yYqRiJZUTUNVuKeDwu6e3xIQ
-ummvCcKyoucey9D0s2U8SvpmvXWrXo3cAEe9rXolYcfzKHjYPAihISdTovI7qL3q
-XRKfL7FSJTHzl4NudLS/d8klueItSjtFzVmRpdKihH2spSA+RNSMZr4IQHGJoJgw
-A4XdTRrM3CORAzF/hkjAe9TxkB8gsnVHjFazER/TUGYBsTuzfXEmQFtepqE/cRjH
-imzLiStzSgaIEJQgpUEchDy+RxPoDcOox/q0PUWeHhnjVShUcjTnuvxKtdcNbgFl
-G/qSxjUfsCIu/5+uw0PFu7mEt+CKnNesP21Y2vETujXz1p2murpm1rHqlS0gLrtE
-QlemfdKL735aWolFXkCNZ4YxjnNwm7zju7rh52xd+6h0wxQiqUb6CdNf7O87jtc7
-s+50+t7PAtiEWX+TtxJr80pQmCKndOh5e1lr1ZOa8rQvhOt6RRBzkyzuj11gf9mP
-aTUzvpALst82EWooWUd1
-=qQs1
------END PGP SIGNATURE-----
-
---d6Gm4EdcadzBjdND--
