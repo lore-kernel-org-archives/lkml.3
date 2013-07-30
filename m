@@ -1,101 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753094Ab3G3RYm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 13:24:42 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:60899 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751040Ab3G3RYk (ORCPT
+	id S1754204Ab3G3R1t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 13:27:49 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:44183 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750957Ab3G3R1s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 13:24:40 -0400
-Date: Tue, 30 Jul 2013 18:24:13 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Chris Ball <cjb@laptop.org>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Seungwon Jeon <tgih.jun@samsung.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        linux-arm-kernel@lists.infradead.org
-Message-ID: <20130730172413.GW9858@sirena.org.uk>
-References: <20130730114502.GQ9858@sirena.org.uk>
- <864nbcte4j.fsf@void.printf.net>
+	Tue, 30 Jul 2013 13:27:48 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Hillf Danton <dhillf@gmail.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: Re: [PATCH 03/18] mm, hugetlb: unify region structure handling
+In-Reply-To: <1375075929-6119-4-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1375075929-6119-1-git-send-email-iamjoonsoo.kim@lge.com> <1375075929-6119-4-git-send-email-iamjoonsoo.kim@lge.com>
+User-Agent: Notmuch/0.15.2+167~g5306b2b (http://notmuchmail.org) Emacs/24.3.50.1 (x86_64-unknown-linux-gnu)
+Date: Tue, 30 Jul 2013 22:57:37 +0530
+Message-ID: <87wqo8ot4m.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="N1hYC8G2yr6txGRN"
-Content-Disposition: inline
-In-Reply-To: <864nbcte4j.fsf@void.printf.net>
-X-Cookie: You will be awarded some great honor.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 0/5] Optional regulator support
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Type: text/plain
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13073017-9264-0000-0000-0000043B4140
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Joonsoo Kim <iamjoonsoo.kim@lge.com> writes:
 
---N1hYC8G2yr6txGRN
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> Currently, to track a reserved and allocated region, we use two different
+> ways for MAP_SHARED and MAP_PRIVATE. For MAP_SHARED, we use
+> address_mapping's private_list and, for MAP_PRIVATE, we use a resv_map.
+> Now, we are preparing to change a coarse grained lock which protect
+> a region structure to fine grained lock, and this difference hinder it.
+> So, before changing it, unify region structure handling.
+>
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+>
+> diff --git a/fs/hugetlbfs/inode.c b/fs/hugetlbfs/inode.c
+> index a3f868a..a1ae3ada 100644
+> --- a/fs/hugetlbfs/inode.c
+> +++ b/fs/hugetlbfs/inode.c
+> @@ -366,7 +366,12 @@ static void truncate_hugepages(struct inode *inode, loff_t lstart)
+>
+>  static void hugetlbfs_evict_inode(struct inode *inode)
+>  {
+> +	struct resv_map *resv_map;
+> +
+>  	truncate_hugepages(inode, 0);
+> +	resv_map = (struct resv_map *)inode->i_mapping->private_data;
+> +	if (resv_map)
 
-On Tue, Jul 30, 2013 at 01:40:28PM +0100, Chris Ball wrote:
-> On Tue, Jul 30 2013, Mark Brown wrote:
+can resv_map == NULL ?
 
-> > Right now all the MMC users are converted over as-is, though it does
-> > look like drivers such as sdhci really ought to be insisting on having a
-> > regulator for VMMC in the same way that the MMC core helper does (and
-> > indeed in that case it looks like it ought to be converted over to the
-> > core code).
 
-> I didn't follow this part -- I don't think the MMC core insists on a
-> VMMC regulator, and I don't think sdhci should either, because e.g.
-> an x86 laptop isn't going to have one.  What am I missing?
+> +		kref_put(&resv_map->refs, resv_map_release);
 
-You're missing the fact that there will be a VMMC regulator there since
-the card needs power to function, it just might not be one that software
-knows about or can control.  If it's one that software can control
-that's not mapped in properly (eg, because the driver for the regulator
-wasn't loaded) then obviously that's a serious problem and power saving
-features in the regulator API may for example turn off the supply even
-if it's on by default since they can't tell it's in use.
+Also the kref_put is confusing. For shared mapping we don't have ref
+count incremented right ? So may be you can directly call
+resv_map_release or add a comment around explaining this more ?
 
-As things stand the expectation for x86 type systems is that MMC
-controllers attached via PCI or USB ought to be setting up a fixed
-regulator so that the consumer part can proceed without ignoring errors
-that might be serious on other systems.  It's probably not a bad idea to
-do this anyway though hopefully in the future this work will make it
-less needed.  For embedded systems the system integration ought to be
-doing the same thing, normally as part of the configuration of the PMIC.
 
-The goal of this series is to make it much easier for the regulator core
-to transparently support such systems where the regulators aren't
-visible to software by transparently stubbing out normal supplies that
-really must be present somehow for the hardware to operate without
-confusing things by also stubbing out suppies that may be missing in
-normal operation.  This is the problem for the existing stubbing support
-- it works well for normal supplies but it means that any consumer that
-wants to handle a supply that's not there can't tell it's missing.
+>  	clear_inode(inode);
+>  }
+>
+> @@ -468,6 +473,11 @@ static struct inode *hugetlbfs_get_inode(struct super_block *sb,
+>  					umode_t mode, dev_t dev)
+>  {
+>  	struct inode *inode;
+> +	struct resv_map *resv_map;
+> +
+> +	resv_map = resv_map_alloc();
+> +	if (!resv_map)
+> +		return NULL;
 
---N1hYC8G2yr6txGRN
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+-aneesh
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR9/a6AAoJELSic+t+oim9tD0P/1nZKP1GVe7cQl52fJ1rK9Ol
-CdMOkU3mirx4sIt7ndi0GVRuZZCivLLC/QECuoiQIQ12VrLOLcZUGlxO+vkLFEnR
-GTs1SjJIvET5clnvI/fI8hRFYrpm6CNm8Dzf50maiin1JNll0uto6fV2Ke2UHSOb
-9QgQ/8tHxFuy5XMHmrLV9CVvqmWMoPzvjbhF7cKCLduherhKf5NWEgt3P2bnOF+E
-/c9XJj2KIU/Vdwb/sLCtOsQsnW8Urjm+2dqbWbJ+Ka3b1j/8u9otxnwgcdd6o3pf
-jrJF8/kVILsPpKCf3cI3hNTS7eHZ/vYAhS7cPpsiPUZOaxydWJSJbyOr+mhOpbGF
-k6eVCdt4xcC5G2un8EbS97YEIkDQvKNUrZs02utcdEn5HguDc7E2w4VNB07jv7FR
-ovEcBxjTEZDkJuqNYMNvMxRYEjDXZcYlZTeVjUe6PkUP85qYXTXB8l1ZbFlQeHXW
-MH96vl/3OOnF6iD0HeHVhYMdJmwaJSbrjM7NcH2p6dcIRjMGoQHNp/GDTMtehX56
-m+Obb2AXCqas1twAu2bo0BsQAJBW3yf9lm8x/cfHFP3pSsXP2IpH5YIVq1a1gywP
-Zc5H5HWEzBgVFNoanDbRVH2RQLA95CsUA0UXSpizBS2J5YpK6FbuY51uA+lMCcfL
-kwQB/F/5ORqOO+qOMQm0
-=tv0Z
------END PGP SIGNATURE-----
-
---N1hYC8G2yr6txGRN--
