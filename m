@@ -1,63 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756771Ab3G3SPd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 14:15:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11589 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756582Ab3G3SPb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 14:15:31 -0400
-Date: Tue, 30 Jul 2013 14:05:04 -0400
-From: Dave Jones <davej@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        kosaki.motohiro@gmail.com, walken@google.com,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org
-Subject: Re: mlockall triggred rcu_preempt stall.
-Message-ID: <20130730180504.GA4546@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-	kosaki.motohiro@gmail.com, walken@google.com,
-	akpm@linux-foundation.org, torvalds@linux-foundation.org
-References: <20130719145323.GA1903@redhat.com>
- <20130719221538.GH21367@linux.vnet.ibm.com>
- <20130720003212.GA31308@redhat.com>
- <20130730175718.GA8957@linux.vnet.ibm.com>
+	id S1756823Ab3G3SQW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 14:16:22 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:58034 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756060Ab3G3SQU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Jul 2013 14:16:20 -0400
+Message-ID: <51F802F0.3030907@wwwdotorg.org>
+Date: Tue, 30 Jul 2013 12:16:16 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130730175718.GA8957@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Laxman Dewangan <ldewangan@nvidia.com>
+CC: grant.likely@linaro.org, rob.herring@calxeda.com, linus.walleij@linaro.org,
+        linux-doc@vger.kernel.org, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Subject: Re: [PATCH] pinctrl: tegra: add valid function name on DT document
+References: <1375182261-30946-1-git-send-email-ldewangan@nvidia.com>
+In-Reply-To: <1375182261-30946-1-git-send-email-ldewangan@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 30, 2013 at 10:57:18AM -0700, Paul E. McKenney wrote:
- > On Fri, Jul 19, 2013 at 08:32:12PM -0400, Dave Jones wrote:
- > > On Fri, Jul 19, 2013 at 03:15:39PM -0700, Paul E. McKenney wrote:
- > >  > On Fri, Jul 19, 2013 at 10:53:23AM -0400, Dave Jones wrote:
- > >  > > My fuzz tester keeps hitting this. Every instance shows the non-irq stack
- > >  > > came in from mlockall.  I'm only seeing this on one box, but that has more
- > >  > > ram (8gb) than my other machines, which might explain it.
- > >  > 
- > >  > Are you building CONFIG_PREEMPT=n?  I don't see any preemption points in
- > >  > do_mlockall(), so a range containing enough vmas might well stall the
- > >  > CPU in that case.  
- > > 
- > > That was with full preempt.
- > > 
- > >  > Does the patch below help?  If so, we probably need others, but let's
- > >  > first see if this one helps.  ;-)
- > > 
- > > I'll try it on Monday.
- > 
- > Any news?  If I don't hear otherwise, I will assume that the patch did
- > not help, and will therefore drop it.
+On 07/30/2013 05:04 AM, Laxman Dewangan wrote:
+> Add valid property name for the property "nvidia,function" in
+> DT binding document of Tegra pincontrol.
 
-I wasn't able to do any tests yesterday, because I kept hitting other oopses.
-I've got patches for the more obvious ones now, so I'll start testing rc3 this
-afternoon.
+I have applied this to Tegra's for-3.12/dt branch, but I fixed up quite
+a few issues along the way...
 
-	Dave
+> diff --git a/Documentation/devicetree/bindings/pinctrl/nvidia,tegra114-pinmux.txt b/Documentation/devicetree/bindings/pinctrl/nvidia,tegra114-pinmux.txt
 
+> @@ -69,6 +69,16 @@ Valid values for pin and group names are:
+>      gpio_w2_aud_pw2, gpio_w3_aud_pw3, usb_vbus_en0_pn4, usb_vbus_en1_pn5,
+>      sdmmc3_clk_lb_in_pee5, sdmmc3_clk_lb_out_pee4, reset_out_n.
+>  
+> +The valid names for the nvidia,functions are:
+> +    blink, cec, cldvfs, clk12, cpu, dap, dap1, dap2, dev3, displaya,
 
+For consistency with other lists in the document, I added a blank line
+between those two lines, and reworded the first of those lines to be
+written in the same style as equivalent text for other lists.
+
+> +    displaya_alt, displayb, dtv, emc_dll, extperiph1, extperiph2,
+> +    extperiph3, gmi, gmi_alt, hda, hsi, i2c1, i2c2, i2c3, i2c4, i2cpwr,
+> +    i2s0, i2s1, i2s2, i2s3, i2s4, irda, kbc, nand, nand_alt, owr, pmi,
+> +    pwm0, pwm1, pwm2, pwm3, pwron, reset_out_n, rsvd1, rsvd2, rsvd3,
+> +    rsvd4, sdmmc1, sdmmc2, sdmmc3, sdmmc4, soc, spdif, spi1, spi2, spi3,
+> +    spi4, spi5, spi6, sysclk, trace, uarta, uartb, uartc, uartd, ulpi,
+> +    usb, vgp1, vgp2, vgp3, vgp4, vgp5, vgp6, vi, vi_alt1, vi_alt3
+> +
+>    drive groups:
+
+There is a list of valid pin/group names in the document, and that list
+is divided into two sub-lists, for mux and drive groups. You inserted
+the list of function names between the two sub-lists rather than after
+the top-level list. Hence, I moved your additions to the correct place,
+and also removed 2 characters of indent, since it's a top-level list,
+not a sub-list of pin groups.
+
+> diff --git a/Documentation/devicetree/bindings/pinctrl/nvidia,tegra20-pinmux.txt b/Documentation/devicetree/bindings/pinctrl/nvidia,tegra20-pinmux.txt
+
+> @@ -82,6 +82,7 @@ Valid values for pin and group names are:
+>      spdo, spia, spib, spic, spid, spie, spif, spig, spih, uaa, uab, uac, uad,
+>      uca, ucb, uda.
+>  
+> +
+>    tristate groups:
+
+I undid that change.
