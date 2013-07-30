@@ -1,138 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756489Ab3G3S1L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 14:27:11 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:33150 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754613Ab3G3S1I convert rfc822-to-8bit (ORCPT
+	id S1756693Ab3G3S2h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 14:28:37 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:42813 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754745Ab3G3S2g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 14:27:08 -0400
-From: James Bottomley <jbottomley@parallels.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        =?iso-8859-15?Q?Kai_M=E4kisara?= <Kai.Makisara@kolumbus.fi>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Subject: Re: [PATCH 26/36] SCSI: st: convert class code to use dev_groups
-Thread-Topic: [PATCH 26/36] SCSI: st: convert class code to use dev_groups
-Thread-Index: AQHOiLn9t/l1qhKVW06gF3VbaQ7jyJl+CK4A
-Date: Tue, 30 Jul 2013 18:27:06 +0000
-Message-ID: <1375208826.2065.12.camel@dabdike.int.hansenpartnership.com>
-References: <1374703539-9705-1-git-send-email-gregkh@linuxfoundation.org>
-	 <1374703539-9705-27-git-send-email-gregkh@linuxfoundation.org>
-In-Reply-To: <1374703539-9705-27-git-send-email-gregkh@linuxfoundation.org>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [24.17.213.192]
-Content-Type: text/plain; charset="iso-8859-15"
-Content-ID: <729B32817221F54798078068CC3F9F2D@sw.swsoft.com>
-Content-Transfer-Encoding: 8BIT
+	Tue, 30 Jul 2013 14:28:36 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org
+Cc: Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, Hillf Danton <dhillf@gmail.com>,
+        Michal Hocko <mhocko@suse.cz>, Rik van Riel <riel@redhat.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        Naoya Horiguchi <nao.horiguchi@gmail.com>
+Subject: Re: [PATCH 1/8] migrate: make core migration code aware of hugepage
+In-Reply-To: <1374728103-17468-2-git-send-email-n-horiguchi@ah.jp.nec.com>
+References: <1374728103-17468-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1374728103-17468-2-git-send-email-n-horiguchi@ah.jp.nec.com>
+User-Agent: Notmuch/0.15.2+167~g5306b2b (http://notmuchmail.org) Emacs/24.3.50.1 (x86_64-unknown-linux-gnu)
+Date: Tue, 30 Jul 2013 23:58:27 +0530
+Message-ID: <87mwp3q4vo.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
+Content-Type: text/plain
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13073018-4790-0000-0000-00000989E99F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding linux-scsi to cc.
+Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> writes:
 
-James
-
-On Wed, 2013-07-24 at 15:05 -0700, Greg Kroah-Hartman wrote:
-> The dev_attrs field of struct class is going away soon, dev_groups
-> should be used instead.  This converts the scsi tape class code to use
-> the correct field.
-> 
-> Cc: Kai Mäkisara <Kai.Makisara@kolumbus.fi>
-> Cc: James E.J. Bottomley <JBottomley@parallels.com>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Before enabling each user of page migration to support hugepage,
+> this patch enables the list of pages for migration to link not only
+> LRU pages, but also hugepages. As a result, putback_movable_pages()
+> and migrate_pages() can handle both of LRU pages and hugepages.
+>
+> ChangeLog v4:
+>  - make some macros return 'do {} while(0)'
+>  - use more readable variable name
+>
+> ChangeLog v3:
+>  - revert introducing migrate_movable_pages
+>  - add isolate_huge_page
+>
+> ChangeLog v2:
+>  - move code removing VM_HUGETLB from vma_migratable check into a
+>    separate patch
+>  - hold hugetlb_lock in putback_active_hugepage
+>  - update comment near the definition of hugetlb_lock
+>
+> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Acked-by: Andi Kleen <ak@linux.intel.com>
+> Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 > ---
-> 
-> James, feel free to take this through your tree, or ACK it and I can
-> take it through mine.
-> 
->  drivers/scsi/st.c | 27 ++++++++++++++++-----------
->  1 file changed, 16 insertions(+), 11 deletions(-)
-> 
-> diff --git a/drivers/scsi/st.c b/drivers/scsi/st.c
-> index 2a32036a..ff44b3c2 100644
-> --- a/drivers/scsi/st.c
-> +++ b/drivers/scsi/st.c
-> @@ -82,7 +82,7 @@ static int try_rdio = 1;
->  static int try_wdio = 1;
->  
->  static struct class st_sysfs_class;
-> -static struct device_attribute st_dev_attrs[];
-> +static const struct attribute_group *st_dev_groups[];
->  
->  MODULE_AUTHOR("Kai Makisara");
->  MODULE_DESCRIPTION("SCSI tape (st) driver");
-> @@ -4274,7 +4274,7 @@ static void scsi_tape_release(struct kref *kref)
->  
->  static struct class st_sysfs_class = {
->  	.name = "scsi_tape",
-> -	.dev_attrs = st_dev_attrs,
-> +	.dev_groups = st_dev_groups,
->  };
->  
->  static int __init init_st(void)
-> @@ -4408,6 +4408,7 @@ defined_show(struct device *dev, struct device_attribute *attr, char *buf)
->  	l = snprintf(buf, PAGE_SIZE, "%d\n", STm->defined);
->  	return l;
->  }
-> +static DEVICE_ATTR_RO(defined);
->  
->  static ssize_t
->  default_blksize_show(struct device *dev, struct device_attribute *attr,
-> @@ -4419,7 +4420,7 @@ default_blksize_show(struct device *dev, struct device_attribute *attr,
->  	l = snprintf(buf, PAGE_SIZE, "%d\n", STm->default_blksize);
->  	return l;
->  }
-> -
-> +static DEVICE_ATTR_RO(default_blksize);
->  
->  static ssize_t
->  default_density_show(struct device *dev, struct device_attribute *attr,
-> @@ -4433,6 +4434,7 @@ default_density_show(struct device *dev, struct device_attribute *attr,
->  	l = snprintf(buf, PAGE_SIZE, fmt, STm->default_density);
->  	return l;
->  }
-> +static DEVICE_ATTR_RO(default_density);
->  
->  static ssize_t
->  default_compression_show(struct device *dev, struct device_attribute *attr,
-> @@ -4444,6 +4446,7 @@ default_compression_show(struct device *dev, struct device_attribute *attr,
->  	l = snprintf(buf, PAGE_SIZE, "%d\n", STm->default_compression - 1);
->  	return l;
->  }
-> +static DEVICE_ATTR_RO(default_compression);
->  
->  static ssize_t
->  options_show(struct device *dev, struct device_attribute *attr, char *buf)
-> @@ -4472,15 +4475,17 @@ options_show(struct device *dev, struct device_attribute *attr, char *buf)
->  	l = snprintf(buf, PAGE_SIZE, "0x%08x\n", options);
->  	return l;
->  }
-> -
-> -static struct device_attribute st_dev_attrs[] = {
-> -	__ATTR_RO(defined),
-> -	__ATTR_RO(default_blksize),
-> -	__ATTR_RO(default_density),
-> -	__ATTR_RO(default_compression),
-> -	__ATTR_RO(options),
-> -	__ATTR_NULL,
-> +static DEVICE_ATTR_RO(options);
-> +
-> +static struct attribute *st_dev_attrs[] = {
-> +	&dev_attr_defined.attr,
-> +	&dev_attr_default_blksize.attr,
-> +	&dev_attr_default_density.attr,
-> +	&dev_attr_default_compression.attr,
-> +	&dev_attr_options.attr,
-> +	NULL,
->  };
-> +ATTRIBUTE_GROUPS(st_dev);
->  
->  /* The following functions may be useful for a larger audience. */
->  static int sgl_map_user_pages(struct st_buffer *STbp,
+>  include/linux/hugetlb.h |  6 ++++++
+>  mm/hugetlb.c            | 32 +++++++++++++++++++++++++++++++-
+>  mm/migrate.c            | 10 +++++++++-
+>  3 files changed, 46 insertions(+), 2 deletions(-)
+>
+> diff --git v3.11-rc1.orig/include/linux/hugetlb.h v3.11-rc1/include/linux/hugetlb.h
+> index c2b1801..c7a14a4 100644
+> --- v3.11-rc1.orig/include/linux/hugetlb.h
+> +++ v3.11-rc1/include/linux/hugetlb.h
+> @@ -66,6 +66,9 @@ int hugetlb_reserve_pages(struct inode *inode, long from, long to,
+>  						vm_flags_t vm_flags);
+>  void hugetlb_unreserve_pages(struct inode *inode, long offset, long freed);
+>  int dequeue_hwpoisoned_huge_page(struct page *page);
+> +bool isolate_huge_page(struct page *page, struct list_head *list);
+> +void putback_active_hugepage(struct page *page);
+> +void putback_active_hugepages(struct list_head *list);
 
+are we using putback_active_hugepages in the patch series ?
+
+
+>  void copy_huge_page(struct page *dst, struct page *src);
+>
+>  #ifdef CONFIG_ARCH_WANT_HUGE_PMD_SHARE
+> @@ -134,6 +137,9 @@ static inline int dequeue_hwpoisoned_huge_page(struct page *page)
+>  	return 0;
+>  }
+
+-aneesh
 
