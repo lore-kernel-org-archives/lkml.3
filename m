@@ -1,87 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754204Ab3G3R1t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 13:27:49 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:44183 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750957Ab3G3R1s (ORCPT
+	id S1755641Ab3G3RaZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 13:30:25 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:36544 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750957Ab3G3RaX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 13:27:48 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Hillf Danton <dhillf@gmail.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: Re: [PATCH 03/18] mm, hugetlb: unify region structure handling
-In-Reply-To: <1375075929-6119-4-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1375075929-6119-1-git-send-email-iamjoonsoo.kim@lge.com> <1375075929-6119-4-git-send-email-iamjoonsoo.kim@lge.com>
-User-Agent: Notmuch/0.15.2+167~g5306b2b (http://notmuchmail.org) Emacs/24.3.50.1 (x86_64-unknown-linux-gnu)
-Date: Tue, 30 Jul 2013 22:57:37 +0530
-Message-ID: <87wqo8ot4m.fsf@linux.vnet.ibm.com>
+	Tue, 30 Jul 2013 13:30:23 -0400
+Date: Tue, 30 Jul 2013 13:30:22 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Julius Werner <jwerner@chromium.org>
+cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Andiry Xu <andiry.xu@amd.com>, Vincent Palatin <vpalatin@chromium.org>,
+        Benson Leung <bleung@chromium.org>
+Subject: Re: [PATCH] usb: core: don't try to reset_device() a port that got
+ just disconnected
+In-Reply-To: <1375204090-27465-1-git-send-email-jwerner@chromium.org>
+Message-ID: <Pine.LNX.4.44L0.1307301320360.1105-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13073017-9264-0000-0000-0000043B4140
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joonsoo Kim <iamjoonsoo.kim@lge.com> writes:
+On Tue, 30 Jul 2013, Julius Werner wrote:
 
-> Currently, to track a reserved and allocated region, we use two different
-> ways for MAP_SHARED and MAP_PRIVATE. For MAP_SHARED, we use
-> address_mapping's private_list and, for MAP_PRIVATE, we use a resv_map.
-> Now, we are preparing to change a coarse grained lock which protect
-> a region structure to fine grained lock, and this difference hinder it.
-> So, before changing it, unify region structure handling.
->
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
->
-> diff --git a/fs/hugetlbfs/inode.c b/fs/hugetlbfs/inode.c
-> index a3f868a..a1ae3ada 100644
-> --- a/fs/hugetlbfs/inode.c
-> +++ b/fs/hugetlbfs/inode.c
-> @@ -366,7 +366,12 @@ static void truncate_hugepages(struct inode *inode, loff_t lstart)
->
->  static void hugetlbfs_evict_inode(struct inode *inode)
->  {
-> +	struct resv_map *resv_map;
-> +
->  	truncate_hugepages(inode, 0);
-> +	resv_map = (struct resv_map *)inode->i_mapping->private_data;
-> +	if (resv_map)
+> The USB hub driver's event handler contains a check to catch SuperSpeed
+> devices that transitioned into the SS.Inactive state and tries to fix
+> them with a reset. It decides whether to do a plain hub port reset or
+> call the usb_reset_device() method based on whether there was a device
+> attached to the port.
+> 
+> However, there are device/hub combinations (found with a JetFlash
+> Transcend mass storage stick (8564:1000) on the root hub of an Intel
+> LynxPoint PCH) which can transition to the SS.Inactive state on
+> disconnect (and stay there long enough for the host to notice). In this
+> case, above-mentioned reset check will call usb_reset_device() on the
+> now disconnected device. This leads to a futile attempt of asking a
+> bunch of floating wires to disable device-initiated U1 and U2, each
+> stalling khubd for a 5 second timeout before finally accepting the
+> device's fate amongst a flurry of error messages.
+ 
+Wait a moment.  Why does each of these attempts lead to a 5-second
+timeout?  Why don't they fail immediately?
 
-can resv_map == NULL ?
+> This patch makes the choice of reset dependent on the port status that
+> has just been read from the hub, as opposed to any previous in-kernel
+> state, thus working around this problem.
+> 
+> Signed-off-by: Julius Werner <jwerner@chromium.org>
+> ---
+>  drivers/usb/core/hub.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
+> index 4a8a1d6..ace0c52 100644
+> --- a/drivers/usb/core/hub.c
+> +++ b/drivers/usb/core/hub.c
+> @@ -4798,7 +4798,7 @@ static void hub_events(void)
+>  					hub->ports[i - 1]->child;
+>  
+>  				dev_dbg(hub_dev, "warm reset port %d\n", i);
+> -				if (!udev) {
+> +				if (!(portstatus & USB_PORT_STAT_CONNECTION)) {
+>  					status = hub_port_reset(hub, i,
+>  							NULL, HUB_BH_RESET_TIME,
+>  							true);
+> @@ -4808,8 +4808,8 @@ static void hub_events(void)
+>  					usb_lock_device(udev);
+>  					status = usb_reset_device(udev);
+>  					usb_unlock_device(udev);
 
+What will happen here if udev is NULL?  Maybe you should change the 
+test to (!udev || !(portstatus & ...)).
 
-> +		kref_put(&resv_map->refs, resv_map_release);
+> +					connect_change = 0;
+>  				}
+> -				connect_change = 0;
+>  			}
 
-Also the kref_put is confusing. For shared mapping we don't have ref
-count incremented right ? So may be you can directly call
-resv_map_release or add a comment around explaining this more ?
-
-
->  	clear_inode(inode);
->  }
->
-> @@ -468,6 +473,11 @@ static struct inode *hugetlbfs_get_inode(struct super_block *sb,
->  					umode_t mode, dev_t dev)
->  {
->  	struct inode *inode;
-> +	struct resv_map *resv_map;
-> +
-> +	resv_map = resv_map_alloc();
-> +	if (!resv_map)
-> +		return NULL;
-
--aneesh
+Alan Stern
 
