@@ -1,156 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756747Ab3G3BgY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 21:36:24 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:55179 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753773Ab3G3BgV (ORCPT
+	id S1756724Ab3G3BiN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 21:38:13 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:60019 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751402Ab3G3BiL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 21:36:21 -0400
-Message-ID: <51F71891.3030508@hitachi.com>
-Date: Tue, 30 Jul 2013 10:36:17 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Mon, 29 Jul 2013 21:38:11 -0400
+X-Sasl-enc: sKLFU5bKer5lS3W5ISd2DvD3EEp06iBAPxS8wvP3dW9x 1375148289
+Date: Mon, 29 Jul 2013 18:38:08 -0700
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Tomas Winkler <tomas.winkler@intel.com>
+Subject: Re: linux-next: manual merge of the char-misc tree with Linus' tree
+Message-ID: <20130730013808.GA5373@kroah.com>
+References: <20130729150129.76a9fab4023ee22c940b7920@canb.auug.org.au>
+ <20130729192649.GA9191@kroah.com>
+ <20130730102754.749949a5d53c54e4c6c72d53@canb.auug.org.au>
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Alexander Z Lam <azl@google.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        David Sharp <dhsharp@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 6/6] tracing: Change remove_event_file_dir() to
- clear "d_subdirs"->i_private
-References: <20130726172513.GA3586@redhat.com> <20130726172551.GA3632@redhat.com> <20130728183527.GB16723@redhat.com>
-In-Reply-To: <20130728183527.GB16723@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130730102754.749949a5d53c54e4c6c72d53@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/07/29 3:35), Oleg Nesterov wrote:
-> Change remove_event_file_dir() to clear ->i_private for every
-> file we are going to remove.
+On Tue, Jul 30, 2013 at 10:27:54AM +1000, Stephen Rothwell wrote:
+> Hi Greg,
 > 
-> We need to check file->dir != NULL because event_create_dir()
-> can fail. debugfs_remove_recursive(NULL) is fine but the patch
-> moves it under the same check anyway for readability.
+> On Mon, 29 Jul 2013 12:26:49 -0700 Greg KH <greg@kroah.com> wrote:
+> >
+> > On Mon, Jul 29, 2013 at 03:01:29PM +1000, Stephen Rothwell wrote:
+> > > 
+> > > Today's linux-next merge of the char-misc tree got a conflict in
+> > > drivers/misc/mei/init.c between commit 99f22c4ef24c ("mei: don't have to
+> > > clean the state on power up") from Linus' tree and commit b950ac1dabfc
+> > > ("mei: don't get stuck in select during reset") from the char-misc tree.
+> > > 
+> > > (Unrelated white space changes are a pest :-()
+> > > 
+> > > I fixed it up (see below) and can carry the fix as necessary (no action
+> > > is required).
+> > 
+> > Thanks, I've merged the char-misc-next branch into 3.11-rc3, so this
+> > merge problem should no longer be there.
 > 
-> spin_lock(d_lock) and "d_inode != NULL" check are not needed
-> afaics, but I do not understand this code enough.
+> Unfortunately, I think this is exactly the sort of back merge that Linus
+> hates.  He and I are quite capable of coping with relatively complex
+> merge conflicts, so ones like this are really not a problem (and "git
+> rerere" takes care of it once I have resolved it the first time).  That
+> is why I added "no action is required" to my notification messages.
+> These messages are really more "this is what I did, please tell me if I
+> did something wrong", not "please fix this up"  (I know this message from
+> me has changed over time - we can all learn, even us oldies :-))
 > 
-> tracing_open_generic_file() and tracing_release_generic_file()
-> can go away, ftrace_enable_fops and ftrace_event_filter_fops()
-> use tracing_open_generic() but only to check tracing_disabled.
+> Also, if you are doing a merge of fixes that you have submitted to
+> Linus, it is probably better to merge your fixes branch rather that
+> Linus' tree after he has merged it - that way you are not dragging
+> irrelevant stuff from Linus' tree into yours and complicating the git
+> history/bisecting so much.
 > 
-> This fixes all races with event_remove() or instance_delete().
-> f_op->read/write/whatever can never use the freed file/call,
-> all event/* files were changed to check and use ->i_private
-> under event_mutex.
-> 
-> Note: this doesn't not fix other problems, event_remove() can
-> destroy the active ftrace_event_call, we need more changes but
-> those changes are completely orthogonal.
+> Of course, if you need something from Linus' tree that someone else put
+> there to continue development, then you need to back merge Linus' tree,
+> but after rc2 or 3 that should be rare.  And, of course, such a back
+> merge needs a good changelog explaining exactly why it was done.
 
-Looks good for me.
+I usually want those fixes from the rcs and merge at that point in time
+every other -rc release or so, just to make it much easier for me to
+test with, and to pick in the patches I've sent to Linus.
 
-Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Yes, I could just suck in my fixes branch, but I would be stuck with
+trees based on -rc1, which is almost always a pain to test with.
 
-Thanks!
+I'm not doing "merges every week", and have been doing it this way for a
+few years now with no complaints.  The -rc point in time is a good place
+to sync up with it seems.
 
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> ---
->  kernel/trace/trace_events.c |   47 +++++++++++++-----------------------------
->  1 files changed, 15 insertions(+), 32 deletions(-)
-> 
-> diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-> index 2a4f68a..79a2743 100644
-> --- a/kernel/trace/trace_events.c
-> +++ b/kernel/trace/trace_events.c
-> @@ -428,42 +428,26 @@ static void *event_file_data(struct file *filp)
->  
->  static void remove_event_file_dir(struct ftrace_event_file *file)
->  {
-> +	struct dentry *dir = file->dir;
-> +	struct dentry *child;
-> +
-> +	if (dir) {
-> +		spin_lock(&dir->d_lock);	/* probably unneeded */
-> +		list_for_each_entry(child, &dir->d_subdirs, d_u.d_child) {
-> +			if (child->d_inode)	/* probably unneeded */
-> +				child->d_inode->i_private = NULL;
-> +		}
-> +		spin_unlock(&dir->d_lock);
-> +
-> +		debugfs_remove_recursive(dir);
-> +	}
-> +
->  	list_del(&file->list);
-> -	debugfs_remove_recursive(file->dir);
->  	remove_subsystem(file->system);
->  	kmem_cache_free(file_cachep, file);
->  }
->  
->  /*
-> - * Open and update trace_array ref count.
-> - * Must have the current trace_array passed to it.
-> - */
-> -static int tracing_open_generic_file(struct inode *inode, struct file *filp)
-> -{
-> -	struct ftrace_event_file *file = inode->i_private;
-> -	struct trace_array *tr = file->tr;
-> -	int ret;
-> -
-> -	if (trace_array_get(tr) < 0)
-> -		return -ENODEV;
-> -
-> -	ret = tracing_open_generic(inode, filp);
-> -	if (ret < 0)
-> -		trace_array_put(tr);
-> -	return ret;
-> -}
-> -
-> -static int tracing_release_generic_file(struct inode *inode, struct file *filp)
-> -{
-> -	struct ftrace_event_file *file = inode->i_private;
-> -	struct trace_array *tr = file->tr;
-> -
-> -	trace_array_put(tr);
-> -
-> -	return 0;
-> -}
-> -
-> -/*
->   * __ftrace_set_clr_event(NULL, NULL, NULL, set) will set/unset all events.
->   */
->  static int
-> @@ -1277,10 +1261,9 @@ static const struct file_operations ftrace_set_event_fops = {
->  };
->  
->  static const struct file_operations ftrace_enable_fops = {
-> -	.open = tracing_open_generic_file,
-> +	.open = tracing_open_generic,
->  	.read = event_enable_read,
->  	.write = event_enable_write,
-> -	.release = tracing_release_generic_file,
->  	.llseek = default_llseek,
->  };
->  
-> 
+thanks,
 
-
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+greg k-h
