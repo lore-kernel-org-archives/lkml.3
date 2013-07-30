@@ -1,51 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751266Ab3G3Kie (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 06:38:34 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49272 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750745Ab3G3Kid (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 06:38:33 -0400
-Date: Tue, 30 Jul 2013 12:38:28 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Chen Gang <gang.chen@asianux.com>
-Cc: jaharkes@cs.cmu.edu, coda@cs.cmu.edu, codalist@TELEMANN.coda.cs.cmu.edu,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH trivial] include/linux/coda.h: remove useless '#else'
-In-Reply-To: <51F76B7D.2090602@asianux.com>
-Message-ID: <alpine.LNX.2.00.1307301238230.18809@pobox.suse.cz>
-References: <51F76B7D.2090602@asianux.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1751402Ab3G3KoO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 06:44:14 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:59170 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750877Ab3G3KoN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Jul 2013 06:44:13 -0400
+Message-ID: <51F84172.50408@gmail.com>
+Date: Tue, 30 Jul 2013 18:42:58 -0400
+From: Dong Fang <yp.fangdong@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Dan Carpenter <dan.carpenter@oracle.com>
+CC: akpm@linux-foundation.org, jeff.liu@oracle.com, xuejiufei@huawei.com,
+        shencanquan@huawei.com, ocfs2-devel@oss.oracle.com,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH v2] fs/ocfs2: use list_for_each_entry() instead of list_for_each()
+References: <1374931429-14062-1-git-send-email-yp.fangdong@gmail.com> <20130729074928.GB5053@mwanda> <20130729080606.GD5053@mwanda>
+In-Reply-To: <20130729080606.GD5053@mwanda>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Jul 2013, Chen Gang wrote:
+On 07/29/2013 04:06 AM, Dan Carpenter wrote:
+> Oh.  It appears that nothing changed between v1 and v2.  Only the CC
+> list.
+>
+> It's probably that the list moderation on ocfs2-devel was confusing
+> for non-native English speakers the patch submitter thought his
+> patch was dropped.
+>
+> Also mailing lists should have a white list so that I don't get the
+> message every single time.
+>
+> regards,
+> dan carpenter
+>
+hi, dan carpenter.
 
-> '#else' is useless, need remove.
-> 
-> Signed-off-by: Chen Gang <gang.chen@asianux.com>
-> ---
->  include/linux/coda.h |    1 -
->  1 files changed, 0 insertions(+), 1 deletions(-)
-> 
-> diff --git a/include/linux/coda.h b/include/linux/coda.h
-> index cff544f..d30209b 100644
-> --- a/include/linux/coda.h
-> +++ b/include/linux/coda.h
-> @@ -60,7 +60,6 @@ Mellon the rights to redistribute these changes without encumbrance.
->  
->  #if defined(__linux__)
->  typedef unsigned long long u_quad_t;
-> -#else
->  #endif
->  #include <uapi/linux/coda.h>
->  #endif 
+i am not a member of Ocfs2-devel mailing list, after i send this patch,
+it notice me "Your message to Ocfs2-devel awaits moderator approval".
+i subscribe this mailing list just now, do you think i need to resend
+this patch to Ocfs2-devel ?
 
-Applied.
-
--- 
-Jiri Kosina
-SUSE Labs
+thx very much.
