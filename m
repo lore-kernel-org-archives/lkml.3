@@ -1,148 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756970Ab3G3KIp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 06:08:45 -0400
-Received: from smtp4-g21.free.fr ([212.27.42.4]:33577 "EHLO smtp4-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751822Ab3G3KIn convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 06:08:43 -0400
-Date: Tue, 30 Jul 2013 12:09:07 +0200
-From: Jean-Francois Moine <moinejf@free.fr>
-To: Dave Martin <Dave.Martin@arm.com>
-Cc: Robert Richter <rric@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Will Deacon <will.deacon@arm.com>, Jed Davis <jld@mozilla.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        "oprofile-list@lists.sf.net" <oprofile-list@lists.sf.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] ARM: Fix r7/r11 confusion when CONFIG_THUMB2_KERNEL=y
- [OT]
-Message-ID: <20130730120907.6dcc469e@armhf>
-In-Reply-To: <20130730094457.GC2478@localhost.localdomain>
-References: <1373685501-1620-1-git-send-email-jld@mozilla.com>
-	<20130715135420.GG10000@mudshark.cambridge.arm.com>
-	<20130720044655.GC9433@mozilla.com>
-	<20130721213753.GA29879@mudshark.cambridge.arm.com>
-	<20130722185234.GA14519@localhost.localdomain>
-	<20130729212140.GB12681@mozilla.com>
-	<20130730092517.GB2478@localhost.localdomain>
-	<20130730113853.46cbb00a@armhf>
-	<20130730094457.GC2478@localhost.localdomain>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; arm-unknown-linux-gnueabihf)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1757448Ab3G3KKT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 06:10:19 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:58042 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751918Ab3G3KKQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Jul 2013 06:10:16 -0400
+X-IronPort-AV: E=Sophos;i="4.89,777,1367942400"; 
+   d="scan'208";a="8067763"
+Message-ID: <51F7901E.3010204@cn.fujitsu.com>
+Date: Tue, 30 Jul 2013 18:06:22 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: Kim <jaegeuk.kim@samsung.com>
+CC: f2fs <linux-f2fs-devel@lists.sourceforge.net>,
+        fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] f2fs: add a wait step when submit bio with {READ,WRITE}_SYNC
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/30 18:07:57,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/30 18:07:57,
+	Serialize complete at 2013/07/30 18:07:57
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Jul 2013 10:44:57 +0100
-Dave Martin <Dave.Martin@arm.com> wrote:
+When we submit bio with READ_SYNC or WRITE_SYNC, we need to wait a
+moment for the io completion, current codes only find_data_page() follows the
+rule, other places missing this step, so add it.
 
-> On Tue, Jul 30, 2013 at 11:38:53AM +0200, Jean-Francois Moine wrote:
-> > On Tue, 30 Jul 2013 10:25:18 +0100
-> > Dave Martin <Dave.Martin@arm.com> wrote:
-> >   
-> > > The pragmatic route is less contraversial and lower overhead: even though
-> > > it's not correct as per the ABI, GCC is the only supported compiler for
-> > > building the kernel anyway.  
-> > 
-> > BTW, kernels compiled with gcc-4.8 don't work.  
-> 
-> I haven't tried 4.8 yet.  Do you know what the problem is?
+Further more, moving the PageUptodate check into f2fs_readpage() to clean up
+the codes.
 
-I randomly get 'NULL pointer dereference' in ext3 (trace below).
+Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+---
+ fs/f2fs/checkpoint.c |    1 -
+ fs/f2fs/data.c       |   39 +++++++++++++++++----------------------
+ fs/f2fs/node.c       |    1 -
+ fs/f2fs/recovery.c   |    2 --
+ fs/f2fs/segment.c    |    2 +-
+ 5 files changed, 18 insertions(+), 27 deletions(-)
 
-I compared the gcc-4.6 and gcc-4.8 ARM codes of the function where the
-problem occurs, and, while the gcc-4.8 code seems a bit odd, the
-problem should be somewhere else, surely in the memory management.
-
-> > Did anybody succeed with clang?  
-> 
-> Hmm, I've no idea.  Is this possible?
-
-freebsd kernels are compiled with clang, and I heard about linux
-patches, but I did not find them yet.
-
-Otherwise, replacing gcc with clang in the main kernel Makefile stops
-on an assembly instruction where odd register numbers could not be
-used. I did not go further.
-
------------------- gcc-4.8.1 kernel oops ----------------
-Unable to handle kernel NULL pointer dereference at virtual address 00000003
-pgd = bcf74000
-[00000003] *pgd=3cf16831, *pte=00000000, *ppte=00000000
-Internal error: Oops: 811 [#1] PREEMPT ARM
-Modules linked in: arc4 p54usb p54common crc_ccitt mac80211 cfg80211 fbcon bitblit softcursor font snd_soc_spdif_tx tda998x dove_drm drm_kms_helper snd_soc_kirkwood mv_cesa drm snd_soc_kirkwood_spdif
-CPU: 0 PID: 2426 Comm: iceweasel Not tainted 3.10.0-dirty #55
-task: bd92b700 ti: bcf48000 task.ti: bcf48000
-PC is at do_mpage_readpage+0x754/0x888
-LR is at bio_add_page+0x44/0x4c
-pc : [<800e3c70>]    lr : [<800db8ac>]    psr: 600f0113
-sp : bcf49c34  ip : bcf49c88  fp : bcf49c5c
-r10: 00000003  r9 : 00000000  r8 : 00000043
-r7 : 00000001  r6 : 800e3f54  r5 : bcf49c30  r4 : 00000003
-r3 : 00020000  r2 : 00000042  r1 : 00000000  r0 : bcf49c5c
-Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
-Control: 10c5387d  Table: 3cf74019  DAC: 00000015
-Process iceweasel (pid: 2426, stack limit = 0xbcf48240)
-Stack: (0xbcf49c34 to 0xbcf4a000)
-9c20:                                              00000020 bcf49d24 00200200
-9c40: 00100100 bd580d94 00000000 80de4260 bcf49cf4 bcf49c60 800e3e78 800e3528
-9c60: bcf49c88 bcf49c7c 801164cc 000000c1 804d660c 801164cc da0716b4 00000042
-9c80: 00000000 00000000 00000020 00000000 80de4260 000000c1 00287ab6 00000000
-9ca0: 00020000 80073500 bd402c80 804d6670 00100100 00000002 00200200 8039a2ac
-9cc0: 804d660c 00000002 804d6ca0 80113f84 00000020 00000020 00000042 000000b4
-9ce0: 00000000 00000020 bcf49d04 bcf49cf8 80113fa8 800e3db0 bcf49d6c bcf49d08
-9d00: 80079ef4 80113f90 bcf00c00 00000018 bd580d94 00000020 bd580d98 bcf49d24
-9d20: 00000001 80de4394 80de4254 91827364 bcf49d30 bcf49d30 bcf49d38 bcf49d38
-9d40: 00000052 00000052 bcf00c00 bd580d94 bd580d94 bcf49df0 00000000 bcf6c0d0
-9d60: bcf49d84 bcf49d70 8007a600 80079d10 00000008 7319d000 bcf49ddc bcf49d88
-9d80: 800719f4 8007a5dc 80076670 80075448 00000001 000000c1 bcf00c48 00000002
-9da0: 3c5e818f 00000000 bcf48008 bd580ce0 80013e40 bcf6c0d0 bdbc2e40 00000000
-9dc0: 7319d000 00000028 00000000 bcf75cc0 bcf49e2c bcf49de0 8008b0ac 8007163c
-9de0: bdb247a8 00000000 00000000 00000200 00000028 00000052 7319d000 00000000
-9e00: 8007b8d0 bcf6c0d0 7319d000 7319d000 bdbc2e40 bcf6c0d0 00000028 00000000
-9e20: bcf49e7c bcf49e30 8008e584 8008b048 00000052 00000028 00000000 000000b1
-9e40: da538506 000000b1 804bb718 00000004 804bb708 bcf74000 00000398 7319d000
-9e60: bdbc2e40 bcf6c0d0 00000028 bcf75cc0 bcf49eb4 bcf49e80 8008ed14 8008e51c
-9e80: bcf75cc0 00000028 da538506 00000017 bcf49fb0 bdbc2e40 bd92b700 7319d288
-9ea0: bcf48038 00000028 bcf49efc bcf49eb8 80013c38 8008ec80 0000b533 00000000
-9ec0: 0000b533 00000200 00000000 bdbc2e78 00000000 00000017 80013a64 804b76f4
-9ee0: 7319d288 bcf49fb0 00000ea1 00000000 bcf49fac bcf49f00 80008460 80013a70
-9f00: bcf00c00 00000001 000b45c0 804bc488 bcf48000 00000000 0000001d 00000000
-9f20: 00000001 73098000 bcf49f54 804bc488 bcf49f54 bcf49f40 8006a284 8006b524
-9f40: 804bb900 bcf48028 00000000 00000000 0000001d 00000000 bcf49f7c bcf49f68
-9f60: 80022424 8006db18 00020000 804c3c90 bcf49f9c bcf49f80 8000ec2c 800223a4
-9f80: 00000621 75253ff0 200f0030 75238ed2 200f0030 ffffffff 00000000 00000ea1
-9fa0: 00000000 bcf49fb0 8000e118 8000842c 7319d2ec 7319d292 7ee06c98 7319d288
-9fc0: 7ee06c98 73098000 00000000 00000000 00000ea1 00000ea1 00000000 73223be0
-9fe0: 752811fc 7ee06b88 7523bd75 75238ed2 200f0030 ffffffff 00000000 00000000
-Backtrace: 
-[<800e351c>] (do_mpage_readpage+0x0/0x888) from [<800e3e78>] (mpage_readpages+0xd4/0x130)
-[<800e3da4>] (mpage_readpages+0x0/0x130) from [<80113fa8>] (ext3_readpages+0x24/0x28)
-[<80113f84>] (ext3_readpages+0x0/0x28) from [<80079ef4>] (__do_page_cache_readahead+0x1f0/0x2d8)
-[<80079d04>] (__do_page_cache_readahead+0x0/0x2d8) from [<8007a600>] (ra_submit+0x30/0x38)
-[<8007a5d0>] (ra_submit+0x0/0x38) from [<800719f4>] (filemap_fault+0x3c4/0x4b0)
-[<80071630>] (filemap_fault+0x0/0x4b0) from [<8008b0ac>] (__do_fault+0x70/0x4a8)
-[<8008b03c>] (__do_fault+0x0/0x4a8) from [<8008e584>] (handle_pte_fault+0x74/0x764)
-[<8008e510>] (handle_pte_fault+0x0/0x764) from [<8008ed14>] (handle_mm_fault+0xa0/0xd4)
-[<8008ec74>] (handle_mm_fault+0x0/0xd4) from [<80013c38>] (do_page_fault+0x1d4/0x278)
-[<80013a64>] (do_page_fault+0x0/0x278) from [<80008460>] (do_DataAbort+0x40/0xa0)
-[<80008420>] (do_DataAbort+0x0/0xa0) from [<8000e118>] (__dabt_usr+0x38/0x40)
-Exception stack(0xbcf49fb0 to 0xbcf49ff8)
-9fa0:                                     7319d2ec 7319d292 7ee06c98 7319d288
-9fc0: 7ee06c98 73098000 00000000 00000000 00000ea1 00000ea1 00000000 73223be0
-9fe0: 752811fc 7ee06b88 7523bd75 75238ed2 200f0030 ffffffff
- r8:00000ea1 r7:00000000 r6:ffffffff r5:200f0030 r4:75238ed2
-Code: e0854184 e51b0084 e14424d8 e51b40a0 (e1c420f0) 
----[ end trace 838796f906351fb0 ]---
-
-
+diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
+index fe91773..e376a42 100644
+--- a/fs/f2fs/checkpoint.c
++++ b/fs/f2fs/checkpoint.c
+@@ -64,7 +64,6 @@ repeat:
+ 	if (f2fs_readpage(sbi, page, index, READ_SYNC))
+ 		goto repeat;
+ 
+-	lock_page(page);
+ 	if (page->mapping != mapping) {
+ 		f2fs_put_page(page, 1);
+ 		goto repeat;
+diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
+index 19cd7c6..b048936 100644
+--- a/fs/f2fs/data.c
++++ b/fs/f2fs/data.c
+@@ -216,13 +216,11 @@ struct page *find_data_page(struct inode *inode, pgoff_t index, bool sync)
+ 
+ 	err = f2fs_readpage(sbi, page, dn.data_blkaddr,
+ 					sync ? READ_SYNC : READA);
+-	if (sync) {
+-		wait_on_page_locked(page);
+-		if (!PageUptodate(page)) {
+-			f2fs_put_page(page, 0);
+-			return ERR_PTR(-EIO);
+-		}
+-	}
++	if (err)
++		return ERR_PTR(err);
++
++	if (sync)
++		unlock_page(page);
+ 	return page;
+ }
+ 
+@@ -267,11 +265,6 @@ repeat:
+ 	if (err)
+ 		return ERR_PTR(err);
+ 
+-	lock_page(page);
+-	if (!PageUptodate(page)) {
+-		f2fs_put_page(page, 1);
+-		return ERR_PTR(-EIO);
+-	}
+ 	if (page->mapping != mapping) {
+ 		f2fs_put_page(page, 1);
+ 		goto repeat;
+@@ -325,11 +318,7 @@ repeat:
+ 		err = f2fs_readpage(sbi, page, dn.data_blkaddr, READ_SYNC);
+ 		if (err)
+ 			return ERR_PTR(err);
+-		lock_page(page);
+-		if (!PageUptodate(page)) {
+-			f2fs_put_page(page, 1);
+-			return ERR_PTR(-EIO);
+-		}
++
+ 		if (page->mapping != mapping) {
+ 			f2fs_put_page(page, 1);
+ 			goto repeat;
+@@ -399,6 +388,16 @@ int f2fs_readpage(struct f2fs_sb_info *sbi, struct page *page,
+ 
+ 	submit_bio(type, bio);
+ 	up_read(&sbi->bio_sem);
++
++	if (type == READ_SYNC) {
++		wait_on_page_locked(page);
++		lock_page(page);
++		if (!PageUptodate(page)) {
++			f2fs_put_page(page, 1);
++			return -EIO;
++		}
++	}
++
+ 	return 0;
+ }
+ 
+@@ -679,11 +678,7 @@ repeat:
+ 		err = f2fs_readpage(sbi, page, dn.data_blkaddr, READ_SYNC);
+ 		if (err)
+ 			return err;
+-		lock_page(page);
+-		if (!PageUptodate(page)) {
+-			f2fs_put_page(page, 1);
+-			return -EIO;
+-		}
++
+ 		if (page->mapping != mapping) {
+ 			f2fs_put_page(page, 1);
+ 			goto repeat;
+diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
+index f5172e2..f061554 100644
+--- a/fs/f2fs/node.c
++++ b/fs/f2fs/node.c
+@@ -1534,7 +1534,6 @@ int restore_node_summary(struct f2fs_sb_info *sbi,
+ 		if (f2fs_readpage(sbi, page, addr, READ_SYNC))
+ 			goto out;
+ 
+-		lock_page(page);
+ 		rn = F2FS_NODE(page);
+ 		sum_entry->nid = rn->footer.nid;
+ 		sum_entry->version = 0;
+diff --git a/fs/f2fs/recovery.c b/fs/f2fs/recovery.c
+index 639eb34..ec68183 100644
+--- a/fs/f2fs/recovery.c
++++ b/fs/f2fs/recovery.c
+@@ -140,8 +140,6 @@ static int find_fsync_dnodes(struct f2fs_sb_info *sbi, struct list_head *head)
+ 		if (err)
+ 			goto out;
+ 
+-		lock_page(page);
+-
+ 		if (cp_ver != cpver_of_node(page))
+ 			break;
+ 
+diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
+index 9b74ae2..bcd19db 100644
+--- a/fs/f2fs/segment.c
++++ b/fs/f2fs/segment.c
+@@ -639,7 +639,7 @@ static void do_submit_bio(struct f2fs_sb_info *sbi,
+ 
+ 		trace_f2fs_do_submit_bio(sbi->sb, btype, sync, sbi->bio[btype]);
+ 
+-		if (type == META_FLUSH) {
++		if ((type == META_FLUSH) || (rw & WRITE_SYNC)) {
+ 			DECLARE_COMPLETION_ONSTACK(wait);
+ 			p->is_sync = true;
+ 			p->wait = &wait;
 -- 
-Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
-Jef		|		http://moinejf.free.fr/
+1.7.7
+
