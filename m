@@ -1,55 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758065Ab3G3WPN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 18:15:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35365 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757964Ab3G3WPK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 18:15:10 -0400
-Date: Tue, 30 Jul 2013 18:14:35 -0400
-From: Dave Jones <davej@redhat.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [Ksummit-2013-discuss] [ARM ATTEND] catching up on exploit
- mitigations
-Message-ID: <20130730221435.GA22240@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Kees Cook <keescook@chromium.org>,
-	"linux-arm-kernel@lists.infradead.org" <linux-arm-kernel@lists.infradead.org>,
-	ksummit-2013-discuss@lists.linuxfoundation.org,
-	LKML <linux-kernel@vger.kernel.org>
-References: <CAGXu5jKv9Vt+Hu0mFYaxggLLDZ46U3KR9MKegUoHH8StXCkBtQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGXu5jKv9Vt+Hu0mFYaxggLLDZ46U3KR9MKegUoHH8StXCkBtQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757964Ab3G3WR2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 18:17:28 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:51242 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756447Ab3G3WRZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Jul 2013 18:17:25 -0400
+X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.5+dev
+To: Andreas Dilger <andreas.dilger@intel.com>, Peng Tao <tao.peng@emc.com>
+Cc: linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: next-20130730 - Seen in drivers/staging/lustre/lnet/Kconfig
+From: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1375222608_7183P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Tue, 30 Jul 2013 18:16:48 -0400
+Message-ID: <11551.1375222608@turing-police.cc.vt.edu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 30, 2013 at 12:05:40PM -0700, Kees Cook wrote:
- 
- > - fuzzing (is anyone running trinity or similar on the ARM tree?)
- 
-Someone was kind enough to send me an arm chromebook, so I tried this just
-last week (albeit, on the 3.4 kernel it shipped with). The results make
-me think the answer is a resounding 'no'.
+--==_Exmh_1375222608_7183P
+Content-Type: text/plain; charset=us-ascii
 
-I don't have time to build more recent kernels on it, but I wouldn't
-be surprised to find that things aren't much better (If they are, someone
-is seriously sucking at backporting stuff to stable).
+What's wrong with this picture?
 
-There's no ARM64 support yet in trinity, though it'd be easy to add for
-someone with hardware. Again, wouldn't be surprised at all to learn there
-are bugs there (It's been true of every new arch ported to so far).
+config LNET_MAX_PAYLOAD
+        int "Lustre lnet max transfer payload (default 2MB)"
+        depends on LUSTRE_FS
+        default "1048576"
 
-On the subject of trinity, I've been hesitant about proposing a slot
-at k-s this year, though if there's interest I'm always happy to talk
-about it, and get feedback for new places it could go..
 
-	Dave
+--==_Exmh_1375222608_7183P
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.13 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iQIVAwUBUfg7UAdmEQWDXROgAQLxNw/+JkOwYhd20hxNH5KXHwXFsdKIpoOtqWzW
+cQzyoUwFuuKaANPxSzJAqMdl70wxuSYyUSf0DwwIIFhJQSoP7qQZ0RDVrhQj+CbD
+SwYkKVzJnyrCkAz6z1KMbWVws2uzHI89Y3xw9l1amacXFi3Ztal6mXJYOzJzgQCp
+M+9PBs8AJPq6EzEIwBWDAbXeBtwQn7l5pE2MbxeFLwVaBH3pbgwzoWb5sgQ1Olec
+M9+eWJAmuw48qIscAJ81iat/cT4gS1wqXFj2QZPB2fDqTNYTdE3tZpn4WOMrh+Zk
+acHu1R8BSUpURq00NbMqgQ5/GNYhtZcyod1rC8Y1ML2XQQfLqIOg+wwiNzd5p4v+
+i+kETbAHib/jZ3Wnudg/ij13x9YgAqWRhWKLYmJTe3jwYK5OJ7CTUoVyh69U9UXa
+8P9GmN8ul/98zpUAS0VXwgJTmcxF1HffM/geryl/nPdAr57laRoYIMRYynDt/Kk7
+PmH5OQ+dBmuhb671XZDKuhuHvQkfXNLg38vbnB7bBAi0gck9UUTNaxN1fG3aH7yC
+DI+0IVWFL2UEcCJLREbMVL5ALUdIvPfaHIT2w79kRdbssPEz9+6xdorRxekjLzEx
+vLF6PWQ8nHGVU9UgoJvv4snXzUjyFcPbAQb0m134R5aov5zhla6K1yEJX73JQHZM
+3aXvcjbYlVI=
+=86s6
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1375222608_7183P--
