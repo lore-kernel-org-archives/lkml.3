@@ -1,57 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756397Ab3G3BNM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 21:13:12 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:41552 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751212Ab3G3BNK (ORCPT
+	id S1755544Ab3G3BOs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 21:14:48 -0400
+Received: from mx1.corp.phx1.mozilla.com ([63.245.216.69]:39869 "EHLO
+	smtp.mozilla.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751212Ab3G3BOr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 21:13:10 -0400
-Message-ID: <51F7127B.1070107@huawei.com>
-Date: Tue, 30 Jul 2013 09:10:19 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Glauber Costa <glommer@parallels.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        <linux-mm@kvack.org>
-Subject: Re: [PATCH v3 1/8] cgroup: convert cgroup_ida to cgroup_idr
-References: <51F614B2.6010503@huawei.com> <51F614C4.7060602@huawei.com> <20130729182835.GD26076@mtj.dyndns.org>
-In-Reply-To: <20130729182835.GD26076@mtj.dyndns.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+	Mon, 29 Jul 2013 21:14:47 -0400
+From: Jed Davis <jld@mozilla.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Cc: Jed Davis <jld@mozilla.com>
+Subject: [PATCH 1/2] perf: Fix handling of arch_perf_out_copy_user return value.
+Date: Mon, 29 Jul 2013 18:12:40 -0700
+Message-Id: <1375146761-4339-1-git-send-email-jld@mozilla.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/7/30 2:28, Tejun Heo wrote:
-> Hello,
-> 
-> On Mon, Jul 29, 2013 at 03:07:48PM +0800, Li Zefan wrote:
->> @@ -4590,6 +4599,9 @@ static void cgroup_offline_fn(struct work_struct *work)
->>  	/* delete this cgroup from parent->children */
->>  	list_del_rcu(&cgrp->sibling);
->>  
->> +	if (cgrp->id)
->> +		idr_remove(&cgrp->root->cgroup_idr, cgrp->id);
->> +
-> 
-> Yeap, if we're gonna allow lookups, removal should happen here but can
-> we please add short comment explaining why that is?
+All architectures except x86 use __copy_from_user_inatomic to provide
+arch_perf_out_copy_user; like the other copy_from routines, it returns
+the number of bytes not copied.  perf was expecting the number of bytes
+that had been copied.  This change corrects that, and thereby allows
+PERF_SAMPLE_STACK_USER to be enabled on non-x86 architectures.
 
-sure
+x86 uses copy_from_user_nmi, which deviates from the other copy_from
+routines by returning the number of bytes copied.  (This cancels out
+the effect of perf being backwards; apparently this code has only ever
+been tested on x86.)  This change therefore adds a second wrapper to
+re-reverse it for perf; the next patch in this series will clean it up.
 
-> Also, do we want to clear cgrp->id?
-> 
+Signed-off-by: Jed Davis <jld@mozilla.com>
+---
+ arch/x86/include/asm/perf_event.h |  9 ++++++++-
+ kernel/events/internal.h          | 11 ++++++++++-
+ 2 files changed, 18 insertions(+), 2 deletions(-)
 
-Set cgrp->id to 0? No, 0 is a valid id. The if is here because at first
-I called idr_alloc() very late in cgroup_create(), so cgroup_offline_fn()
-can be called while cgrp->id hasn't been initialized. Now I can remove
-this check.
+diff --git a/arch/x86/include/asm/perf_event.h b/arch/x86/include/asm/perf_event.h
+index 8249df4..ddae5bd 100644
+--- a/arch/x86/include/asm/perf_event.h
++++ b/arch/x86/include/asm/perf_event.h
+@@ -274,6 +274,13 @@ static inline void perf_check_microcode(void) { }
+  static inline void amd_pmu_disable_virt(void) { }
+ #endif
+ 
+-#define arch_perf_out_copy_user copy_from_user_nmi
++static inline unsigned long copy_from_user_nmi_for_perf(void *to,
++							const void __user *from,
++							unsigned long n)
++{
++	return n - copy_from_user_nmi(to, from, n);
++}
++
++#define arch_perf_out_copy_user copy_from_user_nmi_for_perf
+ 
+ #endif /* _ASM_X86_PERF_EVENT_H */
+diff --git a/kernel/events/internal.h b/kernel/events/internal.h
+index ca65997..e61b22c 100644
+--- a/kernel/events/internal.h
++++ b/kernel/events/internal.h
+@@ -81,6 +81,7 @@ static inline unsigned long perf_data_size(struct ring_buffer *rb)
+ 	return rb->nr_pages << (PAGE_SHIFT + page_order(rb));
+ }
+ 
++/* The memcpy_func must return the number of bytes successfully copied. */
+ #define DEFINE_OUTPUT_COPY(func_name, memcpy_func)			\
+ static inline unsigned int						\
+ func_name(struct perf_output_handle *handle,				\
+@@ -122,11 +123,19 @@ DEFINE_OUTPUT_COPY(__output_copy, memcpy_common)
+ 
+ DEFINE_OUTPUT_COPY(__output_skip, MEMCPY_SKIP)
+ 
++/* arch_perf_out_copy_user must return the number of bytes not copied. */
+ #ifndef arch_perf_out_copy_user
+ #define arch_perf_out_copy_user __copy_from_user_inatomic
+ #endif
+ 
+-DEFINE_OUTPUT_COPY(__output_copy_user, arch_perf_out_copy_user)
++static inline unsigned long perf_memcpy_from_user(void *to,
++						  const void __user *from,
++						  unsigned long n)
++{
++	return n - arch_perf_out_copy_user(to, from, n);
++}
++
++DEFINE_OUTPUT_COPY(__output_copy_user, perf_memcpy_from_user)
+ 
+ /* Callchain handling */
+ extern struct perf_callchain_entry *
+-- 
+1.8.3.2
 
