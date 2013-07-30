@@ -1,62 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753546Ab3G3Mkt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 08:40:49 -0400
-Received: from mail-qc0-f172.google.com ([209.85.216.172]:63532 "EHLO
-	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751228Ab3G3Mkj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 08:40:39 -0400
-From: Tejun Heo <tj@kernel.org>
-To: linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com
-Cc: shli@kernel.org, Tejun Heo <tj@kernel.org>,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>,
-        linux1394-devel@lists.sourceforge.net
-Subject: [PATCH 4/9] firewire: WQ_NON_REENTRANT is meaningless and going away
-Date: Tue, 30 Jul 2013 08:40:23 -0400
-Message-Id: <1375188028-11910-5-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1375188028-11910-1-git-send-email-tj@kernel.org>
-References: <1375188028-11910-1-git-send-email-tj@kernel.org>
+	id S1753731Ab3G3Mkw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 08:40:52 -0400
+Received: from void.printf.net ([89.145.121.20]:50807 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752601Ab3G3Mki (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Jul 2013 08:40:38 -0400
+From: Chris Ball <cjb@laptop.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, Seungwon Jeon <tgih.jun@samsung.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 0/5] Optional regulator support
+References: <20130730114502.GQ9858@sirena.org.uk>
+Date: Tue, 30 Jul 2013 13:40:28 +0100
+In-Reply-To: <20130730114502.GQ9858@sirena.org.uk> (Mark Brown's message of
+	"Tue, 30 Jul 2013 12:45:02 +0100")
+Message-ID: <864nbcte4j.fsf@void.printf.net>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi,
 
-Please route this through the subsystem tree.  As written in the
-description, this shouldn't make any functional difference and just
-prepares for the removal of WQ_NON_REENTRANT which is already noop.
+On Tue, Jul 30 2013, Mark Brown wrote:
+> This patch series adds a variant of regulator_get() which allows
+> regulator consumers to tell the core that the supply they are requesting
+> may genuinely be absent in the system.  The goal is to help address some
+> of the problems with handling errors in regulator_get() in drivers that
+> are newly converted to the regulator API by allowing the core to provide
+> stub regulators for supplies that aren't hooked up without disrupting
+> the operation of drivers like MMC drivers which may genuinely not have
+> some of their supplies hooked up.
+>
+> Currently the code simply introduces a new API call with exactly the
+> same implementation as regulator_get() so there should be zero impact
+> from the series other than a slightly larger kernel.
 
-Thanks.
+Looks good:
 
------- 8< -------
-dbf2576e37 ("workqueue: make all workqueues non-reentrant") made
-WQ_NON_REENTRANT no-op and the flag is going away.  Remove its usages.
+Acked-by: Chris Ball <cjb@laptop.org>
 
-This patch doesn't introduce any behavior changes.
+> Right now all the MMC users are converted over as-is, though it does
+> look like drivers such as sdhci really ought to be insisting on having a
+> regulator for VMMC in the same way that the MMC core helper does (and
+> indeed in that case it looks like it ought to be converted over to the
+> core code).
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Cc: linux1394-devel@lists.sourceforge.net
----
- drivers/firewire/core-transaction.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+I didn't follow this part -- I don't think the MMC core insists on a
+VMMC regulator, and I don't think sdhci should either, because e.g.
+an x86 laptop isn't going to have one.  What am I missing?
 
-diff --git a/drivers/firewire/core-transaction.c b/drivers/firewire/core-transaction.c
-index 28a94c7..e5af0e3 100644
---- a/drivers/firewire/core-transaction.c
-+++ b/drivers/firewire/core-transaction.c
-@@ -1262,8 +1262,7 @@ static int __init fw_core_init(void)
- {
- 	int ret;
- 
--	fw_workqueue = alloc_workqueue("firewire",
--				       WQ_NON_REENTRANT | WQ_MEM_RECLAIM, 0);
-+	fw_workqueue = alloc_workqueue("firewire", WQ_MEM_RECLAIM, 0);
- 	if (!fw_workqueue)
- 		return -ENOMEM;
- 
+Thanks,
+
+- Chris.
 -- 
-1.8.3.1
-
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
