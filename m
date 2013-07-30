@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757543Ab3G3UQ6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 16:16:58 -0400
-Received: from www.linutronix.de ([62.245.132.108]:58492 "EHLO
+	id S1757483Ab3G3UQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 16:16:57 -0400
+Received: from www.linutronix.de ([62.245.132.108]:58498 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756821Ab3G3UQv (ORCPT
+	with ESMTP id S1757235Ab3G3UQw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 16:16:51 -0400
+	Tue, 30 Jul 2013 16:16:52 -0400
 From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 To: linux-usb@vger.kernel.org
 Cc: balbi@ti.com, linux-kernel@vger.kernel.org, george.cherian@ti.com,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [PATCH 1/5] usb: phy: rename nop_usb_xceiv => usb_phy_gen_xceiv
-Date: Tue, 30 Jul 2013 22:16:37 +0200
-Message-Id: <1375215401-19729-2-git-send-email-bigeasy@linutronix.de>
+Subject: [PATCH 3/5] usb: phy: Add AM335x PHY driver
+Date: Tue, 30 Jul 2013 22:16:39 +0200
+Message-Id: <1375215401-19729-4-git-send-email-bigeasy@linutronix.de>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1375215401-19729-1-git-send-email-bigeasy@linutronix.de>
 References: <1375215401-19729-1-git-send-email-bigeasy@linutronix.de>
@@ -24,329 +24,237 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The "nop" driver isn't a do-nothing-stub but supports a couple functions
-like clock on/off or is able to use a voltage regulator. This patch
-simply renames the driver to "generic" since it is easy possible to
-extend it by a simple function istead of writing a complete driver.
+This driver is a redo of my earlier attempt. It uses parts of the
+generic PHY driver and uses the new control driver for the register
+the phy needs to power on/off the phy. It also enables easy access for
+the wakeup register which is not yet implemented.
+The difference between the omap attempt is:
+- no static holding variable
+- one global visible function which exports a struct with callbacks to
+  access the "control" registers.
 
 Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 ---
- arch/arm/mach-omap2/board-omap3beagle.c  |   4 +-
- arch/arm/mach-omap2/board-omap3evm.c     |   4 +-
- arch/arm/mach-omap2/board-omap3pandora.c |   2 +-
- arch/arm/mach-omap2/usb-host.c           |  10 +-
- drivers/usb/dwc3/dwc3-exynos.c           |   8 +-
- drivers/usb/dwc3/dwc3-pci.c              |   8 +-
- drivers/usb/musb/am35x.c                 |   2 +-
- drivers/usb/musb/blackfin.c              |   2 +-
- drivers/usb/musb/da8xx.c                 |   2 +-
- drivers/usb/musb/davinci.c               |   2 +-
- drivers/usb/musb/musb_dsps.c             |   2 +-
- drivers/usb/musb/tusb6010.c              |   2 +-
- drivers/usb/phy/Makefile                 |   2 +-
- drivers/usb/phy/phy-generic.c            | 292 +++++++++++++++++++++++++++++++
- drivers/usb/phy/phy-nop.c                | 292 -------------------------------
- include/linux/usb/nop-usb-xceiv.h        |  29 ---
- include/linux/usb/usb_phy_gen_xceiv.h    |  29 +++
- 17 files changed, 346 insertions(+), 346 deletions(-)
- create mode 100644 drivers/usb/phy/phy-generic.c
- delete mode 100644 drivers/usb/phy/phy-nop.c
- delete mode 100644 include/linux/usb/nop-usb-xceiv.h
- create mode 100644 include/linux/usb/usb_phy_gen_xceiv.h
+ drivers/usb/phy/Kconfig              |  12 ++++
+ drivers/usb/phy/Makefile             |   2 +
+ drivers/usb/phy/am35x-phy-control.h  |  21 ++++++
+ drivers/usb/phy/phy-am335x-control.c | 135 +++++++++++++++++++++++++++++++++++
+ drivers/usb/phy/phy-am335x.c         |  99 +++++++++++++++++++++++++
+ 5 files changed, 269 insertions(+)
+ create mode 100644 drivers/usb/phy/am35x-phy-control.h
+ create mode 100644 drivers/usb/phy/phy-am335x-control.c
+ create mode 100644 drivers/usb/phy/phy-am335x.c
 
-diff --git a/arch/arm/mach-omap2/board-omap3beagle.c b/arch/arm/mach-omap2/board-omap3beagle.c
-index 04c1165..1c6ae5f 100644
---- a/arch/arm/mach-omap2/board-omap3beagle.c
-+++ b/arch/arm/mach-omap2/board-omap3beagle.c
-@@ -33,7 +33,7 @@
- #include <linux/mtd/nand.h>
- #include <linux/mmc/host.h>
- #include <linux/usb/phy.h>
--#include <linux/usb/nop-usb-xceiv.h>
-+#include <linux/usb/usb_phy_gen_xceiv.h>
+diff --git a/drivers/usb/phy/Kconfig b/drivers/usb/phy/Kconfig
+index f5ea339..f41c3e1 100644
+--- a/drivers/usb/phy/Kconfig
++++ b/drivers/usb/phy/Kconfig
+@@ -86,6 +86,18 @@ config OMAP_USB3
+ 	  This driver interacts with the "OMAP Control USB Driver" to power
+ 	  on/off the PHY.
  
- #include <linux/regulator/machine.h>
- #include <linux/i2c/twl.h>
-@@ -279,7 +279,7 @@ static struct regulator_consumer_supply beagle_vsim_supply[] = {
- static struct gpio_led gpio_leds[];
- 
- /* PHY's VCC regulator might be added later, so flag that we need it */
--static struct nop_usb_xceiv_platform_data hsusb2_phy_data = {
-+static struct usb_phy_gen_xceiv_platform_data hsusb2_phy_data = {
- 	.needs_vcc = true,
- };
- 
-diff --git a/arch/arm/mach-omap2/board-omap3evm.c b/arch/arm/mach-omap2/board-omap3evm.c
-index 8c02626..52bdddd 100644
---- a/arch/arm/mach-omap2/board-omap3evm.c
-+++ b/arch/arm/mach-omap2/board-omap3evm.c
-@@ -33,7 +33,7 @@
- #include <linux/i2c/twl.h>
- #include <linux/usb/otg.h>
- #include <linux/usb/musb.h>
--#include <linux/usb/nop-usb-xceiv.h>
-+#include <linux/usb/usb_phy_gen_xceiv.h>
- #include <linux/smsc911x.h>
- 
- #include <linux/wl12xx.h>
-@@ -468,7 +468,7 @@ struct wl12xx_platform_data omap3evm_wlan_data __initdata = {
- static struct regulator_consumer_supply omap3evm_vaux2_supplies[] = {
- 	REGULATOR_SUPPLY("VDD_CSIPHY1", "omap3isp"),	/* OMAP ISP */
- 	REGULATOR_SUPPLY("VDD_CSIPHY2", "omap3isp"),	/* OMAP ISP */
--	REGULATOR_SUPPLY("vcc", "nop_usb_xceiv.2"),	/* hsusb port 2 */
-+	REGULATOR_SUPPLY("vcc", "usb_phy_gen_xceiv.2"),	/* hsusb port 2 */
- 	REGULATOR_SUPPLY("vaux2", NULL),
- };
- 
-diff --git a/arch/arm/mach-omap2/board-omap3pandora.c b/arch/arm/mach-omap2/board-omap3pandora.c
-index b1547a0..d2b455e 100644
---- a/arch/arm/mach-omap2/board-omap3pandora.c
-+++ b/arch/arm/mach-omap2/board-omap3pandora.c
-@@ -352,7 +352,7 @@ static struct regulator_consumer_supply pandora_vcc_lcd_supply[] = {
- };
- 
- static struct regulator_consumer_supply pandora_usb_phy_supply[] = {
--	REGULATOR_SUPPLY("vcc", "nop_usb_xceiv.2"),	/* hsusb port 2 */
-+	REGULATOR_SUPPLY("vcc", "usb_phy_gen_xceiv.2"),	/* hsusb port 2 */
- };
- 
- /* ads7846 on SPI and 2 nub controllers on I2C */
-diff --git a/arch/arm/mach-omap2/usb-host.c b/arch/arm/mach-omap2/usb-host.c
-index 2eb19d4..e83a6a4 100644
---- a/arch/arm/mach-omap2/usb-host.c
-+++ b/arch/arm/mach-omap2/usb-host.c
-@@ -28,7 +28,7 @@
- #include <linux/io.h>
- #include <linux/gpio.h>
- #include <linux/usb/phy.h>
--#include <linux/usb/nop-usb-xceiv.h>
-+#include <linux/usb/usb_phy_gen_xceiv.h>
- 
- #include "soc.h"
- #include "omap_device.h"
-@@ -349,7 +349,7 @@ static struct fixed_voltage_config hsusb_reg_config = {
- 	/* .init_data filled later */
- };
- 
--static const char *nop_name = "nop_usb_xceiv"; /* NOP PHY driver */
-+static const char *nop_name = "usb_phy_gen_xceiv"; /* NOP PHY driver */
- static const char *reg_name = "reg-fixed-voltage"; /* Regulator driver */
- 
- /**
-@@ -460,9 +460,9 @@ int usbhs_init_phys(struct usbhs_phy_data *phy, int num_phys)
- 		pdevinfo.name = nop_name;
- 		pdevinfo.id = phy->port;
- 		pdevinfo.data = phy->platform_data;
--		pdevinfo.size_data = sizeof(struct nop_usb_xceiv_platform_data);
--
--		scnprintf(phy_id, MAX_STR, "nop_usb_xceiv.%d",
-+		pdevinfo.size_data =
-+			sizeof(struct usb_phy_gen_xceiv_platform_data);
-+		scnprintf(phy_id, MAX_STR, "usb_phy_gen_xceiv.%d",
- 					phy->port);
- 		pdev = platform_device_register_full(&pdevinfo);
- 		if (IS_ERR(pdev)) {
-diff --git a/drivers/usb/dwc3/dwc3-exynos.c b/drivers/usb/dwc3/dwc3-exynos.c
-index 9a8a5e1..2f2e88a 100644
---- a/drivers/usb/dwc3/dwc3-exynos.c
-+++ b/drivers/usb/dwc3/dwc3-exynos.c
-@@ -24,7 +24,7 @@
- #include <linux/dma-mapping.h>
- #include <linux/clk.h>
- #include <linux/usb/otg.h>
--#include <linux/usb/nop-usb-xceiv.h>
-+#include <linux/usb/usb_phy_gen_xceiv.h>
- #include <linux/of.h>
- #include <linux/of_platform.h>
- 
-@@ -38,13 +38,13 @@ struct dwc3_exynos {
- 
- static int dwc3_exynos_register_phys(struct dwc3_exynos *exynos)
- {
--	struct nop_usb_xceiv_platform_data pdata;
-+	struct usb_phy_gen_xceiv_platform_data pdata;
- 	struct platform_device	*pdev;
- 	int			ret;
- 
- 	memset(&pdata, 0x00, sizeof(pdata));
- 
--	pdev = platform_device_alloc("nop_usb_xceiv", PLATFORM_DEVID_AUTO);
-+	pdev = platform_device_alloc("usb_phy_gen_xceiv", PLATFORM_DEVID_AUTO);
- 	if (!pdev)
- 		return -ENOMEM;
- 
-@@ -55,7 +55,7 @@ static int dwc3_exynos_register_phys(struct dwc3_exynos *exynos)
- 	if (ret)
- 		goto err1;
- 
--	pdev = platform_device_alloc("nop_usb_xceiv", PLATFORM_DEVID_AUTO);
-+	pdev = platform_device_alloc("usb_phy_gen_xceiv", PLATFORM_DEVID_AUTO);
- 	if (!pdev) {
- 		ret = -ENOMEM;
- 		goto err1;
-diff --git a/drivers/usb/dwc3/dwc3-pci.c b/drivers/usb/dwc3/dwc3-pci.c
-index 5d746e5..6f5ac34 100644
---- a/drivers/usb/dwc3/dwc3-pci.c
-+++ b/drivers/usb/dwc3/dwc3-pci.c
-@@ -23,7 +23,7 @@
- #include <linux/platform_device.h>
- 
- #include <linux/usb/otg.h>
--#include <linux/usb/nop-usb-xceiv.h>
-+#include <linux/usb/usb_phy_gen_xceiv.h>
- 
- /* FIXME define these in <linux/pci_ids.h> */
- #define PCI_VENDOR_ID_SYNOPSYS		0x16c3
-@@ -38,13 +38,13 @@ struct dwc3_pci {
- 
- static int dwc3_pci_register_phys(struct dwc3_pci *glue)
- {
--	struct nop_usb_xceiv_platform_data pdata;
-+	struct usb_phy_gen_xceiv_platform_data pdata;
- 	struct platform_device	*pdev;
- 	int			ret;
- 
- 	memset(&pdata, 0x00, sizeof(pdata));
- 
--	pdev = platform_device_alloc("nop_usb_xceiv", 0);
-+	pdev = platform_device_alloc("usb_phy_gen_xceiv", 0);
- 	if (!pdev)
- 		return -ENOMEM;
- 
-@@ -55,7 +55,7 @@ static int dwc3_pci_register_phys(struct dwc3_pci *glue)
- 	if (ret)
- 		goto err1;
- 
--	pdev = platform_device_alloc("nop_usb_xceiv", 1);
-+	pdev = platform_device_alloc("usb_phy_gen_xceiv", 1);
- 	if (!pdev) {
- 		ret = -ENOMEM;
- 		goto err1;
-diff --git a/drivers/usb/musb/am35x.c b/drivers/usb/musb/am35x.c
-index 2231850..5733a20 100644
---- a/drivers/usb/musb/am35x.c
-+++ b/drivers/usb/musb/am35x.c
-@@ -33,7 +33,7 @@
- #include <linux/io.h>
- #include <linux/platform_device.h>
- #include <linux/dma-mapping.h>
--#include <linux/usb/nop-usb-xceiv.h>
-+#include <linux/usb/usb_phy_gen_xceiv.h>
- #include <linux/platform_data/usb-omap.h>
- 
- #include "musb_core.h"
-diff --git a/drivers/usb/musb/blackfin.c b/drivers/usb/musb/blackfin.c
-index 6ba8439..195e966 100644
---- a/drivers/usb/musb/blackfin.c
-+++ b/drivers/usb/musb/blackfin.c
-@@ -19,7 +19,7 @@
- #include <linux/platform_device.h>
- #include <linux/dma-mapping.h>
- #include <linux/prefetch.h>
--#include <linux/usb/nop-usb-xceiv.h>
-+#include <linux/usb/usb_phy_gen_xceiv.h>
- 
- #include <asm/cacheflush.h>
- 
-diff --git a/drivers/usb/musb/da8xx.c b/drivers/usb/musb/da8xx.c
-index 0da6f64..ccc6b63 100644
---- a/drivers/usb/musb/da8xx.c
-+++ b/drivers/usb/musb/da8xx.c
-@@ -33,7 +33,7 @@
- #include <linux/io.h>
- #include <linux/platform_device.h>
- #include <linux/dma-mapping.h>
--#include <linux/usb/nop-usb-xceiv.h>
-+#include <linux/usb/usb_phy_gen_xceiv.h>
- 
- #include <mach/da8xx.h>
- #include <linux/platform_data/usb-davinci.h>
-diff --git a/drivers/usb/musb/davinci.c b/drivers/usb/musb/davinci.c
-index f8aeaf2..91f300e 100644
---- a/drivers/usb/musb/davinci.c
-+++ b/drivers/usb/musb/davinci.c
-@@ -33,7 +33,7 @@
- #include <linux/gpio.h>
- #include <linux/platform_device.h>
- #include <linux/dma-mapping.h>
--#include <linux/usb/nop-usb-xceiv.h>
-+#include <linux/usb/usb_phy_gen_xceiv.h>
- 
- #include <mach/cputype.h>
- #include <mach/hardware.h>
-diff --git a/drivers/usb/musb/musb_dsps.c b/drivers/usb/musb/musb_dsps.c
-index 23f511f..05c2a02 100644
---- a/drivers/usb/musb/musb_dsps.c
-+++ b/drivers/usb/musb/musb_dsps.c
-@@ -36,7 +36,7 @@
- #include <linux/dma-mapping.h>
- #include <linux/pm_runtime.h>
- #include <linux/module.h>
--#include <linux/usb/nop-usb-xceiv.h>
-+#include <linux/usb/usb_phy_gen_xceiv.h>
- #include <linux/platform_data/usb-omap.h>
- #include <linux/sizes.h>
- 
-diff --git a/drivers/usb/musb/tusb6010.c b/drivers/usb/musb/tusb6010.c
-index 6f8a9ca..c642f09 100644
---- a/drivers/usb/musb/tusb6010.c
-+++ b/drivers/usb/musb/tusb6010.c
-@@ -25,7 +25,7 @@
- #include <linux/io.h>
- #include <linux/platform_device.h>
- #include <linux/dma-mapping.h>
--#include <linux/usb/nop-usb-xceiv.h>
-+#include <linux/usb/usb_phy_gen_xceiv.h>
- 
- #include "musb_core.h"
- 
++config AM335X_CONTROL_USB
++	tristate
++
++config AM335X_PHY_USB
++	tristate "AM335x USB PHY Driver"
++	select USB_PHY
++	select AM335X_CONTROL_USB
++	select NOP_USB_XCEIV
++	help
++	  This driver provides PHY support for that phy which part for the
++	  AM335x SoC.
++
+ config SAMSUNG_USBPHY
+ 	tristate
+ 	help
 diff --git a/drivers/usb/phy/Makefile b/drivers/usb/phy/Makefile
-index 070eca3..24c5816 100644
+index 24c5816..dae321d 100644
 --- a/drivers/usb/phy/Makefile
 +++ b/drivers/usb/phy/Makefile
-@@ -14,7 +14,7 @@ phy-fsl-usb2-objs			:= phy-fsl-usb.o phy-fsm-usb.o
- obj-$(CONFIG_FSL_USB2_OTG)		+= phy-fsl-usb2.o
- obj-$(CONFIG_ISP1301_OMAP)		+= phy-isp1301-omap.o
+@@ -16,6 +16,8 @@ obj-$(CONFIG_ISP1301_OMAP)		+= phy-isp1301-omap.o
  obj-$(CONFIG_MV_U3D_PHY)		+= phy-mv-u3d-usb.o
--obj-$(CONFIG_NOP_USB_XCEIV)		+= phy-nop.o
-+obj-$(CONFIG_NOP_USB_XCEIV)		+= phy-generic.o
+ obj-$(CONFIG_NOP_USB_XCEIV)		+= phy-generic.o
  obj-$(CONFIG_OMAP_CONTROL_USB)		+= phy-omap-control.o
++obj-$(CONFIG_AM335X_CONTROL_USB)	+= phy-am335x-control.o
++obj-$(CONFIG_AM335X_PHY_USB)		+= phy-am335x.o
  obj-$(CONFIG_OMAP_USB2)			+= phy-omap-usb2.o
  obj-$(CONFIG_OMAP_USB3)			+= phy-omap-usb3.o
-diff --git a/drivers/usb/phy/phy-generic.c b/drivers/usb/phy/phy-generic.c
+ obj-$(CONFIG_SAMSUNG_USBPHY)		+= phy-samsung-usb.o
+diff --git a/drivers/usb/phy/am35x-phy-control.h b/drivers/usb/phy/am35x-phy-control.h
 new file mode 100644
-index 0000000..f379b7d
+index 0000000..b96594d
 --- /dev/null
-+++ b/drivers/usb/phy/phy-generic.c
-@@ -0,0 +1,292 @@
-+/*
-+ * drivers/usb/otg/nop-usb-xceiv.c
-+ *
-+ * NOP USB transceiver for all USB transceiver which are either built-in
-+ * into USB IP or which are mostly autonomous.
-+ *
-+ * Copyright (C) 2009 Texas Instruments Inc
-+ * Author: Ajay Kumar Gupta <ajay.gupta@ti.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-+ *
-+ * Current status:
-+ *	This provides a "nop" transceiver for PHYs which are
-+ *	autonomous such as isp1504, isp1707, etc.
-+ */
++++ b/drivers/usb/phy/am35x-phy-control.h
+@@ -0,0 +1,21 @@
++#ifndef _AM335x_PHY_CONTROL_H_
++#define _AM335x_PHY_CONTROL_H_
 +
++struct phy_control {
++	void (*phy_power)(struct phy_control *phy_ctrl, u32 id, bool on);
++	void (*phy_wkup)(struct phy_control *phy_ctrl, u32 id, bool on);
++};
++
++static inline void phy_ctrl_power(struct phy_control *phy_ctrl, u32 id, bool on)
++{
++	phy_ctrl->phy_power(phy_ctrl, id, on);
++}
++
++static inline void phy_ctrl_wkup(struct phy_control *phy_ctrl, u32 id, bool on)
++{
++	phy_ctrl->phy_wkup(phy_ctrl, id, on);
++}
++
++struct phy_control *am335x_get_phy_control(struct device *dev);
++
++#endif
+diff --git a/drivers/usb/phy/phy-am335x-control.c b/drivers/usb/phy/phy-am335x-control.c
+new file mode 100644
+index 0000000..64e5ab4
+--- /dev/null
++++ b/drivers/usb/phy/phy-am335x-control.c
+@@ -0,0 +1,135 @@
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/of.h>
++#include <linux/io.h>
++
++struct phy_control {
++	void (*phy_power)(struct phy_control *phy_ctrl, u32 id, bool on);
++	void (*phy_wkup)(struct phy_control *phy_ctrl, u32 id, bool on);
++};
++
++struct am335x_control_usb {
++	struct device *dev;
++	void __iomem *reset_reg;
++	spinlock_t lock;
++	struct phy_control phy_ctrl;
++};
++
++#define AM335X_USB0_CTRL		0x620
++#define AM335X_USB1_CTRL		0x628
++#define AM335x_USB_WKUP			0x648
++
++#define USBPHY_CM_PWRDN		(1 << 0)
++#define USBPHY_OTG_PWRDN	(1 << 1)
++#define USBPHY_OTGVDET_EN	(1 << 19)
++#define USBPHY_OTGSESSEND_EN	(1 << 20)
++
++static void am335x_phy_power(struct phy_control *phy_ctrl, u32 id, bool on)
++{
++	struct am335x_control_usb *usb_ctrl;
++	u32 val;
++	u32 reg;
++
++	usb_ctrl = container_of(phy_ctrl, struct am335x_control_usb, phy_ctrl);
++
++	switch (id) {
++	case 0:
++		reg = AM335X_USB0_CTRL;
++		break;
++	case 1:
++		reg = AM335X_USB1_CTRL;
++		break;
++	default:
++		__WARN();
++		 return;
++	}
++
++	val = readl(usb_ctrl->reset_reg + reg);
++	if (on) {
++		val &= ~(USBPHY_CM_PWRDN | USBPHY_OTG_PWRDN);
++		val |= USBPHY_OTGVDET_EN | USBPHY_OTGSESSEND_EN;
++	} else {
++		val |= USBPHY_CM_PWRDN | USBPHY_OTG_PWRDN;
++	}
++
++	writel(val, usb_ctrl->reset_reg + reg);
++}
++
++static const struct phy_control ctrl_am335x = {
++	.phy_power = am335x_phy_power,
++};
++
++static const struct of_device_id omap_control_usb_id_table[] = {
++	{ .compatible = "ti,am335x-ctrl-module", .data = &ctrl_am335x },
++	{}
++};
++MODULE_DEVICE_TABLE(of, omap_control_usb_id_table);
++
++static struct platform_driver am335x_control_driver;
++static int match(struct device *dev, void *data)
++{
++	struct device_node *node = (struct device_node *)data;
++	return dev->of_node == node &&
++		dev->driver == &am335x_control_driver.driver;
++}
++
++struct phy_control *am335x_get_phy_control(struct device *dev)
++{
++	struct device_node *node;
++	struct am335x_control_usb *ctrl_usb;
++
++	node = of_parse_phandle(dev->of_node, "ti,ctrl_mod", 0);
++	if (!node)
++		return NULL;
++
++	dev = bus_find_device(&platform_bus_type, NULL, node, match);
++	ctrl_usb = dev_get_drvdata(dev);
++	if (!ctrl_usb)
++		return NULL;
++	return &ctrl_usb->phy_ctrl;
++}
++EXPORT_SYMBOL_GPL(am335x_get_phy_control);
++
++static int am335x_control_usb_probe(struct platform_device *pdev)
++{
++	struct resource	*res;
++	struct am335x_control_usb *ctrl_usb;
++	const struct of_device_id *of_id;
++	const struct phy_control *phy_ctrl;
++
++	of_id = of_match_node(omap_control_usb_id_table, pdev->dev.of_node);
++	if (!of_id)
++		return -EINVAL;
++
++	phy_ctrl = of_id->data;
++
++	ctrl_usb = devm_kzalloc(&pdev->dev, sizeof(*ctrl_usb), GFP_KERNEL);
++	if (!ctrl_usb) {
++		dev_err(&pdev->dev, "unable to alloc memory for control usb\n");
++		return -ENOMEM;
++	}
++
++	ctrl_usb->dev = &pdev->dev;
++
++	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "control_dev");
++	ctrl_usb->reset_reg = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(ctrl_usb->reset_reg))
++		return PTR_ERR(ctrl_usb->reset_reg);
++	spin_lock_init(&ctrl_usb->lock);
++	ctrl_usb->phy_ctrl = *phy_ctrl;
++
++	dev_set_drvdata(ctrl_usb->dev, ctrl_usb);
++	return 0;
++}
++
++static struct platform_driver am335x_control_driver = {
++	.probe		= am335x_control_usb_probe,
++	.driver		= {
++		.name	= "am335x-control-usb",
++		.owner	= THIS_MODULE,
++		.of_match_table = of_match_ptr(omap_control_usb_id_table),
++	},
++};
++
++module_platform_driver(am335x_control_driver);
++MODULE_LICENSE("GPL v2");
+diff --git a/drivers/usb/phy/phy-am335x.c b/drivers/usb/phy/phy-am335x.c
+new file mode 100644
+index 0000000..c4d614d
+--- /dev/null
++++ b/drivers/usb/phy/phy-am335x.c
+@@ -0,0 +1,99 @@
 +#include <linux/module.h>
 +#include <linux/platform_device.h>
 +#include <linux/dma-mapping.h>
@@ -356,629 +264,96 @@ index 0000000..f379b7d
 +#include <linux/clk.h>
 +#include <linux/regulator/consumer.h>
 +#include <linux/of.h>
++#include <linux/of_address.h>
 +
-+struct usb_phy_gen_xceiv {
-+	struct usb_phy phy;
-+	struct device *dev;
-+	struct clk *clk;
-+	struct regulator *vcc;
-+	struct regulator *reset;
++#include "am35x-phy-control.h"
++#include "phy-generic.h"
++
++struct am335x_phy {
++	struct usb_phy_gen_xceiv usb_phy_gen;
++	struct phy_control *phy_ctrl;
++	int id;
 +};
 +
-+static struct platform_device *pd;
-+
-+void usb_nop_xceiv_register(void)
++static int am335x_init(struct usb_phy *phy)
 +{
-+	if (pd)
-+		return;
-+	pd = platform_device_register_simple("usb_phy_gen_xceiv", -1, NULL, 0);
-+	if (!pd) {
-+		pr_err("Unable to register generic usb transceiver\n");
-+		return;
-+	}
-+}
-+EXPORT_SYMBOL(usb_nop_xceiv_register);
++	struct am335x_phy *am_phy = dev_get_drvdata(phy->dev);
 +
-+void usb_nop_xceiv_unregister(void)
-+{
-+	platform_device_unregister(pd);
-+	pd = NULL;
-+}
-+EXPORT_SYMBOL(usb_nop_xceiv_unregister);
-+
-+static int nop_set_suspend(struct usb_phy *x, int suspend)
-+{
++	phy_ctrl_power(am_phy->phy_ctrl, am_phy->id, true);
 +	return 0;
 +}
 +
-+static int nop_init(struct usb_phy *phy)
++static void am335x_shutdown(struct usb_phy *phy)
 +{
-+	struct usb_phy_gen_xceiv *nop = dev_get_drvdata(phy->dev);
++	struct am335x_phy *am_phy = dev_get_drvdata(phy->dev);
 +
-+	if (!IS_ERR(nop->vcc)) {
-+		if (regulator_enable(nop->vcc))
-+			dev_err(phy->dev, "Failed to enable power\n");
-+	}
-+
-+	if (!IS_ERR(nop->clk))
-+		clk_enable(nop->clk);
-+
-+	if (!IS_ERR(nop->reset)) {
-+		/* De-assert RESET */
-+		if (regulator_enable(nop->reset))
-+			dev_err(phy->dev, "Failed to de-assert reset\n");
-+	}
-+
-+	return 0;
++	phy_ctrl_power(am_phy->phy_ctrl, am_phy->id, false);
 +}
 +
-+static void nop_shutdown(struct usb_phy *phy)
++static int am335x_phy_probe(struct platform_device *pdev)
 +{
-+	struct usb_phy_gen_xceiv *nop = dev_get_drvdata(phy->dev);
-+
-+	if (!IS_ERR(nop->reset)) {
-+		/* Assert RESET */
-+		if (regulator_disable(nop->reset))
-+			dev_err(phy->dev, "Failed to assert reset\n");
-+	}
-+
-+	if (!IS_ERR(nop->clk))
-+		clk_disable(nop->clk);
-+
-+	if (!IS_ERR(nop->vcc)) {
-+		if (regulator_disable(nop->vcc))
-+			dev_err(phy->dev, "Failed to disable power\n");
-+	}
-+}
-+
-+static int nop_set_peripheral(struct usb_otg *otg, struct usb_gadget *gadget)
-+{
-+	if (!otg)
-+		return -ENODEV;
-+
-+	if (!gadget) {
-+		otg->gadget = NULL;
-+		return -ENODEV;
-+	}
-+
-+	otg->gadget = gadget;
-+	otg->phy->state = OTG_STATE_B_IDLE;
-+	return 0;
-+}
-+
-+static int nop_set_host(struct usb_otg *otg, struct usb_bus *host)
-+{
-+	if (!otg)
-+		return -ENODEV;
-+
-+	if (!host) {
-+		otg->host = NULL;
-+		return -ENODEV;
-+	}
-+
-+	otg->host = host;
-+	return 0;
-+}
-+
-+static int usb_phy_gen_xceiv_probe(struct platform_device *pdev)
-+{
++	struct am335x_phy *am_phy;
 +	struct device *dev = &pdev->dev;
-+	struct usb_phy_gen_xceiv_platform_data *pdata = pdev->dev.platform_data;
-+	struct usb_phy_gen_xceiv	*nop;
-+	enum usb_phy_type	type = USB_PHY_TYPE_USB2;
-+	int err;
-+	u32 clk_rate = 0;
-+	bool needs_vcc = false;
-+	bool needs_reset = false;
++	int ret;
 +
-+	nop = devm_kzalloc(&pdev->dev, sizeof(*nop), GFP_KERNEL);
-+	if (!nop)
++	am_phy = devm_kzalloc(dev, sizeof(*am_phy), GFP_KERNEL);
++	if (!am_phy)
 +		return -ENOMEM;
 +
-+	nop->phy.otg = devm_kzalloc(&pdev->dev, sizeof(*nop->phy.otg),
-+							GFP_KERNEL);
-+	if (!nop->phy.otg)
-+		return -ENOMEM;
-+
-+	if (dev->of_node) {
-+		struct device_node *node = dev->of_node;
-+
-+		if (of_property_read_u32(node, "clock-frequency", &clk_rate))
-+			clk_rate = 0;
-+
-+		needs_vcc = of_property_read_bool(node, "vcc-supply");
-+		needs_reset = of_property_read_bool(node, "reset-supply");
-+
-+	} else if (pdata) {
-+		type = pdata->type;
-+		clk_rate = pdata->clk_rate;
-+		needs_vcc = pdata->needs_vcc;
-+		needs_reset = pdata->needs_reset;
++	am_phy->phy_ctrl = am335x_get_phy_control(dev);
++	if (!am_phy->phy_ctrl)
++		return -EPROBE_DEFER;
++	am_phy->id = of_alias_get_id(pdev->dev.of_node, "phy");
++	if (am_phy->id < 0) {
++		dev_err(&pdev->dev, "Missing PHY id: %d\n", am_phy->id);
++		return am_phy->id;
 +	}
 +
-+	nop->clk = devm_clk_get(&pdev->dev, "main_clk");
-+	if (IS_ERR(nop->clk)) {
-+		dev_dbg(&pdev->dev, "Can't get phy clock: %ld\n",
-+					PTR_ERR(nop->clk));
-+	}
++	ret = usb_phy_gen_create_phy(dev, &am_phy->usb_phy_gen,
++			USB_PHY_TYPE_USB2, 0, false, false);
++	if (ret)
++		return ret;
 +
-+	if (!IS_ERR(nop->clk) && clk_rate) {
-+		err = clk_set_rate(nop->clk, clk_rate);
-+		if (err) {
-+			dev_err(&pdev->dev, "Error setting clock rate\n");
-+			return err;
-+		}
-+	}
-+
-+	if (!IS_ERR(nop->clk)) {
-+		err = clk_prepare(nop->clk);
-+		if (err) {
-+			dev_err(&pdev->dev, "Error preparing clock\n");
-+			return err;
-+		}
-+	}
-+
-+	nop->vcc = devm_regulator_get(&pdev->dev, "vcc");
-+	if (IS_ERR(nop->vcc)) {
-+		dev_dbg(&pdev->dev, "Error getting vcc regulator: %ld\n",
-+					PTR_ERR(nop->vcc));
-+		if (needs_vcc)
-+			return -EPROBE_DEFER;
-+	}
-+
-+	nop->reset = devm_regulator_get(&pdev->dev, "reset");
-+	if (IS_ERR(nop->reset)) {
-+		dev_dbg(&pdev->dev, "Error getting reset regulator: %ld\n",
-+					PTR_ERR(nop->reset));
-+		if (needs_reset)
-+			return -EPROBE_DEFER;
-+	}
-+
-+	nop->dev		= &pdev->dev;
-+	nop->phy.dev		= nop->dev;
-+	nop->phy.label		= "nop-xceiv";
-+	nop->phy.set_suspend	= nop_set_suspend;
-+	nop->phy.init		= nop_init;
-+	nop->phy.shutdown	= nop_shutdown;
-+	nop->phy.state		= OTG_STATE_UNDEFINED;
-+	nop->phy.type		= type;
-+
-+	nop->phy.otg->phy		= &nop->phy;
-+	nop->phy.otg->set_host		= nop_set_host;
-+	nop->phy.otg->set_peripheral	= nop_set_peripheral;
-+
-+	err = usb_add_phy_dev(&nop->phy);
-+	if (err) {
-+		dev_err(&pdev->dev, "can't register transceiver, err: %d\n",
-+			err);
++	ret = usb_add_phy_dev(&am_phy->usb_phy_gen.phy);
++	if (ret)
 +		goto err_add;
-+	}
++	am_phy->usb_phy_gen.phy.init = am335x_init;
++	am_phy->usb_phy_gen.phy.shutdown = am335x_shutdown;
 +
-+	platform_set_drvdata(pdev, nop);
-+
-+	ATOMIC_INIT_NOTIFIER_HEAD(&nop->phy.notifier);
-+
++	platform_set_drvdata(pdev, am_phy);
 +	return 0;
 +
 +err_add:
-+	if (!IS_ERR(nop->clk))
-+		clk_unprepare(nop->clk);
-+	return err;
++	usb_phy_gen_cleanup_phy(&am_phy->usb_phy_gen);
++	return ret;
 +}
 +
-+static int usb_phy_gen_xceiv_remove(struct platform_device *pdev)
++static int am335x_phy_remove(struct platform_device *pdev)
 +{
-+	struct usb_phy_gen_xceiv *nop = platform_get_drvdata(pdev);
++	struct am335x_phy *am_phy = platform_get_drvdata(pdev);
 +
-+	if (!IS_ERR(nop->clk))
-+		clk_unprepare(nop->clk);
-+
-+	usb_remove_phy(&nop->phy);
-+
++	usb_remove_phy(&am_phy->usb_phy_gen.phy);
 +	return 0;
 +}
 +
-+static const struct of_device_id nop_xceiv_dt_ids[] = {
-+	{ .compatible = "usb-nop-xceiv" },
++static const struct of_device_id am335x_phy_ids[] = {
++	{ .compatible = "ti,am335x-usb-phy" },
 +	{ }
 +};
++MODULE_DEVICE_TABLE(of, am335x_phy_ids);
 +
-+MODULE_DEVICE_TABLE(of, nop_xceiv_dt_ids);
-+
-+static struct platform_driver usb_phy_gen_xceiv_driver = {
-+	.probe		= usb_phy_gen_xceiv_probe,
-+	.remove		= usb_phy_gen_xceiv_remove,
-+	.driver		= {
-+		.name	= "usb_phy_gen_xceiv",
-+		.owner	= THIS_MODULE,
-+		.of_match_table = nop_xceiv_dt_ids,
++static struct platform_driver am335x_phy_driver = {
++	.probe          = am335x_phy_probe,
++	.remove         = am335x_phy_remove,
++	.driver         = {
++		.name   = "am335x-phy-driver",
++		.owner  = THIS_MODULE,
++		.of_match_table = of_match_ptr(am335x_phy_ids),
 +	},
 +};
 +
-+static int __init usb_phy_gen_xceiv_init(void)
-+{
-+	return platform_driver_register(&usb_phy_gen_xceiv_driver);
-+}
-+subsys_initcall(usb_phy_gen_xceiv_init);
-+
-+static void __exit usb_phy_gen_xceiv_exit(void)
-+{
-+	platform_driver_unregister(&usb_phy_gen_xceiv_driver);
-+}
-+module_exit(usb_phy_gen_xceiv_exit);
-+
-+MODULE_ALIAS("platform:usb_phy_gen_xceiv");
-+MODULE_AUTHOR("Texas Instruments Inc");
-+MODULE_DESCRIPTION("NOP USB Transceiver driver");
-+MODULE_LICENSE("GPL");
-diff --git a/drivers/usb/phy/phy-nop.c b/drivers/usb/phy/phy-nop.c
-deleted file mode 100644
-index 55445e5d..0000000
---- a/drivers/usb/phy/phy-nop.c
-+++ /dev/null
-@@ -1,292 +0,0 @@
--/*
-- * drivers/usb/otg/nop-usb-xceiv.c
-- *
-- * NOP USB transceiver for all USB transceiver which are either built-in
-- * into USB IP or which are mostly autonomous.
-- *
-- * Copyright (C) 2009 Texas Instruments Inc
-- * Author: Ajay Kumar Gupta <ajay.gupta@ti.com>
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License as published by
-- * the Free Software Foundation; either version 2 of the License, or
-- * (at your option) any later version.
-- *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- *
-- * You should have received a copy of the GNU General Public License
-- * along with this program; if not, write to the Free Software
-- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-- *
-- * Current status:
-- *	This provides a "nop" transceiver for PHYs which are
-- *	autonomous such as isp1504, isp1707, etc.
-- */
--
--#include <linux/module.h>
--#include <linux/platform_device.h>
--#include <linux/dma-mapping.h>
--#include <linux/usb/otg.h>
--#include <linux/usb/nop-usb-xceiv.h>
--#include <linux/slab.h>
--#include <linux/clk.h>
--#include <linux/regulator/consumer.h>
--#include <linux/of.h>
--
--struct nop_usb_xceiv {
--	struct usb_phy phy;
--	struct device *dev;
--	struct clk *clk;
--	struct regulator *vcc;
--	struct regulator *reset;
--};
--
--static struct platform_device *pd;
--
--void usb_nop_xceiv_register(void)
--{
--	if (pd)
--		return;
--	pd = platform_device_register_simple("nop_usb_xceiv", -1, NULL, 0);
--	if (!pd) {
--		printk(KERN_ERR "Unable to register usb nop transceiver\n");
--		return;
--	}
--}
--EXPORT_SYMBOL(usb_nop_xceiv_register);
--
--void usb_nop_xceiv_unregister(void)
--{
--	platform_device_unregister(pd);
--	pd = NULL;
--}
--EXPORT_SYMBOL(usb_nop_xceiv_unregister);
--
--static int nop_set_suspend(struct usb_phy *x, int suspend)
--{
--	return 0;
--}
--
--static int nop_init(struct usb_phy *phy)
--{
--	struct nop_usb_xceiv *nop = dev_get_drvdata(phy->dev);
--
--	if (!IS_ERR(nop->vcc)) {
--		if (regulator_enable(nop->vcc))
--			dev_err(phy->dev, "Failed to enable power\n");
--	}
--
--	if (!IS_ERR(nop->clk))
--		clk_enable(nop->clk);
--
--	if (!IS_ERR(nop->reset)) {
--		/* De-assert RESET */
--		if (regulator_enable(nop->reset))
--			dev_err(phy->dev, "Failed to de-assert reset\n");
--	}
--
--	return 0;
--}
--
--static void nop_shutdown(struct usb_phy *phy)
--{
--	struct nop_usb_xceiv *nop = dev_get_drvdata(phy->dev);
--
--	if (!IS_ERR(nop->reset)) {
--		/* Assert RESET */
--		if (regulator_disable(nop->reset))
--			dev_err(phy->dev, "Failed to assert reset\n");
--	}
--
--	if (!IS_ERR(nop->clk))
--		clk_disable(nop->clk);
--
--	if (!IS_ERR(nop->vcc)) {
--		if (regulator_disable(nop->vcc))
--			dev_err(phy->dev, "Failed to disable power\n");
--	}
--}
--
--static int nop_set_peripheral(struct usb_otg *otg, struct usb_gadget *gadget)
--{
--	if (!otg)
--		return -ENODEV;
--
--	if (!gadget) {
--		otg->gadget = NULL;
--		return -ENODEV;
--	}
--
--	otg->gadget = gadget;
--	otg->phy->state = OTG_STATE_B_IDLE;
--	return 0;
--}
--
--static int nop_set_host(struct usb_otg *otg, struct usb_bus *host)
--{
--	if (!otg)
--		return -ENODEV;
--
--	if (!host) {
--		otg->host = NULL;
--		return -ENODEV;
--	}
--
--	otg->host = host;
--	return 0;
--}
--
--static int nop_usb_xceiv_probe(struct platform_device *pdev)
--{
--	struct device *dev = &pdev->dev;
--	struct nop_usb_xceiv_platform_data *pdata = pdev->dev.platform_data;
--	struct nop_usb_xceiv	*nop;
--	enum usb_phy_type	type = USB_PHY_TYPE_USB2;
--	int err;
--	u32 clk_rate = 0;
--	bool needs_vcc = false;
--	bool needs_reset = false;
--
--	nop = devm_kzalloc(&pdev->dev, sizeof(*nop), GFP_KERNEL);
--	if (!nop)
--		return -ENOMEM;
--
--	nop->phy.otg = devm_kzalloc(&pdev->dev, sizeof(*nop->phy.otg),
--							GFP_KERNEL);
--	if (!nop->phy.otg)
--		return -ENOMEM;
--
--	if (dev->of_node) {
--		struct device_node *node = dev->of_node;
--
--		if (of_property_read_u32(node, "clock-frequency", &clk_rate))
--			clk_rate = 0;
--
--		needs_vcc = of_property_read_bool(node, "vcc-supply");
--		needs_reset = of_property_read_bool(node, "reset-supply");
--
--	} else if (pdata) {
--		type = pdata->type;
--		clk_rate = pdata->clk_rate;
--		needs_vcc = pdata->needs_vcc;
--		needs_reset = pdata->needs_reset;
--	}
--
--	nop->clk = devm_clk_get(&pdev->dev, "main_clk");
--	if (IS_ERR(nop->clk)) {
--		dev_dbg(&pdev->dev, "Can't get phy clock: %ld\n",
--					PTR_ERR(nop->clk));
--	}
--
--	if (!IS_ERR(nop->clk) && clk_rate) {
--		err = clk_set_rate(nop->clk, clk_rate);
--		if (err) {
--			dev_err(&pdev->dev, "Error setting clock rate\n");
--			return err;
--		}
--	}
--
--	if (!IS_ERR(nop->clk)) {
--		err = clk_prepare(nop->clk);
--		if (err) {
--			dev_err(&pdev->dev, "Error preparing clock\n");
--			return err;
--		}
--	}
--
--	nop->vcc = devm_regulator_get(&pdev->dev, "vcc");
--	if (IS_ERR(nop->vcc)) {
--		dev_dbg(&pdev->dev, "Error getting vcc regulator: %ld\n",
--					PTR_ERR(nop->vcc));
--		if (needs_vcc)
--			return -EPROBE_DEFER;
--	}
--
--	nop->reset = devm_regulator_get(&pdev->dev, "reset");
--	if (IS_ERR(nop->reset)) {
--		dev_dbg(&pdev->dev, "Error getting reset regulator: %ld\n",
--					PTR_ERR(nop->reset));
--		if (needs_reset)
--			return -EPROBE_DEFER;
--	}
--
--	nop->dev		= &pdev->dev;
--	nop->phy.dev		= nop->dev;
--	nop->phy.label		= "nop-xceiv";
--	nop->phy.set_suspend	= nop_set_suspend;
--	nop->phy.init		= nop_init;
--	nop->phy.shutdown	= nop_shutdown;
--	nop->phy.state		= OTG_STATE_UNDEFINED;
--	nop->phy.type		= type;
--
--	nop->phy.otg->phy		= &nop->phy;
--	nop->phy.otg->set_host		= nop_set_host;
--	nop->phy.otg->set_peripheral	= nop_set_peripheral;
--
--	err = usb_add_phy_dev(&nop->phy);
--	if (err) {
--		dev_err(&pdev->dev, "can't register transceiver, err: %d\n",
--			err);
--		goto err_add;
--	}
--
--	platform_set_drvdata(pdev, nop);
--
--	ATOMIC_INIT_NOTIFIER_HEAD(&nop->phy.notifier);
--
--	return 0;
--
--err_add:
--	if (!IS_ERR(nop->clk))
--		clk_unprepare(nop->clk);
--	return err;
--}
--
--static int nop_usb_xceiv_remove(struct platform_device *pdev)
--{
--	struct nop_usb_xceiv *nop = platform_get_drvdata(pdev);
--
--	if (!IS_ERR(nop->clk))
--		clk_unprepare(nop->clk);
--
--	usb_remove_phy(&nop->phy);
--
--	return 0;
--}
--
--static const struct of_device_id nop_xceiv_dt_ids[] = {
--	{ .compatible = "usb-nop-xceiv" },
--	{ }
--};
--
--MODULE_DEVICE_TABLE(of, nop_xceiv_dt_ids);
--
--static struct platform_driver nop_usb_xceiv_driver = {
--	.probe		= nop_usb_xceiv_probe,
--	.remove		= nop_usb_xceiv_remove,
--	.driver		= {
--		.name	= "nop_usb_xceiv",
--		.owner	= THIS_MODULE,
--		.of_match_table = nop_xceiv_dt_ids,
--	},
--};
--
--static int __init nop_usb_xceiv_init(void)
--{
--	return platform_driver_register(&nop_usb_xceiv_driver);
--}
--subsys_initcall(nop_usb_xceiv_init);
--
--static void __exit nop_usb_xceiv_exit(void)
--{
--	platform_driver_unregister(&nop_usb_xceiv_driver);
--}
--module_exit(nop_usb_xceiv_exit);
--
--MODULE_ALIAS("platform:nop_usb_xceiv");
--MODULE_AUTHOR("Texas Instruments Inc");
--MODULE_DESCRIPTION("NOP USB Transceiver driver");
--MODULE_LICENSE("GPL");
-diff --git a/include/linux/usb/nop-usb-xceiv.h b/include/linux/usb/nop-usb-xceiv.h
-deleted file mode 100644
-index 148d351..0000000
---- a/include/linux/usb/nop-usb-xceiv.h
-+++ /dev/null
-@@ -1,29 +0,0 @@
--#ifndef __LINUX_USB_NOP_XCEIV_H
--#define __LINUX_USB_NOP_XCEIV_H
--
--#include <linux/usb/otg.h>
--
--struct nop_usb_xceiv_platform_data {
--	enum usb_phy_type type;
--	unsigned long clk_rate;
--
--	/* if set fails with -EPROBE_DEFER if can't get regulator */
--	unsigned int needs_vcc:1;
--	unsigned int needs_reset:1;
--};
--
--#if defined(CONFIG_NOP_USB_XCEIV) || (defined(CONFIG_NOP_USB_XCEIV_MODULE) && defined(MODULE))
--/* sometimes transceivers are accessed only through e.g. ULPI */
--extern void usb_nop_xceiv_register(void);
--extern void usb_nop_xceiv_unregister(void);
--#else
--static inline void usb_nop_xceiv_register(void)
--{
--}
--
--static inline void usb_nop_xceiv_unregister(void)
--{
--}
--#endif
--
--#endif /* __LINUX_USB_NOP_XCEIV_H */
-diff --git a/include/linux/usb/usb_phy_gen_xceiv.h b/include/linux/usb/usb_phy_gen_xceiv.h
-new file mode 100644
-index 0000000..f9a7e7b
---- /dev/null
-+++ b/include/linux/usb/usb_phy_gen_xceiv.h
-@@ -0,0 +1,29 @@
-+#ifndef __LINUX_USB_NOP_XCEIV_H
-+#define __LINUX_USB_NOP_XCEIV_H
-+
-+#include <linux/usb/otg.h>
-+
-+struct usb_phy_gen_xceiv_platform_data {
-+	enum usb_phy_type type;
-+	unsigned long clk_rate;
-+
-+	/* if set fails with -EPROBE_DEFER if can't get regulator */
-+	unsigned int needs_vcc:1;
-+	unsigned int needs_reset:1;
-+};
-+
-+#if IS_ENABLED(CONFIG_NOP_USB_XCEIV)
-+/* sometimes transceivers are accessed only through e.g. ULPI */
-+extern void usb_nop_xceiv_register(void);
-+extern void usb_nop_xceiv_unregister(void);
-+#else
-+static inline void usb_nop_xceiv_register(void)
-+{
-+}
-+
-+static inline void usb_nop_xceiv_unregister(void)
-+{
-+}
-+#endif
-+
-+#endif /* __LINUX_USB_NOP_XCEIV_H */
++module_platform_driver(am335x_phy_driver);
++MODULE_LICENSE("GPL v2");
 -- 
 1.8.3.2
 
