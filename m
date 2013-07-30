@@ -1,74 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932760Ab3G3Jit (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 05:38:49 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53371 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932637Ab3G3Jdx (ORCPT
+	id S932694Ab3G3Jir (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 05:38:47 -0400
+Received: from smtp1-g21.free.fr ([212.27.42.1]:44887 "EHLO smtp1-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932646Ab3G3Jic convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 05:33:53 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Android Kernel Team <kernel-team@android.com>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 091/106] staging: android: logger: Correct write offset reset on error
-Date: Tue, 30 Jul 2013 10:31:50 +0100
-Message-Id: <1375176725-5825-92-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
-References: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	Tue, 30 Jul 2013 05:38:32 -0400
+Date: Tue, 30 Jul 2013 11:38:53 +0200
+From: Jean-Francois Moine <moinejf@free.fr>
+To: Dave Martin <Dave.Martin@arm.com>
+Cc: Jed Davis <jld@mozilla.com>, Robert Richter <rric@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Will Deacon <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        "oprofile-list@lists.sf.net" <oprofile-list@lists.sf.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] ARM: Fix r7/r11 confusion when CONFIG_THUMB2_KERNEL=y
+ [OT]
+Message-ID: <20130730113853.46cbb00a@armhf>
+In-Reply-To: <20130730092517.GB2478@localhost.localdomain>
+References: <1373685501-1620-1-git-send-email-jld@mozilla.com>
+	<20130715135420.GG10000@mudshark.cambridge.arm.com>
+	<20130720044655.GC9433@mozilla.com>
+	<20130721213753.GA29879@mudshark.cambridge.arm.com>
+	<20130722185234.GA14519@localhost.localdomain>
+	<20130729212140.GB12681@mozilla.com>
+	<20130730092517.GB2478@localhost.localdomain>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; arm-unknown-linux-gnueabihf)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.18 -stable review patch.  If anyone has any objections, please let me know.
+On Tue, 30 Jul 2013 10:25:18 +0100
+Dave Martin <Dave.Martin@arm.com> wrote:
 
-------------------
+> The pragmatic route is less contraversial and lower overhead: even though
+> it's not correct as per the ABI, GCC is the only supported compiler for
+> building the kernel anyway.
 
-From: Karlis Ogsts <karlis.ogsts@sonymobile.com>
+BTW, kernels compiled with gcc-4.8 don't work.
 
-commit 72bb99cfe9c57d2044445fb34bbc95b4c0bae6f2 upstream.
+Did anybody succeed with clang?
 
-In the situation that a writer fails to copy data from userspace it will reset
-the write offset to the value it had before it went to sleep. This discarding
-any messages written while aquiring the mutex.
-
-Therefore the reset offset needs to be retrieved after acquiring the mutex.
-
-Cc: Android Kernel Team <kernel-team@android.com>
-Signed-off-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/staging/android/logger.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/staging/android/logger.c b/drivers/staging/android/logger.c
-index b2e71c6..6a3c74a 100644
---- a/drivers/staging/android/logger.c
-+++ b/drivers/staging/android/logger.c
-@@ -357,7 +357,7 @@ static ssize_t logger_aio_write(struct kiocb *iocb, const struct iovec *iov,
- 			 unsigned long nr_segs, loff_t ppos)
- {
- 	struct logger_log *log = file_get_log(iocb->ki_filp);
--	size_t orig = log->w_off;
-+	size_t orig;
- 	struct logger_entry header;
- 	struct timespec now;
- 	ssize_t ret = 0;
-@@ -376,6 +376,8 @@ static ssize_t logger_aio_write(struct kiocb *iocb, const struct iovec *iov,
- 
- 	mutex_lock(&log->mutex);
- 
-+	orig = log->w_off;
-+
- 	/*
- 	 * Fix up any readers, pulling them forward to the first readable
- 	 * entry after (what will be) the new write offset. We do this now
 -- 
-1.8.3.2
-
+Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
+Jef		|		http://moinejf.free.fr/
