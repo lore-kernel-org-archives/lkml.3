@@ -1,85 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756207Ab3G3A3D (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 20:29:03 -0400
-Received: from smtp.infotech.no ([82.134.31.41]:52233 "EHLO smtp.infotech.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755266Ab3G3A3A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 20:29:00 -0400
-Message-ID: <51F708A4.9090207@interlog.com>
-Date: Mon, 29 Jul 2013 20:28:20 -0400
-From: Douglas Gilbert <dgilbert@interlog.com>
-Reply-To: dgilbert@interlog.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S1755164Ab3G3Aah (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 20:30:37 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:65491 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752364Ab3G3Aaf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 20:30:35 -0400
+Date: Tue, 30 Jul 2013 08:29:51 +0800 (CST)
+From: Xiong Zhou <jencce.kernel@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+cc: Andreas Dilger <andreas.dilger@intel.com>, Peng Tao <bergwolf@gmail.com>,
+        Paul Bolle <pebolle@tiscali.nl>, Jiri Kosina <trivial@kernel.org>,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        jencce.kernel@gmail.com
+Subject: [PATCH v2] staging/lustre: lloop depends on BLOCK
+Message-ID: <alpine.DEB.2.02.1307300827010.2625@M2420>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Nix <nix@esperi.org.uk>
-CC: Bernd Schubert <bernd.schubert@fastmail.fm>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-scsi@vger.kernel.org,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        nick.cheng@areca.com.tw, stable@vger.kernel.org
-Subject: Re: [SCSI REGRESSION] 3.10.2 or 3.10.3: arcmsr failure at bootup
- / early userspace transition
-References: <87r4ehfzhf.fsf@spindle.srvr.nix> <51F667C2.4020801@fastmail.fm> <87mwp5frdl.fsf@spindle.srvr.nix> <51F67959.2060803@fastmail.fm> <87fvuxdqes.fsf@spindle.srvr.nix>
-In-Reply-To: <87fvuxdqes.fsf@spindle.srvr.nix>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13-07-29 05:09 PM, Nix wrote:
-> On 29 Jul 2013, Bernd Schubert uttered the following:
->
->> On 07/29/2013 03:05 PM, Nix wrote:
->>> On 29 Jul 2013, Bernd Schubert said:
->>>
->>>> Hi Nick,
->>>>
->>>> On 07/29/2013 12:10 PM, Nick Alcock wrote:
->>>>> arcmsr0: abort device command of scsi id = 0 lun = 1
->>>>> arcmsr0: abort device command of scsi id = 0 lun = 0
->>>>> arcmsr: executing bus reset eh.....num_resets=0, num_[...]
->>>>>
->>>>> arcmsr0: wait 'abort all outstanding command' timeout
->>>>> arcmsr0: executing hw bus reset ....
->>>>> arcmsr0: waiting for hw bus reset return, retry=0
->>>>> arcmsr0: waiting for hw bus reset return, retry=1
->>>>> Areca RAID Controller0: F/W V1.46 2009-01-06 & Model ARC-1210
->>>>> arcmsr: scsi  bus reset eh returns with success
->>>>> [and back to the top of the error messages again, apparently forever,
->>>>>     not that the machine would be much use without its RAID array even
->>>>>     if this loop terminated at some point, so I only gave it a couple
->>>>>     of minutes]
->>>>>
->>>>> The failure happens precisely at the moment we transition to early
->>>>> userspace, so presumably userspace I/O is failing (or something related
->>>>> to raw device access, perhaps, since the first thing it does is a
->>>>> vgscan).
->>>>>
->>>>> I haven't bisected yet (sorry, I have work to do which means this
->>>>> machine must be running right now), but nothing has changed in the
->>>>> arcmsr controller, nor in SCSI-land excepting
->>>>>
->>>>> commit 98dcc2946adbe4349ef1ef9b99873b912831edd4
->>>>> Author: Martin K. Petersen <martin.petersen@oracle.com>
->>>>> Date:   Thu Jun 6 22:15:55 2013 -0400
->
-> I can now confirm that reverting this commit causes this problem to go
-> away, and my machine boots fine again.
->
-> Please revert (and figure out what is wrong so that 3.11 doesn't
-> implode in the same way? I'm happy to assist...)
+From: Xiong Zhou <jencce.kernel@gmail.com>
 
-Hi,
-Please supply the information that Martin Petersen asked
-for.
+In the lustre client driver, lloop depends on BLOCK. Add an
+option for this dependence. Last version of this patch makes
+LUSTRE_FS depends on BLOCK.
+Remove unnecessary jdb head files which depends on BLOCK.
 
-I just examined a more recent Areca SAS RAID controller
-and would describe it as the SCSI device from hell. One solution
-to this problem is to modify the arcmsr driver so it returns
-a more consistent set of lies to the management SCSI commands that
-Martin is asking about.
+Signed-off-by: Xiong Zhou <jencce.kernel@gmail.com>
+---
+ drivers/staging/lustre/lustre/Kconfig              |    7 ++++++-
+ drivers/staging/lustre/lustre/fld/fld_cache.c      |    1 -
+ drivers/staging/lustre/lustre/fld/fld_request.c    |    1 -
+ .../lustre/lustre/include/linux/lustre_compat25.h  |    2 ++
+ drivers/staging/lustre/lustre/llite/Makefile       |    2 +-
+ drivers/staging/lustre/lustre/lvfs/fsfilt.c        |    1 -
+ 6 files changed, 9 insertions(+), 5 deletions(-)
 
-Doug Gilbert
-
+diff --git a/drivers/staging/lustre/lustre/Kconfig b/drivers/staging/lustre/lustre/Kconfig
+index 0b45de0..4e898e4 100644
+--- a/drivers/staging/lustre/lustre/Kconfig
++++ b/drivers/staging/lustre/lustre/Kconfig
+@@ -1,6 +1,6 @@
+ config LUSTRE_FS
+ 	tristate "Lustre file system client support"
+-	depends on STAGING && INET && BLOCK && m
++	depends on INET && m
+ 	select LNET
+ 	select CRYPTO
+ 	select CRYPTO_CRC32
+@@ -53,3 +53,8 @@ config LUSTRE_TRANSLATE_ERRNOS
+ 	bool
+ 	depends on LUSTRE_FS && !X86
+ 	default true
++
++config LUSTRE_LLITE_LLOOP
++	bool "Lustre virtual block device"
++	depends on LUSTRE_FS && BLOCK
++	default m
+diff --git a/drivers/staging/lustre/lustre/fld/fld_cache.c b/drivers/staging/lustre/lustre/fld/fld_cache.c
+index 347f2ae..8410107 100644
+--- a/drivers/staging/lustre/lustre/fld/fld_cache.c
++++ b/drivers/staging/lustre/lustre/fld/fld_cache.c
+@@ -45,7 +45,6 @@
+ 
+ # include <linux/libcfs/libcfs.h>
+ # include <linux/module.h>
+-# include <linux/jbd.h>
+ # include <asm/div64.h>
+ 
+ #include <obd.h>
+diff --git a/drivers/staging/lustre/lustre/fld/fld_request.c b/drivers/staging/lustre/lustre/fld/fld_request.c
+index c99b945..049322a 100644
+--- a/drivers/staging/lustre/lustre/fld/fld_request.c
++++ b/drivers/staging/lustre/lustre/fld/fld_request.c
+@@ -44,7 +44,6 @@
+ 
+ # include <linux/libcfs/libcfs.h>
+ # include <linux/module.h>
+-# include <linux/jbd.h>
+ # include <asm/div64.h>
+ 
+ #include <obd.h>
+diff --git a/drivers/staging/lustre/lustre/include/linux/lustre_compat25.h b/drivers/staging/lustre/lustre/include/linux/lustre_compat25.h
+index 426533b..c0156e3 100644
+--- a/drivers/staging/lustre/lustre/include/linux/lustre_compat25.h
++++ b/drivers/staging/lustre/lustre/include/linux/lustre_compat25.h
+@@ -111,12 +111,14 @@ static inline void ll_set_fs_pwd(struct fs_struct *fs, struct vfsmount *mnt,
+ #define TREE_READ_LOCK_IRQ(mapping)	spin_lock_irq(&(mapping)->tree_lock)
+ #define TREE_READ_UNLOCK_IRQ(mapping)	spin_unlock_irq(&(mapping)->tree_lock)
+ 
++#ifdef CONFIG_BLOCK
+ static inline
+ int ll_unregister_blkdev(unsigned int dev, const char *name)
+ {
+ 	unregister_blkdev(dev, name);
+ 	return 0;
+ }
++#endif
+ 
+ #define ll_invalidate_bdev(a,b)	 invalidate_bdev((a))
+ 
+diff --git a/drivers/staging/lustre/lustre/llite/Makefile b/drivers/staging/lustre/lustre/llite/Makefile
+index dff0c04..f493e07 100644
+--- a/drivers/staging/lustre/lustre/llite/Makefile
++++ b/drivers/staging/lustre/lustre/llite/Makefile
+@@ -1,5 +1,5 @@
+ obj-$(CONFIG_LUSTRE_FS) += lustre.o
+-obj-$(CONFIG_LUSTRE_FS) += llite_lloop.o
++obj-$(CONFIG_LUSTRE_LLITE_LLOOP) += llite_lloop.o
+ lustre-y := dcache.o dir.o file.o llite_close.o llite_lib.o llite_nfs.o \
+ 	    rw.o lproc_llite.o namei.o symlink.o llite_mmap.o \
+ 	    xattr.o remote_perm.o llite_rmtacl.o llite_capa.o \
+diff --git a/drivers/staging/lustre/lustre/lvfs/fsfilt.c b/drivers/staging/lustre/lustre/lvfs/fsfilt.c
+index 064445c..ce71f80 100644
+--- a/drivers/staging/lustre/lustre/lvfs/fsfilt.c
++++ b/drivers/staging/lustre/lustre/lvfs/fsfilt.c
+@@ -35,7 +35,6 @@
+ #define DEBUG_SUBSYSTEM S_FILTER
+ 
+ #include <linux/fs.h>
+-#include <linux/jbd.h>
+ #include <linux/module.h>
+ #include <linux/kmod.h>
+ #include <linux/slab.h>
