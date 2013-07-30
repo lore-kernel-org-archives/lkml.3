@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757483Ab3G3UQ5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 16:16:57 -0400
-Received: from www.linutronix.de ([62.245.132.108]:58498 "EHLO
+	id S1757388Ab3G3UQz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 16:16:55 -0400
+Received: from www.linutronix.de ([62.245.132.108]:58495 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757235Ab3G3UQw (ORCPT
+	with ESMTP id S1757198Ab3G3UQv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 16:16:52 -0400
+	Tue, 30 Jul 2013 16:16:51 -0400
 From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 To: linux-usb@vger.kernel.org
 Cc: balbi@ti.com, linux-kernel@vger.kernel.org, george.cherian@ti.com,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [PATCH 3/5] usb: phy: Add AM335x PHY driver
-Date: Tue, 30 Jul 2013 22:16:39 +0200
-Message-Id: <1375215401-19729-4-git-send-email-bigeasy@linutronix.de>
+Subject: [PATCH 2/5] usb: phy: phy-generic: export init functions
+Date: Tue, 30 Jul 2013 22:16:38 +0200
+Message-Id: <1375215401-19729-3-git-send-email-bigeasy@linutronix.de>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1375215401-19729-1-git-send-email-bigeasy@linutronix.de>
 References: <1375215401-19729-1-git-send-email-bigeasy@linutronix.de>
@@ -24,336 +24,275 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver is a redo of my earlier attempt. It uses parts of the
-generic PHY driver and uses the new control driver for the register
-the phy needs to power on/off the phy. It also enables easy access for
-the wakeup register which is not yet implemented.
-The difference between the omap attempt is:
-- no static holding variable
-- one global visible function which exports a struct with callbacks to
-  access the "control" registers.
+This patch exports the mostly generic functions so they can be used from
+other phy driver instead of duplicating the code.
 
 Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 ---
- drivers/usb/phy/Kconfig              |  12 ++++
- drivers/usb/phy/Makefile             |   2 +
- drivers/usb/phy/am35x-phy-control.h  |  21 ++++++
- drivers/usb/phy/phy-am335x-control.c | 135 +++++++++++++++++++++++++++++++++++
- drivers/usb/phy/phy-am335x.c         |  99 +++++++++++++++++++++++++
- 5 files changed, 269 insertions(+)
- create mode 100644 drivers/usb/phy/am35x-phy-control.h
- create mode 100644 drivers/usb/phy/phy-am335x-control.c
- create mode 100644 drivers/usb/phy/phy-am335x.c
+ drivers/usb/phy/phy-generic.c | 130 ++++++++++++++++++++++++------------------
+ drivers/usb/phy/phy-generic.h |  20 +++++++
+ 2 files changed, 93 insertions(+), 57 deletions(-)
+ create mode 100644 drivers/usb/phy/phy-generic.h
 
-diff --git a/drivers/usb/phy/Kconfig b/drivers/usb/phy/Kconfig
-index f5ea339..f41c3e1 100644
---- a/drivers/usb/phy/Kconfig
-+++ b/drivers/usb/phy/Kconfig
-@@ -86,6 +86,18 @@ config OMAP_USB3
- 	  This driver interacts with the "OMAP Control USB Driver" to power
- 	  on/off the PHY.
+diff --git a/drivers/usb/phy/phy-generic.c b/drivers/usb/phy/phy-generic.c
+index f379b7d..8808974 100644
+--- a/drivers/usb/phy/phy-generic.c
++++ b/drivers/usb/phy/phy-generic.c
+@@ -36,13 +36,7 @@
+ #include <linux/regulator/consumer.h>
+ #include <linux/of.h>
  
-+config AM335X_CONTROL_USB
-+	tristate
+-struct usb_phy_gen_xceiv {
+-	struct usb_phy phy;
+-	struct device *dev;
+-	struct clk *clk;
+-	struct regulator *vcc;
+-	struct regulator *reset;
+-};
++#include "phy-generic.h"
+ 
+ static struct platform_device *pd;
+ 
+@@ -70,7 +64,7 @@ static int nop_set_suspend(struct usb_phy *x, int suspend)
+ 	return 0;
+ }
+ 
+-static int nop_init(struct usb_phy *phy)
++int usb_gen_phy_init(struct usb_phy *phy)
+ {
+ 	struct usb_phy_gen_xceiv *nop = dev_get_drvdata(phy->dev);
+ 
+@@ -90,8 +84,9 @@ static int nop_init(struct usb_phy *phy)
+ 
+ 	return 0;
+ }
++EXPORT_SYMBOL_GPL(usb_gen_phy_init);
+ 
+-static void nop_shutdown(struct usb_phy *phy)
++void usb_gen_phy_shutdown(struct usb_phy *phy)
+ {
+ 	struct usb_phy_gen_xceiv *nop = dev_get_drvdata(phy->dev);
+ 
+@@ -109,6 +104,7 @@ static void nop_shutdown(struct usb_phy *phy)
+ 			dev_err(phy->dev, "Failed to disable power\n");
+ 	}
+ }
++EXPORT_SYMBOL_GPL(usb_gen_phy_shutdown);
+ 
+ static int nop_set_peripheral(struct usb_otg *otg, struct usb_gadget *gadget)
+ {
+@@ -139,52 +135,27 @@ static int nop_set_host(struct usb_otg *otg, struct usb_bus *host)
+ 	return 0;
+ }
+ 
+-static int usb_phy_gen_xceiv_probe(struct platform_device *pdev)
++int usb_phy_gen_create_phy(struct device *dev, struct usb_phy_gen_xceiv *nop,
++		enum usb_phy_type type, u32 clk_rate, bool needs_vcc,
++		bool needs_reset)
+ {
+-	struct device *dev = &pdev->dev;
+-	struct usb_phy_gen_xceiv_platform_data *pdata = pdev->dev.platform_data;
+-	struct usb_phy_gen_xceiv	*nop;
+-	enum usb_phy_type	type = USB_PHY_TYPE_USB2;
+ 	int err;
+-	u32 clk_rate = 0;
+-	bool needs_vcc = false;
+-	bool needs_reset = false;
+-
+-	nop = devm_kzalloc(&pdev->dev, sizeof(*nop), GFP_KERNEL);
+-	if (!nop)
+-		return -ENOMEM;
+ 
+-	nop->phy.otg = devm_kzalloc(&pdev->dev, sizeof(*nop->phy.otg),
+-							GFP_KERNEL);
++	nop->phy.otg = devm_kzalloc(dev, sizeof(*nop->phy.otg),
++			GFP_KERNEL);
+ 	if (!nop->phy.otg)
+ 		return -ENOMEM;
+ 
+-	if (dev->of_node) {
+-		struct device_node *node = dev->of_node;
+-
+-		if (of_property_read_u32(node, "clock-frequency", &clk_rate))
+-			clk_rate = 0;
+-
+-		needs_vcc = of_property_read_bool(node, "vcc-supply");
+-		needs_reset = of_property_read_bool(node, "reset-supply");
+-
+-	} else if (pdata) {
+-		type = pdata->type;
+-		clk_rate = pdata->clk_rate;
+-		needs_vcc = pdata->needs_vcc;
+-		needs_reset = pdata->needs_reset;
+-	}
+-
+-	nop->clk = devm_clk_get(&pdev->dev, "main_clk");
++	nop->clk = devm_clk_get(dev, "main_clk");
+ 	if (IS_ERR(nop->clk)) {
+-		dev_dbg(&pdev->dev, "Can't get phy clock: %ld\n",
++		dev_dbg(dev, "Can't get phy clock: %ld\n",
+ 					PTR_ERR(nop->clk));
+ 	}
+ 
+ 	if (!IS_ERR(nop->clk) && clk_rate) {
+ 		err = clk_set_rate(nop->clk, clk_rate);
+ 		if (err) {
+-			dev_err(&pdev->dev, "Error setting clock rate\n");
++			dev_err(dev, "Error setting clock rate\n");
+ 			return err;
+ 		}
+ 	}
+@@ -192,33 +163,31 @@ static int usb_phy_gen_xceiv_probe(struct platform_device *pdev)
+ 	if (!IS_ERR(nop->clk)) {
+ 		err = clk_prepare(nop->clk);
+ 		if (err) {
+-			dev_err(&pdev->dev, "Error preparing clock\n");
++			dev_err(dev, "Error preparing clock\n");
+ 			return err;
+ 		}
+ 	}
+ 
+-	nop->vcc = devm_regulator_get(&pdev->dev, "vcc");
++	nop->vcc = devm_regulator_get(dev, "vcc");
+ 	if (IS_ERR(nop->vcc)) {
+-		dev_dbg(&pdev->dev, "Error getting vcc regulator: %ld\n",
++		dev_dbg(dev, "Error getting vcc regulator: %ld\n",
+ 					PTR_ERR(nop->vcc));
+ 		if (needs_vcc)
+ 			return -EPROBE_DEFER;
+ 	}
+ 
+-	nop->reset = devm_regulator_get(&pdev->dev, "reset");
++	nop->reset = devm_regulator_get(dev, "reset");
+ 	if (IS_ERR(nop->reset)) {
+-		dev_dbg(&pdev->dev, "Error getting reset regulator: %ld\n",
++		dev_dbg(dev, "Error getting reset regulator: %ld\n",
+ 					PTR_ERR(nop->reset));
+ 		if (needs_reset)
+ 			return -EPROBE_DEFER;
+ 	}
+ 
+-	nop->dev		= &pdev->dev;
++	nop->dev		= dev;
+ 	nop->phy.dev		= nop->dev;
+ 	nop->phy.label		= "nop-xceiv";
+ 	nop->phy.set_suspend	= nop_set_suspend;
+-	nop->phy.init		= nop_init;
+-	nop->phy.shutdown	= nop_shutdown;
+ 	nop->phy.state		= OTG_STATE_UNDEFINED;
+ 	nop->phy.type		= type;
+ 
+@@ -226,6 +195,58 @@ static int usb_phy_gen_xceiv_probe(struct platform_device *pdev)
+ 	nop->phy.otg->set_host		= nop_set_host;
+ 	nop->phy.otg->set_peripheral	= nop_set_peripheral;
+ 
++	ATOMIC_INIT_NOTIFIER_HEAD(&nop->phy.notifier);
++	return 0;
++}
++EXPORT_SYMBOL_GPL(usb_phy_gen_create_phy);
 +
-+config AM335X_PHY_USB
-+	tristate "AM335x USB PHY Driver"
-+	select USB_PHY
-+	select AM335X_CONTROL_USB
-+	select NOP_USB_XCEIV
-+	help
-+	  This driver provides PHY support for that phy which part for the
-+	  AM335x SoC.
++void usb_phy_gen_cleanup_phy(struct usb_phy_gen_xceiv *nop)
++{
++	if (!IS_ERR(nop->clk))
++		clk_unprepare(nop->clk);
++}
++EXPORT_SYMBOL_GPL(usb_phy_gen_cleanup_phy);
 +
- config SAMSUNG_USBPHY
- 	tristate
- 	help
-diff --git a/drivers/usb/phy/Makefile b/drivers/usb/phy/Makefile
-index 24c5816..dae321d 100644
---- a/drivers/usb/phy/Makefile
-+++ b/drivers/usb/phy/Makefile
-@@ -16,6 +16,8 @@ obj-$(CONFIG_ISP1301_OMAP)		+= phy-isp1301-omap.o
- obj-$(CONFIG_MV_U3D_PHY)		+= phy-mv-u3d-usb.o
- obj-$(CONFIG_NOP_USB_XCEIV)		+= phy-generic.o
- obj-$(CONFIG_OMAP_CONTROL_USB)		+= phy-omap-control.o
-+obj-$(CONFIG_AM335X_CONTROL_USB)	+= phy-am335x-control.o
-+obj-$(CONFIG_AM335X_PHY_USB)		+= phy-am335x.o
- obj-$(CONFIG_OMAP_USB2)			+= phy-omap-usb2.o
- obj-$(CONFIG_OMAP_USB3)			+= phy-omap-usb3.o
- obj-$(CONFIG_SAMSUNG_USBPHY)		+= phy-samsung-usb.o
-diff --git a/drivers/usb/phy/am35x-phy-control.h b/drivers/usb/phy/am35x-phy-control.h
++static int usb_phy_gen_xceiv_probe(struct platform_device *pdev)
++{
++	struct device *dev = &pdev->dev;
++	struct usb_phy_gen_xceiv_platform_data *pdata = pdev->dev.platform_data;
++	struct usb_phy_gen_xceiv	*nop;
++	enum usb_phy_type	type = USB_PHY_TYPE_USB2;
++	int err;
++	u32 clk_rate = 0;
++	bool needs_vcc = false;
++	bool needs_reset = false;
++
++	if (dev->of_node) {
++		struct device_node *node = dev->of_node;
++
++		if (of_property_read_u32(node, "clock-frequency", &clk_rate))
++			clk_rate = 0;
++
++		needs_vcc = of_property_read_bool(node, "vcc-supply");
++		needs_reset = of_property_read_bool(node, "reset-supply");
++
++	} else if (pdata) {
++		type = pdata->type;
++		clk_rate = pdata->clk_rate;
++		needs_vcc = pdata->needs_vcc;
++		needs_reset = pdata->needs_reset;
++	}
++
++	nop = devm_kzalloc(dev, sizeof(*nop), GFP_KERNEL);
++	if (!nop)
++		return -ENOMEM;
++
++
++	err = usb_phy_gen_create_phy(dev, nop, type, clk_rate, needs_vcc,
++			needs_reset);
++	if (err)
++		return err;
++
++	nop->phy.init		= usb_gen_phy_init;
++	nop->phy.shutdown	= usb_gen_phy_shutdown;
++
+ 	err = usb_add_phy_dev(&nop->phy);
+ 	if (err) {
+ 		dev_err(&pdev->dev, "can't register transceiver, err: %d\n",
+@@ -235,13 +256,10 @@ static int usb_phy_gen_xceiv_probe(struct platform_device *pdev)
+ 
+ 	platform_set_drvdata(pdev, nop);
+ 
+-	ATOMIC_INIT_NOTIFIER_HEAD(&nop->phy.notifier);
+-
+ 	return 0;
+ 
+ err_add:
+-	if (!IS_ERR(nop->clk))
+-		clk_unprepare(nop->clk);
++	usb_phy_gen_cleanup_phy(nop);
+ 	return err;
+ }
+ 
+@@ -249,9 +267,7 @@ static int usb_phy_gen_xceiv_remove(struct platform_device *pdev)
+ {
+ 	struct usb_phy_gen_xceiv *nop = platform_get_drvdata(pdev);
+ 
+-	if (!IS_ERR(nop->clk))
+-		clk_unprepare(nop->clk);
+-
++	usb_phy_gen_cleanup_phy(nop);
+ 	usb_remove_phy(&nop->phy);
+ 
+ 	return 0;
+diff --git a/drivers/usb/phy/phy-generic.h b/drivers/usb/phy/phy-generic.h
 new file mode 100644
-index 0000000..b96594d
+index 0000000..61687d5
 --- /dev/null
-+++ b/drivers/usb/phy/am35x-phy-control.h
-@@ -0,0 +1,21 @@
-+#ifndef _AM335x_PHY_CONTROL_H_
-+#define _AM335x_PHY_CONTROL_H_
++++ b/drivers/usb/phy/phy-generic.h
+@@ -0,0 +1,20 @@
++#ifndef _PHY_GENERIC_H_
++#define _PHY_GENERIC_H_
 +
-+struct phy_control {
-+	void (*phy_power)(struct phy_control *phy_ctrl, u32 id, bool on);
-+	void (*phy_wkup)(struct phy_control *phy_ctrl, u32 id, bool on);
++struct usb_phy_gen_xceiv {
++	struct usb_phy phy;
++	struct device *dev;
++	struct clk *clk;
++	struct regulator *vcc;
++	struct regulator *reset;
 +};
 +
-+static inline void phy_ctrl_power(struct phy_control *phy_ctrl, u32 id, bool on)
-+{
-+	phy_ctrl->phy_power(phy_ctrl, id, on);
-+}
++int usb_gen_phy_init(struct usb_phy *phy);
++void usb_gen_phy_shutdown(struct usb_phy *phy);
 +
-+static inline void phy_ctrl_wkup(struct phy_control *phy_ctrl, u32 id, bool on)
-+{
-+	phy_ctrl->phy_wkup(phy_ctrl, id, on);
-+}
-+
-+struct phy_control *am335x_get_phy_control(struct device *dev);
++int usb_phy_gen_create_phy(struct device *dev, struct usb_phy_gen_xceiv *nop,
++		enum usb_phy_type type, u32 clk_rate, bool needs_vcc,
++		bool needs_reset);
++void usb_phy_gen_cleanup_phy(struct usb_phy_gen_xceiv *nop);
 +
 +#endif
-diff --git a/drivers/usb/phy/phy-am335x-control.c b/drivers/usb/phy/phy-am335x-control.c
-new file mode 100644
-index 0000000..64e5ab4
---- /dev/null
-+++ b/drivers/usb/phy/phy-am335x-control.c
-@@ -0,0 +1,135 @@
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/of.h>
-+#include <linux/io.h>
-+
-+struct phy_control {
-+	void (*phy_power)(struct phy_control *phy_ctrl, u32 id, bool on);
-+	void (*phy_wkup)(struct phy_control *phy_ctrl, u32 id, bool on);
-+};
-+
-+struct am335x_control_usb {
-+	struct device *dev;
-+	void __iomem *reset_reg;
-+	spinlock_t lock;
-+	struct phy_control phy_ctrl;
-+};
-+
-+#define AM335X_USB0_CTRL		0x620
-+#define AM335X_USB1_CTRL		0x628
-+#define AM335x_USB_WKUP			0x648
-+
-+#define USBPHY_CM_PWRDN		(1 << 0)
-+#define USBPHY_OTG_PWRDN	(1 << 1)
-+#define USBPHY_OTGVDET_EN	(1 << 19)
-+#define USBPHY_OTGSESSEND_EN	(1 << 20)
-+
-+static void am335x_phy_power(struct phy_control *phy_ctrl, u32 id, bool on)
-+{
-+	struct am335x_control_usb *usb_ctrl;
-+	u32 val;
-+	u32 reg;
-+
-+	usb_ctrl = container_of(phy_ctrl, struct am335x_control_usb, phy_ctrl);
-+
-+	switch (id) {
-+	case 0:
-+		reg = AM335X_USB0_CTRL;
-+		break;
-+	case 1:
-+		reg = AM335X_USB1_CTRL;
-+		break;
-+	default:
-+		__WARN();
-+		 return;
-+	}
-+
-+	val = readl(usb_ctrl->reset_reg + reg);
-+	if (on) {
-+		val &= ~(USBPHY_CM_PWRDN | USBPHY_OTG_PWRDN);
-+		val |= USBPHY_OTGVDET_EN | USBPHY_OTGSESSEND_EN;
-+	} else {
-+		val |= USBPHY_CM_PWRDN | USBPHY_OTG_PWRDN;
-+	}
-+
-+	writel(val, usb_ctrl->reset_reg + reg);
-+}
-+
-+static const struct phy_control ctrl_am335x = {
-+	.phy_power = am335x_phy_power,
-+};
-+
-+static const struct of_device_id omap_control_usb_id_table[] = {
-+	{ .compatible = "ti,am335x-ctrl-module", .data = &ctrl_am335x },
-+	{}
-+};
-+MODULE_DEVICE_TABLE(of, omap_control_usb_id_table);
-+
-+static struct platform_driver am335x_control_driver;
-+static int match(struct device *dev, void *data)
-+{
-+	struct device_node *node = (struct device_node *)data;
-+	return dev->of_node == node &&
-+		dev->driver == &am335x_control_driver.driver;
-+}
-+
-+struct phy_control *am335x_get_phy_control(struct device *dev)
-+{
-+	struct device_node *node;
-+	struct am335x_control_usb *ctrl_usb;
-+
-+	node = of_parse_phandle(dev->of_node, "ti,ctrl_mod", 0);
-+	if (!node)
-+		return NULL;
-+
-+	dev = bus_find_device(&platform_bus_type, NULL, node, match);
-+	ctrl_usb = dev_get_drvdata(dev);
-+	if (!ctrl_usb)
-+		return NULL;
-+	return &ctrl_usb->phy_ctrl;
-+}
-+EXPORT_SYMBOL_GPL(am335x_get_phy_control);
-+
-+static int am335x_control_usb_probe(struct platform_device *pdev)
-+{
-+	struct resource	*res;
-+	struct am335x_control_usb *ctrl_usb;
-+	const struct of_device_id *of_id;
-+	const struct phy_control *phy_ctrl;
-+
-+	of_id = of_match_node(omap_control_usb_id_table, pdev->dev.of_node);
-+	if (!of_id)
-+		return -EINVAL;
-+
-+	phy_ctrl = of_id->data;
-+
-+	ctrl_usb = devm_kzalloc(&pdev->dev, sizeof(*ctrl_usb), GFP_KERNEL);
-+	if (!ctrl_usb) {
-+		dev_err(&pdev->dev, "unable to alloc memory for control usb\n");
-+		return -ENOMEM;
-+	}
-+
-+	ctrl_usb->dev = &pdev->dev;
-+
-+	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "control_dev");
-+	ctrl_usb->reset_reg = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(ctrl_usb->reset_reg))
-+		return PTR_ERR(ctrl_usb->reset_reg);
-+	spin_lock_init(&ctrl_usb->lock);
-+	ctrl_usb->phy_ctrl = *phy_ctrl;
-+
-+	dev_set_drvdata(ctrl_usb->dev, ctrl_usb);
-+	return 0;
-+}
-+
-+static struct platform_driver am335x_control_driver = {
-+	.probe		= am335x_control_usb_probe,
-+	.driver		= {
-+		.name	= "am335x-control-usb",
-+		.owner	= THIS_MODULE,
-+		.of_match_table = of_match_ptr(omap_control_usb_id_table),
-+	},
-+};
-+
-+module_platform_driver(am335x_control_driver);
-+MODULE_LICENSE("GPL v2");
-diff --git a/drivers/usb/phy/phy-am335x.c b/drivers/usb/phy/phy-am335x.c
-new file mode 100644
-index 0000000..c4d614d
---- /dev/null
-+++ b/drivers/usb/phy/phy-am335x.c
-@@ -0,0 +1,99 @@
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/dma-mapping.h>
-+#include <linux/usb/otg.h>
-+#include <linux/usb/usb_phy_gen_xceiv.h>
-+#include <linux/slab.h>
-+#include <linux/clk.h>
-+#include <linux/regulator/consumer.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+
-+#include "am35x-phy-control.h"
-+#include "phy-generic.h"
-+
-+struct am335x_phy {
-+	struct usb_phy_gen_xceiv usb_phy_gen;
-+	struct phy_control *phy_ctrl;
-+	int id;
-+};
-+
-+static int am335x_init(struct usb_phy *phy)
-+{
-+	struct am335x_phy *am_phy = dev_get_drvdata(phy->dev);
-+
-+	phy_ctrl_power(am_phy->phy_ctrl, am_phy->id, true);
-+	return 0;
-+}
-+
-+static void am335x_shutdown(struct usb_phy *phy)
-+{
-+	struct am335x_phy *am_phy = dev_get_drvdata(phy->dev);
-+
-+	phy_ctrl_power(am_phy->phy_ctrl, am_phy->id, false);
-+}
-+
-+static int am335x_phy_probe(struct platform_device *pdev)
-+{
-+	struct am335x_phy *am_phy;
-+	struct device *dev = &pdev->dev;
-+	int ret;
-+
-+	am_phy = devm_kzalloc(dev, sizeof(*am_phy), GFP_KERNEL);
-+	if (!am_phy)
-+		return -ENOMEM;
-+
-+	am_phy->phy_ctrl = am335x_get_phy_control(dev);
-+	if (!am_phy->phy_ctrl)
-+		return -EPROBE_DEFER;
-+	am_phy->id = of_alias_get_id(pdev->dev.of_node, "phy");
-+	if (am_phy->id < 0) {
-+		dev_err(&pdev->dev, "Missing PHY id: %d\n", am_phy->id);
-+		return am_phy->id;
-+	}
-+
-+	ret = usb_phy_gen_create_phy(dev, &am_phy->usb_phy_gen,
-+			USB_PHY_TYPE_USB2, 0, false, false);
-+	if (ret)
-+		return ret;
-+
-+	ret = usb_add_phy_dev(&am_phy->usb_phy_gen.phy);
-+	if (ret)
-+		goto err_add;
-+	am_phy->usb_phy_gen.phy.init = am335x_init;
-+	am_phy->usb_phy_gen.phy.shutdown = am335x_shutdown;
-+
-+	platform_set_drvdata(pdev, am_phy);
-+	return 0;
-+
-+err_add:
-+	usb_phy_gen_cleanup_phy(&am_phy->usb_phy_gen);
-+	return ret;
-+}
-+
-+static int am335x_phy_remove(struct platform_device *pdev)
-+{
-+	struct am335x_phy *am_phy = platform_get_drvdata(pdev);
-+
-+	usb_remove_phy(&am_phy->usb_phy_gen.phy);
-+	return 0;
-+}
-+
-+static const struct of_device_id am335x_phy_ids[] = {
-+	{ .compatible = "ti,am335x-usb-phy" },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(of, am335x_phy_ids);
-+
-+static struct platform_driver am335x_phy_driver = {
-+	.probe          = am335x_phy_probe,
-+	.remove         = am335x_phy_remove,
-+	.driver         = {
-+		.name   = "am335x-phy-driver",
-+		.owner  = THIS_MODULE,
-+		.of_match_table = of_match_ptr(am335x_phy_ids),
-+	},
-+};
-+
-+module_platform_driver(am335x_phy_driver);
-+MODULE_LICENSE("GPL v2");
 -- 
 1.8.3.2
 
