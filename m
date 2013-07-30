@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932775Ab3G3Jj5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 05:39:57 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53346 "EHLO
+	id S932745Ab3G3Jkc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 05:40:32 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53332 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932613Ab3G3Jds (ORCPT
+	with ESMTP id S932599Ab3G3Jdp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 05:33:48 -0400
+	Tue, 30 Jul 2013 05:33:45 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Saurav Kashyap <saurav.kashyap@qlogic.com>,
-        Giridhar Malavali <giridhar.malavali@qlogic.com>,
-        James Bottomley <JBottomley@Parallels.com>,
+Cc: Mark Kettenis <kettenis@openbsd.org>,
+        Alex Deucher <alexander.deucher@amd.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 086/106] [SCSI] qla2xxx: Properly set the tagging for commands.
-Date: Tue, 30 Jul 2013 10:31:45 +0100
-Message-Id: <1375176725-5825-87-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 084/106] drm/radeon: fix combios tables on older cards
+Date: Tue, 30 Jul 2013 10:31:43 +0100
+Message-Id: <1375176725-5825-85-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
 References: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
@@ -29,64 +28,293 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Saurav Kashyap <saurav.kashyap@qlogic.com>
+From: Mark Kettenis <kettenis@openbsd.org>
 
-commit c3ccb1d7cf4c4549151876dd37c0944a682fd9e1 upstream.
+commit cef1d00cd56f600121ad121875655ad410a001b8 upstream.
 
-This fixes a regression where Xyratex controllers and disks were lost by the
-driver:
+Noticed that my old Radeon 7500 hung after printing
 
-https://bugzilla.kernel.org/show_bug.cgi?id=59601
+   drm: GPU not posted. posting now...
 
-Reported-by: Jack Hill <jackhill@jackhill.us>
-Signed-off-by: Saurav Kashyap <saurav.kashyap@qlogic.com>
-Signed-off-by: Giridhar Malavali <giridhar.malavali@qlogic.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+when it wasn't selected as the primary card the BIOS.  Some digging
+revealed that it was hanging in combios_parse_mmio_table() while
+parsing the ASIC INIT 3 table.  Looking at the BIOS ROM for the card,
+it becomes obvious that there is no ASIC INIT 3 table in the BIOS.
+The code is just processing random garbage.  No surprise it hangs!
+
+Why do I say that there is no ASIC INIT 3 table is the BIOS?  This
+table is found through the MISC INFO table.  The MISC INFO table can
+be found at offset 0x5e in the COMBIOS header.  But the header is
+smaller than that.  The COMBIOS header starts at offset 0x126.  The
+standard PCI Data Structure (the bit that starts with 'PCIR') lives at
+offset 0x180.  That means that the COMBIOS header can not be larger
+than 0x5a bytes and therefore cannot contain a MISC INFO table.
+
+I looked at a dozen or so BIOS images, some my own, some downloaded from:
+
+    <http://www.techpowerup.com/vgabios/index.php?manufacturer=ATI&page=1>
+
+It is fairly obvious that the size of the COMBIOS header can be found
+at offset 0x6 of the header.  Not sure if it is a 16-bit number or
+just an 8-bit number, but that doesn't really matter since the tables
+seems to be always smaller than 256 bytes.
+
+So I think combios_get_table_offset() should check if the requested
+table is present.  This can be done by checking the offset against the
+size of the header.  See the diff below.  The diff is against the WIP
+OpenBSD codebase that roughly corresponds to Linux 3.8.13 at this
+point.  But I don't think this bit of the code changed much since
+then.
+
+For what it is worth:
+
+Signed-off-by: Mark Kettenis <kettenis@openbsd.org>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/scsi/qla2xxx/qla_iocb.c | 11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/radeon/radeon_combios.c | 145 +++++++++-----------------------
+ 1 file changed, 41 insertions(+), 104 deletions(-)
 
-diff --git a/drivers/scsi/qla2xxx/qla_iocb.c b/drivers/scsi/qla2xxx/qla_iocb.c
-index 70dbf53..f2254d2 100644
---- a/drivers/scsi/qla2xxx/qla_iocb.c
-+++ b/drivers/scsi/qla2xxx/qla_iocb.c
-@@ -424,6 +424,8 @@ qla2x00_start_scsi(srb_t *sp)
- 			    __constant_cpu_to_le16(CF_SIMPLE_TAG);
- 			break;
+diff --git a/drivers/gpu/drm/radeon/radeon_combios.c b/drivers/gpu/drm/radeon/radeon_combios.c
+index be9be8e..cf5dd63 100644
+--- a/drivers/gpu/drm/radeon/radeon_combios.c
++++ b/drivers/gpu/drm/radeon/radeon_combios.c
+@@ -147,7 +147,7 @@ static uint16_t combios_get_table_offset(struct drm_device *dev,
+ 					 enum radeon_combios_table_offset table)
+ {
+ 	struct radeon_device *rdev = dev->dev_private;
+-	int rev;
++	int rev, size;
+ 	uint16_t offset = 0, check_offset;
+ 
+ 	if (!rdev->bios)
+@@ -156,174 +156,106 @@ static uint16_t combios_get_table_offset(struct drm_device *dev,
+ 	switch (table) {
+ 		/* absolute offset tables */
+ 	case COMBIOS_ASIC_INIT_1_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0xc);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0xc;
+ 		break;
+ 	case COMBIOS_BIOS_SUPPORT_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x14);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x14;
+ 		break;
+ 	case COMBIOS_DAC_PROGRAMMING_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x2a);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x2a;
+ 		break;
+ 	case COMBIOS_MAX_COLOR_DEPTH_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x2c);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x2c;
+ 		break;
+ 	case COMBIOS_CRTC_INFO_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x2e);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x2e;
+ 		break;
+ 	case COMBIOS_PLL_INFO_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x30);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x30;
+ 		break;
+ 	case COMBIOS_TV_INFO_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x32);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x32;
+ 		break;
+ 	case COMBIOS_DFP_INFO_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x34);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x34;
+ 		break;
+ 	case COMBIOS_HW_CONFIG_INFO_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x36);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x36;
+ 		break;
+ 	case COMBIOS_MULTIMEDIA_INFO_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x38);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x38;
+ 		break;
+ 	case COMBIOS_TV_STD_PATCH_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x3e);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x3e;
+ 		break;
+ 	case COMBIOS_LCD_INFO_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x40);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x40;
+ 		break;
+ 	case COMBIOS_MOBILE_INFO_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x42);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x42;
+ 		break;
+ 	case COMBIOS_PLL_INIT_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x46);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x46;
+ 		break;
+ 	case COMBIOS_MEM_CONFIG_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x48);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x48;
+ 		break;
+ 	case COMBIOS_SAVE_MASK_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x4a);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x4a;
+ 		break;
+ 	case COMBIOS_HARDCODED_EDID_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x4c);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x4c;
+ 		break;
+ 	case COMBIOS_ASIC_INIT_2_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x4e);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x4e;
+ 		break;
+ 	case COMBIOS_CONNECTOR_INFO_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x50);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x50;
+ 		break;
+ 	case COMBIOS_DYN_CLK_1_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x52);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x52;
+ 		break;
+ 	case COMBIOS_RESERVED_MEM_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x54);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x54;
+ 		break;
+ 	case COMBIOS_EXT_TMDS_INFO_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x58);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x58;
+ 		break;
+ 	case COMBIOS_MEM_CLK_INFO_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x5a);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x5a;
+ 		break;
+ 	case COMBIOS_EXT_DAC_INFO_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x5c);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x5c;
+ 		break;
+ 	case COMBIOS_MISC_INFO_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x5e);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x5e;
+ 		break;
+ 	case COMBIOS_CRT_INFO_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x60);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x60;
+ 		break;
+ 	case COMBIOS_INTEGRATED_SYSTEM_INFO_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x62);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x62;
+ 		break;
+ 	case COMBIOS_COMPONENT_VIDEO_INFO_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x64);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x64;
+ 		break;
+ 	case COMBIOS_FAN_SPEED_INFO_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x66);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x66;
+ 		break;
+ 	case COMBIOS_OVERDRIVE_INFO_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x68);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x68;
+ 		break;
+ 	case COMBIOS_OEM_INFO_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x6a);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x6a;
+ 		break;
+ 	case COMBIOS_DYN_CLK_2_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x6c);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x6c;
+ 		break;
+ 	case COMBIOS_POWER_CONNECTOR_INFO_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x6e);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x6e;
+ 		break;
+ 	case COMBIOS_I2C_INFO_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x70);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x70;
+ 		break;
+ 		/* relative offset tables */
+ 	case COMBIOS_ASIC_INIT_3_TABLE:	/* offset from misc info */
+@@ -439,11 +371,16 @@ static uint16_t combios_get_table_offset(struct drm_device *dev,
  		}
-+	} else {
-+		cmd_pkt->control_flags = __constant_cpu_to_le16(CF_SIMPLE_TAG);
+ 		break;
+ 	default:
++		check_offset = 0;
+ 		break;
  	}
  
- 	/* Load SCSI command packet. */
-@@ -1353,11 +1355,11 @@ qla24xx_build_scsi_crc_2_iocbs(srb_t *sp, struct cmd_type_crc_2 *cmd_pkt,
- 		    fcp_cmnd->task_attribute = TSK_ORDERED;
- 		    break;
- 		default:
--		    fcp_cmnd->task_attribute = 0;
-+		    fcp_cmnd->task_attribute = TSK_SIMPLE;
- 		    break;
- 		}
- 	} else {
--		fcp_cmnd->task_attribute = 0;
-+		fcp_cmnd->task_attribute = TSK_SIMPLE;
- 	}
+-	return offset;
++	size = RBIOS8(rdev->bios_header_start + 0x6);
++	/* check absolute offset tables */
++	if (table < COMBIOS_ASIC_INIT_3_TABLE && check_offset && check_offset < size)
++		offset = RBIOS16(rdev->bios_header_start + check_offset);
  
- 	cmd_pkt->fcp_rsp_dseg_len = 0; /* Let response come in status iocb */
-@@ -1563,7 +1565,12 @@ qla24xx_start_scsi(srb_t *sp)
- 		case ORDERED_QUEUE_TAG:
- 			cmd_pkt->task = TSK_ORDERED;
- 			break;
-+		default:
-+		    cmd_pkt->task = TSK_SIMPLE;
-+		    break;
- 		}
-+	} else {
-+		cmd_pkt->task = TSK_SIMPLE;
- 	}
++	return offset;
+ }
  
- 	/* Load SCSI command packet. */
+ bool radeon_combios_check_hardcoded_edid(struct radeon_device *rdev)
 -- 
 1.8.3.2
 
