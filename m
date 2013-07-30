@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758855Ab3G3Jyy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 05:54:54 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53050 "EHLO
+	id S1758726Ab3G3Jz1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 05:55:27 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53046 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758667Ab3G3Jco (ORCPT
+	with ESMTP id S1758628Ab3G3Jcn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 05:32:44 -0400
+	Tue, 30 Jul 2013 05:32:43 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Takashi Iwai <tiwai@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 030/106] ALSA: pxa2xx: Fix unlocked snd_pcm_stop() call
-Date: Tue, 30 Jul 2013 10:30:49 +0100
-Message-Id: <1375176725-5825-31-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 029/106] ALSA: usx2y: Fix unlocked snd_pcm_stop() call
+Date: Tue, 30 Jul 2013 10:30:48 +0100
+Message-Id: <1375176725-5825-30-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
 References: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
@@ -29,31 +29,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Takashi Iwai <tiwai@suse.de>
 
-commit 46f6c1aaf790be9ea3c8ddfc8f235a5f677d08e2 upstream.
+commit 5be1efb4c2ed79c3d7c0cbcbecae768377666e84 upstream.
 
 snd_pcm_stop() must be called in the PCM substream lock context.
 
-Acked-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/arm/pxa2xx-pcm-lib.c | 2 ++
- 1 file changed, 2 insertions(+)
+ sound/usb/usx2y/usbusx2yaudio.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/sound/arm/pxa2xx-pcm-lib.c b/sound/arm/pxa2xx-pcm-lib.c
-index 76e0d56..823359e 100644
---- a/sound/arm/pxa2xx-pcm-lib.c
-+++ b/sound/arm/pxa2xx-pcm-lib.c
-@@ -166,7 +166,9 @@ void pxa2xx_pcm_dma_irq(int dma_ch, void *dev_id)
- 	} else {
- 		printk(KERN_ERR "%s: DMA error on channel %d (DCSR=%#x)\n",
- 			rtd->params->name, dma_ch, dcsr);
-+		snd_pcm_stream_lock(substream);
- 		snd_pcm_stop(substream, SNDRV_PCM_STATE_XRUN);
-+		snd_pcm_stream_unlock(substream);
- 	}
- }
- EXPORT_SYMBOL(pxa2xx_pcm_dma_irq);
+diff --git a/sound/usb/usx2y/usbusx2yaudio.c b/sound/usb/usx2y/usbusx2yaudio.c
+index 520ef96..43d337d 100644
+--- a/sound/usb/usx2y/usbusx2yaudio.c
++++ b/sound/usb/usx2y/usbusx2yaudio.c
+@@ -273,7 +273,11 @@ static void usX2Y_clients_stop(struct usX2Ydev *usX2Y)
+ 		struct snd_usX2Y_substream *subs = usX2Y->subs[s];
+ 		if (subs) {
+ 			if (atomic_read(&subs->state) >= state_PRERUNNING) {
++				unsigned long flags;
++
++				snd_pcm_stream_lock_irqsave(subs->pcm_substream, flags);
+ 				snd_pcm_stop(subs->pcm_substream, SNDRV_PCM_STATE_XRUN);
++				snd_pcm_stream_unlock_irqrestore(subs->pcm_substream, flags);
+ 			}
+ 			for (u = 0; u < NRURBS; u++) {
+ 				struct urb *urb = subs->urb[u];
 -- 
 1.8.3.2
 
