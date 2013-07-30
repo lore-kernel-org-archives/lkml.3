@@ -1,110 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757973Ab3G3Hty (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 03:49:54 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:56574 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754575Ab3G3Htv (ORCPT
+	id S1758015Ab3G3HuI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 03:50:08 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:36788 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757917Ab3G3HuD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 03:49:51 -0400
-Message-ID: <51F76F61.40206@linaro.org>
-Date: Tue, 30 Jul 2013 15:46:41 +0800
-From: Hanjun Guo <hanjun.guo@linaro.org>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Vincent Guittot <vincent.guittot@linaro.org>
-CC: Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Patch Tracking <patches@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linaro-acpi@lists.linaro.org, Al Stone <al.stone@linaro.org>,
-        Graeme Gregory <graeme.gregory@linaro.org>,
-        Naresh Bhat <naresh.bhat@linaro.org>,
-        Tomasz Nowicki <tomasz.nowicki@linaro.org>
-Subject: Re: [RFC][PATCH 2/2] ARM64: introduce cluster id and make a difference
- between socket id
-References: <1374921728-9007-1-git-send-email-hanjun.guo@linaro.org> <1374921728-9007-2-git-send-email-hanjun.guo@linaro.org> <CAKfTPtBXi4C3ncLmsWZQEs3x80VbPhHo+gC9hG_EFwMdafJmOQ@mail.gmail.com>
-In-Reply-To: <CAKfTPtBXi4C3ncLmsWZQEs3x80VbPhHo+gC9hG_EFwMdafJmOQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 30 Jul 2013 03:50:03 -0400
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Mel Gorman <mgorman@suse.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Subject: [RFC PATCH 09/10] sched: Choose a runqueue that has lesser local affinity tasks
+Date: Tue, 30 Jul 2013 13:18:24 +0530
+Message-Id: <1375170505-5967-10-git-send-email-srikar@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1375170505-5967-1-git-send-email-srikar@linux.vnet.ibm.com>
+References: <1375170505-5967-1-git-send-email-srikar@linux.vnet.ibm.com>
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13073007-3620-0000-0000-000003BA60EE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013-7-29 17:38, Vincent Guittot wrote:
-> On 27 July 2013 12:42, Hanjun Guo <hanjun.guo@linaro.org> wrote:
->> In the cpu topology information, we define topology_physical_package_id()
->> as cpu socket id, which means that the socket id is the idenfication for
->> physical processor, not for a cluster in a cpu die.
->>
->> On ARM64 platform, multi cluster in a cpu die will be normal, here is a
->> example with 2 cores in a cluster and 2 cluster in a socket:
->>
->> |--------------------------------------|
->> |                socket                |
->> |                                      |
->> | |---------------|  |---------------| |
->> | |    cluster    |  |    cluster    | |
->> | |               |  |               | |
->> | | |----| |----| |  | |----| |----| | |
->> | | |core| |core| |  | |core| |core| | |
->> | | |----| |----| |  | |----| |----| | |
->> | |               |  |               | |
->> | |---------------|  |---------------| |
->> |                                      |
->> |--------------------------------------|
->>
->> ARM64 extended the MPIDR into 64 bit and introduce another affinity level,
->> we can use this affinity level for socket id and use the third highest level
->> affinity for cluster id, which  make the socket id behavior in its original
->> way.
->>
->> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
->> ---
->>  arch/arm64/include/asm/topology.h |    1 +
->>  arch/arm64/kernel/topology.c      |    8 ++++++--
->>  2 files changed, 7 insertions(+), 2 deletions(-)
->>
->> diff --git a/arch/arm64/include/asm/topology.h b/arch/arm64/include/asm/topology.h
->> index 8631808..ff68ecc 100644
->> --- a/arch/arm64/include/asm/topology.h
->> +++ b/arch/arm64/include/asm/topology.h
->> @@ -8,6 +8,7 @@
->>  struct cputopo_arm64 {
->>         int thread_id;
->>         int core_id;
->> +       int cluster_id;
->>         int socket_id;
->>         cpumask_t thread_sibling;
->>         cpumask_t core_sibling;
->> diff --git a/arch/arm64/kernel/topology.c b/arch/arm64/kernel/topology.c
->> index 1eb0435..6d1e5a6 100644
->> --- a/arch/arm64/kernel/topology.c
->> +++ b/arch/arm64/kernel/topology.c
->> @@ -80,12 +80,14 @@ void store_cpu_topology(unsigned int cpuid)
->>                         /* core performance interdependency */
->>                         cpuid_topo->thread_id = MPIDR_AFFINITY_LEVEL_0(mpidr);
->>                         cpuid_topo->core_id = MPIDR_AFFINITY_LEVEL_1(mpidr);
->> -                       cpuid_topo->socket_id = MPIDR_AFFINITY_LEVEL_2(mpidr);
->> +                       cpuid_topo->cluster_id = MPIDR_AFFINITY_LEVEL_2(mpidr);
->> +                       cpuid_topo->socket_id = MPIDR_AFFINITY_LEVEL_3(mpidr);
-> 
-> socket_id is currently used by update_siblings_masks to update the
-> core_sibling mask. This mask defines which CPUs share their cache and
-> AFAICT, the cache are shared at the cluster level so cluster_id should
-> be used instead socket_id.
+While migrating tasks to a different node, choosing the busiest runqueue
+may not always be the right choice. The busiest runqueue might have
+tasks that are already consolidated. Choosing such a runqueue might
+actually lead to more performance impact.
 
-For some architecture, cpu cores in a cluster share L2 cache, and clusters
-in the cpu die share L3 cache, so I think we can make a difference between
-socket id and cluster id.
+Alternatively choose a runqueue that has less local numa affine tasks,
+i.e, tasks that benefit if run on a node other than their current node.
+The load balancer would then pitchin to move load from the busiest
+runqueue to the runqueue from where tasks for cross node migration were
+picked. So the load would end up being better consolidated.
 
-> 
-> Have you got more information about the goal of this new level_3 ?
+Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+---
+ include/linux/sched.h |    2 +
+ kernel/sched/fair.c   |   82 +++++++++++++++++++++++++++++++++++++++++++++++--
+ kernel/sched/sched.h  |    1 +
+ 3 files changed, 82 insertions(+), 3 deletions(-)
 
-Actually not, I think ARM should give some recommendations as ARMv7 did.
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index ba188f1..c5d0a13 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1507,6 +1507,8 @@ struct task_struct {
+ 	u64 node_stamp;			/* migration stamp  */
+ 	struct callback_head numa_work;
+ 	int migrate_seq;
++	bool pinned_task;
++	bool local_task;
+ #endif /* CONFIG_NUMA_BALANCING */
+ 
+ 	struct rcu_head rcu;
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index a99aebc..e749650 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -805,6 +805,36 @@ static void task_numa_placement(struct task_struct *p)
+ 	/* FIXME: Scheduling placement policy hints go here */
+ }
+ 
++static void update_local_task_count(struct task_struct *p)
++{
++	struct rq *rq = task_rq(p);
++	int curnode = cpu_to_node(cpu_of(rq));
++	int cur_numa_weight = 0;
++	int total_numa_weight = 0;
++
++	if (!p->pinned_task) {
++		if (p->mm && p->mm->numa_weights) {
++			cur_numa_weight = atomic_read(&p->mm->numa_weights[curnode]);
++			total_numa_weight = atomic_read(&p->mm->numa_weights[nr_node_ids]);
++		}
++
++		/*
++		 * Account tasks that are neither pinned nor have numa affinity as
++		 * non local tasks.
++		 */
++		if (p->local_task != (cur_numa_weight * nr_node_ids > total_numa_weight)) {
++			if (!p->local_task) {
++				rq->non_local_task_count--;
++				p->local_task = true;
++			} else {
++				rq->non_local_task_count++;
++				p->local_task = false;
++			}
++
++		}
++	}
++}
++
+ /*
+  * Got a PROT_NONE fault for a page on @node.
+  */
+@@ -826,6 +856,9 @@ void task_numa_fault(int node, int pages, bool migrated)
+ 			p->numa_scan_period + jiffies_to_msecs(10));
+ 
+ 	task_numa_placement(p);
++
++	/* Should this be moved to update_curr()? */
++	update_local_task_count(p);
+ }
+ 
+ static void reset_ptenuma_scan(struct task_struct *p)
+@@ -996,16 +1029,31 @@ void task_tick_numa(struct rq *rq, struct task_struct *curr)
+ 	}
+ }
+ 
++static void add_non_local_task_count(struct rq *rq, struct task_struct *p,
++		int value)
++{
++	if (p->pinned_task || p->local_task)
++		return;
++	else
++		rq->non_local_task_count += value;
++}
++
+ static void account_numa_enqueue(struct cfs_rq *cfs_rq, struct task_struct *p)
+ {
+ 	struct mm_struct *mm = p->mm;
+ 	struct rq *rq = rq_of(cfs_rq);
+ 	int curnode = cpu_to_node(cpu_of(rq));
++	int cur_numa_weight = 0;
++	int total_numa_weight = 0;
+ 
+ 	if (mm && mm->numa_weights) {
+-		atomic_read(&mm->numa_weights[curnode]);
+-		atomic_read(&mm->numa_weights[nr_node_ids]);
++		cur_numa_weight = atomic_inc_return(&mm->numa_weights[curnode]);
++		total_numa_weight = atomic_inc_return(&mm->numa_weights[nr_node_ids]);
+ 	}
++
++	p->pinned_task = (p->nr_cpus_allowed == 1);
++	p->local_task = (cur_numa_weight * nr_node_ids > total_numa_weight);
++	add_non_local_task_count(rq, p, 1);
+ }
+ 
+ static void account_numa_dequeue(struct cfs_rq *cfs_rq, struct task_struct *p)
+@@ -1019,6 +1067,10 @@ static void account_numa_dequeue(struct cfs_rq *cfs_rq, struct task_struct *p)
+ 		atomic_dec(&mm->numa_weights[curnode]);
+ 		atomic_dec(&mm->numa_weights[nr_node_ids]);
+ 	}
++
++	add_non_local_task_count(rq, p, -1);
++	p->pinned_task = false;
++	p->local_task = false;
+ }
+ #else
+ static void task_tick_numa(struct rq *rq, struct task_struct *curr)
+@@ -5046,6 +5098,27 @@ find_busiest_group(struct lb_env *env, int *balance)
+ 	return NULL;
+ }
+ 
++#ifdef CONFIG_NUMA_BALANCING
++static struct rq *find_numa_queue(struct lb_env *env,
++				struct sched_group *group, struct rq *busy_rq)
++{
++	struct rq *rq;
++	int i;
++
++	for_each_cpu(i, sched_group_cpus(group)) {
++		if (!cpumask_test_cpu(i, env->cpus))
++			continue;
++
++		rq = cpu_rq(i);
++		if (rq->nr_running > 1) {
++			if (rq->non_local_task_count > busy_rq->non_local_task_count)
++				busy_rq = rq;
++		}
++	}
++	return busy_rq;
++}
++#endif
++
+ /*
+  * find_busiest_queue - find the busiest runqueue among the cpus in group.
+  */
+@@ -5187,8 +5260,11 @@ static int load_balance(int this_cpu, struct rq *this_rq,
+ 	if (busiest->nr_running > 1) {
+ #ifdef CONFIG_NUMA_BALANCING
+ 		if (sd->flags & SD_NUMA) {
+-			if (cpu_to_node(env.dst_cpu) != cpu_to_node(env.src_cpu))
++			if (cpu_to_node(env.dst_cpu) != cpu_to_node(env.src_cpu)) {
+ 				env.iterations = 0;
++				busiest = find_numa_queue(&env, group, busiest);
++			}
++
+ 		}
+ #endif
+ 		/*
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 9f60d74..5e620b7 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -486,6 +486,7 @@ struct rq {
+ 	struct sched_avg avg;
+ #ifdef CONFIG_NUMA_BALANCING
+ 	struct task_struct *push_task;
++	unsigned int non_local_task_count;
+ #endif
+ };
+ 
+-- 
+1.7.1
 
-Thanks
-Hanjun
