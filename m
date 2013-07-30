@@ -1,90 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752259Ab3G3ROW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 13:14:22 -0400
-Received: from dkim2.fusionio.com ([66.114.96.54]:40104 "EHLO
-	dkim2.fusionio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750926Ab3G3ROV (ORCPT
+	id S1753650Ab3G3RR4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 13:17:56 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:50859 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750800Ab3G3RRz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 13:14:21 -0400
-X-ASG-Debug-ID: 1375204411-03d6a577cb3dcfc0001-xx1T2L
-X-Barracuda-Envelope-From: JBacik@fusionio.com
-Date: Tue, 30 Jul 2013 13:13:29 -0400
-From: Josef Bacik <jbacik@fusionio.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: Thorsten Glaser <tg@mirbsd.de>,
-        Debian GNU/Linux m68k <debian-68k@lists.debian.org>,
-        <linux-btrfs@vger.kernel.org>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>
-Subject: Re: btrfs zero divide (was: Re: Linux 3.10 problem reports (yes,
- plural))
-Message-ID: <20130730171329.GF24583@localhost.localdomain>
-X-ASG-Orig-Subj: Re: btrfs zero divide (was: Re: Linux 3.10 problem reports (yes,
- plural))
-References: <Pine.BSM.4.64L.1307300820160.20675@herc.mirbsd.org>
- <alpine.DEB.2.02.1307301052010.23107@ayla.of.borg>
+	Tue, 30 Jul 2013 13:17:55 -0400
+Date: Tue, 30 Jul 2013 10:17:52 -0700
+From: David Brown <davidb@codeaurora.org>
+To: Chris Ball <cjb@laptop.org>
+Cc: Georgi Djakov <gdjakov@mm-sol.com>, linux-mmc@vger.kernel.org,
+        grant.likely@linaro.org, rob.herring@calxeda.com,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Asutosh Das <asutoshd@codeaurora.org>,
+        Venkat Gopalakrishnan <venkatg@codeaurora.org>,
+        Sahitya Tummala <stummala@codeaurora.org>,
+        Subhash Jadavani <subhashj@codeaurora.org>
+Subject: Re: [PATCH] mmc: sdhci-msm: Add support for MSM chipsets
+Message-ID: <20130730171752.GA30897@codeaurora.org>
+References: <1375201355-26906-1-git-send-email-gdjakov@mm-sol.com>
+ <86y58orogf.fsf@void.printf.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii; format=flowed
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <alpine.DEB.2.02.1307301052010.23107@ayla.of.borg>
-User-Agent: Mutt/1.5.21 (2011-07-01)
-X-Originating-IP: [10.101.1.160]
-X-Barracuda-Connect: cas2.int.fusionio.com[10.101.1.41]
-X-Barracuda-Start-Time: 1375204411
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
-X-Barracuda-Bayes: INNOCENT GLOBAL 0.0000 1.0000 -2.0210
-X-Barracuda-Spam-Score: -2.02
-X-Barracuda-Spam-Status: No, SCORE=-2.02 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.137440
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+In-Reply-To: <86y58orogf.fsf@void.printf.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 30, 2013 at 11:07:30AM +0200, Geert Uytterhoeven wrote:
-> On Tue, 30 Jul 2013, Thorsten Glaser wrote:
-> > NEW problem: btrfs doesn’t work at all. I had to reboot my
-> > buildd into 3.2 using echo s/u/s/o >/proc/sysrq-trigger as
-> > the attempt to mount it left the system hanging there.
-> 
-> > [    0.000000] Linux version 3.10-1-m68k (debian-kernel@lists.debian.org) (gcc version 4.8.1 (Debian 4.8.1-7+m68k.1) ) #1 Debian 3.10.3-1 (2013-07-27)
-> 
-> > [    6.720000] bio: create slab <bio-1> at 1
-> > [    6.740000] Btrfs loaded
-> > [    6.830000] device label ara5-butter devid 1 transid 376178 /dev/nfhd8p3
-> > [    7.150000] EXT4-fs (nfhd8p1): mounted filesystem with ordered data mode. Opts: (null)
-> > [   14.520000] udevd[228]: starting version 175
-> > [   17.820000] device label ara5-butter devid 1 transid 376178 /dev/nfhd8p3
-> > [   20.850000] Adding 3670012k swap on /dev/nfhd8p2.  Priority:-1 extents:1 across:3670012k
-> > [   21.380000] EXT4-fs (nfhd8p1): re-mounted. Opts: (null)
-> > [   31.300000] EXT4-fs (nfhd8p1): re-mounted. Opts: errors=remount-ro
-> > [   38.460000] device label ara5-butter devid 1 transid 376178 /dev/nfhd8p3
-> > [   38.530000] btrfs: setting nodatacow, compression disabled
-> > [   38.540000] btrfs: enabling auto recovery
-> > [   38.570000] btrfs: disk space caching is enabled
-> > [   38.600000] *** ZERO DIVIDE ***   FORMAT=2
-> > [   38.630000] Current process id is 722
-> > [   38.660000] BAD KERNEL TRAP: 00000000
-> > [   38.680000] Modules linked in: evdev mac_hid ext4 crc16 jbd2 mbcache btrfs xor lzo_compress zlib_deflate raid6_pq crc32c libcrc32c
-> > [   38.730000] PC: [<319535b2>] __btrfs_map_block+0x11c/0x119a [btrfs]
-> 
-> Woops, adding the btrfs devs to CC.
-> 
+On Tue, Jul 30, 2013 at 05:40:16PM +0100, Chris Ball wrote:
 
-Can you gdb btrfs.ko and do 
+>On Tue, Jul 30 2013, Georgi Djakov wrote:
+>> This platform driver adds the support of Secure Digital Host
+>> Controller Interface compliant controller in MSM chipsets.
+>>
+>> CC: Asutosh Das <asutoshd@codeaurora.org>
+>> CC: Venkat Gopalakrishnan <venkatg@codeaurora.org>
+>> CC: Sahitya Tummala <stummala@codeaurora.org>
+>> CC: Subhash Jadavani <subhashj@codeaurora.org>
+>> Signed-off-by: Georgi Djakov <gdjakov@mm-sol.com>
+>> ---
+>> This is an initial version of the Qualcomm MSM SDHCI driver.
+>> It is based on the SDHCI code from coreaurora.org with minor
+>> modifications. The MMC standard DT bindings are used where
+>> possible. The patch applies to v3.11-rc3.
+>
+>Is the arch code that will use this driver already in mainline,
+>or on its way in?
 
-list *(__btrfs_map_block+0x11c)
+It is on it's way.  Once all of the necessary Acks are in place, I'll
+be pulling it in.
 
-so I can see where this is?  I've not seen this yet, just so I'm clear this is
-blowing up because we're doing
+David
 
-blah / 0
-
-right?  I've looked at all the places we do divides in this function and it
-doesn't look like we're doing this anywhere but I could be blind.  Thanks,
-
-Josef
+-- 
+sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
