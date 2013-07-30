@@ -1,87 +1,378 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932142Ab3G3JUy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 05:20:54 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:12964 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758329Ab3G3JUu (ORCPT
+	id S932223Ab3G3JV3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 05:21:29 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:64877 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758493Ab3G3JTZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 05:20:50 -0400
-X-AuditID: cbfee691-b7fef6d000002d62-6d-51f785700bd0
-From: Jingoo Han <jg1.han@samsung.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Mark Brown <broonie@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jingoo Han <jg1.han@samsung.com>
-Subject: [PATCH] Driver core: Add accessor for device tree node
-Date: Tue, 30 Jul 2013 18:20:47 +0900
-Message-id: <007601ce8d06$13dbb890$3b9329b0$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac6NBYOmTcp9nI+FTGyWGqKoa5RWfw==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrJIsWRmVeSWpSXmKPExsVy+t8zI92C1u+BBr+ei1vMWb+GzWLqwyds
-	FvOPnGO1OPBnB6NF8+L1bBaXF15itbi8aw6bxeEVB5gcODwWfL7C7rFpVSebx51re9g8Tsz4
-	zeKxf+4ado++LasYPT5vkgtgj+KySUnNySxLLdK3S+DK+HDnCXvBNdaKdSfVGxgvsXQxcnJI
-	CJhITL1yjQnCFpO4cG89WxcjF4eQwDJGif51L4GKOMCKFu3hg4hPZ5RYvHcnO4Tzi1Fi7vG9
-	rCDdbAJqEl++HGYHsUUEjCX6z84CK2IW+M8osbfnMjNIQljAXuLJr/+MIDaLgKrEtrWnwRp4
-	BSwl5l+7zwhhC0r8mHwP7DxmAS2J9TuPM0HY8hKb17xlhjhVQWLH2deMEMv0JBrvrIWqF5HY
-	9+IdI8hiCYG37BKf1u1kg1gmIPFt8iGod2QlNh2AmiMpcXDFDZYJjGKzkKyehWT1LCSrZyFZ
-	sYCRZRWjaGpBckFxUnqRqV5xYm5xaV66XnJ+7iZGSLRO3MF4/4D1IcZkoPUTmaVEk/OB0Z5X
-	Em9obGZkYWpiamxkbmlGmrCSOK96i3WgkEB6YklqdmpqQWpRfFFpTmrxIUYmDk6pBsYzf6ae
-	P7e/oGN1aNX8Aw9qY8qWKU2do+k60cYnM23NkwNCl/yWbnq79cv3GTGNNeYRm3sKN1l9ervM
-	dWprgjf7u98np8h+Oda4QqaQvbMqrdKU/7j1yqiJVaIbBO+bKz1lZns28evmu+vOnXfruGW5
-	wE5E4nBFc+XHALOODC6uylWb7ux1ytipxFKckWioxVxUnAgAD/wLJ+wCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrGKsWRmVeSWpSXmKPExsVy+t9jQd2C1u+BBh8uClvMWb+GzWLqwyds
-	FvOPnGO1OPBnB6NF8+L1bBaXF15itbi8aw6bxeEVB5gcODwWfL7C7rFpVSebx51re9g8Tsz4
-	zeKxf+4ado++LasYPT5vkgtgj2pgtMlITUxJLVJIzUvOT8nMS7dV8g6Od443NTMw1DW0tDBX
-	UshLzE21VXLxCdB1y8wBOktJoSwxpxQoFJBYXKykb4dpQmiIm64FTGOErm9IEFyPkQEaSFjH
-	mPHhzhP2gmusFetOqjcwXmLpYuTgkBAwkVi0h6+LkRPIFJO4cG89WxcjF4eQwHRGicV7d7JD
-	OL8YJeYe38sKUsUmoCbx5cthdhBbRMBYov/sLLAiZoH/jBJ7ey4zgySEBewlnvz6zwhiswio
-	SmxbexqsgVfAUmL+tfuMELagxI/J91hAbGYBLYn1O48zQdjyEpvXvGWGOElBYsfZ14wQy/Qk
-	Gu+shaoXkdj34h3jBEaBWUhGzUIyahaSUbOQtCxgZFnFKJpakFxQnJSea6RXnJhbXJqXrpec
-	n7uJEZwKnknvYFzVYHGIUYCDUYmHd0PBt0Ah1sSy4srcQ4wSHMxKIrwsN4BCvCmJlVWpRfnx
-	RaU5qcWHGJOBPp3ILCWanA9MU3kl8YbGJmZGlkZmFkYm5uakCSuJ8x5stQ4UEkhPLEnNTk0t
-	SC2C2cLEwSnVwLiGN+jjhZlXmJxnX1JYIG3+TnOGa9TBPZ+PSe+v2dK2L+z9jc2vlpXyKp+4
-	vaBeImTvq0t/A5c/dIh7orS4aEagzadLt7v8T5XY56z5xnH5f+i7jPw5fq0/lu8IbmveNJVj
-	9XclhopeqXe3VV9xGS2S7Ug+ZjyrpX/Z/ra1yrnCC1SlW1ot9mspsRRnJBpqMRcVJwIAlpLr
-	l0kDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Tue, 30 Jul 2013 05:19:25 -0400
+X-AuditID: 9c930179-b7c49ae000000e68-e9-51f78518a173
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>,
+        Jeremy Eder <jeder@redhat.com>
+Subject: [PATCH 09/17] perf ftrace: Add 'report' sub-command
+Date: Tue, 30 Jul 2013 18:19:06 +0900
+Message-Id: <1375175954-798-10-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1375175954-798-1-git-send-email-namhyung@kernel.org>
+References: <1375175954-798-1-git-send-email-namhyung@kernel.org>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the wrapper function for retrieving device tree node instead of
-accessing dev->of_node directly.
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+The ftrace report command is for analyzing ftrace result as usual perf
+report style.  Internal processing of the ftrace buffer is similar to
+the 'show' sub-command but it synthesizes necessary information like
+thread, dso, map and symbol from saved trace info.
+
+It currently count number of samples as a period and it can be
+extended to use calltime of funcgraph_exit in the future.
+
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- include/linux/device.h |    5 +++++
- 1 file changed, 5 insertions(+)
+ tools/perf/builtin-ftrace.c | 282 +++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 280 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/device.h b/include/linux/device.h
-index 22b546a..4faaa51 100644
---- a/include/linux/device.h
-+++ b/include/linux/device.h
-@@ -917,6 +917,11 @@ static inline void *dev_get_platdata(const struct device *dev)
- 	return dev->platform_data;
+diff --git a/tools/perf/builtin-ftrace.c b/tools/perf/builtin-ftrace.c
+index c54ab6e90d42..0792bfdf168c 100644
+--- a/tools/perf/builtin-ftrace.c
++++ b/tools/perf/builtin-ftrace.c
+@@ -21,6 +21,7 @@
+ #include "util/target.h"
+ #include "util/thread_map.h"
+ #include "util/cpumap.h"
++#include "util/sort.h"
+ #include "util/trace-event.h"
+ #include "../lib/traceevent/kbuffer.h"
+ #include "../lib/traceevent/event-parse.h"
+@@ -35,6 +36,7 @@ struct perf_ftrace {
+ 	const char *tracer;
+ 	const char *dirname;
+ 	struct pevent *pevent;
++	bool show_full_info;
+ };
+ 
+ static bool done;
+@@ -1176,6 +1178,214 @@ out:
+ 	return ret;
  }
  
-+static inline void *dev_get_of_node(const struct device *dev)
++struct cmdline_list {
++	struct cmdline_list	*next;
++	char			*comm;
++	int			pid;
++};
++
++struct func_list {
++	struct func_list	*next;
++	unsigned long long	addr;
++	char			*func;
++	char			*mod;
++};
++
++static int do_ftrace_report(struct perf_ftrace *ftrace)
 +{
-+	return dev->of_node;
++	int ret = -1;
++	char buf[PATH_MAX];
++	unsigned long nr_samples;
++	struct perf_session *session;
++	struct perf_evsel *evsel;
++	struct pevent_record *record;
++	struct perf_ftrace_report report = {
++		.ftrace = ftrace,
++		.tool = {
++			.sample = process_sample_event,
++		},
++	};
++	struct cmdline_list *cmdline;
++	struct func_list *func;
++	struct machine *machine;
++	struct dso *dso;
++
++	canonicalize_directory_name(ftrace->dirname);
++
++	scnprintf(buf, sizeof(buf), "%s.dir/perf.header", ftrace->dirname);
++
++	session = perf_session__new(buf, O_RDONLY, false, false, &report.tool);
++	if (session == NULL) {
++		pr_err("failed to create a session\n");
++		return -1;
++	}
++
++	ftrace->pevent = session->pevent;
++
++	if (perf_session__process_events(session, &report.tool) < 0) {
++		pr_err("failed to process events\n");
++		goto out;
++	}
++
++	machine = machines__findnew(&session->machines, HOST_KERNEL_ID);
++
++	/* Synthesize thread info from saved cmdlines */
++	cmdline = ftrace->pevent->cmdlist;
++	while (cmdline) {
++		struct thread *thread;
++
++		thread = machine__findnew_thread(machine, cmdline->pid);
++		if (thread && !thread->comm_set)
++			thread__set_comm(thread, cmdline->comm);
++
++		cmdline = cmdline->next;
++	}
++
++	/* Synthesize kernel dso and symbol info from saved kallsyms */
++	func = ftrace->pevent->funclist;
++	while (func) {
++		struct symbol *sym;
++
++		scnprintf(buf, sizeof(buf), "[%s]",
++			  func->mod ? func->mod : "kernel.kallsyms");
++
++		dso = dso__kernel_findnew(machine, buf, NULL, DSO_TYPE_KERNEL);
++		if (dso == NULL) {
++			pr_debug("can't find or allocate dso %s\n", buf);
++			continue;
++		}
++
++		sym = symbol__new(func->addr, 0, STB_GLOBAL, func->func);
++		if (sym == NULL) {
++			pr_debug("failed to allocate new symbol\n");
++			continue;
++		}
++		symbols__insert(&dso->symbols[MAP__FUNCTION], sym);
++
++		func = func->next;
++	}
++
++	/* Generate kernel maps */
++	list_for_each_entry(dso, &machine->kernel_dsos, node) {
++		struct map *map = map__new2(0, dso, MAP__FUNCTION);
++		if (map == NULL) {
++			pr_debug("failed to allocate new map\n");
++			goto out;
++		}
++
++		symbols__fixup_end(&dso->symbols[MAP__FUNCTION]);
++		map__fixup_start(map);
++		map__fixup_end(map);
++
++		dso__set_loaded(dso, MAP__FUNCTION);
++
++		map_groups__insert(&machine->kmaps, map);
++		if (strcmp(dso->name, "[kernel.kallsyms]") == 0)
++			machine->vmlinux_maps[MAP__FUNCTION] = map;
++	}
++
++	/* FIXME: no need to get ordered */
++	record = get_ordered_record(ftrace);
++	while (record) {
++		int type;
++		struct addr_location al;
++		union perf_event event = {
++			.header = {
++				.misc = PERF_RECORD_MISC_KERNEL,
++			},
++		};
++		struct perf_sample sample = {
++			.cpu = record->cpu,
++			.raw_data = record->data,
++			.period = 1,
++		};
++		struct format_field *field;
++		unsigned long long val;
++
++		type = pevent_data_type(ftrace->pevent, record);
++		evsel = perf_evlist__find_tracepoint_by_id(session->evlist,
++							   type);
++		if (evsel == NULL) {
++			pr_warning("no event found for type %d\n", type);
++			continue;
++		}
++
++		event.ip.pid = pevent_data_pid(ftrace->pevent, record);
++
++		if (!strcmp(perf_evsel__name(evsel), "ftrace:function"))
++			field = pevent_find_field(evsel->tp_format, "ip");
++		else
++			field = pevent_find_field(evsel->tp_format, "func");
++
++		if (pevent_read_number_field(field, record->data, &val) < 0) {
++			pr_err("failed to parse function address\n");
++			goto out;
++		}
++		event.ip.ip = val;
++
++		if (perf_event__preprocess_sample(&event, machine, &al,
++						  &sample, NULL) < 0) {
++			pr_err("problem processing %d event, skipping it.\n",
++				event.header.type);
++			goto out;
++		}
++
++		/* TODO: update sample.period using calltime */
++		if (!__hists__add_entry(&evsel->hists, &al, NULL,
++					sample.period, 0)) {
++			pr_err("failed to add a hist entry\n");
++			goto out;
++		}
++
++		evsel->hists.stats.total_period += sample.period;
++		hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
++
++		free(record);
++		record = get_ordered_record(ftrace);
++	}
++	ret = 0;
++
++	perf_session__fprintf_info(session, stdout, ftrace->show_full_info);
++
++	nr_samples = 0;
++	list_for_each_entry(evsel, &session->evlist->entries, node) {
++		struct hists *hists = &evsel->hists;
++
++		hists__collapse_resort(hists);
++		hists__output_resort(&evsel->hists);
++		nr_samples += hists->stats.nr_events[PERF_RECORD_SAMPLE];
++	}
++
++	if (nr_samples == 0) {
++		pr_warning("The %s file has no samples!\n", session->filename);
++		goto out;
++	}
++
++	list_for_each_entry(evsel, &session->evlist->entries, node) {
++		struct hists *hists = &evsel->hists;
++		const char *evname = perf_evsel__name(evsel);
++		u64 nr_events = hists->stats.total_period;
++		char unit;
++
++		nr_samples = hists->stats.nr_events[PERF_RECORD_SAMPLE];
++		nr_samples = convert_unit(nr_samples, &unit);
++		fprintf(stdout, "# Samples: %lu%c", nr_samples, unit);
++		if (evname != NULL)
++			fprintf(stdout, " of event '%s'", evname);
++
++		fprintf(stdout, "\n# Event count (approx.): %" PRIu64, nr_events);
++		fprintf(stdout, "\n#\n");
++
++		hists__fprintf(hists, true, 0, 0, 0.0, stdout);
++		fprintf(stdout, "\n\n");
++	}
++
++out:
++	free_ftrace_report_args(ftrace);
++	perf_session__delete(session);
++	return ret;
 +}
 +
- /*
-  * Manual binding of a device to driver. See drivers/base/bus.c
-  * for information on use.
+ static int
+ __cmd_ftrace_live(struct perf_ftrace *ftrace, int argc, const char **argv)
+ {
+@@ -1359,6 +1569,72 @@ out:
+ 	return ret;
+ }
+ 
++static int
++__cmd_ftrace_report(struct perf_ftrace *ftrace, int argc, const char **argv)
++{
++	int ret = -1;
++	const char * const report_usage[] = {
++		"perf ftrace report [<options>]",
++		NULL
++	};
++	const struct option report_options[] = {
++	OPT_STRING('i', "input", &ftrace->dirname, "dirname",
++		   "input directory name to use (default: perf.data)"),
++	OPT_INCR('v', "verbose", &verbose,
++		 "be more verbose"),
++	OPT_BOOLEAN('D', "dump-raw-trace", &dump_trace,
++		    "dump raw trace in ASCII"),
++	OPT_STRING('C', "cpu", &ftrace->target.cpu_list, "cpu",
++		    "list of cpus to monitor"),
++	OPT_STRING('s', "sort", &sort_order, "key[,key2...]",
++		   "sort by key(s): pid, comm, dso, symbol, cpu"),
++	OPT_BOOLEAN('I', "show-info", &ftrace->show_full_info,
++		    "Display extended information like cpu/numa topology"),
++	OPT_END()
++	};
++
++	argc = parse_options(argc, argv, report_options, report_usage,
++			     PARSE_OPT_STOP_AT_NON_OPTION);
++	if (argc)
++		usage_with_options(report_usage, report_options);
++
++	ret = perf_target__validate(&ftrace->target);
++	if (ret) {
++		char errbuf[512];
++
++		perf_target__strerror(&ftrace->target, ret, errbuf, 512);
++		pr_err("%s\n", errbuf);
++		return -EINVAL;
++	}
++
++	ftrace->evlist = perf_evlist__new();
++	if (ftrace->evlist == NULL)
++		return -ENOMEM;
++
++	ret = perf_evlist__create_maps(ftrace->evlist, &ftrace->target);
++	if (ret < 0)
++		goto out;
++
++	if (ftrace->dirname == NULL)
++		ftrace->dirname = DEFAULT_DIRNAME;
++
++	perf_hpp__init();
++
++	setup_sorting();
++
++	symbol_conf.exclude_other = false;
++	symbol_conf.try_vmlinux_path = false;
++	symbol__init();
++
++	ret = do_ftrace_report(ftrace);
++
++	perf_evlist__delete_maps(ftrace->evlist);
++out:
++	perf_evlist__delete(ftrace->evlist);
++
++	return ret;
++}
++
+ int cmd_ftrace(int argc, const char **argv, const char *prefix __maybe_unused)
+ {
+ 	int ret;
+@@ -1366,8 +1642,8 @@ int cmd_ftrace(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		.target = { .uid = UINT_MAX, },
+ 	};
+ 	const char * const ftrace_usage[] = {
+-		"perf ftrace {live|record|show} [<options>] [<command>]",
+-		"perf ftrace {live|record|show} [<options>] -- <command> [<options>]",
++		"perf ftrace {live|record|show|report} [<options>] [<command>]",
++		"perf ftrace {live|record|show|report} [<options>] -- <command> [<options>]",
+ 		NULL
+ 	};
+ 	const struct option ftrace_options[] = {
+@@ -1390,6 +1666,8 @@ int cmd_ftrace(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		ret = __cmd_ftrace_record(&ftrace, argc, argv);
+ 	} else 	if (strcmp(argv[0], "show") == 0) {
+ 		ret = __cmd_ftrace_show(&ftrace, argc, argv);
++	} else 	if (strncmp(argv[0], "rep", 3) == 0) {
++		ret = __cmd_ftrace_report(&ftrace, argc, argv);
+ 	} else {
+ 		usage_with_options(ftrace_usage, ftrace_options);
+ 	}
 -- 
-1.7.10.4
-
+1.7.11.7
 
