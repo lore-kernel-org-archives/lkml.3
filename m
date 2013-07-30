@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759016Ab3G3KFs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 06:05:48 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52908 "EHLO
+	id S1758996Ab3G3KFp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 06:05:45 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52909 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758444Ab3G3JcO (ORCPT
+	with ESMTP id S1758449Ab3G3JcO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 30 Jul 2013 05:32:14 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jan Kara <jack@suse.cz>, Jens Axboe <axboe@kernel.dk>,
+Cc: "J. Bruce Fields" <bfields@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 002/106] writeback: Fix periodic writeback after fs mount
-Date: Tue, 30 Jul 2013 10:30:21 +0100
-Message-Id: <1375176725-5825-3-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 003/106] nfsd4: fix decoding of compounds across page boundaries
+Date: Tue, 30 Jul 2013 10:30:22 +0100
+Message-Id: <1375176725-5825-4-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
 References: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
@@ -27,61 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit a5faeaf9109578e65e1a32e2a3e76c8b47e7dcb6 upstream.
+commit 247500820ebd02ad87525db5d9b199e5b66f6636 upstream.
 
-Code in blkdev.c moves a device inode to default_backing_dev_info when
-the last reference to the device is put and moves the device inode back
-to its bdi when the first reference is acquired. This includes moving to
-wb.b_dirty list if the device inode is dirty. The code however doesn't
-setup timer to wake corresponding flusher thread and while wb.b_dirty
-list is non-empty __mark_inode_dirty() will not set it up either. Thus
-periodic writeback is effectively disabled until a sync(2) call which can
-lead to unexpected data loss in case of crash or power failure.
+A freebsd NFSv4.0 client was getting rare IO errors expanding a tarball.
+A network trace showed the server returning BAD_XDR on the final getattr
+of a getattr+write+getattr compound.  The final getattr started on a
+page boundary.
 
-Fix the problem by setting up a timer for periodic writeback in case we
-add the first dirty inode to wb.b_dirty list in bdev_inode_switch_bdi().
+I believe the Linux client ignores errors on the post-write getattr, and
+that that's why we haven't seen this before.
 
-Reported-by: Bert De Jonghe <Bert.DeJonghe@amplidata.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
-[ luis: backported to 3.5: adjusted context ]
+Reported-by: Rick Macklem <rmacklem@uoguelph.ca>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/block_dev.c | 9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ fs/nfsd/nfs4xdr.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/block_dev.c b/fs/block_dev.c
-index 1244094..7da78cf 100644
---- a/fs/block_dev.c
-+++ b/fs/block_dev.c
-@@ -57,17 +57,24 @@ static void bdev_inode_switch_bdi(struct inode *inode,
- 			struct backing_dev_info *dst)
- {
- 	struct backing_dev_info *old = inode->i_data.backing_dev_info;
-+	bool wakeup_bdi = false;
- 
- 	if (unlikely(dst == old))		/* deadlock avoidance */
- 		return;
- 	bdi_lock_two(&old->wb, &dst->wb);
- 	spin_lock(&inode->i_lock);
- 	inode->i_data.backing_dev_info = dst;
--	if (inode->i_state & I_DIRTY)
-+	if (inode->i_state & I_DIRTY) {
-+		if (bdi_cap_writeback_dirty(dst) && !wb_has_dirty_io(&dst->wb))
-+			wakeup_bdi = true;
- 		list_move(&inode->i_wb_list, &dst->wb.b_dirty);
-+	}
- 	spin_unlock(&inode->i_lock);
- 	spin_unlock(&old->wb.list_lock);
- 	spin_unlock(&dst->wb.list_lock);
-+
-+	if (wakeup_bdi)
-+		bdi_wakeup_thread_delayed(dst);
- }
- 
- sector_t blkdev_max_block(struct block_device *bdev)
+diff --git a/fs/nfsd/nfs4xdr.c b/fs/nfsd/nfs4xdr.c
+index b2ae2da..65ed9bf 100644
+--- a/fs/nfsd/nfs4xdr.c
++++ b/fs/nfsd/nfs4xdr.c
+@@ -161,8 +161,8 @@ static __be32 *read_buf(struct nfsd4_compoundargs *argp, u32 nbytes)
+ 	 */
+ 	memcpy(p, argp->p, avail);
+ 	/* step to next page */
+-	argp->p = page_address(argp->pagelist[0]);
+ 	argp->pagelist++;
++	argp->p = page_address(argp->pagelist[0]);
+ 	if (argp->pagelen < PAGE_SIZE) {
+ 		argp->end = argp->p + (argp->pagelen>>2);
+ 		argp->pagelen = 0;
 -- 
 1.8.3.2
 
