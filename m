@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755266Ab3G3PC1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 11:02:27 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:42286 "EHLO
+	id S1755389Ab3G3PCl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 11:02:41 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:42278 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753981Ab3G3PAE (ORCPT
+	by vger.kernel.org with ESMTP id S1753915Ab3G3PAE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 30 Jul 2013 11:00:04 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
@@ -12,11 +12,10 @@ To: linux-arm-kernel@lists.infradead.org
 Cc: Emilio Lopez <emilio@elopez.com.ar>, kevin.z.m.zh@gmail.com,
         sunny@allwinnertech.com, shuge@allwinnertech.com,
         linux-kernel@vger.kernel.org, linux-sunxi@googlegroups.com,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 04/10] pinctrl: sunxi: Wrap long compatible declaration lines
-Date: Tue, 30 Jul 2013 16:59:48 +0200
-Message-Id: <1375196394-21138-5-git-send-email-maxime.ripard@free-electrons.com>
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: [PATCH 03/10] ARM: sun7i: Add Olimex A20-Olinuxino-Micro support
+Date: Tue, 30 Jul 2013 16:59:47 +0200
+Message-Id: <1375196394-21138-4-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 1.8.3.4
 In-Reply-To: <1375196394-21138-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1375196394-21138-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -24,49 +23,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The compatible declaration and their associated data are exceeding the
-80-characters width limit.
-
-Split these lines to make them more readable and fit in the kernel
-coding guidelines.
+The Olimex A20-Olinuxino is an open-hardware board based on the
+Allwinner A20 SoC, with most of the pins exported on headers, a 10/100M
+ethernet port, SATA, SD and uSD slots, etc.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>
 ---
- drivers/pinctrl/pinctrl-sunxi.c | 20 ++++++++++++++++----
- 1 file changed, 16 insertions(+), 4 deletions(-)
+ arch/arm/boot/dts/Makefile                      |  3 ++-
+ arch/arm/boot/dts/sun7i-a20-olinuxino-micro.dts | 34 +++++++++++++++++++++++++
+ 2 files changed, 36 insertions(+), 1 deletion(-)
+ create mode 100644 arch/arm/boot/dts/sun7i-a20-olinuxino-micro.dts
 
-diff --git a/drivers/pinctrl/pinctrl-sunxi.c b/drivers/pinctrl/pinctrl-sunxi.c
-index 5985e60..246310b 100644
---- a/drivers/pinctrl/pinctrl-sunxi.c
-+++ b/drivers/pinctrl/pinctrl-sunxi.c
-@@ -628,10 +628,22 @@ static void sunxi_pinctrl_irq_handler(unsigned irq, struct irq_desc *desc)
- }
- 
- static struct of_device_id sunxi_pinctrl_match[] = {
--	{ .compatible = "allwinner,sun4i-a10-pinctrl", .data = (void *)&sun4i_a10_pinctrl_data },
--	{ .compatible = "allwinner,sun5i-a10s-pinctrl", .data = (void *)&sun5i_a10s_pinctrl_data },
--	{ .compatible = "allwinner,sun5i-a13-pinctrl", .data = (void *)&sun5i_a13_pinctrl_data },
--	{ .compatible = "allwinner,sun6i-a31-pinctrl", .data = (void *)&sun6i_a31_pinctrl_data },
-+	{
-+		.compatible = "allwinner,sun4i-a10-pinctrl",
-+		.data = (void *)&sun4i_a10_pinctrl_data,
-+	},
-+	{
-+		.compatible = "allwinner,sun5i-a10s-pinctrl",
-+		.data = (void *)&sun5i_a10s_pinctrl_data,
-+	},
-+	{
-+		.compatible = "allwinner,sun5i-a13-pinctrl",
-+		.data = (void *)&sun5i_a13_pinctrl_data,
-+	},
-+	{
-+		.compatible = "allwinner,sun6i-a31-pinctrl",
-+		.data = (void *)&sun6i_a31_pinctrl_data,
-+	},
- 	{}
- };
- MODULE_DEVICE_TABLE(of, sunxi_pinctrl_match);
+diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+index 1482533..18a7374 100644
+--- a/arch/arm/boot/dts/Makefile
++++ b/arch/arm/boot/dts/Makefile
+@@ -211,7 +211,8 @@ dtb-$(CONFIG_ARCH_SUNXI) += \
+ 	sun4i-a10-hackberry.dtb \
+ 	sun5i-a10s-olinuxino-micro.dtb \
+ 	sun5i-a13-olinuxino.dtb \
+-	sun6i-a31-colombus.dtb
++	sun6i-a31-colombus.dtb \
++	sun7i-a20-olinuxino-micro.dtb
+ dtb-$(CONFIG_ARCH_TEGRA) += tegra20-harmony.dtb \
+ 	tegra20-iris-512.dtb \
+ 	tegra20-medcom-wide.dtb \
+diff --git a/arch/arm/boot/dts/sun7i-a20-olinuxino-micro.dts b/arch/arm/boot/dts/sun7i-a20-olinuxino-micro.dts
+new file mode 100644
+index 0000000..29edf8b
+--- /dev/null
++++ b/arch/arm/boot/dts/sun7i-a20-olinuxino-micro.dts
+@@ -0,0 +1,34 @@
++/*
++ * Copyright 2013 Maxime Ripard
++ *
++ * Maxime Ripard <maxime.ripard@free-electrons.com>
++ *
++ * The code contained herein is licensed under the GNU General Public
++ * License. You may obtain a copy of the GNU General Public License
++ * Version 2 or later at the following locations:
++ *
++ * http://www.opensource.org/licenses/gpl-license.html
++ * http://www.gnu.org/copyleft/gpl.html
++ */
++
++/dts-v1/;
++/include/ "sun7i-a20.dtsi"
++
++/ {
++	model = "Olimex A20-Olinuxino Micro";
++	compatible = "olimex,a20-olinuxino-micro", "allwinner,sun7i-a20";
++
++	soc@01c20000 {
++		uart0: serial@01c28000 {
++			status = "okay";
++		};
++
++		uart6: serial@01c29800 {
++			status = "okay";
++		};
++
++		uart7: serial@01c29c00 {
++			status = "okay";
++		};
++	};
++};
 -- 
 1.8.3.4
 
