@@ -1,65 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758241Ab3G3Su4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 14:50:56 -0400
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:54214 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757194Ab3G3Sux (ORCPT
+	id S1757940Ab3G3Ssj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 14:48:39 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56659 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756582Ab3G3Ssg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 14:50:53 -0400
-Message-ID: <51F80B09.8060509@linaro.org>
-Date: Tue, 30 Jul 2013 11:50:49 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>, Olof Johansson <olof@lixom.net>
-CC: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Linux ARM Kernel ML <linux-arm-kernel@lists.infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] 64bit friendly generic sched_clock() base for 3.12
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 30 Jul 2013 14:48:36 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Dave Kleikamp <dave.kleikamp@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 61/75] sunvnet: vnet_port_remove must call unregister_netdev
+Date: Tue, 30 Jul 2013 11:45:05 -0700
+Message-Id: <1375209919-1768-28-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1375197464-27962-1-git-send-email-kamal@canonical.com>
+References: <1375197464-27962-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Thomas, Olof,
-     Here is the common base changes in Stephen's "64bit friendly 
-generic sched_clock()" patch series. This common base will be needed so 
-that following patch series can be merged via both the tip/timers/core 
-and arm-soc trees independently.
+3.8.13.6 -stable review patch.  If anyone has any objections, please let me know.
 
-Please let me know if you have any issues or objections with this set.
+------------------
 
-thanks
--john
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
 
+[ Upstream commit aabb9875d02559ab9b928cd6f259a5cc4c21a589 ]
 
-The following changes since commit ad81f0545ef01ea651886dddac4bef6cec930092:
+The missing call to unregister_netdev() leaves the interface active
+after the driver is unloaded by rmmod.
 
-   Linux 3.11-rc1 (2013-07-14 15:18:27 -0700)
+Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/net/ethernet/sun/sunvnet.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-are available in the git repository at:
+diff --git a/drivers/net/ethernet/sun/sunvnet.c b/drivers/net/ethernet/sun/sunvnet.c
+index e1b8955..fb6f3e3 100644
+--- a/drivers/net/ethernet/sun/sunvnet.c
++++ b/drivers/net/ethernet/sun/sunvnet.c
+@@ -1242,6 +1242,8 @@ static int vnet_port_remove(struct vio_dev *vdev)
+ 		dev_set_drvdata(&vdev->dev, NULL);
+ 
+ 		kfree(port);
++
++		unregister_netdev(vp->dev);
+ 	}
+ 	return 0;
+ }
+-- 
+1.8.1.2
 
-   git://git.linaro.org/people/jstultz/linux.git 
-fortglx/3.12/sched-clock64-base
-
-for you to fetch changes up to e7e3ff1bfe9c42ee31172e9afdc0383a9e595e29:
-
-   sched_clock: Add support for >32 bit sched_clock (2013-07-30 11:24:21 
--0700)
-
-----------------------------------------------------------------
-Stephen Boyd (4):
-       clocksource: Extract max nsec calculation into separate function
-       sched_clock: Use seqcount instead of rolling our own
-       sched_clock: Use an hrtimer instead of timer
-       sched_clock: Add support for >32 bit sched_clock
-
-  include/linux/clocksource.h |   2 +
-  include/linux/sched_clock.h |   2 +
-  kernel/time/clocksource.c   |  45 ++++++++++++------
-  kernel/time/sched_clock.c   | 111 
-++++++++++++++++++++++++--------------------
-  4 files changed, 95 insertions(+), 65 deletions(-)
