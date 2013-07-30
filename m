@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932357Ab3G3Jc7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 05:32:59 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53080 "EHLO
+	id S1758707Ab3G3Jcs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 05:32:48 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53025 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758713Ab3G3Jcv (ORCPT
+	with ESMTP id S932336Ab3G3Jci (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 05:32:51 -0400
+	Tue, 30 Jul 2013 05:32:38 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 037/106] xen/blkback: Check device permissions before allowing OP_DISCARD
-Date: Tue, 30 Jul 2013 10:30:56 +0100
-Message-Id: <1375176725-5825-38-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 017/106] perf: Remove WARN_ON_ONCE() check in __perf_event_enable() for valid scenario
+Date: Tue, 30 Jul 2013 10:30:36 +0100
+Message-Id: <1375176725-5825-18-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
 References: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
@@ -27,57 +31,99 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+From: Jiri Olsa <jolsa@redhat.com>
 
-commit 604c499cbbcc3d5fe5fb8d53306aa0fae1990109 upstream.
+commit 06f417968beac6e6b614e17b37d347aa6a6b1d30 upstream.
 
-We need to make sure that the device is not RO or that
-the request is not past the number of sectors we want to
-issue the DISCARD operation for.
+The '!ctx->is_active' check has a valid scenario, so
+there's no need for the warning.
 
-This fixes CVE-2013-2140.
+The reason is that there's a time window between the
+'ctx->is_active' check in the perf_event_enable() function
+and the __perf_event_enable() function having:
 
-Acked-by: Jan Beulich <JBeulich@suse.com>
-Acked-by: Ian Campbell <Ian.Campbell@citrix.com>
-[v1: Made it pr_warn instead of pr_debug]
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+  - IRQs on
+  - ctx->lock unlocked
+
+where the task could be killed and 'ctx' deactivated by
+perf_event_exit_task(), ending up with the warning below.
+
+So remove the WARN_ON_ONCE() check and add comments to
+explain it all.
+
+This addresses the following warning reported by Vince Weaver:
+
+[  324.983534] ------------[ cut here ]------------
+[  324.984420] WARNING: at kernel/events/core.c:1953 __perf_event_enable+0x187/0x190()
+[  324.984420] Modules linked in:
+[  324.984420] CPU: 19 PID: 2715 Comm: nmi_bug_snb Not tainted 3.10.0+ #246
+[  324.984420] Hardware name: Supermicro X8DTN/X8DTN, BIOS 4.6.3 01/08/2010
+[  324.984420]  0000000000000009 ffff88043fce3ec8 ffffffff8160ea0b ffff88043fce3f00
+[  324.984420]  ffffffff81080ff0 ffff8802314fdc00 ffff880231a8f800 ffff88043fcf7860
+[  324.984420]  0000000000000286 ffff880231a8f800 ffff88043fce3f10 ffffffff8108103a
+[  324.984420] Call Trace:
+[  324.984420]  <IRQ>  [<ffffffff8160ea0b>] dump_stack+0x19/0x1b
+[  324.984420]  [<ffffffff81080ff0>] warn_slowpath_common+0x70/0xa0
+[  324.984420]  [<ffffffff8108103a>] warn_slowpath_null+0x1a/0x20
+[  324.984420]  [<ffffffff81134437>] __perf_event_enable+0x187/0x190
+[  324.984420]  [<ffffffff81130030>] remote_function+0x40/0x50
+[  324.984420]  [<ffffffff810e51de>] generic_smp_call_function_single_interrupt+0xbe/0x130
+[  324.984420]  [<ffffffff81066a47>] smp_call_function_single_interrupt+0x27/0x40
+[  324.984420]  [<ffffffff8161fd2f>] call_function_single_interrupt+0x6f/0x80
+[  324.984420]  <EOI>  [<ffffffff816161a1>] ? _raw_spin_unlock_irqrestore+0x41/0x70
+[  324.984420]  [<ffffffff8113799d>] perf_event_exit_task+0x14d/0x210
+[  324.984420]  [<ffffffff810acd04>] ? switch_task_namespaces+0x24/0x60
+[  324.984420]  [<ffffffff81086946>] do_exit+0x2b6/0xa40
+[  324.984420]  [<ffffffff8161615c>] ? _raw_spin_unlock_irq+0x2c/0x30
+[  324.984420]  [<ffffffff81087279>] do_group_exit+0x49/0xc0
+[  324.984420]  [<ffffffff81096854>] get_signal_to_deliver+0x254/0x620
+[  324.984420]  [<ffffffff81043057>] do_signal+0x57/0x5a0
+[  324.984420]  [<ffffffff8161a164>] ? __do_page_fault+0x2a4/0x4e0
+[  324.984420]  [<ffffffff8161665c>] ? retint_restore_args+0xe/0xe
+[  324.984420]  [<ffffffff816166cd>] ? retint_signal+0x11/0x84
+[  324.984420]  [<ffffffff81043605>] do_notify_resume+0x65/0x80
+[  324.984420]  [<ffffffff81616702>] retint_signal+0x46/0x84
+[  324.984420] ---[ end trace 442ec2f04db3771a ]---
+
+Reported-by: Vince Weaver <vincent.weaver@maine.edu>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Suggested-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1373384651-6109-2-git-send-email-jolsa@redhat.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/block/xen-blkback/blkback.c | 13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
+ kernel/events/core.c | 11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
-index 4fd1dea..4ed7bf9 100644
---- a/drivers/block/xen-blkback/blkback.c
-+++ b/drivers/block/xen-blkback/blkback.c
-@@ -399,7 +399,18 @@ static int dispatch_discard_io(struct xen_blkif *blkif,
- 	int status = BLKIF_RSP_OKAY;
- 	struct block_device *bdev = blkif->vbd.bdev;
- 	unsigned long secure;
-+	struct phys_req preq;
-+
-+	preq.sector_number = req->u.discard.sector_number;
-+	preq.nr_sects      = req->u.discard.nr_sectors;
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index b373584..cccd51c 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -1706,7 +1706,16 @@ static int __perf_event_enable(void *info)
+ 	struct perf_cpu_context *cpuctx = __get_cpu_context(ctx);
+ 	int err;
  
-+	err = xen_vbd_translate(&preq, blkif, WRITE);
-+	if (err) {
-+		pr_warn(DRV_PFX "access denied: DISCARD [%llu->%llu] on dev=%04x\n",
-+			preq.sector_number,
-+			preq.sector_number + preq.nr_sects, blkif->vbd.pdevice);
-+		goto fail_response;
-+	}
- 	blkif->st_ds_req++;
+-	if (WARN_ON_ONCE(!ctx->is_active))
++	/*
++	 * There's a time window between 'ctx->is_active' check
++	 * in perf_event_enable function and this place having:
++	 *   - IRQs on
++	 *   - ctx->lock unlocked
++	 *
++	 * where the task could be killed and 'ctx' deactivated
++	 * by perf_event_exit_task.
++	 */
++	if (!ctx->is_active)
+ 		return -EINVAL;
  
- 	xen_blkif_get(blkif);
-@@ -410,7 +421,7 @@ static int dispatch_discard_io(struct xen_blkif *blkif,
- 	err = blkdev_issue_discard(bdev, req->u.discard.sector_number,
- 				   req->u.discard.nr_sectors,
- 				   GFP_KERNEL, secure);
--
-+fail_response:
- 	if (err == -EOPNOTSUPP) {
- 		pr_debug(DRV_PFX "discard op failed, not supported\n");
- 		status = BLKIF_RSP_EOPNOTSUPP;
+ 	raw_spin_lock(&ctx->lock);
 -- 
 1.8.3.2
 
