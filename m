@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757829Ab3G3SsS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 14:48:18 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56625 "EHLO
+	id S1757856Ab3G3SsY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 14:48:24 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56630 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757769Ab3G3SsP (ORCPT
+	with ESMTP id S1757823Ab3G3SsR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 14:48:15 -0400
+	Tue, 30 Jul 2013 14:48:17 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Nicolas Dichtel <nicolas.dichtel@6wind.com>,
-        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+Cc: "Michael S. Tsirkin" <mst@redhat.com>, Jason Wang <jasowang@redhat.com>,
         "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 65/75] ipv6: in case of link failure remove route directly instead of letting it expire
-Date: Tue, 30 Jul 2013 11:45:09 -0700
-Message-Id: <1375209919-1768-32-git-send-email-kamal@canonical.com>
+Subject: [PATCH 74/75] macvtap: do not zerocopy if iov needs more pages than MAX_SKB_FRAGS
+Date: Tue, 30 Jul 2013 11:45:18 -0700
+Message-Id: <1375209919-1768-41-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1375197464-27962-1-git-send-email-kamal@canonical.com>
 References: <1375197464-27962-1-git-send-email-kamal@canonical.com>
@@ -30,99 +28,125 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+From: Jason Wang <jasowang@redhat.com>
 
-[ Upstream commit 1eb4f758286884e7566627164bca4c4a16952a83 ]
+[ Upstream commit ece793fcfc417b3925844be88a6a6dc82ae8f7c6 ]
 
-We could end up expiring a route which is part of an ecmp route set. Doing
-so would invalidate the rt->rt6i_nsiblings calculations and could provoke
-the following panic:
+We try to linearize part of the skb when the number of iov is greater than
+MAX_SKB_FRAGS. This is not enough since each single vector may occupy more than
+one pages, so zerocopy_sg_fromiovec() may still fail and may break the guest
+network.
 
-[   80.144667] ------------[ cut here ]------------
-[   80.145172] kernel BUG at net/ipv6/ip6_fib.c:733!
-[   80.145172] invalid opcode: 0000 [#1] SMP
-[   80.145172] Modules linked in: 8021q nf_conntrack_netbios_ns nf_conntrack_broadcast ipt_MASQUERADE ip6table_mangle ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 iptable_nat nf_nat_ipv4 nf_nat iptable_mangle nf_conntrack_ipv4 nf_defrag_ipv4 xt_conntrack nf_conntrack ebtable_filter ebtables ip6table_filter ip6_tables
-+snd_hda_intel snd_hda_codec snd_hwdep snd_seq snd_seq_device snd_pcm snd_page_alloc snd_timer virtio_balloon snd soundcore i2c_piix4 i2c_core virtio_net virtio_blk
-[   80.145172] CPU: 1 PID: 786 Comm: ping6 Not tainted 3.10.0+ #118
-[   80.145172] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-[   80.145172] task: ffff880117fa0000 ti: ffff880118770000 task.ti: ffff880118770000
-[   80.145172] RIP: 0010:[<ffffffff815f3b5d>]  [<ffffffff815f3b5d>] fib6_add+0x75d/0x830
-[   80.145172] RSP: 0018:ffff880118771798  EFLAGS: 00010202
-[   80.145172] RAX: 0000000000000000 RBX: 0000000000000000 RCX: ffff88011350e480
-[   80.145172] RDX: ffff88011350e238 RSI: 0000000000000004 RDI: ffff88011350f738
-[   80.145172] RBP: ffff880118771848 R08: ffff880117903280 R09: 0000000000000001
-[   80.145172] R10: 0000000000000000 R11: 0000000000000000 R12: ffff88011350f680
-[   80.145172] R13: ffff880117903280 R14: ffff880118771890 R15: ffff88011350ef90
-[   80.145172] FS:  00007f02b5127740(0000) GS:ffff88011fd00000(0000) knlGS:0000000000000000
-[   80.145172] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[   80.145172] CR2: 00007f981322a000 CR3: 00000001181b1000 CR4: 00000000000006e0
-[   80.145172] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[   80.145172] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[   80.145172] Stack:
-[   80.145172]  0000000000000001 ffff880100000000 ffff880100000000 ffff880117903280
-[   80.145172]  0000000000000000 ffff880119a4cf00 0000000000000400 00000000000007fa
-[   80.145172]  0000000000000000 0000000000000000 0000000000000000 ffff88011350f680
-[   80.145172] Call Trace:
-[   80.145172]  [<ffffffff815eeceb>] ? rt6_bind_peer+0x4b/0x90
-[   80.145172]  [<ffffffff815ed985>] __ip6_ins_rt+0x45/0x70
-[   80.145172]  [<ffffffff815eee35>] ip6_ins_rt+0x35/0x40
-[   80.145172]  [<ffffffff815ef1e4>] ip6_pol_route.isra.44+0x3a4/0x4b0
-[   80.145172]  [<ffffffff815ef34a>] ip6_pol_route_output+0x2a/0x30
-[   80.145172]  [<ffffffff81616077>] fib6_rule_action+0xd7/0x210
-[   80.145172]  [<ffffffff815ef320>] ? ip6_pol_route_input+0x30/0x30
-[   80.145172]  [<ffffffff81553026>] fib_rules_lookup+0xc6/0x140
-[   80.145172]  [<ffffffff81616374>] fib6_rule_lookup+0x44/0x80
-[   80.145172]  [<ffffffff815ef320>] ? ip6_pol_route_input+0x30/0x30
-[   80.145172]  [<ffffffff815edea3>] ip6_route_output+0x73/0xb0
-[   80.145172]  [<ffffffff815dfdf3>] ip6_dst_lookup_tail+0x2c3/0x2e0
-[   80.145172]  [<ffffffff813007b1>] ? list_del+0x11/0x40
-[   80.145172]  [<ffffffff81082a4c>] ? remove_wait_queue+0x3c/0x50
-[   80.145172]  [<ffffffff815dfe4d>] ip6_dst_lookup_flow+0x3d/0xa0
-[   80.145172]  [<ffffffff815fda77>] rawv6_sendmsg+0x267/0xc20
-[   80.145172]  [<ffffffff815a8a83>] inet_sendmsg+0x63/0xb0
-[   80.145172]  [<ffffffff8128eb93>] ? selinux_socket_sendmsg+0x23/0x30
-[   80.145172]  [<ffffffff815218d6>] sock_sendmsg+0xa6/0xd0
-[   80.145172]  [<ffffffff81524a68>] SYSC_sendto+0x128/0x180
-[   80.145172]  [<ffffffff8109825c>] ? update_curr+0xec/0x170
-[   80.145172]  [<ffffffff81041d09>] ? kvm_clock_get_cycles+0x9/0x10
-[   80.145172]  [<ffffffff810afd1e>] ? __getnstimeofday+0x3e/0xd0
-[   80.145172]  [<ffffffff8152509e>] SyS_sendto+0xe/0x10
-[   80.145172]  [<ffffffff8164efd9>] system_call_fastpath+0x16/0x1b
-[   80.145172] Code: fe ff ff 41 f6 45 2a 06 0f 85 ca fe ff ff 49 8b 7e 08 4c 89 ee e8 94 ef ff ff e9 b9 fe ff ff 48 8b 82 28 05 00 00 e9 01 ff ff ff <0f> 0b 49 8b 54 24 30 0d 00 00 40 00 89 83 14 01 00 00 48 89 53
-[   80.145172] RIP  [<ffffffff815f3b5d>] fib6_add+0x75d/0x830
-[   80.145172]  RSP <ffff880118771798>
-[   80.387413] ---[ end trace 02f20b7a8b81ed95 ]---
-[   80.390154] Kernel panic - not syncing: Fatal exception in interrupt
+Solve this problem by calculate the pages needed for iov before trying to do
+zerocopy and switch to use copy instead of zerocopy if it needs more than
+MAX_SKB_FRAGS.
 
-Cc: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-Cc: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+This is done through introducing a new helper to count the pages for iov, and
+call uarg->callback() manually when switching from zerocopy to copy to notify
+vhost.
+
+We can do further optimization on top.
+
+This bug were introduced from b92946e2919134ebe2a4083e4302236295ea2a73
+(macvtap: zerocopy: validate vectors before building skb).
+
+Cc: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/ipv6/route.c | 9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ drivers/net/macvtap.c | 62 ++++++++++++++++++++++++++++++---------------------
+ 1 file changed, 37 insertions(+), 25 deletions(-)
 
-diff --git a/net/ipv6/route.c b/net/ipv6/route.c
-index 5845613..2f01ab3 100644
---- a/net/ipv6/route.c
-+++ b/net/ipv6/route.c
-@@ -1118,10 +1118,13 @@ static void ip6_link_failure(struct sk_buff *skb)
- 
- 	rt = (struct rt6_info *) skb_dst(skb);
- 	if (rt) {
--		if (rt->rt6i_flags & RTF_CACHE)
--			rt6_update_expires(rt, 0);
--		else if (rt->rt6i_node && (rt->rt6i_flags & RTF_DEFAULT))
-+		if (rt->rt6i_flags & RTF_CACHE) {
-+			dst_hold(&rt->dst);
-+			if (ip6_del_rt(rt))
-+				dst_free(&rt->dst);
-+		} else if (rt->rt6i_node && (rt->rt6i_flags & RTF_DEFAULT)) {
- 			rt->rt6i_node->fn_sernum = -1;
-+		}
- 	}
+diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
+index 9b4e29c..9872202 100644
+--- a/drivers/net/macvtap.c
++++ b/drivers/net/macvtap.c
+@@ -644,6 +644,28 @@ static int macvtap_skb_to_vnet_hdr(const struct sk_buff *skb,
+ 	return 0;
  }
+ 
++static unsigned long iov_pages(const struct iovec *iv, int offset,
++			       unsigned long nr_segs)
++{
++	unsigned long seg, base;
++	int pages = 0, len, size;
++
++	while (nr_segs && (offset >= iv->iov_len)) {
++		offset -= iv->iov_len;
++		++iv;
++		--nr_segs;
++	}
++
++	for (seg = 0; seg < nr_segs; seg++) {
++		base = (unsigned long)iv[seg].iov_base + offset;
++		len = iv[seg].iov_len - offset;
++		size = ((base & ~PAGE_MASK) + len + ~PAGE_MASK) >> PAGE_SHIFT;
++		pages += size;
++		offset = 0;
++	}
++
++	return pages;
++}
+ 
+ /* Get packet from user space buffer */
+ static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
+@@ -690,31 +712,15 @@ static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
+ 	if (unlikely(count > UIO_MAXIOV))
+ 		goto err;
+ 
+-	if (m && m->msg_control && sock_flag(&q->sk, SOCK_ZEROCOPY))
+-		zerocopy = true;
+-
+-	if (zerocopy) {
+-		/* Userspace may produce vectors with count greater than
+-		 * MAX_SKB_FRAGS, so we need to linearize parts of the skb
+-		 * to let the rest of data to be fit in the frags.
+-		 */
+-		if (count > MAX_SKB_FRAGS) {
+-			copylen = iov_length(iv, count - MAX_SKB_FRAGS);
+-			if (copylen < vnet_hdr_len)
+-				copylen = 0;
+-			else
+-				copylen -= vnet_hdr_len;
+-		}
+-		/* There are 256 bytes to be copied in skb, so there is enough
+-		 * room for skb expand head in case it is used.
+-		 * The rest buffer is mapped from userspace.
+-		 */
+-		if (copylen < vnet_hdr.hdr_len)
+-			copylen = vnet_hdr.hdr_len;
+-		if (!copylen)
+-			copylen = GOODCOPY_LEN;
++	if (m && m->msg_control && sock_flag(&q->sk, SOCK_ZEROCOPY)) {
++		copylen = vnet_hdr.hdr_len ? vnet_hdr.hdr_len : GOODCOPY_LEN;
+ 		linear = copylen;
+-	} else {
++		if (iov_pages(iv, vnet_hdr_len + copylen, count)
++		    <= MAX_SKB_FRAGS)
++			zerocopy = true;
++	}
++
++	if (!zerocopy) {
+ 		copylen = len;
+ 		linear = vnet_hdr.hdr_len;
+ 	}
+@@ -726,9 +732,15 @@ static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
+ 
+ 	if (zerocopy)
+ 		err = zerocopy_sg_from_iovec(skb, iv, vnet_hdr_len, count);
+-	else
++	else {
+ 		err = skb_copy_datagram_from_iovec(skb, 0, iv, vnet_hdr_len,
+ 						   len);
++		if (!err && m && m->msg_control) {
++			struct ubuf_info *uarg = m->msg_control;
++			uarg->callback(uarg, false);
++		}
++	}
++
+ 	if (err)
+ 		goto err_kfree;
  
 -- 
 1.8.1.2
