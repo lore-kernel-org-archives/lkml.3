@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758490Ab3G3JTX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 05:19:23 -0400
+	id S1758560Ab3G3JTe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 05:19:34 -0400
 Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:57152 "EHLO
 	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758440Ab3G3JTU (ORCPT
+	with ESMTP id S1758516Ab3G3JT1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 05:19:20 -0400
-X-AuditID: 9c930179-b7c49ae000000e68-d6-51f78515063d
+	Tue, 30 Jul 2013 05:19:27 -0400
+X-AuditID: 9c930179-b7c49ae000000e68-ea-51f78518099b
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
@@ -17,9 +17,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>,
         Jeremy Eder <jeder@redhat.com>
-Subject: [PATCH 02/17] perf util: Add more debug message on failure path
-Date: Tue, 30 Jul 2013 18:18:59 +0900
-Message-Id: <1375175954-798-3-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 10/17] perf ftrace: Add dump_printf() for low-level debugging
+Date: Tue, 30 Jul 2013 18:19:07 +0900
+Message-Id: <1375175954-798-11-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1375175954-798-1-git-send-email-namhyung@kernel.org>
 References: <1375175954-798-1-git-send-email-namhyung@kernel.org>
@@ -30,136 +30,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-It's helpful for debugging on tracing features.
+For reusability, rename trace_event() to dump_raw_event() and pass
+size as an argument.  And use it in do_ftrace_report() to show raw
+data of ftrace entries.
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/util/header.c           |  4 ++-
- tools/perf/util/trace-event-read.c | 53 ++++++++++++++++++++++++++------------
- 2 files changed, 39 insertions(+), 18 deletions(-)
+ tools/perf/builtin-ftrace.c | 6 ++++++
+ tools/perf/util/debug.c     | 8 ++++----
+ tools/perf/util/debug.h     | 2 +-
+ tools/perf/util/session.c   | 2 +-
+ 4 files changed, 12 insertions(+), 6 deletions(-)
 
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index f558f83769af..11b08f24ba42 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -2700,8 +2700,10 @@ static int perf_evsel__prepare_tracepoint_event(struct perf_evsel *evsel,
- 	}
+diff --git a/tools/perf/builtin-ftrace.c b/tools/perf/builtin-ftrace.c
+index 0792bfdf168c..bb0a238b8509 100644
+--- a/tools/perf/builtin-ftrace.c
++++ b/tools/perf/builtin-ftrace.c
+@@ -1330,6 +1330,12 @@ static int do_ftrace_report(struct perf_ftrace *ftrace)
+ 			goto out;
+ 		}
  
- 	event = pevent_find_event(pevent, evsel->attr.config);
--	if (event == NULL)
-+	if (event == NULL) {
-+		pr_debug("cannot find event format for %d\n", (int)evsel->attr.config);
- 		return -1;
-+	}
- 
- 	if (!evsel->name) {
- 		snprintf(bf, sizeof(bf), "%s:%s", event->system, event->name);
-diff --git a/tools/perf/util/trace-event-read.c b/tools/perf/util/trace-event-read.c
-index e084e5e654b6..0e3b3f527320 100644
---- a/tools/perf/util/trace-event-read.c
-+++ b/tools/perf/util/trace-event-read.c
-@@ -262,39 +262,53 @@ static int read_header_files(struct pevent *pevent)
- 
- static int read_ftrace_file(struct pevent *pevent, unsigned long long size)
- {
-+	int ret;
- 	char *buf;
- 
- 	buf = malloc(size);
--	if (buf == NULL)
-+	if (buf == NULL) {
-+		pr_debug("memory allocation failure\n");
- 		return -1;
-+	}
- 
--	if (do_read(buf, size) < 0) {
--		free(buf);
--		return -1;
-+	ret = do_read(buf, size);
-+	if (ret < 0) {
-+		pr_debug("error reading ftrace file.\n");
-+		goto out;
- 	}
- 
--	parse_ftrace_file(pevent, buf, size);
-+	ret = parse_ftrace_file(pevent, buf, size);
-+	if (ret < 0)
-+		pr_debug("error parsing ftrace file.\n");
-+out:
- 	free(buf);
--	return 0;
-+	return ret;
++		dump_printf(" .... event: %s\n", perf_evsel__name(evsel));
++		dump_raw_event(record, record->size);
++		dump_printf("%3d %llu %#llx [%#x]\n\n",
++			    record->cpu, record->ts, record->offset,
++			    record->size);
++
+ 		/* TODO: update sample.period using calltime */
+ 		if (!__hists__add_entry(&evsel->hists, &al, NULL,
+ 					sample.period, 0)) {
+diff --git a/tools/perf/util/debug.c b/tools/perf/util/debug.c
+index 399e74c34c1a..2c42aaed4528 100644
+--- a/tools/perf/util/debug.c
++++ b/tools/perf/util/debug.c
+@@ -47,7 +47,7 @@ int dump_printf(const char *fmt, ...)
+ 	return ret;
  }
  
- static int read_event_file(struct pevent *pevent, char *sys,
- 			    unsigned long long size)
+-void trace_event(union perf_event *event)
++void dump_raw_event(void *event, int size)
  {
-+	int ret;
- 	char *buf;
+ 	unsigned char *raw_event = (void *)event;
+ 	const char *color = PERF_COLOR_BLUE;
+@@ -58,9 +58,9 @@ void trace_event(union perf_event *event)
  
- 	buf = malloc(size);
--	if (buf == NULL)
-+	if (buf == NULL) {
-+		pr_debug("memory allocation failure\n");
- 		return -1;
-+	}
+ 	printf(".");
+ 	color_fprintf(stdout, color, "\n. ... raw event: size %d bytes\n",
+-		      event->header.size);
++		      size);
  
--	if (do_read(buf, size) < 0) {
-+	ret = do_read(buf, size);
-+	if (ret < 0) {
- 		free(buf);
--		return -1;
-+		goto out;
- 	}
+-	for (i = 0; i < event->header.size; i++) {
++	for (i = 0; i < size; i++) {
+ 		if ((i & 15) == 0) {
+ 			printf(".");
+ 			color_fprintf(stdout, color, "  %04x: ", i);
+@@ -68,7 +68,7 @@ void trace_event(union perf_event *event)
  
--	parse_event_file(pevent, buf, size, sys);
-+	ret = parse_event_file(pevent, buf, size, sys);
-+	if (ret < 0)
-+		pr_debug("error parsing event file.\n");
-+out:
- 	free(buf);
--	return 0;
-+	return ret;
- }
+ 		color_fprintf(stdout, color, " %02x", raw_event[i]);
  
- static int read_ftrace_files(struct pevent *pevent)
-@@ -347,6 +361,7 @@ static int read_saved_cmdline(struct pevent *pevent)
- {
- 	unsigned long long size;
- 	char *buf;
-+	int ret;
+-		if (((i & 15) == 15) || i == event->header.size-1) {
++		if (((i & 15) == 15) || i == size-1) {
+ 			color_fprintf(stdout, color, "  ");
+ 			for (j = 0; j < 15-(i & 15); j++)
+ 				color_fprintf(stdout, color, "   ");
+diff --git a/tools/perf/util/debug.h b/tools/perf/util/debug.h
+index efbd98805ad0..9cebb0cdb7bd 100644
+--- a/tools/perf/util/debug.h
++++ b/tools/perf/util/debug.h
+@@ -12,7 +12,7 @@ extern int verbose;
+ extern bool quiet, dump_trace;
  
- 	/* it can have 0 size */
- 	size = read8(pevent);
-@@ -354,18 +369,22 @@ static int read_saved_cmdline(struct pevent *pevent)
- 		return 0;
+ int dump_printf(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
+-void trace_event(union perf_event *event);
++void dump_raw_event(void *event, int size);
  
- 	buf = malloc(size + 1);
--	if (buf == NULL)
-+	if (buf == NULL) {
-+		pr_debug("memory allocation failure\n");
- 		return -1;
-+	}
+ int ui__error(const char *format, ...) __attribute__((format(printf, 1, 2)));
+ int ui__warning(const char *format, ...) __attribute__((format(printf, 1, 2)));
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index a0ce5a46abbe..8e6d05acab32 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -793,7 +793,7 @@ static void dump_event(struct perf_session *session, union perf_event *event,
+ 	printf("\n%#" PRIx64 " [%#x]: event: %d\n",
+ 	       file_offset, event->header.size, event->header.type);
  
--	if (do_read(buf, size) < 0) {
--		free(buf);
--		return -1;
-+	ret = do_read(buf, size);
-+	if (ret < 0) {
-+		pr_debug("error reading saved cmdlines\n");
-+		goto out;
- 	}
+-	trace_event(event);
++	dump_raw_event(event, event->header.size);
  
- 	parse_saved_cmdline(pevent, buf, size);
--
-+	ret = 0;
-+out:
- 	free(buf);
--	return 0;
-+	return ret;
- }
- 
- ssize_t trace_report(int fd, struct pevent **ppevent, bool __repipe)
+ 	if (sample)
+ 		perf_session__print_tstamp(session, event, sample);
 -- 
 1.7.11.7
 
