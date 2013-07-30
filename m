@@ -1,56 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932139Ab3G3S6O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 14:58:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45771 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757389Ab3G3S6K (ORCPT
+	id S1757599Ab3G3S5v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 14:57:51 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56532 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756729Ab3G3Spd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 14:58:10 -0400
-Date: Tue, 30 Jul 2013 11:58:08 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: David Miller <davem@davemloft.net>
-Cc: hayeswang@realtek.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        nic_swsd@realtek.com
-Subject: Re: [PATCH v3 1/3] net/usb/r815x: replace USB buffer from stack to
- DMA-able
-Message-ID: <20130730185808.GA25353@kroah.com>
-References: <D7C722C73C7A400780358D0376412267@realtek.com.tw>
- <1375172936-4145-1-git-send-email-hayeswang@realtek.com>
- <20130730140059.GE27962@kroah.com>
- <20130730.113329.1450325193505423812.davem@davemloft.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130730.113329.1450325193505423812.davem@davemloft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 30 Jul 2013 14:45:33 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Olivier DANET <odanet@caramail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 43/75] [PATCH] sparc32: vm_area_struct access for old Sun SPARCs.
+Date: Tue, 30 Jul 2013 11:44:47 -0700
+Message-Id: <1375209919-1768-10-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1375197464-27962-1-git-send-email-kamal@canonical.com>
+References: <1375197464-27962-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 30, 2013 at 11:33:29AM -0700, David Miller wrote:
-> From: Greg KH <gregkh@linuxfoundation.org>
-> Date: Tue, 30 Jul 2013 07:00:59 -0700
-> 
-> > This call is so slow, you can afford to make a call to kmalloc for the
-> > data, as it sure just did for other structures it needed :)
-> 
-> I told him to implement things this way, to avoid calling kmalloc every
-> single register access.
-> 
-> Using kmalloc all the time makes the access fragile, since a badly timed
-> call during high memory pressure can fail.
-> 
-> I'd rather the potential failure happen at one time, probe time.
+3.8.13.6 -stable review patch.  If anyone has any objections, please let me know.
 
-I agree, but the call usb_control_message() also does a tiny kmalloc(),
-and is _very_ slow and if you have high memory pressure, doing USB
-messages like this is not what you want to do anyway (the host
-controller does it's own allocations and the like as well.)
+------------------
 
-USB isn't "fast" like most normal networking physical layers :)
+From: Olivier DANET <odanet@caramail.com>
 
-thanks,
+commit 961246b4ed8da3bcf4ee1eb9147f341013553e3c upstream.
 
-greg k-h
+Commit e4c6bfd2d79d063017ab19a18915f0bc759f32d9 ("mm: rearrange
+vm_area_struct for fewer cache misses") changed the layout of the
+vm_area_struct structure, it broke several SPARC32 assembly routines
+which used numerical constants for accessing the vm_mm field.
+
+This patch defines the VMA_VM_MM constant to replace the immediate values.
+
+Signed-off-by: Olivier DANET <odanet@caramail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ arch/sparc/kernel/asm-offsets.c |  2 ++
+ arch/sparc/mm/hypersparc.S      |  8 ++++----
+ arch/sparc/mm/swift.S           |  8 ++++----
+ arch/sparc/mm/tsunami.S         |  6 +++---
+ arch/sparc/mm/viking.S          | 10 +++++-----
+ 5 files changed, 18 insertions(+), 16 deletions(-)
+
+diff --git a/arch/sparc/kernel/asm-offsets.c b/arch/sparc/kernel/asm-offsets.c
+index 68f7e11..ce48203 100644
+--- a/arch/sparc/kernel/asm-offsets.c
++++ b/arch/sparc/kernel/asm-offsets.c
+@@ -34,6 +34,8 @@ int foo(void)
+ 	DEFINE(AOFF_task_thread, offsetof(struct task_struct, thread));
+ 	BLANK();
+ 	DEFINE(AOFF_mm_context, offsetof(struct mm_struct, context));
++	BLANK();
++	DEFINE(VMA_VM_MM,    offsetof(struct vm_area_struct, vm_mm));
+ 
+ 	/* DEFINE(NUM_USER_SEGMENTS, TASK_SIZE>>28); */
+ 	return 0;
+diff --git a/arch/sparc/mm/hypersparc.S b/arch/sparc/mm/hypersparc.S
+index 44aad32..969f964 100644
+--- a/arch/sparc/mm/hypersparc.S
++++ b/arch/sparc/mm/hypersparc.S
+@@ -74,7 +74,7 @@ hypersparc_flush_cache_mm_out:
+ 
+ 	/* The things we do for performance... */
+ hypersparc_flush_cache_range:
+-	ld	[%o0 + 0x0], %o0		/* XXX vma->vm_mm, GROSS XXX */
++	ld	[%o0 + VMA_VM_MM], %o0
+ #ifndef CONFIG_SMP
+ 	ld	[%o0 + AOFF_mm_context], %g1
+ 	cmp	%g1, -1
+@@ -163,7 +163,7 @@ hypersparc_flush_cache_range_out:
+ 	 */
+ 	/* Verified, my ass... */
+ hypersparc_flush_cache_page:
+-	ld	[%o0 + 0x0], %o0		/* XXX vma->vm_mm, GROSS XXX */
++	ld	[%o0 + VMA_VM_MM], %o0
+ 	ld	[%o0 + AOFF_mm_context], %g2
+ #ifndef CONFIG_SMP
+ 	cmp	%g2, -1
+@@ -284,7 +284,7 @@ hypersparc_flush_tlb_mm_out:
+ 	 sta	%g5, [%g1] ASI_M_MMUREGS
+ 
+ hypersparc_flush_tlb_range:
+-	ld	[%o0 + 0x00], %o0	/* XXX vma->vm_mm GROSS XXX */
++	ld	[%o0 + VMA_VM_MM], %o0
+ 	mov	SRMMU_CTX_REG, %g1
+ 	ld	[%o0 + AOFF_mm_context], %o3
+ 	lda	[%g1] ASI_M_MMUREGS, %g5
+@@ -307,7 +307,7 @@ hypersparc_flush_tlb_range_out:
+ 	 sta	%g5, [%g1] ASI_M_MMUREGS
+ 
+ hypersparc_flush_tlb_page:
+-	ld	[%o0 + 0x00], %o0	/* XXX vma->vm_mm GROSS XXX */
++	ld	[%o0 + VMA_VM_MM], %o0
+ 	mov	SRMMU_CTX_REG, %g1
+ 	ld	[%o0 + AOFF_mm_context], %o3
+ 	andn	%o1, (PAGE_SIZE - 1), %o1
+diff --git a/arch/sparc/mm/swift.S b/arch/sparc/mm/swift.S
+index c801c39..5d2b88d 100644
+--- a/arch/sparc/mm/swift.S
++++ b/arch/sparc/mm/swift.S
+@@ -105,7 +105,7 @@ swift_flush_cache_mm_out:
+ 
+ 	.globl	swift_flush_cache_range
+ swift_flush_cache_range:
+-	ld	[%o0 + 0x0], %o0		/* XXX vma->vm_mm, GROSS XXX */
++	ld	[%o0 + VMA_VM_MM], %o0
+ 	sub	%o2, %o1, %o2
+ 	sethi	%hi(4096), %o3
+ 	cmp	%o2, %o3
+@@ -116,7 +116,7 @@ swift_flush_cache_range:
+ 
+ 	.globl	swift_flush_cache_page
+ swift_flush_cache_page:
+-	ld	[%o0 + 0x0], %o0		/* XXX vma->vm_mm, GROSS XXX */
++	ld	[%o0 + VMA_VM_MM], %o0
+ 70:
+ 	ld	[%o0 + AOFF_mm_context], %g2
+ 	cmp	%g2, -1
+@@ -219,7 +219,7 @@ swift_flush_sig_insns:
+ 	.globl	swift_flush_tlb_range
+ 	.globl	swift_flush_tlb_all
+ swift_flush_tlb_range:
+-	ld	[%o0 + 0x00], %o0	/* XXX vma->vm_mm GROSS XXX */
++	ld	[%o0 + VMA_VM_MM], %o0
+ swift_flush_tlb_mm:
+ 	ld	[%o0 + AOFF_mm_context], %g2
+ 	cmp	%g2, -1
+@@ -233,7 +233,7 @@ swift_flush_tlb_all_out:
+ 
+ 	.globl	swift_flush_tlb_page
+ swift_flush_tlb_page:
+-	ld	[%o0 + 0x00], %o0	/* XXX vma->vm_mm GROSS XXX */
++	ld	[%o0 + VMA_VM_MM], %o0
+ 	mov	SRMMU_CTX_REG, %g1
+ 	ld	[%o0 + AOFF_mm_context], %o3
+ 	andn	%o1, (PAGE_SIZE - 1), %o1
+diff --git a/arch/sparc/mm/tsunami.S b/arch/sparc/mm/tsunami.S
+index 4e55e8f..bf10a34 100644
+--- a/arch/sparc/mm/tsunami.S
++++ b/arch/sparc/mm/tsunami.S
+@@ -24,7 +24,7 @@
+ 	/* Sliiick... */
+ tsunami_flush_cache_page:
+ tsunami_flush_cache_range:
+-	ld	[%o0 + 0x0], %o0	/* XXX vma->vm_mm, GROSS XXX */
++	ld	[%o0 + VMA_VM_MM], %o0
+ tsunami_flush_cache_mm:
+ 	ld	[%o0 + AOFF_mm_context], %g2
+ 	cmp	%g2, -1
+@@ -46,7 +46,7 @@ tsunami_flush_sig_insns:
+ 
+ 	/* More slick stuff... */
+ tsunami_flush_tlb_range:
+-	ld	[%o0 + 0x00], %o0	/* XXX vma->vm_mm GROSS XXX */
++	ld	[%o0 + VMA_VM_MM], %o0
+ tsunami_flush_tlb_mm:
+ 	ld	[%o0 + AOFF_mm_context], %g2
+ 	cmp	%g2, -1
+@@ -65,7 +65,7 @@ tsunami_flush_tlb_out:
+ 
+ 	/* This one can be done in a fine grained manner... */
+ tsunami_flush_tlb_page:
+-	ld	[%o0 + 0x00], %o0	/* XXX vma->vm_mm GROSS XXX */
++	ld	[%o0 + VMA_VM_MM], %o0
+ 	mov	SRMMU_CTX_REG, %g1
+ 	ld	[%o0 + AOFF_mm_context], %o3
+ 	andn	%o1, (PAGE_SIZE - 1), %o1
+diff --git a/arch/sparc/mm/viking.S b/arch/sparc/mm/viking.S
+index bf8ee06..852257f 100644
+--- a/arch/sparc/mm/viking.S
++++ b/arch/sparc/mm/viking.S
+@@ -108,7 +108,7 @@ viking_mxcc_flush_page:
+ viking_flush_cache_page:
+ viking_flush_cache_range:
+ #ifndef CONFIG_SMP
+-	ld	[%o0 + 0x0], %o0		/* XXX vma->vm_mm, GROSS XXX */
++	ld	[%o0 + VMA_VM_MM], %o0
+ #endif
+ viking_flush_cache_mm:
+ #ifndef CONFIG_SMP
+@@ -148,7 +148,7 @@ viking_flush_tlb_mm:
+ #endif
+ 
+ viking_flush_tlb_range:
+-	ld	[%o0 + 0x00], %o0	/* XXX vma->vm_mm GROSS XXX */
++	ld	[%o0 + VMA_VM_MM], %o0
+ 	mov	SRMMU_CTX_REG, %g1
+ 	ld	[%o0 + AOFF_mm_context], %o3
+ 	lda	[%g1] ASI_M_MMUREGS, %g5
+@@ -173,7 +173,7 @@ viking_flush_tlb_range:
+ #endif
+ 
+ viking_flush_tlb_page:
+-	ld	[%o0 + 0x00], %o0	/* XXX vma->vm_mm GROSS XXX */
++	ld	[%o0 + VMA_VM_MM], %o0
+ 	mov	SRMMU_CTX_REG, %g1
+ 	ld	[%o0 + AOFF_mm_context], %o3
+ 	lda	[%g1] ASI_M_MMUREGS, %g5
+@@ -239,7 +239,7 @@ sun4dsmp_flush_tlb_range:
+ 	tst	%g5
+ 	bne	3f
+ 	 mov	SRMMU_CTX_REG, %g1
+-	ld	[%o0 + 0x00], %o0	/* XXX vma->vm_mm GROSS XXX */
++	ld	[%o0 + VMA_VM_MM], %o0
+ 	ld	[%o0 + AOFF_mm_context], %o3
+ 	lda	[%g1] ASI_M_MMUREGS, %g5
+ 	sethi	%hi(~((1 << SRMMU_PGDIR_SHIFT) - 1)), %o4
+@@ -265,7 +265,7 @@ sun4dsmp_flush_tlb_page:
+ 	tst	%g5
+ 	bne	2f
+ 	 mov	SRMMU_CTX_REG, %g1
+-	ld	[%o0 + 0x00], %o0	/* XXX vma->vm_mm GROSS XXX */
++	ld	[%o0 + VMA_VM_MM], %o0
+ 	ld	[%o0 + AOFF_mm_context], %o3
+ 	lda	[%g1] ASI_M_MMUREGS, %g5
+ 	and	%o1, PAGE_MASK, %o1
+-- 
+1.8.1.2
+
