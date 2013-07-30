@@ -1,55 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757438Ab3G2QNg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 12:13:36 -0400
-Received: from mail1.bemta12.messagelabs.com ([216.82.251.7]:61804 "EHLO
-	mail1.bemta12.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751690Ab3G2QNe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 12:13:34 -0400
-X-Env-Sender: Hector.Palacios@digi.com
-X-Msg-Ref: server-16.tower-29.messagelabs.com!1375114411!24957050!2
-X-Originating-IP: [66.77.174.13]
-X-StarScan-Received: 
-X-StarScan-Version: 6.9.11; banners=-,-,-
-X-VirusChecked: Checked
-From: Hector Palacios <hector.palacios@digi.com>
-To: <linux-bluetooth@vger.kernel.org>
-CC: <marcel@holtmann.org>, <gustavo@padovan.org>, <johan.hedberg@gmail.com>,
-        <linux-kernel@vger.kernel.org>, <vikram.kandukuri@atheros.com>,
-        <suraj@atheros.com>, <hector.palacios@digi.com>
-Subject: [PATCH] bluetooth: remove wrong dependency for BT_ATH3K
-Date: Mon, 29 Jul 2013 18:12:05 +0200
-Message-ID: <1375114325-25498-1-git-send-email-hector.palacios@digi.com>
-X-Mailer: git-send-email 1.8.3.4
+	id S1757460Ab3G2QOD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 12:14:03 -0400
+Received: from mga09.intel.com ([134.134.136.24]:14346 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754869Ab3G2QOA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 12:14:00 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,770,1367996400"; 
+   d="scan'208";a="353674085"
+Date: Mon, 29 Jul 2013 23:57:31 -0400
+From: Youquan Song <youquan.song@linux.intel.com>
+To: Jeremy Eder <jeder@redhat.com>
+Cc: linux-kernel@vger.kernel.org, rafael.j.wysocki@intel.com, riel@redhat.com,
+        youquan.song@intel.com, youquan.song@linux.intel.com,
+        paulmck@linux.vnet.ibm.com, daniel.lezcano@linaro.org,
+        arjan@linux.intel.com, len.brown@intel.com
+Subject: Re: RFC:  revert request for cpuidle patches e11538d1 and 69a37bea
+Message-ID: <20130730035731.GA701@linux-youquan.bj.intel.com>
+References: <20130726173306.GB17985@jeder.rdu.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-KSE-Antivirus-Interceptor-Info: scan successful
-X-KSE-Antivirus-Info: Clean
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130726173306.GB17985@jeder.rdu.redhat.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Atheros firmware download driver is not dependent on HCI
-USB driver. This driver is needed to complement any Atheros
-driver like BT_HCIUART_ATH3K.
+Hi Jeremy,
 
-Signed-off-by: Hector Palacios <hector.palacios@digi.com>
-CC: Suraj Sumangala <suraj@atheros.com>
-CC: Vikram Kandukuri <vikram.kandukuri@atheros.com>
----
- drivers/bluetooth/Kconfig | 1 -
- 1 file changed, 1 deletion(-)
+I try reproduce your result and then fix the issue, but I do not reproduce it
+ yet.
 
-diff --git a/drivers/bluetooth/Kconfig b/drivers/bluetooth/Kconfig
-index 11a6104..a1d482b 100644
---- a/drivers/bluetooth/Kconfig
-+++ b/drivers/bluetooth/Kconfig
-@@ -222,7 +222,6 @@ config BT_MRVL_SDIO
- 
- config BT_ATH3K
- 	tristate "Atheros firmware download driver"
--	depends on BT_HCIBTUSB
- 	select FW_LOADER
- 	help
- 	  Bluetooth firmware download driver.
+I run at netperf-2.6.0 at one machine as server: netserver, other
+machine: netperf -t TCP_RR -H $SERVER_IP -l 60. The target machine is
+used in both client and server. I do not reproduce the performance drop
+issue. I also notice the result is not stable, sometime it is high,
+sometime is low. In sumarry, it is hard to make a definite result.
+
+Can you try tell me how to reproduce the issue? how do you get the C0
+data?
+
+What's your config for kernel?  Do you enable CONFIG_NO_HZ_FULL=y or
+only CONFIG_NO_HZ=y?
+
+
+Thanks
+-Youquan 
