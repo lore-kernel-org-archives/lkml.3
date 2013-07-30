@@ -1,69 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758480Ab3G3J1s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 05:27:48 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:49405 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755685Ab3G3J1r convert rfc822-to-8bit (ORCPT
+	id S932131Ab3G3JcR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 05:32:17 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52900 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755686Ab3G3JcN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 05:27:47 -0400
-MIME-Version: 1.0
-In-Reply-To: <51F7844F.60904@huawei.com>
-References: <51F7844F.60904@huawei.com>
-Date: Tue, 30 Jul 2013 12:27:45 +0300
-Message-ID: <CAEnQRZBX8rogCbYApgjdP4gEV=e3k=bCzLSUNP+abGsVOTQafA@mail.gmail.com>
-Subject: Re: [PATCH] net: fix build warning in trans_rdma.c
-From: Daniel Baluta <daniel.baluta@gmail.com>
-To: Xishi Qiu <qiuxishi@huawei.com>
-Cc: ericvh@gmail.com, rminnich@sandia.gov, lucho@ionkov.net,
-        davem@davemloft.net, v9fs-developer@lists.sourceforge.net,
-        netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+	Tue, 30 Jul 2013 05:32:13 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Soeren Moch <smoch@web.de>, Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 001/106] [media] media: dmxdev: remove dvb_ringbuffer_flush() on writer side
+Date: Tue, 30 Jul 2013 10:30:20 +0100
+Message-Id: <1375176725-5825-2-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
+References: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 30, 2013 at 12:15 PM, Xishi Qiu <qiuxishi@huawei.com> wrote:
-> When building v3.11-rc3, I get the following warning:
-> ...
-> net/9p/trans_rdma.c:594: warning: ‘rdma_cancelled’ defined but not used
-> ...
-> As the function is not be used, so remove it.
->
-> Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
-> ---
->  net/9p/trans_rdma.c |   11 -----------
->  1 files changed, 0 insertions(+), 11 deletions(-)
->
-> diff --git a/net/9p/trans_rdma.c b/net/9p/trans_rdma.c
-> index 928f2bb..8f68df5 100644
-> --- a/net/9p/trans_rdma.c
-> +++ b/net/9p/trans_rdma.c
-> @@ -588,17 +588,6 @@ static int rdma_cancel(struct p9_client *client, struct p9_req_t *req)
->         return 1;
->  }
->
-> -/* A request has been fully flushed without a reply.
-> - * That means we have posted one buffer in excess.
-> - */
-> -static int rdma_cancelled(struct p9_client *client, struct p9_req_t *req)
-> -{
-> -       struct p9_trans_rdma *rdma = client->trans;
-> -
-> -       atomic_inc(&rdma->excess_rc);
-> -       return 0;
-> -}
-> -
->  /**
->   * trans_create_rdma - Transport method for creating atransport instance
->   * @client: client instance
+3.5.7.18 -stable review patch.  If anyone has any objections, please let me know.
 
-Hi,
+------------------
 
-This is wrong.
+From: Soeren Moch <smoch@web.de>
 
-Please check http://comments.gmane.org/gmane.linux.network/276261.
+commit 414abbd2cd4c2618895f02ed3a76ec6647281436 upstream.
 
-thanks,
-Daniel.
+In dvb_ringbuffer lock-less synchronizationof reader and writer threads is done
+with separateread and write pointers. Sincedvb_ringbuffer_flush() modifies the
+read pointer, this function must not be called from the writer thread.
+This patch removes the dvb_ringbuffer_flush() calls in the dmxdev ringbuffer
+write functions, this fixes Oopses "Unable to handle kernel paging request"
+I could observe for the call chaindvb_demux_read ->dvb_dmxdev_buffer_read ->
+dvb_ringbuffer_read_user -> __copy_to_user (the reader side of the ringbuffer).
+The flush calls at the write side are not necessary anyway since ringbuffer_flush
+is also called in dvb_dmxdev_buffer_read() when an error condition is set in the
+ringbuffer.
+This patch should also be applied to stable kernels.
+
+Signed-off-by: Soeren Moch <smoch@web.de>
+Reviewed-by: Sakari Ailus <sakari.ailus@iki.fi>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+[ luis: backported to 3.5:
+  - drivers/media/dvb-core/dmxdev.c -> drivers/media/dvb/dvb-core/dmxdev.c ]
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/media/dvb/dvb-core/dmxdev.c | 8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/media/dvb/dvb-core/dmxdev.c b/drivers/media/dvb/dvb-core/dmxdev.c
+index 73970cd..214df76 100644
+--- a/drivers/media/dvb/dvb-core/dmxdev.c
++++ b/drivers/media/dvb/dvb-core/dmxdev.c
+@@ -379,10 +379,8 @@ static int dvb_dmxdev_section_callback(const u8 *buffer1, size_t buffer1_len,
+ 		ret = dvb_dmxdev_buffer_write(&dmxdevfilter->buffer, buffer2,
+ 					      buffer2_len);
+ 	}
+-	if (ret < 0) {
+-		dvb_ringbuffer_flush(&dmxdevfilter->buffer);
++	if (ret < 0)
+ 		dmxdevfilter->buffer.error = ret;
+-	}
+ 	if (dmxdevfilter->params.sec.flags & DMX_ONESHOT)
+ 		dmxdevfilter->state = DMXDEV_STATE_DONE;
+ 	spin_unlock(&dmxdevfilter->dev->lock);
+@@ -418,10 +416,8 @@ static int dvb_dmxdev_ts_callback(const u8 *buffer1, size_t buffer1_len,
+ 	ret = dvb_dmxdev_buffer_write(buffer, buffer1, buffer1_len);
+ 	if (ret == buffer1_len)
+ 		ret = dvb_dmxdev_buffer_write(buffer, buffer2, buffer2_len);
+-	if (ret < 0) {
+-		dvb_ringbuffer_flush(buffer);
++	if (ret < 0)
+ 		buffer->error = ret;
+-	}
+ 	spin_unlock(&dmxdevfilter->dev->lock);
+ 	wake_up(&buffer->queue);
+ 	return 0;
+-- 
+1.8.3.2
+
