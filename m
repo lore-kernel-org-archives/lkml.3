@@ -1,79 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753934Ab3G3NVo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 09:21:44 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:47398 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751287Ab3G3NVm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 09:21:42 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Konstantin Krivyakin <k.krivyakin@samsung.com>,
-        linux-kernel@vger.kernel.org, viresh.kumar@linaro.org,
-        mingo@redhat.com, kgene.kim@samsung.com, linux-pm@vger.kernel.org,
-        i.zhbanov@samsung.com, e.voevodin@samsung.com,
-        kyungmin.park@samsung.com, akpm@linux-foundation.org
-Subject: Re: [PATCH RFC 0/3] Per-process power consumption measurement facility
-Date: Tue, 30 Jul 2013 15:31:50 +0200
-Message-ID: <17414140.5WcljOZAKe@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <20130730085256.GK3008@twins.programming.kicks-ass.net>
-References: <1375172259-9641-1-git-send-email-k.krivyakin@samsung.com> <20130730085256.GK3008@twins.programming.kicks-ass.net>
+	id S1754670Ab3G3NWH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 09:22:07 -0400
+Received: from mail-bk0-f42.google.com ([209.85.214.42]:51656 "EHLO
+	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754233Ab3G3NWC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Jul 2013 09:22:02 -0400
+Date: Tue, 30 Jul 2013 15:21:14 +0200
+From: Robert Richter <rric@kernel.org>
+To: Jed Davis <jld@mozilla.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] perf: Fix handling of arch_perf_out_copy_user return
+ value.
+Message-ID: <20130730131818.GA31198@rric.localhost>
+References: <1375146761-4339-1-git-send-email-jld@mozilla.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1375146761-4339-1-git-send-email-jld@mozilla.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, July 30, 2013 10:52:56 AM Peter Zijlstra wrote:
-> On Tue, Jul 30, 2013 at 12:17:36PM +0400, Konstantin Krivyakin wrote:
-> > This patchset adds per-process power consumption measurement facility.
-> > Power consumption is very important on mobile platforms. This code
-> > allows to measure consumed power in Watts*Hours. The consumed power
-> > for process is updated on scheduler switch and depends on current
-> > CPU voltage and frequency.
-> > 
-> > The formula for computation is: P = C * V^2 * f, where C is a constant
-> > that reflects capacity of the system, V is the current voltage and
-> > f is the current frequency.
-> > (Taken from: http://en.wikipedia.org/wiki/CPU_power_dissipation).
-> > 
-> > In this patchset was added implementation for Exynos platform
-> > to demonstrate how it works.
-> > 
-> > To minimize scheduler impact for each CPU P-state the value of (V^2 *f)
-> > was precomputed at the time of platform initialization.
+On 29.07.13 18:12:40, Jed Davis wrote:
+> All architectures except x86 use __copy_from_user_inatomic to provide
+> arch_perf_out_copy_user; like the other copy_from routines, it returns
+> the number of bytes not copied.  perf was expecting the number of bytes
+> that had been copied.  This change corrects that, and thereby allows
+> PERF_SAMPLE_STACK_USER to be enabled on non-x86 architectures.
 > 
-> It seems to me the 3 multiplies that takes could be done when cpufreq
-> actually changes the P-state.
+> x86 uses copy_from_user_nmi, which deviates from the other copy_from
+> routines by returning the number of bytes copied.  (This cancels out
+> the effect of perf being backwards; apparently this code has only ever
+> been tested on x86.)  This change therefore adds a second wrapper to
+> re-reverse it for perf; the next patch in this series will clean it up.
 > 
-> > And to reduce performance impact furthermore, the C constant is multiplied
-> > in userspace.
+> Signed-off-by: Jed Davis <jld@mozilla.com>
+> ---
+>  arch/x86/include/asm/perf_event.h |  9 ++++++++-
+>  kernel/events/internal.h          | 11 ++++++++++-
+>  2 files changed, 18 insertions(+), 2 deletions(-)
 > 
-> That seems particularly silly; how is userspace to know C and why
-> isn't it a much better idea to do this in the code generating the number
-> for userspace to consume.
-> 
-> Also, I intensely dislike this thing because:
-> 
->  - it adds more user interface
->  - it adds more accounting muck
->  - it completely lacks any useful changelogs
->  - it completely fails to even begin addressing the issues we already
->    have with cpufreq
-> 
-> There's been a lot of talk about power aware scheduling in the recent
-> past, there's also been a lot of problems listed we must overcome/solve.
-> This patch set completely fails to tie into any of that.
-> 
-> You also completely fail to explain the user case and thus related why
-> you can't use any of the other facilities like perf or ftrace to measure
-> this.
+> diff --git a/arch/x86/include/asm/perf_event.h b/arch/x86/include/asm/perf_event.h
+> index 8249df4..ddae5bd 100644
+> --- a/arch/x86/include/asm/perf_event.h
+> +++ b/arch/x86/include/asm/perf_event.h
+> @@ -274,6 +274,13 @@ static inline void perf_check_microcode(void) { }
+>   static inline void amd_pmu_disable_virt(void) { }
+>  #endif
+>  
+> -#define arch_perf_out_copy_user copy_from_user_nmi
+> +static inline unsigned long copy_from_user_nmi_for_perf(void *to,
+> +							const void __user *from,
+> +							unsigned long n)
+> +{
+> +	return n - copy_from_user_nmi(to, from, n);
+> +}
+> +
+> +#define arch_perf_out_copy_user copy_from_user_nmi_for_perf
 
-Agreed, thanks Peter!
+I like your change of copy_from_user_nmi() to return bytes not copied
+since it makes callers simpler and has the same i/f as other copy
+functions.
 
+Please do not introduce code that you later remove, instead merge this
+patch with your next.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+>  
+>  #endif /* _ASM_X86_PERF_EVENT_H */
+> diff --git a/kernel/events/internal.h b/kernel/events/internal.h
+> index ca65997..e61b22c 100644
+> --- a/kernel/events/internal.h
+> +++ b/kernel/events/internal.h
+> @@ -81,6 +81,7 @@ static inline unsigned long perf_data_size(struct ring_buffer *rb)
+>  	return rb->nr_pages << (PAGE_SHIFT + page_order(rb));
+>  }
+>  
+> +/* The memcpy_func must return the number of bytes successfully copied. */
+>  #define DEFINE_OUTPUT_COPY(func_name, memcpy_func)			\
+>  static inline unsigned int						\
+>  func_name(struct perf_output_handle *handle,				\
+> @@ -122,11 +123,19 @@ DEFINE_OUTPUT_COPY(__output_copy, memcpy_common)
+>  
+>  DEFINE_OUTPUT_COPY(__output_skip, MEMCPY_SKIP)
+>  
+> +/* arch_perf_out_copy_user must return the number of bytes not copied. */
+>  #ifndef arch_perf_out_copy_user
+>  #define arch_perf_out_copy_user __copy_from_user_inatomic
+>  #endif
+>  
+> -DEFINE_OUTPUT_COPY(__output_copy_user, arch_perf_out_copy_user)
+> +static inline unsigned long perf_memcpy_from_user(void *to,
+> +						  const void __user *from,
+> +						  unsigned long n)
+> +{
+> +	return n - arch_perf_out_copy_user(to, from, n);
+> +}
+> +
+> +DEFINE_OUTPUT_COPY(__output_copy_user, perf_memcpy_from_user)
+
+Better modify DEFINE_OUTPUT_COPY() to deal with bytes-not-copied as
+return value for memcpy_func(). Other users of DEFINE_OUTPUT_COPY()
+could be fixed easily.
+
+-Robert
