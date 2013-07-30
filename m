@@ -1,200 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757458Ab3G3USJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 16:18:09 -0400
-Received: from www.linutronix.de ([62.245.132.108]:58501 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757261Ab3G3UQx (ORCPT
+	id S1757054Ab3G3UUO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 16:20:14 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:37427 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756060Ab3G3UUK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 16:16:53 -0400
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: linux-usb@vger.kernel.org
-Cc: balbi@ti.com, linux-kernel@vger.kernel.org, george.cherian@ti.com,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [PATCH 4/5] usb: musb: dsps: remove the hardcoded phy pieces
-Date: Tue, 30 Jul 2013 22:16:40 +0200
-Message-Id: <1375215401-19729-5-git-send-email-bigeasy@linutronix.de>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1375215401-19729-1-git-send-email-bigeasy@linutronix.de>
-References: <1375215401-19729-1-git-send-email-bigeasy@linutronix.de>
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
+	Tue, 30 Jul 2013 16:20:10 -0400
+Message-ID: <51F81FF5.4020600@wwwdotorg.org>
+Date: Tue, 30 Jul 2013 14:20:05 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Laxman Dewangan <ldewangan@nvidia.com>
+CC: Andrew Chew <AChew@nvidia.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
+        "rob@landley.net" <rob@landley.net>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "lee.jones@linaro.org" <lee.jones@linaro.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "ian@slimlogic.co.uk" <ian@slimlogic.co.uk>,
+        "j-keerthy@ti.com" <j-keerthy@ti.com>,
+        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
+        Rhyland Klein <rklein@nvidia.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mfd: palmas: Add DVFS mux setting
+References: <1374871308-490-1-git-send-email-achew@nvidia.com> <51F2E74E.2060107@wwwdotorg.org> <643E69AA4436674C8F39DCC2C05F763862A12740FB@HQMAIL03.nvidia.com> <51F2EC66.2080200@wwwdotorg.org> <643E69AA4436674C8F39DCC2C05F763862A1274113@HQMAIL03.nvidia.com> <51F2F22B.500@wwwdotorg.org> <643E69AA4436674C8F39DCC2C05F763862A1274137@HQMAIL03.nvidia.com> <51F398F8.5070602@nvidia.com>
+In-Reply-To: <51F398F8.5070602@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-dsps uses a nop driver which is added in dsps itself and does the PHY
-on/off calls within dsps. Since those calls are now moved the nop driver
-itself, we can now request the phy proper phy and remove those calls.
-Currently only the first musb interface is used so we only add one phy
-node for now.
+On 07/27/2013 03:55 AM, Laxman Dewangan wrote:
+> On Saturday 27 July 2013 03:42 AM, Andrew Chew wrote:
+>> I wrote:
+>>> Andrew wrote:
+>>>> [adding a third pinmux configuration property to Palmas's DT]
+>>>
+>>> How does this interact with the pinctrl driver that Laxman just
+>>> sent for Palmas?
+>>>
+>>> https://lkml.org/lkml/2013/7/26/141
+>>> [PATCH 0/2] pinctrl: palmas: add pincontrol driver
+..
+>> Abandoning this patch.
+...
+> once we will have the pincontrol driver then mux pads are become redundant.
 
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
----
- drivers/usb/musb/musb_dsps.c | 97 +-------------------------------------------
- 1 file changed, 1 insertion(+), 96 deletions(-)
+OK. The driver should probably operate like this then:
 
-diff --git a/drivers/usb/musb/musb_dsps.c b/drivers/usb/musb/musb_dsps.c
-index 05c2a02..7f1361c 100644
---- a/drivers/usb/musb/musb_dsps.c
-+++ b/drivers/usb/musb/musb_dsps.c
-@@ -120,49 +120,8 @@ struct dsps_glue {
- 	const struct dsps_musb_wrapper *wrp; /* wrapper register offsets */
- 	struct timer_list timer[2];	/* otg_workaround timer */
- 	unsigned long last_timer[2];    /* last timer data for each instance */
--	u32 __iomem *usb_ctrl[2];
- };
- 
--#define	DSPS_AM33XX_CONTROL_MODULE_PHYS_0	0x44e10620
--#define	DSPS_AM33XX_CONTROL_MODULE_PHYS_1	0x44e10628
--
--static const resource_size_t dsps_control_module_phys[] = {
--	DSPS_AM33XX_CONTROL_MODULE_PHYS_0,
--	DSPS_AM33XX_CONTROL_MODULE_PHYS_1,
--};
--
--#define USBPHY_CM_PWRDN		(1 << 0)
--#define USBPHY_OTG_PWRDN	(1 << 1)
--#define USBPHY_OTGVDET_EN	(1 << 19)
--#define USBPHY_OTGSESSEND_EN	(1 << 20)
--
--/**
-- * musb_dsps_phy_control - phy on/off
-- * @glue: struct dsps_glue *
-- * @id: musb instance
-- * @on: flag for phy to be switched on or off
-- *
-- * This is to enable the PHY using usb_ctrl register in system control
-- * module space.
-- *
-- * XXX: This function will be removed once we have a seperate driver for
-- * control module
-- */
--static void musb_dsps_phy_control(struct dsps_glue *glue, u8 id, u8 on)
--{
--	u32 usbphycfg;
--
--	usbphycfg = readl(glue->usb_ctrl[id]);
--
--	if (on) {
--		usbphycfg &= ~(USBPHY_CM_PWRDN | USBPHY_OTG_PWRDN);
--		usbphycfg |= USBPHY_OTGVDET_EN | USBPHY_OTGSESSEND_EN;
--	} else {
--		usbphycfg |= USBPHY_CM_PWRDN | USBPHY_OTG_PWRDN;
--	}
--
--	writel(usbphycfg, glue->usb_ctrl[id]);
--}
- /**
-  * dsps_musb_enable - enable interrupts
-  */
-@@ -407,8 +366,7 @@ static int dsps_musb_init(struct musb *musb)
- 	musb->mregs += wrp->musb_core_offset;
- 
- 	/* NOP driver needs change if supporting dual instance */
--	usb_nop_xceiv_register();
--	musb->xceiv = usb_get_phy(USB_PHY_TYPE_USB2);
-+	musb->xceiv = devm_usb_get_phy_by_phandle(glue->dev, "phys", 0);
- 	if (IS_ERR_OR_NULL(musb->xceiv))
- 		return -EPROBE_DEFER;
- 
-@@ -426,9 +384,6 @@ static int dsps_musb_init(struct musb *musb)
- 	/* Reset the musb */
- 	dsps_writel(reg_base, wrp->control, (1 << wrp->reset));
- 
--	/* Start the on-chip PHY and its PLL. */
--	musb_dsps_phy_control(glue, pdev->id, 1);
--
- 	musb->isr = dsps_interrupt;
- 
- 	/* reset the otgdisable bit, needed for host mode to work */
-@@ -438,8 +393,6 @@ static int dsps_musb_init(struct musb *musb)
- 
- 	return 0;
- err0:
--	usb_put_phy(musb->xceiv);
--	usb_nop_xceiv_unregister();
- 	return status;
- }
- 
-@@ -451,14 +404,7 @@ static int dsps_musb_exit(struct musb *musb)
- 
- 	del_timer_sync(&glue->timer[pdev->id]);
- 
--	/* Shutdown the on-chip PHY and its PLL. */
--	musb_dsps_phy_control(glue, pdev->id, 0);
- 	usb_phy_shutdown(musb->xceiv);
--
--	/* NOP driver needs change if supporting dual instance */
--	usb_put_phy(musb->xceiv);
--	usb_nop_xceiv_unregister();
--
- 	return 0;
- }
- 
-@@ -487,16 +433,6 @@ static int dsps_create_musb_pdev(struct dsps_glue *glue, u8 id)
- 	char res_name[11];
- 	int ret;
- 
--	resources[0].start = dsps_control_module_phys[id];
--	resources[0].end = resources[0].start + SZ_4 - 1;
--	resources[0].flags = IORESOURCE_MEM;
--
--	glue->usb_ctrl[id] = devm_ioremap_resource(&pdev->dev, resources);
--	if (IS_ERR(glue->usb_ctrl[id])) {
--		ret = PTR_ERR(glue->usb_ctrl[id]);
--		goto err0;
--	}
--
- 	/* first resource is for usbss, so start index from 1 */
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, id + 1);
- 	if (!res) {
-@@ -680,36 +616,6 @@ static int dsps_remove(struct platform_device *pdev)
- 	return 0;
- }
- 
--#ifdef CONFIG_PM_SLEEP
--static int dsps_suspend(struct device *dev)
--{
--	struct platform_device *pdev = to_platform_device(dev->parent);
--	struct dsps_glue *glue = platform_get_drvdata(pdev);
--	const struct dsps_musb_wrapper *wrp = glue->wrp;
--	int i;
--
--	for (i = 0; i < wrp->instances; i++)
--		musb_dsps_phy_control(glue, i, 0);
--
--	return 0;
--}
--
--static int dsps_resume(struct device *dev)
--{
--	struct platform_device *pdev = to_platform_device(dev->parent);
--	struct dsps_glue *glue = platform_get_drvdata(pdev);
--	const struct dsps_musb_wrapper *wrp = glue->wrp;
--	int i;
--
--	for (i = 0; i < wrp->instances; i++)
--		musb_dsps_phy_control(glue, i, 1);
--
--	return 0;
--}
--#endif
--
--static SIMPLE_DEV_PM_OPS(dsps_pm_ops, dsps_suspend, dsps_resume);
--
- static const struct dsps_musb_wrapper am33xx_driver_data = {
- 	.revision		= 0x00,
- 	.control		= 0x14,
-@@ -752,7 +658,6 @@ static struct platform_driver dsps_usbss_driver = {
- 	.remove         = dsps_remove,
- 	.driver         = {
- 		.name   = "musb-dsps",
--		.pm	= &dsps_pm_ops,
- 		.of_match_table	= of_match_ptr(musb_dsps_of_match),
- 	},
- };
--- 
-1.8.3.2
+* During probe(), parse the ti,mux-pad* parameters, if present, and
+apply them. This is needed to maintain compatibility with old DTs that
+may contain these properties.
 
+* At the end of probe(), register the pinctrl driver. If standard
+pinctrl properties are present in DT, these will then be applied. These
+may override the values set by any ti,mux-pad* properties if they were
+present.
+
+Also, we should remove, or mark deprecated, the ti,mux-pad* properties
+in the binding document when adding pinctrl support.
