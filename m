@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758598Ab3G3JTt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 05:19:49 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:57152 "EHLO
+	id S1758578Ab3G3JTr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 05:19:47 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:47887 "EHLO
 	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758428Ab3G3JTb (ORCPT
+	with ESMTP id S1758530Ab3G3JTb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 30 Jul 2013 05:19:31 -0400
-X-AuditID: 9c930179-b7c49ae000000e68-fb-51f7851b286c
+X-AuditID: 9c930179-b7c49ae000000e68-fe-51f7851b4c51
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
@@ -17,9 +17,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>,
         Jeremy Eder <jeder@redhat.com>
-Subject: [PATCH 16/17] perf ftrace: Show leaf-functions as oneliner
-Date: Tue, 30 Jul 2013 18:19:13 +0900
-Message-Id: <1375175954-798-17-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 17/17] perf ftrace: Tidy up the function graph output of 'show' subcommand
+Date: Tue, 30 Jul 2013 18:19:14 +0900
+Message-Id: <1375175954-798-18-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1375175954-798-1-git-send-email-namhyung@kernel.org>
 References: <1375175954-798-1-git-send-email-namhyung@kernel.org>
@@ -30,168 +30,106 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-Detect leaf functions and print them in a same line.
+Now it doesn't call pevent_print_event() but prints context info in
+itself using print_graph_duration().  Make it compact by only print
+cpu number and duration:
 
-Note that it only converts leaf-functions that doesn't have any other
-records between entry and exit even in other cpus.  I left other leaf
-functions as is.
+  # perf ftrace show
+  ...
+   10)   0.065 us |  __fsnotify_parent();
+   10)            |  fsnotify() {
+   10)   0.060 us |    __srcu_read_lock();
+   10)   0.040 us |    __srcu_read_unlock();
+   10)   0.652 us |  }
+   10)   0.040 us |  fput();
+   10)            |  __audit_syscall_exit() {
+   10)            |    path_put() {
+   10)   0.037 us |      dput();
+   10)   0.032 us |      mntput();
+   10)   0.563 us |    }
+   10)   0.035 us |    unroll_tree_refs();
+   10)   0.035 us |    kfree();
+   10)   1.284 us |  }
+   10)            |  __audit_syscall_entry() {
+   10)   0.029 us |    current_kernel_time();
+   10)   0.239 us |  }
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/builtin-ftrace.c | 87 +++++++++++++++++++++++++++++++++++++++------
- 1 file changed, 76 insertions(+), 11 deletions(-)
+ tools/perf/builtin-ftrace.c | 35 +++++++++++++++++++++++++++++++++--
+ 1 file changed, 33 insertions(+), 2 deletions(-)
 
 diff --git a/tools/perf/builtin-ftrace.c b/tools/perf/builtin-ftrace.c
-index 25a07db864b4..8d4ec20e3854 100644
+index 8d4ec20e3854..9e78ec19caeb 100644
 --- a/tools/perf/builtin-ftrace.c
 +++ b/tools/perf/builtin-ftrace.c
-@@ -874,34 +874,77 @@ function_handler(struct trace_seq *s, struct pevent_record *record,
+@@ -879,6 +879,27 @@ static struct pevent_record *get_ordered_record(struct perf_ftrace *ftrace);
  
- #define TRACE_GRAPH_INDENT  2
+ static struct event_format *fgraph_exit_event;
  
-+static struct pevent_record *peek_ordered_record(struct perf_ftrace *ftrace);
-+static struct pevent_record *get_ordered_record(struct perf_ftrace *ftrace);
++static void
++print_graph_duration(struct trace_seq *s, struct event_format *event,
++		     struct pevent_record *record)
++{
++	unsigned long long duration;
++	unsigned long long rettime, calltime;
++	unsigned long usec, nsec;
 +
-+static struct event_format *fgraph_exit_event;
++	if (pevent_get_field_val(s, event, "rettime", record, &rettime, 1))
++		return;
++
++	if (pevent_get_field_val(s, event, "calltime", record, &calltime, 1))
++		return;
++
++	duration = rettime - calltime;
++	usec = duration / 1000;
++	nsec = duration % 1000;
++
++	trace_seq_printf(s, "%3d) %3lu.%03lu us |  ", record->cpu, usec, nsec);
++}
 +
  static int
  fgraph_ent_handler(struct trace_seq *s, struct pevent_record *record,
--		   struct event_format *event, void *context __maybe_unused)
-+		   struct event_format *event, void *context)
- {
+ 		   struct event_format *event, void *context)
+@@ -911,9 +932,14 @@ fgraph_ent_handler(struct trace_seq *s, struct pevent_record *record,
+ 	if (next && next->cpu == record->cpu &&
+ 	    pevent_data_type(event->pevent, next) == fgraph_exit_event->id) {
+ 		is_leaf = true;
++
++		print_graph_duration(s, fgraph_exit_event, next);
++
+ 		/* consume record */
+ 		get_ordered_record(ftrace);
+ 		free(next);
++	} else {
++		trace_seq_printf(s, "%3d) %*s |  ", record->cpu, 10, "");
+ 	}
+ 
+ nested:
+@@ -954,6 +980,8 @@ fgraph_ret_handler(struct trace_seq *s, struct pevent_record *record,
  	unsigned long long depth;
- 	unsigned long long val;
- 	const char *func;
-+	struct perf_ftrace *ftrace = context;
-+	struct pevent_record *next;
-+	bool is_leaf = false;
-+	bool needs_free = false;
-+	void *data;
-+	int ret = -1;
  	int i;
  
-+	/*
-+	 * record->data can be invalidated after calling peek_ordered_record()
-+	 * because it can unmap the current kbuffer page.  Make a copy.
-+	 */
-+	data = malloc(record->size);
-+	if (data == NULL)
-+		goto nested;
++	print_graph_duration(s, event, record);
 +
-+	memcpy(data, record->data, record->size);
-+	record->data = data;
-+	needs_free = true;
-+
-+	/* detect leaf function and make it one-liner */
-+	next = peek_ordered_record(ftrace);
-+	if (next && next->cpu == record->cpu &&
-+	    pevent_data_type(event->pevent, next) == fgraph_exit_event->id) {
-+		is_leaf = true;
-+		/* consume record */
-+		get_ordered_record(ftrace);
-+		free(next);
-+	}
-+
-+nested:
  	if (pevent_get_field_val(s, event, "depth", record, &depth, 1))
--		return trace_seq_putc(s, '!');
-+		goto out;
+ 		return trace_seq_putc(s, '!');
  
- 	/* Function */
- 	for (i = 0; i < (int)(depth * TRACE_GRAPH_INDENT); i++)
- 		trace_seq_putc(s, ' ');
- 
- 	if (pevent_get_field_val(s, event, "func", record, &val, 1))
--		return trace_seq_putc(s, '!');
-+		goto out;
- 
- 	func = pevent_find_function(event->pevent, val);
- 
- 	if (func)
--		trace_seq_printf(s, "%s() {", func);
-+		trace_seq_printf(s, "%s()", func);
- 	else
--		trace_seq_printf(s, "%llx() {", val);
-+		trace_seq_printf(s, "%llx()", val);
- 
--	trace_seq_putc(s, '\n');
--	return 0;
-+	if (is_leaf)
-+		trace_seq_puts(s, ";\n");
-+	else
-+		trace_seq_puts(s, " {\n");
-+
-+	ret = 0;
-+out:
-+	if (needs_free)
-+		free(record->data);
-+
-+	return ret;
- }
- 
- static int
-@@ -1103,7 +1146,8 @@ get_ftrace_event_record(struct perf_ftrace *ftrace,
- 	return fra->record;
- }
- 
--static struct pevent_record *get_ordered_record(struct perf_ftrace *ftrace)
-+static struct ftrace_report_arg *
-+__get_ordered_record(struct perf_ftrace *ftrace)
- {
- 	struct ftrace_report_arg *fra = NULL;
- 	struct ftrace_report_arg *tmp;
-@@ -1117,9 +1161,26 @@ static struct pevent_record *get_ordered_record(struct perf_ftrace *ftrace)
- 			fra = tmp;
+@@ -1265,9 +1293,12 @@ static int do_ftrace_show(struct perf_ftrace *ftrace)
+ 			continue;
  		}
- 	}
-+	return fra;
-+}
-+
-+static struct pevent_record *peek_ordered_record(struct perf_ftrace *ftrace)
-+{
-+	struct ftrace_report_arg *fra = __get_ordered_record(ftrace);
-+
-+	if (fra)
-+		return fra->record;
-+
-+	return NULL;
-+}
-+
-+static struct pevent_record *get_ordered_record(struct perf_ftrace *ftrace)
-+{
-+	struct ftrace_report_arg *fra = __get_ordered_record(ftrace);
  
- 	if (fra) {
--		record = fra->record;
-+		struct pevent_record *record = fra->record;
-+
- 		fra->record = NULL;
- 		return record;
- 	}
-@@ -1175,10 +1236,10 @@ static int do_ftrace_show(struct perf_ftrace *ftrace)
- 				      function_handler, NULL);
- 	pevent_register_event_handler(ftrace->pevent, -1,
- 				      "ftrace", "funcgraph_entry",
--				      fgraph_ent_handler, NULL);
-+				      fgraph_ent_handler, ftrace);
- 	pevent_register_event_handler(ftrace->pevent, -1,
- 				      "ftrace", "funcgraph_exit",
--				      fgraph_ret_handler, NULL);
-+				      fgraph_ret_handler, ftrace);
+-		pevent_print_event(ftrace->pevent, &seq, record);
+-		trace_seq_do_printf(&seq);
++		if (!strcmp(ftrace->tracer, "function_graph"))
++			pevent_event_info(&seq, event, record);
++		else
++			pevent_print_event(ftrace->pevent, &seq, record);
  
- 	if (perf_session__process_events(session, &show.tool) < 0) {
- 		pr_err("failed to process events\n");
-@@ -1186,6 +1247,10 @@ static int do_ftrace_show(struct perf_ftrace *ftrace)
- 		goto out;
- 	}
++		trace_seq_do_printf(&seq);
+ 		trace_seq_reset(&seq);
  
-+	fgraph_exit_event = pevent_find_event_by_name(ftrace->pevent, "ftrace",
-+						     "funcgraph_exit");
-+	BUG_ON(fgraph_exit_event == NULL);
-+
- 	trace_seq_init(&seq);
- 
- 	record = get_ordered_record(ftrace);
+ 		free(record);
 -- 
 1.7.11.7
 
