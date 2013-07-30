@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757845Ab3G3Uto (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 16:49:44 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:43959 "EHLO
+	id S1757976Ab3G3UwX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 16:52:23 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:43966 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757318Ab3G3Utn (ORCPT
+	by vger.kernel.org with ESMTP id S1757342Ab3G3Utn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 30 Jul 2013 16:49:43 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
@@ -13,38 +13,64 @@ Cc: Emilio Lopez <emilio@elopez.com.ar>, kevin.z.m.zh@gmail.com,
         sunny@allwinnertech.com, shuge@allwinnertech.com,
         linux-kernel@vger.kernel.org, linux-sunxi@googlegroups.com,
         Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCHv2 01/10] irqchip: GIC: Add Cortex-A7 compatible string
-Date: Tue, 30 Jul 2013 22:49:30 +0200
-Message-Id: <1375217379-15126-2-git-send-email-maxime.ripard@free-electrons.com>
+        Mike Turquette <mturquette@linaro.org>
+Subject: [PATCHv2 02/10] clk: sunxi: fix initialization of basic clocks
+Date: Tue, 30 Jul 2013 22:49:31 +0200
+Message-Id: <1375217379-15126-3-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 1.8.3.4
 In-Reply-To: <1375217379-15126-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1375217379-15126-1-git-send-email-maxime.ripard@free-electrons.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The GIC can also be found on Cortex-A7 based SoCs. Register a new
-compatible string for those cases.
+From: Emilio López <emilio@elopez.com.ar>
 
+With the recent move towards CLK_OF_DECLARE(...), the driver stopped
+initializing osc32k, which is compatible "fixed-clock". This is because
+we never called of_clk_init(NULL). Fix this by moving the only other
+simple clock (osc24M) to use CLK_OF_DECLARE(...) and call of_clk_init(NULL)
+to initialize both of them.
+
+Signed-off-by: Emilio López <emilio@elopez.com.ar>
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Mike Turquette <mturquette@linaro.org>
 ---
- drivers/irqchip/irq-gic.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/clk/sunxi/clk-sunxi.c | 11 +++--------
+ 1 file changed, 3 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-index 19ceaa6..5b5fe23 100644
---- a/drivers/irqchip/irq-gic.c
-+++ b/drivers/irqchip/irq-gic.c
-@@ -854,6 +854,7 @@ int __init gic_of_init(struct device_node *node, struct device_node *parent)
- }
- IRQCHIP_DECLARE(cortex_a15_gic, "arm,cortex-a15-gic", gic_of_init);
- IRQCHIP_DECLARE(cortex_a9_gic, "arm,cortex-a9-gic", gic_of_init);
-+IRQCHIP_DECLARE(cortex_a7_gic, "arm,cortex-a7-gic", gic_of_init);
- IRQCHIP_DECLARE(msm_8660_qgic, "qcom,msm-8660-qgic", gic_of_init);
- IRQCHIP_DECLARE(msm_qgic2, "qcom,msm-qgic2", gic_of_init);
+diff --git a/drivers/clk/sunxi/clk-sunxi.c b/drivers/clk/sunxi/clk-sunxi.c
+index 412912b..fe1528e 100644
+--- a/drivers/clk/sunxi/clk-sunxi.c
++++ b/drivers/clk/sunxi/clk-sunxi.c
+@@ -409,12 +409,7 @@ static void __init sunxi_gates_clk_setup(struct device_node *node,
  
+ 	of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
+ }
+-
+-/* Matches for of_clk_init */
+-static const __initconst struct of_device_id clk_match[] = {
+-	{.compatible = "allwinner,sun4i-osc-clk", .data = sunxi_osc_clk_setup,},
+-	{}
+-};
++CLK_OF_DECLARE(sunxi_osc, "allwinner,sun4i-osc-clk", sunxi_osc_clk_setup);
+ 
+ /* Matches for factors clocks */
+ static const __initconst struct of_device_id clk_factors_match[] = {
+@@ -467,8 +462,8 @@ static void __init of_sunxi_table_clock_setup(const struct of_device_id *clk_mat
+ 
+ void __init sunxi_init_clocks(void)
+ {
+-	/* Register all the simple sunxi clocks on DT */
+-	of_clk_init(clk_match);
++	/* Register all the simple and basic clocks on DT */
++	of_clk_init(NULL);
+ 
+ 	/* Register factor clocks */
+ 	of_sunxi_table_clock_setup(clk_factors_match, sunxi_factors_clk_setup);
 -- 
 1.8.3.4
 
