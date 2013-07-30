@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758769Ab3G3Jo2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 05:44:28 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53261 "EHLO
+	id S1758806Ab3G3Jom (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 05:44:42 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53259 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932378Ab3G3Jd3 (ORCPT
+	with ESMTP id S932361Ab3G3Jd3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 30 Jul 2013 05:33:29 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+Cc: Huang Rui <ray.huang@amd.com>, Felipe Balbi <balbi@ti.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 068/106] powerpc/modules: Module CRC relocation fix causes perf issues
-Date: Tue, 30 Jul 2013 10:31:27 +0100
-Message-Id: <1375176725-5825-69-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 070/106] usb: dwc3: fix wrong bit mask in dwc3_event_type
+Date: Tue, 30 Jul 2013 10:31:29 +0100
+Message-Id: <1375176725-5825-71-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
 References: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
@@ -28,79 +27,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: Huang Rui <ray.huang@amd.com>
 
-commit 0e0ed6406e61434d3f38fb58aa8464ec4722b77e upstream.
+commit 1974d494dea05ea227cb42f5e918828801e237aa upstream.
 
-Module CRCs are implemented as absolute symbols that get resolved by
-a linker script. We build an intermediate .o that contains an
-unresolved symbol for each CRC. genksysms parses this .o, calculates
-the CRCs and writes a linker script that "resolves" the symbols to
-the calculated CRC.
+Per dwc3 2.50a spec, the is_devspec bit is used to distinguish the
+Device Endpoint-Specific Event or Device-Specific Event (DEVT). If the
+bit is 1, the event is represented Device-Specific Event, then use
+[7:1] bits as Device Specific Event to marked the type. It has 7 bits,
+and we can see the reserved8_31 variable name which means from 8 to 31
+bits marked reserved, actually there are 24 bits not 25 bits between
+that. And 1 + 7 + 24 = 32, the event size is 4 byes.
 
-Unfortunately the ppc64 relocatable kernel sees these CRCs as symbols
-that need relocating and relocates them at boot. Commit d4703aef
-(module: handle ppc64 relocating kcrctabs when CONFIG_RELOCATABLE=y)
-added a hook to reverse the bogus relocations. Part of this patch
-created a symbol at 0x0:
+So in dwc3_event_type, the bit mask should be:
+is_devspec	[0]		1  bit
+type		[7:1]		7  bits
+reserved8_31	[31:8]		24 bits
 
-# head -2 /proc/kallsyms
-0000000000000000 T reloc_start
-c000000000000000 T .__start
+This patch should be backported to kernels as old as 3.2, that contain
+the commit 72246da40f3719af3bfd104a2365b32537c27d83 "usb: Introduce
+DesignWare USB3 DRD Driver".
 
-This reloc_start symbol is causing lots of confusion to perf. It
-thinks reloc_start is a massive function that stretches from 0x0 to
-0xc000000000000000 and we get various cryptic errors out of perf,
-including:
-
-problem incrementing symbol count, skipping event
-
-This patch removes the  reloc_start linker script label and instead
-defines it as PHYSICAL_START. We also need to wrap it with
-CONFIG_PPC64 because the ppc32 kernel can set a non zero
-PHYSICAL_START at compile time and we wouldn't want to subtract
-it from the CRCs in that case.
-
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Acked-by: Rusty Russell <rusty@rustcorp.com.au>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Huang Rui <ray.huang@amd.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/powerpc/include/asm/module.h | 5 ++---
- arch/powerpc/kernel/vmlinux.lds.S | 3 ---
- 2 files changed, 2 insertions(+), 6 deletions(-)
+ drivers/usb/dwc3/core.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/powerpc/include/asm/module.h b/arch/powerpc/include/asm/module.h
-index 0192a4e..80de64b 100644
---- a/arch/powerpc/include/asm/module.h
-+++ b/arch/powerpc/include/asm/module.h
-@@ -87,10 +87,9 @@ struct exception_table_entry;
- void sort_ex_table(struct exception_table_entry *start,
- 		   struct exception_table_entry *finish);
+diff --git a/drivers/usb/dwc3/core.h b/drivers/usb/dwc3/core.h
+index f69c877..3c9e37e 100644
+--- a/drivers/usb/dwc3/core.h
++++ b/drivers/usb/dwc3/core.h
+@@ -669,8 +669,8 @@ struct dwc3 {
  
--#ifdef CONFIG_MODVERSIONS
-+#if defined(CONFIG_MODVERSIONS) && defined(CONFIG_PPC64)
- #define ARCH_RELOCATES_KCRCTAB
--
--extern const unsigned long reloc_start[];
-+#define reloc_start PHYSICAL_START
- #endif
- #endif /* __KERNEL__ */
- #endif	/* _ASM_POWERPC_MODULE_H */
-diff --git a/arch/powerpc/kernel/vmlinux.lds.S b/arch/powerpc/kernel/vmlinux.lds.S
-index 65d1c08..7703569 100644
---- a/arch/powerpc/kernel/vmlinux.lds.S
-+++ b/arch/powerpc/kernel/vmlinux.lds.S
-@@ -38,9 +38,6 @@ jiffies = jiffies_64 + 4;
- #endif
- SECTIONS
- {
--	. = 0;
--	reloc_start = .;
--
- 	. = KERNELBASE;
+ struct dwc3_event_type {
+ 	u32	is_devspec:1;
+-	u32	type:6;
+-	u32	reserved8_31:25;
++	u32	type:7;
++	u32	reserved8_31:24;
+ } __packed;
  
- /*
+ #define DWC3_DEPEVT_XFERCOMPLETE	0x01
 -- 
 1.8.3.2
 
