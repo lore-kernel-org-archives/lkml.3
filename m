@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932267Ab3G3Jc1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 05:32:27 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52956 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932243Ab3G3JcY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932242Ab3G3JcY (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 30 Jul 2013 05:32:24 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52929 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758628Ab3G3JcT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Jul 2013 05:32:19 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Hannes Reinecke <hare@suse.de>, Mike Snitzer <snitzer@redhat.com>,
-        Alasdair G Kergon <agk@redhat.com>,
+Cc: David Disseldorp <ddiss@suse.de>, Steve French <smfrench@gmail.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 012/106] dm mpath: fix ioctl deadlock when no paths
-Date: Tue, 30 Jul 2013 10:30:31 +0100
-Message-Id: <1375176725-5825-13-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 007/106] [CIFS] use sensible file nlink values if unprovided
+Date: Tue, 30 Jul 2013 10:30:26 +0100
+Message-Id: <1375176725-5825-8-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
 References: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
@@ -28,95 +27,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hannes Reinecke <hare@suse.de>
+From: Steve French <smfrench@gmail.com>
 
-commit 6c182cd88d179cbbd06f4f8a8a19b6977940753f upstream.
+commit 6658b9f70ebca5fc0795b1d6d733996af1e2caa7 upstream.
 
-When multipath needs to retry an ioctl the reference to the
-current live table needs to be dropped. Otherwise a deadlock
-occurs when all paths are down:
-- dm_blk_ioctl takes a reference to the current table
-  and spins in multipath_ioctl().
-- A new table is being loaded, but upon resume the process
-  hangs in dm_table_destroy() waiting for references to
-  drop to zero.
+Certain servers may not set the NumberOfLinks field in query file/path
+info responses. In such a case, cifs_inode_needs_reval() assumes that
+all regular files are hardlinks and triggers revalidation, leading to
+excessive and unnecessary network traffic.
 
-With this patch the reference to the old table is dropped
-prior to retry, thereby avoiding the deadlock.
+This change hardcodes cf_nlink (and subsequently i_nlink) when not
+returned by the server, similar to what already occurs in cifs_mkdir().
 
-Signed-off-by: Hannes Reinecke <hare@suse.de>
-Cc: Mike Snitzer <snitzer@redhat.com>
-Signed-off-by: Alasdair G Kergon <agk@redhat.com>
+Signed-off-by: David Disseldorp <ddiss@suse.de>
+Signed-off-by: Steve French <smfrench@gmail.com>
+[ luis: backported to 3.5:
+  - replaced cifs_dbg() by cFYI() ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/md/dm-mpath.c | 8 ++------
- drivers/md/dm.c       | 9 ++++++++-
- 2 files changed, 10 insertions(+), 7 deletions(-)
+ fs/cifs/inode.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/drivers/md/dm-mpath.c b/drivers/md/dm-mpath.c
-index 1ca41d2..93b3c2d 100644
---- a/drivers/md/dm-mpath.c
-+++ b/drivers/md/dm-mpath.c
-@@ -1526,7 +1526,6 @@ static int multipath_ioctl(struct dm_target *ti, unsigned int cmd,
- 	unsigned long flags;
- 	int r;
+diff --git a/fs/cifs/inode.c b/fs/cifs/inode.c
+index 6fbfbdb..293226e 100644
+--- a/fs/cifs/inode.c
++++ b/fs/cifs/inode.c
+@@ -549,6 +549,11 @@ cifs_all_info_to_fattr(struct cifs_fattr *fattr, FILE_ALL_INFO *info,
+ 			fattr->cf_mode &= ~(S_IWUGO);
  
--again:
- 	bdev = NULL;
- 	mode = 0;
- 	r = 0;
-@@ -1544,7 +1543,7 @@ again:
+ 		fattr->cf_nlink = le32_to_cpu(info->NumberOfLinks);
++		if (fattr->cf_nlink < 1) {
++			cFYI(1, "replacing bogus file nlink value %u\n",
++				fattr->cf_nlink);
++			fattr->cf_nlink = 1;
++		}
  	}
  
- 	if ((pgpath && m->queue_io) || (!pgpath && m->queue_if_no_path))
--		r = -EAGAIN;
-+		r = -ENOTCONN;
- 	else if (!bdev)
- 		r = -EIO;
- 
-@@ -1556,11 +1555,8 @@ again:
- 	if (!r && ti->len != i_size_read(bdev->bd_inode) >> SECTOR_SHIFT)
- 		r = scsi_verify_blk_ioctl(NULL, cmd);
- 
--	if (r == -EAGAIN && !fatal_signal_pending(current)) {
-+	if (r == -ENOTCONN && !fatal_signal_pending(current))
- 		queue_work(kmultipathd, &m->process_queued_ios);
--		msleep(10);
--		goto again;
--	}
- 
- 	return r ? : __blkdev_driver_ioctl(bdev, mode, cmd, arg);
- }
-diff --git a/drivers/md/dm.c b/drivers/md/dm.c
-index 32370ea..9a7290b 100644
---- a/drivers/md/dm.c
-+++ b/drivers/md/dm.c
-@@ -414,10 +414,12 @@ static int dm_blk_ioctl(struct block_device *bdev, fmode_t mode,
- 			unsigned int cmd, unsigned long arg)
- {
- 	struct mapped_device *md = bdev->bd_disk->private_data;
--	struct dm_table *map = dm_get_live_table(md);
-+	struct dm_table *map;
- 	struct dm_target *tgt;
- 	int r = -ENOTTY;
- 
-+retry:
-+	map = dm_get_live_table(md);
- 	if (!map || !dm_table_get_size(map))
- 		goto out;
- 
-@@ -438,6 +440,11 @@ static int dm_blk_ioctl(struct block_device *bdev, fmode_t mode,
- out:
- 	dm_table_put(map);
- 
-+	if (r == -ENOTCONN) {
-+		msleep(10);
-+		goto retry;
-+	}
-+
- 	return r;
- }
- 
+ 	fattr->cf_uid = cifs_sb->mnt_uid;
 -- 
 1.8.3.2
 
