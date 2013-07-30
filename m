@@ -1,82 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758217Ab3G3IuL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 04:50:11 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:37656 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755067Ab3G3IuB (ORCPT
+	id S1758225Ab3G3Ivp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 04:51:45 -0400
+Received: from juliette.telenet-ops.be ([195.130.137.74]:57747 "EHLO
+	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755067Ab3G3Ivl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 04:50:01 -0400
-Date: Tue, 30 Jul 2013 17:49:58 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
-Cc: Olof Johansson <olof@lixom.net>, Linux-SH <linux-sh@vger.kernel.org>,
-        Guennadi <g.liakhovetski@gmx.de>, linux-kernel@vger.kernel.org,
-        Vinod Koul <vinod.koul@intel.com>
-Subject: Re: [PATCH resend] shdma: fixup sh_dmae_get_partial() calculation
- error
-Message-ID: <20130730084957.GA17209@verge.net.au>
-References: <1373422152-29976-1-git-send-email-horms+renesas@verge.net.au>
- <20130716012041.GA942@verge.net.au>
- <20130723023907.GC14983@quad.lixom.net>
- <20130723041220.GA22253@verge.net.au>
- <87zjtddgtg.wl%kuninori.morimoto.gx@renesas.com>
- <20130724034009.GA18355@verge.net.au>
- <87d2q8v6fs.wl%kuninori.morimoto.gx@renesas.com>
- <87bo5sv63u.wl%kuninori.morimoto.gx@renesas.com>
+	Tue, 30 Jul 2013 04:51:41 -0400
+Date: Tue, 30 Jul 2013 10:51:37 +0200 (CEST)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Linux Kernel Development <linux-kernel@vger.kernel.org>
+cc: Linux/PPC Development <linuxppc-dev@lists.ozlabs.org>,
+        linux-usb@vger.kernel.org
+Subject: Re: Build regressions/improvements in v3.11-rc3
+In-Reply-To: <alpine.DEB.2.02.1307301048280.23035@ayla.of.borg>
+Message-ID: <alpine.DEB.2.02.1307301049230.23054@ayla.of.borg>
+References: <alpine.DEB.2.02.1307301048280.23035@ayla.of.borg>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87bo5sv63u.wl%kuninori.morimoto.gx@renesas.com>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ Cc Vinod ]
+On Tue, 30 Jul 2013, Geert Uytterhoeven wrote:
+> JFYI, when comparing v3.11-rc3 to v3.11-rc2[3], the summaries are:
+>   - build errors: +38/-14
 
-On Tue, Jul 23, 2013 at 11:12:41PM -0700, Kuninori Morimoto wrote:
-> sh_desc->hw.tcr is controlling real data size,
-> and, register TCR is controlling data transfer count
-> which was xmit_shifted value of hw.tcr.
-> Current sh_dmae_get_partial() is calculating in different unit.
-> This patch fixes it.
-> 
-> Signed-off-by: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
+  + arch/powerpc/kvm/book3s_emulate.c: error: 'bat' may be used uninitialized in this function [-Werror=uninitialized]:  => 349:2
+  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_ANDCOND' undeclared (first use in this function):  => 161:17, 86:16
+  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_AVPN' undeclared (first use in this function):  => 160:17, 85:16, 192:16
+  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_BULK_REMOVE' undeclared (first use in this function):  => 246:7
+  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_CEDE' undeclared (first use in this function):  => 250:7
+  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_CPPR' undeclared (first use in this function):  => 257:7
+  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_ENTER' undeclared (first use in this function):  => 240:7
+  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_EOI' undeclared (first use in this function):  => 258:7
+  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_EXACT' undeclared (first use in this function):  => 50:6
+  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_IPI' undeclared (first use in this function):  => 259:7
+  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_IPOLL' undeclared (first use in this function):  => 260:7
+  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_NOT_FOUND' undeclared (first use in this function):  => 193:27, 87:27
+  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_PARAMETER' undeclared (first use in this function):  => 138:10
+  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_PROTECT' undeclared (first use in this function):  => 244:7
+  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_PTEG_FULL' undeclared (first use in this function):  => 54:12
+  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_PUT_TCE' undeclared (first use in this function):  => 248:7
+  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_REMOVE' undeclared (first use in this function):  => 242:7
+  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_RTAS' undeclared (first use in this function):  => 265:7
+  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_SUCCESS' undeclared (first use in this function):  => 67:26, 96:26, 211:26, 125:12
+  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_TOO_HARD' undeclared (first use in this function):  => 224:12
+  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_XIRR' undeclared (first use in this function):  => 256:7
+  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_XIRR_X' undeclared (first use in this function):  => 261:7
+  + arch/powerpc/platforms/pseries/hotplug-memory.c: error: 'SECTION_SIZE_BITS' undeclared (first use in this function):  => 24:31
+  + mm/memory_hotplug.c: error: 'PAGES_PER_SECTION' undeclared (first use in this function):  => 1630:46
+  + mm/memory_hotplug.c: error: implicit declaration of function '__nr_to_section' [-Werror=implicit-function-declaration]:  => 1635:3
+  + mm/memory_hotplug.c: error: implicit declaration of function 'find_memory_block_hinted' [-Werror=implicit-function-declaration]:  => 1642:3
+  + mm/memory_hotplug.c: error: implicit declaration of function 'pfn_to_section_nr' [-Werror=implicit-function-declaration]:  => 1631:3
+  + mm/memory_hotplug.c: error: implicit declaration of function 'present_section_nr' [-Werror=implicit-function-declaration]:  => 1632:3
 
-Can I confirm that this was a regression introduced by
-4f46f8ac80416b0e8fd3aba6a0d842205fb29140                   
-("dmaengine: shdma: restore partial transfer calculation") ?
+powerpc-randconfig
 
-> ---
-> >> Guennadi
-> 
-> Could you please check this patch, and give it your Acked-by ?
-> 
->  drivers/dma/sh/shdma.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/dma/sh/shdma.c b/drivers/dma/sh/shdma.c
-> index b70709b..d670b8b 100644
-> --- a/drivers/dma/sh/shdma.c
-> +++ b/drivers/dma/sh/shdma.c
-> @@ -388,8 +388,8 @@ static size_t sh_dmae_get_partial(struct shdma_chan *schan,
->  						    shdma_chan);
->  	struct sh_dmae_desc *sh_desc = container_of(sdesc,
->  					struct sh_dmae_desc, shdma_desc);
-> -	return (sh_desc->hw.tcr - sh_dmae_readl(sh_chan, TCR)) <<
-> -		sh_chan->xmit_shift;
-> +	return sh_desc->hw.tcr -
-> +		(sh_dmae_readl(sh_chan, TCR) << sh_chan->xmit_shift);
->  }
->  
->  /* Called from error IRQ or NMI */
-> -- 
-> 1.7.9.5
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-sh" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+  + drivers/md/dm-cache-policy-mq.c: error: conflicting types for 'remove_mapping':  => 962:13
+
+sparc-allmodconfig, not a regression (was hidden due to a sparc64/sparc32
+mixup on kissb), patch submitted
+
+  + error: "usb_add_gadget_udc" [drivers/usb/chipidea/ci_hdrc.ko] undefined!:  => N/A
+  + error: "usb_del_gadget_udc" [drivers/usb/chipidea/ci_hdrc.ko] undefined!:  => N/A
+  + error: "usb_gadget_map_request" [drivers/usb/chipidea/ci_hdrc.ko] undefined!:  => N/A
+  + error: "usb_gadget_unmap_request" [drivers/usb/chipidea/ci_hdrc.ko] undefined!:  => N/A
+
+x86_64-randconfig
+
+> [1] http://kisskb.ellerman.id.au/kisskb/head/6490/ (all 120 configs)
+> [3] http://kisskb.ellerman.id.au/kisskb/head/6461/ (all 120 configs)
+
+Gr{oetje,eeting}s,
+
+						Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
