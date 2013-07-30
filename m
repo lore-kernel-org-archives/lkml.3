@@ -1,137 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758110Ab3G3W66 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 18:58:58 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:43482 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756180Ab3G3W64 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 18:58:56 -0400
-Date: Tue, 30 Jul 2013 23:58:45 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Richard Genoud <richard.genoud@gmail.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Bo Shen <voice.shen@atmel.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org, devicetree@vger.kernel.org,
-        patches@opensource.wolfsonmicro.com
-Message-ID: <20130730225845.GB9858@sirena.org.uk>
-References: <1375180329-4860-1-git-send-email-richard.genoud@gmail.com>
- <1375180329-4860-3-git-send-email-richard.genoud@gmail.com>
- <51F7FBA8.6080400@wwwdotorg.org>
- <20130730204511.GX9858@sirena.org.uk>
- <51F8302D.406@wwwdotorg.org>
+	id S1758151Ab3G3XDf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 19:03:35 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:48036 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753487Ab3G3XDe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Jul 2013 19:03:34 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: Aaron Lu <aaron.lwe@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, Len Brown <lenb@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [REGRESSION/PATCH] acpi: blacklist win8 OSI for ASUS Zenbok Prime UX31A
+Date: Wed, 31 Jul 2013 01:13:41 +0200
+Message-ID: <37178266.QXgbv9rq0i@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CAMP44s02V_FO1BPJZqo6MB9RMknXYdV7AXDqbJzYHpgK1GUuJw@mail.gmail.com>
+References: <1375125658-1223-1-git-send-email-felipe.contreras@gmail.com> <3453253.oZLO1ChPbL@vostro.rjw.lan> <CAMP44s02V_FO1BPJZqo6MB9RMknXYdV7AXDqbJzYHpgK1GUuJw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="sOljI8osNSgTwq0k"
-Content-Disposition: inline
-In-Reply-To: <51F8302D.406@wwwdotorg.org>
-X-Cookie: You will be awarded some great honor.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v6 2/8] ASoC: atmel: machine driver for at91sam9x5-wm8731
- boards
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tuesday, July 30, 2013 03:59:26 PM Felipe Contreras wrote:
+> On Tue, Jul 30, 2013 at 8:42 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > On Tuesday, July 30, 2013 01:57:55 PM Aaron Lu wrote:
+> >> On 07/30/2013 01:51 PM, Aaron Lu wrote:
+> >> > On 07/30/2013 11:44 AM, Felipe Contreras wrote:
+> >> >> On Mon, Jul 29, 2013 at 10:11 PM, Aaron Lu <aaron.lwe@gmail.com> wrote:
+> >> >>> On 07/30/2013 03:20 AM, Felipe Contreras wrote:
+> >> >>>> Since v3.7 the acpi backlight driver doesn't work at all on this machine
+> >> >>>> because presumably the ACPI code contains stub code when Windows 8 OSI is
+> >> >>>> reported.
+> >> >>>>
+> >> >>>> The commit ea45ea7 (in v3.11-rc2) tried to fix this problem by using the intel
+> >> >>>> backlight driver, however, on this machine it turns the backlight completely
+> >> >>>> off when it reaches level 0%, after which the user might have a lot trouble
+> >> >>>> trying to bring it back.
+> >> >>>
+> >> >>> What do you mean by a lot of trouble? If you press hotkey to increase
+> >> >>> backlight brightness level, does it work?
+> >> >>
+> >> >> I guess so, *if* there is indeed a user-space power manager handling
+> >> >> that, *and* the keyboard has such keys, *or* the user has set custom
+> >> >> hotkeys.
+> >> >
+> >> > Right, for a GUI environment this may not be a big problem(user uses Fn
+> >> > key to decrease brightness level and then hit the black screen, it's
+> >> > natural he will use Fn key to increase brightness level).
+> >> >
+> >> >>
+> >> >>> If so, the screen should not
+> >> >>> be black any more, it's not that user has to blindly enter some command
+> >> >>> to get out of the black screen.
+> >> >>>
+> >> >>> And I'm not sure if this is a bug of intel_backlight(setting a low level
+> >> >>> makes the screen almost off), I see different models with different
+> >> >>> vendors having this behavior.
+> >> >>
+> >> >> I mean, the screen is completely off, I cannot see absolutely
+> >> >> anything. I don't see this behavior with the ACPI backlight driver,
+> >> >> nor do I see that in Windows 7.
+> >> >>
+> >> >>> If this is deemed a bug, then I'm afraid
+> >> >>> intel_backlight interface is useless for a lot of systems...perhaps we
+> >> >>> can only say, intel_backlight's interpretation of low levels are
+> >> >>> different with ACPI video's, and that's probably why its type is named
+> >> >>> as raw :-)
+> >> >>
+> >> >> Well, a bug is defined as unexpected behavior -- as a user, if I'm
+> >> >> changing the brightness of the screen, I certainly don't expect the
+> >> >> screen to turn off, and I think that's the expectation from most
+> >> >> people. It's the first time I see something like that.
+> >> >
+> >> > I agree this is kind of un-expected. At the same time, this seems to be
+> >> > the normal behavior for intel_backlight. I don't know what the correct
+> >> > thing to do here if this is something we want to avoid - modify intel
+> >> > backlight handling code not to set too low value or change the user
+> >> > space tool not to set a too low value if they are interacting with a
+> >> > raw type interface. Neither of them sounds cool... Or, users may get
+> >> > used to it, I for example, don't find this to be very annoying, but
+> >> > maybe I'm already used to it.
+> >>
+> >> BTW, for the complete screen off problem, I don't see there is anything
+> >> wrong with it from code's point of view. It's not that there is an error
+> >> in code or this is a broken hardware that caused the screen off when
+> >> setting a very low or 0 brightness level, it is simply the expected
+> >> behavior of what this interface can provide. It can really set the
+> >> brightness level to minimum(zero) or maximum. Don't get me wrong, I
+> >> didn't mean this is a good user experience, I don't know that. I just
+> >> don't think this is a program bug, and I don't know if this should be
+> >> fixed or not - obviously this interface did what it is asked to do,
+> >> correctly.
+> >
+> > Precisely, user space asks for 0 and the kernel delivers.
+> >
+> > And there are reasons why 0 should be "screen off", like power management
+> > (when you have a policy to dim the screen completely after a period of
+> > inactivity, for example).
+> 
+> There is another interface the turn the screen off.
+> 
+> If 0 turns the screen off with the intel driver, 0 should turn the
+> screen off with the ACPI driver, having inconsistent behavior
+> depending on which driver is used is a bug.
 
---sOljI8osNSgTwq0k
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The ACPI driver simply exposes and interface to interact with the AML methods
+in the BIOS directly.
 
-On Tue, Jul 30, 2013 at 03:29:17PM -0600, Stephen Warren wrote:
-> On 07/30/2013 02:45 PM, Mark Brown wrote:
+Yes, this is a mistake and shouldn't be designed this way.
 
-> > You really shouldn't do this, it's not accomplishing much.
+However, incidentally, this makes backlight control work on your machine.
 
-> What it accomplishes is not polluting the CODEC's binding with a set
-> of strings that must always be supported since DT is an ABI. The
-> strings are isolated into the specific audio complex binding, which
-> might possibly become deprecated and replaced with something better
-> and more generic.
+Anyway, we need all backlight drivers to work consistently and don't tempt me
+to rip the ACPI driver entirely from the kernel for what it's worth.
 
-You seem to be assuming that the strings are a bad thing.  I'm not sure
-that this is the case modulo the tooling issues...
+Yes, that will break backlight on your system and *then* you can complain to
+Linus if you wish.
 
-Besides the reality is that we're using strings right now and they're
-being baked into bindings right now, I can't see anything being saved by
-listing them in the board binding rather than in the CODEC binding since
-both are ABIs especially once you get to the second board binding.  The
-ship has sailed on that one. =20
+This is the last message I'm sending in this thread.
 
-All the CODEC binding does is say "there are pins called this", it's up
-to some other binding to define how they're used and the CODEC binding
-can always add extra information to that list, including a mapping to
-integers.
+Kind regards,
+Rafael
 
-> > The above is going to be legibility challenged without defines at
-> > which point the strings end up appearing in the binding document
-> > anyway.
 
-> Yes, you'd certainly have to use defines not raw integers. The strings
-> wouldn't appear in the binding doc so much as the numbers.
-
-The strings would be there in the text explaining what the numbers mean
-- whatever happens the pin names are going to be physically present in
-the document, it's just a formatting difference.  The CODEC document
-has to list all the pins, we're not going to avoid that by defining a
-mapping to integers since adding the integers will in some way end up
-defining the names even if just as part of the name of a constant.
-
-We could start adding the integers right now - something like:
-
-	The X CODEC has the following numbered input and output pins:
-
-		1. HPOUTL
-		2. HPOUTR
-		...
-
-	(see datasheet for details), a header file is provided with
-	constants X_PIN_foo for convenience.
-
-would work with either approach to identifying the pins or if we're
-being less verbose and just reference the header file for the
-definitions that becomes something like:
-
-	The X CODEC has input and output pins listed with numerical
-	identifiers in the form the X_PIN_foo defined in the X.h header
-	file where foo is the name of the pin.
-
-(that's not good boilerplate wording but you get my drift) which still
-ends up defining a set of known strings for pins.
-
-In fact now that I think about this why don't we just go ahead and do
-all this, starting by putting the numbers into the bindings for the
-CODECs since that's the simplest thing and doesn't involve writing code?
-I even have several boards on my desk that run DT ASoC...
-
---sOljI8osNSgTwq0k
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR+EUiAAoJELSic+t+oim9S4sP/2eRljQXNmjQrcold3ve3zZI
-t5RVJZnOItspiO9EH8rU+QpQGBZ4Ef3GX5uack8mYm956mTX9YdDRIzcMMoOhciZ
-RXcttTDHRHexgFHiTgzn/9ManagPYtFi++FzPc5IErqGNF00yVWlWQVZndNiyLfh
-I4SAnAPdSK2HJfLy46unSmDenGINCdJDhDo2NJvFDxPZKrOYUKiJ2fVFCohwVhbp
-GrS+PQPmFV5yoj6PKL2+XA/WFNU7JiN0sdDkErjCyz2iCjava3W+8D/AFzJj5c84
-k4kiz9fLTOL9Ay6ttspmHBxMW4TNZ5yjZ10pP8xG4ZRYELVc3zPi+EQM7TI78UFX
-umfFMw89OMXG2Gsa8mKzAclwYCiCATw4TFBXyGpYIShfCr1VVuq0K1UQh7jIJPeF
-XJFdNjIcT/TjwCrYFjgwFyrqHfJ2k3utdT/GGpntzYS8SQy6JfbQbHFTCR0aXGTC
-IEfUDh7e4KrLKkGjScG893cae/EShmvhxN8XgQ+cwClpvPZ3+qJlxZZrR/2SX/r1
-L4WrUEMx/FFCQQC2fy1X7wE73E2WGqtMibN6awPjGACuk5rD8d/rqITtgxpp7JaS
-zgQp/MvBRivSEz0w26hPw3AFLZY9UilpGlDOihWzRHQM1DHPIB17sQ2LF+tGrXKT
-H6iEKJU3WGbHicJ4Vdm2
-=Tqfg
------END PGP SIGNATURE-----
-
---sOljI8osNSgTwq0k--
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
