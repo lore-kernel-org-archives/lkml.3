@@ -1,72 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757315Ab3G3D7Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 23:59:24 -0400
-Received: from prod-mail-xrelay01.akamai.com ([72.246.2.12]:14876 "EHLO
-	prod-mail-xrelay01.akamai.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757195Ab3G3D7U (ORCPT
+	id S1751949Ab3G3EBm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 00:01:42 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:36390 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750745Ab3G3EBk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 23:59:20 -0400
-Message-ID: <51F73A17.2090208@akamai.com>
-Date: Mon, 29 Jul 2013 23:59:19 -0400
-From: Jason Baron <jbaron@akamai.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Tue, 30 Jul 2013 00:01:40 -0400
+Message-ID: <51F7E332.5010708@gmail.com>
+Date: Tue, 30 Jul 2013 12:00:50 -0400
+From: Dong Fang <yp.fangdong@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: "Du, Changbin" <changbin.du@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] dynamic_debug: add wildcard support to filter files/functions/modules
-References: <1374757321-5988-1-git-send-email-changbin.du@gmail.com> <1374770840.1957.4.camel@joe-AO722>
-In-Reply-To: <1374770840.1957.4.camel@joe-AO722>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+CC: mfasheh@suse.com, jlbec@evilplan.org, akpm@linux-foundation.org,
+        jeff.liu@oracle.com, viro@zeniv.linux.org.uk, sunil.mushran@gmail.com,
+        tim.gardner@canonical.com, xuejiufei@huawei.com,
+        shencanquan@huawei.com, ocfs2-devel@oss.oracle.com,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH v2] fs/ocfs2: use list_for_each_entry() instead of list_for_each()
+References: <1374931429-14062-1-git-send-email-yp.fangdong@gmail.com> <20130729074928.GB5053@mwanda> <20130729080606.GD5053@mwanda>
+In-Reply-To: <20130729080606.GD5053@mwanda>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/25/2013 12:47 PM, Joe Perches wrote:
-> On Thu, 2013-07-25 at 21:02 +0800, Du, Changbin wrote:
->> From: "Du, Changbin" <changbin.du@gmail.com>
->>
->> This patch add wildcard '*'(matches zero or more characters) and '?'
->> (matches one character) support when qurying debug flags.
-> Seems very useful.  Caveat below.
+On 07/29/2013 04:06 AM, Dan Carpenter wrote:
+> Oh.  It appears that nothing changed between v1 and v2.  Only the CC
+> list.
 >
->> diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
-> []
->> @@ -127,6 +127,21 @@ static void vpr_info_dq(const struct ddebug_query *query, const char *msg)
->>   		 query->first_lineno, query->last_lineno);
->>   }
->>   
->> +static int match_pattern(char *pat, char *str)
->> +{
->> +	switch (*pat) {
->> +	case '\0':
->> +		return !*str;
->> +	case '*':
->> +		return  match_pattern(pat+1, str) ||
->> +			(*str && match_pattern(pat, str+1));
->> +	case '?':
->> +		return *str && match_pattern(pat+1, str+1);
->> +	default:
->> +		return *pat == *str && match_pattern(pat+1, str 1);
->> +	}
->> +}
-> What's the maximum length string used today?
-> On a very long pattern, can this recursion cause stack overflow?
+> It's probably that the list moderation on ocfs2-devel was confusing
+> for non-native English speakers the patch submitter thought his
+> patch was dropped.
 >
-> Other than that, I like it.
-
-The recursion here is a concern - especially since the 'pat' pointer is 
-controlled from userspace. Maybe not at pretty, but this can easily be 
-done in userspace. For example, to set all driver/usb* one could do 
-something like:
-
-grep "drivers/usb" control | awk -F ":| "  '{ print "file " $1 " line " 
-$2 }' | xargs -i -n1 echo {} +p > control
-
-Thanks,
-
--Jason
-
-
-
+> Also mailing lists should have a white list so that I don't get the
+> message every single time.
+>
+> regards,
+> dan carpenter
+>
+sorry about that, i just think i shoud send this patch to linux-fsdevel,
+but ./get_maintainer.pl didn't tell me
