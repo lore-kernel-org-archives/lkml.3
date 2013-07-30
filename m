@@ -1,89 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751758Ab3G3Ohl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 10:37:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40788 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750959Ab3G3Ohk (ORCPT
+	id S1752127Ab3G3Oje (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 10:39:34 -0400
+Received: from www.linutronix.de ([62.245.132.108]:57108 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751040Ab3G3Ojc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 10:37:40 -0400
-Date: Tue, 30 Jul 2013 07:38:57 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Hans J. Koch" <hjk@hansjkoch.de>, linux-kernel@vger.kernel.org,
-        kernel@pengutronix.de, linux-mm@kvack.org
-Subject: Re: [PATCH v2 1/2] uio: provide vm access to UIO_MEM_PHYS maps
-Message-ID: <20130730143857.GA29376@kroah.com>
-References: <20130727214911.GK1754@pengutronix.de>
- <1374962978-1860-1-git-send-email-u.kleine-koenig@pengutronix.de>
- <20130729200914.GA6146@kroah.com>
- <20130730075239.GN1754@pengutronix.de>
- <20130730134950.GA27962@kroah.com>
- <20130730143237.GU1754@pengutronix.de>
+	Tue, 30 Jul 2013 10:39:32 -0400
+Message-ID: <51F7D020.3000508@linutronix.de>
+Date: Tue, 30 Jul 2013 16:39:28 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130630 Icedove/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130730143237.GU1754@pengutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: balbi@ti.com
+CC: George Cherian <george.cherian@ti.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        linux-omap@vger.kernel.org, kishon@ti.com
+Subject: Re: [PATCH v2 2/4] phy: phy-amxxxx-usb: Add PHY driver for amxxxx
+ platform
+References: <1374237277-17769-1-git-send-email-george.cherian@ti.com> <1374237277-17769-3-git-send-email-george.cherian@ti.com> <20130729151754.GB827@linutronix.de> <51F74CEC.8040407@ti.com> <51F77F15.7090306@linutronix.de> <51F7CCB7.4040305@ti.com> <20130730143339.GM28162@radagast>
+In-Reply-To: <20130730143339.GM28162@radagast>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 30, 2013 at 04:32:37PM +0200, Uwe Kleine-König wrote:
-> Hello Greg,
-> 
-> On Tue, Jul 30, 2013 at 06:49:50AM -0700, Greg Kroah-Hartman wrote:
-> > On Tue, Jul 30, 2013 at 09:52:39AM +0200, Uwe Kleine-König wrote:
-> > > [expanding Cc: to also include akpm and linux-mm]
-> > > 
-> > > Hello,
-> > > 
-> > > On Mon, Jul 29, 2013 at 01:09:14PM -0700, Greg Kroah-Hartman wrote:
-> > > > On Sun, Jul 28, 2013 at 12:09:37AM +0200, Uwe Kleine-König wrote:
-> > > > > This makes it possible to let gdb access mappings of the process that is
-> > > > > being debugged.
-> > > > > 
-> > > > > uio_mmap_logical was moved and uio_vm_ops renamed to group related code
-> > > > > and differentiate to new stuff.
-> > > > > 
-> > > > > Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-> > > > > ---
-> > > > > Changes since v1:
-> > > > >     - only use generic_access_phys ifdef CONFIG_HAVE_IOREMAP_PROT
-> > > > >     - fix all users of renamed struct
-> > > > 
-> > > > I still get a build error with this patch:
-> > > > 
-> > > >   MODPOST 384 modules
-> > > > ERROR: "generic_access_phys" [drivers/uio/uio.ko] undefined!
-> > > > 
-> > > > So something isn't quite right.
-> > > Ah, you built as a module and generic_access_phys isn't exported. The
-> > > other users of generic_access_phys (arch/x86/pci/i386.c and
-> > > drivers/char/mem.c) can only be builtin.
-> > > 
-> > > So the IMHO best option is to add an EXPORT_SYMBOL(generic_access_phys)
-> > > to mm/memory.c.
-> > 
-> > EXPORT_SYMBOL_GPL() perhaps?
-> Yeah, that would work just fine, too. Who takes care for mm/memory.c,
-> Andrew? Should I send a separate patch or is it ok to do it in the patch
-> making use of it and let it go in via Greg?
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA256
 
-I can take it, in a patch before this one, if I get the acks from Andrew
-and anyone else who "owns" that file (use get_maintainer.pl to determine
-the proper people please.)
+On 07/30/2013 04:33 PM, Felipe Balbi wrote:
+> let's try not to add any new TI-specific DT bindings, can you
+> figure that out by reading some revision register ? Or perhaps by
+> using different compatible strings ?
 
-> > And why all of a sudden does the uio driver need this change?  It is
-> > working just fine right now without it, right?
-> Yeah it works. But if you gdb your userspace driver, gdb cannot access
-> the mappings without my patch.
+I would suggest to use a different binding. But I'm currently trying to
+come up with something for am335x with a device reference?
 
-Ah, but who needs to use a debugger... :)
+Sebastian
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
 
-thanks,
-
-greg k-h
+iQIcBAEBCAAGBQJR99AZAAoJEHuW6BYqjPXRf5AP/jcMFUstlqqujRppC2gMsqh6
++xlpwh5hCHJPxQizwkG8kWW9XGMIMPmqODqoYwA9dFI3a5VgVVTRUkhnHEXlAt9A
+8X0Sl+mdKx0XwvjxjRDPUEYqvpDFAPYxgnwvxEfjtnDgQs5ikxFj4zaMonAj5oK0
+s7XnOImJmdoHbFfvR5Cx10zmfa0BjQETqk5bt/j8+8jnv86cZk8fEGE8XYoUnhFw
+BsEZgfSZH/pV6s339gTs+x4+zW0luJIhJdtQmh5Ylo+xt/3TYAmDuZ0v88A6gFV+
+MZjJLh2L9Sr6g0Pl/Rk5aMZhe5GSSrZYuu4Vltpz2xF1SjRRqg6ykmw6sqnme2uj
+BWwq5qNG5EFPtyhZCupTZ/z388kKOhC54kbFwJW7Duv9TkDUOctVuUbehEN4Pu/u
+HljW3FoYvvB/7EOXJhBcG6qy+ClS7mKkJJHeavnzbtzeg2jO1ZSKV1S/bJfpY4F6
+ualEKdC+A+UXYNHSnSkbdJPAfIQw9BOhdD3nszdzrB+0xUU1ul2V3Zdf0xKsUVPj
+8qkK9IuHum/pUfUEK/3C/igOhtag24LOhiGu1MG8Axe4FdmiTixhnV4DZzGyAMcm
+8Br/gtKVCuoU89y0mYhsAA5o+3e6YKE7lPQVULtrZO7/+wbOTrEaukvwCMB/NngL
++qNzg8WzrRHCAQnSKni9
+=712g
+-----END PGP SIGNATURE-----
