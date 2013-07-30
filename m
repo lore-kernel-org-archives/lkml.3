@@ -1,84 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757745Ab3G3Uld (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 16:41:33 -0400
-Received: from mga11.intel.com ([192.55.52.93]:12168 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757331Ab3G3Ulc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 16:41:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,781,1367996400"; 
-   d="scan'208";a="378568925"
-Date: Tue, 30 Jul 2013 13:41:25 -0700
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: James Hogan <james.hogan@imgtec.com>
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH] usb: xhci: add missing dma-mapping.h includes
-Message-ID: <20130730204125.GD10202@xanatos>
-References: <1374842083-5935-1-git-send-email-james.hogan@imgtec.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1374842083-5935-1-git-send-email-james.hogan@imgtec.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757770Ab3G3UoZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 16:44:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47357 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756924Ab3G3UoX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Jul 2013 16:44:23 -0400
+Date: Tue, 30 Jul 2013 13:44:22 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        Mel Gorman <mgorman@suse.de>, Nick Piggin <npiggin@kernel.dk>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Konstantin Weitz <konstantin.weitz@gmail.com>
+Subject: Re: [PATCH 1/2] mm: add support for discard of unused ptes
+Message-Id: <20130730134422.98c0977eada81d3ac41a08bb@linux-foundation.org>
+In-Reply-To: <1374742461-29160-2-git-send-email-schwidefsky@de.ibm.com>
+References: <1374742461-29160-1-git-send-email-schwidefsky@de.ibm.com>
+	<1374742461-29160-2-git-send-email-schwidefsky@de.ibm.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for the patch James!  I'll send it off to Greg in a couple days.
+On Thu, 25 Jul 2013 10:54:20 +0200 Martin Schwidefsky <schwidefsky@de.ibm.com> wrote:
 
-Sarah Sharp
+> From: Konstantin Weitz <konstantin.weitz@gmail.com>
+> 
+> In a virtualized environment and given an appropriate interface the guest
+> can mark pages as unused while they are free (for the s390 implementation
+> see git commit 45e576b1c3d00206 "guest page hinting light"). For the host
+> the unused state is a property of the pte.
+> 
+> This patch adds the primitive 'pte_unused' and code to the host swap out
+> handler so that pages marked as unused by all mappers are not swapped out
+> but discarded instead, thus saving one IO for swap out and potentially
+> another one for swap in.
+> 
+> ...
+>
+> --- a/include/asm-generic/pgtable.h
+> +++ b/include/asm-generic/pgtable.h
+> @@ -193,6 +193,19 @@ static inline int pte_same(pte_t pte_a, pte_t pte_b)
+>  }
+>  #endif
+>  
+> +#ifndef __HAVE_ARCH_PTE_UNUSED
+> +/*
+> + * Some architectures provide facilities to virtualization guests
+> + * so that they can flag allocated pages as unused. This allows the
+> + * host to transparently reclaim unused pages. This function returns
+> + * whether the pte's page is unused.
+> + */
+> +static inline int pte_unused(pte_t pte)
+> +{
+> +	return 0;
+> +}
+> +#endif
+> +
+>  #ifndef __HAVE_ARCH_PMD_SAME
+>  #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+>  static inline int pmd_same(pmd_t pmd_a, pmd_t pmd_b)
+> diff --git a/mm/rmap.c b/mm/rmap.c
+> index cd356df..2291f25 100644
+> --- a/mm/rmap.c
+> +++ b/mm/rmap.c
+> @@ -1234,6 +1234,16 @@ int try_to_unmap_one(struct page *page, struct vm_area_struct *vma,
+>  		}
+>  		set_pte_at(mm, address, pte,
+>  			   swp_entry_to_pte(make_hwpoison_entry(page)));
+> +	} else if (pte_unused(pteval)) {
+> +		/*
+> +		 * The guest indicated that the page content is of no
+> +		 * interest anymore. Simply discard the pte, vmscan
+> +		 * will take care of the rest.
+> +		 */
+> +		if (PageAnon(page))
+> +			dec_mm_counter(mm, MM_ANONPAGES);
+> +		else
+> +			dec_mm_counter(mm, MM_FILEPAGES);
+>  	} else if (PageAnon(page)) {
+>  		swp_entry_t entry = { .val = page_private(page) };
 
-On Fri, Jul 26, 2013 at 01:34:43PM +0100, James Hogan wrote:
-> A randconfig build hit the following build errors because xhci.c and
-> xhci-mem.c use dma mapping functions but don't include
-> <linux/dma-mapping.h>. Add the missing includes to fix the build errors.
-> 
-> drivers/usb/host/xhci.c In function 'xhci_gen_setup':
-> drivers/usb/host/xhci.c +4872 : error: implicit declaration of function 'dma_set_mask'
-> drivers/usb/host/xhci.c +4872 : error: implicit declaration of function 'DMA_BIT_MASK'
-> 
-> drivers/usb/host/xhci-mem.c In function 'xhci_free_stream_ctx':
-> drivers/usb/host/xhci-mem.c +435 : error: implicit declaration of function 'dma_free_coherent'
-> drivers/usb/host/xhci-mem.c In function 'xhci_alloc_stream_ctx':
-> drivers/usb/host/xhci-mem.c +463 : error: implicit declaration of function 'dma_alloc_coherent'
-> 
-> Signed-off-by: James Hogan <james.hogan@imgtec.com>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: linux-usb@vger.kernel.org
-> Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-> ---
->  drivers/usb/host/xhci-mem.c | 1 +
->  drivers/usb/host/xhci.c     | 1 +
->  2 files changed, 2 insertions(+)
-> 
-> diff --git a/drivers/usb/host/xhci-mem.c b/drivers/usb/host/xhci-mem.c
-> index fbf75e5..3e27d92 100644
-> --- a/drivers/usb/host/xhci-mem.c
-> +++ b/drivers/usb/host/xhci-mem.c
-> @@ -24,6 +24,7 @@
->  #include <linux/pci.h>
->  #include <linux/slab.h>
->  #include <linux/dmapool.h>
-> +#include <linux/dma-mapping.h>
->  
->  #include "xhci.h"
->  
-> diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-> index d8f640b..247020c 100644
-> --- a/drivers/usb/host/xhci.c
-> +++ b/drivers/usb/host/xhci.c
-> @@ -27,6 +27,7 @@
->  #include <linux/moduleparam.h>
->  #include <linux/slab.h>
->  #include <linux/dmi.h>
-> +#include <linux/dma-mapping.h>
->  
->  #include "xhci.h"
->  
-> -- 
-> 1.8.1.2
-> 
-> 
+Obviously harmless.  Please include this in whatever tree carries
+"[PATCH 2/2] s390/kvm: support collaborative memory management".
