@@ -1,55 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758260Ab3G3VJc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 17:09:32 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39325 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757853Ab3G3VJ3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 17:09:29 -0400
-Date: Tue, 30 Jul 2013 22:09:13 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: David Brown <davidb@codeaurora.org>
-Cc: Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Jason Cooper <jason@lakedaemon.net>, Nicolas Pitre <nico@linaro.org>,
-        Shawn Guo <shawn.guo@linaro.org>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH v2 3/9] ARM: msm: Move debug-macro.S to include/debug
-Message-ID: <20130730210912.GS24642@n2100.arm.linux.org.uk>
-References: <1374699274-18388-1-git-send-email-sboyd@codeaurora.org> <1374699274-18388-4-git-send-email-sboyd@codeaurora.org> <20130730205532.GA18638@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130730205532.GA18638@codeaurora.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1757824Ab3G3VIb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 17:08:31 -0400
+Received: from mga11.intel.com ([192.55.52.93]:37557 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757425Ab3G3VI3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Jul 2013 17:08:29 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,781,1367996400"; 
+   d="scan'208";a="373654021"
+From: Adrian Hunter <adrian.hunter@intel.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH V2 4/9] perf tools: adjust the vmlinux symtab matches kallsyms test
+Date: Wed, 31 Jul 2013 00:13:53 +0300
+Message-Id: <1375218838-31042-5-git-send-email-adrian.hunter@intel.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1375218838-31042-1-git-send-email-adrian.hunter@intel.com>
+References: <1375218838-31042-1-git-send-email-adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 30, 2013 at 01:55:32PM -0700, David Brown wrote:
-> On Wed, Jul 24, 2013 at 01:54:28PM -0700, Stephen Boyd wrote:
->> One more step to allowing MSM to participate in the
->> multi-platform defconfig.
->
-> Full patch: https://patchwork.kernel.org/patch/2833034/
->
->> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
->> ---
->> arch/arm/Kconfig.debug                             |  9 +++-
->> .../mach/debug-macro.S => include/debug/msm.S}     | 32 ++++++++++-
->> arch/arm/mach-msm/include/mach/msm_iomap-8960.h    |  5 --
->> arch/arm/mach-msm/include/mach/msm_iomap-8x60.h    |  5 --
->> arch/arm/mach-msm/include/mach/msm_iomap.h         | 12 -----
->> arch/arm/mach-msm/include/mach/uncompress.h        | 63 ----------------------
->> arch/arm/mach-msm/io.c                             | 40 +++++++-------
->> 7 files changed, 58 insertions(+), 108 deletions(-)
->> rename arch/arm/{mach-msm/include/mach/debug-macro.S => include/debug/msm.S} (61%)
->> delete mode 100644 arch/arm/mach-msm/include/mach/uncompress.h
->
-> Any comments on this?  This is mostly an MSM change, but I'd like to
-> get an Ack from someone because of the file moving into
-> arch/arm/include/debug.
+vmlinux maps now map to the dso and the symbol values
+are now file offsets.  For comparison with kallsyms
+the virtual memory address is needed which is obtained
+by unmapping the symbol value.
 
-Well, there will be some conflicts in Kconfig.debug, but there's some
-other comments.  Please see my reply on the actual patch.
+The "vmlinux symtab matches kallsyms" is adjusted
+accordingly.
+
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+---
+ tools/perf/tests/vmlinux-kallsyms.c | 32 +++++++++++++++++++++-----------
+ 1 file changed, 21 insertions(+), 11 deletions(-)
+
+diff --git a/tools/perf/tests/vmlinux-kallsyms.c b/tools/perf/tests/vmlinux-kallsyms.c
+index add1539..e2e1498 100644
+--- a/tools/perf/tests/vmlinux-kallsyms.c
++++ b/tools/perf/tests/vmlinux-kallsyms.c
+@@ -25,6 +25,7 @@ int test__vmlinux_matches_kallsyms(void)
+ 	struct machine kallsyms, vmlinux;
+ 	enum map_type type = MAP__FUNCTION;
+ 	struct ref_reloc_sym ref_reloc_sym = { .name = "_stext", };
++	u64 mem_start, mem_end;
+ 
+ 	/*
+ 	 * Step 1:
+@@ -123,10 +124,14 @@ int test__vmlinux_matches_kallsyms(void)
+ 		if (sym->start == sym->end)
+ 			continue;
+ 
+-		first_pair = machine__find_kernel_symbol(&kallsyms, type, sym->start, NULL, NULL);
++		mem_start = vmlinux_map->unmap_ip(vmlinux_map, sym->start);
++		mem_end = vmlinux_map->unmap_ip(vmlinux_map, sym->end);
++
++		first_pair = machine__find_kernel_symbol(&kallsyms, type,
++							 mem_start, NULL, NULL);
+ 		pair = first_pair;
+ 
+-		if (pair && pair->start == sym->start) {
++		if (pair && pair->start == mem_start) {
+ next_pair:
+ 			if (strcmp(sym->name, pair->name) == 0) {
+ 				/*
+@@ -138,10 +143,11 @@ next_pair:
+ 				 * off the real size. More than that and we
+ 				 * _really_ have a problem.
+ 				 */
+-				s64 skew = sym->end - pair->end;
++				s64 skew = mem_end - pair->end;
+ 				if (llabs(skew) >= page_size)
+ 					pr_debug("%#" PRIx64 ": diff end addr for %s v: %#" PRIx64 " k: %#" PRIx64 "\n",
+-						 sym->start, sym->name, sym->end, pair->end);
++						 mem_start, sym->name, mem_end,
++						 pair->end);
+ 
+ 				/*
+ 				 * Do not count this as a failure, because we
+@@ -159,7 +165,7 @@ detour:
+ 				if (nnd) {
+ 					struct symbol *next = rb_entry(nnd, struct symbol, rb_node);
+ 
+-					if (next->start == sym->start) {
++					if (next->start == mem_start) {
+ 						pair = next;
+ 						goto next_pair;
+ 					}
+@@ -172,10 +178,11 @@ detour:
+ 				}
+ 
+ 				pr_debug("%#" PRIx64 ": diff name v: %s k: %s\n",
+-					 sym->start, sym->name, pair->name);
++					 mem_start, sym->name, pair->name);
+ 			}
+ 		} else
+-			pr_debug("%#" PRIx64 ": %s not on kallsyms\n", sym->start, sym->name);
++			pr_debug("%#" PRIx64 ": %s not on kallsyms\n",
++				 mem_start, sym->name);
+ 
+ 		err = -1;
+ 	}
+@@ -208,16 +215,19 @@ detour:
+ 	for (nd = rb_first(&vmlinux.kmaps.maps[type]); nd; nd = rb_next(nd)) {
+ 		struct map *pos = rb_entry(nd, struct map, rb_node), *pair;
+ 
+-		pair = map_groups__find(&kallsyms.kmaps, type, pos->start);
++		mem_start = vmlinux_map->unmap_ip(vmlinux_map, pos->start);
++		mem_end = vmlinux_map->unmap_ip(vmlinux_map, pos->end);
++
++		pair = map_groups__find(&kallsyms.kmaps, type, mem_start);
+ 		if (pair == NULL || pair->priv)
+ 			continue;
+ 
+-		if (pair->start == pos->start) {
++		if (pair->start == mem_start) {
+ 			pair->priv = 1;
+ 			pr_info(" %" PRIx64 "-%" PRIx64 " %" PRIx64 " %s in kallsyms as",
+ 				pos->start, pos->end, pos->pgoff, pos->dso->name);
+-			if (pos->pgoff != pair->pgoff || pos->end != pair->end)
+-				pr_info(": \n*%" PRIx64 "-%" PRIx64 " %" PRIx64 "",
++			if (mem_end != pair->end)
++				pr_info(":\n*%" PRIx64 "-%" PRIx64 " %" PRIx64,
+ 					pair->start, pair->end, pair->pgoff);
+ 			pr_info(" %s\n", pair->dso->name);
+ 			pair->priv = 1;
+-- 
+1.7.11.7
+
