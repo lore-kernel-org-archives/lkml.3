@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753058Ab3G3Ooz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 10:44:55 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:42111 "EHLO
+	id S1753554Ab3G3Opg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 10:45:36 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:42120 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751246Ab3G3Oow (ORCPT
+	by vger.kernel.org with ESMTP id S1752772Ab3G3Ooy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 10:44:52 -0400
+	Tue, 30 Jul 2013 10:44:54 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: Mike Turquette <mturquette@linaro.org>
 Cc: Emilio Lopez <emilio@elopez.com.ar>, kevin.z.m.zh@gmail.com,
@@ -14,9 +14,9 @@ Cc: Emilio Lopez <emilio@elopez.com.ar>, kevin.z.m.zh@gmail.com,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         linux-sunxi@googlegroups.com,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH 2/4] clk: sunxi: Allow to specify the divider width from the dividers data
-Date: Tue, 30 Jul 2013 16:44:20 +0200
-Message-Id: <1375195462-19566-3-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH 3/4] clk: sunxi: Add A31 clocks support
+Date: Tue, 30 Jul 2013 16:44:21 +0200
+Message-Id: <1375195462-19566-4-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 1.8.3.4
 In-Reply-To: <1375195462-19566-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1375195462-19566-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -24,67 +24,226 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The divider width used to be hardcoded. Some A31 dividers are no longer
-with the hardcoded width, so we need to make it specific to each divider
-and set it in the dividers data.
+The A31 has a mostly different clock set compared to the other older
+SoCs currently supported in the Allwinner clock driver.
+
+Add support for the basic useful clocks. The other ones will come in
+eventually.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- drivers/clk/sunxi/clk-sunxi.c | 24 +++++++++++++-----------
- 1 file changed, 13 insertions(+), 11 deletions(-)
+ drivers/clk/sunxi/clk-sunxi.c | 120 ++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 120 insertions(+)
 
 diff --git a/drivers/clk/sunxi/clk-sunxi.c b/drivers/clk/sunxi/clk-sunxi.c
-index 3c91888..6e9cbc9 100644
+index 6e9cbc9..8cd69e6 100644
 --- a/drivers/clk/sunxi/clk-sunxi.c
 +++ b/drivers/clk/sunxi/clk-sunxi.c
-@@ -277,26 +277,28 @@ static void __init sunxi_mux_clk_setup(struct device_node *node,
-  * sunxi_divider_clk_setup() - Setup function for simple divider clocks
-  */
+@@ -124,7 +124,67 @@ static void sun4i_get_pll1_factors(u32 *freq, u32 parent_rate,
+ 	*n = div / 4;
+ }
  
--#define SUNXI_DIVISOR_WIDTH	2
--
- struct div_data {
--	u8 shift;
--	u8 pow;
-+	u8	shift;
-+	u8	pow;
-+	u8	width;
++/**
++ * sun6i_get_pll1_factors() - calculates n, k and m factors for PLL1
++ * PLL1 rate is calculated as follows
++ * rate = parent_rate * (n + 1) * (k + 1) / (m + 1);
++ * parent_rate should always be 24MHz
++ */
++static void sun6i_get_pll1_factors(u32 *freq, u32 parent_rate,
++				   u8 *n, u8 *k, u8 *m, u8 *p)
++{
++	/*
++	 * We can operate only on MHz, this will make our life easier
++	 * later.
++	 */
++	u32 freq_mhz = *freq / 1000000;
++	u32 parent_freq_mhz = parent_rate / 1000000;
++
++	/* If the frequency is a multiple of 32 MHz, k is always 3 */
++	if (!(freq_mhz % 32))
++		*k = 3;
++	/* If the frequency is a multiple of 9 MHz, k is always 2 */
++	else if (!(freq_mhz % 9))
++		*k = 2;
++	/* If the frequency is a multiple of 8 MHz, k is always 1 */
++	else if (!(freq_mhz % 8))
++		*k = 1;
++	/* Otherwise, we don't use the k factor */
++	else
++		*k = 0;
+ 
++	/*
++	 * If the frequency is a multiple of 2 but not a multiple of
++	 * 3, m is 3. This is the first time we use 6 here, yet we
++	 * will use it on several other places.
++	 * We use this number because it's the lowest frequency we can
++	 * generate (with n = 0, k = 0, m = 3), so every other frequency
++	 * somehow relates to this frequency.
++	 */
++	if ((freq_mhz % 6) == 2 || (freq_mhz % 6) == 4)
++		*m = 2;
++	/*
++	 * If the frequency is a multiple of 6MHz, but the factor is
++	 * odd, m will be 3
++	 */
++	else if ((freq_mhz / 6) & 1)
++		*m = 3;
++	/* Otherwise, we end up with m = 1 */
++	else
++		*m = 1;
++
++	/* Calculate n thanks to the above factors we already got */
++	*n = freq_mhz * (*m + 1) / ((*k + 1) * parent_freq_mhz) - 1;
++
++	/*
++	 * If n end up being outbound, and that we can still decrease
++	 * m, do it.
++	 */
++	if ((*n + 1) > 31 && (*m + 1) > 1) {
++		*n = (*n + 1) / 2 - 1;
++		*m = (*m + 1) / 2 - 1;
++	}
++}
+ 
+ /**
+  * sun4i_get_apb1_factors() - calculates m, p factors for APB1
+@@ -189,6 +249,15 @@ static struct clk_factors_config sun4i_pll1_config = {
+ 	.pwidth = 2,
  };
  
- static const __initconst struct div_data sun4i_axi_data = {
--	.shift = 0,
--	.pow = 0,
++static struct clk_factors_config sun6i_pll1_config = {
++	.nshift	= 8,
++	.nwidth = 5,
++	.kshift = 4,
++	.kwidth = 2,
++	.mshift = 0,
++	.mwidth = 2,
++};
++
+ static struct clk_factors_config sun4i_apb1_config = {
+ 	.mshift = 0,
+ 	.mwidth = 5,
+@@ -201,6 +270,11 @@ static const __initconst struct factors_data sun4i_pll1_data = {
+ 	.getter = sun4i_get_pll1_factors,
+ };
+ 
++static const __initconst struct factors_data sun6i_pll1_data = {
++	.table = &sun6i_pll1_config,
++	.getter = sun6i_get_pll1_factors,
++};
++
+ static const __initconst struct factors_data sun4i_apb1_data = {
+ 	.table = &sun4i_apb1_config,
+ 	.getter = sun4i_get_apb1_factors,
+@@ -243,6 +317,10 @@ static const __initconst struct mux_data sun4i_cpu_mux_data = {
+ 	.shift = 16,
+ };
+ 
++static const __initconst struct mux_data sun6i_ahb1_mux_data = {
++	.shift = 12,
++};
++
+ static const __initconst struct mux_data sun4i_apb1_mux_data = {
+ 	.shift = 24,
+ };
+@@ -301,6 +379,12 @@ static const __initconst struct div_data sun4i_apb0_data = {
+ 	.width	= 2,
+ };
+ 
++static const __initconst struct div_data sun6i_apb2_div_data = {
 +	.shift	= 0,
 +	.pow	= 0,
-+	.width	= 2,
- };
- 
- static const __initconst struct div_data sun4i_ahb_data = {
--	.shift = 4,
--	.pow = 1,
-+	.shift	= 4,
-+	.pow	= 1,
-+	.width	= 2,
- };
- 
- static const __initconst struct div_data sun4i_apb0_data = {
--	.shift = 8,
--	.pow = 1,
-+	.shift	= 8,
-+	.pow	= 1,
-+	.width	= 2,
- };
- 
++	.width	= 4,
++};
++
  static void __init sunxi_divider_clk_setup(struct device_node *node,
-@@ -312,7 +314,7 @@ static void __init sunxi_divider_clk_setup(struct device_node *node,
- 	clk_parent = of_clk_get_parent_name(node, 0);
+ 					   struct div_data *data)
+ {
+@@ -347,6 +431,10 @@ static const __initconst struct gates_data sun5i_a13_ahb_gates_data = {
+ 	.mask = {0x107067e7, 0x185111},
+ };
  
- 	clk = clk_register_divider(NULL, clk_name, clk_parent, 0,
--				   reg, data->shift, SUNXI_DIVISOR_WIDTH,
-+				   reg, data->shift, data->width,
- 				   data->pow ? CLK_DIVIDER_POWER_OF_TWO : 0,
- 				   &clk_lock);
- 	if (clk) {
++static const __initconst struct gates_data sun6i_a31_ahb1_gates_data = {
++	.mask = { 0xedfe7f62, 0x794f931 },
++};
++
+ static const __initconst struct gates_data sun4i_apb0_gates_data = {
+ 	.mask = {0x4EF},
+ };
+@@ -363,6 +451,14 @@ static const __initconst struct gates_data sun5i_a13_apb1_gates_data = {
+ 	.mask = {0xa0007},
+ };
+ 
++static const __initconst struct gates_data sun6i_a31_apb1_gates_data = {
++	.mask = { 0x3031 },
++};
++
++static const __initconst struct gates_data sun6i_a31_apb2_gates_data = {
++	.mask = { 0x3f000f },
++};
++
+ static void __init sunxi_gates_clk_setup(struct device_node *node,
+ 					 struct gates_data *data)
+ {
+@@ -420,6 +516,10 @@ static const __initconst struct of_device_id clk_factors_match[] = {
+ 		.data = &sun4i_pll1_data,
+ 	},
+ 	{
++		.compatible = "allwinner,sun6i-pll1-clk",
++		.data = &sun6i_pll1_data,
++	},
++	{
+ 		.compatible = "allwinner,sun4i-apb1-clk",
+ 		.data = &sun4i_apb1_data,
+ 	},
+@@ -440,6 +540,10 @@ static const __initconst struct of_device_id clk_div_match[] = {
+ 		.compatible = "allwinner,sun4i-apb0-clk",
+ 		.data = &sun4i_apb0_data,
+ 	},
++	{
++		.compatible = "allwinner,sun6i-apb2-div-clk",
++		.data = &sun6i_apb2_div_data,
++	},
+ 	{}
+ };
+ 
+@@ -453,6 +557,10 @@ static const __initconst struct of_device_id clk_mux_match[] = {
+ 		.compatible = "allwinner,sun4i-apb1-mux-clk",
+ 		.data = &sun4i_apb1_mux_data,
+ 	},
++	{
++		.compatible = "allwinner,sun6i-ahb1-mux-clk",
++		.data = &sun6i_ahb1_mux_data,
++	},
+ 	{}
+ };
+ 
+@@ -471,6 +579,10 @@ static const __initconst struct of_device_id clk_gates_match[] = {
+ 		.data = &sun5i_a13_ahb_gates_data,
+ 	},
+ 	{
++		.compatible = "allwinner,sun6i-a31-ahb1-gates-clk",
++		.data = &sun6i_a31_ahb1_gates_data,
++	},
++	{
+ 		.compatible = "allwinner,sun4i-apb0-gates-clk",
+ 		.data = &sun4i_apb0_gates_data,
+ 	},
+@@ -486,6 +598,14 @@ static const __initconst struct of_device_id clk_gates_match[] = {
+ 		.compatible = "allwinner,sun5i-a13-apb1-gates-clk",
+ 		.data = &sun5i_a13_apb1_gates_data,
+ 	},
++	{
++		.compatible = "allwinner,sun6i-a31-apb1-gates-clk",
++		.data = &sun6i_a31_apb1_gates_data,
++	},
++	{
++		.compatible = "allwinner,sun6i-a31-apb2-gates-clk",
++		.data = &sun6i_a31_apb2_gates_data,
++	},
+ 	{}
+ };
+ 
 -- 
 1.8.3.4
 
