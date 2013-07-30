@@ -1,63 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757082Ab3G3DjZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 23:39:25 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:40169 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751066Ab3G3DjY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 23:39:24 -0400
-Message-ID: <51F73555.1020204@huawei.com>
-Date: Tue, 30 Jul 2013 11:39:01 +0800
-From: Rui Xiang <rui.xiang@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S1757127Ab3G3Dj5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 23:39:57 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:8878 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1757115Ab3G3Dje (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 23:39:34 -0400
+X-IronPort-AV: E=Sophos;i="4.89,774,1367942400"; 
+   d="scan'208";a="8064103"
+Message-ID: <51F735AE.2050902@cn.fujitsu.com>
+Date: Tue, 30 Jul 2013 11:40:30 +0800
+From: Miao Xie <miaox@cn.fujitsu.com>
+Reply-To: miaox@cn.fujitsu.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Gu Zheng <guz.fnst@cn.fujitsu.com>
-CC: <containers@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        <serge.hallyn@ubuntu.com>, <ebiederm@xmission.com>,
-        <akpm@linux-foundation.org>, <gaofeng@cn.fujitsu.com>,
-        <libo.chen@huawei.com>
-Subject: Re: [PATCH 7/9] syslog_ns: implement function for creating syslog
- ns
-References: <1375065080-26740-1-git-send-email-rui.xiang@huawei.com> <1375065080-26740-8-git-send-email-rui.xiang@huawei.com> <51F64313.4010700@cn.fujitsu.com>
-In-Reply-To: <51F64313.4010700@cn.fujitsu.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Azat Khuzhin <a3at.mail@gmail.com>
+CC: linux-btrfs@vger.kernel.org, chris.mason@fusionio.com,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] btrfs: use list_for_each_entry_safe() when delete items
+References: <1374919965-11690-1-git-send-email-a3at.mail@gmail.com> <CAG5DWoi_BQvHYcPySZBLQpB3wbYeqvYj_CE1RvEBSB8xibtrDw@mail.gmail.com>
+In-Reply-To: <CAG5DWoi_BQvHYcPySZBLQpB3wbYeqvYj_CE1RvEBSB8xibtrDw@mail.gmail.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/30 11:37:17,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/30 11:37:18,
+	Serialize complete at 2013/07/30 11:37:18
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.72.188]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/7/29 18:25, Gu Zheng wrote:
-> Hi Rui,
+On mon, 29 Jul 2013 11:48:32 +0400, Azat Khuzhin wrote:
+> On Sat, Jul 27, 2013 at 2:12 PM, Azat Khuzhin <a3at.mail@gmail.com> wrote:
+>> Replace list_for_each_entry() by list_for_each_entry_safe() in
+>> __btrfs_close_devices()
+>>
+>> There is another place that delete items lock_stripe_add(), but there we
+>> don't need safe version, because after deleting we exit from loop.
+>>
+>> Signed-off-by: Azat Khuzhin <a3at.mail@gmail.com>
+>> ---
+>>  fs/btrfs/volumes.c |    4 ++--
+>>  1 file changed, 2 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/fs/btrfs/volumes.c b/fs/btrfs/volumes.c
+>> index 78b8717..1d1b595 100644
+>> --- a/fs/btrfs/volumes.c
+>> +++ b/fs/btrfs/volumes.c
+>> @@ -616,13 +616,13 @@ static void free_device(struct rcu_head *head)
+>>
+>>  static int __btrfs_close_devices(struct btrfs_fs_devices *fs_devices)
+>>  {
+>> -       struct btrfs_device *device;
+>> +       struct btrfs_device *device, *next;
+>>
+>>         if (--fs_devices->opened > 0)
+>>                 return 0;
+>>
+>>         mutex_lock(&fs_devices->device_list_mutex);
+>> -       list_for_each_entry(device, &fs_devices->devices, dev_list) {
+>> +       list_for_each_entry_safe(device, next, &fs_devices->devices, dev_list) {
+>>                 struct btrfs_device *new_device;
+>>                 struct rcu_string *name;
 > 
-> On 07/29/2013 10:31 AM, Rui Xiang wrote:
+> There is "kfree(device);" at the end of loop, maybe there must "goto
+> again;" after it?
+> (instead of this patch)
+
+Your fix is right, we needn't search from the head once again.
+
+The other fix way is:
+	call_rcu(&device->rcu, free_device);
++	device = new_device;
+ }
+but from the viewpoint of the readability, this way is not so good.
+
+Reviewed-by: Miao Xie <miaox@cn.fujitsu.com>
+
 > 
->> Add create_syslog_ns function to create a new ns. We
->> must create a user_ns before create a new syslog ns.
->> And then tie the new syslog_ns to current user_ns
->> instead of original syslog_ns which comes from
->> parent user_ns.
-
-...
-
->> diff --git a/kernel/printk.c b/kernel/printk.c
->> index fd2d600..6b561db 100644
->> --- a/kernel/printk.c
->> +++ b/kernel/printk.c
->> @@ -384,6 +384,10 @@ static int check_syslog_permissions(int type, bool from_file,
->>  		|| type == SYSLOG_ACTION_CONSOLE_LEVEL)
->>  		ns = &init_syslog_ns;
->>  
->> +	/* create a new syslog ns */
->> +	if (type == SYSLOG_ACTION_NEW_NS)
->> +		return 0;
->> +
+>>
+>> --
+>> 1.7.10.4
+>>
 > 
-> Don't we need further permission or caps check here? Return success directly seems sloppy. 
 > 
-CAP_SYSLOG is checked in create_syslog_ns, so I think we can return 0 temporarily.
-
-
+> 
 
