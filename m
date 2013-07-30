@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932795Ab3G3JpE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 05:45:04 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53234 "EHLO
+	id S932600Ab3G3JpB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 05:45:01 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53239 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932485Ab3G3JdY (ORCPT
+	with ESMTP id S932489Ab3G3JdY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 30 Jul 2013 05:33:24 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Eric Dumazet <edumazet@google.com>, Patrick McHardy <kaber@trash.net>,
+Cc: Bob Picco <bob.picco@oracle.com>, sparclinux@vger.kernel.org,
         "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 064/106] vlan: fix a race in egress prio management
-Date: Tue, 30 Jul 2013 10:31:23 +0100
-Message-Id: <1375176725-5825-65-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 066/106] sparc64 address-congruence property
+Date: Tue, 30 Jul 2013 10:31:25 +0100
+Message-Id: <1375176725-5825-67-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
 References: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
@@ -28,50 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: bob picco <bpicco@meloft.net>
 
-commit 3e3aac497513c669e1c62c71e1d552ea85c1d974 upstream.
+commit 771a37ff4d80b80db3b0df3e7696f14b298c67b7 upstream.
 
-egress_priority_map[] hash table updates are protected by rtnl,
-and we never remove elements until device is dismantled.
+The Machine Description (MD) property "address-congruence-offset" is
+optional. According to the MD specification the value is assumed 0UL when
+not present. This caused early boot failure on T5.
 
-We have to make sure that before inserting an new element in hash table,
-all its fields are committed to memory or else another cpu could
-find corrupt values and crash.
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Patrick McHardy <kaber@trash.net>
+Signed-off-by: Bob Picco <bob.picco@oracle.com>
+CC: sparclinux@vger.kernel.org
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/8021q/vlan_dev.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+ arch/sparc/mm/init_64.c | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
-diff --git a/net/8021q/vlan_dev.c b/net/8021q/vlan_dev.c
-index 7005e08..b8cf84e 100644
---- a/net/8021q/vlan_dev.c
-+++ b/net/8021q/vlan_dev.c
-@@ -73,6 +73,8 @@ vlan_dev_get_egress_qos_mask(struct net_device *dev, struct sk_buff *skb)
- {
- 	struct vlan_priority_tci_mapping *mp;
- 
-+	smp_rmb(); /* coupled with smp_wmb() in vlan_dev_set_egress_priority() */
+diff --git a/arch/sparc/mm/init_64.c b/arch/sparc/mm/init_64.c
+index d58edf5..f2ace29 100644
+--- a/arch/sparc/mm/init_64.c
++++ b/arch/sparc/mm/init_64.c
+@@ -1049,7 +1049,14 @@ static int __init grab_mblocks(struct mdesc_handle *md)
+ 		m->size = *val;
+ 		val = mdesc_get_property(md, node,
+ 					 "address-congruence-offset", NULL);
+-		m->offset = *val;
 +
- 	mp = vlan_dev_priv(dev)->egress_priority_map[(skb->priority & 0xF)];
- 	while (mp) {
- 		if (mp->priority == skb->priority) {
-@@ -235,6 +237,11 @@ int vlan_dev_set_egress_priority(const struct net_device *dev,
- 	np->next = mp;
- 	np->priority = skb_prio;
- 	np->vlan_qos = vlan_qos;
-+	/* Before inserting this element in hash table, make sure all its fields
-+	 * are committed to memory.
-+	 * coupled with smp_rmb() in vlan_dev_get_egress_qos_mask()
-+	 */
-+	smp_wmb();
- 	vlan->egress_priority_map[skb_prio & 0xF] = np;
- 	if (vlan_qos)
- 		vlan->nr_egress_mappings++;
++		/* The address-congruence-offset property is optional.
++		 * Explicity zero it be identifty this.
++		 */
++		if (val)
++			m->offset = *val;
++		else
++			m->offset = 0UL;
+ 
+ 		numadbg("MBLOCK[%d]: base[%llx] size[%llx] offset[%llx]\n",
+ 			count - 1, m->base, m->size, m->offset);
 -- 
 1.8.3.2
 
