@@ -1,136 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757824Ab3G3VIb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 17:08:31 -0400
-Received: from mga11.intel.com ([192.55.52.93]:37557 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757425Ab3G3VI3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 17:08:29 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,781,1367996400"; 
-   d="scan'208";a="373654021"
-From: Adrian Hunter <adrian.hunter@intel.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH V2 4/9] perf tools: adjust the vmlinux symtab matches kallsyms test
-Date: Wed, 31 Jul 2013 00:13:53 +0300
-Message-Id: <1375218838-31042-5-git-send-email-adrian.hunter@intel.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1375218838-31042-1-git-send-email-adrian.hunter@intel.com>
-References: <1375218838-31042-1-git-send-email-adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
+	id S1758212Ab3G3VKk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 17:10:40 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:35050 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758025Ab3G3VKi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Jul 2013 17:10:38 -0400
+Message-ID: <51F82BCC.1080409@codeaurora.org>
+Date: Tue, 30 Jul 2013 14:10:36 -0700
+From: hanumant <hanumant@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Bjorn Andersson <Bjorn.Andersson@sonymobile.com>,
+        "Bird, Tim" <Tim.Bird@sonymobile.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        ext Tony Lindgren <tony@atomide.com>
+Subject: Re: [PATCH] pinctrl: msm: Add support for MSM TLMM pinmux
+References: <1374702089-2832-1-git-send-email-hanumant@codeaurora.org> <CACRpkdZLFD-KAvZdUUvQKje3vAH1D0EJMW9PSK8VSp3Xs4eiGA@mail.gmail.com>
+In-Reply-To: <CACRpkdZLFD-KAvZdUUvQKje3vAH1D0EJMW9PSK8VSp3Xs4eiGA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-vmlinux maps now map to the dso and the symbol values
-are now file offsets.  For comparison with kallsyms
-the virtual memory address is needed which is obtained
-by unmapping the symbol value.
+On 7/29/2013 9:37 AM, Linus Walleij wrote:
+> On Wed, Jul 24, 2013 at 11:41 PM, Hanumant Singh
+> <hanumant@codeaurora.org> wrote:
+>
+>> Add a new device tree enabled pinctrl driver for
+>> Qualcomm MSM SoC's. This driver provides an extensible
+>> framework to interface all MSM's that use a TLMM pinmux,
+>> with the pinctrl subsytem.
+>>
+>> This driver is split into two parts: the pinctrl interface
+>> and the TLMM version specific implementation. The pinctrl
+>> interface parses the device tree and registers with the pinctrl
+>> subsytem. The TLMM version specific implementation supports
+>> pin configuration/register programming for the different
+>> pin types present on a given TLMM pinmux version.
+>>
+>> Add support only for TLMM version 3 pinmux right now,
+>> as well as, only two of the different pin types present on the
+>> TLMM v3 pinmux.
+>> Pintype 1: General purpose pins.
+>> Pintype 2: SDC pins.
+>
+> I guess this is the v4 patch set?
+>
+> Please include a small changelog so I can keep track of
+> things...
+>
+>
+>> Change-Id: I065d874cd2c6fd002d5b3cb4b355445bb6912bf4
+>
+> This thing is not interesting to the kernel community.
+>
+>> diff --git a/Documentation/devicetree/bindings/pinctrl/msm-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/msm-pinctrl.txt
+>> new file mode 100644
+>> index 0000000..0f17a94
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/pinctrl/msm-pinctrl.txt
+>
+> This needs to be broken out and sent for separate review on
+> the devicetree@vger.kernel.org mailing list.
+>
+>> +Required Properties
+>> +  - qcom,pin-type-*: identifies the pin type. Pin types supported are
+>> +                       qcom,pin-type-gp (General purpose)
+>> +                       qcom,pin-type-sdc (SDC)
+>
+> I am wondering if it it would not be simpler to split this
+> driver in two, one for the GP pins and one for the SDC pins.
+> Having this tag on each and every pin seems *very*
+> awkward.
+>
+> If you have two drivers and two device tree nodes, one for
+> GP pins and one for SDC pins, just separated by different
+> compatible strings and different memory regs, things will
+> look simpler and be easier to maintain I think.
+>
+> Unless there is some strong cross-dependency between
+> GP and SDC please explore this approach.
 
-The "vmlinux symtab matches kallsyms" is adjusted
-accordingly.
+Actually we have had this discussion.
+There are more pin types on a TLMM then just these 2.
+The registers are interleaved.
+They are no separated at a clean page boundary.
+Also there is mode register that governs the function mode of the 
+"unifunction"/single function pins like SDC. This register is again 
+interspersed in the address map.
+Having it the way it is right now, will help me add clean support for
+other pintypes on a given TLMM version.
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
----
- tools/perf/tests/vmlinux-kallsyms.c | 32 +++++++++++++++++++++-----------
- 1 file changed, 21 insertions(+), 11 deletions(-)
+>
+>> +- Pin groups as child nodes: The pin mux (selecting pin function
+>> +  mode) and pin config (pull up/down, driver strength, direction) settings are
+>> +  represented as child nodes of the pin-controller node. There is no limit on
+>> +  the count of these child nodes.
+>> +
+>> +  Required Properties
+>> +    -qcom,pins: phandle specifying pin type and a pin number.
+>> +    -qcom,num-grp-pins: number of pins in the group.
+>> +    -label: name to to identify the pin group.
+>> +
+>> +  Optional Properties
+>> +    -qcom,pin-func: function setting for the pin group.
+>
+> After some scratching my head I realize that you are trying
+> to reimplement parts of pinctrl-single.c.
+>
+> I.e. you try to put all the definitions of groups and functions
+> into the devicetree instead of having this in the driver
+> as tables.
+>
+> If this is what you want to do you should use pinctrl-single.c.
+> It might be possible to use pinctrl-single.c only for the
+> GP pins.
+I would prefer not to split the driver into one driver for its own 
+pintype for above reasons.
+Also there isn't just one register per pin for gp pins, there are more 
+registers.
+For example to configure direction, I have to touch additional registers
+then just the config register.
+Also for future TLMM version, we are very likely to move away from 
+single config register.
+>
+> But if there is something complex about the hardware that
+> make pinctrl-single.c not fit the bill I advice you to encode
+> the lists of groups and functions into the driver instead.
+>
+> Also, split this in a per-soc manner (compare the other
+> drivers) so you can support plugging one file per SoC
+> for the different MSM chips using this pin controller.
+>
+We actually have the same TLMM pinmux used by several socs of a family.
+The number of pins on each soc may vary.
+Also a given soc gets used in a number of boards.
+The device tree for a given soc is split into the different boards that 
+its in ie the boards inherit a common soc.dtsi but have separate dts.
+The boards for the same soc may use different pin groups for 
+accomplishing a function, since we have multiple i2c, spi uart etc
+peripheral instances on a soc. A different instance of each of the above 
+peripherals, can be used in different boards, utilizing different
+or subset of same pin groups.
+Thus I would need to have multiple C files for one soc, based on the 
+boards that it goes into.
 
-diff --git a/tools/perf/tests/vmlinux-kallsyms.c b/tools/perf/tests/vmlinux-kallsyms.c
-index add1539..e2e1498 100644
---- a/tools/perf/tests/vmlinux-kallsyms.c
-+++ b/tools/perf/tests/vmlinux-kallsyms.c
-@@ -25,6 +25,7 @@ int test__vmlinux_matches_kallsyms(void)
- 	struct machine kallsyms, vmlinux;
- 	enum map_type type = MAP__FUNCTION;
- 	struct ref_reloc_sym ref_reloc_sym = { .name = "_stext", };
-+	u64 mem_start, mem_end;
- 
- 	/*
- 	 * Step 1:
-@@ -123,10 +124,14 @@ int test__vmlinux_matches_kallsyms(void)
- 		if (sym->start == sym->end)
- 			continue;
- 
--		first_pair = machine__find_kernel_symbol(&kallsyms, type, sym->start, NULL, NULL);
-+		mem_start = vmlinux_map->unmap_ip(vmlinux_map, sym->start);
-+		mem_end = vmlinux_map->unmap_ip(vmlinux_map, sym->end);
-+
-+		first_pair = machine__find_kernel_symbol(&kallsyms, type,
-+							 mem_start, NULL, NULL);
- 		pair = first_pair;
- 
--		if (pair && pair->start == sym->start) {
-+		if (pair && pair->start == mem_start) {
- next_pair:
- 			if (strcmp(sym->name, pair->name) == 0) {
- 				/*
-@@ -138,10 +143,11 @@ next_pair:
- 				 * off the real size. More than that and we
- 				 * _really_ have a problem.
- 				 */
--				s64 skew = sym->end - pair->end;
-+				s64 skew = mem_end - pair->end;
- 				if (llabs(skew) >= page_size)
- 					pr_debug("%#" PRIx64 ": diff end addr for %s v: %#" PRIx64 " k: %#" PRIx64 "\n",
--						 sym->start, sym->name, sym->end, pair->end);
-+						 mem_start, sym->name, mem_end,
-+						 pair->end);
- 
- 				/*
- 				 * Do not count this as a failure, because we
-@@ -159,7 +165,7 @@ detour:
- 				if (nnd) {
- 					struct symbol *next = rb_entry(nnd, struct symbol, rb_node);
- 
--					if (next->start == sym->start) {
-+					if (next->start == mem_start) {
- 						pair = next;
- 						goto next_pair;
- 					}
-@@ -172,10 +178,11 @@ detour:
- 				}
- 
- 				pr_debug("%#" PRIx64 ": diff name v: %s k: %s\n",
--					 sym->start, sym->name, pair->name);
-+					 mem_start, sym->name, pair->name);
- 			}
- 		} else
--			pr_debug("%#" PRIx64 ": %s not on kallsyms\n", sym->start, sym->name);
-+			pr_debug("%#" PRIx64 ": %s not on kallsyms\n",
-+				 mem_start, sym->name);
- 
- 		err = -1;
- 	}
-@@ -208,16 +215,19 @@ detour:
- 	for (nd = rb_first(&vmlinux.kmaps.maps[type]); nd; nd = rb_next(nd)) {
- 		struct map *pos = rb_entry(nd, struct map, rb_node), *pair;
- 
--		pair = map_groups__find(&kallsyms.kmaps, type, pos->start);
-+		mem_start = vmlinux_map->unmap_ip(vmlinux_map, pos->start);
-+		mem_end = vmlinux_map->unmap_ip(vmlinux_map, pos->end);
-+
-+		pair = map_groups__find(&kallsyms.kmaps, type, mem_start);
- 		if (pair == NULL || pair->priv)
- 			continue;
- 
--		if (pair->start == pos->start) {
-+		if (pair->start == mem_start) {
- 			pair->priv = 1;
- 			pr_info(" %" PRIx64 "-%" PRIx64 " %" PRIx64 " %s in kallsyms as",
- 				pos->start, pos->end, pos->pgoff, pos->dso->name);
--			if (pos->pgoff != pair->pgoff || pos->end != pair->end)
--				pr_info(": \n*%" PRIx64 "-%" PRIx64 " %" PRIx64 "",
-+			if (mem_end != pair->end)
-+				pr_info(":\n*%" PRIx64 "-%" PRIx64 " %" PRIx64,
- 					pair->start, pair->end, pair->pgoff);
- 			pr_info(" %s\n", pair->dso->name);
- 			pair->priv = 1;
+Thanks
+Hanumant
+
+
 -- 
-1.7.11.7
-
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+-- 
