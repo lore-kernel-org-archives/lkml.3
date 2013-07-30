@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758779Ab3G3JhA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 05:37:00 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53391 "EHLO
+	id S932691Ab3G3Jh3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 05:37:29 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53387 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932667Ab3G3Jd5 (ORCPT
+	with ESMTP id S932569Ab3G3Jd4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 05:33:57 -0400
+	Tue, 30 Jul 2013 05:33:56 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: NeilBrown <neilb@suse.de>, Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 096/106] md/raid5: fix interaction of 'replace' and 'recovery'.
-Date: Tue, 30 Jul 2013 10:31:55 +0100
-Message-Id: <1375176725-5825-97-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 095/106] md/raid10: remove use-after-free bug.
+Date: Tue, 30 Jul 2013 10:31:54 +0100
+Message-Id: <1375176725-5825-96-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
 References: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
@@ -28,109 +28,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: NeilBrown <neilb@suse.de>
 
-commit f94c0b6658c7edea8bc19d13be321e3860a3fa54 upstream.
+commit 0eb25bb027a100f5a9df8991f2f628e7d851bc1e upstream.
 
-If a device in a RAID4/5/6 is being replaced while another is being
-recovered, then the writes to the replacement device currently don't
-happen, resulting in corruption when the replacement completes and the
-new drive takes over.
+We always need to be careful when calling generic_make_request, as it
+can start a chain of events which might free something that we are
+using.
 
-This is because the replacement writes are only triggered when
-'s.replacing' is set and not when the similar 's.sync' is set (which
-is the case during resync and recovery - it means all devices need to
-be read).
+Here is one place I wasn't careful enough.  If the wbio2 is not in
+use, then it might get freed at the first generic_make_request call.
+So perform all necessary tests first.
 
-So schedule those writes when s.replacing is set as well.
+This bug was introduced in 3.3-rc3 (24afd80d99) and can cause an
+oops, so fix is suitable for any -stable since then.
 
-In this case we cannot use "STRIPE_INSYNC" to record that the
-replacement has happened as that is needed for recording that any
-parity calculation is complete.  So introduce STRIPE_REPLACED to
-record if the replacement has happened.
-
-For safety we should also check that STRIPE_COMPUTE_RUN is not set.
-This has a similar effect to the "s.locked == 0" test.  The latter
-ensure that now IO has been flagged but not started.  The former
-checks if any parity calculation has been flagged by not started.
-We must wait for both of these to complete before triggering the
-'replace'.
-
-Add a similar test to the subsequent check for "are we finished yet".
-This possibly isn't needed (is subsumed in the STRIPE_INSYNC test),
-but it makes it more obvious that the REPLACE will happen before we
-think we are finished.
-
-Finally if a NeedReplace device is not UPTODATE then that is an
-error.  We really must trigger a warning.
-
-This bug was introduced in commit 9a3e1101b827a59ac9036a672f5fa8d5279d0fe2
-(md/raid5:  detect and handle replacements during recovery.)
-which introduced replacement for raid5.
-That was in 3.3-rc3, so any stable kernel since then would benefit
-from this fix.
-
-Reported-by: qindehua <13691222965@163.com>
-Tested-by: qindehua <qindehua@163.com>
 Signed-off-by: NeilBrown <neilb@suse.de>
 [ luis: backported to 3.5: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/md/raid5.c | 15 ++++++++++-----
- drivers/md/raid5.h |  1 +
- 2 files changed, 11 insertions(+), 5 deletions(-)
+ drivers/md/raid10.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/md/raid5.c b/drivers/md/raid5.c
-index bcd096b..ecf09ec 100644
---- a/drivers/md/raid5.c
-+++ b/drivers/md/raid5.c
-@@ -3372,6 +3372,7 @@ static void handle_stripe(struct stripe_head *sh)
- 	if (test_and_clear_bit(STRIPE_SYNC_REQUESTED, &sh->state)) {
- 		set_bit(STRIPE_SYNCING, &sh->state);
- 		clear_bit(STRIPE_INSYNC, &sh->state);
-+		clear_bit(STRIPE_REPLACED, &sh->state);
+diff --git a/drivers/md/raid10.c b/drivers/md/raid10.c
+index a829557..5ad042c 100644
+--- a/drivers/md/raid10.c
++++ b/drivers/md/raid10.c
+@@ -2130,12 +2130,18 @@ static void recovery_request_write(struct mddev *mddev, struct r10bio *r10_bio)
+ 	d = r10_bio->devs[1].devnum;
+ 	wbio = r10_bio->devs[1].bio;
+ 	wbio2 = r10_bio->devs[1].repl_bio;
++	/* Need to test wbio2->bi_end_io before we call
++	 * generic_make_request as if the former is NULL,
++	 * the latter is free to free wbio2.
++	 */
++	if (wbio2 && !wbio2->bi_end_io)
++		wbio2 = NULL;
+ 	if (wbio->bi_end_io) {
+ 		atomic_inc(&conf->mirrors[d].rdev->nr_pending);
+ 		md_sync_acct(conf->mirrors[d].rdev->bdev, wbio->bi_size >> 9);
+ 		generic_make_request(wbio);
  	}
- 	clear_bit(STRIPE_DELAYED, &sh->state);
- 
-@@ -3511,19 +3512,23 @@ static void handle_stripe(struct stripe_head *sh)
- 			handle_parity_checks5(conf, sh, &s, disks);
- 	}
- 
--	if (s.replacing && s.locked == 0
--	    && !test_bit(STRIPE_INSYNC, &sh->state)) {
-+	if ((s.replacing || s.syncing) && s.locked == 0
-+	    && !test_bit(STRIPE_COMPUTE_RUN, &sh->state)
-+	    && !test_bit(STRIPE_REPLACED, &sh->state)) {
- 		/* Write out to replacement devices where possible */
- 		for (i = 0; i < conf->raid_disks; i++)
--			if (test_bit(R5_UPTODATE, &sh->dev[i].flags) &&
--			    test_bit(R5_NeedReplace, &sh->dev[i].flags)) {
-+			if (test_bit(R5_NeedReplace, &sh->dev[i].flags)) {
-+				WARN_ON(!test_bit(R5_UPTODATE, &sh->dev[i].flags));
- 				set_bit(R5_WantReplace, &sh->dev[i].flags);
- 				set_bit(R5_LOCKED, &sh->dev[i].flags);
- 				s.locked++;
- 			}
--		set_bit(STRIPE_INSYNC, &sh->state);
-+		if (s.replacing)
-+			set_bit(STRIPE_INSYNC, &sh->state);
-+		set_bit(STRIPE_REPLACED, &sh->state);
- 	}
- 	if ((s.syncing || s.replacing) && s.locked == 0 &&
-+	    !test_bit(STRIPE_COMPUTE_RUN, &sh->state) &&
- 	    test_bit(STRIPE_INSYNC, &sh->state)) {
- 		md_done_sync(conf->mddev, STRIPE_SECTORS, 1);
- 		clear_bit(STRIPE_SYNCING, &sh->state);
-diff --git a/drivers/md/raid5.h b/drivers/md/raid5.h
-index 2164021..43d22fc 100644
---- a/drivers/md/raid5.h
-+++ b/drivers/md/raid5.h
-@@ -307,6 +307,7 @@ enum {
- 	STRIPE_SYNC_REQUESTED,
- 	STRIPE_SYNCING,
- 	STRIPE_INSYNC,
-+	STRIPE_REPLACED,
- 	STRIPE_PREREAD_ACTIVE,
- 	STRIPE_DELAYED,
- 	STRIPE_DEGRADED,
+-	if (wbio2 && wbio2->bi_end_io) {
++	if (wbio2) {
+ 		atomic_inc(&conf->mirrors[d].replacement->nr_pending);
+ 		md_sync_acct(conf->mirrors[d].replacement->bdev,
+ 			     wbio2->bi_size >> 9);
 -- 
 1.8.3.2
 
