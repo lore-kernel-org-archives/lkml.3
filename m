@@ -1,54 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756276Ab3G3OYC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 10:24:02 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40658 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756076Ab3G3OX7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 10:23:59 -0400
-Date: Tue, 30 Jul 2013 07:25:17 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Kishon Vijay Abraham I <kishon@ti.com>, tony@atomide.com,
-        linux@arm.linux.org.uk, eballetbo@gmail.com, javier@dowhile0.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: [PATCH 2/2] arm: omap: remove *.auto* from device names given in
- usb_bind_phy
-Message-ID: <20130730142517.GA29015@kroah.com>
-References: <51F74BC8.7020903@ti.com>
- <20130730060134.GD9155@radagast>
- <51F7590B.4020705@ti.com>
- <20130730061830.GE9155@radagast>
- <51F75C40.4060406@ti.com>
- <20130730062844.GH9155@radagast>
- <51F7613C.5070803@ti.com>
- <20130730071611.GD16441@radagast>
- <51F7752B.8050804@ti.com>
- <20130730081520.GH16441@radagast>
+	id S1756308Ab3G3OZJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 10:25:09 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:50296 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755881Ab3G3OZH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Jul 2013 10:25:07 -0400
+Message-ID: <51F7CCB7.4040305@ti.com>
+Date: Tue, 30 Jul 2013 19:54:55 +0530
+From: George Cherian <george.cherian@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130730081520.GH16441@radagast>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+CC: <linux-usb@vger.kernel.org>, <balbi@ti.com>,
+        <linux-kernel@vger.kernel.org>, <gregkh@linuxfoundation.org>,
+        <linux-omap@vger.kernel.org>, <kishon@ti.com>
+Subject: Re: [PATCH v2 2/4] phy: phy-amxxxx-usb: Add PHY driver for amxxxx
+ platform
+References: <1374237277-17769-1-git-send-email-george.cherian@ti.com> <1374237277-17769-3-git-send-email-george.cherian@ti.com> <20130729151754.GB827@linutronix.de> <51F74CEC.8040407@ti.com> <51F77F15.7090306@linutronix.de>
+In-Reply-To: <51F77F15.7090306@linutronix.de>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 30, 2013 at 11:15:20AM +0300, Felipe Balbi wrote:
-> > > look at Greg's and my reply to that email.
-> > 
-> > but finally Greg agreed to what Tomasz proposed no?
-> 
-> that's not what I see in the thread. I see Greg agreed to regulator's
-> own IDs being sequentially created, but he mentions device names can
-> change.
+On 7/30/2013 2:23 PM, Sebastian Andrzej Siewior wrote:
+> On 07/30/2013 07:19 AM, George Cherian wrote:
+>>> So from what I see now, it is most likely the easiest thing to just add
+>>> that wakeup to the phy driver I posted. Do you agree?
+>> The whole idea of writing a seperate phy driver was to use the generic
+>> phy framework
+>> and most of the amxxxx devices have the same phy (eg am335x, am437x).
+>> Now since the register is shared in am335x for phy_wkup (Not in the case
+>> of am437x)
+>> how are you planning to  map it. I feel if omap_control_usb can delegate
+>> the writes
+>> to phy_wkup, phy_on and phy_off, it makes the life simpler.
+> that omap-control driver looks a little strange. It has a compatible
+> field saying ti,omap-control-usb and then it requires additionally a
+> ti,type property which should have been avoided.
 
-And that no one should _ever_ rely on them to be a specific "name", the
-bus is responsible for creating the id, it could be "random" and
-everything should work just fine.
+ti,type property is to differentiate between usb2 and usb3 phy for a 
+single soc.
+for eg: OMAP5 has both usb2 and usb3 phy
 
-thanks,
 
-greg k-h
+-- 
+-George
+
