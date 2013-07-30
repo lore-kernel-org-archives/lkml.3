@@ -1,50 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756562Ab3G3SCg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 14:02:36 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:62499 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753675Ab3G3SCe (ORCPT
+	id S1756653Ab3G3SJw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 14:09:52 -0400
+Received: from mailgw1.uni-kl.de ([131.246.120.220]:36151 "EHLO
+	mailgw1.uni-kl.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753843Ab3G3SJu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 14:02:34 -0400
-Date: Tue, 30 Jul 2013 20:02:30 +0200
-From: Leif Lindholm <leif.lindholm@linaro.org>
-To: Tony Luck <tony.luck@gmail.com>
-Cc: "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        Matt Fleming <matt.fleming@intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        patches@linaro.org
-Subject: Re: [PATCH 1/4] efi: provide a generic efi_config_init()
-Message-ID: <20130730180230.GJ18151@rocoto.smurfnet.nu>
-References: <1375202858-28470-1-git-send-email-leif.lindholm@linaro.org>
- <1375202858-28470-2-git-send-email-leif.lindholm@linaro.org>
- <CA+8MBbK5S3z+VQhhuT5WT7=7zYy=5zyvZEWfnfTfc1NxXBa=Sg@mail.gmail.com>
+	Tue, 30 Jul 2013 14:09:50 -0400
+Message-ID: <51F80167.1080004@fastmail.fm>
+Date: Tue, 30 Jul 2013 20:09:43 +0200
+From: Bernd Schubert <bernd.schubert@fastmail.fm>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+8MBbK5S3z+VQhhuT5WT7=7zYy=5zyvZEWfnfTfc1NxXBa=Sg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Martin K. Petersen" <martin.petersen@oracle.com>
+CC: Nix <nix@esperi.org.uk>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-scsi@vger.kernel.org, nick.cheng@areca.com.tw,
+        stable@vger.kernel.org
+Subject: Re: [SCSI REGRESSION] 3.10.2 or 3.10.3: arcmsr failure at bootup
+ / early userspace transition
+References: <87r4ehfzhf.fsf@spindle.srvr.nix> <51F667C2.4020801@fastmail.fm> <87mwp5frdl.fsf@spindle.srvr.nix> <51F67959.2060803@fastmail.fm> <87fvuxdqes.fsf@spindle.srvr.nix> <yq1txjdhree.fsf@sermon.lab.mkp.net>
+In-Reply-To: <yq1txjdhree.fsf@sermon.lab.mkp.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-ITWM-CharSet: UTF-8
+X-ITWM-Scanned-By: mail2.itwm.fhg.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 30, 2013 at 10:53:10AM -0700, Tony Luck wrote:
-> On Tue, Jul 30, 2013 at 9:47 AM, Leif Lindholm <leif.lindholm@linaro.org> wrote:
-> > +       /*
-> > +        * Let's see what config tables the firmware passed to us.
-> > +        */
-> > +       config_tables = early_mememap(efi.systab->tables,
-> > +                                      efi.systab->nr_tables * sz);
-> 
-> Breaks bisection on ia64 ... you use early_mememap() here, but don't
-> define it on ia64 until patch 3/4.  So I get:
+On 07/30/2013 01:34 AM, Martin K. Petersen wrote:
+>>>>>> "Nix" == Nix  <nix@esperi.org.uk> writes:
+>
+> Bernd,
+>
+> Nix> I can now confirm that reverting this commit causes this problem to
+> Nix> go away, and my machine boots fine again.
+>
+> Can you please send me the output of sq_inq with your 1.49 firmware?
+>
+> I made a tweak that allowed Nix to boot but we're trying to find a good
+> blacklist trigger. And that's tricky given that Areca allows you
+> manually specify the SCSI model string for each volume...
+>
 
-Ugh, OK.
+Sorry it got a bit late today.
 
-So I guess the clean way to deal with that would be to make the
-memremap definition a separate patch?
+Here it is.
 
-/
-    Leif
+> (wheezy)fslab1:~# sg_inq -v /dev/sdc
+>     inquiry cdb: 12 00 00 00 24 00
+> standard INQUIRY:
+>     inquiry cdb: 12 00 00 00 60 00
+>   PQual=0  Device_type=0  RMB=0  version=0x05  [SPC-3]
+>   [AERC=0]  [TrmTsk=0]  NormACA=0  HiSUP=0  Resp_data_format=2
+>   SCCS=0  ACC=0  TPGS=0  3PC=0  Protect=0  BQue=0
+>   EncServ=0  MultiP=0  [MChngr=0]  [ACKREQQ=0]  Addr16=1
+>   [RelAdr=0]  WBus16=1  Sync=0  Linked=0  [TranDis=0]  CmdQue=1
+>   [SPI: Clocking=0x3  QAS=0  IUS=0]
+>     length=96 (0x60)   Peripheral device type: disk
+>  Vendor identification: Hitachi
+>  Product identification: HDS724040KLSA80
+>  Product revision level: R001
+>     inquiry cdb: 12 01 00 00 fc 00
+>     inquiry cdb: 12 01 80 00 fc 00
+>  Unit serial number: KRFS2CRAHXJZVD
+
+Besides the firmware, the difference might be that I'm exporting single 
+disks without any areca-raidset in between.
+I can try to confirm that tomorrow, I just need the system as it is till 
+tomorrow noon.
+
+
+Cheers,
+Bernd
