@@ -1,54 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757595Ab3G3GtV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 02:49:21 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:12137 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757535Ab3G3GtU (ORCPT
+	id S1757607Ab3G3GxC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 02:53:02 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:60921 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752812Ab3G3Gw6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 02:49:20 -0400
-Message-ID: <51F761E7.5090403@huawei.com>
-Date: Tue, 30 Jul 2013 14:49:11 +0800
-From: Xishi Qiu <qiuxishi@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Tue, 30 Jul 2013 02:52:58 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX184Y/6PLv7LJUOQeX2V/8L+
+Date: Mon, 29 Jul 2013 23:52:54 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Benoit Cousson <benoit.cousson@gmail.com>
+Cc: Nishanth Menon <nm@ti.com>, l-o <linux-omap@vger.kernel.org>,
+        dt list <devicetree@vger.kernel.org>,
+        l-a <linux-arm-kernel@lists.infradead.org>,
+        lkml <linux-kernel@vger.kernel.org>, J Keerthy <j-keerthy@ti.com>
+Subject: Re: [PATCH V2 0/3] ARM: dts: omap5-uevm: fixup wrong regulator
+ configuration
+Message-ID: <20130730065253.GE7656@atomide.com>
+References: <51F67D7D.9070003@ti.com>
+ <1375117383-19285-1-git-send-email-nm@ti.com>
+ <51F6EA23.50803@gmail.com>
 MIME-Version: 1.0
-To: <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] mm/hotplug: remove unnecessary BUG_ON in __offline_pages()
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.74.196]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51F6EA23.50803@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I think we can remove "BUG_ON(start_pfn >= end_pfn)" in __offline_pages(),
-because in memory_block_action() "nr_pages = PAGES_PER_SECTION * sections_per_block" 
-is always greater than 0.
+* Benoit Cousson <benoit.cousson@gmail.com> [130729 15:24]:
+> Hi Nishanth,
+> 
+> Thanks for the quick update.
+> 
+> On 29/07/2013 19:03, Nishanth Menon wrote:
+> > Due to wrong older revision of documentation used as reference, we
+> > seem to have a bunch of LDOs wrongly configured on OMAP5 uEVM. This
+> > series is based power tree on production board 750-2628-XXX platform.
+> > Unfortunately, the wrong voltages may be detrimental to OMAP5 as they
+> > supply hardware blocks at voltages that are out of specification.
+> >
+> > Also available at:
+> > based on v3.11-rc1 tag
+> > http link: https://github.com/nmenon/linux-2.6-playground/commits/push/omap5-palmas-fixes-v2
+> > git link: git://github.com/nmenon/linux-2.6-playground.git
+> > branch: push/omap5-palmas-fixes-v2
+> >
+> > Changes since V1:
+> >  - squash of patches
+> >  - picked up Ack from Keerthy
+> >  - based on v3.11-rc3 tag
+> >
+> > V1: http://marc.info/?t=137407980100008&r=1&w=2
+> >
+> > Nishanth Menon (3):
+> >   ARM: dts: omap5-uevm: document regulator signals used on the actual
+> >     board
+> >   ARM: dts: omap5-uevm: fix regulator configurations mandatory for SoC
+> >   ARM: dts: omap5-uevm: update optional/unused regulator configurations
+> >
+> >  arch/arm/boot/dts/omap5-uevm.dts |   78 ++++++++++++++++++++++++--------------
+> >  1 file changed, 49 insertions(+), 29 deletions(-)
+> >
+> > Regards,
+> > Nishanth Menon
+> 
+> For the whole series:
+> 
+> Acked-by: Benoit Cousson <benoit.cousson@gmail.com>
 
-memory_block_action()
-	offline_pages()
-		__offline_pages()
-			BUG_ON(start_pfn >= end_pfn)
+Thanks, I've applied these into omap-for-v3.11/fixes-omap5
+and will send a pull request for these today as these seem
+quite urgent fixes.
 
-Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
----
- mm/memory_hotplug.c | 1 -
- 1 file changed, 1 deletion(-)
+Regards,
 
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index ca1dd3a..8e333f9 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -1472,7 +1472,6 @@ static int __ref __offline_pages(unsigned long start_pfn,
- 	struct zone *zone;
- 	struct memory_notify arg;
- 
--	BUG_ON(start_pfn >= end_pfn);
- 	/* at least, alignment against pageblock is necessary */
- 	if (!IS_ALIGNED(start_pfn, pageblock_nr_pages))
- 		return -EINVAL;
--- 
-1.8.2.2
-
+Tony
