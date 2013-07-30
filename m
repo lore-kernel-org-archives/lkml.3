@@ -1,122 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757326Ab3G3FY7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 01:24:59 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:55461 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752002Ab3G3FY6 (ORCPT
+	id S1757241Ab3G3Fek (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 01:34:40 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:21376 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753526Ab3G3Fej (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 01:24:58 -0400
-X-AuditID: 9c93016f-b7b50ae0000021a9-bc-51f74e281258
-From: Namhyung Kim <namhyung@kernel.org>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH 8/9] perf tools: add kcore to the object code reading test
-References: <1374760890-30558-1-git-send-email-adrian.hunter@intel.com>
-	<1374760890-30558-9-git-send-email-adrian.hunter@intel.com>
-Date: Tue, 30 Jul 2013 14:24:56 +0900
-In-Reply-To: <1374760890-30558-9-git-send-email-adrian.hunter@intel.com>
-	(Adrian Hunter's message of "Thu, 25 Jul 2013 17:01:29 +0300")
-Message-ID: <87vc3s1uxj.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Tue, 30 Jul 2013 01:34:39 -0400
+Message-ID: <51F75040.1010300@oracle.com>
+Date: Tue, 30 Jul 2013 13:33:52 +0800
+From: Zhenzhong Duan <zhenzhong.duan@oracle.com>
+Reply-To: zhenzhong.duan@oracle.com
+Organization: oracle
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Feng Jin <joe.jin@oracle.com>
+Subject: [PATCH] Return a proper bool value to hypervisor_x2apic_available
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 25 Jul 2013 17:01:29 +0300, Adrian Hunter wrote:
-> Make the "object code reading" test attempt to read from
-> kcore.
->
-> The test uses objdump which struggles with kcore. i.e.
-> doesn't always work, sometimes takes a long time.
-> The test has been made to work around those issues.
->
-[SNIP]
+When bootup on a bare metal env, hypervisor_x2apic_available should return
+ture so that "max_physical_apicid > 255" check in enable_IR_x2apic is useful.
 
-> -	if (al.map->dso->symtab_type == DSO_BINARY_TYPE__KALLSYMS) {
-> +	if (al.map->dso->symtab_type == DSO_BINARY_TYPE__KALLSYMS &&
-> +	    !dso__is_kcore(al.map->dso)) {
+Signed-off-by: Zhenzhong Duan <zhenzhong.duan@oracle.com>
+---
+ arch/x86/include/asm/hypervisor.h |    2 +-
+ arch/x86/kernel/cpu/hypervisor.c  |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-I was confused.  So this means that the symbols came from the kallsyms
-but actual binary data came from the kcore, right?
+diff --git a/arch/x86/include/asm/hypervisor.h b/arch/x86/include/asm/hypervisor.h
+index 2d4b5e6..d4c09b3 100644
+--- a/arch/x86/include/asm/hypervisor.h
++++ b/arch/x86/include/asm/hypervisor.h
+@@ -59,6 +59,6 @@ extern bool hypervisor_x2apic_available(void);
+ #else
+ static inline void init_hypervisor(struct cpuinfo_x86 *c) { }
+ static inline void init_hypervisor_platform(void) { }
+-static inline bool hypervisor_x2apic_available(void) { return false; }
++static inline bool hypervisor_x2apic_available(void) { return true; }
+ #endif /* CONFIG_HYPERVISOR_GUEST */
+ #endif /* _ASM_X86_HYPERVISOR_H */
+diff --git a/arch/x86/kernel/cpu/hypervisor.c b/arch/x86/kernel/cpu/hypervisor.c
+index 8727921..ee303cd 100644
+--- a/arch/x86/kernel/cpu/hypervisor.c
++++ b/arch/x86/kernel/cpu/hypervisor.c
+@@ -82,7 +82,7 @@ void __init init_hypervisor_platform(void)
+ 
+ bool __init hypervisor_x2apic_available(void)
+ {
+-	return x86_hyper                   &&
++	return !x86_hyper                  ||
+ 	       x86_hyper->x2apic_available &&
+ 	       x86_hyper->x2apic_available();
+ }
+-- 
+1.7.3
 
-
->  		pr_debug("Unexpected kernel address - skipping\n");
->  		return 0;
->  	}
-
-[SNIP]
-> +
-> +	/* 2nd time through we just try kcore */
-> +	if (try_kcore && !have_kcore)
-> +		return TEST_CODE_READING_NO_KCORE;
-> +
-> +	/* No point getting kernel events if there is no kernel object */
-> +	if (!have_vmlinux && !have_kcore)
->  		excl_kernel = true;
->  
->  	threads = thread_map__new_by_tid(pid);
-> @@ -457,8 +502,12 @@ static int do_test_code_reading(void)
->  	if (ret < 0)
->  		goto out_err;
->  
-> -	if (!have_vmlinux)
-> +	if (!have_vmlinux && !have_kcore && !try_kcore)
-> +		err = TEST_CODE_READING_NO_KERNEL_OBJ;
-> +	else if (!have_vmlinux && !try_kcore)
->  		err = TEST_CODE_READING_NO_VMLINUX;
-> +	else if (!have_kcore && try_kcore)
-> +		err = TEST_CODE_READING_NO_KCORE;
-
-It seems that the above line is not reachable since we already bailed
-out the second test if we don't have kcore.
-
-
->  	else if (excl_kernel)
->  		err = TEST_CODE_READING_NO_ACCESS;
->  	else
-> @@ -485,7 +534,9 @@ int test__code_reading(void)
->  {
->  	int ret;
->  
-> -	ret = do_test_code_reading();
-> +	ret = do_test_code_reading(false);
-> +	if (!ret)
-
-Shouldn't it be
-
-	if (ret)
-?
-
-Thanks,
-Namhyung
-
-
-> +		ret = do_test_code_reading(true);
->  
->  	switch (ret) {
->  	case TEST_CODE_READING_OK:
-> @@ -493,9 +544,15 @@ int test__code_reading(void)
->  	case TEST_CODE_READING_NO_VMLINUX:
->  		fprintf(stderr, " (no vmlinux)");
->  		return 0;
-> +	case TEST_CODE_READING_NO_KCORE:
-> +		fprintf(stderr, " (no kcore)");
-> +		return 0;
->  	case TEST_CODE_READING_NO_ACCESS:
->  		fprintf(stderr, " (no access)");
->  		return 0;
-> +	case TEST_CODE_READING_NO_KERNEL_OBJ:
-> +		fprintf(stderr, " (no kernel obj)");
-> +		return 0;
->  	default:
->  		return -1;
->  	};
