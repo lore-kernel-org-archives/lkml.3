@@ -1,72 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754432Ab3G3IxJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 04:53:09 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:40539 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755383Ab3G3IxE (ORCPT
+	id S1758296Ab3G3Ixr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 04:53:47 -0400
+Received: from www.linutronix.de ([62.245.132.108]:54636 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755432Ab3G3Ixp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 04:53:04 -0400
-Date: Tue, 30 Jul 2013 10:52:56 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Konstantin Krivyakin <k.krivyakin@samsung.com>
-Cc: linux-kernel@vger.kernel.org, rjw@sisk.pl, viresh.kumar@linaro.org,
-        mingo@redhat.com, kgene.kim@samsung.com, linux-pm@vger.kernel.org,
-        i.zhbanov@samsung.com, e.voevodin@samsung.com,
-        kyungmin.park@samsung.com, akpm@linux-foundation.org
-Subject: Re: [PATCH RFC 0/3] Per-process power consumption measurement
- facility
-Message-ID: <20130730085256.GK3008@twins.programming.kicks-ass.net>
-References: <1375172259-9641-1-git-send-email-k.krivyakin@samsung.com>
+	Tue, 30 Jul 2013 04:53:45 -0400
+Message-ID: <51F77F15.7090306@linutronix.de>
+Date: Tue, 30 Jul 2013 10:53:41 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130630 Icedove/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1375172259-9641-1-git-send-email-k.krivyakin@samsung.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: George Cherian <george.cherian@ti.com>
+CC: linux-usb@vger.kernel.org, balbi@ti.com, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org, linux-omap@vger.kernel.org, kishon@ti.com
+Subject: Re: [PATCH v2 2/4] phy: phy-amxxxx-usb: Add PHY driver for amxxxx
+ platform
+References: <1374237277-17769-1-git-send-email-george.cherian@ti.com> <1374237277-17769-3-git-send-email-george.cherian@ti.com> <20130729151754.GB827@linutronix.de> <51F74CEC.8040407@ti.com>
+In-Reply-To: <51F74CEC.8040407@ti.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 30, 2013 at 12:17:36PM +0400, Konstantin Krivyakin wrote:
-> This patchset adds per-process power consumption measurement facility.
-> Power consumption is very important on mobile platforms. This code
-> allows to measure consumed power in Watts*Hours. The consumed power
-> for process is updated on scheduler switch and depends on current
-> CPU voltage and frequency.
+On 07/30/2013 07:19 AM, George Cherian wrote:
+>> So from what I see now, it is most likely the easiest thing to just add
+>> that wakeup to the phy driver I posted. Do you agree?
 > 
-> The formula for computation is: P = C * V^2 * f, where C is a constant
-> that reflects capacity of the system, V is the current voltage and
-> f is the current frequency.
-> (Taken from: http://en.wikipedia.org/wiki/CPU_power_dissipation).
+> The whole idea of writing a seperate phy driver was to use the generic
+> phy framework
+> and most of the amxxxx devices have the same phy (eg am335x, am437x).
+> Now since the register is shared in am335x for phy_wkup (Not in the case
+> of am437x)
+> how are you planning to  map it. I feel if omap_control_usb can delegate
+> the writes
+> to phy_wkup, phy_on and phy_off, it makes the life simpler.
+
+that omap-control driver looks a little strange. It has a compatible
+field saying ti,omap-control-usb and then it requires additionally a
+ti,type property which should have been avoided.
+
+But back to the initial problem. I don't really like the idea of
+touching in the control-module registers but others do it as well.
+So the idea of a control driver doesn't sound that bad.
+- an am335x-reset device
+- a phy driver with a reference to that reset device.
+- non-standard phy calls for power & wak eup on/off.
+
+Let me think about it.
+
 > 
-> In this patchset was added implementation for Exynos platform
-> to demonstrate how it works.
+> Thoughts???
+
+I think I buy it but give me a bit…
+
 > 
-> To minimize scheduler impact for each CPU P-state the value of (V^2 *f)
-> was precomputed at the time of platform initialization.
 
-It seems to me the 3 multiplies that takes could be done when cpufreq
-actually changes the P-state.
-
-> And to reduce performance impact furthermore, the C constant is multiplied
-> in userspace.
-
-That seems particularly silly; how is userspace to know C and why
-isn't it a much better idea to do this in the code generating the number
-for userspace to consume.
-
-Also, I intensely dislike this thing because:
-
- - it adds more user interface
- - it adds more accounting muck
- - it completely lacks any useful changelogs
- - it completely fails to even begin addressing the issues we already
-   have with cpufreq
-
-There's been a lot of talk about power aware scheduling in the recent
-past, there's also been a lot of problems listed we must overcome/solve.
-This patch set completely fails to tie into any of that.
-
-You also completely fail to explain the user case and thus related why
-you can't use any of the other facilities like perf or ftrace to measure
-this.
+Sebastian
