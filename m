@@ -1,83 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757607Ab3G3GxC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 02:53:02 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:60921 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752812Ab3G3Gw6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 02:52:58 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX184Y/6PLv7LJUOQeX2V/8L+
-Date: Mon, 29 Jul 2013 23:52:54 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Benoit Cousson <benoit.cousson@gmail.com>
-Cc: Nishanth Menon <nm@ti.com>, l-o <linux-omap@vger.kernel.org>,
-        dt list <devicetree@vger.kernel.org>,
-        l-a <linux-arm-kernel@lists.infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>, J Keerthy <j-keerthy@ti.com>
-Subject: Re: [PATCH V2 0/3] ARM: dts: omap5-uevm: fixup wrong regulator
- configuration
-Message-ID: <20130730065253.GE7656@atomide.com>
-References: <51F67D7D.9070003@ti.com>
- <1375117383-19285-1-git-send-email-nm@ti.com>
- <51F6EA23.50803@gmail.com>
+	id S1757633Ab3G3HFj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 03:05:39 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:58588 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752127Ab3G3HFh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Jul 2013 03:05:37 -0400
+Message-ID: <51F7659E.3040302@ti.com>
+Date: Tue, 30 Jul 2013 12:35:02 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51F6EA23.50803@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Joel Fernandes <joelf@ti.com>
+CC: Tony Lindgren <tony@atomide.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Sricharan R <r.sricharan@ti.com>, Rajendra Nayak <rnayak@ti.com>,
+        Lokesh Vutla <lokeshvutla@ti.com>, Matt Porter <matt@ohporter.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
+        Mark Brown <broonie@linaro.org>,
+        Benoit Cousson <benoit.cousson@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>, Balaji TK <balajitk@ti.com>,
+        Gururaja Hebbar <gururaja.hebbar@ti.com>, Chris Ball <cjb@laptop.org>,
+        Jason Kridner <jkridner@beagleboard.org>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>
+Subject: Re: [PATCH 4/9] dma: edma: Find missed events and issue them
+References: <1375104595-16018-1-git-send-email-joelf@ti.com> <1375104595-16018-5-git-send-email-joelf@ti.com>
+In-Reply-To: <1375104595-16018-5-git-send-email-joelf@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Benoit Cousson <benoit.cousson@gmail.com> [130729 15:24]:
-> Hi Nishanth,
+On Monday 29 July 2013 06:59 PM, Joel Fernandes wrote:
+> In an effort to move to using Scatter gather lists of any size with
+> EDMA as discussed at [1] instead of placing limitations on the driver,
+> we work through the limitations of the EDMAC hardware to find missed
+> events and issue them.
 > 
-> Thanks for the quick update.
+> The sequence of events that require this are:
 > 
-> On 29/07/2013 19:03, Nishanth Menon wrote:
-> > Due to wrong older revision of documentation used as reference, we
-> > seem to have a bunch of LDOs wrongly configured on OMAP5 uEVM. This
-> > series is based power tree on production board 750-2628-XXX platform.
-> > Unfortunately, the wrong voltages may be detrimental to OMAP5 as they
-> > supply hardware blocks at voltages that are out of specification.
-> >
-> > Also available at:
-> > based on v3.11-rc1 tag
-> > http link: https://github.com/nmenon/linux-2.6-playground/commits/push/omap5-palmas-fixes-v2
-> > git link: git://github.com/nmenon/linux-2.6-playground.git
-> > branch: push/omap5-palmas-fixes-v2
-> >
-> > Changes since V1:
-> >  - squash of patches
-> >  - picked up Ack from Keerthy
-> >  - based on v3.11-rc3 tag
-> >
-> > V1: http://marc.info/?t=137407980100008&r=1&w=2
-> >
-> > Nishanth Menon (3):
-> >   ARM: dts: omap5-uevm: document regulator signals used on the actual
-> >     board
-> >   ARM: dts: omap5-uevm: fix regulator configurations mandatory for SoC
-> >   ARM: dts: omap5-uevm: update optional/unused regulator configurations
-> >
-> >  arch/arm/boot/dts/omap5-uevm.dts |   78 ++++++++++++++++++++++++--------------
-> >  1 file changed, 49 insertions(+), 29 deletions(-)
-> >
-> > Regards,
-> > Nishanth Menon
+> For the scenario where MAX slots for an EDMA channel is 3:
 > 
-> For the whole series:
+> SG1 -> SG2 -> SG3 -> SG4 -> SG5 -> SG6 -> Null
 > 
-> Acked-by: Benoit Cousson <benoit.cousson@gmail.com>
+> The above SG list will have to be DMA'd in 2 sets:
+> 
+> (1) SG1 -> SG2 -> SG3 -> Null
+> (2) SG4 -> SG5 -> SG6 -> Null
+> 
+> After (1) is succesfully transferred, the events from the MMC controller
+> donot stop coming and are missed by the time we have setup the transfer
+> for (2). So here, we catch the events missed as an error condition and
+> issue them manually.
 
-Thanks, I've applied these into omap-for-v3.11/fixes-omap5
-and will send a pull request for these today as these seem
-quite urgent fixes.
+Are you sure there wont be any effect of these missed events on the
+peripheral side. For example, wont McASP get into an underrun condition
+when it encounters a null PaRAM set? Even UART has to transmit to a
+particular baud so I guess it cannot wait like the way MMC/SD can.
 
-Regards,
+Also, wont this lead to under-utilization of the peripheral bandwith?
+Meaning, MMC/SD is ready with data but cannot transfer because the DMA
+is waiting to be set-up.
 
-Tony
+Did you consider a ping-pong scheme with say three PaRAM sets per
+channel? That way you can keep a continuous transfer going on from the
+peripheral over the complete SG list.
+
+Thanks,
+Sekhar
+
