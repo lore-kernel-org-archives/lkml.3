@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758446Ab3G3JeV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 05:34:21 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53451 "EHLO
+	id S932719Ab3G3JeK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 05:34:10 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53430 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753091Ab3G3JeR (ORCPT
+	with ESMTP id S932699Ab3G3JeF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 05:34:17 -0400
+	Tue, 30 Jul 2013 05:34:05 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: David Vrabel <david.vrabel@citrix.com>, Ingo Molnar <mingo@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Konrad Wilk <konrad.wilk@oracle.com>,
-        John Stultz <john.stultz@linaro.org>, xen-devel@lists.xen.org,
-        Thomas Gleixner <tglx@linutronix.de>,
+Cc: Johan Hovold <jhovold@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 106/106] hrtimers: Move SMP function call to thread context
-Date: Tue, 30 Jul 2013 10:32:05 +0100
-Message-Id: <1375176725-5825-107-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 103/106] USB: mos7840: fix memory leak in open
+Date: Tue, 30 Jul 2013 10:32:02 +0100
+Message-Id: <1375176725-5825-104-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
 References: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
@@ -30,97 +28,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 5ec2481b7b47a4005bb446d176e5d0257400c77d upstream.
+commit 5f8a2e68b679b41cc8e9b642f2f5aa45dd678641 upstream.
 
-smp_call_function_* must not be called from softirq context.
+Allocated urbs and buffers were never freed on errors in open.
 
-But clock_was_set() which calls on_each_cpu() is called from softirq
-context to implement a delayed clock_was_set() for the timer interrupt
-handler. Though that almost never gets invoked. A recent change in the
-resume code uses the softirq based delayed clock_was_set to support
-Xens resume mechanism.
-
-linux-next contains a new warning which warns if smp_call_function_*
-is called from softirq context which gets triggered by that Xen
-change.
-
-Fix this by moving the delayed clock_was_set() call to a work context.
-
-Reported-and-tested-by: Artem Savkov <artem.savkov@gmail.com>
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
-Cc: David Vrabel <david.vrabel@citrix.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: H. Peter Anvin <hpa@zytor.com>,
-Cc: Konrad Wilk <konrad.wilk@oracle.com>
-Cc: John Stultz <john.stultz@linaro.org>
-Cc: xen-devel@lists.xen.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 [ luis: backported to 3.5: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/hrtimer.c | 28 +++++++++++++---------------
- 1 file changed, 13 insertions(+), 15 deletions(-)
+ drivers/usb/serial/mos7840.c | 25 +++++++++++++++++--------
+ 1 file changed, 17 insertions(+), 8 deletions(-)
 
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index 60f7e32..a57ef25 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -707,17 +707,20 @@ static int hrtimer_switch_to_hres(void)
- 	return 1;
+diff --git a/drivers/usb/serial/mos7840.c b/drivers/usb/serial/mos7840.c
+index dada37f..297847b 100644
+--- a/drivers/usb/serial/mos7840.c
++++ b/drivers/usb/serial/mos7840.c
+@@ -973,20 +973,20 @@ static int mos7840_open(struct tty_struct *tty, struct usb_serial_port *port)
+ 	status = mos7840_get_reg_sync(port, mos7840_port->SpRegOffset, &Data);
+ 	if (status < 0) {
+ 		dbg("Reading Spreg failed");
+-		return -1;
++		goto err;
+ 	}
+ 	Data |= 0x80;
+ 	status = mos7840_set_reg_sync(port, mos7840_port->SpRegOffset, Data);
+ 	if (status < 0) {
+ 		dbg("writing Spreg failed");
+-		return -1;
++		goto err;
+ 	}
+ 
+ 	Data &= ~0x80;
+ 	status = mos7840_set_reg_sync(port, mos7840_port->SpRegOffset, Data);
+ 	if (status < 0) {
+ 		dbg("writing Spreg failed");
+-		return -1;
++		goto err;
+ 	}
+ 	/* End of block to be checked */
+ 
+@@ -995,7 +995,7 @@ static int mos7840_open(struct tty_struct *tty, struct usb_serial_port *port)
+ 									&Data);
+ 	if (status < 0) {
+ 		dbg("Reading Controlreg failed");
+-		return -1;
++		goto err;
+ 	}
+ 	Data |= 0x08;		/* Driver done bit */
+ 	Data |= 0x20;		/* rx_disable */
+@@ -1003,7 +1003,7 @@ static int mos7840_open(struct tty_struct *tty, struct usb_serial_port *port)
+ 				mos7840_port->ControlRegOffset, Data);
+ 	if (status < 0) {
+ 		dbg("writing Controlreg failed");
+-		return -1;
++		goto err;
+ 	}
+ 	/* do register settings here */
+ 	/* Set all regs to the device default values. */
+@@ -1014,21 +1014,21 @@ static int mos7840_open(struct tty_struct *tty, struct usb_serial_port *port)
+ 	status = mos7840_set_uart_reg(port, INTERRUPT_ENABLE_REGISTER, Data);
+ 	if (status < 0) {
+ 		dbg("disabling interrupts failed");
+-		return -1;
++		goto err;
+ 	}
+ 	/* Set FIFO_CONTROL_REGISTER to the default value */
+ 	Data = 0x00;
+ 	status = mos7840_set_uart_reg(port, FIFO_CONTROL_REGISTER, Data);
+ 	if (status < 0) {
+ 		dbg("Writing FIFO_CONTROL_REGISTER  failed");
+-		return -1;
++		goto err;
+ 	}
+ 
+ 	Data = 0xcf;
+ 	status = mos7840_set_uart_reg(port, FIFO_CONTROL_REGISTER, Data);
+ 	if (status < 0) {
+ 		dbg("Writing FIFO_CONTROL_REGISTER  failed");
+-		return -1;
++		goto err;
+ 	}
+ 
+ 	Data = 0x03;
+@@ -1182,6 +1182,15 @@ static int mos7840_open(struct tty_struct *tty, struct usb_serial_port *port)
+ 				serial, mos7840_port, port);
+ 
+ 	return 0;
++err:
++	for (j = 0; j < NUM_URBS; ++j) {
++		urb = mos7840_port->write_urb_pool[j];
++		if (!urb)
++			continue;
++		kfree(urb->transfer_buffer);
++		usb_free_urb(urb);
++	}
++	return status;
  }
  
-+static void clock_was_set_work(struct work_struct *work)
-+{
-+	clock_was_set();
-+}
-+
-+static DECLARE_WORK(hrtimer_work, clock_was_set_work);
-+
- /*
-- * Called from timekeeping code to reprogramm the hrtimer interrupt
-- * device. If called from the timer interrupt context we defer it to
-- * softirq context.
-+ * Called from timekeeping and resume code to reprogramm the hrtimer
-+ * interrupt device on all cpus.
-  */
- void clock_was_set_delayed(void)
- {
--	struct hrtimer_cpu_base *cpu_base = &__get_cpu_var(hrtimer_bases);
--
--	cpu_base->clock_was_set = 1;
--	__raise_softirq_irqoff(HRTIMER_SOFTIRQ);
-+	schedule_work(&hrtimer_work);
- }
- 
- #else
-@@ -766,8 +769,10 @@ void hrtimers_resume(void)
- 	WARN_ONCE(!irqs_disabled(),
- 		  KERN_INFO "hrtimers_resume() called with IRQs enabled!");
- 
-+	/* Retrigger on the local CPU */
- 	retrigger_next_event(NULL);
--	timerfd_clock_was_set();
-+	/* And schedule a retrigger for all others */
-+	clock_was_set_delayed();
- }
- 
- static inline void timer_stats_hrtimer_set_start_info(struct hrtimer *timer)
-@@ -1416,13 +1421,6 @@ void hrtimer_peek_ahead_timers(void)
- 
- static void run_hrtimer_softirq(struct softirq_action *h)
- {
--	struct hrtimer_cpu_base *cpu_base = &__get_cpu_var(hrtimer_bases);
--
--	if (cpu_base->clock_was_set) {
--		cpu_base->clock_was_set = 0;
--		clock_was_set();
--	}
--
- 	hrtimer_peek_ahead_timers();
- }
- 
+ /*****************************************************************************
 -- 
 1.8.3.2
 
