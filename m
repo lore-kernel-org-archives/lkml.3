@@ -1,49 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932212Ab3G3SzI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 14:55:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12585 "EHLO mx1.redhat.com"
+	id S932257Ab3G3SzP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 14:55:15 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:57740 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756758Ab3G3SzE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 14:55:04 -0400
-Message-ID: <1375210502.31262.45.camel@ul30vt.home>
-Subject: [GIT PULL] VFIO fixes for v3.11-rc4
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, kvm <kvm@vger.kernel.org>
-Date: Tue, 30 Jul 2013 12:55:02 -0600
+	id S1756758Ab3G3SzK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Jul 2013 14:55:10 -0400
+Message-ID: <1375210496.20048.80.camel@cumari.coelho.fi>
+Subject: Re: [PATCH v2] Documentation: dt: bindings: TI WiLink modules
+From: Luciano Coelho <coelho@ti.com>
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+CC: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <mturquette@linaro.org>, <mark.rutland@arm.com>, <balbi@ti.com>,
+        <grant.likely@linaro.org>, <rob.herring@calxeda.com>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-wireless@vger.kernel.org>, <linux-arm@vger.kernel.org>,
+        <tony@atomide.com>, <nm@ti.com>
+Date: Tue, 30 Jul 2013 21:54:56 +0300
+In-Reply-To: <1551085.3MDKgN8U89@avalon>
+References: <1375109728-5931-1-git-send-email-coelho@ti.com>
+	 <1551085.3MDKgN8U89@avalon>
 Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
+X-Mailer: Evolution 3.4.4-3 
+MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+(using the new devicetree mailing list address)
 
-The following changes since commit 3b2f64d00c46e1e4e9bd0bb9bb12619adac27a4b:
+On Tue, 2013-07-30 at 20:24 +0200, Laurent Pinchart wrote:
+> Hi Luciano,
+> 
+> Thank you for the patch.
+> 
+> On Monday 29 July 2013 17:55:28 Luciano Coelho wrote:
+> > Add device tree bindings documentation for the TI WiLink modules.
+> > Currently only the WLAN part of the WiLink6, WiLink7 and WiLink8
+> > modules is supported.
+> > 
+> > Signed-off-by: Luciano Coelho <coelho@ti.com>
+> > ---
+> > 
+> > Changes in v2:
+> > 
+> > Use generic clock definitions to get the clock data instead of passing
+> > the frequencies directly.  Also added definition for "internal"
+> > ti,wilink-clock.
+> > 
+> > Please review.
+> 
+> The proposal looks good to me, I just have one small comment.
 
-  Linux 3.11-rc2 (2013-07-21 12:05:29 -0700)
+Cool! Thanks for the review.
 
-are available in the git repository at:
+[...]
+> > +Example:
+> > +--------
+> > +
+> > +Example definition that can be used in OMAP4 Panda:
+> > +
+> > +wlan {
+> > +	compatible = "ti,wilink6";
+> > +	interrupt-parent = <&gpio2>;
+> > +	interrupts = <21 0x4>;	/* gpio line 53, high level triggered */
+> 
+> Could you please use the IRQ_TYPE_LEVEL_HIGH macro (defined in <dt-
+> bindings/interrupt-controller/irq.h>) instead of the hardcode 0x4 constant ?
 
-  git://github.com/awilliam/linux-vfio.git tags/vfio-v3.11-rc4
+Ah, right, I saw this new header file recently but forgot to update my
+example.  I'll update the OMAP4 Panda and OMAP4 SDP dts files I just
+sent out as well.
 
-for you to fetch changes up to d24cdbfd28b7e0ffecb1e281d73e73c03a57f734:
-
-  vfio-pci: Avoid deadlock on remove (2013-07-24 16:36:41 -0600)
-
-----------------------------------------------------------------
-vfio: misc fixes around overreacting to bus notifier events and
-      a locking fix for a corner case blocked remove.
-
-----------------------------------------------------------------
-Alex Williamson (3):
-      vfio: Don't overreact to DEL_DEVICE
-      vfio: Ignore sprurious notifies
-      vfio-pci: Avoid deadlock on remove
-
- drivers/vfio/pci/vfio_pci.c | 23 +++++++++++++++++++++--
- drivers/vfio/vfio.c         | 37 ++++++++++---------------------------
- 2 files changed, 31 insertions(+), 29 deletions(-)
+--
+Cheers,
+Luca.
 
