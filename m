@@ -1,49 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751724Ab3G2XlM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 19:41:12 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:54845 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751158Ab3G2XlK (ORCPT
+	id S1751891Ab3G2Xlf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 19:41:35 -0400
+Received: from us01smtp2.synopsys.com ([198.182.44.80]:56759 "EHLO
+	kiruna.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751495Ab3G2Xle (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 19:41:10 -0400
-Date: Mon, 29 Jul 2013 16:41:06 -0700 (PDT)
-Message-Id: <20130729.164106.943996066712571180.davem@davemloft.net>
-To: Vineet.Gupta1@synopsys.com
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, mgorman@suse.de, hughd@google.com,
-        riel@redhat.com, rientjes@google.com, peterz@infradead.org,
-        linux-arch@vger.kernel.org, catalin.marinas@arm.com,
-        jcmvbkbc@gmail.com
-Subject: Re: [PATCH] mm: Fix the TLB range flushed when __tlb_remove_page()
- runs out of slots
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1369832173-15088-1-git-send-email-vgupta@synopsys.com>
-References: <1369832173-15088-1-git-send-email-vgupta@synopsys.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Mon, 29 Jul 2013 19:41:34 -0400
+Message-ID: <51F7AD7A.2090901@synopsys.com>
+Date: Tue, 30 Jul 2013 05:11:38 -0700
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: lkml <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] ARC fix for 3.11
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Mon, 29 Jul 2013 16:41:09 -0700 (PDT)
+X-Originating-IP: [10.9.21.44]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Date: Wed, 29 May 2013 18:26:13 +0530
+Hi Linus,
 
-> zap_pte_range loops from @addr to @end. In the middle, if it runs out of
-> batching slots, TLB entries needs to be flushed for @start to @interim,
-> NOT @interim to @end.
-> 
-> Since ARC port doesn't use page free batching I can't test it myself but
-> this seems like the right thing to do.
-> Observed this when working on a fix for the issue at thread:
-> 	http://www.spinics.net/lists/linux-arch/msg21736.html
-> 
-> Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+Please pull a build breakage for ARC.
 
-As this bug can cause pretty serious memory corruption, I'd like to
-see this submitted to -stable.
+Thx,
+-Vineet
 
-Thanks!
+------------------------->
+The following changes since commit 3b2f64d00c46e1e4e9bd0bb9bb12619adac27a4b:
+
+  Linux 3.11-rc2 (2013-07-21 12:05:29 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/vgupta/arc.git/ tags/arc-v3.11-fixes
+
+for you to fetch changes up to 4ffd9e2c4deda2ad90ce261174b2bc90e0660703:
+
+  ARC: SMP build breakage (2013-07-26 15:34:22 -0700)
+
+----------------------------------------------------------------
+SMP build breakage
+
+----------------------------------------------------------------
+Vineet Gupta (1):
+      ARC: SMP build breakage
+
+ arch/arc/include/asm/entry.h | 1 +
+ 1 file changed, 1 insertion(+)
