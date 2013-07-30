@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757381Ab3G3Sr3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 14:47:29 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56555 "EHLO
+	id S1757359Ab3G3Sr1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 14:47:27 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56558 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756911Ab3G3Spe (ORCPT
+	with ESMTP id S1756927Ab3G3Spe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 30 Jul 2013 14:45:34 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Gao feng <gaofeng@cn.fujitsu.com>, "David S. Miller" <davem@davemloft.net>,
+Cc: "Michael S. Tsirkin" <mst@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 48/75] ipv6: don't call addrconf_dst_alloc again when enable lo
-Date: Tue, 30 Jul 2013 11:44:52 -0700
-Message-Id: <1375209919-1768-15-git-send-email-kamal@canonical.com>
+Subject: [PATCH 49/75] macvtap: fix recovery from gup errors
+Date: Tue, 30 Jul 2013 11:44:53 -0700
+Message-Id: <1375209919-1768-16-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1375197464-27962-1-git-send-email-kamal@canonical.com>
 References: <1375197464-27962-1-git-send-email-kamal@canonical.com>
@@ -27,42 +28,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gao feng <gaofeng@cn.fujitsu.com>
+From: "Michael S. Tsirkin" <mst@redhat.com>
 
-[ Upstream commit a881ae1f625c599b460cc8f8a7fcb1c438f699ad ]
+commit 4c7ab054ab4f5d63625508ed6f8a607184cae7c2 upstream.
 
-If we disable all of the net interfaces, and enable
-un-lo interface before lo interface, we already allocated
-the addrconf dst in ipv6_add_addr. So we shouldn't allocate
-it again when we enable lo interface.
+get user pages might fail partially in macvtap zero copy
+mode. To recover we need to put all pages that we got,
+but code used a wrong index resulting in double-free
+errors.
 
-Otherwise the message below will be triggered.
-unregister_netdevice: waiting for sit1 to become free. Usage count = 1
-
-This problem is introduced by commit 25fb6ca4ed9cad72f14f61629b68dc03c0d9713f
-"net IPv6 : Fix broken IPv6 routing table after loopback down-up"
-
-Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
+Reported-by: Brad Hubbard <bhubbard@redhat.com>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Acked-by: Jason Wang <jasowang@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/ipv6/addrconf.c | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/net/macvtap.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/net/ipv6/addrconf.c b/net/ipv6/addrconf.c
-index d1d6915..c6987a9 100644
---- a/net/ipv6/addrconf.c
-+++ b/net/ipv6/addrconf.c
-@@ -2555,6 +2555,9 @@ static void init_loopback(struct net_device *dev)
- 			if (sp_ifa->flags & (IFA_F_DADFAILED | IFA_F_TENTATIVE))
- 				continue;
- 
-+			if (sp_ifa->rt)
-+				continue;
+diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
+index 0f0f9ce..ba4d38b 100644
+--- a/drivers/net/macvtap.c
++++ b/drivers/net/macvtap.c
+@@ -535,8 +535,10 @@ static int zerocopy_sg_from_iovec(struct sk_buff *skb, const struct iovec *from,
+ 			return -EMSGSIZE;
+ 		num_pages = get_user_pages_fast(base, size, 0, &page[i]);
+ 		if (num_pages != size) {
+-			for (i = 0; i < num_pages; i++)
+-				put_page(page[i]);
++			int j;
 +
- 			sp_rt = addrconf_dst_alloc(idev, &sp_ifa->addr, 0);
- 
- 			/* Failure cases are ignored */
++			for (j = 0; j < num_pages; j++)
++				put_page(page[i + j]);
+ 			return -EFAULT;
+ 		}
+ 		truesize = size * PAGE_SIZE;
 -- 
 1.8.1.2
 
