@@ -1,102 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757003Ab3G3DLM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 23:11:12 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:63664 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753015Ab3G3DLK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 23:11:10 -0400
-Message-ID: <51F72EF3.8080706@gmail.com>
-Date: Tue, 30 Jul 2013 11:11:47 +0800
-From: Aaron Lu <aaron.lwe@gmail.com>
+	id S1757013Ab3G3DOe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 23:14:34 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:45825 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750926Ab3G3DOc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 23:14:32 -0400
+X-IronPort-AV: E=Sophos;i="4.89,774,1367942400"; 
+   d="scan'208";a="8063805"
+Message-ID: <51F72FE6.4080202@cn.fujitsu.com>
+Date: Tue, 30 Jul 2013 11:15:50 +0800
+From: Gao feng <gaofeng@cn.fujitsu.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Felipe Contreras <felipe.contreras@gmail.com>
-CC: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <lenb@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [REGRESSION/PATCH] acpi: blacklist win8 OSI for ASUS Zenbok Prime
- UX31A
-References: <1375125658-1223-1-git-send-email-felipe.contreras@gmail.com>
-In-Reply-To: <1375125658-1223-1-git-send-email-felipe.contreras@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: Dave Chinner <david@fromorbit.com>, dwight.engen@oracle.com
+CC: "Eric W. Biederman" <ebiederm@xmission.com>, linux-fsdevel@vger.kernel.org,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        linux-kernel@vger.kernel.org, "Serge E. Hallyn" <serge@hallyn.com>,
+        Ben Myers <bpm@sgi.com>, Alex Elder <elder@kernel.org>,
+        xfs@oss.sgi.com
+Subject: Re: [PATCH review 05/16] xfs: Update xfs_ioctl_setattr to handle
+ projids in any user namespace
+References: <87txpaph4n.fsf@xmission.com> <1361149870-27732-1-git-send-email-ebiederm@xmission.com> <1361149870-27732-5-git-send-email-ebiederm@xmission.com> <20130219015550.GJ26694@dastard> <51F616F2.5040906@cn.fujitsu.com> <20130729075109.GF13468@dastard>
+In-Reply-To: <20130729075109.GF13468@dastard>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/30 11:12:15,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/30 11:12:19,
+	Serialize complete at 2013/07/30 11:12:19
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/30/2013 03:20 AM, Felipe Contreras wrote:
-> Since v3.7 the acpi backlight driver doesn't work at all on this machine
-> because presumably the ACPI code contains stub code when Windows 8 OSI is
-> reported.
+On 07/29/2013 03:51 PM, Dave Chinner wrote:
+> [ cc xfs list ]
 > 
-> The commit ea45ea7 (in v3.11-rc2) tried to fix this problem by using the intel
-> backlight driver, however, on this machine it turns the backlight completely
-> off when it reaches level 0%, after which the user might have a lot trouble
-> trying to bring it back.
-
-What do you mean by a lot of trouble? If you press hotkey to increase
-backlight brightness level, does it work? If so, the screen should not
-be black any more, it's not that user has to blindly enter some command
-to get out of the black screen.
-
-And I'm not sure if this is a bug of intel_backlight(setting a low level
-makes the screen almost off), I see different models with different
-vendors having this behavior. If this is deemed a bug, then I'm afraid
-intel_backlight interface is useless for a lot of systems...perhaps we
-can only say, intel_backlight's interpretation of low levels are
-different with ACPI video's, and that's probably why its type is named
-as raw :-)
-
--Aaron
-
+> On Mon, Jul 29, 2013 at 03:17:06PM +0800, Gao feng wrote:
+>> On 02/19/2013 09:55 AM, Dave Chinner wrote:
+>>> On Sun, Feb 17, 2013 at 05:10:58PM -0800, Eric W. Biederman wrote:
+>>>> From: "Eric W. Biederman" <ebiederm@xmission.com>
+>>>>
+>>>> - Convert the userspace value in fa->fsx_projid into a kprojid and
+>>>>   store it in the variable projid.
+>>>> - Verify that xfs can store the projid after it is converted into
+>>>>   xfs's user namespace.
+>>>> - Replace uses of fa->fsx_projid with projid throughout
+>>>>   xfs_ioctl_setattr.
+>>>>
+>>>> Cc: Ben Myers <bpm@sgi.com>
+>>>> Cc: Alex Elder <elder@kernel.org>
+>>>> Cc: Dave Chinner <david@fromorbit.com>
+>>>> Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+>>>> ---
+>>>>  fs/xfs/xfs_ioctl.c |   26 ++++++++++++++++++--------
+>>>>  1 files changed, 18 insertions(+), 8 deletions(-)
+>>>>
+>>>> diff --git a/fs/xfs/xfs_ioctl.c b/fs/xfs/xfs_ioctl.c
+>>>> index 016624b..4a55f50 100644
+>>>> --- a/fs/xfs/xfs_ioctl.c
+>>>> +++ b/fs/xfs/xfs_ioctl.c
+>>>> @@ -925,6 +925,7 @@ xfs_ioctl_setattr(
+>>>>  	struct xfs_dquot	*gdqp = NULL;
+>>>>  	struct xfs_dquot	*olddquot = NULL;
+>>>>  	int			code;
+>>>> +	kprojid_t		projid = INVALID_PROJID;
+>>>>  
+>>>>  	trace_xfs_ioctl_setattr(ip);
+>>>>  
+>>>> @@ -934,11 +935,20 @@ xfs_ioctl_setattr(
+>>>>  		return XFS_ERROR(EIO);
+>>>>  
+>>>>  	/*
+>>>> -	 * Disallow 32bit project ids when projid32bit feature is not enabled.
+>>>> +	 * Verify the specifid project id is valid.
+>>>>  	 */
+>>>> -	if ((mask & FSX_PROJID) && (fa->fsx_projid > (__uint16_t)-1) &&
+>>>> -			!xfs_sb_version_hasprojid32bit(&ip->i_mount->m_sb))
+>>>> -		return XFS_ERROR(EINVAL);
+>>>> +	if (mask & FSX_PROJID) {
+>>>> +		projid = make_kprojid(current_user_ns(), fa->fsx_projid);
+>>>> +		if (!projid_valid(projid))
+>>>> +			return XFS_ERROR(EINVAL);
+>>>> +
+>>>> +		/*
+>>>> +		 * Disallow 32bit project ids when projid32bit feature is not enabled.
+>>>> +		 */
+>>>> +		if ((from_kprojid(&init_user_ns, projid) > (__uint16_t)-1) &&
+>>>> +		    !xfs_sb_version_hasprojid32bit(&ip->i_mount->m_sb))
+>>>> +			return XFS_ERROR(EINVAL);
+>>>> +	}
+>>>
+>>> That looks busted. Why does one use current_user_ns() and the other
+>>> &init_user_ns()?
+>>>
+>>
+>> hmm, through this thread had been stopped discussing for a long time, but I'm working on converting
+>> ids to kids for xfs now, and I want to remove the finial dependenciy for user namespace.
 > 
-> This patch fixes both regressions by blacklisting the win8 OSI, so we are back
-> to v3.6 behavior, and it should remain that way until the intel backlight
-> driver is fixed.
-> 
-> Since v3.7, users have been forced to fix the initial regression by modifying
-> the boot arguments [1].
-> 
-> [1] https://wiki.archlinux.org/index.php/ASUS_Zenbook_Prime_UX31A
-> 
-> Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
-> ---
->  drivers/acpi/blacklist.c | 14 ++++++++++++++
->  1 file changed, 14 insertions(+)
-> 
-> diff --git a/drivers/acpi/blacklist.c b/drivers/acpi/blacklist.c
-> index cb96296..a404127 100644
-> --- a/drivers/acpi/blacklist.c
-> +++ b/drivers/acpi/blacklist.c
-> @@ -192,6 +192,12 @@ static int __init dmi_disable_osi_win7(const struct dmi_system_id *d)
->  	acpi_osi_setup("!Windows 2009");
->  	return 0;
->  }
-> +static int __init dmi_disable_osi_win8(const struct dmi_system_id *d)
-> +{
-> +	printk(KERN_NOTICE PREFIX "DMI detected: %s\n", d->ident);
-> +	acpi_osi_setup("!Windows 2012");
-> +	return 0;
-> +}
->  
->  static struct dmi_system_id acpi_osi_dmi_table[] __initdata = {
->  	{
-> @@ -267,6 +273,14 @@ static struct dmi_system_id acpi_osi_dmi_table[] __initdata = {
->  		     DMI_MATCH(DMI_PRODUCT_NAME, "Satellite P305D"),
->  		},
->  	},
-> +	{
-> +	.callback = dmi_disable_osi_win8,
-> +	.ident = "ASUS Zenbook Prime UX31A",
-> +	.matches = {
-> +		     DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK COMPUTER INC."),
-> +		     DMI_MATCH(DMI_PRODUCT_NAME, "UX31A"),
-> +		},
-> +	},
->  
->  	/*
->  	 * BIOS invocation of _OSI(Linux) is almost always a BIOS bug.
+> You're duplicating work that is already going on - we've been
+> talking about this stuff on the XFS list and reviewing patches for
+> the last 3-4 weeks for this.
 > 
 
+oops.. thanks for your reminder!
+
+> http://oss.sgi.com/pipermail/xfs/2013-July/028467.html
+> 
+> Basically, the discussion we are currently having is whether project
+> IDs should be exposed to user namespaces at all. e.g:
+> 
+> http://oss.sgi.com/pipermail/xfs/2013-July/028497.html
+> http://oss.sgi.com/pipermail/xfs/2013-July/028551.html
+> 
+> "Basically, until we have worked out *if* project quotas can be used
+> safely within user namespaces, we need to reject any attempt to use
+> them from within a user namespace container."
+> 
+
+yes, seems this v6 patchset allows user in un-init user namespace to setup proj quota
+through ioctl, and the projid hasn't been converted to kprojid in this patchset.
+Doesn't this will cause user in container has the ability to change the proj quota
+which is set by root user in host?
+
+> i.e. the whole "project IDs are part of user namespaces because of
+> quotas" looks like a bad decision to have been made. Project IDs are
+> independent of users and groups and can be used to account for usage
+> across discontiguous directory and permission heirarchies, so trying
+> to contain them to a "user namespace" really matches their
+> functionality.
+
+I'm ok if we disallow un-init user namespace to setup proj quota right now,
+all user namespace will share the same proj quota and only init user namespace
+has the rights to modify proj quota. this looks clear to me.
+
+
+Thanks,
+Gao
