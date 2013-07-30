@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932306Ab3G3Jcd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 05:32:33 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52979 "EHLO
+	id S932334Ab3G3Jch (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 05:32:37 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52998 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932246Ab3G3Jca (ORCPT
+	with ESMTP id S932302Ab3G3Jcd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 05:32:30 -0400
+	Tue, 30 Jul 2013 05:32:33 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Bryan Schumaker <bjschuma@netapp.com>, David Jeffery <djeffery@redhat.com>,
-        "J. Bruce Fields" <bfields@redhat.com>,
+Cc: Alex Deucher <alexander.deucher@amd.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 014/106] lockd: protect nlm_blocked access in nlmsvc_retry_blocked
-Date: Tue, 30 Jul 2013 10:30:33 +0100
-Message-Id: <1375176725-5825-15-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 020/106] drm/radeon/hdmi: make sure we have an afmt block assigned
+Date: Tue, 30 Jul 2013 10:30:39 +0100
+Message-Id: <1375176725-5825-21-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
 References: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
@@ -28,63 +27,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Jeffery <djeffery@redhat.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 1c327d962fc420aea046c16215a552710bde8231 upstream.
+commit c2b4cacfe9816c1fe378c785ce8a678cf0635ec6 upstream.
 
-In nlmsvc_retry_blocked, the check that the list is non-empty and acquiring
-the pointer of the first entry is unprotected by any lock.  This allows a rare
-race condition when there is only one entry on the list.  A function such as
-nlmsvc_grant_callback() can be called, which will temporarily remove the entry
-from the list.  Between the list_empty() and list_entry(),the list may become
-empty, causing an invalid pointer to be used as an nlm_block, leading to a
-possible crash.
+Prevents a segfault if an afmt block is not assigned to the
+encoder such as in the LVDS or eDP case.
 
-This patch adds the nlm_block_lock around these calls to prevent concurrent
-use of the nlm_blocked list.
+Fixes:
+https://bugs.freedesktop.org/show_bug.cgi?id=66714
 
-This was a regression introduced by
-f904be9cc77f361d37d71468b13ff3d1a1823dea  "lockd: Mostly remove BKL from
-the server".
-
-Cc: Bryan Schumaker <bjschuma@netapp.com>
-Signed-off-by: David Jeffery <djeffery@redhat.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+[ luis: backported to 3.5:
+  - adjusted context
+  - dropped changes to evergreen_hdmi_enable() ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/lockd/svclock.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/gpu/drm/radeon/evergreen_hdmi.c | 3 +++
+ drivers/gpu/drm/radeon/r600_hdmi.c      | 6 ++++++
+ 2 files changed, 9 insertions(+)
 
-diff --git a/fs/lockd/svclock.c b/fs/lockd/svclock.c
-index e46353f..aff1c61 100644
---- a/fs/lockd/svclock.c
-+++ b/fs/lockd/svclock.c
-@@ -941,6 +941,7 @@ nlmsvc_retry_blocked(void)
- 	unsigned long	timeout = MAX_SCHEDULE_TIMEOUT;
- 	struct nlm_block *block;
+diff --git a/drivers/gpu/drm/radeon/evergreen_hdmi.c b/drivers/gpu/drm/radeon/evergreen_hdmi.c
+index 65c5416..44b3b07 100644
+--- a/drivers/gpu/drm/radeon/evergreen_hdmi.c
++++ b/drivers/gpu/drm/radeon/evergreen_hdmi.c
+@@ -156,6 +156,9 @@ void evergreen_hdmi_setmode(struct drm_encoder *encoder, struct drm_display_mode
+ 	struct radeon_encoder_atom_dig *dig = radeon_encoder->enc_priv;
+ 	uint32_t offset;
  
-+	spin_lock(&nlm_blocked_lock);
- 	while (!list_empty(&nlm_blocked) && !kthread_should_stop()) {
- 		block = list_entry(nlm_blocked.next, struct nlm_block, b_list);
++	if (!dig || !dig->afmt)
++		return;
++
+ 	/* Silent, r600_hdmi_enable will raise WARN for us */
+ 	if (!dig->afmt->enabled)
+ 		return;
+diff --git a/drivers/gpu/drm/radeon/r600_hdmi.c b/drivers/gpu/drm/radeon/r600_hdmi.c
+index 26ce6c1..949bf83 100644
+--- a/drivers/gpu/drm/radeon/r600_hdmi.c
++++ b/drivers/gpu/drm/radeon/r600_hdmi.c
+@@ -322,6 +322,9 @@ void r600_hdmi_setmode(struct drm_encoder *encoder, struct drm_display_mode *mod
+ 	struct radeon_encoder_atom_dig *dig = radeon_encoder->enc_priv;
+ 	uint32_t offset;
  
-@@ -950,6 +951,7 @@ nlmsvc_retry_blocked(void)
- 			timeout = block->b_when - jiffies;
- 			break;
- 		}
-+		spin_unlock(&nlm_blocked_lock);
++	if (!dig || !dig->afmt)
++		return;
++
+ 	/* Silent, r600_hdmi_enable will raise WARN for us */
+ 	if (!dig->afmt->enabled)
+ 		return;
+@@ -480,6 +483,9 @@ void r600_hdmi_enable(struct drm_encoder *encoder)
+ 	uint32_t offset;
+ 	u32 hdmi;
  
- 		dprintk("nlmsvc_retry_blocked(%p, when=%ld)\n",
- 			block, block->b_when);
-@@ -959,7 +961,9 @@ nlmsvc_retry_blocked(void)
- 			retry_deferred_block(block);
- 		} else
- 			nlmsvc_grant_blocked(block);
-+		spin_lock(&nlm_blocked_lock);
- 	}
-+	spin_unlock(&nlm_blocked_lock);
++	if (!dig || !dig->afmt)
++		return;
++
+ 	if (ASIC_IS_DCE6(rdev))
+ 		return;
  
- 	return timeout;
- }
 -- 
 1.8.3.2
 
