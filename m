@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932211Ab3G3JXm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 05:23:42 -0400
+	id S932177Ab3G3JXl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 05:23:41 -0400
 Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:64877 "EHLO
 	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758358Ab3G3JTT (ORCPT
+	with ESMTP id S1758456Ab3G3JTV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 05:19:19 -0400
-X-AuditID: 9c930179-b7c49ae000000e68-cf-51f785151989
+	Tue, 30 Jul 2013 05:19:21 -0400
+X-AuditID: 9c930179-b7c49ae000000e68-da-51f785165f3f
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
@@ -17,9 +17,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>,
         Jeremy Eder <jeder@redhat.com>
-Subject: [PATCH 01/17] perf util: Save pid-cmdline mapping into tracing header
-Date: Tue, 30 Jul 2013 18:18:58 +0900
-Message-Id: <1375175954-798-2-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 04/17] perf ftrace: Add support for --pid option
+Date: Tue, 30 Jul 2013 18:19:01 +0900
+Message-Id: <1375175954-798-5-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1375175954-798-1-git-send-email-namhyung@kernel.org>
 References: <1375175954-798-1-git-send-email-namhyung@kernel.org>
@@ -30,191 +30,208 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-Current trace info data lacks the saved cmdline mapping which is
-needed for pevent to find out the comm of a task.  Add this and bump
-up the version number so that perf can determine its presence when
-reading.
-
-This is mostly corresponding to trace.dat file version 6, but still
-lacks 4 byte of number of cpus, and 10 bytes of type string - and I
-think we don't need those anyway.
+The -p (--pid) option enables to trace existing process by its pid.
 
 Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/util/trace-event-info.c  | 33 ++++++++++++++++++++++++++++++++-
- tools/perf/util/trace-event-parse.c | 17 +++++++++++++++++
- tools/perf/util/trace-event-read.c  | 36 ++++++++++++++++++++++++++++++++++--
- tools/perf/util/trace-event.h       |  1 +
- 4 files changed, 84 insertions(+), 3 deletions(-)
+ tools/perf/builtin-ftrace.c | 89 ++++++++++++++++++++++++++++++++-------------
+ 1 file changed, 63 insertions(+), 26 deletions(-)
 
-diff --git a/tools/perf/util/trace-event-info.c b/tools/perf/util/trace-event-info.c
-index f3c9e551bd35..48678ca4c4d6 100644
---- a/tools/perf/util/trace-event-info.c
-+++ b/tools/perf/util/trace-event-info.c
-@@ -41,7 +41,7 @@
- #include <lk/debugfs.h>
- #include "evsel.h"
+diff --git a/tools/perf/builtin-ftrace.c b/tools/perf/builtin-ftrace.c
+index 6f3dd02c5b9a..bd415f2b1cde 100644
+--- a/tools/perf/builtin-ftrace.c
++++ b/tools/perf/builtin-ftrace.c
+@@ -11,6 +11,7 @@
  
--#define VERSION "0.5"
-+#define VERSION "0.6"
+ #include <unistd.h>
+ #include <signal.h>
++#include <fcntl.h>
  
- static int output_fd;
- 
-@@ -390,6 +390,34 @@ out:
- 	return err;
+ #include "util/debug.h"
+ #include "util/parse-options.h"
+@@ -34,11 +35,12 @@ static void sig_handler(int sig __maybe_unused)
+ 	done = true;
  }
  
-+static int record_saved_cmdline(void)
-+{
-+	unsigned int size;
-+	char *path;
-+	struct stat st;
-+	int ret, err = 0;
-+
-+	path = get_tracing_file("saved_cmdlines");
-+	if (!path) {
-+		pr_debug("can't get tracing/saved_cmdline");
-+		return -ENOMEM;
-+	}
-+
-+	ret = stat(path, &st);
-+	if (ret < 0) {
-+		/* not found */
-+		size = 0;
-+		if (write(output_fd, &size, 8) != 8)
-+			err = -EIO;
-+		goto out;
-+	}
-+	err = record_file(path, 8);
-+
-+out:
-+	put_tracing_file(path);
-+	return err;
-+}
-+
- static void
- put_tracepoints_path(struct tracepoint_path *tps)
+-static int write_tracing_file(const char *name, const char *val)
++static int __write_tracing_file(const char *name, const char *val, bool append)
  {
-@@ -550,6 +578,9 @@ struct tracing_data *tracing_data_get(struct list_head *pattrs,
- 	if (err)
- 		goto out;
- 	err = record_ftrace_printk();
-+	if (err)
-+		goto out;
-+	err = record_saved_cmdline();
+ 	char *file;
+ 	int fd, ret = -1;
+ 	ssize_t size = strlen(val);
++	int flags = O_WRONLY;
  
- out:
- 	/*
-diff --git a/tools/perf/util/trace-event-parse.c b/tools/perf/util/trace-event-parse.c
-index fe7a27d67d2b..ef09e4720e04 100644
---- a/tools/perf/util/trace-event-parse.c
-+++ b/tools/perf/util/trace-event-parse.c
-@@ -232,6 +232,23 @@ void parse_ftrace_printk(struct pevent *pevent,
+ 	file = get_tracing_file(name);
+ 	if (!file) {
+@@ -46,7 +48,12 @@ static int write_tracing_file(const char *name, const char *val)
+ 		return -1;
  	}
+ 
+-	fd = open(file, O_WRONLY);
++	if (append)
++		flags |= O_APPEND;
++	else
++		flags |= O_TRUNC;
++
++	fd = open(file, flags);
+ 	if (fd < 0) {
+ 		pr_debug("cannot open tracing file: %s\n", name);
+ 		goto out;
+@@ -63,6 +70,16 @@ out:
+ 	return ret;
  }
  
-+void parse_saved_cmdline(struct pevent *pevent,
-+			 char *file, unsigned int size __maybe_unused)
++static int write_tracing_file(const char *name, const char *val)
 +{
-+	char *comm;
-+	char *line;
-+	char *next = NULL;
-+	int pid;
-+
-+	line = strtok_r(file, "\n", &next);
-+	while (line) {
-+		sscanf(line, "%d %ms", &pid, &comm);
-+		pevent_register_comm(pevent, comm, pid);
-+		free(comm);
-+		line = strtok_r(NULL, "\n", &next);
-+	}
++	return __write_tracing_file(name, val, false);
 +}
 +
- int parse_ftrace_file(struct pevent *pevent, char *buf, unsigned long size)
++static int append_tracing_file(const char *name, const char *val)
++{
++	return __write_tracing_file(name, val, true);
++}
++
+ static int reset_tracing_files(struct perf_ftrace *ftrace __maybe_unused)
  {
- 	return pevent_parse_event(pevent, buf, size, "ftrace");
-diff --git a/tools/perf/util/trace-event-read.c b/tools/perf/util/trace-event-read.c
-index f2112270c663..e084e5e654b6 100644
---- a/tools/perf/util/trace-event-read.c
-+++ b/tools/perf/util/trace-event-read.c
-@@ -343,6 +343,31 @@ static int read_event_files(struct pevent *pevent)
+ 	if (write_tracing_file("tracing_on", "0") < 0)
+@@ -77,11 +94,27 @@ static int reset_tracing_files(struct perf_ftrace *ftrace __maybe_unused)
  	return 0;
  }
  
-+static int read_saved_cmdline(struct pevent *pevent)
++static int set_tracing_pid(struct perf_ftrace *ftrace)
 +{
-+	unsigned long long size;
-+	char *buf;
++	int i;
++	char buf[16];
 +
-+	/* it can have 0 size */
-+	size = read8(pevent);
-+	if (!size)
++	if (perf_target__has_cpu(&ftrace->target))
 +		return 0;
 +
-+	buf = malloc(size + 1);
-+	if (buf == NULL)
-+		return -1;
-+
-+	if (do_read(buf, size) < 0) {
-+		free(buf);
-+		return -1;
++	for (i = 0; i < thread_map__nr(ftrace->evlist->threads); i++) {
++		scnprintf(buf, sizeof(buf), "%d",
++			  ftrace->evlist->threads->map[i]);
++		if (append_tracing_file("set_ftrace_pid", buf) < 0)
++			return -1;
 +	}
-+
-+	parse_saved_cmdline(pevent, buf, size);
-+
-+	free(buf);
 +	return 0;
 +}
 +
- ssize_t trace_report(int fd, struct pevent **ppevent, bool __repipe)
+ static int __cmd_ftrace(struct perf_ftrace *ftrace, int argc, const char **argv)
  {
- 	char buf[BUFSIZ];
-@@ -383,10 +408,11 @@ ssize_t trace_report(int fd, struct pevent **ppevent, bool __repipe)
+ 	char *trace_file;
+ 	int trace_fd;
+-	char *trace_pid;
+ 	char buf[4096];
+ 	struct pollfd pollfd = {
+ 		.events = POLLIN,
+@@ -92,42 +125,37 @@ static int __cmd_ftrace(struct perf_ftrace *ftrace, int argc, const char **argv)
  		return -1;
- 	if (show_version)
- 		printf("version = %s\n", version);
--	free(version);
+ 	}
  
--	if (do_read(buf, 1) < 0)
-+	if (do_read(buf, 1) < 0) {
-+		free(version);
- 		return -1;
-+	}
- 	file_bigendian = buf[0];
- 	host_bigendian = bigendian();
+-	if (argc < 1)
+-		return -1;
+-
+ 	signal(SIGINT, sig_handler);
+ 	signal(SIGUSR1, sig_handler);
+ 	signal(SIGCHLD, sig_handler);
  
-@@ -422,6 +448,11 @@ ssize_t trace_report(int fd, struct pevent **ppevent, bool __repipe)
- 	err = read_ftrace_printk(pevent);
- 	if (err)
+-	reset_tracing_files(ftrace);
++	if (reset_tracing_files(ftrace) < 0)
++		goto out;
+ 
+ 	/* reset ftrace buffer */
+ 	if (write_tracing_file("trace", "0") < 0)
  		goto out;
-+	if (!strcmp(version, "0.6")) {
-+		err = read_saved_cmdline(pevent);
-+		if (err)
-+			goto out;
-+	}
  
- 	size = trace_data_size;
- 	repipe = false;
-@@ -438,5 +469,6 @@ ssize_t trace_report(int fd, struct pevent **ppevent, bool __repipe)
- out:
- 	if (pevent)
- 		pevent_free(pevent);
-+	free(version);
- 	return size;
+-	if (perf_evlist__prepare_workload(ftrace->evlist, &ftrace->target,
+-					  argv, false, true) < 0)
+-		goto out;
+-
+-	if (write_tracing_file("current_tracer", ftrace->tracer) < 0) {
+-		pr_err("failed to set current_tracer to %s\n", ftrace->tracer);
++	if (argc && perf_evlist__prepare_workload(ftrace->evlist,
++						  &ftrace->target,
++						  argv, false, true) < 0) {
+ 		goto out;
+ 	}
+ 
+-	if (asprintf(&trace_pid, "%d", ftrace->evlist->threads->map[0]) < 0) {
+-		pr_err("failed to allocate pid string\n");
+-		goto out;
++	if (set_tracing_pid(ftrace) < 0) {
++		pr_err("failed to set ftrace pid\n");
++		goto out_reset;
+ 	}
+ 
+-	if (write_tracing_file("set_ftrace_pid", trace_pid) < 0) {
+-		pr_err("failed to set pid: %s\n", trace_pid);
+-		goto out_free_pid;
++	if (write_tracing_file("current_tracer", ftrace->tracer) < 0) {
++		pr_err("failed to set current_tracer to %s\n", ftrace->tracer);
++		goto out_reset;
+ 	}
+ 
+ 	trace_file = get_tracing_file("trace_pipe");
+ 	if (!trace_file) {
+ 		pr_err("failed to open trace_pipe\n");
+-		goto out_free_pid;
++		goto out_reset;
+ 	}
+ 
+ 	trace_fd = open(trace_file, O_RDONLY);
+@@ -136,7 +164,7 @@ static int __cmd_ftrace(struct perf_ftrace *ftrace, int argc, const char **argv)
+ 
+ 	if (trace_fd < 0) {
+ 		pr_err("failed to open trace_pipe\n");
+-		goto out_free_pid;
++		goto out_reset;
+ 	}
+ 
+ 	fcntl(trace_fd, F_SETFL, O_NONBLOCK);
+@@ -175,11 +203,9 @@ static int __cmd_ftrace(struct perf_ftrace *ftrace, int argc, const char **argv)
+ 
+ out_close_fd:
+ 	close(trace_fd);
+-out_free_pid:
+-	free(trace_pid);
+-out:
++out_reset:
+ 	reset_tracing_files(ftrace);
+-
++out:
+ 	return done ? 0 : -1;
  }
-diff --git a/tools/perf/util/trace-event.h b/tools/perf/util/trace-event.h
-index fafe1a40444a..52fc78d4b40c 100644
---- a/tools/perf/util/trace-event.h
-+++ b/tools/perf/util/trace-event.h
-@@ -31,6 +31,7 @@ void *raw_field_ptr(struct event_format *event, const char *name, void *data);
  
- void parse_proc_kallsyms(struct pevent *pevent, char *file, unsigned int size);
- void parse_ftrace_printk(struct pevent *pevent, char *file, unsigned int size);
-+void parse_saved_cmdline(struct pevent *pevent, char *file, unsigned int size);
+@@ -197,6 +223,8 @@ int cmd_ftrace(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	const struct option ftrace_options[] = {
+ 	OPT_STRING('t', "tracer", &ftrace.tracer, "tracer",
+ 		   "tracer to use: function_graph or function"),
++	OPT_STRING('p', "pid", &ftrace.target.pid, "pid",
++		   "trace on existing process id"),
+ 	OPT_INCR('v', "verbose", &verbose,
+ 		 "be more verbose"),
+ 	OPT_END()
+@@ -204,9 +232,18 @@ int cmd_ftrace(int argc, const char **argv, const char *prefix __maybe_unused)
  
- ssize_t trace_report(int fd, struct pevent **pevent, bool repipe);
+ 	argc = parse_options(argc, argv, ftrace_options, ftrace_usage,
+ 			    PARSE_OPT_STOP_AT_NON_OPTION);
+-	if (!argc)
++	if (!argc && perf_target__none(&ftrace.target))
+ 		usage_with_options(ftrace_usage, ftrace_options);
  
++	ret = perf_target__validate(&ftrace.target);
++	if (ret) {
++		char errbuf[512];
++
++		perf_target__strerror(&ftrace.target, ret, errbuf, 512);
++		pr_err("%s\n", errbuf);
++		return -EINVAL;
++	}
++
+ 	ftrace.evlist = perf_evlist__new();
+ 	if (ftrace.evlist == NULL)
+ 		return -ENOMEM;
 -- 
 1.7.11.7
 
