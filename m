@@ -1,116 +1,270 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758651Ab3G3J6S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 05:58:18 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52994 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932298Ab3G3Jcd (ORCPT
+	id S1758927Ab3G3J63 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 05:58:29 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:58671 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758729Ab3G3J6Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 05:32:33 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 018/106] perf: Fix perf_lock_task_context() vs RCU
-Date: Tue, 30 Jul 2013 10:30:37 +0100
-Message-Id: <1375176725-5825-19-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
-References: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	Tue, 30 Jul 2013 05:58:25 -0400
+From: zwu.kernel@gmail.com
+To: xfs@oss.sgi.com
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Subject: [PATCH v2] xfs: introduce object readahead to log recovery
+Date: Tue, 30 Jul 2013 17:59:07 +0800
+Message-Id: <1375178347-29037-1-git-send-email-zwu.kernel@gmail.com>
+X-Mailer: git-send-email 1.7.11.7
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13073009-4834-0000-0000-0000098C1979
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.18 -stable review patch.  If anyone has any objections, please let me know.
+From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 
-------------------
+  It can take a long time to run log recovery operation because it is
+single threaded and is bound by read latency. We can find that it took
+most of the time to wait for the read IO to occur, so if one object
+readahead is introduced to log recovery, it will obviously reduce the
+log recovery time.
 
-From: Peter Zijlstra <peterz@infradead.org>
+Log recovery time stat:
 
-commit 058ebd0eba3aff16b144eabf4510ed9510e1416e upstream.
+          w/o this patch        w/ this patch
 
-Jiri managed to trigger this warning:
+real:        0m15.023s             0m7.802s
+user:        0m0.001s              0m0.001s
+sys:         0m0.246s              0m0.107s
 
- [] ======================================================
- [] [ INFO: possible circular locking dependency detected ]
- [] 3.10.0+ #228 Tainted: G        W
- [] -------------------------------------------------------
- [] p/6613 is trying to acquire lock:
- []  (rcu_node_0){..-...}, at: [<ffffffff810ca797>] rcu_read_unlock_special+0xa7/0x250
- []
- [] but task is already holding lock:
- []  (&ctx->lock){-.-...}, at: [<ffffffff810f2879>] perf_lock_task_context+0xd9/0x2c0
- []
- [] which lock already depends on the new lock.
- []
- [] the existing dependency chain (in reverse order) is:
- []
- [] -> #4 (&ctx->lock){-.-...}:
- [] -> #3 (&rq->lock){-.-.-.}:
- [] -> #2 (&p->pi_lock){-.-.-.}:
- [] -> #1 (&rnp->nocb_gp_wq[1]){......}:
- [] -> #0 (rcu_node_0){..-...}:
-
-Paul was quick to explain that due to preemptible RCU we cannot call
-rcu_read_unlock() while holding scheduler (or nested) locks when part
-of the read side critical section was preemptible.
-
-Therefore solve it by making the entire RCU read side non-preemptible.
-
-Also pull out the retry from under the non-preempt to play nice with RT.
-
-Reported-by: Jiri Olsa <jolsa@redhat.com>
-Helped-out-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 ---
- kernel/events/core.c | 15 ++++++++++++++-
- 1 file changed, 14 insertions(+), 1 deletion(-)
+ fs/xfs/xfs_log_recover.c | 162 +++++++++++++++++++++++++++++++++++++++++++++--
+ fs/xfs/xfs_log_recover.h |   2 +
+ 2 files changed, 159 insertions(+), 5 deletions(-)
 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index cccd51c..00aa7e3 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -723,8 +723,18 @@ perf_lock_task_context(struct task_struct *task, int ctxn, unsigned long *flags)
- {
- 	struct perf_event_context *ctx;
- 
--	rcu_read_lock();
- retry:
-+	/*
-+	 * One of the few rules of preemptible RCU is that one cannot do
-+	 * rcu_read_unlock() while holding a scheduler (or nested) lock when
-+	 * part of the read side critical section was preemptible -- see
-+	 * rcu_read_unlock_special().
-+	 *
-+	 * Since ctx->lock nests under rq->lock we must ensure the entire read
-+	 * side critical section is non-preemptible.
-+	 */
-+	preempt_disable();
-+	rcu_read_lock();
- 	ctx = rcu_dereference(task->perf_event_ctxp[ctxn]);
- 	if (ctx) {
- 		/*
-@@ -740,6 +750,8 @@ retry:
- 		raw_spin_lock_irqsave(&ctx->lock, *flags);
- 		if (ctx != rcu_dereference(task->perf_event_ctxp[ctxn])) {
- 			raw_spin_unlock_irqrestore(&ctx->lock, *flags);
-+			rcu_read_unlock();
-+			preempt_enable();
- 			goto retry;
- 		}
- 
-@@ -749,6 +761,7 @@ retry:
- 		}
- 	}
- 	rcu_read_unlock();
-+	preempt_enable();
- 	return ctx;
+diff --git a/fs/xfs/xfs_log_recover.c b/fs/xfs/xfs_log_recover.c
+index 7681b19..029826f 100644
+--- a/fs/xfs/xfs_log_recover.c
++++ b/fs/xfs/xfs_log_recover.c
+@@ -3116,6 +3116,111 @@ xlog_recover_free_trans(
+ 	kmem_free(trans);
  }
  
++STATIC void
++xlog_recover_buffer_ra_pass2(
++	struct xlog                     *log,
++	struct xlog_recover_item        *item)
++{
++	xfs_buf_log_format_t	*buf_f = item->ri_buf[0].i_addr;
++	xfs_mount_t		*mp = log->l_mp;
++
++	if (xlog_check_buffer_cancelled(log, buf_f->blf_blkno,
++			buf_f->blf_len, buf_f->blf_flags)) {
++		return;
++	}
++
++	xfs_buf_readahead(mp->m_ddev_targp, buf_f->blf_blkno,
++				buf_f->blf_len, NULL);
++}
++
++STATIC void
++xlog_recover_inode_ra_pass2(
++	struct xlog                     *log,
++	struct xlog_recover_item        *item)
++{
++	xfs_inode_log_format_t	in_buf, *in_f;
++	xfs_mount_t		*mp = log->l_mp;
++	int			error;
++
++	if (item->ri_buf[0].i_len == sizeof(xfs_inode_log_format_t)) {
++		in_f = item->ri_buf[0].i_addr;
++	} else {
++		in_f = &in_buf;
++		memset(in_f, 0, sizeof(*in_f));
++		error = xfs_inode_item_format_convert(&item->ri_buf[0], in_f);
++		if (error)
++			return;
++	}
++
++	if (xlog_check_buffer_cancelled(log, in_f->ilf_blkno,
++					in_f->ilf_len, 0))
++		return;
++
++	xfs_buf_readahead(mp->m_ddev_targp, in_f->ilf_blkno,
++				in_f->ilf_len, &xfs_inode_buf_ops);
++}
++
++STATIC void
++xlog_recover_dquot_ra_pass2(
++	struct xlog			*log,
++	struct xlog_recover_item	*item)
++{
++	xfs_mount_t		*mp = log->l_mp;
++	struct xfs_disk_dquot	*recddq;
++	int			error;
++	xfs_dq_logformat_t	*dq_f;
++	uint			type;
++
++
++	if (mp->m_qflags == 0)
++		return;
++
++	recddq = item->ri_buf[1].i_addr;
++	if (recddq == NULL)
++		return;
++	if (item->ri_buf[1].i_len < sizeof(xfs_disk_dquot_t))
++		return;
++
++	type = recddq->d_flags & (XFS_DQ_USER | XFS_DQ_PROJ | XFS_DQ_GROUP);
++	ASSERT(type);
++	if (log->l_quotaoffs_flag & type)
++		return;
++
++	dq_f = item->ri_buf[0].i_addr;
++	ASSERT(dq_f);
++	error = xfs_qm_dqcheck(mp, recddq, dq_f->qlf_id, 0, XFS_QMOPT_DOWARN,
++			   "xlog_recover_dquot_ra_pass2 (log copy)");
++	if (error)
++		return;
++	ASSERT(dq_f->qlf_len == 1);
++
++	xfs_buf_readahead(mp->m_ddev_targp, dq_f->qlf_blkno,
++				dq_f->qlf_len, NULL);
++}
++
++STATIC void
++xlog_recover_ra_pass2(
++	struct xlog			*log,
++	struct xlog_recover_item	*item)
++{
++	switch (ITEM_TYPE(item)) {
++	case XFS_LI_BUF:
++		xlog_recover_buffer_ra_pass2(log, item);
++		break;
++	case XFS_LI_INODE:
++		xlog_recover_inode_ra_pass2(log, item);
++		break;
++	case XFS_LI_DQUOT:
++		xlog_recover_dquot_ra_pass2(log, item);
++		break;
++	case XFS_LI_EFI:
++	case XFS_LI_EFD:
++	case XFS_LI_QUOTAOFF:
++	default:
++		break;
++	}
++}
++
+ STATIC int
+ xlog_recover_commit_pass1(
+ 	struct xlog			*log,
+@@ -3177,6 +3282,26 @@ xlog_recover_commit_pass2(
+ 	}
+ }
+ 
++STATIC int
++xlog_recover_items_pass2(
++	struct xlog                     *log,
++	struct xlog_recover             *trans,
++	struct list_head                *buffer_list,
++	struct list_head                *ra_list)
++{
++	int			error = 0;
++	xlog_recover_item_t	*item;
++
++	list_for_each_entry(item, ra_list, ri_list) {
++		error = xlog_recover_commit_pass2(log, trans,
++					  buffer_list, item);
++		if (error)
++			return error;
++	}
++
++	return error;
++}
++
+ /*
+  * Perform the transaction.
+  *
+@@ -3189,9 +3314,11 @@ xlog_recover_commit_trans(
+ 	struct xlog_recover	*trans,
+ 	int			pass)
+ {
+-	int			error = 0, error2;
+-	xlog_recover_item_t	*item;
++	int			error = 0, error2, ra_qdepth = 0;
++	xlog_recover_item_t	*item, *next;
+ 	LIST_HEAD		(buffer_list);
++	LIST_HEAD		(ra_list);
++	LIST_HEAD		(all_ra_list);
+ 
+ 	hlist_del(&trans->r_list);
+ 
+@@ -3199,14 +3326,21 @@ xlog_recover_commit_trans(
+ 	if (error)
+ 		return error;
+ 
+-	list_for_each_entry(item, &trans->r_itemq, ri_list) {
++	list_for_each_entry_safe(item, next, &trans->r_itemq, ri_list) {
+ 		switch (pass) {
+ 		case XLOG_RECOVER_PASS1:
+ 			error = xlog_recover_commit_pass1(log, trans, item);
+ 			break;
+ 		case XLOG_RECOVER_PASS2:
+-			error = xlog_recover_commit_pass2(log, trans,
+-							  &buffer_list, item);
++			if (ra_qdepth++ >= XLOG_RECOVER_MAX_QDEPTH) {
++				error = xlog_recover_items_pass2(log, trans,
++						&buffer_list, &ra_list);
++				list_splice_tail_init(&ra_list, &all_ra_list);
++				ra_qdepth = 0;
++			} else {
++				xlog_recover_ra_pass2(log, item);
++				list_move_tail(&item->ri_list, &ra_list);
++			}
+ 			break;
+ 		default:
+ 			ASSERT(0);
+@@ -3216,9 +3350,27 @@ xlog_recover_commit_trans(
+ 			goto out;
+ 	}
+ 
++	if (!list_empty(&ra_list)) {
++		error = xlog_recover_items_pass2(log, trans,
++				&buffer_list, &ra_list);
++		if (error)
++			goto out;
++
++		list_splice_tail_init(&ra_list, &all_ra_list);
++	}
++
++	if (!list_empty(&all_ra_list))
++		list_splice_init(&all_ra_list, &trans->r_itemq);
++
+ 	xlog_recover_free_trans(trans);
+ 
+ out:
++	if (!list_empty(&ra_list))
++		list_splice_tail_init(&ra_list, &all_ra_list);
++
++	if (!list_empty(&all_ra_list))
++		list_splice_init(&all_ra_list, &trans->r_itemq);
++
+ 	error2 = xfs_buf_delwri_submit(&buffer_list);
+ 	return error ? error : error2;
+ }
+diff --git a/fs/xfs/xfs_log_recover.h b/fs/xfs/xfs_log_recover.h
+index 1c55ccb..16322f6 100644
+--- a/fs/xfs/xfs_log_recover.h
++++ b/fs/xfs/xfs_log_recover.h
+@@ -63,4 +63,6 @@ typedef struct xlog_recover {
+ #define	XLOG_RECOVER_PASS1	1
+ #define	XLOG_RECOVER_PASS2	2
+ 
++#define XLOG_RECOVER_MAX_QDEPTH 100
++
+ #endif	/* __XFS_LOG_RECOVER_H__ */
 -- 
-1.8.3.2
+1.7.11.7
 
