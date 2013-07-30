@@ -1,25 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753075Ab3G3MZY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 08:25:24 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:10356 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751975Ab3G3MZQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 08:25:16 -0400
+	id S1752812Ab3G3MZP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 08:25:15 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:15861 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751747Ab3G3MZN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Jul 2013 08:25:13 -0400
 X-IronPort-AV: E=Sophos;i="4.89,778,1367971200"; 
-   d="scan'208";a="40169449"
+   d="scan'208";a="38226788"
 From: Ben Guthro <benjamin.guthro@citrix.com>
 To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Jan Beulich <jbeulich@suse.com>, "Rafael J . Wysocki" <rjw@sisk.pl>,
         <linux-kernel@vger.kernel.org>, <linux-acpi@vger.kernel.org>,
         <xen-devel@lists.xen.org>
-CC: Ben Guthro <benjamin.guthro@citrix.com>
-Subject: [PATCH v8 1/3] x86/acpi: Introduce acpi_os_prepare_extended_sleep callback for extended sleep path
-Date: Tue, 30 Jul 2013 08:24:52 -0400
-Message-ID: <1375187094-19357-2-git-send-email-benjamin.guthro@citrix.com>
+CC: Ben Guthro <benjamin.guthro@citrix.com>,
+        Richard L Maliszewski <richard.l.maliszewski@intel.com>,
+        Gang Wei <gang.wei@intel.com>, Shane Wang <shane.wang@intel.com>,
+        Bob Moore <robert.moore@intel.com>,
+        <tboot-devel@lists.sourceforge.net>
+Subject: [PATCH v8 0/3] Xen/ACPI: support sleep state entering on hardware reduced systems
+Date: Tue, 30 Jul 2013 08:24:51 -0400
+Message-ID: <1375187094-19357-1-git-send-email-benjamin.guthro@citrix.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1375187094-19357-1-git-send-email-benjamin.guthro@citrix.com>
-References: <1375187094-19357-1-git-send-email-benjamin.guthro@citrix.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [10.204.241.11]
@@ -27,105 +30,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Like acpi_os_prepare_sleep, register a callback for use in systems like
-tboot, and xen, which have system specific requirements outside of acpica.
-This mirrors the functionality in acpi_os_prepare_sleep(), called from
-acpi_hw_sleep()
+In version 3.4 acpi_os_prepare_sleep() got introduced in parallel with
+reduced hardware sleep support, and the two changes didn't get
+synchronized: The new code doesn't call the hook function (if so
+requested). Fix this, requiring a new callback to be added to acpica
+to be called back during this reduced hardware sleep.
 
+This requires adjusting TXT, but the adjustments only go as far as
+failing the extended mode call (since, looking at the TXT interface,
+there doesn't even appear to be precautions to deal with that
+alternative interface).
+
+The xen hypervisor change underlying this is commit 62d1a69 ("ACPI: support
+v5 (reduced HW) sleep interface") on the master branch of
+git://xenbits.xen.org/xen.git.
+
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
 Signed-off-by: Ben Guthro <benjamin.guthro@citrix.com>
----
- drivers/acpi/acpica/hwesleep.c |    9 +++++++++
- drivers/acpi/osl.c             |   24 ++++++++++++++++++++++++
- include/linux/acpi.h           |    7 +++++++
- 3 files changed, 40 insertions(+)
+Cc: Richard L Maliszewski <richard.l.maliszewski@intel.com>
+Cc: Gang Wei <gang.wei@intel.com>
+Cc: Shane Wang <shane.wang@intel.com>
+Cc: Bob Moore <robert.moore@intel.com>
+Cc: Rafael J. Wysocki <rjw@sisk.pl>
+Cc: linux-acpi@vger.kernel.org
+Cc: tboot-devel@lists.sourceforge.net 
 
-diff --git a/drivers/acpi/acpica/hwesleep.c b/drivers/acpi/acpica/hwesleep.c
-index 5e5f762..4140768 100644
---- a/drivers/acpi/acpica/hwesleep.c
-+++ b/drivers/acpi/acpica/hwesleep.c
-@@ -43,6 +43,7 @@
-  */
- 
- #include <acpi/acpi.h>
-+#include <linux/acpi.h>
- #include "accommon.h"
- 
- #define _COMPONENT          ACPI_HARDWARE
-@@ -128,6 +129,14 @@ acpi_status acpi_hw_extended_sleep(u8 sleep_state)
- 
- 	ACPI_FLUSH_CPU_CACHE();
- 
-+	status = acpi_os_prepare_extended_sleep(sleep_state,
-+						acpi_gbl_sleep_type_a,
-+						acpi_gbl_sleep_type_b);
-+	if (ACPI_SKIP(status))
-+		return_ACPI_STATUS(AE_OK);
-+	if (ACPI_FAILURE(status))
-+		return_ACPI_STATUS(status);
-+
- 	/*
- 	 * Set the SLP_TYP and SLP_EN bits.
- 	 *
-diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-index 6ab2c35..a934950 100644
---- a/drivers/acpi/osl.c
-+++ b/drivers/acpi/osl.c
-@@ -79,6 +79,8 @@ extern char line_buf[80];
- 
- static int (*__acpi_os_prepare_sleep)(u8 sleep_state, u32 pm1a_ctrl,
- 				      u32 pm1b_ctrl);
-+static int (*__acpi_os_prepare_extended_sleep)(u8 sleep_state, u32 val_a,
-+				      u32 val_b);
- 
- static acpi_osd_handler acpi_irq_handler;
- static void *acpi_irq_context;
-@@ -1779,6 +1781,28 @@ void acpi_os_set_prepare_sleep(int (*func)(u8 sleep_state,
- 	__acpi_os_prepare_sleep = func;
- }
- 
-+acpi_status acpi_os_prepare_extended_sleep(u8 sleep_state, u32 val_a,
-+				  u32 val_b)
-+{
-+	int rc = 0;
-+	if (__acpi_os_prepare_extended_sleep)
-+		rc = __acpi_os_prepare_extended_sleep(sleep_state,
-+					     val_a, val_b);
-+	if (rc < 0)
-+		return AE_ERROR;
-+	else if (rc > 0)
-+		return AE_CTRL_SKIP;
-+
-+	return AE_OK;
-+}
-+
-+void acpi_os_set_prepare_extended_sleep(int (*func)(u8 sleep_state,
-+			       u32 val_a, u32 val_b))
-+{
-+	__acpi_os_prepare_extended_sleep = func;
-+}
-+
-+
- void alloc_acpi_hp_work(acpi_handle handle, u32 type, void *context,
- 			void (*func)(struct work_struct *work))
- {
-diff --git a/include/linux/acpi.h b/include/linux/acpi.h
-index 353ba25..a5db4ae 100644
---- a/include/linux/acpi.h
-+++ b/include/linux/acpi.h
-@@ -481,6 +481,13 @@ void acpi_os_set_prepare_sleep(int (*func)(u8 sleep_state,
- 
- acpi_status acpi_os_prepare_sleep(u8 sleep_state,
- 				  u32 pm1a_control, u32 pm1b_control);
-+
-+void acpi_os_set_prepare_extended_sleep(int (*func)(u8 sleep_state,
-+				        u32 val_a,  u32 val_b));
-+
-+acpi_status acpi_os_prepare_extended_sleep(u8 sleep_state,
-+					   u32 val_a, u32 val_b);
-+
- #ifdef CONFIG_X86
- void arch_reserve_mem_area(acpi_physical_address addr, size_t size);
- #else
+v2: Extend description to include reference to hypervisor side change
+v3: Split into multiple patches, separating subsystems
+    Remove bool parameters, in favor of u8
+v4: Remove linux/acpi.h dependencies
+    Further patch split to break out acpica from OSL
+    More bool vs u8 fixes
+v5: Fix build of consumers of acpi_os_prepare_sleep() interface change,
+    so intermediate builds of partial patch series will not fail.
+v6: Rebased to linux-pm linux-next branch
+    Added warning in tboot early return code
+    Added Reviewed-by lines
+v7: Add separate acpi_os_prepare_extended_sleep() interface
+    Remove OSL acpica changes introduced in v4
+v8: Return meaningful error code in tboot error path
+
+Ben Guthro (3):
+  x86/acpi: Introduce acpi_os_prepare_extended_sleep callback for
+    extended sleep path
+  x86/tboot: Fail extended mode reduced hardware sleep
+  xen/acpi: notify xen when reduced hardware sleep is available
+
+ arch/x86/kernel/tboot.c          |   12 +++++++++++
+ drivers/acpi/acpica/hwesleep.c   |    9 +++++++++
+ drivers/acpi/osl.c               |   24 ++++++++++++++++++++++
+ drivers/xen/acpi.c               |   41 ++++++++++++++++++++++++++------------
+ include/linux/acpi.h             |    7 +++++++
+ include/xen/acpi.h               |    8 ++++++--
+ include/xen/interface/platform.h |    7 ++++---
+ 7 files changed, 90 insertions(+), 18 deletions(-)
+
 -- 
 1.7.9.5
 
