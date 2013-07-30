@@ -1,261 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756445Ab3G3RuJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 13:50:09 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:60617 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752800Ab3G3RuH (ORCPT
+	id S1756586Ab3G3Rug (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 13:50:36 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:53580 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756511Ab3G3Ruf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 13:50:07 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Hillf Danton <dhillf@gmail.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: Re: [PATCH 06/18] mm, hugetlb: remove vma_need_reservation()
-In-Reply-To: <1375075929-6119-7-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1375075929-6119-1-git-send-email-iamjoonsoo.kim@lge.com> <1375075929-6119-7-git-send-email-iamjoonsoo.kim@lge.com>
-User-Agent: Notmuch/0.15.2+167~g5306b2b (http://notmuchmail.org) Emacs/24.3.50.1 (x86_64-unknown-linux-gnu)
-Date: Tue, 30 Jul 2013 23:19:58 +0530
-Message-ID: <87siywos3d.fsf@linux.vnet.ibm.com>
+	Tue, 30 Jul 2013 13:50:35 -0400
+Message-ID: <51F7FCE7.1040006@codeaurora.org>
+Date: Tue, 30 Jul 2013 13:50:31 -0400
+From: Christopher Covington <cov@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13073017-2000-0000-0000-00000D1AD4AD
+To: Jean-Francois Moine <moinejf@free.fr>
+CC: Dave Martin <Dave.Martin@arm.com>, Robert Richter <rric@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Jed Davis <jld@mozilla.com>,
+        Will Deacon <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        "oprofile-list@lists.sf.net" <oprofile-list@lists.sf.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] ARM: Fix r7/r11 confusion when CONFIG_THUMB2_KERNEL=y
+ [OT]
+References: <1373685501-1620-1-git-send-email-jld@mozilla.com> <20130715135420.GG10000@mudshark.cambridge.arm.com> <20130720044655.GC9433@mozilla.com> <20130721213753.GA29879@mudshark.cambridge.arm.com> <20130722185234.GA14519@localhost.localdomain> <20130729212140.GB12681@mozilla.com> <20130730092517.GB2478@localhost.localdomain> <20130730113853.46cbb00a@armhf> <20130730094457.GC2478@localhost.localdomain> <20130730120907.6dcc469e@armhf>
+In-Reply-To: <20130730120907.6dcc469e@armhf>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joonsoo Kim <iamjoonsoo.kim@lge.com> writes:
+On 07/30/2013 06:09 AM, Jean-Francois Moine wrote:
+> On Tue, 30 Jul 2013 10:44:57 +0100
+> Dave Martin <Dave.Martin@arm.com> wrote:
+>> On Tue, Jul 30, 2013 at 11:38:53AM +0200, Jean-Francois Moine wrote:
+>>> On Tue, 30 Jul 2013 10:25:18 +0100
+>>> Dave Martin <Dave.Martin@arm.com> wrote:
+>>>> The pragmatic route is less contraversial and lower overhead: even though
+>>>> it's not correct as per the ABI, GCC is the only supported compiler for
+>>>> building the kernel anyway.  
 
-> vma_need_reservation() can be substituted by vma_has_reserves()
-> with minor change. These function do almost same thing,
-> so unifying them is better to maintain.
+[...]
 
-I found the resulting code confusing and complex. I am sure there is
-more that what is explained in the commit message. If you are just doing
-this for cleanup, may be we should avoid doing this  ?
+>>> Did anybody succeed with clang?  
+>>
+>> Hmm, I've no idea.  Is this possible?
+> 
+> freebsd kernels are compiled with clang, and I heard about linux
+> patches, but I did not find them yet.
 
+There's a project home page here:
 
->
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
->
-> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> index bf2ee11..ff46a2c 100644
-> --- a/mm/hugetlb.c
-> +++ b/mm/hugetlb.c
-> @@ -451,8 +451,18 @@ void reset_vma_resv_huge_pages(struct vm_area_struct *vma)
->  		vma->vm_private_data = (void *)0;
->  }
->
-> -/* Returns true if the VMA has associated reserve pages */
-> -static int vma_has_reserves(struct vm_area_struct *vma, long chg)
-> +/*
-> + * Determine if the huge page at addr within the vma has an associated
-> + * reservation.  Where it does not we will need to logically increase
-> + * reservation and actually increase subpool usage before an allocation
-> + * can occur.  Where any new reservation would be required the
-> + * reservation change is prepared, but not committed.  Once the page
-> + * has been allocated from the subpool and instantiated the change should
-> + * be committed via vma_commit_reservation.  No action is required on
-> + * failure.
-> + */
-> +static int vma_has_reserves(struct hstate *h,
-> +			struct vm_area_struct *vma, unsigned long addr)
->  {
->  	if (vma->vm_flags & VM_NORESERVE) {
->  		/*
-> @@ -464,10 +474,22 @@ static int vma_has_reserves(struct vm_area_struct *vma, long chg)
->  		 * step. Currently, we don't have any other solution to deal
->  		 * with this situation properly, so add work-around here.
->  		 */
-> -		if (vma->vm_flags & VM_MAYSHARE && chg == 0)
-> -			return 1;
-> -		else
-> -			return 0;
-> +		if (vma->vm_flags & VM_MAYSHARE) {
-> +			struct address_space *mapping = vma->vm_file->f_mapping;
-> +			struct inode *inode = mapping->host;
-> +			pgoff_t idx = vma_hugecache_offset(h, vma, addr);
-> +			struct resv_map *resv = inode->i_mapping->private_data;
-> +			long chg;
-> +
-> +			chg = region_chg(resv, idx, idx + 1);
-> +			if (chg < 0)
-> +				return -ENOMEM;
-> +
-> +			if (chg == 0)
-> +				return 1;
-> +		}
-> +
-> +		return 0;
->  	}
->
->  	/* Shared mappings always use reserves */
-> @@ -478,8 +500,16 @@ static int vma_has_reserves(struct vm_area_struct *vma, long chg)
->  	 * Only the process that called mmap() has reserves for
->  	 * private mappings.
->  	 */
-> -	if (is_vma_resv_set(vma, HPAGE_RESV_OWNER))
-> +	if (is_vma_resv_set(vma, HPAGE_RESV_OWNER)) {
-> +		pgoff_t idx = vma_hugecache_offset(h, vma, addr);
-> +		struct resv_map *resv = vma_resv_map(vma);
-> +
-> +		/* Just for allocating region structure */
-> +		if (region_chg(resv, idx, idx + 1) < 0)
-> +			return -ENOMEM;
-> +
->  		return 1;
-> +	}
->
->  	return 0;
->  }
-> @@ -542,8 +572,7 @@ static struct page *dequeue_huge_page_node(struct hstate *h, int nid)
->
->  static struct page *dequeue_huge_page_vma(struct hstate *h,
->  				struct vm_area_struct *vma,
-> -				unsigned long address, int avoid_reserve,
-> -				long chg)
-> +				unsigned long address, int avoid_reserve)
->  {
->  	struct page *page = NULL;
->  	struct mempolicy *mpol;
-> @@ -558,7 +587,7 @@ static struct page *dequeue_huge_page_vma(struct hstate *h,
->  	 * have no page reserves. This check ensures that reservations are
->  	 * not "stolen". The child may still get SIGKILLed
->  	 */
-> -	if (!vma_has_reserves(vma, chg) &&
-> +	if (!vma_has_reserves(h, vma, address) &&
->  			h->free_huge_pages - h->resv_huge_pages == 0)
->  		return NULL;
->
-> @@ -578,7 +607,7 @@ retry_cpuset:
->  			if (page) {
->  				if (avoid_reserve)
->  					break;
-> -				if (!vma_has_reserves(vma, chg))
-> +				if (!vma_has_reserves(h, vma, address))
->  					break;
->
->  				h->resv_huge_pages--;
-> @@ -1077,42 +1106,6 @@ static void return_unused_surplus_pages(struct hstate *h,
->  	}
->  }
->
-> -/*
-> - * Determine if the huge page at addr within the vma has an associated
-> - * reservation.  Where it does not we will need to logically increase
-> - * reservation and actually increase subpool usage before an allocation
-> - * can occur.  Where any new reservation would be required the
-> - * reservation change is prepared, but not committed.  Once the page
-> - * has been allocated from the subpool and instantiated the change should
-> - * be committed via vma_commit_reservation.  No action is required on
-> - * failure.
-> - */
-> -static long vma_needs_reservation(struct hstate *h,
-> -			struct vm_area_struct *vma, unsigned long addr)
-> -{
-> -	struct address_space *mapping = vma->vm_file->f_mapping;
-> -	struct inode *inode = mapping->host;
-> -
-> -	if (vma->vm_flags & VM_MAYSHARE) {
-> -		pgoff_t idx = vma_hugecache_offset(h, vma, addr);
-> -		struct resv_map *resv = inode->i_mapping->private_data;
-> -
-> -		return region_chg(resv, idx, idx + 1);
-> -
-> -	} else if (!is_vma_resv_set(vma, HPAGE_RESV_OWNER)) {
-> -		return 1;
-> -
-> -	} else  {
-> -		long err;
-> -		pgoff_t idx = vma_hugecache_offset(h, vma, addr);
-> -		struct resv_map *resv = vma_resv_map(vma);
-> -
-> -		err = region_chg(resv, idx, idx + 1);
-> -		if (err < 0)
-> -			return err;
-> -		return 0;
-> -	}
-> -}
->  static void vma_commit_reservation(struct hstate *h,
->  			struct vm_area_struct *vma, unsigned long addr)
->  {
-> @@ -1140,8 +1133,7 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
->  	struct hugepage_subpool *spool = subpool_vma(vma);
->  	struct hstate *h = hstate_vma(vma);
->  	struct page *page;
-> -	long chg;
-> -	int ret, idx;
-> +	int ret, idx, has_reserve;
->  	struct hugetlb_cgroup *h_cg;
->
->  	idx = hstate_index(h);
-> @@ -1153,20 +1145,21 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
->  	 * need pages and subpool limit allocated allocated if no reserve
->  	 * mapping overlaps.
->  	 */
-> -	chg = vma_needs_reservation(h, vma, addr);
-> -	if (chg < 0)
-> +	has_reserve = vma_has_reserves(h, vma, addr);
-> +	if (has_reserve < 0)
->  		return ERR_PTR(-ENOMEM);
-> -	if (chg)
-> -		if (hugepage_subpool_get_pages(spool, chg))
-> +
-> +	if (!has_reserve && (hugepage_subpool_get_pages(spool, 1) < 0))
->  			return ERR_PTR(-ENOSPC);
->
->  	ret = hugetlb_cgroup_charge_cgroup(idx, pages_per_huge_page(h), &h_cg);
->  	if (ret) {
-> -		hugepage_subpool_put_pages(spool, chg);
-> +		if (!has_reserve)
-> +			hugepage_subpool_put_pages(spool, 1);
->  		return ERR_PTR(-ENOSPC);
->  	}
->  	spin_lock(&hugetlb_lock);
-> -	page = dequeue_huge_page_vma(h, vma, addr, avoid_reserve, chg);
-> +	page = dequeue_huge_page_vma(h, vma, addr, avoid_reserve);
->  	if (!page) {
->  		spin_unlock(&hugetlb_lock);
->  		page = alloc_buddy_huge_page(h, NUMA_NO_NODE);
-> @@ -1174,7 +1167,8 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
->  			hugetlb_cgroup_uncharge_cgroup(idx,
->  						       pages_per_huge_page(h),
->  						       h_cg);
-> -			hugepage_subpool_put_pages(spool, chg);
-> +			if (!has_reserve)
-> +				hugepage_subpool_put_pages(spool, 1);
->  			return ERR_PTR(-ENOSPC);
->  		}
->  		spin_lock(&hugetlb_lock);
-> @@ -2769,7 +2763,7 @@ retry:
->  	 * the spinlock.
->  	 */
->  	if ((flags & FAULT_FLAG_WRITE) && !(vma->vm_flags & VM_SHARED))
-> -		if (vma_needs_reservation(h, vma, address) < 0) {
-> +		if (vma_has_reserves(h, vma, address) < 0) {
->  			ret = VM_FAULT_OOM;
->  			goto backout_unlocked;
->  		}
-> @@ -2860,7 +2854,7 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
->  	 * consumed.
->  	 */
->  	if ((flags & FAULT_FLAG_WRITE) && !huge_pte_write(entry)) {
-> -		if (vma_needs_reservation(h, vma, address) < 0) {
-> +		if (vma_has_reserves(h, vma, address) < 0) {
->  			ret = VM_FAULT_OOM;
->  			goto out_mutex;
->  		}
-> -- 
-> 1.7.9.5
+http://llvm.linuxfoundation.org/index.php/Main_Page
 
+Christopher
+
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by the Linux Foundation.
