@@ -1,69 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753774Ab3G3PAD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 11:00:03 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:42255 "EHLO
+	id S1754706Ab3G3PAI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 11:00:08 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:42271 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751551Ab3G3PAB (ORCPT
+	by vger.kernel.org with ESMTP id S1753705Ab3G3PAD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 11:00:01 -0400
+	Tue, 30 Jul 2013 11:00:03 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: linux-arm-kernel@lists.infradead.org
 Cc: Emilio Lopez <emilio@elopez.com.ar>, kevin.z.m.zh@gmail.com,
         sunny@allwinnertech.com, shuge@allwinnertech.com,
         linux-kernel@vger.kernel.org, linux-sunxi@googlegroups.com,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH 00/10] Introduce Allwinner A20 support
-Date: Tue, 30 Jul 2013 16:59:44 +0200
-Message-Id: <1375196394-21138-1-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH 02/10] ARM: sun7i: Add Allwinner A20 DTSI
+Date: Tue, 30 Jul 2013 16:59:46 +0200
+Message-Id: <1375196394-21138-3-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 1.8.3.4
+In-Reply-To: <1375196394-21138-1-git-send-email-maxime.ripard@free-electrons.com>
+References: <1375196394-21138-1-git-send-email-maxime.ripard@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Everyone,
+The Allwinner A20 SoC is based on 2 Cortex A7, an ARM Mali GPU, and is
+built to be pin-compatible with the older Allwinner A10.
 
-This patchset brings in support for the Allwinner A20 SoC.
-
-This SoC is pretty much the heir of the Allwinner A10. They both have a lot of
-IP in common, the A20 is pin-compatible with the A10, the only major difference
-being that the A20 has 2 Cortex-A7 instead of the single Cortex-A8 found in the
-A10.
-
-Just like the A31, the SMP support isn't there yet, nor do we have clock
-support or any storage device.
-
-We also have the same SMP bit issue that makes Linux run without the caches
-enabled for the time being when CONFIG_SMP isn't set.
-
-This serie comes on top of the serie "ARM: sunxi: Add support for the Allwinner
-A31 SoC" I sent previously.
-
-Thanks,
-Maxime
-
-Maxime Ripard (10):
-  ARM: sunxi: Introduce Allwinner A20 support
-  ARM: sun7i: Add Allwinner A20 DTSI
-  ARM: sun7i: Add Olimex A20-Olinuxino-Micro support
-  pinctrl: sunxi: Wrap long compatible declaration lines
-  pinctrl: sunxi: Add Allwinner A20 pins set
-  pinctrl: sunxi: Fix inconsistent indentation
-  ARM: sun7i: Add the PIO controller node to the DTSI
-  ARM: sun7i: DT: Add UART muxing options to the DTSI
-  ARM: sun7i: a20-olinuxino: Enable UARTs muxing
-  ARM: sun7i: a20-olinuxino: Enable the user LED
-
- arch/arm/boot/dts/Makefile                      |    3 +-
- arch/arm/boot/dts/sun7i-a20-olinuxino-micro.dts |   61 ++
- arch/arm/boot/dts/sun7i-a20.dtsi                |  204 +++++
- arch/arm/mach-sunxi/sunxi.c                     |    1 +
- drivers/pinctrl/pinctrl-sunxi-pins.h            | 1028 ++++++++++++++++++++++-
- drivers/pinctrl/pinctrl-sunxi.c                 |   24 +-
- 6 files changed, 1311 insertions(+), 10 deletions(-)
- create mode 100644 arch/arm/boot/dts/sun7i-a20-olinuxino-micro.dts
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+---
+ arch/arm/boot/dts/sun7i-a20.dtsi | 171 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 171 insertions(+)
  create mode 100644 arch/arm/boot/dts/sun7i-a20.dtsi
 
+diff --git a/arch/arm/boot/dts/sun7i-a20.dtsi b/arch/arm/boot/dts/sun7i-a20.dtsi
+new file mode 100644
+index 0000000..1afdb4e
+--- /dev/null
++++ b/arch/arm/boot/dts/sun7i-a20.dtsi
+@@ -0,0 +1,171 @@
++/*
++ * Copyright 2013 Maxime Ripard
++ *
++ * Maxime Ripard <maxime.ripard@free-electrons.com>
++ *
++ * The code contained herein is licensed under the GNU General Public
++ * License. You may obtain a copy of the GNU General Public License
++ * Version 2 or later at the following locations:
++ *
++ * http://www.opensource.org/licenses/gpl-license.html
++ * http://www.gnu.org/copyleft/gpl.html
++ */
++
++/include/ "skeleton.dtsi"
++
++/ {
++	interrupt-parent = <&gic>;
++
++	cpus {
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		cpu@0 {
++			compatible = "arm,cortex-a7";
++			device_type = "cpu";
++			reg = <0>;
++		};
++
++		cpu@1 {
++			compatible = "arm,cortex-a7";
++			device_type = "cpu";
++			reg = <1>;
++		};
++	};
++
++	memory {
++		reg = <0x40000000 0x80000000>;
++	};
++
++	clocks {
++		#address-cells = <1>;
++		#size-cells = <1>;
++		ranges;
++
++		osc24M: osc24M@01c20050 {
++			#clock-cells = <0>;
++			compatible = "fixed-clock";
++			clock-frequency = <24000000>;
++		};
++
++		osc32k: osc32k {
++			#clock-cells = <0>;
++			compatible = "fixed-clock";
++			clock-frequency = <32768>;
++		};
++	};
++
++	soc@01c20000 {
++		compatible = "simple-bus";
++		#address-cells = <1>;
++		#size-cells = <1>;
++
++		timer@01c20c00 {
++			compatible = "allwinner,sun4i-timer";
++			reg = <0x01c20c00 0x90>;
++			interrupts = <0 22 1>,
++				     <0 23 1>,
++				     <0 24 1>,
++				     <0 25 1>,
++				     <0 67 1>,
++				     <0 68 1>;
++			clocks = <&osc24M>;
++		};
++
++		wdt: watchdog@01c20c90 {
++			compatible = "allwinner,sun4i-wdt";
++			reg = <0x01c20c90 0x10>;
++		};
++
++		uart0: serial@01c28000 {
++			compatible = "snps,dw-apb-uart";
++			reg = <0x01c28000 0x400>;
++			interrupts = <0 1 1>;
++			reg-shift = <2>;
++			reg-io-width = <4>;
++			clocks = <&osc24M>;
++			status = "disabled";
++		};
++
++		uart1: serial@01c28400 {
++			compatible = "snps,dw-apb-uart";
++			reg = <0x01c28400 0x400>;
++			interrupts = <0 2 1>;
++			reg-shift = <2>;
++			reg-io-width = <4>;
++			clocks = <&osc24M>;
++			status = "disabled";
++		};
++
++		uart2: serial@01c28800 {
++			compatible = "snps,dw-apb-uart";
++			reg = <0x01c28800 0x400>;
++			interrupts = <0 3 1>;
++			reg-shift = <2>;
++			reg-io-width = <4>;
++			clocks = <&osc24M>;
++			status = "disabled";
++		};
++
++		uart3: serial@01c28c00 {
++			compatible = "snps,dw-apb-uart";
++			reg = <0x01c28c00 0x400>;
++			interrupts = <0 4 1>;
++			reg-shift = <2>;
++			reg-io-width = <4>;
++			clocks = <&osc24M>;
++			status = "disabled";
++		};
++
++		uart4: serial@01c29000 {
++			compatible = "snps,dw-apb-uart";
++			reg = <0x01c29000 0x400>;
++			interrupts = <0 17 1>;
++			reg-shift = <2>;
++			reg-io-width = <4>;
++			clocks = <&osc24M>;
++			status = "disabled";
++		};
++
++		uart5: serial@01c29400 {
++			compatible = "snps,dw-apb-uart";
++			reg = <0x01c29400 0x400>;
++			interrupts = <0 18 1>;
++			reg-shift = <2>;
++			reg-io-width = <4>;
++			clocks = <&osc24M>;
++			status = "disabled";
++		};
++
++		uart6: serial@01c29800 {
++			compatible = "snps,dw-apb-uart";
++			reg = <0x01c29800 0x400>;
++			interrupts = <0 19 1>;
++			reg-shift = <2>;
++			reg-io-width = <4>;
++			clocks = <&osc24M>;
++			status = "disabled";
++		};
++
++		uart7: serial@01c29c00 {
++			compatible = "snps,dw-apb-uart";
++			reg = <0x01c29c00 0x400>;
++			interrupts = <0 20 1>;
++			reg-shift = <2>;
++			reg-io-width = <4>;
++			clocks = <&osc24M>;
++			status = "disabled";
++		};
++
++		gic: interrupt-controller@01c81000 {
++			compatible = "arm,cortex-a7-gic";
++			reg = <0x01c81000 0x1000>,
++			      <0x01c82000 0x1000>,
++			      <0x01c84000 0x2000>,
++			      <0x01c86000 0x2000>;
++			interrupt-controller;
++			#interrupt-cells = <3>;
++			interrupts = <1 9 0xf04>;
++		};
++	};
++};
 -- 
 1.8.3.4
 
