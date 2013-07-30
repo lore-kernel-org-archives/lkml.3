@@ -1,74 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753952Ab3G3LaQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 07:30:16 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:34064 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751350Ab3G3LaO (ORCPT
+	id S1754592Ab3G3Lb5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 07:31:57 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9362 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751649Ab3G3Lby (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 07:30:14 -0400
-Date: Tue, 30 Jul 2013 12:29:49 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Richard Genoud <richard.genoud@gmail.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>, Bo Shen <voice.shen@atmel.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org, devicetree@vger.kernel.org,
-        patches@opensource.wolfsonmicro.com
-Message-ID: <20130730112949.GP9858@sirena.org.uk>
-References: <1375180329-4860-1-git-send-email-richard.genoud@gmail.com>
- <1375180329-4860-2-git-send-email-richard.genoud@gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="mdlWJHP8WUkO1oOu"
-Content-Disposition: inline
-In-Reply-To: <1375180329-4860-2-git-send-email-richard.genoud@gmail.com>
-X-Cookie: You will be awarded some great honor.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v6 1/8] ASoC: wm8731: add rates constraints
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	Tue, 30 Jul 2013 07:31:54 -0400
+X-Authority-Analysis: v=2.0 cv=aqMw+FlV c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=d_O34BjmFfwA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=YYX2g-drga8A:10 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=3nbZYyFuAAAA:8 a=y4oymp9fq9aDtU_duecA:9 a=jEp0ucaQiEUA:10 a=EvKJbDF4Ut8A:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-Id: <20130730113152.135431410@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Tue, 30 Jul 2013 07:27:19 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: [for-next-3.11][PATCH 1/8] tracing: Turn event/id->i_private into call->event.type
+References: <20130730112718.273490378@goodmis.org>
+Content-Disposition: inline; filename=0001-tracing-Turn-event-id-i_private-into-call-event.type.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Oleg Nesterov <oleg@redhat.com>
 
---mdlWJHP8WUkO1oOu
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+event_id_read() is racy, ftrace_event_call can be already freed
+by trace_remove_event_call() callers.
 
-On Tue, Jul 30, 2013 at 12:32:02PM +0200, Richard Genoud wrote:
-> Depending on the mclk (or crystal) selected, the wm8731 codec have some
-> constraints on its data sampling rates:
-> e.g. with a 12.288MHz or 18.432MHz crystal, the authorized rates are
-> 8KHz, 32KHz, 48KHz and 96KHz.
+Change event_create_dir() to pass "data = call->event.type", this
+is all event_id_read() needs. ftrace_event_id_fops no longer needs
+tracing_open_generic().
 
-Applied, thanks.
+We add the new helper, event_file_data(), to read ->i_private, it
+will have more users.
 
---mdlWJHP8WUkO1oOu
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Note: currently ACCESS_ONCE() and "id != 0" check are not needed,
+but we are going to change event_remove/rmdir to clear ->i_private.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+Link: http://lkml.kernel.org/r/20130726172532.GA3605@redhat.com
 
-iQIcBAEBAgAGBQJR96OpAAoJELSic+t+oim9KD8P/jufnid8JfAwCFurbaWmciex
-ASQ2UuNfKZxhunDX0IdQ0byCdXA56HRgJap9zhWlE9YrlAflPhcseAO8SkhPaDoB
-Bcxgtc3Qhwq4HhJz7sux8fjijsDfiFqSL+ZaJG5GGJTW6tNCu+SnhtGcj8zztYyw
-hseY5H9Us/fKmMbXcWqg4U9KpPVCi8V1U6oEMlGTCLHBKAJGtLYq//LaC8Gdenc2
-xW8568EeylLF9rOPiB8xtvDEO4arbd+xIWQLJLG742iERJyI8r0yx7NKkQ4+m5ek
-0mDOG1ZpwArGuMztzrXDIw0RO8TKB570pq1Z4xz1eMWqOluONEY+BXVBP466DmEN
-ORryiBQcSXhfQzgIZHduTqWPlKUapwsYuwif3ODvPmKTxagzFt1gQe9zrgKES2mG
-Lx/6TfDjVlW3u64L/5sK6dSEE9HeX4My5ehr8oxoNSaZpLat+S+bPWdi2YZnbYGE
-1E55WN9UMH01FtxBsAsdCdDBVZJm1FNvqGwfgi6lQYE8b9RHNYIuHB0kLu2Hsmia
-s9r0awsUtdjGreC1nD3XHiB24PlFGF3rm6koMF2cH39DBF35aTc6r9bXQ1veP4qy
-gNnUs0uiVKWG1de1bc/QM+zWTRu33pgAZm29hvWvbMIeezdDcx9/w+oTOFhLDDFd
-+bdN/0oqyy76wTWOGkKq
-=urka
------END PGP SIGNATURE-----
+Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/trace_events.c |   18 +++++++++++++-----
+ 1 file changed, 13 insertions(+), 5 deletions(-)
 
---mdlWJHP8WUkO1oOu--
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index 898f868..c2d13c5 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -409,6 +409,11 @@ static void put_system(struct ftrace_subsystem_dir *dir)
+ 	mutex_unlock(&event_mutex);
+ }
+ 
++static void *event_file_data(struct file *filp)
++{
++	return ACCESS_ONCE(file_inode(filp)->i_private);
++}
++
+ /*
+  * Open and update trace_array ref count.
+  * Must have the current trace_array passed to it.
+@@ -946,14 +951,18 @@ static int trace_format_open(struct inode *inode, struct file *file)
+ static ssize_t
+ event_id_read(struct file *filp, char __user *ubuf, size_t cnt, loff_t *ppos)
+ {
+-	struct ftrace_event_call *call = filp->private_data;
++	int id = (long)event_file_data(filp);
+ 	char buf[32];
+ 	int len;
+ 
+ 	if (*ppos)
+ 		return 0;
+ 
+-	len = sprintf(buf, "%d\n", call->event.type);
++	if (unlikely(!id))
++		return -ENODEV;
++
++	len = sprintf(buf, "%d\n", id);
++
+ 	return simple_read_from_buffer(ubuf, cnt, ppos, buf, len);
+ }
+ 
+@@ -1240,7 +1249,6 @@ static const struct file_operations ftrace_event_format_fops = {
+ };
+ 
+ static const struct file_operations ftrace_event_id_fops = {
+-	.open = tracing_open_generic,
+ 	.read = event_id_read,
+ 	.llseek = default_llseek,
+ };
+@@ -1488,8 +1496,8 @@ event_create_dir(struct dentry *parent,
+ 
+ #ifdef CONFIG_PERF_EVENTS
+ 	if (call->event.type && call->class->reg)
+-		trace_create_file("id", 0444, file->dir, call,
+-		 		  id);
++		trace_create_file("id", 0444, file->dir,
++				  (void *)(long)call->event.type, id);
+ #endif
+ 
+ 	/*
+-- 
+1.7.10.4
+
+
