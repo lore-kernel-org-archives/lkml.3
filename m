@@ -1,140 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757013Ab3G3DOe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 23:14:34 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:45825 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750926Ab3G3DOc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 23:14:32 -0400
-X-IronPort-AV: E=Sophos;i="4.89,774,1367942400"; 
-   d="scan'208";a="8063805"
-Message-ID: <51F72FE6.4080202@cn.fujitsu.com>
-Date: Tue, 30 Jul 2013 11:15:50 +0800
-From: Gao feng <gaofeng@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1757061Ab3G3DSd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 23:18:33 -0400
+Received: from co9ehsobe003.messaging.microsoft.com ([207.46.163.26]:5517 "EHLO
+	co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751566Ab3G3DSc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 23:18:32 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 4
+X-BigFish: VS4(z2005kz98dI1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6h1082kzz1de098h8275bh1de097hz2dh2a8h668h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1155h)
+Date: Tue, 30 Jul 2013 11:23:11 +0800
+From: Robin Gong <b38343@freescale.com>
+To: Axel Lin <axel.lin@ingics.com>
+CC: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RFT] regulator: pfuze100: Fix n_voltages setting for
+ SW2~SW4 with high bit set
+Message-ID: <20130730032310.GC1430@Robin-OptiPlex-780>
+References: <1375152388.4265.1.camel@phoenix>
 MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>, dwight.engen@oracle.com
-CC: "Eric W. Biederman" <ebiederm@xmission.com>, linux-fsdevel@vger.kernel.org,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        linux-kernel@vger.kernel.org, "Serge E. Hallyn" <serge@hallyn.com>,
-        Ben Myers <bpm@sgi.com>, Alex Elder <elder@kernel.org>,
-        xfs@oss.sgi.com
-Subject: Re: [PATCH review 05/16] xfs: Update xfs_ioctl_setattr to handle
- projids in any user namespace
-References: <87txpaph4n.fsf@xmission.com> <1361149870-27732-1-git-send-email-ebiederm@xmission.com> <1361149870-27732-5-git-send-email-ebiederm@xmission.com> <20130219015550.GJ26694@dastard> <51F616F2.5040906@cn.fujitsu.com> <20130729075109.GF13468@dastard>
-In-Reply-To: <20130729075109.GF13468@dastard>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/07/30 11:12:15,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/07/30 11:12:19,
-	Serialize complete at 2013/07/30 11:12:19
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1375152388.4265.1.camel@phoenix>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/29/2013 03:51 PM, Dave Chinner wrote:
-> [ cc xfs list ]
+Ok for me.
+On Tue, Jul 30, 2013 at 10:46:28AM +0800, Axel Lin wrote:
+> Current code adjust min_uV and uV_step but missed adjusting the n_voltages
+> setting.
 > 
-> On Mon, Jul 29, 2013 at 03:17:06PM +0800, Gao feng wrote:
->> On 02/19/2013 09:55 AM, Dave Chinner wrote:
->>> On Sun, Feb 17, 2013 at 05:10:58PM -0800, Eric W. Biederman wrote:
->>>> From: "Eric W. Biederman" <ebiederm@xmission.com>
->>>>
->>>> - Convert the userspace value in fa->fsx_projid into a kprojid and
->>>>   store it in the variable projid.
->>>> - Verify that xfs can store the projid after it is converted into
->>>>   xfs's user namespace.
->>>> - Replace uses of fa->fsx_projid with projid throughout
->>>>   xfs_ioctl_setattr.
->>>>
->>>> Cc: Ben Myers <bpm@sgi.com>
->>>> Cc: Alex Elder <elder@kernel.org>
->>>> Cc: Dave Chinner <david@fromorbit.com>
->>>> Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
->>>> ---
->>>>  fs/xfs/xfs_ioctl.c |   26 ++++++++++++++++++--------
->>>>  1 files changed, 18 insertions(+), 8 deletions(-)
->>>>
->>>> diff --git a/fs/xfs/xfs_ioctl.c b/fs/xfs/xfs_ioctl.c
->>>> index 016624b..4a55f50 100644
->>>> --- a/fs/xfs/xfs_ioctl.c
->>>> +++ b/fs/xfs/xfs_ioctl.c
->>>> @@ -925,6 +925,7 @@ xfs_ioctl_setattr(
->>>>  	struct xfs_dquot	*gdqp = NULL;
->>>>  	struct xfs_dquot	*olddquot = NULL;
->>>>  	int			code;
->>>> +	kprojid_t		projid = INVALID_PROJID;
->>>>  
->>>>  	trace_xfs_ioctl_setattr(ip);
->>>>  
->>>> @@ -934,11 +935,20 @@ xfs_ioctl_setattr(
->>>>  		return XFS_ERROR(EIO);
->>>>  
->>>>  	/*
->>>> -	 * Disallow 32bit project ids when projid32bit feature is not enabled.
->>>> +	 * Verify the specifid project id is valid.
->>>>  	 */
->>>> -	if ((mask & FSX_PROJID) && (fa->fsx_projid > (__uint16_t)-1) &&
->>>> -			!xfs_sb_version_hasprojid32bit(&ip->i_mount->m_sb))
->>>> -		return XFS_ERROR(EINVAL);
->>>> +	if (mask & FSX_PROJID) {
->>>> +		projid = make_kprojid(current_user_ns(), fa->fsx_projid);
->>>> +		if (!projid_valid(projid))
->>>> +			return XFS_ERROR(EINVAL);
->>>> +
->>>> +		/*
->>>> +		 * Disallow 32bit project ids when projid32bit feature is not enabled.
->>>> +		 */
->>>> +		if ((from_kprojid(&init_user_ns, projid) > (__uint16_t)-1) &&
->>>> +		    !xfs_sb_version_hasprojid32bit(&ip->i_mount->m_sb))
->>>> +			return XFS_ERROR(EINVAL);
->>>> +	}
->>>
->>> That looks busted. Why does one use current_user_ns() and the other
->>> &init_user_ns()?
->>>
->>
->> hmm, through this thread had been stopped discussing for a long time, but I'm working on converting
->> ids to kids for xfs now, and I want to remove the finial dependenciy for user namespace.
+> When BIT6 is clear:
+>         n_voltages = (1975000 - 400000) / 25000 + 1 = 64
+> When BIT6 is set:
+>         n_voltages = (3300000 - 800000) / 50000 + 1 = 51
 > 
-> You're duplicating work that is already going on - we've been
-> talking about this stuff on the XFS list and reviewing patches for
-> the last 3-4 weeks for this.
+> The n_voltages needs update because when BIT6 is set 0x73 ~ 0x7f are reserved.
+> When using regulator_list_voltage_linear, the n_voltages does matter here
+> because wrong n_voltages setting make the equation return wrong result.
+> e.g. if selector is 63, regulator_list_voltage_linear returns
+>      800000 + (50000 * 63) = 4000000
+>      It should return -EINVAL if the selector is in the range of 51 ~ 63.
 > 
-
-oops.. thanks for your reminder!
-
-> http://oss.sgi.com/pipermail/xfs/2013-July/028467.html
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+> ---
+>  drivers/regulator/pfuze100-regulator.c | 16 ++++++++--------
+>  1 file changed, 8 insertions(+), 8 deletions(-)
 > 
-> Basically, the discussion we are currently having is whether project
-> IDs should be exposed to user namespaces at all. e.g:
+> diff --git a/drivers/regulator/pfuze100-regulator.c b/drivers/regulator/pfuze100-regulator.c
+> index 2dadc31..a77379b 100644
+> --- a/drivers/regulator/pfuze100-regulator.c
+> +++ b/drivers/regulator/pfuze100-regulator.c
+> @@ -387,8 +387,11 @@ static int pfuze100_regulator_probe(struct i2c_client *client,
+>  
+>  	for (i = 0; i < PFUZE100_MAX_REGULATOR; i++) {
+>  		struct regulator_init_data *init_data;
+> +		struct regulator_desc *desc;
+>  		int val;
+>  
+> +		desc = &pfuze_chip->regulator_descs[i].desc;
+> +
+>  		if (pdata)
+>  			init_data = pdata->init_data[i];
+>  		else
+> @@ -396,13 +399,11 @@ static int pfuze100_regulator_probe(struct i2c_client *client,
+>  
+>  		/* SW2~SW4 high bit check and modify the voltage value table */
+>  		if (i > PFUZE100_SW1C && i < PFUZE100_SWBST) {
+> -			regmap_read(pfuze_chip->regmap, PFUZE100_SW2VOL +
+> -					(i - PFUZE100_SW2) * 7, &val);
+> +			regmap_read(pfuze_chip->regmap, desc->vsel_reg, &val);
+>  			if (val & 0x40) {
+> -				pfuze_chip->regulator_descs[i].desc.min_uV
+> -				= 800000;
+> -				pfuze_chip->regulator_descs[i].desc.uV_step
+> -				= 50000;
+> +				desc->min_uV = 800000;
+> +				desc->uV_step = 50000;
+> +				desc->n_voltages = 51;
+>  			}
+>  		}
+>  
+> @@ -411,8 +412,7 @@ static int pfuze100_regulator_probe(struct i2c_client *client,
+>  		config.driver_data = pfuze_chip;
+>  		config.of_node = match_of_node(i);
+>  
+> -		pfuze_chip->regulators[i] = regulator_register(&pfuze_chip
+> -			->regulator_descs[i].desc, &config);
+> +		pfuze_chip->regulators[i] = regulator_register(desc, &config);
+>  		if (IS_ERR(pfuze_chip->regulators[i])) {
+>  			dev_err(&client->dev, "register regulator%s failed\n",
+>  				pfuze100_regulators[i].desc.name);
+> -- 
+> 1.8.1.2
 > 
-> http://oss.sgi.com/pipermail/xfs/2013-July/028497.html
-> http://oss.sgi.com/pipermail/xfs/2013-July/028551.html
 > 
-> "Basically, until we have worked out *if* project quotas can be used
-> safely within user namespaces, we need to reject any attempt to use
-> them from within a user namespace container."
+> 
 > 
 
-yes, seems this v6 patchset allows user in un-init user namespace to setup proj quota
-through ioctl, and the projid hasn't been converted to kprojid in this patchset.
-Doesn't this will cause user in container has the ability to change the proj quota
-which is set by root user in host?
-
-> i.e. the whole "project IDs are part of user namespaces because of
-> quotas" looks like a bad decision to have been made. Project IDs are
-> independent of users and groups and can be used to account for usage
-> across discontiguous directory and permission heirarchies, so trying
-> to contain them to a "user namespace" really matches their
-> functionality.
-
-I'm ok if we disallow un-init user namespace to setup proj quota right now,
-all user namespace will share the same proj quota and only init user namespace
-has the rights to modify proj quota. this looks clear to me.
-
-
-Thanks,
-Gao
