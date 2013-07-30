@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932812Ab3G3JvF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 05:51:05 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53135 "EHLO
+	id S932454Ab3G3Jvn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 05:51:43 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53107 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932372Ab3G3JdD (ORCPT
+	with ESMTP id S932319Ab3G3Jc6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 05:33:03 -0400
+	Tue, 30 Jul 2013 05:32:58 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mathias Krause <minipli@googlemail.com>,
-        Steffen Klassert <steffen.klassert@secunet.com>,
+Cc: Aydin Arik <aydin.arik@alliedtelesis.co.nz>,
         "David S. Miller" <davem@davemloft.net>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 046/106] af_key: fix info leaks in notify messages
-Date: Tue, 30 Jul 2013 10:31:05 +0100
-Message-Id: <1375176725-5825-47-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 042/106] ipv4: Fixed MD5 key lookups when adding/ removing MD5 to/ from TCP sockets.
+Date: Tue, 30 Jul 2013 10:31:01 +0100
+Message-Id: <1375176725-5825-43-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
 References: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
@@ -30,44 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Krause <minipli@googlemail.com>
+From: Aydin Arik <aydin.arik@alliedtelesis.co.nz>
 
-commit a5cc68f3d63306d0d288f31edfc2ae6ef8ecd887 upstream.
+commit c0353c7b5da4cbd2ab8227e84bbc9c79890f24ce upstream.
 
-key_notify_sa_flush() and key_notify_policy_flush() miss to initialize
-the sadb_msg_reserved member of the broadcasted message and thereby
-leak 2 bytes of heap memory to listeners. Fix that.
+MD5 key lookups on a given TCP socket were being performed
+incorrectly. This fix alters parameter inputs to the MD5
+lookup function tcp_md5_do_lookup, which is called by functions
+tcp_md5_do_add and tcp_md5_do_del. Specifically, the change now
+inputs the correct address and address family required to make
+a proper lookup.
 
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Cc: Steffen Klassert <steffen.klassert@secunet.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
+Signed-off-by: Aydin Arik <aydin.arik@alliedtelesis.co.nz>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/key/af_key.c | 2 ++
- 1 file changed, 2 insertions(+)
+ net/ipv4/tcp_ipv4.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/net/key/af_key.c b/net/key/af_key.c
-index 34e4185..7a09bbb 100644
---- a/net/key/af_key.c
-+++ b/net/key/af_key.c
-@@ -1705,6 +1705,7 @@ static int key_notify_sa_flush(const struct km_event *c)
- 	hdr->sadb_msg_version = PF_KEY_V2;
- 	hdr->sadb_msg_errno = (uint8_t) 0;
- 	hdr->sadb_msg_len = (sizeof(struct sadb_msg) / sizeof(uint64_t));
-+	hdr->sadb_msg_reserved = 0;
+diff --git a/net/ipv4/tcp_ipv4.c b/net/ipv4/tcp_ipv4.c
+index 2a95340..f374da4 100644
+--- a/net/ipv4/tcp_ipv4.c
++++ b/net/ipv4/tcp_ipv4.c
+@@ -989,7 +989,7 @@ int tcp_md5_do_add(struct sock *sk, const union tcp_md5_addr *addr,
+ 	struct tcp_sock *tp = tcp_sk(sk);
+ 	struct tcp_md5sig_info *md5sig;
  
- 	pfkey_broadcast(skb, GFP_ATOMIC, BROADCAST_ALL, NULL, c->net);
+-	key = tcp_md5_do_lookup(sk, (union tcp_md5_addr *)&addr, AF_INET);
++	key = tcp_md5_do_lookup(sk, addr, family);
+ 	if (key) {
+ 		/* Pre-existing entry - just update that one. */
+ 		memcpy(key->key, newkey, newkeylen);
+@@ -1034,7 +1034,7 @@ int tcp_md5_do_del(struct sock *sk, const union tcp_md5_addr *addr, int family)
+ 	struct tcp_md5sig_key *key;
+ 	struct tcp_md5sig_info *md5sig;
  
-@@ -2686,6 +2687,7 @@ static int key_notify_policy_flush(const struct km_event *c)
- 	hdr->sadb_msg_version = PF_KEY_V2;
- 	hdr->sadb_msg_errno = (uint8_t) 0;
- 	hdr->sadb_msg_len = (sizeof(struct sadb_msg) / sizeof(uint64_t));
-+	hdr->sadb_msg_reserved = 0;
- 	pfkey_broadcast(skb_out, GFP_ATOMIC, BROADCAST_ALL, NULL, c->net);
- 	return 0;
- 
+-	key = tcp_md5_do_lookup(sk, (union tcp_md5_addr *)&addr, AF_INET);
++	key = tcp_md5_do_lookup(sk, addr, family);
+ 	if (!key)
+ 		return -ENOENT;
+ 	hlist_del_rcu(&key->node);
 -- 
 1.8.3.2
 
