@@ -1,73 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756848Ab3G3DKJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 23:10:09 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:57076 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753015Ab3G3DKI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 23:10:08 -0400
-Message-ID: <1375153806.2075.100.camel@joe-AO722>
-Subject: Re: Checkpatch error on trace events macros
-From: Joe Perches <joe@perches.com>
-To: Li Zefan <lizefan@huawei.com>
-Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Andy Whitcroft <apw@canonical.com>, linux-kernel@vger.kernel.org
-Date: Mon, 29 Jul 2013 20:10:06 -0700
-In-Reply-To: <51F72D55.7050108@huawei.com>
-References: <20130729195201.GC14883@xanatos> <51F7171C.4060100@huawei.com>
-	 <1375149538.2075.95.camel@joe-AO722> <51F71FBC.6030600@huawei.com>
-	 <1375151796.2075.97.camel@joe-AO722> <51F72D55.7050108@huawei.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
+	id S1757003Ab3G3DLM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 23:11:12 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:63664 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753015Ab3G3DLK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 23:11:10 -0400
+Message-ID: <51F72EF3.8080706@gmail.com>
+Date: Tue, 30 Jul 2013 11:11:47 +0800
+From: Aaron Lu <aaron.lwe@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Felipe Contreras <felipe.contreras@gmail.com>
+CC: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <lenb@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [REGRESSION/PATCH] acpi: blacklist win8 OSI for ASUS Zenbok Prime
+ UX31A
+References: <1375125658-1223-1-git-send-email-felipe.contreras@gmail.com>
+In-Reply-To: <1375125658-1223-1-git-send-email-felipe.contreras@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-07-30 at 11:04 +0800, Li Zefan wrote:
-> On 2013/7/30 10:36, Joe Perches wrote:
-> > On Tue, 2013-07-30 at 10:06 +0800, Li Zefan wrote:
-> >> On 2013/7/30 9:58, Joe Perches wrote:
-> >>> So what are these TRACE_<FOO> defines that need
-> >>> excluding from the "complex values" check?
-> >>>
-> >>> Anything other than 
-> >>>
-> >>> TRACE_SYSTEM
-> >>> TRACE_INCLUDE_FILE
-> >>> TRACE_INCLUDE_PATH
-> >>>
-> >>> ?
-> >>>
-> >>> samples/trace_events/trace-events-sample.h
-> >>> only has those 3.
-> >>>
-> >>
-> >> Try:
-> >>   # scripts/checkpatch.pl --file include/trace/events/*
-> >>
-> >> You'll see numerous errors. :)
-> > 
-> > Nope, you'll see numerous whitespace defects, but no
-> > actual errors.
-> > 
-> > If you run with:
-> > 
-> > --ignore=spacing,long_line,code_indent,leading_space,printf_l,split_string,space_before_tab,trailing_whitespace,line_continuations
-> > 
+On 07/30/2013 03:20 AM, Felipe Contreras wrote:
+> Since v3.7 the acpi backlight driver doesn't work at all on this machine
+> because presumably the ACPI code contains stub code when Windows 8 OSI is
+> reported.
 > 
-> Serious? I'd just not run checkpatch.pl. ;)
+> The commit ea45ea7 (in v3.11-rc2) tried to fix this problem by using the intel
+> backlight driver, however, on this machine it turns the backlight completely
+> off when it reaches level 0%, after which the user might have a lot trouble
+> trying to bring it back.
 
-Your choice.  It's all whitespace and %Lx stuff.
-I think the reports are actual style defects.
-The line continuations and split strings uses are
-pretty poor there too.
+What do you mean by a lot of trouble? If you press hotkey to increase
+backlight brightness level, does it work? If so, the screen should not
+be black any more, it's not that user has to blindly enter some command
+to get out of the black screen.
 
-> The "complex values" check complaints come from many places in include/trace/events/*,
-> and I'm not going to check where and why.
+And I'm not sure if this is a bug of intel_backlight(setting a low level
+makes the screen almost off), I see different models with different
+vendors having this behavior. If this is deemed a bug, then I'm afraid
+intel_backlight interface is useless for a lot of systems...perhaps we
+can only say, intel_backlight's interpretation of low levels are
+different with ACPI video's, and that's probably why its type is named
+as raw :-)
 
-Nor I.
-You haven't answered my question either.
+-Aaron
 
+> 
+> This patch fixes both regressions by blacklisting the win8 OSI, so we are back
+> to v3.6 behavior, and it should remain that way until the intel backlight
+> driver is fixed.
+> 
+> Since v3.7, users have been forced to fix the initial regression by modifying
+> the boot arguments [1].
+> 
+> [1] https://wiki.archlinux.org/index.php/ASUS_Zenbook_Prime_UX31A
+> 
+> Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
+> ---
+>  drivers/acpi/blacklist.c | 14 ++++++++++++++
+>  1 file changed, 14 insertions(+)
+> 
+> diff --git a/drivers/acpi/blacklist.c b/drivers/acpi/blacklist.c
+> index cb96296..a404127 100644
+> --- a/drivers/acpi/blacklist.c
+> +++ b/drivers/acpi/blacklist.c
+> @@ -192,6 +192,12 @@ static int __init dmi_disable_osi_win7(const struct dmi_system_id *d)
+>  	acpi_osi_setup("!Windows 2009");
+>  	return 0;
+>  }
+> +static int __init dmi_disable_osi_win8(const struct dmi_system_id *d)
+> +{
+> +	printk(KERN_NOTICE PREFIX "DMI detected: %s\n", d->ident);
+> +	acpi_osi_setup("!Windows 2012");
+> +	return 0;
+> +}
+>  
+>  static struct dmi_system_id acpi_osi_dmi_table[] __initdata = {
+>  	{
+> @@ -267,6 +273,14 @@ static struct dmi_system_id acpi_osi_dmi_table[] __initdata = {
+>  		     DMI_MATCH(DMI_PRODUCT_NAME, "Satellite P305D"),
+>  		},
+>  	},
+> +	{
+> +	.callback = dmi_disable_osi_win8,
+> +	.ident = "ASUS Zenbook Prime UX31A",
+> +	.matches = {
+> +		     DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK COMPUTER INC."),
+> +		     DMI_MATCH(DMI_PRODUCT_NAME, "UX31A"),
+> +		},
+> +	},
+>  
+>  	/*
+>  	 * BIOS invocation of _OSI(Linux) is almost always a BIOS bug.
+> 
 
