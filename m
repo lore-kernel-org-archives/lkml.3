@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932789Ab3G3Jnn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 05:43:43 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53281 "EHLO
+	id S932527Ab3G3Jdc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 05:33:32 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53246 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932501Ab3G3Jdd (ORCPT
+	with ESMTP id S932501Ab3G3Jd0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 05:33:33 -0400
+	Tue, 30 Jul 2013 05:33:26 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Luiz Angelo Daros de Luca <luizluca@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Dave Kleikamp <dave.kleikamp@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 074/106] usb: serial: cp210x: Add USB ID for Netgear Switches embedded serial adapter
-Date: Tue, 30 Jul 2013 10:31:33 +0100
-Message-Id: <1375176725-5825-75-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 067/106] sparc: tsb must be flushed before tlb
+Date: Tue, 30 Jul 2013 10:31:26 +0100
+Message-Id: <1375176725-5825-68-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
 References: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
@@ -28,34 +28,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Luiz Angelo Daros de Luca <luizluca@gmail.com>
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
 
-commit 90625070c4253377025878c4e82feed8b35c7116 upstream.
+commit 23a01138efe216f8084cfaa74b0b90dd4b097441 upstream.
 
-This adds NetGear Managed Switch M4100 series, M5300 series, M7100 series
-USB ID (0846:0110) to the cp210x driver. Without this, the serial
-adapter is not recognized in Linux. Description was obtained from
-an Netgear Eng.
+This fixes a race where a cpu may re-load a tlb from a stale tsb right
+after it has been flushed by a remote function call.
 
-Signed-off-by: Luiz Angelo Daros de Luca <luizluca@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+I still see some instability when stressing the system with parallel
+kernel builds while creating memory pressure by writing to
+/proc/sys/vm/nr_hugepages, but this patch improves the stability
+significantly.
+
+Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+Acked-by: Bob Picco <bob.picco@oracle.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+[ luis: backported to 3.5: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/serial/cp210x.c | 1 +
- 1 file changed, 1 insertion(+)
+ arch/sparc/mm/tlb.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/usb/serial/cp210x.c b/drivers/usb/serial/cp210x.c
-index 489ab7d..67260ca 100644
---- a/drivers/usb/serial/cp210x.c
-+++ b/drivers/usb/serial/cp210x.c
-@@ -60,6 +60,7 @@ static const struct usb_device_id id_table[] = {
- 	{ USB_DEVICE(0x0489, 0xE000) }, /* Pirelli Broadband S.p.A, DP-L10 SIP/GSM Mobile */
- 	{ USB_DEVICE(0x0489, 0xE003) }, /* Pirelli Broadband S.p.A, DP-L10 SIP/GSM Mobile */
- 	{ USB_DEVICE(0x0745, 0x1000) }, /* CipherLab USB CCD Barcode Scanner 1000 */
-+	{ USB_DEVICE(0x0846, 0x1100) }, /* NetGear Managed Switch M4100 series, M5300 series, M7100 series */
- 	{ USB_DEVICE(0x08e6, 0x5501) }, /* Gemalto Prox-PU/CU contactless smartcard reader */
- 	{ USB_DEVICE(0x08FD, 0x000A) }, /* Digianswer A/S , ZigBee/802.15.4 MAC Device */
- 	{ USB_DEVICE(0x0BED, 0x1100) }, /* MEI (TM) Cashflow-SC Bill/Voucher Acceptor */
+diff --git a/arch/sparc/mm/tlb.c b/arch/sparc/mm/tlb.c
+index afd021e..072f553 100644
+--- a/arch/sparc/mm/tlb.c
++++ b/arch/sparc/mm/tlb.c
+@@ -115,8 +115,8 @@ no_cache_flush:
+ 	}
+ 
+ 	if (!tb->active) {
+-		global_flush_tlb_page(mm, vaddr);
+ 		flush_tsb_user_page(mm, vaddr);
++		global_flush_tlb_page(mm, vaddr);
+ 		goto out;
+ 	}
+ 
 -- 
 1.8.3.2
 
