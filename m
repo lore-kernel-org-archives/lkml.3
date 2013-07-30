@@ -1,60 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752975Ab3G3MxN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 08:53:13 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:64819 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750857Ab3G3MxK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 08:53:10 -0400
-Date: Tue, 30 Jul 2013 08:53:06 -0400
-From: Tejun Heo <tj@kernel.org>
-To: shli@kernel.org
-Cc: linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org, neilb@suse.de,
-        djbw@fb.com
-Subject: Re: [patch 1/3] raid5: offload stripe handle to workqueue
-Message-ID: <20130730125306.GC2599@htj.dyndns.org>
-References: <20130730055207.698660010@kernel.org>
- <20130730055257.527231772@kernel.org>
+	id S1753030Ab3G3Mza (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 08:55:30 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33721 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750863Ab3G3Mz2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Jul 2013 08:55:28 -0400
+Date: Tue, 30 Jul 2013 14:55:25 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, dave.hansen@intel.com,
+        kosaki.motohiro@jp.fujitsu.com, kamezawa.hiroyu@jp.fujitsu.com,
+        bp@suse.de, Dave Hansen <dave@linux.vnet.ibm.com>
+Subject: Re: [PATCH resend] drop_caches: add some documentation and info
+ message
+Message-ID: <20130730125525.GB15847@dhcp22.suse.cz>
+References: <1374842669-22844-1-git-send-email-mhocko@suse.cz>
+ <20130729135743.c04224fb5d8e64b2730d8263@linux-foundation.org>
+ <20130730074531.GA10584@dhcp22.suse.cz>
+ <20130730012544.2f33ebf6.akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130730055257.527231772@kernel.org>
+In-Reply-To: <20130730012544.2f33ebf6.akpm@linux-foundation.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Tue 30-07-13 01:25:44, Andrew Morton wrote:
+> On Tue, 30 Jul 2013 09:45:31 +0200 Michal Hocko <mhocko@suse.cz> wrote:
+> 
+> > On Mon 29-07-13 13:57:43, Andrew Morton wrote:
+> > > On Fri, 26 Jul 2013 14:44:29 +0200 Michal Hocko <mhocko@suse.cz> wrote:
+> > [...]
+> > > > --- a/fs/drop_caches.c
+> > > > +++ b/fs/drop_caches.c
+> > > > @@ -59,6 +59,8 @@ int drop_caches_sysctl_handler(ctl_table *table, int write,
+> > > >  	if (ret)
+> > > >  		return ret;
+> > > >  	if (write) {
+> > > > +		printk(KERN_INFO "%s (%d): dropped kernel caches: %d\n",
+> > > > +		       current->comm, task_pid_nr(current), sysctl_drop_caches);
+> > > >  		if (sysctl_drop_caches & 1)
+> > > >  			iterate_supers(drop_pagecache_sb, NULL);
+> > > >  		if (sysctl_drop_caches & 2)
+> > > 
+> > > How about we do
+> > > 
+> > > 	if (!(sysctl_drop_caches & 4))
+> > > 		printk(....)
+> > >
+> > > so people can turn it off if it's causing problems?
+> > 
+> > I am OK with that  but can we use a top bit instead. Maybe we never have
+> > other entities to drop in the future but it would be better to have a room for them
+> > just in case.
+> 
+> If we add another flag in the future it can use bit 3?
 
-On Tue, Jul 30, 2013 at 01:52:08PM +0800, shli@kernel.org wrote:
-> +static void raid5_wakeup_stripe_thread(struct stripe_head *sh)
-> +{
-> +	struct r5conf *conf = sh->raid_conf;
-> +	struct r5worker_group *group;
-> +	int i;
-> +
-> +	if (conf->worker_cnt_per_group == 0) {
-> +		md_wakeup_thread(conf->mddev->thread);
-> +		return;
-> +	}
-> +
-> +	group = conf->worker_groups + cpu_to_group(sh->cpu);
-> +
-> +	for (i = 0; i < conf->worker_cnt_per_group; i++)
-> +		queue_work_on(sh->cpu, raid5_wq, &group->workers[i].work);
-> +}
+What if we get crazy and need more of them?
 
-Another general suggestion.  Using workqueue mechanism simply as
-thread dispatching mechanism like above and then buliding your own
-work dispatching code on top is usually a poor form.  It usually is
-much better to assign a single unit of work to a single work item as
-it allows things like per work unit flushing and much easier
-implementation of freezing.  It's possible that you have some
-overriding constraints here but if so it'd be nice if you can explain
-it.
+> > So what about using 1<<31 instead?
+> 
+> Could, but negative (or is it positive?) numbers are a bit of a pain.
 
-Thanks.
+Yes, that was the point ;), I would like to make a new usage a dance on
+the meadows.
+But I do not care much, let's use 1<<30 if negative sounds too bad but I
+would leave some room for further entities.
 
 -- 
-tejun
+Michal Hocko
+SUSE Labs
