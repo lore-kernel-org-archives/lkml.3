@@ -1,106 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758273Ab3G3I7N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 04:59:13 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:33100 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755447Ab3G3I7K convert rfc822-to-8bit (ORCPT
+	id S1758290Ab3G3JA1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 05:00:27 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:39786 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755529Ab3G3JAY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 04:59:10 -0400
-Message-ID: <51F78056.6000104@arm.com>
-Date: Tue, 30 Jul 2013 09:59:02 +0100
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-CC: Thomas Gleixner <tglx@linutronix.de>,
+	Tue, 30 Jul 2013 05:00:24 -0400
+Date: Tue, 30 Jul 2013 11:00:20 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
         Mike Turquette <mturquette@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "albert.u.boot@aribaud.net" <albert.u.boot@aribaud.net>,
-        Emilio Lopez <emilio@elopez.com.ar>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "shuge@allwinnertech.com" <shuge@allwinnertech.com>,
-        "linux-sunxi@googlegroups.com" <linux-sunxi@googlegroups.com>,
-        "kevin.z.m.zh@gmail.com" <kevin.z.m.zh@gmail.com>,
-        "sunny@allwinnertech.com" <sunny@allwinnertech.com>,
         Olof Johansson <olof@lixom.net>,
+        Albert ARIBAUD <albert.u.boot@aribaud.net>,
+        Emilio Lopez <emilio@elopez.com.ar>, kevin.z.m.zh@gmail.com,
+        sunny@allwinnertech.com, shuge@allwinnertech.com,
         "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 05/10] ARM: sunxi: Add Allwinner A31 DTSI
-References: <1374618312-19001-1-git-send-email-maxime.ripard@free-electrons.com> <1374618312-19001-6-git-send-email-maxime.ripard@free-electrons.com>
-In-Reply-To: <1374618312-19001-6-git-send-email-maxime.ripard@free-electrons.com>
-X-Enigmail-Version: 1.4.6
-X-OriginalArrivalTime: 30 Jul 2013 08:59:02.0971 (UTC) FILETIME=[09D538B0:01CE8D03]
-X-MC-Unique: 113073009590708401
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-sunxi@googlegroups.com
+Subject: Re: [PATCH 07/10] pinctrl: sunxi: Add Allwinner A31 pins set
+Message-ID: <20130730090020.GF1441@lukather>
+References: <1374618312-19001-1-git-send-email-maxime.ripard@free-electrons.com>
+ <1374618312-19001-8-git-send-email-maxime.ripard@free-electrons.com>
+ <CACRpkdZ1RhsLMC0xWDDr9Hmy78i+uU-9x0-2Y+_NvRZ-yefmVw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="BXr400anF0jyguTS"
+Content-Disposition: inline
+In-Reply-To: <CACRpkdZ1RhsLMC0xWDDr9Hmy78i+uU-9x0-2Y+_NvRZ-yefmVw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Maxime,
 
-On 23/07/13 23:25, Maxime Ripard wrote:
-> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> ---
->  arch/arm/boot/dts/Makefile       |   3 +-
->  arch/arm/boot/dts/sun6i-a31.dtsi | 155 +++++++++++++++++++++++++++++++++++++++
->  2 files changed, 157 insertions(+), 1 deletion(-)
->  create mode 100644 arch/arm/boot/dts/sun6i-a31.dtsi
-> 
-> diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-> index 641b3c9..1482533 100644
-> --- a/arch/arm/boot/dts/Makefile
-> +++ b/arch/arm/boot/dts/Makefile
-> @@ -210,7 +210,8 @@ dtb-$(CONFIG_ARCH_SUNXI) += \
->  	sun4i-a10-mini-xplus.dtb \
->  	sun4i-a10-hackberry.dtb \
->  	sun5i-a10s-olinuxino-micro.dtb \
-> -	sun5i-a13-olinuxino.dtb
-> +	sun5i-a13-olinuxino.dtb \
-> +	sun6i-a31-colombus.dtb
->  dtb-$(CONFIG_ARCH_TEGRA) += tegra20-harmony.dtb \
->  	tegra20-iris-512.dtb \
->  	tegra20-medcom-wide.dtb \
-> diff --git a/arch/arm/boot/dts/sun6i-a31.dtsi b/arch/arm/boot/dts/sun6i-a31.dtsi
-> new file mode 100644
-> index 0000000..c6c19a9
-> --- /dev/null
-> +++ b/arch/arm/boot/dts/sun6i-a31.dtsi
-> @@ -0,0 +1,155 @@
-> +/*
-> + * Copyright 2013 Maxime Ripard
-> + *
-> + * Maxime Ripard <maxime.ripard@free-electrons.com>
-> + *
-> + * The code contained herein is licensed under the GNU General Public
-> + * License. You may obtain a copy of the GNU General Public License
-> + * Version 2 or later at the following locations:
-> + *
-> + * http://www.opensource.org/licenses/gpl-license.html
-> + * http://www.gnu.org/copyleft/gpl.html
-> + */
-> +
-> +/include/ "skeleton.dtsi"
-> +
+--BXr400anF0jyguTS
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-[...]
+Hi Linus,
 
-> +		gic: interrupt-controller@01c81000 {
-> +			compatible = "arm,cortex-a7-gic";
-> +			reg = <0x01c81000 0x1000>, <0x01c82000 0x100>;
+On Mon, Jul 29, 2013 at 06:20:13PM +0200, Linus Walleij wrote:
+> On Wed, Jul 24, 2013 at 12:25 AM, Maxime Ripard
+> <maxime.ripard@free-electrons.com> wrote:
+>=20
+> > The Allwinner A31 SoC uses the same IP than the one found in the
+> > A10/A13, with only different pins. Add the pins and the associated
+> > functions found in the A31.
+> >
+> > Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+>=20
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+>=20
+> Will you carry this through ARM SoC or do you want me to merge
+> this into the pinctrl tree? It seems pretty independent.
 
-Th Cortex A7 TRM indicates that its GIC has the virtualization
-extensions. You should reflect this in the binding (wider GICC range,
-GICH and GICV ranges, maintenance interrupt).
+I'd prefer if you could merge it through the pinctrl tree.
 
-See
-http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0464d/BGBJFJJA.html
-for details.
+Thanks!
+Maxime
 
-Thanks,
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
 
-	M.
--- 
-Jazz is not dead. It just smells funny...
+--BXr400anF0jyguTS
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR94CkAAoJEBx+YmzsjxAgDsEP/1LKwK0YexuHGl6CSt9byI9E
+X0yqRNYsUSUqjNqLan0jEA5w84ZxGv5a9loYrKh0vWYzllZUtDjZ9sAsrB3qWIvo
+On6A86kFRQf7qBDKTdHWaWJILrR9bqsPQq5vJz6dTjABdfo8ZmZ8xRDFbfzl8mgI
+/T9A1zEBXtSu5sYeOf747jzd5UU5vhF2zS0o8VUyqvab6d8wZEjAz2s8R891u8Nf
+YEBz0gMYQFV7sFW9sZlfk1RD1zkCmQrPJbpZd7Vx7xJFSuJCOinK1DjckYNya7WY
+kDuUPuh2Z3oW3nkeIXfhDx5B5uJfh3FdVg69VXS+zKcbaZz3JQ+VO0YvyIwJn7Ti
+6AqbW5oMH1NJ3AAay07XVHF0EMQqmxEalmjb+ZjIVGEgHK8OFzdioq8aHmrSdBpx
++j8djh8pGKgYjZ6rrMX+9NVTZZ6lclxu+LsGFxvpROcderMH4dTzTwI2EMMPu7RQ
+hyh3PfRzrwnNNoI7HZ4XOnzdrdwMoo7hatQWbLFQZ3UrdDNDtzlRdsdMJ93OoY8d
+QEW/uC8uLln89PbibE1E+AEwcexrmxc8sDv8GPdYNu1DaCEE8XosCQk50+Plor+F
+yB77RDyaYDNDbPHeBbtOapQxnlz5Rtrne0jjCzfpY78WbSLucmuIq0BV7lP1lPLl
+9I0obY3qJZ9feq2lHSVp
+=MQko
+-----END PGP SIGNATURE-----
+
+--BXr400anF0jyguTS--
