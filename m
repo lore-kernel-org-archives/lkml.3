@@ -1,54 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751616Ab3G3Kuz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 06:50:55 -0400
-Received: from mail-db8lp0189.outbound.messaging.microsoft.com ([213.199.154.189]:11273
-	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750877Ab3G3Kuy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 06:50:54 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 4
-X-BigFish: VS4(z2005kz98dI1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6h1082kzz1de098h8275bh1de097hz2dh2a8h668h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1155h)
-Date: Tue, 30 Jul 2013 18:54:50 +0800
-From: Robin Gong <b38343@freescale.com>
-To: Mark Brown <broonie@kernel.org>
-CC: Axel Lin <axel.lin@ingics.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RFT] regulator: pfuze100: Fix n_voltages setting for
- SW2~SW4 with high bit set
-Message-ID: <20130730105449.GA4084@Robin-OptiPlex-780>
-References: <1375152388.4265.1.camel@phoenix>
- <20130730032310.GC1430@Robin-OptiPlex-780>
- <20130730102110.GK9858@sirena.org.uk>
+	id S1752313Ab3G3KvY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 06:51:24 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49565 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751675Ab3G3KvI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Jul 2013 06:51:08 -0400
+Date: Tue, 30 Jul 2013 12:51:03 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT] pktcdvd
+Message-ID: <alpine.LNX.2.00.1307301238400.18809@pobox.suse.cz>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20130730102110.GK9858@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
-	Thanks for your kindly remind.
+Jens,
 
-On Tue, Jul 30, 2013 at 11:21:10AM +0100, Mark Brown wrote:
-> On Tue, Jul 30, 2013 at 11:23:11AM +0800, Robin Gong wrote:
-> > Ok for me.
-> 
-> For Linux kernel process you should say
-> 
->    Acked-by: Robin Gong <b38343@freescale.com>
-> 
-> or
-> 
->    Reviewed-by: Robin Gong <b38343@freescale.com>
-> 
-> to say if you are OK - the first means you didn't really review but it
-> looks OK, the second means you did a proper review.
+please consider pulling from
 
+  git://git.kernel.org/pub/scm/linux/kernel/git/jikos/linux-block.git for-3.12/pktcdvd
 
+to receive a few small cleanups to pktcdvd driver by Joe Perches. Nothing 
+urgent, definitely 3.12 material.
 
+Thanks.
+
+Joe Perches (8):
+      pktcdvd: convert ZONE macro to static function get_zone()
+      pktcdvd: convert printk to pr_<level>
+      pktcdvd: consolidate DPRINTK and VPRINTK macros
+      pktcdvd: add struct pktcdvd_device * to pkt_dbg
+      pktcdvd: add struct pktcdvd_device.name to pr_err logging where possible
+      pktcdvd: convert pr_notice to pkt_notice
+      pktcdvd: convert pr_info to pkt_info
+      pktcdvd: add struct pktcdvd_device * to pkt_dump_sense()
+
+ drivers/block/pktcdvd.c |  278 ++++++++++++++++++++++++-----------------------
+ 1 files changed, 140 insertions(+), 138 deletions(-)
+
+-- 
+Jiri Kosina
+SUSE Labs
