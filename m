@@ -1,199 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755602Ab3G3Qh1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 12:37:27 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:48416 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755000Ab3G3QhN (ORCPT
+	id S1755045Ab3G3QjJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 12:39:09 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:58918 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753353Ab3G3QjH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 12:37:13 -0400
-Message-ID: <51F7ED20.80202@linux.vnet.ibm.com>
-Date: Tue, 30 Jul 2013 22:13:12 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Tue, 30 Jul 2013 12:39:07 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Li Zefan <lizefan@huawei.com>, Tejun Heo <tj@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        cgroups@vger.kernel.org, containers@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, kent.overstreet@gmail.com,
+        Glauber Costa <glommer@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+References: <20130723174711.GE21100@mtj.dyndns.org>
+	<8761vui4cr.fsf@xmission.com> <20130729075939.GA4678@dhcp22.suse.cz>
+	<87ehahg312.fsf@xmission.com> <20130729095109.GB4678@dhcp22.suse.cz>
+	<20130729161026.GD22605@mtj.dyndns.org> <87r4eh70yg.fsf@xmission.com>
+	<51F71DE2.4020102@huawei.com>
+	<87ppu0a298.fsf_-_@tw-ebiederman.twitter.com>
+	<20130730123120.GA15847@dhcp22.suse.cz>
+Date: Tue, 30 Jul 2013 09:37:46 -0700
+In-Reply-To: <20130730123120.GA15847@dhcp22.suse.cz> (Michal Hocko's message
+	of "Tue, 30 Jul 2013 14:31:20 +0200")
+Message-ID: <874nbc3sx1.fsf@tw-ebiederman.twitter.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>, mingo@redhat.com
-CC: jeremy@goop.org, x86@kernel.org, konrad.wilk@oracle.com, hpa@zytor.com,
-        pbonzini@redhat.com, linux-doc@vger.kernel.org,
-        habanero@linux.vnet.ibm.com, xen-devel@lists.xensource.com,
-        peterz@infradead.org, mtosatti@redhat.com,
-        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
-        attilio.rao@citrix.com, ouyang@cs.pitt.edu, gregkh@suse.de,
-        agraf@suse.de, chegu_vinod@hp.com, torvalds@linux-foundation.org,
-        avi.kivity@gmail.com, tglx@linutronix.de, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, riel@redhat.com, drjones@redhat.com,
-        virtualization@lists.linux-foundation.org,
-        srivatsa.vaddagiri@gmail.com
-Subject: Re: [PATCH RFC V11 15/18] kvm : Paravirtual ticketlocks support for
- linux guests running on KVM hypervisor
-References: <20130722061631.24737.75508.sendpatchset@codeblue> <20130722062016.24737.54554.sendpatchset@codeblue> <20130723150748.GC6029@redhat.com> <51EFA24E.2060103@linux.vnet.ibm.com> <20130724103907.GF16400@redhat.com> <51EFC1D4.9060800@linux.vnet.ibm.com> <20130724120647.GG16400@redhat.com> <51EFCA42.5020009@linux.vnet.ibm.com> <51F0ED31.3040200@linux.vnet.ibm.com> <20130725091509.GA22735@redhat.com> <51F0F202.5090001@linux.vnet.ibm.com>
-In-Reply-To: <51F0F202.5090001@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13073016-9264-0000-0000-0000043B352C
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX195CzGXseOA53XKJqJkvZdNb8MLlNNPDYs=
+X-SA-Exim-Connect-IP: 98.207.154.105
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+Subject: Re: memcg creates an unkillable task in 3.11-rc2
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: No (on in01.mta.xmission.com); Unknown failure
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/25/2013 03:08 PM, Raghavendra K T wrote:
-> On 07/25/2013 02:45 PM, Gleb Natapov wrote:
->> On Thu, Jul 25, 2013 at 02:47:37PM +0530, Raghavendra K T wrote:
->>> On 07/24/2013 06:06 PM, Raghavendra K T wrote:
->>>> On 07/24/2013 05:36 PM, Gleb Natapov wrote:
->>>>> On Wed, Jul 24, 2013 at 05:30:20PM +0530, Raghavendra K T wrote:
->>>>>> On 07/24/2013 04:09 PM, Gleb Natapov wrote:
->>>>>>> On Wed, Jul 24, 2013 at 03:15:50PM +0530, Raghavendra K T wrote:
->>>>>>>> On 07/23/2013 08:37 PM, Gleb Natapov wrote:
->>>>>>>>> On Mon, Jul 22, 2013 at 11:50:16AM +0530, Raghavendra K T wrote:
->>>>>>>>>> +static void kvm_lock_spinning(struct arch_spinlock *lock,
->>>>>>>>>> __ticket_t want)
->>>>>>>> [...]
->>>>>>>>>> +
->>>>>>>>>> +    /*
->>>>>>>>>> +     * halt until it's our turn and kicked. Note that we do safe
->>>>>>>>>> halt
->>>>>>>>>> +     * for irq enabled case to avoid hang when lock info is
->>>>>>>>>> overwritten
->>>>>>>>>> +     * in irq spinlock slowpath and no spurious interrupt occur
->>>>>>>>>> to save us.
->>>>>>>>>> +     */
->>>>>>>>>> +    if (arch_irqs_disabled_flags(flags))
->>>>>>>>>> +        halt();
->>>>>>>>>> +    else
->>>>>>>>>> +        safe_halt();
->>>>>>>>>> +
->>>>>>>>>> +out:
->>>>>>>>> So here now interrupts can be either disabled or enabled. Previous
->>>>>>>>> version disabled interrupts here, so are we sure it is safe to
->>>>>>>>> have them
->>>>>>>>> enabled at this point? I do not see any problem yet, will keep
->>>>>>>>> thinking.
->>>>>>>>
->>>>>>>> If we enable interrupt here, then
->>>>>>>>
->>>>>>>>
->>>>>>>>>> +    cpumask_clear_cpu(cpu, &waiting_cpus);
->>>>>>>>
->>>>>>>> and if we start serving lock for an interrupt that came here,
->>>>>>>> cpumask clear and w->lock=null may not happen atomically.
->>>>>>>> if irq spinlock does not take slow path we would have non null
->>>>>>>> value
->>>>>>>> for lock, but with no information in waitingcpu.
->>>>>>>>
->>>>>>>> I am still thinking what would be problem with that.
->>>>>>>>
->>>>>>> Exactly, for kicker waiting_cpus and w->lock updates are
->>>>>>> non atomic anyway.
->>>>>>>
->>>>>>>>>> +    w->lock = NULL;
->>>>>>>>>> +    local_irq_restore(flags);
->>>>>>>>>> +    spin_time_accum_blocked(start);
->>>>>>>>>> +}
->>>>>>>>>> +PV_CALLEE_SAVE_REGS_THUNK(kvm_lock_spinning);
->>>>>>>>>> +
->>>>>>>>>> +/* Kick vcpu waiting on @lock->head to reach value @ticket */
->>>>>>>>>> +static void kvm_unlock_kick(struct arch_spinlock *lock,
->>>>>>>>>> __ticket_t ticket)
->>>>>>>>>> +{
->>>>>>>>>> +    int cpu;
->>>>>>>>>> +
->>>>>>>>>> +    add_stats(RELEASED_SLOW, 1);
->>>>>>>>>> +    for_each_cpu(cpu, &waiting_cpus) {
->>>>>>>>>> +        const struct kvm_lock_waiting *w =
->>>>>>>>>> &per_cpu(lock_waiting, cpu);
->>>>>>>>>> +        if (ACCESS_ONCE(w->lock) == lock &&
->>>>>>>>>> +            ACCESS_ONCE(w->want) == ticket) {
->>>>>>>>>> +            add_stats(RELEASED_SLOW_KICKED, 1);
->>>>>>>>>> +            kvm_kick_cpu(cpu);
->>>>>>>>> What about using NMI to wake sleepers? I think it was
->>>>>>>>> discussed, but
->>>>>>>>> forgot why it was dismissed.
->>>>>>>>
->>>>>>>> I think I have missed that discussion. 'll go back and check. so
->>>>>>>> what is the idea here? we can easily wake up the halted vcpus that
->>>>>>>> have interrupt disabled?
->>>>>>> We can of course. IIRC the objection was that NMI handling path
->>>>>>> is very
->>>>>>> fragile and handling NMI on each wakeup will be more expensive then
->>>>>>> waking up a guest without injecting an event, but it is still
->>>>>>> interesting
->>>>>>> to see the numbers.
->>>>>>>
->>>>>>
->>>>>> Haam, now I remember, We had tried request based mechanism. (new
->>>>>> request like REQ_UNHALT) and process that. It had worked, but had
->>>>>> some
->>>>>> complex hacks in vcpu_enter_guest to avoid guest hang in case of
->>>>>> request cleared.  So had left it there..
->>>>>>
->>>>>> https://lkml.org/lkml/2012/4/30/67
->>>>>>
->>>>>> But I do not remember performance impact though.
->>>>> No, this is something different. Wakeup with NMI does not need KVM
->>>>> changes at
->>>>> all. Instead of kvm_kick_cpu(cpu) in kvm_unlock_kick you send NMI IPI.
->>>>>
->>>>
->>>> True. It was not NMI.
->>>> just to confirm, are you talking about something like this to be
->>>> tried ?
->>>>
->>>> apic->send_IPI_mask(cpumask_of(cpu), APIC_DM_NMI);
->>>
->>> When I started benchmark, I started seeing
->>> "Dazed and confused, but trying to continue" from unknown nmi error
->>> handling.
->>> Did I miss anything (because we did not register any NMI handler)? or
->>> is it that spurious NMIs are trouble because we could get spurious NMIs
->>> if next waiter already acquired the lock.
->> There is a default NMI handler that tries to detect the reason why NMI
->> happened (which is no so easy on x86) and prints this message if it
->> fails. You need to add logic to detect spinlock slow path there. Check
->> bit in waiting_cpus for instance.
+Michal Hocko <mhocko@suse.cz> writes:
+
+> On Tue 30-07-13 01:19:31, Eric W. Biederman wrote:
+> [...]
+>> Hmm. Looking farther I see what is going on. And it has nothing to do
+>> with the freezer. (I have commented out that code and reproduced it
+>> without the freezer to be doubly certain).
+>> 
+>> 
+>> On the exit path exit_robust_list is triggering a page fault to fault a
+>> page back in.  Which since we have no memory causes the exit path
+>> to get stuck in mem_cgroup_handle_oom.
 >
-> aha.. Okay. will check that.
+> Hmm, interesting. I assume the exit is caused by the SIGKILL, right?
+> If yes, then why it hasn't coughed early in __mem_cgroup_try_charge
 
-yes. Thanks.. that did the trick.
+Interesting question.  This isn't the primary thread but we do send
+SIGKILL to the secondary threads as well.
 
-I did like below in unknown_nmi_error():
-if (cpumask_test_cpu(smp_processor_id(), &waiting_cpus))
-    return;
+We definitely need those checks on both paths making my change valid.
 
-But I believe you asked NMI method only for experimental purpose to
-check the upperbound. because as I doubted above, for spurious NMI
-(i.e. when unlocker kicks when waiter already got the lock), we would
-still hit unknown NMI error.
+Oh. Duh!  This is after we act on SIGKILL so SIGKILL is no longer
+pending.
 
-I had hit spurious NMI over 1656 times over entire benchmark run.
-along with
-INFO: NMI handler (arch_trigger_all_cpu_backtrace_handler) took too long 
-to run: 24.886 msecs etc...
-
-(and we cannot get away with that too because it means we bypass the
-unknown NMI error even in genuine cases too)
-
-Here was the result for the my dbench test( 32 core  machine with 32
-vcpu guest HT off)
-
-                  ---------- % improvement --------------
-		pvspinlock      pvspin_ipi      pvpsin_nmi
-dbench_1x	0.9016    	0.7442    	0.7522
-dbench_2x	14.7513   	18.0164   	15.9421
-dbench_3x	14.7571   	17.0793   	13.3572
-dbench_4x	6.3625    	8.7897    	5.3800
-
-So I am seeing over 2-4% improvement with IPI method.
-
-Gleb,
-  do you think the current series looks good to you? [one patch I
-have resent with in_nmi() check] or do you think I have to respin the
-series with IPI method etc. or is there any concerns that I have to
-address. Please let me know..
+That is how it makes it through __mem_cgroup_try_charge.
 
 
-PS: [Sorry for the late reply, was quickly checking whether unfair lock
-with lockowner is better. it did not prove to be though. and so far
-all the results are favoring this series.]
+>> Which means the following change should fix the hang.  I will test it in just
+>> a second.
+>> 
+>> The problem is that we only handled pending fatal signals and exiting
+>> processes when the OOM logic was enabled. Sigh.
+>
+> If this is about PF_EXITING then we should handle that earlier in the
+> code chain (__mem_cgroup_try_charge sounds like a proper place). Let me
+> think about that.
 
+We also need to test for fatal signals before we sleep in both boths of
+mem_cgroup_out_of_memory.  But yes testing for this condition earlier
+so we don't have to do a lot of work before we get out would not be a
+bad thing.
+
+Eric
+
+
+>
+> Thanks for debugging this!
+>
+>> Eric
+>> 
+>> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+>> index 00a7a66..5998a57 100644
+>> --- a/mm/memcontrol.c
+>> +++ b/mm/memcontrol.c
+>> @@ -1792,16 +1792,6 @@ static void mem_cgroup_out_of_memory(struct mem_cgroup *memcg, gfp_t gfp_mask,
+>>         unsigned int points = 0;
+>>         struct task_struct *chosen = NULL;
+>>  
+>> -       /*
+>> -        * If current has a pending SIGKILL or is exiting, then automatically
+>> -        * select it.  The goal is to allow it to allocate so that it may
+>> -        * quickly exit and free its memory.
+>> -        */
+>> -       if (fatal_signal_pending(current) || current->flags & PF_EXITING) {
+>> -               set_thread_flag(TIF_MEMDIE);
+>> -               return;
+>> -       }
+>> -
+>>         check_panic_on_oom(CONSTRAINT_MEMCG, gfp_mask, order, NULL);
+>>         totalpages = mem_cgroup_get_limit(memcg) >> PAGE_SHIFT ? : 1;
+>>         for_each_mem_cgroup_tree(iter, memcg) {
+>> @@ -2220,7 +2210,15 @@ static bool mem_cgroup_handle_oom(struct mem_cgroup *memcg, gfp_t mask,
+>>                 mem_cgroup_oom_notify(memcg);
+>>         spin_unlock(&memcg_oom_lock);
+>>  
+>> -       if (need_to_kill) {
+>> +       /*
+>> +        * If current has a pending SIGKILL or is exiting, then automatically
+>> +        * select it.  The goal is to allow it to allocate so that it may
+>> +        * quickly exit and free its memory.
+>> +        */
+>> +       if (fatal_signal_pending(current) || current->flags & PF_EXITING) {
+>> +               set_thread_flag(TIF_MEMDIE);
+>> +               finish_wait(&memcg_oom_waitq, &owait.wait);
+>> +       } else if (need_to_kill) {
+>>                 finish_wait(&memcg_oom_waitq, &owait.wait);
+>>                 mem_cgroup_out_of_memory(memcg, mask, order);
+>>         } else {
