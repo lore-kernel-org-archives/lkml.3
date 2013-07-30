@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756531Ab3G3Ama (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 20:42:30 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:41939 "EHLO comal.ext.ti.com"
+	id S1756576Ab3G3Amh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 20:42:37 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:44697 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755331Ab3G3AmY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 20:42:24 -0400
+	id S1756495Ab3G3Ama (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 20:42:30 -0400
 From: "Kim, Milo" <Milo.Kim@ti.com>
-To: "Samuel Ortiz (sameo@linux.intel.com)" <sameo@linux.intel.com>,
-        "lee.jones@linaro.org" <lee.jones@linaro.org>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "thierry.reding@gmail.com" <thierry.reding@gmail.com>
-CC: "broonie@kernel.org" <broonie@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+To: "linus.walleij@linaro.org" <linus.walleij@linaro.org>
+CC: "lee.jones@linaro.org" <lee.jones@linaro.org>,
+        "Samuel Ortiz (sameo@linux.intel.com)" <sameo@linux.intel.com>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
         "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>
-Subject: [PATCH v2 0/4] LP3943 MFD driver for a GPIO expander and a PWM
- generator
-Thread-Topic: [PATCH v2 0/4] LP3943 MFD driver for a GPIO expander and a PWM
- generator
-Thread-Index: Ac6MtPwZD9EP5HyaSpa1yZpmewoqqw==
-Date: Tue, 30 Jul 2013 00:42:12 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998F82E849D1@DQHE06.ent.ti.com>
+Subject: [PATCH v2 2/4] gpio: add LP3943 I2C GPIO expander driver
+Thread-Topic: [PATCH v2 2/4] gpio: add LP3943 I2C GPIO expander driver
+Thread-Index: Ac6MurP223AkMccGSmqgL5khl6SxYQ==
+Date: Tue, 30 Jul 2013 00:42:21 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998F82E849DF@DQHE06.ent.ti.com>
 Accept-Language: en-US, ko-KR
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -33,47 +31,331 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r6U0gqOD030758
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r6U0grBO030763
 
-LP3943 is an integrated device capable of driving 16 output channels.
-It can be used for GPIO expander and PWM generators.
-LP3493 registers are controlled via the I2C interface.
+This is one of LP3943 MFD driver.
+LP3943 is configurable as a GPIO expander, up to 16 GPIOs.
 
-This patch-set consists of four parts - MFD, GPIO, PWM and device tree bindings.
+* Application note: how to configure LP3943 as a GPIO expander
+  http://www.ti.com/lit/an/snva287a/snva287a.pdf
 
-Milo Kim (4):
-  mfd: add LP3943 MFD driver
-  gpio: add LP3943 I2C GPIO expander driver
-  pwm: add LP3943 PWM driver
-  Documentation: dt: bindings: add LP3943 bindings
+* Supported GPIO controller operations
+  request, free, direction_input, direction_output, get and set
 
- .../devicetree/bindings/gpio/gpio-lp3943.txt       |   42 +++
- Documentation/devicetree/bindings/mfd/lp3943.txt   |   33 ++
- .../devicetree/bindings/pwm/pwm-lp3943.txt         |   65 ++++
- drivers/gpio/Kconfig                               |    8 +
- drivers/gpio/Makefile                              |    1 +
- drivers/gpio/gpio-lp3943.c                         |  242 ++++++++++++++
- drivers/mfd/Kconfig                                |   11 +
- drivers/mfd/Makefile                               |    1 +
- drivers/mfd/lp3943.c                               |  165 ++++++++++
- drivers/pwm/Kconfig                                |   10 +
- drivers/pwm/Makefile                               |    1 +
- drivers/pwm/pwm-lp3943.c                           |  348 ++++++++++++++++++++
- include/linux/mfd/lp3943.h                         |  115 +++++++
- 13 files changed, 1042 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/gpio/gpio-lp3943.txt
- create mode 100644 Documentation/devicetree/bindings/mfd/lp3943.txt
- create mode 100644 Documentation/devicetree/bindings/pwm/pwm-lp3943.txt
+* GPIO direction register not supported
+  LP3943 doesn't have the GPIO direction register. It only provides input and
+  output status registers.
+  So, private data for the direction should be handled manually.
+  This variable is updated whenever the direction is changed and
+  used in 'get' operation.
+
+* Pin assignment
+  A driver data, 'pin_used' is checked when a GPIO is requested.
+  If the GPIO is already assigned, then returns as failure.
+  If the GPIO is available, 'pin_used' is set.
+  When the GPIO is not used anymore, then it is cleared.
+  It is defined as unsigned long type for atomic bit operation APIs,
+  but only LSB 16bits are used because LP3943 has 16 outputs.
+
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Milo Kim <milo.kim@ti.com>
+---
+* Patch v2
+  Use bitops macros for bit manipulations.
+  Support device tree structure for the GPIO controller.
+  Add request() and free() for the pin assignment.
+
+ drivers/gpio/Kconfig       |    8 ++
+ drivers/gpio/Makefile      |    1 +
+ drivers/gpio/gpio-lp3943.c |  242 ++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 251 insertions(+)
  create mode 100644 drivers/gpio/gpio-lp3943.c
- create mode 100644 drivers/mfd/lp3943.c
- create mode 100644 drivers/pwm/pwm-lp3943.c
- create mode 100644 include/linux/mfd/lp3943.h
 
+diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+index 573c449..baf6166 100644
+--- a/drivers/gpio/Kconfig
++++ b/drivers/gpio/Kconfig
+@@ -325,6 +325,14 @@ config GPIO_ARIZONA
+ 	help
+ 	  Support for GPIOs on Wolfson Arizona class devices.
+ 
++config GPIO_LP3943
++	tristate "TI/National Semiconductor LP3943 GPIO expander"
++	depends on MFD_LP3943
++	help
++	  GPIO driver for LP3943 MFD.
++	  LP3943 can be used as a GPIO expander which provides up to 16 GPIOs.
++	  Open drain outputs are required for this usage.
++
+ config GPIO_MAX7300
+ 	tristate "Maxim MAX7300 GPIO expander"
+ 	depends on I2C
+diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
+index 0cb2d65..ff580ac 100644
+--- a/drivers/gpio/Makefile
++++ b/drivers/gpio/Makefile
+@@ -31,6 +31,7 @@ obj-$(CONFIG_GPIO_IT8761E)	+= gpio-it8761e.o
+ obj-$(CONFIG_GPIO_JANZ_TTL)	+= gpio-janz-ttl.o
+ obj-$(CONFIG_ARCH_KS8695)	+= gpio-ks8695.o
+ obj-$(CONFIG_GPIO_LANGWELL)	+= gpio-langwell.o
++obj-$(CONFIG_GPIO_LP3943)	+= gpio-lp3943.o
+ obj-$(CONFIG_ARCH_LPC32XX)	+= gpio-lpc32xx.o
+ obj-$(CONFIG_GPIO_LYNXPOINT)	+= gpio-lynxpoint.o
+ obj-$(CONFIG_GPIO_MAX730X)	+= gpio-max730x.o
+diff --git a/drivers/gpio/gpio-lp3943.c b/drivers/gpio/gpio-lp3943.c
+new file mode 100644
+index 0000000..61855d9
+--- /dev/null
++++ b/drivers/gpio/gpio-lp3943.c
+@@ -0,0 +1,242 @@
++/*
++ * TI/National Semiconductor LP3943 GPIO driver
++ *
++ * Copyright 2013 Texas Instruments
++ *
++ * Author: Milo Kim <milo.kim@ti.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; version 2.
++ */
++
++#include <linux/bitops.h>
++#include <linux/err.h>
++#include <linux/gpio.h>
++#include <linux/i2c.h>
++#include <linux/mfd/lp3943.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/slab.h>
++
++#define to_lp3943_gpio(_chip)	container_of(_chip, struct lp3943_gpio, chip)
++
++enum lp3943_gpios {
++	LP3943_GPIO1,
++	LP3943_GPIO2,
++	LP3943_GPIO3,
++	LP3943_GPIO4,
++	LP3943_GPIO5,
++	LP3943_GPIO6,
++	LP3943_GPIO7,
++	LP3943_GPIO8,
++	LP3943_GPIO9,
++	LP3943_GPIO10,
++	LP3943_GPIO11,
++	LP3943_GPIO12,
++	LP3943_GPIO13,
++	LP3943_GPIO14,
++	LP3943_GPIO15,
++	LP3943_GPIO16,
++	LP3943_MAX_GPIO,
++};
++
++struct lp3943_gpio {
++	struct gpio_chip chip;
++	struct lp3943 *lp3943;
++	u16 input_mask;		/* 1 = GPIO is input direction, 0 = output */
++};
++
++static int lp3943_gpio_request(struct gpio_chip *chip, unsigned offset)
++{
++	struct lp3943_gpio *lp3943_gpio = to_lp3943_gpio(chip);
++	struct lp3943 *lp3943 = lp3943_gpio->lp3943;
++
++	/* Return an error if the pin is already assigned */
++	if (test_and_set_bit(offset, &lp3943->pin_used))
++		return -EBUSY;
++
++	return 0;
++}
++
++static void lp3943_gpio_free(struct gpio_chip *chip, unsigned offset)
++{
++	struct lp3943_gpio *lp3943_gpio = to_lp3943_gpio(chip);
++	struct lp3943 *lp3943 = lp3943_gpio->lp3943;
++
++	clear_bit(offset, &lp3943->pin_used);
++}
++
++static int lp3943_gpio_direction_input(struct gpio_chip *chip, unsigned offset)
++{
++	struct lp3943_gpio *lp3943_gpio = to_lp3943_gpio(chip);
++	struct lp3943 *lp3943 = lp3943_gpio->lp3943;
++	const struct lp3943_reg_cfg *mux = lp3943->mux_cfg;
++
++	lp3943_gpio->input_mask |= BIT(offset);
++
++	return lp3943_update_bits(lp3943, mux[offset].reg, mux[offset].mask,
++				LP3943_GPIO_IN << mux[offset].shift);
++}
++
++static int lp3943_get_gpio_in_status(struct lp3943_gpio *lp3943_gpio,
++				struct gpio_chip *chip, unsigned offset)
++{
++	u8 addr;
++	u8 read;
++	int err;
++
++	switch (offset) {
++	case LP3943_GPIO1 ... LP3943_GPIO8:
++		addr = LP3943_REG_GPIO_A;
++		break;
++	case LP3943_GPIO9 ... LP3943_GPIO16:
++		addr = LP3943_REG_GPIO_B;
++		offset = offset - 8;
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	err = lp3943_read_byte(lp3943_gpio->lp3943, addr, &read);
++	if (err)
++		return err;
++
++	return !!(read & BIT(offset));
++}
++
++static int lp3943_get_gpio_out_status(struct lp3943_gpio *lp3943_gpio,
++				struct gpio_chip *chip, unsigned offset)
++{
++	struct lp3943 *lp3943 = lp3943_gpio->lp3943;
++	const struct lp3943_reg_cfg *mux = lp3943->mux_cfg;
++	int err;
++	u8 read;
++
++	err = lp3943_read_byte(lp3943, mux[offset].reg, &read);
++	if (err)
++		return err;
++
++	read = (read & mux[offset].mask) >> mux[offset].shift;
++
++	if (read == LP3943_GPIO_OUT_HIGH)
++		return 1;
++	else if (read == LP3943_GPIO_OUT_LOW)
++		return 0;
++	else
++		return -EINVAL;
++}
++
++static int lp3943_gpio_get(struct gpio_chip *chip, unsigned offset)
++{
++	struct lp3943_gpio *lp3943_gpio = to_lp3943_gpio(chip);
++
++	/*
++	 * Limitation:
++	 *   LP3943 doesn't have the GPIO direction register. It provides
++	 *   only input and output status registers.
++	 *   So, direction info is required to handle the 'get' operation.
++	 *   This variable is updated whenever the direction is changed and
++	 *   it is used here.
++	 */
++
++	if (lp3943_gpio->input_mask & BIT(offset))
++		return lp3943_get_gpio_in_status(lp3943_gpio, chip, offset);
++	else
++		return lp3943_get_gpio_out_status(lp3943_gpio, chip, offset);
++}
++
++static void lp3943_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
++{
++	struct lp3943_gpio *lp3943_gpio = to_lp3943_gpio(chip);
++	struct lp3943 *lp3943 = lp3943_gpio->lp3943;
++	const struct lp3943_reg_cfg *mux = lp3943->mux_cfg;
++	u8 data;
++
++	if (value)
++		data = LP3943_GPIO_OUT_HIGH;
++	else
++		data = LP3943_GPIO_OUT_LOW;
++
++	lp3943_update_bits(lp3943, mux[offset].reg, mux[offset].mask,
++			data << mux[offset].shift);
++}
++
++static int lp3943_gpio_direction_output(struct gpio_chip *chip, unsigned offset,
++					int value)
++{
++	struct lp3943_gpio *lp3943_gpio = to_lp3943_gpio(chip);
++
++	lp3943_gpio_set(chip, offset, value);
++	lp3943_gpio->input_mask &= ~BIT(offset);
++
++	return 0;
++}
++
++static const struct gpio_chip lp3943_gpio_chip = {
++	.label			= "lp3943",
++	.owner			= THIS_MODULE,
++	.request		= lp3943_gpio_request,
++	.free			= lp3943_gpio_free,
++	.direction_input	= lp3943_gpio_direction_input,
++	.get			= lp3943_gpio_get,
++	.direction_output	= lp3943_gpio_direction_output,
++	.set			= lp3943_gpio_set,
++	.base			= -1,
++	.ngpio			= LP3943_MAX_GPIO,
++	.can_sleep		= 1,
++};
++
++static int lp3943_gpio_probe(struct platform_device *pdev)
++{
++	struct lp3943 *lp3943 = dev_get_drvdata(pdev->dev.parent);
++	struct lp3943_gpio *lp3943_gpio;
++	int ret;
++
++	lp3943_gpio = devm_kzalloc(&pdev->dev, sizeof(*lp3943_gpio),
++				GFP_KERNEL);
++	if (!lp3943_gpio)
++		return -ENOMEM;
++
++	lp3943_gpio->lp3943 = lp3943;
++	lp3943_gpio->chip = lp3943_gpio_chip;
++	lp3943_gpio->chip.dev = &pdev->dev;
++
++	platform_set_drvdata(pdev, lp3943_gpio);
++
++	ret = gpiochip_add(&lp3943_gpio->chip);
++	if (ret < 0) {
++		dev_err(&pdev->dev, "failed to add GPIO chip: %d\n", ret);
++		return ret;
++	}
++
++	return 0;
++}
++
++static int lp3943_gpio_remove(struct platform_device *pdev)
++{
++	struct lp3943_gpio *lp3943_gpio = platform_get_drvdata(pdev);
++	return gpiochip_remove(&lp3943_gpio->chip);
++}
++
++static const struct of_device_id lp3943_gpio_dt_ids[] = {
++	{ .compatible = "ti,lp3943-gpio", },
++	{ }
++};
++MODULE_DEVICE_TABLE(of, lp3943_gpio_dt_ids);
++
++static struct platform_driver lp3943_gpio_driver = {
++	.probe = lp3943_gpio_probe,
++	.remove = lp3943_gpio_remove,
++	.driver = {
++		.name = "lp3943-gpio",
++		.owner = THIS_MODULE,
++		.of_match_table = of_match_ptr(lp3943_gpio_dt_ids),
++	},
++};
++module_platform_driver(lp3943_gpio_driver);
++
++MODULE_DESCRIPTION("LP3943 GPIO driver");
++MODULE_ALIAS("platform:lp3943-gpio");
++MODULE_AUTHOR("Milo Kim");
++MODULE_LICENSE("GPL");
 -- 
 1.7.9.5
 
 
 Best Regards,
 Milo
+
 
 ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
