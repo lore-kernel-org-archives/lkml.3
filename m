@@ -1,54 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752552Ab3G3PyS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 11:54:18 -0400
-Received: from static-87-79-237-121.netcologne.de ([87.79.237.121]:27350 "EHLO
-	herc.mirbsd.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750745Ab3G3PyQ convert rfc822-to-8bit (ORCPT
+	id S1753150Ab3G3P7j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 11:59:39 -0400
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:53792 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751040Ab3G3P7g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 11:54:16 -0400
-X-Greylist: delayed 820 seconds by postgrey-1.27 at vger.kernel.org; Tue, 30 Jul 2013 11:54:16 EDT
-Date: Tue, 30 Jul 2013 15:40:01 +0000 (UTC)
-From: Thorsten Glaser <tg@mirbsd.de>
-X-X-Sender: tg@herc.mirbsd.org
-To: debian-68k@lists.debian.org
-cc: linux-btrfs@vger.kernel.org,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>
-Subject: Re: btrfs zero divide
-In-Reply-To: <alpine.DEB.2.02.1307301052010.23107@ayla.of.borg>
-Message-ID: <Pine.BSM.4.64L.1307301539150.28836@herc.mirbsd.org>
-References: <Pine.BSM.4.64L.1307300820160.20675@herc.mirbsd.org>
- <alpine.DEB.2.02.1307301052010.23107@ayla.of.borg>
-X-Message-Flag: Your mailer is broken. Get an update at http://www.washington.edu/pine/getpine/pcpine.html for free.
+	Tue, 30 Jul 2013 11:59:36 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <51F758B6.9090204@jp.fujitsu.com>
+References: <1368509365-2260-1-git-send-email-indou.takao@jp.fujitsu.com>
+ <CAErSpo4t_2Xw76p3Z9FVzyyK-MBovavDu9D=pYoPMjESSxgT=w@mail.gmail.com>
+ <51B19DF3.2070009@jp.fujitsu.com> <CAErSpo6dfEnzriHD_aWZB_3E-kSzauhNRHPd+VuFX5HONVKgqw@mail.gmail.com>
+ <51B6BEDB.3000509@jp.fujitsu.com> <CAErSpo5u8qGALt6C+tuPYXdd2YgyMH6fnPnA+afUteEZ7kY0iw@mail.gmail.com>
+ <51B93221.2040505@jp.fujitsu.com> <CAErSpo5tVK-Z3aOdMTzab-S8o5zLVtDOFQ8-LSYpUgbrJSsxuw@mail.gmail.com>
+ <51BA7BB6.1080104@jp.fujitsu.com> <51EF7466.20703@jp.fujitsu.com>
+ <CAErSpo5B7NzVfxwW3bQnfK+iK+DrRsWQd2Cm14z5PWNnRHWL5w@mail.gmail.com>
+ <51F5B966.9080405@jp.fujitsu.com> <CAErSpo4JtG5qVJb-nCywe3vkft=-cDeRDKn_V92RCZ-sGXpwbg@mail.gmail.com>
+ <51F758B6.9090204@jp.fujitsu.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 30 Jul 2013 09:59:16 -0600
+Message-ID: <CAErSpo7TNhQO0dx_xZvF=dU2fSWTFf8x=xUJcEsbadJkv8ktuQ@mail.gmail.com>
+Subject: Re: [PATCH v2] PCI: Reset PCIe devices to stop ongoing DMA
+To: Takao Indoh <indou.takao@jp.fujitsu.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "open list:INTEL IOMMU (VT-d)" <iommu@lists.linux-foundation.org>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "ishii.hironobu@jp.fujitsu.com" <ishii.hironobu@jp.fujitsu.com>,
+        Don Dutile <ddutile@redhat.com>,
+        "Sumner, William" <bill.sumner@hp.com>,
+        "alex.williamson@redhat.com" <alex.williamson@redhat.com>,
+        Haren Myneni <hbabu@us.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Geert Uytterhoeven dixit:
+On Tue, Jul 30, 2013 at 12:09 AM, Takao Indoh
+<indou.takao@jp.fujitsu.com> wrote:
+> (2013/07/29 23:17), Bjorn Helgaas wrote:
+>> On Sun, Jul 28, 2013 at 6:37 PM, Takao Indoh <indou.takao@jp.fujitsu.com> wrote:
+>>> (2013/07/26 2:00), Bjorn Helgaas wrote:
 
->   0:	222e ff74      	movel %fp@(-140),%d1
->   4:	2a2e ff5c      	movel %fp@(-164),%d5
->   8:	2c2e ff60      	movel %fp@(-160),%d6
->   c:	4c45 1402     <	divul %d5,%d2,%d1 >
->  10:	2d40 ff64      	movel %d0,%fp@(-156)
->  14:	2d41 ff68      	movel %d1,%fp@(-152)
->  18:	2205           	movel %d5,%d1
->  1a:	4c2e 1800 ff68 	mulsl %fp@(-152),%d1
->  20:	4c04 0800      	mulsl %d4,%d0
->  24:	2041           	moveal %d1,%a0
->  26:	d1c0           	addal %d0,%a0
->  28:	2206           	movel %d6,%d1
->  2a:	4c2e 1400 ff68 	mulul %fp@(-152),%d0,%d1
+>>>> My point about IOMMU and PCI initialization order doesn't go away just
+>>>> because it doesn't fit "kdump policy."  Having system initialization
+>>>> occur in a logical order is far more important than making kdump work.
+>>>
+>>> My next plan is as follows. I think this is matched to logical order
+>>> on boot.
+>>>
+>>> drivers/pci/pci.c
+>>> - Add function to reset bus, for example, pci_reset_bus(struct pci_bus *bus)
+>>>
+>>> drivers/iommu/intel-iommu.c
+>>> - On initialization, if IOMMU is already enabled, call this bus reset
+>>>    function before disabling and re-enabling IOMMU.
+>>
+>> I raised this issue because of arches like sparc that enumerate the
+>> IOMMU before the PCI devices that use it.  In that situation, I think
+>> you're proposing this:
+>>
+>>    panic kernel
+>>      enable IOMMU
+>>      panic
+>>    kdump kernel
+>>      initialize IOMMU (already enabled)
+>>        pci_reset_bus
+>>        disable IOMMU
+>>        enable IOMMU
+>>      enumerate PCI devices
+>>
+>> But the problem is that when you call pci_reset_bus(), you haven't
+>> enumerated the PCI devices, so you don't know what to reset.
+>
+> Right, so my idea is adding reset code into "intel-iommu.c". intel-iommu
+> initialization is based on the assumption that enumeration of PCI devices
+> is already done. We can find target device from IOMMU page table instead
+> of scanning all devices in pci tree.
+>
+> Therefore, this idea is only for intel-iommu. Other architectures need
+> to implement their own reset code.
 
-This is gcc-4.8 compiled, btw… in case that’s a known issue.
+That's my point.  I'm opposed to adding code to PCI when it only
+benefits x86 and we know other arches will need a fundamentally
+different design.  I would rather have a design that can work for all
+arches.
 
-bye,
-//mirabilos
--- 
-“It is inappropriate to require that a time represented as
- seconds since the Epoch precisely represent the number of
- seconds between the referenced time and the Epoch.”
-	-- IEEE Std 1003.1b-1993 (POSIX) Section B.2.2.2
+If your implementation is totally implemented under arch/x86 (or in
+intel-iommu.c, I guess), I can't object as much.  However, I think
+that eventually even x86 should enumerate the IOMMUs via ACPI before
+we enumerate PCI devices.
+
+It's pretty clear that's how BIOS designers expect the OS to work.
+For example, sec 8.7.3 of the Intel Virtualization Technology for
+Directed I/O spec, rev 1.3, shows the expectation that remapping
+hardware (IOMMU) is initialized before discovering the I/O hierarchy
+below a hot-added host bridge.  Obviously you're not talking about a
+hot-add scenario, but I think the same sequence should apply at
+boot-time as well.
+
+Bjorn
