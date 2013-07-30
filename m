@@ -1,55 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932694Ab3G3Jir (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 05:38:47 -0400
-Received: from smtp1-g21.free.fr ([212.27.42.1]:44887 "EHLO smtp1-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932646Ab3G3Jic convert rfc822-to-8bit (ORCPT
+	id S932772Ab3G3Jja (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 05:39:30 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53351 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932615Ab3G3Jdt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 05:38:32 -0400
-Date: Tue, 30 Jul 2013 11:38:53 +0200
-From: Jean-Francois Moine <moinejf@free.fr>
-To: Dave Martin <Dave.Martin@arm.com>
-Cc: Jed Davis <jld@mozilla.com>, Robert Richter <rric@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Will Deacon <will.deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        "oprofile-list@lists.sf.net" <oprofile-list@lists.sf.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] ARM: Fix r7/r11 confusion when CONFIG_THUMB2_KERNEL=y
- [OT]
-Message-ID: <20130730113853.46cbb00a@armhf>
-In-Reply-To: <20130730092517.GB2478@localhost.localdomain>
-References: <1373685501-1620-1-git-send-email-jld@mozilla.com>
-	<20130715135420.GG10000@mudshark.cambridge.arm.com>
-	<20130720044655.GC9433@mozilla.com>
-	<20130721213753.GA29879@mudshark.cambridge.arm.com>
-	<20130722185234.GA14519@localhost.localdomain>
-	<20130729212140.GB12681@mozilla.com>
-	<20130730092517.GB2478@localhost.localdomain>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; arm-unknown-linux-gnueabihf)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 30 Jul 2013 05:33:49 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: "Ewan D. Milne" <emilne@redhat.com>,
+        James Bottomley <JBottomley@Parallels.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 087/106] [SCSI] sd: fix crash when UA received on DIF enabled device
+Date: Tue, 30 Jul 2013 10:31:46 +0100
+Message-Id: <1375176725-5825-88-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
+References: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Jul 2013 10:25:18 +0100
-Dave Martin <Dave.Martin@arm.com> wrote:
+3.5.7.18 -stable review patch.  If anyone has any objections, please let me know.
 
-> The pragmatic route is less contraversial and lower overhead: even though
-> it's not correct as per the ABI, GCC is the only supported compiler for
-> building the kernel anyway.
+------------------
 
-BTW, kernels compiled with gcc-4.8 don't work.
+From: "Ewan D. Milne" <emilne@redhat.com>
 
-Did anybody succeed with clang?
+commit 085b513f97d8d799d28491239be4b451bcd8c2c5 upstream.
 
+sd_prep_fn will allocate a larger CDB for the command via mempool_alloc
+for devices using DIF type 2 protection.  This CDB was being freed
+in sd_done, which results in a kernel crash if the command is retried
+due to a UNIT ATTENTION.  This change moves the code to free the larger
+CDB into sd_unprep_fn instead, which is invoked after the request is
+complete.
+
+It is no longer necessary to call scsi_print_command separately for
+this case as the ->cmnd will no longer be NULL in the normal code path.
+
+Also removed conditional test for DIF type 2 when freeing the larger
+CDB because the protection_type could have been changed via sysfs while
+the command was executing.
+
+Signed-off-by: Ewan D. Milne <emilne@redhat.com>
+Acked-by: Martin K. Petersen <martin.petersen@oracle.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/scsi/sd.c | 22 +++++++---------------
+ 1 file changed, 7 insertions(+), 15 deletions(-)
+
+diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+index 3977faa..8e18431 100644
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -673,10 +673,17 @@ static int scsi_setup_flush_cmnd(struct scsi_device *sdp, struct request *rq)
+ 
+ static void sd_unprep_fn(struct request_queue *q, struct request *rq)
+ {
++	struct scsi_cmnd *SCpnt = rq->special;
++
+ 	if (rq->cmd_flags & REQ_DISCARD) {
+ 		free_page((unsigned long)rq->buffer);
+ 		rq->buffer = NULL;
+ 	}
++	if (SCpnt->cmnd != rq->cmd) {
++		mempool_free(SCpnt->cmnd, sd_cdb_pool);
++		SCpnt->cmnd = NULL;
++		SCpnt->cmd_len = 0;
++	}
+ }
+ 
+ /**
+@@ -1540,21 +1547,6 @@ static int sd_done(struct scsi_cmnd *SCpnt)
+ 	if (rq_data_dir(SCpnt->request) == READ && scsi_prot_sg_count(SCpnt))
+ 		sd_dif_complete(SCpnt, good_bytes);
+ 
+-	if (scsi_host_dif_capable(sdkp->device->host, sdkp->protection_type)
+-	    == SD_DIF_TYPE2_PROTECTION && SCpnt->cmnd != SCpnt->request->cmd) {
+-
+-		/* We have to print a failed command here as the
+-		 * extended CDB gets freed before scsi_io_completion()
+-		 * is called.
+-		 */
+-		if (result)
+-			scsi_print_command(SCpnt);
+-
+-		mempool_free(SCpnt->cmnd, sd_cdb_pool);
+-		SCpnt->cmnd = NULL;
+-		SCpnt->cmd_len = 0;
+-	}
+-
+ 	return good_bytes;
+ }
+ 
 -- 
-Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
-Jef		|		http://moinejf.free.fr/
+1.8.3.2
+
