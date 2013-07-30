@@ -1,100 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757428Ab3G3Fu1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 01:50:27 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:51834 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752002Ab3G3FuY (ORCPT
+	id S1757419Ab3G3FvF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 01:51:05 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:35692 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751258Ab3G3FvD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 01:50:24 -0400
-Date: Tue, 30 Jul 2013 08:50:05 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Felipe Balbi <balbi@ti.com>, <linux-next@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Rong Wang <Rong.Wang@csr.com>,
-        Greg KH <greg@kroah.com>
-Subject: Re: linux-next: manual merge of the usb-gadget tree with the
- usb.current tree
-Message-ID: <20130730055005.GC9155@radagast>
-Reply-To: <balbi@ti.com>
-References: <20130730140810.a61155d064e33248faef323b@canb.auug.org.au>
+	Tue, 30 Jul 2013 01:51:03 -0400
+Message-ID: <51F7546C.9030901@gmail.com>
+Date: Tue, 30 Jul 2013 13:51:40 +0800
+From: Aaron Lu <aaron.lwe@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="iFRdW5/EC4oqxDHL"
-Content-Disposition: inline
-In-Reply-To: <20130730140810.a61155d064e33248faef323b@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Felipe Contreras <felipe.contreras@gmail.com>
+CC: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <lenb@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [REGRESSION/PATCH] acpi: blacklist win8 OSI for ASUS Zenbok Prime
+ UX31A
+References: <1375125658-1223-1-git-send-email-felipe.contreras@gmail.com> <51F72EF3.8080706@gmail.com> <CAMP44s2Wysia0qHGcnGbBBgrzEvsys_0A1X=t8WT52XwojG7Og@mail.gmail.com>
+In-Reply-To: <CAMP44s2Wysia0qHGcnGbBBgrzEvsys_0A1X=t8WT52XwojG7Og@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---iFRdW5/EC4oqxDHL
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 07/30/2013 11:44 AM, Felipe Contreras wrote:
+> On Mon, Jul 29, 2013 at 10:11 PM, Aaron Lu <aaron.lwe@gmail.com> wrote:
+>> On 07/30/2013 03:20 AM, Felipe Contreras wrote:
+>>> Since v3.7 the acpi backlight driver doesn't work at all on this machine
+>>> because presumably the ACPI code contains stub code when Windows 8 OSI is
+>>> reported.
+>>>
+>>> The commit ea45ea7 (in v3.11-rc2) tried to fix this problem by using the intel
+>>> backlight driver, however, on this machine it turns the backlight completely
+>>> off when it reaches level 0%, after which the user might have a lot trouble
+>>> trying to bring it back.
+>>
+>> What do you mean by a lot of trouble? If you press hotkey to increase
+>> backlight brightness level, does it work?
+> 
+> I guess so, *if* there is indeed a user-space power manager handling
+> that, *and* the keyboard has such keys, *or* the user has set custom
+> hotkeys.
 
-Hi,
+Right, for a GUI environment this may not be a big problem(user uses Fn
+key to decrease brightness level and then hit the black screen, it's
+natural he will use Fn key to increase brightness level).
 
-On Tue, Jul 30, 2013 at 02:08:10PM +1000, Stephen Rothwell wrote:
-> Hi Felipe,
->=20
-> Today's linux-next merge of the usb-gadget tree got a conflict in
-> drivers/usb/gadget/udc-core.c between commit 1894870eb424 ("usb: gadget:
-> udc-core: fix the typo of udc state attribute") from the usb.current tree
-> and commit 5702f75375aa ("usb: gadget: udc-core: move sysfs_notify() to a
-> workqueue") from the usb-gadget tree.
->=20
-> I fixed it up (see below) and can carry the fix as necessary (no action
-> is required).
->=20
-> --=20
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
->=20
-> diff --cc drivers/usb/gadget/udc-core.c
-> index 13e25f8,3122ab9..0000000
-> --- a/drivers/usb/gadget/udc-core.c
-> +++ b/drivers/usb/gadget/udc-core.c
-> @@@ -105,6 -106,13 +106,13 @@@ EXPORT_SYMBOL_GPL(usb_gadget_unmap_requ
->  =20
->   /* --------------------------------------------------------------------=
------ */
->  =20
-> + static void usb_gadget_state_work(struct work_struct *work)
-> + {
-> + 	struct usb_gadget	*gadget =3D work_to_gadget(work);
-> +=20
->  -	sysfs_notify(&gadget->dev.kobj, NULL, "status");
-> ++	sysfs_notify(&gadget->dev.kobj, NULL, "state");
-> + }
+> 
+>> If so, the screen should not
+>> be black any more, it's not that user has to blindly enter some command
+>> to get out of the black screen.
+>>
+>> And I'm not sure if this is a bug of intel_backlight(setting a low level
+>> makes the screen almost off), I see different models with different
+>> vendors having this behavior.
+> 
+> I mean, the screen is completely off, I cannot see absolutely
+> anything. I don't see this behavior with the ACPI backlight driver,
+> nor do I see that in Windows 7.
+> 
+>> If this is deemed a bug, then I'm afraid
+>> intel_backlight interface is useless for a lot of systems...perhaps we
+>> can only say, intel_backlight's interpretation of low levels are
+>> different with ACPI video's, and that's probably why its type is named
+>> as raw :-)
+> 
+> Well, a bug is defined as unexpected behavior -- as a user, if I'm
+> changing the brightness of the screen, I certainly don't expect the
+> screen to turn off, and I think that's the expectation from most
+> people. It's the first time I see something like that.
 
-this is the same fix used in my master branch, looks good. :-)
+I agree this is kind of un-expected. At the same time, this seems to be
+the normal behavior for intel_backlight. I don't know what the correct
+thing to do here if this is something we want to avoid - modify intel
+backlight handling code not to set too low value or change the user
+space tool not to set a too low value if they are interacting with a
+raw type interface. Neither of them sounds cool... Or, users may get
+used to it, I for example, don't find this to be very annoying, but
+maybe I'm already used to it.
 
-Thanks
-
---=20
-balbi
-
---iFRdW5/EC4oqxDHL
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR91QNAAoJEIaOsuA1yqREROkQAKnC1pyaFkwCtAyDP9quNUR1
-dHyR22skd2ArROXm3X2uIjUnLDflKsKOx655T0Xpy5pMBTLccBf8/4GZUUwIdY/Y
-QUpSPqFETl8hDV7tbXETBeHTmy/gjuivMD+30QFNLeU1tD59KCYb19+KJDndLCW2
-1deIMu/J1eoKwoKrWjpkj94LfeVc6Nv+6dBfB5rU/4aNbOfPHqEk5fXm9DqFueEn
-RWmTVQPiaO8PjH02RBvQUtR18RH8JSilVyIP2b8UPlvzcrZ0nmIal+70ynb0g4lW
-Y6I9S5+mh/jl4B1xgBRefEDH89T5+yWErJRL+3iSgDMWmqARdQOXmqRSIqerbJHp
-qe6VWsj2FwjcU3tveC9AJYs0G7fzPLLuTW45Nar6TGbtnIYOCtG4FCbQ1t3WEB8b
-pUkL1CLluNKteWdv/ao4ZxPCI7hir4TlgaARH0QYqe5ttN4sm3O4INe+YZAxCszJ
-wbFDeomrb6AXUs9USY18YRzAq8cKh2TZeB2O7Ii/yFnD13bbxXDugcagbzvMWelA
-FlbKi9B8i+WIJ2hn+oWRqAaySWW5StsqcECjTfIr046DbnV9/fkZlUOXIUDACNfN
-Ecqkqjxt4NAwpLja6RpCi95AfADNPG+MNonJqK6f3RksMVhTgUW+8klzbTc3HMTc
-Z+pgaP2tmfZTrFXyXfQJ
-=Vx7L
------END PGP SIGNATURE-----
-
---iFRdW5/EC4oqxDHL--
+-Aaron
