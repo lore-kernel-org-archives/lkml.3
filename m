@@ -1,111 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758523Ab3G3JWo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 05:22:44 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:54507 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758369Ab3G3JWl (ORCPT
+	id S1758654Ab3G3JXF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 05:23:05 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:57152 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758457Ab3G3JTW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 05:22:41 -0400
-Date: Tue, 30 Jul 2013 11:22:31 +0200 (CEST)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Simon Horman <horms@verge.net.au>
-cc: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        Olof Johansson <olof@lixom.net>, Linux-SH <linux-sh@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>
-Subject: Re: [PATCH resend] shdma: fixup sh_dmae_get_partial() calculation
- error
-In-Reply-To: <20130730084957.GA17209@verge.net.au>
-Message-ID: <Pine.LNX.4.64.1307301114020.25629@axis700.grange>
-References: <1373422152-29976-1-git-send-email-horms+renesas@verge.net.au>
- <20130716012041.GA942@verge.net.au> <20130723023907.GC14983@quad.lixom.net>
- <20130723041220.GA22253@verge.net.au> <87zjtddgtg.wl%kuninori.morimoto.gx@renesas.com>
- <20130724034009.GA18355@verge.net.au> <87d2q8v6fs.wl%kuninori.morimoto.gx@renesas.com>
- <87bo5sv63u.wl%kuninori.morimoto.gx@renesas.com> <20130730084957.GA17209@verge.net.au>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:QOMzdSaeIdSH9RfHAYaAU2xYel37l9lhwrVhlPYjyQU
- 4vr+Ov6W2BCOFDTzZ3GBBH4cspUle14RPILL/ZW0uS7B+mJix7
- 7Syn+Dx+XLGJgl4XktJabmLpxNqWfsMBJN7dAJOBpkze/bgzwS
- NRcPgOjkfTCbUGsJQpehDLe7FLHVa09+25qvo9ez0DZ9w5IWAC
- n6fvkI1hDry2aSh+K5MbKqV40zEChKPlFeJp1v3nGtB/j8jkpK
- ykGr0WX4uoNxdP8n/vruB7vXol6KFeUoFaNUCOGFHibsV2IHt8
- TMvdchLpbliQ4w7dI5LGzTD4YvaNpnnrhhJXUW5kExfysxhBDv
- cEscFC82TGlKaqaLqx1hbEAut7k0rPddH77VB1tZISD5wh4C0y
- 4zhCm2+wwnMZQ==
+	Tue, 30 Jul 2013 05:19:22 -0400
+X-AuditID: 9c930179-b7c49ae000000e68-db-51f78516ba50
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>,
+        Jeremy Eder <jeder@redhat.com>
+Subject: [PATCH 05/17] perf ftrace: Add support for -a and -C option
+Date: Tue, 30 Jul 2013 18:19:02 +0900
+Message-Id: <1375175954-798-6-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1375175954-798-1-git-send-email-namhyung@kernel.org>
+References: <1375175954-798-1-git-send-email-namhyung@kernel.org>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Simon
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-On Tue, 30 Jul 2013, Simon Horman wrote:
+The -a/--all-cpus and -C/--cpu option is for controlling tracing cpus.
+To do that, add and use cpu_map__sprintf() function.
 
-> [ Cc Vinod ]
-> 
-> On Tue, Jul 23, 2013 at 11:12:41PM -0700, Kuninori Morimoto wrote:
-> > sh_desc->hw.tcr is controlling real data size,
-> > and, register TCR is controlling data transfer count
-> > which was xmit_shifted value of hw.tcr.
-> > Current sh_dmae_get_partial() is calculating in different unit.
-> > This patch fixes it.
-> > 
-> > Signed-off-by: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
-> 
-> Can I confirm that this was a regression introduced by
-> 4f46f8ac80416b0e8fd3aba6a0d842205fb29140                   
-> ("dmaengine: shdma: restore partial transfer calculation") ?
-
-No, don't think so. That patch only restores what was accidentally deleted 
-from the driver before. So, you cannot say, that before that patch the 
-calculation was correct. And even the way it restores it was already wrong 
-before. The error goes back to the original implementation:
-
-commit c014906a870ce70e009def0c9d170ccabeb0be63
-Author: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Date:   Thu Feb 18 16:30:02 2010 +0000
-
-    dmaengine: shdma: extend .device_terminate_all() to record partial transfer
-
-Thanks
-Guennadi
-
-> 
-> > ---
-> > >> Guennadi
-> > 
-> > Could you please check this patch, and give it your Acked-by ?
-> > 
-> >  drivers/dma/sh/shdma.c |    4 ++--
-> >  1 file changed, 2 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/drivers/dma/sh/shdma.c b/drivers/dma/sh/shdma.c
-> > index b70709b..d670b8b 100644
-> > --- a/drivers/dma/sh/shdma.c
-> > +++ b/drivers/dma/sh/shdma.c
-> > @@ -388,8 +388,8 @@ static size_t sh_dmae_get_partial(struct shdma_chan *schan,
-> >  						    shdma_chan);
-> >  	struct sh_dmae_desc *sh_desc = container_of(sdesc,
-> >  					struct sh_dmae_desc, shdma_desc);
-> > -	return (sh_desc->hw.tcr - sh_dmae_readl(sh_chan, TCR)) <<
-> > -		sh_chan->xmit_shift;
-> > +	return sh_desc->hw.tcr -
-> > +		(sh_dmae_readl(sh_chan, TCR) << sh_chan->xmit_shift);
-> >  }
-> >  
-> >  /* Called from error IRQ or NMI */
-> > -- 
-> > 1.7.9.5
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-sh" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > 
-> 
-
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+ tools/perf/builtin-ftrace.c | 69 +++++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/cpumap.c    | 45 +++++++++++++++++++++++++++++
+ tools/perf/util/cpumap.h    |  1 +
+ 3 files changed, 115 insertions(+)
+
+diff --git a/tools/perf/builtin-ftrace.c b/tools/perf/builtin-ftrace.c
+index bd415f2b1cde..642aa49c66d7 100644
+--- a/tools/perf/builtin-ftrace.c
++++ b/tools/perf/builtin-ftrace.c
+@@ -18,6 +18,7 @@
+ #include "util/evlist.h"
+ #include "util/target.h"
+ #include "util/thread_map.h"
++#include "util/cpumap.h"
+ 
+ 
+ #define DEFAULT_TRACER  "function_graph"
+@@ -80,6 +81,8 @@ static int append_tracing_file(const char *name, const char *val)
+ 	return __write_tracing_file(name, val, true);
+ }
+ 
++static int reset_tracing_cpu(void);
++
+ static int reset_tracing_files(struct perf_ftrace *ftrace __maybe_unused)
+ {
+ 	if (write_tracing_file("tracing_on", "0") < 0)
+@@ -91,6 +94,9 @@ static int reset_tracing_files(struct perf_ftrace *ftrace __maybe_unused)
+ 	if (write_tracing_file("set_ftrace_pid", " ") < 0)
+ 		return -1;
+ 
++	if (reset_tracing_cpu() < 0)
++		return -1;
++
+ 	return 0;
+ }
+ 
+@@ -111,6 +117,60 @@ static int set_tracing_pid(struct perf_ftrace *ftrace)
+ 	return 0;
+ }
+ 
++static int set_tracing_cpu(struct perf_ftrace *ftrace)
++{
++	char *cpumask;
++	size_t mask_size;
++	int ret;
++	int last_cpu;
++	struct cpu_map *cpumap = ftrace->evlist->cpus;
++
++	if (!perf_target__has_cpu(&ftrace->target))
++		return 0;
++
++	last_cpu = cpumap->map[cpumap->nr - 1];
++	mask_size = (last_cpu + 3) / 4 + 1;
++	mask_size += last_cpu / 32; /* ',' is needed for every 32th cpus */
++
++	cpumask = malloc(mask_size);
++	if (cpumask == NULL) {
++		pr_debug("failed to allocate cpu mask\n");
++		return -1;
++	}
++
++	cpu_map__sprintf(cpumap, cpumask);
++
++	ret = write_tracing_file("tracing_cpumask", cpumask);
++
++	free(cpumask);
++	return ret;
++}
++
++static int reset_tracing_cpu(void)
++{
++	char *cpumask;
++	size_t mask_size;
++	int last_cpu;
++	struct cpu_map *cpumap = cpu_map__new(NULL);
++
++	last_cpu = cpumap->map[cpumap->nr - 1];
++	mask_size = (last_cpu + 3) / 4 + 1;
++	mask_size += last_cpu / 32; /* ',' is needed for every 32th cpus */
++
++	cpumask = malloc(mask_size);
++	if (cpumask == NULL) {
++		pr_debug("failed to allocate cpu mask\n");
++		return -1;
++	}
++
++	cpu_map__sprintf(cpumap, cpumask);
++
++	write_tracing_file("tracing_cpumask", cpumask);
++
++	free(cpumask);
++	return 0;
++}
++
+ static int __cmd_ftrace(struct perf_ftrace *ftrace, int argc, const char **argv)
+ {
+ 	char *trace_file;
+@@ -147,6 +207,11 @@ static int __cmd_ftrace(struct perf_ftrace *ftrace, int argc, const char **argv)
+ 		goto out_reset;
+ 	}
+ 
++	if (set_tracing_cpu(ftrace) < 0) {
++		pr_err("failed to set tracing cpumask\n");
++		goto out_reset;
++	}
++
+ 	if (write_tracing_file("current_tracer", ftrace->tracer) < 0) {
+ 		pr_err("failed to set current_tracer to %s\n", ftrace->tracer);
+ 		goto out_reset;
+@@ -227,6 +292,10 @@ int cmd_ftrace(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		   "trace on existing process id"),
+ 	OPT_INCR('v', "verbose", &verbose,
+ 		 "be more verbose"),
++	OPT_BOOLEAN('a', "all-cpus", &ftrace.target.system_wide,
++		    "system-wide collection from all CPUs"),
++	OPT_STRING('C', "cpu", &ftrace.target.cpu_list, "cpu",
++		    "list of cpus to monitor"),
+ 	OPT_END()
+ 	};
+ 
+diff --git a/tools/perf/util/cpumap.c b/tools/perf/util/cpumap.c
+index beb8cf9f9976..7933839915ea 100644
+--- a/tools/perf/util/cpumap.c
++++ b/tools/perf/util/cpumap.c
+@@ -187,6 +187,51 @@ size_t cpu_map__fprintf(struct cpu_map *map, FILE *fp)
+ 	return printed + fprintf(fp, "\n");
+ }
+ 
++static char hex_char(char val)
++{
++	if (0 <= val && val <= 9)
++		return val + '0';
++	if (10 <= val && val < 16)
++		return val - 10 + 'a';
++	return '?';
++}
++
++size_t cpu_map__sprintf(struct cpu_map *map, char *buf)
++{
++	int i, cpu;
++	char *ptr = buf;
++	unsigned char *bitmap;
++	int last_cpu = map->map[map->nr - 1];
++
++	bitmap = zalloc((last_cpu + 7) / 8);
++	if (bitmap == NULL) {
++		buf[0] = '\0';
++		return 0;
++	}
++
++	for (i = 0; i < map->nr; i++) {
++		cpu = map->map[i];
++		bitmap[cpu / 8] |= 1 << (cpu % 8);
++	}
++
++	for (cpu = last_cpu / 4 * 4; cpu >= 0; cpu -= 4) {
++		unsigned char bits = bitmap[cpu / 8];
++
++		if (cpu % 8)
++			bits >>= 4;
++		else
++			bits &= 0xf;
++
++		*ptr++ = hex_char(bits);
++		if ((cpu % 32) == 0 && cpu > 0)
++			*ptr++ = ',';
++	}
++	*ptr++ = '\0';
++
++	free(bitmap);
++	return ptr - buf;
++}
++
+ struct cpu_map *cpu_map__dummy_new(void)
+ {
+ 	struct cpu_map *cpus = malloc(sizeof(*cpus) + sizeof(int));
+diff --git a/tools/perf/util/cpumap.h b/tools/perf/util/cpumap.h
+index b123bb9d6f55..a9a7f19f89d7 100644
+--- a/tools/perf/util/cpumap.h
++++ b/tools/perf/util/cpumap.h
+@@ -14,6 +14,7 @@ struct cpu_map *cpu_map__dummy_new(void);
+ void cpu_map__delete(struct cpu_map *map);
+ struct cpu_map *cpu_map__read(FILE *file);
+ size_t cpu_map__fprintf(struct cpu_map *map, FILE *fp);
++size_t cpu_map__sprintf(struct cpu_map *map, char *buf);
+ int cpu_map__get_socket(struct cpu_map *map, int idx);
+ int cpu_map__get_core(struct cpu_map *map, int idx);
+ int cpu_map__build_socket_map(struct cpu_map *cpus, struct cpu_map **sockp);
+-- 
+1.7.11.7
+
