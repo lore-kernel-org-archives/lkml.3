@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756787Ab3G3PZr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 11:25:47 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55325 "EHLO
+	id S1756834Ab3G3PZt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 11:25:49 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55327 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753150Ab3G3PSI (ORCPT
+	with ESMTP id S1755726Ab3G3PSI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 30 Jul 2013 11:18:08 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Paulo Zanoni <paulo.r.zanoni@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
+Cc: Imre Deak <imre.deak@intel.com>, Daniel Vetter <daniel.vetter@ffwll.ch>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 11/75] drm/i915: rename sdvox_reg to hdmi_reg on HDMI context
-Date: Tue, 30 Jul 2013 08:16:40 -0700
-Message-Id: <1375197464-27962-12-git-send-email-kamal@canonical.com>
+Subject: [PATCH 08/75] drm/i915: merge {i965, sandybridge}_write_fence_reg()
+Date: Tue, 30 Jul 2013 08:16:37 -0700
+Message-Id: <1375197464-27962-9-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1375197464-27962-1-git-send-email-kamal@canonical.com>
 References: <1375197464-27962-1-git-send-email-kamal@canonical.com>
@@ -28,275 +27,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paulo Zanoni <paulo.r.zanoni@intel.com>
+From: Imre Deak <imre.deak@intel.com>
 
-commit b242b7f745650832f445dca3e19efc3dd2d65a66 upstream.
+commit 56c844e539f1f6f5768c5f73f119e6f4aed9d320 upstream.
 
-Some (but not all) of the HDMI registers can be used to control sDVO,
-so those registers have two names. IMHO, when we're talking about
-HDMI, we really should call the HDMI control register "hdmi_reg"
-instead of "sdvox_reg", otherwise we'll just confuse people reading
-our code (we now have platforms with HDMI but without SDVO). So now
-"struct intel_hdmi" has a member called "hdmi_reg" instead of
-"sdvox_reg".
+The two functions are rather similar, so merge them.
 
-Also, don't worry: "struct intel_sdvo" still has a member called
-"sdvo_reg".
-
-v2: Rebase (v1 was sent in May 2012).
-
-Signed-off-by: Paulo Zanoni <paulo.r.zanoni@intel.com>
+Signed-off-by: Imre Deak <imre.deak@intel.com>
 Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-[ kamal: backport to 3.8.y-stable as prereq for:
-  bcf53de4 "drm/i915: Preserve the DDI_A_4_LANES bit from the bios" ]
+[ kamal: 3.8.y-stable prereq for d18b9619 ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/i915/intel_ddi.c  |  4 +--
- drivers/gpu/drm/i915/intel_drv.h  |  4 +--
- drivers/gpu/drm/i915/intel_hdmi.c | 76 +++++++++++++++++++--------------------
- 3 files changed, 41 insertions(+), 43 deletions(-)
+ drivers/gpu/drm/i915/i915_gem.c | 44 ++++++++++++++---------------------------
+ 1 file changed, 15 insertions(+), 29 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/intel_ddi.c b/drivers/gpu/drm/i915/intel_ddi.c
-index debf25f..0724662 100644
---- a/drivers/gpu/drm/i915/intel_ddi.c
-+++ b/drivers/gpu/drm/i915/intel_ddi.c
-@@ -1509,9 +1509,7 @@ void intel_ddi_init(struct drm_device *dev, enum port port)
- 	intel_dig_port->port_reversal = I915_READ(DDI_BUF_CTL(port)) &
- 					DDI_BUF_PORT_REVERSAL;
- 	if (hdmi_connector)
--		intel_dig_port->hdmi.sdvox_reg = DDI_BUF_CTL(port);
--	else
--		intel_dig_port->hdmi.sdvox_reg = 0;
-+		intel_dig_port->hdmi.hdmi_reg = DDI_BUF_CTL(port);
- 	intel_dig_port->dp.output_reg = DDI_BUF_CTL(port);
- 
- 	intel_encoder->type = INTEL_OUTPUT_UNKNOWN;
-diff --git a/drivers/gpu/drm/i915/intel_drv.h b/drivers/gpu/drm/i915/intel_drv.h
-index 1c1840f..a803234 100644
---- a/drivers/gpu/drm/i915/intel_drv.h
-+++ b/drivers/gpu/drm/i915/intel_drv.h
-@@ -334,7 +334,7 @@ struct dip_infoframe {
- } __attribute__((packed));
- 
- struct intel_hdmi {
--	u32 sdvox_reg;
-+	u32 hdmi_reg;
- 	int ddc_bus;
- 	uint32_t color_range;
- 	bool has_hdmi_sink;
-@@ -427,7 +427,7 @@ extern void intel_attach_broadcast_rgb_property(struct drm_connector *connector)
- 
- extern void intel_crt_init(struct drm_device *dev);
- extern void intel_hdmi_init(struct drm_device *dev,
--			    int sdvox_reg, enum port port);
-+			    int hdmi_reg, enum port port);
- extern void intel_hdmi_init_connector(struct intel_digital_port *intel_dig_port,
- 				      struct intel_connector *intel_connector);
- extern struct intel_hdmi *enc_to_intel_hdmi(struct drm_encoder *encoder);
-diff --git a/drivers/gpu/drm/i915/intel_hdmi.c b/drivers/gpu/drm/i915/intel_hdmi.c
-index dccd859..8d7a334 100644
---- a/drivers/gpu/drm/i915/intel_hdmi.c
-+++ b/drivers/gpu/drm/i915/intel_hdmi.c
-@@ -50,7 +50,7 @@ assert_hdmi_port_disabled(struct intel_hdmi *intel_hdmi)
- 
- 	enabled_bits = HAS_DDI(dev) ? DDI_BUF_CTL_ENABLE : SDVO_ENABLE;
- 
--	WARN(I915_READ(intel_hdmi->sdvox_reg) & enabled_bits,
-+	WARN(I915_READ(intel_hdmi->hdmi_reg) & enabled_bits,
- 	     "HDMI port enabled, expecting disabled\n");
+diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
+index 919cc5c..2aef3d2 100644
+--- a/drivers/gpu/drm/i915/i915_gem.c
++++ b/drivers/gpu/drm/i915/i915_gem.c
+@@ -2523,52 +2523,38 @@ int i915_gpu_idle(struct drm_device *dev)
+ 	return 0;
  }
  
-@@ -391,7 +391,7 @@ static void g4x_set_infoframes(struct drm_encoder *encoder,
- 		return;
- 	}
- 
--	switch (intel_hdmi->sdvox_reg) {
-+	switch (intel_hdmi->hdmi_reg) {
- 	case SDVOB:
- 		port = VIDEO_DIP_PORT_B;
- 		break;
-@@ -447,7 +447,7 @@ static void ibx_set_infoframes(struct drm_encoder *encoder,
- 		return;
- 	}
- 
--	switch (intel_hdmi->sdvox_reg) {
-+	switch (intel_hdmi->hdmi_reg) {
- 	case HDMIB:
- 		port = VIDEO_DIP_PORT_B;
- 		break;
-@@ -587,40 +587,40 @@ static void intel_hdmi_mode_set(struct drm_encoder *encoder,
- 	struct drm_i915_private *dev_priv = dev->dev_private;
- 	struct intel_crtc *intel_crtc = to_intel_crtc(encoder->crtc);
- 	struct intel_hdmi *intel_hdmi = enc_to_intel_hdmi(encoder);
--	u32 sdvox;
-+	u32 hdmi_val;
- 
--	sdvox = SDVO_ENCODING_HDMI;
-+	hdmi_val = SDVO_ENCODING_HDMI;
- 	if (!HAS_PCH_SPLIT(dev))
--		sdvox |= intel_hdmi->color_range;
-+		hdmi_val |= intel_hdmi->color_range;
- 	if (adjusted_mode->flags & DRM_MODE_FLAG_PVSYNC)
--		sdvox |= SDVO_VSYNC_ACTIVE_HIGH;
-+		hdmi_val |= SDVO_VSYNC_ACTIVE_HIGH;
- 	if (adjusted_mode->flags & DRM_MODE_FLAG_PHSYNC)
--		sdvox |= SDVO_HSYNC_ACTIVE_HIGH;
-+		hdmi_val |= SDVO_HSYNC_ACTIVE_HIGH;
- 
- 	if (intel_crtc->bpp > 24)
--		sdvox |= COLOR_FORMAT_12bpc;
-+		hdmi_val |= COLOR_FORMAT_12bpc;
- 	else
--		sdvox |= COLOR_FORMAT_8bpc;
-+		hdmi_val |= COLOR_FORMAT_8bpc;
- 
- 	/* Required on CPT */
- 	if (intel_hdmi->has_hdmi_sink && HAS_PCH_CPT(dev))
--		sdvox |= HDMI_MODE_SELECT;
-+		hdmi_val |= HDMI_MODE_SELECT;
- 
- 	if (intel_hdmi->has_audio) {
- 		DRM_DEBUG_DRIVER("Enabling HDMI audio on pipe %c\n",
- 				 pipe_name(intel_crtc->pipe));
--		sdvox |= SDVO_AUDIO_ENABLE;
--		sdvox |= SDVO_NULL_PACKETS_DURING_VSYNC;
-+		hdmi_val |= SDVO_AUDIO_ENABLE;
-+		hdmi_val |= SDVO_NULL_PACKETS_DURING_VSYNC;
- 		intel_write_eld(encoder, adjusted_mode);
- 	}
- 
- 	if (HAS_PCH_CPT(dev))
--		sdvox |= PORT_TRANS_SEL_CPT(intel_crtc->pipe);
-+		hdmi_val |= PORT_TRANS_SEL_CPT(intel_crtc->pipe);
- 	else if (intel_crtc->pipe == PIPE_B)
--		sdvox |= SDVO_PIPE_B_SELECT;
-+		hdmi_val |= SDVO_PIPE_B_SELECT;
- 
--	I915_WRITE(intel_hdmi->sdvox_reg, sdvox);
--	POSTING_READ(intel_hdmi->sdvox_reg);
-+	I915_WRITE(intel_hdmi->hdmi_reg, hdmi_val);
-+	POSTING_READ(intel_hdmi->hdmi_reg);
- 
- 	intel_hdmi->set_infoframes(encoder, adjusted_mode);
- }
-@@ -633,7 +633,7 @@ static bool intel_hdmi_get_hw_state(struct intel_encoder *encoder,
- 	struct intel_hdmi *intel_hdmi = enc_to_intel_hdmi(&encoder->base);
- 	u32 tmp;
- 
--	tmp = I915_READ(intel_hdmi->sdvox_reg);
-+	tmp = I915_READ(intel_hdmi->hdmi_reg);
- 
- 	if (!(tmp & SDVO_ENABLE))
- 		return false;
-@@ -657,7 +657,7 @@ static void intel_enable_hdmi(struct intel_encoder *encoder)
- 	if (intel_hdmi->has_audio)
- 		enable_bits |= SDVO_AUDIO_ENABLE;
- 
--	temp = I915_READ(intel_hdmi->sdvox_reg);
-+	temp = I915_READ(intel_hdmi->hdmi_reg);
- 
- 	/* HW workaround for IBX, we need to move the port to transcoder A
- 	 * before disabling it. */
-@@ -674,21 +674,21 @@ static void intel_enable_hdmi(struct intel_encoder *encoder)
- 	 * we do this anyway which shows more stable in testing.
- 	 */
- 	if (HAS_PCH_SPLIT(dev)) {
--		I915_WRITE(intel_hdmi->sdvox_reg, temp & ~SDVO_ENABLE);
--		POSTING_READ(intel_hdmi->sdvox_reg);
-+		I915_WRITE(intel_hdmi->hdmi_reg, temp & ~SDVO_ENABLE);
-+		POSTING_READ(intel_hdmi->hdmi_reg);
- 	}
- 
- 	temp |= enable_bits;
- 
--	I915_WRITE(intel_hdmi->sdvox_reg, temp);
--	POSTING_READ(intel_hdmi->sdvox_reg);
-+	I915_WRITE(intel_hdmi->hdmi_reg, temp);
-+	POSTING_READ(intel_hdmi->hdmi_reg);
- 
- 	/* HW workaround, need to write this twice for issue that may result
- 	 * in first write getting masked.
- 	 */
- 	if (HAS_PCH_SPLIT(dev)) {
--		I915_WRITE(intel_hdmi->sdvox_reg, temp);
--		POSTING_READ(intel_hdmi->sdvox_reg);
-+		I915_WRITE(intel_hdmi->hdmi_reg, temp);
-+		POSTING_READ(intel_hdmi->hdmi_reg);
- 	}
- }
- 
-@@ -700,7 +700,7 @@ static void intel_disable_hdmi(struct intel_encoder *encoder)
- 	u32 temp;
- 	u32 enable_bits = SDVO_ENABLE | SDVO_AUDIO_ENABLE;
- 
--	temp = I915_READ(intel_hdmi->sdvox_reg);
-+	temp = I915_READ(intel_hdmi->hdmi_reg);
- 
- 	/* HW workaround for IBX, we need to move the port to transcoder A
- 	 * before disabling it. */
-@@ -710,12 +710,12 @@ static void intel_disable_hdmi(struct intel_encoder *encoder)
- 
- 		if (temp & SDVO_PIPE_B_SELECT) {
- 			temp &= ~SDVO_PIPE_B_SELECT;
--			I915_WRITE(intel_hdmi->sdvox_reg, temp);
--			POSTING_READ(intel_hdmi->sdvox_reg);
-+			I915_WRITE(intel_hdmi->hdmi_reg, temp);
-+			POSTING_READ(intel_hdmi->hdmi_reg);
- 
- 			/* Again we need to write this twice. */
--			I915_WRITE(intel_hdmi->sdvox_reg, temp);
--			POSTING_READ(intel_hdmi->sdvox_reg);
-+			I915_WRITE(intel_hdmi->hdmi_reg, temp);
-+			POSTING_READ(intel_hdmi->hdmi_reg);
- 
- 			/* Transcoder selection bits only update
- 			 * effectively on vblank. */
-@@ -730,21 +730,21 @@ static void intel_disable_hdmi(struct intel_encoder *encoder)
- 	 * we do this anyway which shows more stable in testing.
- 	 */
- 	if (HAS_PCH_SPLIT(dev)) {
--		I915_WRITE(intel_hdmi->sdvox_reg, temp & ~SDVO_ENABLE);
--		POSTING_READ(intel_hdmi->sdvox_reg);
-+		I915_WRITE(intel_hdmi->hdmi_reg, temp & ~SDVO_ENABLE);
-+		POSTING_READ(intel_hdmi->hdmi_reg);
- 	}
- 
- 	temp &= ~enable_bits;
- 
--	I915_WRITE(intel_hdmi->sdvox_reg, temp);
--	POSTING_READ(intel_hdmi->sdvox_reg);
-+	I915_WRITE(intel_hdmi->hdmi_reg, temp);
-+	POSTING_READ(intel_hdmi->hdmi_reg);
- 
- 	/* HW workaround, need to write this twice for issue that may result
- 	 * in first write getting masked.
- 	 */
- 	if (HAS_PCH_SPLIT(dev)) {
--		I915_WRITE(intel_hdmi->sdvox_reg, temp);
--		POSTING_READ(intel_hdmi->sdvox_reg);
-+		I915_WRITE(intel_hdmi->hdmi_reg, temp);
-+		POSTING_READ(intel_hdmi->hdmi_reg);
- 	}
- }
- 
-@@ -1009,7 +1009,7 @@ void intel_hdmi_init_connector(struct intel_digital_port *intel_dig_port,
- 	}
- }
- 
--void intel_hdmi_init(struct drm_device *dev, int sdvox_reg, enum port port)
-+void intel_hdmi_init(struct drm_device *dev, int hdmi_reg, enum port port)
+-static void sandybridge_write_fence_reg(struct drm_device *dev, int reg,
+-					struct drm_i915_gem_object *obj)
+-{
+-	drm_i915_private_t *dev_priv = dev->dev_private;
+-	uint64_t val;
+-
+-	if (obj) {
+-		u32 size = obj->gtt_space->size;
+-
+-		val = (uint64_t)((obj->gtt_offset + size - 4096) &
+-				 0xfffff000) << 32;
+-		val |= obj->gtt_offset & 0xfffff000;
+-		val |= (uint64_t)((obj->stride / 128) - 1) <<
+-			SANDYBRIDGE_FENCE_PITCH_SHIFT;
+-
+-		if (obj->tiling_mode == I915_TILING_Y)
+-			val |= 1 << I965_FENCE_TILING_Y_SHIFT;
+-		val |= I965_FENCE_REG_VALID;
+-	} else
+-		val = 0;
+-
+-	I915_WRITE64(FENCE_REG_SANDYBRIDGE_0 + reg * 8, val);
+-	POSTING_READ(FENCE_REG_SANDYBRIDGE_0 + reg * 8);
+-}
+-
+ static void i965_write_fence_reg(struct drm_device *dev, int reg,
+ 				 struct drm_i915_gem_object *obj)
  {
- 	struct intel_digital_port *intel_dig_port;
- 	struct intel_encoder *intel_encoder;
-@@ -1042,7 +1042,7 @@ void intel_hdmi_init(struct drm_device *dev, int sdvox_reg, enum port port)
- 	intel_encoder->cloneable = false;
+ 	drm_i915_private_t *dev_priv = dev->dev_private;
++	int fence_reg;
++	int fence_pitch_shift;
+ 	uint64_t val;
  
- 	intel_dig_port->port = port;
--	intel_dig_port->hdmi.sdvox_reg = sdvox_reg;
-+	intel_dig_port->hdmi.hdmi_reg = hdmi_reg;
- 	intel_dig_port->dp.output_reg = 0;
++	if (INTEL_INFO(dev)->gen >= 6) {
++		fence_reg = FENCE_REG_SANDYBRIDGE_0;
++		fence_pitch_shift = SANDYBRIDGE_FENCE_PITCH_SHIFT;
++	} else {
++		fence_reg = FENCE_REG_965_0;
++		fence_pitch_shift = I965_FENCE_PITCH_SHIFT;
++	}
++
+ 	if (obj) {
+ 		u32 size = obj->gtt_space->size;
  
- 	intel_hdmi_init_connector(intel_dig_port, intel_connector);
+ 		val = (uint64_t)((obj->gtt_offset + size - 4096) &
+ 				 0xfffff000) << 32;
+ 		val |= obj->gtt_offset & 0xfffff000;
+-		val |= ((obj->stride / 128) - 1) << I965_FENCE_PITCH_SHIFT;
++		val |= (uint64_t)((obj->stride / 128) - 1) << fence_pitch_shift;
+ 		if (obj->tiling_mode == I915_TILING_Y)
+ 			val |= 1 << I965_FENCE_TILING_Y_SHIFT;
+ 		val |= I965_FENCE_REG_VALID;
+ 	} else
+ 		val = 0;
+ 
+-	I915_WRITE64(FENCE_REG_965_0 + reg * 8, val);
+-	POSTING_READ(FENCE_REG_965_0 + reg * 8);
++	fence_reg += reg * 8;
++	I915_WRITE64(fence_reg, val);
++	POSTING_READ(fence_reg);
+ }
+ 
+ static void i915_write_fence_reg(struct drm_device *dev, int reg,
+@@ -2652,7 +2638,7 @@ static void i915_gem_write_fence(struct drm_device *dev, int reg,
+ {
+ 	switch (INTEL_INFO(dev)->gen) {
+ 	case 7:
+-	case 6: sandybridge_write_fence_reg(dev, reg, obj); break;
++	case 6:
+ 	case 5:
+ 	case 4: i965_write_fence_reg(dev, reg, obj); break;
+ 	case 3: i915_write_fence_reg(dev, reg, obj); break;
 -- 
 1.8.1.2
 
