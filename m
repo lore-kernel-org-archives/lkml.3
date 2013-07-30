@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757947Ab3G3Swi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 14:52:38 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56637 "EHLO
+	id S1757780Ab3G3Sxr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 14:53:47 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56596 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757849Ab3G3SsX (ORCPT
+	with ESMTP id S1757492Ab3G3Srp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 14:48:23 -0400
+	Tue, 30 Jul 2013 14:47:45 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Neil Horman <nhorman@tuxdriver.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Jay Cliburn <jcliburn@gmail.com>, Chris Snook <chris.snook@gmail.com>,
+Cc: Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
         "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 71/75] atl1e: unmap partially mapped skb on dma error and free skb
-Date: Tue, 30 Jul 2013 11:45:15 -0700
-Message-Id: <1375209919-1768-38-git-send-email-kamal@canonical.com>
+Subject: [PATCH 69/75] ipv6: only static routes qualify for equal cost multipathing
+Date: Tue, 30 Jul 2013 11:45:13 -0700
+Message-Id: <1375209919-1768-36-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1375197464-27962-1-git-send-email-kamal@canonical.com>
 References: <1375197464-27962-1-git-send-email-kamal@canonical.com>
@@ -30,89 +29,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Neil Horman <nhorman@tuxdriver.com>
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-[ Upstream commit 584ec4355355ffac43571b02a314d43eb2f7fcbf ]
+[ Upstream commit 307f2fb95e9b96b3577916e73d92e104f8f26494 ]
 
-Ben Hutchings pointed out that my recent update to atl1e
-in commit 352900b583b2852152a1e05ea0e8b579292e731e
-("atl1e: fix dma mapping warnings") was missing a bit of code.
+Static routes in this case are non-expiring routes which did not get
+configured by autoconf or by icmpv6 redirects.
 
-Specifically it reset the hardware tx ring to its origional state when
-we hit a dma error, but didn't unmap any exiting mappings from the
-operation.  This patch fixes that up.  It also remembers to free the
-skb in the event that an error occurs, so we don't leak.  Untested, as
-I don't have hardware.  I think its pretty straightforward, but please
-review closely.
+To make sure we actually get an ecmp route while searching for the first
+one in this fib6_node's leafs, also make sure it matches the ecmp route
+assumptions.
 
-Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-CC: Ben Hutchings <bhutchings@solarflare.com>
-CC: Jay Cliburn <jcliburn@gmail.com>
-CC: Chris Snook <chris.snook@gmail.com>
-CC: "David S. Miller" <davem@davemloft.net>
+v2:
+a) Removed RTF_EXPIRE check in dst.from chain. The check of RTF_ADDRCONF
+   already ensures that this route, even if added again without
+   RTF_EXPIRES (in case of a RA announcement with infinite timeout),
+   does not cause the rt6i_nsiblings logic to go wrong if a later RA
+   updates the expiration time later.
+
+v3:
+a) Allow RTF_EXPIRES routes to enter the ecmp route set. We have to do so,
+   because an pmtu event could update the RTF_EXPIRES flag and we would
+   not count this route, if another route joins this set. We now filter
+   only for RTF_GATEWAY|RTF_ADDRCONF|RTF_DYNAMIC, which are flags that
+   don't get changed after rt6_info construction.
+
+Cc: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/ethernet/atheros/atl1e/atl1e_main.c | 24 +++++++++++++++++++++++-
- 1 file changed, 23 insertions(+), 1 deletion(-)
+ net/ipv6/ip6_fib.c | 15 +++++++++++----
+ 1 file changed, 11 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/net/ethernet/atheros/atl1e/atl1e_main.c b/drivers/net/ethernet/atheros/atl1e/atl1e_main.c
-index a756cd4..62cb33c 100644
---- a/drivers/net/ethernet/atheros/atl1e/atl1e_main.c
-+++ b/drivers/net/ethernet/atheros/atl1e/atl1e_main.c
-@@ -1682,6 +1682,7 @@ static int atl1e_tx_map(struct atl1e_adapter *adapter,
- 	u16 f;
- 	int segment;
- 	int ring_start = adapter->tx_ring.next_to_use;
-+	int ring_end;
+diff --git a/net/ipv6/ip6_fib.c b/net/ipv6/ip6_fib.c
+index 710cafd..e67039f 100644
+--- a/net/ipv6/ip6_fib.c
++++ b/net/ipv6/ip6_fib.c
+@@ -634,6 +634,12 @@ insert_above:
+ 	return ln;
+ }
  
- 	nr_frags = skb_shinfo(skb)->nr_frags;
- 	segment = (tpd->word3 >> TPD_SEGMENT_EN_SHIFT) & TPD_SEGMENT_EN_MASK;
-@@ -1725,6 +1726,15 @@ static int atl1e_tx_map(struct atl1e_adapter *adapter,
- 					map_len, PCI_DMA_TODEVICE);
- 
- 		if (dma_mapping_error(&adapter->pdev->dev, tx_buffer->dma)) {
-+			/* We need to unwind the mappings we've done */
-+			ring_end = adapter->tx_ring.next_to_use;
-+			adapter->tx_ring.next_to_use = ring_start;
-+			while (adapter->tx_ring.next_to_use != ring_end) {
-+				tpd = atl1e_get_tpd(adapter);
-+				tx_buffer = atl1e_get_tx_buffer(adapter, tpd);
-+				pci_unmap_single(adapter->pdev, tx_buffer->dma,
-+						 tx_buffer->length, PCI_DMA_TODEVICE);
-+			}
- 			/* Reset the tx rings next pointer */
- 			adapter->tx_ring.next_to_use = ring_start;
- 			return -ENOSPC;
-@@ -1767,6 +1777,16 @@ static int atl1e_tx_map(struct atl1e_adapter *adapter,
- 							  DMA_TO_DEVICE);
- 
- 			if (dma_mapping_error(&adapter->pdev->dev, tx_buffer->dma)) {
-+				/* We need to unwind the mappings we've done */
-+				ring_end = adapter->tx_ring.next_to_use;
-+				adapter->tx_ring.next_to_use = ring_start;
-+				while (adapter->tx_ring.next_to_use != ring_end) {
-+					tpd = atl1e_get_tpd(adapter);
-+					tx_buffer = atl1e_get_tx_buffer(adapter, tpd);
-+					dma_unmap_page(&adapter->pdev->dev, tx_buffer->dma,
-+						       tx_buffer->length, DMA_TO_DEVICE);
-+				}
++static inline bool rt6_qualify_for_ecmp(struct rt6_info *rt)
++{
++	return (rt->rt6i_flags & (RTF_GATEWAY|RTF_ADDRCONF|RTF_DYNAMIC)) ==
++	       RTF_GATEWAY;
++}
 +
- 				/* Reset the ring next to use pointer */
- 				adapter->tx_ring.next_to_use = ring_start;
- 				return -ENOSPC;
-@@ -1857,8 +1877,10 @@ static netdev_tx_t atl1e_xmit_frame(struct sk_buff *skb,
- 		return NETDEV_TX_OK;
- 	}
+ /*
+  *	Insert routing information in a node.
+  */
+@@ -648,6 +654,7 @@ static int fib6_add_rt2node(struct fib6_node *fn, struct rt6_info *rt,
+ 	int add = (!info->nlh ||
+ 		   (info->nlh->nlmsg_flags & NLM_F_CREATE));
+ 	int found = 0;
++	bool rt_can_ecmp = rt6_qualify_for_ecmp(rt);
  
--	if (atl1e_tx_map(adapter, skb, tpd))
-+	if (atl1e_tx_map(adapter, skb, tpd)) {
-+		dev_kfree_skb_any(skb);
- 		goto out;
-+	}
+ 	ins = &fn->leaf;
  
- 	atl1e_tx_queue(adapter, tpd_req, tpd);
+@@ -693,9 +700,8 @@ static int fib6_add_rt2node(struct fib6_node *fn, struct rt6_info *rt,
+ 			 * To avoid long list, we only had siblings if the
+ 			 * route have a gateway.
+ 			 */
+-			if (rt->rt6i_flags & RTF_GATEWAY &&
+-			    !(rt->rt6i_flags & RTF_EXPIRES) &&
+-			    !(iter->rt6i_flags & RTF_EXPIRES))
++			if (rt_can_ecmp &&
++			    rt6_qualify_for_ecmp(iter))
+ 				rt->rt6i_nsiblings++;
+ 		}
  
+@@ -717,7 +723,8 @@ static int fib6_add_rt2node(struct fib6_node *fn, struct rt6_info *rt,
+ 		/* Find the first route that have the same metric */
+ 		sibling = fn->leaf;
+ 		while (sibling) {
+-			if (sibling->rt6i_metric == rt->rt6i_metric) {
++			if (sibling->rt6i_metric == rt->rt6i_metric &&
++			    rt6_qualify_for_ecmp(sibling)) {
+ 				list_add_tail(&rt->rt6i_siblings,
+ 					      &sibling->rt6i_siblings);
+ 				break;
 -- 
 1.8.1.2
 
