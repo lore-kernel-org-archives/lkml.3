@@ -1,42 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758943Ab3G3J7G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 05:59:06 -0400
-Received: from nm27-vm1.bullet.mail.bf1.yahoo.com ([98.139.213.148]:35515 "EHLO
-	nm27-vm1.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758935Ab3G3J67 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 05:58:59 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 828496.49887.bm@omp1050.mail.bf1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-RocketYMMF:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=o4zMCJEYmWLyzmB7u91NBqMAadCs+Ao3YQSGJe+61GDeMrS2UV6Ol0DoGhUWdkM/mOlNchOuEzPsMEiKieMh0R1DdTSC9TqCICis76xD4unwtX5ovA90E2XmldOLDHsZbkzFfJ+amwoAf3w//xScKEN8APTmgImCxcueHr1nuwo=;
-X-YMail-OSG: ARlFu4QVM1lAjvhrugm9izrFWknC8Ox_PuKY7q.4EYpP9SK
- YOWJvUKoEosPiEi4-
-X-Rocket-MIMEInfo: 002.001,RGVhciBGcmllbmQsDQpHcmVldGluZ3MgdG8geW91IGFuZCB5b3VyIGZhbWlseS4NCg0KTXkgbmFtZSBpcyBNcnMgTW9uYXRlIEFkYW1hLCB0aGUgY3VycmVudCBDaGllZiBBdWRpdG9yIG9mIGEgZm9ybWlkYWJsZSBiYW5rIGhlcmUgaW4gT3VhZ2Fkb3Vnb3UsIEJ1cmtpbmEgRmFzbywgV2VzdCBBZnJpY2EuIEkgaGF2ZSBhIHRyYW5zYWN0aW9uIHdvcnRoIG9mIDEyLjUgTWlsbGlvbiBVLlMgZG9sbGFycyBmb3IgdHJhbnNmZXJyaW5nIGludG8geW91ciBjYXJlIGZvciBvdXIgbXV0dWFsIGJlbmVmaXRzLCBzbwEwAQEBAQ--
-X-RocketYMMF: frombalissun100
-X-Mailer: YahooMailClassic/280 YahooMailWebService/0.8.151.566
-Message-ID: <1375178338.43001.YahooMailBasic@web140005.mail.bf1.yahoo.com>
-Date: Tue, 30 Jul 2013 02:58:58 -0700 (PDT)
-From: monat <m77777a@sify.com>
-Reply-To: m77777a@sify.com
-Subject: From Mrs Monat Adama.
-To: undisclosed recipients:;
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S932322Ab3G3J7s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 05:59:48 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52967 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932243Ab3G3Jc2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Jul 2013 05:32:28 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: "Theodore Ts'o" <tytso@mit.edu>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 015/106] ext4: don't show usrquota/grpquota twice in /proc/mounts
+Date: Tue, 30 Jul 2013 10:30:34 +0100
+Message-Id: <1375176725-5825-16-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
+References: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Friend,
-Greetings to you and your family.
+3.5.7.18 -stable review patch.  If anyone has any objections, please let me know.
 
-My name is Mrs Monate Adama, the current Chief Auditor of a formidable bank here in Ouagadougou, Burkina Faso, West Africa. I have a transaction worth of 12.5 Million U.S dollars for transferring into your care for our mutual benefits, so  i need your assistance with 100% cooperation to realise this task. 
-Further details about the fund, its source and the administrative procedure to transfer this fund into your receiving bank account shall be made known to you immediately as I have your positive response.
+------------------
 
-Thanks and Regards,
+From: Theodore Ts'o <tytso@mit.edu>
 
-Mrs Monate Adama.
+commit ad065dd01662ae22138899e6b1c8eeb3a529964f upstream.
+
+We now print mount options in a generic fashion in
+ext4_show_options(), so we shouldn't be explicitly printing the
+{usr,grp}quota options in ext4_show_quota_options().
+
+Without this patch, /proc/mounts can look like this:
+
+ /dev/vdb /vdb ext4 rw,relatime,quota,usrquota,data=ordered,usrquota 0 0
+                                      ^^^^^^^^              ^^^^^^^^
+
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ fs/ext4/super.c | 6 ------
+ 1 file changed, 6 deletions(-)
+
+diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+index 89abdd7..0689c5d 100644
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -1749,12 +1749,6 @@ static inline void ext4_show_quota_options(struct seq_file *seq,
+ 
+ 	if (sbi->s_qf_names[GRPQUOTA])
+ 		seq_printf(seq, ",grpjquota=%s", sbi->s_qf_names[GRPQUOTA]);
+-
+-	if (test_opt(sb, USRQUOTA))
+-		seq_puts(seq, ",usrquota");
+-
+-	if (test_opt(sb, GRPQUOTA))
+-		seq_puts(seq, ",grpquota");
+ #endif
+ }
+ 
+-- 
+1.8.3.2
+
