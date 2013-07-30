@@ -1,245 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757578Ab3G3Ujs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 16:39:48 -0400
-Received: from mail-ea0-f173.google.com ([209.85.215.173]:35653 "EHLO
-	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757149Ab3G3Ujq (ORCPT
+	id S1757691Ab3G3UkH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 16:40:07 -0400
+Received: from dkim1.fusionio.com ([66.114.96.53]:32881 "EHLO
+	dkim1.fusionio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757349Ab3G3UkE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 16:39:46 -0400
-From: Zoran Markovic <zoran.markovic@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: linux-pm@vger.kernel.org, Benoit Goby <benoit@android.com>,
-        Android Kernel Team <kernel-team@android.com>,
-        Colin Cross <ccross@android.com>, Todd Poynor <toddpoynor@google.com>,
-        San Mehat <san@google.com>, John Stultz <john.stultz@linaro.org>,
-        Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Len Brown <len.brown@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Zoran Markovic <zoran.markovic@linaro.org>
-Subject: [RFC PATCHv3] drivers: power: Detect device suspend/resume lockup and log event in pstore.
-Date: Tue, 30 Jul 2013 13:38:53 -0700
-Message-Id: <1375216733-6740-1-git-send-email-zoran.markovic@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 30 Jul 2013 16:40:04 -0400
+X-ASG-Debug-ID: 1375216802-03d6a577cd3e4420001-xx1T2L
+X-Barracuda-Envelope-From: JBacik@fusionio.com
+Date: Tue, 30 Jul 2013 16:40:01 -0400
+From: Josef Bacik <jbacik@fusionio.com>
+To: Thorsten Glaser <tg@mirbsd.de>
+CC: Josef Bacik <jbacik@fusionio.com>, Joe Perches <joe@perches.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Debian GNU/Linux m68k <debian-68k@lists.debian.org>,
+        <linux-btrfs@vger.kernel.org>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>
+Subject: Re: btrfs zero divide
+Message-ID: <20130730204001.GG24583@localhost.localdomain>
+X-ASG-Orig-Subj: Re: btrfs zero divide
+References: <Pine.BSM.4.64L.1307300820160.20675@herc.mirbsd.org>
+ <alpine.DEB.2.02.1307301052010.23107@ayla.of.borg>
+ <20130730171329.GF24583@localhost.localdomain>
+ <Pine.BSM.4.64L.1307301741360.20305@herc.mirbsd.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <Pine.BSM.4.64L.1307301741360.20305@herc.mirbsd.org>
+User-Agent: Mutt/1.5.21 (2011-07-01)
+X-Originating-IP: [10.101.1.160]
+X-Barracuda-Connect: cas1.int.fusionio.com[10.101.1.40]
+X-Barracuda-Start-Time: 1375216802
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Bayes: INNOCENT GLOBAL 0.0000 1.0000 -2.0210
+X-Barracuda-Spam-Score: -2.02
+X-Barracuda-Spam-Status: No, SCORE=-2.02 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.137447
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Benoit Goby <benoit@android.com>
+On Tue, Jul 30, 2013 at 07:02:29PM +0000, Thorsten Glaser wrote:
+> Josef Bacik dixit:
+> 
+> >Can you gdb btrfs.ko and do
+> >
+> >list *(__btrfs_map_block+0x11c)
+> 
+> Not easily (the kernel image is from a .deb package),
+> and even in a compile tree gdb just says:
+> No symbol table is loaded.  Use the "file" command.
+> 
+> With a bit of cheating and a cross-compiler, this is:
+> 
+> (gdb) list *0x0000106e
+> 0x106e is in __btrfs_map_block (/var/lib/gforge/chroot/home/users/tg/Xl/linux-3.10.1/fs/btrfs/volumes.c:4447).
+> 4442            stripe_nr = offset;
+> 4443            /*
+> 4444             * stripe_nr counts the total number of stripes we have to stride
+> 4445             * to get to this block
+> 4446             */
+> 4447            do_div(stripe_nr, stripe_len);
+> 4448
+> 4449            stripe_offset = stripe_nr * stripe_len;
+> 4450            BUG_ON(offset < stripe_offset);
+> 4451
+> 
 
-Rather than hard-lock the kernel, dump the suspend/resume thread stack and
-panic() to capture a message in pstore when a driver takes too long to
-suspend/resume. Default suspend/resume watchdog timeout is set to 12
-seconds to be longer than the usbhid 10 second timeout, but could be
-changed at compile time.
+So stripe_len shouldn't be 0, if it is you have bigger problems :).  Is this a
+corrupt fs or something?  If there was some sort of corruption that occured then
+I suppose stripe_len could be 0 and we'd need to catch that somewhere higher up
+the stack and error out.  Is there a way you could check and see if that's the
+case?  Thanks,
 
-Exclude from the watchdog the time spent waiting for children that
-are resumed asynchronously and time every device, whether or not they
-resumed synchronously.
-
-This patch is targeted for mobile devices where a suspend/resume lockup
-could cause a system reboot. Information about failing device can be
-retrieved in subsequent boot session by mounting pstore and inspecting
-the log.
-
-The hardware watchdog timer is likely suspended during this time and
-couldn't be relied upon. The soft-lockup detector would eventually tell
-that tasks are not scheduled, but would provide little context as to why.
-The patch hence uses system timer and assumes it is still active while the
-devices are suspended/resumed.
-
-This feature can be enabled/disabled during kernel configuration.
-
-Cc: Android Kernel Team <kernel-team@android.com>
-Cc: Colin Cross <ccross@android.com>
-Cc: Todd Poynor <toddpoynor@google.com>
-Cc: San Mehat <san@google.com>
-Cc: Benoit Goby <benoit@android.com>
-Cc: John Stultz <john.stultz@linaro.org>
-Cc: Pavel Machek <pavel@ucw.cz>
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
-Cc: Len Brown <len.brown@intel.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Original-author: San Mehat <san@google.com>
-Signed-off-by: Benoit Goby <benoit@android.com>
-[zoran.markovic@linaro.org: Changed printk(KERN_EMERG,...) to pr_emerg(...),
-tweaked commit message. Minor changes to add compile-time inclusion of
-the feature.]
-Signed-off-by: Zoran Markovic <zoran.markovic@linaro.org>
----
-v3: 
-* Added explicit dependency on pstore
-* Collapsed recovery options to system panic only
-* Logged driver string in panic message
-
- drivers/base/power/main.c |   70 +++++++++++++++++++++++++++++++++++++++++++++
- kernel/power/Kconfig      |   16 +++++++++++
- 2 files changed, 86 insertions(+)
-
-diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
-index 5a9b656..c19aec0 100644
---- a/drivers/base/power/main.c
-+++ b/drivers/base/power/main.c
-@@ -29,6 +29,8 @@
- #include <linux/async.h>
- #include <linux/suspend.h>
- #include <linux/cpuidle.h>
-+#include <linux/timer.h>
-+
- #include "../base.h"
- #include "power.h"
- 
-@@ -54,6 +56,12 @@ struct suspend_stats suspend_stats;
- static DEFINE_MUTEX(dpm_list_mtx);
- static pm_message_t pm_transition;
- 
-+struct dpm_watchdog {
-+	struct device		*dev;
-+	struct task_struct	*tsk;
-+	struct timer_list	timer;
-+};
-+
- static int async_error;
- 
- /**
-@@ -384,6 +392,60 @@ static int dpm_run_callback(pm_callback_t cb, struct device *dev,
- 	return error;
- }
- 
-+#ifdef CONFIG_DPM_WD
-+/**
-+ * dpm_wd_handler - Driver suspend / resume watchdog handler.
-+ *
-+ * Called when a driver has timed out suspending or resuming.
-+ * There's not much we can do here to recover so panic() to
-+ * capture a crash-dump in pstore.
-+ */
-+static void dpm_wd_handler(unsigned long data)
-+{
-+	struct dpm_watchdog *wd = (void *)data;
-+
-+	dev_emerg(wd->dev, "**** DPM device timeout ****\n");
-+	show_stack(wd->tsk, NULL);
-+	panic("%s %s: unrecoverable failure\n",
-+		dev_driver_string(wd->dev), dev_name(wd->dev));
-+}
-+
-+/**
-+ * dpm_wd_set - Enable pm watchdog for given device.
-+ * @wd: Watchdog. Must be allocated on the stack.
-+ * @dev: Device to handle.
-+ */
-+static void dpm_wd_set(struct dpm_watchdog *wd, struct device *dev)
-+{
-+	struct timer_list *timer = &wd->timer;
-+
-+	wd->dev = dev;
-+	wd->tsk = get_current();
-+
-+	init_timer_on_stack(timer);
-+	/* use same timeout value for both suspend and resume */
-+	timer->expires = jiffies + HZ * CONFIG_DPM_WD_TIMEOUT;
-+	timer->function = dpm_wd_handler;
-+	timer->data = (unsigned long)wd;
-+	add_timer(timer);
-+}
-+
-+/**
-+ * dpm_wd_clear - Disable suspend/resume watchdog.
-+ * @wd: Watchdog to disable.
-+ */
-+static void dpm_wd_clear(struct dpm_watchdog *wd)
-+{
-+	struct timer_list *timer = &wd->timer;
-+
-+	del_timer_sync(timer);
-+	destroy_timer_on_stack(timer);
-+}
-+#else
-+#define dpm_wd_set(x, y)
-+#define dpm_wd_clear(x)
-+#endif
-+
- /*------------------------- Resume routines -------------------------*/
- 
- /**
-@@ -570,6 +632,7 @@ static int device_resume(struct device *dev, pm_message_t state, bool async)
- 	pm_callback_t callback = NULL;
- 	char *info = NULL;
- 	int error = 0;
-+	struct dpm_watchdog wd;
- 
- 	TRACE_DEVICE(dev);
- 	TRACE_RESUME(0);
-@@ -585,6 +648,7 @@ static int device_resume(struct device *dev, pm_message_t state, bool async)
- 	 * a resumed device, even if the device hasn't been completed yet.
- 	 */
- 	dev->power.is_prepared = false;
-+	dpm_wd_set(&wd, dev);
- 
- 	if (!dev->power.is_suspended)
- 		goto Unlock;
-@@ -636,6 +700,7 @@ static int device_resume(struct device *dev, pm_message_t state, bool async)
- 
-  Unlock:
- 	device_unlock(dev);
-+	dpm_wd_clear(&wd);
- 
-  Complete:
- 	complete_all(&dev->power.completion);
-@@ -1053,6 +1118,7 @@ static int __device_suspend(struct device *dev, pm_message_t state, bool async)
- 	pm_callback_t callback = NULL;
- 	char *info = NULL;
- 	int error = 0;
-+	struct dpm_watchdog wd;
- 
- 	dpm_wait_for_children(dev, async);
- 
-@@ -1076,6 +1142,8 @@ static int __device_suspend(struct device *dev, pm_message_t state, bool async)
- 	if (dev->power.syscore)
- 		goto Complete;
- 
-+	dpm_wd_set(&wd, dev);
-+
- 	device_lock(dev);
- 
- 	if (dev->pm_domain) {
-@@ -1131,6 +1199,8 @@ static int __device_suspend(struct device *dev, pm_message_t state, bool async)
- 
- 	device_unlock(dev);
- 
-+	dpm_wd_clear(&wd);
-+
-  Complete:
- 	complete_all(&dev->power.completion);
- 	if (error)
-diff --git a/kernel/power/Kconfig b/kernel/power/Kconfig
-index d444c4e..6a6b763 100644
---- a/kernel/power/Kconfig
-+++ b/kernel/power/Kconfig
-@@ -178,6 +178,22 @@ config PM_SLEEP_DEBUG
- 	def_bool y
- 	depends on PM_DEBUG && PM_SLEEP
- 
-+config DPM_WD
-+	bool "Device suspend/resume watchdog"
-+	depends on PM_DEBUG && PSTORE
-+	---help---
-+	  Sets up a watchdog timer to capture drivers that are
-+	  locked up attempting to suspend/resume a device.
-+	  A detected lockup causes system panic with message
-+	  captured in pstore device for inspection in subsequent
-+	  boot session.
-+
-+config DPM_WD_TIMEOUT
-+	int "Watchdog timeout in seconds"
-+	range 1 120
-+	default 12
-+	depends on DPM_WD
-+
- config PM_TRACE
- 	bool
- 	help
--- 
-1.7.9.5
-
+Josef
