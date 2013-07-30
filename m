@@ -1,194 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757245Ab3G3D6x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 23:58:53 -0400
-Received: from ozlabs.org ([203.10.76.45]:42592 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755010Ab3G3D6w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 23:58:52 -0400
-Date: Tue, 30 Jul 2013 13:29:26 +1000
-From: David Gibson <david@gibson.dropbear.id.au>
-To: "jonsmirl@gmail.com" <jonsmirl@gmail.com>
-Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "ksummit-2013-discuss@lists.linuxfoundation.org" 
-	<ksummit-2013-discuss@lists.linuxfoundation.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Domenico Andreoli <cavokz@gmail.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Dave P Martin <Dave.Martin@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [Ksummit-2013-discuss] DT bindings as ABI [was: Do we have
- people interested in device tree janitoring / cleanup?]
-Message-ID: <20130730032926.GL29970@voom.fritz.box>
-References: <51F39FD8.6080808@broadcom.com>
- <2460092.aLmjrOVh1g@flatron>
- <51F3A82E.2000907@broadcom.com>
- <CACxGe6t0C7PTiDDaFkgoMZWUpBVokasxwZpV6HEtf3LaPi4qUw@mail.gmail.com>
- <CAKON4OymA55w_V=oP4BL2su84m8EnPgdhnQtyLWKaAJE-yNBkQ@mail.gmail.com>
- <CACxGe6uE6jOE-vz0onW5h93Es-soGiBAcFBM7Dvxh+HvCNrHkw@mail.gmail.com>
- <CACxGe6vw9=y5a+EgF1gO39SwGAdGofD2MYjyJ3jYu6uN3ke70A@mail.gmail.com>
- <1374988276.1973.29.camel@dabdike>
- <20130730014453.GJ29970@voom.fritz.box>
- <CAKON4OyWuF+qm2MAhbXnGg=ozzw37kpSWciLxyUy+QQzxoWdxQ@mail.gmail.com>
+	id S1757240Ab3G3D7I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 23:59:08 -0400
+Received: from mail-oa0-f41.google.com ([209.85.219.41]:42989 "EHLO
+	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757258Ab3G3D7E (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 23:59:04 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Xb8pJpF45Qg/t7GZ"
-Content-Disposition: inline
-In-Reply-To: <CAKON4OyWuF+qm2MAhbXnGg=ozzw37kpSWciLxyUy+QQzxoWdxQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <51F73730.9070402@huawei.com>
+References: <1373621543-54836-1-git-send-email-wangyijing@huawei.com>
+ <1373621543-54836-4-git-send-email-wangyijing@huawei.com> <CAErSpo4XhONYq3CZnPKgdMD4V5o8fgFc=NGVUGgFz0y5zM3GyA@mail.gmail.com>
+ <51F73730.9070402@huawei.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 29 Jul 2013 21:58:43 -0600
+Message-ID: <CAErSpo6Zw3Q=bzw6tAR70TCcXs1+UB9BNW3y7w8qNusT2c79tg@mail.gmail.com>
+Subject: Re: [PATCH -v3 3/3] PCI,pciehp: use PCIe DSN to identify device
+ change during suspend
+To: Yijing Wang <wangyijing@huawei.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Don Dutile <ddutile@redhat.com>, Paul Bolle <pebolle@tiscali.nl>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Rafael <rjw@sisk.pl>, Hanjun Guo <guohanjun@huawei.com>,
+        Jiang Liu <jiang.liu@huawei.com>, Oliver Neukum <oneukum@suse.de>,
+        Gu Zheng <guz.fnst@cn.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jul 29, 2013 at 9:46 PM, Yijing Wang <wangyijing@huawei.com> wrote:
+>> I'm not sure this is implemented at the correct place.  The idea of
+>> using the serial number to detect card swaps is not really specific to
+>> pciehp.  I know the Device Serial Number capability is defined in the
+>> PCIe spec, but it doesn't *require* any PCIe functionality, and
+>> there's no reason a similar capability couldn't be defined for
+>> conventional PCI.
+>>
+>> I don't know much about it, but conventional PCI *does* in fact
+>> support the VPD capability, which can contain a serial number.  I
+>> wonder if we should enhance pci_device_serial_number() to look for a
+>> VPD serial number if there's no PCIe DSN.  Then we would want this
+>> check for card swap in a more generic place, e.g., somewhere in
+>> pci_scan_slot(), so all forms of hotplug would benefit from it.
+>
+> Hi Bjorn,
+>    I'm reworking this patch, but found some strange info about vpd serial number.
+> I have two x86 machines, they almost have the same hardware topology. But by lspci,
+> I found two different Broadcom BCM5709 NIC in different machine have the same vpd serial
+> number. If this is normal, vpd serial number seems to be useless for identify device change.
 
---Xb8pJpF45Qg/t7GZ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I wouldn't say it's completely useless.  If the VPD serial number
+changes, we can be pretty confident that the card has changed.  It's
+just that if the VPD serial number is unchanged, we might incorrectly
+assume it's the same device.
 
-On Mon, Jul 29, 2013 at 10:15:12PM -0400, jonsmirl@gmail.com wrote:
-> On Mon, Jul 29, 2013 at 9:44 PM, David Gibson
-> <david@gibson.dropbear.id.au> wrote:
-> > On Sat, Jul 27, 2013 at 10:11:16PM -0700, James Bottomley wrote:
-> >> On Sat, 2013-07-27 at 21:28 -0600, Grant Likely wrote:
-> >> > On Sat, Jul 27, 2013 at 2:25 PM, Grant Likely <grant.likely@secretla=
-b.ca> wrote:
-> >> > > On Sat, Jul 27, 2013 at 2:01 PM, jonsmirl@gmail.com <jonsmirl@gmai=
-l.com> wrote:
-> >> > >> On Sat, Jul 27, 2013 at 3:45 PM, Grant Likely <grant.likely@secre=
-tlab.ca> wrote:
-> >> > >>> On Sat, Jul 27, 2013 at 4:59 AM, Arend van Spriel <arend@broadco=
-m.com> wrote:
-> >> > >>>> Let's see how many people go and scream if I say this: Too bad =
-=2Edts files
-> >> > >>>> are not done using XML format as DT bindings could be described=
- using XML
-> >> > >>>> Schema.
-> >> > >>>
-> >> > >>> Draft an example and show us how it would look!  :-)  There is
-> >> > >>> absolutely nothing preventing us from expressing a DT in XML for=
-mat,
-> >> > >>> or even using XSLT to define DT schema while still using our cur=
-rent
-> >> > >>> .dts syntax. It would be trivial to do lossless translation betw=
-een
-> >> > >>> .dts syntax and xml.
-> >> > >>>
-> >> > >>> The problem that I have with XML and XSLT is that it is very ver=
-bose
-> >> > >>> and not entirely friendly to mere-mortals. However, I'm more than
-> >> > >>> willing to be proved wrong on this point.
-> >> > >>
-> >> > >> I considered this approach a while ago and discarded it. It would=
- work
-> >> > >> but it is just too much of a Frankenstein monster.
-> >> > >>
-> >> > >> Much cleaner to modify dtc to take a schema as part of the compil=
-ation
-> >> > >> process. The schema language itself has no requirement to look li=
-ke
-> >> > >> DTS syntax. Whoever wrote dtc probably has a favorite language th=
-at
-> >> > >> would be good for writing schemas in.
-> >> > >
-> >> > > Making it part of dtc is a required feature as far as I'm concerne=
-d.
-> >> > > Using XML/XSLT and dtc-integration are not mutually exclusive, but=
- I
-> >> > > digress.
-> >> >
-> >> > Oops, ignore the XSLT bit. XSLT isn't schema and has no bearing on t=
-he
-> >> > discussion of schema. Sorry for the noise.
-> >>
-> >> XSLT is a transform language ... you'd use it say to transform xml to
-> >> dtc, so it would be an integral component of an xml/xslt based schema.
-> >>
-> >> If you want actually to describe and have validated the xml schema
-> >> itself, then you'd use xsd (XML schema description language) and its
-> >> associated tools.
-> >>
-> >> I'm not saying you *should* do this, just that it's possible (plus I've
-> >> just blown my kernel cred by knowing about xml, sigh).
-> >
-> > Heh.  So, it was said in jest, but that actually raises an important
-> > point.
-> >
-> > There are basically two criteria to keep in mind for our
-> > representation of schemas:
-> >    1) Adequate expressiveness to validate a sufficiently large part,
-> > of a sufficiently large number of bindings to be useful.
-> >    2) Ease of use and ease of learning **for the target audience**.
-> >
-> > To the best of my knowledge xsd would do well on (1), but I'm not
-> > convinced it does very well on (2).  In an environment where XML was
-> > already widely used, XSD would make perfect sense.  Here, I think it
-> > would be pretty ugly to wire onto the existing DT tools and
-> > infrastructure, and unpleasantly unfamiliar for many kernel and board
-> > developers trying to work with DT schemas.
-> >
-> >
-> > So, by way of investigation, let me propose an alternative expression
-> > of schemas, that I'm also not convinced we should do, but is possible
-> > and expressive.  It's illustrative, because it's kind of the polar
-> > opposite approach to XSD: just use C.
-> >
-> > dtc already has a (so far limited) "checks" mechanism which verifies
-> > various aspects of DT content.  These are implemented by C functions
-> > in checks.c.  There's obviously ample expressiveness - you can express
-> > any constraint you want that way.  It can be pretty verbose, and
-> > fiddly.  A good library of helper functions can mitigate that, but
-> > it's not clear how much.  On the other hand, a very good fraction of
-> > people working with this will already be familiar with C, which is a
-> > big plus.  This is, after all, the reason that the dts syntax is
-> > chiefly C inspired.
-> >
-> > Now, in practice, I think we will want a more convenient schema
-> > language (just as we wanted dts, rather than manually constructing
-> > FDTs as C structures).  But I absolutely do think, that the schema
-> > handling should be handled as plugins to the checks mechanism -
-> > basically we'd have a validate_schemas() check function.
-> >
-> > I also think we should consider the option of having a simple and
-> > straightforward schema language which handles, say, 80% of cases with
-> > a fall back to C for the 20% of curly cases.  That might actually be
-> > simpler to work with in practice than a schema language which can
-> > express absolutely anything, at the cost of being awkward for simple
-> > cases or difficult to get your head around.
->=20
-> Would C++ work? You can use operating overloading and templates to
-> change the syntax into something that doesn't even resemble C any
-> more.
+But we currently *always* assume it's the same device, since we don't
+look at serial numbers at all.  If we can detect some changes, that
+should be an improvement over what we have today even though it's not
+perfect.
 
-Well, in theory.  But given that dtc and the kernel are both in plain
-C, I don't think it's a good idea.
-
---=20
-David Gibson			| I'll have my music baroque, and my code
-david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
-				| _way_ _around_!
-http://www.ozlabs.org/~dgibson
-
---Xb8pJpF45Qg/t7GZ
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.13 (GNU/Linux)
-
-iEYEARECAAYFAlH3MxYACgkQaILKxv3ab8YGEgCfeTTnZKYxRDr/iCTgYgx23K7H
-vYAAnAmQHCp8olWerEkFkkP3MPRN6xC/
-=8/+t
------END PGP SIGNATURE-----
-
---Xb8pJpF45Qg/t7GZ--
+> The first machine:
+> linux:/home/yijing # lspci -vvv -s 0000:01:00.0
+> 01:00.0 Ethernet controller: Broadcom Corporation NetXtreme II BCM5709 Gigabit Ethernet (rev 20)
+>         Subsystem: Broadcom Corporation NetXtreme II BCM5709 Gigabit Ethernet
+>         Control: I/O- Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-
+>         Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+>         Latency: 0, Cache Line Size: 256 bytes
+>         Interrupt: pin A routed to IRQ 28
+>         Region 0: Memory at c0000000 (64-bit, non-prefetchable) [size=32M]
+>         Capabilities: [48] Power Management version 3
+>                 Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA PME(D0+,D1-,D2-,D3hot+,D3cold+)
+>                 Status: D0 NoSoftRst+ PME-Enable- DSel=0 DScale=1 PME-
+>         Capabilities: [50] Vital Product Data
+>                 Product Name: Broadcom NetXtreme II Ethernet Controller
+>                 Read-only fields:
+>                         [PN] Part number: BCM95706A0
+>                         [EC] Engineering changes: 220197-2
+>                         [SN] Serial number: 0123456789
+>                         [MN] Manufacture ID: 31 34 65 34
+>                         [RV] Reserved: checksum good, 31 byte(s) reserved
+>                 End
+>         Capabilities: [58] MSI: Enable- Count=1/16 Maskable- 64bit+
+>                 Address: 0000000000000000  Data: 0000
+>         ..............[snip]...................
+>
+> The second machine:
+> linux-suse-vmdq:~/pciutils-3.2.0 # ./lspci -vvv -s 01:00.0
+> 01:00.0 Ethernet controller: Broadcom Corporation NetXtreme II BCM5709 Gigabit Ethernet (rev 20)
+>         Subsystem: Broadcom Corporation NetXtreme II BCM5709 Gigabit Ethernet
+>         Control: I/O- Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-
+>         Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+>         Latency: 0, Cache Line Size: 256 bytes
+>         Interrupt: pin A routed to IRQ 28
+>         Region 0: Memory at f6000000 (64-bit, non-prefetchable) [size=32M]
+>         Capabilities: [48] Power Management version 3
+>                 Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA PME(D0+,D1-,D2-,D3hot+,D3cold+)
+>                 Status: D0 NoSoftRst+ PME-Enable- DSel=0 DScale=1 PME-
+>         Capabilities: [50] Vital Product Data
+>                 Product Name: Broadcom NetXtreme II Ethernet Controller
+>                 Read-only fields:
+>                         [PN] Part number: BCM95706A0
+>                         [EC] Engineering changes: 220197-2
+>                         [SN] Serial number: 0123456789
+>                         [MN] Manufacture ID: 31 34 65 34
+>                         [RV] Reserved: checksum good, 31 byte(s) reserved
+>                 End
+>         .......[snip]........
+>
+>
+>>
+>> Also, I think it's possible to use acpiphp for ExpressCard slots, and
+>> this patch doesn't help acpiphp detect card swaps.  I don't see any
+>> mention of suspend/resume in acpiphp, so I don't know if it does
+>> anything at all to detect card changes while suspended.  Maybe Rafael
+>> can shed some light?
+>>
+>> I put the first two patches on a pci/yijing-dsn-v3 branch while we
+>> work out the details of this one.
+>>
+>> Bjorn
+>>
+>>>         } else if (!list_empty(&pbus->devices)) {
+>>>                 pciehp_disable_slot(slot);
+>>>         }
+>>> --
+>>> 1.7.1
+>>>
+>>>
+>>
+>> .
+>>
+>
+>
+> --
+> Thanks!
+> Yijing
+>
