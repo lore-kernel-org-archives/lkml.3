@@ -1,95 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756699Ab3G3TRh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 15:17:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46038 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754057Ab3G3TRg (ORCPT
+	id S1756621Ab3G3TWS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 15:22:18 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:33735 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750957Ab3G3TWQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 15:17:36 -0400
-Date: Tue, 30 Jul 2013 12:17:35 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: [GIT PATCH] USB fixes for 3.11-rc4
-Message-ID: <20130730191735.GA26504@kroah.com>
+	Tue, 30 Jul 2013 15:22:16 -0400
+From: James Bottomley <jbottomley@parallels.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>
+Subject: Re: [PATCH 25/36] SCSI: sd: convert class code to use dev_groups
+Thread-Topic: [PATCH 25/36] SCSI: sd: convert class code to use dev_groups
+Thread-Index: AQHOiLn9lIPAkmLJT0q4B8AZLxq1S5l94uSAgAAvZYCAAAXEgA==
+Date: Tue, 30 Jul 2013 19:22:16 +0000
+Message-ID: <1375212127.2065.20.camel@dabdike.int.hansenpartnership.com>
+References: <1374703539-9705-1-git-send-email-gregkh@linuxfoundation.org>
+	 <1374703539-9705-26-git-send-email-gregkh@linuxfoundation.org>
+	 <1375200711.2065.10.camel@dabdike.int.hansenpartnership.com>
+	 <20130730190129.GC25353@kroah.com>
+In-Reply-To: <20130730190129.GC25353@kroah.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [24.17.213.192]
+Content-Type: text/plain; charset=US-ASCII
+Content-ID: <E9B67C2971EE8D40A0C010483B1851FA@sw.swsoft.com>
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 2c7b871b9102c497ba8f972aa5d38532f05b654d:
+On Tue, 2013-07-30 at 12:01 -0700, Greg Kroah-Hartman wrote:
+> On Tue, Jul 30, 2013 at 04:11:52PM +0000, James Bottomley wrote:
+> > On Wed, 2013-07-24 at 15:05 -0700, Greg Kroah-Hartman wrote:
+> > > The dev_attrs field of struct class is going away soon, dev_groups
+> > > should be used instead.  This converts the scsi disk class code to use
+> > > the correct field.
+> > > 
+> > > It required some functions to be moved around to place the show and
+> > > store functions next to each other, the old order seemed to make no
+> > > sense at all.
+> > > 
+> > > Cc: James E.J. Bottomley <JBottomley@parallels.com>
+> > > Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> > > ---
+> > > 
+> > > James, feel free to take this through your tree, or ACK it and I can
+> > > take it through mine.
+> > 
+> > Just found this ... I have the stable folder rule be git-send-email and
+> > from you, so it picks up your patches as well.
+> 
+> It seems you aren't the only one who has procmail rules for my emails :)
 
-  usb: Clear both buffers when clearing a control transfer TT buffer. (2013-07-25 11:37:13 -0700)
+It's not that I don't like you, I procmail it to a different folder
+because of mobile phones: my inbox is about 50 deep and a stable patch
+run can basically empty the cache ... this can be damn annoying if your
+hotel reservation is number 51.
 
-are available in the git repository at:
+> I wonder if I need to start sending my stable stuff out from a different
+> email address...
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb.git/ tags/usb-3.11-rc4
+You don't need a different address, just use a different tag.  I tag all
+SCSI git email with 
 
-for you to fetch changes up to fed1f1ed90bce42ea010e2904cbc04e7b8304940:
+X-Git-Tree: SCSI
 
-  USB: serial: ftdi_sio: add more RT Systems ftdi devices (2013-07-29 13:38:38 -0700)
+Ben Hutchings tags all his stable email with:
 
-----------------------------------------------------------------
-USB fixes for 3.11-rc4
+X-mailer: LinuxStableQueue (scripts by bwh)
 
-Here are some tiny USB fixes for 3.11-rc4
+and so on ... any header tag does ... I'm sure git-send-email can be
+persuaded to add a more meaningful one.
 
-Nothing major, some gadget fixes, some new device ids, a new tiny driver
-for the ANT+ USB device, and a number of fixes for the mos7840 driver
-that were much needed.
+> > I'll take it through my tree, just in case we're mucking about with
+> > attributes this cycle around.
+> 
+> That's fine with me, thanks.
 
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+OK, adding it to the testing queue now.
 
-----------------------------------------------------------------
-Andrzej Pietrasiewicz (4):
-      usb: gadget: ether: put_usb_function on unbind
-      usb: gadget: free opts struct on error recovery
-      usb: gadget: multi: fix error return code in cdc_do_config()
-      usb: gadget: f_phonet: remove unused preprocessor conditional
+James
 
-Fabio Estevam (1):
-      usb: chipidea: cast PORTSC_PTS and DEVLC_PTS macros
-
-Greg Kroah-Hartman (2):
-      USB: serial: add driver for Suunto ANT+ USB device
-      Merge tag 'fixes-for-v3.11-rc3' of git://git.kernel.org/.../balbi/usb into usb-linus
-
-Johan Hovold (4):
-      USB: mos7840: fix race in register handling
-      USB: mos7840: fix device-type detection
-      USB: mos7840: fix race in led handling
-      USB: mos7840: fix pointer casts
-
-Kishon Vijay Abraham I (1):
-      usb: musb: fix resource passed from glue layer to musb
-
-Peter Chen (1):
-      usb: chipidea: fix the build error with randconfig
-
-Rick Farina (Zero_Chaos) (1):
-      USB: serial: ftdi_sio: add more RT Systems ftdi devices
-
-Rong Wang (1):
-      usb: gadget: udc-core: fix the typo of udc state attribute
-
- drivers/usb/chipidea/Kconfig      |   4 +-
- drivers/usb/chipidea/bits.h       |   4 +-
- drivers/usb/gadget/ether.c        |  14 +++-
- drivers/usb/gadget/f_phonet.c     |   2 -
- drivers/usb/gadget/multi.c        |  10 +--
- drivers/usb/gadget/udc-core.c     |   2 +-
- drivers/usb/musb/omap2430.c       |   7 +-
- drivers/usb/musb/tusb6010.c       |   7 +-
- drivers/usb/serial/Kconfig        |   7 ++
- drivers/usb/serial/Makefile       |   1 +
- drivers/usb/serial/ftdi_sio.c     |  31 +++++++-
- drivers/usb/serial/ftdi_sio_ids.h |  34 +++++++--
- drivers/usb/serial/mos7840.c      | 150 ++++++++++++++++++++++----------------
- drivers/usb/serial/suunto.c       |  41 +++++++++++
- 14 files changed, 223 insertions(+), 91 deletions(-)
- create mode 100644 drivers/usb/serial/suunto.c
