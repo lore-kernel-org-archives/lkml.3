@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932454Ab3G3Jvn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 05:51:43 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53107 "EHLO
+	id S932815Ab3G3JwC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 05:52:02 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53102 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932319Ab3G3Jc6 (ORCPT
+	with ESMTP id S1758730Ab3G3Jc4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 05:32:58 -0400
+	Tue, 30 Jul 2013 05:32:56 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Aydin Arik <aydin.arik@alliedtelesis.co.nz>,
+Cc: =?UTF-8?q?Linus=20L=C3=BCssing?= <linus.luessing@web.de>,
         "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 042/106] ipv4: Fixed MD5 key lookups when adding/ removing MD5 to/ from TCP sockets.
-Date: Tue, 30 Jul 2013 10:31:01 +0100
-Message-Id: <1375176725-5825-43-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 041/106] bridge: fix switched interval for MLD Query types
+Date: Tue, 30 Jul 2013 10:31:00 +0100
+Message-Id: <1375176725-5825-42-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
 References: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,46 +31,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Aydin Arik <aydin.arik@alliedtelesis.co.nz>
+From: =?UTF-8?q?Linus=20L=C3=BCssing?= <linus.luessing@web.de>
 
-commit c0353c7b5da4cbd2ab8227e84bbc9c79890f24ce upstream.
+commit 32de868cbc6bee010d2cee95b5071b25ecbec8c3 upstream.
 
-MD5 key lookups on a given TCP socket were being performed
-incorrectly. This fix alters parameter inputs to the MD5
-lookup function tcp_md5_do_lookup, which is called by functions
-tcp_md5_do_add and tcp_md5_do_del. Specifically, the change now
-inputs the correct address and address family required to make
-a proper lookup.
+General Queries (the one with the Multicast Address field
+set to zero / '::') are supposed to have a Maximum Response Delay
+of [Query Response Interval], while for Multicast-Address-Specific
+Queries it is [Last Listener Query Interval] - not the other way
+round. (see RFC2710, section 7.3+7.8)
 
-Signed-off-by: Aydin Arik <aydin.arik@alliedtelesis.co.nz>
+Signed-off-by: Linus Lüssing <linus.luessing@web.de>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/ipv4/tcp_ipv4.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/bridge/br_multicast.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/net/ipv4/tcp_ipv4.c b/net/ipv4/tcp_ipv4.c
-index 2a95340..f374da4 100644
---- a/net/ipv4/tcp_ipv4.c
-+++ b/net/ipv4/tcp_ipv4.c
-@@ -989,7 +989,7 @@ int tcp_md5_do_add(struct sock *sk, const union tcp_md5_addr *addr,
- 	struct tcp_sock *tp = tcp_sk(sk);
- 	struct tcp_md5sig_info *md5sig;
+diff --git a/net/bridge/br_multicast.c b/net/bridge/br_multicast.c
+index b665812..4c1954b 100644
+--- a/net/bridge/br_multicast.c
++++ b/net/bridge/br_multicast.c
+@@ -469,8 +469,9 @@ static struct sk_buff *br_ip6_multicast_alloc_query(struct net_bridge *br,
+ 	skb_set_transport_header(skb, skb->len);
+ 	mldq = (struct mld_msg *) icmp6_hdr(skb);
  
--	key = tcp_md5_do_lookup(sk, (union tcp_md5_addr *)&addr, AF_INET);
-+	key = tcp_md5_do_lookup(sk, addr, family);
- 	if (key) {
- 		/* Pre-existing entry - just update that one. */
- 		memcpy(key->key, newkey, newkeylen);
-@@ -1034,7 +1034,7 @@ int tcp_md5_do_del(struct sock *sk, const union tcp_md5_addr *addr, int family)
- 	struct tcp_md5sig_key *key;
- 	struct tcp_md5sig_info *md5sig;
+-	interval = ipv6_addr_any(group) ? br->multicast_last_member_interval :
+-					  br->multicast_query_response_interval;
++	interval = ipv6_addr_any(group) ?
++			br->multicast_query_response_interval :
++			br->multicast_last_member_interval;
  
--	key = tcp_md5_do_lookup(sk, (union tcp_md5_addr *)&addr, AF_INET);
-+	key = tcp_md5_do_lookup(sk, addr, family);
- 	if (!key)
- 		return -ENOENT;
- 	hlist_del_rcu(&key->node);
+ 	mldq->mld_type = ICMPV6_MGM_QUERY;
+ 	mldq->mld_code = 0;
 -- 
 1.8.3.2
 
