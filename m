@@ -1,78 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756224Ab3G3Rmh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 13:42:37 -0400
-Received: from 7of9.schinagl.nl ([88.159.158.68]:39232 "EHLO 7of9.schinagl.nl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754396Ab3G3Rm3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 13:42:29 -0400
-Message-ID: <51F7FA37.2010407@schinagl.nl>
-Date: Tue, 30 Jul 2013 19:39:03 +0200
-From: Oliver Schinagl <oliver+list@schinagl.nl>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S1756101Ab3G3RpT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 13:45:19 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:34973 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752046Ab3G3RpR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Jul 2013 13:45:17 -0400
+Message-ID: <51F7FBA8.6080400@wwwdotorg.org>
+Date: Tue, 30 Jul 2013 11:45:12 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: Oliver Schinagl <oliver@schinagl.nl>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        linux-sunxi@googlegroups.com, arnd@arndb.de,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        andy.shevchenko@gmail.com, linux@arm.linux.org.uk,
-        linus.walleij@linaro.org
-Subject: Re: [linux-sunxi] Re: [PATCH 1/2] Initial support for Allwinner's
- Security ID fuses
-References: <20130626175144.GC2222@kroah.com> <51D674BF.9030207@schinagl.nl> <20130706193646.GB9778@kroah.com> <51E466A3.4010503@schinagl.nl> <20130716064107.GA10868@kroah.com> <20130717114650.GN3125@lukather> <20130717161758.GA9822@kroah.com> <20130719094211.GD5106@lukather> <20130719234944.GA11498@kroah.com> <51F7BE2F.3060004@schinagl.nl> <20130730142047.GA28696@kroah.com>
-In-Reply-To: <20130730142047.GA28696@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Richard Genoud <richard.genoud@gmail.com>
+CC: Mark Brown <broonie@kernel.org>, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Bo Shen <voice.shen@atmel.com>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        alsa-devel@alsa-project.org, devicetree@vger.kernel.org,
+        patches@opensource.wolfsonmicro.com
+Subject: Re: [PATCH v6 2/8] ASoC: atmel: machine driver for at91sam9x5-wm8731
+ boards
+References: <1375180329-4860-1-git-send-email-richard.genoud@gmail.com> <1375180329-4860-3-git-send-email-richard.genoud@gmail.com>
+In-Reply-To: <1375180329-4860-3-git-send-email-richard.genoud@gmail.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30-07-13 16:20, Greg KH wrote:
-> On Tue, Jul 30, 2013 at 03:22:55PM +0200, Oliver Schinagl wrote:
->>> Let me go look at how I can make this work "easier", give me a few days.
->> Not wanting to be rude, but it has been a little more then a few
->> days, any progress? Just want to know what I have to modify my
->> driver to so it can go into the next merge window :)
->
-> What?  Oh crap.
->
-> I saw this old email in my todo box last week and for some stupid reason
-> I thought I had already taken care of this, otherwise why would I have
-> left it around for so long?...
->
-> Ugh, very sorry about that...
->
-> Hm, this is a mess.  I hate platform devices...
->
-> Anyway, as you want to get this into 3.12, and I'm not going to be able
-> to get the core infrastructure into the platform device by then, just go
-> ahead and do a sysfs_create_group() call in your device probe callback
-> for now.  That will register the needed files for the device (not the
-> driver, DOH that was stupid of me...) and all should be ok.
->
-> Yes, you will still race with userspace, but as right now, there's no
-> way that _any_ platform driver can do this "correctly", you will be in
-> good company.  I'll clean up all platform drivers in a sweep of the tree
-> after 3.12 or so when I get the needed infrastructure in place for the
-> platform_driver code.
->
-> Again, very sorry for all of this, you have helped me out a lot in
-> figuring out that this is a mess, and should be fixed up better, but in
-> the end, you are pretty much back at the beginning of what you
-> originally wanted to do, right?
-Alright, I'll modify it to use sysfs_create_group() and try to leave it 
-as much as it is no to ease the transition.
->
-> I owe you a beer, at the least, my apologies...
-Pff, free booze is far better ;) I kid I kid, though Maxime helped a lot 
-there.
+On 07/30/2013 04:32 AM, Richard Genoud wrote:
+> From: Nicolas Ferre <nicolas.ferre@atmel.com>
+> 
+> Description of the Asoc machine driver for an at91sam9x5 based board
+> with a wm8731 audio DAC. Wm8731 is clocked by a crystal and used as a
+> master on the SSC/I2S interface. Its connections are a headphone jack
+> and an Line input jack.
+> 
+> [Richard: this is based on an old patch from Nicolas that I forward
+> ported and reworked to use only device tree]
 
-Ok expect a v6 I think for review and hopefully merge tomorrow.
+> diff --git a/Documentation/devicetree/bindings/sound/atmel-sam9x5-wm8731-audio.txt b/Documentation/devicetree/bindings/sound/atmel-sam9x5-wm8731-audio.txt
 
-oliver
+> +* Atmel at91sam9x5ek wm8731 audio complex
+> +
+> +Required properties:
+> +  - compatible: "atmel,sam9x5-wm8731-audio"
+> +  - atmel,model: The user-visible name of this sound complex.
+> +  - atmel,ssc-controller: The phandle of the SSC controller
+> +  - atmel,audio-codec: The phandle of the WM8731 audio codec
+> +  - atmel,audio-routing: A list of the connections between audio components.
+> +    Each entry is a pair of strings, the first being the connection's sink,
+> +    the second being the connection's source.
+> +
+> +Available audio endpoints for the audio-routing table:
+> +
+> +Board connectors:
+> + * Headphone Jack
+> + * Line In Jack
+> +
+> +wm8731 pins:
+> +cf Documentation/devicetree/bindings/sound/wm8731.txt
 
->
-> greg k-h
->
+In the Tegra bindings, I deliberately put the list of CODEC pins into
+the audio complex binding rather than the CODEC binding. That's because
+I'm not sure that in the long-term we want to use strings to identify
+the CODEC pins, rather than using integers. By putting the list orf
+CODEC pins in the audio complex binding rather than the CODEC binding, I
+didn't lumber the CODEC binding with a list of strings that it had to
+support forever.
 
+One reason that strings are problematic is because they can't be mixed
+with integers/phandles in the same property, so if we ever end up with
+more generic audio bindings where the routing table is expressed more like:
+
+audio-routes = <&component_a $a_pin &component_b $b_pin>;
+
+... in order to allow completely arbitrary and fully name-spaced routing
+specification[1], then $a_pin and $b_pin need to be integers not strings.
+
+[1] and perhaps we can get rid of properties like
+audio-codec/ssc-controller, and automatically deduce which components
+are needed simply by finding all phandles in the audio-routes property.
+
+Perhaps the solution here is to allow mixing phandles/integers/strings
+in one property, but that's potentially quite a large change to the DTB
+format; we'd need to introduce type fields into the property data, and
+other data format changes.
