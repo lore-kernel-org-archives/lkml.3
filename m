@@ -1,138 +1,477 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758204Ab3G3Wsf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 18:48:35 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:47458 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758058Ab3G3WsN (ORCPT
+	id S1758073Ab3G3Wxe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 18:53:34 -0400
+Received: from usindpps05.hds.com ([207.126.252.18]:54587 "EHLO
+	usindpps05.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757349Ab3G3Wxb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 18:48:13 -0400
-X-IronPort-AV: E=Sophos;i="4.89,782,1367996400"; 
-   d="scan'208";a="65649190"
-X-IronPort-AV: E=Sophos;i="4.89,781,1367996400"; 
-   d="scan'208";a="576425650"
-Date: Tue, 30 Jul 2013 15:48:09 -0700
-From: "Luis R. Rodriguez" <rodrigue@qca.qualcomm.com>
-To: Marcel Holtmann <marcel@holtmann.org>
-CC: Hector Palacios <hector.palacios@digi.com>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        "linux-bluetooth@vger.kernel.org" <linux-bluetooth@vger.kernel.org>,
-        "gustavo@padovan.org" <gustavo@padovan.org>,
-        "johan.hedberg@gmail.com" <johan.hedberg@gmail.com>,
-        <mcgrof@do-not-panic.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "surajs@qca.qualcomm.com" <surajs@qca.qualcomm.com>,
-        <jjohnson@qca.qualcomm.com>, Adrian Chadd <adrian@freebsd.org>,
-        <ddahlby@qca.qualcomm.com>, Ben Hutchings <ben@decadent.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: ROM Patching (was: [PATCH] bluetooth: remove wrong dependency
- for BT_ATH3K)
-Message-ID: <20130730224809.GN17130@pogo>
-References: <1375114325-25498-1-git-send-email-hector.palacios@digi.com>
- <5438CD3C-E28C-485C-94B8-F743E8B13D4A@holtmann.org>
- <51F7722E.9050708@digi.com>
- <20130730205601.GI17130@pogo>
- <2C94C740-76BA-4058-B0D7-C37D44875CA1@holtmann.org>
+	Tue, 30 Jul 2013 18:53:31 -0400
+Message-ID: <51F843B1.4050609@hds.com>
+Date: Tue, 30 Jul 2013 18:52:33 -0400
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <2C94C740-76BA-4058-B0D7-C37D44875CA1@holtmann.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: [172.30.39.5]
+To: linux-kernel@vger.kernel.org, x86@kernel.org
+CC: hpa@zytor.com, rostedt@goodmis.org, mingo@elte.hu, bp@alien8.de,
+        tglx@linutronix.de, fdeslaur@gmail.com, raphael.beamonte@gmail.com,
+        dle-develop@lists.sourceforge.net, tomoki.sekiyama@hds.com
+Subject: [RFC][PATCH] Introduce page fault tracepoint
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Proofpoint-SPF-Result: pass
+X-Proofpoint-SPF-Record: v=spf1 mx ip4:207.126.244.0/26 ip4:207.126.252.0/25 include:mktomail.com
+ include:cloud.hds.com ~all
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
+ definitions=2013-07-30_09:2013-07-30,2013-07-30,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=outbound_policy score=0 spamscore=0 suspectscore=4
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1305240000 definitions=main-1307300176
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CC'ing linux-wireless as ROM patching is mentioned and in so far as
-802.11 mobile is concerned this is a pretty frequent practice there
-as well so figured we'd tie in the conversations.
+This patch introduces page fault tracepoints to x86 architecture
+by switching IDT.
 
-On Tue, Jul 30, 2013 at 03:05:18PM -0700, Marcel Holtmann wrote:
-> Hi Luis,
-> 
-> >> This brings an interesting question: shouldn't the firmware download
-> >> part be isolated from the USB driver? After all, I want to
-> >> communicate with a UART bluetooth chip.
-> > 
-> > There are a few BT firmware upload modules (last I checked at least 2),
-> > I believe it should be possible to stuff all that code a shared
-> > module or even as FreeBSD does it -- treat fw uploading in userspace,
-> > however just keep in mind for quirks [0]. So patches welcomed.
-> 
-> it really depends on what kind of patching or firmware download has to be done.
-> 
-> For all the ROM patching via HCI commands, we explicitly added support
-> for setup stage
+[Use case of page fault events]
 
-This stage is what is I was referring to.
+  Two events, for user and kernel spaces, are introduced at the beginning of
+  page fault handler.
 
-> and exposed a standard way of getting in front of
-> Bluetooth core init sequence.
+  - User space event
+    There is a request of page fault event for user space as below.
 
-Nice.
+    http://marc.info/?l=linux-mm&m=136807959830182&w=2
+    http://marc.info/?l=linux-mm&m=136807959130175&w=2
 
-> An example here would be the Intel
-> Bluetooth devices that require ROM patching. This can be useful for
-> many Bluetooth devices that are generally USB transport standard
-> compliant, but need a few extra commands of vendor setup.
+  - Kernel space event:
+    Overhead in kernel space is measurable by enabling it.
 
-Interesting. I believe for 802.11 we just throw in a bunch of ROM
-patching onto the 802.11 driver_firwmare.fw file and then assume
-the driver can do the right thing. I however haven't worked on that so I
-am curious if someone more familiar with this can provide details of
-how that happens. I do know that the 802.11 mobile drivers get tons of
-firmware updates because of this exact architectural choice and do
-wonder how we can easily keep up with the firmware updates in meaninful
-way to linux-firwmare.
+[Creating IDT]
 
-How often do the ROM patches get updated? And do the HCI commands
-trigger a userspace event?
+ A way to create IDT is as below.
 
-> We are planning to take one extra step and split this into a
-> mini-driver approach similar to what has been done for usbnet, but we
-> are not there yet.
+ - Introduce set_intr_gate_raw() to register just non-trace handler to IDT.
+   This is used at boot time which tracing is disabled.
+ - Make set_intr_gate() macro so that it can register trace handler to
+   trace IDT and non-trace handler to normal IDT.
 
-Neat. Perhaps we need something that we can share with 802.11 or other
-hardare I highly doubt we're the only ones patching ROM. Don't we even
-patch up core CPUs? I'm wondering if firmware_class could be expanded to
-support serialized ROM patching. The biggest hurdle I see with splititng
-ROM patching from a single firmware is serializing that, addressing
-revision dependencies and of course kernel dependencies.
+Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
+---
+ arch/x86/include/asm/desc.h             |   33 +++++++++++++++++---
+ arch/x86/include/asm/hw_irq.h           |   14 ++++++++-
+ arch/x86/include/asm/trace/exceptions.h |   51 +++++++++++++++++++++++++++++++
+ arch/x86/include/asm/traps.h            |   22 +++++++++++++
+ arch/x86/kernel/entry_32.S              |   10 ++++++
+ arch/x86/kernel/entry_64.S              |   13 +++++++-
+ arch/x86/kernel/head64.c                |    2 +-
+ arch/x86/kernel/irqinit.c               |    2 +-
+ arch/x86/kernel/kvm.c                   |    2 +-
+ arch/x86/kernel/traps.c                 |   28 ++++++++--------
+ arch/x86/mm/Makefile                    |    2 +
+ arch/x86/mm/fault.c                     |   22 +++++++++++++
+ 12 files changed, 177 insertions(+), 24 deletions(-)
+ create mode 100644 arch/x86/include/asm/trace/exceptions.h
 
-I've thrown this on the list of topics for the next wireless summit
-at New Orleans.
+diff --git a/arch/x86/include/asm/desc.h b/arch/x86/include/asm/desc.h
+index b90e5df..c04302b 100644
+--- a/arch/x86/include/asm/desc.h
++++ b/arch/x86/include/asm/desc.h
+@@ -327,10 +327,28 @@ static inline void write_trace_idt_entry(int entry, const gate_desc *gate)
+ {
+ 	write_idt_entry(trace_idt_table, entry, gate);
+ }
++
++static inline void _trace_set_gate(int gate, unsigned type, void *addr,
++				   unsigned dpl, unsigned ist, unsigned seg)
++{
++	gate_desc s;
++
++	pack_gate(&s, type, (unsigned long)addr, dpl, ist, seg);
++	/*
++	 * does not need to be atomic because it is only done once at
++	 * setup time
++	 */
++	write_trace_idt_entry(gate, &s);
++}
+ #else
+ static inline void write_trace_idt_entry(int entry, const gate_desc *gate)
+ {
+ }
++
++static inline void _trace_set_gate(int gate, unsigned type, void *addr,
++				   unsigned dpl, unsigned ist, unsigned seg)
++{
++}
+ #endif
+ 
+ static inline void _set_gate(int gate, unsigned type, void *addr,
+@@ -353,12 +371,20 @@ static inline void _set_gate(int gate, unsigned type, void *addr,
+  * Pentium F0 0F bugfix can have resulted in the mapped
+  * IDT being write-protected.
+  */
+-static inline void set_intr_gate(unsigned int n, void *addr)
++static inline void set_intr_gate_raw(unsigned int n, void *addr)
+ {
+ 	BUG_ON((unsigned)n > 0xFF);
+ 	_set_gate(n, GATE_INTERRUPT, addr, 0, 0, __KERNEL_CS);
+ }
+ 
++#define set_intr_gate(n, addr)						\
++	do {								\
++		BUG_ON((unsigned)n > 0xFF);				\
++		_set_gate(n, GATE_INTERRUPT, addr, 0, 0, __KERNEL_CS);	\
++		_trace_set_gate(n, GATE_INTERRUPT, trace_##addr, 0, 0,	\
++				__KERNEL_CS);				\
++	} while (0)
++
+ extern int first_system_vector;
+ /* used_vectors is BITMAP for irq is not managed by percpu vector_irq */
+ extern unsigned long used_vectors[];
+@@ -395,10 +421,7 @@ static inline void trace_set_intr_gate(unsigned int gate, void *addr)
+ #define __trace_alloc_intr_gate(n, addr)
+ #endif
+ 
+-static inline void __alloc_intr_gate(unsigned int n, void *addr)
+-{
+-	set_intr_gate(n, addr);
+-}
++#define __alloc_intr_gate(n, addr) set_intr_gate(n, addr)
+ 
+ #define alloc_intr_gate(n, addr)				\
+ 	do {							\
+diff --git a/arch/x86/include/asm/hw_irq.h b/arch/x86/include/asm/hw_irq.h
+index e4ac559..fbd73b7 100644
+--- a/arch/x86/include/asm/hw_irq.h
++++ b/arch/x86/include/asm/hw_irq.h
+@@ -89,10 +89,22 @@ extern void trace_reschedule_interrupt(void);
+ extern void trace_threshold_interrupt(void);
+ extern void trace_call_function_interrupt(void);
+ extern void trace_call_function_single_interrupt(void);
++#else /* CONFIG_TRACING */
++#define trace_apic_timer_interrupt apic_timer_interrupt
++#define trace_x86_platform_ipi x86_platform_ipi
++#define trace_error_interrupt error_interrupt
++#define trace_irq_work_interrupt irq_work_interrupt
++#define trace_spurious_interrupt spurious_interrupt
++#define trace_thermal_interrupt thermal_interrupt
++#define trace_reschedule_interrupt reschedule_interrupt
++#define trace_threshold_interrupt threshold_interrupt
++#define trace_call_function_interrupt call_function_interrupt
++#define trace_call_function_single_interrupt call_function_single_interrupt
++#endif
++
+ #define trace_irq_move_cleanup_interrupt  irq_move_cleanup_interrupt
+ #define trace_reboot_interrupt  reboot_interrupt
+ #define trace_kvm_posted_intr_ipi kvm_posted_intr_ipi
+-#endif /* CONFIG_TRACING */
+ 
+ /* IOAPIC */
+ #define IO_APIC_IRQ(x) (((x) >= NR_IRQS_LEGACY) || ((1<<(x)) & io_apic_irqs))
+diff --git a/arch/x86/include/asm/trace/exceptions.h b/arch/x86/include/asm/trace/exceptions.h
+new file mode 100644
+index 0000000..660fcf1
+--- /dev/null
++++ b/arch/x86/include/asm/trace/exceptions.h
+@@ -0,0 +1,51 @@
++#undef TRACE_SYSTEM
++#define TRACE_SYSTEM exceptions
++
++#if !defined(_TRACE_PAGE_FAULT_H) || defined(TRACE_HEADER_MULTI_READ)
++#define _TRACE_PAGE_FAULT_H
++
++#include <linux/tracepoint.h>
++
++extern void trace_irq_vector_regfunc(void);
++extern void trace_irq_vector_unregfunc(void);
++
++DECLARE_EVENT_CLASS(x86_exceptions,
++
++	TP_PROTO(unsigned long address, struct pt_regs *regs,
++		 unsigned long error_code),
++
++	TP_ARGS(address, regs, error_code),
++
++	TP_STRUCT__entry(
++		__field(		unsigned long, address	)
++		__field(		struct pt_regs *, regs	)
++		__field(		unsigned long, error_code )
++	),
++
++	TP_fast_assign(
++		__entry->address = address;
++		__entry->regs = regs;
++		__entry->error_code = error_code;
++	),
++
++	TP_printk("address=0x%lx regs=0x%p error_code=0x%lx",
++		  __entry->address, __entry->regs, __entry->error_code) );
++
++#define DEFINE_PAGE_FAULT_EVENT(name)				\
++DEFINE_EVENT_FN(x86_exceptions, name,				\
++	TP_PROTO(unsigned long address,	struct pt_regs *regs,	\
++		 unsigned long error_code),			\
++	TP_ARGS(address, regs, error_code),			\
++	trace_irq_vector_regfunc,				\
++	trace_irq_vector_unregfunc);
++
++DEFINE_PAGE_FAULT_EVENT(user_page_fault);
++DEFINE_PAGE_FAULT_EVENT(kernel_page_fault);
++
++#undef TRACE_INCLUDE_PATH
++#define TRACE_INCLUDE_PATH .
++#define TRACE_INCLUDE_FILE exceptions
++#endif /*  _TRACE_PAGE_FAULT_H */
++
++/* This part must be outside protection */
++#include <trace/define_trace.h>
+diff --git a/arch/x86/include/asm/traps.h b/arch/x86/include/asm/traps.h
+index 88eae2a..adf9258 100644
+--- a/arch/x86/include/asm/traps.h
++++ b/arch/x86/include/asm/traps.h
+@@ -41,6 +41,25 @@ asmlinkage void machine_check(void);
+ #endif /* CONFIG_X86_MCE */
+ asmlinkage void simd_coprocessor_error(void);
+ 
++#ifdef CONFIG_TRACING
++asmlinkage void trace_page_fault(void);
++#else
++#define trace_page_fault page_fault
++#endif
++#define trace_divide_error divide_error
++#define trace_bounds bounds
++#define trace_invalid_op invalid_op
++#define trace_device_not_available device_not_available
++#define trace_coprocessor_segment_overrun coprocessor_segment_overrun
++#define trace_invalid_TSS invalid_TSS
++#define trace_segment_not_present segment_not_present
++#define trace_general_protection general_protection
++#define trace_spurious_interrupt_bug spurious_interrupt_bug
++#define trace_coprocessor_error coprocessor_error
++#define trace_alignment_check alignment_check
++#define trace_simd_coprocessor_error simd_coprocessor_error
++#define trace_async_page_fault async_page_fault
++
+ dotraplinkage void do_divide_error(struct pt_regs *, long);
+ dotraplinkage void do_debug(struct pt_regs *, long);
+ dotraplinkage void do_nmi(struct pt_regs *, long);
+@@ -59,6 +78,9 @@ asmlinkage __kprobes struct pt_regs *sync_regs(struct pt_regs *);
+ #endif
+ dotraplinkage void do_general_protection(struct pt_regs *, long);
+ dotraplinkage void do_page_fault(struct pt_regs *, unsigned long);
++#ifdef CONFIG_TRACING
++dotraplinkage void trace_do_page_fault(struct pt_regs *, unsigned long);
++#endif
+ dotraplinkage void do_spurious_interrupt_bug(struct pt_regs *, long);
+ dotraplinkage void do_coprocessor_error(struct pt_regs *, long);
+ dotraplinkage void do_alignment_check(struct pt_regs *, long);
+diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+index 2cfbc3a..c9eb4e2 100644
+--- a/arch/x86/kernel/entry_32.S
++++ b/arch/x86/kernel/entry_32.S
+@@ -1244,6 +1244,16 @@ return_to_handler:
+  */
+ 	.pushsection .kprobes.text, "ax"
+ 
++#ifdef CONFIG_TRACING
++ENTRY(trace_page_fault)
++	RING0_EC_FRAME
++	ASM_CLAC
++	pushl_cfi $trace_do_page_fault
++	jmp error_code
++	CFI_ENDPROC
++END(trace_page_fault)
++#endif
++
+ ENTRY(page_fault)
+ 	RING0_EC_FRAME
+ 	ASM_CLAC
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index 1b69951..5136404 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -1295,6 +1295,17 @@ ENTRY(\sym)
+ END(\sym)
+ .endm
+ 
++#ifdef CONFIG_TRACING
++.macro trace_errorentry sym do_sym
++errorentry trace(\sym) trace(\do_sym)
++errorentry \sym \do_sym
++.endm
++#else
++.macro trace_errorentry sym do_sym
++errorentry \sym \do_sym
++.endm
++#endif
++
+ 	/* error code is on the stack already */
+ .macro paranoiderrorentry sym do_sym
+ ENTRY(\sym)
+@@ -1497,7 +1508,7 @@ zeroentry xen_int3 do_int3
+ errorentry xen_stack_segment do_stack_segment
+ #endif
+ errorentry general_protection do_general_protection
+-errorentry page_fault do_page_fault
++trace_errorentry page_fault do_page_fault
+ #ifdef CONFIG_KVM_GUEST
+ errorentry async_page_fault do_async_page_fault
+ #endif
+diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
+index 55b6761..67a0649 100644
+--- a/arch/x86/kernel/head64.c
++++ b/arch/x86/kernel/head64.c
+@@ -162,7 +162,7 @@ void __init x86_64_start_kernel(char * real_mode_data)
+ 	clear_bss();
+ 
+ 	for (i = 0; i < NUM_EXCEPTION_VECTORS; i++)
+-		set_intr_gate(i, &early_idt_handlers[i]);
++		set_intr_gate_raw(i, &early_idt_handlers[i]);
+ 	load_idt((const struct desc_ptr *)&idt_descr);
+ 
+ 	copy_bootdata(__va(real_mode_data));
+diff --git a/arch/x86/kernel/irqinit.c b/arch/x86/kernel/irqinit.c
+index a2a1fbc..2ca2354 100644
+--- a/arch/x86/kernel/irqinit.c
++++ b/arch/x86/kernel/irqinit.c
+@@ -206,7 +206,7 @@ void __init native_init_IRQ(void)
+ 	i = FIRST_EXTERNAL_VECTOR;
+ 	for_each_clear_bit_from(i, used_vectors, NR_VECTORS) {
+ 		/* IA32_SYSCALL_VECTOR could be used in trap_init already. */
+-		set_intr_gate(i, interrupt[i - FIRST_EXTERNAL_VECTOR]);
++		set_intr_gate_raw(i, interrupt[i - FIRST_EXTERNAL_VECTOR]);
+ 	}
+ 
+ 	if (!acpi_ioapic && !of_ioapic)
+diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
+index a96d32c..12b384e 100644
+--- a/arch/x86/kernel/kvm.c
++++ b/arch/x86/kernel/kvm.c
+@@ -462,7 +462,7 @@ static struct notifier_block kvm_cpu_notifier = {
+ 
+ static void __init kvm_apf_trap_init(void)
+ {
+-	set_intr_gate(14, &async_page_fault);
++	set_intr_gate(14, async_page_fault);
+ }
+ 
+ void __init kvm_guest_init(void)
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index 1b23a1c..eadd251 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -709,7 +709,7 @@ void __init early_trap_init(void)
+ 	/* int3 can be called from all */
+ 	set_system_intr_gate_ist(X86_TRAP_BP, &int3, DEBUG_STACK);
+ #ifdef CONFIG_X86_32
+-	set_intr_gate(X86_TRAP_PF, &page_fault);
++	set_intr_gate(X86_TRAP_PF, page_fault);
+ #endif
+ 	load_idt(&idt_descr);
+ }
+@@ -717,7 +717,7 @@ void __init early_trap_init(void)
+ void __init early_trap_pf_init(void)
+ {
+ #ifdef CONFIG_X86_64
+-	set_intr_gate(X86_TRAP_PF, &page_fault);
++	set_intr_gate(X86_TRAP_PF, page_fault);
+ #endif
+ }
+ 
+@@ -733,30 +733,30 @@ void __init trap_init(void)
+ 	early_iounmap(p, 4);
+ #endif
+ 
+-	set_intr_gate(X86_TRAP_DE, &divide_error);
++	set_intr_gate(X86_TRAP_DE, divide_error);
+ 	set_intr_gate_ist(X86_TRAP_NMI, &nmi, NMI_STACK);
+ 	/* int4 can be called from all */
+ 	set_system_intr_gate(X86_TRAP_OF, &overflow);
+-	set_intr_gate(X86_TRAP_BR, &bounds);
+-	set_intr_gate(X86_TRAP_UD, &invalid_op);
+-	set_intr_gate(X86_TRAP_NM, &device_not_available);
++	set_intr_gate(X86_TRAP_BR, bounds);
++	set_intr_gate(X86_TRAP_UD, invalid_op);
++	set_intr_gate(X86_TRAP_NM, device_not_available);
+ #ifdef CONFIG_X86_32
+ 	set_task_gate(X86_TRAP_DF, GDT_ENTRY_DOUBLEFAULT_TSS);
+ #else
+ 	set_intr_gate_ist(X86_TRAP_DF, &double_fault, DOUBLEFAULT_STACK);
+ #endif
+-	set_intr_gate(X86_TRAP_OLD_MF, &coprocessor_segment_overrun);
+-	set_intr_gate(X86_TRAP_TS, &invalid_TSS);
+-	set_intr_gate(X86_TRAP_NP, &segment_not_present);
++	set_intr_gate(X86_TRAP_OLD_MF, coprocessor_segment_overrun);
++	set_intr_gate(X86_TRAP_TS, invalid_TSS);
++	set_intr_gate(X86_TRAP_NP, segment_not_present);
+ 	set_intr_gate_ist(X86_TRAP_SS, &stack_segment, STACKFAULT_STACK);
+-	set_intr_gate(X86_TRAP_GP, &general_protection);
+-	set_intr_gate(X86_TRAP_SPURIOUS, &spurious_interrupt_bug);
+-	set_intr_gate(X86_TRAP_MF, &coprocessor_error);
+-	set_intr_gate(X86_TRAP_AC, &alignment_check);
++	set_intr_gate(X86_TRAP_GP, general_protection);
++	set_intr_gate(X86_TRAP_SPURIOUS, spurious_interrupt_bug);
++	set_intr_gate(X86_TRAP_MF, coprocessor_error);
++	set_intr_gate(X86_TRAP_AC, alignment_check);
+ #ifdef CONFIG_X86_MCE
+ 	set_intr_gate_ist(X86_TRAP_MC, &machine_check, MCE_STACK);
+ #endif
+-	set_intr_gate(X86_TRAP_XF, &simd_coprocessor_error);
++	set_intr_gate(X86_TRAP_XF, simd_coprocessor_error);
+ 
+ 	/* Reserve all the builtin and the syscall vector: */
+ 	for (i = 0; i < FIRST_EXTERNAL_VECTOR; i++)
+diff --git a/arch/x86/mm/Makefile b/arch/x86/mm/Makefile
+index 23d8e5f..6a19ad9 100644
+--- a/arch/x86/mm/Makefile
++++ b/arch/x86/mm/Makefile
+@@ -6,6 +6,8 @@ nostackp := $(call cc-option, -fno-stack-protector)
+ CFLAGS_physaddr.o		:= $(nostackp)
+ CFLAGS_setup_nx.o		:= $(nostackp)
+ 
++CFLAGS_fault.o := -I$(src)/../include/asm/trace
++
+ obj-$(CONFIG_X86_PAT)		+= pat_rbtree.o
+ obj-$(CONFIG_SMP)		+= tlb.o
+ 
+diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+index 654be4a..f515154 100644
+--- a/arch/x86/mm/fault.c
++++ b/arch/x86/mm/fault.c
+@@ -20,6 +20,9 @@
+ #include <asm/kmemcheck.h>		/* kmemcheck_*(), ...		*/
+ #include <asm/fixmap.h>			/* VSYSCALL_START		*/
+ 
++#define CREATE_TRACE_POINTS
++#include <asm/trace/exceptions.h>
++
+ /*
+  * Page fault error code bits:
+  *
+@@ -1230,3 +1233,22 @@ do_page_fault(struct pt_regs *regs, unsigned long error_code)
+ 	__do_page_fault(regs, error_code);
+ 	exception_exit(prev_state);
+ }
++
++static void trace_page_fault_entries(struct pt_regs *regs,
++				     unsigned long error_code)
++{
++	if (user_mode(regs))
++		trace_user_page_fault(read_cr2(), regs, error_code);
++	else
++		trace_kernel_page_fault(read_cr2(), regs, error_code);
++}
++
++dotraplinkage void __kprobes
++trace_do_page_fault(struct pt_regs *regs, unsigned long error_code)
++{
++	enum ctx_state prev_state;
++	prev_state = exception_enter();
++	trace_page_fault_entries(regs, error_code);
++	__do_page_fault(regs, error_code);
++	exception_exit(prev_state);
++}
+-- 
+1.7.1
 
-> However the ROM patching drivers need to be in the kernel since
-> otherwise they will race with the core init sequence.
-
-Sure and depending on the architecture -- if this is kicked off to
-userspace helpers or not then we may need to consider dbus in
-kernel thing to help with speed / races, dependenecies / async
-loading, -EPROBE_DEFER, etc.
-
-> There are also just firmware download drivers that do nothing else
-> than just loading the firmware. And here it can be done via userspace
-> or kernel space. In the Bluetooth world we have seen both, but
-> generally the kernel ones stayed around while the userspace ones had a
-> hard time to work with udev, libusb, libusb1 etc.
-
-Ah I see. Perhaps we can address this once we get some form of dbus in
-kernel.
-
-> For UART based drivers it is a little bit different since we had to
-> bring up the line discipline from userspace anyway and configure all
-> the UART parameters. For these drivers the firmware download or ROM
-> patching has been done normally via userspace since there is full
-> exclusive access before the Bluetooth subsystem knows about the
-> device.
-
-Is this something that dbus in kernel can help clean up a bit?
-
-> With the newly introduced setup stage, the drivers could actually
-> share the setup handling for UART and USB based devices. Not sure if
-> any vendor is going for this approach.
-
-Interesting... Is the architecture documented somewhere? Is this
-upstream already?
-
-  Luis
