@@ -1,61 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757895Ab3G3Uzg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 16:55:36 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:34180 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756925Ab3G3Uze (ORCPT
+	id S1758052Ab3G3U4I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 16:56:08 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:29596 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756925Ab3G3U4F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 16:55:34 -0400
-Date: Tue, 30 Jul 2013 13:55:32 -0700
-From: David Brown <davidb@codeaurora.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>, Nicolas Pitre <nico@linaro.org>,
-        Shawn Guo <shawn.guo@linaro.org>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH v2 3/9] ARM: msm: Move debug-macro.S to include/debug
-Message-ID: <20130730205532.GA18638@codeaurora.org>
-References: <1374699274-18388-1-git-send-email-sboyd@codeaurora.org>
- <1374699274-18388-4-git-send-email-sboyd@codeaurora.org>
+	Tue, 30 Jul 2013 16:56:05 -0400
+X-IronPort-AV: E=Sophos;i="4.89,781,1367996400"; 
+   d="scan'208";a="65629833"
+X-IronPort-AV: E=Sophos;i="4.89,780,1367996400"; 
+   d="scan'208";a="487786699"
+Date: Tue, 30 Jul 2013 13:56:01 -0700
+From: "Luis R. Rodriguez" <rodrigue@qca.qualcomm.com>
+To: Hector Palacios <hector.palacios@digi.com>
+CC: Marcel Holtmann <marcel@holtmann.org>,
+        "linux-bluetooth@vger.kernel.org" <linux-bluetooth@vger.kernel.org>,
+        "gustavo@padovan.org" <gustavo@padovan.org>,
+        "johan.hedberg@gmail.com" <johan.hedberg@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "surajs@qca.qualcomm.com" <surajs@qca.qualcomm.com>
+Subject: Re: [PATCH] bluetooth: remove wrong dependency for BT_ATH3K
+Message-ID: <20130730205601.GI17130@pogo>
+References: <1375114325-25498-1-git-send-email-hector.palacios@digi.com>
+ <5438CD3C-E28C-485C-94B8-F743E8B13D4A@holtmann.org>
+ <51F7722E.9050708@digi.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <1374699274-18388-4-git-send-email-sboyd@codeaurora.org>
+In-Reply-To: <51F7722E.9050708@digi.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [172.30.39.5]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 24, 2013 at 01:54:28PM -0700, Stephen Boyd wrote:
->One more step to allowing MSM to participate in the
->multi-platform defconfig.
+On Tue, Jul 30, 2013 at 09:58:38AM +0200, Hector Palacios wrote:
+> This brings an interesting question: shouldn't the firmware download
+> part be isolated from the USB driver? After all, I want to
+> communicate with a UART bluetooth chip.
 
-Full patch: https://patchwork.kernel.org/patch/2833034/
+There are a few BT firmware upload modules (last I checked at least 2),
+I believe it should be possible to stuff all that code a shared
+module or even as FreeBSD does it -- treat fw uploading in userspace,
+however just keep in mind for quirks [0]. So patches welcomed.
 
->Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
->---
-> arch/arm/Kconfig.debug                             |  9 +++-
-> .../mach/debug-macro.S => include/debug/msm.S}     | 32 ++++++++++-
-> arch/arm/mach-msm/include/mach/msm_iomap-8960.h    |  5 --
-> arch/arm/mach-msm/include/mach/msm_iomap-8x60.h    |  5 --
-> arch/arm/mach-msm/include/mach/msm_iomap.h         | 12 -----
-> arch/arm/mach-msm/include/mach/uncompress.h        | 63 ----------------------
-> arch/arm/mach-msm/io.c                             | 40 +++++++-------
-> 7 files changed, 58 insertions(+), 108 deletions(-)
-> rename arch/arm/{mach-msm/include/mach/debug-macro.S => include/debug/msm.S} (61%)
-> delete mode 100644 arch/arm/mach-msm/include/mach/uncompress.h
+[0] http://wireless.kernel.org/en/users/Drivers/ath3k#AR3011_over_USB
 
-Any comments on this?  This is mostly an MSM change, but I'd like to
-get an Ack from someone because of the file moving into
-arch/arm/include/debug.
-
-Thanks,
-David
-
--- 
-sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+  Luis
