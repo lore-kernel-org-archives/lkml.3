@@ -1,59 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757213Ab3G3FCE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 01:02:04 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:31438 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753409Ab3G3FCD (ORCPT
+	id S1757280Ab3G3FGW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 01:06:22 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:49456 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755086Ab3G3FGU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 01:02:03 -0400
-Message-ID: <51F748AA.4060706@oracle.com>
-Date: Tue, 30 Jul 2013 13:01:30 +0800
-From: Jeff Liu <jeff.liu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+	Tue, 30 Jul 2013 01:06:20 -0400
+Message-ID: <51F74995.2050202@ti.com>
+Date: Tue, 30 Jul 2013 00:05:25 -0500
+From: Joel Fernandes <joelf@ti.com>
+Reply-To: <joelf@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Dong Fang <yp.fangdong@gmail.com>
-CC: Dan Carpenter <dan.carpenter@oracle.com>, mfasheh@suse.com,
-        jlbec@evilplan.org, akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
-        sunil.mushran@gmail.com, tim.gardner@canonical.com,
-        xuejiufei@huawei.com, shencanquan@huawei.com,
-        ocfs2-devel@oss.oracle.com, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH v2] fs/ocfs2: use list_for_each_entry() instead of list_for_each()
-References: <1374931429-14062-1-git-send-email-yp.fangdong@gmail.com> <20130729074928.GB5053@mwanda> <20130729080606.GD5053@mwanda> <51F7E332.5010708@gmail.com>
-In-Reply-To: <51F7E332.5010708@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Sekhar Nori <nsekhar@ti.com>
+CC: Tony Lindgren <tony@atomide.com>, Vinod Koul <vinod.koul@intel.com>,
+        Benoit Cousson <benoit.cousson@linaro.org>,
+        Balaji TK <balajitk@ti.com>, Arnd Bergmann <arnd@arndb.de>,
+        Jason Kridner <jkridner@beagleboard.org>,
+        Mark Jackson <mpfj-list@newflow.co.uk>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Pantel Antoniou <panto@antoniou-consulting.com>
+Subject: Re: [PATCH v2] ARM: EDMA: Fix clearing of unused list for DT DMA
+ resources
+References: <1374515989-7391-1-git-send-email-joelf@ti.com> <51F4589E.5070108@ti.com> <51F6140B.3070600@ti.com> <51F738BF.7070808@ti.com> <51F74688.3090702@ti.com>
+In-Reply-To: <51F74688.3090702@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dong,
-
-On 07/31/2013 12:00 AM, Dong Fang wrote:
-
-> On 07/29/2013 04:06 AM, Dan Carpenter wrote:
->> Oh.  It appears that nothing changed between v1 and v2.  Only the CC
->> list.
+On 07/29/2013 11:52 PM, Sekhar Nori wrote:> On Tuesday 30 July 2013
+09:23 AM, Joel Fernandes wrote:
+>> On 07/29/2013 02:04 AM, Sekhar Nori wrote:
+>>> On Sunday 28 July 2013 05:02 AM, Joel Fernandes wrote:
+>>>> Hi Tony or Sekhar,
+>>>>
+>>>> If this patch looks ok, could you pick it up for -rc cycle?
+>>>>
+>>>> It fixes DMA breakages after the merge window for devices for which DMA
+>>>> resources are being populated in device tree instead pdev.
+>>>
+>>> But which DT-enabled platform in kernel is using EDMA? A grep for edma
+>>> over arch/arm/boot/dts/* brings up nothing.
+>>> Does this really have to go into the -rc cycle or can it wait till
+>>> v3.12?
 >>
->> It's probably that the list moderation on ocfs2-devel was confusing
->> for non-native English speakers the patch submitter thought his
->> patch was dropped.
 >>
->> Also mailing lists should have a white list so that I don't get the
->> message every single time.
->>
->> regards,
->> dan carpenter
->>
-> sorry about that, i just think i shoud send this patch to linux-fsdevel,
-> but ./get_maintainer.pl didn't tell me
+>> But unused channel list is also populated for private EDMA callers like
+>> davinci-pcm no? IIRC, HWMOD data is also removed for McASP so EDMA for
+>> those may break.
+>
+> Yes, but which DT-enabled platform has davinci-pcm working today?
+> AFAICS, this bug affects DT-enabled platforms only.
 
-It's better to send this patch to ocfs2-devel@oss.oracle.com only, as this
-is a specific patch for OCFS2.
-
-Also, we tag OCFS2 kernel patch with "ocfs2" in subject line rather than "fs/ocfs2".
+Yes, you're right. I didn't realize nothing else is working yet. I guess
+its fine then for next kernel release.
 
 Thanks,
--Jeff
+
+-Joel
