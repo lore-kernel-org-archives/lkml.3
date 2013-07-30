@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754604Ab3G3PLs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 11:11:48 -0400
-Received: from mail-ea0-f175.google.com ([209.85.215.175]:43263 "EHLO
-	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751040Ab3G3PLp (ORCPT
+	id S1755011Ab3G3PLv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 11:11:51 -0400
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:43582 "EHLO
+	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751040Ab3G3PLt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 11:11:45 -0400
+	Tue, 30 Jul 2013 11:11:49 -0400
 From: Paolo Bonzini <pbonzini@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: gnatapov@redhat.com, kvm@vger.kernel.org
-Subject: [PATCH 1/3] KVM: x86: rename EMULATE_DO_MMIO
-Date: Tue, 30 Jul 2013 17:11:34 +0200
-Message-Id: <1375197096-2454-2-git-send-email-pbonzini@redhat.com>
+Subject: [PATCH 3/3] KVM: x86: handle singlestep during emulation
+Date: Tue, 30 Jul 2013 17:11:36 +0200
+Message-Id: <1375197096-2454-4-git-send-email-pbonzini@redhat.com>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1375197096-2454-1-git-send-email-pbonzini@redhat.com>
 References: <1375197096-2454-1-git-send-email-pbonzini@redhat.com>
@@ -20,77 +20,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The next patch will reuse it for other userspace exits than MMIO,
-namely debug events.
+This lets debugging work better during emulation of invalid
+guest state.
+
+This time the check is done after emulation, but before writeback
+of the flags; we need to check the flags *before* execution of the
+instruction, we cannot check singlestep_rip because the CS base may
+have already been modified.
 
 Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 ---
- arch/x86/include/asm/kvm_host.h | 4 ++--
- arch/x86/kvm/mmu.c              | 2 +-
- arch/x86/kvm/vmx.c              | 2 +-
- arch/x86/kvm/x86.c              | 4 ++--
- 4 files changed, 6 insertions(+), 6 deletions(-)
+ arch/x86/kvm/x86.c | 39 ++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 38 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index 1f98c1b..b33e9dc 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -795,8 +795,8 @@ extern u32  kvm_min_guest_tsc_khz;
- extern u32  kvm_max_guest_tsc_khz;
- 
- enum emulation_result {
--	EMULATE_DONE,       /* no further processing */
--	EMULATE_DO_MMIO,      /* kvm_run filled with mmio request */
-+	EMULATE_DONE,         /* no further processing */
-+	EMULATE_USER_EXIT,    /* kvm_run ready for userspace exit */
- 	EMULATE_FAIL,         /* can't emulate this instruction */
- };
- 
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 6941fa7..7ee30d4 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -4096,7 +4096,7 @@ int kvm_mmu_page_fault(struct kvm_vcpu *vcpu, gva_t cr2, u32 error_code,
- 	switch (er) {
- 	case EMULATE_DONE:
- 		return 1;
--	case EMULATE_DO_MMIO:
-+	case EMULATE_USER_EXIT:
- 		++vcpu->stat.mmio_exits;
- 		/* fall through */
- 	case EMULATE_FAIL:
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index 260a919..0c87015 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -5422,7 +5422,7 @@ static int handle_invalid_guest_state(struct kvm_vcpu *vcpu)
- 
- 		err = emulate_instruction(vcpu, EMULTYPE_NO_REEXECUTE);
- 
--		if (err == EMULATE_DO_MMIO) {
-+		if (err == EMULATE_USER_EXIT) {
- 			ret = 0;
- 			goto out;
- 		}
 diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 737c804..c2a0674 100644
+index 1368cf5..9805cfd 100644
 --- a/arch/x86/kvm/x86.c
 +++ b/arch/x86/kvm/x86.c
-@@ -5038,11 +5038,11 @@ restart:
- 			writeback = false;
- 			vcpu->arch.complete_userspace_io = complete_emulated_pio;
- 		}
--		r = EMULATE_DO_MMIO;
-+		r = EMULATE_USER_EXIT;
- 	} else if (vcpu->mmio_needed) {
- 		if (!vcpu->mmio_is_write)
- 			writeback = false;
--		r = EMULATE_DO_MMIO;
-+		r = EMULATE_USER_EXIT;
- 		vcpu->arch.complete_userspace_io = complete_emulated_mmio;
- 	} else if (r == EMULATION_RESTART)
- 		goto restart;
+@@ -4971,6 +4971,41 @@ static int kvm_vcpu_check_hw_bp(unsigned long addr, u32 type, u32 dr7,
+ 	return dr6;
+ }
+ 
++static void kvm_vcpu_check_singlestep(struct kvm_vcpu *vcpu, int *r)
++{
++	struct kvm_run *kvm_run = vcpu->run;
++
++	/*
++	 * Use the "raw" value to see if TF was passed to the processor.
++	 * Note that the new value of the flags has not been saved yet.
++	 *
++	 * This is correct even for TF set by the guest, because "the
++	 * processor will not generate this exception after the instruction
++	 * that sets the TF flag".
++	 */
++	unsigned long rflags = kvm_x86_ops->get_rflags(vcpu);
++
++	if (unlikely(rflags & X86_EFLAGS_TF)) {
++		if (vcpu->guest_debug & KVM_GUESTDBG_SINGLESTEP) {
++			kvm_run->debug.arch.dr6 = DR6_BS | DR6_FIXED_1;
++			kvm_run->debug.arch.pc = vcpu->arch.singlestep_rip;
++			kvm_run->debug.arch.exception = DB_VECTOR;
++			kvm_run->exit_reason = KVM_EXIT_DEBUG;
++			*r = EMULATE_USER_EXIT;
++		} else {
++			vcpu->arch.emulate_ctxt.eflags &= ~X86_EFLAGS_TF;
++			/*
++			 * "Certain debug exceptions may clear bit 0-3.  The
++			 * remaining contents of the DR6 register are never
++			 * cleared by the processor".
++			 */
++			vcpu->arch.dr6 &= ~15;
++			vcpu->arch.dr6 |= DR6_BS;
++			kvm_queue_exception(vcpu, DB_VECTOR);
++		}
++	}
++}
++
+ static bool kvm_vcpu_check_breakpoint(struct kvm_vcpu *vcpu, int *r)
+ {
+ 	struct kvm_run *kvm_run = vcpu->run;
+@@ -5117,10 +5152,12 @@ restart:
+ 
+ 	if (writeback) {
+ 		toggle_interruptibility(vcpu, ctxt->interruptibility);
+-		kvm_set_rflags(vcpu, ctxt->eflags);
+ 		kvm_make_request(KVM_REQ_EVENT, vcpu);
+ 		vcpu->arch.emulate_regs_need_sync_to_vcpu = false;
+ 		kvm_rip_write(vcpu, ctxt->eip);
++		if (r == EMULATE_DONE)
++			kvm_vcpu_check_singlestep(vcpu, &r);
++		kvm_set_rflags(vcpu, ctxt->eflags);
+ 	} else
+ 		vcpu->arch.emulate_regs_need_sync_to_vcpu = true;
+ 
 -- 
 1.8.1.4
-
 
