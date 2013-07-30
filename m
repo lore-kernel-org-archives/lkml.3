@@ -1,158 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754120Ab3G3NC2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 09:02:28 -0400
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:58191 "EHLO
+	id S1754041Ab3G3NC1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 09:02:27 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:58186 "EHLO
 	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753599Ab3G3NCX (ORCPT
+	with ESMTP id S1753087Ab3G3NCW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 09:02:23 -0400
+	Tue, 30 Jul 2013 09:02:22 -0400
 From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 To: gleb@redhat.com
 Cc: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
         linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
         Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Subject: [PATCH 03/12] KVM: MMU: lazily drop large spte
-Date: Tue, 30 Jul 2013 21:02:01 +0800
-Message-Id: <1375189330-24066-4-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+Subject: [PATCH 02/12] KVM: MMU: properly check last spte in fast_page_fault()
+Date: Tue, 30 Jul 2013 21:02:00 +0800
+Message-Id: <1375189330-24066-3-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1375189330-24066-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
 References: <1375189330-24066-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13073012-1618-0000-0000-0000045E8BA7
+x-cbid: 13073012-1618-0000-0000-0000045E8BA6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, kvm zaps the large spte if write-protected is needed, the later
-read can fault on that spte. Actually, we can make the large spte readonly
-instead of making them un-present, the page fault caused by read access can
-be avoided
+Using sp->role.level instead of @level since @level is not got from the
+page table hierarchy
 
-The idea is from Avi:
-| As I mentioned before, write-protecting a large spte is a good idea,
-| since it moves some work from protect-time to fault-time, so it reduces
-| jitter.  This removes the need for the return value.
+There is no issue in current code since the fast page fault only fixes the
+fault caused by dirty-log, that means no large spte points to the dirty logged
+page
 
-[
-  It has fixed the issue reported in 6b73a9606 by stopping fast page fault
-  marking the large spte to writable
-]
+The patch makes the code more readable and avoid potential issue in the further
+development
 
 Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 ---
- arch/x86/kvm/mmu.c | 36 +++++++++++++++++-------------------
- 1 file changed, 17 insertions(+), 19 deletions(-)
+ arch/x86/kvm/mmu.c | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
 diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index cf163ca..35d4b50 100644
+index a731c0b..cf163ca 100644
 --- a/arch/x86/kvm/mmu.c
 +++ b/arch/x86/kvm/mmu.c
-@@ -1181,8 +1181,7 @@ static void drop_large_spte(struct kvm_vcpu *vcpu, u64 *sptep)
- 
- /*
-  * Write-protect on the specified @sptep, @pt_protect indicates whether
-- * spte writ-protection is caused by protecting shadow page table.
-- * @flush indicates whether tlb need be flushed.
-+ * spte write-protection is caused by protecting shadow page table.
-  *
-  * Note: write protection is difference between drity logging and spte
-  * protection:
-@@ -1191,10 +1190,9 @@ static void drop_large_spte(struct kvm_vcpu *vcpu, u64 *sptep)
-  * - for spte protection, the spte can be writable only after unsync-ing
-  *   shadow page.
-  *
-- * Return true if the spte is dropped.
-+ * Return true if tlb need be flushed.
-  */
--static bool
--spte_write_protect(struct kvm *kvm, u64 *sptep, bool *flush, bool pt_protect)
-+static bool spte_write_protect(struct kvm *kvm, u64 *sptep, bool pt_protect)
- {
- 	u64 spte = *sptep;
- 
-@@ -1204,17 +1202,11 @@ spte_write_protect(struct kvm *kvm, u64 *sptep, bool *flush, bool pt_protect)
- 
- 	rmap_printk("rmap_write_protect: spte %p %llx\n", sptep, *sptep);
- 
--	if (__drop_large_spte(kvm, sptep)) {
--		*flush |= true;
--		return true;
--	}
--
- 	if (pt_protect)
- 		spte &= ~SPTE_MMU_WRITEABLE;
- 	spte = spte & ~PT_WRITABLE_MASK;
- 
--	*flush |= mmu_spte_update(sptep, spte);
--	return false;
-+	return mmu_spte_update(sptep, spte);
+@@ -2830,9 +2830,9 @@ static bool page_fault_can_be_fast(u32 error_code)
  }
  
- static bool __rmap_write_protect(struct kvm *kvm, unsigned long *rmapp,
-@@ -1226,11 +1218,8 @@ static bool __rmap_write_protect(struct kvm *kvm, unsigned long *rmapp,
+ static bool
+-fast_pf_fix_direct_spte(struct kvm_vcpu *vcpu, u64 *sptep, u64 spte)
++fast_pf_fix_direct_spte(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
++			u64 *sptep, u64 spte)
+ {
+-	struct kvm_mmu_page *sp = page_header(__pa(sptep));
+ 	gfn_t gfn;
  
- 	for (sptep = rmap_get_first(*rmapp, &iter); sptep;) {
- 		BUG_ON(!(*sptep & PT_PRESENT_MASK));
--		if (spte_write_protect(kvm, sptep, &flush, pt_protect)) {
--			sptep = rmap_get_first(*rmapp, &iter);
--			continue;
--		}
- 
-+		flush |= spte_write_protect(kvm, sptep, pt_protect);
- 		sptep = rmap_get_next(&iter);
- 	}
- 
-@@ -2701,6 +2690,8 @@ static int __direct_map(struct kvm_vcpu *vcpu, gpa_t v, int write,
- 			break;
- 		}
- 
-+		drop_large_spte(vcpu, iterator.sptep);
-+
- 		if (!is_shadow_present_pte(*iterator.sptep)) {
- 			u64 base_addr = iterator.addr;
- 
-@@ -2855,7 +2846,7 @@ fast_pf_fix_direct_spte(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
-  * - false: let the real page fault path to fix it.
-  */
- static bool fast_page_fault(struct kvm_vcpu *vcpu, gva_t gva, int level,
--			    u32 error_code)
-+			    u32 error_code, bool force_pt_level)
+ 	WARN_ON(!sp->role.direct);
+@@ -2858,6 +2858,7 @@ static bool fast_page_fault(struct kvm_vcpu *vcpu, gva_t gva, int level,
+ 			    u32 error_code)
  {
  	struct kvm_shadow_walk_iterator iterator;
- 	struct kvm_mmu_page *sp;
-@@ -2884,6 +2875,13 @@ static bool fast_page_fault(struct kvm_vcpu *vcpu, gva_t gva, int level,
++	struct kvm_mmu_page *sp;
+ 	bool ret = false;
+ 	u64 spte = 0ull;
+ 
+@@ -2878,7 +2879,8 @@ static bool fast_page_fault(struct kvm_vcpu *vcpu, gva_t gva, int level,
+ 		goto exit;
+ 	}
+ 
+-	if (!is_last_spte(spte, level))
++	sp = page_header(__pa(iterator.sptep));
++	if (!is_last_spte(spte, sp->role.level))
  		goto exit;
  
  	/*
-+	 * Can not map the large spte to writable if the page is dirty
-+	 * logged.
-+	 */
-+	if (sp->role.level > PT_PAGE_TABLE_LEVEL && force_pt_level)
-+		goto exit;
-+
-+	/*
- 	 * Check if it is a spurious fault caused by TLB lazily flushed.
- 	 *
- 	 * Need not check the access of upper level table entries since
-@@ -2944,7 +2942,7 @@ static int nonpaging_map(struct kvm_vcpu *vcpu, gva_t v, u32 error_code,
- 	} else
- 		level = PT_PAGE_TABLE_LEVEL;
- 
--	if (fast_page_fault(vcpu, v, level, error_code))
-+	if (fast_page_fault(vcpu, v, level, error_code, force_pt_level))
- 		return 0;
- 
- 	mmu_seq = vcpu->kvm->mmu_notifier_seq;
-@@ -3422,7 +3420,7 @@ static int tdp_page_fault(struct kvm_vcpu *vcpu, gva_t gpa, u32 error_code,
- 	} else
- 		level = PT_PAGE_TABLE_LEVEL;
- 
--	if (fast_page_fault(vcpu, gpa, level, error_code))
-+	if (fast_page_fault(vcpu, gpa, level, error_code, force_pt_level))
- 		return 0;
- 
- 	mmu_seq = vcpu->kvm->mmu_notifier_seq;
+@@ -2904,7 +2906,7 @@ static bool fast_page_fault(struct kvm_vcpu *vcpu, gva_t gva, int level,
+ 	 * the gfn is not stable for indirect shadow page.
+ 	 * See Documentation/virtual/kvm/locking.txt to get more detail.
+ 	 */
+-	ret = fast_pf_fix_direct_spte(vcpu, iterator.sptep, spte);
++	ret = fast_pf_fix_direct_spte(vcpu, sp, iterator.sptep, spte);
+ exit:
+ 	trace_fast_page_fault(vcpu, gva, error_code, iterator.sptep,
+ 			      spte, ret);
 -- 
 1.8.1.4
 
