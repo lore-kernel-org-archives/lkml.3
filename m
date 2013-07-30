@@ -1,107 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756557Ab3G3B51 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 21:57:27 -0400
-Received: from ozlabs.org ([203.10.76.45]:35231 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751693Ab3G3B50 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 21:57:26 -0400
-Date: Tue, 30 Jul 2013 11:50:31 +1000
-From: David Gibson <david@gibson.dropbear.id.au>
-To: Jason Cooper <jason@lakedaemon.net>
-Cc: Dave Martin <Dave.Martin@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Domenico Andreoli <cavokz@gmail.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        "ksummit-2013-discuss@lists.linuxfoundation.org" 
-	<ksummit-2013-discuss@lists.linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jonsmirl@gmail.com" <jonsmirl@gmail.com>
-Subject: Re: [Ksummit-2013-discuss] Defining schemas for Device Tree
-Message-ID: <20130730015031.GK29970@voom.fritz.box>
-References: <2469263.vMN09Q7Tzi@flatron>
- <20130729150124.GS29916@titan.lakedaemon.net>
- <20130729164905.GB2280@localhost.localdomain>
- <20130729172339.GT29916@titan.lakedaemon.net>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="q6mBvMCt6oafMx9a"
-Content-Disposition: inline
-In-Reply-To: <20130729172339.GT29916@titan.lakedaemon.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756644Ab3G3B7A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 21:59:00 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:59459 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752062Ab3G3B67 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 21:58:59 -0400
+Message-ID: <1375149538.2075.95.camel@joe-AO722>
+Subject: Re: Checkpatch error on trace events macros
+From: Joe Perches <joe@perches.com>
+To: Li Zefan <lizefan@huawei.com>
+Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Andy Whitcroft <apw@canonical.com>, linux-kernel@vger.kernel.org
+Date: Mon, 29 Jul 2013 18:58:58 -0700
+In-Reply-To: <51F7171C.4060100@huawei.com>
+References: <20130729195201.GC14883@xanatos> <51F7171C.4060100@huawei.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2013-07-30 at 09:30 +0800, Li Zefan wrote:
+> On 2013/7/30 3:52, Sarah Sharp wrote:
+> > Hi Andy and Joe,
+> > 
+> > Checkpatch is complaining when code adds new trace events macros:
+> > 
+> > sarah@xanatos:~/git/kernels/xhci$ git am -s ~/Maildir.fetchmail/.to-apply
+> > Applying: xhci: add traces for debug messages in xhci_address_device()
+> > ERROR: Macros with complex values should be enclosed in parenthesis
+> > #86: FILE: drivers/usb/host/xhci-trace.h:15:
+> > +#define TRACE_SYSTEM xhci-hcd
+> > 
+> > ERROR: Macros with complex values should be enclosed in parenthesis
+> > #115: FILE: drivers/usb/host/xhci-trace.h:44:
+> > +#define TRACE_INCLUDE_PATH .
+> > 
+> > ERROR: Macros with complex values should be enclosed in parenthesis
+> > #118: FILE: drivers/usb/host/xhci-trace.h:47:
+> > +#define TRACE_INCLUDE_FILE xhci-trace
+> > 
+> > total: 3 errors, 0 warnings, 169 lines checked
+> > 
+> > 
+> > The macros have to be defined that way for trace events to work.
+> 
+> yeah, that's true, and we always just ignore chechpatch complaints
+> when it comes to TRACE_EVENT macros.
+> 
+> > Can you fix checkpatch not to complain about trace event macros?
+> > 
 
---q6mBvMCt6oafMx9a
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+So what are these TRACE_<FOO> defines that need
+excluding from the "complex values" check?
 
-On Mon, Jul 29, 2013 at 01:23:39PM -0400, Jason Cooper wrote:
-> On Mon, Jul 29, 2013 at 05:49:05PM +0100, Dave Martin wrote:
-> > On Mon, Jul 29, 2013 at 11:01:24AM -0400, Jason Cooper wrote:
-> > > On Mon, Jul 29, 2013 at 02:21:52AM +0200, Tomasz Figa wrote:
->=20
-> > > > b) What information should be specified in schemas? What level of=
-=20
-> > > >    granularity is required?
-> > >=20
-> > > One item I don't see in this list is node ordering.  There's been some
-> > > discussion lately on deferred probing (re boot times).  If we were to
-> > > intentionally declare that DT are parsed in the order written, then a
-> > > lot of deferred probes could be avoided by moving eg the pinctrl node=
- to
-> > > near the top of the tree.
-> > >=20
-> > > This doesn't impact buses as much, since the nodes needing the bus are
-> > > already children.  However, anything accessed via phandles: pins,
-> > > clocks, regulators, etc could benefit from declaring and enforcing th=
-is.
-> > > Eg having the dtc warn when a phandle is used before it's correspondi=
-ng
-> > > node is declared.
-> > >=20
-> > > Not critical though, just a thought.
-> >=20
-> > I don't think that siblings have any defined order in DT.  If reading a
-> > device tree, there's no guarantee you get nodes or properties out in the
-> > same order as the original .dts file.
->=20
-> That's why I raised the point.  If people think encoding initialization
-> order in the DT is a good idea, then we should change the dtc so it
-> compiles/decompiles in the same order.
+Anything other than 
 
-I'm not actually sure what you mean by this.  dtc already preserves
-order between input and output.
+TRACE_SYSTEM
+TRACE_INCLUDE_FILE
+TRACE_INCLUDE_PATH
 
---=20
-David Gibson			| I'll have my music baroque, and my code
-david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
-				| _way_ _around_!
-http://www.ozlabs.org/~dgibson
+?
 
---q6mBvMCt6oafMx9a
-Content-Type: application/pgp-signature
+samples/trace_events/trace-events-sample.h
+only has those 3.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.13 (GNU/Linux)
 
-iEYEARECAAYFAlH3G+cACgkQaILKxv3ab8YmcgCdEzwCl0StxQVzfzE3aDk/O3VC
-4ecAniijNIkuDXdYsEFyuKWIot7e43hX
-=4bCl
------END PGP SIGNATURE-----
 
---q6mBvMCt6oafMx9a--
