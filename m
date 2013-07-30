@@ -1,103 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758122Ab3G3StQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 14:49:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29722 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757889Ab3G3StL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 14:49:11 -0400
-Date: Tue, 30 Jul 2013 14:48:42 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, Hillf Danton <dhillf@gmail.com>,
-        Michal Hocko <mhocko@suse.cz>, Rik van Riel <riel@redhat.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        Naoya Horiguchi <nao.horiguchi@gmail.com>
-Message-ID: <1375210122-kz46l6fv-mutt-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <87mwp3q4vo.fsf@linux.vnet.ibm.com>
-References: <1374728103-17468-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1374728103-17468-2-git-send-email-n-horiguchi@ah.jp.nec.com>
- <87mwp3q4vo.fsf@linux.vnet.ibm.com>
-Subject: Re: [PATCH 1/8] migrate: make core migration code aware of hugepage
-Mime-Version: 1.0
-Content-Type: text/plain;
- charset=iso-2022-jp
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-X-Mutt-References: <87mwp3q4vo.fsf@linux.vnet.ibm.com>
-X-Mutt-Fcc: ~/Maildir/sent/
-User-Agent: Mutt 1.5.21 (2010-09-15)
+	id S1758055Ab3G3StE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 14:49:04 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56690 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758033Ab3G3Ss4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Jul 2013 14:48:56 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Ding Tianhong <dingtianhong@huawei.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 62/75] ifb: fix rcu_sched self-detected stalls
+Date: Tue, 30 Jul 2013 11:45:06 -0700
+Message-Id: <1375209919-1768-29-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1375197464-27962-1-git-send-email-kamal@canonical.com>
+References: <1375197464-27962-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 30, 2013 at 11:58:27PM +0530, Aneesh Kumar K.V wrote:
-> Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> writes:
-> 
-> > Before enabling each user of page migration to support hugepage,
-> > this patch enables the list of pages for migration to link not only
-> > LRU pages, but also hugepages. As a result, putback_movable_pages()
-> > and migrate_pages() can handle both of LRU pages and hugepages.
-> >
-> > ChangeLog v4:
-> >  - make some macros return 'do {} while(0)'
-> >  - use more readable variable name
-> >
-> > ChangeLog v3:
-> >  - revert introducing migrate_movable_pages
-> >  - add isolate_huge_page
-> >
-> > ChangeLog v2:
-> >  - move code removing VM_HUGETLB from vma_migratable check into a
-> >    separate patch
-> >  - hold hugetlb_lock in putback_active_hugepage
-> >  - update comment near the definition of hugetlb_lock
-> >
-> > Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> > Acked-by: Andi Kleen <ak@linux.intel.com>
-> > Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-> > ---
-> >  include/linux/hugetlb.h |  6 ++++++
-> >  mm/hugetlb.c            | 32 +++++++++++++++++++++++++++++++-
-> >  mm/migrate.c            | 10 +++++++++-
-> >  3 files changed, 46 insertions(+), 2 deletions(-)
-> >
-> > diff --git v3.11-rc1.orig/include/linux/hugetlb.h v3.11-rc1/include/linux/hugetlb.h
-> > index c2b1801..c7a14a4 100644
-> > --- v3.11-rc1.orig/include/linux/hugetlb.h
-> > +++ v3.11-rc1/include/linux/hugetlb.h
-> > @@ -66,6 +66,9 @@ int hugetlb_reserve_pages(struct inode *inode, long from, long to,
-> >  						vm_flags_t vm_flags);
-> >  void hugetlb_unreserve_pages(struct inode *inode, long offset, long freed);
-> >  int dequeue_hwpoisoned_huge_page(struct page *page);
-> > +bool isolate_huge_page(struct page *page, struct list_head *list);
-> > +void putback_active_hugepage(struct page *page);
-> > +void putback_active_hugepages(struct list_head *list);
-> 
-> are we using putback_active_hugepages in the patch series ?
+3.8.13.6 -stable review patch.  If anyone has any objections, please let me know.
 
-This function has no user, so shouldn't be added.
-I forgot to clean it up when changing code.
-Thanks for pointing out.
+------------------
 
-Naoya
+From: dingtianhong <dingtianhong@huawei.com>
 
-> 
-> >  void copy_huge_page(struct page *dst, struct page *src);
-> >
-> >  #ifdef CONFIG_ARCH_WANT_HUGE_PMD_SHARE
-> > @@ -134,6 +137,9 @@ static inline int dequeue_hwpoisoned_huge_page(struct page *page)
-> >  	return 0;
-> >  }
-> 
-> -aneesh
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->
+[ Upstream commit 440d57bc5ff55ec1efb3efc9cbe9420b4bbdfefa ]
+
+According to the commit 16b0dc29c1af9df341428f4c49ada4f626258082
+(dummy: fix rcu_sched self-detected stalls)
+
+Eric Dumazet fix the problem in dummy, but the ifb will occur the
+same problem like the dummy modules.
+
+Trying to "modprobe ifb numifbs=30000" triggers :
+
+INFO: rcu_sched self-detected stall on CPU
+
+After this splat, RTNL is locked and reboot is needed.
+
+We must call cond_resched() to avoid this, even holding RTNL.
+
+Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/net/ifb.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/net/ifb.c b/drivers/net/ifb.c
+index 344dceb..04ab337 100644
+--- a/drivers/net/ifb.c
++++ b/drivers/net/ifb.c
+@@ -291,8 +291,10 @@ static int __init ifb_init_module(void)
+ 	rtnl_lock();
+ 	err = __rtnl_link_register(&ifb_link_ops);
+ 
+-	for (i = 0; i < numifbs && !err; i++)
++	for (i = 0; i < numifbs && !err; i++) {
+ 		err = ifb_init_one(i);
++		cond_resched();
++	}
+ 	if (err)
+ 		__rtnl_link_unregister(&ifb_link_ops);
+ 	rtnl_unlock();
+-- 
+1.8.1.2
+
