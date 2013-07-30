@@ -1,97 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757429Ab3G3VPQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 17:15:16 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39335 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756870Ab3G3VPP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 17:15:15 -0400
-Date: Tue, 30 Jul 2013 22:15:01 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: David Brown <davidb@codeaurora.org>, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 3/9] ARM: msm: Move debug-macro.S to include/debug
-Message-ID: <20130730211501.GT24642@n2100.arm.linux.org.uk>
-References: <1374699274-18388-1-git-send-email-sboyd@codeaurora.org> <1374699274-18388-4-git-send-email-sboyd@codeaurora.org>
+	id S1757568Ab3G3VRb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 17:17:31 -0400
+Received: from mga03.intel.com ([143.182.124.21]:31945 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757033Ab3G3VRa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Jul 2013 17:17:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,781,1367996400"; 
+   d="scan'208";a="373656947"
+Message-ID: <51F82D64.5060609@intel.com>
+Date: Wed, 31 Jul 2013 00:17:24 +0300
+From: Adrian Hunter <adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
+ Business Identity Code: 0357606 - 4, Domiciled in Helsinki
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1374699274-18388-4-git-send-email-sboyd@codeaurora.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Namhyung Kim <namhyung@kernel.org>
+CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH 8/9] perf tools: add kcore to the object code reading
+ test
+References: <1374760890-30558-1-git-send-email-adrian.hunter@intel.com> <1374760890-30558-9-git-send-email-adrian.hunter@intel.com> <87vc3s1uxj.fsf@sejong.aot.lge.com>
+In-Reply-To: <87vc3s1uxj.fsf@sejong.aot.lge.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 24, 2013 at 01:54:28PM -0700, Stephen Boyd wrote:
-> One more step to allowing MSM to participate in the
-> multi-platform defconfig.
-> 
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> ---
->  arch/arm/Kconfig.debug                             |  9 +++-
->  .../mach/debug-macro.S => include/debug/msm.S}     | 32 ++++++++++-
->  arch/arm/mach-msm/include/mach/msm_iomap-8960.h    |  5 --
->  arch/arm/mach-msm/include/mach/msm_iomap-8x60.h    |  5 --
->  arch/arm/mach-msm/include/mach/msm_iomap.h         | 12 -----
->  arch/arm/mach-msm/include/mach/uncompress.h        | 63 ----------------------
->  arch/arm/mach-msm/io.c                             | 40 +++++++-------
->  7 files changed, 58 insertions(+), 108 deletions(-)
->  rename arch/arm/{mach-msm/include/mach/debug-macro.S => include/debug/msm.S} (61%)
->  delete mode 100644 arch/arm/mach-msm/include/mach/uncompress.h
-> 
-> diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
-> index e401a76..4a62a8d 100644
-> --- a/arch/arm/Kconfig.debug
-> +++ b/arch/arm/Kconfig.debug
-> @@ -777,6 +777,11 @@ config DEBUG_LL_INCLUDE
->  				 DEBUG_IMX6SL_UART
->  	default "debug/keystone.S" if DEBUG_KEYSTONE_UART0 || \
->  				      DEBUG_KEYSTONE_UART1
-> +	default "debug/msm.S" if DEBUG_MSM_UART1 || \
-> +				 DEBUG_MSM_UART2 || \
-> +				 DEBUG_MSM_UART3 || \
-> +				 DEBUG_MSM8660_UART || \
-> +				 DEBUG_MSM8960_UART
->  	default "debug/mvebu.S" if DEBUG_MVEBU_UART || \
->  				   DEBUG_MVEBU_UART_ALTERNATE
->  	default "debug/mxs.S" if DEBUG_IMX23_UART || DEBUG_IMX28_UART
-> @@ -804,13 +809,13 @@ config DEBUG_LL_INCLUDE
->  
->  config DEBUG_UNCOMPRESS
->  	bool
-> -	default y if ARCH_MULTIPLATFORM && DEBUG_LL && \
-> +	default y if (ARCH_MULTIPLATFORM || ARCH_MSM) && DEBUG_LL && \
->  		     !DEBUG_OMAP2PLUS_UART && \
->  		     !DEBUG_TEGRA_UART
->  
->  config UNCOMPRESS_INCLUDE
->  	string
-> -	default "debug/uncompress.h" if ARCH_MULTIPLATFORM
-> +	default "debug/uncompress.h" if ARCH_MULTIPLATFORM || ARCH_MSM
->  	default "mach/uncompress.h"
+On 30/07/2013 8:24 a.m., Namhyung Kim wrote:
+> On Thu, 25 Jul 2013 17:01:29 +0300, Adrian Hunter wrote:
+>> Make the "object code reading" test attempt to read from
+>> kcore.
+>>
+>> The test uses objdump which struggles with kcore. i.e.
+>> doesn't always work, sometimes takes a long time.
+>> The test has been made to work around those issues.
+>>
+> [SNIP]
+>
+>> -	if (al.map->dso->symtab_type == DSO_BINARY_TYPE__KALLSYMS) {
+>> +	if (al.map->dso->symtab_type == DSO_BINARY_TYPE__KALLSYMS&&
+>> +	    !dso__is_kcore(al.map->dso)) {
+>
+> I was confused.  So this means that the symbols came from the kallsyms
+> but actual binary data came from the kcore, right?
 
-I hope the above two aren't going to grow.
+Yes
 
->  	{
->  		.virtual =  (unsigned long) MSM_SHARED_RAM_BASE,
->  		.pfn = __phys_to_pfn(MSM_SHARED_RAM_PHYS),
->  		.length =   MSM_SHARED_RAM_SIZE,
->  		.type =     MT_DEVICE,
->  	},
+>
+>
+>>   		pr_debug("Unexpected kernel address - skipping\n");
+>>   		return 0;
+>>   	}
+>
+> [SNIP]
+>> +
+>> +	/* 2nd time through we just try kcore */
+>> +	if (try_kcore&&  !have_kcore)
+>> +		return TEST_CODE_READING_NO_KCORE;
+>> +
+>> +	/* No point getting kernel events if there is no kernel object */
+>> +	if (!have_vmlinux&&  !have_kcore)
+>>   		excl_kernel = true;
+>>
+>>   	threads = thread_map__new_by_tid(pid);
+>> @@ -457,8 +502,12 @@ static int do_test_code_reading(void)
+>>   	if (ret<  0)
+>>   		goto out_err;
+>>
+>> -	if (!have_vmlinux)
+>> +	if (!have_vmlinux&&  !have_kcore&&  !try_kcore)
+>> +		err = TEST_CODE_READING_NO_KERNEL_OBJ;
+>> +	else if (!have_vmlinux&&  !try_kcore)
+>>   		err = TEST_CODE_READING_NO_VMLINUX;
+>> +	else if (!have_kcore&&  try_kcore)
+>> +		err = TEST_CODE_READING_NO_KCORE;
+>
+> It seems that the above line is not reachable since we already bailed
+> out the second test if we don't have kcore.
 
-A comment here mentioning that the below must be the last entry would
-probably be a good idea as you overwrite the virtual/pfn members of this
-last entry.
+Fixed in V2
 
-> +#if defined(CONFIG_DEBUG_MSM_UART1) || defined(CONFIG_DEBUG_MSM_UART2) || \
-> +		defined(CONFIG_DEBUG_MSM_UART3)
-> +	{
-> +		/* virtual and pfn filled in by debug_ll_addr() */
-> +		.length = SZ_4K,
-> +		.type = MT_DEVICE_NONSHARED,
-> +	}
-> +#endif
+>
+>
+>>   	else if (excl_kernel)
+>>   		err = TEST_CODE_READING_NO_ACCESS;
+>>   	else
+>> @@ -485,7 +534,9 @@ int test__code_reading(void)
+>>   {
+>>   	int ret;
+>>
+>> -	ret = do_test_code_reading();
+>> +	ret = do_test_code_reading(false);
+>> +	if (!ret)
+>
+> Shouldn't it be
+>
+> 	if (ret)
 
-Other than that, this seems to be fine.
+No.  Zero is returned if vmlinux is found and the kernel is not 
+excluded.  In all other cases, there is no point trying kcore.
+Note if vmlinux is not found, then kcore will be tried the first
+time around.
+
+> ?
+>
+> Thanks,
+> Namhyung
+>
+>
+>> +		ret = do_test_code_reading(true);
+>>
+>>   	switch (ret) {
+>>   	case TEST_CODE_READING_OK:
+>> @@ -493,9 +544,15 @@ int test__code_reading(void)
+>>   	case TEST_CODE_READING_NO_VMLINUX:
+>>   		fprintf(stderr, " (no vmlinux)");
+>>   		return 0;
+>> +	case TEST_CODE_READING_NO_KCORE:
+>> +		fprintf(stderr, " (no kcore)");
+>> +		return 0;
+>>   	case TEST_CODE_READING_NO_ACCESS:
+>>   		fprintf(stderr, " (no access)");
+>>   		return 0;
+>> +	case TEST_CODE_READING_NO_KERNEL_OBJ:
+>> +		fprintf(stderr, " (no kernel obj)");
+>> +		return 0;
+>>   	default:
+>>   		return -1;
+>>   	};
+
