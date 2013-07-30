@@ -1,58 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932711Ab3G3Jf1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 05:35:27 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:41788 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758438Ab3G3JfZ (ORCPT
+	id S932769Ab3G3Jf4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 05:35:56 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53415 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932685Ab3G3JeD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 05:35:25 -0400
-Date: Tue, 30 Jul 2013 11:35:19 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ethan Zhao <ethan.kernel@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, johlstei@codeaurora.org,
-        Yinghai Lu <yinghai@kernel.org>, Jin Feng <joe.jin@oracle.com>
-Subject: Re: [PATCH V3]hrtimer: Fix a performance regression by disable
- reprogramming in remove_hrtimer
-Message-ID: <20130730093519.GP3008@twins.programming.kicks-ass.net>
-References: <1374955447-5051-1-git-send-email-ethan.kernel@gmail.com>
- <alpine.DEB.2.02.1307291146060.4089@ionos.tec.linutronix.de>
- <CABawtvP4oLuvHOS3prbbgPShXVziV_wTo7i6KCqJ9KkoVdz0ag@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABawtvP4oLuvHOS3prbbgPShXVziV_wTo7i6KCqJ9KkoVdz0ag@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Tue, 30 Jul 2013 05:34:03 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: enrico Mioso <mrkiko.rs@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 100/106] usb: serial: option: blacklist ONDA MT689DC QMI interface
+Date: Tue, 30 Jul 2013 10:31:59 +0100
+Message-Id: <1375176725-5825-101-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
+References: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 30, 2013 at 05:12:49PM +0800, Ethan Zhao wrote:
-> On Mon, Jul 29, 2013 at 6:18 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> > The test case does not involve anything hrtimer related. Do you have
-> > CONFIG_SCHED_HRTICK enabled?
-> >
-> 
-> Yes.  it is default configured in stable release.
-> CONFIG_SCHED_HRTICK=y
+3.5.7.18 -stable review patch.  If anyone has any objections, please let me know.
 
-Should still be disabled by default even if supported:
+------------------
 
-# grep HRTICK kernel/sched/features.h
-SCHED_FEAT(HRTICK, false)
+From: Enrico Mioso <mrkiko.rs@gmail.com>
 
+commit 3d1a69e726406ab662ab88fa30a3a05ed404334d upstream.
 
-> > First of all we want to know, which particular hrtimer is causing that
-> > issue. If it is the hrtick one, then I really have to ask why you want
-> > to use it at all in such a high performance scenario.
-> >
-> >  Any advice about the HZ in high performance scenario ? hrtimer tick
-> Is not fit for high performance ?
+Prevent the option driver from binding itself to the QMI/WWAN interface, making
+it unusable by the proper driver.
 
-Hence why its disabled, programming the timer hardware is too expensive.
-But since you didn't even know that I suspect you aren't in fact using
-it.
+Signed-off-by: enrico Mioso <mrkiko.rs@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/usb/serial/option.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-It would be good if you could do what Thomas suggested and look at which
-timer is actually active during your workload.
+diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
+index d2d4a48..a93b219 100644
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -834,7 +834,8 @@ static const struct usb_device_id option_ids[] = {
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0017, 0xff, 0xff, 0xff),
+ 		.driver_info = (kernel_ulong_t)&net_intf3_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0018, 0xff, 0xff, 0xff) },
+-	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0019, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0019, 0xff, 0xff, 0xff),
++		.driver_info = (kernel_ulong_t)&net_intf3_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0020, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0021, 0xff, 0xff, 0xff),
+ 		.driver_info = (kernel_ulong_t)&net_intf4_blacklist },
+-- 
+1.8.3.2
+
