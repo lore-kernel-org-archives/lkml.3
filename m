@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932502Ab3G3Jd0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 05:33:26 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53183 "EHLO
+	id S932633Ab3G3Jdu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 05:33:50 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53337 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932361Ab3G3JdN (ORCPT
+	with ESMTP id S932611Ab3G3Jdq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 05:33:13 -0400
+	Tue, 30 Jul 2013 05:33:46 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ding Tianhong <dingtianhong@huawei.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Jeff Skirvin <jeffrey.d.skirvin@intel.com>,
+        James Bottomley <JBottomley@Parallels.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 056/106] ifb: fix rcu_sched self-detected stalls
-Date: Tue, 30 Jul 2013 10:31:15 +0100
-Message-Id: <1375176725-5825-57-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 085/106] [SCSI] isci: Fix a race condition in the SSP task management path
+Date: Tue, 30 Jul 2013 10:31:44 +0100
+Message-Id: <1375176725-5825-86-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
 References: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
@@ -28,47 +28,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: dingtianhong <dingtianhong@huawei.com>
+From: Jeff Skirvin <jeffrey.d.skirvin@intel.com>
 
-commit 440d57bc5ff55ec1efb3efc9cbe9420b4bbdfefa upstream.
+commit 96f15f29038e58e1b0a96483e2b369ff446becf1 upstream.
 
-According to the commit 16b0dc29c1af9df341428f4c49ada4f626258082
-(dummy: fix rcu_sched self-detected stalls)
+This commit fixes a race condition in the isci driver abort task and SSP
+device task management path.  The race is caused when an I/O termination
+in the SCU hardware is necessary because of an SSP target timeout condition,
+and the check of the I/O end state races against the HW-termination-driven
+end state.  The failure of the race meant that no TMF was sent to the device
+to clean-up the pending I/O.
 
-Eric Dumazet fix the problem in dummy, but the ifb will occur the
-same problem like the dummy modules.
-
-Trying to "modprobe ifb numifbs=30000" triggers :
-
-INFO: rcu_sched self-detected stall on CPU
-
-After this splat, RTNL is locked and reboot is needed.
-
-We must call cond_resched() to avoid this, even holding RTNL.
-
-Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Jeff Skirvin <jeffrey.d.skirvin@intel.com>
+Reviewed-by: Lukasz Dorau <lukasz.dorau@intel.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/ifb.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/scsi/isci/task.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/net/ifb.c b/drivers/net/ifb.c
-index 344dceb..04ab337 100644
---- a/drivers/net/ifb.c
-+++ b/drivers/net/ifb.c
-@@ -291,8 +291,10 @@ static int __init ifb_init_module(void)
- 	rtnl_lock();
- 	err = __rtnl_link_register(&ifb_link_ops);
+diff --git a/drivers/scsi/isci/task.c b/drivers/scsi/isci/task.c
+index 6bc74eb..efd9e9e 100644
+--- a/drivers/scsi/isci/task.c
++++ b/drivers/scsi/isci/task.c
+@@ -491,6 +491,7 @@ int isci_task_abort_task(struct sas_task *task)
+ 	struct isci_tmf           tmf;
+ 	int                       ret = TMF_RESP_FUNC_FAILED;
+ 	unsigned long             flags;
++	int                       target_done_already = 0;
  
--	for (i = 0; i < numifbs && !err; i++)
-+	for (i = 0; i < numifbs && !err; i++) {
- 		err = ifb_init_one(i);
-+		cond_resched();
+ 	/* Get the isci_request reference from the task.  Note that
+ 	 * this check does not depend on the pending request list
+@@ -505,9 +506,11 @@ int isci_task_abort_task(struct sas_task *task)
+ 	/* If task is already done, the request isn't valid */
+ 	if (!(task->task_state_flags & SAS_TASK_STATE_DONE) &&
+ 	    (task->task_state_flags & SAS_TASK_AT_INITIATOR) &&
+-	    old_request)
++	    old_request) {
+ 		idev = isci_get_device(task->dev->lldd_dev);
+-
++		target_done_already = test_bit(IREQ_COMPLETE_IN_TARGET,
++					       &old_request->flags);
 +	}
- 	if (err)
- 		__rtnl_link_unregister(&ifb_link_ops);
- 	rtnl_unlock();
+ 	spin_unlock(&task->task_state_lock);
+ 	spin_unlock_irqrestore(&ihost->scic_lock, flags);
+ 
+@@ -561,7 +564,7 @@ int isci_task_abort_task(struct sas_task *task)
+ 
+ 	if (task->task_proto == SAS_PROTOCOL_SMP ||
+ 	    sas_protocol_ata(task->task_proto) ||
+-	    test_bit(IREQ_COMPLETE_IN_TARGET, &old_request->flags) ||
++	    target_done_already ||
+ 	    test_bit(IDEV_GONE, &idev->flags)) {
+ 
+ 		spin_unlock_irqrestore(&ihost->scic_lock, flags);
 -- 
 1.8.3.2
 
