@@ -1,90 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756101Ab3G3RpT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 13:45:19 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:34973 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752046Ab3G3RpR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 13:45:17 -0400
-Message-ID: <51F7FBA8.6080400@wwwdotorg.org>
-Date: Tue, 30 Jul 2013 11:45:12 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1756156Ab3G3Rpt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 13:45:49 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:51356 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752030Ab3G3Rps (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Jul 2013 13:45:48 -0400
+Date: Tue, 30 Jul 2013 13:45:39 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 1/3] mm: vmscan: fix numa reclaim balance problem in
+ kswapd
+Message-ID: <20130730174539.GF715@cmpxchg.org>
+References: <1374267325-22865-1-git-send-email-hannes@cmpxchg.org>
+ <1374267325-22865-2-git-send-email-hannes@cmpxchg.org>
+ <20130726155319.21e8a191456bf8a0ff724199@linux-foundation.org>
 MIME-Version: 1.0
-To: Richard Genoud <richard.genoud@gmail.com>
-CC: Mark Brown <broonie@kernel.org>, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Bo Shen <voice.shen@atmel.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org, devicetree@vger.kernel.org,
-        patches@opensource.wolfsonmicro.com
-Subject: Re: [PATCH v6 2/8] ASoC: atmel: machine driver for at91sam9x5-wm8731
- boards
-References: <1375180329-4860-1-git-send-email-richard.genoud@gmail.com> <1375180329-4860-3-git-send-email-richard.genoud@gmail.com>
-In-Reply-To: <1375180329-4860-3-git-send-email-richard.genoud@gmail.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130726155319.21e8a191456bf8a0ff724199@linux-foundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/30/2013 04:32 AM, Richard Genoud wrote:
-> From: Nicolas Ferre <nicolas.ferre@atmel.com>
+On Fri, Jul 26, 2013 at 03:53:19PM -0700, Andrew Morton wrote:
+> On Fri, 19 Jul 2013 16:55:23 -0400 Johannes Weiner <hannes@cmpxchg.org> wrote:
 > 
-> Description of the Asoc machine driver for an at91sam9x5 based board
-> with a wm8731 audio DAC. Wm8731 is clocked by a crystal and used as a
-> master on the SSC/I2S interface. Its connections are a headphone jack
-> and an Line input jack.
+> > When the page allocator fails to get a page from all zones in its
+> > given zonelist, it wakes up the per-node kswapds for all zones that
+> > are at their low watermark.
+> > 
+> > However, with a system under load and the free page counters being
+> > per-cpu approximations, the observed counter value in a zone can
+> > fluctuate enough that the allocation fails but the kswapd wakeup is
+> > also skipped while the zone is still really close to the low
+> > watermark.
+> > 
+> > When one node misses a wakeup like this, it won't be aged before all
+> > the other node's zones are down to their low watermarks again.  And
+> > skipping a full aging cycle is an obvious fairness problem.
+> > 
+> > Kswapd runs until the high watermarks are restored, so it should also
+> > be woken when the high watermarks are not met.  This ages nodes more
+> > equally and creates a safety margin for the page counter fluctuation.
 > 
-> [Richard: this is based on an old patch from Nicolas that I forward
-> ported and reworked to use only device tree]
+> Well yes, but what guarantee is there that the per-cpu counter error
+> problem is reliably fixed?  AFAICT this patch "fixes" it because the
+> gap between the low and high watermarks happens to be larger than the
+> per-cpu counter fluctuation, yes?  If so, there are surely all sorts of
+> situations where it will break again.
+> 
+> To fix this reliably, we should be looking at constraining counter
+> batch sizes or performing a counter summation to get the more accurate
+> estimate?
 
-> diff --git a/Documentation/devicetree/bindings/sound/atmel-sam9x5-wm8731-audio.txt b/Documentation/devicetree/bindings/sound/atmel-sam9x5-wm8731-audio.txt
+Thinking about this some more, the per-cpu fluctuation appears to be a
+red herring in this case.  Kswapd wakeup uses the safe version of the
+watermark checking code.  A percpu inaccuracy would result in the
+allocator waking kswapd a little too early or too late, but once it
+decides to wake it, we are getting an accurate picture on all zones.
+The safe watermark checks are designed to catch percpu inaccuracies
+between the low and the min watermark, the distance between low and
+high is twice as big, so we should be good.
 
-> +* Atmel at91sam9x5ek wm8731 audio complex
-> +
-> +Required properties:
-> +  - compatible: "atmel,sam9x5-wm8731-audio"
-> +  - atmel,model: The user-visible name of this sound complex.
-> +  - atmel,ssc-controller: The phandle of the SSC controller
-> +  - atmel,audio-codec: The phandle of the WM8731 audio codec
-> +  - atmel,audio-routing: A list of the connections between audio components.
-> +    Each entry is a pair of strings, the first being the connection's sink,
-> +    the second being the connection's source.
-> +
-> +Available audio endpoints for the audio-routing table:
-> +
-> +Board connectors:
-> + * Headphone Jack
-> + * Line In Jack
-> +
-> +wm8731 pins:
-> +cf Documentation/devicetree/bindings/sound/wm8731.txt
-
-In the Tegra bindings, I deliberately put the list of CODEC pins into
-the audio complex binding rather than the CODEC binding. That's because
-I'm not sure that in the long-term we want to use strings to identify
-the CODEC pins, rather than using integers. By putting the list orf
-CODEC pins in the audio complex binding rather than the CODEC binding, I
-didn't lumber the CODEC binding with a list of strings that it had to
-support forever.
-
-One reason that strings are problematic is because they can't be mixed
-with integers/phandles in the same property, so if we ever end up with
-more generic audio bindings where the routing table is expressed more like:
-
-audio-routes = <&component_a $a_pin &component_b $b_pin>;
-
-... in order to allow completely arbitrary and fully name-spaced routing
-specification[1], then $a_pin and $b_pin need to be integers not strings.
-
-[1] and perhaps we can get rid of properties like
-audio-codec/ssc-controller, and automatically deduce which components
-are needed simply by finding all phandles in the audio-routes property.
-
-Perhaps the solution here is to allow mixing phandles/integers/strings
-in one property, but that's potentially quite a large change to the DTB
-format; we'd need to introduce type fields into the property data, and
-other data format changes.
+The fluctuation that makes individual zones miss full aging cycles
+comes from true free page variation under load when the NOT OK
+threshold for the allocator is the same value as the OK threshold for
+skipping kswapd wakeups.
