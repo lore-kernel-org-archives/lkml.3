@@ -1,362 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753903Ab3G3QLy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 12:11:54 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:48981 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751584Ab3G3QLw convert rfc822-to-8bit (ORCPT
+	id S1754450Ab3G3QM3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 12:12:29 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:55965 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752259Ab3G3QM2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 12:11:52 -0400
-From: James Bottomley <jbottomley@parallels.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Subject: Re: [PATCH 25/36] SCSI: sd: convert class code to use dev_groups
-Thread-Topic: [PATCH 25/36] SCSI: sd: convert class code to use dev_groups
-Thread-Index: AQHOiLn9lIPAkmLJT0q4B8AZLxq1S5l94uSA
-Date: Tue, 30 Jul 2013 16:11:52 +0000
-Message-ID: <1375200711.2065.10.camel@dabdike.int.hansenpartnership.com>
-References: <1374703539-9705-1-git-send-email-gregkh@linuxfoundation.org>
-	 <1374703539-9705-26-git-send-email-gregkh@linuxfoundation.org>
-In-Reply-To: <1374703539-9705-26-git-send-email-gregkh@linuxfoundation.org>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [24.17.213.192]
-Content-Type: text/plain; charset=US-ASCII
-Content-ID: <954CC08C8DEFCF48853BC234E38C3EE0@sw.swsoft.com>
-Content-Transfer-Encoding: 7BIT
+	Tue, 30 Jul 2013 12:12:28 -0400
+Message-ID: <51F7E5E8.5090000@linaro.org>
+Date: Tue, 30 Jul 2013 09:12:24 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+CC: Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Christopher Covington <cov@codeaurora.org>,
+        Stephen Warren <swarren@wwwdotorg.org>
+Subject: Re: [PATCH v4 07/17] clocksource: bcm2835: Switch to sched_clock_register()
+References: <1374189690-10810-1-git-send-email-sboyd@codeaurora.org> <1374189690-10810-8-git-send-email-sboyd@codeaurora.org> <51F78FCB.2020004@linaro.org>
+In-Reply-To: <51F78FCB.2020004@linaro.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-07-24 at 15:05 -0700, Greg Kroah-Hartman wrote:
-> The dev_attrs field of struct class is going away soon, dev_groups
-> should be used instead.  This converts the scsi disk class code to use
-> the correct field.
-> 
-> It required some functions to be moved around to place the show and
-> store functions next to each other, the old order seemed to make no
-> sense at all.
-> 
-> Cc: James E.J. Bottomley <JBottomley@parallels.com>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> ---
-> 
-> James, feel free to take this through your tree, or ACK it and I can
-> take it through mine.
-
-Just found this ... I have the stable folder rule be git-send-email and
-from you, so it picks up your patches as well.
-
-I'll take it through my tree, just in case we're mucking about with
-attributes this cycle around.
-
-Thanks,
-
-James
+On 07/30/2013 03:04 AM, Daniel Lezcano wrote:
+> On 07/19/2013 01:21 AM, Stephen Boyd wrote:
+>> The 32 bit sched_clock interface now supports 64 bits. Upgrade to
+>> the 64 bit function to allow us to remove the 32 bit registration
+>> interface.
+>>
+>> Cc: Stephen Warren <swarren@wwwdotorg.org>
+>> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+>> ---
+> Hi Stephen,
+>
+> you sent a series with tick and clocksource changes.
+>
+> John is recipient of part of them. I replaced him to maintain the
+> clocksource drivers.
+>
+> Is the series you sent for clocksource drivers supposed to be taken by
+> me or by Russell ?
+>
+> In the future if there are no dependencies, it would be preferable to
+> group the clocksource drivers changes into a series and send them to me.
 
 
->  drivers/scsi/sd.c | 149 +++++++++++++++++++++++++++---------------------------
->  1 file changed, 75 insertions(+), 74 deletions(-)
-> 
-> diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-> index 80f39b8b..fdcbf567 100644
-> --- a/drivers/scsi/sd.c
-> +++ b/drivers/scsi/sd.c
-> @@ -132,8 +132,8 @@ static const char *sd_cache_types[] = {
->  };
->  
->  static ssize_t
-> -sd_store_cache_type(struct device *dev, struct device_attribute *attr,
-> -		    const char *buf, size_t count)
-> +cache_type_store(struct device *dev, struct device_attribute *attr,
-> +		 const char *buf, size_t count)
->  {
->  	int i, ct = -1, rcd, wce, sp;
->  	struct scsi_disk *sdkp = to_scsi_disk(dev);
-> @@ -199,8 +199,18 @@ sd_store_cache_type(struct device *dev, struct device_attribute *attr,
->  }
->  
->  static ssize_t
-> -sd_store_manage_start_stop(struct device *dev, struct device_attribute *attr,
-> -			   const char *buf, size_t count)
-> +manage_start_stop_show(struct device *dev, struct device_attribute *attr,
-> +		       char *buf)
-> +{
-> +	struct scsi_disk *sdkp = to_scsi_disk(dev);
-> +	struct scsi_device *sdp = sdkp->device;
-> +
-> +	return snprintf(buf, 20, "%u\n", sdp->manage_start_stop);
-> +}
-> +
-> +static ssize_t
-> +manage_start_stop_store(struct device *dev, struct device_attribute *attr,
-> +			const char *buf, size_t count)
->  {
->  	struct scsi_disk *sdkp = to_scsi_disk(dev);
->  	struct scsi_device *sdp = sdkp->device;
-> @@ -212,10 +222,19 @@ sd_store_manage_start_stop(struct device *dev, struct device_attribute *attr,
->  
->  	return count;
->  }
-> +static DEVICE_ATTR_RW(manage_start_stop);
->  
->  static ssize_t
-> -sd_store_allow_restart(struct device *dev, struct device_attribute *attr,
-> -		       const char *buf, size_t count)
-> +allow_restart_show(struct device *dev, struct device_attribute *attr, char *buf)
-> +{
-> +	struct scsi_disk *sdkp = to_scsi_disk(dev);
-> +
-> +	return snprintf(buf, 40, "%d\n", sdkp->device->allow_restart);
-> +}
-> +
-> +static ssize_t
-> +allow_restart_store(struct device *dev, struct device_attribute *attr,
-> +		    const char *buf, size_t count)
->  {
->  	struct scsi_disk *sdkp = to_scsi_disk(dev);
->  	struct scsi_device *sdp = sdkp->device;
-> @@ -230,47 +249,30 @@ sd_store_allow_restart(struct device *dev, struct device_attribute *attr,
->  
->  	return count;
->  }
-> +static DEVICE_ATTR_RW(allow_restart);
->  
->  static ssize_t
-> -sd_show_cache_type(struct device *dev, struct device_attribute *attr,
-> -		   char *buf)
-> +cache_type_show(struct device *dev, struct device_attribute *attr, char *buf)
->  {
->  	struct scsi_disk *sdkp = to_scsi_disk(dev);
->  	int ct = sdkp->RCD + 2*sdkp->WCE;
->  
->  	return snprintf(buf, 40, "%s\n", sd_cache_types[ct]);
->  }
-> +static DEVICE_ATTR_RW(cache_type);
->  
->  static ssize_t
-> -sd_show_fua(struct device *dev, struct device_attribute *attr, char *buf)
-> +FUA_show(struct device *dev, struct device_attribute *attr, char *buf)
->  {
->  	struct scsi_disk *sdkp = to_scsi_disk(dev);
->  
->  	return snprintf(buf, 20, "%u\n", sdkp->DPOFUA);
->  }
-> +static DEVICE_ATTR_RO(FUA);
->  
->  static ssize_t
-> -sd_show_manage_start_stop(struct device *dev, struct device_attribute *attr,
-> -			  char *buf)
-> -{
-> -	struct scsi_disk *sdkp = to_scsi_disk(dev);
-> -	struct scsi_device *sdp = sdkp->device;
-> -
-> -	return snprintf(buf, 20, "%u\n", sdp->manage_start_stop);
-> -}
-> -
-> -static ssize_t
-> -sd_show_allow_restart(struct device *dev, struct device_attribute *attr,
-> -		      char *buf)
-> -{
-> -	struct scsi_disk *sdkp = to_scsi_disk(dev);
-> -
-> -	return snprintf(buf, 40, "%d\n", sdkp->device->allow_restart);
-> -}
-> -
-> -static ssize_t
-> -sd_show_protection_type(struct device *dev, struct device_attribute *attr,
-> -			char *buf)
-> +protection_type_show(struct device *dev, struct device_attribute *attr,
-> +		     char *buf)
->  {
->  	struct scsi_disk *sdkp = to_scsi_disk(dev);
->  
-> @@ -278,8 +280,8 @@ sd_show_protection_type(struct device *dev, struct device_attribute *attr,
->  }
->  
->  static ssize_t
-> -sd_store_protection_type(struct device *dev, struct device_attribute *attr,
-> -			 const char *buf, size_t count)
-> +protection_type_store(struct device *dev, struct device_attribute *attr,
-> +		      const char *buf, size_t count)
->  {
->  	struct scsi_disk *sdkp = to_scsi_disk(dev);
->  	unsigned int val;
-> @@ -298,10 +300,11 @@ sd_store_protection_type(struct device *dev, struct device_attribute *attr,
->  
->  	return count;
->  }
-> +static DEVICE_ATTR_RW(protection_type);
->  
->  static ssize_t
-> -sd_show_protection_mode(struct device *dev, struct device_attribute *attr,
-> -			char *buf)
-> +protection_mode_show(struct device *dev, struct device_attribute *attr,
-> +		     char *buf)
->  {
->  	struct scsi_disk *sdkp = to_scsi_disk(dev);
->  	struct scsi_device *sdp = sdkp->device;
-> @@ -320,24 +323,26 @@ sd_show_protection_mode(struct device *dev, struct device_attribute *attr,
->  
->  	return snprintf(buf, 20, "%s%u\n", dix ? "dix" : "dif", dif);
->  }
-> +static DEVICE_ATTR_RO(protection_mode);
->  
->  static ssize_t
-> -sd_show_app_tag_own(struct device *dev, struct device_attribute *attr,
-> -		    char *buf)
-> +app_tag_own_show(struct device *dev, struct device_attribute *attr, char *buf)
->  {
->  	struct scsi_disk *sdkp = to_scsi_disk(dev);
->  
->  	return snprintf(buf, 20, "%u\n", sdkp->ATO);
->  }
-> +static DEVICE_ATTR_RO(app_tag_own);
->  
->  static ssize_t
-> -sd_show_thin_provisioning(struct device *dev, struct device_attribute *attr,
-> -			  char *buf)
-> +thin_provisioning_show(struct device *dev, struct device_attribute *attr,
-> +		       char *buf)
->  {
->  	struct scsi_disk *sdkp = to_scsi_disk(dev);
->  
->  	return snprintf(buf, 20, "%u\n", sdkp->lbpme);
->  }
-> +static DEVICE_ATTR_RO(thin_provisioning);
->  
->  static const char *lbp_mode[] = {
->  	[SD_LBP_FULL]		= "full",
-> @@ -349,8 +354,8 @@ static const char *lbp_mode[] = {
->  };
->  
->  static ssize_t
-> -sd_show_provisioning_mode(struct device *dev, struct device_attribute *attr,
-> -			  char *buf)
-> +provisioning_mode_show(struct device *dev, struct device_attribute *attr,
-> +		       char *buf)
->  {
->  	struct scsi_disk *sdkp = to_scsi_disk(dev);
->  
-> @@ -358,8 +363,8 @@ sd_show_provisioning_mode(struct device *dev, struct device_attribute *attr,
->  }
->  
->  static ssize_t
-> -sd_store_provisioning_mode(struct device *dev, struct device_attribute *attr,
-> -			   const char *buf, size_t count)
-> +provisioning_mode_store(struct device *dev, struct device_attribute *attr,
-> +			const char *buf, size_t count)
->  {
->  	struct scsi_disk *sdkp = to_scsi_disk(dev);
->  	struct scsi_device *sdp = sdkp->device;
-> @@ -385,10 +390,11 @@ sd_store_provisioning_mode(struct device *dev, struct device_attribute *attr,
->  
->  	return count;
->  }
-> +static DEVICE_ATTR_RW(provisioning_mode);
->  
->  static ssize_t
-> -sd_show_max_medium_access_timeouts(struct device *dev,
-> -				   struct device_attribute *attr, char *buf)
-> +max_medium_access_timeouts_show(struct device *dev,
-> +				struct device_attribute *attr, char *buf)
->  {
->  	struct scsi_disk *sdkp = to_scsi_disk(dev);
->  
-> @@ -396,9 +402,9 @@ sd_show_max_medium_access_timeouts(struct device *dev,
->  }
->  
->  static ssize_t
-> -sd_store_max_medium_access_timeouts(struct device *dev,
-> -				    struct device_attribute *attr,
-> -				    const char *buf, size_t count)
-> +max_medium_access_timeouts_store(struct device *dev,
-> +				 struct device_attribute *attr, const char *buf,
-> +				 size_t count)
->  {
->  	struct scsi_disk *sdkp = to_scsi_disk(dev);
->  	int err;
-> @@ -410,10 +416,11 @@ sd_store_max_medium_access_timeouts(struct device *dev,
->  
->  	return err ? err : count;
->  }
-> +static DEVICE_ATTR_RW(max_medium_access_timeouts);
->  
->  static ssize_t
-> -sd_show_write_same_blocks(struct device *dev, struct device_attribute *attr,
-> -			  char *buf)
-> +max_write_same_blocks_show(struct device *dev, struct device_attribute *attr,
-> +			   char *buf)
->  {
->  	struct scsi_disk *sdkp = to_scsi_disk(dev);
->  
-> @@ -421,8 +428,8 @@ sd_show_write_same_blocks(struct device *dev, struct device_attribute *attr,
->  }
->  
->  static ssize_t
-> -sd_store_write_same_blocks(struct device *dev, struct device_attribute *attr,
-> -			   const char *buf, size_t count)
-> +max_write_same_blocks_store(struct device *dev, struct device_attribute *attr,
-> +			    const char *buf, size_t count)
->  {
->  	struct scsi_disk *sdkp = to_scsi_disk(dev);
->  	struct scsi_device *sdp = sdkp->device;
-> @@ -451,35 +458,29 @@ sd_store_write_same_blocks(struct device *dev, struct device_attribute *attr,
->  
->  	return count;
->  }
-> -
-> -static struct device_attribute sd_disk_attrs[] = {
-> -	__ATTR(cache_type, S_IRUGO|S_IWUSR, sd_show_cache_type,
-> -	       sd_store_cache_type),
-> -	__ATTR(FUA, S_IRUGO, sd_show_fua, NULL),
-> -	__ATTR(allow_restart, S_IRUGO|S_IWUSR, sd_show_allow_restart,
-> -	       sd_store_allow_restart),
-> -	__ATTR(manage_start_stop, S_IRUGO|S_IWUSR, sd_show_manage_start_stop,
-> -	       sd_store_manage_start_stop),
-> -	__ATTR(protection_type, S_IRUGO|S_IWUSR, sd_show_protection_type,
-> -	       sd_store_protection_type),
-> -	__ATTR(protection_mode, S_IRUGO, sd_show_protection_mode, NULL),
-> -	__ATTR(app_tag_own, S_IRUGO, sd_show_app_tag_own, NULL),
-> -	__ATTR(thin_provisioning, S_IRUGO, sd_show_thin_provisioning, NULL),
-> -	__ATTR(provisioning_mode, S_IRUGO|S_IWUSR, sd_show_provisioning_mode,
-> -	       sd_store_provisioning_mode),
-> -	__ATTR(max_write_same_blocks, S_IRUGO|S_IWUSR,
-> -	       sd_show_write_same_blocks, sd_store_write_same_blocks),
-> -	__ATTR(max_medium_access_timeouts, S_IRUGO|S_IWUSR,
-> -	       sd_show_max_medium_access_timeouts,
-> -	       sd_store_max_medium_access_timeouts),
-> -	__ATTR_NULL,
-> +static DEVICE_ATTR_RW(max_write_same_blocks);
-> +
-> +static struct attribute *sd_disk_attrs[] = {
-> +	&dev_attr_cache_type.attr,
-> +	&dev_attr_FUA.attr,
-> +	&dev_attr_allow_restart.attr,
-> +	&dev_attr_manage_start_stop.attr,
-> +	&dev_attr_protection_type.attr,
-> +	&dev_attr_protection_mode.attr,
-> +	&dev_attr_app_tag_own.attr,
-> +	&dev_attr_thin_provisioning.attr,
-> +	&dev_attr_provisioning_mode.attr,
-> +	&dev_attr_max_write_same_blocks.attr,
-> +	&dev_attr_max_medium_access_timeouts.attr,
-> +	NULL,
->  };
-> +ATTRIBUTE_GROUPS(sd_disk);
->  
->  static struct class sd_disk_class = {
->  	.name		= "scsi_disk",
->  	.owner		= THIS_MODULE,
->  	.dev_release	= scsi_disk_release,
-> -	.dev_attrs	= sd_disk_attrs,
-> +	.dev_groups	= sd_disk_groups,
->  };
->  
->  static const struct dev_pm_ops sd_pm_ops = {
+I believe there are some dependencies on the generic bits.
+
+I'm planning on queing the generic parts in one branch (to send to 
+thomas), queuing the drivers/clocksource bits to send to you, but was 
+waiting on an Ack from Catalin.
+
+I got busy with some other work items, so I haven't pushed these out 
+yet, but I'll review things again and push them out today.
+
+thanks
+-john
+
 
 
