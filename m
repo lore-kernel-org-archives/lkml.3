@@ -1,113 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756821Ab3G3VFu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 17:05:50 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:53749 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751777Ab3G3VFs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 17:05:48 -0400
-Message-ID: <1375218347.2075.133.camel@joe-AO722>
-Subject: Re: btrfs zero divide
-From: Joe Perches <joe@perches.com>
-To: Josef Bacik <jbacik@fusionio.com>
-Cc: Thorsten Glaser <tg@mirbsd.de>, Geert Uytterhoeven <geert@linux-m68k.org>,
-        Debian GNU/Linux m68k <debian-68k@lists.debian.org>,
-        linux-btrfs@vger.kernel.org,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>
-Date: Tue, 30 Jul 2013 14:05:47 -0700
-In-Reply-To: <20130730204001.GG24583@localhost.localdomain>
-References: <Pine.BSM.4.64L.1307300820160.20675@herc.mirbsd.org>
-	 <alpine.DEB.2.02.1307301052010.23107@ayla.of.borg>
-	 <20130730171329.GF24583@localhost.localdomain>
-	 <Pine.BSM.4.64L.1307301741360.20305@herc.mirbsd.org>
-	 <20130730204001.GG24583@localhost.localdomain>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1757045Ab3G3VIQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 17:08:16 -0400
+Received: from mga11.intel.com ([192.55.52.93]:31782 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754010Ab3G3VIP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Jul 2013 17:08:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,781,1367996400"; 
+   d="scan'208";a="373653909"
+From: Adrian Hunter <adrian.hunter@intel.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH V2 0/9] perf tools: add support for reading object code
+Date: Wed, 31 Jul 2013 00:13:49 +0300
+Message-Id: <1375218838-31042-1-git-send-email-adrian.hunter@intel.com>
+X-Mailer: git-send-email 1.7.11.7
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-07-30 at 16:40 -0400, Josef Bacik wrote:
-> So stripe_len shouldn't be 0, if it is you have bigger problems :).  Is this a
-> corrupt fs or something?  If there was some sort of corruption that occured then
-> I suppose stripe_len could be 0 and we'd need to catch that somewhere higher up
-> the stack and error out.  Is there a way you could check and see if that's the
-> case?  Thanks,
+Hi
 
-Maybe use a temporary check in do_div
-Something like this maybe. (uncompiled/untested)
----
- include/asm-generic/div64.h | 43 +++++++++++++++++++++++++++++--------------
- 1 file changed, 29 insertions(+), 14 deletions(-)
+Here are some patches that add support for reading object code from vmlinux,
+kernel modules and /proc/kcore.
 
-diff --git a/include/asm-generic/div64.h b/include/asm-generic/div64.h
-index 8f4e319..cce75fe 100644
---- a/include/asm-generic/div64.h
-+++ b/include/asm-generic/div64.h
-@@ -19,16 +19,25 @@
- 
- #include <linux/types.h>
- #include <linux/compiler.h>
-+#include <linux/bug.h>
-+#include <linux/printk.h>
- 
- #if BITS_PER_LONG == 64
- 
--# define do_div(n,base) ({					\
-+# define do_div(n, base)					\
-+({								\
- 	uint32_t __base = (base);				\
- 	uint32_t __rem;						\
--	__rem = ((uint64_t)(n)) % __base;			\
--	(n) = ((uint64_t)(n)) / __base;				\
-+	if (__base == 0) {					\
-+		WARN(1, "Attempted division by 0\n");		\
-+		dump_stack();					\
-+		__rem = 0;					\
-+	} else {						\
-+		__rem = ((uint64_t)(n)) % __base;		\
-+		(n) = ((uint64_t)(n)) / __base;			\
-+	}							\
- 	__rem;							\
-- })
-+})
- 
- #elif BITS_PER_LONG == 32
- 
-@@ -37,16 +46,22 @@ extern uint32_t __div64_32(uint64_t *dividend, uint32_t divisor);
- /* The unnecessary pointer compare is there
-  * to check for type safety (n must be 64bit)
-  */
--# define do_div(n,base) ({				\
--	uint32_t __base = (base);			\
--	uint32_t __rem;					\
--	(void)(((typeof((n)) *)0) == ((uint64_t *)0));	\
--	if (likely(((n) >> 32) == 0)) {			\
--		__rem = (uint32_t)(n) % __base;		\
--		(n) = (uint32_t)(n) / __base;		\
--	} else 						\
--		__rem = __div64_32(&(n), __base);	\
--	__rem;						\
-+# define do_div(n, base)					\
-+({								\
-+	uint32_t __base = (base);				\
-+	uint32_t __rem;						\
-+	(void)(((typeof((n)) *)0) == ((uint64_t *)0));		\
-+	if (__base == 0) {					\
-+		WARN(1, "Attempted division by 0\n");		\
-+		dump_stack();					\
-+		__rem = 0;					\
-+	} else if (likely(((n) >> 32) == 0)) {			\
-+		__rem = (uint32_t)(n) % __base;			\
-+		(n) = (uint32_t)(n) / __base;			\
-+	} else {						\
-+		__rem = __div64_32(&(n), __base);		\
-+	}							\
-+	__rem;							\
-  })
- 
- #else /* BITS_PER_LONG == ?? */
+Changes in V2:
+	Re-based on Arnaldo's tree's perf/core branch
+
+	perf tools: add test for reading object code
+		Use strchr in read_objdump_line()
+		Remove unused return value of read_objdump_line()
+		Fix double space before "cycles:u"
+		Add missing perf_evlist__delete(evlist) in do_test_code_reading()
+	perf tools: load kernel maps before using
+		Correct spelling of "initialization" in commit message
+	perf tools: add support for reading from /proc/kcore
+		Do not test kallsyms filename for host buildid because
+		/proc/kallsyms is always used if the dso buildid matches
+		the host
+	perf tools: add kcore to the object code reading test
+		Remove redundant "else if (!have_kcore && try_kcore)" clause
 
 
+Adrian Hunter (9):
+      perf tools: add test for reading object code
+      perf tools: load kernel maps before using
+      perf tools: make it possible to read object code from vmlinux
+      perf tools: adjust the vmlinux symtab matches kallsyms test                                                                   
+      perf tools: avoid SyS kernel syscall aliases                                                                                  
+      perf tools: make it possible to read object code from kernel modules                                                          
+      perf tools: add support for reading from /proc/kcore                                                                          
+      perf tools: add kcore to the object code reading test                                                                         
+      perf tools: allow annotation using /proc/kcore                                                                                
+                                                                                                                                    
+ tools/perf/Makefile                 |   1 +                                                                                        
+ tools/perf/builtin-inject.c         |   2 +-                                                                                       
+ tools/perf/builtin-script.c         |   4 +-                                                                                       
+ tools/perf/builtin-top.c            |   3 +-                                                                                       
+ tools/perf/tests/builtin-test.c     |   4 +                                                                                        
+ tools/perf/tests/code-reading.c     | 556 ++++++++++++++++++++++++++++++++++++                                                     
+ tools/perf/tests/tests.h            |   1 +                                                                                        
+ tools/perf/tests/vmlinux-kallsyms.c |  32 ++-                                                                                      
+ tools/perf/util/annotate.c          |  13 +-                                                                                       
+ tools/perf/util/build-id.c          |   2 +-                                                                                       
+ tools/perf/util/dso.c               |  10 +-                                                                                       
+ tools/perf/util/dso.h               |  17 ++                                                                                       
+ tools/perf/util/event.c             |  18 +-                                                                                       
+ tools/perf/util/machine.c           |  20 +-                                                                                       
+ tools/perf/util/map.c               |  67 ++---                                                                                    
+ tools/perf/util/map.h               |  13 +                                                                                        
+ tools/perf/util/symbol-elf.c        | 166 ++++++++++-                                                                              
+ tools/perf/util/symbol-minimal.c    |   7 +                                                                                        
+ tools/perf/util/symbol.c            | 273 ++++++++++++++++--                                                                       
+ tools/perf/util/symbol.h            |   5 +
+ tools/perf/util/thread.h            |   2 +-
+ tools/perf/util/unwind.c            |   4 +-
+ 22 files changed, 1120 insertions(+), 100 deletions(-)
+ create mode 100644 tools/perf/tests/code-reading.c
+
+
+Regards
+Adrian
