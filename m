@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758096Ab3G3Uvi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 16:51:38 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:43971 "EHLO
+	id S1758100Ab3G3Uvx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 16:51:53 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:43984 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757855Ab3G3Utp (ORCPT
+	by vger.kernel.org with ESMTP id S1757318Ab3G3Utp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 30 Jul 2013 16:49:45 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
@@ -13,9 +13,9 @@ Cc: Emilio Lopez <emilio@elopez.com.ar>, kevin.z.m.zh@gmail.com,
         sunny@allwinnertech.com, shuge@allwinnertech.com,
         linux-kernel@vger.kernel.org, linux-sunxi@googlegroups.com,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCHv2 05/10] ARM: sunxi: Add Allwinner A31 DTSI
-Date: Tue, 30 Jul 2013 22:49:34 +0200
-Message-Id: <1375217379-15126-6-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCHv2 04/10] ARM: sun6i: Add restart code for the A31
+Date: Tue, 30 Jul 2013 22:49:33 +0200
+Message-Id: <1375217379-15126-5-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 1.8.3.4
 In-Reply-To: <1375217379-15126-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1375217379-15126-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -23,177 +23,121 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Allwinner A31 SoC is a multimedia SoC powered by 4 Cortex-A7 and a
-PowerVR GPU.
+The Allwinner A31 has a different watchdog, with a slightly different
+register layout, that requires a different restart code.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- arch/arm/boot/dts/sun6i-a31.dtsi | 156 +++++++++++++++++++++++++++++++++++++++
- 1 file changed, 156 insertions(+)
- create mode 100644 arch/arm/boot/dts/sun6i-a31.dtsi
+ .../devicetree/bindings/watchdog/sun4i-wdt.txt     | 13 -------
+ .../devicetree/bindings/watchdog/sunxi-wdt.txt     | 14 +++++++
+ arch/arm/mach-sunxi/sunxi.c                        | 43 ++++++++++++++++++++--
+ 3 files changed, 54 insertions(+), 16 deletions(-)
+ delete mode 100644 Documentation/devicetree/bindings/watchdog/sun4i-wdt.txt
+ create mode 100644 Documentation/devicetree/bindings/watchdog/sunxi-wdt.txt
 
-diff --git a/arch/arm/boot/dts/sun6i-a31.dtsi b/arch/arm/boot/dts/sun6i-a31.dtsi
+diff --git a/Documentation/devicetree/bindings/watchdog/sun4i-wdt.txt b/Documentation/devicetree/bindings/watchdog/sun4i-wdt.txt
+deleted file mode 100644
+index ecd650a..0000000
+--- a/Documentation/devicetree/bindings/watchdog/sun4i-wdt.txt
++++ /dev/null
+@@ -1,13 +0,0 @@
+-Allwinner sun4i Watchdog timer
+-
+-Required properties:
+-
+-- compatible : should be "allwinner,sun4i-wdt"
+-- reg : Specifies base physical address and size of the registers.
+-
+-Example:
+-
+-wdt: watchdog@01c20c90 {
+-	compatible = "allwinner,sun4i-wdt";
+-	reg = <0x01c20c90 0x10>;
+-};
+diff --git a/Documentation/devicetree/bindings/watchdog/sunxi-wdt.txt b/Documentation/devicetree/bindings/watchdog/sunxi-wdt.txt
 new file mode 100644
-index 0000000..407e7b4
+index 0000000..e39cb26
 --- /dev/null
-+++ b/arch/arm/boot/dts/sun6i-a31.dtsi
-@@ -0,0 +1,156 @@
-+/*
-+ * Copyright 2013 Maxime Ripard
-+ *
-+ * Maxime Ripard <maxime.ripard@free-electrons.com>
-+ *
-+ * The code contained herein is licensed under the GNU General Public
-+ * License. You may obtain a copy of the GNU General Public License
-+ * Version 2 or later at the following locations:
-+ *
-+ * http://www.opensource.org/licenses/gpl-license.html
-+ * http://www.gnu.org/copyleft/gpl.html
-+ */
++++ b/Documentation/devicetree/bindings/watchdog/sunxi-wdt.txt
+@@ -0,0 +1,14 @@
++Allwinner SoCs Watchdog timer
 +
-+/include/ "skeleton.dtsi"
++Required properties:
 +
-+/ {
-+	interrupt-parent = <&gic>;
++- compatible : should be "allwinner,<soc-family>-wdt", the currently supported
++  SoC families being sun4i and sun6i
++- reg : Specifies base physical address and size of the registers.
 +
-+	cpus {
-+		#address-cells = <1>;
-+		#size-cells = <0>;
++Example:
 +
-+		cpu@0 {
-+			compatible = "arm,cortex-a7";
-+			device_type = "cpu";
-+			reg = <0>;
-+		};
-+
-+		cpu@1 {
-+			compatible = "arm,cortex-a7";
-+			device_type = "cpu";
-+			reg = <1>;
-+		};
-+
-+		cpu@2 {
-+			compatible = "arm,cortex-a7";
-+			device_type = "cpu";
-+			reg = <2>;
-+		};
-+
-+		cpu@3 {
-+			compatible = "arm,cortex-a7";
-+			device_type = "cpu";
-+			reg = <3>;
-+		};
-+	};
-+
-+	memory {
-+		reg = <0x40000000 0x80000000>;
-+	};
-+
-+	clocks {
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+
-+		osc: oscillator {
-+			#clock-cells = <0>;
-+			compatible = "fixed-clock";
-+			clock-frequency = <24000000>;
-+		};
-+	};
-+
-+	soc@01c20000 {
-+		compatible = "simple-bus";
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+		ranges;
-+
-+		timer@01c20c00 {
-+			compatible = "allwinner,sun4i-timer";
-+			reg = <0x01c20c00 0xa0>;
-+			interrupts = <0 18 1>,
-+				     <0 19 1>,
-+				     <0 20 1>,
-+				     <0 21 1>,
-+				     <0 22 1>;
-+			clocks = <&osc>;
-+		};
-+
-+		wdt1: watchdog@01c20ca0 {
-+			compatible = "allwinner,sun6i-wdt";
-+			reg = <0x01c20ca0 0x20>;
-+		};
-+
-+		uart0: serial@01c28000 {
-+			compatible = "snps,dw-apb-uart";
-+			reg = <0x01c28000 0x400>;
-+			interrupts = <0 0 1>;
-+			reg-shift = <2>;
-+			reg-io-width = <4>;
-+			clocks = <&osc>;
-+			status = "disabled";
-+		};
-+
-+		uart1: serial@01c28400 {
-+			compatible = "snps,dw-apb-uart";
-+			reg = <0x01c28400 0x400>;
-+			interrupts = <0 1 1>;
-+			reg-shift = <2>;
-+			reg-io-width = <4>;
-+			clocks = <&osc>;
-+			status = "disabled";
-+		};
-+
-+		uart2: serial@01c28800 {
-+			compatible = "snps,dw-apb-uart";
-+			reg = <0x01c28800 0x400>;
-+			interrupts = <0 2 1>;
-+			reg-shift = <2>;
-+			reg-io-width = <4>;
-+			clocks = <&osc>;
-+			status = "disabled";
-+		};
-+
-+		uart3: serial@01c28c00 {
-+			compatible = "snps,dw-apb-uart";
-+			reg = <0x01c28c00 0x400>;
-+			interrupts = <0 3 1>;
-+			reg-shift = <2>;
-+			reg-io-width = <4>;
-+			clocks = <&osc>;
-+			status = "disabled";
-+		};
-+
-+		uart4: serial@01c29000 {
-+			compatible = "snps,dw-apb-uart";
-+			reg = <0x01c29000 0x400>;
-+			interrupts = <0 4 1>;
-+			reg-shift = <2>;
-+			reg-io-width = <4>;
-+			clocks = <&osc>;
-+			status = "disabled";
-+		};
-+
-+		uart5: serial@01c29400 {
-+			compatible = "snps,dw-apb-uart";
-+			reg = <0x01c29400 0x400>;
-+			interrupts = <0 5 1>;
-+			reg-shift = <2>;
-+			reg-io-width = <4>;
-+			clocks = <&osc>;
-+			status = "disabled";
-+		};
-+
-+		gic: interrupt-controller@01c81000 {
-+			compatible = "arm,cortex-a7-gic";
-+			reg = <0x01c81000 0x1000>,
-+			      <0x01c82000 0x1000>,
-+			      <0x01c84000 0x2000>,
-+			      <0x01c86000 0x2000>;
-+			interrupt-controller;
-+			#interrupt-cells = <3>;
-+			interrupts = <1 9 0xf04>;
-+		};
-+	};
++wdt: watchdog@01c20c90 {
++	compatible = "allwinner,sun4i-wdt";
++	reg = <0x01c20c90 0x10>;
 +};
+diff --git a/arch/arm/mach-sunxi/sunxi.c b/arch/arm/mach-sunxi/sunxi.c
+index 11326d9..19bcc96 100644
+--- a/arch/arm/mach-sunxi/sunxi.c
++++ b/arch/arm/mach-sunxi/sunxi.c
+@@ -27,10 +27,19 @@
+ #include <asm/system_misc.h>
+ 
+ #define SUN4I_WATCHDOG_CTRL_REG		0x00
+-#define SUN4I_WATCHDOG_CTRL_RESTART		(1 << 0)
++#define SUN4I_WATCHDOG_CTRL_RESTART		BIT(0)
+ #define SUN4I_WATCHDOG_MODE_REG		0x04
+-#define SUN4I_WATCHDOG_MODE_ENABLE		(1 << 0)
+-#define SUN4I_WATCHDOG_MODE_RESET_ENABLE	(1 << 1)
++#define SUN4I_WATCHDOG_MODE_ENABLE		BIT(0)
++#define SUN4I_WATCHDOG_MODE_RESET_ENABLE	BIT(1)
++
++#define SUN6I_WATCHDOG1_IRQ_REG		0x00
++#define SUN6I_WATCHDOG1_CTRL_REG	0x10
++#define SUN6I_WATCHDOG1_CTRL_RESTART		BIT(0)
++#define SUN6I_WATCHDOG1_CONFIG_REG	0x14
++#define SUN6I_WATCHDOG1_CONFIG_RESTART		BIT(0)
++#define SUN6I_WATCHDOG1_CONFIG_IRQ		BIT(1)
++#define SUN6I_WATCHDOG1_MODE_REG	0x18
++#define SUN6I_WATCHDOG1_MODE_ENABLE		BIT(0)
+ 
+ static void __iomem *wdt_base;
+ 
+@@ -56,8 +65,36 @@ static void sun4i_restart(enum reboot_mode mode, const char *cmd)
+ 	}
+ }
+ 
++static void sun6i_restart(char mode, const char *cmd)
++{
++	if (!wdt_base)
++		return;
++
++	/* Disable interrupts */
++	writel(0, wdt_base + SUN6I_WATCHDOG1_IRQ_REG);
++
++	/* We want to disable the IRQ and just reset the whole system */
++	writel(SUN6I_WATCHDOG1_CONFIG_RESTART,
++		wdt_base + SUN6I_WATCHDOG1_CONFIG_REG);
++
++	/* Enable timer. The default and lowest interval value is 0.5s */
++	writel(SUN6I_WATCHDOG1_MODE_ENABLE,
++		wdt_base + SUN6I_WATCHDOG1_MODE_REG);
++
++	/* Restart the watchdog. */
++	writel(SUN6I_WATCHDOG1_CTRL_RESTART,
++		wdt_base + SUN6I_WATCHDOG1_CTRL_REG);
++
++	while (1) {
++		mdelay(5);
++		writel(SUN6I_WATCHDOG1_MODE_ENABLE,
++			wdt_base + SUN6I_WATCHDOG1_MODE_REG);
++	}
++}
++
+ static struct of_device_id sunxi_restart_ids[] = {
+ 	{ .compatible = "allwinner,sun4i-wdt", .data = sun4i_restart },
++	{ .compatible = "allwinner,sun6i-wdt", .data = sun6i_restart },
+ 	{ /*sentinel*/ }
+ };
+ 
 -- 
 1.8.3.4
 
