@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932697Ab3G3JeF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 05:34:05 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53395 "EHLO
+	id S1758446Ab3G3JeV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 05:34:21 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53451 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932673Ab3G3Jd7 (ORCPT
+	with ESMTP id S1753091Ab3G3JeR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 05:33:59 -0400
+	Tue, 30 Jul 2013 05:34:17 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+Cc: David Vrabel <david.vrabel@citrix.com>, Ingo Molnar <mingo@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Konrad Wilk <konrad.wilk@oracle.com>,
+        John Stultz <john.stultz@linaro.org>, xen-devel@lists.xen.org,
+        Thomas Gleixner <tglx@linutronix.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 097/106] xhci: Avoid NULL pointer deref when host dies.
-Date: Tue, 30 Jul 2013 10:31:56 +0100
-Message-Id: <1375176725-5825-98-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 106/106] hrtimers: Move SMP function call to thread context
+Date: Tue, 30 Jul 2013 10:32:05 +0100
+Message-Id: <1375176725-5825-107-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
 References: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
@@ -27,71 +30,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit 203a86613fb3bf2767335659513fa98563a3eb71 upstream.
+commit 5ec2481b7b47a4005bb446d176e5d0257400c77d upstream.
 
-When the host controller fails to respond to an Enable Slot command, and
-the host fails to respond to the register write to abort the command
-ring, the xHCI driver will assume the host is dead, and call
-usb_hc_died().
+smp_call_function_* must not be called from softirq context.
 
-The USB device's slot_id is still set to zero, and the pointer stored at
-xhci->devs[0] will always be NULL.  The call to xhci_check_args in
-xhci_free_dev should have caught the NULL virt_dev pointer.
+But clock_was_set() which calls on_each_cpu() is called from softirq
+context to implement a delayed clock_was_set() for the timer interrupt
+handler. Though that almost never gets invoked. A recent change in the
+resume code uses the softirq based delayed clock_was_set to support
+Xens resume mechanism.
 
-However, xhci_free_dev is designed to free the xhci_virt_device
-structures, even if the host is dead, so that we don't leak kernel
-memory.  xhci_free_dev checks the return value from the generic
-xhci_check_args function.  If the return value is -ENODEV, it carries on
-trying to free the virtual device.
+linux-next contains a new warning which warns if smp_call_function_*
+is called from softirq context which gets triggered by that Xen
+change.
 
-The issue is that xhci_check_args looks at the host controller state
-before it looks at the xhci_virt_device pointer.  It will return -ENIVAL
-because the host is dead, and xhci_free_dev will ignore the return
-value, and happily dereference the NULL xhci_virt_device pointer.
+Fix this by moving the delayed clock_was_set() call to a work context.
 
-The fix is to make sure that xhci_check_args checks the xhci_virt_device
-pointer before it checks the host state.
-
-See https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1203453 for
-further details.  This patch doesn't solve the underlying issue, but
-will ensure we don't see any more NULL pointer dereferences because of
-the issue.
-
-This patch should be backported to kernels as old as 3.1, that
-contain the commit 7bd89b4017f46a9b92853940fd9771319acb578a "xhci: Don't
-submit commands or URBs to halted hosts."
-
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Reported-by: Vincent Thiele <vincentthiele@gmail.com>
+Reported-and-tested-by: Artem Savkov <artem.savkov@gmail.com>
+Reported-by: Sasha Levin <sasha.levin@oracle.com>
+Cc: David Vrabel <david.vrabel@citrix.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: H. Peter Anvin <hpa@zytor.com>,
+Cc: Konrad Wilk <konrad.wilk@oracle.com>
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: xen-devel@lists.xen.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+[ luis: backported to 3.5: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/host/xhci.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ kernel/hrtimer.c | 28 +++++++++++++---------------
+ 1 file changed, 13 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-index bd96077..a918743 100644
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -1162,9 +1162,6 @@ static int xhci_check_args(struct usb_hcd *hcd, struct usb_device *udev,
- 	}
- 
- 	xhci = hcd_to_xhci(hcd);
--	if (xhci->xhc_state & XHCI_STATE_HALTED)
--		return -ENODEV;
--
- 	if (check_virt_dev) {
- 		if (!udev->slot_id || !xhci->devs[udev->slot_id]) {
- 			printk(KERN_DEBUG "xHCI %s called with unaddressed "
-@@ -1180,6 +1177,9 @@ static int xhci_check_args(struct usb_hcd *hcd, struct usb_device *udev,
- 		}
- 	}
- 
-+	if (xhci->xhc_state & XHCI_STATE_HALTED)
-+		return -ENODEV;
-+
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index 60f7e32..a57ef25 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -707,17 +707,20 @@ static int hrtimer_switch_to_hres(void)
  	return 1;
+ }
+ 
++static void clock_was_set_work(struct work_struct *work)
++{
++	clock_was_set();
++}
++
++static DECLARE_WORK(hrtimer_work, clock_was_set_work);
++
+ /*
+- * Called from timekeeping code to reprogramm the hrtimer interrupt
+- * device. If called from the timer interrupt context we defer it to
+- * softirq context.
++ * Called from timekeeping and resume code to reprogramm the hrtimer
++ * interrupt device on all cpus.
+  */
+ void clock_was_set_delayed(void)
+ {
+-	struct hrtimer_cpu_base *cpu_base = &__get_cpu_var(hrtimer_bases);
+-
+-	cpu_base->clock_was_set = 1;
+-	__raise_softirq_irqoff(HRTIMER_SOFTIRQ);
++	schedule_work(&hrtimer_work);
+ }
+ 
+ #else
+@@ -766,8 +769,10 @@ void hrtimers_resume(void)
+ 	WARN_ONCE(!irqs_disabled(),
+ 		  KERN_INFO "hrtimers_resume() called with IRQs enabled!");
+ 
++	/* Retrigger on the local CPU */
+ 	retrigger_next_event(NULL);
+-	timerfd_clock_was_set();
++	/* And schedule a retrigger for all others */
++	clock_was_set_delayed();
+ }
+ 
+ static inline void timer_stats_hrtimer_set_start_info(struct hrtimer *timer)
+@@ -1416,13 +1421,6 @@ void hrtimer_peek_ahead_timers(void)
+ 
+ static void run_hrtimer_softirq(struct softirq_action *h)
+ {
+-	struct hrtimer_cpu_base *cpu_base = &__get_cpu_var(hrtimer_bases);
+-
+-	if (cpu_base->clock_was_set) {
+-		cpu_base->clock_was_set = 0;
+-		clock_was_set();
+-	}
+-
+ 	hrtimer_peek_ahead_timers();
  }
  
 -- 
