@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757910Ab3G3Ht0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 03:49:26 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:59291 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754575Ab3G3HtX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 03:49:23 -0400
+	id S1757926Ab3G3Htg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 03:49:36 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:57178 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754575Ab3G3Htd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Jul 2013 03:49:33 -0400
 From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 To: Mel Gorman <mgorman@suse.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Ingo Molnar <mingo@kernel.org>
@@ -16,61 +15,216 @@ Cc: Andrea Arcangeli <aarcange@redhat.com>,
         Preeti U Murthy <preeti@linux.vnet.ibm.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Subject: [RFC PATCH 04/10] sched: Move active_load_balance_cpu_stop to a new helper function
-Date: Tue, 30 Jul 2013 13:18:19 +0530
-Message-Id: <1375170505-5967-5-git-send-email-srikar@linux.vnet.ibm.com>
+Subject: [RFC PATCH 05/10] sched: Extend idle balancing to look for consolidation of tasks
+Date: Tue, 30 Jul 2013 13:18:20 +0530
+Message-Id: <1375170505-5967-6-git-send-email-srikar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1375170505-5967-1-git-send-email-srikar@linux.vnet.ibm.com>
 References: <1375170505-5967-1-git-send-email-srikar@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13073007-2398-0000-0000-000000DE0F87
+x-cbid: 13073007-7182-0000-0000-000007E6A12A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Due to the way active_load_balance_cpu gets called and the parameters
-passed to it, the active_load_balance_cpu_stop call gets split into
-multiple lines. Instead move it into a separate helper function.
+If the cpu is idle even after a regular load balance, then
+try to move a task from another node to this node, such that
+node locality improves.
 
-this is a cleanup change. No functional changes.
+While choosing a task to pull, choose a task/address-space from the
+currently running set of tasks on this node. Make sure that the chosen
+address-space has a numa affinity to the current node. Choose another
+node that has the least number of tasks that belong to this address
+space.
+
+This change might induce a slight imbalance but there are enough checks
+to make sure that the imbalance is within limits. This slight imbalance
+that is created can act as a catalyst/opportunity for the other node to
+pull its node affine tasks.
+
+TODO: current checks that look at nr_running should be modified to
+look at task loads instead.
 
 Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 ---
- kernel/sched/fair.c |   13 ++++++++-----
- 1 files changed, 8 insertions(+), 5 deletions(-)
+ kernel/sched/fair.c |  156 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 156 insertions(+), 0 deletions(-)
 
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 8fcbf96..debb75a 100644
+index debb75a..43af8d9 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -5103,6 +5103,12 @@ static int need_active_balance(struct lb_env *env)
+@@ -5609,6 +5609,77 @@ void update_max_interval(void)
+ 	max_load_balance_interval = HZ*num_online_cpus()/10;
+ }
  
- static int active_load_balance_cpu_stop(void *data);
- 
-+static void active_load_balance(struct rq *rq)
++#ifdef CONFIG_NUMA_BALANCING
++static struct task_struct *
++select_task_to_pull(struct mm_struct *this_mm, int this_cpu, int nid)
 +{
-+	stop_one_cpu_nowait(cpu_of(rq), active_load_balance_cpu_stop, rq,
-+			&rq->active_balance_work);
++	struct mm_struct *mm;
++	struct rq *rq;
++	int cpu;
++
++	for_each_cpu(cpu, cpumask_of_node(nid)) {
++		rq = cpu_rq(cpu);
++		mm = rq->curr->mm;
++
++		if (mm == this_mm) {
++			if (cpumask_test_cpu(this_cpu, tsk_cpus_allowed(rq->curr)))
++				return rq->curr;
++		}
++	}
++	return NULL;
 +}
 +
++static int
++select_node_to_pull(struct mm_struct *mm, unsigned int nr_running, int nid)
++{
++	atomic_t *weights = mm->numa_weights;
++	int least_running, running, other_nr_running, other_running;
++	int least_node = -1;
++	int other_node, cpu;
++
++	least_running = atomic_read(&weights[nid]);
++	running = least_running;
++	for_each_online_node(other_node) {
++		/* our own node? skip */
++		if (other_node == nid)
++			continue;
++
++		other_running = atomic_read(&weights[other_node]);
++		/* no interesting thread in this node */
++		if (other_running == 0)
++			continue;
++
++		/* other_node has more numa affinity? Dont move. */
++		if (other_running > least_running)
++			continue;
++
++		other_nr_running = 0;
++		for_each_cpu(cpu, cpumask_of_node(other_node))
++			other_nr_running += cpu_rq(cpu)->nr_running;
++
++		/* other_node is already lightly loaded? */
++		if (nr_running > other_nr_running)
++			continue;
++
++		/*
++		 * If the other node has significant proportion of load of
++		 * the process in question. Or relatively has more affinity
++		 * to this address space than the current node, then dont
++		 * move
++		 */
++		if (other_nr_running < 2 * other_running)
++			continue;
++
++		if (nr_running * other_running >= other_nr_running * running)
++			continue;
++
++		least_running = other_running;
++		least_node = other_node;
++	}
++	return least_node;
++}
++#endif
++
  /*
-  * Check this_cpu to ensure it is balanced within domain. Attempt to move
-  * tasks if there is an imbalance.
-@@ -5290,11 +5296,8 @@ static int load_balance(int this_cpu, struct rq *this_rq,
- 			}
- 			raw_spin_unlock_irqrestore(&busiest->lock, flags);
- 
--			if (active_balance) {
--				stop_one_cpu_nowait(cpu_of(busiest),
--					active_load_balance_cpu_stop, busiest,
--					&busiest->active_balance_work);
--			}
+  * It checks each scheduling domain to see if it is due to be balanced,
+  * and initiates a balancing operation if so.
+@@ -5674,6 +5745,91 @@ static void rebalance_domains(int cpu, enum cpu_idle_type idle)
+ 		if (!balance)
+ 			break;
+ 	}
++#ifdef CONFIG_NUMA_BALANCING
++	if (!rq->nr_running) {
++		struct mm_struct *prev_mm, *mm;
++		struct task_struct *p = NULL;
++		unsigned int nr_running = 0;
++		int curr_running, total_running;
++		int other_node, nid, dcpu;
++
++		nid = cpu_to_node(cpu);
++		prev_mm = NULL;
++
++		for_each_cpu(dcpu, cpumask_of_node(nid))
++			nr_running += cpu_rq(dcpu)->nr_running;
++
++		for_each_cpu(dcpu, cpumask_of_node(nid)) {
++			struct rq *this_rq;
++
++			this_rq = cpu_rq(dcpu);
++			mm = this_rq->curr->mm;
++			if (!mm || !mm->numa_weights)
++				continue;
++
++			/*
++			 * Dont retry if the previous and the current
++			 * requests share the same address space
++			 */
++			if (mm == prev_mm)
++				continue;
++
++			curr_running = atomic_read(&mm->numa_weights[nid]);
++			total_running = atomic_read(&mm->numa_weights[nr_node_ids]);
++
++			if (curr_running < 2 || total_running < 2)
++				continue;
++
++			prev_mm = mm;
++
++			/* all threads have consolidated */
++			if (curr_running == total_running)
++				continue;
++
++			/*
++			 * in-significant proportion of load running on
++			 * this node?
++			 */
++			if (total_running > curr_running * (nr_node_ids + 1)) {
++				if (nr_running > 2 * curr_running)
++					continue;
++			}
++
++			other_node = select_node_to_pull(mm, nr_running, nid);
++			if (other_node == -1)
++				continue;
++			p = select_task_to_pull(mm, cpu, other_node);
++			if (p)
++				break;
++		}
++		if (p) {
++			struct rq *this_rq;
++			unsigned long flags;
++			int active_balance;
++
++			this_rq = task_rq(p);
++			active_balance = 0;
++
++			/*
++			 * ->active_balance synchronizes accesses to
++			 * ->active_balance_work.  Once set, it's cleared
++			 * only after active load balance is finished.
++			 */
++			raw_spin_lock_irqsave(&this_rq->lock, flags);
++			if (task_rq(p) == this_rq) {
++				if (!this_rq->active_balance) {
++					this_rq->active_balance = 1;
++					this_rq->push_cpu = cpu;
++					active_balance = 1;
++				}
++			}
++			raw_spin_unlock_irqrestore(&this_rq->lock, flags);
++
 +			if (active_balance)
-+				active_load_balance(busiest);
++				active_load_balance(this_rq);
++		}
++	}
++#endif
+ 	rcu_read_unlock();
  
- 			/*
- 			 * We've kicked active balancing, reset the failure
+ 	/*
 -- 
 1.7.1
 
