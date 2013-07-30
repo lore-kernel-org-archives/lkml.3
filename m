@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758911Ab3G3J4M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 05:56:12 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53027 "EHLO
+	id S1758898Ab3G3J4L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 05:56:11 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53029 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932338Ab3G3Jci (ORCPT
+	with ESMTP id S932340Ab3G3Jcj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 05:32:38 -0400
+	Tue, 30 Jul 2013 05:32:39 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>,
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        "J. Bruce Fields" <bfields@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 025/106] ALSA: asihpi: Fix unlocked snd_pcm_stop() call
-Date: Tue, 30 Jul 2013 10:30:44 +0100
-Message-Id: <1375176725-5825-26-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 024/106] svcrdma: underflow issue in decode_write_list()
+Date: Tue, 30 Jul 2013 10:30:43 +0100
+Message-Id: <1375176725-5825-25-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
 References: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
@@ -27,33 +28,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 60478295d6876619f8f47f6d1a5c25eaade69ee3 upstream.
+commit b2781e1021525649c0b33fffd005ef219da33926 upstream.
 
-snd_pcm_stop() must be called in the PCM substream lock context.
+My static checker marks everything from ntohl() as untrusted and it
+complains we could have an underflow problem doing:
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+	return (u32 *)&ary->wc_array[nchunks];
+
+Also on 32 bit systems the upper bound check could overflow.
+
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/pci/asihpi/asihpi.c | 3 +++
- 1 file changed, 3 insertions(+)
+ net/sunrpc/xprtrdma/svc_rdma_marshal.c | 20 ++++++++++++++------
+ 1 file changed, 14 insertions(+), 6 deletions(-)
 
-diff --git a/sound/pci/asihpi/asihpi.c b/sound/pci/asihpi/asihpi.c
-index e8de831..05093bd 100644
---- a/sound/pci/asihpi/asihpi.c
-+++ b/sound/pci/asihpi/asihpi.c
-@@ -769,7 +769,10 @@ static void snd_card_asihpi_timer_function(unsigned long data)
- 						s->number);
- 				ds->drained_count++;
- 				if (ds->drained_count > 20) {
-+					unsigned long flags;
-+					snd_pcm_stream_lock_irqsave(s, flags);
- 					snd_pcm_stop(s, SNDRV_PCM_STATE_XRUN);
-+					snd_pcm_stream_unlock_irqrestore(s, flags);
- 					continue;
- 				}
- 			} else {
+diff --git a/net/sunrpc/xprtrdma/svc_rdma_marshal.c b/net/sunrpc/xprtrdma/svc_rdma_marshal.c
+index 8d2eddd..65b1462 100644
+--- a/net/sunrpc/xprtrdma/svc_rdma_marshal.c
++++ b/net/sunrpc/xprtrdma/svc_rdma_marshal.c
+@@ -98,6 +98,7 @@ void svc_rdma_rcl_chunk_counts(struct rpcrdma_read_chunk *ch,
+  */
+ static u32 *decode_write_list(u32 *va, u32 *vaend)
+ {
++	unsigned long start, end;
+ 	int nchunks;
+ 
+ 	struct rpcrdma_write_array *ary =
+@@ -113,9 +114,12 @@ static u32 *decode_write_list(u32 *va, u32 *vaend)
+ 		return NULL;
+ 	}
+ 	nchunks = ntohl(ary->wc_nchunks);
+-	if (((unsigned long)&ary->wc_array[0] +
+-	     (sizeof(struct rpcrdma_write_chunk) * nchunks)) >
+-	    (unsigned long)vaend) {
++
++	start = (unsigned long)&ary->wc_array[0];
++	end = (unsigned long)vaend;
++	if (nchunks < 0 ||
++	    nchunks > (SIZE_MAX - start) / sizeof(struct rpcrdma_write_chunk) ||
++	    (start + (sizeof(struct rpcrdma_write_chunk) * nchunks)) > end) {
+ 		dprintk("svcrdma: ary=%p, wc_nchunks=%d, vaend=%p\n",
+ 			ary, nchunks, vaend);
+ 		return NULL;
+@@ -129,6 +133,7 @@ static u32 *decode_write_list(u32 *va, u32 *vaend)
+ 
+ static u32 *decode_reply_array(u32 *va, u32 *vaend)
+ {
++	unsigned long start, end;
+ 	int nchunks;
+ 	struct rpcrdma_write_array *ary =
+ 		(struct rpcrdma_write_array *)va;
+@@ -143,9 +148,12 @@ static u32 *decode_reply_array(u32 *va, u32 *vaend)
+ 		return NULL;
+ 	}
+ 	nchunks = ntohl(ary->wc_nchunks);
+-	if (((unsigned long)&ary->wc_array[0] +
+-	     (sizeof(struct rpcrdma_write_chunk) * nchunks)) >
+-	    (unsigned long)vaend) {
++
++	start = (unsigned long)&ary->wc_array[0];
++	end = (unsigned long)vaend;
++	if (nchunks < 0 ||
++	    nchunks > (SIZE_MAX - start) / sizeof(struct rpcrdma_write_chunk) ||
++	    (start + (sizeof(struct rpcrdma_write_chunk) * nchunks)) > end) {
+ 		dprintk("svcrdma: ary=%p, wc_nchunks=%d, vaend=%p\n",
+ 			ary, nchunks, vaend);
+ 		return NULL;
 -- 
 1.8.3.2
 
