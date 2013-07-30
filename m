@@ -1,70 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757054Ab3G3UUO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 16:20:14 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:37427 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756060Ab3G3UUK (ORCPT
+	id S1757198Ab3G3UVq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 16:21:46 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:36560 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754010Ab3G3UVo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 16:20:10 -0400
-Message-ID: <51F81FF5.4020600@wwwdotorg.org>
-Date: Tue, 30 Jul 2013 14:20:05 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Tue, 30 Jul 2013 16:21:44 -0400
+From: Luciano Coelho <coelho@ti.com>
+To: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>
+CC: <mturquette@linaro.org>, <mark.rutland@arm.com>, <balbi@ti.com>,
+        <grant.likely@linaro.org>, <rob.herring@calxeda.com>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-wireless@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <tony@atomide.com>,
+        <nm@ti.com>, <laurent.pinchart@ideasonboard.com>
+Subject: [PATCH v3] Documentation: dt: bindings: TI WiLink modules
+Date: Tue, 30 Jul 2013 23:21:08 +0300
+Message-ID: <1375215668-29171-1-git-send-email-coelho@ti.com>
+X-Mailer: git-send-email 1.8.3.2
 MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: Andrew Chew <AChew@nvidia.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "lee.jones@linaro.org" <lee.jones@linaro.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "ian@slimlogic.co.uk" <ian@slimlogic.co.uk>,
-        "j-keerthy@ti.com" <j-keerthy@ti.com>,
-        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
-        Rhyland Klein <rklein@nvidia.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mfd: palmas: Add DVFS mux setting
-References: <1374871308-490-1-git-send-email-achew@nvidia.com> <51F2E74E.2060107@wwwdotorg.org> <643E69AA4436674C8F39DCC2C05F763862A12740FB@HQMAIL03.nvidia.com> <51F2EC66.2080200@wwwdotorg.org> <643E69AA4436674C8F39DCC2C05F763862A1274113@HQMAIL03.nvidia.com> <51F2F22B.500@wwwdotorg.org> <643E69AA4436674C8F39DCC2C05F763862A1274137@HQMAIL03.nvidia.com> <51F398F8.5070602@nvidia.com>
-In-Reply-To: <51F398F8.5070602@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/27/2013 03:55 AM, Laxman Dewangan wrote:
-> On Saturday 27 July 2013 03:42 AM, Andrew Chew wrote:
->> I wrote:
->>> Andrew wrote:
->>>> [adding a third pinmux configuration property to Palmas's DT]
->>>
->>> How does this interact with the pinctrl driver that Laxman just
->>> sent for Palmas?
->>>
->>> https://lkml.org/lkml/2013/7/26/141
->>> [PATCH 0/2] pinctrl: palmas: add pincontrol driver
-..
->> Abandoning this patch.
-...
-> once we will have the pincontrol driver then mux pads are become redundant.
+Add device tree bindings documentation for the TI WiLink modules.
+Currently only the WLAN part of the WiLink6, WiLink7 and WiLink8
+modules is supported.
 
-OK. The driver should probably operate like this then:
+Signed-off-by: Luciano Coelho <coelho@ti.com>
+---
 
-* During probe(), parse the ti,mux-pad* parameters, if present, and
-apply them. This is needed to maintain compatibility with old DTs that
-may contain these properties.
+In v3, use IRQ_TYPE_LEVEL_HIGH in the example, as suggested by Laurent.
 
-* At the end of probe(), register the pinctrl driver. If standard
-pinctrl properties are present in DT, these will then be applied. These
-may override the values set by any ti,mux-pad* properties if they were
-present.
+ .../devicetree/bindings/net/wireless/ti-wilink.txt | 68 ++++++++++++++++++++++
+ 1 file changed, 68 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/net/wireless/ti-wilink.txt
 
-Also, we should remove, or mark deprecated, the ti,mux-pad* properties
-in the binding document when adding pinctrl support.
+diff --git a/Documentation/devicetree/bindings/net/wireless/ti-wilink.txt b/Documentation/devicetree/bindings/net/wireless/ti-wilink.txt
+new file mode 100644
+index 0000000..aafebb1
+--- /dev/null
++++ b/Documentation/devicetree/bindings/net/wireless/ti-wilink.txt
+@@ -0,0 +1,68 @@
++TI WiLink Wireless Modules Device Tree Bindings
++===============================================
++
++The WiLink modules provide wireless connectivity, such as WLAN,
++Bluetooth, FM and NFC.
++
++There are several different modules available, which can be grouped by
++their generation: WiLink6, WiLink7 and WiLink8.  WiLink4 is not
++currently supported with device tree.
++
++Currently, only the WLAN portion of the modules is supported with
++device tree.
++
++Required properties:
++--------------------
++
++- compatible: should be "ti,wilink6", "ti,wilink7" or "ti,wilink8"
++- interrupt-parent: the interrupt controller
++- interrupts: out-of-band WLAN interrupt
++	See the interrupt controller's bindings documentation for
++	detailed definition.
++
++Optional properties:
++--------------------
++
++- clocks: list of clocks needed by the chip as follows:
++
++  refclock: the internal WLAN reference clock frequency (required for
++	WiLink6 and WiLink7; not used for WiLink8).
++
++  tcxoclock: the internal WLAN TCXO clock frequency (required for
++	WiLink7 not used for WiLink6 and WiLink8).
++
++  The clocks must be defined and named accordingly.  For example:
++
++  clocks = <&refclock>
++  clock-names = "refclock";
++
++  refclock: refclock {
++		     compatible = "ti,wilink-clock";
++		     #clock-cells = <0>;
++		     clock-frequency = <38400000>;
++	};
++
++  Some modules that contain the WiLink chip provide clocks in the
++  module itself.  In this case, we define a "ti,wilink-clock" as shown
++  above.  But any other clock could in theory be used, so the proper
++  clock definition should be used.
++
++
++Example:
++--------
++
++Example definition that can be used in OMAP4 Panda:
++
++wlan {
++	compatible = "ti,wilink6";
++	interrupt-parent = <&gpio2>;
++	interrupts = <21 IRQ_TYPE_LEVEL_HIGH>;	/* gpio line 53 */
++	clocks = <&refclock>;
++	clock-names = "refclock";
++
++	refclock: refclock {
++		compatible = "ti,wilink-clock";
++		#clock-cells = <0>;
++		clock-frequency = <38400000>;
++	};
++};
+-- 
+1.8.3.2
+
