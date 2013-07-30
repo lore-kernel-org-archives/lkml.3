@@ -1,44 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757146Ab3G3TF0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 15:05:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45800 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756716Ab3G3TFZ (ORCPT
+	id S1757275Ab3G3TFn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 15:05:43 -0400
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:44442 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757235Ab3G3TFl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 15:05:25 -0400
-Date: Tue, 30 Jul 2013 12:05:24 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Philippe Proulx <philippe.proulx@savoirfairelinux.com>
-Cc: devel@driverdev.osuosl.org, davinci-linux-open-source@linux.davincidsp.com,
-        Subhasish Ghosh <subhasish@mistralsolutions.com>,
-        linux-kernel@vger.kernel.org, kernel <kernel@savoirfairelinux.com>,
-        m-watkins@ti.com
-Subject: Re: PRUSS MFD staging driver: status update
-Message-ID: <20130730190524.GE25353@kroah.com>
-References: <736128401.605095.1375206899203.JavaMail.root@mail>
- <108709052.651756.1375208260748.JavaMail.root@mail>
+	Tue, 30 Jul 2013 15:05:41 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <108709052.651756.1375208260748.JavaMail.root@mail>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Tue, 30 Jul 2013 12:05:40 -0700
+X-Google-Sender-Auth: JE1UnfGBCkzUkWsJEd_rvK3wGdQ
+Message-ID: <CAGXu5jKv9Vt+Hu0mFYaxggLLDZ46U3KR9MKegUoHH8StXCkBtQ@mail.gmail.com>
+Subject: [ARM ATTEND] catching up on exploit mitigations
+From: Kees Cook <keescook@chromium.org>
+To: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Cc: ksummit-2013-discuss@lists.linuxfoundation.org,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 30, 2013 at 02:17:40PM -0400, Philippe Proulx wrote:
-> Hi Greg.
-> 
-> I am interested in continuing the work of Subhasish Ghosh regarding
-> TI PRUSS drivers integration on the kernel side. The last LKML reply
-> I'm aware of is yours, 2 years ago, here:
-> <https://lkml.org/lkml/2011/7/5/548>, and then there was silence.
+I'd like to propose the topic of catching up to x86 exploit
+mitigations and security features, and potentially identifying
+ARM-unique mitigations/features that could be implemented. Several
+years ago, with Nicolas Pitre doing all the real work, I coordinated
+getting ARM caught up on things like userspace ASLR and
+stack-protector. Recently, based on work by Will Drewry, I ported
+seccomp-bpf to ARM. I'd like to continue this kind of thing, and I
+think it's overdue to examine this area again. A lot of work has
+already been done by grsecurity in this area (see
+http://forums.grsecurity.net/viewtopic.php?f=7&t=3292), so it would be
+good to start there.
 
-Then please follow what I suggested there and resend the code, or send
-whatever you are proposing.  It's hard to judge vague statements without
-seeing the code as to what you wish to have integrated, don't you agree?
+While it may expose my current ignorance of low level ARM mechanics,
+I'd like to examine and discuss:
 
-thanks,
+- RO and W^X kernel page table protections (similar to x86's
+DEBUG_RODATA and DEBUG_SET_MODULE_RONX; it's not clear to me how much
+LPAE and PXN is already handling this, if at all)
 
-greg k-h
+- something like x86's SMEP and SMAP (to deter kernel exploitation
+from userspace)
+
+- vector table protections (needs to be protected like the x86_64
+vsyscall table, RO, etc)
+
+- kernel ASLR (I'm close to having this upstreamable for x86)
+
+- fuzzing (is anyone running trinity or similar on the ARM tree?)
+
+- any other things ... ?
+
+Thanks,
+
+-Kees
+
+-- 
+Kees Cook
+Chrome OS Security
