@@ -1,90 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756065Ab3G3OAg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 10:00:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40458 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754394Ab3G3OAe (ORCPT
+	id S1756096Ab3G3OBM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 10:01:12 -0400
+Received: from mail-gh0-f173.google.com ([209.85.160.173]:47916 "EHLO
+	mail-gh0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755385Ab3G3OBK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 10:00:34 -0400
-Date: Tue, 30 Jul 2013 07:01:52 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Hayes Wang <hayeswang@realtek.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org, nic_swsd@realtek.com
-Subject: Re: [PATCH v3 2/3] net/usb/r8152: replace USB buffer from stack to
- DMA-able
-Message-ID: <20130730140152.GF27962@kroah.com>
-References: <D7C722C73C7A400780358D0376412267@realtek.com.tw>
- <1375172936-4145-1-git-send-email-hayeswang@realtek.com>
- <1375172936-4145-2-git-send-email-hayeswang@realtek.com>
+	Tue, 30 Jul 2013 10:01:10 -0400
+Date: Tue, 30 Jul 2013 10:01:06 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Shaohua Li <shli@kernel.org>
+Cc: linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org, neilb@suse.de,
+        djbw@fb.com
+Subject: Re: [patch 3/3] raid5: only wakeup necessary threads
+Message-ID: <20130730140106.GE12016@htj.dyndns.org>
+References: <20130730055207.698660010@kernel.org>
+ <20130730055425.056034691@kernel.org>
+ <20130730124655.GB2599@htj.dyndns.org>
+ <20130730132414.GB30352@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1375172936-4145-2-git-send-email-hayeswang@realtek.com>
+In-Reply-To: <20130730132414.GB30352@kernel.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 30, 2013 at 04:28:55PM +0800, Hayes Wang wrote:
-> Allocate the required transfer buffer for usb_control_msg.
-> 
-> Signed-off-by: Hayes Wang <hayeswang@realtek.com>
-> ---
->  drivers/net/usb/r8152.c | 91 +++++++++++++++++++++++++++++++++++--------------
->  1 file changed, 66 insertions(+), 25 deletions(-)
-> 
-> diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
-> index ee13f9e..93a7baa 100644
-> --- a/drivers/net/usb/r8152.c
-> +++ b/drivers/net/usb/r8152.c
-> @@ -282,6 +282,8 @@ enum rtl_register_content {
->  #define RTL8152_RMS		(VLAN_ETH_FRAME_LEN + VLAN_HLEN)
->  #define RTL8152_TX_TIMEOUT	(HZ)
->  
-> +#define RTL8152_MAX_TRANSFER_SIZE	8
-> +
->  /* rtl8152 flags */
->  enum rtl8152_flags {
->  	RTL8152_UNPLUG = 0,
-> @@ -324,8 +326,10 @@ struct r8152 {
->  	struct sk_buff *tx_skb, *rx_skb;
->  	struct delayed_work schedule;
->  	struct mii_if_info mii;
-> +	struct mutex transfer_mutex;
->  	u32 msg_enable;
->  	u16 ocp_base;
-> +	u8 *transfer_buf;
->  	u8 version;
->  	u8 speed;
->  };
-> @@ -344,17 +348,59 @@ static const int multicast_filter_limit = 32;
->  static
->  int get_registers(struct r8152 *tp, u16 value, u16 index, u16 size, void *data)
->  {
-> -	return usb_control_msg(tp->udev, usb_rcvctrlpipe(tp->udev, 0),
-> +	int ret;
-> +	void *tmp;
-> +
-> +	if (size > RTL8152_MAX_TRANSFER_SIZE || !tp->transfer_buf) {
-> +		tmp = kmalloc(size, GFP_KERNEL);
-> +		if (!tmp)
-> +			return -ENOMEM;
-> +	} else {
-> +		mutex_lock(&tp->transfer_mutex);
-> +		tmp = tp->transfer_buf;
-> +	}
-> +
-> +	ret = usb_control_msg(tp->udev, usb_rcvctrlpipe(tp->udev, 0),
->  			       RTL8152_REQ_GET_REGS, RTL8152_REQT_READ,
-> -			       value, index, data, size, 500);
-> +			       value, index, tmp, size, 500);
+Hello, Shaohua.
 
-Same here, no need for your "transfer buf" structure, just always
-kmalloc the data, copy it in, and make the call.  It's _really_ slow
-anyway, you will never notice any speed overhead by doing this.
+On Tue, Jul 30, 2013 at 09:24:14PM +0800, Shaohua Li wrote:
+> In the raid5 case, it's very hard to keep the order the bios passed in, because
+> we need read some disks, calculate parity, and write some disks, the timing
+> could break any kind of order. Besides the workqueue handles 8 stripes one
+> time, so I suppose this keeps some order if there is.
 
-thanks,
+Of course, it can't be absolute but still keeping the relative
+ordering and temporal locality (ie. issue IOs in order once the XOR
+calculation of the whole source bio is done rather than issuing as
+each block completes calculation) would help quite a bit.
 
-greg k-h
+Thanks.
+
+-- 
+tejun
