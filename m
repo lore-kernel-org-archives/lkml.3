@@ -1,95 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758546Ab3G3XvB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 19:51:01 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:48093 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755837Ab3G3Xu6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 19:50:58 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Matthew Garrett <matthew.garrett@nebula.com>, daniel.vetter@ffwll.ch,
-        Aaron Lu <aaron.lu@intel.com>,
-        Jani Nikula <jani.nikula@linux.intel.com>
-Cc: linux-acpi@vger.kernel.org, seth.forshee@canonical.com,
-        joeyli.kernel@gmail.com, intel-gfx@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        lenb@kernel.org, Igor Gnatenko <i.gnatenko.brain@gmail.com>,
-        Yves-Alexis Perez <corsac@debian.org>, "Lee, Chun-Yi" <jlee@suse.com>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Subject: Re: [Update][PATCH 0/3] Fix backlight issues on some Windows 8 systems
-Date: Wed, 31 Jul 2013 02:01:05 +0200
-Message-ID: <3500424.KqMOhglylx@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1448863.3slS729B6b@vostro.rjw.lan>
-References: <1370818899-8595-1-git-send-email-matthew.garrett@nebula.com> <1448863.3slS729B6b@vostro.rjw.lan>
+	id S1758572Ab3G3Xxx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 19:53:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49634 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758142Ab3G3Xxw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Jul 2013 19:53:52 -0400
+Date: Tue, 30 Jul 2013 16:55:08 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: "Luis R. Rodriguez" <rodrigue@qca.qualcomm.com>
+Cc: Marcel Holtmann <marcel@holtmann.org>,
+        Hector Palacios <hector.palacios@digi.com>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        "linux-bluetooth@vger.kernel.org" <linux-bluetooth@vger.kernel.org>,
+        "gustavo@padovan.org" <gustavo@padovan.org>,
+        "johan.hedberg@gmail.com" <johan.hedberg@gmail.com>,
+        mcgrof@do-not-panic.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "surajs@qca.qualcomm.com" <surajs@qca.qualcomm.com>,
+        jjohnson@qca.qualcomm.com, Adrian Chadd <adrian@freebsd.org>,
+        ddahlby@qca.qualcomm.com, Ben Hutchings <ben@decadent.org.uk>
+Subject: Re: ROM Patching (was: [PATCH] bluetooth: remove wrong dependency
+ for BT_ATH3K)
+Message-ID: <20130730235508.GA25319@kroah.com>
+References: <1375114325-25498-1-git-send-email-hector.palacios@digi.com>
+ <5438CD3C-E28C-485C-94B8-F743E8B13D4A@holtmann.org>
+ <51F7722E.9050708@digi.com>
+ <20130730205601.GI17130@pogo>
+ <2C94C740-76BA-4058-B0D7-C37D44875CA1@holtmann.org>
+ <20130730224809.GN17130@pogo>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130730224809.GN17130@pogo>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, July 18, 2013 02:16:09 AM Rafael J. Wysocki wrote:
-> On Sunday, June 09, 2013 07:01:36 PM Matthew Garrett wrote:
-> > Windows 8 introduced new policy for backlight control by pushing it out to
-> > graphics drivers. This appears to have coincided with a range of vendors
-> > adding Windows 8 checks to their backlight control code which trigger either
-> > awkward behaviour (Lenovo) or complete brokenness (some Dells). The simplest
-> > thing to do would be to just disable ACPI backlight control entirely if the
-> > firmware indicates Windows 8 support, but it's entirely possible that
-> > individual graphics drivers might still make use of the ACPI functionality in
-> > preference to native control.
-> > 
-> > The first two patches in this series are picked from other patchesets aimed at
-> > solving similar problems. The last simply unregisters ACPI backlight control
-> > on Windows 8 systems when using an Intel GPU. Similar code could be added to
-> > other drivers, but I'm reluctant to do so without further investigation as
-> > to the behaviour of the vendor drivers under Windows.
+On Tue, Jul 30, 2013 at 03:48:09PM -0700, Luis R. Rodriguez wrote:
+> > We are planning to take one extra step and split this into a
+> > mini-driver approach similar to what has been done for usbnet, but we
+> > are not there yet.
 > 
-> Well, after some more time spent on that, we now have a series of 3 patches
-> (different from the $subject one) that we think may be used to address this
-> issue.  As far as I can say, it has been tested by multiple people whose
-> systems have those problems and they generally saw improvement.
+> Neat. Perhaps we need something that we can share with 802.11 or other
+> hardare I highly doubt we're the only ones patching ROM. Don't we even
+> patch up core CPUs? I'm wondering if firmware_class could be expanded to
+> support serialized ROM patching. The biggest hurdle I see with splititng
+> ROM patching from a single firmware is serializing that, addressing
+> revision dependencies and of course kernel dependencies.
+
+What does the firmware_class need to do here that it doesn't do today?
+
+> > However the ROM patching drivers need to be in the kernel since
+> > otherwise they will race with the core init sequence.
 > 
-> It is not my ideal approach, but it seems to be the least intrusive and/or
-> with the least amount of possible side effects that we can do right now
-> as a general measure (alternatively, we could create a possibly long
-> blacklist table of affected systems with different workarounds for them,
-> but let's just say that is not overwhelmingly attractive).
+> Sure and depending on the architecture -- if this is kicked off to
+> userspace helpers or not then we may need to consider dbus in
+> kernel thing to help with speed / races, dependenecies / async
+> loading, -EPROBE_DEFER, etc.
+
+How would dbus in the kernel change anything here?
+
+> > There are also just firmware download drivers that do nothing else
+> > than just loading the firmware. And here it can be done via userspace
+> > or kernel space. In the Bluetooth world we have seen both, but
+> > generally the kernel ones stayed around while the userspace ones had a
+> > hard time to work with udev, libusb, libusb1 etc.
 > 
-> [1/3] Make ACPICA export things that we need for checking OSI(Win8).
+> Ah I see. Perhaps we can address this once we get some form of dbus in
+> kernel.
+
+The kernel directly loads firmware from the filesystem now, no userspace
+helpers are involved, so no need for udev, libusb, etc.  And as such, no
+need for any "dbus" in the kernel to do this either.
+
+> > For UART based drivers it is a little bit different since we had to
+> > bring up the line discipline from userspace anyway and configure all
+> > the UART parameters. For these drivers the firmware download or ROM
+> > patching has been done normally via userspace since there is full
+> > exclusive access before the Bluetooth subsystem knows about the
+> > device.
 > 
-> [2/3] Make acpi_video_device_find_cap() call acpi_video_init_brightness() even
->       if it is not going to register the backlight interface (needed for
->       Thinkpads).
-> 
-> [3/3] Avoid using ACPI backlight if i915 is in use and the firmware believes
->       we are Windows 8.
-> 
-> Many thanks to everyone involved!
+> Is this something that dbus in kernel can help clean up a bit?
 
-So this didn't work, as we had to revert [3/3], but I think we should try to
-make some progress with this nevertheless.  A way forward I'm seeing now could
-be to
-(1) Split the ACPI video driver so that it is possible to register the
-    backlight control separately from the event interface.
-(2) Add a command line option to i915 to make it use the native backlight
-    control (without registering the ACPI one) if set.  Make unset the
-    default initially.
-(3) Fix i915 backlight control issues for all systems known to have them
-    (that may take a while) and flip the defailt for that option to set when we
-    think we're ready.
-(4) If there still are problem reports, flip the default back to unset and
-    repeat (3).
+I don't understand how it could, please explain.
 
-If this converges, everyone will be using the native backlight control by
-default and the original problem will go away automatically.
+Also note, for those not knowing, we have been working on dbus in the
+kernel (google "kdbus" for the github repo), but it is all
+outward-facing (i.e. userspace using the kdbus code to interact with
+other processes with a dbus-like protocol, not for in-kernel dbus
+things, although adding it wouldn't be that hard, just really strange.
 
-Thoughts?
+thanks,
 
-Rafael
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+greg k-h
