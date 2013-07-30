@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932647Ab3G3Jli (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 05:41:38 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53312 "EHLO
+	id S932762Ab3G3Jlv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 05:41:51 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53307 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932575Ab3G3Jdk (ORCPT
+	with ESMTP id S932565Ab3G3Jdj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 05:33:40 -0400
+	Tue, 30 Jul 2013 05:33:39 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Roger Quadros <rogerq@ti.com>,
+Cc: Sami Rahman <sami.rahman@mmbresearch.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 080/106] USB: EHCI: Fix resume signalling on remote wakeup
-Date: Tue, 30 Jul 2013 10:31:39 +0100
-Message-Id: <1375176725-5825-81-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 079/106] USB: cp210x: add MMB and PI ZigBee USB Device Support
+Date: Tue, 30 Jul 2013 10:31:38 +0100
+Message-Id: <1375176725-5825-80-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
 References: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
@@ -28,41 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roger Quadros <rogerq@ti.com>
+From: Sami Rahman <sami.rahman@mmbresearch.com>
 
-commit 47a64a13d54f6c669b00542848d5550be3d3310e upstream.
+commit 7681156982026ebf7eafd7301eb0374d7648d068 upstream.
 
-Set the ehci->resuming flag for the port we receive a remote
-wakeup on so that resume signalling can be completed.
+Added support for MMB Networks and Planet Innovation Ingeni ZigBee USB
+devices using customized Silicon Labs' CP210x.c USB to UART bridge
+drivers with PIDs: 88A4, 88A5.
 
-Without this, the root hub timer will not fire again to check
-if the resume was completed and there will be a never-ending wait on
-on the port.
-
-This effect is only observed if the HUB IRQ IN does not come after we
-have initiated the port resume.
-
-Signed-off-by: Roger Quadros <rogerq@ti.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Sami Rahman <sami.rahman@mmbresearch.com>
+Tested-by: Sami Rahman <sami.rahman@mmbresearch.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[ luis: backported to 3.5: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/host/ehci-hub.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/serial/cp210x.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/usb/host/ehci-hub.c b/drivers/usb/host/ehci-hub.c
-index 349d3fe..c3a3a72 100644
---- a/drivers/usb/host/ehci-hub.c
-+++ b/drivers/usb/host/ehci-hub.c
-@@ -827,6 +827,7 @@ static int ehci_hub_control (
- 				/* resume signaling for 20 msec */
- 				ehci->reset_done[wIndex] = jiffies
- 						+ msecs_to_jiffies(20);
-+				set_bit(wIndex, &ehci->resuming_ports);
- 				/* check the port again */
- 				mod_timer(&ehci_to_hcd(ehci)->rh_timer,
- 						ehci->reset_done[wIndex]);
+diff --git a/drivers/usb/serial/cp210x.c b/drivers/usb/serial/cp210x.c
+index 8521468..2ab3af1 100644
+--- a/drivers/usb/serial/cp210x.c
++++ b/drivers/usb/serial/cp210x.c
+@@ -125,6 +125,8 @@ static const struct usb_device_id id_table[] = {
+ 	{ USB_DEVICE(0x10C4, 0x85F8) }, /* Virtenio Preon32 */
+ 	{ USB_DEVICE(0x10C4, 0x8664) }, /* AC-Services CAN-IF */
+ 	{ USB_DEVICE(0x10C4, 0x8665) }, /* AC-Services OBD-IF */
++	{ USB_DEVICE(0x10C4, 0x88A4) }, /* MMB Networks ZigBee USB Device */
++	{ USB_DEVICE(0x10C4, 0x88A5) }, /* Planet Innovation Ingeni ZigBee USB Device */
+ 	{ USB_DEVICE(0x10C4, 0xEA60) }, /* Silicon Labs factory default */
+ 	{ USB_DEVICE(0x10C4, 0xEA61) }, /* Silicon Labs factory default */
+ 	{ USB_DEVICE(0x10C4, 0xEA70) }, /* Silicon Labs factory default */
 -- 
 1.8.3.2
 
