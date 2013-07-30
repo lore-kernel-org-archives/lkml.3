@@ -1,60 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753861Ab3G3MmA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 08:42:00 -0400
-Received: from mail-qc0-f176.google.com ([209.85.216.176]:56829 "EHLO
-	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753049Ab3G3Mkq (ORCPT
+	id S1753933Ab3G3MmS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 08:42:18 -0400
+Received: from [65.55.88.15] ([65.55.88.15]:15906 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1752783Ab3G3MmO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 08:40:46 -0400
-From: Tejun Heo <tj@kernel.org>
-To: linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com
-Cc: shli@kernel.org, Tejun Heo <tj@kernel.org>, Sage Weil <sage@inktank.com>,
-        ceph-devel@vger.kernel.org
-Subject: [PATCH 8/9] ceph: WQ_NON_REENTRANT is meaningless and going away
-Date: Tue, 30 Jul 2013 08:40:27 -0400
-Message-Id: <1375188028-11910-9-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1375188028-11910-1-git-send-email-tj@kernel.org>
-References: <1375188028-11910-1-git-send-email-tj@kernel.org>
+	Tue, 30 Jul 2013 08:42:14 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 7
+X-BigFish: VS7(zzzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6h1082kz70kd2iz1de098h8275bh1de097hz2dh2a8h668h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1de2h1dfeh1dffh1e23h1155h)
+From: Arpit Goel <B44344@freescale.com>
+To: <linux@arm.linux.org.uk>, <takata@linux-m32r.org>, <philb@gnu.org>,
+        <geert@linux-m68k.org>, <schwidefsky@de.ibm.com>,
+        <heiko.carstens@de.ibm.com>, <linux390@de.ibm.com>,
+        <davem@davemloft.net>, <rob.herring@calxeda.com>, <arnd@arndb.de>,
+        <sboyd@codeaurora.org>, <swarren@nvidia.com>, <john.stultz@linaro.org>,
+        <jesper.nilsson@axis.com>, <gregkh@linuxfoundation.org>,
+        <sam@ravnborg.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-m32r@ml.linux-m32r.org>, <linux-m32r-ja@ml.linux-m32r.org>,
+        <linux-m68k@vger.kernel.org>, <linux-s390@vger.kernel.org>,
+        <sparclinux@vger.kernel.org>, Arpit Goel <B44344@freescale.com>
+Subject: [PATCH 2/2] Convert PowerPC macro spin_event_timeout() to architecture independent macro
+Date: Tue, 30 Jul 2013 18:08:20 +0530
+Message-ID: <1375187900-17582-3-git-send-email-B44344@freescale.com>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1375187900-17582-1-git-send-email-B44344@freescale.com>
+References: <1375187900-17582-1-git-send-email-B44344@freescale.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+This patch ports PowerPC implementation of spin_event_timeout() for generic
+use. Architecture specific implementation can be added to asm/delay.h, which
+will override the generic linux implementation.
 
-Please route this through the subsystem tree.  As written in the
-description, this shouldn't make any functional difference and just
-prepares for the removal of WQ_NON_REENTRANT which is already noop.
-
-Thanks.
-
------- 8< -------
-dbf2576e37 ("workqueue: make all workqueues non-reentrant") made
-WQ_NON_REENTRANT no-op and the flag is going away.  Remove its usages.
-
-This patch doesn't introduce any behavior changes.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Sage Weil <sage@inktank.com>
-Cc: ceph-devel@vger.kernel.org
+Signed-off-by: Arpit Goel <B44344@freescale.com>
 ---
- net/ceph/messenger.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/linux/delay.h | 40 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 40 insertions(+)
 
-diff --git a/net/ceph/messenger.c b/net/ceph/messenger.c
-index eb0a46a..dd9b585 100644
---- a/net/ceph/messenger.c
-+++ b/net/ceph/messenger.c
-@@ -290,7 +290,7 @@ int ceph_msgr_init(void)
- 	if (ceph_msgr_slab_init())
- 		return -ENOMEM;
+diff --git a/include/linux/delay.h b/include/linux/delay.h
+index a6ecb34..e975994 100644
+--- a/include/linux/delay.h
++++ b/include/linux/delay.h
+@@ -52,4 +52,44 @@ static inline void ssleep(unsigned int seconds)
+ 	msleep(seconds * 1000);
+ }
  
--	ceph_msgr_wq = alloc_workqueue("ceph-msgr", WQ_NON_REENTRANT, 0);
-+	ceph_msgr_wq = alloc_workqueue("ceph-msgr", 0, 0);
- 	if (ceph_msgr_wq)
- 		return 0;
- 
++#ifndef spin_event_timeout
++/**
++ * spin_event_timeout - spin until a condition gets true or a timeout elapses
++ * @condition: a C expression to evalate
++ * @timeout: timeout, in microseconds
++ * @delay: the number of microseconds to delay between each evaluation of
++ *         @condition
++ *
++ * The process spins until the condition evaluates to true (non-zero) or the
++ * timeout elapses.  The return value of this macro is the value of
++ * @condition when the loop terminates. This allows you to determine the cause
++ * of the loop terminates.  If the return value is zero, then you know a
++ * timeout has occurred.
++ *
++ * This primary purpose of this macro is to poll on a hardware register
++ * until a status bit changes.  The timeout ensures that the loop still
++ * terminates even if the bit never changes.  The delay is for devices that
++ * need a delay in between successive reads.
++ *
++ * gcc will optimize out the if-statement if @delay is a constant.
++ *
++ * This is copied from PowerPC based spin_event_timeout() implementation
++ * and modified for generic usecase.
++ */
++#define spin_event_timeout(condition, timeout, delay)		\
++({								\
++	typeof(condition) __ret;				\
++	unsigned long __loops = timeout/USECS_PER_JIFFY;	\
++	unsigned long __start = jiffies;			\
++	while (!(__ret = (condition)) &&			\
++		time_before(jiffies, __start + __loops + 1))	\
++		if (delay)					\
++			udelay(delay);				\
++		else						\
++			schedule();				\
++	if (!__ret)						\
++		__ret = (condition);				\
++	__ret;							\
++})
++#endif
+ #endif /* defined(_LINUX_DELAY_H) */
 -- 
-1.8.3.1
+1.8.1.4
+
 
