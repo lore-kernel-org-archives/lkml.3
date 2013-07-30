@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758760Ab3G3Jkz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 05:40:55 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53322 "EHLO
+	id S932621Ab3G3JlU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 05:41:20 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53317 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932589Ab3G3Jdm (ORCPT
+	with ESMTP id S932523Ab3G3Jdl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 05:33:42 -0400
+	Tue, 30 Jul 2013 05:33:41 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ondrej Zary <linux@rainbow-software.org>,
-        Alex Deucher <alexander.deucher@amd.com>,
+Cc: Alex Deucher <alexander.deucher@amd.com>, Dong He <hedonghust@gmail.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 082/106] drm/radeon: Another card with wrong primary dac adj
-Date: Tue, 30 Jul 2013 10:31:41 +0100
-Message-Id: <1375176725-5825-83-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 081/106] drm/radeon: fix endian issues with DP handling (v3)
+Date: Tue, 30 Jul 2013 10:31:40 +0100
+Message-Id: <1375176725-5825-82-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
 References: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
@@ -28,59 +27,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ondrej Zary <linux@rainbow-software.org>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit f7929f34fa0e0bb6736a2484fdc07d77a1653081 upstream.
+commit 34be8c9af7b8728465963740fc11136ae90dfc36 upstream.
 
-Hello,
-got another card with "too bright" problem:
-Sapphire Radeon VE 7000 DDR (VGA+S-Video)
+The atom interpreter expects data in LE format, so
+swap the message buffer as apprioriate.
 
-lspci -vnn:
-01:00.0 VGA compatible controller [0300]: Advanced Micro Devices [AMD] nee ATI RV100 QY [Radeon 7000/VE] [1002:5159] (prog-if 00 [VGA controller])
-        Subsystem: PC Partner Limited Sapphire Radeon VE 7000 DDR [174b:7c28]
+v2: properly handle non-dw aligned byte counts.
+v3: properly handle remainder
 
-The patch below fixes the problem for this card.
-But I don't like the blacklist, couldn't some heuristic be used instead?
-The interesting thing is that the manufacturer is the same as the other card
-needing the same quirk. I wonder how many different types are broken this way.
-
-The "wrong" ps2_pdac_adj value that comes from BIOS on this card is 0x300.
-
-====================
-drm/radeon: Add primary dac adj quirk for Sapphire Radeon VE 7000 DDR
-
-Values from BIOS are wrong, causing too bright colors.
-Use default values instead.
-
-Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Cc: Dong He <hedonghust@gmail.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/radeon/radeon_combios.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/radeon/atombios_dp.c | 43 ++++++++++++++++++++++++++++++++----
+ 1 file changed, 39 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/radeon_combios.c b/drivers/gpu/drm/radeon/radeon_combios.c
-index 77c50cc..f44dc93 100644
---- a/drivers/gpu/drm/radeon/radeon_combios.c
-+++ b/drivers/gpu/drm/radeon/radeon_combios.c
-@@ -959,10 +959,14 @@ struct radeon_encoder_primary_dac *radeon_combios_get_primary_dac_info(struct
- 	}
+diff --git a/drivers/gpu/drm/radeon/atombios_dp.c b/drivers/gpu/drm/radeon/atombios_dp.c
+index 500cced..824d03c 100644
+--- a/drivers/gpu/drm/radeon/atombios_dp.c
++++ b/drivers/gpu/drm/radeon/atombios_dp.c
+@@ -45,6 +45,41 @@ static char *pre_emph_names[] = {
+ };
  
- 	/* quirks */
-+	/* Radeon 7000 (RV100) */
-+	if (((dev->pdev->device == 0x5159) &&
-+	    (dev->pdev->subsystem_vendor == 0x174B) &&
-+	    (dev->pdev->subsystem_device == 0x7c28)) ||
- 	/* Radeon 9100 (R200) */
--	if ((dev->pdev->device == 0x514D) &&
-+	   ((dev->pdev->device == 0x514D) &&
- 	    (dev->pdev->subsystem_vendor == 0x174B) &&
--	    (dev->pdev->subsystem_device == 0x7149)) {
-+	    (dev->pdev->subsystem_device == 0x7149))) {
- 		/* vbios value is bad, use the default */
- 		found = 0;
- 	}
+ /***** radeon AUX functions *****/
++
++/* Atom needs data in little endian format
++ * so swap as appropriate when copying data to
++ * or from atom. Note that atom operates on
++ * dw units.
++ */
++static void radeon_copy_swap(u8 *dst, u8 *src, u8 num_bytes, bool to_le)
++{
++#ifdef __BIG_ENDIAN
++	u8 src_tmp[20], dst_tmp[20]; /* used for byteswapping */
++	u32 *dst32, *src32;
++	int i;
++
++	memcpy(src_tmp, src, num_bytes);
++	src32 = (u32 *)src_tmp;
++	dst32 = (u32 *)dst_tmp;
++	if (to_le) {
++		for (i = 0; i < ((num_bytes + 3) / 4); i++)
++			dst32[i] = cpu_to_le32(src32[i]);
++		memcpy(dst, dst_tmp, num_bytes);
++	} else {
++		u8 dws = num_bytes & ~3;
++		for (i = 0; i < ((num_bytes + 3) / 4); i++)
++			dst32[i] = le32_to_cpu(src32[i]);
++		memcpy(dst, dst_tmp, dws);
++		if (num_bytes % 4) {
++			for (i = 0; i < (num_bytes % 4); i++)
++				dst[dws+i] = dst_tmp[dws+i];
++		}
++	}
++#else
++	memcpy(dst, src, num_bytes);
++#endif
++}
++
+ union aux_channel_transaction {
+ 	PROCESS_AUX_CHANNEL_TRANSACTION_PS_ALLOCATION v1;
+ 	PROCESS_AUX_CHANNEL_TRANSACTION_PARAMETERS_V2 v2;
+@@ -66,10 +101,10 @@ static int radeon_process_aux_ch(struct radeon_i2c_chan *chan,
+ 
+ 	base = (unsigned char *)(rdev->mode_info.atom_context->scratch + 1);
+ 
+-	memcpy(base, send, send_bytes);
++	radeon_copy_swap(base, send, send_bytes, true);
+ 
+-	args.v1.lpAuxRequest = 0 + 4;
+-	args.v1.lpDataOut = 16 + 4;
++	args.v1.lpAuxRequest = cpu_to_le16((u16)(0 + 4));
++	args.v1.lpDataOut = cpu_to_le16((u16)(16 + 4));
+ 	args.v1.ucDataOutLen = 0;
+ 	args.v1.ucChannelID = chan->rec.i2c_id;
+ 	args.v1.ucDelay = delay / 10;
+@@ -103,7 +138,7 @@ static int radeon_process_aux_ch(struct radeon_i2c_chan *chan,
+ 		recv_bytes = recv_size;
+ 
+ 	if (recv && recv_size)
+-		memcpy(recv, base + 16, recv_bytes);
++		radeon_copy_swap(recv, base + 16, recv_bytes, false);
+ 
+ 	return recv_bytes;
+ }
 -- 
 1.8.3.2
 
