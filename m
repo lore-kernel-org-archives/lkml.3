@@ -1,39 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757373Ab3G3Tzo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 15:55:44 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:40993 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757074Ab3G3Tzn (ORCPT
+	id S1757165Ab3G3T5y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 15:57:54 -0400
+Received: from mail-vb0-f48.google.com ([209.85.212.48]:57543 "EHLO
+	mail-vb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754613Ab3G3T5v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 15:55:43 -0400
-Date: Tue, 30 Jul 2013 12:55:42 -0700 (PDT)
-Message-Id: <20130730.125542.2060050812919169911.davem@davemloft.net>
-To: mst@redhat.com
-Cc: jasowang@redhat.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net V2 2/2] macvtap: do not zerocopy if iov needs more
- pages than MAX_SKB_FRAGS
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20130730114125.GB22218@redhat.com>
-References: <1374116116-43844-2-git-send-email-jasowang@redhat.com>
-	<20130719050351.GB8537@redhat.com>
-	<20130730114125.GB22218@redhat.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Tue, 30 Jul 2013 12:55:42 -0700 (PDT)
+	Tue, 30 Jul 2013 15:57:51 -0400
+MIME-Version: 1.0
+In-Reply-To: <1375202858-28470-1-git-send-email-leif.lindholm@linaro.org>
+References: <1375202858-28470-1-git-send-email-leif.lindholm@linaro.org>
+Date: Tue, 30 Jul 2013 12:57:49 -0700
+Message-ID: <CA+8MBb+VzakCg0NAfxTxQ+LipvKhjTL4QaU5Q-vEU=hVZViq_A@mail.gmail.com>
+Subject: Re: [PATCH 0/4] Make commonly useful UEFI functions common
+From: Tony Luck <tony.luck@gmail.com>
+To: Leif Lindholm <leif.lindholm@linaro.org>
+Cc: "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        Matt Fleming <matt.fleming@intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        patches@linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Michael S. Tsirkin" <mst@redhat.com>
-Date: Tue, 30 Jul 2013 14:41:25 +0300
+On Tue, Jul 30, 2013 at 9:47 AM, Leif Lindholm <leif.lindholm@linaro.org> wrote:
+> IA64 code compile tested only.
 
-> Was this patch dropped?
+Compiled on a bunch of ia64 configurations, Boot tested. But not on machine that
+does the PROCESSOR_ABSTRACTION_LAYER_OVERWRITE_GUID thingy.
+Code to do the arch specific thing looks ok though.
 
-Nope, it's commit ece793fcfc417b3925844be88a6a6dc82ae8f7c6
-
-> Any objections to merging it for 3.11 and stable?
-
-No objection, queued up for -stable.
+-Tony
