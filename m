@@ -1,43 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758895Ab3G3J51 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 05:57:27 -0400
-Received: from www.linutronix.de ([62.245.132.108]:55126 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758651Ab3G3J5X (ORCPT
+	id S1758906Ab3G3J56 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 05:57:58 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53002 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932202Ab3G3Jcf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 05:57:23 -0400
-Message-ID: <51F78DFF.2030307@linutronix.de>
-Date: Tue, 30 Jul 2013 11:57:19 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130630 Icedove/17.0.7
-MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>
-CC: Felipe Balbi <balbi@ti.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, george.cherian@ti.com,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH 1/4] usb: phy: rename nop_usb_xceiv => usb_phy_gen_xceiv
-References: <1374869757-923-1-git-send-email-bigeasy@linutronix.de> <1374869757-923-2-git-send-email-bigeasy@linutronix.de> <20130729122022.GF24801@radagast> <20130730070814.GF7656@atomide.com> <51F76C90.90207@linutronix.de> <20130730075650.GI7656@atomide.com>
-In-Reply-To: <20130730075650.GI7656@atomide.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Tue, 30 Jul 2013 05:32:35 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Liu ShuoX <shuox.liu@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 022/106] PM / Sleep: avoid 'autosleep' in shutdown progress
+Date: Tue, 30 Jul 2013 10:30:41 +0100
+Message-Id: <1375176725-5825-23-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
+References: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/30/2013 09:56 AM, Tony Lindgren wrote:
-> A separate minimal branch against -rc3 sounds good to me.
+3.5.7.18 -stable review patch.  If anyone has any objections, please let me know.
 
-Great. Felipe, can you please put this change in a separate -rc3 based
-branch which you and Tony will pull in?
+------------------
 
-> Regards,
-> 
-> Tony
-> 
+From: Liu ShuoX <shuox.liu@intel.com>
 
-Sebastian
+commit e5248a111bf4048a9f3fab1a9c94c4630a10592a upstream.
+
+Prevent automatic system suspend from happening during system
+shutdown by making try_to_suspend() check system_state and return
+immediately if it is not SYSTEM_RUNNING.
+
+This prevents the following breakage from happening (scenario from
+Zhang Yanmin):
+
+ Kernel starts shutdown and calls all device driver's shutdown
+ callback.  When a driver's shutdown is called, the last wakelock is
+ released and suspend-to-ram starts.  However, as some driver's shut
+ down callbacks already shut down devices and disabled runtime pm,
+ the suspend-to-ram calls driver's suspend callback without noticing
+ that device is already off and causes crash.
+
+[rjw: Changelog]
+Signed-off-by: Liu ShuoX <shuox.liu@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ kernel/power/autosleep.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/kernel/power/autosleep.c b/kernel/power/autosleep.c
+index ca304046..ab79ecb 100644
+--- a/kernel/power/autosleep.c
++++ b/kernel/power/autosleep.c
+@@ -32,7 +32,8 @@ static void try_to_suspend(struct work_struct *work)
+ 
+ 	mutex_lock(&autosleep_lock);
+ 
+-	if (!pm_save_wakeup_count(initial_count)) {
++	if (!pm_save_wakeup_count(initial_count) ||
++		system_state != SYSTEM_RUNNING) {
+ 		mutex_unlock(&autosleep_lock);
+ 		goto out;
+ 	}
+-- 
+1.8.3.2
+
