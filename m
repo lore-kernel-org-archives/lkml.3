@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756888Ab3G3PZv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 11:25:51 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55326 "EHLO
+	id S1757088Ab3G3PZ5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 11:25:57 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55277 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755719Ab3G3PSI (ORCPT
+	with ESMTP id S1755616Ab3G3PSH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 11:18:08 -0400
+	Tue, 30 Jul 2013 11:18:07 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Xiong Zhang <xiong.y.zhang@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 04/75] drm/i915: Correct obj->mm_list link to dev_priv->dev_priv->mm.inactive_list
-Date: Tue, 30 Jul 2013 08:16:33 -0700
-Message-Id: <1375197464-27962-5-git-send-email-kamal@canonical.com>
+Subject: [PATCH 01/75] xen/blkback: Check device permissions before allowing OP_DISCARD
+Date: Tue, 30 Jul 2013 08:16:30 -0700
+Message-Id: <1375197464-27962-2-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1375197464-27962-1-git-send-email-kamal@canonical.com>
 References: <1375197464-27962-1-git-send-email-kamal@canonical.com>
@@ -28,43 +27,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Xiong Zhang <xiong.y.zhang@intel.com>
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-commit 067556084a0e412013af6b0250a3143ae5afde6d upstream.
+commit 604c499cbbcc3d5fe5fb8d53306aa0fae1990109 upstream.
 
-obj->mm_list link to dev_priv->mm.inactive_list/active_list
-obj->global_list link to dev_priv->mm.unbound_list/bound_list
+We need to make sure that the device is not RO or that
+the request is not past the number of sectors we want to
+issue the DISCARD operation for.
 
-This regression has been introduced in
+This fixes CVE-2013-2140.
 
-commit 93927ca52a55c23e0a6a305e7e9082e8411ac9fa
-Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-Date:   Thu Jan 10 18:03:00 2013 +0100
-
-    drm/i915: Revert shrinker changes from "Track unbound pages"
-
-Signed-off-by: Xiong Zhang <xiong.y.zhang@intel.com>
-[danvet: Add regression notice.]
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-[ kamal: backport to 3.8 ]
+Acked-by: Jan Beulich <JBeulich@suse.com>
+Acked-by: Ian Campbell <Ian.Campbell@citrix.com>
+[v1: Made it pr_warn instead of pr_debug]
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/i915/i915_gem.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/block/xen-blkback/blkback.c | 13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
-index 80bc298..0e01617 100644
---- a/drivers/gpu/drm/i915/i915_gem.c
-+++ b/drivers/gpu/drm/i915/i915_gem.c
-@@ -4429,7 +4429,7 @@ i915_gem_inactive_shrink(struct shrinker *shrinker, struct shrink_control *sc)
- 	list_for_each_entry(obj, &dev_priv->mm.unbound_list, gtt_list)
- 		if (obj->pages_pin_count == 0)
- 			cnt += obj->base.size >> PAGE_SHIFT;
--	list_for_each_entry(obj, &dev_priv->mm.inactive_list, gtt_list)
-+	list_for_each_entry(obj, &dev_priv->mm.inactive_list, mm_list)
- 		if (obj->pin_count == 0 && obj->pages_pin_count == 0)
- 			cnt += obj->base.size >> PAGE_SHIFT;
+diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
+index ef6d9be..bdee5f8 100644
+--- a/drivers/block/xen-blkback/blkback.c
++++ b/drivers/block/xen-blkback/blkback.c
+@@ -656,7 +656,18 @@ static int dispatch_discard_io(struct xen_blkif *blkif,
+ 	int status = BLKIF_RSP_OKAY;
+ 	struct block_device *bdev = blkif->vbd.bdev;
+ 	unsigned long secure;
++	struct phys_req preq;
++
++	preq.sector_number = req->u.discard.sector_number;
++	preq.nr_sects      = req->u.discard.nr_sectors;
  
++	err = xen_vbd_translate(&preq, blkif, WRITE);
++	if (err) {
++		pr_warn(DRV_PFX "access denied: DISCARD [%llu->%llu] on dev=%04x\n",
++			preq.sector_number,
++			preq.sector_number + preq.nr_sects, blkif->vbd.pdevice);
++		goto fail_response;
++	}
+ 	blkif->st_ds_req++;
+ 
+ 	xen_blkif_get(blkif);
+@@ -667,7 +678,7 @@ static int dispatch_discard_io(struct xen_blkif *blkif,
+ 	err = blkdev_issue_discard(bdev, req->u.discard.sector_number,
+ 				   req->u.discard.nr_sectors,
+ 				   GFP_KERNEL, secure);
+-
++fail_response:
+ 	if (err == -EOPNOTSUPP) {
+ 		pr_debug(DRV_PFX "discard op failed, not supported\n");
+ 		status = BLKIF_RSP_EOPNOTSUPP;
 -- 
 1.8.1.2
 
