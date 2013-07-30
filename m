@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754737Ab3G3NFj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 09:05:39 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:41453 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752601Ab3G3NFg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 09:05:36 -0400
+	id S1755642Ab3G3NLd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 09:11:33 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:46322 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753087Ab3G3NFi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Jul 2013 09:05:38 -0400
 From: Luciano Coelho <coelho@ti.com>
 To: <linux-wireless@vger.kernel.org>, <tony@atomide.com>, <nsekhar@ti.com>
 CC: <coelho@ti.com>, <luca@coelho.fi>, <mturquette@linaro.org>,
@@ -15,9 +14,9 @@ CC: <coelho@ti.com>, <luca@coelho.fi>, <mturquette@linaro.org>,
         <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <nm@ti.com>, <martinez.javier@gmail.com>
-Subject: [PATCH v4 3/8] wlcore: remove pwr_in_suspend from platform data
-Date: Tue, 30 Jul 2013 16:04:31 +0300
-Message-ID: <1375189476-21557-4-git-send-email-coelho@ti.com>
+Subject: [PATCH v4 5/8] wlcore: add initial device tree support to the sdio module
+Date: Tue, 30 Jul 2013 16:04:33 +0300
+Message-ID: <1375189476-21557-6-git-send-email-coelho@ti.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1375189476-21557-1-git-send-email-coelho@ti.com>
 References: <1375189476-21557-1-git-send-email-coelho@ti.com>
@@ -27,78 +26,129 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The pwr_in_suspend flag depends on the MMC settings which can be
-retrieved from the SDIO subsystem, so it doesn't need to be part of
-the platform data structure.  Move it to the platform device data that
-is passed from SDIO to wlcore.
+If platform data is not available, try to get the required information
+from the device tree.  Register an OF match table and parse the
+appropriate device tree nodes.
+
+Parse interrupt property only, for now.
 
 Signed-off-by: Luciano Coelho <coelho@ti.com>
 Reviewed-by: Felipe Balbi <balbi@ti.com>
 ---
- drivers/net/wireless/ti/wlcore/main.c     | 3 +--
- drivers/net/wireless/ti/wlcore/sdio.c     | 2 +-
- drivers/net/wireless/ti/wlcore/wlcore_i.h | 1 +
- include/linux/wl12xx.h                    | 1 -
- 4 files changed, 3 insertions(+), 4 deletions(-)
+ drivers/net/wireless/ti/wlcore/sdio.c | 69 ++++++++++++++++++++++++++++++++---
+ 1 file changed, 63 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/net/wireless/ti/wlcore/main.c b/drivers/net/wireless/ti/wlcore/main.c
-index 11dab9a..e771de0 100644
---- a/drivers/net/wireless/ti/wlcore/main.c
-+++ b/drivers/net/wireless/ti/wlcore/main.c
-@@ -5900,7 +5900,6 @@ static void wlcore_nvs_cb(const struct firmware *fw, void *context)
- 	struct wl1271 *wl = context;
- 	struct platform_device *pdev = wl->pdev;
- 	struct wlcore_platdev_data *pdev_data = pdev->dev.platform_data;
--	struct wl12xx_platform_data *pdata = pdev_data->pdata;
- 
- 	int ret;
- 
-@@ -5947,7 +5946,7 @@ static void wlcore_nvs_cb(const struct firmware *fw, void *context)
- 	if (!ret) {
- 		wl->irq_wake_enabled = true;
- 		device_init_wakeup(wl->dev, 1);
--		if (pdata->pwr_in_suspend)
-+		if (pdev_data->pwr_in_suspend)
- 			wl->hw->wiphy->wowlan = &wlcore_wowlan_support;
- 	}
- #endif
 diff --git a/drivers/net/wireless/ti/wlcore/sdio.c b/drivers/net/wireless/ti/wlcore/sdio.c
-index 29ef249..4c7e8ac 100644
+index 4c7e8ac..9370d7e 100644
 --- a/drivers/net/wireless/ti/wlcore/sdio.c
 +++ b/drivers/net/wireless/ti/wlcore/sdio.c
-@@ -260,7 +260,7 @@ static int wl1271_probe(struct sdio_func *func,
- 	dev_dbg(glue->dev, "sdio PM caps = 0x%x\n", mmcflags);
- 
- 	if (mmcflags & MMC_PM_KEEP_POWER)
--		pdev_data->pdata->pwr_in_suspend = true;
-+		pdev_data->pwr_in_suspend = true;
- 
- 	sdio_set_drvdata(func, glue);
- 
-diff --git a/drivers/net/wireless/ti/wlcore/wlcore_i.h b/drivers/net/wireless/ti/wlcore/wlcore_i.h
-index e5e1464..f2c4227 100644
---- a/drivers/net/wireless/ti/wlcore/wlcore_i.h
-+++ b/drivers/net/wireless/ti/wlcore/wlcore_i.h
-@@ -209,6 +209,7 @@ struct wl1271_if_operations {
- struct wlcore_platdev_data {
- 	struct wl12xx_platform_data *pdata;
- 	struct wl1271_if_operations *if_ops;
-+	bool pwr_in_suspend;
+@@ -30,7 +30,7 @@
+ #include <linux/mmc/sdio_ids.h>
+ #include <linux/mmc/card.h>
+ #include <linux/mmc/host.h>
+-#include <linux/gpio.h>
++#include <linux/of_irq.h>
+ #include <linux/wl12xx.h>
+ #include <linux/pm_runtime.h>
+ #include <linux/printk.h>
+@@ -214,6 +214,43 @@ static struct wl1271_if_operations sdio_ops = {
+ 	.set_block_size = wl1271_sdio_set_block_size,
  };
  
- #define MAX_NUM_KEYS 14
-diff --git a/include/linux/wl12xx.h b/include/linux/wl12xx.h
-index 1bfcd19..ab90b1c 100644
---- a/include/linux/wl12xx.h
-+++ b/include/linux/wl12xx.h
-@@ -59,7 +59,6 @@ struct wl12xx_platform_data {
- 	int irq;
- 	int board_ref_clock;
- 	int board_tcxo_clock;
--	bool pwr_in_suspend;
++static struct wl12xx_platform_data *wlcore_get_pdata_from_of(struct device *dev)
++{
++	struct wl12xx_platform_data *pdata;
++	struct device_node *np = dev->of_node;
++
++	if (!np) {
++		np = of_find_matching_node(NULL, dev->driver->of_match_table);
++		if (!np) {
++			dev_notice(dev, "device tree node not available\n");
++			pdata = ERR_PTR(-ENODEV);
++			goto out;
++		}
++	}
++
++	pdata = kzalloc(sizeof(*pdata), GFP_KERNEL);
++	if (!pdata) {
++		dev_err(dev, "can't allocate platform data\n");
++		pdata = ERR_PTR(-ENODEV);
++		goto out;
++	}
++
++	pdata->irq = irq_of_parse_and_map(np, 0);
++	if (pdata->irq < 0) {
++		dev_err(dev, "can't get interrupt gpio from the device tree\n");
++		goto out_free;
++	}
++
++	goto out;
++
++out_free:
++	kfree(pdata);
++	pdata = ERR_PTR(-ENODEV);
++
++out:
++	return pdata;
++}
++
+ static int wl1271_probe(struct sdio_func *func,
+ 				  const struct sdio_device_id *id)
+ {
+@@ -248,11 +285,22 @@ static int wl1271_probe(struct sdio_func *func,
+ 	/* Use block mode for transferring over one block size of data */
+ 	func->card->quirks |= MMC_QUIRK_BLKSZ_FOR_BYTE_MODE;
+ 
++	/* The pdata allocated here is freed when the device is freed,
++	 * so we don't need an additional out label to free it in case
++	 * of error further on.
++	 */
++
++	/* Try to get legacy platform data from the board file */
+ 	pdev_data->pdata = wl12xx_get_platform_data();
+ 	if (IS_ERR(pdev_data->pdata)) {
+-		ret = PTR_ERR(pdev_data->pdata);
+-		dev_err(glue->dev, "missing wlan platform data: %d\n", ret);
+-		goto out_free_glue;
++		dev_info(&func->dev,
++			 "legacy platform data not found, trying device tree\n");
++
++		pdev_data->pdata = wlcore_get_pdata_from_of(&func->dev);
++		if (IS_ERR(pdev_data->pdata)) {
++			dev_err(&func->dev, "can't get platform data\n");
++			goto out_free_glue;
++		}
+ 	}
+ 
+ 	/* if sdio can keep power while host is suspended, enable wow */
+@@ -386,16 +434,25 @@ static const struct dev_pm_ops wl1271_sdio_pm_ops = {
+ };
+ #endif
+ 
++static const struct of_device_id wlcore_sdio_of_match_table[] = {
++	{ .compatible = "ti,wilink6" },
++	{ .compatible = "ti,wilink7" },
++	{ .compatible = "ti,wilink8" },
++	{ }
++};
++MODULE_DEVICE_TABLE(of, wlcore_sdio_of_match_table);
++
+ static struct sdio_driver wl1271_sdio_driver = {
+ 	.name		= "wl1271_sdio",
+ 	.id_table	= wl1271_devices,
+ 	.probe		= wl1271_probe,
+ 	.remove		= wl1271_remove,
+-#ifdef CONFIG_PM
+ 	.drv = {
++#ifdef CONFIG_PM
+ 		.pm = &wl1271_sdio_pm_ops,
+-	},
+ #endif
++		.of_match_table = of_match_ptr(wlcore_sdio_of_match_table),
++	},
  };
  
- #ifdef CONFIG_WILINK_PLATFORM_DATA
+ static int __init wl1271_init(void)
 -- 
 1.8.3.2
 
