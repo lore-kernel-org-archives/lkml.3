@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757475Ab3G3Sy4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 14:54:56 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56547 "EHLO
+	id S932074Ab3G3Syz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 14:54:55 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56549 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756870Ab3G3Spe (ORCPT
+	with ESMTP id S1756882Ab3G3Spe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 30 Jul 2013 14:45:34 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Eric Dumazet <edumazet@google.com>,
+Cc: Dave Kleikamp <dave.kleikamp@oracle.com>,
         "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 50/75] ipv6: ip6_sk_dst_check() must not assume ipv6 dst
-Date: Tue, 30 Jul 2013 11:44:54 -0700
-Message-Id: <1375209919-1768-17-git-send-email-kamal@canonical.com>
+Subject: [PATCH 45/75] sparc: tsb must be flushed before tlb
+Date: Tue, 30 Jul 2013 11:44:49 -0700
+Message-Id: <1375209919-1768-12-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1375197464-27962-1-git-send-email-kamal@canonical.com>
 References: <1375197464-27962-1-git-send-email-kamal@canonical.com>
@@ -28,55 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
 
-[ Upstream commit a963a37d384d71ad43b3e9e79d68d42fbe0901f3 ]
+commit 23a01138efe216f8084cfaa74b0b90dd4b097441 upstream.
 
-It's possible to use AF_INET6 sockets and to connect to an IPv4
-destination. After this, socket dst cache is a pointer to a rtable,
-not rt6_info.
+This fixes a race where a cpu may re-load a tlb from a stale tsb right
+after it has been flushed by a remote function call.
 
-ip6_sk_dst_check() should check the socket dst cache is IPv6, or else
-various corruptions/crashes can happen.
+I still see some instability when stressing the system with parallel
+kernel builds while creating memory pressure by writing to
+/proc/sys/vm/nr_hugepages, but this patch improves the stability
+significantly.
 
-Dave Jones can reproduce immediate crash with
-trinity -q -l off -n -c sendmsg -c connect
-
-With help from Hannes Frederic Sowa
-
-Reported-by: Dave Jones <davej@redhat.com>
-Reported-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+Acked-by: Bob Picco <bob.picco@oracle.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/ipv6/ip6_output.c | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ arch/sparc/mm/tlb.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/ipv6/ip6_output.c b/net/ipv6/ip6_output.c
-index 2adff32..978e4a3 100644
---- a/net/ipv6/ip6_output.c
-+++ b/net/ipv6/ip6_output.c
-@@ -843,11 +843,17 @@ static struct dst_entry *ip6_sk_dst_check(struct sock *sk,
- 					  const struct flowi6 *fl6)
- {
- 	struct ipv6_pinfo *np = inet6_sk(sk);
--	struct rt6_info *rt = (struct rt6_info *)dst;
-+	struct rt6_info *rt;
+diff --git a/arch/sparc/mm/tlb.c b/arch/sparc/mm/tlb.c
+index 83d89bc..37e7bc4 100644
+--- a/arch/sparc/mm/tlb.c
++++ b/arch/sparc/mm/tlb.c
+@@ -85,8 +85,8 @@ static void tlb_batch_add_one(struct mm_struct *mm, unsigned long vaddr,
+ 	}
  
- 	if (!dst)
+ 	if (!tb->active) {
+-		global_flush_tlb_page(mm, vaddr);
+ 		flush_tsb_user_page(mm, vaddr);
++		global_flush_tlb_page(mm, vaddr);
  		goto out;
+ 	}
  
-+	if (dst->ops->family != AF_INET6) {
-+		dst_release(dst);
-+		return NULL;
-+	}
-+
-+	rt = (struct rt6_info *)dst;
- 	/* Yes, checking route validity in not connected
- 	 * case is not very simple. Take into account,
- 	 * that we do not support routing by source, TOS,
 -- 
 1.8.1.2
 
