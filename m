@@ -1,62 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757275Ab3G3TFn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 15:05:43 -0400
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:44442 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757235Ab3G3TFl (ORCPT
+	id S1756902Ab3G3THX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 15:07:23 -0400
+Received: from mail-la0-f48.google.com ([209.85.215.48]:42130 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754613Ab3G3THV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 15:05:41 -0400
+	Tue, 30 Jul 2013 15:07:21 -0400
+Message-ID: <51F80EE9.30801@cogentembedded.com>
+Date: Tue, 30 Jul 2013 23:07:21 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Date: Tue, 30 Jul 2013 12:05:40 -0700
-X-Google-Sender-Auth: JE1UnfGBCkzUkWsJEd_rvK3wGdQ
-Message-ID: <CAGXu5jKv9Vt+Hu0mFYaxggLLDZ46U3KR9MKegUoHH8StXCkBtQ@mail.gmail.com>
-Subject: [ARM ATTEND] catching up on exploit mitigations
-From: Kees Cook <keescook@chromium.org>
-To: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Cc: ksummit-2013-discuss@lists.linuxfoundation.org,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+CC: linux-arm-kernel@lists.infradead.org, Emilio Lopez <emilio@elopez.com.ar>,
+        linux-kernel@vger.kernel.org, linux-sunxi@googlegroups.com,
+        kevin.z.m.zh@gmail.com, sunny@allwinnertech.com,
+        shuge@allwinnertech.com
+Subject: Re: [PATCH 08/10] ARM: sun7i: DT: Add UART muxing options to the
+ DTSI
+References: <1375196394-21138-1-git-send-email-maxime.ripard@free-electrons.com> <1375196394-21138-9-git-send-email-maxime.ripard@free-electrons.com>
+In-Reply-To: <1375196394-21138-9-git-send-email-maxime.ripard@free-electrons.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'd like to propose the topic of catching up to x86 exploit
-mitigations and security features, and potentially identifying
-ARM-unique mitigations/features that could be implemented. Several
-years ago, with Nicolas Pitre doing all the real work, I coordinated
-getting ARM caught up on things like userspace ASLR and
-stack-protector. Recently, based on work by Will Drewry, I ported
-seccomp-bpf to ARM. I'd like to continue this kind of thing, and I
-think it's overdue to examine this area again. A lot of work has
-already been done by grsecurity in this area (see
-http://forums.grsecurity.net/viewtopic.php?f=7&t=3292), so it would be
-good to start there.
+Hello.
 
-While it may expose my current ignorance of low level ARM mechanics,
-I'd like to examine and discuss:
+On 07/30/2013 06:59 PM, Maxime Ripard wrote:
 
-- RO and W^X kernel page table protections (similar to x86's
-DEBUG_RODATA and DEBUG_SET_MODULE_RONX; it's not clear to me how much
-LPAE and PXN is already handling this, if at all)
+> The UARTs on the A20 can be muxed to several pins. Add a few options to
+> the DTSI so that we can start using them in the boards' DT.
 
-- something like x86's SMEP and SMAP (to deter kernel exploitation
-from userspace)
+> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+> ---
+>   arch/arm/boot/dts/sun7i-a20.dtsi | 21 +++++++++++++++++++++
+>   1 file changed, 21 insertions(+)
 
-- vector table protections (needs to be protected like the x86_64
-vsyscall table, RO, etc)
+> diff --git a/arch/arm/boot/dts/sun7i-a20.dtsi b/arch/arm/boot/dts/sun7i-a20.dtsi
+> index 704fca9..9f45e8d 100644
+> --- a/arch/arm/boot/dts/sun7i-a20.dtsi
+> +++ b/arch/arm/boot/dts/sun7i-a20.dtsi
+> @@ -70,6 +70,27 @@
+>   			#address-cells = <1>;
+>   			#size-cells = <0>;
+>   			#gpio-cells = <3>;
+> +
+> +			uart0_pins_a: uart0@0 {
 
-- kernel ASLR (I'm close to having this upstreamable for x86)
+    Why have address part of the node name if there's not "reg" property?
+And the preferred node name is "serial", not "uart", according to the ePAPR 
+spec (http://www.power.org/resources/downloads/Power_ePAPR_APPROVED_v1.0.pdf).
 
-- fuzzing (is anyone running trinity or similar on the ARM tree?)
+> +				allwinner,pins = "PB22", "PB23";
+> +				allwinner,function = "uart0";
+> +				allwinner,drive = <0>;
+> +				allwinner,pull = <0>;
+> +			};
+> +
+> +			uart6_pins_a: uart6@0 {
+> +				allwinner,pins = "PI12", "PI13";
+> +				allwinner,function = "uart6";
+> +				allwinner,drive = <0>;
+> +				allwinner,pull = <0>;
+> +			};
+> +
+> +			uart7_pins_a: uart7@0 {
+> +				allwinner,pins = "PI20", "PI21";
+> +				allwinner,function = "uart7";
+> +				allwinner,drive = <0>;
+> +				allwinner,pull = <0>;
+> +			};
 
-- any other things ... ?
+WBR, Sergei
 
-Thanks,
-
--Kees
-
--- 
-Kees Cook
-Chrome OS Security
