@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752884Ab3G3Mkj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 08:40:39 -0400
-Received: from mail-qc0-f171.google.com ([209.85.216.171]:56965 "EHLO
-	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751228Ab3G3Mkg (ORCPT
+	id S1753546Ab3G3Mkt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 08:40:49 -0400
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:63532 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751228Ab3G3Mkj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 08:40:36 -0400
+	Tue, 30 Jul 2013 08:40:39 -0400
 From: Tejun Heo <tj@kernel.org>
 To: linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com
-Cc: shli@kernel.org, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 1/9] workqueue: mark WQ_NON_REENTRANT deprecated
-Date: Tue, 30 Jul 2013 08:40:20 -0400
-Message-Id: <1375188028-11910-2-git-send-email-tj@kernel.org>
+Cc: shli@kernel.org, Tejun Heo <tj@kernel.org>,
+        Stefan Richter <stefanr@s5r6.in-berlin.de>,
+        linux1394-devel@lists.sourceforge.net
+Subject: [PATCH 4/9] firewire: WQ_NON_REENTRANT is meaningless and going away
+Date: Tue, 30 Jul 2013 08:40:23 -0400
+Message-Id: <1375188028-11910-5-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1375188028-11910-1-git-send-email-tj@kernel.org>
 References: <1375188028-11910-1-git-send-email-tj@kernel.org>
@@ -20,78 +22,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
+
+Please route this through the subsystem tree.  As written in the
+description, this shouldn't make any functional difference and just
+prepares for the removal of WQ_NON_REENTRANT which is already noop.
+
+Thanks.
+
+------ 8< -------
 dbf2576e37 ("workqueue: make all workqueues non-reentrant") made
-WQ_NON_REENTRANT no-op but the following patches didn't remove the
-flag or update the documentation.  Let's mark the flag deprecated and
-update the documentation accordingly.
+WQ_NON_REENTRANT no-op and the flag is going away.  Remove its usages.
+
+This patch doesn't introduce any behavior changes.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Cc: linux1394-devel@lists.sourceforge.net
 ---
- Documentation/workqueue.txt | 18 ++++++------------
- include/linux/workqueue.h   |  7 ++++++-
- 2 files changed, 12 insertions(+), 13 deletions(-)
+ drivers/firewire/core-transaction.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/Documentation/workqueue.txt b/Documentation/workqueue.txt
-index a6ab4b6..67113f6 100644
---- a/Documentation/workqueue.txt
-+++ b/Documentation/workqueue.txt
-@@ -100,8 +100,8 @@ Subsystems and drivers can create and queue work items through special
- workqueue API functions as they see fit. They can influence some
- aspects of the way the work items are executed by setting flags on the
- workqueue they are putting the work item on. These flags include
--things like CPU locality, reentrancy, concurrency limits, priority and
--more.  To get a detailed overview refer to the API description of
-+things like CPU locality, concurrency limits, priority and more.  To
-+get a detailed overview refer to the API description of
- alloc_workqueue() below.
+diff --git a/drivers/firewire/core-transaction.c b/drivers/firewire/core-transaction.c
+index 28a94c7..e5af0e3 100644
+--- a/drivers/firewire/core-transaction.c
++++ b/drivers/firewire/core-transaction.c
+@@ -1262,8 +1262,7 @@ static int __init fw_core_init(void)
+ {
+ 	int ret;
  
- When a work item is queued to a workqueue, the target gcwq and
-@@ -166,16 +166,6 @@ resources, scheduled and executed.
+-	fw_workqueue = alloc_workqueue("firewire",
+-				       WQ_NON_REENTRANT | WQ_MEM_RECLAIM, 0);
++	fw_workqueue = alloc_workqueue("firewire", WQ_MEM_RECLAIM, 0);
+ 	if (!fw_workqueue)
+ 		return -ENOMEM;
  
- @flags:
- 
--  WQ_NON_REENTRANT
--
--	By default, a wq guarantees non-reentrance only on the same
--	CPU.  A work item may not be executed concurrently on the same
--	CPU by multiple workers but is allowed to be executed
--	concurrently on multiple CPUs.  This flag makes sure
--	non-reentrance is enforced across all CPUs.  Work items queued
--	to a non-reentrant wq are guaranteed to be executed by at most
--	one worker system-wide at any given time.
--
-   WQ_UNBOUND
- 
- 	Work items queued to an unbound wq are served by a special
-@@ -233,6 +223,10 @@ resources, scheduled and executed.
- 
- 	This flag is meaningless for unbound wq.
- 
-+Note that the flag WQ_NON_REENTRANT no longer exists as all workqueues
-+are now non-reentrant - any work item is guaranteed to be executed by
-+at most one worker system-wide at any given time.
-+
- @max_active:
- 
- @max_active determines the maximum number of execution contexts per
-diff --git a/include/linux/workqueue.h b/include/linux/workqueue.h
-index a0ed78a..594521b 100644
---- a/include/linux/workqueue.h
-+++ b/include/linux/workqueue.h
-@@ -295,7 +295,12 @@ static inline unsigned int work_static(struct work_struct *work) { return 0; }
-  * Documentation/workqueue.txt.
-  */
- enum {
--	WQ_NON_REENTRANT	= 1 << 0, /* guarantee non-reentrance */
-+	/*
-+	 * All wqs are now non-reentrant making the following flag
-+	 * meaningless.  Will be removed.
-+	 */
-+	WQ_NON_REENTRANT	= 1 << 0, /* DEPRECATED */
-+
- 	WQ_UNBOUND		= 1 << 1, /* not bound to any cpu */
- 	WQ_FREEZABLE		= 1 << 2, /* freeze during suspend */
- 	WQ_MEM_RECLAIM		= 1 << 3, /* may be used for memory reclaim */
 -- 
 1.8.3.1
 
