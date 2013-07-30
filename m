@@ -1,145 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758969Ab3G3KCk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 06:02:40 -0400
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:63391 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932261Ab3G3KAb (ORCPT
+	id S1758987Ab3G3KDE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 06:03:04 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52951 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932232Ab3G3JcX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 06:00:31 -0400
-From: Richard Genoud <richard.genoud@gmail.com>
-To: Mark Brown <broonie@kernel.org>, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>
-Cc: Bo Shen <voice.shen@atmel.com>, Lars-Peter Clausen <lars@metafoo.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org, devicetree-discuss@lists.ozlabs.org,
-        Richard Genoud <richard.genoud@gmail.com>
-Subject: [PATCH v6 1/8] ASoC: wm8731: add rates constraints
-Date: Tue, 30 Jul 2013 11:59:45 +0200
-Message-Id: <1375178392-26060-2-git-send-email-richard.genoud@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1375178392-26060-1-git-send-email-richard.genoud@gmail.com>
-References: <1375178392-26060-1-git-send-email-richard.genoud@gmail.com>
+	Tue, 30 Jul 2013 05:32:23 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Joern Engel <joern@logfs.org>, Nicholas Bellinger <nab@linux-iscsi.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 011/106] iscsi-target: Fix tfc_tpg_nacl_auth_cit configfs length overflow
+Date: Tue, 30 Jul 2013 10:30:30 +0100
+Message-Id: <1375176725-5825-12-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
+References: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Depending on the mclk (or crystal) selected, the wm8731 codec have some
-constraints on its data sampling rates:
-e.g. with a 12.288MHz or 18.432MHz crystal, the authorized rates are
-8KHz, 32KHz, 48KHz and 96KHz.
+3.5.7.18 -stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
+------------------
+
+From: =?UTF-8?q?J=C3=B6rn=20Engel?= <joern@logfs.org>
+
+commit 0fbfc46fb0b2f543a8b539e94c6c293ebc0b05a6 upstream.
+
+This patch fixes a potential buffer overflow while processing
+iscsi_node_auth input for configfs attributes within NodeACL
+tfc_tpg_nacl_auth_cit context.
+
+Signed-off-by: Joern Engel <joern@logfs.org>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/soc/codecs/wm8731.c |   60 ++++++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 57 insertions(+), 3 deletions(-)
+ drivers/target/iscsi/iscsi_target_configfs.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/sound/soc/codecs/wm8731.c b/sound/soc/codecs/wm8731.c
-index 5276062..456bb8c 100644
---- a/sound/soc/codecs/wm8731.c
-+++ b/sound/soc/codecs/wm8731.c
-@@ -45,6 +45,7 @@ static const char *wm8731_supply_names[WM8731_NUM_SUPPLIES] = {
- struct wm8731_priv {
- 	struct regmap *regmap;
- 	struct regulator_bulk_data supplies[WM8731_NUM_SUPPLIES];
-+	const struct snd_pcm_hw_constraint_list *constraints;
- 	unsigned int sysclk;
- 	int sysclk_type;
- 	int playback_fs;
-@@ -290,6 +291,36 @@ static const struct _coeff_div coeff_div[] = {
- 	{12000000, 88200, 136, 0xf, 0x1, 0x1},
- };
- 
-+/* rates constraints */
-+static const unsigned int wm8731_rates_12000000[] = {
-+	8000, 32000, 44100, 48000, 96000, 88200,
-+};
-+
-+static const unsigned int wm8731_rates_12288000_18432000[] = {
-+	8000, 32000, 48000, 96000,
-+};
-+
-+static const unsigned int wm8731_rates_11289600_16934400[] = {
-+	8000, 44100, 88200,
-+};
-+
-+static const struct snd_pcm_hw_constraint_list wm8731_constraints_12000000 = {
-+	.list = wm8731_rates_12000000,
-+	.count = ARRAY_SIZE(wm8731_rates_12000000),
-+};
-+
-+static const
-+struct snd_pcm_hw_constraint_list wm8731_constraints_12288000_18432000 = {
-+	.list = wm8731_rates_12288000_18432000,
-+	.count = ARRAY_SIZE(wm8731_rates_12288000_18432000),
-+};
-+
-+static const
-+struct snd_pcm_hw_constraint_list wm8731_constraints_11289600_16934400 = {
-+	.list = wm8731_rates_11289600_16934400,
-+	.count = ARRAY_SIZE(wm8731_rates_11289600_16934400),
-+};
-+
- static inline int get_coeff(int mclk, int rate)
- {
- 	int i;
-@@ -362,17 +393,26 @@ static int wm8731_set_dai_sysclk(struct snd_soc_dai *codec_dai,
- 	}
- 
- 	switch (freq) {
--	case 11289600:
-+	case 0:
-+		wm8731->constraints = NULL;
-+		break;
- 	case 12000000:
-+		wm8731->constraints = &wm8731_constraints_12000000;
-+		break;
- 	case 12288000:
--	case 16934400:
- 	case 18432000:
--		wm8731->sysclk = freq;
-+		wm8731->constraints = &wm8731_constraints_12288000_18432000;
-+		break;
-+	case 16934400:
-+	case 11289600:
-+		wm8731->constraints = &wm8731_constraints_11289600_16934400;
- 		break;
- 	default:
- 		return -EINVAL;
- 	}
- 
-+	wm8731->sysclk = freq;
-+
- 	snd_soc_dapm_sync(&codec->dapm);
- 
- 	return 0;
-@@ -475,12 +515,26 @@ static int wm8731_set_bias_level(struct snd_soc_codec *codec,
- 	return 0;
- }
- 
-+static int wm8731_startup(struct snd_pcm_substream *substream,
-+	struct snd_soc_dai *dai)
-+{
-+	struct wm8731_priv *wm8731 = snd_soc_codec_get_drvdata(dai->codec);
-+
-+	if (wm8731->constraints)
-+		snd_pcm_hw_constraint_list(substream->runtime, 0,
-+					   SNDRV_PCM_HW_PARAM_RATE,
-+					   wm8731->constraints);
-+
-+	return 0;
-+}
-+
- #define WM8731_RATES SNDRV_PCM_RATE_8000_96000
- 
- #define WM8731_FORMATS (SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S20_3LE |\
- 	SNDRV_PCM_FMTBIT_S24_LE)
- 
- static const struct snd_soc_dai_ops wm8731_dai_ops = {
-+	.startup	= wm8731_startup,
- 	.hw_params	= wm8731_hw_params,
- 	.digital_mute	= wm8731_mute,
- 	.set_sysclk	= wm8731_set_dai_sysclk,
+diff --git a/drivers/target/iscsi/iscsi_target_configfs.c b/drivers/target/iscsi/iscsi_target_configfs.c
+index 69dc8e3..c17bccf 100644
+--- a/drivers/target/iscsi/iscsi_target_configfs.c
++++ b/drivers/target/iscsi/iscsi_target_configfs.c
+@@ -415,7 +415,7 @@ static ssize_t __iscsi_##prefix##_store_##name(				\
+ 	if (!capable(CAP_SYS_ADMIN))					\
+ 		return -EPERM;						\
+ 									\
+-	snprintf(auth->name, PAGE_SIZE, "%s", page);			\
++	snprintf(auth->name, sizeof(auth->name), "%s", page);		\
+ 	if (!strncmp("NULL", auth->name, 4))				\
+ 		auth->naf_flags &= ~flags;				\
+ 	else								\
 -- 
-1.7.10.4
+1.8.3.2
 
