@@ -1,89 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756741Ab3G3Brm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 21:47:42 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:47108 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751675Ab3G3Brl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 21:47:41 -0400
-Message-ID: <51F71AEC.1090709@huawei.com>
-Date: Tue, 30 Jul 2013 09:46:20 +0800
-From: Xie XiuQi <xiexiuqi@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	id S1756781Ab3G3Bs0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 21:48:26 -0400
+Received: from ozlabs.org ([203.10.76.45]:54820 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754583Ab3G3BsY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 21:48:24 -0400
+Date: Tue, 30 Jul 2013 11:44:53 +1000
+From: David Gibson <david@gibson.dropbear.id.au>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "ksummit-2013-discuss@lists.linuxfoundation.org" 
+	<ksummit-2013-discuss@lists.linuxfoundation.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Domenico Andreoli <cavokz@gmail.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Dave P Martin <Dave.Martin@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [Ksummit-2013-discuss] DT bindings as ABI [was: Do we have
+ people interested in device tree janitoring / cleanup?]
+Message-ID: <20130730014453.GJ29970@voom.fritz.box>
+References: <20130725175702.GC22291@e106331-lin.cambridge.arm.com>
+ <2007664.vYsECFSKrV@flatron>
+ <51F39FD8.6080808@broadcom.com>
+ <2460092.aLmjrOVh1g@flatron>
+ <51F3A82E.2000907@broadcom.com>
+ <CACxGe6t0C7PTiDDaFkgoMZWUpBVokasxwZpV6HEtf3LaPi4qUw@mail.gmail.com>
+ <CAKON4OymA55w_V=oP4BL2su84m8EnPgdhnQtyLWKaAJE-yNBkQ@mail.gmail.com>
+ <CACxGe6uE6jOE-vz0onW5h93Es-soGiBAcFBM7Dvxh+HvCNrHkw@mail.gmail.com>
+ <CACxGe6vw9=y5a+EgF1gO39SwGAdGofD2MYjyJ3jYu6uN3ke70A@mail.gmail.com>
+ <1374988276.1973.29.camel@dabdike>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Jens Axboe <jens.axboe@oracle.com>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hanjun Guo <guohanjun@huawei.com>, Li Zefan <lizefan@huawei.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] smp: kill unnecessary variable - csd_flags
-References: <51F5D399.3050609@huawei.com> <20130729121305.GE3008@twins.programming.kicks-ass.net>
-In-Reply-To: <20130729121305.GE3008@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.69.18]
-X-CFilter-Loop: Reflected
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="bgQAstJ9X1Eg13Dy"
+Content-Disposition: inline
+In-Reply-To: <1374988276.1973.29.camel@dabdike>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/7/29 20:13, Peter Zijlstra wrote:
-> On Mon, Jul 29, 2013 at 10:29:45AM +0800, Xie XiuQi wrote:
->> We used csd_flags formerly because we allocated csd_data by
->> kmalloc when "wait == 0". When fail to allocation, we will
->> fall back to on-stack allocation. "csd_data" might be invalid
->> after generic_exec_single return.
->>
->> But now we use per cpu data for single cpu ipi calls, and
->> csd_data can't fall back to on-stack allocation when "wait == 0".
->>
->> So csd_flags is unnecessary now. Remove it.
-> 
-> The much simpler argument is that both callsites of
-> generic_exec_single() do an unconditional csd_lock().
-> 
 
-That's right. All csd_data are protected by csd_lock.
+--bgQAstJ9X1Eg13Dy
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->> Signed-off-by: Xie XiuQi <xiexiuqi@huawei.com>
->> ---
->>  kernel/smp.c |   11 +----------
->>  1 files changed, 1 insertions(+), 10 deletions(-)
->>
->> diff --git a/kernel/smp.c b/kernel/smp.c
->> index 4dba0f7..cac2b6e 100644
->> --- a/kernel/smp.c
->> +++ b/kernel/smp.c
->> @@ -186,25 +186,16 @@ void generic_smp_call_function_single_interrupt(void)
->>
->>  	while (!list_empty(&list)) {
->>  		struct call_single_data *csd;
->> -		unsigned int csd_flags;
->>
->>  		csd = list_entry(list.next, struct call_single_data, list);
->>  		list_del(&csd->list);
->>
->> -		/*
->> -		 * 'csd' can be invalid after this call if flags == 0
->> -		 * (when called through generic_exec_single()),
->> -		 * so save them away before making the call:
->> -		 */
->> -		csd_flags = csd->flags;
->> -
->>  		csd->func(csd->info);
->>
->>  		/*
->>  		 * Unlocked CSDs are valid through generic_exec_single():
->>  		 */
->> -		if (csd_flags & CSD_FLAG_LOCK)
->> -			csd_unlock(csd);
->> +		csd_unlock(csd);
-> 
-> The comment is completely useless and confusing after this; why do you
-> leave it in? 
-> 
+On Sat, Jul 27, 2013 at 10:11:16PM -0700, James Bottomley wrote:
+> On Sat, 2013-07-27 at 21:28 -0600, Grant Likely wrote:
+> > On Sat, Jul 27, 2013 at 2:25 PM, Grant Likely <grant.likely@secretlab.c=
+a> wrote:
+> > > On Sat, Jul 27, 2013 at 2:01 PM, jonsmirl@gmail.com <jonsmirl@gmail.c=
+om> wrote:
+> > >> On Sat, Jul 27, 2013 at 3:45 PM, Grant Likely <grant.likely@secretla=
+b.ca> wrote:
+> > >>> On Sat, Jul 27, 2013 at 4:59 AM, Arend van Spriel <arend@broadcom.c=
+om> wrote:
+> > >>>> Let's see how many people go and scream if I say this: Too bad .dt=
+s files
+> > >>>> are not done using XML format as DT bindings could be described us=
+ing XML
+> > >>>> Schema.
+> > >>>
+> > >>> Draft an example and show us how it would look!  :-)  There is
+> > >>> absolutely nothing preventing us from expressing a DT in XML format,
+> > >>> or even using XSLT to define DT schema while still using our current
+> > >>> .dts syntax. It would be trivial to do lossless translation between
+> > >>> .dts syntax and xml.
+> > >>>
+> > >>> The problem that I have with XML and XSLT is that it is very verbose
+> > >>> and not entirely friendly to mere-mortals. However, I'm more than
+> > >>> willing to be proved wrong on this point.
+> > >>
+> > >> I considered this approach a while ago and discarded it. It would wo=
+rk
+> > >> but it is just too much of a Frankenstein monster.
+> > >>
+> > >> Much cleaner to modify dtc to take a schema as part of the compilati=
+on
+> > >> process. The schema language itself has no requirement to look like
+> > >> DTS syntax. Whoever wrote dtc probably has a favorite language that
+> > >> would be good for writing schemas in.
+> > >
+> > > Making it part of dtc is a required feature as far as I'm concerned.
+> > > Using XML/XSLT and dtc-integration are not mutually exclusive, but I
+> > > digress.
+> >=20
+> > Oops, ignore the XSLT bit. XSLT isn't schema and has no bearing on the
+> > discussion of schema. Sorry for the noise.
+>=20
+> XSLT is a transform language ... you'd use it say to transform xml to
+> dtc, so it would be an integral component of an xml/xslt based schema.
+>=20
+> If you want actually to describe and have validated the xml schema
+> itself, then you'd use xsd (XML schema description language) and its
+> associated tools.
+>=20
+> I'm not saying you *should* do this, just that it's possible (plus I've
+> just blown my kernel cred by knowing about xml, sigh).
 
-Thanks for your comment, I'll remove the comment and send a new version soon.
+Heh.  So, it was said in jest, but that actually raises an important
+point.
+
+There are basically two criteria to keep in mind for our
+representation of schemas:
+   1) Adequate expressiveness to validate a sufficiently large part,
+of a sufficiently large number of bindings to be useful.
+   2) Ease of use and ease of learning **for the target audience**.
+
+To the best of my knowledge xsd would do well on (1), but I'm not
+convinced it does very well on (2).  In an environment where XML was
+already widely used, XSD would make perfect sense.  Here, I think it
+would be pretty ugly to wire onto the existing DT tools and
+infrastructure, and unpleasantly unfamiliar for many kernel and board
+developers trying to work with DT schemas.
 
 
+So, by way of investigation, let me propose an alternative expression
+of schemas, that I'm also not convinced we should do, but is possible
+and expressive.  It's illustrative, because it's kind of the polar
+opposite approach to XSD: just use C.
+
+dtc already has a (so far limited) "checks" mechanism which verifies
+various aspects of DT content.  These are implemented by C functions
+in checks.c.  There's obviously ample expressiveness - you can express
+any constraint you want that way.  It can be pretty verbose, and
+fiddly.  A good library of helper functions can mitigate that, but
+it's not clear how much.  On the other hand, a very good fraction of
+people working with this will already be familiar with C, which is a
+big plus.  This is, after all, the reason that the dts syntax is
+chiefly C inspired.
+
+Now, in practice, I think we will want a more convenient schema
+language (just as we wanted dts, rather than manually constructing
+FDTs as C structures).  But I absolutely do think, that the schema
+handling should be handled as plugins to the checks mechanism -
+basically we'd have a validate_schemas() check function.
+
+I also think we should consider the option of having a simple and
+straightforward schema language which handles, say, 80% of cases with
+a fall back to C for the 20% of curly cases.  That might actually be
+simpler to work with in practice than a schema language which can
+express absolutely anything, at the cost of being awkward for simple
+cases or difficult to get your head around.
+
+Remember, a schema language is only a win if it is - for the target
+audience - more convenient to express schemas in than C.
+
+--=20
+David Gibson			| I'll have my music baroque, and my code
+david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
+				| _way_ _around_!
+http://www.ozlabs.org/~dgibson
+
+--bgQAstJ9X1Eg13Dy
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.13 (GNU/Linux)
+
+iEYEARECAAYFAlH3GpUACgkQaILKxv3ab8aylACeKTvdD1JODCSxPkh9rXctbmv5
+1vkAn3cxQXkoaylN+MBGT2Zuu/IazmAi
+=yz40
+-----END PGP SIGNATURE-----
+
+--bgQAstJ9X1Eg13Dy--
