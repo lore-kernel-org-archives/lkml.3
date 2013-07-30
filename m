@@ -1,90 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757725Ab3G3HNo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 03:13:44 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:57138 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757591Ab3G3HNn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 03:13:43 -0400
-X-Spam-Score: -100.8
-Message-ID: <51F76769.5050205@asianux.com>
-Date: Tue, 30 Jul 2013 15:12:41 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1757715Ab3G3HRP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 03:17:15 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:54366 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752332Ab3G3HRN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Jul 2013 03:17:13 -0400
+Date: Tue, 30 Jul 2013 10:16:11 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+CC: <balbi@ti.com>, <tony@atomide.com>, <linux@arm.linux.org.uk>,
+        <eballetbo@gmail.com>, <javier@dowhile0.org>,
+        <gregkh@linuxfoundation.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH 2/2] arm: omap: remove *.auto* from device names given in
+ usb_bind_phy
+Message-ID: <20130730071611.GD16441@radagast>
+Reply-To: <balbi@ti.com>
+References: <20130729150638.GD3063@radagast>
+ <51F68A56.8060805@ti.com>
+ <20130729175413.GC4964@radagast>
+ <51F74BC8.7020903@ti.com>
+ <20130730060134.GD9155@radagast>
+ <51F7590B.4020705@ti.com>
+ <20130730061830.GE9155@radagast>
+ <51F75C40.4060406@ti.com>
+ <20130730062844.GH9155@radagast>
+ <51F7613C.5070803@ti.com>
 MIME-Version: 1.0
-To: Richard Kuo <rkuo@codeaurora.org>, jonas@southpole.se,
-        liqin.chen@sunplusct.com, lennox.wu@gmail.com
-CC: linux-hexagon@vger.kernel.org, linux@openrisc.net,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] arch: *: Kconfig: add "kernel/Kconfig.freezer" to "arch/*/Kconfig"
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="oj4kGyHlBMXGt3Le"
+Content-Disposition: inline
+In-Reply-To: <51F7613C.5070803@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All architectures include "kernel/Kconfig.freezer" except three left,
-so let them include it too, or 'allmodconfig' will report error.
+--oj4kGyHlBMXGt3Le
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The related errors: (with allmodconfig for openrisc):
+Hi,
 
-    CC      kernel/cgroup_freezer.o
-  kernel/cgroup_freezer.c: In function 'freezer_css_online':
-  kernel/cgroup_freezer.c:133:15: error: 'system_freezing_cnt' undeclared (first use in this function)
-  kernel/cgroup_freezer.c:133:15: note: each undeclared identifier is reported only once for each function it appears in
-  kernel/cgroup_freezer.c: In function 'freezer_css_offline':
-  kernel/cgroup_freezer.c:157:15: error: 'system_freezing_cnt' undeclared (first use in this function)
-  kernel/cgroup_freezer.c: In function 'freezer_attach':
-  kernel/cgroup_freezer.c:200:4: error: implicit declaration of function 'freeze_task'
-  kernel/cgroup_freezer.c: In function 'freezer_apply_state':
-  kernel/cgroup_freezer.c:371:16: error: 'system_freezing_cnt' undeclared (first use in this function)
+On Tue, Jul 30, 2013 at 12:16:20PM +0530, Kishon Vijay Abraham I wrote:
+> >>>> the list of controller device (names) it can support (PHY framework =
+does not
+> >>>> maintain a separate list for binding like how we had in USB PHY libr=
+ary). e.g.
+> >>>> http://www.mail-archive.com/linux-omap@vger.kernel.org/msg92817.html=
+=2E In such
+> >>>
+> >>> this has nothing to do with $subject though. We talk about generic PHY
+> >>> framework once all these PHY drivers are moved there :-)
+> >>>
+> >>>> cases how do we pass the device names. Also will the MUSB core devic=
+e be
+> >>>> created before twl4030-usb PHY device?
+> >>>
+> >>> and why would that be a problem ? We're telling the framework that the
+> >>> musb device will use a phy with a name of 'twl4030'. If musb calls
+> >>> usb_get_phy_dev() and doesn't find a phy, it'll return -EPROBE_DEFER =
+and
+> >>> try again later.
+> >>
+> >> I think we are talking about different problems here ;-) I'm trying to=
+ tell
+> >> using idr in MUSB core is needed for Generic PHY Framework. So in a wa=
+y, the
+> >> Generic PHY Framework series depends on this patch series or else MUSB=
+ in OMAP3
+> >> platforms wont work after Generic PHY framework gets merged.
+> >=20
+> > then you just found a limitation in your framework, right ? :-) I mean,
+> > imagine if now we have to add an IDR to every single user of your
+> > framework because they could end up in systems with multiple instances
+> > of the same IP ?
+>=20
+> I raised a similar concern in the PHY framework discussion [1] :-) And si=
+nce
+> it's used everywhere else regulators, clkdev, etc.. it's agreed to be use=
+d in
+> PHY as well. Btw if PLATFORM_DEVID_AUTO is used even regulator, clk_get s=
+hould
+> fail IMO.
+>=20
+> [1] -> http://lkml.indiana.edu/hypermail/linux/kernel/1307.2/03573.html
 
+look at Greg's and my reply to that email.
 
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
----
- arch/hexagon/Kconfig  |    1 +
- arch/openrisc/Kconfig |    1 +
- arch/score/Kconfig    |    2 ++
- 3 files changed, 4 insertions(+), 0 deletions(-)
+--=20
+balbi
 
-diff --git a/arch/hexagon/Kconfig b/arch/hexagon/Kconfig
-index 33a9792..77d442a 100644
---- a/arch/hexagon/Kconfig
-+++ b/arch/hexagon/Kconfig
-@@ -158,6 +158,7 @@ source "kernel/Kconfig.hz"
- endmenu
- 
- source "init/Kconfig"
-+source "kernel/Kconfig.freezer"
- source "drivers/Kconfig"
- source "fs/Kconfig"
- 
-diff --git a/arch/openrisc/Kconfig b/arch/openrisc/Kconfig
-index 99dbab1..d60bf98 100644
---- a/arch/openrisc/Kconfig
-+++ b/arch/openrisc/Kconfig
-@@ -55,6 +55,7 @@ config GENERIC_CSUM
- 
- source "init/Kconfig"
- 
-+source "kernel/Kconfig.freezer"
- 
- menu "Processor type and features"
- 
-diff --git a/arch/score/Kconfig b/arch/score/Kconfig
-index c8def8b..5fc2375 100644
---- a/arch/score/Kconfig
-+++ b/arch/score/Kconfig
-@@ -87,6 +87,8 @@ config STACKTRACE_SUPPORT
- 
- source "init/Kconfig"
- 
-+source "kernel/Kconfig.freezer"
-+
- config MMU
- 	def_bool y
- 
--- 
-1.7.7.6
+--oj4kGyHlBMXGt3Le
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR92g7AAoJEIaOsuA1yqREY0IP/2rLJXtchwOiyow03vRcjVbv
+tsWrWB2cGvtGAe3cnyAqaBzTIJ0RlA/N3d+gjy8qPWrShKrLTOgBXB+vcjpQZUcZ
+9zfFef0pz1vz3/lXkDYj/mDNkIcIS6SslzbJ8KIfArniXgfB6Yj+T3xgtzc1gbKH
+76OrAq3fTZJYPeoLFUVQX+Eh3z8O33QocWYLFHFXpcDO5wMTrz5B2lGmfhukd/FN
+yPaZvh/34EqdOTNdt7xxcbZNj0gTzsGVyFPgrrixn/arkbX13Ffzhn/caGuHIrSC
+SrTKJ6+GCuur+XFduYtOweV6mKs/DTxK7UCIqPKHbYuUnKJXmYppTRUAKqJ4fSWo
+nBotOyRwS6JYl+1JRWrC1BPnwnZJ83ECXo9+Un5FwFjNoZ6oqTHFIgrzSlpIkNZF
+eIU6GhDlXZGf7M08cHZ+ALsdA0eMgt7RYW2W+zlkL3L4OIHEPLD/UiWoAX/LEnGY
+yAJLslgXBkvRwUa3UyABg9GRg1F+mhCzEI+Zq8lc+u98WcfQ5r6g4K64QImFJnBa
+7IdK6t5IX8/T1FfCZA/Jfg7VMwPPV7meIar0gUQTSciex6/gMYuQlXM5txMuGbk2
+xO1rUy1q6Zfw4DbPWS/7eYPT+WUBn2jZFPk9IfFU3AUPzJlNiGPE7kDaJ8ph/l21
+Eix1XIq50wgErgvxv2c8
+=0vRB
+-----END PGP SIGNATURE-----
+
+--oj4kGyHlBMXGt3Le--
