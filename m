@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758560Ab3G3JTe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 05:19:34 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:57152 "EHLO
+	id S1758515Ab3G3JT0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 05:19:26 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:64877 "EHLO
 	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758516Ab3G3JT1 (ORCPT
+	with ESMTP id S1758478Ab3G3JTX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 05:19:27 -0400
-X-AuditID: 9c930179-b7c49ae000000e68-ea-51f78518099b
+	Tue, 30 Jul 2013 05:19:23 -0400
+X-AuditID: 9c930179-b7c49ae000000e68-e3-51f785174cbe
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
@@ -17,9 +17,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>,
         Jeremy Eder <jeder@redhat.com>
-Subject: [PATCH 10/17] perf ftrace: Add dump_printf() for low-level debugging
-Date: Tue, 30 Jul 2013 18:19:07 +0900
-Message-Id: <1375175954-798-11-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 06/17] perf ftrace: Split "live" sub-command
+Date: Tue, 30 Jul 2013 18:19:03 +0900
+Message-Id: <1375175954-798-7-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1375175954-798-1-git-send-email-namhyung@kernel.org>
 References: <1375175954-798-1-git-send-email-namhyung@kernel.org>
@@ -30,95 +30,220 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-For reusability, rename trace_event() to dump_raw_event() and pass
-size as an argument.  And use it in do_ftrace_report() to show raw
-data of ftrace entries.
+Separate out the default behavior to "live" subcommand.  It's a
+preparation to support more subcommands like "record" and "report".
 
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/builtin-ftrace.c | 6 ++++++
- tools/perf/util/debug.c     | 8 ++++----
- tools/perf/util/debug.h     | 2 +-
- tools/perf/util/session.c   | 2 +-
- 4 files changed, 12 insertions(+), 6 deletions(-)
+ tools/perf/builtin-ftrace.c | 133 ++++++++++++++++++++++++++------------------
+ 1 file changed, 80 insertions(+), 53 deletions(-)
 
 diff --git a/tools/perf/builtin-ftrace.c b/tools/perf/builtin-ftrace.c
-index 0792bfdf168c..bb0a238b8509 100644
+index 642aa49c66d7..1bb6d1ff0eb1 100644
 --- a/tools/perf/builtin-ftrace.c
 +++ b/tools/perf/builtin-ftrace.c
-@@ -1330,6 +1330,12 @@ static int do_ftrace_report(struct perf_ftrace *ftrace)
- 			goto out;
- 		}
- 
-+		dump_printf(" .... event: %s\n", perf_evsel__name(evsel));
-+		dump_raw_event(record, record->size);
-+		dump_printf("%3d %llu %#llx [%#x]\n\n",
-+			    record->cpu, record->ts, record->offset,
-+			    record->size);
-+
- 		/* TODO: update sample.period using calltime */
- 		if (!__hists__add_entry(&evsel->hists, &al, NULL,
- 					sample.period, 0)) {
-diff --git a/tools/perf/util/debug.c b/tools/perf/util/debug.c
-index 399e74c34c1a..2c42aaed4528 100644
---- a/tools/perf/util/debug.c
-+++ b/tools/perf/util/debug.c
-@@ -47,7 +47,7 @@ int dump_printf(const char *fmt, ...)
- 	return ret;
+@@ -171,19 +171,13 @@ static int reset_tracing_cpu(void)
+ 	return 0;
  }
  
--void trace_event(union perf_event *event)
-+void dump_raw_event(void *event, int size)
+-static int __cmd_ftrace(struct perf_ftrace *ftrace, int argc, const char **argv)
++static int do_ftrace_live(struct perf_ftrace *ftrace)
  {
- 	unsigned char *raw_event = (void *)event;
- 	const char *color = PERF_COLOR_BLUE;
-@@ -58,9 +58,9 @@ void trace_event(union perf_event *event)
+ 	char *trace_file;
+ 	int trace_fd;
+ 	char buf[4096];
+-	struct pollfd pollfd = {
+-		.events = POLLIN,
+-	};
+-
+-	if (geteuid() != 0) {
+-		pr_err("ftrace only works for root!\n");
+-		return -1;
+-	}
++	/* sleep 1ms if no data read */
++	struct timespec req = { .tv_nsec = 1000000 };
  
- 	printf(".");
- 	color_fprintf(stdout, color, "\n. ... raw event: size %d bytes\n",
--		      event->header.size);
-+		      size);
+ 	signal(SIGINT, sig_handler);
+ 	signal(SIGUSR1, sig_handler);
+@@ -196,12 +190,6 @@ static int __cmd_ftrace(struct perf_ftrace *ftrace, int argc, const char **argv)
+ 	if (write_tracing_file("trace", "0") < 0)
+ 		goto out;
  
--	for (i = 0; i < event->header.size; i++) {
-+	for (i = 0; i < size; i++) {
- 		if ((i & 15) == 0) {
- 			printf(".");
- 			color_fprintf(stdout, color, "  %04x: ", i);
-@@ -68,7 +68,7 @@ void trace_event(union perf_event *event)
+-	if (argc && perf_evlist__prepare_workload(ftrace->evlist,
+-						  &ftrace->target,
+-						  argv, false, true) < 0) {
+-		goto out;
+-	}
+-
+ 	if (set_tracing_pid(ftrace) < 0) {
+ 		pr_err("failed to set ftrace pid\n");
+ 		goto out_reset;
+@@ -233,7 +221,6 @@ static int __cmd_ftrace(struct perf_ftrace *ftrace, int argc, const char **argv)
+ 	}
  
- 		color_fprintf(stdout, color, " %02x", raw_event[i]);
+ 	fcntl(trace_fd, F_SETFL, O_NONBLOCK);
+-	pollfd.fd = trace_fd;
  
--		if (((i & 15) == 15) || i == event->header.size-1) {
-+		if (((i & 15) == 15) || i == size-1) {
- 			color_fprintf(stdout, color, "  ");
- 			for (j = 0; j < 15-(i & 15); j++)
- 				color_fprintf(stdout, color, "   ");
-diff --git a/tools/perf/util/debug.h b/tools/perf/util/debug.h
-index efbd98805ad0..9cebb0cdb7bd 100644
---- a/tools/perf/util/debug.h
-+++ b/tools/perf/util/debug.h
-@@ -12,7 +12,7 @@ extern int verbose;
- extern bool quiet, dump_trace;
+ 	if (write_tracing_file("tracing_on", "1") < 0) {
+ 		pr_err("can't enable tracing\n");
+@@ -243,16 +230,18 @@ static int __cmd_ftrace(struct perf_ftrace *ftrace, int argc, const char **argv)
+ 	perf_evlist__start_workload(ftrace->evlist);
  
- int dump_printf(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
--void trace_event(union perf_event *event);
-+void dump_raw_event(void *event, int size);
+ 	while (!done) {
+-		if (poll(&pollfd, 1, -1) < 0)
+-			break;
++		int n = read(trace_fd, buf, sizeof(buf));
  
- int ui__error(const char *format, ...) __attribute__((format(printf, 1, 2)));
- int ui__warning(const char *format, ...) __attribute__((format(printf, 1, 2)));
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index a0ce5a46abbe..8e6d05acab32 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -793,7 +793,7 @@ static void dump_event(struct perf_session *session, union perf_event *event,
- 	printf("\n%#" PRIx64 " [%#x]: event: %d\n",
- 	       file_offset, event->header.size, event->header.type);
+-		if (pollfd.revents & POLLIN) {
+-			int n = read(trace_fd, buf, sizeof(buf));
+-			if (n < 0)
+-				break;
+-			if (fwrite(buf, n, 1, stdout) != 1)
++		if (n < 0) {
++			if (errno == EINTR || errno == EAGAIN)
++				goto sleep;
++			else
+ 				break;
+-		}
++		} else if (n == 0) {
++sleep:
++			clock_nanosleep(CLOCK_MONOTONIC, 0, &req, NULL);
++		} else if (fwrite(buf, n, 1, stdout) != 1)
++			break;
+ 	}
  
--	trace_event(event);
-+	dump_raw_event(event, event->header.size);
+ 	write_tracing_file("tracing_on", "0");
+@@ -274,61 +263,99 @@ out:
+ 	return done ? 0 : -1;
+ }
  
- 	if (sample)
- 		perf_session__print_tstamp(session, event, sample);
+-int cmd_ftrace(int argc, const char **argv, const char *prefix __maybe_unused)
++static int
++__cmd_ftrace_live(struct perf_ftrace *ftrace, int argc, const char **argv)
+ {
+-	int ret;
+-	struct perf_ftrace ftrace = {
+-		.target = { .uid = UINT_MAX, },
+-	};
+-	const char * const ftrace_usage[] = {
+-		"perf ftrace [<options>] [<command>]",
+-		"perf ftrace [<options>] -- <command> [<options>]",
++	int ret = -1;
++	const char * const live_usage[] = {
++		"perf ftrace live [<options>] [<command>]",
++		"perf ftrace live [<options>] -- <command> [<options>]",
+ 		NULL
+ 	};
+-	const struct option ftrace_options[] = {
+-	OPT_STRING('t', "tracer", &ftrace.tracer, "tracer",
++	const struct option live_options[] = {
++	OPT_STRING('t', "tracer", &ftrace->tracer, "tracer",
+ 		   "tracer to use: function_graph or function"),
+-	OPT_STRING('p', "pid", &ftrace.target.pid, "pid",
++	OPT_STRING('p', "pid", &ftrace->target.pid, "pid",
+ 		   "trace on existing process id"),
+ 	OPT_INCR('v', "verbose", &verbose,
+ 		 "be more verbose"),
+-	OPT_BOOLEAN('a', "all-cpus", &ftrace.target.system_wide,
++	OPT_BOOLEAN('a', "all-cpus", &ftrace->target.system_wide,
+ 		    "system-wide collection from all CPUs"),
+-	OPT_STRING('C', "cpu", &ftrace.target.cpu_list, "cpu",
++	OPT_STRING('C', "cpu", &ftrace->target.cpu_list, "cpu",
+ 		    "list of cpus to monitor"),
+ 	OPT_END()
+ 	};
+ 
+-	argc = parse_options(argc, argv, ftrace_options, ftrace_usage,
+-			    PARSE_OPT_STOP_AT_NON_OPTION);
+-	if (!argc && perf_target__none(&ftrace.target))
+-		usage_with_options(ftrace_usage, ftrace_options);
++	argc = parse_options(argc, argv, live_options, live_usage,
++			     PARSE_OPT_STOP_AT_NON_OPTION);
++	if (!argc && perf_target__none(&ftrace->target))
++		usage_with_options(live_usage, live_options);
+ 
+-	ret = perf_target__validate(&ftrace.target);
++	ret = perf_target__validate(&ftrace->target);
+ 	if (ret) {
+ 		char errbuf[512];
+ 
+-		perf_target__strerror(&ftrace.target, ret, errbuf, 512);
++		perf_target__strerror(&ftrace->target, ret, errbuf, 512);
+ 		pr_err("%s\n", errbuf);
+ 		return -EINVAL;
+ 	}
+ 
+-	ftrace.evlist = perf_evlist__new();
+-	if (ftrace.evlist == NULL)
++	ftrace->evlist = perf_evlist__new();
++	if (ftrace->evlist == NULL)
+ 		return -ENOMEM;
+ 
+-	ret = perf_evlist__create_maps(ftrace.evlist, &ftrace.target);
++	ret = perf_evlist__create_maps(ftrace->evlist, &ftrace->target);
+ 	if (ret < 0)
+-		goto out_delete_evlist;
++		goto out;
++
++	if (ftrace->tracer == NULL)
++		ftrace->tracer = DEFAULT_TRACER;
++
++	if (argc && perf_evlist__prepare_workload(ftrace->evlist,
++						  &ftrace->target,
++						  argv, false, true) < 0)
++		goto out_maps;
++
++	ret = do_ftrace_live(ftrace);
++
++out_maps:
++	perf_evlist__delete_maps(ftrace->evlist);
++out:
++	perf_evlist__delete(ftrace->evlist);
++
++	return ret;
++}
++
++int cmd_ftrace(int argc, const char **argv, const char *prefix __maybe_unused)
++{
++	int ret;
++	struct perf_ftrace ftrace = {
++		.target = { .uid = UINT_MAX, },
++	};
++	const char * const ftrace_usage[] = {
++		"perf ftrace {live} [<options>] [<command>]",
++		"perf ftrace {live} [<options>] -- <command> [<options>]",
++		NULL
++	};
++	const struct option ftrace_options[] = {
++	OPT_END()
++	};
+ 
+-	if (ftrace.tracer == NULL)
+-		ftrace.tracer = DEFAULT_TRACER;
++	argc = parse_options(argc, argv, ftrace_options, ftrace_usage,
++			     PARSE_OPT_STOP_AT_NON_OPTION);
++	if (!argc)
++		usage_with_options(ftrace_usage, ftrace_options);
+ 
+-	ret = __cmd_ftrace(&ftrace, argc, argv);
++	if (geteuid() != 0) {
++		pr_err("ftrace only works for root!\n");
++		return -1;
++	}
+ 
+-	perf_evlist__delete_maps(ftrace.evlist);
+-out_delete_evlist:
+-	perf_evlist__delete(ftrace.evlist);
++	if (strcmp(argv[0], "live") == 0) {
++		ret = __cmd_ftrace_live(&ftrace, argc, argv);
++	} else {
++		usage_with_options(ftrace_usage, ftrace_options);
++	}
+ 
+ 	return ret;
+ }
 -- 
 1.7.11.7
 
