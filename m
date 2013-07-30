@@ -1,107 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757982Ab3G3ILo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 04:11:44 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:58292 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753972Ab3G3ILk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 04:11:40 -0400
-X-AuditID: cbfee68d-b7f096d0000043fc-7f-51f7753bee06
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'MyungJoo Ham'" <myungjoo.ham@samsung.com>
-Cc: "'Chanwoo Choi'" <cw00.choi@samsung.com>, linux-kernel@vger.kernel.org,
-        Jingoo Han <jg1.han@samsung.com>
-Subject: [PATCH 19/35] extcon: use dev_get_platdata()
-Date: Tue, 30 Jul 2013 17:11:39 +0900
-Message-id: <004401ce8cfc$6aeb8430$40c28c90$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac6M/Dp+DQWJh/TRTdu/cCLaEewaNA==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrNIsWRmVeSWpSXmKPExsVy+t8zfV3r0u+BBhPuy1tc//Kc1eLywktA
-	YtccNovbjSvYHFg8+rasYvT4vEkugCmKyyYlNSezLLVI3y6BK+PF0ndsBWcFKk4encbUwLiI
-	r4uRk0NCwERids9hFghbTOLCvfVsILaQwDJGiedH0mFqjuw4ydzFyAUUX8Qo8Wj+U1YI5xej
-	xO0V81lBqtgE1CS+fDnMDmKLCOhKvLx6mxnEZhbIkZj94hZYjbCAqcTP+9OANnBwsAioSnzq
-	cgIJ8wpYSpz8to8dwhaU+DH5HgtEq5bE+p3HmSBseYnNa94yQxykILHj7GtGiFV6Ep/WroWq
-	F5HY9+IdI8htEgKL2CVWTfwO1sAiICDxbfIhFpC9EgKyEpsOQM2RlDi44gbLBEaxWUhWz0Ky
-	ehaS1bOQrFjAyLKKUTS1ILmgOCm9yFCvODG3uDQvXS85P3cTIySiencw3j5gfYgxGWj9RGYp
-	0eR8YETmlcQbGpsZWZiamBobmVuakSasJM6r1mIdKCSQnliSmp2aWpBaFF9UmpNafIiRiYNT
-	qoHRNDDDOYPv0e6nd5iUZrUePjrlY8CvWhnDakepvV85btrfWcRz3Shzm8jutqfibZd9L7O/
-	2T1T2fT7m+CfzpenNT03NtHZEHyRde2cC/d/LlubkLJwcmLHeaF/JVxzd1/1iY5IDDl2Lflv
-	/aEdfMVFLI5H6ionppRFufTvaw60uF3Zsr+i1u6AEktxRqKhFnNRcSIA3p96vb4CAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupkleLIzCtJLcpLzFFi42I5/e+xgK516fdAg1WnpC2uf3nOanF54SUg
-	sWsOm8XtxhVsDiwefVtWMXp83iQXwBTVwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8cb2pmYKhr
-	aGlhrqSQl5ibaqvk4hOg65aZA7RJSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5vSBBcj5EB
-	GkhYx5jxYuk7toKzAhUnj05jamBcxNfFyMkhIWAicWTHSWYIW0ziwr31bF2MXBxCAosYJR7N
-	f8oK4fxilLi9Yj4rSBWbgJrEly+H2UFsEQFdiZdXb4N1MwvkSMx+cQusRljAVOLn/WlAkzg4
-	WARUJT51OYGEeQUsJU5+28cOYQtK/Jh8jwWiVUti/c7jTBC2vMTmNW+hDlKQ2HH2NSPEKj2J
-	T2vXQtWLSOx78Y5xAqPALCSjZiEZNQvJqFlIWhYwsqxiFE0tSC4oTkrPNdQrTswtLs1L10vO
-	z93ECI7YZ1I7GFc2WBxiFOBgVOLh3VDwLVCINbGsuDL3EKMEB7OSCC/LDaAQb0piZVVqUX58
-	UWlOavEhxmSgRycyS4km5wOTSV5JvKGxiZmRpZGZhZGJuTlpwkrivAdarQOFBNITS1KzU1ML
-	UotgtjBxcEo1MJZofdFOZDtz/nirTcVZhmmLKnvX/q05EZ/rt2jZ9k3vUvvPC1Qs4K7mYLtc
-	xTeho/r9kcCNhdsbWr76ioVOeLR8ls6UTybn7kevq+bu+39gwruyy/0t1rtnajv/fP3bU3bu
-	xPf7f07zYF289lEX68uPIll54pLbNRylS3smPj3BWf61syc8aLoSS3FGoqEWc1FxIgCmHEhX
-	HAMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1758008Ab3G3IMx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 04:12:53 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:33496 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753972Ab3G3IMt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Jul 2013 04:12:49 -0400
+Message-ID: <51F7752B.8050804@ti.com>
+Date: Tue, 30 Jul 2013 13:41:23 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: <balbi@ti.com>
+CC: <tony@atomide.com>, <linux@arm.linux.org.uk>, <eballetbo@gmail.com>,
+        <javier@dowhile0.org>, <gregkh@linuxfoundation.org>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH 2/2] arm: omap: remove *.auto* from device names given
+ in usb_bind_phy
+References: <20130729150638.GD3063@radagast> <51F68A56.8060805@ti.com> <20130729175413.GC4964@radagast> <51F74BC8.7020903@ti.com> <20130730060134.GD9155@radagast> <51F7590B.4020705@ti.com> <20130730061830.GE9155@radagast> <51F75C40.4060406@ti.com> <20130730062844.GH9155@radagast> <51F7613C.5070803@ti.com> <20130730071611.GD16441@radagast>
+In-Reply-To: <20130730071611.GD16441@radagast>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the wrapper function for retrieving the platform data instead of
-accessing dev->platform_data directly.
+On Tuesday 30 July 2013 12:46 PM, Felipe Balbi wrote:
+> Hi,
+> 
+> On Tue, Jul 30, 2013 at 12:16:20PM +0530, Kishon Vijay Abraham I wrote:
+>>>>>> the list of controller device (names) it can support (PHY framework does not
+>>>>>> maintain a separate list for binding like how we had in USB PHY library). e.g.
+>>>>>> http://www.mail-archive.com/linux-omap@vger.kernel.org/msg92817.html. In such
+>>>>>
+>>>>> this has nothing to do with $subject though. We talk about generic PHY
+>>>>> framework once all these PHY drivers are moved there :-)
+>>>>>
+>>>>>> cases how do we pass the device names. Also will the MUSB core device be
+>>>>>> created before twl4030-usb PHY device?
+>>>>>
+>>>>> and why would that be a problem ? We're telling the framework that the
+>>>>> musb device will use a phy with a name of 'twl4030'. If musb calls
+>>>>> usb_get_phy_dev() and doesn't find a phy, it'll return -EPROBE_DEFER and
+>>>>> try again later.
+>>>>
+>>>> I think we are talking about different problems here ;-) I'm trying to tell
+>>>> using idr in MUSB core is needed for Generic PHY Framework. So in a way, the
+>>>> Generic PHY Framework series depends on this patch series or else MUSB in OMAP3
+>>>> platforms wont work after Generic PHY framework gets merged.
+>>>
+>>> then you just found a limitation in your framework, right ? :-) I mean,
+>>> imagine if now we have to add an IDR to every single user of your
+>>> framework because they could end up in systems with multiple instances
+>>> of the same IP ?
+>>
+>> I raised a similar concern in the PHY framework discussion [1] :-) And since
+>> it's used everywhere else regulators, clkdev, etc.. it's agreed to be used in
+>> PHY as well. Btw if PLATFORM_DEVID_AUTO is used even regulator, clk_get should
+>> fail IMO.
+>>
+>> [1] -> http://lkml.indiana.edu/hypermail/linux/kernel/1307.2/03573.html
+> 
+> look at Greg's and my reply to that email.
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
----
- drivers/extcon/extcon-adc-jack.c |    2 +-
- drivers/extcon/extcon-gpio.c     |    2 +-
- drivers/extcon/extcon-palmas.c   |    2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
+but finally Greg agreed to what Tomasz proposed no?
 
-diff --git a/drivers/extcon/extcon-adc-jack.c b/drivers/extcon/extcon-adc-jack.c
-index d0233cd..91babc8 100644
---- a/drivers/extcon/extcon-adc-jack.c
-+++ b/drivers/extcon/extcon-adc-jack.c
-@@ -94,7 +94,7 @@ static irqreturn_t adc_jack_irq_thread(int irq, void *_data)
- static int adc_jack_probe(struct platform_device *pdev)
- {
- 	struct adc_jack_data *data;
--	struct adc_jack_pdata *pdata = pdev->dev.platform_data;
-+	struct adc_jack_pdata *pdata = dev_get_platdata(&pdev->dev);
- 	int i, err = 0;
- 
- 	data = devm_kzalloc(&pdev->dev, sizeof(*data), GFP_KERNEL);
-diff --git a/drivers/extcon/extcon-gpio.c b/drivers/extcon/extcon-gpio.c
-index 02bec32..c752a47 100644
---- a/drivers/extcon/extcon-gpio.c
-+++ b/drivers/extcon/extcon-gpio.c
-@@ -78,7 +78,7 @@ static ssize_t extcon_gpio_print_state(struct extcon_dev *edev, char *buf)
- 
- static int gpio_extcon_probe(struct platform_device *pdev)
- {
--	struct gpio_extcon_platform_data *pdata = pdev->dev.platform_data;
-+	struct gpio_extcon_platform_data *pdata = dev_get_platdata(&pdev->dev);
- 	struct gpio_extcon_data *extcon_data;
- 	int ret = 0;
- 
-diff --git a/drivers/extcon/extcon-palmas.c b/drivers/extcon/extcon-palmas.c
-index b752a0a..dd3ea74 100644
---- a/drivers/extcon/extcon-palmas.c
-+++ b/drivers/extcon/extcon-palmas.c
-@@ -134,7 +134,7 @@ static void palmas_enable_irq(struct palmas_usb *palmas_usb)
- static int palmas_usb_probe(struct platform_device *pdev)
- {
- 	struct palmas *palmas = dev_get_drvdata(pdev->dev.parent);
--	struct palmas_usb_platform_data	*pdata = pdev->dev.platform_data;
-+	struct palmas_usb_platform_data	*pdata = dev_get_platdata(&pdev->dev);
- 	struct device_node *node = pdev->dev.of_node;
- 	struct palmas_usb *palmas_usb;
- 	int status;
--- 
-1.7.10.4
-
-
+Thanks
+Kishon
