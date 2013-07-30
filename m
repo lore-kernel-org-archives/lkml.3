@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756658Ab3G3PV5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 11:21:57 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55399 "EHLO
+	id S1756600Ab3G3PW0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 11:22:26 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55391 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756518Ab3G3PUt (ORCPT
+	with ESMTP id S1755986Ab3G3PUr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 11:20:49 -0400
+	Tue, 30 Jul 2013 11:20:47 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Takashi Iwai <tiwai@suse.de>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 22/75] ALSA: atiixp: Fix unlocked snd_pcm_stop() call
-Date: Tue, 30 Jul 2013 08:16:51 -0700
-Message-Id: <1375197464-27962-23-git-send-email-kamal@canonical.com>
+Subject: [PATCH 30/75] staging: line6: Fix unlocked snd_pcm_stop() call
+Date: Tue, 30 Jul 2013 08:16:59 -0700
+Message-Id: <1375197464-27962-31-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1375197464-27962-1-git-send-email-kamal@canonical.com>
 References: <1375197464-27962-1-git-send-email-kamal@canonical.com>
@@ -28,42 +28,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Takashi Iwai <tiwai@suse.de>
 
-commit cc7282b8d5abbd48c81d1465925d464d9e3eaa8f upstream.
+commit 86f0b5b86d142b9323432fef078a6cf0fb5dda74 upstream.
 
 snd_pcm_stop() must be called in the PCM substream lock context.
 
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- sound/pci/atiixp.c       | 2 ++
- sound/pci/atiixp_modem.c | 2 ++
- 2 files changed, 4 insertions(+)
+ drivers/staging/line6/pcm.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/sound/pci/atiixp.c b/sound/pci/atiixp.c
-index a677431..3a80ffc 100644
---- a/sound/pci/atiixp.c
-+++ b/sound/pci/atiixp.c
-@@ -688,7 +688,9 @@ static void snd_atiixp_xrun_dma(struct atiixp *chip, struct atiixp_dma *dma)
- 	if (! dma->substream || ! dma->running)
- 		return;
- 	snd_printdd("atiixp: XRUN detected (DMA %d)\n", dma->ops->type);
-+	snd_pcm_stream_lock(dma->substream);
- 	snd_pcm_stop(dma->substream, SNDRV_PCM_STATE_XRUN);
-+	snd_pcm_stream_unlock(dma->substream);
- }
- 
- /*
-diff --git a/sound/pci/atiixp_modem.c b/sound/pci/atiixp_modem.c
-index d0bec7b..57f4182 100644
---- a/sound/pci/atiixp_modem.c
-+++ b/sound/pci/atiixp_modem.c
-@@ -638,7 +638,9 @@ static void snd_atiixp_xrun_dma(struct atiixp_modem *chip,
- 	if (! dma->substream || ! dma->running)
- 		return;
- 	snd_printdd("atiixp-modem: XRUN detected (DMA %d)\n", dma->ops->type);
-+	snd_pcm_stream_lock(dma->substream);
- 	snd_pcm_stop(dma->substream, SNDRV_PCM_STATE_XRUN);
-+	snd_pcm_stream_unlock(dma->substream);
+diff --git a/drivers/staging/line6/pcm.c b/drivers/staging/line6/pcm.c
+index 6c1e313..fe6f536e 100644
+--- a/drivers/staging/line6/pcm.c
++++ b/drivers/staging/line6/pcm.c
+@@ -384,8 +384,11 @@ static int snd_line6_pcm_free(struct snd_device *device)
+ */
+ static void pcm_disconnect_substream(struct snd_pcm_substream *substream)
+ {
+-	if (substream->runtime && snd_pcm_running(substream))
++	if (substream->runtime && snd_pcm_running(substream)) {
++		snd_pcm_stream_lock_irq(substream);
+ 		snd_pcm_stop(substream, SNDRV_PCM_STATE_DISCONNECTED);
++		snd_pcm_stream_unlock_irq(substream);
++	}
  }
  
  /*
