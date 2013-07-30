@@ -1,135 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755238Ab3G3NGP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 09:06:15 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:46342 "EHLO bear.ext.ti.com"
+	id S1755122Ab3G3NGj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 09:06:39 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:47374 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754954Ab3G3NFw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 09:05:52 -0400
-From: Luciano Coelho <coelho@ti.com>
-To: <linux-wireless@vger.kernel.org>, <tony@atomide.com>, <nsekhar@ti.com>
-CC: <coelho@ti.com>, <luca@coelho.fi>, <mturquette@linaro.org>,
-        <mark.rutland@arm.com>, <balbi@ti.com>, <grant.likely@linaro.org>,
-        <rob.herring@calxeda.com>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <nm@ti.com>, <martinez.javier@gmail.com>
-Subject: [PATCH v4 8/8] wlcore/wl12xx: check if we got correct clock data from DT
-Date: Tue, 30 Jul 2013 16:04:36 +0300
-Message-ID: <1375189476-21557-9-git-send-email-coelho@ti.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1375189476-21557-1-git-send-email-coelho@ti.com>
-References: <1375189476-21557-1-git-send-email-coelho@ti.com>
+	id S1755031Ab3G3NGh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Jul 2013 09:06:37 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Ben Guthro <benjamin.guthro@citrix.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jan Beulich <jbeulich@suse.com>, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, xen-devel@lists.xen.org,
+        Richard L Maliszewski <richard.l.maliszewski@intel.com>,
+        Gang Wei <gang.wei@intel.com>, Shane Wang <shane.wang@intel.com>,
+        Bob Moore <robert.moore@intel.com>, tboot-devel@lists.sourceforge.net
+Subject: Re: [PATCH v8 0/3] Xen/ACPI: support sleep state entering on hardware reduced systems
+Date: Tue, 30 Jul 2013 15:16:44 +0200
+Message-ID: <1712849.Df3Hfvh1Az@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1375187094-19357-1-git-send-email-benjamin.guthro@citrix.com>
+References: <1375187094-19357-1-git-send-email-benjamin.guthro@citrix.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The fref and the tcxo clocks settings are optional in some platforms.
-WiLink8 doesn't need either, so we don't check the values.  WiLink 6
-only needs the fref clock, so we check that it is valid or return with
-an error.  WiLink7 needs both clocks, if either is not available we
-return with an error.
+On Tuesday, July 30, 2013 08:24:51 AM Ben Guthro wrote:
+> In version 3.4 acpi_os_prepare_sleep() got introduced in parallel with
+> reduced hardware sleep support, and the two changes didn't get
+> synchronized: The new code doesn't call the hook function (if so
+> requested). Fix this, requiring a new callback to be added to acpica
+> to be called back during this reduced hardware sleep.
+> 
+> This requires adjusting TXT, but the adjustments only go as far as
+> failing the extended mode call (since, looking at the TXT interface,
+> there doesn't even appear to be precautions to deal with that
+> alternative interface).
+> 
+> The xen hypervisor change underlying this is commit 62d1a69 ("ACPI: support
+> v5 (reduced HW) sleep interface") on the master branch of
+> git://xenbits.xen.org/xen.git.
+> 
+> Signed-off-by: Jan Beulich <jbeulich@suse.com>
+> Signed-off-by: Ben Guthro <benjamin.guthro@citrix.com>
+> Cc: Richard L Maliszewski <richard.l.maliszewski@intel.com>
+> Cc: Gang Wei <gang.wei@intel.com>
+> Cc: Shane Wang <shane.wang@intel.com>
+> Cc: Bob Moore <robert.moore@intel.com>
+> Cc: Rafael J. Wysocki <rjw@sisk.pl>
+> Cc: linux-acpi@vger.kernel.org
+> Cc: tboot-devel@lists.sourceforge.net 
+> 
+> v2: Extend description to include reference to hypervisor side change
+> v3: Split into multiple patches, separating subsystems
+>     Remove bool parameters, in favor of u8
+> v4: Remove linux/acpi.h dependencies
+>     Further patch split to break out acpica from OSL
+>     More bool vs u8 fixes
+> v5: Fix build of consumers of acpi_os_prepare_sleep() interface change,
+>     so intermediate builds of partial patch series will not fail.
+> v6: Rebased to linux-pm linux-next branch
+>     Added warning in tboot early return code
+>     Added Reviewed-by lines
+> v7: Add separate acpi_os_prepare_extended_sleep() interface
+>     Remove OSL acpica changes introduced in v4
+> v8: Return meaningful error code in tboot error path
+> 
+> Ben Guthro (3):
+>   x86/acpi: Introduce acpi_os_prepare_extended_sleep callback for
+>     extended sleep path
+>   x86/tboot: Fail extended mode reduced hardware sleep
+>   xen/acpi: notify xen when reduced hardware sleep is available
+> 
+>  arch/x86/kernel/tboot.c          |   12 +++++++++++
+>  drivers/acpi/acpica/hwesleep.c   |    9 +++++++++
+>  drivers/acpi/osl.c               |   24 ++++++++++++++++++++++
+>  drivers/xen/acpi.c               |   41 ++++++++++++++++++++++++++------------
+>  include/linux/acpi.h             |    7 +++++++
+>  include/xen/acpi.h               |    8 ++++++--
+>  include/xen/interface/platform.h |    7 ++++---
+>  7 files changed, 90 insertions(+), 18 deletions(-)
 
-Signed-off-by: Luciano Coelho <coelho@ti.com>
-Reviewed-by: Felipe Balbi <balbi@ti.com>
----
- drivers/net/wireless/ti/wl12xx/main.c | 20 +++++++++++++++++---
- drivers/net/wireless/ti/wlcore/sdio.c |  4 ----
- 2 files changed, 17 insertions(+), 7 deletions(-)
+Please modify [2/3] as requested in the other message, [1/3] and [3/3] are OK
+and don't need to be resent.
 
-diff --git a/drivers/net/wireless/ti/wl12xx/main.c b/drivers/net/wireless/ti/wl12xx/main.c
-index a6c2a14..60d2ff4 100644
---- a/drivers/net/wireless/ti/wl12xx/main.c
-+++ b/drivers/net/wireless/ti/wl12xx/main.c
-@@ -927,6 +927,11 @@ static int wl128x_boot_clk(struct wl1271 *wl, int *selected_clock)
- 	u16 sys_clk_cfg;
- 	int ret;
- 
-+	if ((priv->ref_clock < 0) || (priv->tcxo_clock < 0)) {
-+		wl1271_error("Missing fref and/or tcxo clock settings\n");
-+		return -EINVAL;
-+	}
-+
- 	/* For XTAL-only modes, FREF will be used after switching from TCXO */
- 	if (priv->ref_clock == WL12XX_REFCLOCK_26_XTAL ||
- 	    priv->ref_clock == WL12XX_REFCLOCK_38_XTAL) {
-@@ -976,6 +981,11 @@ static int wl127x_boot_clk(struct wl1271 *wl)
- 	u32 clk;
- 	int ret;
- 
-+	if (priv->ref_clock < 0) {
-+		wl1271_error("Missing fref clock settings\n");
-+		return -EINVAL;
-+	}
-+
- 	if (WL127X_PG_GET_MAJOR(wl->hw_pg_ver) < 3)
- 		wl->quirks |= WLCORE_QUIRK_END_OF_TRANSACTION;
- 
-@@ -1758,7 +1768,7 @@ static int wl12xx_setup(struct wl1271 *wl)
- 	wlcore_set_ht_cap(wl, IEEE80211_BAND_5GHZ, &wl12xx_ht_cap);
- 	wl12xx_conf_init(wl);
- 
--	if (!fref_param) {
-+	if (!fref_param && (pdata->ref_clock_freq > 0)) {
- 		priv->ref_clock = wl12xx_get_clock_idx(wl12xx_refclock_table,
- 						       pdata->ref_clock_freq,
- 						       pdata->ref_clock_xtal);
-@@ -1769,6 +1779,8 @@ static int wl12xx_setup(struct wl1271 *wl)
- 
- 			return priv->ref_clock;
- 		}
-+	} else if (!fref_param) {
-+		priv->ref_clock = -EINVAL;
- 	} else {
- 		if (!strcmp(fref_param, "19.2"))
- 			priv->ref_clock = WL12XX_REFCLOCK_19;
-@@ -1786,7 +1798,7 @@ static int wl12xx_setup(struct wl1271 *wl)
- 			wl1271_error("Invalid fref parameter %s", fref_param);
- 	}
- 
--	if (!tcxo_param) {
-+	if (!fref_param && (pdata->tcxo_clock_freq > 0)) {
- 		priv->tcxo_clock = wl12xx_get_clock_idx(wl12xx_tcxoclock_table,
- 							pdata->tcxo_clock_freq,
- 							true);
-@@ -1796,7 +1808,9 @@ static int wl12xx_setup(struct wl1271 *wl)
- 
- 			return priv->tcxo_clock;
- 		}
--	} else {
-+	} else if (!fref_param) {
-+		priv->tcxo_clock = -EINVAL;
-+	}else {
- 		if (!strcmp(tcxo_param, "19.2"))
- 			priv->tcxo_clock = WL12XX_TCXOCLOCK_19_2;
- 		else if (!strcmp(tcxo_param, "26"))
-diff --git a/drivers/net/wireless/ti/wlcore/sdio.c b/drivers/net/wireless/ti/wlcore/sdio.c
-index 60fce49..c76eb66 100644
---- a/drivers/net/wireless/ti/wlcore/sdio.c
-+++ b/drivers/net/wireless/ti/wlcore/sdio.c
-@@ -252,20 +252,16 @@ static struct wl12xx_platform_data *wlcore_get_pdata_from_of(struct device *dev)
- 	for_each_matching_node(clock_node, wlcore_sdio_of_clk_match_table)
- 		of_fixed_clk_setup(clock_node);
- 
--	/* TODO: make sure we have this when needed (ie. for WL6 and WL7) */
- 	glue->refclock = of_clk_get_by_name(np, "refclock");
- 	if (IS_ERR(glue->refclock)) {
--		dev_err(dev, "couldn't find refclock on the device tree\n");
- 		glue->refclock = NULL;
- 	} else {
- 		clk_prepare_enable(glue->refclock);
- 		pdata->ref_clock_freq = clk_get_rate(glue->refclock);
- 	}
- 
--	/* TODO: make sure we have this when needed (ie. for WL7) */
- 	glue->tcxoclock = of_clk_get_by_name(np, "tcxoclock");
- 	if (IS_ERR(glue->tcxoclock)) {
--		dev_err(dev, "couldn't find tcxoclock on the device tree\n");
- 		glue->tcxoclock = NULL;
- 	} else {
- 		clk_prepare_enable(glue->tcxoclock);
+Thanks,
+Rafael
+
+
 -- 
-1.8.3.2
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
