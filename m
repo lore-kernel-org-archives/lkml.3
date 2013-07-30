@@ -1,80 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755991Ab3G3Eeh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 00:34:37 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:36819 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752515Ab3G3Eeg (ORCPT
+	id S1757071Ab3G3Ef0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 00:35:26 -0400
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:33353 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753072Ab3G3EfY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 00:34:36 -0400
-Date: Tue, 30 Jul 2013 14:34:27 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Felipe Balbi <balbi@ti.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Roger Quadros <rogerq@ti.com>
-Subject: linux-next: build failure after merge of the usb-gadget tree
-Message-Id: <20130730143427.9b8560de8d74ed73f0ad561b@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__30_Jul_2013_14_34_27_+1000_1RG=xd40h16DTNjC"
+	Tue, 30 Jul 2013 00:35:24 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130730032926.GL29970@voom.fritz.box>
+References: <51F39FD8.6080808@broadcom.com> <2460092.aLmjrOVh1g@flatron>
+ <51F3A82E.2000907@broadcom.com> <CACxGe6t0C7PTiDDaFkgoMZWUpBVokasxwZpV6HEtf3LaPi4qUw@mail.gmail.com>
+ <CAKON4OymA55w_V=oP4BL2su84m8EnPgdhnQtyLWKaAJE-yNBkQ@mail.gmail.com>
+ <CACxGe6uE6jOE-vz0onW5h93Es-soGiBAcFBM7Dvxh+HvCNrHkw@mail.gmail.com>
+ <CACxGe6vw9=y5a+EgF1gO39SwGAdGofD2MYjyJ3jYu6uN3ke70A@mail.gmail.com>
+ <1374988276.1973.29.camel@dabdike> <20130730014453.GJ29970@voom.fritz.box>
+ <CAKON4OyWuF+qm2MAhbXnGg=ozzw37kpSWciLxyUy+QQzxoWdxQ@mail.gmail.com> <20130730032926.GL29970@voom.fritz.box>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Mon, 29 Jul 2013 22:35:03 -0600
+X-Google-Sender-Auth: P4-7rp4NnjGYNpHpKAVR3czRMaA
+Message-ID: <CACxGe6sUFmLZMT+dvCbpmPrzR3DNMjw64LbD3n=JsjXsmrM-qg@mail.gmail.com>
+Subject: Re: [Ksummit-2013-discuss] DT bindings as ABI [was: Do we have people
+ interested in device tree janitoring / cleanup?]
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Richard Cochran <richardcochran@gmail.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Arend van Spriel <arend@broadcom.com>, Olof Johansson <olof@lixom.net>,
+        Mark Brown <broonie@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "ksummit-2013-discuss@lists.linuxfoundation.org" 
+	<ksummit-2013-discuss@lists.linuxfoundation.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Domenico Andreoli <cavokz@gmail.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Dave P Martin <Dave.Martin@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__30_Jul_2013_14_34_27_+1000_1RG=xd40h16DTNjC
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Jul 29, 2013 at 1:31 AM, Maxime Ripard
+<maxime.ripard@free-electrons.com> wrote:
+> Hi,
+>
+> On Sun, Jul 28, 2013 at 03:19:03PM +0200, Richard Cochran wrote:
+>> On Sun, Jul 28, 2013 at 11:12:53AM +0200, Tomasz Figa wrote:
+>>
+>> > I'm not really sure what effect on users this has. Maybe you should define
+>> > "users".
+>>
+>> ...
+>>
+>> > Care to explain this reasoning?
+>>
+>> Use Case
+>> ~~~~~~~~
+>>
+>> User acquires a machine running ARM Linux version 3.x, with u-boot
+>> and dtb in a read only flash partition. The board boots and works just
+>> fine. However, for his application, the user requires a new kernel
+>> feature that appeared in version 3.y where y > x. He compiles the new
+>> kernel, and it also works.
+>
+> I'm afraid this kind of use case will never be properly supported, DT
+> stable ABI or not.
 
-Hi Felipe,
+Why? New kernel features should be no problem at all.
 
-After merging the usb-gadget tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
+New driver features /might/ not be available, but only if the new
+feature requires additional data that isn't present in the tree and
+cannot be obtained elsewhere.
 
-drivers/usb/phy/of.c:32:24: error: redefinition of 'of_usb_get_phy_mode'
- enum usb_phy_interface of_usb_get_phy_mode(struct device_node *np)
-                        ^
-In file included from drivers/usb/phy/of.c:13:0:
-include/linux/usb/of.h:33:38: note: previous definition of 'of_usb_get_phy_=
-mode' was here
- static inline enum usb_phy_interface of_usb_get_phy_mode(struct device_nod=
-e *np)
-                                      ^
+>
+> Think about this: what kernel will actually be shipped in that board?
+> Most likely, it will be a BSP kernel from the vendor. Does the vendor
+> will have made that commitment to have a stable ABI for the DT? Will it
+> use the same bindings than mainline? Do we want to support all the crazy
+> bindings every vendor will come up with?
 
-Caused by commit 052a11d13bde ("usb: phy: make PHY driver selection
-possible by controller drivers").  The static inline declaration in
-include/linux/usb/of.h is exposed if at least one of CONFIG_OF or
-CONFIG_USB_PHY is not set, but drivers/usb/phy/of.c is now built if
-CONFIG_OF and CONFIG_USB_SUPPORT is set (it used to require
-CONFIG_USB_PHY to be set - see drivers/usb/Makefile).  This build has
-CONFIG_OF set but CONFIG_USB_PHY not set.
+That's not a DT issue. That an out-of-tree board/SoC support issue. DT
+doesn't make that any better or worse.
 
-I have used the usb-gadget tree from next-20130729 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Tue__30_Jul_2013_14_34_27_+1000_1RG=xd40h16DTNjC
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJR90JXAAoJEECxmPOUX5FEHSAP/j8IOJNCuDb+kprarPlpcxzi
-Pg6xwJ0iOgw/IGnlZ/h+kRwTLBH27ONWGR1wsQDILtJ/fanZTvjGjqMKbpwLCM5t
-RJ6DajAr3kX73D82xFiihLDXAYf1sGNLOT+LaWPwqHeRI3BQZyGGKcVLeszPx5IG
-e5WllD2LtpYEjRN7QDYVzXuzpwxrrfU7N9jAhTbOenFeGsTsuj8Gx0ifn/dvN2fo
-QYFeZZwc2ELUfPMC8ygR4/SRnNFuKW/wSAxzJaP/Sf/jplaIMUbDCIHS79+YqLmd
-b6IXEVuc9kBZMbnMOzm7Naiz6ufLoByg+CcgIrgiIJkwoCXv97BXi0niGLRawQqb
-i4ZUOUtHFZmsJ5SLIIbo6virawAZiGC4i4epXdLXWy6/PYG5fUjmERpPyUVOerH8
-ZIdHMFVuwBcX/H+A4E2DyWnmy2nkN6OJr4scTYScWcvYdWmXCF0w06MygjuMn6ym
-LO0BL2dQTZW+wrh231+tWYak+GN+1Q+z6IJDn4jdkWM6meJiaLOAhZ5lYM0wr0Y7
-UgPFulAd6bjLrFJvIerWd4k9mQ+hsoJf8n6kzstqIfk8zVbllVslA3qbXMuxQ0xR
-L0W3QkRpJNZWKhcL4OJ9hzn98QVBW1Xd/LvOkQdbQWtC50Z6AciPN6fcZEeXtXBC
-KwgDi3k5fMAsaKAdmA4r
-=lKx8
------END PGP SIGNATURE-----
-
---Signature=_Tue__30_Jul_2013_14_34_27_+1000_1RG=xd40h16DTNjC--
+g.
