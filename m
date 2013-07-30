@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932532Ab3G3Jo7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 05:44:59 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53236 "EHLO
+	id S932659Ab3G3Jp7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 05:45:59 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53232 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932490Ab3G3JdY (ORCPT
+	with ESMTP id S932427Ab3G3JdX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 05:33:24 -0400
+	Tue, 30 Jul 2013 05:33:23 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Olivier DANET <odanet@caramail.com>,
+Cc: Neil Horman <nhorman@tuxdriver.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Jay Cliburn <jcliburn@gmail.com>, Chris Snook <chris.snook@gmail.com>,
         "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 065/106] [PATCH] sparc32: vm_area_struct access for old Sun SPARCs.
-Date: Tue, 30 Jul 2013 10:31:24 +0100
-Message-Id: <1375176725-5825-66-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 063/106] atl1e: unmap partially mapped skb on dma error and free skb
+Date: Tue, 30 Jul 2013 10:31:22 +0100
+Message-Id: <1375176725-5825-64-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
 References: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
@@ -28,201 +30,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Olivier DANET <odanet@caramail.com>
+From: Neil Horman <nhorman@tuxdriver.com>
 
-commit 961246b4ed8da3bcf4ee1eb9147f341013553e3c upstream.
+commit 584ec4355355ffac43571b02a314d43eb2f7fcbf upstream.
 
-Commit e4c6bfd2d79d063017ab19a18915f0bc759f32d9 ("mm: rearrange
-vm_area_struct for fewer cache misses") changed the layout of the
-vm_area_struct structure, it broke several SPARC32 assembly routines
-which used numerical constants for accessing the vm_mm field.
+Ben Hutchings pointed out that my recent update to atl1e
+in commit 352900b583b2852152a1e05ea0e8b579292e731e
+("atl1e: fix dma mapping warnings") was missing a bit of code.
 
-This patch defines the VMA_VM_MM constant to replace the immediate values.
+Specifically it reset the hardware tx ring to its origional state when
+we hit a dma error, but didn't unmap any exiting mappings from the
+operation.  This patch fixes that up.  It also remembers to free the
+skb in the event that an error occurs, so we don't leak.  Untested, as
+I don't have hardware.  I think its pretty straightforward, but please
+review closely.
 
-Signed-off-by: Olivier DANET <odanet@caramail.com>
+Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+CC: Ben Hutchings <bhutchings@solarflare.com>
+CC: Jay Cliburn <jcliburn@gmail.com>
+CC: Chris Snook <chris.snook@gmail.com>
+CC: "David S. Miller" <davem@davemloft.net>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/sparc/kernel/asm-offsets.c |  2 ++
- arch/sparc/mm/hypersparc.S      |  8 ++++----
- arch/sparc/mm/swift.S           |  8 ++++----
- arch/sparc/mm/tsunami.S         |  6 +++---
- arch/sparc/mm/viking.S          | 10 +++++-----
- 5 files changed, 18 insertions(+), 16 deletions(-)
+ drivers/net/ethernet/atheros/atl1e/atl1e_main.c | 24 +++++++++++++++++++++++-
+ 1 file changed, 23 insertions(+), 1 deletion(-)
 
-diff --git a/arch/sparc/kernel/asm-offsets.c b/arch/sparc/kernel/asm-offsets.c
-index 68f7e11..ce48203 100644
---- a/arch/sparc/kernel/asm-offsets.c
-+++ b/arch/sparc/kernel/asm-offsets.c
-@@ -34,6 +34,8 @@ int foo(void)
- 	DEFINE(AOFF_task_thread, offsetof(struct task_struct, thread));
- 	BLANK();
- 	DEFINE(AOFF_mm_context, offsetof(struct mm_struct, context));
-+	BLANK();
-+	DEFINE(VMA_VM_MM,    offsetof(struct vm_area_struct, vm_mm));
+diff --git a/drivers/net/ethernet/atheros/atl1e/atl1e_main.c b/drivers/net/ethernet/atheros/atl1e/atl1e_main.c
+index 1dfe5f7..05e72c8 100644
+--- a/drivers/net/ethernet/atheros/atl1e/atl1e_main.c
++++ b/drivers/net/ethernet/atheros/atl1e/atl1e_main.c
+@@ -1701,6 +1701,7 @@ static int atl1e_tx_map(struct atl1e_adapter *adapter,
+ 	u16 f;
+ 	int segment;
+ 	int ring_start = adapter->tx_ring.next_to_use;
++	int ring_end;
  
- 	/* DEFINE(NUM_USER_SEGMENTS, TASK_SIZE>>28); */
- 	return 0;
-diff --git a/arch/sparc/mm/hypersparc.S b/arch/sparc/mm/hypersparc.S
-index 44aad32..969f964 100644
---- a/arch/sparc/mm/hypersparc.S
-+++ b/arch/sparc/mm/hypersparc.S
-@@ -74,7 +74,7 @@ hypersparc_flush_cache_mm_out:
+ 	nr_frags = skb_shinfo(skb)->nr_frags;
+ 	segment = (tpd->word3 >> TPD_SEGMENT_EN_SHIFT) & TPD_SEGMENT_EN_MASK;
+@@ -1744,6 +1745,15 @@ static int atl1e_tx_map(struct atl1e_adapter *adapter,
+ 					map_len, PCI_DMA_TODEVICE);
  
- 	/* The things we do for performance... */
- hypersparc_flush_cache_range:
--	ld	[%o0 + 0x0], %o0		/* XXX vma->vm_mm, GROSS XXX */
-+	ld	[%o0 + VMA_VM_MM], %o0
- #ifndef CONFIG_SMP
- 	ld	[%o0 + AOFF_mm_context], %g1
- 	cmp	%g1, -1
-@@ -163,7 +163,7 @@ hypersparc_flush_cache_range_out:
- 	 */
- 	/* Verified, my ass... */
- hypersparc_flush_cache_page:
--	ld	[%o0 + 0x0], %o0		/* XXX vma->vm_mm, GROSS XXX */
-+	ld	[%o0 + VMA_VM_MM], %o0
- 	ld	[%o0 + AOFF_mm_context], %g2
- #ifndef CONFIG_SMP
- 	cmp	%g2, -1
-@@ -284,7 +284,7 @@ hypersparc_flush_tlb_mm_out:
- 	 sta	%g5, [%g1] ASI_M_MMUREGS
+ 		if (dma_mapping_error(&adapter->pdev->dev, tx_buffer->dma)) {
++			/* We need to unwind the mappings we've done */
++			ring_end = adapter->tx_ring.next_to_use;
++			adapter->tx_ring.next_to_use = ring_start;
++			while (adapter->tx_ring.next_to_use != ring_end) {
++				tpd = atl1e_get_tpd(adapter);
++				tx_buffer = atl1e_get_tx_buffer(adapter, tpd);
++				pci_unmap_single(adapter->pdev, tx_buffer->dma,
++						 tx_buffer->length, PCI_DMA_TODEVICE);
++			}
+ 			/* Reset the tx rings next pointer */
+ 			adapter->tx_ring.next_to_use = ring_start;
+ 			return -ENOSPC;
+@@ -1786,6 +1796,16 @@ static int atl1e_tx_map(struct atl1e_adapter *adapter,
+ 							  DMA_TO_DEVICE);
  
- hypersparc_flush_tlb_range:
--	ld	[%o0 + 0x00], %o0	/* XXX vma->vm_mm GROSS XXX */
-+	ld	[%o0 + VMA_VM_MM], %o0
- 	mov	SRMMU_CTX_REG, %g1
- 	ld	[%o0 + AOFF_mm_context], %o3
- 	lda	[%g1] ASI_M_MMUREGS, %g5
-@@ -307,7 +307,7 @@ hypersparc_flush_tlb_range_out:
- 	 sta	%g5, [%g1] ASI_M_MMUREGS
+ 			if (dma_mapping_error(&adapter->pdev->dev, tx_buffer->dma)) {
++				/* We need to unwind the mappings we've done */
++				ring_end = adapter->tx_ring.next_to_use;
++				adapter->tx_ring.next_to_use = ring_start;
++				while (adapter->tx_ring.next_to_use != ring_end) {
++					tpd = atl1e_get_tpd(adapter);
++					tx_buffer = atl1e_get_tx_buffer(adapter, tpd);
++					dma_unmap_page(&adapter->pdev->dev, tx_buffer->dma,
++						       tx_buffer->length, DMA_TO_DEVICE);
++				}
++
+ 				/* Reset the ring next to use pointer */
+ 				adapter->tx_ring.next_to_use = ring_start;
+ 				return -ENOSPC;
+@@ -1876,8 +1896,10 @@ static netdev_tx_t atl1e_xmit_frame(struct sk_buff *skb,
+ 		return NETDEV_TX_OK;
+ 	}
  
- hypersparc_flush_tlb_page:
--	ld	[%o0 + 0x00], %o0	/* XXX vma->vm_mm GROSS XXX */
-+	ld	[%o0 + VMA_VM_MM], %o0
- 	mov	SRMMU_CTX_REG, %g1
- 	ld	[%o0 + AOFF_mm_context], %o3
- 	andn	%o1, (PAGE_SIZE - 1), %o1
-diff --git a/arch/sparc/mm/swift.S b/arch/sparc/mm/swift.S
-index c801c39..5d2b88d 100644
---- a/arch/sparc/mm/swift.S
-+++ b/arch/sparc/mm/swift.S
-@@ -105,7 +105,7 @@ swift_flush_cache_mm_out:
+-	if (atl1e_tx_map(adapter, skb, tpd))
++	if (atl1e_tx_map(adapter, skb, tpd)) {
++		dev_kfree_skb_any(skb);
+ 		goto out;
++	}
  
- 	.globl	swift_flush_cache_range
- swift_flush_cache_range:
--	ld	[%o0 + 0x0], %o0		/* XXX vma->vm_mm, GROSS XXX */
-+	ld	[%o0 + VMA_VM_MM], %o0
- 	sub	%o2, %o1, %o2
- 	sethi	%hi(4096), %o3
- 	cmp	%o2, %o3
-@@ -116,7 +116,7 @@ swift_flush_cache_range:
+ 	atl1e_tx_queue(adapter, tpd_req, tpd);
  
- 	.globl	swift_flush_cache_page
- swift_flush_cache_page:
--	ld	[%o0 + 0x0], %o0		/* XXX vma->vm_mm, GROSS XXX */
-+	ld	[%o0 + VMA_VM_MM], %o0
- 70:
- 	ld	[%o0 + AOFF_mm_context], %g2
- 	cmp	%g2, -1
-@@ -219,7 +219,7 @@ swift_flush_sig_insns:
- 	.globl	swift_flush_tlb_range
- 	.globl	swift_flush_tlb_all
- swift_flush_tlb_range:
--	ld	[%o0 + 0x00], %o0	/* XXX vma->vm_mm GROSS XXX */
-+	ld	[%o0 + VMA_VM_MM], %o0
- swift_flush_tlb_mm:
- 	ld	[%o0 + AOFF_mm_context], %g2
- 	cmp	%g2, -1
-@@ -233,7 +233,7 @@ swift_flush_tlb_all_out:
- 
- 	.globl	swift_flush_tlb_page
- swift_flush_tlb_page:
--	ld	[%o0 + 0x00], %o0	/* XXX vma->vm_mm GROSS XXX */
-+	ld	[%o0 + VMA_VM_MM], %o0
- 	mov	SRMMU_CTX_REG, %g1
- 	ld	[%o0 + AOFF_mm_context], %o3
- 	andn	%o1, (PAGE_SIZE - 1), %o1
-diff --git a/arch/sparc/mm/tsunami.S b/arch/sparc/mm/tsunami.S
-index 4e55e8f..bf10a34 100644
---- a/arch/sparc/mm/tsunami.S
-+++ b/arch/sparc/mm/tsunami.S
-@@ -24,7 +24,7 @@
- 	/* Sliiick... */
- tsunami_flush_cache_page:
- tsunami_flush_cache_range:
--	ld	[%o0 + 0x0], %o0	/* XXX vma->vm_mm, GROSS XXX */
-+	ld	[%o0 + VMA_VM_MM], %o0
- tsunami_flush_cache_mm:
- 	ld	[%o0 + AOFF_mm_context], %g2
- 	cmp	%g2, -1
-@@ -46,7 +46,7 @@ tsunami_flush_sig_insns:
- 
- 	/* More slick stuff... */
- tsunami_flush_tlb_range:
--	ld	[%o0 + 0x00], %o0	/* XXX vma->vm_mm GROSS XXX */
-+	ld	[%o0 + VMA_VM_MM], %o0
- tsunami_flush_tlb_mm:
- 	ld	[%o0 + AOFF_mm_context], %g2
- 	cmp	%g2, -1
-@@ -65,7 +65,7 @@ tsunami_flush_tlb_out:
- 
- 	/* This one can be done in a fine grained manner... */
- tsunami_flush_tlb_page:
--	ld	[%o0 + 0x00], %o0	/* XXX vma->vm_mm GROSS XXX */
-+	ld	[%o0 + VMA_VM_MM], %o0
- 	mov	SRMMU_CTX_REG, %g1
- 	ld	[%o0 + AOFF_mm_context], %o3
- 	andn	%o1, (PAGE_SIZE - 1), %o1
-diff --git a/arch/sparc/mm/viking.S b/arch/sparc/mm/viking.S
-index bf8ee06..852257f 100644
---- a/arch/sparc/mm/viking.S
-+++ b/arch/sparc/mm/viking.S
-@@ -108,7 +108,7 @@ viking_mxcc_flush_page:
- viking_flush_cache_page:
- viking_flush_cache_range:
- #ifndef CONFIG_SMP
--	ld	[%o0 + 0x0], %o0		/* XXX vma->vm_mm, GROSS XXX */
-+	ld	[%o0 + VMA_VM_MM], %o0
- #endif
- viking_flush_cache_mm:
- #ifndef CONFIG_SMP
-@@ -148,7 +148,7 @@ viking_flush_tlb_mm:
- #endif
- 
- viking_flush_tlb_range:
--	ld	[%o0 + 0x00], %o0	/* XXX vma->vm_mm GROSS XXX */
-+	ld	[%o0 + VMA_VM_MM], %o0
- 	mov	SRMMU_CTX_REG, %g1
- 	ld	[%o0 + AOFF_mm_context], %o3
- 	lda	[%g1] ASI_M_MMUREGS, %g5
-@@ -173,7 +173,7 @@ viking_flush_tlb_range:
- #endif
- 
- viking_flush_tlb_page:
--	ld	[%o0 + 0x00], %o0	/* XXX vma->vm_mm GROSS XXX */
-+	ld	[%o0 + VMA_VM_MM], %o0
- 	mov	SRMMU_CTX_REG, %g1
- 	ld	[%o0 + AOFF_mm_context], %o3
- 	lda	[%g1] ASI_M_MMUREGS, %g5
-@@ -239,7 +239,7 @@ sun4dsmp_flush_tlb_range:
- 	tst	%g5
- 	bne	3f
- 	 mov	SRMMU_CTX_REG, %g1
--	ld	[%o0 + 0x00], %o0	/* XXX vma->vm_mm GROSS XXX */
-+	ld	[%o0 + VMA_VM_MM], %o0
- 	ld	[%o0 + AOFF_mm_context], %o3
- 	lda	[%g1] ASI_M_MMUREGS, %g5
- 	sethi	%hi(~((1 << SRMMU_PGDIR_SHIFT) - 1)), %o4
-@@ -265,7 +265,7 @@ sun4dsmp_flush_tlb_page:
- 	tst	%g5
- 	bne	2f
- 	 mov	SRMMU_CTX_REG, %g1
--	ld	[%o0 + 0x00], %o0	/* XXX vma->vm_mm GROSS XXX */
-+	ld	[%o0 + VMA_VM_MM], %o0
- 	ld	[%o0 + AOFF_mm_context], %o3
- 	lda	[%g1] ASI_M_MMUREGS, %g5
- 	and	%o1, PAGE_MASK, %o1
 -- 
 1.8.3.2
 
