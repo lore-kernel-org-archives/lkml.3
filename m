@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758806Ab3G3Jom (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 05:44:42 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53259 "EHLO
+	id S932795Ab3G3JpE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 05:45:04 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53234 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932361Ab3G3Jd3 (ORCPT
+	with ESMTP id S932485Ab3G3JdY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 05:33:29 -0400
+	Tue, 30 Jul 2013 05:33:24 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Huang Rui <ray.huang@amd.com>, Felipe Balbi <balbi@ti.com>,
+Cc: Eric Dumazet <edumazet@google.com>, Patrick McHardy <kaber@trash.net>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 070/106] usb: dwc3: fix wrong bit mask in dwc3_event_type
-Date: Tue, 30 Jul 2013 10:31:29 +0100
-Message-Id: <1375176725-5825-71-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 064/106] vlan: fix a race in egress prio management
+Date: Tue, 30 Jul 2013 10:31:23 +0100
+Message-Id: <1375176725-5825-65-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
 References: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
@@ -27,49 +28,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Huang Rui <ray.huang@amd.com>
+From: Eric Dumazet <edumazet@google.com>
 
-commit 1974d494dea05ea227cb42f5e918828801e237aa upstream.
+commit 3e3aac497513c669e1c62c71e1d552ea85c1d974 upstream.
 
-Per dwc3 2.50a spec, the is_devspec bit is used to distinguish the
-Device Endpoint-Specific Event or Device-Specific Event (DEVT). If the
-bit is 1, the event is represented Device-Specific Event, then use
-[7:1] bits as Device Specific Event to marked the type. It has 7 bits,
-and we can see the reserved8_31 variable name which means from 8 to 31
-bits marked reserved, actually there are 24 bits not 25 bits between
-that. And 1 + 7 + 24 = 32, the event size is 4 byes.
+egress_priority_map[] hash table updates are protected by rtnl,
+and we never remove elements until device is dismantled.
 
-So in dwc3_event_type, the bit mask should be:
-is_devspec	[0]		1  bit
-type		[7:1]		7  bits
-reserved8_31	[31:8]		24 bits
+We have to make sure that before inserting an new element in hash table,
+all its fields are committed to memory or else another cpu could
+find corrupt values and crash.
 
-This patch should be backported to kernels as old as 3.2, that contain
-the commit 72246da40f3719af3bfd104a2365b32537c27d83 "usb: Introduce
-DesignWare USB3 DRD Driver".
-
-Signed-off-by: Huang Rui <ray.huang@amd.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Patrick McHardy <kaber@trash.net>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/dwc3/core.h | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/8021q/vlan_dev.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/drivers/usb/dwc3/core.h b/drivers/usb/dwc3/core.h
-index f69c877..3c9e37e 100644
---- a/drivers/usb/dwc3/core.h
-+++ b/drivers/usb/dwc3/core.h
-@@ -669,8 +669,8 @@ struct dwc3 {
+diff --git a/net/8021q/vlan_dev.c b/net/8021q/vlan_dev.c
+index 7005e08..b8cf84e 100644
+--- a/net/8021q/vlan_dev.c
++++ b/net/8021q/vlan_dev.c
+@@ -73,6 +73,8 @@ vlan_dev_get_egress_qos_mask(struct net_device *dev, struct sk_buff *skb)
+ {
+ 	struct vlan_priority_tci_mapping *mp;
  
- struct dwc3_event_type {
- 	u32	is_devspec:1;
--	u32	type:6;
--	u32	reserved8_31:25;
-+	u32	type:7;
-+	u32	reserved8_31:24;
- } __packed;
- 
- #define DWC3_DEPEVT_XFERCOMPLETE	0x01
++	smp_rmb(); /* coupled with smp_wmb() in vlan_dev_set_egress_priority() */
++
+ 	mp = vlan_dev_priv(dev)->egress_priority_map[(skb->priority & 0xF)];
+ 	while (mp) {
+ 		if (mp->priority == skb->priority) {
+@@ -235,6 +237,11 @@ int vlan_dev_set_egress_priority(const struct net_device *dev,
+ 	np->next = mp;
+ 	np->priority = skb_prio;
+ 	np->vlan_qos = vlan_qos;
++	/* Before inserting this element in hash table, make sure all its fields
++	 * are committed to memory.
++	 * coupled with smp_rmb() in vlan_dev_get_egress_qos_mask()
++	 */
++	smp_wmb();
+ 	vlan->egress_priority_map[skb_prio & 0xF] = np;
+ 	if (vlan_qos)
+ 		vlan->nr_egress_mappings++;
 -- 
 1.8.3.2
 
