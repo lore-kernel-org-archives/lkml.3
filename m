@@ -1,57 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754580Ab3G3QQo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 12:16:44 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:53726 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752310Ab3G3QQn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 12:16:43 -0400
-Date: Tue, 30 Jul 2013 18:16:29 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCH 0/8] perf: add ability to sample physical data addresses
-Message-ID: <20130730161629.GC32226@laptop.programming.kicks-ass.net>
-References: <CABPqkBSfkg+rPw4A=n8wmPg=iwn1Qf8PdYA4ycxxooOv3GrvmA@mail.gmail.com>
- <20130708081919.GV23916@twins.programming.kicks-ass.net>
- <CABPqkBSesQsfeutY2qu1n3uMka0dOFOT2tzqCWYGV=2p6F8Y9w@mail.gmail.com>
- <20130730083758.GH3008@twins.programming.kicks-ass.net>
- <CABPqkBTxovrj11sskW50TZzf6e_V0tObT-qDPAbxHcrpLJNNZg@mail.gmail.com>
- <20130730090202.GL3008@twins.programming.kicks-ass.net>
- <CABPqkBRX-A5i26w1aMBmjb7GVmYUBS6k03ePN6qoASS9Z9xkmg@mail.gmail.com>
- <CABPqkBQeNEidngxK08O-eAA4aJhqe8R-F-8Vk8DA-Z1qtKdU_Q@mail.gmail.com>
- <20130730155212.GB32226@laptop.programming.kicks-ass.net>
- <CABPqkBQFpJjHLYuErcMdxTNKe4-JW_JZfYkEWrX5JHTZmWOqDg@mail.gmail.com>
+	id S1754498Ab3G3QV4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 12:21:56 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:56172 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750895Ab3G3QVz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Jul 2013 12:21:55 -0400
+Message-ID: <51F7E7FA.3080702@ti.com>
+Date: Tue, 30 Jul 2013 21:51:14 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABPqkBQFpJjHLYuErcMdxTNKe4-JW_JZfYkEWrX5JHTZmWOqDg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Mark Rutland <mark.rutland@arm.com>
+CC: Gururaja Hebbar <gururaja.hebbar@ti.com>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "benoit.cousson@gmail.com" <benoit.cousson@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "vaibhav.bedia@ti.com" <vaibhav.bedia@ti.com>,
+        "benoit.cousson@linaro.org" <benoit.cousson@linaro.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [Patch V2 4/4] ARM: dts: AM33XX: update rtc node compatibility
+References: <1372841225-18813-1-git-send-email-gururaja.hebbar@ti.com> <1372841225-18813-5-git-send-email-gururaja.hebbar@ti.com> <51F749B0.7020802@ti.com> <20130730145501.GA29859@e106331-lin.cambridge.arm.com>
+In-Reply-To: <20130730145501.GA29859@e106331-lin.cambridge.arm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 30, 2013 at 06:09:15PM +0200, Stephane Eranian wrote:
-> On Tue, Jul 30, 2013 at 5:52 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > On Tue, Jul 30, 2013 at 04:21:41PM +0200, Stephane Eranian wrote:
-> >> Peter,
-> >>
-> >> One thing that bothers me with the MMAP2 approach is that
-> >> it forces integration into perf.
-> >
-> > This is a good (TM) thing, yes? ;-)
-> >
+On 7/30/2013 8:25 PM, Mark Rutland wrote:
+> On Tue, Jul 30, 2013 at 06:05:52AM +0100, Gururaja Hebbar wrote:
+>> Hi,
+>>
+>> On 7/3/2013 2:17 PM, Hebbar Gururaja wrote:
+>>> Since AM33xx  RTC IP has RTC_IRQWAKEEN to support Alarm Wake-up.
+>>>
+>>> Update the rtc compatible property to "ti,am3352-rtc" to enable handling
+>>> of this feature inside rtc-omap driver.
+>>
+>> The other 2 rtc driver related patches have been pulled up. If you have 
+>> no comments, can you please pull this up.
+>>
+>> Regards
+>> Gururaja
+>>
+>>>
+>>> Signed-off-by: Hebbar Gururaja <gururaja.hebbar@ti.com>
+>>> ---
+>>> :100644 100644 77aa1b0... dde180a... M	arch/arm/boot/dts/am33xx.dtsi
+>>>   arch/arm/boot/dts/am33xx.dtsi |    2 +-
+>>>   1 file changed, 1 insertion(+), 1 deletion(-)
+>>>
+>>> diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
+>>> index 77aa1b0..dde180a 100644
+>>> --- a/arch/arm/boot/dts/am33xx.dtsi
+>>> +++ b/arch/arm/boot/dts/am33xx.dtsi
+>>> @@ -297,7 +297,7 @@
+>>>   		};
+>>>
+>>>   		rtc@44e3e000 {
+>>> -			compatible = "ti,da830-rtc";
+>>> +			compatible = "ti,am3352-rtc";
 > 
-> Well, that's one way to look at it. But I'd like the API to
-> be able to support more than one tool easily. If the barrier
-> for any advanced analysis is too high from the raw kernel
-> API then we will only have one tool. I don't think that sane.
+> Given that this is backwards compatible with the old binding, it would
+> be nicer to have this as:
+> 
+> 	compatible = "ti,am3352-rtc", "ti,da830-rtc";
+> 
+> We must get into the habit of changing dts files in a
+> backwards-compatible fashion.
 
-Sure, but any half-way usable profiling will need the existing sideband
-data. So I don't think that relying on it for this particular feature is
-too much.
+Right, I suggested this when v1 was posted. It turns out the current
+kernel does not handle the compatilble list correctly and the string
+selected actually depends on the order in which it appears in match
+table in driver instead.
+
+I saw there were patches being discussed to fix this issue, but until
+that is fixed, we cannot really use what you (and I before) suggested.
+
+Thanks,
+Sekhar
