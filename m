@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758201Ab3G3SuT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 14:50:19 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56695 "EHLO
+	id S1758117Ab3G3Suz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 14:50:55 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56677 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756311Ab3G3Ss6 (ORCPT
+	with ESMTP id S1757376Ab3G3Sss (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 14:48:58 -0400
+	Tue, 30 Jul 2013 14:48:48 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Michael S. Tsirkin" <mst@redhat.com>, Jason Wang <jasowang@redhat.com>,
+Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
         "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 63/75] tuntap: correctly linearize skb when zerocopy is used
-Date: Tue, 30 Jul 2013 11:45:07 -0700
-Message-Id: <1375209919-1768-30-git-send-email-kamal@canonical.com>
+Subject: [PATCH 52/75] sh_eth: fix unhandled RFE interrupt
+Date: Tue, 30 Jul 2013 11:44:56 -0700
+Message-Id: <1375209919-1768-19-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1375197464-27962-1-git-send-email-kamal@canonical.com>
 References: <1375197464-27962-1-git-send-email-kamal@canonical.com>
@@ -28,59 +28,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jason Wang <jasowang@redhat.com>
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
 
-[ Upstream commit 3dd5c3308e8b671e8e8882ba972f51cefbe9fd0d ]
+[ Upstream commit ca8c35852138ee0585eaffe6b9f10a5261ea7771 ]
 
-Userspace may produce vectors greater than MAX_SKB_FRAGS. When we try to
-linearize parts of the skb to let the rest of iov to be fit in
-the frags, we need count copylen into linear when calling tun_alloc_skb()
-instead of partly counting it into data_len. Since this breaks
-zerocopy_sg_from_iovec() since its inner counter assumes nr_frags should
-be zero at beginning. This cause nr_frags to be increased wrongly without
-setting the correct frags.
+EESR.RFE (receive FIFO overflow) interrupt is enabled by the driver on all SoCs
+and sh_eth_error() handles it but it's not present in any initializer/assignment
+of the 'eesr_err_check' field of 'struct sh_eth_cpu_data'. This leads to that
+interrupt not being handled and cleared, and finally to disabling IRQ and the
+driver being non-functional.
 
-This bug were introduced from 0690899b4d4501b3505be069b9a687e68ccbe15b
-(tun: experimental zero copy tx support)
+Modify DEFAULT_EESR_ERR_CHECK macro and all explicit initializers of the above
+mentioned field to contain the EESR.RFE bit. Remove useless backslashes from the
+initializers, while at it.
 
-Cc: Michael S. Tsirkin <mst@redhat.com>
-Signed-off-by: Jason Wang <jasowang@redhat.com>
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/tun.c | 9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ drivers/net/ethernet/renesas/sh_eth.c | 17 +++++++++--------
+ drivers/net/ethernet/renesas/sh_eth.h |  2 +-
+ 2 files changed, 10 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-index 2a56317..0ebfa18 100644
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -1045,7 +1045,7 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
- {
- 	struct tun_pi pi = { 0, cpu_to_be16(ETH_P_IP) };
- 	struct sk_buff *skb;
--	size_t len = total_len, align = NET_SKB_PAD;
-+	size_t len = total_len, align = NET_SKB_PAD, linear;
- 	struct virtio_net_hdr gso = { 0 };
- 	int offset = 0;
- 	int copylen;
-@@ -1109,10 +1109,13 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
- 			copylen = gso.hdr_len;
- 		if (!copylen)
- 			copylen = GOODCOPY_LEN;
--	} else
-+		linear = copylen;
-+	} else {
- 		copylen = len;
-+		linear = gso.hdr_len;
-+	}
+diff --git a/drivers/net/ethernet/renesas/sh_eth.c b/drivers/net/ethernet/renesas/sh_eth.c
+index 520161c..4237224 100644
+--- a/drivers/net/ethernet/renesas/sh_eth.c
++++ b/drivers/net/ethernet/renesas/sh_eth.c
+@@ -172,8 +172,9 @@ static struct sh_eth_cpu_data sh_eth_my_cpu_data = {
+ 	.rmcr_value	= 0x00000001,
  
--	skb = tun_alloc_skb(tfile, align, copylen, gso.hdr_len, noblock);
-+	skb = tun_alloc_skb(tfile, align, copylen, linear, noblock);
- 	if (IS_ERR(skb)) {
- 		if (PTR_ERR(skb) != -EAGAIN)
- 			tun->dev->stats.rx_dropped++;
+ 	.tx_check	= EESR_FTC | EESR_CND | EESR_DLC | EESR_CD | EESR_RTO,
+-	.eesr_err_check	= EESR_TWB | EESR_TABT | EESR_RABT | EESR_RDE |
+-			  EESR_RFRMER | EESR_TFE | EESR_TDE | EESR_ECI,
++	.eesr_err_check	= EESR_TWB | EESR_TABT | EESR_RABT | EESR_RFE |
++			  EESR_RDE | EESR_RFRMER | EESR_TFE | EESR_TDE |
++			  EESR_ECI,
+ 	.tx_error_check	= EESR_TWB | EESR_TABT | EESR_TDE | EESR_TFE,
+ 
+ 	.apr		= 1,
+@@ -286,9 +287,9 @@ static struct sh_eth_cpu_data sh_eth_my_cpu_data_giga = {
+ 	.eesipr_value	= DMAC_M_RFRMER | DMAC_M_ECI | 0x003fffff,
+ 
+ 	.tx_check	= EESR_TC1 | EESR_FTC,
+-	.eesr_err_check	= EESR_TWB1 | EESR_TWB | EESR_TABT | EESR_RABT | \
+-			  EESR_RDE | EESR_RFRMER | EESR_TFE | EESR_TDE | \
+-			  EESR_ECI,
++	.eesr_err_check	= EESR_TWB1 | EESR_TWB | EESR_TABT | EESR_RABT |
++			  EESR_RFE | EESR_RDE | EESR_RFRMER | EESR_TFE |
++			  EESR_TDE | EESR_ECI,
+ 	.tx_error_check	= EESR_TWB1 | EESR_TWB | EESR_TABT | EESR_TDE | \
+ 			  EESR_TFE,
+ 	.fdr_value	= 0x0000072f,
+@@ -368,9 +369,9 @@ static struct sh_eth_cpu_data sh_eth_my_cpu_data = {
+ 	.eesipr_value	= DMAC_M_RFRMER | DMAC_M_ECI | 0x003fffff,
+ 
+ 	.tx_check	= EESR_TC1 | EESR_FTC,
+-	.eesr_err_check	= EESR_TWB1 | EESR_TWB | EESR_TABT | EESR_RABT | \
+-			  EESR_RDE | EESR_RFRMER | EESR_TFE | EESR_TDE | \
+-			  EESR_ECI,
++	.eesr_err_check	= EESR_TWB1 | EESR_TWB | EESR_TABT | EESR_RABT |
++			  EESR_RFE | EESR_RDE | EESR_RFRMER | EESR_TFE |
++			  EESR_TDE | EESR_ECI,
+ 	.tx_error_check	= EESR_TWB1 | EESR_TWB | EESR_TABT | EESR_TDE | \
+ 			  EESR_TFE,
+ 
+diff --git a/drivers/net/ethernet/renesas/sh_eth.h b/drivers/net/ethernet/renesas/sh_eth.h
+index bae84fd..3ea34bf 100644
+--- a/drivers/net/ethernet/renesas/sh_eth.h
++++ b/drivers/net/ethernet/renesas/sh_eth.h
+@@ -472,7 +472,7 @@ enum EESR_BIT {
+ 
+ #define DEFAULT_TX_CHECK	(EESR_FTC | EESR_CND | EESR_DLC | EESR_CD | \
+ 				 EESR_RTO)
+-#define DEFAULT_EESR_ERR_CHECK	(EESR_TWB | EESR_TABT | EESR_RABT | \
++#define DEFAULT_EESR_ERR_CHECK	(EESR_TWB | EESR_TABT | EESR_RABT | EESR_RFE | \
+ 				 EESR_RDE | EESR_RFRMER | EESR_ADE | \
+ 				 EESR_TFE | EESR_TDE | EESR_ECI)
+ #define DEFAULT_TX_ERROR_CHECK	(EESR_TWB | EESR_TABT | EESR_ADE | EESR_TDE | \
 -- 
 1.8.1.2
 
