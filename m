@@ -1,72 +1,609 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757928Ab3G3Hwq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 03:52:46 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:45867 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757820Ab3G3Hwo (ORCPT
+	id S1757860Ab3G3H4C (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 03:56:02 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:51327 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754020Ab3G3Hz7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 03:52:44 -0400
-Date: Tue, 30 Jul 2013 09:52:39 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: "Hans J. Koch" <hjk@hansjkoch.de>, linux-kernel@vger.kernel.org,
-        kernel@pengutronix.de, Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm@kvack.org
-Subject: Re: [PATCH v2 1/2] uio: provide vm access to UIO_MEM_PHYS maps
-Message-ID: <20130730075239.GN1754@pengutronix.de>
-References: <20130727214911.GK1754@pengutronix.de>
- <1374962978-1860-1-git-send-email-u.kleine-koenig@pengutronix.de>
- <20130729200914.GA6146@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130729200914.GA6146@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Tue, 30 Jul 2013 03:55:59 -0400
+X-AuditID: cbfee690-b7f6f6d00000740c-1c-51f7718b66fc
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Andrew Morton'" <akpm@linux-foundation.org>
+Cc: "'LKML'" <linux-kernel@vger.kernel.org>,
+        "'Richard Purdie'" <rpurdie@rpsys.net>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+Subject: [PATCH 01/35] backlight: use dev_get_platdata()
+Date: Tue, 30 Jul 2013 16:55:54 +0900
+Message-id: <003301ce8cfa$381e5e30$a85b1a90$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: Ac6M+h1qzNO7HaDWQ3CxCl4IYe5OSA==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrBIsWRmVeSWpSXmKPExsVy+t8zY93uwu+BBk9aFSzmrF/DZnF54SVW
+	i8u75rBZ7N71lNWBxePEjN8sHnvm/2D16NuyitHj8ya5AJYoLpuU1JzMstQifbsEroy3zY/Y
+	Ci5vZay43v+KsYFx1yzGLkZODgkBE4lVsxawQthiEhfurWfrYuTiEBJYxigxobOZDaZoz5XV
+	TBCJ6YwSx/cdZIdwfjFK7OpYD9bOJqAm8eXLYaAEB4eIgL5EW4sGSJhZoFRi64P3LCC2sICF
+	xK8XU5hAbBYBVYlzU9vAWnkFLCV+tq1ng7AFJX5MvscC0aslsX7ncSYIW15i85q3zBAHKUjs
+	OPsa7AMRAT2JfQ+mMEPUiEjse/GOEeQ2CYFt7BJ3V/azQiwTkPg2+RALyG0SArISmw5AzZGU
+	OLjiBssERrFZSFbPQrJ6FpLVs5CsWMDIsopRNLUguaA4Kb3IRK84Mbe4NC9dLzk/dxMjJNYm
+	7GC8d8D6EGMy0PqJzFKiyfnAWM0riTc0NjOyMDUxNTYytzQjTVhJnFe9xTpQSCA9sSQ1OzW1
+	ILUovqg0J7X4ECMTB6dUA6PRMaktd//b5fxevWA2S9WGp5uCbHt8DhctCrvMPfF23lGet9Y6
+	hfPLWPYLCNxO3HBCwFS2Rv9Wh1xGzaQvWh8arB212+f6PHm57qZ9D+/GTROVZZ03eq25/z3/
+	xhxd9nkvu/fO4n2VfCjMsHdxJ29EVL7C6191gZ95kmMjHcKKuuwNLs67w6DEUpyRaKjFXFSc
+	CAAhqEIOywIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprKKsWRmVeSWpSXmKPExsVy+t9jQd3uwu+BBoffSVjMWb+GzeLywkus
+	Fpd3zWGz2L3rKasDi8eJGb9ZPPbM/8Hq0bdlFaPH501yASxRDYw2GamJKalFCql5yfkpmXnp
+	tkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUA7lRTKEnNKgUIBicXFSvp2mCaEhrjp
+	WsA0Ruj6hgTB9RgZoIGEdYwZb5sfsRVc3spYcb3/FWMD465ZjF2MnBwSAiYSe66sZoKwxSQu
+	3FvP1sXIxSEkMJ1R4vi+g+wQzi9GiV0d61lBqtgE1CS+fDkMlODgEBHQl2hr0QAJMwuUSmx9
+	8J4FxBYWsJD49WIK2FAWAVWJc1PbwFp5BSwlfraBLACxBSV+TL7HAtGrJbF+53EmCFteYvOa
+	t8wQBylI7Dj7GuxQEQE9iX0PpjBD1IhI7HvxjnECo8AsJKNmIRk1C8moWUhaFjCyrGIUTS1I
+	LihOSs810itOzC0uzUvXS87P3cQIjuRn0jsYVzVYHGIU4GBU4uHdUPAtUIg1say4MvcQowQH
+	s5IIL8sNoBBvSmJlVWpRfnxRaU5q8SHGZKBPJzJLiSbnA5NMXkm8obGJmZGlkZmFkYm5OWnC
+	SuK8B1utA4UE0hNLUrNTUwtSi2C2MHFwSjUwFt1avZrPme1s7bHyw7YfSufd2XRLadkahv5K
+	vnu7cmKMexw91nL6LYtLYs9Vvl+f/P1ZpLUJi/biTwpbUj/fl6qvE5AoWTppnZ5L4Tp37ner
+	Cnyfip8rnv9K9U5txq9N/Vr8x63cvaSObV9rynN4Jsf23fN+322/5R0XWvVt6UTn0HusF6o0
+	lViKMxINtZiLihMBmplo1SgDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[expanding Cc: to also include akpm and linux-mm]
+Use the wrapper function for retrieving the platform data instead of
+accessing dev->platform_data directly.
 
-Hello,
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+---
+ drivers/video/backlight/88pm860x_bl.c        |    2 +-
+ drivers/video/backlight/aat2870_bl.c         |    2 +-
+ drivers/video/backlight/adp5520_bl.c         |    2 +-
+ drivers/video/backlight/adp8860_bl.c         |    6 +++---
+ drivers/video/backlight/adp8870_bl.c         |    6 +++---
+ drivers/video/backlight/ams369fg06.c         |    2 +-
+ drivers/video/backlight/atmel-pwm-bl.c       |    2 +-
+ drivers/video/backlight/bd6107.c             |    2 +-
+ drivers/video/backlight/corgi_lcd.c          |    2 +-
+ drivers/video/backlight/da903x_bl.c          |    2 +-
+ drivers/video/backlight/generic_bl.c         |    2 +-
+ drivers/video/backlight/gpio_backlight.c     |    3 ++-
+ drivers/video/backlight/ili9320.c            |    2 +-
+ drivers/video/backlight/kb3886_bl.c          |    2 +-
+ drivers/video/backlight/l4f00242t03.c        |    6 +++---
+ drivers/video/backlight/ld9040.c             |    2 +-
+ drivers/video/backlight/lm3533_bl.c          |    2 +-
+ drivers/video/backlight/lm3630_bl.c          |    2 +-
+ drivers/video/backlight/lm3639_bl.c          |    2 +-
+ drivers/video/backlight/lms283gf05.c         |    4 ++--
+ drivers/video/backlight/lms501kf03.c         |    2 +-
+ drivers/video/backlight/lp855x_bl.c          |    4 ++--
+ drivers/video/backlight/lv5207lp.c           |    2 +-
+ drivers/video/backlight/omap1_bl.c           |    2 +-
+ drivers/video/backlight/pcf50633-backlight.c |    2 +-
+ drivers/video/backlight/platform_lcd.c       |    2 +-
+ drivers/video/backlight/pwm_bl.c             |    2 +-
+ drivers/video/backlight/s6e63m0.c            |    2 +-
+ drivers/video/backlight/tdo24m.c             |    2 +-
+ drivers/video/backlight/tosa_bl.c            |    2 +-
+ drivers/video/backlight/tps65217_bl.c        |    5 ++---
+ drivers/video/backlight/wm831x_bl.c          |    8 +++-----
+ 32 files changed, 44 insertions(+), 46 deletions(-)
 
-On Mon, Jul 29, 2013 at 01:09:14PM -0700, Greg Kroah-Hartman wrote:
-> On Sun, Jul 28, 2013 at 12:09:37AM +0200, Uwe Kleine-König wrote:
-> > This makes it possible to let gdb access mappings of the process that is
-> > being debugged.
-> > 
-> > uio_mmap_logical was moved and uio_vm_ops renamed to group related code
-> > and differentiate to new stuff.
-> > 
-> > Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-> > ---
-> > Changes since v1:
-> >     - only use generic_access_phys ifdef CONFIG_HAVE_IOREMAP_PROT
-> >     - fix all users of renamed struct
-> 
-> I still get a build error with this patch:
-> 
->   MODPOST 384 modules
-> ERROR: "generic_access_phys" [drivers/uio/uio.ko] undefined!
-> 
-> So something isn't quite right.
-Ah, you built as a module and generic_access_phys isn't exported. The
-other users of generic_access_phys (arch/x86/pci/i386.c and
-drivers/char/mem.c) can only be builtin.
-
-So the IMHO best option is to add an EXPORT_SYMBOL(generic_access_phys)
-to mm/memory.c.
-
-Best regards
-Uwe
-
+diff --git a/drivers/video/backlight/88pm860x_bl.c b/drivers/video/backlight/88pm860x_bl.c
+index 2cd6350..a84a12a 100644
+--- a/drivers/video/backlight/88pm860x_bl.c
++++ b/drivers/video/backlight/88pm860x_bl.c
+@@ -196,7 +196,7 @@ static int pm860x_backlight_dt_init(struct platform_device *pdev,
+ static int pm860x_backlight_probe(struct platform_device *pdev)
+ {
+ 	struct pm860x_chip *chip = dev_get_drvdata(pdev->dev.parent);
+-	struct pm860x_backlight_pdata *pdata = pdev->dev.platform_data;
++	struct pm860x_backlight_pdata *pdata = dev_get_platdata(&pdev->dev);
+ 	struct pm860x_backlight_data *data;
+ 	struct backlight_device *bl;
+ 	struct resource *res;
+diff --git a/drivers/video/backlight/aat2870_bl.c b/drivers/video/backlight/aat2870_bl.c
+index c6fc668..c68232b 100644
+--- a/drivers/video/backlight/aat2870_bl.c
++++ b/drivers/video/backlight/aat2870_bl.c
+@@ -127,7 +127,7 @@ static const struct backlight_ops aat2870_bl_ops = {
+ 
+ static int aat2870_bl_probe(struct platform_device *pdev)
+ {
+-	struct aat2870_bl_platform_data *pdata = pdev->dev.platform_data;
++	struct aat2870_bl_platform_data *pdata = dev_get_platdata(&pdev->dev);
+ 	struct aat2870_bl_driver_data *aat2870_bl;
+ 	struct backlight_device *bd;
+ 	struct backlight_properties props;
+diff --git a/drivers/video/backlight/adp5520_bl.c b/drivers/video/backlight/adp5520_bl.c
+index c84701b..fe8e3d1 100644
+--- a/drivers/video/backlight/adp5520_bl.c
++++ b/drivers/video/backlight/adp5520_bl.c
+@@ -297,7 +297,7 @@ static int adp5520_bl_probe(struct platform_device *pdev)
+ 		return -ENOMEM;
+ 
+ 	data->master = pdev->dev.parent;
+-	data->pdata = pdev->dev.platform_data;
++	data->pdata = dev_get_platdata(&pdev->dev);
+ 
+ 	if (data->pdata  == NULL) {
+ 		dev_err(&pdev->dev, "missing platform data\n");
+diff --git a/drivers/video/backlight/adp8860_bl.c b/drivers/video/backlight/adp8860_bl.c
+index 75b10f8..2f77f37 100644
+--- a/drivers/video/backlight/adp8860_bl.c
++++ b/drivers/video/backlight/adp8860_bl.c
+@@ -216,7 +216,7 @@ static int adp8860_led_setup(struct adp8860_led *led)
+ static int adp8860_led_probe(struct i2c_client *client)
+ {
+ 	struct adp8860_backlight_platform_data *pdata =
+-		client->dev.platform_data;
++		dev_get_platdata(&client->dev);
+ 	struct adp8860_bl *data = i2c_get_clientdata(client);
+ 	struct adp8860_led *led, *led_dat;
+ 	struct led_info *cur_led;
+@@ -300,7 +300,7 @@ static int adp8860_led_probe(struct i2c_client *client)
+ static int adp8860_led_remove(struct i2c_client *client)
+ {
+ 	struct adp8860_backlight_platform_data *pdata =
+-		client->dev.platform_data;
++		dev_get_platdata(&client->dev);
+ 	struct adp8860_bl *data = i2c_get_clientdata(client);
+ 	int i;
+ 
+@@ -658,7 +658,7 @@ static int adp8860_probe(struct i2c_client *client,
+ 	struct backlight_device *bl;
+ 	struct adp8860_bl *data;
+ 	struct adp8860_backlight_platform_data *pdata =
+-		client->dev.platform_data;
++		dev_get_platdata(&client->dev);
+ 	struct backlight_properties props;
+ 	uint8_t reg_val;
+ 	int ret;
+diff --git a/drivers/video/backlight/adp8870_bl.c b/drivers/video/backlight/adp8870_bl.c
+index 90049d7..9eee69f 100644
+--- a/drivers/video/backlight/adp8870_bl.c
++++ b/drivers/video/backlight/adp8870_bl.c
+@@ -238,7 +238,7 @@ static int adp8870_led_setup(struct adp8870_led *led)
+ static int adp8870_led_probe(struct i2c_client *client)
+ {
+ 	struct adp8870_backlight_platform_data *pdata =
+-		client->dev.platform_data;
++		dev_get_platdata(&client->dev);
+ 	struct adp8870_bl *data = i2c_get_clientdata(client);
+ 	struct adp8870_led *led, *led_dat;
+ 	struct led_info *cur_led;
+@@ -325,7 +325,7 @@ static int adp8870_led_probe(struct i2c_client *client)
+ static int adp8870_led_remove(struct i2c_client *client)
+ {
+ 	struct adp8870_backlight_platform_data *pdata =
+-		client->dev.platform_data;
++		dev_get_platdata(&client->dev);
+ 	struct adp8870_bl *data = i2c_get_clientdata(client);
+ 	int i;
+ 
+@@ -848,7 +848,7 @@ static int adp8870_probe(struct i2c_client *client,
+ 	struct backlight_device *bl;
+ 	struct adp8870_bl *data;
+ 	struct adp8870_backlight_platform_data *pdata =
+-		client->dev.platform_data;
++		dev_get_platdata(&client->dev);
+ 	uint8_t reg_val;
+ 	int ret;
+ 
+diff --git a/drivers/video/backlight/ams369fg06.c b/drivers/video/backlight/ams369fg06.c
+index 319fef6..df5507b 100644
+--- a/drivers/video/backlight/ams369fg06.c
++++ b/drivers/video/backlight/ams369fg06.c
+@@ -471,7 +471,7 @@ static int ams369fg06_probe(struct spi_device *spi)
+ 	lcd->spi = spi;
+ 	lcd->dev = &spi->dev;
+ 
+-	lcd->lcd_pd = spi->dev.platform_data;
++	lcd->lcd_pd = dev_get_platdata(&spi->dev);
+ 	if (!lcd->lcd_pd) {
+ 		dev_err(&spi->dev, "platform data is NULL\n");
+ 		return -EINVAL;
+diff --git a/drivers/video/backlight/atmel-pwm-bl.c b/drivers/video/backlight/atmel-pwm-bl.c
+index 0393d82..8900da7 100644
+--- a/drivers/video/backlight/atmel-pwm-bl.c
++++ b/drivers/video/backlight/atmel-pwm-bl.c
+@@ -133,7 +133,7 @@ static int __init atmel_pwm_bl_probe(struct platform_device *pdev)
+ 
+ 	pwmbl->pdev = pdev;
+ 
+-	pdata = pdev->dev.platform_data;
++	pdata = dev_get_platdata(&pdev->dev);
+ 	if (!pdata) {
+ 		retval = -ENODEV;
+ 		goto err_free_mem;
+diff --git a/drivers/video/backlight/bd6107.c b/drivers/video/backlight/bd6107.c
+index 15e3294..43c434e 100644
+--- a/drivers/video/backlight/bd6107.c
++++ b/drivers/video/backlight/bd6107.c
+@@ -128,7 +128,7 @@ static const struct backlight_ops bd6107_backlight_ops = {
+ static int bd6107_probe(struct i2c_client *client,
+ 			  const struct i2c_device_id *id)
+ {
+-	struct bd6107_platform_data *pdata = client->dev.platform_data;
++	struct bd6107_platform_data *pdata = dev_get_platdata(&client->dev);
+ 	struct backlight_device *backlight;
+ 	struct backlight_properties props;
+ 	struct bd6107 *bd;
+diff --git a/drivers/video/backlight/corgi_lcd.c b/drivers/video/backlight/corgi_lcd.c
+index c97867a..be56cfe 100644
+--- a/drivers/video/backlight/corgi_lcd.c
++++ b/drivers/video/backlight/corgi_lcd.c
+@@ -533,7 +533,7 @@ static int setup_gpio_backlight(struct corgi_lcd *lcd,
+ static int corgi_lcd_probe(struct spi_device *spi)
+ {
+ 	struct backlight_properties props;
+-	struct corgi_lcd_platform_data *pdata = spi->dev.platform_data;
++	struct corgi_lcd_platform_data *pdata = dev_get_platdata(&spi->dev);
+ 	struct corgi_lcd *lcd;
+ 	int ret = 0;
+ 
+diff --git a/drivers/video/backlight/da903x_bl.c b/drivers/video/backlight/da903x_bl.c
+index 67cadd3..bbad5c2 100644
+--- a/drivers/video/backlight/da903x_bl.c
++++ b/drivers/video/backlight/da903x_bl.c
+@@ -109,7 +109,7 @@ static const struct backlight_ops da903x_backlight_ops = {
+ 
+ static int da903x_backlight_probe(struct platform_device *pdev)
+ {
+-	struct da9034_backlight_pdata *pdata = pdev->dev.platform_data;
++	struct da9034_backlight_pdata *pdata = dev_get_platdata(&pdev->dev);
+ 	struct da903x_backlight_data *data;
+ 	struct backlight_device *bl;
+ 	struct backlight_properties props;
+diff --git a/drivers/video/backlight/generic_bl.c b/drivers/video/backlight/generic_bl.c
+index 19e393b..48fa914 100644
+--- a/drivers/video/backlight/generic_bl.c
++++ b/drivers/video/backlight/generic_bl.c
+@@ -79,7 +79,7 @@ static const struct backlight_ops genericbl_ops = {
+ static int genericbl_probe(struct platform_device *pdev)
+ {
+ 	struct backlight_properties props;
+-	struct generic_bl_info *machinfo = pdev->dev.platform_data;
++	struct generic_bl_info *machinfo = dev_get_platdata(&pdev->dev);
+ 	const char *name = "generic-bl";
+ 	struct backlight_device *bd;
+ 
+diff --git a/drivers/video/backlight/gpio_backlight.c b/drivers/video/backlight/gpio_backlight.c
+index 5fa217f..118da0c 100644
+--- a/drivers/video/backlight/gpio_backlight.c
++++ b/drivers/video/backlight/gpio_backlight.c
+@@ -62,7 +62,8 @@ static const struct backlight_ops gpio_backlight_ops = {
+ 
+ static int gpio_backlight_probe(struct platform_device *pdev)
+ {
+-	struct gpio_backlight_platform_data *pdata = pdev->dev.platform_data;
++	struct gpio_backlight_platform_data *pdata =
++		dev_get_platdata(&pdev->dev);
+ 	struct backlight_properties props;
+ 	struct backlight_device *bl;
+ 	struct gpio_backlight *gbl;
+diff --git a/drivers/video/backlight/ili9320.c b/drivers/video/backlight/ili9320.c
+index f8be90c..4dd43e0 100644
+--- a/drivers/video/backlight/ili9320.c
++++ b/drivers/video/backlight/ili9320.c
+@@ -198,7 +198,7 @@ static void ili9320_setup_spi(struct ili9320 *ili,
+ int ili9320_probe_spi(struct spi_device *spi,
+ 				struct ili9320_client *client)
+ {
+-	struct ili9320_platdata *cfg = spi->dev.platform_data;
++	struct ili9320_platdata *cfg = dev_get_platdata(&spi->dev);
+ 	struct device *dev = &spi->dev;
+ 	struct ili9320 *ili;
+ 	struct lcd_device *lcd;
+diff --git a/drivers/video/backlight/kb3886_bl.c b/drivers/video/backlight/kb3886_bl.c
+index bca6ccc..5bacabb 100644
+--- a/drivers/video/backlight/kb3886_bl.c
++++ b/drivers/video/backlight/kb3886_bl.c
+@@ -141,7 +141,7 @@ static const struct backlight_ops kb3886bl_ops = {
+ static int kb3886bl_probe(struct platform_device *pdev)
+ {
+ 	struct backlight_properties props;
+-	struct kb3886bl_machinfo *machinfo = pdev->dev.platform_data;
++	struct kb3886bl_machinfo *machinfo = dev_get_platdata(&pdev->dev);
+ 
+ 	bl_machinfo = machinfo;
+ 	if (!machinfo->limit_mask)
+diff --git a/drivers/video/backlight/l4f00242t03.c b/drivers/video/backlight/l4f00242t03.c
+index a35a38c..923eae2 100644
+--- a/drivers/video/backlight/l4f00242t03.c
++++ b/drivers/video/backlight/l4f00242t03.c
+@@ -48,7 +48,7 @@ static void l4f00242t03_reset(unsigned int gpio)
+ 
+ static void l4f00242t03_lcd_init(struct spi_device *spi)
+ {
+-	struct l4f00242t03_pdata *pdata = spi->dev.platform_data;
++	struct l4f00242t03_pdata *pdata = dev_get_platdata(&spi->dev);
+ 	struct l4f00242t03_priv *priv = spi_get_drvdata(spi);
+ 	const u16 cmd[] = { 0x36, param(0), 0x3A, param(0x60) };
+ 	int ret;
+@@ -88,7 +88,7 @@ static void l4f00242t03_lcd_init(struct spi_device *spi)
+ 
+ static void l4f00242t03_lcd_powerdown(struct spi_device *spi)
+ {
+-	struct l4f00242t03_pdata *pdata = spi->dev.platform_data;
++	struct l4f00242t03_pdata *pdata = dev_get_platdata(&spi->dev);
+ 	struct l4f00242t03_priv *priv = spi_get_drvdata(spi);
+ 
+ 	dev_dbg(&spi->dev, "Powering down LCD\n");
+@@ -171,7 +171,7 @@ static struct lcd_ops l4f_ops = {
+ static int l4f00242t03_probe(struct spi_device *spi)
+ {
+ 	struct l4f00242t03_priv *priv;
+-	struct l4f00242t03_pdata *pdata = spi->dev.platform_data;
++	struct l4f00242t03_pdata *pdata = dev_get_platdata(&spi->dev);
+ 	int ret;
+ 
+ 	if (pdata == NULL) {
+diff --git a/drivers/video/backlight/ld9040.c b/drivers/video/backlight/ld9040.c
+index 1e0a309..26d5139 100644
+--- a/drivers/video/backlight/ld9040.c
++++ b/drivers/video/backlight/ld9040.c
+@@ -702,7 +702,7 @@ static int ld9040_probe(struct spi_device *spi)
+ 	lcd->spi = spi;
+ 	lcd->dev = &spi->dev;
+ 
+-	lcd->lcd_pd = spi->dev.platform_data;
++	lcd->lcd_pd = dev_get_platdata(&spi->dev);
+ 	if (!lcd->lcd_pd) {
+ 		dev_err(&spi->dev, "platform data is NULL.\n");
+ 		return -EINVAL;
+diff --git a/drivers/video/backlight/lm3533_bl.c b/drivers/video/backlight/lm3533_bl.c
+index 1d1dbfb..93eea65 100644
+--- a/drivers/video/backlight/lm3533_bl.c
++++ b/drivers/video/backlight/lm3533_bl.c
+@@ -284,7 +284,7 @@ static int lm3533_bl_probe(struct platform_device *pdev)
+ 	if (!lm3533)
+ 		return -EINVAL;
+ 
+-	pdata = pdev->dev.platform_data;
++	pdata = dev_get_platdata(&pdev->dev);
+ 	if (!pdata) {
+ 		dev_err(&pdev->dev, "no platform data\n");
+ 		return -EINVAL;
+diff --git a/drivers/video/backlight/lm3630_bl.c b/drivers/video/backlight/lm3630_bl.c
+index 76a62e9..972458a 100644
+--- a/drivers/video/backlight/lm3630_bl.c
++++ b/drivers/video/backlight/lm3630_bl.c
+@@ -352,7 +352,7 @@ static const struct regmap_config lm3630_regmap = {
+ static int lm3630_probe(struct i2c_client *client,
+ 				  const struct i2c_device_id *id)
+ {
+-	struct lm3630_platform_data *pdata = client->dev.platform_data;
++	struct lm3630_platform_data *pdata = dev_get_platdata(&client->dev);
+ 	struct lm3630_chip_data *pchip;
+ 	int ret;
+ 
+diff --git a/drivers/video/backlight/lm3639_bl.c b/drivers/video/backlight/lm3639_bl.c
+index 053964d..4a83c7f 100644
+--- a/drivers/video/backlight/lm3639_bl.c
++++ b/drivers/video/backlight/lm3639_bl.c
+@@ -304,7 +304,7 @@ static int lm3639_probe(struct i2c_client *client,
+ {
+ 	int ret;
+ 	struct lm3639_chip_data *pchip;
+-	struct lm3639_platform_data *pdata = client->dev.platform_data;
++	struct lm3639_platform_data *pdata = dev_get_platdata(&client->dev);
+ 	struct backlight_properties props;
+ 
+ 	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
+diff --git a/drivers/video/backlight/lms283gf05.c b/drivers/video/backlight/lms283gf05.c
+index 4eec472..80b5929 100644
+--- a/drivers/video/backlight/lms283gf05.c
++++ b/drivers/video/backlight/lms283gf05.c
+@@ -128,7 +128,7 @@ static int lms283gf05_power_set(struct lcd_device *ld, int power)
+ {
+ 	struct lms283gf05_state *st = lcd_get_data(ld);
+ 	struct spi_device *spi = st->spi;
+-	struct lms283gf05_pdata *pdata = spi->dev.platform_data;
++	struct lms283gf05_pdata *pdata = dev_get_platdata(&spi->dev);
+ 
+ 	if (power <= FB_BLANK_NORMAL) {
+ 		if (pdata)
+@@ -153,7 +153,7 @@ static struct lcd_ops lms_ops = {
+ static int lms283gf05_probe(struct spi_device *spi)
+ {
+ 	struct lms283gf05_state *st;
+-	struct lms283gf05_pdata *pdata = spi->dev.platform_data;
++	struct lms283gf05_pdata *pdata = dev_get_platdata(&spi->dev);
+ 	struct lcd_device *ld;
+ 	int ret = 0;
+ 
+diff --git a/drivers/video/backlight/lms501kf03.c b/drivers/video/backlight/lms501kf03.c
+index cf01b9a..ff46e19 100644
+--- a/drivers/video/backlight/lms501kf03.c
++++ b/drivers/video/backlight/lms501kf03.c
+@@ -344,7 +344,7 @@ static int lms501kf03_probe(struct spi_device *spi)
+ 	lcd->spi = spi;
+ 	lcd->dev = &spi->dev;
+ 
+-	lcd->lcd_pd = spi->dev.platform_data;
++	lcd->lcd_pd = dev_get_platdata(&spi->dev);
+ 	if (!lcd->lcd_pd) {
+ 		dev_err(&spi->dev, "platform data is NULL\n");
+ 		return -EINVAL;
+diff --git a/drivers/video/backlight/lp855x_bl.c b/drivers/video/backlight/lp855x_bl.c
+index a0e1e02..0e8842d 100644
+--- a/drivers/video/backlight/lp855x_bl.c
++++ b/drivers/video/backlight/lp855x_bl.c
+@@ -394,7 +394,7 @@ static int lp855x_parse_dt(struct device *dev, struct device_node *node)
+ static int lp855x_probe(struct i2c_client *cl, const struct i2c_device_id *id)
+ {
+ 	struct lp855x *lp;
+-	struct lp855x_platform_data *pdata = cl->dev.platform_data;
++	struct lp855x_platform_data *pdata = dev_get_platdata(&cl->dev);
+ 	struct device_node *node = cl->dev.of_node;
+ 	int ret;
+ 
+@@ -403,7 +403,7 @@ static int lp855x_probe(struct i2c_client *cl, const struct i2c_device_id *id)
+ 		if (ret < 0)
+ 			return ret;
+ 
+-		pdata = cl->dev.platform_data;
++		pdata = dev_get_platdata(&cl->dev);
+ 	}
+ 
+ 	if (!i2c_check_functionality(cl->adapter, I2C_FUNC_SMBUS_I2C_BLOCK))
+diff --git a/drivers/video/backlight/lv5207lp.c b/drivers/video/backlight/lv5207lp.c
+index 498fd73..8091a28 100644
+--- a/drivers/video/backlight/lv5207lp.c
++++ b/drivers/video/backlight/lv5207lp.c
+@@ -93,7 +93,7 @@ static const struct backlight_ops lv5207lp_backlight_ops = {
+ static int lv5207lp_probe(struct i2c_client *client,
+ 			  const struct i2c_device_id *id)
+ {
+-	struct lv5207lp_platform_data *pdata = client->dev.platform_data;
++	struct lv5207lp_platform_data *pdata = dev_get_platdata(&client->dev);
+ 	struct backlight_device *backlight;
+ 	struct backlight_properties props;
+ 	struct lv5207lp *lv;
+diff --git a/drivers/video/backlight/omap1_bl.c b/drivers/video/backlight/omap1_bl.c
+index 812e22e..ac11a46 100644
+--- a/drivers/video/backlight/omap1_bl.c
++++ b/drivers/video/backlight/omap1_bl.c
+@@ -133,7 +133,7 @@ static int omapbl_probe(struct platform_device *pdev)
+ 	struct backlight_properties props;
+ 	struct backlight_device *dev;
+ 	struct omap_backlight *bl;
+-	struct omap_backlight_config *pdata = pdev->dev.platform_data;
++	struct omap_backlight_config *pdata = dev_get_platdata(&pdev->dev);
+ 
+ 	if (!pdata)
+ 		return -ENXIO;
+diff --git a/drivers/video/backlight/pcf50633-backlight.c b/drivers/video/backlight/pcf50633-backlight.c
+index 6ed76be..b2184cf 100644
+--- a/drivers/video/backlight/pcf50633-backlight.c
++++ b/drivers/video/backlight/pcf50633-backlight.c
+@@ -103,7 +103,7 @@ static int pcf50633_bl_probe(struct platform_device *pdev)
+ {
+ 	struct pcf50633_bl *pcf_bl;
+ 	struct device *parent = pdev->dev.parent;
+-	struct pcf50633_platform_data *pcf50633_data = parent->platform_data;
++	struct pcf50633_platform_data *pcf50633_data = dev_get_platdata(parent);
+ 	struct pcf50633_bl_platform_data *pdata = pcf50633_data->backlight_data;
+ 	struct backlight_properties bl_props;
+ 
+diff --git a/drivers/video/backlight/platform_lcd.c b/drivers/video/backlight/platform_lcd.c
+index 0568367..cc0f067 100644
+--- a/drivers/video/backlight/platform_lcd.c
++++ b/drivers/video/backlight/platform_lcd.c
+@@ -80,7 +80,7 @@ static int platform_lcd_probe(struct platform_device *pdev)
+ 	struct device *dev = &pdev->dev;
+ 	int err;
+ 
+-	pdata = pdev->dev.platform_data;
++	pdata = dev_get_platdata(&pdev->dev);
+ 	if (!pdata) {
+ 		dev_err(dev, "no platform data supplied\n");
+ 		return -EINVAL;
+diff --git a/drivers/video/backlight/pwm_bl.c b/drivers/video/backlight/pwm_bl.c
+index 1fea627..36db5d9 100644
+--- a/drivers/video/backlight/pwm_bl.c
++++ b/drivers/video/backlight/pwm_bl.c
+@@ -163,7 +163,7 @@ static int pwm_backlight_parse_dt(struct device *dev,
+ 
+ static int pwm_backlight_probe(struct platform_device *pdev)
+ {
+-	struct platform_pwm_backlight_data *data = pdev->dev.platform_data;
++	struct platform_pwm_backlight_data *data = dev_get_platdata(&pdev->dev);
+ 	struct platform_pwm_backlight_data defdata;
+ 	struct backlight_properties props;
+ 	struct backlight_device *bl;
+diff --git a/drivers/video/backlight/s6e63m0.c b/drivers/video/backlight/s6e63m0.c
+index b37bb18..4e339ad 100644
+--- a/drivers/video/backlight/s6e63m0.c
++++ b/drivers/video/backlight/s6e63m0.c
+@@ -735,7 +735,7 @@ static int s6e63m0_probe(struct spi_device *spi)
+ 	lcd->spi = spi;
+ 	lcd->dev = &spi->dev;
+ 
+-	lcd->lcd_pd = spi->dev.platform_data;
++	lcd->lcd_pd = dev_get_platdata(&spi->dev);
+ 	if (!lcd->lcd_pd) {
+ 		dev_err(&spi->dev, "platform data is NULL.\n");
+ 		return -EINVAL;
+diff --git a/drivers/video/backlight/tdo24m.c b/drivers/video/backlight/tdo24m.c
+index 18cdf46..2ccfa46 100644
+--- a/drivers/video/backlight/tdo24m.c
++++ b/drivers/video/backlight/tdo24m.c
+@@ -338,7 +338,7 @@ static int tdo24m_probe(struct spi_device *spi)
+ 	enum tdo24m_model model;
+ 	int err;
+ 
+-	pdata = spi->dev.platform_data;
++	pdata = dev_get_platdata(&spi->dev);
+ 	if (pdata)
+ 		model = pdata->model;
+ 	else
+diff --git a/drivers/video/backlight/tosa_bl.c b/drivers/video/backlight/tosa_bl.c
+index 9df66ac..b8db933 100644
+--- a/drivers/video/backlight/tosa_bl.c
++++ b/drivers/video/backlight/tosa_bl.c
+@@ -38,7 +38,7 @@ struct tosa_bl_data {
+ 
+ static void tosa_bl_set_backlight(struct tosa_bl_data *data, int brightness)
+ {
+-	struct spi_device *spi = data->i2c->dev.platform_data;
++	struct spi_device *spi = dev_get_platdata(&data->i2c->dev);
+ 
+ 	i2c_smbus_write_byte_data(data->i2c, DAC_CH1, data->comadj);
+ 
+diff --git a/drivers/video/backlight/tps65217_bl.c b/drivers/video/backlight/tps65217_bl.c
+index 0578231..4ea2039 100644
+--- a/drivers/video/backlight/tps65217_bl.c
++++ b/drivers/video/backlight/tps65217_bl.c
+@@ -287,12 +287,11 @@ static int tps65217_bl_probe(struct platform_device *pdev)
+ 		if (IS_ERR(pdata))
+ 			return PTR_ERR(pdata);
+ 	} else {
+-		if (!pdev->dev.platform_data) {
++		pdata = dev_get_platdata(&pdev->dev);
++		if (!pdata) {
+ 			dev_err(&pdev->dev, "no platform data provided\n");
+ 			return -EINVAL;
+ 		}
+-
+-		pdata = pdev->dev.platform_data;
+ 	}
+ 
+ 	tps65217_bl = devm_kzalloc(&pdev->dev, sizeof(*tps65217_bl),
+diff --git a/drivers/video/backlight/wm831x_bl.c b/drivers/video/backlight/wm831x_bl.c
+index 9e5517a..2ccf320 100644
+--- a/drivers/video/backlight/wm831x_bl.c
++++ b/drivers/video/backlight/wm831x_bl.c
+@@ -123,7 +123,7 @@ static const struct backlight_ops wm831x_backlight_ops = {
+ static int wm831x_backlight_probe(struct platform_device *pdev)
+ {
+ 	struct wm831x *wm831x = dev_get_drvdata(pdev->dev.parent);
+-	struct wm831x_pdata *wm831x_pdata;
++	struct wm831x_pdata *wm831x_pdata = dev_get_platdata(pdev->dev.parent);
+ 	struct wm831x_backlight_pdata *pdata;
+ 	struct wm831x_backlight_data *data;
+ 	struct backlight_device *bl;
+@@ -131,12 +131,10 @@ static int wm831x_backlight_probe(struct platform_device *pdev)
+ 	int ret, i, max_isel, isink_reg, dcdc_cfg;
+ 
+ 	/* We need platform data */
+-	if (pdev->dev.parent->platform_data) {
+-		wm831x_pdata = pdev->dev.parent->platform_data;
++	if (wm831x_pdata)
+ 		pdata = wm831x_pdata->backlight;
+-	} else {
++	else
+ 		pdata = NULL;
+-	}
+ 
+ 	if (!pdata) {
+ 		dev_err(&pdev->dev, "No platform data supplied\n");
 -- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+1.7.10.4
+
+
