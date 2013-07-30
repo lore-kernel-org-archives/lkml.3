@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932131Ab3G3JcR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 05:32:17 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52900 "EHLO
+	id S1758645Ab3G3JcT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 05:32:19 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52915 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755686Ab3G3JcN (ORCPT
+	with ESMTP id S932128Ab3G3JcR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 05:32:13 -0400
+	Tue, 30 Jul 2013 05:32:17 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Soeren Moch <smoch@web.de>, Mauro Carvalho Chehab <mchehab@redhat.com>,
+Cc: Magnus Damm <damm@opensource.se>,
+        Simon Horman <horms+renesas@verge.net.au>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 001/106] [media] media: dmxdev: remove dvb_ringbuffer_flush() on writer side
-Date: Tue, 30 Jul 2013 10:30:20 +0100
-Message-Id: <1375176725-5825-2-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 004/106] ARM: shmobile: emev2 GIO3 resource fix
+Date: Tue, 30 Jul 2013 10:30:23 +0100
+Message-Id: <1375176725-5825-5-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
 References: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
@@ -27,60 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Soeren Moch <smoch@web.de>
+From: Magnus Damm <damm@opensource.se>
 
-commit 414abbd2cd4c2618895f02ed3a76ec6647281436 upstream.
+commit 1eb14ea1e6bcd11d6d0ba937fc39808bb4d3453e upstream.
 
-In dvb_ringbuffer lock-less synchronizationof reader and writer threads is done
-with separateread and write pointers. Sincedvb_ringbuffer_flush() modifies the
-read pointer, this function must not be called from the writer thread.
-This patch removes the dvb_ringbuffer_flush() calls in the dmxdev ringbuffer
-write functions, this fixes Oopses "Unable to handle kernel paging request"
-I could observe for the call chaindvb_demux_read ->dvb_dmxdev_buffer_read ->
-dvb_ringbuffer_read_user -> __copy_to_user (the reader side of the ringbuffer).
-The flush calls at the write side are not necessary anyway since ringbuffer_flush
-is also called in dvb_dmxdev_buffer_read() when an error condition is set in the
-ringbuffer.
-This patch should also be applied to stable kernels.
+Fix GIO3 base addresses for EMEV2.
 
-Signed-off-by: Soeren Moch <smoch@web.de>
-Reviewed-by: Sakari Ailus <sakari.ailus@iki.fi>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-[ luis: backported to 3.5:
-  - drivers/media/dvb-core/dmxdev.c -> drivers/media/dvb/dvb-core/dmxdev.c ]
+This bug was introduced by 088efd9273b5076a0aead479aa31f1066d182b3e
+("mach-shmobile: Emma Mobile EV2 GPIO support V3") which was included in v3.5.
+
+Signed-off-by: Magnus Damm <damm@opensource.se>
+Signed-off-by: Simon Horman <horms+renesas@verge.net.au>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/media/dvb/dvb-core/dmxdev.c | 8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+ arch/arm/mach-shmobile/setup-emev2.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/media/dvb/dvb-core/dmxdev.c b/drivers/media/dvb/dvb-core/dmxdev.c
-index 73970cd..214df76 100644
---- a/drivers/media/dvb/dvb-core/dmxdev.c
-+++ b/drivers/media/dvb/dvb-core/dmxdev.c
-@@ -379,10 +379,8 @@ static int dvb_dmxdev_section_callback(const u8 *buffer1, size_t buffer1_len,
- 		ret = dvb_dmxdev_buffer_write(&dmxdevfilter->buffer, buffer2,
- 					      buffer2_len);
- 	}
--	if (ret < 0) {
--		dvb_ringbuffer_flush(&dmxdevfilter->buffer);
-+	if (ret < 0)
- 		dmxdevfilter->buffer.error = ret;
--	}
- 	if (dmxdevfilter->params.sec.flags & DMX_ONESHOT)
- 		dmxdevfilter->state = DMXDEV_STATE_DONE;
- 	spin_unlock(&dmxdevfilter->dev->lock);
-@@ -418,10 +416,8 @@ static int dvb_dmxdev_ts_callback(const u8 *buffer1, size_t buffer1_len,
- 	ret = dvb_dmxdev_buffer_write(buffer, buffer1, buffer1_len);
- 	if (ret == buffer1_len)
- 		ret = dvb_dmxdev_buffer_write(buffer, buffer2, buffer2_len);
--	if (ret < 0) {
--		dvb_ringbuffer_flush(buffer);
-+	if (ret < 0)
- 		buffer->error = ret;
--	}
- 	spin_unlock(&dmxdevfilter->dev->lock);
- 	wake_up(&buffer->queue);
- 	return 0;
+diff --git a/arch/arm/mach-shmobile/setup-emev2.c b/arch/arm/mach-shmobile/setup-emev2.c
+index dae9aa6..bf7f509 100644
+--- a/arch/arm/mach-shmobile/setup-emev2.c
++++ b/arch/arm/mach-shmobile/setup-emev2.c
+@@ -287,14 +287,14 @@ static struct gpio_em_config gio3_config = {
+ static struct resource gio3_resources[] = {
+ 	[0] = {
+ 		.name	= "GIO_096",
+-		.start	= 0xe0050100,
+-		.end	= 0xe005012b,
++		.start	= 0xe0050180,
++		.end	= 0xe00501ab,
+ 		.flags	= IORESOURCE_MEM,
+ 	},
+ 	[1] = {
+ 		.name	= "GIO_096",
+-		.start	= 0xe0050140,
+-		.end	= 0xe005015f,
++		.start	= 0xe00501c0,
++		.end	= 0xe00501df,
+ 		.flags	= IORESOURCE_MEM,
+ 	},
+ 	[2] = {
 -- 
 1.8.3.2
 
