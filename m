@@ -1,52 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758581Ab3G3JYK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 05:24:10 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:20071 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758369Ab3G3JYG (ORCPT
+	id S1758475Ab3G3J0f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 05:26:35 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:41471 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758389Ab3G3J0e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 05:24:06 -0400
-Message-ID: <51F7861E.5050903@huawei.com>
-Date: Tue, 30 Jul 2013 17:23:42 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Tue, 30 Jul 2013 05:26:34 -0400
+Date: Tue, 30 Jul 2013 11:26:22 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Mel Gorman <mgorman@suse.de>, Ingo Molnar <mingo@kernel.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [RFC PATCH 00/10] Improve numa scheduling by consolidating tasks
+Message-ID: <20130730092622.GN3008@twins.programming.kicks-ass.net>
+References: <1375170505-5967-1-git-send-email-srikar@linux.vnet.ibm.com>
+ <20130730081755.GF3008@twins.programming.kicks-ass.net>
+ <20130730082001.GG3008@twins.programming.kicks-ass.net>
+ <20130730090345.GA22201@linux.vnet.ibm.com>
+ <20130730091021.GM3008@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: <xuejiufei@huawei.com>
-CC: <oleg@redhat.com>, <tj@kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: call_usermodehelper() returns -513 when ocfs2 umounting filesystems
-References: <51F76BA0.4000007@huawei.com> <51F77E7D.20608@huawei.com>
-In-Reply-To: <51F77E7D.20608@huawei.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130730091021.GM3008@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/7/30 16:51, Xue jiufei wrote:
-> On 2013/7/30 15:30, Xue jiufei wrote:
->> Hi, 
->> We have encountered an error when umounting ocfs2 filesystems.
->> Function ocfs2_leave_group() calls call_usermodehelper() to stop
->> heartbeat thread, but it returns -513(ERESTARTNOINTR) in one test.
->> And after that error, every times umounting the filesystem, it
->> returns the same error.
->> And at the same time, there's another kworker thread which is
->> sending messages to other nodes always return return errno
->> -512(ERESTARTSYS). So I think these two threads may have
->> pending signals remain.
->> This error can not reproduced any longer. Has any ideas?
+On Tue, Jul 30, 2013 at 11:10:21AM +0200, Peter Zijlstra wrote:
+> On Tue, Jul 30, 2013 at 02:33:45PM +0530, Srikar Dronamraju wrote:
+> > * Peter Zijlstra <peterz@infradead.org> [2013-07-30 10:20:01]:
+> > 
+> > > On Tue, Jul 30, 2013 at 10:17:55AM +0200, Peter Zijlstra wrote:
+> > > > On Tue, Jul 30, 2013 at 01:18:15PM +0530, Srikar Dronamraju wrote:
+> > > > > Here is an approach that looks to consolidate workloads across nodes.
+> > > > > This results in much improved performance. Again I would assume this work
+> > > > > is complementary to Mel's work with numa faulting.
+> > > > 
+> > > > I highly dislike the use of task weights here. It seems completely
+> > > > unrelated to the problem at hand.
+> > > 
+> > > I also don't particularly like the fact that it's purely process based.
+> > > The faults information we have gives much richer task relations.
+> > > 
+> > 
+> > With just pure fault information based approach, I am not seeing any
+> > major improvement in tasks/memory consolidation. I still see memory
+> > spread across different nodes and tasks getting ping-ponged to different
+> > nodes. And if there are multiple unrelated processes, then we see a mix
+> > of tasks of different processes in each of the node.
+> 
+> The fault thing isn't finished. Mel explicitly said it doesn't yet have
+> inter-task relations. And you run everything in a VM which is like a big
+> nasty mangler for anything sane.
 
-You should have made the question more clear, and that is:
+Also, the last time you posted this, I already said that if you'd use
+the faults data to do grouping you'd get similar reseults. Task weight
+is a completely unrelated and random measure. I think you even conceded
+this.
 
-How is it possible that a workqueue kernel thread has pending signals?
+So I really don't get why you're still using task weight for this.
 
->>
->> The log is as follows:
->> [58463.684504] (kworker/u:1,17332,0):o2net_send_tcp_msg:1332 ERROR: sendmsg returned -512 instead of 104
->> [58915.213299] ocfs2: Error -513 running user helper "/usr/sbin/ocfs2_hb_ctl -K -u A5FD0ED8733D4F9C98D23B326AD7DE10"
->> [59406.443615] ocfs2: Error -513 running user helper "/usr/sbin/ocfs2_hb_ctl -K -u A5FD0ED8733D4F9C98D23B326AD7DE10"
->>
-
+Also, Ingo already showed that you can get task grouping from the fault
+information itself, no need to use mm information to do this.
