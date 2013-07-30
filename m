@@ -1,58 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757502Ab3G3VVH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 17:21:07 -0400
-Received: from icebox.esperi.org.uk ([81.187.191.129]:44371 "EHLO
-	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757044Ab3G3VVF (ORCPT
+	id S1757454Ab3G3VWn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 17:22:43 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:36909 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757033Ab3G3VWm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 17:21:05 -0400
-From: Nix <nix@esperi.org.uk>
-To: Bernd Schubert <bernd.schubert@fastmail.fm>
-Cc: Douglas Gilbert <dgilbert@interlog.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-scsi@vger.kernel.org,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        nick.cheng@areca.com.tw, stable@vger.kernel.org
-Subject: Re: [SCSI REGRESSION] 3.10.2 or 3.10.3: arcmsr failure at bootup / early userspace transition
-References: <87r4ehfzhf.fsf@spindle.srvr.nix> <51F667C2.4020801@fastmail.fm>
-	<87mwp5frdl.fsf@spindle.srvr.nix> <51F67959.2060803@fastmail.fm>
-	<87fvuxdqes.fsf@spindle.srvr.nix> <51F708A4.9090207@interlog.com>
-	<87ob9koogb.fsf@spindle.srvr.nix> <51F80294.50804@fastmail.fm>
-Emacs: is that a Lisp interpreter in your editor, or are you just happy to see me?
-Date: Tue, 30 Jul 2013 22:20:55 +0100
-In-Reply-To: <51F80294.50804@fastmail.fm> (Bernd Schubert's message of "Tue,
-	30 Jul 2013 20:14:44 +0200")
-Message-ID: <877gg7n3rc.fsf@spindle.srvr.nix>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
+	Tue, 30 Jul 2013 17:22:42 -0400
+Message-ID: <51F82E9F.9010309@wwwdotorg.org>
+Date: Tue, 30 Jul 2013 15:22:39 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain
-X-DCC-STAT_FI_X86_64_VIRTUAL-Metrics: spindle 1245; Body=7 Fuz1=7 Fuz2=7
+To: hanumant <hanumant@codeaurora.org>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Bjorn Andersson <Bjorn.Andersson@sonymobile.com>,
+        "Bird, Tim" <Tim.Bird@sonymobile.com>,
+        ext Tony Lindgren <tony@atomide.com>
+Subject: Re: [PATCH] pinctrl: msm: Add support for MSM TLMM pinmux
+References: <1374702089-2832-1-git-send-email-hanumant@codeaurora.org> <CACRpkdZLFD-KAvZdUUvQKje3vAH1D0EJMW9PSK8VSp3Xs4eiGA@mail.gmail.com> <51F82BCC.1080409@codeaurora.org>
+In-Reply-To: <51F82BCC.1080409@codeaurora.org>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30 Jul 2013, Bernd Schubert told this:
+On 07/30/2013 03:10 PM, hanumant wrote:
+...
+> We actually have the same TLMM pinmux used by several socs of a family.
+> The number of pins on each soc may vary.
+> Also a given soc gets used in a number of boards.
+> The device tree for a given soc is split into the different boards that
+> its in ie the boards inherit a common soc.dtsi but have separate dts.
+> The boards for the same soc may use different pin groups for
+> accomplishing a function, since we have multiple i2c, spi uart etc
+> peripheral instances on a soc. A different instance of each of the above
+> peripherals, can be used in different boards, utilizing different
+> or subset of same pin groups.
+> Thus I would need to have multiple C files for one soc, based on the
+> boards that it goes into.
 
-> On 07/30/2013 02:56 AM, Nix wrote:
->> On 30 Jul 2013, Douglas Gilbert outgrape:
->>
->>> Please supply the information that Martin Petersen asked
->>> for.
->>
->> Did it in private IRC (the advantage of working for the same division of
->> the same company!)
->>
->> I didn't realise the original fix was actually implemented to allow
->> Bernd, with a different Areca controller, to boot... obviously, in that
->> situation, reversion is wrong, since that would just replace one won't-
->> boot situation with another.
->
-> Unless there is very simple fix the commit should reverted, imho. It
-> would better then to remove write-same support from the md-layer.
+The pinctrl driver should be exposing the raw capabilities of the HW.
+All the board-specific configuration should be expressed in DT. So, the
+driver shouldn't have to know anything about different boards at
+compile-time.
 
-I'm not using md on that machine, just LVM. Our suspicion is that ext4
-is doing a WRITE SAME for some reason.
-
--- 
-NULL && (void)
