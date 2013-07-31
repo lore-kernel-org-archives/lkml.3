@@ -1,102 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752493Ab3GaMoA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 08:44:00 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:51413 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751310Ab3GaMn7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 08:43:59 -0400
-Date: Wed, 31 Jul 2013 08:43:50 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 1/3] mm: vmscan: fix numa reclaim balance problem in
- kswapd
-Message-ID: <20130731124350.GL715@cmpxchg.org>
-References: <1374267325-22865-1-git-send-email-hannes@cmpxchg.org>
- <1374267325-22865-2-git-send-email-hannes@cmpxchg.org>
- <20130726155319.21e8a191456bf8a0ff724199@linux-foundation.org>
- <20130730174539.GF715@cmpxchg.org>
+	id S1756215Ab3GaMse (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 08:48:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55863 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751360Ab3GaMsd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 08:48:33 -0400
+Date: Wed, 31 Jul 2013 05:49:50 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Piotr Sarna <p.sarna@partner.samsung.com>
+Cc: devel@driverdev.osuosl.org, Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-kernel@vger.kernel.org, ngupta@vflare.org,
+        b.zolnierkie@samsung.com
+Subject: Re: [PATCH 1/2] staging: zram: add Crypto API support
+Message-ID: <20130731124950.GB30635@kroah.com>
+References: <1375187449-6546-1-git-send-email-p.sarna@partner.samsung.com>
+ <20130730135333.GB27962@kroah.com>
+ <51F8E404.6070507@partner.samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130730174539.GF715@cmpxchg.org>
+In-Reply-To: <51F8E404.6070507@partner.samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 30, 2013 at 01:45:39PM -0400, Johannes Weiner wrote:
-> On Fri, Jul 26, 2013 at 03:53:19PM -0700, Andrew Morton wrote:
-> > On Fri, 19 Jul 2013 16:55:23 -0400 Johannes Weiner <hannes@cmpxchg.org> wrote:
-> > 
-> > > When the page allocator fails to get a page from all zones in its
-> > > given zonelist, it wakes up the per-node kswapds for all zones that
-> > > are at their low watermark.
-> > > 
-> > > However, with a system under load and the free page counters being
-> > > per-cpu approximations, the observed counter value in a zone can
-> > > fluctuate enough that the allocation fails but the kswapd wakeup is
-> > > also skipped while the zone is still really close to the low
-> > > watermark.
-> > > 
-> > > When one node misses a wakeup like this, it won't be aged before all
-> > > the other node's zones are down to their low watermarks again.  And
-> > > skipping a full aging cycle is an obvious fairness problem.
-> > > 
-> > > Kswapd runs until the high watermarks are restored, so it should also
-> > > be woken when the high watermarks are not met.  This ages nodes more
-> > > equally and creates a safety margin for the page counter fluctuation.
-> > 
-> > Well yes, but what guarantee is there that the per-cpu counter error
-> > problem is reliably fixed?  AFAICT this patch "fixes" it because the
-> > gap between the low and high watermarks happens to be larger than the
-> > per-cpu counter fluctuation, yes?  If so, there are surely all sorts of
-> > situations where it will break again.
-> > 
-> > To fix this reliably, we should be looking at constraining counter
-> > batch sizes or performing a counter summation to get the more accurate
-> > estimate?
+On Wed, Jul 31, 2013 at 12:16:36PM +0200, Piotr Sarna wrote:
+> Hi,
 > 
-> Thinking about this some more, the per-cpu fluctuation appears to be a
-> red herring in this case.  Kswapd wakeup uses the safe version of the
-> watermark checking code.  A percpu inaccuracy would result in the
-> allocator waking kswapd a little too early or too late, but once it
-> decides to wake it, we are getting an accurate picture on all zones.
-> The safe watermark checks are designed to catch percpu inaccuracies
-> between the low and the min watermark, the distance between low and
-> high is twice as big, so we should be good.
+> On 07/30/2013 03:53 PM, Greg KH wrote:
+> > On Tue, Jul 30, 2013 at 02:30:48PM +0200, Piotr Sarna wrote:
+> >> Current version of zram does not allow any substitution of a default
+> >> compression algorithm. Therefore, I decided to change the existing
+> >> implementation of page compression by adding Crypto API compability.
+> > 
+> > As I have stated before, I want this code to get merged out of the
+> > drivers/staging/ area _before_ any new features get added to it.  People
+> > are taking too much time adding new stuff, like this, and no one seems
+> > to be working to get it merged to the proper place anymore.
+> > 
 > 
-> The fluctuation that makes individual zones miss full aging cycles
-> comes from true free page variation under load when the NOT OK
-> threshold for the allocator is the same value as the OK threshold for
-> skipping kswapd wakeups.
+> OK, but we actually need those features in order to test zram
+> against other, competitive solutions - and then decide whether
+> and how to merge it out of /drivers/staging.
 
-Andrew, could you please update the patch to this new changelog with
-the percpu counter drivel removed?  Thanks!
+Where is another "competitive solution" in the kernel?
 
----
-When the page allocator fails to get a page from all zones in its
-given zonelist, it wakes up the per-node kswapds for all zones that
-are at their low watermark.
+And you are implying that as-is, zram isn't acceptable, right?  If so, I
+should just delete it now as I was originally told otherwise, that's why
+I merged it :(
 
-However, with a system under load the free pages in a zone can
-fluctuate enough that the allocation fails but the kswapd wakeup is
-also skipped while the zone is still really close to the low
-watermark.
+> > So again, I'm going to have to say no to a new feature here, sorry.
+> > zcache, zram, and zsmalloc need to get cleaned up and merged out of
+> > staging before anything new can be added to them.
+> > 
+> > Or, if no one is working on that, I guess I can just delete them,
+> > right?...
+> > 
+> 
+> Is there any official TODO list of cleaning up and merging out zram?
 
-When one node misses a wakeup like this, it won't be aged before all
-the other node's zones are down to their low watermarks again.  And
-skipping a full aging cycle is an obvious fairness problem.
+As it came from the "zswap" code, there doesn't seem to be one :(
 
-Kswapd runs until the high watermarks are restored, so it should also
-be woken when the high watermarks are not met.  This ages nodes more
-equally and creates a safety margin for the page counter fluctuation.
+The code is over 2 years old now, with no percieved movement out of
+staging.  If it doesn't get fixed up in the next kernel version or so, I
+will have to remove it entirely.
 
-By using zone_balanced(), it will now check, in addition to the
-watermark, if compaction requires more order-0 pages to create a
-higher order page.
+sorry,
 
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
----
+greg k-h
