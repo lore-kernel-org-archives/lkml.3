@@ -1,69 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760632Ab3GaRxw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 13:53:52 -0400
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:46801 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751894Ab3GaRxu (ORCPT
+	id S1760613Ab3GaR4z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 13:56:55 -0400
+Received: from mail-ye0-f179.google.com ([209.85.213.179]:41950 "EHLO
+	mail-ye0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751866Ab3GaR4y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 13:53:50 -0400
+	Wed, 31 Jul 2013 13:56:54 -0400
+From: Paul Moore <paul@paul-moore.com>
+To: Casey Schaufler <casey@schaufler-ca.com>
+Cc: LKLM <linux-kernel@vger.kernel.org>,
+        LSM <linux-security-module@vger.kernel.org>,
+        SE Linux <selinux@tycho.nsa.gov>, James Morris <jmorris@namei.org>,
+        John Johansen <john.johansen@canonical.com>,
+        Eric Paris <eparis@redhat.com>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Kees Cook <keescook@chromium.org>
+Subject: Re: [PATCH v14 5/6] LSM: SO_PEERSEC configuration options
+Date: Wed, 31 Jul 2013 13:56:50 -0400
+Message-ID: <2522719.Q8VOfUrvSY@sifl>
+User-Agent: KMail/4.10.5 (Linux/3.10.2-gentoo; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <51F93130.6040506@schaufler-ca.com>
+References: <51F16CFB.6040603@schaufler-ca.com> <6712209.BXb1SVfVxH@sifl> <51F93130.6040506@schaufler-ca.com>
 MIME-Version: 1.0
-In-Reply-To: <51F8D5C9.4020309@huawei.com>
-References: <1360036520-31032-1-git-send-email-wangyijing@huawei.com>
- <51A42137.9090908@huawei.com> <CAErSpo7iyiq6H-BsPNO0Nyc1SF+JteOzBqNQ+d_D=RYE_pdTEA@mail.gmail.com>
- <51F73108.4070905@huawei.com> <CAErSpo4mHTwqrW-yq_1BkjD0GyFtVYZRm9+eGfASJ_aJCOagjg@mail.gmail.com>
- <CAErSpo4xJk7bHQihtdN1UP+6Y17TOrBFhEsO_Zwyvz8iQMEXsw@mail.gmail.com> <51F8D5C9.4020309@huawei.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 31 Jul 2013 11:53:30 -0600
-Message-ID: <CAErSpo5GUTXyo4GeCGvh_GauKUA4decbDWUnD47qKPr6E65g9w@mail.gmail.com>
-Subject: Re: [PATCH] PCI: update device mps when doing pci hotplug
-To: Yijing Wang <wangyijing@huawei.com>
-Cc: Jon Mason <jdmason@kudzu.us>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Yijing Wang <wangyijing0307@gmail.com>,
-        Hanjun Guo <guohanjun@huawei.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Joe Jin <joe.jin@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 31, 2013 at 3:15 AM, Yijing Wang <wangyijing@huawei.com> wrote:
-> Hi Bjorn,
->    I didn't observe a performance difference between MPS=128 and MPS=512. I use ping $dest_ip -s 65500(large size packet)
-> to test the different situations.
-
-Interesting.  "ping" is probably not a good way to see performance
-differences, but hopefully you could see a difference in *some*
-scenario.  Otherwise, there's not much point in increasing MPS :)
-
->> I assume there are no AER or other errors logged by the root port?
-> Yes, AER is not support in local machine.
-
-Per the 5520/5500 spec, it does support AER (sec 19.11.5).  Maybe
-there's some platform support required in addition.  You might still
-be able to see some info just with "lspci -vv"
-
-> Hmmm, PCIe Spec does not involve too much about MPS setting. So maybe different platform
-> has different strategy.
-
-I think there's enough in the spec to tell us what we need to do (this
-is sec 2.2.2):
-
-  - A Transmitter must not send a TLP larger than its Max_Payload_Size
-  - A Receiver must treat TLPs larger than its Max_Payload_Size as malformed
-
-The only way I can see to guarantee that is to set the MPS on both
-ends of the link the same.
-
-> Conservatively, as a improvement for mps setting after hotplug. I think update mps setting equal to its parent
-> make sense. This is no harm to other devices, we only modify the hotplug device itself mps register.
+On Wednesday, July 31, 2013 08:45:52 AM Casey Schaufler wrote:
+> On 7/30/2013 2:47 PM, Paul Moore wrote:
+> > On Thursday, July 25, 2013 11:32:23 AM Casey Schaufler wrote:
+> >> Subject: [PATCH v14 5/6] LSM: SO_PEERSEC configuration options
+> >> 
+> >> Refine the handling of SO_PEERSEC to enable legacy
+> >> user space runtimes, Fedora in particular, when running
+> >> with multiple LSMs that are capable of providing information
+> >> using getsockopt(). This introduces an additional configuration
+> >> option, and requires that the default be the legacy behavior.
+> >> 
+> >> Signed-off-by: Casey Schaufler <casey@schaufler-ca.com>
+> > 
+> > ...
+> > 
+> >> --- a/security/Kconfig
+> >> +++ b/security/Kconfig
+> >> @@ -157,17 +157,49 @@ config SECMARK_LSM
+> >> 
+> >>  	help
+> >>  	
+> >>  	  The name of the LSM to use with the networking secmark
+> >> 
+> >> -config SECURITY_PLAIN_CONTEXT
+> >> -	bool "Backward compatable contexts without lsm='value' formatting"
+> >> -	depends on SECURITY_SELINUX || SECURITY_SMACK
+> >> -	default y
+> >> +choice
+> >> +	depends on SECURITY && (SECURITY_SELINUX || SECURITY_SMACK)
+> >> +	prompt "Peersec LSM"
+> >> +	default PEERSEC_SECURITY_FIRST
+> >> +
+> >> 
+> >>  	help
+> >> 
+> >> -	  Without this value set security context strings will
+> >> -	  include the name of the lsm with which they are associated
+> >> -	  even if there is only one LSM that uses security contexts.
+> >> -	  This matches the way contexts were handled before it was
+> >> -	  possible to have multiple concurrent security modules.
+> >> -	  If you are unsure how to answer this question, answer Y.
+> >> +	  Select the security module that will send attribute
+> >> +	  information in IP header options.
+> >> +	  Most SELinux configurations do not take advantage
+> >> +	  of Netlabel, while all Smack configurations do. Unless
+> >> +	  there is a need to do otherwise chose Smack in preference
+> >> +	  to SELinux.
+> > 
+> > I'm not hugely in love with the help text; the first sentence seems to be
+> > all that is needed, the second seems unnecessary and not exactly fair to
+> > the LSMs.
 >
-> So if you agree, I will update my patch ,only try to modify hotplug device mps, make them equal to its parent.
+> I can take out the "friendly advice". What it really should say
+> is more on the lines of:
+> 
+> 	If you have gotten to the point where you have to make
+> 	this decision you should probably call it a work day, go
+> 	home, have a nice drink and spend some time with a loved
+> 	one. In the morning take a good hard look at your network
+> 	configuration. You may end up with a different security
+> 	policies being enforced with IPv4 and IPv6 communications.
 
-Yes, I think that would be safe.  If the switch is set to a larger MPS
-than the hot-added device supports, I don't think we can safely use
-the device.
+Perfect ;)
 
-Bjorn
+-- 
+paul moore
+www.paul-moore.com
+
