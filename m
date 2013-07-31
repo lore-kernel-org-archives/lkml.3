@@ -1,84 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760289Ab3GaQvq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 12:51:46 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:6405 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755324Ab3GaQvp (ORCPT
+	id S1760398Ab3GaQxH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 12:53:07 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:37395 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755324Ab3GaQxF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 12:51:45 -0400
-X-Authority-Analysis: v=2.0 cv=KJ7Y/S5o c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=fDhLNHh0KZQA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=6No3EKuEBNEA:10 a=CIaAqoflp38mQsA4sZ4A:9 a=QEXdDO2ut3YA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-ID: <1375289503.5418.6.camel@gandalf.local.home>
-Subject: Re: [PATCH v2 0/1] tracing: trace_remove_event_call() should fail
- if call/file is in use
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Alexander Z Lam <azl@google.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        David Sharp <dhsharp@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
+	Wed, 31 Jul 2013 12:53:05 -0400
+Date: Wed, 31 Jul 2013 17:52:43 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Tejun Heo <htejun@gmail.com>
+Cc: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Peter Chen <peter.chen@freescale.com>,
+        Fabio Estevam <festevam@gmail.com>, alexander.shishkin@linux.intel.com,
+        kernel@pengutronix.de, linux-usb@vger.kernel.org,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Jeff Garzik <jeff@garzik.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        linux-kernel@vger.kernel.org
-Date: Wed, 31 Jul 2013 12:51:43 -0400
-In-Reply-To: <20130729175008.GA26284@redhat.com>
-References: <20130729175008.GA26284@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+        linux-kernel@vger.kernel.org, Mike Turquette <mturquette@linaro.org>,
+        linux-arm-kernel@lists.infradead.org
+Message-ID: <20130731165243.GX9858@sirena.org.uk>
+References: <20130731111853.GJ9858@sirena.org.uk>
+ <20130731113244.GI2810@htj.dyndns.org>
+ <20130731115027.GN9858@sirena.org.uk>
+ <20130731115527.GR2810@htj.dyndns.org>
+ <20130731132708.GQ9858@sirena.org.uk>
+ <20130731134215.GS2810@htj.dyndns.org>
+ <20130731135751.GT9858@sirena.org.uk>
+ <20130731140758.GT2810@htj.dyndns.org>
+ <20130731152523.GW9858@sirena.org.uk>
+ <20130731152932.GV2810@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="htcamZYLtaLycLnV"
+Content-Disposition: inline
+In-Reply-To: <20130731152932.GV2810@htj.dyndns.org>
+X-Cookie: You will be awarded some great honor.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 2/2] chipidea: Use devm_request_irq()
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-07-29 at 19:50 +0200, Oleg Nesterov wrote:
-> Hello.
-> 
-> On top of "[PATCH v2 0/6] tracing: open/delete fixes" series.
-> 
-> Perhaps this series should be updated, Masami has some concerns.
-> But it seems that you both mostly agree with these changes, so
-> let me send the "last" patch for review.
-> 
-> The last change in kernel/trace/trace_events.c we need to close the
-> problems with create/use/delete (at least those which I know ;).
-> 
-> Now we are ready to change trace_kprobe.c and trace_uprobe.c, Steven
-> already has the patches.
 
-Can you refresh my memory. My INBOX is quite full. What were the
-subjects for these patches? This fix has lots of different threads, not
-to mention versions.
+--htcamZYLtaLycLnV
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Thanks,
+On Wed, Jul 31, 2013 at 11:29:32AM -0400, Tejun Heo wrote:
 
--- Steve
+> Yeah, sure, thank you very much for your input.  It is of course
+> strictly ordered and the documentation needs to be updated.
 
-> 
-> Changes:
-> 
-> 	- remove the TRACE_EVENT_FL_REF_MASK (which we do not have)
-> 	  check.
-> 
-> 	  We rely on the previous changes, we do not care if someone
-> 	  have an opened file, event_enable_write/etc can do nothing
-> 	  but fail after we do remove_event_file_dir().
-> 
-> 	- Add the comment and a note into the changelog to explain
-> 	  why we still need to check FTRACE_EVENT_FL_ENABLED.
-> 
-> Oleg.
-> 
->  include/linux/ftrace_event.h |    2 +-
->  kernel/trace/trace_events.c  |   35 +++++++++++++++++++++++++++++++++--
->  2 files changed, 34 insertions(+), 3 deletions(-)
+While I note the way you're saying this given the widespread adoption I
+think there's a bit more effort needed on making sure people are aware
+of this model and that it's possible to do it - most of the APIs with
+devres support really ought to have things like a devm_clk_get_enable()
+(an example discussed further up the thread) added to them.
 
+devres has been quite widely adopted but not in a way that supports this
+usage model.
 
+--htcamZYLtaLycLnV
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR+UDYAAoJELSic+t+oim97sEP/0u75THsXKjt8hV7/hNNi/gz
+4HN1OVAima4BLyDi8OyELO8H9tFrQuHjYkOP5hhs7bVC5eb3mJ+P9fAIXbGeZAqf
+eGDBNgBXrxdNMxb4hAyhMUG3qHFKjbRvjxEmiuFGwdUc3d5jfMkf+PiG+u4HcUna
+MVr9HunbrfCJ8kiq6ih+H3gf2cyYCGGkzPxX//qLrsC+KdLFam7mfhSJubGNbAze
+NGuOxWygJF9hB0X2+0vMk90kPYVZjK+uNjqR5r8nFAlRDBVv+CyARUoQuqVzO1ta
+T+iwdXxQP/9V/7bPe1Ss02B6ka4iYgxJg5rlgnB/5cuFuyrDwH/Cj/C3cOsK+MHk
+fnuA1/FagFKrmYGXD+tZzwA/w6eMrE/Twmu3fCkvvk1vAKBea5UXdEfywvQ+jjUV
+3NOFVtlIRVE2qzxtaPWaNfsj2YeYwNjLk5hJ78jTAYZpmObO9fIuop2u2DZgx2rK
+aasudzOnzFnEMc6k2duVbtKxrWu/iePbrpU87dj02hgeyIwWxCLvNuj2Y1BTF1rZ
+vrpuReTK3vTolf2oBfL4NrYyW71MQmVzyJnzR6kdl7dUR8oq2K++IKZ/F+t7Ndas
+j31h4BoSSnKTMrKEB6QfVmGof4o+B1Vaa5Oy3W2Sin2flbXgIVY9OJ61+/hfUEnh
+Q+ZeeXzNW6AqlyI6g1sC
+=0caO
+-----END PGP SIGNATURE-----
+
+--htcamZYLtaLycLnV--
