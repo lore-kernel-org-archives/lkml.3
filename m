@@ -1,70 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759024Ab3GaJiU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 05:38:20 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:51838 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757147Ab3GaJiS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 05:38:18 -0400
-Date: Wed, 31 Jul 2013 15:08:02 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Hillf Danton <dhillf@gmail.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 08/18] sched: Reschedule task on preferred NUMA node once
- selected
-Message-ID: <20130731093802.GB4880@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <1373901620-2021-1-git-send-email-mgorman@suse.de>
- <1373901620-2021-9-git-send-email-mgorman@suse.de>
- <CAJd=RBB8rzy8bZ1JWkkmGBX2ucZ0kr9aOsiiwgV2s0y9_0z6fw@mail.gmail.com>
- <20130731090727.GI2296@suse.de>
+	id S1759076Ab3GaJik (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 05:38:40 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:57618 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753966Ab3GaJii (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 05:38:38 -0400
+Message-ID: <51F8DA99.3010303@huawei.com>
+Date: Wed, 31 Jul 2013 17:36:25 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20130731090727.GI2296@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13073109-5806-0000-0000-000022406B25
+To: Tejun Heo <tj@kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
+Subject: [PATCH v2 5/5] cgroup: remove struct cgroup_seqfile_state
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Mel Gorman <mgorman@suse.de> [2013-07-31 10:07:27]:
+We can use struct cfent instead.
 
-> On Wed, Jul 17, 2013 at 09:31:05AM +0800, Hillf Danton wrote:
-> > On Mon, Jul 15, 2013 at 11:20 PM, Mel Gorman <mgorman@suse.de> wrote:
-> > > +static int
-> > > +find_idlest_cpu_node(int this_cpu, int nid)
-> > > +{
-> > > +       unsigned long load, min_load = ULONG_MAX;
-> > > +       int i, idlest_cpu = this_cpu;
-> > > +
-> > > +       BUG_ON(cpu_to_node(this_cpu) == nid);
-> > > +
-> > > +       rcu_read_lock();
-> > > +       for_each_cpu(i, cpumask_of_node(nid)) {
-> > 
-> > Check allowed CPUs first if task is given?
-> > 
-> 
-> If the task is not allowed to run on the CPUs for that node then how
-> were the NUMA hinting faults recorded?
-> 
+v2:
+- remove cgroup_seqfile_release().
 
-But still we could check if the task is allowed to run on a cpu before we
-capture the load of the cpu. This would avoid us trying to select a cpu
-whose load is low but which cannot run this task.
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+---
+ kernel/cgroup.c | 45 +++++++++++++--------------------------------
+ 1 file changed, 13 insertions(+), 32 deletions(-)
 
-> -- 
-> Mel Gorman
-> SUSE Labs
-> 
-
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 0d378b1..c836dff 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -2362,11 +2362,6 @@ static ssize_t cgroup_file_read(struct file *file, char __user *buf,
+  * supports string->u64 maps, but can be extended in future.
+  */
+ 
+-struct cgroup_seqfile_state {
+-	struct cftype *cft;
+-	struct cgroup *cgroup;
+-};
+-
+ static int cgroup_map_add(struct cgroup_map_cb *cb, const char *key, u64 value)
+ {
+ 	struct seq_file *sf = cb->state;
+@@ -2375,59 +2370,45 @@ static int cgroup_map_add(struct cgroup_map_cb *cb, const char *key, u64 value)
+ 
+ static int cgroup_seqfile_show(struct seq_file *m, void *arg)
+ {
+-	struct cgroup_seqfile_state *state = m->private;
+-	struct cftype *cft = state->cft;
++	struct cfent *cfe = m->private;
++	struct cftype *cft = cfe->type;
++	struct cgroup *cgrp = __d_cgrp(cfe->dentry->d_parent);
++
+ 	if (cft->read_map) {
+ 		struct cgroup_map_cb cb = {
+ 			.fill = cgroup_map_add,
+ 			.state = m,
+ 		};
+-		return cft->read_map(state->cgroup, cft, &cb);
++		return cft->read_map(cgrp, cft, &cb);
+ 	}
+-	return cft->read_seq_string(state->cgroup, cft, m);
+-}
+-
+-static int cgroup_seqfile_release(struct inode *inode, struct file *file)
+-{
+-	struct seq_file *seq = file->private_data;
+-	kfree(seq->private);
+-	return single_release(inode, file);
++	return cft->read_seq_string(cgrp, cft, m);
+ }
+ 
+ static const struct file_operations cgroup_seqfile_operations = {
+ 	.read = seq_read,
+ 	.write = cgroup_file_write,
+ 	.llseek = seq_lseek,
+-	.release = cgroup_seqfile_release,
++	.release = single_release,
+ };
+ 
+ static int cgroup_file_open(struct inode *inode, struct file *file)
+ {
+ 	int err;
++	struct cfent *cfe;
+ 	struct cftype *cft;
+ 
+ 	err = generic_file_open(inode, file);
+ 	if (err)
+ 		return err;
+-	cft = __d_cft(file->f_dentry);
++	cfe = __d_cfe(file->f_dentry);
++	cft = cfe->type;
+ 
+ 	if (cft->read_map || cft->read_seq_string) {
+-		struct cgroup_seqfile_state *state;
+-
+-		state = kzalloc(sizeof(*state), GFP_USER);
+-		if (!state)
+-			return -ENOMEM;
+-
+-		state->cft = cft;
+-		state->cgroup = __d_cgrp(file->f_dentry->d_parent);
+ 		file->f_op = &cgroup_seqfile_operations;
+-		err = single_open(file, cgroup_seqfile_show, state);
+-		if (err < 0)
+-			kfree(state);
+-	} else if (cft->open)
++		err = single_open(file, cgroup_seqfile_show, cfe);
++	} else if (cft->open) {
+ 		err = cft->open(inode, file);
+-	else
+-		err = 0;
++	}
+ 
+ 	return err;
+ }
 -- 
-Thanks and Regards
-Srikar Dronamraju
-
+1.8.0.2
