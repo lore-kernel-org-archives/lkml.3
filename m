@@ -1,66 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759565Ab3GaLYG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 07:24:06 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:48295 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755524Ab3GaLYE (ORCPT
+	id S932193Ab3GaLYW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 07:24:22 -0400
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:17740
+	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756147Ab3GaLYF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 07:24:04 -0400
+	Wed, 31 Jul 2013 07:24:05 -0400
+X-Greylist: delayed 639 seconds by postgrey-1.27 at vger.kernel.org; Wed, 31 Jul 2013 07:24:05 EDT
+X-IronPort-AV: E=Sophos;i="4.89,786,1367964000"; 
+   d="scan'208";a="22862046"
+Message-ID: <51F8F14C.8060507@inria.fr>
+Date: Wed, 31 Jul 2013 13:13:16 +0200
+From: Brice Goglin <Brice.Goglin@inria.fr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130630 Icedove/17.0.7
 MIME-Version: 1.0
-Date: Wed, 31 Jul 2013 16:54:03 +0530
-Message-ID: <CAOaiJ-mNE=1nuaPqd+qUZVsHakm1Mo-j40dXiTeN+nEVLXOvXg@mail.gmail.com>
-Subject: ipv4: crash at leaf_walk_rcu
-From: vinayak menon <vinayakm.list@gmail.com>
-To: linux-kernel@vger.kernel.org, davem@davemloft.net,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Arun KS <getarunks@gmail.com>
+To: Dan Williams <djbw@fb.com>, Vinod Koul <vinod.koul@intel.com>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: dmaengine: make dma_channel_rebalance() NUMA aware
+X-Enigmail-Version: 1.5.1
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+dmaengine: make dma_channel_rebalance() NUMA aware
 
-A crash was seen on 3.4.5 kernel during some random wlan operations.
+dma_channel_rebalance() currently distributes channels by processor ID.
+These IDs often change with the BIOS, and the order isn't related to
+the DMA channel list (related to PCI bus ids).
+* On my SuperMicro dual E5 machine, first socket has processor IDs [0-7]
+  (and [16-23] for hyperthreads), second socket has [8-15]+[24-31]
+  => channels are properly allocated to local CPUs.
+* On Dells R720 with same processors, first socket has even processor IDs,
+  second socket has odd numbers
+  => half the processors get channels on the remote socket, causing
+     cross-NUMA traffic and lower DMA performance.
 
-CPU: Single core ARM Cortex A9.
+Change nth_chan() to return the channel with min table_count and in the
+NUMA node of the given CPU, if any. If none, the (non-local) channel with
+min table_count is returned. nth_chan() is therefore renamed into min_chan()
+since we don't iterate until the nth channel anymore. In practice, the
+behavior is the same because first channels are taken first and are then
+ignored because they got an additional reference.
 
-fib_route_seq_next was called with second argument (void *v) as
-0xd6e3e360 which is a "freed" object of the "ip_fib_trie" cache. I
-confirmed that the object was freed with crash utility.
+The new code has a slightly higher complexity since we always scan the
+entire list of channels for finding the minimal table_count (instead
+of stopping after N chans), and because we check whether the CPU is in the
+DMA device locality mask. Overall we still have time complexity =
+number of chans x number of processors. This rebalance is rarely used,
+so this won't hurt.
 
-Sequence: fib_route_seq_next->trie_nextleaf->leaf_walk_rcu
+On the above SuperMicro machine, channels are still allocated the same.
+On the Dells, there are no locality issue anymore (each MEMCPY channel
+goes to both hyperthreads of a single core of the local socket).
 
-As "v" was a freed object, inside trie_nextleaf(), node_parent_rcu()
-returned an invalid tnode. But as I had enabled slab poisoning and the
-object was already freed, the tnode was 0x6b6b6b6b. And this was
-passed to leaf_walk_rcu and resulted in the crash.
+Signed-off-by: Brice Goglin <Brice.Goglin@inria.fr>
+---
+ drivers/dma/dmaengine.c |   64 +++++++++++++++++++++++++++---------------------
+ 1 file changed, 37 insertions(+), 27 deletions(-)
 
-fib_route_seq_start, takes rcu_read_lock(), but free_leaf calls
-call_rcu_bh. Can this be the problem ?
-Should rcu_read_lock() in fib_route_seq_start be changed to rcu_read_lock_bh() ?
+Index: b/drivers/dma/dmaengine.c
+===================================================================
+--- a/drivers/dma/dmaengine.c	2013-07-29 05:53:33.000000000 +0200
++++ b/drivers/dma/dmaengine.c	2013-07-31 13:02:34.640590036 +0200
+@@ -376,20 +376,35 @@ void dma_issue_pending_all(void)
+ EXPORT_SYMBOL(dma_issue_pending_all);
+ 
+ /**
+- * nth_chan - returns the nth channel of the given capability
++ * dma_chan_is_local - returns 1 if the channel is close to the cpu
++ */
++static int dma_chan_is_local(struct dma_chan *chan, int cpu)
++{
++#ifdef CONFIG_NUMA
++	int node = dev_to_node(chan->device->dev);
++	return node == -1 || cpumask_test_cpu(cpu, cpumask_of_node(node));
++#else
++	return 1;
++#endif
++}
++
++/**
++ * min_chan - returns the channel with min count and close to the cpu
+  * @cap: capability to match
+- * @n: nth channel desired
++ * @cpu: cpu index which the channel should be close to
+  *
+- * Defaults to returning the channel with the desired capability and the
+- * lowest reference count when 'n' cannot be satisfied.  Must be called
+- * under dma_list_mutex.
++ * If some channels are close to the given cpu, the one with the lowest
++ * reference count is returned. Otherwise, cpu is ignored and only the
++ * reference count is taken into account.
++ * Must be called under dma_list_mutex.
+  */
+-static struct dma_chan *nth_chan(enum dma_transaction_type cap, int n)
++static struct dma_chan *min_chan(enum dma_transaction_type cap, int cpu)
+ {
+ 	struct dma_device *device;
+ 	struct dma_chan *chan;
+ 	struct dma_chan *ret = NULL;
+ 	struct dma_chan *min = NULL;
++	struct dma_chan *localmin = NULL;
+ 
+ 	list_for_each_entry(device, &dma_device_list, global_node) {
+ 		if (!dma_has_cap(cap, device->cap_mask) ||
+@@ -398,22 +413,18 @@ static struct dma_chan *nth_chan(enum dm
+ 		list_for_each_entry(chan, &device->channels, device_node) {
+ 			if (!chan->client_count)
+ 				continue;
+-			if (!min)
+-				min = chan;
+-			else if (chan->table_count < min->table_count)
++			if (!min || chan->table_count < min->table_count)
+ 				min = chan;
+ 
+-			if (n-- == 0) {
+-				ret = chan;
+-				break; /* done */
+-			}
++			if (cpu != -1 && dma_chan_is_local(chan, cpu))
++				if (!localmin ||
++				    chan->table_count < localmin->table_count)
++					localmin = chan;
+ 		}
+-		if (ret)
+-			break; /* done */
+ 	}
+ 
+ 	if (!ret)
+-		ret = min;
++		ret = localmin ? localmin : min;
+ 
+ 	if (ret)
+ 		ret->table_count++;
+@@ -435,7 +446,6 @@ static void dma_channel_rebalance(void)
+ 	struct dma_device *device;
+ 	int cpu;
+ 	int cap;
+-	int n;
+ 
+ 	/* undo the last distribution */
+ 	for_each_dma_cap_mask(cap, dma_cap_mask_all)
+@@ -454,16 +464,16 @@ static void dma_channel_rebalance(void)
+ 		return;
+ 
+ 	/* redistribute available channels */
+-	n = 0;
+-	for_each_dma_cap_mask(cap, dma_cap_mask_all)
+-		for_each_online_cpu(cpu) {
+-			if (num_possible_cpus() > 1)
+-				chan = nth_chan(cap, n++);
+-			else
+-				chan = nth_chan(cap, -1);
+-
+-			per_cpu_ptr(channel_table[cap], cpu)->chan = chan;
+-		}
++	if (num_possible_cpus() == 1) {
++		for_each_dma_cap_mask(cap, dma_cap_mask_all)
++			per_cpu_ptr(channel_table[cap], 0)->chan
++			 = min_chan(cap, -1);
++	} else {
++		for_each_dma_cap_mask(cap, dma_cap_mask_all)
++			for_each_online_cpu(cpu)
++			per_cpu_ptr(channel_table[cap], cpu)->chan
++			 = min_chan(cap, cpu);
++	}
+ }
+ 
+ static struct dma_chan *private_candidate(const dma_cap_mask_t *mask,
 
-----------------------------------------------------------------------------
-PC is at leaf_walk_rcu+0x10/0xa0
-LR is at fib_route_seq_next+0x58/0x74
-pc : [<c0500e5c>]    lr : [<c050108c>]    psr: a0000013
-sp : c150bee0  ip : 00000000  fp : 00000000
-r10: 00000400  r9 : 53701020  r8 : c32345c0
-r7 : 00000000  r6 : 00000001  r5 : 00000000  r4 : 00000002
-r3 : 6b6b6b6b  r2 : 00000001  r1 : d6e3e360  r0 : 6b6b6b6a
-Flags: NzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
-Control: 10c53c7d  Table: 835dc059  DAC: 00000015
-
-Backtrace:
-[<c0500e5c>] (leaf_walk_rcu+0x10/0xa0) from [<c050108c>]
-(fib_route_seq_next+0x58/0x74)
-[<c050108c>] (fib_route_seq_next+0x58/0x74) from [<c011c06c>]
-(seq_read+0x2cc/0x438)
-[<c011c06c>] (seq_read+0x2cc/0x438) from [<c0145734>] (proc_reg_read+0xb0/0xcc)
-[<c0145734>] (proc_reg_read+0xb0/0xcc) from [<c0100798>] (vfs_read+0xac/0x124)
-[<c0100798>] (vfs_read+0xac/0x124) from [<c0100848>] (sys_read+0x38/0x64)
-[<c0100848>] (sys_read+0x38/0x64) from [<c000e100>] (ret_fast_syscall+0x0/0x48)
-
-Thanks,
-Vinayak
