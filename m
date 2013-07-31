@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759370Ab3GaLXQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 07:23:16 -0400
-Received: from eu1sys200aog115.obsmtp.com ([207.126.144.139]:59332 "EHLO
-	eu1sys200aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755379Ab3GaLXP (ORCPT
+	id S1759590Ab3GaLXh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 07:23:37 -0400
+Received: from eu1sys200aog114.obsmtp.com ([207.126.144.137]:40712 "EHLO
+	eu1sys200aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756147Ab3GaLXg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 07:23:15 -0400
-Message-ID: <51F8F0FA.1050200@st.com>
-Date: Wed, 31 Jul 2013 12:11:54 +0100
+	Wed, 31 Jul 2013 07:23:36 -0400
+Message-ID: <51F8F10F.4040403@st.com>
+Date: Wed, 31 Jul 2013 12:12:15 +0100
 From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
 Reply-To: srinivas.kandagatla@st.com
 Organization: STMicroelectronics
@@ -16,9 +16,9 @@ User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17
 MIME-Version: 1.0
 To: Sachin Kamat <sachin.kamat@linaro.org>
 Cc: linux-kernel@vger.kernel.org, linus.walleij@linaro.org
-Subject: Re: [PATCH 1/2] pinctrl: st: Convert to use devm_ioremap_resource
-References: <1375071776-29037-1-git-send-email-sachin.kamat@linaro.org>
-In-Reply-To: <1375071776-29037-1-git-send-email-sachin.kamat@linaro.org>
+Subject: Re: [PATCH 2/2] pinctrl: st: Staticize local symbols
+References: <1375071776-29037-1-git-send-email-sachin.kamat@linaro.org> <1375071776-29037-2-git-send-email-sachin.kamat@linaro.org>
+In-Reply-To: <1375071776-29037-2-git-send-email-sachin.kamat@linaro.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -26,33 +26,46 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 29/07/13 05:22, Sachin Kamat wrote:
-> devm_request_and_ioremap is deprecated. Use devm_ioremap_resource
-> instead.
+> Symbols used only in this file are made static.
 > 
 > Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
 > ---
->  drivers/pinctrl/pinctrl-st.c |    8 +++-----
->  1 file changed, 3 insertions(+), 5 deletions(-)
+>  drivers/pinctrl/pinctrl-st.c |    8 ++++----
+>  1 file changed, 4 insertions(+), 4 deletions(-)
 > 
 > diff --git a/drivers/pinctrl/pinctrl-st.c b/drivers/pinctrl/pinctrl-st.c
-> index 04d4506..6246d7a 100644
+> index 6246d7a..2a10a31 100644
 > --- a/drivers/pinctrl/pinctrl-st.c
 > +++ b/drivers/pinctrl/pinctrl-st.c
-> @@ -1222,11 +1222,9 @@ static int st_gpiolib_register_bank(struct st_pinctrl *info,
->  	if (of_address_to_resource(np, 0, &res))
->  		return -ENODEV;
+> @@ -288,8 +288,8 @@ struct st_pinctrl {
 >  
-> -	bank->base = devm_request_and_ioremap(dev, &res);
-> -	if (!bank->base) {
-> -		dev_err(dev, "Can't get IO memory mapping!\n");
-> -		return -ENODEV;
-> -	}
-> +	bank->base = devm_ioremap_resource(dev, &res);
-> +	if (IS_ERR(bank->base))
-> +		return PTR_ERR(bank->base);
+>  /* SOC specific data */
+>  /* STiH415 data */
+> -unsigned int stih415_input_delays[] = {0, 500, 1000, 1500};
+> -unsigned int stih415_output_delays[] = {0, 1000, 2000, 3000};
+> +static unsigned int stih415_input_delays[] = {0, 500, 1000, 1500};
+> +static unsigned int stih415_output_delays[] = {0, 1000, 2000, 3000};
 >  
->  	bank->gpio_chip = st_gpio_template;
->  	bank->gpio_chip.base = bank_num * ST_GPIO_PINS_PER_BANK;
+>  #define STIH415_PCTRL_COMMON_DATA				\
+>  	.rt_style	= st_retime_style_packed,		\
+> @@ -324,7 +324,7 @@ static const struct st_pctl_data  stih415_right_data = {
+>  };
+>  
+>  /* STiH416 data */
+> -unsigned int stih416_delays[] = {0, 300, 500, 750, 1000, 1250, 1500,
+> +static unsigned int stih416_delays[] = {0, 300, 500, 750, 1000, 1250, 1500,
+>  			1750, 2000, 2250, 2500, 2750, 3000, 3250 };
+>  
+>  static const struct st_pctl_data  stih416_data = {
+> @@ -811,7 +811,7 @@ static int st_pmx_get_funcs_count(struct pinctrl_dev *pctldev)
+>  	return info->nfunctions;
+>  }
+>  
+> -const char *st_pmx_get_fname(struct pinctrl_dev *pctldev,
+> +static const char *st_pmx_get_fname(struct pinctrl_dev *pctldev,
+>  	unsigned selector)
+>  {
+>  	struct st_pinctrl *info = pinctrl_dev_get_drvdata(pctldev);
 > 
 Acked-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
 
