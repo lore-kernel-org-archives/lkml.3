@@ -1,59 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756187Ab3GaGKT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 02:10:19 -0400
-Received: from vs15.mail.saunalahti.fi ([62.142.117.202]:54586 "EHLO
-	vs15.mail.saunalahti.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754401Ab3GaGKR convert rfc822-to-8bit (ORCPT
+	id S1757711Ab3GaGLd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 02:11:33 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:51737 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754467Ab3GaGLb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 02:10:17 -0400
-X-Greylist: delayed 369 seconds by postgrey-1.27 at vger.kernel.org; Wed, 31 Jul 2013 02:10:17 EDT
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 6.5 \(1508\))
-Subject: Re: [PATCH 26/36] SCSI: st: convert class code to use dev_groups
-From: =?windows-1252?Q?Kai_M=E4kisara?= <Kai.Makisara@kolumbus.fi>
-In-Reply-To: <1374703539-9705-27-git-send-email-gregkh@linuxfoundation.org>
-Date: Wed, 31 Jul 2013 09:03:59 +0300
-Cc: linux-kernel@vger.kernel.org,
-        "James E.J. Bottomley" <JBottomley@parallels.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <6739E18D-CC83-4818-8524-4F65D715581B@kolumbus.fi>
-References: <1374703539-9705-1-git-send-email-gregkh@linuxfoundation.org> <1374703539-9705-27-git-send-email-gregkh@linuxfoundation.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-X-Mailer: Apple Mail (2.1508)
+	Wed, 31 Jul 2013 02:11:31 -0400
+Date: Wed, 31 Jul 2013 08:11:29 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Dave Jones <davej@redhat.com>, Dave Chinner <david@fromorbit.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
+Subject: Re: XFS undeletable files. (3.11rc3)
+Message-ID: <20130731061129.GA354@x4>
+References: <20130712023930.GA6473@redhat.com>
+ <20130725041538.GH13468@dastard>
+ <20130730202628.GA16356@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130730202628.GA16356@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On 25.7.2013, at 1.05, Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
-
-> The dev_attrs field of struct class is going away soon, dev_groups
-> should be used instead.  This converts the scsi tape class code to use
-> the correct field.
+On 2013.07.30 at 16:26 -0400, Dave Jones wrote:
+> On Thu, Jul 25, 2013 at 02:15:38PM +1000, Dave Chinner wrote:
+>  > On Thu, Jul 11, 2013 at 10:39:30PM -0400, Dave Jones wrote:
+>  > > Just saw this during boot after an unclean shutdown. It hung afterwards.
+>  > > 
+>  > > [   97.162665] XFS: Assertion failed: xfs_dir2_sf_lookup(args) == ENOENT, file: fs/xfs/xfs_dir2_sf.c, line: 358
+>  > > [   97.164646] ------------[ cut here ]------------
+>  > 
+>  > I just reproduced this by chance. I know exactly what I was doing
+>  > when it went bang, so I might be able to reduce it from scattergun
+>  > blast testing to be able to reproduce it on demand.
 > 
-> Cc: Kai Mäkisara <Kai.Makisara@kolumbus.fi>
-> Cc: James E.J. Bottomley <JBottomley@parallels.com>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
-Acked-by: Kai Mäkisara <Kai.Makisara@kolumbus.fi>
-
+> I xfs_repair'd that disk a week or so back, and have been fine until today when..
 > 
-> James, feel free to take this through your tree, or ACK it and I can
-> take it through mine.
+> (16:22:57:root@zerosum:tmp.6)# ll
+> ls: cannot access : No such file or directory
+> total 0
+> ?????????? ? ? ? ?            ? ?
+> (16:22:58:root@zerosum:tmp.6)# cd ..
+> (16:23:06:root@zerosum:tmp)# rm -rf tmp.6
+> rm: cannot remove â€˜tmp.6â€™: Directory not empty
+> (16:23:14:root@zerosum:tmp)# cd -
+> /home/davej/src/trinity/tmp/tmp.6
+> (16:23:23:root@zerosum:tmp.6)# stat *
+> stat: cannot stat â€˜\020â€™: No such file or directory
 > 
-> drivers/scsi/st.c | 27 ++++++++++++++++-----------
-> 1 file changed, 16 insertions(+), 11 deletions(-)
+> I don't know if this is residual crap from that first problem that never got fixed up,
+> or something new.
 > 
-> diff --git a/drivers/scsi/st.c b/drivers/scsi/st.c
-> index 2a32036a..ff44b3c2 100644
-> --- a/drivers/scsi/st.c
-> +++ b/drivers/scsi/st.c
-> @@ -82,7 +82,7 @@ static int try_rdio = 1;
-> static int try_wdio = 1;
-> 
-…
+> Any ideas ?
 
-Thanks,
-Kai
+If you have crashed your test machine running an rc1 or rc2 kernel, you
+must run xfs_repair again to clean up possible corruption (that happened
+during log replay). The fix (commit e1b4271ac26) is in rc3.
 
+-- 
+Markus
