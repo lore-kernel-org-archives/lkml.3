@@ -1,103 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759671Ab3GaLtO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 07:49:14 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:51109 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751218Ab3GaLtK (ORCPT
+	id S1759542Ab3GaLuE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 07:50:04 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:47271 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751098Ab3GaLuB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 07:49:10 -0400
-X-AuditID: cbfee61b-b7efe6d000007b11-77-51f8f9b5d54c
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Joonyoung Shim <jy0922.shim@samsung.com>
-Cc: linux-mm@kvack.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, liuj97@gmail.com,
-        kosaki.motohiro@gmail.com, Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Subject: Re: [PATCH] Revert
- "mm/memory-hotplug: fix lowmem count overflow when offline pages"
-Date: Wed, 31 Jul 2013 13:48:51 +0200
-Message-id: <3049413.HnxJdeugZK@amdc1032>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-45-generic; KDE/4.8.5; i686; ; )
-In-reply-to: <1572085.gN7iX7IvMe@amdc1032>
-References: <1375260602-2462-1-git-send-email-jy0922.shim@samsung.com>
- <1572085.gN7iX7IvMe@amdc1032>
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=ISO-8859-1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrLLMWRmVeSWpSXmKPExsVy+t9jAd2tP38EGlxtFrOYs34Nm8WLexdZ
-	LJ5t4ba4vGsOm8W9Nf9ZLZqPbGSy2HZ4B5MDu8fOWXfZPTZ9msTucWLGbxaPB4c2s3j0bVnF
-	6PF5k1wAWxSXTUpqTmZZapG+XQJXxpHnU9gK9glU9F43amBcydvFyMEhIWAiseqUbxcjJ5Ap
-	JnHh3nq2LkYuDiGBRYwSb3r+sEA4LUwS67r/sINUsQlYSUxsX8UI0iwioCOx4SQ7SA2zwApG
-	iU/XJjKB1AgLxEvcfX0CzGYRUJU49mw2G4jNK6Ap0fv+PTOILSrgKnFu0Q8WkDmcAloS0xby
-	goSFBNIktq08xwpRLijxY/I9FhCbWUBeYt/+qawQto7E/tZpbBMYBWYhKZuFpGwWkrIFjMyr
-	GEVTC5ILipPSc430ihNzi0vz0vWS83M3MYID/Zn0DsZVDRaHGAU4GJV4eGdc+h4oxJpYVlyZ
-	e4hRgoNZSYRXPuhHoBBvSmJlVWpRfnxRaU5q8SFGaQ4WJXHeg63WgUIC6YklqdmpqQWpRTBZ
-	Jg5OqQZGVmc5Ta5fTG7zNudX781mufPy90neMqNzyuJrp7Vz3xZK3/PDn6F/W8SaVZfudx7Y
-	dfEfT/IcsxsXmSf/+9OpmPE5JUl0jvDPWVLrjM6IWj90OqF+Y/qe+pfv5Wq0G+OPG8VqsK0W
-	VtkTV7XS6tOFhPsVdzee+vrtfzp/0PaCb2XbBOdaCz4xVmIpzkg01GIuKk4EAMvFdp1wAgAA
+	Wed, 31 Jul 2013 07:50:01 -0400
+Date: Wed, 31 Jul 2013 13:49:57 +0200
+From: "maxime.ripard" <maxime.ripard@free-electrons.com>
+To: "kevin.z.m" <kevin.z.m.zh@gmail.com>
+Cc: Emilio Lopez <emilio@elopez.com.ar>,
+        Mike Turquette <mturquette@linaro.org>,
+        =?utf-8?B?5a2Z5b2m6YKm?= <sunny@allwinnertech.com>,
+        =?utf-8?B?5ZC05Lmm6ICV?= <shuge@allwinnertech.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Re: [PATCH 4/4] ARM: sun6i: Enable clock support in the DTSI
+Message-ID: <20130731114957.GD2911@lukather>
+References: <1375195462-19566-1-git-send-email-maxime.ripard@free-electrons.com>
+ <1375195462-19566-5-git-send-email-maxime.ripard@free-electrons.com>
+ <51F86A2E.10505@elopez.com.ar>
+ <20130731073724.GA24439@lukather>
+ <2013073116110750016327@gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="WlEyl6ow+jlIgNUh"
+Content-Disposition: inline
+In-Reply-To: <2013073116110750016327@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, July 31, 2013 01:17:46 PM Bartlomiej Zolnierkiewicz wrote:
-> 
-> Hi,
-> 
-> On Wednesday, July 31, 2013 05:50:02 PM Joonyoung Shim wrote:
-> > This reverts commit cea27eb2a202959783f81254c48c250ddd80e129.
-> 
-> Could you please also include commit descriptions, i.e.
-> commit cea27eb2a202959783f81254c48c250ddd80e129 ("mm/memory-hotplug: fix
-> lowmem count overflow when offline pages")?
-> 
-> > Fixed to adjust totalhigh_pages when hot-removing memory by commit
-> > 3dcc0571cd64816309765b7c7e4691a4cadf2ee7, so that commit occurs
-> > duplicated decreasing of totalhigh_pages.
-> 
-> Could you please describe it a bit more (because it is non-obvious) how
-> the commit cea27eb effectively does the same totalhigh_pages adjustment
-> that is present in the commit 3dcc057?
 
-Err, the other way around. How the commit 3dcc057 ("mm: correctly update
-zone->managed_pages") does what cea27eb ("mm/memory-hotplug: fix lowmem
-count overflow when offline pages") did.
+--WlEyl6ow+jlIgNUh
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Best regards,
---
-Bartlomiej Zolnierkiewicz
-Samsung R&D Institute Poland
-Samsung Electronics
+Hi Kevin,
 
-> > Signed-off-by: Joonyoung Shim <jy0922.shim@samsung.com>
-> > ---
-> > The commit cea27eb2a202959783f81254c48c250ddd80e129 is only for stable,
-> > is it right?
-> 
-> It is in Linus' tree now but you're probably right that it should be
-> limited to stable tree.
-> 
-> Best regards,
-> --
-> Bartlomiej Zolnierkiewicz
-> Samsung R&D Institute Poland
-> Samsung Electronics
-> 
-> >  mm/page_alloc.c | 4 ----
-> >  1 file changed, 4 deletions(-)
-> > 
-> > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> > index b100255..2b28216 100644
-> > --- a/mm/page_alloc.c
-> > +++ b/mm/page_alloc.c
-> > @@ -6274,10 +6274,6 @@ __offline_isolated_pages(unsigned long start_pfn, unsigned long end_pfn)
-> >  		list_del(&page->lru);
-> >  		rmv_page_order(page);
-> >  		zone->free_area[order].nr_free--;
-> > -#ifdef CONFIG_HIGHMEM
-> > -		if (PageHighMem(page))
-> > -			totalhigh_pages -= 1 << order;
-> > -#endif
-> >  		for (i = 0; i < (1 << order); i++)
-> >  			SetPageReserved((page+i));
-> >  		pfn += (1 << order);
+On Wed, Jul 31, 2013 at 04:11:11PM +0800, kevin.z.m wrote:
+> Hi, Maxime,
+>=20
+> > The problem is a bit more complex than that.
+>=20
+> > On the A31, the losc clock is actually a mux between an external
+> > oscillator running at 32kHz, and the internal oscillator running at
+> > 667MHz, that would be scaled down.
+>=20
+> > Support for this mux is not quite there yet, since I've not seen any
+> > documentation for it, but this would allow to just rearrange losc
+> > parents and compatible when we will had such support.
+>=20
+> I think there is some misunderstanding. All allwinner's platforms have=20
+> 2 losc clock source. One is the external 32KHz oscillator, and the other
+> is internal 32kHz R/C circuit. The internal 32k R/C circuit can't provide
+> a very exact clock on 32KHz. The mux is just for select external osc or i=
+nternal
+> 32KHz R/C. If there is no external 32kHz oscillator, we can replace it wi=
+th=20
+> internal 32kHz R/C for some low speed but not exact clock requirement.
 
+Thanks for the clarification.
+
+How does one select either the internal or the external 32kHz
+oscillator? Is this done in software (I can't find any reference to that
+in the user manuals) or in hardware?
+
+Thanks,
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--WlEyl6ow+jlIgNUh
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR+PnkAAoJEBx+YmzsjxAgeHgQAJgG2liVnGh8iGS6i6oT9Ypd
+DXJpeqWv3TuyidQ0HquF/B+9QJjiyzr/gUnE9agExj84ZFMmm7m5iP3XE68YNVLI
+NBUKfEgd4sHgfm9z4+b94832txIoUKdU5dbFCmgZ82COqndyqhk3XlQVl6mo8FFn
+1jRgNSlGprrYZ7csGL3nrDELoHNGGO+fyYybculiC1PXq/f5SohN36+1c4Igaxh/
+6TJV3ObdILGfEdIOuqhvXPJ98BPmwriYWfuHym8AGD0miJfTk7gTAnYl6QLKOMkx
+k1JvemCHVJuxswOJXqfcdKwER6cOQakq2Q6m4XnSL5fj0mgJgERMHo6SrH8DvYRB
+fY+9TZN4xmVeergyCb/lcxs/4j7XayG27Kj2nB5cDmM+jXHwWM0s59rFOjuKmDJX
+k6xzJr5HsSSIxV5X/1cvud7GrchllNIk7/xeuTf4XD+7fokyRoLYkikMj3SYQcZX
+v3W0Ea5cRQbuHndrzEtkeDqPUFh3MExPs7R5unXLW3TR+QzeF1dfI5jxg2eYL2xA
+19YFUfqmsfCAiPWIfcHQb7oJXGmI1RYOmzSPHBAxj7Va4V1aLMHMxciS3QZeBcb2
+Xm2wKYv16H14EoCt6bS79x2mYUoHNsbKe/cxZ1rd2LYxpz2Bj/3t/v9GI+2aK43B
+GEV79GbXU013QQ2XbisO
+=A+IT
+-----END PGP SIGNATURE-----
+
+--WlEyl6ow+jlIgNUh--
