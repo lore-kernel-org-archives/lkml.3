@@ -1,104 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758637Ab3GaA1q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 20:27:46 -0400
-Received: from zetta.elopez.com.ar ([199.30.59.35]:56410 "EHLO
-	zetta.elopez.com.ar" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756990Ab3GaA1o (ORCPT
+	id S1758676Ab3GaA2i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 20:28:38 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:25099 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756990Ab3GaA2g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 20:27:44 -0400
-Message-ID: <51F859F5.70501@elopez.com.ar>
-Date: Tue, 30 Jul 2013 21:27:33 -0300
-From: =?ISO-8859-1?Q?Emilio_L=F3pez?= <emilio@elopez.com.ar>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Tue, 30 Jul 2013 20:28:36 -0400
+X-IronPort-AV: E=Sophos;i="4.89,782,1367996400"; 
+   d="scan'208";a="65803387"
+X-IronPort-AV: E=Sophos;i="4.89,782,1367996400"; 
+   d="scan'208";a="522883003"
+Date: Tue, 30 Jul 2013 17:27:44 -0700
+From: "Luis R. Rodriguez" <rodrigue@qca.qualcomm.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Marcel Holtmann <marcel@holtmann.org>,
+        Hector Palacios <hector.palacios@digi.com>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        "linux-bluetooth@vger.kernel.org" <linux-bluetooth@vger.kernel.org>,
+        "gustavo@padovan.org" <gustavo@padovan.org>,
+        "johan.hedberg@gmail.com" <johan.hedberg@gmail.com>,
+        <mcgrof@do-not-panic.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "surajs@qca.qualcomm.com" <surajs@qca.qualcomm.com>,
+        <jjohnson@qca.qualcomm.com>, Adrian Chadd <adrian@freebsd.org>,
+        <ddahlby@qca.qualcomm.com>, Ben Hutchings <ben@decadent.org.uk>
+Subject: Re: ROM Patching (was: [PATCH] bluetooth: remove wrong dependency
+ for BT_ATH3K)
+Message-ID: <20130731002744.GT17130@pogo>
+References: <1375114325-25498-1-git-send-email-hector.palacios@digi.com>
+ <5438CD3C-E28C-485C-94B8-F743E8B13D4A@holtmann.org>
+ <51F7722E.9050708@digi.com>
+ <20130730205601.GI17130@pogo>
+ <2C94C740-76BA-4058-B0D7-C37D44875CA1@holtmann.org>
+ <20130730224809.GN17130@pogo>
+ <20130730235508.GA25319@kroah.com>
 MIME-Version: 1.0
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-CC: Mike Turquette <mturquette@linaro.org>, kevin.z.m.zh@gmail.com,
-        sunny@allwinnertech.com, shuge@allwinnertech.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4] clk: sunxi: Allow to specify the divider width from
- the dividers data
-References: <1375195462-19566-1-git-send-email-maxime.ripard@free-electrons.com> <1375195462-19566-3-git-send-email-maxime.ripard@free-electrons.com>
-In-Reply-To: <1375195462-19566-3-git-send-email-maxime.ripard@free-electrons.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20130730235508.GA25319@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [172.30.39.5]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-El 30/07/13 11:44, Maxime Ripard escribió:
-> The divider width used to be hardcoded. Some A31 dividers are no longer
-> with the hardcoded width, so we need to make it specific to each divider
-> and set it in the dividers data.
+On Tue, Jul 30, 2013 at 04:55:08PM -0700, Greg Kroah-Hartman wrote:
+> On Tue, Jul 30, 2013 at 03:48:09PM -0700, Luis R. Rodriguez wrote:
+> > > We are planning to take one extra step and split this into a
+> > > mini-driver approach similar to what has been done for usbnet, but we
+> > > are not there yet.
+> > 
+> > Neat. Perhaps we need something that we can share with 802.11 or other
+> > hardare I highly doubt we're the only ones patching ROM. Don't we even
+> > patch up core CPUs? I'm wondering if firmware_class could be expanded to
+> > support serialized ROM patching. The biggest hurdle I see with splititng
+> > ROM patching from a single firmware is serializing that, addressing
+> > revision dependencies and of course kernel dependencies.
 > 
-> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+> What does the firmware_class need to do here that it doesn't do today?
 
-Looks good to me,
+It will depend on the requirements for ROM patches and if or not
+firmware can be split up into patches rather than getting a full
+firmware.fw update for any single patch update. If ROM patches
+get split up then how I can imagine driver code firmware getting
+to become a pain in the ass to maintain and nasty. It'd seem
+better to build relationships between these and possible patch
+depdendencies on ROM and let firmware_class do the management
+of that.
 
-Reviewed-by: Emilio López <emilio@elopez.com.ar>
-
-> ---
->  drivers/clk/sunxi/clk-sunxi.c | 24 +++++++++++++-----------
->  1 file changed, 13 insertions(+), 11 deletions(-)
+> > > However the ROM patching drivers need to be in the kernel since
+> > > otherwise they will race with the core init sequence.
+> > 
+> > Sure and depending on the architecture -- if this is kicked off to
+> > userspace helpers or not then we may need to consider dbus in
+> > kernel thing to help with speed / races, dependenecies / async
+> > loading, -EPROBE_DEFER, etc.
 > 
-> diff --git a/drivers/clk/sunxi/clk-sunxi.c b/drivers/clk/sunxi/clk-sunxi.c
-> index 3c91888..6e9cbc9 100644
-> --- a/drivers/clk/sunxi/clk-sunxi.c
-> +++ b/drivers/clk/sunxi/clk-sunxi.c
-> @@ -277,26 +277,28 @@ static void __init sunxi_mux_clk_setup(struct device_node *node,
->   * sunxi_divider_clk_setup() - Setup function for simple divider clocks
->   */
->  
-> -#define SUNXI_DIVISOR_WIDTH	2
-> -
->  struct div_data {
-> -	u8 shift;
-> -	u8 pow;
-> +	u8	shift;
-> +	u8	pow;
-> +	u8	width;
->  };
->  
->  static const __initconst struct div_data sun4i_axi_data = {
-> -	.shift = 0,
-> -	.pow = 0,
-> +	.shift	= 0,
-> +	.pow	= 0,
-> +	.width	= 2,
->  };
+> How would dbus in the kernel change anything here?
+> The kernel directly loads firmware from the filesystem now, no userspace
+> helpers are involved, so no need for udev, libusb, etc.  And as such, no
+> need for any "dbus" in the kernel to do this either.
+> I don't understand how it could, please explain.
 
-Is there a style rule governing the use of tabs/spaces on structs? Maybe
-we should do this alignment cleanup on the full file some time.
+Yeah nevermind :D too much coffee today made my brain fart.
 
->  
->  static const __initconst struct div_data sun4i_ahb_data = {
-> -	.shift = 4,
-> -	.pow = 1,
-> +	.shift	= 4,
-> +	.pow	= 1,
-> +	.width	= 2,
->  };
->  
->  static const __initconst struct div_data sun4i_apb0_data = {
-> -	.shift = 8,
-> -	.pow = 1,
-> +	.shift	= 8,
-> +	.pow	= 1,
-> +	.width	= 2,
->  };
->  
->  static void __init sunxi_divider_clk_setup(struct device_node *node,
-> @@ -312,7 +314,7 @@ static void __init sunxi_divider_clk_setup(struct device_node *node,
->  	clk_parent = of_clk_get_parent_name(node, 0);
->  
->  	clk = clk_register_divider(NULL, clk_name, clk_parent, 0,
-> -				   reg, data->shift, SUNXI_DIVISOR_WIDTH,
-> +				   reg, data->shift, data->width,
->  				   data->pow ? CLK_DIVIDER_POWER_OF_TWO : 0,
->  				   &clk_lock);
->  	if (clk) {
-> 
+> Also note, for those not knowing, we have been working on dbus in the
+> kernel (google "kdbus" for the github repo), but it is all
+> outward-facing (i.e. userspace using the kdbus code to interact with
+> other processes with a dbus-like protocol, not for in-kernel dbus
+> things, although adding it wouldn't be that hard, just really strange.
 
 Thanks!
 
-Emilio
+  Luis
