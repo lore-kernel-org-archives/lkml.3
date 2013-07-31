@@ -1,222 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760248Ab3GaOf1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 10:35:27 -0400
-Received: from mail-vb0-f52.google.com ([209.85.212.52]:45571 "EHLO
-	mail-vb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759769Ab3GaOfY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 10:35:24 -0400
-Date: Wed, 31 Jul 2013 11:35:16 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH V2 2/9] perf tools: load kernel maps before using
-Message-ID: <20130731143516.GE3614@ghostprotocols.net>
-References: <1375218838-31042-1-git-send-email-adrian.hunter@intel.com>
- <1375218838-31042-3-git-send-email-adrian.hunter@intel.com>
+	id S1760264Ab3GaOhZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 10:37:25 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:58200 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756572Ab3GaOhW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 10:37:22 -0400
+Message-ID: <51F92109.2060707@ti.com>
+Date: Wed, 31 Jul 2013 09:36:57 -0500
+From: Nishanth Menon <nm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1375218838-31042-3-git-send-email-adrian.hunter@intel.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mike Turquette <mturquette@linaro.org>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH RFC 2/3] clk: cpufreq helper for voltage scaling
+References: <1373247868-21444-1-git-send-email-mturquette@linaro.org> <1373247868-21444-3-git-send-email-mturquette@linaro.org>
+In-Reply-To: <1373247868-21444-3-git-send-email-mturquette@linaro.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Jul 31, 2013 at 12:13:51AM +0300, Adrian Hunter escreveu:
-> In order to use kernel maps to read object code, those
-> maps must be adjusted to map to the dso file offset.
-> Because lazy-initialization is used, that is not done
-> until symbols are loaded.  However the maps are first
-> used by thread__find_addr_map() before symbols are loaded.
-> So this patch changes thread__find_addr() to "load" kernel
-> maps before using them.
-
-Argh, yeah, we create maps as we traverse kallsyms, right? I guess this
-is there for historical reasons (i.e. it "evolved" like that), but I'm
-adding a note to my TODO list to remove that mess, i.e. we should
-probably do that as a separate step, i.e. the creation of kernel maps,
-detached from actually loading the symbols.
-
-For now I think your patch makes we progress, so I'll apply it.
-
-Thanks,
-
-- Arnaldo
- 
-> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+On 07/07/2013 08:44 PM, Mike Turquette wrote:
+> This patch builds on "clk: notifier handler for dynamic voltage scaling"
+> by adding a CPUfreq-specific helper function for registering a clock
+> rate-change notifier to scale regulator voltage as a function of clock
+> rate.
+>
+> In particular this patch creates an instance of struct
+> cpufreq_frequency_table and also calculate the voltage scaling latency,
+> both of which are returned to the caller for use in the CPUfreq driver.
+>
+> Signed-off-by: Mike Turquette <mturquette@linaro.org>
 > ---
->  tools/perf/builtin-inject.c     |  2 +-
->  tools/perf/builtin-script.c     |  4 ++--
->  tools/perf/tests/code-reading.c |  2 +-
->  tools/perf/util/build-id.c      |  2 +-
->  tools/perf/util/event.c         | 18 ++++++++++++++----
->  tools/perf/util/thread.h        |  2 +-
->  tools/perf/util/unwind.c        |  4 ++--
->  7 files changed, 22 insertions(+), 12 deletions(-)
-> 
-> diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
-> index 1d8de2e..f012a98 100644
-> --- a/tools/perf/builtin-inject.c
-> +++ b/tools/perf/builtin-inject.c
-> @@ -206,7 +206,7 @@ static int perf_event__inject_buildid(struct perf_tool *tool,
->  	}
->  
->  	thread__find_addr_map(thread, machine, cpumode, MAP__FUNCTION,
-> -			      event->ip.ip, &al);
-> +			      event->ip.ip, &al, NULL);
->  
->  	if (al.map != NULL) {
->  		if (!al.map->dso->hit) {
-> diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-> index 1cad370..cd616ff 100644
-> --- a/tools/perf/builtin-script.c
-> +++ b/tools/perf/builtin-script.c
-> @@ -341,10 +341,10 @@ static void print_sample_addr(union perf_event *event,
->  		return;
->  
->  	thread__find_addr_map(thread, machine, cpumode, MAP__FUNCTION,
-> -			      sample->addr, &al);
-> +			      sample->addr, &al, NULL);
->  	if (!al.map)
->  		thread__find_addr_map(thread, machine, cpumode, MAP__VARIABLE,
-> -				      sample->addr, &al);
-> +				      sample->addr, &al, NULL);
->  
->  	al.cpu = sample->cpu;
->  	al.sym = NULL;
-> diff --git a/tools/perf/tests/code-reading.c b/tools/perf/tests/code-reading.c
-> index 7c9437d..6cd3190 100644
-> --- a/tools/perf/tests/code-reading.c
-> +++ b/tools/perf/tests/code-reading.c
-> @@ -138,7 +138,7 @@ static int read_object_code(u64 addr, size_t len, u8 cpumode,
->  	pr_debug("Reading object code for memory address: %#"PRIx64"\n", addr);
->  
->  	thread__find_addr_map(thread, machine, cpumode, MAP__FUNCTION, addr,
-> -			      &al);
-> +			      &al, NULL);
->  	if (!al.map || !al.map->dso) {
->  		pr_debug("thread__find_addr_map failed\n");
->  		return -1;
-> diff --git a/tools/perf/util/build-id.c b/tools/perf/util/build-id.c
-> index 5295625..3a0f508 100644
-> --- a/tools/perf/util/build-id.c
-> +++ b/tools/perf/util/build-id.c
-> @@ -33,7 +33,7 @@ int build_id__mark_dso_hit(struct perf_tool *tool __maybe_unused,
->  	}
->  
->  	thread__find_addr_map(thread, machine, cpumode, MAP__FUNCTION,
-> -			      event->ip.ip, &al);
-> +			      event->ip.ip, &al, NULL);
->  
->  	if (al.map != NULL)
->  		al.map->dso->hit = 1;
-> diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-> index 9541270..cc7c0c9 100644
-> --- a/tools/perf/util/event.c
-> +++ b/tools/perf/util/event.c
-> @@ -592,9 +592,10 @@ int perf_event__process(struct perf_tool *tool __maybe_unused,
->  void thread__find_addr_map(struct thread *self,
->  			   struct machine *machine, u8 cpumode,
->  			   enum map_type type, u64 addr,
-> -			   struct addr_location *al)
-> +			   struct addr_location *al, symbol_filter_t filter)
->  {
->  	struct map_groups *mg = &self->mg;
-> +	bool load_map = false;
->  
->  	al->thread = self;
->  	al->addr = addr;
-> @@ -609,11 +610,13 @@ void thread__find_addr_map(struct thread *self,
->  	if (cpumode == PERF_RECORD_MISC_KERNEL && perf_host) {
->  		al->level = 'k';
->  		mg = &machine->kmaps;
-> +		load_map = true;
->  	} else if (cpumode == PERF_RECORD_MISC_USER && perf_host) {
->  		al->level = '.';
->  	} else if (cpumode == PERF_RECORD_MISC_GUEST_KERNEL && perf_guest) {
->  		al->level = 'g';
->  		mg = &machine->kmaps;
-> +		load_map = true;
->  	} else {
->  		/*
->  		 * 'u' means guest os user space.
-> @@ -654,8 +657,15 @@ try_again:
->  			mg = &machine->kmaps;
->  			goto try_again;
->  		}
-> -	} else
-> +	} else {
-> +		/*
-> +		 * Kernel maps might be changed when loading symbols so loading
-> +		 * must be done prior to using kernel maps.
-> +		 */
-> +		if (load_map)
-> +			map__load(al->map, filter);
->  		al->addr = al->map->map_ip(al->map, al->addr);
+>   drivers/clk/clk-voltage-notifier.c | 71 ++++++++++++++++++++++++++++++++++++++
+>   include/linux/clk.h                |  6 ++++
+>   2 files changed, 77 insertions(+)
+
+As stage 1 of the transition, I dont have any complaints, but for SoC 
+level, at least on OMAP, it is not just regulator and clock, we have 
+additional tweaks to do - like ABB, AVS etc.
+
+What would you suggest as the strategy to introduce SoC specific 
+handlers for voltage notifiers that can co-exist with this?
+
+>
+> diff --git a/drivers/clk/clk-voltage-notifier.c b/drivers/clk/clk-voltage-notifier.c
+> index cb6b85f..8e1707f 100644
+> --- a/drivers/clk/clk-voltage-notifier.c
+> +++ b/drivers/clk/clk-voltage-notifier.c
+> @@ -10,6 +10,7 @@
+>    */
+>
+>   #include <linux/clk.h>
+> +#include <linux/cpufreq.h>
+
+for example - we should not depend on cpufreq in a generic clock based 
+dvfs approach. we would like to allow devfreq also to transition to this.
+
+>   #include <linux/device.h>
+>   #include <linux/module.h>
+>   #include <linux/notifier.h>
+> @@ -133,3 +134,73 @@ void of_clk_volt_notifier_unregister(struct notifier_block *nb)
+>   	kfree(vsd);
+>   }
+>   EXPORT_SYMBOL_GPL(of_clk_volt_notifier_unregister);
+> +
+> +void of_clk_cpufreq_notifier_unregister(struct notifier_block *nb,
+> +		struct cpufreq_frequency_table *freq_table)
+> +{
+> +	struct volt_scale_data *data = to_volt_scale_data(nb);
+> +	struct device *dev = data->dev;
+> +
+> +	opp_free_cpufreq_table(dev, &freq_table);
+> +	of_clk_volt_notifier_unregister(nb);
+> +}
+> +EXPORT_SYMBOL_GPL(of_clk_cpufreq_notifier_unregister);
+> +
+> +/**
+> + * of_clk_cpufreq_notifer_register - register clock notifier to scale voltage
+> + * @dev: device that owns this scaling operation
+> + * @np: pointer to device's DT node
+> + * @clk: clock whose rate-change notifier triggers voltage scaling
+> + * @supply: regulator id string
+> + * @freq_table: pointer to uninitialized CPUfreq frequency scaling table
+> + * @voltage_latency: worst case voltage scaling latency
+> + */
+> +struct notifier_block *of_clk_cpufreq_notifier_register(struct device *dev,
+> +		struct device_node *np, struct clk *clk, const char *supply,
+> +		struct cpufreq_frequency_table **table,
+> +		unsigned int *voltage_latency)
+> +{
+> +	struct notifier_block *nb;
+> +	struct volt_scale_data *vsd;
+> +	struct opp *opp;
+> +	unsigned long min, max;
+> +	int ret, i;
+> +
+> +	nb = of_clk_volt_notifier_register(dev, np, clk, supply,
+> +			voltage_latency);
+> +	if (IS_ERR(nb))
+> +		return nb;
+> +
+> +	vsd = to_volt_scale_data(nb);
+> +
+> +	ret = opp_init_cpufreq_table(dev, table);
+> +	if (ret) {
+> +		pr_err("failed to init cpufreq table: %d\n", ret);
+> +		goto err_unregister;
 > +	}
->  }
->  
->  void thread__find_addr_location(struct thread *thread, struct machine *machine,
-> @@ -663,7 +673,7 @@ void thread__find_addr_location(struct thread *thread, struct machine *machine,
->  				struct addr_location *al,
->  				symbol_filter_t filter)
->  {
-> -	thread__find_addr_map(thread, machine, cpumode, type, addr, al);
-> +	thread__find_addr_map(thread, machine, cpumode, type, addr, al, filter);
->  	if (al->map != NULL)
->  		al->sym = map__find_symbol(al->map, al->addr, filter);
->  	else
-> @@ -699,7 +709,7 @@ int perf_event__preprocess_sample(const union perf_event *event,
->  		machine__create_kernel_maps(machine);
->  
->  	thread__find_addr_map(thread, machine, cpumode, MAP__FUNCTION,
-> -			      event->ip.ip, al);
-> +			      event->ip.ip, al, filter);
->  	dump_printf(" ...... dso: %s\n",
->  		    al->map ? al->map->dso->long_name :
->  			al->level == 'H' ? "[hypervisor]" : "<not found>");
-> diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
-> index 0fe1f9c..f98d1d9 100644
-> --- a/tools/perf/util/thread.h
-> +++ b/tools/perf/util/thread.h
-> @@ -41,7 +41,7 @@ static inline struct map *thread__find_map(struct thread *self,
->  
->  void thread__find_addr_map(struct thread *thread, struct machine *machine,
->  			   u8 cpumode, enum map_type type, u64 addr,
-> -			   struct addr_location *al);
-> +			   struct addr_location *al, symbol_filter_t filter);
->  
->  void thread__find_addr_location(struct thread *thread, struct machine *machine,
->  				u8 cpumode, enum map_type type, u64 addr,
-> diff --git a/tools/perf/util/unwind.c b/tools/perf/util/unwind.c
-> index 958723b..5bbd494 100644
-> --- a/tools/perf/util/unwind.c
-> +++ b/tools/perf/util/unwind.c
-> @@ -272,7 +272,7 @@ static struct map *find_map(unw_word_t ip, struct unwind_info *ui)
->  	struct addr_location al;
->  
->  	thread__find_addr_map(ui->thread, ui->machine, PERF_RECORD_MISC_USER,
-> -			      MAP__FUNCTION, ip, &al);
-> +			      MAP__FUNCTION, ip, &al, NULL);
->  	return al.map;
->  }
->  
-> @@ -349,7 +349,7 @@ static int access_dso_mem(struct unwind_info *ui, unw_word_t addr,
->  	ssize_t size;
->  
->  	thread__find_addr_map(ui->thread, ui->machine, PERF_RECORD_MISC_USER,
-> -			      MAP__FUNCTION, addr, &al);
-> +			      MAP__FUNCTION, addr, &al, NULL);
->  	if (!al.map) {
->  		pr_debug("unwind: no map for %lx\n", (unsigned long)addr);
->  		return -1;
-> -- 
-> 1.7.11.7
+> +
+> +	/* find the min and max voltages and compute worst-case latency */
+> +	for (i = 0; table[0][i].frequency != CPUFREQ_TABLE_END; i++)
+> +		;
+> +
+> +	rcu_read_lock();
+> +	opp = opp_find_freq_exact(dev,
+> +			table[0][0].frequency * 1000, true);
+> +	min = opp_get_voltage(opp);
+> +	opp = opp_find_freq_exact(dev,
+> +			table[0][i-1].frequency * 1000, true);
+> +	max = opp_get_voltage(opp);
+> +	rcu_read_unlock();
+> +
+> +	*voltage_latency = regulator_set_voltage_time(vsd->reg, min, max);
+> +	if (*voltage_latency < 0)
+> +		pr_warn("%s: failed to calculate voltage latency, %d\n",
+> +				__func__, ret);
+> +
+> +	return nb;
+> +
+> +err_unregister:
+> +	of_clk_volt_notifier_unregister(nb);
+> +	return ERR_PTR(ret);
+> +}
+> +EXPORT_SYMBOL_GPL(of_clk_cpufreq_notifier_register);
+> diff --git a/include/linux/clk.h b/include/linux/clk.h
+> index 85ea520..3104883 100644
+> --- a/include/linux/clk.h
+> +++ b/include/linux/clk.h
+> @@ -86,6 +86,12 @@ struct notifier_block *of_clk_volt_notifier_register(struct device *dev,
+>   		struct device_node *np, struct clk *clk, const char *supply,
+>   		int *voltage_latency);
+>   void of_clk_volt_notifier_unregister(struct notifier_block *nb);
+> +struct notifier_block *of_clk_cpufreq_notifier_register(struct device *dev,
+> +		struct device_node *np, struct clk *clk, const char *supply,
+> +		struct cpufreq_frequency_table **table,
+> +		unsigned int *voltage_latency);
+> +void of_clk_cpufreq_notifier_unregister(struct notifier_block *nb,
+> +		struct cpufreq_frequency_table *freq_table);
+>
+>   #endif
+>
+>
+
+
+-- 
+Regards,
+Nishanth Menon
