@@ -1,85 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760755Ab3GaUsr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 16:48:47 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39474 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756851Ab3GaUsq (ORCPT
+	id S1760778Ab3GaUtI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 16:49:08 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:47213 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757210Ab3GaUtG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 16:48:46 -0400
-Date: Wed, 31 Jul 2013 21:48:18 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: "jonsmirl@gmail.com" <jonsmirl@gmail.com>
-Cc: Richard Cochran <richardcochran@gmail.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "ksummit-2013-discuss@lists.linuxfoundation.org" 
-	<ksummit-2013-discuss@lists.linuxfoundation.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Domenico Andreoli <cavokz@gmail.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Arend van Spriel <arend@broadcom.com>, Mark Brown <broonie@kernel.org>,
-        Olof Johansson <olof@lixom.net>, mbizon@freebox.fr,
-        Dave P Martin <Dave.Martin@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [Ksummit-2013-discuss] DT bindings as ABI [was: Do we have
-	people interested in device tree janitoring / cleanup?]
-Message-ID: <20130731204817.GC24642@n2100.arm.linux.org.uk>
-References: <20130725175702.GC22291@e106331-lin.cambridge.arm.com> <1999586.84BnWE5EUh@thinkpad> <20130731191209.GA8027@netboy> <1409617.9untvfnOTJ@flatron> <20130731200017.GC8027@netboy> <20130731201457.GA24642@n2100.arm.linux.org.uk> <CAKON4Ow7rE9cDj_tS7kmYN4incM+ay=BK96q-ph2JxYH3xiQzg@mail.gmail.com>
+	Wed, 31 Jul 2013 16:49:06 -0400
+Message-ID: <51F97842.6050200@linaro.org>
+Date: Wed, 31 Jul 2013 22:49:06 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKON4Ow7rE9cDj_tS7kmYN4incM+ay=BK96q-ph2JxYH3xiQzg@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: =?UTF-8?B?U8O2cmVuIEJyaW5rbWFubg==?= <soren.brinkmann@xilinx.com>
+CC: Stephen Boyd <sboyd@codeaurora.org>, John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Stuart Menefy <stuart.menefy@st.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: Enable arm_global_timer for Zynq brakes boot
+References: <51E72DCA.9070500@codeaurora.org> <f5b76049-7e5b-4dd0-9863-19cfd1d599b9@TX2EHSMHS006.ehs.local> <51E7435B.3060605@codeaurora.org> <ff4d40be-7177-4a55-ab2f-dff11fa18642@DB9EHSMHS009.ehs.local> <51ED8DF2.60600@codeaurora.org> <20130722201348.GI453@xsjandreislx> <0735ab8c-0f80-4b64-b2b2-8d4553482c2a@CO9EHSMHS013.ehs.local> <51F66565.7010600@linaro.org> <8d56935e-2a20-46c7-b80a-f779572dd839@CO1EHSMHS014.ehs.local> <51F77D93.4030505@linaro.org> <829dbb20-0f14-4a3b-8da9-1f7b1b5b8b59@DB8EHSMHS005.ehs.local>
+In-Reply-To: <829dbb20-0f14-4a3b-8da9-1f7b1b5b8b59@DB8EHSMHS005.ehs.local>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 31, 2013 at 04:37:36PM -0400, jonsmirl@gmail.com wrote:
-> On Wed, Jul 31, 2013 at 4:14 PM, Russell King - ARM Linux
-> <linux@arm.linux.org.uk> wrote:
-> > However, if we go back to the idea that DT is supposed to describe the
-> > hardware, _and_ that the way to describe that hardware is well defined
-> > and _stable_ (as it should be) then there should be no reason what so
-> > ever that your old DT blob should not continue working in later kernels.
-> > If it doesn't, then the contract that DT promised when we first moved
-> > over to using DT has been _broken_.
+On 07/31/2013 12:34 AM, Sören Brinkmann wrote:
+> On Tue, Jul 30, 2013 at 10:47:15AM +0200, Daniel Lezcano wrote:
+>> On 07/30/2013 02:03 AM, Sören Brinkmann wrote:
+>>> Hi Daniel,
+>>>
+>>> On Mon, Jul 29, 2013 at 02:51:49PM +0200, Daniel Lezcano wrote:
+>>> (snip)
+>>>>
+>>>> the CPUIDLE_FLAG_TIMER_STOP flag tells the cpuidle framework the local
+>>>> timer will be stopped when entering to the idle state. In this case, the
+>>>> cpuidle framework will call clockevents_notify(ENTER) and switches to a
+>>>> broadcast timer and will call clockevents_notify(EXIT) when exiting the
+>>>> idle state, switching the local timer back in use.
+>>>
+>>> I've been thinking about this, trying to understand how this makes my
+>>> boot attempts on Zynq hang. IIUC, the wrongly provided TIMER_STOP flag
+>>> would make the timer core switch to a broadcast device even though it
+>>> wouldn't be necessary. But shouldn't it still work? It sounds like we do
+>>> something useless, but nothing wrong in a sense that it should result in
+>>> breakage. I guess I'm missing something obvious. This timer system will
+>>> always remain a mystery to me.
+>>>
+>>> Actually this more or less leads to the question: What is this
+>>> 'broadcast timer'. I guess that is some clockevent device which is
+>>> common to all cores? (that would be the cadence_ttc for Zynq). Is the
+>>> hang pointing to some issue with that driver?
+>>
+>> If you look at the /proc/timer_list, which timer is used for broadcasting ?
 > 
-> Suppose your DT predates PINCTRL and the CPU needs the pins set to
-> function.  But setting the pins up is a board specific function. How
-> is this going to get implemented in a generic kernel that doesn't have
-> any board specific code in it?
+> So, the correct run results (full output attached).
 > 
-> I would propose that we only need to worry about DTs that got put into
-> boot loaders and not worry about ones that were only used when
-> appended to a kernel.
+> The vanilla kernel uses the twd timers as local timers and the TTC as
+> broadcast device:
+> 	Tick Device: mode:     1                                                         
+> 	Broadcast device  
+> 	Clock Event Device: ttc_clockevent
+> 
+> When I remove the offending CPUIDLE flag and add the DT fragment to
+> enable the global timer, the twd timers are still used as local timers
+> and the broadcast device is the global timer:
+> 	Tick Device: mode:     1                                                         
+> 	Broadcast device                                                                 
+> 	Clock Event Device: arm_global_timer
+> 
+> Again, since boot hangs in the actually broken case, I don't see way to
+> obtain this information for that case.
 
-That is - again - our mistake.  We should have made it clear from the
-start that the use of an _appended_ DT, or a DT provided with the kernel
-being booted was more or less mandatory for the time being.  We actually
-did exactly the opposite - we advertised the appended DT as a stop-gap
-measure just to allow a DT kernel to be booted with a boot loader which
-didn't support DT.
+Can't you use the maxcpus=1 option to ensure the system to boot up ?
 
-That in itself _encouraged_ boot loader support for DT on ARM (which in
-itself is not a bad thing) but also leads people down the path of
-potentially separating the DT from the kernel.
 
-Had we encouraged the use of an appended DT instead, but still encouraged
-boot loaders to update, and also made a clear statement that DT is
-unstable (which everyone can see - for example by making our DT stuff
-depend on CONFIG_EXPERIMENTAL when it existed) then everyone would have
-been clear about its status.
+-- 
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
 
-The fact that we did not - the fact that we ignored this process means
-that it is _our_ problem that people like Richard are blowing up such a
-storm over this.  We need to admit that we got it wrong, and commit to
-doing it the right way in future.  What that means is starting off today
-with a commitment to keep as much of the stuff which works today working
-_tomorrow_, and the day after, and so forth.
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
