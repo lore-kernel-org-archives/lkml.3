@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759907Ab3GaNom (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 09:44:42 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46942 "EHLO
+	id S1760119Ab3GaNok (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 09:44:40 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46939 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759735Ab3GaNZr (ORCPT
+	by vger.kernel.org with ESMTP id S1759730Ab3GaNZr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 31 Jul 2013 09:25:47 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,17 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "=?UTF-8?q?J=C3=B3hann=20B=2E=20Gu=C3=B0mundsson?=" 
-	<johannbg@gmail.com>,
-        "=?UTF-8?Q?J=C3=B3hann=20B?=.=?UTF-8?Q?=20Gu=C3=B0mundsson?=" 
-	<johannbg@fedoraproject.org>
+CC: akpm@linux-foundation.org, "Sami Rahman" <sami.rahman@mmbresearch.com>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
 Date: Wed, 31 Jul 2013 15:23:09 +0200
-Message-ID: <lsq.1375276989.976980322@decadent.org.uk>
+Message-ID: <lsq.1375276989.688829679@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [59/84] USB: misc: Add Manhattan Hi-Speed USB DVI Converter to
- sisusbvga
+Subject: [62/84] USB: cp210x: add MMB and PI ZigBee USB Device Support
 In-Reply-To: <lsq.1375276989.251749228@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.216.67.181
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -36,25 +31,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jóhann B. Guðmundsson <johannbg@gmail.com>
+From: Sami Rahman <sami.rahman@mmbresearch.com>
 
-commit 58fc90db8261b571c026bb8bf23aad48a7233118 upstream.
+commit 7681156982026ebf7eafd7301eb0374d7648d068 upstream.
 
-Signed-off-by: Jóhann B. Guðmundsson <johannbg@fedoraproject.org>
+Added support for MMB Networks and Planet Innovation Ingeni ZigBee USB
+devices using customized Silicon Labs' CP210x.c USB to UART bridge
+drivers with PIDs: 88A4, 88A5.
+
+Signed-off-by: Sami Rahman <sami.rahman@mmbresearch.com>
+Tested-by: Sami Rahman <sami.rahman@mmbresearch.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/misc/sisusbvga/sisusb.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/serial/cp210x.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/usb/misc/sisusbvga/sisusb.c
-+++ b/drivers/usb/misc/sisusbvga/sisusb.c
-@@ -3247,6 +3247,7 @@ static const struct usb_device_id sisusb
- 	{ USB_DEVICE(0x0711, 0x0903) },
- 	{ USB_DEVICE(0x0711, 0x0918) },
- 	{ USB_DEVICE(0x0711, 0x0920) },
-+	{ USB_DEVICE(0x0711, 0x0950) },
- 	{ USB_DEVICE(0x182d, 0x021c) },
- 	{ USB_DEVICE(0x182d, 0x0269) },
- 	{ }
+--- a/drivers/usb/serial/cp210x.c
++++ b/drivers/usb/serial/cp210x.c
+@@ -125,6 +125,8 @@ static const struct usb_device_id id_tab
+ 	{ USB_DEVICE(0x10C4, 0x85F8) }, /* Virtenio Preon32 */
+ 	{ USB_DEVICE(0x10C4, 0x8664) }, /* AC-Services CAN-IF */
+ 	{ USB_DEVICE(0x10C4, 0x8665) }, /* AC-Services OBD-IF */
++	{ USB_DEVICE(0x10C4, 0x88A4) }, /* MMB Networks ZigBee USB Device */
++	{ USB_DEVICE(0x10C4, 0x88A5) }, /* Planet Innovation Ingeni ZigBee USB Device */
+ 	{ USB_DEVICE(0x10C4, 0xEA60) }, /* Silicon Labs factory default */
+ 	{ USB_DEVICE(0x10C4, 0xEA61) }, /* Silicon Labs factory default */
+ 	{ USB_DEVICE(0x10C4, 0xEA70) }, /* Silicon Labs factory default */
 
