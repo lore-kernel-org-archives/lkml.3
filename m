@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759831Ab3GaNZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 09:25:56 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46938 "EHLO
+	id S1759943Ab3GaNja (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 09:39:30 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46878 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759715Ab3GaNZu (ORCPT
+	by vger.kernel.org with ESMTP id S1759683Ab3GaNZ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 09:25:50 -0400
+	Wed, 31 Jul 2013 09:25:56 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Josef Bacik" <jbacik@fusionio.com>,
-        "Alex Lyakas" <alex.btrfs@zadarastorage.com>
+CC: akpm@linux-foundation.org, "Johan Hovold" <jhovold@gmail.com>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
 Date: Wed, 31 Jul 2013 15:23:09 +0200
-Message-ID: <lsq.1375276989.464386024@decadent.org.uk>
+Message-ID: <lsq.1375276989.720798838@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [55/84] Btrfs: re-add root to dead root list if we stop dropping it
+Subject: [83/84] USB: mos7840: fix memory leak in open
 In-Reply-To: <lsq.1375276989.251749228@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.216.67.181
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,55 +31,104 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josef Bacik <jbacik@fusionio.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit d29a9f629e009c9b90e5859bce581070fd6247fc upstream.
+commit 5f8a2e68b679b41cc8e9b642f2f5aa45dd678641 upstream.
 
-If we stop dropping a root for whatever reason we need to add it back to the
-dead root list so that we will re-start the dropping next transaction commit.
-The other case this happens is if we recover a drop because we will add a root
-without adding it to the fs radix tree, so we can leak it's root and commit root
-extent buffer, adding this to the dead root list makes this cleanup happen.
-Thanks,
+Allocated urbs and buffers were never freed on errors in open.
 
-Reported-by: Alex Lyakas <alex.btrfs@zadarastorage.com>
-Signed-off-by: Josef Bacik <jbacik@fusionio.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 [bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/btrfs/extent-tree.c | 11 +++++++++++
- 1 file changed, 11 insertions(+)
+ drivers/usb/serial/mos7840.c | 25 +++++++++++++++++--------
+ 1 file changed, 17 insertions(+), 8 deletions(-)
 
---- a/fs/btrfs/extent-tree.c
-+++ b/fs/btrfs/extent-tree.c
-@@ -6560,6 +6560,7 @@ void btrfs_drop_snapshot(struct btrfs_ro
- 	int err = 0;
- 	int ret;
- 	int level;
-+	bool root_dropped = false;
- 
- 	path = btrfs_alloc_path();
- 	if (!path) {
-@@ -6709,11 +6710,21 @@ void btrfs_drop_snapshot(struct btrfs_ro
- 		free_extent_buffer(root->commit_root);
- 		kfree(root);
+--- a/drivers/usb/serial/mos7840.c
++++ b/drivers/usb/serial/mos7840.c
+@@ -925,20 +925,20 @@ static int mos7840_open(struct tty_struc
+ 	status = mos7840_get_reg_sync(port, mos7840_port->SpRegOffset, &Data);
+ 	if (status < 0) {
+ 		dbg("Reading Spreg failed");
+-		return -1;
++		goto err;
  	}
-+	root_dropped = true;
- out_free:
- 	btrfs_end_transaction_throttle(trans, tree_root);
- 	kfree(wc);
- 	btrfs_free_path(path);
- out:
-+	/*
-+	 * So if we need to stop dropping the snapshot for whatever reason we
-+	 * need to make sure to add it back to the dead root list so that we
-+	 * keep trying to do the work later.  This also cleans up roots if we
-+	 * don't have it in the radix (like when we recover after a power fail
-+	 * or unmount) so we don't leak memory.
-+	 */
-+	if (root_dropped == false)
-+		btrfs_add_dead_root(root);
- 	if (err)
- 		btrfs_std_error(root->fs_info, err);
- 	return;
+ 	Data |= 0x80;
+ 	status = mos7840_set_reg_sync(port, mos7840_port->SpRegOffset, Data);
+ 	if (status < 0) {
+ 		dbg("writing Spreg failed");
+-		return -1;
++		goto err;
+ 	}
+ 
+ 	Data &= ~0x80;
+ 	status = mos7840_set_reg_sync(port, mos7840_port->SpRegOffset, Data);
+ 	if (status < 0) {
+ 		dbg("writing Spreg failed");
+-		return -1;
++		goto err;
+ 	}
+ 	/* End of block to be checked */
+ 
+@@ -947,7 +947,7 @@ static int mos7840_open(struct tty_struc
+ 									&Data);
+ 	if (status < 0) {
+ 		dbg("Reading Controlreg failed");
+-		return -1;
++		goto err;
+ 	}
+ 	Data |= 0x08;		/* Driver done bit */
+ 	Data |= 0x20;		/* rx_disable */
+@@ -955,7 +955,7 @@ static int mos7840_open(struct tty_struc
+ 				mos7840_port->ControlRegOffset, Data);
+ 	if (status < 0) {
+ 		dbg("writing Controlreg failed");
+-		return -1;
++		goto err;
+ 	}
+ 	/* do register settings here */
+ 	/* Set all regs to the device default values. */
+@@ -966,21 +966,21 @@ static int mos7840_open(struct tty_struc
+ 	status = mos7840_set_uart_reg(port, INTERRUPT_ENABLE_REGISTER, Data);
+ 	if (status < 0) {
+ 		dbg("disabling interrupts failed");
+-		return -1;
++		goto err;
+ 	}
+ 	/* Set FIFO_CONTROL_REGISTER to the default value */
+ 	Data = 0x00;
+ 	status = mos7840_set_uart_reg(port, FIFO_CONTROL_REGISTER, Data);
+ 	if (status < 0) {
+ 		dbg("Writing FIFO_CONTROL_REGISTER  failed");
+-		return -1;
++		goto err;
+ 	}
+ 
+ 	Data = 0xcf;
+ 	status = mos7840_set_uart_reg(port, FIFO_CONTROL_REGISTER, Data);
+ 	if (status < 0) {
+ 		dbg("Writing FIFO_CONTROL_REGISTER  failed");
+-		return -1;
++		goto err;
+ 	}
+ 
+ 	Data = 0x03;
+@@ -1136,7 +1136,15 @@ static int mos7840_open(struct tty_struc
+ 	dbg ("%s leave", __func__);
+ 
+ 	return 0;
+-
++err:
++	for (j = 0; j < NUM_URBS; ++j) {
++		urb = mos7840_port->write_urb_pool[j];
++		if (!urb)
++			continue;
++		kfree(urb->transfer_buffer);
++		usb_free_urb(urb);
++	}
++	return status;
+ }
+ 
+ /*****************************************************************************
 
