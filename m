@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759393Ab3GaJGh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 05:06:37 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:55192 "EHLO
+	id S1759277Ab3GaJDj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 05:03:39 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:56068 "EHLO
 	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755043Ab3GaJDk (ORCPT
+	with ESMTP id S1755043Ab3GaJDd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 05:03:40 -0400
-X-AuditID: 9c93017d-b7b45ae000000e34-1c-51f8d2e4a1d8
+	Wed, 31 Jul 2013 05:03:33 -0400
+X-AuditID: 9c93017d-b7b45ae000000e34-14-51f8d2e32ff0
 From: Namhyung Kim <namhyung@kernel.org>
 To: Steven Rostedt <rostedt@goodmis.org>
 Cc: Namhyung Kim <namhyung.kim@lge.com>, Hyeoncheol Lee <cheol.lee@lge.com>,
@@ -17,9 +17,9 @@ Cc: Namhyung Kim <namhyung.kim@lge.com>, Hyeoncheol Lee <cheol.lee@lge.com>,
         Oleg Nesterov <oleg@redhat.com>,
         "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: [PATCH 08/13] tracing/uprobes: Fetch args before reserving a ring buffer
-Date: Wed, 31 Jul 2013 18:03:25 +0900
-Message-Id: <1375261410-11219-9-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 02/13] tracing/kprobes: Add fetch{,_size} member into symbol and deref fetch method
+Date: Wed, 31 Jul 2013 18:03:19 +0900
+Message-Id: <1375261410-11219-3-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1375261410-11219-1-git-send-email-namhyung@kernel.org>
 References: <1375261410-11219-1-git-send-email-namhyung@kernel.org>
@@ -28,140 +28,133 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+From: Hyeoncheol Lee <cheol.lee@lge.com>
 
-Fetching from user space should be done in a non-atomic context.  So
-use a temporary buffer and copy its content to the ring buffer
-atomically.
+Those symbol and deref fetch methods access a memory region but they
+assume it's a kernel memory since uprobes does not support them.
 
-While at it, use __get_data_size() and store_trace_args() to reduce
-code duplication.
+Add ->fetch and ->fetch_size member in order to provide a proper
+access method for supporting uprobes.
 
 Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: Oleg Nesterov <oleg@redhat.com>
 Cc: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Signed-off-by: Hyeoncheol Lee <cheol.lee@lge.com>
+[namhyung@kernel.org: Split original patch into pieces as requested]
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- kernel/trace/trace_uprobe.c | 69 ++++++++++++++++++++++++++++++++++-----------
- 1 file changed, 53 insertions(+), 16 deletions(-)
+ kernel/trace/trace_probe.c | 48 ++++++++++++++++++++++++++++++++++++++++------
+ 1 file changed, 42 insertions(+), 6 deletions(-)
 
-diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
-index bcc7bd300c99..f78098398a61 100644
---- a/kernel/trace/trace_uprobe.c
-+++ b/kernel/trace/trace_uprobe.c
-@@ -516,15 +516,31 @@ static void uprobe_trace_print(struct trace_uprobe *tu,
- 	struct uprobe_trace_entry_head *entry;
- 	struct ring_buffer_event *event;
- 	struct ring_buffer *buffer;
--	void *data;
--	int size, i;
-+	void *data, *tmp;
-+	int size, dsize, esize;
- 	struct ftrace_event_call *call = &tu->p.call;
+diff --git a/kernel/trace/trace_probe.c b/kernel/trace/trace_probe.c
+index c58c25d81591..c123a890c5b1 100644
+--- a/kernel/trace/trace_probe.c
++++ b/kernel/trace/trace_probe.c
+@@ -93,6 +93,8 @@ struct symbol_cache {
+ 	char		*symbol;
+ 	long		offset;
+ 	unsigned long	addr;
++	fetch_func_t	fetch;
++	fetch_func_t	fetch_size;
+ };
  
--	size = SIZEOF_TRACE_ENTRY(is_ret_probe(tu));
-+	dsize = __get_data_size(&tu->p, regs);
-+	esize = SIZEOF_TRACE_ENTRY(is_ret_probe(tu));
-+
-+	/*
-+	 * A temporary buffer is used for storing fetched data before reserving
-+	 * the ring buffer because fetching from user space should be done in a
-+	 * non-atomic context.
-+	 */
-+	tmp = kmalloc(tu->p.size + dsize, GFP_KERNEL);
-+	if (tmp == NULL)
-+		return;
-+
-+	store_trace_args(esize, &tu->p, regs, tmp, dsize);
-+
-+	size = esize + tu->p.size + dsize;
- 	event = trace_current_buffer_lock_reserve(&buffer, call->event.type,
--						  size + tu->p.size, 0, 0);
--	if (!event)
-+						  size, 0, 0);
-+	if (!event) {
-+		kfree(tmp);
- 		return;
-+	}
- 
- 	entry = ring_buffer_event_data(event);
- 	if (is_ret_probe(tu)) {
-@@ -536,13 +552,12 @@ static void uprobe_trace_print(struct trace_uprobe *tu,
- 		data = DATAOF_TRACE_ENTRY(entry, false);
- 	}
- 
--	for (i = 0; i < tu->p.nr_args; i++) {
--		call_fetch(&tu->p.args[i].fetch, regs,
--			   data + tu->p.args[i].offset);
--	}
-+	memcpy(data, tmp, tu->p.size + dsize);
- 
- 	if (!filter_current_check_discard(buffer, call, entry, event))
- 		trace_buffer_unlock_commit(buffer, event, 0, 0);
-+
-+	kfree(tmp);
+ static unsigned long update_symbol_cache(struct symbol_cache *sc)
+@@ -139,18 +141,29 @@ __kprobes void FETCH_FUNC_NAME(symbol, type)(struct pt_regs *regs,	\
+ {									\
+ 	struct symbol_cache *sc = data;					\
+ 	if (sc->addr)							\
+-		fetch_memory_##type(regs, (void *)sc->addr, dest);	\
++		sc->fetch(regs, (void *)sc->addr, dest);		\
+ 	else								\
+ 		*(type *)dest = 0;					\
  }
- 
- /* uprobe handler */
-@@ -756,11 +771,30 @@ static void uprobe_perf_print(struct trace_uprobe *tu,
- 	struct ftrace_event_call *call = &tu->p.call;
- 	struct uprobe_trace_entry_head *entry;
- 	struct hlist_head *head;
--	void *data;
--	int size, rctx, i;
-+	void *data, *tmp;
-+	int size, dsize, esize;
-+	int rctx;
+ DEFINE_BASIC_FETCH_FUNCS(symbol)
+ DEFINE_FETCH_symbol(string)
+-DEFINE_FETCH_symbol(string_size)
 +
-+	dsize = __get_data_size(&tu->p, regs);
-+	esize = SIZEOF_TRACE_ENTRY(is_ret_probe(tu));
-+
-+	/*
-+	 * A temporary buffer is used for storing fetched data before reserving
-+	 * the ring buffer because fetching from user space should be done in a
-+	 * non-atomic context.
-+	 */
-+	tmp = kmalloc(tu->p.size + dsize, GFP_KERNEL);
-+	if (tmp == NULL)
-+		return;
++__kprobes void FETCH_FUNC_NAME(symbol, string_size)(struct pt_regs *regs,
++						    void *data, void *dest)
++{
++	struct symbol_cache *sc = data;
++	if (sc->addr && sc->fetch_size)
++		sc->fetch_size(regs, (void *)sc->addr, dest);
++	else
++		*(string_size *)dest = 0;
++}
  
--	size = SIZEOF_TRACE_ENTRY(is_ret_probe(tu));
--	size = ALIGN(size + tu->p.size + sizeof(u32), sizeof(u64)) - sizeof(u32);
-+	store_trace_args(esize, &tu->p, regs, tmp, dsize);
-+
-+	size = esize + tu->p.size + dsize;
-+	size = ALIGN(size + sizeof(u32), sizeof(u64)) - sizeof(u32);
-+	if (WARN_ONCE(size > PERF_MAX_TRACE_SIZE, "profile buffer not large enough")) {
-+		kfree(tmp);
-+		return;
-+	}
+ /* Dereference memory access function */
+ struct deref_fetch_param {
+ 	struct fetch_param	orig;
+ 	long			offset;
++	fetch_func_t		fetch;
++	fetch_func_t		fetch_size;
+ };
  
- 	preempt_disable();
- 	head = this_cpu_ptr(call->perf_events);
-@@ -780,15 +814,18 @@ static void uprobe_perf_print(struct trace_uprobe *tu,
- 		data = DATAOF_TRACE_ENTRY(entry, false);
- 	}
- 
--	for (i = 0; i < tu->p.nr_args; i++) {
--		struct probe_arg *parg = &tu->p.args[i];
-+	memcpy(data, tmp, tu->p.size + dsize);
-+
-+	if (size - esize > tu->p.size + dsize) {
-+		int len = tu->p.size + dsize;
- 
--		call_fetch(&parg->fetch, regs, data + parg->offset);
-+		memset(data + len, 0, size - esize - len);
- 	}
- 
- 	perf_trace_buf_submit(entry, size, rctx, 0, 1, regs, head, NULL);
-  out:
- 	preempt_enable();
-+	kfree(tmp);
+ #define DEFINE_FETCH_deref(type)					\
+@@ -162,13 +175,26 @@ __kprobes void FETCH_FUNC_NAME(deref, type)(struct pt_regs *regs,	\
+ 	call_fetch(&dprm->orig, regs, &addr);				\
+ 	if (addr) {							\
+ 		addr += dprm->offset;					\
+-		fetch_memory_##type(regs, (void *)addr, dest);		\
++		dprm->fetch(regs, (void *)addr, dest);			\
+ 	} else								\
+ 		*(type *)dest = 0;					\
  }
+ DEFINE_BASIC_FETCH_FUNCS(deref)
+ DEFINE_FETCH_deref(string)
+-DEFINE_FETCH_deref(string_size)
++
++__kprobes void FETCH_FUNC_NAME(deref, string_size)(struct pt_regs *regs,
++						   void *data, void *dest)
++{
++	struct deref_fetch_param *dprm = data;
++	unsigned long addr;
++
++	call_fetch(&dprm->orig, regs, &addr);
++	if (addr && dprm->fetch_size) {
++		addr += dprm->offset;
++		dprm->fetch_size(regs, (void *)addr, dest);
++	} else
++		*(string_size *)dest = 0;
++}
  
- /* uprobe profile handler */
+ static __kprobes void update_deref_fetch_param(struct deref_fetch_param *data)
+ {
+@@ -410,13 +436,20 @@ static int parse_probe_arg(char *arg, const struct fetch_type *t,
+ 			f->fn = t->fetch[FETCH_MTD_memory];
+ 			f->data = (void *)param;
+ 		} else {
++			struct symbol_cache *sc;
++
+ 			ret = traceprobe_split_symbol_offset(arg + 1, &offset);
+ 			if (ret)
+ 				break;
+ 
+-			f->data = alloc_symbol_cache(arg + 1, offset);
+-			if (f->data)
++			sc = alloc_symbol_cache(arg + 1, offset);
++			if (sc) {
+ 				f->fn = t->fetch[FETCH_MTD_symbol];
++				sc->fetch = t->fetch[FETCH_MTD_memory];
++				sc->fetch_size = get_fetch_size_function(t,
++							sc->fetch, ttbl);
++				f->data = sc;
++			}
+ 		}
+ 		break;
+ 
+@@ -448,6 +481,9 @@ static int parse_probe_arg(char *arg, const struct fetch_type *t,
+ 				return -ENOMEM;
+ 
+ 			dprm->offset = offset;
++			dprm->fetch = t->fetch[FETCH_MTD_memory];
++			dprm->fetch_size = get_fetch_size_function(t,
++							dprm->fetch, ttbl);
+ 			ret = parse_probe_arg(arg, t2, &dprm->orig, is_return,
+ 							is_kprobe);
+ 			if (ret)
 -- 
 1.7.11.7
 
