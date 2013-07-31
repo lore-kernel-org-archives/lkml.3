@@ -1,88 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758577Ab3GaD3X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 23:29:23 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:9702 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753785Ab3GaD3W (ORCPT
+	id S1758699Ab3GaDcF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 23:32:05 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:2794 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1758476Ab3GaDcD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 23:29:22 -0400
-X-AuditID: cbfee68d-b7f096d0000043fc-cb-51f8848f7170
-Message-id: <51F88497.5020909@samsung.com>
-Date: Wed, 31 Jul 2013 12:29:27 +0900
-From: Jaehoon Chung <jh80.chung@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130623
- Thunderbird/17.0.7
-MIME-version: 1.0
-To: Seungwon Jeon <tgih.jun@samsung.com>
-Cc: "'Mark Brown'" <broonie@kernel.org>,
-        "'Liam Girdwood'" <lgirdwood@gmail.com>,
-        "'Chris Ball'" <cjb@laptop.org>,
-        "'Jaehoon Chung'" <jh80.chung@samsung.com>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linaro-kernel@lists.linaro.org, "'Mark Brown'" <broonie@linaro.org>
-Subject: Re: [PATCH 4/5] mmc: dw_mmc: Indicate that regulators may be absent
-References: <1375184777-25404-1-git-send-email-broonie@kernel.org>
- <1375184777-25404-4-git-send-email-broonie@kernel.org>
- <003901ce8d29$610ab3f0$23201bd0$%jun@samsung.com>
-In-reply-to: <003901ce8d29$610ab3f0$23201bd0$%jun@samsung.com>
-Content-type: text/plain; charset=EUC-KR
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNIsWRmVeSWpSXmKPExsWyRsSkRHdCy49Ag5/bWC2mPnzCZrHp+nVW
-	i+2vN7JZ3PjVxmrx7UoHk8X7Q8+YLTY9vsZqcXnXHDaLI//7GS0+3L/I7MDlsXPWXXaPTas6
-	2TwOXVnL6HHn2h42j81L6j1u/3vM7NG3ZRWjx+dNcgEcUVw2Kak5mWWpRfp2CVwZL5ecZSlY
-	xVpxeeJjtgbGNSxdjJwcEgImEptuXWODsMUkLtxbD2RzcQgJLGWUmNWxiwmm6Mf+PlaIxCJG
-	iXW/LkJVvWaUmNfyBqydV0BL4uPuQ6wgNouAqsSXTYfAVrAJ6Ehs/3YcbJKoQJjEkm+PoeoF
-	JX5MvgdUw8EhIqAh8WV+AshMZoH9TBJTdn4DmyMs4CPxZ10LE8Sy9YwSTc8WMIM0cArYSXQ+
-	MgOpYQbqnfr6NCOELS+xec1bZoir/7JL3LwXDHGPgMS3yYfAdkkIyEpsOgBVIilxcMUNlgmM
-	YrOQXDQLydRZSKYuYGRexSiaWpBcUJyUXmSoV5yYW1yal66XnJ+7iREYsaf/PevdwXj7gPUh
-	xmSglROZpUST84ERn1cSb2hsZmRhamJqbGRuaUaasJI4r1qLdaCQQHpiSWp2ampBalF8UWlO
-	avEhRiYOTqkGxq3v+/fe9+W+znruUXHiPBmH2vOXJy7aYmzfmfdwwqMnP14vmLBXLypx8Yre
-	iPmThP4/OS5/YR+33HuVV5bPla2+GZ74r/Vrr+/bKDNBoaun3O/8COBSvBhiGlXZ2/rQ3+zf
-	0fSvE/3fNSbLLr9xMy40ty4vbbtBYviUY2FtGp13+L5bNEQp2ymxFGckGmoxFxUnAgC4FK3W
-	7gIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrJKsWRmVeSWpSXmKPExsVy+t9jAd3+lh+BBsdXWFlMffiEzWLT9eus
-	Fttfb2SzuPGrjdXi25UOJov3h54xW2x6fI3V4vKuOWwWR/73M1p8uH+R2YHLY+esu+wem1Z1
-	snkcurKW0ePOtT1sHpuX1Hvc/veY2aNvyypGj8+b5AI4ohoYbTJSE1NSixRS85LzUzLz0m2V
-	vIPjneNNzQwMdQ0tLcyVFPISc1NtlVx8AnTdMnOAjlRSKEvMKQUKBSQWFyvp22GaEBripmsB
-	0xih6xsSBNdjZIAGEtYwZrxccpalYBVrxeWJj9kaGNewdDFyckgImEj82N/HCmGLSVy4t56t
-	i5GLQ0hgEaPEul8XoZzXjBLzWt6wgVTxCmhJfNx9CKyDRUBV4sumQ2CT2AR0JLZ/O84EYosK
-	hEks+fYYql5Q4sfke0A1HBwiAhoSX+YngMxkFtjPJDFl5zewOcICPhJ/1rUwQSxbzyjR9GwB
-	M0gDp4CdROcjM5AaZqDeqa9PM0LY8hKb17xlnsAoMAvJillIymYhKVvAyLyKUTS1ILmgOCk9
-	10ivODG3uDQvXS85P3cTIzghPJPewbiqweIQowAHoxIP74xL3wOFWBPLiitzDzFKcDArifDK
-	B/0IFOJNSaysSi3Kjy8qzUktPsSYDAyBicxSosn5wGSVVxJvaGxiZmRpZG5oYWRsTpqwkjjv
-	wVbrQCGB9MSS1OzU1ILUIpgtTBycUg2MATq7VhhN4BcoipAMzWZ4rV/sZ/LiReDV3id1t67f
-	NH/yzUlz/RyfYvu9ltGnWL1qlGakHRdcsH7Vme8KjKdX17SvUss5Gc5Qu45vTe7abSbNDC/q
-	36dnfN+3Z70zRxObu+XGZ5IOumIlVnEdBwQev/958ce2hx2uJ1+whMw75BUsHtC1T/i4Ektx
-	RqKhFnNRcSIAL5Dg7EwDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Tue, 30 Jul 2013 23:32:03 -0400
+X-IronPort-AV: E=Sophos;i="4.89,783,1367942400"; 
+   d="scan'208";a="8073383"
+Message-ID: <51F8844A.7080407@cn.fujitsu.com>
+Date: Wed, 31 Jul 2013 11:28:10 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: Xishi Qiu <qiuxishi@huawei.com>
+CC: plagnioj@jcrosoft.com, tomi.valkeinen@ti.com, linux-fbdev@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] fbdev: fix build warning in vga16fb.c
+References: <51F8829E.4080605@huawei.com>
+In-Reply-To: <51F8829E.4080605@huawei.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/31 11:29:45,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/31 11:29:48
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by: Jaehoon Chung <jh80.chung@samsung.com>
+Hoho, Tomi has applied the patch from Lius to fix this warning.
+And this is the sixth patch to fix the same issue since last week.
 
-Best Regards,
-Jaehoon Chung
+Thanks,
+Gu
 
-On 07/30/2013 10:33 PM, Seungwon Jeon wrote:
-> On Tue, July 30, 2013, Mark Brown wrote:
->> From: Mark Brown <broonie@linaro.org>
->>
->> Use regulator_get_optional() to tell the core that requests for regulators
->> can fail in a real system.
->>
->> Signed-off-by: Mark Brown <broonie@linaro.org>
-> Acked-by: Seungwon Jeon <tgih.jun@samsung.com>
+
+On 07/31/2013 11:21 AM, Xishi Qiu wrote:
+
+> When building v3.11-rc3, I get the following warning:
+> ...
+> drivers/video/vga16fb.c: In function ‘vga16fb_destroy’:
+> drivers/video/vga16fb.c:1268: warning: unused variable ‘dev’
+> ...
 > 
-> Thanks,
-> Seungwon Jeon
+> Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
+> ---
+>  drivers/video/vga16fb.c |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+> diff --git a/drivers/video/vga16fb.c b/drivers/video/vga16fb.c
+> index 830ded4..2827333 100644
+> --- a/drivers/video/vga16fb.c
+> +++ b/drivers/video/vga16fb.c
+> @@ -1265,7 +1265,6 @@ static void vga16fb_imageblit(struct fb_info *info, const struct fb_image *image
+>  
+>  static void vga16fb_destroy(struct fb_info *info)
+>  {
+> -	struct platform_device *dev = container_of(info->device, struct platform_device, dev);
+>  	iounmap(info->screen_base);
+>  	fb_dealloc_cmap(&info->cmap);
+>  	/* XXX unshare VGA regions */
+
 
