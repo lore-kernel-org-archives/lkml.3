@@ -1,175 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752106Ab3GaFpV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 01:45:21 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:37031 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750775Ab3GaFpS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 01:45:18 -0400
-Message-ID: <51F8A440.8010803@ti.com>
-Date: Wed, 31 Jul 2013 11:14:32 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1753206Ab3GaFqV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 01:46:21 -0400
+Received: from co9ehsobe001.messaging.microsoft.com ([207.46.163.24]:43231
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751316Ab3GaFqT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 01:46:19 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VS-4(zzbb2dI98dI9371I542I1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275dh1de097hz2dh2a8h668h839h8e2h8e3h93fhd25hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e1dhbe9i1155h)
+From: Wang Dongsheng-B40534 <B40534@freescale.com>
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+CC: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
+        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
+        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "michael@ellerman.id.au" <michael@ellerman.id.au>,
+        "srivatsa.bhat@linux.vnet.ibm.com" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "svaidy@linux.vnet.ibm.com" <svaidy@linux.vnet.ibm.com>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "rjw@sisk.pl" <rjw@sisk.pl>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Li Yang-R58472 <r58472@freescale.com>,
+        Zhao Chenhui-B35336 <B35336@freescale.com>,
+        Wood Scott-B07421 <B07421@freescale.com>,
+        "galak@kernel.crashing.org" <galak@kernel.crashing.org>
+Subject: RE: [PATCH V2 4/6] cpuidle/pseries: Move the pseries_idle backend
+ driver to sysdev.
+Thread-Topic: [PATCH V2 4/6] cpuidle/pseries: Move the pseries_idle backend
+ driver to sysdev.
+Thread-Index: AQHOjZoanqWpV3IrokOYHebEiDJxA5l+HjAggAALWICAAAYQYA==
+Date: Wed, 31 Jul 2013 05:46:09 +0000
+Message-ID: <ABB05CD9C9F68C46A5CEDC7F15439259FF2A3A@039-SN2MPN1-021.039d.mgd.msft.net>
+References: <20130731025840.19448.24468.stgit@deepthi>
+ <20130731025924.19448.46538.stgit@deepthi>
+ <ABB05CD9C9F68C46A5CEDC7F15439259FF2953@039-SN2MPN1-021.039d.mgd.msft.net>
+ <51F88BA7.7090404@linux.vnet.ibm.com>
+In-Reply-To: <51F88BA7.7090404@linux.vnet.ibm.com>
+Accept-Language: en-US, zh-CN
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.192.208.117]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: <balbi@ti.com>
-CC: Greg KH <gregkh@linuxfoundation.org>, Tomasz Figa <tomasz.figa@gmail.com>,
-        Alan Stern <stern@rowland.harvard.edu>, <kyungmin.park@samsung.com>,
-        <jg1.han@samsung.com>, <s.nawrocki@samsung.com>,
-        <kgene.kim@samsung.com>, <grant.likely@linaro.org>, <tony@atomide.com>,
-        <arnd@arndb.de>, <swarren@nvidia.com>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-samsung-soc@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-media@vger.kernel.org>,
-        <linux-fbdev@vger.kernel.org>, <akpm@linux-foundation.org>,
-        <balajitk@ti.com>, <george.cherian@ti.com>, <nsekhar@ti.com>
-Subject: Re: [PATCH 01/15] drivers: phy: add generic PHY framework
-References: <20130720220006.GA7977@kroah.com> <3839600.WiC1OLF35o@flatron> <51EBC0F5.70601@ti.com> <9748041.Qq1fWJBg6D@flatron> <20130721154653.GG16598@kroah.com> <20130730071106.GC16441@radagast>
-In-Reply-To: <20130730071106.GC16441@radagast>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r6V5kQeq009257
 
-Hi,
+Hi Preeti,
 
-On Tuesday 30 July 2013 12:41 PM, Felipe Balbi wrote:
-> On Sun, Jul 21, 2013 at 08:46:53AM -0700, Greg KH wrote:
->> On Sun, Jul 21, 2013 at 01:12:07PM +0200, Tomasz Figa wrote:
->>> On Sunday 21 of July 2013 16:37:33 Kishon Vijay Abraham I wrote:
->>>> Hi,
->>>>
->>>> On Sunday 21 July 2013 04:01 PM, Tomasz Figa wrote:
->>>>> Hi,
->>>>>
->>>>> On Saturday 20 of July 2013 19:59:10 Greg KH wrote:
->>>>>> On Sat, Jul 20, 2013 at 10:32:26PM -0400, Alan Stern wrote:
->>>>>>> On Sat, 20 Jul 2013, Greg KH wrote:
->>>>>>>>>>> That should be passed using platform data.
->>>>>>>>>>
->>>>>>>>>> Ick, don't pass strings around, pass pointers.  If you have
->>>>>>>>>> platform
->>>>>>>>>> data you can get to, then put the pointer there, don't use a
->>>>>>>>>> "name".
->>>>>>>>>
->>>>>>>>> I don't think I understood you here :-s We wont have phy pointer
->>>>>>>>> when we create the device for the controller no?(it'll be done in
->>>>>>>>> board file). Probably I'm missing something.
->>>>>>>>
->>>>>>>> Why will you not have that pointer?  You can't rely on the "name"
->>>>>>>> as
->>>>>>>> the device id will not match up, so you should be able to rely on
->>>>>>>> the pointer being in the structure that the board sets up, right?
->>>>>>>>
->>>>>>>> Don't use names, especially as ids can, and will, change, that is
->>>>>>>> going
->>>>>>>> to cause big problems.  Use pointers, this is C, we are supposed to
->>>>>>>> be
->>>>>>>> doing that :)
->>>>>>>
->>>>>>> Kishon, I think what Greg means is this:  The name you are using
->>>>>>> must
->>>>>>> be stored somewhere in a data structure constructed by the board
->>>>>>> file,
->>>>>>> right?  Or at least, associated with some data structure somehow.
->>>>>>> Otherwise the platform code wouldn't know which PHY hardware
->>>>>>> corresponded to a particular name.
->>>>>>>
->>>>>>> Greg's suggestion is that you store the address of that data
->>>>>>> structure
->>>>>>> in the platform data instead of storing the name string.  Have the
->>>>>>> consumer pass the data structure's address when it calls phy_create,
->>>>>>> instead of passing the name.  Then you don't have to worry about two
->>>>>>> PHYs accidentally ending up with the same name or any other similar
->>>>>>> problems.
->>>>>>
->>>>>> Close, but the issue is that whatever returns from phy_create()
->>>>>> should
->>>>>> then be used, no need to call any "find" functions, as you can just
->>>>>> use
->>>>>> the pointer that phy_create() returns.  Much like all other class api
->>>>>> functions in the kernel work.
->>>>>
->>>>> I think there is a confusion here about who registers the PHYs.
->>>>>
->>>>> All platform code does is registering a platform/i2c/whatever device,
->>>>> which causes a driver (located in drivers/phy/) to be instantiated.
->>>>> Such drivers call phy_create(), usually in their probe() callbacks,
->>>>> so platform_code has no way (and should have no way, for the sake of
->>>>> layering) to get what phy_create() returns.
->>
->> Why not put pointers in the platform data structure that can hold these
->> pointers?  I thought that is why we created those structures in the
->> first place.  If not, what are they there for?
+> -----Original Message-----
+> From: Preeti U Murthy [mailto:preeti@linux.vnet.ibm.com]
+> Sent: Wednesday, July 31, 2013 12:00 PM
+> To: Wang Dongsheng-B40534
+> Cc: Deepthi Dharwar; benh@kernel.crashing.org; daniel.lezcano@linaro.org;
+> linux-kernel@vger.kernel.org; michael@ellerman.id.au;
+> srivatsa.bhat@linux.vnet.ibm.com; svaidy@linux.vnet.ibm.com; linuxppc-
+> dev@lists.ozlabs.org; rjw@sisk.pl; linux-pm@vger.kernel.org
+> Subject: Re: [PATCH V2 4/6] cpuidle/pseries: Move the pseries_idle
+> backend driver to sysdev.
 > 
-> heh, IMO we shouldn't pass pointers of any kind through platform_data,
-> we want to pass data :-)
+> Hi Dongsheng,
 > 
-> Allowing to pass pointers through that, is one of the reasons which got
-> us in such a big mess in ARM land, well it was much easier for a
-> board-file/driver writer to pass a function pointer then to create a
-> generic framework :-)
+> On 07/31/2013 08:52 AM, Wang Dongsheng-B40534 wrote:
+> >
+> >
+> >> -----Original Message-----
+> >> From: Deepthi Dharwar [mailto:deepthi@linux.vnet.ibm.com]
+> >> Sent: Wednesday, July 31, 2013 10:59 AM
+> >> To: benh@kernel.crashing.org; daniel.lezcano@linaro.org; linux-
+> >> kernel@vger.kernel.org; michael@ellerman.id.au;
+> >> srivatsa.bhat@linux.vnet.ibm.com; preeti@linux.vnet.ibm.com;
+> >> svaidy@linux.vnet.ibm.com; linuxppc-dev@lists.ozlabs.org
+> >> Cc: rjw@sisk.pl; Wang Dongsheng-B40534; linux-pm@vger.kernel.org
+> >> Subject: [PATCH V2 4/6] cpuidle/pseries: Move the pseries_idle
+> >> backend driver to sysdev.
+> >>
+> >> Move pseries_idle backend driver code to arch/powerpc/sysdev so that
+> >> the code can be used for a common driver for powernv and pseries.
+> >> This removes a lot of code duplicacy.
+> >>
+> > Why not drivers/cpuidle/?
+> >
+> > I think it should be move to drivers/cpuidle.
 > 
->>>>> IMHO we need a lookup method for PHYs, just like for clocks,
->>>>> regulators, PWMs or even i2c busses because there are complex cases
->>>>> when passing just a name using platform data will not work. I would
->>>>> second what Stephen said [1] and define a structure doing things in a
->>>>> DT-like way.
->>>>>
->>>>> Example;
->>>>>
->>>>> [platform code]
->>>>>
->>>>> static const struct phy_lookup my_phy_lookup[] = {
->>>>>
->>>>> 	PHY_LOOKUP("s3c-hsotg.0", "otg", "samsung-usbphy.1", "phy.2"),
->>>>
->>>> The only problem here is that if *PLATFORM_DEVID_AUTO* is used while
->>>> creating the device, the ids in the device name would change and
->>>> PHY_LOOKUP wont be useful.
->>>
->>> I don't think this is a problem. All the existing lookup methods already 
->>> use ID to identify devices (see regulators, clkdev, PWMs, i2c, ...). You 
->>> can simply add a requirement that the ID must be assigned manually, 
->>> without using PLATFORM_DEVID_AUTO to use PHY lookup.
->>
->> And I'm saying that this idea, of using a specific name and id, is
->> frought with fragility and will break in the future in various ways when
->> devices get added to systems, making these strings constantly have to be
->> kept up to date with different board configurations.
->>
->> People, NEVER, hardcode something like an id.  The fact that this
->> happens today with the clock code, doesn't make it right, it makes the
->> clock code wrong.  Others have already said that this is wrong there as
->> well, as systems change and dynamic ids get used more and more.
->>
->> Let's not repeat the same mistakes of the past just because we refuse to
->> learn from them...
->>
->> So again, the "find a phy by a string" functions should be removed, the
->> device id should be automatically created by the phy core just to make
->> things unique in sysfs, and no driver code should _ever_ be reliant on
->> the number that is being created, and the pointer to the phy structure
->> should be used everywhere instead.
->>
->> With those types of changes, I will consider merging this subsystem, but
->> without them, sorry, I will not.
+> Please take a look at what the cpuidle under drivers has to provide.
+> cpuidle has two parts to it. The front end and the back end. The front
+> end constitutes the cpuidle governors, registering of arch specific
+> cpuidle drivers, disabling and enabling of cpuidle feature. It is this
+> front end code which is present under drivers/cpuidle.
 > 
-> I'll agree with Greg here, the very fact that we see people trying to
-> add a requirement of *NOT* using PLATFORM_DEVID_AUTO already points to a
-> big problem in the framework.
+> The arch specific cpuidle drivers which decide what needs to be done to
+> enter a specific idle state chosen by the cpuidle governor is what
+> constitutes the back end of cpuidle. This will not be in drivers/cpuidle
+> but in an arch/ specific code.
 > 
-> The fact is that if we don't allow PLATFORM_DEVID_AUTO we will end up
-> adding similar infrastructure to the driver themselves to make sure we
-> don't end up with duplicate names in sysfs in case we have multiple
-> instances of the same IP in the SoC (or several of the same PCIe card).
-> I really don't want to go back to that.
+> The cpuidle under drivers/cpuidle drives the idle power management, but
+> the low level handling of the entry into idle states should be taken care
+> of by the architecture.
+> 
+> Your recent patch :
+> cpuidle: add freescale e500 family porcessors idle support IMO should
+> hook onto the backend cpuidle driver that this patchset provides.
+> 
+Sorry, I don't think so, cpuidle framework has been already very common.
+Here we just need to do state definition and handling. I wonder whether
+we need this layer.
 
-If we are using PLATFORM_DEVID_AUTO, then I dont see any way we can give the
-correct binding information to the PHY framework. I think we can drop having
-this non-dt support in PHY framework? I see only one platform (OMAP3) going to
-be needing this non-dt support and we can use the USB PHY library for it.
+If your handle is platform dependent, it should be in arch/platform.
 
-Thanks
-Kishon
+If it is only for some platforms and the operation of these platforms can be
+multiplexed, Why cannot as a driver to put into driver/cpuidle?
+
+If it a general driver, I think we can put some common operating to driver/cpuidle
+and make the platform specific code to arch/powerpc/platform.
+
+This patch include front end and back end, not just back end.
+
+This patch include too many state of different platforms and handle function. This state
+and handle that should belong to itself platforms. Not a general way. If Deepthi will do
+a general powerpc cpuidle, I think, it's cannot just using the macro to distinguish
+platform. the front end code maybe move to driver/cpuidle(drvier register) should be better,
+make the Low Power State and what should be handle to arch/powerpc/platform/**, because different
+platforms have different state of low power consumption, and the processing method.
+The front end can provide some general methods to register into general powerpc cpuidle driver.
+
+-dongsheng
+
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
