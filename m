@@ -1,152 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758759Ab3GaGS0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 02:18:26 -0400
-Received: from smtp6-g21.free.fr ([212.27.42.6]:42944 "EHLO smtp6-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751934Ab3GaGSY convert rfc822-to-8bit (ORCPT
+	id S1754049Ab3GaGVk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 02:21:40 -0400
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:38337 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751636Ab3GaGVj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 02:18:24 -0400
-Date: Wed, 31 Jul 2013 08:18:58 +0200
-From: Jean-Francois Moine <moinejf@free.fr>
-To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: [PATCH v3 4/4] ASoC: kirkwood: change kirkwood-i2s to
- mvebu-pcm-audio and DT doc
-Message-ID: <20130731081858.53413597@armhf>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; arm-unknown-linux-gnueabihf)
-Mime-Version: 1.0
+	Wed, 31 Jul 2013 02:21:39 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130731044101.GE2548@lge.com>
+References: <1375075929-6119-1-git-send-email-iamjoonsoo.kim@lge.com>
+	<1375075929-6119-2-git-send-email-iamjoonsoo.kim@lge.com>
+	<CAJd=RBCUJg5GJEQ2_heCt8S9LZzedGLbvYvivFkmvfMChPqaCg@mail.gmail.com>
+	<20130731022751.GA2548@lge.com>
+	<CAJd=RBD=SNm9TG-kxKcd-BiMduOhLUubq=JpRwCy_MmiDtO9Tw@mail.gmail.com>
+	<20130731044101.GE2548@lge.com>
+Date: Wed, 31 Jul 2013 14:21:38 +0800
+Message-ID: <CAJd=RBDr72T+O+aNdb-HyB3U+k5JiVWMoXfPNA0y-Hxw-wDD-g@mail.gmail.com>
+Subject: Re: [PATCH 01/18] mm, hugetlb: protect reserved pages when
+ softofflining requests the pages
+From: Hillf Danton <dhillf@gmail.com>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As the kirkwood audio system may be used in other Marvell machines
-(mvebu), this patch changes the name of the audio driver to
-'mvebu-pcm-audio' and also contains the associated DT documentation.
-
-Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
----
- .../devicetree/bindings/sound/mvebu-pcm-audio.txt | 29 ++++++++++++++++++++++
- sound/soc/kirkwood/kirkwood-dma.c                 |  2 +-
- sound/soc/kirkwood/kirkwood-i2s.c                 |  6 +++---
- sound/soc/kirkwood/kirkwood-openrd.c              |  4 ++--
- sound/soc/kirkwood/kirkwood-t5325.c               |  4 ++--
- 5 files changed, 37 insertions(+), 8 deletions(-)
-
-diff --git a/Documentation/devicetree/bindings/sound/mvebu-pcm-audio.txt b/Documentation/devicetree/bindings/sound/mvebu-pcm-audio.txt
-new file mode 100644
-index 0000000..0995ebc
---- /dev/null
-+++ b/Documentation/devicetree/bindings/sound/mvebu-pcm-audio.txt
-@@ -0,0 +1,29 @@
-+* mvebu (Kirkwood, Dove, Armada 370) i2s controller
-+
-+Required properties:
-+
-+- compatible: "marvell,mvebu-pcm-audio"
-+
-+- reg: physical base address of the controller and length of memory mapped
-+  region.
-+
-+- interrupts: list of two irq numbers.
-+  The first irq is used for data flow and the second one is used for errors.
-+
-+- clocks: one or two phandles.
-+  The first one is mandatory and defines the internal clock.
-+  The second one is optional and defines an external clock.
-+
-+- clock-names: names associated to the clocks:
-+	"internal" for the internal clock
-+	"extclk" for the external clock
-+
-+Example:
-+
-+i2s1: audio-controller@b4000 {
-+	compatible = "marvell,mvebu-pcm-audio";
-+	reg = <0xb4000 0x2210>;
-+	interrupts = <21>, <22>;
-+	clocks = <&gate_clk 13>;
-+	clock-names = "internal";
-+};
-diff --git a/sound/soc/kirkwood/kirkwood-dma.c b/sound/soc/kirkwood/kirkwood-dma.c
-index f735501..e9802f1 100644
---- a/sound/soc/kirkwood/kirkwood-dma.c
-+++ b/sound/soc/kirkwood/kirkwood-dma.c
-@@ -165,7 +165,7 @@ static int kirkwood_dma_open(struct snd_pcm_substream *substream)
- 		prdata->data = priv;
- 
- 		err = request_irq(priv->irq, kirkwood_dma_irq, IRQF_SHARED,
--				  "kirkwood-i2s", prdata);
-+				  "mvebu-pcm-audio", prdata);
- 		if (err) {
- 			kfree(prdata);
- 			return -EBUSY;
-diff --git a/sound/soc/kirkwood/kirkwood-i2s.c b/sound/soc/kirkwood/kirkwood-i2s.c
-index 9844010..4f817a2 100644
---- a/sound/soc/kirkwood/kirkwood-i2s.c
-+++ b/sound/soc/kirkwood/kirkwood-i2s.c
-@@ -25,7 +25,7 @@
- 
- #include "kirkwood.h"
- 
--#define DRV_NAME	"kirkwood-i2s"
-+#define DRV_NAME	"mvebu-pcm-audio"
- 
- #define KIRKWOOD_I2S_FORMATS \
- 	(SNDRV_PCM_FMTBIT_S16_LE | \
-@@ -555,7 +555,7 @@ fail:
- 
- #ifdef CONFIG_OF
- static struct of_device_id kirkwood_i2s_of_match[] = {
--	{ .compatible = "marvell,kirkwood-i2s" },
-+	{ .compatible = "marvell,mvebu-pcm-audio" },
- 	{ }
- };
- MODULE_DEVICE_TABLE(of, kirkwood_i2s_of_match);
-@@ -577,4 +577,4 @@ module_platform_driver(kirkwood_i2s_driver);
- MODULE_AUTHOR("Arnaud Patard, <arnaud.patard@rtp-net.org>");
- MODULE_DESCRIPTION("Kirkwood I2S SoC Interface");
- MODULE_LICENSE("GPL");
--MODULE_ALIAS("platform:kirkwood-i2s");
-+MODULE_ALIAS("platform:mvebu-pcm-audio");
-diff --git a/sound/soc/kirkwood/kirkwood-openrd.c b/sound/soc/kirkwood/kirkwood-openrd.c
-index df565d2..532843a 100644
---- a/sound/soc/kirkwood/kirkwood-openrd.c
-+++ b/sound/soc/kirkwood/kirkwood-openrd.c
-@@ -52,8 +52,8 @@ static struct snd_soc_dai_link openrd_client_dai[] = {
- {
- 	.name = "CS42L51",
- 	.stream_name = "CS42L51 HiFi",
--	.cpu_dai_name = "kirkwood-i2s",
--	.platform_name = "kirkwood-i2s",
-+	.cpu_dai_name = "mvebu-pcm-audio",
-+	.platform_name = "mvebu-pcm-audio",
- 	.codec_dai_name = "cs42l51-hifi",
- 	.codec_name = "cs42l51-codec.0-004a",
- 	.dai_fmt = SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_CBS_CFS,
-diff --git a/sound/soc/kirkwood/kirkwood-t5325.c b/sound/soc/kirkwood/kirkwood-t5325.c
-index b4647ba..d31a0f1 100644
---- a/sound/soc/kirkwood/kirkwood-t5325.c
-+++ b/sound/soc/kirkwood/kirkwood-t5325.c
-@@ -68,8 +68,8 @@ static struct snd_soc_dai_link t5325_dai[] = {
- {
- 	.name = "ALC5621",
- 	.stream_name = "ALC5621 HiFi",
--	.cpu_dai_name = "kirkwood-i2s",
--	.platform_name = "kirkwood-i2s",
-+	.cpu_dai_name = "mvebu-pcm-audio",
-+	.platform_name = "mvebu-pcm-audio",
- 	.codec_dai_name = "alc5621-hifi",
- 	.codec_name = "alc562x-codec.0-001a",
- 	.dai_fmt = SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_CBS_CFS,
-
-
--- 
-Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
-Jef		|		http://moinejf.free.fr/
+On Wed, Jul 31, 2013 at 12:41 PM, Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
+> On Wed, Jul 31, 2013 at 10:49:24AM +0800, Hillf Danton wrote:
+>> On Wed, Jul 31, 2013 at 10:27 AM, Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
+>> > On Mon, Jul 29, 2013 at 03:24:46PM +0800, Hillf Danton wrote:
+>> >> On Mon, Jul 29, 2013 at 1:31 PM, Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
+>> >> > alloc_huge_page_node() use dequeue_huge_page_node() without
+>> >> > any validation check, so it can steal reserved page unconditionally.
+>> >>
+>> >> Well, why is it illegal to use reserved page here?
+>> >
+>> > If we use reserved page here, other processes which are promised to use
+>> > enough hugepages cannot get enough hugepages and can die. This is
+>> > unexpected result to them.
+>> >
+>> But, how do you determine that a huge page is requested by a process
+>> that is not allowed to use reserved pages?
+>
+> Reserved page is just one for each address or file offset. If we need to
+> move this page, this means that it already use it's own reserved page, this
+> page is it. So we should not use other reserved page for moving this page.
+>
+Hm, how do you determine "this page" is not buddy?
