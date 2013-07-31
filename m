@@ -1,71 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759412Ab3GaKRX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 06:17:23 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:39340 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754181Ab3GaKRV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 06:17:21 -0400
-X-AuditID: cbfee61b-b7efe6d000007b11-00-51f8e42e4551
-Message-id: <51F8E404.6070507@partner.samsung.com>
-Date: Wed, 31 Jul 2013 12:16:36 +0200
-From: Piotr Sarna <p.sarna@partner.samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623
- Thunderbird/17.0.7
-MIME-version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: ngupta@vflare.org, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org, b.zolnierkie@samsung.com,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [PATCH 1/2] staging: zram: add Crypto API support
-References: <1375187449-6546-1-git-send-email-p.sarna@partner.samsung.com>
- <20130730135333.GB27962@kroah.com>
-In-reply-to: <20130730135333.GB27962@kroah.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrOLMWRmVeSWpSXmKPExsVy+t9jQV29Jz8CDR5c1LTYOGM9q8WeM7/Y
-	LZoXr2ezONv0ht3i8q45bBYbWmaxO7B53Nt3mMVj/9w17B59W1Yxeuz8tJnV4/MmuQDWKC6b
-	lNSczLLUIn27BK6M253PGQtmcVZc/9jB3MA4i72LkZNDQsBEYvLK3UwQtpjEhXvr2boYuTiE
-	BKYzSnQ9fswO4bxmlNj26CgLSBWvgJHE3M8vmEFsFgFViQdTl4HF2QT0Jb5cXwNkc3CICkRI
-	HF2uCVEuKPFj8j2wEhEBDYmXR2+xgMxkFpjBKHFp33+wzcICdhJrDm4EmykkkC+xsLcJ7DpO
-	oJnXP8xhBLGZBXQk9rdOY4Ow5SU2r3nLPIFRYBaSHbOQlM1CUraAkXkVo2hqQXJBcVJ6rpFe
-	cWJucWleul5yfu4mRnBwP5PewbiqweIQowAHoxIP74xL3wOFWBPLiitzDzFKcDArifDKB/0I
-	FOJNSaysSi3Kjy8qzUktPsQozcGiJM57sNU6UEggPbEkNTs1tSC1CCbLxMEp1cAY4t+SorJv
-	304LxeVyobxsB08lOQgLdiiebndxCLnS/25KVcfznu9XHOJbpnSJzemKFm1cPSNFt2BOXcG2
-	k3pMe5+UGH5gT3TV6NU+u/159TtHfYmpS4pvGry1OzDZ3vjn3C83Pv/sL5rCsGKSn8v0nT7X
-	58+5eNHM3/n7+ZKmt5Nthd2auLuUWIozEg21mIuKEwGJjC/3agIAAA==
+	id S1759439Ab3GaKRw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 06:17:52 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:48681 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752396Ab3GaKRu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 06:17:50 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Aaron Lu <aaron.lu@intel.com>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Tejun Heo <tj@kernel.org>, linux-ide@vger.kernel.org
+Subject: Re: [PATCH 2/3] ACPI / PM: Make messages in acpi_device_set_power() print device names
+Date: Wed, 31 Jul 2013 12:27:53 +0200
+Message-ID: <1858303.iaJrUSpF87@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <51F8B445.1070000@intel.com>
+References: <10433383.dueoNg39qi@vostro.rjw.lan> <4285597.UpTJrMA8Fu@vostro.rjw.lan> <51F8B445.1070000@intel.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On 07/30/2013 03:53 PM, Greg KH wrote:
-> On Tue, Jul 30, 2013 at 02:30:48PM +0200, Piotr Sarna wrote:
->> Current version of zram does not allow any substitution of a default
->> compression algorithm. Therefore, I decided to change the existing
->> implementation of page compression by adding Crypto API compability.
+On Wednesday, July 31, 2013 02:52:53 PM Aaron Lu wrote:
+> On 07/29/2013 08:20 PM, Rafael J. Wysocki wrote:
+> > On Monday, July 29, 2013 10:29:36 AM Aaron Lu wrote:
+> >> On 07/27/2013 09:11 PM, Rafael J. Wysocki wrote:
+> >>> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> >>>
+> >>> Modify acpi_device_set_power() so that diagnostic messages printed by
+> >>> it to the kernel log always contain the name of the device concerned
+> >>> to make it possible to identify the device that triggered the message
+> >>> if need be.
+> >>>
+> >>> Also replace printk(KERN_WARNING ) with dev_warn() everywhere in that
+> >>> function.
+> >>>
+> >>> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> >>> ---
+> >>>  drivers/acpi/device_pm.c |   22 ++++++++++------------
+> >>>  1 file changed, 10 insertions(+), 12 deletions(-)
+> >>>
+> >>> Index: linux-pm/drivers/acpi/device_pm.c
+> >>> ===================================================================
+> >>> --- linux-pm.orig/drivers/acpi/device_pm.c
+> >>> +++ linux-pm/drivers/acpi/device_pm.c
+> >>> @@ -166,20 +166,20 @@ int acpi_device_set_power(struct acpi_de
+> >>>  	/* Make sure this is a valid target state */
+> >>>  
+> >>>  	if (state == device->power.state) {
+> >>> -		ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Device is already at %s\n",
+> >>> +		ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Device [%s] already in %s\n",
+> >>> +				  device->pnp.bus_id,
+> >>>  				  acpi_power_state_string(state)));
+> >>>  		return 0;
+> >>>  	}
+> >>>  
+> >>>  	if (!device->power.states[state].flags.valid) {
+> >>> -		printk(KERN_WARNING PREFIX "Device does not support %s\n",
+> >>> -		       acpi_power_state_string(state));
+> >>> +		dev_warn(&device->dev, "Power state %s not supported\n",
+> >>> +			 acpi_power_state_string(state));
+> >>>  		return -ENODEV;
+> >>>  	}
+> >>>  	if (device->parent && (state < device->parent->power.state)) {
+> >>> -		printk(KERN_WARNING PREFIX
+> >>> -			      "Cannot set device to a higher-powered"
+> >>> -			      " state than parent\n");
+> >>> +		dev_warn(&device->dev, "Cannot transition to a higher-powered "
+> >>> +			 "state than parent\n");
+> >>
+> >> I think the state information would also be useful here:
+> >>
+> >> 		dev_warn(&device->dev, "Cannot transition to a higher-powereed "
+> >> 		         "state %d than paeren's state %d\n", state,
+> >> 			 device->parent->power.state);
+> > 
+> > This is not the scope of this patch, please send another one on top of it.
+> > 
 > 
-> As I have stated before, I want this code to get merged out of the
-> drivers/staging/ area _before_ any new features get added to it.  People
-> are taking too much time adding new stuff, like this, and no one seems
-> to be working to get it merged to the proper place anymore.
+> Patch to add state information in error message, apply on top of this
+> one.
 > 
-
-OK, but we actually need those features in order to test zram
-against other, competitive solutions - and then decide whether
-and how to merge it out of /drivers/staging.
-
-> So again, I'm going to have to say no to a new feature here, sorry.
-> zcache, zram, and zsmalloc need to get cleaned up and merged out of
-> staging before anything new can be added to them.
+> From: Aaron Lu <aaron.lu@intel.com>
+> Subject: [PATCH] ACPI / PM: Add state information in error message for
+>  acpi_device_set_power
 > 
-> Or, if no one is working on that, I guess I can just delete them,
-> right?...
+> The state information can be useful to know what the problem is when it
+> appeared in an error message about a device can not being set to a higher
+> power state than its parent, so this patch adds such state information
+> for both the target state of the device failed to be set and the current
+> parent's state.
 > 
+> Signed-off-by: Aaron Lu <aaron.lu@intel.com>
+> ---
+>  drivers/acpi/device_pm.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/acpi/device_pm.c b/drivers/acpi/device_pm.c
+> index beb9625..707258b 100644
+> --- a/drivers/acpi/device_pm.c
+> +++ b/drivers/acpi/device_pm.c
+> @@ -179,7 +179,8 @@ int acpi_device_set_power(struct acpi_device *device, int state)
+>  	}
+>  	if (device->parent && (state < device->parent->power.state)) {
+>  		dev_warn(&device->dev,
+> -			 "Cannot transition to a higher-powered state than parent\n");
+> +			 "Cannot transition to a higher-powered state %d than parent's state %d\n",
 
-Is there any official TODO list of cleaning up and merging out zram?
+This message will look a little odd I think ->
 
-Regards,
-Piotr Sarna
+> +			 state, device->parent->power.state);
+
+-> and please don't use raw numbers in such messages.
+
+What about
+
+	"Cannot transition to power state %s for parent in %s\n",
+	acpi_power_state_string(state),
+	acpi_power_state_string(device->parent->power.state)
+
+>  		return -ENODEV;
+>  	}
+
+Thanks,
+Rafael
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
