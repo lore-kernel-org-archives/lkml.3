@@ -1,89 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760777Ab3GaS4l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 14:56:41 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:48988 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757132Ab3GaS4j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 14:56:39 -0400
-Message-ID: <1375296998.5729.8.camel@joe-AO722>
-Subject: Re: [PATCH v3] net: Add MOXA ART SoCs ethernet driver
-From: Joe Perches <joe@perches.com>
-To: Jonas Jensen <jonas.jensen@gmail.com>
-Cc: netdev@vger.kernel.org, davem@davemloft.net, linux-doc@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, arm@kernel.org, florian@openwrt.org
-Date: Wed, 31 Jul 2013 11:56:38 -0700
-In-Reply-To: <1375280401-5564-1-git-send-email-jonas.jensen@gmail.com>
-References: <1374842890-20735-1-git-send-email-jonas.jensen@gmail.com>
-	 <1375280401-5564-1-git-send-email-jonas.jensen@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1760647Ab3GaS7H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 14:59:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23770 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753289Ab3GaS7E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 14:59:04 -0400
+Date: Wed, 31 Jul 2013 20:53:47 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Zach Levis <zach@zachsthings.com>, Zach Levis <zml@linux.vnet.ibm.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: + fs-binfmts-add-a-name-field-to-the-binfmt-struct.patch added
+	to -mm tree
+Message-ID: <20130731185347.GA26439@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-07-31 at 16:20 +0200, Jonas Jensen wrote:
-> The MOXA UC-711X hardware(s) has an ethernet controller that seem to be
-> developed internally. The IC used is "RTL8201CP".
+> From: Zach Levis <zml@linux.vnet.ibm.com>
+> Subject: fs/binfmts: add a name field to the binfmt struct
+>
+> Adding the name field helps when printing error messages referring to
+> specific binfmts.
 
-Just some simple comments...
+OK, but...
 
-> diff --git a/drivers/net/ethernet/moxa/moxart_ether.c b/drivers/net/ethernet/moxa/moxart_ether.c
-[]
-> +static int moxart_rx_poll(struct napi_struct *napi, int budget)
-[]
-> +	while (1) {
-[]
-> +		if (ui & (RX_ERR | CRC_ERR | FTL | RUNT | RX_ODD_NB)) {
-> +			netdev_err(ndev, "packet error\n");
+>  static struct linux_binfmt elf_format = {
+> +	.name		= "elf",
+>  	.module		= THIS_MODULE,
+>  	.load_binary	= load_elf_binary,
+>  	.load_shlib	= load_elf_library,
+> diff -puN fs/binfmt_elf_fdpic.c~fs-binfmts-add-a-name-field-to-the-binfmt-struct fs/binfmt_elf_fdpic.c
+> --- a/fs/binfmt_elf_fdpic.c~fs-binfmts-add-a-name-field-to-the-binfmt-struct
+> +++ a/fs/binfmt_elf_fdpic.c
+> @@ -81,6 +81,7 @@ static int elf_fdpic_core_dump(struct co
+>  #endif
+>
+>  static struct linux_binfmt elf_fdpic_format = {
+> +	.name		= "FDPIC ELF",
 
-This is generally a bad idea as it can flood
-the log.  It's probably better to remove it.
-If you really want logging, then at least use
-net_ratelimit().  Generally, the stats are
-enough.
+The naming doesn't look consistent, but this is minor.
 
-> +			priv->stats.rx_dropped++;
-> +			priv->stats.rx_errors++;
-[]
-> +static int moxart_mac_start_xmit(struct sk_buff *skb, struct net_device *ndev)
-[]
-> +	if (txdesc->txdes0.ubit.tx_dma_own) {
-> +		netdev_err(ndev, "no TX space for packet\n");
-> +		priv->stats.tx_dropped++;
+I think this is not compat-friendly. If we add .name then I think
+compat_elf_format should have another name != "elf".
 
-here too.
+Not that I think this is really wrong, but still.
 
-> +static int moxart_mac_probe(struct platform_device *pdev)
-[]
-> +	priv->tx_buf_base = kmalloc(priv->tx_buf_size * TX_DESC_NUM,
-> +				    GFP_ATOMIC);
-> +	if (!priv->tx_buf_base) {
-> +		netdev_err(ndev, "TX buffer alloc failed\n");
-> +		goto init_fail;
-> +	}
-> +
-> +	priv->rx_buf_base = kmalloc(priv->rx_buf_size * RX_DESC_NUM,
-> +				    GFP_ATOMIC);
-> +	if (!priv->rx_buf_base) {
-> +		netdev_err(ndev, "RX buffer alloc failed\n");
-> +		goto init_fail;
-> +	}
-
-Extra OOM messages aren't useful, there's a generic
-OOM and a dump_stack from the kernel.
-
-> +	netdev_dbg(ndev, "%s: IRQ=%d address=%02x:%02x:%02x:%02x:%02x:%02x\n",
-> +		   __func__, ndev->irq,
-> +		   ndev->dev_addr[0], ndev->dev_addr[1], ndev->dev_addr[2],
-> +		   ndev->dev_addr[3], ndev->dev_addr[4], ndev->dev_addr[5]);
-
-There's a mac address helper you can use:
-
-	netdev_dbg(ndev, "%s: IRQ=%d address=%pM\n"
-		   __func__, ndev->irq, ndev->dev_addr);
-
+Oleg.
 
