@@ -1,103 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759950Ab3GaNbL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 09:31:11 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:60427 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759710Ab3GaNbI (ORCPT
+	id S1759978Ab3GaNb3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 09:31:29 -0400
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:34697 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759710Ab3GaNb1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 09:31:08 -0400
-X-AuditID: cbfee61b-b7efe6d000007b11-bf-51f9119a9f8b
-Message-id: <51F91195.1020904@partner.samsung.com>
-Date: Wed, 31 Jul 2013 15:31:01 +0200
-From: Piotr Sarna <p.sarna@partner.samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623
- Thunderbird/17.0.7
-MIME-version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: devel@driverdev.osuosl.org, Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-kernel@vger.kernel.org, ngupta@vflare.org,
-        b.zolnierkie@samsung.com
-Subject: Re: [PATCH 1/2] staging: zram: add Crypto API support
-References: <1375187449-6546-1-git-send-email-p.sarna@partner.samsung.com>
- <20130730135333.GB27962@kroah.com> <51F8E404.6070507@partner.samsung.com>
- <20130731124950.GB30635@kroah.com>
-In-reply-to: <20130731124950.GB30635@kroah.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrBLMWRmVeSWpSXmKPExsVy+t9jQd1Zgj8DDRrfq1tsnLGe1WLPmV/s
-	Fs2L17NZnG16w25xedccNosNLbPYHdg87u07zOKxf+4ado++LasYPXZ+2szq8XmTXABrFJdN
-	SmpOZllqkb5dAldGy+k3TAX7hCqaPjQxNzDu4+ti5OSQEDCRaFq2nRXCFpO4cG89WxcjF4eQ
-	wHRGidn7r7JCOK8ZJXY8XQpWxStgJHGm/T4ziM0ioCrxp70PLM4moC/x5foali5GDg5RgQiJ
-	o8s1IcoFJX5MvscCYosIaEi8PHqLBWQms8A0RonpDz+CzREWsJNYc3AjM8Sy3YwS/UevgQ3l
-	BBp6dOotMJtZQEdif+s0NghbXmLzmrfMExgFZiFZMgtJ2SwkZQsYmVcxiqYWJBcUJ6XnGukV
-	J+YWl+al6yXn525iBIf3M+kdjKsaLA4xCnAwKvHwzrj0PVCINbGsuDL3EKMEB7OSCO8e1p+B
-	QrwpiZVVqUX58UWlOanFhxilOViUxHkPtloHCgmkJ5akZqemFqQWwWSZODilGhh93GdeqLW5
-	tLrwwomteT/ZSqv3Od+Ourv60UeZ5wLXFPK3/O944rJvd+bR0oXCOlfmrHuyIq424cWPO9pJ
-	greMJRzltkXcz8lw2/qcx86yjIdX5TLnjGC9e3b/GUMs+fJk7jze/e2UcakRn5vr/X0Kj//L
-	bHBZYX+N68GDlUIu5f/aZ37/o39AiaU4I9FQi7moOBEA20pdimsCAAA=
+	Wed, 31 Jul 2013 09:31:27 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130731131323.GB31245@order.stressinduktion.org>
+References: <CAOaiJ-k14g6ihjVfgHqgq48KV7-dRJ1_owNyDkza-r=36gscsQ@mail.gmail.com>
+	<20130731125513.GS26694@linux.vnet.ibm.com>
+	<20130731131323.GB31245@order.stressinduktion.org>
+Date: Wed, 31 Jul 2013 19:01:26 +0530
+Message-ID: <CAOaiJ-mNeR63cOGBxUOJTP40mzS1QMzNNAhc+BbFAoE1NQc30A@mail.gmail.com>
+Subject: Re: ipv4: crash at leaf_walk_rcu
+From: vinayak menon <vinayakm.list@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        vinayak menon <vinayakm.list@gmail.com>, linux-kernel@vger.kernel.org,
+        davem@davemloft.net, getarunks@gmail.com, netdev@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/31/2013 02:49 PM, Greg KH wrote:
-> On Wed, Jul 31, 2013 at 12:16:36PM +0200, Piotr Sarna wrote:
->> Hi,
+On Wed, Jul 31, 2013 at 6:43 PM, Hannes Frederic Sowa
+<hannes@stressinduktion.org> wrote:
+> On Wed, Jul 31, 2013 at 05:55:13AM -0700, Paul E. McKenney wrote:
+>> On Wed, Jul 31, 2013 at 04:40:47PM +0530, vinayak menon wrote:
+>> > Hi,
+>> >
+>> > A crash was seen on 3.4.5 kernel during some random wlan operations.
+>> >
+>> > CPU: Single core ARM Cortex A9.
+>> >
+>> > fib_route_seq_next was called with second argument (void *v) as 0xd6e3e360
+>> > which is a "freed" object of the "ip_fib_trie" cache. I confirmed that the
+>> > object was freed with crash utility.
+>> >
+>> > Sequence: fib_route_seq_next->trie_nextleaf->leaf_walk_rcu
+>> >
+>> > As "v" was a freed object, inside trie_nextleaf(), node_parent_rcu()
+>> > returned an invalid tnode. But as I had enabled slab poisoning and the
+>> > object was already freed, the tnode was 0x6b6b6b6b. And this was passed to
+>> > leaf_walk_rcu and resulted in the crash.
+>> >
+>> > fib_route_seq_start, takes rcu_read_lock(), but free_leaf
+>> > calls call_rcu_bh. Can this be the problem ?
+>> > Should rcu_read_lock() in fib_route_seq_start be changed to rcu_read_lock_bh()
+>> > ?
 >>
->> On 07/30/2013 03:53 PM, Greg KH wrote:
->>> On Tue, Jul 30, 2013 at 02:30:48PM +0200, Piotr Sarna wrote:
->>>> Current version of zram does not allow any substitution of a default
->>>> compression algorithm. Therefore, I decided to change the existing
->>>> implementation of page compression by adding Crypto API compability.
->>>
->>> As I have stated before, I want this code to get merged out of the
->>> drivers/staging/ area _before_ any new features get added to it.  People
->>> are taking too much time adding new stuff, like this, and no one seems
->>> to be working to get it merged to the proper place anymore.
->>>
->>
->> OK, but we actually need those features in order to test zram
->> against other, competitive solutions - and then decide whether
->> and how to merge it out of /drivers/staging.
-> 
-> Where is another "competitive solution" in the kernel?
-> 
-> And you are implying that as-is, zram isn't acceptable, right?  If so, I
-> should just delete it now as I was originally told otherwise, that's why
-> I merged it :(
-> 
->>> So again, I'm going to have to say no to a new feature here, sorry.
->>> zcache, zram, and zsmalloc need to get cleaned up and merged out of
->>> staging before anything new can be added to them.
->>>
->>> Or, if no one is working on that, I guess I can just delete them,
->>> right?...
->>>
->>
->> Is there any official TODO list of cleaning up and merging out zram?
-> 
-> As it came from the "zswap" code, there doesn't seem to be one :(
-> 
-> The code is over 2 years old now, with no percieved movement out of
-> staging.  If it doesn't get fixed up in the next kernel version or so, I
-> will have to remove it entirely.
-> 
-> sorry,
-> 
-> greg k-h
-> 
+>> One way or the other, the RCU read-side primitives need to match the RCU
+>> update-side primitives.  Adding netdev...
+>
+> Already fixed by:
+>
+> commit 0c03eca3d995e73d691edea8c787e25929ec156d
+> Author: Eric Dumazet <edumazet@google.com>
+> Date:   Tue Aug 7 00:47:11 2012 +0000
+>
+>     net: fib: fix incorrect call_rcu_bh()
+>
+>     After IP route cache removal, I believe rcu_bh() has very little use and
+>     we should remove this RCU variant, since it adds some cycles in fast
+>     path.
+>
+>     Anyway, the call_rcu_bh() use in fib_true is obviously wrong, since
+>     some users only assert rcu_read_lock().
+>
 
-"Another competitive solutions" I thought of were zswap and zcache.
-
-On one hand, during my tests (of compressed swap feature), zram
-turned out to be no faster than zswap/zcache (but no slower either).
-
-On the other, zram happens to have some more, perhaps reasonable
-use cases (described in zram.txt), e.g. mounting it as /tmp.
-
-So far, I haven't tested those other features of zram,
-so I can't possibly say whether it should be considered for a merge-out
-or kept in staging for now.
-
-Regards,
-Piotr Sarna
+Thanks. I missed this somehow.
