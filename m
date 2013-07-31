@@ -1,77 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759730Ab3GaONQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 10:13:16 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:52126 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755331Ab3GaONO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 10:13:14 -0400
-Date: Wed, 31 Jul 2013 07:13:06 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: vinayak menon <vinayakm.list@gmail.com>, linux-kernel@vger.kernel.org,
-        davem@davemloft.net, getarunks@gmail.com, netdev@vger.kernel.org
-Subject: Re: ipv4: crash at leaf_walk_rcu
-Message-ID: <20130731141306.GT26694@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <CAOaiJ-k14g6ihjVfgHqgq48KV7-dRJ1_owNyDkza-r=36gscsQ@mail.gmail.com>
- <20130731125513.GS26694@linux.vnet.ibm.com>
- <20130731131323.GB31245@order.stressinduktion.org>
+	id S1759734Ab3GaOPT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 10:15:19 -0400
+Received: from mail-qe0-f53.google.com ([209.85.128.53]:61951 "EHLO
+	mail-qe0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751310Ab3GaOPR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 10:15:17 -0400
+Date: Wed, 31 Jul 2013 10:15:12 -0400
+From: Tejun Heo <htejun@gmail.com>
+To: Peter Chen <hzpeterchen@gmail.com>
+Cc: Mark Brown <broonie@kernel.org>,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Peter Chen <peter.chen@freescale.com>,
+        Fabio Estevam <festevam@gmail.com>,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        kernel@pengutronix.de,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Jeff Garzik <jeff@garzik.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, Mike Turquette <mturquette@linaro.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 2/2] chipidea: Use devm_request_irq()
+Message-ID: <20130731141512.GU2810@htj.dyndns.org>
+References: <20130731084645.GB1754@pengutronix.de>
+ <20130731090512.GD9858@sirena.org.uk>
+ <20130731094434.GC1754@pengutronix.de>
+ <20130731095411.GA2810@htj.dyndns.org>
+ <20130731111853.GJ9858@sirena.org.uk>
+ <20130731113244.GI2810@htj.dyndns.org>
+ <20130731115027.GN9858@sirena.org.uk>
+ <20130731115527.GR2810@htj.dyndns.org>
+ <20130731132708.GQ9858@sirena.org.uk>
+ <CAL411-qQm9vgDHswEM6PEvFKAaqd=e3qm-zViUbNztv0tJYa8Q@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130731131323.GB31245@order.stressinduktion.org>
+In-Reply-To: <CAL411-qQm9vgDHswEM6PEvFKAaqd=e3qm-zViUbNztv0tJYa8Q@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13073114-0320-0000-0000-0000007E57CF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 31, 2013 at 03:13:23PM +0200, Hannes Frederic Sowa wrote:
-> On Wed, Jul 31, 2013 at 05:55:13AM -0700, Paul E. McKenney wrote:
-> > On Wed, Jul 31, 2013 at 04:40:47PM +0530, vinayak menon wrote:
-> > > Hi,
-> > > 
-> > > A crash was seen on 3.4.5 kernel during some random wlan operations.
-> > > 
-> > > CPU: Single core ARM Cortex A9.
-> > > 
-> > > fib_route_seq_next was called with second argument (void *v) as 0xd6e3e360
-> > > which is a "freed" object of the "ip_fib_trie" cache. I confirmed that the
-> > > object was freed with crash utility.
-> > > 
-> > > Sequence: fib_route_seq_next->trie_nextleaf->leaf_walk_rcu
-> > > 
-> > > As "v" was a freed object, inside trie_nextleaf(), node_parent_rcu()
-> > > returned an invalid tnode. But as I had enabled slab poisoning and the
-> > > object was already freed, the tnode was 0x6b6b6b6b. And this was passed to
-> > > leaf_walk_rcu and resulted in the crash.
-> > > 
-> > > fib_route_seq_start, takes rcu_read_lock(), but free_leaf
-> > > calls call_rcu_bh. Can this be the problem ?
-> > > Should rcu_read_lock() in fib_route_seq_start be changed to rcu_read_lock_bh()
-> > > ?
-> > 
-> > One way or the other, the RCU read-side primitives need to match the RCU
-> > update-side primitives.  Adding netdev...
-> 
-> Already fixed by:
-> 
-> commit 0c03eca3d995e73d691edea8c787e25929ec156d
-> Author: Eric Dumazet <edumazet@google.com>
-> Date:   Tue Aug 7 00:47:11 2012 +0000
-> 
->     net: fib: fix incorrect call_rcu_bh()
->     
->     After IP route cache removal, I believe rcu_bh() has very little use and
->     we should remove this RCU variant, since it adds some cycles in fast
->     path.
->     
->     Anyway, the call_rcu_bh() use in fib_true is obviously wrong, since
->     some users only assert rcu_read_lock().
+hello,
 
-Even better!  ;-)
+On Wed, Jul 31, 2013 at 09:55:26PM +0800, Peter Chen wrote:
+> I think the main point is we should allocate managed resource which is used
+> at interrupt handler before devm_request_irq, and all resources used
+> at interrupt
+> handler should be managed.
+> 
+> If we use non-managed resource at interrupt handler, but using managed interrupt
+> handler, things still will go wrong if there is an odd (unexpected)
+> interrupt after
+> we finish deactivation at removal.
 
-							Thanx, Paul
+In general, applying devm partially isn't a good idea.  It's very easy
+to get into trouble thanks to release order dependency which isn't
+immediately noticeable and there have been actual bugs caused by that.
+The strategies which seem to work are either
 
+* Convert everything over to devm by wrapping deactivation in a devres
+  callback too.  As long as your init sequence is sane (ie. irq
+  shouldn't be request before things used by irq are ready).
+
+* Allocate all resources using devres but shut down the execution
+  engine in the remove_one().  Again, as all releases are controlled
+  by devres, you won't have to worry about messing up the release
+  sequencing.
+
+Thanks.
+
+-- 
+tejun
