@@ -1,275 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756815Ab3GaQWb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 12:22:31 -0400
-Received: from smtp104.biz.mail.bf1.yahoo.com ([98.139.221.63]:22928 "HELO
-	smtp104.biz.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751357Ab3GaQW0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 12:22:26 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: 4VdEEfkVM1lJ037qFqxMOsBKfTATk8wRJrnZswCZyBD9EWr
- KMmf9FHM3jc5r5pNT44qPJvEhjfNkju83axkL_njbsPl9U8_45Icv2tlRaYu
- XQHRtyHu6DwYOriICJQu7zipJ9uoqYu7cIgJGNpysVkdUSdSJpSfQ8_JRqIO
- SYsgWMnuZPRP6nhfa6rLM6apQfKjvl0dJPxjmv9M5HiVqgfoIf0Kop16xRuG
- BxDGpSIaf_X3df8itRzsJfIJiBvIfgH5yUjvlBocS_E1sc32epoOs3fiQ8mJ
- 7WAPSz0y6_UjVWOmCF33o77eiA9jFwzqRYWRu7pQold9ufM7YJXLR3U.TEel
- ghq495ZFzwOHhR0y0FGPxdjzmWKxuMpWrz5g1RBCnNeJH_hQOyx66wU4mdF1
- 4FzCufgwjpgSvUMsOi8ZQOoIxai92.bvOSrxMeY3gMc9vc3d1VbUbtQ3XiJZ
- Xomd4RTRkkJAZ5SuZ1lx9L2lplndC4M8dFcnw3MfjB86Vay_97MCON096wZv
- 6ebc8av.5pDjw
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-X-Rocket-Received: from [192.168.0.103] (casey@24.6.250.25 with )
-        by smtp104.biz.mail.bf1.yahoo.com with SMTP; 31 Jul 2013 09:22:25 -0700 PDT
-Message-ID: <51F939BF.3010404@schaufler-ca.com>
-Date: Wed, 31 Jul 2013 09:22:23 -0700
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S1756918Ab3GaQW5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 12:22:57 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:49196 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752234Ab3GaQWz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 12:22:55 -0400
+Date: Wed, 31 Jul 2013 18:22:52 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org
+Cc: lkml <linux-kernel@vger.kernel.org>
+Subject: i915 INFO: trying to register non-static key.
+Message-ID: <20130731162252.GC4724@pd.tnic>
 MIME-Version: 1.0
-To: Paul Moore <paul@paul-moore.com>
-CC: LKLM <linux-kernel@vger.kernel.org>,
-        LSM <linux-security-module@vger.kernel.org>,
-        SE Linux <selinux@tycho.nsa.gov>, James Morris <jmorris@namei.org>,
-        John Johansen <john.johansen@canonical.com>,
-        Eric Paris <eparis@redhat.com>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Kees Cook <keescook@chromium.org>,
-        Casey Schaufler <casey@schaufler-ca.com>
-Subject: Re: [PATCH v14 3/6] LSM: Explicit individual LSM associations
-References: <51F16CFB.6040603@schaufler-ca.com> <51F16F2B.5020606@schaufler-ca.com> <5154459.vWAL79RUx2@sifl>
-In-Reply-To: <5154459.vWAL79RUx2@sifl>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/30/2013 3:08 PM, Paul Moore wrote:
-> On Thursday, July 25, 2013 11:32:11 AM Casey Schaufler wrote:
->> Subject: [PATCH v14 3/6] LSM: Explicit individual LSM associations
->>
->> Expand the /proc/.../attr interface set to help include
->> LSM specific entries as well as the traditional shared
->> "current", "prev" and "exec" entries. Each LSM that uses
->> one of the traditional interfaces gets it's own interface
->> prefixed with the LSM name for the ones it cares about.
->> Thus, we have "smack.current", "selinux.current" and
->> "apparmor.current" in addition to "current".
->>
->> Add two new interfaces under /sys/kernel/security.
->> The lsm interface displays the comma seperated list of
->> active LSMs. The present interface displays the name
->> of the LSM providing the traditional /proc/.../attr
->> interfaces. User space code should no longer have to
->> grub around in odd places to determine what LSM is
->> being used and thus what data is available to it.
->>
->> Introduce feature specific security operation vectors
->> for NetLabel, XFRM, secmark and presentation in the
->> traditional /proc/.../attr interfaces. This allows
->> proper handling of secids.
-> Maybe I missed something, can you elaborate on this, perhaps even provide an 
-> example for us simple minded folk?
+Dudes,
 
-There are a set of facilities that (currently, at least)
-can't be shared by multiple LSMs for one reason or another.
-XFRM and secmark have pretty well been declared as hopeless
-for expansion due to the sk_buff "32 bits is all you're ever
-going to get now shut up and go away" stance taken by certain
-networking maintainers. NetLabel might possibly be made to
-support multiple CIPSO tag types and while I don't think that
-it makes sense to put much effort into doing so, if there is
-a coin flip choice it should go in the direction of allowing
-it. The presentation facility is there to address the "current"
-interface in /proc, where backward compatibility is necessary.
+has anyone already reported this (happens on Linus of today +
+tip/master):
 
-Audit, on the other hand, uses secids but is capable of dealing
-with multiple LSMs, provided it can identify which LSM goes
-with which secid.
+[    0.608465] Linux agpgart interface v0.103
+[    0.608615] [drm] Initialized drm 1.1.0 20060810
+[    0.612050] [drm] Memory usable by graphics device = 2048M
+[    0.612212] i915 0000:00:02.0: setting latency timer to 64
+[    0.674824] INFO: trying to register non-static key.
+[    0.674904] the code is fine but needs lockdep annotation.
+[    0.674983] turning off the locking correctness validator.
+[    0.675063] CPU: 1 PID: 1 Comm: swapper/0 Not tainted 3.11.0-rc3+ #1
+[    0.675146] Hardware name: LENOVO 2320CTO/2320CTO, BIOS G2ET86WW (2.06 ) 11/13/2012
+[    0.675244]  0000000000000002 ffff880213c9d708 ffffffff815bc9d4 0000000000000000
+[    0.675539]  ffffffff82608750 ffff880213c9d808 ffffffff810aa864 ffff88021d283fc0
+[    0.675828]  ffffffff82654e60 0000000000000000 ffffffff00000000 ffff880200000000
+[    0.676116] Call Trace:
+[    0.676194]  [<ffffffff815bc9d4>] dump_stack+0x4f/0x84
+[    0.676281]  [<ffffffff810aa864>] __lock_acquire+0x1774/0x1d80
+[    0.676366]  [<ffffffff81010d6f>] ? save_stack_trace+0x2f/0x50
+[    0.676451]  [<ffffffff810a6d7f>] ? save_trace+0x3f/0xc0
+[    0.676535]  [<ffffffff810aa36d>] ? __lock_acquire+0x127d/0x1d80
+[    0.676621]  [<ffffffff810ab445>] lock_acquire+0x85/0x130
+[    0.676705]  [<ffffffff810682f5>] ? flush_work+0x5/0x280
+[    0.676787]  [<ffffffff8106833c>] flush_work+0x4c/0x280
+[    0.676870]  [<ffffffff810682f5>] ? flush_work+0x5/0x280
+[    0.676954]  [<ffffffff810abd8e>] ? mark_held_locks+0xae/0x120
+[    0.677039]  [<ffffffff8106a961>] ? __cancel_work_timer+0x71/0x110
+[    0.677125]  [<ffffffff8106a96d>] __cancel_work_timer+0x7d/0x110
+[    0.677207]  [<ffffffff8106aa13>] cancel_delayed_work_sync+0x13/0x20
+[    0.677292]  [<ffffffff813c1e15>] intel_disable_gt_powersave+0x65/0x410
+[    0.677379]  [<ffffffff813c3b39>] intel_gt_sanitize+0x49/0xb0
+[    0.677463]  [<ffffffff81372541>] i915_driver_load+0x611/0xe90
+[    0.677550]  [<ffffffff8135acce>] drm_get_pci_dev+0x17e/0x2a0
+[    0.677632]  [<ffffffff8136ddec>] i915_pci_probe+0x2c/0x70
+[    0.677716]  [<ffffffff812b27fb>] local_pci_probe+0x4b/0x80
+[    0.677798]  [<ffffffff812b2a61>] pci_device_probe+0x111/0x120
+[    0.677885]  [<ffffffff813dc06b>] driver_probe_device+0x7b/0x240
+[    0.677971]  [<ffffffff813dc2db>] __driver_attach+0xab/0xb0
+[    0.678053]  [<ffffffff813dc230>] ? driver_probe_device+0x240/0x240
+[    0.678138]  [<ffffffff813da0ed>] bus_for_each_dev+0x5d/0xa0
+[    0.678222]  [<ffffffff813dbb2e>] driver_attach+0x1e/0x20
+[    0.678304]  [<ffffffff813db64f>] bus_add_driver+0x10f/0x270
+[    0.678390]  [<ffffffff813dc9ba>] driver_register+0x7a/0x170
+[    0.678471]  [<ffffffff812b1874>] __pci_register_driver+0x64/0x70
+[    0.678558]  [<ffffffff81b2b68a>] ? ftrace_define_fields_drm_vblank_event+0x6d/0x6d
+[    0.678660]  [<ffffffff8135af05>] drm_pci_init+0x115/0x130
+[    0.678740]  [<ffffffff81b2b68a>] ? ftrace_define_fields_drm_vblank_event+0x6d/0x6d
+[    0.678843]  [<ffffffff81b2b6f0>] i915_init+0x66/0x68
+[    0.678927]  [<ffffffff8100031a>] do_one_initcall+0x11a/0x170
+[    0.679012]  [<ffffffff8106f800>] ? parse_args+0xa0/0x360
+[    0.679096]  [<ffffffff81af2f92>] kernel_init_freeable+0x108/0x197
+[    0.679182]  [<ffffffff81af283f>] ? do_early_param+0x8c/0x8c
+[    0.679266]  [<ffffffff815b3350>] ? rest_init+0xd0/0xd0
+[    0.679349]  [<ffffffff815b335e>] kernel_init+0xe/0xf0
+[    0.679427]  [<ffffffff815cca5c>] ret_from_fork+0x7c/0xb0
+[    0.679509]  [<ffffffff815b3350>] ? rest_init+0xd0/0xd0
+[    0.680182] i915 0000:00:02.0: irq 42 for MSI/MSI-X
+[    0.680278] [drm] Supports vblank timestamp caching Rev 1 (10.10.2010).
 
-The most general case (audit) needs to keep a secid for each LSM.
-This is easy enough to do. The networking facilities (XFRM,
-secmark and NetLabel) always want to deal with exactly one,
-although as I mentioned previously, NetLabel could conceivably
-be multiple LSM aware someday. When audit and XFRM interact
-there needs to be a way to identify which of the secids audit
-is going to use is the one XFRM cares about.
+-- 
+Regards/Gruss,
+    Boris.
 
-There are two ways to do this. One is to identify the
-security_operations structure associated with the LSM or to
-identify the slot in the secids structure that holds that LSM's
-secid. The security_operations structure contains the
-information about the slot in the secids structure. The most
-general way to identify the information about these special
-cases is to identify the security_operations that go with them.
-
-
-I hope that is helpful. I fear that I may not be getting
-the core concept across. The idea is to make it easier to
-deal with the special interfaces in the general cases.
-
-
->> Add NetLabel interfaces that allow an LSM to request
->> ownership of the NetLabel subsystem and to determine
->> whether or not it has that ownership. These interfaces
->> are intended to allow a future in which NetLabel can
->> support multiple LSMs at the same time, although they
->> do not do so now.
->>
->> Signed-off-by: Casey Schaufler <casey@schaufler-ca.com>
-> ...
->
->> --- a/include/net/netlabel.h
->> +++ b/include/net/netlabel.h
->> @@ -407,7 +407,9 @@ int netlbl_secattr_catmap_setrng(struct
->> netlbl_lsm_secattr_catmap *catmap, /*
->>   * LSM protocol operations (NetLabel LSM/kernel API)
->>   */
->> -int netlbl_enabled(void);
->> +int netlbl_enabled(struct security_operations *lsm);
->> +int netlbl_lsm_owner(struct security_operations *lsm);
->> +int netlbl_lsm_register(struct security_operations *lsm);
->>  int netlbl_sock_setattr(struct sock *sk,
->>  			u16 family,
->>  			const struct netlbl_lsm_secattr *secattr);
->> @@ -521,7 +523,11 @@ static inline int netlbl_secattr_catmap_setrng(
->>  {
->>  	return 0;
->>  }
->> -static inline int netlbl_enabled(void)
->> +static inline int netlbl_lsm_register(struct security_operations *lsm)
->> +{
->> +	return 0;
->> +}
->> +static inline int netlbl_enabled(struct security_operations *lsm)
->>  {
->>  	return 0;
->>  }
-> Is it worth including a static inline for netlabel_lsm_owner() for the sake of 
-> completeness?  I haven't looked closely enough yet to know if it is strictly 
-> necessary or not.
-
-I don't think it ever comes up, which would imply we don't need
-netlbl_enabled(), either.
-
->> diff --git a/net/ipv4/cipso_ipv4.c b/net/ipv4/cipso_ipv4.c
->> index 00a2b2b..5ca352b 100644
->> --- a/net/ipv4/cipso_ipv4.c
->> +++ b/net/ipv4/cipso_ipv4.c
->> @@ -1594,7 +1594,7 @@ static int cipso_v4_parsetag_loc(const struct
->> cipso_v4_doi *doi_def, u32 secid;
->>
->>  	secid = *(u32 *)&tag[2];
->> -	lsm_init_secid(&secattr->attr.secid, secid, 0);
->> +	lsm_init_secid(&secattr->attr.secid, secid, lsm_netlbl_order());
->>  	secattr->flags |= NETLBL_SECATTR_SECID;
-> I still need to wrap my head around all the changes, but I *think* this change 
-> may not be necessary since NetLabel isn't multi-LSM aware at the moment.  If 
-> this change is necessary, then there are likely other changes that need to be 
-> made as well, the NetLabel LSM cache would be my main concern.
-
-Using the NetLabel secid slot is necessary because when we get into
-the auditing code the secid needs to be in the right place to associate
-it with the right LSM.
-
->> diff --git a/net/netlabel/netlabel_kapi.c b/net/netlabel/netlabel_kapi.c
->> index 7c94aed..bd5fee6 100644
->> --- a/net/netlabel/netlabel_kapi.c
->> +++ b/net/netlabel/netlabel_kapi.c
->> @@ -608,6 +608,47 @@ int netlbl_secattr_catmap_setrng(struct
->> netlbl_lsm_secattr_catmap *catmap, */
->>
->>  /**
->> + * netlbl_lsm_register - Reserve the NetLabel subsystem for an LSM
->> + * @lsm: the security module making the request
->> + *
->> + * Description:
->> + * To avoid potential conflicting views between LSMs over
->> + * what should go in the network label reserve the Netlabel
->> + * mechanism for use by one LSM. netlbl_enabled will return
->> + * false for all other LSMs.
->> + *
->> + */
->> +int netlbl_lsm_register(struct security_operations *lsm)
->> +{
->> +	if (lsm == NULL)
->> +		return -EINVAL;
->> +
->> +	if (lsm_netlbl_ops() == NULL)
->> +		netlbl_ops = lsm;
->> +	else if (lsm_netlbl_ops() != lsm)
->> +		return -EBUSY;
->> +
->> +	printk(KERN_INFO "NetLabel: Registered LSM \"%s\".\n", lsm->name);
->> +	return 0;
->> +}
->> +
->> +/**
->> + * netlbl_lsm_owner - Report if the NetLabel subsystem is registered for an
->> LSM + * @lsm: the security module making the request
->> + *
->> + * Description:
->> + * Report whether the LSM passed is the LSM registered for NetLabel
->> + *
->> + * Returns 1 if this is the registered NetLabel LSM, 0 otherwise
->> + */
->> +int netlbl_lsm_owner(struct security_operations *lsm)
->> +{
->> +	if (lsm_netlbl_ops() == lsm)
->> +		return 1;
->> +	return 0;
->> +}
->> +
->> +/**
->>   * netlbl_enabled - Determine if the NetLabel subsystem is enabled
->>   *
->>   * Description:
->> @@ -619,8 +660,12 @@ int netlbl_secattr_catmap_setrng(struct
->> netlbl_lsm_secattr_catmap *catmap, * be disabled.
->>   *
->>   */
->> -int netlbl_enabled(void)
->> +int netlbl_enabled(struct security_operations *lsm)
->>  {
->> +	if (lsm_netlbl_ops() == NULL)
->> +		return 0;
->> +	if (lsm_netlbl_ops() != lsm)
->> +		return 0;
-> How about some simplification in the above?
->
-> 	struct security_operations *sops = lsm_netlbl_ops();
->
-> 	if (sops == NULL || sops != lsm)
-> 		return 0;
-
-Sure.
-
->>  	/* At some point we probably want to expose this mechanism to the user
->>  	 * as well so that admins can toggle NetLabel regardless of the
->>  	 * configuration */
-> ...
->
->> diff --git a/net/netlabel/netlabel_unlabeled.c
->> b/net/netlabel/netlabel_unlabeled.c index 3e9064a..be4e083 100644
->> --- a/net/netlabel/netlabel_unlabeled.c
->> +++ b/net/netlabel/netlabel_unlabeled.c
->> @@ -263,7 +263,7 @@ static int netlbl_unlhsh_add_addr4(struct
->> netlbl_unlhsh_iface *iface, entry->list.addr = addr->s_addr & mask->s_addr;
->>  	entry->list.mask = mask->s_addr;
->>  	entry->list.valid = 1;
->> -	lsm_init_secid(&entry->secid, secid, 0);
->> +	lsm_init_secid(&entry->secid, secid, lsm_netlbl_order());
-> See my above comments in the CIPSO code.
->
->>  	spin_lock(&netlbl_unlhsh_lock);
->>  	ret_val = netlbl_af4list_add(&entry->list, &iface->addr4_list);
->> @@ -307,7 +307,7 @@ static int netlbl_unlhsh_add_addr6(struct
->> netlbl_unlhsh_iface *iface, entry->list.addr.s6_addr32[3] &=
->> mask->s6_addr32[3];
->>  	entry->list.mask = *mask;
->>  	entry->list.valid = 1;
->> -	lsm_init_secid(&entry->secid, secid, 0);
->> +	lsm_init_secid(&entry->secid, secid, lsm_netlbl_order());
-> Same.  You get the idea ...
->
-
+Sent from a fat crate under my desk. Formatting is fine.
+--
