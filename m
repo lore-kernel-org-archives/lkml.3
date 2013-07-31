@@ -1,448 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760377Ab3GaOpa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 10:45:30 -0400
-Received: from smtp.eu.citrix.com ([46.33.159.39]:46043 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759861Ab3GaOp3 (ORCPT
+	id S1760336Ab3GaOpw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 10:45:52 -0400
+Received: from mail-vb0-f48.google.com ([209.85.212.48]:36688 "EHLO
+	mail-vb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751310Ab3GaOpu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 10:45:29 -0400
-X-IronPort-AV: E=Sophos;i="4.89,787,1367971200"; 
-   d="scan'208";a="7325062"
-Message-ID: <1375281925.7382.88.camel@kazak.uk.xensource.com>
-Subject: Re: [PATCH] powerpc/fsl-booke: Rename b4qds.dts -> b4qds.dtsi.
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: <linux-kernel@vger.kernel.org>
-CC: Shaveta Leekha <shaveta@freescale.com>,
-        Minghuan Lian <Minghuan.Lian@freescale.com>,
-        Andy Fleming <afleming@freescale.com>,
-        Poonam Aggrwal <poonam.aggrwal@freescale.com>,
-        Ramneek Mehresh <ramneek.mehresh@freescale.com>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, <linuxppc-dev@lists.ozlabs.org>
-Date: Wed, 31 Jul 2013 15:45:25 +0100
-In-Reply-To: <1369995280-20863-1-git-send-email-ian.campbell@citrix.com>
-References: <1369995280-20863-1-git-send-email-ian.campbell@citrix.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
+	Wed, 31 Jul 2013 10:45:50 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.203.1]
+In-Reply-To: <20130731144348.GB7641@gmail.com>
+References: <1375278775-3430-1-git-send-email-pyrasis@gmail.com>
+	<1375278775-3430-2-git-send-email-pyrasis@gmail.com>
+	<20130731144348.GB7641@gmail.com>
+Date: Wed, 31 Jul 2013 23:45:49 +0900
+X-Google-Sender-Auth: _hN_q1UL1CHNBYQLeEKVU6JohK0
+Message-ID: <CAEwNFnC22seWC6W+xmTGH3_0nChGaBHG3ehtg_+GLcCwYHGVmg@mail.gmail.com>
+Subject: Re: [PATCH 2/3] correct unfaithful translation on HOWTO in ko_KR
+From: Minchan Kim <minchan@kernel.org>
+To: "Lee, Jae-Hong" <pyrasis@gmail.com>
+Cc: rob@landley.net, linux-doc@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ping?
+On Wed, Jul 31, 2013 at 11:43 PM, Minchan Kim <minchan@kernel.org> wrote:
+> On Wed, Jul 31, 2013 at 10:52:54PM +0900, Lee, Jae-Hong wrote:
+>> From: "Lee, Jae-Hong" <pyrasis@gmail.com>
+>>
+>> Signed-off-by: Lee, Jae-Hong <pyrasis@gmail.com>
+> Acked-by: Minchan Kim <minchan@kernel.org>
 
-On Fri, 2013-05-31 at 11:14 +0100, Ian Campbell wrote:
-> This file is a common include for B4860 and B4420 but is not a valid DTS itself:
-> 	  DTC     arch/powerpc/boot/b4qds.dtb
-> 	Error: arch/powerpc/boot/dts/b4qds.dts:35.1-2 syntax error
-> 	FATAL ERROR: Unable to parse input tree
-> 	make[1]: *** [arch/powerpc/boot/b4qds.dtb] Error 1
-> 	make: *** [b4qds.dtb] Error 2
-> 
-> I spotted in build tests of device-tree.git, announcement
-> https://lkml.org/lkml/2013/4/24/209, which builds *.dts. Probably no one would
-> do this this in real life on linux.git but it still seems worth fixing.
-> 
-> Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-> Cc: Shaveta Leekha <shaveta@freescale.com>
-> Cc: Minghuan Lian <Minghuan.Lian@freescale.com>
-> Cc: Andy Fleming <afleming@freescale.com>
-> Cc: Poonam Aggrwal <poonam.aggrwal@freescale.com>
-> Cc: Ramneek Mehresh <ramneek.mehresh@freescale.com>
-> Cc: Kumar Gala <galak@kernel.crashing.org>
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: linuxppc-dev@lists.ozlabs.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
->  arch/powerpc/boot/dts/b4420qds.dts |    2 +-
->  arch/powerpc/boot/dts/b4860qds.dts |    2 +-
->  arch/powerpc/boot/dts/b4qds.dts    |  169 ------------------------------------
->  arch/powerpc/boot/dts/b4qds.dtsi   |  169 ++++++++++++++++++++++++++++++++++++
->  4 files changed, 171 insertions(+), 171 deletions(-)
->  delete mode 100644 arch/powerpc/boot/dts/b4qds.dts
->  create mode 100644 arch/powerpc/boot/dts/b4qds.dtsi
-> 
-> diff --git a/arch/powerpc/boot/dts/b4420qds.dts b/arch/powerpc/boot/dts/b4420qds.dts
-> index 923156d..508dbdf 100644
-> --- a/arch/powerpc/boot/dts/b4420qds.dts
-> +++ b/arch/powerpc/boot/dts/b4420qds.dts
-> @@ -33,7 +33,7 @@
->   */
->  
->  /include/ "fsl/b4420si-pre.dtsi"
-> -/include/ "b4qds.dts"
-> +/include/ "b4qds.dtsi"
->  
->  / {
->  	model = "fsl,B4420QDS";
-> diff --git a/arch/powerpc/boot/dts/b4860qds.dts b/arch/powerpc/boot/dts/b4860qds.dts
-> index 78907f3..6bb3707 100644
-> --- a/arch/powerpc/boot/dts/b4860qds.dts
-> +++ b/arch/powerpc/boot/dts/b4860qds.dts
-> @@ -33,7 +33,7 @@
->   */
->  
->  /include/ "fsl/b4860si-pre.dtsi"
-> -/include/ "b4qds.dts"
-> +/include/ "b4qds.dtsi"
->  
->  / {
->  	model = "fsl,B4860QDS";
-> diff --git a/arch/powerpc/boot/dts/b4qds.dts b/arch/powerpc/boot/dts/b4qds.dts
-> deleted file mode 100644
-> index e6d2f8f..0000000
-> --- a/arch/powerpc/boot/dts/b4qds.dts
-> +++ /dev/null
-> @@ -1,169 +0,0 @@
-> -/*
-> - * B4420DS Device Tree Source
-> - *
-> - * Copyright 2012 Freescale Semiconductor, Inc.
-> - *
-> - * Redistribution and use in source and binary forms, with or without
-> - * modification, are permitted provided that the following conditions are met:
-> - *     * Redistributions of source code must retain the above copyright
-> - *       notice, this list of conditions and the following disclaimer.
-> - *     * Redistributions in binary form must reproduce the above copyright
-> - *       notice, this list of conditions and the following disclaimer in the
-> - *       documentation and/or other materials provided with the distribution.
-> - *     * Neither the name of Freescale Semiconductor nor the
-> - *       names of its contributors may be used to endorse or promote products
-> - *       derived from this software without specific prior written permission.
-> - *
-> - *
-> - * ALTERNATIVELY, this software may be distributed under the terms of the
-> - * GNU General Public License ("GPL") as published by the Free Software
-> - * Foundation, either version 2 of that License or (at your option) any
-> - * later version.
-> - *
-> - * This software is provided by Freescale Semiconductor "as is" and any
-> - * express or implied warranties, including, but not limited to, the implied
-> - * warranties of merchantability and fitness for a particular purpose are
-> - * disclaimed. In no event shall Freescale Semiconductor be liable for any
-> - * direct, indirect, incidental, special, exemplary, or consequential damages
-> - * (including, but not limited to, procurement of substitute goods or services;
-> - * loss of use, data, or profits; or business interruption) however caused and
-> - * on any theory of liability, whether in contract, strict liability, or tort
-> - * (including negligence or otherwise) arising in any way out of the use of
-> - * this software, even if advised of the possibility of such damage.
-> - */
-> -
-> -/ {
-> -	model = "fsl,B4QDS";
-> -	compatible = "fsl,B4QDS";
-> -	#address-cells = <2>;
-> -	#size-cells = <2>;
-> -	interrupt-parent = <&mpic>;
-> -
-> -	ifc: localbus@ffe124000 {
-> -		reg = <0xf 0xfe124000 0 0x2000>;
-> -		ranges = <0 0 0xf 0xe8000000 0x08000000
-> -			  2 0 0xf 0xff800000 0x00010000
-> -			  3 0 0xf 0xffdf0000 0x00008000>;
-> -
-> -		nor@0,0 {
-> -			#address-cells = <1>;
-> -			#size-cells = <1>;
-> -			compatible = "cfi-flash";
-> -			reg = <0x0 0x0 0x8000000>;
-> -			bank-width = <2>;
-> -			device-width = <1>;
-> -		};
-> -
-> -		nand@2,0 {
-> -			#address-cells = <1>;
-> -			#size-cells = <1>;
-> -			compatible = "fsl,ifc-nand";
-> -			reg = <0x2 0x0 0x10000>;
-> -
-> -			partition@0 {
-> -				/* This location must not be altered  */
-> -				/* 1MB for u-boot Bootloader Image */
-> -				reg = <0x0 0x00100000>;
-> -				label = "NAND U-Boot Image";
-> -				read-only;
-> -			};
-> -
-> -			partition@100000 {
-> -				/* 1MB for DTB Image */
-> -				reg = <0x00100000 0x00100000>;
-> -				label = "NAND DTB Image";
-> -			};
-> -
-> -			partition@200000 {
-> -				/* 10MB for Linux Kernel Image */
-> -				reg = <0x00200000 0x00A00000>;
-> -				label = "NAND Linux Kernel Image";
-> -			};
-> -
-> -			partition@c00000 {
-> -				/* 500MB for Root file System Image */
-> -				reg = <0x00c00000 0x1F400000>;
-> -				label = "NAND RFS Image";
-> -			};
-> -		};
-> -
-> -		board-control@3,0 {
-> -			compatible = "fsl,b4qds-fpga", "fsl,fpga-qixis";
-> -			reg = <3 0 0x300>;
-> -		};
-> -	};
-> -
-> -	memory {
-> -		device_type = "memory";
-> -	};
-> -
-> -	dcsr: dcsr@f00000000 {
-> -		ranges = <0x00000000 0xf 0x00000000 0x01052000>;
-> -	};
-> -
-> -	soc: soc@ffe000000 {
-> -		ranges = <0x00000000 0xf 0xfe000000 0x1000000>;
-> -		reg = <0xf 0xfe000000 0 0x00001000>;
-> -		spi@110000 {
-> -			flash@0 {
-> -				#address-cells = <1>;
-> -				#size-cells = <1>;
-> -				compatible = "sst,sst25wf040";
-> -				reg = <0>;
-> -				spi-max-frequency = <40000000>; /* input clock */
-> -			};
-> -		};
-> -
-> -		sdhc@114000 {
-> -			/*Disabled as there is no sdhc connector on B4420QDS board*/
-> -			status = "disabled";
-> -		};
-> -
-> -		i2c@118000 {
-> -			eeprom@50 {
-> -				compatible = "at24,24c64";
-> -				reg = <0x50>;
-> -			};
-> -			eeprom@51 {
-> -				compatible = "at24,24c256";
-> -				reg = <0x51>;
-> -			};
-> -			eeprom@53 {
-> -				compatible = "at24,24c256";
-> -				reg = <0x53>;
-> -			};
-> -			eeprom@57 {
-> -				compatible = "at24,24c256";
-> -				reg = <0x57>;
-> -			};
-> -			rtc@68 {
-> -				compatible = "dallas,ds3232";
-> -				reg = <0x68>;
-> -			};
-> -		};
-> -
-> -		usb@210000 {
-> -			dr_mode = "host";
-> -			phy_type = "ulpi";
-> -		};
-> -
-> -	};
-> -
-> -	pci0: pcie@ffe200000 {
-> -		reg = <0xf 0xfe200000 0 0x10000>;
-> -		ranges = <0x02000000 0 0xe0000000 0xc 0x00000000 0x0 0x20000000
-> -			  0x01000000 0 0x00000000 0xf 0xf8000000 0x0 0x00010000>;
-> -		pcie@0 {
-> -			ranges = <0x02000000 0 0xe0000000
-> -				  0x02000000 0 0xe0000000
-> -				  0 0x20000000
-> -
-> -				  0x01000000 0 0x00000000
-> -				  0x01000000 0 0x00000000
-> -				  0 0x00010000>;
-> -		};
-> -	};
-> -
-> -};
-> -
-> -/include/ "fsl/b4si-post.dtsi"
-> diff --git a/arch/powerpc/boot/dts/b4qds.dtsi b/arch/powerpc/boot/dts/b4qds.dtsi
-> new file mode 100644
-> index 0000000..e6d2f8f
-> --- /dev/null
-> +++ b/arch/powerpc/boot/dts/b4qds.dtsi
-> @@ -0,0 +1,169 @@
-> +/*
-> + * B4420DS Device Tree Source
-> + *
-> + * Copyright 2012 Freescale Semiconductor, Inc.
-> + *
-> + * Redistribution and use in source and binary forms, with or without
-> + * modification, are permitted provided that the following conditions are met:
-> + *     * Redistributions of source code must retain the above copyright
-> + *       notice, this list of conditions and the following disclaimer.
-> + *     * Redistributions in binary form must reproduce the above copyright
-> + *       notice, this list of conditions and the following disclaimer in the
-> + *       documentation and/or other materials provided with the distribution.
-> + *     * Neither the name of Freescale Semiconductor nor the
-> + *       names of its contributors may be used to endorse or promote products
-> + *       derived from this software without specific prior written permission.
-> + *
-> + *
-> + * ALTERNATIVELY, this software may be distributed under the terms of the
-> + * GNU General Public License ("GPL") as published by the Free Software
-> + * Foundation, either version 2 of that License or (at your option) any
-> + * later version.
-> + *
-> + * This software is provided by Freescale Semiconductor "as is" and any
-> + * express or implied warranties, including, but not limited to, the implied
-> + * warranties of merchantability and fitness for a particular purpose are
-> + * disclaimed. In no event shall Freescale Semiconductor be liable for any
-> + * direct, indirect, incidental, special, exemplary, or consequential damages
-> + * (including, but not limited to, procurement of substitute goods or services;
-> + * loss of use, data, or profits; or business interruption) however caused and
-> + * on any theory of liability, whether in contract, strict liability, or tort
-> + * (including negligence or otherwise) arising in any way out of the use of
-> + * this software, even if advised of the possibility of such damage.
-> + */
-> +
-> +/ {
-> +	model = "fsl,B4QDS";
-> +	compatible = "fsl,B4QDS";
-> +	#address-cells = <2>;
-> +	#size-cells = <2>;
-> +	interrupt-parent = <&mpic>;
-> +
-> +	ifc: localbus@ffe124000 {
-> +		reg = <0xf 0xfe124000 0 0x2000>;
-> +		ranges = <0 0 0xf 0xe8000000 0x08000000
-> +			  2 0 0xf 0xff800000 0x00010000
-> +			  3 0 0xf 0xffdf0000 0x00008000>;
-> +
-> +		nor@0,0 {
-> +			#address-cells = <1>;
-> +			#size-cells = <1>;
-> +			compatible = "cfi-flash";
-> +			reg = <0x0 0x0 0x8000000>;
-> +			bank-width = <2>;
-> +			device-width = <1>;
-> +		};
-> +
-> +		nand@2,0 {
-> +			#address-cells = <1>;
-> +			#size-cells = <1>;
-> +			compatible = "fsl,ifc-nand";
-> +			reg = <0x2 0x0 0x10000>;
-> +
-> +			partition@0 {
-> +				/* This location must not be altered  */
-> +				/* 1MB for u-boot Bootloader Image */
-> +				reg = <0x0 0x00100000>;
-> +				label = "NAND U-Boot Image";
-> +				read-only;
-> +			};
-> +
-> +			partition@100000 {
-> +				/* 1MB for DTB Image */
-> +				reg = <0x00100000 0x00100000>;
-> +				label = "NAND DTB Image";
-> +			};
-> +
-> +			partition@200000 {
-> +				/* 10MB for Linux Kernel Image */
-> +				reg = <0x00200000 0x00A00000>;
-> +				label = "NAND Linux Kernel Image";
-> +			};
-> +
-> +			partition@c00000 {
-> +				/* 500MB for Root file System Image */
-> +				reg = <0x00c00000 0x1F400000>;
-> +				label = "NAND RFS Image";
-> +			};
-> +		};
-> +
-> +		board-control@3,0 {
-> +			compatible = "fsl,b4qds-fpga", "fsl,fpga-qixis";
-> +			reg = <3 0 0x300>;
-> +		};
-> +	};
-> +
-> +	memory {
-> +		device_type = "memory";
-> +	};
-> +
-> +	dcsr: dcsr@f00000000 {
-> +		ranges = <0x00000000 0xf 0x00000000 0x01052000>;
-> +	};
-> +
-> +	soc: soc@ffe000000 {
-> +		ranges = <0x00000000 0xf 0xfe000000 0x1000000>;
-> +		reg = <0xf 0xfe000000 0 0x00001000>;
-> +		spi@110000 {
-> +			flash@0 {
-> +				#address-cells = <1>;
-> +				#size-cells = <1>;
-> +				compatible = "sst,sst25wf040";
-> +				reg = <0>;
-> +				spi-max-frequency = <40000000>; /* input clock */
-> +			};
-> +		};
-> +
-> +		sdhc@114000 {
-> +			/*Disabled as there is no sdhc connector on B4420QDS board*/
-> +			status = "disabled";
-> +		};
-> +
-> +		i2c@118000 {
-> +			eeprom@50 {
-> +				compatible = "at24,24c64";
-> +				reg = <0x50>;
-> +			};
-> +			eeprom@51 {
-> +				compatible = "at24,24c256";
-> +				reg = <0x51>;
-> +			};
-> +			eeprom@53 {
-> +				compatible = "at24,24c256";
-> +				reg = <0x53>;
-> +			};
-> +			eeprom@57 {
-> +				compatible = "at24,24c256";
-> +				reg = <0x57>;
-> +			};
-> +			rtc@68 {
-> +				compatible = "dallas,ds3232";
-> +				reg = <0x68>;
-> +			};
-> +		};
-> +
-> +		usb@210000 {
-> +			dr_mode = "host";
-> +			phy_type = "ulpi";
-> +		};
-> +
-> +	};
-> +
-> +	pci0: pcie@ffe200000 {
-> +		reg = <0xf 0xfe200000 0 0x10000>;
-> +		ranges = <0x02000000 0 0xe0000000 0xc 0x00000000 0x0 0x20000000
-> +			  0x01000000 0 0x00000000 0xf 0xf8000000 0x0 0x00010000>;
-> +		pcie@0 {
-> +			ranges = <0x02000000 0 0xe0000000
-> +				  0x02000000 0 0xe0000000
-> +				  0 0x20000000
-> +
-> +				  0x01000000 0 0x00000000
-> +				  0x01000000 0 0x00000000
-> +				  0 0x00010000>;
-> +		};
-> +	};
-> +
-> +};
-> +
-> +/include/ "fsl/b4si-post.dtsi"
+But still need description, too although it's trivial
+
+>
+> Thanks!
+>
+> --
+> Kind regards,
+> Minchan Kim
 
 
+
+-- 
+Kind regards,
+Minchan Kim
