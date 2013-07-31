@@ -1,91 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756350Ab3GaLSJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 07:18:09 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:43406 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755596Ab3GaLSH (ORCPT
+	id S1759047Ab3GaLTO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 07:19:14 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:48369 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756144Ab3GaLTM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 07:18:07 -0400
-X-AuditID: cbfee61a-b7f196d000007dfa-d5-51f8f26d8c16
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Joonyoung Shim <jy0922.shim@samsung.com>
-Cc: linux-mm@kvack.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, liuj97@gmail.com,
-        kosaki.motohiro@gmail.com
-Subject: Re: [PATCH] Revert
- "mm/memory-hotplug: fix lowmem count overflow when offline pages"
-Date: Wed, 31 Jul 2013 13:17:46 +0200
-Message-id: <1572085.gN7iX7IvMe@amdc1032>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-45-generic; KDE/4.8.5; i686; ; )
-In-reply-to: <1375260602-2462-1-git-send-email-jy0922.shim@samsung.com>
-References: <1375260602-2462-1-git-send-email-jy0922.shim@samsung.com>
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=ISO-8859-1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrKLMWRmVeSWpSXmKPExsVy+t9jQd3cTz8CDR40y1rMWb+GzeLFvYss
-	Fs+2cFtc3jWHzeLemv+sFs1HNjI5sHnsnHWX3WPTp0nsHidm/Gbx6NuyitHj8ya5ANYoLpuU
-	1JzMstQifbsErox/56+zFrzjqfg96RNzA+Nxri5GTg4JAROJS4f3s0LYYhIX7q1n62Lk4hAS
-	mM4o8frrbiinhUmi7+ZHFpAqNgEriYntqxi7GDk4RAR0JDacZAcJMwvUSVz5NpcRxBYWiJe4
-	+/oEE4jNIqAqsffeU7AFvAKaEncnnASLiwq4Spxb9ANsJKeAu8SXW7+YQWwhATeJP8v/QNUL
-	SvyYfI8FYr68xL79U1khbB2J/a3T2CYwCsxCUjYLSdksJGULGJlXMYqmFiQXFCel5xrqFSfm
-	Fpfmpesl5+duYgQH9jOpHYwrGywOMQpwMCrx8Dpc+B4oxJpYVlyZe4hRgoNZSYRXPuhHoBBv
-	SmJlVWpRfnxRaU5q8SFGaQ4WJXHeA63WgUIC6YklqdmpqQWpRTBZJg5OqQZGgfYn3290isQf
-	NTZ9NfH6yu8bWYqtN2r49S54JNhnUSSV8PzT5vZDD06svmgfMlX1fQZ7hq/6V77GN5+uphed
-	7fc6U7Etf5/Pyypj9qVsmYEHivQfzdrJ8+92X6HMiw+vtzeYLhN8esFYsWtNYln6oyVZX07J
-	JPS/z1kwN/pL0eZXigHGTbaZSizFGYmGWsxFxYkA7E1ZP2gCAAA=
+	Wed, 31 Jul 2013 07:19:12 -0400
+Date: Wed, 31 Jul 2013 12:18:53 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Tejun Heo <htejun@gmail.com>
+Cc: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Peter Chen <peter.chen@freescale.com>,
+        Fabio Estevam <festevam@gmail.com>, alexander.shishkin@linux.intel.com,
+        kernel@pengutronix.de, linux-usb@vger.kernel.org,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Jeff Garzik <jeff@garzik.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, Mike Turquette <mturquette@linaro.org>,
+        linux-arm-kernel@lists.infradead.org
+Message-ID: <20130731111853.GJ9858@sirena.org.uk>
+References: <1375232669-27846-1-git-send-email-festevam@gmail.com>
+ <1375232669-27846-2-git-send-email-festevam@gmail.com>
+ <20130731073306.GZ1754@pengutronix.de>
+ <20130731082054.GF8540@nchen-desktop>
+ <20130731084645.GB1754@pengutronix.de>
+ <20130731090512.GD9858@sirena.org.uk>
+ <20130731094434.GC1754@pengutronix.de>
+ <20130731095411.GA2810@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="aP1ODUq80QliXAiN"
+Content-Disposition: inline
+In-Reply-To: <20130731095411.GA2810@htj.dyndns.org>
+X-Cookie: You will be awarded some great honor.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 2/2] chipidea: Use devm_request_irq()
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Hi,
+--aP1ODUq80QliXAiN
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Wednesday, July 31, 2013 05:50:02 PM Joonyoung Shim wrote:
-> This reverts commit cea27eb2a202959783f81254c48c250ddd80e129.
+On Wed, Jul 31, 2013 at 05:54:11AM -0400, Tejun Heo wrote:
+> On Wed, Jul 31, 2013 at 11:44:34AM +0200, Uwe Kleine-K=F6nig wrote:
 
-Could you please also include commit descriptions, i.e.
-commit cea27eb2a202959783f81254c48c250ddd80e129 ("mm/memory-hotplug: fix
-lowmem count overflow when offline pages")?
+> > > > OK, so the possible problem is that remove is called while the irq =
+is
+> > > > still active. That means you have to assert that all resources the =
+irq
 
-> Fixed to adjust totalhigh_pages when hot-removing memory by commit
-> 3dcc0571cd64816309765b7c7e4691a4cadf2ee7, so that commit occurs
-> duplicated decreasing of totalhigh_pages.
+> If your driver destruction path is running while your irq handler is
+> still running, it's a crappy / broken driver.  You need a deactivation
+> step whether you're using devm or not.  IRQs can be shared and the
+> device should be in a quiesced state before the driver detaches
+> itself.  Note that you can queue deactivation routine using devm.  For
+> an example, please take a look at
+> drivers/ata/libata-core.c::ata_host_start().
 
-Could you please describe it a bit more (because it is non-obvious) how
-the commit cea27eb effectively does the same totalhigh_pages adjustment
-that is present in the commit 3dcc057?
+I'm not sure I understand how this relates the problem.  The main issue
+here is that for the shared IRQ case quiescing the device doesn't make
+any difference since one of the other users of the interrupt could cause
+the interrupt handler to be called regardless of what the hardware is
+doing.  This means that we need to guarantee that anything the interrupt
+handler relies on has not been deallocated before the interrupt handler
+is unregistered.
 
-> Signed-off-by: Joonyoung Shim <jy0922.shim@samsung.com>
-> ---
-> The commit cea27eb2a202959783f81254c48c250ddd80e129 is only for stable,
-> is it right?
+> irq deregistration.  Add an explicit deactivation step using
+> devres_alloc().
 
-It is in Linus' tree now but you're probably right that it should be
-limited to stable tree.
+> devm guarantees that the destruction callbacks are called in the
+> reverse order of registration.
 
-Best regards,
---
-Bartlomiej Zolnierkiewicz
-Samsung R&D Institute Poland
-Samsung Electronics
+OK, that's helpful.  It'd be good to document this if it's something
+the API is intending to guarantee, though - devres.txt doesn't mention
+this and it's not something I'd intuitively expect to be the case.
 
->  mm/page_alloc.c | 4 ----
->  1 file changed, 4 deletions(-)
-> 
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index b100255..2b28216 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -6274,10 +6274,6 @@ __offline_isolated_pages(unsigned long start_pfn, unsigned long end_pfn)
->  		list_del(&page->lru);
->  		rmv_page_order(page);
->  		zone->free_area[order].nr_free--;
-> -#ifdef CONFIG_HIGHMEM
-> -		if (PageHighMem(page))
-> -			totalhigh_pages -= 1 << order;
-> -#endif
->  		for (i = 0; i < (1 << order); i++)
->  			SetPageReserved((page+i));
->  		pfn += (1 << order);
+--aP1ODUq80QliXAiN
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR+PKaAAoJELSic+t+oim9F3sP/iPf8/L+4WXt7+XtU8rhRoiH
+lz5kIeYHjmB654NAYi4ssnqz0OZWAhWxg6sdjXOEHaPkxUg3Yn1VMY5ZPkf4TP4c
+oYuaQ7dnZDwLRZ65FA8oPdCGzutfpGLVhhWLQ+C+D7ojzCb2aU9QzO4ViGZvtVXi
+swOXMbu+HXNTGi/vePCNcrMwYv9/Kdi/QTh6pPn6gihvdVv8yBnQMWfYV1Zn2430
+7Zujj7GDqOmoSMp/hXcuml05c/hqlmED5jdwsH0rtzX0OsbgoFdIaImiPPtcmGg7
+YiZaeakLWS4JW+iwq2jwSaLWUwmflAZUPWTNrDq79iYimedXquCZcYlFLfG4DlAD
+ZwARRCMgy251XNY7Pzu6SA09Ys5sjqUHgqvcqMIwRBadbJwLeQjjUZCGViMcT0em
+jPbCc46Lm5n8O9LcXDZRMMgemxYnQUvQ37nkGeZBkQUz4XkB+bSHzUNg0NosFQR+
++QkLDw/sGfe+BeswRvNhgyEerZs8QAZ9LgNTdgQTyHLSafAhRL3E9fXqc3d7Oxfm
+cAvRblG+EZ0cr+EQT3p567UDpJPK+0WBiFq1vKYLSwhlPHTulI4FUHFb4kqB6o3Z
+ygC945i0N3g8t7la/iIwqOFLeSAPilKLw1yU6YLyGZPlE9BxVxZSOQe2bqkB7PRW
+T6c4cWFnqkFx5xWDNa5i
+=s3JU
+-----END PGP SIGNATURE-----
+
+--aP1ODUq80QliXAiN--
