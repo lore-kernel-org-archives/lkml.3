@@ -1,118 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757592Ab3GaV0v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 17:26:51 -0400
-Received: from mail-lb0-f182.google.com ([209.85.217.182]:39252 "EHLO
-	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751418Ab3GaV0t (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 17:26:49 -0400
+	id S1757664Ab3GaV15 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 17:27:57 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:49486 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751660Ab3GaV14 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 17:27:56 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] cpufreq: Re-arrange header files
+Date: Wed, 31 Jul 2013 23:38:07 +0200
+Message-ID: <5948193.cosVqkRF9h@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <be0fa53fe03550ec49b8bade1af7d4e1f6e06b39.1375284946.git.viresh.kumar@linaro.org>
+References: <be0fa53fe03550ec49b8bade1af7d4e1f6e06b39.1375284946.git.viresh.kumar@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <20130731204817.GC24642@n2100.arm.linux.org.uk>
-References: <20130725175702.GC22291@e106331-lin.cambridge.arm.com>
-	<1999586.84BnWE5EUh@thinkpad>
-	<20130731191209.GA8027@netboy>
-	<1409617.9untvfnOTJ@flatron>
-	<20130731200017.GC8027@netboy>
-	<20130731201457.GA24642@n2100.arm.linux.org.uk>
-	<CAKON4Ow7rE9cDj_tS7kmYN4incM+ay=BK96q-ph2JxYH3xiQzg@mail.gmail.com>
-	<20130731204817.GC24642@n2100.arm.linux.org.uk>
-Date: Wed, 31 Jul 2013 17:26:47 -0400
-Message-ID: <CAKON4Ozfe=endqnXWkcWR2HuJ489Otpcu2QsjB0DNg6jpRgG+Q@mail.gmail.com>
-Subject: Re: [Ksummit-2013-discuss] DT bindings as ABI [was: Do we have people
- interested in device tree janitoring / cleanup?]
-From: "jonsmirl@gmail.com" <jonsmirl@gmail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Richard Cochran <richardcochran@gmail.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "ksummit-2013-discuss@lists.linuxfoundation.org" 
-	<ksummit-2013-discuss@lists.linuxfoundation.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Domenico Andreoli <cavokz@gmail.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Arend van Spriel <arend@broadcom.com>, Mark Brown <broonie@kernel.org>,
-        Olof Johansson <olof@lixom.net>, mbizon@freebox.fr,
-        Dave P Martin <Dave.Martin@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 31, 2013 at 4:48 PM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Wed, Jul 31, 2013 at 04:37:36PM -0400, jonsmirl@gmail.com wrote:
->> On Wed, Jul 31, 2013 at 4:14 PM, Russell King - ARM Linux
->> <linux@arm.linux.org.uk> wrote:
->> > However, if we go back to the idea that DT is supposed to describe the
->> > hardware, _and_ that the way to describe that hardware is well defined
->> > and _stable_ (as it should be) then there should be no reason what so
->> > ever that your old DT blob should not continue working in later kernels.
->> > If it doesn't, then the contract that DT promised when we first moved
->> > over to using DT has been _broken_.
->>
->> Suppose your DT predates PINCTRL and the CPU needs the pins set to
->> function.  But setting the pins up is a board specific function. How
->> is this going to get implemented in a generic kernel that doesn't have
->> any board specific code in it?
->>
->> I would propose that we only need to worry about DTs that got put into
->> boot loaders and not worry about ones that were only used when
->> appended to a kernel.
->
-> That is - again - our mistake.  We should have made it clear from the
-> start that the use of an _appended_ DT, or a DT provided with the kernel
-> being booted was more or less mandatory for the time being.  We actually
-> did exactly the opposite - we advertised the appended DT as a stop-gap
-> measure just to allow a DT kernel to be booted with a boot loader which
-> didn't support DT.
->
-> That in itself _encouraged_ boot loader support for DT on ARM (which in
-> itself is not a bad thing) but also leads people down the path of
-> potentially separating the DT from the kernel.
->
-> Had we encouraged the use of an appended DT instead, but still encouraged
-> boot loaders to update, and also made a clear statement that DT is
-> unstable (which everyone can see - for example by making our DT stuff
-> depend on CONFIG_EXPERIMENTAL when it existed) then everyone would have
-> been clear about its status.
->
-> The fact that we did not - the fact that we ignored this process means
-> that it is _our_ problem that people like Richard are blowing up such a
-> storm over this.  We need to admit that we got it wrong, and commit to
-> doing it the right way in future.  What that means is starting off today
-> with a commitment to keep as much of the stuff which works today working
-> _tomorrow_, and the day after, and so forth.
+On Wednesday, July 31, 2013 09:05:57 PM Viresh Kumar wrote:
+> This exercise has been done earlier but hasn't been done for few files. Lets do
+> it now. It targets to fix following problems:
+> - Include headers in ascending order, so that we don't add same multiple times
+>   by mistake.
 
-What do you think about using a quirk layer to decouple deployed DTs
-from whatever is implemented in the kernel? I still think there is
-going to be volatility in the the kernel DT usage simply because we
-haven't figured out all of the issues with it yet.  For example
-defining a global schema system is going to expose a lot of irregular
-DT syntax when you line up all of the platform DTs in a system where
-it is easy to compare them. One the plus side the kernel is certainly
-evolving to a point where this volatility will stop in the future, we
-just aren't there yet.  If we don't use a quirk fixup system, then
-board specific code is going to continue to exist scattered around in
-the arch directories.
+Normally, I'd regard that as pointless churn, but why don't you actually
+remove direct #includes already included through cpufreq.h when you're at it?
 
-My preference would be to contain the board specific DT fixup code
-inside a quirk system and have the goal of making the arch directories
-free of board specific code. Any new board would have a good enough DT
-that they don't need any board specific DT fixup code. Of course
-there's quite a ways to go before reaching that goal.
+For example, what's the point of including cpumask.h directly from
+cpufreq_governor.c if it includes cpufreq.h too?
 
-Alternatively you may be of the belief that it is impossible to get
-rid of the board specific code. But x86 doesn't have any of it, why
-should ARM?
+Also it doesn't look like all of the includes are really necessary.
 
+> - <asm/> must be included after <linux/>, so that they override whatever they
+>   need.
+> 
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> ---
+>  drivers/cpufreq/cpufreq.c             | 23 +++++++++++------------
+>  drivers/cpufreq/cpufreq_governor.c    |  2 +-
+>  drivers/cpufreq/cpufreq_ondemand.c    |  2 +-
+>  drivers/cpufreq/cpufreq_performance.c |  4 ++--
+>  drivers/cpufreq/cpufreq_powersave.c   |  4 ++--
+>  drivers/cpufreq/cpufreq_stats.c       | 12 ++++++------
+>  include/linux/cpufreq.h               | 10 +++++-----
+>  7 files changed, 28 insertions(+), 29 deletions(-)
+> 
+> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> index 170d344..d5f2a09 100644
+> --- a/drivers/cpufreq/cpufreq.c
+> +++ b/drivers/cpufreq/cpufreq.c
+> @@ -17,25 +17,24 @@
+>  
+>  #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+>  
+> -#include <asm/cputime.h>
+> +#include <linux/cpu.h>
+> +#include <linux/cpufreq.h>
+> +#include <linux/completion.h>
+> +#include <linux/delay.h>
+> +#include <linux/device.h>
+> +#include <linux/init.h>
+> +#include <linux/interrupt.h>
+>  #include <linux/kernel.h>
+>  #include <linux/kernel_stat.h>
+>  #include <linux/module.h>
+> -#include <linux/init.h>
+> +#include <linux/mutex.h>
+>  #include <linux/notifier.h>
+> -#include <linux/cpufreq.h>
+> -#include <linux/delay.h>
+> -#include <linux/interrupt.h>
+> -#include <linux/spinlock.h>
+> -#include <linux/tick.h>
+> -#include <linux/device.h>
+>  #include <linux/slab.h>
+> -#include <linux/cpu.h>
+> -#include <linux/completion.h>
+> -#include <linux/mutex.h>
+> +#include <linux/spinlock.h>
+>  #include <linux/syscore_ops.h>
+> -
+> +#include <linux/tick.h>
+>  #include <trace/events/power.h>
+> +#include <asm/cputime.h>
+>  
+>  /**
+>   * The "cpufreq driver" - the arch- or hardware-dependent low
+> diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
+> index 7409dbd..5876788 100644
+> --- a/drivers/cpufreq/cpufreq_governor.c
+> +++ b/drivers/cpufreq/cpufreq_governor.c
+> @@ -16,7 +16,6 @@
+>  
+>  #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+>  
+> -#include <asm/cputime.h>
+>  #include <linux/cpufreq.h>
+>  #include <linux/cpumask.h>
+>  #include <linux/export.h>
+> @@ -25,6 +24,7 @@
+>  #include <linux/slab.h>
+>  #include <linux/types.h>
+>  #include <linux/workqueue.h>
+> +#include <asm/cputime.h>
+>  
+>  #include "cpufreq_governor.h"
+>  
+> diff --git a/drivers/cpufreq/cpufreq_ondemand.c b/drivers/cpufreq/cpufreq_ondemand.c
+> index a3c5574..d3344b5 100644
+> --- a/drivers/cpufreq/cpufreq_ondemand.c
+> +++ b/drivers/cpufreq/cpufreq_ondemand.c
+> @@ -12,6 +12,7 @@
+>  
+>  #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+>  
+> +#include <linux/cpu.h>
+>  #include <linux/cpufreq.h>
+>  #include <linux/init.h>
+>  #include <linux/kernel.h>
+> @@ -24,7 +25,6 @@
+>  #include <linux/sysfs.h>
+>  #include <linux/tick.h>
+>  #include <linux/types.h>
+> -#include <linux/cpu.h>
+>  
+>  #include "cpufreq_governor.h"
+>  
+> diff --git a/drivers/cpufreq/cpufreq_performance.c b/drivers/cpufreq/cpufreq_performance.c
+> index 9fef7d6..bdfda75 100644
+> --- a/drivers/cpufreq/cpufreq_performance.c
+> +++ b/drivers/cpufreq/cpufreq_performance.c
+> @@ -12,10 +12,10 @@
+>  
+>  #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+>  
+> -#include <linux/kernel.h>
+> -#include <linux/module.h>
+>  #include <linux/cpufreq.h>
+>  #include <linux/init.h>
+> +#include <linux/kernel.h>
+> +#include <linux/module.h>
+>  
+>  static int cpufreq_governor_performance(struct cpufreq_policy *policy,
+>  					unsigned int event)
+> diff --git a/drivers/cpufreq/cpufreq_powersave.c b/drivers/cpufreq/cpufreq_powersave.c
+> index 32109a1..47235e2 100644
+> --- a/drivers/cpufreq/cpufreq_powersave.c
+> +++ b/drivers/cpufreq/cpufreq_powersave.c
+> @@ -12,10 +12,10 @@
+>  
+>  #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+>  
+> -#include <linux/kernel.h>
+> -#include <linux/module.h>
+>  #include <linux/cpufreq.h>
+>  #include <linux/init.h>
+> +#include <linux/kernel.h>
+> +#include <linux/module.h>
+>  
+>  static int cpufreq_governor_powersave(struct cpufreq_policy *policy,
+>  					unsigned int event)
+> diff --git a/drivers/cpufreq/cpufreq_stats.c b/drivers/cpufreq/cpufreq_stats.c
+> index cb38413..7610e4b 100644
+> --- a/drivers/cpufreq/cpufreq_stats.c
+> +++ b/drivers/cpufreq/cpufreq_stats.c
+> @@ -9,17 +9,17 @@
+>   * published by the Free Software Foundation.
+>   */
+>  
+> -#include <linux/kernel.h>
+> -#include <linux/slab.h>
+>  #include <linux/cpu.h>
+> -#include <linux/sysfs.h>
+>  #include <linux/cpufreq.h>
+> -#include <linux/module.h>
+>  #include <linux/jiffies.h>
+> -#include <linux/percpu.h>
+> +#include <linux/kernel.h>
+>  #include <linux/kobject.h>
+> -#include <linux/spinlock.h>
+> +#include <linux/module.h>
+>  #include <linux/notifier.h>
+> +#include <linux/percpu.h>
+> +#include <linux/slab.h>
+> +#include <linux/spinlock.h>
+> +#include <linux/sysfs.h>
+>  #include <asm/cputime.h>
+>  
+>  static spinlock_t cpufreq_stats_lock;
+> diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
+> index e1fd215..247d83a 100644
+> --- a/include/linux/cpufreq.h
+> +++ b/include/linux/cpufreq.h
+> @@ -11,15 +11,15 @@
+>  #ifndef _LINUX_CPUFREQ_H
+>  #define _LINUX_CPUFREQ_H
+>  
+> -#include <asm/cputime.h>
+> +#include <linux/cpumask.h>
+> +#include <linux/completion.h>
+> +#include <linux/kobject.h>
+>  #include <linux/mutex.h>
+>  #include <linux/notifier.h>
+> -#include <linux/threads.h>
+> -#include <linux/kobject.h>
+>  #include <linux/sysfs.h>
+> -#include <linux/completion.h>
+> +#include <linux/threads.h>
+>  #include <linux/workqueue.h>
+> -#include <linux/cpumask.h>
+> +#include <asm/cputime.h>
+>  #include <asm/div64.h>
+>  
+>  #define CPUFREQ_NAME_LEN 16
+> 
 -- 
-Jon Smirl
-jonsmirl@gmail.com
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
