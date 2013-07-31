@@ -1,61 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760719Ab3GaUkv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 16:40:51 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:33457 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754425Ab3GaUkm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 16:40:42 -0400
-Date: Wed, 31 Jul 2013 22:40:40 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: e1000-devel@lists.sourceforge.net
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: e1000e suspend-to-disk reboots box with 3.11-rc3+
-Message-ID: <20130731204040.GE4724@pd.tnic>
+	id S1760843Ab3GaUm7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 16:42:59 -0400
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:52647 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752209Ab3GaUm5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 16:42:57 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAErSpo5GUTXyo4GeCGvh_GauKUA4decbDWUnD47qKPr6E65g9w@mail.gmail.com>
+References: <1360036520-31032-1-git-send-email-wangyijing@huawei.com>
+ <51A42137.9090908@huawei.com> <CAErSpo7iyiq6H-BsPNO0Nyc1SF+JteOzBqNQ+d_D=RYE_pdTEA@mail.gmail.com>
+ <51F73108.4070905@huawei.com> <CAErSpo4mHTwqrW-yq_1BkjD0GyFtVYZRm9+eGfASJ_aJCOagjg@mail.gmail.com>
+ <CAErSpo4xJk7bHQihtdN1UP+6Y17TOrBFhEsO_Zwyvz8iQMEXsw@mail.gmail.com>
+ <51F8D5C9.4020309@huawei.com> <CAErSpo5GUTXyo4GeCGvh_GauKUA4decbDWUnD47qKPr6E65g9w@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 31 Jul 2013 14:42:36 -0600
+Message-ID: <CAErSpo6yuxdngHepJ96w72SOSapud2URwc2GHPT_-CZh0e1CSA@mail.gmail.com>
+Subject: Re: [PATCH] PCI: update device mps when doing pci hotplug
+To: Yijing Wang <wangyijing@huawei.com>
+Cc: Jon Mason <jdmason@kudzu.us>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Yijing Wang <wangyijing0307@gmail.com>,
+        Hanjun Guo <guohanjun@huawei.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Joe Jin <joe.jin@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, Jul 31, 2013 at 11:53 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> On Wed, Jul 31, 2013 at 3:15 AM, Yijing Wang <wangyijing@huawei.com> wrote:
+>> Hi Bjorn,
+>>    I didn't observe a performance difference between MPS=128 and MPS=512. I use ping $dest_ip -s 65500(large size packet)
+>> to test the different situations.
+>
+> Interesting.  "ping" is probably not a good way to see performance
+> differences, but hopefully you could see a difference in *some*
+> scenario.  Otherwise, there's not much point in increasing MPS :)
+>
+>>> I assume there are no AER or other errors logged by the root port?
+>> Yes, AER is not support in local machine.
+>
+> Per the 5520/5500 spec, it does support AER (sec 19.11.5).  Maybe
+> there's some platform support required in addition.  You might still
+> be able to see some info just with "lspci -vv"
+>
+>> Hmmm, PCIe Spec does not involve too much about MPS setting. So maybe different platform
+>> has different strategy.
+>
+> I think there's enough in the spec to tell us what we need to do (this
+> is sec 2.2.2):
+>
+>   - A Transmitter must not send a TLP larger than its Max_Payload_Size
+>   - A Receiver must treat TLPs larger than its Max_Payload_Size as malformed
+>
+> The only way I can see to guarantee that is to set the MPS on both
+> ends of the link the same.
+>
+>> Conservatively, as a improvement for mps setting after hotplug. I think update mps setting equal to its parent
+>> make sense. This is no harm to other devices, we only modify the hotplug device itself mps register.
+>>
+>> So if you agree, I will update my patch ,only try to modify hotplug device mps, make them equal to its parent.
+>
+> Yes, I think that would be safe.  If the switch is set to a larger MPS
+> than the hot-added device supports, I don't think we can safely use
+> the device.
 
-I'm experiencing the strange observation that when I hibernate my x230
-with Linus HEAD from today + tip/master (3.11-rc3+), the box doesn't
-remain off but reboots immediately.
+I opened a bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=60671
+for this problem.  Please correct any mistakes in my summary and
+reference it in your changelog.
 
-Since I have a similar bug where an e1000e box reboots
-when "Wake on LAN from S4/S5" is enabled in the BIOS
-(https://bugzilla.novell.com/show_bug.cgi?id=812592) I decided to test
-with LAN cable removed.
-
-And yes, when the ethernet cable is not connected, the box hibernates
-and remains off. When I hibernate with the cable attached, the box
-doesn't remain off but reboots.
-
-The card is:
-
-[    1.620772] e1000e: Intel(R) PRO/1000 Network Driver - 2.3.2-k
-[    1.622116] e1000e: Copyright(c) 1999 - 2013 Intel Corporation.
-[    1.623687] e1000e 0000:00:19.0: setting latency timer to 64
-[    1.625160] e1000e 0000:00:19.0: Interrupt Throttling Rate (ints/sec) set to dynamic conservative mode
-[    1.626640] e1000e 0000:00:19.0: irq 44 for MSI/MSI-X
-[    1.884432] e1000e 0000:00:19.0 eth0: registered PHC clock
-[    1.885925] e1000e 0000:00:19.0 eth0: (PCI Express:2.5GT/s:Width x1) 3c:97:0e:6b:ef:e7
-[    1.887466] e1000e 0000:00:19.0 eth0: Intel(R) PRO/1000 Network Connection
-[    1.889089] e1000e 0000:00:19.0 eth0: MAC: 10, PHY: 11, PBA No: 1000FF-0FF
-
-And of course, 3.10 is fine.
-
-Any ideas?
-
-I'll try to bisect it when I get a chance.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Bjorn
