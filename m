@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932453Ab3GaRmt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 13:42:49 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:1480 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760686Ab3GaRmj (ORCPT
+	id S932489Ab3GaRnW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 13:43:22 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:9051 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932335Ab3GaRmb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 13:42:39 -0400
+	Wed, 31 Jul 2013 13:42:31 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 31 Jul 2013 10:42:38 -0700
+	by hqnvupgp07.nvidia.com on Wed, 31 Jul 2013 10:42:30 -0700
 From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-To: <mturquette@linaro.org>
+To: <swarren@wwwdotorg.org>
 CC: <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <swarren@wwwdotorg.org>, <linux-usb@vger.kernel.org>,
-        <pgaikwad@nvidia.com>, <pdeschrijver@nvidia.com>,
-        Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-Subject: [PATCH] clk: tegra30: Don't wait for PLL_U lock bit
-Date: Wed, 31 Jul 2013 20:42:31 +0300
-Message-ID: <1375292551-7933-2-git-send-email-ttynkkynen@nvidia.com>
+        <linux-usb@vger.kernel.org>, Mikko Perttunen <mperttunen@nvidia.com>
+Subject: [PATCH 2/2] ARM: dts: USB for Tegra114 Dalmore
+Date: Wed, 31 Jul 2013 20:42:23 +0300
+Message-ID: <1375292543-7896-3-git-send-email-ttynkkynen@nvidia.com>
 X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1375292551-7933-1-git-send-email-ttynkkynen@nvidia.com>
-References: <1375292551-7933-1-git-send-email-ttynkkynen@nvidia.com>
+In-Reply-To: <1375292543-7896-1-git-send-email-ttynkkynen@nvidia.com>
+References: <1375292543-7896-1-git-send-email-ttynkkynen@nvidia.com>
 X-NVConfidentiality: public
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -28,28 +26,110 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The lock bit on PLL_U does not seem to be working correctly and
-sometimes never gets set when waiting for the PLL to come up.
-Remove the TEGRA_PLL_USE_LOCK flag to use a constant delay.
+From: Mikko Perttunen <mperttunen@nvidia.com>
 
-Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+Device tree entries for the three EHCI controllers on Tegra114.
+Enables the the third controller (USB host) on Dalmore.
+
+Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
 ---
- drivers/clk/tegra/clk-tegra30.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/boot/dts/tegra114-dalmore.dts |  9 +++++
+ arch/arm/boot/dts/tegra114.dtsi        | 62 ++++++++++++++++++++++++++++++++++
+ 2 files changed, 71 insertions(+)
 
-diff --git a/drivers/clk/tegra/clk-tegra30.c b/drivers/clk/tegra/clk-tegra30.c
-index e2c6ca0..9103fc8 100644
---- a/drivers/clk/tegra/clk-tegra30.c
-+++ b/drivers/clk/tegra/clk-tegra30.c
-@@ -971,7 +971,7 @@ static void __init tegra30_pll_init(void)
- 	/* PLLU */
- 	clk = tegra_clk_register_pll("pll_u", "pll_ref", clk_base, pmc_base, 0,
- 			    0, &pll_u_params, TEGRA_PLLU | TEGRA_PLL_HAS_CPCON |
--			    TEGRA_PLL_SET_LFCON | TEGRA_PLL_USE_LOCK,
-+			    TEGRA_PLL_SET_LFCON,
- 			    pll_u_freq_table,
- 			    NULL);
- 	clk_register_clkdev(clk, "pll_u", NULL);
+diff --git a/arch/arm/boot/dts/tegra114-dalmore.dts b/arch/arm/boot/dts/tegra114-dalmore.dts
+index cb640eb..f3fc2b0 100644
+--- a/arch/arm/boot/dts/tegra114-dalmore.dts
++++ b/arch/arm/boot/dts/tegra114-dalmore.dts
+@@ -870,6 +870,15 @@
+ 		non-removable;
+ 	};
+ 
++	usb@7d008000 {
++		status = "okay";
++	};
++
++	usb-phy@7d008000 {
++		status = "okay";
++		vbus-supply = <&usb3_vbus_reg>;
++	};
++
+ 	clocks {
+ 		compatible = "simple-bus";
+ 		#address-cells = <1>;
+diff --git a/arch/arm/boot/dts/tegra114.dtsi b/arch/arm/boot/dts/tegra114.dtsi
+index abf6c40..2905145 100644
+--- a/arch/arm/boot/dts/tegra114.dtsi
++++ b/arch/arm/boot/dts/tegra114.dtsi
+@@ -430,6 +430,68 @@
+ 		status = "disable";
+ 	};
+ 
++	usb@7d000000 {
++		compatible = "nvidia,tegra30-ehci", "usb-ehci";
++		reg = <0x7d000000 0x4000>;
++		interrupts = <GIC_SPI 20 IRQ_TYPE_LEVEL_HIGH>;
++		phy_type = "utmi";
++		clocks = <&tegra_car TEGRA114_CLK_USBD>;
++		nvidia,phy = <&phy1>;
++		status = "disabled";
++	};
++
++	phy1: usb-phy@7d000000 {
++		compatible = "nvidia,tegra30-usb-phy";
++		reg = <0x7d000000 0x4000 0x7d000000 0x4000>;
++		phy_type = "utmi";
++		clocks = <&tegra_car TEGRA114_CLK_USBD>,
++			 <&tegra_car TEGRA114_CLK_PLL_U>,
++			 <&tegra_car TEGRA114_CLK_USBD>;
++		clock-names = "reg", "pll_u", "utmi-pads";
++		nvidia,hssync-start-delay = <0>;
++		nvidia,idle-wait-delay = <17>;
++		nvidia,elastic-limit = <16>;
++		nvidia,term-range-adj = <6>;
++		nvidia,xcvr-setup = <9>;
++		nvidia,xcvr-lsfslew = <0>;
++		nvidia,xcvr-lsrslew = <3>;
++		nvidia,hssquelch-level = <2>;
++		nvidia,hsdiscon-level = <5>;
++		nvidia,xcvr-hsslew = <12>;
++		status = "disabled";
++	};
++
++	usb@7d008000 {
++		compatible = "nvidia,tegra30-ehci", "usb-ehci";
++		reg = <0x7d008000 0x4000>;
++		interrupts = <GIC_SPI 97 IRQ_TYPE_LEVEL_HIGH>;
++		phy_type = "utmi";
++		clocks = <&tegra_car TEGRA114_CLK_USB3>;
++		nvidia,phy = <&phy3>;
++		status = "disabled";
++	};
++
++	phy3: usb-phy@7d008000 {
++		compatible = "nvidia,tegra30-usb-phy";
++		reg = <0x7d008000 0x4000 0x7d000000 0x4000>;
++		phy_type = "utmi";
++		clocks = <&tegra_car TEGRA114_CLK_USB3>,
++			 <&tegra_car TEGRA114_CLK_PLL_U>,
++			 <&tegra_car TEGRA114_CLK_USBD>;
++		clock-names = "reg", "pll_u", "utmi-pads";
++		nvidia,hssync-start-delay = <0>;
++		nvidia,idle-wait-delay = <17>;
++		nvidia,elastic-limit = <16>;
++		nvidia,term-range-adj = <6>;
++		nvidia,xcvr-setup = <9>;
++		nvidia,xcvr-lsfslew = <0>;
++		nvidia,xcvr-lsrslew = <3>;
++		nvidia,hssquelch-level = <2>;
++		nvidia,hsdiscon-level = <5>;
++		nvidia,xcvr-hsslew = <12>;
++		status = "disabled";
++	};
++
+ 	cpus {
+ 		#address-cells = <1>;
+ 		#size-cells = <0>;
 -- 
 1.8.1.5
 
