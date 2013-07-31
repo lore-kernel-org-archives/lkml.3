@@ -1,40 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759510Ab3GaPVL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 11:21:11 -0400
-Received: from nm33-vm8.bullet.mail.bf1.yahoo.com ([72.30.238.198]:35024 "EHLO
-	nm33-vm8.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751803Ab3GaPVJ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 11:21:09 -0400
-X-Greylist: delayed 317 seconds by postgrey-1.27 at vger.kernel.org; Wed, 31 Jul 2013 11:21:08 EDT
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 581637.4070.bm@omp1009.mail.bf1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com.au;
-  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-RocketYMMF:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=FPhmyr7GRPwrv4vWS9ZSzWqx6LQk0cRekPwpl41waWLO/0yf9bwgahX820dgUH93vPMefDlBw8lEJqAlFnnhsAqmfSAiQcsX4qPdBWBMTjUjusZRbCPAR1MIc9dF32xFr7Uikk+ZzVagT65LaDstuXu1uvP2O2dhiPd1BUsKXEw=;
-X-YMail-OSG: E42qy6gVM1km.qPRHk36.3.QBAI6oumgBh2HAHe1Oig.984
- eb9vOJhwDczu7hbJHwOMJ
-X-Rocket-MIMEInfo: 002.001,DQpHcmVldGluZ3MgZnJvbSBCVVJLSU5BIEZBU086DQpMZXQgbWUgc3RhcnQgYnkgaW50cm9kdWNlIG15c2VsZixJIGFtIE1ycyBEb3JpcyBPbWFyLCBCSUxMIEFORCBFWENIQU5HRSBNQU5BR0VSIChCYW5rIG9mIEFmcmljYSkgT3VhZ2Fkb3Vnb3UsIEJ1cmtpbmEgRmFzby5JIGFtIHdyaXR0aW5nIHlvdSB0aGlzIGxldHRlciBiYXNlZCBvbiB0aGUgbGF0ZXN0IGRldmVsb3BtZW50IGF0IG91ciBiYW5rIHdoaWNoIEkgd2lsbCBsaWtlIHRvIGJyaW5nIHRvIHlvdXIgcGVyc29uYWwgZWRpZmljYXRpb24uICQxMiwBMAEBAQE-
-X-RocketYMMF: dorisomar952
-X-Mailer: YahooMailClassic/280 YahooMailWebService/0.8.151.566
-Message-ID: <1375283748.3126.YahooMailBasic@web162703.mail.bf1.yahoo.com>
-Date: Wed, 31 Jul 2013 08:15:48 -0700 (PDT)
-From: Doris Omar <1735963831@qq.com>
-Reply-To: doris_mrx@qq.com
-Subject: Re: Very Urgent!!!
-To: undisclosed recipients:;
+	id S1760271Ab3GaPVg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 11:21:36 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41922 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756736Ab3GaPVf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 11:21:35 -0400
+Date: Wed, 31 Jul 2013 16:21:31 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Tony Lindgren <tony@atomide.com>
+Cc: ksummit-2013-discuss@lists.linuxfoundation.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [Ksummit-2013-discuss] [ATTEND] [ARM ATTEND] kernel data bloat
+ and how to avoid it
+Message-ID: <20130731152131.GW2296@suse.de>
+References: <20130731073802.GT7656@atomide.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20130731073802.GT7656@atomide.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jul 31, 2013 at 12:38:03AM -0700, Tony Lindgren wrote:
+> Hi all,
+> 
+> Probably the biggest kernel data bloat issue is in the ARM land, but
+> it also seems that it's becoming a Linux generic issue too, so I
+> guess it could be discussed in either context.
+> 
 
-Greetings from BURKINA FASO:
-Let me start by introduce myself,I am Mrs Doris Omar, BILL AND EXCHANGE MANAGER (Bank of Africa) Ouagadougou, Burkina Faso.I am writting you this letter based on the latest development at our bank which I will like to bring to your personal edification. $12,250million transfer claims. this is a legitimate transaction and I agreed to offer you 40% of this money as my foreign partner after confirmation of the fund in your bank account,If you are interested, please get back to me.
+Would scripts/bloat-o-meter highlight where the growth problems are?
 
-Yours faithful,
-Mrs Doris Omar.
+-- 
+Mel Gorman
+SUSE Labs
