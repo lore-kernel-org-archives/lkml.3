@@ -1,107 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757871Ab3GaG1K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 02:27:10 -0400
-Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:55216 "EHLO
-	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752164Ab3GaG1I (ORCPT
+	id S1754519Ab3GaG3p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 02:29:45 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:54284 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751659Ab3GaG3o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 02:27:08 -0400
-Date: Wed, 31 Jul 2013 08:26:59 +0200
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        Mel Gorman <mgorman@suse.de>, Nick Piggin <npiggin@kernel.dk>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Konstantin Weitz <konstantin.weitz@gmail.com>
-Subject: Re: [PATCH 1/2] mm: add support for discard of unused ptes
-Message-ID: <20130731082659.1b5a5377@mschwide>
-In-Reply-To: <20130730134422.98c0977eada81d3ac41a08bb@linux-foundation.org>
-References: <1374742461-29160-1-git-send-email-schwidefsky@de.ibm.com>
-	<1374742461-29160-2-git-send-email-schwidefsky@de.ibm.com>
-	<20130730134422.98c0977eada81d3ac41a08bb@linux-foundation.org>
-Organization: IBM Corporation
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 31 Jul 2013 02:29:44 -0400
+Message-ID: <51F8AEC7.7080407@huawei.com>
+Date: Wed, 31 Jul 2013 14:29:27 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: <devel@driverdev.osuosl.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/2] Staging: rtl8192e: add missing single_release()
+Content-Type: text/plain; charset="GB2312"
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13073106-0342-0000-0000-000005D498BA
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Jul 2013 13:44:22 -0700
-Andrew Morton <akpm@linux-foundation.org> wrote:
+The debug file is opened with single_open(), but there's no
+single_release().
 
-> On Thu, 25 Jul 2013 10:54:20 +0200 Martin Schwidefsky <schwidefsky@de.ibm.com> wrote:
-> 
-> > From: Konstantin Weitz <konstantin.weitz@gmail.com>
-> > 
-> > In a virtualized environment and given an appropriate interface the guest
-> > can mark pages as unused while they are free (for the s390 implementation
-> > see git commit 45e576b1c3d00206 "guest page hinting light"). For the host
-> > the unused state is a property of the pte.
-> > 
-> > This patch adds the primitive 'pte_unused' and code to the host swap out
-> > handler so that pages marked as unused by all mappers are not swapped out
-> > but discarded instead, thus saving one IO for swap out and potentially
-> > another one for swap in.
-> > 
-> > ...
-> >
-> > --- a/include/asm-generic/pgtable.h
-> > +++ b/include/asm-generic/pgtable.h
-> > @@ -193,6 +193,19 @@ static inline int pte_same(pte_t pte_a, pte_t pte_b)
-> >  }
-> >  #endif
-> >  
-> > +#ifndef __HAVE_ARCH_PTE_UNUSED
-> > +/*
-> > + * Some architectures provide facilities to virtualization guests
-> > + * so that they can flag allocated pages as unused. This allows the
-> > + * host to transparently reclaim unused pages. This function returns
-> > + * whether the pte's page is unused.
-> > + */
-> > +static inline int pte_unused(pte_t pte)
-> > +{
-> > +	return 0;
-> > +}
-> > +#endif
-> > +
-> >  #ifndef __HAVE_ARCH_PMD_SAME
-> >  #ifdef CONFIG_TRANSPARENT_HUGEPAGE
-> >  static inline int pmd_same(pmd_t pmd_a, pmd_t pmd_b)
-> > diff --git a/mm/rmap.c b/mm/rmap.c
-> > index cd356df..2291f25 100644
-> > --- a/mm/rmap.c
-> > +++ b/mm/rmap.c
-> > @@ -1234,6 +1234,16 @@ int try_to_unmap_one(struct page *page, struct vm_area_struct *vma,
-> >  		}
-> >  		set_pte_at(mm, address, pte,
-> >  			   swp_entry_to_pte(make_hwpoison_entry(page)));
-> > +	} else if (pte_unused(pteval)) {
-> > +		/*
-> > +		 * The guest indicated that the page content is of no
-> > +		 * interest anymore. Simply discard the pte, vmscan
-> > +		 * will take care of the rest.
-> > +		 */
-> > +		if (PageAnon(page))
-> > +			dec_mm_counter(mm, MM_ANONPAGES);
-> > +		else
-> > +			dec_mm_counter(mm, MM_FILEPAGES);
-> >  	} else if (PageAnon(page)) {
-> >  		swp_entry_t entry = { .val = page_private(page) };
-> 
-> Obviously harmless.  Please include this in whatever tree carries
-> "[PATCH 2/2] s390/kvm: support collaborative memory management".
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+---
+ drivers/staging/rtl8192e/rtllib_module.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/staging/rtl8192e/rtllib_module.c b/drivers/staging/rtl8192e/rtllib_module.c
+index 84ea721..51d46e0 100644
+--- a/drivers/staging/rtl8192e/rtllib_module.c
++++ b/drivers/staging/rtl8192e/rtllib_module.c
+@@ -233,7 +233,8 @@ static const struct file_operations fops = {
+ 	.open = open_debug_level,
+ 	.read = seq_read,
+ 	.llseek = seq_lseek,
+-	.write = write_debug_level
++	.write = write_debug_level,
++	.release = single_release,
+ };
  
-Cool, thanks. This will go out via the KVM tree then.
-
+ int __init rtllib_init(void)
 -- 
-blue skies,
-   Martin.
-
-"Reality continues to ruin my life." - Calvin.
-
+1.8.0.2
