@@ -1,49 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759421Ab3GaJtn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 05:49:43 -0400
-Received: from mail09.linbit.com ([212.69.161.110]:39361 "EHLO
-	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759316Ab3GaJtU (ORCPT
+	id S1759455Ab3GaJvl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 05:51:41 -0400
+Received: from relay.parallels.com ([195.214.232.42]:38665 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759415Ab3GaJvi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 05:49:20 -0400
-From: Philipp Reisner <philipp.reisner@linbit.com>
-To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
-Cc: drbd-dev@lists.linbit.com
-Subject: [PATCH 0/5] RFC: DRBD Fixes
-Date: Wed, 31 Jul 2013 11:41:10 +0200
-Message-Id: <1375263675-18410-1-git-send-email-philipp.reisner@linbit.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 31 Jul 2013 05:51:38 -0400
+Message-ID: <51F8DE28.4000508@parallels.com>
+Date: Wed, 31 Jul 2013 13:51:36 +0400
+From: Maxim Patlasov <mpatlasov@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Dave Kleikamp <dave.kleikamp@oracle.com>, <linux-kernel@vger.kernel.org>,
+        <linux-fsdevel@vger.kernel.org>, Zach Brown <zab@zabbo.net>
+Subject: Re: [PATCH V8 00/33] loop: Issue O_DIRECT aio using bio_vec
+References: <1374774659-13121-1-git-send-email-dave.kleikamp@oracle.com> <20130730142820.313f1af6827276df31913106@linux-foundation.org>
+In-Reply-To: <20130730142820.313f1af6827276df31913106@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.30.17.2]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These are five independend fixes. Please see the commit messages
-for descriptions.
+07/31/2013 01:28 AM, Andrew Morton пишет:
+> On Thu, 25 Jul 2013 12:50:26 -0500 Dave Kleikamp <dave.kleikamp@oracle.com> wrote:
+>
+>> This patch series adds a kernel interface to fs/aio.c so that kernel code can
+>> issue concurrent asynchronous IO to file systems.  It adds an aio command and
+>> file system methods which specify io memory with pages instead of userspace
+>> addresses.
+>>
+>> This series was written to reduce the current overhead loop imposes by
+>> performing synchronus buffered file system IO from a kernel thread.  These
+>> patches turn loop into a light weight layer that translates bios into iocbs.
+> Do you have any performance numbers?
+>
+> Does anyone care much about loop performance?  What's the value here?
+>
+>
 
-The series is based on v3.11-rc3, and intended for the 3.12 merge
-window.
+OpenVZ uses loopback-device to keep per-container filesystems. We care 
+much about overhead introduced by loop: IO-bound applications run on top 
+of per-container filesystem shouldn't perform worse than on top of host 
+filesystem. So the value for us is zero overhead.
 
-I will post a second series targeted at the 3.12 merge window
-in the next days. It will contain only renames (no functional changes)
-
-
-Lars Ellenberg (3):
-  drbd: fix NULL pointer deref in module init error path
-  drbd: fix decoding of bitmap vli rle for device sizes > 64 TB
-  drbd: avoid to shrink max_bio_size due to peer re-configuration
-
-Philipp Reisner (2):
-  drbd: Fix an connection drop issue after enabling allow-two-primaries
-  drbd: Fix adding of new minors with freshly created meta data
-
- drivers/block/drbd/drbd_int.h      |    3 ++-
- drivers/block/drbd/drbd_main.c     |   19 ++++++++-------
- drivers/block/drbd/drbd_nl.c       |    6 ++---
- drivers/block/drbd/drbd_receiver.c |   45 +++++++++++++++++-------------------
- drivers/block/drbd/drbd_req.c      |    3 +++
- 5 files changed, 38 insertions(+), 38 deletions(-)
-
--- 
-1.7.9.5
-
+Thanks,
+Maxim
