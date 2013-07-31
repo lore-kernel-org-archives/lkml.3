@@ -1,48 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760348Ab3GaQj7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 12:39:59 -0400
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:49972 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760243Ab3GaQj5 (ORCPT
+	id S1760269Ab3GaQnQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 12:43:16 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:2238 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753838Ab3GaQnP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 12:39:57 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAK9yfHwZCBk5boyiak1FJ7WVJ+FxLjPk1Wa5eYbuZw8BaOV5jw@mail.gmail.com>
-References: <cover.1375279948.git.viresh.kumar@linaro.org>
-	<CAK9yfHwZCBk5boyiak1FJ7WVJ+FxLjPk1Wa5eYbuZw8BaOV5jw@mail.gmail.com>
-Date: Wed, 31 Jul 2013 22:09:56 +0530
-Message-ID: <CAKohpokTPBv5Z7uGffRJqKB-V=pMi8WAeWUuxNvt+3QV3YcRKg@mail.gmail.com>
-Subject: Re: [PATCH 00/15] cpufreq: initialize drivers .owner field with THIS_MODULE
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: rjw@sisk.pl, linaro-kernel@lists.linaro.org, patches@linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, arnd.bergmann@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 31 Jul 2013 12:43:15 -0400
+X-Authority-Analysis: v=2.0 cv=e9yEuNV/ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=p_wSJkOgJdAA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=vMlpsT2et3MA:10 a=CZkpJ56KOrl6hjesbDEA:9 a=QEXdDO2ut3YA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-ID: <1375288993.5418.1.camel@gandalf.local.home>
+Subject: Re: [for-next-3.11][PATCH 0/8] ftrace/tracing: Event file fixes and
+ ftrace function hash fixes
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Date: Wed, 31 Jul 2013 12:43:13 -0400
+In-Reply-To: <20130731142236.GA31073@redhat.com>
+References: <20130730112718.273490378@goodmis.org>
+	 <20130731114722.GA4416@redhat.com>
+	 <1375279617.19999.1.camel@gandalf.local.home>
+	 <20130731142236.GA31073@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31 July 2013 22:06, Sachin Kamat <sachin.kamat@linaro.org> wrote:
-> Hi Viresh,
->
-> On 31 July 2013 19:49, Viresh Kumar <viresh.kumar@linaro.org> wrote:
->> CPUFreq core does following at multiple places:
->> module_{get|put}(cpufreq_driver->owner)).
->>
->> This is done to make sure module doesn't get unloaded if it is currently in use.
->> This will work only if the .owner field of cpufreq driver is initialized with a
->> valid pointer.
->>
->> This field wasn't initialized for many cpufreq driver, lets initialize it with
->> THIS_MODULE.
->
->
-> Isn't it possible to do this inside cpufreq_register_driver function
-> in a similar way as done for platform_driver_register [1].
->
-> [1] https://lkml.org/lkml/2013/5/25/5
+On Wed, 2013-07-31 at 16:22 +0200, Oleg Nesterov wrote:
 
-Don't know if its possible to set it to something other than THIS_MODULE.
-In which case we want something else to be done.
+> That patch fixes the buggy debugfs_remove_recursive() and nothing else.
+
+Cool, I just pulled it in, and added your test case as part of my test
+suite.
+
+> 
+> The test-case from the changelog can trigger the problem with or without
+> the recent changes. You can't (I hope) crash the kernel this way after
+> these changes, but the undeleted directory is still obviously bad.
+> 
+> Just I think that "open/delete fixes" is not complete without this fix.
+
+OK, I'll start running it through my tests and I'll be pushing it out
+later today. I'm still waiting on a "tested-by" for one of my other
+patches.
+
+Thanks!
+
+-- Steve
+
+
