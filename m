@@ -1,194 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758854Ab3GaCa7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 22:30:59 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:33927 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751428Ab3GaCa5 (ORCPT
+	id S1758881Ab3GaCdt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 22:33:49 -0400
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:37362 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751600Ab3GaCdr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 22:30:57 -0400
-Date: Wed, 31 Jul 2013 10:30:41 +0800 (CST)
-From: Xiong Zhou <jencce.kernel@gmail.com>
-X-X-Sender: zx@M2420
-To: Peng Tao <bergwolf@gmail.com>
-cc: Xiong Zhou <jencce.kernel@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andreas Dilger <andreas.dilger@intel.com>,
-        Paul Bolle <pebolle@tiscali.nl>, Jiri Kosina <trivial@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>
-Subject: Re: [PATCH v2] staging/lustre: lloop depends on BLOCK
-In-Reply-To: <CA+a=Yy4FAOhKkwgzuCj-rtd9rE2jc8WOf=E8OMQ=o=JUrGgW1w@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1307311028001.25194@M2420>
-References: <alpine.DEB.2.02.1307300827010.2625@M2420> <CA+a=Yy4FAOhKkwgzuCj-rtd9rE2jc8WOf=E8OMQ=o=JUrGgW1w@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 30 Jul 2013 22:33:47 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <Pine.LNX.4.44L0.1307301320360.1105-100000@iolanthe.rowland.org>
+References: <1375204090-27465-1-git-send-email-jwerner@chromium.org>
+	<Pine.LNX.4.44L0.1307301320360.1105-100000@iolanthe.rowland.org>
+Date: Tue, 30 Jul 2013 19:33:46 -0700
+X-Google-Sender-Auth: -vSTCw8Uq-KpHjhbk7S1Yv9pOKc
+Message-ID: <CAODwPW8ZRpVPWKp0Eda4GDhNHiBqcWECW7d69H_oi4UoFQL_NQ@mail.gmail.com>
+Subject: Re: [PATCH] usb: core: don't try to reset_device() a port that got
+ just disconnected
+From: Julius Werner <jwerner@chromium.org>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Julius Werner <jwerner@chromium.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-usb@vger.kernel.org,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Vincent Palatin <vpalatin@chromium.org>,
+        Benson Leung <bleung@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> Wait a moment.  Why does each of these attempts lead to a 5-second
+> timeout?  Why don't they fail immediately?
 
+Now that you mention it, that's a very good question. The kernel
+enqueues a control transfer to the now disconnected address because
+it's internal bookkeeping is not yet updated, but I guess that should
+usually fail very fast from an xHC-internal transaction timeout. I
+have now tried to debug the cause of this: I see the transfer being
+enqueued and the doorbell triggered, but never get a transfer event
+back from it (until the software timeout calls usb_kill_urb() which
+stops the endpoint). With the same setup on a PantherPoint system I
+get the same U1/U2 disable control messages on unplugging, but they
+fail within <5ms with a transaction error... so I guess this must be a
+LynxPoint hardware bug.
 
-On Tue, 30 Jul 2013, Peng Tao wrote:
+Regardless, calling usb_reset_device() is still wrong and will at
+least lead to pointless transfer attempts and error messages, so I
+think my patch still has merit.
 
-> On Tue, Jul 30, 2013 at 8:29 AM, Xiong Zhou <jencce.kernel@gmail.com> wrote:
-> > From: Xiong Zhou <jencce.kernel@gmail.com>
-> >
-> > In the lustre client driver, lloop depends on BLOCK. Add an
-> > option for this dependence. Last version of this patch makes
-> > LUSTRE_FS depends on BLOCK.
-> > Remove unnecessary jdb head files which depends on BLOCK.
-> >
-> Thanks for the patch. One minor comment below. Other than that, you can add
-> Reviewed-by: Peng Tao <tao.peng@emc.com>
-> 
-> > Signed-off-by: Xiong Zhou <jencce.kernel@gmail.com>
-> > ---
-> >  drivers/staging/lustre/lustre/Kconfig              |    7 ++++++-
-> >  drivers/staging/lustre/lustre/fld/fld_cache.c      |    1 -
-> >  drivers/staging/lustre/lustre/fld/fld_request.c    |    1 -
-> >  .../lustre/lustre/include/linux/lustre_compat25.h  |    2 ++
-> >  drivers/staging/lustre/lustre/llite/Makefile       |    2 +-
-> >  drivers/staging/lustre/lustre/lvfs/fsfilt.c        |    1 -
-> >  6 files changed, 9 insertions(+), 5 deletions(-)
-> >
-> >  #define TREE_READ_UNLOCK_IRQ(mapping)  spin_unlock_irq(&(mapping)->tree_lock)
-> >
-> > +#ifdef CONFIG_BLOCK
-> >  static inline
-> >  int ll_unregister_blkdev(unsigned int dev, const char *name)
-> It is better to remove the wrapper and just call unregister_blkdev in
-> lloop.c. The wrapper exists to support old kernels in Lustre master
-> but doesn't make sense in upstream kernel.
-> 
-> Thanks,
-> Tao
-> 
+> What will happen here if udev is NULL?  Maybe you should change the
+> test to (!udev || !(portstatus & ...)).
 
-Good comment, Thanks for the review.
-
-
-
-From: Xiong Zhou <jencce.kernel@gmail.com>
-
-First version of this patch makes LUSTRE_FS depends on BLOCK.
-Second version makes only lloop depends on BLOCK with a config
-option for this dependence, and remove unnecessary jdb header
-files which depends on BLOCK.
-This version removes the wrapper ll_unregister_blkdev which 
-depends on BLOCK in header and just call unregister_blkdev in 
-lloop.c based on Peng Tao's comment.
-
-Signed-off-by: Xiong Zhou <jencce.kernel@gmail.com>
-Reviewed-by: Peng Tao <tao.peng@emc.com>
----
- drivers/staging/lustre/lustre/Kconfig              |    7 ++++++-
- drivers/staging/lustre/lustre/fld/fld_cache.c      |    1 -
- drivers/staging/lustre/lustre/fld/fld_request.c    |    1 -
- .../lustre/lustre/include/linux/lustre_compat25.h  |    7 -------
- drivers/staging/lustre/lustre/llite/Makefile       |    2 +-
- drivers/staging/lustre/lustre/llite/lloop.c        |    6 ++----
- drivers/staging/lustre/lustre/lvfs/fsfilt.c        |    1 -
- 7 files changed, 9 insertions(+), 16 deletions(-)
-
-diff --git a/drivers/staging/lustre/lustre/Kconfig b/drivers/staging/lustre/lustre/Kconfig
-index 0b45de0..4e898e4 100644
---- a/drivers/staging/lustre/lustre/Kconfig
-+++ b/drivers/staging/lustre/lustre/Kconfig
-@@ -1,6 +1,6 @@
- config LUSTRE_FS
- 	tristate "Lustre file system client support"
--	depends on STAGING && INET && BLOCK && m
-+	depends on INET && m
- 	select LNET
- 	select CRYPTO
- 	select CRYPTO_CRC32
-@@ -53,3 +53,8 @@ config LUSTRE_TRANSLATE_ERRNOS
- 	bool
- 	depends on LUSTRE_FS && !X86
- 	default true
-+
-+config LUSTRE_LLITE_LLOOP
-+	bool "Lustre virtual block device"
-+	depends on LUSTRE_FS && BLOCK
-+	default m
-diff --git a/drivers/staging/lustre/lustre/fld/fld_cache.c b/drivers/staging/lustre/lustre/fld/fld_cache.c
-index 347f2ae..8410107 100644
---- a/drivers/staging/lustre/lustre/fld/fld_cache.c
-+++ b/drivers/staging/lustre/lustre/fld/fld_cache.c
-@@ -45,7 +45,6 @@
- 
- # include <linux/libcfs/libcfs.h>
- # include <linux/module.h>
--# include <linux/jbd.h>
- # include <asm/div64.h>
- 
- #include <obd.h>
-diff --git a/drivers/staging/lustre/lustre/fld/fld_request.c b/drivers/staging/lustre/lustre/fld/fld_request.c
-index c99b945..049322a 100644
---- a/drivers/staging/lustre/lustre/fld/fld_request.c
-+++ b/drivers/staging/lustre/lustre/fld/fld_request.c
-@@ -44,7 +44,6 @@
- 
- # include <linux/libcfs/libcfs.h>
- # include <linux/module.h>
--# include <linux/jbd.h>
- # include <asm/div64.h>
- 
- #include <obd.h>
-diff --git a/drivers/staging/lustre/lustre/include/linux/lustre_compat25.h b/drivers/staging/lustre/lustre/include/linux/lustre_compat25.h
-index 426533b..018e604 100644
---- a/drivers/staging/lustre/lustre/include/linux/lustre_compat25.h
-+++ b/drivers/staging/lustre/lustre/include/linux/lustre_compat25.h
-@@ -111,13 +111,6 @@ static inline void ll_set_fs_pwd(struct fs_struct *fs, struct vfsmount *mnt,
- #define TREE_READ_LOCK_IRQ(mapping)	spin_lock_irq(&(mapping)->tree_lock)
- #define TREE_READ_UNLOCK_IRQ(mapping)	spin_unlock_irq(&(mapping)->tree_lock)
- 
--static inline
--int ll_unregister_blkdev(unsigned int dev, const char *name)
--{
--	unregister_blkdev(dev, name);
--	return 0;
--}
--
- #define ll_invalidate_bdev(a,b)	 invalidate_bdev((a))
- 
- #ifndef FS_HAS_FIEMAP
-diff --git a/drivers/staging/lustre/lustre/llite/Makefile b/drivers/staging/lustre/lustre/llite/Makefile
-index dff0c04..f493e07 100644
---- a/drivers/staging/lustre/lustre/llite/Makefile
-+++ b/drivers/staging/lustre/lustre/llite/Makefile
-@@ -1,5 +1,5 @@
- obj-$(CONFIG_LUSTRE_FS) += lustre.o
--obj-$(CONFIG_LUSTRE_FS) += llite_lloop.o
-+obj-$(CONFIG_LUSTRE_LLITE_LLOOP) += llite_lloop.o
- lustre-y := dcache.o dir.o file.o llite_close.o llite_lib.o llite_nfs.o \
- 	    rw.o lproc_llite.o namei.o symlink.o llite_mmap.o \
- 	    xattr.o remote_perm.o llite_rmtacl.o llite_capa.o \
-diff --git a/drivers/staging/lustre/lustre/llite/lloop.c b/drivers/staging/lustre/lustre/llite/lloop.c
-index e063efc..ae3dc9d 100644
---- a/drivers/staging/lustre/lustre/llite/lloop.c
-+++ b/drivers/staging/lustre/lustre/llite/lloop.c
-@@ -848,10 +848,8 @@ static void lloop_exit(void)
- 		blk_cleanup_queue(loop_dev[i].lo_queue);
- 		put_disk(disks[i]);
- 	}
--	if (ll_unregister_blkdev(lloop_major, "lloop"))
--		CWARN("lloop: cannot unregister blkdev\n");
--	else
--		CDEBUG(D_CONFIG, "unregistered lloop major %d\n", lloop_major);
-+
-+	unregister_blkdev(lloop_major, "lloop");
- 
- 	OBD_FREE(disks, max_loop * sizeof(*disks));
- 	OBD_FREE(loop_dev, max_loop * sizeof(*loop_dev));
-diff --git a/drivers/staging/lustre/lustre/lvfs/fsfilt.c b/drivers/staging/lustre/lustre/lvfs/fsfilt.c
-index 064445c..ce71f80 100644
---- a/drivers/staging/lustre/lustre/lvfs/fsfilt.c
-+++ b/drivers/staging/lustre/lustre/lvfs/fsfilt.c
-@@ -35,7 +35,6 @@
- #define DEBUG_SUBSYSTEM S_FILTER
- 
- #include <linux/fs.h>
--#include <linux/jbd.h>
+Right... I'm not sure if that can happen in practice, but I'll change
+it just in case.
