@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760445Ab3GaOVH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 10:21:07 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:50552 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760413Ab3GaOVC (ORCPT
+	id S1760466Ab3GaOVP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 10:21:15 -0400
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:39639 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760447Ab3GaOVL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 10:21:02 -0400
+	Wed, 31 Jul 2013 10:21:11 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, arnd.bergmann@linaro.org,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: [PATCH 11/15] cpufreq: s5pv210: initialize .owner field with THIS_MODULE
-Date: Wed, 31 Jul 2013 19:49:20 +0530
-Message-Id: <702cbf98ff441665e43b9572c16f2cb71f50c3c1.1375279948.git.viresh.kumar@linaro.org>
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH 12/15] cpufreq: sa11**: initialize .owner field with THIS_MODULE
+Date: Wed, 31 Jul 2013 19:49:21 +0530
+Message-Id: <24a297bc16b61b2577266b8a8f4ab2ac7b83f03d.1375279948.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1375279948.git.viresh.kumar@linaro.org>
 References: <cover.1375279948.git.viresh.kumar@linaro.org>
@@ -36,24 +35,36 @@ valid pointer.
 This field wasn't initialized for this driver, lets initialize it with
 THIS_MODULE.
 
-Cc: Kukjin Kim <kgene.kim@samsung.com>
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/cpufreq/s5pv210-cpufreq.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/cpufreq/sa1100-cpufreq.c | 1 +
+ drivers/cpufreq/sa1110-cpufreq.c | 1 +
+ 2 files changed, 2 insertions(+)
 
-diff --git a/drivers/cpufreq/s5pv210-cpufreq.c b/drivers/cpufreq/s5pv210-cpufreq.c
-index 5c77570..9ebad24 100644
---- a/drivers/cpufreq/s5pv210-cpufreq.c
-+++ b/drivers/cpufreq/s5pv210-cpufreq.c
-@@ -609,6 +609,7 @@ static struct cpufreq_driver s5pv210_driver = {
- 	.target		= s5pv210_target,
- 	.get		= s5pv210_getspeed,
- 	.init		= s5pv210_cpu_init,
+diff --git a/drivers/cpufreq/sa1100-cpufreq.c b/drivers/cpufreq/sa1100-cpufreq.c
+index cff18e8..f41dbd7 100644
+--- a/drivers/cpufreq/sa1100-cpufreq.c
++++ b/drivers/cpufreq/sa1100-cpufreq.c
+@@ -233,6 +233,7 @@ static struct cpufreq_driver sa1100_driver __refdata = {
+ 	.target		= sa1100_target,
+ 	.get		= sa11x0_getspeed,
+ 	.init		= sa1100_cpu_init,
 +	.owner		= THIS_MODULE,
- 	.name		= "s5pv210",
- #ifdef CONFIG_PM
- 	.suspend	= s5pv210_cpufreq_suspend,
+ 	.name		= "sa1100",
+ };
+ 
+diff --git a/drivers/cpufreq/sa1110-cpufreq.c b/drivers/cpufreq/sa1110-cpufreq.c
+index 39c90b6..61627fb 100644
+--- a/drivers/cpufreq/sa1110-cpufreq.c
++++ b/drivers/cpufreq/sa1110-cpufreq.c
+@@ -349,6 +349,7 @@ static struct cpufreq_driver sa1110_driver __refdata = {
+ 	.target		= sa1110_target,
+ 	.get		= sa11x0_getspeed,
+ 	.init		= sa1110_cpu_init,
++	.owner		= THIS_MODULE,
+ 	.name		= "sa1110",
+ };
+ 
 -- 
 1.7.12.rc2.18.g61b472e
 
