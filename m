@@ -1,56 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759714Ab3GaQ2b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 12:28:31 -0400
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:34671 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756874Ab3GaQ21 (ORCPT
+	id S1760091Ab3GaQ35 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 12:29:57 -0400
+Received: from up.free-electrons.com ([94.23.35.102]:48670 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752816Ab3GaQ3z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 12:28:27 -0400
-Message-ID: <51F93B28.3030001@gmail.com>
-Date: Wed, 31 Jul 2013 11:28:24 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Grant Likely <grant.likely@linaro.org>,
-        George Cherian <george.cherian@ti.com>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, Felipe Balbi <balbi@ti.com>,
-        Roger Quadros <rogerq@ti.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Vivek Gautam <gautam.vivek@samsung.com>
-Subject: Re: [PATCH] of: provide of_platform_unpopulate()
-References: <1374257691-31981-1-git-send-email-bigeasy@linutronix.de>  <51EBF33A.4050207@gmail.com> <51EC4908.4040504@gmail.com>  <CACxGe6sqv2Wsp26MWqqs9W_eWO3tjs-+2z3z8fC=2fe-BjJvkA@mail.gmail.com> <1375090382.3859.38.camel@pasglop>
-In-Reply-To: <1375090382.3859.38.camel@pasglop>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
+	Wed, 31 Jul 2013 12:29:55 -0400
+Date: Wed, 31 Jul 2013 18:29:19 +0200
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Tomasz Figa <tomasz.figa@gmail.com>
+Cc: "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Domenico Andreoli <cavokz@gmail.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Dave P Martin <Dave.Martin@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Richard Cochran <richardcochran@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        "ksummit-2013-discuss@lists.linuxfoundation.org" 
+	<ksummit-2013-discuss@lists.linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Ksummit-2013-discuss] Defining schemas for Device Tree
+Message-ID: <20130731182919.1168b88e@skate>
+In-Reply-To: <2300415.ZNNddtVGav@thinkpad>
+References: <1706112.Xn49tiCSKF@thinkpad>
+	<20130731113401.GM9858@sirena.org.uk>
+	<CAKON4OyQUcqw1RFcWj3uy0i2i+3UBB8fG1rPw6tcrMGDZ40y6g@mail.gmail.com>
+	<2300415.ZNNddtVGav@thinkpad>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.9.1 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/29/2013 04:33 AM, Benjamin Herrenschmidt wrote:
-> On Mon, 2013-07-22 at 00:44 +0100, Grant Likely wrote:
->>> BTW, it looks like Grant has attempted this already:
->>
->> Yup, things broke badly. Unfortunately the of_platform_device and
->> platform_device history doesn't treat resources in the same way. I
->> would like to merge the code, but I haven't been able to figure out a
->> clean way to do it. Looks like we do need the unpopulate function.
+Dear Tomasz Figa,
+
+On Wed, 31 Jul 2013 14:21:49 +0200, Tomasz Figa wrote:
+
+> u-boot still does not have generic driver model or at least did not have when 
+> I last checked it not so long ago, so it seems like there is still long way to 
+> go for using FDT as source of information about hardware in u-boot.
 > 
-> What is the exact problem Grant ? Care to give me an example ?
-> 
+> barebox [1], aka u-boot-v2, might be closer to this approach (it might be 
+> already using it, but this needs to be checked) as it already has generic 
+> driver model and support for DT.
 
-See this thread:
+There are already some platforms in Barebox that are using the Device
+Tree. For example, the basic Marvell platforms support in Barebox now
+uses the Device Tree.
 
-http://www.mail-archive.com/linuxppc-dev@lists.ozlabs.org/msg63678.html
+Best regards,
 
-Rob
-
+Thomas
+-- 
+Thomas Petazzoni, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
