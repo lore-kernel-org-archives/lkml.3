@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759855Ab3GaNpa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 09:45:30 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46948 "EHLO
+	id S1760212Ab3GaNp4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 09:45:56 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46861 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759655Ab3GaNZr (ORCPT
+	by vger.kernel.org with ESMTP id S1754689Ab3GaNZq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 09:25:47 -0400
+	Wed, 31 Jul 2013 09:25:46 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Oskar Andero" <oskar.andero@sonymobile.com>,
-        "Matthew Dharm" <mdharm-usb@one-eyed-alien.net>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Ren Bigcren" <bigcren.ren@sonymobile.com>
+CC: akpm@linux-foundation.org, "Dave Jones" <davej@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
 Date: Wed, 31 Jul 2013 15:23:09 +0200
-Message-ID: <lsq.1375276989.751223647@decadent.org.uk>
+Message-ID: <lsq.1375276989.208160707@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [58/84] USB: storage: Add MicroVault Flash Drive to unusual_devs
+Subject: [08/84] x25: Fix broken locking in ioctl error paths.
 In-Reply-To: <lsq.1375276989.251749228@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.216.67.181
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,36 +31,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ren Bigcren <bigcren.ren@sonymobile.com>
+From: Dave Jones <davej@redhat.com>
 
-commit e7a6121f4929c17215f0cdca3726f4bf3e4e9529 upstream.
+[ Upstream commit 4ccb93ce7439b63c31bc7597bfffd13567fa483d ]
 
-The device report an error capacity when read_capacity_16().
-Using read_capacity_10() can get the correct capacity.
+Two of the x25 ioctl cases have error paths that break out of the function without
+unlocking the socket, leading to this warning:
 
-Signed-off-by: Ren Bigcren <bigcren.ren@sonymobile.com>
-Cc: Matthew Dharm <mdharm-usb@one-eyed-alien.net>
-Signed-off-by: Oskar Andero <oskar.andero@sonymobile.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+================================================
+[ BUG: lock held when returning to user space! ]
+3.10.0-rc7+ #36 Not tainted
+------------------------------------------------
+trinity-child2/31407 is leaving the kernel with locks still held!
+1 lock held by trinity-child2/31407:
+ #0:  (sk_lock-AF_X25){+.+.+.}, at: [<ffffffffa024b6da>] x25_ioctl+0x8a/0x740 [x25]
+
+Signed-off-by: Dave Jones <davej@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/storage/unusual_devs.h | 7 +++++++
- 1 file changed, 7 insertions(+)
+ net/x25/af_x25.c | 15 ++++++++-------
+ 1 file changed, 8 insertions(+), 7 deletions(-)
 
---- a/drivers/usb/storage/unusual_devs.h
-+++ b/drivers/usb/storage/unusual_devs.h
-@@ -657,6 +657,13 @@ UNUSUAL_DEV(  0x054c, 0x016a, 0x0000, 0x
- 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
- 		US_FL_FIX_INQUIRY ),
+diff --git a/net/x25/af_x25.c b/net/x25/af_x25.c
+index 3e16c6a..dc24ba9 100644
+--- a/net/x25/af_x25.c
++++ b/net/x25/af_x25.c
+@@ -1586,11 +1586,11 @@ out_cud_release:
+ 	case SIOCX25CALLACCPTAPPRV: {
+ 		rc = -EINVAL;
+ 		lock_sock(sk);
+-		if (sk->sk_state != TCP_CLOSE)
+-			break;
+-		clear_bit(X25_ACCPT_APPRV_FLAG, &x25->flags);
++		if (sk->sk_state == TCP_CLOSE) {
++			clear_bit(X25_ACCPT_APPRV_FLAG, &x25->flags);
++			rc = 0;
++		}
+ 		release_sock(sk);
+-		rc = 0;
+ 		break;
+ 	}
  
-+/* Submitted by Ren Bigcren <bigcren.ren@sonymobile.com> */
-+UNUSUAL_DEV(  0x054c, 0x02a5, 0x0100, 0x0100,
-+		"Sony Corp.",
-+		"MicroVault Flash Drive",
-+		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
-+		US_FL_NO_READ_CAPACITY_16 ),
-+
- /* floppy reports multiple luns */
- UNUSUAL_DEV(  0x055d, 0x2020, 0x0000, 0x0210,
- 		"SAMSUNG",
+@@ -1598,14 +1598,15 @@ out_cud_release:
+ 		rc = -EINVAL;
+ 		lock_sock(sk);
+ 		if (sk->sk_state != TCP_ESTABLISHED)
+-			break;
++			goto out_sendcallaccpt_release;
+ 		/* must call accptapprv above */
+ 		if (test_bit(X25_ACCPT_APPRV_FLAG, &x25->flags))
+-			break;
++			goto out_sendcallaccpt_release;
+ 		x25_write_internal(sk, X25_CALL_ACCEPTED);
+ 		x25->state = X25_STATE_3;
+-		release_sock(sk);
+ 		rc = 0;
++out_sendcallaccpt_release:
++		release_sock(sk);
+ 		break;
+ 	}
+ 
 
