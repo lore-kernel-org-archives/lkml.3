@@ -1,51 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759201Ab3GaHiK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 03:38:10 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:28482 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758125Ab3GaHiI (ORCPT
+	id S1755270Ab3GaHsw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 03:48:52 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:39903 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754260Ab3GaHsu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 03:38:08 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+rnCnpB4579PxgTYfbOqRi
-Date: Wed, 31 Jul 2013 00:38:03 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: ksummit-2013-discuss@lists.linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [ATTEND] [ARM ATTEND] kernel data bloat and how to avoid it
-Message-ID: <20130731073802.GT7656@atomide.com>
+	Wed, 31 Jul 2013 03:48:50 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1375253182.8289.3.camel@jlt4.sipsolutions.net>
+References: <1375114325-25498-1-git-send-email-hector.palacios@digi.com>
+ <5438CD3C-E28C-485C-94B8-F743E8B13D4A@holtmann.org> <51F7722E.9050708@digi.com>
+ <20130730205601.GI17130@pogo> <2C94C740-76BA-4058-B0D7-C37D44875CA1@holtmann.org>
+ <20130730224809.GN17130@pogo> <1375253182.8289.3.camel@jlt4.sipsolutions.net>
+From: "Luis R. Rodriguez" <rodrigue@qca.qualcomm.com>
+Date: Wed, 31 Jul 2013 00:48:28 -0700
+X-Google-Sender-Auth: fnBo443c5Uv2vIuHSKLkbxJDQMk
+Message-ID: <CAB=NE6XOe2fXs-ZVWikxVj2zKuPN2VLaX6PMTYEP4mKb7+5cqA@mail.gmail.com>
+Subject: Re: ROM Patching (was: [PATCH] bluetooth: remove wrong dependency for BT_ATH3K)
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: Marcel Holtmann <marcel@holtmann.org>,
+        Hector Palacios <hector.palacios@digi.com>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        "linux-bluetooth@vger.kernel.org" <linux-bluetooth@vger.kernel.org>,
+        "gustavo@padovan.org" <gustavo@padovan.org>,
+        "johan.hedberg@gmail.com" <johan.hedberg@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "surajs@qca.qualcomm.com" <surajs@qca.qualcomm.com>,
+        jjohnson@qca.qualcomm.com, Adrian Chadd <adrian@freebsd.org>,
+        ddahlby@qca.qualcomm.com, Ben Hutchings <ben@decadent.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Tue, Jul 30, 2013 at 11:46 PM, Johannes Berg
+<johannes@sipsolutions.net> wrote:
+> On Tue, 2013-07-30 at 15:48 -0700, Luis R. Rodriguez wrote:
+>
+>> Neat. Perhaps we need something that we can share with 802.11 or other
+>> hardare I highly doubt we're the only ones patching ROM. Don't we even
+>> patch up core CPUs? I'm wondering if firmware_class could be expanded to
+>> support serialized ROM patching. The biggest hurdle I see with splititng
+>> ROM patching from a single firmware is serializing that, addressing
+>> revision dependencies and of course kernel dependencies.
+>
+> I don't really see what you're trying to get it so I arbitrarily picked
+> this ...
+>
+> I think "ROM patching" like in BT and 802.11 are two completely
+> different things. In BT at least you have a common transport to the
+> device, a more-or-less common command set (HCI) etc.
 
-Probably the biggest kernel data bloat issue is in the ARM land, but
-it also seems that it's becoming a Linux generic issue too, so I
-guess it could be discussed in either context.
+Sure.
 
-The kernel data bloat issue is slightly related to the devicetree talks
-as well as I'm seeing a lot of the device tree bindings heading the wrong
-way both at the binding level and the device driver level.
+> None of that exists
+> for wireless (today) so trying to find common ground between firmware
+> (patches) for different 802.11 hardware seems completely futile?
 
-Basically the data bloat issue is there for the arch code and drivers
-and may not show up initially until things have headed the wrong way for
-too long.
+So long as we can gaurantee mobile drivers get fw updated as much as
+is really needed in the industry great.
 
-After struggling with the data issues in the ARM land over past few
-years, I think we have now pretty good idea how to spot the issues
-early and avoid building databases into Linux kernel.
-
-So some kind of discussion on data bloat and how to avoid it might be
-interesting to a bunch of maintainers?
-
-Regards,
-
-Tony
+  Luis
