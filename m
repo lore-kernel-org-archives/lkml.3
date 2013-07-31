@@ -1,171 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760217Ab3GaTEA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 15:04:00 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:25336 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753245Ab3GaTD7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 15:03:59 -0400
-X-IronPort-AV: E=Sophos;i="4.89,788,1367971200"; 
-   d="scan'208";a="40568563"
-Date: Wed, 31 Jul 2013 20:03:46 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <konrad.wilk@oracle.com>,
-        <Ian.Campbell@citrix.com>, <david.vrabel@citrix.com>
-Subject: Re: [PATCH RFC 7/8] swiotlb-xen: support autotranslate guests
-In-Reply-To: <1375292732-7627-7-git-send-email-stefano.stabellini@eu.citrix.com>
-Message-ID: <alpine.DEB.2.02.1307312001450.4893@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1307311833040.4893@kaball.uk.xensource.com> <1375292732-7627-7-git-send-email-stefano.stabellini@eu.citrix.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1759487Ab3GaTM2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 15:12:28 -0400
+Received: from mail-ea0-f170.google.com ([209.85.215.170]:50766 "EHLO
+	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754168Ab3GaTM0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 15:12:26 -0400
+Date: Wed, 31 Jul 2013 21:12:09 +0200
+From: Richard Cochran <richardcochran@gmail.com>
+To: Tomasz Figa <tomasz.figa@gmail.com>
+Cc: mbizon@freebox.fr, Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "ksummit-2013-discuss@lists.linuxfoundation.org" 
+	<ksummit-2013-discuss@lists.linuxfoundation.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Domenico Andreoli <cavokz@gmail.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Olof Johansson <olof@lixom.net>, Mark Brown <broonie@kernel.org>,
+        Arend van Spriel <arend@broadcom.com>,
+        Dave P Martin <Dave.Martin@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [Ksummit-2013-discuss] DT bindings as ABI [was: Do we have
+ people interested in device tree janitoring / cleanup?]
+Message-ID: <20130731191209.GA8027@netboy>
+References: <20130725175702.GC22291@e106331-lin.cambridge.arm.com>
+ <1479410.BSGDrOcRvP@thinkpad>
+ <20130731150717.GD4904@netboy>
+ <1999586.84BnWE5EUh@thinkpad>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1999586.84BnWE5EUh@thinkpad>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 31 Jul 2013, Stefano Stabellini wrote:
-> Support autotranslate guests in swiotlb-xen by keeping track of the
-> phys-to-bus and bus-to-phys mappings of the swiotlb buffer
-> (xen_io_tlb_start-xen_io_tlb_end).
+On Wed, Jul 31, 2013 at 05:23:35PM +0200, Tomasz Figa wrote:
 > 
-> Use a simple direct access on a pre-allocated array for phys-to-bus
-> queries. Use a red-black tree for bus-to-phys queries.
+> I said it many, many times, that a) and b) I proposed are just two extremes. 
+> It is unlikely that an extreme solution will be the best option to choose. I 
+> am strongly for something in the middle, just like I wrote in several of my 
+> previous replies.
 > 
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> CC: david.vrabel@citrix.com
-> ---
->  drivers/xen/swiotlb-xen.c |  127 +++++++++++++++++++++++++++++++++++++++------
->  1 files changed, 111 insertions(+), 16 deletions(-)
-> 
-> diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
-> index 353f013..c79ac88 100644
-> --- a/drivers/xen/swiotlb-xen.c
-> +++ b/drivers/xen/swiotlb-xen.c
-> @@ -38,32 +38,116 @@
->  #include <linux/bootmem.h>
->  #include <linux/dma-mapping.h>
->  #include <linux/export.h>
-> +#include <linux/slab.h>
-> +#include <linux/spinlock_types.h>
-> +#include <linux/rbtree.h>
->  #include <xen/swiotlb-xen.h>
->  #include <xen/page.h>
->  #include <xen/xen-ops.h>
->  #include <xen/hvc-console.h>
-> +#include <xen/features.h>
->  /*
->   * Used to do a quick range check in swiotlb_tbl_unmap_single and
->   * swiotlb_tbl_sync_single_*, to see if the memory was in fact allocated by this
->   * API.
->   */
->  
-> +#define NR_DMA_SEGS  ((xen_io_tlb_nslabs + IO_TLB_SEGSIZE - 1) / IO_TLB_SEGSIZE)
->  static char *xen_io_tlb_start, *xen_io_tlb_end;
->  static unsigned long xen_io_tlb_nslabs;
->  /*
->   * Quick lookup value of the bus address of the IOTLB.
->   */
->  
-> -static u64 start_dma_addr;
-> +struct xen_dma{
-> +	dma_addr_t dma_addr;
-> +	phys_addr_t phys_addr;
-> +	size_t size;
-> +	struct rb_node rbnode;
-> +};
-> +
-> +static struct xen_dma *xen_dma_seg;
-> +static struct rb_root bus_to_phys = RB_ROOT;
-> +static DEFINE_SPINLOCK(xen_dma_lock);
-> +
-> +static void xen_dma_insert(struct xen_dma *entry)
-> +{
-> +	struct rb_node **link = &bus_to_phys.rb_node;
-> +	struct rb_node *parent = NULL;
-> +	struct xen_dma *e;
-> +
-> +	spin_lock(&xen_dma_lock);
-> +
-> +	while (*link) {
-> +		parent = *link;
-> +		e = rb_entry(parent, struct xen_dma, rbnode);
-> +
-> +		WARN_ON(entry->dma_addr == e->dma_addr);
-> +
-> +		if (entry->dma_addr < e->dma_addr)
-> +			link = &(*link)->rb_left;
-> +		else
-> +			link = &(*link)->rb_right;
-> +	}
-> +	rb_link_node(&entry->rbnode, parent, link);
-> +	rb_insert_color(&entry->rbnode, &bus_to_phys);
-> +
-> +	spin_unlock(&xen_dma_lock);
-> +}
-> +
-> +static struct xen_dma *xen_dma_retrieve(dma_addr_t dma_addr)
-> +{
-> +	struct rb_node *n = bus_to_phys.rb_node;
-> +	struct xen_dma *e;
-> +	
-> +	spin_lock(&xen_dma_lock);
-> +
-> +	while (n) {
-> +		e = rb_entry(n, struct xen_dma, rbnode);
-> +		if (e->dma_addr <= dma_addr && e->dma_addr + e->size > dma_addr) {
-> +			spin_unlock(&xen_dma_lock);
-> +			return e;
-> +		}
-> +		if (dma_addr < e->dma_addr)
-> +			n = n->rb_left;
-> +		else
-> +			n = n->rb_right;
-> +	}
-> +
-> +	spin_unlock(&xen_dma_lock);
-> +	return NULL;
-> +}
->  
->  static dma_addr_t xen_phys_to_bus(phys_addr_t paddr)
->  {
-> -	return phys_to_machine(XPADDR(paddr)).maddr;
-> +	int nr_seg;
-> +	unsigned long offset;
-> +	char* vaddr;
-> +
-> +	if (!xen_feature(XENFEAT_auto_translated_physmap))
-> +		return phys_to_machine(XPADDR(paddr)).maddr;
-> +
-> +	vaddr = (char *) phys_to_virt(paddr);
-> +	if (vaddr >= xen_io_tlb_end || vaddr < xen_io_tlb_start)
-> +		return ~0;
-> +
-> +	offset = vaddr - xen_io_tlb_start;
-> +	nr_seg = offset / (IO_TLB_SEGSIZE << IO_TLB_SHIFT);
-> +
-> +	return xen_dma_seg[nr_seg].dma_addr + (paddr & ((IO_TLB_SEGSIZE << IO_TLB_SHIFT) - 1));
+> This is something that should be commented, not those extreme options.
 
-I have just realized that there is a much better way of doing this:
+We are saying that pursuing a) is useless because it adds pain and
+complexity without adding benefit. I simply don't buy your argument
+that DT makes a better platform data, but that is besides the point.
 
-return xen_dma_seg[nr_seg].dma_addr + (paddr - xen_dma_seg[nr_seg].phys_addr);
+I had said, think about the users.  You said, what users?  I wrote a
+clear and concise use case.  You said, lets think about a) and b) and
+all the shades of gray in between.
+
+In order to support the use case, you will have to provide a stable
+ABI. You can't have a compromise solution. At the end of the day,
+either you have a stable ABI, or you don't.
+
+It was apparent to me that the arm/dt thing has been meandering around
+since its inception, but what was surprising is that people were doing
+this on purpose, and now they are defending this. Why can't we get a
+firm commitment on having a stable ABI?
+
+Thanks,
+Richard
 
 
->  }
->  
->  static phys_addr_t xen_bus_to_phys(dma_addr_t baddr)
->  {
-> -	return machine_to_phys(XMADDR(baddr)).paddr;
-> +	if (xen_feature(XENFEAT_auto_translated_physmap))
-> +	{
-> +		struct xen_dma *dma = xen_dma_retrieve(baddr);
-> +		if (dma == NULL)
-> +			return ~0;
-> +		else
-> +			return dma->phys_addr + (baddr & ((IO_TLB_SEGSIZE << IO_TLB_SHIFT) - 1));
-
-same here:
-
-return dma->phys_addr + (baddr - dma->dma_addr);
