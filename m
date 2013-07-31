@@ -1,61 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759433Ab3GaKUi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 06:20:38 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:48694 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754615Ab3GaKUh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 06:20:37 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Mike Turquette <mturquette@linaro.org>, Shawn Guo <shawn.guo@linaro.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-pm@vger.kernel.org
-Subject: Re: [PATCH RFC 3/3] cpufreq: cpufreq-cpu0: clk rate-change notifiers
-Date: Wed, 31 Jul 2013 12:30:45 +0200
-Message-ID: <2244883.xRIZhTlqYe@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAKohpom-8KXixJ0ZbQ7Poh3uqJCqo7LFyYEfYeMyp+yZx9QmHA@mail.gmail.com>
-References: <1373247868-21444-1-git-send-email-mturquette@linaro.org> <20130731014328.5270.4248@quantum> <CAKohpom-8KXixJ0ZbQ7Poh3uqJCqo7LFyYEfYeMyp+yZx9QmHA@mail.gmail.com>
+	id S1759454Ab3GaKVJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 06:21:09 -0400
+Received: from mail-we0-f177.google.com ([74.125.82.177]:49418 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752396Ab3GaKVH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 06:21:07 -0400
+Date: Wed, 31 Jul 2013 11:21:00 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arnd@arndb.de, linus.walleij@stericsson.com,
+        srinidhi.kasagar@stericsson.com
+Subject: Re: [PATCH 01/22] ARM: ux500: Remove '0x's from HREF v60+ DTS file
+Message-ID: <20130731102100.GD13298@lee--X1>
+References: <1374242333-6852-1-git-send-email-lee.jones@linaro.org>
+ <20130730115403.GA29992@amd.pavel.ucw.cz>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130730115403.GA29992@amd.pavel.ucw.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, July 31, 2013 10:09:03 AM Viresh Kumar wrote:
-> On 31 July 2013 07:13, Mike Turquette <mturquette@linaro.org> wrote:
-> > Quoting Viresh Kumar (2013-07-07 21:10:54)
-> >> On Mon, Jul 8, 2013 at 7:14 AM, Mike Turquette <mturquette@linaro.org> wrote:
-> >> > Removes direct handling of OPP tables and voltage regulators by calling
-> >> > of_clk_cpufreq_notifier_handler, introduced by commit "clk: cpufreq
-> >> > helper for voltage scaling".
-> >> >
-> >> > In the future this can help consolidate code found across similar
-> >> > CPUfreq drivers.
-> >> >
-> >> > Signed-off-by: Mike Turquette <mturquette@linaro.org>
-> >> > ---
-> >> >  drivers/cpufreq/cpufreq-cpu0.c | 125 ++++++++---------------------------------
-> >> >  1 file changed, 22 insertions(+), 103 deletions(-)
-> >>
-> >> Good patch, really gets lots of stuff out from cpufreq drivers.
-> >>
-> >> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
-> >
-> > Viresh,
-> >
-> > Thanks for the Ack. I received no comments on this series besides your
-> > own, so I plan to merge it. Do you want to take patch #3, or do you want
-> > me to take it, or should I give you and Rafael a stable branch instead?
+On Tue, 30 Jul 2013, Pavel Machek wrote:
+
+> On Fri 2013-07-19 14:58:32, Lee Jones wrote:
+> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
 > 
-> Its only related to cpufreq-cpu0 and to handle dependencies well they
-> should go through a single tree.. Probably your tree is the right place for
-> now. Rafael?
+> Why?
 
-Yes, the entire series should go through the Mike's tree I think.
+Convention.
 
-Thanks,
-Rafael
+> > diff --git a/arch/arm/boot/dts/hrefv60plus.dts b/arch/arm/boot/dts/hrefv60plus.dts
+> > index 3d580d6..46fd8af 100644
+> > --- a/arch/arm/boot/dts/hrefv60plus.dts
+> > +++ b/arch/arm/boot/dts/hrefv60plus.dts
+> > @@ -26,7 +26,7 @@
+> >  
+> >  	soc {
+> >  		i2c@80110000 {
+> > -			bu21013_tp@0x5c {
+> > +			bu21013_tp@5c {
+> >  				reset-gpio = <&gpio4 15 0x4>;
+> >  			};
+> >  		};
+> 
 
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
