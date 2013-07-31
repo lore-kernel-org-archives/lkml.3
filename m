@@ -1,169 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759524Ab3GaL50 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 07:57:26 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58648 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751098Ab3GaL5Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 07:57:24 -0400
-Date: Wed, 31 Jul 2013 12:57:19 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/18] Basic scheduler support for automatic NUMA
- balancing V5
-Message-ID: <20130731115719.GT2296@suse.de>
-References: <1373901620-2021-1-git-send-email-mgorman@suse.de>
- <20130725103620.GM27075@twins.programming.kicks-ass.net>
- <20130731103052.GR2296@suse.de>
- <20130731104814.GA3008@twins.programming.kicks-ass.net>
+	id S1759639Ab3GaL6l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 07:58:41 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:50027 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751098Ab3GaL6j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 07:58:39 -0400
+Message-ID: <51F8FBC4.1040009@ti.com>
+Date: Wed, 31 Jul 2013 06:57:56 -0500
+From: Nishanth Menon <nm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20130731104814.GA3008@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Bill Huang <bilhuang@nvidia.com>
+CC: <sameo@linux.intel.com>, <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
+        <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
+        <ian.campbell@citrix.com>, <rob@landley.net>, <lee.jones@linaro.org>,
+        <broonie@linaro.org>, <j-keerthy@ti.com>, <grant.likely@linaro.org>,
+        <ian@slimlogic.co.uk>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Mallikarjun Kasoju <mkasoju@nvidia.com>
+Subject: Re: [PATCH v2 1/1] mfd: palmas: Add power off control
+References: <1375255037-10024-1-git-send-email-bilhuang@nvidia.com>
+In-Reply-To: <1375255037-10024-1-git-send-email-bilhuang@nvidia.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 31, 2013 at 12:48:14PM +0200, Peter Zijlstra wrote:
-> On Wed, Jul 31, 2013 at 11:30:52AM +0100, Mel Gorman wrote:
-> > I'm not sure I understand your point. The scan rate is decreased again if
-> > the page is found to be properly placed in the future. It's in the next
-> > hunk you modify although the periodically reset comment is now out of date.
-> 
-> Yeah its because of the next hunk. I figured that if we don't lower it,
-> we shouldn't raise it either.
-> 
+On 07/31/2013 02:17 AM, Bill Huang wrote:
+> Hook up "pm_power_off" to palmas power off routine if there is DT
+> property "ti,system-power-controller" defined, so platform which is
+> powered by this regulator can be powered off properly.
+>
+> Based on work by:
+> Mallikarjun Kasoju <mkasoju@nvidia.com>
+>
+> Signed-off-by: Bill Huang <bilhuang@nvidia.com>
+> cc: Mallikarjun Kasoju <mkasoju@nvidia.com>
+> ---
+>   .../devicetree/bindings/regulator/palmas-pmic.txt  |    5 +++
+>   drivers/mfd/palmas.c                               |   33 ++++++++++++++++++--
 
-hmm, I'm going to punt that to a TODO item and think about it some more
-with a fresh head.
+Since the specific question on v1 was not answered, I will ask again, 
+any reason why it wont fit in drivers/power/reset/ is'nt it the right
+place to add this?
 
-> > > @@ -1167,10 +1171,20 @@ void task_numa_fault(int last_nidpid, in
-> > >  	/*
-> > >  	 * If pages are properly placed (did not migrate) then scan slower.
-> > >  	 * This is reset periodically in case of phase changes
-> > > -	 */
-> > > -        if (!migrated)
-> > > +	 *
-> > > +	 * APZ: it seems to me that one can get a ton of !migrated faults;
-> > > +	 * consider the scenario where two threads fight over a shared memory
-> > > +	 * segment. We'll win half the faults, half of that will be local, half
-> > > +	 * of that will be remote. This means we'll see 1/4-th of the total
-> > > +	 * memory being !migrated. Using a fixed increment will completely
-> > > +	 * flatten the scan speed for a sufficiently large workload. Another
-> > > +	 * scenario is due to that migration rate limit.
-> > > +	 *
-> > > +        if (!migrated) {
-> > >  		p->numa_scan_period = min(p->numa_scan_period_max,
-> > >  			p->numa_scan_period + jiffies_to_msecs(10));
-> > > +	}
-> > > +	 */
-> > 
-> > FWIW, I'm also not happy with how the scan rate is reduced but did not
-> > come up with a better alternative that was not fragile or depended on
-> > gathering too much state. Granted, I also have not been treating it as a
-> > high priority problem.
-> 
-> Right, so what Ingo did is have the scan rate depend on the convergence.
-> What exactly did you dislike about that?
-> 
 
-It depended entirely on properly detecting if we are converged or not. As
-things like false share detection within THP is still not there I was
-worried that it was too easy to make the wrong decision here and keep it
-pinned at the maximum scan rate.
+>   include/linux/mfd/palmas.h                         |    1 +
+>   3 files changed, 37 insertions(+), 2 deletions(-)
+>
+> diff --git a/Documentation/devicetree/bindings/regulator/palmas-pmic.txt b/Documentation/devicetree/bindings/regulator/palmas-pmic.txt
+> index 30b0581..4adca2a 100644
+> --- a/Documentation/devicetree/bindings/regulator/palmas-pmic.txt
+> +++ b/Documentation/devicetree/bindings/regulator/palmas-pmic.txt
+> @@ -36,6 +36,9 @@ Optional nodes:
+>   	       ti,smps-range - OTP has the wrong range set for the hardware so override
+>   	       0 - low range, 1 - high range.
+>
+> +- ti,system-power-controller: Telling whether or not this pmic is controlling
+> +			      the system power.
+> +
+>   Example:
+>
+>   #include <dt-bindings/interrupt-controller/irq.h>
+> @@ -48,6 +51,8 @@ pmic {
+>
+>   	ti,ldo6-vibrator;
+>
+> +	ti,system-power-controller;
+> +
+>   	regulators {
+>   		smps12_reg : smps12 {
+>   			regulator-name = "smps12";
+> diff --git a/drivers/mfd/palmas.c b/drivers/mfd/palmas.c
+> index e4d1c70..220a34d 100644
+> --- a/drivers/mfd/palmas.c
+> +++ b/drivers/mfd/palmas.c
+> @@ -229,6 +229,32 @@ static void palmas_dt_to_pdata(struct i2c_client *i2c,
+>   					PALMAS_POWER_CTRL_ENABLE2_MASK;
+>   	if (i2c->irq)
+>   		palmas_set_pdata_irq_flag(i2c, pdata);
+> +
+> +	pdata->pm_off = of_property_read_bool(node,
+> +			"ti,system-power-controller");
+> +}
+> +
+> +static struct palmas *palmas_dev;
+> +static void palmas_power_off(void)
+> +{
+> +	unsigned int addr;
+> +	int ret, slave;
+> +
+> +	if (!palmas_dev)
+> +		return;
+> +
 
-> We could define the convergence as all the faults inside the interleave
-> mask vs the total faults, and then run at: min + (1 - c)*(max-min).
-> 
+If you notice the reference code I send, atleast on TWL6035/37 variants 
+of Palmas, USB IRQ unmask is mandatory for power on with USB cable - 
+example usage scenario: extremely low battery, device powered off, plug 
+in usb cable to restart charging - you'd like to initiate charging logic 
+in bootloader, but that wont work if the device does not do OFF-ON 
+transition with usb cable plugged in for vbus.
 
-And when we have such things properly in place then I think we can kick
-away the current crutch.
+> +	slave = PALMAS_BASE_TO_SLAVE(PALMAS_PMU_CONTROL_BASE);
+> +	addr = PALMAS_BASE_TO_REG(PALMAS_PMU_CONTROL_BASE, PALMAS_DEV_CTRL);
+> +
+> +	ret = regmap_update_bits(
+> +			palmas_dev->regmap[slave],
+> +			addr,
+> +			PALMAS_DEV_CTRL_DEV_ON,
+> +			0);
+> +
+> +	if (ret)
+> +		pr_err("%s: Unable to write to DEV_CTRL_DEV_ON: %d\n",
+> +				__func__, ret);
+>   }
+>
+>   static unsigned int palmas_features = PALMAS_PMIC_FEATURE_SMPS10_BOOST;
+> @@ -423,10 +449,13 @@ no_irq:
+>   	 */
+>   	if (node) {
+>   		ret = of_platform_populate(node, NULL, NULL, &i2c->dev);
+> -		if (ret < 0)
+> +		if (ret < 0) {
+>   			goto err_irq;
+> -		else
+> +		} else if (pdata->pm_off && !pm_power_off) {
+> +			palmas_dev = palmas;
+> +			pm_power_off = palmas_power_off;
+>   			return ret;
+> +		}
+>   	}
+>
+>   	return ret;
+> diff --git a/include/linux/mfd/palmas.h b/include/linux/mfd/palmas.h
+> index 1a8dd7a..061cce0 100644
+> --- a/include/linux/mfd/palmas.h
+> +++ b/include/linux/mfd/palmas.h
+> @@ -258,6 +258,7 @@ struct palmas_platform_data {
+>   	 */
+>   	int mux_from_pdata;
+>   	u8 pad1, pad2;
+> +	bool pm_off;
+>
+>   	struct palmas_pmic_platform_data *pmic_pdata;
+>   	struct palmas_gpadc_platform_data *gpadc_pdata;
+>
 
-> > > +#if 0
-> > >  	/*
-> > >  	 * We do not care about task placement until a task runs on a node
-> > >  	 * other than the first one used by the address space. This is
-> > >  	 * largely because migrations are driven by what CPU the task
-> > >  	 * is running on. If it's never scheduled on another node, it'll
-> > >  	 * not migrate so why bother trapping the fault.
-> > > +	 *
-> > > +	 * APZ: seems like a bad idea for pure shared memory workloads.
-> > >  	 */
-> > >  	if (mm->first_nid == NUMA_PTE_SCAN_INIT)
-> > >  		mm->first_nid = numa_node_id();
-> > 
-> > At some point in the past scan starts were based on waiting a fixed interval
-> > but that seemed like a hack designed to get around hurting kernel compile
-> > benchmarks. I'll give it more thought and see can I think of a better
-> > alternative that is based on an event but not this event.
-> 
-> Ah, well the reasoning on that was that all this NUMA business is
-> 'expensive' so we'd better only bother with tasks that persist long
-> enough for it to pay off.
-> 
-
-Which is fair enough but tasks that lasted *just* longer than the interval
-still got punished. Processes running with a slightly slower CPU gets
-hurts meaning that it would be a difficult bug report to digest.
-
-> In that regard it makes perfect sense to wait a fixed amount of runtime
-> before we start scanning.
-> 
-> So it was not a pure hack to make kbuild work again.. that is did was
-> good though.
-> 
-
-Maybe we should reintroduce the delay then but I really would prefer that
-it was triggered on some sort of event.
-
-> > > @@ -1254,9 +1272,14 @@ void task_numa_work(struct callback_head
-> > >  	 * Do not set pte_numa if the current running node is rate-limited.
-> > >  	 * This loses statistics on the fault but if we are unwilling to
-> > >  	 * migrate to this node, it is less likely we can do useful work
-> > > -	 */
-> > > +	 *
-> > > +	 * APZ: seems like a bad idea; even if this node can't migrate anymore
-> > > +	 * other nodes might and we want up-to-date information to do balance
-> > > +	 * decisions.
-> > > +	 *
-> > >  	if (migrate_ratelimited(numa_node_id()))
-> > >  		return;
-> > > +	 */
-> > >  
-> > 
-> > Ingo also disliked this but I wanted to avoid a situation where the
-> > workload suffered because of a corner case where the interconnect was
-> > filled with migration traffic.
-> 
-> Right, but you already rate limit the actual migrations, this should
-> leave enough bandwidth to allow the non-migrating scanning.
-> 
-> I think its important we keep up-to-date information if we're going to
-> do placement based on it.
-> 
-
-Ok, you convinced me. I slapped a changelog on it that is a cut&paste job
-and moved it earlier in the series.
-
-> On that rate-limit, this looks to be a hard-coded number unrelated to
-> the actual hardware.
-
-Guesstimate.
-
-> I think we should at the very least make it a
-> configurable number and preferably scale the number with the SLIT info.
-> Or alternatively actually measure the node to node bandwidth.
-> 
-
-Ideally we should just kick it away because scan rate limiting works
-properly. Lets not make it a tunable just yet so we can avoid having to
-deprecate it later.
 
 -- 
-Mel Gorman
-SUSE Labs
+Regards,
+Nishanth Menon
