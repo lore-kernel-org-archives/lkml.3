@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760967Ab3GaWb1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 18:31:27 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:44517 "EHLO
+	id S1761001Ab3GaWb6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 18:31:58 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:44617 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757813Ab3GaWbV (ORCPT
+	with ESMTP id S1760931Ab3GaWbZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 18:31:21 -0400
+	Wed, 31 Jul 2013 18:31:25 -0400
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: arm@kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Sekhar Nori <nsekhar@ti.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>
-Subject: [PATCH 03/18] ARM: davinci: Switch to sched_clock_register()
-Date: Wed, 31 Jul 2013 15:31:02 -0700
-Message-Id: <1375309877-16617-4-git-send-email-sboyd@codeaurora.org>
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>
+Subject: [PATCH 16/18] ARM: orion: Switch to sched_clock_register()
+Date: Wed, 31 Jul 2013 15:31:15 -0700
+Message-Id: <1375309877-16617-17-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.8.4.rc0.1.g8f6a3e5
 In-Reply-To: <1375309877-16617-1-git-send-email-sboyd@codeaurora.org>
 References: <1375309877-16617-1-git-send-email-sboyd@codeaurora.org>
@@ -26,35 +25,35 @@ The 32 bit sched_clock interface now supports 64 bits. Upgrade to
 the 64 bit function to allow us to remove the 32 bit registration
 interface.
 
-Cc: Sekhar Nori <nsekhar@ti.com>
-Cc: Kevin Hilman <khilman@deeprootsystems.com>
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: Andrew Lunn <andrew@lunn.ch>
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- arch/arm/mach-davinci/time.c | 4 ++--
+ arch/arm/plat-orion/time.c | 4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/mach-davinci/time.c b/arch/arm/mach-davinci/time.c
-index 7a55b5c..6d5440a 100644
---- a/arch/arm/mach-davinci/time.c
-+++ b/arch/arm/mach-davinci/time.c
-@@ -285,7 +285,7 @@ static struct clocksource clocksource_davinci = {
- /*
-  * Overwrite weak default sched_clock with something more precise
+diff --git a/arch/arm/plat-orion/time.c b/arch/arm/plat-orion/time.c
+index 9d2b2ac..dade292 100644
+--- a/arch/arm/plat-orion/time.c
++++ b/arch/arm/plat-orion/time.c
+@@ -60,7 +60,7 @@ static u32 ticks_per_jiffy;
+  * at least 7.5ns (133MHz TCLK).
   */
--static u32 notrace davinci_read_sched_clock(void)
-+static u64 notrace davinci_read_sched_clock(void)
+ 
+-static u32 notrace orion_read_sched_clock(void)
++static u64 notrace orion_read_sched_clock(void)
  {
- 	return timer32_read(&timers[TID_CLOCKSOURCE]);
+ 	return ~readl(timer_base + TIMER0_VAL_OFF);
  }
-@@ -392,7 +392,7 @@ void __init davinci_timer_init(void)
- 				    davinci_clock_tick_rate))
- 		printk(err, clocksource_davinci.name);
+@@ -201,7 +201,7 @@ orion_time_init(void __iomem *_bridge_base, u32 _bridge_timer1_clr_mask,
+ 	/*
+ 	 * Set scale and timer for sched_clock.
+ 	 */
+-	setup_sched_clock(orion_read_sched_clock, 32, tclk);
++	sched_clock_register(orion_read_sched_clock, 32, tclk);
  
--	setup_sched_clock(davinci_read_sched_clock, 32,
-+	sched_clock_register(davinci_read_sched_clock, 32,
- 			  davinci_clock_tick_rate);
- 
- 	/* setup clockevent */
+ 	/*
+ 	 * Setup free-running clocksource timer (interrupts
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
