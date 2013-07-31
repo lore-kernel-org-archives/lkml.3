@@ -1,91 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759387Ab3GaJGK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 05:06:10 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:17756 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759209Ab3GaJGG (ORCPT
+	id S1759393Ab3GaJGh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 05:06:37 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:55192 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755043Ab3GaJDk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 05:06:06 -0400
-X-Spam-Score: -100.8
-Message-ID: <51F8D33A.3050406@asianux.com>
-Date: Wed, 31 Jul 2013 17:04:58 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-CC: Paul Mundt <lethal@linux-sh.org>, rafael.j.wysocki@intel.com,
-        horms+renesas@verge.net.au, khilman@linaro.org,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] scripts/recordmcount.pl: remove "-m32" for sh architecture
-References: <51F8BB73.2070603@asianux.com> <51F8BE59.4030506@linaro.org> <51F8CCC0.1090302@asianux.com>
-In-Reply-To: <51F8CCC0.1090302@asianux.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Wed, 31 Jul 2013 05:03:40 -0400
+X-AuditID: 9c93017d-b7b45ae000000e34-1c-51f8d2e4a1d8
+From: Namhyung Kim <namhyung@kernel.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Namhyung Kim <namhyung.kim@lge.com>, Hyeoncheol Lee <cheol.lee@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: [PATCH 08/13] tracing/uprobes: Fetch args before reserving a ring buffer
+Date: Wed, 31 Jul 2013 18:03:25 +0900
+Message-Id: <1375261410-11219-9-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1375261410-11219-1-git-send-email-namhyung@kernel.org>
+References: <1375261410-11219-1-git-send-email-namhyung@kernel.org>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-'allmodconfig' will report error for "-m32", Now "-m32" is useless for
-latest compiler and neither can find "-m32" in "arch/sh" directory, so
-just remove it is OK.
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-The related error:
+Fetching from user space should be done in a non-atomic context.  So
+use a temporary buffer and copy its content to the ring buffer
+atomically.
 
-    CC      init/main.o
-  sh3-gchen-linux-gnu-gcc: error: unrecognized command line option '-m32'
-  sh3-gchen-linux-gnu-ld: cannot find init/.tmp_mc_main.o: No such file or directory
-  sh3-gchen-linux-gnu-objcopy: 'init/.tmp_mx_main.o': No such file
-  rm: cannot remove `init/.tmp_mx_main.o': No such file or directory
-  rm: cannot remove `init/.tmp_mc_main.o': No such file or directory
-    CHK     include/generated/compile.h
-    CC      init/version.o
-    CC      init/do_mounts.o
-  sh3-gchen-linux-gnu-gcc: error: unrecognized command line option '-m32'
-  sh3-gchen-linux-gnu-ld: cannot find init/.tmp_mc_do_mounts.o: No such file or directory
-  mv: cannot stat `init/.tmp_mx_do_mounts.o': No such file or directory
-  rm: cannot remove `init/.tmp_mc_do_mounts.o': No such file or directory
-    CC      init/do_mounts_initrd.o
-    LD      init/mounts.o
-    CC      init/initramfs.o
-    CC      init/init_task.o
-    LD      init/built-in.o
-  sh3-gchen-linux-gnu-ld: cannot find init/main.o: No such file or directory
-  make[1]: *** [init/built-in.o] Error 1
-  make: *** [init] Error 2
+While at it, use __get_data_size() and store_trace_args() to reduce
+code duplication.
 
-The related compiler information:
-
-  [root@dhcp122 linux-next]# sh3-gchen-linux-gnu-gcc -v
-  Using built-in specs.
-  COLLECT_GCC=sh3-gchen-linux-gnu-gcc
-  COLLECT_LTO_WRAPPER=/home/gchen/x-tools/sh3-gchen-linux-gnu/bin/../libexec/gcc/sh3-gchen-linux-gnu/4.8.0/lto-wrapper
-  Target: sh3-gchen-linux-gnu
-  Configured with: /root/src/toolchain_sh/crosstool-ng-2685dfa9de14/.build/src/gcc-4.8.0/configure --build=x86_64-build_unknown-linux-gnu --host=x86_64-build_unknown-linux-gnu --target=sh3-gchen-linux-gnu --prefix=/root/src/toolchain_sh/crosstool-ng-2685dfa9de14/.build/sh3-gchen-linux-gnu/buildtools --with-local-prefix=/home/gchen/x-tools/sh3-gchen-linux-gnu/sh3-gchen-linux-gnu/sysroot --disable-libmudflap --with-sysroot=/home/gchen/x-tools/sh3-gchen-linux-gnu/sh3-gchen-linux-gnu/sysroot --enable-shared --with-pkgversion='crosstool-NG hg+unknown-20130731.103227' --enable-__cxa_atexit --with-gmp=/root/src/toolchain_sh/crosstool-ng-2685dfa9de14/.build/sh3-gchen-linux-gnu/buildtools --with-mpfr=/root/src/toolchain_sh/crosstool-ng-2685dfa9de14/.build/sh3-gchen-linux-gnu/buildtools --with-mpc=/root/src/toolchain_sh/crosstool-ng-2685dfa9de14/.build/sh3-gchen-linux-gnu/buildtools --with-isl=/root/src/toolchain_sh/crosstool-ng-2685dfa9de14/.build/sh3-gchen-linux-gnu/buildtools --with
- -cloog=/r
-oot/src/toolchain_sh/crosstool-ng-2685dfa9de14/.build/sh3-gchen-linux-gnu/buildtools --with-libelf=/root/src/toolchain_sh/crosstool-ng-2685dfa9de14/.build/sh3-gchen-linux-gnu/buildtools --enable-lto --enable-target-optspace --disable-libgomp --disable-libmudflap --disable-nls --disable-multilib --enable-languages=c
-  Thread model: posix
-  gcc version 4.8.0 (crosstool-NG hg+unknown-20130731.103227) 
-
-
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- scripts/recordmcount.pl |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+ kernel/trace/trace_uprobe.c | 69 ++++++++++++++++++++++++++++++++++-----------
+ 1 file changed, 53 insertions(+), 16 deletions(-)
 
-diff --git a/scripts/recordmcount.pl b/scripts/recordmcount.pl
-index 858966a..679218b 100755
---- a/scripts/recordmcount.pl
-+++ b/scripts/recordmcount.pl
-@@ -262,7 +262,6 @@ if ($arch eq "x86_64") {
-     # force flags for this arch
-     $ld .= " -m shlelf_linux";
-     $objcopy .= " -O elf32-sh-linux";
--    $cc .= " -m32";
+diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
+index bcc7bd300c99..f78098398a61 100644
+--- a/kernel/trace/trace_uprobe.c
++++ b/kernel/trace/trace_uprobe.c
+@@ -516,15 +516,31 @@ static void uprobe_trace_print(struct trace_uprobe *tu,
+ 	struct uprobe_trace_entry_head *entry;
+ 	struct ring_buffer_event *event;
+ 	struct ring_buffer *buffer;
+-	void *data;
+-	int size, i;
++	void *data, *tmp;
++	int size, dsize, esize;
+ 	struct ftrace_event_call *call = &tu->p.call;
  
- } elsif ($arch eq "powerpc") {
-     $local_regex = "^[0-9a-fA-F]+\\s+t\\s+(\\.?\\S+)";
+-	size = SIZEOF_TRACE_ENTRY(is_ret_probe(tu));
++	dsize = __get_data_size(&tu->p, regs);
++	esize = SIZEOF_TRACE_ENTRY(is_ret_probe(tu));
++
++	/*
++	 * A temporary buffer is used for storing fetched data before reserving
++	 * the ring buffer because fetching from user space should be done in a
++	 * non-atomic context.
++	 */
++	tmp = kmalloc(tu->p.size + dsize, GFP_KERNEL);
++	if (tmp == NULL)
++		return;
++
++	store_trace_args(esize, &tu->p, regs, tmp, dsize);
++
++	size = esize + tu->p.size + dsize;
+ 	event = trace_current_buffer_lock_reserve(&buffer, call->event.type,
+-						  size + tu->p.size, 0, 0);
+-	if (!event)
++						  size, 0, 0);
++	if (!event) {
++		kfree(tmp);
+ 		return;
++	}
+ 
+ 	entry = ring_buffer_event_data(event);
+ 	if (is_ret_probe(tu)) {
+@@ -536,13 +552,12 @@ static void uprobe_trace_print(struct trace_uprobe *tu,
+ 		data = DATAOF_TRACE_ENTRY(entry, false);
+ 	}
+ 
+-	for (i = 0; i < tu->p.nr_args; i++) {
+-		call_fetch(&tu->p.args[i].fetch, regs,
+-			   data + tu->p.args[i].offset);
+-	}
++	memcpy(data, tmp, tu->p.size + dsize);
+ 
+ 	if (!filter_current_check_discard(buffer, call, entry, event))
+ 		trace_buffer_unlock_commit(buffer, event, 0, 0);
++
++	kfree(tmp);
+ }
+ 
+ /* uprobe handler */
+@@ -756,11 +771,30 @@ static void uprobe_perf_print(struct trace_uprobe *tu,
+ 	struct ftrace_event_call *call = &tu->p.call;
+ 	struct uprobe_trace_entry_head *entry;
+ 	struct hlist_head *head;
+-	void *data;
+-	int size, rctx, i;
++	void *data, *tmp;
++	int size, dsize, esize;
++	int rctx;
++
++	dsize = __get_data_size(&tu->p, regs);
++	esize = SIZEOF_TRACE_ENTRY(is_ret_probe(tu));
++
++	/*
++	 * A temporary buffer is used for storing fetched data before reserving
++	 * the ring buffer because fetching from user space should be done in a
++	 * non-atomic context.
++	 */
++	tmp = kmalloc(tu->p.size + dsize, GFP_KERNEL);
++	if (tmp == NULL)
++		return;
+ 
+-	size = SIZEOF_TRACE_ENTRY(is_ret_probe(tu));
+-	size = ALIGN(size + tu->p.size + sizeof(u32), sizeof(u64)) - sizeof(u32);
++	store_trace_args(esize, &tu->p, regs, tmp, dsize);
++
++	size = esize + tu->p.size + dsize;
++	size = ALIGN(size + sizeof(u32), sizeof(u64)) - sizeof(u32);
++	if (WARN_ONCE(size > PERF_MAX_TRACE_SIZE, "profile buffer not large enough")) {
++		kfree(tmp);
++		return;
++	}
+ 
+ 	preempt_disable();
+ 	head = this_cpu_ptr(call->perf_events);
+@@ -780,15 +814,18 @@ static void uprobe_perf_print(struct trace_uprobe *tu,
+ 		data = DATAOF_TRACE_ENTRY(entry, false);
+ 	}
+ 
+-	for (i = 0; i < tu->p.nr_args; i++) {
+-		struct probe_arg *parg = &tu->p.args[i];
++	memcpy(data, tmp, tu->p.size + dsize);
++
++	if (size - esize > tu->p.size + dsize) {
++		int len = tu->p.size + dsize;
+ 
+-		call_fetch(&parg->fetch, regs, data + parg->offset);
++		memset(data + len, 0, size - esize - len);
+ 	}
+ 
+ 	perf_trace_buf_submit(entry, size, rctx, 0, 1, regs, head, NULL);
+  out:
+ 	preempt_enable();
++	kfree(tmp);
+ }
+ 
+ /* uprobe profile handler */
 -- 
-1.7.7.6
+1.7.11.7
+
