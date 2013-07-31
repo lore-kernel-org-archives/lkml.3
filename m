@@ -1,46 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759484Ab3GaJul (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 05:50:41 -0400
-Received: from smtp.eu.citrix.com ([46.33.159.39]:36699 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759124Ab3GaJui (ORCPT
+	id S1759418Ab3GaJtq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 05:49:46 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:39359 "EHLO
+	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759306Ab3GaJtU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 05:50:38 -0400
-X-IronPort-AV: E=Sophos;i="4.89,786,1367971200"; 
-   d="scan'208";a="7312214"
-Message-ID: <51F8DDEB.603@citrix.com>
-Date: Wed, 31 Jul 2013 11:50:35 +0200
-From: =?ISO-8859-1?Q?Roger_Pau_Monn=E9?= <roger.pau@citrix.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: <xen-devel@lists.xen.org>
-CC: <linux-kernel@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>
-Subject: Re: [Xen-devel] [PATCH RFC 0/4] xen-block: prevent blkfront for hoarding
- grants
-References: <1373288607-1876-1-git-send-email-roger.pau@citrix.com>
-In-Reply-To: <1373288607-1876-1-git-send-email-roger.pau@citrix.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.203.1]
+	Wed, 31 Jul 2013 05:49:20 -0400
+From: Philipp Reisner <philipp.reisner@linbit.com>
+To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
+Cc: drbd-dev@lists.linbit.com
+Subject: [PATCH 4/5] drbd: fix decoding of bitmap vli rle for device sizes > 64 TB
+Date: Wed, 31 Jul 2013 11:41:14 +0200
+Message-Id: <1375263675-18410-5-git-send-email-philipp.reisner@linbit.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1375263675-18410-1-git-send-email-philipp.reisner@linbit.com>
+References: <1375263675-18410-1-git-send-email-philipp.reisner@linbit.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/07/13 15:03, Roger Pau Monne wrote:
-> The following patches prevent blkfront from hoarding all grants in the 
-> system by allowing blkfront to request blkback to unmap certain grants 
-> so they can be freed by blkfront. This is done periodically by 
-> blkfront, unmapping a certain amount of unused persistent grants.
-> 
-> This series also includes a bug fix for the grant table free callback 
-> implementation.
+From: Lars Ellenberg <lars.ellenberg@linbit.com>
 
-Hello,
+Symptoms: disconnect after bitmap exchange due to
+bitmap overflow (e:49731075554) while decoding bm RLE packet
 
-IMHO I think 1 should go in (at the end it's a bugfix) and backported to
-stable. 2 and 4 (second version) can probably also go in?
+In the decoding step of the variable length integer run length encoding
+there was potentially an uncatched bitshift by wordsize (variable >> 64).
 
-Roger.
+The result of which is "undefined" :(
+(only "sometimes" the result is the desired 0)
+
+Fix: don't do any bit shift magic for shift == 64, just assign.
+
+Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
+Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
+---
+ drivers/block/drbd/drbd_receiver.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/block/drbd/drbd_receiver.c b/drivers/block/drbd/drbd_receiver.c
+index 12c59eb..6fa6673 100644
+--- a/drivers/block/drbd/drbd_receiver.c
++++ b/drivers/block/drbd/drbd_receiver.c
+@@ -4125,7 +4125,11 @@ recv_bm_rle_bits(struct drbd_conf *mdev,
+ 				(unsigned int)bs.buf_len);
+ 			return -EIO;
+ 		}
+-		look_ahead >>= bits;
++		/* if we consumed all 64 bits, assign 0; >> 64 is "undefined"; */
++		if (likely(bits < 64))
++			look_ahead >>= bits;
++		else
++			look_ahead = 0;
+ 		have -= bits;
+ 
+ 		bits = bitstream_get_bits(&bs, &tmp, 64 - have);
+-- 
+1.7.9.5
+
