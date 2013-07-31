@@ -1,136 +1,331 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753206Ab3GaFqV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 01:46:21 -0400
-Received: from co9ehsobe001.messaging.microsoft.com ([207.46.163.24]:43231
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751316Ab3GaFqT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 01:46:19 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VS-4(zzbb2dI98dI9371I542I1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275dh1de097hz2dh2a8h668h839h8e2h8e3h93fhd25hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e1dhbe9i1155h)
-From: Wang Dongsheng-B40534 <B40534@freescale.com>
-To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-CC: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "michael@ellerman.id.au" <michael@ellerman.id.au>,
-        "srivatsa.bhat@linux.vnet.ibm.com" <srivatsa.bhat@linux.vnet.ibm.com>,
-        "svaidy@linux.vnet.ibm.com" <svaidy@linux.vnet.ibm.com>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "rjw@sisk.pl" <rjw@sisk.pl>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Li Yang-R58472 <r58472@freescale.com>,
-        Zhao Chenhui-B35336 <B35336@freescale.com>,
-        Wood Scott-B07421 <B07421@freescale.com>,
-        "galak@kernel.crashing.org" <galak@kernel.crashing.org>
-Subject: RE: [PATCH V2 4/6] cpuidle/pseries: Move the pseries_idle backend
- driver to sysdev.
-Thread-Topic: [PATCH V2 4/6] cpuidle/pseries: Move the pseries_idle backend
- driver to sysdev.
-Thread-Index: AQHOjZoanqWpV3IrokOYHebEiDJxA5l+HjAggAALWICAAAYQYA==
-Date: Wed, 31 Jul 2013 05:46:09 +0000
-Message-ID: <ABB05CD9C9F68C46A5CEDC7F15439259FF2A3A@039-SN2MPN1-021.039d.mgd.msft.net>
-References: <20130731025840.19448.24468.stgit@deepthi>
- <20130731025924.19448.46538.stgit@deepthi>
- <ABB05CD9C9F68C46A5CEDC7F15439259FF2953@039-SN2MPN1-021.039d.mgd.msft.net>
- <51F88BA7.7090404@linux.vnet.ibm.com>
-In-Reply-To: <51F88BA7.7090404@linux.vnet.ibm.com>
-Accept-Language: en-US, zh-CN
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.192.208.117]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+	id S1753600Ab3GaFrT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 01:47:19 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:55318 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750839Ab3GaFrR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 01:47:17 -0400
+From: Joe Perches <joe@perches.com>
+To: netdev@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Jamal Hadi Salim <jhs@mojatatu.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] net: Remove extern from include/net/ scheduling prototypes
+Date: Tue, 30 Jul 2013 22:47:13 -0700
+Message-Id: <470a8782ea89cee979eca82c7847748129de6bd0.1375249605.git.joe@perches.com>
+X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r6V5kQeq009257
 
-Hi Preeti,
+There are a mix of function prototypes with and without extern
+in the kernel sources.  Standardize on not using extern for
+function prototypes.
 
-> -----Original Message-----
-> From: Preeti U Murthy [mailto:preeti@linux.vnet.ibm.com]
-> Sent: Wednesday, July 31, 2013 12:00 PM
-> To: Wang Dongsheng-B40534
-> Cc: Deepthi Dharwar; benh@kernel.crashing.org; daniel.lezcano@linaro.org;
-> linux-kernel@vger.kernel.org; michael@ellerman.id.au;
-> srivatsa.bhat@linux.vnet.ibm.com; svaidy@linux.vnet.ibm.com; linuxppc-
-> dev@lists.ozlabs.org; rjw@sisk.pl; linux-pm@vger.kernel.org
-> Subject: Re: [PATCH V2 4/6] cpuidle/pseries: Move the pseries_idle
-> backend driver to sysdev.
-> 
-> Hi Dongsheng,
-> 
-> On 07/31/2013 08:52 AM, Wang Dongsheng-B40534 wrote:
-> >
-> >
-> >> -----Original Message-----
-> >> From: Deepthi Dharwar [mailto:deepthi@linux.vnet.ibm.com]
-> >> Sent: Wednesday, July 31, 2013 10:59 AM
-> >> To: benh@kernel.crashing.org; daniel.lezcano@linaro.org; linux-
-> >> kernel@vger.kernel.org; michael@ellerman.id.au;
-> >> srivatsa.bhat@linux.vnet.ibm.com; preeti@linux.vnet.ibm.com;
-> >> svaidy@linux.vnet.ibm.com; linuxppc-dev@lists.ozlabs.org
-> >> Cc: rjw@sisk.pl; Wang Dongsheng-B40534; linux-pm@vger.kernel.org
-> >> Subject: [PATCH V2 4/6] cpuidle/pseries: Move the pseries_idle
-> >> backend driver to sysdev.
-> >>
-> >> Move pseries_idle backend driver code to arch/powerpc/sysdev so that
-> >> the code can be used for a common driver for powernv and pseries.
-> >> This removes a lot of code duplicacy.
-> >>
-> > Why not drivers/cpuidle/?
-> >
-> > I think it should be move to drivers/cpuidle.
-> 
-> Please take a look at what the cpuidle under drivers has to provide.
-> cpuidle has two parts to it. The front end and the back end. The front
-> end constitutes the cpuidle governors, registering of arch specific
-> cpuidle drivers, disabling and enabling of cpuidle feature. It is this
-> front end code which is present under drivers/cpuidle.
-> 
-> The arch specific cpuidle drivers which decide what needs to be done to
-> enter a specific idle state chosen by the cpuidle governor is what
-> constitutes the back end of cpuidle. This will not be in drivers/cpuidle
-> but in an arch/ specific code.
-> 
-> The cpuidle under drivers/cpuidle drives the idle power management, but
-> the low level handling of the entry into idle states should be taken care
-> of by the architecture.
-> 
-> Your recent patch :
-> cpuidle: add freescale e500 family porcessors idle support IMO should
-> hook onto the backend cpuidle driver that this patchset provides.
-> 
-Sorry, I don't think so, cpuidle framework has been already very common.
-Here we just need to do state definition and handling. I wonder whether
-we need this layer.
+Function prototypes don't need to be written with extern.
+extern is assumed by the compiler.  Its use is as unnecessary as
+using auto to declare automatic/local variables in a block.
 
-If your handle is platform dependent, it should be in arch/platform.
+Reflow modified prototypes to 80 columns.
 
-If it is only for some platforms and the operation of these platforms can be
-multiplexed, Why cannot as a driver to put into driver/cpuidle?
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ include/net/act_api.h     | 60 +++++++++++++++++++++++------------------------
+ include/net/pkt_cls.h     | 42 ++++++++++++++++-----------------
+ include/net/pkt_sched.h   | 50 +++++++++++++++++++--------------------
+ include/net/sch_generic.h | 53 +++++++++++++++++++++--------------------
+ 4 files changed, 104 insertions(+), 101 deletions(-)
 
-If it a general driver, I think we can put some common operating to driver/cpuidle
-and make the platform specific code to arch/powerpc/platform.
+diff --git a/include/net/act_api.h b/include/net/act_api.h
+index b8ffac7..9e90fdf 100644
+--- a/include/net/act_api.h
++++ b/include/net/act_api.h
+@@ -82,36 +82,36 @@ struct tc_action_ops {
+ 	int     (*walk)(struct sk_buff *, struct netlink_callback *, int, struct tc_action *);
+ };
+ 
+-extern struct tcf_common *tcf_hash_lookup(u32 index,
+-					  struct tcf_hashinfo *hinfo);
+-extern void tcf_hash_destroy(struct tcf_common *p, struct tcf_hashinfo *hinfo);
+-extern int tcf_hash_release(struct tcf_common *p, int bind,
+-			    struct tcf_hashinfo *hinfo);
+-extern int tcf_generic_walker(struct sk_buff *skb, struct netlink_callback *cb,
+-			      int type, struct tc_action *a);
+-extern u32 tcf_hash_new_index(u32 *idx_gen, struct tcf_hashinfo *hinfo);
+-extern int tcf_hash_search(struct tc_action *a, u32 index);
+-extern struct tcf_common *tcf_hash_check(u32 index, struct tc_action *a,
+-					 int bind, struct tcf_hashinfo *hinfo);
+-extern struct tcf_common *tcf_hash_create(u32 index, struct nlattr *est,
+-					  struct tc_action *a, int size,
+-					  int bind, u32 *idx_gen,
+-					  struct tcf_hashinfo *hinfo);
+-extern void tcf_hash_insert(struct tcf_common *p, struct tcf_hashinfo *hinfo);
++struct tcf_common *tcf_hash_lookup(u32 index, struct tcf_hashinfo *hinfo);
++void tcf_hash_destroy(struct tcf_common *p, struct tcf_hashinfo *hinfo);
++int tcf_hash_release(struct tcf_common *p, int bind,
++		     struct tcf_hashinfo *hinfo);
++int tcf_generic_walker(struct sk_buff *skb, struct netlink_callback *cb,
++		       int type, struct tc_action *a);
++u32 tcf_hash_new_index(u32 *idx_gen, struct tcf_hashinfo *hinfo);
++int tcf_hash_search(struct tc_action *a, u32 index);
++struct tcf_common *tcf_hash_check(u32 index, struct tc_action *a,
++				  int bind, struct tcf_hashinfo *hinfo);
++struct tcf_common *tcf_hash_create(u32 index, struct nlattr *est,
++				   struct tc_action *a, int size,
++				   int bind, u32 *idx_gen,
++				   struct tcf_hashinfo *hinfo);
++void tcf_hash_insert(struct tcf_common *p, struct tcf_hashinfo *hinfo);
+ 
+-extern int tcf_register_action(struct tc_action_ops *a);
+-extern int tcf_unregister_action(struct tc_action_ops *a);
+-extern void tcf_action_destroy(struct tc_action *a, int bind);
+-extern int tcf_action_exec(struct sk_buff *skb, const struct tc_action *a, struct tcf_result *res);
+-extern struct tc_action *tcf_action_init(struct net *net, struct nlattr *nla,
+-					 struct nlattr *est, char *n, int ovr,
+-					 int bind);
+-extern struct tc_action *tcf_action_init_1(struct net *net, struct nlattr *nla,
+-					   struct nlattr *est, char *n, int ovr,
+-					   int bind);
+-extern int tcf_action_dump(struct sk_buff *skb, struct tc_action *a, int, int);
+-extern int tcf_action_dump_old(struct sk_buff *skb, struct tc_action *a, int, int);
+-extern int tcf_action_dump_1(struct sk_buff *skb, struct tc_action *a, int, int);
+-extern int tcf_action_copy_stats (struct sk_buff *,struct tc_action *, int);
++int tcf_register_action(struct tc_action_ops *a);
++int tcf_unregister_action(struct tc_action_ops *a);
++void tcf_action_destroy(struct tc_action *a, int bind);
++int tcf_action_exec(struct sk_buff *skb, const struct tc_action *a,
++		    struct tcf_result *res);
++struct tc_action *tcf_action_init(struct net *net, struct nlattr *nla,
++				  struct nlattr *est, char *n, int ovr,
++				  int bind);
++struct tc_action *tcf_action_init_1(struct net *net, struct nlattr *nla,
++				    struct nlattr *est, char *n, int ovr,
++				    int bind);
++int tcf_action_dump(struct sk_buff *skb, struct tc_action *a, int, int);
++int tcf_action_dump_old(struct sk_buff *skb, struct tc_action *a, int, int);
++int tcf_action_dump_1(struct sk_buff *skb, struct tc_action *a, int, int);
++int tcf_action_copy_stats(struct sk_buff *, struct tc_action *, int);
+ #endif /* CONFIG_NET_CLS_ACT */
+ #endif
+diff --git a/include/net/pkt_cls.h b/include/net/pkt_cls.h
+index 1317450..2ebef77 100644
+--- a/include/net/pkt_cls.h
++++ b/include/net/pkt_cls.h
+@@ -14,8 +14,8 @@ struct tcf_walker {
+ 	int	(*fn)(struct tcf_proto *, unsigned long node, struct tcf_walker *);
+ };
+ 
+-extern int register_tcf_proto_ops(struct tcf_proto_ops *ops);
+-extern int unregister_tcf_proto_ops(struct tcf_proto_ops *ops);
++int register_tcf_proto_ops(struct tcf_proto_ops *ops);
++int unregister_tcf_proto_ops(struct tcf_proto_ops *ops);
+ 
+ static inline unsigned long
+ __cls_set_class(unsigned long *clp, unsigned long cl)
+@@ -126,17 +126,17 @@ tcf_exts_exec(struct sk_buff *skb, struct tcf_exts *exts,
+ 	return 0;
+ }
+ 
+-extern int tcf_exts_validate(struct net *net, struct tcf_proto *tp,
+-			     struct nlattr **tb, struct nlattr *rate_tlv,
+-			     struct tcf_exts *exts,
+-			     const struct tcf_ext_map *map);
+-extern void tcf_exts_destroy(struct tcf_proto *tp, struct tcf_exts *exts);
+-extern void tcf_exts_change(struct tcf_proto *tp, struct tcf_exts *dst,
+-	                     struct tcf_exts *src);
+-extern int tcf_exts_dump(struct sk_buff *skb, struct tcf_exts *exts,
+-	                 const struct tcf_ext_map *map);
+-extern int tcf_exts_dump_stats(struct sk_buff *skb, struct tcf_exts *exts,
+-	                       const struct tcf_ext_map *map);
++int tcf_exts_validate(struct net *net, struct tcf_proto *tp,
++		      struct nlattr **tb, struct nlattr *rate_tlv,
++		      struct tcf_exts *exts,
++		      const struct tcf_ext_map *map);
++void tcf_exts_destroy(struct tcf_proto *tp, struct tcf_exts *exts);
++void tcf_exts_change(struct tcf_proto *tp, struct tcf_exts *dst,
++		     struct tcf_exts *src);
++int tcf_exts_dump(struct sk_buff *skb, struct tcf_exts *exts,
++		  const struct tcf_ext_map *map);
++int tcf_exts_dump_stats(struct sk_buff *skb, struct tcf_exts *exts,
++			const struct tcf_ext_map *map);
+ 
+ /**
+  * struct tcf_pkt_info - packet information
+@@ -239,14 +239,14 @@ struct tcf_ematch_ops {
+ 	struct list_head	link;
+ };
+ 
+-extern int tcf_em_register(struct tcf_ematch_ops *);
+-extern void tcf_em_unregister(struct tcf_ematch_ops *);
+-extern int tcf_em_tree_validate(struct tcf_proto *, struct nlattr *,
+-				struct tcf_ematch_tree *);
+-extern void tcf_em_tree_destroy(struct tcf_proto *, struct tcf_ematch_tree *);
+-extern int tcf_em_tree_dump(struct sk_buff *, struct tcf_ematch_tree *, int);
+-extern int __tcf_em_tree_match(struct sk_buff *, struct tcf_ematch_tree *,
+-			       struct tcf_pkt_info *);
++int tcf_em_register(struct tcf_ematch_ops *);
++void tcf_em_unregister(struct tcf_ematch_ops *);
++int tcf_em_tree_validate(struct tcf_proto *, struct nlattr *,
++			 struct tcf_ematch_tree *);
++void tcf_em_tree_destroy(struct tcf_proto *, struct tcf_ematch_tree *);
++int tcf_em_tree_dump(struct sk_buff *, struct tcf_ematch_tree *, int);
++int __tcf_em_tree_match(struct sk_buff *, struct tcf_ematch_tree *,
++			struct tcf_pkt_info *);
+ 
+ /**
+  * tcf_em_tree_change - replace ematch tree of a running classifier
+diff --git a/include/net/pkt_sched.h b/include/net/pkt_sched.h
+index 388bf8b..f7c24f8 100644
+--- a/include/net/pkt_sched.h
++++ b/include/net/pkt_sched.h
+@@ -64,8 +64,8 @@ struct qdisc_watchdog {
+ 	struct Qdisc	*qdisc;
+ };
+ 
+-extern void qdisc_watchdog_init(struct qdisc_watchdog *wd, struct Qdisc *qdisc);
+-extern void qdisc_watchdog_schedule_ns(struct qdisc_watchdog *wd, u64 expires);
++void qdisc_watchdog_init(struct qdisc_watchdog *wd, struct Qdisc *qdisc);
++void qdisc_watchdog_schedule_ns(struct qdisc_watchdog *wd, u64 expires);
+ 
+ static inline void qdisc_watchdog_schedule(struct qdisc_watchdog *wd,
+ 					   psched_time_t expires)
+@@ -73,31 +73,31 @@ static inline void qdisc_watchdog_schedule(struct qdisc_watchdog *wd,
+ 	qdisc_watchdog_schedule_ns(wd, PSCHED_TICKS2NS(expires));
+ }
+ 
+-extern void qdisc_watchdog_cancel(struct qdisc_watchdog *wd);
++void qdisc_watchdog_cancel(struct qdisc_watchdog *wd);
+ 
+ extern struct Qdisc_ops pfifo_qdisc_ops;
+ extern struct Qdisc_ops bfifo_qdisc_ops;
+ extern struct Qdisc_ops pfifo_head_drop_qdisc_ops;
+ 
+-extern int fifo_set_limit(struct Qdisc *q, unsigned int limit);
+-extern struct Qdisc *fifo_create_dflt(struct Qdisc *sch, struct Qdisc_ops *ops,
+-				      unsigned int limit);
+-
+-extern int register_qdisc(struct Qdisc_ops *qops);
+-extern int unregister_qdisc(struct Qdisc_ops *qops);
+-extern void qdisc_list_del(struct Qdisc *q);
+-extern struct Qdisc *qdisc_lookup(struct net_device *dev, u32 handle);
+-extern struct Qdisc *qdisc_lookup_class(struct net_device *dev, u32 handle);
+-extern struct qdisc_rate_table *qdisc_get_rtab(struct tc_ratespec *r,
+-		struct nlattr *tab);
+-extern void qdisc_put_rtab(struct qdisc_rate_table *tab);
+-extern void qdisc_put_stab(struct qdisc_size_table *tab);
+-extern void qdisc_warn_nonwc(char *txt, struct Qdisc *qdisc);
+-extern int sch_direct_xmit(struct sk_buff *skb, struct Qdisc *q,
+-			   struct net_device *dev, struct netdev_queue *txq,
+-			   spinlock_t *root_lock);
+-
+-extern void __qdisc_run(struct Qdisc *q);
++int fifo_set_limit(struct Qdisc *q, unsigned int limit);
++struct Qdisc *fifo_create_dflt(struct Qdisc *sch, struct Qdisc_ops *ops,
++			       unsigned int limit);
++
++int register_qdisc(struct Qdisc_ops *qops);
++int unregister_qdisc(struct Qdisc_ops *qops);
++void qdisc_list_del(struct Qdisc *q);
++struct Qdisc *qdisc_lookup(struct net_device *dev, u32 handle);
++struct Qdisc *qdisc_lookup_class(struct net_device *dev, u32 handle);
++struct qdisc_rate_table *qdisc_get_rtab(struct tc_ratespec *r,
++					struct nlattr *tab);
++void qdisc_put_rtab(struct qdisc_rate_table *tab);
++void qdisc_put_stab(struct qdisc_size_table *tab);
++void qdisc_warn_nonwc(char *txt, struct Qdisc *qdisc);
++int sch_direct_xmit(struct sk_buff *skb, struct Qdisc *q,
++		    struct net_device *dev, struct netdev_queue *txq,
++		    spinlock_t *root_lock);
++
++void __qdisc_run(struct Qdisc *q);
+ 
+ static inline void qdisc_run(struct Qdisc *q)
+ {
+@@ -105,10 +105,10 @@ static inline void qdisc_run(struct Qdisc *q)
+ 		__qdisc_run(q);
+ }
+ 
+-extern int tc_classify_compat(struct sk_buff *skb, const struct tcf_proto *tp,
+-			      struct tcf_result *res);
+-extern int tc_classify(struct sk_buff *skb, const struct tcf_proto *tp,
++int tc_classify_compat(struct sk_buff *skb, const struct tcf_proto *tp,
+ 		       struct tcf_result *res);
++int tc_classify(struct sk_buff *skb, const struct tcf_proto *tp,
++		struct tcf_result *res);
+ 
+ /* Calculate maximal size of packet seen by hard_start_xmit
+    routine of this device.
+diff --git a/include/net/sch_generic.h b/include/net/sch_generic.h
+index 6eab6336..ffc9d88 100644
+--- a/include/net/sch_generic.h
++++ b/include/net/sch_generic.h
+@@ -350,30 +350,32 @@ qdisc_class_find(const struct Qdisc_class_hash *hash, u32 id)
+ 	return NULL;
+ }
+ 
+-extern int qdisc_class_hash_init(struct Qdisc_class_hash *);
+-extern void qdisc_class_hash_insert(struct Qdisc_class_hash *, struct Qdisc_class_common *);
+-extern void qdisc_class_hash_remove(struct Qdisc_class_hash *, struct Qdisc_class_common *);
+-extern void qdisc_class_hash_grow(struct Qdisc *, struct Qdisc_class_hash *);
+-extern void qdisc_class_hash_destroy(struct Qdisc_class_hash *);
+-
+-extern void dev_init_scheduler(struct net_device *dev);
+-extern void dev_shutdown(struct net_device *dev);
+-extern void dev_activate(struct net_device *dev);
+-extern void dev_deactivate(struct net_device *dev);
+-extern void dev_deactivate_many(struct list_head *head);
+-extern struct Qdisc *dev_graft_qdisc(struct netdev_queue *dev_queue,
+-				     struct Qdisc *qdisc);
+-extern void qdisc_reset(struct Qdisc *qdisc);
+-extern void qdisc_destroy(struct Qdisc *qdisc);
+-extern void qdisc_tree_decrease_qlen(struct Qdisc *qdisc, unsigned int n);
+-extern struct Qdisc *qdisc_alloc(struct netdev_queue *dev_queue,
+-				 struct Qdisc_ops *ops);
+-extern struct Qdisc *qdisc_create_dflt(struct netdev_queue *dev_queue,
+-				       struct Qdisc_ops *ops, u32 parentid);
+-extern void __qdisc_calculate_pkt_len(struct sk_buff *skb,
+-				      const struct qdisc_size_table *stab);
+-extern void tcf_destroy(struct tcf_proto *tp);
+-extern void tcf_destroy_chain(struct tcf_proto **fl);
++int qdisc_class_hash_init(struct Qdisc_class_hash *);
++void qdisc_class_hash_insert(struct Qdisc_class_hash *,
++			     struct Qdisc_class_common *);
++void qdisc_class_hash_remove(struct Qdisc_class_hash *,
++			     struct Qdisc_class_common *);
++void qdisc_class_hash_grow(struct Qdisc *, struct Qdisc_class_hash *);
++void qdisc_class_hash_destroy(struct Qdisc_class_hash *);
++
++void dev_init_scheduler(struct net_device *dev);
++void dev_shutdown(struct net_device *dev);
++void dev_activate(struct net_device *dev);
++void dev_deactivate(struct net_device *dev);
++void dev_deactivate_many(struct list_head *head);
++struct Qdisc *dev_graft_qdisc(struct netdev_queue *dev_queue,
++			      struct Qdisc *qdisc);
++void qdisc_reset(struct Qdisc *qdisc);
++void qdisc_destroy(struct Qdisc *qdisc);
++void qdisc_tree_decrease_qlen(struct Qdisc *qdisc, unsigned int n);
++struct Qdisc *qdisc_alloc(struct netdev_queue *dev_queue,
++			  struct Qdisc_ops *ops);
++struct Qdisc *qdisc_create_dflt(struct netdev_queue *dev_queue,
++				struct Qdisc_ops *ops, u32 parentid);
++void __qdisc_calculate_pkt_len(struct sk_buff *skb,
++			       const struct qdisc_size_table *stab);
++void tcf_destroy(struct tcf_proto *tp);
++void tcf_destroy_chain(struct tcf_proto **fl);
+ 
+ /* Reset all TX qdiscs greater then index of a device.  */
+ static inline void qdisc_reset_all_tx_gt(struct net_device *dev, unsigned int i)
+@@ -692,7 +694,8 @@ static inline u64 psched_l2t_ns(const struct psched_ratecfg *r,
+ 	return ((u64)(len + r->overhead) * r->mult) >> r->shift;
+ }
+ 
+-extern void psched_ratecfg_precompute(struct psched_ratecfg *r, const struct tc_ratespec *conf);
++void psched_ratecfg_precompute(struct psched_ratecfg *r,
++			       const struct tc_ratespec *conf);
+ 
+ static inline void psched_ratecfg_getrate(struct tc_ratespec *res,
+ 					  const struct psched_ratecfg *r)
+-- 
+1.8.1.2.459.gbcd45b4.dirty
 
-This patch include front end and back end, not just back end.
-
-This patch include too many state of different platforms and handle function. This state
-and handle that should belong to itself platforms. Not a general way. If Deepthi will do
-a general powerpc cpuidle, I think, it's cannot just using the macro to distinguish
-platform. the front end code maybe move to driver/cpuidle(drvier register) should be better,
-make the Low Power State and what should be handle to arch/powerpc/platform/**, because different
-platforms have different state of low power consumption, and the processing method.
-The front end can provide some general methods to register into general powerpc cpuidle driver.
-
--dongsheng
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
