@@ -1,39 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760076Ab3GaOfB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 10:35:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59294 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755268Ab3GaOfA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 10:35:00 -0400
-Date: Wed, 31 Jul 2013 16:29:37 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: Re: [for-next-3.11][PATCH 0/8] ftrace/tracing: Event file fixes
-	and ftrace function hash fixes
-Message-ID: <20130731142937.GA32023@redhat.com>
-References: <20130730112718.273490378@goodmis.org> <20130731114722.GA4416@redhat.com> <1375279617.19999.1.camel@gandalf.local.home> <20130731142236.GA31073@redhat.com>
+	id S1760248Ab3GaOf1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 10:35:27 -0400
+Received: from mail-vb0-f52.google.com ([209.85.212.52]:45571 "EHLO
+	mail-vb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759769Ab3GaOfY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 10:35:24 -0400
+Date: Wed, 31 Jul 2013 11:35:16 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH V2 2/9] perf tools: load kernel maps before using
+Message-ID: <20130731143516.GE3614@ghostprotocols.net>
+References: <1375218838-31042-1-git-send-email-adrian.hunter@intel.com>
+ <1375218838-31042-3-git-send-email-adrian.hunter@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130731142236.GA31073@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1375218838-31042-3-git-send-email-adrian.hunter@intel.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry for noise, forgot to mention...
+Em Wed, Jul 31, 2013 at 12:13:51AM +0300, Adrian Hunter escreveu:
+> In order to use kernel maps to read object code, those
+> maps must be adjusted to map to the dso file offset.
+> Because lazy-initialization is used, that is not done
+> until symbols are loaded.  However the maps are first
+> used by thread__find_addr_map() before symbols are loaded.
+> So this patch changes thread__find_addr() to "load" kernel
+> maps before using them.
 
-On 07/31, Oleg Nesterov wrote:
->
-> Just I think that "open/delete fixes" is not complete without this fix.
+Argh, yeah, we create maps as we traverse kallsyms, right? I guess this
+is there for historical reasons (i.e. it "evolved" like that), but I'm
+adding a note to my TODO list to remove that mess, i.e. we should
+probably do that as a separate step, i.e. the creation of kernel maps,
+detached from actually loading the symbols.
 
-And without the last "tracing: trace_remove_event_call() should fail if
-call/file is in use" or something similar.
+For now I think your patch makes we progress, so I'll apply it.
 
-Oleg.
+Thanks,
 
+- Arnaldo
+ 
+> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+> ---
+>  tools/perf/builtin-inject.c     |  2 +-
+>  tools/perf/builtin-script.c     |  4 ++--
+>  tools/perf/tests/code-reading.c |  2 +-
+>  tools/perf/util/build-id.c      |  2 +-
+>  tools/perf/util/event.c         | 18 ++++++++++++++----
+>  tools/perf/util/thread.h        |  2 +-
+>  tools/perf/util/unwind.c        |  4 ++--
+>  7 files changed, 22 insertions(+), 12 deletions(-)
+> 
+> diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
+> index 1d8de2e..f012a98 100644
+> --- a/tools/perf/builtin-inject.c
+> +++ b/tools/perf/builtin-inject.c
+> @@ -206,7 +206,7 @@ static int perf_event__inject_buildid(struct perf_tool *tool,
+>  	}
+>  
+>  	thread__find_addr_map(thread, machine, cpumode, MAP__FUNCTION,
+> -			      event->ip.ip, &al);
+> +			      event->ip.ip, &al, NULL);
+>  
+>  	if (al.map != NULL) {
+>  		if (!al.map->dso->hit) {
+> diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+> index 1cad370..cd616ff 100644
+> --- a/tools/perf/builtin-script.c
+> +++ b/tools/perf/builtin-script.c
+> @@ -341,10 +341,10 @@ static void print_sample_addr(union perf_event *event,
+>  		return;
+>  
+>  	thread__find_addr_map(thread, machine, cpumode, MAP__FUNCTION,
+> -			      sample->addr, &al);
+> +			      sample->addr, &al, NULL);
+>  	if (!al.map)
+>  		thread__find_addr_map(thread, machine, cpumode, MAP__VARIABLE,
+> -				      sample->addr, &al);
+> +				      sample->addr, &al, NULL);
+>  
+>  	al.cpu = sample->cpu;
+>  	al.sym = NULL;
+> diff --git a/tools/perf/tests/code-reading.c b/tools/perf/tests/code-reading.c
+> index 7c9437d..6cd3190 100644
+> --- a/tools/perf/tests/code-reading.c
+> +++ b/tools/perf/tests/code-reading.c
+> @@ -138,7 +138,7 @@ static int read_object_code(u64 addr, size_t len, u8 cpumode,
+>  	pr_debug("Reading object code for memory address: %#"PRIx64"\n", addr);
+>  
+>  	thread__find_addr_map(thread, machine, cpumode, MAP__FUNCTION, addr,
+> -			      &al);
+> +			      &al, NULL);
+>  	if (!al.map || !al.map->dso) {
+>  		pr_debug("thread__find_addr_map failed\n");
+>  		return -1;
+> diff --git a/tools/perf/util/build-id.c b/tools/perf/util/build-id.c
+> index 5295625..3a0f508 100644
+> --- a/tools/perf/util/build-id.c
+> +++ b/tools/perf/util/build-id.c
+> @@ -33,7 +33,7 @@ int build_id__mark_dso_hit(struct perf_tool *tool __maybe_unused,
+>  	}
+>  
+>  	thread__find_addr_map(thread, machine, cpumode, MAP__FUNCTION,
+> -			      event->ip.ip, &al);
+> +			      event->ip.ip, &al, NULL);
+>  
+>  	if (al.map != NULL)
+>  		al.map->dso->hit = 1;
+> diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+> index 9541270..cc7c0c9 100644
+> --- a/tools/perf/util/event.c
+> +++ b/tools/perf/util/event.c
+> @@ -592,9 +592,10 @@ int perf_event__process(struct perf_tool *tool __maybe_unused,
+>  void thread__find_addr_map(struct thread *self,
+>  			   struct machine *machine, u8 cpumode,
+>  			   enum map_type type, u64 addr,
+> -			   struct addr_location *al)
+> +			   struct addr_location *al, symbol_filter_t filter)
+>  {
+>  	struct map_groups *mg = &self->mg;
+> +	bool load_map = false;
+>  
+>  	al->thread = self;
+>  	al->addr = addr;
+> @@ -609,11 +610,13 @@ void thread__find_addr_map(struct thread *self,
+>  	if (cpumode == PERF_RECORD_MISC_KERNEL && perf_host) {
+>  		al->level = 'k';
+>  		mg = &machine->kmaps;
+> +		load_map = true;
+>  	} else if (cpumode == PERF_RECORD_MISC_USER && perf_host) {
+>  		al->level = '.';
+>  	} else if (cpumode == PERF_RECORD_MISC_GUEST_KERNEL && perf_guest) {
+>  		al->level = 'g';
+>  		mg = &machine->kmaps;
+> +		load_map = true;
+>  	} else {
+>  		/*
+>  		 * 'u' means guest os user space.
+> @@ -654,8 +657,15 @@ try_again:
+>  			mg = &machine->kmaps;
+>  			goto try_again;
+>  		}
+> -	} else
+> +	} else {
+> +		/*
+> +		 * Kernel maps might be changed when loading symbols so loading
+> +		 * must be done prior to using kernel maps.
+> +		 */
+> +		if (load_map)
+> +			map__load(al->map, filter);
+>  		al->addr = al->map->map_ip(al->map, al->addr);
+> +	}
+>  }
+>  
+>  void thread__find_addr_location(struct thread *thread, struct machine *machine,
+> @@ -663,7 +673,7 @@ void thread__find_addr_location(struct thread *thread, struct machine *machine,
+>  				struct addr_location *al,
+>  				symbol_filter_t filter)
+>  {
+> -	thread__find_addr_map(thread, machine, cpumode, type, addr, al);
+> +	thread__find_addr_map(thread, machine, cpumode, type, addr, al, filter);
+>  	if (al->map != NULL)
+>  		al->sym = map__find_symbol(al->map, al->addr, filter);
+>  	else
+> @@ -699,7 +709,7 @@ int perf_event__preprocess_sample(const union perf_event *event,
+>  		machine__create_kernel_maps(machine);
+>  
+>  	thread__find_addr_map(thread, machine, cpumode, MAP__FUNCTION,
+> -			      event->ip.ip, al);
+> +			      event->ip.ip, al, filter);
+>  	dump_printf(" ...... dso: %s\n",
+>  		    al->map ? al->map->dso->long_name :
+>  			al->level == 'H' ? "[hypervisor]" : "<not found>");
+> diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
+> index 0fe1f9c..f98d1d9 100644
+> --- a/tools/perf/util/thread.h
+> +++ b/tools/perf/util/thread.h
+> @@ -41,7 +41,7 @@ static inline struct map *thread__find_map(struct thread *self,
+>  
+>  void thread__find_addr_map(struct thread *thread, struct machine *machine,
+>  			   u8 cpumode, enum map_type type, u64 addr,
+> -			   struct addr_location *al);
+> +			   struct addr_location *al, symbol_filter_t filter);
+>  
+>  void thread__find_addr_location(struct thread *thread, struct machine *machine,
+>  				u8 cpumode, enum map_type type, u64 addr,
+> diff --git a/tools/perf/util/unwind.c b/tools/perf/util/unwind.c
+> index 958723b..5bbd494 100644
+> --- a/tools/perf/util/unwind.c
+> +++ b/tools/perf/util/unwind.c
+> @@ -272,7 +272,7 @@ static struct map *find_map(unw_word_t ip, struct unwind_info *ui)
+>  	struct addr_location al;
+>  
+>  	thread__find_addr_map(ui->thread, ui->machine, PERF_RECORD_MISC_USER,
+> -			      MAP__FUNCTION, ip, &al);
+> +			      MAP__FUNCTION, ip, &al, NULL);
+>  	return al.map;
+>  }
+>  
+> @@ -349,7 +349,7 @@ static int access_dso_mem(struct unwind_info *ui, unw_word_t addr,
+>  	ssize_t size;
+>  
+>  	thread__find_addr_map(ui->thread, ui->machine, PERF_RECORD_MISC_USER,
+> -			      MAP__FUNCTION, addr, &al);
+> +			      MAP__FUNCTION, addr, &al, NULL);
+>  	if (!al.map) {
+>  		pr_debug("unwind: no map for %lx\n", (unsigned long)addr);
+>  		return -1;
+> -- 
+> 1.7.11.7
