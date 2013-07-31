@@ -1,77 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758727Ab3GaFWa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 01:22:30 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:32793 "EHLO bear.ext.ti.com"
+	id S1758978Ab3GaFWr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 01:22:47 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:53971 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754374Ab3GaFW2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 01:22:28 -0400
-Message-ID: <51F89B59.6010708@ti.com>
-Date: Wed, 31 Jul 2013 00:06:33 -0500
+	id S1758754Ab3GaFWn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 01:22:43 -0400
+Message-ID: <51F89763.1010102@ti.com>
+Date: Tue, 30 Jul 2013 23:49:39 -0500
 From: Joel Fernandes <joelf@ti.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
 To: Sekhar Nori <nsekhar@ti.com>
-CC: Tony Lindgren <tony@atomide.com>, Vinod Koul <vinod.koul@intel.com>,
+CC: Tony Lindgren <tony@atomide.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Sricharan R <r.sricharan@ti.com>, Rajendra Nayak <rnayak@ti.com>,
+        Lokesh Vutla <lokeshvutla@ti.com>, Matt Porter <matt@ohporter.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
+        Mark Brown <broonie@linaro.org>,
         Benoit Cousson <benoit.cousson@linaro.org>,
-        Balaji TK <balajitk@ti.com>, Arnd Bergmann <arnd@arndb.de>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>, Balaji TK <balajitk@ti.com>,
+        Gururaja Hebbar <gururaja.hebbar@ti.com>, Chris Ball <cjb@laptop.org>,
         Jason Kridner <jkridner@beagleboard.org>,
-        Mark Jackson <mpfj-list@newflow.co.uk>,
         Linux OMAP List <linux-omap@vger.kernel.org>,
         Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Pantel Antoniou <panto@antoniou-consulting.com>
-Subject: Re: [PATCH v2] ARM: EDMA: Fix clearing of unused list for DT DMA
- resources
-References: <1374515989-7391-1-git-send-email-joelf@ti.com> <51F61359.1090309@ti.com> <51F73738.6080901@ti.com> <51F7E9D0.1080107@ti.com>
-In-Reply-To: <51F7E9D0.1080107@ti.com>
-Content-Type: text/plain; charset="UTF-8"
+        Linux MMC List <linux-mmc@vger.kernel.org>
+Subject: Re: [PATCH 4/9] dma: edma: Find missed events and issue them
+References: <1375104595-16018-1-git-send-email-joelf@ti.com> <1375104595-16018-5-git-send-email-joelf@ti.com> <51F7659E.3040302@ti.com>
+In-Reply-To: <51F7659E.3040302@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/30/2013 11:29 AM, Sekhar Nori wrote:
-> On 7/30/2013 9:17 AM, Joel Fernandes wrote:
-> 
->>>> diff --git a/arch/arm/common/edma.c b/arch/arm/common/edma.c
->>>> index a432e6c..765d578 100644
->>>> --- a/arch/arm/common/edma.c
->>>> +++ b/arch/arm/common/edma.c
-> 
->>>> +	} else {
->>>> +		for (; i < pdev->num_resources; i++) {
->>>> +			if ((pdev->resource[i].flags & IORESOURCE_DMA) &&
->>>> +			    (int)pdev->resource[i].start >= 0) {
->>>> +				ctlr = EDMA_CTLR(pdev->resource[i].start);
->>>> +				clear_bit(EDMA_CHAN_SLOT(
->>>> +					  pdev->resource[i].start),
->>>> +					  edma_cc[ctlr]->edma_unused);
->>>> +			}
->>>
->>> So there is very little in common between OF and non-OF versions of this
->>> function. Why not have two different versions of this function for the
->>> two cases? The OF version can reside under the CONFIG_OF conditional
->>> already in use in the file. This will also save you the ugly line breaks
->>> you had to resort to due to too deep indentation.
->>
->> Actually those line breaks are not necessary and wouldn't result in
->> compilation errors. I was planning to drop them. I'll go ahead and split
->> it out anyway, now that also the OF version of the function is going to
->> be bit longer if we use the of_parse functions.
->>
->> Thanks for your review,
-> 
-> It turns out, I gave a bad idea. What I suggested will break the case of
-> non-DT boot with CONFIG_OF enabled. So what you had was fine. May be
-> just return from "if (dev->of_node)" so you don't need to have an else
-> block and can save on the indentation.>
+Hi Sekhar,
 
-Ok, sure. I will go ahead and return from the if block.
+On 07/30/2013 02:05 AM, Sekhar Nori wrote:
+> On Monday 29 July 2013 06:59 PM, Joel Fernandes wrote:
+>> In an effort to move to using Scatter gather lists of any size with
+>> EDMA as discussed at [1] instead of placing limitations on the driver,
+>> we work through the limitations of the EDMAC hardware to find missed
+>> events and issue them.
+>>
+>> The sequence of events that require this are:
+>>
+>> For the scenario where MAX slots for an EDMA channel is 3:
+>>
+>> SG1 -> SG2 -> SG3 -> SG4 -> SG5 -> SG6 -> Null
+>>
+>> The above SG list will have to be DMA'd in 2 sets:
+>>
+>> (1) SG1 -> SG2 -> SG3 -> Null
+>> (2) SG4 -> SG5 -> SG6 -> Null
+>>
+>> After (1) is succesfully transferred, the events from the MMC controller
+>> donot stop coming and are missed by the time we have setup the transfer
+>> for (2). So here, we catch the events missed as an error condition and
+>> issue them manually.
+> 
+> Are you sure there wont be any effect of these missed events on the
+> peripheral side. For example, wont McASP get into an underrun condition
+> when it encounters a null PaRAM set? Even UART has to transmit to a
+
+But it will not encounter null PaRAM set because McASP uses contiguous
+buffers for transfer which are not scattered across physical memory.
+This can be accomplished with an SG of size 1. For such SGs, this patch
+series leaves it linked Dummy and does not link to Null set. Null set is
+only used for SG lists that are > MAX_NR_SG in size such as those
+created for example by MMC and Crypto.
+
+> particular baud so I guess it cannot wait like the way MMC/SD can.
+
+Existing driver have to wait anyway if they hit MAX SG limit today. If
+they don't want to wait, they would have allocated a contiguous block of
+memory and DMA that in one stretch so they don't lose any events, and in
+such cases we are not linking to Null.
+
+> Also, wont this lead to under-utilization of the peripheral bandwith?
+> Meaning, MMC/SD is ready with data but cannot transfer because the DMA
+> is waiting to be set-up.
+
+But it is waiting anyway even today. Currently based on MAX segs, MMC
+driver/subsystem will make SG list of size max_segs. Between these
+sessions of creating such smaller SG-lists, if for some reason the MMC
+controller is sending events, these will be lost anyway.
+
+What will happen now with this patch series is we are simply accepting a
+bigger list than this, and handling all the max_segs stuff within the
+EDMA driver itself without outside world knowing. This is actually more
+efficient as for long transfers, we are not going back and forth much
+between the client and EDMA driver.
+
+> Did you consider a ping-pong scheme with say three PaRAM sets per
+> channel? That way you can keep a continuous transfer going on from the
+> peripheral over the complete SG list.
+
+Do you mean ping-pong scheme as used in the davinci-pcm driver today?
+This can be used only for buffers that are contiguous in memory, not
+those that are scattered across memory.
 
 Thanks,
 
 -Joel
-
-
