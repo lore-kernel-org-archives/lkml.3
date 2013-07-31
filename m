@@ -1,96 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758676Ab3GaA2i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 20:28:38 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:25099 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756990Ab3GaA2g (ORCPT
+	id S1758687Ab3GaAe4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 20:34:56 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:45852 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757395Ab3GaAez (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 20:28:36 -0400
-X-IronPort-AV: E=Sophos;i="4.89,782,1367996400"; 
-   d="scan'208";a="65803387"
-X-IronPort-AV: E=Sophos;i="4.89,782,1367996400"; 
-   d="scan'208";a="522883003"
-Date: Tue, 30 Jul 2013 17:27:44 -0700
-From: "Luis R. Rodriguez" <rodrigue@qca.qualcomm.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Marcel Holtmann <marcel@holtmann.org>,
-        Hector Palacios <hector.palacios@digi.com>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        "linux-bluetooth@vger.kernel.org" <linux-bluetooth@vger.kernel.org>,
-        "gustavo@padovan.org" <gustavo@padovan.org>,
-        "johan.hedberg@gmail.com" <johan.hedberg@gmail.com>,
-        <mcgrof@do-not-panic.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "surajs@qca.qualcomm.com" <surajs@qca.qualcomm.com>,
-        <jjohnson@qca.qualcomm.com>, Adrian Chadd <adrian@freebsd.org>,
-        <ddahlby@qca.qualcomm.com>, Ben Hutchings <ben@decadent.org.uk>
-Subject: Re: ROM Patching (was: [PATCH] bluetooth: remove wrong dependency
- for BT_ATH3K)
-Message-ID: <20130731002744.GT17130@pogo>
-References: <1375114325-25498-1-git-send-email-hector.palacios@digi.com>
- <5438CD3C-E28C-485C-94B8-F743E8B13D4A@holtmann.org>
- <51F7722E.9050708@digi.com>
- <20130730205601.GI17130@pogo>
- <2C94C740-76BA-4058-B0D7-C37D44875CA1@holtmann.org>
- <20130730224809.GN17130@pogo>
- <20130730235508.GA25319@kroah.com>
+	Tue, 30 Jul 2013 20:34:55 -0400
+Message-ID: <51F85BAC.70101@tilera.com>
+Date: Tue, 30 Jul 2013 20:34:52 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20130730235508.GA25319@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: [172.30.39.5]
+To: David Miller <davem@davemloft.net>
+CC: <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>
+Subject: Re: [PATCH v2] tile: handle 64-bit statistics in tilepro network
+ driver
+References: <cover.1374609948.git.cmetcalf@tilera.com> <40362053a9f02d56a4f0c07a9982d96203723ec8.1374609948.git.cmetcalf@tilera.com> <201307251642.r6PGgHx2002404@farm-0012.internal.tilera.com> <20130730.161634.1378046909890599017.davem@davemloft.net>
+In-Reply-To: <20130730.161634.1378046909890599017.davem@davemloft.net>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 30, 2013 at 04:55:08PM -0700, Greg Kroah-Hartman wrote:
-> On Tue, Jul 30, 2013 at 03:48:09PM -0700, Luis R. Rodriguez wrote:
-> > > We are planning to take one extra step and split this into a
-> > > mini-driver approach similar to what has been done for usbnet, but we
-> > > are not there yet.
-> > 
-> > Neat. Perhaps we need something that we can share with 802.11 or other
-> > hardare I highly doubt we're the only ones patching ROM. Don't we even
-> > patch up core CPUs? I'm wondering if firmware_class could be expanded to
-> > support serialized ROM patching. The biggest hurdle I see with splititng
-> > ROM patching from a single firmware is serializing that, addressing
-> > revision dependencies and of course kernel dependencies.
-> 
-> What does the firmware_class need to do here that it doesn't do today?
+On 7/30/2013 7:16 PM, David Miller wrote:
+> From: Chris Metcalf <cmetcalf@tilera.com>
+> Date: Thu, 25 Jul 2013 12:41:15 -0400
+>
+>> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+> Applied, thanks.
+>
+> Your PTP patch for the Tile driver doesn't even come close to
+> applying properly to net-next, please respin it and report if
+> you want me to apply it.
+>
+> Thanks.
 
-It will depend on the requirements for ROM patches and if or not
-firmware can be split up into patches rather than getting a full
-firmware.fw update for any single patch update. If ROM patches
-get split up then how I can imagine driver code firmware getting
-to become a pain in the ass to maintain and nasty. It'd seem
-better to build relationships between these and possible patch
-depdendencies on ROM and let firmware_class do the management
-of that.
+It might be easiest to pull the whole series from:
 
-> > > However the ROM patching drivers need to be in the kernel since
-> > > otherwise they will race with the core init sequence.
-> > 
-> > Sure and depending on the architecture -- if this is kicked off to
-> > userspace helpers or not then we may need to consider dbus in
-> > kernel thing to help with speed / races, dependenecies / async
-> > loading, -EPROBE_DEFER, etc.
-> 
-> How would dbus in the kernel change anything here?
-> The kernel directly loads firmware from the filesystem now, no userspace
-> helpers are involved, so no need for udev, libusb, etc.  And as such, no
-> need for any "dbus" in the kernel to do this either.
-> I don't understand how it could, please explain.
+  git://git.kernel.org/pub/scm/linux/kernel/git/cmetcalf/linux-tile.git tile-net-next
 
-Yeah nevermind :D too much coffee today made my brain fart.
+Chris Metcalf (13):
+      tile: handle 64-bit statistics in tilepro network driver
+      tile: support rx_dropped/rx_errors in tilepro net driver
+      tile: avoid bug in tilepro net driver built with old hypervisor
+      tile: remove dead is_dup_ack() function from tilepro net driver
+      tile: support jumbo frames in the tilegx network driver
+      tile: update dev->stats directly in tilegx network driver
+      tile: fix panic bug in napi support for tilegx network driver
+      tile: enable GRO in the tilegx network driver
+      tile: support multiple mPIPE shims in tilegx network driver
+      tile: support TSO for IPv6 in tilegx network driver
+      tile: make "tile_net.custom" a proper bool module parameter
+      tile: remove deprecated NETIF_F_LLTX flag from tile drivers
+      tile: support PTP using the tilegx mPIPE (IEEE 1588)
 
-> Also note, for those not knowing, we have been working on dbus in the
-> kernel (google "kdbus" for the github repo), but it is all
-> outward-facing (i.e. userspace using the kdbus code to interact with
-> other processes with a dbus-like protocol, not for in-kernel dbus
-> things, although adding it wouldn't be that hard, just really strange.
+ arch/tile/gxio/iorpc_mpipe.c              |   66 ++
+ arch/tile/gxio/iorpc_mpipe_info.c         |   18 +
+ arch/tile/gxio/mpipe.c                    |   43 +-
+ arch/tile/include/gxio/iorpc_mpipe.h      |   14 +-
+ arch/tile/include/gxio/iorpc_mpipe_info.h |    4 +
+ arch/tile/include/gxio/mpipe.h            |  143 +++-
+ arch/tile/include/hv/drv_mpipe_intf.h     |    3 +
+ drivers/net/ethernet/tile/Kconfig         |   11 +
+ drivers/net/ethernet/tile/tilegx.c        | 1097 +++++++++++++++++++----------
+ drivers/net/ethernet/tile/tilepro.c       |  206 ++----
+ 10 files changed, 1100 insertions(+), 505 deletions(-)
 
-Thanks!
+Aside from the tilepro 64-bit stats change, and the PTP change, the other
+changes didn't receive any substantive feedback.  (Eric Dumazet pointed
+out that explicit NETIF_F_GRO was unnecessary, so I removed it.)
 
-  Luis
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
+
