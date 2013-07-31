@@ -1,82 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758265Ab3GaB12 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 21:27:28 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:49512 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752645Ab3GaB11 (ORCPT
+	id S1758761Ab3GaBgZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 21:36:25 -0400
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:61656 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754785Ab3GaBgW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 21:27:27 -0400
-Date: Wed, 31 Jul 2013 11:27:15 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the ext4 tree
-Message-Id: <20130731112715.5ef90f220e6f6be184dfd665@canb.auug.org.au>
-In-Reply-To: <20130729110816.12958c3a26400f444a9a5012@canb.auug.org.au>
-References: <20130729110816.12958c3a26400f444a9a5012@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__31_Jul_2013_11_27_15_+1000_KIbf27aXg3_MK8Ze"
+	Tue, 30 Jul 2013 21:36:22 -0400
+Message-ID: <51F86A20.3060309@gmail.com>
+Date: Wed, 31 Jul 2013 09:36:32 +0800
+From: Aaron Lu <aaron.lwe@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Felipe Contreras <felipe.contreras@gmail.com>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, Len Brown <lenb@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [REGRESSION/PATCH] acpi: blacklist win8 OSI for ASUS Zenbok Prime
+ UX31A
+References: <1375125658-1223-1-git-send-email-felipe.contreras@gmail.com> <3453253.oZLO1ChPbL@vostro.rjw.lan> <CAMP44s02V_FO1BPJZqo6MB9RMknXYdV7AXDqbJzYHpgK1GUuJw@mail.gmail.com> <37178266.QXgbv9rq0i@vostro.rjw.lan> <CAMP44s2LqiEGtS72FuTjsHUa1MH2kfaYHmcpNKMmAm2LnbFCCQ@mail.gmail.com>
+In-Reply-To: <CAMP44s2LqiEGtS72FuTjsHUa1MH2kfaYHmcpNKMmAm2LnbFCCQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__31_Jul_2013_11_27_15_+1000_KIbf27aXg3_MK8Ze
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 07/31/2013 08:11 AM, Felipe Contreras wrote:
+> On Tue, Jul 30, 2013 at 6:13 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> 
+>>> If 0 turns the screen off with the intel driver, 0 should turn the
+>>> screen off with the ACPI driver, having inconsistent behavior
+>>> depending on which driver is used is a bug.
+>>
+>> The ACPI driver simply exposes and interface to interact with the AML methods
+>> in the BIOS directly.
+> 
+> No, the ACPI driver is exposing a backlight interface, which has a
+> defined stable API.
+> 
+> Documentation/ABI/stable/sysfs-class-backlight
+> 
+> Yes, the interface doesn't define what should happen at 0, that is a
+> bug in the interface definition.
+> 
+> *How* it achieves that is an implementation detail.
+> 
+>> Yes, this is a mistake and shouldn't be designed this way.
+>>
+>> However, incidentally, this makes backlight control work on your machine.
+>>
+>> Anyway, we need all backlight drivers to work consistently and don't tempt me
+>> to rip the ACPI driver entirely from the kernel for what it's worth.
+> 
+> Yes, they should work consistently, and go ahead, rip the ACPI driver,
+> *then* you'll see many more people complaining about the Linux kernel
+> breaking user-space, which should never happen. Mistakes happen, but
+> if you do this willingly and knowingly, I think there would be
+> repercussions for you.
+> 
+>> Yes, that will break backlight on your system and *then* you can complain to
+>> Linus if you wish.
+> 
+> It is already broken in v3.11-rc3, in fact I just booted that to try
+> it out and it booted with the screen completely black (fortunately I
+> knew exactly what to type to change that).
 
-Hi Ted,
+That is bad, can you please file a bug for that? I'll need to take a
+look at your ACPI tables, thanks.
 
-On Mon, 29 Jul 2013 11:08:16 +1000 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
->
-> After merging the ext4 tree, today's linux-next build (powerpc
-> ppc64_defconfig) failed like this:
->=20
-> fs/ext4/ialloc.c: In function '__ext4_new_inode':
-> fs/ext4/ialloc.c:817:1: warning: label 'next_ino' defined but not used [-=
-Wunused-label]
->  next_ino:
->  ^
-> fs/ext4/ialloc.c:792:4: error: label 'next_inode' used but not defined
->     goto next_inode;
->     ^
->=20
-> Hmm ...
->=20
-> Caused by commit 4a8603ef197a ("ext4: avoid reusing recently deleted
-> inodes in no journal mode").
->=20
-> I have used the ext4 tree from next-20130726 for today.
+> 
+> Apparently this commit also needs to be reverted: efaa14c (ACPI /
+> video: no automatic brightness changes by win8-compatible firmware).
+> In this machine it makes the backlight work again (without
+> acpi_osi="!Windows 2012"), but by doing so the ACPI driver also turns
+> off the screen completely at level 0. Also, each time I change the
 
-I am still getting this ...
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+So with rc3 and commit efaa14c reverted, when you set level 0 to ACPI
+video's backlight interface, the screen will be off now? And this is not
+the case in 3.10, right?
 
---Signature=_Wed__31_Jul_2013_11_27_15_+1000_KIbf27aXg3_MK8Ze
-Content-Type: application/pgp-signature
+> backlight level from X, the screen blinks as if going 100%, 0%, and
+> then the desired level.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+Please attach acpidump output to the to be opened bugzilla page, thanks.
 
-iQIcBAEBCAAGBQJR+Gf5AAoJEECxmPOUX5FExMEP/jwdQpnVGm0rLiU56HaJPsMz
-Kpm0AZCi4wv7tkAk8gElnha8fWSOUxu9IqRQv9+uAW6d59N6vNdN1QcDNHMBhEz9
-+FUHZW76Sm+GKqEfBLEf6/Xu5i8J6XMM05/45291Zckb51Iivki2A00XYFz2AZbw
-hwqTMsTYGVyjngJIWvy4JF5M1GQpCXMq0lu5Xfg4k1i3NkKoyKqV6ETrdHZv6l3d
-6JVXulen0fi/J4XrTUTmwPT0zj6LIjfxngAyIsU9/G//tQ1g/yzjJJwkPMp/cATp
-IzK42imU81kbih/oo/1XHAxJs3+GME7NM+OHftg4fGECJxbLAF1XIJM560B776fD
-HtUJ180TteoEmXabh/axrt1omYQ5Ij6/lBSPifcjw0TjX/zhchWuKkkmJbXXgls3
-yRecs4RMSUXtKxtNRwBMAWHXiHpEx7W7cxIRPU7/6J6E/9JQQIrohBJTr60PxBqH
-djismcs0Jf+ME2bDyfhgiKZcTLURImKEtyTWyiV6FNMomxvczfYV6dbOb7qUuKKM
-yr2nss3ce2fyZPXFfTb6yH+cKD14zSkOEY7D1/4lerV6JPqYJsH9kEUa4w50FPjX
-THQE6+Mw/w4oIxCbNgMVxwYuhJ1ERmCwo7V79mijhkXr0d49v8/cK/4URVUK9jj0
-B9H16nsMWBjWok6F4j2h
-=+I1q
------END PGP SIGNATURE-----
+-Aaron
 
---Signature=_Wed__31_Jul_2013_11_27_15_+1000_KIbf27aXg3_MK8Ze--
+> 
+> For this particular machine simply applying the attached patch would
+> solve all those regressions, but who knows in other machines, I think
+> it's safer to revert efaa14c.
+> 
+
