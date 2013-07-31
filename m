@@ -1,97 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760646Ab3GaWGx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 18:06:53 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:33959 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753732Ab3GaWGv (ORCPT
+	id S1760796Ab3GaWID (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 18:08:03 -0400
+Received: from mail-vb0-f47.google.com ([209.85.212.47]:47788 "EHLO
+	mail-vb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753732Ab3GaWIA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 18:06:51 -0400
-Message-ID: <51F98A78.9060309@wwwdotorg.org>
-Date: Wed, 31 Jul 2013 16:06:48 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Wed, 31 Jul 2013 18:08:00 -0400
 MIME-Version: 1.0
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-CC: Tuomas Tynkkynen <tuomas.tynkkynen@iki.fi>,
-        Tuomas Tynkkynen <ttynkkynen@nvidia.com>, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        Mikko Perttunen <mperttunen@nvidia.com>
-Subject: Re: [PATCH 2/2] ARM: dts: USB for Tegra114 Dalmore
-References: <1375292543-7896-1-git-send-email-ttynkkynen@nvidia.com> <1375292543-7896-3-git-send-email-ttynkkynen@nvidia.com> <51F9550F.3080503@cogentembedded.com> <51F9660C.6090604@iki.fi> <51F96B48.10209@cogentembedded.com>
-In-Reply-To: <51F96B48.10209@cogentembedded.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130731174335.006a58f9@annuminas.surriel.com>
+References: <20130731174335.006a58f9@annuminas.surriel.com>
+Date: Wed, 31 Jul 2013 15:07:58 -0700
+X-Google-Sender-Auth: u4CXDaxQ5wTCtrrOQaeOMRLUBE8
+Message-ID: <CA+55aFx3ZHZrgP3yQwb=ttYUeH1zFVQtUA5dFW1h8FPhjfKgUA@mail.gmail.com>
+Subject: Re: [PATCH] sched,x86: optimize switch_mm for multi-threaded workloads
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Rik van Riel <riel@redhat.com>
+Cc: Ingo Molnar <mingo@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        jmario@redhat.com, dzickus@redhat.com, Peter Anvin <hpa@zytor.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/31/2013 01:53 PM, Sergei Shtylyov wrote:
-> Hello.
-> 
-> On 07/31/2013 11:31 PM, Tuomas Tynkkynen wrote:
->>>> Device tree entries for the three EHCI controllers on Tegra114.
->>>> Enables the the third controller (USB host) on Dalmore.
+On Wed, Jul 31, 2013 at 2:43 PM, Rik van Riel <riel@redhat.com> wrote:
+>
+> The cause turned out to be unnecessary atomic accesses to the
+> mm_cpumask. When in lazy TLB mode, the CPU is only removed from
+> the mm_cpumask if there is a TLB flush event.
+>
+> Most of the time, no such TLB flush happens, and the kernel
+> skips the TLB reload.  It can also skip the atomic memory
+> set & test.
 
->>>> diff --git a/arch/arm/boot/dts/tegra114.dtsi
->>>> b/arch/arm/boot/dts/tegra114.dtsi
->>>> index abf6c40..2905145 100644
->>>> --- a/arch/arm/boot/dts/tegra114.dtsi
->>>> +++ b/arch/arm/boot/dts/tegra114.dtsi
->>>> @@ -430,6 +430,68 @@
->>>>           status = "disable";
->>>>       };
->>>>
->>>> +    usb@7d000000 {
->>>> +        compatible = "nvidia,tegra30-ehci", "usb-ehci";
->>>> +        reg = <0x7d000000 0x4000>;
->>>> +        interrupts = <GIC_SPI 20 IRQ_TYPE_LEVEL_HIGH>;
->>>> +        phy_type = "utmi";
->>>> +        clocks = <&tegra_car TEGRA114_CLK_USBD>;
->>>> +        nvidia,phy = <&phy1>;
->>>> +        status = "disabled";
->>>> +    };
->>>> +
->>>> +    phy1: usb-phy@7d000000 {
-> 
->>>     At the same address as the previous node?
-> 
->> Yes. The first node is for the EHCI driver and the second for the PHY
->> driver.
->> There is some overlap in the exact registers used, so both drives map the
->> whole USB controller block.
-> 
->    That's really horrible design.
+The patch looks obvious, and I'm not seeing any very clear reasons for
+why we would want that test-and-set to be atomic. That said, I'd like
+to have some explicit comments about exactly why it doesn't need the
+atomicity. Because afaik, there actually are concurrent readers _and_
+writers of that mask, and the accesses are not locked by anything
+here.
 
-Yup. Both USB PHY and EHCI controller registers really are interleaved
-in one range.
+I _think_ the reason for this all being safe is simply that the only
+real race is "We need to set the bit before we load the page table,
+and we're protected against that bit being cleared because the TLB
+state is TLBSTATE_OK and thus TLB flushing will no longer leave that
+mm".
 
->>>> +        compatible = "nvidia,tegra30-usb-phy";
->>>> +        reg = <0x7d000000 0x4000 0x7d000000 0x4000>;
-> 
->>>     Hm, there must be some mistake: two similar register ranges.
-> 
->> The second range is used to configure the UTMI pad registers. All the
->> UTMI pad
->> registers are located in the first USB controller's range.
-> 
->    Which second range? This is one and the same range.
+But damn, it all looks subtle as hell. That code does:
 
-Some registers in the USB1 register range actually are "global" and
-relevant to all USB controllers. So:
+                this_cpu_write(cpu_tlbstate.state, TLBSTATE_OK);
+                BUG_ON(this_cpu_read(cpu_tlbstate.active_mm) != next);
 
-There are two 2-cell entries in that reg property. The first entry
-defines the registers for this USB PHY, and hence is unique for each USB
-PHY node. The second defines the registers for whichever USB PHY
-contains various shared registers across multiple PHYs, so is expected
-to be identical across all USB PHY DT nodes.
+                if (!cpumask_test_and_set_cpu(cpu, mm_cpumask(next))) {
 
-Yes, the HW design really is this screwy.
+and I'm wondering if we need a barrier to make sure that that
+TLBSTATE_OK write happens *before* we test the cpumask. With
+test_and_set(), we have the barrier in the test-and-set. But with just
+test_bit, I'm not seeing why the compiler couldn't re-order them. I
+suspect it won't, but...
 
->    Don't they cause numerous resource conflicts while device nodes being
-> instantiated as the platform devices?
+So I think the patch is _probably_ fine, but I think this is a hell of
+a lot more subtle than it all looks, and I'd like people to show that
+they have thought this through. And I don't see any indication of that
+in the changelog - it only talks about the performance issues, not
+about the *correctness* issues.
 
-No; the driver knows that the HW is screwy and there's lots of
-register-range sharing going on, so it simply maps the registers, rather
-than reserving the physical address range and mapping it.
+Please?
+
+               Linus
