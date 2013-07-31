@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759918Ab3GaN0J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 09:26:09 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46933 "EHLO
+	id S1760011Ab3GaN0g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 09:26:36 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:47159 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759711Ab3GaNZ6 (ORCPT
+	by vger.kernel.org with ESMTP id S1759906Ab3GaN0L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 09:25:58 -0400
+	Wed, 31 Jul 2013 09:26:11 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Sasha Levin" <sasha.levin@oracle.com>,
+CC: akpm@linux-foundation.org, "Michael S. Tsirkin" <mst@redhat.com>,
+        "Wolfram Gloger" <wmglo@dent.med.uni-muenchen.de>,
         "David S. Miller" <davem@davemloft.net>
 Date: Wed, 31 Jul 2013 15:23:09 +0200
-Message-ID: <lsq.1375276989.852780586@decadent.org.uk>
+Message-ID: <lsq.1375276989.488553581@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [17/84] 9p: fix off by one causing access violations and  memory
- corruption
+Subject: [27/84] virtio: support unlocked queue poll
 In-Reply-To: <lsq.1375276989.251749228@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.216.67.181
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,77 +32,116 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sasha Levin <sasha.levin@oracle.com>
+From: Michael S. Tsirkin <mst@redhat.com>
 
-[ Upstream commit 110ecd69a9feea82a152bbf9b12aba57e6396883 ]
+commit cc229884d3f77ec3b1240e467e0236c3e0647c0c upstream.
 
-p9_release_pages() would attempt to dereference one value past the end of
-pages[]. This would cause the following crashes:
+This adds a way to check ring empty state after enable_cb outside any
+locks. Will be used by virtio_net.
 
-[ 6293.171817] BUG: unable to handle kernel paging request at ffff8807c96f3000
-[ 6293.174146] IP: [<ffffffff8412793b>] p9_release_pages+0x3b/0x60
-[ 6293.176447] PGD 79c5067 PUD 82c1e3067 PMD 82c197067 PTE 80000007c96f3060
-[ 6293.180060] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[ 6293.180060] Modules linked in:
-[ 6293.180060] CPU: 62 PID: 174043 Comm: modprobe Tainted: G        W    3.10.0-next-20130710-sasha #3954
-[ 6293.180060] task: ffff8807b803b000 ti: ffff880787dde000 task.ti: ffff880787dde000
-[ 6293.180060] RIP: 0010:[<ffffffff8412793b>]  [<ffffffff8412793b>] p9_release_pages+0x3b/0x60
-[ 6293.214316] RSP: 0000:ffff880787ddfc28  EFLAGS: 00010202
-[ 6293.214316] RAX: 0000000000000001 RBX: ffff8807c96f2ff8 RCX: 0000000000000000
-[ 6293.222017] RDX: ffff8807b803b000 RSI: 0000000000000001 RDI: ffffea001c7e3d40
-[ 6293.222017] RBP: ffff880787ddfc48 R08: 0000000000000000 R09: 0000000000000000
-[ 6293.222017] R10: 0000000000000001 R11: 0000000000000000 R12: 0000000000000001
-[ 6293.222017] R13: 0000000000000001 R14: ffff8807cc50c070 R15: ffff8807cc50c070
-[ 6293.222017] FS:  00007f572641d700(0000) GS:ffff8807f3600000(0000) knlGS:0000000000000000
-[ 6293.256784] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[ 6293.256784] CR2: ffff8807c96f3000 CR3: 00000007c8e81000 CR4: 00000000000006e0
-[ 6293.256784] Stack:
-[ 6293.256784]  ffff880787ddfcc8 ffff880787ddfcc8 0000000000000000 ffff880787ddfcc8
-[ 6293.256784]  ffff880787ddfd48 ffffffff84128be8 ffff880700000002 0000000000000001
-[ 6293.256784]  ffff8807b803b000 ffff880787ddfce0 0000100000000000 0000000000000000
-[ 6293.256784] Call Trace:
-[ 6293.256784]  [<ffffffff84128be8>] p9_virtio_zc_request+0x598/0x630
-[ 6293.256784]  [<ffffffff8115c610>] ? wake_up_bit+0x40/0x40
-[ 6293.256784]  [<ffffffff841209b1>] p9_client_zc_rpc+0x111/0x3a0
-[ 6293.256784]  [<ffffffff81174b78>] ? sched_clock_cpu+0x108/0x120
-[ 6293.256784]  [<ffffffff84122a21>] p9_client_read+0xe1/0x2c0
-[ 6293.256784]  [<ffffffff81708a90>] v9fs_file_read+0x90/0xc0
-[ 6293.256784]  [<ffffffff812bd073>] vfs_read+0xc3/0x130
-[ 6293.256784]  [<ffffffff811a78bd>] ? trace_hardirqs_on+0xd/0x10
-[ 6293.256784]  [<ffffffff812bd5a2>] SyS_read+0x62/0xa0
-[ 6293.256784]  [<ffffffff841a1a00>] tracesys+0xdd/0xe2
-[ 6293.256784] Code: 66 90 48 89 fb 41 89 f5 48 8b 3f 48 85 ff 74 29 85 f6 74 25 45 31 e4 66 0f 1f 84 00 00 00 00 00 e8 eb 14 12 fd 41 ff c4 49 63 c4 <48> 8b 3c c3 48 85 ff 74 05 45 39 e5 75 e7 48 83 c4 08 5b 41 5c
-[ 6293.256784] RIP  [<ffffffff8412793b>] p9_release_pages+0x3b/0x60
-[ 6293.256784]  RSP <ffff880787ddfc28>
-[ 6293.256784] CR2: ffff8807c96f3000
-[ 6293.256784] ---[ end trace 50822ee72cd360fc ]---
+Note: there's room for more optimization: caller is likely to have a
+memory barrier already, which means we might be able to get rid of a
+barrier here.  Deferring this optimization until we do some
+benchmarking.
 
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
+[wg: Backported to 3.2]
+Signed-off-by: Wolfram Gloger <wmglo@dent.med.uni-muenchen.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/9p/trans_common.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
-
-diff --git a/net/9p/trans_common.c b/net/9p/trans_common.c
-index de8df95..2ee3879 100644
---- a/net/9p/trans_common.c
-+++ b/net/9p/trans_common.c
-@@ -24,11 +24,11 @@
-  */
- void p9_release_pages(struct page **pages, int nr_pages)
- {
--	int i = 0;
--	while (pages[i] && nr_pages--) {
--		put_page(pages[i]);
--		i++;
--	}
-+	int i;
-+
-+	for (i = 0; i < nr_pages; i++)
-+		if (pages[i])
-+			put_page(pages[i]);
+diff -upr linux-3.2.49/drivers/virtio/virtio_ring.c linux-3.2.49wg/drivers/virtio/virtio_ring.c
+--- linux-3.2.49/drivers/virtio/virtio_ring.c	2013-07-27 18:13:40.000000000 +0200
++++ linux-3.2.49wg/drivers/virtio/virtio_ring.c	2013-07-27 13:57:28.000000000 +0200
+@@ -360,9 +360,22 @@ void virtqueue_disable_cb(struct virtque
  }
- EXPORT_SYMBOL(p9_release_pages);
+ EXPORT_SYMBOL_GPL(virtqueue_disable_cb);
  
+-bool virtqueue_enable_cb(struct virtqueue *_vq)
++/**
++ * virtqueue_enable_cb_prepare - restart callbacks after disable_cb
++ * @vq: the struct virtqueue we're talking about.
++ *
++ * This re-enables callbacks; it returns current queue state
++ * in an opaque unsigned value. This value should be later tested by
++ * virtqueue_poll, to detect a possible race between the driver checking for
++ * more work, and enabling callbacks.
++ *
++ * Caller must ensure we don't call this with other virtqueue
++ * operations at the same time (except where noted).
++ */
++unsigned virtqueue_enable_cb_prepare(struct virtqueue *_vq)
+ {
+ 	struct vring_virtqueue *vq = to_vvq(_vq);
++	u16 last_used_idx;
+ 
+ 	START_USE(vq);
+ 
+@@ -372,15 +385,45 @@ bool virtqueue_enable_cb(struct virtqueu
+ 	 * either clear the flags bit or point the event index at the next
+ 	 * entry. Always do both to keep code simple. */
+ 	vq->vring.avail->flags &= ~VRING_AVAIL_F_NO_INTERRUPT;
+-	vring_used_event(&vq->vring) = vq->last_used_idx;
++	vring_used_event(&vq->vring) = last_used_idx = vq->last_used_idx;
++	END_USE(vq);
++	return last_used_idx;
++}
++EXPORT_SYMBOL_GPL(virtqueue_enable_cb_prepare);
++
++/**
++ * virtqueue_poll - query pending used buffers
++ * @vq: the struct virtqueue we're talking about.
++ * @last_used_idx: virtqueue state (from call to virtqueue_enable_cb_prepare).
++ *
++ * Returns "true" if there are pending used buffers in the queue.
++ *
++ * This does not need to be serialized.
++ */
++bool virtqueue_poll(struct virtqueue *_vq, unsigned last_used_idx)
++{
++	struct vring_virtqueue *vq = to_vvq(_vq);
++
+ 	virtio_mb();
+-	if (unlikely(more_used(vq))) {
+-		END_USE(vq);
+-		return false;
+-	}
++	return (u16)last_used_idx != vq->vring.used->idx;
++}
++EXPORT_SYMBOL_GPL(virtqueue_poll);
+ 
+-	END_USE(vq);
+-	return true;
++/**
++ * virtqueue_enable_cb - restart callbacks after disable_cb.
++ * @vq: the struct virtqueue we're talking about.
++ *
++ * This re-enables callbacks; it returns "false" if there are pending
++ * buffers in the queue, to detect a possible race between the driver
++ * checking for more work, and enabling callbacks.
++ *
++ * Caller must ensure we don't call this with other virtqueue
++ * operations at the same time (except where noted).
++ */
++bool virtqueue_enable_cb(struct virtqueue *_vq)
++{
++	unsigned last_used_idx = virtqueue_enable_cb_prepare(_vq);
++	return !virtqueue_poll(_vq, last_used_idx);
+ }
+ EXPORT_SYMBOL_GPL(virtqueue_enable_cb);
+ 
+diff -upr linux-3.2.49/include/linux/virtio.h linux-3.2.49wg/include/linux/virtio.h
+--- linux-3.2.49/include/linux/virtio.h	2012-01-05 00:55:44.000000000 +0100
++++ linux-3.2.49wg/include/linux/virtio.h	2013-07-27 13:57:28.000000000 +0200
+@@ -96,6 +96,10 @@ void virtqueue_disable_cb(struct virtque
+ 
+ bool virtqueue_enable_cb(struct virtqueue *vq);
+ 
++unsigned virtqueue_enable_cb_prepare(struct virtqueue *vq);
++
++bool virtqueue_poll(struct virtqueue *vq, unsigned);
++
+ bool virtqueue_enable_cb_delayed(struct virtqueue *vq);
+ 
+ void *virtqueue_detach_unused_buf(struct virtqueue *vq);
 
