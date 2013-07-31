@@ -1,50 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751193Ab3GaXZQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 19:25:16 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:48621 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750748Ab3GaXZO (ORCPT
+	id S1751238Ab3GaX3q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 19:29:46 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:43481 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750748Ab3GaX3o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 19:25:14 -0400
-From: Soren Brinkmann <soren.brinkmann@xilinx.com>
-To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Michal Simek <michal.simek@xilinx.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org,
-        Soren Brinkmann <soren.brinkmann@xilinx.com>
-Subject: [PATCH] arm: zynq: dt: Set correct L2 ram latencies
-Date: Wed, 31 Jul 2013 16:24:59 -0700
-Message-Id: <1375313099-8402-1-git-send-email-soren.brinkmann@xilinx.com>
-X-Mailer: git-send-email 1.8.3.4
+	Wed, 31 Jul 2013 19:29:44 -0400
+Message-ID: <51F99DE4.7010503@wwwdotorg.org>
+Date: Wed, 31 Jul 2013 17:29:40 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+CC: Tuomas Tynkkynen <tuomas.tynkkynen@iki.fi>,
+        Tuomas Tynkkynen <ttynkkynen@nvidia.com>, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        Mikko Perttunen <mperttunen@nvidia.com>
+Subject: Re: [PATCH 2/2] ARM: dts: USB for Tegra114 Dalmore
+References: <1375292543-7896-1-git-send-email-ttynkkynen@nvidia.com> <1375292543-7896-3-git-send-email-ttynkkynen@nvidia.com> <51F9550F.3080503@cogentembedded.com> <51F9660C.6090604@iki.fi> <51F96B48.10209@cogentembedded.com> <51F98A78.9060309@wwwdotorg.org> <51F98D92.3010607@cogentembedded.com>
+In-Reply-To: <51F98D92.3010607@cogentembedded.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
----
- arch/arm/boot/dts/zynq-7000.dtsi | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+On 07/31/2013 04:20 PM, Sergei Shtylyov wrote:
+> On 08/01/2013 02:06 AM, Stephen Warren wrote:
+...
+>>>     That's really horrible design.
+>>
+>> Yup. Both USB PHY and EHCI controller registers really are interleaved
+>> in one range.
+> 
+>    But the standard EHCI register space has no holes IIRC, so they can't
+> be really that much interleaved as you're describing (unless you have
+> some non-standard registers of course)...
 
-diff --git a/arch/arm/boot/dts/zynq-7000.dtsi b/arch/arm/boot/dts/zynq-7000.dtsi
-index 6f54a64..e32b92b 100644
---- a/arch/arm/boot/dts/zynq-7000.dtsi
-+++ b/arch/arm/boot/dts/zynq-7000.dtsi
-@@ -41,8 +41,8 @@
- 		L2: cache-controller {
- 			compatible = "arm,pl310-cache";
- 			reg = <0xF8F02000 0x1000>;
--			arm,data-latency = <2 3 2>;
--			arm,tag-latency = <2 3 2>;
-+			arm,data-latency = <3 2 2>;
-+			arm,tag-latency = <2 2 2>;
- 			cache-unified;
- 			cache-level = <2>;
- 		};
--- 
-1.8.3.4
+Yes, there are certainly non-standard registers.
 
+...
+>>>     Don't they cause numerous resource conflicts while device nodes
+>>> being
+>>> instantiated as the platform devices?
+> 
+>> No; the driver knows that the HW is screwy and there's lots of
+>> register-range sharing going on, so it simply maps the registers, rather
+>> than reserving the physical address range and mapping it.
+> 
+>    Yes, it's clear that the driver should take special measures, I was
+> asking about the platform device creation phase. What do you see in
+> /proc/iomem?
+
+The drivers don't request the memory region since doing so would cause
+conflicts. Hence, the regions don't show up in /proc/iomem.
+
+This actually isn't that uncommon for DT-based drivers anyway; many use
+e.g. of_iomap() which IIRC just looks up the resource and maps it
+without registering the usage.
