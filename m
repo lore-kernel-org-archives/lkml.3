@@ -1,83 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759228Ab3GaJx3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 05:53:29 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:45148 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758896Ab3GaJx1 (ORCPT
+	id S1759346Ab3GaJyR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 05:54:17 -0400
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:54120 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753959Ab3GaJyP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 05:53:27 -0400
-Date: Wed, 31 Jul 2013 11:53:06 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jason Low <jason.low2@hp.com>
-Cc: Ingo Molnar <mingo@redhat.com>, KML <linux-kernel@vger.kernel.org>,
-        Mike Galbraith <efault@gmx.de>, Thomas Gleixner <tglx@linutronix.de>,
-        Paul Turner <pjt@google.com>, Alex Shi <alex.shi@intel.com>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, aswin@hp.com, scott.norton@hp.com,
-        chegu_vinod@hp.com, Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Subject: Re: [RFC PATCH] sched: Reduce overestimating avg_idle
-Message-ID: <20130731095306.GY3008@twins.programming.kicks-ass.net>
-References: <1375263472.3922.26.camel@j-VirtualBox>
+	Wed, 31 Jul 2013 05:54:15 -0400
+Date: Wed, 31 Jul 2013 05:54:11 -0400
+From: Tejun Heo <htejun@gmail.com>
+To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: Mark Brown <broonie@kernel.org>, Peter Chen <peter.chen@freescale.com>,
+        Fabio Estevam <festevam@gmail.com>, alexander.shishkin@linux.intel.com,
+        kernel@pengutronix.de, linux-usb@vger.kernel.org,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Jeff Garzik <jeff@garzik.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, Mike Turquette <mturquette@linaro.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 2/2] chipidea: Use devm_request_irq()
+Message-ID: <20130731095411.GA2810@htj.dyndns.org>
+References: <1375232669-27846-1-git-send-email-festevam@gmail.com>
+ <1375232669-27846-2-git-send-email-festevam@gmail.com>
+ <20130731073306.GZ1754@pengutronix.de>
+ <20130731082054.GF8540@nchen-desktop>
+ <20130731084645.GB1754@pengutronix.de>
+ <20130731090512.GD9858@sirena.org.uk>
+ <20130731094434.GC1754@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1375263472.3922.26.camel@j-VirtualBox>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130731094434.GC1754@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 31, 2013 at 02:37:52AM -0700, Jason Low wrote:
-> The avg_idle value may sometimes be overestimated, which may cause new idle
-> load balance to be attempted more often than it should. Currently, when
-> avg_idle gets updated, if the delta exceeds some max value (default 1000000 ns),
-> the entire avg gets set to the max value, regardless of what the previous avg
-> was. So if a CPU remains idle for 200,000 ns most of the time, and if the CPU
-> goes idle for 1,200,000 ns, the average is then pushed up to 1,000,000 ns when
-> it should be less.
-> 
-> Additionally, once the avg_idle is at its max, it may take a while to pull the
-> avg down to a value that it should be. In the above example, after the avg idle
-> is set the max value of 1000000 ns, the CPU's idle durations needs to
-> be 200000 ns for the next 8 occurrences before the avg falls below the migration
-> cost value.
-> 
-> This patch attempts to avoid these situations by always updating the avg_idle
-> value first with the function call to update_avg(). Then, if the avg_idle
-> exceeds the max avg value, the avg gets set to the max. Also, this patch lowers
-> the max avg_idle value to migration_cost * 1.5 instead of migration_cost * 2 to
-> reduce the time it takes to pull the avg idle to a lower value after long idles.
+Hello,
 
-Indeed, this seems quite sensible.
+On Wed, Jul 31, 2013 at 11:44:34AM +0200, Uwe Kleine-König wrote:
+> > > OK, so the possible problem is that remove is called while the irq is
+> > > still active. That means you have to assert that all resources the irq
 
-> With this change, I got some decent performance boosts in AIM7 workloads on an
-> 8 socket machine on the 3.10 kernel. In particular, it boosted the AIM7 fserver
-> workload by about 20% when running it with a high # of users.
+If your driver destruction path is running while your irq handler is
+still running, it's a crappy / broken driver.  You need a deactivation
+step whether you're using devm or not.  IRQs can be shared and the
+device should be in a quiesced state before the driver detaches
+itself.  Note that you can queue deactivation routine using devm.  For
+an example, please take a look at
+drivers/ata/libata-core.c::ata_host_start().
 
-Nice :-)
+> > > handler is using (e.g. ioremap, clk_prepare_enable) are only freed
+> > > *after* the irq is done. For ioremap that means it must be done using
+> > > devm_ioremap_resource. For a clock it's not that easy because the irq
+> > > handler has to assert that a used clk is kept prepared which can only be
+> > > done using clk_prepare which in turn is not allowed in an irq handler.
+> > 
+> > > Hmm. So the only possible fixes are
+> > > 	- devm* can be told to also care about clk_disable_unprepare
+> > > 	- after disabling irqs in the remove callback wait for all
+> > > 	  active irqs to be done. (i.e. call synchronize_irq(irq))
+> > > 	- don't use devm_request_irq
 
-> An avg_idle related question that I have is does migration_cost in idle balance
-> need to be the same as the migration_cost in task_hot()? Can we keep
-> migration_cost default value used in task_hot() the same, but have a different
-> default value or increase migration_cost only when comparing it with avg_idle in
-> idle balance?
+Again, the right thing to do is having a proper deactivation step.
+This is nothing devm can do automatically.  There's no way for it to
+find out that the device is actually quiesced.  Let's say it waits for
+the current instance of irq handler to finish.  How would it know that
+it won't start again between the flushing of the current instance and
+irq deregistration.  Add an explicit deactivation step using
+devres_alloc().
 
-No they're quite unrelated. I think you can measure the max time we've
-ever spend in newidle balance and use that to clip the values.
+> > I'm not sure that devm_ guarantees any ordering in the cleanups it does
+> > so I'd not like to rely on the first option either, if there were some
+> > guarantee of that it'd help.  The nice thing about explicitly freeing
+> > the IRQ is that you can tell that all this stuff is safe by inspection.
+> devm_* at least uses list_for_each_entry_reverse
+> (drivers/base/devres.c:release_nodes()). Without this guarantee devm_
+> would not make much sense IMHO.
 
-Similarly, I've thought about how we updated the sd->avg_cost in the
-previous patches and wondered if we should not track max_cost.
+devm guarantees that the destruction callbacks are called in the
+reverse order of registration.
 
-The 'only' down-side I could come up with is that its all ran from
-SoftIRQ context which means IRQ/NMI/SMI can all stretch/warp the time it
-takes to actually do the idle balance.
+Thanks.
 
-The idea behind using the max is that we want to reduce the chance we
-overrun the averages and consume time we should have spend doing useful
-work.
+-- 
+tejun
