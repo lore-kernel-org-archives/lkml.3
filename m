@@ -1,58 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759454Ab3GaKVJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 06:21:09 -0400
-Received: from mail-we0-f177.google.com ([74.125.82.177]:49418 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752396Ab3GaKVH (ORCPT
+	id S1759479Ab3GaKXK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 06:23:10 -0400
+Received: from mail-qa0-f41.google.com ([209.85.216.41]:44567 "EHLO
+	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754397Ab3GaKXH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 06:21:07 -0400
-Date: Wed, 31 Jul 2013 11:21:00 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, linus.walleij@stericsson.com,
-        srinidhi.kasagar@stericsson.com
-Subject: Re: [PATCH 01/22] ARM: ux500: Remove '0x's from HREF v60+ DTS file
-Message-ID: <20130731102100.GD13298@lee--X1>
-References: <1374242333-6852-1-git-send-email-lee.jones@linaro.org>
- <20130730115403.GA29992@amd.pavel.ucw.cz>
+	Wed, 31 Jul 2013 06:23:07 -0400
+Date: Wed, 31 Jul 2013 06:23:03 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Marc C <marc.ceeeee@gmail.com>
+Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        Alexander Gordeev <agordeev@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Mike Christie <michaelc@cs.wisc.edu>, linux-kernel@vger.kernel.org,
+        linux-ide@vger.kernel.org, Jeff Garzik <jgarzik@pobox.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>
+Subject: Re: [PATCH RESEND 0/1] AHCI: Optimize interrupt processing
+Message-ID: <20130731102303.GC2810@htj.dyndns.org>
+References: <20130722150359.GA16564@dhcp-26-207.brq.redhat.com>
+ <1374527436.7397.1145.camel@haakon3.risingtidesystems.com>
+ <20130725101641.GB31994@dhcp-26-207.brq.redhat.com>
+ <1374790082.7397.1411.camel@haakon3.risingtidesystems.com>
+ <20130726020928.GL29296@kernel.dk>
+ <1374873276.7397.1512.camel@haakon3.risingtidesystems.com>
+ <1374885793.7397.1537.camel@haakon3.risingtidesystems.com>
+ <20130729111827.GA14283@dhcp-26-207.brq.redhat.com>
+ <1375125571.5171.16.camel@haakon3.risingtidesystems.com>
+ <CAO1A-8AW-aQJ0hjX38U_q8Ovcpb58fP9Skfyi59xihXTQHECNQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130730115403.GA29992@amd.pavel.ucw.cz>
+In-Reply-To: <CAO1A-8AW-aQJ0hjX38U_q8Ovcpb58fP9Skfyi59xihXTQHECNQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Jul 2013, Pavel Machek wrote:
+Hello,
 
-> On Fri 2013-07-19 14:58:32, Lee Jones wrote:
-> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+On Tue, Jul 30, 2013 at 09:16:02PM -0700, Marc C wrote:
+> >> One thing which would probably be worthwhile tho is getting rid of the
+> >> bitmap based qc tag allocator in libata.  That one is just borderline
+> >> stupid to keep around on any setup which is supposed to be scalable.
+> > Your border might be wider than mine :-). Yes, the bitmap should
+> > definitely go.
+>
+> A naive implementation is obviously less-than-efficient. However, what
+> other problems exist with the libata QC tag allocator? I highly doubt
+> SATA will change to beyond 32 queue tags, primarily because it would
+> be a pain to change SDB FIS (it's likely to break the dozens of AHCI
+> controller implementations out there). Further, it seems like the
+> industry stopped caring about SATA and is pushing NVMe for future
+> offerings.
 > 
-> Why?
+> In any event, most modern systems should have instructions to count
+> leading zeroes and modify bits atomically.
 
-Convention.
+It's inefficient not because scanning is expensive but because it
+makes all CPUs in the system to hit on the exact same cacheline over
+and over and over again.
 
-> > diff --git a/arch/arm/boot/dts/hrefv60plus.dts b/arch/arm/boot/dts/hrefv60plus.dts
-> > index 3d580d6..46fd8af 100644
-> > --- a/arch/arm/boot/dts/hrefv60plus.dts
-> > +++ b/arch/arm/boot/dts/hrefv60plus.dts
-> > @@ -26,7 +26,7 @@
-> >  
-> >  	soc {
-> >  		i2c@80110000 {
-> > -			bu21013_tp@0x5c {
-> > +			bu21013_tp@5c {
-> >  				reset-gpio = <&gpio4 15 0x4>;
-> >  			};
-> >  		};
-> 
+Thanks.
 
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+tejun
