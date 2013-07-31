@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759378Ab3GaJEI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 05:04:08 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:55192 "EHLO
+	id S1759362Ab3GaJEG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 05:04:06 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:56068 "EHLO
 	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759319Ab3GaJDm (ORCPT
+	with ESMTP id S1759322Ab3GaJDm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 31 Jul 2013 05:03:42 -0400
-X-AuditID: 9c93017d-b7b45ae000000e34-21-51f8d2e46a90
+X-AuditID: 9c93017d-b7b45ae000000e34-22-51f8d2e46f9d
 From: Namhyung Kim <namhyung@kernel.org>
 To: Steven Rostedt <rostedt@goodmis.org>
 Cc: Namhyung Kim <namhyung.kim@lge.com>, Hyeoncheol Lee <cheol.lee@lge.com>,
@@ -17,9 +17,9 @@ Cc: Namhyung Kim <namhyung.kim@lge.com>, Hyeoncheol Lee <cheol.lee@lge.com>,
         Oleg Nesterov <oleg@redhat.com>,
         "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: [PATCH 12/13] tracing/uprobes: Add support for full argument access methods
-Date: Wed, 31 Jul 2013 18:03:29 +0900
-Message-Id: <1375261410-11219-13-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 13/13] tracing/probes: Fix basic print type functions
+Date: Wed, 31 Jul 2013 18:03:30 +0900
+Message-Id: <1375261410-11219-14-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1375261410-11219-1-git-send-email-namhyung@kernel.org>
 References: <1375261410-11219-1-git-send-email-namhyung@kernel.org>
@@ -30,10 +30,14 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-Enable to fetch other types of argument for the uprobes.  IOW, we can
-access stack, memory, deref, bitfield and retval from uprobes now.
+The print format of s32 type was "ld" and it's casted to "long".  So
+it turned out to print 4294967295 for "-1" on 64-bit systems.  Not
+sure whether it worked well on 32-bit systems.
 
-Original-patch-by: Hyeoncheol Lee <cheol.lee@lge.com>
+Anyway, it'd be better if we have exact format and type cast for each
+types on both of 32- and 64-bit systems.  In fact, the only difference
+is on s64/u64 types.
+
 Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: Oleg Nesterov <oleg@redhat.com>
@@ -41,96 +45,39 @@ Cc: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- kernel/trace/trace_probe.c | 34 ++++++++++++++++++++--------------
- 1 file changed, 20 insertions(+), 14 deletions(-)
+ kernel/trace/trace_probe.c | 17 +++++++++++------
+ 1 file changed, 11 insertions(+), 6 deletions(-)
 
 diff --git a/kernel/trace/trace_probe.c b/kernel/trace/trace_probe.c
-index a46c9fd494ff..8ad48ca4e344 100644
+index 8ad48ca4e344..e84e6134f1fb 100644
 --- a/kernel/trace/trace_probe.c
 +++ b/kernel/trace/trace_probe.c
-@@ -318,7 +318,7 @@ fail:
- }
+@@ -45,14 +45,19 @@ __kprobes int PRINT_TYPE_FUNC_NAME(type)(struct trace_seq *s,		\
+ }									\
+ const char PRINT_TYPE_FMT_NAME(type)[] = fmt;
  
- /* Special function : only accept unsigned long */
--static __kprobes void fetch_stack_address(struct pt_regs *regs,
-+static __kprobes void fetch_kernel_stack_address(struct pt_regs *regs,
- 					  void *dummy, void *dest, void *priv)
- {
- 	*(unsigned long *)dest = kernel_stack_pointer(regs);
-@@ -368,7 +368,8 @@ int traceprobe_split_symbol_offset(char *symbol, unsigned long *offset)
- #define PARAM_MAX_STACK (THREAD_SIZE / sizeof(unsigned long))
+-DEFINE_BASIC_PRINT_TYPE_FUNC(u8, "%x", unsigned int)
+-DEFINE_BASIC_PRINT_TYPE_FUNC(u16, "%x", unsigned int)
+-DEFINE_BASIC_PRINT_TYPE_FUNC(u32, "%lx", unsigned long)
++DEFINE_BASIC_PRINT_TYPE_FUNC(u8 , "%x", unsigned char)
++DEFINE_BASIC_PRINT_TYPE_FUNC(u16, "%x", unsigned short)
++DEFINE_BASIC_PRINT_TYPE_FUNC(u32, "%x", unsigned int)
++DEFINE_BASIC_PRINT_TYPE_FUNC(s8,  "%d", signed char)
++DEFINE_BASIC_PRINT_TYPE_FUNC(s16, "%d", short)
++DEFINE_BASIC_PRINT_TYPE_FUNC(s32, "%d", int)
++#if BITS_PER_LONG == 32
+ DEFINE_BASIC_PRINT_TYPE_FUNC(u64, "%llx", unsigned long long)
+-DEFINE_BASIC_PRINT_TYPE_FUNC(s8, "%d", int)
+-DEFINE_BASIC_PRINT_TYPE_FUNC(s16, "%d", int)
+-DEFINE_BASIC_PRINT_TYPE_FUNC(s32, "%ld", long)
+ DEFINE_BASIC_PRINT_TYPE_FUNC(s64, "%lld", long long)
++#else /* BITS_PER_LONG == 64 */
++DEFINE_BASIC_PRINT_TYPE_FUNC(u64, "%lx", unsigned long)
++DEFINE_BASIC_PRINT_TYPE_FUNC(s64, "%ld", long)
++#endif
  
- static int parse_probe_vars(char *arg, const struct fetch_type *t,
--			    struct fetch_param *f, bool is_return)
-+			    struct fetch_param *f, bool is_return,
-+			    bool is_kprobe)
- {
- 	int ret = 0;
- 	unsigned long param;
-@@ -380,13 +381,18 @@ static int parse_probe_vars(char *arg, const struct fetch_type *t,
- 			ret = -EINVAL;
- 	} else if (strncmp(arg, "stack", 5) == 0) {
- 		if (arg[5] == '\0') {
--			if (strcmp(t->name, DEFAULT_FETCH_TYPE_STR) == 0)
--				f->fn = fetch_stack_address;
--			else
--				ret = -EINVAL;
-+			if (strcmp(t->name, DEFAULT_FETCH_TYPE_STR))
-+				return -EINVAL;
-+
-+			if (is_kprobe)
-+				f->fn = fetch_kernel_stack_address;
-+			else {
-+				f->fn = t->fetch[FETCH_MTD_stack];
-+				f->data = (void *)0;
-+			}
- 		} else if (isdigit(arg[5])) {
- 			ret = kstrtoul(arg + 5, 10, &param);
--			if (ret || param > PARAM_MAX_STACK)
-+			if (ret || (is_kprobe && param > PARAM_MAX_STACK))
- 				ret = -EINVAL;
- 			else {
- 				f->fn = t->fetch[FETCH_MTD_stack];
-@@ -410,17 +416,13 @@ static int parse_probe_arg(char *arg, const struct fetch_type *t,
- 	int ret;
- 	const struct fetch_type *ttbl;
- 
--	ttbl = kprobes_fetch_type_table;
-+	ttbl = is_kprobe ? kprobes_fetch_type_table : uprobes_fetch_type_table;
- 
- 	ret = 0;
- 
--	/* Until uprobe_events supports only reg arguments */
--	if (!is_kprobe && arg[0] != '%')
--		return -EINVAL;
--
- 	switch (arg[0]) {
- 	case '$':
--		ret = parse_probe_vars(arg + 1, t, f, is_return);
-+		ret = parse_probe_vars(arg + 1, t, f, is_return, is_kprobe);
- 		break;
- 
- 	case '%':	/* named register */
-@@ -443,6 +445,10 @@ static int parse_probe_arg(char *arg, const struct fetch_type *t,
- 		} else {
- 			struct symbol_cache *sc;
- 
-+			/* uprobes don't support symbols */
-+			if (!is_kprobe)
-+				return -EINVAL;
-+
- 			ret = traceprobe_split_symbol_offset(arg + 1, &offset);
- 			if (ret)
- 				break;
-@@ -554,7 +560,7 @@ int traceprobe_parse_probe_arg(char *arg, ssize_t *size,
- 	int ret;
- 	const struct fetch_type *ttbl;
- 
--	ttbl = kprobes_fetch_type_table;
-+	ttbl = is_kprobe ? kprobes_fetch_type_table : uprobes_fetch_type_table;
- 
- 	if (strlen(arg) > MAX_ARGSTR_LEN) {
- 		pr_info("Argument is too long.: %s\n",  arg);
+ /* Print type function for string type */
+ __kprobes int PRINT_TYPE_FUNC_NAME(string)(struct trace_seq *s,
 -- 
 1.7.11.7
 
