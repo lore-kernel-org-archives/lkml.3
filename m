@@ -1,53 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760357Ab3GaPoJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 11:44:09 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:46959 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756560Ab3GaPoH (ORCPT
+	id S1760420Ab3GaPpY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 11:45:24 -0400
+Received: from g6t0187.atlanta.hp.com ([15.193.32.64]:45908 "EHLO
+	g6t0187.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755532Ab3GaPpX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 11:44:07 -0400
-Date: Wed, 31 Jul 2013 21:13:55 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Andrew Theurer <habanero@linux.vnet.ibm.com>
-Cc: Mel Gorman <mgorman@suse.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+	Wed, 31 Jul 2013 11:45:23 -0400
+Message-ID: <51F93105.8020503@hp.com>
+Date: Wed, 31 Jul 2013 11:45:09 -0400
+From: Don Morris <don.morris@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Mel Gorman <mgorman@suse.de>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
         Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [RFC PATCH 00/10] Improve numa scheduling by consolidating tasks
-Message-ID: <20130731154355.GD4880@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <1375170505-5967-1-git-send-email-srikar@linux.vnet.ibm.com>
- <1375277624.11541.27.camel@oc6622382223.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1375277624.11541.27.camel@oc6622382223.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13073115-3620-0000-0000-000003C126A9
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] sched, numa: Use {cpu, pid} to create task groups for
+ shared faults
+References: <1373901620-2021-1-git-send-email-mgorman@suse.de> <20130730113857.GR3008@twins.programming.kicks-ass.net> <20130731150751.GA15144@twins.programming.kicks-ass.net>
+In-Reply-To: <20130731150751.GA15144@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Andrew Theurer <habanero@linux.vnet.ibm.com> [2013-07-31 08:33:44]:
->              -----------    -----------    -----------    -----------  
->  VM-node00|   49153(006%)   673792(083%)    51712(006%)   36352(004%) 
+On 07/31/2013 11:07 AM, Peter Zijlstra wrote:
 > 
-> I think the consolidation is a nice concept, but it needs a much tighter
-> integration with numa balancing.  The action to clump tasks on same node's
-> runqueues should be triggered by detecting that they also access
-> the same memory.
+> New version that includes a final put for the numa_group struct and a
+> few other modifications.
 > 
+> The new task_numa_free() completely blows though, far too expensive.
+> Good ideas needed.
+> 
+> ---
+> Subject: sched, numa: Use {cpu, pid} to create task groups for shared faults
+> From: Peter Zijlstra <peterz@infradead.org>
+> Date: Tue Jul 30 10:40:20 CEST 2013
+> 
+> A very simple/straight forward shared fault task grouping
+> implementation.
+> 
+> Concerns are that grouping on a single shared fault might be too
+> aggressive -- this only works because Mel is excluding DSOs for faults,
+> otherwise we'd have the world in a single group.
+> 
+> Future work could explore more complex means of picking groups. We
+> could for example track one group for the entire scan (using something
+> like PDM) and join it at the end of the scan if we deem it shared a
+> sufficient amount of memory.
+> 
+> Another avenue to explore is that to do with tasks where private faults
+> are predominant. Should we exclude them from the group or treat them as
+> secondary, creating a graded group that tries hardest to collate shared
+> tasks but also tries to move private tasks near when possible.
+> 
+> Also, the grouping information is completely unused, its up to future
+> patches to do this.
+> 
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> ---
+>  include/linux/sched.h |    4 +
+>  kernel/sched/core.c   |    4 +
+>  kernel/sched/fair.c   |  177 +++++++++++++++++++++++++++++++++++++++++++++++---
+>  kernel/sched/sched.h  |    5 -
+>  4 files changed, 176 insertions(+), 14 deletions(-)
 
-Thanks Andrew for testing and reporting your results and analysis.
-Will try to focus on getting consolidation + tighter integration with
-numa balancing.
+> +
+> +static void task_numa_free(struct task_struct *p)
+> +{
+> +	kfree(p->numa_faults);
+> +	if (p->numa_group) {
+> +		struct numa_group *grp = p->numa_group;
 
--- 
-Thanks and Regards
-Srikar Dronamraju
+See below.
+
+> +		int i;
+> +
+> +		for (i = 0; i < 2*nr_node_ids; i++)
+> +			atomic_long_sub(p->numa_faults[i], &grp->faults[i]);
+> +
+> +		spin_lock(&p->numa_lock);
+> +		spin_lock(&group->lock);
+> +		list_del(&p->numa_entry);
+> +		spin_unlock(&group->lock);
+> +		rcu_assign_pointer(p->numa_group, NULL);
+> +		put_numa_group(grp);
+
+So is the local variable group or grp here? Got to be one or the
+other to compile...
+
+Don
+
+> +	}
+> +}
+> +
+>  /*
+>   * Got a PROT_NONE fault for a page on @node.
+>   */
 
