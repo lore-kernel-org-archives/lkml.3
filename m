@@ -1,66 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759574Ab3GaKjc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 06:39:32 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:10794 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755572Ab3GaKja (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 06:39:30 -0400
-Message-ID: <51F8E922.3070008@huawei.com>
-Date: Wed, 31 Jul 2013 18:38:26 +0800
-From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1759547Ab3GaKkl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 06:40:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13720 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751684Ab3GaKkk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 06:40:40 -0400
+Date: Wed, 31 Jul 2013 13:40:38 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH 3/3] KVM: x86: handle singlestep during emulation
+Message-ID: <20130731104037.GG7484@redhat.com>
+References: <1375197096-2454-1-git-send-email-pbonzini@redhat.com>
+ <1375197096-2454-4-git-send-email-pbonzini@redhat.com>
+ <20130731094649.GE7484@redhat.com>
+ <494454351.7440476.1375266631241.JavaMail.root@redhat.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@redhat.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Jens Axboe <axboe@kernel.dk>,
-        Al Viro <viro@zeniv.linux.org.uk>, Eric Dumazet <edumazet@google.com>
-Subject: Re: [PATCH] relay: fix timer madness
-References: <51F8E06C.1010408@huawei.com>
-In-Reply-To: <51F8E06C.1010408@huawei.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.66.58.241]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <494454351.7440476.1375266631241.JavaMail.root@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/7/31 18:01, zhangwei(Jovi) wrote:
-> From: Ingo Molnar <mingo@elte.hu>
+On Wed, Jul 31, 2013 at 06:30:31AM -0400, Paolo Bonzini wrote:
 > 
-> When I'm using ktap script to tracing all event tracepoints by relay
-> transport, without this patch, the system will hang in few seconds.
+> ----- Gleb Natapov <gleb@redhat.com> wrote:
+> > On Tue, Jul 30, 2013 at 05:11:36PM +0200, Paolo Bonzini wrote:
+> > > This lets debugging work better during emulation of invalid
+> > > guest state.
+> > > 
+> > > This time the check is done after emulation, but before writeback
+> > > of the flags; we need to check the flags *before* execution of the
+> > > instruction, we cannot check singlestep_rip because the CS base may
+> > > have already been modified.
+> > > 
+> > > Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+> > > ---
+> > >  arch/x86/kvm/x86.c | 39 ++++++++++++++++++++++++++++++++++++++-
+> > >  1 file changed, 38 insertions(+), 1 deletion(-)
+> > > 
+> > > diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> > > index 1368cf5..9805cfd 100644
+> > > --- a/arch/x86/kvm/x86.c
+> > > +++ b/arch/x86/kvm/x86.c
+> > > @@ -4971,6 +4971,41 @@ static int kvm_vcpu_check_hw_bp(unsigned long addr, u32 type, u32 dr7,
+> > >  	return dr6;
+> > >  }
+> > >  
+> > > +static void kvm_vcpu_check_singlestep(struct kvm_vcpu *vcpu, int *r)
+> > > +{
+> > > +	struct kvm_run *kvm_run = vcpu->run;
+> > > +
+> > > +	/*
+> > > +	 * Use the "raw" value to see if TF was passed to the processor.
+> > > +	 * Note that the new value of the flags has not been saved yet.
+> > > +	 *
+> > > +	 * This is correct even for TF set by the guest, because "the
+> > > +	 * processor will not generate this exception after the instruction
+> > > +	 * that sets the TF flag".
+> > > +	 */
+> > > +	unsigned long rflags = kvm_x86_ops->get_rflags(vcpu);
+> > > +
+> > > +	if (unlikely(rflags & X86_EFLAGS_TF)) {
+> > > +		if (vcpu->guest_debug & KVM_GUESTDBG_SINGLESTEP) {
+> > > +			kvm_run->debug.arch.dr6 = DR6_BS | DR6_FIXED_1;
+> > > +			kvm_run->debug.arch.pc = vcpu->arch.singlestep_rip;
+> > > +			kvm_run->debug.arch.exception = DB_VECTOR;
+> > > +			kvm_run->exit_reason = KVM_EXIT_DEBUG;
+> > > +			*r = EMULATE_USER_EXIT;
+> > > +		} else {
+> > > +			vcpu->arch.emulate_ctxt.eflags &= ~X86_EFLAGS_TF;
+> > > +			/*
+> > > +			 * "Certain debug exceptions may clear bit 0-3.  The
+> > > +			 * remaining contents of the DR6 register are never
+> > > +			 * cleared by the processor".
+> > > +			 */
+> > > +			vcpu->arch.dr6 &= ~15;
+> > > +			vcpu->arch.dr6 |= DR6_BS;
+> > > +			kvm_queue_exception(vcpu, DB_VECTOR);
+> > > +		}
+> > > +	}
+> > > +}
+> > > +
+> > >  static bool kvm_vcpu_check_breakpoint(struct kvm_vcpu *vcpu, int *r)
+> > >  {
+> > >  	struct kvm_run *kvm_run = vcpu->run;
+> > > @@ -5117,10 +5152,12 @@ restart:
+> > >  
+> > >  	if (writeback) {
+> > >  		toggle_interruptibility(vcpu, ctxt->interruptibility);
+> > > -		kvm_set_rflags(vcpu, ctxt->eflags);
+> > >  		kvm_make_request(KVM_REQ_EVENT, vcpu);
+> > >  		vcpu->arch.emulate_regs_need_sync_to_vcpu = false;
+> > >  		kvm_rip_write(vcpu, ctxt->eip);
+> > > +		if (r == EMULATE_DONE)
+> > Single step will not work for mmio write and pio out, we never return
+> > into emulator for those instructions.
 > 
-> I found the original patch discussion in 2007.
-> http://marc.info/?l=linux-kernel&m=118544794717162&w=2
-> (In that mail thread, the patch didn't fix that problem, but it fix
-> the problem I encountered now)
+> Ok to apply the patch as is and work it out later (I suppose I need to
+> check for NULL complete_userspace_io, and if so set my function)?  It
+> is already a huge improvement in usability.
 > 
-> Changed from origina patch:
->  - mod timer interval changed from jiffies+1 to HZ/10, as Ingo suggested.
->  - mod timer interval changed from HZ/10 to jiffies + HZ/10, suggested
->    by Dan Carpenter, since mod_timer() takes an offset for interval.
-> 
-> Original patch changelog from Ingo in 2007:
-> 
->   Remove timer calls (!!!) from deep within the tracing infrastructure.
->   This was totally bogus code that can cause lockups and worse.
->   Poll the buffer every 2 jiffies for now.
-> 
-> Signed-off-by: Ingo Molnar <mingo@elte.hu>
-> Signed-off-by: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-> Cc: Dan Carpenter <dan.carpenter@oracle.com>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: Jens Axboe <axboe@kernel.dk>
-> Cc: Al Viro <viro@zeniv.linux.org.uk>
-> Cc: Eric Dumazet <edumazet@google.com>
-> ---
-Hi Andrew,
+This is not worse from what we have now, so lets apply it, but please add
+comment here that write case is not handled properly yet to not forget
+about it.
 
-How about this patch? this version folded the suggestion from Ingo and Dan.
+complete_userspace_io is not null for write MMIO but the execution
+never returns to emulator, so this is not so simple. May be set
+vcpu->arch.io_singlestep and check it in complete_userspace_io.
 
-jovi
-
+--
+			Gleb.
