@@ -1,150 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932148Ab3GaByd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 21:54:33 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:3613 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751494Ab3GaByb (ORCPT
+	id S1758807Ab3GaB7V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 21:59:21 -0400
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:46230 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751494Ab3GaB7R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 21:54:31 -0400
-X-Spam-Score: -100.8
-Message-ID: <51F86E1A.60404@asianux.com>
-Date: Wed, 31 Jul 2013 09:53:30 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Tue, 30 Jul 2013 21:59:17 -0400
+Message-ID: <51F86F9A.4090104@gmail.com>
+Date: Wed, 31 Jul 2013 09:59:54 +0800
+From: Aaron Lu <aaron.lwe@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: "'Jiri Kosina'" <trivial@kernel.org>, jaharkes@cs.cmu.edu, coda@cs.cmu.edu,
-        codalist@TELEMANN.coda.cs.cmu.edu,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH trivial] include/linux/coda.h: remove useless '#else'
-References: <51F76B7D.2090602@asianux.com> <1375187380.2075.111.camel@joe-AO722> <51F86C08.3080805@asianux.com>
-In-Reply-To: <51F86C08.3080805@asianux.com>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, Len Brown <lenb@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [REGRESSION/PATCH] acpi: blacklist win8 OSI for ASUS Zenbok Prime
+ UX31A
+References: <1375125658-1223-1-git-send-email-felipe.contreras@gmail.com> <51F7546C.9030901@gmail.com> <51F755E3.8040706@gmail.com> <3453253.oZLO1ChPbL@vostro.rjw.lan> <CAMP44s02V_FO1BPJZqo6MB9RMknXYdV7AXDqbJzYHpgK1GUuJw@mail.gmail.com>
+In-Reply-To: <CAMP44s02V_FO1BPJZqo6MB9RMknXYdV7AXDqbJzYHpgK1GUuJw@mail.gmail.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/31/2013 09:44 AM, Chen Gang wrote:
-> On 07/30/2013 08:29 PM, Joe Perches wrote:
->> On Tue, 2013-07-30 at 15:30 +0800, Chen Gang wrote:
->>> '#else' is useless, need remove.
+On 07/31/2013 04:59 AM, Felipe Contreras wrote:
+> On Tue, Jul 30, 2013 at 8:42 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> On Tuesday, July 30, 2013 01:57:55 PM Aaron Lu wrote:
+>>> On 07/30/2013 01:51 PM, Aaron Lu wrote:
+>>>> On 07/30/2013 11:44 AM, Felipe Contreras wrote:
+>>>>> On Mon, Jul 29, 2013 at 10:11 PM, Aaron Lu <aaron.lwe@gmail.com> wrote:
+>>>>>> On 07/30/2013 03:20 AM, Felipe Contreras wrote:
+>>>>>>> Since v3.7 the acpi backlight driver doesn't work at all on this machine
+>>>>>>> because presumably the ACPI code contains stub code when Windows 8 OSI is
+>>>>>>> reported.
+>>>>>>>
+>>>>>>> The commit ea45ea7 (in v3.11-rc2) tried to fix this problem by using the intel
+>>>>>>> backlight driver, however, on this machine it turns the backlight completely
+>>>>>>> off when it reaches level 0%, after which the user might have a lot trouble
+>>>>>>> trying to bring it back.
+>>>>>>
+>>>>>> What do you mean by a lot of trouble? If you press hotkey to increase
+>>>>>> backlight brightness level, does it work?
+>>>>>
+>>>>> I guess so, *if* there is indeed a user-space power manager handling
+>>>>> that, *and* the keyboard has such keys, *or* the user has set custom
+>>>>> hotkeys.
+>>>>
+>>>> Right, for a GUI environment this may not be a big problem(user uses Fn
+>>>> key to decrease brightness level and then hit the black screen, it's
+>>>> natural he will use Fn key to increase brightness level).
+>>>>
+>>>>>
+>>>>>> If so, the screen should not
+>>>>>> be black any more, it's not that user has to blindly enter some command
+>>>>>> to get out of the black screen.
+>>>>>>
+>>>>>> And I'm not sure if this is a bug of intel_backlight(setting a low level
+>>>>>> makes the screen almost off), I see different models with different
+>>>>>> vendors having this behavior.
+>>>>>
+>>>>> I mean, the screen is completely off, I cannot see absolutely
+>>>>> anything. I don't see this behavior with the ACPI backlight driver,
+>>>>> nor do I see that in Windows 7.
+>>>>>
+>>>>>> If this is deemed a bug, then I'm afraid
+>>>>>> intel_backlight interface is useless for a lot of systems...perhaps we
+>>>>>> can only say, intel_backlight's interpretation of low levels are
+>>>>>> different with ACPI video's, and that's probably why its type is named
+>>>>>> as raw :-)
+>>>>>
+>>>>> Well, a bug is defined as unexpected behavior -- as a user, if I'm
+>>>>> changing the brightness of the screen, I certainly don't expect the
+>>>>> screen to turn off, and I think that's the expectation from most
+>>>>> people. It's the first time I see something like that.
+>>>>
+>>>> I agree this is kind of un-expected. At the same time, this seems to be
+>>>> the normal behavior for intel_backlight. I don't know what the correct
+>>>> thing to do here if this is something we want to avoid - modify intel
+>>>> backlight handling code not to set too low value or change the user
+>>>> space tool not to set a too low value if they are interacting with a
+>>>> raw type interface. Neither of them sounds cool... Or, users may get
+>>>> used to it, I for example, don't find this to be very annoying, but
+>>>> maybe I'm already used to it.
 >>>
->>> Signed-off-by: Chen Gang <gang.chen@asianux.com>
->>> ---
->>>  include/linux/coda.h |    1 -
->>>  1 files changed, 0 insertions(+), 1 deletions(-)
->>>
->>> diff --git a/include/linux/coda.h b/include/linux/coda.h
->>> index cff544f..d30209b 100644
->>> --- a/include/linux/coda.h
->>> +++ b/include/linux/coda.h
->>> @@ -60,7 +60,6 @@ Mellon the rights to redistribute these changes without encumbrance.
->>>  
->>>  #if defined(__linux__)
->>>  typedef unsigned long long u_quad_t;
->>> -#else
->>>  #endif
->>>  #include <uapi/linux/coda.h>
->>>  #endif 
+>>> BTW, for the complete screen off problem, I don't see there is anything
+>>> wrong with it from code's point of view. It's not that there is an error
+>>> in code or this is a broken hardware that caused the screen off when
+>>> setting a very low or 0 brightness level, it is simply the expected
+>>> behavior of what this interface can provide. It can really set the
+>>> brightness level to minimum(zero) or maximum. Don't get me wrong, I
+>>> didn't mean this is a good user experience, I don't know that. I just
+>>> don't think this is a program bug, and I don't know if this should be
+>>> fixed or not - obviously this interface did what it is asked to do,
+>>> correctly.
 >>
->> Why have the #if at all?
+>> Precisely, user space asks for 0 and the kernel delivers.
 >>
->>
->>
+>> And there are reasons why 0 should be "screen off", like power management
+>> (when you have a policy to dim the screen completely after a period of
+>> inactivity, for example).
 > 
-> Hmm... some old version compilers do not define __linux__ automatically
-> (e.g. or32-linux-gcc 4.5.1-or32-1.0rc1, which is the latest cross
-> compiler for openrisc, though).
+> There is another interface the turn the screen off.
 > 
-> If not define __linux__, the compiler will report error (u_quad_t is
-> not defined).
-> 
-> When we remove "#if defined(__linux__)" from "include/linux/coda.h",
-> the compiler will not report error, and 'cdev_t' will be defined as
-> 'dev_t', not 'u_quad_t' (I guess, it is an implicit bug).
-> 
-> 
-> In "uapi/include/*", only "coda.h" has "#if defined(__linux__)", maybe
-> they want multiple OS can share the same "coda.h" file (at least, we
-> can not say it is a bad idea).
-> 
-> Neither suitable to define __linux__ in "include/linux/coda.h".
-> 
-> 
-> All together, I think:
-> 
->   the direct cause:
->     "uapi/include/coda.h" wants to share itself for multiple OS (so they need check __linux__).
->       (in "uapi/include/*", only coda.h need check __linux__)
-> 
->   the root cause:
->     the compiler for linux should define __linux__ automatically, the latest version of gcc has done, but some of the old version is not.
->     most of cross compilers have merged their code into gcc main tree, but still left some (e.g. openrisc).
->       (at least, I can not build openrisc from gcc main tree correctly, but most of others can)
->     some of latest cross compilers still use old version of gcc, (still not define __linux__ automatically).
-> 
+> If 0 turns the screen off with the intel driver, 0 should turn the
+> screen off with the ACPI driver, having inconsistent behavior
+> depending on which driver is used is a bug.
 
-Maybe what I said is incorrect (it is just my current understanding).
-
-Welcome any other members' suggestions or completions for discussing and
-checking.
-
-Thanks.
+I'm not sure of this. Remember the days when we switch the hard disk
+driver from IDE to SCSI? The block device name changed from hdx to sdx.
+Is this a bug?
 
 > 
-> The related code in "uapi/linux/coda.h" is below:
+> If 0 did not turn off the screen in v3.10, 0 should not turn off the
+> screen in v3.11, to do so would be a *regression*.
+
+That depends on how you see it. I believe 0 also turns off the screen in
+v3.10 if we are talking about the same driver(intel_backlight).
+
+-Aaron
+
 > 
-> -------------------------------code begin-------------------------------
+>> So in my opinion, if that's a problem for anyone, it has to be addressed in
+>> user space and if there are any vendors who try to address *that* in their ACPI
+>> tables, that's one more reason to avoid using ACPI for backlight control.
 > 
->  73 #if defined(DJGPP) || defined(__CYGWIN32__)
->  74 #ifdef KERNEL
->  75 typedef unsigned long u_long;
->  76 typedef unsigned int u_int;
->  77 typedef unsigned short u_short;
->  78 typedef u_long ino_t;
->  79 typedef u_long dev_t;
->  80 typedef void * caddr_t;
->  81 #ifdef DOS
->  82 typedef unsigned __int64 u_quad_t;
->  83 #else
->  84 typedef unsigned long long u_quad_t;
->  85 #endif
->  86 
->  87 #define inline
->  88 
->  89 struct timespec {
->  90         long       ts_sec;
->  91         long       ts_nsec;
->  92 };
->  93 #else  /* DJGPP but not KERNEL */
->  94 #include <sys/time.h>
->  95 typedef unsigned long long u_quad_t;
->  96 #endif /* !KERNEL */
->  97 #endif /* !DJGPP */
->  98 
->  99 
-> 100 #if defined(__linux__)
-> 101 #include <linux/time.h>
-> 102 #define cdev_t u_quad_t
-> 103 #ifndef __KERNEL__
-> 104 #if !defined(_UQUAD_T_) && (!defined(__GLIBC__) || __GLIBC__ < 2)
-> 105 #define _UQUAD_T_ 1
-> 106 typedef unsigned long long u_quad_t;
-> 107 #endif
-> 108 #endif /* __KERNEL__ */
-> 109 #else
-> 110 #define cdev_t dev_t
-> 111 #endif
-> 112 
+> If you think it's the user-space responsibility to deal with kernel
+> bugs, I think it's only a matter of time before you receive one of
+> these [1].
 > 
-> -------------------------------code end---------------------------------
+> "If a change results in user programs breaking, it's a bug in the
+> kernel. We never EVER blame the user programs. How hard can this be to
+> understand?"
 > 
+> "WE DO NOT BREAK USERSPACE!"
 > 
-> Thanks.
+> [1] https://lkml.org/lkml/2012/12/23/75
 > 
 
-
--- 
-Chen Gang
