@@ -1,93 +1,448 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760344Ab3GaOoy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 10:44:54 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40123 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756541Ab3GaOox (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 10:44:53 -0400
-Date: Wed, 31 Jul 2013 16:44:51 +0200
-From: Jan Kara <jack@suse.cz>
-To: Dave Chinner <david@fromorbit.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, davej@redhat.com, viro@zeniv.linux.org.uk,
-        jack@suse.cz, glommer@parallels.com
-Subject: Re: [PATCH 02/11] inode: add IOP_NOTHASHED to avoid inode hash lock
- in evict
-Message-ID: <20130731144451.GD22930@quack.suse.cz>
-References: <1375244150-27296-1-git-send-email-david@fromorbit.com>
- <1375244150-27296-3-git-send-email-david@fromorbit.com>
+	id S1760377Ab3GaOpa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 10:45:30 -0400
+Received: from smtp.eu.citrix.com ([46.33.159.39]:46043 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759861Ab3GaOp3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 10:45:29 -0400
+X-IronPort-AV: E=Sophos;i="4.89,787,1367971200"; 
+   d="scan'208";a="7325062"
+Message-ID: <1375281925.7382.88.camel@kazak.uk.xensource.com>
+Subject: Re: [PATCH] powerpc/fsl-booke: Rename b4qds.dts -> b4qds.dtsi.
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: <linux-kernel@vger.kernel.org>
+CC: Shaveta Leekha <shaveta@freescale.com>,
+        Minghuan Lian <Minghuan.Lian@freescale.com>,
+        Andy Fleming <afleming@freescale.com>,
+        Poonam Aggrwal <poonam.aggrwal@freescale.com>,
+        Ramneek Mehresh <ramneek.mehresh@freescale.com>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, <linuxppc-dev@lists.ozlabs.org>
+Date: Wed, 31 Jul 2013 15:45:25 +0100
+In-Reply-To: <1369995280-20863-1-git-send-email-ian.campbell@citrix.com>
+References: <1369995280-20863-1-git-send-email-ian.campbell@citrix.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1375244150-27296-3-git-send-email-david@fromorbit.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.203.1]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 31-07-13 14:15:41, Dave Chinner wrote:
-> From: Dave Chinner <dchinner@redhat.com>
+ping?
+
+On Fri, 2013-05-31 at 11:14 +0100, Ian Campbell wrote:
+> This file is a common include for B4860 and B4420 but is not a valid DTS itself:
+> 	  DTC     arch/powerpc/boot/b4qds.dtb
+> 	Error: arch/powerpc/boot/dts/b4qds.dts:35.1-2 syntax error
+> 	FATAL ERROR: Unable to parse input tree
+> 	make[1]: *** [arch/powerpc/boot/b4qds.dtb] Error 1
+> 	make: *** [b4qds.dtb] Error 2
 > 
-> Some filesystems don't use the VFS inode hash and fake the fact they
-> are hashed so that all the writeback code works correctly. However,
-> this means the evict() path still tries to remove the inode from the
-> hash, meaning that the inode_hash_lock() needs to be taken
-> unnecessarily. Hence under certain workloads the inode_hash_lock can
-> be contended even if the inode is never actually hashed.
+> I spotted in build tests of device-tree.git, announcement
+> https://lkml.org/lkml/2013/4/24/209, which builds *.dts. Probably no one would
+> do this this in real life on linux.git but it still seems worth fixing.
 > 
-> To avoid this, add an inode opflag to allow inode_hash_remove() to
-> avoid taking the hash lock on inodes have never actually been
-> hashed.
-> 
-> Signed-off-by: Dave Chinner <dchinner@redhat.com>
+> Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+> Cc: Shaveta Leekha <shaveta@freescale.com>
+> Cc: Minghuan Lian <Minghuan.Lian@freescale.com>
+> Cc: Andy Fleming <afleming@freescale.com>
+> Cc: Poonam Aggrwal <poonam.aggrwal@freescale.com>
+> Cc: Ramneek Mehresh <ramneek.mehresh@freescale.com>
+> Cc: Kumar Gala <galak@kernel.crashing.org>
+> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: linuxppc-dev@lists.ozlabs.org
+> Cc: linux-kernel@vger.kernel.org
 > ---
->  fs/xfs/xfs_iops.c  | 2 ++
->  include/linux/fs.h | 3 ++-
->  2 files changed, 4 insertions(+), 1 deletion(-)
+>  arch/powerpc/boot/dts/b4420qds.dts |    2 +-
+>  arch/powerpc/boot/dts/b4860qds.dts |    2 +-
+>  arch/powerpc/boot/dts/b4qds.dts    |  169 ------------------------------------
+>  arch/powerpc/boot/dts/b4qds.dtsi   |  169 ++++++++++++++++++++++++++++++++++++
+>  4 files changed, 171 insertions(+), 171 deletions(-)
+>  delete mode 100644 arch/powerpc/boot/dts/b4qds.dts
+>  create mode 100644 arch/powerpc/boot/dts/b4qds.dtsi
 > 
-> diff --git a/fs/xfs/xfs_iops.c b/fs/xfs/xfs_iops.c
-> index 96dda62..68a8264 100644
-> --- a/fs/xfs/xfs_iops.c
-> +++ b/fs/xfs/xfs_iops.c
-> @@ -1168,8 +1168,10 @@ xfs_setup_inode(
->  	inode->i_state = I_NEW;
+> diff --git a/arch/powerpc/boot/dts/b4420qds.dts b/arch/powerpc/boot/dts/b4420qds.dts
+> index 923156d..508dbdf 100644
+> --- a/arch/powerpc/boot/dts/b4420qds.dts
+> +++ b/arch/powerpc/boot/dts/b4420qds.dts
+> @@ -33,7 +33,7 @@
+>   */
 >  
->  	inode_sb_list_add(inode);
+>  /include/ "fsl/b4420si-pre.dtsi"
+> -/include/ "b4qds.dts"
+> +/include/ "b4qds.dtsi"
+>  
+>  / {
+>  	model = "fsl,B4420QDS";
+> diff --git a/arch/powerpc/boot/dts/b4860qds.dts b/arch/powerpc/boot/dts/b4860qds.dts
+> index 78907f3..6bb3707 100644
+> --- a/arch/powerpc/boot/dts/b4860qds.dts
+> +++ b/arch/powerpc/boot/dts/b4860qds.dts
+> @@ -33,7 +33,7 @@
+>   */
+>  
+>  /include/ "fsl/b4860si-pre.dtsi"
+> -/include/ "b4qds.dts"
+> +/include/ "b4qds.dtsi"
+>  
+>  / {
+>  	model = "fsl,B4860QDS";
+> diff --git a/arch/powerpc/boot/dts/b4qds.dts b/arch/powerpc/boot/dts/b4qds.dts
+> deleted file mode 100644
+> index e6d2f8f..0000000
+> --- a/arch/powerpc/boot/dts/b4qds.dts
+> +++ /dev/null
+> @@ -1,169 +0,0 @@
+> -/*
+> - * B4420DS Device Tree Source
+> - *
+> - * Copyright 2012 Freescale Semiconductor, Inc.
+> - *
+> - * Redistribution and use in source and binary forms, with or without
+> - * modification, are permitted provided that the following conditions are met:
+> - *     * Redistributions of source code must retain the above copyright
+> - *       notice, this list of conditions and the following disclaimer.
+> - *     * Redistributions in binary form must reproduce the above copyright
+> - *       notice, this list of conditions and the following disclaimer in the
+> - *       documentation and/or other materials provided with the distribution.
+> - *     * Neither the name of Freescale Semiconductor nor the
+> - *       names of its contributors may be used to endorse or promote products
+> - *       derived from this software without specific prior written permission.
+> - *
+> - *
+> - * ALTERNATIVELY, this software may be distributed under the terms of the
+> - * GNU General Public License ("GPL") as published by the Free Software
+> - * Foundation, either version 2 of that License or (at your option) any
+> - * later version.
+> - *
+> - * This software is provided by Freescale Semiconductor "as is" and any
+> - * express or implied warranties, including, but not limited to, the implied
+> - * warranties of merchantability and fitness for a particular purpose are
+> - * disclaimed. In no event shall Freescale Semiconductor be liable for any
+> - * direct, indirect, incidental, special, exemplary, or consequential damages
+> - * (including, but not limited to, procurement of substitute goods or services;
+> - * loss of use, data, or profits; or business interruption) however caused and
+> - * on any theory of liability, whether in contract, strict liability, or tort
+> - * (including negligence or otherwise) arising in any way out of the use of
+> - * this software, even if advised of the possibility of such damage.
+> - */
+> -
+> -/ {
+> -	model = "fsl,B4QDS";
+> -	compatible = "fsl,B4QDS";
+> -	#address-cells = <2>;
+> -	#size-cells = <2>;
+> -	interrupt-parent = <&mpic>;
+> -
+> -	ifc: localbus@ffe124000 {
+> -		reg = <0xf 0xfe124000 0 0x2000>;
+> -		ranges = <0 0 0xf 0xe8000000 0x08000000
+> -			  2 0 0xf 0xff800000 0x00010000
+> -			  3 0 0xf 0xffdf0000 0x00008000>;
+> -
+> -		nor@0,0 {
+> -			#address-cells = <1>;
+> -			#size-cells = <1>;
+> -			compatible = "cfi-flash";
+> -			reg = <0x0 0x0 0x8000000>;
+> -			bank-width = <2>;
+> -			device-width = <1>;
+> -		};
+> -
+> -		nand@2,0 {
+> -			#address-cells = <1>;
+> -			#size-cells = <1>;
+> -			compatible = "fsl,ifc-nand";
+> -			reg = <0x2 0x0 0x10000>;
+> -
+> -			partition@0 {
+> -				/* This location must not be altered  */
+> -				/* 1MB for u-boot Bootloader Image */
+> -				reg = <0x0 0x00100000>;
+> -				label = "NAND U-Boot Image";
+> -				read-only;
+> -			};
+> -
+> -			partition@100000 {
+> -				/* 1MB for DTB Image */
+> -				reg = <0x00100000 0x00100000>;
+> -				label = "NAND DTB Image";
+> -			};
+> -
+> -			partition@200000 {
+> -				/* 10MB for Linux Kernel Image */
+> -				reg = <0x00200000 0x00A00000>;
+> -				label = "NAND Linux Kernel Image";
+> -			};
+> -
+> -			partition@c00000 {
+> -				/* 500MB for Root file System Image */
+> -				reg = <0x00c00000 0x1F400000>;
+> -				label = "NAND RFS Image";
+> -			};
+> -		};
+> -
+> -		board-control@3,0 {
+> -			compatible = "fsl,b4qds-fpga", "fsl,fpga-qixis";
+> -			reg = <3 0 0x300>;
+> -		};
+> -	};
+> -
+> -	memory {
+> -		device_type = "memory";
+> -	};
+> -
+> -	dcsr: dcsr@f00000000 {
+> -		ranges = <0x00000000 0xf 0x00000000 0x01052000>;
+> -	};
+> -
+> -	soc: soc@ffe000000 {
+> -		ranges = <0x00000000 0xf 0xfe000000 0x1000000>;
+> -		reg = <0xf 0xfe000000 0 0x00001000>;
+> -		spi@110000 {
+> -			flash@0 {
+> -				#address-cells = <1>;
+> -				#size-cells = <1>;
+> -				compatible = "sst,sst25wf040";
+> -				reg = <0>;
+> -				spi-max-frequency = <40000000>; /* input clock */
+> -			};
+> -		};
+> -
+> -		sdhc@114000 {
+> -			/*Disabled as there is no sdhc connector on B4420QDS board*/
+> -			status = "disabled";
+> -		};
+> -
+> -		i2c@118000 {
+> -			eeprom@50 {
+> -				compatible = "at24,24c64";
+> -				reg = <0x50>;
+> -			};
+> -			eeprom@51 {
+> -				compatible = "at24,24c256";
+> -				reg = <0x51>;
+> -			};
+> -			eeprom@53 {
+> -				compatible = "at24,24c256";
+> -				reg = <0x53>;
+> -			};
+> -			eeprom@57 {
+> -				compatible = "at24,24c256";
+> -				reg = <0x57>;
+> -			};
+> -			rtc@68 {
+> -				compatible = "dallas,ds3232";
+> -				reg = <0x68>;
+> -			};
+> -		};
+> -
+> -		usb@210000 {
+> -			dr_mode = "host";
+> -			phy_type = "ulpi";
+> -		};
+> -
+> -	};
+> -
+> -	pci0: pcie@ffe200000 {
+> -		reg = <0xf 0xfe200000 0 0x10000>;
+> -		ranges = <0x02000000 0 0xe0000000 0xc 0x00000000 0x0 0x20000000
+> -			  0x01000000 0 0x00000000 0xf 0xf8000000 0x0 0x00010000>;
+> -		pcie@0 {
+> -			ranges = <0x02000000 0 0xe0000000
+> -				  0x02000000 0 0xe0000000
+> -				  0 0x20000000
+> -
+> -				  0x01000000 0 0x00000000
+> -				  0x01000000 0 0x00000000
+> -				  0 0x00010000>;
+> -		};
+> -	};
+> -
+> -};
+> -
+> -/include/ "fsl/b4si-post.dtsi"
+> diff --git a/arch/powerpc/boot/dts/b4qds.dtsi b/arch/powerpc/boot/dts/b4qds.dtsi
+> new file mode 100644
+> index 0000000..e6d2f8f
+> --- /dev/null
+> +++ b/arch/powerpc/boot/dts/b4qds.dtsi
+> @@ -0,0 +1,169 @@
+> +/*
+> + * B4420DS Device Tree Source
+> + *
+> + * Copyright 2012 Freescale Semiconductor, Inc.
+> + *
+> + * Redistribution and use in source and binary forms, with or without
+> + * modification, are permitted provided that the following conditions are met:
+> + *     * Redistributions of source code must retain the above copyright
+> + *       notice, this list of conditions and the following disclaimer.
+> + *     * Redistributions in binary form must reproduce the above copyright
+> + *       notice, this list of conditions and the following disclaimer in the
+> + *       documentation and/or other materials provided with the distribution.
+> + *     * Neither the name of Freescale Semiconductor nor the
+> + *       names of its contributors may be used to endorse or promote products
+> + *       derived from this software without specific prior written permission.
+> + *
+> + *
+> + * ALTERNATIVELY, this software may be distributed under the terms of the
+> + * GNU General Public License ("GPL") as published by the Free Software
+> + * Foundation, either version 2 of that License or (at your option) any
+> + * later version.
+> + *
+> + * This software is provided by Freescale Semiconductor "as is" and any
+> + * express or implied warranties, including, but not limited to, the implied
+> + * warranties of merchantability and fitness for a particular purpose are
+> + * disclaimed. In no event shall Freescale Semiconductor be liable for any
+> + * direct, indirect, incidental, special, exemplary, or consequential damages
+> + * (including, but not limited to, procurement of substitute goods or services;
+> + * loss of use, data, or profits; or business interruption) however caused and
+> + * on any theory of liability, whether in contract, strict liability, or tort
+> + * (including negligence or otherwise) arising in any way out of the use of
+> + * this software, even if advised of the possibility of such damage.
+> + */
 > +
->  	/* make the inode look hashed for the writeback code */
->  	hlist_add_fake(&inode->i_hash);
-> +	inode->i_opflags |= IOP_NOTHASHED;
->  
->  	inode->i_mode	= ip->i_d.di_mode;
->  	set_nlink(inode, ip->i_d.di_nlink);
-> diff --git a/include/linux/fs.h b/include/linux/fs.h
-> index b09ddc0..51cf6ed 100644
-> --- a/include/linux/fs.h
-> +++ b/include/linux/fs.h
-> @@ -515,6 +515,7 @@ struct posix_acl;
->  #define IOP_FASTPERM	0x0001
->  #define IOP_LOOKUP	0x0002
->  #define IOP_NOFOLLOW	0x0004
-> +#define IOP_NOTHASHED	0x0008	/* inode never hashed, avoid unhashing */
->  
->  /*
->   * Keep mostly read-only and often accessed (especially for
-> @@ -2371,7 +2372,7 @@ static inline void insert_inode_hash(struct inode *inode)
->  extern void __remove_inode_hash(struct inode *);
->  static inline void remove_inode_hash(struct inode *inode)
->  {
-> -	if (!inode_unhashed(inode))
-> +	if (!((inode->i_opflags & IOP_NOTHASHED) || inode_unhashed(inode)))
-  It's somewhat easier for me to read if the condition if written as:
-	if (!(inode->i_opflags & IOP_NOTHASHED) && !inode_unhashed(inode))
-  But whatever... The patch looks good. You can add:
-Reviewed-by: Jan Kara <jack@suse.cz>
+> +/ {
+> +	model = "fsl,B4QDS";
+> +	compatible = "fsl,B4QDS";
+> +	#address-cells = <2>;
+> +	#size-cells = <2>;
+> +	interrupt-parent = <&mpic>;
+> +
+> +	ifc: localbus@ffe124000 {
+> +		reg = <0xf 0xfe124000 0 0x2000>;
+> +		ranges = <0 0 0xf 0xe8000000 0x08000000
+> +			  2 0 0xf 0xff800000 0x00010000
+> +			  3 0 0xf 0xffdf0000 0x00008000>;
+> +
+> +		nor@0,0 {
+> +			#address-cells = <1>;
+> +			#size-cells = <1>;
+> +			compatible = "cfi-flash";
+> +			reg = <0x0 0x0 0x8000000>;
+> +			bank-width = <2>;
+> +			device-width = <1>;
+> +		};
+> +
+> +		nand@2,0 {
+> +			#address-cells = <1>;
+> +			#size-cells = <1>;
+> +			compatible = "fsl,ifc-nand";
+> +			reg = <0x2 0x0 0x10000>;
+> +
+> +			partition@0 {
+> +				/* This location must not be altered  */
+> +				/* 1MB for u-boot Bootloader Image */
+> +				reg = <0x0 0x00100000>;
+> +				label = "NAND U-Boot Image";
+> +				read-only;
+> +			};
+> +
+> +			partition@100000 {
+> +				/* 1MB for DTB Image */
+> +				reg = <0x00100000 0x00100000>;
+> +				label = "NAND DTB Image";
+> +			};
+> +
+> +			partition@200000 {
+> +				/* 10MB for Linux Kernel Image */
+> +				reg = <0x00200000 0x00A00000>;
+> +				label = "NAND Linux Kernel Image";
+> +			};
+> +
+> +			partition@c00000 {
+> +				/* 500MB for Root file System Image */
+> +				reg = <0x00c00000 0x1F400000>;
+> +				label = "NAND RFS Image";
+> +			};
+> +		};
+> +
+> +		board-control@3,0 {
+> +			compatible = "fsl,b4qds-fpga", "fsl,fpga-qixis";
+> +			reg = <3 0 0x300>;
+> +		};
+> +	};
+> +
+> +	memory {
+> +		device_type = "memory";
+> +	};
+> +
+> +	dcsr: dcsr@f00000000 {
+> +		ranges = <0x00000000 0xf 0x00000000 0x01052000>;
+> +	};
+> +
+> +	soc: soc@ffe000000 {
+> +		ranges = <0x00000000 0xf 0xfe000000 0x1000000>;
+> +		reg = <0xf 0xfe000000 0 0x00001000>;
+> +		spi@110000 {
+> +			flash@0 {
+> +				#address-cells = <1>;
+> +				#size-cells = <1>;
+> +				compatible = "sst,sst25wf040";
+> +				reg = <0>;
+> +				spi-max-frequency = <40000000>; /* input clock */
+> +			};
+> +		};
+> +
+> +		sdhc@114000 {
+> +			/*Disabled as there is no sdhc connector on B4420QDS board*/
+> +			status = "disabled";
+> +		};
+> +
+> +		i2c@118000 {
+> +			eeprom@50 {
+> +				compatible = "at24,24c64";
+> +				reg = <0x50>;
+> +			};
+> +			eeprom@51 {
+> +				compatible = "at24,24c256";
+> +				reg = <0x51>;
+> +			};
+> +			eeprom@53 {
+> +				compatible = "at24,24c256";
+> +				reg = <0x53>;
+> +			};
+> +			eeprom@57 {
+> +				compatible = "at24,24c256";
+> +				reg = <0x57>;
+> +			};
+> +			rtc@68 {
+> +				compatible = "dallas,ds3232";
+> +				reg = <0x68>;
+> +			};
+> +		};
+> +
+> +		usb@210000 {
+> +			dr_mode = "host";
+> +			phy_type = "ulpi";
+> +		};
+> +
+> +	};
+> +
+> +	pci0: pcie@ffe200000 {
+> +		reg = <0xf 0xfe200000 0 0x10000>;
+> +		ranges = <0x02000000 0 0xe0000000 0xc 0x00000000 0x0 0x20000000
+> +			  0x01000000 0 0x00000000 0xf 0xf8000000 0x0 0x00010000>;
+> +		pcie@0 {
+> +			ranges = <0x02000000 0 0xe0000000
+> +				  0x02000000 0 0xe0000000
+> +				  0 0x20000000
+> +
+> +				  0x01000000 0 0x00000000
+> +				  0x01000000 0 0x00000000
+> +				  0 0x00010000>;
+> +		};
+> +	};
+> +
+> +};
+> +
+> +/include/ "fsl/b4si-post.dtsi"
 
->  		__remove_inode_hash(inode);
->  }
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
