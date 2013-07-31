@@ -1,63 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759645Ab3GaLi2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 07:38:28 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:55954 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752493Ab3GaLi0 (ORCPT
+	id S1759660Ab3GaLjD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 07:39:03 -0400
+Received: from mail-qe0-f51.google.com ([209.85.128.51]:44253 "EHLO
+	mail-qe0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755061Ab3GaLjA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 07:38:26 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jason Cooper <jason@lakedaemon.net>
-Subject: Re: [Ksummit-2013-discuss] [ATTEND] DT, maintainership, development process
-Date: Wed, 31 Jul 2013 13:48:36 +0200
-Message-ID: <2963534.uP9oyT6an2@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <51F8A4F3.4020003@zytor.com>
-References: <20130729102452.GA2682@zurbaran> <4053222.hWzinV5Hra@vostro.rjw.lan> <51F8A4F3.4020003@zytor.com>
+	Wed, 31 Jul 2013 07:39:00 -0400
+Date: Wed, 31 Jul 2013 07:38:57 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Li Zefan <lizefan@huawei.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
+Subject: Re: [PATCH 6/7] cgroup: rename current_css_set_cg_links
+Message-ID: <20130731113857.GM2810@htj.dyndns.org>
+References: <51F8C7C5.9040608@huawei.com>
+ <51F8C83F.6010407@huawei.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51F8C83F.6010407@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, July 30, 2013 10:47:31 PM H. Peter Anvin wrote:
-> On 07/29/2013 03:30 PM, Rafael J. Wysocki wrote:
-> > On Monday, July 29, 2013 02:17:34 PM John W. Linville wrote:
-> >> On Mon, Jul 29, 2013 at 03:27:44PM +0200, Rafael J. Wysocki wrote:
-> >>
-> >>> That said we have the same issue with commits with just two SOB tags if
-> >>> a maintainer applies a patch that nobody has responded to.  Are they going to
-> >>> be regarded as "suspicious" too now?
-> >>>
-> >>> And what about trusting maintainers?  If Linus trusts them enough to pull from
-> >>> them, why can't everybody else trust them enough to assume that they don't do
-> >>> bad things on purpose?
-> >>
-> >> Not just Linus -- it's 'turtles all the way down' here.  As someone
-> >> else suggested, a Singed-off-by in the merge commit should suffice
-> >> here.  Although, I haven't always made a habit of adding S-o-b to
-> >> merge commits either...
-> > 
-> > An SOB in the merge doesn't provide any additional information that can't
-> > be retrieved from git, unless you use a different e-mail address for the
-> > sign-off. :-)
-> > 
+Hello,
+
+On Wed, Jul 31, 2013 at 04:18:07PM +0800, Li Zefan wrote:
+> As we've renamed css_set->cg_links to css_set->cgrp_links (See commit
+> 69d0206c79 "cgroup: bring some sanity to naming around cg_cgroup_link"),
+> it's better to also rename the debug file.
 > 
-> Watch out for fast forward merges.  Ideally I guess maintainers really
-> should disable fast forwards and PGP-sign their merge commits...
+> As the "debug" cgroup subsystem is for debug only and acts as a sample
+> on how to write a cgroup subsystem, it's fine to change the interface.
 
-If you submit a signed pull request, that covers all of the history in your
-tree up to the top commit you're requesting to pull.
+I'd rather not do this.  It doesn't really buy us anything and stuff
+like cgrp_links isn't interesting to actual controllers anyway.
 
-And I don't do fast forward merges.
+Thanks.
 
-Thanks,
-Rafael
-
+-- 
+tejun
