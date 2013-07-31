@@ -1,292 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932200Ab3GaRmU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 13:42:20 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:1465 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760561Ab3GaRmQ (ORCPT
+	id S932317Ab3GaRpP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 13:45:15 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:18346 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754918Ab3GaRpM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 13:42:16 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 31 Jul 2013 10:42:16 -0700
-From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-To: <balbi@ti.com>
-CC: <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <swarren@wwwdotorg.org>,
-        <gregkh@linuxfoundation.org>, <stern@rowland.harvard.edu>,
-        Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-Subject: [PATCH 3/6] usb: phy: tegra: Tegra30 support
-Date: Wed, 31 Jul 2013 20:41:59 +0300
-Message-ID: <1375292522-7855-4-git-send-email-ttynkkynen@nvidia.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1375292522-7855-1-git-send-email-ttynkkynen@nvidia.com>
-References: <1375292522-7855-1-git-send-email-ttynkkynen@nvidia.com>
-X-NVConfidentiality: public
+	Wed, 31 Jul 2013 13:45:12 -0400
+X-IronPort-AV: E=Sophos;i="4.89,788,1367971200"; 
+   d="scan'208";a="38588059"
+Date: Wed, 31 Jul 2013 18:44:59 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: <xen-devel@lists.xensource.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>
+Subject: [PATCH RFC 0/8] enable swiotlb-xen on arm and arm64
+Message-ID: <alpine.DEB.2.02.1307311833040.4893@kaball.uk.xensource.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Tegra30 USB PHY is a bit different than the Tegra20 PHY:
+Hi all,
+this patch series enables xen-swiotlb on arm and arm64.
 
-- The EHCI controller supports the HOSTPC register extension, and some
-  of the fields that the PHY needs to modify (PHCD and PTS) have moved
-  to the new HOSTPC register.
-- Some of the UTMI PLL configuration registers have moved from the USB
-  register space to the Clock-And-Reset controller space. In Tegra30
-  the clock driver is responsible for configuring the UTMI PLL.
-- The USBMODE register must be explicitly written to enter host mode.
-- Certain PHY parameters need to be programmed for optimal signal
-  quality. Support for this will be added in the next patch.
+Considering that all guests, including dom0, run on xen on arm with
+second stage translation enabled, it follows that without an IOMMU no
+guests could actually drive the hardware.
 
-The new tegra_phy_soc_config structure is added to describe the
-differences between the SoCs.
+The solution for platforms without an IOMMU is to use swiotlb-xen,
+adapted to autotranslate guests. swiotlb-xen provides a set of dma_ops
+that can be used by Linux to setup a contiguous buffer in stage-2
+addresses and use it for dma operations.
+Basically Linux asks Xen to make a buffer contiguous and gets the
+machine address for it. This buffer is going to be used by lib/swiotlb.c
+to allocate bounce buffers.
 
-Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
----
- drivers/usb/phy/phy-tegra-usb.c   | 121 +++++++++++++++++++++++++++++---------
- include/linux/usb/tegra_usb_phy.h |  19 ++++++
- 2 files changed, 112 insertions(+), 28 deletions(-)
 
-diff --git a/drivers/usb/phy/phy-tegra-usb.c b/drivers/usb/phy/phy-tegra-usb.c
-index 936b4a2..85ec70e 100644
---- a/drivers/usb/phy/phy-tegra-usb.c
-+++ b/drivers/usb/phy/phy-tegra-usb.c
-@@ -28,6 +28,7 @@
- #include <linux/io.h>
- #include <linux/gpio.h>
- #include <linux/of.h>
-+#include <linux/of_device.h>
- #include <linux/of_gpio.h>
- #include <linux/usb/otg.h>
- #include <linux/usb/ulpi.h>
-@@ -39,11 +40,16 @@
- 
- #define ULPI_VIEWPORT		0x170
- 
--/* PORTSC registers */
-+/* PORTSC PTS/PHCD bits, Tegra20 only */
- #define TEGRA_USB_PORTSC1				0x184
- #define TEGRA_USB_PORTSC1_PTS(x)			(((x) & 0x3) << 30)
- #define TEGRA_USB_PORTSC1_PHCD				(1 << 23)
- 
-+/* HOSTPC1 PTS/PHCD bits, Tegra30 and above */
-+#define TEGRA_USB_HOSTPC1_DEVLC		0x1b4
-+#define TEGRA_USB_HOSTPC1_DEVLC_PTS(x)	(((x) & 0x7) << 29)
-+#define TEGRA_USB_HOSTPC1_DEVLC_PHCD	(1 << 22)
-+
- /* Bits of PORTSC1, which will get cleared by writing 1 into them */
- #define TEGRA_PORTSC1_RWC_BITS	(PORT_CSC | PORT_PEC | PORT_OCC)
- 
-@@ -141,6 +147,12 @@
- #define UTMIP_BIAS_CFG1		0x83c
- #define   UTMIP_BIAS_PDTRK_COUNT(x)	(((x) & 0x1f) << 3)
- 
-+/* For Tegra30 and above only, the address is different in Tegra20 */
-+#define USB_USBMODE		0x1f8
-+#define   USB_USBMODE_MASK		(3 << 0)
-+#define   USB_USBMODE_HOST		(3 << 0)
-+#define   USB_USBMODE_DEVICE		(2 << 0)
-+
- static DEFINE_SPINLOCK(utmip_pad_lock);
- static int utmip_pad_count;
- 
-@@ -193,10 +205,17 @@ static void set_pts(struct tegra_usb_phy *phy, u8 pts_val)
- 	void __iomem *base = phy->regs;
- 	unsigned long val;
- 
--	val = readl(base + TEGRA_USB_PORTSC1) & ~TEGRA_PORTSC1_RWC_BITS;
--	val &= ~TEGRA_USB_PORTSC1_PTS(3);
--	val |= TEGRA_USB_PORTSC1_PTS(pts_val & 3);
--	writel(val, base + TEGRA_USB_PORTSC1);
-+	if (phy->soc_config->has_hostpc) {
-+		val = readl(base + TEGRA_USB_HOSTPC1_DEVLC);
-+		val &= ~TEGRA_USB_HOSTPC1_DEVLC_PTS(~0);
-+		val |= TEGRA_USB_HOSTPC1_DEVLC_PTS(pts_val);
-+		writel(val, base + TEGRA_USB_HOSTPC1_DEVLC);
-+	} else {
-+		val = readl(base + TEGRA_USB_PORTSC1) & ~TEGRA_PORTSC1_RWC_BITS;
-+		val &= ~TEGRA_USB_PORTSC1_PTS(~0);
-+		val |= TEGRA_USB_PORTSC1_PTS(pts_val);
-+		writel(val, base + TEGRA_USB_PORTSC1);
-+	}
- }
- 
- static void set_phcd(struct tegra_usb_phy *phy, bool enable)
-@@ -204,12 +223,21 @@ static void set_phcd(struct tegra_usb_phy *phy, bool enable)
- 	void __iomem *base = phy->regs;
- 	unsigned long val;
- 
--	val = readl(base + TEGRA_USB_PORTSC1) & ~TEGRA_PORTSC1_RWC_BITS;
--	if (enable)
--		val |= TEGRA_USB_PORTSC1_PHCD;
--	else
--		val &= ~TEGRA_USB_PORTSC1_PHCD;
--	writel(val, base + TEGRA_USB_PORTSC1);
-+	if (phy->soc_config->has_hostpc) {
-+		val = readl(base + TEGRA_USB_HOSTPC1_DEVLC);
-+		if (enable)
-+			val |= TEGRA_USB_HOSTPC1_DEVLC_PHCD;
-+		else
-+			val &= ~TEGRA_USB_HOSTPC1_DEVLC_PHCD;
-+		writel(val, base + TEGRA_USB_HOSTPC1_DEVLC);
-+	} else {
-+		val = readl(base + TEGRA_USB_PORTSC1) & ~PORT_RWC_BITS;
-+		if (enable)
-+			val |= TEGRA_USB_PORTSC1_PHCD;
-+		else
-+			val &= ~TEGRA_USB_PORTSC1_PHCD;
-+		writel(val, base + TEGRA_USB_PORTSC1);
-+	}
- }
- 
- static int utmip_pad_open(struct tegra_usb_phy *phy)
-@@ -367,17 +395,21 @@ static int utmi_phy_power_on(struct tegra_usb_phy *phy)
- 	val &= ~UTMIP_SUSPEND_EXIT_ON_EDGE;
- 	writel(val, base + UTMIP_MISC_CFG0);
- 
--	val = readl(base + UTMIP_MISC_CFG1);
--	val &= ~(UTMIP_PLL_ACTIVE_DLY_COUNT(~0) | UTMIP_PLLU_STABLE_COUNT(~0));
--	val |= UTMIP_PLL_ACTIVE_DLY_COUNT(phy->freq->active_delay) |
--		UTMIP_PLLU_STABLE_COUNT(phy->freq->stable_count);
--	writel(val, base + UTMIP_MISC_CFG1);
--
--	val = readl(base + UTMIP_PLL_CFG1);
--	val &= ~(UTMIP_XTAL_FREQ_COUNT(~0) | UTMIP_PLLU_ENABLE_DLY_COUNT(~0));
--	val |= UTMIP_XTAL_FREQ_COUNT(phy->freq->xtal_freq_count) |
--		UTMIP_PLLU_ENABLE_DLY_COUNT(phy->freq->enable_delay);
--	writel(val, base + UTMIP_PLL_CFG1);
-+	if (!phy->soc_config->utmi_pll_config_in_car_module) {
-+		val = readl(base + UTMIP_MISC_CFG1);
-+		val &= ~(UTMIP_PLL_ACTIVE_DLY_COUNT(~0) |
-+			UTMIP_PLLU_STABLE_COUNT(~0));
-+		val |= UTMIP_PLL_ACTIVE_DLY_COUNT(phy->freq->active_delay) |
-+			UTMIP_PLLU_STABLE_COUNT(phy->freq->stable_count);
-+		writel(val, base + UTMIP_MISC_CFG1);
-+
-+		val = readl(base + UTMIP_PLL_CFG1);
-+		val &= ~(UTMIP_XTAL_FREQ_COUNT(~0) |
-+			UTMIP_PLLU_ENABLE_DLY_COUNT(~0));
-+		val |= UTMIP_XTAL_FREQ_COUNT(phy->freq->xtal_freq_count) |
-+			UTMIP_PLLU_ENABLE_DLY_COUNT(phy->freq->enable_delay);
-+		writel(val, base + UTMIP_PLL_CFG1);
-+	}
- 
- 	if (phy->mode == USB_DR_MODE_PERIPHERAL) {
- 		val = readl(base + USB_SUSP_CTRL);
-@@ -448,6 +480,16 @@ static int utmi_phy_power_on(struct tegra_usb_phy *phy)
- 
- 	utmi_phy_clk_enable(phy);
- 
-+	if (phy->soc_config->requires_usbmode_setup) {
-+		val = readl(base + USB_USBMODE);
-+		val &= ~USB_USBMODE_MASK;
-+		if (phy->mode == USB_DR_MODE_HOST)
-+			val |= USB_USBMODE_HOST;
-+		else
-+			val |= USB_USBMODE_DEVICE;
-+		writel(val, base + USB_USBMODE);
-+	}
-+
- 	if (!phy->is_legacy_phy)
- 		set_pts(phy, 0);
- 
-@@ -864,8 +906,30 @@ static int utmi_phy_probe(struct tegra_usb_phy *tegra_phy,
- 	return 0;
- }
- 
-+static const struct tegra_phy_soc_config tegra20_soc_config = {
-+	.utmi_pll_config_in_car_module = false,
-+	.has_hostpc = false,
-+	.requires_usbmode_setup = false,
-+	.requires_extra_tuning_parameters = false,
-+};
-+
-+static const struct tegra_phy_soc_config tegra30_soc_config = {
-+	.utmi_pll_config_in_car_module = true,
-+	.has_hostpc = true,
-+	.requires_usbmode_setup = true,
-+	.requires_extra_tuning_parameters = true,
-+};
-+
-+static struct of_device_id tegra_usb_phy_id_table[] = {
-+	{ .compatible = "nvidia,tegra30-usb-phy", .data = &tegra30_soc_config },
-+	{ .compatible = "nvidia,tegra20-usb-phy", .data = &tegra20_soc_config },
-+	{ },
-+};
-+MODULE_DEVICE_TABLE(of, tegra_usb_phy_id_table);
-+
- static int tegra_usb_phy_probe(struct platform_device *pdev)
- {
-+	const struct of_device_id *match;
- 	struct resource *res;
- 	struct tegra_usb_phy *tegra_phy = NULL;
- 	struct device_node *np = pdev->dev.of_node;
-@@ -878,6 +942,13 @@ static int tegra_usb_phy_probe(struct platform_device *pdev)
- 		return -ENOMEM;
- 	}
- 
-+	match = of_match_device(tegra_usb_phy_id_table, &pdev->dev);
-+	if (!match) {
-+		dev_err(&pdev->dev, "Error: No device match found\n");
-+		return -ENODEV;
-+	}
-+	tegra_phy->soc_config = match->data;
-+
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (!res) {
- 		dev_err(&pdev->dev, "Failed to get I/O memory\n");
-@@ -963,12 +1034,6 @@ static int tegra_usb_phy_remove(struct platform_device *pdev)
- 	return 0;
- }
- 
--static struct of_device_id tegra_usb_phy_id_table[] = {
--	{ .compatible = "nvidia,tegra20-usb-phy", },
--	{ },
--};
--MODULE_DEVICE_TABLE(of, tegra_usb_phy_id_table);
--
- static struct platform_driver tegra_usb_phy_driver = {
- 	.probe		= tegra_usb_phy_probe,
- 	.remove		= tegra_usb_phy_remove,
-diff --git a/include/linux/usb/tegra_usb_phy.h b/include/linux/usb/tegra_usb_phy.h
-index d3db274..d3a63c3 100644
---- a/include/linux/usb/tegra_usb_phy.h
-+++ b/include/linux/usb/tegra_usb_phy.h
-@@ -18,6 +18,24 @@
- #include <linux/clk.h>
- #include <linux/usb/otg.h>
- 
-+/*
-+ * utmi_pll_config_in_car_module: true if the UTMI PLL configuration registers
-+ *     should be set up by clk-tegra, false if by the PHY code
-+ * has_hostpc: true if the USB controller has the HOSTPC extension, which
-+ *     changes the location of the PHCD and PTS fields
-+ * requires_usbmode_setup: true if the USBMODE register needs to be set to
-+ *      enter host mode
-+ * requires_extra_tuning_parameters: true if xcvr_hsslew, hssquelch_level
-+ *      and hsdiscon_level should be set for adequate signal quality
-+ */
-+
-+struct tegra_phy_soc_config {
-+	bool utmi_pll_config_in_car_module;
-+	bool has_hostpc;
-+	bool requires_usbmode_setup;
-+	bool requires_extra_tuning_parameters;
-+};
-+
- struct tegra_utmip_config {
- 	u8 hssync_start_delay;
- 	u8 elastic_limit;
-@@ -47,6 +65,7 @@ struct tegra_usb_phy {
- 	struct regulator *vbus;
- 	enum usb_dr_mode mode;
- 	void *config;
-+	const struct tegra_phy_soc_config *soc_config;
- 	struct usb_phy *ulpi;
- 	struct usb_phy u_phy;
- 	bool is_legacy_phy;
--- 
-1.8.1.5
+The first 3 patches lay the groundwork on arm and arm64 to have
+alternative dma_ops and swiotlb.
 
+The forth patch moves Xen initialization earlier so that we already know
+whether we are running on Xen at the time of initializing dma_ops on the
+platform.
+
+The following patches adapt swiotlb-xen to autotranslate guests (guest
+with second stage translation in hardware) and provide an arm
+implementation of xen_create_contiguous_region.
+
+
+Feedback is very welcome.
+Cheers,
+
+Stefano
+
+
+Stefano Stabellini (8):
+      arm: make SWIOTLB available
+      arm: introduce a global dma_ops pointer
+      arm64: do not initialize arm64_swiotlb if dma_ops is already set
+      xen/arm,arm64: move Xen initialization earlier
+      xen: introduce XENMEM_get_dma_buf and xen_put_dma_buf
+      xen: make xen_create_contiguous_region return the dma address
+      swiotlb-xen: support autotranslate guests
+      xen/arm,arm64: enable SWIOTLB_XEN
+
+ arch/arm/Kconfig                      |    8 ++
+ arch/arm/common/dmabounce.c           |   10 +-
+ arch/arm/include/asm/dma-mapping.h    |   27 ++++++-
+ arch/arm/include/asm/xen/hypervisor.h |    6 ++
+ arch/arm/include/asm/xen/page.h       |    2 +
+ arch/arm/kernel/setup.c               |    2 +
+ arch/arm/mm/dma-mapping.c             |    3 +
+ arch/arm/xen/Makefile                 |    2 +-
+ arch/arm/xen/enlighten.c              |   24 ++++--
+ arch/arm/xen/mm.c                     |  118 ++++++++++++++++++++++++++
+ arch/arm64/Kconfig                    |    1 +
+ arch/arm64/kernel/setup.c             |    2 +
+ arch/arm64/mm/dma-mapping.c           |    2 +
+ arch/arm64/xen/Makefile               |    2 +-
+ arch/x86/xen/mmu.c                    |    4 +-
+ drivers/xen/Kconfig                   |    1 -
+ drivers/xen/swiotlb-xen.c             |  147 +++++++++++++++++++++++++++++----
+ include/xen/interface/memory.h        |   62 ++++++++++++++
+ include/xen/xen-ops.h                 |    3 +-
+ 19 files changed, 391 insertions(+), 35 deletions(-)
+ create mode 100644 arch/arm/xen/mm.c
