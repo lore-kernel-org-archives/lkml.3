@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760215Ab3GaNsk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 09:48:40 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46868 "EHLO
+	id S1760045Ab3GaNsj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 09:48:39 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46925 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759567Ab3GaNZm (ORCPT
+	by vger.kernel.org with ESMTP id S1751963Ab3GaNZm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 31 Jul 2013 09:25:42 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Changli Gao" <xiaosuo@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
+CC: akpm@linux-foundation.org, "Sarah Sharp" <sarah.a.sharp@linux.intel.com>,
+        "Vincent Thiele" <vincentthiele@gmail.com>
 Date: Wed, 31 Jul 2013 15:23:09 +0200
-Message-ID: <lsq.1375276989.283786214@decadent.org.uk>
+Message-ID: <lsq.1375276989.587854424@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [09/84] net: Swap ver and type in pppoe_hdr
+Subject: [77/84] xhci: Avoid NULL pointer deref when host dies.
 In-Reply-To: <lsq.1375276989.251749228@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.216.67.181
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,35 +31,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Changli Gao <xiaosuo@gmail.com>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-[ Upstream commit b1a5a34bd0b8767ea689e68f8ea513e9710b671e ]
+commit 203a86613fb3bf2767335659513fa98563a3eb71 upstream.
 
-Ver and type in pppoe_hdr should be swapped as defined by RFC2516
-section-4.
+When the host controller fails to respond to an Enable Slot command, and
+the host fails to respond to the register write to abort the command
+ring, the xHCI driver will assume the host is dead, and call
+usb_hc_died().
 
-Signed-off-by: David S. Miller <davem@davemloft.net>
+The USB device's slot_id is still set to zero, and the pointer stored at
+xhci->devs[0] will always be NULL.  The call to xhci_check_args in
+xhci_free_dev should have caught the NULL virt_dev pointer.
+
+However, xhci_free_dev is designed to free the xhci_virt_device
+structures, even if the host is dead, so that we don't leak kernel
+memory.  xhci_free_dev checks the return value from the generic
+xhci_check_args function.  If the return value is -ENODEV, it carries on
+trying to free the virtual device.
+
+The issue is that xhci_check_args looks at the host controller state
+before it looks at the xhci_virt_device pointer.  It will return -ENIVAL
+because the host is dead, and xhci_free_dev will ignore the return
+value, and happily dereference the NULL xhci_virt_device pointer.
+
+The fix is to make sure that xhci_check_args checks the xhci_virt_device
+pointer before it checks the host state.
+
+See https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1203453 for
+further details.  This patch doesn't solve the underlying issue, but
+will ensure we don't see any more NULL pointer dereferences because of
+the issue.
+
+This patch should be backported to kernels as old as 3.1, that
+contain the commit 7bd89b4017f46a9b92853940fd9771319acb578a "xhci: Don't
+submit commands or URBs to halted hosts."
+
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Reported-by: Vincent Thiele <vincentthiele@gmail.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- include/linux/if_pppox.h | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/usb/host/xhci.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/include/linux/if_pppox.h b/include/linux/if_pppox.h
-index b5f927f..732c962 100644
---- a/include/linux/if_pppox.h
-+++ b/include/linux/if_pppox.h
-@@ -128,11 +128,11 @@ struct pppoe_tag {
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -1153,9 +1153,6 @@ static int xhci_check_args(struct usb_hc
+ 	}
  
- struct pppoe_hdr {
- #if defined(__LITTLE_ENDIAN_BITFIELD)
--	__u8 ver : 4;
- 	__u8 type : 4;
-+	__u8 ver : 4;
- #elif defined(__BIG_ENDIAN_BITFIELD)
--	__u8 type : 4;
- 	__u8 ver : 4;
-+	__u8 type : 4;
- #else
- #error	"Please fix <asm/byteorder.h>"
- #endif
+ 	xhci = hcd_to_xhci(hcd);
+-	if (xhci->xhc_state & XHCI_STATE_HALTED)
+-		return -ENODEV;
+-
+ 	if (check_virt_dev) {
+ 		if (!udev->slot_id || !xhci->devs[udev->slot_id]) {
+ 			printk(KERN_DEBUG "xHCI %s called with unaddressed "
+@@ -1171,6 +1168,9 @@ static int xhci_check_args(struct usb_hc
+ 		}
+ 	}
+ 
++	if (xhci->xhc_state & XHCI_STATE_HALTED)
++		return -ENODEV;
++
+ 	return 1;
+ }
+ 
 
