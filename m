@@ -1,97 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757404Ab3GaVNO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 17:13:14 -0400
-Received: from mga03.intel.com ([143.182.124.21]:56214 "EHLO mga03.intel.com"
+	id S1760756Ab3GaVNV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 17:13:21 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:49466 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751351Ab3GaVNM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 17:13:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,789,1367996400"; 
-   d="scan'208";a="275957337"
-From: "Allan, Bruce W" <bruce.w.allan@intel.com>
-To: Borislav Petkov <bp@alien8.de>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [E1000-devel] e1000e suspend-to-disk reboots box with 3.11-rc3+
-Thread-Topic: [E1000-devel] e1000e suspend-to-disk reboots box with 3.11-rc3+
-Thread-Index: AQHOji5MakWczhzCjkufVl/hJFFsD5l/Rtxw
-Date: Wed, 31 Jul 2013 21:13:10 +0000
-Message-ID: <804857E1F29AAC47BF68C404FC60A184542E21F8@ORSMSX105.amr.corp.intel.com>
-References: <20130731204040.GE4724@pd.tnic>
-In-Reply-To: <20130731204040.GE4724@pd.tnic>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.139]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1757481Ab3GaVNS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 17:13:18 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Takao Indoh <indou.takao@jp.fujitsu.com>, Vivek Goyal <vgoyal@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "open list:INTEL IOMMU (VT-d)" <iommu@lists.linux-foundation.org>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "ishii.hironobu@jp.fujitsu.com" <ishii.hironobu@jp.fujitsu.com>,
+        Don Dutile <ddutile@redhat.com>,
+        "Sumner, William" <bill.sumner@hp.com>,
+        "alex.williamson@redhat.com" <alex.williamson@redhat.com>,
+        Haren Myneni <hbabu@us.ibm.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+Subject: Re: [PATCH v2] PCI: Reset PCIe devices to stop ongoing DMA
+Date: Wed, 31 Jul 2013 23:23:28 +0200
+Message-ID: <1699397.FXoFYIGzbk@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CAErSpo4yJ2yqCWv7GT7jWSVd_8SktU=xJXT78m8Vxp_wLA4Fow@mail.gmail.com>
+References: <1368509365-2260-1-git-send-email-indou.takao@jp.fujitsu.com> <51F85BCC.2070103@jp.fujitsu.com> <CAErSpo4yJ2yqCWv7GT7jWSVd_8SktU=xJXT78m8Vxp_wLA4Fow@mail.gmail.com>
 MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Borislav Petkov [mailto:bp@alien8.de]
-> Sent: Wednesday, July 31, 2013 1:41 PM
-> To: e1000-devel@lists.sourceforge.net
-> Cc: netdev@vger.kernel.org; linux-kernel@vger.kernel.org
-> Subject: [E1000-devel] e1000e suspend-to-disk reboots box with 3.11-rc3+
+On Wednesday, July 31, 2013 03:08:03 PM Bjorn Helgaas wrote:
+> [+cc Rafael, linux-acpi]
 > 
-> Hi,
+> On Tue, Jul 30, 2013 at 6:35 PM, Takao Indoh <indou.takao@jp.fujitsu.com> wrote:
 > 
-> I'm experiencing the strange observation that when I hibernate my x230
-> with Linus HEAD from today + tip/master (3.11-rc3+), the box doesn't
-> remain off but reboots immediately.
+> > On x86, currently IOMMU initialization run *after* PCI enumeration, but
+> > what you are talking about is that it should be changed so that x86
+> > IOMMU initialization is done *before* PCI enumeration like sparc, right?
 > 
-> Since I have a similar bug where an e1000e box reboots
-> when "Wake on LAN from S4/S5" is enabled in the BIOS
-> (https://bugzilla.novell.com/show_bug.cgi?id=812592) I decided to test
-> with LAN cable removed.
+> Yes.  I don't know whether or when that initialization order will ever
+> be changed, but I do think we should avoid building more
+> infrastructure that depends on the current order.
 > 
-> And yes, when the ethernet cable is not connected, the box hibernates
-> and remains off. When I hibernate with the cable attached, the box
-> doesn't remain off but reboots.
-> 
-> The card is:
-> 
-> [    1.620772] e1000e: Intel(R) PRO/1000 Network Driver - 2.3.2-k
-> [    1.622116] e1000e: Copyright(c) 1999 - 2013 Intel Corporation.
-> [    1.623687] e1000e 0000:00:19.0: setting latency timer to 64
-> [    1.625160] e1000e 0000:00:19.0: Interrupt Throttling Rate (ints/sec) set to
-> dynamic conservative mode
-> [    1.626640] e1000e 0000:00:19.0: irq 44 for MSI/MSI-X
-> [    1.884432] e1000e 0000:00:19.0 eth0: registered PHC clock
-> [    1.885925] e1000e 0000:00:19.0 eth0: (PCI Express:2.5GT/s:Width x1)
-> 3c:97:0e:6b:ef:e7
-> [    1.887466] e1000e 0000:00:19.0 eth0: Intel(R) PRO/1000 Network
-> Connection
-> [    1.889089] e1000e 0000:00:19.0 eth0: MAC: 10, PHY: 11, PBA No: 1000FF-
-> 0FF
-> 
-> And of course, 3.10 is fine.
-> 
-> Any ideas?
-> 
-> I'll try to bisect it when I get a chance.
-> 
-> --
-> Regards/Gruss,
->     Boris.
+> Changing the order is a pretty big deal because it's a lot more than
+> just the IOMMU.  Basically I think we should be enumerating ACPI
+> devices, including the IOMMU, before PCI devices, but there's a lot of
+> legacy involved in that area.  Added Rafael in case he has any
+> thoughts.
 
-Off the top of my head, I cannot think of anything that has been added to the driver in
-Linus' tree since 3.10 that would cause this change in behavior.  There are a number of
-changes that have been put into the out-of-tree driver which have not yet made it into
-Linus' tree - would you be willing to try the latest out-of-tree driver from e1000.sf.net
-to see if it resolves your issue?  Of course, a bisect as you mention would also help.
+Well, actually, I'm not really familiar with IOMMUs, sorry.
 
-Have you checked for a BIOS update from your system manufacturer?
-Do you have Runtime Power Management enabled for this device?
+I do think that initializing IOMMU before PCI enumeration would be better,
+however.  At least if the ordering should be the same on all architectures,
+which I suppose is the case, that's the one I'd choose.
 
 Thanks,
-Bruce.
+Rafael
 
