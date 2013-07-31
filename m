@@ -1,25 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759296Ab3GaI40 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 04:56:26 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:41711 "EHLO
+	id S1759323Ab3GaI4j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 04:56:39 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:41726 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752830Ab3GaI4X (ORCPT
+	with ESMTP id S1759185Ab3GaI4f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 04:56:23 -0400
-Date: Wed, 31 Jul 2013 01:55:28 -0700
-From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
-Message-ID: <tip-9545m3apw5d93ubyrotrj31y@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        pjt@google.com, peterz@infradead.org, max@gustavus.edu,
-        stable@kernel.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, pjt@google.com, max@gustavus.edu,
-        stable@kernel.org, tglx@linutronix.de
+	Wed, 31 Jul 2013 04:56:35 -0400
+Date: Wed, 31 Jul 2013 01:55:58 -0700
+From: tip-bot for Frederic Weisbecker <tipbot@zytor.com>
+Message-ID: <tip-6050cb0b0b366092d1383bc23d7b16cd26db00f0@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, acme@redhat.com,
+        hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
+        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, peterz@infradead.org,
+        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
+        tglx@linutronix.de
+In-Reply-To: <1374539466-4799-2-git-send-email-fweisbec@gmail.com>
+References: <1374539466-4799-2-git-send-email-fweisbec@gmail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/urgent] sched: Ensure update_cfs_shares()
-  is called for parents of continuously-running tasks
-Git-Commit-ID: bf0bd948d1682e3996adc093b43021ed391983e6
+Subject: [tip:perf/core] perf:
+  Fix branch stack refcount leak on callchain init failure
+Git-Commit-ID: 6050cb0b0b366092d1383bc23d7b16cd26db00f0
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -28,49 +32,74 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 31 Jul 2013 01:55:34 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 31 Jul 2013 01:56:05 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  bf0bd948d1682e3996adc093b43021ed391983e6
-Gitweb:     http://git.kernel.org/tip/bf0bd948d1682e3996adc093b43021ed391983e6
-Author:     Peter Zijlstra <peterz@infradead.org>
-AuthorDate: Fri, 26 Jul 2013 23:48:42 +0200
+Commit-ID:  6050cb0b0b366092d1383bc23d7b16cd26db00f0
+Gitweb:     http://git.kernel.org/tip/6050cb0b0b366092d1383bc23d7b16cd26db00f0
+Author:     Frederic Weisbecker <fweisbec@gmail.com>
+AuthorDate: Tue, 23 Jul 2013 02:30:59 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 30 Jul 2013 22:14:37 +0200
+CommitDate: Tue, 30 Jul 2013 22:22:58 +0200
 
-sched: Ensure update_cfs_shares() is called for parents of continuously-running tasks
+perf: Fix branch stack refcount leak on callchain init failure
 
-We typically update a task_group's shares within the dequeue/enqueue
-path.  However, continuously running tasks sharing a CPU are not
-subject to these updates as they are only put/picked.  Unfortunately,
-when we reverted f269ae046 (in 17bc14b7), we lost the augmenting
-periodic update that was supposed to account for this; resulting in a
-potential loss of fairness.
+On callchain buffers allocation failure, free_event() is
+called and all the accounting performed in perf_event_alloc()
+for that event is cancelled.
 
-To fix this, re-introduce the explicit update in
-update_cfs_rq_blocked_load() [called via entity_tick()].
+But if the event has branch stack sampling, it is unaccounted
+as well from the branch stack sampling events refcounts.
 
-Reported-by: Max Hailperin <max@gustavus.edu>
+This is a bug because this accounting is performed after the
+callchain buffer allocation. As a result, the branch stack sampling
+events refcount can become negative.
+
+To fix this, move the branch stack event accounting before the
+callchain buffer allocation.
+
+Reported-by: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Stephane Eranian <eranian@google.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Reviewed-by: Paul Turner <pjt@google.com>
-Link: http://lkml.kernel.org/n/tip-9545m3apw5d93ubyrotrj31y@git.kernel.org
-Cc: <stable@kernel.org>
+Link: http://lkml.kernel.org/r/1374539466-4799-2-git-send-email-fweisbec@gmail.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/fair.c | 1 +
- 1 file changed, 1 insertion(+)
+ kernel/events/core.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 98d1355..06db94b 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -2032,6 +2032,7 @@ entity_tick(struct cfs_rq *cfs_rq, struct sched_entity *curr, int queued)
- 	 */
- 	update_entity_load_avg(curr, 1);
- 	update_cfs_rq_blocked_load(cfs_rq, 1);
-+	update_cfs_shares(cfs_rq);
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 1274114..f35aa7e 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -6567,6 +6567,12 @@ done:
+ 			atomic_inc(&nr_comm_events);
+ 		if (event->attr.task)
+ 			atomic_inc(&nr_task_events);
++		if (has_branch_stack(event)) {
++			static_key_slow_inc(&perf_sched_events.key);
++			if (!(event->attach_state & PERF_ATTACH_TASK))
++				atomic_inc(&per_cpu(perf_branch_stack_events,
++						    event->cpu));
++		}
+ 		if (event->attr.sample_type & PERF_SAMPLE_CALLCHAIN) {
+ 			err = get_callchain_buffers();
+ 			if (err) {
+@@ -6574,12 +6580,6 @@ done:
+ 				return ERR_PTR(err);
+ 			}
+ 		}
+-		if (has_branch_stack(event)) {
+-			static_key_slow_inc(&perf_sched_events.key);
+-			if (!(event->attach_state & PERF_ATTACH_TASK))
+-				atomic_inc(&per_cpu(perf_branch_stack_events,
+-						    event->cpu));
+-		}
+ 	}
  
- #ifdef CONFIG_SCHED_HRTICK
- 	/*
+ 	return event;
