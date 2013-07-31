@@ -1,28 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760001Ab3GaN3E (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 09:29:04 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:47044 "EHLO
+	id S1759965Ab3GaN27 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 09:28:59 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:47163 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759809Ab3GaN0M (ORCPT
+	by vger.kernel.org with ESMTP id S1759907Ab3GaN0O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 09:26:12 -0400
+	Wed, 31 Jul 2013 09:26:14 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Chen Weilong" <chenweilong@huawei.com>,
-        "Hideaki YOSHIFUJI" <yoshfuji@linux-ipv6.org>,
-        "dingtianhong" <dingtianhong@huawei.com>,
-        "Hannes Frederic Sowa" <hannes@stressinduktion.org>,
+CC: akpm@linux-foundation.org, "Neil Horman" <nhorman@tuxdriver.com>,
+        "Jay Cliburn" <jcliburn@gmail.com>,
         "David S. Miller" <davem@davemloft.net>,
-        "Amerigo Wang" <amwang@redhat.com>
+        "Chris Snook" <chris.snook@gmail.com>
 Date: Wed, 31 Jul 2013 15:23:09 +0200
-Message-ID: <lsq.1375276989.986549793@decadent.org.uk>
+Message-ID: <lsq.1375276989.671946400@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [10/84] ipv6,mcast: always hold idev->lock before mca_lock
+Subject: [20/84] atl1e: fix dma mapping warnings
 In-Reply-To: <lsq.1375276989.251749228@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.216.67.181
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -35,244 +33,151 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Amerigo Wang <amwang@redhat.com>
+From: Neil Horman <nhorman@tuxdriver.com>
 
-[ Upstream commit 8965779d2c0e6ab246c82a405236b1fb2adae6b2, with
-  some bits from commit b7b1bfce0bb68bd8f6e62a28295922785cc63781
-  ("ipv6: split duplicate address detection and router solicitation timer")
-  to get the __ipv6_get_lladdr() used by this patch. ]
+[ Upstream commit 352900b583b2852152a1e05ea0e8b579292e731e ]
 
-dingtianhong reported the following deadlock detected by lockdep:
+Recently had this backtrace reported:
+WARNING: at lib/dma-debug.c:937 check_unmap+0x47d/0x930()
+Hardware name: System Product Name
+ATL1E 0000:02:00.0: DMA-API: device driver failed to check map error[device
+address=0x00000000cbfd1000] [size=90 bytes] [mapped as single]
+Modules linked in: xt_conntrack nf_conntrack ebtable_filter ebtables
+ip6table_filter ip6_tables snd_hda_codec_hdmi snd_hda_codec_realtek iTCO_wdt
+iTCO_vendor_support snd_hda_intel acpi_cpufreq mperf coretemp btrfs zlib_deflate
+snd_hda_codec snd_hwdep microcode raid6_pq libcrc32c snd_seq usblp serio_raw xor
+snd_seq_device joydev snd_pcm snd_page_alloc snd_timer snd lpc_ich i2c_i801
+soundcore mfd_core atl1e asus_atk0110 ata_generic pata_acpi radeon i2c_algo_bit
+drm_kms_helper ttm drm i2c_core pata_marvell uinput
+Pid: 314, comm: systemd-journal Not tainted 3.9.0-0.rc6.git2.3.fc19.x86_64 #1
+Call Trace:
+ <IRQ>  [<ffffffff81069106>] warn_slowpath_common+0x66/0x80
+ [<ffffffff8106916c>] warn_slowpath_fmt+0x4c/0x50
+ [<ffffffff8138151d>] check_unmap+0x47d/0x930
+ [<ffffffff810ad048>] ? sched_clock_cpu+0xa8/0x100
+ [<ffffffff81381a2f>] debug_dma_unmap_page+0x5f/0x70
+ [<ffffffff8137ce30>] ? unmap_single+0x20/0x30
+ [<ffffffffa01569a1>] atl1e_intr+0x3a1/0x5b0 [atl1e]
+ [<ffffffff810d53fd>] ? trace_hardirqs_off+0xd/0x10
+ [<ffffffff81119636>] handle_irq_event_percpu+0x56/0x390
+ [<ffffffff811199ad>] handle_irq_event+0x3d/0x60
+ [<ffffffff8111cb6a>] handle_fasteoi_irq+0x5a/0x100
+ [<ffffffff8101c36f>] handle_irq+0xbf/0x150
+ [<ffffffff811dcb2f>] ? file_sb_list_del+0x3f/0x50
+ [<ffffffff81073b10>] ? irq_enter+0x50/0xa0
+ [<ffffffff8172738d>] do_IRQ+0x4d/0xc0
+ [<ffffffff811dcb2f>] ? file_sb_list_del+0x3f/0x50
+ [<ffffffff8171c6b2>] common_interrupt+0x72/0x72
+ <EOI>  [<ffffffff810db5b2>] ? lock_release+0xc2/0x310
+ [<ffffffff8109ea04>] lg_local_unlock_cpu+0x24/0x50
+ [<ffffffff811dcb2f>] file_sb_list_del+0x3f/0x50
+ [<ffffffff811dcb6d>] fput+0x2d/0xc0
+ [<ffffffff811d8ea1>] filp_close+0x61/0x90
+ [<ffffffff811fae4d>] __close_fd+0x8d/0x150
+ [<ffffffff811d8ef0>] sys_close+0x20/0x50
+ [<ffffffff81725699>] system_call_fastpath+0x16/0x1b
 
- ======================================================
- [ INFO: possible circular locking dependency detected ]
- 3.4.24.05-0.1-default #1 Not tainted
- -------------------------------------------------------
- ksoftirqd/0/3 is trying to acquire lock:
-  (&ndev->lock){+.+...}, at: [<ffffffff8147f804>] ipv6_get_lladdr+0x74/0x120
+The usual straighforward failure to check for dma_mapping_error after a map
+operation is completed.
 
- but task is already holding lock:
-  (&mc->mca_lock){+.+...}, at: [<ffffffff8149d130>] mld_send_report+0x40/0x150
+This patch should fix it, the reporter wandered off after filing this bz:
+https://bugzilla.redhat.com/show_bug.cgi?id=954170
 
- which lock already depends on the new lock.
+and I don't have hardware to test, but the fix is pretty straightforward, so I
+figured I'd post it for review.
 
- the existing dependency chain (in reverse order) is:
-
- -> #1 (&mc->mca_lock){+.+...}:
-        [<ffffffff810a8027>] validate_chain+0x637/0x730
-        [<ffffffff810a8417>] __lock_acquire+0x2f7/0x500
-        [<ffffffff810a8734>] lock_acquire+0x114/0x150
-        [<ffffffff814f691a>] rt_spin_lock+0x4a/0x60
-        [<ffffffff8149e4bb>] igmp6_group_added+0x3b/0x120
-        [<ffffffff8149e5d8>] ipv6_mc_up+0x38/0x60
-        [<ffffffff81480a4d>] ipv6_find_idev+0x3d/0x80
-        [<ffffffff81483175>] addrconf_notify+0x3d5/0x4b0
-        [<ffffffff814fae3f>] notifier_call_chain+0x3f/0x80
-        [<ffffffff81073471>] raw_notifier_call_chain+0x11/0x20
-        [<ffffffff813d8722>] call_netdevice_notifiers+0x32/0x60
-        [<ffffffff813d92d4>] __dev_notify_flags+0x34/0x80
-        [<ffffffff813d9360>] dev_change_flags+0x40/0x70
-        [<ffffffff813ea627>] do_setlink+0x237/0x8a0
-        [<ffffffff813ebb6c>] rtnl_newlink+0x3ec/0x600
-        [<ffffffff813eb4d0>] rtnetlink_rcv_msg+0x160/0x310
-        [<ffffffff814040b9>] netlink_rcv_skb+0x89/0xb0
-        [<ffffffff813eb357>] rtnetlink_rcv+0x27/0x40
-        [<ffffffff81403e20>] netlink_unicast+0x140/0x180
-        [<ffffffff81404a9e>] netlink_sendmsg+0x33e/0x380
-        [<ffffffff813c4252>] sock_sendmsg+0x112/0x130
-        [<ffffffff813c537e>] __sys_sendmsg+0x44e/0x460
-        [<ffffffff813c5544>] sys_sendmsg+0x44/0x70
-        [<ffffffff814feab9>] system_call_fastpath+0x16/0x1b
-
- -> #0 (&ndev->lock){+.+...}:
-        [<ffffffff810a798e>] check_prev_add+0x3de/0x440
-        [<ffffffff810a8027>] validate_chain+0x637/0x730
-        [<ffffffff810a8417>] __lock_acquire+0x2f7/0x500
-        [<ffffffff810a8734>] lock_acquire+0x114/0x150
-        [<ffffffff814f6c82>] rt_read_lock+0x42/0x60
-        [<ffffffff8147f804>] ipv6_get_lladdr+0x74/0x120
-        [<ffffffff8149b036>] mld_newpack+0xb6/0x160
-        [<ffffffff8149b18b>] add_grhead+0xab/0xc0
-        [<ffffffff8149d03b>] add_grec+0x3ab/0x460
-        [<ffffffff8149d14a>] mld_send_report+0x5a/0x150
-        [<ffffffff8149f99e>] igmp6_timer_handler+0x4e/0xb0
-        [<ffffffff8105705a>] call_timer_fn+0xca/0x1d0
-        [<ffffffff81057b9f>] run_timer_softirq+0x1df/0x2e0
-        [<ffffffff8104e8c7>] handle_pending_softirqs+0xf7/0x1f0
-        [<ffffffff8104ea3b>] __do_softirq_common+0x7b/0xf0
-        [<ffffffff8104f07f>] __thread_do_softirq+0x1af/0x210
-        [<ffffffff8104f1c1>] run_ksoftirqd+0xe1/0x1f0
-        [<ffffffff8106c7de>] kthread+0xae/0xc0
-        [<ffffffff814fff74>] kernel_thread_helper+0x4/0x10
-
-actually we can just hold idev->lock before taking pmc->mca_lock,
-and avoid taking idev->lock again when iterating idev->addr_list,
-since the upper callers of mld_newpack() already take
-read_lock_bh(&idev->lock).
-
-Reported-by: dingtianhong <dingtianhong@huawei.com>
-Cc: dingtianhong <dingtianhong@huawei.com>
-Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Tested-by: Ding Tianhong <dingtianhong@huawei.com>
-Tested-by: Chen Weilong <chenweilong@huawei.com>
-Signed-off-by: Cong Wang <amwang@redhat.com>
-Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+CC: Jay Cliburn <jcliburn@gmail.com>
+CC: Chris Snook <chris.snook@gmail.com>
+CC: "David S. Miller" <davem@davemloft.net>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- include/net/addrconf.h |  3 +++
- net/ipv6/addrconf.c    | 28 ++++++++++++++++++----------
- net/ipv6/mcast.c       | 18 ++++++++++--------
- 3 files changed, 31 insertions(+), 18 deletions(-)
+ drivers/net/ethernet/atheros/atl1e/atl1e_main.c | 28 ++++++++++++++++++++++---
+ 1 file changed, 25 insertions(+), 3 deletions(-)
 
-diff --git a/include/net/addrconf.h b/include/net/addrconf.h
-index cbc6bb0..44b1110 100644
---- a/include/net/addrconf.h
-+++ b/include/net/addrconf.h
-@@ -81,6 +81,9 @@ extern int			ipv6_dev_get_saddr(struct net *net,
- 					       const struct in6_addr *daddr,
- 					       unsigned int srcprefs,
- 					       struct in6_addr *saddr);
-+extern int			__ipv6_get_lladdr(struct inet6_dev *idev,
-+						  struct in6_addr *addr,
-+						  unsigned char banned_flags);
- extern int			ipv6_get_lladdr(struct net_device *dev,
- 						struct in6_addr *addr,
- 						unsigned char banned_flags);
-diff --git a/net/ipv6/addrconf.c b/net/ipv6/addrconf.c
-index a7fe50f..314bda2 100644
---- a/net/ipv6/addrconf.c
-+++ b/net/ipv6/addrconf.c
-@@ -1236,6 +1236,23 @@ try_nextdev:
+diff --git a/drivers/net/ethernet/atheros/atl1e/atl1e_main.c b/drivers/net/ethernet/atheros/atl1e/atl1e_main.c
+index dd893b3..ec08ccd 100644
+--- a/drivers/net/ethernet/atheros/atl1e/atl1e_main.c
++++ b/drivers/net/ethernet/atheros/atl1e/atl1e_main.c
+@@ -1685,8 +1685,8 @@ check_sum:
+ 	return 0;
  }
- EXPORT_SYMBOL(ipv6_dev_get_saddr);
  
-+int __ipv6_get_lladdr(struct inet6_dev *idev, struct in6_addr *addr,
-+		      unsigned char banned_flags)
-+{
-+	struct inet6_ifaddr *ifp;
-+	int err = -EADDRNOTAVAIL;
+-static void atl1e_tx_map(struct atl1e_adapter *adapter,
+-		      struct sk_buff *skb, struct atl1e_tpd_desc *tpd)
++static int atl1e_tx_map(struct atl1e_adapter *adapter,
++			struct sk_buff *skb, struct atl1e_tpd_desc *tpd)
+ {
+ 	struct atl1e_tpd_desc *use_tpd = NULL;
+ 	struct atl1e_tx_buffer *tx_buffer = NULL;
+@@ -1697,6 +1697,7 @@ static void atl1e_tx_map(struct atl1e_adapter *adapter,
+ 	u16 nr_frags;
+ 	u16 f;
+ 	int segment;
++	int ring_start = adapter->tx_ring.next_to_use;
+ 
+ 	nr_frags = skb_shinfo(skb)->nr_frags;
+ 	segment = (tpd->word3 >> TPD_SEGMENT_EN_SHIFT) & TPD_SEGMENT_EN_MASK;
+@@ -1709,6 +1710,9 @@ static void atl1e_tx_map(struct atl1e_adapter *adapter,
+ 		tx_buffer->length = map_len;
+ 		tx_buffer->dma = pci_map_single(adapter->pdev,
+ 					skb->data, hdr_len, PCI_DMA_TODEVICE);
++		if (dma_mapping_error(&adapter->pdev->dev, tx_buffer->dma))
++			return -ENOSPC;
 +
-+	list_for_each_entry(ifp, &idev->addr_list, if_list) {
-+		if (ifp->scope == IFA_LINK &&
-+		    !(ifp->flags & banned_flags)) {
-+			ipv6_addr_copy(addr, &ifp->addr);
-+			err = 0;
-+			break;
+ 		ATL1E_SET_PCIMAP_TYPE(tx_buffer, ATL1E_TX_PCIMAP_SINGLE);
+ 		mapped_len += map_len;
+ 		use_tpd->buffer_addr = cpu_to_le64(tx_buffer->dma);
+@@ -1735,6 +1739,13 @@ static void atl1e_tx_map(struct atl1e_adapter *adapter,
+ 		tx_buffer->dma =
+ 			pci_map_single(adapter->pdev, skb->data + mapped_len,
+ 					map_len, PCI_DMA_TODEVICE);
++
++		if (dma_mapping_error(&adapter->pdev->dev, tx_buffer->dma)) {
++			/* Reset the tx rings next pointer */
++			adapter->tx_ring.next_to_use = ring_start;
++			return -ENOSPC;
 +		}
-+	}
-+	return err;
-+}
 +
- int ipv6_get_lladdr(struct net_device *dev, struct in6_addr *addr,
- 		    unsigned char banned_flags)
- {
-@@ -1245,17 +1262,8 @@ int ipv6_get_lladdr(struct net_device *dev, struct in6_addr *addr,
- 	rcu_read_lock();
- 	idev = __in6_dev_get(dev);
- 	if (idev) {
--		struct inet6_ifaddr *ifp;
--
- 		read_lock_bh(&idev->lock);
--		list_for_each_entry(ifp, &idev->addr_list, if_list) {
--			if (ifp->scope == IFA_LINK &&
--			    !(ifp->flags & banned_flags)) {
--				ipv6_addr_copy(addr, &ifp->addr);
--				err = 0;
--				break;
--			}
--		}
-+		err = __ipv6_get_lladdr(idev, addr, banned_flags);
- 		read_unlock_bh(&idev->lock);
- 	}
- 	rcu_read_unlock();
-diff --git a/net/ipv6/mcast.c b/net/ipv6/mcast.c
-index f2d74ea..c7ec4bb 100644
---- a/net/ipv6/mcast.c
-+++ b/net/ipv6/mcast.c
-@@ -1334,8 +1334,9 @@ mld_scount(struct ifmcaddr6 *pmc, int type, int gdeleted, int sdeleted)
- 	return scount;
+ 		ATL1E_SET_PCIMAP_TYPE(tx_buffer, ATL1E_TX_PCIMAP_SINGLE);
+ 		mapped_len  += map_len;
+ 		use_tpd->buffer_addr = cpu_to_le64(tx_buffer->dma);
+@@ -1770,6 +1781,13 @@ static void atl1e_tx_map(struct atl1e_adapter *adapter,
+ 							  (i * MAX_TX_BUF_LEN),
+ 							  tx_buffer->length,
+ 							  DMA_TO_DEVICE);
++
++			if (dma_mapping_error(&adapter->pdev->dev, tx_buffer->dma)) {
++				/* Reset the ring next to use pointer */
++				adapter->tx_ring.next_to_use = ring_start;
++				return -ENOSPC;
++			}
++
+ 			ATL1E_SET_PCIMAP_TYPE(tx_buffer, ATL1E_TX_PCIMAP_PAGE);
+ 			use_tpd->buffer_addr = cpu_to_le64(tx_buffer->dma);
+ 			use_tpd->word2 = (use_tpd->word2 & (~TPD_BUFLEN_MASK)) |
+@@ -1787,6 +1805,7 @@ static void atl1e_tx_map(struct atl1e_adapter *adapter,
+ 	/* The last buffer info contain the skb address,
+ 	   so it will be free after unmap */
+ 	tx_buffer->skb = skb;
++	return 0;
  }
  
--static struct sk_buff *mld_newpack(struct net_device *dev, int size)
-+static struct sk_buff *mld_newpack(struct inet6_dev *idev, int size)
- {
-+	struct net_device *dev = idev->dev;
- 	struct net *net = dev_net(dev);
- 	struct sock *sk = net->ipv6.igmp_sk;
- 	struct sk_buff *skb;
-@@ -1358,7 +1359,7 @@ static struct sk_buff *mld_newpack(struct net_device *dev, int size)
- 
- 	skb_reserve(skb, LL_RESERVED_SPACE(dev));
- 
--	if (ipv6_get_lladdr(dev, &addr_buf, IFA_F_TENTATIVE)) {
-+	if (__ipv6_get_lladdr(idev, &addr_buf, IFA_F_TENTATIVE)) {
- 		/* <draft-ietf-magma-mld-source-05.txt>:
- 		 * use unspecified address as the source address
- 		 * when a valid link-local address is not available.
-@@ -1461,7 +1462,7 @@ static struct sk_buff *add_grhead(struct sk_buff *skb, struct ifmcaddr6 *pmc,
- 	struct mld2_grec *pgr;
- 
- 	if (!skb)
--		skb = mld_newpack(dev, dev->mtu);
-+		skb = mld_newpack(pmc->idev, dev->mtu);
- 	if (!skb)
- 		return NULL;
- 	pgr = (struct mld2_grec *)skb_put(skb, sizeof(struct mld2_grec));
-@@ -1481,7 +1482,8 @@ static struct sk_buff *add_grhead(struct sk_buff *skb, struct ifmcaddr6 *pmc,
- static struct sk_buff *add_grec(struct sk_buff *skb, struct ifmcaddr6 *pmc,
- 	int type, int gdeleted, int sdeleted)
- {
--	struct net_device *dev = pmc->idev->dev;
-+	struct inet6_dev *idev = pmc->idev;
-+	struct net_device *dev = idev->dev;
- 	struct mld2_report *pmr;
- 	struct mld2_grec *pgr = NULL;
- 	struct ip6_sf_list *psf, *psf_next, *psf_prev, **psf_list;
-@@ -1510,7 +1512,7 @@ static struct sk_buff *add_grec(struct sk_buff *skb, struct ifmcaddr6 *pmc,
- 		    AVAILABLE(skb) < grec_size(pmc, type, gdeleted, sdeleted)) {
- 			if (skb)
- 				mld_sendpack(skb);
--			skb = mld_newpack(dev, dev->mtu);
-+			skb = mld_newpack(idev, dev->mtu);
- 		}
+ static void atl1e_tx_queue(struct atl1e_adapter *adapter, u16 count,
+@@ -1854,10 +1873,13 @@ static netdev_tx_t atl1e_xmit_frame(struct sk_buff *skb,
+ 		return NETDEV_TX_OK;
  	}
- 	first = 1;
-@@ -1537,7 +1539,7 @@ static struct sk_buff *add_grec(struct sk_buff *skb, struct ifmcaddr6 *pmc,
- 				pgr->grec_nsrcs = htons(scount);
- 			if (skb)
- 				mld_sendpack(skb);
--			skb = mld_newpack(dev, dev->mtu);
-+			skb = mld_newpack(idev, dev->mtu);
- 			first = 1;
- 			scount = 0;
- 		}
-@@ -1592,8 +1594,8 @@ static void mld_send_report(struct inet6_dev *idev, struct ifmcaddr6 *pmc)
- 	struct sk_buff *skb = NULL;
- 	int type;
  
-+	read_lock_bh(&idev->lock);
- 	if (!pmc) {
--		read_lock_bh(&idev->lock);
- 		for (pmc=idev->mc_list; pmc; pmc=pmc->next) {
- 			if (pmc->mca_flags & MAF_NOREPORT)
- 				continue;
-@@ -1605,7 +1607,6 @@ static void mld_send_report(struct inet6_dev *idev, struct ifmcaddr6 *pmc)
- 			skb = add_grec(skb, pmc, type, 0, 0);
- 			spin_unlock_bh(&pmc->mca_lock);
- 		}
--		read_unlock_bh(&idev->lock);
- 	} else {
- 		spin_lock_bh(&pmc->mca_lock);
- 		if (pmc->mca_sfcount[MCAST_EXCLUDE])
-@@ -1615,6 +1616,7 @@ static void mld_send_report(struct inet6_dev *idev, struct ifmcaddr6 *pmc)
- 		skb = add_grec(skb, pmc, type, 0, 0);
- 		spin_unlock_bh(&pmc->mca_lock);
- 	}
-+	read_unlock_bh(&idev->lock);
- 	if (skb)
- 		mld_sendpack(skb);
+-	atl1e_tx_map(adapter, skb, tpd);
++	if (atl1e_tx_map(adapter, skb, tpd))
++		goto out;
++
+ 	atl1e_tx_queue(adapter, tpd_req, tpd);
+ 
+ 	netdev->trans_start = jiffies; /* NETIF_F_LLTX driver :( */
++out:
+ 	spin_unlock_irqrestore(&adapter->tx_lock, flags);
+ 	return NETDEV_TX_OK;
  }
 
