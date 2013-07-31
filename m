@@ -1,161 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758522Ab3G3XuL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 19:50:11 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:56185 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755837Ab3G3XuJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 19:50:09 -0400
-X-Greylist: delayed 901 seconds by postgrey-1.27 at vger.kernel.org; Tue, 30 Jul 2013 19:50:09 EDT
-X-AuditID: 9c93017e-b7b62ae000000eeb-69-51f84daa21ad
-Date: Wed, 31 Jul 2013 08:35:30 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hillf Danton <dhillf@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] hugetlb: fix lockdep splat caused by pmd sharing
-Message-ID: <20130730233530.GA19340@bbox>
-References: <20130730142957.GG15847@dhcp22.suse.cz>
- <1375195560-23888-1-git-send-email-mhocko@suse.cz>
- <20130730145834.GA32226@laptop.programming.kicks-ass.net>
- <20130730152333.GJ15847@dhcp22.suse.cz>
+	id S1758546Ab3G3XvB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 19:51:01 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:48093 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755837Ab3G3Xu6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Jul 2013 19:50:58 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Matthew Garrett <matthew.garrett@nebula.com>, daniel.vetter@ffwll.ch,
+        Aaron Lu <aaron.lu@intel.com>,
+        Jani Nikula <jani.nikula@linux.intel.com>
+Cc: linux-acpi@vger.kernel.org, seth.forshee@canonical.com,
+        joeyli.kernel@gmail.com, intel-gfx@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        lenb@kernel.org, Igor Gnatenko <i.gnatenko.brain@gmail.com>,
+        Yves-Alexis Perez <corsac@debian.org>, "Lee, Chun-Yi" <jlee@suse.com>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Subject: Re: [Update][PATCH 0/3] Fix backlight issues on some Windows 8 systems
+Date: Wed, 31 Jul 2013 02:01:05 +0200
+Message-ID: <3500424.KqMOhglylx@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1448863.3slS729B6b@vostro.rjw.lan>
+References: <1370818899-8595-1-git-send-email-matthew.garrett@nebula.com> <1448863.3slS729B6b@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130730152333.GJ15847@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 30, 2013 at 05:23:33PM +0200, Michal Hocko wrote:
-> On Tue 30-07-13 16:58:34, Peter Zijlstra wrote:
-> > On Tue, Jul 30, 2013 at 04:46:00PM +0200, Michal Hocko wrote:
-> [...]
-> > > +/*
-> > > + * Now, reclaim path never holds hugetlbfs_inode->i_mmap_mutex while it could
-> > > + * hold normal inode->i_mmap_mutex so this annotation avoids a lockdep splat.
+On Thursday, July 18, 2013 02:16:09 AM Rafael J. Wysocki wrote:
+> On Sunday, June 09, 2013 07:01:36 PM Matthew Garrett wrote:
+> > Windows 8 introduced new policy for backlight control by pushing it out to
+> > graphics drivers. This appears to have coincided with a range of vendors
+> > adding Windows 8 checks to their backlight control code which trigger either
+> > awkward behaviour (Lenovo) or complete brokenness (some Dells). The simplest
+> > thing to do would be to just disable ACPI backlight control entirely if the
+> > firmware indicates Windows 8 support, but it's entirely possible that
+> > individual graphics drivers might still make use of the ACPI functionality in
+> > preference to native control.
 > > 
-> > How about something like:
-> > 
-> > /*
-> >  * Hugetlbfs is not reclaimable; therefore its i_mmap_mutex will never
-> >  * be taken from reclaim -- unlike regular filesystems. This needs an
-> >  * annotation because huge_pmd_share() does an allocation under
-> >  * i_mmap_mutex.
-> >  */
-> > 
-> > It clarifies the exact conditions and makes easier to verify the
-> > validity of the annotation.
+> > The first two patches in this series are picked from other patchesets aimed at
+> > solving similar problems. The last simply unregisters ACPI backlight control
+> > on Windows 8 systems when using an Intel GPU. Similar code could be added to
+> > other drivers, but I'm reluctant to do so without further investigation as
+> > to the behaviour of the vendor drivers under Windows.
 > 
-> Yes, looks much better. Thanks!
-> ---
-> >From 673cbe2ca7df0decd7320987d97585660542e468 Mon Sep 17 00:00:00 2001
-> From: Michal Hocko <mhocko@suse.cz>
-> Date: Tue, 30 Jul 2013 17:22:14 +0200
-> Subject: [PATCH] hugetlb: fix lockdep splat caused by pmd sharing
+> Well, after some more time spent on that, we now have a series of 3 patches
+> (different from the $subject one) that we think may be used to address this
+> issue.  As far as I can say, it has been tested by multiple people whose
+> systems have those problems and they generally saw improvement.
 > 
-> Dave has reported the following lockdep splat:
-> [128095.470960] =================================
-> [128095.471315] [ INFO: inconsistent lock state ]
-> [128095.471660] 3.11.0-rc1+ #9 Not tainted
-> [128095.472156] ---------------------------------
-> [128095.472905] inconsistent {RECLAIM_FS-ON-W} -> {IN-RECLAIM_FS-W} usage.
-> [128095.473650] kswapd0/49 [HC0[0]:SC0[0]:HE1:SE1] takes:
-> [128095.474373]  (&mapping->i_mmap_mutex){+.+.?.}, at: [<c114971b>] page_referenced+0x87/0x5e3
-> [128095.475128] {RECLAIM_FS-ON-W} state was registered at:
-> [128095.475866]   [<c10a6232>] mark_held_locks+0x81/0xe7
-> [128095.476597]   [<c10a8db3>] lockdep_trace_alloc+0x5e/0xbc
-> [128095.477322]   [<c112316b>] __alloc_pages_nodemask+0x8b/0x9b6
-> [128095.478049]   [<c1123ab6>] __get_free_pages+0x20/0x31
-> [128095.478769]   [<c1123ad9>] get_zeroed_page+0x12/0x14
-> [128095.479477]   [<c113fe1e>] __pmd_alloc+0x1c/0x6b
-> [128095.480138]   [<c1155ea7>] huge_pmd_share+0x265/0x283
-> [128095.480138]   [<c1155f22>] huge_pte_alloc+0x5d/0x71
-> [128095.480138]   [<c115612e>] hugetlb_fault+0x7c/0x64a
-> [128095.480138]   [<c114087c>] handle_mm_fault+0x255/0x299
-> [128095.480138]   [<c15bbab0>] __do_page_fault+0x142/0x55c
-> [128095.480138]   [<c15bbed7>] do_page_fault+0xd/0x16
-> [128095.480138]   [<c15b927c>] error_code+0x6c/0x74
-> [128095.480138] irq event stamp: 3136917
-> [128095.480138] hardirqs last  enabled at (3136917): [<c15b8139>] _raw_spin_unlock_irq+0x27/0x50
-> [128095.480138] hardirqs last disabled at (3136916): [<c15b7f4e>] _raw_spin_lock_irq+0x15/0x78
-> [128095.480138] softirqs last  enabled at (3136180): [<c1048e4a>] __do_softirq+0x137/0x30f
-> [128095.480138] softirqs last disabled at (3136175): [<c1049195>] irq_exit+0xa8/0xaa
-> [128095.480138]
-> other info that might help us debug this:
-> [128095.480138]  Possible unsafe locking scenario:
-> [128095.480138]        CPU0
-> [128095.480138]        ----
-> [128095.480138]   lock(&mapping->i_mmap_mutex);
-> [128095.480138]   <Interrupt>
-> [128095.480138]     lock(&mapping->i_mmap_mutex);
-> [128095.480138]
->  *** DEADLOCK ***
-> [128095.480138] no locks held by kswapd0/49.
-> [128095.480138]
-> stack backtrace:
-> [128095.480138] CPU: 1 PID: 49 Comm: kswapd0 Not tainted 3.11.0-rc1+ #9
-> [128095.480138] Hardware name: Dell Inc.                 Precision WorkStation 490    /0DT031, BIOS A08 04/25/2008
-> [128095.480138]  c1d32630 00000000 ee39fb18 c15b001e ee395780 ee39fb54 c15acdcb c1751845
-> [128095.480138]  c1751bbf 00000031 00000000 00000000 00000000 00000000 00000001 00000001
-> [128095.480138]  c1751bbf 00000008 ee395c44 00000100 ee39fb88 c10a6130 00000008 0000d8fb
-> [128095.480138] Call Trace:
-> [128095.480138]  [<c15b001e>] dump_stack+0x4b/0x79
-> [128095.480138]  [<c15acdcb>] print_usage_bug+0x1d9/0x1e3
-> [128095.480138]  [<c10a6130>] mark_lock+0x1e0/0x261
-> [128095.480138]  [<c10a5878>] ? check_usage_backwards+0x109/0x109
-> [128095.480138]  [<c10a6cde>] __lock_acquire+0x623/0x17f2
-> [128095.480138]  [<c107aa43>] ? sched_clock_cpu+0xcd/0x130
-> [128095.480138]  [<c107a7e8>] ? sched_clock_local+0x42/0x12e
-> [128095.480138]  [<c10a84cf>] lock_acquire+0x7d/0x195
-> [128095.480138]  [<c114971b>] ? page_referenced+0x87/0x5e3
-> [128095.480138]  [<c15b3671>] mutex_lock_nested+0x6c/0x3a7
-> [128095.480138]  [<c114971b>] ? page_referenced+0x87/0x5e3
-> [128095.480138]  [<c114971b>] ? page_referenced+0x87/0x5e3
-> [128095.480138]  [<c11661d5>] ? mem_cgroup_charge_statistics.isra.24+0x61/0x9e
-> [128095.480138]  [<c114971b>] page_referenced+0x87/0x5e3
-> [128095.480138]  [<f8433030>] ? raid0_congested+0x26/0x8a [raid0]
-> [128095.480138]  [<c112b9c7>] shrink_page_list+0x3d9/0x947
-> [128095.480138]  [<c10a6457>] ? trace_hardirqs_on+0xb/0xd
-> [128095.480138]  [<c112c3cf>] shrink_inactive_list+0x155/0x4cb
-> [128095.480138]  [<c112cd07>] shrink_lruvec+0x300/0x5ce
-> [128095.480138]  [<c112d028>] shrink_zone+0x53/0x14e
-> [128095.480138]  [<c112e531>] kswapd+0x517/0xa75
-> [128095.480138]  [<c112e01a>] ? mem_cgroup_shrink_node_zone+0x280/0x280
-> [128095.480138]  [<c10661ff>] kthread+0xa8/0xaa
-> [128095.480138]  [<c10a6457>] ? trace_hardirqs_on+0xb/0xd
-> [128095.480138]  [<c15bf737>] ret_from_kernel_thread+0x1b/0x28
-> [128095.480138]  [<c1066157>] ? insert_kthread_work+0x63/0x63
+> It is not my ideal approach, but it seems to be the least intrusive and/or
+> with the least amount of possible side effects that we can do right now
+> as a general measure (alternatively, we could create a possibly long
+> blacklist table of affected systems with different workarounds for them,
+> but let's just say that is not overwhelmingly attractive).
 > 
-> which is a false positive caused by hugetlb pmd sharing code which
-> allocates a new pmd from withing mappint->i_mmap_mutex. If this
-> allocation causes reclaim then the lockdep detector complains that we
-> might self-deadlock.
+> [1/3] Make ACPICA export things that we need for checking OSI(Win8).
 > 
-> This is not correct though, because hugetlb pages are not reclaimable so
-> their mapping will be never touched from the reclaim path.
+> [2/3] Make acpi_video_device_find_cap() call acpi_video_init_brightness() even
+>       if it is not going to register the backlight interface (needed for
+>       Thinkpads).
 > 
-> The patch tells lockup detector that hugetlb i_mmap_mutex is special
-> by assigning it a separate lockdep class so it won't report possible
-> deadlocks on unrelated mappings.
+> [3/3] Avoid using ACPI backlight if i915 is in use and the firmware believes
+>       we are Windows 8.
 > 
-> [peterz@infradead.org: comment for annotation]
-> Reported-by: Dave Jones <davej@redhat.com>
-> Signed-off-by: Michal Hocko <mhocko@suse.cz>
-Reviewed-by: Minchan Kim <minchan@kernel.org>
+> Many thanks to everyone involved!
 
-Thanks, Michal!
-Only remained thing is Dave's testing.
+So this didn't work, as we had to revert [3/3], but I think we should try to
+make some progress with this nevertheless.  A way forward I'm seeing now could
+be to
+(1) Split the ACPI video driver so that it is possible to register the
+    backlight control separately from the event interface.
+(2) Add a command line option to i915 to make it use the native backlight
+    control (without registering the ACPI one) if set.  Make unset the
+    default initially.
+(3) Fix i915 backlight control issues for all systems known to have them
+    (that may take a while) and flip the defailt for that option to set when we
+    think we're ready.
+(4) If there still are problem reports, flip the default back to unset and
+    repeat (3).
 
-- 
-Kind regards,
-Minchan Kim
+If this converges, everyone will be using the native backlight control by
+default and the original problem will go away automatically.
+
+Thoughts?
+
+Rafael
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
