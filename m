@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760066Ab3GaNdh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 09:33:37 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:47085 "EHLO
+	id S1759859Ab3GaNdf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 09:33:35 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:47097 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759865Ab3GaN0D (ORCPT
+	by vger.kernel.org with ESMTP id S1759860Ab3GaN0D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 31 Jul 2013 09:26:03 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,11 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Takashi Iwai" <tiwai@suse.de>
+CC: akpm@linux-foundation.org, "Mark Brown" <broonie@linaro.org>,
+        "Oskar Schirmer" <oskar@scara.com>,
+        "Fabio Estevam" <fabio.estevam@freescale.com>
 Date: Wed, 31 Jul 2013 15:23:09 +0200
-Message-ID: <lsq.1375276989.594323458@decadent.org.uk>
+Message-ID: <lsq.1375276989.448607450@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [42/84] ALSA: atiixp: Fix unlocked snd_pcm_stop() call
+Subject: [34/84] ASoC: sglt5000: Fix the default value of CHIP_SSS_CTRL
 In-Reply-To: <lsq.1375276989.251749228@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.216.67.181
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,41 +32,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Fabio Estevam <fabio.estevam@freescale.com>
 
-commit cc7282b8d5abbd48c81d1465925d464d9e3eaa8f upstream.
+commit 016fcab8ff46fca29375d484226ec91932aa4a07 upstream.
 
-snd_pcm_stop() must be called in the PCM substream lock context.
+According to the sgtl5000 reference manual, the default value of CHIP_SSS_CTRL
+is 0x10.
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Reported-by: Oskar Schirmer <oskar@scara.com>
+Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
+[bwh: Backported to 3.2: format of register defaults array is different]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- sound/pci/atiixp.c       | 2 ++
- sound/pci/atiixp_modem.c | 2 ++
- 2 files changed, 4 insertions(+)
+ sound/soc/codecs/sgtl5000.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/pci/atiixp.c
-+++ b/sound/pci/atiixp.c
-@@ -688,7 +688,9 @@ static void snd_atiixp_xrun_dma(struct a
- 	if (! dma->substream || ! dma->running)
- 		return;
- 	snd_printdd("atiixp: XRUN detected (DMA %d)\n", dma->ops->type);
-+	snd_pcm_stream_lock(dma->substream);
- 	snd_pcm_stop(dma->substream, SNDRV_PCM_STATE_XRUN);
-+	snd_pcm_stream_unlock(dma->substream);
- }
- 
- /*
---- a/sound/pci/atiixp_modem.c
-+++ b/sound/pci/atiixp_modem.c
-@@ -638,7 +638,9 @@ static void snd_atiixp_xrun_dma(struct a
- 	if (! dma->substream || ! dma->running)
- 		return;
- 	snd_printdd("atiixp-modem: XRUN detected (DMA %d)\n", dma->ops->type);
-+	snd_pcm_stream_lock(dma->substream);
- 	snd_pcm_stop(dma->substream, SNDRV_PCM_STATE_XRUN);
-+	snd_pcm_stream_unlock(dma->substream);
- }
- 
- /*
+--- a/sound/soc/codecs/sgtl5000.c
++++ b/sound/soc/codecs/sgtl5000.c
+@@ -38,7 +38,7 @@
+ static const u16 sgtl5000_regs[SGTL5000_MAX_REG_OFFSET] =  {
+ 	[SGTL5000_CHIP_CLK_CTRL] = 0x0008,
+ 	[SGTL5000_CHIP_I2S_CTRL] = 0x0010,
+-	[SGTL5000_CHIP_SSS_CTRL] = 0x0008,
++	[SGTL5000_CHIP_SSS_CTRL] = 0x0010,
+ 	[SGTL5000_CHIP_DAC_VOL] = 0x3c3c,
+ 	[SGTL5000_CHIP_PAD_STRENGTH] = 0x015f,
+ 	[SGTL5000_CHIP_ANA_HP_CTRL] = 0x1818,
 
