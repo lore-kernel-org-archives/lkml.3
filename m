@@ -1,54 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759394Ab3GaJtV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 05:49:21 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52650 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759295Ab3GaJtT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 05:49:19 -0400
-Date: Wed, 31 Jul 2013 10:49:14 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 16/18] sched: Avoid overloading CPUs on a preferred NUMA
- node
-Message-ID: <20130731094914.GN2296@suse.de>
-References: <1373901620-2021-1-git-send-email-mgorman@suse.de>
- <1373901620-2021-17-git-send-email-mgorman@suse.de>
- <20130717105423.GC17211@twins.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20130717105423.GC17211@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1759264Ab3GaJtZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 05:49:25 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:39369 "EHLO
+	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759402Ab3GaJtW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 05:49:22 -0400
+From: Philipp Reisner <philipp.reisner@linbit.com>
+To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
+Cc: drbd-dev@lists.linbit.com
+Subject: [PATCH 5/5] drbd: avoid to shrink max_bio_size due to peer re-configuration
+Date: Wed, 31 Jul 2013 11:41:15 +0200
+Message-Id: <1375263675-18410-6-git-send-email-philipp.reisner@linbit.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1375263675-18410-1-git-send-email-philipp.reisner@linbit.com>
+References: <1375263675-18410-1-git-send-email-philipp.reisner@linbit.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 17, 2013 at 12:54:23PM +0200, Peter Zijlstra wrote:
-> On Mon, Jul 15, 2013 at 04:20:18PM +0100, Mel Gorman wrote:
-> > +static long effective_load(struct task_group *tg, int cpu, long wl, long wg);
-> 
-> And this
+From: Lars Ellenberg <lars.ellenberg@linbit.com>
 
-> -- which suggests you always build with cgroups enabled?
+For a long time, the receiving side has spread "too large" incoming
+requests over multiple bios.  No need to shrink our max_bio_size
+(max_hw_sectors) if the peer is reconfigured to use a different storage.
 
-Yes, the test kernel configuration is one taken from an opensuse kernel
-with a bunch of unnecessary drivers removed.
+The problem manifests itself if we are not the top of the device stack
+(DRBD is used a LVM PV).
 
-> I generally
-> try and disable all that nonsense when building new stuff, the scheduler is a
-> 'lot' simpler that way. Once that works make it 'interesting' again.
-> 
+A hardware reconfiguration on the peer may cause the supported
+max_bio_size to shrink, and the connection handshake would now
+unnecessarily shrink the max_bio_size on the active node.
 
-Understood. I'll disable CONFIG_CGROUPS in the next round of testing which
-will be based against 3.11-rc3 once I plough this set of feedback.
+There is no way to notify upper layers that they have to "re-stack"
+their limits. So they won't notice at all, and may keep submitting bios
+that are suddenly considered "too large for device".
 
-Thanks.
+We already check for compatibility and ignore changes on the peer,
+the code only was masked out unless we have a fully established connection.
+We just need to allow it a bit earlier during the handshake.
 
+Also consider max_hw_sectors in our merge bvec function, just in case.
+
+Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
+Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
+---
+ drivers/block/drbd/drbd_nl.c  |    4 ++--
+ drivers/block/drbd/drbd_req.c |    3 +++
+ 2 files changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/block/drbd/drbd_nl.c b/drivers/block/drbd/drbd_nl.c
+index 37dad18..c706d50 100644
+--- a/drivers/block/drbd/drbd_nl.c
++++ b/drivers/block/drbd/drbd_nl.c
+@@ -1132,9 +1132,9 @@ void drbd_reconsider_max_bio_size(struct drbd_conf *mdev)
+ 	/* We may ignore peer limits if the peer is modern enough.
+ 	   Because new from 8.3.8 onwards the peer can use multiple
+ 	   BIOs for a single peer_request */
+-	if (mdev->state.conn >= C_CONNECTED) {
++	if (mdev->state.conn >= C_WF_REPORT_PARAMS) {
+ 		if (mdev->tconn->agreed_pro_version < 94)
+-			peer = min( mdev->peer_max_bio_size, DRBD_MAX_SIZE_H80_PACKET);
++			peer = min(mdev->peer_max_bio_size, DRBD_MAX_SIZE_H80_PACKET);
+ 			/* Correct old drbd (up to 8.3.7) if it believes it can do more than 32KiB */
+ 		else if (mdev->tconn->agreed_pro_version == 94)
+ 			peer = DRBD_MAX_SIZE_H80_PACKET;
+diff --git a/drivers/block/drbd/drbd_req.c b/drivers/block/drbd/drbd_req.c
+index c24379f..fec7bef 100644
+--- a/drivers/block/drbd/drbd_req.c
++++ b/drivers/block/drbd/drbd_req.c
+@@ -1306,6 +1306,7 @@ int drbd_merge_bvec(struct request_queue *q, struct bvec_merge_data *bvm, struct
+ 	int backing_limit;
+ 
+ 	if (bio_size && get_ldev(mdev)) {
++		unsigned int max_hw_sectors = queue_max_hw_sectors(q);
+ 		struct request_queue * const b =
+ 			mdev->ldev->backing_bdev->bd_disk->queue;
+ 		if (b->merge_bvec_fn) {
+@@ -1313,6 +1314,8 @@ int drbd_merge_bvec(struct request_queue *q, struct bvec_merge_data *bvm, struct
+ 			limit = min(limit, backing_limit);
+ 		}
+ 		put_ldev(mdev);
++		if ((limit >> 9) > max_hw_sectors)
++			limit = max_hw_sectors << 9;
+ 	}
+ 	return limit;
+ }
 -- 
-Mel Gorman
-SUSE Labs
+1.7.9.5
+
