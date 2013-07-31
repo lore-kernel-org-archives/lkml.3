@@ -1,96 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759461Ab3GaI56 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 04:57:58 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:23806 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759282Ab3GaI5u (ORCPT
+	id S1759447Ab3GaI54 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 04:57:56 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:41798 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759394Ab3GaI5v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 04:57:50 -0400
-X-AuditID: cbfee690-b7f6f6d00000740c-49-51f8d18d8eec
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Andrew Morton'" <akpm@linux-foundation.org>
-Cc: "'LKML'" <linux-kernel@vger.kernel.org>,
-        "'Richard Purdie'" <rpurdie@rpsys.net>,
-        Jingoo Han <jg1.han@samsung.com>
-Subject: [PATCH 2/3] backlight: lm3639: Don't mix different enum types
-Date: Wed, 31 Jul 2013 17:57:48 +0900
-Message-id: <002e01ce8dcc$0814f8c0$183eea40$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac6NzAGYWV0SL+quQom35h5T9xXT5A==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrKIsWRmVeSWpSXmKPExsVy+t8zA93eiz8CDc48ZreYs34Nm8XlhZdY
-	LS7vmsNmsXvXU1YHFo8TM36zeOyZ/4PVo2/LKkaPz5vkAliiuGxSUnMyy1KL9O0SuDIOTT7G
-	UrCRu2Lf5cAGxjOcXYycHBICJhIbZ7SwQNhiEhfurWfrYuTiEBJYxijR8X8VK0zRsRn72CES
-	0xklLl5/xgrh/GKU+HhvEztIFZuAmsSXL4eBbA4OEQF9ibYWDZAws0CxxOyzTxhBbGEBN4nj
-	+w+CDWURUJXoOXAFrJVXwFJiy+kHjBC2oMSPyfdYIHq1JNbvPM4EYctLbF7zlhniIAWJHWdf
-	g9WLCOhJfD/ykxmiRkRi34t3jCC3SQhsY5fYvOINC8QyAYlvkw+xgNwmISArsekA1BxJiYMr
-	brBMYBSbhWT1LCSrZyFZPQvJigWMLKsYRVMLkguKk9KLTPSKE3OLS/PS9ZLzczcxQqJswg7G
-	ewesDzEmA62fyCwlmpwPjNK8knhDYzMjC1MTU2Mjc0sz0oSVxHnVW6wDhQTSE0tSs1NTC1KL
-	4otKc1KLDzEycXBKNTCqXA72f1EQpHd7kvF/x7Yrm6pnX5QXZDcO+XjoaT//TSO/xMezN91p
-	aBH8ZvBrvd4p/r66ecue1kzZmVOUn3F55VXXi3u8LHdoWsgczK/4kaq9NlFIibPn2pSzCT8X
-	n93PGhCiNm/3/ewLT9Q3XPSfvPqcyMyJ6lEH95kemJgmUtz5gO3K9+p2JZbijERDLeai4kQA
-	cSm/HMgCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprEKsWRmVeSWpSXmKPExsVy+t9jQd3eiz8CDc72sVjMWb+GzeLywkus
-	Fpd3zWGz2L3rKasDi8eJGb9ZPPbM/8Hq0bdlFaPH501yASxRDYw2GamJKalFCql5yfkpmXnp
-	tkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUA7lRTKEnNKgUIBicXFSvp2mCaEhrjp
-	WsA0Ruj6hgTB9RgZoIGEdYwZhyYfYynYyF2x73JgA+MZzi5GTg4JAROJYzP2sUPYYhIX7q1n
-	62Lk4hASmM4ocfH6M1YI5xejxMd7m8Cq2ATUJL58OQxkc3CICOhLtLVogISZBYolZp99wghi
-	Cwu4SRzff5AVxGYRUJXoOXAFrJVXwFJiy+kHjBC2oMSPyfdYIHq1JNbvPM4EYctLbF7zlhni
-	IAWJHWdfg9WLCOhJfD/ykxmiRkRi34t3jBMYBWYhGTULyahZSEbNQtKygJFlFaNoakFyQXFS
-	eq6hXnFibnFpXrpecn7uJkZwDD+T2sG4ssHiEKMAB6MSD6/Dhe+BQqyJZcWVuYcYJTiYlUR4
-	5YN+BArxpiRWVqUW5ccXleakFh9iTAb6dCKzlGhyPjC95JXEGxqbmBlZGplZGJmYm5MmrCTO
-	e6DVOlBIID2xJDU7NbUgtQhmCxMHp1QDo/ANSx6Jnas2bzeTsP07cbcYf+/z309WlTCEzHx4
-	6fqehVsOPYxs279bJkuUd/5srsATF4xMtveVPtOdMn0h44NTYQcSOkz3Syg9+Bq+6avpxr+v
-	6u+Ksq84Yn/d8EHjD/X0sMeWx9rj3S4cvf61qoHtic4X8QerT921T2Pt7GZKkA7WDo53uaTE
-	UpyRaKjFXFScCAA8rV/rJQMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Wed, 31 Jul 2013 04:57:51 -0400
+Date: Wed, 31 Jul 2013 01:57:07 -0700
+From: tip-bot for Frederic Weisbecker <tipbot@zytor.com>
+Message-ID: <tip-93786a5f6aeb9c032c1c240246c5aabcf457b38f@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, acme@redhat.com,
+        hpa@zytor.com, mingo@kernel.org, anish198519851985@gmail.com,
+        peterz@infradead.org, srivatsa.bhat@linux.vnet.ibm.com,
+        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
+        tglx@linutronix.de, dzickus@redhat.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, anish198519851985@gmail.com,
+        peterz@infradead.org, srivatsa.bhat@linux.vnet.ibm.com,
+        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
+        tglx@linutronix.de, dzickus@redhat.com
+In-Reply-To: <1374539466-4799-9-git-send-email-fweisbec@gmail.com>
+References: <1374539466-4799-9-git-send-email-fweisbec@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] watchdog: Make it work under full dynticks
+Git-Commit-ID: 93786a5f6aeb9c032c1c240246c5aabcf457b38f
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 31 Jul 2013 01:57:14 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Don't mix different enum types to fix the sparse warnings.
+Commit-ID:  93786a5f6aeb9c032c1c240246c5aabcf457b38f
+Gitweb:     http://git.kernel.org/tip/93786a5f6aeb9c032c1c240246c5aabcf457b38f
+Author:     Frederic Weisbecker <fweisbec@gmail.com>
+AuthorDate: Tue, 23 Jul 2013 02:31:06 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Tue, 30 Jul 2013 22:29:15 +0200
 
-drivers/video/backlight/lm3639_bl.c:80:51: warning: mixing different enum types
-drivers/video/backlight/lm3639_bl.c:80:51:     int enum lm3639_fleds  versus
-drivers/video/backlight/lm3639_bl.c:80:51:     int enum lm3639_bleds
-drivers/video/backlight/lm3639_bl.c:82:51: warning: mixing different enum types
-drivers/video/backlight/lm3639_bl.c:82:51:     int enum lm3639_fleds  versus
-drivers/video/backlight/lm3639_bl.c:82:51:     int enum lm3639_bleds
+watchdog: Make it work under full dynticks
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+A perf event can be used without forcing the tick to
+stay alive if it doesn't use a frequency but a sample
+period and if it doesn't throttle (raise storm of events).
+
+Since the lockup detector neither use a perf event frequency
+nor should ever throttle due to its high period, it can now
+run concurrently with the full dynticks feature.
+
+So remove the hack that disabled the watchdog.
+
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Don Zickus <dzickus@redhat.com>
+Cc: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Anish Singh <anish198519851985@gmail.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1374539466-4799-9-git-send-email-fweisbec@gmail.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- drivers/video/backlight/lm3639_bl.c |   11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
+ kernel/watchdog.c | 8 --------
+ 1 file changed, 8 deletions(-)
 
-diff --git a/drivers/video/backlight/lm3639_bl.c b/drivers/video/backlight/lm3639_bl.c
-index 053964d..6c888e3 100644
---- a/drivers/video/backlight/lm3639_bl.c
-+++ b/drivers/video/backlight/lm3639_bl.c
-@@ -76,10 +76,13 @@ static int lm3639_chip_init(struct lm3639_chip_data *pchip)
- 		goto out;
+diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+index 1241d8c..51c4f34 100644
+--- a/kernel/watchdog.c
++++ b/kernel/watchdog.c
+@@ -553,14 +553,6 @@ void __init lockup_detector_init(void)
+ {
+ 	set_sample_period();
  
- 	/* output pins config. */
--	if (!pdata->init_brt_led)
--		reg_val = pdata->fled_pins | pdata->bled_pins;
--	else
--		reg_val = pdata->fled_pins | pdata->bled_pins | 0x01;
-+	if (!pdata->init_brt_led) {
-+		reg_val = pdata->fled_pins;
-+		reg_val |= pdata->bled_pins;
-+	} else {
-+		reg_val = pdata->fled_pins;
-+		reg_val |= pdata->bled_pins | 0x01;
-+	}
- 
- 	ret = regmap_update_bits(pchip->regmap, REG_ENABLE, 0x79, reg_val);
- 	if (ret < 0)
--- 
-1.7.10.4
-
-
+-#ifdef CONFIG_NO_HZ_FULL
+-	if (watchdog_user_enabled) {
+-		watchdog_user_enabled = 0;
+-		pr_warning("Disabled lockup detectors by default for full dynticks\n");
+-		pr_warning("You can reactivate it with 'sysctl -w kernel.watchdog=1'\n");
+-	}
+-#endif
+-
+ 	if (watchdog_user_enabled)
+ 		watchdog_enable_all_cpus();
+ }
