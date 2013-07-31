@@ -1,60 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758872Ab3GaGjY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 02:39:24 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:39202 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758706Ab3GaGjW (ORCPT
+	id S1758285Ab3GaGkU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 02:40:20 -0400
+Received: from mail-we0-f176.google.com ([74.125.82.176]:60334 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752568Ab3GaGkS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 02:39:22 -0400
-Date: Wed, 31 Jul 2013 15:39:19 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Magnus Damm <magnus.damm@gmail.com>
-Cc: linux-kernel@vger.kernel.org, kuninori.morimoto.gx@renesas.com,
-        linux-sh@vger.kernel.org
-Subject: Re: [PATCH] ARM: shmobile: r8a7740: add PMU information to
- r8a7740.dtsi
-Message-ID: <20130731063918.GC5090@verge.net.au>
-References: <20130724035909.30648.64982.sendpatchset@w520>
+	Wed, 31 Jul 2013 02:40:18 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130724035909.30648.64982.sendpatchset@w520>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <20130731004303.GA7118@dastard>
+References: <1374774659-13121-1-git-send-email-dave.kleikamp@oracle.com>
+	<20130730142820.313f1af6827276df31913106@linux-foundation.org>
+	<20130731004303.GA7118@dastard>
+Date: Wed, 31 Jul 2013 08:40:16 +0200
+Message-ID: <CA+icZUWcCv3X6GE6kMmGKcizgfMNeUErbPW_+ihbke3UL6KD3g@mail.gmail.com>
+Subject: Re: [PATCH V8 00/33] loop: Issue O_DIRECT aio using bio_vec
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Dave Chinner <david@fromorbit.com>,
+        Dave Kleikamp <dave.kleikamp@oracle.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org,
+        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
+        Zach Brown <zab@zabbo.net>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 24, 2013 at 12:59:09PM +0900, Magnus Damm wrote:
-> From: Magnus Damm <damm@opensource.se>
-> 
-> Add PMU information to r8a7740.dtsi. With this
-> included Armadillo800eva DT reference may use the PMU.
-> 
-> Signed-off-by: Magnus Damm <damm@opensource.se>
+On Wed, Jul 31, 2013 at 2:43 AM, Dave Chinner <david@fromorbit.com> wrote:
+> On Tue, Jul 30, 2013 at 02:28:20PM -0700, Andrew Morton wrote:
+>> On Thu, 25 Jul 2013 12:50:26 -0500 Dave Kleikamp <dave.kleikamp@oracle.com> wrote:
+>>
+>> > This patch series adds a kernel interface to fs/aio.c so that kernel code can
+>> > issue concurrent asynchronous IO to file systems.  It adds an aio command and
+>> > file system methods which specify io memory with pages instead of userspace
+>> > addresses.
+>> >
+>> > This series was written to reduce the current overhead loop imposes by
+>> > performing synchronus buffered file system IO from a kernel thread.  These
+>> > patches turn loop into a light weight layer that translates bios into iocbs.
+>>
+>> Do you have any performance numbers?
+>>
 
-Thanks, I will queue this up for v3.12 in the dt2 branch.
+[ CC Al and Linux-next maintainer ]
 
-> ---
-> 
->  Dry coded based on data sheet, not runtime tested.
-> 
->  arch/arm/boot/dts/r8a7740.dtsi |    5 +++++
->  1 file changed, 5 insertions(+)
-> 
-> --- 0001/arch/arm/boot/dts/r8a7740.dtsi
-> +++ work/arch/arm/boot/dts/r8a7740.dtsi	2013-07-24 04:20:42.000000000 +0900
-> @@ -32,6 +32,11 @@
->  		      <0xc2000000 0x1000>;
->  	};
->  
-> +	pmu {
-> +		compatible = "arm,cortex-a9-pmu";
-> +		interrupts = <0 83 4>;
-> +	};
-> +
->  	/* irqpin0: IRQ0 - IRQ7 */
->  	irqpin0: irqpin@e6900000 {
->  		compatible = "renesas,intc-irqpin";
-> 
+The more important question how to test and then provide performance numbers.
+If you give me a test-case I give you numbers!
+
+>> Does anyone care much about loop performance?  What's the value here?
+>
+> Yes. Anyone using loopback devices for file-backed devices exposed
+> to containers and VMs cares about the memory and CPU overhead
+> the double caching the existing loop device has.
+>
+
+Yupp, I am here on Ubuntu/precise AMD64 in a so-called WUBI
+environment which makes intensive usage of loopback-device plus FUSE
+driver and $fs-of-your-choice (here: ext4).
+
+Today, I have pulled Dave's aio_loop GIT branch into v3.11-rc3.
+After successful compilation I am running it right now.
+
+I had also tested v6 of the series [1] from February 2013 and
+encouraged Dave to put it into Linux-next [2].
+Unfortunately, there was no response from Al.
+Again, Dave try to get it into Linux-next!
+
+- Sedat -
+
+[1] http://marc.info/?t=135947707100013&r=1&w=4
+[2] http://marc.info/?l=linux-fsdevel&m=136122569807203&w=4
