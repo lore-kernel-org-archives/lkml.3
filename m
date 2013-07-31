@@ -1,132 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758164Ab3GaFMX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 01:12:23 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:56807 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752988Ab3GaFMW (ORCPT
+	id S1758233Ab3GaFOa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 01:14:30 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:59851 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752988Ab3GaFO3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 01:12:22 -0400
-X-AuditID: 9c930179-b7c49ae000000e68-84-51f89cb4f6b1
-Date: Wed, 31 Jul 2013 14:12:21 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Hillf Danton <dhillf@gmail.com>
-Subject: Re: [PATCH 15/18] mm, hugetlb: move up anon_vma_prepare()
-Message-ID: <20130731051221.GK2548@lge.com>
-References: <1375075929-6119-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1375075929-6119-16-git-send-email-iamjoonsoo.kim@lge.com>
- <1375124737-9w10y4c4-mutt-n-horiguchi@ah.jp.nec.com>
- <1375125555-yuwxqz39-mutt-n-horiguchi@ah.jp.nec.com>
+	Wed, 31 Jul 2013 01:14:29 -0400
+Date: Wed, 31 Jul 2013 06:14:22 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Aaron Lu <aaron.lwe@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        Len Brown <lenb@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [REGRESSION/PATCH] acpi: blacklist win8 OSI for ASUS Zenbok
+ Prime UX31A
+Message-ID: <20130731051421.GA15766@srcf.ucam.org>
+References: <1375125658-1223-1-git-send-email-felipe.contreras@gmail.com>
+ <3453253.oZLO1ChPbL@vostro.rjw.lan>
+ <CAMP44s02V_FO1BPJZqo6MB9RMknXYdV7AXDqbJzYHpgK1GUuJw@mail.gmail.com>
+ <37178266.QXgbv9rq0i@vostro.rjw.lan>
+ <CAMP44s2LqiEGtS72FuTjsHUa1MH2kfaYHmcpNKMmAm2LnbFCCQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1375125555-yuwxqz39-mutt-n-horiguchi@ah.jp.nec.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <CAMP44s2LqiEGtS72FuTjsHUa1MH2kfaYHmcpNKMmAm2LnbFCCQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 29, 2013 at 03:19:15PM -0400, Naoya Horiguchi wrote:
-> On Mon, Jul 29, 2013 at 03:05:37PM -0400, Naoya Horiguchi wrote:
-> > On Mon, Jul 29, 2013 at 02:32:06PM +0900, Joonsoo Kim wrote:
-> > > If we fail with a allocated hugepage, it is hard to recover properly.
-> > > One such example is reserve count. We don't have any method to recover
-> > > reserve count. Although, I will introduce a function to recover reserve
-> > > count in following patch, it is better not to allocate a hugepage
-> > > as much as possible. So move up anon_vma_prepare() which can be failed
-> > > in OOM situation.
-> > > 
-> > > Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> > 
-> > Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> 
-> Sorry, let me suspend this Reviewed for a question.
-> If alloc_huge_page failed after we succeeded anon_vma_parepare,
-> the allocated anon_vma_chain and/or anon_vma are safely freed?
-> Or don't we have to free them?
+On Tue, Jul 30, 2013 at 07:11:06PM -0500, Felipe Contreras wrote:
 
-Yes, it will be freed by free_pgtables() and then unlink_anon_vmas()
-when a task terminate. So, we don't have to free them.
+> No, the ACPI driver is exposing a backlight interface, which has a
+> defined stable API.
 
-Thanks.
+>From the ACPI spec:
 
-> 
-> Thanks,
-> Naoya Horiguchi
-> 
-> > > diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> > > index 683fd38..bb8a45f 100644
-> > > --- a/mm/hugetlb.c
-> > > +++ b/mm/hugetlb.c
-> > > @@ -2536,6 +2536,15 @@ retry_avoidcopy:
-> > >  	/* Drop page_table_lock as buddy allocator may be called */
-> > >  	spin_unlock(&mm->page_table_lock);
-> > >  
-> > > +	/*
-> > > +	 * When the original hugepage is shared one, it does not have
-> > > +	 * anon_vma prepared.
-> > > +	 */
-> > > +	if (unlikely(anon_vma_prepare(vma))) {
-> > > +		ret = VM_FAULT_OOM;
-> > > +		goto out_old_page;
-> > > +	}
-> > > +
-> > >  	use_reserve = vma_has_reserves(h, vma, address);
-> > >  	if (use_reserve == -ENOMEM) {
-> > >  		ret = VM_FAULT_OOM;
-> > > @@ -2590,15 +2599,6 @@ retry_avoidcopy:
-> > >  		goto out_lock;
-> > >  	}
-> > >  
-> > > -	/*
-> > > -	 * When the original hugepage is shared one, it does not have
-> > > -	 * anon_vma prepared.
-> > > -	 */
-> > > -	if (unlikely(anon_vma_prepare(vma))) {
-> > > -		ret = VM_FAULT_OOM;
-> > > -		goto out_new_page;
-> > > -	}
-> > > -
-> > >  	copy_user_huge_page(new_page, old_page, address, vma,
-> > >  			    pages_per_huge_page(h));
-> > >  	__SetPageUptodate(new_page);
-> > > @@ -2625,7 +2625,6 @@ retry_avoidcopy:
-> > >  	spin_unlock(&mm->page_table_lock);
-> > >  	mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end);
-> > >  
-> > > -out_new_page:
-> > >  	page_cache_release(new_page);
-> > >  out_old_page:
-> > >  	page_cache_release(old_page);
-> > > -- 
-> > > 1.7.9.5
-> > > 
-> > > --
-> > > To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> > > the body to majordomo@kvack.org.  For more info on Linux MM,
-> > > see: http://www.linux-mm.org/ .
-> > > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> > >
-> > 
-> > --
-> > To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> > the body to majordomo@kvack.org.  For more info on Linux MM,
-> > see: http://www.linux-mm.org/ .
-> > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> >
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+'The OEM may define the number 0 as "Zero brightness" that can mean to 
+turn off the lighting (e.g. LCD panel backlight) in the device.'
+
+There's no mechanism for an OS to know whether or not a firmware 
+implementation will actually turn the backlight off at 0, so there's no 
+way the OS can define the lowest backlight state as anything other than 
+"May or may not turn the screen off". If your userspace application 
+depends on specific numbers having specific meanings, your userspace 
+application is broken. Don't ascribe meanings to arbitrary values.
+
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
