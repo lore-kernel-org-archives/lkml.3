@@ -1,37 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760404Ab3GaOn5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 10:43:57 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:52978 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759951Ab3GaOnz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 10:43:55 -0400
-Date: Wed, 31 Jul 2013 23:43:48 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: "Lee, Jae-Hong" <pyrasis@gmail.com>
-Cc: rob@landley.net, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] correct unfaithful translation on HOWTO in ko_KR
-Message-ID: <20130731144348.GB7641@gmail.com>
-References: <1375278775-3430-1-git-send-email-pyrasis@gmail.com>
- <1375278775-3430-2-git-send-email-pyrasis@gmail.com>
+	id S1760344Ab3GaOoy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 10:44:54 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40123 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756541Ab3GaOox (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 10:44:53 -0400
+Date: Wed, 31 Jul 2013 16:44:51 +0200
+From: Jan Kara <jack@suse.cz>
+To: Dave Chinner <david@fromorbit.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, davej@redhat.com, viro@zeniv.linux.org.uk,
+        jack@suse.cz, glommer@parallels.com
+Subject: Re: [PATCH 02/11] inode: add IOP_NOTHASHED to avoid inode hash lock
+ in evict
+Message-ID: <20130731144451.GD22930@quack.suse.cz>
+References: <1375244150-27296-1-git-send-email-david@fromorbit.com>
+ <1375244150-27296-3-git-send-email-david@fromorbit.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1375278775-3430-2-git-send-email-pyrasis@gmail.com>
+In-Reply-To: <1375244150-27296-3-git-send-email-david@fromorbit.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 31, 2013 at 10:52:54PM +0900, Lee, Jae-Hong wrote:
-> From: "Lee, Jae-Hong" <pyrasis@gmail.com>
+On Wed 31-07-13 14:15:41, Dave Chinner wrote:
+> From: Dave Chinner <dchinner@redhat.com>
 > 
-> Signed-off-by: Lee, Jae-Hong <pyrasis@gmail.com>
-Acked-by: Minchan Kim <minchan@kernel.org>
+> Some filesystems don't use the VFS inode hash and fake the fact they
+> are hashed so that all the writeback code works correctly. However,
+> this means the evict() path still tries to remove the inode from the
+> hash, meaning that the inode_hash_lock() needs to be taken
+> unnecessarily. Hence under certain workloads the inode_hash_lock can
+> be contended even if the inode is never actually hashed.
+> 
+> To avoid this, add an inode opflag to allow inode_hash_remove() to
+> avoid taking the hash lock on inodes have never actually been
+> hashed.
+> 
+> Signed-off-by: Dave Chinner <dchinner@redhat.com>
+> ---
+>  fs/xfs/xfs_iops.c  | 2 ++
+>  include/linux/fs.h | 3 ++-
+>  2 files changed, 4 insertions(+), 1 deletion(-)
+> 
+> diff --git a/fs/xfs/xfs_iops.c b/fs/xfs/xfs_iops.c
+> index 96dda62..68a8264 100644
+> --- a/fs/xfs/xfs_iops.c
+> +++ b/fs/xfs/xfs_iops.c
+> @@ -1168,8 +1168,10 @@ xfs_setup_inode(
+>  	inode->i_state = I_NEW;
+>  
+>  	inode_sb_list_add(inode);
+> +
+>  	/* make the inode look hashed for the writeback code */
+>  	hlist_add_fake(&inode->i_hash);
+> +	inode->i_opflags |= IOP_NOTHASHED;
+>  
+>  	inode->i_mode	= ip->i_d.di_mode;
+>  	set_nlink(inode, ip->i_d.di_nlink);
+> diff --git a/include/linux/fs.h b/include/linux/fs.h
+> index b09ddc0..51cf6ed 100644
+> --- a/include/linux/fs.h
+> +++ b/include/linux/fs.h
+> @@ -515,6 +515,7 @@ struct posix_acl;
+>  #define IOP_FASTPERM	0x0001
+>  #define IOP_LOOKUP	0x0002
+>  #define IOP_NOFOLLOW	0x0004
+> +#define IOP_NOTHASHED	0x0008	/* inode never hashed, avoid unhashing */
+>  
+>  /*
+>   * Keep mostly read-only and often accessed (especially for
+> @@ -2371,7 +2372,7 @@ static inline void insert_inode_hash(struct inode *inode)
+>  extern void __remove_inode_hash(struct inode *);
+>  static inline void remove_inode_hash(struct inode *inode)
+>  {
+> -	if (!inode_unhashed(inode))
+> +	if (!((inode->i_opflags & IOP_NOTHASHED) || inode_unhashed(inode)))
+  It's somewhat easier for me to read if the condition if written as:
+	if (!(inode->i_opflags & IOP_NOTHASHED) && !inode_unhashed(inode))
+  But whatever... The patch looks good. You can add:
+Reviewed-by: Jan Kara <jack@suse.cz>
 
-Thanks!
+>  		__remove_inode_hash(inode);
+>  }
 
+								Honza
 -- 
-Kind regards,
-Minchan Kim
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
