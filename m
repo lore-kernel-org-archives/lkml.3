@@ -1,154 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758025Ab3GaCjk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 22:39:40 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:57137 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751171Ab3GaCji (ORCPT
+	id S1758930Ab3GaCl1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 22:41:27 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:48235 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752906Ab3GaCl0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 22:39:38 -0400
-Message-ID: <51F878DA.3000206@huawei.com>
-Date: Wed, 31 Jul 2013 10:39:22 +0800
-From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Tue, 30 Jul 2013 22:41:26 -0400
+X-AuditID: 9c93016f-b7b50ae0000021a9-5a-51f879544a1a
+Date: Wed, 31 Jul 2013 11:41:24 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Subject: Re: [PATCH 05/18] mm, hugetlb: protect region tracking via newly
+ introduced resv_map lock
+Message-ID: <20130731024124.GC2548@lge.com>
+References: <1375075929-6119-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1375075929-6119-6-git-send-email-iamjoonsoo.kim@lge.com>
+ <CAJd=RBD6ySxfeX0ebzJ1jsTWnOfvwSm4iyQ8Zr2W05x2LVWE2Q@mail.gmail.com>
 MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        <ktap@freelists.org>
-CC: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        <jovi.zhangwei@gmail.com>
-Subject: [ANNOUNCE] ktap 0.2 released
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.66.58.241]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJd=RBD6ySxfeX0ebzJ1jsTWnOfvwSm4iyQ8Zr2W05x2LVWE2Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear,
+On Mon, Jul 29, 2013 at 04:58:57PM +0800, Hillf Danton wrote:
+> On Mon, Jul 29, 2013 at 1:31 PM, Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
+> > There is a race condition if we map a same file on different processes.
+> > Region tracking is protected by mmap_sem and hugetlb_instantiation_mutex.
+> > When we do mmap, we don't grab a hugetlb_instantiation_mutex, but,
+> > grab a mmap_sem. This doesn't prevent other process to modify region
+> > structure, so it can be modified by two processes concurrently.
+> >
+> > To solve this, I introduce a lock to resv_map and make region manipulation
+> > function grab a lock before they do actual work. This makes region
+> > tracking safe.
+> >
+> > Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> >
+> > diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
+> > index 2677c07..e29e28f 100644
+> > --- a/include/linux/hugetlb.h
+> > +++ b/include/linux/hugetlb.h
+> > @@ -26,6 +26,7 @@ struct hugepage_subpool {
+> >
+> >  struct resv_map {
+> >         struct kref refs;
+> > +       spinlock_t lock;
+> >         struct list_head regions;
+> >  };
+> >  extern struct resv_map *resv_map_alloc(void);
+> > diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> > index 24c0111..bf2ee11 100644
+> > --- a/mm/hugetlb.c
+> > +++ b/mm/hugetlb.c
+> [...]
+> > @@ -193,6 +188,7 @@ static long region_chg(struct resv_map *resv, long f, long t)
+> >         struct file_region *rg, *nrg;
+> >         long chg = 0;
+> >
+> > +       spin_lock(&resv->lock);
+> >         /* Locate the region we are before or in. */
+> >         list_for_each_entry(rg, head, link)
+> >                 if (f <= rg->to)
+> > @@ -203,14 +199,18 @@ static long region_chg(struct resv_map *resv, long f, long t)
+> >          * size such that we can guarantee to record the reservation. */
+> >         if (&rg->link == head || t < rg->from) {
+> >                 nrg = kmalloc(sizeof(*nrg), GFP_KERNEL);
+> 
+> Hm, you are allocating a piece of memory with spin lock held.
+> How about replacing that spin lock with a mutex?
 
-I'm pleased to announce that ktap released v0.2, the archive is available at:
+I think that lock held period here is very short, so mutex is not appropriate
+to use. How about trying allocate with GFP_NOWAIT? And then if failed,
+release the lock and allocate with GFP_KERNEL and retry at the beginnig.
 
-	https://github.com/ktap/ktap/archive/v0.2.tar.gz
+Thanks.
 
-
-= what's ktap?
-
-   A New Scripting Dynamic Tracing Tool For Linux
-
-   ktap have different design principles from Linux mainstream dynamic tracing
-   language in that it's based on bytecode, so it doesn't depend upon GCC,
-   doesn't require compiling kernel module for each script, safe to use in
-   production environment, fulfilling the embedd ecosystem's tracing needs.
-
-   ktap is released as GPL license.
-
-   More information can be found at ktap/doc directory.
-
-= Highlight features
-
-   - support tracepoints, k(ret)probe, u(ret)probe, timer, function tracing, etc.
-   - support x86, x86-64, powerpc, arm, and preempt-rt kernel.
-   - support kernel 3.1 and later versions, include Linux mainline.
-
-= Script highlight changes from v0.1
-
-   * new tracing block syntax (introduce keywords: trace, trace_end)
-	trace EVENTDEF function (e) { BODY }
-	trace_end function () { BODY }
-
-   * event became to a built-in type in language
-	print(e) will output string presentation of event.
-
-	for syscalls:sys_enter_write event, print(e) will output like:
-	sys_write(fd: 3, buf: b9369c78, count: 60)
-
-   * support trace filter
-	trace 'sched:sched_switch /prev_comm == foo || next_comm == foo/
-
-   * support kprobe/kretprobe (no debuginfo handing)
-	trace "probe:do_sys_open dfd=%di filename=%dx flags=%cx mode=+4($stack)"
-	trace "probe:do_sys_open%return fd=$retval"
-
-   * support uprobe/uretprobe (no debuginfo handling)
-	trace "probe:/lib/libc.so.6:0x000773c0"
-	trace "probe:/lib/libc.so.6:0x000773c0%return"
-
-   * support function tracing
-	trace "ftrace:function /ip == mutex*/"
-
-   * support oneline scripting
-	ktap -e 'trace "syscalls:*" function (e) { print(e) }'
-
-   * specific pid or cpu to tracing
-	ktap -C cpu *.kp
-	ktap -p pid *.kp
-
-   * more sample scripts
-
-   * support calling print_backtrace() in any context
-
-   * support calling exit() in any context
-
-= Backend highlight changes from v0.1
-
-   * unified perf callback mechanism
-   * use ring buffer transport instead of relayfs
-   * reentrant in ktap tracing
-   * performance boost(use percpu data in many case)
-   * safe table/string manipulation
-   * safe ktap exit
-   * big code cleanups
-   * fixed a lot of bugs, more stable than v0.1
-
-= Source code
-
-   Please get latest code from:
-   https://github.com/ktap/ktap.git
-
-= Building & Running
-
-   [root@jovi]# git clone https://github.com/ktap/ktap.git
-
-   [root@jovi]# cd ktap
-   [root@jovi]# make	#generate ktapvm kernel module and ktap binary
-
-   [root@jovi]# insmod ./ktapvm.ko
-   [root@jovi]# ./ktap scripts/syscalls.kp
-
-= Samples scripts
-
-   There have many samples scripts in README and ktap/scripts.
-
-= Documentation
-
-   Documentation is in ktap/doc/
-
-= Mailing list
-
-   ktap@freelists.org
-   You can subscribe ktap mailing list at link: http://www.freelists.org/list/ktap
-
-= Feedback
-
-   ktap is still under active development, so any feedback, bug reports, patches,
-   feature requests, as always, is welcome.
-
-
-.jovi
-
-
-
-
-
-
-
+> 
+> > -               if (!nrg)
+> > -                       return -ENOMEM;
+> > +               if (!nrg) {
+> > +                       chg = -ENOMEM;
+> > +                       goto out;
+> > +               }
+> > +
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
