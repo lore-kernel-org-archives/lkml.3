@@ -1,151 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760654Ab3GaRhY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 13:37:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6830 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760622Ab3GaRhA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 13:37:00 -0400
-Date: Wed, 31 Jul 2013 19:31:35 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/3] tracing: Don't pass file_operations array to
-	event_create_dir()
-Message-ID: <20130731173135.GA31040@redhat.com>
+	id S1760660Ab3GaRmO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 13:42:14 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:9039 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760561Ab3GaRmM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 13:42:12 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 31 Jul 2013 10:42:11 -0700
+From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+To: <balbi@ti.com>
+CC: <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <swarren@wwwdotorg.org>,
+        <gregkh@linuxfoundation.org>, <stern@rowland.harvard.edu>,
+        Tuomas Tynkkynen <ttynkkynen@nvidia.com>,
+        Matthieu CASTET <matthieu.castet@parrot.com>,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Subject: [PATCH 1/6] usb: host: add has_tdi_phy_lpm capability bit
+Date: Wed, 31 Jul 2013 20:41:57 +0300
+Message-ID: <1375292522-7855-2-git-send-email-ttynkkynen@nvidia.com>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <1375292522-7855-1-git-send-email-ttynkkynen@nvidia.com>
+References: <1375292522-7855-1-git-send-email-ttynkkynen@nvidia.com>
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130731173116.GA31018@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that event_create_dir() and __trace_add_new_event() always
-use the same file_operations we can kill these arguments and
-simplify the code.
+The has_hostpc capability bit indicates that the host controller has the
+HOSTPC register extensions, but at the same time enables clock disabling
+power saving features with the PHY Low Power Clock Disable (PHCD) bit.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+However, some host controllers have the HOSTPC extensions but don't
+support the low-power feature, so the PHCD bit must not be set on those
+controllers. Add a separate capability bit for the low-power feature
+instead, and change all existing users of has_hostpc to use this new
+capability bit.
+
+The idea for this commit is taken from an old 2012 commit that never got
+merged ("disociate chipidea PHY low power suspend control from hostpc")
+
+Inspired-by: Matthieu CASTET <matthieu.castet@parrot.com>
+Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
 ---
- kernel/trace/trace_events.c |   46 +++++++++++-------------------------------
- 1 files changed, 12 insertions(+), 34 deletions(-)
+ drivers/usb/chipidea/host.c |  1 +
+ drivers/usb/host/ehci-hub.c | 14 +++++++-------
+ drivers/usb/host/ehci.h     |  1 +
+ 3 files changed, 9 insertions(+), 7 deletions(-)
 
-diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index 5fcd18b..77ef314 100644
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -1485,12 +1485,7 @@ event_subsystem_dir(struct trace_array *tr, const char *name,
- }
+diff --git a/drivers/usb/chipidea/host.c b/drivers/usb/chipidea/host.c
+index 40d0fda..9b3aaf1 100644
+--- a/drivers/usb/chipidea/host.c
++++ b/drivers/usb/chipidea/host.c
+@@ -63,6 +63,7 @@ static int host_start(struct ci_hdrc *ci)
+ 	ehci = hcd_to_ehci(hcd);
+ 	ehci->caps = ci->hw_bank.cap;
+ 	ehci->has_hostpc = ci->hw_bank.lpm;
++	ehci->has_tdi_phy_lpm = ci->hw_bank.lpm;
  
- static int
--event_create_dir(struct dentry *parent,
--		 struct ftrace_event_file *file,
--		 const struct file_operations *id,
--		 const struct file_operations *enable,
--		 const struct file_operations *filter,
--		 const struct file_operations *format)
-+event_create_dir(struct dentry *parent, struct ftrace_event_file *file)
- {
- 	struct ftrace_event_call *call = file->event_call;
- 	struct trace_array *tr = file->tr;
-@@ -1518,12 +1513,13 @@ event_create_dir(struct dentry *parent,
+ 	ret = usb_add_hcd(hcd, 0, 0);
+ 	if (ret)
+diff --git a/drivers/usb/host/ehci-hub.c b/drivers/usb/host/ehci-hub.c
+index 2b70277..8044a74 100644
+--- a/drivers/usb/host/ehci-hub.c
++++ b/drivers/usb/host/ehci-hub.c
+@@ -183,7 +183,7 @@ static void ehci_adjust_port_wakeup_flags(struct ehci_hcd *ehci,
+ 	spin_lock_irq(&ehci->lock);
  
- 	if (call->class->reg && !(call->flags & TRACE_EVENT_FL_IGNORE_ENABLE))
- 		trace_create_file("enable", 0644, file->dir, file,
--				  enable);
-+				  &ftrace_enable_fops);
+ 	/* clear phy low-power mode before changing wakeup flags */
+-	if (ehci->has_hostpc) {
++	if (ehci->has_tdi_phy_lpm) {
+ 		port = HCS_N_PORTS(ehci->hcs_params);
+ 		while (port--) {
+ 			u32 __iomem	*hostpc_reg = &ehci->regs->hostpc[port];
+@@ -217,7 +217,7 @@ static void ehci_adjust_port_wakeup_flags(struct ehci_hcd *ehci,
+ 	}
  
- #ifdef CONFIG_PERF_EVENTS
- 	if (call->event.type && call->class->reg)
- 		trace_create_file("id", 0444, file->dir,
--				  (void *)(long)call->event.type, id);
-+				  (void *)(long)call->event.type,
-+				  &ftrace_event_id_fops);
- #endif
- 
- 	/*
-@@ -1540,10 +1536,10 @@ event_create_dir(struct dentry *parent,
+ 	/* enter phy low-power mode again */
+-	if (ehci->has_hostpc) {
++	if (ehci->has_tdi_phy_lpm) {
+ 		port = HCS_N_PORTS(ehci->hcs_params);
+ 		while (port--) {
+ 			u32 __iomem	*hostpc_reg = &ehci->regs->hostpc[port];
+@@ -309,7 +309,7 @@ static int ehci_bus_suspend (struct usb_hcd *hcd)
  		}
  	}
- 	trace_create_file("filter", 0644, file->dir, call,
--			  filter);
-+			  &ftrace_event_filter_fops);
  
- 	trace_create_file("format", 0444, file->dir, call,
--			  format);
-+			  &ftrace_event_format_fops);
+-	if (changed && ehci->has_hostpc) {
++	if (changed && ehci->has_tdi_phy_lpm) {
+ 		spin_unlock_irq(&ehci->lock);
+ 		msleep(5);	/* 5 ms for HCD to enter low-power mode */
+ 		spin_lock_irq(&ehci->lock);
+@@ -435,7 +435,7 @@ static int ehci_bus_resume (struct usb_hcd *hcd)
+ 		goto shutdown;
  
- 	return 0;
- }
-@@ -1644,12 +1640,7 @@ trace_create_new_event(struct ftrace_event_call *call,
+ 	/* clear phy low-power mode before resume */
+-	if (ehci->bus_suspended && ehci->has_hostpc) {
++	if (ehci->bus_suspended && ehci->has_tdi_phy_lpm) {
+ 		i = HCS_N_PORTS(ehci->hcs_params);
+ 		while (i--) {
+ 			if (test_bit(i, &ehci->bus_suspended)) {
+@@ -788,7 +788,7 @@ static int ehci_hub_control (
+ 				goto error;
  
- /* Add an event to a trace directory */
- static int
--__trace_add_new_event(struct ftrace_event_call *call,
--		      struct trace_array *tr,
--		      const struct file_operations *id,
--		      const struct file_operations *enable,
--		      const struct file_operations *filter,
--		      const struct file_operations *format)
-+__trace_add_new_event(struct ftrace_event_call *call, struct trace_array *tr)
- {
- 	struct ftrace_event_file *file;
+ 			/* clear phy low-power mode before resume */
+-			if (ehci->has_hostpc) {
++			if (ehci->has_tdi_phy_lpm) {
+ 				temp1 = ehci_readl(ehci, hostpc_reg);
+ 				ehci_writel(ehci, temp1 & ~HOSTPC_PHCD,
+ 						hostpc_reg);
+@@ -1031,12 +1031,12 @@ static int ehci_hub_control (
  
-@@ -1657,7 +1648,7 @@ __trace_add_new_event(struct ftrace_event_call *call,
- 	if (!file)
- 		return -ENOMEM;
+ 			/* After above check the port must be connected.
+ 			 * Set appropriate bit thus could put phy into low power
+-			 * mode if we have hostpc feature
++			 * mode if we have tdi_phy_lpm feature
+ 			 */
+ 			temp &= ~PORT_WKCONN_E;
+ 			temp |= PORT_WKDISC_E | PORT_WKOC_E;
+ 			ehci_writel(ehci, temp | PORT_SUSPEND, status_reg);
+-			if (ehci->has_hostpc) {
++			if (ehci->has_tdi_phy_lpm) {
+ 				spin_unlock_irqrestore(&ehci->lock, flags);
+ 				msleep(5);/* 5ms for HCD enter low pwr mode */
+ 				spin_lock_irqsave(&ehci->lock, flags);
+diff --git a/drivers/usb/host/ehci.h b/drivers/usb/host/ehci.h
+index 64f9a08..d034d94 100644
+--- a/drivers/usb/host/ehci.h
++++ b/drivers/usb/host/ehci.h
+@@ -210,6 +210,7 @@ struct ehci_hcd {			/* one per controller */
+ 	#define OHCI_HCCTRL_LEN         0x4
+ 	__hc32			*ohci_hcctrl_reg;
+ 	unsigned		has_hostpc:1;
++	unsigned		has_tdi_phy_lpm:1;
+ 	unsigned		has_ppcd:1; /* support per-port change bits */
+ 	u8			sbrn;		/* packed release number */
  
--	return event_create_dir(tr->event_dir, file, id, enable, filter, format);
-+	return event_create_dir(tr->event_dir, file);
- }
- 
- /*
-@@ -1835,11 +1826,7 @@ __trace_add_event_dirs(struct trace_array *tr)
- 	int ret;
- 
- 	list_for_each_entry(call, &ftrace_events, list) {
--		ret = __trace_add_new_event(call, tr,
--					    &ftrace_event_id_fops,
--					    &ftrace_enable_fops,
--					    &ftrace_event_filter_fops,
--					    &ftrace_event_format_fops);
-+		ret = __trace_add_new_event(call, tr);
- 		if (ret < 0)
- 			pr_warning("Could not create directory for event %s\n",
- 				   call->name);
-@@ -2147,11 +2134,7 @@ __trace_early_add_event_dirs(struct trace_array *tr)
- 
- 
- 	list_for_each_entry(file, &tr->events, list) {
--		ret = event_create_dir(tr->event_dir, file,
--				       &ftrace_event_id_fops,
--				       &ftrace_enable_fops,
--				       &ftrace_event_filter_fops,
--				       &ftrace_event_format_fops);
-+		ret = event_create_dir(tr->event_dir, file);
- 		if (ret < 0)
- 			pr_warning("Could not create directory for event %s\n",
- 				   file->event_call->name);
-@@ -2196,13 +2179,8 @@ static void __add_event_to_tracers(struct ftrace_event_call *call)
- {
- 	struct trace_array *tr;
- 
--	list_for_each_entry(tr, &ftrace_trace_arrays, list) {
--		__trace_add_new_event(call, tr,
--				      &ftrace_event_id_fops,
--				      &ftrace_enable_fops,
--				      &ftrace_event_filter_fops,
--				      &ftrace_event_format_fops);
--	}
-+	list_for_each_entry(tr, &ftrace_trace_arrays, list)
-+		__trace_add_new_event(call, tr);
- }
- 
- static struct notifier_block trace_module_nb = {
 -- 
-1.5.5.1
+1.8.1.5
 
