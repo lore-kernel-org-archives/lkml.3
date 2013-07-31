@@ -1,62 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751238Ab3GaX3q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 19:29:46 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:43481 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750748Ab3GaX3o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 19:29:44 -0400
-Message-ID: <51F99DE4.7010503@wwwdotorg.org>
-Date: Wed, 31 Jul 2013 17:29:40 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1751633Ab3GaXaB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 19:30:01 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:46141 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751453Ab3GaX37 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 19:29:59 -0400
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: Lee Jones <lee.jones@linaro.org>
+CC: "Samuel Ortiz (sameo@linux.intel.com)" <sameo@linux.intel.com>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>
+Subject: RE: [PATCH v2 1/4] mfd: add LP3943 MFD driver
+Thread-Topic: [PATCH v2 1/4] mfd: add LP3943 MFD driver
+Thread-Index: Ac6MtTyjOqxscTSbS1eNJ8jjFJq3OQA7LOYAAChTv8A=
+Date: Wed, 31 Jul 2013 23:29:48 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998F82E850A9@DQHE06.ent.ti.com>
+References: <A874F61F95741C4A9BA573A70FE3998F82E849D8@DQHE06.ent.ti.com>
+ <20130731115630.GH13298@lee--X1>
+In-Reply-To: <20130731115630.GH13298@lee--X1>
+Accept-Language: en-US, ko-KR
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.16.34.32]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-CC: Tuomas Tynkkynen <tuomas.tynkkynen@iki.fi>,
-        Tuomas Tynkkynen <ttynkkynen@nvidia.com>, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        Mikko Perttunen <mperttunen@nvidia.com>
-Subject: Re: [PATCH 2/2] ARM: dts: USB for Tegra114 Dalmore
-References: <1375292543-7896-1-git-send-email-ttynkkynen@nvidia.com> <1375292543-7896-3-git-send-email-ttynkkynen@nvidia.com> <51F9550F.3080503@cogentembedded.com> <51F9660C.6090604@iki.fi> <51F96B48.10209@cogentembedded.com> <51F98A78.9060309@wwwdotorg.org> <51F98D92.3010607@cogentembedded.com>
-In-Reply-To: <51F98D92.3010607@cogentembedded.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r6VNUAtg016267
 
-On 07/31/2013 04:20 PM, Sergei Shtylyov wrote:
-> On 08/01/2013 02:06 AM, Stephen Warren wrote:
-...
->>>     That's really horrible design.
->>
->> Yup. Both USB PHY and EHCI controller registers really are interleaved
->> in one range.
+Thanks for the review, please see my comments.
+
+> <snip> * looks good up to me up to here *
 > 
->    But the standard EHCI register space has no holes IIRC, so they can't
-> be really that much interleaved as you're describing (unless you have
-> some non-standard registers of course)...
+> Although, I think the 0 = 1, 1 = 2 ... stuff is really confusing. Is
+> there nothing we can do about that?
 
-Yes, there are certainly non-standard registers.
+OK, enum value of lp3943_pwm_output can be changed as below
+because LP3943_PWM_INVALID is not used anymore.
 
-...
->>>     Don't they cause numerous resource conflicts while device nodes
->>> being
->>> instantiated as the platform devices?
+enum lp3943_pwm_output {
+	LP3943_PWM_OUT0,
+	LP3943_PWM_OUT1,
+	...
+	LP3943_PWM_OUT15,
+};
+
+Then, output index will match each enum integer value.
+Does it make sense?
+
+> > +static const struct i2c_device_id lp3943_ids[] = {
+> > +	{ "lp3943", 0 },
+> > +	{ }
+> > +};
+> > +MODULE_DEVICE_TABLE(i2c, lp3943_ids);
 > 
->> No; the driver knows that the HW is screwy and there's lots of
->> register-range sharing going on, so it simply maps the registers, rather
->> than reserving the physical address range and mapping it.
+> Are we expecting this driver to support more devices?
+
+At this moment, this is the only one device supported.
+
+> > +static int __init lp3943_init(void)
+> > +{
+> > +	return i2c_add_driver(&lp3943_driver);
+> > +}
+> > +subsys_initcall(lp3943_init);
+> > +
+> > +static void __exit lp3943_exit(void)
+> > +{
+> > +	i2c_del_driver(&lp3943_driver);
+> > +}
+> > +module_exit(lp3943_exit);
 > 
->    Yes, it's clear that the driver should take special measures, I was
-> asking about the platform device creation phase. What do you see in
-> /proc/iomem?
+> I think you want to replace:
+>   lp3943_init()
+>   lp3943_exit
+> 
+> With:
+>   module_i2c_driver()
 
-The drivers don't request the memory region since doing so would cause
-conflicts. Hence, the regions don't show up in /proc/iomem.
+This is related with initcall sequence.
+Some problem may happen if any GPIO or PWM consumer tries to request before
+LP3943 MFDs are added.
+For example, a GPIO is requested in _probe() of some device.
+Let's assume the GPIO number is in range of what LP3943 GPIO driver provided.
+Then, gpio_request() will be failed because the GPIO is invalid at this moment.
+If the device request again later, it will be OK, but we can't expect this 
+situation for every driver.
+Some drivers request a GPIO only once in _probe(), other devices may request
+a GPIO in some cases.
+So, I think lp3943_init() should be defined as subsys_initcall() instead of 
+module_init().
 
-This actually isn't that uncommon for DT-based drivers anyway; many use
-e.g. of_iomap() which IIRC just looks up the resource and maps it
-without registering the usage.
+Best regards,
+Milo -
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
