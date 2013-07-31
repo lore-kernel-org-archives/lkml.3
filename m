@@ -1,73 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756215Ab3GaMse (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 08:48:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55863 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751360Ab3GaMsd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 08:48:33 -0400
-Date: Wed, 31 Jul 2013 05:49:50 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Piotr Sarna <p.sarna@partner.samsung.com>
-Cc: devel@driverdev.osuosl.org, Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-kernel@vger.kernel.org, ngupta@vflare.org,
-        b.zolnierkie@samsung.com
-Subject: Re: [PATCH 1/2] staging: zram: add Crypto API support
-Message-ID: <20130731124950.GB30635@kroah.com>
-References: <1375187449-6546-1-git-send-email-p.sarna@partner.samsung.com>
- <20130730135333.GB27962@kroah.com>
- <51F8E404.6070507@partner.samsung.com>
+	id S1759185Ab3GaMvx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 08:51:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64390 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752360Ab3GaMvv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 08:51:51 -0400
+Date: Wed, 31 Jul 2013 14:51:48 +0200
+From: Karel Zak <kzak@redhat.com>
+To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        util-linux@vger.kernel.org
+Subject: [ANNOUNCE] util-linux v2.23.2
+Message-ID: <20130731125148.GA1127@x2.net.home>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <51F8E404.6070507@partner.samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 31, 2013 at 12:16:36PM +0200, Piotr Sarna wrote:
-> Hi,
-> 
-> On 07/30/2013 03:53 PM, Greg KH wrote:
-> > On Tue, Jul 30, 2013 at 02:30:48PM +0200, Piotr Sarna wrote:
-> >> Current version of zram does not allow any substitution of a default
-> >> compression algorithm. Therefore, I decided to change the existing
-> >> implementation of page compression by adding Crypto API compability.
-> > 
-> > As I have stated before, I want this code to get merged out of the
-> > drivers/staging/ area _before_ any new features get added to it.  People
-> > are taking too much time adding new stuff, like this, and no one seems
-> > to be working to get it merged to the proper place anymore.
-> > 
-> 
-> OK, but we actually need those features in order to test zram
-> against other, competitive solutions - and then decide whether
-> and how to merge it out of /drivers/staging.
 
-Where is another "competitive solution" in the kernel?
+The util-linux stable bugfix release v2.23.2 is available at
 
-And you are implying that as-is, zram isn't acceptable, right?  If so, I
-should just delete it now as I was originally told otherwise, that's why
-I merged it :(
+  ftp://ftp.kernel.org/pub/linux/utils/util-linux/v2.23
 
-> > So again, I'm going to have to say no to a new feature here, sorry.
-> > zcache, zram, and zsmalloc need to get cleaned up and merged out of
-> > staging before anything new can be added to them.
-> > 
-> > Or, if no one is working on that, I guess I can just delete them,
-> > right?...
-> > 
-> 
-> Is there any official TODO list of cleaning up and merging out zram?
+Feedback and bug reports, as always, are welcomed.
 
-As it came from the "zswap" code, there doesn't seem to be one :(
+  Karel
 
-The code is over 2 years old now, with no percieved movement out of
-staging.  If it doesn't get fixed up in the next kernel version or so, I
-will have to remove it entirely.
 
-sorry,
 
-greg k-h
+Util-linux 2.23.2 Release Notes
+===============================
+
+agetty:
+   - don't remove ECHOCTL from c_lflag  [Karel Zak]
+   - fix a kill/erase error in man page and improve clarity  [Benno Schulenberg]
+   - fix memory leak [clang-analyzer]  [Sami Kerola]
+   - update man page and usage()  [Karel Zak]
+   - unrecognized option '--loginpause'"  [kernc]
+cal:
+   - fix -y output for UTF8  [Karel Zak]
+column:
+   - dereference of null pointer [clang-analyzer]  [Sami Kerola]
+dmesg:
+   - don't use pager for --follow  [Karel Zak]
+docs:
+   - update AUTHORS file  [Karel Zak]
+eject:
+   - unlock door before issuing CDROMEJECT command  [Aaron Lu]
+exec_shell:
+   - add a license and touch up func def  [Mike Frysinger]
+fdisk:
+   - add support for the MicroBlaze architecture  [Nathan Rossi]
+findmnt:
+   - avoid unused parameter warning  [Karel Zak]
+   - make udev usage more robust  [Karel Zak]
+   - test for fstype/options/maj min before source and target  [Karel Zak]
+getopt:
+   - add reference to /usr/share/docs to man page  [Karel Zak]
+hwclock:
+   - remove references to adjtimex from man page  [Karel Zak]
+libmount:
+   - be robust for empty target/source strings  [Karel Zak]
+   - fix memory leak [clang-analyzer]  [Karel Zak]
+   - more robust options string parsing  [Karel Zak]
+login:
+   - use TCSANOW to remove HUPCL  [Karel Zak]
+losetup:
+   - set errno for misaligned offsets  [Karel Zak]
+lsblk:
+   - use devno to get mountpoint  [Karel Zak]
+mkfs.bfs:
+   - fix 64-Bit and endian problems  [ihno]
+mkfs.cramfs:
+   - argument to free() is a constant address [clang-analyzer]  [Sami Kerola]
+mount:
+   - (deprecated) fix typo tailed->failed  [Yuri Chornoivan]
+   - fix mistaken word and some grammar in man page of mount  [Benno Schulenberg]
+   - remove repeating words from mount.8  [Karel Zak]
+   - update xfs docs  [Karel Zak]
+po:
+   - merge changes  [Karel Zak]
+   - update cs.po (from translationproject.org)  [Petr Písař]
+   - update fr.po (from translationproject.org)  [David Prévot]
+   - update pl.po (from translationproject.org)  [Jakub Bogusz]
+   - update uk.po (from translationproject.org)  [Yuri Chornoivan]
+renice:
+   - exit with non-zero value when arguments cause warnings  [Sami Kerola]
+runuser:
+   - update man page, add note about -l vs. -p  [Karel Zak]
+sfdisk:
+   - don't use word 'disk'.  [Karel Zak]
+su:
+   - ignore --preserve-environment, it's mutually exclusive to --login  [Karel Zak]
+sulogin:
+   - fix compiler warning  [Karel Zak]
+   - fix memory leak [clang-analyzer]  [Sami Kerola]
+uuidd:
+   - add missing initializer [clang-analyzer]  [Karel Zak]
+
