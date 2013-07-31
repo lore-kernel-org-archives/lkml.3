@@ -1,97 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758983Ab3GaHQf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 03:16:35 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:59536 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754965Ab3GaHQc (ORCPT
+	id S1759116Ab3GaHSu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 03:18:50 -0400
+Received: from mail-la0-f42.google.com ([209.85.215.42]:37353 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759091Ab3GaHSr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 03:16:32 -0400
-Date: Wed, 31 Jul 2013 00:16:30 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Arpit Goel <B44344@freescale.com>
-Cc: linux@arm.linux.org.uk, takata@linux-m32r.org, philb@gnu.org,
-        geert@linux-m68k.org, schwidefsky@de.ibm.com,
-        heiko.carstens@de.ibm.com, linux390@de.ibm.com, davem@davemloft.net,
-        rob.herring@calxeda.com, arnd@arndb.de, swarren@nvidia.com,
-        john.stultz@linaro.org, jesper.nilsson@axis.com,
-        gregkh@linuxfoundation.org, sam@ravnborg.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-m32r@ml.linux-m32r.org, linux-m32r-ja@ml.linux-m32r.org,
-        linux-m68k@vger.kernel.org, linux-s390@vger.kernel.org,
-        sparclinux@vger.kernel.org, mattw@codeaurora.org
-Subject: Re: [PATCH 2/2] Convert PowerPC macro spin_event_timeout() to
- architecture independent macro
-Message-ID: <20130731071630.GI8868@codeaurora.org>
-References: <1375187900-17582-1-git-send-email-B44344@freescale.com>
- <1375187900-17582-3-git-send-email-B44344@freescale.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1375187900-17582-3-git-send-email-B44344@freescale.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 31 Jul 2013 03:18:47 -0400
+From: Alexander Popov <a13xp0p0v88@gmail.com>
+To: Gerhard Sittig <gsi@denx.de>, Vinod Koul <vinod.koul@intel.com>,
+        Dan Williams <djbw@fb.com>, Lars-Peter Clausen <lars@metafoo.de>,
+        Arnd Bergmann <arnd@arndb.de>, Anatolij Gustschin <agust@denx.de>
+Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: [PATCH RFC v3 1/5] dma: mpc512x: reorder mpc8308 specific instructions
+Date: Wed, 31 Jul 2013 11:20:54 +0400
+Message-Id: <1375255254-10955-1-git-send-email-a13xp0p0v88@gmail.com>
+X-Mailer: git-send-email 1.7.11.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/30, Arpit Goel wrote:
-> This patch ports PowerPC implementation of spin_event_timeout() for generic
-> use. Architecture specific implementation can be added to asm/delay.h, which
-> will override the generic linux implementation.
-> 
-> Signed-off-by: Arpit Goel <B44344@freescale.com>
-> ---
+From: Gerhard Sittig <gsi@denx.de>
 
-We use something similar internally but it's tied specifically to
-readl.
+Concentrate the test and the specific code for MPC8308
+in the 'if' branch and handle MPC512x in the 'else' branch.
 
->  
-> +#ifndef spin_event_timeout
-> +/**
-> + * spin_event_timeout - spin until a condition gets true or a timeout elapses
-> + * @condition: a C expression to evalate
-> + * @timeout: timeout, in microseconds
-> + * @delay: the number of microseconds to delay between each evaluation of
-> + *         @condition
-> + *
-> + * The process spins until the condition evaluates to true (non-zero) or the
-> + * timeout elapses.  The return value of this macro is the value of
-> + * @condition when the loop terminates. This allows you to determine the cause
-> + * of the loop terminates.  If the return value is zero, then you know a
-> + * timeout has occurred.
-> + *
-> + * This primary purpose of this macro is to poll on a hardware register
-> + * until a status bit changes.  The timeout ensures that the loop still
-> + * terminates even if the bit never changes.  The delay is for devices that
-> + * need a delay in between successive reads.
-> + *
-> + * gcc will optimize out the if-statement if @delay is a constant.
-> + *
-> + * This is copied from PowerPC based spin_event_timeout() implementation
-> + * and modified for generic usecase.
-> + */
-> +#define spin_event_timeout(condition, timeout, delay)		\
-> +({								\
-> +	typeof(condition) __ret;				\
-> +	unsigned long __loops = timeout/USECS_PER_JIFFY;	\
-> +	unsigned long __start = jiffies;			\
-> +	while (!(__ret = (condition)) &&			\
-> +		time_before(jiffies, __start + __loops + 1))	\
-> +		if (delay)					\
-> +			udelay(delay);				\
-> +		else						\
-> +			schedule();				\
-> +	if (!__ret)						\
-> +		__ret = (condition);				\
-> +	__ret;							\
-> +})
+This modification only reorders instructions but doesn't change behaviour.
 
-What do you do here if jiffies aren't incrementing (i.e
-interrupts are disabled). The time_before() check won't work
-there and it would be nice if we were able to use this in such
-situations. I think powerpc gets around this by reading the
-hardware timer directly?
+Signed-off-by: Alexander Popov <a13xp0p0v88@gmail.com>
+---
+ drivers/dma/mpc512x_dma.c | 42 +++++++++++++++++++++++++-----------------
+ 1 file changed, 25 insertions(+), 17 deletions(-)
 
+diff --git a/drivers/dma/mpc512x_dma.c b/drivers/dma/mpc512x_dma.c
+index 2d95673..b8881de 100644
+--- a/drivers/dma/mpc512x_dma.c
++++ b/drivers/dma/mpc512x_dma.c
+@@ -50,9 +50,17 @@
+ #define MPC_DMA_DESCRIPTORS	64
+ 
+ /* Macro definitions */
+-#define MPC_DMA_CHANNELS	64
+ #define MPC_DMA_TCD_OFFSET	0x1000
+ 
++/*
++ * Maximum channel counts for individual hardware variants
++ * and the maximum channel count over all supported controllers,
++ * used for data structure size
++ */
++#define MPC8308_DMACHAN_MAX	16
++#define MPC512x_DMACHAN_MAX	64
++#define MPC_DMA_CHANNELS	64
++
+ /* Arbitration mode of group and channel */
+ #define MPC_DMA_DMACR_EDCG	(1 << 31)
+ #define MPC_DMA_DMACR_ERGA	(1 << 3)
+@@ -716,10 +724,10 @@ static int mpc_dma_probe(struct platform_device *op)
+ 
+ 	dma = &mdma->dma;
+ 	dma->dev = dev;
+-	if (!mdma->is_mpc8308)
+-		dma->chancnt = MPC_DMA_CHANNELS;
++	if (mdma->is_mpc8308)
++		dma->chancnt = MPC8308_DMACHAN_MAX;
+ 	else
+-		dma->chancnt = 16; /* MPC8308 DMA has only 16 channels */
++		dma->chancnt = MPC512x_DMACHAN_MAX;
+ 	dma->device_alloc_chan_resources = mpc_dma_alloc_chan_resources;
+ 	dma->device_free_chan_resources = mpc_dma_free_chan_resources;
+ 	dma->device_issue_pending = mpc_dma_issue_pending;
+@@ -753,7 +761,19 @@ static int mpc_dma_probe(struct platform_device *op)
+ 	 * - Round-robin group arbitration,
+ 	 * - Round-robin channel arbitration.
+ 	 */
+-	if (!mdma->is_mpc8308) {
++	if (mdma->is_mpc8308) {
++		/* MPC8308 has 16 channels and lacks some registers */
++		out_be32(&mdma->regs->dmacr, MPC_DMA_DMACR_ERCA);
++
++		/* enable snooping */
++		out_be32(&mdma->regs->dmagpor, MPC_DMA_DMAGPOR_SNOOP_ENABLE);
++		/* Disable error interrupts */
++		out_be32(&mdma->regs->dmaeeil, 0);
++
++		/* Clear interrupts status */
++		out_be32(&mdma->regs->dmaintl, 0xFFFF);
++		out_be32(&mdma->regs->dmaerrl, 0xFFFF);
++	} else {
+ 		out_be32(&mdma->regs->dmacr, MPC_DMA_DMACR_EDCG |
+ 					MPC_DMA_DMACR_ERGA | MPC_DMA_DMACR_ERCA);
+ 
+@@ -774,18 +794,6 @@ static int mpc_dma_probe(struct platform_device *op)
+ 		/* Route interrupts to IPIC */
+ 		out_be32(&mdma->regs->dmaihsa, 0);
+ 		out_be32(&mdma->regs->dmailsa, 0);
+-	} else {
+-		/* MPC8308 has 16 channels and lacks some registers */
+-		out_be32(&mdma->regs->dmacr, MPC_DMA_DMACR_ERCA);
+-
+-		/* enable snooping */
+-		out_be32(&mdma->regs->dmagpor, MPC_DMA_DMAGPOR_SNOOP_ENABLE);
+-		/* Disable error interrupts */
+-		out_be32(&mdma->regs->dmaeeil, 0);
+-
+-		/* Clear interrupts status */
+-		out_be32(&mdma->regs->dmaintl, 0xFFFF);
+-		out_be32(&mdma->regs->dmaerrl, 0xFFFF);
+ 	}
+ 
+ 	/* Register DMA engine */
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+1.7.11.3
+
