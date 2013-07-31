@@ -1,66 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759593Ab3GaLaH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 07:30:07 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:48760 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756143Ab3GaLaE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 07:30:04 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: linux-pci <linux-pci@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Cc: Myron Stowe <myron.stowe@gmail.com>, linux-arm-kernel@lists.infradead.org,
-        iommu@lists.linux-foundation.org,
-        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: [Announcement] Linux Plumbers ACPI/PM, PCI Microconference
-Date: Wed, 31 Jul 2013 13:40:14 +0200
-Message-ID: <1755363.sGc8nLIQOW@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAL-B5D03ki8NHsM6EuESTH2K-Eh+XyFHNXPDYwgDq+oagDjtMQ@mail.gmail.com>
-References: <CAL-B5D03ki8NHsM6EuESTH2K-Eh+XyFHNXPDYwgDq+oagDjtMQ@mail.gmail.com>
+	id S1759598Ab3GaLcu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 07:32:50 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:56781 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754239Ab3GaLcs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 07:32:48 -0400
+Date: Wed, 31 Jul 2013 07:32:44 -0400
+From: Tejun Heo <htejun@gmail.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Peter Chen <peter.chen@freescale.com>,
+        Fabio Estevam <festevam@gmail.com>, alexander.shishkin@linux.intel.com,
+        kernel@pengutronix.de, linux-usb@vger.kernel.org,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Jeff Garzik <jeff@garzik.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, Mike Turquette <mturquette@linaro.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 2/2] chipidea: Use devm_request_irq()
+Message-ID: <20130731113244.GI2810@htj.dyndns.org>
+References: <1375232669-27846-1-git-send-email-festevam@gmail.com>
+ <1375232669-27846-2-git-send-email-festevam@gmail.com>
+ <20130731073306.GZ1754@pengutronix.de>
+ <20130731082054.GF8540@nchen-desktop>
+ <20130731084645.GB1754@pengutronix.de>
+ <20130731090512.GD9858@sirena.org.uk>
+ <20130731094434.GC1754@pengutronix.de>
+ <20130731095411.GA2810@htj.dyndns.org>
+ <20130731111853.GJ9858@sirena.org.uk>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130731111853.GJ9858@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+Hello,
 
-The original announcement didn't go to linux-pm, so again:
+On Wed, Jul 31, 2013 at 12:18:53PM +0100, Mark Brown wrote:
+> I'm not sure I understand how this relates the problem.  The main issue
+> here is that for the shared IRQ case quiescing the device doesn't make
+> any difference since one of the other users of the interrupt could cause
+> the interrupt handler to be called regardless of what the hardware is
+> doing.  This means that we need to guarantee that anything the interrupt
+> handler relies on has not been deallocated before the interrupt handler
+> is unregistered.
 
-On Tuesday, July 16, 2013 08:21:26 PM Myron Stowe wrote:
-> Linux Plumbers has approved an ACPI/PM, PCI microconference. The
-> overview page is here:
-> 
-> http://wiki.linuxplumbersconf.org/2013:pci_subsystem
-> 
-> We would like to start receiving volunteers for presenting topics of
-> interest.  There is a lot of activity in these subsystems so please
-> respond by submitting presentation or discussion proposals that you
-> would be willing to cover for consideration.  You should also feel
-> free to submit ideas as proposals that others could cover.  The
-> instructions for submitting ideas should be at:
-> 
-> http://www.linuxplumbersconf.org/2013/submitting-topic/
+Yeah, if all resources are allocated using devm - note that you can
+hook in non-devm resources using devres_alloc() - all resources which
+would be necessary for the interrupt handler would have been allocated
+before the irq was allocated, right?  And thus they'll of course
+released after the IRQ is freed.  The problem arises when devm and
+non-devm releases are mixed as non-devm ones would happen before all
+devm ones messing up the release sequencing.
 
-If anyone who's going to attend the Linux Plumbers Conf this year is interested
-in any particular topic for discussion during the ACPI/PM+PCI uconf, please
-submit a formal topic proposal at:
+> OK, that's helpful.  It'd be good to document this if it's something
+> the API is intending to guarantee, though - devres.txt doesn't mention
 
-http://www.linuxplumbersconf.org/2013/ocw/events/LPC2013/proposals/new
+Oh, it's definitely guaranteed.  Nothing would work otherwise.
 
-If you submit a topic, that doesn't mean you'll be expected to present anything
-(if accepted).  In fact, we are mostly interested in discussion topics and we'd
-like to know what is important to people.
+> this and it's not something I'd intuitively expect to be the case.
 
-That said if you have a (short) presentation to make, please submit it too.
+Oops... I guess I forgot to mention that.  Care to submit a patch?
 
-We'll appreciate all submissions very much.
+Thanks.
 
-Thanks,
-Rafael
-
+-- 
+tejun
