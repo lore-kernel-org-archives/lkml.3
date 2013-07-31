@@ -1,75 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760400Ab3GaPDm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 11:03:42 -0400
-Received: from smtp.eu.citrix.com ([46.33.159.39]:62882 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759655Ab3GaPC5 (ORCPT
+	id S1760144Ab3GaPHg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 11:07:36 -0400
+Received: from mail-ea0-f178.google.com ([209.85.215.178]:49757 "EHLO
+	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756583Ab3GaPHf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 11:02:57 -0400
-X-IronPort-AV: E=Sophos;i="4.89,787,1367971200"; 
-   d="scan'208";a="7325898"
-From: Roger Pau Monne <roger.pau@citrix.com>
-To: <xen-devel@lists.xen.org>, <linux-kernel@vger.kernel.org>
-CC: Roger Pau Monne <roger.pau@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>
-Subject: [PATCH 1/3] xen-gnt: prevent adding duplicate gnt callbacks
-Date: Wed, 31 Jul 2013 17:00:42 +0200
-Message-ID: <1375282844-4314-2-git-send-email-roger.pau@citrix.com>
-X-Mailer: git-send-email 1.7.7.5 (Apple Git-26)
-In-Reply-To: <1375282844-4314-1-git-send-email-roger.pau@citrix.com>
-References: <1375282844-4314-1-git-send-email-roger.pau@citrix.com>
+	Wed, 31 Jul 2013 11:07:35 -0400
+Date: Wed, 31 Jul 2013 17:07:19 +0200
+From: Richard Cochran <richardcochran@gmail.com>
+To: Tomasz Figa <tomasz.figa@gmail.com>
+Cc: mbizon@freebox.fr, Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "ksummit-2013-discuss@lists.linuxfoundation.org" 
+	<ksummit-2013-discuss@lists.linuxfoundation.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Domenico Andreoli <cavokz@gmail.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Olof Johansson <olof@lixom.net>, Mark Brown <broonie@kernel.org>,
+        Arend van Spriel <arend@broadcom.com>,
+        Dave P Martin <Dave.Martin@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [Ksummit-2013-discuss] DT bindings as ABI [was: Do we have
+ people interested in device tree janitoring / cleanup?]
+Message-ID: <20130731150717.GD4904@netboy>
+References: <20130725175702.GC22291@e106331-lin.cambridge.arm.com>
+ <1441731.8CGUI1tUxh@flatron>
+ <1375267057.20042.52.camel@sakura.staff.proxad.net>
+ <1479410.BSGDrOcRvP@thinkpad>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1479410.BSGDrOcRvP@thinkpad>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the current implementation, the callback in the tail of the list
-can be added twice, because the check done in
-gnttab_request_free_callback is bogus, callback->next can be NULL if
-it is the last callback in the list. If we add the same callback twice
-we end up with an infinite loop, were callback == callback->next.
+On Wed, Jul 31, 2013 at 12:59:59PM +0200, Tomasz Figa wrote:
+> On Wednesday 31 of July 2013 12:37:37 Maxime Bizon wrote:
+> > 
+> > Board files are C code anyone has the skill to edit/understand/refactor.
+> > Moving to DT and keep them in tree tightly coupled with the kernel
+> > version just adds another layer of indirection for *no purpose*.
 
-Replace this check with a proper one that iterates over the list to
-see if the callback has already been added.
++1
 
-Signed-off-by: Roger Pau Monné <roger.pau@citrix.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: David Vrabel <david.vrabel@citrix.com>
----
-This patch should be backported to stable trees
----
- drivers/xen/grant-table.c |   13 +++++++++++--
- 1 files changed, 11 insertions(+), 2 deletions(-)
+That is exactly what I tried to say.
 
-diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
-index 04c1b2d..d5418c1 100644
---- a/drivers/xen/grant-table.c
-+++ b/drivers/xen/grant-table.c
-@@ -729,9 +729,18 @@ void gnttab_request_free_callback(struct gnttab_free_callback *callback,
- 				  void (*fn)(void *), void *arg, u16 count)
- {
- 	unsigned long flags;
-+	struct gnttab_free_callback *cb;
-+
- 	spin_lock_irqsave(&gnttab_list_lock, flags);
--	if (callback->next)
--		goto out;
-+
-+	/* Check if the callback is already on the list */
-+	cb = gnttab_free_callback_list;
-+	while (cb) {
-+		if (cb == callback)
-+			goto out;
-+		cb = cb->next;
-+	}
-+
- 	callback->fn = fn;
- 	callback->arg = arg;
- 	callback->count = count;
--- 
-1.7.7.5 (Apple Git-26)
+> > Linus started the whole thing some years ago by refusing to pull ARM
+> > tree [1]. Reread his post, what he wants is clearly b).
+> > 
+> > Going a) does not solve any problem. You are just moving churn to
+> > somewhere else. We had board files churn, then defconfigs churn, DTS
+> > files (and associated drivers) will be next.
+
+And at this rate, we are headed for another Linus ultimatum, sooner or
+later.
+
+> > DT is self inflicted pain. It has to be for the greater good.
+> 
+> It has several benefits over board files that I mentioned above, possible 
+> without fully separating them from kernel tree.
+
+Every time a criticism is voiced about DT, the DT people stick their
+fingers in their ears and say, "NAH, NAH, NAH, I CAN'T HEAR YOU!"
+
+WRT to DT-as-platform-device, we would rather stick with the C code,
+please. Just pushing the configuration tables into an external form
+does not simplify the problem. In fact, it creates new problems by
+inviting the possibility of a bootloader/DT/kernel mismatch.
+
+Thanks,
+Richard
 
