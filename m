@@ -1,196 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759226Ab3GaJTL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 05:19:11 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:43852 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752396Ab3GaJTH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 05:19:07 -0400
-Message-ID: <51F8D667.2040406@ti.com>
-Date: Wed, 31 Jul 2013 14:48:31 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S1759260Ab3GaJUX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 05:20:23 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:51686 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751073Ab3GaJUT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 05:20:19 -0400
+Message-ID: <51F8D5C9.4020309@huawei.com>
+Date: Wed, 31 Jul 2013 17:15:53 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Joel Fernandes <joelf@ti.com>
-CC: Tony Lindgren <tony@atomide.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Sricharan R <r.sricharan@ti.com>, Rajendra Nayak <rnayak@ti.com>,
-        Lokesh Vutla <lokeshvutla@ti.com>, Matt Porter <matt@ohporter.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
-        Mark Brown <broonie@linaro.org>,
-        Benoit Cousson <benoit.cousson@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>, Balaji TK <balajitk@ti.com>,
-        Gururaja Hebbar <gururaja.hebbar@ti.com>, Chris Ball <cjb@laptop.org>,
-        Jason Kridner <jkridner@beagleboard.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>
-Subject: Re: [PATCH 4/9] dma: edma: Find missed events and issue them
-References: <1375104595-16018-1-git-send-email-joelf@ti.com> <1375104595-16018-5-git-send-email-joelf@ti.com> <51F7659E.3040302@ti.com> <51F89763.1010102@ti.com>
-In-Reply-To: <51F89763.1010102@ti.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: Jon Mason <jdmason@kudzu.us>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Yijing Wang <wangyijing0307@gmail.com>,
+        Hanjun Guo <guohanjun@huawei.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Joe Jin <joe.jin@oracle.com>
+Subject: Re: [PATCH] PCI: update device mps when doing pci hotplug
+References: <1360036520-31032-1-git-send-email-wangyijing@huawei.com> <51A42137.9090908@huawei.com> <CAErSpo7iyiq6H-BsPNO0Nyc1SF+JteOzBqNQ+d_D=RYE_pdTEA@mail.gmail.com> <51F73108.4070905@huawei.com> <CAErSpo4mHTwqrW-yq_1BkjD0GyFtVYZRm9+eGfASJ_aJCOagjg@mail.gmail.com> <CAErSpo4xJk7bHQihtdN1UP+6Y17TOrBFhEsO_Zwyvz8iQMEXsw@mail.gmail.com>
+In-Reply-To: <CAErSpo4xJk7bHQihtdN1UP+6Y17TOrBFhEsO_Zwyvz8iQMEXsw@mail.gmail.com>
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.76.69]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 31 July 2013 10:19 AM, Joel Fernandes wrote:
-> Hi Sekhar,
-> 
-> On 07/30/2013 02:05 AM, Sekhar Nori wrote:
->> On Monday 29 July 2013 06:59 PM, Joel Fernandes wrote:
->>> In an effort to move to using Scatter gather lists of any size with
->>> EDMA as discussed at [1] instead of placing limitations on the driver,
->>> we work through the limitations of the EDMAC hardware to find missed
->>> events and issue them.
+>>> PCIe Spec does not explicitly mention this issue, we can only get the message that
+>>> root port/ root complex can split the TLP into smaller packets. For instance
+>>> one 256B packet split into two 128B packet.
 >>>
->>> The sequence of events that require this are:
->>>
->>> For the scenario where MAX slots for an EDMA channel is 3:
->>>
->>> SG1 -> SG2 -> SG3 -> SG4 -> SG5 -> SG6 -> Null
->>>
->>> The above SG list will have to be DMA'd in 2 sets:
->>>
->>> (1) SG1 -> SG2 -> SG3 -> Null
->>> (2) SG4 -> SG5 -> SG6 -> Null
->>>
->>> After (1) is succesfully transferred, the events from the MMC controller
->>> donot stop coming and are missed by the time we have setup the transfer
->>> for (2). So here, we catch the events missed as an error condition and
->>> issue them manually.
->>
->> Are you sure there wont be any effect of these missed events on the
->> peripheral side. For example, wont McASP get into an underrun condition
->> when it encounters a null PaRAM set? Even UART has to transmit to a
+>>> I confirm this issue in my X86 machine and IA64 machine.
+>>> 1. I unload NIC driver to make sure the safety during  change the NIC MPS.
+>>> 2. Use setpci change NIC MPS to the max value it supports.
+>>> 3. Reload the NIC driver
+>>> 4. Ping and use scp cpoy large file bwtween machines. Result is ok.
 > 
-> But it will not encounter null PaRAM set because McASP uses contiguous
-> buffers for transfer which are not scattered across physical memory.
-> This can be accomplished with an SG of size 1. For such SGs, this patch
-> series leaves it linked Dummy and does not link to Null set. Null set is
-> only used for SG lists that are > MAX_NR_SG in size such as those
-> created for example by MMC and Crypto.
-> 
->> particular baud so I guess it cannot wait like the way MMC/SD can.
-> 
-> Existing driver have to wait anyway if they hit MAX SG limit today. If
-> they don't want to wait, they would have allocated a contiguous block of
-> memory and DMA that in one stretch so they don't lose any events, and in
-> such cases we are not linking to Null.
+> Just as a way to confirm that the MPS change is actually doing
+> something, I assume you observe a performance difference between
+> MPS=128 and MPS=512 on the NIC (and the root port MPS=128 in both
+> cases)?  Or maybe you can confirm with an analyzer that there are
+> actually 512-byte TLPs on the link?
 
-As long as DMA driver can advertize its MAX SG limit, peripherals can
-always work around that by limiting the number of sync events they
-generate so as to not having any of the events getting missed. With this
-series, I am worried that EDMA drivers is advertizing that it can handle
-any length SG list while not taking care of missing any events while
-doing so. This will break the assumptions that driver writers make.
+Hi Bjorn,
+   I didn't observe a performance difference between MPS=128 and MPS=512. I use ping $dest_ip -s 65500(large size packet)
+to test the different situations.
 
-> 
->> Also, wont this lead to under-utilization of the peripheral bandwith?
->> Meaning, MMC/SD is ready with data but cannot transfer because the DMA
->> is waiting to be set-up.
-> 
-> But it is waiting anyway even today. Currently based on MAX segs, MMC
-> driver/subsystem will make SG list of size max_segs. Between these
-> sessions of creating such smaller SG-lists, if for some reason the MMC
-> controller is sending events, these will be lost anyway.
+1. root port MPS = 128, EP MPS = 256.
 
-But if MMC/SD driver knows how many events it should generate if it
-knows the MAX SG limit. So there should not be any missed events in
-current code. And I am not claiming that your solution is making matters
-worse. But its not making it much better as well.
+root port --------Endpoint device
+00:01.0           01:00.1
 
-> 
-> What will happen now with this patch series is we are simply accepting a
-> bigger list than this, and handling all the max_segs stuff within the
-> EDMA driver itself without outside world knowing. This is actually more
-> efficient as for long transfers, we are not going back and forth much
-> between the client and EDMA driver.
+In this case, I use ping in the local machine, and result is ok.
+linux:~ # ping 128.5.160.28 -s 65500
+PING 128.5.160.28 (128.5.160.28) 65500(65528) bytes of data.
+65508 bytes from 128.5.160.28: icmp_seq=1 ttl=64 time=1.43 ms
+65508 bytes from 128.5.160.28: icmp_seq=2 ttl=64 time=1.42 ms
+65508 bytes from 128.5.160.28: icmp_seq=3 ttl=64 time=1.41 ms
+65508 bytes from 128.5.160.28: icmp_seq=4 ttl=64 time=1.37 ms
+65508 bytes from 128.5.160.28: icmp_seq=5 ttl=64 time=1.43 ms
+..........
 
-Agreed, I am not debating that we need to handle SG lists of any length.
-The hardware is capable of handling them, and no reason kernel should not.
+ \-[0000:00]-+-00.0  Intel Corporation 5500 I/O Hub to ESI Port
+             +-01.0-[01]--+-00.0  Broadcom Corporation NetXtreme II BCM5709 Gigabit Ethernet
+             |            \-00.1  Broadcom Corporation NetXtreme II BCM5709 Gigabit Ethernet
+
+linux:~ # lspci -vvv -s 01:00.1
+01:00.1 Ethernet controller: Broadcom Corporation NetXtreme II BCM5709 Gigabit Ethernet (rev 20)
+............[snip].............
+	Capabilities: [ac] Express (v2) Endpoint, MSI 00
+		DevCap:	MaxPayload 512 bytes, PhantFunc 0, Latency L0s <4us, L1 <64us
+			ExtTag- AttnBtn- AttnInd- PwrInd- RBE+ FLReset-
+		DevCtl:	Report errors: Correctable+ Non-Fatal+ Fatal+ Unsupported+
+			RlxdOrd+ ExtTag- PhantFunc- AuxPwr- NoSnoop+
+			MaxPayload 256 bytes, MaxReadReq 512 bytes
+
+linux:~ # lspci -vvv -s 00:01.0
+00:01.0 PCI bridge: Intel Corporation 5520/5500/X58 I/O Hub PCI Express Root Port 1 (rev 22) (prog-if 00 [Normal decode])
+...........[snip]..............
+	Capabilities: [90] Express (v2) Root Port (Slot+), MSI 00
+		DevCap:	MaxPayload 256 bytes, PhantFunc 0, Latency L0s <64ns, L1 <1us
+			ExtTag+ RBE+ FLReset-
+		DevCtl:	Report errors: Correctable- Non-Fatal- Fatal- Unsupported-
+			RlxdOrd- ExtTag- PhantFunc- AuxPwr- NoSnoop-
+			MaxPayload 128 bytes, MaxReadReq 128 bytes
+
+
+2. root port MPS = 256, EP MPS = 128.
+In this case, use "ping $dest_ip -s 65500" to test, but result is fail.
+
+So I guess the packet size during ping is larger than 128, EP device discard these TLPs.
+
+I have no analyzer to catch the TLP packets. So I can not Guarantee this conclusion(EP MPS larger than Root port is 100% safe).
 
 > 
->> Did you consider a ping-pong scheme with say three PaRAM sets per
->> channel? That way you can keep a continuous transfer going on from the
->> peripheral over the complete SG list.
+> I assume there are no AER or other errors logged by the root port?
+Yes, AER is not support in local machine.
+
+> The test you showed was a copy *to* the local machine, so the NIC
+> would have been doing DMA writes to memory.  I assume it works equally
+> well doing a copy *from* the local machine to another machine across
+> the network, where the NIC is doing DMA reads from memory?
+
+Yes, I tested in both copy direction, and result is ok.
+
+> The only mention I can find in the spec is sec 1.3.1, where it says "a
+> Root Complex is generally permitted to split a packet into smaller
+> packets when routing transactions peer-to-peer between hierarchy
+> domains ..."
 > 
-> Do you mean ping-pong scheme as used in the davinci-pcm driver today?
+> I'm not a hardware guy (I often wish I were :)), but here's how I
+> interpret that statement.  Let's take the following example:
+> 
+>   00:01.0 Root port bridge to [bus 01] MPS=128
+>   01:00.1 Endpoint MPS=512
+> 
+>   00:02.0 Root Port bridge to [bus 02] MPS=256
+>   00:03.0 Root Port bridge to [bus 03] MPS=128
+>   02:00.0 Endpoint MPS=256
+>   03:00.0 Endpoint MPS=128
+> 
+> If 02:00.0 (MPS=256) generates a DMA write destined for 03:00.0, it
+> may transmit a TLP with a data payload of 256 bytes, and 00:02.0
+> (MPS=256 also) will accept it.  The root complex may route the packet
+> to 00:03.0 (MPS=128), and here it would need to be split into two
+> 128-byte TLPs before being transmitted by 00:03.0 to 03:00.0
+> (MPS=128).
+> 
+> Your situation is basically 01:00.1 (MPS=512) doing a DMA write
+> destined for memory and sending a 512-byte TLP to 00:01.0 (MPS=128).
+> In this case, the root complex isn't doing any peer-to-peer routing
+> between hierarchy domains, so I don't think the statement in sec 1.3.1
+> applies.  So I don't understand why the root port would accept that
+> TLP.  I would think it would report a malformed TLP error.
 
-No. AFAIR, thats a ping-pong between internal RAM and DDR for earlier
-audio ports which did not come with FIFO.
+Hmmm, PCIe Spec does not involve too much about MPS setting. So maybe different platform
+has different strategy.
 
-> This can be used only for buffers that are contiguous in memory, not
-> those that are scattered across memory.
+Conservatively, as a improvement for mps setting after hotplug. I think update mps setting equal to its parent
+make sense. This is no harm to other devices, we only modify the hotplug device itself mps register.
 
-I was hinting at using the linking facility of EDMA to achieve this.
-Each PaRAM set has full 32-bit source and destination pointers so I see
-no reason why non-contiguous case cannot be handled.
+So if you agree, I will update my patch ,only try to modify hotplug device mps, make them equal to its parent.
 
-Lets say you need to transfer SG[0..6] on channel C. Now, PaRAM sets are
-typically 4 times the number of channels. In this case we use one DMA
-PaRAM set and two Link PaRAM sets per channel. P0 is the DMA PaRAM set
-and P1 and P2 are the Link sets.
+Thanks!
+Yijing.
 
-Initial setup:
 
-SG0 -> SG1 -> SG2 -> SG3 -> SG4 -> SG5 -> SG6 -> NULL
- ^      ^      ^
- |      |      |
-P0  -> P1  -> P2  -> NULL
 
-P[0..2].TCINTEN = 1, so get an interrupt after each SG element
-completion. On each completion interrupt, hardware automatically copies
-the linked PaRAM set into the DMA PaRAM set so after SG0 is transferred
-out, the state of hardware is:
+-- 
+Thanks!
+Yijing
 
-SG1  -> SG2 -> SG3 -> SG3 -> SG6 -> NULL
- ^       ^
- |       |
-P0,1    P2  -> NULL
- |       ^
- |       |
- ---------
-
-SG1 transfer has already started by the time the TC interrupt is
-handled. As you can see P1 is now redundant and ready to be recycled. So
-in the interrupt handler, software recycles P1. Thus:
-
-SG1 -> SG2 -> SG3 -> SG4 -> SG5 -> SG6 -> NULL
- ^      ^      ^
- |      |      |
-P0  -> P2  -> P1  -> NULL
-
-Now, on next interrupt, P2 gets copied and thus can get recycled.
-Hardware state:
-
-SG2  -> SG3 -> SG4 -> SG5 -> SG6 -> NULL
- ^       ^
- |       |
-P0,2    P1  -> NULL
- |       ^
- |       |
- ---------
-
-As part of TC completion interrupt handling:
-
-SG2 -> SG3 -> SG4 -> SG5 -> SG6 -> NULL
- ^      ^      ^
- |      |      |
-P0  -> P1  -> P2  -> NULL
-
-This goes on until the SG list in exhausted. If you use more PaRAM sets,
-interrupt handler gets more time to recycle the PaRAM set. At no point
-we touch P0 as it is always under active transfer. Thus the peripheral
-is always kept busy.
-
-Do you see any reason why such a mechanism cannot be implemented?
-
-Thanks,
-Sekhar
