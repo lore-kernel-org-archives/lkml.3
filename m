@@ -1,45 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757437Ab3GaDUR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 23:20:17 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:17889 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752658Ab3GaDUN (ORCPT
+	id S1758389Ab3GaDVQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 23:21:16 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:48389 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752658Ab3GaDVP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 23:20:13 -0400
-To: Nick Alcock <nick.alcock@esperi.org.uk>
-Cc: Bernd Schubert <bernd.schubert@fastmail.fm>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-scsi@vger.kernel.org, nick.cheng@areca.com.tw,
-        stable@vger.kernel.org
-Subject: Re: [SCSI REGRESSION] 3.10.2 or 3.10.3: arcmsr failure at bootup / early userspace transition
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle Corporation
-References: <87r4ehfzhf.fsf@spindle.srvr.nix> <51F667C2.4020801@fastmail.fm>
-	<87mwp5frdl.fsf@spindle.srvr.nix> <51F67959.2060803@fastmail.fm>
-	<87fvuxdqes.fsf@spindle.srvr.nix> <yq1txjdhree.fsf@sermon.lab.mkp.net>
-	<51F80167.1080004@fastmail.fm> <87siyvlhgs.fsf@spindle.srvr.nix>
-Date: Tue, 30 Jul 2013 23:19:59 -0400
-In-Reply-To: <87siyvlhgs.fsf@spindle.srvr.nix> (Nick Alcock's message of "Wed,
-	31 Jul 2013 01:07:47 +0100")
-Message-ID: <yq1vc3rh0v4.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.130005 (Ma Gnus v0.5) Emacs/24.2 (gnu/linux)
+	Tue, 30 Jul 2013 23:21:15 -0400
+Message-ID: <51F8829E.4080605@huawei.com>
+Date: Wed, 31 Jul 2013 11:21:02 +0800
+From: Xishi Qiu <qiuxishi@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+To: <plagnioj@jcrosoft.com>, <tomi.valkeinen@ti.com>,
+        <linux-fbdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] fbdev: fix build warning in vga16fb.c
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.135.74.196]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Nick" == Nick Alcock <nick.alcock@esperi.org.uk> writes:
+When building v3.11-rc3, I get the following warning:
+...
+drivers/video/vga16fb.c: In function ‘vga16fb_destroy’:
+drivers/video/vga16fb.c:1268: warning: unused variable ‘dev’
+...
 
-Nick> in which case we don't actually know that your Areca controller
-Nick> supports the VPD page we thought it did: quite possibly only this
-Nick> underlying disk does.
+Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
+---
+ drivers/video/vga16fb.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-The ATA Information VPD page is created by the SCSI-ATA Translation
-layer. The controller firmware in this case.
-
+diff --git a/drivers/video/vga16fb.c b/drivers/video/vga16fb.c
+index 830ded4..2827333 100644
+--- a/drivers/video/vga16fb.c
++++ b/drivers/video/vga16fb.c
+@@ -1265,7 +1265,6 @@ static void vga16fb_imageblit(struct fb_info *info, const struct fb_image *image
+ 
+ static void vga16fb_destroy(struct fb_info *info)
+ {
+-	struct platform_device *dev = container_of(info->device, struct platform_device, dev);
+ 	iounmap(info->screen_base);
+ 	fb_dealloc_cmap(&info->cmap);
+ 	/* XXX unshare VGA regions */
 -- 
-Martin K. Petersen	Oracle Linux Engineering
+1.7.1
+
