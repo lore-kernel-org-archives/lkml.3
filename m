@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760709Ab3GaRpy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 13:45:54 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:51278 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760268Ab3GaRpv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 13:45:51 -0400
+	id S1760738Ab3GaRrP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 13:47:15 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:45605 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760696Ab3GaRpx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 13:45:53 -0400
 X-IronPort-AV: E=Sophos;i="4.89,788,1367971200"; 
-   d="scan'208";a="40548628"
+   d="scan'208";a="38588265"
 From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 To: <xen-devel@lists.xensource.com>
 CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <konrad.wilk@oracle.com>, <Stefano.Stabellini@eu.citrix.com>,
         <Ian.Campbell@citrix.com>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        <will.deacon@arm.com>, <linux@arm.linux.org.uk>
-Subject: [PATCH RFC 2/8] arm: introduce a global dma_ops pointer
-Date: Wed, 31 Jul 2013 18:45:26 +0100
-Message-ID: <1375292732-7627-2-git-send-email-stefano.stabellini@eu.citrix.com>
+        <david.vrabel@citrix.com>
+Subject: [PATCH RFC 7/8] swiotlb-xen: support autotranslate guests
+Date: Wed, 31 Jul 2013 18:45:31 +0100
+Message-ID: <1375292732-7627-7-git-send-email-stefano.stabellini@eu.citrix.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <alpine.DEB.2.02.1307311833040.4893@kaball.uk.xensource.com>
 References: <alpine.DEB.2.02.1307311833040.4893@kaball.uk.xensource.com>
@@ -27,102 +28,269 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Initially set dma_ops to arm_dma_ops.
-Use dma_ops instead of arm_dma_ops in dmabounce.
+Support autotranslate guests in swiotlb-xen by keeping track of the
+phys-to-bus and bus-to-phys mappings of the swiotlb buffer
+(xen_io_tlb_start-xen_io_tlb_end).
+
+Use a simple direct access on a pre-allocated array for phys-to-bus
+queries. Use a red-black tree for bus-to-phys queries.
 
 Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: will.deacon@arm.com
-CC: linux@arm.linux.org.uk
+CC: david.vrabel@citrix.com
 ---
- arch/arm/common/dmabounce.c        |   10 +++++-----
- arch/arm/include/asm/dma-mapping.h |    3 ++-
- arch/arm/mm/dma-mapping.c          |    3 +++
- 3 files changed, 10 insertions(+), 6 deletions(-)
+ drivers/xen/swiotlb-xen.c |  127 +++++++++++++++++++++++++++++++++++++++------
+ 1 files changed, 111 insertions(+), 16 deletions(-)
 
-diff --git a/arch/arm/common/dmabounce.c b/arch/arm/common/dmabounce.c
-index 1143c4d..b626122 100644
---- a/arch/arm/common/dmabounce.c
-+++ b/arch/arm/common/dmabounce.c
-@@ -325,7 +325,7 @@ static dma_addr_t dmabounce_map_page(struct device *dev, struct page *page,
+diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
+index 353f013..c79ac88 100644
+--- a/drivers/xen/swiotlb-xen.c
++++ b/drivers/xen/swiotlb-xen.c
+@@ -38,32 +38,116 @@
+ #include <linux/bootmem.h>
+ #include <linux/dma-mapping.h>
+ #include <linux/export.h>
++#include <linux/slab.h>
++#include <linux/spinlock_types.h>
++#include <linux/rbtree.h>
+ #include <xen/swiotlb-xen.h>
+ #include <xen/page.h>
+ #include <xen/xen-ops.h>
+ #include <xen/hvc-console.h>
++#include <xen/features.h>
+ /*
+  * Used to do a quick range check in swiotlb_tbl_unmap_single and
+  * swiotlb_tbl_sync_single_*, to see if the memory was in fact allocated by this
+  * API.
+  */
+ 
++#define NR_DMA_SEGS  ((xen_io_tlb_nslabs + IO_TLB_SEGSIZE - 1) / IO_TLB_SEGSIZE)
+ static char *xen_io_tlb_start, *xen_io_tlb_end;
+ static unsigned long xen_io_tlb_nslabs;
+ /*
+  * Quick lookup value of the bus address of the IOTLB.
+  */
+ 
+-static u64 start_dma_addr;
++struct xen_dma{
++	dma_addr_t dma_addr;
++	phys_addr_t phys_addr;
++	size_t size;
++	struct rb_node rbnode;
++};
++
++static struct xen_dma *xen_dma_seg;
++static struct rb_root bus_to_phys = RB_ROOT;
++static DEFINE_SPINLOCK(xen_dma_lock);
++
++static void xen_dma_insert(struct xen_dma *entry)
++{
++	struct rb_node **link = &bus_to_phys.rb_node;
++	struct rb_node *parent = NULL;
++	struct xen_dma *e;
++
++	spin_lock(&xen_dma_lock);
++
++	while (*link) {
++		parent = *link;
++		e = rb_entry(parent, struct xen_dma, rbnode);
++
++		WARN_ON(entry->dma_addr == e->dma_addr);
++
++		if (entry->dma_addr < e->dma_addr)
++			link = &(*link)->rb_left;
++		else
++			link = &(*link)->rb_right;
++	}
++	rb_link_node(&entry->rbnode, parent, link);
++	rb_insert_color(&entry->rbnode, &bus_to_phys);
++
++	spin_unlock(&xen_dma_lock);
++}
++
++static struct xen_dma *xen_dma_retrieve(dma_addr_t dma_addr)
++{
++	struct rb_node *n = bus_to_phys.rb_node;
++	struct xen_dma *e;
++	
++	spin_lock(&xen_dma_lock);
++
++	while (n) {
++		e = rb_entry(n, struct xen_dma, rbnode);
++		if (e->dma_addr <= dma_addr && e->dma_addr + e->size > dma_addr) {
++			spin_unlock(&xen_dma_lock);
++			return e;
++		}
++		if (dma_addr < e->dma_addr)
++			n = n->rb_left;
++		else
++			n = n->rb_right;
++	}
++
++	spin_unlock(&xen_dma_lock);
++	return NULL;
++}
+ 
+ static dma_addr_t xen_phys_to_bus(phys_addr_t paddr)
+ {
+-	return phys_to_machine(XPADDR(paddr)).maddr;
++	int nr_seg;
++	unsigned long offset;
++	char* vaddr;
++
++	if (!xen_feature(XENFEAT_auto_translated_physmap))
++		return phys_to_machine(XPADDR(paddr)).maddr;
++
++	vaddr = (char *) phys_to_virt(paddr);
++	if (vaddr >= xen_io_tlb_end || vaddr < xen_io_tlb_start)
++		return ~0;
++
++	offset = vaddr - xen_io_tlb_start;
++	nr_seg = offset / (IO_TLB_SEGSIZE << IO_TLB_SHIFT);
++
++	return xen_dma_seg[nr_seg].dma_addr + (paddr & ((IO_TLB_SEGSIZE << IO_TLB_SHIFT) - 1));
+ }
+ 
+ static phys_addr_t xen_bus_to_phys(dma_addr_t baddr)
+ {
+-	return machine_to_phys(XMADDR(baddr)).paddr;
++	if (xen_feature(XENFEAT_auto_translated_physmap))
++	{
++		struct xen_dma *dma = xen_dma_retrieve(baddr);
++		if (dma == NULL)
++			return ~0;
++		else
++			return dma->phys_addr + (baddr & ((IO_TLB_SEGSIZE << IO_TLB_SHIFT) - 1));
++	} else
++		return machine_to_phys(XMADDR(baddr)).paddr;
+ }
+ 
+ static dma_addr_t xen_virt_to_bus(void *address)
+@@ -107,6 +191,9 @@ static int is_xen_swiotlb_buffer(dma_addr_t dma_addr)
+ 	unsigned long pfn = mfn_to_local_pfn(mfn);
+ 	phys_addr_t paddr;
+ 
++	if (xen_feature(XENFEAT_auto_translated_physmap))
++		return 1;
++
+ 	/* If the address is outside our domain, it CAN
+ 	 * have the same virtual address as another address
+ 	 * in our domain. Therefore _only_ check address within our domain.
+@@ -124,13 +211,12 @@ static int max_dma_bits = 32;
+ static int
+ xen_swiotlb_fixup(void *buf, size_t size, unsigned long nslabs)
+ {
+-	int i, rc;
++	int i, j, rc;
+ 	int dma_bits;
+-	dma_addr_t dma_handle;
+ 
+ 	dma_bits = get_order(IO_TLB_SEGSIZE << IO_TLB_SHIFT) + PAGE_SHIFT;
+ 
+-	i = 0;
++	i = j = 0;
+ 	do {
+ 		int slabs = min(nslabs - i, (unsigned long)IO_TLB_SEGSIZE);
+ 
+@@ -138,12 +224,16 @@ xen_swiotlb_fixup(void *buf, size_t size, unsigned long nslabs)
+ 			rc = xen_create_contiguous_region(
+ 				(unsigned long)buf + (i << IO_TLB_SHIFT),
+ 				get_order(slabs << IO_TLB_SHIFT),
+-				dma_bits, &dma_handle);
++				dma_bits, &xen_dma_seg[j].dma_addr);
++			xen_dma_seg[j].phys_addr = virt_to_phys(buf + (i << IO_TLB_SHIFT));
++			xen_dma_seg[j].size = slabs << IO_TLB_SHIFT;
++			xen_dma_insert(&xen_dma_seg[j]);
+ 		} while (rc && dma_bits++ < max_dma_bits);
+ 		if (rc)
+ 			return rc;
+ 
+ 		i += slabs;
++		j++;
+ 	} while (i < nslabs);
+ 	return 0;
+ }
+@@ -193,9 +283,10 @@ retry:
+ 	/*
+ 	 * Get IO TLB memory from any location.
+ 	 */
+-	if (early)
++	if (early) {
+ 		xen_io_tlb_start = alloc_bootmem_pages(PAGE_ALIGN(bytes));
+-	else {
++		xen_dma_seg = alloc_bootmem(sizeof(struct xen_dma) * NR_DMA_SEGS);
++	} else {
+ #define SLABS_PER_PAGE (1 << (PAGE_SHIFT - IO_TLB_SHIFT))
+ #define IO_TLB_MIN_SLABS ((1<<20) >> IO_TLB_SHIFT)
+ 		while ((SLABS_PER_PAGE << order) > IO_TLB_MIN_SLABS) {
+@@ -210,6 +301,7 @@ retry:
+ 			xen_io_tlb_nslabs = SLABS_PER_PAGE << order;
+ 			bytes = xen_io_tlb_nslabs << IO_TLB_SHIFT;
+ 		}
++		xen_dma_seg = kzalloc(sizeof(struct xen_dma) * NR_DMA_SEGS, GFP_KERNEL);
+ 	}
+ 	if (!xen_io_tlb_start) {
+ 		m_ret = XEN_SWIOTLB_ENOMEM;
+@@ -232,7 +324,6 @@ retry:
+ 		m_ret = XEN_SWIOTLB_EFIXUP;
+ 		goto error;
+ 	}
+-	start_dma_addr = xen_virt_to_bus(xen_io_tlb_start);
+ 	if (early) {
+ 		if (swiotlb_init_with_tbl(xen_io_tlb_start, xen_io_tlb_nslabs,
+ 			 verbose))
+@@ -290,7 +381,8 @@ xen_swiotlb_alloc_coherent(struct device *hwdev, size_t size,
+ 
+ 	phys = virt_to_phys(ret);
+ 	dev_addr = xen_phys_to_bus(phys);
+-	if (((dev_addr + size - 1 <= dma_mask)) &&
++	if (!xen_feature(XENFEAT_auto_translated_physmap) &&
++	    ((dev_addr + size - 1 <= dma_mask)) &&
+ 	    !range_straddles_page_boundary(phys, size))
+ 		*dma_handle = dev_addr;
+ 	else {
+@@ -321,8 +413,9 @@ xen_swiotlb_free_coherent(struct device *hwdev, size_t size, void *vaddr,
+ 
+ 	phys = virt_to_phys(vaddr);
+ 
+-	if (((dev_addr + size - 1 > dma_mask)) ||
+-	    range_straddles_page_boundary(phys, size))
++	if (xen_feature(XENFEAT_auto_translated_physmap) ||
++		(((dev_addr + size - 1 > dma_mask)) ||
++		 range_straddles_page_boundary(phys, size)))
+ 		xen_destroy_contiguous_region((unsigned long)vaddr, order);
+ 
+ 	free_pages((unsigned long)vaddr, order);
+@@ -351,14 +444,15 @@ dma_addr_t xen_swiotlb_map_page(struct device *dev, struct page *page,
+ 	 * we can safely return the device addr and not worry about bounce
+ 	 * buffering it.
+ 	 */
+-	if (dma_capable(dev, dev_addr, size) &&
++	if (!xen_feature(XENFEAT_auto_translated_physmap) &&
++	    dma_capable(dev, dev_addr, size) &&
+ 	    !range_straddles_page_boundary(phys, size) && !swiotlb_force)
+ 		return dev_addr;
+ 
+ 	/*
+ 	 * Oh well, have to allocate and map a bounce buffer.
+ 	 */
+-	map = swiotlb_tbl_map_single(dev, start_dma_addr, phys, size, dir);
++	map = swiotlb_tbl_map_single(dev, xen_dma_seg[0].dma_addr, phys, size, dir);
+ 	if (map == SWIOTLB_MAP_ERROR)
  		return DMA_ERROR_CODE;
  
- 	if (ret == 0) {
--		arm_dma_ops.sync_single_for_device(dev, dma_addr, size, dir);
-+		dma_ops->sync_single_for_device(dev, dma_addr, size, dir);
- 		return dma_addr;
- 	}
+@@ -494,10 +588,11 @@ xen_swiotlb_map_sg_attrs(struct device *hwdev, struct scatterlist *sgl,
+ 		dma_addr_t dev_addr = xen_phys_to_bus(paddr);
  
-@@ -353,7 +353,7 @@ static void dmabounce_unmap_page(struct device *dev, dma_addr_t dma_addr, size_t
- 
- 	buf = find_safe_buffer_dev(dev, dma_addr, __func__);
- 	if (!buf) {
--		arm_dma_ops.sync_single_for_cpu(dev, dma_addr, size, dir);
-+		dma_ops->sync_single_for_cpu(dev, dma_addr, size, dir);
- 		return;
- 	}
- 
-@@ -397,7 +397,7 @@ static void dmabounce_sync_for_cpu(struct device *dev,
- 	if (!__dmabounce_sync_for_cpu(dev, handle, size, dir))
- 		return;
- 
--	arm_dma_ops.sync_single_for_cpu(dev, handle, size, dir);
-+	dma_ops->sync_single_for_cpu(dev, handle, size, dir);
- }
- 
- static int __dmabounce_sync_for_device(struct device *dev, dma_addr_t addr,
-@@ -437,7 +437,7 @@ static void dmabounce_sync_for_device(struct device *dev,
- 	if (!__dmabounce_sync_for_device(dev, handle, size, dir))
- 		return;
- 
--	arm_dma_ops.sync_single_for_device(dev, handle, size, dir);
-+	dma_ops->sync_single_for_device(dev, handle, size, dir);
- }
- 
- static int dmabounce_set_mask(struct device *dev, u64 dma_mask)
-@@ -445,7 +445,7 @@ static int dmabounce_set_mask(struct device *dev, u64 dma_mask)
- 	if (dev->archdata.dmabounce)
- 		return 0;
- 
--	return arm_dma_ops.set_dma_mask(dev, dma_mask);
-+	return dma_ops->set_dma_mask(dev, dma_mask);
- }
- 
- static struct dma_map_ops dmabounce_ops = {
-diff --git a/arch/arm/include/asm/dma-mapping.h b/arch/arm/include/asm/dma-mapping.h
-index ad89e0f..f907f65 100644
---- a/arch/arm/include/asm/dma-mapping.h
-+++ b/arch/arm/include/asm/dma-mapping.h
-@@ -12,6 +12,7 @@
- #include <asm/memory.h>
- 
- #define DMA_ERROR_CODE	(~0)
-+extern struct dma_map_ops *dma_ops;
- extern struct dma_map_ops arm_dma_ops;
- extern struct dma_map_ops arm_coherent_dma_ops;
- 
-@@ -19,7 +20,7 @@ static inline struct dma_map_ops *get_dma_ops(struct device *dev)
- {
- 	if (dev && dev->archdata.dma_ops)
- 		return dev->archdata.dma_ops;
--	return &arm_dma_ops;
-+	return dma_ops;
- }
- 
- static inline void set_dma_ops(struct device *dev, struct dma_map_ops *ops)
-diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
-index 7f9b179..870b12c 100644
---- a/arch/arm/mm/dma-mapping.c
-+++ b/arch/arm/mm/dma-mapping.c
-@@ -141,6 +141,9 @@ struct dma_map_ops arm_dma_ops = {
- };
- EXPORT_SYMBOL(arm_dma_ops);
- 
-+struct dma_map_ops *dma_ops = &arm_dma_ops;
-+EXPORT_SYMBOL(dma_ops);
-+
- static void *arm_coherent_dma_alloc(struct device *dev, size_t size,
- 	dma_addr_t *handle, gfp_t gfp, struct dma_attrs *attrs);
- static void arm_coherent_dma_free(struct device *dev, size_t size, void *cpu_addr,
+ 		if (swiotlb_force ||
++		    xen_feature(XENFEAT_auto_translated_physmap) ||
+ 		    !dma_capable(hwdev, dev_addr, sg->length) ||
+ 		    range_straddles_page_boundary(paddr, sg->length)) {
+ 			phys_addr_t map = swiotlb_tbl_map_single(hwdev,
+-								 start_dma_addr,
++								 xen_dma_seg[0].dma_addr,
+ 								 sg_phys(sg),
+ 								 sg->length,
+ 								 dir);
 -- 
 1.7.2.5
 
