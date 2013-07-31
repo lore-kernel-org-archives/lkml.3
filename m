@@ -1,155 +1,290 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760864Ab3GaVIv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 17:08:51 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:49883 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753430Ab3GaVIu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 17:08:50 -0400
-Message-ID: <51F97CE3.9030306@linaro.org>
-Date: Wed, 31 Jul 2013 23:08:51 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1760817Ab3GaVLW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 17:11:22 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:57082 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751835Ab3GaVLU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 17:11:20 -0400
+Date: Wed, 31 Jul 2013 16:11:15 -0500
+From: Ben Myers <bpm@sgi.com>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: tytso@mit.edu, adilger.kernel@dilger.ca, elder@kernel.org,
+        hch@infradead.org, david@fromorbit.com,
+        Namjae Jeon <namjae.jeon@samsung.com>, linux-kernel@vger.kernel.org,
+        xfs@oss.sgi.com, a.sangwan@samsung.com, linux-fsdevel@vger.kernel.org,
+        linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 2/3] xfs: Implement FALLOC_FL_COLLAPSE_RANGE
+Message-ID: <20130731211115.GU3111@sgi.com>
+References: <1375281734-15874-1-git-send-email-linkinjeon@gmail.com>
 MIME-Version: 1.0
-To: =?UTF-8?B?U8O2cmVuIEJyaW5rbWFubg==?= <soren.brinkmann@xilinx.com>
-CC: Stephen Boyd <sboyd@codeaurora.org>, John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Stuart Menefy <stuart.menefy@st.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: Enable arm_global_timer for Zynq brakes boot
-References: <f5b76049-7e5b-4dd0-9863-19cfd1d599b9@TX2EHSMHS006.ehs.local> <51E7435B.3060605@codeaurora.org> <ff4d40be-7177-4a55-ab2f-dff11fa18642@DB9EHSMHS009.ehs.local> <51ED8DF2.60600@codeaurora.org> <20130722201348.GI453@xsjandreislx> <0735ab8c-0f80-4b64-b2b2-8d4553482c2a@CO9EHSMHS013.ehs.local> <51F66565.7010600@linaro.org> <8d56935e-2a20-46c7-b80a-f779572dd839@CO1EHSMHS014.ehs.local> <51F77D93.4030505@linaro.org> <51F97842.6050200@linaro.org> <068436c6-ff98-428f-8875-bb1c6f86466b@TX2EHSMHS008.ehs.local>
-In-Reply-To: <068436c6-ff98-428f-8875-bb1c6f86466b@TX2EHSMHS008.ehs.local>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1375281734-15874-1-git-send-email-linkinjeon@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/31/2013 10:58 PM, Sören Brinkmann wrote:
-> On Wed, Jul 31, 2013 at 10:49:06PM +0200, Daniel Lezcano wrote:
->> On 07/31/2013 12:34 AM, Sören Brinkmann wrote:
->>> On Tue, Jul 30, 2013 at 10:47:15AM +0200, Daniel Lezcano wrote:
->>>> On 07/30/2013 02:03 AM, Sören Brinkmann wrote:
->>>>> Hi Daniel,
->>>>>
->>>>> On Mon, Jul 29, 2013 at 02:51:49PM +0200, Daniel Lezcano wrote:
->>>>> (snip)
->>>>>>
->>>>>> the CPUIDLE_FLAG_TIMER_STOP flag tells the cpuidle framework the local
->>>>>> timer will be stopped when entering to the idle state. In this case, the
->>>>>> cpuidle framework will call clockevents_notify(ENTER) and switches to a
->>>>>> broadcast timer and will call clockevents_notify(EXIT) when exiting the
->>>>>> idle state, switching the local timer back in use.
->>>>>
->>>>> I've been thinking about this, trying to understand how this makes my
->>>>> boot attempts on Zynq hang. IIUC, the wrongly provided TIMER_STOP flag
->>>>> would make the timer core switch to a broadcast device even though it
->>>>> wouldn't be necessary. But shouldn't it still work? It sounds like we do
->>>>> something useless, but nothing wrong in a sense that it should result in
->>>>> breakage. I guess I'm missing something obvious. This timer system will
->>>>> always remain a mystery to me.
->>>>>
->>>>> Actually this more or less leads to the question: What is this
->>>>> 'broadcast timer'. I guess that is some clockevent device which is
->>>>> common to all cores? (that would be the cadence_ttc for Zynq). Is the
->>>>> hang pointing to some issue with that driver?
->>>>
->>>> If you look at the /proc/timer_list, which timer is used for broadcasting ?
->>>
->>> So, the correct run results (full output attached).
->>>
->>> The vanilla kernel uses the twd timers as local timers and the TTC as
->>> broadcast device:
->>> 	Tick Device: mode:     1                                                         
->>> 	Broadcast device  
->>> 	Clock Event Device: ttc_clockevent
->>>
->>> When I remove the offending CPUIDLE flag and add the DT fragment to
->>> enable the global timer, the twd timers are still used as local timers
->>> and the broadcast device is the global timer:
->>> 	Tick Device: mode:     1                                                         
->>> 	Broadcast device                                                                 
->>> 	Clock Event Device: arm_global_timer
->>>
->>> Again, since boot hangs in the actually broken case, I don't see way to
->>> obtain this information for that case.
->>
->> Can't you use the maxcpus=1 option to ensure the system to boot up ?
-> 
-> Right, that works. I forgot about that option after you mentioned, that
-> it is most likely not that useful.
-> 
-> Anyway, this are those sysfs files with an unmodified cpuidle driver and
-> the gt enabled and having maxcpus=1 set.
-> 
-> /proc/timer_list:
-> 	Tick Device: mode:     1
-> 	Broadcast device
-> 	Clock Event Device: arm_global_timer
-> 	 max_delta_ns:   12884902005
-> 	 min_delta_ns:   1000
-> 	 mult:           715827876
-> 	 shift:          31
-> 	 mode:           3
+Hey Namjae,
 
-Here the mode is 3 (CLOCK_EVT_MODE_ONESHOT)
-
-The previous timer_list output you gave me when removing the offending
-cpuidle flag, it was 1 (CLOCK_EVT_MODE_SHUTDOWN).
-
-Is it possible you try to get this output again right after onlining the
-cpu1 in order to check if the broadcast device switches to SHUTDOWN ?
-
-> 	 next_event:     108080000000 nsecs
-> 	 set_next_event: gt_clockevent_set_next_event
-> 	 set_mode:       gt_clockevent_set_mode
-> 	 event_handler:  tick_handle_oneshot_broadcast
-> 	 retries:        0
-> 	
-> 	tick_broadcast_mask: 00000001
-> 	tick_broadcast_oneshot_mask: 00000000
-> 	
-> 	Tick Device: mode:     1
-> 	Per CPU device: 0
-> 	Clock Event Device: local_timer
-> 	 max_delta_ns:   12884902005
-> 	 min_delta_ns:   1000
-> 	 mult:           715827876
-> 	 shift:          31
-> 	 mode:           3
-> 	 next_event:     106900000000 nsecs
-> 	 set_next_event: twd_set_next_event
-> 	 set_mode:       twd_set_mode
-> 	 event_handler:  hrtimer_interrupt
-> 	 retries:        0
+On Wed, Jul 31, 2013 at 11:42:14PM +0900, Namjae Jeon wrote:
+> From: Namjae Jeon <namjae.jeon@samsung.com>
 > 
-> # cat /proc/interrupts 
-> 	           CPU0       
-> 	 27:        252       GIC  27  gt
-> 	 29:        626       GIC  29  twd
-> 	 43:          0       GIC  43  ttc_clockevent
-> 	 82:        410       GIC  82  xuartps
-> 	IPI0:          0  CPU wakeup interrupts
-> 	IPI1:          0  Timer broadcast interrupts
-> 	IPI2:          0  Rescheduling interrupts
-> 	IPI3:          0  Function call interrupts
-> 	IPI4:          0  Single function call interrupts
-> 	IPI5:          0  CPU stop interrupts
-> 	Err:          0
+> New fallocate flag FALLOC_FL_COLLAPSE_RANGE implementation for XFS.
 > 
+> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+> Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
+    
+Very cool feature!  ;) 
+
+I have a couple initial suggestions/questions:
+
+> ---
+>  fs/xfs/xfs_bmap.c     |   92 +++++++++++++++++++++++++++++++++++++++++++++++++
+>  fs/xfs/xfs_bmap.h     |    3 ++
+>  fs/xfs/xfs_file.c     |   26 ++++++++++++--
+>  fs/xfs/xfs_iops.c     |   35 +++++++++++++++++++
+>  fs/xfs/xfs_vnodeops.c |   62 +++++++++++++++++++++++++++++++++
+>  fs/xfs/xfs_vnodeops.h |    2 ++
+>  6 files changed, 217 insertions(+), 3 deletions(-)
 > 
-> 	Sören
-> 
-> 
+> diff --git a/fs/xfs/xfs_bmap.c b/fs/xfs/xfs_bmap.c
+> index 05c698c..ae677b1 100644
+> --- a/fs/xfs/xfs_bmap.c
+> +++ b/fs/xfs/xfs_bmap.c
+> @@ -6145,3 +6145,95 @@ next_block:
+>  
+>  	return error;
+>  }
+> +
+> +/*
+> + * xfs_update_logical()
+> + *	Updates starting logical block of extents by subtracting
+> + *	shift from them. At max XFS_LINEAR_EXTS number extents
+> + *	will be updated and *current_ext is the extent number which
+> + *	is currently being updated.
+> + */
+> +int
+> +xfs_update_logical(
+> +	xfs_trans_t		*tp,
+> +	struct xfs_inode	*ip,
+> +	int			*done,
+> +	xfs_fileoff_t		start_fsb,
+> +	xfs_fileoff_t		shift,
+> +	xfs_extnum_t		*current_ext)
 
+Could we find a better name for this function?  Maybe something like
+xfs_shift_extent_startblocks or xfs_shift_extent_offsets?
 
--- 
- <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+Also, is there also a case for being able to shift extent offsets upward in the
+file's address space so that you can splice in a chunk of data?  For that I
+think maybe you'd want to be able to shift on sub-block boundaries too, and
+there would be some copying and zeroing involved on the boundary block.  Not sure.
 
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+> +{
+> +	xfs_btree_cur_t		*cur;
+> +	xfs_bmbt_rec_host_t	*gotp;
+> +	xfs_mount_t		*mp;
+> +	xfs_ifork_t		*ifp;
+> +	xfs_extnum_t		nexts = 0;
+> +	xfs_fileoff_t		startoff;
+> +	int			error = 0;
+> +	int			i;
+> +
+> +	ifp = XFS_IFORK_PTR(ip, XFS_DATA_FORK);
+> +	mp = ip->i_mount;
+> +
+> +	if (!(ifp->if_flags & XFS_IFEXTENTS) &&
+> +		(error = xfs_iread_extents(tp, ip, XFS_DATA_FORK)))
+> +		return error;
+> +
+> +	if (!*current_ext) {
+> +		gotp = xfs_iext_bno_to_ext(ifp, start_fsb, current_ext);
+> +		/*
+> +		 * gotp can be null in 2 cases: 1) if there are no extents
+> +		 * or 2) start_fsb lies in a hole beyond which there are
+> +		 * no extents. Either way, we are done.
+> +		 */
+> +		if (!gotp) {
+> +			*done = 1;
+> +			return 0;
+> +		}
+> +	}
+> +
+> +	if (ifp->if_flags & XFS_IFBROOT)
+> +		cur = xfs_bmbt_init_cursor(mp, tp, ip, XFS_DATA_FORK);
+> +	else
+> +		cur = NULL;
+> +
+> +	while (nexts++ < XFS_LINEAR_EXTS &&
+> +	       *current_ext <  XFS_IFORK_NEXTENTS(ip, XFS_DATA_FORK)) {
+> +		gotp = xfs_iext_get_ext(ifp, (*current_ext)++);
+> +		startoff = xfs_bmbt_get_startoff(gotp);
+> +		if (cur) {
+> +			if ((error = xfs_bmbt_lookup_eq(cur,
+> +					startoff,
+> +					xfs_bmbt_get_startblock(gotp),
+> +					xfs_bmbt_get_blockcount(gotp),
+> +					&i)))
+> +				goto del_cursor;
+> +			XFS_WANT_CORRUPTED_GOTO(i == 1, del_cursor);
+> +		}
+> +		startoff -= shift;
+> +		xfs_bmbt_set_startoff(gotp, startoff);
+> +		if (cur) {
+> +			error = xfs_bmbt_update(cur, startoff,
+> +						xfs_bmbt_get_startblock(gotp),
+> +						xfs_bmbt_get_blockcount(gotp),
+> +						xfs_bmbt_get_state(gotp));
+> +			if (error)
+> +				goto del_cursor;
+> +		}
+> +	}
+> +
+> +	/* Check if we are done */
+> +	if (*current_ext ==  XFS_IFORK_NEXTENTS(ip, XFS_DATA_FORK))
+> +		*done = 1;
+> +
+> +del_cursor:
+> +	if (cur) {
+> +		if (!error)
+> +			cur->bc_private.b.allocated = 0;
+> +		 xfs_btree_del_cursor(cur,
+> +				error ? XFS_BTREE_ERROR : XFS_BTREE_NOERROR);
+> +	}
+> +
+> +	xfs_trans_log_inode(tp, ip, XFS_ILOG_CORE | XFS_ILOG_DEXT);
+> +
+> +	return error;
+> +}
+> diff --git a/fs/xfs/xfs_bmap.h b/fs/xfs/xfs_bmap.h
+> index 1cf1292..f923734 100644
+> --- a/fs/xfs/xfs_bmap.h
+> +++ b/fs/xfs/xfs_bmap.h
+> @@ -204,6 +204,9 @@ int	xfs_bunmapi(struct xfs_trans *tp, struct xfs_inode *ip,
+>  int	xfs_check_nostate_extents(struct xfs_ifork *ifp, xfs_extnum_t idx,
+>  		xfs_extnum_t num);
+>  uint	xfs_default_attroffset(struct xfs_inode *ip);
+> +int	xfs_update_logical(xfs_trans_t *tp, struct xfs_inode *ip, int *done,
+> +		xfs_fileoff_t start_fsb, xfs_fileoff_t shift,
+> +		xfs_extnum_t *current_ext);
+>  
+>  #ifdef __KERNEL__
+>  /* bmap to userspace formatter - copy to user & advance pointer */
+> diff --git a/fs/xfs/xfs_file.c b/fs/xfs/xfs_file.c
+> index de3dc98..7d871bc 100644
+> --- a/fs/xfs/xfs_file.c
+> +++ b/fs/xfs/xfs_file.c
+> @@ -817,7 +817,12 @@ xfs_file_fallocate(
+>  	int		cmd = XFS_IOC_RESVSP;
+>  	int		attr_flags = XFS_ATTR_NOLOCK;
+>  
+> -	if (mode & ~(FALLOC_FL_KEEP_SIZE | FALLOC_FL_PUNCH_HOLE))
+> +	if (mode & ~(FALLOC_FL_KEEP_SIZE | FALLOC_FL_PUNCH_HOLE |
+> +		     FALLOC_FL_COLLAPSE_RANGE))
+> +		return -EOPNOTSUPP;
+> +
+> +	/* not just yet for rt inodes */
+> +	if ((mode & FALLOC_FL_COLLAPSE_RANGE) && XFS_IS_REALTIME_INODE(ip))
+>  		return -EOPNOTSUPP;
+>  
+>  	bf.l_whence = 0;
+> @@ -826,11 +831,11 @@ xfs_file_fallocate(
+>  
+>  	xfs_ilock(ip, XFS_IOLOCK_EXCL);
+>  
+> -	if (mode & FALLOC_FL_PUNCH_HOLE)
+> +	if (mode & (FALLOC_FL_PUNCH_HOLE | FALLOC_FL_COLLAPSE_RANGE))
+>  		cmd = XFS_IOC_UNRESVSP;
+>  
+>  	/* check the new inode size is valid before allocating */
+> -	if (!(mode & FALLOC_FL_KEEP_SIZE) &&
+> +	if (!(mode & (FALLOC_FL_KEEP_SIZE | FALLOC_FL_COLLAPSE_RANGE)) &&
+>  	    offset + len > i_size_read(inode)) {
+>  		new_size = offset + len;
+>  		error = inode_newsize_ok(inode, new_size);
+> @@ -845,6 +850,21 @@ xfs_file_fallocate(
+>  	if (error)
+>  		goto out_unlock;
+>  
+> +	if (mode & FALLOC_FL_COLLAPSE_RANGE) {
+> +		error = -xfs_collapse_file_space(ip, offset + len, len);
+> +		if (error || offset >= i_size_read(inode))
+> +			goto out_unlock;
+> +
+> +		/* Shrink size in case of FALLOC_FL_COLLAPSE_RANGE */
+> +		if ((offset + len) > i_size_read(inode))
+> +			new_size = offset;
+> +		else
+> +			new_size = i_size_read(inode) - len;
+> +		error = -xfs_update_file_size(ip, new_size);
+> +
+> +		goto out_unlock;
+> +	}
+> +
 
+Since you're not implementing an XFS_IOC_COLLAPSE_RANGE flag for the
+xfs_change_file_space interface, it might be cleaner not to use change_space at
+all... e.g. call xfs_free_file_space directly from xfs_collapse_file_space or
+in the above conditional (making the conditional exclusive with the
+change_space call).
+
+Alternatively, you could implement this fully through xfs_change_file_space.
+
+Either way I think it would be best for it to be all or nothing with respect to
+the xfs_change_file_space interface, and my preference is that you implement
+this through xfs_collapse_file_space interface just as the rest of these
+operations are implemented in xfs.
+
+>  	/* Change file size if needed */
+>  	if (new_size) {
+>  		struct iattr iattr;
+> diff --git a/fs/xfs/xfs_iops.c b/fs/xfs/xfs_iops.c
+> index 96dda62..16b20f1 100644
+> --- a/fs/xfs/xfs_iops.c
+> +++ b/fs/xfs/xfs_iops.c
+> @@ -1236,3 +1236,38 @@ xfs_setup_inode(
+>  
+>  	unlock_new_inode(inode);
+>  }
+> +
+> +/*
+> + * xfs_update_file_size()
+> + *	Just a simple disk size and time update
+> + */
+> +int
+> +xfs_update_file_size(
+> +	struct xfs_inode        *ip,
+> +	loff_t			newsize)
+> +{
+> +	xfs_mount_t		*mp = ip->i_mount;
+> +	struct inode		*inode = VFS_I(ip);
+> +	struct xfs_trans	*tp;
+> +	int			error;
+> +
+> +	tp = xfs_trans_alloc(mp, XFS_TRANS_SETATTR_NOT_SIZE);
+> +
+> +	error = xfs_trans_reserve(tp, 0, XFS_ICHANGE_LOG_RES(mp), 0, 0, 0);
+> +	if (error)
+> +		return error;
+> +
+> +	xfs_trans_ijoin(tp, ip, 0);
+> +	truncate_setsize(inode, newsize);
+> +	ip->i_d.di_size = newsize;
+> +
+> +	xfs_trans_ichgtime(tp, ip, XFS_ICHGTIME_CHG);
+> +
+> +	xfs_trans_log_inode(tp, ip, XFS_ILOG_CORE);
+> +
+> +	if (mp->m_flags & XFS_MOUNT_WSYNC)
+> +		xfs_trans_set_sync(tp);
+> +
+> +	return xfs_trans_commit(tp, 0);
+> +
+> +}
+
+Did you consider xfs_setattr_size for this?
+
+Thanks,
+	Ben
