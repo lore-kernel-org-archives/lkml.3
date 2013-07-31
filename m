@@ -1,129 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759558Ab3GaKsZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 06:48:25 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:46579 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759017Ab3GaKsX (ORCPT
+	id S1759581Ab3GaKxH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 06:53:07 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:62676 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759115Ab3GaKxF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 06:48:23 -0400
-Date: Wed, 31 Jul 2013 12:48:14 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/18] Basic scheduler support for automatic NUMA
- balancing V5
-Message-ID: <20130731104814.GA3008@twins.programming.kicks-ass.net>
-References: <1373901620-2021-1-git-send-email-mgorman@suse.de>
- <20130725103620.GM27075@twins.programming.kicks-ass.net>
- <20130731103052.GR2296@suse.de>
+	Wed, 31 Jul 2013 06:53:05 -0400
+Date: Wed, 31 Jul 2013 11:52:57 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: "'Samuel Ortiz'" <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 18/35] mfd: use dev_get_platdata()
+Message-ID: <20130731105257.GE13298@lee--X1>
+References: <004301ce8cfc$32eaf7f0$98c0e7d0$@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20130731103052.GR2296@suse.de>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <004301ce8cfc$32eaf7f0$98c0e7d0$@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 31, 2013 at 11:30:52AM +0100, Mel Gorman wrote:
-> I'm not sure I understand your point. The scan rate is decreased again if
-> the page is found to be properly placed in the future. It's in the next
-> hunk you modify although the periodically reset comment is now out of date.
+On Tue, 30 Jul 2013, Jingoo Han wrote:
 
-Yeah its because of the next hunk. I figured that if we don't lower it,
-we shouldn't raise it either.
-
-> > @@ -1167,10 +1171,20 @@ void task_numa_fault(int last_nidpid, in
-> >  	/*
-> >  	 * If pages are properly placed (did not migrate) then scan slower.
-> >  	 * This is reset periodically in case of phase changes
-> > -	 */
-> > -        if (!migrated)
-> > +	 *
-> > +	 * APZ: it seems to me that one can get a ton of !migrated faults;
-> > +	 * consider the scenario where two threads fight over a shared memory
-> > +	 * segment. We'll win half the faults, half of that will be local, half
-> > +	 * of that will be remote. This means we'll see 1/4-th of the total
-> > +	 * memory being !migrated. Using a fixed increment will completely
-> > +	 * flatten the scan speed for a sufficiently large workload. Another
-> > +	 * scenario is due to that migration rate limit.
-> > +	 *
-> > +        if (!migrated) {
-> >  		p->numa_scan_period = min(p->numa_scan_period_max,
-> >  			p->numa_scan_period + jiffies_to_msecs(10));
-> > +	}
-> > +	 */
+> Use the wrapper function for retrieving the platform data instead of
+> accessing dev->platform_data directly.
 > 
-> FWIW, I'm also not happy with how the scan rate is reduced but did not
-> come up with a better alternative that was not fragile or depended on
-> gathering too much state. Granted, I also have not been treating it as a
-> high priority problem.
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 
-Right, so what Ingo did is have the scan rate depend on the convergence.
-What exactly did you dislike about that?
+Look fine. I can't test at the moment though, so:
 
-We could define the convergence as all the faults inside the interleave
-mask vs the total faults, and then run at: min + (1 - c)*(max-min).
+Tentatively applied, thanks.
 
-> > +#if 0
-> >  	/*
-> >  	 * We do not care about task placement until a task runs on a node
-> >  	 * other than the first one used by the address space. This is
-> >  	 * largely because migrations are driven by what CPU the task
-> >  	 * is running on. If it's never scheduled on another node, it'll
-> >  	 * not migrate so why bother trapping the fault.
-> > +	 *
-> > +	 * APZ: seems like a bad idea for pure shared memory workloads.
-> >  	 */
-> >  	if (mm->first_nid == NUMA_PTE_SCAN_INIT)
-> >  		mm->first_nid = numa_node_id();
-> 
-> At some point in the past scan starts were based on waiting a fixed interval
-> but that seemed like a hack designed to get around hurting kernel compile
-> benchmarks. I'll give it more thought and see can I think of a better
-> alternative that is based on an event but not this event.
-
-Ah, well the reasoning on that was that all this NUMA business is
-'expensive' so we'd better only bother with tasks that persist long
-enough for it to pay off.
-
-In that regard it makes perfect sense to wait a fixed amount of runtime
-before we start scanning.
-
-So it was not a pure hack to make kbuild work again.. that is did was
-good though.
-
-> > @@ -1254,9 +1272,14 @@ void task_numa_work(struct callback_head
-> >  	 * Do not set pte_numa if the current running node is rate-limited.
-> >  	 * This loses statistics on the fault but if we are unwilling to
-> >  	 * migrate to this node, it is less likely we can do useful work
-> > -	 */
-> > +	 *
-> > +	 * APZ: seems like a bad idea; even if this node can't migrate anymore
-> > +	 * other nodes might and we want up-to-date information to do balance
-> > +	 * decisions.
-> > +	 *
-> >  	if (migrate_ratelimited(numa_node_id()))
-> >  		return;
-> > +	 */
-> >  
-> 
-> Ingo also disliked this but I wanted to avoid a situation where the
-> workload suffered because of a corner case where the interconnect was
-> filled with migration traffic.
-
-Right, but you already rate limit the actual migrations, this should
-leave enough bandwidth to allow the non-migrating scanning.
-
-I think its important we keep up-to-date information if we're going to
-do placement based on it.
-
-On that rate-limit, this looks to be a hard-coded number unrelated to
-the actual hardware. I think we should at the very least make it a
-configurable number and preferably scale the number with the SLIT info.
-Or alternatively actually measure the node to node bandwidth.
-
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
