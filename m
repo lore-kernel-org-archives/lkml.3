@@ -1,290 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760817Ab3GaVLW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 17:11:22 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:57082 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751835Ab3GaVLU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 17:11:20 -0400
-Date: Wed, 31 Jul 2013 16:11:15 -0500
-From: Ben Myers <bpm@sgi.com>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: tytso@mit.edu, adilger.kernel@dilger.ca, elder@kernel.org,
-        hch@infradead.org, david@fromorbit.com,
-        Namjae Jeon <namjae.jeon@samsung.com>, linux-kernel@vger.kernel.org,
-        xfs@oss.sgi.com, a.sangwan@samsung.com, linux-fsdevel@vger.kernel.org,
-        linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 2/3] xfs: Implement FALLOC_FL_COLLAPSE_RANGE
-Message-ID: <20130731211115.GU3111@sgi.com>
-References: <1375281734-15874-1-git-send-email-linkinjeon@gmail.com>
+	id S1757404Ab3GaVNO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 17:13:14 -0400
+Received: from mga03.intel.com ([143.182.124.21]:56214 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751351Ab3GaVNM convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 17:13:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,789,1367996400"; 
+   d="scan'208";a="275957337"
+From: "Allan, Bruce W" <bruce.w.allan@intel.com>
+To: Borislav Petkov <bp@alien8.de>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [E1000-devel] e1000e suspend-to-disk reboots box with 3.11-rc3+
+Thread-Topic: [E1000-devel] e1000e suspend-to-disk reboots box with 3.11-rc3+
+Thread-Index: AQHOji5MakWczhzCjkufVl/hJFFsD5l/Rtxw
+Date: Wed, 31 Jul 2013 21:13:10 +0000
+Message-ID: <804857E1F29AAC47BF68C404FC60A184542E21F8@ORSMSX105.amr.corp.intel.com>
+References: <20130731204040.GE4724@pd.tnic>
+In-Reply-To: <20130731204040.GE4724@pd.tnic>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.139]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1375281734-15874-1-git-send-email-linkinjeon@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Namjae,
-
-On Wed, Jul 31, 2013 at 11:42:14PM +0900, Namjae Jeon wrote:
-> From: Namjae Jeon <namjae.jeon@samsung.com>
+> -----Original Message-----
+> From: Borislav Petkov [mailto:bp@alien8.de]
+> Sent: Wednesday, July 31, 2013 1:41 PM
+> To: e1000-devel@lists.sourceforge.net
+> Cc: netdev@vger.kernel.org; linux-kernel@vger.kernel.org
+> Subject: [E1000-devel] e1000e suspend-to-disk reboots box with 3.11-rc3+
 > 
-> New fallocate flag FALLOC_FL_COLLAPSE_RANGE implementation for XFS.
+> Hi,
 > 
-> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-> Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
-    
-Very cool feature!  ;) 
-
-I have a couple initial suggestions/questions:
-
-> ---
->  fs/xfs/xfs_bmap.c     |   92 +++++++++++++++++++++++++++++++++++++++++++++++++
->  fs/xfs/xfs_bmap.h     |    3 ++
->  fs/xfs/xfs_file.c     |   26 ++++++++++++--
->  fs/xfs/xfs_iops.c     |   35 +++++++++++++++++++
->  fs/xfs/xfs_vnodeops.c |   62 +++++++++++++++++++++++++++++++++
->  fs/xfs/xfs_vnodeops.h |    2 ++
->  6 files changed, 217 insertions(+), 3 deletions(-)
+> I'm experiencing the strange observation that when I hibernate my x230
+> with Linus HEAD from today + tip/master (3.11-rc3+), the box doesn't
+> remain off but reboots immediately.
 > 
-> diff --git a/fs/xfs/xfs_bmap.c b/fs/xfs/xfs_bmap.c
-> index 05c698c..ae677b1 100644
-> --- a/fs/xfs/xfs_bmap.c
-> +++ b/fs/xfs/xfs_bmap.c
-> @@ -6145,3 +6145,95 @@ next_block:
->  
->  	return error;
->  }
-> +
-> +/*
-> + * xfs_update_logical()
-> + *	Updates starting logical block of extents by subtracting
-> + *	shift from them. At max XFS_LINEAR_EXTS number extents
-> + *	will be updated and *current_ext is the extent number which
-> + *	is currently being updated.
-> + */
-> +int
-> +xfs_update_logical(
-> +	xfs_trans_t		*tp,
-> +	struct xfs_inode	*ip,
-> +	int			*done,
-> +	xfs_fileoff_t		start_fsb,
-> +	xfs_fileoff_t		shift,
-> +	xfs_extnum_t		*current_ext)
+> Since I have a similar bug where an e1000e box reboots
+> when "Wake on LAN from S4/S5" is enabled in the BIOS
+> (https://bugzilla.novell.com/show_bug.cgi?id=812592) I decided to test
+> with LAN cable removed.
+> 
+> And yes, when the ethernet cable is not connected, the box hibernates
+> and remains off. When I hibernate with the cable attached, the box
+> doesn't remain off but reboots.
+> 
+> The card is:
+> 
+> [    1.620772] e1000e: Intel(R) PRO/1000 Network Driver - 2.3.2-k
+> [    1.622116] e1000e: Copyright(c) 1999 - 2013 Intel Corporation.
+> [    1.623687] e1000e 0000:00:19.0: setting latency timer to 64
+> [    1.625160] e1000e 0000:00:19.0: Interrupt Throttling Rate (ints/sec) set to
+> dynamic conservative mode
+> [    1.626640] e1000e 0000:00:19.0: irq 44 for MSI/MSI-X
+> [    1.884432] e1000e 0000:00:19.0 eth0: registered PHC clock
+> [    1.885925] e1000e 0000:00:19.0 eth0: (PCI Express:2.5GT/s:Width x1)
+> 3c:97:0e:6b:ef:e7
+> [    1.887466] e1000e 0000:00:19.0 eth0: Intel(R) PRO/1000 Network
+> Connection
+> [    1.889089] e1000e 0000:00:19.0 eth0: MAC: 10, PHY: 11, PBA No: 1000FF-
+> 0FF
+> 
+> And of course, 3.10 is fine.
+> 
+> Any ideas?
+> 
+> I'll try to bisect it when I get a chance.
+> 
+> --
+> Regards/Gruss,
+>     Boris.
 
-Could we find a better name for this function?  Maybe something like
-xfs_shift_extent_startblocks or xfs_shift_extent_offsets?
+Off the top of my head, I cannot think of anything that has been added to the driver in
+Linus' tree since 3.10 that would cause this change in behavior.  There are a number of
+changes that have been put into the out-of-tree driver which have not yet made it into
+Linus' tree - would you be willing to try the latest out-of-tree driver from e1000.sf.net
+to see if it resolves your issue?  Of course, a bisect as you mention would also help.
 
-Also, is there also a case for being able to shift extent offsets upward in the
-file's address space so that you can splice in a chunk of data?  For that I
-think maybe you'd want to be able to shift on sub-block boundaries too, and
-there would be some copying and zeroing involved on the boundary block.  Not sure.
-
-> +{
-> +	xfs_btree_cur_t		*cur;
-> +	xfs_bmbt_rec_host_t	*gotp;
-> +	xfs_mount_t		*mp;
-> +	xfs_ifork_t		*ifp;
-> +	xfs_extnum_t		nexts = 0;
-> +	xfs_fileoff_t		startoff;
-> +	int			error = 0;
-> +	int			i;
-> +
-> +	ifp = XFS_IFORK_PTR(ip, XFS_DATA_FORK);
-> +	mp = ip->i_mount;
-> +
-> +	if (!(ifp->if_flags & XFS_IFEXTENTS) &&
-> +		(error = xfs_iread_extents(tp, ip, XFS_DATA_FORK)))
-> +		return error;
-> +
-> +	if (!*current_ext) {
-> +		gotp = xfs_iext_bno_to_ext(ifp, start_fsb, current_ext);
-> +		/*
-> +		 * gotp can be null in 2 cases: 1) if there are no extents
-> +		 * or 2) start_fsb lies in a hole beyond which there are
-> +		 * no extents. Either way, we are done.
-> +		 */
-> +		if (!gotp) {
-> +			*done = 1;
-> +			return 0;
-> +		}
-> +	}
-> +
-> +	if (ifp->if_flags & XFS_IFBROOT)
-> +		cur = xfs_bmbt_init_cursor(mp, tp, ip, XFS_DATA_FORK);
-> +	else
-> +		cur = NULL;
-> +
-> +	while (nexts++ < XFS_LINEAR_EXTS &&
-> +	       *current_ext <  XFS_IFORK_NEXTENTS(ip, XFS_DATA_FORK)) {
-> +		gotp = xfs_iext_get_ext(ifp, (*current_ext)++);
-> +		startoff = xfs_bmbt_get_startoff(gotp);
-> +		if (cur) {
-> +			if ((error = xfs_bmbt_lookup_eq(cur,
-> +					startoff,
-> +					xfs_bmbt_get_startblock(gotp),
-> +					xfs_bmbt_get_blockcount(gotp),
-> +					&i)))
-> +				goto del_cursor;
-> +			XFS_WANT_CORRUPTED_GOTO(i == 1, del_cursor);
-> +		}
-> +		startoff -= shift;
-> +		xfs_bmbt_set_startoff(gotp, startoff);
-> +		if (cur) {
-> +			error = xfs_bmbt_update(cur, startoff,
-> +						xfs_bmbt_get_startblock(gotp),
-> +						xfs_bmbt_get_blockcount(gotp),
-> +						xfs_bmbt_get_state(gotp));
-> +			if (error)
-> +				goto del_cursor;
-> +		}
-> +	}
-> +
-> +	/* Check if we are done */
-> +	if (*current_ext ==  XFS_IFORK_NEXTENTS(ip, XFS_DATA_FORK))
-> +		*done = 1;
-> +
-> +del_cursor:
-> +	if (cur) {
-> +		if (!error)
-> +			cur->bc_private.b.allocated = 0;
-> +		 xfs_btree_del_cursor(cur,
-> +				error ? XFS_BTREE_ERROR : XFS_BTREE_NOERROR);
-> +	}
-> +
-> +	xfs_trans_log_inode(tp, ip, XFS_ILOG_CORE | XFS_ILOG_DEXT);
-> +
-> +	return error;
-> +}
-> diff --git a/fs/xfs/xfs_bmap.h b/fs/xfs/xfs_bmap.h
-> index 1cf1292..f923734 100644
-> --- a/fs/xfs/xfs_bmap.h
-> +++ b/fs/xfs/xfs_bmap.h
-> @@ -204,6 +204,9 @@ int	xfs_bunmapi(struct xfs_trans *tp, struct xfs_inode *ip,
->  int	xfs_check_nostate_extents(struct xfs_ifork *ifp, xfs_extnum_t idx,
->  		xfs_extnum_t num);
->  uint	xfs_default_attroffset(struct xfs_inode *ip);
-> +int	xfs_update_logical(xfs_trans_t *tp, struct xfs_inode *ip, int *done,
-> +		xfs_fileoff_t start_fsb, xfs_fileoff_t shift,
-> +		xfs_extnum_t *current_ext);
->  
->  #ifdef __KERNEL__
->  /* bmap to userspace formatter - copy to user & advance pointer */
-> diff --git a/fs/xfs/xfs_file.c b/fs/xfs/xfs_file.c
-> index de3dc98..7d871bc 100644
-> --- a/fs/xfs/xfs_file.c
-> +++ b/fs/xfs/xfs_file.c
-> @@ -817,7 +817,12 @@ xfs_file_fallocate(
->  	int		cmd = XFS_IOC_RESVSP;
->  	int		attr_flags = XFS_ATTR_NOLOCK;
->  
-> -	if (mode & ~(FALLOC_FL_KEEP_SIZE | FALLOC_FL_PUNCH_HOLE))
-> +	if (mode & ~(FALLOC_FL_KEEP_SIZE | FALLOC_FL_PUNCH_HOLE |
-> +		     FALLOC_FL_COLLAPSE_RANGE))
-> +		return -EOPNOTSUPP;
-> +
-> +	/* not just yet for rt inodes */
-> +	if ((mode & FALLOC_FL_COLLAPSE_RANGE) && XFS_IS_REALTIME_INODE(ip))
->  		return -EOPNOTSUPP;
->  
->  	bf.l_whence = 0;
-> @@ -826,11 +831,11 @@ xfs_file_fallocate(
->  
->  	xfs_ilock(ip, XFS_IOLOCK_EXCL);
->  
-> -	if (mode & FALLOC_FL_PUNCH_HOLE)
-> +	if (mode & (FALLOC_FL_PUNCH_HOLE | FALLOC_FL_COLLAPSE_RANGE))
->  		cmd = XFS_IOC_UNRESVSP;
->  
->  	/* check the new inode size is valid before allocating */
-> -	if (!(mode & FALLOC_FL_KEEP_SIZE) &&
-> +	if (!(mode & (FALLOC_FL_KEEP_SIZE | FALLOC_FL_COLLAPSE_RANGE)) &&
->  	    offset + len > i_size_read(inode)) {
->  		new_size = offset + len;
->  		error = inode_newsize_ok(inode, new_size);
-> @@ -845,6 +850,21 @@ xfs_file_fallocate(
->  	if (error)
->  		goto out_unlock;
->  
-> +	if (mode & FALLOC_FL_COLLAPSE_RANGE) {
-> +		error = -xfs_collapse_file_space(ip, offset + len, len);
-> +		if (error || offset >= i_size_read(inode))
-> +			goto out_unlock;
-> +
-> +		/* Shrink size in case of FALLOC_FL_COLLAPSE_RANGE */
-> +		if ((offset + len) > i_size_read(inode))
-> +			new_size = offset;
-> +		else
-> +			new_size = i_size_read(inode) - len;
-> +		error = -xfs_update_file_size(ip, new_size);
-> +
-> +		goto out_unlock;
-> +	}
-> +
-
-Since you're not implementing an XFS_IOC_COLLAPSE_RANGE flag for the
-xfs_change_file_space interface, it might be cleaner not to use change_space at
-all... e.g. call xfs_free_file_space directly from xfs_collapse_file_space or
-in the above conditional (making the conditional exclusive with the
-change_space call).
-
-Alternatively, you could implement this fully through xfs_change_file_space.
-
-Either way I think it would be best for it to be all or nothing with respect to
-the xfs_change_file_space interface, and my preference is that you implement
-this through xfs_collapse_file_space interface just as the rest of these
-operations are implemented in xfs.
-
->  	/* Change file size if needed */
->  	if (new_size) {
->  		struct iattr iattr;
-> diff --git a/fs/xfs/xfs_iops.c b/fs/xfs/xfs_iops.c
-> index 96dda62..16b20f1 100644
-> --- a/fs/xfs/xfs_iops.c
-> +++ b/fs/xfs/xfs_iops.c
-> @@ -1236,3 +1236,38 @@ xfs_setup_inode(
->  
->  	unlock_new_inode(inode);
->  }
-> +
-> +/*
-> + * xfs_update_file_size()
-> + *	Just a simple disk size and time update
-> + */
-> +int
-> +xfs_update_file_size(
-> +	struct xfs_inode        *ip,
-> +	loff_t			newsize)
-> +{
-> +	xfs_mount_t		*mp = ip->i_mount;
-> +	struct inode		*inode = VFS_I(ip);
-> +	struct xfs_trans	*tp;
-> +	int			error;
-> +
-> +	tp = xfs_trans_alloc(mp, XFS_TRANS_SETATTR_NOT_SIZE);
-> +
-> +	error = xfs_trans_reserve(tp, 0, XFS_ICHANGE_LOG_RES(mp), 0, 0, 0);
-> +	if (error)
-> +		return error;
-> +
-> +	xfs_trans_ijoin(tp, ip, 0);
-> +	truncate_setsize(inode, newsize);
-> +	ip->i_d.di_size = newsize;
-> +
-> +	xfs_trans_ichgtime(tp, ip, XFS_ICHGTIME_CHG);
-> +
-> +	xfs_trans_log_inode(tp, ip, XFS_ILOG_CORE);
-> +
-> +	if (mp->m_flags & XFS_MOUNT_WSYNC)
-> +		xfs_trans_set_sync(tp);
-> +
-> +	return xfs_trans_commit(tp, 0);
-> +
-> +}
-
-Did you consider xfs_setattr_size for this?
+Have you checked for a BIOS update from your system manufacturer?
+Do you have Runtime Power Management enabled for this device?
 
 Thanks,
-	Ben
+Bruce.
+
