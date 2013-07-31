@@ -1,66 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756867Ab3GaQoU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 12:44:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12323 "EHLO mx1.redhat.com"
+	id S1757037Ab3GaQsv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 12:48:51 -0400
+Received: from mga02.intel.com ([134.134.136.20]:49601 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751435Ab3GaQoT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 12:44:19 -0400
-Date: Wed, 31 Jul 2013 12:43:52 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Hillf Danton <dhillf@gmail.com>
-Message-ID: <1375289032-ksc4vltc-mutt-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <20130731051221.GK2548@lge.com>
-References: <1375075929-6119-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1375075929-6119-16-git-send-email-iamjoonsoo.kim@lge.com>
- <1375124737-9w10y4c4-mutt-n-horiguchi@ah.jp.nec.com>
- <1375125555-yuwxqz39-mutt-n-horiguchi@ah.jp.nec.com>
- <20130731051221.GK2548@lge.com>
-Subject: Re: [PATCH 15/18] mm, hugetlb: move up anon_vma_prepare()
-Mime-Version: 1.0
-Content-Type: text/plain;
- charset=iso-2022-jp
-Content-Transfer-Encoding: 7bit
+	id S1753154Ab3GaQsu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 12:48:50 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,788,1367996400"; 
+   d="scan'208";a="354990656"
+Date: Wed, 31 Jul 2013 09:48:49 -0700
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Julius Werner <jwerner@chromium.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        Vincent Palatin <vpalatin@chromium.org>,
+        Benson Leung <bleung@chromium.org>
+Subject: Re: [PATCH v2] usb: core: don't try to reset_device() a port that
+ got just disconnected
+Message-ID: <20130731164849.GB6907@xanatos>
+References: <1375239080-21322-1-git-send-email-jwerner@chromium.org>
+ <Pine.LNX.4.44L0.1307311041540.1546-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Mutt-References: <20130731051221.GK2548@lge.com>
-X-Mutt-Fcc: ~/Maildir/sent/
-User-Agent: Mutt 1.5.21 (2010-09-15)
+In-Reply-To: <Pine.LNX.4.44L0.1307311041540.1546-100000@iolanthe.rowland.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 31, 2013 at 02:12:21PM +0900, Joonsoo Kim wrote:
-> On Mon, Jul 29, 2013 at 03:19:15PM -0400, Naoya Horiguchi wrote:
-> > On Mon, Jul 29, 2013 at 03:05:37PM -0400, Naoya Horiguchi wrote:
-> > > On Mon, Jul 29, 2013 at 02:32:06PM +0900, Joonsoo Kim wrote:
-> > > > If we fail with a allocated hugepage, it is hard to recover properly.
-> > > > One such example is reserve count. We don't have any method to recover
-> > > > reserve count. Although, I will introduce a function to recover reserve
-> > > > count in following patch, it is better not to allocate a hugepage
-> > > > as much as possible. So move up anon_vma_prepare() which can be failed
-> > > > in OOM situation.
-> > > > 
-> > > > Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> > > 
-> > > Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> > 
-> > Sorry, let me suspend this Reviewed for a question.
-> > If alloc_huge_page failed after we succeeded anon_vma_parepare,
-> > the allocated anon_vma_chain and/or anon_vma are safely freed?
-> > Or don't we have to free them?
+On Wed, Jul 31, 2013 at 10:43:30AM -0400, Alan Stern wrote:
+> On Tue, 30 Jul 2013, Julius Werner wrote:
 > 
-> Yes, it will be freed by free_pgtables() and then unlink_anon_vmas()
-> when a task terminate. So, we don't have to free them.
+> > The USB hub driver's event handler contains a check to catch SuperSpeed
+> > devices that transitioned into the SS.Inactive state and tries to fix
+> > them with a reset. It decides whether to do a plain hub port reset or
+> > call the usb_reset_device() function based on whether there was a device
+> > attached to the port.
+> > 
+> > However, there are device/hub combinations (found with a JetFlash
+> > Transcend mass storage stick (8564:1000) on the root hub of an Intel
+> > LynxPoint PCH) which can transition to the SS.Inactive state on
+> > disconnect (and stay there long enough for the host to notice). In this
+> > case, above-mentioned reset check will call usb_reset_device() on the
+> > stale device data structure. The kernel will send pointless LPM control
+> > messages to the no longer connected device address and can even cause
+> > several 5 second khubd stalls on some (buggy?) host controllers, before
+> > finally accepting the device's fate amongst a flurry of error messages.
+> > 
+> > This patch makes the choice of reset dependent on the port status that
+> > has just been read from the hub in addition to the existence of an
+> > in-kernel data structure for the device, and only proceeds with the more
+> > extensive reset if both are valid.
+> > 
+> > Signed-off-by: Julius Werner <jwerner@chromium.org>
+> This version looks better.
+> 
+> Acked-by: Alan Stern <stern@rowland.harvard.edu>
 
-OK, thanks for clarification.
+Thanks Alan, I'll send this off to Greg shortly.
 
-Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Sarah Sharp
