@@ -1,61 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756458Ab3GaLZR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 07:25:17 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57279 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755524Ab3GaLZP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 07:25:15 -0400
-Date: Wed, 31 Jul 2013 12:25:10 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm, numa: Sanitize task_numa_fault() callsites
-Message-ID: <20130731112510.GS2296@suse.de>
-References: <1373901620-2021-1-git-send-email-mgorman@suse.de>
- <20130725103845.GN27075@twins.programming.kicks-ass.net>
+	id S1756329Ab3GaL1Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 07:27:25 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:19785 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755379Ab3GaL1Y convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 07:27:24 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <51F8DDEB.603@citrix.com>
+References: <1373288607-1876-1-git-send-email-roger.pau@citrix.com> <51F8DDEB.603@citrix.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20130725103845.GN27075@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: [Xen-devel] [PATCH RFC 0/4] xen-block: prevent blkfront for hoarding grants
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Date: Wed, 31 Jul 2013 07:27:15 -0400
+To: =?ISO-8859-1?Q?Roger_Pau_Monn=E9?= <roger.pau@citrix.com>,
+        xen-devel@lists.xen.org
+CC: linux-kernel@vger.kernel.org, David Vrabel <david.vrabel@citrix.com>
+Message-ID: <604ab238-8a85-43af-bd97-2977fdfe1bbb@email.android.com>
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 25, 2013 at 12:38:45PM +0200, Peter Zijlstra wrote:
-> 
-> Subject: mm, numa: Sanitize task_numa_fault() callsites
-> From: Peter Zijlstra <peterz@infradead.org>
-> Date: Mon Jul 22 10:42:38 CEST 2013
-> 
-> There are three callers of task_numa_fault():
-> 
->  - do_huge_pmd_numa_page():
->      Accounts against the current node, not the node where the
->      page resides, unless we migrated, in which case it accounts
->      against the node we migrated to.
-> 
->  - do_numa_page():
->      Accounts against the current node, not the node where the
->      page resides, unless we migrated, in which case it accounts
->      against the node we migrated to.
-> 
->  - do_pmd_numa_page():
->      Accounts not at all when the page isn't migrated, otherwise
->      accounts against the node we migrated towards.
-> 
-> This seems wrong to me; all three sites should have the same
-> sementaics, furthermore we should accounts against where the page
-> really is, we already know where the task is.
-> 
+"Roger Pau Monné" <roger.pau@citrix.com> wrote:
+>On 08/07/13 15:03, Roger Pau Monne wrote:
+>> The following patches prevent blkfront from hoarding all grants in
+>the 
+>> system by allowing blkfront to request blkback to unmap certain
+>grants 
+>> so they can be freed by blkfront. This is done periodically by 
+>> blkfront, unmapping a certain amount of unused persistent grants.
+>> 
+>> This series also includes a bug fix for the grant table free callback
+>
+>> implementation.
+>
+>Hello,
+>
+>IMHO I think 1 should go in (at the end it's a bugfix) and backported
+>to
+>stable. 2 and 4 (second version) can probably also go in?
+>
+>Roger.
 
-Agreed. To allow the scheduler parts to still be evaluated in proper
-isolation I moved this patch to much earlier in the series.
-
--- 
-Mel Gorman
-SUSE Labs
+Can you repost the patch series please with some of the comments addressed in the commit description  please.  Note that the patch series It says RFC on them :-) 
