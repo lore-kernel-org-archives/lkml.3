@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760804Ab3GaTys (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 15:54:48 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:38580 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760772Ab3GaTyc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1760820Ab3GaTzv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 15:55:51 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:46045 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760746Ab3GaTyc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 31 Jul 2013 15:54:32 -0400
 X-IronPort-AV: E=Sophos;i="4.89,789,1367971200"; 
-   d="scan'208";a="38620691"
+   d="scan'208";a="40581749"
 From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 To: <xen-devel@lists.xensource.com>
 CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <konrad.wilk@oracle.com>, <Stefano.Stabellini@eu.citrix.com>,
         <Ian.Campbell@citrix.com>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        <david.vrabel@citrix.com>
-Subject: [PATCH v2 RFC 6/8] xen: make xen_create_contiguous_region return the dma address
-Date: Wed, 31 Jul 2013 20:54:10 +0100
-Message-ID: <1375300452-12545-6-git-send-email-stefano.stabellini@eu.citrix.com>
+        <will.deacon@arm.com>, <linux@arm.linux.org.uk>
+Subject: [PATCH v2 RFC 2/8] arm: introduce a global dma_ops pointer
+Date: Wed, 31 Jul 2013 20:54:06 +0100
+Message-ID: <1375300452-12545-2-git-send-email-stefano.stabellini@eu.citrix.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <alpine.DEB.2.02.1307312048511.4893@kaball.uk.xensource.com>
 References: <alpine.DEB.2.02.1307312048511.4893@kaball.uk.xensource.com>
@@ -28,87 +27,102 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Modify xen_create_contiguous_region to return the dma address of the
-newly contiguous buffer.
+Initially set dma_ops to arm_dma_ops.
+Use dma_ops instead of arm_dma_ops in dmabounce.
 
 Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: david.vrabel@citrix.com
+CC: will.deacon@arm.com
+CC: linux@arm.linux.org.uk
 ---
- arch/x86/xen/mmu.c        |    4 +++-
- drivers/xen/swiotlb-xen.c |    6 +++---
- include/xen/xen-ops.h     |    3 ++-
- 3 files changed, 8 insertions(+), 5 deletions(-)
+ arch/arm/common/dmabounce.c        |   10 +++++-----
+ arch/arm/include/asm/dma-mapping.h |    3 ++-
+ arch/arm/mm/dma-mapping.c          |    3 +++
+ 3 files changed, 10 insertions(+), 6 deletions(-)
 
-diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index fdc3ba2..df9ab44 100644
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -2329,7 +2329,8 @@ static int xen_exchange_memory(unsigned long extents_in, unsigned int order_in,
- }
+diff --git a/arch/arm/common/dmabounce.c b/arch/arm/common/dmabounce.c
+index 1143c4d..b626122 100644
+--- a/arch/arm/common/dmabounce.c
++++ b/arch/arm/common/dmabounce.c
+@@ -325,7 +325,7 @@ static dma_addr_t dmabounce_map_page(struct device *dev, struct page *page,
+ 		return DMA_ERROR_CODE;
  
- int xen_create_contiguous_region(unsigned long vstart, unsigned int order,
--				 unsigned int address_bits)
-+				 unsigned int address_bits,
-+				 dma_addr_t *dma_handle)
- {
- 	unsigned long *in_frames = discontig_frames, out_frame;
- 	unsigned long  flags;
-@@ -2368,6 +2369,7 @@ int xen_create_contiguous_region(unsigned long vstart, unsigned int order,
- 
- 	spin_unlock_irqrestore(&xen_reservation_lock, flags);
- 
-+	*dma_handle = xen_virt_to_bus(vstart);
- 	return success ? 0 : -ENOMEM;
- }
- EXPORT_SYMBOL_GPL(xen_create_contiguous_region);
-diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
-index aadffcf..353f013 100644
---- a/drivers/xen/swiotlb-xen.c
-+++ b/drivers/xen/swiotlb-xen.c
-@@ -126,6 +126,7 @@ xen_swiotlb_fixup(void *buf, size_t size, unsigned long nslabs)
- {
- 	int i, rc;
- 	int dma_bits;
-+	dma_addr_t dma_handle;
- 
- 	dma_bits = get_order(IO_TLB_SEGSIZE << IO_TLB_SHIFT) + PAGE_SHIFT;
- 
-@@ -137,7 +138,7 @@ xen_swiotlb_fixup(void *buf, size_t size, unsigned long nslabs)
- 			rc = xen_create_contiguous_region(
- 				(unsigned long)buf + (i << IO_TLB_SHIFT),
- 				get_order(slabs << IO_TLB_SHIFT),
--				dma_bits);
-+				dma_bits, &dma_handle);
- 		} while (rc && dma_bits++ < max_dma_bits);
- 		if (rc)
- 			return rc;
-@@ -294,11 +295,10 @@ xen_swiotlb_alloc_coherent(struct device *hwdev, size_t size,
- 		*dma_handle = dev_addr;
- 	else {
- 		if (xen_create_contiguous_region(vstart, order,
--						 fls64(dma_mask)) != 0) {
-+						 fls64(dma_mask), dma_handle) != 0) {
- 			free_pages(vstart, order);
- 			return NULL;
- 		}
--		*dma_handle = virt_to_machine(ret).maddr;
+ 	if (ret == 0) {
+-		arm_dma_ops.sync_single_for_device(dev, dma_addr, size, dir);
++		dma_ops->sync_single_for_device(dev, dma_addr, size, dir);
+ 		return dma_addr;
  	}
- 	memset(ret, 0, size);
- 	return ret;
-diff --git a/include/xen/xen-ops.h b/include/xen/xen-ops.h
-index d6fe062..9ef704d 100644
---- a/include/xen/xen-ops.h
-+++ b/include/xen/xen-ops.h
-@@ -20,7 +20,8 @@ int xen_setup_shutdown_event(void);
  
- extern unsigned long *xen_contiguous_bitmap;
- int xen_create_contiguous_region(unsigned long vstart, unsigned int order,
--				unsigned int address_bits);
-+				unsigned int address_bits,
-+				dma_addr_t *dma_handle);
+@@ -353,7 +353,7 @@ static void dmabounce_unmap_page(struct device *dev, dma_addr_t dma_addr, size_t
  
- void xen_destroy_contiguous_region(unsigned long vstart, unsigned int order);
+ 	buf = find_safe_buffer_dev(dev, dma_addr, __func__);
+ 	if (!buf) {
+-		arm_dma_ops.sync_single_for_cpu(dev, dma_addr, size, dir);
++		dma_ops->sync_single_for_cpu(dev, dma_addr, size, dir);
+ 		return;
+ 	}
  
+@@ -397,7 +397,7 @@ static void dmabounce_sync_for_cpu(struct device *dev,
+ 	if (!__dmabounce_sync_for_cpu(dev, handle, size, dir))
+ 		return;
+ 
+-	arm_dma_ops.sync_single_for_cpu(dev, handle, size, dir);
++	dma_ops->sync_single_for_cpu(dev, handle, size, dir);
+ }
+ 
+ static int __dmabounce_sync_for_device(struct device *dev, dma_addr_t addr,
+@@ -437,7 +437,7 @@ static void dmabounce_sync_for_device(struct device *dev,
+ 	if (!__dmabounce_sync_for_device(dev, handle, size, dir))
+ 		return;
+ 
+-	arm_dma_ops.sync_single_for_device(dev, handle, size, dir);
++	dma_ops->sync_single_for_device(dev, handle, size, dir);
+ }
+ 
+ static int dmabounce_set_mask(struct device *dev, u64 dma_mask)
+@@ -445,7 +445,7 @@ static int dmabounce_set_mask(struct device *dev, u64 dma_mask)
+ 	if (dev->archdata.dmabounce)
+ 		return 0;
+ 
+-	return arm_dma_ops.set_dma_mask(dev, dma_mask);
++	return dma_ops->set_dma_mask(dev, dma_mask);
+ }
+ 
+ static struct dma_map_ops dmabounce_ops = {
+diff --git a/arch/arm/include/asm/dma-mapping.h b/arch/arm/include/asm/dma-mapping.h
+index ad89e0f..f907f65 100644
+--- a/arch/arm/include/asm/dma-mapping.h
++++ b/arch/arm/include/asm/dma-mapping.h
+@@ -12,6 +12,7 @@
+ #include <asm/memory.h>
+ 
+ #define DMA_ERROR_CODE	(~0)
++extern struct dma_map_ops *dma_ops;
+ extern struct dma_map_ops arm_dma_ops;
+ extern struct dma_map_ops arm_coherent_dma_ops;
+ 
+@@ -19,7 +20,7 @@ static inline struct dma_map_ops *get_dma_ops(struct device *dev)
+ {
+ 	if (dev && dev->archdata.dma_ops)
+ 		return dev->archdata.dma_ops;
+-	return &arm_dma_ops;
++	return dma_ops;
+ }
+ 
+ static inline void set_dma_ops(struct device *dev, struct dma_map_ops *ops)
+diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
+index 7f9b179..870b12c 100644
+--- a/arch/arm/mm/dma-mapping.c
++++ b/arch/arm/mm/dma-mapping.c
+@@ -141,6 +141,9 @@ struct dma_map_ops arm_dma_ops = {
+ };
+ EXPORT_SYMBOL(arm_dma_ops);
+ 
++struct dma_map_ops *dma_ops = &arm_dma_ops;
++EXPORT_SYMBOL(dma_ops);
++
+ static void *arm_coherent_dma_alloc(struct device *dev, size_t size,
+ 	dma_addr_t *handle, gfp_t gfp, struct dma_attrs *attrs);
+ static void arm_coherent_dma_free(struct device *dev, size_t size, void *cpu_addr,
 -- 
 1.7.2.5
 
