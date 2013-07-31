@@ -1,67 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760559Ab3GaRwi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 13:52:38 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:41659 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751351Ab3GaRwg (ORCPT
+	id S1760632Ab3GaRxw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 13:53:52 -0400
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:46801 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751894Ab3GaRxu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 13:52:36 -0400
-Date: Wed, 31 Jul 2013 18:52:32 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Felipe Contreras <felipe.contreras@gmail.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Aaron Lu <aaron.lwe@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        Len Brown <lenb@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [REGRESSION/PATCH] acpi: blacklist win8 OSI for ASUS Zenbok
- Prime UX31A
-Message-ID: <20130731175232.GA29987@srcf.ucam.org>
-References: <1375125658-1223-1-git-send-email-felipe.contreras@gmail.com>
- <3453253.oZLO1ChPbL@vostro.rjw.lan>
- <CAMP44s02V_FO1BPJZqo6MB9RMknXYdV7AXDqbJzYHpgK1GUuJw@mail.gmail.com>
- <37178266.QXgbv9rq0i@vostro.rjw.lan>
- <CAMP44s2LqiEGtS72FuTjsHUa1MH2kfaYHmcpNKMmAm2LnbFCCQ@mail.gmail.com>
- <20130731051421.GA15766@srcf.ucam.org>
- <CAMP44s2B=nQLnZm7gyYAJZgt_x3KszRZLUC=fom0t9=Eze+smA@mail.gmail.com>
- <20130731140010.GA24560@srcf.ucam.org>
- <CAMP44s1cLou9TMfLS+FHwPM_b3bG5HN1-hzgvhz0fVRCZ8XqWw@mail.gmail.com>
+	Wed, 31 Jul 2013 13:53:50 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMP44s1cLou9TMfLS+FHwPM_b3bG5HN1-hzgvhz0fVRCZ8XqWw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <51F8D5C9.4020309@huawei.com>
+References: <1360036520-31032-1-git-send-email-wangyijing@huawei.com>
+ <51A42137.9090908@huawei.com> <CAErSpo7iyiq6H-BsPNO0Nyc1SF+JteOzBqNQ+d_D=RYE_pdTEA@mail.gmail.com>
+ <51F73108.4070905@huawei.com> <CAErSpo4mHTwqrW-yq_1BkjD0GyFtVYZRm9+eGfASJ_aJCOagjg@mail.gmail.com>
+ <CAErSpo4xJk7bHQihtdN1UP+6Y17TOrBFhEsO_Zwyvz8iQMEXsw@mail.gmail.com> <51F8D5C9.4020309@huawei.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 31 Jul 2013 11:53:30 -0600
+Message-ID: <CAErSpo5GUTXyo4GeCGvh_GauKUA4decbDWUnD47qKPr6E65g9w@mail.gmail.com>
+Subject: Re: [PATCH] PCI: update device mps when doing pci hotplug
+To: Yijing Wang <wangyijing@huawei.com>
+Cc: Jon Mason <jdmason@kudzu.us>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Yijing Wang <wangyijing0307@gmail.com>,
+        Hanjun Guo <guohanjun@huawei.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Joe Jin <joe.jin@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 31, 2013 at 12:46:04PM -0500, Felipe Contreras wrote:
+On Wed, Jul 31, 2013 at 3:15 AM, Yijing Wang <wangyijing@huawei.com> wrote:
+> Hi Bjorn,
+>    I didn't observe a performance difference between MPS=128 and MPS=512. I use ping $dest_ip -s 65500(large size packet)
+> to test the different situations.
 
-> That doesn't change the fact that you were wrong, and there *is*
-> actually a way. The fact that you don't want to go there doesn't mean
-> it's not there.
+Interesting.  "ping" is probably not a good way to see performance
+differences, but hopefully you could see a difference in *some*
+scenario.  Otherwise, there's not much point in increasing MPS :)
 
-A quirk list will be incomplete, and as such there's no way to guarantee 
-whether or not a value of 0 will turn off the backlight. This is why the 
-interface doesn't make that guarantee, and why any userspace that 
-depends upon that behaviour is behaving incorrectly.
+>> I assume there are no AER or other errors logged by the root port?
+> Yes, AER is not support in local machine.
 
-> Here's another: device tree.
+Per the 5520/5500 spec, it does support AER (sec 19.11.5).  Maybe
+there's some platform support required in addition.  You might still
+be able to see some info just with "lspci -vv"
 
-There's no functional distinction between device tree and a quirk list 
-on x86 - they're both static data sources provided by something other 
-than the system firmware. As a result, they will both be incomplete.
+> Hmmm, PCIe Spec does not involve too much about MPS setting. So maybe different platform
+> has different strategy.
 
-> There are ways to provide a consistent backlight interface to user-space.
+I think there's enough in the spec to tell us what we need to do (this
+is sec 2.2.2):
 
-No, there aren't. What you *can* do is propose to change the ABI 
-description for the sysfs backlight interface such that any system where 
-0 turns off the backlight is considered buggy, but that won't make those 
-systems vanish. A good interface doesn't promise things it can't 
-guarantee, so I'd expect that any such proposal would be rejected.
+  - A Transmitter must not send a TLP larger than its Max_Payload_Size
+  - A Receiver must treat TLPs larger than its Max_Payload_Size as malformed
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+The only way I can see to guarantee that is to set the MPS on both
+ends of the link the same.
+
+> Conservatively, as a improvement for mps setting after hotplug. I think update mps setting equal to its parent
+> make sense. This is no harm to other devices, we only modify the hotplug device itself mps register.
+>
+> So if you agree, I will update my patch ,only try to modify hotplug device mps, make them equal to its parent.
+
+Yes, I think that would be safe.  If the switch is set to a larger MPS
+than the hot-added device supports, I don't think we can safely use
+the device.
+
+Bjorn
