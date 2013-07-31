@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760167Ab3GaNkl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 09:40:41 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46966 "EHLO
+	id S1760153Ab3GaNkk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 09:40:40 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46888 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759766Ab3GaNZv (ORCPT
+	by vger.kernel.org with ESMTP id S1759636Ab3GaNZv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 31 Jul 2013 09:25:51 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Andy Ritger" <aritger@nvidia.com>,
-        "Takashi Iwai" <tiwai@suse.de>,
-        "Aaron Plattner" <aplattner@nvidia.com>
+CC: akpm@linux-foundation.org, "George Cherian" <george.cherian@ti.com>,
+        "Sarah Sharp" <sarah.a.sharp@linux.intel.com>
 Date: Wed, 31 Jul 2013 15:23:09 +0200
-Message-ID: <lsq.1375276989.140182174@decadent.org.uk>
+Message-ID: <lsq.1375276989.883481291@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [51/84] ALSA: hda - Add new GPU codec ID to snd-hda
+Subject: [78/84] usb: host: xhci: Enable XHCI_SPURIOUS_SUCCESS for all
+ controllers with xhci 1.0
 In-Reply-To: <lsq.1375276989.251749228@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.216.67.181
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,36 +32,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Aaron Plattner <aplattner@nvidia.com>
+From: George Cherian <george.cherian@ti.com>
 
-commit d52392b1a80458c0510810789c7db4a39b88022a upstream.
+commit 07f3cb7c28bf3f4dd80bfb136cf45810c46ac474 upstream.
 
-Vendor ID 0x10de0060 is used by a yet-to-be-named GPU chip.
+Xhci controllers with hci_version > 0.96 gives spurious success
+events on short packet completion. During webcam capture the
+"ERROR Transfer event TRB DMA ptr not part of current TD" was observed.
+The same application works fine with synopsis controllers hci_version 0.96.
+The same issue is seen with Intel Pantherpoint xhci controller. So enabling
+this quirk in xhci_gen_setup if controller verion is greater than 0.96.
+For xhci-pci move the quirk to much generic place xhci_gen_setup.
 
-Reviewed-by: Andy Ritger <aritger@nvidia.com>
-Signed-off-by: Aaron Plattner <aplattner@nvidia.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Note from Sarah:
+
+The xHCI 1.0 spec changed how hardware handles short packets.  The HW
+will notify SW of the TRB where the short packet occurred, and it will
+also give a successful status for the last TRB in a TD (the one with the
+IOC flag set).  On the second successful status, that warning will be
+triggered in the driver.
+
+Software is now supposed to not assume the TD is not completed until it
+gets that last successful status.  That means we have a slight race
+condition, although it should have little practical impact.  This patch
+papers over that issue.
+
+It's on my long-term to-do list to fix this race condition, but it is a
+much more involved patch that will probably be too big for stable.  This
+patch is needed for stable to avoid serious log spam.
+
+This patch should be backported to kernels as old as 3.0, that
+contain the commit ad808333d8201d53075a11bc8dd83b81f3d68f0b "Intel xhci:
+Ignore spurious successful event."
+
+The patch will have to be modified for kernels older than 3.2, since
+that kernel added the xhci_gen_setup function for xhci platform devices.
+The correct conflict resolution for kernels older than 3.2 is to set
+XHCI_SPURIOUS_SUCCESS in xhci_pci_quirks for all xHCI 1.0 hosts.
+
+Signed-off-by: George Cherian <george.cherian@ti.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- sound/pci/hda/patch_hdmi.c | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/usb/host/xhci-pci.c | 1 -
+ drivers/usb/host/xhci.c     | 7 +++++++
+ 2 files changed, 7 insertions(+), 1 deletion(-)
 
---- a/sound/pci/hda/patch_hdmi.c
-+++ b/sound/pci/hda/patch_hdmi.c
-@@ -1898,6 +1898,7 @@ static const struct hda_codec_preset snd
- { .id = 0x10de0043, .name = "GPU 43 HDMI/DP",	.patch = patch_generic_hdmi },
- { .id = 0x10de0044, .name = "GPU 44 HDMI/DP",	.patch = patch_generic_hdmi },
- { .id = 0x10de0051, .name = "GPU 51 HDMI/DP",	.patch = patch_generic_hdmi },
-+{ .id = 0x10de0060, .name = "GPU 60 HDMI/DP",	.patch = patch_generic_hdmi },
- { .id = 0x10de0067, .name = "MCP67 HDMI",	.patch = patch_nvhdmi_2ch },
- { .id = 0x10de8001, .name = "MCP73 HDMI",	.patch = patch_nvhdmi_2ch },
- { .id = 0x80860054, .name = "IbexPeak HDMI",	.patch = patch_generic_hdmi },
-@@ -1945,6 +1946,7 @@ MODULE_ALIAS("snd-hda-codec-id:10de0042"
- MODULE_ALIAS("snd-hda-codec-id:10de0043");
- MODULE_ALIAS("snd-hda-codec-id:10de0044");
- MODULE_ALIAS("snd-hda-codec-id:10de0051");
-+MODULE_ALIAS("snd-hda-codec-id:10de0060");
- MODULE_ALIAS("snd-hda-codec-id:10de0067");
- MODULE_ALIAS("snd-hda-codec-id:10de8001");
- MODULE_ALIAS("snd-hda-codec-id:17e80047");
+--- a/drivers/usb/host/xhci-pci.c
++++ b/drivers/usb/host/xhci-pci.c
+@@ -89,7 +89,6 @@ static void xhci_pci_quirks(struct devic
+ 		xhci->quirks |= XHCI_AMD_PLL_FIX;
+ 	if (pdev->vendor == PCI_VENDOR_ID_INTEL &&
+ 			pdev->device == PCI_DEVICE_ID_INTEL_PANTHERPOINT_XHCI) {
+-		xhci->quirks |= XHCI_SPURIOUS_SUCCESS;
+ 		xhci->quirks |= XHCI_EP_LIMIT_QUIRK;
+ 		xhci->limit_active_eps = 64;
+ 		xhci->quirks |= XHCI_SW_BW_CHECKING;
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -4178,6 +4178,13 @@ int xhci_gen_setup(struct usb_hcd *hcd,
+ 
+ 	get_quirks(dev, xhci);
+ 
++	/* In xhci controllers which follow xhci 1.0 spec gives a spurious
++	 * success event after a short transfer. This quirk will ignore such
++	 * spurious event.
++	 */
++	if (xhci->hci_version > 0x96)
++		xhci->quirks |= XHCI_SPURIOUS_SUCCESS;
++
+ 	/* Make sure the HC is halted. */
+ 	retval = xhci_halt(xhci);
+ 	if (retval)
 
