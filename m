@@ -1,107 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760118Ab3GaOI1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 10:08:27 -0400
-Received: from co9ehsobe001.messaging.microsoft.com ([207.46.163.24]:57521
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760063Ab3GaOIX convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 10:08:23 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 4
-X-BigFish: VS4(zz98dIzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h17326ah1de096h8275dh1de097ha509lz2dh2a8h668h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h19ceh1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e1dhbe9i1155h)
-From: Chen Peter-B29397 <B29397@freescale.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>
-CC: Linux/PPC Development <linuxppc-dev@lists.ozlabs.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
-Subject: RE: Build regressions/improvements in v3.11-rc3
-Thread-Topic: Build regressions/improvements in v3.11-rc3
-Thread-Index: AQHOjQIKkoF7Sl/ZoUirAhB+XJS14Jl+1HQi
-Date: Wed, 31 Jul 2013 14:08:17 +0000
-Message-ID: <F281D0F91ED19E4D8E63A7504E8A649803F691A5@039-SN2MPN1-021.039d.mgd.msft.net>
-References: <alpine.DEB.2.02.1307301048280.23035@ayla.of.borg>,<alpine.DEB.2.02.1307301049230.23054@ayla.of.borg>
-In-Reply-To: <alpine.DEB.2.02.1307301049230.23054@ayla.of.borg>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [180.157.63.143]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1760184Ab3GaOIo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 10:08:44 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:30731 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759607Ab3GaOI0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 10:08:26 -0400
+Date: Wed, 31 Jul 2013 10:08:14 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Cc: xen-devel@lists.xensource.com,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: [GIT PULL] (xen) stable/for-linus-3.11-rc3-tag
+Message-ID: <20130731140814.GB23258@phenom.dumpdata.com>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="tKW2IUtsqtDRztdT"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My patches "usb: chipidea: fix the build error with randconfig" fixes chipidea problem.
-It has already at USB fixes for 3.11-rc4.
 
-On Tue, 30 Jul 2013, Geert Uytterhoeven wrote:
-> JFYI, when comparing v3.11-rc3 to v3.11-rc2[3], the summaries are:
->   - build errors: +38/-14
+--tKW2IUtsqtDRztdT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-  + arch/powerpc/kvm/book3s_emulate.c: error: 'bat' may be used uninitialized in this function [-Werror=uninitialized]:  => 349:2
-  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_ANDCOND' undeclared (first use in this function):  => 161:17, 86:16
-  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_AVPN' undeclared (first use in this function):  => 160:17, 85:16, 192:16
-  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_BULK_REMOVE' undeclared (first use in this function):  => 246:7
-  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_CEDE' undeclared (first use in this function):  => 250:7
-  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_CPPR' undeclared (first use in this function):  => 257:7
-  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_ENTER' undeclared (first use in this function):  => 240:7
-  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_EOI' undeclared (first use in this function):  => 258:7
-  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_EXACT' undeclared (first use in this function):  => 50:6
-  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_IPI' undeclared (first use in this function):  => 259:7
-  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_IPOLL' undeclared (first use in this function):  => 260:7
-  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_NOT_FOUND' undeclared (first use in this function):  => 193:27, 87:27
-  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_PARAMETER' undeclared (first use in this function):  => 138:10
-  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_PROTECT' undeclared (first use in this function):  => 244:7
-  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_PTEG_FULL' undeclared (first use in this function):  => 54:12
-  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_PUT_TCE' undeclared (first use in this function):  => 248:7
-  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_REMOVE' undeclared (first use in this function):  => 242:7
-  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_RTAS' undeclared (first use in this function):  => 265:7
-  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_SUCCESS' undeclared (first use in this function):  => 67:26, 96:26, 211:26, 125:12
-  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_TOO_HARD' undeclared (first use in this function):  => 224:12
-  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_XIRR' undeclared (first use in this function):  => 256:7
-  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_XIRR_X' undeclared (first use in this function):  => 261:7
-  + arch/powerpc/platforms/pseries/hotplug-memory.c: error: 'SECTION_SIZE_BITS' undeclared (first use in this function):  => 24:31
-  + mm/memory_hotplug.c: error: 'PAGES_PER_SECTION' undeclared (first use in this function):  => 1630:46
-  + mm/memory_hotplug.c: error: implicit declaration of function '__nr_to_section' [-Werror=implicit-function-declaration]:  => 1635:3
-  + mm/memory_hotplug.c: error: implicit declaration of function 'find_memory_block_hinted' [-Werror=implicit-function-declaration]:  => 1642:3
-  + mm/memory_hotplug.c: error: implicit declaration of function 'pfn_to_section_nr' [-Werror=implicit-function-declaration]:  => 1631:3
-  + mm/memory_hotplug.c: error: implicit declaration of function 'present_section_nr' [-Werror=implicit-function-declaration]:  => 1632:3
+Hey Linus,
 
-powerpc-randconfig
+We are trying out a new git flow where both me and Stefano are going
+to use one git tree. Not sure yet how we are going to figure out
+the branch names (discussing that now) but in the meantime here is a
+git pull from that tree and also using git request pull to construct
+this writeup.
 
-  + drivers/md/dm-cache-policy-mq.c: error: conflicting types for 'remove_mapping':  => 962:13
+Thanks!
 
-sparc-allmodconfig, not a regression (was hidden due to a sparc64/sparc32
-mixup on kissb), patch submitted
+The following changes since commit 0b0c002c340e78173789f8afaa508070d838cf3d:
 
-  + error: "usb_add_gadget_udc" [drivers/usb/chipidea/ci_hdrc.ko] undefined!:  => N/A
-  + error: "usb_del_gadget_udc" [drivers/usb/chipidea/ci_hdrc.ko] undefined!:  => N/A
-  + error: "usb_gadget_map_request" [drivers/usb/chipidea/ci_hdrc.ko] undefined!:  => N/A
-  + error: "usb_gadget_unmap_request" [drivers/usb/chipidea/ci_hdrc.ko] undefined!:  => N/A
+  xen/time: remove blocked time accounting from xen "clockchip" (2013-06-28 12:11:39 -0400)
 
-x86_64-randconfig
+are available in the git repository at:
 
-> [1] http://kisskb.ellerman.id.au/kisskb/head/6490/ (all 120 configs)
-> [3] http://kisskb.ellerman.id.au/kisskb/head/6461/ (all 120 configs)
+  git://git.kernel.org/pub/scm/linux/kernel/git/xen/tip.git tags/stable/for-linus-3.11-rc3-tag
 
-Gr{oetje,eeting}s,
+for you to fetch changes up to 741ddbcfd26f192b0677961385b599aa785f8119:
 
-                                                Geert
+  xen/tmem: do not allow XEN_TMEM on ARM64 (2013-07-30 13:44:02 -0400)
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+----------------------------------------------------------------
+Fixes:
+ - Three fixes for ARM/ARM64 to either compile or not certain generic drivers
+ - Fix for avoiding a potential deadlock when an user space event channel is destroyed.
+ - Fix a workqueue resuming multiple times.
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                                            -- Linus Torvalds
---
-To unsubscribe from this list: send the line "unsubscribe linux-usb" in
-the body of a message to majordomo@vger.kernel.org
-More majordomo info at  http://vger.kernel.org/majordomo-info.html
+----------------------------------------------------------------
+Aurelien Chartier (1):
+      xenbus: frontend resume cleanup
 
+David Vrabel (1):
+      xen/evtchn: avoid a deadlock when unbinding an event channel
 
+Julien Grall (2):
+      xen/arm64: Don't compile cpu hotplug
+      xen/arm: enable PV control for ARM
+
+Stefano Stabellini (1):
+      xen/tmem: do not allow XEN_TMEM on ARM64
+
+ drivers/xen/Kconfig                        |  2 +-
+ drivers/xen/Makefile                       |  5 ++---
+ drivers/xen/evtchn.c                       | 21 ++-------------------
+ drivers/xen/xenbus/xenbus_probe_frontend.c | 19 ++++++++++++++++---
+ 4 files changed, 21 insertions(+), 26 deletions(-)
+
+--tKW2IUtsqtDRztdT
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.13 (GNU/Linux)
+
+iQEcBAEBAgAGBQJR+Ro5AAoJEFjIrFwIi8fJ0OMIALS5/fv7jaiQQBibLP6XeIFy
+zrfv+XZoDfTu5htWjWOtC6Zdpy8ZahmFZl19K4/k8YxyzMAcVBSVIsCDbp+8ex6q
+bGZ4vnZK+eT5bJRfupquGggJkSjIQPsanMrOeNtLJ5QDHVM8o9f92beGnvH+Vs6/
+nnE9kFziHQBgOYQuPWWjHm2XS5BrEx6HpAJZ+M0Mioj2EI9Fzd0LzJjxyzajmqY3
+a2zMC2nY83PdCm7cMD7P1YMWsVbnQP1EEQB6BsCK5QRohALNCvZ9VtyX/5lZS32X
+Xadw5UXBnM1e68hfbNWhfrd5UzEhj10e7hTzzI6SNRkEEj+hjc2fy8v0OXPlnlM=
+=3YQP
+-----END PGP SIGNATURE-----
+
+--tKW2IUtsqtDRztdT--
