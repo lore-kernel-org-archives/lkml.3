@@ -1,73 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759075Ab3GaQb1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 12:31:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45535 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754442Ab3GaQb0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 12:31:26 -0400
-Message-ID: <51F93121.5050802@redhat.com>
-Date: Wed, 31 Jul 2013 11:45:37 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1759612Ab3GaQfJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 12:35:09 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:54428 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752816Ab3GaQfH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 12:35:07 -0400
 MIME-Version: 1.0
-To: Jason Low <jason.low2@hp.com>
-CC: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        KML <linux-kernel@vger.kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
-        Alex Shi <alex.shi@intel.com>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, Mel Gorman <mgorman@suse.de>,
-        aswin@hp.com, scott.norton@hp.com, chegu_vinod@hp.com,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Subject: Re: [RFC PATCH] sched: Reduce overestimating avg_idle
-References: <1375263472.3922.26.camel@j-VirtualBox>
-In-Reply-To: <1375263472.3922.26.camel@j-VirtualBox>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1755363.sGc8nLIQOW@vostro.rjw.lan>
+References: <CAL-B5D03ki8NHsM6EuESTH2K-Eh+XyFHNXPDYwgDq+oagDjtMQ@mail.gmail.com>
+	<1755363.sGc8nLIQOW@vostro.rjw.lan>
+Date: Wed, 31 Jul 2013 10:35:05 -0600
+Message-ID: <CAKocOOPOqqS80D23z6xTVSNYYYWZ7ACg9MtSMz_hTqVA3Duo0w@mail.gmail.com>
+Subject: Re: [Announcement] Linux Plumbers ACPI/PM, PCI Microconference
+From: Shuah Khan <shuahkhan@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-pci <linux-pci@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Myron Stowe <myron.stowe@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, iommu@lists.linux-foundation.org,
+        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, shuah.kh@samsung.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/31/2013 05:37 AM, Jason Low wrote:
-> The avg_idle value may sometimes be overestimated, which may cause new idle
-> load balance to be attempted more often than it should. Currently, when
-> avg_idle gets updated, if the delta exceeds some max value (default 1000000 ns),
-> the entire avg gets set to the max value, regardless of what the previous avg
-> was. So if a CPU remains idle for 200,000 ns most of the time, and if the CPU
-> goes idle for 1,200,000 ns, the average is then pushed up to 1,000,000 ns when
-> it should be less.
+On Wed, Jul 31, 2013 at 5:40 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> Hi All,
 >
-> Additionally, once the avg_idle is at its max, it may take a while to pull the
-> avg down to a value that it should be. In the above example, after the avg idle
-> is set the max value of 1000000 ns, the CPU's idle durations needs to
-> be 200000 ns for the next 8 occurrences before the avg falls below the migration
-> cost value.
+> The original announcement didn't go to linux-pm, so again:
 >
-> This patch attempts to avoid these situations by always updating the avg_idle
-> value first with the function call to update_avg(). Then, if the avg_idle
-> exceeds the max avg value, the avg gets set to the max. Also, this patch lowers
-> the max avg_idle value to migration_cost * 1.5 instead of migration_cost * 2 to
-> reduce the time it takes to pull the avg idle to a lower value after long idles.
+> On Tuesday, July 16, 2013 08:21:26 PM Myron Stowe wrote:
+>> Linux Plumbers has approved an ACPI/PM, PCI microconference. The
+>> overview page is here:
+>>
+>> http://wiki.linuxplumbersconf.org/2013:pci_subsystem
+>>
+>> We would like to start receiving volunteers for presenting topics of
+>> interest.  There is a lot of activity in these subsystems so please
+>> respond by submitting presentation or discussion proposals that you
+>> would be willing to cover for consideration.  You should also feel
+>> free to submit ideas as proposals that others could cover.  The
+>> instructions for submitting ideas should be at:
+>>
+>> http://www.linuxplumbersconf.org/2013/submitting-topic/
 >
-> With this change, I got some decent performance boosts in AIM7 workloads on an
-> 8 socket machine on the 3.10 kernel. In particular, it boosted the AIM7 fserver
-> workload by about 20% when running it with a high # of users.
+> If anyone who's going to attend the Linux Plumbers Conf this year is interested
+> in any particular topic for discussion during the ACPI/PM+PCI uconf, please
+> submit a formal topic proposal at:
 >
-> An avg_idle related question that I have is does migration_cost in idle balance
-> need to be the same as the migration_cost in task_hot()? Can we keep
-> migration_cost default value used in task_hot() the same, but have a different
-> default value or increase migration_cost only when comparing it with avg_idle in
-> idle balance?
+> http://www.linuxplumbersconf.org/2013/ocw/events/LPC2013/proposals/new
 >
+> If you submit a topic, that doesn't mean you'll be expected to present anything
+> (if accepted).  In fact, we are mostly interested in discussion topics and we'd
+> like to know what is important to people.
 >
-> Signed-off-by: Jason Low <jason.low2@hp.com>
+> That said if you have a (short) presentation to make, please submit it too.
+>
+> We'll appreciate all submissions very much.
+>
 
-Reviewed-by: Rik van Riel <riel@redhat.com>
+What I have mind is a discussion topic for the Mini-conference, which
+in-line with what you are asking for.
+I will add it to the web. Thanks for pinging me on this.
 
--- 
-All rights reversed
+-- Shuah
+
+Shuah Khan, Linux Kernel Developer - Open Source Group Samsung Research
+America (Silicon Valley) shuah.kh@samsung.com | (970) 672-0658
