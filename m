@@ -1,412 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759365Ab3GaJFq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 05:05:46 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:59924 "EHLO
-	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759291Ab3GaJDl (ORCPT
+	id S1759387Ab3GaJGK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 05:06:10 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:17756 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759209Ab3GaJGG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 05:03:41 -0400
-X-AuditID: 9c93017d-b7b45ae000000e34-1e-51f8d2e4ee95
-From: Namhyung Kim <namhyung@kernel.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Namhyung Kim <namhyung.kim@lge.com>, Hyeoncheol Lee <cheol.lee@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: [PATCH 10/13] tracing/kprobes: Add priv argument to fetch functions
-Date: Wed, 31 Jul 2013 18:03:27 +0900
-Message-Id: <1375261410-11219-11-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1375261410-11219-1-git-send-email-namhyung@kernel.org>
-References: <1375261410-11219-1-git-send-email-namhyung@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 31 Jul 2013 05:06:06 -0400
+X-Spam-Score: -100.8
+Message-ID: <51F8D33A.3050406@asianux.com>
+Date: Wed, 31 Jul 2013 17:04:58 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+CC: Paul Mundt <lethal@linux-sh.org>, rafael.j.wysocki@intel.com,
+        horms+renesas@verge.net.au, khilman@linaro.org,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] scripts/recordmcount.pl: remove "-m32" for sh architecture
+References: <51F8BB73.2070603@asianux.com> <51F8BE59.4030506@linaro.org> <51F8CCC0.1090302@asianux.com>
+In-Reply-To: <51F8CCC0.1090302@asianux.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+'allmodconfig' will report error for "-m32", Now "-m32" is useless for
+latest compiler and neither can find "-m32" in "arch/sh" directory, so
+just remove it is OK.
 
-This argument is for passing private data structure to each fetch
-function and will be used by uprobes.
+The related error:
 
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+    CC      init/main.o
+  sh3-gchen-linux-gnu-gcc: error: unrecognized command line option '-m32'
+  sh3-gchen-linux-gnu-ld: cannot find init/.tmp_mc_main.o: No such file or directory
+  sh3-gchen-linux-gnu-objcopy: 'init/.tmp_mx_main.o': No such file
+  rm: cannot remove `init/.tmp_mx_main.o': No such file or directory
+  rm: cannot remove `init/.tmp_mc_main.o': No such file or directory
+    CHK     include/generated/compile.h
+    CC      init/version.o
+    CC      init/do_mounts.o
+  sh3-gchen-linux-gnu-gcc: error: unrecognized command line option '-m32'
+  sh3-gchen-linux-gnu-ld: cannot find init/.tmp_mc_do_mounts.o: No such file or directory
+  mv: cannot stat `init/.tmp_mx_do_mounts.o': No such file or directory
+  rm: cannot remove `init/.tmp_mc_do_mounts.o': No such file or directory
+    CC      init/do_mounts_initrd.o
+    LD      init/mounts.o
+    CC      init/initramfs.o
+    CC      init/init_task.o
+    LD      init/built-in.o
+  sh3-gchen-linux-gnu-ld: cannot find init/main.o: No such file or directory
+  make[1]: *** [init/built-in.o] Error 1
+  make: *** [init] Error 2
+
+The related compiler information:
+
+  [root@dhcp122 linux-next]# sh3-gchen-linux-gnu-gcc -v
+  Using built-in specs.
+  COLLECT_GCC=sh3-gchen-linux-gnu-gcc
+  COLLECT_LTO_WRAPPER=/home/gchen/x-tools/sh3-gchen-linux-gnu/bin/../libexec/gcc/sh3-gchen-linux-gnu/4.8.0/lto-wrapper
+  Target: sh3-gchen-linux-gnu
+  Configured with: /root/src/toolchain_sh/crosstool-ng-2685dfa9de14/.build/src/gcc-4.8.0/configure --build=x86_64-build_unknown-linux-gnu --host=x86_64-build_unknown-linux-gnu --target=sh3-gchen-linux-gnu --prefix=/root/src/toolchain_sh/crosstool-ng-2685dfa9de14/.build/sh3-gchen-linux-gnu/buildtools --with-local-prefix=/home/gchen/x-tools/sh3-gchen-linux-gnu/sh3-gchen-linux-gnu/sysroot --disable-libmudflap --with-sysroot=/home/gchen/x-tools/sh3-gchen-linux-gnu/sh3-gchen-linux-gnu/sysroot --enable-shared --with-pkgversion='crosstool-NG hg+unknown-20130731.103227' --enable-__cxa_atexit --with-gmp=/root/src/toolchain_sh/crosstool-ng-2685dfa9de14/.build/sh3-gchen-linux-gnu/buildtools --with-mpfr=/root/src/toolchain_sh/crosstool-ng-2685dfa9de14/.build/sh3-gchen-linux-gnu/buildtools --with-mpc=/root/src/toolchain_sh/crosstool-ng-2685dfa9de14/.build/sh3-gchen-linux-gnu/buildtools --with-isl=/root/src/toolchain_sh/crosstool-ng-2685dfa9de14/.build/sh3-gchen-linux-gnu/buildtools --with
+ -cloog=/r
+oot/src/toolchain_sh/crosstool-ng-2685dfa9de14/.build/sh3-gchen-linux-gnu/buildtools --with-libelf=/root/src/toolchain_sh/crosstool-ng-2685dfa9de14/.build/sh3-gchen-linux-gnu/buildtools --enable-lto --enable-target-optspace --disable-libgomp --disable-libmudflap --disable-nls --disable-multilib --enable-languages=c
+  Thread model: posix
+  gcc version 4.8.0 (crosstool-NG hg+unknown-20130731.103227) 
+
+
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
 ---
- kernel/trace/trace_kprobe.c | 28 ++++++++++++++++------------
- kernel/trace/trace_probe.c  | 44 +++++++++++++++++++++++---------------------
- kernel/trace/trace_probe.h  | 15 +++++++++------
- kernel/trace/trace_uprobe.c |  8 ++++----
- 4 files changed, 52 insertions(+), 43 deletions(-)
+ scripts/recordmcount.pl |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-index 40018618cc08..dfd31c6b38a7 100644
---- a/kernel/trace/trace_kprobe.c
-+++ b/kernel/trace/trace_kprobe.c
-@@ -740,7 +740,7 @@ static const struct file_operations kprobe_profile_ops = {
-  */
- #define DEFINE_FETCH_stack(type)					\
- static __kprobes void FETCH_FUNC_NAME(stack, type)(struct pt_regs *regs,\
--					  void *offset, void *dest)	\
-+				  void *offset, void *dest, void *priv) \
- {									\
- 	*(type *)dest = (type)regs_get_kernel_stack_nth(regs,		\
- 				(unsigned int)((unsigned long)offset));	\
-@@ -752,7 +752,7 @@ DEFINE_BASIC_FETCH_FUNCS(stack)
+diff --git a/scripts/recordmcount.pl b/scripts/recordmcount.pl
+index 858966a..679218b 100755
+--- a/scripts/recordmcount.pl
++++ b/scripts/recordmcount.pl
+@@ -262,7 +262,6 @@ if ($arch eq "x86_64") {
+     # force flags for this arch
+     $ld .= " -m shlelf_linux";
+     $objcopy .= " -O elf32-sh-linux";
+-    $cc .= " -m32";
  
- #define DEFINE_FETCH_memory(type)					\
- static __kprobes void FETCH_FUNC_NAME(memory, type)(struct pt_regs *regs,\
--					  void *addr, void *dest)	\
-+				    void *addr, void *dest, void *priv) \
- {									\
- 	type retval;							\
- 	if (probe_kernel_address(addr, retval))				\
-@@ -766,7 +766,7 @@ DEFINE_BASIC_FETCH_FUNCS(memory)
-  * length and relative data location.
-  */
- static __kprobes void FETCH_FUNC_NAME(memory, string)(struct pt_regs *regs,
--					       void *addr, void *dest)
-+					void *addr, void *dest, void *priv)
- {
- 	long ret;
- 	int maxlen = get_rloc_len(*(u32 *)dest);
-@@ -803,7 +803,7 @@ static __kprobes void FETCH_FUNC_NAME(memory, string)(struct pt_regs *regs,
- 
- /* Return the length of string -- including null terminal byte */
- static __kprobes void FETCH_FUNC_NAME(memory, string_size)(struct pt_regs *regs,
--						    void *addr, void *dest)
-+					   void *addr, void *dest, void *priv)
- {
- 	mm_segment_t old_fs;
- 	int ret, len = 0;
-@@ -865,7 +865,7 @@ __kprobe_trace_func(struct trace_kprobe *tp, struct pt_regs *regs,
- 	local_save_flags(irq_flags);
- 	pc = preempt_count();
- 
--	dsize = __get_data_size(&tp->p, regs);
-+	dsize = __get_data_size(&tp->p, regs, NULL);
- 	size = sizeof(*entry) + tp->p.size + dsize;
- 
- 	event = trace_event_buffer_lock_reserve(&buffer, ftrace_file,
-@@ -876,7 +876,8 @@ __kprobe_trace_func(struct trace_kprobe *tp, struct pt_regs *regs,
- 
- 	entry = ring_buffer_event_data(event);
- 	entry->ip = (unsigned long)tp->rp.kp.addr;
--	store_trace_args(sizeof(*entry), &tp->p, regs, (u8 *)&entry[1], dsize);
-+	store_trace_args(sizeof(*entry), &tp->p, regs, (u8 *)&entry[1], dsize,
-+			 NULL);
- 
- 	if (!filter_current_check_discard(buffer, call, entry, event))
- 		trace_buffer_unlock_commit_regs(buffer, event,
-@@ -913,7 +914,7 @@ __kretprobe_trace_func(struct trace_kprobe *tp, struct kretprobe_instance *ri,
- 	local_save_flags(irq_flags);
- 	pc = preempt_count();
- 
--	dsize = __get_data_size(&tp->p, regs);
-+	dsize = __get_data_size(&tp->p, regs, NULL);
- 	size = sizeof(*entry) + tp->p.size + dsize;
- 
- 	event = trace_event_buffer_lock_reserve(&buffer, ftrace_file,
-@@ -925,7 +926,8 @@ __kretprobe_trace_func(struct trace_kprobe *tp, struct kretprobe_instance *ri,
- 	entry = ring_buffer_event_data(event);
- 	entry->func = (unsigned long)tp->rp.kp.addr;
- 	entry->ret_ip = (unsigned long)ri->ret_addr;
--	store_trace_args(sizeof(*entry), &tp->p, regs, (u8 *)&entry[1], dsize);
-+	store_trace_args(sizeof(*entry), &tp->p, regs, (u8 *)&entry[1], dsize,
-+			 NULL);
- 
- 	if (!filter_current_check_discard(buffer, call, entry, event))
- 		trace_buffer_unlock_commit_regs(buffer, event,
-@@ -1085,7 +1087,7 @@ kprobe_perf_func(struct trace_kprobe *tp, struct pt_regs *regs)
- 	if (hlist_empty(head))
- 		return;
- 
--	dsize = __get_data_size(&tp->p, regs);
-+	dsize = __get_data_size(&tp->p, regs, NULL);
- 	__size = sizeof(*entry) + tp->p.size + dsize;
- 	size = ALIGN(__size + sizeof(u32), sizeof(u64));
- 	size -= sizeof(u32);
-@@ -1096,7 +1098,8 @@ kprobe_perf_func(struct trace_kprobe *tp, struct pt_regs *regs)
- 
- 	entry->ip = (unsigned long)tp->rp.kp.addr;
- 	memset(&entry[1], 0, dsize);
--	store_trace_args(sizeof(*entry), &tp->p, regs, (u8 *)&entry[1], dsize);
-+	store_trace_args(sizeof(*entry), &tp->p, regs, (u8 *)&entry[1], dsize,
-+			 NULL);
- 	perf_trace_buf_submit(entry, size, rctx, 0, 1, regs, head, NULL);
- }
- 
-@@ -1115,7 +1118,7 @@ kretprobe_perf_func(struct trace_kprobe *tp, struct kretprobe_instance *ri,
- 	if (hlist_empty(head))
- 		return;
- 
--	dsize = __get_data_size(&tp->p, regs);
-+	dsize = __get_data_size(&tp->p, regs, NULL);
- 	__size = sizeof(*entry) + tp->p.size + dsize;
- 	size = ALIGN(__size + sizeof(u32), sizeof(u64));
- 	size -= sizeof(u32);
-@@ -1126,7 +1129,8 @@ kretprobe_perf_func(struct trace_kprobe *tp, struct kretprobe_instance *ri,
- 
- 	entry->func = (unsigned long)tp->rp.kp.addr;
- 	entry->ret_ip = (unsigned long)ri->ret_addr;
--	store_trace_args(sizeof(*entry), &tp->p, regs, (u8 *)&entry[1], dsize);
-+	store_trace_args(sizeof(*entry), &tp->p, regs, (u8 *)&entry[1], dsize,
-+			 NULL);
- 	perf_trace_buf_submit(entry, size, rctx, 0, 1, regs, head, NULL);
- }
- #endif	/* CONFIG_PERF_EVENTS */
-diff --git a/kernel/trace/trace_probe.c b/kernel/trace/trace_probe.c
-index 76ab02143b5a..029ffc401e39 100644
---- a/kernel/trace/trace_probe.c
-+++ b/kernel/trace/trace_probe.c
-@@ -73,7 +73,7 @@ const char PRINT_TYPE_FMT_NAME(string)[] = "\\\"%s\\\"";
- /* Data fetch function templates */
- #define DEFINE_FETCH_reg(type)						\
- __kprobes void FETCH_FUNC_NAME(reg, type)(struct pt_regs *regs,		\
--					void *offset, void *dest)	\
-+				  void *offset, void *dest, void *priv)	\
- {									\
- 	*(type *)dest = (type)regs_get_register(regs,			\
- 				(unsigned int)((unsigned long)offset));	\
-@@ -82,7 +82,7 @@ DEFINE_BASIC_FETCH_FUNCS(reg)
- 
- #define DEFINE_FETCH_retval(type)					\
- __kprobes void FETCH_FUNC_NAME(retval, type)(struct pt_regs *regs,	\
--					  void *dummy, void *dest)	\
-+				   void *dummy, void *dest, void *priv)	\
- {									\
- 	*(type *)dest = (type)regs_return_value(regs);			\
- }
-@@ -137,11 +137,11 @@ static struct symbol_cache *alloc_symbol_cache(const char *sym, long offset)
- 
- #define DEFINE_FETCH_symbol(type)					\
- __kprobes void FETCH_FUNC_NAME(symbol, type)(struct pt_regs *regs,	\
--					  void *data, void *dest)	\
-+				    void *data, void *dest, void *priv)	\
- {									\
- 	struct symbol_cache *sc = data;					\
- 	if (sc->addr)							\
--		sc->fetch(regs, (void *)sc->addr, dest);		\
-+		sc->fetch(regs, (void *)sc->addr, dest, priv);		\
- 	else								\
- 		*(type *)dest = 0;					\
- }
-@@ -149,11 +149,11 @@ DEFINE_BASIC_FETCH_FUNCS(symbol)
- DEFINE_FETCH_symbol(string)
- 
- __kprobes void FETCH_FUNC_NAME(symbol, string_size)(struct pt_regs *regs,
--						    void *data, void *dest)
-+					void *data, void *dest, void *priv)
- {
- 	struct symbol_cache *sc = data;
- 	if (sc->addr && sc->fetch_size)
--		sc->fetch_size(regs, (void *)sc->addr, dest);
-+		sc->fetch_size(regs, (void *)sc->addr, dest, priv);
- 	else
- 		*(string_size *)dest = 0;
- }
-@@ -168,14 +168,14 @@ struct deref_fetch_param {
- 
- #define DEFINE_FETCH_deref(type)					\
- __kprobes void FETCH_FUNC_NAME(deref, type)(struct pt_regs *regs,	\
--					    void *data, void *dest)	\
-+				    void *data, void *dest, void *priv)	\
- {									\
- 	struct deref_fetch_param *dprm = data;				\
- 	unsigned long addr;						\
--	call_fetch(&dprm->orig, regs, &addr);				\
-+	call_fetch(&dprm->orig, regs, &addr, priv);			\
- 	if (addr) {							\
- 		addr += dprm->offset;					\
--		dprm->fetch(regs, (void *)addr, dest);			\
-+		dprm->fetch(regs, (void *)addr, dest, priv);		\
- 	} else								\
- 		*(type *)dest = 0;					\
- }
-@@ -183,15 +183,15 @@ DEFINE_BASIC_FETCH_FUNCS(deref)
- DEFINE_FETCH_deref(string)
- 
- __kprobes void FETCH_FUNC_NAME(deref, string_size)(struct pt_regs *regs,
--						   void *data, void *dest)
-+					void *data, void *dest, void *priv)
- {
- 	struct deref_fetch_param *dprm = data;
- 	unsigned long addr;
- 
--	call_fetch(&dprm->orig, regs, &addr);
-+	call_fetch(&dprm->orig, regs, &addr, priv);
- 	if (addr && dprm->fetch_size) {
- 		addr += dprm->offset;
--		dprm->fetch_size(regs, (void *)addr, dest);
-+		dprm->fetch_size(regs, (void *)addr, dest, priv);
- 	} else
- 		*(string_size *)dest = 0;
- }
-@@ -221,12 +221,12 @@ struct bitfield_fetch_param {
- };
- 
- #define DEFINE_FETCH_bitfield(type)					\
--__kprobes void FETCH_FUNC_NAME(bitfield, type)(struct pt_regs *regs,\
--					    void *data, void *dest)	\
-+__kprobes void FETCH_FUNC_NAME(bitfield, type)(struct pt_regs *regs,	\
-+				    void *data, void *dest, void *priv)	\
- {									\
- 	struct bitfield_fetch_param *bprm = data;			\
- 	type buf = 0;							\
--	call_fetch(&bprm->orig, regs, &buf);				\
-+	call_fetch(&bprm->orig, regs, &buf, priv);			\
- 	if (buf) {							\
- 		buf <<= bprm->hi_shift;					\
- 		buf >>= bprm->low_shift;				\
-@@ -314,7 +314,7 @@ fail:
- 
- /* Special function : only accept unsigned long */
- static __kprobes void fetch_stack_address(struct pt_regs *regs,
--					void *dummy, void *dest)
-+					  void *dummy, void *dest, void *priv)
- {
- 	*(unsigned long *)dest = kernel_stack_pointer(regs);
- }
-@@ -703,14 +703,15 @@ out:
- }
- 
- /* Sum up total data length for dynamic arraies (strings) */
--__kprobes int __get_data_size(struct trace_probe *tp, struct pt_regs *regs)
-+__kprobes int __get_data_size(struct trace_probe *tp, struct pt_regs *regs,
-+			      void *priv)
- {
- 	int i, ret = 0;
- 	u32 len;
- 
- 	for (i = 0; i < tp->nr_args; i++)
- 		if (unlikely(tp->args[i].fetch_size.fn)) {
--			call_fetch(&tp->args[i].fetch_size, regs, &len);
-+			call_fetch(&tp->args[i].fetch_size, regs, &len, priv);
- 			ret += len;
- 		}
- 
-@@ -719,7 +720,8 @@ __kprobes int __get_data_size(struct trace_probe *tp, struct pt_regs *regs)
- 
- /* Store the value of each argument */
- __kprobes void store_trace_args(int ent_size, struct trace_probe *tp,
--				struct pt_regs *regs, u8 *data, int maxlen)
-+				struct pt_regs *regs, u8 *data, int maxlen,
-+				void *priv)
- {
- 	int i;
- 	u32 end = tp->size;
-@@ -734,7 +736,7 @@ __kprobes void store_trace_args(int ent_size, struct trace_probe *tp,
- 			dl = (u32 *)(data + tp->args[i].offset);
- 			*dl = make_data_rloc(maxlen, end - tp->args[i].offset);
- 			/* Then try to fetch string or dynamic array data */
--			call_fetch(&tp->args[i].fetch, regs, dl);
-+			call_fetch(&tp->args[i].fetch, regs, dl, priv);
- 			/* Reduce maximum length */
- 			end += get_rloc_len(*dl);
- 			maxlen -= get_rloc_len(*dl);
-@@ -744,7 +746,7 @@ __kprobes void store_trace_args(int ent_size, struct trace_probe *tp,
- 		} else
- 			/* Just fetching data normally */
- 			call_fetch(&tp->args[i].fetch, regs,
--				   data + tp->args[i].offset);
-+				   data + tp->args[i].offset, priv);
- 	}
- }
- 
-diff --git a/kernel/trace/trace_probe.h b/kernel/trace/trace_probe.h
-index ec18e1b1487e..ad2e3cf6d9ed 100644
---- a/kernel/trace/trace_probe.h
-+++ b/kernel/trace/trace_probe.h
-@@ -98,7 +98,7 @@ typedef u32 string;
- typedef u32 string_size;
- 
- /* Data fetch function type */
--typedef	void (*fetch_func_t)(struct pt_regs *, void *, void *);
-+typedef	void (*fetch_func_t)(struct pt_regs *, void *, void *, void *);
- /* Printing function type */
- typedef int (*print_type_func_t)(struct trace_seq *, const char *, void *, void *);
- 
-@@ -182,7 +182,8 @@ static inline bool trace_probe_is_registered(struct trace_probe *tp)
- #define FETCH_FUNC_NAME(method, type)	fetch_##method##_##type
- 
- #define DECLARE_FETCH_FUNC(method, type)				\
--extern void FETCH_FUNC_NAME(method, type)(struct pt_regs *, void *, void *)
-+extern void FETCH_FUNC_NAME(method, type)(struct pt_regs *, void *,	\
-+					  void *, void *)
- 
- #define DECLARE_BASIC_FETCH_FUNCS(method) 	\
- DECLARE_FETCH_FUNC(method, u8);	  		\
-@@ -264,9 +265,9 @@ ASSIGN_FETCH_FUNC(bitfield, ftype),			\
- extern const struct fetch_type kprobes_fetch_type_table[];
- 
- static inline __kprobes void call_fetch(struct fetch_param *fprm,
--				 struct pt_regs *regs, void *dest)
-+				 struct pt_regs *regs, void *dest, void *priv)
- {
--	return fprm->fn(regs, fprm->data, dest);
-+	return fprm->fn(regs, fprm->data, dest, priv);
- }
- 
- /* Check the name is good for event/group/fields */
-@@ -298,7 +299,9 @@ extern ssize_t traceprobe_probes_write(struct file *file,
- 
- extern int traceprobe_command(const char *buf, int (*createfn)(int, char**));
- 
--extern int __get_data_size(struct trace_probe *tp, struct pt_regs *regs);
-+extern int __get_data_size(struct trace_probe *tp, struct pt_regs *regs,
-+			   void *priv);
- extern void store_trace_args(int ent_size, struct trace_probe *tp,
--			     struct pt_regs *regs, u8 *data, int maxlen);
-+			     struct pt_regs *regs, u8 *data, int maxlen,
-+			     void *priv);
- extern int set_print_fmt(struct trace_probe *tp, bool is_return);
-diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
-index 2888b95b063f..2c1c648e75bb 100644
---- a/kernel/trace/trace_uprobe.c
-+++ b/kernel/trace/trace_uprobe.c
-@@ -520,7 +520,7 @@ static void uprobe_trace_print(struct trace_uprobe *tu,
- 	int size, dsize, esize;
- 	struct ftrace_event_call *call = &tu->p.call;
- 
--	dsize = __get_data_size(&tu->p, regs);
-+	dsize = __get_data_size(&tu->p, regs, NULL);
- 	esize = SIZEOF_TRACE_ENTRY(is_ret_probe(tu));
- 
- 	/*
-@@ -532,7 +532,7 @@ static void uprobe_trace_print(struct trace_uprobe *tu,
- 	if (tmp == NULL)
- 		return;
- 
--	store_trace_args(esize, &tu->p, regs, tmp, dsize);
-+	store_trace_args(esize, &tu->p, regs, tmp, dsize, NULL);
- 
- 	size = esize + tu->p.size + dsize;
- 	event = trace_current_buffer_lock_reserve(&buffer, call->event.type,
-@@ -775,7 +775,7 @@ static void uprobe_perf_print(struct trace_uprobe *tu,
- 	int size, dsize, esize;
- 	int rctx;
- 
--	dsize = __get_data_size(&tu->p, regs);
-+	dsize = __get_data_size(&tu->p, regs, NULL);
- 	esize = SIZEOF_TRACE_ENTRY(is_ret_probe(tu));
- 
- 	/*
-@@ -787,7 +787,7 @@ static void uprobe_perf_print(struct trace_uprobe *tu,
- 	if (tmp == NULL)
- 		return;
- 
--	store_trace_args(esize, &tu->p, regs, tmp, dsize);
-+	store_trace_args(esize, &tu->p, regs, tmp, dsize, NULL);
- 
- 	size = esize + tu->p.size + dsize;
- 	size = ALIGN(size + sizeof(u32), sizeof(u64)) - sizeof(u32);
+ } elsif ($arch eq "powerpc") {
+     $local_regex = "^[0-9a-fA-F]+\\s+t\\s+(\\.?\\S+)";
 -- 
-1.7.11.7
-
+1.7.7.6
