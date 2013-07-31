@@ -1,40 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759310Ab3GaITN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 04:19:13 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:27771 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759103Ab3GaISr (ORCPT
+	id S1759259Ab3GaIUW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 04:20:22 -0400
+Received: from relay.parallels.com ([195.214.232.42]:55028 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759172Ab3GaIQp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 04:18:47 -0400
-Message-ID: <51F8C7C5.9040608@huawei.com>
-Date: Wed, 31 Jul 2013 16:16:05 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Wed, 31 Jul 2013 04:16:45 -0400
+Message-ID: <51F8C7CC.6010703@parallels.com>
+Date: Wed, 31 Jul 2013 12:16:12 +0400
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
-Subject: [PATCH 0/7] some pending cgroup patches
-Content-Type: text/plain; charset="GB2312"
+To: Cyrill Gorcunov <gorcunov@gmail.com>, <akpm@linux-foundation.org>
+CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        <luto@amacapital.net>, <gorcunov@openvz.org>, <mpm@selenic.com>,
+        <xiaoguangrong@linux.vnet.ibm.com>, <mtosatti@redhat.com>,
+        <kosaki.motohiro@gmail.com>, <sfr@canb.auug.org.au>,
+        <peterz@infradead.org>, <aneesh.kumar@linux.vnet.ibm.com>
+Subject: Re: [patch 1/2] [PATCH] mm: Save soft-dirty bits on swapped pages
+References: <20130730204154.407090410@gmail.com> <20130730204654.844299768@gmail.com>
+In-Reply-To: <20130730204654.844299768@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+X-Originating-IP: [10.30.16.114]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The first one is a small bug fix, and the rest are pure cleanups.
+On 07/31/2013 12:41 AM, Cyrill Gorcunov wrote:
 
-Li Zefan (7):
-      cgroup: fix a leak when percpu_ref_init() fails
-      cgroup: remove sparse tags from offline_css()
-      cgroup: restructure the failure path in cgroup_write_event_control()
-      cgroup: rename cgroup_pidlist->mutex
-      cgroup: remove struct cgroup_seqfile_state
-      cgroup: rename current_css_set_cg_links
-      cgroup: more naming cleanups
---
- include/linux/cgroup.h |   6 +--
- kernel/cgroup.c        | 138 ++++++++++++++++++++++++++++-----------------------------------
- kernel/cpuset.c        |  16 ++++----
- 3 files changed, 72 insertions(+), 88 deletions(-)
+> Andy Lutomirski reported that in case if a page with _PAGE_SOFT_DIRTY
+> bit set get swapped out, the bit is getting lost and no longer
+> available when pte read back.
+> 
+> To resolve this we introduce _PTE_SWP_SOFT_DIRTY bit which is
+> saved in pte entry for the page being swapped out. When such page
+> is to be read back from a swap cache we check for bit presence
+> and if it's there we clear it and restore the former _PAGE_SOFT_DIRTY
+> bit back.
+> 
+> One of the problem was to find a place in pte entry where we can
+> save the _PTE_SWP_SOFT_DIRTY bit while page is in swap. The
+> _PAGE_PSE was chosen for that, it doesn't intersect with swap
+> entry format stored in pte.
+> 
+> Reported-by: Andy Lutomirski <luto@amacapital.net>
+> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+
+Acked-by: Pavel Emelyanov <xemul@parallels.com>
+
