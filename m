@@ -1,122 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759741Ab3GaPMw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 11:12:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41617 "EHLO mx2.suse.de"
+	id S1760099Ab3GaPNc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 11:13:32 -0400
+Received: from ns.mm-sol.com ([212.124.72.66]:40950 "EHLO extserv.mm-sol.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752000Ab3GaPMu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 11:12:50 -0400
-Date: Wed, 31 Jul 2013 17:12:49 +0200
-From: Jan Kara <jack@suse.cz>
-To: Dave Chinner <david@fromorbit.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, davej@redhat.com, viro@zeniv.linux.org.uk,
-        jack@suse.cz, glommer@parallels.com
-Subject: Re: [PATCH 04/11] sync: serialise per-superblock sync operations
-Message-ID: <20130731151249.GH22930@quack.suse.cz>
-References: <1375244150-27296-1-git-send-email-david@fromorbit.com>
- <1375244150-27296-5-git-send-email-david@fromorbit.com>
+	id S1754070Ab3GaPNa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 11:13:30 -0400
+Message-ID: <51F929BE.1050505@mm-sol.com>
+Date: Wed, 31 Jul 2013 18:14:06 +0300
+From: Georgi Djakov <gdjakov@mm-sol.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1375244150-27296-5-git-send-email-david@fromorbit.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Bjorn Andersson <bjorn@kryo.se>
+CC: linux-mmc@vger.kernel.org, cjb@laptop.org, grant.likely@linaro.org,
+        rob.herring@calxeda.com, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Asutosh Das <asutoshd@codeaurora.org>,
+        Venkat Gopalakrishnan <venkatg@codeaurora.org>,
+        Sahitya Tummala <stummala@codeaurora.org>,
+        Subhash Jadavani <subhashj@codeaurora.org>
+Subject: Re: [PATCH] mmc: sdhci-msm: Add support for MSM chipsets
+References: <1375201355-26906-1-git-send-email-gdjakov@mm-sol.com> <CAJAp7OgOT82G=W8RpDvaogskUmAN26CWq4gKUs45RwOeU8pXvQ@mail.gmail.com>
+In-Reply-To: <CAJAp7OgOT82G=W8RpDvaogskUmAN26CWq4gKUs45RwOeU8pXvQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 31-07-13 14:15:43, Dave Chinner wrote:
-> From: Dave Chinner <dchinner@redhat.com>
-> 
-> When competing sync(2) calls walk the same filesystem, they need to
-> walk the list of inodes on the superblock to find all the inodes
-> that we need to wait for IO completion on. However, when multiple
-> wait_sb_inodes() calls do this at the same time, they contend on the
-> the inode_sb_list_lock and the contention causes system wide
-> slowdowns. In effect, concurrent sync(2) calls can take longer and
-> burn more CPU than if they were serialised.
-> 
-> Stop the worst of the contention by adding a per-sb mutex to wrap
-> around wait_sb_inodes() so that we only execute one sync(2) IO
-> completion walk per superblock superblock at a time and hence avoid
-> contention being triggered by concurrent sync(2) calls.
-  The patch looks OK. You can add:
-Reviewed-by: Jan Kara <jack@suse.cz>
+On 07/31/2013 03:19 AM, Bjorn Andersson wrote:
+> On Tue, Jul 30, 2013 at 8:22 AM, Georgi Djakov <gdjakov@mm-sol.com> wrote:
+>> This platform driver adds the support of Secure Digital Host
+>> Controller Interface compliant controller in MSM chipsets.
+>>
+>> [snip]
+>> +
+>> +       sdhc_1: qcom,sdhc@f9824900 {
+>> +               compatible = "qcom,sdhci-msm";
+>> +                       reg = <0xf9824900 0x11c>, <0xf9824000 0x800>;
+>> +                       reg-names = "hc_mem", "core_mem";
+>> +                       interrupts = <0 123 0>, <0 138 0>;
+>> +                       interrupt-names = "hc_irq", "pwr_irq";
+>> +
+>> +               vdd-supply = <&pm8941_l21>;
+>> +               vdd-io-supply = <&pm8941_l13>;
+>> +               qcom,vdd-voltage-level = <2950000 2950000>;
+>> +               qcom,vdd-current-level = <9000 800000>;
+>> +
+>> +               qcom,vdd-io-always-on;
+>> +               qcom,vdd-io-lpm-sup;
+>> +               qcom,vdd-io-voltage-level = <1800000 2950000>;
+>> +               qcom,vdd-io-current-level = <6 22000>;
+>> +
+>> +               bus-width = <4>;
+>> +               non-removable;
+>> +               qcom,bus-speed-mode = "HS200_1p8v", "DDR_1p8v";
+>> +
+>> +               gpios = <&msmgpio 40 0>, /* CLK */
+>> +                       <&msmgpio 39 0>, /* CMD */
+>> +                       <&msmgpio 38 0>, /* DATA0 */
+>> +                       <&msmgpio 37 0>, /* DATA1 */
+>> +                       <&msmgpio 36 0>, /* DATA2 */
+>> +                       <&msmgpio 35 0>; /* DATA3 */
+>> +               qcom,gpio-names = "CLK", "CMD", "DAT0", "DAT1", "DAT2", "DAT3";
+>
+> I believe these gpio references (and in the rest of the patch) should
+> be replaced by pinctrl. As far as I can see it provides what you want
+> and gives you configurability and potential sleep states of those pins
+> nicely integrated.
+>
 
-								Honza
+Thanks! I'll make it use the pinctrl driver that is coming too.
 
-> 
-> Signed-off-by: Dave Chinner <dchinner@redhat.com>
-> ---
->  fs/fs-writeback.c  | 11 +++++++++++
->  fs/super.c         |  1 +
->  include/linux/fs.h |  2 ++
->  3 files changed, 14 insertions(+)
-> 
-> diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-> index ca66dc8..56272ec 100644
-> --- a/fs/fs-writeback.c
-> +++ b/fs/fs-writeback.c
-> @@ -1207,6 +1207,15 @@ out_unlock_inode:
->  }
->  EXPORT_SYMBOL(__mark_inode_dirty);
->  
-> +/*
-> + * The @s_sync_lock is used to serialise concurrent sync operations
-> + * to avoid lock contention problems with concurrent wait_sb_inodes() calls.
-> + * Concurrent callers will block on the s_sync_lock rather than doing contending
-> + * walks. The queueing maintains sync(2) required behaviour as all the IO that
-> + * has been issued up to the time this function is enter is guaranteed to be
-> + * completed by the time we have gained the lock and waited for all IO that is
-> + * in progress regardless of the order callers are granted the lock.
-> + */
->  static void wait_sb_inodes(struct super_block *sb)
->  {
->  	struct inode *inode, *old_inode = NULL;
-> @@ -1217,6 +1226,7 @@ static void wait_sb_inodes(struct super_block *sb)
->  	 */
->  	WARN_ON(!rwsem_is_locked(&sb->s_umount));
->  
-> +	mutex_lock(&sb->s_sync_lock);
->  	spin_lock(&sb->s_inode_list_lock);
->  
->  	/*
-> @@ -1258,6 +1268,7 @@ static void wait_sb_inodes(struct super_block *sb)
->  	}
->  	spin_unlock(&sb->s_inode_list_lock);
->  	iput(old_inode);
-> +	mutex_unlock(&sb->s_sync_lock);
->  }
->  
->  /**
-> diff --git a/fs/super.c b/fs/super.c
-> index d4d753e..7f98fd6 100644
-> --- a/fs/super.c
-> +++ b/fs/super.c
-> @@ -200,6 +200,7 @@ static struct super_block *alloc_super(struct file_system_type *type, int flags)
->  		s->s_bdi = &default_backing_dev_info;
->  		INIT_HLIST_NODE(&s->s_instances);
->  		INIT_HLIST_BL_HEAD(&s->s_anon);
-> +		mutex_init(&s->s_sync_lock);
->  		INIT_LIST_HEAD(&s->s_inodes);
->  		spin_lock_init(&s->s_inode_list_lock);
->  
-> diff --git a/include/linux/fs.h b/include/linux/fs.h
-> index 923b465..971e8be 100644
-> --- a/include/linux/fs.h
-> +++ b/include/linux/fs.h
-> @@ -1321,6 +1321,8 @@ struct super_block {
->  	/* Being remounted read-only */
->  	int s_readonly_remount;
->  
-> +	struct mutex		s_sync_lock;	/* sync serialisation lock */
-> +
->  	/*
->  	 * Keep the lru lists last in the structure so they always sit on their
->  	 * own individual cachelines.
-> -- 
-> 1.8.3.2
-> 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+BR,
+Georgi
