@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760712Ab3GaRom (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 13:44:42 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:11943 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932225Ab3GaRmV (ORCPT
+	id S932200Ab3GaRmU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 13:42:20 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:1465 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760561Ab3GaRmQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 13:42:21 -0400
+	Wed, 31 Jul 2013 13:42:16 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 31 Jul 2013 10:42:20 -0700
+	by hqnvupgp07.nvidia.com on Wed, 31 Jul 2013 10:42:16 -0700
 From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
 To: <balbi@ti.com>
 CC: <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-usb@vger.kernel.org>, <swarren@wwwdotorg.org>,
         <gregkh@linuxfoundation.org>, <stern@rowland.harvard.edu>,
         Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-Subject: [PATCH 5/6] Documentation: New DT parameters for tegra30-usb-phy
-Date: Wed, 31 Jul 2013 20:42:01 +0300
-Message-ID: <1375292522-7855-6-git-send-email-ttynkkynen@nvidia.com>
+Subject: [PATCH 3/6] usb: phy: tegra: Tegra30 support
+Date: Wed, 31 Jul 2013 20:41:59 +0300
+Message-ID: <1375292522-7855-4-git-send-email-ttynkkynen@nvidia.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1375292522-7855-1-git-send-email-ttynkkynen@nvidia.com>
 References: <1375292522-7855-1-git-send-email-ttynkkynen@nvidia.com>
@@ -28,55 +28,265 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Document the new device tree parameters for Tegra30 USB PHY.
+The Tegra30 USB PHY is a bit different than the Tegra20 PHY:
+
+- The EHCI controller supports the HOSTPC register extension, and some
+  of the fields that the PHY needs to modify (PHCD and PTS) have moved
+  to the new HOSTPC register.
+- Some of the UTMI PLL configuration registers have moved from the USB
+  register space to the Clock-And-Reset controller space. In Tegra30
+  the clock driver is responsible for configuring the UTMI PLL.
+- The USBMODE register must be explicitly written to enter host mode.
+- Certain PHY parameters need to be programmed for optimal signal
+  quality. Support for this will be added in the next patch.
+
+The new tegra_phy_soc_config structure is added to describe the
+differences between the SoCs.
 
 Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
 ---
- .../devicetree/bindings/usb/nvidia,tegra20-usb-phy.txt    | 15 ++++++++++++---
- 1 file changed, 12 insertions(+), 3 deletions(-)
+ drivers/usb/phy/phy-tegra-usb.c   | 121 +++++++++++++++++++++++++++++---------
+ include/linux/usb/tegra_usb_phy.h |  19 ++++++
+ 2 files changed, 112 insertions(+), 28 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/usb/nvidia,tegra20-usb-phy.txt b/Documentation/devicetree/bindings/usb/nvidia,tegra20-usb-phy.txt
-index 59c4854..8b5901d 100644
---- a/Documentation/devicetree/bindings/usb/nvidia,tegra20-usb-phy.txt
-+++ b/Documentation/devicetree/bindings/usb/nvidia,tegra20-usb-phy.txt
-@@ -3,7 +3,7 @@ Tegra SOC USB PHY
- The device node for Tegra SOC USB PHY:
+diff --git a/drivers/usb/phy/phy-tegra-usb.c b/drivers/usb/phy/phy-tegra-usb.c
+index 936b4a2..85ec70e 100644
+--- a/drivers/usb/phy/phy-tegra-usb.c
++++ b/drivers/usb/phy/phy-tegra-usb.c
+@@ -28,6 +28,7 @@
+ #include <linux/io.h>
+ #include <linux/gpio.h>
+ #include <linux/of.h>
++#include <linux/of_device.h>
+ #include <linux/of_gpio.h>
+ #include <linux/usb/otg.h>
+ #include <linux/usb/ulpi.h>
+@@ -39,11 +40,16 @@
  
- Required properties :
-- - compatible : Should be "nvidia,tegra20-usb-phy".
-+ - compatible : Should be "nvidia,tegra<chip>-usb-phy".
-  - reg : Defines the following set of registers, in the order listed:
-    - The PHY's own register set.
-      Always present.
-@@ -24,17 +24,26 @@ Required properties :
- Required properties for phy_type == ulpi:
-   - nvidia,phy-reset-gpio : The GPIO used to reset the PHY.
+ #define ULPI_VIEWPORT		0x170
  
--Required PHY timing params for utmi phy:
-+Required PHY timing params for utmi phy, for all chips:
-   - nvidia,hssync-start-delay : Number of 480 Mhz clock cycles to wait before
-     start of sync launches RxActive
-   - nvidia,elastic-limit : Variable FIFO Depth of elastic input store
-   - nvidia,idle-wait-delay : Number of 480 Mhz clock cycles of idle to wait
-     before declare IDLE.
-   - nvidia,term-range-adj : Range adjusment on terminations
--  - nvidia,xcvr-setup : HS driver output control
-+  - Either one of the following for HS driver output control:
-+    - nvidia,xcvr-setup : integer, uses the provided value.
-+    - nvidia,xcvr-setup-use-fuses : boolean, indicates that the value is read
-+      from the on-chip fuses
-+    If both are provided, nvidia,xcvr-setup-use-fuses takes precedence.
-   - nvidia,xcvr-lsfslew : LS falling slew rate control.
-   - nvidia,xcvr-lsrslew :  LS rising slew rate control.
+-/* PORTSC registers */
++/* PORTSC PTS/PHCD bits, Tegra20 only */
+ #define TEGRA_USB_PORTSC1				0x184
+ #define TEGRA_USB_PORTSC1_PTS(x)			(((x) & 0x3) << 30)
+ #define TEGRA_USB_PORTSC1_PHCD				(1 << 23)
  
-+Required PHY timing params for utmi phy, only on Tegra30 and above:
-+  - nvidia,xcvr-hsslew : HS slew rate control.
-+  - nvidia,hssquelch-level : HS squelch detector level.
-+  - nvidia,hsdiscon-level : HS disconnect detector level.
++/* HOSTPC1 PTS/PHCD bits, Tegra30 and above */
++#define TEGRA_USB_HOSTPC1_DEVLC		0x1b4
++#define TEGRA_USB_HOSTPC1_DEVLC_PTS(x)	(((x) & 0x7) << 29)
++#define TEGRA_USB_HOSTPC1_DEVLC_PHCD	(1 << 22)
 +
- Optional properties:
-   - nvidia,has-legacy-mode : boolean indicates whether this controller can
-     operate in legacy mode (as APX 2500 / 2600). In legacy mode some
+ /* Bits of PORTSC1, which will get cleared by writing 1 into them */
+ #define TEGRA_PORTSC1_RWC_BITS	(PORT_CSC | PORT_PEC | PORT_OCC)
+ 
+@@ -141,6 +147,12 @@
+ #define UTMIP_BIAS_CFG1		0x83c
+ #define   UTMIP_BIAS_PDTRK_COUNT(x)	(((x) & 0x1f) << 3)
+ 
++/* For Tegra30 and above only, the address is different in Tegra20 */
++#define USB_USBMODE		0x1f8
++#define   USB_USBMODE_MASK		(3 << 0)
++#define   USB_USBMODE_HOST		(3 << 0)
++#define   USB_USBMODE_DEVICE		(2 << 0)
++
+ static DEFINE_SPINLOCK(utmip_pad_lock);
+ static int utmip_pad_count;
+ 
+@@ -193,10 +205,17 @@ static void set_pts(struct tegra_usb_phy *phy, u8 pts_val)
+ 	void __iomem *base = phy->regs;
+ 	unsigned long val;
+ 
+-	val = readl(base + TEGRA_USB_PORTSC1) & ~TEGRA_PORTSC1_RWC_BITS;
+-	val &= ~TEGRA_USB_PORTSC1_PTS(3);
+-	val |= TEGRA_USB_PORTSC1_PTS(pts_val & 3);
+-	writel(val, base + TEGRA_USB_PORTSC1);
++	if (phy->soc_config->has_hostpc) {
++		val = readl(base + TEGRA_USB_HOSTPC1_DEVLC);
++		val &= ~TEGRA_USB_HOSTPC1_DEVLC_PTS(~0);
++		val |= TEGRA_USB_HOSTPC1_DEVLC_PTS(pts_val);
++		writel(val, base + TEGRA_USB_HOSTPC1_DEVLC);
++	} else {
++		val = readl(base + TEGRA_USB_PORTSC1) & ~TEGRA_PORTSC1_RWC_BITS;
++		val &= ~TEGRA_USB_PORTSC1_PTS(~0);
++		val |= TEGRA_USB_PORTSC1_PTS(pts_val);
++		writel(val, base + TEGRA_USB_PORTSC1);
++	}
+ }
+ 
+ static void set_phcd(struct tegra_usb_phy *phy, bool enable)
+@@ -204,12 +223,21 @@ static void set_phcd(struct tegra_usb_phy *phy, bool enable)
+ 	void __iomem *base = phy->regs;
+ 	unsigned long val;
+ 
+-	val = readl(base + TEGRA_USB_PORTSC1) & ~TEGRA_PORTSC1_RWC_BITS;
+-	if (enable)
+-		val |= TEGRA_USB_PORTSC1_PHCD;
+-	else
+-		val &= ~TEGRA_USB_PORTSC1_PHCD;
+-	writel(val, base + TEGRA_USB_PORTSC1);
++	if (phy->soc_config->has_hostpc) {
++		val = readl(base + TEGRA_USB_HOSTPC1_DEVLC);
++		if (enable)
++			val |= TEGRA_USB_HOSTPC1_DEVLC_PHCD;
++		else
++			val &= ~TEGRA_USB_HOSTPC1_DEVLC_PHCD;
++		writel(val, base + TEGRA_USB_HOSTPC1_DEVLC);
++	} else {
++		val = readl(base + TEGRA_USB_PORTSC1) & ~PORT_RWC_BITS;
++		if (enable)
++			val |= TEGRA_USB_PORTSC1_PHCD;
++		else
++			val &= ~TEGRA_USB_PORTSC1_PHCD;
++		writel(val, base + TEGRA_USB_PORTSC1);
++	}
+ }
+ 
+ static int utmip_pad_open(struct tegra_usb_phy *phy)
+@@ -367,17 +395,21 @@ static int utmi_phy_power_on(struct tegra_usb_phy *phy)
+ 	val &= ~UTMIP_SUSPEND_EXIT_ON_EDGE;
+ 	writel(val, base + UTMIP_MISC_CFG0);
+ 
+-	val = readl(base + UTMIP_MISC_CFG1);
+-	val &= ~(UTMIP_PLL_ACTIVE_DLY_COUNT(~0) | UTMIP_PLLU_STABLE_COUNT(~0));
+-	val |= UTMIP_PLL_ACTIVE_DLY_COUNT(phy->freq->active_delay) |
+-		UTMIP_PLLU_STABLE_COUNT(phy->freq->stable_count);
+-	writel(val, base + UTMIP_MISC_CFG1);
+-
+-	val = readl(base + UTMIP_PLL_CFG1);
+-	val &= ~(UTMIP_XTAL_FREQ_COUNT(~0) | UTMIP_PLLU_ENABLE_DLY_COUNT(~0));
+-	val |= UTMIP_XTAL_FREQ_COUNT(phy->freq->xtal_freq_count) |
+-		UTMIP_PLLU_ENABLE_DLY_COUNT(phy->freq->enable_delay);
+-	writel(val, base + UTMIP_PLL_CFG1);
++	if (!phy->soc_config->utmi_pll_config_in_car_module) {
++		val = readl(base + UTMIP_MISC_CFG1);
++		val &= ~(UTMIP_PLL_ACTIVE_DLY_COUNT(~0) |
++			UTMIP_PLLU_STABLE_COUNT(~0));
++		val |= UTMIP_PLL_ACTIVE_DLY_COUNT(phy->freq->active_delay) |
++			UTMIP_PLLU_STABLE_COUNT(phy->freq->stable_count);
++		writel(val, base + UTMIP_MISC_CFG1);
++
++		val = readl(base + UTMIP_PLL_CFG1);
++		val &= ~(UTMIP_XTAL_FREQ_COUNT(~0) |
++			UTMIP_PLLU_ENABLE_DLY_COUNT(~0));
++		val |= UTMIP_XTAL_FREQ_COUNT(phy->freq->xtal_freq_count) |
++			UTMIP_PLLU_ENABLE_DLY_COUNT(phy->freq->enable_delay);
++		writel(val, base + UTMIP_PLL_CFG1);
++	}
+ 
+ 	if (phy->mode == USB_DR_MODE_PERIPHERAL) {
+ 		val = readl(base + USB_SUSP_CTRL);
+@@ -448,6 +480,16 @@ static int utmi_phy_power_on(struct tegra_usb_phy *phy)
+ 
+ 	utmi_phy_clk_enable(phy);
+ 
++	if (phy->soc_config->requires_usbmode_setup) {
++		val = readl(base + USB_USBMODE);
++		val &= ~USB_USBMODE_MASK;
++		if (phy->mode == USB_DR_MODE_HOST)
++			val |= USB_USBMODE_HOST;
++		else
++			val |= USB_USBMODE_DEVICE;
++		writel(val, base + USB_USBMODE);
++	}
++
+ 	if (!phy->is_legacy_phy)
+ 		set_pts(phy, 0);
+ 
+@@ -864,8 +906,30 @@ static int utmi_phy_probe(struct tegra_usb_phy *tegra_phy,
+ 	return 0;
+ }
+ 
++static const struct tegra_phy_soc_config tegra20_soc_config = {
++	.utmi_pll_config_in_car_module = false,
++	.has_hostpc = false,
++	.requires_usbmode_setup = false,
++	.requires_extra_tuning_parameters = false,
++};
++
++static const struct tegra_phy_soc_config tegra30_soc_config = {
++	.utmi_pll_config_in_car_module = true,
++	.has_hostpc = true,
++	.requires_usbmode_setup = true,
++	.requires_extra_tuning_parameters = true,
++};
++
++static struct of_device_id tegra_usb_phy_id_table[] = {
++	{ .compatible = "nvidia,tegra30-usb-phy", .data = &tegra30_soc_config },
++	{ .compatible = "nvidia,tegra20-usb-phy", .data = &tegra20_soc_config },
++	{ },
++};
++MODULE_DEVICE_TABLE(of, tegra_usb_phy_id_table);
++
+ static int tegra_usb_phy_probe(struct platform_device *pdev)
+ {
++	const struct of_device_id *match;
+ 	struct resource *res;
+ 	struct tegra_usb_phy *tegra_phy = NULL;
+ 	struct device_node *np = pdev->dev.of_node;
+@@ -878,6 +942,13 @@ static int tegra_usb_phy_probe(struct platform_device *pdev)
+ 		return -ENOMEM;
+ 	}
+ 
++	match = of_match_device(tegra_usb_phy_id_table, &pdev->dev);
++	if (!match) {
++		dev_err(&pdev->dev, "Error: No device match found\n");
++		return -ENODEV;
++	}
++	tegra_phy->soc_config = match->data;
++
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	if (!res) {
+ 		dev_err(&pdev->dev, "Failed to get I/O memory\n");
+@@ -963,12 +1034,6 @@ static int tegra_usb_phy_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
+-static struct of_device_id tegra_usb_phy_id_table[] = {
+-	{ .compatible = "nvidia,tegra20-usb-phy", },
+-	{ },
+-};
+-MODULE_DEVICE_TABLE(of, tegra_usb_phy_id_table);
+-
+ static struct platform_driver tegra_usb_phy_driver = {
+ 	.probe		= tegra_usb_phy_probe,
+ 	.remove		= tegra_usb_phy_remove,
+diff --git a/include/linux/usb/tegra_usb_phy.h b/include/linux/usb/tegra_usb_phy.h
+index d3db274..d3a63c3 100644
+--- a/include/linux/usb/tegra_usb_phy.h
++++ b/include/linux/usb/tegra_usb_phy.h
+@@ -18,6 +18,24 @@
+ #include <linux/clk.h>
+ #include <linux/usb/otg.h>
+ 
++/*
++ * utmi_pll_config_in_car_module: true if the UTMI PLL configuration registers
++ *     should be set up by clk-tegra, false if by the PHY code
++ * has_hostpc: true if the USB controller has the HOSTPC extension, which
++ *     changes the location of the PHCD and PTS fields
++ * requires_usbmode_setup: true if the USBMODE register needs to be set to
++ *      enter host mode
++ * requires_extra_tuning_parameters: true if xcvr_hsslew, hssquelch_level
++ *      and hsdiscon_level should be set for adequate signal quality
++ */
++
++struct tegra_phy_soc_config {
++	bool utmi_pll_config_in_car_module;
++	bool has_hostpc;
++	bool requires_usbmode_setup;
++	bool requires_extra_tuning_parameters;
++};
++
+ struct tegra_utmip_config {
+ 	u8 hssync_start_delay;
+ 	u8 elastic_limit;
+@@ -47,6 +65,7 @@ struct tegra_usb_phy {
+ 	struct regulator *vbus;
+ 	enum usb_dr_mode mode;
+ 	void *config;
++	const struct tegra_phy_soc_config *soc_config;
+ 	struct usb_phy *ulpi;
+ 	struct usb_phy u_phy;
+ 	bool is_legacy_phy;
 -- 
 1.8.1.5
 
