@@ -1,250 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759225Ab3GaImd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 04:42:33 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:53218 "EHLO e7.ny.us.ibm.com"
+	id S1759236Ab3GaIoU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 04:44:20 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47708 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753016Ab3GaImD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 04:42:03 -0400
-From: zwu.kernel@gmail.com
-To: xfs@oss.sgi.com
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Subject: [PATCH v3] xfs: introduce object readahead to log recovery
-Date: Wed, 31 Jul 2013 16:42:45 +0800
-Message-Id: <1375260165-8773-1-git-send-email-zwu.kernel@gmail.com>
-X-Mailer: git-send-email 1.7.11.7
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13073108-5806-0000-0000-000022405D08
+	id S1754269Ab3GaIoP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 04:44:15 -0400
+Date: Wed, 31 Jul 2013 09:44:11 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] sched, numa: migrates_degrades_locality()
+Message-ID: <20130731084411.GG2296@suse.de>
+References: <1373901620-2021-1-git-send-email-mgorman@suse.de>
+ <1373901620-2021-8-git-send-email-mgorman@suse.de>
+ <20130725104009.GO27075@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20130725104009.GO27075@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+On Thu, Jul 25, 2013 at 12:40:09PM +0200, Peter Zijlstra wrote:
+> 
+> Subject: sched, numa: migrates_degrades_locality()
+> From: Peter Zijlstra <peterz@infradead.org>
+> Date: Mon Jul 22 14:02:54 CEST 2013
+> 
+> It just makes heaps of sense; so add it and make both it and
+> migrate_improve_locality() a sched_feat().
+> 
 
-  It can take a long time to run log recovery operation because it is
-single threaded and is bound by read latency. We can find that it took
-most of the time to wait for the read IO to occur, so if one object
-readahead is introduced to log recovery, it will obviously reduce the
-log recovery time.
+Ok. I'll be splitting this patch and merging part of it into "sched:
+Favour moving tasks towards the preferred node" and keeping the
+degrades_locality as a separate patch. I'm also not a fan of the
+tunables names NUMA_FAULTS_UP and NUMA_FAULTS_DOWN because it is hard to
+guess what they mean. NUMA_FAVOUR_HIGHER, NUMA_RESIST_LOWER?
 
-Log recovery time stat:
+Change to just the parent patch looks is as follows. task_faults() is
+not introduced yet in the series which is why it is still missing.
 
-          w/o this patch        w/ this patch
-
-real:        0m15.023s             0m7.802s
-user:        0m0.001s              0m0.001s
-sys:         0m0.246s              0m0.107s
-
-Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
----
- fs/xfs/xfs_log_recover.c | 159 +++++++++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 153 insertions(+), 6 deletions(-)
-
-diff --git a/fs/xfs/xfs_log_recover.c b/fs/xfs/xfs_log_recover.c
-index 7681b19..ebb00bc 100644
---- a/fs/xfs/xfs_log_recover.c
-+++ b/fs/xfs/xfs_log_recover.c
-@@ -3116,6 +3116,106 @@ xlog_recover_free_trans(
- 	kmem_free(trans);
- }
- 
-+STATIC void
-+xlog_recover_buffer_ra_pass2(
-+	struct xlog                     *log,
-+	struct xlog_recover_item        *item)
-+{
-+	struct xfs_buf_log_format	*buf_f = item->ri_buf[0].i_addr;
-+	struct xfs_mount		*mp = log->l_mp;
-+
-+	if (xlog_check_buffer_cancelled(log, buf_f->blf_blkno,
-+			buf_f->blf_len, buf_f->blf_flags)) {
-+		return;
-+	}
-+
-+	xfs_buf_readahead(mp->m_ddev_targp, buf_f->blf_blkno,
-+				buf_f->blf_len, NULL);
-+}
-+
-+STATIC void
-+xlog_recover_inode_ra_pass2(
-+	struct xlog                     *log,
-+	struct xlog_recover_item        *item)
-+{
-+	struct xfs_inode_log_format	ilf_buf;
-+	struct xfs_inode_log_format	*ilfp;
-+	struct xfs_mount		*mp = log->l_mp;
-+	int			error;
-+
-+	if (item->ri_buf[0].i_len == sizeof(struct xfs_inode_log_format)) {
-+		ilfp = item->ri_buf[0].i_addr;
-+	} else {
-+		ilfp = &ilf_buf;
-+		memset(ilfp, 0, sizeof(*ilfp));
-+		error = xfs_inode_item_format_convert(&item->ri_buf[0], ilfp);
-+		if (error)
-+			return;
-+	}
-+
-+	if (xlog_check_buffer_cancelled(log, ilfp->ilf_blkno, ilfp->ilf_len, 0))
-+		return;
-+
-+	xfs_buf_readahead(mp->m_ddev_targp, ilfp->ilf_blkno,
-+				ilfp->ilf_len, &xfs_inode_buf_ops);
-+}
-+
-+STATIC void
-+xlog_recover_dquot_ra_pass2(
-+	struct xlog			*log,
-+	struct xlog_recover_item	*item)
-+{
-+	struct xfs_mount	*mp = log->l_mp;
-+	struct xfs_disk_dquot	*recddq;
-+	struct xfs_dq_logformat	*dq_f;
-+	uint			type;
-+
-+
-+	if (mp->m_qflags == 0)
-+		return;
-+
-+	recddq = item->ri_buf[1].i_addr;
-+	if (recddq == NULL)
-+		return;
-+	if (item->ri_buf[1].i_len < sizeof(struct xfs_disk_dquot))
-+		return;
-+
-+	type = recddq->d_flags & (XFS_DQ_USER | XFS_DQ_PROJ | XFS_DQ_GROUP);
-+	ASSERT(type);
-+	if (log->l_quotaoffs_flag & type)
-+		return;
-+
-+	dq_f = item->ri_buf[0].i_addr;
-+	ASSERT(dq_f);
-+	ASSERT(dq_f->qlf_len == 1);
-+
-+	xfs_buf_readahead(mp->m_ddev_targp, dq_f->qlf_blkno,
-+				dq_f->qlf_len, NULL);
-+}
-+
-+STATIC void
-+xlog_recover_ra_pass2(
-+	struct xlog			*log,
-+	struct xlog_recover_item	*item)
-+{
-+	switch (ITEM_TYPE(item)) {
-+	case XFS_LI_BUF:
-+		xlog_recover_buffer_ra_pass2(log, item);
-+		break;
-+	case XFS_LI_INODE:
-+		xlog_recover_inode_ra_pass2(log, item);
-+		break;
-+	case XFS_LI_DQUOT:
-+		xlog_recover_dquot_ra_pass2(log, item);
-+		break;
-+	case XFS_LI_EFI:
-+	case XFS_LI_EFD:
-+	case XFS_LI_QUOTAOFF:
-+	default:
-+		break;
-+	}
-+}
-+
- STATIC int
- xlog_recover_commit_pass1(
- 	struct xlog			*log,
-@@ -3177,6 +3277,26 @@ xlog_recover_commit_pass2(
- 	}
- }
- 
-+STATIC int
-+xlog_recover_items_pass2(
-+	struct xlog                     *log,
-+	struct xlog_recover             *trans,
-+	struct list_head                *buffer_list,
-+	struct list_head                *item_list)
-+{
-+	struct xlog_recover_item	*item;
-+	int				error = 0;
-+
-+	list_for_each_entry(item, item_list, ri_list) {
-+		error = xlog_recover_commit_pass2(log, trans,
-+					  buffer_list, item);
-+		if (error)
-+			return error;
-+	}
-+
-+	return error;
-+}
-+
- /*
-  * Perform the transaction.
-  *
-@@ -3189,9 +3309,16 @@ xlog_recover_commit_trans(
- 	struct xlog_recover	*trans,
- 	int			pass)
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 78bfbea..5ea3afe 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -3978,8 +3978,10 @@ static bool migrate_improves_locality(struct task_struct *p, struct lb_env *env)
  {
--	int			error = 0, error2;
--	xlog_recover_item_t	*item;
--	LIST_HEAD		(buffer_list);
-+	int				error = 0;
-+	int				error2;
-+	int				items_queued = 0;
-+	struct xlog_recover_item	*item;
-+	struct xlog_recover_item	*next;
-+	LIST_HEAD			(buffer_list);
-+	LIST_HEAD			(ra_list);
-+	LIST_HEAD			(done_list);
-+
-+	#define XLOG_RECOVER_COMMIT_QUEUE_MAX 100
+ 	int src_nid, dst_nid;
  
- 	hlist_del(&trans->r_list);
- 
-@@ -3199,14 +3326,22 @@ xlog_recover_commit_trans(
- 	if (error)
- 		return error;
- 
--	list_for_each_entry(item, &trans->r_itemq, ri_list) {
-+	list_for_each_entry_safe(item, next, &trans->r_itemq, ri_list) {
- 		switch (pass) {
- 		case XLOG_RECOVER_PASS1:
- 			error = xlog_recover_commit_pass1(log, trans, item);
- 			break;
- 		case XLOG_RECOVER_PASS2:
--			error = xlog_recover_commit_pass2(log, trans,
--							  &buffer_list, item);
-+			xlog_recover_ra_pass2(log, item);
-+			list_move_tail(&item->ri_list, &ra_list);
-+			items_queued++;
-+			if (items_queued >= XLOG_RECOVER_COMMIT_QUEUE_MAX) {
-+				error = xlog_recover_items_pass2(log, trans,
-+						&buffer_list, &ra_list);
-+				list_splice_tail_init(&ra_list, &done_list);
-+				items_queued = 0;
-+			}
-+
- 			break;
- 		default:
- 			ASSERT(0);
-@@ -3216,6 +3351,18 @@ xlog_recover_commit_trans(
- 			goto out;
- 	}
- 
-+	if (!list_empty(&ra_list)) {
-+		error = xlog_recover_items_pass2(log, trans,
-+				&buffer_list, &ra_list);
-+		if (error)
-+			goto out;
-+
-+		list_splice_tail_init(&ra_list, &done_list);
+-	if (!p->numa_faults || !(env->sd->flags & SD_NUMA))
++	if (!sched_feat(NUMA_FAVOUR_HIGHER || !p->numa_faults ||
++	    !(env->sd->flags & SD_NUMA))) {
+ 		return false;
 +	}
-+
-+	if (!list_empty(&done_list))
-+		list_splice_init(&done_list, &trans->r_itemq);
-+
- 	xlog_recover_free_trans(trans);
  
- out:
--- 
-1.7.11.7
+ 	src_nid = cpu_to_node(env->src_cpu);
+ 	dst_nid = cpu_to_node(env->dst_cpu);
+@@ -3988,7 +3990,7 @@ static bool migrate_improves_locality(struct task_struct *p, struct lb_env *env)
+ 	    p->numa_migrate_seq >= sysctl_numa_balancing_settle_count)
+ 		return false;
+ 
+-	if (p->numa_preferred_nid == dst_nid)
++	if (p->numa_faults[dst_nid] > p->numa_faults[src_nid])
+ 		return true;
+ 
+ 	return false;
+diff --git a/kernel/sched/features.h b/kernel/sched/features.h
+index 99399f8..97a1136 100644
+--- a/kernel/sched/features.h
++++ b/kernel/sched/features.h
+@@ -69,4 +69,11 @@ SCHED_FEAT(LB_MIN, false)
+ #ifdef CONFIG_NUMA_BALANCING
+ SCHED_FEAT(NUMA,	false)
+ SCHED_FEAT(NUMA_FORCE,	false)
++
++/*
++ * NUMA_FAVOUR_HIGHER will favor moving tasks towards nodes where a
++ * higher number of hinting faults are recorded during active load
++ * balancing.
++ */
++SCHED_FEAT(NUMA_FAVOUR_HIGHER, true)
+ #endif
 
+-- 
+Mel Gorman
+SUSE Labs
