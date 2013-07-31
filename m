@@ -1,79 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756660Ab3GaQSC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 12:18:02 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:60705 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751910Ab3GaQSA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 12:18:00 -0400
-Date: Wed, 31 Jul 2013 09:17:46 -0700
-Message-ID: <20130731091746.Horde.du1olpir309R_TiqC-MWNuA@imap.linux.ibm.com>
-From: Zach Levis <zml@linux.vnet.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        viro@zeniv.linux.org.uk, Zach Levis <zach@zachsthings.com>
-Subject: Re: [PATCH 2/3] fs/binfmts: Better handling of binfmt loops
-References: <1374766845-13565-1-git-send-email-zml@linux.vnet.ibm.com>
- <1374766845-13565-2-git-send-email-zml@linux.vnet.ibm.com>
- <20130730140446.1a4982e21ac8e183c65e9ed1@linux-foundation.org>
- <20130730161651.Horde.PkwqiJir309R_EljyDbxlqA@imap.linux.ibm.com>
- <20130730162611.205debb7fab539a034166552@linux-foundation.org>
-In-Reply-To: <20130730162611.205debb7fab539a034166552@linux-foundation.org>
-User-Agent: Internet Messaging Program (IMP) H4 (5.0.22)
-Content-Type: text/plain; charset=utf-8; format=flowed; DelSp=Yes
+	id S1757652Ab3GaQSj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 12:18:39 -0400
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:53539 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756855Ab3GaQS0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 12:18:26 -0400
 MIME-Version: 1.0
-Content-Disposition: inline
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13073116-0320-0000-0000-0000007EE679
+In-Reply-To: <003f01ce8154$2f5ea1d0$8e1be570$%jun@samsung.com>
+References: <1373391071-6312-1-git-send-email-dianders@chromium.org>
+	<1373411961-23812-1-git-send-email-dianders@chromium.org>
+	<1373411961-23812-4-git-send-email-dianders@chromium.org>
+	<002a01ce7d7d$6bd9e870$438db950$%jun@samsung.com>
+	<CAD=FV=UtX0Z1ABdi5h270ks8Py2o1iPK4DonOHJH3N0Q1YShTQ@mail.gmail.com>
+	<003f01ce8154$2f5ea1d0$8e1be570$%jun@samsung.com>
+Date: Wed, 31 Jul 2013 09:18:23 -0700
+X-Google-Sender-Auth: AJXMLSgp5WG69oKbnS5DGRAK13w
+Message-ID: <CAD=FV=XZcf8xWWxrCoe9KqjnQs4p4y7ENnuUYsVKU+yrE09GeQ@mail.gmail.com>
+Subject: Re: [PATCH v2 3/5] mmc: dw_mmc: Add exynos resume_noirq callback to
+ clear WAKEUP_INT
+From: Doug Anderson <dianders@chromium.org>
+To: Seungwon Jeon <tgih.jun@samsung.com>
+Cc: Chris Ball <cjb@laptop.org>, Olof Johansson <olof@lixom.net>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        James Hogan <james.hogan@imgtec.com>,
+        Grant Grundler <grundler@chromium.org>,
+        Alim Akhtar <alim.akhtar@samsung.com>,
+        Abhilash Kesavan <a.kesavan@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Seungwon,
 
-Quoting Andrew Morton <akpm@linux-foundation.org>:
+On Mon, Jul 15, 2013 at 5:09 AM, Seungwon Jeon <tgih.jun@samsung.com> wrote:
+> Sorry for late response.
+> Yes, it's not clear.
+> If you get the confirmation, could you share this problem?
+> Possibly, auto-clear may not be implemented.
+> Then, manual should be correct.
 
-> On Tue, 30 Jul 2013 16:16:51 -0700 Zach Levis <zml@linux.vnet.ibm.com> wrote:
->
->>
->> Quoting Andrew Morton <akpm@linux-foundation.org>:
->>
->> > On Thu, 25 Jul 2013 08:40:44 -0700 Zach Levis  
->> <zml@linux.vnet.ibm.com> wrote:
->> >
->> >> With these changes, when a binfmt loop is encountered,
->> >> the ELOOP will propogate back to the 0 depth. At this point the
->> >> argv and argc values will be reset to what they were originally and an
->> >> attempt is made to continue with the following binfmt handlers.
->> >
->> > hm, why?  What problem does this fix?  What value does the change offer
->> > to our users?
->>
->> This is used when the binfmt_misc,script,etc options are configured in
->> a way that would previously prevent executables from launching that
->> could be executed with a different binfmt but don't because of a loop
->> in a prior binfmt.
->>
->> Example: a qemu is configured to run 64-bit ELFs on an otherwise
->> 32-bit system. The system's owner switches to running with 64-bit
->> executables, but forgets to disable the binfmt_misc option that
->> redirects 64bit ELFs to qemu. Since the qemu executable is a 64-bit
->> ELF now, binfmt_misc keeps on matching it with the qemu rule,
->> preventing the execution of any 64-bit binary.
->
-> So the admin can unforget to make that change and no longer has a problem.
->
->> With this patch, an error is printed and search_binary_handler()
->> continues on to the next handler, allowing the original executable to
->> run normally so the user can (hopefully) fix their misconfiguration
->> more easily.
->
-> Is all this really worth changing the kernel for?  It sounds
-> a bit marginal.
-I'd say it is worth changing because this is a self-contained fix that  
-doesn't have much in the way of side effects for normal execution but  
-can help recover a system. Apart from storing a pointer to the  
-provided arguments, the only changes this requires are in the code for  
-error handling.
+I just got an update from my contacts.  They confirm that bit 11 is
+not automatically cleared and that writing to it will clear it.
+Hopefully this information will make it into the next version of any
+documentation that you receive as well.
 
+It is still unclear exactly why the WAKEUP_INT was being asserted on
+our board despite the fact that all of the wakeup control signals
+(bits 10:8) were 0.  That is still being investigated.
 
+-Doug
