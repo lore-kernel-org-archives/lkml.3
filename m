@@ -1,48 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758770Ab3GaCJi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 22:09:38 -0400
-Received: from mail-la0-f50.google.com ([209.85.215.50]:46231 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751428Ab3GaCJf (ORCPT
+	id S1758856Ab3GaCJo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 22:09:44 -0400
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:52660 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751428Ab3GaCJl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 22:09:35 -0400
+	Tue, 30 Jul 2013 22:09:41 -0400
+Date: Wed, 31 Jul 2013 10:09:28 +0800
+From: Shaohua Li <shli@kernel.org>
+To: Tomoki Sekiyama <tomoki.sekiyama@hds.com>
+Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, tj@kernel.org,
+        seiji.aguchi@hds.com
+Subject: Re: [RFC PATCH] cfq-iosched: limit slice_idle when many busy queues
+ are in idle window
+Message-ID: <20130731020928.GA27570@kernel.org>
+References: <20130730193033.27856.58005.stgit@hds.com>
 MIME-Version: 1.0
-In-Reply-To: <51F86F9A.4090104@gmail.com>
-References: <1375125658-1223-1-git-send-email-felipe.contreras@gmail.com>
-	<51F7546C.9030901@gmail.com>
-	<51F755E3.8040706@gmail.com>
-	<3453253.oZLO1ChPbL@vostro.rjw.lan>
-	<CAMP44s02V_FO1BPJZqo6MB9RMknXYdV7AXDqbJzYHpgK1GUuJw@mail.gmail.com>
-	<51F86F9A.4090104@gmail.com>
-Date: Tue, 30 Jul 2013 21:09:33 -0500
-Message-ID: <CAMP44s2HUpVp-hoAH1LcHLURLP00R=B8czjrfCFbwGBMEyU5XA@mail.gmail.com>
-Subject: Re: [REGRESSION/PATCH] acpi: blacklist win8 OSI for ASUS Zenbok Prime UX31A
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: Aaron Lu <aaron.lwe@gmail.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, Len Brown <lenb@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130730193033.27856.58005.stgit@hds.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 30, 2013 at 8:59 PM, Aaron Lu <aaron.lwe@gmail.com> wrote:
-> On 07/31/2013 04:59 AM, Felipe Contreras wrote:
+On Tue, Jul 30, 2013 at 03:30:33PM -0400, Tomoki Sekiyama wrote:
+> Hi,
+> 
+> When some application launches several hundreds of processes that issue
+> only a few small sync I/O requests, CFQ may cause heavy latencies
+> (10+ seconds at the worst case), although the request rate is low enough for
+> the disk to handle it without waiting. This is because CFQ waits for
+> slice_idle (default:8ms) every time before processing each request, until
+> their thinktimes are evaluated.
+> 
+> This scenario can be reproduced using fio with parameters below:
+>   fio -filename=/tmp/test -rw=randread -size=5G -runtime=15 -name=file1 \
+>       -bs=4k -numjobs=500 -thinktime=1000000
+> In this case, 500 processes issue a random read request every second.
 
->> There is another interface the turn the screen off.
->>
->> If 0 turns the screen off with the intel driver, 0 should turn the
->> screen off with the ACPI driver, having inconsistent behavior
->> depending on which driver is used is a bug.
->
-> I'm not sure of this. Remember the days when we switch the hard disk
-> driver from IDE to SCSI? The block device name changed from hdx to sdx.
-> Is this a bug?
+For this workload CFQ should perfectly detect it's a seek queue and disable
+idle. I suppose the reason is CFQ hasn't enough data/time to disable idle yet,
+since your thinktime is long and runtime is short.
 
-The name might have changed, but the way the interface worked did not;
-both hdx and sdx worked exactly the same.
+I thought the real problem here is cfq_init_cfqq() shouldn't set idle_window
+when initializing a queue. We should enable idle window after we detect the
+queue is worthy idle.
 
--- 
-Felipe Contreras
+Thanks,
+Shaohua
