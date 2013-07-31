@@ -1,94 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760898Ab3GaWOK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 18:14:10 -0400
-Received: from mga11.intel.com ([192.55.52.93]:27756 "EHLO mga11.intel.com"
+	id S1760866Ab3GaWQT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 18:16:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6526 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757533Ab3GaWOI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 18:14:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,790,1367996400"; 
-   d="scan'208";a="379170671"
-From: "Jiang, Dave" <dave.jiang@intel.com>
-To: Brice Goglin <Brice.Goglin@inria.fr>
-CC: Dan Williams <djbw@fb.com>, "Koul, Vinod" <vinod.koul@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Mason, Jon" <jon.mason@intel.com>
-Subject: Re: ioatdma: add ioat_raid_enabled module parameter
-Thread-Topic: ioatdma: add ioat_raid_enabled module parameter
-Thread-Index: AQHOjjom0XMeyUNRoUmcakeh/vzoC5l/z3CA
-Date: Wed, 31 Jul 2013 22:14:07 +0000
-Message-ID: <1375308847.6448.6.camel@djiang5-linux2.ch.intel.com>
-References: <51F98A3F.3000102@inria.fr>
-In-Reply-To: <51F98A3F.3000102@inria.fr>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.2.105.54]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <CE978987272F294C8E82E6DFA112EA25@intel.com>
+	id S1753640Ab3GaWQS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 18:16:18 -0400
+Message-ID: <51F98CAB.80100@redhat.com>
+Date: Wed, 31 Jul 2013 18:16:11 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Ingo Molnar <mingo@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        jmario@redhat.com, dzickus@redhat.com, Peter Anvin <hpa@zytor.com>
+Subject: Re: [PATCH] sched,x86: optimize switch_mm for multi-threaded workloads
+References: <20130731174335.006a58f9@annuminas.surriel.com> <CA+55aFx3ZHZrgP3yQwb=ttYUeH1zFVQtUA5dFW1h8FPhjfKgUA@mail.gmail.com>
+In-Reply-To: <CA+55aFx3ZHZrgP3yQwb=ttYUeH1zFVQtUA5dFW1h8FPhjfKgUA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r6VMEOQY015830
 
-I'm ok with enabling this for people that just want to use DMA and not
-RAID. 
+On 07/31/2013 06:07 PM, Linus Torvalds wrote:
+> On Wed, Jul 31, 2013 at 2:43 PM, Rik van Riel <riel@redhat.com> wrote:
+>>
+>> The cause turned out to be unnecessary atomic accesses to the
+>> mm_cpumask. When in lazy TLB mode, the CPU is only removed from
+>> the mm_cpumask if there is a TLB flush event.
+>>
+>> Most of the time, no such TLB flush happens, and the kernel
+>> skips the TLB reload.  It can also skip the atomic memory
+>> set & test.
+>
+> The patch looks obvious, and I'm not seeing any very clear reasons for
+> why we would want that test-and-set to be atomic. That said, I'd like
+> to have some explicit comments about exactly why it doesn't need the
+> atomicity. Because afaik, there actually are concurrent readers _and_
+> writers of that mask, and the accesses are not locked by anything
+> here.
+ >
+> I _think_ the reason for this all being safe is simply that the only
+> real race is "We need to set the bit before we load the page table,
+> and we're protected against that bit being cleared because the TLB
+> state is TLBSTATE_OK and thus TLB flushing will no longer leave that
+> mm".
+>
+> But damn, it all looks subtle as hell. That code does:
+>
+>                  this_cpu_write(cpu_tlbstate.state, TLBSTATE_OK);
+>                  BUG_ON(this_cpu_read(cpu_tlbstate.active_mm) != next);
+>
+>                  if (!cpumask_test_and_set_cpu(cpu, mm_cpumask(next))) {
+>
+> and I'm wondering if we need a barrier to make sure that that
+> TLBSTATE_OK write happens *before* we test the cpumask. With
+> test_and_set(), we have the barrier in the test-and-set. But with just
+> test_bit, I'm not seeing why the compiler couldn't re-order them. I
+> suspect it won't, but...
 
-Acked-by: Dave Jiang <dave.jiang@intel.com>
+cpumask_set_bit expands to set_bit, which is atomic
 
-On Thu, 2013-08-01 at 00:05 +0200, Brice Goglin wrote:
-> ioatdma: add ioat_raid_enabled module parameter
-> 
-> Commit f26df1a1 added a 64-byte alignment requirement for legacy
-> operations to work around a silicon errata when mixing legacy and
-> RAID descriptors.
-> Passing ioat_raid_enabled=0 now disables RAID offload entirely in
-> the ioatdma driver so that legacy operations (memcpy, etc.) can
-> work without alignment restrictions anymore.
-> 
-> Signed-off-by: Brice Goglin <Brice.Goglin@inria.fr>
-> ---
->  drivers/dma/ioat/dma_v3.c |    9 +++++++--
->  1 file changed, 7 insertions(+), 2 deletions(-)
-> 
-> Index: b/drivers/dma/ioat/dma_v3.c
-> ===================================================================
-> --- a/drivers/dma/ioat/dma_v3.c	2013-07-31 23:06:24.163810000 +0200
-> +++ b/drivers/dma/ioat/dma_v3.c	2013-07-31 23:47:54.246719841 +0200
-> @@ -67,6 +67,11 @@
->  #include "dma.h"
->  #include "dma_v2.h"
->  
-> +static int ioat_raid_enabled = 1;
-> +module_param(ioat_raid_enabled, int, 0444);
-> +MODULE_PARM_DESC(ioat_raid_enabled,
-> +		 "control support of RAID offload (default: 1)");
-> +
->  /* ioat hardware assumes at least two sources for raid operations */
->  #define src_cnt_to_sw(x) ((x) + 2)
->  #define src_cnt_to_hw(x) ((x) - 2)
-> @@ -1775,7 +1780,7 @@ int ioat3_dma_probe(struct ioatdma_devic
->  	dma->device_alloc_chan_resources = ioat2_alloc_chan_resources;
->  	dma->device_free_chan_resources = ioat2_free_chan_resources;
->  
-> -	if (is_xeon_cb32(pdev))
-> +	if (is_xeon_cb32(pdev) && ioat_raid_enabled)
->  		dma->copy_align = 6;
->  
->  	dma_cap_set(DMA_INTERRUPT, dma->cap_mask);
-> @@ -1783,7 +1788,7 @@ int ioat3_dma_probe(struct ioatdma_devic
->  
->  	device->cap = readl(device->reg_base + IOAT_DMA_CAP_OFFSET);
->  
-> -	if (is_bwd_noraid(pdev))
-> +	if (!ioat_raid_enabled || is_bwd_noraid(pdev))
->  		device->cap &= ~(IOAT_CAP_XOR | IOAT_CAP_PQ | IOAT_CAP_RAID16SS);
->  
->  	/* dca is incompatible with raid operations */
-> 
+Do we need any explicit compiler barrier in addition to the
+atomic operation performed by set_bit?
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+I would be happy to rewrite the comment right above the
+cpumask_set_cpu call if you want.
+
+-- 
+All rights reversed
