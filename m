@@ -1,322 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753956Ab3GaQIw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 12:08:52 -0400
-Received: from smtp.eu.citrix.com ([46.33.159.39]:30467 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751868Ab3GaQIv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 12:08:51 -0400
-X-IronPort-AV: E=Sophos;i="4.89,788,1367971200"; 
-   d="scan'208";a="7329083"
-From: Roger Pau Monne <roger.pau@citrix.com>
-To: <xen-devel@lists.xen.org>, <linux-kernel@vger.kernel.org>
-CC: Roger Pau Monne <roger.pau@citrix.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH RFC] p2m: use GNTTABOP_unmap_and_duplicate if available
-Date: Wed, 31 Jul 2013 18:07:35 +0200
-Message-ID: <1375286855-4861-1-git-send-email-roger.pau@citrix.com>
-X-Mailer: git-send-email 1.7.7.5 (Apple Git-26)
+	id S1754422Ab3GaQKX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 12:10:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25621 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751130Ab3GaQKV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 12:10:21 -0400
+Date: Wed, 31 Jul 2013 12:09:45 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Takao Indoh <indou.takao@jp.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "open list:INTEL IOMMU (VT-d)" <iommu@lists.linux-foundation.org>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "ishii.hironobu@jp.fujitsu.com" <ishii.hironobu@jp.fujitsu.com>,
+        Don Dutile <ddutile@redhat.com>,
+        "Sumner, William" <bill.sumner@hp.com>,
+        "alex.williamson@redhat.com" <alex.williamson@redhat.com>,
+        Haren Myneni <hbabu@us.ibm.com>
+Subject: Re: [PATCH v2] PCI: Reset PCIe devices to stop ongoing DMA
+Message-ID: <20130731160944.GA1577@redhat.com>
+References: <CAErSpo4t_2Xw76p3Z9FVzyyK-MBovavDu9D=pYoPMjESSxgT=w@mail.gmail.com>
+ <51B19DF3.2070009@jp.fujitsu.com>
+ <CAErSpo6dfEnzriHD_aWZB_3E-kSzauhNRHPd+VuFX5HONVKgqw@mail.gmail.com>
+ <51B6BEDB.3000509@jp.fujitsu.com>
+ <CAErSpo5u8qGALt6C+tuPYXdd2YgyMH6fnPnA+afUteEZ7kY0iw@mail.gmail.com>
+ <51B93221.2040505@jp.fujitsu.com>
+ <CAErSpo5tVK-Z3aOdMTzab-S8o5zLVtDOFQ8-LSYpUgbrJSsxuw@mail.gmail.com>
+ <51BA7BB6.1080104@jp.fujitsu.com>
+ <51EF7466.20703@jp.fujitsu.com>
+ <CAErSpo5B7NzVfxwW3bQnfK+iK+DrRsWQd2Cm14z5PWNnRHWL5w@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAErSpo5B7NzVfxwW3bQnfK+iK+DrRsWQd2Cm14z5PWNnRHWL5w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The new GNTTABOP_unmap_and_duplicate operation doesn't zero the
-mapping passed in new_addr, allowing us to perform batch unmaps in p2m
-code without requiring the use of a multicall.
+On Thu, Jul 25, 2013 at 11:00:46AM -0600, Bjorn Helgaas wrote:
+> On Wed, Jul 24, 2013 at 12:29 AM, Takao Indoh
+> <indou.takao@jp.fujitsu.com> wrote:
+> > Sorry for letting this discussion slide, I was busy on other works:-(
+> > Anyway, the summary of previous discussion is:
+> > - My patch adds new initcall(fs_initcall) to reset all PCIe endpoints on
+> >   boot. This expects PCI enumeration is done before IOMMU
+> >   initialization as follows.
+> >     (1) PCI enumeration
+> >     (2) fs_initcall ---> device reset
+> >     (3) IOMMU initialization
+> > - This works on x86, but does not work on other architecture because
+> >   IOMMU is initialized before PCI enumeration on some architectures. So,
+> >   device reset should be done where IOMMU is initialized instead of
+> >   initcall.
+> > - Or, as another idea, we can reset devices in first kernel(panic kernel)
+> >
+> > Resetting devices in panic kernel is against kdump policy and seems not to
+> > be good idea. So I think adding reset code into iommu initialization is
+> > better. I'll post patches for that.
+> 
+> Of course nobody *wants* to do anything in the panic kernel.  But
+> simply saying "it's against kdump policy and seems not to be a good
+> idea" is not a technical argument.  There are things that are
+> impractical to do in the kdump kernel, so they have to be done in the
+> panic kernel even though we know the kernel is unreliable and the
+> attempt may fail.
 
-Signed-off-by: Roger Pau Monné <roger.pau@citrix.com>
-Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
-I don't currently have a NFS server (the one I had is currently not
-working due to SD card corruption) and I cannot set up one right now,
-so I've only tested this with a raw image stored in a local disk.
----
- arch/x86/include/asm/xen/page.h     |    4 +-
- arch/x86/xen/p2m.c                  |  131 ++++++++++++++++++++++++++++++++++-
- drivers/xen/grant-table.c           |   24 ++----
- include/xen/interface/grant_table.h |   22 ++++++
- 4 files changed, 162 insertions(+), 19 deletions(-)
+I think resetting all devices in crashed kernel is really a lot of
+code. If there is a small piece of code, it can still be considered.
 
-diff --git a/arch/x86/include/asm/xen/page.h b/arch/x86/include/asm/xen/page.h
-index 6aef9fb..ea1dce6 100644
---- a/arch/x86/include/asm/xen/page.h
-+++ b/arch/x86/include/asm/xen/page.h
-@@ -51,8 +51,8 @@ extern unsigned long set_phys_range_identity(unsigned long pfn_s,
- 
- extern int m2p_add_override(unsigned long mfn, struct page *page,
- 			    struct gnttab_map_grant_ref *kmap_op);
--extern int m2p_remove_override(struct page *page,
--				struct gnttab_map_grant_ref *kmap_op);
-+extern int m2p_remove_override(struct page **pages,
-+				struct gnttab_map_grant_ref *kmap_ops, int count);
- extern struct page *m2p_find_override(unsigned long mfn);
- extern unsigned long m2p_find_override_pfn(unsigned long mfn, unsigned long pfn);
- 
-diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
-index 0d4ec35..e3d2668 100644
---- a/arch/x86/xen/p2m.c
-+++ b/arch/x86/xen/p2m.c
-@@ -154,6 +154,8 @@
- #include <linux/hash.h>
- #include <linux/sched.h>
- #include <linux/seq_file.h>
-+#include <linux/slab.h>
-+#include <linux/hardirq.h>
- 
- #include <asm/cache.h>
- #include <asm/setup.h>
-@@ -853,6 +855,7 @@ bool set_phys_to_machine(unsigned long pfn, unsigned long mfn)
- 
- static RESERVE_BRK_ARRAY(struct list_head, m2p_overrides, M2P_OVERRIDE_HASH);
- static DEFINE_SPINLOCK(m2p_override_lock);
-+extern bool gnttab_supports_duplicate;
- 
- static void __init m2p_override_init(void)
- {
-@@ -933,7 +936,7 @@ int m2p_add_override(unsigned long mfn, struct page *page,
- 	return 0;
- }
- EXPORT_SYMBOL_GPL(m2p_add_override);
--int m2p_remove_override(struct page *page,
-+int m2p_remove_override_single(struct page *page,
- 		struct gnttab_map_grant_ref *kmap_op)
- {
- 	unsigned long flags;
-@@ -1034,6 +1037,132 @@ int m2p_remove_override(struct page *page,
- 
- 	return 0;
- }
-+
-+int m2p_remove_override_batch(struct page **pages,
-+		struct gnttab_map_grant_ref *kmap_ops, int count)
-+{
-+	struct gnttab_unmap_and_duplicate *unmap_ops = NULL;
-+	unsigned long *mfn = kcalloc(count, sizeof(mfn[0]), GFP_KERNEL);
-+	unsigned long flags;
-+	unsigned long pfn;
-+	unsigned long uninitialized_var(address);
-+	unsigned level;
-+	struct page *page;
-+	pte_t *ptep = NULL;
-+	int ret = 0, i;
-+
-+
-+	for (i = 0; i < count; i++) {
-+		page = pages[i];
-+		pfn = page_to_pfn(page);
-+		mfn[i] = get_phys_to_machine(pfn);
-+		if (mfn[i] == INVALID_P2M_ENTRY || !(mfn[i] & FOREIGN_FRAME_BIT)) {
-+			ret = -EINVAL;
-+			goto out;
-+		}
-+
-+		if (!PageHighMem(page)) {
-+			address = (unsigned long)__va(pfn << PAGE_SHIFT);
-+			ptep = lookup_address(address, &level);
-+
-+			if (WARN(ptep == NULL || level != PG_LEVEL_4K,
-+						"m2p_remove_override: pfn %lx not mapped", pfn)) {
-+				ret = -EINVAL;
-+				goto out;
-+			}
-+		}
-+
-+		spin_lock_irqsave(&m2p_override_lock, flags);
-+		list_del(&page->lru);
-+		spin_unlock_irqrestore(&m2p_override_lock, flags);
-+		WARN_ON(!PagePrivate(page));
-+		ClearPagePrivate(page);
-+
-+		set_phys_to_machine(pfn, page->index);
-+	}
-+
-+	if (kmap_ops != NULL) {
-+		struct page *scratch_page = get_balloon_scratch_page();
-+		unsigned long scratch_page_address = (unsigned long)
-+					__va(page_to_pfn(scratch_page) << PAGE_SHIFT);
-+		int invcount = 0;
-+
-+		unmap_ops = kcalloc(count, sizeof(unmap_ops[0]), GFP_KERNEL);
-+		if (!unmap_ops) {
-+			put_balloon_scratch_page();
-+			ret = -1;
-+			goto out;
-+		}
-+		for (i = 0; i < count; i++) {
-+			page = pages[i];
-+			if (!PageHighMem(page)) {
-+				unmap_ops[invcount].host_addr = kmap_ops[i].host_addr;
-+				unmap_ops[invcount].new_addr = scratch_page_address;
-+				unmap_ops[invcount].handle = kmap_ops[i].handle;
-+				invcount++;
-+			}
-+		}
-+		ret = HYPERVISOR_grant_table_op(GNTTABOP_unmap_and_duplicate, unmap_ops, invcount);
-+		if (ret) {
-+			printk(KERN_WARNING "m2p_remove_override_batch: GNTTABOP_unmap_and_duplicate failed");
-+			put_balloon_scratch_page();
-+			ret = -1;
-+			goto out;
-+		}
-+		put_balloon_scratch_page();
-+	}
-+
-+	for (i = 0; i < count; i++) {
-+		/* p2m(m2p(mfn)) == FOREIGN_FRAME(mfn): the mfn is already present
-+		 * somewhere in this domain, even before being added to the
-+		 * m2p_override (see comment above in m2p_add_override).
-+		 * If there are no other entries in the m2p_override corresponding
-+		 * to this mfn, then remove the FOREIGN_FRAME_BIT from the p2m for
-+		 * the original pfn (the one shared by the frontend): the backend
-+		 * cannot do any IO on this page anymore because it has been
-+		 * unshared. Removing the FOREIGN_FRAME_BIT from the p2m entry of
-+		 * the original pfn causes mfn_to_pfn(mfn) to return the frontend
-+		 * pfn again. */
-+		pfn = page_to_pfn(pages[i]);
-+		mfn[i] &= ~FOREIGN_FRAME_BIT;
-+		ret = __get_user(pfn, &machine_to_phys_mapping[mfn[i]]);
-+		if (ret == 0 && get_phys_to_machine(pfn) == FOREIGN_FRAME(mfn[i]) &&
-+				m2p_find_override(mfn[i]) == NULL)
-+			set_phys_to_machine(pfn, mfn[i]);
-+	}
-+
-+out:
-+	kfree(unmap_ops);
-+	kfree(mfn);
-+	return ret;
-+}
-+
-+int m2p_remove_override(struct page **pages,
-+		struct gnttab_map_grant_ref *kmap_ops, int count)
-+{
-+	int i, ret;
-+	bool lazy = false;
-+
-+	if (gnttab_supports_duplicate) {
-+		ret = m2p_remove_override_batch(pages, kmap_ops, count);
-+		if (ret)
-+			return ret;
-+	} else {
-+		if (!in_interrupt() && paravirt_get_lazy_mode() == PARAVIRT_LAZY_NONE) {
-+			arch_enter_lazy_mmu_mode();
-+			lazy = true;
-+		}
-+		for (i = 0; i < count; i++) {
-+			ret = m2p_remove_override_single(pages[i], kmap_ops ?
-+					       &kmap_ops[i] : NULL);
-+			if (ret)
-+				return ret;
-+		}
-+		if (lazy)
-+			arch_leave_lazy_mmu_mode();
-+	}
-+	return ret;
-+}
- EXPORT_SYMBOL_GPL(m2p_remove_override);
- 
- struct page *m2p_find_override(unsigned long mfn)
-diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
-index d5418c1..835f600 100644
---- a/drivers/xen/grant-table.c
-+++ b/drivers/xen/grant-table.c
-@@ -64,6 +64,7 @@ static int gnttab_free_count;
- static grant_ref_t gnttab_free_head;
- static DEFINE_SPINLOCK(gnttab_list_lock);
- unsigned long xen_hvm_resume_frames;
-+bool gnttab_supports_duplicate;
- EXPORT_SYMBOL_GPL(xen_hvm_resume_frames);
- 
- static union {
-@@ -934,8 +935,7 @@ int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
- 		      struct gnttab_map_grant_ref *kmap_ops,
- 		      struct page **pages, unsigned int count)
- {
--	int i, ret;
--	bool lazy = false;
-+	int ret;
- 
- 	ret = HYPERVISOR_grant_table_op(GNTTABOP_unmap_grant_ref, unmap_ops, count);
- 	if (ret)
-@@ -944,20 +944,7 @@ int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
- 	if (xen_feature(XENFEAT_auto_translated_physmap))
- 		return ret;
- 
--	if (!in_interrupt() && paravirt_get_lazy_mode() == PARAVIRT_LAZY_NONE) {
--		arch_enter_lazy_mmu_mode();
--		lazy = true;
--	}
--
--	for (i = 0; i < count; i++) {
--		ret = m2p_remove_override(pages[i], kmap_ops ?
--				       &kmap_ops[i] : NULL);
--		if (ret)
--			return ret;
--	}
--
--	if (lazy)
--		arch_leave_lazy_mmu_mode();
-+	ret = m2p_remove_override(pages, kmap_ops, count);
- 
- 	return ret;
- }
-@@ -1247,6 +1234,11 @@ int gnttab_init(void)
- 	gnttab_free_count = nr_init_grefs - NR_RESERVED_ENTRIES;
- 	gnttab_free_head  = NR_RESERVED_ENTRIES;
- 
-+	if (HYPERVISOR_grant_table_op(GNTTABOP_unmap_and_duplicate, NULL, 0))
-+		gnttab_supports_duplicate = false;
-+	else
-+		gnttab_supports_duplicate = true;
-+
- 	printk("Grant table initialized\n");
- 	return 0;
- 
-diff --git a/include/xen/interface/grant_table.h b/include/xen/interface/grant_table.h
-index e40fae9..1f49dc1 100644
---- a/include/xen/interface/grant_table.h
-+++ b/include/xen/interface/grant_table.h
-@@ -428,6 +428,27 @@ struct gnttab_unmap_and_replace {
- DEFINE_GUEST_HANDLE_STRUCT(gnttab_unmap_and_replace);
- 
- /*
-+ * GNTTABOP_unmap_and_duplicate: Destroy one or more grant-reference mappings
-+ * tracked by <handle> but atomically replace the page table entry with one
-+ * pointing to the machine address under <new_addr>.
-+ * NOTES:
-+ *  1. The call may fail in an undefined manner if either mapping is not
-+ *     tracked by <handle>.
-+ *  2. After executing a batch of unmaps, it is guaranteed that no stale
-+ *     mappings will remain in the device or host TLBs.
-+ */
-+#define GNTTABOP_unmap_and_duplicate  12
-+struct gnttab_unmap_and_duplicate {
-+    /* IN parameters. */
-+    uint64_t host_addr;
-+    uint64_t new_addr;
-+    grant_handle_t handle;
-+    /* OUT parameters. */
-+    int16_t  status;              /* => enum grant_status */
-+};
-+DEFINE_GUEST_HANDLE_STRUCT(gnttab_unmap_and_duplicate_t);
-+
-+/*
-  * GNTTABOP_set_version: Request a particular version of the grant
-  * table shared table structure.  This operation can only be performed
-  * once in any given domain.  It must be performed before any grants
-@@ -522,6 +543,7 @@ DEFINE_GUEST_HANDLE_STRUCT(gnttab_get_version);
- #define GNTST_bad_copy_arg    (-10) /* copy arguments cross page boundary.   */
- #define GNTST_address_too_big (-11) /* transfer page address too large.      */
- #define GNTST_eagain          (-12) /* Operation not done; try again.        */
-+#define GNTST_enosys          (-13) /* Operation not implemented.            */
- 
- #define GNTTABOP_error_msgs {                   \
-     "okay",                                     \
--- 
-1.7.7.5 (Apple Git-26)
+I don't know much about IOMMU or PCI or PCIE. But I am taking one step
+back and discuss again the idea of not resetting the IOMMU in second
+kernel.
 
+I think resetting the bus is a good idea but just resetting PCIE
+will solve only part of the problem and we will same issues with
+devices on other buses.
+
+So what sounds more appealing if we could fix this particular
+problem at IOMMU level first (and continue to develp patches for
+resetting various buses).
+
+In the past also these ideas have been proposed that continue to
+use translation table from first kernel. Retain those mappings and
+don't reset IOMMU. Reserve some space for kdump mappings in first
+kernel and use that reserved mapping space in second kernel. It
+never got implemented though.
+
+Bjorn, so what's the fundamental problem with this idea?
+
+Also, what's wrong with DMAR error. If some device tried to do DMA,
+and DMA was blocked because IOMMU got reset and mappings are no more
+there, why does it lead to failure. Shouldn't we just reate limit 
+error messages in such case and if device is needed, anyway driver
+will reset it.
+
+Other problem mentioned in this thread is PCI SERR. What is it? Is
+it some kind of error device reports if it can't do DMA successfully.
+Can these errors be simply ignored kdump kernel? This problem sounds
+similar to a device keeping interrupt asserted in second kernel and
+kernel simply disables the interrupt line if nobody claims the
+interrupt.
+
+IOW, it feels to me that we should handle the issue (DMAR error) at
+IOMMU level first (instead of trying to make sure that by the time
+we get to initialize IOMMU(), all devices in system have been quiesced
+and nobody is doing DMA).
+
+Thanks
+Vivek
