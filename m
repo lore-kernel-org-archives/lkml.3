@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758915Ab3GaFWp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 01:22:45 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:53964 "EHLO arroyo.ext.ti.com"
+	id S1758997Ab3GaFXI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 01:23:08 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:35676 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758743Ab3GaFWm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 01:22:42 -0400
-Message-ID: <51F89B0B.4080803@ti.com>
-Date: Wed, 31 Jul 2013 00:05:15 -0500
+	id S1758253Ab3GaFXE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 01:23:04 -0400
+Message-ID: <51F892D2.4090805@ti.com>
+Date: Tue, 30 Jul 2013 23:30:10 -0500
 From: Joel Fernandes <joelf@ti.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
@@ -31,81 +31,73 @@ CC: Tony Lindgren <tony@atomide.com>,
 	<davinci-linux-open-source@linux.davincidsp.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Linux MMC List <linux-mmc@vger.kernel.org>
-Subject: Re: [PATCH 7/9] ARM: edma: Don't clear EMR of channel in edma_stop
-References: <1375104595-16018-1-git-send-email-joelf@ti.com> <1375104595-16018-8-git-send-email-joelf@ti.com> <51F77982.7030601@ti.com>
-In-Reply-To: <51F77982.7030601@ti.com>
+Subject: Re: [PATCH 3/9] ARM: edma: Add function to manually trigger an EDMA
+ channel
+References: <1375104595-16018-1-git-send-email-joelf@ti.com> <1375104595-16018-4-git-send-email-joelf@ti.com> <51F74CAD.3040604@ti.com>
+In-Reply-To: <51F74CAD.3040604@ti.com>
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/30/2013 03:29 AM, Sekhar Nori wrote:
+On 07/30/2013 12:18 AM, Sekhar Nori wrote:
 > On Monday 29 July 2013 06:59 PM, Joel Fernandes wrote:
->> We certainly don't want error conditions to be cleared anywhere
-> 
-> 'anywhere' is a really loaded term.
-> 
->> as this will make us 'forget' about missed events. We depend on
->> knowing which events were missed in order to be able to reissue them.
-> 
->> This fixes a race condition where the EMR was being cleared
->> by the transfer completion interrupt handler.
+>> Manual trigger for events missed as a result of splitting a
+>> scatter gather list and DMA'ing it in batches. Add a helper
+>> function to trigger a channel incase any such events are missed.
 >>
->> Basically, what was happening was:
+>> Signed-off-by: Joel Fernandes <joelf@ti.com>
+>> ---
+>>  arch/arm/common/edma.c             |   21 +++++++++++++++++++++
+>>  include/linux/platform_data/edma.h |    2 ++
+>>  2 files changed, 23 insertions(+)
 >>
->>             Missed event
->>              |
->>              |
->>              V
->> SG1-SG2-SG3-Null
->>          \
->>           \__TC Interrupt (Almost same time as ARM is executing
->> TC interrupt handler, an event got missed and also forgotten
->> by clearing the EMR).
+>> diff --git a/arch/arm/common/edma.c b/arch/arm/common/edma.c
+>> index 3567ba1..10995b2 100644
+>> --- a/arch/arm/common/edma.c
+>> +++ b/arch/arm/common/edma.c
+>> @@ -1236,6 +1236,27 @@ void edma_resume(unsigned channel)
+>>  }
+>>  EXPORT_SYMBOL(edma_resume);
+>>  
+>> +int edma_manual_trigger(unsigned channel)
 > 
-> Sorry, but I dont see how edma_stop() is coming into picture in the race
-> you describe?
+> edma_trigger_channel() maybe? Brings consistency with
+> edma_alloc_channel() edma_free_channel() etc.
 
-In edma_callback function, for the case of DMA_COMPLETE (Transfer
-completion interrupt), edma_stop() is called when all sets have been
-processed. This had the effect of clearing the EMR.
+Ok, sure.
 
-This has 2 problems:
-
-1.
-If error interrupt is also pending and TC interrupt clears the EMR.
-
-Due to this the ARM will execute the error interrupt even though the EMR
-is clear. As a result, the following if condition in dma_ccerr_handler
-will be true and IRQ_NONE is returned.
-
-        if ((edma_read_array(ctlr, EDMA_EMR, 0) == 0) &&
-            (edma_read_array(ctlr, EDMA_EMR, 1) == 0) &&
-            (edma_read(ctlr, EDMA_QEMR) == 0) &&
-            (edma_read(ctlr, EDMA_CCERR) == 0))
-                return IRQ_NONE;
-
-If this happens enough number of times, IRQ subsystem disables the
-interrupt thinking its spurious which creates serious problems.
-
-2.
-If the above if statement condition is removed, then EMR is 0 so the
-callback function will not be called in dma_ccerr_handler thus the event
-is forgotten, never triggered manually or never sets missed flag of the
-channel.
-
-So about the race: TC interrupt handler executing before the error
-interrupt handler can result in clearing the EMR and creates these problems.
-
->> The EMR is ultimately being cleared by the Error interrupt
->> handler once it is handled so we don't have to do it in edma_stop.
 > 
-> This, I agree with. edma_clean_channel() also there to re-initialize the
-> channel so doing it in edma_stop() certainly seems superfluous.
+>> +{
+>> +	unsigned ctlr;
+>> +	int j;
+>> +	unsigned int mask;
+>> +
+>> +	ctlr = EDMA_CTLR(channel);
+>> +	channel = EDMA_CHAN_SLOT(channel);
+>> +	mask = BIT(channel & 0x1f);
+>> +
+>> +	j = channel >> 5;
+>> +
+>> +	/* EDMA channels without event association */
+> 
+> May be actually check for no-event association before you trigger in
+> software? You can do that by looking at unused channel list, no?
 
-Sure.
+But, we want to trigger whether there is event association or not in
+this function. For ex, MMC has event associated but still this function
+is used to trigger event for it.
+
+> 
+>> +	edma_shadow0_write_array(ctlr, SH_ESR, j, mask);
+> 
+> edma_shadow0_write_array(ctlr, SH_ESR, channel >> 5, mask) is no less
+> readable, but I leave it to you.
+
+Sure that's more readable, will changed it to that.
 
 Thanks,
 
 -Joel
+
