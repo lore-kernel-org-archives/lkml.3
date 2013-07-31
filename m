@@ -1,80 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759146Ab3GaJk1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 05:40:27 -0400
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:47205 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758920Ab3GaJkW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 05:40:22 -0400
-Date: Wed, 31 Jul 2013 13:39:45 +0400
-From: Dmitry Popov <dp@highloadlab.com>
-To: "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, Eric Dumazet <edumazet@google.com>,
-        Neal Cardwell <ncardwell@google.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, trivial@kernel.org
-Subject: [PATCH] tcp: Remove unused tcpct declarations and comments
-Message-Id: <20130731133945.5b7b3f7487491f41ea45a7f6@highloadlab.com>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.20; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1759285Ab3GaJkf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 05:40:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20651 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756031Ab3GaJkc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 05:40:32 -0400
+Date: Wed, 31 Jul 2013 12:40:30 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH 1/3] KVM: x86: rename EMULATE_DO_MMIO
+Message-ID: <20130731094030.GD7484@redhat.com>
+References: <1375197096-2454-1-git-send-email-pbonzini@redhat.com>
+ <1375197096-2454-2-git-send-email-pbonzini@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1375197096-2454-2-git-send-email-pbonzini@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove declaration, 4 defines and confusing comment that are no longer used
-since 1a2c6181c4 ("tcp: Remove TCPCT").
+On Tue, Jul 30, 2013 at 05:11:34PM +0200, Paolo Bonzini wrote:
+> The next patch will reuse it for other userspace exits than MMIO,
+> namely debug events.
+> 
+> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+> ---
+>  arch/x86/include/asm/kvm_host.h | 4 ++--
+>  arch/x86/kvm/mmu.c              | 2 +-
+>  arch/x86/kvm/vmx.c              | 2 +-
+>  arch/x86/kvm/x86.c              | 4 ++--
+>  4 files changed, 6 insertions(+), 6 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+> index 1f98c1b..b33e9dc 100644
+> --- a/arch/x86/include/asm/kvm_host.h
+> +++ b/arch/x86/include/asm/kvm_host.h
+> @@ -795,8 +795,8 @@ extern u32  kvm_min_guest_tsc_khz;
+>  extern u32  kvm_max_guest_tsc_khz;
+>  
+>  enum emulation_result {
+> -	EMULATE_DONE,       /* no further processing */
+> -	EMULATE_DO_MMIO,      /* kvm_run filled with mmio request */
+> +	EMULATE_DONE,         /* no further processing */
+> +	EMULATE_USER_EXIT,    /* kvm_run ready for userspace exit */
+>  	EMULATE_FAIL,         /* can't emulate this instruction */
+>  };
+>  
+> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+> index 6941fa7..7ee30d4 100644
+> --- a/arch/x86/kvm/mmu.c
+> +++ b/arch/x86/kvm/mmu.c
+> @@ -4096,7 +4096,7 @@ int kvm_mmu_page_fault(struct kvm_vcpu *vcpu, gva_t cr2, u32 error_code,
+>  	switch (er) {
+>  	case EMULATE_DONE:
+>  		return 1;
+> -	case EMULATE_DO_MMIO:
+> +	case EMULATE_USER_EXIT:
+>  		++vcpu->stat.mmio_exits;
+>  		/* fall through */
+>  	case EMULATE_FAIL:
+> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+> index 260a919..0c87015 100644
+> --- a/arch/x86/kvm/vmx.c
+> +++ b/arch/x86/kvm/vmx.c
+> @@ -5422,7 +5422,7 @@ static int handle_invalid_guest_state(struct kvm_vcpu *vcpu)
+>  
+>  		err = emulate_instruction(vcpu, EMULTYPE_NO_REEXECUTE);
+>  
+> -		if (err == EMULATE_DO_MMIO) {
+> +		if (err == EMULATE_USER_EXIT) {
+Not related to the patch, but here we need ++vcpu->stat.mmio_exits too.
+And mmio_exits is not really about mmios any more, oh well.
 
-Signed-off-by: Dmitry Popov <dp@highloadlab.com>
----
- include/linux/tcp.h | 1 -
- include/net/tcp.h   | 4 ----
- net/ipv4/tcp.c      | 4 ----
- 3 files changed, 9 deletions(-)
+The patch itself looks good.
+>  			ret = 0;
+>  			goto out;
+>  		}
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index 737c804..c2a0674 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -5038,11 +5038,11 @@ restart:
+>  			writeback = false;
+>  			vcpu->arch.complete_userspace_io = complete_emulated_pio;
+>  		}
+> -		r = EMULATE_DO_MMIO;
+> +		r = EMULATE_USER_EXIT;
+>  	} else if (vcpu->mmio_needed) {
+>  		if (!vcpu->mmio_is_write)
+>  			writeback = false;
+> -		r = EMULATE_DO_MMIO;
+> +		r = EMULATE_USER_EXIT;
+>  		vcpu->arch.complete_userspace_io = complete_emulated_mmio;
+>  	} else if (r == EMULATION_RESTART)
+>  		goto restart;
+> -- 
+> 1.8.1.4
+> 
 
-diff --git a/include/linux/tcp.h b/include/linux/tcp.h
-index 472120b..b7e01bc 100644
---- a/include/linux/tcp.h
-+++ b/include/linux/tcp.h
-@@ -107,7 +107,6 @@ static inline void tcp_clear_options(struct tcp_options_received *rx_opt)
-  * only four options will fit in a standard TCP header */
- #define TCP_NUM_SACKS 4
- 
--struct tcp_cookie_values;
- struct tcp_request_sock_ops;
- 
- struct tcp_request_sock {
-diff --git a/include/net/tcp.h b/include/net/tcp.h
-index d198005..fa6893c 100644
---- a/include/net/tcp.h
-+++ b/include/net/tcp.h
-@@ -192,10 +192,6 @@ extern void tcp_time_wait(struct sock *sk, int state, int timeo);
- #define TCPOLEN_TIMESTAMP      10
- #define TCPOLEN_MD5SIG         18
- #define TCPOLEN_EXP_FASTOPEN_BASE  4
--#define TCPOLEN_COOKIE_BASE    2	/* Cookie-less header extension */
--#define TCPOLEN_COOKIE_PAIR    3	/* Cookie pair header extension */
--#define TCPOLEN_COOKIE_MIN     (TCPOLEN_COOKIE_BASE+TCP_COOKIE_MIN)
--#define TCPOLEN_COOKIE_MAX     (TCPOLEN_COOKIE_BASE+TCP_COOKIE_MAX)
- 
- /* But this is what stacks really send out. */
- #define TCPOLEN_TSTAMP_ALIGNED		12
-diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-index 5423223..077abde 100644
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -410,10 +410,6 @@ void tcp_init_sock(struct sock *sk)
- 
- 	icsk->icsk_sync_mss = tcp_sync_mss;
- 
--	/* Presumed zeroed, in order of appearance:
--	 *	cookie_in_always, cookie_out_never,
--	 *	s_data_constant, s_data_in, s_data_out
--	 */
- 	sk->sk_sndbuf = sysctl_tcp_wmem[1];
- 	sk->sk_rcvbuf = sysctl_tcp_rmem[1];
- 
+--
+			Gleb.
