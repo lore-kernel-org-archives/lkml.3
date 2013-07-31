@@ -1,85 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759458Ab3GaMzX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 08:55:23 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:57456 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751360Ab3GaMzW (ORCPT
+	id S1756380Ab3GaM6Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 08:58:16 -0400
+Received: from smtp.eu.citrix.com ([46.33.159.39]:28573 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751553Ab3GaM6O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 08:55:22 -0400
-Date: Wed, 31 Jul 2013 05:55:13 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: vinayak menon <vinayakm.list@gmail.com>
-Cc: linux-kernel@vger.kernel.org, davem@davemloft.net, getarunks@gmail.com,
-        netdev@vger.kernel.org
-Subject: Re: ipv4: crash at leaf_walk_rcu
-Message-ID: <20130731125513.GS26694@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <CAOaiJ-k14g6ihjVfgHqgq48KV7-dRJ1_owNyDkza-r=36gscsQ@mail.gmail.com>
+	Wed, 31 Jul 2013 08:58:14 -0400
+X-IronPort-AV: E=Sophos;i="4.89,787,1367971200"; 
+   d="scan'208";a="7319649"
+Message-ID: <1375275491.7382.39.camel@kazak.uk.xensource.com>
+Subject: Re: DT bindings as ABI [was: Do we have people interested in device
+ tree janitoring / cleanup?]
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Mark Rutland <mark.rutland@arm.com>
+CC: Olof Johansson <olof@lixom.net>, Catalin Marinas <Catalin.Marinas@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "ksummit-2013-discuss@lists.linuxfoundation.org" 
+	<ksummit-2013-discuss@lists.linuxfoundation.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        "Domenico Andreoli" <cavokz@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dave P Martin <Dave.Martin@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>
+Date: Wed, 31 Jul 2013 13:58:11 +0100
+In-Reply-To: <20130725175702.GC22291@e106331-lin.cambridge.arm.com>
+References: <CAOesGMhJ+je8FZqeFxhAcYwU0CHYer+aGP6DA_8x3azrzfA2sw@mail.gmail.com>
+	 <20130725175702.GC22291@e106331-lin.cambridge.arm.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOaiJ-k14g6ihjVfgHqgq48KV7-dRJ1_owNyDkza-r=36gscsQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13073112-7408-0000-0000-0000127EAA25
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.203.1]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 31, 2013 at 04:40:47PM +0530, vinayak menon wrote:
-> Hi,
+On Thu, 2013-07-25 at 18:57 +0100, Mark Rutland wrote:
+> > A possible way to handle this is to have exactly that: A group of
+> > people that essentially constitute the "standards committee" that meet
+> > on a regular basis to review and approve new bindings. They should be
+> > people not just doing ARM Linux work, but other stakeholders in these
+> > bindings too. One of the things they should probably do is sift
+> > through our current in-kernel bindings and select those who seem ready
+> > to be locked in, review/discuss/decide upon that and once the decision
+> > is made, that specific binding does become part of the static,
+> > never-ever-change ABI of firmware-to-kernel interfaces.   That might
+> > also be the time that the binding is moved from the kernel to a
+> > separate repo, but that's a technicality that we'll let the DT
+> > maintainers decide among themselves, IMHO.
 > 
-> A crash was seen on 3.4.5 kernel during some random wlan operations.
-> 
-> CPU: Single core ARM Cortex A9.
-> 
-> fib_route_seq_next was called with second argument (void *v) as 0xd6e3e360
-> which is a "freed" object of the "ip_fib_trie" cache. I confirmed that the
-> object was freed with crash utility.
-> 
-> Sequence: fib_route_seq_next->trie_nextleaf->leaf_walk_rcu
-> 
-> As "v" was a freed object, inside trie_nextleaf(), node_parent_rcu()
-> returned an invalid tnode. But as I had enabled slab poisoning and the
-> object was already freed, the tnode was 0x6b6b6b6b. And this was passed to
-> leaf_walk_rcu and resulted in the crash.
-> 
-> fib_route_seq_start, takes rcu_read_lock(), but free_leaf
-> calls call_rcu_bh. Can this be the problem ?
-> Should rcu_read_lock() in fib_route_seq_start be changed to rcu_read_lock_bh()
-> ?
+> We're going to need input from other OSs too, or the bindings will
+> remain Linux-specific regardless of how far away the bindings and dts
+> repo(s) is/are.
 
-One way or the other, the RCU read-side primitives need to match the RCU
-update-side primitives.  Adding netdev...
+FWIW my primary interest in stable DT ABIs is because Xen would like to
+consume the same device trees on boot, as well as be able to do other
+clever things with DT at runtime. Specifically:
+      * Take the host device tree passed to Xen at boot, filter out the
+        stuff which Xen uses for itself (which is for the most part core
+        architectural stuff) and pass the remainder to the dom0 Linux
+        kernel (or perhaps in the future another kernel) to drive the
+        remainder of the hardware (mostly the SoC specific stuff, but
+        some architectural and some Xen defined stuff too)
+      * Generate a suitable DT for a guest domain on the fly depending
+        on the guest configuration.
 
-							Thanx, Paul
+Obviously both of those need a stable ABI for us to understand,
+manipulate and generate.
 
-> ----------------------------------------------------------------------------
-> PC is at leaf_walk_rcu+0x10/0xa0
-> LR is at fib_route_seq_next+0x58/0x74
-> pc : [<c0500e5c>]    lr : [<c050108c>]    psr: a0000013
-> sp : c150bee0  ip : 00000000  fp : 00000000
-> r10: 00000400  r9 : 53701020  r8 : c32345c0
-> r7 : 00000000  r6 : 00000001  r5 : 00000000  r4 : 00000002
-> r3 : 6b6b6b6b  r2 : 00000001  r1 : d6e3e360  r0 : 6b6b6b6a
-> Flags: NzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
-> Control: 10c53c7d  Table: 835dc059  DAC: 00000015
-> 
-> Backtrace:
-> [<c0500e5c>] (leaf_walk_rcu+0x10/0xa0) from [<c050108c>]
-> (fib_route_seq_next+0x58/0x74)
-> [<c050108c>] (fib_route_seq_next+0x58/0x74) from [<c011c06c>]
-> (seq_read+0x2cc/0x438)
-> [<c011c06c>] (seq_read+0x2cc/0x438) from [<c0145734>]
-> (proc_reg_read+0xb0/0xcc)
-> [<c0145734>] (proc_reg_read+0xb0/0xcc) from [<c0100798>]
-> (vfs_read+0xac/0x124)
-> [<c0100798>] (vfs_read+0xac/0x124) from [<c0100848>] (sys_read+0x38/0x64)
-> [<c0100848>] (sys_read+0x38/0x64) from [<c000e100>]
-> (ret_fast_syscall+0x0/0x48)
-> 
-> Thanks,
-> Vinayak
+Ian.
 
