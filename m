@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760194Ab3GaNkq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 09:40:46 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46901 "EHLO
+	id S1760103Ab3GaNko (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 09:40:44 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46879 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759652Ab3GaNZv (ORCPT
+	by vger.kernel.org with ESMTP id S1751338Ab3GaNZv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 31 Jul 2013 09:25:51 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Anton Blanchard" <anton@samba.org>,
-        "Rusty Russell" <rusty@rustcorp.com.au>,
-        "Benjamin Herrenschmidt" <benh@kernel.crashing.org>
+CC: akpm@linux-foundation.org, "Jason Wang" <jasowang@redhat.com>,
+        "Brad Hubbard" <bhubbard@redhat.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
 Date: Wed, 31 Jul 2013 15:23:09 +0200
-Message-ID: <lsq.1375276989.950300168@decadent.org.uk>
+Message-ID: <lsq.1375276989.608960498@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [74/84] powerpc/modules: Module CRC relocation fix causes perf issues
+Subject: [03/84] macvtap: fix recovery from gup errors
 In-Reply-To: <lsq.1375276989.251749228@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.216.67.181
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,73 +33,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: "Michael S. Tsirkin" <mst@redhat.com>
 
-commit 0e0ed6406e61434d3f38fb58aa8464ec4722b77e upstream.
+[ Upstream commit 4c7ab054ab4f5d63625508ed6f8a607184cae7c2 ]
 
-Module CRCs are implemented as absolute symbols that get resolved by
-a linker script. We build an intermediate .o that contains an
-unresolved symbol for each CRC. genksysms parses this .o, calculates
-the CRCs and writes a linker script that "resolves" the symbols to
-the calculated CRC.
+get user pages might fail partially in macvtap zero copy
+mode. To recover we need to put all pages that we got,
+but code used a wrong index resulting in double-free
+errors.
 
-Unfortunately the ppc64 relocatable kernel sees these CRCs as symbols
-that need relocating and relocates them at boot. Commit d4703aef
-(module: handle ppc64 relocating kcrctabs when CONFIG_RELOCATABLE=y)
-added a hook to reverse the bogus relocations. Part of this patch
-created a symbol at 0x0:
-
-# head -2 /proc/kallsyms
-0000000000000000 T reloc_start
-c000000000000000 T .__start
-
-This reloc_start symbol is causing lots of confusion to perf. It
-thinks reloc_start is a massive function that stretches from 0x0 to
-0xc000000000000000 and we get various cryptic errors out of perf,
-including:
-
-problem incrementing symbol count, skipping event
-
-This patch removes the  reloc_start linker script label and instead
-defines it as PHYSICAL_START. We also need to wrap it with
-CONFIG_PPC64 because the ppc32 kernel can set a non zero
-PHYSICAL_START at compile time and we wouldn't want to subtract
-it from the CRCs in that case.
-
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Acked-by: Rusty Russell <rusty@rustcorp.com.au>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Reported-by: Brad Hubbard <bhubbard@redhat.com>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Acked-by: Jason Wang <jasowang@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/powerpc/include/asm/module.h | 5 ++---
- arch/powerpc/kernel/vmlinux.lds.S | 3 ---
- 2 files changed, 2 insertions(+), 6 deletions(-)
+ drivers/net/macvtap.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/arch/powerpc/include/asm/module.h
-+++ b/arch/powerpc/include/asm/module.h
-@@ -87,10 +87,9 @@ struct exception_table_entry;
- void sort_ex_table(struct exception_table_entry *start,
- 		   struct exception_table_entry *finish);
- 
--#ifdef CONFIG_MODVERSIONS
-+#if defined(CONFIG_MODVERSIONS) && defined(CONFIG_PPC64)
- #define ARCH_RELOCATES_KCRCTAB
--
--extern const unsigned long reloc_start[];
-+#define reloc_start PHYSICAL_START
- #endif
- #endif /* __KERNEL__ */
- #endif	/* _ASM_POWERPC_MODULE_H */
---- a/arch/powerpc/kernel/vmlinux.lds.S
-+++ b/arch/powerpc/kernel/vmlinux.lds.S
-@@ -38,9 +38,6 @@ jiffies = jiffies_64 + 4;
- #endif
- SECTIONS
- {
--	. = 0;
--	reloc_start = .;
--
- 	. = KERNELBASE;
- 
- /*
+diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
+index 26106c0..d91858e 100644
+--- a/drivers/net/macvtap.c
++++ b/drivers/net/macvtap.c
+@@ -532,8 +532,10 @@ static int zerocopy_sg_from_iovec(struct sk_buff *skb, const struct iovec *from,
+ 			return -EMSGSIZE;
+ 		num_pages = get_user_pages_fast(base, size, 0, &page[i]);
+ 		if (num_pages != size) {
+-			for (i = 0; i < num_pages; i++)
+-				put_page(page[i]);
++			int j;
++
++			for (j = 0; j < num_pages; j++)
++				put_page(page[i + j]);
+ 			return -EFAULT;
+ 		}
+ 		truesize = size * PAGE_SIZE;
 
