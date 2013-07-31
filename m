@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760145Ab3GaNnM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 09:43:12 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46983 "EHLO
+	id S1759786Ab3GaNZs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 09:25:48 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46913 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759761Ab3GaNZt (ORCPT
+	by vger.kernel.org with ESMTP id S1759699Ab3GaNZp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 09:25:49 -0400
+	Wed, 31 Jul 2013 09:25:45 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Eldad Zack" <eldad@fogrefinery.com>,
-        "Takashi Iwai" <tiwai@suse.de>
+CC: akpm@linux-foundation.org,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        "James Bottomley" <JBottomley@Parallels.com>,
+        "Ewan D. Milne" <emilne@redhat.com>
 Date: Wed, 31 Jul 2013 15:23:09 +0200
-Message-ID: <lsq.1375276989.116516589@decadent.org.uk>
+Message-ID: <lsq.1375276989.148708244@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [56/84] ALSA: usb-audio: 6fire: return correct XRUN indication
+Subject: [68/84] [SCSI] sd: fix crash when UA received on DIF enabled device
 In-Reply-To: <lsq.1375276989.251749228@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.216.67.181
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,32 +33,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eldad Zack <eldad@fogrefinery.com>
+From: "Ewan D. Milne" <emilne@redhat.com>
 
-commit be2f93a4c4981b3646b6f98f477154411b8516cb upstream.
+commit 085b513f97d8d799d28491239be4b451bcd8c2c5 upstream.
 
-Return SNDRV_PCM_POS_XRUN (snd_pcm_uframes_t) instead of
-SNDRV_PCM_STATE_XRUN (snd_pcm_state_t) from the pointer
-function of 6fire, as expected by snd_pcm_update_hw_ptr0().
+sd_prep_fn will allocate a larger CDB for the command via mempool_alloc
+for devices using DIF type 2 protection.  This CDB was being freed
+in sd_done, which results in a kernel crash if the command is retried
+due to a UNIT ATTENTION.  This change moves the code to free the larger
+CDB into sd_unprep_fn instead, which is invoked after the request is
+complete.
 
-Caught by sparse.
+It is no longer necessary to call scsi_print_command separately for
+this case as the ->cmnd will no longer be NULL in the normal code path.
 
-Signed-off-by: Eldad Zack <eldad@fogrefinery.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Also removed conditional test for DIF type 2 when freeing the larger
+CDB because the protection_type could have been changed via sysfs while
+the command was executing.
+
+Signed-off-by: Ewan D. Milne <emilne@redhat.com>
+Acked-by: Martin K. Petersen <martin.petersen@oracle.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- sound/usb/6fire/pcm.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/scsi/sd.c | 22 +++++++---------------
+ 1 file changed, 7 insertions(+), 15 deletions(-)
 
---- a/sound/usb/6fire/pcm.c
-+++ b/sound/usb/6fire/pcm.c
-@@ -541,7 +541,7 @@ static snd_pcm_uframes_t usb6fire_pcm_po
- 	snd_pcm_uframes_t ret;
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -641,10 +641,17 @@ static int scsi_setup_flush_cmnd(struct
  
- 	if (rt->panic || !sub)
--		return SNDRV_PCM_STATE_XRUN;
-+		return SNDRV_PCM_POS_XRUN;
+ static void sd_unprep_fn(struct request_queue *q, struct request *rq)
+ {
++	struct scsi_cmnd *SCpnt = rq->special;
++
+ 	if (rq->cmd_flags & REQ_DISCARD) {
+ 		free_page((unsigned long)rq->buffer);
+ 		rq->buffer = NULL;
+ 	}
++	if (SCpnt->cmnd != rq->cmd) {
++		mempool_free(SCpnt->cmnd, sd_cdb_pool);
++		SCpnt->cmnd = NULL;
++		SCpnt->cmd_len = 0;
++	}
+ }
  
- 	spin_lock_irqsave(&sub->lock, flags);
- 	ret = sub->dma_off;
+ /**
+@@ -1452,21 +1459,6 @@ static int sd_done(struct scsi_cmnd *SCp
+ 	if (rq_data_dir(SCpnt->request) == READ && scsi_prot_sg_count(SCpnt))
+ 		sd_dif_complete(SCpnt, good_bytes);
+ 
+-	if (scsi_host_dif_capable(sdkp->device->host, sdkp->protection_type)
+-	    == SD_DIF_TYPE2_PROTECTION && SCpnt->cmnd != SCpnt->request->cmd) {
+-
+-		/* We have to print a failed command here as the
+-		 * extended CDB gets freed before scsi_io_completion()
+-		 * is called.
+-		 */
+-		if (result)
+-			scsi_print_command(SCpnt);
+-
+-		mempool_free(SCpnt->cmnd, sd_cdb_pool);
+-		SCpnt->cmnd = NULL;
+-		SCpnt->cmd_len = 0;
+-	}
+-
+ 	return good_bytes;
+ }
+ 
 
