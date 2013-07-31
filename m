@@ -1,131 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754193Ab3GaGFQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 02:05:16 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:6429 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751842Ab3GaGFN (ORCPT
+	id S1754263Ab3GaGHV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 02:07:21 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59525 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751684Ab3GaGHT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 02:05:13 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 30 Jul 2013 23:05:12 -0700
-Message-ID: <1375251767.32701.5.camel@bilhuang-vm1>
-Subject: Re: [PATCH 1/1] mfd: palmas: Add power off control
-From: Bill Huang <bilhuang@nvidia.com>
-To: Nishanth Menon <nm@ti.com>
-CC: "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "lee.jones@linaro.org" <lee.jones@linaro.org>,
-        "broonie@linaro.org" <broonie@linaro.org>,
-        "j-keerthy@ti.com" <j-keerthy@ti.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "ian@slimlogic.co.uk" <ian@slimlogic.co.uk>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mallikarjun Kasoju <mkasoju@nvidia.com>
-Date: Tue, 30 Jul 2013 23:22:47 -0700
-In-Reply-To: <51F7BCEC.9080803@ti.com>
-References: <1375185957-28212-1-git-send-email-bilhuang@nvidia.com>
-	 <51F7BCEC.9080803@ti.com>
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Wed, 31 Jul 2013 02:07:19 -0400
+Message-ID: <51F8A994.5090809@canonical.com>
+Date: Wed, 31 Jul 2013 08:07:16 +0200
+From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset="ISO-8859-9"
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        bskeggs@redhat.com
+Subject: Re: nouveau: check client.base.vm before dereferencing it.
+References: <20130725162203.GA32273@redhat.com> <20130730225521.GA25895@redhat.com>
+In-Reply-To: <20130730225521.GA25895@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-07-30 at 21:17 +0800, Nishanth Menon wrote:
-> On 07/30/2013 07:05 AM, Bill Huang wrote:
-> > Hook up "pm_power_off" to palmas power off routine if there is DT
-> > property "ti,system-power-controller" defined, so platform which is
-> > powered by this regulator can be powered off properly.
-> >
-> > Based on work by:
-> > Mallikarjun Kasoju <mkasoju@nvidia.com>
-> >
-> > Signed-off-by: Bill Huang <bilhuang@nvidia.com>
-> > cc: Mallikarjun Kasoju <mkasoju@nvidia.com>
-> > ---
-> >   .../devicetree/bindings/regulator/palmas-pmic.txt  |    5 +++++
-> >   drivers/mfd/palmas.c                               |   23 ++++++++++++++++++--
-> >   include/linux/mfd/palmas.h                         |    1 +
-> any reason why it wont fit in drivers/power/reset/ is'nt it the right 
-> place to add this?
-> >   3 files changed, 27 insertions(+), 2 deletions(-)
-> >
-> > diff --git a/Documentation/devicetree/bindings/regulator/palmas-pmic.txt b/Documentation/devicetree/bindings/regulator/palmas-pmic.txt
-> > index 30b0581..4adca2a 100644
-> > --- a/Documentation/devicetree/bindings/regulator/palmas-pmic.txt
-> > +++ b/Documentation/devicetree/bindings/regulator/palmas-pmic.txt
-> > @@ -36,6 +36,9 @@ Optional nodes:
-> >   	       ti,smps-range - OTP has the wrong range set for the hardware so override
-> >   	       0 - low range, 1 - high range.
-> >
-> > +- ti,system-power-controller: Telling whether or not this pmic is controlling
-> controller or master?
-
-We name it controller since it controls the system power of the
-platform, I'm not sure will it make more sense to be master? Or does it
-makes sense to other pmic which also control the system power (the same
-property are already used in pmic TPS6586x and TPS65910).
-
-> > +			      the system power.
-> > +
-> >   Example:
-> >
-> >   #include <dt-bindings/interrupt-controller/irq.h>
-> > @@ -48,6 +51,8 @@ pmic {
-> >
-> >   	ti,ldo6-vibrator;
-> >
-> > +	ti,system-power-controller;
-> > +
-> >   	regulators {
-> >   		smps12_reg : smps12 {
-> >   			regulator-name = "smps12";
-> > diff --git a/drivers/mfd/palmas.c b/drivers/mfd/palmas.c
-> > index e4d1c70..0662b21 100644
-> > --- a/drivers/mfd/palmas.c
-> > +++ b/drivers/mfd/palmas.c
-> > @@ -229,6 +229,22 @@ static void palmas_dt_to_pdata(struct i2c_client *i2c,
-> >   					PALMAS_POWER_CTRL_ENABLE2_MASK;
-> >   	if (i2c->irq)
-> >   		palmas_set_pdata_irq_flag(i2c, pdata);
-> > +
-> > +	pdata->pm_off = of_property_read_bool(node,
-> > +			"ti,system-power-controller");
-> > +}
-> > +
-> > +static struct palmas *palmas_dev;
-> > +static void palmas_power_off(void)
-> > +{
-> > +	unsigned int addr;
-> > +
-> > +	if (!palmas_dev)
-> > +		return;
-> > +
-> > +	addr = PALMAS_BASE_TO_REG(PALMAS_PMU_CONTROL_BASE, PALMAS_DEV_CTRL);
-> > +
-> > +	regmap_update_bits(palmas_dev->regmap[0], addr, 1, 0);
-> slave = PALMAS_BASE_TO_SLAVE(base);
-> addr = PALMAS_BASE_TO_REG(base, reg);
-> 
-> r = regmap_update_bits(palmas->regmap[slave], addr, mask, val);
-> instead?
-> 
-> just for reference, an old implementation I had done is available at [1]
-> 
-Thanks, I'll send out v2.
-> 
-> [1] 
-> http://git.omapzoom.org/?p=kernel/omap.git;a=blob;f=drivers/mfd/palmas-poweroff.c;hb=p-linux-omap-3.4
-> 
-
+Op 31-07-13 00:55, Dave Jones schreef:
+> On Thu, Jul 25, 2013 at 12:22:03PM -0400, Dave Jones wrote:
+>  > This recently started happening (since the last DRM merge, 3.10 was fine).
+>  > 
+>  > [   17.751970] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+>  > [   17.753911] CPU: 3 PID: 292 Comm: systemd-udevd Not tainted 3.11.0-rc2+ #13 
+>  > [   17.754392] EIP: 0060:[<f86dde0f>] EFLAGS: 00010296 CPU: 3
+>  > [   17.754542] EIP is at nouveau_bo_new+0x1f/0x28c [nouveau]
+>  > [   17.754647] EAX: 00000000 EBX: ed8610b0 ECX: 00000100 EDX: 00004000
+>  > ..
+>  > [   17.756729] Call Trace:
+>  > [   17.756849]  [<f850280f>] ? drm_mode_crtc_set_gamma_size+0x23/0x43 [drm]
+>  > [   17.756993]  [<f86ef2f6>] nv04_crtc_create+0xd4/0x142 [nouveau]
+>  > [   17.757138]  [<f86f2758>] nv04_display_create+0xf2/0x35a [nouveau]
+>  > [   17.757281]  [<f86e801a>] nouveau_display_create+0x33f/0x553 [nouveau]
+>  > [   17.757422]  [<f86d99fb>] nouveau_drm_load+0x22f/0x5dc [nouveau]
+>  > [   17.757534]  [<c1391816>] ? device_register+0x17/0x1a
+>  > [   17.757648]  [<f84ff77b>] ? drm_sysfs_device_add+0x76/0xa3 [drm]
+>  > [   17.757764]  [<f84fe6bd>] drm_get_pci_dev+0x138/0x238 [drm]
+>  > [   17.757902]  [<f86ab3ce>] ? nouveau_device_create_+0x65/0x11b [nouveau]
+>  > [   17.758044]  [<f86da081>] nouveau_drm_probe+0x2d9/0x360 [nouveau]
+>  > [   17.758155]  [<c12d55ac>] pci_device_probe+0x6c/0xb0
+>  > [   17.758261]  [<c1393dae>] driver_probe_device+0x7f/0x356
+>  > [   17.758367]  [<c139412c>] __driver_attach+0x74/0x76
+>  > [   17.758473]  [<c13940b8>] ? __device_attach+0x33/0x33
+>  > [   17.758579]  [<c13922b6>] bus_for_each_dev+0x49/0x74
+>  > [   17.758684]  [<c13938ec>] driver_attach+0x1e/0x20
+>  > [   17.758791]  [<c13940b8>] ? __device_attach+0x33/0x33
+>  > [   17.758896]  [<c1393550>] bus_add_driver+0x1d0/0x27c
+>  > [   17.759002]  [<c12d51c2>] ? pci_pm_suspend+0x111/0x111
+>  > [   17.759109]  [<c12d51c2>] ? pci_pm_suspend+0x111/0x111
+>  > [   17.759215]  [<c1394667>] driver_register+0x6a/0x123
+>  > [   17.759321]  [<c12bdfad>] ? __raw_spin_lock_init+0x2d/0x4e
+>  > [   17.759428]  [<c12d45f3>] __pci_register_driver+0x4a/0x4d
+>  > [   17.760008]  [<f84fe8a3>] drm_pci_init+0xe6/0xee [drm]
+>  > [   17.760008]  [<f8752000>] ? 0xf8751fff
+>  > [   17.760008]  [<f8752048>] nouveau_drm_init+0x48/0x1000 [nouveau]
+>  > [   17.760008]  [<c10003f0>] do_one_initcall+0xc0/0x180
+>  > [   17.760008]  [<f8752000>] ? 0xf8751fff
+>  > [   17.760008]  [<c1033765>] ? set_memory_nx+0x5a/0x5c
+>  > [   17.760008]  [<c15aca75>] ? set_section_ro_nx+0x54/0x59
+>  > [   17.760008]  [<c10b4174>] load_module+0x1ad6/0x2519
+>  > [   17.760008]  [<c10b05ed>] ? copy_module_from_fd.isra.49+0x34/0x13b
+>  > [   17.760008]  [<c10b4d0b>] SyS_finit_module+0x73/0xac
+>  > [   17.760008]  [<c106b0cb>] ? up_write+0x1b/0x30
+>  > [   17.760008]  [<c11343ca>] ? vm_mmap_pgoff+0x7a/0x97
+>  > [   17.760008]  [<c15bf03b>] sysenter_do_call+0x12/0x32
+>  > [   17.760008] Code: c7 83 1c 01 00 00 ff ff ff ff eb aa 55 89 e5 57 56 53 83 ec 2c 66 66 66 66 90 89 d6 89 4d e8 8b b8 ec 03 00 00 8b 87 8c 00 00 00 <8b> 00 0f b6 88 91 00 00 00 b8 ff ff ff ff d3 e0 25 ff ff ff 7f
+>
+> 0108bc808107b97e101b15af9705729626be6447 introduced an oops due
+> to use doing a dereference on a variable that can validly be null.
+>     
+> Split up the new check, and add an additional check before
+> the potential NULL dereference.
+>     
+> Signed-off-by: Dave Jones <davej@redhat.com>
+>
+http://cgit.freedesktop.org/nouveau/linux-2.6/commit/?id=421e3673400de7ccd0222e041803332c907a3417
 
