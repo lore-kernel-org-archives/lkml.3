@@ -1,148 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759398Ab3GaJXU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 05:23:20 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:43001 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755221Ab3GaJV6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 05:21:58 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.34 with qID r6V9Lq5p030808, This message is accepted by code: ctloc85258
-From: Hayes Wang <hayeswang@realtek.com>
-To: <netdev@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH v4 4/5] net/usb/r8152: make sure the USB buffer is DMA-able
-Date: Wed, 31 Jul 2013 17:21:25 +0800
-Message-ID: <1375262486-5373-4-git-send-email-hayeswang@realtek.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1375262486-5373-1-git-send-email-hayeswang@realtek.com>
-References: <D7C722C73C7A400780358D0376412267@realtek.com.tw>
- <1375262486-5373-1-git-send-email-hayeswang@realtek.com>
+	id S1759322Ab3GaJX4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 05:23:56 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:37294 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753959Ab3GaJXy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 05:23:54 -0400
+Date: Wed, 31 Jul 2013 11:23:52 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>,
+        Joe Perches <joe@perches.com>, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>, Anton Vorontsov <anton@enomsg.org>,
+        Colin Cross <ccross@android.com>, Kees Cook <keescook@chromium.org>,
+        Tony Luck <tony.luck@intel.com>, Len Brown <lenb@kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>
+Subject: Re: [PATCH] APEI/ERST: Fix error message formatting
+Message-ID: <20130731092351.GA4724@pd.tnic>
+References: <20130724171347.GB29756@naverao1-tp.watson.ibm.com>
+ <1374686598.18818.18.camel@joe-AO722>
+ <51F10AA8.2050901@linux.vnet.ibm.com>
+ <CAErSpo5vLbsM5BXjrCVy1AKBxRRSH33TthyyK3O35Mghqw81nQ@mail.gmail.com>
+ <20130729135812.GD6634@pd.tnic>
+ <CAErSpo6fbMmicX95j_wYkJRnQeJEZ_jQSm76j9ZN4sHP0C2Yhg@mail.gmail.com>
+ <20130729144046.GE6634@pd.tnic>
+ <CAErSpo69wNc1h6PyJhFfhdFzz0GOiM=SCCfrm-WO5XDFTFzcHw@mail.gmail.com>
+ <20130729152230.GG6634@pd.tnic>
+ <CAErSpo7fmr9tsvA2fWgVWaOO9=hzHt8=hhr49BPrW3KxZtGLuw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CAErSpo7fmr9tsvA2fWgVWaOO9=hzHt8=hhr49BPrW3KxZtGLuw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allocate the required memory before calling usb_control_msg. And
-the additional memory copy is necessary.
+On Mon, Jul 29, 2013 at 10:12:56AM -0600, Bjorn Helgaas wrote:
+> Yep, fair enough.  Looks good to me.
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
----
- drivers/net/usb/r8152.c | 60 ++++++++++++++++++++++++++++---------------------
- 1 file changed, 35 insertions(+), 25 deletions(-)
+Thanks. I've added the newline per Joe's suggestion, added your Acked-by
+and will send it upwards soonish.
 
-diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
-index ee13f9e..ef033ab 100644
---- a/drivers/net/usb/r8152.c
-+++ b/drivers/net/usb/r8152.c
-@@ -344,17 +344,41 @@ static const int multicast_filter_limit = 32;
- static
- int get_registers(struct r8152 *tp, u16 value, u16 index, u16 size, void *data)
- {
--	return usb_control_msg(tp->udev, usb_rcvctrlpipe(tp->udev, 0),
-+	int ret;
-+	void *tmp;
-+
-+	tmp = kmalloc(size, GFP_KERNEL);
-+	if (!tmp)
-+		return -ENOMEM;
-+
-+	ret = usb_control_msg(tp->udev, usb_rcvctrlpipe(tp->udev, 0),
- 			       RTL8152_REQ_GET_REGS, RTL8152_REQT_READ,
--			       value, index, data, size, 500);
-+			       value, index, tmp, size, 500);
-+
-+	memcpy(data, tmp, size);
-+	kfree(tmp);
-+
-+	return ret;
- }
- 
- static
- int set_registers(struct r8152 *tp, u16 value, u16 index, u16 size, void *data)
- {
--	return usb_control_msg(tp->udev, usb_sndctrlpipe(tp->udev, 0),
-+	int ret;
-+	void *tmp;
-+
-+	tmp = kmalloc(size, GFP_KERNEL);
-+	if (!tmp)
-+		return -ENOMEM;
-+
-+	memcpy(tmp, data, size);
-+
-+	ret = usb_control_msg(tp->udev, usb_sndctrlpipe(tp->udev, 0),
- 			       RTL8152_REQ_SET_REGS, RTL8152_REQT_WRITE,
--			       value, index, data, size, 500);
-+			       value, index, tmp, size, 500);
-+
-+	kfree(tmp);
-+	return ret;
- }
- 
- static int generic_ocp_read(struct r8152 *tp, u16 index, u16 size,
-@@ -685,21 +709,14 @@ static void ocp_reg_write(struct r8152 *tp, u16 addr, u16 data)
- static inline void set_ethernet_addr(struct r8152 *tp)
- {
- 	struct net_device *dev = tp->netdev;
--	u8 *node_id;
-+	u8 node_id[8] = {0};
- 
--	node_id = kmalloc(sizeof(u8) * 8, GFP_KERNEL);
--	if (!node_id) {
--		netif_err(tp, probe, dev, "out of memory");
--		return;
--	}
--
--	if (pla_ocp_read(tp, PLA_IDR, sizeof(u8) * 8, node_id) < 0)
-+	if (pla_ocp_read(tp, PLA_IDR, sizeof(node_id), node_id) < 0)
- 		netif_notice(tp, probe, dev, "inet addr fail\n");
- 	else {
- 		memcpy(dev->dev_addr, node_id, dev->addr_len);
- 		memcpy(dev->perm_addr, dev->dev_addr, dev->addr_len);
- 	}
--	kfree(node_id);
- }
- 
- static int rtl8152_set_mac_address(struct net_device *netdev, void *p)
-@@ -882,15 +899,10 @@ static void rtl8152_set_rx_mode(struct net_device *netdev)
- static void _rtl8152_set_rx_mode(struct net_device *netdev)
- {
- 	struct r8152 *tp = netdev_priv(netdev);
--	u32 tmp, *mc_filter;	/* Multicast hash filter */
-+	u32 mc_filter[2];	/* Multicast hash filter */
-+	__le32 tmp[2];
- 	u32 ocp_data;
- 
--	mc_filter = kmalloc(sizeof(u32) * 2, GFP_KERNEL);
--	if (!mc_filter) {
--		netif_err(tp, link, netdev, "out of memory");
--		return;
--	}
--
- 	clear_bit(RTL8152_SET_RX_MODE, &tp->flags);
- 	netif_stop_queue(netdev);
- 	ocp_data = ocp_read_dword(tp, MCU_TYPE_PLA, PLA_RCR);
-@@ -918,14 +930,12 @@ static void _rtl8152_set_rx_mode(struct net_device *netdev)
- 		}
- 	}
- 
--	tmp = mc_filter[0];
--	mc_filter[0] = __cpu_to_le32(swab32(mc_filter[1]));
--	mc_filter[1] = __cpu_to_le32(swab32(tmp));
-+	tmp[0] = __cpu_to_le32(swab32(mc_filter[1]));
-+	tmp[1] = __cpu_to_le32(swab32(mc_filter[0]));
- 
--	pla_ocp_write(tp, PLA_MAR, BYTE_EN_DWORD, sizeof(u32) * 2, mc_filter);
-+	pla_ocp_write(tp, PLA_MAR, BYTE_EN_DWORD, sizeof(tmp), tmp);
- 	ocp_write_dword(tp, MCU_TYPE_PLA, PLA_RCR, ocp_data);
- 	netif_wake_queue(netdev);
--	kfree(mc_filter);
- }
- 
- static netdev_tx_t rtl8152_start_xmit(struct sk_buff *skb,
 -- 
-1.8.3.1
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
