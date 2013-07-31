@@ -1,47 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757030Ab3GaQgL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 12:36:11 -0400
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:52929 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754304Ab3GaQgJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 12:36:09 -0400
+	id S1760266Ab3GaQg0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 12:36:26 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:51107 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760170Ab3GaQgZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 12:36:25 -0400
+Date: Wed, 31 Jul 2013 18:36:23 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org
+Cc: lkml <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: i915 backlight
+Message-ID: <20130731163623.GD4724@pd.tnic>
+References: <20130731162252.GC4724@pd.tnic>
 MIME-Version: 1.0
-In-Reply-To: <cover.1375279948.git.viresh.kumar@linaro.org>
-References: <cover.1375279948.git.viresh.kumar@linaro.org>
-Date: Wed, 31 Jul 2013 22:06:08 +0530
-Message-ID: <CAK9yfHwZCBk5boyiak1FJ7WVJ+FxLjPk1Wa5eYbuZw8BaOV5jw@mail.gmail.com>
-Subject: Re: [PATCH 00/15] cpufreq: initialize drivers .owner field with THIS_MODULE
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: rjw@sisk.pl, linaro-kernel@lists.linaro.org, patches@linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, arnd.bergmann@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130731162252.GC4724@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Viresh,
+On Wed, Jul 31, 2013 at 06:22:52PM +0200, Borislav Petkov wrote:
+> Dudes,
+> 
+> has anyone already reported this (happens on Linus of today +
+> tip/master):
 
-On 31 July 2013 19:49, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> CPUFreq core does following at multiple places:
-> module_{get|put}(cpufreq_driver->owner)).
->
-> This is done to make sure module doesn't get unloaded if it is currently in use.
-> This will work only if the .owner field of cpufreq driver is initialized with a
-> valid pointer.
->
-> This field wasn't initialized for many cpufreq driver, lets initialize it with
-> THIS_MODULE.
+Oh, one more thing: I can't control the backlight anymore on this x230
+with the Fn-Fx keys and this is most probably related to that recent
+backlight revert story. If there is a new approach I can test, please
+let me know.
 
+Btw, it worked before on this machine with "acpi_backlight=vendor" on
+the cmdline.
 
-Isn't it possible to do this inside cpufreq_register_driver function
-in a similar way as done for platform_driver_register [1].
-
-[1] https://lkml.org/lkml/2013/5/25/5
+Thanks a lot.
 
 -- 
-With warm regards,
-Sachin
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
