@@ -1,119 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759803Ab3GaNbA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 09:31:00 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46998 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759768Ab3GaN0G (ORCPT
+	id S1759950Ab3GaNbL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 09:31:11 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:60427 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759710Ab3GaNbI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 09:26:06 -0400
-Content-Type: text/plain; charset="UTF-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-MIME-Version: 1.0
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Tan Xiaojun" <tanxiaojun@huawei.com>,
-        "dingtianhong" <dingtianhong@huawei.com>,
-        "David S. Miller" <davem@davemloft.net>
-Date: Wed, 31 Jul 2013 15:23:09 +0200
-Message-ID: <lsq.1375276989.794407031@decadent.org.uk>
-X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [18/84] dummy: fix oops when loading the dummy failed
-In-Reply-To: <lsq.1375276989.251749228@decadent.org.uk>
-X-SA-Exim-Connect-IP: 151.216.67.181
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Wed, 31 Jul 2013 09:31:08 -0400
+X-AuditID: cbfee61b-b7efe6d000007b11-bf-51f9119a9f8b
+Message-id: <51F91195.1020904@partner.samsung.com>
+Date: Wed, 31 Jul 2013 15:31:01 +0200
+From: Piotr Sarna <p.sarna@partner.samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623
+ Thunderbird/17.0.7
+MIME-version: 1.0
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org, Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-kernel@vger.kernel.org, ngupta@vflare.org,
+        b.zolnierkie@samsung.com
+Subject: Re: [PATCH 1/2] staging: zram: add Crypto API support
+References: <1375187449-6546-1-git-send-email-p.sarna@partner.samsung.com>
+ <20130730135333.GB27962@kroah.com> <51F8E404.6070507@partner.samsung.com>
+ <20130731124950.GB30635@kroah.com>
+In-reply-to: <20130731124950.GB30635@kroah.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrBLMWRmVeSWpSXmKPExsVy+t9jQd1Zgj8DDRrfq1tsnLGe1WLPmV/s
+	Fs2L17NZnG16w25xedccNosNLbPYHdg87u07zOKxf+4ado++LasYPXZ+2szq8XmTXABrFJdN
+	SmpOZllqkb5dAldGy+k3TAX7hCqaPjQxNzDu4+ti5OSQEDCRaFq2nRXCFpO4cG89WxcjF4eQ
+	wHRGidn7r7JCOK8ZJXY8XQpWxStgJHGm/T4ziM0ioCrxp70PLM4moC/x5foali5GDg5RgQiJ
+	o8s1IcoFJX5MvscCYosIaEi8PHqLBWQms8A0RonpDz+CzREWsJNYc3AjM8Sy3YwS/UevgQ3l
+	BBp6dOotMJtZQEdif+s0NghbXmLzmrfMExgFZiFZMgtJ2SwkZQsYmVcxiqYWJBcUJ6XnGukV
+	J+YWl+al6yXn525iBIf3M+kdjKsaLA4xCnAwKvHwzrj0PVCINbGsuDL3EKMEB7OSCO8e1p+B
+	QrwpiZVVqUX58UWlOanFhxilOViUxHkPtloHCgmkJ5akZqemFqQWwWSZODilGhh93GdeqLW5
+	tLrwwomteT/ZSqv3Od+Ourv60UeZ5wLXFPK3/O944rJvd+bR0oXCOlfmrHuyIq424cWPO9pJ
+	greMJRzltkXcz8lw2/qcx86yjIdX5TLnjGC9e3b/GUMs+fJk7jze/e2UcakRn5vr/X0Kj//L
+	bHBZYX+N68GDlUIu5f/aZ37/o39AiaU4I9FQi7moOBEA20pdimsCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2.50-rc1 review patch.  If anyone has any objections, please let me know.
+On 07/31/2013 02:49 PM, Greg KH wrote:
+> On Wed, Jul 31, 2013 at 12:16:36PM +0200, Piotr Sarna wrote:
+>> Hi,
+>>
+>> On 07/30/2013 03:53 PM, Greg KH wrote:
+>>> On Tue, Jul 30, 2013 at 02:30:48PM +0200, Piotr Sarna wrote:
+>>>> Current version of zram does not allow any substitution of a default
+>>>> compression algorithm. Therefore, I decided to change the existing
+>>>> implementation of page compression by adding Crypto API compability.
+>>>
+>>> As I have stated before, I want this code to get merged out of the
+>>> drivers/staging/ area _before_ any new features get added to it.  People
+>>> are taking too much time adding new stuff, like this, and no one seems
+>>> to be working to get it merged to the proper place anymore.
+>>>
+>>
+>> OK, but we actually need those features in order to test zram
+>> against other, competitive solutions - and then decide whether
+>> and how to merge it out of /drivers/staging.
+> 
+> Where is another "competitive solution" in the kernel?
+> 
+> And you are implying that as-is, zram isn't acceptable, right?  If so, I
+> should just delete it now as I was originally told otherwise, that's why
+> I merged it :(
+> 
+>>> So again, I'm going to have to say no to a new feature here, sorry.
+>>> zcache, zram, and zsmalloc need to get cleaned up and merged out of
+>>> staging before anything new can be added to them.
+>>>
+>>> Or, if no one is working on that, I guess I can just delete them,
+>>> right?...
+>>>
+>>
+>> Is there any official TODO list of cleaning up and merging out zram?
+> 
+> As it came from the "zswap" code, there doesn't seem to be one :(
+> 
+> The code is over 2 years old now, with no percieved movement out of
+> staging.  If it doesn't get fixed up in the next kernel version or so, I
+> will have to remove it entirely.
+> 
+> sorry,
+> 
+> greg k-h
+> 
 
-------------------
+"Another competitive solutions" I thought of were zswap and zcache.
 
-From: dingtianhong <dingtianhong@huawei.com>
+On one hand, during my tests (of compressed swap feature), zram
+turned out to be no faster than zswap/zcache (but no slower either).
 
-[ Upstream commit 2c8a01894a12665d8059fad8f0a293c98a264121 ]
+On the other, zram happens to have some more, perhaps reasonable
+use cases (described in zram.txt), e.g. mounting it as /tmp.
 
-We rename the dummy in modprobe.conf like this:
+So far, I haven't tested those other features of zram,
+so I can't possibly say whether it should be considered for a merge-out
+or kept in staging for now.
 
-install dummy0 /sbin/modprobe -o dummy0 --ignore-install dummy
-install dummy1 /sbin/modprobe -o dummy1 --ignore-install dummy
-
-We got oops when we run the command:
-
-modprobe dummy0
-modprobe dummy1
-
-------------[ cut here ]------------
-
-[ 3302.187584] BUG: unable to handle kernel NULL pointer dereference at 0000000000000008
-[ 3302.195411] IP: [<ffffffff813fe62a>] __rtnl_link_unregister+0x9a/0xd0
-[ 3302.201844] PGD 85c94a067 PUD 8517bd067 PMD 0
-[ 3302.206305] Oops: 0002 [#1] SMP
-[ 3302.299737] task: ffff88105ccea300 ti: ffff880eba4a0000 task.ti: ffff880eba4a0000
-[ 3302.307186] RIP: 0010:[<ffffffff813fe62a>]  [<ffffffff813fe62a>] __rtnl_link_unregister+0x9a/0xd0
-[ 3302.316044] RSP: 0018:ffff880eba4a1dd8  EFLAGS: 00010246
-[ 3302.321332] RAX: 0000000000000000 RBX: ffffffff81a9d738 RCX: 0000000000000002
-[ 3302.328436] RDX: 0000000000000000 RSI: ffffffffa04d602c RDI: ffff880eba4a1dd8
-[ 3302.335541] RBP: ffff880eba4a1e18 R08: dead000000200200 R09: dead000000100100
-[ 3302.342644] R10: 0000000000000080 R11: 0000000000000003 R12: ffffffff81a9d788
-[ 3302.349748] R13: ffffffffa04d7020 R14: ffffffff81a9d670 R15: ffff880eba4a1dd8
-[ 3302.364910] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[ 3302.370630] CR2: 0000000000000008 CR3: 000000085e15e000 CR4: 00000000000427e0
-[ 3302.377734] DR0: 0000000000000003 DR1: 00000000000000b0 DR2: 0000000000000001
-[ 3302.384838] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[ 3302.391940] Stack:
-[ 3302.393944]  ffff880eba4a1dd8 ffff880eba4a1dd8 ffff880eba4a1e18 ffffffffa04d70c0
-[ 3302.401350]  00000000ffffffef ffffffffa01a8000 0000000000000000 ffffffff816111c8
-[ 3302.408758]  ffff880eba4a1e48 ffffffffa01a80be ffff880eba4a1e48 ffffffffa04d70c0
-[ 3302.416164] Call Trace:
-[ 3302.418605]  [<ffffffffa01a8000>] ? 0xffffffffa01a7fff
-[ 3302.423727]  [<ffffffffa01a80be>] dummy_init_module+0xbe/0x1000 [dummy0]
-[ 3302.430405]  [<ffffffffa01a8000>] ? 0xffffffffa01a7fff
-[ 3302.435535]  [<ffffffff81000322>] do_one_initcall+0x152/0x1b0
-[ 3302.441263]  [<ffffffff810ab24b>] do_init_module+0x7b/0x200
-[ 3302.446824]  [<ffffffff810ad3d2>] load_module+0x4e2/0x530
-[ 3302.452215]  [<ffffffff8127ae40>] ? ddebug_dyndbg_boot_param_cb+0x60/0x60
-[ 3302.458979]  [<ffffffff810ad5f1>] SyS_init_module+0xd1/0x130
-[ 3302.464627]  [<ffffffff814b9652>] system_call_fastpath+0x16/0x1b
-[ 3302.490090] RIP  [<ffffffff813fe62a>] __rtnl_link_unregister+0x9a/0xd0
-[ 3302.496607]  RSP <ffff880eba4a1dd8>
-[ 3302.500084] CR2: 0000000000000008
-[ 3302.503466] ---[ end trace 8342d49cd49f78ed ]---
-
-The reason is that when loading dummy, if __rtnl_link_register() return failed,
-the init_module should return and avoid take the wrong path.
-
-Signed-off-by: Tan Xiaojun <tanxiaojun@huawei.com>
-Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- drivers/net/dummy.c | 4 ++++
- 1 file changed, 4 insertions(+)
-
-diff --git a/drivers/net/dummy.c b/drivers/net/dummy.c
-index 68fe73c..99b1145 100644
---- a/drivers/net/dummy.c
-+++ b/drivers/net/dummy.c
-@@ -186,6 +186,8 @@ static int __init dummy_init_module(void)
- 
- 	rtnl_lock();
- 	err = __rtnl_link_register(&dummy_link_ops);
-+	if (err < 0)
-+		goto out;
- 
- 	for (i = 0; i < numdummies && !err; i++) {
- 		err = dummy_init_one();
-@@ -193,6 +195,8 @@ static int __init dummy_init_module(void)
- 	}
- 	if (err < 0)
- 		__rtnl_link_unregister(&dummy_link_ops);
-+
-+out:
- 	rtnl_unlock();
- 
- 	return err;
-
+Regards,
+Piotr Sarna
