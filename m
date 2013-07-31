@@ -1,93 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759447Ab3GaI54 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 04:57:56 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:41798 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759394Ab3GaI5v (ORCPT
+	id S1759465Ab3GaI60 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 04:58:26 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:28406 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759282Ab3GaI6U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 04:57:51 -0400
-Date: Wed, 31 Jul 2013 01:57:07 -0700
-From: tip-bot for Frederic Weisbecker <tipbot@zytor.com>
-Message-ID: <tip-93786a5f6aeb9c032c1c240246c5aabcf457b38f@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, acme@redhat.com,
-        hpa@zytor.com, mingo@kernel.org, anish198519851985@gmail.com,
-        peterz@infradead.org, srivatsa.bhat@linux.vnet.ibm.com,
-        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
-        tglx@linutronix.de, dzickus@redhat.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, eranian@google.com,
-        linux-kernel@vger.kernel.org, anish198519851985@gmail.com,
-        peterz@infradead.org, srivatsa.bhat@linux.vnet.ibm.com,
-        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
-        tglx@linutronix.de, dzickus@redhat.com
-In-Reply-To: <1374539466-4799-9-git-send-email-fweisbec@gmail.com>
-References: <1374539466-4799-9-git-send-email-fweisbec@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] watchdog: Make it work under full dynticks
-Git-Commit-ID: 93786a5f6aeb9c032c1c240246c5aabcf457b38f
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 31 Jul 2013 01:57:14 -0700 (PDT)
+	Wed, 31 Jul 2013 04:58:20 -0400
+X-AuditID: cbfee691-b7fef6d000002d62-18-51f8d1aa1f48
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Andrew Morton'" <akpm@linux-foundation.org>
+Cc: "'LKML'" <linux-kernel@vger.kernel.org>,
+        "'Richard Purdie'" <rpurdie@rpsys.net>,
+        Jingoo Han <jg1.han@samsung.com>
+Subject: [PATCH 3/3] backlight: lp8788: Staticize 'default_bl_config'
+Date: Wed, 31 Jul 2013 17:58:18 +0900
+Message-id: <002f01ce8dcc$1988e5d0$4c9ab170$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: Ac6NzBUqund+adrpRn6MICICBY5QEQ==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrKIsWRmVeSWpSXmKPExsVy+t8zI91VF38EGixoFreYs34Nm8XlhZdY
+	LS7vmsNmsXvXU1YHFo8TM36zeOyZ/4PVo2/LKkaPz5vkAliiuGxSUnMyy1KL9O0SuDIOHnjM
+	VnCEreLgqf3sDYyHWbsYOTkkBEwktm/8wA5hi0lcuLeerYuRi0NIYBmjRNeaTmaYokc7l7FD
+	JKYzSuy4tY4VwvnFKPHu60ewUWwCahJfvhwGquLgEBHQl2hr0QAJMwsUS8w++4QRxBYWcJXY
+	dXAqC4jNIqAqsW/6a0aQcl4BS4mXi6RAwrwCghI/Jt9jgWjVkli/8zgThC0vsXnNW6h7FCR2
+	nH0NNlJEQE/ixLSLjBA1IhL7XrxjBDlNQmAbu8Tp5XtZIXYJSHybfIgFZJeEgKzEpgNQcyQl
+	Dq64wTKBUWwWktWzkKyehWT1LCQrFjCyrGIUTS1ILihOSi8y1StOzC0uzUvXS87P3cQIibKJ
+	OxjvH7A+xJgMtH4is5Rocj4wSvNK4g2NzYwsTE1MjY3MLc1IE1YS51VvsQ4UEkhPLEnNTk0t
+	SC2KLyrNSS0+xMjEwSnVwCh67Xm0xVvxfbG9594vd49aOyfJd77EfN4Fx94Vh4tuEQjcZxLz
+	sEZx3v3CdZcrtl0/KLTW9M2eiAKDCP93K6Je8H6YL/NvzbFLQht22BTcy7PW0Ii/v/Ofa9X7
+	y671Cwyk2F8v1lzMLy85Z+/lf3OO3tjPE1K5pbfs6PTSdMXr68z/zJtf1SOrxFKckWioxVxU
+	nAgAr4YYIsgCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprEKsWRmVeSWpSXmKPExsVy+t9jQd1VF38EGvxdKWwxZ/0aNovLCy+x
+	WlzeNYfNYveup6wOLB4nZvxm8dgz/werR9+WVYwenzfJBbBENTDaZKQmpqQWKaTmJeenZOal
+	2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE6Lpl5gDtVFIoS8wpBQoFJBYXK+nbYZoQGuKm
+	awHTGKHrGxIE12NkgAYS1jFmHDzwmK3gCFvFwVP72RsYD7N2MXJySAiYSDzauYwdwhaTuHBv
+	PVsXIxeHkMB0Rokdt9axQji/GCXeff0I1sEmoCbx5cthoA4ODhEBfYm2Fg2QMLNAscTss08Y
+	QWxhAVeJXQensoDYLAKqEvumv2YEKecVsJR4uUgKJMwrICjxY/I9FohWLYn1O48zQdjyEpvX
+	vGWGuEdBYsfZ12AjRQT0JE5Mu8gIUSMise/FO8YJjAKzkIyahWTULCSjZiFpWcDIsopRNLUg
+	uaA4KT3XUK84Mbe4NC9dLzk/dxMjOIafSe1gXNlgcYhRgINRiYfX4cL3QCHWxLLiytxDjBIc
+	zEoivPJBPwKFeFMSK6tSi/Lji0pzUosPMSYDPTqRWUo0OR+YXvJK4g2NTcyMLI3MLIxMzM1J
+	E1YS5z3Qah0oJJCeWJKanZpakFoEs4WJg1OqgVHlmuupKTubd8vYyF3geLRLrzvrYbzi10Wb
+	guY+U501w04l0+2ieW3giv+aepMl1CWFhfdfTWUIze2Y3e9XHl/PXqDsxR6Vlt0QUPBwe3/N
+	8Qd5qcXbZQRv+J9Zp/+D8cm0JYleBt3nHwdcVTJ8cef27wcJPrF5H3YayikGtNdOvsqQd6I6
+	RImlOCPRUIu5qDgRAA5MpRclAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  93786a5f6aeb9c032c1c240246c5aabcf457b38f
-Gitweb:     http://git.kernel.org/tip/93786a5f6aeb9c032c1c240246c5aabcf457b38f
-Author:     Frederic Weisbecker <fweisbec@gmail.com>
-AuthorDate: Tue, 23 Jul 2013 02:31:06 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 30 Jul 2013 22:29:15 +0200
+Fix the following sparse warnings:
 
-watchdog: Make it work under full dynticks
+drivers/video/backlight/lp8788_bl.c:55:25: warning: symbol 'default_bl_config' was not declared. Should it be static?
 
-A perf event can be used without forcing the tick to
-stay alive if it doesn't use a frequency but a sample
-period and if it doesn't throttle (raise storm of events).
-
-Since the lockup detector neither use a perf event frequency
-nor should ever throttle due to its high period, it can now
-run concurrently with the full dynticks feature.
-
-So remove the hack that disabled the watchdog.
-
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Don Zickus <dzickus@redhat.com>
-Cc: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Anish Singh <anish198519851985@gmail.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1374539466-4799-9-git-send-email-fweisbec@gmail.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- kernel/watchdog.c | 8 --------
- 1 file changed, 8 deletions(-)
+ drivers/video/backlight/lp8788_bl.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-index 1241d8c..51c4f34 100644
---- a/kernel/watchdog.c
-+++ b/kernel/watchdog.c
-@@ -553,14 +553,6 @@ void __init lockup_detector_init(void)
- {
- 	set_sample_period();
+diff --git a/drivers/video/backlight/lp8788_bl.c b/drivers/video/backlight/lp8788_bl.c
+index 980855e..e49905d 100644
+--- a/drivers/video/backlight/lp8788_bl.c
++++ b/drivers/video/backlight/lp8788_bl.c
+@@ -52,7 +52,7 @@ struct lp8788_bl {
+ 	struct pwm_device *pwm;
+ };
  
--#ifdef CONFIG_NO_HZ_FULL
--	if (watchdog_user_enabled) {
--		watchdog_user_enabled = 0;
--		pr_warning("Disabled lockup detectors by default for full dynticks\n");
--		pr_warning("You can reactivate it with 'sysctl -w kernel.watchdog=1'\n");
--	}
--#endif
--
- 	if (watchdog_user_enabled)
- 		watchdog_enable_all_cpus();
- }
+-struct lp8788_bl_config default_bl_config = {
++static struct lp8788_bl_config default_bl_config = {
+ 	.bl_mode    = LP8788_BL_REGISTER_ONLY,
+ 	.dim_mode   = LP8788_DIM_EXPONENTIAL,
+ 	.full_scale = LP8788_FULLSCALE_1900uA,
+-- 
+1.7.10.4
+
+
