@@ -1,91 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752007Ab3GaEh0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 00:37:26 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:36087 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751651Ab3GaEhZ (ORCPT
+	id S1753998Ab3GaEjH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 00:39:07 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:63326 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752766Ab3GaEjF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 00:37:25 -0400
-Message-ID: <51F89530.8050908@oracle.com>
-Date: Wed, 31 Jul 2013 12:40:16 +0800
-From: vaughan <vaughan.cao@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Wed, 31 Jul 2013 00:39:05 -0400
 MIME-Version: 1.0
-To: dgilbert@interlog.com
-CC: JBottomley@parallels.com, =?UTF-8?B?SsO2cm4gRW5nZWw=?= <joern@logfs.org>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 0/4] [SCSI] sg: fix race condition in sg_open
-References: <1374075246-22923-1-git-send-email-vaughan.cao@oracle.com> <1374468033-8947-1-git-send-email-vaughan.cao@oracle.com> <20130722170338.GA15824@logfs.org> <51F144F4.4090509@oracle.com> <51F18BAB.8060600@interlog.com>
-In-Reply-To: <51F18BAB.8060600@interlog.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+In-Reply-To: <20130731014328.5270.4248@quantum>
+References: <1373247868-21444-1-git-send-email-mturquette@linaro.org>
+	<1373247868-21444-4-git-send-email-mturquette@linaro.org>
+	<CAOh2x=kAM98Qta5RquVVByR8jJ3=t+6fNZ4o4WSroVCCZi+0Cg@mail.gmail.com>
+	<20130731014328.5270.4248@quantum>
+Date: Wed, 31 Jul 2013 10:09:03 +0530
+Message-ID: <CAKohpom-8KXixJ0ZbQ7Poh3uqJCqo7LFyYEfYeMyp+yZx9QmHA@mail.gmail.com>
+Subject: Re: [PATCH RFC 3/3] cpufreq: cpufreq-cpu0: clk rate-change notifiers
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Mike Turquette <mturquette@linaro.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Shawn Guo <shawn.guo@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-pm@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/26/2013 04:33 AM, Douglas Gilbert wrote:
-> On 13-07-25 11:32 AM, vaughan wrote:
->> On 07/23/2013 01:03 AM, Jörn Engel wrote:
->>> On Mon, 22 July 2013 12:40:29 +0800, Vaughan Cao wrote:
->>>> There is a race when open sg with O_EXCL flag. Also a race may
->>>> happen between
->>>> sg_open and sg_remove.
->>>>
->>>> Changes from v4:
->>>>   * [3/4] use ERR_PTR series instead of adding another parameter in
->>>> sg_add_sfp
->>>>   * [4/4] fix conflict for cherry-pick from v3.
->>>>
->>>> Changes from v3:
->>>>   * release o_sem in sg_release(), not in sg_remove_sfp().
->>>>   * not set exclude with sfd_lock held.
->>>>
->>>> Vaughan Cao (4):
->>>>    [SCSI] sg: use rwsem to solve race during exclusive open
->>>>    [SCSI] sg: no need sg_open_exclusive_lock
->>>>    [SCSI] sg: checking sdp->detached isn't protected when open
->>>>    [SCSI] sg: push file descriptor list locking down to per-device
->>>>      locking
->>>>
->>>>   drivers/scsi/sg.c | 178
->>>> +++++++++++++++++++++++++-----------------------------
->>>>   1 file changed, 83 insertions(+), 95 deletions(-)
->>> Patchset looks good to me, although I didn't test it on hardware yet.
->>> Signed-off-by: Joern Engel <joern@logfs.org>
->>>
->>> James, care to pick this up?
->>>
->>> Jörn
->> Hi James,
+On 31 July 2013 07:13, Mike Turquette <mturquette@linaro.org> wrote:
+> Quoting Viresh Kumar (2013-07-07 21:10:54)
+>> On Mon, Jul 8, 2013 at 7:14 AM, Mike Turquette <mturquette@linaro.org> wrote:
+>> > Removes direct handling of OPP tables and voltage regulators by calling
+>> > of_clk_cpufreq_notifier_handler, introduced by commit "clk: cpufreq
+>> > helper for voltage scaling".
+>> >
+>> > In the future this can help consolidate code found across similar
+>> > CPUfreq drivers.
+>> >
+>> > Signed-off-by: Mike Turquette <mturquette@linaro.org>
+>> > ---
+>> >  drivers/cpufreq/cpufreq-cpu0.c | 125 ++++++++---------------------------------
+>> >  1 file changed, 22 insertions(+), 103 deletions(-)
 >>
->> sg driver has two races happen in
->>   a) exclusive open and non-exclusive open
->>   b) sg removal and sg open
->> I explained the scenario detail in the separate patches. I did test
->> those patches and
->> Jörn has reviewed them.  I got no response from Doug Gilbert for a long
->> time.
->> Would you care to pick these up?
+>> Good patch, really gets lots of stuff out from cpufreq drivers.
+>>
+>> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
 >
-> Hi,
-> Your patches applied with a little noise to lk 3.10.2 and
-> gave this warning from the build.
+> Viresh,
 >
->   CC [M]  drivers/scsi/sg.o
-> drivers/scsi/sg.c: In function ‘sg_open’:
-> drivers/scsi/sg.c:242:6: warning: unused variable ‘res’
-> [-Wunused-variable]
->
-> I'll keep testing ...
-Hi Doug,
+> Thanks for the Ack. I received no comments on this series besides your
+> own, so I plan to merge it. Do you want to take patch #3, or do you want
+> me to take it, or should I give you and Rafael a stable branch instead?
 
-Can I ask how about the test result?
-
-Thanks,
-Vaughan
->
-> Doug Gilbert
->
-
+Its only related to cpufreq-cpu0 and to handle dependencies well they
+should go through a single tree.. Probably your tree is the right place for
+now. Rafael?
