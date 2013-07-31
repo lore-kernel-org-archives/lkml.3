@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759983Ab3GaN0d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 09:26:33 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:47094 "EHLO
+	id S1759970Ab3GaN0b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 09:26:31 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46854 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759854Ab3GaN0I (ORCPT
+	by vger.kernel.org with ESMTP id S1751553Ab3GaN0J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 09:26:08 -0400
+	Wed, 31 Jul 2013 09:26:09 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Jason Wang" <jasowang@redhat.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        "Wolfram Gloger" <wmglo@dent.med.uni-muenchen.de>,
+CC: akpm@linux-foundation.org, "Eric Dumazet" <eric.dumazet@gmail.com>,
+        "Joe Jin" <joe.jin@oracle.com>, "Eric Dumazet" <edumazet@google.com>,
         "David S. Miller" <davem@davemloft.net>
 Date: Wed, 31 Jul 2013 15:23:09 +0200
-Message-ID: <lsq.1375276989.797153437@decadent.org.uk>
+Message-ID: <lsq.1375276989.624585746@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [28/84] virtio_net: fix race in RX VQ processing
+Subject: [07/84] neighbour: fix a race in neigh_destroy()
 In-Reply-To: <lsq.1375276989.251749228@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.216.67.181
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,58 +32,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael S. Tsirkin <mst@redhat.com>
+From: Eric Dumazet <eric.dumazet@gmail.com>
 
-commit cbdadbbf0c790f79350a8f36029208944c5487d0 upstream.
+[ Upstream commit c9ab4d85de222f3390c67aedc9c18a50e767531e ]
 
-virtio net called virtqueue_enable_cq on RX path after napi_complete, so
-with NAPI_STATE_SCHED clear - outside the implicit napi lock.
-This violates the requirement to synchronize virtqueue_enable_cq wrt
-virtqueue_add_buf.  In particular, used event can move backwards,
-causing us to lose interrupts.
-In a debug build, this can trigger panic within START_USE.
+There is a race in neighbour code, because neigh_destroy() uses
+skb_queue_purge(&neigh->arp_queue) without holding neighbour lock,
+while other parts of the code assume neighbour rwlock is what
+protects arp_queue
 
-Jason Wang reports that he can trigger the races artificially,
-by adding udelay() in virtqueue_enable_cb() after virtio_mb().
+Convert all skb_queue_purge() calls to the __skb_queue_purge() variant
 
-However, we must call napi_complete to clear NAPI_STATE_SCHED before
-polling the virtqueue for used buffers, otherwise napi_schedule_prep in
-a callback will fail, causing us to lose RX events.
+Use __skb_queue_head_init() instead of skb_queue_head_init()
+to make clear we do not use arp_queue.lock
 
-To fix, call virtqueue_enable_cb_prepare with NAPI_STATE_SCHED
-set (under napi lock), later call virtqueue_poll with
-NAPI_STATE_SCHED clear (outside the lock).
+And hold neigh->lock in neigh_destroy() to close the race.
 
-Reported-by: Jason Wang <jasowang@redhat.com>
-Tested-by: Jason Wang <jasowang@redhat.com>
-Acked-by: Jason Wang <jasowang@redhat.com>
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Reported-by: Joe Jin <joe.jin@oracle.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
-[wg: Backported to 3.2]
-Signed-off-by: Wolfram Gloger <wmglo@dent.med.uni-muenchen.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
-diff -upr linux-3.2.49/drivers/net/virtio_net.c linux-3.2.49wg/drivers/net/virtio_net.c
---- linux-3.2.49/drivers/net/virtio_net.c	2012-01-05 00:55:44.000000000 +0100
-+++ linux-3.2.49wg/drivers/net/virtio_net.c	2013-07-27 13:57:33.000000000 +0200
-@@ -508,7 +508,7 @@ static int virtnet_poll(struct napi_stru
- {
- 	struct virtnet_info *vi = container_of(napi, struct virtnet_info, napi);
- 	void *buf;
--	unsigned int len, received = 0;
-+	unsigned int r, len, received = 0;
+ net/core/neighbour.c | 12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
+
+diff --git a/net/core/neighbour.c b/net/core/neighbour.c
+index 5b9709f..0ea3fd3 100644
+--- a/net/core/neighbour.c
++++ b/net/core/neighbour.c
+@@ -237,7 +237,7 @@ static void neigh_flush_dev(struct neigh_table *tbl, struct net_device *dev)
+ 				   we must kill timers etc. and move
+ 				   it to safe state.
+ 				 */
+-				skb_queue_purge(&n->arp_queue);
++				__skb_queue_purge(&n->arp_queue);
+ 				n->output = neigh_blackhole;
+ 				if (n->nud_state & NUD_VALID)
+ 					n->nud_state = NUD_NOARP;
+@@ -291,7 +291,7 @@ static struct neighbour *neigh_alloc(struct neigh_table *tbl)
+ 	if (!n)
+ 		goto out_entries;
  
- again:
- 	while (received < budget &&
-@@ -525,8 +525,9 @@ again:
+-	skb_queue_head_init(&n->arp_queue);
++	__skb_queue_head_init(&n->arp_queue);
+ 	rwlock_init(&n->lock);
+ 	seqlock_init(&n->ha_lock);
+ 	n->updated	  = n->used = now;
+@@ -701,7 +701,9 @@ void neigh_destroy(struct neighbour *neigh)
+ 	if (neigh_del_timer(neigh))
+ 		printk(KERN_WARNING "Impossible event.\n");
  
- 	/* Out of packets? */
- 	if (received < budget) {
-+		r = virtqueue_enable_cb_prepare(vi->rvq);
- 		napi_complete(napi);
--		if (unlikely(!virtqueue_enable_cb(vi->rvq)) &&
-+		if (unlikely(virtqueue_poll(vi->rvq, r)) &&
- 		    napi_schedule_prep(napi)) {
- 			virtqueue_disable_cb(vi->rvq);
- 			__napi_schedule(napi);
+-	skb_queue_purge(&neigh->arp_queue);
++	write_lock_bh(&neigh->lock);
++	__skb_queue_purge(&neigh->arp_queue);
++	write_unlock_bh(&neigh->lock);
+ 
+ 	dev_put(neigh->dev);
+ 	neigh_parms_put(neigh->parms);
+@@ -843,7 +845,7 @@ static void neigh_invalidate(struct neighbour *neigh)
+ 		neigh->ops->error_report(neigh, skb);
+ 		write_lock(&neigh->lock);
+ 	}
+-	skb_queue_purge(&neigh->arp_queue);
++	__skb_queue_purge(&neigh->arp_queue);
+ }
+ 
+ static void neigh_probe(struct neighbour *neigh)
+@@ -1176,7 +1178,7 @@ int neigh_update(struct neighbour *neigh, const u8 *lladdr, u8 new,
+ 
+ 			write_lock_bh(&neigh->lock);
+ 		}
+-		skb_queue_purge(&neigh->arp_queue);
++		__skb_queue_purge(&neigh->arp_queue);
+ 	}
+ out:
+ 	if (update_isrouter) {
 
