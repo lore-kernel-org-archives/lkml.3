@@ -1,216 +1,1107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759233Ab3GaJri (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 05:47:38 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:46332 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750775Ab3GaJrg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 05:47:36 -0400
-Date: Wed, 31 Jul 2013 11:47:33 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: x86-ml <x86@kernel.org>
-Cc: Tony Luck <tony.luck@intel.com>, lkml <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] RAS: Cleanup ERST error messages formatting
-Message-ID: <20130731094733.GB4724@pd.tnic>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754708Ab3GaJs6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 05:48:58 -0400
+Received: from eu1sys200aog118.obsmtp.com ([207.126.144.145]:36075 "EHLO
+	eu1sys200aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752396Ab3GaJsy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 05:48:54 -0400
+From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
+To: linux-serial@vger.kernel.org
+Cc: Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        srinivas.kandagatla@st.com,
+        Stephen Gallimore <stephen.gallimore@st.com>,
+        Stuart Menefy <stuart.menefy@st.com>, Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH v7] serial:st-asc: Add ST ASC driver.
+Date: Wed, 31 Jul 2013 10:36:48 +0100
+Message-Id: <1375263408-12834-1-git-send-email-srinivas.kandagatla@st.com>
+X-Mailer: git-send-email 1.7.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi guys,
+From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
 
-please pull for 3.12.
+This patch adds support to ASC (asynchronous serial controller)
+driver, which is basically a standard serial driver. This IP is common
+across all the ST parts for settop box platforms.
 
-Thanks.
+ASC is embedded in ST COMMS IP block. It supports Rx & Tx functionality.
+It support all industry standard baud rates.
 
-The following changes since commit 5ae90d8e467e625e447000cb4335c4db973b1095:
+Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+CC: Stephen Gallimore <stephen.gallimore@st.com>
+CC: Stuart Menefy <stuart.menefy@st.com>
+CC: Arnd Bergmann <arnd@arndb.de>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+Hi Greg,
 
-  Linux 3.11-rc3 (2013-07-28 20:53:33 -0700)
+This patch is the part of the driver support for Sti ARM SOCs.
+This patch undergone 3-4 cycles of review in arm-kernel mailing list.
+All the patches in that series went into 3.11.
+This patch is based on 3.11-rc1.
 
-are available in the git repository at:
+Am resending this patch, as it missed 3.11 window.
+Can you please consider this patch for 3.12.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/ras/ras.git tags/ras_for_3.12
+Thanks,
+srini
 
-for you to fetch changes up to cb82a2e4f9468c1bb8c1050903d3dab61b3b679d:
+Changes since v6:
+	- Fixed build warning when built without CONFIG_OF, pointed by Greg.
 
-  APEI/ERST: Fix error message formatting (2013-07-31 11:23:10 +0200)
+Changes since v5:
+	- Fixed build error reported by Greg when build without PINCTRL.
 
-----------------------------------------------------------------
-ERST error message formatting cleanup.
+Changes since v4:
+	- rebased with tty-next branch from git.kernel.org tty repo.
 
-----------------------------------------------------------------
-Borislav Petkov (1):
-      APEI/ERST: Fix error message formatting
+Changes since v3:
+	- None.
 
- drivers/acpi/apei/erst.c | 51 ++++++++++++++++++++++--------------------------
- 1 file changed, 23 insertions(+), 28 deletions(-)
+Changes since v2:
+	- st-asc driver made POSIX compatible based on Russell K comment.
 
-diff --git a/drivers/acpi/apei/erst.c b/drivers/acpi/apei/erst.c
-index 88d0b0f9f92b..40ffcdafbc6f 100644
---- a/drivers/acpi/apei/erst.c
-+++ b/drivers/acpi/apei/erst.c
-@@ -39,7 +39,8 @@
- 
- #include "apei-internal.h"
- 
--#define ERST_PFX "ERST: "
-+#undef pr_fmt
-+#define pr_fmt(fmt) "ERST: " fmt
- 
- /* ERST command status */
- #define ERST_STATUS_SUCCESS			0x0
-@@ -109,8 +110,7 @@ static inline int erst_errno(int command_status)
- static int erst_timedout(u64 *t, u64 spin_unit)
- {
- 	if ((s64)*t < spin_unit) {
--		pr_warning(FW_WARN ERST_PFX
--			   "Firmware does not respond in time\n");
-+		pr_warn(FW_WARN "Firmware does not respond in time.\n");
- 		return 1;
- 	}
- 	*t -= spin_unit;
-@@ -186,8 +186,8 @@ static int erst_exec_stall(struct apei_exec_context *ctx,
- 
- 	if (ctx->value > FIRMWARE_MAX_STALL) {
- 		if (!in_nmi())
--			pr_warning(FW_WARN ERST_PFX
--			"Too long stall time for stall instruction: %llx.\n",
-+			pr_warn(FW_WARN
-+			"Too long stall time for stall instruction: 0x%llx.\n",
- 				   ctx->value);
- 		stall_time = FIRMWARE_MAX_STALL;
- 	} else
-@@ -206,8 +206,8 @@ static int erst_exec_stall_while_true(struct apei_exec_context *ctx,
- 
- 	if (ctx->var1 > FIRMWARE_MAX_STALL) {
- 		if (!in_nmi())
--			pr_warning(FW_WARN ERST_PFX
--		"Too long stall time for stall while true instruction: %llx.\n",
-+			pr_warn(FW_WARN
-+		"Too long stall time for stall while true instruction: 0x%llx.\n",
- 				   ctx->var1);
- 		stall_time = FIRMWARE_MAX_STALL;
- 	} else
-@@ -271,8 +271,7 @@ static int erst_exec_move_data(struct apei_exec_context *ctx,
- 
- 	/* ioremap does not work in interrupt context */
- 	if (in_interrupt()) {
--		pr_warning(ERST_PFX
--			   "MOVE_DATA can not be used in interrupt context");
-+		pr_warn("MOVE_DATA can not be used in interrupt context.\n");
- 		return -EBUSY;
- 	}
- 
-@@ -522,8 +521,7 @@ retry:
- 				     ERST_RECORD_ID_CACHE_SIZE_MAX);
- 		if (new_size <= erst_record_id_cache.size) {
- 			if (printk_ratelimit())
--				pr_warning(FW_WARN ERST_PFX
--					   "too many record ID!\n");
-+				pr_warn(FW_WARN "too many record IDs!\n");
- 			return 0;
- 		}
- 		alloc_size = new_size * sizeof(entries[0]);
-@@ -759,8 +757,7 @@ static int __erst_clear_from_storage(u64 record_id)
- static void pr_unimpl_nvram(void)
- {
- 	if (printk_ratelimit())
--		pr_warning(ERST_PFX
--		"NVRAM ERST Log Address Range is not implemented yet\n");
-+		pr_warn("NVRAM ERST Log Address Range not implemented yet.\n");
- }
- 
- static int __erst_write_to_nvram(const struct cper_record_header *record)
-@@ -1120,7 +1117,7 @@ static int __init erst_init(void)
- 		goto err;
- 
- 	if (erst_disable) {
--		pr_info(ERST_PFX
-+		pr_info(
- 	"Error Record Serialization Table (ERST) support is disabled.\n");
- 		goto err;
- 	}
-@@ -1131,14 +1128,14 @@ static int __init erst_init(void)
- 		goto err;
- 	else if (ACPI_FAILURE(status)) {
- 		const char *msg = acpi_format_exception(status);
--		pr_err(ERST_PFX "Failed to get table, %s\n", msg);
-+		pr_err("Failed to get table, %s\n", msg);
- 		rc = -EINVAL;
- 		goto err;
- 	}
- 
- 	rc = erst_check_table(erst_tab);
- 	if (rc) {
--		pr_err(FW_BUG ERST_PFX "ERST table is invalid\n");
-+		pr_err(FW_BUG "ERST table is invalid.\n");
- 		goto err;
- 	}
- 
-@@ -1156,21 +1153,19 @@ static int __init erst_init(void)
- 	rc = erst_get_erange(&erst_erange);
- 	if (rc) {
- 		if (rc == -ENODEV)
--			pr_info(ERST_PFX
-+			pr_info(
- 	"The corresponding hardware device or firmware implementation "
- 	"is not available.\n");
- 		else
--			pr_err(ERST_PFX
--			       "Failed to get Error Log Address Range.\n");
-+			pr_err("Failed to get Error Log Address Range.\n");
- 		goto err_unmap_reg;
- 	}
- 
- 	r = request_mem_region(erst_erange.base, erst_erange.size, "APEI ERST");
- 	if (!r) {
--		pr_err(ERST_PFX
--		"Can not request iomem region <0x%16llx-0x%16llx> for ERST.\n",
--		(unsigned long long)erst_erange.base,
--		(unsigned long long)erst_erange.base + erst_erange.size);
-+		pr_err("Can not request [mem %#010llx-%#010llx] for ERST.\n",
-+		       (unsigned long long)erst_erange.base,
-+		       (unsigned long long)erst_erange.base + erst_erange.size - 1);
- 		rc = -EIO;
- 		goto err_unmap_reg;
- 	}
-@@ -1180,7 +1175,7 @@ static int __init erst_init(void)
- 	if (!erst_erange.vaddr)
- 		goto err_release_erange;
- 
--	pr_info(ERST_PFX
-+	pr_info(
- 	"Error Record Serialization Table (ERST) support is initialized.\n");
- 
- 	buf = kmalloc(erst_erange.size, GFP_KERNEL);
-@@ -1192,15 +1187,15 @@ static int __init erst_init(void)
- 		rc = pstore_register(&erst_info);
- 		if (rc) {
- 			if (rc != -EPERM)
--				pr_info(ERST_PFX
--				"Could not register with persistent store\n");
-+				pr_info(
-+				"Could not register with persistent store.\n");
- 			erst_info.buf = NULL;
- 			erst_info.bufsize = 0;
- 			kfree(buf);
- 		}
- 	} else
--		pr_err(ERST_PFX
--		"Failed to allocate %lld bytes for persistent store error log\n",
-+		pr_err(
-+		"Failed to allocate %lld bytes for persistent store error log.\n",
- 		erst_erange.size);
- 
- 	return 0;
+Changes since RFC:
+	- modified kconfig to remove default y
+	- removed all the forward declaration.
+	- use dynamic major numbering.
+	- merge header-file in to driver.
 
+ .../devicetree/bindings/tty/serial/st-asc.txt      |   18 +
+ drivers/tty/serial/Kconfig                         |   15 +
+ drivers/tty/serial/Makefile                        |    1 +
+ drivers/tty/serial/st-asc.c                        |  939 ++++++++++++++++++++
+ include/uapi/linux/serial_core.h                   |    3 +
+ 5 files changed, 976 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/tty/serial/st-asc.txt
+ create mode 100644 drivers/tty/serial/st-asc.c
 
+diff --git a/Documentation/devicetree/bindings/tty/serial/st-asc.txt b/Documentation/devicetree/bindings/tty/serial/st-asc.txt
+new file mode 100644
+index 0000000..75d877f
+--- /dev/null
++++ b/Documentation/devicetree/bindings/tty/serial/st-asc.txt
+@@ -0,0 +1,18 @@
++*st-asc(Serial Port)
++
++Required properties:
++- compatible : Should be "st,asc".
++- reg, reg-names, interrupts, interrupt-names	: Standard way to define device
++			resources with names. look in
++			Documentation/devicetree/bindings/resource-names.txt
++
++Optional properties:
++- st,hw-flow-ctrl	bool flag to enable hardware flow control.
++- st,force-m1		bool flat to force asc to be in Mode-1 recommeded
++			for high bit rates (above 19.2K)
++Example:
++serial@fe440000{
++    compatible    = "st,asc";
++    reg         = <0xfe440000 0x2c>;
++    interrupts     =  <0 209 0>;
++};
+diff --git a/drivers/tty/serial/Kconfig b/drivers/tty/serial/Kconfig
+index 1456673..f87daf1 100644
+--- a/drivers/tty/serial/Kconfig
++++ b/drivers/tty/serial/Kconfig
+@@ -1496,6 +1496,21 @@ config SERIAL_FSL_LPUART_CONSOLE
+ 	help
+ 	  If you have enabled the lpuart serial port on the Freescale SoCs,
+ 	  you can make it the console by answering Y to this option.
++config SERIAL_ST_ASC
++	tristate "ST ASC serial port support"
++	select SERIAL_CORE
++	help
++	  This driver is for the on-chip Asychronous Serial Controller on
++	  STMicroelectronics STi SoCs.
++	  ASC is embedded in ST COMMS IP block. It supports Rx & Tx functionality.
++	  It support all industry standard baud rates.
++
++	  If unsure, say N.
++
++config SERIAL_ST_ASC_CONSOLE
++	bool "Support for console on ST ASC"
++	depends on SERIAL_ST_ASC=y
++	select SERIAL_CORE_CONSOLE
+ 
+ endmenu
+ 
+diff --git a/drivers/tty/serial/Makefile b/drivers/tty/serial/Makefile
+index cf650f0..47b679c 100644
+--- a/drivers/tty/serial/Makefile
++++ b/drivers/tty/serial/Makefile
+@@ -65,6 +65,7 @@ obj-$(CONFIG_SERIAL_KGDB_NMI) += kgdb_nmi.o
+ obj-$(CONFIG_SERIAL_KS8695) += serial_ks8695.o
+ obj-$(CONFIG_SERIAL_OMAP) += omap-serial.o
+ obj-$(CONFIG_SERIAL_ALTERA_UART) += altera_uart.o
++obj-$(CONFIG_SERIAL_ST_ASC) += st-asc.o
+ obj-$(CONFIG_KGDB_SERIAL_CONSOLE) += kgdboc.o
+ obj-$(CONFIG_SERIAL_QE) += ucc_uart.o
+ obj-$(CONFIG_SERIAL_TIMBERDALE)	+= timbuart.o
+diff --git a/drivers/tty/serial/st-asc.c b/drivers/tty/serial/st-asc.c
+new file mode 100644
+index 0000000..2ff4b1b
+--- /dev/null
++++ b/drivers/tty/serial/st-asc.c
+@@ -0,0 +1,939 @@
++/*
++ * st-asc.c: ST Asynchronous serial controller (ASC) driver
++ *
++ * Copyright (C) 2003-2013 STMicroelectronics (R&D) Limited
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ */
++
++#if defined(CONFIG_SERIAL_ST_ASC_CONSOLE) && defined(CONFIG_MAGIC_SYSRQ)
++#define SUPPORT_SYSRQ
++#endif
++
++#include <linux/module.h>
++#include <linux/serial.h>
++#include <linux/console.h>
++#include <linux/sysrq.h>
++#include <linux/platform_device.h>
++#include <linux/io.h>
++#include <linux/irq.h>
++#include <linux/tty.h>
++#include <linux/tty_flip.h>
++#include <linux/delay.h>
++#include <linux/spinlock.h>
++#include <linux/pm_runtime.h>
++#include <linux/of.h>
++#include <linux/of_platform.h>
++#include <linux/serial_core.h>
++#include <linux/clk.h>
++
++#define DRIVER_NAME "st-asc"
++#define ASC_SERIAL_NAME "ttyAS"
++#define ASC_FIFO_SIZE 16
++#define ASC_MAX_PORTS 8
++
++struct asc_port {
++	struct uart_port port;
++	struct clk *clk;
++	unsigned int hw_flow_control:1;
++	unsigned int force_m1:1;
++};
++
++static struct asc_port asc_ports[ASC_MAX_PORTS];
++static struct uart_driver asc_uart_driver;
++
++/*---- UART Register definitions ------------------------------*/
++
++/* Register offsets */
++
++#define ASC_BAUDRATE			0x00
++#define ASC_TXBUF			0x04
++#define ASC_RXBUF			0x08
++#define ASC_CTL				0x0C
++#define ASC_INTEN			0x10
++#define ASC_STA				0x14
++#define ASC_GUARDTIME			0x18
++#define ASC_TIMEOUT			0x1C
++#define ASC_TXRESET			0x20
++#define ASC_RXRESET			0x24
++#define ASC_RETRIES			0x28
++
++/* ASC_RXBUF */
++#define ASC_RXBUF_PE			0x100
++#define ASC_RXBUF_FE			0x200
++/**
++ * Some of status comes from higher bits of the character and some come from
++ * the status register. Combining both of them in to single status using dummy
++ * bits.
++ */
++#define ASC_RXBUF_DUMMY_RX		0x10000
++#define ASC_RXBUF_DUMMY_BE		0x20000
++#define ASC_RXBUF_DUMMY_OE		0x40000
++
++/* ASC_CTL */
++
++#define ASC_CTL_MODE_MSK		0x0007
++#define  ASC_CTL_MODE_8BIT		0x0001
++#define  ASC_CTL_MODE_7BIT_PAR		0x0003
++#define  ASC_CTL_MODE_9BIT		0x0004
++#define  ASC_CTL_MODE_8BIT_WKUP		0x0005
++#define  ASC_CTL_MODE_8BIT_PAR		0x0007
++#define ASC_CTL_STOP_MSK		0x0018
++#define  ASC_CTL_STOP_HALFBIT		0x0000
++#define  ASC_CTL_STOP_1BIT		0x0008
++#define  ASC_CTL_STOP_1_HALFBIT		0x0010
++#define  ASC_CTL_STOP_2BIT		0x0018
++#define ASC_CTL_PARITYODD		0x0020
++#define ASC_CTL_LOOPBACK		0x0040
++#define ASC_CTL_RUN			0x0080
++#define ASC_CTL_RXENABLE		0x0100
++#define ASC_CTL_SCENABLE		0x0200
++#define ASC_CTL_FIFOENABLE		0x0400
++#define ASC_CTL_CTSENABLE		0x0800
++#define ASC_CTL_BAUDMODE		0x1000
++
++/* ASC_GUARDTIME */
++
++#define ASC_GUARDTIME_MSK		0x00FF
++
++/* ASC_INTEN */
++
++#define ASC_INTEN_RBE			0x0001
++#define ASC_INTEN_TE			0x0002
++#define ASC_INTEN_THE			0x0004
++#define ASC_INTEN_PE			0x0008
++#define ASC_INTEN_FE			0x0010
++#define ASC_INTEN_OE			0x0020
++#define ASC_INTEN_TNE			0x0040
++#define ASC_INTEN_TOI			0x0080
++#define ASC_INTEN_RHF			0x0100
++
++/* ASC_RETRIES */
++
++#define ASC_RETRIES_MSK			0x00FF
++
++/* ASC_RXBUF */
++
++#define ASC_RXBUF_MSK			0x03FF
++
++/* ASC_STA */
++
++#define ASC_STA_RBF			0x0001
++#define ASC_STA_TE			0x0002
++#define ASC_STA_THE			0x0004
++#define ASC_STA_PE			0x0008
++#define ASC_STA_FE			0x0010
++#define ASC_STA_OE			0x0020
++#define ASC_STA_TNE			0x0040
++#define ASC_STA_TOI			0x0080
++#define ASC_STA_RHF			0x0100
++#define ASC_STA_TF			0x0200
++#define ASC_STA_NKD			0x0400
++
++/* ASC_TIMEOUT */
++
++#define ASC_TIMEOUT_MSK			0x00FF
++
++/* ASC_TXBUF */
++
++#define ASC_TXBUF_MSK			0x01FF
++
++/*---- Inline function definitions ---------------------------*/
++
++static inline struct asc_port *to_asc_port(struct uart_port *port)
++{
++	return container_of(port, struct asc_port, port);
++}
++
++static inline u32 asc_in(struct uart_port *port, u32 offset)
++{
++	return readl(port->membase + offset);
++}
++
++static inline void asc_out(struct uart_port *port, u32 offset, u32 value)
++{
++	writel(value, port->membase + offset);
++}
++
++/*
++ * Some simple utility functions to enable and disable interrupts.
++ * Note that these need to be called with interrupts disabled.
++ */
++static inline void asc_disable_tx_interrupts(struct uart_port *port)
++{
++	u32 intenable = asc_in(port, ASC_INTEN) & ~ASC_INTEN_THE;
++	asc_out(port, ASC_INTEN, intenable);
++	(void)asc_in(port, ASC_INTEN);	/* Defeat bus write posting */
++}
++
++static inline void asc_enable_tx_interrupts(struct uart_port *port)
++{
++	u32 intenable = asc_in(port, ASC_INTEN) | ASC_INTEN_THE;
++	asc_out(port, ASC_INTEN, intenable);
++}
++
++static inline void asc_disable_rx_interrupts(struct uart_port *port)
++{
++	u32 intenable = asc_in(port, ASC_INTEN) & ~ASC_INTEN_RBE;
++	asc_out(port, ASC_INTEN, intenable);
++	(void)asc_in(port, ASC_INTEN);	/* Defeat bus write posting */
++}
++
++static inline void asc_enable_rx_interrupts(struct uart_port *port)
++{
++	u32 intenable = asc_in(port, ASC_INTEN) | ASC_INTEN_RBE;
++	asc_out(port, ASC_INTEN, intenable);
++}
++
++static inline u32 asc_txfifo_is_empty(struct uart_port *port)
++{
++	return asc_in(port, ASC_STA) & ASC_STA_TE;
++}
++
++static inline int asc_txfifo_is_full(struct uart_port *port)
++{
++	return asc_in(port, ASC_STA) & ASC_STA_TF;
++}
++
++static inline const char *asc_port_name(struct uart_port *port)
++{
++	return to_platform_device(port->dev)->name;
++}
++
++/*----------------------------------------------------------------------*/
++
++/*
++ * This section contains code to support the use of the ASC as a
++ * generic serial port.
++ */
++
++static inline unsigned asc_hw_txroom(struct uart_port *port)
++{
++	u32 status = asc_in(port, ASC_STA);
++
++	if (status & ASC_STA_THE)
++		return port->fifosize / 2;
++	else if (!(status & ASC_STA_TF))
++		return 1;
++
++	return 0;
++}
++
++/*
++ * Start transmitting chars.
++ * This is called from both interrupt and task level.
++ * Either way interrupts are disabled.
++ */
++static void asc_transmit_chars(struct uart_port *port)
++{
++	struct circ_buf *xmit = &port->state->xmit;
++	int txroom;
++	unsigned char c;
++
++	txroom = asc_hw_txroom(port);
++
++	if ((txroom != 0) && port->x_char) {
++		c = port->x_char;
++		port->x_char = 0;
++		asc_out(port, ASC_TXBUF, c);
++		port->icount.tx++;
++		txroom = asc_hw_txroom(port);
++	}
++
++	if (uart_tx_stopped(port)) {
++		/*
++		 * We should try and stop the hardware here, but I
++		 * don't think the ASC has any way to do that.
++		 */
++		asc_disable_tx_interrupts(port);
++		return;
++	}
++
++	if (uart_circ_empty(xmit)) {
++		asc_disable_tx_interrupts(port);
++		return;
++	}
++
++	if (txroom == 0)
++		return;
++
++	do {
++		c = xmit->buf[xmit->tail];
++		xmit->tail = (xmit->tail + 1) & (UART_XMIT_SIZE - 1);
++		asc_out(port, ASC_TXBUF, c);
++		port->icount.tx++;
++		txroom--;
++	} while ((txroom > 0) && (!uart_circ_empty(xmit)));
++
++	if (uart_circ_chars_pending(xmit) < WAKEUP_CHARS)
++		uart_write_wakeup(port);
++
++	if (uart_circ_empty(xmit))
++		asc_disable_tx_interrupts(port);
++}
++
++static void asc_receive_chars(struct uart_port *port)
++{
++	struct tty_port *tport = &port->state->port;
++	unsigned long status;
++	unsigned long c = 0;
++	char flag;
++
++	if (port->irq_wake)
++		pm_wakeup_event(tport->tty->dev, 0);
++
++	while ((status = asc_in(port, ASC_STA)) & ASC_STA_RBF) {
++		c = asc_in(port, ASC_RXBUF) | ASC_RXBUF_DUMMY_RX;
++		flag = TTY_NORMAL;
++		port->icount.rx++;
++
++		if ((c & (ASC_RXBUF_FE | ASC_RXBUF_PE)) ||
++			status & ASC_STA_OE) {
++
++			if (c & ASC_RXBUF_FE) {
++				if (c == ASC_RXBUF_FE) {
++					port->icount.brk++;
++					if (uart_handle_break(port))
++						continue;
++					c |= ASC_RXBUF_DUMMY_BE;
++				} else {
++					port->icount.frame++;
++				}
++			} else if (c & ASC_RXBUF_PE) {
++				port->icount.parity++;
++			}
++			/*
++			 * Reading any data from the RX FIFO clears the
++			 * overflow error condition.
++			 */
++			if (status & ASC_STA_OE) {
++				port->icount.overrun++;
++				c |= ASC_RXBUF_DUMMY_OE;
++			}
++
++			c &= port->read_status_mask;
++
++			if (c & ASC_RXBUF_DUMMY_BE)
++				flag = TTY_BREAK;
++			else if (c & ASC_RXBUF_PE)
++				flag = TTY_PARITY;
++			else if (c & ASC_RXBUF_FE)
++				flag = TTY_FRAME;
++		}
++
++		if (uart_handle_sysrq_char(port, c))
++			continue;
++
++		uart_insert_char(port, c, ASC_RXBUF_DUMMY_OE, c & 0xff, flag);
++	}
++
++	/* Tell the rest of the system the news. New characters! */
++	tty_flip_buffer_push(tport);
++}
++
++static irqreturn_t asc_interrupt(int irq, void *ptr)
++{
++	struct uart_port *port = ptr;
++	u32 status;
++
++	spin_lock(&port->lock);
++
++	status = asc_in(port, ASC_STA);
++
++	if (status & ASC_STA_RBF) {
++		/* Receive FIFO not empty */
++		asc_receive_chars(port);
++	}
++
++	if ((status & ASC_STA_THE) &&
++	    (asc_in(port, ASC_INTEN) & ASC_INTEN_THE)) {
++		/* Transmitter FIFO at least half empty */
++		asc_transmit_chars(port);
++	}
++
++	spin_unlock(&port->lock);
++
++	return IRQ_HANDLED;
++}
++
++/*----------------------------------------------------------------------*/
++
++/*
++ * UART Functions
++ */
++
++static unsigned int asc_tx_empty(struct uart_port *port)
++{
++	return asc_txfifo_is_empty(port) ? TIOCSER_TEMT : 0;
++}
++
++static void asc_set_mctrl(struct uart_port *port, unsigned int mctrl)
++{
++	/*
++	 * This routine is used for seting signals of: DTR, DCD, CTS/RTS
++	 * We use ASC's hardware for CTS/RTS, so don't need any for that.
++	 * Some boards have DTR and DCD implemented using PIO pins,
++	 * code to do this should be hooked in here.
++	 */
++}
++
++static unsigned int asc_get_mctrl(struct uart_port *port)
++{
++	/*
++	 * This routine is used for geting signals of: DTR, DCD, DSR, RI,
++	 * and CTS/RTS
++	 */
++	return TIOCM_CAR | TIOCM_DSR | TIOCM_CTS;
++}
++
++/* There are probably characters waiting to be transmitted. */
++static void asc_start_tx(struct uart_port *port)
++{
++	struct circ_buf *xmit = &port->state->xmit;
++
++	if (!uart_circ_empty(xmit))
++		asc_enable_tx_interrupts(port);
++}
++
++/* Transmit stop */
++static void asc_stop_tx(struct uart_port *port)
++{
++	asc_disable_tx_interrupts(port);
++}
++
++/* Receive stop */
++static void asc_stop_rx(struct uart_port *port)
++{
++	asc_disable_rx_interrupts(port);
++}
++
++/* Force modem status interrupts on */
++static void asc_enable_ms(struct uart_port *port)
++{
++	/* Nothing here yet .. */
++}
++
++/* Handle breaks - ignored by us */
++static void asc_break_ctl(struct uart_port *port, int break_state)
++{
++	/* Nothing here yet .. */
++}
++
++/*
++ * Enable port for reception.
++ */
++static int asc_startup(struct uart_port *port)
++{
++	if (request_irq(port->irq, asc_interrupt, IRQF_NO_SUSPEND,
++			asc_port_name(port), port)) {
++		dev_err(port->dev, "cannot allocate irq.\n");
++		return -ENODEV;
++	}
++
++	asc_transmit_chars(port);
++	asc_enable_rx_interrupts(port);
++
++	return 0;
++}
++
++static void asc_shutdown(struct uart_port *port)
++{
++	asc_disable_tx_interrupts(port);
++	asc_disable_rx_interrupts(port);
++	free_irq(port->irq, port);
++}
++
++static void asc_pm(struct uart_port *port, unsigned int state,
++		unsigned int oldstate)
++{
++	struct asc_port *ascport = to_asc_port(port);
++	unsigned long flags = 0;
++	u32 ctl;
++
++	switch (state) {
++	case UART_PM_STATE_ON:
++		clk_prepare_enable(ascport->clk);
++		break;
++	case UART_PM_STATE_OFF:
++		/*
++		 * Disable the ASC baud rate generator, which is as close as
++		 * we can come to turning it off. Note this is not called with
++		 * the port spinlock held.
++		 */
++		spin_lock_irqsave(&port->lock, flags);
++		ctl = asc_in(port, ASC_CTL) & ~ASC_CTL_RUN;
++		asc_out(port, ASC_CTL, ctl);
++		spin_unlock_irqrestore(&port->lock, flags);
++		clk_disable_unprepare(ascport->clk);
++		break;
++	}
++}
++
++static void asc_set_termios(struct uart_port *port, struct ktermios *termios,
++			    struct ktermios *old)
++{
++	struct asc_port *ascport = to_asc_port(port);
++	unsigned int baud;
++	u32 ctrl_val;
++	tcflag_t cflag;
++	unsigned long flags;
++
++	/* Update termios to reflect hardware capabilities */
++	termios->c_cflag &= ~(CMSPAR |
++			 (ascport->hw_flow_control ? 0 : CRTSCTS));
++
++	port->uartclk = clk_get_rate(ascport->clk);
++
++	baud = uart_get_baud_rate(port, termios, old, 0, port->uartclk/16);
++	cflag = termios->c_cflag;
++
++	spin_lock_irqsave(&port->lock, flags);
++
++	/* read control register */
++	ctrl_val = asc_in(port, ASC_CTL);
++
++	/* stop serial port and reset value */
++	asc_out(port, ASC_CTL, (ctrl_val & ~ASC_CTL_RUN));
++	ctrl_val = ASC_CTL_RXENABLE | ASC_CTL_FIFOENABLE;
++
++	/* reset fifo rx & tx */
++	asc_out(port, ASC_TXRESET, 1);
++	asc_out(port, ASC_RXRESET, 1);
++
++	/* set character length */
++	if ((cflag & CSIZE) == CS7) {
++		ctrl_val |= ASC_CTL_MODE_7BIT_PAR;
++	} else {
++		ctrl_val |= (cflag & PARENB) ?  ASC_CTL_MODE_8BIT_PAR :
++						ASC_CTL_MODE_8BIT;
++	}
++
++	/* set stop bit */
++	ctrl_val |= (cflag & CSTOPB) ? ASC_CTL_STOP_2BIT : ASC_CTL_STOP_1BIT;
++
++	/* odd parity */
++	if (cflag & PARODD)
++		ctrl_val |= ASC_CTL_PARITYODD;
++
++	/* hardware flow control */
++	if ((cflag & CRTSCTS))
++		ctrl_val |= ASC_CTL_CTSENABLE;
++
++	if ((baud < 19200) && !ascport->force_m1) {
++		asc_out(port, ASC_BAUDRATE, (port->uartclk / (16 * baud)));
++	} else {
++		/*
++		 * MODE 1: recommended for high bit rates (above 19.2K)
++		 *
++		 *                   baudrate * 16 * 2^16
++		 * ASCBaudRate =   ------------------------
++		 *                          inputclock
++		 *
++		 * However to keep the maths inside 32bits we divide top and
++		 * bottom by 64. The +1 is to avoid a divide by zero if the
++		 * input clock rate is something unexpected.
++		 */
++		u32 counter = (baud * 16384) / ((port->uartclk / 64) + 1);
++		asc_out(port, ASC_BAUDRATE, counter);
++		ctrl_val |= ASC_CTL_BAUDMODE;
++	}
++
++	uart_update_timeout(port, cflag, baud);
++
++	ascport->port.read_status_mask = ASC_RXBUF_DUMMY_OE;
++	if (termios->c_iflag & INPCK)
++		ascport->port.read_status_mask |= ASC_RXBUF_FE | ASC_RXBUF_PE;
++	if (termios->c_iflag & (BRKINT | PARMRK))
++		ascport->port.read_status_mask |= ASC_RXBUF_DUMMY_BE;
++
++	/*
++	 * Characters to ignore
++	 */
++	ascport->port.ignore_status_mask = 0;
++	if (termios->c_iflag & IGNPAR)
++		ascport->port.ignore_status_mask |= ASC_RXBUF_FE | ASC_RXBUF_PE;
++	if (termios->c_iflag & IGNBRK) {
++		ascport->port.ignore_status_mask |= ASC_RXBUF_DUMMY_BE;
++		/*
++		 * If we're ignoring parity and break indicators,
++		 * ignore overruns too (for real raw support).
++		 */
++		if (termios->c_iflag & IGNPAR)
++			ascport->port.ignore_status_mask |= ASC_RXBUF_DUMMY_OE;
++	}
++
++	/*
++	 * Ignore all characters if CREAD is not set.
++	 */
++	if (!(termios->c_cflag & CREAD))
++		ascport->port.ignore_status_mask |= ASC_RXBUF_DUMMY_RX;
++
++	/* Set the timeout */
++	asc_out(port, ASC_TIMEOUT, 20);
++
++	/* write final value and enable port */
++	asc_out(port, ASC_CTL, (ctrl_val | ASC_CTL_RUN));
++
++	spin_unlock_irqrestore(&port->lock, flags);
++}
++
++static const char *asc_type(struct uart_port *port)
++{
++	return (port->type == PORT_ASC) ? DRIVER_NAME : NULL;
++}
++
++static void asc_release_port(struct uart_port *port)
++{
++}
++
++static int asc_request_port(struct uart_port *port)
++{
++	return 0;
++}
++
++/*
++ * Called when the port is opened, and UPF_BOOT_AUTOCONF flag is set
++ * Set type field if successful
++ */
++static void asc_config_port(struct uart_port *port, int flags)
++{
++	if ((flags & UART_CONFIG_TYPE))
++		port->type = PORT_ASC;
++}
++
++static int
++asc_verify_port(struct uart_port *port, struct serial_struct *ser)
++{
++	/* No user changeable parameters */
++	return -EINVAL;
++}
++
++#ifdef CONFIG_CONSOLE_POLL
++/*
++ * Console polling routines for writing and reading from the uart while
++ * in an interrupt or debug context (i.e. kgdb).
++ */
++
++static int asc_get_poll_char(struct uart_port *port)
++{
++	if (!(asc_in(port, ASC_STA) & ASC_STA_RBF))
++		return NO_POLL_CHAR;
++
++	return asc_in(port, ASC_RXBUF);
++}
++
++static void asc_put_poll_char(struct uart_port *port, unsigned char c)
++{
++	while (asc_txfifo_is_full(port))
++		cpu_relax();
++	asc_out(port, ASC_TXBUF, c);
++}
++
++#endif /* CONFIG_CONSOLE_POLL */
++
++/*---------------------------------------------------------------------*/
++
++static struct uart_ops asc_uart_ops = {
++	.tx_empty	= asc_tx_empty,
++	.set_mctrl	= asc_set_mctrl,
++	.get_mctrl	= asc_get_mctrl,
++	.start_tx	= asc_start_tx,
++	.stop_tx	= asc_stop_tx,
++	.stop_rx	= asc_stop_rx,
++	.enable_ms	= asc_enable_ms,
++	.break_ctl	= asc_break_ctl,
++	.startup	= asc_startup,
++	.shutdown	= asc_shutdown,
++	.set_termios	= asc_set_termios,
++	.type		= asc_type,
++	.release_port	= asc_release_port,
++	.request_port	= asc_request_port,
++	.config_port	= asc_config_port,
++	.verify_port	= asc_verify_port,
++	.pm		= asc_pm,
++#ifdef CONFIG_CONSOLE_POLL
++	.poll_get_char = asc_get_poll_char,
++	.poll_put_char = asc_put_poll_char,
++#endif /* CONFIG_CONSOLE_POLL */
++};
++
++static int asc_init_port(struct asc_port *ascport,
++			  struct platform_device *pdev)
++{
++	struct uart_port *port = &ascport->port;
++	struct resource *res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++
++	if (!res) {
++		dev_err(&pdev->dev, "Unable to get io resource\n");
++		return -ENODEV;
++	}
++
++	port->iotype	= UPIO_MEM;
++	port->flags	= UPF_BOOT_AUTOCONF;
++	port->ops	= &asc_uart_ops;
++	port->fifosize	= ASC_FIFO_SIZE;
++	port->dev	= &pdev->dev;
++	port->mapbase	= res->start;
++	port->irq	= platform_get_irq(pdev, 0);
++
++	port->membase = devm_request_and_ioremap(&pdev->dev, res);
++	if (!port->membase) {
++		dev_err(&pdev->dev, "Unable to request io memory\n");
++		return -ENODEV;
++	}
++
++	spin_lock_init(&port->lock);
++
++	ascport->clk = devm_clk_get(&pdev->dev, NULL);
++
++	if (WARN_ON(IS_ERR(ascport->clk)))
++		return -EINVAL;
++	/* ensure that clk rate is correct by enabling the clk */
++	clk_prepare_enable(ascport->clk);
++	ascport->port.uartclk = clk_get_rate(ascport->clk);
++	WARN_ON(ascport->port.uartclk == 0);
++	clk_disable_unprepare(ascport->clk);
++
++	return 0;
++}
++
++static struct asc_port *asc_of_get_asc_port(struct platform_device *pdev)
++{
++	struct device_node *np = pdev->dev.of_node;
++	int id;
++
++	if (!np)
++		return NULL;
++
++	id = of_alias_get_id(np, ASC_SERIAL_NAME);
++
++	if (id < 0)
++		id = 0;
++
++	if (WARN_ON(id >= ASC_MAX_PORTS))
++		return NULL;
++
++	asc_ports[id].hw_flow_control = of_property_read_bool(np,
++							"st,hw-flow-control");
++	asc_ports[id].force_m1 =  of_property_read_bool(np, "st,force_m1");
++	asc_ports[id].port.line = id;
++	return &asc_ports[id];
++}
++
++#ifdef CONFIG_OF
++static struct of_device_id asc_match[] = {
++	{ .compatible = "st,asc", },
++	{},
++};
++
++MODULE_DEVICE_TABLE(of, asc_match);
++#endif
++
++static int asc_serial_probe(struct platform_device *pdev)
++{
++	int ret;
++	struct asc_port *ascport;
++
++	ascport = asc_of_get_asc_port(pdev);
++	if (!ascport)
++		return -ENODEV;
++
++	ret = asc_init_port(ascport, pdev);
++	if (ret)
++		return ret;
++
++	ret = uart_add_one_port(&asc_uart_driver, &ascport->port);
++	if (ret)
++		return ret;
++
++	platform_set_drvdata(pdev, &ascport->port);
++
++	return 0;
++}
++
++static int asc_serial_remove(struct platform_device *pdev)
++{
++	struct uart_port *port = platform_get_drvdata(pdev);
++
++	platform_set_drvdata(pdev, NULL);
++	return uart_remove_one_port(&asc_uart_driver, port);
++}
++
++#ifdef CONFIG_PM_SLEEP
++static int asc_serial_suspend(struct device *dev)
++{
++	struct platform_device *pdev = to_platform_device(dev);
++	struct uart_port *port = platform_get_drvdata(pdev);
++
++	return uart_suspend_port(&asc_uart_driver, port);
++}
++
++static int asc_serial_resume(struct device *dev)
++{
++	struct platform_device *pdev = to_platform_device(dev);
++	struct uart_port *port = platform_get_drvdata(pdev);
++
++	return uart_resume_port(&asc_uart_driver, port);
++}
++
++#endif /* CONFIG_PM_SLEEP */
++
++/*----------------------------------------------------------------------*/
++
++#ifdef CONFIG_SERIAL_ST_ASC_CONSOLE
++static void asc_console_putchar(struct uart_port *port, int ch)
++{
++	unsigned int timeout = 1000000;
++
++	/* Wait for upto 1 second in case flow control is stopping us. */
++	while (--timeout && asc_txfifo_is_full(port))
++		udelay(1);
++
++	asc_out(port, ASC_TXBUF, ch);
++}
++
++/*
++ *  Print a string to the serial port trying not to disturb
++ *  any possible real use of the port...
++ */
++
++static void asc_console_write(struct console *co, const char *s, unsigned count)
++{
++	struct uart_port *port = &asc_ports[co->index].port;
++	unsigned long flags;
++	unsigned long timeout = 1000000;
++	int locked = 1;
++	u32 intenable;
++
++	local_irq_save(flags);
++	if (port->sysrq)
++		locked = 0; /* asc_interrupt has already claimed the lock */
++	else if (oops_in_progress)
++		locked = spin_trylock(&port->lock);
++	else
++		spin_lock(&port->lock);
++
++	/*
++	 * Disable interrupts so we don't get the IRQ line bouncing
++	 * up and down while interrupts are disabled.
++	 */
++	intenable = asc_in(port, ASC_INTEN);
++	asc_out(port, ASC_INTEN, 0);
++	(void)asc_in(port, ASC_INTEN);	/* Defeat bus write posting */
++
++	uart_console_write(port, s, count, asc_console_putchar);
++
++	while (--timeout && !asc_txfifo_is_empty(port))
++		udelay(1);
++
++	asc_out(port, ASC_INTEN, intenable);
++
++	if (locked)
++		spin_unlock(&port->lock);
++	local_irq_restore(flags);
++}
++
++static int asc_console_setup(struct console *co, char *options)
++{
++	struct asc_port *ascport;
++	int baud = 9600;
++	int bits = 8;
++	int parity = 'n';
++	int flow = 'n';
++
++	if (co->index >= ASC_MAX_PORTS)
++		return -ENODEV;
++
++	ascport = &asc_ports[co->index];
++
++	/*
++	 * This driver does not support early console initialization
++	 * (use ARM early printk support instead), so we only expect
++	 * this to be called during the uart port registration when the
++	 * driver gets probed and the port should be mapped at that point.
++	 */
++	BUG_ON(ascport->port.mapbase == 0 || ascport->port.membase == NULL);
++
++	if (options)
++		uart_parse_options(options, &baud, &parity, &bits, &flow);
++
++	return uart_set_options(&ascport->port, co, baud, parity, bits, flow);
++}
++
++static struct console asc_console = {
++	.name		= ASC_SERIAL_NAME,
++	.device		= uart_console_device,
++	.write		= asc_console_write,
++	.setup		= asc_console_setup,
++	.flags		= CON_PRINTBUFFER,
++	.index		= -1,
++	.data		= &asc_uart_driver,
++};
++
++#define ASC_SERIAL_CONSOLE (&asc_console)
++
++#else
++#define ASC_SERIAL_CONSOLE NULL
++#endif /* CONFIG_SERIAL_ST_ASC_CONSOLE */
++
++static struct uart_driver asc_uart_driver = {
++	.owner		= THIS_MODULE,
++	.driver_name	= DRIVER_NAME,
++	.dev_name	= ASC_SERIAL_NAME,
++	.major		= 0,
++	.minor		= 0,
++	.nr		= ASC_MAX_PORTS,
++	.cons		= ASC_SERIAL_CONSOLE,
++};
++
++static const struct dev_pm_ops asc_serial_pm_ops = {
++	SET_SYSTEM_SLEEP_PM_OPS(asc_serial_suspend, asc_serial_resume)
++};
++
++static struct platform_driver asc_serial_driver = {
++	.probe		= asc_serial_probe,
++	.remove		= asc_serial_remove,
++	.driver	= {
++		.name	= DRIVER_NAME,
++		.pm	= &asc_serial_pm_ops,
++		.owner	= THIS_MODULE,
++		.of_match_table = of_match_ptr(asc_match),
++	},
++};
++
++static int __init asc_init(void)
++{
++	int ret;
++	static char banner[] __initdata =
++		KERN_INFO "STMicroelectronics ASC driver initialized\n";
++
++	printk(banner);
++
++	ret = uart_register_driver(&asc_uart_driver);
++	if (ret)
++		return ret;
++
++	ret = platform_driver_register(&asc_serial_driver);
++	if (ret)
++		uart_unregister_driver(&asc_uart_driver);
++
++	return ret;
++}
++
++static void __exit asc_exit(void)
++{
++	platform_driver_unregister(&asc_serial_driver);
++	uart_unregister_driver(&asc_uart_driver);
++}
++
++module_init(asc_init);
++module_exit(asc_exit);
++
++MODULE_ALIAS("platform:" DRIVER_NAME);
++MODULE_AUTHOR("STMicroelectronics (R&D) Limited");
++MODULE_DESCRIPTION("STMicroelectronics ASC serial port driver");
++MODULE_LICENSE("GPL");
+diff --git a/include/uapi/linux/serial_core.h b/include/uapi/linux/serial_core.h
+index 9119cc0..e40ebe1 100644
+--- a/include/uapi/linux/serial_core.h
++++ b/include/uapi/linux/serial_core.h
+@@ -232,4 +232,7 @@
+ /* SH-SCI */
+ #define PORT_HSCIF	104
+ 
++/* ST ASC type numbers */
++#define PORT_ASC       105
++
+ #endif /* _UAPILINUX_SERIAL_CORE_H */
 -- 
-Regards/Gruss,
-    Boris.
+1.7.6.5
 
-Sent from a fat crate under my desk. Formatting is fine.
---
