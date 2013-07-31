@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760094Ab3GaNhd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 09:37:33 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:47066 "EHLO
+	id S1760027Ab3GaNhb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 09:37:31 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46972 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759825Ab3GaNZ7 (ORCPT
+	by vger.kernel.org with ESMTP id S1759753Ab3GaNZ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 31 Jul 2013 09:25:59 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Dave Kleikamp" <dave.kleikamp@oracle.com>,
-        "Bob Picco" <bob.picco@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>
+CC: akpm@linux-foundation.org,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        "Lan Tianyu" <tianyu.lan@intel.com>
 Date: Wed, 31 Jul 2013 15:23:09 +0200
-Message-ID: <lsq.1375276989.84316608@decadent.org.uk>
+Message-ID: <lsq.1375276989.822158812@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [25/84] sparc: tsb must be flushed before tlb
+Subject: [53/84] ACPI / video: ignore BIOS initial backlight value for
+ Fujitsu E753
 In-Reply-To: <lsq.1375276989.251749228@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.216.67.181
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,38 +33,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
+From: Lan Tianyu <tianyu.lan@intel.com>
 
-commit 23a01138efe216f8084cfaa74b0b90dd4b097441 upstream.
+commit 9657a565a476d517451c10b0bcc106e300785aff upstream.
 
-This fixes a race where a cpu may re-load a tlb from a stale tsb right
-after it has been flushed by a remote function call.
+The BIOS of FUjitsu E753 reports an incorrect initial backlight value
+for WIN8 compatible OS, causing backlight to be dark during startup.
+This change causes the incorrect initial value from BIOS to be ignored.
 
-I still see some instability when stressing the system with parallel
-kernel builds while creating memory pressure by writing to
-/proc/sys/vm/nr_hugepages, but this patch improves the stability
-significantly.
-
-Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
-Acked-by: Bob Picco <bob.picco@oracle.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+References: https://bugzilla.kernel.org/show_bug.cgi?id=60161
+Reported-and-tested-by: Jan Hinnerk Stosch <janhinnerk.stosch@gmail.com>
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/sparc/mm/tlb.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/acpi/video.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/arch/sparc/mm/tlb.c b/arch/sparc/mm/tlb.c
-index afd021e..072f553 100644
---- a/arch/sparc/mm/tlb.c
-+++ b/arch/sparc/mm/tlb.c
-@@ -115,8 +115,8 @@ no_cache_flush:
- 	}
- 
- 	if (!tb->active) {
--		global_flush_tlb_page(mm, vaddr);
- 		flush_tsb_user_page(mm, vaddr);
-+		global_flush_tlb_page(mm, vaddr);
- 		goto out;
- 	}
- 
+--- a/drivers/acpi/video.c
++++ b/drivers/acpi/video.c
+@@ -449,6 +449,14 @@ static struct dmi_system_id video_dmi_ta
+ 	},
+ 	{
+ 	 .callback = video_ignore_initial_backlight,
++	 .ident = "Fujitsu E753",
++	 .matches = {
++		DMI_MATCH(DMI_BOARD_VENDOR, "FUJITSU"),
++		DMI_MATCH(DMI_PRODUCT_NAME, "LIFEBOOK E753"),
++		},
++	},
++	{
++	 .callback = video_ignore_initial_backlight,
+ 	 .ident = "HP Pavilion dm4",
+ 	 .matches = {
+ 		DMI_MATCH(DMI_BOARD_VENDOR, "Hewlett-Packard"),
 
