@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752114Ab3GaEQq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 00:16:46 -0400
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:34985 "EHLO
+	id S1758938Ab3GaERH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 00:17:07 -0400
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:35001 "EHLO
 	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750771Ab3GaEQC (ORCPT
+	by vger.kernel.org with ESMTP id S1750819Ab3GaEQE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 00:16:02 -0400
+	Wed, 31 Jul 2013 00:16:04 -0400
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApgDAKOO+FF5LPxHgWdsb2JhbABbwz0XDgEBFiYogiQBAQUnLyMQCBgxOQMbGYgPuGqQG4NzA6xRKg
+X-IronPort-Anti-Spam-Result: ApgDAKOO+FF5LPxHgWdsb2JhbABbwiaBFxcOAQEWJiiCJAEBBScvIxAIGDE5AxsZiA+4ao40gT8og3MDogCKUSqBLA
 From: Dave Chinner <david@fromorbit.com>
 To: linux-fsdevel@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, davej@redhat.com,
         viro@zeniv.linux.org.uk, jack@suse.cz, glommer@parallels.com
-Subject: [PATCH 01/11] writeback: plug writeback at a high level
-Date: Wed, 31 Jul 2013 14:15:40 +1000
-Message-Id: <1375244150-27296-2-git-send-email-david@fromorbit.com>
+Subject: [PATCH 02/11] inode: add IOP_NOTHASHED to avoid inode hash lock in evict
+Date: Wed, 31 Jul 2013 14:15:41 +1000
+Message-Id: <1375244150-27296-3-git-send-email-david@fromorbit.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1375244150-27296-1-git-send-email-david@fromorbit.com>
 References: <1375244150-27296-1-git-send-email-david@fromorbit.com>
@@ -25,72 +25,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dave Chinner <dchinner@redhat.com>
 
-Doing writeback on lots of little files causes terrible IOPS storms
-because of the per-mapping writeback plugging we do. This
-essentially causes imeediate dispatch of IO for each mapping,
-regardless of the context in which writeback is occurring.
+Some filesystems don't use the VFS inode hash and fake the fact they
+are hashed so that all the writeback code works correctly. However,
+this means the evict() path still tries to remove the inode from the
+hash, meaning that the inode_hash_lock() needs to be taken
+unnecessarily. Hence under certain workloads the inode_hash_lock can
+be contended even if the inode is never actually hashed.
 
-IOWs, running a concurrent write-lots-of-small 4k files using fsmark
-on XFS results in a huge number of IOPS being issued for data
-writes.  Metadata writes are sorted and plugged at a high level by
-XFS, so aggregate nicely into large IOs. However, data writeback IOs
-are dispatched in individual 4k IOs, even when the blocks of two
-consecutively written files are adjacent.
-
-Test VM: 8p, 8GB RAM, 4xSSD in RAID0, 100TB sparse XFS filesystem,
-metadata CRCs enabled.
-
-Kernel: 3.10-rc5 + xfsdev + my 3.11 xfs queue (~70 patches)
-
-Test:
-
-$ ./fs_mark  -D  10000  -S0  -n  10000  -s  4096  -L  120  -d
-/mnt/scratch/0  -d  /mnt/scratch/1  -d  /mnt/scratch/2  -d
-/mnt/scratch/3  -d  /mnt/scratch/4  -d  /mnt/scratch/5  -d
-/mnt/scratch/6  -d  /mnt/scratch/7
-
-Result:
-
-		wall	sys	create rate	Physical write IO
-		time	CPU	(avg files/s)	 IOPS	Bandwidth
-		-----	-----	------------	------	---------
-unpatched	6m56s	15m47s	24,000+/-500	26,000	130MB/s
-patched		5m06s	13m28s	32,800+/-600	 1,500	180MB/s
-improvement	-26.44%	-14.68%	  +36.67%	-94.23%	+38.46%
-
-If I use zero length files, this workload at about 500 IOPS, so
-plugging drops the data IOs from roughly 25,500/s to 1000/s.
-3 lines of code, 35% better throughput for 15% less CPU.
-
-The benefits of plugging at this layer are likely to be higher for
-spinning media as the IO patterns for this workload are going make a
-much bigger difference on high IO latency devices.....
+To avoid this, add an inode opflag to allow inode_hash_remove() to
+avoid taking the hash lock on inodes have never actually been
+hashed.
 
 Signed-off-by: Dave Chinner <dchinner@redhat.com>
 ---
- fs/fs-writeback.c | 3 +++
- 1 file changed, 3 insertions(+)
+ fs/xfs/xfs_iops.c  | 2 ++
+ include/linux/fs.h | 3 ++-
+ 2 files changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-index 68851ff..1d23d9a 100644
---- a/fs/fs-writeback.c
-+++ b/fs/fs-writeback.c
-@@ -589,7 +589,9 @@ static long writeback_sb_inodes(struct super_block *sb,
- 	unsigned long start_time = jiffies;
- 	long write_chunk;
- 	long wrote = 0;  /* count both pages and inodes */
-+	struct blk_plug plug;
+diff --git a/fs/xfs/xfs_iops.c b/fs/xfs/xfs_iops.c
+index 96dda62..68a8264 100644
+--- a/fs/xfs/xfs_iops.c
++++ b/fs/xfs/xfs_iops.c
+@@ -1168,8 +1168,10 @@ xfs_setup_inode(
+ 	inode->i_state = I_NEW;
  
-+	blk_start_plug(&plug);
- 	while (!list_empty(&wb->b_io)) {
- 		struct inode *inode = wb_inode(wb->b_io.prev);
+ 	inode_sb_list_add(inode);
++
+ 	/* make the inode look hashed for the writeback code */
+ 	hlist_add_fake(&inode->i_hash);
++	inode->i_opflags |= IOP_NOTHASHED;
  
-@@ -686,6 +688,7 @@ static long writeback_sb_inodes(struct super_block *sb,
- 				break;
- 		}
- 	}
-+	blk_finish_plug(&plug);
- 	return wrote;
+ 	inode->i_mode	= ip->i_d.di_mode;
+ 	set_nlink(inode, ip->i_d.di_nlink);
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index b09ddc0..51cf6ed 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -515,6 +515,7 @@ struct posix_acl;
+ #define IOP_FASTPERM	0x0001
+ #define IOP_LOOKUP	0x0002
+ #define IOP_NOFOLLOW	0x0004
++#define IOP_NOTHASHED	0x0008	/* inode never hashed, avoid unhashing */
+ 
+ /*
+  * Keep mostly read-only and often accessed (especially for
+@@ -2371,7 +2372,7 @@ static inline void insert_inode_hash(struct inode *inode)
+ extern void __remove_inode_hash(struct inode *);
+ static inline void remove_inode_hash(struct inode *inode)
+ {
+-	if (!inode_unhashed(inode))
++	if (!((inode->i_opflags & IOP_NOTHASHED) || inode_unhashed(inode)))
+ 		__remove_inode_hash(inode);
  }
  
 -- 
