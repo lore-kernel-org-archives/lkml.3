@@ -1,196 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759173Ab3GaHhb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 03:37:31 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:46155 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1759091Ab3GaHh1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 03:37:27 -0400
-Date: Wed, 31 Jul 2013 09:37:24 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Emilio =?iso-8859-1?Q?L=F3pez?= <emilio@elopez.com.ar>
-Cc: Mike Turquette <mturquette@linaro.org>, kevin.z.m.zh@gmail.com,
-        sunny@allwinnertech.com, shuge@allwinnertech.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] ARM: sun6i: Enable clock support in the DTSI
-Message-ID: <20130731073724.GA24439@lukather>
-References: <1375195462-19566-1-git-send-email-maxime.ripard@free-electrons.com>
- <1375195462-19566-5-git-send-email-maxime.ripard@free-electrons.com>
- <51F86A2E.10505@elopez.com.ar>
+	id S1759205Ab3GaHhr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 03:37:47 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41270 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759100Ab3GaHh3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 03:37:29 -0400
+Date: Wed, 31 Jul 2013 09:37:26 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Li Zefan <lizefan@huawei.com>, Tejun Heo <tj@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        cgroups@vger.kernel.org, containers@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, kent.overstreet@gmail.com,
+        Glauber Costa <glommer@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: memcg creates an unkillable task in 3.11-rc2
+Message-ID: <20130731073726.GC30514@dhcp22.suse.cz>
+References: <8761vui4cr.fsf@xmission.com>
+ <20130729075939.GA4678@dhcp22.suse.cz>
+ <87ehahg312.fsf@xmission.com>
+ <20130729095109.GB4678@dhcp22.suse.cz>
+ <20130729161026.GD22605@mtj.dyndns.org>
+ <87r4eh70yg.fsf@xmission.com>
+ <51F71DE2.4020102@huawei.com>
+ <87ppu0a298.fsf_-_@tw-ebiederman.twitter.com>
+ <20130730123120.GA15847@dhcp22.suse.cz>
+ <874nbc3sx1.fsf@tw-ebiederman.twitter.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="TB36FDmn/VVEgNH/"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51F86A2E.10505@elopez.com.ar>
+In-Reply-To: <874nbc3sx1.fsf@tw-ebiederman.twitter.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+[I am CCing David here as well]
 
---TB36FDmn/VVEgNH/
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue 30-07-13 09:37:46, Eric W. Biederman wrote:
+> Michal Hocko <mhocko@suse.cz> writes:
+> 
+> > On Tue 30-07-13 01:19:31, Eric W. Biederman wrote:
+> > [...]
+> >> Hmm. Looking farther I see what is going on. And it has nothing to do
+> >> with the freezer. (I have commented out that code and reproduced it
+> >> without the freezer to be doubly certain).
+> >> 
+> >> 
+> >> On the exit path exit_robust_list is triggering a page fault to fault a
+> >> page back in.  Which since we have no memory causes the exit path
+> >> to get stuck in mem_cgroup_handle_oom.
+> >
+> > Hmm, interesting. I assume the exit is caused by the SIGKILL, right?
+> > If yes, then why it hasn't coughed early in __mem_cgroup_try_charge
+> 
+> Interesting question.  This isn't the primary thread but we do send
+> SIGKILL to the secondary threads as well.
+> 
+> We definitely need those checks on both paths making my change valid.
+> 
+> Oh. Duh!  This is after we act on SIGKILL so SIGKILL is no longer
+> pending.
 
-Hi Emilio,
+Very well spotted Eric! What do you think about the following patch?
+I would have to check since when the exit path could trigger the fault
+but I guess this is worth stable backport.
+---
+>From 411408558f2858328ea25e69567e9a53a8314032 Mon Sep 17 00:00:00 2001
+From: Michal Hocko <mhocko@suse.cz>
+Date: Wed, 31 Jul 2013 08:48:54 +0200
+Subject: [PATCH] memcg: Do not hang on OOM when killed by userspace OOM
 
-On Tue, Jul 30, 2013 at 10:36:46PM -0300, Emilio L=F3pez wrote:
-> Hi Maxime,
->=20
-> Overall this looks good to me, but I have some small comments:
->=20
-> El 30/07/13 11:44, Maxime Ripard escribi=F3:
-> > Now that the clock driver has support for the A31 clocks, we can add
-> > them to the DTSI and start using them in the relevant hardware blocks.
-> >=20
-> > Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> > ---
-> >  arch/arm/boot/dts/sun6i-a31.dtsi | 137 +++++++++++++++++++++++++++++++=
-+++++---
-> >  1 file changed, 127 insertions(+), 10 deletions(-)
-> >=20
-> > diff --git a/arch/arm/boot/dts/sun6i-a31.dtsi b/arch/arm/boot/dts/sun6i=
--a31.dtsi
-> > index 0d13dc6..c6a3a91 100644
-> > --- a/arch/arm/boot/dts/sun6i-a31.dtsi
-> > +++ b/arch/arm/boot/dts/sun6i-a31.dtsi
-> > @@ -51,13 +51,130 @@
-> > =20
-> >  	clocks {
-> >  		#address-cells =3D <1>;
-> > -		#size-cells =3D <0>;
-> > +		#size-cells =3D <1>;
-> > +		ranges;
-> > =20
-> > -		osc: oscillator {
-> > +		osc24M: hosc {
->=20
-> Please use osc24M and osc32k instead of hosc and losc, respectively.
+Eric has reported that he can see task(s) stuck in memcg OOM handler
+regularly. The only way out is to
+	echo 0 > $GROUP/memory.oom_controll
 
-The problem is a bit more complex than that.
+His usecase is:
+- Setup a hierarchy with memory and the freezer
+  (disable kernel oom and have a process watch for oom).
+- In that memory cgroup add a process with one thread per cpu.
+- In one thread slowly allocate once per second I think it is 16M of ram
+  and mlock and dirty it (just to force the pages into ram and stay there).
+- When oom is achieved loop:
+  * attempt to freeze all of the tasks.
+  * if frozen send every task SIGKILL, unfreeze, remove the directory in
+    cgroupfs.
 
-On the A31, the losc clock is actually a mux between an external
-oscillator running at 32kHz, and the internal oscillator running at
-667MHz, that would be scaled down.
+Eric has then pinpointed the issue to be memcg specific.
 
-Support for this mux is not quite there yet, since I've not seen any
-documentation for it, but this would allow to just rearrange losc
-parents and compatible when we will had such support.
+All tasks are sitting on the memcg_oom_waitq when memcg oom is disabled.
+Those that have received fatal signal will bypass the charge and should
+continue on their way out. The tricky part is that that exit path might
+trigger a page fault (e.g. exit_robust_list) thus the memcg charge
+while its memcg is still under OOM because nobody has released any
+charges. Unlike with the in-kernel OOM handler the exiting task doesn't
+get TIF_MEMDIE set so it doesn't shortcut charges and falls to the
+memcg OOM again without any way out of it as there are no fatal signals
+pending anymore.
 
-Hence why I chose these names.
+This patch sets the TIF_MEMDIE flag pro actively in mem_cgroup_handle_oom
+if the memcg is disabled after the task is woken up with fatal signal
+pending. This means that any further charges will be bypassed early in
+__mem_cgroup_try_charge and the task will have chance to exit finally.
 
-> >  			#clock-cells =3D <0>;
-> >  			compatible =3D "fixed-clock";
-> >  			clock-frequency =3D <24000000>;
->=20
-> Is osc24M not gatable on A31?
+Strictly speaking we might mark also a task which hasn't been killed by
+userspace OOM handler but this is not harmful as the task is going away
+anyway and under-oom group would like to see it go as soon as possible.
 
-Nope.
+Reported-by: Eric W. Biederman <ebiederm@xmission.com>
+Debugged-by: Eric W. Biederman <ebiederm@xmission.com>
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+---
+ mm/memcontrol.c | 13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
 
-> >  		};
-> > +
-> > +		osc32k: losc {
-> > +			#clock-cells =3D <0>;
-> > +			compatible =3D "fixed-clock";
-> > +			clock-frequency =3D <32768>;
-> > +		};
-> > +
-> > +		pll1: pll1@01c20000 {
-> > +			#clock-cells =3D <0>;
-> > +			compatible =3D "allwinner,sun6i-pll1-clk";
-> > +			reg =3D <0x01c20000 0x4>;
-> > +			clocks =3D <&osc24M>;
-> > +		};
-> > +
-> > +		/*
-> > +		 * This is a dummy clock, to be used as placeholder on
-> > +		 * other mux clocks when a specific parent clock is not
-> > +		 * yet implemented. It should be dropped when the driver
-> > +		 * is complete.
-> > +		 */
-> > +		pll6: pll6 {
-> > +			#clock-cells =3D <0>;
-> > +			compatible =3D "fixed-clock";
-> > +			clock-frequency =3D <0>;
-> > +		};
-> > +
-> > +		cpu: cpu@01c20050 {
-> > +			#clock-cells =3D <0>;
-> > +			compatible =3D "allwinner,sun4i-cpu-clk";
-> > +			reg =3D <0x01c20050 0x4>;
-> > +			clocks =3D <&osc32k>, <&osc24M>, <&pll1>, <&pll1>;
->=20
-> Listing pll1 twice doesn't sound correct, but vendor code seems to
-> indicate so. A comment to clarify it's not a typo would be good I think.
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index d12ca6f..d4103b0 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -2235,8 +2235,19 @@ static bool mem_cgroup_handle_oom(struct mem_cgroup *memcg, gfp_t mask,
+ 
+ 	mem_cgroup_unmark_under_oom(memcg);
+ 
+-	if (test_thread_flag(TIF_MEMDIE) || fatal_signal_pending(current))
++	if (test_thread_flag(TIF_MEMDIE))
+ 		return false;
++
++	/*
++	 * Userspace OOM killer might have killed this task but
++	 * there is no way it could have set TIF_MEMDIE as well
++	 * so we have to set it manually.
++	 */
++	if (fatal_signal_pending(current)) {
++		if (memcg->oom_kill_disable)
++			set_thread_flag(TIF_MEMDIE);
++		return false;
++	}
+ 	/* Give chance to dying process */
+ 	schedule_timeout_uninterruptible(1);
+ 	return true;
+-- 
+1.8.3.2
 
-Yes, I suspect an error in the datasheet, but until proven otherwise,
-it's that way.
-
-I'll add a comment.
-
-> > +		};
-> > +
-> > +		axi: axi@01c20050 {
-> > +			#clock-cells =3D <0>;
-> > +			compatible =3D "allwinner,sun4i-axi-clk";
-> > +			reg =3D <0x01c20050 0x4>;
-> > +			clocks =3D <&cpu>;
-> > +		};
-> > +
-> > +		ahb1_mux: ahb1_mux@01c20054 {
-> > +			#clock-cells =3D <0>;
-> > +			compatible =3D "allwinner,sun6i-ahb1-mux-clk";
-> > +			reg =3D <0x01c20054 0x4>;
-> > +			clocks =3D <&osc32k>, <&osc24M>, <&axi>, <&pll6>;
-> > +		};
-> > +
-> > +		ahb1: ahb1@01c20054 {
-> > +			#clock-cells =3D <0>;
-> > +			compatible =3D "allwinner,sun4i-ahb-clk";
-> > +			reg =3D <0x01c20054 0x4>;
-> > +			clocks =3D <&ahb1_mux>;
-> > +		};
->=20
-> Depending on when this lands, I believe these two above could be merged
-> into one with the refactoring introduced on my patchset.
-
-Since your patchset is still in RFC and we had no comments from Mike so
-far, while this one looks pretty similar to the one we had before, I
-guess the safest thing to do would be to rebase your patches on top of
-this ones.
-
-But it's right those clocks (AHB1 and APB2) will benefit from your work
-as well :)
-
-Maxime
-
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---TB36FDmn/VVEgNH/
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR+L60AAoJEBx+YmzsjxAg8goP/1gsgjcr8klKmbw9GjuuxmMI
-yGN+NzpJvVuoqXq6by1IDx8q5i2ucwWI/qfqewht2DxJ4TspMcLDQQEIHiNEBm8L
-Wmy5yywl6ID276zi+d8kpS/8BgXusk1OD5+vmQAvr76Cr2xJ67ubYQKIWGcMcQXs
-e0DkXb71oBdJZU3hCtD38ha9XyoGTWd2A0ySCa+vO9akOQIsdh2lfwSXH7n4z5xv
-w93roWH4gFVuGfqU0Ysqh4CBsxG+v1dSJ5s2cQd+Zv9oVPUU37ErQCQgqpZtzYud
-YKbudjByeVJero2q+C2J2bnCt0uP1QDfp6K5J+WOzS9Jcvx4NUIuvzasbo6Djvui
-wF1vfAjUS/VpsCu3RLFEYejyWClq84x37MOIu2pn+4hwjyACHCmGtxWji0KjzJDh
-300I6BWVBLIGae49zB0XWiuiBrMWgue+pNnF2w8L5qtVUxLYp9TfnfEjP76pj4Hr
-QOHirJ/ADqq9hkyynrSAEgU7dkEebOowrKzxAxOpSTuek2pRRR5qZggufVzc44Dc
-qz/omIOekHS/oM+Rgetjb71F9BxvyF5OVkc/ggEWynRrXzO9gkXQ8snVoyqAhqE5
-KE4xN7Qm48de56s1bRb41UgZyyaE4JHaZHNddUnZgM15topi9jMOQn6g3qyRqTBG
-duLr7LYMpZ7hYLOzV0NK
-=PKJ0
------END PGP SIGNATURE-----
-
---TB36FDmn/VVEgNH/--
+-- 
+Michal Hocko
+SUSE Labs
