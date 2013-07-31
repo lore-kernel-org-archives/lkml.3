@@ -1,85 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760960Ab3GaWtP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 18:49:15 -0400
-Received: from mail-we0-f169.google.com ([74.125.82.169]:54205 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757890Ab3GaWtN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 18:49:13 -0400
-Message-ID: <51F9946A.50107@linaro.org>
-Date: Thu, 01 Aug 2013 00:49:14 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1760954Ab3GaWyU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 18:54:20 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55673 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757781Ab3GaWyT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 18:54:19 -0400
+Date: Thu, 1 Aug 2013 00:54:14 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT] HID
+Message-ID: <alpine.LNX.2.00.1308010050560.18809@pobox.suse.cz>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Stephen Boyd <sboyd@codeaurora.org>
-CC: Mark Rutland <mark.rutland@arm.com>, Marc Zyngier <Marc.Zyngier@arm.com>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v4 0/5] Memory mapped architected timers
-References: <1374191972-18015-1-git-send-email-sboyd@codeaurora.org> <20130722170817.GB4833@e106331-lin.cambridge.arm.com> <20130724203253.GE27761@codeaurora.org> <20130731223833.GJ8868@codeaurora.org>
-In-Reply-To: <20130731223833.GJ8868@codeaurora.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/01/2013 12:38 AM, Stephen Boyd wrote:
-> On 07/24, Stephen Boyd wrote:
->> On 07/22, Mark Rutland wrote:
->>> Hi Stephen,
->>>
->>> On Fri, Jul 19, 2013 at 12:59:27AM +0100, Stephen Boyd wrote:
->>>> This patchset adds support for memory mapped architected timers. We
->>>> don't have any other global broadcast timer in our system, so we use the
->>>> mmio timer during low power modes. The first patch changes the register
->>>> accessor to an enum per Thomas' request. The second patch is the binding.
->>>> The next two patches lay some groundwork so that the last patch is simpler.
->>>> The final patch adds support for mmio timers.
->>>>
->>>> Patches are based on v3.11-rc1.
->>>
->>> Be aware that as of v3.11-rc2 this doesn't cleanly apply, as the
->>> __cpuinit removal broke the final patch's context in a couple of places.
->>> It would be nice to get rid of the new cpuinit additions too...
->>>
->>> With that cleaned up locally, I've gave this a spin on tc2 and a
->>> Foundation model to test the cp15/system timers, hotplugging CPUs and
->>> running a basic test (`time sleep 5`). That all seems to work.
->>>
->>> Unfortunately I have no way of testing the memory-mapped timer support,
->>> but I trust you've tested that locally.
->>>
->>> For the series:
->>>
->>> Acked-by: Mark Rutland <mark.rutland@arm.com>
->>>
->>
->> Thanks Mark.
->>
->> Daniel, can you pick up these patches please?
->>
-> 
-> Ping Daniel?
+Linus,
 
-Yes, thanks for the head up.
+please pull from
 
-I will look at them and pick the patches.
+  git://git.kernel.org/pub/scm/linux/kernel/git/jikos/hid.git for-linus
 
-  -- Daniel
+to receive
 
+
+
+- fix for hid-sony PS3 sixaxxis breakage from Benjamin Tissories
+- fix for hidraw race condition from Yonghua Zheng
+- fix/bandaid for rare device enumeration problems of Logitech Unifying 
+  receivers from Nestor Lopez Casado
+
+Benjamin Tissoires (1):
+      HID: sony: fix HID mapping for PS3 sixaxis controller
+
+Nestor Lopez Casado (2):
+      HID: Revert "Revert "HID: Fix logitech-dj: missing Unifying device issue""
+      HID: hid-logitech-dj: querying_devices was never set
+
+Yonghua Zheng (1):
+      HID: hidraw: fix improper mutex release
+
+ drivers/hid/hid-logitech-dj.c |   47 +++++++++++++++++++++++++++++++++++++++++
+ drivers/hid/hid-logitech-dj.h |    1 +
+ drivers/hid/hid-sony.c        |    3 +-
+ drivers/hid/hidraw.c          |    2 +-
+ 4 files changed, 51 insertions(+), 2 deletions(-)
 
 -- 
- <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+Jiri Kosina
+SUSE Labs
