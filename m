@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759933Ab3GaN0W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 09:26:22 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:47139 "EHLO
+	id S1759982Ab3GaN3B (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 09:29:01 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:47023 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759910Ab3GaN0L (ORCPT
+	by vger.kernel.org with ESMTP id S1759764Ab3GaN0M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 09:26:11 -0400
+	Wed, 31 Jul 2013 09:26:12 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Eric Paris" <eparis@redhat.com>, "Al Viro" <viro@zeniv.linux.org.uk>,
-        "Dan Carpenter" <dan.carpenter@oracle.com>
+CC: akpm@linux-foundation.org, "Wei Yongjun" <yongjun_wei@trendmicro.com.cn>,
+        "David S. Miller" <davem@davemloft.net>
 Date: Wed, 31 Jul 2013 15:23:09 +0200
-Message-ID: <lsq.1375276989.204861160@decadent.org.uk>
+Message-ID: <lsq.1375276989.92994453@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [30/84] fanotify: info leak in copy_event_to_user()
+Subject: [11/84] l2tp: add missing .owner to struct pppox_proto
 In-Reply-To: <lsq.1375276989.251749228@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.216.67.181
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,31 +31,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-commit de1e0c40aceb9d5bff09c3a3b97b2f1b178af53f upstream.
+[ Upstream commit e1558a93b61962710733dc8c11a2bc765607f1cd ]
 
-The ->reserved field isn't cleared so we leak one byte of stack
-information to userspace.
+Add missing .owner of struct pppox_proto. This prevents the
+module from being removed from underneath its users.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Eric Paris <eparis@redhat.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/notify/fanotify/fanotify_user.c | 1 +
- 1 file changed, 1 insertion(+)
+ net/l2tp/l2tp_ppp.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/fs/notify/fanotify/fanotify_user.c
-+++ b/fs/notify/fanotify/fanotify_user.c
-@@ -118,6 +118,7 @@ static int fill_event_metadata(struct fs
- 	metadata->event_len = FAN_EVENT_METADATA_LEN;
- 	metadata->metadata_len = FAN_EVENT_METADATA_LEN;
- 	metadata->vers = FANOTIFY_METADATA_VERSION;
-+	metadata->reserved = 0;
- 	metadata->mask = event->mask & FAN_ALL_OUTGOING_EVENTS;
- 	metadata->pid = pid_vnr(event->tgid);
- 	if (unlikely(event->mask & FAN_Q_OVERFLOW))
+diff --git a/net/l2tp/l2tp_ppp.c b/net/l2tp/l2tp_ppp.c
+index 74410e6..e579006 100644
+--- a/net/l2tp/l2tp_ppp.c
++++ b/net/l2tp/l2tp_ppp.c
+@@ -1778,7 +1778,8 @@ static const struct proto_ops pppol2tp_ops = {
+ 
+ static const struct pppox_proto pppol2tp_proto = {
+ 	.create		= pppol2tp_create,
+-	.ioctl		= pppol2tp_ioctl
++	.ioctl		= pppol2tp_ioctl,
++	.owner		= THIS_MODULE,
+ };
+ 
+ #ifdef CONFIG_L2TP_V3
 
