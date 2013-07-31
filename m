@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760342Ab3GaOYU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 10:24:20 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:52122 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760136Ab3GaOYR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 10:24:17 -0400
-Date: Wed, 31 Jul 2013 16:24:05 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Adrian Hunter <adrian.hunter@intel.com>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH V2 1/9] perf tools: add test for reading object code
-Message-ID: <20130731142405.GB3008@twins.programming.kicks-ass.net>
-References: <1375218838-31042-1-git-send-email-adrian.hunter@intel.com>
- <1375218838-31042-2-git-send-email-adrian.hunter@intel.com>
- <20130731141732.GD3614@ghostprotocols.net>
+	id S1760231Ab3GaOZX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 10:25:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16166 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759442Ab3GaOZV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 10:25:21 -0400
+Date: Wed, 31 Jul 2013 10:24:30 -0400
+From: Dave Jones <davej@redhat.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Aaro Koskinen <aaro.koskinen@iki.fi>,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
+        Kees Cook <keescook@chromium.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [Ksummit-2013-discuss] [ARM ATTEND] catching up on exploit
+ mitigations
+Message-ID: <20130731142430.GA4545@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Russell King - ARM Linux <linux@arm.linux.org.uk>,
+	Aaro Koskinen <aaro.koskinen@iki.fi>,
+	ksummit-2013-discuss@lists.linuxfoundation.org,
+	Kees Cook <keescook@chromium.org>,
+	"linux-arm-kernel@lists.infradead.org" <linux-arm-kernel@lists.infradead.org>,
+	LKML <linux-kernel@vger.kernel.org>
+References: <CAGXu5jKv9Vt+Hu0mFYaxggLLDZ46U3KR9MKegUoHH8StXCkBtQ@mail.gmail.com>
+ <20130730221435.GA22240@redhat.com>
+ <20130730231120.GC30725@blackmetal.musicnaut.iki.fi>
+ <20130730231533.GA26824@redhat.com>
+ <20130730235834.GD30725@blackmetal.musicnaut.iki.fi>
+ <20130731000444.GC1281@redhat.com>
+ <20130731094012.GU24642@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130731141732.GD3614@ghostprotocols.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20130731094012.GU24642@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 31, 2013 at 11:17:32AM -0300, Arnaldo Carvalho de Melo wrote:
-> Em Wed, Jul 31, 2013 at 12:13:50AM +0300, Adrian Hunter escreveu:
-> > Using the information in mmap events, perf tools can read object
-> > code associated with sampled addresses.  A test is added that
-> > compares bytes read by perf with the same bytes read using
-> > objdump.
-> 
-> So this parses objdump output, and we also already have the annotation
-> logic that does that too, have you thought about having common routines
-> for these two cases?
-> 
+On Wed, Jul 31, 2013 at 10:40:12AM +0100, Russell King - ARM Linux wrote:
+ > On Tue, Jul 30, 2013 at 08:04:44PM -0400, Dave Jones wrote:
+ > > To use ARM as an example, the bugs I've seen have mostly been in arch specific
+ > > code that does things like page-table manipulation.  The chromebook bugs I
+ > > was hitting for eg were various kinds of PTE corruption warnings. 
+ > 
+ > Hmm, really?  Did you reported these bugs?  I'm not aware of mainline
+ > having any changes related to bug reports on PTEs on ARM.
 
-Or better yet, stop using objdump like this and start using libbfd
-directly. The only reason we did horrible things like parsing objdump
-output is because nobody knew how the underlying stuff actually worked
-and we wanted to have something quick.
+I wasn't sure if it was a googleism, or happens on mainline, so no.
 
+	Dave
 
