@@ -1,43 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756893Ab3GaTNP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 15:13:15 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:42151 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750795Ab3GaTNN (ORCPT
+	id S1757208Ab3GaTPQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 15:15:16 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:56920 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753289Ab3GaTPO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 15:13:13 -0400
-Message-ID: <51F961C5.7070302@wwwdotorg.org>
-Date: Wed, 31 Jul 2013 13:13:09 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Wed, 31 Jul 2013 15:15:14 -0400
+Date: Wed, 31 Jul 2013 15:08:02 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: Gustavo Padovan <gustavo@padovan.org>, linux-wireless@vger.kernel.org,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: pull request: bluetooth 2013-07-30
+Message-ID: <20130731190801.GE2311@tuxdriver.com>
+References: <20130730123848.GE5975@joana>
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: rjw@sisk.pl, linaro-kernel@lists.linaro.org, patches@linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, arnd.bergmann@linaro.org,
-        Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH 14/15] cpufreq: Tegra: initialize .owner field with THIS_MODULE
-References: <cover.1375279948.git.viresh.kumar@linaro.org> <7e832fd210488da0675b6c70fc9a3947eec7899d.1375279948.git.viresh.kumar@linaro.org>
-In-Reply-To: <7e832fd210488da0675b6c70fc9a3947eec7899d.1375279948.git.viresh.kumar@linaro.org>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130730123848.GE5975@joana>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/31/2013 08:19 AM, Viresh Kumar wrote:
-> CPUFreq core does following at multiple places:
-> module_{get|put}(cpufreq_driver->owner)).
+On Tue, Jul 30, 2013 at 01:38:48PM +0100, Gustavo Padovan wrote:
+> Hi John,
 > 
-> This is done to make sure module doesn't get unloaded if it is currently in use.
-> This will work only if the .owner field of cpufreq driver is initialized with a
-> valid pointer.
+> A few fixes and devices ID additions for 3.11: 
 > 
-> This field wasn't initialized for this driver, lets initialize it with
-> THIS_MODULE.
+>  * There are 4 new ath3k device ids 
+>  * Fixed stack memory usage in ath3k.
+>  * Fixed the init process of BlueFRITZ! devices, they were failing to init
+>    due to an unsupported command we sent. 
+>  * Fixed wrong use of PTR_ERR in btusb code that was preventing intel devices
+>    to work properly.
+>  * Fixed race condition between hci_register_dev() and hci_dev_open() that
+>    could cause a NULL pointer dereference.
+>  * Fixed race condition that could call hci_req_cmd_complete() and make some
+>    devices to fail as showed in the log added to the commit message.
+> 
+> Please pull or let me know of any issues. Thanks.
+> 
+> 	Gustavo
+> 
+> --
+> The following changes since commit 075163bbb0f51174359947e1bce84f5edb23f21e:
+> 
+>   ath9k_htc: Handle IDLE state transition properly (2013-06-24 13:52:52 -0400)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth master
+> 
+> for you to fetch changes up to 53e21fbc288218a423959f878c86471a0e323a9a:
+> 
+>   Bluetooth: Fix calling request callback more than once (2013-07-29 12:28:04 +0100)
 
-Acked-by: Stephen Warren <swarren@nvidia.com>
+Pulling now...
 
-I assume this is all part of a series you'll take through the cpufreq tree.
+-- 
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
