@@ -1,86 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759700Ab3GaODx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 10:03:53 -0400
-Received: from forward-corp1f.mail.yandex.net ([95.108.130.40]:36363 "EHLO
-	forward-corp1f.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751338Ab3GaODv (ORCPT
+	id S1759752Ab3GaOHA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 10:07:00 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:4344 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752169Ab3GaOG7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 10:03:51 -0400
-X-Greylist: delayed 367 seconds by postgrey-1.27 at vger.kernel.org; Wed, 31 Jul 2013 10:03:51 EDT
-Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
-Message-ID: <51F917CF.7010905@yandex-team.ru>
-Date: Wed, 31 Jul 2013 17:57:35 +0400
-From: Roman Gushchin <klamm@yandex-team.ru>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>, raise.sail@gmail.com,
-        ebiederm@xmission.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] net: check net.core.somaxconn sysctl values
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Wed, 31 Jul 2013 10:06:59 -0400
+X-Authority-Analysis: v=2.0 cv=aqMw+FlV c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=p_wSJkOgJdAA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=vMlpsT2et3MA:10 a=lmjoxpBp869WeTqsC5oA:9 a=QEXdDO2ut3YA:10 a=QJZ2i771jr8A:10 a=hiVlc5aPH8EA:10 a=t3eNqxsjbZ8A:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-ID: <1375279617.19999.1.camel@gandalf.local.home>
+Subject: Re: [for-next-3.11][PATCH 0/8] ftrace/tracing: Event file fixes and
+ ftrace function hash fixes
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Date: Wed, 31 Jul 2013 10:06:57 -0400
+In-Reply-To: <20130731114722.GA4416@redhat.com>
+References: <20130730112718.273490378@goodmis.org>
+	 <20130731114722.GA4416@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's possible to assign an invalid value to the net.core.somaxconn
-sysctl variable, because there is no checks at all.
+On Wed, 2013-07-31 at 13:47 +0200, Oleg Nesterov wrote:
+> On 07/30, Steven Rostedt wrote:
+> >
+> > Using the i_private and event_mutex
+> > to verify that the event still exists to solve the race.
+> 
+> To remind, we also need the "debugfs: debugfs_remove_recursive() must
+> not rely on list_empty(d_subdirs)" patch, otherwise we still have the
+> problems with the opened files.
 
-The sk_max_ack_backlog field of the sock structure is defined as
-unsigned short. Therefore, the backlog argument in inet_listen()
-shouldn't exceed USHRT_MAX. The backlog argument in the listen() syscall
-is truncated to the somaxconn value. So, the somaxconn value shouldn't
-exceed 65535 (USHRT_MAX).
-Also, negative values of somaxconn are meaningless.
+Do these patches depend on that patch? Should I rebase to have that
+patch first?
 
-before:
-$ sysctl -w net.core.somaxconn=256
-net.core.somaxconn = 256
-$ sysctl -w net.core.somaxconn=65536
-net.core.somaxconn = 65536
-$ sysctl -w net.core.somaxconn=-100
-net.core.somaxconn = -100
+-- Steve
 
-after:
-$ sysctl -w net.core.somaxconn=256
-net.core.somaxconn = 256
-$ sysctl -w net.core.somaxconn=65536
-error: "Invalid argument" setting key "net.core.somaxconn"
-$ sysctl -w net.core.somaxconn=-100
-error: "Invalid argument" setting key "net.core.somaxconn"
+> 
+> Just in case, we need this fix even if .open() does trace_array_get()
+> or tracing_open_generic_file() (removed by recent changes), rmdir can
+> be called before we increment the counter and the deleted dentry breaks
+> debugfs_remove_recursive().
+> 
+> But after the recent changes this fix becomes more important. An opened
+> file confuses debugfs_remove_recursive() and after that you can't create
+> another probe.
 
-Signed-off-by: Roman Gushchin <klamm@yandex-team.ru>
----
-  net/core/sysctl_net_core.c | 6 +++++-
-  1 file changed, 5 insertions(+), 1 deletion(-)
-
-diff --git a/net/core/sysctl_net_core.c b/net/core/sysctl_net_core.c
-index cfdb46a..2ff093b 100644
---- a/net/core/sysctl_net_core.c
-+++ b/net/core/sysctl_net_core.c
-@@ -20,7 +20,9 @@
-  #include <net/sock.h>
-  #include <net/net_ratelimit.h>
-
-+static int zero = 0;
-  static int one = 1;
-+static int ushort_max = USHRT_MAX;
-
-  #ifdef CONFIG_RPS
-  static int rps_sock_flow_sysctl(ctl_table *table, int write,
-@@ -204,7 +206,9 @@ static struct ctl_table netns_core_table[] = {
-  		.data		= &init_net.core.sysctl_somaxconn,
-  		.maxlen		= sizeof(int),
-  		.mode		= 0644,
--		.proc_handler	= proc_dointvec
-+		.extra1		= &zero,
-+		.extra2		= &ushort_max,
-+		.proc_handler	= proc_dointvec_minmax
-  	},
-  	{ }
-  };
--- 
-1.8.1.2
 
