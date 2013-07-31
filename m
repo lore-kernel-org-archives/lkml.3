@@ -1,42 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758478Ab3GaGLr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 02:11:47 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:2691 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758076Ab3GaGLp (ORCPT
+	id S1758211Ab3GaGQv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 02:16:51 -0400
+Received: from smtp6-g21.free.fr ([212.27.42.6]:38717 "EHLO smtp6-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754664Ab3GaGQi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 02:11:45 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 30 Jul 2013 23:10:20 -0700
-Message-ID: <51F8AD86.20905@nvidia.com>
-Date: Wed, 31 Jul 2013 11:54:06 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH] pinctrl: tegra: add valid function name on DT document
-References: <1375182261-30946-1-git-send-email-ldewangan@nvidia.com> <51F802F0.3030907@wwwdotorg.org>
-In-Reply-To: <51F802F0.3030907@wwwdotorg.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 31 Jul 2013 02:16:38 -0400
+Date: Wed, 31 Jul 2013 08:17:11 +0200
+From: Jean-Francois Moine <moinejf@free.fr>
+To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: [PATCH v3 0/4] ASoc: kirkwood: extend the kirkwood audio subsystem
+ for DT usage
+Message-ID: <20130731081711.417af22f@armhf>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; arm-unknown-linux-gnueabihf)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 30 July 2013 11:46 PM, Stephen Warren wrote:
-> On 07/30/2013 05:04 AM, Laxman Dewangan wrote:
->> Add valid property name for the property "nvidia,function" in
->> DT binding document of Tegra pincontrol.
-> I have applied this to Tegra's for-3.12/dt branch, but I fixed up quite
-> a few issues along the way...
->
+This patch series adds DT support to the kirkwood audio subsystem.
 
-Thank you very much for taking care.
+It cancels the previous patch requests:
+- ARM: kirkwood: enable S/PDIF
+- ARM: kirkwood: extend the kirkwood i2s driver for DT usage
+- ARM: kirkwood: extend the kirkwood pcm/dma driver for DT usage
+
+It also contains the merge of kirkwood-i2c and kirkwood-dma into one
+module, with the removal of the kirkwood-pcm-audio device.
+This involves changes in the openrd and t5325 drivers, and also in the
+common Kirkwood machine initialization. These last changes have not
+been tested.
+
+History
+v3
+	- change the DT name from "kirkwood-i2s" to "mvebu-pcm-audio"
+	- apply to linux-next
+	- let NULL as the internal i2s clock for compatibility
+	- change i2s external clock name to "extclk" instead of "external"
+	- cancel previous patch 1/4. Russell's patch
+		http://mailman.alsa-project.org/pipermail/alsa-devel/2013-July/064508.html
+	  should be applied instead.
+v2
+	- fix compilation errors
+
+-- 
+Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
+Jef		|		http://moinejf.free.fr/
