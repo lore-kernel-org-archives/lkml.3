@@ -1,74 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759818Ab3GaOAW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 10:00:22 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:53251 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759682Ab3GaOAT (ORCPT
+	id S1759700Ab3GaODx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 10:03:53 -0400
+Received: from forward-corp1f.mail.yandex.net ([95.108.130.40]:36363 "EHLO
+	forward-corp1f.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751338Ab3GaODv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 10:00:19 -0400
-Date: Wed, 31 Jul 2013 15:00:11 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Wei Yongjun <weiyj.lk@gmail.com>
-Cc: lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de,
-        kuninori.morimoto.gx@renesas.com, yongjun_wei@trendmicro.com.cn,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Message-ID: <20130731140011.GV9858@sirena.org.uk>
-References: <CAPgLHd_0p56XkKjmtaD8J8OtTxPg-XY9xQRepsZYNtH-tY6uFw@mail.gmail.com>
+	Wed, 31 Jul 2013 10:03:51 -0400
+X-Greylist: delayed 367 seconds by postgrey-1.27 at vger.kernel.org; Wed, 31 Jul 2013 10:03:51 EDT
+Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
+Message-ID: <51F917CF.7010905@yandex-team.ru>
+Date: Wed, 31 Jul 2013 17:57:35 +0400
+From: Roman Gushchin <klamm@yandex-team.ru>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="diiB1pV/0M5IS+GS"
-Content-Disposition: inline
-In-Reply-To: <CAPgLHd_0p56XkKjmtaD8J8OtTxPg-XY9xQRepsZYNtH-tY6uFw@mail.gmail.com>
-X-Cookie: You will be awarded some great honor.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH -next] ASoC: rcar: fix return value check in
- rsnd_gen1_probe()
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+To: "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>, raise.sail@gmail.com,
+        ebiederm@xmission.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] net: check net.core.somaxconn sysctl values
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+It's possible to assign an invalid value to the net.core.somaxconn
+sysctl variable, because there is no checks at all.
 
---diiB1pV/0M5IS+GS
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The sk_max_ack_backlog field of the sock structure is defined as
+unsigned short. Therefore, the backlog argument in inet_listen()
+shouldn't exceed USHRT_MAX. The backlog argument in the listen() syscall
+is truncated to the somaxconn value. So, the somaxconn value shouldn't
+exceed 65535 (USHRT_MAX).
+Also, negative values of somaxconn are meaningless.
 
-On Tue, Jul 30, 2013 at 07:51:37AM +0800, Wei Yongjun wrote:
-> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
->=20
-> In case of error, the function devm_ioremap_resource() returns ERR_PTR()
-> and never returns NULL. The NULL test in the return value check should be
-> replaced with IS_ERR(), and also remove the dev_err call to avoid redunda=
-nt
-> error message.
+before:
+$ sysctl -w net.core.somaxconn=256
+net.core.somaxconn = 256
+$ sysctl -w net.core.somaxconn=65536
+net.core.somaxconn = 65536
+$ sysctl -w net.core.somaxconn=-100
+net.core.somaxconn = -100
 
-Applied, thanks.
+after:
+$ sysctl -w net.core.somaxconn=256
+net.core.somaxconn = 256
+$ sysctl -w net.core.somaxconn=65536
+error: "Invalid argument" setting key "net.core.somaxconn"
+$ sysctl -w net.core.somaxconn=-100
+error: "Invalid argument" setting key "net.core.somaxconn"
 
---diiB1pV/0M5IS+GS
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Signed-off-by: Roman Gushchin <klamm@yandex-team.ru>
+---
+  net/core/sysctl_net_core.c | 6 +++++-
+  1 file changed, 5 insertions(+), 1 deletion(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+diff --git a/net/core/sysctl_net_core.c b/net/core/sysctl_net_core.c
+index cfdb46a..2ff093b 100644
+--- a/net/core/sysctl_net_core.c
++++ b/net/core/sysctl_net_core.c
+@@ -20,7 +20,9 @@
+  #include <net/sock.h>
+  #include <net/net_ratelimit.h>
 
-iQIcBAEBAgAGBQJR+RhoAAoJELSic+t+oim9JywQAISdmHcMOHn44JaTu9HRgGXo
-dpDck6jttaHOGx42i27DfNUlqopufcK4p5O6scqJZS54r/Rf0N83m5RoAF1VL4Bf
-h58PlyQOtlao+YMyWmVrDA8L3iEALwUMOCw7WlPgfqYOK3cTD1ekQxrT2IXP1cKf
-It7r7YUNf9rTJ3/Z/eocNkL0C0hI0Kgqqwx2NO1GB6OAvKhU1mJ8KT8TfNck6qq3
-6tFNewf/JD6m4DuucuNmo82Yf6MRbjFqU1MuWjYiBNp/cKUZtRSyEGvcG4FDE4gn
-ARUNhrB5d/b0XEMOWlw6HplWIXSGoEgfMStTy9vtSqy4wbQ5jf1pUOc+f60uBRlB
-tiSscnrfcxhIxOSIj6lmFU2Ro9kS+KNVu2bc/A8vDZ2g4o88PB0Aqau7o0/Fyw1E
-4uy1t2yjThPtl+jquEeYK6rhAk5QawTuceIlDYe8u0Fkxu+wEpf63KEv5+Px/pTm
-yrN0bP+4ZZMK7RcjGbyj6jnI3Pm0lL0YNUI6F1Ms5D6i6gSeG9hpnCLbhtiaR2Sm
-hetUkwXZN93uS8DA9yBIF2C9AqRmEcd/K+bNcPYcbkYSQLUnvdEFXt+kT3o8iej9
-X6pF7NPhUbZGjNvUOqsOf3GcGGTrbxmTx9sclYNZudy2W9uldWxX1zfQDPaL5OIq
-SPL6tKskx32qefTWs7bS
-=Q9FQ
------END PGP SIGNATURE-----
++static int zero = 0;
+  static int one = 1;
++static int ushort_max = USHRT_MAX;
 
---diiB1pV/0M5IS+GS--
+  #ifdef CONFIG_RPS
+  static int rps_sock_flow_sysctl(ctl_table *table, int write,
+@@ -204,7 +206,9 @@ static struct ctl_table netns_core_table[] = {
+  		.data		= &init_net.core.sysctl_somaxconn,
+  		.maxlen		= sizeof(int),
+  		.mode		= 0644,
+-		.proc_handler	= proc_dointvec
++		.extra1		= &zero,
++		.extra2		= &ushort_max,
++		.proc_handler	= proc_dointvec_minmax
+  	},
+  	{ }
+  };
+-- 
+1.8.1.2
+
