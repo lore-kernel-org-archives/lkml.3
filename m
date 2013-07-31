@@ -1,51 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756106Ab3GaGaf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 02:30:35 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:54464 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752245Ab3GaGae (ORCPT
+	id S1754940Ab3GaGdG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 02:33:06 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:40473 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751290Ab3GaGdE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 02:30:34 -0400
-Message-ID: <51F8AEF5.3070300@huawei.com>
-Date: Wed, 31 Jul 2013 14:30:13 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Wed, 31 Jul 2013 02:33:04 -0400
+Date: Tue, 30 Jul 2013 23:32:50 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Azat Khuzhin <a3at.mail@gmail.com>
+cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH] mm: for shm_open()/mmap() with OVERCOMMIT_NEVER, return
+ -1 if no memory avail
+In-Reply-To: <1375214187-10740-1-git-send-email-a3at.mail@gmail.com>
+Message-ID: <alpine.LNX.2.00.1307302245020.2185@eggly.anvils>
+References: <1375214187-10740-1-git-send-email-a3at.mail@gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: <devel@driverdev.osuosl.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/2] Staging: rtl8192u/ieee80211: add missing single_release()
-References: <51F8AEC7.7080407@huawei.com>
-In-Reply-To: <51F8AEC7.7080407@huawei.com>
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The debug file is opened with single_open(), but there's no
-single_release().
+On Tue, 30 Jul 2013, Azat Khuzhin wrote:
 
-Signed-off-by: Li Zefan <lizefan@huawei.com>
----
- drivers/staging/rtl8192u/ieee80211/ieee80211_module.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+> Otherwize if there is no left space on shmem device, there will be
+> "Bus error" when application will try to write to address space that was
+> returned by mmap(2)
+> 
+> This patch also preserve old behaviour if MAP_NORESERVE/VM_NORESERVE
+> isset.
+> 
+> So, with this patch, you will get next:
+> 
+> a)
+> $ echo 2 >| /proc/sys/vm/overcommit_memory
+>   ....
+>   mmap() = MAP_FAILED;
+>   ....
+> 
+> b)
+>   ....
+>   mmap(0, length, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_NORESERVE) = !MAP_FAILED;
+>   write()
+>   killed by SIGBUS
+>   ....
+> 
+> c)
+> $ echo 0 >| /proc/sys/vm/overcommit_memory
+>   ....
+>   mmap() = !MAP_FAILED;
+>   write()
+>   killed by SIGBUS
+>   ....
+> 
+> Signed-off-by: Azat Khuzhin <a3at.mail@gmail.com>
 
-diff --git a/drivers/staging/rtl8192u/ieee80211/ieee80211_module.c b/drivers/staging/rtl8192u/ieee80211/ieee80211_module.c
-index e0870c0..434c431 100644
---- a/drivers/staging/rtl8192u/ieee80211/ieee80211_module.c
-+++ b/drivers/staging/rtl8192u/ieee80211/ieee80211_module.c
-@@ -268,7 +268,8 @@ static const struct file_operations fops = {
- 	.open = open_debug_level,
- 	.read = seq_read,
- 	.llseek = seq_lseek,
--	.write = write_debug_level
-+	.write = write_debug_level,
-+	.release = single_release,
- };
- 
- int __init ieee80211_debug_init(void)
--- 
-1.8.0.2
+Thanks for making the patch, but I'm afraid there are a number of
+things wrong with it; and even if it were perfect, I would still be
+reluctant to change the semantics of shmem_mmap() after all this time.
+
+Some comments on your implementation below; but if getting SIGBUS from
+a write to an mmapping, once the underlying filesystem (shmem/tmpfs or
+any other) fills up, if that SIGBUS is troublesome for you, then please
+try using fallocate() to allocate the space before accessing the mmapping.
+
+> ---
+>  mm/shmem.c |   16 ++++++++++++++++
+>  1 file changed, 16 insertions(+)
+> 
+> diff --git a/mm/shmem.c b/mm/shmem.c
+> index a87990c..965f4ba 100644
+> --- a/mm/shmem.c
+> +++ b/mm/shmem.c
+> @@ -32,6 +32,8 @@
+>  #include <linux/export.h>
+>  #include <linux/swap.h>
+>  #include <linux/aio.h>
+> +#include <linux/statfs.h>
+> +#include <linux/path.h>
+
+I'm surprised you need either of those: vfs.h should have already
+included statfs.h, and I don't see what path.h would be for.
+
+>  
+>  static struct vfsmount *shm_mnt;
+>  
+> @@ -1356,6 +1358,20 @@ out_nomem:
+>  
+>  static int shmem_mmap(struct file *file, struct vm_area_struct *vma)
+>  {
+> +	if (!(vma->vm_flags & VM_NORESERVE) &&
+> +	    sysctl_overcommit_memory == OVERCOMMIT_NEVER) {
+
+So, this would be a new and different usage of sysctl_overcommit_memory:
+usually it applies to vm_committed_as accounting, but you're extending
+it to affect tmpfs filesystem size accounting.  Hmm.
+
+> +		struct inode *inode = file_inode(file);
+> +		struct kstatfs sbuf;
+> +		u64 size;
+> +
+> +		inode->i_sb->s_op->statfs(file->f_dentry, &sbuf);
+
+You don't really need to go through ->statfs(), since that will arrive
+at shmem_statfs().  Where you can see there will be a problem in the
+case of an unlimited (max_blocks=0) mount - you will fail mmap() of
+every file of non-0 size - and mmaps of 0-size files aren't much use!
+But moving on from that case...
+
+> +		size = sbuf.f_bfree * sbuf.f_bsize;
+> +
+> +		if (size < inode->i_size) {
+> +			return -ENOMEM;
+
+So, if your filesystem is full, mmap() of any (i_size>0) file in it will
+fail?  I don't think that's what you want at all.  You seem to be assuming
+that no pages of the file you're mmap()ing have been allocated yet: that
+may be the case, but it's very often not so.
+
+> +		}
+
+And if we pass that test, there's stll no assurance that you won't get
+SIGBUS from accessing the mmapping: nothing has actually been reserved
+here, and other activity on the system can gobble up all the remaining
+space in the filesystem, or take vm_committed_as to its maximum.
+
+> +	}
+> +
+>  	file_accessed(file);
+>  	vma->vm_ops = &shmem_vm_ops;
+>  	return 0;
+> -- 
+> 1.7.10.4
+
+Please "man 2 fallocate" and use that instead.
+
+Hugh
