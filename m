@@ -1,71 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752433Ab3GaNN0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 09:13:26 -0400
-Received: from s15338416.onlinehome-server.info ([87.106.68.36]:50951 "EHLO
-	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751338Ab3GaNNZ (ORCPT
+	id S1756267Ab3GaNSJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 09:18:09 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:36759 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751310Ab3GaNSH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 09:13:25 -0400
-Date: Wed, 31 Jul 2013 15:13:23 +0200
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: vinayak menon <vinayakm.list@gmail.com>, linux-kernel@vger.kernel.org,
-        davem@davemloft.net, getarunks@gmail.com, netdev@vger.kernel.org
-Subject: Re: ipv4: crash at leaf_walk_rcu
-Message-ID: <20130731131323.GB31245@order.stressinduktion.org>
-Mail-Followup-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-	vinayak menon <vinayakm.list@gmail.com>,
-	linux-kernel@vger.kernel.org, davem@davemloft.net,
-	getarunks@gmail.com, netdev@vger.kernel.org
-References: <CAOaiJ-k14g6ihjVfgHqgq48KV7-dRJ1_owNyDkza-r=36gscsQ@mail.gmail.com> <20130731125513.GS26694@linux.vnet.ibm.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	Wed, 31 Jul 2013 09:18:07 -0400
+Date: Wed, 31 Jul 2013 09:17:57 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Mike Rapoport <mike.rapoport@gmail.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Ramkumar Ramachandra <artagnon@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [QUERY] lguest64
+Message-ID: <20130731131757.GB22124@phenom.dumpdata.com>
+References: <CALkWK0n7zedKD4tnxKh-qMuDnMJ5RXjnPJ9EUWT=cCgiokX11A@mail.gmail.com>
+ <51E97779.3020103@zytor.com>
+ <87zjte9iah.fsf@rustcorp.com.au>
+ <CABpLfohrweJd0=0eFJDO7dv2HHxx_mbP0uySMDrsZZZXExdXug@mail.gmail.com>
+ <51F9005F.30501@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130731125513.GS26694@linux.vnet.ibm.com>
+In-Reply-To: <51F9005F.30501@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 31, 2013 at 05:55:13AM -0700, Paul E. McKenney wrote:
-> On Wed, Jul 31, 2013 at 04:40:47PM +0530, vinayak menon wrote:
-> > Hi,
+On Wed, Jul 31, 2013 at 05:17:35AM -0700, H. Peter Anvin wrote:
+> On 07/31/2013 02:39 AM, Mike Rapoport wrote:
 > > 
-> > A crash was seen on 3.4.5 kernel during some random wlan operations.
+> > The use case I had in mind is to use lguest as a nested hypervisor in
+> > public clouds. As of today, major public clouds do not support nested
+> > virtualization and it's not clear at all if they will expose this
+> > ability in their deployments. Addition of 64-bit support for lguest
+> > won't require changes to pvops and, as far as I can tell, won't change
+> > the number of pvops users...
 > > 
-> > CPU: Single core ARM Cortex A9.
-> > 
-> > fib_route_seq_next was called with second argument (void *v) as 0xd6e3e360
-> > which is a "freed" object of the "ip_fib_trie" cache. I confirmed that the
-> > object was freed with crash utility.
-> > 
-> > Sequence: fib_route_seq_next->trie_nextleaf->leaf_walk_rcu
-> > 
-> > As "v" was a freed object, inside trie_nextleaf(), node_parent_rcu()
-> > returned an invalid tnode. But as I had enabled slab poisoning and the
-> > object was already freed, the tnode was 0x6b6b6b6b. And this was passed to
-> > leaf_walk_rcu and resulted in the crash.
-> > 
-> > fib_route_seq_start, takes rcu_read_lock(), but free_leaf
-> > calls call_rcu_bh. Can this be the problem ?
-> > Should rcu_read_lock() in fib_route_seq_start be changed to rcu_read_lock_bh()
-> > ?
 > 
-> One way or the other, the RCU read-side primitives need to match the RCU
-> update-side primitives.  Adding netdev...
+> "We can add a pvops user and that won't change the number of pvops
+> users" What?!
+> 
+> >> Yes, the subset of x86-64 machines for which there isn't hardware
+> >> virtualization support is pretty uninteresting.
+> > 
+> > There are plenty virtual machines in EC2, Rackspace, HP and other
+> > clouds that do not have hardware virtualization. I believe that
+> > running a hypervisor on them may be pretty interesting.
+> 
+> The big problem with pvops is that they are a permanent tax on future
+> development -- a classic case of "the hooks problem."  As such it is
+> important that there be a real, significant, use case with enough users
+> to make the pain worthwhile.  With Xen looking at sunsetting PV support
+> with a long horizon, it might currently be possible to remove pvops some
 
-Already fixed by:
+PV MMU parts specifically.
 
-commit 0c03eca3d995e73d691edea8c787e25929ec156d
-Author: Eric Dumazet <edumazet@google.com>
-Date:   Tue Aug 7 00:47:11 2012 +0000
-
-    net: fib: fix incorrect call_rcu_bh()
-    
-    After IP route cache removal, I believe rcu_bh() has very little use and
-    we should remove this RCU variant, since it adds some cycles in fast
-    path.
-    
-    Anyway, the call_rcu_bh() use in fib_true is obviously wrong, since
-    some users only assert rcu_read_lock().
-
+> time in the early 2020s or so timeframe.  Introducing and promoting a
+> new user now would definitely make that impossible.
+> 
+> So it matters that the use case be real.
+> 
+> 	-hpa
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
