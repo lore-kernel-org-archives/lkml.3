@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760495Ab3GaPXJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 11:23:09 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:31249 "EHLO
+	id S1760517Ab3GaPYH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 11:24:07 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:31243 "EHLO
 	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932449Ab3GaPV4 (ORCPT
+	with ESMTP id S932352Ab3GaPVs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 11:21:56 -0400
-Message-ID: <781c9ee56f1f87d91eb691f16fc020f410143f0e.1375283106.git.cmetcalf@tilera.com>
+	Wed, 31 Jul 2013 11:21:48 -0400
+Message-ID: <7765607e9aaea6f828187847f1e2180657f5f5aa.1375283106.git.cmetcalf@tilera.com>
 In-Reply-To: <cover.1375283104.git.cmetcalf@tilera.com>
 References: <cover.1374609948.git.cmetcalf@tilera.com>
 	<cover.1375283104.git.cmetcalf@tilera.com>
 From: Chris Metcalf <cmetcalf@tilera.com>
 Date: Wed, 31 Jul 2013 11:05:04 -0400
-Subject: [PATCH 10/12] tile: make "tile_net.custom" a proper bool module parameter
+Subject: [PATCH 06/12] tile: fix panic bug in napi support for tilegx network driver
 To: <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -21,48 +21,107 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The code used to call napi_disable() in an interrupt handler
+(from smp_call_function), which in turn could call msleep().
+Unfortunately you can't sleep in an interrupt context.
+
+Luckily it turns out all the NAPI support functions are
+just operating on data structures and not on any deeply
+per-cpu data, so we can arrange to set up and tear down all
+the NAPI state on the core driving the process, and just
+do the IRQ enable/disable as a smp_call_function thing.
+
 Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 ---
- drivers/net/ethernet/tile/tilegx.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ drivers/net/ethernet/tile/tilegx.c | 65 +++++++++++++++++++-------------------
+ 1 file changed, 33 insertions(+), 32 deletions(-)
 
 diff --git a/drivers/net/ethernet/tile/tilegx.c b/drivers/net/ethernet/tile/tilegx.c
-index ebc1b43..6696807 100644
+index 9ea88c8..58bd189 100644
 --- a/drivers/net/ethernet/tile/tilegx.c
 +++ b/drivers/net/ethernet/tile/tilegx.c
-@@ -256,11 +256,11 @@ static char *network_cpus_string;
- /* The actual cpus in "network_cpus". */
- static struct cpumask network_cpus_map;
+@@ -650,37 +650,13 @@ static enum hrtimer_restart tile_net_handle_egress_timer(struct hrtimer *t)
+ 	return HRTIMER_NORESTART;
+ }
  
--/* If "loopify=LINK" was specified, this is "LINK". */
-+/* If "tile_net.loopify=LINK" was specified, this is "LINK". */
- static char *loopify_link_name;
+-/* Helper function for "tile_net_update()".
+- * "dev" (i.e. arg) is the device being brought up or down,
+- * or NULL if all devices are now down.
+- */
+-static void tile_net_update_cpu(void *arg)
++/* Helper function for "tile_net_update()". */
++static void manage_ingress_irq(void *enable)
+ {
+-	struct tile_net_info *info = &__get_cpu_var(per_cpu_info);
+-	struct net_device *dev = arg;
+-
+-	if (!info->has_iqueue)
+-		return;
+-
+-	if (dev != NULL) {
+-		if (!info->napi_added) {
+-			netif_napi_add(dev, &info->napi,
+-				       tile_net_poll, TILE_NET_WEIGHT);
+-			info->napi_added = true;
+-		}
+-		if (!info->napi_enabled) {
+-			napi_enable(&info->napi);
+-			info->napi_enabled = true;
+-		}
++	if (enable)
+ 		enable_percpu_irq(ingress_irq, 0);
+-	} else {
++	else
+ 		disable_percpu_irq(ingress_irq);
+-		if (info->napi_enabled) {
+-			napi_disable(&info->napi);
+-			info->napi_enabled = false;
+-		}
+-		/* FIXME: Drain the iqueue. */
+-	}
+ }
  
--/* If "tile_net.custom" was specified, this is non-NULL. */
--static char *custom_str;
-+/* If "tile_net.custom" was specified, this is true. */
-+static bool custom_flag;
- 
- /* If "tile_net.jumbo=NUM" was specified, this is "NUM". */
- static uint jumbo_num;
-@@ -323,7 +323,7 @@ MODULE_PARM_DESC(loopify, "name the device to use loop0/1 for ingress/egress");
- /* The "tile_net.custom" argument causes us to ignore the "conventional"
-  * classifier metadata, in particular, the "l2_offset".
-  */
--module_param_named(custom, custom_str, charp, 0444);
-+module_param_named(custom, custom_flag, bool, 0444);
- MODULE_PARM_DESC(custom, "indicates a (heavily) customized classifier");
- 
- /* The "tile_net.jumbo" argument causes us to support "jumbo" packets,
-@@ -501,7 +501,7 @@ static bool tile_net_handle_packet(int instance, gxio_mpipe_idesc_t *idesc)
+ /* Helper function for tile_net_open() and tile_net_stop().
+@@ -717,10 +693,35 @@ static int tile_net_update(struct net_device *dev)
+ 		return -EIO;
  	}
  
- 	/* Get the "l2_offset", if allowed. */
--	l2_offset = custom_str ? 0 : gxio_mpipe_idesc_get_l2_offset(idesc);
-+	l2_offset = custom_flag ? 0 : gxio_mpipe_idesc_get_l2_offset(idesc);
+-	/* Update all cpus, sequentially (to protect "netif_napi_add()"). */
+-	for_each_online_cpu(cpu)
+-		smp_call_function_single(cpu, tile_net_update_cpu,
+-					 (saw_channel ? dev : NULL), 1);
++	/* Update all cpus, sequentially (to protect "netif_napi_add()").
++	 * We use on_each_cpu to handle the IPI mask or unmask.
++	 */
++	if (!saw_channel)
++		on_each_cpu(manage_ingress_irq, (void *)0, 1);
++	for_each_online_cpu(cpu) {
++		struct tile_net_info *info = &per_cpu(per_cpu_info, cpu);
++		if (!info->has_iqueue)
++			continue;
++		if (saw_channel) {
++			if (!info->napi_added) {
++				netif_napi_add(dev, &info->napi,
++					       tile_net_poll, TILE_NET_WEIGHT);
++				info->napi_added = true;
++			}
++			if (!info->napi_enabled) {
++				napi_enable(&info->napi);
++				info->napi_enabled = true;
++			}
++		} else {
++			if (info->napi_enabled) {
++				napi_disable(&info->napi);
++				info->napi_enabled = false;
++			}
++			/* FIXME: Drain the iqueue. */
++		}
++	}
++	if (saw_channel)
++		on_each_cpu(manage_ingress_irq, (void *)1, 1);
  
- 	/* Get the VA (including NET_IP_ALIGN bytes of "headroom"). */
- 	va = tile_io_addr_to_va((unsigned long)(long)idesc->va);
+ 	/* HACK: Allow packets to flow in the simulator. */
+ 	if (saw_channel)
 -- 
 1.8.3.1
 
