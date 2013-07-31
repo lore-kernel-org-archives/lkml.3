@@ -1,106 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759772Ab3GaPJg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 11:09:36 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:53535 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756442Ab3GaPJe (ORCPT
+	id S1759866Ab3GaPKs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 11:10:48 -0400
+Received: from forward-corp1g.mail.yandex.net ([95.108.253.251]:48225 "EHLO
+	forward-corp1g.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751803Ab3GaPKq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 11:09:34 -0400
-Date: Wed, 31 Jul 2013 17:09:23 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Mel Gorman <mgorman@suse.de>, Ingo Molnar <mingo@kernel.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [RFC PATCH 00/10] Improve numa scheduling by consolidating tasks
-Message-ID: <20130731150923.GC3008@twins.programming.kicks-ass.net>
-References: <1375170505-5967-1-git-send-email-srikar@linux.vnet.ibm.com>
- <20130730081755.GF3008@twins.programming.kicks-ass.net>
- <20130730082001.GG3008@twins.programming.kicks-ass.net>
- <20130730090345.GA22201@linux.vnet.ibm.com>
- <20130730091021.GM3008@twins.programming.kicks-ass.net>
- <20130730094650.GB28656@linux.vnet.ibm.com>
+	Wed, 31 Jul 2013 11:10:46 -0400
+X-Greylist: delayed 437 seconds by postgrey-1.27 at vger.kernel.org; Wed, 31 Jul 2013 11:10:46 EDT
+Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
+Message-ID: <51F9273B.2020408@yandex-team.ru>
+Date: Wed, 31 Jul 2013 19:03:23 +0400
+From: Roman Gushchin <klamm@yandex-team.ru>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130730094650.GB28656@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: "David S. Miller" <davem@davemloft.net>, raise.sail@gmail.com,
+        ebiederm@xmission.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net: check net.core.somaxconn sysctl values
+References: <51F917CF.7010905@yandex-team.ru> <1375281457.10515.98.camel@edumazet-glaptop>
+In-Reply-To: <1375281457.10515.98.camel@edumazet-glaptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 30, 2013 at 03:16:50PM +0530, Srikar Dronamraju wrote:
-> I am not against fault and fault based handling is very much needed. 
-> I have listed that this approach is complementary to numa faults that
-> Mel is proposing. 
-> 
-> Right now I think if we can first get the tasks to consolidate on nodes
-> and then use the numa faults to place the tasks, then we would be able
-> to have a very good solution. 
-> 
-> Plain fault information is actually causing confusion in enough number
-> of cases esp if the initial set of pages is all consolidated into fewer
-> set of nodes. With plain fault information, memory follows cpu, cpu
-> follows memory are conflicting with each other. memory wants to move to
-> nodes where the tasks are currently running and the tasks are planning
-> to move nodes where the current memory is around.
+On 31.07.2013 18:37, Eric Dumazet wrote:
+> On Wed, 2013-07-31 at 17:57 +0400, Roman Gushchin wrote:
+>> It's possible to assign an invalid value to the net.core.somaxconn
+>> sysctl variable, because there is no checks at all.
+>>
+>> The sk_max_ack_backlog field of the sock structure is defined as
+>> unsigned short. Therefore, the backlog argument in inet_listen()
+>> shouldn't exceed USHRT_MAX. The backlog argument in the listen() syscall
+>> is truncated to the somaxconn value. So, the somaxconn value shouldn't
+>> exceed 65535 (USHRT_MAX).
+>> Also, negative values of somaxconn are meaningless.
+>>
+>> before:
+>> $ sysctl -w net.core.somaxconn=256
+>> net.core.somaxconn = 256
+>> $ sysctl -w net.core.somaxconn=65536
+>> net.core.somaxconn = 65536
+>> $ sysctl -w net.core.somaxconn=-100
+>> net.core.somaxconn = -100
+>>
+>> after:
+>> $ sysctl -w net.core.somaxconn=256
+>> net.core.somaxconn = 256
+>> $ sysctl -w net.core.somaxconn=65536
+>> error: "Invalid argument" setting key "net.core.somaxconn"
+>> $ sysctl -w net.core.somaxconn=-100
+>> error: "Invalid argument" setting key "net.core.somaxconn"
+>>
+>> Signed-off-by: Roman Gushchin <klamm@yandex-team.ru>
+>> ---
+>>    net/core/sysctl_net_core.c | 6 +++++-
+>>    1 file changed, 5 insertions(+), 1 deletion(-)
+>
+>
+> We had a discussion about this one month ago, as Changli Gao posted a
+> patch. http://patchwork.ozlabs.org/patch/255460/
+>
+> So proper credits would be nice ;)
 
-Since task weights are a completely random measure the above story
-completely fails to make any sense. If you can collate on an arbitrary
-number, why can't you collate on faults?
+Ok :)
 
-The fact that the placement policies so far have not had inter-task
-relations doesn't mean its not possible.
+> Based on a prior patch from Changli Gao
+>
+> Reported-by: Changli Gao <xiaosuo@gmail.com>
+> Suggested-by: Eric Dumazet <edumazet@google.com>
+>
+> Acked-by: Eric Dumazet <edumazet@google.com>
+>
 
-> Also most of the consolidation that I have proposed is pretty
-> conservative or either done at idle balance time. This would not affect
-> the numa faulting in any way. When I run with my patches (along with
-> some debug code), the consolidation happens pretty pretty quickly.
-> Once consolidation has happened, numa faults would be of immense value.
+Thanks!
 
-And also completely broken in various 'fun' ways. You're far too fond of
-nr_running for one.
+PS I've forwarded your letter back to the lkml by mistake.
+Sorry)
 
-Also, afaict it never does anything if the machine is overloaded and we
-never hit the !nr_running case in rebalance_domains.
+Regards,
+Roman
 
-> Here is how I am looking at the solution.
-> 
-> 1. Till the initial scan delay, allow tasks to consolidate
-
-I would really want to not change regular balance behaviour for now;
-you're also adding far too many atomic operations to the scheduler fast
-path, that's going to make people terribly unhappy.
-
-> 2. After the first scan delay to the next scan delay, account numa
->    faults, allow memory to move. But dont use numa faults as yet to
->    drive scheduling decisions. Here also task continue to consolidate.
-> 
-> 	This will lead to tasks and memory moving to specific nodes and
-> 	leading to consolidation.
-
-This is just plain silly, once you have fault information you'd better
-use it to move tasks towards where the memory is, doing anything else
-is, like said, silly.
-
-> 3. After the second scan delay, continue to account numa faults and
-> allow numa faults to drive scheduling decisions.
-> 
-> Should we use also use task weights at stage 3 or just numa faults or
-> which one should get more preference is something that I am not clear at
-> this time. At this time, I would think we would need to factor in both
-> of them.
-> 
-> I think this approach would mean tasks get consolidated but the inter
-> process, inter task relations that you are looking for also remain
-> strong.
-> 
-> Is this a acceptable solution?
-
-No, again, task weight is a completely random number unrelated to
-anything we want to do. Furthermore we simply cannot add mm wide atomics
-to the scheduler hot paths.
