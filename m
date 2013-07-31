@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760253Ab3GaNrk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 09:47:40 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46871 "EHLO
+	id S1760232Ab3GaNrj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 09:47:39 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46855 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759632Ab3GaNZn (ORCPT
+	by vger.kernel.org with ESMTP id S1759627Ab3GaNZn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 31 Jul 2013 09:25:43 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Dan Williams" <dcbw@redhat.com>
+CC: akpm@linux-foundation.org, "Eric Dumazet" <edumazet@google.com>,
+        "Dave Jones" <davej@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Hannes Frederic Sowa" <hannes@stressinduktion.org>
 Date: Wed, 31 Jul 2013 15:23:09 +0200
-Message-ID: <lsq.1375276989.794903227@decadent.org.uk>
+Message-ID: <lsq.1375276989.594119795@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [81/84] usb: serial: option: add Olivetti Olicard 200
+Subject: [04/84] ipv6: ip6_sk_dst_check() must not assume ipv6 dst
 In-Reply-To: <lsq.1375276989.251749228@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.216.67.181
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,36 +33,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Williams <dcbw@redhat.com>
+From: Eric Dumazet <edumazet@google.com>
 
-commit 4cf76df06ecc852633ed927d91e01c83c33bc331 upstream.
+[ Upstream commit a963a37d384d71ad43b3e9e79d68d42fbe0901f3 ]
 
-Speaks AT on interfaces 5 (command & PPP) and 3 (secondary), other
-interface protocols are unknown.
+It's possible to use AF_INET6 sockets and to connect to an IPv4
+destination. After this, socket dst cache is a pointer to a rtable,
+not rt6_info.
 
-Signed-off-by: Dan Williams <dcbw@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+ip6_sk_dst_check() should check the socket dst cache is IPv6, or else
+various corruptions/crashes can happen.
+
+Dave Jones can reproduce immediate crash with
+trinity -q -l off -n -c sendmsg -c connect
+
+With help from Hannes Frederic Sowa
+
+Reported-by: Dave Jones <davej@redhat.com>
+Reported-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/serial/option.c | 2 ++
- 1 file changed, 2 insertions(+)
+ net/ipv6/ip6_output.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -347,6 +347,7 @@ static void option_instat_callback(struc
- #define OLIVETTI_VENDOR_ID			0x0b3c
- #define OLIVETTI_PRODUCT_OLICARD100		0xc000
- #define OLIVETTI_PRODUCT_OLICARD145		0xc003
-+#define OLIVETTI_PRODUCT_OLICARD200		0xc005
+diff --git a/net/ipv6/ip6_output.c b/net/ipv6/ip6_output.c
+index 6aadaa8..7a0f168 100644
+--- a/net/ipv6/ip6_output.c
++++ b/net/ipv6/ip6_output.c
+@@ -909,11 +909,17 @@ static struct dst_entry *ip6_sk_dst_check(struct sock *sk,
+ 					  const struct flowi6 *fl6)
+ {
+ 	struct ipv6_pinfo *np = inet6_sk(sk);
+-	struct rt6_info *rt = (struct rt6_info *)dst;
++	struct rt6_info *rt;
  
- /* Celot products */
- #define CELOT_VENDOR_ID				0x211f
-@@ -1281,6 +1282,7 @@ static const struct usb_device_id option
+ 	if (!dst)
+ 		goto out;
  
- 	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD100) },
- 	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD145) },
-+	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD200) },
- 	{ USB_DEVICE(CELOT_VENDOR_ID, CELOT_PRODUCT_CT680M) }, /* CT-650 CDMA 450 1xEVDO modem */
- 	{ USB_DEVICE(ONDA_VENDOR_ID, ONDA_MT825UP) }, /* ONDA MT825UP modem */
- 	{ USB_DEVICE_AND_INTERFACE_INFO(SAMSUNG_VENDOR_ID, SAMSUNG_PRODUCT_GT_B3730, USB_CLASS_CDC_DATA, 0x00, 0x00) }, /* Samsung GT-B3730 LTE USB modem.*/
++	if (dst->ops->family != AF_INET6) {
++		dst_release(dst);
++		return NULL;
++	}
++
++	rt = (struct rt6_info *)dst;
+ 	/* Yes, checking route validity in not connected
+ 	 * case is not very simple. Take into account,
+ 	 * that we do not support routing by source, TOS,
 
