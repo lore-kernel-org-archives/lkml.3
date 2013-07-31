@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759695Ab3GaNZj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 09:25:39 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46885 "EHLO
+	id S1760138Ab3GaNuy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 09:50:54 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46891 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759635Ab3GaNZg (ORCPT
+	by vger.kernel.org with ESMTP id S1759650Ab3GaNZh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 09:25:36 -0400
+	Wed, 31 Jul 2013 09:25:37 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Anders Hammarquist" <iko@iko.pp.se>,
-        "Johan Hovold" <jhovold@gmail.com>,
+CC: akpm@linux-foundation.org, "Barry Grussling" <barry@grussling.com>,
         "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
 Date: Wed, 31 Jul 2013 15:23:09 +0200
-Message-ID: <lsq.1375276989.242438838@decadent.org.uk>
+Message-ID: <lsq.1375276989.948041410@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [75/84] USB: ti_usb_3410_5052: fix dynamic-id matching
+Subject: [61/84] usb: cp210x support SEL C662 Vendor/Device
 In-Reply-To: <lsq.1375276989.251749228@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.216.67.181
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,34 +31,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Barry Grussling <barry@grussling.com>
 
-commit 1fad56424f5ad3ce4973505a357212b2e2282b3f upstream.
+commit b579fa52f6be0b4157ca9cc5e94d44a2c89a7e95 upstream.
 
-The driver failed to take the dynamic ids into account when determining
-the device type and therefore all devices were detected as 2-port
-devices when using the dynamic-id interface.
+This patch adds support for the Schweitzer Engineering Laboratories
+C662 USB cable based off the CP210x driver.
 
-Match on the usb-serial-driver field instead of doing redundant id-table
-searches.
-
-Reported-by: Anders Hammarquist <iko@iko.pp.se>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Barry Grussling <barry@grussling.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/serial/ti_usb_3410_5052.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/serial/cp210x.c | 1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/usb/serial/ti_usb_3410_5052.c
-+++ b/drivers/usb/serial/ti_usb_3410_5052.c
-@@ -408,7 +408,7 @@ static int ti_startup(struct usb_serial
- 	usb_set_serial_data(serial, tdev);
- 
- 	/* determine device type */
--	if (usb_match_id(serial->interface, ti_id_table_3410))
-+	if (serial->type == &ti_1port_device)
- 		tdev->td_is_3410 = 1;
- 	dbg("%s - device type is %s", __func__,
- 				tdev->td_is_3410 ? "3410" : "5052");
+--- a/drivers/usb/serial/cp210x.c
++++ b/drivers/usb/serial/cp210x.c
+@@ -155,6 +155,7 @@ static const struct usb_device_id id_tab
+ 	{ USB_DEVICE(0x17F4, 0xAAAA) }, /* Wavesense Jazz blood glucose meter */
+ 	{ USB_DEVICE(0x1843, 0x0200) }, /* Vaisala USB Instrument Cable */
+ 	{ USB_DEVICE(0x18EF, 0xE00F) }, /* ELV USB-I2C-Interface */
++	{ USB_DEVICE(0x1ADB, 0x0001) }, /* Schweitzer Engineering C662 Cable */
+ 	{ USB_DEVICE(0x1BE3, 0x07A6) }, /* WAGO 750-923 USB Service Cable */
+ 	{ USB_DEVICE(0x1E29, 0x0102) }, /* Festo CPX-USB */
+ 	{ USB_DEVICE(0x1E29, 0x0501) }, /* Festo CMSP */
 
