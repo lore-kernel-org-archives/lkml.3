@@ -1,112 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760736Ab3GaTxo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 15:53:44 -0400
-Received: from mail-la0-f51.google.com ([209.85.215.51]:42539 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754425Ab3GaTxm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 15:53:42 -0400
-Message-ID: <51F96B48.10209@cogentembedded.com>
-Date: Wed, 31 Jul 2013 23:53:44 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S1760773Ab3GaTyc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 15:54:32 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:46045 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753289Ab3GaTyb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 15:54:31 -0400
+X-IronPort-AV: E=Sophos;i="4.89,789,1367971200"; 
+   d="scan'208";a="40581747"
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+To: <xen-devel@lists.xensource.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <konrad.wilk@oracle.com>, <Stefano.Stabellini@eu.citrix.com>,
+        <Ian.Campbell@citrix.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        <will.deacon@arm.com>, <linux@arm.linux.org.uk>
+Subject: [PATCH v2 RFC 1/8] arm: make SWIOTLB available
+Date: Wed, 31 Jul 2013 20:54:05 +0100
+Message-ID: <1375300452-12545-1-git-send-email-stefano.stabellini@eu.citrix.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <alpine.DEB.2.02.1307312048511.4893@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1307312048511.4893@kaball.uk.xensource.com>
 MIME-Version: 1.0
-To: Tuomas Tynkkynen <tuomas.tynkkynen@iki.fi>
-CC: Tuomas Tynkkynen <ttynkkynen@nvidia.com>, swarren@wwwdotorg.org,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org, Mikko Perttunen <mperttunen@nvidia.com>
-Subject: Re: [PATCH 2/2] ARM: dts: USB for Tegra114 Dalmore
-References: <1375292543-7896-1-git-send-email-ttynkkynen@nvidia.com> <1375292543-7896-3-git-send-email-ttynkkynen@nvidia.com> <51F9550F.3080503@cogentembedded.com> <51F9660C.6090604@iki.fi>
-In-Reply-To: <51F9660C.6090604@iki.fi>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: will.deacon@arm.com
+CC: linux@arm.linux.org.uk
+---
+ arch/arm/Kconfig                   |    7 +++++++
+ arch/arm/include/asm/dma-mapping.h |   24 ++++++++++++++++++++++++
+ 2 files changed, 31 insertions(+), 0 deletions(-)
 
-On 07/31/2013 11:31 PM, Tuomas Tynkkynen wrote:
-
->>> From: Mikko Perttunen <mperttunen@nvidia.com>
-
->>> Device tree entries for the three EHCI controllers on Tegra114.
->>> Enables the the third controller (USB host) on Dalmore.
-
->>     I would have done the board patch separately from the SoC one.
-
->>> Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
->> [...]
->>
->>> diff --git a/arch/arm/boot/dts/tegra114.dtsi
->>> b/arch/arm/boot/dts/tegra114.dtsi
->>> index abf6c40..2905145 100644
->>> --- a/arch/arm/boot/dts/tegra114.dtsi
->>> +++ b/arch/arm/boot/dts/tegra114.dtsi
->>> @@ -430,6 +430,68 @@
->>>           status = "disable";
->>>       };
->>>
->>> +    usb@7d000000 {
->>> +        compatible = "nvidia,tegra30-ehci", "usb-ehci";
->>> +        reg = <0x7d000000 0x4000>;
->>> +        interrupts = <GIC_SPI 20 IRQ_TYPE_LEVEL_HIGH>;
->>> +        phy_type = "utmi";
->>> +        clocks = <&tegra_car TEGRA114_CLK_USBD>;
->>> +        nvidia,phy = <&phy1>;
->>> +        status = "disabled";
->>> +    };
->>> +
->>> +    phy1: usb-phy@7d000000 {
-
->>     At the same address as the previous node?
-
-> Yes. The first node is for the EHCI driver and the second for the PHY driver.
-> There is some overlap in the exact registers used, so both drives map the
-> whole USB controller block.
-
-    That's really horrible design.
-
->>> +        compatible = "nvidia,tegra30-usb-phy";
->>> +        reg = <0x7d000000 0x4000 0x7d000000 0x4000>;
-
->>     Hm, there must be some mistake: two similar register ranges.
-
-> The second range is used to configure the UTMI pad registers. All the UTMI pad
-> registers are located in the first USB controller's range.
-
-    Which second range? This is one and the same range.
-
->>> +    usb@7d008000 {
->>> +        compatible = "nvidia,tegra30-ehci", "usb-ehci";
->>> +        reg = <0x7d008000 0x4000>;
->>> +        interrupts = <GIC_SPI 97 IRQ_TYPE_LEVEL_HIGH>;
->>> +        phy_type = "utmi";
->>> +        clocks = <&tegra_car TEGRA114_CLK_USB3>;
->>> +        nvidia,phy = <&phy3>;
->>> +        status = "disabled";
->>> +    };
->>> +
->>> +    phy3: usb-phy@7d008000 {
-
->>     Again at the same address as previous node?
-
->>> +        compatible = "nvidia,tegra30-usb-phy";
->>> +        reg = <0x7d008000 0x4000 0x7d000000 0x4000>;
-
->>     Second range conflicts with previous nodes.
-
-    Are you sure it's valid? Are you sure it shouldn't be 0x7d008000?
-
->> WBR, Sergei
-
-> All these entries mapping the same address are expected. See
-> arch/arm/boot/dts/tegra20.dtsi for an existing example of Tegra USB bindings.
-
-    Don't they cause numerous resource conflicts while device nodes being 
-instantiated as the platform devices?
-
-WBR, Sergei
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index ba412e0..05125ab 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -1832,6 +1832,13 @@ config CC_STACKPROTECTOR
+ 	  neutralized via a kernel panic.
+ 	  This feature requires gcc version 4.2 or above.
+ 
++config SWIOTLB
++	def_bool y
++	select NEED_SG_DMA_LENGTH
++
++config IOMMU_HELPER
++	def_bool SWIOTLB
++
+ config XEN_DOM0
+ 	def_bool y
+ 	depends on XEN
+diff --git a/arch/arm/include/asm/dma-mapping.h b/arch/arm/include/asm/dma-mapping.h
+index 5b579b9..ad89e0f 100644
+--- a/arch/arm/include/asm/dma-mapping.h
++++ b/arch/arm/include/asm/dma-mapping.h
+@@ -86,6 +86,30 @@ static inline dma_addr_t virt_to_dma(struct device *dev, void *addr)
+ }
+ #endif
+ 
++static inline dma_addr_t phys_to_dma(struct device *dev, phys_addr_t paddr)
++{
++	unsigned int offset = paddr & ~PAGE_MASK;
++	return pfn_to_dma(dev, paddr >> PAGE_SHIFT) + offset;
++}
++
++static inline phys_addr_t dma_to_phys(struct device *dev, dma_addr_t dev_addr)
++{
++	unsigned int offset = dev_addr & ~PAGE_MASK;
++	return (dma_to_pfn(dev, dev_addr) << PAGE_SHIFT) + offset;
++}
++
++static inline bool dma_capable(struct device *dev, dma_addr_t addr, size_t size)
++{
++	if (!dev->dma_mask)
++		return 0;
++
++	return addr + size - 1 <= *dev->dma_mask;
++}
++
++static inline void dma_mark_clean(void *addr, size_t size)
++{
++}
++
+ /*
+  * DMA errors are defined by all-bits-set in the DMA address.
+  */
+-- 
+1.7.2.5
 
