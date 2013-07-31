@@ -1,119 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759525Ab3GaKah (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 06:30:37 -0400
-Received: from mx4-phx2.redhat.com ([209.132.183.25]:47806 "EHLO
-	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753966Ab3GaKaf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 06:30:35 -0400
-Date: Wed, 31 Jul 2013 06:30:31 -0400 (EDT)
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Message-ID: <494454351.7440476.1375266631241.JavaMail.root@redhat.com>
-In-Reply-To: <20130731094649.GE7484@redhat.com>
-References: <1375197096-2454-1-git-send-email-pbonzini@redhat.com> <1375197096-2454-4-git-send-email-pbonzini@redhat.com> <20130731094649.GE7484@redhat.com>
-Subject: Re: [PATCH 3/3] KVM: x86: handle singlestep during emulation
+	id S1759536Ab3GaKa6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 06:30:58 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55289 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756178Ab3GaKa4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 06:30:56 -0400
+Date: Wed, 31 Jul 2013 11:30:52 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/18] Basic scheduler support for automatic NUMA
+ balancing V5
+Message-ID: <20130731103052.GR2296@suse.de>
+References: <1373901620-2021-1-git-send-email-mgorman@suse.de>
+ <20130725103620.GM27075@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.5.82.12]
-X-Mailer: Zimbra 8.0.3_GA_5664 (zclient/8.0.3_GA_5664)
-Thread-Topic: x86: handle singlestep during emulation
-Thread-Index: 08UeJGydELJpIgYhBKhV+iIRiW9v8Q==
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20130725103620.GM27075@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
------ Gleb Natapov <gleb@redhat.com> wrote:
-> On Tue, Jul 30, 2013 at 05:11:36PM +0200, Paolo Bonzini wrote:
-> > This lets debugging work better during emulation of invalid
-> > guest state.
-> > 
-> > This time the check is done after emulation, but before writeback
-> > of the flags; we need to check the flags *before* execution of the
-> > instruction, we cannot check singlestep_rip because the CS base may
-> > have already been modified.
-> > 
-> > Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-> > ---
-> >  arch/x86/kvm/x86.c | 39 ++++++++++++++++++++++++++++++++++++++-
-> >  1 file changed, 38 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> > index 1368cf5..9805cfd 100644
-> > --- a/arch/x86/kvm/x86.c
-> > +++ b/arch/x86/kvm/x86.c
-> > @@ -4971,6 +4971,41 @@ static int kvm_vcpu_check_hw_bp(unsigned long addr, u32 type, u32 dr7,
-> >  	return dr6;
-> >  }
-> >  
-> > +static void kvm_vcpu_check_singlestep(struct kvm_vcpu *vcpu, int *r)
-> > +{
-> > +	struct kvm_run *kvm_run = vcpu->run;
-> > +
-> > +	/*
-> > +	 * Use the "raw" value to see if TF was passed to the processor.
-> > +	 * Note that the new value of the flags has not been saved yet.
-> > +	 *
-> > +	 * This is correct even for TF set by the guest, because "the
-> > +	 * processor will not generate this exception after the instruction
-> > +	 * that sets the TF flag".
-> > +	 */
-> > +	unsigned long rflags = kvm_x86_ops->get_rflags(vcpu);
-> > +
-> > +	if (unlikely(rflags & X86_EFLAGS_TF)) {
-> > +		if (vcpu->guest_debug & KVM_GUESTDBG_SINGLESTEP) {
-> > +			kvm_run->debug.arch.dr6 = DR6_BS | DR6_FIXED_1;
-> > +			kvm_run->debug.arch.pc = vcpu->arch.singlestep_rip;
-> > +			kvm_run->debug.arch.exception = DB_VECTOR;
-> > +			kvm_run->exit_reason = KVM_EXIT_DEBUG;
-> > +			*r = EMULATE_USER_EXIT;
-> > +		} else {
-> > +			vcpu->arch.emulate_ctxt.eflags &= ~X86_EFLAGS_TF;
-> > +			/*
-> > +			 * "Certain debug exceptions may clear bit 0-3.  The
-> > +			 * remaining contents of the DR6 register are never
-> > +			 * cleared by the processor".
-> > +			 */
-> > +			vcpu->arch.dr6 &= ~15;
-> > +			vcpu->arch.dr6 |= DR6_BS;
-> > +			kvm_queue_exception(vcpu, DB_VECTOR);
-> > +		}
-> > +	}
-> > +}
-> > +
-> >  static bool kvm_vcpu_check_breakpoint(struct kvm_vcpu *vcpu, int *r)
-> >  {
-> >  	struct kvm_run *kvm_run = vcpu->run;
-> > @@ -5117,10 +5152,12 @@ restart:
-> >  
-> >  	if (writeback) {
-> >  		toggle_interruptibility(vcpu, ctxt->interruptibility);
-> > -		kvm_set_rflags(vcpu, ctxt->eflags);
-> >  		kvm_make_request(KVM_REQ_EVENT, vcpu);
-> >  		vcpu->arch.emulate_regs_need_sync_to_vcpu = false;
-> >  		kvm_rip_write(vcpu, ctxt->eip);
-> > +		if (r == EMULATE_DONE)
-> Single step will not work for mmio write and pio out, we never return
-> into emulator for those instructions.
-
-Ok to apply the patch as is and work it out later (I suppose I need to
-check for NULL complete_userspace_io, and if so set my function)?  It
-is already a huge improvement in usability.
-
-Paolo
-
-> > +			kvm_vcpu_check_singlestep(vcpu, &r);
-> > +		kvm_set_rflags(vcpu, ctxt->eflags);
-> >  	} else
-> >  		vcpu->arch.emulate_regs_need_sync_to_vcpu = true;
-> >  
-> > -- 
-> > 1.8.1.4
+On Thu, Jul 25, 2013 at 12:36:20PM +0200, Peter Zijlstra wrote:
 > 
-> --
-> 			Gleb.
+> Subject: sched, numa: Break stuff..
+> From: Peter Zijlstra <peterz@infradead.org>
+> Date: Tue Jul 23 14:58:41 CEST 2013
+> 
+> This patch is mostly a comment in code. I don't believe the current
+> scan period adjustment scheme can work properly nor do I think it a
+> good idea to ratelimit the numa faults as a whole based on migration.
+> 
+> Reasons are in the modified comments...
+> 
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> ---
+>  kernel/sched/fair.c |   41 ++++++++++++++++++++++++++++++++---------
+>  1 file changed, 32 insertions(+), 9 deletions(-)
+> 
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -1108,7 +1108,6 @@ static void task_numa_placement(struct t
+>  
+>  	/* Preferred node as the node with the most faults */
+>  	if (max_faults && max_nid != p->numa_preferred_nid) {
+> -		int old_migrate_seq = p->numa_migrate_seq;
+>  
+>  		/* Queue task on preferred node if possible */
+>  		p->numa_preferred_nid = max_nid;
+> @@ -1116,14 +1115,19 @@ static void task_numa_placement(struct t
+>  		numa_migrate_preferred(p);
+>  
+>  		/*
+> +		int old_migrate_seq = p->numa_migrate_seq;
+> +		 *
+>  		 * If preferred nodes changes frequently then the scan rate
+>  		 * will be continually high. Mitigate this by increasing the
+>  		 * scan rate only if the task was settled.
+> -		 */
+> +		 *
+> +		 * APZ: disabled because we don't lower it again :/
+> +		 *
+>  		if (old_migrate_seq >= sysctl_numa_balancing_settle_count) {
+>  			p->numa_scan_period = max(p->numa_scan_period >> 1,
+>  					task_scan_min(p));
+>  		}
+> +		 */
+>  	}
+>  }
+>  
 
+I'm not sure I understand your point. The scan rate is decreased again if
+the page is found to be properly placed in the future. It's in the next
+hunk you modify although the periodically reset comment is now out of date.
+
+> @@ -1167,10 +1171,20 @@ void task_numa_fault(int last_nidpid, in
+>  	/*
+>  	 * If pages are properly placed (did not migrate) then scan slower.
+>  	 * This is reset periodically in case of phase changes
+> -	 */
+> -        if (!migrated)
+> +	 *
+> +	 * APZ: it seems to me that one can get a ton of !migrated faults;
+> +	 * consider the scenario where two threads fight over a shared memory
+> +	 * segment. We'll win half the faults, half of that will be local, half
+> +	 * of that will be remote. This means we'll see 1/4-th of the total
+> +	 * memory being !migrated. Using a fixed increment will completely
+> +	 * flatten the scan speed for a sufficiently large workload. Another
+> +	 * scenario is due to that migration rate limit.
+> +	 *
+> +        if (!migrated) {
+>  		p->numa_scan_period = min(p->numa_scan_period_max,
+>  			p->numa_scan_period + jiffies_to_msecs(10));
+> +	}
+> +	 */
+
+FWIW, I'm also not happy with how the scan rate is reduced but did not
+come up with a better alternative that was not fragile or depended on
+gathering too much state. Granted, I also have not been treating it as a
+high priority problem.
+
+>  
+>  	task_numa_placement(p);
+>  
+> @@ -1216,12 +1230,15 @@ void task_numa_work(struct callback_head
+>  	if (p->flags & PF_EXITING)
+>  		return;
+>  
+> +#if 0
+>  	/*
+>  	 * We do not care about task placement until a task runs on a node
+>  	 * other than the first one used by the address space. This is
+>  	 * largely because migrations are driven by what CPU the task
+>  	 * is running on. If it's never scheduled on another node, it'll
+>  	 * not migrate so why bother trapping the fault.
+> +	 *
+> +	 * APZ: seems like a bad idea for pure shared memory workloads.
+>  	 */
+>  	if (mm->first_nid == NUMA_PTE_SCAN_INIT)
+>  		mm->first_nid = numa_node_id();
+
+At some point in the past scan starts were based on waiting a fixed interval
+but that seemed like a hack designed to get around hurting kernel compile
+benchmarks. I'll give it more thought and see can I think of a better
+alternative that is based on an event but not this event.
+
+> @@ -1233,6 +1250,7 @@ void task_numa_work(struct callback_head
+>  
+>  		mm->first_nid = NUMA_PTE_SCAN_ACTIVE;
+>  	}
+> +#endif
+>  
+>  	/*
+>  	 * Enforce maximal scan/migration frequency..
+> @@ -1254,9 +1272,14 @@ void task_numa_work(struct callback_head
+>  	 * Do not set pte_numa if the current running node is rate-limited.
+>  	 * This loses statistics on the fault but if we are unwilling to
+>  	 * migrate to this node, it is less likely we can do useful work
+> -	 */
+> +	 *
+> +	 * APZ: seems like a bad idea; even if this node can't migrate anymore
+> +	 * other nodes might and we want up-to-date information to do balance
+> +	 * decisions.
+> +	 *
+>  	if (migrate_ratelimited(numa_node_id()))
+>  		return;
+> +	 */
+>  
+
+Ingo also disliked this but I wanted to avoid a situation where the
+workload suffered because of a corner case where the interconnect was
+filled with migration traffic.
+
+>  	start = mm->numa_scan_offset;
+>  	pages = sysctl_numa_balancing_scan_size;
+> @@ -1297,10 +1320,10 @@ void task_numa_work(struct callback_head
+>  
+>  out:
+>  	/*
+> -	 * It is possible to reach the end of the VMA list but the last few VMAs are
+> -	 * not guaranteed to the vma_migratable. If they are not, we would find the
+> -	 * !migratable VMA on the next scan but not reset the scanner to the start
+> -	 * so check it now.
+> +	 * It is possible to reach the end of the VMA list but the last few
+> +	 * VMAs are not guaranteed to the vma_migratable. If they are not, we
+> +	 * would find the !migratable VMA on the next scan but not reset the
+> +	 * scanner to the start so check it now.
+>  	 */
+>  	if (vma)
+>  		mm->numa_scan_offset = start;
+
+Will fix.
+
+-- 
+Mel Gorman
+SUSE Labs
