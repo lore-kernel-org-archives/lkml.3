@@ -1,104 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760420Ab3GaPpY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 11:45:24 -0400
-Received: from g6t0187.atlanta.hp.com ([15.193.32.64]:45908 "EHLO
-	g6t0187.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755532Ab3GaPpX (ORCPT
+	id S1760528Ab3GaPpj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 11:45:39 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:52392 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760463Ab3GaPph (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 11:45:23 -0400
-Message-ID: <51F93105.8020503@hp.com>
-Date: Wed, 31 Jul 2013 11:45:09 -0400
-From: Don Morris <don.morris@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Wed, 31 Jul 2013 11:45:37 -0400
+From: "Lee, Jae-Hong" <pyrasis@gmail.com>
+To: rob@landley.net, minchan@kernel.org
+Cc: linux-kernel@vger.kernel.org, "Lee, Jae-Hong" <pyrasis@gmail.com>
+Subject: =?UTF-8?q?=5BPATCH=201/3=5D=20Type=20fix=20on=20HOWTO=20in=20ko=5FKR?=
+Date: Thu,  1 Aug 2013 00:45:36 +0900
+Message-Id: <1375285538-6027-1-git-send-email-pyrasis@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Mel Gorman <mgorman@suse.de>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] sched, numa: Use {cpu, pid} to create task groups for
- shared faults
-References: <1373901620-2021-1-git-send-email-mgorman@suse.de> <20130730113857.GR3008@twins.programming.kicks-ass.net> <20130731150751.GA15144@twins.programming.kicks-ass.net>
-In-Reply-To: <20130731150751.GA15144@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/31/2013 11:07 AM, Peter Zijlstra wrote:
-> 
-> New version that includes a final put for the numa_group struct and a
-> few other modifications.
-> 
-> The new task_numa_free() completely blows though, far too expensive.
-> Good ideas needed.
-> 
-> ---
-> Subject: sched, numa: Use {cpu, pid} to create task groups for shared faults
-> From: Peter Zijlstra <peterz@infradead.org>
-> Date: Tue Jul 30 10:40:20 CEST 2013
-> 
-> A very simple/straight forward shared fault task grouping
-> implementation.
-> 
-> Concerns are that grouping on a single shared fault might be too
-> aggressive -- this only works because Mel is excluding DSOs for faults,
-> otherwise we'd have the world in a single group.
-> 
-> Future work could explore more complex means of picking groups. We
-> could for example track one group for the entire scan (using something
-> like PDM) and join it at the end of the scan if we deem it shared a
-> sufficient amount of memory.
-> 
-> Another avenue to explore is that to do with tasks where private faults
-> are predominant. Should we exclude them from the group or treat them as
-> secondary, creating a graded group that tries hardest to collate shared
-> tasks but also tries to move private tasks near when possible.
-> 
-> Also, the grouping information is completely unused, its up to future
-> patches to do this.
-> 
-> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-> ---
->  include/linux/sched.h |    4 +
->  kernel/sched/core.c   |    4 +
->  kernel/sched/fair.c   |  177 +++++++++++++++++++++++++++++++++++++++++++++++---
->  kernel/sched/sched.h  |    5 -
->  4 files changed, 176 insertions(+), 14 deletions(-)
+From: "Lee, Jae-Hong" <pyrasis@gmail.com>
 
-> +
-> +static void task_numa_free(struct task_struct *p)
-> +{
-> +	kfree(p->numa_faults);
-> +	if (p->numa_group) {
-> +		struct numa_group *grp = p->numa_group;
+This patch fixes some minor typos in Documentation/ko_KR/HOWTO.
 
-See below.
+Signed-off-by: Lee, Jae-Hong <pyrasis@gmail.com>
+---
+ Documentation/ko_KR/HOWTO |   21 +++++++++++----------
+ 1 file changed, 11 insertions(+), 10 deletions(-)
 
-> +		int i;
-> +
-> +		for (i = 0; i < 2*nr_node_ids; i++)
-> +			atomic_long_sub(p->numa_faults[i], &grp->faults[i]);
-> +
-> +		spin_lock(&p->numa_lock);
-> +		spin_lock(&group->lock);
-> +		list_del(&p->numa_entry);
-> +		spin_unlock(&group->lock);
-> +		rcu_assign_pointer(p->numa_group, NULL);
-> +		put_numa_group(grp);
-
-So is the local variable group or grp here? Got to be one or the
-other to compile...
-
-Don
-
-> +	}
-> +}
-> +
->  /*
->   * Got a PROT_NONE fault for a page on @node.
->   */
+diff --git a/Documentation/ko_KR/HOWTO b/Documentation/ko_KR/HOWTO
+index ab5189a..4aa79f9 100644
+--- a/Documentation/ko_KR/HOWTO
++++ b/Documentation/ko_KR/HOWTO
+@@ -182,8 +182,8 @@ Documentation/DocBook/ 디렉토리 내에서 만들어지며 PDF, Postscript, H
+ 프로젝트를 봐야 한다.
+     http://kernelnewbies.org
+ 그곳은 거의 모든 종류의 기본적인 커널 개발 질문들(질문하기 전에 먼저
+-아카이브를 찾아봐라. 과거에 이미 답변되었을 수도 있다)을 할수있는 도움이
+-될만한 메일링 리스트가 있다. 또한 실시간으로 질문 할수 있는 IRC 채널도
++아카이브를 찾아봐라. 과거에 이미 답변되었을 수도 있다)을 할 수있는 도움이
++될만한 메일링 리스트가 있다. 또한 실시간으로 질문 할 수 있는 IRC 채널도
+ 가지고 있으며 리눅스 커널 개발을 배우는 데 유용한 문서들을 보유하고 있다.
+ 
+ 웹사이트는 코드구성, 서브시스템들, 그리고 현재 프로젝트들
+@@ -245,7 +245,7 @@ Documentation/DocBook/ 디렉토리 내에서 만들어지며 PDF, Postscript, H
+     것을 기억해라. 왜냐하면 변경이 자체내에서만 발생하고 추가된 코드가
+     드라이버 외부의 다른 부분에는 영향을 주지 않으므로 그런 변경은
+     회귀(역자주: 이전에는 존재하지 않았지만 새로운 기능추가나 변경으로 인해
+-		생겨난 버그)를 일으킬 만한 위험을 가지고 있지 않기 때문이다. -rc1이
++    생겨난 버그)를 일으킬 만한 위험을 가지고 있지 않기 때문이다. -rc1이
+     배포된 이후에 git를 사용하여 패치들을 Linus에게 보낼수 있지만 패치들은
+     공식적인 메일링 리스트로 보내서 검토를 받을 필요가 있다.
+   - 새로운 -rc는 Linus가 현재 git tree가 테스트 하기에 충분히 안정된 상태에
+@@ -472,7 +472,7 @@ bugme-janitor 메일링 리스트(bugzilla에 모든 변화들이 여기서 메
+ 가능한한 가장 좋은 기술적인 해답을 찾고 있는 커뮤니티에서는 항상
+ 어떤 패치가 얼마나 좋은지에 관하여 다른 의견들이 있을 수 있다. 여러분은
+ 협조적이어야 하고 기꺼이 여러분의 생각을 커널 내에 맞추어야 한다. 아니면
+-적어도 여러분의 것이 가치있다는 것을 중명하여야 한다. 잘못된 것도 여러분이
++적어도 여러분의 것이 가치있다는 것을 증명하여야 한다. 잘못된 것도 여러분이
+ 올바른 방향의 해결책으로 이끌어갈 의지가 있다면 받아들여질 것이라는 점을
+ 기억하라.
+ 
+@@ -488,21 +488,21 @@ bugme-janitor 메일링 리스트(bugzilla에 모든 변화들이 여기서 메
+ 커널 커뮤니티는 가장 전통적인 회사의 개발 환경과는 다르다. 여기에 여러분들의
+ 문제를 피하기 위한 목록이 있다.
+   여러분들이 제안한 변경들에 관하여 말할 때 좋은 것들 :
+-    - "이것은 여러 문제들을 해겹합니다."
++    - "이것은 여러 문제들을 해결합니다."
+     - "이것은 2000 라인의 코드를 제거합니다."
+     - "이것은 내가 말하려는 것에 관해 설명하는 패치입니다."
+-    - "나는 5개의 다른 아키텍쳐에서 그것을 테스트했슴으로..."
+-    - "여기에 일련의 작은 패치들이 있슴음로..."
+-    - "이것은 일반적인 머신에서 성능을 향상시킴으로..."
++    - "나는 5개의 다른 아키텍쳐에서 그것을 테스트 했으므로..."
++    - "여기에 일련의 작은 패치들이 있으므로..."
++    - "이것은 일반적인 머신에서 성능을 향상시키므로..."
+ 
+   여러분들이 말할 때 피해야 할 좋지 않은 것들 :
+-    - "우리를 그것을 AIT/ptx/Solaris에서 이러한 방법으로 했다. 그러므로 그것은 좋은 것임에 틀립없다..."
++    - "우리를 그것을 AIT/ptx/Solaris에서 이러한 방법으로 했다. 그러므로 그것은 좋은 것임에 틀림없다..."
+     - "나는 20년동안 이것을 해왔다. 그러므로..."
+     - "이것은 돈을 벌기위해 나의 회사가 필요로 하는 것이다."
+     - "이것은 우리의 엔터프라이즈 상품 라인을 위한 것이다."
+     - "여기에 나의 생각을 말하고 있는 1000 페이지 설계 문서가 있다."
+     - "나는 6달동안 이것을 했으니..."
+-    - "여기에 5000라인 짜리 패치가 있으니..."
++    - "여기에 5000 라인 짜리 패치가 있으니..."
+     - "나는 현재 뒤죽박죽인 것을 재작성했다. 그리고 여기에..."
+     - "나는 마감시한을 가지고 있으므로 이 패치는 지금 적용될 필요가 있다."
+ 
+@@ -574,6 +574,7 @@ Pat이라는 이름을 가진 여자가 있을 수도 있는 것이다. 리눅
+ 또한 완성되지 않았고 "나중에 수정될 것이다." 와 같은 것들을 포함하는
+ 패치들은 받아들여지지 않을 것이라는 점을 유념하라.
+ 
++
+ 변경을 정당화해라
+ -----------------
+ 
+-- 
+1.7.10.4
 
