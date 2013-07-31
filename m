@@ -1,126 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759076Ab3GaJik (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 05:38:40 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:57618 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753966Ab3GaJii (ORCPT
+	id S1758365Ab3GaJj0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 05:39:26 -0400
+Received: from mail-bk0-f51.google.com ([209.85.214.51]:41046 "EHLO
+	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751316Ab3GaJjY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 05:38:38 -0400
-Message-ID: <51F8DA99.3010303@huawei.com>
-Date: Wed, 31 Jul 2013 17:36:25 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Wed, 31 Jul 2013 05:39:24 -0400
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
-Subject: [PATCH v2 5/5] cgroup: remove struct cgroup_seqfile_state
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+In-Reply-To: <87zjte9iah.fsf@rustcorp.com.au>
+References: <CALkWK0n7zedKD4tnxKh-qMuDnMJ5RXjnPJ9EUWT=cCgiokX11A@mail.gmail.com>
+	<51E97779.3020103@zytor.com>
+	<87zjte9iah.fsf@rustcorp.com.au>
+Date: Wed, 31 Jul 2013 12:39:23 +0300
+Message-ID: <CABpLfohrweJd0=0eFJDO7dv2HHxx_mbP0uySMDrsZZZXExdXug@mail.gmail.com>
+Subject: Re: [QUERY] lguest64
+From: Mike Rapoport <mike.rapoport@gmail.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Ramkumar Ramachandra <artagnon@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We can use struct cfent instead.
+On Tue, Jul 23, 2013 at 4:28 AM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+> "H. Peter Anvin" <hpa@zytor.com> writes:
+>> On 07/19/2013 02:06 AM, Ramkumar Ramachandra wrote:
+>>> Hi,
+>>>
+>>> I tried building lguest to play with it, but was disappointed to find
+>>> this in the Kconfig:
+>>>
+>>>   depends on X86_32
+>>>
+>>> Why is this [1]?  What is so hard about supporting 64-bit machines?  I
+>>> found a five-year old tree that claims to do lguest64 [2], but didn't
+>>> investigate further.
+>>>
 
-v2:
-- remove cgroup_seqfile_release().
+Sorry for jumping late, but, coincidentally, I was thinking about
+extending lguest for 64-bits and while googling about the subj, I've
+crossed this thread...
 
-Signed-off-by: Li Zefan <lizefan@huawei.com>
----
- kernel/cgroup.c | 45 +++++++++++++--------------------------------
- 1 file changed, 13 insertions(+), 32 deletions(-)
+>> Please don't have us deal with another lguest unless there is a use case
+>> for it.  We want to reduce pvops and pvops users, not increase them...
+>>
+>>       -hpa
 
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 0d378b1..c836dff 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -2362,11 +2362,6 @@ static ssize_t cgroup_file_read(struct file *file, char __user *buf,
-  * supports string->u64 maps, but can be extended in future.
-  */
- 
--struct cgroup_seqfile_state {
--	struct cftype *cft;
--	struct cgroup *cgroup;
--};
--
- static int cgroup_map_add(struct cgroup_map_cb *cb, const char *key, u64 value)
- {
- 	struct seq_file *sf = cb->state;
-@@ -2375,59 +2370,45 @@ static int cgroup_map_add(struct cgroup_map_cb *cb, const char *key, u64 value)
- 
- static int cgroup_seqfile_show(struct seq_file *m, void *arg)
- {
--	struct cgroup_seqfile_state *state = m->private;
--	struct cftype *cft = state->cft;
-+	struct cfent *cfe = m->private;
-+	struct cftype *cft = cfe->type;
-+	struct cgroup *cgrp = __d_cgrp(cfe->dentry->d_parent);
-+
- 	if (cft->read_map) {
- 		struct cgroup_map_cb cb = {
- 			.fill = cgroup_map_add,
- 			.state = m,
- 		};
--		return cft->read_map(state->cgroup, cft, &cb);
-+		return cft->read_map(cgrp, cft, &cb);
- 	}
--	return cft->read_seq_string(state->cgroup, cft, m);
--}
--
--static int cgroup_seqfile_release(struct inode *inode, struct file *file)
--{
--	struct seq_file *seq = file->private_data;
--	kfree(seq->private);
--	return single_release(inode, file);
-+	return cft->read_seq_string(cgrp, cft, m);
- }
- 
- static const struct file_operations cgroup_seqfile_operations = {
- 	.read = seq_read,
- 	.write = cgroup_file_write,
- 	.llseek = seq_lseek,
--	.release = cgroup_seqfile_release,
-+	.release = single_release,
- };
- 
- static int cgroup_file_open(struct inode *inode, struct file *file)
- {
- 	int err;
-+	struct cfent *cfe;
- 	struct cftype *cft;
- 
- 	err = generic_file_open(inode, file);
- 	if (err)
- 		return err;
--	cft = __d_cft(file->f_dentry);
-+	cfe = __d_cfe(file->f_dentry);
-+	cft = cfe->type;
- 
- 	if (cft->read_map || cft->read_seq_string) {
--		struct cgroup_seqfile_state *state;
--
--		state = kzalloc(sizeof(*state), GFP_USER);
--		if (!state)
--			return -ENOMEM;
--
--		state->cft = cft;
--		state->cgroup = __d_cgrp(file->f_dentry->d_parent);
- 		file->f_op = &cgroup_seqfile_operations;
--		err = single_open(file, cgroup_seqfile_show, state);
--		if (err < 0)
--			kfree(state);
--	} else if (cft->open)
-+		err = single_open(file, cgroup_seqfile_show, cfe);
-+	} else if (cft->open) {
- 		err = cft->open(inode, file);
--	else
--		err = 0;
-+	}
- 
- 	return err;
- }
+The use case I had in mind is to use lguest as a nested hypervisor in
+public clouds. As of today, major public clouds do not support nested
+virtualization and it's not clear at all if they will expose this
+ability in their deployments. Addition of 64-bit support for lguest
+won't require changes to pvops and, as far as I can tell, won't change
+the number of pvops users...
+
+> Yes, the subset of x86-64 machines for which there isn't hardware
+> virtualization support is pretty uninteresting.
+
+There are plenty virtual machines in EC2, Rackspace, HP and other
+clouds that do not have hardware virtualization. I believe that
+running a hypervisor on them may be pretty interesting.
+
+> Cheers,
+> Rusty.
+
+
 -- 
-1.8.0.2
+Sincerely yours,
+Mike.
