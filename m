@@ -1,220 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758108Ab3GaE5R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 00:57:17 -0400
-Received: from ozlabs.org ([203.10.76.45]:34919 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751934Ab3GaE4s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 00:56:48 -0400
-From: Michael Ellerman <michael@ellerman.id.au>
-To: <linuxppc-dev@ozlabs.org>
-Cc: <linux-kernel@vger.kernel.org>, Anton Blanchard <anton@samba.org>,
-        Jeremy Kerr <jk@ozlabs.org>, Michael Neuling <mikey@neuling.org>,
-        Andrew Morton <akpm@osdl.org>
-Subject: [PATCH 2/3] selftests: Add support files for powerpc tests
-Date: Wed, 31 Jul 2013 14:56:32 +1000
-Message-Id: <1375246593-26116-2-git-send-email-michael@ellerman.id.au>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1375246593-26116-1-git-send-email-michael@ellerman.id.au>
-References: <1375246593-26116-1-git-send-email-michael@ellerman.id.au>
+	id S1754207Ab3GaFCx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 01:02:53 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:50899 "EHLO
+	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751934Ab3GaFCw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 01:02:52 -0400
+X-AuditID: 9c93017e-b7b62ae000000eeb-e3-51f89a795d66
+Date: Wed, 31 Jul 2013 14:02:50 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Hillf Danton <dhillf@gmail.com>
+Subject: Re: [PATCH 08/18] mm, hugetlb: do hugepage_subpool_get_pages() when
+ avoid_reserve
+Message-ID: <20130731050250.GH2548@lge.com>
+References: <1375075929-6119-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1375075929-6119-9-git-send-email-iamjoonsoo.kim@lge.com>
+ <1375121151-dxyftdvy-mutt-n-horiguchi@ah.jp.nec.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1375121151-dxyftdvy-mutt-n-horiguchi@ah.jp.nec.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit adds support code used by upcoming powerpc tests.
+On Mon, Jul 29, 2013 at 02:05:51PM -0400, Naoya Horiguchi wrote:
+> On Mon, Jul 29, 2013 at 02:31:59PM +0900, Joonsoo Kim wrote:
+> > When we try to get a huge page with avoid_reserve, we don't consume
+> > a reserved page. So it is treated like as non-reserve case.
+> 
+> This patch will be completely overwritten with 9/18.
+> So is this patch necessary?
 
-Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
----
- tools/testing/selftests/powerpc/harness.c | 83 +++++++++++++++++++++++++++++++
- tools/testing/selftests/powerpc/subunit.h | 47 +++++++++++++++++
- tools/testing/selftests/powerpc/utils.h   | 34 +++++++++++++
- 3 files changed, 164 insertions(+)
- create mode 100644 tools/testing/selftests/powerpc/harness.c
- create mode 100644 tools/testing/selftests/powerpc/subunit.h
- create mode 100644 tools/testing/selftests/powerpc/utils.h
+Yes. This is a bug fix, so should be separate.
+When we try to allocate with avoid_reserve, we don't use reserved page pool.
+So, hugepage_subpool_get_pages() should be called and returned if failed.
 
-diff --git a/tools/testing/selftests/powerpc/harness.c b/tools/testing/selftests/powerpc/harness.c
-new file mode 100644
-index 0000000..ad73a34
---- /dev/null
-+++ b/tools/testing/selftests/powerpc/harness.c
-@@ -0,0 +1,83 @@
-+/*
-+ * Copyright 2013, Michael Ellerman, IBM Corp.
-+ * Licensed under GPLv2.
-+ */
-+
-+#include <errno.h>
-+#include <stdbool.h>
-+#include <stdio.h>
-+#include <stdlib.h>
-+#include <sys/types.h>
-+#include <sys/wait.h>
-+#include <unistd.h>
-+
-+#include "subunit.h"
-+#include "utils.h"
-+
-+#define TIMEOUT		120
-+#define KILL_TIMEOUT	5
-+
-+
-+int run_test(int (test_function)(void), char *name)
-+{
-+	bool terminated;
-+	int rc, status;
-+	pid_t pid;
-+
-+	/* Make sure output is flushed before forking */
-+	fflush(stdout);
-+
-+	pid = fork();
-+	if (pid == 0) {
-+		exit(test_function());
-+	} else if (pid == -1) {
-+		perror("fork");
-+		return 1;
-+	}
-+
-+	/* Wake us up in timeout seconds */
-+	alarm(TIMEOUT);
-+	terminated = false;
-+
-+wait:
-+	rc = waitpid(pid, &status, 0);
-+	if (rc == -1) {
-+		if (errno != EINTR) {
-+			printf("unknown error from waitpid\n");
-+			return 1;
-+		}
-+
-+		if (terminated) {
-+			printf("!! force killing %s\n", name);
-+			kill(pid, SIGKILL);
-+			return 1;
-+		} else {
-+			printf("!! killing %s\n", name);
-+			kill(pid, SIGTERM);
-+			terminated = true;
-+			alarm(KILL_TIMEOUT);
-+			goto wait;
-+		}
-+	}
-+
-+	if (WIFEXITED(status))
-+		status = WEXITSTATUS(status);
-+	else
-+		status = 1; /* Signal or other */
-+
-+	return status;
-+}
-+
-+int test_harness(int (test_function)(void), char *name)
-+{
-+	int rc;
-+
-+	test_start(name);
-+	test_set_git_version(GIT_VERSION);
-+
-+	rc = run_test(test_function, name);
-+
-+	test_finish(name, rc);
-+
-+	return rc;
-+}
-diff --git a/tools/testing/selftests/powerpc/subunit.h b/tools/testing/selftests/powerpc/subunit.h
-new file mode 100644
-index 0000000..98a2292
---- /dev/null
-+++ b/tools/testing/selftests/powerpc/subunit.h
-@@ -0,0 +1,47 @@
-+/*
-+ * Copyright 2013, Michael Ellerman, IBM Corp.
-+ * Licensed under GPLv2.
-+ */
-+
-+#ifndef _SELFTESTS_POWERPC_SUBUNIT_H
-+#define _SELFTESTS_POWERPC_SUBUNIT_H
-+
-+static inline void test_start(char *name)
-+{
-+	printf("test: %s\n", name);
-+}
-+
-+static inline void test_failure_detail(char *name, char *detail)
-+{
-+	printf("failure: %s [%s]\n", name, detail);
-+}
-+
-+static inline void test_failure(char *name)
-+{
-+	printf("failure: %s\n", name);
-+}
-+
-+static inline void test_error(char *name)
-+{
-+	printf("error: %s\n", name);
-+}
-+
-+static inline void test_success(char *name)
-+{
-+	printf("success: %s\n", name);
-+}
-+
-+static inline void test_finish(char *name, int status)
-+{
-+	if (status)
-+		test_failure(name);
-+	else
-+		test_success(name);
-+}
-+
-+static inline void test_set_git_version(char *value)
-+{
-+	printf("tags: git_version:%s\n", value);
-+}
-+
-+#endif /* _SELFTESTS_POWERPC_SUBUNIT_H */
-diff --git a/tools/testing/selftests/powerpc/utils.h b/tools/testing/selftests/powerpc/utils.h
-new file mode 100644
-index 0000000..5851c4b
---- /dev/null
-+++ b/tools/testing/selftests/powerpc/utils.h
-@@ -0,0 +1,34 @@
-+/*
-+ * Copyright 2013, Michael Ellerman, IBM Corp.
-+ * Licensed under GPLv2.
-+ */
-+
-+#ifndef _SELFTESTS_POWERPC_UTILS_H
-+#define _SELFTESTS_POWERPC_UTILS_H
-+
-+#include <stdint.h>
-+#include <stdbool.h>
-+
-+/* Avoid headaches with PRI?64 - just use %ll? always */
-+typedef unsigned long long u64;
-+typedef   signed long long s64;
-+
-+/* Just for familiarity */
-+typedef uint32_t u32;
-+typedef uint8_t u8;
-+
-+
-+int test_harness(int (test_function)(void), char *name);
-+
-+
-+/* Yes, this is evil */
-+#define FAIL_IF(x)						\
-+do {								\
-+	if ((x)) {						\
-+		fprintf(stderr,					\
-+		"[FAIL] Test FAILED on line %d\n", __LINE__);	\
-+		return 1;					\
-+	}							\
-+} while (0)
-+
-+#endif /* _SELFTESTS_POWERPC_UTILS_H */
--- 
-1.8.1.2
+If we merge these into one, we cannot know that there exists a bug.
 
+Thanks.
+
+> 
+> Naoya Horiguchi
+> 
+> > Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> > 
+> > diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> > index 1426c03..749629e 100644
+> > --- a/mm/hugetlb.c
+> > +++ b/mm/hugetlb.c
+> > @@ -1149,12 +1149,13 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
+> >  	if (has_reserve < 0)
+> >  		return ERR_PTR(-ENOMEM);
+> >  
+> > -	if (!has_reserve && (hugepage_subpool_get_pages(spool, 1) < 0))
+> > +	if ((!has_reserve || avoid_reserve)
+> > +		&& (hugepage_subpool_get_pages(spool, 1) < 0))
+> >  			return ERR_PTR(-ENOSPC);
+> >  
+> >  	ret = hugetlb_cgroup_charge_cgroup(idx, pages_per_huge_page(h), &h_cg);
+> >  	if (ret) {
+> > -		if (!has_reserve)
+> > +		if (!has_reserve || avoid_reserve)
+> >  			hugepage_subpool_put_pages(spool, 1);
+> >  		return ERR_PTR(-ENOSPC);
+> >  	}
+> > @@ -1167,7 +1168,7 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
+> >  			hugetlb_cgroup_uncharge_cgroup(idx,
+> >  						       pages_per_huge_page(h),
+> >  						       h_cg);
+> > -			if (!has_reserve)
+> > +			if (!has_reserve || avoid_reserve)
+> >  				hugepage_subpool_put_pages(spool, 1);
+> >  			return ERR_PTR(-ENOSPC);
+> >  		}
+> > -- 
+> > 1.7.9.5
+> >
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
