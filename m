@@ -1,85 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759621Ab3GaLiS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 07:38:18 -0400
-Received: from zetta.elopez.com.ar ([199.30.59.35]:56447 "EHLO
-	zetta.elopez.com.ar" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752493Ab3GaLiQ (ORCPT
+	id S1759645Ab3GaLi2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 07:38:28 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:55954 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752493Ab3GaLi0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 07:38:16 -0400
-Message-ID: <51F8F70F.70208@elopez.com.ar>
-Date: Wed, 31 Jul 2013 08:37:51 -0300
-From: =?UTF-8?B?RW1pbGlvIEzDs3Bleg==?= <emilio@elopez.com.ar>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Wed, 31 Jul 2013 07:38:26 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jason Cooper <jason@lakedaemon.net>
+Subject: Re: [Ksummit-2013-discuss] [ATTEND] DT, maintainership, development process
+Date: Wed, 31 Jul 2013 13:48:36 +0200
+Message-ID: <2963534.uP9oyT6an2@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <51F8A4F3.4020003@zytor.com>
+References: <20130729102452.GA2682@zurbaran> <4053222.hWzinV5Hra@vostro.rjw.lan> <51F8A4F3.4020003@zytor.com>
 MIME-Version: 1.0
-To: "kevin.z.m.zh" <kevin.z.m.zh@gmail.com>
-CC: "maxime.ripard" <maxime.ripard@free-electrons.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        =?UTF-8?B?5a2Z5b2m6YKm?= <sunny@allwinnertech.com>,
-        =?UTF-8?B?5ZC05Lmm6ICV?= <shuge@allwinnertech.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/4] ARM: sun6i: Enable clock support in the DTSI
-References: <1375195462-19566-1-git-send-email-maxime.ripard@free-electrons.com> <1375195462-19566-5-git-send-email-maxime.ripard@free-electrons.com> <51F86A2E.10505@elopez.com.ar>,  <20130731073724.GA24439@lukather> <2013073116110750016327@gmail.com>
-In-Reply-To: <2013073116110750016327@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tuesday, July 30, 2013 10:47:31 PM H. Peter Anvin wrote:
+> On 07/29/2013 03:30 PM, Rafael J. Wysocki wrote:
+> > On Monday, July 29, 2013 02:17:34 PM John W. Linville wrote:
+> >> On Mon, Jul 29, 2013 at 03:27:44PM +0200, Rafael J. Wysocki wrote:
+> >>
+> >>> That said we have the same issue with commits with just two SOB tags if
+> >>> a maintainer applies a patch that nobody has responded to.  Are they going to
+> >>> be regarded as "suspicious" too now?
+> >>>
+> >>> And what about trusting maintainers?  If Linus trusts them enough to pull from
+> >>> them, why can't everybody else trust them enough to assume that they don't do
+> >>> bad things on purpose?
+> >>
+> >> Not just Linus -- it's 'turtles all the way down' here.  As someone
+> >> else suggested, a Singed-off-by in the merge commit should suffice
+> >> here.  Although, I haven't always made a habit of adding S-o-b to
+> >> merge commits either...
+> > 
+> > An SOB in the merge doesn't provide any additional information that can't
+> > be retrieved from git, unless you use a different e-mail address for the
+> > sign-off. :-)
+> > 
+> 
+> Watch out for fast forward merges.  Ideally I guess maintainers really
+> should disable fast forwards and PGP-sign their merge commits...
 
-El 31/07/13 05:11, kevin.z.m escribió:
-> Hi, Maxime,
->  
->> The problem is a bit more complex than that.
->  
->> On the A31, the losc clock is actually a mux between an external
->> oscillator running at 32kHz, and the internal oscillator running at
->> 667MHz, that would be scaled down.
->  
->> Support for this mux is not quite there yet, since I've not seen any
->> documentation for it, but this would allow to just rearrange losc
->> parents and compatible when we will had such support.
->  
-> I think there is some misunderstanding. All allwinner's platforms have
-> 2 losc clock source. One is the external 32KHz oscillator, and the other
-> is internal 32kHz R/C circuit. The internal 32k R/C circuit can't provide
-> a very exact clock on 32KHz. The mux is just for select external osc or
-> internal
-> 32KHz R/C. If there is no external 32kHz oscillator, we can replace it with
-> internal 32kHz R/C for some low speed but not exact clock requirement.
+If you submit a signed pull request, that covers all of the history in your
+tree up to the top commit you're requesting to pull.
 
-Thanks for the clarification :)
+And I don't do fast forward merges.
 
-(snip)
+Thanks,
+Rafael
 
->> > + ahb1_mux: ahb1_mux@01c20054 {
->> > + #clock-cells = <0>;
->> > + compatible = "allwinner,sun6i-ahb1-mux-clk";
->> > + reg = <0x01c20054 0x4>;
->> > + clocks = <&osc32k>, <&osc24M>, <&axi>, <&pll6>;
->> > + };
->> > +
->> > + ahb1: ahb1@01c20054 {
->> > + #clock-cells = <0>;
->> > + compatible = "allwinner,sun4i-ahb-clk";
->> > + reg = <0x01c20054 0x4>;
->> > + clocks = <&ahb1_mux>;
->> > + };
->> 
->> Depending on when this lands, I believe these two above could be merged
->> into one with the refactoring introduced on my patchset.
->  
-> Since your patchset is still in RFC and we had no comments from Mike so
-> far, while this one looks pretty similar to the one we had before, I
-> guess the safest thing to do would be to rebase your patches on top of
-> this ones.
-
-Ok, I'll do that.
-
-Cheers,
-
-Emilio
