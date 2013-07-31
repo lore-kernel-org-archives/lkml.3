@@ -1,41 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759241Ab3GaIRP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 04:17:15 -0400
-Received: from relay.parallels.com ([195.214.232.42]:55102 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759217Ab3GaIRM (ORCPT
+	id S1759268Ab3GaIRj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 04:17:39 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:30769 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759210Ab3GaIRf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 04:17:12 -0400
-Message-ID: <51F8C7F4.9020504@parallels.com>
-Date: Wed, 31 Jul 2013 12:16:52 +0400
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	Wed, 31 Jul 2013 04:17:35 -0400
+Message-ID: <51F8C818.4080308@huawei.com>
+Date: Wed, 31 Jul 2013 16:17:28 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Cyrill Gorcunov <gorcunov@gmail.com>, <akpm@linux-foundation.org>
-CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        <luto@amacapital.net>, <gorcunov@openvz.org>, <mpm@selenic.com>,
-        <xiaoguangrong@linux.vnet.ibm.com>, <mtosatti@redhat.com>,
-        <kosaki.motohiro@gmail.com>, <sfr@canb.auug.org.au>,
-        <peterz@infradead.org>, <aneesh.kumar@linux.vnet.ibm.com>
-Subject: Re: [patch 2/2] [PATCH] mm: Save soft-dirty bits on file pages
-References: <20130730204154.407090410@gmail.com> <20130730204654.966378702@gmail.com>
-In-Reply-To: <20130730204654.966378702@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Tejun Heo <tj@kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
+Subject: [PATCH 4/7] cgroup: rename cgroup_pidlist->mutex
+References: <51F8C7C5.9040608@huawei.com>
+In-Reply-To: <51F8C7C5.9040608@huawei.com>
+Content-Type: text/plain; charset="GB2312"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.16.114]
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/31/2013 12:41 AM, Cyrill Gorcunov wrote:
+It's a semaphore not a mutex.
 
-> Andy reported that if file page get reclaimed we loose soft-dirty bit
-> if it was there, so save _PAGE_BIT_SOFT_DIRTY bit when page address
-> get encoded into pte entry. Thus when #pf happens on such non-present
-> pte we can restore it back.
-> 
-> Reported-by: Andy Lutomirski <luto@amacapital.net>
-> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+---
+ kernel/cgroup.c | 22 +++++++++++-----------
+ 1 file changed, 11 insertions(+), 11 deletions(-)
 
-Acked-by: Pavel Emelyanov <xemul@parallels.com>
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index f0d7f5d..0d378b1 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -3417,7 +3417,7 @@ struct cgroup_pidlist {
+ 	/* pointer to the cgroup we belong to, for list removal purposes */
+ 	struct cgroup *owner;
+ 	/* protects the other fields */
+-	struct rw_semaphore mutex;
++	struct rw_semaphore sem;
+ };
+ 
+ /*
+@@ -3490,7 +3490,7 @@ static struct cgroup_pidlist *cgroup_pidlist_find(struct cgroup *cgrp,
+ 	struct pid_namespace *ns = task_active_pid_ns(current);
+ 
+ 	/*
+-	 * We can't drop the pidlist_mutex before taking the l->mutex in case
++	 * We can't drop the pidlist_mutex before taking the l->sem in case
+ 	 * the last ref-holder is trying to remove l from the list at the same
+ 	 * time. Holding the pidlist_mutex precludes somebody taking whichever
+ 	 * list we find out from under us - compare release_pid_array().
+@@ -3499,7 +3499,7 @@ static struct cgroup_pidlist *cgroup_pidlist_find(struct cgroup *cgrp,
+ 	list_for_each_entry(l, &cgrp->pidlists, links) {
+ 		if (l->key.type == type && l->key.ns == ns) {
+ 			/* make sure l doesn't vanish out from under us */
+-			down_write(&l->mutex);
++			down_write(&l->sem);
+ 			mutex_unlock(&cgrp->pidlist_mutex);
+ 			return l;
+ 		}
+@@ -3510,8 +3510,8 @@ static struct cgroup_pidlist *cgroup_pidlist_find(struct cgroup *cgrp,
+ 		mutex_unlock(&cgrp->pidlist_mutex);
+ 		return l;
+ 	}
+-	init_rwsem(&l->mutex);
+-	down_write(&l->mutex);
++	init_rwsem(&l->sem);
++	down_write(&l->sem);
+ 	l->key.type = type;
+ 	l->key.ns = get_pid_ns(ns);
+ 	l->owner = cgrp;
+@@ -3572,7 +3572,7 @@ static int pidlist_array_load(struct cgroup *cgrp, enum cgroup_filetype type,
+ 	l->list = array;
+ 	l->length = length;
+ 	l->use_count++;
+-	up_write(&l->mutex);
++	up_write(&l->sem);
+ 	*lp = l;
+ 	return 0;
+ }
+@@ -3650,7 +3650,7 @@ static void *cgroup_pidlist_start(struct seq_file *s, loff_t *pos)
+ 	int index = 0, pid = *pos;
+ 	int *iter;
+ 
+-	down_read(&l->mutex);
++	down_read(&l->sem);
+ 	if (pid) {
+ 		int end = l->length;
+ 
+@@ -3677,7 +3677,7 @@ static void *cgroup_pidlist_start(struct seq_file *s, loff_t *pos)
+ static void cgroup_pidlist_stop(struct seq_file *s, void *v)
+ {
+ 	struct cgroup_pidlist *l = s->private;
+-	up_read(&l->mutex);
++	up_read(&l->sem);
+ }
+ 
+ static void *cgroup_pidlist_next(struct seq_file *s, void *v, loff_t *pos)
+@@ -3723,7 +3723,7 @@ static void cgroup_release_pid_array(struct cgroup_pidlist *l)
+ 	 * pidlist_mutex, we have to take pidlist_mutex first.
+ 	 */
+ 	mutex_lock(&l->owner->pidlist_mutex);
+-	down_write(&l->mutex);
++	down_write(&l->sem);
+ 	BUG_ON(!l->use_count);
+ 	if (!--l->use_count) {
+ 		/* we're the last user if refcount is 0; remove and free */
+@@ -3731,12 +3731,12 @@ static void cgroup_release_pid_array(struct cgroup_pidlist *l)
+ 		mutex_unlock(&l->owner->pidlist_mutex);
+ 		pidlist_free(l->list);
+ 		put_pid_ns(l->key.ns);
+-		up_write(&l->mutex);
++		up_write(&l->sem);
+ 		kfree(l);
+ 		return;
+ 	}
+ 	mutex_unlock(&l->owner->pidlist_mutex);
+-	up_write(&l->mutex);
++	up_write(&l->sem);
+ }
+ 
+ static int cgroup_pidlist_release(struct inode *inode, struct file *file)
+-- 
+1.8.0.2
