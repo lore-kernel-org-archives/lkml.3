@@ -1,96 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756246Ab3GaKsT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 06:48:19 -0400
-Received: from ns.iliad.fr ([212.27.33.1]:56602 "EHLO ns.iliad.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755524Ab3GaKsS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 06:48:18 -0400
-X-Greylist: delayed 638 seconds by postgrey-1.27 at vger.kernel.org; Wed, 31 Jul 2013 06:48:17 EDT
-Message-ID: <1375267057.20042.52.camel@sakura.staff.proxad.net>
-Subject: Re: [Ksummit-2013-discuss] DT bindings as ABI [was: Do we have
- people interested in device tree janitoring / cleanup?]
-From: Maxime Bizon <mbizon@freebox.fr>
-Reply-To: mbizon@freebox.fr
-To: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: Richard Cochran <richardcochran@gmail.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "ksummit-2013-discuss@lists.linuxfoundation.org" 
-	<ksummit-2013-discuss@lists.linuxfoundation.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Domenico Andreoli <cavokz@gmail.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Olof Johansson <olof@lixom.net>, Mark Brown <broonie@kernel.org>,
-        Arend van Spriel <arend@broadcom.com>,
-        Dave P Martin <Dave.Martin@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Wed, 31 Jul 2013 12:37:37 +0200
-In-Reply-To: <1441731.8CGUI1tUxh@flatron>
-References: <20130725175702.GC22291@e106331-lin.cambridge.arm.com>
-	 <51F39FD8.6080808@broadcom.com> <20130727183059.GD4813@netboy>
-	 <1441731.8CGUI1tUxh@flatron>
-Organization: Freebox
-Content-Type: text/plain; charset="ANSI_X3.4-1968"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1759558Ab3GaKsZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 06:48:25 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:46579 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759017Ab3GaKsX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 06:48:23 -0400
+Date: Wed, 31 Jul 2013 12:48:14 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/18] Basic scheduler support for automatic NUMA
+ balancing V5
+Message-ID: <20130731104814.GA3008@twins.programming.kicks-ass.net>
+References: <1373901620-2021-1-git-send-email-mgorman@suse.de>
+ <20130725103620.GM27075@twins.programming.kicks-ass.net>
+ <20130731103052.GR2296@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130731103052.GR2296@suse.de>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jul 31, 2013 at 11:30:52AM +0100, Mel Gorman wrote:
+> I'm not sure I understand your point. The scan rate is decreased again if
+> the page is found to be properly placed in the future. It's in the next
+> hunk you modify although the periodically reset comment is now out of date.
 
-On Sat, 2013-07-27 at 11:51 -0700, Tomasz Figa wrote:
+Yeah its because of the next hunk. I figured that if we don't lower it,
+we shouldn't raise it either.
 
-> Well, it depends on how we use the DT. There are (at least) two possible 
-> usage scenarios:
+> > @@ -1167,10 +1171,20 @@ void task_numa_fault(int last_nidpid, in
+> >  	/*
+> >  	 * If pages are properly placed (did not migrate) then scan slower.
+> >  	 * This is reset periodically in case of phase changes
+> > -	 */
+> > -        if (!migrated)
+> > +	 *
+> > +	 * APZ: it seems to me that one can get a ton of !migrated faults;
+> > +	 * consider the scenario where two threads fight over a shared memory
+> > +	 * segment. We'll win half the faults, half of that will be local, half
+> > +	 * of that will be remote. This means we'll see 1/4-th of the total
+> > +	 * memory being !migrated. Using a fixed increment will completely
+> > +	 * flatten the scan speed for a sufficiently large workload. Another
+> > +	 * scenario is due to that migration rate limit.
+> > +	 *
+> > +        if (!migrated) {
+> >  		p->numa_scan_period = min(p->numa_scan_period_max,
+> >  			p->numa_scan_period + jiffies_to_msecs(10));
+> > +	}
+> > +	 */
 > 
->  a) using DT as direct replacement for board files - this means that you 
->     are free to say that DTSes are strictly coupled with kernel version 
->     and you are free to modify the bindings - see the analogy to board 
->     files, where you could modify the platform data structures and could 
->     not directly copy board file from one kernel version to another,
+> FWIW, I'm also not happy with how the scan rate is reduced but did not
+> come up with a better alternative that was not fragile or depended on
+> gathering too much state. Granted, I also have not been treating it as a
+> high priority problem.
 
-I'm shocked to see this as a possible option.
+Right, so what Ingo did is have the scan rate depend on the convergence.
+What exactly did you dislike about that?
 
-Board files are C code anyone has the skill to edit/understand/refactor.
-Moving to DT and keep them in tree tightly coupled with the kernel
-version just adds another layer of indirection for *no purpose*.
+We could define the convergence as all the faults inside the interleave
+mask vs the total faults, and then run at: min + (1 - c)*(max-min).
 
-The fact that we loose compiler syntax/type checking (as highlighted
-somewhere else in this thread) even looks like a regression.
-
-
->  b) using DT as an ABI - this is the original way, i.e. define stable 
->     bindings and make sure that anu DTB built for older kernel will
-> work, with equal or greater set of functionality on newer kernels.
+> > +#if 0
+> >  	/*
+> >  	 * We do not care about task placement until a task runs on a node
+> >  	 * other than the first one used by the address space. This is
+> >  	 * largely because migrations are driven by what CPU the task
+> >  	 * is running on. If it's never scheduled on another node, it'll
+> >  	 * not migrate so why bother trapping the fault.
+> > +	 *
+> > +	 * APZ: seems like a bad idea for pure shared memory workloads.
+> >  	 */
+> >  	if (mm->first_nid == NUMA_PTE_SCAN_INIT)
+> >  		mm->first_nid = numa_node_id();
 > 
-Linus started the whole thing some years ago by refusing to pull ARM
-tree [1]. Reread his post, what he wants is clearly b).
+> At some point in the past scan starts were based on waiting a fixed interval
+> but that seemed like a hack designed to get around hurting kernel compile
+> benchmarks. I'll give it more thought and see can I think of a better
+> alternative that is based on an event but not this event.
 
-Going a) does not solve any problem. You are just moving churn to
-somewhere else. We had board files churn, then defconfigs churn, DTS
-files (and associated drivers) will be next.
+Ah, well the reasoning on that was that all this NUMA business is
+'expensive' so we'd better only bother with tasks that persist long
+enough for it to pay off.
 
-DT is self inflicted pain. It has to be for the greater good.
+In that regard it makes perfect sense to wait a fixed amount of runtime
+before we start scanning.
 
-Going b) *might* allow what some people here dream about, a kernel free
-of hardware knowledge. A new board could boot a kernel compiled before
-it was even designed.
+So it was not a pure hack to make kbuild work again.. that is did was
+good though.
 
-Now since I do "embedded" stuff everyday, I don't think b) can apply to
-the whole ARM world. There is just to much hardware peculiarity.
+> > @@ -1254,9 +1272,14 @@ void task_numa_work(struct callback_head
+> >  	 * Do not set pte_numa if the current running node is rate-limited.
+> >  	 * This loses statistics on the fault but if we are unwilling to
+> >  	 * migrate to this node, it is less likely we can do useful work
+> > -	 */
+> > +	 *
+> > +	 * APZ: seems like a bad idea; even if this node can't migrate anymore
+> > +	 * other nodes might and we want up-to-date information to do balance
+> > +	 * decisions.
+> > +	 *
+> >  	if (migrate_ratelimited(numa_node_id()))
+> >  		return;
+> > +	 */
+> >  
+> 
+> Ingo also disliked this but I wanted to avoid a situation where the
+> workload suffered because of a corner case where the interconnect was
+> filled with migration traffic.
 
+Right, but you already rate limit the actual migrations, this should
+leave enough bandwidth to allow the non-migrating scanning.
 
-[1] https://lkml.org/lkml/2011/3/30/525
+I think its important we keep up-to-date information if we're going to
+do placement based on it.
 
--- 
-Maxime
-
+On that rate-limit, this looks to be a hard-coded number unrelated to
+the actual hardware. I think we should at the very least make it a
+configurable number and preferably scale the number with the SLIT info.
+Or alternatively actually measure the node to node bandwidth.
 
