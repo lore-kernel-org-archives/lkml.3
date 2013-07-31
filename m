@@ -1,98 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759139Ab3GaHXU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 03:23:20 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:35272 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758847Ab3GaHXS (ORCPT
+	id S1759147Ab3GaH1Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 03:27:25 -0400
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:57782 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755280Ab3GaH1Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 03:23:18 -0400
-Date: Wed, 31 Jul 2013 17:23:14 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>, xen-devel@lists.xensource.com,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        david.vrabel@citrix.com, boris.ostrovsky@oracle.com,
-        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org
-Subject: Re: Replace in linux-next the xen, xen-two, xen-arm with
- xen/tip.git tree instead.
-Message-Id: <20130731172314.da8bcd6788eaa944a32fc268@canb.auug.org.au>
-In-Reply-To: <20130730195316.GA12124@phenom.dumpdata.com>
-References: <20130730195316.GA12124@phenom.dumpdata.com>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__31_Jul_2013_17_23_14_+1000_zY3BJZgwq9NuiIZC"
+	Wed, 31 Jul 2013 03:27:24 -0400
+Message-ID: <51F8BC5D.80605@linaro.org>
+Date: Wed, 31 Jul 2013 09:27:25 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: =?UTF-8?B?U8O2cmVuIEJyaW5rbWFubg==?= <soren.brinkmann@xilinx.com>
+CC: Stephen Boyd <sboyd@codeaurora.org>, John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Stuart Menefy <stuart.menefy@st.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: Enable arm_global_timer for Zynq brakes boot
+References: <51E72DCA.9070500@codeaurora.org> <f5b76049-7e5b-4dd0-9863-19cfd1d599b9@TX2EHSMHS006.ehs.local> <51E7435B.3060605@codeaurora.org> <ff4d40be-7177-4a55-ab2f-dff11fa18642@DB9EHSMHS009.ehs.local> <51ED8DF2.60600@codeaurora.org> <20130722201348.GI453@xsjandreislx> <0735ab8c-0f80-4b64-b2b2-8d4553482c2a@CO9EHSMHS013.ehs.local> <51F66565.7010600@linaro.org> <8d56935e-2a20-46c7-b80a-f779572dd839@CO1EHSMHS014.ehs.local> <51F77D93.4030505@linaro.org> <829dbb20-0f14-4a3b-8da9-1f7b1b5b8b59@DB8EHSMHS005.ehs.local>
+In-Reply-To: <829dbb20-0f14-4a3b-8da9-1f7b1b5b8b59@DB8EHSMHS005.ehs.local>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__31_Jul_2013_17_23_14_+1000_zY3BJZgwq9NuiIZC
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 07/31/2013 12:34 AM, Sören Brinkmann wrote:
+> On Tue, Jul 30, 2013 at 10:47:15AM +0200, Daniel Lezcano wrote:
+>> On 07/30/2013 02:03 AM, Sören Brinkmann wrote:
+>>> Hi Daniel,
+>>>
+>>> On Mon, Jul 29, 2013 at 02:51:49PM +0200, Daniel Lezcano wrote:
+>>> (snip)
+>>>>
+>>>> the CPUIDLE_FLAG_TIMER_STOP flag tells the cpuidle framework the local
+>>>> timer will be stopped when entering to the idle state. In this case, the
+>>>> cpuidle framework will call clockevents_notify(ENTER) and switches to a
+>>>> broadcast timer and will call clockevents_notify(EXIT) when exiting the
+>>>> idle state, switching the local timer back in use.
+>>>
+>>> I've been thinking about this, trying to understand how this makes my
+>>> boot attempts on Zynq hang. IIUC, the wrongly provided TIMER_STOP flag
+>>> would make the timer core switch to a broadcast device even though it
+>>> wouldn't be necessary. But shouldn't it still work? It sounds like we do
+>>> something useless, but nothing wrong in a sense that it should result in
+>>> breakage. I guess I'm missing something obvious. This timer system will
+>>> always remain a mystery to me.
+>>>
+>>> Actually this more or less leads to the question: What is this
+>>> 'broadcast timer'. I guess that is some clockevent device which is
+>>> common to all cores? (that would be the cadence_ttc for Zynq). Is the
+>>> hang pointing to some issue with that driver?
+>>
+>> If you look at the /proc/timer_list, which timer is used for broadcasting ?
+> 
+> So, the correct run results (full output attached).
+> 
+> The vanilla kernel uses the twd timers as local timers and the TTC as
+> broadcast device:
+> 	Tick Device: mode:     1                                                         
+> 	Broadcast device  
+> 	Clock Event Device: ttc_clockevent
+> 
+> When I remove the offending CPUIDLE flag and add the DT fragment to
+> enable the global timer, the twd timers are still used as local timers
+> and the broadcast device is the global timer:
+> 	Tick Device: mode:     1                                                         
+> 	Broadcast device                                                                 
+> 	Clock Event Device: arm_global_timer
+> 
+> Again, since boot hangs in the actually broken case, I don't see way to
+> obtain this information for that case.
 
-Hi Konrad,
+Hmm, interesting. Can you give the ouput of /proc/interrupts also with
+the global timer ?
 
-On Tue, 30 Jul 2013 15:53:16 -0400 Konrad Rzeszutek Wilk <konrad.wilk@oracl=
-e.com> wrote:
->
-> I was wondering if it would be possible to remove from linux-next
-> the three xen trees and instead use a combined tree, similar to the
-> x86 tip (so the various maintainers share it)?
->=20
-> The ones that would be removed are:
->=20
-> xen		git	git://git.kernel.org/pub/scm/linux/kernel/git/jeremy/xen.git#ups=
-tream/xen
-> xen-two		git	git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git=
-#linux-next
-> xen-arm		git	git://git.kernel.org/pub/scm/linux/kernel/git/sstabellini/xe=
-n.git#linux-next
->=20
-> And instead it would be pulled from:
->=20
-> xen-tip		git	git://git.kernel.org/pub/scm/linux/kernel/git/xen/tip.git#li=
-nux-next
->=20
-> I presume you need Ack's from all of us (so Jeremy and Stefano) so CC-ing=
- them here.
 
-I have replaced the xen and xen-two trees with the xen-tip tree today.  I
-will remove the xen-arm tree when I hear from Stefano (as that tree has a
-commit that is not in xen-tip currently).
+-- 
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
 
-The contacts for xen-tip are the contact for both those trees above
-(Jeremy Fitzhardinge <jeremy@goop.org>, Xen Devel
-<Xen-devel@lists.xensource.com>, Konrad Rzeszutek Wilk
-<konrad.wilk@oracle.com>).  And I will add Stefano Stabellini
-<stefano.stabellini@eu.citrix.com> when I remove the xen-arm tree.
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
-Let me know if you want changes.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Wed__31_Jul_2013_17_23_14_+1000_zY3BJZgwq9NuiIZC
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJR+LtiAAoJEECxmPOUX5FEmuwP/1v1PLrVbtKDHN5EfmPFS9gZ
-+A4ZimFGat0050t7yxD2qmGPp3FfKdZa6zNqLtA8q9BLPnv8alNHTXHHqZKYcF6w
-3PTU+EIJ+ZGvCJ7HKWwEsKcmZt20TShaHf54D/RpB7Nm9oIua5vMKh3zCN+EUyFO
-EWQ0jLrT+00VWn5DOgQpzzk1iKKKeBnqyO/4RFMgrpDUsNhVc3jgK/Gnu++QW5wU
-ikcxQA6IfMpZoP1BHn1UsCeamTjHcu293EWH58e7q0z/82XOnMeZkr359XEHTQSs
-m4khcAcrgu1Ps2G5A6LOqygzaP3OR8Zth2B4YDk8JXIYE7ydT92GM0FZvZ5v4btP
-bpHx8JRqaurYStUINa7fjTKkbfMAwCYE0PrIq5YUb21rrUC2hlN0yzm5TWG2B2KT
-tIN0qUQqPEebEgQUg6GbaDUxI8dKNkhaG7xHjQSLFhQ7xhCNIETHBKEjtuYooz7C
-sxsHCzKqY6dtfHTRgp2FFRchYStn5J9nqWbpbb/MOpcEJCkw7MX2MlngMbwxzSqo
-v4rnkCV43e6pwaXABpMwmvIpQPVqAdR4238S83n7dPdA4B0au8fza3Rj5u9Evgd4
-cPwOBzzlFAvCGzpQGxi3is0BNmiwEdt5izvTgvLNfK/m4WoMX0sieeUZ2OH7AvD0
-Ik0zHtzpiDx0iBLVL1Zb
-=gagu
------END PGP SIGNATURE-----
-
---Signature=_Wed__31_Jul_2013_17_23_14_+1000_zY3BJZgwq9NuiIZC--
