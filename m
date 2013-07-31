@@ -1,102 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760518Ab3GaT3l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 15:29:41 -0400
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:37337 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751888Ab3GaT3j (ORCPT
+	id S1760603Ab3GaTbc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 15:31:32 -0400
+Received: from mail-la0-f45.google.com ([209.85.215.45]:62979 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751888Ab3GaTba (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 15:29:39 -0400
-From: Tomasz Figa <tomasz.figa@gmail.com>
-To: Richard Cochran <richardcochran@gmail.com>
-Cc: mbizon@freebox.fr, Mark Rutland <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "ksummit-2013-discuss@lists.linuxfoundation.org" 
-	<ksummit-2013-discuss@lists.linuxfoundation.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Domenico Andreoli <cavokz@gmail.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Olof Johansson <olof@lixom.net>, Mark Brown <broonie@kernel.org>,
-        Arend van Spriel <arend@broadcom.com>,
-        Dave P Martin <Dave.Martin@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [Ksummit-2013-discuss] DT bindings as ABI [was: Do we have people interested in device tree janitoring / cleanup?]
-Date: Wed, 31 Jul 2013 21:29:35 +0200
-Message-ID: <1409617.9untvfnOTJ@flatron>
-User-Agent: KMail/4.10.5 (Linux/3.10.1-gentoo; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <20130731191209.GA8027@netboy>
-References: <20130725175702.GC22291@e106331-lin.cambridge.arm.com> <1999586.84BnWE5EUh@thinkpad> <20130731191209.GA8027@netboy>
+	Wed, 31 Jul 2013 15:31:30 -0400
+Message-ID: <51F9660C.6090604@iki.fi>
+Date: Wed, 31 Jul 2013 22:31:24 +0300
+From: Tuomas Tynkkynen <tuomas.tynkkynen@iki.fi>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+CC: Tuomas Tynkkynen <ttynkkynen@nvidia.com>, swarren@wwwdotorg.org,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org, Mikko Perttunen <mperttunen@nvidia.com>
+Subject: Re: [PATCH 2/2] ARM: dts: USB for Tegra114 Dalmore
+References: <1375292543-7896-1-git-send-email-ttynkkynen@nvidia.com> <1375292543-7896-3-git-send-email-ttynkkynen@nvidia.com> <51F9550F.3080503@cogentembedded.com>
+In-Reply-To: <51F9550F.3080503@cogentembedded.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 31 of July 2013 21:12:09 Richard Cochran wrote:
-> On Wed, Jul 31, 2013 at 05:23:35PM +0200, Tomasz Figa wrote:
-> > I said it many, many times, that a) and b) I proposed are just two
-> > extremes. It is unlikely that an extreme solution will be the best
-> > option to choose. I am strongly for something in the middle, just
-> > like I wrote in several of my previous replies.
-> > 
-> > This is something that should be commented, not those extreme options.
-> 
-> We are saying that pursuing a) is useless because it adds pain and
-> complexity without adding benefit. I simply don't buy your argument
-> that DT makes a better platform data, but that is besides the point.
-> 
-> I had said, think about the users.  You said, what users?  I wrote a
-> clear and concise use case.  You said, lets think about a) and b) and
-> all the shades of gray in between.
+Hello,
 
-I showed you two example solutions that could handle this use case without 
-stable binding ABI, just to prove that b) is not the only option (even if 
-it's the best one, which I continue to agree on, don't get me wrong).
+On 31/07/13 21:18, Sergei Shtylyov wrote:
+> Hello.
+>
+> On 07/31/2013 09:42 PM, Tuomas Tynkkynen wrote:
+>
+>> From: Mikko Perttunen <mperttunen@nvidia.com>
+>
+>> Device tree entries for the three EHCI controllers on Tegra114.
+>> Enables the the third controller (USB host) on Dalmore.
+>
+>     I would have done the board patch separately from the SoC one.
+>
+>> Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
+> [...]
+>
+>> diff --git a/arch/arm/boot/dts/tegra114.dtsi
+>> b/arch/arm/boot/dts/tegra114.dtsi
+>> index abf6c40..2905145 100644
+>> --- a/arch/arm/boot/dts/tegra114.dtsi
+>> +++ b/arch/arm/boot/dts/tegra114.dtsi
+>> @@ -430,6 +430,68 @@
+>>           status = "disable";
+>>       };
+>>
+>> +    usb@7d000000 {
+>> +        compatible = "nvidia,tegra30-ehci", "usb-ehci";
+>> +        reg = <0x7d000000 0x4000>;
+>> +        interrupts = <GIC_SPI 20 IRQ_TYPE_LEVEL_HIGH>;
+>> +        phy_type = "utmi";
+>> +        clocks = <&tegra_car TEGRA114_CLK_USBD>;
+>> +        nvidia,phy = <&phy1>;
+>> +        status = "disabled";
+>> +    };
+>> +
+>> +    phy1: usb-phy@7d000000 {
+>
+>     At the same address as the previous node?
 
-I also added that the use case is not fully valid, because you can't 
-magically define bindings for all future hardware, which means you can't 
-support the hardware using a DTB made before stable bindings for that 
-hardware have ever been introduced.
+Yes. The first node is for the EHCI driver and the second for the PHY 
+driver. There is some overlap in the exact registers used, so both 
+drives map the whole USB controller block.
 
-With all of this, I agreed that a DTB made for kernel 3.x, when used with 
-kernel 3.y (y > x) should provide the same or greater feature set than 
-used with kernel 3.x, in other words, this should cause no regressions. 
-Still, for new features, you will likely need to update the DTB.
+>
+>> +        compatible = "nvidia,tegra30-usb-phy";
+>> +        reg = <0x7d000000 0x4000 0x7d000000 0x4000>;
+>
+>     Hm, there must be some mistake: two similar register ranges.
 
-> In order to support the use case, you will have to provide a stable
-> ABI. You can't have a compromise solution. At the end of the day,
-> either you have a stable ABI, or you don't.
-> 
-> It was apparent to me that the arm/dt thing has been meandering around
-> since its inception, but what was surprising is that people were doing
-> this on purpose, and now they are defending this. Why can't we get a
-> firm commitment on having a stable ABI?
+The second range is used to configure the UTMI pad registers. All the 
+UTMI pad registers are located in the first USB controller's range.
 
-This is exactly what are we trying to do right now. But you don't get 
-stable things right away. You need some kind of process, for design, 
-review, staging, stabilization, etc. Without all of this we will again 
-surely end up with something pretending to be good and stable, while being 
-completely useless and only a burden to support in new code.
+>> +    usb@7d008000 {
+>> +        compatible = "nvidia,tegra30-ehci", "usb-ehci";
+>> +        reg = <0x7d008000 0x4000>;
+>> +        interrupts = <GIC_SPI 97 IRQ_TYPE_LEVEL_HIGH>;
+>> +        phy_type = "utmi";
+>> +        clocks = <&tegra_car TEGRA114_CLK_USB3>;
+>> +        nvidia,phy = <&phy3>;
+>> +        status = "disabled";
+>> +    };
+>> +
+>> +    phy3: usb-phy@7d008000 {
+>
+>     Again at the same address as previous node?
+>
+>> +        compatible = "nvidia,tegra30-usb-phy";
+>> +        reg = <0x7d008000 0x4000 0x7d000000 0x4000>;
+>
+>     Second range conflicts with previous nodes.
+>
+> WBR, Sergei
 
-So, again, to summarize, my view on this is as follows:
- - there is a list of best practices for binding design and existing 
-   stable bindings that can be used to help for designing new bindings,
- - new bindings go through review process,
- - after positive review, such bindings gets staging status, i.e. they are 
-   marked as something that could change,
- - after some period of time (we need to define this precisely) they get 
-   frozen and can't be changed in a way that breaks compatibility any
-   more. In other words, they become ABI.
-
-What do you think?
-
-Best regards,
-Tomasz
-
+All these entries mapping the same address are expected. See
+arch/arm/boot/dts/tegra20.dtsi for an existing example of Tegra USB 
+bindings.
