@@ -1,45 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759718Ab3GaNZk (ORCPT <rfc822;w@1wt.eu>);
+	id S1760141Ab3GaNtv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 09:49:51 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46866 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752495Ab3GaNZk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 31 Jul 2013 09:25:40 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:44022 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759640Ab3GaNZg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 09:25:36 -0400
-Message-ID: <51F91030.9060606@zytor.com>
-Date: Wed, 31 Jul 2013 06:25:04 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+Content-Type: text/plain; charset="UTF-8"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Mike Rapoport <mike.rapoport@gmail.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Ramkumar Ramachandra <artagnon@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [QUERY] lguest64
-References: <CALkWK0n7zedKD4tnxKh-qMuDnMJ5RXjnPJ9EUWT=cCgiokX11A@mail.gmail.com> <51E97779.3020103@zytor.com> <87zjte9iah.fsf@rustcorp.com.au> <CABpLfohrweJd0=0eFJDO7dv2HHxx_mbP0uySMDrsZZZXExdXug@mail.gmail.com> <51F9005F.30501@zytor.com> <20130731131757.GB22124@phenom.dumpdata.com>
-In-Reply-To: <20130731131757.GB22124@phenom.dumpdata.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+CC: akpm@linux-foundation.org,
+        "=?UTF-8?q?Linus=20L=C3=BCssing?=" <linus.luessing@web.de>,
+        "David S. Miller" <davem@davemloft.net>
+Date: Wed, 31 Jul 2013 15:23:09 +0200
+Message-ID: <lsq.1375276989.485573342@decadent.org.uk>
+X-Mailer: LinuxStableQueue (scripts by bwh)
+Subject: [01/84] bridge: fix switched interval for MLD Query types
+In-Reply-To: <lsq.1375276989.251749228@decadent.org.uk>
+X-SA-Exim-Connect-IP: 151.216.67.181
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/31/2013 06:17 AM, Konrad Rzeszutek Wilk wrote:
->>
->> The big problem with pvops is that they are a permanent tax on future
->> development -- a classic case of "the hooks problem."  As such it is
->> important that there be a real, significant, use case with enough users
->> to make the pain worthwhile.  With Xen looking at sunsetting PV support
->> with a long horizon, it might currently be possible to remove pvops some
-> 
-> PV MMU parts specifically.
-> 
+3.2.50-rc1 review patch.  If anyone has any objections, please let me know.
 
-Pretty much stuff that is driverized on plain hardware doesn't matter.
-What are you looking at with respect to the basic CPU control state?
+------------------
 
-	-hpa
+From: Linus Lüssing <linus.luessing@web.de>
 
+[ Upstream commit 32de868cbc6bee010d2cee95b5071b25ecbec8c3 ]
+
+General Queries (the one with the Multicast Address field
+set to zero / '::') are supposed to have a Maximum Response Delay
+of [Query Response Interval], while for Multicast-Address-Specific
+Queries it is [Last Listener Query Interval] - not the other way
+round. (see RFC2710, section 7.3+7.8)
+
+Signed-off-by: Linus Lüssing <linus.luessing@web.de>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ net/bridge/br_multicast.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/net/bridge/br_multicast.c b/net/bridge/br_multicast.c
+index 5ac1811..b81500c 100644
+--- a/net/bridge/br_multicast.c
++++ b/net/bridge/br_multicast.c
+@@ -467,8 +467,9 @@ static struct sk_buff *br_ip6_multicast_alloc_query(struct net_bridge *br,
+ 	skb_set_transport_header(skb, skb->len);
+ 	mldq = (struct mld_msg *) icmp6_hdr(skb);
+ 
+-	interval = ipv6_addr_any(group) ? br->multicast_last_member_interval :
+-					  br->multicast_query_response_interval;
++	interval = ipv6_addr_any(group) ?
++			br->multicast_query_response_interval :
++			br->multicast_last_member_interval;
+ 
+ 	mldq->mld_type = ICMPV6_MGM_QUERY;
+ 	mldq->mld_code = 0;
 
