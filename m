@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760191Ab3GaNpz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 09:45:55 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46956 "EHLO
+	id S1760160Ab3GaNpx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 09:45:53 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46963 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759739Ab3GaNZq (ORCPT
+	by vger.kernel.org with ESMTP id S1759630Ab3GaNZq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 31 Jul 2013 09:25:46 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Josef Bacik" <jbacik@fusionio.com>,
-        "Alex Lyakas" <alex.btrfs@zadarastorage.com>
+CC: akpm@linux-foundation.org, "Andy Ritger" <aritger@nvidia.com>,
+        "Takashi Iwai" <tiwai@suse.de>, "Daniel Dadap" <ddadap@nvidia.com>,
+        "Aaron Plattner" <aplattner@nvidia.com>
 Date: Wed, 31 Jul 2013 15:23:09 +0200
-Message-ID: <lsq.1375276989.243471@decadent.org.uk>
+Message-ID: <lsq.1375276989.999769726@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [54/84] Btrfs: fix lock leak when resuming snapshot deletion
+Subject: [50/84] ALSA: hda - Add new GPU codec ID to snd-hda
 In-Reply-To: <lsq.1375276989.251749228@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.216.67.181
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,38 +32,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josef Bacik <jbacik@fusionio.com>
+From: Aaron Plattner <aplattner@nvidia.com>
 
-commit fec386ac1428f9c0e672df952cbca5cebd4e4e2f upstream.
+commit 7ae48b56f8d9c836259bc02f3e2ea4962d6b5d1b upstream.
 
-We aren't setting path->locks[level] when we resume a snapshot deletion which
-means we won't unlock the buffer when we free the path.  This causes deadlocks
-if we happen to re-allocate the block before we've evicted the extent buffer
-from cache.  Thanks,
+Vendor ID 0x10de0051 is used by a yet-to-be-named GPU chip.
 
-Reported-by: Alex Lyakas <alex.btrfs@zadarastorage.com>
-Signed-off-by: Josef Bacik <jbacik@fusionio.com>
+Signed-off-by: Aaron Plattner <aplattner@nvidia.com>
+Acked-by: Andy Ritger <aritger@nvidia.com>
+Reviewed-by: Daniel Dadap <ddadap@nvidia.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/btrfs/extent-tree.c | 2 ++
+ sound/pci/hda/patch_hdmi.c | 2 ++
  1 file changed, 2 insertions(+)
 
---- a/fs/btrfs/extent-tree.c
-+++ b/fs/btrfs/extent-tree.c
-@@ -6614,6 +6614,7 @@ void btrfs_drop_snapshot(struct btrfs_ro
- 		while (1) {
- 			btrfs_tree_lock(path->nodes[level]);
- 			btrfs_set_lock_blocking(path->nodes[level]);
-+			path->locks[level] = BTRFS_WRITE_LOCK_BLOCKING;
- 
- 			ret = btrfs_lookup_extent_info(trans, root,
- 						path->nodes[level]->start,
-@@ -6627,6 +6628,7 @@ void btrfs_drop_snapshot(struct btrfs_ro
- 				break;
- 
- 			btrfs_tree_unlock(path->nodes[level]);
-+			path->locks[level] = 0;
- 			WARN_ON(wc->refs[level] != 1);
- 			level--;
- 		}
+--- a/sound/pci/hda/patch_hdmi.c
++++ b/sound/pci/hda/patch_hdmi.c
+@@ -1897,6 +1897,7 @@ static const struct hda_codec_preset snd
+ { .id = 0x10de0042, .name = "GPU 42 HDMI/DP",	.patch = patch_generic_hdmi },
+ { .id = 0x10de0043, .name = "GPU 43 HDMI/DP",	.patch = patch_generic_hdmi },
+ { .id = 0x10de0044, .name = "GPU 44 HDMI/DP",	.patch = patch_generic_hdmi },
++{ .id = 0x10de0051, .name = "GPU 51 HDMI/DP",	.patch = patch_generic_hdmi },
+ { .id = 0x10de0067, .name = "MCP67 HDMI",	.patch = patch_nvhdmi_2ch },
+ { .id = 0x10de8001, .name = "MCP73 HDMI",	.patch = patch_nvhdmi_2ch },
+ { .id = 0x80860054, .name = "IbexPeak HDMI",	.patch = patch_generic_hdmi },
+@@ -1943,6 +1944,7 @@ MODULE_ALIAS("snd-hda-codec-id:10de0041"
+ MODULE_ALIAS("snd-hda-codec-id:10de0042");
+ MODULE_ALIAS("snd-hda-codec-id:10de0043");
+ MODULE_ALIAS("snd-hda-codec-id:10de0044");
++MODULE_ALIAS("snd-hda-codec-id:10de0051");
+ MODULE_ALIAS("snd-hda-codec-id:10de0067");
+ MODULE_ALIAS("snd-hda-codec-id:10de8001");
+ MODULE_ALIAS("snd-hda-codec-id:17e80047");
 
