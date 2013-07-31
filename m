@@ -1,163 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760686Ab3GaTt4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 15:49:56 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:29471 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754425Ab3GaTtz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 15:49:55 -0400
-X-Authority-Analysis: v=2.0 cv=aqMw+FlV c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=0VS4G58IZu0A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=laNjaRT52OkA:10 a=HpRuFPVUsIMZKc_IP30A:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-ID: <1375300192.5418.17.camel@gandalf.local.home>
-Subject: Re: [RFC][PATCH 3/4] tracing/kprobes: Fail to unregister if probe
- event files are open
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Wed, 31 Jul 2013 15:49:52 -0400
-In-Reply-To: <20130704034038.819592356@goodmis.org>
-References: <20130704033347.807661713@goodmis.org>
-	 <20130704034038.819592356@goodmis.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1760695Ab3GaTxG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 15:53:06 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:32861 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753245Ab3GaTxD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 15:53:03 -0400
+X-IronPort-AV: E=Sophos;i="4.89,789,1367971200"; 
+   d="scan'208";a="40581429"
+Date: Wed, 31 Jul 2013 20:52:50 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: <xen-devel@lists.xensource.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>
+Subject: [PATCH v2 RFC 0/8] enable swiotlb-xen on arm and arm64
+Message-ID: <alpine.DEB.2.02.1307312048511.4893@kaball.uk.xensource.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-07-03 at 23:33 -0400, Steven Rostedt wrote:
-> plain text document attachment
-> (0003-tracing-kprobes-Fail-to-unregister-if-probe-event-fi.patch)
-> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
-> 
-> When one of the event files is opened, we need to prevent them from
-> being removed. Modules do with with the module owner set (automated
-> from the VFS layer).  The ftrace buffer instances have a ref count added
-> to the trace_array when the enabled file is opened (the others are not
-> that big of a deal, as they only reference the event calls which
-> still exist when an instance disappears). But kprobes and uprobes
-> do not have any protection.
-> 
->  # cd /sys/kernel/debug/tracing
->  # echo 'p:sigprocmask sigprocmask' > kprobe_events || exit -1
->  # enable_probe() {
->     sleep 10
->     echo 1
->  }
->  # file=events/kprobes/sigprocmask/enable
->  # enable_probe > $file &
->  > kprobe_events
-> 
-> The above will corrupt the kprobe system, as the write to the enable
-> file will happen after the kprobe was deleted.
-> 
-> Trying to create the probe again fails:
-> 
->  # echo 'p:sigprocmask sigprocmask' > kprobe_events
->  # cat kprobe_events
-> p:kprobes/sigprocmask sigprocmask
->  # ls events/kprobes/
-> enable  filter
+Hi all,
+this patch series enables xen-swiotlb on arm and arm64.
 
-Oleg,
+Considering that all guests, including dom0, run on xen on arm with
+second stage translation enabled, it follows that without an IOMMU no
+guests could actually drive the hardware.
 
-The above no longer triggers the bug due to your changes. The race is
-much tighter now and requires a process with the enable file opened and
-races with a write to enable it where the removal of the trace file
-checks the trace disabled, sees that it is, continues, but then the
-write enables it just as it gets deleted.
+The solution for platforms without an IOMMU is to use swiotlb-xen,
+adapted to autotranslate guests. swiotlb-xen provides a set of dma_ops
+that can be used by Linux to setup a contiguous buffer in stage-2
+addresses and use it for dma operations.
+Basically Linux asks Xen to make a buffer contiguous and gets the
+machine address for it. This buffer is going to be used by lib/swiotlb.c
+to allocate bounce buffers.
 
-Is this correct?
 
-Do you know of a way to trigger this bug? Probably requires writing
-something in C and hammer at writing '0's and '1's into the enable file,
-and then remove it. Check if it succeeds and try again.
+The first 3 patches lay the groundwork on arm and arm64 to have
+alternative dma_ops and swiotlb.
 
-Hmm, what happens without this patch now? If it is active, and we delete
-it? It will call back into the kprobes and access a tracepoint that does
-not exist? Would this cause a crash?
+The forth patch moves Xen initialization earlier so that we already know
+whether we are running on Xen at the time of initializing dma_ops on the
+platform.
 
--- Steve
+The following patches adapt swiotlb-xen to autotranslate guests (guest
+with second stage translation in hardware) and provide an arm
+implementation of xen_create_contiguous_region.
+
+
+Feedback is very welcome.
+Cheers,
+
+Stefano
 
 
 
-> 
-> Have the unregister probe fail when the event files are open, in use
-> are used by perf.
-> 
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> ---
->  kernel/trace/trace_kprobe.c |   21 +++++++++++++++------
->  1 file changed, 15 insertions(+), 6 deletions(-)
-> 
-> diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-> index 7ed6976..ffcaf42 100644
-> --- a/kernel/trace/trace_kprobe.c
-> +++ b/kernel/trace/trace_kprobe.c
-> @@ -95,7 +95,7 @@ static __kprobes bool trace_probe_is_on_module(struct trace_probe *tp)
->  }
->  
->  static int register_probe_event(struct trace_probe *tp);
-> -static void unregister_probe_event(struct trace_probe *tp);
-> +static int unregister_probe_event(struct trace_probe *tp);
->  
->  static DEFINE_MUTEX(probe_lock);
->  static LIST_HEAD(probe_list);
-> @@ -340,9 +340,12 @@ static int unregister_trace_probe(struct trace_probe *tp)
->  	if (trace_probe_is_enabled(tp))
->  		return -EBUSY;
->  
-> +	/* Will fail if probe is being used by ftrace or perf */
-> +	if (unregister_probe_event(tp))
-> +		return -EBUSY;
-> +
->  	__unregister_trace_probe(tp);
->  	list_del(&tp->list);
-> -	unregister_probe_event(tp);
->  
->  	return 0;
->  }
-> @@ -621,7 +624,9 @@ static int release_all_trace_probes(void)
->  	/* TODO: Use batch unregistration */
->  	while (!list_empty(&probe_list)) {
->  		tp = list_entry(probe_list.next, struct trace_probe, list);
-> -		unregister_trace_probe(tp);
-> +		ret = unregister_trace_probe(tp);
-> +		if (ret)
-> +			goto end;
->  		free_trace_probe(tp);
->  	}
->  
-> @@ -1242,11 +1247,15 @@ static int register_probe_event(struct trace_probe *tp)
->  	return ret;
->  }
->  
-> -static void unregister_probe_event(struct trace_probe *tp)
-> +static int unregister_probe_event(struct trace_probe *tp)
->  {
-> +	int ret;
-> +
->  	/* tp->event is unregistered in trace_remove_event_call() */
-> -	trace_remove_event_call(&tp->call);
-> -	kfree(tp->call.print_fmt);
-> +	ret = trace_remove_event_call(&tp->call);
-> +	if (!ret)
-> +		kfree(tp->call.print_fmt);
-> +	return ret;
->  }
->  
->  /* Make a debugfs interface for controlling probe points */
+Changes in v2:
+- fixed a couple of errors in xen_bus_to_phys, xen_phys_to_bus and
+xen_swiotlb_fixup.
 
 
+
+Stefano Stabellini (8):
+      arm: make SWIOTLB available
+      arm: introduce a global dma_ops pointer
+      arm64: do not initialize arm64_swiotlb if dma_ops is already set
+      xen/arm,arm64: move Xen initialization earlier
+      xen: introduce XENMEM_get_dma_buf and xen_put_dma_buf
+      xen: make xen_create_contiguous_region return the dma address
+      swiotlb-xen: support autotranslate guests
+      xen/arm,arm64: enable SWIOTLB_XEN
+
+ arch/arm/Kconfig                      |    8 ++
+ arch/arm/common/dmabounce.c           |   10 +-
+ arch/arm/include/asm/dma-mapping.h    |   27 ++++++-
+ arch/arm/include/asm/xen/hypervisor.h |    6 ++
+ arch/arm/include/asm/xen/page.h       |    2 +
+ arch/arm/kernel/setup.c               |    2 +
+ arch/arm/mm/dma-mapping.c             |    3 +
+ arch/arm/xen/Makefile                 |    2 +-
+ arch/arm/xen/enlighten.c              |   24 ++++--
+ arch/arm/xen/mm.c                     |  117 ++++++++++++++++++++++++++
+ arch/arm64/Kconfig                    |    1 +
+ arch/arm64/kernel/setup.c             |    2 +
+ arch/arm64/mm/dma-mapping.c           |    2 +
+ arch/arm64/xen/Makefile               |    2 +-
+ arch/x86/xen/mmu.c                    |    4 +-
+ drivers/xen/Kconfig                   |    1 -
+ drivers/xen/swiotlb-xen.c             |  147 +++++++++++++++++++++++++++++----
+ include/xen/interface/memory.h        |   62 ++++++++++++++
+ include/xen/xen-ops.h                 |    3 +-
+ 19 files changed, 390 insertions(+), 35 deletions(-)
+ create mode 100644 arch/arm/xen/mm.c
+
+git://git.kernel.org/pub/scm/linux/kernel/git/sstabellini/xen.git swiotlb-xen-2
