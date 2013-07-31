@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760008Ab3GaNaH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 09:30:07 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46937 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759716Ab3GaN0H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1759900Ab3GaN0H (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 31 Jul 2013 09:26:07 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46921 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759689Ab3GaNZ6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 09:25:58 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Dave Jones" <davej@redhat.com>,
-        "YOSHIFUJI Hideaki" <yoshfuji@linux-ipv6.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Hannes Frederic Sowa" <hannes@stressinduktion.org>
+CC: akpm@linux-foundation.org, "Ondrej Zary" <linux@rainbow-software.org>,
+        "Alex Deucher" <alexander.deucher@amd.com>
 Date: Wed, 31 Jul 2013 15:23:09 +0200
-Message-ID: <lsq.1375276989.816484926@decadent.org.uk>
+Message-ID: <lsq.1375276989.821675692@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [12/84] ipv6: call udp_push_pending_frames when uncorking a 
- socket with AF_INET pending data
+Subject: [63/84] drm/radeon: Another card with wrong primary dac adj
 In-Reply-To: <lsq.1375276989.251749228@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.216.67.181
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,127 +31,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+From: Ondrej Zary <linux@rainbow-software.org>
 
-[ Upstream commit 8822b64a0fa64a5dd1dfcf837c5b0be83f8c05d1 ]
+commit f7929f34fa0e0bb6736a2484fdc07d77a1653081 upstream.
 
-We accidentally call down to ip6_push_pending_frames when uncorking
-pending AF_INET data on a ipv6 socket. This results in the following
-splat (from Dave Jones):
+Hello,
+got another card with "too bright" problem:
+Sapphire Radeon VE 7000 DDR (VGA+S-Video)
 
-skbuff: skb_under_panic: text:ffffffff816765f6 len:48 put:40 head:ffff88013deb6df0 data:ffff88013deb6dec tail:0x2c end:0xc0 dev:<NULL>
-------------[ cut here ]------------
-kernel BUG at net/core/skbuff.c:126!
-invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-Modules linked in: dccp_ipv4 dccp 8021q garp bridge stp dlci mpoa snd_seq_dummy sctp fuse hidp tun bnep nfnetlink scsi_transport_iscsi rfcomm can_raw can_bcm af_802154 appletalk caif_socket can caif ipt_ULOG x25 rose af_key pppoe pppox ipx phonet irda llc2 ppp_generic slhc p8023 psnap p8022 llc crc_ccitt atm bluetooth
-+netrom ax25 nfc rfkill rds af_rxrpc coretemp hwmon kvm_intel kvm crc32c_intel snd_hda_codec_realtek ghash_clmulni_intel microcode pcspkr snd_hda_codec_hdmi snd_hda_intel snd_hda_codec snd_hwdep usb_debug snd_seq snd_seq_device snd_pcm e1000e snd_page_alloc snd_timer ptp snd pps_core soundcore xfs libcrc32c
-CPU: 2 PID: 8095 Comm: trinity-child2 Not tainted 3.10.0-rc7+ #37
-task: ffff8801f52c2520 ti: ffff8801e6430000 task.ti: ffff8801e6430000
-RIP: 0010:[<ffffffff816e759c>]  [<ffffffff816e759c>] skb_panic+0x63/0x65
-RSP: 0018:ffff8801e6431de8  EFLAGS: 00010282
-RAX: 0000000000000086 RBX: ffff8802353d3cc0 RCX: 0000000000000006
-RDX: 0000000000003b90 RSI: ffff8801f52c2ca0 RDI: ffff8801f52c2520
-RBP: ffff8801e6431e08 R08: 0000000000000000 R09: 0000000000000000
-R10: 0000000000000001 R11: 0000000000000001 R12: ffff88022ea0c800
-R13: ffff88022ea0cdf8 R14: ffff8802353ecb40 R15: ffffffff81cc7800
-FS:  00007f5720a10740(0000) GS:ffff880244c00000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 0000000005862000 CR3: 000000022843c000 CR4: 00000000001407e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000600
-Stack:
- ffff88013deb6dec 000000000000002c 00000000000000c0 ffffffff81a3f6e4
- ffff8801e6431e18 ffffffff8159a9aa ffff8801e6431e90 ffffffff816765f6
- ffffffff810b756b 0000000700000002 ffff8801e6431e40 0000fea9292aa8c0
-Call Trace:
- [<ffffffff8159a9aa>] skb_push+0x3a/0x40
- [<ffffffff816765f6>] ip6_push_pending_frames+0x1f6/0x4d0
- [<ffffffff810b756b>] ? mark_held_locks+0xbb/0x140
- [<ffffffff81694919>] udp_v6_push_pending_frames+0x2b9/0x3d0
- [<ffffffff81694660>] ? udplite_getfrag+0x20/0x20
- [<ffffffff8162092a>] udp_lib_setsockopt+0x1aa/0x1f0
- [<ffffffff811cc5e7>] ? fget_light+0x387/0x4f0
- [<ffffffff816958a4>] udpv6_setsockopt+0x34/0x40
- [<ffffffff815949f4>] sock_common_setsockopt+0x14/0x20
- [<ffffffff81593c31>] SyS_setsockopt+0x71/0xd0
- [<ffffffff816f5d54>] tracesys+0xdd/0xe2
-Code: 00 00 48 89 44 24 10 8b 87 d8 00 00 00 48 89 44 24 08 48 8b 87 e8 00 00 00 48 c7 c7 c0 04 aa 81 48 89 04 24 31 c0 e8 e1 7e ff ff <0f> 0b 55 48 89 e5 0f 0b 55 48 89 e5 0f 0b 55 48 89 e5 0f 0b 55
-RIP  [<ffffffff816e759c>] skb_panic+0x63/0x65
- RSP <ffff8801e6431de8>
+lspci -vnn:
+01:00.0 VGA compatible controller [0300]: Advanced Micro Devices [AMD] nee ATI RV100 QY [Radeon 7000/VE] [1002:5159] (prog-if 00 [VGA controller])
+        Subsystem: PC Partner Limited Sapphire Radeon VE 7000 DDR [174b:7c28]
 
-This patch adds a check if the pending data is of address family AF_INET
-and directly calls udp_push_ending_frames from udp_v6_push_pending_frames
-if that is the case.
+The patch below fixes the problem for this card.
+But I don't like the blacklist, couldn't some heuristic be used instead?
+The interesting thing is that the manufacturer is the same as the other card
+needing the same quirk. I wonder how many different types are broken this way.
 
-This bug was found by Dave Jones with trinity.
+The "wrong" ps2_pdac_adj value that comes from BIOS on this card is 0x300.
 
-(Also move the initialization of fl6 below the AF_INET check, even if
-not strictly necessary.)
+====================
+drm/radeon: Add primary dac adj quirk for Sapphire Radeon VE 7000 DDR
 
-Cc: Dave Jones <davej@redhat.com>
-Cc: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Values from BIOS are wrong, causing too bright colors.
+Use default values instead.
+
+Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- include/net/udp.h | 1 +
- net/ipv4/udp.c    | 3 ++-
- net/ipv6/udp.c    | 7 ++++++-
- 3 files changed, 9 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/radeon/radeon_combios.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/include/net/udp.h b/include/net/udp.h
-index 3b285f4..e158330 100644
---- a/include/net/udp.h
-+++ b/include/net/udp.h
-@@ -180,6 +180,7 @@ extern int udp_get_port(struct sock *sk, unsigned short snum,
- extern void udp_err(struct sk_buff *, u32);
- extern int udp_sendmsg(struct kiocb *iocb, struct sock *sk,
- 			    struct msghdr *msg, size_t len);
-+extern int udp_push_pending_frames(struct sock *sk);
- extern void udp_flush_pending_frames(struct sock *sk);
- extern int udp_rcv(struct sk_buff *skb);
- extern int udp_ioctl(struct sock *sk, int cmd, unsigned long arg);
-diff --git a/net/ipv4/udp.c b/net/ipv4/udp.c
-index 5a65eea..5decc93 100644
---- a/net/ipv4/udp.c
-+++ b/net/ipv4/udp.c
-@@ -766,7 +766,7 @@ send:
- /*
-  * Push out all pending data as one UDP datagram. Socket is locked.
-  */
--static int udp_push_pending_frames(struct sock *sk)
-+int udp_push_pending_frames(struct sock *sk)
- {
- 	struct udp_sock  *up = udp_sk(sk);
- 	struct inet_sock *inet = inet_sk(sk);
-@@ -785,6 +785,7 @@ out:
- 	up->pending = 0;
- 	return err;
- }
-+EXPORT_SYMBOL(udp_push_pending_frames);
+--- a/drivers/gpu/drm/radeon/radeon_combios.c
++++ b/drivers/gpu/drm/radeon/radeon_combios.c
+@@ -959,10 +959,14 @@ struct radeon_encoder_primary_dac *radeo
+ 	}
  
- int udp_sendmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
- 		size_t len)
-diff --git a/net/ipv6/udp.c b/net/ipv6/udp.c
-index 20f0812..f9e496b 100644
---- a/net/ipv6/udp.c
-+++ b/net/ipv6/udp.c
-@@ -893,11 +893,16 @@ static int udp_v6_push_pending_frames(struct sock *sk)
- 	struct udphdr *uh;
- 	struct udp_sock  *up = udp_sk(sk);
- 	struct inet_sock *inet = inet_sk(sk);
--	struct flowi6 *fl6 = &inet->cork.fl.u.ip6;
-+	struct flowi6 *fl6;
- 	int err = 0;
- 	int is_udplite = IS_UDPLITE(sk);
- 	__wsum csum = 0;
- 
-+	if (up->pending == AF_INET)
-+		return udp_push_pending_frames(sk);
-+
-+	fl6 = &inet->cork.fl.u.ip6;
-+
- 	/* Grab the skbuff where UDP header space exists. */
- 	if ((skb = skb_peek(&sk->sk_write_queue)) == NULL)
- 		goto out;
+ 	/* quirks */
++	/* Radeon 7000 (RV100) */
++	if (((dev->pdev->device == 0x5159) &&
++	    (dev->pdev->subsystem_vendor == 0x174B) &&
++	    (dev->pdev->subsystem_device == 0x7c28)) ||
+ 	/* Radeon 9100 (R200) */
+-	if ((dev->pdev->device == 0x514D) &&
++	   ((dev->pdev->device == 0x514D) &&
+ 	    (dev->pdev->subsystem_vendor == 0x174B) &&
+-	    (dev->pdev->subsystem_device == 0x7149)) {
++	    (dev->pdev->subsystem_device == 0x7149))) {
+ 		/* vbios value is bad, use the default */
+ 		found = 0;
+ 	}
 
