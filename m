@@ -1,329 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759334Ab3GaJUt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 05:20:49 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:46547 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752457Ab3GaJUr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 05:20:47 -0400
-Date: Wed, 31 Jul 2013 11:20:43 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Emilio =?iso-8859-1?Q?L=F3pez?= <emilio@elopez.com.ar>
-Cc: Mike Turquette <mturquette@linaro.org>, kevin.z.m.zh@gmail.com,
-        sunny@allwinnertech.com, shuge@allwinnertech.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] clk: sunxi: Rename the structure to prepare the
- addition of sun6i
-Message-ID: <20130731092043.GA2911@lukather>
-References: <1375195462-19566-1-git-send-email-maxime.ripard@free-electrons.com>
- <1375195462-19566-2-git-send-email-maxime.ripard@free-electrons.com>
- <51F856D6.2050504@elopez.com.ar>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="W/nzBZO5zC0uMSeA"
-Content-Disposition: inline
-In-Reply-To: <51F856D6.2050504@elopez.com.ar>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1759186Ab3GaJVg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 05:21:36 -0400
+Received: from mta2.perrit.net ([194.213.15.114]:41600 "EHLO mta2.perrit.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753905Ab3GaJVf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 05:21:35 -0400
+X-Greylist: delayed 588 seconds by postgrey-1.27 at vger.kernel.org; Wed, 31 Jul 2013 05:21:34 EDT
+Message-ID: <1375261905.2540.23.camel@jazz.koekkoek>
+Subject: Re: Link state change detection problem on Moschip MCS7832 again
+From: Jeroen Koekkoek <jeroen@koekkoek.nl>
+To: linux-kernel@vger.kernel.org
+Cc: Michael Hunold <hunold@linuxtv.org>
+Date: Wed, 31 Jul 2013 11:11:45 +0200
+In-Reply-To: <50EFE644.3000904@linuxtv.org>
+References: <50EFE644.3000904@linuxtv.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.4 (3.8.4-1.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2013-01-11 at 11:15 +0100, Michael Hunold wrote:
+> Hi,
+> 
+> I have a no-name Moschip MCS7832-based adapter shows a strange behaviour 
+> in my system after a system upgrade. "lsusb -vv" for that device is 
+> attached to the end of the mail.
+> 
+> I am using the adapter for embedded systems development, where it serves 
+> kernels via TFTP and root filesystems via NFS.
+> 
+> I have recently upgrade my system to Kubuntu 12.10 which uses a 3.5.0-21 
+> kernel. Before that upgrade the device was working fine with Xubuntu 10.10.
+> 
+> I have used the network-manager applet that comes with Kubuntu to assign 
+> a static IP address to that interface.
+> 
+> The symptom is that when the remote system's bootloader (u-boot in my 
+> case) starts to fetch the kernel via TFTP, it usually starts fine (a 
+> couple of "#" are shown to indicate progress), then timeouts are 
+> happening ("T" is shown), then progress continues, then more timeouts 
+> and so on.
+> 
+> I can see the following messages getting repeated in /var/log/syslog:
+> 
+> [...]
+> Jan 11 11:01:04 elmc-teemhu NetworkManager[1250]: <info> (eth1): carrier 
+> now OFF (device state 100, deferring action for 4 seconds)
+> Jan 11 11:01:04 elmc-teemhu NetworkManager[1250]: <info> (eth1): carrier 
+> now ON (device state 100)
+> [...]
+> 
+> I found the following bug report and this got me going:
+> https://bugzilla.kernel.org/show_bug.cgi?id=28532
+> 
+> Here is what I investigated so far.
+> 
+> 1. I noticed that the patch dabdaf0caa3af520dbc1df87b2fb4e77224037bd 
+> from Ondrej Zary is missing in the kernel Kubuntu is serving, so I 
+> downloaded the most-recent mcs7830.c from kernel.org and recompiled the 
+> module. The problem stays the same, there is no improvement.
+> 
+> 2. I undid both commits dabdaf0caa3af520dbc1df87b2fb4e77224037bd and 
+> b1ff4f96fd1c63890d78d8939c6e0f2b44ce3113 which added the "mcs7830: 
+> Implement link state detection" in the first place. Without that 
+> "feature" my adapter is now working reliably again.
+> 
+> 3. Commit dabdaf0caa3af520dbc1df87b2fb4e77224037bd had the following 
+> comment:
+> 
+> "The device had an undocumented "feature": it can provide a sequence of
+> spurious link-down status data even if the link is up all the time.
+> A sequence of 10 was seen so update the link state only after the device
+> reports the same link state 20 times."
+> 
+> I tried to increase the number from 20 gradually, but it did not help to 
+> fix the problem. In my desparation I tried 100 as well, but this only 
+> postponed the
+> 
+> 4. In my desparation, I went back to the most recent driver and added 
+> the following code to mcs7830_status() in order to track after how many 
+> calls to that function the link state changes.
+> 
+> [...]
+> {
+> 	static int xxx_counter = 0;
+> 	static int xxx_link = -1;
+> 	if (link != xxx_link) {
+> 		printk("counter %4d -> link %d\n", xxx_counter, link);
+> 		xxx_link = link;
+> 		xxx_counter = 0;
+> 	} else {
+> 		xxx_counter++;
+> 	}
+> }
+> [...]
+> 
+> This resulted in the following output:
+> 
+> Jan 11 11:01:04 elmc-teemhu kernel: [11627.025109] counter  105 -> link 0
+> Jan 11 11:01:04 elmc-teemhu kernel: [11627.101840] counter   76 -> link 1
+> Jan 11 11:01:04 elmc-teemhu kernel: [11627.207724] counter  105 -> link 0
+> Jan 11 11:01:04 elmc-teemhu kernel: [11627.285582] counter   77 -> link 1
+> Jan 11 11:01:04 elmc-teemhu kernel: [11627.392416] counter  106 -> link 0
+> Jan 11 11:01:04 elmc-teemhu kernel: [11627.468149] counter   75 -> link 1
+> Jan 11 11:01:04 elmc-teemhu kernel: [11627.574036] counter  105 -> link 0
+> Jan 11 11:01:04 elmc-teemhu kernel: [11627.651893] counter   77 -> link 1
+> Jan 11 11:01:04 elmc-teemhu kernel: [11627.757719] counter  105 -> link 0
+> Jan 11 11:01:04 elmc-teemhu NetworkManager[1250]: <info> (eth1): carrier 
+> now OFF (device state 100, deferring action for 4 seconds)
+> Jan 11 11:01:04 elmc-teemhu kernel: [11627.834546] counter   76 -> link 1
+> Jan 11 11:01:04 elmc-teemhu NetworkManager[1250]: <info> (eth1): carrier 
+> now ON (device state 100)
+> Jan 11 11:01:05 elmc-teemhu kernel: [11627.939259] counter  104 -> link 0
+> Jan 11 11:01:05 elmc-teemhu kernel: [11628.018204] counter   78 -> link 1
+> 
+> So it seems the link state is constantly toggling and the network 
+> manager eventually picks that up and does some reconfiguratation to the 
+> network interface which disturbs both TFTP and NFS.
+> 
+> As I already said above, when I undo both commits then everything is 
+> working fine again. Network manager is not complaining any more and TFTP 
+> and NFS is working fine.
+> 
+> Any idea what is wrong with that adapter? Is it unable to report link 
+> state changes correctly at all?
+> 
+> How to make the current driver work correctly without reverting the two 
+> commit completly?
+> 
+> Best regards
+> Michael.
 
---W/nzBZO5zC0uMSeA
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi,
 
-Hi Emilio,
+I'm experiencing the same problem. After reverting the commits below, my
+problems disappeared.
 
-On Tue, Jul 30, 2013 at 09:14:14PM -0300, Emilio L=F3pez wrote:
-> Hi Maxime,
->=20
-> El 30/07/13 11:44, Maxime Ripard escribi=F3:
-> > Rename all the generic-named structure to sun4i to avoid confusion when
-> > we will introduce the sun6i (A31) clocks.
-> >=20
-> > While we're at it, avoid too long lines and wrap the DT compatibles
-> > tables.
-> >=20
-> > Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
->=20
-> Overall the patch looks good :)
->=20
-> > ---
-> >  drivers/clk/sunxi/clk-sunxi.c | 108 +++++++++++++++++++++++++++++-----=
---------
-> >  1 file changed, 75 insertions(+), 33 deletions(-)
-> >=20
-> > diff --git a/drivers/clk/sunxi/clk-sunxi.c b/drivers/clk/sunxi/clk-sunx=
-i.c
-> > index fe1528e..3c91888 100644
-> > --- a/drivers/clk/sunxi/clk-sunxi.c
-> > +++ b/drivers/clk/sunxi/clk-sunxi.c
-> > @@ -25,12 +25,12 @@
-> >  static DEFINE_SPINLOCK(clk_lock);
-> > =20
-> >  /**
-> > - * sunxi_osc_clk_setup() - Setup function for gatable oscillator
-> > + * sun4i_osc_clk_setup() - Setup function for gatable oscillator
-> >   */
-> > =20
-> >  #define SUNXI_OSC24M_GATE	0
-> > =20
-> > -static void __init sunxi_osc_clk_setup(struct device_node *node)
-> > +static void __init sun4i_osc_clk_setup(struct device_node *node)
-> >  {
-> >  	struct clk *clk;
-> >  	struct clk_fixed_rate *fixed;
-> > @@ -73,13 +73,13 @@ static void __init sunxi_osc_clk_setup(struct devic=
-e_node *node)
-> > =20
-> > =20
-> >  /**
-> > - * sunxi_get_pll1_factors() - calculates n, k, m, p factors for PLL1
-> > + * sun4i_get_pll1_factors() - calculates n, k, m, p factors for PLL1
-> >   * PLL1 rate is calculated as follows
-> >   * rate =3D (parent_rate * n * (k + 1) >> p) / (m + 1);
-> >   * parent_rate is always 24Mhz
-> >   */
-> > =20
-> > -static void sunxi_get_pll1_factors(u32 *freq, u32 parent_rate,
-> > +static void sun4i_get_pll1_factors(u32 *freq, u32 parent_rate,
-> >  				   u8 *n, u8 *k, u8 *m, u8 *p)
-> >  {
-> >  	u8 div;
-> > @@ -127,12 +127,12 @@ static void sunxi_get_pll1_factors(u32 *freq, u32=
- parent_rate,
-> > =20
-> > =20
-> >  /**
-> > - * sunxi_get_apb1_factors() - calculates m, p factors for APB1
-> > + * sun4i_get_apb1_factors() - calculates m, p factors for APB1
-> >   * APB1 rate is calculated as follows
-> >   * rate =3D (parent_rate >> p) / (m + 1);
-> >   */
-> > =20
-> > -static void sunxi_get_apb1_factors(u32 *freq, u32 parent_rate,
-> > +static void sun4i_get_apb1_factors(u32 *freq, u32 parent_rate,
-> >  				   u8 *n, u8 *k, u8 *m, u8 *p)
-> >  {
-> >  	u8 calcm, calcp;
-> > @@ -178,7 +178,7 @@ struct factors_data {
-> >  	void (*getter) (u32 *rate, u32 parent_rate, u8 *n, u8 *k, u8 *m, u8 *=
-p);
-> >  };
-> > =20
-> > -static struct clk_factors_config pll1_config =3D {
-> > +static struct clk_factors_config sun4i_pll1_config =3D {
-> >  	.nshift =3D 8,
-> >  	.nwidth =3D 5,
-> >  	.kshift =3D 4,
-> > @@ -189,21 +189,21 @@ static struct clk_factors_config pll1_config =3D {
-> >  	.pwidth =3D 2,
-> >  };
-> > =20
-> > -static struct clk_factors_config apb1_config =3D {
-> > +static struct clk_factors_config sun4i_apb1_config =3D {
-> >  	.mshift =3D 0,
-> >  	.mwidth =3D 5,
-> >  	.pshift =3D 16,
-> >  	.pwidth =3D 2,
-> >  };
-> > =20
-> > -static const __initconst struct factors_data pll1_data =3D {
-> > -	.table =3D &pll1_config,
-> > -	.getter =3D sunxi_get_pll1_factors,
-> > +static const __initconst struct factors_data sun4i_pll1_data =3D {
-> > +	.table =3D &sun4i_pll1_config,
-> > +	.getter =3D sun4i_get_pll1_factors,
-> >  };
-> > =20
-> > -static const __initconst struct factors_data apb1_data =3D {
-> > -	.table =3D &apb1_config,
-> > -	.getter =3D sunxi_get_apb1_factors,
-> > +static const __initconst struct factors_data sun4i_apb1_data =3D {
-> > +	.table =3D &sun4i_apb1_config,
-> > +	.getter =3D sun4i_get_apb1_factors,
-> >  };
-> > =20
-> >  static void __init sunxi_factors_clk_setup(struct device_node *node,
-> > @@ -239,11 +239,11 @@ struct mux_data {
-> >  	u8 shift;
-> >  };
-> > =20
-> > -static const __initconst struct mux_data cpu_mux_data =3D {
-> > +static const __initconst struct mux_data sun4i_cpu_mux_data =3D {
-> >  	.shift =3D 16,
-> >  };
-> > =20
-> > -static const __initconst struct mux_data apb1_mux_data =3D {
-> > +static const __initconst struct mux_data sun4i_apb1_mux_data =3D {
-> >  	.shift =3D 24,
-> >  };
-> > =20
-> > @@ -284,17 +284,17 @@ struct div_data {
-> >  	u8 pow;
-> >  };
-> > =20
-> > -static const __initconst struct div_data axi_data =3D {
-> > +static const __initconst struct div_data sun4i_axi_data =3D {
-> >  	.shift =3D 0,
-> >  	.pow =3D 0,
-> >  };
-> > =20
-> > -static const __initconst struct div_data ahb_data =3D {
-> > +static const __initconst struct div_data sun4i_ahb_data =3D {
-> >  	.shift =3D 4,
-> >  	.pow =3D 1,
-> >  };
-> > =20
-> > -static const __initconst struct div_data apb0_data =3D {
-> > +static const __initconst struct div_data sun4i_apb0_data =3D {
-> >  	.shift =3D 8,
-> >  	.pow =3D 1,
-> >  };
-> > @@ -413,35 +413,77 @@ CLK_OF_DECLARE(sunxi_osc, "allwinner,sun4i-osc-cl=
-k", sunxi_osc_clk_setup);
-> > =20
-> >  /* Matches for factors clocks */
-> >  static const __initconst struct of_device_id clk_factors_match[] =3D {
-> > -	{.compatible =3D "allwinner,sun4i-pll1-clk", .data =3D &pll1_data,},
-> > -	{.compatible =3D "allwinner,sun4i-apb1-clk", .data =3D &apb1_data,},
-> > +	{
-> > +		.compatible =3D "allwinner,sun4i-pll1-clk",
-> > +		.data =3D &sun4i_pll1_data,
-> > +	},
-> > +	{
-> > +		.compatible =3D "allwinner,sun4i-apb1-clk",
-> > +		.data =3D &sun4i_apb1_data,
-> > +	},
-> >  	{}
-> >  };
-> > =20
-> >  /* Matches for divider clocks */
-> >  static const __initconst struct of_device_id clk_div_match[] =3D {
-> > -	{.compatible =3D "allwinner,sun4i-axi-clk", .data =3D &axi_data,},
-> > -	{.compatible =3D "allwinner,sun4i-ahb-clk", .data =3D &ahb_data,},
-> > -	{.compatible =3D "allwinner,sun4i-apb0-clk", .data =3D &apb0_data,},
-> > +	{
-> > +		.compatible =3D "allwinner,sun4i-axi-clk",
-> > +		.data =3D &sun4i_axi_data,
-> > +	},
-> > +	{
-> > +		.compatible =3D "allwinner,sun4i-ahb-clk",
-> > +		.data =3D &sun4i_ahb_data,
-> > +	},
-> > +	{
-> > +		.compatible =3D "allwinner,sun4i-apb0-clk",
-> > +		.data =3D &sun4i_apb0_data,
-> > +	},
-> >  	{}
-> >  };
-> > =20
-> >  /* Matches for mux clocks */
-> >  static const __initconst struct of_device_id clk_mux_match[] =3D {
-> > -	{.compatible =3D "allwinner,sun4i-cpu-clk", .data =3D &cpu_mux_data,},
-> > -	{.compatible =3D "allwinner,sun4i-apb1-mux-clk", .data =3D &apb1_mux_=
-data,},
-> > +	{
-> > +		.compatible =3D "allwinner,sun4i-cpu-clk",
-> > +		.data =3D &sun4i_cpu_mux_data,
-> > +	},
-> > +	{
-> > +		.compatible =3D "allwinner,sun4i-apb1-mux-clk",
-> > +		.data =3D &sun4i_apb1_mux_data,
-> > +	},
-> >  	{}
-> >  };
-> > =20
-> >  /* Matches for gate clocks */
-> >  static const __initconst struct of_device_id clk_gates_match[] =3D {
-> > -	{.compatible =3D "allwinner,sun4i-axi-gates-clk", .data =3D &sun4i_ax=
-i_gates_data,},
-> > -	{.compatible =3D "allwinner,sun4i-ahb-gates-clk", .data =3D &sun4i_ah=
-b_gates_data,},
-> > -	{.compatible =3D "allwinner,sun5i-a13-ahb-gates-clk", .data =3D &sun5=
-i_a13_ahb_gates_data,},
-> > -	{.compatible =3D "allwinner,sun4i-apb0-gates-clk", .data =3D &sun4i_a=
-pb0_gates_data,},
-> > -	{.compatible =3D "allwinner,sun5i-a13-apb0-gates-clk", .data =3D &sun=
-5i_a13_apb0_gates_data,},
-> > -	{.compatible =3D "allwinner,sun4i-apb1-gates-clk", .data =3D &sun4i_a=
-pb1_gates_data,},
-> > -	{.compatible =3D "allwinner,sun5i-a13-apb1-gates-clk", .data =3D &sun=
-5i_a13_apb1_gates_data,},
-> > +	{
-> > +		.compatible =3D "allwinner,sun4i-axi-gates-clk",
-> > +		.data =3D &sun4i_axi_gates_data,
-> > +	},
-> > +	{
-> > +		.compatible =3D "allwinner,sun4i-ahb-gates-clk",
-> > +		.data =3D &sun4i_ahb_gates_data,
-> > +	},
-> > +	{
-> > +		.compatible =3D "allwinner,sun5i-a13-ahb-gates-clk",
-> > +		.data =3D &sun5i_a13_ahb_gates_data,
-> > +	},
-> > +	{
-> > +		.compatible =3D "allwinner,sun4i-apb0-gates-clk",
-> > +		.data =3D &sun4i_apb0_gates_data,
-> > +	},
-> > +	{
-> > +		.compatible =3D "allwinner,sun5i-a13-apb0-gates-clk",
-> > +		.data =3D &sun5i_a13_apb0_gates_data,
-> > +	},
-> > +	{
-> > +		.compatible =3D "allwinner,sun4i-apb1-gates-clk",
-> > +		.data =3D &sun4i_apb1_gates_data,
-> > +	},
-> > +	{
-> > +		.compatible =3D "allwinner,sun5i-a13-apb1-gates-clk",
-> > +		.data =3D &sun5i_a13_apb1_gates_data,
-> > +	},
-> >  	{}
-> >  };
-> > =20
->=20
-> I'm not particularly a fan of this though; in my opinion it hurts
-> readability a bit and it uses 4x the lines. It looks like a highly
-> probable source of git conflicts too if not handled appropriately :)
+commit b1ff4f96fd1c63890d78d8939c6e0f2b44ce3113
+	mcs7830: Implement link state detection
 
-Yeah, I'll drop it just like for pinctrl then.
+commit b1ff4f96fd1c63890d78d8939c6e0f2b44ce3113
+	mcs7830: Implement link state detection
 
->=20
-> Other than that,
->=20
-> Reviewed-by: Emilio L=F3pez <emilio@elopez.com.ar>
+I'm running Fedora 19 (Linux laptop.lan 3.10.3-300.fc19.x86_64 #1 SMP
+Fri Jul 26 00:00:58 UTC 2013 x86_64 x86_64 x86_64 GNU/Linux).
 
-Thanks!
-Maxime
+Best regards,
+Jeroen Koekkoek
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---W/nzBZO5zC0uMSeA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR+NbrAAoJEBx+YmzsjxAgGqIP/ihTdxjd2d5Ns9DZQDGAVVkZ
-4SJoQlE8dC4CrUZb41Cp5CKMwCaLViqktSOifyXZ6dqLLrf4hLcW5kBvOzIwWoZs
-u84fex7PTo6+HdftWLrNAKrAlHm360NWMUNx/hgislmlPvFUKggVgNGhljrw3zYy
-FYopoJOHv3xjjvzjHSSq7l8NVKNlON7pO1lVyntBl1J/Omyl3O4oviMCMrseeLlZ
-DxkGmP8Yh724L7eeqKDYLqVhYBIBluVNHD+k0EliJQJaYXCtbiXMHVLApd77IH5Q
-OSLYRE8g9sVLnV8Mk8NcRl5Um1f5q6H/6YAPsWTFn7ksfpkl94Xh4kHg+xuADATb
-3NSDclA3sRkbNDlv1Dnb3HNCH5P4pMGMO/GTnL2vrfOnFtCfK41bUyI1HN21t+kW
-kp1CqVCixnoHyTY3hxzZRmmcMVRMRJMnh7+FgxHfGB9KGPcViOKN2LZXxDiNbNNV
-5REQrVSfpM2XNHVF8tfkWK78LVDGRPYkT7UIsz5AppBVzJxz7AHJvsqKL0OYtZdI
-nbbaSUM2K99RWnxaNWZ7DjJX1gyPc0eaEkZkLa8SJfph5q7roPKVB3EEwYstdqhd
-HT+Toy21zgM98LCA/MNhkU+JI48aLckZwb/TKGswiaBl6DfwNDJ/LCwMSaOFnA2k
-xWV+HOl9UR0TyTF3h2JO
-=BE9/
------END PGP SIGNATURE-----
-
---W/nzBZO5zC0uMSeA--
