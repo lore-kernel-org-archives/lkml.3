@@ -1,63 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759220Ab3GaIQy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 04:16:54 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:29718 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759199Ab3GaIQw (ORCPT
+	id S1759241Ab3GaIRP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 04:17:15 -0400
+Received: from relay.parallels.com ([195.214.232.42]:55102 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759217Ab3GaIRM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 04:16:52 -0400
-Message-ID: <51F8C7E8.1080909@huawei.com>
-Date: Wed, 31 Jul 2013 16:16:40 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Wed, 31 Jul 2013 04:17:12 -0400
+Message-ID: <51F8C7F4.9020504@parallels.com>
+Date: Wed, 31 Jul 2013 12:16:52 +0400
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
-Subject: [PATCH 2/7] cgroup: remove sparse tags from offline_css()
-References: <51F8C7C5.9040608@huawei.com>
-In-Reply-To: <51F8C7C5.9040608@huawei.com>
-Content-Type: text/plain; charset="GB2312"
+To: Cyrill Gorcunov <gorcunov@gmail.com>, <akpm@linux-foundation.org>
+CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        <luto@amacapital.net>, <gorcunov@openvz.org>, <mpm@selenic.com>,
+        <xiaoguangrong@linux.vnet.ibm.com>, <mtosatti@redhat.com>,
+        <kosaki.motohiro@gmail.com>, <sfr@canb.auug.org.au>,
+        <peterz@infradead.org>, <aneesh.kumar@linux.vnet.ibm.com>
+Subject: Re: [patch 2/2] [PATCH] mm: Save soft-dirty bits on file pages
+References: <20130730204154.407090410@gmail.com> <20130730204654.966378702@gmail.com>
+In-Reply-To: <20130730204654.966378702@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+X-Originating-IP: [10.30.16.114]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This should have been removed in commit d7eeac1913ff
-("cgroup: hold cgroup_mutex before calling css_offline").
+On 07/31/2013 12:41 AM, Cyrill Gorcunov wrote:
 
-While at it, update the comments.
+> Andy reported that if file page get reclaimed we loose soft-dirty bit
+> if it was there, so save _PAGE_BIT_SOFT_DIRTY bit when page address
+> get encoded into pte entry. Thus when #pf happens on such non-present
+> pte we can restore it back.
+> 
+> Reported-by: Andy Lutomirski <luto@amacapital.net>
+> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
 
-Signed-off-by: Li Zefan <lizefan@huawei.com>
----
- kernel/cgroup.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
-
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index e60eba2..916a699 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -4164,7 +4164,7 @@ static void init_cgroup_css(struct cgroup_subsys_state *css,
- 	INIT_WORK(&css->dput_work, css_dput_fn);
- }
- 
--/* invoke ->post_create() on a new CSS and mark it online if successful */
-+/* invoke ->css_online() on a new CSS and mark it online if successful */
- static int online_css(struct cgroup_subsys *ss, struct cgroup *cgrp)
- {
- 	int ret = 0;
-@@ -4178,9 +4178,8 @@ static int online_css(struct cgroup_subsys *ss, struct cgroup *cgrp)
- 	return ret;
- }
- 
--/* if the CSS is online, invoke ->pre_destory() on it and mark it offline */
-+/* if the CSS is online, invoke ->css_offline() on it and mark it offline */
- static void offline_css(struct cgroup_subsys *ss, struct cgroup *cgrp)
--	__releases(&cgroup_mutex) __acquires(&cgroup_mutex)
- {
- 	struct cgroup_subsys_state *css = cgrp->subsys[ss->subsys_id];
- 
--- 
-1.8.0.2
+Acked-by: Pavel Emelyanov <xemul@parallels.com>
