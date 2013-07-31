@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759399Ab3GaI5T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 04:57:19 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:41773 "EHLO
+	id S1759416Ab3GaI52 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 04:57:28 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:41781 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759282Ab3GaI5M (ORCPT
+	with ESMTP id S1759282Ab3GaI5W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 04:57:12 -0400
-Date: Wed, 31 Jul 2013 01:56:39 -0700
+	Wed, 31 Jul 2013 04:57:22 -0400
+Date: Wed, 31 Jul 2013 01:56:48 -0700
 From: tip-bot for Frederic Weisbecker <tipbot@zytor.com>
-Message-ID: <tip-9a545de019b536771feefb76f85e5038b65c2190@git.kernel.org>
+Message-ID: <tip-ba8a75c16e292c0a3a87406a77508cbbc6cf4ee2@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, eranian@google.com, acme@redhat.com,
         hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
         namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
@@ -18,11 +18,11 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, eranian@google.com,
         linux-kernel@vger.kernel.org, peterz@infradead.org,
         namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
         tglx@linutronix.de
-In-Reply-To: <1374539466-4799-6-git-send-email-fweisbec@gmail.com>
-References: <1374539466-4799-6-git-send-email-fweisbec@gmail.com>
+In-Reply-To: <1374539466-4799-7-git-send-email-fweisbec@gmail.com>
+References: <1374539466-4799-7-git-send-email-fweisbec@gmail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf: Migrate per cpu event accounting
-Git-Commit-ID: 9a545de019b536771feefb76f85e5038b65c2190
+Subject: [tip:perf/core] perf: Account freq events per cpu
+Git-Commit-ID: ba8a75c16e292c0a3a87406a77508cbbc6cf4ee2
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,23 +31,23 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 31 Jul 2013 01:56:45 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 31 Jul 2013 01:56:54 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  9a545de019b536771feefb76f85e5038b65c2190
-Gitweb:     http://git.kernel.org/tip/9a545de019b536771feefb76f85e5038b65c2190
+Commit-ID:  ba8a75c16e292c0a3a87406a77508cbbc6cf4ee2
+Gitweb:     http://git.kernel.org/tip/ba8a75c16e292c0a3a87406a77508cbbc6cf4ee2
 Author:     Frederic Weisbecker <fweisbec@gmail.com>
-AuthorDate: Tue, 23 Jul 2013 02:31:03 +0200
+AuthorDate: Tue, 23 Jul 2013 02:31:04 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
 CommitDate: Tue, 30 Jul 2013 22:29:14 +0200
 
-perf: Migrate per cpu event accounting
+perf: Account freq events per cpu
 
-When an event is migrated, move the event per-cpu
-accounting accordingly so that branch stack and cgroup
-events work correctly on the new CPU.
+This is going to be used by the full dynticks subsystem
+as a finer-grained information to know when to keep and
+when to stop the tick.
 
 Original-patch-by: Peter Zijlstra <peterz@infradead.org>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
@@ -56,29 +56,41 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Stephane Eranian <eranian@google.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1374539466-4799-6-git-send-email-fweisbec@gmail.com
+Link: http://lkml.kernel.org/r/1374539466-4799-7-git-send-email-fweisbec@gmail.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/events/core.c | 2 ++
- 1 file changed, 2 insertions(+)
+ kernel/events/core.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
 diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 3a4b73a..63bdec9 100644
+index 63bdec9..3fe385a 100644
 --- a/kernel/events/core.c
 +++ b/kernel/events/core.c
-@@ -7145,6 +7145,7 @@ void perf_pmu_migrate_context(struct pmu *pmu, int src_cpu, int dst_cpu)
- 	list_for_each_entry_safe(event, tmp, &src_ctx->event_list,
- 				 event_entry) {
- 		perf_remove_from_context(event);
-+		unaccount_event_cpu(event, src_cpu);
- 		put_ctx(src_ctx);
- 		list_add(&event->event_entry, &events);
+@@ -141,6 +141,7 @@ enum event_type_t {
+ struct static_key_deferred perf_sched_events __read_mostly;
+ static DEFINE_PER_CPU(atomic_t, perf_cgroup_events);
+ static DEFINE_PER_CPU(atomic_t, perf_branch_stack_events);
++static DEFINE_PER_CPU(atomic_t, perf_freq_events);
+ 
+ static atomic_t nr_mmap_events __read_mostly;
+ static atomic_t nr_comm_events __read_mostly;
+@@ -3139,6 +3140,9 @@ static void unaccount_event_cpu(struct perf_event *event, int cpu)
  	}
-@@ -7157,6 +7158,7 @@ void perf_pmu_migrate_context(struct pmu *pmu, int src_cpu, int dst_cpu)
- 		list_del(&event->event_entry);
- 		if (event->state >= PERF_EVENT_STATE_OFF)
- 			event->state = PERF_EVENT_STATE_INACTIVE;
-+		account_event_cpu(event, dst_cpu);
- 		perf_install_in_context(dst_ctx, event, dst_cpu);
- 		get_ctx(dst_ctx);
+ 	if (is_cgroup_event(event))
+ 		atomic_dec(&per_cpu(perf_cgroup_events, cpu));
++
++	if (event->attr.freq)
++		atomic_dec(&per_cpu(perf_freq_events, cpu));
+ }
+ 
+ static void unaccount_event(struct perf_event *event)
+@@ -6474,6 +6478,9 @@ static void account_event_cpu(struct perf_event *event, int cpu)
  	}
+ 	if (is_cgroup_event(event))
+ 		atomic_inc(&per_cpu(perf_cgroup_events, cpu));
++
++	if (event->attr.freq)
++		atomic_inc(&per_cpu(perf_freq_events, cpu));
+ }
+ 
+ static void account_event(struct perf_event *event)
