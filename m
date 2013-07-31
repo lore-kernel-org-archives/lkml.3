@@ -1,51 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759455Ab3GaJvl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 05:51:41 -0400
-Received: from relay.parallels.com ([195.214.232.42]:38665 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759415Ab3GaJvi (ORCPT
+	id S1759228Ab3GaJx3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 05:53:29 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:45148 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758896Ab3GaJx1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 05:51:38 -0400
-Message-ID: <51F8DE28.4000508@parallels.com>
-Date: Wed, 31 Jul 2013 13:51:36 +0400
-From: Maxim Patlasov <mpatlasov@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Wed, 31 Jul 2013 05:53:27 -0400
+Date: Wed, 31 Jul 2013 11:53:06 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jason Low <jason.low2@hp.com>
+Cc: Ingo Molnar <mingo@redhat.com>, KML <linux-kernel@vger.kernel.org>,
+        Mike Galbraith <efault@gmx.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Paul Turner <pjt@google.com>, Alex Shi <alex.shi@intel.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, aswin@hp.com, scott.norton@hp.com,
+        chegu_vinod@hp.com, Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Subject: Re: [RFC PATCH] sched: Reduce overestimating avg_idle
+Message-ID: <20130731095306.GY3008@twins.programming.kicks-ass.net>
+References: <1375263472.3922.26.camel@j-VirtualBox>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Dave Kleikamp <dave.kleikamp@oracle.com>, <linux-kernel@vger.kernel.org>,
-        <linux-fsdevel@vger.kernel.org>, Zach Brown <zab@zabbo.net>
-Subject: Re: [PATCH V8 00/33] loop: Issue O_DIRECT aio using bio_vec
-References: <1374774659-13121-1-git-send-email-dave.kleikamp@oracle.com> <20130730142820.313f1af6827276df31913106@linux-foundation.org>
-In-Reply-To: <20130730142820.313f1af6827276df31913106@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.30.17.2]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1375263472.3922.26.camel@j-VirtualBox>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-07/31/2013 01:28 AM, Andrew Morton пишет:
-> On Thu, 25 Jul 2013 12:50:26 -0500 Dave Kleikamp <dave.kleikamp@oracle.com> wrote:
->
->> This patch series adds a kernel interface to fs/aio.c so that kernel code can
->> issue concurrent asynchronous IO to file systems.  It adds an aio command and
->> file system methods which specify io memory with pages instead of userspace
->> addresses.
->>
->> This series was written to reduce the current overhead loop imposes by
->> performing synchronus buffered file system IO from a kernel thread.  These
->> patches turn loop into a light weight layer that translates bios into iocbs.
-> Do you have any performance numbers?
->
-> Does anyone care much about loop performance?  What's the value here?
->
->
+On Wed, Jul 31, 2013 at 02:37:52AM -0700, Jason Low wrote:
+> The avg_idle value may sometimes be overestimated, which may cause new idle
+> load balance to be attempted more often than it should. Currently, when
+> avg_idle gets updated, if the delta exceeds some max value (default 1000000 ns),
+> the entire avg gets set to the max value, regardless of what the previous avg
+> was. So if a CPU remains idle for 200,000 ns most of the time, and if the CPU
+> goes idle for 1,200,000 ns, the average is then pushed up to 1,000,000 ns when
+> it should be less.
+> 
+> Additionally, once the avg_idle is at its max, it may take a while to pull the
+> avg down to a value that it should be. In the above example, after the avg idle
+> is set the max value of 1000000 ns, the CPU's idle durations needs to
+> be 200000 ns for the next 8 occurrences before the avg falls below the migration
+> cost value.
+> 
+> This patch attempts to avoid these situations by always updating the avg_idle
+> value first with the function call to update_avg(). Then, if the avg_idle
+> exceeds the max avg value, the avg gets set to the max. Also, this patch lowers
+> the max avg_idle value to migration_cost * 1.5 instead of migration_cost * 2 to
+> reduce the time it takes to pull the avg idle to a lower value after long idles.
 
-OpenVZ uses loopback-device to keep per-container filesystems. We care 
-much about overhead introduced by loop: IO-bound applications run on top 
-of per-container filesystem shouldn't perform worse than on top of host 
-filesystem. So the value for us is zero overhead.
+Indeed, this seems quite sensible.
 
-Thanks,
-Maxim
+> With this change, I got some decent performance boosts in AIM7 workloads on an
+> 8 socket machine on the 3.10 kernel. In particular, it boosted the AIM7 fserver
+> workload by about 20% when running it with a high # of users.
+
+Nice :-)
+
+> An avg_idle related question that I have is does migration_cost in idle balance
+> need to be the same as the migration_cost in task_hot()? Can we keep
+> migration_cost default value used in task_hot() the same, but have a different
+> default value or increase migration_cost only when comparing it with avg_idle in
+> idle balance?
+
+No they're quite unrelated. I think you can measure the max time we've
+ever spend in newidle balance and use that to clip the values.
+
+Similarly, I've thought about how we updated the sd->avg_cost in the
+previous patches and wondered if we should not track max_cost.
+
+The 'only' down-side I could come up with is that its all ran from
+SoftIRQ context which means IRQ/NMI/SMI can all stretch/warp the time it
+takes to actually do the idle balance.
+
+The idea behind using the max is that we want to reduce the chance we
+overrun the averages and consume time we should have spend doing useful
+work.
