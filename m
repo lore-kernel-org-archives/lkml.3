@@ -1,77 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760099Ab3GaPNc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 11:13:32 -0400
-Received: from ns.mm-sol.com ([212.124.72.66]:40950 "EHLO extserv.mm-sol.com"
+	id S1760124Ab3GaPPp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 11:15:45 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41718 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754070Ab3GaPNa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 11:13:30 -0400
-Message-ID: <51F929BE.1050505@mm-sol.com>
-Date: Wed, 31 Jul 2013 18:14:06 +0300
-From: Georgi Djakov <gdjakov@mm-sol.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S1754070Ab3GaPPn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 11:15:43 -0400
+Date: Wed, 31 Jul 2013 17:15:42 +0200
+From: Jan Kara <jack@suse.cz>
+To: Dave Chinner <david@fromorbit.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, davej@redhat.com, viro@zeniv.linux.org.uk,
+        jack@suse.cz, glommer@parallels.com
+Subject: Re: [PATCH 07/11] writeback: periodically trim the writeback list
+Message-ID: <20130731151542.GI22930@quack.suse.cz>
+References: <1375244150-27296-1-git-send-email-david@fromorbit.com>
+ <1375244150-27296-8-git-send-email-david@fromorbit.com>
 MIME-Version: 1.0
-To: Bjorn Andersson <bjorn@kryo.se>
-CC: linux-mmc@vger.kernel.org, cjb@laptop.org, grant.likely@linaro.org,
-        rob.herring@calxeda.com, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Asutosh Das <asutoshd@codeaurora.org>,
-        Venkat Gopalakrishnan <venkatg@codeaurora.org>,
-        Sahitya Tummala <stummala@codeaurora.org>,
-        Subhash Jadavani <subhashj@codeaurora.org>
-Subject: Re: [PATCH] mmc: sdhci-msm: Add support for MSM chipsets
-References: <1375201355-26906-1-git-send-email-gdjakov@mm-sol.com> <CAJAp7OgOT82G=W8RpDvaogskUmAN26CWq4gKUs45RwOeU8pXvQ@mail.gmail.com>
-In-Reply-To: <CAJAp7OgOT82G=W8RpDvaogskUmAN26CWq4gKUs45RwOeU8pXvQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1375244150-27296-8-git-send-email-david@fromorbit.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/31/2013 03:19 AM, Bjorn Andersson wrote:
-> On Tue, Jul 30, 2013 at 8:22 AM, Georgi Djakov <gdjakov@mm-sol.com> wrote:
->> This platform driver adds the support of Secure Digital Host
->> Controller Interface compliant controller in MSM chipsets.
->>
->> [snip]
->> +
->> +       sdhc_1: qcom,sdhc@f9824900 {
->> +               compatible = "qcom,sdhci-msm";
->> +                       reg = <0xf9824900 0x11c>, <0xf9824000 0x800>;
->> +                       reg-names = "hc_mem", "core_mem";
->> +                       interrupts = <0 123 0>, <0 138 0>;
->> +                       interrupt-names = "hc_irq", "pwr_irq";
->> +
->> +               vdd-supply = <&pm8941_l21>;
->> +               vdd-io-supply = <&pm8941_l13>;
->> +               qcom,vdd-voltage-level = <2950000 2950000>;
->> +               qcom,vdd-current-level = <9000 800000>;
->> +
->> +               qcom,vdd-io-always-on;
->> +               qcom,vdd-io-lpm-sup;
->> +               qcom,vdd-io-voltage-level = <1800000 2950000>;
->> +               qcom,vdd-io-current-level = <6 22000>;
->> +
->> +               bus-width = <4>;
->> +               non-removable;
->> +               qcom,bus-speed-mode = "HS200_1p8v", "DDR_1p8v";
->> +
->> +               gpios = <&msmgpio 40 0>, /* CLK */
->> +                       <&msmgpio 39 0>, /* CMD */
->> +                       <&msmgpio 38 0>, /* DATA0 */
->> +                       <&msmgpio 37 0>, /* DATA1 */
->> +                       <&msmgpio 36 0>, /* DATA2 */
->> +                       <&msmgpio 35 0>; /* DATA3 */
->> +               qcom,gpio-names = "CLK", "CMD", "DAT0", "DAT1", "DAT2", "DAT3";
->
-> I believe these gpio references (and in the rest of the patch) should
-> be replaced by pinctrl. As far as I can see it provides what you want
-> and gives you configurability and potential sleep states of those pins
-> nicely integrated.
->
+On Wed 31-07-13 14:15:46, Dave Chinner wrote:
+> From: Dave Chinner <dchinner@redhat.com>
+> 
+> Inodes are removed lazily from the bdi writeback list, so in the
+> absence of sync(2) work inodes will build up on the bdi writback
+> list even though they are no longer under IO. Use the periodic
+> kupdate work check to remove inodes no longer under IO from the
+> writeback list.
+> 
+> Signed-off-by: Dave Chinner <dchinner@redhat.com>
+> ---
+>  fs/fs-writeback.c | 19 +++++++++++++++++++
+>  1 file changed, 19 insertions(+)
+> 
+> diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+> index 638f122..7c9bbf0 100644
+> --- a/fs/fs-writeback.c
+> +++ b/fs/fs-writeback.c
+> @@ -962,6 +962,23 @@ static long wb_check_background_flush(struct bdi_writeback *wb)
+>  	return 0;
+>  }
+>  
+> +/*
+> + * clean out writeback list for all inodes that don't have IO in progress
+> + */
+> +static void wb_trim_writeback_list(struct bdi_writeback *wb)
+> +{
+> +	struct inode *inode;
+> +	struct inode *tmp;
+> +
+> +	spin_lock(&wb->list_lock);
+> +	list_for_each_entry_safe(inode, tmp, &wb->b_writeback, i_wb_list) {
+> +		if (!mapping_tagged(inode->i_mapping, PAGECACHE_TAG_WRITEBACK))
+> +			list_del_init(&inode->i_wb_list);
+> +	}
+   Oo, and here you manipulate i_wb_list without mapping->tree_lock so that
+can race with the list_empty() check in bdi_mark_inode_writeback().
 
-Thanks! I'll make it use the pinctrl driver that is coming too.
+								Honza
 
-BR,
-Georgi
+> +	spin_unlock(&wb->list_lock);
+> +
+> +}
+> +
+>  static long wb_check_old_data_flush(struct bdi_writeback *wb)
+>  {
+>  	unsigned long expired;
+> @@ -978,6 +995,8 @@ static long wb_check_old_data_flush(struct bdi_writeback *wb)
+>  	if (time_before(jiffies, expired))
+>  		return 0;
+>  
+> +	wb_trim_writeback_list(wb);
+> +
+>  	wb->last_old_flush = jiffies;
+>  	nr_pages = get_nr_dirty_pages();
+>  
+> -- 
+> 1.8.3.2
+> 
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
