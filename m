@@ -1,78 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932245Ab3GaPVi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 11:21:38 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:31236 "EHLO
+	id S932346Ab3GaPVq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 11:21:46 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:31240 "EHLO
 	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760255Ab3GaPVg (ORCPT
+	with ESMTP id S932297Ab3GaPVn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 11:21:36 -0400
-Message-ID: <cover.1375283104.git.cmetcalf@tilera.com>
-In-Reply-To: <cover.1374609948.git.cmetcalf@tilera.com>
+	Wed, 31 Jul 2013 11:21:43 -0400
+Message-ID: <aa47cdfb2b518c7e56798ec5863c735c60d88eb2.1375283105.git.cmetcalf@tilera.com>
+In-Reply-To: <cover.1375283104.git.cmetcalf@tilera.com>
 References: <cover.1374609948.git.cmetcalf@tilera.com>
+	<cover.1375283104.git.cmetcalf@tilera.com>
 From: Chris Metcalf <cmetcalf@tilera.com>
 Date: Wed, 31 Jul 2013 11:05:04 -0400
-Subject: [PATCH v2 00/12] update tile network drivers
-To: <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
-        "Richard Cochran <richardcochran@gmail.com> Eric Dumazet" 
-	<eric.dumazet@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 03/12] tile: remove dead is_dup_ack() function from tilepro net driver
+To: <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is v2 of the patch series to update the Tilera network drivers.
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+---
+ drivers/net/ethernet/tile/tilepro.c | 76 -------------------------------------
+ 1 file changed, 76 deletions(-)
 
->From the v1 00/13 cover letter: "This patch series contains changes made
-to the Tilera on-chip network drivers for both the 64-bit tilegx and
-32-bit tilepro architectures.  The changes involve a number of bug fixes,
-support for the multiple mPIPEs on the new Gx72 chip, support for jumbo
-frames, TSO for IPv6, GRO, PTP support, and statistics improvements."
-
-David has already applied the v2 patch for what was patch 01/13 in the
-first series ("handle 64-bit statistics in tilepro network driver")
-so it is not included in this v2 series.
-
-Changes from the v1 series include:
-
-- Nearly complete rewrite of PTP changes based on feedback from
-  Richard Cochran
-- Removal of NETIF_F_GRO as unnecessary (from Eric Dumazet)
-- A few minor whitespace and code style changes
-
-The revised PTP change (12/12 in this series) was already posted
-separately, but this version includes one whitespace tweak (leading tabs
-instead of spaces on one line) that I missed in the initial PTP v2,
-as well as the Acked-by from Richard Cochran.
-
-Chris Metcalf (12):
-  tile: support rx_dropped/rx_errors in tilepro net driver
-  tile: avoid bug in tilepro net driver built with old hypervisor
-  tile: remove dead is_dup_ack() function from tilepro net driver
-  tile: support jumbo frames in the tilegx network driver
-  tile: update dev->stats directly in tilegx network driver
-  tile: fix panic bug in napi support for tilegx network driver
-  tile: enable GRO in the tilegx network driver
-  tile: support multiple mPIPE shims in tilegx network driver
-  tile: support TSO for IPv6 in tilegx network driver
-  tile: make "tile_net.custom" a proper bool module parameter
-  tile: remove deprecated NETIF_F_LLTX flag from tile drivers
-  tile: support PTP using the tilegx mPIPE (IEEE 1588)
-
- arch/tile/gxio/iorpc_mpipe.c              |   66 ++
- arch/tile/gxio/iorpc_mpipe_info.c         |   18 +
- arch/tile/gxio/mpipe.c                    |   43 +-
- arch/tile/include/gxio/iorpc_mpipe.h      |   14 +-
- arch/tile/include/gxio/iorpc_mpipe_info.h |    4 +
- arch/tile/include/gxio/mpipe.h            |  143 +++-
- arch/tile/include/hv/drv_mpipe_intf.h     |    3 +
- drivers/net/ethernet/tile/Kconfig         |   11 +
- drivers/net/ethernet/tile/tilegx.c        | 1097 +++++++++++++++++++----------
- drivers/net/ethernet/tile/tilepro.c       |  129 +---
- 10 files changed, 1046 insertions(+), 482 deletions(-)
-
+diff --git a/drivers/net/ethernet/tile/tilepro.c b/drivers/net/ethernet/tile/tilepro.c
+index cb67df7..ba40ecd 100644
+--- a/drivers/net/ethernet/tile/tilepro.c
++++ b/drivers/net/ethernet/tile/tilepro.c
+@@ -93,9 +93,6 @@
+ /* ISSUE: This may actually hurt performance of the TCP blaster. */
+ /* #define TILE_NET_GSO */
+ 
+-/* Define this to collapse "duplicate" acks. */
+-/* #define IGNORE_DUP_ACKS */
+-
+ /* HACK: Define this to verify incoming packets. */
+ /* #define TILE_NET_VERIFY_INGRESS */
+ 
+@@ -629,79 +626,6 @@ static void tile_net_handle_egress_timer(unsigned long arg)
+ }
+ 
+ 
+-#ifdef IGNORE_DUP_ACKS
+-
+-/*
+- * Help detect "duplicate" ACKs.  These are sequential packets (for a
+- * given flow) which are exactly 66 bytes long, sharing everything but
+- * ID=2@0x12, Hsum=2@0x18, Ack=4@0x2a, WinSize=2@0x30, Csum=2@0x32,
+- * Tstamps=10@0x38.  The ID's are +1, the Hsum's are -1, the Ack's are
+- * +N, and the Tstamps are usually identical.
+- *
+- * NOTE: Apparently truly duplicate acks (with identical "ack" values),
+- * should not be collapsed, as they are used for some kind of flow control.
+- */
+-static bool is_dup_ack(char *s1, char *s2, unsigned int len)
+-{
+-	int i;
+-
+-	unsigned long long ignorable = 0;
+-
+-	/* Identification. */
+-	ignorable |= (1ULL << 0x12);
+-	ignorable |= (1ULL << 0x13);
+-
+-	/* Header checksum. */
+-	ignorable |= (1ULL << 0x18);
+-	ignorable |= (1ULL << 0x19);
+-
+-	/* ACK. */
+-	ignorable |= (1ULL << 0x2a);
+-	ignorable |= (1ULL << 0x2b);
+-	ignorable |= (1ULL << 0x2c);
+-	ignorable |= (1ULL << 0x2d);
+-
+-	/* WinSize. */
+-	ignorable |= (1ULL << 0x30);
+-	ignorable |= (1ULL << 0x31);
+-
+-	/* Checksum. */
+-	ignorable |= (1ULL << 0x32);
+-	ignorable |= (1ULL << 0x33);
+-
+-	for (i = 0; i < len; i++, ignorable >>= 1) {
+-
+-		if ((ignorable & 1) || (s1[i] == s2[i]))
+-			continue;
+-
+-#ifdef TILE_NET_DEBUG
+-		/* HACK: Mention non-timestamp diffs. */
+-		if (i < 0x38 && i != 0x2f &&
+-		    net_ratelimit())
+-			pr_info("Diff at 0x%x\n", i);
+-#endif
+-
+-		return false;
+-	}
+-
+-#ifdef TILE_NET_NO_SUPPRESS_DUP_ACKS
+-	/* HACK: Do not suppress truly duplicate ACKs. */
+-	/* ISSUE: Is this actually necessary or helpful? */
+-	if (s1[0x2a] == s2[0x2a] &&
+-	    s1[0x2b] == s2[0x2b] &&
+-	    s1[0x2c] == s2[0x2c] &&
+-	    s1[0x2d] == s2[0x2d]) {
+-		return false;
+-	}
+-#endif
+-
+-	return true;
+-}
+-
+-#endif
+-
+-
+-
+ static void tile_net_discard_aux(struct tile_net_cpu *info, int index)
+ {
+ 	struct tile_netio_queue *queue = &info->queue;
 -- 
 1.8.3.1
 
