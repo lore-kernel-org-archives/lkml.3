@@ -1,61 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760213Ab3GaQjS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 12:39:18 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:55477 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755605Ab3GaQjO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1759713Ab3GaQjR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 12:39:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8879 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754154Ab3GaQjO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 31 Jul 2013 12:39:14 -0400
-Date: Wed, 31 Jul 2013 18:39:03 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/18] Basic scheduler support for automatic NUMA
- balancing V5
-Message-ID: <20130731163903.GG3008@twins.programming.kicks-ass.net>
-References: <1373901620-2021-1-git-send-email-mgorman@suse.de>
- <20130725103620.GM27075@twins.programming.kicks-ass.net>
- <20130731103052.GR2296@suse.de>
- <20130731104814.GA3008@twins.programming.kicks-ass.net>
- <20130731115719.GT2296@suse.de>
- <20130731153018.GD3008@twins.programming.kicks-ass.net>
- <20130731161141.GX2296@suse.de>
+Date: Wed, 31 Jul 2013 12:39:01 -0400
+From: Dave Jones <davej@redhat.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org
+Subject: Re: ext4_da_release_space:1333: ext4_da_release_space: ino 12,
+ to_free 1 with only 0 reserved data  blocks
+Message-ID: <20130731163901.GA10973@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>, Jan Kara <jack@suse.cz>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	linux-ext4@vger.kernel.org
+References: <20130716202533.GA16061@redhat.com>
+ <20130717125322.GA29294@quack.suse.cz>
+ <20130717145218.GA27731@redhat.com>
+ <20130717213850.GA5025@quack.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130731161141.GX2296@suse.de>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20130717213850.GA5025@quack.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 31, 2013 at 05:11:41PM +0100, Mel Gorman wrote:
-> RSS was another option it felt as arbitrary as a plain delay.
+On Wed, Jul 17, 2013 at 11:38:50PM +0200, Jan Kara wrote:
+ > On Wed 17-07-13 10:52:18, Dave Jones wrote:
+ > > On Wed, Jul 17, 2013 at 02:53:22PM +0200, Jan Kara wrote:
+ > >  > On Tue 16-07-13 16:25:33, Dave Jones wrote:
+ > >  > > I've seen this happen a few times this week..
+ > >  >   Thanks for report! Was this when fuzzing or just normal desktop load?
+ > >  > What is inode with inode number 12 on your filesystem sdb1? What IO happens
+ > >  > to it? Apparently some delalloc accounting went wrong somewhere and it's
+ > >  > searching for a needle in a haystack unless we have more details...
+ > > 
+ > > It was running this.. https://github.com/kernelslacker/io-tests/blob/master/setup.sh
+ > > in a loop. After about 6 hours, that fell out.  It made it all the way through
+ > > every test a few times, which is odd, as the test should be fairly deterministic.
+ > > Ah, I wasn't capturing the fsx seed. I'll do that on the next run.
+ >   So inode 12 was likely the file used by fsx. OK. Looking at the script
+ > link, fsx is run as:
+ >   /usr/local/bin/fsx -N 250000 -S0 foo &
+ > so the seed is always 0. So it is a deterministic test and there must be
+ > some race with writeback or something that is rarely triggered. Drat.
+ > 
+ > Umm, looking at the filesystems this tests, ext4 with 1 KB blocksize is
+ > likely the config which hits this (the accounting is more complex there) so
+ > it might be interesting to concentrace on this one.
 
-Right, it would avoid 'small' programs getting scanning done with the
-rationale that their cost isn't that large since they don't have much
-memory to begin with.
+I just retried these tests, and hit this again.
+I can confirm it happens on the 1k block filesystem.
 
-The same can be said for tasks that don't run much -- irrespective of
-how much absolute runtime they've gathered.
+	Dave
 
-Is there any other group of tasks that we do not want to scan?
 
-Maybe if we can list all the various exclusions we can get to a proper
-quantifier that way.
-
-So far we've got:
-
- - doesn't run long
- - doesn't run much
- - doesn't have much memory
-
-> Should I revert 5bca23035391928c4c7301835accca3551b96cc2 with an
-> explanation that it potentially is completely useless in the purely
-> multi-process shared case?
-
-Yeah I suppose so..
