@@ -1,48 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760727Ab3GaUBu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 16:01:50 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39441 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754297Ab3GaUBt (ORCPT
+	id S1760606Ab3GaUKe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 16:10:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32842 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755143Ab3GaUKc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 16:01:49 -0400
-Date: Wed, 31 Jul 2013 21:01:35 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, konrad.wilk@oracle.com,
-        Ian.Campbell@citrix.com, will.deacon@arm.com
-Subject: Re: [PATCH v2 RFC 2/8] arm: introduce a global dma_ops pointer
-Message-ID: <20130731200135.GZ24642@n2100.arm.linux.org.uk>
-References: <alpine.DEB.2.02.1307312048511.4893@kaball.uk.xensource.com> <1375300452-12545-2-git-send-email-stefano.stabellini@eu.citrix.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1375300452-12545-2-git-send-email-stefano.stabellini@eu.citrix.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Wed, 31 Jul 2013 16:10:32 -0400
+Date: Wed, 31 Jul 2013 13:10:30 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Michal Simek <michal.simek@xilinx.com>
+Cc: linux-kernel@vger.kernel.org, Michal Simek <monstr@monstr.eu>,
+        Al Viro <viro@ZenIV.linux.org.uk>, dholsgrove@xilinx.com,
+        Rich Felker <dalias@aerifal.cx>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        James Hogan <james.hogan@imgtec.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Kees Cook <keescook@chromium.org>, Oleg Nesterov <oleg@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        microblaze-uclinux@itee.uq.edu.au
+Subject: Re: [PATCH v3] microblaze: Fix clone syscall
+Message-Id: <20130731131030.3d03c68362382dad78136cfb@linux-foundation.org>
+In-Reply-To: <db3f4687983a591b1797f2a54a9a8eb695afb9ac.1375081274.git.michal.simek@xilinx.com>
+References: <db3f4687983a591b1797f2a54a9a8eb695afb9ac.1375081274.git.michal.simek@xilinx.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 31, 2013 at 08:54:06PM +0100, Stefano Stabellini wrote:
-> Initially set dma_ops to arm_dma_ops.
-> Use dma_ops instead of arm_dma_ops in dmabounce.
+On Mon, 29 Jul 2013 09:01:48 +0200 Michal Simek <michal.simek@xilinx.com> wrote:
+
+> Fix inadvertent breakage in the clone syscall ABI for Microblaze
+> that was introduced in this patch:
+> "microblaze: switch to generic fork/vfork/clone"
+> (sha1: f3268edbe6fe0ce56e62c6d6b14640aeb04864b7)
 > 
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> CC: will.deacon@arm.com
-> CC: linux@arm.linux.org.uk
+> The Microblaze syscall ABI for clone takes the parent tid address in
+> the 4th argument; the third argument slot is used for the stack size.
+> The incorrectly-used CLONE_BACKWARDS type assigned parent tid to the
+> 3rd slot.
+> 
+> This commit restores the original ABI so that existing userspace libc
+> code will work correctly.
+> 
+> All kernel versions from v3.8-rc1 were affected.
 
-If you're using swiotlb, there's little point in converting dmabounce
-to be able to use it, because it's basically providing the same
-functionality - dmabounce is there to do software buffer bouncing within
-the DMA to move streaming buffers from DMA-inaccessible memory into
-DMA-accessible memory.
+x86_64 allnoconfig generates screenfuls of
 
-It's original use is with older SoCs with buggy DMA (eg, those which
-can only address alternate 1MB chunks of memory for example) but also
-got used in situations where alternative solutions would've been better
-(like using swiotlb.)  I've been discouraging its use as it's suffered
-from memory exhaustion problems (there's a number of threads and bug
-reports which were never solved about IXP4xx(?) platforms suffering
-this due to this bouncing.)
+In file included from fs/signalfd.c:31:
+include/linux/syscalls.h:805:5: warning: "CONFIG_CLONE_BACKWARDS3" is not defined
+
+> --- a/include/linux/syscalls.h
+> +++ b/include/linux/syscalls.h
+> @@ -802,9 +802,14 @@ asmlinkage long sys_vfork(void);
+>  asmlinkage long sys_clone(unsigned long, unsigned long, int __user *, int,
+>  	       int __user *);
+>  #else
+> +#if CONFIG_CLONE_BACKWARDS3
+
+Presumably ifdef here will fix that.  Please redo, retest and resend?
+
+
