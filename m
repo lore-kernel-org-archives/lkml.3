@@ -1,76 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760597Ab3GaUpk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 16:45:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61951 "EHLO mx1.redhat.com"
+	id S1760693Ab3GaUqt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 16:46:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4727 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755143Ab3GaUpj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 16:45:39 -0400
-Date: Wed, 31 Jul 2013 22:40:03 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC][PATCH 3/4] tracing/kprobes: Fail to unregister if probe
-	event files are open
-Message-ID: <20130731204003.GA30188@redhat.com>
-References: <20130704033347.807661713@goodmis.org> <20130704034038.819592356@goodmis.org> <1375300192.5418.17.camel@gandalf.local.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1752209Ab3GaUqr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 16:46:47 -0400
+Date: Wed, 31 Jul 2013 16:46:21 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Hillf Danton <dhillf@gmail.com>
+Message-ID: <1375303581-l14hjkth-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <20130731050824.GJ2548@lge.com>
+References: <1375075929-6119-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1375075929-6119-12-git-send-email-iamjoonsoo.kim@lge.com>
+ <1375123170-v27s5zvu-mutt-n-horiguchi@ah.jp.nec.com>
+ <20130731050824.GJ2548@lge.com>
+Subject: Re: [PATCH 11/18] mm, hugetlb: move down outside_reserve check
+Mime-Version: 1.0
+Content-Type: text/plain;
+ charset=iso-2022-jp
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <1375300192.5418.17.camel@gandalf.local.home>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+X-Mutt-References: <20130731050824.GJ2548@lge.com>
+X-Mutt-Fcc: ~/Maildir/sent/
+User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/31, Steven Rostedt wrote:
->
-> On Wed, 2013-07-03 at 23:33 -0400, Steven Rostedt wrote:
-> > The above will corrupt the kprobe system, as the write to the enable
-> > file will happen after the kprobe was deleted.
->
-> Oleg,
->
-> The above no longer triggers the bug due to your changes. The race is
-> much tighter now
+On Wed, Jul 31, 2013 at 02:08:24PM +0900, Joonsoo Kim wrote:
+> On Mon, Jul 29, 2013 at 02:39:30PM -0400, Naoya Horiguchi wrote:
+> > On Mon, Jul 29, 2013 at 02:32:02PM +0900, Joonsoo Kim wrote:
+> > > Just move down outsider_reserve check.
+> > > This makes code more readable.
+> > > 
+> > > There is no functional change.
+> > 
+> > Why don't you do this in 10/18?
+> 
+> Just help to review :)
+> Step-by-step approach may help to review, so I decide to be separate it.
+> If you don't want it, I will merge it in next spin.
 
-Yes, the changelog should be updated...
-
-> and requires a process with the enable file opened and
-> races with a write to enable it where the removal of the trace file
-> checks the trace disabled, sees that it is, continues, but then the
-> write enables it just as it gets deleted.
-
-This should be fine. Either event_remove() path takes event_mutex
-first and then ->write() fails, or ftrace_event_enable_disable()
-actually disables this even successfully.
-
-> Do you know of a way to trigger this bug?
-
-I'll try to think more tomorrow, but most probably no. The race is
-unlikely.
-
-We need perf_trace_event_init() or ":enable_event:this-event" right
-before trace_remove_event_call() takes the mutex.
-
-And right after the caller (kprobes) checks "disabled".
-
-> Hmm, what happens without this patch now? If it is active, and we delete
-> it? It will call back into the kprobes and access a tracepoint that does
-> not exist? Would this cause a crash?
-
-I think yes, the crash is possible.
-
-perf or FL_SOFT_MODE, this call/file has the external references, and
-we are going to free it.
-
-Oleg.
-
+OK, it's up to you actually.
