@@ -1,73 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760831Ab3GaVH1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 17:07:27 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:49444 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757339Ab3GaVHY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 17:07:24 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Shuah Khan <shuahkhan@gmail.com>
-Cc: linux-pci <linux-pci@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Myron Stowe <myron.stowe@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, iommu@lists.linux-foundation.org,
-        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, shuah.kh@samsung.com
-Subject: Re: [Announcement] Linux Plumbers ACPI/PM, PCI Microconference
-Date: Wed, 31 Jul 2013 23:17:36 +0200
-Message-ID: <7183196.Ov6Qetq3lO@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAKocOOPOqqS80D23z6xTVSNYYYWZ7ACg9MtSMz_hTqVA3Duo0w@mail.gmail.com>
-References: <CAL-B5D03ki8NHsM6EuESTH2K-Eh+XyFHNXPDYwgDq+oagDjtMQ@mail.gmail.com> <1755363.sGc8nLIQOW@vostro.rjw.lan> <CAKocOOPOqqS80D23z6xTVSNYYYWZ7ACg9MtSMz_hTqVA3Duo0w@mail.gmail.com>
+	id S1760856Ab3GaVI3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 17:08:29 -0400
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:38801 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757494Ab3GaVIZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 17:08:25 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <51F85BCC.2070103@jp.fujitsu.com>
+References: <1368509365-2260-1-git-send-email-indou.takao@jp.fujitsu.com>
+ <CAErSpo4t_2Xw76p3Z9FVzyyK-MBovavDu9D=pYoPMjESSxgT=w@mail.gmail.com>
+ <51B19DF3.2070009@jp.fujitsu.com> <CAErSpo6dfEnzriHD_aWZB_3E-kSzauhNRHPd+VuFX5HONVKgqw@mail.gmail.com>
+ <51B6BEDB.3000509@jp.fujitsu.com> <CAErSpo5u8qGALt6C+tuPYXdd2YgyMH6fnPnA+afUteEZ7kY0iw@mail.gmail.com>
+ <51B93221.2040505@jp.fujitsu.com> <CAErSpo5tVK-Z3aOdMTzab-S8o5zLVtDOFQ8-LSYpUgbrJSsxuw@mail.gmail.com>
+ <51BA7BB6.1080104@jp.fujitsu.com> <51EF7466.20703@jp.fujitsu.com>
+ <CAErSpo5B7NzVfxwW3bQnfK+iK+DrRsWQd2Cm14z5PWNnRHWL5w@mail.gmail.com>
+ <51F5B966.9080405@jp.fujitsu.com> <CAErSpo4JtG5qVJb-nCywe3vkft=-cDeRDKn_V92RCZ-sGXpwbg@mail.gmail.com>
+ <51F758B6.9090204@jp.fujitsu.com> <CAErSpo7TNhQO0dx_xZvF=dU2fSWTFf8x=xUJcEsbadJkv8ktuQ@mail.gmail.com>
+ <51F85BCC.2070103@jp.fujitsu.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 31 Jul 2013 15:08:03 -0600
+Message-ID: <CAErSpo4yJ2yqCWv7GT7jWSVd_8SktU=xJXT78m8Vxp_wLA4Fow@mail.gmail.com>
+Subject: Re: [PATCH v2] PCI: Reset PCIe devices to stop ongoing DMA
+To: Takao Indoh <indou.takao@jp.fujitsu.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "open list:INTEL IOMMU (VT-d)" <iommu@lists.linux-foundation.org>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "ishii.hironobu@jp.fujitsu.com" <ishii.hironobu@jp.fujitsu.com>,
+        Don Dutile <ddutile@redhat.com>,
+        "Sumner, William" <bill.sumner@hp.com>,
+        "alex.williamson@redhat.com" <alex.williamson@redhat.com>,
+        Haren Myneni <hbabu@us.ibm.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, July 31, 2013 10:35:05 AM Shuah Khan wrote:
-> On Wed, Jul 31, 2013 at 5:40 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > Hi All,
-> >
-> > The original announcement didn't go to linux-pm, so again:
-> >
-> > On Tuesday, July 16, 2013 08:21:26 PM Myron Stowe wrote:
-> >> Linux Plumbers has approved an ACPI/PM, PCI microconference. The
-> >> overview page is here:
-> >>
-> >> http://wiki.linuxplumbersconf.org/2013:pci_subsystem
-> >>
-> >> We would like to start receiving volunteers for presenting topics of
-> >> interest.  There is a lot of activity in these subsystems so please
-> >> respond by submitting presentation or discussion proposals that you
-> >> would be willing to cover for consideration.  You should also feel
-> >> free to submit ideas as proposals that others could cover.  The
-> >> instructions for submitting ideas should be at:
-> >>
-> >> http://www.linuxplumbersconf.org/2013/submitting-topic/
-> >
-> > If anyone who's going to attend the Linux Plumbers Conf this year is interested
-> > in any particular topic for discussion during the ACPI/PM+PCI uconf, please
-> > submit a formal topic proposal at:
-> >
-> > http://www.linuxplumbersconf.org/2013/ocw/events/LPC2013/proposals/new
-> >
-> > If you submit a topic, that doesn't mean you'll be expected to present anything
-> > (if accepted).  In fact, we are mostly interested in discussion topics and we'd
-> > like to know what is important to people.
-> >
-> > That said if you have a (short) presentation to make, please submit it too.
-> >
-> > We'll appreciate all submissions very much.
-> >
-> 
-> What I have mind is a discussion topic for the Mini-conference, which
-> in-line with what you are asking for.
-> I will add it to the web.
+[+cc Rafael, linux-acpi]
 
-Thank you!
+On Tue, Jul 30, 2013 at 6:35 PM, Takao Indoh <indou.takao@jp.fujitsu.com> wrote:
 
+> On x86, currently IOMMU initialization run *after* PCI enumeration, but
+> what you are talking about is that it should be changed so that x86
+> IOMMU initialization is done *before* PCI enumeration like sparc, right?
+
+Yes.  I don't know whether or when that initialization order will ever
+be changed, but I do think we should avoid building more
+infrastructure that depends on the current order.
+
+Changing the order is a pretty big deal because it's a lot more than
+just the IOMMU.  Basically I think we should be enumerating ACPI
+devices, including the IOMMU, before PCI devices, but there's a lot of
+legacy involved in that area.  Added Rafael in case he has any
+thoughts.
+
+> Hmm, ok, I think I need to post attached patch to iommu list and
+> discuss it including current order of x86 IOMMU initialization.
