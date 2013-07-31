@@ -1,61 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759713Ab3GaQjR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 12:39:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8879 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754154Ab3GaQjO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 12:39:14 -0400
-Date: Wed, 31 Jul 2013 12:39:01 -0400
-From: Dave Jones <davej@redhat.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org
-Subject: Re: ext4_da_release_space:1333: ext4_da_release_space: ino 12,
- to_free 1 with only 0 reserved data  blocks
-Message-ID: <20130731163901.GA10973@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>, Jan Kara <jack@suse.cz>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	linux-ext4@vger.kernel.org
-References: <20130716202533.GA16061@redhat.com>
- <20130717125322.GA29294@quack.suse.cz>
- <20130717145218.GA27731@redhat.com>
- <20130717213850.GA5025@quack.suse.cz>
+	id S1760348Ab3GaQj7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 12:39:59 -0400
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:49972 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760243Ab3GaQj5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 12:39:57 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130717213850.GA5025@quack.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAK9yfHwZCBk5boyiak1FJ7WVJ+FxLjPk1Wa5eYbuZw8BaOV5jw@mail.gmail.com>
+References: <cover.1375279948.git.viresh.kumar@linaro.org>
+	<CAK9yfHwZCBk5boyiak1FJ7WVJ+FxLjPk1Wa5eYbuZw8BaOV5jw@mail.gmail.com>
+Date: Wed, 31 Jul 2013 22:09:56 +0530
+Message-ID: <CAKohpokTPBv5Z7uGffRJqKB-V=pMi8WAeWUuxNvt+3QV3YcRKg@mail.gmail.com>
+Subject: Re: [PATCH 00/15] cpufreq: initialize drivers .owner field with THIS_MODULE
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: rjw@sisk.pl, linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, arnd.bergmann@linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 17, 2013 at 11:38:50PM +0200, Jan Kara wrote:
- > On Wed 17-07-13 10:52:18, Dave Jones wrote:
- > > On Wed, Jul 17, 2013 at 02:53:22PM +0200, Jan Kara wrote:
- > >  > On Tue 16-07-13 16:25:33, Dave Jones wrote:
- > >  > > I've seen this happen a few times this week..
- > >  >   Thanks for report! Was this when fuzzing or just normal desktop load?
- > >  > What is inode with inode number 12 on your filesystem sdb1? What IO happens
- > >  > to it? Apparently some delalloc accounting went wrong somewhere and it's
- > >  > searching for a needle in a haystack unless we have more details...
- > > 
- > > It was running this.. https://github.com/kernelslacker/io-tests/blob/master/setup.sh
- > > in a loop. After about 6 hours, that fell out.  It made it all the way through
- > > every test a few times, which is odd, as the test should be fairly deterministic.
- > > Ah, I wasn't capturing the fsx seed. I'll do that on the next run.
- >   So inode 12 was likely the file used by fsx. OK. Looking at the script
- > link, fsx is run as:
- >   /usr/local/bin/fsx -N 250000 -S0 foo &
- > so the seed is always 0. So it is a deterministic test and there must be
- > some race with writeback or something that is rarely triggered. Drat.
- > 
- > Umm, looking at the filesystems this tests, ext4 with 1 KB blocksize is
- > likely the config which hits this (the accounting is more complex there) so
- > it might be interesting to concentrace on this one.
+On 31 July 2013 22:06, Sachin Kamat <sachin.kamat@linaro.org> wrote:
+> Hi Viresh,
+>
+> On 31 July 2013 19:49, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+>> CPUFreq core does following at multiple places:
+>> module_{get|put}(cpufreq_driver->owner)).
+>>
+>> This is done to make sure module doesn't get unloaded if it is currently in use.
+>> This will work only if the .owner field of cpufreq driver is initialized with a
+>> valid pointer.
+>>
+>> This field wasn't initialized for many cpufreq driver, lets initialize it with
+>> THIS_MODULE.
+>
+>
+> Isn't it possible to do this inside cpufreq_register_driver function
+> in a similar way as done for platform_driver_register [1].
+>
+> [1] https://lkml.org/lkml/2013/5/25/5
 
-I just retried these tests, and hit this again.
-I can confirm it happens on the 1k block filesystem.
-
-	Dave
-
-
+Don't know if its possible to set it to something other than THIS_MODULE.
+In which case we want something else to be done.
