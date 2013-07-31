@@ -1,226 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757664Ab3GaV15 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 17:27:57 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:49486 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751660Ab3GaV14 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 17:27:56 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cpufreq: Re-arrange header files
-Date: Wed, 31 Jul 2013 23:38:07 +0200
-Message-ID: <5948193.cosVqkRF9h@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <be0fa53fe03550ec49b8bade1af7d4e1f6e06b39.1375284946.git.viresh.kumar@linaro.org>
-References: <be0fa53fe03550ec49b8bade1af7d4e1f6e06b39.1375284946.git.viresh.kumar@linaro.org>
+	id S1760743Ab3GaV2l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 17:28:41 -0400
+Received: from smtp107.biz.mail.bf1.yahoo.com ([98.139.244.55]:32213 "HELO
+	smtp107.biz.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1757481Ab3GaV2h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 17:28:37 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: eolqC8IVM1kPYbAu_BKiQ6nbpBpUq8jbjG0yf_YBIEmUGBM
+ uet5r30P7apkrODkfEpGuhpWAA62ZyMD1.iPgnYhZPFtxxJvgZeTLIVHcIQT
+ F16aTugbEeEQTwBgas8ExI3YvYwlrMxVQyivz50ffbBk_HOEeCHBnIzMCqYx
+ 8_HNvnA.3CGgu44dfNzfQMTFKLTTouCK5kCfz45weBIxU9HnbFC9LRnk8NDD
+ xo5vf8HhUd4bH8f_nmkxXg_b6dRDv9EhkdeJjrPfPoG5grpFzqOMpuDmSgr0
+ 1IK68GZCJnBw9sAdIMNytiUEjIW5fDiSHFGI2Sdj1QCjgVdMLlwkGciwvqGc
+ 98EJxttqOPyQuM1MRcaZ7isCBZVcPAnASbcMy83FxBETFZyj8dS1FRiG4NmX
+ CpJncxoQho0BYS99lT8EWlh.A0HhCmNnhgEvIGkKZwdT2pMVzySWOow_5z0i
+ .a8EJEZF1QpvuPFj._0uzRQVX.6YLnEbovwEODXbzJVrDROlR9xv_VQ5aZZ3
+ SH.9wsbMX9xHKxA--
+X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
+X-Rocket-Received: from [192.168.0.103] (casey@24.6.250.25 with )
+        by smtp107.biz.mail.bf1.yahoo.com with SMTP; 31 Jul 2013 14:21:56 -0700 PDT
+Message-ID: <51F97FF2.4040205@schaufler-ca.com>
+Date: Wed, 31 Jul 2013 14:21:54 -0700
+From: Casey Schaufler <casey@schaufler-ca.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Paul Moore <paul@paul-moore.com>
+CC: LKLM <linux-kernel@vger.kernel.org>,
+        LSM <linux-security-module@vger.kernel.org>,
+        SE Linux <selinux@tycho.nsa.gov>, James Morris <jmorris@namei.org>,
+        John Johansen <john.johansen@canonical.com>,
+        Eric Paris <eparis@redhat.com>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Kees Cook <keescook@chromium.org>,
+        Casey Schaufler <casey@schaufler-ca.com>
+Subject: Re: [PATCH v14 3/6] LSM: Explicit individual LSM associations
+References: <51F16CFB.6040603@schaufler-ca.com> <5154459.vWAL79RUx2@sifl> <51F939BF.3010404@schaufler-ca.com> <2122972.gxaeSjOpon@sifl>
+In-Reply-To: <2122972.gxaeSjOpon@sifl>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, July 31, 2013 09:05:57 PM Viresh Kumar wrote:
-> This exercise has been done earlier but hasn't been done for few files. Lets do
-> it now. It targets to fix following problems:
-> - Include headers in ascending order, so that we don't add same multiple times
->   by mistake.
+On 7/31/2013 12:39 PM, Paul Moore wrote:
+> On Wednesday, July 31, 2013 09:22:23 AM Casey Schaufler wrote:
+>> On 7/30/2013 3:08 PM, Paul Moore wrote:
+>>> On Thursday, July 25, 2013 11:32:11 AM Casey Schaufler wrote:
+>>>> Subject: [PATCH v14 3/6] LSM: Explicit individual LSM associations
+>>>>
+>>>> Expand the /proc/.../attr interface set to help include
+>>>> LSM specific entries as well as the traditional shared
+>>>> "current", "prev" and "exec" entries. Each LSM that uses
+>>>> one of the traditional interfaces gets it's own interface
+>>>> prefixed with the LSM name for the ones it cares about.
+>>>> Thus, we have "smack.current", "selinux.current" and
+>>>> "apparmor.current" in addition to "current".
+>>>>
+>>>> Add two new interfaces under /sys/kernel/security.
+>>>> The lsm interface displays the comma seperated list of
+>>>> active LSMs. The present interface displays the name
+>>>> of the LSM providing the traditional /proc/.../attr
+>>>> interfaces. User space code should no longer have to
+>>>> grub around in odd places to determine what LSM is
+>>>> being used and thus what data is available to it.
+>>>>
+>>>> Introduce feature specific security operation vectors
+>>>> for NetLabel, XFRM, secmark and presentation in the
+>>>> traditional /proc/.../attr interfaces. This allows
+>>>> proper handling of secids.
+>>> Maybe I missed something, can you elaborate on this, perhaps even provide
+>>> an example for us simple minded folk?
+>> There are a set of facilities that (currently, at least)
+>> can't be shared by multiple LSMs ...
+> I should have been more specific.
+>
+> Thanks for the explanation, but that I understand the problems of stacking 
+> LSM/secids, we've had that conversation a few times now.  The explanation I 
+> was hoping for had to do with this sentence:
+>
+>  "Introduce feature specific security operation vectors for
+>   NetLabel, XFRM, secmark and presentation in the traditional
+>   /proc/.../attr interfaces."
+>
+> Can you explain this a bit more?  When I looked at the patch - and maybe I'm 
+> missing something - I didn't see anything in /proc that dealt with NetLabel, 
+> XFRM, and/or Secmark.
 
-Normally, I'd regard that as pointless churn, but why don't you actually
-remove direct #includes already included through cpufreq.h when you're at it?
+Just so. I have failed to communicate clearly.
 
-For example, what's the point of including cpumask.h directly from
-cpufreq_governor.c if it includes cpufreq.h too?
+  "Each feature that requires support by a single, selected LSM
+   is identified by a global pointer to that LSM's security_operations
+   structure."
 
-Also it doesn't look like all of the includes are really necessary.
+NetLabel, XFRM and secmark are networking interfaces that can
+send the security information from a single LSM along with the
+packets of data.
 
-> - <asm/> must be included after <linux/>, so that they override whatever they
->   need.
-> 
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> ---
->  drivers/cpufreq/cpufreq.c             | 23 +++++++++++------------
->  drivers/cpufreq/cpufreq_governor.c    |  2 +-
->  drivers/cpufreq/cpufreq_ondemand.c    |  2 +-
->  drivers/cpufreq/cpufreq_performance.c |  4 ++--
->  drivers/cpufreq/cpufreq_powersave.c   |  4 ++--
->  drivers/cpufreq/cpufreq_stats.c       | 12 ++++++------
->  include/linux/cpufreq.h               | 10 +++++-----
->  7 files changed, 28 insertions(+), 29 deletions(-)
-> 
-> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-> index 170d344..d5f2a09 100644
-> --- a/drivers/cpufreq/cpufreq.c
-> +++ b/drivers/cpufreq/cpufreq.c
-> @@ -17,25 +17,24 @@
->  
->  #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
->  
-> -#include <asm/cputime.h>
-> +#include <linux/cpu.h>
-> +#include <linux/cpufreq.h>
-> +#include <linux/completion.h>
-> +#include <linux/delay.h>
-> +#include <linux/device.h>
-> +#include <linux/init.h>
-> +#include <linux/interrupt.h>
->  #include <linux/kernel.h>
->  #include <linux/kernel_stat.h>
->  #include <linux/module.h>
-> -#include <linux/init.h>
-> +#include <linux/mutex.h>
->  #include <linux/notifier.h>
-> -#include <linux/cpufreq.h>
-> -#include <linux/delay.h>
-> -#include <linux/interrupt.h>
-> -#include <linux/spinlock.h>
-> -#include <linux/tick.h>
-> -#include <linux/device.h>
->  #include <linux/slab.h>
-> -#include <linux/cpu.h>
-> -#include <linux/completion.h>
-> -#include <linux/mutex.h>
-> +#include <linux/spinlock.h>
->  #include <linux/syscore_ops.h>
-> -
-> +#include <linux/tick.h>
->  #include <trace/events/power.h>
-> +#include <asm/cputime.h>
->  
->  /**
->   * The "cpufreq driver" - the arch- or hardware-dependent low
-> diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
-> index 7409dbd..5876788 100644
-> --- a/drivers/cpufreq/cpufreq_governor.c
-> +++ b/drivers/cpufreq/cpufreq_governor.c
-> @@ -16,7 +16,6 @@
->  
->  #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
->  
-> -#include <asm/cputime.h>
->  #include <linux/cpufreq.h>
->  #include <linux/cpumask.h>
->  #include <linux/export.h>
-> @@ -25,6 +24,7 @@
->  #include <linux/slab.h>
->  #include <linux/types.h>
->  #include <linux/workqueue.h>
-> +#include <asm/cputime.h>
->  
->  #include "cpufreq_governor.h"
->  
-> diff --git a/drivers/cpufreq/cpufreq_ondemand.c b/drivers/cpufreq/cpufreq_ondemand.c
-> index a3c5574..d3344b5 100644
-> --- a/drivers/cpufreq/cpufreq_ondemand.c
-> +++ b/drivers/cpufreq/cpufreq_ondemand.c
-> @@ -12,6 +12,7 @@
->  
->  #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
->  
-> +#include <linux/cpu.h>
->  #include <linux/cpufreq.h>
->  #include <linux/init.h>
->  #include <linux/kernel.h>
-> @@ -24,7 +25,6 @@
->  #include <linux/sysfs.h>
->  #include <linux/tick.h>
->  #include <linux/types.h>
-> -#include <linux/cpu.h>
->  
->  #include "cpufreq_governor.h"
->  
-> diff --git a/drivers/cpufreq/cpufreq_performance.c b/drivers/cpufreq/cpufreq_performance.c
-> index 9fef7d6..bdfda75 100644
-> --- a/drivers/cpufreq/cpufreq_performance.c
-> +++ b/drivers/cpufreq/cpufreq_performance.c
-> @@ -12,10 +12,10 @@
->  
->  #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
->  
-> -#include <linux/kernel.h>
-> -#include <linux/module.h>
->  #include <linux/cpufreq.h>
->  #include <linux/init.h>
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
->  
->  static int cpufreq_governor_performance(struct cpufreq_policy *policy,
->  					unsigned int event)
-> diff --git a/drivers/cpufreq/cpufreq_powersave.c b/drivers/cpufreq/cpufreq_powersave.c
-> index 32109a1..47235e2 100644
-> --- a/drivers/cpufreq/cpufreq_powersave.c
-> +++ b/drivers/cpufreq/cpufreq_powersave.c
-> @@ -12,10 +12,10 @@
->  
->  #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
->  
-> -#include <linux/kernel.h>
-> -#include <linux/module.h>
->  #include <linux/cpufreq.h>
->  #include <linux/init.h>
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
->  
->  static int cpufreq_governor_powersave(struct cpufreq_policy *policy,
->  					unsigned int event)
-> diff --git a/drivers/cpufreq/cpufreq_stats.c b/drivers/cpufreq/cpufreq_stats.c
-> index cb38413..7610e4b 100644
-> --- a/drivers/cpufreq/cpufreq_stats.c
-> +++ b/drivers/cpufreq/cpufreq_stats.c
-> @@ -9,17 +9,17 @@
->   * published by the Free Software Foundation.
->   */
->  
-> -#include <linux/kernel.h>
-> -#include <linux/slab.h>
->  #include <linux/cpu.h>
-> -#include <linux/sysfs.h>
->  #include <linux/cpufreq.h>
-> -#include <linux/module.h>
->  #include <linux/jiffies.h>
-> -#include <linux/percpu.h>
-> +#include <linux/kernel.h>
->  #include <linux/kobject.h>
-> -#include <linux/spinlock.h>
-> +#include <linux/module.h>
->  #include <linux/notifier.h>
-> +#include <linux/percpu.h>
-> +#include <linux/slab.h>
-> +#include <linux/spinlock.h>
-> +#include <linux/sysfs.h>
->  #include <asm/cputime.h>
->  
->  static spinlock_t cpufreq_stats_lock;
-> diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
-> index e1fd215..247d83a 100644
-> --- a/include/linux/cpufreq.h
-> +++ b/include/linux/cpufreq.h
-> @@ -11,15 +11,15 @@
->  #ifndef _LINUX_CPUFREQ_H
->  #define _LINUX_CPUFREQ_H
->  
-> -#include <asm/cputime.h>
-> +#include <linux/cpumask.h>
-> +#include <linux/completion.h>
-> +#include <linux/kobject.h>
->  #include <linux/mutex.h>
->  #include <linux/notifier.h>
-> -#include <linux/threads.h>
-> -#include <linux/kobject.h>
->  #include <linux/sysfs.h>
-> -#include <linux/completion.h>
-> +#include <linux/threads.h>
->  #include <linux/workqueue.h>
-> -#include <linux/cpumask.h>
-> +#include <asm/cputime.h>
->  #include <asm/div64.h>
->  
->  #define CPUFREQ_NAME_LEN 16
-> 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+/proc/.../attr/current and SO_PEERSEC are interfaces that could
+send information from multiple LSMs, but in most cases you have
+to choose one LSM to placate your user space tools.
+
+In all of these cases it is necessary to identify the LSM to use.
+Even though the end use is quite different the mechanism to support
+the identification is the same.
+
+>
+>>>> Add NetLabel interfaces that allow an LSM to request
+>>>> ownership of the NetLabel subsystem and to determine
+>>>> whether or not it has that ownership. These interfaces
+>>>> are intended to allow a future in which NetLabel can
+>>>> support multiple LSMs at the same time, although they
+>>>> do not do so now.
+>>>>
+>>>> Signed-off-by: Casey Schaufler <casey@schaufler-ca.com>
+>>> ...
+>>>
+>>>> --- a/include/net/netlabel.h
+>>>> +++ b/include/net/netlabel.h
+>>>> @@ -407,7 +407,9 @@ int netlbl_secattr_catmap_setrng(struct
+>>>> netlbl_lsm_secattr_catmap *catmap, /*
+>>>>
+>>>>   * LSM protocol operations (NetLabel LSM/kernel API)
+>>>>   */
+>>>>
+>>>> -int netlbl_enabled(void);
+>>>> +int netlbl_enabled(struct security_operations *lsm);
+>>>> +int netlbl_lsm_owner(struct security_operations *lsm);
+>>>> +int netlbl_lsm_register(struct security_operations *lsm);
+>>>>
+>>>>  int netlbl_sock_setattr(struct sock *sk,
+>>>>  
+>>>>  			u16 family,
+>>>>  			const struct netlbl_lsm_secattr *secattr);
+>>>>
+>>>> @@ -521,7 +523,11 @@ static inline int netlbl_secattr_catmap_setrng(
+>>>>
+>>>>  {
+>>>>  
+>>>>  	return 0;
+>>>>  
+>>>>  }
+>>>>
+>>>> -static inline int netlbl_enabled(void)
+>>>> +static inline int netlbl_lsm_register(struct security_operations *lsm)
+>>>> +{
+>>>> +	return 0;
+>>>> +}
+>>>> +static inline int netlbl_enabled(struct security_operations *lsm)
+>>>>
+>>>>  {
+>>>>  
+>>>>  	return 0;
+>>>>  
+>>>>  }
+>>> Is it worth including a static inline for netlabel_lsm_owner() for the
+>>> sake of completeness?  I haven't looked closely enough yet to know if it
+>>> is strictly necessary or not.
+>> I don't think it ever comes up, which would imply we don't need
+>> netlbl_enabled(), either.
+> Probably not, but I like the safety of having it defined.  I guess that is why 
+> I would prefer having netlabel_lsm_owner() defined here as well.
+
+Not a problem. I'll add it.
+
+>>>> diff --git a/net/ipv4/cipso_ipv4.c b/net/ipv4/cipso_ipv4.c
+>>>> index 00a2b2b..5ca352b 100644
+>>>> --- a/net/ipv4/cipso_ipv4.c
+>>>> +++ b/net/ipv4/cipso_ipv4.c
+>>>> @@ -1594,7 +1594,7 @@ static int cipso_v4_parsetag_loc(const struct
+>>>> cipso_v4_doi *doi_def, u32 secid;
+>>>>
+>>>>  	secid = *(u32 *)&tag[2];
+>>>>
+>>>> -	lsm_init_secid(&secattr->attr.secid, secid, 0);
+>>>> +	lsm_init_secid(&secattr->attr.secid, secid, lsm_netlbl_order());
+>>>>
+>>>>  	secattr->flags |= NETLBL_SECATTR_SECID;
+>>> I still need to wrap my head around all the changes, but I *think* this
+>>> change may not be necessary since NetLabel isn't multi-LSM aware at the
+>>> moment.  If this change is necessary, then there are likely other changes
+>>> that need to be made as well, the NetLabel LSM cache would be my main
+>>> concern.
+>> Using the NetLabel secid slot is necessary because when we get into
+>> the auditing code the secid needs to be in the right place to associate
+>> it with the right LSM.
+> Fair enough.
+>
+
