@@ -1,81 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758619Ab3GaALJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 20:11:09 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:38230 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756649Ab3GaALI (ORCPT
+	id S1758626Ab3GaANH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 20:13:07 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:43785 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755837Ab3GaANF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 20:11:08 -0400
+	Tue, 30 Jul 2013 20:13:05 -0400
+Message-ID: <51F85690.9060701@codeaurora.org>
+Date: Tue, 30 Jul 2013 17:13:04 -0700
+From: Hanumant Singh <hanumant@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <37178266.QXgbv9rq0i@vostro.rjw.lan>
-References: <1375125658-1223-1-git-send-email-felipe.contreras@gmail.com>
-	<3453253.oZLO1ChPbL@vostro.rjw.lan>
-	<CAMP44s02V_FO1BPJZqo6MB9RMknXYdV7AXDqbJzYHpgK1GUuJw@mail.gmail.com>
-	<37178266.QXgbv9rq0i@vostro.rjw.lan>
-Date: Tue, 30 Jul 2013 19:11:06 -0500
-Message-ID: <CAMP44s2LqiEGtS72FuTjsHUa1MH2kfaYHmcpNKMmAm2LnbFCCQ@mail.gmail.com>
-Subject: Re: [REGRESSION/PATCH] acpi: blacklist win8 OSI for ASUS Zenbok Prime UX31A
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Aaron Lu <aaron.lwe@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, Len Brown <lenb@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Bjorn Andersson <Bjorn.Andersson@sonymobile.com>,
+        "Bird, Tim" <Tim.Bird@sonymobile.com>,
+        ext Tony Lindgren <tony@atomide.com>
+Subject: Re: [PATCH] pinctrl: msm: Add support for MSM TLMM pinmux
+References: <1374702089-2832-1-git-send-email-hanumant@codeaurora.org> <CACRpkdZLFD-KAvZdUUvQKje3vAH1D0EJMW9PSK8VSp3Xs4eiGA@mail.gmail.com> <51F82BCC.1080409@codeaurora.org> <51F82E9F.9010309@wwwdotorg.org> <51F853BF.9040007@codeaurora.org> <51F8556A.1010300@wwwdotorg.org>
+In-Reply-To: <51F8556A.1010300@wwwdotorg.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 30, 2013 at 6:13 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-
->> If 0 turns the screen off with the intel driver, 0 should turn the
->> screen off with the ACPI driver, having inconsistent behavior
->> depending on which driver is used is a bug.
+On 7/30/2013 5:08 PM, Stephen Warren wrote:
+> On 07/30/2013 06:01 PM, Hanumant Singh wrote:
+>> On 7/30/2013 2:22 PM, Stephen Warren wrote:
+>>> On 07/30/2013 03:10 PM, hanumant wrote:
+>>> ...
+>>>> We actually have the same TLMM pinmux used by several socs of a family.
+>>>> The number of pins on each soc may vary.
+>>>> Also a given soc gets used in a number of boards.
+>>>> The device tree for a given soc is split into the different boards that
+>>>> its in ie the boards inherit a common soc.dtsi but have separate dts.
+>>>> The boards for the same soc may use different pin groups for
+>>>> accomplishing a function, since we have multiple i2c, spi uart etc
+>>>> peripheral instances on a soc. A different instance of each of the above
+>>>> peripherals, can be used in different boards, utilizing different
+>>>> or subset of same pin groups.
+>>>> Thus I would need to have multiple C files for one soc, based on the
+>>>> boards that it goes into.
+>>>
+>>> The pinctrl driver should be exposing the raw capabilities of the HW.
+>>> All the board-specific configuration should be expressed in DT. So, the
+>>> driver shouldn't have to know anything about different boards at
+>>> compile-time.
+>>>
+>> I agree, so I wanted to keep the pin grouping information in DT, we
+>> already have a board based differentiation of dts files in DT, for the
+>> same soc.
 >
-> The ACPI driver simply exposes and interface to interact with the AML methods
-> in the BIOS directly.
-
-No, the ACPI driver is exposing a backlight interface, which has a
-defined stable API.
-
-Documentation/ABI/stable/sysfs-class-backlight
-
-Yes, the interface doesn't define what should happen at 0, that is a
-bug in the interface definition.
-
-*How* it achieves that is an implementation detail.
-
-> Yes, this is a mistake and shouldn't be designed this way.
+> That's the opposite of what I was saying. Pin groups are a feature of
+> the SoC design, not the board.
 >
-> However, incidentally, this makes backlight control work on your machine.
->
-> Anyway, we need all backlight drivers to work consistently and don't tempt me
-> to rip the ACPI driver entirely from the kernel for what it's worth.
+Sorry I guess I wasn't clear.
+Right now I have a soc-pinctrl.dtsi containing pin groupings.
+This will be "inherited" by soc-boardtype.dts.
+The pinctrl client device nodes in soc-boardtype.dts will point to pin 
+groupings in soc-pinctrl.dtsi that are valid for that particular boardtype.
+Is this a valid design?
 
-Yes, they should work consistently, and go ahead, rip the ACPI driver,
-*then* you'll see many more people complaining about the Linux kernel
-breaking user-space, which should never happen. Mistakes happen, but
-if you do this willingly and knowingly, I think there would be
-repercussions for you.
+Thanks
+Hanumant
+that are valid for that
 
-> Yes, that will break backlight on your system and *then* you can complain to
-> Linus if you wish.
-
-It is already broken in v3.11-rc3, in fact I just booted that to try
-it out and it booted with the screen completely black (fortunately I
-knew exactly what to type to change that).
-
-Apparently this commit also needs to be reverted: efaa14c (ACPI /
-video: no automatic brightness changes by win8-compatible firmware).
-In this machine it makes the backlight work again (without
-acpi_osi="!Windows 2012"), but by doing so the ACPI driver also turns
-off the screen completely at level 0. Also, each time I change the
-backlight level from X, the screen blinks as if going 100%, 0%, and
-then the desired level.
-
-For this particular machine simply applying the attached patch would
-solve all those regressions, but who knows in other machines, I think
-it's safer to revert efaa14c.
 
 -- 
-Felipe Contreras
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+-- 
