@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760023Ab3GaNtu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 09:49:50 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46850 "EHLO
+	id S1759695Ab3GaNZj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 09:25:39 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46885 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759672Ab3GaNZk (ORCPT
+	by vger.kernel.org with ESMTP id S1759635Ab3GaNZg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 09:25:40 -0400
+	Wed, 31 Jul 2013 09:25:36 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Enrico Mioso" <mrkiko.rs@gmail.com>
+CC: akpm@linux-foundation.org, "Anders Hammarquist" <iko@iko.pp.se>,
+        "Johan Hovold" <jhovold@gmail.com>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
 Date: Wed, 31 Jul 2013 15:23:09 +0200
-Message-ID: <lsq.1375276989.565108301@decadent.org.uk>
+Message-ID: <lsq.1375276989.242438838@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [76/84] usb: serial: option: Add ONYX 3G device support
+Subject: [75/84] USB: ti_usb_3410_5052: fix dynamic-id matching
 In-Reply-To: <lsq.1375276989.251749228@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.216.67.181
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,28 +32,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Enrico Mioso <mrkiko.rs@gmail.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 63b5df963f52ccbab6fabedf05b7ac6b465789a4 upstream.
+commit 1fad56424f5ad3ce4973505a357212b2e2282b3f upstream.
 
-This patch adds support for the ONYX 3G device (version 1) from ALFA
-NETWORK.
+The driver failed to take the dynamic ids into account when determining
+the device type and therefore all devices were detected as 2-port
+devices when using the dynamic-id interface.
 
-Signed-off-by: Enrico Mioso <mrkiko.rs@gmail.com>
+Match on the usb-serial-driver field instead of doing redundant id-table
+searches.
+
+Reported-by: Anders Hammarquist <iko@iko.pp.se>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/serial/option.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/serial/ti_usb_3410_5052.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -798,6 +798,7 @@ static const struct usb_device_id option
- 	{ USB_DEVICE(KYOCERA_VENDOR_ID, KYOCERA_PRODUCT_KPC680) },
- 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x6000)}, /* ZTE AC8700 */
- 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x6613)}, /* Onda H600/ZTE MF330 */
-+	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x0023)}, /* ONYX 3G device */
- 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x9000)}, /* SIMCom SIM5218 */
- 	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_6280) }, /* BP3-USB & BP3-EXT HSDPA */
- 	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_6008) },
+--- a/drivers/usb/serial/ti_usb_3410_5052.c
++++ b/drivers/usb/serial/ti_usb_3410_5052.c
+@@ -408,7 +408,7 @@ static int ti_startup(struct usb_serial
+ 	usb_set_serial_data(serial, tdev);
+ 
+ 	/* determine device type */
+-	if (usb_match_id(serial->interface, ti_id_table_3410))
++	if (serial->type == &ti_1port_device)
+ 		tdev->td_is_3410 = 1;
+ 	dbg("%s - device type is %s", __func__,
+ 				tdev->td_is_3410 ? "3410" : "5052");
 
