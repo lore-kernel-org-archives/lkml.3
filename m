@@ -1,219 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758934Ab3GaCnJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 22:43:09 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:43575 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752718Ab3GaCnI (ORCPT
+	id S1758811Ab3GaCt0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 22:49:26 -0400
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:38114 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751494Ab3GaCtZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 22:43:08 -0400
-X-AuditID: 9c93017e-b7b62ae000000eeb-6a-51f879b9cde7
-Date: Wed, 31 Jul 2013 11:43:06 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Davidlohr Bueso <davidlohr.bueso@hp.com>
+	Tue, 30 Jul 2013 22:49:25 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130731022751.GA2548@lge.com>
+References: <1375075929-6119-1-git-send-email-iamjoonsoo.kim@lge.com>
+	<1375075929-6119-2-git-send-email-iamjoonsoo.kim@lge.com>
+	<CAJd=RBCUJg5GJEQ2_heCt8S9LZzedGLbvYvivFkmvfMChPqaCg@mail.gmail.com>
+	<20130731022751.GA2548@lge.com>
+Date: Wed, 31 Jul 2013 10:49:24 +0800
+Message-ID: <CAJd=RBD=SNm9TG-kxKcd-BiMduOhLUubq=JpRwCy_MmiDtO9Tw@mail.gmail.com>
+Subject: Re: [PATCH 01/18] mm, hugetlb: protect reserved pages when
+ softofflining requests the pages
+From: Hillf Danton <dhillf@gmail.com>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
         Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
         "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Hugh Dickins <hughd@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
         David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Hillf Danton <dhillf@gmail.com>
-Subject: Re: [PATCH 05/18] mm, hugetlb: protect region tracking via newly
- introduced resv_map lock
-Message-ID: <20130731024305.GD2548@lge.com>
-References: <1375075929-6119-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1375075929-6119-6-git-send-email-iamjoonsoo.kim@lge.com>
- <1375123985.2089.5.camel@buesod1.americas.hpqcorp.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1375123985.2089.5.camel@buesod1.americas.hpqcorp.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 29, 2013 at 11:53:05AM -0700, Davidlohr Bueso wrote:
-> On Mon, 2013-07-29 at 14:31 +0900, Joonsoo Kim wrote:
-> > There is a race condition if we map a same file on different processes.
-> > Region tracking is protected by mmap_sem and hugetlb_instantiation_mutex.
-> > When we do mmap, we don't grab a hugetlb_instantiation_mutex, but,
-> > grab a mmap_sem. This doesn't prevent other process to modify region
-> > structure, so it can be modified by two processes concurrently.
-> > 
-> > To solve this, I introduce a lock to resv_map and make region manipulation
-> > function grab a lock before they do actual work. This makes region
-> > tracking safe.
-> 
-> I think we can use a rwsem here instead of a spinlock, similar to my
-> previous 1/2 approach.
-
-Hello, Davidlohr.
-
-As I said in reply to Hillf, I prefer to use a spinlock.
-Please refer that reply.
-
-Thanks.
-
-> 
-> > 
-> > Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> > 
-> > diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
-> > index 2677c07..e29e28f 100644
-> > --- a/include/linux/hugetlb.h
-> > +++ b/include/linux/hugetlb.h
-> > @@ -26,6 +26,7 @@ struct hugepage_subpool {
-> >  
-> >  struct resv_map {
-> >  	struct kref refs;
-> > +	spinlock_t lock;
-> >  	struct list_head regions;
-> >  };
-> >  extern struct resv_map *resv_map_alloc(void);
-> > diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> > index 24c0111..bf2ee11 100644
-> > --- a/mm/hugetlb.c
-> > +++ b/mm/hugetlb.c
-> > @@ -134,15 +134,8 @@ static inline struct hugepage_subpool *subpool_vma(struct vm_area_struct *vma)
-> >   * Region tracking -- allows tracking of reservations and instantiated pages
-> >   *                    across the pages in a mapping.
-> >   *
-> > - * The region data structures are protected by a combination of the mmap_sem
-> > - * and the hugetlb_instantiation_mutex.  To access or modify a region the caller
-> > - * must either hold the mmap_sem for write, or the mmap_sem for read and
-> > - * the hugetlb_instantiation_mutex:
-> > - *
-> > - *	down_write(&mm->mmap_sem);
-> > - * or
-> > - *	down_read(&mm->mmap_sem);
-> > - *	mutex_lock(&hugetlb_instantiation_mutex);
-> > + * The region data structures are embedded into a resv_map and
-> > + * protected by a resv_map's lock
-> >   */
-> >  struct file_region {
-> >  	struct list_head link;
-> > @@ -155,6 +148,7 @@ static long region_add(struct resv_map *resv, long f, long t)
-> >  	struct list_head *head = &resv->regions;
-> >  	struct file_region *rg, *nrg, *trg;
-> >  
-> > +	spin_lock(&resv->lock);
-> >  	/* Locate the region we are either in or before. */
-> >  	list_for_each_entry(rg, head, link)
-> >  		if (f <= rg->to)
-> > @@ -184,6 +178,7 @@ static long region_add(struct resv_map *resv, long f, long t)
-> >  	}
-> >  	nrg->from = f;
-> >  	nrg->to = t;
-> > +	spin_unlock(&resv->lock);
-> >  	return 0;
-> >  }
-> >  
-> > @@ -193,6 +188,7 @@ static long region_chg(struct resv_map *resv, long f, long t)
-> >  	struct file_region *rg, *nrg;
-> >  	long chg = 0;
-> >  
-> > +	spin_lock(&resv->lock);
-> >  	/* Locate the region we are before or in. */
-> >  	list_for_each_entry(rg, head, link)
-> >  		if (f <= rg->to)
-> > @@ -203,14 +199,18 @@ static long region_chg(struct resv_map *resv, long f, long t)
-> >  	 * size such that we can guarantee to record the reservation. */
-> >  	if (&rg->link == head || t < rg->from) {
-> >  		nrg = kmalloc(sizeof(*nrg), GFP_KERNEL);
-> > -		if (!nrg)
-> > -			return -ENOMEM;
-> > +		if (!nrg) {
-> > +			chg = -ENOMEM;
-> > +			goto out;
-> > +		}
-> > +
-> >  		nrg->from = f;
-> >  		nrg->to   = f;
-> >  		INIT_LIST_HEAD(&nrg->link);
-> >  		list_add(&nrg->link, rg->link.prev);
-> >  
-> > -		return t - f;
-> > +		chg = t - f;
-> > +		goto out;
-> >  	}
-> >  
-> >  	/* Round our left edge to the current segment if it encloses us. */
-> > @@ -223,7 +223,7 @@ static long region_chg(struct resv_map *resv, long f, long t)
-> >  		if (&rg->link == head)
-> >  			break;
-> >  		if (rg->from > t)
-> > -			return chg;
-> > +			goto out;
-> >  
-> >  		/* We overlap with this area, if it extends further than
-> >  		 * us then we must extend ourselves.  Account for its
-> > @@ -234,6 +234,9 @@ static long region_chg(struct resv_map *resv, long f, long t)
-> >  		}
-> >  		chg -= rg->to - rg->from;
-> >  	}
-> > +
-> > +out:
-> > +	spin_unlock(&resv->lock);
-> >  	return chg;
-> >  }
-> >  
-> > @@ -243,12 +246,13 @@ static long region_truncate(struct resv_map *resv, long end)
-> >  	struct file_region *rg, *trg;
-> >  	long chg = 0;
-> >  
-> > +	spin_lock(&resv->lock);
-> >  	/* Locate the region we are either in or before. */
-> >  	list_for_each_entry(rg, head, link)
-> >  		if (end <= rg->to)
-> >  			break;
-> >  	if (&rg->link == head)
-> > -		return 0;
-> > +		goto out;
-> >  
-> >  	/* If we are in the middle of a region then adjust it. */
-> >  	if (end > rg->from) {
-> > @@ -265,6 +269,9 @@ static long region_truncate(struct resv_map *resv, long end)
-> >  		list_del(&rg->link);
-> >  		kfree(rg);
-> >  	}
-> > +
-> > +out:
-> > +	spin_unlock(&resv->lock);
-> >  	return chg;
-> >  }
-> >  
-> > @@ -274,6 +281,7 @@ static long region_count(struct resv_map *resv, long f, long t)
-> >  	struct file_region *rg;
-> >  	long chg = 0;
-> >  
-> > +	spin_lock(&resv->lock);
-> >  	/* Locate each segment we overlap with, and count that overlap. */
-> >  	list_for_each_entry(rg, head, link) {
-> >  		long seg_from;
-> > @@ -289,6 +297,7 @@ static long region_count(struct resv_map *resv, long f, long t)
-> >  
-> >  		chg += seg_to - seg_from;
-> >  	}
-> > +	spin_unlock(&resv->lock);
-> >  
-> >  	return chg;
-> >  }
-> > @@ -386,6 +395,7 @@ struct resv_map *resv_map_alloc(void)
-> >  		return NULL;
-> >  
-> >  	kref_init(&resv_map->refs);
-> > +	spin_lock_init(&resv_map->lock);
-> >  	INIT_LIST_HEAD(&resv_map->regions);
-> >  
-> >  	return resv_map;
-> 
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+On Wed, Jul 31, 2013 at 10:27 AM, Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
+> On Mon, Jul 29, 2013 at 03:24:46PM +0800, Hillf Danton wrote:
+>> On Mon, Jul 29, 2013 at 1:31 PM, Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
+>> > alloc_huge_page_node() use dequeue_huge_page_node() without
+>> > any validation check, so it can steal reserved page unconditionally.
+>>
+>> Well, why is it illegal to use reserved page here?
+>
+> If we use reserved page here, other processes which are promised to use
+> enough hugepages cannot get enough hugepages and can die. This is
+> unexpected result to them.
+>
+But, how do you determine that a huge page is requested by a process
+that is not allowed to use reserved pages?
