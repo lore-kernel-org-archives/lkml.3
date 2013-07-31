@@ -1,31 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759354Ab3GaJAp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 05:00:45 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:41751 "EHLO
+	id S1759211Ab3GaJBm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 05:01:42 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:41713 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759229Ab3GaI4v (ORCPT
+	with ESMTP id S1755275Ab3GaI4Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 04:56:51 -0400
-Date: Wed, 31 Jul 2013 01:55:48 -0700
-From: tip-bot for Xie XiuQi <tipbot@zytor.com>
-Message-ID: <tip-46591962cb5bfd2bfb0baf42497119c816503598@git.kernel.org>
+	Wed, 31 Jul 2013 04:56:24 -0400
+Date: Wed, 31 Jul 2013 01:55:38 -0700
+From: tip-bot for Maarten Lankhorst <tipbot@zytor.com>
+Message-ID: <tip-85f4896123d0299128f2c95cc40f3b8b01d4b0f6@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        rusty@rustcorp.com.au, torvalds@linux-foundation.org,
-        peterz@infradead.org, jens.axboe@oracle.com,
-        paulmck@linux.vnet.ibm.com, npiggin@suse.de, xiexiuqi@huawei.com,
-        tglx@linutronix.de, oleg@redhat.com
+        torvalds@linux-foundation.org, peterz@infradead.org,
+        akpm@linux-foundation.org, alexander.deucher@amd.com,
+        tglx@linutronix.de, maarten.lankhorst@canonical.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, rusty@rustcorp.com.au,
-        peterz@infradead.org, jens.axboe@oracle.com, npiggin@suse.de,
-        paulmck@linux.vnet.ibm.com, xiexiuqi@huawei.com, oleg@redhat.com,
-        tglx@linutronix.de
-In-Reply-To: <51F72DA1.7010401@huawei.com>
-References: <51F72DA1.7010401@huawei.com>
+        torvalds@linux-foundation.org, peterz@infradead.org,
+        akpm@linux-foundation.org, alexander.deucher@amd.com,
+        tglx@linutronix.de, maarten.lankhorst@canonical.com
+In-Reply-To: <51F775B5.201@canonical.com>
+References: <51F775B5.201@canonical.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] generic-ipi:
-  Kill unnecessary variable - csd_flags
-Git-Commit-ID: 46591962cb5bfd2bfb0baf42497119c816503598
+Subject: [tip:core/urgent] mutex: Fix w/w mutex deadlock injection
+Git-Commit-ID: 85f4896123d0299128f2c95cc40f3b8b01d4b0f6
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,69 +31,57 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 31 Jul 2013 01:55:54 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 31 Jul 2013 01:55:44 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  46591962cb5bfd2bfb0baf42497119c816503598
-Gitweb:     http://git.kernel.org/tip/46591962cb5bfd2bfb0baf42497119c816503598
-Author:     Xie XiuQi <xiexiuqi@huawei.com>
-AuthorDate: Tue, 30 Jul 2013 11:06:09 +0800
+Commit-ID:  85f4896123d0299128f2c95cc40f3b8b01d4b0f6
+Gitweb:     http://git.kernel.org/tip/85f4896123d0299128f2c95cc40f3b8b01d4b0f6
+Author:     Maarten Lankhorst <maarten.lankhorst@canonical.com>
+AuthorDate: Tue, 30 Jul 2013 10:13:41 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 30 Jul 2013 22:19:05 +0200
+CommitDate: Tue, 30 Jul 2013 22:16:40 +0200
 
-generic-ipi: Kill unnecessary variable - csd_flags
+mutex: Fix w/w mutex deadlock injection
 
-After commit 8969a5ede0f9e17da4b943712429aef2c9bcd82b
-("generic-ipi: remove kmalloc()"), wait = 0 can be guaranteed,
-and all callsites of generic_exec_single() do an unconditional
-csd_lock() now.
+The check needs to be for > 1, because ctx->acquired is already incremented.
+This will prevent ww_mutex_lock_slow from returning -EDEADLK and not locking
+the mutex. It caused a lot of false gpu lockups on radeon with
+CONFIG_DEBUG_WW_MUTEX_SLOWPATH=y because a function that shouldn't be able
+to return -EDEADLK did.
 
-So csd_flags is unnecessary now. Remove it.
-
-Signed-off-by: Xie XiuQi <xiexiuqi@huawei.com>
+Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Alex Deucher <alexander.deucher@amd.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Nick Piggin <npiggin@suse.de>
-Cc: Jens Axboe <jens.axboe@oracle.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Link: http://lkml.kernel.org/r/51F72DA1.7010401@huawei.com
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Link: http://lkml.kernel.org/r/51F775B5.201@canonical.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/smp.c | 14 +-------------
- 1 file changed, 1 insertion(+), 13 deletions(-)
+ kernel/mutex.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/smp.c b/kernel/smp.c
-index fe9f773..7332697 100644
---- a/kernel/smp.c
-+++ b/kernel/smp.c
-@@ -186,25 +186,13 @@ void generic_smp_call_function_single_interrupt(void)
+diff --git a/kernel/mutex.c b/kernel/mutex.c
+index ff05f4b..a52ee7bb 100644
+--- a/kernel/mutex.c
++++ b/kernel/mutex.c
+@@ -686,7 +686,7 @@ __ww_mutex_lock(struct ww_mutex *lock, struct ww_acquire_ctx *ctx)
+ 	might_sleep();
+ 	ret =  __mutex_lock_common(&lock->base, TASK_UNINTERRUPTIBLE,
+ 				   0, &ctx->dep_map, _RET_IP_, ctx);
+-	if (!ret && ctx->acquired > 0)
++	if (!ret && ctx->acquired > 1)
+ 		return ww_mutex_deadlock_injection(lock, ctx);
  
- 	while (!list_empty(&list)) {
- 		struct call_single_data *csd;
--		unsigned int csd_flags;
+ 	return ret;
+@@ -702,7 +702,7 @@ __ww_mutex_lock_interruptible(struct ww_mutex *lock, struct ww_acquire_ctx *ctx)
+ 	ret = __mutex_lock_common(&lock->base, TASK_INTERRUPTIBLE,
+ 				  0, &ctx->dep_map, _RET_IP_, ctx);
  
- 		csd = list_entry(list.next, struct call_single_data, list);
- 		list_del(&csd->list);
+-	if (!ret && ctx->acquired > 0)
++	if (!ret && ctx->acquired > 1)
+ 		return ww_mutex_deadlock_injection(lock, ctx);
  
--		/*
--		 * 'csd' can be invalid after this call if flags == 0
--		 * (when called through generic_exec_single()),
--		 * so save them away before making the call:
--		 */
--		csd_flags = csd->flags;
--
- 		csd->func(csd->info);
- 
--		/*
--		 * Unlocked CSDs are valid through generic_exec_single():
--		 */
--		if (csd_flags & CSD_FLAG_LOCK)
--			csd_unlock(csd);
-+		csd_unlock(csd);
- 	}
- }
- 
+ 	return ret;
