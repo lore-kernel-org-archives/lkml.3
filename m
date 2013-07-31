@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760126Ab3GaNim (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 09:38:42 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46928 "EHLO
+	id S1760109Ab3GaNil (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 09:38:41 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:47052 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759649Ab3GaNZ5 (ORCPT
+	by vger.kernel.org with ESMTP id S1759811Ab3GaNZ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 31 Jul 2013 09:25:57 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,15 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Giridhar Malavali" <giridhar.malavali@qlogic.com>,
-        "Saurav Kashyap" <saurav.kashyap@qlogic.com>,
-        "James Bottomley" <JBottomley@Parallels.com>,
-        "Jack Hill" <jackhill@jackhill.us>
+CC: akpm@linux-foundation.org, "Nagachandra P" <nagachandra@gmail.com>,
+        "Theodore Ts'o" <tytso@mit.edu>
 Date: Wed, 31 Jul 2013 15:23:09 +0200
-Message-ID: <lsq.1375276989.436681420@decadent.org.uk>
+Message-ID: <lsq.1375276989.729223333@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [67/84] [SCSI] qla2xxx: Properly set the tagging for commands.
+Subject: [37/84] ext4: don't allow ext4_free_blocks() to fail due to ENOMEM
 In-Reply-To: <lsq.1375276989.251749228@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.216.67.181
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,60 +31,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Saurav Kashyap <saurav.kashyap@qlogic.com>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit c3ccb1d7cf4c4549151876dd37c0944a682fd9e1 upstream.
+commit e7676a704ee0a1ef71a6b23760b5a8f6896cb1a1 upstream.
 
-This fixes a regression where Xyratex controllers and disks were lost by the
-driver:
+The filesystem should not be marked inconsistent if ext4_free_blocks()
+is not able to allocate memory.  Unfortunately some callers (most
+notably ext4_truncate) don't have a way to reflect an error back up to
+the VFS.  And even if we did, most userspace applications won't deal
+with most system calls returning ENOMEM anyway.
 
-https://bugzilla.kernel.org/show_bug.cgi?id=59601
-
-Reported-by: Jack Hill <jackhill@jackhill.us>
-Signed-off-by: Saurav Kashyap <saurav.kashyap@qlogic.com>
-Signed-off-by: Giridhar Malavali <giridhar.malavali@qlogic.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Reported-by: Nagachandra P <nagachandra@gmail.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/scsi/qla2xxx/qla_iocb.c | 11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
+ fs/ext4/mballoc.c | 11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
 
---- a/drivers/scsi/qla2xxx/qla_iocb.c
-+++ b/drivers/scsi/qla2xxx/qla_iocb.c
-@@ -423,6 +423,8 @@ qla2x00_start_scsi(srb_t *sp)
- 			    __constant_cpu_to_le16(CF_SIMPLE_TAG);
- 			break;
+--- a/fs/ext4/mballoc.c
++++ b/fs/ext4/mballoc.c
+@@ -4696,11 +4696,16 @@ do_more:
+ 		 * blocks being freed are metadata. these blocks shouldn't
+ 		 * be used until this transaction is committed
+ 		 */
++	retry:
+ 		new_entry = kmem_cache_alloc(ext4_free_ext_cachep, GFP_NOFS);
+ 		if (!new_entry) {
+-			ext4_mb_unload_buddy(&e4b);
+-			err = -ENOMEM;
+-			goto error_return;
++			/*
++			 * We use a retry loop because
++			 * ext4_free_blocks() is not allowed to fail.
++			 */
++			cond_resched();
++			congestion_wait(BLK_RW_ASYNC, HZ/50);
++			goto retry;
  		}
-+	} else {
-+		cmd_pkt->control_flags = __constant_cpu_to_le16(CF_SIMPLE_TAG);
- 	}
- 
- 	/* Load SCSI command packet. */
-@@ -1244,11 +1246,11 @@ qla24xx_build_scsi_crc_2_iocbs(srb_t *sp
- 		    fcp_cmnd->task_attribute = TSK_ORDERED;
- 		    break;
- 		default:
--		    fcp_cmnd->task_attribute = 0;
-+		    fcp_cmnd->task_attribute = TSK_SIMPLE;
- 		    break;
- 		}
- 	} else {
--		fcp_cmnd->task_attribute = 0;
-+		fcp_cmnd->task_attribute = TSK_SIMPLE;
- 	}
- 
- 	cmd_pkt->fcp_rsp_dseg_len = 0; /* Let response come in status iocb */
-@@ -1454,7 +1456,12 @@ qla24xx_start_scsi(srb_t *sp)
- 		case ORDERED_QUEUE_TAG:
- 			cmd_pkt->task = TSK_ORDERED;
- 			break;
-+		default:
-+		    cmd_pkt->task = TSK_SIMPLE;
-+		    break;
- 		}
-+	} else {
-+		cmd_pkt->task = TSK_SIMPLE;
- 	}
- 
- 	/* Load SCSI command packet. */
+ 		new_entry->start_cluster = bit;
+ 		new_entry->group  = block_group;
 
