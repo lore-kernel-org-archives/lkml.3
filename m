@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759939Ab3GaNaB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 09:30:01 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:47122 "EHLO
+	id S1759803Ab3GaNbA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 09:31:00 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46998 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759537Ab3GaN0H (ORCPT
+	by vger.kernel.org with ESMTP id S1759768Ab3GaN0G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 09:26:07 -0400
+	Wed, 31 Jul 2013 09:26:06 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Takashi Iwai" <tiwai@suse.de>,
-        "Clemens Ladisch" <clemens@ladisch.de>
+CC: akpm@linux-foundation.org, "Tan Xiaojun" <tanxiaojun@huawei.com>,
+        "dingtianhong" <dingtianhong@huawei.com>,
+        "David S. Miller" <davem@davemloft.net>
 Date: Wed, 31 Jul 2013 15:23:09 +0200
-Message-ID: <lsq.1375276989.621662122@decadent.org.uk>
+Message-ID: <lsq.1375276989.794407031@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [45/84] ALSA: ua101: Fix unlocked snd_pcm_stop() call
+Subject: [18/84] dummy: fix oops when loading the dummy failed
 In-Reply-To: <lsq.1375276989.251749228@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.216.67.181
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,46 +32,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: dingtianhong <dingtianhong@huawei.com>
 
-commit 9538aa46c2427d6782aa10036c4da4c541605e0e upstream.
+[ Upstream commit 2c8a01894a12665d8059fad8f0a293c98a264121 ]
 
-snd_pcm_stop() must be called in the PCM substream lock context.
+We rename the dummy in modprobe.conf like this:
 
-Acked-by: Clemens Ladisch <clemens@ladisch.de>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+install dummy0 /sbin/modprobe -o dummy0 --ignore-install dummy
+install dummy1 /sbin/modprobe -o dummy1 --ignore-install dummy
+
+We got oops when we run the command:
+
+modprobe dummy0
+modprobe dummy1
+
+------------[ cut here ]------------
+
+[ 3302.187584] BUG: unable to handle kernel NULL pointer dereference at 0000000000000008
+[ 3302.195411] IP: [<ffffffff813fe62a>] __rtnl_link_unregister+0x9a/0xd0
+[ 3302.201844] PGD 85c94a067 PUD 8517bd067 PMD 0
+[ 3302.206305] Oops: 0002 [#1] SMP
+[ 3302.299737] task: ffff88105ccea300 ti: ffff880eba4a0000 task.ti: ffff880eba4a0000
+[ 3302.307186] RIP: 0010:[<ffffffff813fe62a>]  [<ffffffff813fe62a>] __rtnl_link_unregister+0x9a/0xd0
+[ 3302.316044] RSP: 0018:ffff880eba4a1dd8  EFLAGS: 00010246
+[ 3302.321332] RAX: 0000000000000000 RBX: ffffffff81a9d738 RCX: 0000000000000002
+[ 3302.328436] RDX: 0000000000000000 RSI: ffffffffa04d602c RDI: ffff880eba4a1dd8
+[ 3302.335541] RBP: ffff880eba4a1e18 R08: dead000000200200 R09: dead000000100100
+[ 3302.342644] R10: 0000000000000080 R11: 0000000000000003 R12: ffffffff81a9d788
+[ 3302.349748] R13: ffffffffa04d7020 R14: ffffffff81a9d670 R15: ffff880eba4a1dd8
+[ 3302.364910] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[ 3302.370630] CR2: 0000000000000008 CR3: 000000085e15e000 CR4: 00000000000427e0
+[ 3302.377734] DR0: 0000000000000003 DR1: 00000000000000b0 DR2: 0000000000000001
+[ 3302.384838] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[ 3302.391940] Stack:
+[ 3302.393944]  ffff880eba4a1dd8 ffff880eba4a1dd8 ffff880eba4a1e18 ffffffffa04d70c0
+[ 3302.401350]  00000000ffffffef ffffffffa01a8000 0000000000000000 ffffffff816111c8
+[ 3302.408758]  ffff880eba4a1e48 ffffffffa01a80be ffff880eba4a1e48 ffffffffa04d70c0
+[ 3302.416164] Call Trace:
+[ 3302.418605]  [<ffffffffa01a8000>] ? 0xffffffffa01a7fff
+[ 3302.423727]  [<ffffffffa01a80be>] dummy_init_module+0xbe/0x1000 [dummy0]
+[ 3302.430405]  [<ffffffffa01a8000>] ? 0xffffffffa01a7fff
+[ 3302.435535]  [<ffffffff81000322>] do_one_initcall+0x152/0x1b0
+[ 3302.441263]  [<ffffffff810ab24b>] do_init_module+0x7b/0x200
+[ 3302.446824]  [<ffffffff810ad3d2>] load_module+0x4e2/0x530
+[ 3302.452215]  [<ffffffff8127ae40>] ? ddebug_dyndbg_boot_param_cb+0x60/0x60
+[ 3302.458979]  [<ffffffff810ad5f1>] SyS_init_module+0xd1/0x130
+[ 3302.464627]  [<ffffffff814b9652>] system_call_fastpath+0x16/0x1b
+[ 3302.490090] RIP  [<ffffffff813fe62a>] __rtnl_link_unregister+0x9a/0xd0
+[ 3302.496607]  RSP <ffff880eba4a1dd8>
+[ 3302.500084] CR2: 0000000000000008
+[ 3302.503466] ---[ end trace 8342d49cd49f78ed ]---
+
+The reason is that when loading dummy, if __rtnl_link_register() return failed,
+the init_module should return and avoid take the wrong path.
+
+Signed-off-by: Tan Xiaojun <tanxiaojun@huawei.com>
+Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- sound/usb/misc/ua101.c | 14 ++++++++++++--
- 1 file changed, 12 insertions(+), 2 deletions(-)
+ drivers/net/dummy.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/sound/usb/misc/ua101.c
-+++ b/sound/usb/misc/ua101.c
-@@ -613,14 +613,24 @@ static int start_usb_playback(struct ua1
+diff --git a/drivers/net/dummy.c b/drivers/net/dummy.c
+index 68fe73c..99b1145 100644
+--- a/drivers/net/dummy.c
++++ b/drivers/net/dummy.c
+@@ -186,6 +186,8 @@ static int __init dummy_init_module(void)
  
- static void abort_alsa_capture(struct ua101 *ua)
- {
--	if (test_bit(ALSA_CAPTURE_RUNNING, &ua->states))
-+	unsigned long flags;
+ 	rtnl_lock();
+ 	err = __rtnl_link_register(&dummy_link_ops);
++	if (err < 0)
++		goto out;
+ 
+ 	for (i = 0; i < numdummies && !err; i++) {
+ 		err = dummy_init_one();
+@@ -193,6 +195,8 @@ static int __init dummy_init_module(void)
+ 	}
+ 	if (err < 0)
+ 		__rtnl_link_unregister(&dummy_link_ops);
 +
-+	if (test_bit(ALSA_CAPTURE_RUNNING, &ua->states)) {
-+		snd_pcm_stream_lock_irqsave(ua->capture.substream, flags);
- 		snd_pcm_stop(ua->capture.substream, SNDRV_PCM_STATE_XRUN);
-+		snd_pcm_stream_unlock_irqrestore(ua->capture.substream, flags);
-+	}
- }
++out:
+ 	rtnl_unlock();
  
- static void abort_alsa_playback(struct ua101 *ua)
- {
--	if (test_bit(ALSA_PLAYBACK_RUNNING, &ua->states))
-+	unsigned long flags;
-+
-+	if (test_bit(ALSA_PLAYBACK_RUNNING, &ua->states)) {
-+		snd_pcm_stream_lock_irqsave(ua->playback.substream, flags);
- 		snd_pcm_stop(ua->playback.substream, SNDRV_PCM_STATE_XRUN);
-+		snd_pcm_stream_unlock_irqrestore(ua->playback.substream, flags);
-+	}
- }
- 
- static int set_stream_hw(struct ua101 *ua, struct snd_pcm_substream *substream,
+ 	return err;
 
