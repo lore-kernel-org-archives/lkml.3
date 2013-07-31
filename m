@@ -1,82 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759422Ab3GaI7r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 04:59:47 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:23736 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759378Ab3GaI5O (ORCPT
+	id S1759354Ab3GaJAp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 05:00:45 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:41751 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759229Ab3GaI4v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 04:57:14 -0400
-X-AuditID: cbfee68e-b7f276d000002279-7e-51f8d168f9e8
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Andrew Morton'" <akpm@linux-foundation.org>
-Cc: "'LKML'" <linux-kernel@vger.kernel.org>,
-        "'Richard Purdie'" <rpurdie@rpsys.net>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-Subject: [PATCH 1/3] backlight: ld9040: Staticize local variable gamma_table
-Date: Wed, 31 Jul 2013 17:57:12 +0900
-Message-id: <002d01ce8dcb$f28d7f40$d7a87dc0$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac6Ny+xTCd5smhD6S9K/x8QwboxIfg==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCIsWRmVeSWpSXmKPExsVy+t8zQ92Miz8CDd6fsbaYs34Nm8XlhZdY
-	LS7vmsNmsXvXU1YHFo8TM36zeOyZ/4PVo2/LKkaPz5vkAliiuGxSUnMyy1KL9O0SuDL6L29h
-	Lmhjr1hxuImtgbGBrYuRk0NCwETi4fcVzBC2mMSFe+uB4lwcQgLLGCXOPLzJClN0dGonVGIR
-	o8TdK3eYIZxfjBInVj1jAaliE1CT+PLlMHsXIweHiIC+RFuLBkiYWaBUYuuD9ywgYWEBH4mm
-	Z2UgYRYBVYk5K/+DVfMKWErsnV8FEuYVEJT4MfkeC0SnlsT6nceZIGx5ic1r3kLdqSCx4+xr
-	RhBbREBP4v//fkaIGhGJfS/eMYJcJiGwjV3i9JlZLBC7BCS+TT4EdoKEgKzEpgNQcyQlDq64
-	wTKBUWwWktWzkKyehWT1LCQrFjCyrGIUTS1ILihOSi8y0itOzC0uzUvXS87P3cQIibG+HYw3
-	D1gfYkwGWj+RWUo0OR8Yo3kl8YbGZkYWpiamxkbmlmakCSuJ86q1WAcKCaQnlqRmp6YWpBbF
-	F5XmpBYfYmTi4JRqYFxXmHR/n82db/Entn3dfn2f3jt7D50Z1irsOptetm6wWpfrqtsezvMw
-	jHtys9f8I0Y/72+tbTknaODkK22+b3brkj+1d7b3nfpeLt1fbS3Rvt5i1y0Pv9e73VpMmatE
-	+XgumdWlCW3S+W1dWJPufKiUvVai5H+86tRla3Q45z7KXbOa71+8khJLcUaioRZzUXEiAN7A
-	M93HAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprIKsWRmVeSWpSXmKPExsVy+t9jAd2Miz8CDfa9M7eYs34Nm8XlhZdY
-	LS7vmsNmsXvXU1YHFo8TM36zeOyZ/4PVo2/LKkaPz5vkAliiGhhtMlITU1KLFFLzkvNTMvPS
-	bZW8g+Od403NDAx1DS0tzJUU8hJzU22VXHwCdN0yc4B2KimUJeaUAoUCEouLlfTtME0IDXHT
-	tYBpjND1DQmC6zEyQAMJ6xgz+i9vYS5oY69YcbiJrYGxga2LkZNDQsBE4ujUTihbTOLCvfVA
-	NheHkMAiRom7V+4wQzi/GCVOrHrGAlLFJqAm8eXLYfYuRg4OEQF9ibYWDZAws0CpxNYH71lA
-	wsICPhJNz8pAwiwCqhJzVv4Hq+YVsJTYO78KJMwrICjxY/I9FohOLYn1O48zQdjyEpvXvGWG
-	OEdBYsfZ14wgtoiAnsT///2MEDUiEvtevGOcwCgwC8moWUhGzUIyahaSlgWMLKsYRVMLkguK
-	k9JzDfWKE3OLS/PS9ZLzczcxgiP4mdQOxpUNFocYBTgYlXh4HS58DxRiTSwrrsw9xCjBwawk
-	wisf9CNQiDclsbIqtSg/vqg0J7X4EGMy0KMTmaVEk/OBySWvJN7Q2MTMyNLIzMLIxNycNGEl
-	cd4DrdaBQgLpiSWp2ampBalFMFuYODilGhgb7/1e+8l215FPOh++S8uyfXnTU5mv3bRuc031
-	G6Hk8kk2DyxWxP68ynt/ssiM5+3eepNPn42yPbf4gkWs5L032gL2/xaxe9sZX+FQ7+8o6Du9
-	p7nEPEqu5/fcqwahrgxf3+n1VK2Pbvv1Stgq7sGjgN83CpJPtp5Y++gmo9T0jV2qz9Wj175V
-	YinOSDTUYi4qTgQAZxIdbSQDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Wed, 31 Jul 2013 04:56:51 -0400
+Date: Wed, 31 Jul 2013 01:55:48 -0700
+From: tip-bot for Xie XiuQi <tipbot@zytor.com>
+Message-ID: <tip-46591962cb5bfd2bfb0baf42497119c816503598@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        rusty@rustcorp.com.au, torvalds@linux-foundation.org,
+        peterz@infradead.org, jens.axboe@oracle.com,
+        paulmck@linux.vnet.ibm.com, npiggin@suse.de, xiexiuqi@huawei.com,
+        tglx@linutronix.de, oleg@redhat.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, rusty@rustcorp.com.au,
+        peterz@infradead.org, jens.axboe@oracle.com, npiggin@suse.de,
+        paulmck@linux.vnet.ibm.com, xiexiuqi@huawei.com, oleg@redhat.com,
+        tglx@linutronix.de
+In-Reply-To: <51F72DA1.7010401@huawei.com>
+References: <51F72DA1.7010401@huawei.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] generic-ipi:
+  Kill unnecessary variable - csd_flags
+Git-Commit-ID: 46591962cb5bfd2bfb0baf42497119c816503598
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 31 Jul 2013 01:55:54 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix the following sparse warnings:
+Commit-ID:  46591962cb5bfd2bfb0baf42497119c816503598
+Gitweb:     http://git.kernel.org/tip/46591962cb5bfd2bfb0baf42497119c816503598
+Author:     Xie XiuQi <xiexiuqi@huawei.com>
+AuthorDate: Tue, 30 Jul 2013 11:06:09 +0800
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Tue, 30 Jul 2013 22:19:05 +0200
 
-drivers/video/backlight/ld9040_gamma.h:172:3: warning: symbol 'gamma_table' was not declared. Should it be static?
+generic-ipi: Kill unnecessary variable - csd_flags
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+After commit 8969a5ede0f9e17da4b943712429aef2c9bcd82b
+("generic-ipi: remove kmalloc()"), wait = 0 can be guaranteed,
+and all callsites of generic_exec_single() do an unconditional
+csd_lock() now.
+
+So csd_flags is unnecessary now. Remove it.
+
+Signed-off-by: Xie XiuQi <xiexiuqi@huawei.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Nick Piggin <npiggin@suse.de>
+Cc: Jens Axboe <jens.axboe@oracle.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Link: http://lkml.kernel.org/r/51F72DA1.7010401@huawei.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- drivers/video/backlight/ld9040_gamma.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/smp.c | 14 +-------------
+ 1 file changed, 1 insertion(+), 13 deletions(-)
 
-diff --git a/drivers/video/backlight/ld9040_gamma.h b/drivers/video/backlight/ld9040_gamma.h
-index 038d9c8..160f07a 100644
---- a/drivers/video/backlight/ld9040_gamma.h
-+++ b/drivers/video/backlight/ld9040_gamma.h
-@@ -169,7 +169,7 @@ static const unsigned int ld9040_22_50[] = {
+diff --git a/kernel/smp.c b/kernel/smp.c
+index fe9f773..7332697 100644
+--- a/kernel/smp.c
++++ b/kernel/smp.c
+@@ -186,25 +186,13 @@ void generic_smp_call_function_single_interrupt(void)
  
- struct ld9040_gamma {
- 	unsigned int *gamma_22_table[MAX_GAMMA_LEVEL];
--} gamma_table = {
-+} static gamma_table = {
- 	.gamma_22_table[0] = (unsigned int *)&ld9040_22_50,
- 	.gamma_22_table[1] = (unsigned int *)&ld9040_22_70,
- 	.gamma_22_table[2] = (unsigned int *)&ld9040_22_80,
--- 
-1.7.10.4
-
-
+ 	while (!list_empty(&list)) {
+ 		struct call_single_data *csd;
+-		unsigned int csd_flags;
+ 
+ 		csd = list_entry(list.next, struct call_single_data, list);
+ 		list_del(&csd->list);
+ 
+-		/*
+-		 * 'csd' can be invalid after this call if flags == 0
+-		 * (when called through generic_exec_single()),
+-		 * so save them away before making the call:
+-		 */
+-		csd_flags = csd->flags;
+-
+ 		csd->func(csd->info);
+ 
+-		/*
+-		 * Unlocked CSDs are valid through generic_exec_single():
+-		 */
+-		if (csd_flags & CSD_FLAG_LOCK)
+-			csd_unlock(csd);
++		csd_unlock(csd);
+ 	}
+ }
+ 
