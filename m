@@ -1,90 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760536Ab3GaPt7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 11:49:59 -0400
-Received: from up.free-electrons.com ([94.23.35.102]:48489 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1760451Ab3GaPt6 (ORCPT
+	id S1760516Ab3GaPvU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 11:51:20 -0400
+Received: from mailout3.w2.samsung.com ([211.189.100.13]:53264 "EHLO
+	usmailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756760Ab3GaPvS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 11:49:58 -0400
-Date: Wed, 31 Jul 2013 17:49:53 +0200
-From: "maxime.ripard" <maxime.ripard@free-electrons.com>
-To: "kevin.z.m" <kevin.z.m.zh@gmail.com>
-Cc: Emilio Lopez <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>,
-        =?utf-8?B?5a2Z5b2m6YKm?= <sunny@allwinnertech.com>,
-        =?utf-8?B?5ZC05Lmm6ICV?= <shuge@allwinnertech.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Re: [PATCH 4/4] ARM: sun6i: Enable clock support in the DTSI
-Message-ID: <20130731154953.GG2911@lukather>
-References: <1375195462-19566-1-git-send-email-maxime.ripard@free-electrons.com>
- <1375195462-19566-5-git-send-email-maxime.ripard@free-electrons.com>
- <51F86A2E.10505@elopez.com.ar>
- <20130731073724.GA24439@lukather>
- <2013073116110750016327@gmail.com>
- <20130731114957.GD2911@lukather>
- <2013073120102496855035@gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ijf6z65S790CMqo8"
-Content-Disposition: inline
-In-Reply-To: <2013073120102496855035@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 31 Jul 2013 11:51:18 -0400
+X-AuditID: cbfec37a-b7fc36d0000050de-90-51f93274c1cb
+From: Shuah Khan <shuah.kh@samsung.com>
+To: "Winkler, Tomas" <tomas.winkler@intel.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>, "arnd@arndb.de" <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Shuah Khan <shuah.kh@samsung.com>
+Subject: Re: [char-misc 3.11 V2] mei: me: fix hardware reset flow
+Thread-topic: [char-misc 3.11 V2] mei: me: fix hardware reset flow
+Thread-index: AQHOjRXfJ/5nZZSBIEm/1iKXnTSuJw==
+Date: Wed, 31 Jul 2013 15:51:14 +0000
+Message-id: <B8EFE96D1287C24090BAD9D858E15E6174F3DA@sisaex01sj>
+References: <1375182711-10253-1-git-send-email-tomas.winkler@intel.com>
+ <20130730142209.GA28956@kroah.com>
+ <5B8DA87D05A7694D9FA63FD143655C1B1AE783C8@HASMSX106.ger.corp.intel.com>
+ <B8EFE96D1287C24090BAD9D858E15E6174EAFA@sisaex01sj>
+ <5B8DA87D05A7694D9FA63FD143655C1B1AE7868F@HASMSX106.ger.corp.intel.com>
+Accept-Language: en-US
+Content-language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+X-Originating-IP: [105.144.21.63]
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 8BIT
+MIME-version: 1.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupgkeLIzCtJLcpLzFFi42I5/e+wn26J0c9Ag1MvrCz+TjrGbtG8eD2b
+	xflbn5ktLu+aw2bxoafOgdXj969JjB6L97xk8tg/dw27x6TDn5k8Pm+SC2CN4rJJSc3JLEst
+	0rdL4Mr41nyUreCcbEXf2XWsDYx3xbsYOTkkBEwk5u95wgJhi0lcuLeeDcQWEljGKLFjgQWE
+	3cskcfqCXRcjF5A9n1Hi+pFp7CAJNgF1ic+vd4DZIgJ6ErdWz2EHKWIWeMAo8eLfNbCpwgKO
+	EnfOXWSGKHKS2D/rKhNMw5s5kxhBbBYBVYmlM7aBDeIVsJdovXSBDWLbNiaJNZN+gTUwAp33
+	/dQaMJtZQFyiufUm1NkCEkv2nGeGsEUlXj7+x9rFyAFkK0psX20FUa4lsX7ncahWbYkn7y6w
+	QuwSlPgx+R7LBEaxWUimzkLSMgtJyywkLQsYWVYxipUWJxcUJ6WnVhjqFSfmFpfmpesl5+du
+	YoTEXtUOxjtfbQ4xCnAwKvHwOlz4HijEmlhWXJl7iFGCg1lJhHcP689AId6UxMqq1KL8+KLS
+	nNTiQ4xMHJxSDYx6T8LPHol5GfbnTFnr8p185Q1FduHfl2pL1EiWyLDVPHHdvf22z6rrKpaf
+	4pZslNc01HnAtW1/ZuybIl8pw21z4z4eEVISTppbc3zjr+cyZt+eHD630+mbrPyNVf8E8liO
+	v438GhsrsdrGSYvff83yuhVRxcsaXT5q23zbvbuys/BQ14V5r9YosRRnJBpqMRcVJwIA3UGo
+	A5sCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/30/2013 01:30 PM, Winkler, Tomas wrote:
+>
+>>
+>   >>> Both H_IS and H_IE needs to be set to receive H_RDY interrupt
+>>>>>
+>>>>> 1. Assert H_IS to clear the interrupts during hw reset and use
+>>>>> mei_me_reg_write instead of mei_hcsr_set as the later strips down
+>>>>> the H_IS
+>>>>>
+>>>>> 2. fix interrupt disablement embarrassing typo
+>>>>>     hcsr |= ~H_IE -> hcsr &= ~H_IE;
+>>>>> this will remove the unwanted interrupt on power down
+>>>>>
+>>>>> 3. remove useless debug print outs
+>>>>>
+>>>>> Cc: Shuah Khan <shuah.kh@samsung.com>
+>>>>> Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>
+>>>>> Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+>>>>> ---
+>>>>>
+>>>>> V2: Fixed typo in Shuah email
+>>>>>
+>>>>> Hope this finally resolve the ME reset issue for all
+>>>>
+>>>> Can I get a "Tested-by:" from someone to ensure that it really does
+>>>> solve the problem?
+>>>
+>>> Yes,  please wait for ack/test results. It works for me but unfortunately I
+>> cannot go over all  9 gens of  PCH and all their proliferations  where ME
+>> resides.
+>>> I'm putting some effort to have better legacy HW testing coverage but I'm
+>> not there yet.
+>>>
+>>
+>> Tomas,
+>>
+>> I have a test system that has shows the mei_me reset problem after boot-
+>> up. I tested this patch on top of 3.11-rc3 that has the previous 4 patches. I am
+>> seeing the issue still on this system:
+>>
+>> 00:03.0 Communication controller: Intel Corporation 82Q963/Q965 HECI
+>> Controller (rev 02)
+>>           Subsystem: Hewlett-Packard Company Device 2801
+>>           Control: I/O- Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
+>> ParErr- Stepping- SERR- FastB2B- DisINTx+
+>>           Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort-
+>> <TAbort- <MAbort- >SERR- <PERR- INTx-
+>>           Latency: 0
+>>           Interrupt: pin A routed to IRQ 41
+>>           Region 0: Memory at f0521900 (64-bit, non-prefetchable) [size=16]
+>>           Capabilities: <access denied>
+>>           Kernel driver in use: mei_me
+>>
+>>
+>> I am attaching the dmesg. Please let me know if you need any more
+>> information from the system.
+>
+> I'm not sure this error though looks similar is coming from the same source,  this is even after boot up, which  I haven't seen before.
+> Would it be possible you open more logs through dynamic debug on mei and mei_me modules
+> To preserve it over reboot I add it into /etc/modprobe.d/mei.conf
+> options mei dyndbg="+plf"
+> options mei_me dyndbg="+plf"
+>
+> Thanks
+> Tomas
+>
 
---ijf6z65S790CMqo8
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Tomas,
 
+I tested the patch on the system I saw this problem during 
+suspend/resume sequence. After 10 suspend-to-disk reboot mode and 10 
+suspend-to-disk platform mode tests, I couldn't reproduce the problem. 
+So does this mean the problem went away. I don't know. With all your 
+fixes I no longer can reproduce the problem during suspend/resume 
+sequence. I used to see once every 3 or 4 suspend-to-resume attempts on 
+this system.
 
+The second machine I have I see the problem often during run-time and 
+that has nothing to do with suspend/resume. I will get the dyndbg data 
+you asked for from that system.
 
-On Wed, Jul 31, 2013 at 08:10:32PM +0800, kevin.z.m wrote:
-> > How does one select either the internal or the external 32kHz
-> > oscillator? Is this done in software (I can't find any reference to that
-> > in the user manuals) or in hardware?
-> For A20, it should be in the Timer module, and there is a register named =
-"LOSC_CTRL_REG".
-> For A31, it is in the RTC module, same name of "LOSC_CTRL_REG".
+You have my Tested-by for the original suspend/resume problem I reported.
 
-Ok, just so that we're on the same page, we have two oscillators running
-at 32kHz, the internal being always there, and the external that could
-or could not be there, and it's each different hardware block that can
-be wired to one, the other or both?
+-- Shuah
 
-There's no global mux that could use either one of the two 32k to
-provide the only 32kHz source in the system, right?
-
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---ijf6z65S790CMqo8
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR+TIhAAoJEBx+YmzsjxAgl9kP/2rdk4RofktvLbLY8IluAE/h
-y0UCLnYqaJMjgiFqj8Bj5o9GBlgTAT5lGeMmKCIrDlz3VKi2SGBJgrfdQ3uwypvw
-OVGwUk1LpkfKSBPMnxwF2FY6RPXYNuJc3rnilD2eV1FW2E7e8O6yNrI9Qr7Rii8s
-RFbt3YJ8u7RhY2GH1Zw804wUkTQXTwIQGINjgDdo9gnUxxzN1aOHPTmRVtKTK75X
-h0cV/8FOKjXjXGWEFYcJLZzBWMRkjMOQUsY/lZNwV0coElFxkDrrC1B4lC1GQwBS
-hefJBQNOxB5FNHSgl2TnrISpagT29AFKXiz3JOwwyHx10hIHhvHvhQpbqLC90YMe
-xOm+4CPGWHM5AOabaHKwZFrvciPjAlBKSTC6csicQDsiB3IsHj/6L4GR4i/0JN8p
-EyL2hrxSokbuwkG49c2T5lMzlMTCt1cv+D0vRHKCBs0YdlbEYGyNqAURhz5IyARF
-Nd7Xiw23mYwzqFsZjXTVSaCZbfMrVILlgGeWzXgfp2HcU42tMSjo6/Yhpa5RFPyL
-Y9XjaGiIbFHGw+CePWqr0huIYwnPa8OAMaOnydCk1FKrPpNCAfw6plBMxKlBR6X4
-M5h+/gGR3Dlr4nlEYZZwB0FIVEMI5Bjxwtbn1/mXFecBzc5rxaWJTM1xcZdz4jlQ
-lOoybXDkTWbF0ajE/5Xf
-=kvM4
------END PGP SIGNATURE-----
-
---ijf6z65S790CMqo8--
+Shuah Khan, Linux Kernel Developer - Open Source Group Samsung Research 
+America (Silicon Valley) shuah.kh@samsung.com | (970) 672-0658
