@@ -1,57 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760666Ab3GaRvO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 13:51:14 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:58281 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760480Ab3GaRvM (ORCPT
+	id S1760559Ab3GaRwi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 13:52:38 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:41659 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751351Ab3GaRwg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 13:51:12 -0400
-X-Sasl-enc: uWrkqu7V4mdWe6Io+PlVIHiPHZHsbKRvE5a4cNpSUJ4U 1375293071
-Message-ID: <51F94E8D.5040908@fastmail.fm>
-Date: Wed, 31 Jul 2013 19:51:09 +0200
-From: Bernd Schubert <bernd.schubert@fastmail.fm>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Wed, 31 Jul 2013 13:52:36 -0400
+Date: Wed, 31 Jul 2013 18:52:32 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Aaron Lu <aaron.lwe@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        Len Brown <lenb@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [REGRESSION/PATCH] acpi: blacklist win8 OSI for ASUS Zenbok
+ Prime UX31A
+Message-ID: <20130731175232.GA29987@srcf.ucam.org>
+References: <1375125658-1223-1-git-send-email-felipe.contreras@gmail.com>
+ <3453253.oZLO1ChPbL@vostro.rjw.lan>
+ <CAMP44s02V_FO1BPJZqo6MB9RMknXYdV7AXDqbJzYHpgK1GUuJw@mail.gmail.com>
+ <37178266.QXgbv9rq0i@vostro.rjw.lan>
+ <CAMP44s2LqiEGtS72FuTjsHUa1MH2kfaYHmcpNKMmAm2LnbFCCQ@mail.gmail.com>
+ <20130731051421.GA15766@srcf.ucam.org>
+ <CAMP44s2B=nQLnZm7gyYAJZgt_x3KszRZLUC=fom0t9=Eze+smA@mail.gmail.com>
+ <20130731140010.GA24560@srcf.ucam.org>
+ <CAMP44s1cLou9TMfLS+FHwPM_b3bG5HN1-hzgvhz0fVRCZ8XqWw@mail.gmail.com>
 MIME-Version: 1.0
-To: "Martin K. Petersen" <martin.petersen@oracle.com>
-CC: Nix <nix@esperi.org.uk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-scsi@vger.kernel.org, nick.cheng@areca.com.tw,
-        stable@vger.kernel.org
-Subject: Re: [SCSI REGRESSION] 3.10.2 or 3.10.3: arcmsr failure at bootup
- / early userspace transition
-References: <87r4ehfzhf.fsf@spindle.srvr.nix> <51F667C2.4020801@fastmail.fm> <87mwp5frdl.fsf@spindle.srvr.nix> <51F67959.2060803@fastmail.fm> <87fvuxdqes.fsf@spindle.srvr.nix> <yq1txjdhree.fsf@sermon.lab.mkp.net> <51F80167.1080004@fastmail.fm> <yq1zjt3h11y.fsf@sermon.lab.mkp.net>
-In-Reply-To: <yq1zjt3h11y.fsf@sermon.lab.mkp.net>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMP44s1cLou9TMfLS+FHwPM_b3bG5HN1-hzgvhz0fVRCZ8XqWw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/31/2013 05:15 AM, Martin K. Petersen wrote:
->>>>>> "Bernd" == Bernd Schubert <bernd.schubert@fastmail.fm> writes:
-> 
-> Bernd,
-> 
->>> Product revision level: R001 
-> 
-> It's clearly not verbatim passthrough...
-> 
-> Bernd> Besides the firmware, the difference might be that I'm exporting
-> Bernd> single disks without any areca-raidset in between.  I can try to
-> Bernd> confirm that tomorrow, I just need the system as it is till
-> Bernd> tomorrow noon.
-> 
-> That would be a great data point. I don't have any Areca boards.
-> 
+On Wed, Jul 31, 2013 at 12:46:04PM -0500, Felipe Contreras wrote:
 
-Just tested it, areca-raidset does not make a difference, but the
-firmware version does. After downgrading to 1.46 I have the same issue.
+> That doesn't change the fact that you were wrong, and there *is*
+> actually a way. The fact that you don't want to go there doesn't mean
+> it's not there.
 
-It is getting a bit late for me, but as this a pure development system,
-which is also booted over nfs, I can investigate it tomorrow.
+A quirk list will be incomplete, and as such there's no way to guarantee 
+whether or not a value of 0 will turn off the backlight. This is why the 
+interface doesn't make that guarantee, and why any userspace that 
+depends upon that behaviour is behaving incorrectly.
 
+> Here's another: device tree.
 
-Cheers,
-Bernd
+There's no functional distinction between device tree and a quirk list 
+on x86 - they're both static data sources provided by something other 
+than the system firmware. As a result, they will both be incomplete.
+
+> There are ways to provide a consistent backlight interface to user-space.
+
+No, there aren't. What you *can* do is propose to change the ABI 
+description for the sysfs backlight interface such that any system where 
+0 turns off the backlight is considered buggy, but that won't make those 
+systems vanish. A good interface doesn't promise things it can't 
+guarantee, so I'd expect that any such proposal would be rejected.
+
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
