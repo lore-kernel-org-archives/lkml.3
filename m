@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760854Ab3GaT4L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 15:56:11 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:46045 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760675Ab3GaTyb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1760840Ab3GaT4K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 15:56:10 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:60461 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757465Ab3GaTyb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 31 Jul 2013 15:54:31 -0400
 X-IronPort-AV: E=Sophos;i="4.89,789,1367971200"; 
-   d="scan'208";a="40581748"
+   d="scan'208";a="38620689"
 From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 To: <xen-devel@lists.xensource.com>
 CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <konrad.wilk@oracle.com>, <Stefano.Stabellini@eu.citrix.com>,
         <Ian.Campbell@citrix.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        <catalin.marinas@arm.com>, <will.deacon@arm.com>
-Subject: [PATCH v2 RFC 3/8] arm64: do not initialize arm64_swiotlb if dma_ops is already set
-Date: Wed, 31 Jul 2013 20:54:07 +0100
-Message-ID: <1375300452-12545-3-git-send-email-stefano.stabellini@eu.citrix.com>
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: [PATCH v2 RFC 4/8] xen/arm,arm64: move Xen initialization earlier
+Date: Wed, 31 Jul 2013 20:54:08 +0100
+Message-ID: <1375300452-12545-4-git-send-email-stefano.stabellini@eu.citrix.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <alpine.DEB.2.02.1307312048511.4893@kaball.uk.xensource.com>
 References: <alpine.DEB.2.02.1307312048511.4893@kaball.uk.xensource.com>
@@ -28,25 +28,126 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: catalin.marinas@arm.com
-CC: will.deacon@arm.com
 ---
- arch/arm64/mm/dma-mapping.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ arch/arm/include/asm/xen/hypervisor.h |    6 ++++++
+ arch/arm/kernel/setup.c               |    2 ++
+ arch/arm/xen/enlighten.c              |   21 ++++++++++++++-------
+ arch/arm64/kernel/setup.c             |    2 ++
+ 4 files changed, 24 insertions(+), 7 deletions(-)
 
-diff --git a/arch/arm64/mm/dma-mapping.c b/arch/arm64/mm/dma-mapping.c
-index 4bd7579..a006e84 100644
---- a/arch/arm64/mm/dma-mapping.c
-+++ b/arch/arm64/mm/dma-mapping.c
-@@ -63,6 +63,8 @@ static struct dma_map_ops arm64_swiotlb_dma_ops = {
- 
- void __init arm64_swiotlb_init(void)
- {
-+	if (dma_ops != NULL)
-+		return;
- 	dma_ops = &arm64_swiotlb_dma_ops;
- 	swiotlb_init(1);
+diff --git a/arch/arm/include/asm/xen/hypervisor.h b/arch/arm/include/asm/xen/hypervisor.h
+index d7ab99a..17b3ea2 100644
+--- a/arch/arm/include/asm/xen/hypervisor.h
++++ b/arch/arm/include/asm/xen/hypervisor.h
+@@ -16,4 +16,10 @@ static inline enum paravirt_lazy_mode paravirt_get_lazy_mode(void)
+ 	return PARAVIRT_LAZY_NONE;
  }
+ 
++#ifdef CONFIG_XEN
++void xen_early_init(void);
++#else
++static inline void xen_early_init(void) { return; }
++#endif
++
+ #endif /* _ASM_ARM_XEN_HYPERVISOR_H */
+diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
+index 63af9a7..cb7b8e2 100644
+--- a/arch/arm/kernel/setup.c
++++ b/arch/arm/kernel/setup.c
+@@ -45,6 +45,7 @@
+ #include <asm/cacheflush.h>
+ #include <asm/cachetype.h>
+ #include <asm/tlbflush.h>
++#include <asm/xen/hypervisor.h>
+ 
+ #include <asm/prom.h>
+ #include <asm/mach/arch.h>
+@@ -889,6 +890,7 @@ void __init setup_arch(char **cmdline_p)
+ 
+ 	arm_dt_init_cpu_maps();
+ 	psci_init();
++	xen_early_init();
+ #ifdef CONFIG_SMP
+ 	if (is_smp()) {
+ 		if (!mdesc->smp_init || !mdesc->smp_init()) {
+diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
+index c9770ba..14d17ab 100644
+--- a/arch/arm/xen/enlighten.c
++++ b/arch/arm/xen/enlighten.c
+@@ -195,21 +195,19 @@ static void xen_power_off(void)
+  * documentation of the Xen Device Tree format.
+  */
+ #define GRANT_TABLE_PHYSADDR 0
+-static int __init xen_guest_init(void)
++void __init xen_early_init(void)
+ {
+-	struct xen_add_to_physmap xatp;
+-	static struct shared_info *shared_info_page = 0;
++	struct resource res;
+ 	struct device_node *node;
+ 	int len;
+ 	const char *s = NULL;
+ 	const char *version = NULL;
+ 	const char *xen_prefix = "xen,xen-";
+-	struct resource res;
+ 
+ 	node = of_find_compatible_node(NULL, NULL, "xen,xen");
+ 	if (!node) {
+ 		pr_debug("No Xen support\n");
+-		return 0;
++		return;
+ 	}
+ 	s = of_get_property(node, "compatible", &len);
+ 	if (strlen(xen_prefix) + 3  < len &&
+@@ -217,10 +215,10 @@ static int __init xen_guest_init(void)
+ 		version = s + strlen(xen_prefix);
+ 	if (version == NULL) {
+ 		pr_debug("Xen version not found\n");
+-		return 0;
++		return;
+ 	}
+ 	if (of_address_to_resource(node, GRANT_TABLE_PHYSADDR, &res))
+-		return 0;
++		return;
+ 	xen_hvm_resume_frames = res.start >> PAGE_SHIFT;
+ 	xen_events_irq = irq_of_parse_and_map(node, 0);
+ 	pr_info("Xen %s support found, events_irq=%d gnttab_frame_pfn=%lx\n",
+@@ -232,6 +230,15 @@ static int __init xen_guest_init(void)
+ 		xen_start_info->flags |= SIF_INITDOMAIN|SIF_PRIVILEGED;
+ 	else
+ 		xen_start_info->flags &= ~(SIF_INITDOMAIN|SIF_PRIVILEGED);
++}
++
++static int __init xen_guest_init(void)
++{
++	struct xen_add_to_physmap xatp;
++	static struct shared_info *shared_info_page = 0;
++
++	if (!xen_domain())
++		return 0;
+ 
+ 	if (!shared_info_page)
+ 		shared_info_page = (struct shared_info *)
+diff --git a/arch/arm64/kernel/setup.c b/arch/arm64/kernel/setup.c
+index add6ea6..e0d438a 100644
+--- a/arch/arm64/kernel/setup.c
++++ b/arch/arm64/kernel/setup.c
+@@ -53,6 +53,7 @@
+ #include <asm/traps.h>
+ #include <asm/memblock.h>
+ #include <asm/psci.h>
++#include <asm/xen/hypervisor.h>
+ 
+ unsigned int processor_id;
+ EXPORT_SYMBOL(processor_id);
+@@ -267,6 +268,7 @@ void __init setup_arch(char **cmdline_p)
+ 	unflatten_device_tree();
+ 
+ 	psci_init();
++	xen_early_init();
+ 
+ 	cpu_logical_map(0) = read_cpuid_mpidr() & MPIDR_HWID_BITMASK;
+ #ifdef CONFIG_SMP
 -- 
 1.7.2.5
 
