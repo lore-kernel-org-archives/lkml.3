@@ -1,59 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754049Ab3GaGVk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 02:21:40 -0400
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:38337 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751636Ab3GaGVj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 02:21:39 -0400
+	id S1754054Ab3GaGYB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 02:24:01 -0400
+Received: from ozlabs.org ([203.10.76.45]:46236 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751794Ab3GaGYA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 02:24:00 -0400
+Date: Wed, 31 Jul 2013 16:23:56 +1000
+From: Michael Ellerman <michael@ellerman.id.au>
+To: linuxppc-dev@ozlabs.org
+Cc: Jeremy Kerr <jk@ozlabs.org>, Andrew Morton <akpm@osdl.org>,
+        Michael Neuling <mikey@neuling.org>, linux-kernel@vger.kernel.org,
+        Anton Blanchard <anton@samba.org>
+Subject: Re: [PATCH 2/3] selftests: Add support files for powerpc tests
+Message-ID: <20130731062356.GA9997@concordia>
+References: <1375246593-26116-1-git-send-email-michael@ellerman.id.au>
+ <1375246593-26116-2-git-send-email-michael@ellerman.id.au>
 MIME-Version: 1.0
-In-Reply-To: <20130731044101.GE2548@lge.com>
-References: <1375075929-6119-1-git-send-email-iamjoonsoo.kim@lge.com>
-	<1375075929-6119-2-git-send-email-iamjoonsoo.kim@lge.com>
-	<CAJd=RBCUJg5GJEQ2_heCt8S9LZzedGLbvYvivFkmvfMChPqaCg@mail.gmail.com>
-	<20130731022751.GA2548@lge.com>
-	<CAJd=RBD=SNm9TG-kxKcd-BiMduOhLUubq=JpRwCy_MmiDtO9Tw@mail.gmail.com>
-	<20130731044101.GE2548@lge.com>
-Date: Wed, 31 Jul 2013 14:21:38 +0800
-Message-ID: <CAJd=RBDr72T+O+aNdb-HyB3U+k5JiVWMoXfPNA0y-Hxw-wDD-g@mail.gmail.com>
-Subject: Re: [PATCH 01/18] mm, hugetlb: protect reserved pages when
- softofflining requests the pages
-From: Hillf Danton <dhillf@gmail.com>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1375246593-26116-2-git-send-email-michael@ellerman.id.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 31, 2013 at 12:41 PM, Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
-> On Wed, Jul 31, 2013 at 10:49:24AM +0800, Hillf Danton wrote:
->> On Wed, Jul 31, 2013 at 10:27 AM, Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
->> > On Mon, Jul 29, 2013 at 03:24:46PM +0800, Hillf Danton wrote:
->> >> On Mon, Jul 29, 2013 at 1:31 PM, Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
->> >> > alloc_huge_page_node() use dequeue_huge_page_node() without
->> >> > any validation check, so it can steal reserved page unconditionally.
->> >>
->> >> Well, why is it illegal to use reserved page here?
->> >
->> > If we use reserved page here, other processes which are promised to use
->> > enough hugepages cannot get enough hugepages and can die. This is
->> > unexpected result to them.
->> >
->> But, how do you determine that a huge page is requested by a process
->> that is not allowed to use reserved pages?
->
-> Reserved page is just one for each address or file offset. If we need to
-> move this page, this means that it already use it's own reserved page, this
-> page is it. So we should not use other reserved page for moving this page.
->
-Hm, how do you determine "this page" is not buddy?
+On Wed, Jul 31, 2013 at 02:56:32PM +1000, Michael Ellerman wrote:
+> This commit adds support code used by upcoming powerpc tests.
+
+Fudge, I broke this one while "cleaning it up". Will send a v2.
+
+cheers
