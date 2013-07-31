@@ -1,347 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760767Ab3GaU5K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 16:57:10 -0400
-Received: from mail.savoirfairelinux.com ([209.172.62.77]:52931 "EHLO
-	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752209Ab3GaU5I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 16:57:08 -0400
-From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-To: linux-gpio@vger.kernel.org
-Cc: Vivien Didelot <vivien.didelot@savoirfairelinux.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kernel@savoirfairelinux.com
-Subject: [PATCH] gpio: (gpio-pca953x) move header to linux/platform_data/
-Date: Wed, 31 Jul 2013 16:57:11 -0400
-Message-Id: <1375304231-27281-1-git-send-email-vivien.didelot@savoirfairelinux.com>
-X-Mailer: git-send-email 1.8.3.4
+	id S1760671Ab3GaU7A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 16:59:00 -0400
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:58051 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752209Ab3GaU66 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 16:58:58 -0400
+X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VPS-4(zzbb2dI98dI9371Ic89bh146fI1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzzz2fh95h668h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dh906i1155h192ch)
+Date: Wed, 31 Jul 2013 13:58:52 -0700
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+CC: Stephen Boyd <sboyd@codeaurora.org>, John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Stuart Menefy <stuart.menefy@st.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Michal Simek <michal.simek@xilinx.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: Enable arm_global_timer for Zynq brakes boot
+References: <f5b76049-7e5b-4dd0-9863-19cfd1d599b9@TX2EHSMHS006.ehs.local>
+ <51E7435B.3060605@codeaurora.org>
+ <ff4d40be-7177-4a55-ab2f-dff11fa18642@DB9EHSMHS009.ehs.local>
+ <51ED8DF2.60600@codeaurora.org>
+ <20130722201348.GI453@xsjandreislx>
+ <0735ab8c-0f80-4b64-b2b2-8d4553482c2a@CO9EHSMHS013.ehs.local>
+ <51F66565.7010600@linaro.org>
+ <8d56935e-2a20-46c7-b80a-f779572dd839@CO1EHSMHS014.ehs.local>
+ <51F77D93.4030505@linaro.org>
+ <51F97842.6050200@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+In-Reply-To: <51F97842.6050200@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+Message-ID: <068436c6-ff98-428f-8875-bb1c6f86466b@TX2EHSMHS008.ehs.local>
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: xilinx.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch moves the pca953x.h header from include/linux/i2c to
-include/linux/platform_data and updates existing support accordingly.
+On Wed, Jul 31, 2013 at 10:49:06PM +0200, Daniel Lezcano wrote:
+> On 07/31/2013 12:34 AM, Sören Brinkmann wrote:
+> > On Tue, Jul 30, 2013 at 10:47:15AM +0200, Daniel Lezcano wrote:
+> >> On 07/30/2013 02:03 AM, Sören Brinkmann wrote:
+> >>> Hi Daniel,
+> >>>
+> >>> On Mon, Jul 29, 2013 at 02:51:49PM +0200, Daniel Lezcano wrote:
+> >>> (snip)
+> >>>>
+> >>>> the CPUIDLE_FLAG_TIMER_STOP flag tells the cpuidle framework the local
+> >>>> timer will be stopped when entering to the idle state. In this case, the
+> >>>> cpuidle framework will call clockevents_notify(ENTER) and switches to a
+> >>>> broadcast timer and will call clockevents_notify(EXIT) when exiting the
+> >>>> idle state, switching the local timer back in use.
+> >>>
+> >>> I've been thinking about this, trying to understand how this makes my
+> >>> boot attempts on Zynq hang. IIUC, the wrongly provided TIMER_STOP flag
+> >>> would make the timer core switch to a broadcast device even though it
+> >>> wouldn't be necessary. But shouldn't it still work? It sounds like we do
+> >>> something useless, but nothing wrong in a sense that it should result in
+> >>> breakage. I guess I'm missing something obvious. This timer system will
+> >>> always remain a mystery to me.
+> >>>
+> >>> Actually this more or less leads to the question: What is this
+> >>> 'broadcast timer'. I guess that is some clockevent device which is
+> >>> common to all cores? (that would be the cadence_ttc for Zynq). Is the
+> >>> hang pointing to some issue with that driver?
+> >>
+> >> If you look at the /proc/timer_list, which timer is used for broadcasting ?
+> > 
+> > So, the correct run results (full output attached).
+> > 
+> > The vanilla kernel uses the twd timers as local timers and the TTC as
+> > broadcast device:
+> > 	Tick Device: mode:     1                                                         
+> > 	Broadcast device  
+> > 	Clock Event Device: ttc_clockevent
+> > 
+> > When I remove the offending CPUIDLE flag and add the DT fragment to
+> > enable the global timer, the twd timers are still used as local timers
+> > and the broadcast device is the global timer:
+> > 	Tick Device: mode:     1                                                         
+> > 	Broadcast device                                                                 
+> > 	Clock Event Device: arm_global_timer
+> > 
+> > Again, since boot hangs in the actually broken case, I don't see way to
+> > obtain this information for that case.
+> 
+> Can't you use the maxcpus=1 option to ensure the system to boot up ?
 
-Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
----
- arch/arm/mach-at91/board-snapper9260.c      |  2 +-
- arch/arm/mach-davinci/board-da850-evm.c     |  2 +-
- arch/arm/mach-ep93xx/vision_ep9307.c        |  2 +-
- arch/arm/mach-imx/mach-imx27_visstrim_m10.c |  2 +-
- arch/arm/mach-imx/mach-mxt_td60.c           |  2 +-
- arch/arm/mach-ks8695/board-acs5k.c          |  2 +-
- arch/arm/mach-mmp/ttc_dkb.c                 |  2 +-
- arch/arm/mach-omap2/board-am3517evm.c       |  2 +-
- arch/arm/mach-pxa/cm-x300.c                 |  2 +-
- arch/arm/mach-pxa/em-x270.c                 |  2 +-
- arch/arm/mach-pxa/pcm990-baseboard.c        |  2 +-
- arch/arm/mach-pxa/spitz.c                   |  2 +-
- arch/arm/mach-pxa/zeus.c                    |  2 +-
- arch/arm/mach-pxa/zylonite_pxa300.c         |  2 +-
- arch/arm/mach-s3c64xx/mach-crag6410.c       |  2 +-
- arch/x86/platform/mrst/mrst.c               |  2 +-
- drivers/gpio/gpio-pca953x.c                 |  2 +-
- include/linux/i2c/pca953x.h                 | 30 -----------------------------
- include/linux/platform_data/pca953x.h       | 30 +++++++++++++++++++++++++++++
- 19 files changed, 47 insertions(+), 47 deletions(-)
- delete mode 100644 include/linux/i2c/pca953x.h
- create mode 100644 include/linux/platform_data/pca953x.h
+Right, that works. I forgot about that option after you mentioned, that
+it is most likely not that useful.
 
-diff --git a/arch/arm/mach-at91/board-snapper9260.c b/arch/arm/mach-at91/board-snapper9260.c
-index 3aaa978..f1d49e9 100644
---- a/arch/arm/mach-at91/board-snapper9260.c
-+++ b/arch/arm/mach-at91/board-snapper9260.c
-@@ -26,7 +26,7 @@
- #include <linux/gpio.h>
- #include <linux/platform_device.h>
- #include <linux/spi/spi.h>
--#include <linux/i2c/pca953x.h>
-+#include <linux/platform_data/pca953x.h>
- 
- #include <asm/mach-types.h>
- #include <asm/mach/arch.h>
-diff --git a/arch/arm/mach-davinci/board-da850-evm.c b/arch/arm/mach-davinci/board-da850-evm.c
-index bea6793..af6dafb 100644
---- a/arch/arm/mach-davinci/board-da850-evm.c
-+++ b/arch/arm/mach-davinci/board-da850-evm.c
-@@ -19,7 +19,7 @@
- #include <linux/kernel.h>
- #include <linux/i2c.h>
- #include <linux/i2c/at24.h>
--#include <linux/i2c/pca953x.h>
-+#include <linux/platform_data/pca953x.h>
- #include <linux/input.h>
- #include <linux/input/tps6507x-ts.h>
- #include <linux/mfd/tps6507x.h>
-diff --git a/arch/arm/mach-ep93xx/vision_ep9307.c b/arch/arm/mach-ep93xx/vision_ep9307.c
-index 605956f..64f2e50 100644
---- a/arch/arm/mach-ep93xx/vision_ep9307.c
-+++ b/arch/arm/mach-ep93xx/vision_ep9307.c
-@@ -23,7 +23,7 @@
- #include <linux/mtd/partitions.h>
- #include <linux/i2c.h>
- #include <linux/i2c-gpio.h>
--#include <linux/i2c/pca953x.h>
-+#include <linux/platform_data/pca953x.h>
- #include <linux/spi/spi.h>
- #include <linux/spi/flash.h>
- #include <linux/spi/mmc_spi.h>
-diff --git a/arch/arm/mach-imx/mach-imx27_visstrim_m10.c b/arch/arm/mach-imx/mach-imx27_visstrim_m10.c
-index 29ac8ee6..97f9c62 100644
---- a/arch/arm/mach-imx/mach-imx27_visstrim_m10.c
-+++ b/arch/arm/mach-imx/mach-imx27_visstrim_m10.c
-@@ -26,7 +26,7 @@
- #include <linux/platform_device.h>
- #include <linux/mtd/physmap.h>
- #include <linux/i2c.h>
--#include <linux/i2c/pca953x.h>
-+#include <linux/platform_data/pca953x.h>
- #include <linux/input.h>
- #include <linux/gpio.h>
- #include <linux/delay.h>
-diff --git a/arch/arm/mach-imx/mach-mxt_td60.c b/arch/arm/mach-imx/mach-mxt_td60.c
-index a27faab..c918940 100644
---- a/arch/arm/mach-imx/mach-mxt_td60.c
-+++ b/arch/arm/mach-imx/mach-mxt_td60.c
-@@ -26,7 +26,7 @@
- #include <asm/mach/time.h>
- #include <asm/mach/map.h>
- #include <linux/gpio.h>
--#include <linux/i2c/pca953x.h>
-+#include <linux/platform_data/pca953x.h>
- 
- #include "common.h"
- #include "devices-imx27.h"
-diff --git a/arch/arm/mach-ks8695/board-acs5k.c b/arch/arm/mach-ks8695/board-acs5k.c
-index 456d638..9f9c044 100644
---- a/arch/arm/mach-ks8695/board-acs5k.c
-+++ b/arch/arm/mach-ks8695/board-acs5k.c
-@@ -20,7 +20,7 @@
- #include <linux/i2c.h>
- #include <linux/i2c-algo-bit.h>
- #include <linux/i2c-gpio.h>
--#include <linux/i2c/pca953x.h>
-+#include <linux/platform_data/pca953x.h>
- 
- #include <linux/mtd/mtd.h>
- #include <linux/mtd/map.h>
-diff --git a/arch/arm/mach-mmp/ttc_dkb.c b/arch/arm/mach-mmp/ttc_dkb.c
-index 8483906..7022329 100644
---- a/arch/arm/mach-mmp/ttc_dkb.c
-+++ b/arch/arm/mach-mmp/ttc_dkb.c
-@@ -15,7 +15,7 @@
- #include <linux/mtd/partitions.h>
- #include <linux/mtd/onenand.h>
- #include <linux/interrupt.h>
--#include <linux/i2c/pca953x.h>
-+#include <linux/platform_data/pca953x.h>
- #include <linux/gpio.h>
- #include <linux/gpio-pxa.h>
- #include <linux/mfd/88pm860x.h>
-diff --git a/arch/arm/mach-omap2/board-am3517evm.c b/arch/arm/mach-omap2/board-am3517evm.c
-index d63f14b..c7196a6 100644
---- a/arch/arm/mach-omap2/board-am3517evm.c
-+++ b/arch/arm/mach-omap2/board-am3517evm.c
-@@ -21,7 +21,7 @@
- #include <linux/clk.h>
- #include <linux/platform_device.h>
- #include <linux/gpio.h>
--#include <linux/i2c/pca953x.h>
-+#include <linux/platform_data/pca953x.h>
- #include <linux/can/platform/ti_hecc.h>
- #include <linux/davinci_emac.h>
- #include <linux/mmc/host.h>
-diff --git a/arch/arm/mach-pxa/cm-x300.c b/arch/arm/mach-pxa/cm-x300.c
-index 8091aac..f942349 100644
---- a/arch/arm/mach-pxa/cm-x300.c
-+++ b/arch/arm/mach-pxa/cm-x300.c
-@@ -29,7 +29,7 @@
- #include <linux/pwm_backlight.h>
- 
- #include <linux/i2c.h>
--#include <linux/i2c/pca953x.h>
-+#include <linux/platform_data/pca953x.h>
- #include <linux/i2c/pxa-i2c.h>
- 
- #include <linux/mfd/da903x.h>
-diff --git a/arch/arm/mach-pxa/em-x270.c b/arch/arm/mach-pxa/em-x270.c
-index 3a3362f..8eb4e23 100644
---- a/arch/arm/mach-pxa/em-x270.c
-+++ b/arch/arm/mach-pxa/em-x270.c
-@@ -30,7 +30,7 @@
- #include <linux/power_supply.h>
- #include <linux/apm-emulation.h>
- #include <linux/i2c.h>
--#include <linux/i2c/pca953x.h>
-+#include <linux/platform_data/pca953x.h>
- #include <linux/i2c/pxa-i2c.h>
- #include <linux/regulator/userspace-consumer.h>
- 
-diff --git a/arch/arm/mach-pxa/pcm990-baseboard.c b/arch/arm/mach-pxa/pcm990-baseboard.c
-index 13e5b00..3133ba8 100644
---- a/arch/arm/mach-pxa/pcm990-baseboard.c
-+++ b/arch/arm/mach-pxa/pcm990-baseboard.c
-@@ -408,7 +408,7 @@ struct pxacamera_platform_data pcm990_pxacamera_platform_data = {
- 	.mclk_10khz = 1000,
- };
- 
--#include <linux/i2c/pca953x.h>
-+#include <linux/platform_data/pca953x.h>
- 
- static struct pca953x_platform_data pca9536_data = {
- 	.gpio_base	= PXA_NR_BUILTIN_GPIO,
-diff --git a/arch/arm/mach-pxa/spitz.c b/arch/arm/mach-pxa/spitz.c
-index 4c29173..0b11c1a 100644
---- a/arch/arm/mach-pxa/spitz.c
-+++ b/arch/arm/mach-pxa/spitz.c
-@@ -20,7 +20,7 @@
- #include <linux/leds.h>
- #include <linux/i2c.h>
- #include <linux/i2c/pxa-i2c.h>
--#include <linux/i2c/pca953x.h>
-+#include <linux/platform_data/pca953x.h>
- #include <linux/spi/spi.h>
- #include <linux/spi/ads7846.h>
- #include <linux/spi/corgi_lcd.h>
-diff --git a/arch/arm/mach-pxa/zeus.c b/arch/arm/mach-pxa/zeus.c
-index f5d4364..126e4a8 100644
---- a/arch/arm/mach-pxa/zeus.c
-+++ b/arch/arm/mach-pxa/zeus.c
-@@ -26,7 +26,7 @@
- #include <linux/mtd/physmap.h>
- #include <linux/i2c.h>
- #include <linux/i2c/pxa-i2c.h>
--#include <linux/i2c/pca953x.h>
-+#include <linux/platform_data/pca953x.h>
- #include <linux/apm-emulation.h>
- #include <linux/can/platform/mcp251x.h>
- 
-diff --git a/arch/arm/mach-pxa/zylonite_pxa300.c b/arch/arm/mach-pxa/zylonite_pxa300.c
-index 86e59c0..869bce7 100644
---- a/arch/arm/mach-pxa/zylonite_pxa300.c
-+++ b/arch/arm/mach-pxa/zylonite_pxa300.c
-@@ -18,7 +18,7 @@
- #include <linux/init.h>
- #include <linux/i2c.h>
- #include <linux/i2c/pxa-i2c.h>
--#include <linux/i2c/pca953x.h>
-+#include <linux/platform_data/pca953x.h>
- #include <linux/gpio.h>
- 
- #include <mach/pxa300.h>
-diff --git a/arch/arm/mach-s3c64xx/mach-crag6410.c b/arch/arm/mach-s3c64xx/mach-crag6410.c
-index 8ad88ac..007fc53 100644
---- a/arch/arm/mach-s3c64xx/mach-crag6410.c
-+++ b/arch/arm/mach-s3c64xx/mach-crag6410.c
-@@ -30,7 +30,7 @@
- #include <linux/basic_mmio_gpio.h>
- #include <linux/spi/spi.h>
- 
--#include <linux/i2c/pca953x.h>
-+#include <linux/platform_data/pca953x.h>
- #include <linux/platform_data/s3c-hsotg.h>
- 
- #include <video/platform_lcd.h>
-diff --git a/arch/x86/platform/mrst/mrst.c b/arch/x86/platform/mrst/mrst.c
-index 47fe66f..3ca5957 100644
---- a/arch/x86/platform/mrst/mrst.c
-+++ b/arch/x86/platform/mrst/mrst.c
-@@ -20,7 +20,7 @@
- #include <linux/intel_pmic_gpio.h>
- #include <linux/spi/spi.h>
- #include <linux/i2c.h>
--#include <linux/i2c/pca953x.h>
-+#include <linux/platform_data/pca953x.h>
- #include <linux/gpio_keys.h>
- #include <linux/input.h>
- #include <linux/platform_device.h>
-diff --git a/drivers/gpio/gpio-pca953x.c b/drivers/gpio/gpio-pca953x.c
-index 426c51d..8804aec 100644
---- a/drivers/gpio/gpio-pca953x.c
-+++ b/drivers/gpio/gpio-pca953x.c
-@@ -18,7 +18,7 @@
- #include <linux/irq.h>
- #include <linux/irqdomain.h>
- #include <linux/i2c.h>
--#include <linux/i2c/pca953x.h>
-+#include <linux/platform_data/pca953x.h>
- #include <linux/slab.h>
- #ifdef CONFIG_OF_GPIO
- #include <linux/of_platform.h>
-diff --git a/include/linux/i2c/pca953x.h b/include/linux/i2c/pca953x.h
-deleted file mode 100644
-index 3c98dd4..0000000
---- a/include/linux/i2c/pca953x.h
-+++ /dev/null
-@@ -1,30 +0,0 @@
--#ifndef _LINUX_PCA953X_H
--#define _LINUX_PCA953X_H
--
--#include <linux/types.h>
--#include <linux/i2c.h>
--
--/* platform data for the PCA9539 16-bit I/O expander driver */
--
--struct pca953x_platform_data {
--	/* number of the first GPIO */
--	unsigned	gpio_base;
--
--	/* initial polarity inversion setting */
--	u32		invert;
--
--	/* interrupt base */
--	int		irq_base;
--
--	void		*context;	/* param to setup/teardown */
--
--	int		(*setup)(struct i2c_client *client,
--				unsigned gpio, unsigned ngpio,
--				void *context);
--	int		(*teardown)(struct i2c_client *client,
--				unsigned gpio, unsigned ngpio,
--				void *context);
--	const char	*const *names;
--};
--
--#endif /* _LINUX_PCA953X_H */
-diff --git a/include/linux/platform_data/pca953x.h b/include/linux/platform_data/pca953x.h
-new file mode 100644
-index 0000000..3c98dd4
---- /dev/null
-+++ b/include/linux/platform_data/pca953x.h
-@@ -0,0 +1,30 @@
-+#ifndef _LINUX_PCA953X_H
-+#define _LINUX_PCA953X_H
-+
-+#include <linux/types.h>
-+#include <linux/i2c.h>
-+
-+/* platform data for the PCA9539 16-bit I/O expander driver */
-+
-+struct pca953x_platform_data {
-+	/* number of the first GPIO */
-+	unsigned	gpio_base;
-+
-+	/* initial polarity inversion setting */
-+	u32		invert;
-+
-+	/* interrupt base */
-+	int		irq_base;
-+
-+	void		*context;	/* param to setup/teardown */
-+
-+	int		(*setup)(struct i2c_client *client,
-+				unsigned gpio, unsigned ngpio,
-+				void *context);
-+	int		(*teardown)(struct i2c_client *client,
-+				unsigned gpio, unsigned ngpio,
-+				void *context);
-+	const char	*const *names;
-+};
-+
-+#endif /* _LINUX_PCA953X_H */
--- 
-1.8.3.4
+Anyway, this are those sysfs files with an unmodified cpuidle driver and
+the gt enabled and having maxcpus=1 set.
+
+/proc/timer_list:
+	Tick Device: mode:     1
+	Broadcast device
+	Clock Event Device: arm_global_timer
+	 max_delta_ns:   12884902005
+	 min_delta_ns:   1000
+	 mult:           715827876
+	 shift:          31
+	 mode:           3
+	 next_event:     108080000000 nsecs
+	 set_next_event: gt_clockevent_set_next_event
+	 set_mode:       gt_clockevent_set_mode
+	 event_handler:  tick_handle_oneshot_broadcast
+	 retries:        0
+	
+	tick_broadcast_mask: 00000001
+	tick_broadcast_oneshot_mask: 00000000
+	
+	Tick Device: mode:     1
+	Per CPU device: 0
+	Clock Event Device: local_timer
+	 max_delta_ns:   12884902005
+	 min_delta_ns:   1000
+	 mult:           715827876
+	 shift:          31
+	 mode:           3
+	 next_event:     106900000000 nsecs
+	 set_next_event: twd_set_next_event
+	 set_mode:       twd_set_mode
+	 event_handler:  hrtimer_interrupt
+	 retries:        0
+
+# cat /proc/interrupts 
+	           CPU0       
+	 27:        252       GIC  27  gt
+	 29:        626       GIC  29  twd
+	 43:          0       GIC  43  ttc_clockevent
+	 82:        410       GIC  82  xuartps
+	IPI0:          0  CPU wakeup interrupts
+	IPI1:          0  Timer broadcast interrupts
+	IPI2:          0  Rescheduling interrupts
+	IPI3:          0  Function call interrupts
+	IPI4:          0  Single function call interrupts
+	IPI5:          0  CPU stop interrupts
+	Err:          0
+
+
+	Sören
+
 
