@@ -1,67 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760544Ab3GaQyX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 12:54:23 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:37426 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760081Ab3GaQyV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 12:54:21 -0400
-Date: Wed, 31 Jul 2013 17:53:55 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Robin Gong <b38343@freescale.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        linux-kernel@vger.kernel.org
-Message-ID: <20130731165355.GY9858@sirena.org.uk>
-References: <1375195664.11289.1.camel@phoenix>
+	id S1760590Ab3GaQ4R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 12:56:17 -0400
+Received: from mga02.intel.com ([134.134.136.20]:7398 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760559Ab3GaQ4Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 12:56:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,788,1367996400"; 
+   d="scan'208";a="354996137"
+Message-ID: <51F9419F.6070306@intel.com>
+Date: Wed, 31 Jul 2013 09:55:59 -0700
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="jO07GP1DIjZR2Kaj"
-Content-Disposition: inline
-In-Reply-To: <1375195664.11289.1.camel@phoenix>
-X-Cookie: You will be awarded some great honor.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: pfuze100: Simplify pfuze100_set_ramp_delay
- implementation
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+To: Xishi Qiu <qiuxishi@huawei.com>
+CC: linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH] mm/hotplug: remove unnecessary BUG_ON in __offline_pages()
+References: <51F761E7.5090403@huawei.com>
+In-Reply-To: <51F761E7.5090403@huawei.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/29/2013 11:49 PM, Xishi Qiu wrote:
+> I think we can remove "BUG_ON(start_pfn >= end_pfn)" in __offline_pages(),
+> because in memory_block_action() "nr_pages = PAGES_PER_SECTION * sections_per_block" 
+> is always greater than 0.
+...
+> --- a/mm/memory_hotplug.c
+> +++ b/mm/memory_hotplug.c
+> @@ -1472,7 +1472,6 @@ static int __ref __offline_pages(unsigned long start_pfn,
+>  	struct zone *zone;
+>  	struct memory_notify arg;
+>  
+> -	BUG_ON(start_pfn >= end_pfn);
+>  	/* at least, alignment against pageblock is necessary */
+>  	if (!IS_ALIGNED(start_pfn, pageblock_nr_pages))
+>  		return -EINVAL;
 
---jO07GP1DIjZR2Kaj
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I think you're saying that you don't see a way to hit this BUG_ON() in
+practice.  That does appear to be true, unless sections_per_block ended
+up 0 or negative.  The odds of getting in to this code if
+'sections_per_block' was bogus are pretty small.
 
-On Tue, Jul 30, 2013 at 10:47:44PM +0800, Axel Lin wrote:
-> Simplify the equation to calculate ramp_delay.
-> Below equations are equivalent:
+Or, is this a theoretical thing that folks might run in to when adding
+new features or developing?  It's in a cold path and the cost of the
+check is miniscule.  The original author (cc'd) also saw a need to put
+this in probably because he actually ran in to this.
 
-Applied, thanks.
+In any case, it looks fairly safe to me:
 
---jO07GP1DIjZR2Kaj
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR+UEgAAoJELSic+t+oim9JMUQAJ14y4h0hqbXKVlUHiLttI0M
-C+Noz9VgeSG0R8AnN4yV3qaO4SpmY20s5BQ2aNw110S6Uopbr3jjeERxLY/BR9oB
-PjJ40UIAXMRG/KyCLORBVkYiTCZ9Pn/M+7bIk3Aq2fggIXwnCq3MMCKlEBEhwhb+
-xr5WhyyoUjijKQyR7Bu/j+4xgK/nfvb/uOlgVNjtZwAts+gCvKgt4tIQn4FQTM//
-zuF+yfpTUMjJatrLL2PGETP5BwDcVUJAIxoBv4trHDvM4WEWPbXsdl9xrAt+u7V0
-uHQGpglXikZBHPn7SDfWYjFsBxG260g18mdzRdHFlpl/meBreL8cs3rV5yMT340S
-k1ZUTYeufsijT+kUI1X6wZpuWYF5LHcW0SM0VYmwtmU+lfckvKVzZ5DPIzj1QF+N
-YhOU+fDI32Qn0881rNZKy+jo3ESm7mJAVQC1AEYTmd7bz/TubtYqH9StQ7WzEks6
-zgkDJ+ZyuOz6vJDj7lmcbU8SU091iY7HCF1cwC6VGSHIRTKp4Y3Kezx5esGO9I46
-HKCQYDNkrTm8djarAcIq7vbxfHUNe1SXtQyLHaiXP0ww4UhIeychXKrsj7tjJSPS
-tFnkir5NS0BO6rTdpuaNyHmtGo2teR6o32C6RTrl/Ih6gEbnyI75o4bP2pBHoc7h
-sSlfGK71Y/rSAFly483m
-=rpmK
------END PGP SIGNATURE-----
-
---jO07GP1DIjZR2Kaj--
+Reviewed-by: Dave Hansen <dave.hansen@linux.intel.com>
