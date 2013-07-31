@@ -1,284 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759328Ab3GaJHT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 05:07:19 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:59762 "EHLO
-	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759212Ab3GaJDi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 05:03:38 -0400
-X-AuditID: 9c93017d-b7b45ae000000e34-1a-51f8d2e49d56
-From: Namhyung Kim <namhyung@kernel.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Namhyung Kim <namhyung.kim@lge.com>, Hyeoncheol Lee <cheol.lee@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+	id S1759265Ab3GaJHh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 05:07:37 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49712 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753942Ab3GaJHb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 05:07:31 -0400
+Date: Wed, 31 Jul 2013 10:07:27 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: [PATCH 07/13] tracing/kprobes: Remove duplicate set_print_fmt()
-Date: Wed, 31 Jul 2013 18:03:24 +0900
-Message-Id: <1375261410-11219-8-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1375261410-11219-1-git-send-email-namhyung@kernel.org>
-References: <1375261410-11219-1-git-send-email-namhyung@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 08/18] sched: Reschedule task on preferred NUMA node once
+ selected
+Message-ID: <20130731090727.GI2296@suse.de>
+References: <1373901620-2021-1-git-send-email-mgorman@suse.de>
+ <1373901620-2021-9-git-send-email-mgorman@suse.de>
+ <CAJd=RBB8rzy8bZ1JWkkmGBX2ucZ0kr9aOsiiwgV2s0y9_0z6fw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <CAJd=RBB8rzy8bZ1JWkkmGBX2ucZ0kr9aOsiiwgV2s0y9_0z6fw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+On Wed, Jul 17, 2013 at 09:31:05AM +0800, Hillf Danton wrote:
+> On Mon, Jul 15, 2013 at 11:20 PM, Mel Gorman <mgorman@suse.de> wrote:
+> > +static int
+> > +find_idlest_cpu_node(int this_cpu, int nid)
+> > +{
+> > +       unsigned long load, min_load = ULONG_MAX;
+> > +       int i, idlest_cpu = this_cpu;
+> > +
+> > +       BUG_ON(cpu_to_node(this_cpu) == nid);
+> > +
+> > +       rcu_read_lock();
+> > +       for_each_cpu(i, cpumask_of_node(nid)) {
+> 
+> Check allowed CPUs first if task is given?
+> 
 
-The set_print_fmt() functions are implemented almost same for
-[ku]probes.  Move it to a common place and get rid of the duplication.
+If the task is not allowed to run on the CPUs for that node then how
+were the NUMA hinting faults recorded?
 
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- kernel/trace/trace_kprobe.c | 63 +--------------------------------------------
- kernel/trace/trace_probe.c  | 62 ++++++++++++++++++++++++++++++++++++++++++++
- kernel/trace/trace_probe.h  |  1 +
- kernel/trace/trace_uprobe.c | 55 +--------------------------------------
- 4 files changed, 65 insertions(+), 116 deletions(-)
-
-diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-index d4c10fb8b8f8..40018618cc08 100644
---- a/kernel/trace/trace_kprobe.c
-+++ b/kernel/trace/trace_kprobe.c
-@@ -1069,67 +1069,6 @@ static int kretprobe_event_define_fields(struct ftrace_event_call *event_call)
- 	return 0;
- }
- 
--static int __set_print_fmt(struct trace_kprobe *tp, char *buf, int len)
--{
--	int i;
--	int pos = 0;
--
--	const char *fmt, *arg;
--
--	if (!trace_kprobe_is_return(tp)) {
--		fmt = "(%lx)";
--		arg = "REC->" FIELD_STRING_IP;
--	} else {
--		fmt = "(%lx <- %lx)";
--		arg = "REC->" FIELD_STRING_FUNC ", REC->" FIELD_STRING_RETIP;
--	}
--
--	/* When len=0, we just calculate the needed length */
--#define LEN_OR_ZERO (len ? len - pos : 0)
--
--	pos += snprintf(buf + pos, LEN_OR_ZERO, "\"%s", fmt);
--
--	for (i = 0; i < tp->p.nr_args; i++) {
--		pos += snprintf(buf + pos, LEN_OR_ZERO, " %s=%s",
--				tp->p.args[i].name, tp->p.args[i].type->fmt);
--	}
--
--	pos += snprintf(buf + pos, LEN_OR_ZERO, "\", %s", arg);
--
--	for (i = 0; i < tp->p.nr_args; i++) {
--		if (strcmp(tp->p.args[i].type->name, "string") == 0)
--			pos += snprintf(buf + pos, LEN_OR_ZERO,
--					", __get_str(%s)",
--					tp->p.args[i].name);
--		else
--			pos += snprintf(buf + pos, LEN_OR_ZERO, ", REC->%s",
--					tp->p.args[i].name);
--	}
--
--#undef LEN_OR_ZERO
--
--	/* return the length of print_fmt */
--	return pos;
--}
--
--static int set_print_fmt(struct trace_kprobe *tp)
--{
--	int len;
--	char *print_fmt;
--
--	/* First: called with 0 length to calculate the needed length */
--	len = __set_print_fmt(tp, NULL, 0);
--	print_fmt = kmalloc(len + 1, GFP_KERNEL);
--	if (!print_fmt)
--		return -ENOMEM;
--
--	/* Second: actually write the @print_fmt */
--	__set_print_fmt(tp, print_fmt, len + 1);
--	tp->p.call.print_fmt = print_fmt;
--
--	return 0;
--}
--
- #ifdef CONFIG_PERF_EVENTS
- 
- /* Kprobe profile handler */
-@@ -1280,7 +1219,7 @@ static int register_probe_event(struct trace_kprobe *tp)
- 		call->event.funcs = &kprobe_funcs;
- 		call->class->define_fields = kprobe_event_define_fields;
- 	}
--	if (set_print_fmt(tp) < 0)
-+	if (set_print_fmt(&tp->p, trace_kprobe_is_return(tp)) < 0)
- 		return -ENOMEM;
- 	ret = register_ftrace_event(&call->event);
- 	if (!ret) {
-diff --git a/kernel/trace/trace_probe.c b/kernel/trace/trace_probe.c
-index 5e491d82b6ad..76ab02143b5a 100644
---- a/kernel/trace/trace_probe.c
-+++ b/kernel/trace/trace_probe.c
-@@ -747,3 +747,65 @@ __kprobes void store_trace_args(int ent_size, struct trace_probe *tp,
- 				   data + tp->args[i].offset);
- 	}
- }
-+
-+static int __set_print_fmt(struct trace_probe *tp, char *buf, int len,
-+			   bool is_return)
-+{
-+	int i;
-+	int pos = 0;
-+
-+	const char *fmt, *arg;
-+
-+	if (!is_return) {
-+		fmt = "(%lx)";
-+		arg = "REC->" FIELD_STRING_IP;
-+	} else {
-+		fmt = "(%lx <- %lx)";
-+		arg = "REC->" FIELD_STRING_FUNC ", REC->" FIELD_STRING_RETIP;
-+	}
-+
-+	/* When len=0, we just calculate the needed length */
-+#define LEN_OR_ZERO (len ? len - pos : 0)
-+
-+	pos += snprintf(buf + pos, LEN_OR_ZERO, "\"%s", fmt);
-+
-+	for (i = 0; i < tp->nr_args; i++) {
-+		pos += snprintf(buf + pos, LEN_OR_ZERO, " %s=%s",
-+				tp->args[i].name, tp->args[i].type->fmt);
-+	}
-+
-+	pos += snprintf(buf + pos, LEN_OR_ZERO, "\", %s", arg);
-+
-+	for (i = 0; i < tp->nr_args; i++) {
-+		if (strcmp(tp->args[i].type->name, "string") == 0)
-+			pos += snprintf(buf + pos, LEN_OR_ZERO,
-+					", __get_str(%s)",
-+					tp->args[i].name);
-+		else
-+			pos += snprintf(buf + pos, LEN_OR_ZERO, ", REC->%s",
-+					tp->args[i].name);
-+	}
-+
-+#undef LEN_OR_ZERO
-+
-+	/* return the length of print_fmt */
-+	return pos;
-+}
-+
-+int set_print_fmt(struct trace_probe *tp, bool is_return)
-+{
-+	int len;
-+	char *print_fmt;
-+
-+	/* First: called with 0 length to calculate the needed length */
-+	len = __set_print_fmt(tp, NULL, 0, is_return);
-+	print_fmt = kmalloc(len + 1, GFP_KERNEL);
-+	if (!print_fmt)
-+		return -ENOMEM;
-+
-+	/* Second: actually write the @print_fmt */
-+	__set_print_fmt(tp, print_fmt, len + 1, is_return);
-+	tp->call.print_fmt = print_fmt;
-+
-+	return 0;
-+}
-diff --git a/kernel/trace/trace_probe.h b/kernel/trace/trace_probe.h
-index 888cd7d4cd3c..ec18e1b1487e 100644
---- a/kernel/trace/trace_probe.h
-+++ b/kernel/trace/trace_probe.h
-@@ -301,3 +301,4 @@ extern int traceprobe_command(const char *buf, int (*createfn)(int, char**));
- extern int __get_data_size(struct trace_probe *tp, struct pt_regs *regs);
- extern void store_trace_args(int ent_size, struct trace_probe *tp,
- 			     struct pt_regs *regs, u8 *data, int maxlen);
-+extern int set_print_fmt(struct trace_probe *tp, bool is_return);
-diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
-index cbb2ad76fd8c..bcc7bd300c99 100644
---- a/kernel/trace/trace_uprobe.c
-+++ b/kernel/trace/trace_uprobe.c
-@@ -661,59 +661,6 @@ static int uprobe_event_define_fields(struct ftrace_event_call *event_call)
- 	return 0;
- }
- 
--#define LEN_OR_ZERO		(len ? len - pos : 0)
--static int __set_print_fmt(struct trace_uprobe *tu, char *buf, int len)
--{
--	const char *fmt, *arg;
--	int i;
--	int pos = 0;
--
--	if (is_ret_probe(tu)) {
--		fmt = "(%lx <- %lx)";
--		arg = "REC->" FIELD_STRING_FUNC ", REC->" FIELD_STRING_RETIP;
--	} else {
--		fmt = "(%lx)";
--		arg = "REC->" FIELD_STRING_IP;
--	}
--
--	/* When len=0, we just calculate the needed length */
--
--	pos += snprintf(buf + pos, LEN_OR_ZERO, "\"%s", fmt);
--
--	for (i = 0; i < tu->p.nr_args; i++) {
--		pos += snprintf(buf + pos, LEN_OR_ZERO, " %s=%s",
--				tu->p.args[i].name, tu->p.args[i].type->fmt);
--	}
--
--	pos += snprintf(buf + pos, LEN_OR_ZERO, "\", %s", arg);
--
--	for (i = 0; i < tu->p.nr_args; i++) {
--		pos += snprintf(buf + pos, LEN_OR_ZERO, ", REC->%s",
--				tu->p.args[i].name);
--	}
--
--	return pos;	/* return the length of print_fmt */
--}
--#undef LEN_OR_ZERO
--
--static int set_print_fmt(struct trace_uprobe *tu)
--{
--	char *print_fmt;
--	int len;
--
--	/* First: called with 0 length to calculate the needed length */
--	len = __set_print_fmt(tu, NULL, 0);
--	print_fmt = kmalloc(len + 1, GFP_KERNEL);
--	if (!print_fmt)
--		return -ENOMEM;
--
--	/* Second: actually write the @print_fmt */
--	__set_print_fmt(tu, print_fmt, len + 1);
--	tu->p.call.print_fmt = print_fmt;
--
--	return 0;
--}
--
- #ifdef CONFIG_PERF_EVENTS
- static bool
- __uprobe_perf_filter(struct trace_uprobe_filter *filter, struct mm_struct *mm)
-@@ -945,7 +892,7 @@ static int register_uprobe_event(struct trace_uprobe *tu)
- 	call->event.funcs = &uprobe_funcs;
- 	call->class->define_fields = uprobe_event_define_fields;
- 
--	if (set_print_fmt(tu) < 0)
-+	if (set_print_fmt(&tu->p, is_ret_probe(tu)) < 0)
- 		return -ENOMEM;
- 
- 	ret = register_ftrace_event(&call->event);
 -- 
-1.7.11.7
-
+Mel Gorman
+SUSE Labs
