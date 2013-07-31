@@ -1,79 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757336Ab3GaVSi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 17:18:38 -0400
-Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:38250 "EHLO
-	mailout01.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753284Ab3GaVSf (ORCPT
+	id S1757592Ab3GaV0v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 17:26:51 -0400
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:39252 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751418Ab3GaV0t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 17:18:35 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH linux-next] hid/logitech-dj: Fix non-atomic kmalloc in logi_dj_ll_input_event()
-Date: Wed, 31 Jul 2013 17:17:58 -0400
-Message-Id: <1375305478-26754-1-git-send-email-peter@hurleysoftware.com>
-X-Mailer: git-send-email 1.8.1.2
-X-Authenticated-User: 125194 peter@hurleysoftware.com
+	Wed, 31 Jul 2013 17:26:49 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130731204817.GC24642@n2100.arm.linux.org.uk>
+References: <20130725175702.GC22291@e106331-lin.cambridge.arm.com>
+	<1999586.84BnWE5EUh@thinkpad>
+	<20130731191209.GA8027@netboy>
+	<1409617.9untvfnOTJ@flatron>
+	<20130731200017.GC8027@netboy>
+	<20130731201457.GA24642@n2100.arm.linux.org.uk>
+	<CAKON4Ow7rE9cDj_tS7kmYN4incM+ay=BK96q-ph2JxYH3xiQzg@mail.gmail.com>
+	<20130731204817.GC24642@n2100.arm.linux.org.uk>
+Date: Wed, 31 Jul 2013 17:26:47 -0400
+Message-ID: <CAKON4Ozfe=endqnXWkcWR2HuJ489Otpcu2QsjB0DNg6jpRgG+Q@mail.gmail.com>
+Subject: Re: [Ksummit-2013-discuss] DT bindings as ABI [was: Do we have people
+ interested in device tree janitoring / cleanup?]
+From: "jonsmirl@gmail.com" <jonsmirl@gmail.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Richard Cochran <richardcochran@gmail.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "ksummit-2013-discuss@lists.linuxfoundation.org" 
+	<ksummit-2013-discuss@lists.linuxfoundation.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Domenico Andreoli <cavokz@gmail.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Arend van Spriel <arend@broadcom.com>, Mark Brown <broonie@kernel.org>,
+        Olof Johansson <olof@lixom.net>, mbizon@freebox.fr,
+        Dave P Martin <Dave.Martin@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ll_driver's .hidinput_input_event() method is called from
-atomic context [1]. Use GFP_ATOMIC for allocation of the
-synthesized hid report.
+On Wed, Jul 31, 2013 at 4:48 PM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Wed, Jul 31, 2013 at 04:37:36PM -0400, jonsmirl@gmail.com wrote:
+>> On Wed, Jul 31, 2013 at 4:14 PM, Russell King - ARM Linux
+>> <linux@arm.linux.org.uk> wrote:
+>> > However, if we go back to the idea that DT is supposed to describe the
+>> > hardware, _and_ that the way to describe that hardware is well defined
+>> > and _stable_ (as it should be) then there should be no reason what so
+>> > ever that your old DT blob should not continue working in later kernels.
+>> > If it doesn't, then the contract that DT promised when we first moved
+>> > over to using DT has been _broken_.
+>>
+>> Suppose your DT predates PINCTRL and the CPU needs the pins set to
+>> function.  But setting the pins up is a board specific function. How
+>> is this going to get implemented in a generic kernel that doesn't have
+>> any board specific code in it?
+>>
+>> I would propose that we only need to worry about DTs that got put into
+>> boot loaders and not worry about ones that were only used when
+>> appended to a kernel.
+>
+> That is - again - our mistake.  We should have made it clear from the
+> start that the use of an _appended_ DT, or a DT provided with the kernel
+> being booted was more or less mandatory for the time being.  We actually
+> did exactly the opposite - we advertised the appended DT as a stop-gap
+> measure just to allow a DT kernel to be booted with a boot loader which
+> didn't support DT.
+>
+> That in itself _encouraged_ boot loader support for DT on ARM (which in
+> itself is not a bad thing) but also leads people down the path of
+> potentially separating the DT from the kernel.
+>
+> Had we encouraged the use of an appended DT instead, but still encouraged
+> boot loaders to update, and also made a clear statement that DT is
+> unstable (which everyone can see - for example by making our DT stuff
+> depend on CONFIG_EXPERIMENTAL when it existed) then everyone would have
+> been clear about its status.
+>
+> The fact that we did not - the fact that we ignored this process means
+> that it is _our_ problem that people like Richard are blowing up such a
+> storm over this.  We need to admit that we got it wrong, and commit to
+> doing it the right way in future.  What that means is starting off today
+> with a commitment to keep as much of the stuff which works today working
+> _tomorrow_, and the day after, and so forth.
 
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+What do you think about using a quirk layer to decouple deployed DTs
+from whatever is implemented in the kernel? I still think there is
+going to be volatility in the the kernel DT usage simply because we
+haven't figured out all of the issues with it yet.  For example
+defining a global schema system is going to expose a lot of irregular
+DT syntax when you line up all of the platform DTs in a system where
+it is easy to compare them. One the plus side the kernel is certainly
+evolving to a point where this volatility will stop in the future, we
+just aren't there yet.  If we don't use a quirk fixup system, then
+board specific code is going to continue to exist scattered around in
+the arch directories.
 
-[1]
-BUG: sleeping function called from invalid context at /home/peter/src/kernels/next/mm/slub.c:941
-in_atomic(): 1, irqs_disabled(): 1, pid: 2095, name: Xorg
-INFO: lockdep is turned off.
-irq event stamp: 1502178
-hardirqs last  enabled at (1502177): [<ffffffff81785e55>] _raw_spin_unlock_irqrestore+0x65/0x80
-hardirqs last disabled at (1502178): [<ffffffff8178632a>] common_interrupt+0x6a/0x6f
-softirqs last  enabled at (1501802): [<ffffffff81051ed3>] __do_softirq+0x183/0x420
-softirqs last disabled at (1501799): [<ffffffff81052315>] irq_exit+0xb5/0xc0
-CPU: 3 PID: 2095 Comm: Xorg Not tainted 3.11-next-20130725-xeon+lockdep #20130725
-Hardware name: Dell Inc. Precision WorkStation T5400  /0RW203, BIOS A11 04/30/2012
- ffffffff81a662e0 ffff8802adcf9ca8 ffffffff8177c330 0000000000000000
- ffff8802a76d2440 ffff8802adcf9cd8 ffffffff810867d0 ffff8802a7ac8000
- 0000000000000010 00000000ffffffff 00000000000000d0 ffff8802adcf9d38
-Call Trace:
- [<ffffffff8177c330>] dump_stack+0x4f/0x84
- [<ffffffff810867d0>] __might_sleep+0x140/0x1f0
- [<ffffffff811ad93b>] __kmalloc+0x6b/0x2e0
- [<ffffffffa026cb08>] ? hid_alloc_report_buf+0x28/0x30 [hid]
- [<ffffffffa026cb08>] hid_alloc_report_buf+0x28/0x30 [hid]
- [<ffffffffa00700b0>] logi_dj_ll_input_event+0xb0/0x1b0 [hid_logitech_dj]
- [<ffffffff815a559e>] input_handle_event+0x8e/0x540
- [<ffffffff815a5aad>] ? input_inject_event+0x5d/0x220
- [<ffffffff815a5c10>] input_inject_event+0x1c0/0x220
- [<ffffffff815a5a94>] ? input_inject_event+0x44/0x220
- [<ffffffff81181660>] ? might_fault+0xa0/0xb0
- [<ffffffff81181617>] ? might_fault+0x57/0xb0
- [<ffffffff815a909e>] evdev_write+0xde/0x160
- [<ffffffff811c0ad8>] vfs_write+0xc8/0x1f0
- [<ffffffff811c0fe5>] SyS_write+0x55/0xa0
- [<ffffffff8178e682>] system_call_fastpath+0x16/0x1b
----
- drivers/hid/hid-logitech-dj.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+My preference would be to contain the board specific DT fixup code
+inside a quirk system and have the goal of making the arch directories
+free of board specific code. Any new board would have a good enough DT
+that they don't need any board specific DT fixup code. Of course
+there's quite a ways to go before reaching that goal.
 
-diff --git a/drivers/hid/hid-logitech-dj.c b/drivers/hid/hid-logitech-dj.c
-index 510fa8f..e7ad88e 100644
---- a/drivers/hid/hid-logitech-dj.c
-+++ b/drivers/hid/hid-logitech-dj.c
-@@ -591,7 +591,7 @@ static int logi_dj_ll_input_event(struct input_dev *dev, unsigned int type,
- 	}
- 	hid_set_field(field, offset, value);
- 
--	data = hid_alloc_report_buf(field->report, GFP_KERNEL);
-+	data = hid_alloc_report_buf(field->report, GFP_ATOMIC);
- 	if (!data) {
- 		dev_warn(&dev->dev, "failed to allocate report buf memory\n");
- 		return -1;
+Alternatively you may be of the belief that it is impossible to get
+rid of the board specific code. But x86 doesn't have any of it, why
+should ARM?
+
 -- 
-1.8.1.2
-
+Jon Smirl
+jonsmirl@gmail.com
