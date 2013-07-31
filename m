@@ -1,68 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932359Ab3GaP0Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 11:26:24 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:31239 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753117Ab3GaPVm (ORCPT
+	id S1760426Ab3GaP3m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 11:29:42 -0400
+Received: from mail-ye0-f175.google.com ([209.85.213.175]:51935 "EHLO
+	mail-ye0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759951Ab3GaP3k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 11:21:42 -0400
-Message-ID: <689af33d3dd10d94ab71d177182055680a5a48a0.1375283105.git.cmetcalf@tilera.com>
-In-Reply-To: <cover.1375283104.git.cmetcalf@tilera.com>
-References: <cover.1374609948.git.cmetcalf@tilera.com>
-	<cover.1375283104.git.cmetcalf@tilera.com>
-From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Wed, 31 Jul 2013 11:05:04 -0400
-Subject: [PATCH 02/12] tile: avoid bug in tilepro net driver built with old hypervisor
-To: <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>
+	Wed, 31 Jul 2013 11:29:40 -0400
+Date: Wed, 31 Jul 2013 11:29:32 -0400
+From: Tejun Heo <htejun@gmail.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Peter Chen <peter.chen@freescale.com>,
+        Fabio Estevam <festevam@gmail.com>, alexander.shishkin@linux.intel.com,
+        kernel@pengutronix.de, linux-usb@vger.kernel.org,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Jeff Garzik <jeff@garzik.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, Mike Turquette <mturquette@linaro.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 2/2] chipidea: Use devm_request_irq()
+Message-ID: <20130731152932.GV2810@htj.dyndns.org>
+References: <20130731095411.GA2810@htj.dyndns.org>
+ <20130731111853.GJ9858@sirena.org.uk>
+ <20130731113244.GI2810@htj.dyndns.org>
+ <20130731115027.GN9858@sirena.org.uk>
+ <20130731115527.GR2810@htj.dyndns.org>
+ <20130731132708.GQ9858@sirena.org.uk>
+ <20130731134215.GS2810@htj.dyndns.org>
+ <20130731135751.GT9858@sirena.org.uk>
+ <20130731140758.GT2810@htj.dyndns.org>
+ <20130731152523.GW9858@sirena.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130731152523.GW9858@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Building against headers from an older Tilera hypervisor can cause
-the frags[] array to be overrun.  Don't enable TSO in that case.
+On Wed, Jul 31, 2013 at 04:25:23PM +0100, Mark Brown wrote:
+> What I'm saying is that in essentially all the users I've seen devm is
+> only being used for things like kfree() or clk_put() which aren't really
+> connected in any way and can happen in any order.  This (coupled with
+> the lack of documentation that this is supported) is why people are
+> nervous about anything that relies on ordering with this stuff - aside
+> from ATA everything is just using this for straight frees.
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
----
- drivers/net/ethernet/tile/tilepro.c | 9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+Yeah, sure, thank you very much for your input.  It is of course
+strictly ordered and the documentation needs to be updated.
 
-diff --git a/drivers/net/ethernet/tile/tilepro.c b/drivers/net/ethernet/tile/tilepro.c
-index 63fd9cc..cb67df7 100644
---- a/drivers/net/ethernet/tile/tilepro.c
-+++ b/drivers/net/ethernet/tile/tilepro.c
-@@ -1933,7 +1933,7 @@ static int tile_net_tx(struct sk_buff *skb, struct net_device *dev)
- 
- 	unsigned int csum_start = skb_checksum_start_offset(skb);
- 
--	lepp_frag_t frags[LEPP_MAX_FRAGS];
-+	lepp_frag_t frags[1 + MAX_SKB_FRAGS];
- 
- 	unsigned int num_frags;
- 
-@@ -1948,7 +1948,7 @@ static int tile_net_tx(struct sk_buff *skb, struct net_device *dev)
- 	unsigned int cmd_head, cmd_tail, cmd_next;
- 	unsigned int comp_tail;
- 
--	lepp_cmd_t cmds[LEPP_MAX_FRAGS];
-+	lepp_cmd_t cmds[1 + MAX_SKB_FRAGS];
- 
- 
- 	/*
-@@ -2342,8 +2342,9 @@ static void tile_net_setup(struct net_device *dev)
- 	/* We support scatter/gather. */
- 	dev->features |= NETIF_F_SG;
- 
--	/* We support TSO. */
--	dev->features |= NETIF_F_TSO;
-+	/* We support TSO iff the HV supports sufficient frags. */
-+	if (LEPP_MAX_FRAGS >= 1 + MAX_SKB_FRAGS)
-+		dev->features |= NETIF_F_TSO;
- 
- #ifdef TILE_NET_GSO
- 	/* We support GSO. */
 -- 
-1.8.3.1
-
+tejun
