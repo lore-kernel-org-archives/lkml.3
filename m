@@ -1,57 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758488Ab3GaAHT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 20:07:19 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:15559 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755837Ab3GaAHR (ORCPT
+	id S1758614Ab3GaAIP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 20:08:15 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:51722 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755837Ab3GaAIO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 20:07:17 -0400
-X-Spam-Score: -100.8
-Message-ID: <51F854F7.2080504@asianux.com>
-Date: Wed, 31 Jul 2013 08:06:15 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Tue, 30 Jul 2013 20:08:14 -0400
+Message-ID: <51F8556A.1010300@wwwdotorg.org>
+Date: Tue, 30 Jul 2013 18:08:10 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-CC: jaharkes@cs.cmu.edu, coda@cs.cmu.edu, codalist@TELEMANN.coda.cs.cmu.edu,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH trivial] include/linux/coda.h: remove useless '#else'
-References: <51F76B7D.2090602@asianux.com> <alpine.LNX.2.00.1307301238230.18809@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1307301238230.18809@pobox.suse.cz>
-Content-Type: text/plain; charset=UTF-8
+To: Hanumant Singh <hanumant@codeaurora.org>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Bjorn Andersson <Bjorn.Andersson@sonymobile.com>,
+        "Bird, Tim" <Tim.Bird@sonymobile.com>,
+        ext Tony Lindgren <tony@atomide.com>
+Subject: Re: [PATCH] pinctrl: msm: Add support for MSM TLMM pinmux
+References: <1374702089-2832-1-git-send-email-hanumant@codeaurora.org> <CACRpkdZLFD-KAvZdUUvQKje3vAH1D0EJMW9PSK8VSp3Xs4eiGA@mail.gmail.com> <51F82BCC.1080409@codeaurora.org> <51F82E9F.9010309@wwwdotorg.org> <51F853BF.9040007@codeaurora.org>
+In-Reply-To: <51F853BF.9040007@codeaurora.org>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/30/2013 06:38 PM, Jiri Kosina wrote:
-> On Tue, 30 Jul 2013, Chen Gang wrote:
-> 
->> '#else' is useless, need remove.
+On 07/30/2013 06:01 PM, Hanumant Singh wrote:
+> On 7/30/2013 2:22 PM, Stephen Warren wrote:
+>> On 07/30/2013 03:10 PM, hanumant wrote:
+>> ...
+>>> We actually have the same TLMM pinmux used by several socs of a family.
+>>> The number of pins on each soc may vary.
+>>> Also a given soc gets used in a number of boards.
+>>> The device tree for a given soc is split into the different boards that
+>>> its in ie the boards inherit a common soc.dtsi but have separate dts.
+>>> The boards for the same soc may use different pin groups for
+>>> accomplishing a function, since we have multiple i2c, spi uart etc
+>>> peripheral instances on a soc. A different instance of each of the above
+>>> peripherals, can be used in different boards, utilizing different
+>>> or subset of same pin groups.
+>>> Thus I would need to have multiple C files for one soc, based on the
+>>> boards that it goes into.
 >>
->> Signed-off-by: Chen Gang <gang.chen@asianux.com>
->> ---
->>  include/linux/coda.h |    1 -
->>  1 files changed, 0 insertions(+), 1 deletions(-)
+>> The pinctrl driver should be exposing the raw capabilities of the HW.
+>> All the board-specific configuration should be expressed in DT. So, the
+>> driver shouldn't have to know anything about different boards at
+>> compile-time.
 >>
->> diff --git a/include/linux/coda.h b/include/linux/coda.h
->> index cff544f..d30209b 100644
->> --- a/include/linux/coda.h
->> +++ b/include/linux/coda.h
->> @@ -60,7 +60,6 @@ Mellon the rights to redistribute these changes without encumbrance.
->>  
->>  #if defined(__linux__)
->>  typedef unsigned long long u_quad_t;
->> -#else
->>  #endif
->>  #include <uapi/linux/coda.h>
->>  #endif 
-> 
-> Applied.
-> 
+> I agree, so I wanted to keep the pin grouping information in DT, we
+> already have a board based differentiation of dts files in DT, for the
+> same soc.
 
-Thanks.
+That's the opposite of what I was saying. Pin groups are a feature of
+the SoC design, not the board.
 
--- 
-Chen Gang
