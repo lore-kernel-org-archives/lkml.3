@@ -1,57 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758569Ab3GaAF0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 20:05:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60066 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757979Ab3GaAFZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 20:05:25 -0400
-Date: Tue, 30 Jul 2013 20:04:44 -0400
-From: Dave Jones <davej@redhat.com>
-To: Aaro Koskinen <aaro.koskinen@iki.fi>
-Cc: Kees Cook <keescook@chromium.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [Ksummit-2013-discuss] [ARM ATTEND] catching up on exploit
- mitigations
-Message-ID: <20130731000444.GC1281@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Aaro Koskinen <aaro.koskinen@iki.fi>,
-	Kees Cook <keescook@chromium.org>,
-	"linux-arm-kernel@lists.infradead.org" <linux-arm-kernel@lists.infradead.org>,
-	ksummit-2013-discuss@lists.linuxfoundation.org,
-	LKML <linux-kernel@vger.kernel.org>
-References: <CAGXu5jKv9Vt+Hu0mFYaxggLLDZ46U3KR9MKegUoHH8StXCkBtQ@mail.gmail.com>
- <20130730221435.GA22240@redhat.com>
- <20130730231120.GC30725@blackmetal.musicnaut.iki.fi>
- <20130730231533.GA26824@redhat.com>
- <20130730235834.GD30725@blackmetal.musicnaut.iki.fi>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130730235834.GD30725@blackmetal.musicnaut.iki.fi>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758639Ab3GaAFg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 20:05:36 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:43496 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758587Ab3GaAFd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Jul 2013 20:05:33 -0400
+From: Abhimanyu Kapur <abhimany@codeaurora.org>
+To: Anton Vorontsov <anton@enomsg.org>
+Cc: devicetree@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, sboyd@codeaurora.org
+Subject: [PATCH] drivers: power: reset: add msm restart support
+Date: Tue, 30 Jul 2013 17:05:28 -0700
+Message-Id: <1375229128-32226-1-git-send-email-abhimany@codeaurora.org>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 31, 2013 at 02:58:34AM +0300, Aaro Koskinen wrote:
+Add support for restart and poweroff functionality present on MSM
+chipsets with the MPM2 ps-hold hardware.
 
- > Anyway, I think it would be interesting to learn about arch-specific
- > bugs discovered with trinity. Quickly thinking, the results should be
- > mostly same regardless of the architecture since the code being tested
- > is generic especially when running as a regular user. But of course
- > there are 32/64-bit and big-endian/little-endian and such differences,
- > and maybe some permission bugs (likely in vendor kernels).
+Signed-off-by: Abhimanyu Kapur <abhimany@codeaurora.org>
+---
+ .../bindings/power_supply/msm-poweroff.txt         | 17 +++++
+ drivers/power/reset/Kconfig                        |  6 ++
+ drivers/power/reset/Makefile                       |  1 +
+ drivers/power/reset/msm-poweroff.c                 | 75 ++++++++++++++++++++++
+ 4 files changed, 99 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/power_supply/msm-poweroff.txt
+ create mode 100644 drivers/power/reset/msm-poweroff.c
 
-To use ARM as an example, the bugs I've seen have mostly been in arch specific
-code that does things like page-table manipulation.  The chromebook bugs I
-was hitting for eg were various kinds of PTE corruption warnings. 
-
-ISTR the ia64 & sparc64 bugs it discovered long ago were also due to
-things like missing cache flushes, as well as trivial fence-post errors.
-
-	Dave
+diff --git a/Documentation/devicetree/bindings/power_supply/msm-poweroff.txt b/Documentation/devicetree/bindings/power_supply/msm-poweroff.txt
+new file mode 100644
+index 0000000..ce44ad3
+--- /dev/null
++++ b/Documentation/devicetree/bindings/power_supply/msm-poweroff.txt
+@@ -0,0 +1,17 @@
++MSM Restart Driver
++
++A power supply hold (ps-hold) bit is set to power the msm chipsets.
++Clearing that bit allows us to restart/poweroff. The difference
++between poweroff and restart is determined by unique power manager IC
++settings.
++
++Required Properties:
++-compatible: "qcom,pshold"
++-reg: Specifies the physical address of the ps-hold register
++
++Example:
++
++	restart@fc4ab000 {
++		compatible = "qcom,pshold";
++		reg = <0xfc4ab000 0x4>;
++	};
+diff --git a/drivers/power/reset/Kconfig b/drivers/power/reset/Kconfig
+index 349e9ae..e7bcf1d 100644
+--- a/drivers/power/reset/Kconfig
++++ b/drivers/power/reset/Kconfig
+@@ -14,6 +14,12 @@ config POWER_RESET_GPIO
+ 	  If your board needs a GPIO high/low to power down, say Y and
+ 	  create a binding in your devicetree.
+ 
++config POWER_RESET_MSM
++	bool "Qualcomm MSM power-off driver"
++	depends on POWER_RESET && ARCH_MSM
++	help
++	  Power off and restart support for Qualcomm boards.
++
+ config POWER_RESET_QNAP
+ 	bool "QNAP power-off driver"
+ 	depends on OF_GPIO && POWER_RESET && PLAT_ORION
+diff --git a/drivers/power/reset/Makefile b/drivers/power/reset/Makefile
+index 372807f..b82288e 100644
+--- a/drivers/power/reset/Makefile
++++ b/drivers/power/reset/Makefile
+@@ -1,4 +1,5 @@
+ obj-$(CONFIG_POWER_RESET_GPIO) += gpio-poweroff.o
++obj-$(CONFIG_POWER_RESET_MSM) += msm-poweroff.o
+ obj-$(CONFIG_POWER_RESET_QNAP) += qnap-poweroff.o
+ obj-$(CONFIG_POWER_RESET_RESTART) += restart-poweroff.o
+ obj-$(CONFIG_POWER_RESET_VEXPRESS) += vexpress-poweroff.o
+diff --git a/drivers/power/reset/msm-poweroff.c b/drivers/power/reset/msm-poweroff.c
+new file mode 100644
+index 0000000..c461fe4
+--- /dev/null
++++ b/drivers/power/reset/msm-poweroff.c
+@@ -0,0 +1,75 @@
++/* Copyright (c) 2013, The Linux Foundation. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
++
++#include <linux/delay.h>
++#include <linux/err.h>
++#include <linux/init.h>
++#include <linux/kernel.h>
++#include <linux/io.h>
++#include <linux/of.h>
++#include <linux/platform_device.h>
++#include <linux/module.h>
++#include <linux/reboot.h>
++
++#include <asm/system_misc.h>
++
++static void __iomem *msm_ps_hold;
++
++static void do_msm_restart(enum reboot_mode reboot_mode, const char *cmd)
++{
++	writel(0, msm_ps_hold);
++	mdelay(10000);
++}
++
++static void do_msm_poweroff(void)
++{
++	/* TODO: Add poweroff capability */
++
++	do_msm_restart(REBOOT_HARD, NULL);
++}
++
++static int msm_restart_probe(struct platform_device *pdev)
++{
++	struct device *dev = &pdev->dev;
++	struct resource *mem;
++
++	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	msm_ps_hold = devm_ioremap_resource(dev, mem);
++	if (IS_ERR(msm_ps_hold))
++		return PTR_ERR(msm_ps_hold);
++
++	pm_power_off = do_msm_poweroff;
++	arm_pm_restart = do_msm_restart;
++	return 0;
++}
++
++static const struct of_device_id of_msm_restart_match[] = {
++	{ .compatible = "qcom,pshold", },
++	{},
++};
++
++MODULE_DEVICE_TABLE(of, of_msm_restart_match);
++
++static struct platform_driver msm_restart_driver = {
++	.probe = msm_restart_probe,
++	.driver = {
++		.name = "msm-restart",
++		.of_match_table = of_match_ptr(of_msm_restart_match),
++	},
++};
++
++static int __init msm_restart_init(void)
++{
++	return platform_driver_register(&msm_restart_driver);
++}
++device_initcall(msm_restart_init);
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
