@@ -1,70 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760198Ab3GaNri (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 09:47:38 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46862 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759576Ab3GaNZn (ORCPT
+	id S1759995Ab3GaNsI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 09:48:08 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:58897 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759731Ab3GaNsD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 09:25:43 -0400
-Content-Type: text/plain; charset="UTF-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+	Wed, 31 Jul 2013 09:48:03 -0400
+Date: Wed, 31 Jul 2013 22:47:50 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Piotr Sarna <p.sarna@partner.samsung.com>
+Cc: gregkh@linuxfoundation.org, ngupta@vflare.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        b.zolnierkie@samsung.com, Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: [PATCH 1/2] staging: zram: add Crypto API support
+Message-ID: <20130731134750.GA4523@gmail.com>
+References: <1375187449-6546-1-git-send-email-p.sarna@partner.samsung.com>
 MIME-Version: 1.0
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Gao feng" <gaofeng@cn.fujitsu.com>,
-        "David S. Miller" <davem@davemloft.net>
-Date: Wed, 31 Jul 2013 15:23:09 +0200
-Message-ID: <lsq.1375276989.232306487@decadent.org.uk>
-X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [02/84] ipv6: don't call addrconf_dst_alloc again when enable  lo
-In-Reply-To: <lsq.1375276989.251749228@decadent.org.uk>
-X-SA-Exim-Connect-IP: 151.216.67.181
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1375187449-6546-1-git-send-email-p.sarna@partner.samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2.50-rc1 review patch.  If anyone has any objections, please let me know.
+Hello,
 
-------------------
+On Tue, Jul 30, 2013 at 02:30:48PM +0200, Piotr Sarna wrote:
+> Current version of zram does not allow any substitution of a default
+> compression algorithm. Therefore, I decided to change the existing
+> implementation of page compression by adding Crypto API compability.
+> 
+> All direct calls to lzo1x compression/decompression methods are now
+> replaced by calls consistent with Crypto. Also, I removed "workmem"
+> field from struct zram_meta, as it was there for lzo1x purposes only
+> and is no longer needed. Finally, I added a set of functions required
+> by Crypto API to work properly.
+> 
+> In order to substitute the default algorithm (lzo), change the value
+> of zram.compressor module parameter to a proper name (e.g. lz4).
 
-From: Gao feng <gaofeng@cn.fujitsu.com>
+Your patch [1,2/2] are totally same patch I made for using in-house only.
+Why I made it for in-house only is that Greg doesn't want to merge any
+new features before zram promotion is done.
+I understand him totally because I will do same thing as if I were
+maintainer.
 
-[ Upstream commit a881ae1f625c599b460cc8f8a7fcb1c438f699ad ]
+I tried zram promotion several long time ago but unfortunately, failed.
+Sine then, I have been busy by other stuffs.
 
-If we disable all of the net interfaces, and enable
-un-lo interface before lo interface, we already allocated
-the addrconf dst in ipv6_add_addr. So we shouldn't allocate
-it again when we enable lo interface.
+http://comments.gmane.org/gmane.linux.kernel.mm/90264
 
-Otherwise the message below will be triggered.
-unregister_netdevice: waiting for sit1 to become free. Usage count = 1
+The reason to prevent zram promotion is only zsmalloc while Jens
+already acked zram part because zsmalloc was used for zcache,
+zram and zswap at that time and they have different requirements
+for zsmalloc. But recently, zsmalloc is used for only zram so I guess
+we could put zsmalloc with zram in driver/block. Of course, we should
+discuss it with akpm.
 
-This problem is introduced by commit 25fb6ca4ed9cad72f14f61629b68dc03c0d9713f
-"net IPv6 : Fix broken IPv6 routing table after loopback down-up"
+Okay. I think it's good time to promote zram again and I will retry
+soon.
 
-Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- net/ipv6/addrconf.c | 3 +++
- 1 file changed, 3 insertions(+)
+Thanks.
 
-diff --git a/net/ipv6/addrconf.c b/net/ipv6/addrconf.c
-index d603caa..a7fe50f 100644
---- a/net/ipv6/addrconf.c
-+++ b/net/ipv6/addrconf.c
-@@ -2434,6 +2434,9 @@ static void init_loopback(struct net_device *dev)
- 			if (sp_ifa->flags & (IFA_F_DADFAILED | IFA_F_TENTATIVE))
- 				continue;
- 
-+			if (sp_ifa->rt)
-+				continue;
-+
- 			sp_rt = addrconf_dst_alloc(idev, &sp_ifa->addr, 0);
- 
- 			/* Failure cases are ignored */
+> 
+> Signed-off-by: Piotr Sarna <p.sarna@partner.samsung.com>
+> Acked-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 
+-- 
+Kind regards,
+Minchan Kim
