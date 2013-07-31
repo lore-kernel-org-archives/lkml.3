@@ -1,174 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932193Ab3GaLYW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 07:24:22 -0400
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:17740
-	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756147Ab3GaLYF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 07:24:05 -0400
-X-Greylist: delayed 639 seconds by postgrey-1.27 at vger.kernel.org; Wed, 31 Jul 2013 07:24:05 EDT
-X-IronPort-AV: E=Sophos;i="4.89,786,1367964000"; 
-   d="scan'208";a="22862046"
-Message-ID: <51F8F14C.8060507@inria.fr>
-Date: Wed, 31 Jul 2013 13:13:16 +0200
-From: Brice Goglin <Brice.Goglin@inria.fr>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130630 Icedove/17.0.7
+	id S1756458Ab3GaLZR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 07:25:17 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57279 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755524Ab3GaLZP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 07:25:15 -0400
+Date: Wed, 31 Jul 2013 12:25:10 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mm, numa: Sanitize task_numa_fault() callsites
+Message-ID: <20130731112510.GS2296@suse.de>
+References: <1373901620-2021-1-git-send-email-mgorman@suse.de>
+ <20130725103845.GN27075@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: Dan Williams <djbw@fb.com>, Vinod Koul <vinod.koul@intel.com>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: dmaengine: make dma_channel_rebalance() NUMA aware
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20130725103845.GN27075@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-dmaengine: make dma_channel_rebalance() NUMA aware
+On Thu, Jul 25, 2013 at 12:38:45PM +0200, Peter Zijlstra wrote:
+> 
+> Subject: mm, numa: Sanitize task_numa_fault() callsites
+> From: Peter Zijlstra <peterz@infradead.org>
+> Date: Mon Jul 22 10:42:38 CEST 2013
+> 
+> There are three callers of task_numa_fault():
+> 
+>  - do_huge_pmd_numa_page():
+>      Accounts against the current node, not the node where the
+>      page resides, unless we migrated, in which case it accounts
+>      against the node we migrated to.
+> 
+>  - do_numa_page():
+>      Accounts against the current node, not the node where the
+>      page resides, unless we migrated, in which case it accounts
+>      against the node we migrated to.
+> 
+>  - do_pmd_numa_page():
+>      Accounts not at all when the page isn't migrated, otherwise
+>      accounts against the node we migrated towards.
+> 
+> This seems wrong to me; all three sites should have the same
+> sementaics, furthermore we should accounts against where the page
+> really is, we already know where the task is.
+> 
 
-dma_channel_rebalance() currently distributes channels by processor ID.
-These IDs often change with the BIOS, and the order isn't related to
-the DMA channel list (related to PCI bus ids).
-* On my SuperMicro dual E5 machine, first socket has processor IDs [0-7]
-  (and [16-23] for hyperthreads), second socket has [8-15]+[24-31]
-  => channels are properly allocated to local CPUs.
-* On Dells R720 with same processors, first socket has even processor IDs,
-  second socket has odd numbers
-  => half the processors get channels on the remote socket, causing
-     cross-NUMA traffic and lower DMA performance.
+Agreed. To allow the scheduler parts to still be evaluated in proper
+isolation I moved this patch to much earlier in the series.
 
-Change nth_chan() to return the channel with min table_count and in the
-NUMA node of the given CPU, if any. If none, the (non-local) channel with
-min table_count is returned. nth_chan() is therefore renamed into min_chan()
-since we don't iterate until the nth channel anymore. In practice, the
-behavior is the same because first channels are taken first and are then
-ignored because they got an additional reference.
-
-The new code has a slightly higher complexity since we always scan the
-entire list of channels for finding the minimal table_count (instead
-of stopping after N chans), and because we check whether the CPU is in the
-DMA device locality mask. Overall we still have time complexity =
-number of chans x number of processors. This rebalance is rarely used,
-so this won't hurt.
-
-On the above SuperMicro machine, channels are still allocated the same.
-On the Dells, there are no locality issue anymore (each MEMCPY channel
-goes to both hyperthreads of a single core of the local socket).
-
-Signed-off-by: Brice Goglin <Brice.Goglin@inria.fr>
----
- drivers/dma/dmaengine.c |   64 +++++++++++++++++++++++++++---------------------
- 1 file changed, 37 insertions(+), 27 deletions(-)
-
-Index: b/drivers/dma/dmaengine.c
-===================================================================
---- a/drivers/dma/dmaengine.c	2013-07-29 05:53:33.000000000 +0200
-+++ b/drivers/dma/dmaengine.c	2013-07-31 13:02:34.640590036 +0200
-@@ -376,20 +376,35 @@ void dma_issue_pending_all(void)
- EXPORT_SYMBOL(dma_issue_pending_all);
- 
- /**
-- * nth_chan - returns the nth channel of the given capability
-+ * dma_chan_is_local - returns 1 if the channel is close to the cpu
-+ */
-+static int dma_chan_is_local(struct dma_chan *chan, int cpu)
-+{
-+#ifdef CONFIG_NUMA
-+	int node = dev_to_node(chan->device->dev);
-+	return node == -1 || cpumask_test_cpu(cpu, cpumask_of_node(node));
-+#else
-+	return 1;
-+#endif
-+}
-+
-+/**
-+ * min_chan - returns the channel with min count and close to the cpu
-  * @cap: capability to match
-- * @n: nth channel desired
-+ * @cpu: cpu index which the channel should be close to
-  *
-- * Defaults to returning the channel with the desired capability and the
-- * lowest reference count when 'n' cannot be satisfied.  Must be called
-- * under dma_list_mutex.
-+ * If some channels are close to the given cpu, the one with the lowest
-+ * reference count is returned. Otherwise, cpu is ignored and only the
-+ * reference count is taken into account.
-+ * Must be called under dma_list_mutex.
-  */
--static struct dma_chan *nth_chan(enum dma_transaction_type cap, int n)
-+static struct dma_chan *min_chan(enum dma_transaction_type cap, int cpu)
- {
- 	struct dma_device *device;
- 	struct dma_chan *chan;
- 	struct dma_chan *ret = NULL;
- 	struct dma_chan *min = NULL;
-+	struct dma_chan *localmin = NULL;
- 
- 	list_for_each_entry(device, &dma_device_list, global_node) {
- 		if (!dma_has_cap(cap, device->cap_mask) ||
-@@ -398,22 +413,18 @@ static struct dma_chan *nth_chan(enum dm
- 		list_for_each_entry(chan, &device->channels, device_node) {
- 			if (!chan->client_count)
- 				continue;
--			if (!min)
--				min = chan;
--			else if (chan->table_count < min->table_count)
-+			if (!min || chan->table_count < min->table_count)
- 				min = chan;
- 
--			if (n-- == 0) {
--				ret = chan;
--				break; /* done */
--			}
-+			if (cpu != -1 && dma_chan_is_local(chan, cpu))
-+				if (!localmin ||
-+				    chan->table_count < localmin->table_count)
-+					localmin = chan;
- 		}
--		if (ret)
--			break; /* done */
- 	}
- 
- 	if (!ret)
--		ret = min;
-+		ret = localmin ? localmin : min;
- 
- 	if (ret)
- 		ret->table_count++;
-@@ -435,7 +446,6 @@ static void dma_channel_rebalance(void)
- 	struct dma_device *device;
- 	int cpu;
- 	int cap;
--	int n;
- 
- 	/* undo the last distribution */
- 	for_each_dma_cap_mask(cap, dma_cap_mask_all)
-@@ -454,16 +464,16 @@ static void dma_channel_rebalance(void)
- 		return;
- 
- 	/* redistribute available channels */
--	n = 0;
--	for_each_dma_cap_mask(cap, dma_cap_mask_all)
--		for_each_online_cpu(cpu) {
--			if (num_possible_cpus() > 1)
--				chan = nth_chan(cap, n++);
--			else
--				chan = nth_chan(cap, -1);
--
--			per_cpu_ptr(channel_table[cap], cpu)->chan = chan;
--		}
-+	if (num_possible_cpus() == 1) {
-+		for_each_dma_cap_mask(cap, dma_cap_mask_all)
-+			per_cpu_ptr(channel_table[cap], 0)->chan
-+			 = min_chan(cap, -1);
-+	} else {
-+		for_each_dma_cap_mask(cap, dma_cap_mask_all)
-+			for_each_online_cpu(cpu)
-+			per_cpu_ptr(channel_table[cap], cpu)->chan
-+			 = min_chan(cap, cpu);
-+	}
- }
- 
- static struct dma_chan *private_candidate(const dma_cap_mask_t *mask,
-
+-- 
+Mel Gorman
+SUSE Labs
