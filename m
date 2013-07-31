@@ -1,85 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755272Ab3GaJgN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 05:36:13 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:44499 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751316Ab3GaJgL (ORCPT
+	id S1755901Ab3GaJiA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 05:38:00 -0400
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:40942 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751903Ab3GaJh7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 05:36:11 -0400
-Message-ID: <51F8DA5C.9060503@ti.com>
-Date: Wed, 31 Jul 2013 15:05:24 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Joel Fernandes <joelf@ti.com>
-CC: Tony Lindgren <tony@atomide.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Sricharan R <r.sricharan@ti.com>, Rajendra Nayak <rnayak@ti.com>,
-        Lokesh Vutla <lokeshvutla@ti.com>, Matt Porter <matt@ohporter.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
-        Mark Brown <broonie@linaro.org>,
-        Benoit Cousson <benoit.cousson@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>, Balaji TK <balajitk@ti.com>,
-        Gururaja Hebbar <gururaja.hebbar@ti.com>, Chris Ball <cjb@laptop.org>,
-        Jason Kridner <jkridner@beagleboard.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>
-Subject: Re: [PATCH 7/9] ARM: edma: Don't clear EMR of channel in edma_stop
-References: <1375104595-16018-1-git-send-email-joelf@ti.com> <1375104595-16018-8-git-send-email-joelf@ti.com> <51F77982.7030601@ti.com> <51F89B0B.4080803@ti.com>
-In-Reply-To: <51F89B0B.4080803@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+	Wed, 31 Jul 2013 05:37:59 -0400
+Message-ID: <1375263472.3922.26.camel@j-VirtualBox>
+Subject: [RFC PATCH] sched: Reduce overestimating avg_idle
+From: Jason Low <jason.low2@hp.com>
+To: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Jason Low <jason.low2@hp.com>
+Cc: KML <linux-kernel@vger.kernel.org>, Mike Galbraith <efault@gmx.de>,
+        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
+        Alex Shi <alex.shi@intel.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, aswin@hp.com, scott.norton@hp.com,
+        chegu_vinod@hp.com, Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Date: Wed, 31 Jul 2013 02:37:52 -0700
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 31 July 2013 10:35 AM, Joel Fernandes wrote:
-> On 07/30/2013 03:29 AM, Sekhar Nori wrote:
->> On Monday 29 July 2013 06:59 PM, Joel Fernandes wrote:
->>> We certainly don't want error conditions to be cleared anywhere
->>
->> 'anywhere' is a really loaded term.
->>
->>> as this will make us 'forget' about missed events. We depend on
->>> knowing which events were missed in order to be able to reissue them.
->>
->>> This fixes a race condition where the EMR was being cleared
->>> by the transfer completion interrupt handler.
->>>
->>> Basically, what was happening was:
->>>
->>>             Missed event
->>>              |
->>>              |
->>>              V
->>> SG1-SG2-SG3-Null
->>>          \
->>>           \__TC Interrupt (Almost same time as ARM is executing
->>> TC interrupt handler, an event got missed and also forgotten
->>> by clearing the EMR).
->>
->> Sorry, but I dont see how edma_stop() is coming into picture in the race
->> you describe?
-> 
-> In edma_callback function, for the case of DMA_COMPLETE (Transfer
-> completion interrupt), edma_stop() is called when all sets have been
-> processed. This had the effect of clearing the EMR.
+The avg_idle value may sometimes be overestimated, which may cause new idle
+load balance to be attempted more often than it should. Currently, when
+avg_idle gets updated, if the delta exceeds some max value (default 1000000 ns),
+the entire avg gets set to the max value, regardless of what the previous avg
+was. So if a CPU remains idle for 200,000 ns most of the time, and if the CPU
+goes idle for 1,200,000 ns, the average is then pushed up to 1,000,000 ns when
+it should be less.
 
-Ah, thanks. I was missing the fact that the race comes into picture only
-when using the DMA engine driver. I guess that should be mentioned
-somewhere since it is not immediately obvious.
+Additionally, once the avg_idle is at its max, it may take a while to pull the
+avg down to a value that it should be. In the above example, after the avg idle
+is set the max value of 1000000 ns, the CPU's idle durations needs to
+be 200000 ns for the next 8 occurrences before the avg falls below the migration
+cost value.
 
-The patch looks good to me. So if you respin just this one with some
-updated explanation based on what you wrote below, I will take it.
+This patch attempts to avoid these situations by always updating the avg_idle
+value first with the function call to update_avg(). Then, if the avg_idle
+exceeds the max avg value, the avg gets set to the max. Also, this patch lowers
+the max avg_idle value to migration_cost * 1.5 instead of migration_cost * 2 to
+reduce the time it takes to pull the avg idle to a lower value after long idles.
 
-Thanks,
-Sekhar
+With this change, I got some decent performance boosts in AIM7 workloads on an
+8 socket machine on the 3.10 kernel. In particular, it boosted the AIM7 fserver
+workload by about 20% when running it with a high # of users.
+
+An avg_idle related question that I have is does migration_cost in idle balance
+need to be the same as the migration_cost in task_hot()? Can we keep
+migration_cost default value used in task_hot() the same, but have a different
+default value or increase migration_cost only when comparing it with avg_idle in
+idle balance?
+
+
+Signed-off-by: Jason Low <jason.low2@hp.com>
+---
+ kernel/sched/core.c |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index e8b3350..62b484b 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1341,12 +1341,12 @@ ttwu_do_wakeup(struct rq *rq, struct task_struct *p, int wake_flags)
+ 
+ 	if (rq->idle_stamp) {
+ 		u64 delta = rq->clock - rq->idle_stamp;
+-		u64 max = 2*sysctl_sched_migration_cost;
++		u64 max = (sysctl_sched_migration_cost * 3) / 2;
+ 
+-		if (delta > max)
++		update_avg(&rq->avg_idle, delta);
++
++		if (rq->avg_idle > max)
+ 			rq->avg_idle = max;
+-		else
+-			update_avg(&rq->avg_idle, delta);
+ 		rq->idle_stamp = 0;
+ 	}
+ #endif
+@@ -7026,7 +7026,7 @@ void __init sched_init(void)
+ 		rq->cpu = i;
+ 		rq->online = 0;
+ 		rq->idle_stamp = 0;
+-		rq->avg_idle = 2*sysctl_sched_migration_cost;
++		rq->avg_idle = (sysctl_sched_migration_cost * 3) / 2;
+ 
+ 		INIT_LIST_HEAD(&rq->cfs_tasks);
+ 
+-- 
+1.7.1
+
+
 
