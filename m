@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760061Ab3GaNcZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 09:32:25 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:47026 "EHLO
+	id S1760036Ab3GaNcT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 09:32:19 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:47118 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759859Ab3GaN0E (ORCPT
+	by vger.kernel.org with ESMTP id S1759864Ab3GaN0E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 31 Jul 2013 09:26:04 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Mark Brown" <broonie@linaro.org>,
-        "Oskar Schirmer" <oskar@scara.com>,
-        "Fabio Estevam" <fabio.estevam@freescale.com>
+CC: akpm@linux-foundation.org,
+        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
+        "Jan Beulich" <jbeulich@suse.com>
 Date: Wed, 31 Jul 2013 15:23:09 +0200
-Message-ID: <lsq.1375276989.575804976@decadent.org.uk>
+Message-ID: <lsq.1375276989.587143021@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [35/84] ASoC: sglt5000: Fix SGTL5000_PLL_FRAC_DIV_MASK
+Subject: [32/84] xen/io/ring.h: new macro to detect whether there are too
+ many requests on the ring
 In-Reply-To: <lsq.1375276989.251749228@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.216.67.181
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,30 +33,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Fabio Estevam <fabio.estevam@freescale.com>
+From: Jan Beulich <jbeulich@suse.com>
 
-commit 5c78dfe87ea04b501ee000a7f03b9432ac9d008c upstream.
+commit 8d9256906a97c24e97e016482b9be06ea2532b05 upstream.
 
-SGTL5000_PLL_FRAC_DIV_MASK is used to mask bits 0-10 (11 bits in total) of
-register CHIP_PLL_CTRL, so fix the mask to accomodate all this bit range.
+Backends may need to protect themselves against an insane number of
+produced requests stored by a frontend, in case they iterate over
+requests until reaching the req_prod value. There can't be more
+requests on the ring than the difference between produced requests
+and produced (but possibly not yet published) responses.
 
-Reported-by: Oskar Schirmer <oskar@scara.com>
-Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+This is a more strict alternative to a patch previously posted by
+Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>.
+
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- sound/soc/codecs/sgtl5000.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/xen/interface/io/ring.h | 5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/sound/soc/codecs/sgtl5000.h
-+++ b/sound/soc/codecs/sgtl5000.h
-@@ -347,7 +347,7 @@
- #define SGTL5000_PLL_INT_DIV_MASK		0xf800
- #define SGTL5000_PLL_INT_DIV_SHIFT		11
- #define SGTL5000_PLL_INT_DIV_WIDTH		5
--#define SGTL5000_PLL_FRAC_DIV_MASK		0x0700
-+#define SGTL5000_PLL_FRAC_DIV_MASK		0x07ff
- #define SGTL5000_PLL_FRAC_DIV_SHIFT		0
- #define SGTL5000_PLL_FRAC_DIV_WIDTH		11
+--- a/include/xen/interface/io/ring.h
++++ b/include/xen/interface/io/ring.h
+@@ -188,6 +188,11 @@ struct __name##_back_ring {						\
+ #define RING_REQUEST_CONS_OVERFLOW(_r, _cons)				\
+     (((_cons) - (_r)->rsp_prod_pvt) >= RING_SIZE(_r))
  
++/* Ill-behaved frontend determination: Can there be this many requests? */
++#define RING_REQUEST_PROD_OVERFLOW(_r, _prod)               \
++    (((_prod) - (_r)->rsp_prod_pvt) > RING_SIZE(_r))
++
++
+ #define RING_PUSH_REQUESTS(_r) do {					\
+     wmb(); /* back sees requests /before/ updated producer index */	\
+     (_r)->sring->req_prod = (_r)->req_prod_pvt;				\
 
