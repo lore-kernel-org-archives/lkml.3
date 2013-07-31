@@ -1,74 +1,265 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758692Ab3GaAwV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 20:52:21 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:40778 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755730Ab3GaAwT (ORCPT
+	id S1758751Ab3GaBBk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 21:01:40 -0400
+Received: from zetta.elopez.com.ar ([199.30.59.35]:56417 "EHLO
+	zetta.elopez.com.ar" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754385Ab3GaBBj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 20:52:19 -0400
-Date: Wed, 31 Jul 2013 09:52:16 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        Olof Johansson <olof@lixom.net>, Linux-SH <linux-sh@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>
-Subject: Re: [PATCH resend] shdma: fixup sh_dmae_get_partial() calculation
- error
-Message-ID: <20130731005216.GI17209@verge.net.au>
-References: <1373422152-29976-1-git-send-email-horms+renesas@verge.net.au>
- <20130716012041.GA942@verge.net.au>
- <20130723023907.GC14983@quad.lixom.net>
- <20130723041220.GA22253@verge.net.au>
- <87zjtddgtg.wl%kuninori.morimoto.gx@renesas.com>
- <20130724034009.GA18355@verge.net.au>
- <87d2q8v6fs.wl%kuninori.morimoto.gx@renesas.com>
- <87bo5sv63u.wl%kuninori.morimoto.gx@renesas.com>
- <20130730084957.GA17209@verge.net.au>
- <Pine.LNX.4.64.1307301114020.25629@axis700.grange>
+	Tue, 30 Jul 2013 21:01:39 -0400
+Message-ID: <51F861E5.7010909@elopez.com.ar>
+Date: Tue, 30 Jul 2013 22:01:25 -0300
+From: =?ISO-8859-1?Q?Emilio_L=F3pez?= <emilio@elopez.com.ar>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1307301114020.25629@axis700.grange>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+CC: Mike Turquette <mturquette@linaro.org>, kevin.z.m.zh@gmail.com,
+        sunny@allwinnertech.com, shuge@allwinnertech.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] clk: sunxi: Add A31 clocks support
+References: <1375195462-19566-1-git-send-email-maxime.ripard@free-electrons.com> <1375195462-19566-4-git-send-email-maxime.ripard@free-electrons.com>
+In-Reply-To: <1375195462-19566-4-git-send-email-maxime.ripard@free-electrons.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 30, 2013 at 11:22:31AM +0200, Guennadi Liakhovetski wrote:
-> Hi Simon
-> 
-> On Tue, 30 Jul 2013, Simon Horman wrote:
-> 
-> > [ Cc Vinod ]
-> > 
-> > On Tue, Jul 23, 2013 at 11:12:41PM -0700, Kuninori Morimoto wrote:
-> > > sh_desc->hw.tcr is controlling real data size,
-> > > and, register TCR is controlling data transfer count
-> > > which was xmit_shifted value of hw.tcr.
-> > > Current sh_dmae_get_partial() is calculating in different unit.
-> > > This patch fixes it.
-> > > 
-> > > Signed-off-by: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
-> > 
-> > Can I confirm that this was a regression introduced by
-> > 4f46f8ac80416b0e8fd3aba6a0d842205fb29140                   
-> > ("dmaengine: shdma: restore partial transfer calculation") ?
-> 
-> No, don't think so. That patch only restores what was accidentally deleted 
-> from the driver before. So, you cannot say, that before that patch the 
-> calculation was correct. And even the way it restores it was already wrong 
-> before. The error goes back to the original implementation:
-> 
-> commit c014906a870ce70e009def0c9d170ccabeb0be63
-> Author: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-> Date:   Thu Feb 18 16:30:02 2010 +0000
-> 
->     dmaengine: shdma: extend .device_terminate_all() to record partial transfer
+Hi Maxime,
 
-Thanks, I will add the following to the changelog:
+El 30/07/13 11:44, Maxime Ripard escribió:
+> The A31 has a mostly different clock set compared to the other older
+> SoCs currently supported in the Allwinner clock driver.
+> 
+> Add support for the basic useful clocks. The other ones will come in
+> eventually.
+> 
+> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+> ---
+>  drivers/clk/sunxi/clk-sunxi.c | 120 ++++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 120 insertions(+)
+> 
+> diff --git a/drivers/clk/sunxi/clk-sunxi.c b/drivers/clk/sunxi/clk-sunxi.c
+> index 6e9cbc9..8cd69e6 100644
+> --- a/drivers/clk/sunxi/clk-sunxi.c
+> +++ b/drivers/clk/sunxi/clk-sunxi.c
+> @@ -124,7 +124,67 @@ static void sun4i_get_pll1_factors(u32 *freq, u32 parent_rate,
+>  	*n = div / 4;
+>  }
+>  
+> +/**
+> + * sun6i_get_pll1_factors() - calculates n, k and m factors for PLL1
+> + * PLL1 rate is calculated as follows
+> + * rate = parent_rate * (n + 1) * (k + 1) / (m + 1);
+> + * parent_rate should always be 24MHz
+> + */
+> +static void sun6i_get_pll1_factors(u32 *freq, u32 parent_rate,
+> +				   u8 *n, u8 *k, u8 *m, u8 *p)
+> +{
+> +	/*
+> +	 * We can operate only on MHz, this will make our life easier
+> +	 * later.
+> +	 */
+> +	u32 freq_mhz = *freq / 1000000;
+> +	u32 parent_freq_mhz = parent_rate / 1000000;
+> +
+> +	/* If the frequency is a multiple of 32 MHz, k is always 3 */
+> +	if (!(freq_mhz % 32))
+> +		*k = 3;
+> +	/* If the frequency is a multiple of 9 MHz, k is always 2 */
+> +	else if (!(freq_mhz % 9))
+> +		*k = 2;
+> +	/* If the frequency is a multiple of 8 MHz, k is always 1 */
+> +	else if (!(freq_mhz % 8))
+> +		*k = 1;
+> +	/* Otherwise, we don't use the k factor */
+> +	else
+> +		*k = 0;
+>  
+> +	/*
+> +	 * If the frequency is a multiple of 2 but not a multiple of
+> +	 * 3, m is 3. This is the first time we use 6 here, yet we
+> +	 * will use it on several other places.
+> +	 * We use this number because it's the lowest frequency we can
+> +	 * generate (with n = 0, k = 0, m = 3), so every other frequency
+> +	 * somehow relates to this frequency.
+> +	 */
+> +	if ((freq_mhz % 6) == 2 || (freq_mhz % 6) == 4)
+> +		*m = 2;
+> +	/*
+> +	 * If the frequency is a multiple of 6MHz, but the factor is
+> +	 * odd, m will be 3
+> +	 */
+> +	else if ((freq_mhz / 6) & 1)
+> +		*m = 3;
+> +	/* Otherwise, we end up with m = 1 */
+> +	else
+> +		*m = 1;
+> +
+> +	/* Calculate n thanks to the above factors we already got */
+> +	*n = freq_mhz * (*m + 1) / ((*k + 1) * parent_freq_mhz) - 1;
+> +
+> +	/*
+> +	 * If n end up being outbound, and that we can still decrease
+> +	 * m, do it.
+> +	 */
+> +	if ((*n + 1) > 31 && (*m + 1) > 1) {
+> +		*n = (*n + 1) / 2 - 1;
+> +		*m = (*m + 1) / 2 - 1;
+> +	}
+> +}
 
-This bug has been present since c014906a870ce70e009def0c9d170ccabeb0be63
-("dmaengine: shdma: extend .device_terminate_all() to record partial
-transfer"), which was added in 2.6.34-rc1.
+Nice! My rate-to-factors functions pale in comparison :) Remember that
+n/k/m/p may be NULL when the caller just wants you to round freq to an
+achievable value (see clk_factors_round_rate(...) in clk-factors.c).
+
+>  /**
+>   * sun4i_get_apb1_factors() - calculates m, p factors for APB1
+> @@ -189,6 +249,15 @@ static struct clk_factors_config sun4i_pll1_config = {
+>  	.pwidth = 2,
+>  };
+>  
+> +static struct clk_factors_config sun6i_pll1_config = {
+> +	.nshift	= 8,
+> +	.nwidth = 5,
+> +	.kshift = 4,
+> +	.kwidth = 2,
+> +	.mshift = 0,
+> +	.mwidth = 2,
+> +};
+> +
+>  static struct clk_factors_config sun4i_apb1_config = {
+>  	.mshift = 0,
+>  	.mwidth = 5,
+> @@ -201,6 +270,11 @@ static const __initconst struct factors_data sun4i_pll1_data = {
+>  	.getter = sun4i_get_pll1_factors,
+>  };
+>  
+> +static const __initconst struct factors_data sun6i_pll1_data = {
+> +	.table = &sun6i_pll1_config,
+> +	.getter = sun6i_get_pll1_factors,
+> +};
+> +
+>  static const __initconst struct factors_data sun4i_apb1_data = {
+>  	.table = &sun4i_apb1_config,
+>  	.getter = sun4i_get_apb1_factors,
+> @@ -243,6 +317,10 @@ static const __initconst struct mux_data sun4i_cpu_mux_data = {
+>  	.shift = 16,
+>  };
+>  
+> +static const __initconst struct mux_data sun6i_ahb1_mux_data = {
+> +	.shift = 12,
+> +};
+> +
+>  static const __initconst struct mux_data sun4i_apb1_mux_data = {
+>  	.shift = 24,
+>  };
+> @@ -301,6 +379,12 @@ static const __initconst struct div_data sun4i_apb0_data = {
+>  	.width	= 2,
+>  };
+>  
+> +static const __initconst struct div_data sun6i_apb2_div_data = {
+> +	.shift	= 0,
+> +	.pow	= 0,
+> +	.width	= 4,
+> +};
+> +
+>  static void __init sunxi_divider_clk_setup(struct device_node *node,
+>  					   struct div_data *data)
+>  {
+> @@ -347,6 +431,10 @@ static const __initconst struct gates_data sun5i_a13_ahb_gates_data = {
+>  	.mask = {0x107067e7, 0x185111},
+>  };
+>  
+> +static const __initconst struct gates_data sun6i_a31_ahb1_gates_data = {
+> +	.mask = { 0xedfe7f62, 0x794f931 },
+> +};
+> +
+>  static const __initconst struct gates_data sun4i_apb0_gates_data = {
+>  	.mask = {0x4EF},
+>  };
+> @@ -363,6 +451,14 @@ static const __initconst struct gates_data sun5i_a13_apb1_gates_data = {
+>  	.mask = {0xa0007},
+>  };
+>  
+> +static const __initconst struct gates_data sun6i_a31_apb1_gates_data = {
+> +	.mask = { 0x3031 },
+> +};
+> +
+> +static const __initconst struct gates_data sun6i_a31_apb2_gates_data = {
+> +	.mask = { 0x3f000f },
+> +};
+> +
+
+We should decide on a style here and use it across the board, so far we
+have definitions with and without spaces between constants and braces,
+and constants both with upper and lower case A-F. Personally I don't
+feel strongly about the spacing and prefer upper-case constants, but if
+the style guide suggests otherwise, I can live with it (as long as we
+use it consistently, that is)
+
+>  static void __init sunxi_gates_clk_setup(struct device_node *node,
+>  					 struct gates_data *data)
+>  {
+> @@ -420,6 +516,10 @@ static const __initconst struct of_device_id clk_factors_match[] = {
+>  		.data = &sun4i_pll1_data,
+>  	},
+>  	{
+> +		.compatible = "allwinner,sun6i-pll1-clk",
+> +		.data = &sun6i_pll1_data,
+> +	},
+> +	{
+>  		.compatible = "allwinner,sun4i-apb1-clk",
+>  		.data = &sun4i_apb1_data,
+>  	},
+> @@ -440,6 +540,10 @@ static const __initconst struct of_device_id clk_div_match[] = {
+>  		.compatible = "allwinner,sun4i-apb0-clk",
+>  		.data = &sun4i_apb0_data,
+>  	},
+> +	{
+> +		.compatible = "allwinner,sun6i-apb2-div-clk",
+> +		.data = &sun6i_apb2_div_data,
+> +	},
+>  	{}
+>  };
+>  
+> @@ -453,6 +557,10 @@ static const __initconst struct of_device_id clk_mux_match[] = {
+>  		.compatible = "allwinner,sun4i-apb1-mux-clk",
+>  		.data = &sun4i_apb1_mux_data,
+>  	},
+> +	{
+> +		.compatible = "allwinner,sun6i-ahb1-mux-clk",
+> +		.data = &sun6i_ahb1_mux_data,
+> +	},
+>  	{}
+>  };
+>  
+> @@ -471,6 +579,10 @@ static const __initconst struct of_device_id clk_gates_match[] = {
+>  		.data = &sun5i_a13_ahb_gates_data,
+>  	},
+>  	{
+> +		.compatible = "allwinner,sun6i-a31-ahb1-gates-clk",
+> +		.data = &sun6i_a31_ahb1_gates_data,
+> +	},
+> +	{
+>  		.compatible = "allwinner,sun4i-apb0-gates-clk",
+>  		.data = &sun4i_apb0_gates_data,
+>  	},
+> @@ -486,6 +598,14 @@ static const __initconst struct of_device_id clk_gates_match[] = {
+>  		.compatible = "allwinner,sun5i-a13-apb1-gates-clk",
+>  		.data = &sun5i_a13_apb1_gates_data,
+>  	},
+> +	{
+> +		.compatible = "allwinner,sun6i-a31-apb1-gates-clk",
+> +		.data = &sun6i_a31_apb1_gates_data,
+> +	},
+> +	{
+> +		.compatible = "allwinner,sun6i-a31-apb2-gates-clk",
+> +		.data = &sun6i_a31_apb2_gates_data,
+> +	},
+
+Please see my comments on the first patch regarding these.
+
+Thanks!
+
+Emilio
