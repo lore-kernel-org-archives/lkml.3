@@ -1,105 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758879Ab3GaCgQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 22:36:16 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:56611 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751428Ab3GaCgO (ORCPT
+	id S1758025Ab3GaCjk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 22:39:40 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:57137 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751171Ab3GaCji (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 22:36:14 -0400
-X-AuditID: 9c93017e-b7b62ae000000eeb-f8-51f8781d9fce
-Date: Wed, 31 Jul 2013 11:36:13 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Hillf Danton <dhillf@gmail.com>
-Subject: Re: [PATCH 03/18] mm, hugetlb: unify region structure handling
-Message-ID: <20130731023613.GB2548@lge.com>
-References: <1375075929-6119-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1375075929-6119-4-git-send-email-iamjoonsoo.kim@lge.com>
- <87wqo8ot4m.fsf@linux.vnet.ibm.com>
+	Tue, 30 Jul 2013 22:39:38 -0400
+Message-ID: <51F878DA.3000206@huawei.com>
+Date: Wed, 31 Jul 2013 10:39:22 +0800
+From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87wqo8ot4m.fsf@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        <ktap@freelists.org>
+CC: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        <jovi.zhangwei@gmail.com>
+Subject: [ANNOUNCE] ktap 0.2 released
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.66.58.241]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 30, 2013 at 10:57:37PM +0530, Aneesh Kumar K.V wrote:
-> Joonsoo Kim <iamjoonsoo.kim@lge.com> writes:
-> 
-> > Currently, to track a reserved and allocated region, we use two different
-> > ways for MAP_SHARED and MAP_PRIVATE. For MAP_SHARED, we use
-> > address_mapping's private_list and, for MAP_PRIVATE, we use a resv_map.
-> > Now, we are preparing to change a coarse grained lock which protect
-> > a region structure to fine grained lock, and this difference hinder it.
-> > So, before changing it, unify region structure handling.
-> >
-> > Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> >
-> > diff --git a/fs/hugetlbfs/inode.c b/fs/hugetlbfs/inode.c
-> > index a3f868a..a1ae3ada 100644
-> > --- a/fs/hugetlbfs/inode.c
-> > +++ b/fs/hugetlbfs/inode.c
-> > @@ -366,7 +366,12 @@ static void truncate_hugepages(struct inode *inode, loff_t lstart)
-> >
-> >  static void hugetlbfs_evict_inode(struct inode *inode)
-> >  {
-> > +	struct resv_map *resv_map;
-> > +
-> >  	truncate_hugepages(inode, 0);
-> > +	resv_map = (struct resv_map *)inode->i_mapping->private_data;
-> > +	if (resv_map)
-> 
-> can resv_map == NULL ?
+Dear,
 
-Hello, Aneesh.
+I'm pleased to announce that ktap released v0.2, the archive is available at:
 
-Yes, it can.
-root inode which is allocated in hugetlbfs_get_root() doesn't allocate a resv_map.
+	https://github.com/ktap/ktap/archive/v0.2.tar.gz
 
-> 
-> 
-> > +		kref_put(&resv_map->refs, resv_map_release);
-> 
-> Also the kref_put is confusing. For shared mapping we don't have ref
-> count incremented right ? So may be you can directly call
-> resv_map_release or add a comment around explaining this more ?
 
-Yes, I can call resv_map_release() directly, but I think that release
-via reference management is better than it.
+= what's ktap?
 
-Thanks.
+   A New Scripting Dynamic Tracing Tool For Linux
 
-> 
-> 
-> >  	clear_inode(inode);
-> >  }
-> >
-> > @@ -468,6 +473,11 @@ static struct inode *hugetlbfs_get_inode(struct super_block *sb,
-> >  					umode_t mode, dev_t dev)
-> >  {
-> >  	struct inode *inode;
-> > +	struct resv_map *resv_map;
-> > +
-> > +	resv_map = resv_map_alloc();
-> > +	if (!resv_map)
-> > +		return NULL;
-> 
-> -aneesh
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+   ktap have different design principles from Linux mainstream dynamic tracing
+   language in that it's based on bytecode, so it doesn't depend upon GCC,
+   doesn't require compiling kernel module for each script, safe to use in
+   production environment, fulfilling the embedd ecosystem's tracing needs.
+
+   ktap is released as GPL license.
+
+   More information can be found at ktap/doc directory.
+
+= Highlight features
+
+   - support tracepoints, k(ret)probe, u(ret)probe, timer, function tracing, etc.
+   - support x86, x86-64, powerpc, arm, and preempt-rt kernel.
+   - support kernel 3.1 and later versions, include Linux mainline.
+
+= Script highlight changes from v0.1
+
+   * new tracing block syntax (introduce keywords: trace, trace_end)
+	trace EVENTDEF function (e) { BODY }
+	trace_end function () { BODY }
+
+   * event became to a built-in type in language
+	print(e) will output string presentation of event.
+
+	for syscalls:sys_enter_write event, print(e) will output like:
+	sys_write(fd: 3, buf: b9369c78, count: 60)
+
+   * support trace filter
+	trace 'sched:sched_switch /prev_comm == foo || next_comm == foo/
+
+   * support kprobe/kretprobe (no debuginfo handing)
+	trace "probe:do_sys_open dfd=%di filename=%dx flags=%cx mode=+4($stack)"
+	trace "probe:do_sys_open%return fd=$retval"
+
+   * support uprobe/uretprobe (no debuginfo handling)
+	trace "probe:/lib/libc.so.6:0x000773c0"
+	trace "probe:/lib/libc.so.6:0x000773c0%return"
+
+   * support function tracing
+	trace "ftrace:function /ip == mutex*/"
+
+   * support oneline scripting
+	ktap -e 'trace "syscalls:*" function (e) { print(e) }'
+
+   * specific pid or cpu to tracing
+	ktap -C cpu *.kp
+	ktap -p pid *.kp
+
+   * more sample scripts
+
+   * support calling print_backtrace() in any context
+
+   * support calling exit() in any context
+
+= Backend highlight changes from v0.1
+
+   * unified perf callback mechanism
+   * use ring buffer transport instead of relayfs
+   * reentrant in ktap tracing
+   * performance boost(use percpu data in many case)
+   * safe table/string manipulation
+   * safe ktap exit
+   * big code cleanups
+   * fixed a lot of bugs, more stable than v0.1
+
+= Source code
+
+   Please get latest code from:
+   https://github.com/ktap/ktap.git
+
+= Building & Running
+
+   [root@jovi]# git clone https://github.com/ktap/ktap.git
+
+   [root@jovi]# cd ktap
+   [root@jovi]# make	#generate ktapvm kernel module and ktap binary
+
+   [root@jovi]# insmod ./ktapvm.ko
+   [root@jovi]# ./ktap scripts/syscalls.kp
+
+= Samples scripts
+
+   There have many samples scripts in README and ktap/scripts.
+
+= Documentation
+
+   Documentation is in ktap/doc/
+
+= Mailing list
+
+   ktap@freelists.org
+   You can subscribe ktap mailing list at link: http://www.freelists.org/list/ktap
+
+= Feedback
+
+   ktap is still under active development, so any feedback, bug reports, patches,
+   feature requests, as always, is welcome.
+
+
+.jovi
+
+
+
+
+
+
+
