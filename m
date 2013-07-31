@@ -1,59 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760294Ab3GaOUR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 10:20:17 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40832 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760262Ab3GaOUJ (ORCPT
+	id S1760342Ab3GaOYU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 10:24:20 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:52122 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760136Ab3GaOYR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 10:20:09 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@sisk.pl
-Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, arnd.bergmann@linaro.org,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 04/15] cpufreq: dbx500: initialize .owner field with THIS_MODULE
-Date: Wed, 31 Jul 2013 19:49:13 +0530
-Message-Id: <538b0cb147d3bd4a5e21b49c507f725f7fb7feb9.1375279948.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-In-Reply-To: <cover.1375279948.git.viresh.kumar@linaro.org>
-References: <cover.1375279948.git.viresh.kumar@linaro.org>
-In-Reply-To: <cover.1375279948.git.viresh.kumar@linaro.org>
-References: <cover.1375279948.git.viresh.kumar@linaro.org>
+	Wed, 31 Jul 2013 10:24:17 -0400
+Date: Wed, 31 Jul 2013 16:24:05 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Adrian Hunter <adrian.hunter@intel.com>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH V2 1/9] perf tools: add test for reading object code
+Message-ID: <20130731142405.GB3008@twins.programming.kicks-ass.net>
+References: <1375218838-31042-1-git-send-email-adrian.hunter@intel.com>
+ <1375218838-31042-2-git-send-email-adrian.hunter@intel.com>
+ <20130731141732.GD3614@ghostprotocols.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130731141732.GD3614@ghostprotocols.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CPUFreq core does following at multiple places:
-module_{get|put}(cpufreq_driver->owner)).
+On Wed, Jul 31, 2013 at 11:17:32AM -0300, Arnaldo Carvalho de Melo wrote:
+> Em Wed, Jul 31, 2013 at 12:13:50AM +0300, Adrian Hunter escreveu:
+> > Using the information in mmap events, perf tools can read object
+> > code associated with sampled addresses.  A test is added that
+> > compares bytes read by perf with the same bytes read using
+> > objdump.
+> 
+> So this parses objdump output, and we also already have the annotation
+> logic that does that too, have you thought about having common routines
+> for these two cases?
+> 
 
-This is done to make sure module doesn't get unloaded if it is currently in use.
-This will work only if the .owner field of cpufreq driver is initialized with a
-valid pointer.
+Or better yet, stop using objdump like this and start using libbfd
+directly. The only reason we did horrible things like parsing objdump
+output is because nobody knew how the underlying stuff actually worked
+and we wanted to have something quick.
 
-This field wasn't initialized for this driver, lets initialize it with
-THIS_MODULE.
-
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- drivers/cpufreq/dbx500-cpufreq.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/cpufreq/dbx500-cpufreq.c b/drivers/cpufreq/dbx500-cpufreq.c
-index 26321cd..2527f1d 100644
---- a/drivers/cpufreq/dbx500-cpufreq.c
-+++ b/drivers/cpufreq/dbx500-cpufreq.c
-@@ -120,6 +120,7 @@ static struct cpufreq_driver dbx500_cpufreq_driver = {
- 	.get    = dbx500_cpufreq_getspeed,
- 	.init   = dbx500_cpufreq_init,
- 	.name   = "DBX500",
-+	.owner  = THIS_MODULE,
- 	.attr   = dbx500_cpufreq_attr,
- };
- 
--- 
-1.7.12.rc2.18.g61b472e
 
