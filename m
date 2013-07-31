@@ -1,68 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760187Ab3GaNon (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 09:44:43 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:60199 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759763Ab3GaNZr (ORCPT
+	id S1759907Ab3GaNom (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 09:44:42 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46942 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759735Ab3GaNZr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 31 Jul 2013 09:25:47 -0400
-Date: Wed, 31 Jul 2013 14:25:22 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
-Cc: lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Message-ID: <20130731132522.GP9858@sirena.org.uk>
-References: <20130731131627.GA32631@opensource.wolfsonmicro.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="zCmrFqZYZ3TEjivu"
+Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
-In-Reply-To: <20130731131627.GA32631@opensource.wolfsonmicro.com>
-X-Cookie: You will be awarded some great honor.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] ASoC: core: init delayed_work for codec-codec links
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Transfer-Encoding: 8bit
+MIME-Version: 1.0
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+CC: akpm@linux-foundation.org,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "=?UTF-8?q?J=C3=B3hann=20B=2E=20Gu=C3=B0mundsson?=" 
+	<johannbg@gmail.com>,
+        "=?UTF-8?Q?J=C3=B3hann=20B?=.=?UTF-8?Q?=20Gu=C3=B0mundsson?=" 
+	<johannbg@fedoraproject.org>
+Date: Wed, 31 Jul 2013 15:23:09 +0200
+Message-ID: <lsq.1375276989.976980322@decadent.org.uk>
+X-Mailer: LinuxStableQueue (scripts by bwh)
+Subject: [59/84] USB: misc: Add Manhattan Hi-Speed USB DVI Converter to
+ sisusbvga
+In-Reply-To: <lsq.1375276989.251749228@decadent.org.uk>
+X-SA-Exim-Connect-IP: 151.216.67.181
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.2.50-rc1 review patch.  If anyone has any objections, please let me know.
 
---zCmrFqZYZ3TEjivu
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+------------------
 
-On Wed, Jul 31, 2013 at 02:16:44PM +0100, Richard Fitzgerald wrote:
+From: Jóhann B. Guðmundsson <johannbg@gmail.com>
 
-> Pointing it to a dummy work callback is cleaner than taking
-> special cases in the code to bypass the flush_delayed_work_sync().
+commit 58fc90db8261b571c026bb8bf23aad48a7233118 upstream.
 
-Why is this better than pointing at the normal work that you'd expect to
-be used there?
+Signed-off-by: Jóhann B. Guðmundsson <johannbg@fedoraproject.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ drivers/usb/misc/sisusbvga/sisusb.c | 1 +
+ 1 file changed, 1 insertion(+)
 
---zCmrFqZYZ3TEjivu
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+--- a/drivers/usb/misc/sisusbvga/sisusb.c
++++ b/drivers/usb/misc/sisusbvga/sisusb.c
+@@ -3247,6 +3247,7 @@ static const struct usb_device_id sisusb
+ 	{ USB_DEVICE(0x0711, 0x0903) },
+ 	{ USB_DEVICE(0x0711, 0x0918) },
+ 	{ USB_DEVICE(0x0711, 0x0920) },
++	{ USB_DEVICE(0x0711, 0x0950) },
+ 	{ USB_DEVICE(0x182d, 0x021c) },
+ 	{ USB_DEVICE(0x182d, 0x0269) },
+ 	{ }
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR+RA/AAoJELSic+t+oim9lwwQAJM7l2LppIEkQiAFMZwzq+Wp
-zyKBucwlPeHoJcga6OFWpkctS2dBVtrgU+GTxw2uZp9kAzHJSPgV8YriJP6ckbVh
-tAh692dWPZpdTOCHzCS0zjnf6jp/BCw/NKwSH+X/9CzSUqCtMYxkTQFxF2BDpQRT
-tDqxeuoujQ48mAT5cJCFgaUb/cP9UIuJ9IYMlUtOpe1VS8ByXb6K0Jo2HODuIirp
-KnCxmowH+09BH6K1any/+zoYLAoSHCLWosllO5Jv1UGD2GcOV9EIGGcok64ICklB
-wv7Jl+YLJ7iVsJnfCSvvsnA9+hikmhv69zvxTm0CWrhWDQdjbhoDOUEj/AxKMVMq
-9WoiiVam+QntiOcXg+M+WvtHxOz9u5RTWm7xUMfHrNYmk+cAdFQZ2mXiZ9iJ71Kr
-cCGVwXjGxl4nEI8hTa80kj4ar2Gtz0YCNveBiG4s8hwXE+Sq4KtT+U4yquwSwHNU
-0h1w2RP5IxnK108ZBGl42I2JkNV+0mcmRfFoQfSYB+sF+mZ6X03RUQjO0E6j41b7
-9Bykx8sdmcpbwFyoHLeJ5liBexvcFmsrhmBFPSRfDeJCIlorWmRDSf45AicZbMRO
-OHJrSxZcsEwxjYh9cs4KN4pfZkI06eGFN9/7o/upyYdxiS/G5rgmceeLkjxcbQ3f
-gIoXG7261MccVecfTgrs
-=CIQD
------END PGP SIGNATURE-----
-
---zCmrFqZYZ3TEjivu--
