@@ -1,127 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759434Ab3GaI5l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 04:57:41 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:41791 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759282Ab3GaI5g (ORCPT
+	id S1759461Ab3GaI56 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 04:57:58 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:23806 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759282Ab3GaI5u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 04:57:36 -0400
-Date: Wed, 31 Jul 2013 01:56:58 -0700
-From: tip-bot for Frederic Weisbecker <tipbot@zytor.com>
-Message-ID: <tip-d84153d6c96f61aa06429586284639f32debf03e@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, acme@redhat.com,
-        hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
-        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, eranian@google.com,
-        linux-kernel@vger.kernel.org, peterz@infradead.org,
-        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
-        tglx@linutronix.de
-In-Reply-To: <1374539466-4799-8-git-send-email-fweisbec@gmail.com>
-References: <1374539466-4799-8-git-send-email-fweisbec@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf: Implement finer grained full dynticks kick
-Git-Commit-ID: d84153d6c96f61aa06429586284639f32debf03e
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 31 Jul 2013 01:57:04 -0700 (PDT)
+	Wed, 31 Jul 2013 04:57:50 -0400
+X-AuditID: cbfee690-b7f6f6d00000740c-49-51f8d18d8eec
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Andrew Morton'" <akpm@linux-foundation.org>
+Cc: "'LKML'" <linux-kernel@vger.kernel.org>,
+        "'Richard Purdie'" <rpurdie@rpsys.net>,
+        Jingoo Han <jg1.han@samsung.com>
+Subject: [PATCH 2/3] backlight: lm3639: Don't mix different enum types
+Date: Wed, 31 Jul 2013 17:57:48 +0900
+Message-id: <002e01ce8dcc$0814f8c0$183eea40$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: Ac6NzAGYWV0SL+quQom35h5T9xXT5A==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrKIsWRmVeSWpSXmKPExsVy+t8zA93eiz8CDc48ZreYs34Nm8XlhZdY
+	LS7vmsNmsXvXU1YHFo8TM36zeOyZ/4PVo2/LKkaPz5vkAliiuGxSUnMyy1KL9O0SuDIOTT7G
+	UrCRu2Lf5cAGxjOcXYycHBICJhIbZ7SwQNhiEhfurWfrYuTiEBJYxijR8X8VK0zRsRn72CES
+	0xklLl5/xgrh/GKU+HhvEztIFZuAmsSXL4eBbA4OEQF9ibYWDZAws0CxxOyzTxhBbGEBN4nj
+	+w+CDWURUJXoOXAFrJVXwFJiy+kHjBC2oMSPyfdYIHq1JNbvPM4EYctLbF7zlhniIAWJHWdf
+	g9WLCOhJfD/ykxmiRkRi34t3jCC3SQhsY5fYvOINC8QyAYlvkw+xgNwmISArsekA1BxJiYMr
+	brBMYBSbhWT1LCSrZyFZPQvJigWMLKsYRVMLkguKk9KLTPSKE3OLS/PS9ZLzczcxQqJswg7G
+	ewesDzEmA62fyCwlmpwPjNK8knhDYzMjC1MTU2Mjc0sz0oSVxHnVW6wDhQTSE0tSs1NTC1KL
+	4otKc1KLDzEycXBKNTCqXA72f1EQpHd7kvF/x7Yrm6pnX5QXZDcO+XjoaT//TSO/xMezN91p
+	aBH8ZvBrvd4p/r66ecue1kzZmVOUn3F55VXXi3u8LHdoWsgczK/4kaq9NlFIibPn2pSzCT8X
+	n93PGhCiNm/3/ewLT9Q3XPSfvPqcyMyJ6lEH95kemJgmUtz5gO3K9+p2JZbijERDLeai4kQA
+	cSm/HMgCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprEKsWRmVeSWpSXmKPExsVy+t9jQd3eiz8CDc72sVjMWb+GzeLywkus
+	Fpd3zWGz2L3rKasDi8eJGb9ZPPbM/8Hq0bdlFaPH501yASxRDYw2GamJKalFCql5yfkpmXnp
+	tkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUA7lRTKEnNKgUIBicXFSvp2mCaEhrjp
+	WsA0Ruj6hgTB9RgZoIGEdYwZhyYfYynYyF2x73JgA+MZzi5GTg4JAROJYzP2sUPYYhIX7q1n
+	62Lk4hASmM4ocfH6M1YI5xejxMd7m8Cq2ATUJL58OQxkc3CICOhLtLVogISZBYolZp99wghi
+	Cwu4SRzff5AVxGYRUJXoOXAFrJVXwFJiy+kHjBC2oMSPyfdYIHq1JNbvPM4EYctLbF7zlhni
+	IAWJHWdfg9WLCOhJfD/ykxmiRkRi34t3jBMYBWYhGTULyahZSEbNQtKygJFlFaNoakFyQXFS
+	eq6hXnFibnFpXrpecn7uJkZwDD+T2sG4ssHiEKMAB6MSD6/Dhe+BQqyJZcWVuYcYJTiYlUR4
+	5YN+BArxpiRWVqUW5ccXleakFh9iTAb6dCKzlGhyPjC95JXEGxqbmBlZGplZGJmYm5MmrCTO
+	e6DVOlBIID2xJDU7NbUgtQhmCxMHp1QDo/ANSx6Jnas2bzeTsP07cbcYf+/z309WlTCEzHx4
+	6fqehVsOPYxs279bJkuUd/5srsATF4xMtveVPtOdMn0h44NTYQcSOkz3Syg9+Bq+6avpxr+v
+	6u+Ksq84Yn/d8EHjD/X0sMeWx9rj3S4cvf61qoHtic4X8QerT921T2Pt7GZKkA7WDo53uaTE
+	UpyRaKjFXFScCAA8rV/rJQMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d84153d6c96f61aa06429586284639f32debf03e
-Gitweb:     http://git.kernel.org/tip/d84153d6c96f61aa06429586284639f32debf03e
-Author:     Frederic Weisbecker <fweisbec@gmail.com>
-AuthorDate: Tue, 23 Jul 2013 02:31:05 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 30 Jul 2013 22:29:15 +0200
+Don't mix different enum types to fix the sparse warnings.
 
-perf: Implement finer grained full dynticks kick
+drivers/video/backlight/lm3639_bl.c:80:51: warning: mixing different enum types
+drivers/video/backlight/lm3639_bl.c:80:51:     int enum lm3639_fleds  versus
+drivers/video/backlight/lm3639_bl.c:80:51:     int enum lm3639_bleds
+drivers/video/backlight/lm3639_bl.c:82:51: warning: mixing different enum types
+drivers/video/backlight/lm3639_bl.c:82:51:     int enum lm3639_fleds  versus
+drivers/video/backlight/lm3639_bl.c:82:51:     int enum lm3639_bleds
 
-Currently the full dynticks subsystem keep the
-tick alive as long as there are perf events running.
-
-This prevents the tick from being stopped as long as features
-such that the lockup detectors are running. As a temporary fix,
-the lockup detector is disabled by default when full dynticks
-is built but this is not a long term viable solution.
-
-To fix this, only keep the tick alive when an event configured
-with a frequency rather than a period is running on the CPU,
-or when an event throttles on the CPU.
-
-These are the only purposes of the perf tick, especially now that
-the rotation of flexible events is handled from a seperate hrtimer.
-The tick can be shutdown the rest of the time.
-
-Original-patch-by: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Stephane Eranian <eranian@google.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1374539466-4799-8-git-send-email-fweisbec@gmail.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- kernel/events/core.c | 17 +++++++++--------
- 1 file changed, 9 insertions(+), 8 deletions(-)
+ drivers/video/backlight/lm3639_bl.c |   11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 3fe385a..916cf1f 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -870,12 +870,8 @@ static void perf_pmu_rotate_start(struct pmu *pmu)
+diff --git a/drivers/video/backlight/lm3639_bl.c b/drivers/video/backlight/lm3639_bl.c
+index 053964d..6c888e3 100644
+--- a/drivers/video/backlight/lm3639_bl.c
++++ b/drivers/video/backlight/lm3639_bl.c
+@@ -76,10 +76,13 @@ static int lm3639_chip_init(struct lm3639_chip_data *pchip)
+ 		goto out;
  
- 	WARN_ON(!irqs_disabled());
- 
--	if (list_empty(&cpuctx->rotation_list)) {
--		int was_empty = list_empty(head);
-+	if (list_empty(&cpuctx->rotation_list))
- 		list_add(&cpuctx->rotation_list, head);
--		if (was_empty)
--			tick_nohz_full_kick();
--	}
- }
- 
- static void get_ctx(struct perf_event_context *ctx)
-@@ -1875,6 +1871,9 @@ static int  __perf_install_in_context(void *info)
- 	perf_pmu_enable(cpuctx->ctx.pmu);
- 	perf_ctx_unlock(cpuctx, task_ctx);
- 
-+	if (atomic_read(&__get_cpu_var(perf_freq_events)))
-+		tick_nohz_full_kick();
-+
- 	return 0;
- }
- 
-@@ -2812,10 +2811,11 @@ done:
- #ifdef CONFIG_NO_HZ_FULL
- bool perf_event_can_stop_tick(void)
- {
--	if (list_empty(&__get_cpu_var(rotation_list)))
--		return true;
+ 	/* output pins config. */
+-	if (!pdata->init_brt_led)
+-		reg_val = pdata->fled_pins | pdata->bled_pins;
 -	else
-+	if (atomic_read(&__get_cpu_var(perf_freq_events)) ||
-+	    __this_cpu_read(perf_throttled_count))
- 		return false;
-+	else
-+		return true;
- }
- #endif
+-		reg_val = pdata->fled_pins | pdata->bled_pins | 0x01;
++	if (!pdata->init_brt_led) {
++		reg_val = pdata->fled_pins;
++		reg_val |= pdata->bled_pins;
++	} else {
++		reg_val = pdata->fled_pins;
++		reg_val |= pdata->bled_pins | 0x01;
++	}
  
-@@ -5202,6 +5202,7 @@ static int __perf_event_overflow(struct perf_event *event,
- 			__this_cpu_inc(perf_throttled_count);
- 			hwc->interrupts = MAX_INTERRUPTS;
- 			perf_log_throttle(event, 0);
-+			tick_nohz_full_kick();
- 			ret = 1;
- 		}
- 	}
+ 	ret = regmap_update_bits(pchip->regmap, REG_ENABLE, 0x79, reg_val);
+ 	if (ret < 0)
+-- 
+1.7.10.4
+
+
