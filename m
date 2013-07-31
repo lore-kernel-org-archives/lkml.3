@@ -1,135 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760581Ab3GaPp6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 11:45:58 -0400
-Received: from smtp103.biz.mail.bf1.yahoo.com ([98.139.221.62]:22911 "HELO
-	smtp103.biz.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756599Ab3GaPpz (ORCPT
+	id S1760536Ab3GaPt7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 11:49:59 -0400
+Received: from up.free-electrons.com ([94.23.35.102]:48489 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1760451Ab3GaPt6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 11:45:55 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: D7p6Sk0VM1n7P3Zx3WnSx4DCkRge532oK5OEhJbe4LusX0w
- QGA3te0ziUqhf0XVp7pGTyVHKWaL1aQsBy3avnPlPFD1Uz.p1a85n76rbIA3
- 8ev14nyJiF2lJ1icbwRR75egIAhfdDQKkEs639.y0qKb_CZIbwvx02quJQfw
- 7ma4wSykEgWPsXk55A4uAYI9vB3cTkWdBucB0tnPJsjOG6aCE.am2.iEXDkC
- nH8dSsTG.n.S7.f94FhwggYB.LvO.c3aSKsPY2tgKe9ndmkeN0Bho7u.5XRW
- t_3m_gUEypCfh0XuC48.LKMfpUy8mi5FAzUkz6McRRH6I.507jHMYb4d4riw
- iN964RJCxpKAYCQdKX7lu6HLzcIYLNVn0j1B0cTC.t788qS8T_2o2duXsl16
- EJucbFlbs8Es_G3mFWP2FyPBK4L3o6iE5dgC2uhw1eQa_WH9xkYTUj2KV0pT
- M4GsE2NA6V4hKIJs_Aorlc44BWL5YF3QTd6D8yjaAmb7AuiO_24.3SXlncdf
- Ra87cEL28N_Oi
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-X-Rocket-Received: from [192.168.0.103] (casey@24.6.250.25 with )
-        by smtp103.biz.mail.bf1.yahoo.com with SMTP; 31 Jul 2013 08:45:54 -0700 PDT
-Message-ID: <51F93130.6040506@schaufler-ca.com>
-Date: Wed, 31 Jul 2013 08:45:52 -0700
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Wed, 31 Jul 2013 11:49:58 -0400
+Date: Wed, 31 Jul 2013 17:49:53 +0200
+From: "maxime.ripard" <maxime.ripard@free-electrons.com>
+To: "kevin.z.m" <kevin.z.m.zh@gmail.com>
+Cc: Emilio Lopez <emilio@elopez.com.ar>,
+        Mike Turquette <mturquette@linaro.org>,
+        =?utf-8?B?5a2Z5b2m6YKm?= <sunny@allwinnertech.com>,
+        =?utf-8?B?5ZC05Lmm6ICV?= <shuge@allwinnertech.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Re: [PATCH 4/4] ARM: sun6i: Enable clock support in the DTSI
+Message-ID: <20130731154953.GG2911@lukather>
+References: <1375195462-19566-1-git-send-email-maxime.ripard@free-electrons.com>
+ <1375195462-19566-5-git-send-email-maxime.ripard@free-electrons.com>
+ <51F86A2E.10505@elopez.com.ar>
+ <20130731073724.GA24439@lukather>
+ <2013073116110750016327@gmail.com>
+ <20130731114957.GD2911@lukather>
+ <2013073120102496855035@gmail.com>
 MIME-Version: 1.0
-To: Paul Moore <paul@paul-moore.com>
-CC: LKLM <linux-kernel@vger.kernel.org>,
-        LSM <linux-security-module@vger.kernel.org>,
-        SE Linux <selinux@tycho.nsa.gov>, James Morris <jmorris@namei.org>,
-        John Johansen <john.johansen@canonical.com>,
-        Eric Paris <eparis@redhat.com>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Kees Cook <keescook@chromium.org>,
-        Casey Schaufler <casey@schaufler-ca.com>
-Subject: Re: [PATCH v14 5/6] LSM: SO_PEERSEC configuration options
-References: <51F16CFB.6040603@schaufler-ca.com> <51F16F37.6040708@schaufler-ca.com> <6712209.BXb1SVfVxH@sifl>
-In-Reply-To: <6712209.BXb1SVfVxH@sifl>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ijf6z65S790CMqo8"
+Content-Disposition: inline
+In-Reply-To: <2013073120102496855035@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/30/2013 2:47 PM, Paul Moore wrote:
-> On Thursday, July 25, 2013 11:32:23 AM Casey Schaufler wrote:
->> Subject: [PATCH v14 5/6] LSM: SO_PEERSEC configuration options
->>
->> Refine the handling of SO_PEERSEC to enable legacy
->> user space runtimes, Fedora in particular, when running
->> with multiple LSMs that are capable of providing information
->> using getsockopt(). This introduces an additional configuration
->> option, and requires that the default be the legacy behavior.
->>
->> Signed-off-by: Casey Schaufler <casey@schaufler-ca.com>
-> ...
->
->> --- a/security/Kconfig
->> +++ b/security/Kconfig
->> @@ -157,17 +157,49 @@ config SECMARK_LSM
->>  	help
->>  	  The name of the LSM to use with the networking secmark
->>
->> -config SECURITY_PLAIN_CONTEXT
->> -	bool "Backward compatable contexts without lsm='value' formatting"
->> -	depends on SECURITY_SELINUX || SECURITY_SMACK
->> -	default y
->> +choice
->> +	depends on SECURITY && (SECURITY_SELINUX || SECURITY_SMACK)
->> +	prompt "Peersec LSM"
->> +	default PEERSEC_SECURITY_FIRST
->> +
->>  	help
->> -	  Without this value set security context strings will
->> -	  include the name of the lsm with which they are associated
->> -	  even if there is only one LSM that uses security contexts.
->> -	  This matches the way contexts were handled before it was
->> -	  possible to have multiple concurrent security modules.
->> -	  If you are unsure how to answer this question, answer Y.
->> +	  Select the security module that will send attribute
->> +	  information in IP header options.
->> +	  Most SELinux configurations do not take advantage
->> +	  of Netlabel, while all Smack configurations do. Unless
->> +	  there is a need to do otherwise chose Smack in preference
->> +	  to SELinux.
-> I'm not hugely in love with the help text; the first sentence seems to be all 
-> that is needed, the second seems unnecessary and not exactly fair to the LSMs.
 
-I can take out the "friendly advice". What it really should say
-is more on the lines of:
+--ijf6z65S790CMqo8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-	If you have gotten to the point where you have to make
-	this decision you should probably call it a work day, go
-	home, have a nice drink and spend some time with a loved
-	one. In the morning take a good hard look at your network
-	configuration. You may end up with a different security
-	policies being enforced with IPv4 and IPv6 communications.
 
->
->> +	config PEERSEC_SECURITY_FIRST
->> +		bool "First LSM providing for SO_PEERSEC"
->> +		help
->> +		  Provide the first available LSM's information with SO_PEERSEC
->> +
->> +	config PEERSEC_SECURITY_ALL
->> +		bool "Use lsm='value'lsm='value' format"
->> +		help
->> +		  Provide all available security information in SO_PEERSEC
->> +
->> +	config PEERSEC_SECURITY_SELINUX
->> +		bool "SELinux" if SECURITY_SELINUX=y
->> +		help
->> +		  Provide SELinux context with SO_PEERSEC
->> +
->> +	config PEERSEC_SECURITY_SMACK
->> +		bool "Smack" if SECURITY_SMACK=y
->> +		help
->> +		  Provide Smack labels with SO_PEERSEC
->> +
->> +endchoice
->> +
->> +config PEERSEC_LSM
->> +	string
->> +	default "smack" if PEERSEC_SECURITY_SMACK
->> +	default "selinux" if PEERSEC_SECURITY_SELINUX
->> +	default "(all)" if PEERSEC_SECURITY_ALL
->> +	default "(first)"
->> +	help
->> +	  The name of the LSM to use with Netlabel
->>
->>  config SECURITY_PATH
->>  	bool "Security hooks for pathname based access control"
 
+On Wed, Jul 31, 2013 at 08:10:32PM +0800, kevin.z.m wrote:
+> > How does one select either the internal or the external 32kHz
+> > oscillator? Is this done in software (I can't find any reference to that
+> > in the user manuals) or in hardware?
+> For A20, it should be in the Timer module, and there is a register named =
+"LOSC_CTRL_REG".
+> For A31, it is in the RTC module, same name of "LOSC_CTRL_REG".
+
+Ok, just so that we're on the same page, we have two oscillators running
+at 32kHz, the internal being always there, and the external that could
+or could not be there, and it's each different hardware block that can
+be wired to one, the other or both?
+
+There's no global mux that could use either one of the two 32k to
+provide the only 32kHz source in the system, right?
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--ijf6z65S790CMqo8
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR+TIhAAoJEBx+YmzsjxAgl9kP/2rdk4RofktvLbLY8IluAE/h
+y0UCLnYqaJMjgiFqj8Bj5o9GBlgTAT5lGeMmKCIrDlz3VKi2SGBJgrfdQ3uwypvw
+OVGwUk1LpkfKSBPMnxwF2FY6RPXYNuJc3rnilD2eV1FW2E7e8O6yNrI9Qr7Rii8s
+RFbt3YJ8u7RhY2GH1Zw804wUkTQXTwIQGINjgDdo9gnUxxzN1aOHPTmRVtKTK75X
+h0cV/8FOKjXjXGWEFYcJLZzBWMRkjMOQUsY/lZNwV0coElFxkDrrC1B4lC1GQwBS
+hefJBQNOxB5FNHSgl2TnrISpagT29AFKXiz3JOwwyHx10hIHhvHvhQpbqLC90YMe
+xOm+4CPGWHM5AOabaHKwZFrvciPjAlBKSTC6csicQDsiB3IsHj/6L4GR4i/0JN8p
+EyL2hrxSokbuwkG49c2T5lMzlMTCt1cv+D0vRHKCBs0YdlbEYGyNqAURhz5IyARF
+Nd7Xiw23mYwzqFsZjXTVSaCZbfMrVILlgGeWzXgfp2HcU42tMSjo6/Yhpa5RFPyL
+Y9XjaGiIbFHGw+CePWqr0huIYwnPa8OAMaOnydCk1FKrPpNCAfw6plBMxKlBR6X4
+M5h+/gGR3Dlr4nlEYZZwB0FIVEMI5Bjxwtbn1/mXFecBzc5rxaWJTM1xcZdz4jlQ
+lOoybXDkTWbF0ajE/5Xf
+=kvM4
+-----END PGP SIGNATURE-----
+
+--ijf6z65S790CMqo8--
