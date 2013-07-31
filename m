@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760119Ab3GaNok (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 09:44:40 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46939 "EHLO
+	id S1759855Ab3GaNpa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 09:45:30 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46948 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759730Ab3GaNZr (ORCPT
+	by vger.kernel.org with ESMTP id S1759655Ab3GaNZr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 31 Jul 2013 09:25:47 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Sami Rahman" <sami.rahman@mmbresearch.com>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+CC: akpm@linux-foundation.org, "Oskar Andero" <oskar.andero@sonymobile.com>,
+        "Matthew Dharm" <mdharm-usb@one-eyed-alien.net>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "Ren Bigcren" <bigcren.ren@sonymobile.com>
 Date: Wed, 31 Jul 2013 15:23:09 +0200
-Message-ID: <lsq.1375276989.688829679@decadent.org.uk>
+Message-ID: <lsq.1375276989.751223647@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [62/84] USB: cp210x: add MMB and PI ZigBee USB Device Support
+Subject: [58/84] USB: storage: Add MicroVault Flash Drive to unusual_devs
 In-Reply-To: <lsq.1375276989.251749228@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.216.67.181
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,31 +33,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sami Rahman <sami.rahman@mmbresearch.com>
+From: Ren Bigcren <bigcren.ren@sonymobile.com>
 
-commit 7681156982026ebf7eafd7301eb0374d7648d068 upstream.
+commit e7a6121f4929c17215f0cdca3726f4bf3e4e9529 upstream.
 
-Added support for MMB Networks and Planet Innovation Ingeni ZigBee USB
-devices using customized Silicon Labs' CP210x.c USB to UART bridge
-drivers with PIDs: 88A4, 88A5.
+The device report an error capacity when read_capacity_16().
+Using read_capacity_10() can get the correct capacity.
 
-Signed-off-by: Sami Rahman <sami.rahman@mmbresearch.com>
-Tested-by: Sami Rahman <sami.rahman@mmbresearch.com>
+Signed-off-by: Ren Bigcren <bigcren.ren@sonymobile.com>
+Cc: Matthew Dharm <mdharm-usb@one-eyed-alien.net>
+Signed-off-by: Oskar Andero <oskar.andero@sonymobile.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/serial/cp210x.c | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/usb/storage/unusual_devs.h | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/drivers/usb/serial/cp210x.c
-+++ b/drivers/usb/serial/cp210x.c
-@@ -125,6 +125,8 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE(0x10C4, 0x85F8) }, /* Virtenio Preon32 */
- 	{ USB_DEVICE(0x10C4, 0x8664) }, /* AC-Services CAN-IF */
- 	{ USB_DEVICE(0x10C4, 0x8665) }, /* AC-Services OBD-IF */
-+	{ USB_DEVICE(0x10C4, 0x88A4) }, /* MMB Networks ZigBee USB Device */
-+	{ USB_DEVICE(0x10C4, 0x88A5) }, /* Planet Innovation Ingeni ZigBee USB Device */
- 	{ USB_DEVICE(0x10C4, 0xEA60) }, /* Silicon Labs factory default */
- 	{ USB_DEVICE(0x10C4, 0xEA61) }, /* Silicon Labs factory default */
- 	{ USB_DEVICE(0x10C4, 0xEA70) }, /* Silicon Labs factory default */
+--- a/drivers/usb/storage/unusual_devs.h
++++ b/drivers/usb/storage/unusual_devs.h
+@@ -657,6 +657,13 @@ UNUSUAL_DEV(  0x054c, 0x016a, 0x0000, 0x
+ 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
+ 		US_FL_FIX_INQUIRY ),
+ 
++/* Submitted by Ren Bigcren <bigcren.ren@sonymobile.com> */
++UNUSUAL_DEV(  0x054c, 0x02a5, 0x0100, 0x0100,
++		"Sony Corp.",
++		"MicroVault Flash Drive",
++		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
++		US_FL_NO_READ_CAPACITY_16 ),
++
+ /* floppy reports multiple luns */
+ UNUSUAL_DEV(  0x055d, 0x2020, 0x0000, 0x0210,
+ 		"SAMSUNG",
 
