@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758820Ab3GaBwv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 21:52:51 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:45973 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751381Ab3GaBwt (ORCPT
+	id S1758862Ab3GaBw6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 21:52:58 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:48488 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751381Ab3GaBwy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 21:52:49 -0400
-Message-ID: <51F86DA3.6050406@huawei.com>
-Date: Wed, 31 Jul 2013 09:51:31 +0800
+	Tue, 30 Jul 2013 21:52:54 -0400
+Message-ID: <51F86DDD.3030809@huawei.com>
+Date: Wed, 31 Jul 2013 09:52:29 +0800
 From: Li Zefan <lizefan@huawei.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
 To: Tejun Heo <tj@kernel.org>
 CC: Andrew Morton <akpm@linux-foundation.org>,
+        Glauber Costa <glommer@parallels.com>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
         LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
         <linux-mm@kvack.org>
-Subject: [PATCH v4 3/8] cgroup: implement cgroup_from_id()
+Subject: [PATCH v4 6/8] memcg: fail to create cgroup if the cgroup id is too
+ big
 References: <51F86D69.2030907@huawei.com>
 In-Reply-To: <51F86D69.2030907@huawei.com>
 Content-Type: text/plain; charset="GB2312"
@@ -29,49 +31,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This will be used as a replacement for css_lookup().
+memcg requires the cgroup id to be smaller than 65536.
 
-There's a difference with cgroup id and css id. cgroup id starts with 0,
-while css id starts with 1.
-
-v4:
-- also check if cggroup_mutex is held.
-- make it an inline function.
+This is a preparation to kill css id.
 
 Signed-off-by: Li Zefan <lizefan@huawei.com>
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Acked-by: Michal Hocko <mhocko@suse.cz>
 ---
- include/linux/cgroup.h | 18 ++++++++++++++++++
- 1 file changed, 18 insertions(+)
+ mm/memcontrol.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index 8c107e9..4ef8452 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -720,6 +720,24 @@ static inline struct cgroup* task_cgroup(struct task_struct *task,
- 	return task_subsys_state(task, subsys_id)->cgroup;
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 62541f5..ad7d7c9 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -512,6 +512,12 @@ static inline bool mem_cgroup_is_root(struct mem_cgroup *memcg)
+ 	return (memcg == root_mem_cgroup);
  }
  
-+/**
-+ * cgroup_from_id - lookup cgroup by id
-+ * @ss: cgroup subsys to be looked into
-+ * @id: the cgroup id
-+ *
-+ * Returns the cgroup if there's valid one with @id, otherwise returns NULL.
-+ * Should be called under rcu_read_lock().
++/*
++ * We restrict the id in the range of [1, 65535], so it can fit into
++ * an unsigned short.
 + */
-+static inline struct cgroup *cgroup_from_id(struct cgroup_subsys *ss, int id)
-+{
-+#ifdef CONFIG_PROVE_RCU
-+	rcu_lockdep_assert(rcu_read_lock_held() ||
-+			   lockdep_is_held(&cgroup_mutex),
-+			   "cgroup_from_id() needs proper protection");
-+#endif
-+	return idr_find(&ss->root->cgroup_idr, id);
-+}
++#define MEM_CGROUP_ID_MAX	USHRT_MAX
 +
- struct cgroup *cgroup_next_sibling(struct cgroup *pos);
+ static inline unsigned short mem_cgroup_id(struct mem_cgroup *memcg)
+ {
+ 	/*
+@@ -6248,6 +6254,9 @@ mem_cgroup_css_alloc(struct cgroup *cont)
+ 	long error = -ENOMEM;
+ 	int node;
  
- /**
++	if (cont->id > MEM_CGROUP_ID_MAX)
++		return ERR_PTR(-ENOSPC);
++
+ 	memcg = mem_cgroup_alloc();
+ 	if (!memcg)
+ 		return ERR_PTR(error);
 -- 
 1.8.0.2
