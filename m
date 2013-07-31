@@ -1,86 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756031Ab3GaJpC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 05:45:02 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:37535 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751316Ab3GaJo7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 05:44:59 -0400
-Date: Wed, 31 Jul 2013 11:44:34 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Mark Brown <broonie@kernel.org>
-Cc: Peter Chen <peter.chen@freescale.com>, Fabio Estevam <festevam@gmail.com>,
-        alexander.shishkin@linux.intel.com, kernel@pengutronix.de,
-        linux-usb@vger.kernel.org, Fabio Estevam <fabio.estevam@freescale.com>,
-        Tejun Heo <htejun@gmail.com>, Jeff Garzik <jeff@garzik.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, Mike Turquette <mturquette@linaro.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 2/2] chipidea: Use devm_request_irq()
-Message-ID: <20130731094434.GC1754@pengutronix.de>
-References: <1375232669-27846-1-git-send-email-festevam@gmail.com>
- <1375232669-27846-2-git-send-email-festevam@gmail.com>
- <20130731073306.GZ1754@pengutronix.de>
- <20130731082054.GF8540@nchen-desktop>
- <20130731084645.GB1754@pengutronix.de>
- <20130731090512.GD9858@sirena.org.uk>
+	id S1758920Ab3GaJqx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 05:46:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37655 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750775Ab3GaJqv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 05:46:51 -0400
+Date: Wed, 31 Jul 2013 12:46:49 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH 3/3] KVM: x86: handle singlestep during emulation
+Message-ID: <20130731094649.GE7484@redhat.com>
+References: <1375197096-2454-1-git-send-email-pbonzini@redhat.com>
+ <1375197096-2454-4-git-send-email-pbonzini@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130731090512.GD9858@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <1375197096-2454-4-git-send-email-pbonzini@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Expanded Cc: a bit]
-
-Hello,
-
-On Wed, Jul 31, 2013 at 10:05:12AM +0100, Mark Brown wrote:
-> On Wed, Jul 31, 2013 at 10:46:45AM +0200, Uwe Kleine-König wrote:
-We're discussing about devm_request_irq and wonder what happens at
-remove time when the irq is still active.
-
-> > OK, so the possible problem is that remove is called while the irq is
-> > still active. That means you have to assert that all resources the irq
-> > handler is using (e.g. ioremap, clk_prepare_enable) are only freed
-> > *after* the irq is done. For ioremap that means it must be done using
-> > devm_ioremap_resource. For a clock it's not that easy because the irq
-> > handler has to assert that a used clk is kept prepared which can only be
-> > done using clk_prepare which in turn is not allowed in an irq handler.
+On Tue, Jul 30, 2013 at 05:11:36PM +0200, Paolo Bonzini wrote:
+> This lets debugging work better during emulation of invalid
+> guest state.
 > 
-> > Hmm. So the only possible fixes are
-> > 	- devm* can be told to also care about clk_disable_unprepare
-> > 	- after disabling irqs in the remove callback wait for all
-> > 	  active irqs to be done. (i.e. call synchronize_irq(irq))
-> > 	- don't use devm_request_irq
+> This time the check is done after emulation, but before writeback
+> of the flags; we need to check the flags *before* execution of the
+> instruction, we cannot check singlestep_rip because the CS base may
+> have already been modified.
 > 
-> I'm not sure that devm_ guarantees any ordering in the cleanups it does
-> so I'd not like to rely on the first option either, if there were some
-> guarantee of that it'd help.  The nice thing about explicitly freeing
-> the IRQ is that you can tell that all this stuff is safe by inspection.
-devm_* at least uses list_for_each_entry_reverse
-(drivers/base/devres.c:release_nodes()). Without this guarantee devm_
-would not make much sense IMHO.
+> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+> ---
+>  arch/x86/kvm/x86.c | 39 ++++++++++++++++++++++++++++++++++++++-
+>  1 file changed, 38 insertions(+), 1 deletion(-)
+> 
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index 1368cf5..9805cfd 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -4971,6 +4971,41 @@ static int kvm_vcpu_check_hw_bp(unsigned long addr, u32 type, u32 dr7,
+>  	return dr6;
+>  }
+>  
+> +static void kvm_vcpu_check_singlestep(struct kvm_vcpu *vcpu, int *r)
+> +{
+> +	struct kvm_run *kvm_run = vcpu->run;
+> +
+> +	/*
+> +	 * Use the "raw" value to see if TF was passed to the processor.
+> +	 * Note that the new value of the flags has not been saved yet.
+> +	 *
+> +	 * This is correct even for TF set by the guest, because "the
+> +	 * processor will not generate this exception after the instruction
+> +	 * that sets the TF flag".
+> +	 */
+> +	unsigned long rflags = kvm_x86_ops->get_rflags(vcpu);
+> +
+> +	if (unlikely(rflags & X86_EFLAGS_TF)) {
+> +		if (vcpu->guest_debug & KVM_GUESTDBG_SINGLESTEP) {
+> +			kvm_run->debug.arch.dr6 = DR6_BS | DR6_FIXED_1;
+> +			kvm_run->debug.arch.pc = vcpu->arch.singlestep_rip;
+> +			kvm_run->debug.arch.exception = DB_VECTOR;
+> +			kvm_run->exit_reason = KVM_EXIT_DEBUG;
+> +			*r = EMULATE_USER_EXIT;
+> +		} else {
+> +			vcpu->arch.emulate_ctxt.eflags &= ~X86_EFLAGS_TF;
+> +			/*
+> +			 * "Certain debug exceptions may clear bit 0-3.  The
+> +			 * remaining contents of the DR6 register are never
+> +			 * cleared by the processor".
+> +			 */
+> +			vcpu->arch.dr6 &= ~15;
+> +			vcpu->arch.dr6 |= DR6_BS;
+> +			kvm_queue_exception(vcpu, DB_VECTOR);
+> +		}
+> +	}
+> +}
+> +
+>  static bool kvm_vcpu_check_breakpoint(struct kvm_vcpu *vcpu, int *r)
+>  {
+>  	struct kvm_run *kvm_run = vcpu->run;
+> @@ -5117,10 +5152,12 @@ restart:
+>  
+>  	if (writeback) {
+>  		toggle_interruptibility(vcpu, ctxt->interruptibility);
+> -		kvm_set_rflags(vcpu, ctxt->eflags);
+>  		kvm_make_request(KVM_REQ_EVENT, vcpu);
+>  		vcpu->arch.emulate_regs_need_sync_to_vcpu = false;
+>  		kvm_rip_write(vcpu, ctxt->eip);
+> +		if (r == EMULATE_DONE)
+Single step will not work for mmio write and pio out, we never return
+into emulator for those instructions.
 
-To also manage clks, we'd need something like:
+> +			kvm_vcpu_check_singlestep(vcpu, &r);
+> +		kvm_set_rflags(vcpu, ctxt->eflags);
+>  	} else
+>  		vcpu->arch.emulate_regs_need_sync_to_vcpu = true;
+>  
+> -- 
+> 1.8.1.4
 
-	devm_clk_prepare(&dev, some_clk);
-
-that makes devm_clk_release also call clk_unprepare the right number of
-times. Maybe also the same for devm_clk_enable? Does this make sense?
-
-Best regards
-Uwe
-
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+--
+			Gleb.
