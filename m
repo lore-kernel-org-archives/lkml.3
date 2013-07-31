@@ -1,113 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754422Ab3GaQKX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 12:10:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25621 "EHLO mx1.redhat.com"
+	id S1756560Ab3GaQLw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 12:11:52 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44248 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751130Ab3GaQKV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 12:10:21 -0400
-Date: Wed, 31 Jul 2013 12:09:45 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Takao Indoh <indou.takao@jp.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "open list:INTEL IOMMU (VT-d)" <iommu@lists.linux-foundation.org>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "ishii.hironobu@jp.fujitsu.com" <ishii.hironobu@jp.fujitsu.com>,
-        Don Dutile <ddutile@redhat.com>,
-        "Sumner, William" <bill.sumner@hp.com>,
-        "alex.williamson@redhat.com" <alex.williamson@redhat.com>,
-        Haren Myneni <hbabu@us.ibm.com>
-Subject: Re: [PATCH v2] PCI: Reset PCIe devices to stop ongoing DMA
-Message-ID: <20130731160944.GA1577@redhat.com>
-References: <CAErSpo4t_2Xw76p3Z9FVzyyK-MBovavDu9D=pYoPMjESSxgT=w@mail.gmail.com>
- <51B19DF3.2070009@jp.fujitsu.com>
- <CAErSpo6dfEnzriHD_aWZB_3E-kSzauhNRHPd+VuFX5HONVKgqw@mail.gmail.com>
- <51B6BEDB.3000509@jp.fujitsu.com>
- <CAErSpo5u8qGALt6C+tuPYXdd2YgyMH6fnPnA+afUteEZ7kY0iw@mail.gmail.com>
- <51B93221.2040505@jp.fujitsu.com>
- <CAErSpo5tVK-Z3aOdMTzab-S8o5zLVtDOFQ8-LSYpUgbrJSsxuw@mail.gmail.com>
- <51BA7BB6.1080104@jp.fujitsu.com>
- <51EF7466.20703@jp.fujitsu.com>
- <CAErSpo5B7NzVfxwW3bQnfK+iK+DrRsWQd2Cm14z5PWNnRHWL5w@mail.gmail.com>
+	id S1751883Ab3GaQLv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 12:11:51 -0400
+Date: Wed, 31 Jul 2013 17:11:41 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/18] Basic scheduler support for automatic NUMA
+ balancing V5
+Message-ID: <20130731161141.GX2296@suse.de>
+References: <1373901620-2021-1-git-send-email-mgorman@suse.de>
+ <20130725103620.GM27075@twins.programming.kicks-ass.net>
+ <20130731103052.GR2296@suse.de>
+ <20130731104814.GA3008@twins.programming.kicks-ass.net>
+ <20130731115719.GT2296@suse.de>
+ <20130731153018.GD3008@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <CAErSpo5B7NzVfxwW3bQnfK+iK+DrRsWQd2Cm14z5PWNnRHWL5w@mail.gmail.com>
+In-Reply-To: <20130731153018.GD3008@twins.programming.kicks-ass.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 25, 2013 at 11:00:46AM -0600, Bjorn Helgaas wrote:
-> On Wed, Jul 24, 2013 at 12:29 AM, Takao Indoh
-> <indou.takao@jp.fujitsu.com> wrote:
-> > Sorry for letting this discussion slide, I was busy on other works:-(
-> > Anyway, the summary of previous discussion is:
-> > - My patch adds new initcall(fs_initcall) to reset all PCIe endpoints on
-> >   boot. This expects PCI enumeration is done before IOMMU
-> >   initialization as follows.
-> >     (1) PCI enumeration
-> >     (2) fs_initcall ---> device reset
-> >     (3) IOMMU initialization
-> > - This works on x86, but does not work on other architecture because
-> >   IOMMU is initialized before PCI enumeration on some architectures. So,
-> >   device reset should be done where IOMMU is initialized instead of
-> >   initcall.
-> > - Or, as another idea, we can reset devices in first kernel(panic kernel)
-> >
-> > Resetting devices in panic kernel is against kdump policy and seems not to
-> > be good idea. So I think adding reset code into iommu initialization is
-> > better. I'll post patches for that.
+On Wed, Jul 31, 2013 at 05:30:18PM +0200, Peter Zijlstra wrote:
+> On Wed, Jul 31, 2013 at 12:57:19PM +0100, Mel Gorman wrote:
 > 
-> Of course nobody *wants* to do anything in the panic kernel.  But
-> simply saying "it's against kdump policy and seems not to be a good
-> idea" is not a technical argument.  There are things that are
-> impractical to do in the kdump kernel, so they have to be done in the
-> panic kernel even though we know the kernel is unreliable and the
-> attempt may fail.
+> > > Right, so what Ingo did is have the scan rate depend on the convergence.
+> > > What exactly did you dislike about that?
+> > > 
+> > 
+> > It depended entirely on properly detecting if we are converged or not. As
+> > things like false share detection within THP is still not there I was
+> > worried that it was too easy to make the wrong decision here and keep it
+> > pinned at the maximum scan rate.
+> > 
+> > > We could define the convergence as all the faults inside the interleave
+> > > mask vs the total faults, and then run at: min + (1 - c)*(max-min).
+> > > 
+> > 
+> > And when we have such things properly in place then I think we can kick
+> > away the current crutch.
+> 
+> OK, so I'll go write that patch I suppose ;-)
+> 
+> > > Ah, well the reasoning on that was that all this NUMA business is
+> > > 'expensive' so we'd better only bother with tasks that persist long
+> > > enough for it to pay off.
+> > > 
+> > 
+> > Which is fair enough but tasks that lasted *just* longer than the interval
+> > still got punished. Processes running with a slightly slower CPU gets
+> > hurts meaning that it would be a difficult bug report to digest.
+> > 
+> > > In that regard it makes perfect sense to wait a fixed amount of runtime
+> > > before we start scanning.
+> > > 
+> > > So it was not a pure hack to make kbuild work again.. that is did was
+> > > good though.
+> > > 
+> > 
+> > Maybe we should reintroduce the delay then but I really would prefer that
+> > it was triggered on some sort of event.
+> 
+> Humm:
+> 
+> kernel/sched/fair.c:
+> 
+> /* Scan @scan_size MB every @scan_period after an initial @scan_delay in ms */
+> unsigned int sysctl_numa_balancing_scan_delay = 1000;
+> 
+> 
+> kernel/sched/core.c:__sched_fork():
+> 
+> 	numa_scan_period = sysctl_numa_balancing_scan_delay
+> 
+> 
+> It seems its still there, no need to resuscitate.
+> 
 
-I think resetting all devices in crashed kernel is really a lot of
-code. If there is a small piece of code, it can still be considered.
+Yes, reverting 5bca23035391928c4c7301835accca3551b96cc2 effectively restores
+the behaviour you are looking for. It just seems very crude. Then again,
+I also should not have left the scan delay on top of the first_nid
+check.
 
-I don't know much about IOMMU or PCI or PCIE. But I am taking one step
-back and discuss again the idea of not resetting the IOMMU in second
-kernel.
+> I share your preference for a clear event, although nothing really comes
+> to mind. The entire multi-process space seems devoid of useful triggers.
+> 
 
-I think resetting the bus is a good idea but just resetting PCIE
-will solve only part of the problem and we will same issues with
-devices on other buses.
+RSS was another option it felt as arbitrary as a plain delay.
 
-So what sounds more appealing if we could fix this particular
-problem at IOMMU level first (and continue to develp patches for
-resetting various buses).
+Should I revert 5bca23035391928c4c7301835accca3551b96cc2 with an
+explanation that it potentially is completely useless in the purely
+multi-process shared case?
 
-In the past also these ideas have been proposed that continue to
-use translation table from first kernel. Retain those mappings and
-don't reset IOMMU. Reserve some space for kdump mappings in first
-kernel and use that reserved mapping space in second kernel. It
-never got implemented though.
+> > > On that rate-limit, this looks to be a hard-coded number unrelated to
+> > > the actual hardware.
+> > 
+> > Guesstimate.
+> > 
+> > > I think we should at the very least make it a
+> > > configurable number and preferably scale the number with the SLIT info.
+> > > Or alternatively actually measure the node to node bandwidth.
+> > > 
+> > 
+> > Ideally we should just kick it away because scan rate limiting works
+> > properly. Lets not make it a tunable just yet so we can avoid having to
+> > deprecate it later.
+> 
+> I'm not seeing how the rate-limit as per the convergence is going to
+> help here.
 
-Bjorn, so what's the fundamental problem with this idea?
+It should reduce the potential number of NUMA hinting faults that can be
+incurred. However, I accept your point because even it does not directly
+avoid a large number of migration events.
 
-Also, what's wrong with DMAR error. If some device tried to do DMA,
-and DMA was blocked because IOMMU got reset and mappings are no more
-there, why does it lead to failure. Shouldn't we just reate limit 
-error messages in such case and if device is needed, anyway driver
-will reset it.
+> Suppose we migrate the task to another node and its going to
+> stay there. Then our convergence is going down to 0 (all our memory is
+> remote) so we end up at the max scan rate migrating every single page
+> ASAP.
+> 
+> This would completely and utterly saturate any interconnect.
+> 
 
-Other problem mentioned in this thread is PCI SERR. What is it? Is
-it some kind of error device reports if it can't do DMA successfully.
-Can these errors be simply ignored kdump kernel? This problem sounds
-similar to a device keeping interrupt asserted in second kernel and
-kernel simply disables the interrupt line if nobody claims the
-interrupt.
+Good point and we'd arrive back at rate limiting the migration in an
+attempt to avoid it.
 
-IOW, it feels to me that we should handle the issue (DMAR error) at
-IOMMU level first (instead of trying to make sure that by the time
-we get to initialize IOMMU(), all devices in system have been quiesced
-and nobody is doing DMA).
+> Also, in the case we don't have a fully connected system the memory
+> transfers will need multiple hops, which greatly complicates the entire
+> accounting trick :-)
+> 
 
-Thanks
-Vivek
+Also unfortunately true. The larger the machine, the more likely this
+becomes.
+
+-- 
+Mel Gorman
+SUSE Labs
