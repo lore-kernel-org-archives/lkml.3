@@ -1,135 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759571Ab3GaL3X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 07:29:23 -0400
-Received: from mail-ea0-f175.google.com ([209.85.215.175]:45252 "EHLO
-	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756147Ab3GaL3V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 07:29:21 -0400
-From: Tomasz Figa <tomasz.figa@gmail.com>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-gpio@vger.kernel.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Subject: Re: How to create IRQ mappings in a GPIO driver that doesn't control its IRQ domain ?
-Date: Wed, 31 Jul 2013 13:29:26 +0200
-Message-ID: <18585358.29goqe5cyM@thinkpad>
-User-Agent: KMail/4.10.5 (Linux/3.10.1-gentoo; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <2175074.sF1r3oKahE@avalon>
-References: <1624911.6TtmtVmU1T@avalon> <12170068.F0utKQgh5l@flatron> <2175074.sF1r3oKahE@avalon>
+	id S1759593Ab3GaLaH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 07:30:07 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:48760 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756143Ab3GaLaE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 07:30:04 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: linux-pci <linux-pci@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>
+Cc: Myron Stowe <myron.stowe@gmail.com>, linux-arm-kernel@lists.infradead.org,
+        iommu@lists.linux-foundation.org,
+        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: [Announcement] Linux Plumbers ACPI/PM, PCI Microconference
+Date: Wed, 31 Jul 2013 13:40:14 +0200
+Message-ID: <1755363.sGc8nLIQOW@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CAL-B5D03ki8NHsM6EuESTH2K-Eh+XyFHNXPDYwgDq+oagDjtMQ@mail.gmail.com>
+References: <CAL-B5D03ki8NHsM6EuESTH2K-Eh+XyFHNXPDYwgDq+oagDjtMQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 31 of July 2013 13:11:33 Laurent Pinchart wrote:
-> Hi Tomasz,
+Hi All,
+
+The original announcement didn't go to linux-pm, so again:
+
+On Tuesday, July 16, 2013 08:21:26 PM Myron Stowe wrote:
+> Linux Plumbers has approved an ACPI/PM, PCI microconference. The
+> overview page is here:
 > 
-> On Sunday 28 July 2013 12:07:48 Tomasz Figa wrote:
-> > On Wednesday 24 of July 2013 01:21:44 Laurent Pinchart wrote:
-> > > Hello,
-> > > 
-> > > I'm running into an issue on several Renesas SoC with IRQ domains and
-> > > GPIOs.
-> > > 
-> > > On sh73a0, r8a73a4 and r8a7740, GPIOs and external interrupts are
-> > > handled by two separate IP cores, namely the PFC (Pin Function
-> > > Controller) and INTC (Interrupt Controller). The former is handled by
-> > > the sh-pfc driver (drivers/pinctrl/sh-pfc) and the later by the
-> > > irq-renesas-intc-irqpin driver (drivers/irqchip), referred to below as
-> > > the irqpin driver.
-> > 
-> > Is the INTC used for anything more than just external interrupts on GPIO
-> > lines?
+> http://wiki.linuxplumbersconf.org/2013:pci_subsystem
 > 
-> Yes, it also handles other interrupt sources (NMI and peripherals), but
-> those are not implemented now. The peripheral interrupts are also handled
-> by the GIC, which is preferred over INTC.
-
-OK, this is much more clear now.
-
-> > > The sh73a0, for instance, has 32 external interrupt lines that are
-> > > multiplexed on pins usable as GPIOs. Both the GPIO and external
-> > > interrupt functions are usable at the same time, which allows reading
-> > > the state of the interrupt lines.
-> > > 
-> > > These external interrupts are for MMC/SD support, among other devices.
-> > > In this specific case the MMC/SD Card Detect signal is wired to one of
-> > > the external interrupt signals, and the corresponding GPIO is passed to
-> > > the MMC/SD controller driver. Depending on other configuration
-> > > parameters the driver can then either poll the Card Detect signal, or
-> > > register an interrupt handler to detect changes in the signal state.
-> > > This features is implemented by the MMC/SD core, which call
-> > > gpio_to_irq() on the GPIO to retrieve the corresponding IRQ number.
-> > > 
-> > > On non-DT systems the external IRQs are statically mapped at a known
-> > > offset. The sh-pfc driver, to implement the gpio_to_irq() function
-> > > (through its gpiochip .to_irq() handler), simply searches a
-> > > SoC-specific lookup table for the fixed IRQ number associated with a
-> > > given GPIO.
-> > > 
-> > > However, on DT systems, IRQs are mapped dynamically on demand. The
-> > > irqpin driver registers a simple IRQ domain, and the
-> > > irq_create_mapping() function can then be used to map a given IRQ,
-> > > specified as an offset in the domain. This is where the problem
-> > > appears, as the irqchip .to_irq() function is implemented in the sh-pfc
-> > 
-> > I assume it should be s/irqchip/gpiochip/ in the line above, shouldn't it?
+> We would like to start receiving volunteers for presenting topics of
+> interest.  There is a lot of activity in these subsystems so please
+> respond by submitting presentation or discussion proposals that you
+> would be willing to cover for consideration.  You should also feel
+> free to submit ideas as proposals that others could cover.  The
+> instructions for submitting ideas should be at:
 > 
-> Yes, my bad.
+> http://www.linuxplumbersconf.org/2013/submitting-topic/
 
-No problem.
+If anyone who's going to attend the Linux Plumbers Conf this year is interested
+in any particular topic for discussion during the ACPI/PM+PCI uconf, please
+submit a formal topic proposal at:
 
-> > > driver, which doesn't have access to the IRQ domain registered by the
-> > > irqpin driver.
-> > > 
-> > > I could hack around this by exporting a function in the irqpin driver
-> > > that would map an IRQ, and call that function from the sh-pfc driver.
-> > > I'd rather avoid that solution as it would add a direct dependency
-> > > between the two drivers.
-> > 
-> > If you could just get the IRQ domain registered by irqpin driver and use
-> > it in sh-pfc, then I guess it would solve your problem, as you could
-> > simply call irq_create_mapping() with the domain and hwirq as args in your
-> > gpiochip .to_irq() callback.
-> > 
-> > I'm not sure if it's not a hack, but you could add a property to the node
-> > of your pin controller that would contain a phandle to your interrupt
-> > controller. Then you could use of_parse_phandle() to get to device node of
-> > the INTC and then irq_find_host() to retrieve irq domain associated with
-> > it.
-> 
-> That was my initial idea. However, one on of the SoCs, the GPIO interrupts
-> are divided in two separate blocks, handled by two different interrupt
-> controller instances. I could thus have a list of phandle + range, but that
-> becomes pretty hackish. Specifying the interrupts explicitly would be more
-> extensible.
+http://www.linuxplumbersconf.org/2013/ocw/events/LPC2013/proposals/new
 
-Yes, in this case passing the domain alone makes little sense and domain + 
-range would be a bit hackish indeed.
+If you submit a topic, that doesn't mean you'll be expected to present anything
+(if accepted).  In fact, we are mostly interested in discussion topics and we'd
+like to know what is important to people.
 
-> > > Has anyone run into a similar issue ? My gut feeling is that the
-> > > architecture isn't right somewhere, but I can't really pinpoint where.
-> > > As the external IRQs are handled by an IP core separate from the PFC
-> > 
-> > Well, the fact that it's separate doesn't mean anything yet. Here my
-> > question whether it's used exclusively for GPIO interrupts or not becomes
-> > significant. If yes, maybe it could be simply moved to the pinctrl driver?
-> 
-> Depending on the SoC, I have two different IRQ controllers used for GPIO
-> interrupts. They're called INTC and IRQC. INTC has other purposes (although
-> not implemented at the moment). The IRQC instances used for GPIO interrupts
-> are (at the moment) dedicated to GPIO interrupts, but other instances of the
-> same IP core are used for other interrupts, so a separate driver makes
-> sense in my opinion.
+That said if you have a (short) presentation to make, please submit it too.
 
-OK. So you need a bit smarter solution then.
+We'll appreciate all submissions very much.
 
-Best regards,
-Tomasz
+Thanks,
+Rafael
 
