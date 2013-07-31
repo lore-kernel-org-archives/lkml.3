@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759488Ab3GaJts (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 05:49:48 -0400
-Received: from mail09.linbit.com ([212.69.161.110]:39349 "EHLO
+	id S1759476Ab3GaJtr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 05:49:47 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:39360 "EHLO
 	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759066Ab3GaJtU (ORCPT
+	with ESMTP id S1759302Ab3GaJtU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 31 Jul 2013 05:49:20 -0400
-X-Greylist: delayed 482 seconds by postgrey-1.27 at vger.kernel.org; Wed, 31 Jul 2013 05:49:20 EDT
 From: Philipp Reisner <philipp.reisner@linbit.com>
 To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
 Cc: drbd-dev@lists.linbit.com
-Subject: [PATCH 1/5] drbd: fix NULL pointer deref in module init error path
-Date: Wed, 31 Jul 2013 11:41:11 +0200
-Message-Id: <1375263675-18410-2-git-send-email-philipp.reisner@linbit.com>
+Subject: [PATCH 2/5] drbd: Fix an connection drop issue after enabling allow-two-primaries
+Date: Wed, 31 Jul 2013 11:41:12 +0200
+Message-Id: <1375263675-18410-3-git-send-email-philipp.reisner@linbit.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1375263675-18410-1-git-send-email-philipp.reisner@linbit.com>
 References: <1375263675-18410-1-git-send-email-philipp.reisner@linbit.com>
@@ -21,61 +20,111 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lars Ellenberg <lars.ellenberg@linbit.com>
+Since drbd-8.4.0 it is possible to change the allow-two-primaries
+network option while the connection is established.
 
-If we want to iterate over the (as of yet still empty) list in the
-cleanup path, we need to initialize the list before the first goto fail.
+The sequence code used to partially order packets from the
+data socket with packets from the meta-data socket, still assued
+that the allow-two-primaries option is constant while the
+connection is established.
+
+I.e.
+On a node that has the RESOLVE_CONFLICTS bits set, after enabling
+allow-two-primaries, when receiving the next data packet it timed out
+while waiting for the necessary packets on the data socket to arrive
+(wait_for_and_update_peer_seq() function).
+
+Fixed that by always tracking the sequence number, but only waiting
+for it if allow-two-primaries is set.
 
 Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
 Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
 ---
- drivers/block/drbd/drbd_main.c |   19 +++++++++----------
- 1 file changed, 9 insertions(+), 10 deletions(-)
+ drivers/block/drbd/drbd_receiver.c |   39 +++++++++++++++---------------------
+ 1 file changed, 16 insertions(+), 23 deletions(-)
 
-diff --git a/drivers/block/drbd/drbd_main.c b/drivers/block/drbd/drbd_main.c
-index 55635ed..9e3818b 100644
---- a/drivers/block/drbd/drbd_main.c
-+++ b/drivers/block/drbd/drbd_main.c
-@@ -2750,13 +2750,6 @@ int __init drbd_init(void)
- 		return err;
- 	}
+diff --git a/drivers/block/drbd/drbd_receiver.c b/drivers/block/drbd/drbd_receiver.c
+index cc29cd3..12c59eb 100644
+--- a/drivers/block/drbd/drbd_receiver.c
++++ b/drivers/block/drbd/drbd_receiver.c
+@@ -1890,29 +1890,11 @@ static u32 seq_max(u32 a, u32 b)
+ 	return seq_greater(a, b) ? a : b;
+ }
  
--	err = drbd_genl_register();
--	if (err) {
--		printk(KERN_ERR "drbd: unable to register generic netlink family\n");
--		goto fail;
--	}
+-static bool need_peer_seq(struct drbd_conf *mdev)
+-{
+-	struct drbd_tconn *tconn = mdev->tconn;
+-	int tp;
 -
+-	/*
+-	 * We only need to keep track of the last packet_seq number of our peer
+-	 * if we are in dual-primary mode and we have the resolve-conflicts flag set; see
+-	 * handle_write_conflicts().
+-	 */
 -
- 	register_reboot_notifier(&drbd_notifier);
+-	rcu_read_lock();
+-	tp = rcu_dereference(mdev->tconn->net_conf)->two_primaries;
+-	rcu_read_unlock();
+-
+-	return tp && test_bit(RESOLVE_CONFLICTS, &tconn->flags);
+-}
+-
+ static void update_peer_seq(struct drbd_conf *mdev, unsigned int peer_seq)
+ {
+ 	unsigned int newest_peer_seq;
  
- 	/*
-@@ -2767,6 +2760,15 @@ int __init drbd_init(void)
- 	drbd_proc = NULL; /* play safe for drbd_cleanup */
- 	idr_init(&minors);
+-	if (need_peer_seq(mdev)) {
++	if (test_bit(RESOLVE_CONFLICTS, &mdev->tconn->flags)) {
+ 		spin_lock(&mdev->peer_seq_lock);
+ 		newest_peer_seq = seq_max(mdev->peer_seq, peer_seq);
+ 		mdev->peer_seq = newest_peer_seq;
+@@ -1972,22 +1954,31 @@ static int wait_for_and_update_peer_seq(struct drbd_conf *mdev, const u32 peer_s
+ {
+ 	DEFINE_WAIT(wait);
+ 	long timeout;
+-	int ret;
++	int ret = 0, tp;
  
-+	rwlock_init(&global_state_lock);
-+	INIT_LIST_HEAD(&drbd_tconns);
+-	if (!need_peer_seq(mdev))
++	if (!test_bit(RESOLVE_CONFLICTS, &mdev->tconn->flags))
+ 		return 0;
+ 
+ 	spin_lock(&mdev->peer_seq_lock);
+ 	for (;;) {
+ 		if (!seq_greater(peer_seq - 1, mdev->peer_seq)) {
+ 			mdev->peer_seq = seq_max(mdev->peer_seq, peer_seq);
+-			ret = 0;
+ 			break;
+ 		}
 +
-+	err = drbd_genl_register();
-+	if (err) {
-+		printk(KERN_ERR "drbd: unable to register generic netlink family\n");
-+		goto fail;
+ 		if (signal_pending(current)) {
+ 			ret = -ERESTARTSYS;
+ 			break;
+ 		}
++
++		rcu_read_lock();
++		tp = rcu_dereference(mdev->tconn->net_conf)->two_primaries;
++		rcu_read_unlock();
++
++		if (!tp)
++			break;
++
++		/* Only need to wait if two_primaries is enabled */
+ 		prepare_to_wait(&mdev->seq_wait, &wait, TASK_INTERRUPTIBLE);
+ 		spin_unlock(&mdev->peer_seq_lock);
+ 		rcu_read_lock();
+@@ -2228,8 +2219,10 @@ static int receive_Data(struct drbd_tconn *tconn, struct packet_info *pi)
+ 			}
+ 			goto out_interrupted;
+ 		}
+-	} else
++	} else {
++		update_peer_seq(mdev, peer_seq);
+ 		spin_lock_irq(&mdev->tconn->req_lock);
 +	}
-+
- 	err = drbd_create_mempools();
- 	if (err)
- 		goto fail;
-@@ -2778,9 +2780,6 @@ int __init drbd_init(void)
- 		goto fail;
- 	}
+ 	list_add(&peer_req->w.list, &mdev->active_ee);
+ 	spin_unlock_irq(&mdev->tconn->req_lock);
  
--	rwlock_init(&global_state_lock);
--	INIT_LIST_HEAD(&drbd_tconns);
--
- 	retry.wq = create_singlethread_workqueue("drbd-reissue");
- 	if (!retry.wq) {
- 		printk(KERN_ERR "drbd: unable to create retry workqueue\n");
 -- 
 1.7.9.5
 
