@@ -1,99 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760649Ab3GaToQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 15:44:16 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:4060 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756855Ab3GaToO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 15:44:14 -0400
-X-IronPort-AV: E=Sophos;i="4.89,789,1367971200"; 
-   d="scan'208";a="40579644"
-Date: Wed, 31 Jul 2013 20:44:01 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>
-Subject: Re: [PATCH RFC 0/8] enable swiotlb-xen on arm and arm64
-In-Reply-To: <alpine.DEB.2.02.1307311833040.4893@kaball.uk.xensource.com>
-Message-ID: <alpine.DEB.2.02.1307312041510.4893@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1307311833040.4893@kaball.uk.xensource.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1760653Ab3GaTqs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 15:46:48 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:36876 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755143Ab3GaTqr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 15:46:47 -0400
+Message-ID: <51F969A5.5020405@codeaurora.org>
+Date: Wed, 31 Jul 2013 12:46:45 -0700
+From: Hanumant Singh <hanumant@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Bjorn Andersson <Bjorn.Andersson@sonymobile.com>,
+        "Bird, Tim" <Tim.Bird@sonymobile.com>,
+        ext Tony Lindgren <tony@atomide.com>
+Subject: Re: [PATCH] pinctrl: msm: Add support for MSM TLMM pinmux
+References: <1374702089-2832-1-git-send-email-hanumant@codeaurora.org> <CACRpkdZLFD-KAvZdUUvQKje3vAH1D0EJMW9PSK8VSp3Xs4eiGA@mail.gmail.com> <51F82BCC.1080409@codeaurora.org> <51F82E9F.9010309@wwwdotorg.org> <51F853BF.9040007@codeaurora.org> <51F8556A.1010300@wwwdotorg.org> <51F85690.9060701@codeaurora.org> <51F88BAC.2020001@wwwdotorg.org>
+In-Reply-To: <51F88BAC.2020001@wwwdotorg.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Although the series should be enough to demonstrate the concept, it
-contains a couple of errors. I'll send an update.
+On 7/30/2013 8:59 PM, Stephen Warren wrote:
+> On 07/30/2013 06:13 PM, Hanumant Singh wrote:
+>> On 7/30/2013 5:08 PM, Stephen Warren wrote:
+>>> On 07/30/2013 06:01 PM, Hanumant Singh wrote:
+>>>> On 7/30/2013 2:22 PM, Stephen Warren wrote:
+>>>>> On 07/30/2013 03:10 PM, hanumant wrote:
+>>>>> ...
+>>>>>> We actually have the same TLMM pinmux used by several socs of a
+>>>>>> family.
+>>>>>> The number of pins on each soc may vary.
+>>>>>> Also a given soc gets used in a number of boards.
+>>>>>> The device tree for a given soc is split into the different boards
+>>>>>> that
+>>>>>> its in ie the boards inherit a common soc.dtsi but have separate dts.
+>>>>>> The boards for the same soc may use different pin groups for
+>>>>>> accomplishing a function, since we have multiple i2c, spi uart etc
+>>>>>> peripheral instances on a soc. A different instance of each of the
+>>>>>> above
+>>>>>> peripherals, can be used in different boards, utilizing different
+>>>>>> or subset of same pin groups.
+>>>>>> Thus I would need to have multiple C files for one soc, based on the
+>>>>>> boards that it goes into.
+>>>>>
+>>>>> The pinctrl driver should be exposing the raw capabilities of the HW.
+>>>>> All the board-specific configuration should be expressed in DT. So, the
+>>>>> driver shouldn't have to know anything about different boards at
+>>>>> compile-time.
+>>>>>
+>>>> I agree, so I wanted to keep the pin grouping information in DT, we
+>>>> already have a board based differentiation of dts files in DT, for the
+>>>> same soc.
+>>>
+>>> That's the opposite of what I was saying. Pin groups are a feature of
+>>> the SoC design, not the board.
+>>>
+>> Sorry I guess I wasn't clear.
+>> Right now I have a soc-pinctrl.dtsi containing pin groupings.
+>> This will be "inherited" by soc-boardtype.dts.
+>> The pinctrl client device nodes in soc-boardtype.dts will point to pin
+>> groupings in soc-pinctrl.dtsi that are valid for that particular boardtype.
+>> Is this a valid design?
+>
+> OK, so you have two types of child node inside the pinctrl DT node; some
+> define the pin groups the SoC has (in soc.dtsi) and some define pinctrl
+> states that reference the pin group nodes and are referenced by the
+> client nodes.
+>
+> That's probably fine. However, I'd still question putting the pin group
+> nodes in DT at all; I'm not convinced it's better than just putting
+> those into the driver itself. You end up with the same data tables after
+> parsing the DT anyway.
+>
 
-On Wed, 31 Jul 2013, Stefano Stabellini wrote:
-> Hi all,
-> this patch series enables xen-swiotlb on arm and arm64.
-> 
-> Considering that all guests, including dom0, run on xen on arm with
-> second stage translation enabled, it follows that without an IOMMU no
-> guests could actually drive the hardware.
-> 
-> The solution for platforms without an IOMMU is to use swiotlb-xen,
-> adapted to autotranslate guests. swiotlb-xen provides a set of dma_ops
-> that can be used by Linux to setup a contiguous buffer in stage-2
-> addresses and use it for dma operations.
-> Basically Linux asks Xen to make a buffer contiguous and gets the
-> machine address for it. This buffer is going to be used by lib/swiotlb.c
-> to allocate bounce buffers.
-> 
-> 
-> The first 3 patches lay the groundwork on arm and arm64 to have
-> alternative dma_ops and swiotlb.
-> 
-> The forth patch moves Xen initialization earlier so that we already know
-> whether we are running on Xen at the time of initializing dma_ops on the
-> platform.
-> 
-> The following patches adapt swiotlb-xen to autotranslate guests (guest
-> with second stage translation in hardware) and provide an arm
-> implementation of xen_create_contiguous_region.
-> 
-> 
-> Feedback is very welcome.
-> Cheers,
-> 
-> Stefano
-> 
-> 
-> Stefano Stabellini (8):
->       arm: make SWIOTLB available
->       arm: introduce a global dma_ops pointer
->       arm64: do not initialize arm64_swiotlb if dma_ops is already set
->       xen/arm,arm64: move Xen initialization earlier
->       xen: introduce XENMEM_get_dma_buf and xen_put_dma_buf
->       xen: make xen_create_contiguous_region return the dma address
->       swiotlb-xen: support autotranslate guests
->       xen/arm,arm64: enable SWIOTLB_XEN
-> 
->  arch/arm/Kconfig                      |    8 ++
->  arch/arm/common/dmabounce.c           |   10 +-
->  arch/arm/include/asm/dma-mapping.h    |   27 ++++++-
->  arch/arm/include/asm/xen/hypervisor.h |    6 ++
->  arch/arm/include/asm/xen/page.h       |    2 +
->  arch/arm/kernel/setup.c               |    2 +
->  arch/arm/mm/dma-mapping.c             |    3 +
->  arch/arm/xen/Makefile                 |    2 +-
->  arch/arm/xen/enlighten.c              |   24 ++++--
->  arch/arm/xen/mm.c                     |  118 ++++++++++++++++++++++++++
->  arch/arm64/Kconfig                    |    1 +
->  arch/arm64/kernel/setup.c             |    2 +
->  arch/arm64/mm/dma-mapping.c           |    2 +
->  arch/arm64/xen/Makefile               |    2 +-
->  arch/x86/xen/mmu.c                    |    4 +-
->  drivers/xen/Kconfig                   |    1 -
->  drivers/xen/swiotlb-xen.c             |  147 +++++++++++++++++++++++++++++----
->  include/xen/interface/memory.h        |   62 ++++++++++++++
->  include/xen/xen-ops.h                 |    3 +-
->  19 files changed, 391 insertions(+), 35 deletions(-)
->  create mode 100644 arch/arm/xen/mm.c
-> 
+Any feedback for the rest of the patch?
+
+Thanks
+Hanumant
+
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+-- 
