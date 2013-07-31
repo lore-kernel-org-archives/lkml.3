@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932113Ab3GaN0X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 09:26:23 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:47153 "EHLO
+	id S1759933Ab3GaN0W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 09:26:22 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:47139 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759689Ab3GaN0K (ORCPT
+	by vger.kernel.org with ESMTP id S1759910Ab3GaN0L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 09:26:10 -0400
+	Wed, 31 Jul 2013 09:26:11 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
@@ -14,13 +14,13 @@ MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 CC: akpm@linux-foundation.org,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        "Toshi Kani" <toshi.kani@hp.com>,
-        "Yasuaki Ishimatsu" <isimatu.yasuaki@jp.fujitsu.com>
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Eric Paris" <eparis@redhat.com>, "Al Viro" <viro@zeniv.linux.org.uk>,
+        "Dan Carpenter" <dan.carpenter@oracle.com>
 Date: Wed, 31 Jul 2013 15:23:09 +0200
-Message-ID: <lsq.1375276989.380399962@decadent.org.uk>
+Message-ID: <lsq.1375276989.204861160@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [38/84] ACPI / memhotplug: Fix a stale pointer in error path
+Subject: [30/84] fanotify: info leak in copy_event_to_user()
 In-Reply-To: <lsq.1375276989.251749228@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.216.67.181
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,34 +33,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Toshi Kani <toshi.kani@hp.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit d19f503e22316a84c39bc19445e0e4fdd49b3532 upstream.
+commit de1e0c40aceb9d5bff09c3a3b97b2f1b178af53f upstream.
 
-device->driver_data needs to be cleared when releasing its data,
-mem_device, in an error path of acpi_memory_device_add().
+The ->reserved field isn't cleared so we leak one byte of stack
+information to userspace.
 
-The function evaluates the _CRS of memory device objects, and fails
-when it gets an unexpected resource or cannot allocate memory.  A
-kernel crash or data corruption may occur when the kernel accesses
-the stale pointer.
-
-Signed-off-by: Toshi Kani <toshi.kani@hp.com>
-Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Eric Paris <eparis@redhat.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/acpi/acpi_memhotplug.c | 1 +
+ fs/notify/fanotify/fanotify_user.c | 1 +
  1 file changed, 1 insertion(+)
 
---- a/drivers/acpi/acpi_memhotplug.c
-+++ b/drivers/acpi/acpi_memhotplug.c
-@@ -421,6 +421,7 @@ static int acpi_memory_device_add(struct
- 	/* Get the range from the _CRS */
- 	result = acpi_memory_get_device_resources(mem_device);
- 	if (result) {
-+		device->driver_data = NULL;
- 		kfree(mem_device);
- 		return result;
- 	}
+--- a/fs/notify/fanotify/fanotify_user.c
++++ b/fs/notify/fanotify/fanotify_user.c
+@@ -118,6 +118,7 @@ static int fill_event_metadata(struct fs
+ 	metadata->event_len = FAN_EVENT_METADATA_LEN;
+ 	metadata->metadata_len = FAN_EVENT_METADATA_LEN;
+ 	metadata->vers = FANOTIFY_METADATA_VERSION;
++	metadata->reserved = 0;
+ 	metadata->mask = event->mask & FAN_ALL_OUTGOING_EVENTS;
+ 	metadata->pid = pid_vnr(event->tgid);
+ 	if (unlikely(event->mask & FAN_Q_OVERFLOW))
 
