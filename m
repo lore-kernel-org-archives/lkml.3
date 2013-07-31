@@ -1,49 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758811Ab3GaCt0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 22:49:26 -0400
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:38114 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751494Ab3GaCtZ (ORCPT
+	id S1758851Ab3GaCwd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 22:52:33 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:61736 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751600Ab3GaCwb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 22:49:25 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130731022751.GA2548@lge.com>
-References: <1375075929-6119-1-git-send-email-iamjoonsoo.kim@lge.com>
-	<1375075929-6119-2-git-send-email-iamjoonsoo.kim@lge.com>
-	<CAJd=RBCUJg5GJEQ2_heCt8S9LZzedGLbvYvivFkmvfMChPqaCg@mail.gmail.com>
-	<20130731022751.GA2548@lge.com>
-Date: Wed, 31 Jul 2013 10:49:24 +0800
-Message-ID: <CAJd=RBD=SNm9TG-kxKcd-BiMduOhLUubq=JpRwCy_MmiDtO9Tw@mail.gmail.com>
-Subject: Re: [PATCH 01/18] mm, hugetlb: protect reserved pages when
- softofflining requests the pages
-From: Hillf Danton <dhillf@gmail.com>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 30 Jul 2013 22:52:31 -0400
+From: Julius Werner <jwerner@chromium.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Vincent Palatin <vpalatin@chromium.org>,
+        Benson Leung <bleung@chromium.org>,
+        Julius Werner <jwerner@chromium.org>
+Subject: [PATCH v2] usb: core: don't try to reset_device() a port that got just disconnected
+Date: Tue, 30 Jul 2013 19:51:20 -0700
+Message-Id: <1375239080-21322-1-git-send-email-jwerner@chromium.org>
+X-Mailer: git-send-email 1.8.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 31, 2013 at 10:27 AM, Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
-> On Mon, Jul 29, 2013 at 03:24:46PM +0800, Hillf Danton wrote:
->> On Mon, Jul 29, 2013 at 1:31 PM, Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
->> > alloc_huge_page_node() use dequeue_huge_page_node() without
->> > any validation check, so it can steal reserved page unconditionally.
->>
->> Well, why is it illegal to use reserved page here?
->
-> If we use reserved page here, other processes which are promised to use
-> enough hugepages cannot get enough hugepages and can die. This is
-> unexpected result to them.
->
-But, how do you determine that a huge page is requested by a process
-that is not allowed to use reserved pages?
+The USB hub driver's event handler contains a check to catch SuperSpeed
+devices that transitioned into the SS.Inactive state and tries to fix
+them with a reset. It decides whether to do a plain hub port reset or
+call the usb_reset_device() function based on whether there was a device
+attached to the port.
+
+However, there are device/hub combinations (found with a JetFlash
+Transcend mass storage stick (8564:1000) on the root hub of an Intel
+LynxPoint PCH) which can transition to the SS.Inactive state on
+disconnect (and stay there long enough for the host to notice). In this
+case, above-mentioned reset check will call usb_reset_device() on the
+stale device data structure. The kernel will send pointless LPM control
+messages to the no longer connected device address and can even cause
+several 5 second khubd stalls on some (buggy?) host controllers, before
+finally accepting the device's fate amongst a flurry of error messages.
+
+This patch makes the choice of reset dependent on the port status that
+has just been read from the hub in addition to the existence of an
+in-kernel data structure for the device, and only proceeds with the more
+extensive reset if both are valid.
+
+Signed-off-by: Julius Werner <jwerner@chromium.org>
+---
+ drivers/usb/core/hub.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
+index 4a8a1d6..558313d 100644
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -4798,7 +4798,8 @@ static void hub_events(void)
+ 					hub->ports[i - 1]->child;
+ 
+ 				dev_dbg(hub_dev, "warm reset port %d\n", i);
+-				if (!udev) {
++				if (!udev || !(portstatus &
++						USB_PORT_STAT_CONNECTION)) {
+ 					status = hub_port_reset(hub, i,
+ 							NULL, HUB_BH_RESET_TIME,
+ 							true);
+@@ -4808,8 +4809,8 @@ static void hub_events(void)
+ 					usb_lock_device(udev);
+ 					status = usb_reset_device(udev);
+ 					usb_unlock_device(udev);
++					connect_change = 0;
+ 				}
+-				connect_change = 0;
+ 			}
+ 
+ 			if (connect_change)
+-- 
+1.7.12.4
+
