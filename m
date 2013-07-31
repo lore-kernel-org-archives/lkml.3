@@ -1,74 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760512Ab3GaR7y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 13:59:54 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:13449 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757012Ab3GaR7w (ORCPT
+	id S1760680Ab3GaSAh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 14:00:37 -0400
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:52607 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755202Ab3GaSAe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 13:59:52 -0400
-X-Authority-Analysis: v=2.0 cv=KJ7Y/S5o c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=fDhLNHh0KZQA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=6No3EKuEBNEA:10 a=Y3HfltMrH2vKsfhgqBEA:9 a=QEXdDO2ut3YA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-ID: <1375293591.5418.9.camel@gandalf.local.home>
-Subject: Re: [PATCH v2 0/1] tracing: trace_remove_event_call() should fail
- if call/file is in use
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Alexander Z Lam <azl@google.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        David Sharp <dhsharp@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        linux-kernel@vger.kernel.org
-Date: Wed, 31 Jul 2013 13:59:51 -0400
-In-Reply-To: <20130731173832.GA31099@redhat.com>
-References: <20130729175008.GA26284@redhat.com>
-	 <1375289503.5418.6.camel@gandalf.local.home>
-	 <20130731173832.GA31099@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 31 Jul 2013 14:00:34 -0400
+MIME-Version: 1.0
+In-Reply-To: <51F8DCFC.9050205@linux.vnet.ibm.com>
+References: <1374526866-6813-1-git-send-email-bp@alien8.de>
+ <20130724171347.GB29756@naverao1-tp.watson.ibm.com> <1374686598.18818.18.camel@joe-AO722>
+ <51F10AA8.2050901@linux.vnet.ibm.com> <CAErSpo5vLbsM5BXjrCVy1AKBxRRSH33TthyyK3O35Mghqw81nQ@mail.gmail.com>
+ <51F8DCFC.9050205@linux.vnet.ibm.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 31 Jul 2013 12:00:13 -0600
+Message-ID: <CAErSpo6hcjL_A9Vr1R0GqobUysdskd8B1S_9r7-zBSUvELFPXw@mail.gmail.com>
+Subject: Re: [PATCH] APEI/ERST: Fix error message formatting
+To: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
+Cc: Joe Perches <joe@perches.com>, Borislav Petkov <bp@alien8.de>,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
+        Anton Vorontsov <anton@enomsg.org>, Colin Cross <ccross@android.com>,
+        Kees Cook <keescook@chromium.org>, Tony Luck <tony.luck@intel.com>,
+        Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-07-31 at 19:38 +0200, Oleg Nesterov wrote:
-> On 07/31, Steven Rostedt wrote:
-> >
-> > On Mon, 2013-07-29 at 19:50 +0200, Oleg Nesterov wrote:
-> > >
-> > > Now we are ready to change trace_kprobe.c and trace_uprobe.c, Steven
-> > > already has the patches.
-> >
-> > Can you refresh my memory. My INBOX is quite full. What were the
-> > subjects for these patches?
-> 
-> Please see the attached mbox. And notice who is the author ;)
+On Wed, Jul 31, 2013 at 3:46 AM, Naveen N. Rao
+<naveen.n.rao@linux.vnet.ibm.com> wrote:
 
-Heh, who is that guy?
+> My key question was about why we are using a field width of 10 implying a
+> 32-bit value, rather than a field width of 18 as suggested by the data type?
+> This shouldn't truncate the value, but if we are specifying the field width
+> for alignment, seems to me it is better to match the data type.
 
-> I also added the ack from Masami.
+%pR uses a field width of 10 (two for "0x", eight for the value)
+simply because the majority of resource values fit in 32 bits.  Larger
+values extend the width, so it's not a question of truncating any
+data.  But it's no fun to read memory addresses when most of them have
+eight extra leading zeros (the high 32-bits of a 64-bit value).  I
+think the same applies here; most ACPI table addresses still fit in 32
+bits.
 
-Thanks, but I'll take in from the email as that's how my scripts work (I
-cc'd myself)
+We *do* use a field width of 18 for the e820 table, even though many
+of those regions fit in 32 bits.  But that's sort of an exception
+because it's a table where addresses above 4GB are pretty common.
 
--- Steve
+But at the end of the day, I guess I'm just stating my personal
+preferences and yours might be different.
 
-> 
-> But if you only need the subjects:
-> 
-> 	[RFC][PATCH 3/4] tracing/kprobes: Fail to unregister if probe event files are open
-> 	[RFC][PATCH 4/4] tracing/uprobes: Fail to unregister if probe event files are open
-> 
-> Oleg.
-
-
+Bjorn
