@@ -1,63 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757208Ab3GaTPQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 15:15:16 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:56920 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753289Ab3GaTPO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 15:15:14 -0400
-Date: Wed, 31 Jul 2013 15:08:02 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: Gustavo Padovan <gustavo@padovan.org>, linux-wireless@vger.kernel.org,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: pull request: bluetooth 2013-07-30
-Message-ID: <20130731190801.GE2311@tuxdriver.com>
-References: <20130730123848.GE5975@joana>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130730123848.GE5975@joana>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1760243Ab3GaTRs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 15:17:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52404 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756847Ab3GaTRq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 15:17:46 -0400
+Date: Wed, 31 Jul 2013 12:16:56 -0700 (PDT)
+Message-Id: <20130731.121656.1536518989145765329.davem@redhat.com>
+To: christoph.paasch@gmail.com
+Cc: dp@highloadlab.com, kuznet@ms2.inr.ac.ru, jmorris@namei.org,
+        yoshfuji@linux-ipv6.org, kaber@trash.net, edumazet@google.com,
+        ncardwell@google.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, trivial@kernel.org
+Subject: Re: [PATCH] tcp: Remove unused tcpct declarations and comments
+From: David Miller <davem@redhat.com>
+In-Reply-To: <20130731110821.GA3747@cpaasch-mac>
+References: <20130731133945.5b7b3f7487491f41ea45a7f6@highloadlab.com>
+	<20130731110821.GA3747@cpaasch-mac>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 30, 2013 at 01:38:48PM +0100, Gustavo Padovan wrote:
-> Hi John,
-> 
-> A few fixes and devices ID additions for 3.11: 
-> 
->  * There are 4 new ath3k device ids 
->  * Fixed stack memory usage in ath3k.
->  * Fixed the init process of BlueFRITZ! devices, they were failing to init
->    due to an unsupported command we sent. 
->  * Fixed wrong use of PTR_ERR in btusb code that was preventing intel devices
->    to work properly.
->  * Fixed race condition between hci_register_dev() and hci_dev_open() that
->    could cause a NULL pointer dereference.
->  * Fixed race condition that could call hci_req_cmd_complete() and make some
->    devices to fail as showed in the log added to the commit message.
-> 
-> Please pull or let me know of any issues. Thanks.
-> 
-> 	Gustavo
-> 
-> --
-> The following changes since commit 075163bbb0f51174359947e1bce84f5edb23f21e:
-> 
->   ath9k_htc: Handle IDLE state transition properly (2013-06-24 13:52:52 -0400)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth master
-> 
-> for you to fetch changes up to 53e21fbc288218a423959f878c86471a0e323a9a:
-> 
->   Bluetooth: Fix calling request callback more than once (2013-07-29 12:28:04 +0100)
+From: Christoph Paasch <christoph.paasch@gmail.com>
+Date: Wed, 31 Jul 2013 13:08:21 +0200
 
-Pulling now...
+> On 31/07/13 - 13:39:45, Dmitry Popov wrote:
+>> Remove declaration, 4 defines and confusing comment that are no longer used
+>> since 1a2c6181c4 ("tcp: Remove TCPCT").
+>> 
+>> Signed-off-by: Dmitry Popov <dp@highloadlab.com>
+>> ---
+>>  include/linux/tcp.h | 1 -
+>>  include/net/tcp.h   | 4 ----
+>>  net/ipv4/tcp.c      | 4 ----
+>>  3 files changed, 9 deletions(-)
+> 
+> Sorry, I oversaw these when removing TCPCT.
+> 
+> Acked-by: Christoph Paasch <christoph.paasch@uclouvain.be>
 
--- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+Applied, thanks.
