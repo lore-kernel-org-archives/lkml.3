@@ -1,48 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759541Ab3GaKdi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 06:33:38 -0400
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:49882 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755513Ab3GaKdg (ORCPT
+	id S1759556Ab3GaKfK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 06:35:10 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:44860 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756143Ab3GaKfI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 06:33:36 -0400
-Date: Wed, 31 Jul 2013 06:33:32 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Shaohua Li <shli@kernel.org>
-Cc: linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org, neilb@suse.de,
-        djbw@fb.com
-Subject: Re: [patch 1/3] raid5: offload stripe handle to workqueue
-Message-ID: <20130731103332.GE2810@htj.dyndns.org>
-References: <20130730055207.698660010@kernel.org>
- <20130730055257.527231772@kernel.org>
- <20130730125306.GC2599@htj.dyndns.org>
- <20130730130708.GA30352@kernel.org>
- <20130730135751.GD12016@htj.dyndns.org>
- <20130731012434.GA1504@kernel.org>
+	Wed, 31 Jul 2013 06:35:08 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Luciano Coelho <coelho@ti.com>
+Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        mturquette@linaro.org, mark.rutland@arm.com, balbi@ti.com,
+        grant.likely@linaro.org, rob.herring@calxeda.com,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-wireless@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        tony@atomide.com, nm@ti.com
+Subject: Re: [PATCH v3] Documentation: dt: bindings: TI WiLink modules
+Date: Wed, 31 Jul 2013 12:36:07 +0200
+Message-ID: <19103383.PkgSdCFM10@avalon>
+User-Agent: KMail/4.10.5 (Linux/3.8.13-gentoo; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <1375215668-29171-1-git-send-email-coelho@ti.com>
+References: <1375215668-29171-1-git-send-email-coelho@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130731012434.GA1504@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi Luciano,
 
-On Wed, Jul 31, 2013 at 09:24:34AM +0800, Shaohua Li wrote:
-> stripe is the work unit actually. As I said, if I queue a work for each stripe,
-> just queue_work() will make the system blast because of the pwq->pool->lock
-> contention. dispatching one work has another side effect that I can't add block
+On Tuesday 30 July 2013 23:21:08 Luciano Coelho wrote:
+> Add device tree bindings documentation for the TI WiLink modules.
+> Currently only the WLAN part of the WiLink6, WiLink7 and WiLink8
+> modules is supported.
+> 
+> Signed-off-by: Luciano Coelho <coelho@ti.com>
 
-Hmmm.... I see.  I'm not familiar with the code base and could be
-missing something but how does the custom stripe dispatch queue
-synchronize?  Doesn't that make use of a lock anyway?  If so, how
-would scheduling separate work items be worse?  Also, can you please
-elaborate the block plug part?
+Reviewed-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 
-Thanks.
-
+> ---
+> 
+> In v3, use IRQ_TYPE_LEVEL_HIGH in the example, as suggested by Laurent.
+> 
+>  .../devicetree/bindings/net/wireless/ti-wilink.txt | 68
+> ++++++++++++++++++++++ 1 file changed, 68 insertions(+)
+>  create mode 100644
+> Documentation/devicetree/bindings/net/wireless/ti-wilink.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/net/wireless/ti-wilink.txt
+> b/Documentation/devicetree/bindings/net/wireless/ti-wilink.txt new file
+> mode 100644
+> index 0000000..aafebb1
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/net/wireless/ti-wilink.txt
+> @@ -0,0 +1,68 @@
+> +TI WiLink Wireless Modules Device Tree Bindings
+> +===============================================
+> +
+> +The WiLink modules provide wireless connectivity, such as WLAN,
+> +Bluetooth, FM and NFC.
+> +
+> +There are several different modules available, which can be grouped by
+> +their generation: WiLink6, WiLink7 and WiLink8.  WiLink4 is not
+> +currently supported with device tree.
+> +
+> +Currently, only the WLAN portion of the modules is supported with
+> +device tree.
+> +
+> +Required properties:
+> +--------------------
+> +
+> +- compatible: should be "ti,wilink6", "ti,wilink7" or "ti,wilink8"
+> +- interrupt-parent: the interrupt controller
+> +- interrupts: out-of-band WLAN interrupt
+> +	See the interrupt controller's bindings documentation for
+> +	detailed definition.
+> +
+> +Optional properties:
+> +--------------------
+> +
+> +- clocks: list of clocks needed by the chip as follows:
+> +
+> +  refclock: the internal WLAN reference clock frequency (required for
+> +	WiLink6 and WiLink7; not used for WiLink8).
+> +
+> +  tcxoclock: the internal WLAN TCXO clock frequency (required for
+> +	WiLink7 not used for WiLink6 and WiLink8).
+> +
+> +  The clocks must be defined and named accordingly.  For example:
+> +
+> +  clocks = <&refclock>
+> +  clock-names = "refclock";
+> +
+> +  refclock: refclock {
+> +		     compatible = "ti,wilink-clock";
+> +		     #clock-cells = <0>;
+> +		     clock-frequency = <38400000>;
+> +	};
+> +
+> +  Some modules that contain the WiLink chip provide clocks in the
+> +  module itself.  In this case, we define a "ti,wilink-clock" as shown
+> +  above.  But any other clock could in theory be used, so the proper
+> +  clock definition should be used.
+> +
+> +
+> +Example:
+> +--------
+> +
+> +Example definition that can be used in OMAP4 Panda:
+> +
+> +wlan {
+> +	compatible = "ti,wilink6";
+> +	interrupt-parent = <&gpio2>;
+> +	interrupts = <21 IRQ_TYPE_LEVEL_HIGH>;	/* gpio line 53 */
+> +	clocks = <&refclock>;
+> +	clock-names = "refclock";
+> +
+> +	refclock: refclock {
+> +		compatible = "ti,wilink-clock";
+> +		#clock-cells = <0>;
+> +		clock-frequency = <38400000>;
+> +	};
+> +};
 -- 
-tejun
+Regards,
+
+Laurent Pinchart
+
