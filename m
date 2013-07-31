@@ -1,90 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751729Ab3GaXOn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 19:14:43 -0400
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:35136 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751075Ab3GaXOk (ORCPT
+	id S1751642Ab3GaXQg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 19:16:36 -0400
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:52380 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750917Ab3GaXQf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 19:14:40 -0400
+	Wed, 31 Jul 2013 19:16:35 -0400
+Message-ID: <51F99AD4.1070009@linaro.org>
+Date: Thu, 01 Aug 2013 01:16:36 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <51F999DE.7080200@redhat.com>
-References: <20130731174335.006a58f9@annuminas.surriel.com>
- <CA+55aFx3ZHZrgP3yQwb=ttYUeH1zFVQtUA5dFW1h8FPhjfKgUA@mail.gmail.com>
- <51F98CAB.80100@redhat.com> <CA+55aFwj+6P4y8MgGTGbiK_EtfY7LJ_bL_7k9zFYLx4S8F0rJQ@mail.gmail.com>
- <51F99218.4060104@redhat.com> <CA+55aFxKSEHSkdsCkTvjwwo4MnEpN0TwJrek2jd1QJCyUTb-=Q@mail.gmail.com>
- <51F999DE.7080200@redhat.com>
-From: Paul Turner <pjt@google.com>
-Date: Wed, 31 Jul 2013 16:14:09 -0700
-Message-ID: <CAPM31R+BiTiLbNrD+33q31z8Ww7dpm7t1vcLak-hZ-z5L2PY-g@mail.gmail.com>
-Subject: Re: [PATCH] sched,x86: optimize switch_mm for multi-threaded workloads
-To: Rik van Riel <riel@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        jmario@redhat.com, Peter Anvin <hpa@zytor.com>, dzickus@redhat.com,
-        Ingo Molnar <mingo@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Stephen Boyd <sboyd@codeaurora.org>
+CC: Mark Rutland <mark.rutland@arm.com>, Marc Zyngier <Marc.Zyngier@arm.com>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v4 0/5] Memory mapped architected timers
+References: <1374191972-18015-1-git-send-email-sboyd@codeaurora.org> <20130722170817.GB4833@e106331-lin.cambridge.arm.com> <20130724203253.GE27761@codeaurora.org> <20130731223833.GJ8868@codeaurora.org>
+In-Reply-To: <20130731223833.GJ8868@codeaurora.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We attached the following explanatory comment to our version of the patch:
+On 08/01/2013 12:38 AM, Stephen Boyd wrote:
+> On 07/24, Stephen Boyd wrote:
+>> On 07/22, Mark Rutland wrote:
+>>> Hi Stephen,
+>>>
+>>> On Fri, Jul 19, 2013 at 12:59:27AM +0100, Stephen Boyd wrote:
+>>>> This patchset adds support for memory mapped architected timers. We
+>>>> don't have any other global broadcast timer in our system, so we use the
+>>>> mmio timer during low power modes. The first patch changes the register
+>>>> accessor to an enum per Thomas' request. The second patch is the binding.
+>>>> The next two patches lay some groundwork so that the last patch is simpler.
+>>>> The final patch adds support for mmio timers.
+>>>>
+>>>> Patches are based on v3.11-rc1.
+>>>
+>>> Be aware that as of v3.11-rc2 this doesn't cleanly apply, as the
+>>> __cpuinit removal broke the final patch's context in a couple of places.
+>>> It would be nice to get rid of the new cpuinit additions too...
+>>>
+>>> With that cleaned up locally, I've gave this a spin on tc2 and a
+>>> Foundation model to test the cp15/system timers, hotplugging CPUs and
+>>> running a basic test (`time sleep 5`). That all seems to work.
+>>>
+>>> Unfortunately I have no way of testing the memory-mapped timer support,
+>>> but I trust you've tested that locally.
+>>>
+>>> For the series:
+>>>
+>>> Acked-by: Mark Rutland <mark.rutland@arm.com>
+>>>
+>>
+>> Thanks Mark.
+>>
+>> Daniel, can you pick up these patches please?
+>>
+> 
+> Ping Daniel?
 
-/*
-* In the common case (two user threads sharing mm
-* switching) the bit will be set; avoid doing a write
-* (via atomic test & set) unless we have to.  This is
-* safe, because no other CPU ever writes to our bit
-* in the mask, and interrupts are off (so we can't
-* take a TLB IPI here.)  If we don't do this, then
-* switching threads will pingpong the cpumask
-* cacheline.
-*/
+Applied to my tree as 3.12 material
 
-On Wed, Jul 31, 2013 at 4:12 PM, Rik van Riel <riel@redhat.com> wrote:
-> On 07/31/2013 06:46 PM, Linus Torvalds wrote:
->>
->>
->> On Jul 31, 2013 3:39 PM, "Rik van Riel" <riel@redhat.com
->>
->> <mailto:riel@redhat.com>> wrote:
->>  >
->>  > On 07/31/2013 06:21 PM, Linus Torvalds wrote:
->>  >>
->>  >> Ummm.. The race is to the testing of the bit, not setting. The testing
->>  >> of the bit is not valid before we have set the tlb state, AFAIK.
->>  >
->>  >
->>  > I believe the bit is cleared and set by the current CPU.
->>
->> Yes, but we need to be careful with interrupts.
->>
->>
->>  > Interrupts are blocked inside switch_mm, so I think we
->>  > are safe.
->>
->> Are they? I thought we removed all that.
->
->
-> context_switch() shows that the runqueue lock (which is an irq
-> lock) is released, and irqs re-enabled, by the next task, after
-> switch_to(), in finish_lock_switch(), called from finish_task_switch()
->
->> Note that switch_mm gets called for activate_mm too, or something.
->
->
-> Good catch, though it looks like activate_mm is only called from
-> exec_mmap, with the new mm as its argument.  While the new mm can
-> have pages in memory yet, it has never been run so there should
-> be nothing in the TLB yet for the new mm.
->
-> This is subtler than I thought, but it does appear to be safe.
->
->
-> --
-> All rights reversed
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Thanks
+  -- Daniel
+
+
+-- 
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
