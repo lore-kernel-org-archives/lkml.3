@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760098Ab3GaNem (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 09:34:42 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:47060 "EHLO
+	id S1760073Ab3GaNek (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 09:34:40 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46896 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759841Ab3GaN0C (ORCPT
+	by vger.kernel.org with ESMTP id S1759646Ab3GaN0C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 31 Jul 2013 09:26:02 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Bryan Schumaker" <bjschuma@netapp.com>,
-        "David Jeffery" <djeffery@redhat.com>,
-        "J. Bruce Fields" <bfields@redhat.com>
+CC: akpm@linux-foundation.org, "Ian Abbott" <abbotti@mev.co.uk>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
 Date: Wed, 31 Jul 2013 15:23:09 +0200
-Message-ID: <lsq.1375276989.799265150@decadent.org.uk>
+Message-ID: <lsq.1375276989.192201489@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [36/84] lockd: protect nlm_blocked access in nlmsvc_retry_blocked
+Subject: [72/84] staging: comedi: fix a race between do_cmd_ioctl() and
+ read/write
 In-Reply-To: <lsq.1375276989.251749228@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.216.67.181
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,59 +32,138 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Jeffery <djeffery@redhat.com>
+From: Ian Abbott <abbotti@mev.co.uk>
 
-commit 1c327d962fc420aea046c16215a552710bde8231 upstream.
+commit 4b18f08be01a7b3c7b6df497137b6e3cb28adaa3 upstream.
 
-In nlmsvc_retry_blocked, the check that the list is non-empty and acquiring
-the pointer of the first entry is unprotected by any lock.  This allows a rare
-race condition when there is only one entry on the list.  A function such as
-nlmsvc_grant_callback() can be called, which will temporarily remove the entry
-from the list.  Between the list_empty() and list_entry(),the list may become
-empty, causing an invalid pointer to be used as an nlm_block, leading to a
-possible crash.
+`do_cmd_ioctl()` is called with the comedi device's mutex locked to
+process the `COMEDI_CMD` ioctl to set up comedi's asynchronous command
+handling on a comedi subdevice.  `comedi_read()` and `comedi_write()`
+are the `read` and `write` handlers for the comedi device, but do not
+lock the mutex (for performance reasons, as some things can hold the
+mutex for quite a long time).
 
-This patch adds the nlm_block_lock around these calls to prevent concurrent
-use of the nlm_blocked list.
+There is a race condition if `comedi_read()` or `comedi_write()` is
+running at the same time and for the same file object and comedi
+subdevice as `do_cmd_ioctl()`.  `do_cmd_ioctl()` sets the subdevice's
+`busy` pointer to the file object way before it sets the `SRF_RUNNING` flag
+in the subdevice's `runflags` member.  `comedi_read() and
+`comedi_write()` check the subdevice's `busy` pointer is pointing to the
+current file object, then if the `SRF_RUNNING` flag is not set, will call
+`do_become_nonbusy()` to shut down the asyncronous command.  Bad things
+can happen if the asynchronous command is being shutdown and set up at
+the same time.
 
-This was a regression introduced by
-f904be9cc77f361d37d71468b13ff3d1a1823dea  "lockd: Mostly remove BKL from
-the server".
+To prevent the race, don't set the `busy` pointer until
+after the `SRF_RUNNING` flag has been set.  Also, make sure the mutex is
+held in `comedi_read()` and `comedi_write()` while calling
+`do_become_nonbusy()` in order to avoid moving the race condition to a
+point within that function.
 
-Cc: Bryan Schumaker <bjschuma@netapp.com>
-Signed-off-by: David Jeffery <djeffery@redhat.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Change some error handling `goto cleanup` statements in `do_cmd_ioctl()`
+to simple `return -ERRFOO` statements as a result of changing when the
+`busy` pointer is set.
+
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/lockd/svclock.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/staging/comedi/comedi_fops.c | 25 +++++++++++++++----------
+ 1 file changed, 15 insertions(+), 10 deletions(-)
 
---- a/fs/lockd/svclock.c
-+++ b/fs/lockd/svclock.c
-@@ -913,6 +913,7 @@ nlmsvc_retry_blocked(void)
- 	unsigned long	timeout = MAX_SCHEDULE_TIMEOUT;
- 	struct nlm_block *block;
+--- a/drivers/staging/comedi/comedi_fops.c
++++ b/drivers/staging/comedi/comedi_fops.c
+@@ -1078,22 +1078,19 @@ static int do_cmd_ioctl(struct comedi_de
+ 		DPRINTK("subdevice busy\n");
+ 		return -EBUSY;
+ 	}
+-	s->busy = file;
  
-+	spin_lock(&nlm_blocked_lock);
- 	while (!list_empty(&nlm_blocked) && !kthread_should_stop()) {
- 		block = list_entry(nlm_blocked.next, struct nlm_block, b_list);
+ 	/* make sure channel/gain list isn't too long */
+ 	if (user_cmd.chanlist_len > s->len_chanlist) {
+ 		DPRINTK("channel/gain list too long %u > %d\n",
+ 			user_cmd.chanlist_len, s->len_chanlist);
+-		ret = -EINVAL;
+-		goto cleanup;
++		return -EINVAL;
+ 	}
  
-@@ -922,6 +923,7 @@ nlmsvc_retry_blocked(void)
- 			timeout = block->b_when - jiffies;
+ 	/* make sure channel/gain list isn't too short */
+ 	if (user_cmd.chanlist_len < 1) {
+ 		DPRINTK("channel/gain list too short %u < 1\n",
+ 			user_cmd.chanlist_len);
+-		ret = -EINVAL;
+-		goto cleanup;
++		return -EINVAL;
+ 	}
+ 
+ 	async->cmd = user_cmd;
+@@ -1103,8 +1100,7 @@ static int do_cmd_ioctl(struct comedi_de
+ 	    kmalloc(async->cmd.chanlist_len * sizeof(int), GFP_KERNEL);
+ 	if (!async->cmd.chanlist) {
+ 		DPRINTK("allocation failed\n");
+-		ret = -ENOMEM;
+-		goto cleanup;
++		return -ENOMEM;
+ 	}
+ 
+ 	if (copy_from_user(async->cmd.chanlist, user_cmd.chanlist,
+@@ -1156,6 +1152,9 @@ static int do_cmd_ioctl(struct comedi_de
+ 
+ 	comedi_set_subdevice_runflags(s, ~0, SRF_USER | SRF_RUNNING);
+ 
++	/* set s->busy _after_ setting SRF_RUNNING flag to avoid race with
++	 * comedi_read() or comedi_write() */
++	s->busy = file;
+ 	ret = s->do_cmd(dev, s);
+ 	if (ret == 0)
+ 		return 0;
+@@ -1658,6 +1657,7 @@ static ssize_t comedi_write(struct file
+ 
+ 		if (!(comedi_get_subdevice_runflags(s) & SRF_RUNNING)) {
+ 			if (count == 0) {
++				mutex_lock(&dev->mutex);
+ 				if (comedi_get_subdevice_runflags(s) &
+ 					SRF_ERROR) {
+ 					retval = -EPIPE;
+@@ -1665,6 +1665,7 @@ static ssize_t comedi_write(struct file
+ 					retval = 0;
+ 				}
+ 				do_become_nonbusy(dev, s);
++				mutex_unlock(&dev->mutex);
+ 			}
  			break;
  		}
-+		spin_unlock(&nlm_blocked_lock);
+@@ -1779,6 +1780,7 @@ static ssize_t comedi_read(struct file *
  
- 		dprintk("nlmsvc_retry_blocked(%p, when=%ld)\n",
- 			block, block->b_when);
-@@ -931,7 +933,9 @@ nlmsvc_retry_blocked(void)
- 			retry_deferred_block(block);
- 		} else
- 			nlmsvc_grant_blocked(block);
-+		spin_lock(&nlm_blocked_lock);
+ 		if (n == 0) {
+ 			if (!(comedi_get_subdevice_runflags(s) & SRF_RUNNING)) {
++				mutex_lock(&dev->mutex);
+ 				do_become_nonbusy(dev, s);
+ 				if (comedi_get_subdevice_runflags(s) &
+ 				    SRF_ERROR) {
+@@ -1786,6 +1788,7 @@ static ssize_t comedi_read(struct file *
+ 				} else {
+ 					retval = 0;
+ 				}
++				mutex_unlock(&dev->mutex);
+ 				break;
+ 			}
+ 			if (file->f_flags & O_NONBLOCK) {
+@@ -1823,9 +1826,11 @@ static ssize_t comedi_read(struct file *
+ 		buf += n;
+ 		break;		/* makes device work like a pipe */
  	}
-+	spin_unlock(&nlm_blocked_lock);
- 
- 	return timeout;
- }
+-	if (!(comedi_get_subdevice_runflags(s) & (SRF_ERROR | SRF_RUNNING)) &&
+-	    async->buf_read_count - async->buf_write_count == 0) {
+-		do_become_nonbusy(dev, s);
++	if (!(comedi_get_subdevice_runflags(s) & (SRF_ERROR | SRF_RUNNING))) {
++		mutex_lock(&dev->mutex);
++		if (async->buf_read_count - async->buf_write_count == 0)
++			do_become_nonbusy(dev, s);
++		mutex_unlock(&dev->mutex);
+ 	}
+ 	set_current_state(TASK_RUNNING);
+ 	remove_wait_queue(&async->wait_head, &wait);
 
