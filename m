@@ -1,110 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759970Ab3GaN0b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 09:26:31 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46854 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751553Ab3GaN0J (ORCPT
+	id S932276Ab3GaN1Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 09:27:25 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:60276 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759912Ab3GaN1U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 09:26:09 -0400
-Content-Type: text/plain; charset="UTF-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+	Wed, 31 Jul 2013 09:27:20 -0400
+Date: Wed, 31 Jul 2013 14:27:08 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Tejun Heo <htejun@gmail.com>
+Cc: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Peter Chen <peter.chen@freescale.com>,
+        Fabio Estevam <festevam@gmail.com>, alexander.shishkin@linux.intel.com,
+        kernel@pengutronix.de, linux-usb@vger.kernel.org,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Jeff Garzik <jeff@garzik.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, Mike Turquette <mturquette@linaro.org>,
+        linux-arm-kernel@lists.infradead.org
+Message-ID: <20130731132708.GQ9858@sirena.org.uk>
+References: <20130731073306.GZ1754@pengutronix.de>
+ <20130731082054.GF8540@nchen-desktop>
+ <20130731084645.GB1754@pengutronix.de>
+ <20130731090512.GD9858@sirena.org.uk>
+ <20130731094434.GC1754@pengutronix.de>
+ <20130731095411.GA2810@htj.dyndns.org>
+ <20130731111853.GJ9858@sirena.org.uk>
+ <20130731113244.GI2810@htj.dyndns.org>
+ <20130731115027.GN9858@sirena.org.uk>
+ <20130731115527.GR2810@htj.dyndns.org>
 MIME-Version: 1.0
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Eric Dumazet" <eric.dumazet@gmail.com>,
-        "Joe Jin" <joe.jin@oracle.com>, "Eric Dumazet" <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Date: Wed, 31 Jul 2013 15:23:09 +0200
-Message-ID: <lsq.1375276989.624585746@decadent.org.uk>
-X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [07/84] neighbour: fix a race in neigh_destroy()
-In-Reply-To: <lsq.1375276989.251749228@decadent.org.uk>
-X-SA-Exim-Connect-IP: 151.216.67.181
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="cqlcXVgniU+wVEjx"
+Content-Disposition: inline
+In-Reply-To: <20130731115527.GR2810@htj.dyndns.org>
+X-Cookie: You will be awarded some great honor.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 2/2] chipidea: Use devm_request_irq()
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2.50-rc1 review patch.  If anyone has any objections, please let me know.
 
-------------------
+--cqlcXVgniU+wVEjx
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+On Wed, Jul 31, 2013 at 07:55:27AM -0400, Tejun Heo wrote:
 
-[ Upstream commit c9ab4d85de222f3390c67aedc9c18a50e767531e ]
+> If you have DMA / IRQ / command engine deactivations in devm path
+> which often is the case with full conversions, freeing any resources
+> including DMA areas and host private data in the wrong order is a
+> horrible idea.  It's worse as it won't really be noticeable in most
+> cases.
 
-There is a race in neighbour code, because neigh_destroy() uses
-skb_queue_purge(&neigh->arp_queue) without holding neighbour lock,
-while other parts of the code assume neighbour rwlock is what
-protects arp_queue
+It's really only interrupts that affect most devices - if there's DMA or
+anything going on after the remove() then as you said earlier the driver
+is probably doing something wrong.
 
-Convert all skb_queue_purge() calls to the __skb_queue_purge() variant
+--cqlcXVgniU+wVEjx
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Use __skb_queue_head_init() instead of skb_queue_head_init()
-to make clear we do not use arp_queue.lock
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
-And hold neigh->lock in neigh_destroy() to close the race.
+iQIcBAEBAgAGBQJR+RCpAAoJELSic+t+oim95fkP/R3cVtEyCGU5Vvzbm4GjBfAL
+YmAxsfQEoWi9SPK22v25O7KxqX+YtJKpqtdlSLsZnmUJw8fZJhEN6smemU0TAbRT
+rORIH1mIuzqkyrT6f9j5FkJDyARefBCDoryvD20VPWHiJBdGALpQ0DZCoevvvmf3
+oHFVzO81FzM7BKMBgd2v9o24zWBaXSAw2JrDtPNBl0bYvcZi4r1WWWDb66aVrKdh
+fW8E4IlZDTmmk3Dl0ozsPcE1aRamPIVp/ydGvT0mYaJNVrtyJ7BA9Wm+30WGbMiu
+eDTku+okyCi0ETeL+W+EOtdSxZUrtkCw58zKWS1HkROMPrV5q51ncKGQq53aQwU9
+wCgxoYjTVIXZTKhjtJE0+Qm7ynUyxN/R7d9XqyUR7GQo7/I4ECHG2i56oFK8U59l
+P25WP9ykVjgWj3J8ZpYrpLjT5vjvXj4n8f2mT4lyH7j5GnncoUPFg4BC02nud097
+La0UISqR6QBLcvwTKCe+GJP8KMicxYdZyOQt+Db5bb2RDs4N0rq99PoqoQ9QHF1m
++MIDt0NNuPFdB8e+1KL/ggge5Gkzya+2erP0exh1J4uBVC56Mjk6EjRQEwWq36IG
+zA2ikPA2TkV51FOcLW6BSCuewD/sFmS//xWICt6nwLaTjOAaDnr0irS7uOd3LRN/
+ympfimHJoxlje68hvIgF
+=cv3r
+-----END PGP SIGNATURE-----
 
-Reported-by: Joe Jin <joe.jin@oracle.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- net/core/neighbour.c | 12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
-
-diff --git a/net/core/neighbour.c b/net/core/neighbour.c
-index 5b9709f..0ea3fd3 100644
---- a/net/core/neighbour.c
-+++ b/net/core/neighbour.c
-@@ -237,7 +237,7 @@ static void neigh_flush_dev(struct neigh_table *tbl, struct net_device *dev)
- 				   we must kill timers etc. and move
- 				   it to safe state.
- 				 */
--				skb_queue_purge(&n->arp_queue);
-+				__skb_queue_purge(&n->arp_queue);
- 				n->output = neigh_blackhole;
- 				if (n->nud_state & NUD_VALID)
- 					n->nud_state = NUD_NOARP;
-@@ -291,7 +291,7 @@ static struct neighbour *neigh_alloc(struct neigh_table *tbl)
- 	if (!n)
- 		goto out_entries;
- 
--	skb_queue_head_init(&n->arp_queue);
-+	__skb_queue_head_init(&n->arp_queue);
- 	rwlock_init(&n->lock);
- 	seqlock_init(&n->ha_lock);
- 	n->updated	  = n->used = now;
-@@ -701,7 +701,9 @@ void neigh_destroy(struct neighbour *neigh)
- 	if (neigh_del_timer(neigh))
- 		printk(KERN_WARNING "Impossible event.\n");
- 
--	skb_queue_purge(&neigh->arp_queue);
-+	write_lock_bh(&neigh->lock);
-+	__skb_queue_purge(&neigh->arp_queue);
-+	write_unlock_bh(&neigh->lock);
- 
- 	dev_put(neigh->dev);
- 	neigh_parms_put(neigh->parms);
-@@ -843,7 +845,7 @@ static void neigh_invalidate(struct neighbour *neigh)
- 		neigh->ops->error_report(neigh, skb);
- 		write_lock(&neigh->lock);
- 	}
--	skb_queue_purge(&neigh->arp_queue);
-+	__skb_queue_purge(&neigh->arp_queue);
- }
- 
- static void neigh_probe(struct neighbour *neigh)
-@@ -1176,7 +1178,7 @@ int neigh_update(struct neighbour *neigh, const u8 *lladdr, u8 new,
- 
- 			write_lock_bh(&neigh->lock);
- 		}
--		skb_queue_purge(&neigh->arp_queue);
-+		__skb_queue_purge(&neigh->arp_queue);
- 	}
- out:
- 	if (update_isrouter) {
-
+--cqlcXVgniU+wVEjx--
