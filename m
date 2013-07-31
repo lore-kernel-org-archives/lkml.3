@@ -1,38 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760923Ab3GaVuM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 17:50:12 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:33501 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760796Ab3GaVuK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 17:50:10 -0400
-Date: Wed, 31 Jul 2013 14:50:09 -0700 (PDT)
-Message-Id: <20130731.145009.1288090378736581370.davem@davemloft.net>
-To: hayeswang@realtek.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH v4 5/5] net/usb/r8152: adjust relative ocp function
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1375262486-5373-5-git-send-email-hayeswang@realtek.com>
-References: <D7C722C73C7A400780358D0376412267@realtek.com.tw>
-	<1375262486-5373-1-git-send-email-hayeswang@realtek.com>
-	<1375262486-5373-5-git-send-email-hayeswang@realtek.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Wed, 31 Jul 2013 14:50:10 -0700 (PDT)
+	id S1760894Ab3GaVvf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 17:51:35 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:42584 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760796Ab3GaVvc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 17:51:32 -0400
+Date: Wed, 31 Jul 2013 23:51:30 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Matt Fleming <matt@console-pimps.org>, linux-efi@vger.kernel.org,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: Corrupted EFI region
+Message-ID: <20130731215130.GA6087@pd.tnic>
+References: <20130731205431.GG4724@pd.tnic>
+ <20130731205858.GA1678@srcf.ucam.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130731205858.GA1678@srcf.ucam.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hayes Wang <hayeswang@realtek.com>
-Date: Wed, 31 Jul 2013 17:21:26 +0800
-
->  - fix the conversion between cpu and __le32
->  - replace some pla_ocp and usb_ocp functions with generic_ocp function
+On Wed, Jul 31, 2013 at 09:58:58PM +0100, Matthew Garrett wrote:
+> On Wed, Jul 31, 2013 at 10:54:31PM +0200, Borislav Petkov wrote:
 > 
-> Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+> >  efi: mem08: type=7, attr=0xf, range=[0x0000000040000000-0x000000007c000000) (960MB)
+> >  efi: mem09: type=4, attr=0xf, range=[0x000000007c000000-0x000000007c020000) (0MB)
+> >  efi: mem10: type=7, attr=0xf, range=[0x000000007c020000-0x000000007e0ad000) (32MB)
+> > -efi: mem11: type=4, attr=0xf, range=[0x000000007e0ad000-0x000000007e0cc000) (0MB)
+> > +efi: mem11: type=4, attr=0xf, range=[0x000000007e0ad000-0x000000007e0ad000) (0MB)
+> >  efi: mem12: type=7, attr=0xf, range=[0x000000007e0cc000-0x000000007e0cd000) (0MB)
+> >  efi: mem13: type=4, attr=0xf, range=[0x000000007e0cd000-0x000000007e55d000) (4MB)
+> >  efi: mem14: type=3, attr=0xf, range=[0x000000007e55d000-0x000000007e59c000) (0MB)
+> 
+> Are we making any EFI calls in between?
 
-Applied.
+Probably.
+
+> I certainly wouldn't expect the memory map to change after
+> ExitBootServices, but up until that point the firmware's free to mess
+> with it.
+
+Well, we call ExitBootServices pretty early in exit_boot().
+
+But the problem is, something messes up the upper boundary of the region
+and it is an EFI_BOOT_SERVICES_DATA region which we need for the runtime
+services mapping and if we can't map it properly, we're probably going
+to miss functionality or not have runtime at all.
+
+I hope this is an edk2 only bug. Btw, I'm not running the latest version
+so the hope that it could've been fixed in the meantime is not dead yet.
+
+:)
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
