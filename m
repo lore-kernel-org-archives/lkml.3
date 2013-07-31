@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758978Ab3GaFWr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 01:22:47 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:53971 "EHLO arroyo.ext.ti.com"
+	id S1758915Ab3GaFWp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 01:22:45 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:53964 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758754Ab3GaFWn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 01:22:43 -0400
-Message-ID: <51F89763.1010102@ti.com>
-Date: Tue, 30 Jul 2013 23:49:39 -0500
+	id S1758743Ab3GaFWm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 01:22:42 -0400
+Message-ID: <51F89B0B.4080803@ti.com>
+Date: Wed, 31 Jul 2013 00:05:15 -0500
 From: Joel Fernandes <joelf@ti.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
@@ -31,80 +31,80 @@ CC: Tony Lindgren <tony@atomide.com>,
 	<davinci-linux-open-source@linux.davincidsp.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Linux MMC List <linux-mmc@vger.kernel.org>
-Subject: Re: [PATCH 4/9] dma: edma: Find missed events and issue them
-References: <1375104595-16018-1-git-send-email-joelf@ti.com> <1375104595-16018-5-git-send-email-joelf@ti.com> <51F7659E.3040302@ti.com>
-In-Reply-To: <51F7659E.3040302@ti.com>
+Subject: Re: [PATCH 7/9] ARM: edma: Don't clear EMR of channel in edma_stop
+References: <1375104595-16018-1-git-send-email-joelf@ti.com> <1375104595-16018-8-git-send-email-joelf@ti.com> <51F77982.7030601@ti.com>
+In-Reply-To: <51F77982.7030601@ti.com>
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sekhar,
-
-On 07/30/2013 02:05 AM, Sekhar Nori wrote:
+On 07/30/2013 03:29 AM, Sekhar Nori wrote:
 > On Monday 29 July 2013 06:59 PM, Joel Fernandes wrote:
->> In an effort to move to using Scatter gather lists of any size with
->> EDMA as discussed at [1] instead of placing limitations on the driver,
->> we work through the limitations of the EDMAC hardware to find missed
->> events and issue them.
->>
->> The sequence of events that require this are:
->>
->> For the scenario where MAX slots for an EDMA channel is 3:
->>
->> SG1 -> SG2 -> SG3 -> SG4 -> SG5 -> SG6 -> Null
->>
->> The above SG list will have to be DMA'd in 2 sets:
->>
->> (1) SG1 -> SG2 -> SG3 -> Null
->> (2) SG4 -> SG5 -> SG6 -> Null
->>
->> After (1) is succesfully transferred, the events from the MMC controller
->> donot stop coming and are missed by the time we have setup the transfer
->> for (2). So here, we catch the events missed as an error condition and
->> issue them manually.
+>> We certainly don't want error conditions to be cleared anywhere
 > 
-> Are you sure there wont be any effect of these missed events on the
-> peripheral side. For example, wont McASP get into an underrun condition
-> when it encounters a null PaRAM set? Even UART has to transmit to a
+> 'anywhere' is a really loaded term.
+> 
+>> as this will make us 'forget' about missed events. We depend on
+>> knowing which events were missed in order to be able to reissue them.
+> 
+>> This fixes a race condition where the EMR was being cleared
+>> by the transfer completion interrupt handler.
+>>
+>> Basically, what was happening was:
+>>
+>>             Missed event
+>>              |
+>>              |
+>>              V
+>> SG1-SG2-SG3-Null
+>>          \
+>>           \__TC Interrupt (Almost same time as ARM is executing
+>> TC interrupt handler, an event got missed and also forgotten
+>> by clearing the EMR).
+> 
+> Sorry, but I dont see how edma_stop() is coming into picture in the race
+> you describe?
 
-But it will not encounter null PaRAM set because McASP uses contiguous
-buffers for transfer which are not scattered across physical memory.
-This can be accomplished with an SG of size 1. For such SGs, this patch
-series leaves it linked Dummy and does not link to Null set. Null set is
-only used for SG lists that are > MAX_NR_SG in size such as those
-created for example by MMC and Crypto.
+In edma_callback function, for the case of DMA_COMPLETE (Transfer
+completion interrupt), edma_stop() is called when all sets have been
+processed. This had the effect of clearing the EMR.
 
-> particular baud so I guess it cannot wait like the way MMC/SD can.
+This has 2 problems:
 
-Existing driver have to wait anyway if they hit MAX SG limit today. If
-they don't want to wait, they would have allocated a contiguous block of
-memory and DMA that in one stretch so they don't lose any events, and in
-such cases we are not linking to Null.
+1.
+If error interrupt is also pending and TC interrupt clears the EMR.
 
-> Also, wont this lead to under-utilization of the peripheral bandwith?
-> Meaning, MMC/SD is ready with data but cannot transfer because the DMA
-> is waiting to be set-up.
+Due to this the ARM will execute the error interrupt even though the EMR
+is clear. As a result, the following if condition in dma_ccerr_handler
+will be true and IRQ_NONE is returned.
 
-But it is waiting anyway even today. Currently based on MAX segs, MMC
-driver/subsystem will make SG list of size max_segs. Between these
-sessions of creating such smaller SG-lists, if for some reason the MMC
-controller is sending events, these will be lost anyway.
+        if ((edma_read_array(ctlr, EDMA_EMR, 0) == 0) &&
+            (edma_read_array(ctlr, EDMA_EMR, 1) == 0) &&
+            (edma_read(ctlr, EDMA_QEMR) == 0) &&
+            (edma_read(ctlr, EDMA_CCERR) == 0))
+                return IRQ_NONE;
 
-What will happen now with this patch series is we are simply accepting a
-bigger list than this, and handling all the max_segs stuff within the
-EDMA driver itself without outside world knowing. This is actually more
-efficient as for long transfers, we are not going back and forth much
-between the client and EDMA driver.
+If this happens enough number of times, IRQ subsystem disables the
+interrupt thinking its spurious which creates serious problems.
 
-> Did you consider a ping-pong scheme with say three PaRAM sets per
-> channel? That way you can keep a continuous transfer going on from the
-> peripheral over the complete SG list.
+2.
+If the above if statement condition is removed, then EMR is 0 so the
+callback function will not be called in dma_ccerr_handler thus the event
+is forgotten, never triggered manually or never sets missed flag of the
+channel.
 
-Do you mean ping-pong scheme as used in the davinci-pcm driver today?
-This can be used only for buffers that are contiguous in memory, not
-those that are scattered across memory.
+So about the race: TC interrupt handler executing before the error
+interrupt handler can result in clearing the EMR and creates these problems.
+
+>> The EMR is ultimately being cleared by the Error interrupt
+>> handler once it is handled so we don't have to do it in edma_stop.
+> 
+> This, I agree with. edma_clean_channel() also there to re-initialize the
+> channel so doing it in edma_stop() certainly seems superfluous.
+
+Sure.
 
 Thanks,
 
