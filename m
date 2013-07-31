@@ -1,62 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760128Ab3GaNkh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 09:40:37 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:47015 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759791Ab3GaNZw (ORCPT
+	id S1760072Ab3GaNmX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 09:42:23 -0400
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:48247 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759766Ab3GaNmU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 09:25:52 -0400
-Content-Type: text/plain; charset="UTF-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+	Wed, 31 Jul 2013 09:42:20 -0400
+Date: Wed, 31 Jul 2013 09:42:15 -0400
+From: Tejun Heo <htejun@gmail.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Peter Chen <peter.chen@freescale.com>,
+        Fabio Estevam <festevam@gmail.com>, alexander.shishkin@linux.intel.com,
+        kernel@pengutronix.de, linux-usb@vger.kernel.org,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Jeff Garzik <jeff@garzik.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, Mike Turquette <mturquette@linaro.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 2/2] chipidea: Use devm_request_irq()
+Message-ID: <20130731134215.GS2810@htj.dyndns.org>
+References: <20130731082054.GF8540@nchen-desktop>
+ <20130731084645.GB1754@pengutronix.de>
+ <20130731090512.GD9858@sirena.org.uk>
+ <20130731094434.GC1754@pengutronix.de>
+ <20130731095411.GA2810@htj.dyndns.org>
+ <20130731111853.GJ9858@sirena.org.uk>
+ <20130731113244.GI2810@htj.dyndns.org>
+ <20130731115027.GN9858@sirena.org.uk>
+ <20130731115527.GR2810@htj.dyndns.org>
+ <20130731132708.GQ9858@sirena.org.uk>
 MIME-Version: 1.0
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Felipe Balbi" <balbi@ti.com>
-Date: Wed, 31 Jul 2013 15:23:09 +0200
-Message-ID: <lsq.1375276989.713667938@decadent.org.uk>
-X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [39/84] usb: dwc3: gadget: don't prevent gadget from being probed
- if we fail
-In-Reply-To: <lsq.1375276989.251749228@decadent.org.uk>
-X-SA-Exim-Connect-IP: 151.216.67.181
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130731132708.GQ9858@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2.50-rc1 review patch.  If anyone has any objections, please let me know.
+Hello,
 
-------------------
+On Wed, Jul 31, 2013 at 02:27:08PM +0100, Mark Brown wrote:
+> It's really only interrupts that affect most devices - if there's DMA or
+> anything going on after the remove() then as you said earlier the driver
+> is probably doing something wrong.
 
-From: Felipe Balbi <balbi@ti.com>
+Hmmm... it depends on the specific driver is converted but if the
+deactivation sequence - shutting down of command engine - is also
+handled by devm as in libata and if you have non-devres resource free
+in the exit path, you have the same problem.  Again, in general,
+tearing things down in the order which isn't the reverse of allocation
+is a bad idea.  Adhering to the order isn't that hard and will result
+in far less craziness in the long term.
 
-commit cdcedd6981194e511cc206887db661d016069d68 upstream.
+Thanks.
 
-In case we fail our ->udc_start() callback, we
-should be ready to accept another modprobe following
-the failed one.
-
-We had forgotten to clear dwc->gadget_driver back
-to NULL and, because of that, we were preventing
-gadget driver modprobe from being retried.
-
-Signed-off-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- drivers/usb/dwc3/gadget.c | 1 +
- 1 file changed, 1 insertion(+)
-
---- a/drivers/usb/dwc3/gadget.c
-+++ b/drivers/usb/dwc3/gadget.c
-@@ -1217,6 +1217,7 @@ err1:
- 	__dwc3_gadget_ep_disable(dwc->eps[0]);
- 
- err0:
-+	dwc->gadget_driver = NULL;
- 	spin_unlock_irqrestore(&dwc->lock, flags);
- 
- 	return ret;
-
+-- 
+tejun
