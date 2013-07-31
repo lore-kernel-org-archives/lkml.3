@@ -1,55 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751548Ab3GaX4G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 19:56:06 -0400
-Received: from muin.pair.com ([209.68.1.55]:62037 "EHLO muin.pair.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750856Ab3GaX4C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 19:56:02 -0400
-X-Greylist: delayed 661 seconds by postgrey-1.27 at vger.kernel.org; Wed, 31 Jul 2013 19:56:02 EDT
-MIME-Version: 1.0
-In-Reply-To: <20130731071630.GI8868@codeaurora.org>
-References: <1375187900-17582-1-git-send-email-B44344@freescale.com>
-	<1375187900-17582-3-git-send-email-B44344@freescale.com>
-	<20130731071630.GI8868@codeaurora.org>
-Date: Wed, 31 Jul 2013 18:44:58 -0500
-Message-ID: <CAOZdJXVvNBR-qf7LXNOHZVstH_Rebxwn-wAkSaBS53Wn55mYCw@mail.gmail.com>
-Subject: Re: [PATCH 2/2] Convert PowerPC macro spin_event_timeout() to
- architecture independent macro
-From: Timur Tabi <timur@tabi.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Arpit Goel <B44344@freescale.com>, linux@arm.linux.org.uk,
-        takata@linux-m32r.org, philb@gnu.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>, schwidefsky@de.ibm.com,
-        heiko.carstens@de.ibm.com, linux390@de.ibm.com,
-        David Miller <davem@davemloft.net>,
-        Rob Herring <rob.herring@calxeda.com>, Arnd Bergmann <arnd@arndb.de>,
-        Stephen Warren <swarren@nvidia.com>, john.stultz@linaro.org,
-        jesper.nilsson@axis.com, gregkh@linuxfoundation.org, sam@ravnborg.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>, linux-m32r@ml.linux-m32r.org,
-        linux-m32r-ja@ml.linux-m32r.org, linux-m68k@vger.kernel.org,
-        linux-s390@vger.kernel.org, sparclinux@vger.kernel.org,
-        mattw@codeaurora.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751632Ab3GaX5W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 19:57:22 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:41457 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751173Ab3GaX5V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 19:57:21 -0400
+Date: Thu, 1 Aug 2013 09:57:08 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Stupid linux-next git question...
+Message-Id: <20130801095708.b43c432b2bf914827fd45d79@canb.auug.org.au>
+In-Reply-To: <24590.1375311493@turing-police.cc.vt.edu>
+References: <24590.1375311493@turing-police.cc.vt.edu>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__1_Aug_2013_09_57_08_+1000_Les5tUHxOEwOBMHW"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 31, 2013 at 2:16 AM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+--Signature=_Thu__1_Aug_2013_09_57_08_+1000_Les5tUHxOEwOBMHW
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+Hi Valdis,
+
+On Wed, 31 Jul 2013 18:58:13 -0400 Valdis Kletnieks <Valdis.Kletnieks@vt.ed=
+u> wrote:
 >
-> What do you do here if jiffies aren't incrementing (i.e
-> interrupts are disabled). The time_before() check won't work
-> there and it would be nice if we were able to use this in such
-> situations. I think powerpc gets around this by reading the
-> hardware timer directly?
+> OK... So I have (as usual) found some issues in linux-next, so I'm lookin=
+g at 3
+> bisects.  I already know that bisecting between (say) next-20130715 and
+> next-20130730 won't work, but bisecting between the 3.11-rc1 base of
+> next-20130715 and next-20130730 *will* work.
+>=20
+> Question 1:
+>=20
+> Does bisecting between "the HEAD of Linus's tree when a given next- is bu=
+ilt"
+> and "some later next-" work? (basically, I know that anything in Linus's =
+tree
+> as of -0715 is 'Good', so I'd rather start from there than from 3.11-rc1 =
+to
+> save several bisects).
 
-I believe that jiffies is always a global variable.  It should behave
-the same on PowerPC as on other architectures.
+Yes, because that point only moves forward (obviously).
 
-The answer to your question is that you should not use
-spin_event_timeout() in interrupt context, because it yields.
+> Question 2:
+>=20
+> If that works, how do I determine the commit ID to feed to 'git bisect go=
+od'?
+> I *hope* this in Next/merge.log is the magic I'm looking for:
+>=20
+> $ git reset --hard stable
+> HEAD is now at 6c504ec Merge branch 'drm-fixes' of git://people.freedeskt=
+op.org/~airlied/linux
+> Merging origin/master (5ae90d8 Linux 3.11-rc3)
 
-(FYI, I'm the author of spin_event_timeout(), so please CC: me on all
-changes to it)
+Yes, that, or if you look in Next/SHA1s, my start point in Linus' tree is
+labelled "origin".  Also, it is the "stable" branch in the current
+linux-next tree (which is moved forward each day).
+
+These are not stupid questions, by the way :-)
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Thu__1_Aug_2013_09_57_08_+1000_Les5tUHxOEwOBMHW
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBCAAGBQJR+aRdAAoJEECxmPOUX5FE6QwQAKKGJ+vFxjHsiscq4JRBkOPE
+NOfqj7oSmyYQ0UyLIMrlQykEg7JAXzwqVOmR+qkX9zc34toZ6seBRAR/JU5VbNqT
+GFO37wXO4Op1JRZuE8SpcGC3VcM9aXCcvx6rWTNuPmJ6MXIor/LIJHkgL0pOUSj2
+d3uHpBfo1RKeB5lHkrldwMCDxXiqSpYn1l8ItAA9WxyyaQEfTbe9uVnDxaOZgyie
+3XhuGtQ5dcIL5x2H2/I77zRceCDQObuwkzXMh5QrjzzVkz2A1V98S1WvDfU63JV1
+/8GHU1kIYSEaTlWRslGAiHWKy1oKZm+b6EfiHaUJ2gMp1hWu8XjF34jeEzdm+M5J
+i0xyAxK+T5yJ5IXT4fuOssV7VuFSyUBc82uQ6FcT9n+Y/cmRqGqw5k8mqloD6po9
+6rvrvPxGadAp5Yth8ijqJcxWl4dXU7L5bJ0RLmzlp4FTxp+/sSezS5Wf6JhueEKU
+mHaB9fl77x9CjPJrCjJq/xvpkd7YA22dsZ+0lNbZsV3gw0zHEj1mD+6CtKtZnyoo
+VgioZTLF+qIfhcxsYZ2SvPiHmKkh06XZVvaEhZKkUrSWaN1WrfpM4zYHGc9qkhHQ
+sf6P+D+YHxLqpf6hInpMeWDwn5urq3LALq4Ijjkutfg1r1JCwl7A/yaBB1b6Fgzg
+Btw++55PwEfPKodRS7+3
+=obI1
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__1_Aug_2013_09_57_08_+1000_Les5tUHxOEwOBMHW--
