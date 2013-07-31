@@ -1,208 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760685Ab3GaRpl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 13:45:41 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:11937 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752638Ab3GaRmS (ORCPT
+	id S1760728Ab3GaRp4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 13:45:56 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:45605 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760512Ab3GaRpv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 13:42:18 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 31 Jul 2013 10:40:52 -0700
-From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-To: <balbi@ti.com>
-CC: <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <swarren@wwwdotorg.org>,
-        <gregkh@linuxfoundation.org>, <stern@rowland.harvard.edu>,
-        Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-Subject: [PATCH 4/6] usb: phy: tegra: Program new PHY parameters
-Date: Wed, 31 Jul 2013 20:42:00 +0300
-Message-ID: <1375292522-7855-5-git-send-email-ttynkkynen@nvidia.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1375292522-7855-1-git-send-email-ttynkkynen@nvidia.com>
-References: <1375292522-7855-1-git-send-email-ttynkkynen@nvidia.com>
-X-NVConfidentiality: public
+	Wed, 31 Jul 2013 13:45:51 -0400
+X-IronPort-AV: E=Sophos;i="4.89,788,1367971200"; 
+   d="scan'208";a="38588260"
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+To: <xen-devel@lists.xensource.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <konrad.wilk@oracle.com>, <Stefano.Stabellini@eu.citrix.com>,
+        <Ian.Campbell@citrix.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        <will.deacon@arm.com>, <linux@arm.linux.org.uk>
+Subject: [PATCH RFC 1/8] arm: make SWIOTLB available
+Date: Wed, 31 Jul 2013 18:45:25 +0100
+Message-ID: <1375292732-7627-1-git-send-email-stefano.stabellini@eu.citrix.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <alpine.DEB.2.02.1307311833040.4893@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1307311833040.4893@kaball.uk.xensource.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Tegra30 TRM recommends configuration of certain PHY parameters for
-optimal quality. Program the following registers based on device tree
-parameters:
-
-- UTMIP_XCVR_HSSLEW: HS slew rate control.
-- UTMIP_HSSQUELCH_LEVEL: HS squelch detector level
-- UTMIP_HSDISCON_LEVEL: HS disconnect detector level.
-
-These registers exist in Tegra20, but programming them hasn't been
-necessary, so these parameters won't be set on Tegra20 to keep the
-device trees backward compatible.
-
-Additionally, the UTMIP_XCVR_SETUP parameter can be set from fuses
-instead of a software-programmed value, as the optimal value can
-vary between invidual boards. The boolean property
-nvidia,xcvr-setup-use-fuses can be used to enable this behaviour.
-
-Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: will.deacon@arm.com
+CC: linux@arm.linux.org.uk
 ---
- drivers/usb/phy/phy-tegra-usb.c   | 75 +++++++++++++++++++++++++++++----------
- include/linux/usb/tegra_usb_phy.h |  4 +++
- 2 files changed, 61 insertions(+), 18 deletions(-)
+ arch/arm/Kconfig                   |    7 +++++++
+ arch/arm/include/asm/dma-mapping.h |   24 ++++++++++++++++++++++++
+ 2 files changed, 31 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/usb/phy/phy-tegra-usb.c b/drivers/usb/phy/phy-tegra-usb.c
-index 85ec70e..5a34b45 100644
---- a/drivers/usb/phy/phy-tegra-usb.c
-+++ b/drivers/usb/phy/phy-tegra-usb.c
-@@ -99,11 +99,15 @@
- #define   UTMIP_FORCE_PD2_POWERDOWN		(1 << 16)
- #define   UTMIP_FORCE_PDZI_POWERDOWN		(1 << 18)
- #define   UTMIP_XCVR_LSBIAS_SEL			(1 << 21)
--#define   UTMIP_XCVR_HSSLEW_MSB(x)		(((x) & 0x7f) << 25)
-+#define   UTMIP_XCVR_HSSLEW(x)			(((x) & 0x3) << 4)
-+#define   UTMIP_XCVR_HSSLEW_MSB(x)		((((x) & 0x1ff) >> 2) << 25)
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index ba412e0..05125ab 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -1832,6 +1832,13 @@ config CC_STACKPROTECTOR
+ 	  neutralized via a kernel panic.
+ 	  This feature requires gcc version 4.2 or above.
  
- #define UTMIP_BIAS_CFG0		0x80c
- #define   UTMIP_OTGPD			(1 << 11)
- #define   UTMIP_BIASPD			(1 << 10)
-+#define   UTMIP_HSSQUELCH_LEVEL(x)	(((x) & 0x3) << 0)
-+#define   UTMIP_HSDISCON_LEVEL(x)	(((x) & 0x3) << 2)
-+#define   UTMIP_HSDISCON_LEVEL_MSB(x)	((((x) & 0x4) >> 2) << 24)
- 
- #define UTMIP_HSRX_CFG0		0x810
- #define   UTMIP_ELASTIC_LIMIT(x)	(((x) & 0x1f) << 10)
-@@ -255,6 +259,7 @@ static void utmip_pad_power_on(struct tegra_usb_phy *phy)
- {
- 	unsigned long val, flags;
- 	void __iomem *base = phy->pad_regs;
-+	struct tegra_utmip_config *config = phy->config;
- 
- 	clk_prepare_enable(phy->pad_clk);
- 
-@@ -262,7 +267,14 @@ static void utmip_pad_power_on(struct tegra_usb_phy *phy)
- 
- 	if (utmip_pad_count++ == 0) {
- 		val = readl(base + UTMIP_BIAS_CFG0);
--		val &= ~(UTMIP_OTGPD | UTMIP_BIASPD);
-+		val &= ~(UTMIP_OTGPD | UTMIP_BIASPD |
-+			UTMIP_HSSQUELCH_LEVEL(~0) |
-+			UTMIP_HSDISCON_LEVEL(~0) |
-+			UTMIP_HSDISCON_LEVEL_MSB(~0));
++config SWIOTLB
++	def_bool y
++	select NEED_SG_DMA_LENGTH
 +
-+		val |= UTMIP_HSSQUELCH_LEVEL(config->hssquelch_level);
-+		val |= UTMIP_HSDISCON_LEVEL(config->hsdiscon_level);
-+		val |= UTMIP_HSDISCON_LEVEL_MSB(config->hsdiscon_level);
- 		writel(val, base + UTMIP_BIAS_CFG0);
- 	}
- 
-@@ -432,11 +444,16 @@ static int utmi_phy_power_on(struct tegra_usb_phy *phy)
- 		 UTMIP_FORCE_PDZI_POWERDOWN | UTMIP_XCVR_LSBIAS_SEL |
- 		 UTMIP_XCVR_SETUP(~0) | UTMIP_XCVR_SETUP_MSB(~0) |
- 		 UTMIP_XCVR_LSFSLEW(~0) | UTMIP_XCVR_LSRSLEW(~0) |
--		 UTMIP_XCVR_HSSLEW_MSB(~0));
--	val |= UTMIP_XCVR_SETUP(config->xcvr_setup);
--	val |= UTMIP_XCVR_SETUP_MSB(config->xcvr_setup);
-+		 UTMIP_XCVR_HSSLEW(~0) | UTMIP_XCVR_HSSLEW_MSB(~0));
++config IOMMU_HELPER
++	def_bool SWIOTLB
 +
-+	if (!config->xcvr_setup_use_fuses) {
-+		val |= UTMIP_XCVR_SETUP(config->xcvr_setup);
-+		val |= UTMIP_XCVR_SETUP_MSB(config->xcvr_setup);
-+	}
- 	val |= UTMIP_XCVR_LSFSLEW(config->xcvr_lsfslew);
- 	val |= UTMIP_XCVR_LSRSLEW(config->xcvr_lsrslew);
-+	val |= UTMIP_XCVR_HSSLEW(config->xcvr_hsslew);
-+	val |= UTMIP_XCVR_HSSLEW_MSB(config->xcvr_hsslew);
- 	writel(val, base + UTMIP_XCVR_CFG0);
- 
- 	val = readl(base + UTMIP_XCVR_CFG1);
-@@ -450,14 +467,14 @@ static int utmi_phy_power_on(struct tegra_usb_phy *phy)
- 	val |= UTMIP_BIAS_PDTRK_COUNT(0x5);
- 	writel(val, base + UTMIP_BIAS_CFG1);
- 
--	if (phy->is_legacy_phy) {
--		val = readl(base + UTMIP_SPARE_CFG0);
--		if (phy->mode == USB_DR_MODE_PERIPHERAL)
--			val &= ~FUSE_SETUP_SEL;
--		else
--			val |= FUSE_SETUP_SEL;
--		writel(val, base + UTMIP_SPARE_CFG0);
--	} else {
-+	val = readl(base + UTMIP_SPARE_CFG0);
-+	if (config->xcvr_setup_use_fuses)
-+		val |= FUSE_SETUP_SEL;
-+	else
-+		val &= ~FUSE_SETUP_SEL;
-+	writel(val, base + UTMIP_SPARE_CFG0);
-+
-+	if (!phy->is_legacy_phy) {
- 		val = readl(base + USB_SUSP_CTRL);
- 		val |= UTMIP_PHY_ENABLE;
- 		writel(val, base + USB_SUSP_CTRL);
-@@ -888,11 +905,6 @@ static int utmi_phy_probe(struct tegra_usb_phy *tegra_phy,
- 	if (err < 0)
- 		return err;
- 
--	err = read_utmi_param(pdev, "nvidia,xcvr-setup",
--		&config->xcvr_setup);
--	if (err < 0)
--		return err;
--
- 	err = read_utmi_param(pdev, "nvidia,xcvr-lsfslew",
- 		&config->xcvr_lsfslew);
- 	if (err < 0)
-@@ -903,6 +915,33 @@ static int utmi_phy_probe(struct tegra_usb_phy *tegra_phy,
- 	if (err < 0)
- 		return err;
- 
-+	if (tegra_phy->soc_config->requires_extra_tuning_parameters) {
-+		err = read_utmi_param(pdev, "nvidia,xcvr-hsslew",
-+			&config->xcvr_hsslew);
-+		if (err < 0)
-+			return err;
-+
-+		err = read_utmi_param(pdev, "nvidia,hssquelch-level",
-+			&config->hssquelch_level);
-+		if (err < 0)
-+			return err;
-+
-+		err = read_utmi_param(pdev, "nvidia,hsdiscon-level",
-+			&config->hsdiscon_level);
-+		if (err < 0)
-+			return err;
-+	}
-+
-+	config->xcvr_setup_use_fuses = of_property_read_bool(
-+		pdev->dev.of_node, "nvidia,xcvr-setup-use-fuses");
-+
-+	if (!config->xcvr_setup_use_fuses) {
-+		err = read_utmi_param(pdev, "nvidia,xcvr-setup",
-+			&config->xcvr_setup);
-+		if (err < 0)
-+			return err;
-+	}
-+
- 	return 0;
+ config XEN_DOM0
+ 	def_bool y
+ 	depends on XEN
+diff --git a/arch/arm/include/asm/dma-mapping.h b/arch/arm/include/asm/dma-mapping.h
+index 5b579b9..ad89e0f 100644
+--- a/arch/arm/include/asm/dma-mapping.h
++++ b/arch/arm/include/asm/dma-mapping.h
+@@ -86,6 +86,30 @@ static inline dma_addr_t virt_to_dma(struct device *dev, void *addr)
  }
+ #endif
  
-diff --git a/include/linux/usb/tegra_usb_phy.h b/include/linux/usb/tegra_usb_phy.h
-index d3a63c3..1de16c3 100644
---- a/include/linux/usb/tegra_usb_phy.h
-+++ b/include/linux/usb/tegra_usb_phy.h
-@@ -41,9 +41,13 @@ struct tegra_utmip_config {
- 	u8 elastic_limit;
- 	u8 idle_wait_delay;
- 	u8 term_range_adj;
-+	bool xcvr_setup_use_fuses;
- 	u8 xcvr_setup;
- 	u8 xcvr_lsfslew;
- 	u8 xcvr_lsrslew;
-+	u8 xcvr_hsslew;
-+	u8 hssquelch_level;
-+	u8 hsdiscon_level;
- };
- 
- enum tegra_usb_phy_port_speed {
++static inline dma_addr_t phys_to_dma(struct device *dev, phys_addr_t paddr)
++{
++	unsigned int offset = paddr & ~PAGE_MASK;
++	return pfn_to_dma(dev, paddr >> PAGE_SHIFT) + offset;
++}
++
++static inline phys_addr_t dma_to_phys(struct device *dev, dma_addr_t dev_addr)
++{
++	unsigned int offset = dev_addr & ~PAGE_MASK;
++	return (dma_to_pfn(dev, dev_addr) << PAGE_SHIFT) + offset;
++}
++
++static inline bool dma_capable(struct device *dev, dma_addr_t addr, size_t size)
++{
++	if (!dev->dma_mask)
++		return 0;
++
++	return addr + size - 1 <= *dev->dma_mask;
++}
++
++static inline void dma_mark_clean(void *addr, size_t size)
++{
++}
++
+ /*
+  * DMA errors are defined by all-bits-set in the DMA address.
+  */
 -- 
-1.8.1.5
+1.7.2.5
 
