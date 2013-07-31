@@ -1,58 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760590Ab3GaQ4R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 12:56:17 -0400
-Received: from mga02.intel.com ([134.134.136.20]:7398 "EHLO mga02.intel.com"
+	id S1760602Ab3GaRJy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 13:09:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49140 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760559Ab3GaQ4Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 12:56:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,788,1367996400"; 
-   d="scan'208";a="354996137"
-Message-ID: <51F9419F.6070306@intel.com>
-Date: Wed, 31 Jul 2013 09:55:59 -0700
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S1754787Ab3GaRJv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 13:09:51 -0400
+Date: Wed, 31 Jul 2013 19:11:07 +0200
+From: Alexander Gordeev <agordeev@redhat.com>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Jens Axboe <axboe@kernel.dk>, Mike Christie <michaelc@cs.wisc.edu>,
+        Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-ide@vger.kernel.org, Jeff Garzik <jgarzik@pobox.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>
+Subject: Re: [PATCH RESEND 0/1] AHCI: Optimize interrupt processing
+Message-ID: <20130731171106.GA12489@dhcp-26-207.brq.redhat.com>
+References: <1374193399.7397.973.camel@haakon3.risingtidesystems.com>
+ <20130719003034.GG28005@kernel.dk>
+ <1374195825.7397.997.camel@haakon3.risingtidesystems.com>
+ <1374215660.7397.1041.camel@haakon3.risingtidesystems.com>
+ <1374248000.2266.20.camel@dabdike>
+ <1374267684.7397.1058.camel@haakon3.risingtidesystems.com>
+ <1374296162.7397.1098.camel@haakon3.risingtidesystems.com>
+ <20130722150359.GA16564@dhcp-26-207.brq.redhat.com>
+ <1374527436.7397.1145.camel@haakon3.risingtidesystems.com>
+ <20130725101641.GB31994@dhcp-26-207.brq.redhat.com>
 MIME-Version: 1.0
-To: Xishi Qiu <qiuxishi@huawei.com>
-CC: linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH] mm/hotplug: remove unnecessary BUG_ON in __offline_pages()
-References: <51F761E7.5090403@huawei.com>
-In-Reply-To: <51F761E7.5090403@huawei.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130725101641.GB31994@dhcp-26-207.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/29/2013 11:49 PM, Xishi Qiu wrote:
-> I think we can remove "BUG_ON(start_pfn >= end_pfn)" in __offline_pages(),
-> because in memory_block_action() "nr_pages = PAGES_PER_SECTION * sections_per_block" 
-> is always greater than 0.
-...
-> --- a/mm/memory_hotplug.c
-> +++ b/mm/memory_hotplug.c
-> @@ -1472,7 +1472,6 @@ static int __ref __offline_pages(unsigned long start_pfn,
->  	struct zone *zone;
->  	struct memory_notify arg;
->  
-> -	BUG_ON(start_pfn >= end_pfn);
->  	/* at least, alignment against pageblock is necessary */
->  	if (!IS_ALIGNED(start_pfn, pageblock_nr_pages))
->  		return -EINVAL;
+On Thu, Jul 25, 2013 at 12:16:41PM +0200, Alexander Gordeev wrote:
+> On Mon, Jul 22, 2013 at 02:10:36PM -0700, Nicholas A. Bellinger wrote:
+> > Np.  FYI, you'll want to use the latest commit e7827b351 HEAD from
+> > target-pending/scsi-mq, which now has functioning scsi-generic support.
+> 
+> Survives a boot, a kernel build and the build's result :)
 
-I think you're saying that you don't see a way to hit this BUG_ON() in
-practice.  That does appear to be true, unless sections_per_block ended
-up 0 or negative.  The odds of getting in to this code if
-'sections_per_block' was bogus are pretty small.
+Not that rosy. Turned out the old code is called. Hangs with this hunk..
 
-Or, is this a theoretical thing that folks might run in to when adding
-new features or developing?  It's in a cold path and the cost of the
-check is miniscule.  The original author (cc'd) also saw a need to put
-this in probably because he actually ran in to this.
+diff --git a/drivers/ata/ata_piix.c b/drivers/ata/ata_piix.c
+index ac05cd6..a75fd41 100644
+--- a/drivers/ata/ata_piix.c
++++ b/drivers/ata/ata_piix.c
+@@ -1103,6 +1103,8 @@ static struct device_attribute *piix_sidpr_shost_attrs[] = {
+ static struct scsi_host_template piix_sidpr_sht = {
+ 	ATA_BMDMA_SHT(DRV_NAME),
+ 	.shost_attrs		= piix_sidpr_shost_attrs,
++	.scsi_mq		= true,
++	.queuecommand_mq	= ata_scsi_queuecmd,
+ };
+ 
+ static struct ata_port_operations piix_sidpr_sata_ops = {
 
-In any case, it looks fairly safe to me:
 
-Reviewed-by: Dave Hansen <dave.hansen@linux.intel.com>
+-- 
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
