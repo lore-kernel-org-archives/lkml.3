@@ -1,265 +1,268 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758751Ab3GaBBk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 21:01:40 -0400
-Received: from zetta.elopez.com.ar ([199.30.59.35]:56417 "EHLO
-	zetta.elopez.com.ar" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754385Ab3GaBBj (ORCPT
+	id S1758738Ab3GaBIM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 21:08:12 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:44804 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754006Ab3GaBIJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 21:01:39 -0400
-Message-ID: <51F861E5.7010909@elopez.com.ar>
-Date: Tue, 30 Jul 2013 22:01:25 -0300
-From: =?ISO-8859-1?Q?Emilio_L=F3pez?= <emilio@elopez.com.ar>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Tue, 30 Jul 2013 21:08:09 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <51F85BCC.2070103@jp.fujitsu.com>
+Date: Wed, 31 Jul 2013 09:35:24 +0900
+From: Takao Indoh <indou.takao@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-CC: Mike Turquette <mturquette@linaro.org>, kevin.z.m.zh@gmail.com,
-        sunny@allwinnertech.com, shuge@allwinnertech.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] clk: sunxi: Add A31 clocks support
-References: <1375195462-19566-1-git-send-email-maxime.ripard@free-electrons.com> <1375195462-19566-4-git-send-email-maxime.ripard@free-electrons.com>
-In-Reply-To: <1375195462-19566-4-git-send-email-maxime.ripard@free-electrons.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: Vivek Goyal <vgoyal@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "open list:INTEL IOMMU (VT-d)" <iommu@lists.linux-foundation.org>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "ishii.hironobu@jp.fujitsu.com" <ishii.hironobu@jp.fujitsu.com>,
+        Don Dutile <ddutile@redhat.com>,
+        "Sumner, William" <bill.sumner@hp.com>,
+        "alex.williamson@redhat.com" <alex.williamson@redhat.com>,
+        Haren Myneni <hbabu@us.ibm.com>
+Subject: Re: [PATCH v2] PCI: Reset PCIe devices to stop ongoing DMA
+References: <1368509365-2260-1-git-send-email-indou.takao@jp.fujitsu.com> <CAErSpo4t_2Xw76p3Z9FVzyyK-MBovavDu9D=pYoPMjESSxgT=w@mail.gmail.com> <51B19DF3.2070009@jp.fujitsu.com> <CAErSpo6dfEnzriHD_aWZB_3E-kSzauhNRHPd+VuFX5HONVKgqw@mail.gmail.com> <51B6BEDB.3000509@jp.fujitsu.com> <CAErSpo5u8qGALt6C+tuPYXdd2YgyMH6fnPnA+afUteEZ7kY0iw@mail.gmail.com> <51B93221.2040505@jp.fujitsu.com> <CAErSpo5tVK-Z3aOdMTzab-S8o5zLVtDOFQ8-LSYpUgbrJSsxuw@mail.gmail.com> <51BA7BB6.1080104@jp.fujitsu.com> <51EF7466.20703@jp.fujitsu.com> <CAErSpo5B7NzVfxwW3bQnfK+iK+DrRsWQd2Cm14z5PWNnRHWL5w@mail.gmail.com> <51F5B966.9080405@jp.fujitsu.com> <CAErSpo4JtG5qVJb-nCywe3vkft=-cDeRDKn_V92RCZ-sGXpwbg@mail.gmail.com> <51F758B6.9090204@jp.fujitsu.com> <CAErSpo7TNhQO0dx_xZvF=dU2fSWTFf8x=xUJcEsbadJkv8ktuQ@mail.gmail.com>
+In-Reply-To: <CAErSpo7TNhQO0dx_xZvF=dU2fSWTFf8x=xUJcEsbadJkv8ktuQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Maxime,
-
-El 30/07/13 11:44, Maxime Ripard escribió:
-> The A31 has a mostly different clock set compared to the other older
-> SoCs currently supported in the Allwinner clock driver.
+(2013/07/31 0:59), Bjorn Helgaas wrote:
+> On Tue, Jul 30, 2013 at 12:09 AM, Takao Indoh
+> <indou.takao@jp.fujitsu.com> wrote:
+>> (2013/07/29 23:17), Bjorn Helgaas wrote:
+>>> On Sun, Jul 28, 2013 at 6:37 PM, Takao Indoh <indou.takao@jp.fujitsu.com> wrote:
+>>>> (2013/07/26 2:00), Bjorn Helgaas wrote:
 > 
-> Add support for the basic useful clocks. The other ones will come in
-> eventually.
+>>>>> My point about IOMMU and PCI initialization order doesn't go away just
+>>>>> because it doesn't fit "kdump policy."  Having system initialization
+>>>>> occur in a logical order is far more important than making kdump work.
+>>>>
+>>>> My next plan is as follows. I think this is matched to logical order
+>>>> on boot.
+>>>>
+>>>> drivers/pci/pci.c
+>>>> - Add function to reset bus, for example, pci_reset_bus(struct pci_bus *bus)
+>>>>
+>>>> drivers/iommu/intel-iommu.c
+>>>> - On initialization, if IOMMU is already enabled, call this bus reset
+>>>>     function before disabling and re-enabling IOMMU.
+>>>
+>>> I raised this issue because of arches like sparc that enumerate the
+>>> IOMMU before the PCI devices that use it.  In that situation, I think
+>>> you're proposing this:
+>>>
+>>>     panic kernel
+>>>       enable IOMMU
+>>>       panic
+>>>     kdump kernel
+>>>       initialize IOMMU (already enabled)
+>>>         pci_reset_bus
+>>>         disable IOMMU
+>>>         enable IOMMU
+>>>       enumerate PCI devices
+>>>
+>>> But the problem is that when you call pci_reset_bus(), you haven't
+>>> enumerated the PCI devices, so you don't know what to reset.
+>>
+>> Right, so my idea is adding reset code into "intel-iommu.c". intel-iommu
+>> initialization is based on the assumption that enumeration of PCI devices
+>> is already done. We can find target device from IOMMU page table instead
+>> of scanning all devices in pci tree.
+>>
+>> Therefore, this idea is only for intel-iommu. Other architectures need
+>> to implement their own reset code.
 > 
-> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> ---
->  drivers/clk/sunxi/clk-sunxi.c | 120 ++++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 120 insertions(+)
+> That's my point.  I'm opposed to adding code to PCI when it only
+> benefits x86 and we know other arches will need a fundamentally
+> different design.  I would rather have a design that can work for all
+> arches.
 > 
-> diff --git a/drivers/clk/sunxi/clk-sunxi.c b/drivers/clk/sunxi/clk-sunxi.c
-> index 6e9cbc9..8cd69e6 100644
-> --- a/drivers/clk/sunxi/clk-sunxi.c
-> +++ b/drivers/clk/sunxi/clk-sunxi.c
-> @@ -124,7 +124,67 @@ static void sun4i_get_pll1_factors(u32 *freq, u32 parent_rate,
->  	*n = div / 4;
->  }
->  
-> +/**
-> + * sun6i_get_pll1_factors() - calculates n, k and m factors for PLL1
-> + * PLL1 rate is calculated as follows
-> + * rate = parent_rate * (n + 1) * (k + 1) / (m + 1);
-> + * parent_rate should always be 24MHz
-> + */
-> +static void sun6i_get_pll1_factors(u32 *freq, u32 parent_rate,
-> +				   u8 *n, u8 *k, u8 *m, u8 *p)
-> +{
-> +	/*
-> +	 * We can operate only on MHz, this will make our life easier
-> +	 * later.
-> +	 */
-> +	u32 freq_mhz = *freq / 1000000;
-> +	u32 parent_freq_mhz = parent_rate / 1000000;
-> +
-> +	/* If the frequency is a multiple of 32 MHz, k is always 3 */
-> +	if (!(freq_mhz % 32))
-> +		*k = 3;
-> +	/* If the frequency is a multiple of 9 MHz, k is always 2 */
-> +	else if (!(freq_mhz % 9))
-> +		*k = 2;
-> +	/* If the frequency is a multiple of 8 MHz, k is always 1 */
-> +	else if (!(freq_mhz % 8))
-> +		*k = 1;
-> +	/* Otherwise, we don't use the k factor */
-> +	else
-> +		*k = 0;
->  
-> +	/*
-> +	 * If the frequency is a multiple of 2 but not a multiple of
-> +	 * 3, m is 3. This is the first time we use 6 here, yet we
-> +	 * will use it on several other places.
-> +	 * We use this number because it's the lowest frequency we can
-> +	 * generate (with n = 0, k = 0, m = 3), so every other frequency
-> +	 * somehow relates to this frequency.
-> +	 */
-> +	if ((freq_mhz % 6) == 2 || (freq_mhz % 6) == 4)
-> +		*m = 2;
-> +	/*
-> +	 * If the frequency is a multiple of 6MHz, but the factor is
-> +	 * odd, m will be 3
-> +	 */
-> +	else if ((freq_mhz / 6) & 1)
-> +		*m = 3;
-> +	/* Otherwise, we end up with m = 1 */
-> +	else
-> +		*m = 1;
-> +
-> +	/* Calculate n thanks to the above factors we already got */
-> +	*n = freq_mhz * (*m + 1) / ((*k + 1) * parent_freq_mhz) - 1;
-> +
-> +	/*
-> +	 * If n end up being outbound, and that we can still decrease
-> +	 * m, do it.
-> +	 */
-> +	if ((*n + 1) > 31 && (*m + 1) > 1) {
-> +		*n = (*n + 1) / 2 - 1;
-> +		*m = (*m + 1) / 2 - 1;
-> +	}
-> +}
+> If your implementation is totally implemented under arch/x86 (or in
+> intel-iommu.c, I guess), I can't object as much.  However, I think
+> that eventually even x86 should enumerate the IOMMUs via ACPI before
+> we enumerate PCI devices.
+> 
+> It's pretty clear that's how BIOS designers expect the OS to work.
+> For example, sec 8.7.3 of the Intel Virtualization Technology for
+> Directed I/O spec, rev 1.3, shows the expectation that remapping
+> hardware (IOMMU) is initialized before discovering the I/O hierarchy
+> below a hot-added host bridge.  Obviously you're not talking about a
+> hot-add scenario, but I think the same sequence should apply at
+> boot-time as well.
 
-Nice! My rate-to-factors functions pale in comparison :) Remember that
-n/k/m/p may be NULL when the caller just wants you to round freq to an
-achievable value (see clk_factors_round_rate(...) in clk-factors.c).
+Of course I won't add something just for x86 into common PCI layer. I
+attach my new patch, though it is not well tested yet.
 
->  /**
->   * sun4i_get_apb1_factors() - calculates m, p factors for APB1
-> @@ -189,6 +249,15 @@ static struct clk_factors_config sun4i_pll1_config = {
->  	.pwidth = 2,
->  };
->  
-> +static struct clk_factors_config sun6i_pll1_config = {
-> +	.nshift	= 8,
-> +	.nwidth = 5,
-> +	.kshift = 4,
-> +	.kwidth = 2,
-> +	.mshift = 0,
-> +	.mwidth = 2,
-> +};
-> +
->  static struct clk_factors_config sun4i_apb1_config = {
->  	.mshift = 0,
->  	.mwidth = 5,
-> @@ -201,6 +270,11 @@ static const __initconst struct factors_data sun4i_pll1_data = {
->  	.getter = sun4i_get_pll1_factors,
->  };
->  
-> +static const __initconst struct factors_data sun6i_pll1_data = {
-> +	.table = &sun6i_pll1_config,
-> +	.getter = sun6i_get_pll1_factors,
-> +};
-> +
->  static const __initconst struct factors_data sun4i_apb1_data = {
->  	.table = &sun4i_apb1_config,
->  	.getter = sun4i_get_apb1_factors,
-> @@ -243,6 +317,10 @@ static const __initconst struct mux_data sun4i_cpu_mux_data = {
->  	.shift = 16,
->  };
->  
-> +static const __initconst struct mux_data sun6i_ahb1_mux_data = {
-> +	.shift = 12,
-> +};
-> +
->  static const __initconst struct mux_data sun4i_apb1_mux_data = {
->  	.shift = 24,
->  };
-> @@ -301,6 +379,12 @@ static const __initconst struct div_data sun4i_apb0_data = {
->  	.width	= 2,
->  };
->  
-> +static const __initconst struct div_data sun6i_apb2_div_data = {
-> +	.shift	= 0,
-> +	.pow	= 0,
-> +	.width	= 4,
-> +};
-> +
->  static void __init sunxi_divider_clk_setup(struct device_node *node,
->  					   struct div_data *data)
->  {
-> @@ -347,6 +431,10 @@ static const __initconst struct gates_data sun5i_a13_ahb_gates_data = {
->  	.mask = {0x107067e7, 0x185111},
->  };
->  
-> +static const __initconst struct gates_data sun6i_a31_ahb1_gates_data = {
-> +	.mask = { 0xedfe7f62, 0x794f931 },
-> +};
-> +
->  static const __initconst struct gates_data sun4i_apb0_gates_data = {
->  	.mask = {0x4EF},
->  };
-> @@ -363,6 +451,14 @@ static const __initconst struct gates_data sun5i_a13_apb1_gates_data = {
->  	.mask = {0xa0007},
->  };
->  
-> +static const __initconst struct gates_data sun6i_a31_apb1_gates_data = {
-> +	.mask = { 0x3031 },
-> +};
-> +
-> +static const __initconst struct gates_data sun6i_a31_apb2_gates_data = {
-> +	.mask = { 0x3f000f },
-> +};
-> +
+On x86, currently IOMMU initialization run *after* PCI enumeration, but
+what you are talking about is that it should be changed so that x86
+IOMMU initialization is done *before* PCI enumeration like sparc, right?
 
-We should decide on a style here and use it across the board, so far we
-have definitions with and without spaces between constants and braces,
-and constants both with upper and lower case A-F. Personally I don't
-feel strongly about the spacing and prefer upper-case constants, but if
-the style guide suggests otherwise, I can live with it (as long as we
-use it consistently, that is)
+Hmm, ok, I think I need to post attached patch to iommu list and
+discuss it including current order of x86 IOMMU initialization.
 
->  static void __init sunxi_gates_clk_setup(struct device_node *node,
->  					 struct gates_data *data)
->  {
-> @@ -420,6 +516,10 @@ static const __initconst struct of_device_id clk_factors_match[] = {
->  		.data = &sun4i_pll1_data,
->  	},
->  	{
-> +		.compatible = "allwinner,sun6i-pll1-clk",
-> +		.data = &sun6i_pll1_data,
-> +	},
-> +	{
->  		.compatible = "allwinner,sun4i-apb1-clk",
->  		.data = &sun4i_apb1_data,
->  	},
-> @@ -440,6 +540,10 @@ static const __initconst struct of_device_id clk_div_match[] = {
->  		.compatible = "allwinner,sun4i-apb0-clk",
->  		.data = &sun4i_apb0_data,
->  	},
-> +	{
-> +		.compatible = "allwinner,sun6i-apb2-div-clk",
-> +		.data = &sun6i_apb2_div_data,
-> +	},
->  	{}
->  };
->  
-> @@ -453,6 +557,10 @@ static const __initconst struct of_device_id clk_mux_match[] = {
->  		.compatible = "allwinner,sun4i-apb1-mux-clk",
->  		.data = &sun4i_apb1_mux_data,
->  	},
-> +	{
-> +		.compatible = "allwinner,sun6i-ahb1-mux-clk",
-> +		.data = &sun6i_ahb1_mux_data,
-> +	},
->  	{}
->  };
->  
-> @@ -471,6 +579,10 @@ static const __initconst struct of_device_id clk_gates_match[] = {
->  		.data = &sun5i_a13_ahb_gates_data,
->  	},
->  	{
-> +		.compatible = "allwinner,sun6i-a31-ahb1-gates-clk",
-> +		.data = &sun6i_a31_ahb1_gates_data,
-> +	},
-> +	{
->  		.compatible = "allwinner,sun4i-apb0-gates-clk",
->  		.data = &sun4i_apb0_gates_data,
->  	},
-> @@ -486,6 +598,14 @@ static const __initconst struct of_device_id clk_gates_match[] = {
->  		.compatible = "allwinner,sun5i-a13-apb1-gates-clk",
->  		.data = &sun5i_a13_apb1_gates_data,
->  	},
-> +	{
-> +		.compatible = "allwinner,sun6i-a31-apb1-gates-clk",
-> +		.data = &sun6i_a31_apb1_gates_data,
-> +	},
-> +	{
-> +		.compatible = "allwinner,sun6i-a31-apb2-gates-clk",
-> +		.data = &sun6i_a31_apb2_gates_data,
-> +	},
+Thanks,
+Takao Indoh
+---
+ drivers/iommu/intel-iommu.c |   55 +++++++++++++++++++++++++++++++++-
+ drivers/pci/pci.c           |   53 ++++++++++++++++++++++++++++++++
+ include/linux/pci.h         |    1
+ 3 files changed, 108 insertions(+), 1 deletion(-)
 
-Please see my comments on the first patch regarding these.
+diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
+index eec0d3e..fb8a546 100644
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -3663,6 +3663,56 @@ static struct notifier_block device_nb = {
+ 	.notifier_call = device_notifier,
+ };
+ 
++/* Reset PCI device if its entry exists in DMAR table */
++static void __init iommu_reset_devices(struct intel_iommu *iommu, u16 segment)
++{
++	u64 addr;
++	struct root_entry *root;
++	struct context_entry *context;
++	int bus, devfn;
++	struct pci_dev *dev;
++
++	addr = dmar_readq(iommu->reg + DMAR_RTADDR_REG);
++	if (!addr)
++		return;
++
++	/*
++	 *  In the case of kdump, ioremap is needed because root-entry table
++	 *  exists in first kernel's memory area which is not mapped in second
++	 *  kernel
++	 */
++	root = (struct root_entry*)ioremap(addr, PAGE_SIZE);
++	if (!root)
++		return;
++
++	for (bus=0; bus<ROOT_ENTRY_NR; bus++) {
++		if (!root_present(&root[bus]))
++			continue;
++
++		context = (struct context_entry *)ioremap(
++			root[bus].val & VTD_PAGE_MASK, PAGE_SIZE);
++		if (!context)
++			continue;
++
++		for (devfn=0; devfn<ROOT_ENTRY_NR; devfn++) {
++			if (!context_present(&context[devfn]))
++				continue;
++
++			dev = pci_get_domain_bus_and_slot(segment, bus, devfn);
++			if (!dev)
++				continue;
++
++			if (!pci_reset_bus(dev->bus)) /* go to next bus */
++				break;
++			else /* Try per-function reset */
++				pci_reset_function(dev);
++
++		}
++		iounmap(context);
++	}
++	iounmap(root);
++}
++
+ int __init intel_iommu_init(void)
+ {
+ 	int ret = 0;
+@@ -3687,8 +3737,11 @@ int __init intel_iommu_init(void)
+ 			continue;
+ 
+ 		iommu = drhd->iommu;
+-		if (iommu->gcmd & DMA_GCMD_TE)
++		if (iommu->gcmd & DMA_GCMD_TE) {
++			if (reset_devices)
++				iommu_reset_devices(iommu, drhd->segment);
+ 			iommu_disable_translation(iommu);
++		}
+ 	}
+ 
+ 	if (dmar_dev_scope_init() < 0) {
+diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+index e37fea6..c595997 100644
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -3392,6 +3392,59 @@ int pci_reset_function(struct pci_dev *dev)
+ EXPORT_SYMBOL_GPL(pci_reset_function);
+ 
+ /**
++ * pci_reset_bus - reset a PCI bus
++ * @bus: PCI bus to reset
++ *
++ * Returns 0 if the bus was successfully reset or negative if failed.
++ */
++int pci_reset_bus(struct pci_bus *bus)
++{
++	struct pci_dev *pdev;
++	u16 ctrl;
++
++	if (!bus->self)
++		return -ENOTTY;
++
++	list_for_each_entry(pdev, &bus->devices, bus_list)
++		if (pdev->subordinate)
++			return -ENOTTY;
++
++	/* Save config registers of children */
++	list_for_each_entry(pdev, &bus->devices, bus_list) {
++		dev_info(&pdev->dev, "Save state\n");
++		pci_save_state(pdev);
++	}
++
++	dev_info(&bus->self->dev, "Reset Secondary bus\n");
++
++	/* Assert Secondary Bus Reset */
++	pci_read_config_word(bus->self, PCI_BRIDGE_CONTROL, &ctrl);
++	ctrl |= PCI_BRIDGE_CTL_BUS_RESET;
++	pci_write_config_word(bus->self, PCI_BRIDGE_CONTROL, ctrl);
++
++	/* Read config again to flush previous write */
++	pci_read_config_word(bus->self, PCI_BRIDGE_CONTROL, &ctrl);
++
++	msleep(2);
++
++	/* De-assert Secondary Bus Reset */
++	ctrl &= ~PCI_BRIDGE_CTL_BUS_RESET;
++	pci_write_config_word(bus->self, PCI_BRIDGE_CONTROL, ctrl);
++
++	/* Wait for completion */
++	msleep(1000);
++
++	/* Restore config registers of children */
++	list_for_each_entry(pdev, &bus->devices, bus_list) {
++		dev_info(&pdev->dev, "Restore state\n");
++		pci_restore_state(pdev);
++	}
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(pci_reset_bus);
++
++/**
+  * pcix_get_max_mmrbc - get PCI-X maximum designed memory read byte count
+  * @dev: PCI device to query
+  *
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index 0fd1f15..125fbc6 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -924,6 +924,7 @@ int pcie_set_mps(struct pci_dev *dev, int mps);
+ int __pci_reset_function(struct pci_dev *dev);
+ int __pci_reset_function_locked(struct pci_dev *dev);
+ int pci_reset_function(struct pci_dev *dev);
++int pci_reset_bus(struct pci_bus *bus);
+ void pci_update_resource(struct pci_dev *dev, int resno);
+ int __must_check pci_assign_resource(struct pci_dev *dev, int i);
+ int __must_check pci_reassign_resource(struct pci_dev *dev, int i, resource_size_t add_size, resource_size_t align);
 
-Thanks!
-
-Emilio
