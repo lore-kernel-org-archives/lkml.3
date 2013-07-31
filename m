@@ -1,58 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758791Ab3GaBjl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 21:39:41 -0400
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:37041 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752619Ab3GaBjk (ORCPT
+	id S1758799Ab3GaBk0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 21:40:26 -0400
+Received: from mail-qa0-f45.google.com ([209.85.216.45]:35809 "EHLO
+	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752619Ab3GaBkZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 21:39:40 -0400
-Date: Wed, 31 Jul 2013 09:39:29 +0800
-From: Shaohua Li <shli@kernel.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [patch]workqueue: copy attr with all fields.
-Message-ID: <20130731013929.GB1504@kernel.org>
-References: <20130729062412.GA6448@kernel.org>
- <20130729111401.GA20951@mtj.dyndns.org>
- <20130729125259.GA9306@kernel.org>
- <20130729153523.GA22605@mtj.dyndns.org>
- <20130730054955.GA5225@kernel.org>
- <20130730141419.GG12016@htj.dyndns.org>
+	Tue, 30 Jul 2013 21:40:25 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130730141419.GG12016@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAOesGMjG-6x0Qf0_FEQ7Rw5-p6Dyhf+Wi-tZ7x_cj7iq8UmjFg@mail.gmail.com>
+References: <CAOesGMjG-6x0Qf0_FEQ7Rw5-p6Dyhf+Wi-tZ7x_cj7iq8UmjFg@mail.gmail.com>
+From: Barry Song <21cnbao@gmail.com>
+Date: Wed, 31 Jul 2013 09:40:04 +0800
+Message-ID: <CAGsJ_4zbugzzCMuG_85kY0RoBVBpTEBsxuVQ2c5y4tNtSLqmKA@mail.gmail.com>
+Subject: Re: [ANNOUNCE] ARM kernel summit 2013, Oct 22-23
+To: Olof Johansson <olof@lixom.net>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "ksummit-2013-discuss@lists.linuxfoundation.org" 
+	<ksummit-2013-discuss@lists.linuxfoundation.org>,
+        Kevin Hilman <khilman@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mark Brown <broonie@kernel.org>,
+        Grant Likely <grant.likely@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 30, 2013 at 10:14:19AM -0400, Tejun Heo wrote:
-> Hello, Shaohua.
-> 
-> On Tue, Jul 30, 2013 at 01:49:55PM +0800, Shaohua Li wrote:
-> > > Note that copy_workqueue_attrs() is also used while creating worker
-> > > pools and this change would mean that there will be worker pools with
-> > > no_numa attribute assigned basically randomly depending on which wq
-> > > created the pool for the first time which should be fine AFAICS but
-> > > isn't very nice.  Given that there's only single place where a pool's
-> > > attrs is set, maybe it'd be best to clear no_numa right after copy and
-> > > explain what's going on there?
-> > 
-> > alloc_workqueue_attrs() always zero the new allocated attr.
-> 
-> Hmmm?  Yeah, sure, that's how it currently is always zero for all
-> pools.  If you change the copy function, it'll now be set to whatever
-> the input value was when a pool was created, which shouldn't break
-> anything but is a bit confusing as no_numa doesn't have anything to do
-> with pools directly.  Just in case, I'm talking about
-> copy_workqueue_attrs() call in get_unbound_pool().
+2013/7/30 Olof Johansson <olof@lixom.net>:
+> As previous years, we are planning on hosting a ARM Kernel Summit
+> attached to the main Kernel Summit, and we have graciously been given
+> space to host it for two days, Oct 22-23 (Oct 23 is the track day for
+> the main KS, so we're getting an extra day) in Edinburgh, UK.
+>
+> To make sure we get the right set of people invited, we're looking for
+> people to propose topics they would like to see covered as part of the
+> two-day aganda, as well as general invite requests. To request an
+> invite or to propose a topic, please send an email to
+> ksummit-2013-discuss@lists.linuxfoundation.org, and cc LAKML/LKML as
+> appropriate. Please use the tag "[ARM ATTEND]" in the subject to
+> distinguish these from the general KS ATTEND threads.
+>
+> It's pretty obvious that device trees and bindings are hot topics this
+> year, with plenty of overlap between ARM and regular kernel summit and
+> other subsystems. We are tentatively planning on dedicating Wednesday
+> afternoon to the topic, to fit the regular agenda of KS track day to
+> make sure as many interested parties as possible can attend. We'd
+> still be interested in hearing specific topic requests in that area
+> though.
 
-Hmm, I didn't agree it's more confusing to change copy_workqueue_attrs(), the
-name of the function suggests it is a 'copy'. And clearing no_numa in
-apply_workqueue_attrs() after copy_workqueue_attrs() looks like a hack to me.
-But it depends on you, feel free to fix it by yourself.
+It seems IKS and HMP of b.L are coming to hot. There is a prototype
+now, and we need to push it to practice.
+and as an user of both mainline and google Android, even there are
+many Android patches in mainline now, we still need to maintain both
+now. it seems google likes to rebase its patch series againest new
+kernel version instead of merging everytime. so what about talking
+Android mainlining project more?
 
-Thanks,
-Shaohua
+>
+>
+> The group of us organizing and coordinating this year is:
+>
+> Arnd Bergmann
+> Mark Brown
+> Kevin Hilman
+> Olof Johansson
+> Grant Likely
+
+-barry
