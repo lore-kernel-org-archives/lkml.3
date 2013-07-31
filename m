@@ -1,106 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751286Ab3GaXL6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 19:11:58 -0400
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:37627 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750848Ab3GaXL4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 19:11:56 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AjgFAJuY+VF5LPxHgWdsb2JhbABbvRGFLoEZFw4BARYmKIIkAQEFJxMcIxAIAw4HAwklDwUNGAMhE4d+Aw6wLg2IXhaNAIJxB4MYcwOVdoFojCeITSo
-Date: Thu, 1 Aug 2013 09:11:51 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Ben Myers <bpm@sgi.com>
-Cc: Zhi Yong Wu <zwu.kernel@gmail.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>,
-        linux-kernel mlist <linux-kernel@vger.kernel.org>,
-        xfstests <xfs@oss.sgi.com>
-Subject: Re: [PATCH v2] xfs: introduce object readahead to log recovery
-Message-ID: <20130731231151.GD7118@dastard>
-References: <1375178347-29037-1-git-send-email-zwu.kernel@gmail.com>
- <20130730231155.GM13468@dastard>
- <CAEH94LjXRG755cTsuGN_R0V+J9aRvEJaS+0aQSAOkNWL1UbXTA@mail.gmail.com>
- <20130731133506.GT3111@sgi.com>
+	id S1751344Ab3GaXMh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 19:12:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8824 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750863Ab3GaXMg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 19:12:36 -0400
+Message-ID: <51F999DE.7080200@redhat.com>
+Date: Wed, 31 Jul 2013 19:12:30 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130731133506.GT3111@sgi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        jmario@redhat.com, Peter Anvin <hpa@zytor.com>, dzickus@redhat.com,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH] sched,x86: optimize switch_mm for multi-threaded workloads
+References: <20130731174335.006a58f9@annuminas.surriel.com> <CA+55aFx3ZHZrgP3yQwb=ttYUeH1zFVQtUA5dFW1h8FPhjfKgUA@mail.gmail.com> <51F98CAB.80100@redhat.com> <CA+55aFwj+6P4y8MgGTGbiK_EtfY7LJ_bL_7k9zFYLx4S8F0rJQ@mail.gmail.com> <51F99218.4060104@redhat.com> <CA+55aFxKSEHSkdsCkTvjwwo4MnEpN0TwJrek2jd1QJCyUTb-=Q@mail.gmail.com>
+In-Reply-To: <CA+55aFxKSEHSkdsCkTvjwwo4MnEpN0TwJrek2jd1QJCyUTb-=Q@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 31, 2013 at 08:35:07AM -0500, Ben Myers wrote:
-> Hey Zhi,
-> 
-> On Wed, Jul 31, 2013 at 12:07:32PM +0800, Zhi Yong Wu wrote:
-> > On Wed, Jul 31, 2013 at 7:11 AM, Dave Chinner <david@fromorbit.com> wrote:
-> > > On Tue, Jul 30, 2013 at 05:59:07PM +0800, zwu.kernel@gmail.com wrote:
-> > >> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-> > >>
-> > >>   It can take a long time to run log recovery operation because it is
-> > >> single threaded and is bound by read latency. We can find that it took
-> > >> most of the time to wait for the read IO to occur, so if one object
-> > >> readahead is introduced to log recovery, it will obviously reduce the
-> > >> log recovery time.
-> > >>
-> > >> Log recovery time stat:
-> > >>
-> > >>           w/o this patch        w/ this patch
-> > >>
-> > >> real:        0m15.023s             0m7.802s
-> > >> user:        0m0.001s              0m0.001s
-> > >> sys:         0m0.246s              0m0.107s
-> > >>
-> > >> Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-> > >> ---
-> > >>  fs/xfs/xfs_log_recover.c | 162 +++++++++++++++++++++++++++++++++++++++++++++--
-> > >>  fs/xfs/xfs_log_recover.h |   2 +
-> > >>  2 files changed, 159 insertions(+), 5 deletions(-)
-> > >>
-> > >> diff --git a/fs/xfs/xfs_log_recover.c b/fs/xfs/xfs_log_recover.c
-> > >> index 7681b19..029826f 100644
-> > >> --- a/fs/xfs/xfs_log_recover.c
-> > >> +++ b/fs/xfs/xfs_log_recover.c
-> > >> @@ -3116,6 +3116,111 @@ xlog_recover_free_trans(
-> > >>       kmem_free(trans);
-> > >>  }
-> > >>
-> > >> +STATIC void
-> > >> +xlog_recover_buffer_ra_pass2(
-> > >> +     struct xlog                     *log,
-> > >> +     struct xlog_recover_item        *item)
-> > >> +{
-> > >> +     xfs_buf_log_format_t    *buf_f = item->ri_buf[0].i_addr;
-> > >> +     xfs_mount_t             *mp = log->l_mp;
-> > >
-> > >         struct xfs_buf_log_format
-> > >         struct xfs_mount
-> > Why? *_t is also used in a lot of other places.
-> 
-> It is just a general style preference for using the struct instead of the _t in
-> the xfs codebase.  Over the course of the past few years they've slowly been
-> converted in this direction, and we prefer not to add any more _t if it can be
-> avoided.
+On 07/31/2013 06:46 PM, Linus Torvalds wrote:
+>
+> On Jul 31, 2013 3:39 PM, "Rik van Riel" <riel@redhat.com
+> <mailto:riel@redhat.com>> wrote:
+>  >
+>  > On 07/31/2013 06:21 PM, Linus Torvalds wrote:
+>  >>
+>  >> Ummm.. The race is to the testing of the bit, not setting. The testing
+>  >> of the bit is not valid before we have set the tlb state, AFAIK.
+>  >
+>  >
+>  > I believe the bit is cleared and set by the current CPU.
+>
+> Yes, but we need to be careful with interrupts.
+>
+>  > Interrupts are blocked inside switch_mm, so I think we
+>  > are safe.
+>
+> Are they? I thought we removed all that.
 
-Actually, it's not so much a preference but a long term code
-maintenance direction. Documentation/CodingStyle says:
+context_switch() shows that the runqueue lock (which is an irq
+lock) is released, and irqs re-enabled, by the next task, after
+switch_to(), in finish_lock_switch(), called from finish_task_switch()
 
-			Chapter 5: Typedefs
+> Note that switch_mm gets called for activate_mm too, or something.
 
-	Please don't use things like "vps_t".
+Good catch, though it looks like activate_mm is only called from
+exec_mmap, with the new mm as its argument.  While the new mm can
+have pages in memory yet, it has never been run so there should
+be nothing in the TLB yet for the new mm.
 
-	It's a _mistake_ to use typedef for structures and pointers.
-,,,,
+This is subtler than I thought, but it does appear to be safe.
 
-The original XFS code inherited from Irix used typedefs, and we are
-slowly removing them as we modify the code that uses the them.
-
-Cheers,
-
-Dave.
 -- 
-Dave Chinner
-david@fromorbit.com
+All rights reversed
