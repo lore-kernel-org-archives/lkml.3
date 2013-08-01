@@ -1,51 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751934Ab3HAAX7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 20:23:59 -0400
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:24750 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750918Ab3HAAX5 (ORCPT
+	id S1752018Ab3HAAYj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 20:24:39 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:36346 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750918Ab3HAAYi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 20:23:57 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AjgFADSq+VF5LPxHgWdsb2JhbABbDr0DhS6BHBcOAQEWJiiCJAEBBTocMwgDGAklDwUlAyEBEogPuRIWj3iECwOXXooiigJQKg
-Date: Thu, 1 Aug 2013 10:23:41 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: "Theodore Ts'o" <tytso@mit.edu>, Namjae Jeon <linkinjeon@gmail.com>,
-        adilger.kernel@dilger.ca, bpm@sgi.com, elder@kernel.org,
-        hch@infradead.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        xfs@oss.sgi.com, a.sangwan@samsung.com,
-        Namjae Jeon <namjae.jeon@samsung.com>
-Subject: Re: [PATCH 1/3] fs: Introduce new flag FALLOC_FL_COLLAPSE_RANGE
-Message-ID: <20130801002341.GI7118@dastard>
-References: <1375281721-15840-1-git-send-email-linkinjeon@gmail.com>
- <20130731220154.GA11378@thunk.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130731220154.GA11378@thunk.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 31 Jul 2013 20:24:38 -0400
+Date: Wed, 31 Jul 2013 17:24:37 -0700 (PDT)
+Message-Id: <20130731.172437.198780183941616730.davem@davemloft.net>
+To: joe@perches.com
+Cc: netdev@vger.kernel.org, jhs@mojatatu.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net: Remove extern from include/net/ scheduling
+ prototypes
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <470a8782ea89cee979eca82c7847748129de6bd0.1375249605.git.joe@perches.com>
+References: <470a8782ea89cee979eca82c7847748129de6bd0.1375249605.git.joe@perches.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Wed, 31 Jul 2013 17:24:37 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 31, 2013 at 06:01:54PM -0400, Theodore Ts'o wrote:
-> Have you considered what happens if you have a 10 megabyte file, of
-> which the first 5 megs are mmap'ed into a userspace process.
+From: Joe Perches <joe@perches.com>
+Date: Tue, 30 Jul 2013 22:47:13 -0700
+
+> There are a mix of function prototypes with and without extern
+> in the kernel sources.  Standardize on not using extern for
+> function prototypes.
 > 
-> Now suppose you call COLLAPASE_RANGE on a one megabyte range starting
-> at offset 1024k from the beginning of the file.
+> Function prototypes don't need to be written with extern.
+> extern is assumed by the compiler.  Its use is as unnecessary as
+> using auto to declare automatic/local variables in a block.
 > 
-> Does the right thing happen to the mmap'ed region in memory?
+> Reflow modified prototypes to 80 columns.
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
 
-Implementation detail. like a hole punch, it needs to invalidate the
-range that it is operating over so mmap()d regions are refaulted
-after the operation is done.
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Applied, thanks.
