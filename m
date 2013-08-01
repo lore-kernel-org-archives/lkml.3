@@ -1,79 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757010Ab3HAVYe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 17:24:34 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:36916 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756692Ab3HAVYc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 17:24:32 -0400
+	id S1757132Ab3HAVY5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 17:24:57 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48404 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753985Ab3HAVYz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 17:24:55 -0400
+Date: Thu, 1 Aug 2013 23:24:54 +0200
+From: Jan Kara <jack@suse.cz>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/4] jbd: relocate assert after state lock in
+ journal_commit_transaction()
+Message-ID: <20130801212454.GE31857@quack.suse.cz>
+References: <1375383668-8072-1-git-send-email-paul.gortmaker@windriver.com>
+ <1375383668-8072-3-git-send-email-paul.gortmaker@windriver.com>
 MIME-Version: 1.0
-X-Originating-IP: [173.13.129.225]
-In-Reply-To: <20130801.141016.1475274289112004539.davem@davemloft.net>
-References: <20130801205817.GJ23006@n2100.arm.linux.org.uk>
-	<1375391087.2034.82.camel@joe-AO722>
-	<20130801210618.GK23006@n2100.arm.linux.org.uk>
-	<20130801.141016.1475274289112004539.davem@davemloft.net>
-Date: Thu, 1 Aug 2013 14:24:32 -0700
-Message-ID: <CAOesGMhf-2KE1B8_4CGJADCG=ceDFRrDbhTnA56kXYPWoKTScg@mail.gmail.com>
-Subject: Re: [PATCH V2 3/3] ethernet: Convert mac address uses of 6 to ETH_ALEN
-From: Olof Johansson <olof@lixom.net>
-To: David Miller <davem@davemloft.net>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Joe Perches <joe@perches.com>, Sam Creasey <sammy@sammy.net>,
-        Grant Grundler <grundler@parisc-linux.org>,
-        ZongShun Wan <mcuos.com@gmail.com>,
-        Rajesh Borundia <rajesh.borundia@qlogic.com>,
-        Network Development <netdev@vger.kernel.org>,
-        Sony Chacko <sony.chacko@qlogic.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Manish Chopra <manish.chopra@qlogic.com>,
-        Don Fry <pcnet32@frontier.com>, Ron Mercer <ron.mercer@qlogic.com>,
-        Andrew Gallatin <gallatin@myri.com>, linux-driver@qlogic.com,
-        Jitendra Kalsaria <jitendra.kalsaria@qlogic.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Shahed Shaikh <shahed.shaikh@qlogic.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1375383668-8072-3-git-send-email-paul.gortmaker@windriver.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 1, 2013 at 2:10 PM, David Miller <davem@davemloft.net> wrote:
-> From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-> Date: Thu, 1 Aug 2013 22:06:18 +0100
->
->> On Thu, Aug 01, 2013 at 02:04:47PM -0700, Joe Perches wrote:
->>> On Thu, 2013-08-01 at 21:58 +0100, Russell King - ARM Linux wrote:
->>> > This seems rather obscure - I mean, it's not obvious to driver authors
->>> > that should be the case.  Would it not be better to make this a little
->>> > more obvious somehow?  Maybe __aligned(2) against mac_addr?  Or
->>> > maybe have a debugging check for it?
->>>
->>> That'd be for David Miller (cc'd).
->>>
->>> I believe he's argued in the past that any alignment check
->>> for mac addresses was unnecessary.
->>>
->>> For all I know it really might not matter because pasemi
->>> can successfully dereference a ushort against an odd char
->>> pointer.
->>>
->>> I just noticed it and thought it'd be better moved.
->>
->> As can ARM too for years now - either in hardware or via fixup for
->> kernel code.
->
-> But probably not a good idea if it's done in a fast path.
+On Thu 01-08-13 15:01:06, Paul Gortmaker wrote:
+> Backport of jbd2 commit 3ca841c106fd6cd2c942985977a5d126434a8dd6
+> ("jbd2: relocate assert after state lock in journal_commit_transaction()")
+> 
+> Quoting that commit:
+>  ---------------
+>  The state lock is taken after we are doing an assert on the state
+>  value, not before.  So we might in fact be doing an assert on a
+>  transient value.  Ensure the state check is within the scope of
+>  the state lock being taken.
+>  ---------------
+  Thanks. I've added this patch to my tree.
 
-This particular driver is for the PA Semi chips, and I very much doubt
-that compatible hardware will ever show up anywhere else; they're
-fairly dependent on the I/O architecture of the chip and Apple has not
-brought those aspects forward in their ARM chips, as far as I know.
-
-So, you might as well leave the code alone for now. It's not used on
-fast path, and the system definitely handles unaligned accesses for
-this -- it has for years already.
-
-
--Olof
+								Honza
+> 
+> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+> ---
+>  fs/jbd/commit.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/fs/jbd/commit.c b/fs/jbd/commit.c
+> index 11bb11f..bb217dc 100644
+> --- a/fs/jbd/commit.c
+> +++ b/fs/jbd/commit.c
+> @@ -340,13 +340,13 @@ void journal_commit_transaction(journal_t *journal)
+>  	J_ASSERT(journal->j_committing_transaction == NULL);
+>  
+>  	commit_transaction = journal->j_running_transaction;
+> -	J_ASSERT(commit_transaction->t_state == T_RUNNING);
+>  
+>  	trace_jbd_start_commit(journal, commit_transaction);
+>  	jbd_debug(1, "JBD: starting commit of transaction %d\n",
+>  			commit_transaction->t_tid);
+>  
+>  	spin_lock(&journal->j_state_lock);
+> +	J_ASSERT(commit_transaction->t_state == T_RUNNING);
+>  	commit_transaction->t_state = T_LOCKED;
+>  
+>  	trace_jbd_commit_locking(journal, commit_transaction);
+> -- 
+> 1.8.1.2
+> 
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
