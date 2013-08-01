@@ -1,67 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751710Ab3HABIJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 21:08:09 -0400
-Received: from imap.thunk.org ([74.207.234.97]:37631 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750845Ab3HABIH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 21:08:07 -0400
-Date: Wed, 31 Jul 2013 21:07:52 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Namjae Jeon <linkinjeon@gmail.com>, adilger.kernel@dilger.ca, bpm@sgi.com,
-        elder@kernel.org, hch@infradead.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        xfs@oss.sgi.com, a.sangwan@samsung.com,
-        Namjae Jeon <namjae.jeon@samsung.com>
-Subject: Re: [PATCH 1/3] fs: Introduce new flag FALLOC_FL_COLLAPSE_RANGE
-Message-ID: <20130801010751.GD11378@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Dave Chinner <david@fromorbit.com>,
-	Namjae Jeon <linkinjeon@gmail.com>, adilger.kernel@dilger.ca,
-	bpm@sgi.com, elder@kernel.org, hch@infradead.org,
-	linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-	linux-ext4@vger.kernel.org, xfs@oss.sgi.com, a.sangwan@samsung.com,
-	Namjae Jeon <namjae.jeon@samsung.com>
-References: <1375281721-15840-1-git-send-email-linkinjeon@gmail.com>
- <20130731220154.GA11378@thunk.org>
- <20130801002341.GI7118@dastard>
- <20130801004645.GC11378@thunk.org>
- <20130801005447.GS13468@dastard>
+	id S1751955Ab3HABLX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 21:11:23 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:27823 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750983Ab3HABLV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 21:11:21 -0400
+Message-ID: <51F9B5A6.4050905@huawei.com>
+Date: Thu, 1 Aug 2013 09:11:02 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130801005447.GS13468@dastard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+To: Tejun Heo <tj@kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
+Subject: Re: [PATCH 5/7] cgroup: remove struct cgroup_seqfile_state
+References: <51F8C7C5.9040608@huawei.com> <51F8C829.3040708@huawei.com> <51F8D88B.2040400@huawei.com> <20130731113557.GK2810@htj.dyndns.org>
+In-Reply-To: <20130731113557.GK2810@htj.dyndns.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 01, 2013 at 10:54:47AM +1000, Dave Chinner wrote:
-> > It's not just the range that it's operating on, but also the region
-> > beyond the range that's been collapsed out.
+On 2013/7/31 19:35, Tejun Heo wrote:
+> On Wed, Jul 31, 2013 at 05:27:39PM +0800, Li Zefan wrote:
+>>>  static int cgroup_seqfile_release(struct inode *inode, struct file *file)
+>>>  {
+>>> -	struct seq_file *seq = file->private_data;
+>>> -	kfree(seq->private);
+>>>  	return single_release(inode, file);
+>>>  }
+>>
+>> Oh, I just realized now we can remove cgroup_seqfile_release().
+>>
+>> Will send out an updated patch...
 > 
-> Yes, that's part of "the range that it is operating over".
+> Applied the updated patch.  Can you please post updated patches as
+> replies to the original path from next time?  That makes things easier
+> to track on my side.
 > 
-> > A quick eyeball of the patch didn't seem to show any code that handled
-> > this, which is why I asked the question.
-> 
-> Right, but really it's the least of the problems I've noticed - the
-> XFS code is fundamentally broken in many ways - once I've finished
-> commenting on it, I'll have a quick look to see if the ext4 code has
-> the same fundamental flaws....
 
-Well, the fundamental flaw of potential races if the file being
-collapsed has been mmap'ed and there is another process making changes
-beyond the range that is being collapsed is I suspect one that is
-going to be very hard to solve, short of not allowing the collapse
-while there are any read/write mmap's for the file in question.
+Sure.
 
-And I would think these sorts of VM issues should be handled with some
-generic library functions, instead of reimplementing them from scratch
-in each file system.
-
-						- Ted
