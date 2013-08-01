@@ -1,56 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755898Ab3HAVai (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 17:30:38 -0400
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:54943 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752496Ab3HAVag (ORCPT
+	id S1756508Ab3HAVbk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 17:31:40 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:54520 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751957Ab3HAVbi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 17:30:36 -0400
-From: Paul Moore <paul@paul-moore.com>
-To: Casey Schaufler <casey@schaufler-ca.com>
-Cc: LKLM <linux-kernel@vger.kernel.org>,
-        LSM <linux-security-module@vger.kernel.org>,
-        SE Linux <selinux@tycho.nsa.gov>, James Morris <jmorris@namei.org>,
-        John Johansen <john.johansen@canonical.com>,
-        Eric Paris <eparis@redhat.com>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Kees Cook <keescook@chromium.org>
-Subject: Re: [PATCH v14 3/6] LSM: Explicit individual LSM associations
-Date: Thu, 01 Aug 2013 17:30:32 -0400
-Message-ID: <1875185.QyWUQZtYy0@sifl>
-User-Agent: KMail/4.10.5 (Linux/3.10.2-gentoo; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <51FAAE5E.4060801@schaufler-ca.com>
-References: <51F16CFB.6040603@schaufler-ca.com> <1991449.AFacmybWrj@sifl> <51FAAE5E.4060801@schaufler-ca.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Thu, 1 Aug 2013 17:31:38 -0400
+Date: Thu, 01 Aug 2013 14:31:37 -0700 (PDT)
+Message-Id: <20130801.143137.331385226409040561.davem@davemloft.net>
+To: olof@lixom.net
+Cc: linux@arm.linux.org.uk, joe@perches.com, sammy@sammy.net,
+        grundler@parisc-linux.org, mcuos.com@gmail.com,
+        rajesh.borundia@qlogic.com, netdev@vger.kernel.org,
+        sony.chacko@qlogic.com, linux-kernel@vger.kernel.org,
+        manish.chopra@qlogic.com, pcnet32@frontier.com, ron.mercer@qlogic.com,
+        gallatin@myri.com, linux-driver@qlogic.com,
+        jitendra.kalsaria@qlogic.com, linux-arm-kernel@lists.infradead.org,
+        shahed.shaikh@qlogic.com
+Subject: Re: [PATCH V2 3/3] ethernet: Convert mac address uses of 6 to
+ ETH_ALEN
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <CAOesGMhf-2KE1B8_4CGJADCG=ceDFRrDbhTnA56kXYPWoKTScg@mail.gmail.com>
+References: <20130801210618.GK23006@n2100.arm.linux.org.uk>
+	<20130801.141016.1475274289112004539.davem@davemloft.net>
+	<CAOesGMhf-2KE1B8_4CGJADCG=ceDFRrDbhTnA56kXYPWoKTScg@mail.gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Thu, 01 Aug 2013 14:31:38 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, August 01, 2013 11:52:14 AM Casey Schaufler wrote:
-> On 8/1/2013 11:35 AM, Paul Moore wrote:
-> > Okay, so if I understand everything correctly, there are no new entries in
-> > /proc relating specifically to NetLabel, XFRM, or Secmark; although there
-> > are new LSM specific entries for the general /proc entries that exist
-> > now.  Yes?
->
-> That's correct.
-> 
-> There is /sys/kernel/security/present, which tells you which LSM is going to
-> show up in /proc/.../attr/current.
-> 
-> Should we have /sys/kernel/security/XFRM, /sys/kernel/security/secmark,
-> /sys/kernel/security/NetLabel and /sys/kernel/security/SO_PEERCRED?
+From: Olof Johansson <olof@lixom.net>
+Date: Thu, 1 Aug 2013 14:24:32 -0700
 
-Maybe.
+> So, you might as well leave the code alone for now. It's not used on
+> fast path, and the system definitely handles unaligned accesses for
+> this -- it has for years already.
 
-While they might be helpful, I'm not 100% certain they are needed and further 
-I'm not sure they are the "right" solution at this point.  Any thoughts, both 
-for and against, are welcome.
-
--- 
-paul moore
-www.paul-moore.com
-
+Fair enough, Joe please respin.
