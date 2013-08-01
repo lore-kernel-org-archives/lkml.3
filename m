@@ -1,271 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757533Ab3HAWhV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 18:37:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9215 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755177Ab3HAWhT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 18:37:19 -0400
-Date: Thu, 1 Aug 2013 18:36:46 -0400
-From: Rik van Riel <riel@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Mel Gorman <mgorman@suse.de>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [RFC PATCH -v2] numa,sched: use group fault statistics in numa
- placement
-Message-ID: <20130801183646.37b04171@annuminas.surriel.com>
-In-Reply-To: <20130730113857.GR3008@twins.programming.kicks-ass.net>
-References: <1373901620-2021-1-git-send-email-mgorman@suse.de>
-	<20130730113857.GR3008@twins.programming.kicks-ass.net>
-Organization: Red Hat, Inc.
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757668Ab3HAWiG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 18:38:06 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39871 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755177Ab3HAWiE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 18:38:04 -0400
+Date: Thu, 1 Aug 2013 23:37:32 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>, Jens Axboe <axboe@kernel.dk>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH RFC 47/51] ARM: 7794/1: block: Rename parameter
+	dma_mask to max_addr for blk_queue_bounce_limit()
+Message-ID: <20130801223732.GM23006@n2100.arm.linux.org.uk>
+References: <20130801213420.GL23006@n2100.arm.linux.org.uk> <E1V51FC-0006uT-GG@rmk-PC.arm.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <E1V51FC-0006uT-GG@rmk-PC.arm.linux.org.uk>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Jul 2013 13:38:57 +0200
-Peter Zijlstra <peterz@infradead.org> wrote:
+Sorry, these last patches were of course sent my me and not Santosh.
 
+On Thu, Aug 01, 2013 at 11:21:14PM +0100, Santosh Shilimkar wrote:
+> The blk_queue_bounce_limit() API parameter 'dma_mask' is actually the
+> maximum address the device can handle rather than a dma_mask. Rename
+> it accordingly to avoid it being interpreted as dma_mask.
 > 
-> Subject: sched, numa: Use {cpu, pid} to create task groups for shared faults
-> From: Peter Zijlstra <peterz@infradead.org>
-> Date: Tue Jul 30 10:40:20 CEST 2013
+> No functional change.
 > 
-> A very simple/straight forward shared fault task grouping
-> implementation.
-
-Here is another (untested) version of task placement on top of
-your task grouping. Better send it to you now, rather than on
-your friday evening :)
-
-The algorithm is loosely based on Andrea's placement algorithm,
-but not as strict because I am not entirely confident that the
-task grouping code works right yet...
-
-It also has no "fall back to a better node than the current one" 
-code yet, for the case where we fail to migrate to the best node,
-but that should be a separate patch anyway.
-
-
-Subject: [PATCH,RFC] numa,sched: use group fault statistics in numa placement
-
-This version uses the fraction of faults on a particular node for
-both task and group, to figure out the best node to place a task.
-
-I wish I had benchmark numbers to report, but our timezones just
-don't seem to work out that way. Enjoy at your own peril :)
-
-I will be testing these tomorrow.
-
-Signed-off-by: Rik van Riel <riel@redhat.com>
----
- include/linux/sched.h |  1 +
- kernel/sched/fair.c   | 94 +++++++++++++++++++++++++++++++++++++++++----------
- 2 files changed, 77 insertions(+), 18 deletions(-)
-
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 9e7fcfe..5e175ae 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1355,6 +1355,7 @@ struct task_struct {
- 	 * The values remain static for the duration of a PTE scan
- 	 */
- 	unsigned long *numa_faults;
-+	unsigned long total_numa_faults;
- 
- 	/*
- 	 * numa_faults_buffer records faults per node during the current
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 6a06bef..3ef4d45 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -844,6 +844,18 @@ static unsigned int task_scan_max(struct task_struct *p)
-  */
- unsigned int sysctl_numa_balancing_settle_count __read_mostly = 3;
- 
-+struct numa_group {
-+	atomic_t refcount;
-+
-+	spinlock_t lock; /* nr_tasks, tasks */
-+	int nr_tasks;
-+	struct list_head task_list;
-+
-+	struct rcu_head rcu;
-+	atomic_long_t total_faults;
-+	atomic_long_t faults[0];
-+};
-+
- static inline int task_faults_idx(int nid, int priv)
- {
- 	return 2 * nid + priv;
-@@ -857,6 +869,38 @@ static inline unsigned long task_faults(struct task_struct *p, int nid)
- 	return p->numa_faults[2*nid] + p->numa_faults[2*nid+1];
- }
- 
-+static inline unsigned long group_faults(struct task_struct *p, int nid)
-+{
-+	if (!p->numa_group)
-+		return 0;
-+
-+	return atomic_long_read(&p->numa_group->faults[2*nid]) +
-+	       atomic_long_read(&p->numa_group->faults[2*nid+1]);
-+}
-+
-+/*
-+ * These return the fraction of accesses done by a particular task, or
-+ * task group, on a particular numa node.  The group weight is given a
-+ * larger multiplier, in order to group tasks together that are almost
-+ * evenly spread out between numa nodes.
-+ */
-+static inline unsigned long task_weight(struct task_struct *p, int nid)
-+{
-+	if (!p->numa_faults)
-+		return 0;
-+
-+	return 1000 * task_faults(p, nid) / p->total_numa_faults;
-+}
-+
-+static inline unsigned long group_weight(struct task_struct *p, int nid)
-+{
-+	if (!p->numa_group)
-+		return 0;
-+
-+	return 1200 * group_faults(p, nid) /
-+			atomic_long_read(&p->numa_group->total_faults);
-+}
-+
- /*
-  * Create/Update p->mempolicy MPOL_INTERLEAVE to match p->numa_faults[].
-  */
-@@ -979,8 +1023,10 @@ static void task_numa_compare(struct task_numa_env *env, long imp)
- 		cur = NULL;
- 
- 	if (cur) {
--		imp += task_faults(cur, env->src_nid) -
--		       task_faults(cur, env->dst_nid);
-+		imp += task_faults(cur, env->src_nid) +
-+		       group_faults(cur, env->src_nid) -
-+		       task_faults(cur, env->dst_nid) -
-+		       group_faults(cur, env->dst_nid);
- 	}
- 
- 	trace_printk("compare[%d] task:%s/%d improvement: %ld\n",
-@@ -1067,7 +1113,7 @@ static int task_numa_migrate(struct task_struct *p)
- 	}
- 	rcu_read_unlock();
- 
--	faults = task_faults(p, env.src_nid);
-+	faults = task_faults(p, env.src_nid) + group_faults(p, env.src_nid);
- 	update_numa_stats(&env.src_stats, env.src_nid);
- 
- 	for_each_online_node(nid) {
-@@ -1076,7 +1122,7 @@ static int task_numa_migrate(struct task_struct *p)
- 		if (nid == env.src_nid)
- 			continue;
- 
--		imp = task_faults(p, nid) - faults;
-+		imp = task_faults(p, nid) + group_faults(p, nid) - faults;
- 		if (imp < 0)
- 			continue;
- 
-@@ -1122,21 +1168,10 @@ static void numa_migrate_preferred(struct task_struct *p)
- 	p->numa_migrate_retry = jiffies + HZ/10;
- }
- 
--struct numa_group {
--	atomic_t refcount;
--
--	spinlock_t lock; /* nr_tasks, tasks */
--	int nr_tasks;
--	struct list_head task_list;
--
--	struct rcu_head rcu;
--	atomic_long_t faults[0];
--};
--
- static void task_numa_placement(struct task_struct *p)
- {
--	int seq, nid, max_nid = -1;
--	unsigned long max_faults = 0;
-+	int seq, nid, max_nid = -1, max_group_nid = -1;
-+	unsigned long max_faults = 0, max_group_faults = 0;
- 
- 	seq = ACCESS_ONCE(p->mm->numa_scan_seq);
- 	if (p->numa_scan_seq == seq)
-@@ -1148,7 +1183,7 @@ static void task_numa_placement(struct task_struct *p)
- 
- 	/* Find the node with the highest number of faults */
- 	for (nid = 0; nid < nr_node_ids; nid++) {
--		unsigned long faults = 0;
-+		unsigned long faults = 0, group_faults = 0;
- 		int priv, i;
- 
- 		for (priv = 0; priv < 2; priv++) {
-@@ -1161,6 +1196,7 @@ static void task_numa_placement(struct task_struct *p)
- 			/* Decay existing window, copy faults since last scan */
- 			p->numa_faults[i] >>= 1;
- 			p->numa_faults[i] += p->numa_faults_buffer[i];
-+			p->total_numa_faults += p->numa_faults_buffer[i];
- 			p->numa_faults_buffer[i] = 0;
- 
- 			diff += p->numa_faults[i];
-@@ -1169,6 +1205,8 @@ static void task_numa_placement(struct task_struct *p)
- 			if (p->numa_group) {
- 				/* safe because we can only change our own group */
- 				atomic_long_add(diff, &p->numa_group->faults[i]);
-+				atomic_long_add(diff, &p->numa_group->total_faults);
-+				group_faults += atomic_long_read(&p->numa_group->faults[i]);
- 			}
- 		}
- 
-@@ -1176,11 +1214,29 @@ static void task_numa_placement(struct task_struct *p)
- 			max_faults = faults;
- 			max_nid = nid;
- 		}
-+
-+		if (group_faults > max_group_faults) {
-+			max_group_faults = group_faults;
-+			max_group_nid = nid;
-+		}
- 	}
- 
- 	if (sched_feat(NUMA_INTERLEAVE))
- 		task_numa_mempol(p, max_faults);
- 
-+	/*
-+	 * Should we stay on our own, or move in with the group?
-+	 * If the task's memory accesses are concentrated on one node, go
-+	 * to (more likely, stay on) that node. If the group's accesses
-+	 * are more concentrated than the task's accesses, join the group.
-+	 *
-+	 *  max_group_faults     max_faults
-+	 * ------------------ > ------------
-+	 * total_group_faults   total_faults
-+	 */
-+	if (group_weight(p, max_group_nid) > task_weight(p, max_nid))
-+		max_nid = max_group_nid;
-+
- 	/* Preferred node as the node with the most faults */
- 	if (max_faults && max_nid != p->numa_preferred_nid) {
- 
-@@ -1242,6 +1298,7 @@ void task_numa_group(struct task_struct *p, int cpu, int pid)
- 		atomic_set(&grp->refcount, 1);
- 		spin_lock_init(&grp->lock);
- 		INIT_LIST_HEAD(&grp->task_list);
-+		atomic_long_set(&grp->total_faults, 0);
- 
- 		spin_lock(&p->numa_lock);
- 		list_add(&p->numa_entry, &grp->task_list);
-@@ -1336,6 +1393,7 @@ void task_numa_fault(int last_cpupid, int node, int pages, bool migrated)
- 
- 		BUG_ON(p->numa_faults_buffer);
- 		p->numa_faults_buffer = p->numa_faults + (2 * nr_node_ids);
-+		p->total_numa_faults = 0;
- 	}
- 
- 	/*
+> The idea is to fix the bad assumptions about dma_mask wherever it could
+> be miss-interpreted.
+> 
+> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+> ---
+>  block/blk-settings.c |    8 ++++----
+>  1 files changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/block/blk-settings.c b/block/blk-settings.c
+> index c50ecf0..026c151 100644
+> --- a/block/blk-settings.c
+> +++ b/block/blk-settings.c
+> @@ -195,17 +195,17 @@ EXPORT_SYMBOL(blk_queue_make_request);
+>  /**
+>   * blk_queue_bounce_limit - set bounce buffer limit for queue
+>   * @q: the request queue for the device
+> - * @dma_mask: the maximum address the device can handle
+> + * @max_addr: the maximum address the device can handle
+>   *
+>   * Description:
+>   *    Different hardware can have different requirements as to what pages
+>   *    it can do I/O directly to. A low level driver can call
+>   *    blk_queue_bounce_limit to have lower memory pages allocated as bounce
+> - *    buffers for doing I/O to pages residing above @dma_mask.
+> + *    buffers for doing I/O to pages residing above @max_addr.
+>   **/
+> -void blk_queue_bounce_limit(struct request_queue *q, u64 dma_mask)
+> +void blk_queue_bounce_limit(struct request_queue *q, u64 max_addr)
+>  {
+> -	unsigned long b_pfn = dma_mask >> PAGE_SHIFT;
+> +	unsigned long b_pfn = max_addr >> PAGE_SHIFT;
+>  	int dma = 0;
+>  
+>  	q->bounce_gfp = GFP_NOIO;
+> -- 
+> 1.7.4.4
+> 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
