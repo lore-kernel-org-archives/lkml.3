@@ -1,118 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753980Ab3HAT6h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 15:58:37 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:51496 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751989Ab3HAT6e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 15:58:34 -0400
-Date: Thu, 1 Aug 2013 15:58:23 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>, Minchan Kim <minchan@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 3/3] mm: page_alloc: fair zone allocator policy
-Message-ID: <20130801195823.GN715@cmpxchg.org>
-References: <1374267325-22865-1-git-send-email-hannes@cmpxchg.org>
- <1374267325-22865-4-git-send-email-hannes@cmpxchg.org>
- <20130801025636.GC19540@bbox>
- <51F9E4A6.2090909@redhat.com>
- <20130801155111.GO25926@redhat.com>
+	id S1752738Ab3HAUAO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 16:00:14 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:57356 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751094Ab3HAUAK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 16:00:10 -0400
+Date: Thu, 1 Aug 2013 22:00:09 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Greg KH <greg@kroah.com>, kernel list <linux-kernel@vger.kernel.org>,
+        Joe Lawrence <joe.lawrence@stratus.com>,
+        Myron Stowe <myron.stowe@redhat.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Carolyn Wyborny <carolyn.wyborny@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        Greg Rose <gregory.v.rose@intel.com>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
+        Alex Duyck <alexander.h.duyck@intel.com>,
+        John Ronciak <john.ronciak@intel.com>,
+        Tushar Dave <tushar.n.dave@intel.com>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>
+Subject: Re: /sys/module/pcie_aspm/parameters/policy not writable?
+Message-ID: <20130801200008.GA5495@amd.pavel.ucw.cz>
+References: <20130709012611.GA22371@amd.pavel.ucw.cz>
+ <20130709041321.GA30555@kroah.com>
+ <20130709094906.GA3870@amd.pavel.ucw.cz>
+ <20130709101039.GA4479@amd.pavel.ucw.cz>
+ <CAErSpo57qjTkGbNK5qLzJcKuqBGK5=R=raEdyL6M1d5O=FkK_Q@mail.gmail.com>
+ <20130710132950.GA3684@amd.pavel.ucw.cz>
+ <CAErSpo5ig3bxZ3hBUUrzTdc=YqHy7cBGBxOLru4NYdyOOR+W5w@mail.gmail.com>
+ <20130712111121.GB3515@amd.pavel.ucw.cz>
+ <CAErSpo6NYZNHyV9xh2wRSQp72-dxg+FrFW4XrjE5Ps=bW6AGCw@mail.gmail.com>
+ <CAErSpo4XrJL48boVNiEb-7Y=52Bx_79hqP909ayLOdm7we_m3Q@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130801155111.GO25926@redhat.com>
+In-Reply-To: <CAErSpo4XrJL48boVNiEb-7Y=52Bx_79hqP909ayLOdm7we_m3Q@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 01, 2013 at 05:51:11PM +0200, Andrea Arcangeli wrote:
-> On Thu, Aug 01, 2013 at 12:31:34AM -0400, Rik van Riel wrote:
-> > On 07/31/2013 10:56 PM, Minchan Kim wrote:
-> > 
-> > > Yes, it's not really slow path because it could return to normal status
-> > > without calling significant slow functions by reset batchcount of
-> > > prepare_slowpath.
-> > >
-> > > I think it's tradeoff and I am biased your approach although we would
-> > > lose a little performance because fair aging would recover the loss by
-> > > fastpath's overhead. But who knows? Someone has a concern.
-> > >
-> > > So we should mention about such problems.
-> > 
-> > If the atomic operation in the fast path turns out to be a problem,
-> > I suspect we may be able to fix it by using per-cpu counters, and
-> > consolidating those every once in a while.
-> > 
-> > However, it may be good to see whether there is a problem in the
-> > first place, before adding complexity.
+Hi!
+
+> > But since the problem also occurs with Windows, it's pretty likely
+> > that there's a BIOS update to fix it.  I notice on the X60 support
+> > page that there are several versions newer than what you're running.
 > 
-> prepare_slowpath is racy anyway, so I don't see the point in wanting
-> to do atomic ops in the first place.
-> 
-> Much better to do the increment in assembly in a single insn to reduce
-> the window, but there's no point in using the lock prefix when
-> atomic_set will screw it over while somebody does atomic_dec under it
-> anyway. atomic_set cannot be atomic, so it'll screw over any
-> perfectly accurate accounted atomic_dec anyway.
-> 
-> I think it should be done in C without atomic_dec or by introducing an
-> __atomic_dec that isn't using the lock prefix and just tries to do the
-> dec in a single (or as few as possible) asm insn.
+> Do you have any interest in trying a newer BIOS to see if it's fixed
+> there?  If not, I understand; BIOS updates are a hassle at best.
+> You're running BIOS 2.14, and it looks like the current BIOS for an
+> X60 1709 7HU is 2.19 (from http://support.lenovo.com).
 
-Well the reset is not synchronized to the atomic_dec(), but we are
-guaranteed that after n page allocations we wake up kswapd, while
-without atomic ops we might miss a couple allocations when allocators
-race during the RMW.
+I'm lost at the lenovo pages :-(. And frankly I'd prefer not to touch
+the BIOS.
 
-But we might be able to get away with a small error.
+> Carolyn's patch will likely work, at least most of the time, but I
+> think there's a small possibility that it could cause a conflict
+> between the BIOS and the OS over ASPM control, so I'm not 100% in
+> support of that approach.  A conflict may not happen on your
+> machine,
 
-> And because the whole thing is racy, after prepare_slowpath (which I
-> think is a too generic name and should be renamed
-> reset_zonelist_alloc_batch), this last attempt before invoking
-> reclaim:
-> 
-> 	/* This is the last chance, in general, before the goto nopage. */
-> 	page = get_page_from_freelist(gfp_mask, nodemask, order, zonelist,
-> 			high_zoneidx, alloc_flags & ~ALLOC_NO_WATERMARKS,
-> 			preferred_zone, migratetype);
-> 
-> which is trying again with the MIN wmark, should be also altered so
-> that we do one pass totally disregarding alloc_batch, just before
-> declaring MIN-wmark failure in the allocation, and invoking direct
-> reclaim.
-> 
-> Either we add a (alloc_flags | ALLOC_NO_ALLOC_BATCH) to the above
-> alloc_flags in the above call, or we run a second
-> get_page_from_freelist if the above one fails with
-> ALLOC_NO_ALLOC_BATCH set.
-> 
-> Otherwise because of the inherent racy behavior of the alloc_batch
-> logic, what will happen is that we'll eventually have enough hugepage
-> allocations in enough CPUs to hit the alloc_batch limit again in
-> between the prepare_slowpath and the above get_page_from_freelist,
-> that will lead us to call spurious direct_reclaim invocations, when it
-> was just a false negative of alloc_batch.
-
-So the discussion diverged between on-list and off-list.  I suggested
-ignoring the alloc_batch in the slowpath completely (since allocations
-are very unlikely to fail due to the batches immediately after they
-were reset, and the occasional glitch does not matter).  This should
-solve the problem of spurious direct reclaim invocations.  The
-zone_reclaim_mode allocation sequence would basically be:
-
-1. Try zones in the local node with low watermark while maintaining
-   fairness with the allocation batch and invoking zone reclaim if
-   necessary
-
-2. If that fails, wake up kswapd and reset the alloc batches on the
-   local node
-
-3. Try zones in order of preference with the min watermark, invoking
-   zone reclaim if necessary, ignoring allocation batches.
-
-So in the fastpath we try to be local and fair, in the slow path we
-are likely to be local and fair, unless we have to spill into remote
-nodes.  But then there is nothing we can do anyway.
+Can we base it on DMI  whitelist?
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
