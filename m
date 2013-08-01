@@ -1,194 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757303Ab3HAUfv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 16:35:51 -0400
-Received: from mail-bk0-f54.google.com ([209.85.214.54]:65380 "EHLO
-	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752722Ab3HAUft (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 16:35:49 -0400
-Date: Thu, 1 Aug 2013 23:34:59 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Jiri Slaby <jslaby@suse.cz>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH next] n_tty: change lock ordering in n_tty_read() (v2)
-Message-ID: <20130801203459.GE3109@swordfish>
-References: <20130801193146.GA3109@swordfish>
- <20130801194610.GC3109@swordfish>
- <51FABE84.1090006@hurleysoftware.com>
+	id S1757351Ab3HAUhX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 16:37:23 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:51046 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752788Ab3HAUhU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 16:37:20 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, cpufreq@vger.kernel.org,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
+Subject: Re: [RFC][PATCH] cpufreq: Do not hold driver module references for additional policy CPUs
+Date: Thu, 01 Aug 2013 22:47:32 +0200
+Message-ID: <1757496.qSuJuAun9Z@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <51FAC46D.1000703@linux.vnet.ibm.com>
+References: <2362640.pUofnXyzOi@vostro.rjw.lan> <31284072.zAs57d3QXU@vostro.rjw.lan> <51FAC46D.1000703@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51FABE84.1090006@hurleysoftware.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (08/01/13 16:01), Peter Hurley wrote:
-> On 08/01/2013 03:46 PM, Sergey Senozhatsky wrote:
-> >Acquire atomic_read_lock before termios_rwsem rw-lock in n_tty_read().
-> >termios_rwsem is getting released and re-acquired, while remaining
-> >readers are blocked on atomic_read_lock mutex, in case when process
-> >must wait for input_available_p(), making lockdep unhappy:
+On Friday, August 02, 2013 01:56:21 AM Srivatsa S. Bhat wrote:
+> On 08/02/2013 01:34 AM, Rafael J. Wysocki wrote:
+> > On Friday, August 02, 2013 12:51:24 AM Srivatsa S. Bhat wrote:
+> >> On 08/02/2013 12:51 AM, Rafael J. Wysocki wrote:
+> >>> On Friday, August 02, 2013 12:31:23 AM Srivatsa S. Bhat wrote:
+> >>>> On 08/02/2013 12:31 AM, Rafael J. Wysocki wrote:
+> >>>>> On Thursday, August 01, 2013 11:36:49 PM Srivatsa S. Bhat wrote:
+> >>>>>> Its the cpufreq_cpu_get() hidden away in cpufreq_add_dev_symlink(). With
+> >>>>>> that taken care of, everything should be OK. Then we can change the
+> >>>>>> synchronization part to avoid using refcounts.
+> >>>>>
+> >>>>> So I actually don't see why cpufreq_add_dev_symlink() needs to call
+> >>>>> cpufreq_cpu_get() at all, since the policy refcount is already 1 at the
+> >>>>> point it is called and the bumping up of the driver module refcount is
+> >>>>> pointless.
+> >>>>>
+> >>>>
+> >>>> Hmm, yes, it seems so.
+> >>>>
+> >>>>> However, if I change that I also need to change the piece of code that
+> >>>>> calls the complementary cpufreq_cpu_put() and I kind of cannot find it.
+> >>>>>
+> >>>>
+> >>>> ... I guess that's because you are looking at the code with your patch
+> >>>> applied (and your patch removed that _put()) ;-)
+> >>>
+> >>> No, it's not that one.  That one was complementary to the cpufreq_cpu_get()
+> >>> done by cpufreq_add_policy_cpu() before my patch.  Since my patch changes
+> >>> cpufreq_add_policy_cpu() to call cpufreq_cpu_put() before returning and
+> >>> bump up the policy refcount with kobject_get(), the one in
+> >>> __cpufreq_remove_dev() is changed into kobject_put() (correctly, IMO).
+> >>>
+> >>> What gives?
+> >>>
+> >>
+> >> Actually, it _is_ the one I pointed above. This thing is tricky, here's why:
+> >>
+> >> cpufreq_add_policy_cpu() is called only if:
+> >> a. The CPU being onlined has per_cpu(cpufreq_cpu_data, cpu) == NULL
+> >> and 
+> >> b. Its is present in some CPU's related_cpus mask. 
+> >>
+> >> If condition (a) doesn't hold good, you get out right in the beginning of
+> >> __cpufreq_add_dev().
+> >>
+> >> So, cpufreq_add_policy_cpu() is called very rarely because, inside
+> >> __cpufreq_add_dev we do:
+> >>
+> >> 1093         write_lock_irqsave(&cpufreq_driver_lock, flags);
+> >> 1094         for_each_cpu(j, policy->cpus) {
+> >> 1095                 per_cpu(cpufreq_cpu_data, j) = policy;
+> >> 1096                 per_cpu(cpufreq_policy_cpu, j) = policy->cpu;
+> >> 1097         }
+> >> 1098         write_unlock_irqrestore(&cpufreq_driver_lock, flags);
+> >>
+> >> So for all the CPUs in the above policy->cpus mask, we simply return
+> >> without further ado when they are onlined. In particular, we *dont* call
+> >> cpufreq_add_policy_cpu() for any of them.
+> >>
+> >> And their refcounts are incremented by the cpufreq_add_dev_interface()->
+> >> cpufreq_add_dev_symlink() function.
+> >>
+> >> So, ultimately, we increment the refcount for a given non-policy-owner CPU
+> >> only once. *Either* in cpufreq_add_dev_symlink() *or* in cpufreq_add_policy_cpu(),
+> >> but never both.
+> >>
+> >> So, in the teardown path, __cpufreq_remove_dev() needs only one place to
+> >> decrement it as shown below:
+> >>
+> >> 1303         } else {
+> >> 1304 
+> >> 1305                 if (!frozen) {
+> >> 1306                         pr_debug("%s: removing link, cpu: %d\n", __func__, cpu);
+> >> 1307                         cpufreq_cpu_put(data);
+> >> 1308                 }
+> >>
+> >>
+> >> Pretty good maze, right? ;-(
+> > 
+> > Oh dear.  Right.
+> > 
+> > I tgought I could change cpufreq_add_dev_symlink() to use kobject_get() to bump
+> > up the policy refcount in analogy with cpufreq_add_policy_cpu() and then it
+> > wouldn't need to call cpufreq_cpu_get() at all, but there is a bug in the
+> > error code path of cpufreq_add_dev_interface(), because if
+> > cpufreq_add_dev_symlink() fails for one of the CPUs sharing the policy,
+> > it will just fail to drop references grabbed in there.  [Moreover, if it
+> > fails for the first one different from policy->cpu, kobject_put() will be
+> > called for that policy twice in a row if I'm not mistaken (first by
+> > cpufreq_add_dev_interface() and then by __cpufreq_add_dev()), but that's
+> > a different matter.]
+> > 
+> > So I think that neither cpufreq_add_dev_symlink() nor
+> > cpufreq_add_policy_cpu() should bump up the policy refcount in any way.
+> > 
 > 
-> Thanks for the report. This is a regression in lockdep.
+> Yeah, that greatly simplifies things, as seen in the patch below.
+> 
+> > Which entirely boils down to something like this:
+> >
+> 
+> Looks good to me.
+> 
+> Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 
-Thanks for the update. I was thinkg about that. There is no read/write
-termios_rwsem cross-locking on read path with atomic_read_lock being involved,
-but the thing that stopped me is that if lockdep has a regression then I would
-probably see warnings from different places, not just tty.
-Feel free to ask for any help or testing (if need).
+Thanks! :-)
 
-thanks,
-	-ss
+I actually think that I should move the error code path bug fix ->
 
-> >[  463.542463] ======================================================
-> >[  463.542464] [ INFO: possible circular locking dependency detected ]
-> >[  463.542466] 3.11.0-rc3-next-20130801-dbg-dirty #5 Not tainted
-> >[  463.542467] -------------------------------------------------------
-> >[  463.542469] agetty/2075 is trying to acquire lock:
-> >[  463.542484]  (&tty->termios_rwsem){++++..}, at: [<ffffffff81398660>] n_tty_read+0x460/0xab0
-> >[  463.542484]
-> >but task is already holding lock:
-> >[  463.542496]  (&ldata->atomic_read_lock){+.+...}, at: [<ffffffff81398959>] n_tty_read+0x759/0xab0
-> >[  463.542497]
-> >which lock already depends on the new lock.
-> >
-> >[  463.542497]
-> >the existing dependency chain (in reverse order) is:
-> >[  463.542502]
-> >-> #1 (&ldata->atomic_read_lock){+.+...}:
-> >[  463.542508]        [<ffffffff810b9394>] lock_acquire+0xa4/0x200
-> >[  463.542514]        [<ffffffff8160a787>] mutex_lock_interruptible_nested+0x77/0x4e0
-> >[  463.542518]        [<ffffffff81398959>] n_tty_read+0x759/0xab0
-> >[  463.542524]        [<ffffffff81393e8d>] tty_read+0x8d/0x100
-> >[  463.542528]        [<ffffffff8117987a>] vfs_read+0x9a/0x170
-> >[  463.542531]        [<ffffffff8117a05c>] SyS_read+0x4c/0xa0
-> >[  463.542536]        [<ffffffff81610c7e>] tracesys+0xd0/0xd5
-> >[  463.542540]
-> >-> #0 (&tty->termios_rwsem){++++..}:
-> >[  463.542543]        [<ffffffff810b84e6>] __lock_acquire+0x1756/0x1d20
-> >[  463.542547]        [<ffffffff810b9394>] lock_acquire+0xa4/0x200
-> >[  463.542550]        [<ffffffff8160c1b7>] down_read+0x47/0x60
-> >[  463.542554]        [<ffffffff81398660>] n_tty_read+0x460/0xab0
-> >[  463.542557]        [<ffffffff81393e8d>] tty_read+0x8d/0x100
-> >[  463.542560]        [<ffffffff8117987a>] vfs_read+0x9a/0x170
-> >[  463.542563]        [<ffffffff8117a05c>] SyS_read+0x4c/0xa0
-> >[  463.542566]        [<ffffffff81610c7e>] tracesys+0xd0/0xd5
-> >[  463.542567]
-> >other info that might help us debug this:
-> >
-> >[  463.542569]  Possible unsafe locking scenario:
-> >
-> >[  463.542570]        CPU0                    CPU1
-> >[  463.542570]        ----                    ----
-> >[  463.542573]   lock(&ldata->atomic_read_lock);
-> >[  463.542575]                                lock(&tty->termios_rwsem);
-> >[  463.542577]                                lock(&ldata->atomic_read_lock);
-> >[  463.542579]   lock(&tty->termios_rwsem);
-> >[  463.542580]
-> >  *** DEADLOCK ***
-> 
-> False positive.
-> 
-> This deadlock is not possible because CPU1 only holds a read lock
-> which cannot prevent CPU0 from obtaining a read lock on the same
-> read/write semaphore.
-> 
-> I'll be only too happy to track down where the regression was
-> introduced as soon as I fix an actual lock order problem in
-> the nouveau driver which disables lockdep :)
-> 
-> Regards,
-> Peter Hurley
-> 
-> >[  463.542582] 2 locks held by agetty/2075:
-> >[  463.542590]  #0:  (&tty->ldisc_sem){++++++}, at: [<ffffffff8139c130>] tty_ldisc_ref_wait+0x20/0x50
-> >[  463.542597]  #1:  (&ldata->atomic_read_lock){+.+...}, at: [<ffffffff81398959>] n_tty_read+0x759/0xab0
-> >[  463.542598]
-> >stack backtrace:
-> >[  463.542602] CPU: 0 PID: 2075 Comm: agetty Not tainted 3.11.0-rc3-next-20130801-dbg-dirty #5
-> >[  463.542603] Hardware name: Acer             Aspire 5741G    /Aspire 5741G    , BIOS V1.20 02/08/2011
-> >[  463.542609]  ffffffff82236010 ffff88009af67c28 ffffffff8160630a ffffffff82236010
-> >[  463.542613]  ffff88009af67c68 ffffffff816031b7 ffff880151ac0000 ffff880151ac0790
-> >[  463.542617]  000000073469e1bd ffff880151ac0768 ffff880151ac0790 ffff880151ac0000
-> >[  463.542618] Call Trace:
-> >[  463.542625]  [<ffffffff8160630a>] dump_stack+0x4e/0x82
-> >[  463.542630]  [<ffffffff816031b7>] print_circular_bug+0x2b6/0x2c5
-> >[  463.542634]  [<ffffffff810b84e6>] __lock_acquire+0x1756/0x1d20
-> >[  463.542638]  [<ffffffff810b9394>] lock_acquire+0xa4/0x200
-> >[  463.542642]  [<ffffffff81398660>] ? n_tty_read+0x460/0xab0
-> >[  463.542645]  [<ffffffff8160c1b7>] down_read+0x47/0x60
-> >[  463.542649]  [<ffffffff81398660>] ? n_tty_read+0x460/0xab0
-> >[  463.542653]  [<ffffffff81398660>] n_tty_read+0x460/0xab0
-> >[  463.542661]  [<ffffffff81085020>] ? wake_up_process+0x40/0x40
-> >[  463.542665]  [<ffffffff81393e8d>] tty_read+0x8d/0x100
-> >[  463.542668]  [<ffffffff8117987a>] vfs_read+0x9a/0x170
-> >[  463.542671]  [<ffffffff8117a05c>] SyS_read+0x4c/0xa0
-> >[  463.542674]  [<ffffffff81610c7e>] tracesys+0xd0/0xd5
-> >
-> >v2: correct subject typo.
-> >
-> >Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-> >
-> >---
-> >
-> >  drivers/tty/n_tty.c | 15 ++++++---------
-> >  1 file changed, 6 insertions(+), 9 deletions(-)
-> >
-> >diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
-> >index dd8ae0c..03bd6e8 100644
-> >--- a/drivers/tty/n_tty.c
-> >+++ b/drivers/tty/n_tty.c
-> >@@ -2122,8 +2122,6 @@ static ssize_t n_tty_read(struct tty_struct *tty, struct file *file,
-> >  	if (c < 0)
-> >  		return c;
-> >
-> >-	down_read(&tty->termios_rwsem);
-> >-
-> >  	minimum = time = 0;
-> >  	timeout = MAX_SCHEDULE_TIMEOUT;
-> >  	if (!ldata->icanon) {
-> >@@ -2145,16 +2143,15 @@ static ssize_t n_tty_read(struct tty_struct *tty, struct file *file,
-> >  	 *	Internal serialization of reads.
-> >  	 */
-> >  	if (file->f_flags & O_NONBLOCK) {
-> >-		if (!mutex_trylock(&ldata->atomic_read_lock)) {
-> >-			up_read(&tty->termios_rwsem);
-> >+		if (!mutex_trylock(&ldata->atomic_read_lock))
-> >  			return -EAGAIN;
-> >-		}
-> >  	} else {
-> >-		if (mutex_lock_interruptible(&ldata->atomic_read_lock)) {
-> >-			up_read(&tty->termios_rwsem);
-> >+		if (mutex_lock_interruptible(&ldata->atomic_read_lock))
-> >  			return -ERESTARTSYS;
-> >-		}
+> > ---
+> >  drivers/cpufreq/cpufreq.c |   31 +++++++------------------------
+> >  1 file changed, 7 insertions(+), 24 deletions(-)
+> > 
+> > Index: linux-pm/drivers/cpufreq/cpufreq.c
+> > ===================================================================
+> > --- linux-pm.orig/drivers/cpufreq/cpufreq.c
+> > +++ linux-pm/drivers/cpufreq/cpufreq.c
+> > @@ -818,14 +818,11 @@ static int cpufreq_add_dev_symlink(struc
+> >  			continue;
+> > 
+> >  		pr_debug("Adding link for CPU: %u\n", j);
+> > -		cpufreq_cpu_get(policy->cpu);
+> >  		cpu_dev = get_cpu_device(j);
+> >  		ret = sysfs_create_link(&cpu_dev->kobj, &policy->kobj,
+> >  					"cpufreq");
+> > -		if (ret) {
+> > -			cpufreq_cpu_put(policy);
+> > -			return ret;
+> > -		}
+> > +		if (ret)
+> > +			break;
 > >  	}
-> >+
-> >+	down_read(&tty->termios_rwsem);
-> >+
-> >  	packet = tty->packet;
-> >
-> >  	add_wait_queue(&tty->read_wait, &wait);
-> >@@ -2248,7 +2245,6 @@ static ssize_t n_tty_read(struct tty_struct *tty, struct file *file,
-> >  		if (time)
-> >  			timeout = time;
-> >  	}
-> >-	mutex_unlock(&ldata->atomic_read_lock);
-> >  	remove_wait_queue(&tty->read_wait, &wait);
-> >
-> >  	if (!waitqueue_active(&tty->read_wait))
-> >@@ -2260,6 +2256,7 @@ static ssize_t n_tty_read(struct tty_struct *tty, struct file *file,
-> >
-> >  	n_tty_set_room(tty);
-> >  	up_read(&tty->termios_rwsem);
-> >+	mutex_unlock(&ldata->atomic_read_lock);
-> >  	return retval;
+> >  	return ret;
 > >  }
-> >
-> >
-> 
+> > @@ -908,7 +905,8 @@ static int cpufreq_add_policy_cpu(unsign
+> >  	unsigned long flags;
+> > 
+> >  	policy = cpufreq_cpu_get(sibling);
+> > -	WARN_ON(!policy);
+> > +	if (WARN_ON_ONCE(!policy))
+> > +		return -ENODATA;
+> > 
+> >  	if (has_target)
+> >  		__cpufreq_governor(policy, CPUFREQ_GOV_STOP);
+> > @@ -930,16 +928,10 @@ static int cpufreq_add_policy_cpu(unsign
+> >  	}
+> > 
+> >  	/* Don't touch sysfs links during light-weight init */
+> > -	if (frozen) {
+> > -		/* Drop the extra refcount that we took above */
+> > -		cpufreq_cpu_put(policy);
+> > -		return 0;
+> > -	}
+> > -
+> > -	ret = sysfs_create_link(&dev->kobj, &policy->kobj, "cpufreq");
+> > -	if (ret)
+> > -		cpufreq_cpu_put(policy);
+> > +	if (!frozen)
+> > +		ret = sysfs_create_link(&dev->kobj, &policy->kobj, "cpufreq");
+> > 
+> > +	cpufreq_cpu_put(policy);
+> >  	return ret;
+> >  }
+> >  #endif
+> > @@ -1117,9 +1109,6 @@ err_out_unregister:
+> >  	}
+> >  	write_unlock_irqrestore(&cpufreq_driver_lock, flags);
+> > -	kobject_put(&policy->kobj);
+> > -	wait_for_completion(&policy->kobj_unregister);
+> > -
+> >  err_set_policy_cpu:
+> >  	per_cpu(cpufreq_policy_cpu, cpu) = -1;
+> >  	cpufreq_policy_free(policy);
+
+-> into a separate patch, because it's not really related to the other changes
+made here.
+
+Thanks,
+Rafael
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
