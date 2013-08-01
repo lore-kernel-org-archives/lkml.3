@@ -1,113 +1,264 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752878Ab3HAAkQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 20:40:16 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:60602 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752167Ab3HAAbz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752612Ab3HAAkN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 20:40:13 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:39765 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752194Ab3HAAbz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 31 Jul 2013 20:31:55 -0400
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>, Borislav Petkov <bp@alien8.de>,
-        Li Zhong <zhong@linux.vnet.ibm.com>, Mike Galbraith <efault@gmx.de>,
-        Kevin Hilman <khilman@linaro.org>
-Subject: [PATCH 05/23] nohz: Only enable context tracking on full dynticks CPUs
-Date: Thu,  1 Aug 2013 02:31:22 +0200
-Message-Id: <1375317100-20651-6-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1375317100-20651-1-git-send-email-fweisbec@gmail.com>
-References: <1375317100-20651-1-git-send-email-fweisbec@gmail.com>
+From: Joe Perches <joe@perches.com>
+To: netdev@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/8] addrconf.h: Remove extern function prototypes
+Date: Wed, 31 Jul 2013 17:31:32 -0700
+Message-Id: <6333b83215520a6db1f68f1930b047d08548777a.1375316912.git.joe@perches.com>
+X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
+In-Reply-To: <cover.1375316912.git.joe@perches.com>
+References: <cover.1375316912.git.joe@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The context tracking subsystem has the ability to selectively
-enable the tracking on any defined subset of CPU. This means that
-we can define a CPU range that doesn't run the context tracking
-and another range that does.
+There are a mix of function prototypes with and without extern
+in the kernel sources.  Standardize on not using extern for
+function prototypes.
 
-Now what we want in practice is to enable the tracking on full
-dynticks CPUs only. In order to perform this, we just need to pass
-our full dynticks CPU range selection from the full dynticks
-subsystem to the context tracking.
+Function prototypes don't need to be written with extern.
+extern is assumed by the compiler.  Its use is as unnecessary as
+using auto to declare automatic/local variables in a block.
 
-This way we can spare the overhead of RCU user extended quiescent
-state and vtime maintainance on the CPUs that are outside the
-full dynticks range. Just keep in mind the raw context tracking
-itself is still necessary everywhere.
+Reflow modified prototypes to 80 columns.
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Borislav Petkov <bp@alien8.de>
-Cc: Li Zhong <zhong@linux.vnet.ibm.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Kevin Hilman <khilman@linaro.org>
+Signed-off-by: Joe Perches <joe@perches.com>
 ---
- include/linux/context_tracking.h |    2 ++
- kernel/context_tracking.c        |    5 +++++
- kernel/time/tick-sched.c         |    4 ++++
- 3 files changed, 11 insertions(+), 0 deletions(-)
+ include/net/addrconf.h | 160 ++++++++++++++++++++++---------------------------
+ 1 file changed, 72 insertions(+), 88 deletions(-)
 
-diff --git a/include/linux/context_tracking.h b/include/linux/context_tracking.h
-index d883ff0..1ae37c7 100644
---- a/include/linux/context_tracking.h
-+++ b/include/linux/context_tracking.h
-@@ -34,6 +34,8 @@ static inline bool context_tracking_active(void)
- 	return __this_cpu_read(context_tracking.active);
+diff --git a/include/net/addrconf.h b/include/net/addrconf.h
+index c7b181c..43fa31a 100644
+--- a/include/net/addrconf.h
++++ b/include/net/addrconf.h
+@@ -53,51 +53,36 @@ struct prefix_info {
+ #define IN6_ADDR_HSIZE_SHIFT	4
+ #define IN6_ADDR_HSIZE		(1 << IN6_ADDR_HSIZE_SHIFT)
+ 
+-extern int			addrconf_init(void);
+-extern void			addrconf_cleanup(void);
++int addrconf_init(void);
++void addrconf_cleanup(void);
+ 
+-extern int			addrconf_add_ifaddr(struct net *net,
+-						    void __user *arg);
+-extern int			addrconf_del_ifaddr(struct net *net,
+-						    void __user *arg);
+-extern int			addrconf_set_dstaddr(struct net *net,
+-						     void __user *arg);
++int addrconf_add_ifaddr(struct net *net, void __user *arg);
++int addrconf_del_ifaddr(struct net *net, void __user *arg);
++int addrconf_set_dstaddr(struct net *net, void __user *arg);
+ 
+-extern int			ipv6_chk_addr(struct net *net,
+-					      const struct in6_addr *addr,
+-					      const struct net_device *dev,
+-					      int strict);
++int ipv6_chk_addr(struct net *net, const struct in6_addr *addr,
++		  const struct net_device *dev, int strict);
+ 
+ #if defined(CONFIG_IPV6_MIP6) || defined(CONFIG_IPV6_MIP6_MODULE)
+-extern int			ipv6_chk_home_addr(struct net *net,
+-						   const struct in6_addr *addr);
++int ipv6_chk_home_addr(struct net *net, const struct in6_addr *addr);
+ #endif
+ 
+-extern int			ipv6_chk_prefix(const struct in6_addr *addr,
+-						struct net_device *dev);
+-
+-extern struct inet6_ifaddr      *ipv6_get_ifaddr(struct net *net,
+-						 const struct in6_addr *addr,
+-						 struct net_device *dev,
+-						 int strict);
+-
+-extern int			ipv6_dev_get_saddr(struct net *net,
+-					       const struct net_device *dev,
+-					       const struct in6_addr *daddr,
+-					       unsigned int srcprefs,
+-					       struct in6_addr *saddr);
+-extern int			__ipv6_get_lladdr(struct inet6_dev *idev,
+-						  struct in6_addr *addr,
+-						  unsigned char banned_flags);
+-extern int			ipv6_get_lladdr(struct net_device *dev,
+-						struct in6_addr *addr,
+-						unsigned char banned_flags);
+-extern int 			ipv6_rcv_saddr_equal(const struct sock *sk,
+-						    const struct sock *sk2);
+-extern void			addrconf_join_solict(struct net_device *dev,
+-					const struct in6_addr *addr);
+-extern void			addrconf_leave_solict(struct inet6_dev *idev,
+-					const struct in6_addr *addr);
++int ipv6_chk_prefix(const struct in6_addr *addr, struct net_device *dev);
++
++struct inet6_ifaddr *ipv6_get_ifaddr(struct net *net,
++				     const struct in6_addr *addr,
++				     struct net_device *dev, int strict);
++
++int ipv6_dev_get_saddr(struct net *net, const struct net_device *dev,
++		       const struct in6_addr *daddr, unsigned int srcprefs,
++		       struct in6_addr *saddr);
++int __ipv6_get_lladdr(struct inet6_dev *idev, struct in6_addr *addr,
++		      unsigned char banned_flags);
++int ipv6_get_lladdr(struct net_device *dev, struct in6_addr *addr,
++		    unsigned char banned_flags);
++int ipv6_rcv_saddr_equal(const struct sock *sk, const struct sock *sk2);
++void addrconf_join_solict(struct net_device *dev, const struct in6_addr *addr);
++void addrconf_leave_solict(struct inet6_dev *idev, const struct in6_addr *addr);
+ 
+ static inline unsigned long addrconf_timeout_fixup(u32 timeout,
+ 						   unsigned int unit)
+@@ -124,41 +109,38 @@ static inline int addrconf_finite_timeout(unsigned long timeout)
+ /*
+  *	IPv6 Address Label subsystem (addrlabel.c)
+  */
+-extern int			ipv6_addr_label_init(void);
+-extern void			ipv6_addr_label_cleanup(void);
+-extern void			ipv6_addr_label_rtnl_register(void);
+-extern u32			ipv6_addr_label(struct net *net,
+-						const struct in6_addr *addr,
+-						int type, int ifindex);
++int ipv6_addr_label_init(void);
++void ipv6_addr_label_cleanup(void);
++void ipv6_addr_label_rtnl_register(void);
++u32 ipv6_addr_label(struct net *net, const struct in6_addr *addr,
++		    int type, int ifindex);
+ 
+ /*
+  *	multicast prototypes (mcast.c)
+  */
+-extern int ipv6_sock_mc_join(struct sock *sk, int ifindex,
+-			     const struct in6_addr *addr);
+-extern int ipv6_sock_mc_drop(struct sock *sk, int ifindex,
+-			     const struct in6_addr *addr);
+-extern void ipv6_sock_mc_close(struct sock *sk);
+-extern bool inet6_mc_check(struct sock *sk,
+-			   const struct in6_addr *mc_addr,
+-			   const struct in6_addr *src_addr);
+-
+-extern int ipv6_dev_mc_inc(struct net_device *dev, const struct in6_addr *addr);
+-extern int __ipv6_dev_mc_dec(struct inet6_dev *idev, const struct in6_addr *addr);
+-extern int ipv6_dev_mc_dec(struct net_device *dev, const struct in6_addr *addr);
+-extern void ipv6_mc_up(struct inet6_dev *idev);
+-extern void ipv6_mc_down(struct inet6_dev *idev);
+-extern void ipv6_mc_unmap(struct inet6_dev *idev);
+-extern void ipv6_mc_remap(struct inet6_dev *idev);
+-extern void ipv6_mc_init_dev(struct inet6_dev *idev);
+-extern void ipv6_mc_destroy_dev(struct inet6_dev *idev);
+-extern void addrconf_dad_failure(struct inet6_ifaddr *ifp);
+-
+-extern bool ipv6_chk_mcast_addr(struct net_device *dev,
+-				const struct in6_addr *group,
+-				const struct in6_addr *src_addr);
+-
+-extern void ipv6_mc_dad_complete(struct inet6_dev *idev);
++int ipv6_sock_mc_join(struct sock *sk, int ifindex,
++		      const struct in6_addr *addr);
++int ipv6_sock_mc_drop(struct sock *sk, int ifindex,
++		      const struct in6_addr *addr);
++void ipv6_sock_mc_close(struct sock *sk);
++bool inet6_mc_check(struct sock *sk, const struct in6_addr *mc_addr,
++		    const struct in6_addr *src_addr);
++
++int ipv6_dev_mc_inc(struct net_device *dev, const struct in6_addr *addr);
++int __ipv6_dev_mc_dec(struct inet6_dev *idev, const struct in6_addr *addr);
++int ipv6_dev_mc_dec(struct net_device *dev, const struct in6_addr *addr);
++void ipv6_mc_up(struct inet6_dev *idev);
++void ipv6_mc_down(struct inet6_dev *idev);
++void ipv6_mc_unmap(struct inet6_dev *idev);
++void ipv6_mc_remap(struct inet6_dev *idev);
++void ipv6_mc_init_dev(struct inet6_dev *idev);
++void ipv6_mc_destroy_dev(struct inet6_dev *idev);
++void addrconf_dad_failure(struct inet6_ifaddr *ifp);
++
++bool ipv6_chk_mcast_addr(struct net_device *dev, const struct in6_addr *group,
++			 const struct in6_addr *src_addr);
++
++void ipv6_mc_dad_complete(struct inet6_dev *idev);
+ /*
+  * identify MLD packets for MLD filter exceptions
+  */
+@@ -184,29 +166,31 @@ static inline bool ipv6_is_mld(struct sk_buff *skb, int nexthdr, int offset)
+ 	return false;
  }
  
-+extern void context_tracking_cpu_set(int cpu);
-+
- extern void user_enter(void);
- extern void user_exit(void);
+-extern void addrconf_prefix_rcv(struct net_device *dev,
+-				u8 *opt, int len, bool sllao);
++void addrconf_prefix_rcv(struct net_device *dev,
++			 u8 *opt, int len, bool sllao);
  
-diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
-index 7b095de..72bcb25 100644
---- a/kernel/context_tracking.c
-+++ b/kernel/context_tracking.c
-@@ -26,6 +26,11 @@ DEFINE_PER_CPU(struct context_tracking, context_tracking) = {
- #endif
- };
- 
-+void context_tracking_cpu_set(int cpu)
-+{
-+	per_cpu(context_tracking.active, cpu) = true;
-+}
+ /*
+  *	anycast prototypes (anycast.c)
+  */
+-extern int ipv6_sock_ac_join(struct sock *sk,int ifindex, const struct in6_addr *addr);
+-extern int ipv6_sock_ac_drop(struct sock *sk,int ifindex, const struct in6_addr *addr);
+-extern void ipv6_sock_ac_close(struct sock *sk);
+-
+-extern int ipv6_dev_ac_inc(struct net_device *dev, const struct in6_addr *addr);
+-extern int __ipv6_dev_ac_dec(struct inet6_dev *idev, const struct in6_addr *addr);
+-extern bool ipv6_chk_acast_addr(struct net *net, struct net_device *dev,
++int ipv6_sock_ac_join(struct sock *sk, int ifindex,
++		      const struct in6_addr *addr);
++int ipv6_sock_ac_drop(struct sock *sk, int ifindex,
++		      const struct in6_addr *addr);
++void ipv6_sock_ac_close(struct sock *sk);
 +
++int ipv6_dev_ac_inc(struct net_device *dev, const struct in6_addr *addr);
++int __ipv6_dev_ac_dec(struct inet6_dev *idev, const struct in6_addr *addr);
++bool ipv6_chk_acast_addr(struct net *net, struct net_device *dev,
+ 				const struct in6_addr *addr);
+ 
+ 
+ /* Device notifier */
+-extern int register_inet6addr_notifier(struct notifier_block *nb);
+-extern int unregister_inet6addr_notifier(struct notifier_block *nb);
+-extern int inet6addr_notifier_call_chain(unsigned long val, void *v);
++int register_inet6addr_notifier(struct notifier_block *nb);
++int unregister_inet6addr_notifier(struct notifier_block *nb);
++int inet6addr_notifier_call_chain(unsigned long val, void *v);
+ 
+-extern void inet6_netconf_notify_devconf(struct net *net, int type, int ifindex,
+-					 struct ipv6_devconf *devconf);
++void inet6_netconf_notify_devconf(struct net *net, int type, int ifindex,
++				  struct ipv6_devconf *devconf);
+ 
  /**
-  * user_enter - Inform the context tracking that the CPU is going to
-  *              enter userspace mode.
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index e80183f..6d604fd 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -23,6 +23,7 @@
- #include <linux/irq_work.h>
- #include <linux/posix-timers.h>
- #include <linux/perf_event.h>
-+#include <linux/context_tracking.h>
+  * __in6_dev_get - get inet6_dev pointer from netdevice
+@@ -240,7 +224,7 @@ static inline struct inet6_dev *in6_dev_get(const struct net_device *dev)
+ 	return idev;
+ }
  
- #include <asm/irq_regs.h>
+-extern void in6_dev_finish_destroy(struct inet6_dev *idev);
++void in6_dev_finish_destroy(struct inet6_dev *idev);
  
-@@ -350,6 +351,9 @@ void __init tick_nohz_init(void)
- 			return;
- 	}
+ static inline void in6_dev_put(struct inet6_dev *idev)
+ {
+@@ -258,7 +242,7 @@ static inline void in6_dev_hold(struct inet6_dev *idev)
+ 	atomic_inc(&idev->refcnt);
+ }
  
-+	for_each_cpu(cpu, nohz_full_mask)
-+		context_tracking_cpu_set(cpu);
-+
- 	cpu_notifier(tick_nohz_cpu_down_callback, 0);
- 	cpulist_scnprintf(nohz_full_buf, sizeof(nohz_full_buf), nohz_full_mask);
- 	pr_info("NO_HZ: Full dynticks CPUs: %s.\n", nohz_full_buf);
+-extern void inet6_ifa_finish_destroy(struct inet6_ifaddr *ifp);
++void inet6_ifa_finish_destroy(struct inet6_ifaddr *ifp);
+ 
+ static inline void in6_ifa_put(struct inet6_ifaddr *ifp)
+ {
+@@ -340,8 +324,8 @@ static inline bool ipv6_addr_is_solict_mult(const struct in6_addr *addr)
+ }
+ 
+ #ifdef CONFIG_PROC_FS
+-extern int if6_proc_init(void);
+-extern void if6_proc_exit(void);
++int if6_proc_init(void);
++void if6_proc_exit(void);
+ #endif
+ 
+ #endif
 -- 
-1.7.5.4
+1.8.1.2.459.gbcd45b4.dirty
 
