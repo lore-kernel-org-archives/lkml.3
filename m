@@ -1,89 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756113Ab3HAOfU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 10:35:20 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:3559 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754889Ab3HAOfS convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 10:35:18 -0400
-X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC107.redmond.corp.microsoft.com;RD:autodiscover.service.exchange.microsoft.com;EFVD:NLI
-X-SpamScore: -1
-X-BigFish: VS-1(zz9371I542I1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275bh8275dh1de097hz2fh2a8h683h839h944hd24hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h19ceh1b0ah1d07h1d0ch1d2eh1d3fh1de9h1dfeh1dffh1e1dh9a9j1155h)
-X-Forefront-Antispam-Report-Untrusted: CIP:157.56.240.21;KIP:(null);UIP:(null);(null);H:BL2PRD0310HT001.namprd03.prod.outlook.com;R:internal;EFV:INT
-X-Forefront-Antispam-Report-Untrusted: SFV:NSPM;SFS:(51704005)(377454003)(13464003)(189002)(199002)(16406001)(46102001)(53806001)(81542001)(80022001)(74876001)(80976001)(76576001)(74316001)(66066001)(47736001)(33646001)(19580395003)(81342001)(76482001)(83322001)(63696002)(56776001)(51856001)(56816003)(74366001)(65816001)(31966008)(74662001)(4396001)(79102001)(47446002)(54316002)(54356001)(74502001)(19580405001)(76786001)(59766001)(77982001)(47976001)(74706001)(50986001)(76796001)(83072001)(49866001)(69226001)(77096001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:SN2PR03MB061;H:SN2PR03MB061.namprd03.prod.outlook.com;CLIP:173.61.119.57;RD:InfoNoRecords;MX:1;A:1;LANG:en;
-From: KY Srinivasan <kys@microsoft.com>
-To: Olaf Hering <olaf@aepfle.de>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] Tools: hv: check return value of daemon to fix compiler
- warning.
-Thread-Topic: [PATCH] Tools: hv: check return value of daemon to fix
- compiler warning.
-Thread-Index: AQHOjrTke5EhfiRIQkOj3zEsGpKksZmAawQQ
-Date: Thu, 1 Aug 2013 14:34:34 +0000
-Message-ID: <cd624d6beaed42c9aba36143e1a41923@SN2PR03MB061.namprd03.prod.outlook.com>
-References: <1375360992-12865-1-git-send-email-olaf@aepfle.de>
-In-Reply-To: <1375360992-12865-1-git-send-email-olaf@aepfle.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [173.61.119.57]
-x-forefront-prvs: 0925081676
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1756408Ab3HAOfi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 10:35:38 -0400
+Received: from outbound-mail01.westnet.com.au ([203.10.1.242]:15945 "EHLO
+	outbound-mail01.westnet.com.au" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755984Ab3HAOfh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 10:35:37 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Al4CAKZx+lGVhxBY/2dsb2JhbAANToM7g2CnMJQGgTKDGAEBAQQjDwEFQAEQCw4EBgICBRYLAgIJAwIBAgE3DgYNAQUCAQGvQ3SRRYEojl8HgmaBJgOZCZNK
+X-IronPort-AV: E=Sophos;i="4.89,795,1367942400"; 
+   d="scan'208";a="356872737"
+X-WN-REMOTEIP: 149.135.16.88
+X-WN-ENVELOPESENDER: gerg@uclinux.org
+X-WN-MID: 356872737
+X-WN-SMTPAUTHID: gregungerer@westnet.com.au
+Message-ID: <51FA7228.6080306@uclinux.org>
+Date: Fri, 02 Aug 2013 00:35:20 +1000
+From: Greg Ungerer <gerg@uclinux.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-X-OrganizationHeadersPreserved: SN2PR03MB061.namprd03.prod.outlook.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-CrossPremisesHeadersPromoted: TK5EX14HUBC107.redmond.corp.microsoft.com
-X-CrossPremisesHeadersFiltered: TK5EX14HUBC107.redmond.corp.microsoft.com
-X-OriginatorOrg: microsoft.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+To: Guenter Roeck <linux@roeck-us.net>
+CC: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, stable@vger.kernel.org
+Subject: Re: [ 00/17] 3.0.84-stable review
+References: <20130625183915.443950649@linuxfoundation.org> <20130625192300.GA10427@roeck-us.net> <CAMuHMdVzqOLTVWHeGEFpkpDTt8hpor9zQpnn4bPDaNEGWnb=SQ@mail.gmail.com> <20130625193951.GF15184@roeck-us.net> <CAMuHMdWK9xorBaTH+Zg9z1XU=JMsSffzGEfv5KHXnMZLX04PCw@mail.gmail.com> <51CB73E3.9000309@uclinux.org> <20130626232951.GA9629@roeck-us.net>
+In-Reply-To: <20130626232951.GA9629@roeck-us.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Guenter,
+
+Sorry, I am way behind on this...
+
+On 27/06/13 09:29, Guenter Roeck wrote:
+> On Thu, Jun 27, 2013 at 09:06:11AM +1000, Greg Ungerer wrote:
+>> On 26/06/13 17:34, Geert Uytterhoeven wrote:
+>>> On Tue, Jun 25, 2013 at 9:39 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+>>>> On Tue, Jun 25, 2013 at 09:32:26PM +0200, Geert Uytterhoeven wrote:
+>>>>> Hi Günther,
+>>>>>
+>>>>> On Tue, Jun 25, 2013 at 9:23 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+>>>>>> Build m68k:defconfig passed
+>>>>>> Build m68k:apollo_defconfig passed
+>>>>>> Build m68k:m5272c3_defconfig failed
+>>>>>> Build m68k:m5307c3_defconfig failed
+>>>>>> Build m68k:m5249evb_defconfig failed
+>>>>>> Build m68k:m5407c3_defconfig failed
+>>>>>> Build m68k:mac_defconfig passed
+>>>>>> Build m68k:multi_defconfig passed
+>>>>>> Build m68k:sun3_defconfig passed
+>>>>>> Build m68k:sun3x_defconfig passed
+>>>>>> Build m68k:mvme16x_defconfig passed
+>>>>>> Build m68k:hp300_defconfig passed
+>>>>>
+>>>>> m68k:defconfig is an alias for m68k:multi_defconfig, so you can drop
+>>>>> one of them.
+>>>>>
+>>>>> Furthermore, m68k:multi_defconfig is the union of all m68k "classic MMU"
+>>>>> defconfigs, except for sun3_defconfig (due to the incompatible MMU type).
+>>>>> Hence dropping apollo_defconfig, mac_defconfig, sun3x_defconfig,
+>>>>> mvme16x_defconfig, and hp300_defconfig would reduce your build coverage
+>>>>> only marginally. Of course, if you have too many spare cycles ;-)
+>>>>>
+>>>> Thanks, I'll do that. The complete build for three releases takes 15+ hours
+>>>> with i7-3700k, so reducing that a bit doesn't hurt.
+>>>
+>>> FYI, you still built m68k:mvme16x_defconfig for v3.9.7-95-g6a2f14b.
+>>>
+>>>> Would there be any useful builds to add ?
+>>>
+>>> You could add m68k:m5475evb_defconfig, which is the only Coldfire
+>>> defconfig with MMU=y.
+>>>
+>>> Greg: Any other advice for Coldfire?
+>>
+>> I might have some, except I am not sure what we are talking about.
+>> I don't have enough context from the above alone :-)
+>>
+> Just trying to figure out an optimal set of targets for test builds.
+>
+>> I take it this is test building 3.0.84?
+>
+> Yes
+>
+>> I haven't built a 3.0.x for a while, so not sure why the above
+>> ColdFire targets are failing without going and trying it out.
+>>
+> Lots of assembler error messages, plus complaints about redefinitions and
+> implicit declarations.
+>
+> arch/m68k/platform/coldfire/entry.S: Assembler messages:
+> arch/m68k/platform/coldfire/entry.S:64: Error: Unknown operator -- statement `save_all' ignored
+> arch/m68k/platform/coldfire/entry.S:91: Error: operands mismatch -- statement `moveml %a3-%a6/%d6-%d7,%sp@-' ignored
+> arch/m68k/platform/coldfire/entry.S:143: Error: Unknown operator -- statement `restore_user' ignored
+> arch/m68k/platform/coldfire/entry.S:192: Error: Unknown operator -- statement `rdusp' ignored
+> arch/m68k/platform/coldfire/entry.S:201: Error: Unknown operator -- statement `wrusp' ignored
+> In file included from arch/m68k/mm/init.c:4:0:
+> arch/m68k/mm/init_no.c:45:15: error: conflicting types for ‘empty_zero_page’
+> /home/groeck/src/linux-stable/arch/m68k/include/asm/pgtable_mm.h:92:14: note: previous declaration of ‘empty_zero_page’ was here
+> arch/m68k/kernel/setup_no.c: In function 'setup_arch':
+> arch/m68k/kernel/setup_no.c:264:2: error: implicit declaration of function 'paging_init' [-Werror=implicit-function-declaration]
+> /tmp/ccjVitY8.s:120: Error: invalid instruction for this architecture; needs 68010 or higher (68010, 68020 [68k, 68ec020], 68030 [68ec030], 68040 [68ec040], 68060 [68ec060], cpu32 [68330, 68331, 68332, 68333, 68334, 68336, 68340, 68341, 68349, 68360], fidoa [fido]) -- statement `moves.l %d1,(%a2)' ignored
+>
+> and so on. Not that it tells me anything. I'd guess I have the wrong compiler, but it does
+> build for 3.9, so maybe not. If you have an insight, please let me know.
+
+Yes, this is the wrong compiler. You needed to use a m68k-uclinux
+targeted toolchain for 3.0 and older kernels. There are changes to
+the m68k arch Makefile and linker scripts on newer kernels that mean
+you can now use an m68k-linux- toolchain (that is why 3.9 compiles
+cleanly).
+
+Its reasonably easy to fix this on 3.0.x kernels if you want this.
+The below patch does it. I don't have any firm opinion on whether
+you want to apply this to the stable 3.0.x tree. Anyone using 3.0.x
+on m68knommu  has always had to use a m68k-uclinux- toolchain up to
+now.
+
+Regards
+Greg
 
 
-> -----Original Message-----
-> From: Olaf Hering [mailto:olaf@aepfle.de]
-> Sent: Thursday, August 01, 2013 8:43 AM
-> To: KY Srinivasan; gregkh@linuxfoundation.org
-> Cc: linux-kernel@vger.kernel.org; Olaf Hering
-> Subject: [PATCH] Tools: hv: check return value of daemon to fix compiler
-> warning.
-> 
-> hv_kvp_daemon.c: In function 'main':
-> hv_kvp_daemon.c:1441:8: warning: ignoring return value of 'daemon', declared
-> with attribute warn_unused_result [-Wunused-result]
-> 
-> Signed-off-by: Olaf Hering <olaf@aepfle.de>
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 
-> ---
->  tools/hv/hv_kvp_daemon.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
-> index 657c1d2..418ac55 100644
-> --- a/tools/hv/hv_kvp_daemon.c
-> +++ b/tools/hv/hv_kvp_daemon.c
-> @@ -1439,7 +1439,8 @@ int main(void)
->  	char *kvp_recv_buffer;
->  	size_t kvp_recv_buffer_len;
-> 
-> -	daemon(1, 0);
-> +	if (daemon(1, 0))
-> +		return 1;
->  	openlog("KVP", 0, LOG_USER);
->  	syslog(LOG_INFO, "KVP starting; pid is:%d", getpid());
-> 
-> 
-> 
+m68k: allow m68knommu targets to build with an m68k-linux toolchain
 
+Non-mmu m68k arch targets fail to compile with a traditional m68k-linux
+toolchain. Some code relies on __uClinux__ being implicitly defined.
+We can just define it in our arch Makefile to satisfy this. We will
+also need to add the notes section to the linker script to get a
+successful build.
+
+Singed-off-by: Greg Ungerer <gerg@uclinux.org>
+
+--- linux-3.0.88/arch/m68k/Makefile_no.org	2013-08-01 23:47:39.953081304 
++1000
++++ linux-3.0.88/arch/m68k/Makefile_no	2013-08-01 23:50:37.453077257 +1000
+@@ -107,9 +107,11 @@
+  cflags-$(CONFIG_M68360)		:= -m68332
+
+  KBUILD_AFLAGS += $(cflags-y)
++KBUILD_AFLAGS += -D__uClinux__
+
+  KBUILD_CFLAGS += $(cflags-y)
+  KBUILD_CFLAGS += -D__linux__
++KBUILD_CFLAGS += -D__uClinux__
+  KBUILD_CFLAGS += -DUTS_SYSNAME=\"uClinux\"
+
+  head-y := arch/m68k/platform/$(cpuclass-y)/head.o
+--- linux-3.0.88/arch/m68k/kernel/vmlinux.lds_no.S.org	2013-08-01 
+23:58:49.913160401 +1000
++++ linux-3.0.88/arch/m68k/kernel/vmlinux.lds_no.S	2013-08-02 
+00:00:34.373904823 +1000
+@@ -75,6 +75,10 @@
+  		*(__ex_table)
+  		__stop___ex_table = .;
+
++		__start_notes = .;
++		*(.note.*)
++		__stop_notes = .;
++
+  		*(.rodata) *(.rodata.*)
+  		*(__vermagic)		/* Kernel version magic */
+  		*(__markers_strings)
 
 
