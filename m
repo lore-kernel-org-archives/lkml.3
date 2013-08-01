@@ -1,57 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755401Ab3HAM6R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 08:58:17 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.162]:11128 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754705Ab3HAM6Q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 08:58:16 -0400
-X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+yackYocTD1iAi8x+OWJ8KkvZ5rHdwZi2MQ==
-X-RZG-CLASS-ID: mo00
-From: Olaf Hering <olaf@aepfle.de>
-To: kys@microsoft.com, gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, Olaf Hering <olaf@aepfle.de>
-Subject: [PATCH] Tools: hv: in kvp_set_ip_info free mac_addr right after usage
-Date: Thu,  1 Aug 2013 14:58:10 +0200
-Message-Id: <1375361890-15339-1-git-send-email-olaf@aepfle.de>
-X-Mailer: git-send-email 1.8.3.1
+	id S1752810Ab3HANBG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 09:01:06 -0400
+Received: from mms3.broadcom.com ([216.31.210.19]:2163 "EHLO mms3.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751267Ab3HANBF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 09:01:05 -0400
+X-Server-Uuid: B86B6450-0931-4310-942E-F00ED04CA7AF
+Message-ID: <51FA5BFF.6050901@broadcom.com>
+Date: Thu, 1 Aug 2013 15:00:47 +0200
+From: "Arend van Spriel" <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623
+ Thunderbird/17.0.7
+MIME-Version: 1.0
+To: "David Howells" <dhowells@redhat.com>
+cc: "Joe Perches" <joe@perches.com>,
+        "Andrew Morton" <akpm@linux-foundation.org>,
+        "Andy Whitcroft" <apw@canonical.com>,
+        "Hannes Frederic Sowa" <hannes@stressinduktion.org>,
+        "Cong Wang" <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH] checkpatch: Warn when using extern with function
+ prototypes in .h files
+References: <1374721150.1924.26.camel@joe-AO722>
+ <1374602291.3387.17.camel@joe-AO722> <kspuuk$k2v$1@ger.gmane.org>
+ <1374716480.1924.18.camel@joe-AO722>
+ <20130725014732.GA10036@order.stressinduktion.org>
+ <25105.1375359664@warthog.procyon.org.uk>
+In-Reply-To: <25105.1375359664@warthog.procyon.org.uk>
+X-WSS-ID: 7DE4863E2L869572949-01-01
+Content-Type: text/plain;
+ charset=iso-8859-1;
+ format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-... to simplify error path in upcoming changes.
+On 08/01/2013 02:21 PM, David Howells wrote:
+> Joe Perches <joe@perches.com> wrote:
+>
+>> Using the extern keyword on function prototypes is superfluous
+>> visual noise so suggest removing it.
+>>
+>> Using extern can cause unnecessary line wrapping at 80 columns
+>> and unnecessarily long multi-line function prototypes.
+>>
+>> Suggested-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+>> Signed-off-by: Joe Perches <joe@perches.com>
+>
+> Nak.
+>
+> The "extern" makes it much easier to pick out at a glance.
 
-Signed-off-by: Olaf Hering <olaf@aepfle.de>
----
- tools/hv/hv_kvp_daemon.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+Really? Grouping function prototypes within the header file is much more 
+helpful for spotting them.
 
-diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
-index 418ac55..ba075e5 100644
---- a/tools/hv/hv_kvp_daemon.c
-+++ b/tools/hv/hv_kvp_daemon.c
-@@ -1299,6 +1299,7 @@ static int kvp_set_ip_info(char *if_name, struct hv_kvp_ipaddr_value *new_val)
- 	}
- 
- 	error = kvp_write_file(file, "HWADDR", "", mac_addr);
-+	free(mac_addr);
- 	if (error)
- 		goto setval_error;
- 
-@@ -1344,7 +1345,6 @@ static int kvp_set_ip_info(char *if_name, struct hv_kvp_ipaddr_value *new_val)
- 		goto setval_error;
- 
- setval_done:
--	free(mac_addr);
- 	fclose(file);
- 
- 	/*
-@@ -1358,7 +1358,6 @@ setval_done:
- 
- setval_error:
- 	syslog(LOG_ERR, "Failed to write config file");
--	free(mac_addr);
- 	fclose(file);
- 	return error;
- }
+Regards,
+Arend
+
+> Please standardise on there _being_ externs if you must do this.
+>
+> It's gratuitous change anyway and not worth the churn.
+>
+> David
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
+
+
