@@ -1,119 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756049Ab3HAO0a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 10:26:30 -0400
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:47655 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755217Ab3HAO03 (ORCPT
+	id S1756059Ab3HAOaN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 10:30:13 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:43580 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755719Ab3HAOaL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 10:26:29 -0400
-From: Andres Lagar-Cavilla <andreslc@gridcentric.ca>
-To: linux-kernel@vger.kernel.org, xen-devel@lists.xen.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Andres Lagar-Cavilla <andres@lagarcavilla.org>,
-        David Vrabel <david.vrabel@citrix.com>, boris.ostrovsky@oracle.com
-Subject: [PATCH] Xen: Fix retry calls into PRIVCMD_MMAPBATCH*.
-Date: Thu,  1 Aug 2013 14:26:10 +0000
-Message-Id: <1375367170-13151-1-git-send-email-andreslc@gridcentric.ca>
-X-Mailer: git-send-email 1.7.1
-To: linux-kernel@vger.kernel.org, xen-devel@lists.xen.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+	Thu, 1 Aug 2013 10:30:11 -0400
+Date: Thu, 1 Aug 2013 16:30:07 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung@kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 2/8] perf: Sanitize get_callchain_buffer()
+Message-ID: <20130801143006.GI431@somewhere>
+References: <1374539466-4799-1-git-send-email-fweisbec@gmail.com>
+ <1374539466-4799-3-git-send-email-fweisbec@gmail.com>
+ <20130801132934.GG1032@krava.brq.redhat.com>
+ <20130801134226.GC431@somewhere>
+ <20130801135102.GJ1032@krava.brq.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130801135102.GJ1032@krava.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andres Lagar-Cavilla <andres@lagarcavilla.org>
+On Thu, Aug 01, 2013 at 03:51:02PM +0200, Jiri Olsa wrote:
+> On Thu, Aug 01, 2013 at 03:42:28PM +0200, Frederic Weisbecker wrote:
+> > On Thu, Aug 01, 2013 at 03:29:34PM +0200, Jiri Olsa wrote:
+> > > On Tue, Jul 23, 2013 at 02:31:00AM +0200, Frederic Weisbecker wrote:
+> > > SNIP
+> > > 
+> > > >  		if (event->attach_state & PERF_ATTACH_TASK)
+> > > >  			static_key_slow_inc(&perf_sched_events.key);
+> > > >  		if (event->attr.mmap || event->attr.mmap_data)
+> > > > @@ -6572,16 +6570,19 @@ done:
+> > > >  				atomic_inc(&per_cpu(perf_branch_stack_events,
+> > > >  						    event->cpu));
+> > > >  		}
+> > > > -		if (event->attr.sample_type & PERF_SAMPLE_CALLCHAIN) {
+> > > > -			err = get_callchain_buffers();
+> > > > -			if (err) {
+> > > > -				free_event(event);
+> > > > -				return ERR_PTR(err);
+> > > > -			}
+> > > > -		}
+> > > >  	}
+> > > >  
+> > > >  	return event;
+> > > > +
+> > > > +err_pmu:
+> > > > +	if (event->destroy)
+> > > > +		event->destroy(event);
+> > > > +err_ns:
+> > > > +	if (event->ns)
+> > > > +		put_pid_ns(event->ns);
+> > > > +	kfree(event);
+> > > > +
+> > > > +	return ERR_PTR(err);
+> > > 
+> > > could we call __free_filter(event) here?
+> > 
+> > Hmm, the filters are installed from ioctl time so there shouldn't be any yet. But there should be
+> > an exception with inherited events. I fail to find where the filter is inherited though. Do
+> > we actually inherit those?
+> 
+> ouch.. last I checked was freeing filter before writing this... :)
+> 
+> what I meant was the __free_event(event)
 
-When a foreign mapper attempts to map guest frames that are paged out,
-the mapper receives an ENOENT response and will have to try again
-while a helper process pages the target frame back in.
+free_event() doesn't work either because we want several level of rollback depending
+of where the error triggered:
 
-Gating checks on PRIVCMD_MMAPBATCH* ioctl args were preventing retries
-of mapping calls.
+   +err_pmu:
+           if (event->destroy)
+                 event->destroy(event);
+   +err_ns:
+           if (event->ns)
+                 put_pid_ns(event->ns);
+           kfree(event);
 
-V2: Fixed autotranslated physmap mode breakage introduced by V1.
+           return ERR_PTR(err)
 
-Signed-off-by: Andres Lagar-Cavilla <andres@lagarcavilla.org>
----
- drivers/xen/privcmd.c |   41 +++++++++++++++++++++++++++++++++++------
- 1 files changed, 35 insertions(+), 6 deletions(-)
+If we fail after pmu init we want to call destroy, free pid ns and the event.
+If we fail before the pmu init, we want to only free pid ns and the event, ...
 
-diff --git a/drivers/xen/privcmd.c b/drivers/xen/privcmd.c
-index f8e5dd7..6ebdf98 100644
---- a/drivers/xen/privcmd.c
-+++ b/drivers/xen/privcmd.c
-@@ -43,9 +43,12 @@ MODULE_LICENSE("GPL");
- 
- #define PRIV_VMA_LOCKED ((void *)1)
- 
--#ifndef HAVE_ARCH_PRIVCMD_MMAP
- static int privcmd_enforce_singleshot_mapping(struct vm_area_struct *vma);
--#endif
-+
-+static int privcmd_enforce_singleshot_mapping_granular(
-+               struct vm_area_struct *vma,
-+               unsigned long addr,
-+               unsigned long nr_pages);
- 
- static long privcmd_ioctl_hypercall(void __user *udata)
- {
-@@ -422,14 +425,15 @@ static long privcmd_ioctl_mmap_batch(void __user *udata, int version)
- 	vma = find_vma(mm, m.addr);
- 	if (!vma ||
- 	    vma->vm_ops != &privcmd_vm_ops ||
--	    (m.addr != vma->vm_start) ||
--	    ((m.addr + (nr_pages << PAGE_SHIFT)) != vma->vm_end) ||
--	    !privcmd_enforce_singleshot_mapping(vma)) {
-+	    (m.addr < vma->vm_start) ||
-+	    ((m.addr + (nr_pages << PAGE_SHIFT)) > vma->vm_end) ||
-+	    !privcmd_enforce_singleshot_mapping_granular(vma, m.addr, nr_pages)) {
- 		up_write(&mm->mmap_sem);
- 		ret = -EINVAL;
- 		goto out;
- 	}
--	if (xen_feature(XENFEAT_auto_translated_physmap)) {
-+	if (xen_feature(XENFEAT_auto_translated_physmap) &&
-+	    privcmd_enforce_singleshot_mapping(vma)) {
- 		ret = alloc_empty_pages(vma, m.num);
- 		if (ret < 0) {
- 			up_write(&mm->mmap_sem);
-@@ -540,11 +544,36 @@ static int privcmd_mmap(struct file *file, struct vm_area_struct *vma)
- 	return 0;
- }
- 
-+/*
-+ * For Asserting on a whole VMA. This is used by the legacy PRIVCMD_MMAP
-+ * call and autotranslated physmap mode to allocate the ballooned pages that
-+ * back a mapping only once.
-+ */
- static int privcmd_enforce_singleshot_mapping(struct vm_area_struct *vma)
- {
- 	return !cmpxchg(&vma->vm_private_data, NULL, PRIV_VMA_LOCKED);
- }
- 
-+/*
-+ * For MMAPBATCH*. This allows asserting the singleshot mapping
-+ * on a per pfn/pte basis. Mapping calls that fail with ENOENT
-+ * can be then retried until success.
-+ */
-+static int enforce_singleshot_mapping_fn(pte_t *pte, struct page *pmd_page,
-+	                unsigned long addr, void *data)
-+{
-+	return pte_none(*pte) ? 0 : -EBUSY;
-+}
-+
-+static int privcmd_enforce_singleshot_mapping_granular(
-+	           struct vm_area_struct *vma,
-+	           unsigned long addr,
-+	           unsigned long nr_pages)
-+{
-+	return apply_to_page_range(vma->vm_mm, addr, nr_pages << PAGE_SHIFT,
-+	              enforce_singleshot_mapping_fn, NULL) == 0;
-+}
-+
- const struct file_operations xen_privcmd_fops = {
- 	.owner = THIS_MODULE,
- 	.unlocked_ioctl = privcmd_ioctl,
--- 
-1.7.1
+_free_event() does the whole in any case, which is not what we want.
 
+But...
+
+OTOH it might work due to the if (event->destroy) and if (event->ns) before freeing the
+resource associated.
+
+So may be I can replace the labels with a single call to __free_event() after all as it
+checks what needs to be freed.  What do you think?
