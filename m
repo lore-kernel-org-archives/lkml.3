@@ -1,47 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757638Ab3HAWHu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 18:07:50 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:54926 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757535Ab3HAWHt (ORCPT
+	id S1757797Ab3HAWH6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 18:07:58 -0400
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:30547 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757654Ab3HAWHz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 18:07:49 -0400
-Date: Thu, 01 Aug 2013 15:07:47 -0700 (PDT)
-Message-Id: <20130801.150747.1331605394989816099.davem@davemloft.net>
-To: tj@kernel.org
-Cc: lizefan@huawei.com, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        nhorman@tuxdriver.com
-Subject: Re: [PATCH 03/23] netprio_cgroup: pass around @css instead of
- @cgroup and kill struct cgroup_netprio_state
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1375393801-4817-4-git-send-email-tj@kernel.org>
-References: <1375393801-4817-1-git-send-email-tj@kernel.org>
-	<1375393801-4817-4-git-send-email-tj@kernel.org>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+	Thu, 1 Aug 2013 18:07:55 -0400
+Message-ID: <1375394806.10300.24.camel@misato.fc.hp.com>
+Subject: Re: [PATCH v2 03/18] acpi: Remove "continue" in macro
+ INVALID_TABLE().
+From: Toshi Kani <toshi.kani@hp.com>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu,
+        hpa@zytor.com, akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
+        mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
+        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com, x86@kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-acpi@vger.kernel.org
+Date: Thu, 01 Aug 2013 16:06:46 -0600
+In-Reply-To: <1375340800-19332-4-git-send-email-tangchen@cn.fujitsu.com>
+References: <1375340800-19332-1-git-send-email-tangchen@cn.fujitsu.com>
+	 <1375340800-19332-4-git-send-email-tangchen@cn.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Thu, 01 Aug 2013 15:07:48 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tejun Heo <tj@kernel.org>
-Date: Thu,  1 Aug 2013 17:49:41 -0400
+On Thu, 2013-08-01 at 15:06 +0800, Tang Chen wrote:
+> The macro INVALID_TABLE() is defined like this:
+> 
+>  #define INVALID_TABLE(x, path, name)                                    \
+>          { pr_err("ACPI OVERRIDE: " x " [%s%s]\n", path, name); continue; }
+> 
+> And it is used like this:
+> 
+> 	for (...) {
+> 		...
+> 		if (...)
+> 			INVALID_TABLE()
+> 		...
+> 	}
+> 
+> The "continue" in the macro makes the code hard to understand.
+> Change it to the style like other macros:
+> 
+>  #define INVALID_TABLE(x, path, name)                                    \
+>          do { pr_err("ACPI OVERRIDE: " x " [%s%s]\n", path, name); } while (0)
+> 
+> So after this patch, this macro should be used like this:
+> 
+> 	for (...) {
+> 		...
+> 		if (...) {
+> 			INVALID_TABLE()
+> 			continue;
+> 		}
+> 		...
+> 	}
+> 
+> Add the "continue" wherever the macro is called.
+> (For now, it is only called in acpi_initrd_override().)
+> 
+> The idea is from Yinghai Lu <yinghai@kernel.org>.
+> 
+> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> Acked-by: Tejun Heo <tj@kernel.org>
+> Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+> ---
+>  drivers/acpi/osl.c |   18 +++++++++++++-----
+>  1 files changed, 13 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
+> index e721863..91d9f54 100644
+> --- a/drivers/acpi/osl.c
+> +++ b/drivers/acpi/osl.c
+> @@ -565,7 +565,7 @@ static const char * const table_sigs[] = {
+>  
+>  /* Non-fatal errors: Affected tables/files are ignored */
+>  #define INVALID_TABLE(x, path, name)					\
 
-> cgroup controller API will be converted to primarily use struct
-> cgroup_subsys_state instead of struct cgroup.  In preparation, make
-> the internal functions of netprio_cgroup pass around @css instead of
-> @cgrp.
-> 
-> While at it, kill struct cgroup_netprio_state which only contained
-> struct cgroup_subsys_state without serving any purpose.  All functions
-> are converted to deal with @css directly.
-> 
-> This patch shouldn't cause any behavior differences.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
+Since you are touching this macro, I'd suggest to rename it something
+like ACPI_INVALID_TABLE().  INVALID_TABLE() sounds too generic to me.
+Otherwise, it looks good.
 
-Acked-by: David S. Miller <davem@davemloft.net>
+Acked-by: Toshi Kani <toshi.kani@hp.com>
+
+Thanks,
+-Toshi
+
+
+> -	{ pr_err("ACPI OVERRIDE: " x " [%s%s]\n", path, name); continue; }
+> +	do { pr_err("ACPI OVERRIDE: " x " [%s%s]\n", path, name); } while (0)
+>  
+>  #define ACPI_HEADER_SIZE sizeof(struct acpi_table_header)
+>  
+> @@ -593,9 +593,11 @@ void __init acpi_initrd_override(void *data, size_t size)
+>  		data += offset;
+>  		size -= offset;
+>  
+> -		if (file.size < sizeof(struct acpi_table_header))
+> +		if (file.size < sizeof(struct acpi_table_header)) {
+>  			INVALID_TABLE("Table smaller than ACPI header",
+>  				      cpio_path, file.name);
+> +			continue;
+> +		}
+>  
+>  		table = file.data;
+>  
+> @@ -603,15 +605,21 @@ void __init acpi_initrd_override(void *data, size_t size)
+>  			if (!memcmp(table->signature, table_sigs[sig], 4))
+>  				break;
+>  
+> -		if (!table_sigs[sig])
+> +		if (!table_sigs[sig]) {
+>  			INVALID_TABLE("Unknown signature",
+>  				      cpio_path, file.name);
+> -		if (file.size != table->length)
+> +			continue;
+> +		}
+> +		if (file.size != table->length) {
+>  			INVALID_TABLE("File length does not match table length",
+>  				      cpio_path, file.name);
+> -		if (acpi_table_checksum(file.data, table->length))
+> +			continue;
+> +		}
+> +		if (acpi_table_checksum(file.data, table->length)) {
+>  			INVALID_TABLE("Bad table checksum",
+>  				      cpio_path, file.name);
+> +			continue;
+> +		}
+>  
+>  		pr_info("%4.4s ACPI table found in initrd [%s%s][0x%x]\n",
+>  			table->signature, cpio_path, file.name, table->length);
+
+
