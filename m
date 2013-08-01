@@ -1,114 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755462Ab3HANjw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 09:39:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63359 "EHLO mx1.redhat.com"
+	id S1755592Ab3HANkm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 09:40:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40439 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753572Ab3HANju (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 09:39:50 -0400
-Date: Thu, 1 Aug 2013 15:39:21 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung@kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 6/8] perf: Account freq events per cpu
-Message-ID: <20130801133921.GI1032@krava.brq.redhat.com>
-References: <1374539466-4799-1-git-send-email-fweisbec@gmail.com>
- <1374539466-4799-7-git-send-email-fweisbec@gmail.com>
- <20130801124658.GC1032@krava.brq.redhat.com>
- <20130801133155.GB27162@twins.programming.kicks-ass.net>
+	id S1752230Ab3HANkl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 09:40:41 -0400
+Date: Thu, 1 Aug 2013 15:34:55 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC][PATCH 3/4] tracing/kprobes: Fail to unregister if probe
+	event files are open
+Message-ID: <20130801133455.GB8703@redhat.com>
+References: <20130704033347.807661713@goodmis.org> <20130704034038.819592356@goodmis.org> <1375300192.5418.17.camel@gandalf.local.home> <20130731204003.GA30188@redhat.com> <1375310548.5418.21.camel@gandalf.local.home> <1375322866.5418.46.camel@gandalf.local.home> <1375325414.5418.50.camel@gandalf.local.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130801133155.GB27162@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1375325414.5418.50.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 01, 2013 at 03:31:55PM +0200, Peter Zijlstra wrote:
-> On Thu, Aug 01, 2013 at 02:46:58PM +0200, Jiri Olsa wrote:
-> > On Tue, Jul 23, 2013 at 02:31:04AM +0200, Frederic Weisbecker wrote:
-> > > This is going to be used by the full dynticks subsystem
-> > > as a finer-grained information to know when to keep and
-> > > when to stop the tick.
-> > > 
-> > > Original-patch-by: Peter Zijlstra <peterz@infradead.org>
-> > > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> > > Cc: Jiri Olsa <jolsa@redhat.com>
-> > > Cc: Peter Zijlstra <peterz@infradead.org>
-> > > Cc: Namhyung Kim <namhyung@kernel.org>
-> > > Cc: Ingo Molnar <mingo@kernel.org>
-> > > Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-> > > Cc: Stephane Eranian <eranian@google.com>
-> > > ---
-> > >  kernel/events/core.c |    7 +++++++
-> > >  1 files changed, 7 insertions(+), 0 deletions(-)
-> > > 
-> > > diff --git a/kernel/events/core.c b/kernel/events/core.c
-> > > index b40c3db..f9bd39b 100644
-> > > --- a/kernel/events/core.c
-> > > +++ b/kernel/events/core.c
-> > > @@ -141,6 +141,7 @@ enum event_type_t {
-> > >  struct static_key_deferred perf_sched_events __read_mostly;
-> > >  static DEFINE_PER_CPU(atomic_t, perf_cgroup_events);
-> > >  static DEFINE_PER_CPU(atomic_t, perf_branch_stack_events);
-> > > +static DEFINE_PER_CPU(atomic_t, perf_freq_events);
-> > >  
-> > >  static atomic_t nr_mmap_events __read_mostly;
-> > >  static atomic_t nr_comm_events __read_mostly;
-> > > @@ -3139,6 +3140,9 @@ static void unaccount_event_cpu(struct perf_event *event, int cpu)
-> > >  	}
-> > >  	if (is_cgroup_event(event))
-> > >  		atomic_dec(&per_cpu(perf_cgroup_events, cpu));
-> > > +
-> > > +	if (event->attr.freq)
-> > > +		atomic_dec(&per_cpu(perf_freq_events, cpu));
-> > >  }
-> > >  
-> > >  static void unaccount_event(struct perf_event *event)
-> > > @@ -6473,6 +6477,9 @@ static void account_event_cpu(struct perf_event *event, int cpu)
-> > >  	}
-> > >  	if (is_cgroup_event(event))
-> > >  		atomic_inc(&per_cpu(perf_cgroup_events, cpu));
-> > > +
-> > > +	if (event->attr.freq)
-> > > +		atomic_inc(&per_cpu(perf_freq_events, cpu));
-> > 
-> > cpu could be -1 in here.. getting:
-> 
-> Ho humm, right you are. 
-> 
-> So we have:
-> 
-> static void account_event_cpu(struct perf_event *event, int cpu)
-> {
-> 	if (event->parent)
-> 		return;
-> 
-> 	if (has_branch_stack(event)) {
-> 		if (!(event->attach_state & PERF_ATTACH_TASK))
-> 			atomic_inc(&per_cpu(perf_branch_stack_events, cpu));
-> 	}
-> 	if (is_cgroup_event(event))
-> 		atomic_inc(&per_cpu(perf_cgroup_events, cpu));
-> 
-> 	if (event->attr.freq)
-> 		atomic_inc(&per_cpu(perf_freq_events, cpu));
-> }
-> 
-> Where the freq thing is new and shiney, but we already had the other
-> two. Of those, cgroup events must be per cpu so that should be good,
-> the branch_stack thing tests ATTACH_TASK, which should also be good, but
-> leaves me wonder wth they do for those that are attached to tasks.
+On 07/31, Steven Rostedt wrote:
+>
+> Subject: [PATCH] tracing/kprobes: Fail to unregister if probe event files are
+>  in use
+>
+> When a probe is being removed, it cleans up the event files that correspond
+> to the probe. But there is a race between writing to one of these files
+> and deleting the probe. This is especially true for the "enable" file.
+>
+> 	CPU 0				CPU 1
+> 	-----				-----
+>
+> 				  fd = open("enable",O_WRONLY);
+>
+>   probes_open()
+>   release_all_trace_probes()
+>   unregister_trace_probe()
+>   if (trace_probe_is_enabled(tp))
+> 	return -EBUSY
+>
+> 				   write(fd, "1", 1)
+> 				   __ftrace_set_clr_event()
+> 				   call->class->reg()
+> 				    (kprobe_register)
+> 				     enable_trace_probe(tp)
+>
+>   __unregister_trace_probe(tp);
+>   list_del(&tp->list)
+>   unregister_probe_event(tp) <-- fails!
+>   free_trace_probe(tp)
 
-cgroup is cpu only:
+Yes. But again, this doesn't explain why unregister_probe_event()->
+__trace_remove_event_call() can't simply proceed and
+do ftrace_event_enable_disable() + remove_event_from_tracers().
 
-SYSCALL(..
-        if ((flags & PERF_FLAG_PID_CGROUP) && (pid == -1 || cpu == -1))
-                return -EINVAL;
+IOW, if we do not apply the previous "trace_remove_event_call() should
+fail if call/file is in use" patch, then everything is fine:
 
-jirka
+
+> 				   write(fd, "0", 1)
+
+this will fail with ENODEV.
+
+Let's consider another race:
+
+	CPU 0					CPU 1
+	-----					-----
+
+	probes_open()
+	trace_probe_is_enabled() == F;
+
+						sys_perf_event_open(attr.config == id)
+
+
+	...
+	trace_remove_event_call()
+
+Whatever we do, we should abort. We could even do TRACE_REG_PERF_UNREGISTER
+(although the current code doesn't do this), but we have no way to cleanup
+the perf event's which have ->>tp_event = call.
+
+trace_remove_event_call() was already changed to return the error.
+
+And. Since it can fail, this obviously means that it should be checked,
+we can't blindly do free_trace_probe().
+
+IOW, the changelog could be very simple, I think. Either
+trace_remove_event_call() should always succeed or we should check the
+possible failure.
+
+But I won't argue with this changelog. The only important thing is that
+we all seem to agree that we do have the races here which can be fixed
+by this and the previous change.
+
+And just in case. I believe that the patch is fine.
+
+Just one off-topic note,
+
+> @@ -632,7 +635,9 @@ static int release_all_trace_probes(void)
+>  	/* TODO: Use batch unregistration */
+>  	while (!list_empty(&probe_list)) {
+>  		tp = list_entry(probe_list.next, struct trace_probe, list);
+> -		unregister_trace_probe(tp);
+> +		ret = unregister_trace_probe(tp);
+> +		if (ret)
+> +			goto end;
+>  		free_trace_probe(tp);
+>  	}
+
+This obviously breaks all-or-nothing semantics (I mean, this breaks
+the intent, the current code is buggy).
+
+I think we can't avoid this, and I hope this is fine. But then perhaps
+we should simply remove the "list_for_each_entry" check above?
+
+Oleg.
+
