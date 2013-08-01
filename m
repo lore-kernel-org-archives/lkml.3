@@ -1,59 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752668Ab3HAHad (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 03:30:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41713 "EHLO
+	id S1753515Ab3HAHaw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 03:30:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41808 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751835Ab3HAHac (ORCPT
+	with ESMTP id S1753223Ab3HAHat (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 03:30:32 -0400
-Date: Wed, 31 Jul 2013 18:11:50 -0700
+	Thu, 1 Aug 2013 03:30:49 -0400
+Date: Wed, 31 Jul 2013 18:45:12 -0700
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-Cc: linux-serial@vger.kernel.org, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Jiri Slaby <jslaby@suse.cz>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Stephen Gallimore <stephen.gallimore@st.com>,
-        Stuart Menefy <stuart.menefy@st.com>, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH v7] serial:st-asc: Add ST ASC driver.
-Message-ID: <20130801011150.GA11704@kroah.com>
-References: <1375263408-12834-1-git-send-email-srinivas.kandagatla@st.com>
+To: Sudeep Dutt <sudeep.dutt@intel.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>, Rob Landley <rob@landley.net>,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, linux-doc@vger.kernel.org,
+        Nikhil Rao <nikhil.rao@intel.com>,
+        Ashutosh Dixit <ashutosh.dixit@intel.com>,
+        Caz Yokoyama <Caz.Yokoyama@intel.com>,
+        Dasaratharaman Chandramouli 
+	<dasaratharaman.chandramouli@intel.com>,
+        Harshavardhan R Kharche <harshavardhan.r.kharche@intel.com>,
+        "Yaozu (Eddie) Dong" <eddie.dong@intel.com>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
+Subject: Re: [PATCH 1/5] Intel MIC Host Driver for X100 family.
+Message-ID: <20130801014512.GC6941@kroah.com>
+References: <cover.1374717252.git.sudeep.dutt@intel.com>
+ <be8c714ed743143c427058fc0b75722f2eeeee1c.1374717252.git.sudeep.dutt@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1375263408-12834-1-git-send-email-srinivas.kandagatla@st.com>
+In-Reply-To: <be8c714ed743143c427058fc0b75722f2eeeee1c.1374717252.git.sudeep.dutt@intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 31, 2013 at 10:36:48AM +0100, Srinivas KANDAGATLA wrote:
-> From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
-> 
-> This patch adds support to ASC (asynchronous serial controller)
-> driver, which is basically a standard serial driver. This IP is common
-> across all the ST parts for settop box platforms.
-> 
-> ASC is embedded in ST COMMS IP block. It supports Rx & Tx functionality.
-> It support all industry standard baud rates.
-> 
-> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
-> CC: Stephen Gallimore <stephen.gallimore@st.com>
-> CC: Stuart Menefy <stuart.menefy@st.com>
-> CC: Arnd Bergmann <arnd@arndb.de>
-> CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> ---
-> Hi Greg,
-> 
-> This patch is the part of the driver support for Sti ARM SOCs.
-> This patch undergone 3-4 cycles of review in arm-kernel mailing list.
-> All the patches in that series went into 3.11.
-> This patch is based on 3.11-rc1.
+On Wed, Jul 24, 2013 at 08:31:32PM -0700, Sudeep Dutt wrote:
+> This patch enables the following:
+> a) Initializes the Intel MIC X100 PCIe devices.
+> b) Boots and shuts down the card via sysfs entries.
+> c) Allocates and maps a device page for communication with the
+> card driver and updates the device page address via scratchpad
+> registers.
+> d) Provides sysfs entries for family, stepping, state, shutdown
+> status, kernel command line, IP address, ramdisk and log buffer
+> information.
 
-This patch doesn't apply to my tree at all, can you please refresh it
-against my tty-next tree and resend it so that I can have the chance to
-apply it?
+That's a lot to do in one patch, almost 4 thousand lines.  Can't you
+break this up into some more smaller, logical, and reviewable, pieces?
+
+For example, I have no idea what b) is, and how to separate it from the
+things you do for a) and c).
 
 thanks,
 
