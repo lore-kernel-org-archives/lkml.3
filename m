@@ -1,101 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757866Ab3HAWZq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 18:25:46 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39864 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752883Ab3HAWZo (ORCPT
+	id S1757820Ab3HAW10 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 18:27:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57723 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752883Ab3HAW1Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 18:25:44 -0400
-In-Reply-To: <20130801213420.GL23006@n2100.arm.linux.org.uk>
-References: <20130801213420.GL23006@n2100.arm.linux.org.uk>
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>
-Subject: [PATCH RFC 51/51] ARM: 7805/1: mm: change max*pfn to include the
- physical offset of memory
-Message-Id: <E1V51J5-0006uq-1h@rmk-PC.arm.linux.org.uk>
-Date: Thu, 01 Aug 2013 23:25:15 +0100
+	Thu, 1 Aug 2013 18:27:24 -0400
+Date: Fri, 2 Aug 2013 06:28:40 +0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Evan Ng <evan.sin.ng@gmail.com>
+Cc: pe1dnn@amsat.org, johanmeiring@gmail.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: wlags49_h2: fixed 80 line character and white
+ space issue in ap_h2.c Fixed various coding style warnings found by the
+ checkpatch.pl tool
+Message-ID: <20130801222840.GA5444@kroah.com>
+References: <1375303465-3437-1-git-send-email-evan.sin.ng@gmail.com>
+ <20130801215019.GA4427@kroah.com>
+ <CAGkkOHezKfjYaGJHcbPPiE4EobOLMp=K62-NWhpbvp2QDhLOfA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAGkkOHezKfjYaGJHcbPPiE4EobOLMp=K62-NWhpbvp2QDhLOfA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Most of the kernel code assumes that max*pfn is maximum pfns because
-the physical start of memory is expected to be PFN0. Since this
-assumption is not true on ARM architectures, the meaning of max*pfn
-is number of memory pages. This is done to keep drivers happy which
-are making use of of these variable to calculate the dma bounce limit
-using dma_mask.
+On Thu, Aug 01, 2013 at 03:08:21PM -0700, Evan Ng wrote:
+> Thanks for the reply, 
+> 
+> Being this is my first patch that I have submitted, I want to clarify a few
+> things:
+> 
+> My *corrected* subject should read something like this? 
+> 
+> "Subject: [PATCH] Staging: wlags49_h2: fixed 80 line character and white space
+>                issue in ap_h2.c Fixed various coding style warnings found by
+> the
+>                checkpatch.pl tool
+> \n
+> LONGER DESCRIPTION GOES HERE"
 
-Now since we have a architecture override possibility for DMAable
-maximum pfns, lets make meaning of max*pfns as maximum pnfs on ARM
-as well.
+No.
 
-Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
----
- arch/arm/include/asm/dma-mapping.h |    8 ++++++++
- arch/arm/mm/init.c                 |   10 ++++------
- 2 files changed, 12 insertions(+), 6 deletions(-)
+It should be:
+	Subject: [PATCH] Staging: wlags48_h2: ap_h2.c: fixed tab whitespace issue
 
-diff --git a/arch/arm/include/asm/dma-mapping.h b/arch/arm/include/asm/dma-mapping.h
-index 5b579b9..863cd84 100644
---- a/arch/arm/include/asm/dma-mapping.h
-+++ b/arch/arm/include/asm/dma-mapping.h
-@@ -64,6 +64,7 @@ static inline dma_addr_t virt_to_dma(struct device *dev, void *addr)
- {
- 	return (dma_addr_t)__virt_to_bus((unsigned long)(addr));
- }
-+
- #else
- static inline dma_addr_t pfn_to_dma(struct device *dev, unsigned long pfn)
- {
-@@ -86,6 +87,13 @@ static inline dma_addr_t virt_to_dma(struct device *dev, void *addr)
- }
- #endif
- 
-+/* The ARM override for dma_max_pfn() */
-+static inline unsigned long dma_max_pfn(struct device *dev)
-+{
-+	return PHYS_PFN_OFFSET + dma_to_pfn(dev, *dev->dma_mask);
-+}
-+#define dma_max_pfn(dev) dma_max_pfn(dev)
-+
- /*
-  * DMA errors are defined by all-bits-set in the DMA address.
-  */
-diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
-index b5b5836..2731dcf 100644
---- a/arch/arm/mm/init.c
-+++ b/arch/arm/mm/init.c
-@@ -422,12 +422,10 @@ void __init bootmem_init(void)
- 	 * This doesn't seem to be used by the Linux memory manager any
- 	 * more, but is used by ll_rw_block.  If we can get rid of it, we
- 	 * also get rid of some of the stuff above as well.
--	 *
--	 * Note: max_low_pfn and max_pfn reflect the number of _pages_ in
--	 * the system, not the maximum PFN.
- 	 */
--	max_low_pfn = max_low - PHYS_PFN_OFFSET;
--	max_pfn = max_high - PHYS_PFN_OFFSET;
-+	min_low_pfn = min;
-+	max_low_pfn = max_low;
-+	max_pfn = max_high;
- }
- 
- /*
-@@ -533,7 +531,7 @@ static inline void free_area_high(unsigned long pfn, unsigned long end)
- static void __init free_highpages(void)
- {
- #ifdef CONFIG_HIGHMEM
--	unsigned long max_low = max_low_pfn + PHYS_PFN_OFFSET;
-+	unsigned long max_low = max_low_pfn;
- 	struct memblock_region *mem, *res;
- 
- 	/* set highmem page free */
--- 
-1.7.4.4
+	This patch fixes the tab vs. spaces white space issues in this
+	file.
 
+	Signed-off-by: ....
+
+> As for the doing "one thing at a time" would it be preferred if I fix the
+> syntax of one function within a file a time?  Would that mean that for one
+> simple .c file I could be making 15 or so commits to it?
+
+How about fixing one specific warning at a time for the whole file?
+Like tab issues, and then { issues, and then ' ' issues, and so on.  See
+the archives of the mailing list for lots of examples of how to do this
+properly.
+
+hope this helps,
+
+greg k-h
