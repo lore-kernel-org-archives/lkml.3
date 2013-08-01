@@ -1,63 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756585Ab3HAU1I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 16:27:08 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:38388 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753007Ab3HAU1F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 16:27:05 -0400
-Message-ID: <51FAC481.2050905@zytor.com>
-Date: Thu, 01 Aug 2013 13:26:41 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1755264Ab3HAU1w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 16:27:52 -0400
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:50032 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751723Ab3HAU1u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 16:27:50 -0400
 MIME-Version: 1.0
-To: Leif Lindholm <leif.lindholm@linaro.org>
-CC: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-ia64@vger.kernel.org, matt.fleming@intel.com, tglx@linutronix.de,
-        patches@linaro.org, "Luck, Tony" <tony.luck@intel.com>
-Subject: Re: [PATCH 0/4] Make commonly useful UEFI functions common
-References: <1375202858-28470-1-git-send-email-leif.lindholm@linaro.org>
-In-Reply-To: <1375202858-28470-1-git-send-email-leif.lindholm@linaro.org>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130801200008.GA5495@amd.pavel.ucw.cz>
+References: <20130709012611.GA22371@amd.pavel.ucw.cz> <20130709041321.GA30555@kroah.com>
+ <20130709094906.GA3870@amd.pavel.ucw.cz> <20130709101039.GA4479@amd.pavel.ucw.cz>
+ <CAErSpo57qjTkGbNK5qLzJcKuqBGK5=R=raEdyL6M1d5O=FkK_Q@mail.gmail.com>
+ <20130710132950.GA3684@amd.pavel.ucw.cz> <CAErSpo5ig3bxZ3hBUUrzTdc=YqHy7cBGBxOLru4NYdyOOR+W5w@mail.gmail.com>
+ <20130712111121.GB3515@amd.pavel.ucw.cz> <CAErSpo6NYZNHyV9xh2wRSQp72-dxg+FrFW4XrjE5Ps=bW6AGCw@mail.gmail.com>
+ <CAErSpo4XrJL48boVNiEb-7Y=52Bx_79hqP909ayLOdm7we_m3Q@mail.gmail.com> <20130801200008.GA5495@amd.pavel.ucw.cz>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 1 Aug 2013 14:27:29 -0600
+Message-ID: <CAErSpo4Dw9Bg059scx-YzR=5rpkc65f0hjQnM7STtoprOLXJqw@mail.gmail.com>
+Subject: Re: /sys/module/pcie_aspm/parameters/policy not writable?
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Greg KH <greg@kroah.com>, kernel list <linux-kernel@vger.kernel.org>,
+        Joe Lawrence <joe.lawrence@stratus.com>,
+        Myron Stowe <myron.stowe@redhat.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Carolyn Wyborny <carolyn.wyborny@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        Greg Rose <gregory.v.rose@intel.com>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
+        Alex Duyck <alexander.h.duyck@intel.com>,
+        John Ronciak <john.ronciak@intel.com>,
+        Tushar Dave <tushar.n.dave@intel.com>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/30/2013 09:47 AM, Leif Lindholm wrote:
-> This set breaks out some common code from x86/ia64 EFI support
-> code and puts it into drivers/firmware/efi.
-> 
-> First it takes the definition of the global "efi" data structure
-> and moves it into global efi.c. Then it implements a common version
-> of efi_config_init().
-> 
-> Secondly it breaks the efi_lookup_mapped_addr() function out of x86
-> and places it in global efi.c, for shared use with future ARM
-> patches.
-> 
-> IA64 code compile tested only.
-> 
-> Pardon the delay in getting this out - back to back conferences
-> followed by a bad case of the man flu.
-> 
-> Leif Lindholm (4):
->   efi: provide a generic efi_config_init()
->   efi: x86: use common code for (U)EFI configuration scanning
->   efi: ia64: use common code for (U)EFI configuration scanning
->   efi: x86: make efi_lookup_mapped_addr() a common function
-> 
->  arch/ia64/include/asm/io.h  |    1 +
->  arch/ia64/kernel/efi.c      |   54 ++++-------------
->  arch/x86/platform/efi/efi.c |  124 +++------------------------------------
->  drivers/firmware/efi/efi.c  |  136 +++++++++++++++++++++++++++++++++++++++++++
->  include/linux/efi.h         |    7 +++
->  5 files changed, 163 insertions(+), 159 deletions(-)
-> 
+On Thu, Aug 1, 2013 at 2:00 PM, Pavel Machek <pavel@ucw.cz> wrote:
+> Hi!
+>
+>> > But since the problem also occurs with Windows, it's pretty likely
+>> > that there's a BIOS update to fix it.  I notice on the X60 support
+>> > page that there are several versions newer than what you're running.
+>>
+>> Do you have any interest in trying a newer BIOS to see if it's fixed
+>> there?  If not, I understand; BIOS updates are a hassle at best.
+>> You're running BIOS 2.14, and it looks like the current BIOS for an
+>> X60 1709 7HU is 2.19 (from http://support.lenovo.com).
+>
+> I'm lost at the lenovo pages :-(. And frankly I'd prefer not to touch
+> the BIOS.
 
-Matt, I assume you're picking this up once the missing bits are plugged
-in, right?
+I tried to provide a complete link, but the web site isn't amenable to
+that.  I found it by selecting the "Drivers & Software" section,
+entering "X60" as the machine type, selecting "ThinkPad X60 (1709)"
+and going to the "BIOS" section.  I was surprised how easy it was :)
 
-	-hpa
+>> Carolyn's patch will likely work, at least most of the time, but I
+>> think there's a small possibility that it could cause a conflict
+>> between the BIOS and the OS over ASPM control, so I'm not 100% in
+>> support of that approach.  A conflict may not happen on your
+>> machine,
+>
+> Can we base it on DMI  whitelist?
 
+I don't think we can know a priori whether a machine (even your
+machine) is susceptible to a conflict.  But if Carolyn forcibly
+disables it in the driver, she can structure that with a whitelist or
+whatever she thinks is best.
+
+Bjorn
