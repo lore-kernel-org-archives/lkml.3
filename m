@@ -1,43 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754457Ab3HAKMm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 06:12:42 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:2386 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752459Ab3HAKMk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 06:12:40 -0400
-X-IronPort-AV: E=Sophos;i="4.89,793,1367971200"; 
-   d="scan'208";a="40707909"
-Message-ID: <51FA3496.6020803@citrix.com>
-Date: Thu, 1 Aug 2013 11:12:38 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
+	id S1754663Ab3HAKNZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 06:13:25 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:33293 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753784Ab3HAKNW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 06:13:22 -0400
+Date: Thu, 1 Aug 2013 12:12:56 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Cc: Waiman Long <Waiman.Long@hp.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Richard Weinberger <richard@nod.at>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Akinobu Mita <akinobu.mita@gmail.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Michel Lespinasse <walken@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        George Spelvin <linux@horizon.com>,
+        Harvey Harrison <harvey.harrison@gmail.com>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Subject: Re: [PATCH RFC 1/2] qspinlock: Introducing a 4-byte queue spinlock
+ implementation
+Message-ID: <20130801101256.GM3008@twins.programming.kicks-ass.net>
+References: <1375324631-32868-1-git-send-email-Waiman.Long@hp.com>
+ <1375324631-32868-2-git-send-email-Waiman.Long@hp.com>
+ <20130801094029.GK3008@twins.programming.kicks-ass.net>
+ <51FA3455.1000607@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Roger Pau Monne <roger.pau@citrix.com>
-CC: <xen-devel@lists.xen.org>, <linux-kernel@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: Re: [PATCH 1/3] xen-gnt: prevent adding duplicate gnt callbacks
-References: <1375282844-4314-1-git-send-email-roger.pau@citrix.com> <1375282844-4314-2-git-send-email-roger.pau@citrix.com>
-In-Reply-To: <1375282844-4314-2-git-send-email-roger.pau@citrix.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51FA3455.1000607@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31/07/13 16:00, Roger Pau Monne wrote:
-> With the current implementation, the callback in the tail of the list
-> can be added twice, because the check done in
-> gnttab_request_free_callback is bogus, callback->next can be NULL if
-> it is the last callback in the list. If we add the same callback twice
-> we end up with an infinite loop, were callback == callback->next.
-> 
-> Replace this check with a proper one that iterates over the list to
-> see if the callback has already been added.
+On Thu, Aug 01, 2013 at 03:41:33PM +0530, Raghavendra K T wrote:
+> It is exactly 16k-1 not 15k
+> That is because CPU_CODE of 1 to 16k represents cpu 0..16k-1
 
-As a minimal fix suitable for stable,
+>From what I know big systems are usually build with power-of-two
+factors. Although I suppose with a ring fabric you could have an
+arbitrary number of nodes.
 
-Reviewed-by: David Vrabel <david.vrabel@citrix.com>
+Anyway, I've heard SGI talk about 4K cpu systems, 8K cpu systems and 16K
+cpu systems, I've not heard them talk about 16K-n systems.
 
-David
+Also, as in other parts of the reply I send, this limitation seems
+completely unnecessary.
