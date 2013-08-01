@@ -1,83 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753841Ab3HADAV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 23:00:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56300 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753216Ab3HADAT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 23:00:19 -0400
-Date: Wed, 31 Jul 2013 22:59:11 -0400
-From: Dave Jones <davej@redhat.com>
-To: Olof Johansson <olof@lixom.net>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>,
-        "ksummit-2013-discuss@lists.linuxfoundation.org" 
-	<ksummit-2013-discuss@lists.linuxfoundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [Ksummit-2013-discuss] [ARM ATTEND] catching up on exploit
- mitigations
-Message-ID: <20130801025911.GA20166@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Olof Johansson <olof@lixom.net>,
-	Russell King - ARM Linux <linux@arm.linux.org.uk>,
-	Aaro Koskinen <aaro.koskinen@iki.fi>,
-	"ksummit-2013-discuss@lists.linuxfoundation.org" <ksummit-2013-discuss@lists.linuxfoundation.org>,
-	Kees Cook <keescook@chromium.org>,
-	"linux-arm-kernel@lists.infradead.org" <linux-arm-kernel@lists.infradead.org>,
-	LKML <linux-kernel@vger.kernel.org>
-References: <CAGXu5jKv9Vt+Hu0mFYaxggLLDZ46U3KR9MKegUoHH8StXCkBtQ@mail.gmail.com>
- <20130730221435.GA22240@redhat.com>
- <20130730231120.GC30725@blackmetal.musicnaut.iki.fi>
- <20130730231533.GA26824@redhat.com>
- <20130730235834.GD30725@blackmetal.musicnaut.iki.fi>
- <20130731000444.GC1281@redhat.com>
- <20130731094012.GU24642@n2100.arm.linux.org.uk>
- <20130731142430.GA4545@redhat.com>
- <CAOesGMiBa7fT+HZquNrwV=3P=Z-F9c8L7YQr7=D2BO_6pJXQ0w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOesGMiBa7fT+HZquNrwV=3P=Z-F9c8L7YQr7=D2BO_6pJXQ0w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753288Ab3HADFl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 23:05:41 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:56363 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751602Ab3HADFk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 23:05:40 -0400
+From: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
+To: rusty@rustcorp.com.au, dhowells@redhat.com, herbert@gondor.hengli.com.au,
+        davem@davemloft.net
+Cc: linux-kernel@vger.kernel.org, Chun-Yi Lee <jlee@suse.com>,
+        Josh Boyer <jwboyer@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>
+Subject: [PATCH] asymmetric keys: explicitly add the leading zero byte to encoded message
+Date: Thu,  1 Aug 2013 11:05:05 +0800
+Message-Id: <1375326305-13645-1-git-send-email-jlee@suse.com>
+X-Mailer: git-send-email 1.6.0.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 31, 2013 at 07:47:30PM -0700, Olof Johansson wrote:
+From: Chun-Yi Lee <jlee@suse.com>
 
- > >  > Hmm, really?  Did you reported these bugs?  I'm not aware of mainline
- > >  > having any changes related to bug reports on PTEs on ARM.
- > >
- > > I wasn't sure if it was a googleism, or happens on mainline, so no.
- > 
- > As of 3.10, it's not actually hard to run a mainline kernel on the
- > chromebook, but you have limited functionality (no wifi, no USB3, no
- > accellerated graphics). Easiest is to do it by booting from SD card.
- > See instructions at
- > http://www.chromium.org/chromium-os/u-boot-porting-guide/using-nv-u-boot-on-the-samsung-arm-chromebook.
+Per PKCS1 spec, the EMSA-PKCS1-v1_5 encoded message is leading by 0x00 0x01 in
+its first 2 bytes. The leading zero byte is suppressed by MPI so we pass a
+pointer to the _preceding_ byte to RSA_verify() in original code, but it has
+risk for the byte is not zero because it's not in EM buffer's scope, neither
+RSA_verify() nor mpi_get_buffer() didn't take care the leading byte.
+
+To avoid the risk, that's better we explicitly add the leading zero byte to EM
+for pass to RSA_verify(). This patch allocate a _EM buffer to capture the
+result from RSA_I2OSP(), then set the first byte to zero in EM and copy the
+remaining bytes from _EM.
+
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Josh Boyer <jwboyer@redhat.com>
+Cc: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: David Howells <dhowells@redhat.com>
+Signed-off-by: Chun-Yi Lee <jlee@suse.com>
+---
+ crypto/asymmetric_keys/rsa.c |   14 ++++++++++----
+ 1 files changed, 10 insertions(+), 4 deletions(-)
+
+diff --git a/crypto/asymmetric_keys/rsa.c b/crypto/asymmetric_keys/rsa.c
+index ca1a4f3..7bc99d2 100644
+--- a/crypto/asymmetric_keys/rsa.c
++++ b/crypto/asymmetric_keys/rsa.c
+@@ -303,6 +303,7 @@ static int RSA_verify_signature(const struct public_key *key,
+ 	/* Variables as per RFC3447 sec 8.2.2 */
+ 	const u8 *H = sig->digest;
+ 	u8 *EM = NULL;
++	u8 *_EM = NULL;
+ 	MPI m = NULL;
+ 	size_t k;
  
-Yeah, that's how I got Fedora running on it (I think the people who did the
-Fedora spin for the chromebook chose the google kernel for exactly
-the reasons you mention above).  It felt a little sluggish for a native
-kernel build though, and I'm not setup for cross-building so I stuck with
-the 3.4 build.
+@@ -337,14 +338,19 @@ static int RSA_verify_signature(const struct public_key *key,
+ 	/* (2c) Convert the message representative (m) to an encoded message
+ 	 *      (EM) of length k octets.
+ 	 *
+-	 *      NOTE!  The leading zero byte is suppressed by MPI, so we pass a
+-	 *      pointer to the _preceding_ byte to RSA_verify()!
++	 *      NOTE!  The leading zero byte is suppressed by MPI, so we add it
++	 *      back to EM before input to RSA_verify()!
+ 	 */
+-	ret = RSA_I2OSP(m, k, &EM);
++	ret = RSA_I2OSP(m, k, &_EM);
+ 	if (ret < 0)
+ 		goto error;
  
- > How long would a useful run of trinity take?
-
-It blew up in a minute or so of runtime when I tried last week.
-
- > I've got an autobuilder/autobooter setup here with a cross-section of current ARM
- > hardware (7 platforms and counting) that I mostly do boot testing on,
- > and I should add a smallish suite of testcases to the same. Trinity
- > would be a good candidate for that.
-
-Feel free to mail me off-list if I can do anything to help out, though
-hopefully things should build & run 'out of the box'.  You shouldn't
-need any special command line args (though you might get inspiration
-for ideas from the scripts/test-* harnesses)
-
-	Dave
+-	ret = RSA_verify(H, EM - 1, k, sig->digest_size,
++	EM = kmalloc(k, GFP_KERNEL);
++	memset(EM, 0, 1);
++	memcpy(EM + 1, _EM, k-1);
++	kfree(_EM);
++
++	ret = RSA_verify(H, EM, k, sig->digest_size,
+ 			 RSA_ASN1_templates[sig->pkey_hash_algo].data,
+ 			 RSA_ASN1_templates[sig->pkey_hash_algo].size);
+ 
+-- 
+1.6.4.2
 
