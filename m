@@ -1,84 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753494Ab3HAC7d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 22:59:33 -0400
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:33798 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752040Ab3HAC7c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 22:59:32 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AjgFAInO+VF5LPxHgWdsb2JhbABbDr0BhS6BIBcOAQEWJiiCJAEBBAE6HCgLCAMYCSUPBSUDIQESiAoFuUMWj3iECwOUCINWiiKKAlAq
-Date: Thu, 1 Aug 2013 12:59:14 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: "Theodore Ts'o" <tytso@mit.edu>, Namjae Jeon <linkinjeon@gmail.com>,
-        adilger.kernel@dilger.ca, bpm@sgi.com, elder@kernel.org,
-        hch@infradead.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        xfs@oss.sgi.com, a.sangwan@samsung.com,
-        Namjae Jeon <namjae.jeon@samsung.com>
-Subject: Re: [PATCH 1/3] fs: Introduce new flag FALLOC_FL_COLLAPSE_RANGE
-Message-ID: <20130801025914.GL7118@dastard>
-References: <1375281721-15840-1-git-send-email-linkinjeon@gmail.com>
- <20130731220154.GA11378@thunk.org>
- <20130801002341.GI7118@dastard>
- <20130801004645.GC11378@thunk.org>
- <20130801005447.GS13468@dastard>
- <20130801010751.GD11378@thunk.org>
+	id S1753841Ab3HADAV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 23:00:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56300 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753216Ab3HADAT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 23:00:19 -0400
+Date: Wed, 31 Jul 2013 22:59:11 -0400
+From: Dave Jones <davej@redhat.com>
+To: Olof Johansson <olof@lixom.net>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>,
+        "ksummit-2013-discuss@lists.linuxfoundation.org" 
+	<ksummit-2013-discuss@lists.linuxfoundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [Ksummit-2013-discuss] [ARM ATTEND] catching up on exploit
+ mitigations
+Message-ID: <20130801025911.GA20166@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Olof Johansson <olof@lixom.net>,
+	Russell King - ARM Linux <linux@arm.linux.org.uk>,
+	Aaro Koskinen <aaro.koskinen@iki.fi>,
+	"ksummit-2013-discuss@lists.linuxfoundation.org" <ksummit-2013-discuss@lists.linuxfoundation.org>,
+	Kees Cook <keescook@chromium.org>,
+	"linux-arm-kernel@lists.infradead.org" <linux-arm-kernel@lists.infradead.org>,
+	LKML <linux-kernel@vger.kernel.org>
+References: <CAGXu5jKv9Vt+Hu0mFYaxggLLDZ46U3KR9MKegUoHH8StXCkBtQ@mail.gmail.com>
+ <20130730221435.GA22240@redhat.com>
+ <20130730231120.GC30725@blackmetal.musicnaut.iki.fi>
+ <20130730231533.GA26824@redhat.com>
+ <20130730235834.GD30725@blackmetal.musicnaut.iki.fi>
+ <20130731000444.GC1281@redhat.com>
+ <20130731094012.GU24642@n2100.arm.linux.org.uk>
+ <20130731142430.GA4545@redhat.com>
+ <CAOesGMiBa7fT+HZquNrwV=3P=Z-F9c8L7YQr7=D2BO_6pJXQ0w@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130801010751.GD11378@thunk.org>
+In-Reply-To: <CAOesGMiBa7fT+HZquNrwV=3P=Z-F9c8L7YQr7=D2BO_6pJXQ0w@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 31, 2013 at 09:07:52PM -0400, Theodore Ts'o wrote:
-> On Thu, Aug 01, 2013 at 10:54:47AM +1000, Dave Chinner wrote:
-> > > It's not just the range that it's operating on, but also the region
-> > > beyond the range that's been collapsed out.
-> > 
-> > Yes, that's part of "the range that it is operating over".
-> > 
-> > > A quick eyeball of the patch didn't seem to show any code that handled
-> > > this, which is why I asked the question.
-> > 
-> > Right, but really it's the least of the problems I've noticed - the
-> > XFS code is fundamentally broken in many ways - once I've finished
-> > commenting on it, I'll have a quick look to see if the ext4 code has
-> > the same fundamental flaws....
-> 
-> Well, the fundamental flaw of potential races if the file being
-> collapsed has been mmap'ed and there is another process making changes
-> beyond the range that is being collapsed is I suspect one that is
-> going to be very hard to solve, short of not allowing the collapse
-> while there are any read/write mmap's for the file in question.
+On Wed, Jul 31, 2013 at 07:47:30PM -0700, Olof Johansson wrote:
 
-This funtionality is not introducing any new problems w.r.t. mmap().
-In terms of truncating a mmap'd file, that can already occur and
-the behaviour is well known. The current patches don't do the
-operations in the correct order to ensure this is handled correctly
-(i.e. the inode size has to be changed before the page cache
-invalidation, not after), but otherwise there is no new issues
-introduced here.
+ > >  > Hmm, really?  Did you reported these bugs?  I'm not aware of mainline
+ > >  > having any changes related to bug reports on PTEs on ARM.
+ > >
+ > > I wasn't sure if it was a googleism, or happens on mainline, so no.
+ > 
+ > As of 3.10, it's not actually hard to run a mainline kernel on the
+ > chromebook, but you have limited functionality (no wifi, no USB3, no
+ > accellerated graphics). Easiest is to do it by booting from SD card.
+ > See instructions at
+ > http://www.chromium.org/chromium-os/u-boot-porting-guide/using-nv-u-boot-on-the-samsung-arm-chromebook.
+ 
+Yeah, that's how I got Fedora running on it (I think the people who did the
+Fedora spin for the chromebook chose the google kernel for exactly
+the reasons you mention above).  It felt a little sluggish for a native
+kernel build though, and I'm not setup for cross-building so I stuck with
+the 3.4 build.
+ 
+ > How long would a useful run of trinity take?
 
-The real problem is that it has the same problem as hole punching
-w.r.t. not being able to serialise page faults against the extent
-manipulations after the page cache invalidation has occurred.
-That's what Jan Kara's range locking patches we talked about at
-LSFMM will address, and so is beyond the scope of this patchset.
+It blew up in a minute or so of runtime when I tried last week.
 
-> And I would think these sorts of VM issues should be handled with some
-> generic library functions, instead of reimplementing them from scratch
-> in each file system.
+ > I've got an autobuilder/autobooter setup here with a cross-section of current ARM
+ > hardware (7 platforms and counting) that I mostly do boot testing on,
+ > and I should add a smallish suite of testcases to the same. Trinity
+ > would be a good candidate for that.
 
-Well, yes, we have one - truncate_page_cache_range(), and it's used
-correctly in the ext4 patch....
+Feel free to mail me off-list if I can do anything to help out, though
+hopefully things should build & run 'out of the box'.  You shouldn't
+need any special command line args (though you might get inspiration
+for ideas from the scripts/test-* harnesses)
 
-Cheers,
+	Dave
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
