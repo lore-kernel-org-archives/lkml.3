@@ -1,115 +1,422 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757774Ab3HAWQl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 18:16:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24327 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755357Ab3HAWQk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 18:16:40 -0400
-Date: Fri, 2 Aug 2013 00:16:28 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Rik van Riel <riel@redhat.com>, Minchan Kim <minchan@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 3/3] mm: page_alloc: fair zone allocator policy
-Message-ID: <20130801221628.GA9505@redhat.com>
-References: <1374267325-22865-1-git-send-email-hannes@cmpxchg.org>
- <1374267325-22865-4-git-send-email-hannes@cmpxchg.org>
- <20130801025636.GC19540@bbox>
- <51F9E4A6.2090909@redhat.com>
- <20130801155111.GO25926@redhat.com>
- <20130801195823.GN715@cmpxchg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130801195823.GN715@cmpxchg.org>
+	id S1757946Ab3HAWQp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 18:16:45 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39831 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757640Ab3HAWQm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 18:16:42 -0400
+In-Reply-To: <20130801213420.GL23006@n2100.arm.linux.org.uk>
+References: <20130801213420.GL23006@n2100.arm.linux.org.uk>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH RFC 42/51] DMA-API: usb: musb: use
+ platform_device_register_full() to avoid directly
+ messing with dma masks
+Message-Id: <E1V51AL-0006tr-8k@rmk-PC.arm.linux.org.uk>
+Date: Thu, 01 Aug 2013 23:16:13 +0100
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 01, 2013 at 03:58:23PM -0400, Johannes Weiner wrote:
-> But we might be able to get away with a small error.
+Use platform_device_register_full() for those drivers which can, to
+avoid messing directly with DMA masks.  This can only be done when
+the driver does not need to access the allocated musb platform device
+from within its callbacks, which may be called during the musb
+device probing.
 
-The idea is that there's a small error anyway, because multiple CPUs
-can reset it at the same time, while another CPU is decreasing it, so
-the decrease sometime may get lost regardless if atomic or not. How
-worse the error will become I don't know for sure but I would expect
-to still be in the noise level.
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+---
+ drivers/usb/musb/am35x.c    |   50 ++++++++++++++----------------------------
+ drivers/usb/musb/da8xx.c    |   49 ++++++++++++++---------------------------
+ drivers/usb/musb/davinci.c  |   48 ++++++++++++++--------------------------
+ drivers/usb/musb/tusb6010.c |   49 ++++++++++++++---------------------------
+ 4 files changed, 68 insertions(+), 128 deletions(-)
 
-Removing the locked op won't help much when multiple processes
-allocates from the same node, but it'll speed it up when just one CPU
-runs.
+diff --git a/drivers/usb/musb/am35x.c b/drivers/usb/musb/am35x.c
+index 2231850..a8d3eb3 100644
+--- a/drivers/usb/musb/am35x.c
++++ b/drivers/usb/musb/am35x.c
+@@ -89,7 +89,6 @@ struct am35x_glue {
+ 	struct clk		*phy_clk;
+ 	struct clk		*clk;
+ };
+-#define glue_to_musb(g)		platform_get_drvdata(g->musb)
+ 
+ /*
+  * am35x_musb_enable - enable interrupts
+@@ -452,14 +451,18 @@ static const struct musb_platform_ops am35x_ops = {
+ 	.set_vbus	= am35x_musb_set_vbus,
+ };
+ 
+-static u64 am35x_dmamask = DMA_BIT_MASK(32);
++static const struct platform_device_info am35x_dev_info = {
++	.name		= "musb-hdrc",
++	.id		= PLATFORM_DEVID_AUTO,
++	.dma_mask	= DMA_BIT_MASK(32),
++};
+ 
+ static int am35x_probe(struct platform_device *pdev)
+ {
+ 	struct musb_hdrc_platform_data	*pdata = pdev->dev.platform_data;
+ 	struct platform_device		*musb;
+ 	struct am35x_glue		*glue;
+-
++	struct platform_device_info	pinfo;
+ 	struct clk			*phy_clk;
+ 	struct clk			*clk;
+ 
+@@ -471,12 +474,6 @@ static int am35x_probe(struct platform_device *pdev)
+ 		goto err0;
+ 	}
+ 
+-	musb = platform_device_alloc("musb-hdrc", PLATFORM_DEVID_AUTO);
+-	if (!musb) {
+-		dev_err(&pdev->dev, "failed to allocate musb device\n");
+-		goto err1;
+-	}
+-
+ 	phy_clk = clk_get(&pdev->dev, "fck");
+ 	if (IS_ERR(phy_clk)) {
+ 		dev_err(&pdev->dev, "failed to get PHY clock\n");
+@@ -503,12 +500,7 @@ static int am35x_probe(struct platform_device *pdev)
+ 		goto err6;
+ 	}
+ 
+-	musb->dev.parent		= &pdev->dev;
+-	musb->dev.dma_mask		= &am35x_dmamask;
+-	musb->dev.coherent_dma_mask	= am35x_dmamask;
+-
+ 	glue->dev			= &pdev->dev;
+-	glue->musb			= musb;
+ 	glue->phy_clk			= phy_clk;
+ 	glue->clk			= clk;
+ 
+@@ -516,22 +508,17 @@ static int am35x_probe(struct platform_device *pdev)
+ 
+ 	platform_set_drvdata(pdev, glue);
+ 
+-	ret = platform_device_add_resources(musb, pdev->resource,
+-			pdev->num_resources);
+-	if (ret) {
+-		dev_err(&pdev->dev, "failed to add resources\n");
+-		goto err7;
+-	}
+-
+-	ret = platform_device_add_data(musb, pdata, sizeof(*pdata));
+-	if (ret) {
+-		dev_err(&pdev->dev, "failed to add platform_data\n");
+-		goto err7;
+-	}
+-
+-	ret = platform_device_add(musb);
+-	if (ret) {
+-		dev_err(&pdev->dev, "failed to register musb device\n");
++	pinfo = am35x_dev_info;
++	pinfo.parent = &pdev->dev;
++	pinfo.res = pdev->resource;
++	pinfo.num_res = pdev->num_resources;
++	pinfo.data = pdata;
++	pinfo.size_data = sizeof(*pdata);
++
++	glue->musb = musb = platform_device_register_full(&pinfo);
++	if (IS_ERR(musb)) {
++		ret = PTR_ERR(musb);
++		dev_err(&pdev->dev, "failed to register musb device: %d\n", ret);
+ 		goto err7;
+ 	}
+ 
+@@ -550,9 +537,6 @@ static int am35x_probe(struct platform_device *pdev)
+ 	clk_put(phy_clk);
+ 
+ err3:
+-	platform_device_put(musb);
+-
+-err1:
+ 	kfree(glue);
+ 
+ err0:
+diff --git a/drivers/usb/musb/da8xx.c b/drivers/usb/musb/da8xx.c
+index 0da6f64..57402e3 100644
+--- a/drivers/usb/musb/da8xx.c
++++ b/drivers/usb/musb/da8xx.c
+@@ -472,7 +472,11 @@ static const struct musb_platform_ops da8xx_ops = {
+ 	.set_vbus	= da8xx_musb_set_vbus,
+ };
+ 
+-static u64 da8xx_dmamask = DMA_BIT_MASK(32);
++static const struct platform_device_info da8xx_dev_info = {
++	.name		= "musb-hdrc",
++	.id		= PLATFORM_DEVID_AUTO,
++	.dma_mask	= DMA_BIT_MASK(32),
++};
+ 
+ static int da8xx_probe(struct platform_device *pdev)
+ {
+@@ -480,7 +484,7 @@ static int da8xx_probe(struct platform_device *pdev)
+ 	struct musb_hdrc_platform_data	*pdata = pdev->dev.platform_data;
+ 	struct platform_device		*musb;
+ 	struct da8xx_glue		*glue;
+-
++	struct platform_device_info	pinfo;
+ 	struct clk			*clk;
+ 
+ 	int				ret = -ENOMEM;
+@@ -491,12 +495,6 @@ static int da8xx_probe(struct platform_device *pdev)
+ 		goto err0;
+ 	}
+ 
+-	musb = platform_device_alloc("musb-hdrc", PLATFORM_DEVID_AUTO);
+-	if (!musb) {
+-		dev_err(&pdev->dev, "failed to allocate musb device\n");
+-		goto err1;
+-	}
+-
+ 	clk = clk_get(&pdev->dev, "usb20");
+ 	if (IS_ERR(clk)) {
+ 		dev_err(&pdev->dev, "failed to get clock\n");
+@@ -510,12 +508,7 @@ static int da8xx_probe(struct platform_device *pdev)
+ 		goto err4;
+ 	}
+ 
+-	musb->dev.parent		= &pdev->dev;
+-	musb->dev.dma_mask		= &da8xx_dmamask;
+-	musb->dev.coherent_dma_mask	= da8xx_dmamask;
+-
+ 	glue->dev			= &pdev->dev;
+-	glue->musb			= musb;
+ 	glue->clk			= clk;
+ 
+ 	pdata->platform_ops		= &da8xx_ops;
+@@ -535,22 +528,17 @@ static int da8xx_probe(struct platform_device *pdev)
+ 	musb_resources[1].end = pdev->resource[1].end;
+ 	musb_resources[1].flags = pdev->resource[1].flags;
+ 
+-	ret = platform_device_add_resources(musb, musb_resources,
+-			ARRAY_SIZE(musb_resources));
+-	if (ret) {
+-		dev_err(&pdev->dev, "failed to add resources\n");
+-		goto err5;
+-	}
+-
+-	ret = platform_device_add_data(musb, pdata, sizeof(*pdata));
+-	if (ret) {
+-		dev_err(&pdev->dev, "failed to add platform_data\n");
+-		goto err5;
+-	}
+-
+-	ret = platform_device_add(musb);
+-	if (ret) {
+-		dev_err(&pdev->dev, "failed to register musb device\n");
++	pinfo = da8xx_dev_info;
++	pinfo.parent = &pdev->dev;
++	pinfo.res = musb_resources;
++	pinfo.num_res = ARRAY_SIZE(musb_resources);
++	pinfo.data = pdata;
++	pinfo.size_data = sizeof(*pdata);
++
++	glue->musb = musb = platform_device_register_full(&pinfo);
++	if (IS_ERR(musb)) {
++		ret = PTR_ERR(musb);
++		dev_err(&pdev->dev, "failed to register musb device: %d\n", ret);
+ 		goto err5;
+ 	}
+ 
+@@ -563,9 +551,6 @@ static int da8xx_probe(struct platform_device *pdev)
+ 	clk_put(clk);
+ 
+ err3:
+-	platform_device_put(musb);
+-
+-err1:
+ 	kfree(glue);
+ 
+ err0:
+diff --git a/drivers/usb/musb/davinci.c b/drivers/usb/musb/davinci.c
+index f8aeaf2..a55f2e3 100644
+--- a/drivers/usb/musb/davinci.c
++++ b/drivers/usb/musb/davinci.c
+@@ -505,7 +505,11 @@ static const struct musb_platform_ops davinci_ops = {
+ 	.set_vbus	= davinci_musb_set_vbus,
+ };
+ 
+-static u64 davinci_dmamask = DMA_BIT_MASK(32);
++static const struct platform_device_info davinci_dev_info = {
++	.name		= "musb-hdrc",
++	.id		= PLATFORM_DEVID_AUTO,
++	.dma_mask	= DMA_BIT_MASK(32),
++};
+ 
+ static int davinci_probe(struct platform_device *pdev)
+ {
+@@ -513,6 +517,7 @@ static int davinci_probe(struct platform_device *pdev)
+ 	struct musb_hdrc_platform_data	*pdata = pdev->dev.platform_data;
+ 	struct platform_device		*musb;
+ 	struct davinci_glue		*glue;
++	struct platform_device_info	pinfo;
+ 	struct clk			*clk;
+ 
+ 	int				ret = -ENOMEM;
+@@ -523,12 +528,6 @@ static int davinci_probe(struct platform_device *pdev)
+ 		goto err0;
+ 	}
+ 
+-	musb = platform_device_alloc("musb-hdrc", PLATFORM_DEVID_AUTO);
+-	if (!musb) {
+-		dev_err(&pdev->dev, "failed to allocate musb device\n");
+-		goto err1;
+-	}
+-
+ 	clk = clk_get(&pdev->dev, "usb");
+ 	if (IS_ERR(clk)) {
+ 		dev_err(&pdev->dev, "failed to get clock\n");
+@@ -542,12 +541,7 @@ static int davinci_probe(struct platform_device *pdev)
+ 		goto err4;
+ 	}
+ 
+-	musb->dev.parent		= &pdev->dev;
+-	musb->dev.dma_mask		= &davinci_dmamask;
+-	musb->dev.coherent_dma_mask	= davinci_dmamask;
+-
+ 	glue->dev			= &pdev->dev;
+-	glue->musb			= musb;
+ 	glue->clk			= clk;
+ 
+ 	pdata->platform_ops		= &davinci_ops;
+@@ -567,22 +561,17 @@ static int davinci_probe(struct platform_device *pdev)
+ 	musb_resources[1].end = pdev->resource[1].end;
+ 	musb_resources[1].flags = pdev->resource[1].flags;
+ 
+-	ret = platform_device_add_resources(musb, musb_resources,
+-			ARRAY_SIZE(musb_resources));
+-	if (ret) {
+-		dev_err(&pdev->dev, "failed to add resources\n");
+-		goto err5;
+-	}
+-
+-	ret = platform_device_add_data(musb, pdata, sizeof(*pdata));
+-	if (ret) {
+-		dev_err(&pdev->dev, "failed to add platform_data\n");
+-		goto err5;
+-	}
+-
+-	ret = platform_device_add(musb);
+-	if (ret) {
+-		dev_err(&pdev->dev, "failed to register musb device\n");
++	pinfo = davinci_dev_info;
++	pinfo.parent = &pdev->dev;
++	pinfo.res = musb_resources;
++	pinfo.num_res = ARRAY_SIZE(musb_resources);
++	pinfo.data = pdata;
++	pinfo.size_data = sizeof(*pdata);
++
++	glue->musb = musb = platform_device_register_full(&pinfo);
++	if (IS_ERR(musb)) {
++		ret = PTR_ERR(musb);
++		dev_err(&pdev->dev, "failed to register musb device: %d\n", ret);
+ 		goto err5;
+ 	}
+ 
+@@ -595,9 +584,6 @@ static int davinci_probe(struct platform_device *pdev)
+ 	clk_put(clk);
+ 
+ err3:
+-	platform_device_put(musb);
+-
+-err1:
+ 	kfree(glue);
+ 
+ err0:
+diff --git a/drivers/usb/musb/tusb6010.c b/drivers/usb/musb/tusb6010.c
+index 2c06a89..021c00e8 100644
+--- a/drivers/usb/musb/tusb6010.c
++++ b/drivers/usb/musb/tusb6010.c
+@@ -1152,7 +1152,11 @@ static const struct musb_platform_ops tusb_ops = {
+ 	.set_vbus	= tusb_musb_set_vbus,
+ };
+ 
+-static u64 tusb_dmamask = DMA_BIT_MASK(32);
++static const struct platform_device_info tusb_dev_info = {
++	.name		= "musb-hdrc",
++	.id		= PLATFORM_DEVID_AUTO,
++	.dma_mask	= DMA_BIT_MASK(32),
++};
+ 
+ static int tusb_probe(struct platform_device *pdev)
+ {
+@@ -1160,7 +1164,7 @@ static int tusb_probe(struct platform_device *pdev)
+ 	struct musb_hdrc_platform_data	*pdata = pdev->dev.platform_data;
+ 	struct platform_device		*musb;
+ 	struct tusb6010_glue		*glue;
+-
++	struct platform_device_info	pinfo;
+ 	int				ret = -ENOMEM;
+ 
+ 	glue = kzalloc(sizeof(*glue), GFP_KERNEL);
+@@ -1169,18 +1173,7 @@ static int tusb_probe(struct platform_device *pdev)
+ 		goto err0;
+ 	}
+ 
+-	musb = platform_device_alloc("musb-hdrc", PLATFORM_DEVID_AUTO);
+-	if (!musb) {
+-		dev_err(&pdev->dev, "failed to allocate musb device\n");
+-		goto err1;
+-	}
+-
+-	musb->dev.parent		= &pdev->dev;
+-	musb->dev.dma_mask		= &tusb_dmamask;
+-	musb->dev.coherent_dma_mask	= tusb_dmamask;
+-
+ 	glue->dev			= &pdev->dev;
+-	glue->musb			= musb;
+ 
+ 	pdata->platform_ops		= &tusb_ops;
+ 
+@@ -1199,31 +1192,23 @@ static int tusb_probe(struct platform_device *pdev)
+ 	musb_resources[1].end = pdev->resource[1].end;
+ 	musb_resources[1].flags = pdev->resource[1].flags;
+ 
+-	ret = platform_device_add_resources(musb, musb_resources,
+-			ARRAY_SIZE(musb_resources));
+-	if (ret) {
+-		dev_err(&pdev->dev, "failed to add resources\n");
+-		goto err3;
+-	}
+-
+-	ret = platform_device_add_data(musb, pdata, sizeof(*pdata));
+-	if (ret) {
+-		dev_err(&pdev->dev, "failed to add platform_data\n");
+-		goto err3;
+-	}
+-
+-	ret = platform_device_add(musb);
+-	if (ret) {
+-		dev_err(&pdev->dev, "failed to register musb device\n");
++	pinfo = tusb_dev_info;
++	pinfo.parent = &pdev->dev;
++	pinfo.res = musb_resources;
++	pinfo.num_res = ARRAY_SIZE(musb_resources);
++	pinfo.data = pdata;
++	pinfo.size_data = sizeof(*pdata);
++
++	glue->musb = musb = platform_device_register_full(&pinfo);
++	if (IS_ERR(musb)) {
++		ret = PTR_ERR(musb);
++		dev_err(&pdev->dev, "failed to register musb device: %d\n", ret);
+ 		goto err3;
+ 	}
+ 
+ 	return 0;
+ 
+ err3:
+-	platform_device_put(musb);
+-
+-err1:
+ 	kfree(glue);
+ 
+ err0:
+-- 
+1.7.4.4
 
-> So the discussion diverged between on-list and off-list.  I suggested
-> ignoring the alloc_batch in the slowpath completely (since allocations
-> are very unlikely to fail due to the batches immediately after they
-> were reset, and the occasional glitch does not matter).  This should
-> solve the problem of spurious direct reclaim invocations.  The
-
-I'm fine with this solution of ignoring alloc_batch in the slowpath,
-it definitely solves the risk of suprious direct reclaim and it
-contributes to solving zone_reclaim_mode too.
-
-> zone_reclaim_mode allocation sequence would basically be:
-> 
-> 1. Try zones in the local node with low watermark while maintaining
->    fairness with the allocation batch and invoking zone reclaim if
->    necessary
-> 
-> 2. If that fails, wake up kswapd and reset the alloc batches on the
->    local node
-> 
-> 3. Try zones in order of preference with the min watermark, invoking
->    zone reclaim if necessary, ignoring allocation batches.
-
-One difference is that kswapd wasn't involved before. But maybe it's
-beneficial.
-
-> So in the fastpath we try to be local and fair, in the slow path we
-> are likely to be local and fair, unless we have to spill into remote
-> nodes.  But then there is nothing we can do anyway.
-
-I think it should work well.
-
-And with these changes, alloc_batch will help tremendously
-zone_reclaim_mode too (not just prevent its breakage): the allocations
-will be spread evenly on multiple zones of the same nodes, instead of
-insisting calling zone_reclaim on the highest zone of the node until
-zone_reclaim finally fails on it (with the current behavior if
-zone_reclaim_mode is enabled, the LRU is rotated only the high zone
-until full). And it's common to have a least one node with two zones
-(pci32 zone).
-
-By skipping any non-local zone in the fast path if zone_reclaim_mode
-is enabled, will prevent multiple CPUs in different nodes to step in
-each other toes, and alloc_batch will never be resetted by remote CPUs
-with the zone_local check introduced in prepare_slowpath.
-
-Changing the prepare_slowpath to reset only the local node will also
-decrease the very distant interconnect traffic for very big NUMA where
-zone_reclaim_mode is enabled by default, so it'll speedup
-prepare_slowpath too.
-
-Can you submit the fixes to Andrew? I'm very happy with your patch, so
-then I can submit the compaction zone_reclaim_mode fixes on top of
-it.
-
-Changing topic on my zone_reclaim compaction fixes, hope to get more
-review on those, especially the high order watermark algorithm
-improvements. I'll try to get a specsfs with jumbo frames run on it
-too to see if there's any positive measurable effect out of the
-watermark changes and the substantial improvement in compaction
-reliability. (the increase of the low watermark level for high order
-pages is needed to get more accuracy out of zone_reclaim_mode hugepage
-placement, and the decrease of the min watermark level will avoid us
-to waste precious CPU to generate a zillon of high order pages that
-cannot be possibly be useful to PF_MEMALLOC, we've currently a ton 8k
-pages, that any GFP_ATOMIC or GFP_KERNEL allocation are totally
-forbidden to use, but we still generate those for nothing, and over
-time we split them right away at the first 4k allocation so they don't
-even stick)
-
-Thanks!
-Andrea
