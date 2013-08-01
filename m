@@ -1,190 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756695Ab3HATbh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 15:31:37 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:37405 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751270Ab3HATbg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 15:31:36 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <1375352553-5695-1-git-send-email-jacob.jun.pan@linux.intel.com>
-References: <1375352553-5695-1-git-send-email-jacob.jun.pan@linux.intel.com>
+	id S1756294Ab3HATci (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 15:32:38 -0400
+Received: from mail-bk0-f51.google.com ([209.85.214.51]:64620 "EHLO
+	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752245Ab3HATch (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 15:32:37 -0400
+Date: Thu, 1 Aug 2013 22:31:46 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Peter Hurley <peter@hurleysoftware.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH next] n_tty: change lock oreding in n_tty_read()
+Message-ID: <20130801193146.GA3109@swordfish>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH] x86/msr: add 64bit _on_cpu access functions
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Thu, 01 Aug 2013 12:31:07 -0700
-To: Jacob Pan <jacob.jun.pan@linux.intel.com>,
-        LKML <linux-kernel@vger.kernel.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>
-Message-ID: <277225b8-a264-4d85-aace-d9199e1573b1@email.android.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch is fine but please use it asa preface to a patch series that actually used these interfaces.
+Acquire atomic_read_lock before termios_rwsem rw-lock in n_tty_read().
+termios_rwsem is getting released and re-acquired, while remaining
+readers are blocked on atomic_read_lock mutex, in case when process
+must wait for input_available_p(), making lockdep unhappy:
 
-Jacob Pan <jacob.jun.pan@linux.intel.com> wrote:
->Having 64-bit MSR access methods on given CPU can avoid shifting and
->simplify MSR content manipulation. We already have other combinations
->of rdmsrl_xxx and wrmsrl_xxx but missing the _on_cpu version.
->
->Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
->---
-> arch/x86/include/asm/msr.h |   22 ++++++++++++++++
->arch/x86/lib/msr-smp.c     |   62
->++++++++++++++++++++++++++++++++++++++++++++
-> 2 files changed, 84 insertions(+)
->
->diff --git a/arch/x86/include/asm/msr.h b/arch/x86/include/asm/msr.h
->index cb75028..e139b13 100644
->--- a/arch/x86/include/asm/msr.h
->+++ b/arch/x86/include/asm/msr.h
->@@ -218,10 +218,14 @@ void msrs_free(struct msr *msrs);
-> #ifdef CONFIG_SMP
-> int rdmsr_on_cpu(unsigned int cpu, u32 msr_no, u32 *l, u32 *h);
-> int wrmsr_on_cpu(unsigned int cpu, u32 msr_no, u32 l, u32 h);
->+int rdmsrl_on_cpu(unsigned int cpu, u32 msr_no, u64 *q);
->+int wrmsrl_on_cpu(unsigned int cpu, u32 msr_no, u64 q);
->void rdmsr_on_cpus(const struct cpumask *mask, u32 msr_no, struct msr
->*msrs);
->void wrmsr_on_cpus(const struct cpumask *mask, u32 msr_no, struct msr
->*msrs);
-> int rdmsr_safe_on_cpu(unsigned int cpu, u32 msr_no, u32 *l, u32 *h);
-> int wrmsr_safe_on_cpu(unsigned int cpu, u32 msr_no, u32 l, u32 h);
->+int rdmsrl_safe_on_cpu(unsigned int cpu, u32 msr_no, u64 *q);
->+int wrmsrl_safe_on_cpu(unsigned int cpu, u32 msr_no, u64 q);
-> int rdmsr_safe_regs_on_cpu(unsigned int cpu, u32 regs[8]);
-> int wrmsr_safe_regs_on_cpu(unsigned int cpu, u32 regs[8]);
-> #else  /*  CONFIG_SMP  */
->@@ -235,6 +239,16 @@ static inline int wrmsr_on_cpu(unsigned int cpu,
->u32 msr_no, u32 l, u32 h)
-> 	wrmsr(msr_no, l, h);
-> 	return 0;
-> }
->+static inline int rdmsrl_on_cpu(unsigned int cpu, u32 msr_no, u64 *q)
->+{
->+	rdmsrl(msr_no, *q);
->+	return 0;
->+}
->+static inline int wrmsrl_on_cpu(unsigned int cpu, u32 msr_no, u64 q)
->+{
->+	wrmsrl(msr_no, q);
->+	return 0;
->+}
-> static inline void rdmsr_on_cpus(const struct cpumask *m, u32 msr_no,
-> 				struct msr *msrs)
-> {
->@@ -254,6 +268,14 @@ static inline int wrmsr_safe_on_cpu(unsigned int
->cpu, u32 msr_no, u32 l, u32 h)
-> {
-> 	return wrmsr_safe(msr_no, l, h);
-> }
->+static inline int rdmsrl_safe_on_cpu(unsigned int cpu, u32 msr_no, u64
->*q)
->+{
->+	return rdmsrl_safe(msr_no, q);
->+}
->+static inline int wrmsrl_safe_on_cpu(unsigned int cpu, u32 msr_no, u64
->q)
->+{
->+	return wrmsrl_safe(msr_no, q);
->+}
->static inline int rdmsr_safe_regs_on_cpu(unsigned int cpu, u32 regs[8])
-> {
-> 	return rdmsr_safe_regs(regs);
->diff --git a/arch/x86/lib/msr-smp.c b/arch/x86/lib/msr-smp.c
->index a6b1b86..518532e 100644
->--- a/arch/x86/lib/msr-smp.c
->+++ b/arch/x86/lib/msr-smp.c
->@@ -47,6 +47,21 @@ int rdmsr_on_cpu(unsigned int cpu, u32 msr_no, u32
->*l, u32 *h)
-> }
-> EXPORT_SYMBOL(rdmsr_on_cpu);
-> 
->+int rdmsrl_on_cpu(unsigned int cpu, u32 msr_no, u64 *q)
->+{
->+	int err;
->+	struct msr_info rv;
->+
->+	memset(&rv, 0, sizeof(rv));
->+
->+	rv.msr_no = msr_no;
->+	err = smp_call_function_single(cpu, __rdmsr_on_cpu, &rv, 1);
->+	*q = rv.reg.q;
->+
->+	return err;
->+}
->+EXPORT_SYMBOL(rdmsrl_on_cpu);
->+
-> int wrmsr_on_cpu(unsigned int cpu, u32 msr_no, u32 l, u32 h)
-> {
-> 	int err;
->@@ -63,6 +78,22 @@ int wrmsr_on_cpu(unsigned int cpu, u32 msr_no, u32
->l, u32 h)
-> }
-> EXPORT_SYMBOL(wrmsr_on_cpu);
-> 
->+int wrmsrl_on_cpu(unsigned int cpu, u32 msr_no, u64 q)
->+{
->+	int err;
->+	struct msr_info rv;
->+
->+	memset(&rv, 0, sizeof(rv));
->+
->+	rv.msr_no = msr_no;
->+	rv.reg.q = q;
->+
->+	err = smp_call_function_single(cpu, __wrmsr_on_cpu, &rv, 1);
->+
->+	return err;
->+}
->+EXPORT_SYMBOL(wrmsrl_on_cpu);
->+
-> static void __rwmsr_on_cpus(const struct cpumask *mask, u32 msr_no,
-> 			    struct msr *msrs,
-> 			    void (*msr_func) (void *info))
->@@ -159,6 +190,37 @@ int wrmsr_safe_on_cpu(unsigned int cpu, u32
->msr_no, u32 l, u32 h)
-> }
-> EXPORT_SYMBOL(wrmsr_safe_on_cpu);
-> 
->+int wrmsrl_safe_on_cpu(unsigned int cpu, u32 msr_no, u64 q)
->+{
->+	int err;
->+	struct msr_info rv;
->+
->+	memset(&rv, 0, sizeof(rv));
->+
->+	rv.msr_no = msr_no;
->+	rv.reg.q = q;
->+
->+	err = smp_call_function_single(cpu, __wrmsr_safe_on_cpu, &rv, 1);
->+
->+	return err ? err : rv.err;
->+}
->+EXPORT_SYMBOL(wrmsrl_safe_on_cpu);
->+
->+int rdmsrl_safe_on_cpu(unsigned int cpu, u32 msr_no, u64 *q)
->+{
->+	int err;
->+	struct msr_info rv;
->+
->+	memset(&rv, 0, sizeof(rv));
->+
->+	rv.msr_no = msr_no;
->+	err = smp_call_function_single(cpu, __rdmsr_safe_on_cpu, &rv, 1);
->+	*q = rv.reg.q;
->+
->+	return err ? err : rv.err;
->+}
->+EXPORT_SYMBOL(rdmsrl_safe_on_cpu);
->+
-> /*
->  * These variants are significantly slower, but allows control over
->  * the entire 32-bit GPR set.
+[  463.542463] ======================================================
+[  463.542464] [ INFO: possible circular locking dependency detected ]
+[  463.542466] 3.11.0-rc3-next-20130801-dbg-dirty #5 Not tainted
+[  463.542467] -------------------------------------------------------
+[  463.542469] agetty/2075 is trying to acquire lock:
+[  463.542484]  (&tty->termios_rwsem){++++..}, at: [<ffffffff81398660>] n_tty_read+0x460/0xab0
+[  463.542484] 
+but task is already holding lock:
+[  463.542496]  (&ldata->atomic_read_lock){+.+...}, at: [<ffffffff81398959>] n_tty_read+0x759/0xab0
+[  463.542497] 
+which lock already depends on the new lock.
 
--- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+[  463.542497] 
+the existing dependency chain (in reverse order) is:
+[  463.542502] 
+-> #1 (&ldata->atomic_read_lock){+.+...}:
+[  463.542508]        [<ffffffff810b9394>] lock_acquire+0xa4/0x200
+[  463.542514]        [<ffffffff8160a787>] mutex_lock_interruptible_nested+0x77/0x4e0
+[  463.542518]        [<ffffffff81398959>] n_tty_read+0x759/0xab0
+[  463.542524]        [<ffffffff81393e8d>] tty_read+0x8d/0x100
+[  463.542528]        [<ffffffff8117987a>] vfs_read+0x9a/0x170
+[  463.542531]        [<ffffffff8117a05c>] SyS_read+0x4c/0xa0
+[  463.542536]        [<ffffffff81610c7e>] tracesys+0xd0/0xd5
+[  463.542540] 
+-> #0 (&tty->termios_rwsem){++++..}:
+[  463.542543]        [<ffffffff810b84e6>] __lock_acquire+0x1756/0x1d20
+[  463.542547]        [<ffffffff810b9394>] lock_acquire+0xa4/0x200
+[  463.542550]        [<ffffffff8160c1b7>] down_read+0x47/0x60
+[  463.542554]        [<ffffffff81398660>] n_tty_read+0x460/0xab0
+[  463.542557]        [<ffffffff81393e8d>] tty_read+0x8d/0x100
+[  463.542560]        [<ffffffff8117987a>] vfs_read+0x9a/0x170
+[  463.542563]        [<ffffffff8117a05c>] SyS_read+0x4c/0xa0
+[  463.542566]        [<ffffffff81610c7e>] tracesys+0xd0/0xd5
+[  463.542567] 
+other info that might help us debug this:
+
+[  463.542569]  Possible unsafe locking scenario:
+
+[  463.542570]        CPU0                    CPU1
+[  463.542570]        ----                    ----
+[  463.542573]   lock(&ldata->atomic_read_lock);
+[  463.542575]                                lock(&tty->termios_rwsem);
+[  463.542577]                                lock(&ldata->atomic_read_lock);
+[  463.542579]   lock(&tty->termios_rwsem);
+[  463.542580] 
+ *** DEADLOCK ***
+
+[  463.542582] 2 locks held by agetty/2075:
+[  463.542590]  #0:  (&tty->ldisc_sem){++++++}, at: [<ffffffff8139c130>] tty_ldisc_ref_wait+0x20/0x50
+[  463.542597]  #1:  (&ldata->atomic_read_lock){+.+...}, at: [<ffffffff81398959>] n_tty_read+0x759/0xab0
+[  463.542598] 
+stack backtrace:
+[  463.542602] CPU: 0 PID: 2075 Comm: agetty Not tainted 3.11.0-rc3-next-20130801-dbg-dirty #5
+[  463.542603] Hardware name: Acer             Aspire 5741G    /Aspire 5741G    , BIOS V1.20 02/08/2011
+[  463.542609]  ffffffff82236010 ffff88009af67c28 ffffffff8160630a ffffffff82236010
+[  463.542613]  ffff88009af67c68 ffffffff816031b7 ffff880151ac0000 ffff880151ac0790
+[  463.542617]  000000073469e1bd ffff880151ac0768 ffff880151ac0790 ffff880151ac0000
+[  463.542618] Call Trace:
+[  463.542625]  [<ffffffff8160630a>] dump_stack+0x4e/0x82
+[  463.542630]  [<ffffffff816031b7>] print_circular_bug+0x2b6/0x2c5
+[  463.542634]  [<ffffffff810b84e6>] __lock_acquire+0x1756/0x1d20
+[  463.542638]  [<ffffffff810b9394>] lock_acquire+0xa4/0x200
+[  463.542642]  [<ffffffff81398660>] ? n_tty_read+0x460/0xab0
+[  463.542645]  [<ffffffff8160c1b7>] down_read+0x47/0x60
+[  463.542649]  [<ffffffff81398660>] ? n_tty_read+0x460/0xab0
+[  463.542653]  [<ffffffff81398660>] n_tty_read+0x460/0xab0
+[  463.542661]  [<ffffffff81085020>] ? wake_up_process+0x40/0x40
+[  463.542665]  [<ffffffff81393e8d>] tty_read+0x8d/0x100
+[  463.542668]  [<ffffffff8117987a>] vfs_read+0x9a/0x170
+[  463.542671]  [<ffffffff8117a05c>] SyS_read+0x4c/0xa0
+[  463.542674]  [<ffffffff81610c7e>] tracesys+0xd0/0xd5
+
+Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+
+---
+
+ drivers/tty/n_tty.c | 15 ++++++---------
+ 1 file changed, 6 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
+index dd8ae0c..03bd6e8 100644
+--- a/drivers/tty/n_tty.c
++++ b/drivers/tty/n_tty.c
+@@ -2122,8 +2122,6 @@ static ssize_t n_tty_read(struct tty_struct *tty, struct file *file,
+ 	if (c < 0)
+ 		return c;
+ 
+-	down_read(&tty->termios_rwsem);
+-
+ 	minimum = time = 0;
+ 	timeout = MAX_SCHEDULE_TIMEOUT;
+ 	if (!ldata->icanon) {
+@@ -2145,16 +2143,15 @@ static ssize_t n_tty_read(struct tty_struct *tty, struct file *file,
+ 	 *	Internal serialization of reads.
+ 	 */
+ 	if (file->f_flags & O_NONBLOCK) {
+-		if (!mutex_trylock(&ldata->atomic_read_lock)) {
+-			up_read(&tty->termios_rwsem);
++		if (!mutex_trylock(&ldata->atomic_read_lock))
+ 			return -EAGAIN;
+-		}
+ 	} else {
+-		if (mutex_lock_interruptible(&ldata->atomic_read_lock)) {
+-			up_read(&tty->termios_rwsem);
++		if (mutex_lock_interruptible(&ldata->atomic_read_lock))
+ 			return -ERESTARTSYS;
+-		}
+ 	}
++
++	down_read(&tty->termios_rwsem);
++
+ 	packet = tty->packet;
+ 
+ 	add_wait_queue(&tty->read_wait, &wait);
+@@ -2248,7 +2245,6 @@ static ssize_t n_tty_read(struct tty_struct *tty, struct file *file,
+ 		if (time)
+ 			timeout = time;
+ 	}
+-	mutex_unlock(&ldata->atomic_read_lock);
+ 	remove_wait_queue(&tty->read_wait, &wait);
+ 
+ 	if (!waitqueue_active(&tty->read_wait))
+@@ -2260,6 +2256,7 @@ static ssize_t n_tty_read(struct tty_struct *tty, struct file *file,
+ 
+ 	n_tty_set_room(tty);
+ 	up_read(&tty->termios_rwsem);
++	mutex_unlock(&ldata->atomic_read_lock);
+ 	return retval;
+ }
+ 
+
