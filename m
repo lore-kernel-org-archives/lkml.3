@@ -1,95 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757854Ab3HAWMk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 18:12:40 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39819 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757515Ab3HAWMi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 18:12:38 -0400
-In-Reply-To: <20130801213420.GL23006@n2100.arm.linux.org.uk>
-References: <20130801213420.GL23006@n2100.arm.linux.org.uk>
-From: Russell King <rmk+kernel@arm.linux.org.uk>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH RFC 38/51] DMA-API: staging: use dma_set_coherent_mask()
-Message-Id: <E1V516S-0006tP-0m@rmk-PC.arm.linux.org.uk>
-Date: Thu, 01 Aug 2013 23:12:12 +0100
+	id S1757868Ab3HAWN0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 18:13:26 -0400
+Received: from mga09.intel.com ([134.134.136.24]:3657 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755177Ab3HAWNZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 18:13:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,797,1367996400"; 
+   d="scan'208";a="380344143"
+Message-ID: <51FADD6F.3040804@linux.intel.com>
+Date: Thu, 01 Aug 2013 15:13:03 -0700
+From: Dave Hansen <dave.hansen@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Nathan Fontenot <nfont@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Nivedita Singhvi <niv@us.ibm.com>, Michael J Wolf <mjwolf@us.ibm.com>,
+        linux-kernel@vger.kernel.org, Linux-MM <linux-mm@kvack.org>
+Subject: Re: [PATCH] drivers: base: new memory config sysfs driver for large
+ memory systems
+References: <1374786680-26197-1-git-send-email-sjenning@linux.vnet.ibm.com> <20130725234007.GB18349@kroah.com> <20130726144251.GB4379@variantweb.net> <20130801205724.GA13585@kroah.com>
+In-Reply-To: <20130801205724.GA13585@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The correct way for a driver to specify the coherent DMA mask is
-not to directly access the field in the struct device, but to use
-dma_set_coherent_mask().  Only arch and bus code should access this
-member directly.
+On 08/01/2013 01:57 PM, Greg Kroah-Hartman wrote:
+>> > "memory" is the name used by the current sysfs memory layout code in
+>> > drivers/base/memory.c. So it can't be the same unless we are going to
+>> > create a toggle a boot time to select between the models, which is
+>> > something I am looking to add if this code/design is acceptable to
+>> > people.
+> I know it can't be the same, but this is like "memory_v2" or something,
+> right?  I suggest you make it an either/or option, given that you feel
+> the existing layout just will not work properly for you.
 
-Convert all direct write accesses to using the correct API.
+If there are existing tools or applications that look for memory hotplug
+events, how does this interact with those?  I know you guys have control
+over the ppc software that actually performs the probe/online
+operations, but what about other apps?
 
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
----
- drivers/staging/dwc2/platform.c        |    5 +++--
- drivers/staging/imx-drm/imx-drm-core.c |    8 ++++++--
- drivers/staging/imx-drm/ipuv3-crtc.c   |    4 +++-
- 3 files changed, 12 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/staging/dwc2/platform.c b/drivers/staging/dwc2/platform.c
-index 44cce2f..7a14f02 100644
---- a/drivers/staging/dwc2/platform.c
-+++ b/drivers/staging/dwc2/platform.c
-@@ -100,8 +100,9 @@ static int dwc2_driver_probe(struct platform_device *dev)
- 	 */
- 	if (!dev->dev.dma_mask)
- 		dev->dev.dma_mask = &dev->dev.coherent_dma_mask;
--	if (!dev->dev.coherent_dma_mask)
--		dev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
-+	retval = dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(32));
-+	if (retval)
-+		return retval;
- 
- 	irq = platform_get_irq(dev, 0);
- 	if (irq < 0) {
-diff --git a/drivers/staging/imx-drm/imx-drm-core.c b/drivers/staging/imx-drm/imx-drm-core.c
-index 9854a1d..81b7234 100644
---- a/drivers/staging/imx-drm/imx-drm-core.c
-+++ b/drivers/staging/imx-drm/imx-drm-core.c
-@@ -815,6 +815,12 @@ static struct drm_driver imx_drm_driver = {
- 
- static int imx_drm_platform_probe(struct platform_device *pdev)
- {
-+	int ret;
-+
-+	ret = dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(32));
-+	if (ret)
-+		return ret;
-+
- 	imx_drm_device->dev = &pdev->dev;
- 
- 	return drm_platform_init(&imx_drm_driver, pdev);
-@@ -857,8 +863,6 @@ static int __init imx_drm_init(void)
- 		goto err_pdev;
- 	}
- 
--	imx_drm_pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32),
--
- 	ret = platform_driver_register(&imx_drm_pdrv);
- 	if (ret)
- 		goto err_pdrv;
-diff --git a/drivers/staging/imx-drm/ipuv3-crtc.c b/drivers/staging/imx-drm/ipuv3-crtc.c
-index 9176a81..4e66f67 100644
---- a/drivers/staging/imx-drm/ipuv3-crtc.c
-+++ b/drivers/staging/imx-drm/ipuv3-crtc.c
-@@ -522,7 +522,9 @@ static int ipu_drm_probe(struct platform_device *pdev)
- 	if (!pdata)
- 		return -EINVAL;
- 
--	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
-+	ret = dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(32));
-+	if (ret)
-+		return ret;
- 
- 	ipu_crtc = devm_kzalloc(&pdev->dev, sizeof(*ipu_crtc), GFP_KERNEL);
- 	if (!ipu_crtc)
--- 
-1.7.4.4
-
+I also don't seem to see the original post to LKML.  Did you send
+privately to Greg, then he cc'd LKML on his reply?
