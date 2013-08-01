@@ -1,213 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753692Ab3HAHeu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 03:34:50 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:37164 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752368Ab3HAHes (ORCPT
+	id S1753671Ab3HAHgs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 03:36:48 -0400
+Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:2333 "EHLO
+	g6t0186.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753303Ab3HAHgq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 03:34:48 -0400
-Message-ID: <51FA1087.9080908@linux.vnet.ibm.com>
-Date: Thu, 01 Aug 2013 13:08:47 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>, mingo@redhat.com, x86@kernel.org,
-        tglx@linutronix.de
-CC: jeremy@goop.org, konrad.wilk@oracle.com, hpa@zytor.com,
-        pbonzini@redhat.com, linux-doc@vger.kernel.org,
-        habanero@linux.vnet.ibm.com, xen-devel@lists.xensource.com,
-        peterz@infradead.org, mtosatti@redhat.com,
-        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
-        attilio.rao@citrix.com, ouyang@cs.pitt.edu, gregkh@suse.de,
-        agraf@suse.de, chegu_vinod@hp.com, torvalds@linux-foundation.org,
-        avi.kivity@gmail.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, riel@redhat.com, drjones@redhat.com,
-        virtualization@lists.linux-foundation.org,
-        srivatsa.vaddagiri@gmail.com
-Subject: Re: [PATCH RFC V11 15/18] kvm : Paravirtual ticketlocks support for
- linux guests running on KVM hypervisor
-References: <20130723150748.GC6029@redhat.com> <51EFA24E.2060103@linux.vnet.ibm.com> <20130724103907.GF16400@redhat.com> <51EFC1D4.9060800@linux.vnet.ibm.com> <20130724120647.GG16400@redhat.com> <51EFCA42.5020009@linux.vnet.ibm.com> <51F0ED31.3040200@linux.vnet.ibm.com> <20130725091509.GA22735@redhat.com> <51F0F202.5090001@linux.vnet.ibm.com> <51F7ED20.80202@linux.vnet.ibm.com> <20130731062440.GK28372@redhat.com>
-In-Reply-To: <20130731062440.GK28372@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Thu, 1 Aug 2013 03:36:46 -0400
+Message-ID: <1375342601.1974.104.camel@j-VirtualBox>
+Subject: Re: [RFC PATCH] sched: Reduce overestimating avg_idle
+From: Jason Low <jason.low2@hp.com>
+To: Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@redhat.com>, KML <linux-kernel@vger.kernel.org>,
+        Mike Galbraith <efault@gmx.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Paul Turner <pjt@google.com>, Alex Shi <alex.shi@intel.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>, Mel Gorman <mgorman@suse.de>,
+        aswin@hp.com, scott.norton@hp.com, chegu_vinod@hp.com,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Date: Thu, 01 Aug 2013 00:36:41 -0700
+In-Reply-To: <51F9349A.3090605@redhat.com>
+References: <1375263472.3922.26.camel@j-VirtualBox>
+	 <51F9349A.3090605@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13080107-0260-0000-0000-00000367C57D
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/31/2013 11:54 AM, Gleb Natapov wrote:
-> On Tue, Jul 30, 2013 at 10:13:12PM +0530, Raghavendra K T wrote:
->> On 07/25/2013 03:08 PM, Raghavendra K T wrote:
->>> On 07/25/2013 02:45 PM, Gleb Natapov wrote:
->>>> On Thu, Jul 25, 2013 at 02:47:37PM +0530, Raghavendra K T wrote:
->>>>> On 07/24/2013 06:06 PM, Raghavendra K T wrote:
->>>>>> On 07/24/2013 05:36 PM, Gleb Natapov wrote:
->>>>>>> On Wed, Jul 24, 2013 at 05:30:20PM +0530, Raghavendra K T wrote:
->>>>>>>> On 07/24/2013 04:09 PM, Gleb Natapov wrote:
->>>>>>>>> On Wed, Jul 24, 2013 at 03:15:50PM +0530, Raghavendra K T wrote:
->>>>>>>>>> On 07/23/2013 08:37 PM, Gleb Natapov wrote:
->>>>>>>>>>> On Mon, Jul 22, 2013 at 11:50:16AM +0530, Raghavendra K T wrote:
->>>>>>>>>>>> +static void kvm_lock_spinning(struct arch_spinlock *lock,
->>>>>>>>>>>> __ticket_t want)
->>>>>>>>>> [...]
->>>>>>>>>>>> +
->>>>>>>>>>>> +    /*
->>>>>>>>>>>> +     * halt until it's our turn and kicked. Note that we do safe
->>>>>>>>>>>> halt
->>>>>>>>>>>> +     * for irq enabled case to avoid hang when lock info is
->>>>>>>>>>>> overwritten
->>>>>>>>>>>> +     * in irq spinlock slowpath and no spurious interrupt occur
->>>>>>>>>>>> to save us.
->>>>>>>>>>>> +     */
->>>>>>>>>>>> +    if (arch_irqs_disabled_flags(flags))
->>>>>>>>>>>> +        halt();
->>>>>>>>>>>> +    else
->>>>>>>>>>>> +        safe_halt();
->>>>>>>>>>>> +
->>>>>>>>>>>> +out:
->>>>>>>>>>> So here now interrupts can be either disabled or enabled. Previous
->>>>>>>>>>> version disabled interrupts here, so are we sure it is safe to
->>>>>>>>>>> have them
->>>>>>>>>>> enabled at this point? I do not see any problem yet, will keep
->>>>>>>>>>> thinking.
->>>>>>>>>>
->>>>>>>>>> If we enable interrupt here, then
->>>>>>>>>>
->>>>>>>>>>
->>>>>>>>>>>> +    cpumask_clear_cpu(cpu, &waiting_cpus);
->>>>>>>>>>
->>>>>>>>>> and if we start serving lock for an interrupt that came here,
->>>>>>>>>> cpumask clear and w->lock=null may not happen atomically.
->>>>>>>>>> if irq spinlock does not take slow path we would have non null
->>>>>>>>>> value
->>>>>>>>>> for lock, but with no information in waitingcpu.
->>>>>>>>>>
->>>>>>>>>> I am still thinking what would be problem with that.
->>>>>>>>>>
->>>>>>>>> Exactly, for kicker waiting_cpus and w->lock updates are
->>>>>>>>> non atomic anyway.
->>>>>>>>>
->>>>>>>>>>>> +    w->lock = NULL;
->>>>>>>>>>>> +    local_irq_restore(flags);
->>>>>>>>>>>> +    spin_time_accum_blocked(start);
->>>>>>>>>>>> +}
->>>>>>>>>>>> +PV_CALLEE_SAVE_REGS_THUNK(kvm_lock_spinning);
->>>>>>>>>>>> +
->>>>>>>>>>>> +/* Kick vcpu waiting on @lock->head to reach value @ticket */
->>>>>>>>>>>> +static void kvm_unlock_kick(struct arch_spinlock *lock,
->>>>>>>>>>>> __ticket_t ticket)
->>>>>>>>>>>> +{
->>>>>>>>>>>> +    int cpu;
->>>>>>>>>>>> +
->>>>>>>>>>>> +    add_stats(RELEASED_SLOW, 1);
->>>>>>>>>>>> +    for_each_cpu(cpu, &waiting_cpus) {
->>>>>>>>>>>> +        const struct kvm_lock_waiting *w =
->>>>>>>>>>>> &per_cpu(lock_waiting, cpu);
->>>>>>>>>>>> +        if (ACCESS_ONCE(w->lock) == lock &&
->>>>>>>>>>>> +            ACCESS_ONCE(w->want) == ticket) {
->>>>>>>>>>>> +            add_stats(RELEASED_SLOW_KICKED, 1);
->>>>>>>>>>>> +            kvm_kick_cpu(cpu);
->>>>>>>>>>> What about using NMI to wake sleepers? I think it was
->>>>>>>>>>> discussed, but
->>>>>>>>>>> forgot why it was dismissed.
->>>>>>>>>>
->>>>>>>>>> I think I have missed that discussion. 'll go back and check. so
->>>>>>>>>> what is the idea here? we can easily wake up the halted vcpus that
->>>>>>>>>> have interrupt disabled?
->>>>>>>>> We can of course. IIRC the objection was that NMI handling path
->>>>>>>>> is very
->>>>>>>>> fragile and handling NMI on each wakeup will be more expensive then
->>>>>>>>> waking up a guest without injecting an event, but it is still
->>>>>>>>> interesting
->>>>>>>>> to see the numbers.
->>>>>>>>>
->>>>>>>>
->>>>>>>> Haam, now I remember, We had tried request based mechanism. (new
->>>>>>>> request like REQ_UNHALT) and process that. It had worked, but had
->>>>>>>> some
->>>>>>>> complex hacks in vcpu_enter_guest to avoid guest hang in case of
->>>>>>>> request cleared.  So had left it there..
->>>>>>>>
->>>>>>>> https://lkml.org/lkml/2012/4/30/67
->>>>>>>>
->>>>>>>> But I do not remember performance impact though.
->>>>>>> No, this is something different. Wakeup with NMI does not need KVM
->>>>>>> changes at
->>>>>>> all. Instead of kvm_kick_cpu(cpu) in kvm_unlock_kick you send NMI IPI.
->>>>>>>
->>>>>>
->>>>>> True. It was not NMI.
->>>>>> just to confirm, are you talking about something like this to be
->>>>>> tried ?
->>>>>>
->>>>>> apic->send_IPI_mask(cpumask_of(cpu), APIC_DM_NMI);
->>>>>
->>>>> When I started benchmark, I started seeing
->>>>> "Dazed and confused, but trying to continue" from unknown nmi error
->>>>> handling.
->>>>> Did I miss anything (because we did not register any NMI handler)? or
->>>>> is it that spurious NMIs are trouble because we could get spurious NMIs
->>>>> if next waiter already acquired the lock.
->>>> There is a default NMI handler that tries to detect the reason why NMI
->>>> happened (which is no so easy on x86) and prints this message if it
->>>> fails. You need to add logic to detect spinlock slow path there. Check
->>>> bit in waiting_cpus for instance.
->>>
->>> aha.. Okay. will check that.
->>
->> yes. Thanks.. that did the trick.
->>
->> I did like below in unknown_nmi_error():
->> if (cpumask_test_cpu(smp_processor_id(), &waiting_cpus))
->>     return;
->>
->> But I believe you asked NMI method only for experimental purpose to
->> check the upperbound. because as I doubted above, for spurious NMI
->> (i.e. when unlocker kicks when waiter already got the lock), we would
->> still hit unknown NMI error.
->>
->> I had hit spurious NMI over 1656 times over entire benchmark run.
->> along with
->> INFO: NMI handler (arch_trigger_all_cpu_backtrace_handler) took too
->> long to run: 24.886 msecs etc...
->>
-> I wonder why this happens.
->
->> (and we cannot get away with that too because it means we bypass the
->> unknown NMI error even in genuine cases too)
->>
->> Here was the result for the my dbench test( 32 core  machine with 32
->> vcpu guest HT off)
->>
->>                   ---------- % improvement --------------
->> 		pvspinlock      pvspin_ipi      pvpsin_nmi
->> dbench_1x	0.9016    	0.7442    	0.7522
->> dbench_2x	14.7513   	18.0164   	15.9421
->> dbench_3x	14.7571   	17.0793   	13.3572
->> dbench_4x	6.3625    	8.7897    	5.3800
->>
->> So I am seeing over 2-4% improvement with IPI method.
->>
-> Yeah, this was expected.
->
->> Gleb,
->>   do you think the current series looks good to you? [one patch I
->> have resent with in_nmi() check] or do you think I have to respin the
->> series with IPI method etc. or is there any concerns that I have to
->> address. Please let me know..
->>
-> The current code looks fine to me.
 
-Gleb,
+> I wonder if we could get even more conservative values
+> of avg_idle by clamping delta to max, before calling
+> update_avg...
+> 
+> Or rather, I wonder if that would matter enough to make
+> a difference, and in what direction that difference would
+> be.
+> 
+> In other words:
+> 
+> 	if (rq->idle_stamp) {
+> 		u64 delta = rq->clock - rq->idle_stamp;
+> 		u64 max = (sysctl_sched_migration_cost * 3) / 2;
+> 
+> 		if (delta > max)
+> 			delta = max;
+> 
+> 		update_avg(&rq->avg_idle, delta);
+> 		rq->idle_stamp = 0;
+> 	}
 
-Shall I consider this as an ack for kvm part?
+Yes, I initially tried to limit delta to the max. That helped keep the
+avg_idle smaller and provided even better performance improvements on
+the 8 socket HT-enabled case. Here were some of those performance boosts
+on AIM7:
 
-Ingo,
+alltests: +14.5%   custom:      +15.9%   disk:         +15.9%
+fserver:  +33.7%   new_fserver: +15.7%   high_systime: +16.7%   
+shared:   +14.1%
 
-Do you have any concerns reg this series? please let me know if this 
-looks good now to you.
+When we limit the average instead of the delta, the performance boosts
+were in the range of 5-10%, with the exception of fserver.
+
+I initially thought that limiting delta to a small value might cause the
+average to often be underestimated. But come to think of it, this might
+actually provide a more accurate estimate of whether the majority of
+idle durations are either less than or greater than migration_cost. Idle
+durations can be a lot higher while there's a limit to how small each
+short idle duration is. This may help offset some of that bias towards a
+high avg.
+
+So how acceptable is setting a limit of 2*migration cost or less on the
+delta rather than on the avg?
+
+Thanks,
+Jason
+
 
