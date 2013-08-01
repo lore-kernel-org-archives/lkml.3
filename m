@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756583Ab3HAOFt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 10:05:49 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:56933 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756485Ab3HAOFj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 10:05:39 -0400
+	id S1756431Ab3HAOFg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 10:05:36 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:48790 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755648Ab3HAOF2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 10:05:28 -0400
 From: Roger Quadros <rogerq@ti.com>
 To: <balbi@ti.com>
 CC: <tony@atomide.com>, <kishon@ti.com>, <george.cherian@ti.com>,
         <dmurphy@ti.com>, <linux-usb@vger.kernel.org>,
         <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Roger Quadros <rogerq@ti.com>,
-        Benoit Cousson <benoit.cousson@linaro.org>
-Subject: [PATCH 7/7] ARM: dts: omap5: update omap-control-usb node
-Date: Thu, 1 Aug 2013 17:05:15 +0300
-Message-ID: <1375365915-21380-8-git-send-email-rogerq@ti.com>
+        <linux-kernel@vger.kernel.org>, Roger Quadros <rogerq@ti.com>
+Subject: [PATCH 3/7] usb: phy: omap-usb3: Don't use omap_get_control_dev()
+Date: Thu, 1 Aug 2013 17:05:11 +0300
+Message-ID: <1375365915-21380-4-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1375365915-21380-1-git-send-email-rogerq@ti.com>
 References: <1375365915-21380-1-git-send-email-rogerq@ti.com>
@@ -25,62 +25,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Split USB2 PHY and USB3 PHY into separate omap-control-usb
-nodes. Update ti,mode property.
+omap_get_control_dev() is being deprecated as it doesn't support
+multiple instances. As control device is present only from OMAP4
+onwards which supports DT only, we use phandles to get the
+reference to the control device.
 
-CC: Benoit Cousson <benoit.cousson@linaro.org>
+As we don't support non-DT boot, we just bail out on probe
+if device node is not present.
+
 Signed-off-by: Roger Quadros <rogerq@ti.com>
 ---
- arch/arm/boot/dts/omap5.dtsi |   18 ++++++++++++------
- 1 files changed, 12 insertions(+), 6 deletions(-)
+ drivers/usb/phy/phy-omap-usb3.c |   20 +++++++++++++++++---
+ 1 files changed, 17 insertions(+), 3 deletions(-)
 
-diff --git a/arch/arm/boot/dts/omap5.dtsi b/arch/arm/boot/dts/omap5.dtsi
-index 07be2cd..af8ef77 100644
---- a/arch/arm/boot/dts/omap5.dtsi
-+++ b/arch/arm/boot/dts/omap5.dtsi
-@@ -626,14 +626,20 @@
- 			hw-caps-temp-alert;
- 		};
+diff --git a/drivers/usb/phy/phy-omap-usb3.c b/drivers/usb/phy/phy-omap-usb3.c
+index 4a7f27c..bad032e 100644
+--- a/drivers/usb/phy/phy-omap-usb3.c
++++ b/drivers/usb/phy/phy-omap-usb3.c
+@@ -26,6 +26,7 @@
+ #include <linux/pm_runtime.h>
+ #include <linux/delay.h>
+ #include <linux/usb/omap_control_usb.h>
++#include <linux/of_platform.h>
  
--		omap_control_usb: omap-control-usb@4a002300 {
-+		omap_control_usb2phy: omap-control-usb@4a002300 {
- 			compatible = "ti,omap-control-usb";
--			reg = <0x4a002300 0x4>,
--			      <0x4a002370 0x4>;
--			reg-names = "control_dev_conf", "phy_power_usb";
-+			reg = <0x4a002300 0x4>;
-+			reg-names = "power";
- 			ti,type = <2>;
- 		};
- 
-+		omap_control_usb3phy: omap-control-usb@0x4a002370 {
-+			compatible = "ti,omap-control-usb";
-+			reg = <0x4a002370 0x4>;
-+			reg-names = "power";
-+			ti,type = <3>;
-+		};
+ #define	PLL_STATUS		0x00000004
+ #define	PLL_GO			0x00000008
+@@ -198,6 +199,12 @@ static int omap_usb3_probe(struct platform_device *pdev)
+ {
+ 	struct omap_usb			*phy;
+ 	struct resource			*res;
++	struct device_node *node = pdev->dev.of_node;
++	struct device_node *control_node;
++	struct platform_device *control_pdev;
 +
- 		omap_dwc3@4a020000 {
- 			compatible = "ti,dwc3";
- 			ti,hwmods = "usb_otg_ss";
-@@ -661,7 +667,7 @@
- 			usb2_phy: usb2phy@4a084000 {
- 				compatible = "ti,omap-usb2";
- 				reg = <0x4a084000 0x7c>;
--				ctrl-module = <&omap_control_usb>;
-+				ctrl-module = <&omap_control_usb2phy>;
- 			};
++	if (!node)
++		return -ENODEV;
  
- 			usb3_phy: usb3phy@4a084400 {
-@@ -670,7 +676,7 @@
- 				      <0x4a084800 0x64>,
- 				      <0x4a084c00 0x40>;
- 				reg-names = "phy_rx", "phy_tx", "pll_ctrl";
--				ctrl-module = <&omap_control_usb>;
-+				ctrl-module = <&omap_control_usb3phy>;
- 			};
- 		};
+ 	phy = devm_kzalloc(&pdev->dev, sizeof(*phy), GFP_KERNEL);
+ 	if (!phy) {
+@@ -239,11 +246,18 @@ static int omap_usb3_probe(struct platform_device *pdev)
+ 		return -EINVAL;
+ 	}
  
+-	phy->control_dev = omap_get_control_dev();
+-	if (IS_ERR(phy->control_dev)) {
+-		dev_dbg(&pdev->dev, "Failed to get control device\n");
++	control_node = of_parse_phandle(node, "ctrl-module", 0);
++	if (!control_node) {
++		dev_err(&pdev->dev, "Failed to get control device phandle\n");
+ 		return -ENODEV;
+ 	}
++	control_pdev = of_find_device_by_node(control_node);
++	if (!control_pdev) {
++		dev_err(&pdev->dev, "Failed to get control device\n");
++		return -ENODEV;
++	}
++
++	phy->control_dev = &control_pdev->dev;
+ 
+ 	omap_control_usb_phy_power(phy->control_dev, 0);
+ 	usb_add_phy_dev(&phy->phy);
 -- 
 1.7.4.1
 
