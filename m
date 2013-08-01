@@ -1,63 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751748Ab3HAAQy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 20:16:54 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:49546 "EHLO
+	id S1751852Ab3HAAR7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 20:17:59 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:49675 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750856Ab3HAAQw (ORCPT
+	with ESMTP id S1750857Ab3HAAR5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 20:16:52 -0400
-Message-ID: <51F9A8F1.9020704@codeaurora.org>
-Date: Wed, 31 Jul 2013 17:16:49 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Wed, 31 Jul 2013 20:17:57 -0400
+Message-ID: <51F9A934.404@codeaurora.org>
+Date: Wed, 31 Jul 2013 17:17:56 -0700
+From: Hanumant Singh <hanumant@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Timur Tabi <timur@tabi.org>
-CC: Arpit Goel <B44344@freescale.com>, linux@arm.linux.org.uk,
-        takata@linux-m32r.org, philb@gnu.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>, schwidefsky@de.ibm.com,
-        heiko.carstens@de.ibm.com, linux390@de.ibm.com,
-        David Miller <davem@davemloft.net>,
-        Rob Herring <rob.herring@calxeda.com>, Arnd Bergmann <arnd@arndb.de>,
-        Stephen Warren <swarren@nvidia.com>, john.stultz@linaro.org,
-        jesper.nilsson@axis.com, gregkh@linuxfoundation.org, sam@ravnborg.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>, linux-m32r@ml.linux-m32r.org,
-        linux-m32r-ja@ml.linux-m32r.org, linux-m68k@vger.kernel.org,
-        linux-s390@vger.kernel.org, sparclinux@vger.kernel.org,
-        mattw@codeaurora.org
-Subject: Re: [PATCH 2/2] Convert PowerPC macro spin_event_timeout() to architecture
- independent macro
-References: <1375187900-17582-1-git-send-email-B44344@freescale.com> <1375187900-17582-3-git-send-email-B44344@freescale.com> <20130731071630.GI8868@codeaurora.org> <CAOZdJXVvNBR-qf7LXNOHZVstH_Rebxwn-wAkSaBS53Wn55mYCw@mail.gmail.com> <51F9A5FE.8030608@codeaurora.org> <51F9A80E.5010307@tabi.org>
-In-Reply-To: <51F9A80E.5010307@tabi.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Bjorn Andersson <Bjorn.Andersson@sonymobile.com>,
+        "Bird, Tim" <Tim.Bird@sonymobile.com>,
+        ext Tony Lindgren <tony@atomide.com>
+Subject: Re: [PATCH] pinctrl: msm: Add support for MSM TLMM pinmux
+References: <1374702089-2832-1-git-send-email-hanumant@codeaurora.org> <CACRpkdZLFD-KAvZdUUvQKje3vAH1D0EJMW9PSK8VSp3Xs4eiGA@mail.gmail.com> <51F82BCC.1080409@codeaurora.org> <51F82E9F.9010309@wwwdotorg.org> <51F853BF.9040007@codeaurora.org> <51F8556A.1010300@wwwdotorg.org> <51F85690.9060701@codeaurora.org> <51F88BAC.2020001@wwwdotorg.org> <51F969A5.5020405@codeaurora.org> <51F97C47.5020202@wwwdotorg.org>
+In-Reply-To: <51F97C47.5020202@wwwdotorg.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/31/13 17:13, Timur Tabi wrote:
-> On 07/31/2013 07:04 PM, Stephen Boyd wrote:
->> If it yields why are we using udelay? Why not usleep_range()? It would
->> be useful to have a variant that worked in interrupt context and it
->> looked like that was almost possible.
-> I've never heard of usleep_range() before, so I don't know if it
-> applies.  Apparently, udelay() includes its own call to cpu_relax().  Is
-> it possible that cpu_relax() is a "lightweight" yield, compared to sleeping?
-
-cpu_relax() is usually just a compiler barrier or an instruction hint to
-the cpu that it should cool down because we're spinning in a tight loop.
-It certainly shouldn't be calling into the  scheduler.
-
+On 7/31/2013 2:06 PM, Stephen Warren wrote:
+> On 07/31/2013 01:46 PM, Hanumant Singh wrote:
+>> On 7/30/2013 8:59 PM, Stephen Warren wrote:
+>>> On 07/30/2013 06:13 PM, Hanumant Singh wrote:
+>>>> On 7/30/2013 5:08 PM, Stephen Warren wrote:
+>>>>> On 07/30/2013 06:01 PM, Hanumant Singh wrote:
+>>>>>> On 7/30/2013 2:22 PM, Stephen Warren wrote:
+>>>>>>> On 07/30/2013 03:10 PM, hanumant wrote:
+>>>>>>> ...
+>>>>>>>> We actually have the same TLMM pinmux used by several socs of a
+>>>>>>>> family.
+>>>>>>>> The number of pins on each soc may vary.
+>>>>>>>> Also a given soc gets used in a number of boards.
+>>>>>>>> The device tree for a given soc is split into the different boards
+>>>>>>>> that
+>>>>>>>> its in ie the boards inherit a common soc.dtsi but have separate
+>>>>>>>> dts.
+>>>>>>>> The boards for the same soc may use different pin groups for
+>>>>>>>> accomplishing a function, since we have multiple i2c, spi uart etc
+>>>>>>>> peripheral instances on a soc. A different instance of each of the
+>>>>>>>> above
+>>>>>>>> peripherals, can be used in different boards, utilizing different
+>>>>>>>> or subset of same pin groups.
+>>>>>>>> Thus I would need to have multiple C files for one soc, based on the
+>>>>>>>> boards that it goes into.
+>>>>>>>
+>>>>>>> The pinctrl driver should be exposing the raw capabilities of the HW.
+>>>>>>> All the board-specific configuration should be expressed in DT.
+>>>>>>> So, the
+>>>>>>> driver shouldn't have to know anything about different boards at
+>>>>>>> compile-time.
+>>>>>>>
+>>>>>> I agree, so I wanted to keep the pin grouping information in DT, we
+>>>>>> already have a board based differentiation of dts files in DT, for the
+>>>>>> same soc.
+>>>>>
+>>>>> That's the opposite of what I was saying. Pin groups are a feature of
+>>>>> the SoC design, not the board.
+>>>>>
+>>>> Sorry I guess I wasn't clear.
+>>>> Right now I have a soc-pinctrl.dtsi containing pin groupings.
+>>>> This will be "inherited" by soc-boardtype.dts.
+>>>> The pinctrl client device nodes in soc-boardtype.dts will point to pin
+>>>> groupings in soc-pinctrl.dtsi that are valid for that particular
+>>>> boardtype.
+>>>> Is this a valid design?
+>>>
+>>> OK, so you have two types of child node inside the pinctrl DT node; some
+>>> define the pin groups the SoC has (in soc.dtsi) and some define pinctrl
+>>> states that reference the pin group nodes and are referenced by the
+>>> client nodes.
+>>>
+>>> That's probably fine. However, I'd still question putting the pin group
+>>> nodes in DT at all; I'm not convinced it's better than just putting
+>>> those into the driver itself. You end up with the same data tables after
+>>> parsing the DT anyway.
+>>>
+>>
+>> Any feedback for the rest of the patch?
 >
-> FYI, you might want to look at the code reviews for spin_event_timeout()
-> on the linuxppc-dev mailing list, back in March 2009.
+> I'm certainly waiting for this aspect of the patch to be resolved; I
+> think it will impact the rest of the patch so much that it's not worth
+> reviewing until we decide on where to represent the pin groups (some DT
+> parsing could would be removed if we put the pin group definitions into
+> the driver, hence wouldn't need to be reviewed, and likewise there's be
+> some new tables to review).
 >
 
-Sure. Any pointers? Otherwise I'll go digging around the archives.
+I am trying to look at examples of what you are suggesting.
+I was looking at the exynos implementation, and just from a brief glance 
+it seems like there too the pin grouping is being specified in the 
+device tree, using what looks like labels of the pins.
+The labels are matched to group structures in soc specific files?
+
+By having the pin groupings in DT I am able to reuse the driver without 
+any SOC based code bloat.
+As I mentioned earlier, we have entire families of SOCs using the same
+TLMM hardware.
+Its not a guarantee that for a given TLMM version,
+the pin groupings on that hardware are the same for every SOC that its 
+in. Its infact most likely that I wont be able to use the pin groupings
+from one SOC to the next even if they both use the same TLMM.
+It will very quickly lead to a bloat of
+pinctrl-<msm_soc>.c (containing the pin groupings replicated for each soc)
+which use TLMM version specific register programming implementation
+pinctrl-tlmm-<version>.c
+and the DT parsing and interface to framework (which remains unchanged).
+pinctrl-msm.c.
+
+Thanks
+Hanumant
 
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
-
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+-- 
