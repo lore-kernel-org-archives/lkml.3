@@ -1,40 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752203Ab3HAISM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 04:18:12 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:46442 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750742Ab3HAISI (ORCPT
+	id S1752701Ab3HAITx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 04:19:53 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:43389 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750856Ab3HAITu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 04:18:08 -0400
-Date: Thu, 1 Aug 2013 10:17:59 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [PATCH 0/9] perf tools: Enhance and correct srcline behavior
-Message-ID: <20130801081759.GI3008@twins.programming.kicks-ass.net>
-References: <1375325744-26613-1-git-send-email-namhyung@kernel.org>
+	Thu, 1 Aug 2013 04:19:50 -0400
+Date: Thu, 1 Aug 2013 01:19:50 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Dave Chinner <david@fromorbit.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, davej@redhat.com, viro@zeniv.linux.org.uk,
+        jack@suse.cz, glommer@parallels.com
+Subject: Re: [PATCH 08/11] inode: convert per-sb inode list to a list_lru
+Message-ID: <20130801081950.GA18828@infradead.org>
+References: <1375244150-27296-1-git-send-email-david@fromorbit.com>
+ <1375244150-27296-9-git-send-email-david@fromorbit.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1375325744-26613-1-git-send-email-namhyung@kernel.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1375244150-27296-9-git-send-email-david@fromorbit.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 01, 2013 at 11:55:35AM +0900, Namhyung Kim wrote:
-> Hello,
-> 
-> This patchset tries to fix and enhance current srcline behavior.
-> 
-> Firstly it doesn't actually sort by srcline info but by ip.  I suspect
-> it was because of a performance reason to run external addr2line
-> utility.  It showed the srcline info after hist entries were
-> collapsed.  Thanks to Roberto, we now have internal implementation of
-> addr2line using libbfd so can sort/compare by srcline of entries.
+At this point the list_lru name really becomes confusing.  Given that
+it's not really LRU specific maybe just rename it to pernode_list
+or similar?
 
-Sweet..
