@@ -1,141 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755200Ab3HAUBw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 16:01:52 -0400
-Received: from smtp102.biz.mail.bf1.yahoo.com ([98.139.221.61]:48684 "HELO
-	smtp102.biz.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751989Ab3HAUBt (ORCPT
+	id S1753444Ab3HAUGU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 16:06:20 -0400
+Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:56886 "EHLO
+	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751723Ab3HAUGS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 16:01:49 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: 5YDO69cVM1kBJBjtuS_BgIlHvYmdStOASx6Vkc.V5AKsspg
- ha9.XZs5KkDPomZzh9Hz6d.riWgUUAXYleXiFwV0dy_x.Eb7MusSsWIEcfwn
- cZErTs4t9inlcUImVewi8enSSy.Lc_j5V3LmubZozWj9bcXSpAra5reX08bV
- DA4QXr1NcjcAJzAl8mvY_Wd10jGVnqax47GYi3JrlEcMvrf1fPOom90yZC4L
- LnAHQjVoGD43k12hFUJZyb56quuHpKv5k3m46fW3RBNFswr9NMLXJok.0ifi
- ds5VRSmSW2CSH2Xg6faCtecg39n_i6e6Ydyzp.Xmf0S8ckDv6s3Tyqocrjuj
- UHNO9W5Bnw1xaaO2UNtZhoJI8xeaQXU.xh8r8lEhqxnX9lFrJfnf3MBn5rtD
- hUD_4NC5DECcPrepe5YEY6749pB_NyVDsfOnXI581D3V2lNZfcirEzJaZVsT
- n.fsrG60FNXQtVji4LqnF7sQ3PAjH3lj32R11XqTrmCktJmeSd5s2b2tjY6S
- 5qQH_PyOHBm80dtDMc4W4Mj_v7geLt0_GiLepQQ4U9vKEVAYMPknxm8BARg3
- kSMPFGr7qRPvByNWENUxxxA1AYKSltIkR0Rmuq8MR4lweeVXmUzWXAHO8Z29
- 4X4vY6vQsLB7fPd_FfrkbGkFb_blb
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-X-Rocket-Received: from [192.168.0.103] (casey@24.6.250.25 with )
-        by smtp102.biz.mail.bf1.yahoo.com with SMTP; 01 Aug 2013 13:01:48 -0700 PDT
-Message-ID: <51FABEAB.3080600@schaufler-ca.com>
-Date: Thu, 01 Aug 2013 13:01:47 -0700
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Thu, 1 Aug 2013 16:06:18 -0400
+Message-ID: <51FABFB7.9070409@hurleysoftware.com>
+Date: Thu, 01 Aug 2013 16:06:15 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Tomasz Stanislawski <t.stanislaws@samsung.com>
-CC: Casey Schaufler <casey@schaufler-ca.com>,
-        linux-security-module@vger.kernel.org, m.szyprowski@samsung.com,
-        kyungmin.park@samsung.com, r.krypa@samsung.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] security: smack: fix memleak in smk_write_rules_list()
-References: <1371137352-31273-1-git-send-email-t.stanislaws@samsung.com> <51C1BB6C.8010105@samsung.com>
-In-Reply-To: <51C1BB6C.8010105@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Michel Lespinasse <walken@google.com>,
+        Artem Savkov <artem.savkov@gmail.com>
+CC: gregkh@linuxfoundation.org, jslaby@suse.cz, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH] n_tty: release atomic_read_lock before calling schedule_timeout()
+References: <1375198500-17414-1-git-send-email-artem.savkov@gmail.com> <51F7EC5A.2030609@hurleysoftware.com> <20130731114726.GA11570@cpv436-motbuntu.spb.ea.mot-mobility.com>
+In-Reply-To: <20130731114726.GA11570@cpv436-motbuntu.spb.ea.mot-mobility.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/19/2013 7:08 AM, Tomasz Stanislawski wrote:
-> >From 8497987bedf8821db3dce47a6205dfce2b0895c5 Mon Sep 17 00:00:00 2001
-> From: Tomasz Stanislawski <t.stanislaws@samsung.com>
-> Date: Thu, 6 Jun 2013 09:30:50 +0200
-> Subject: [PATCH] security: smack: fix memleak in smk_write_rules_list()
+On 07/31/2013 07:47 AM, Artem Savkov wrote:
+> On Tue, Jul 30, 2013 at 12:39:54PM -0400, Peter Hurley wrote:
+>> On 07/30/2013 11:35 AM, Artem Savkov wrote:
+>>> ldata->atomic_read_lock should be released before scheduling as well as
+>>> tty->termios_rwsem, otherwise there is a potential deadlock detected by lockdep
+>>
+>> False positive.
+>>
+>>> Introduced in "n_tty: Access termios values safely"
+>>> (9356b535fcb71db494fc434acceb79f56d15bda2 in linux-next.git)
+>>>
+>>> [   16.822058] ======================================================
+>>> [   16.822058] [ INFO: possible circular locking dependency detected ]
+>>> [   16.822058] 3.11.0-rc3-next-20130730+ #140 Tainted: G        W
+>>> [   16.822058] -------------------------------------------------------
+>>> [   16.822058] bash/1198 is trying to acquire lock:
+>>> [   16.822058]  (&tty->termios_rwsem){++++..}, at: [<ffffffff816aa3bb>] n_tty_read+0x49b/0x660
+>>> [   16.822058]
+>>> [   16.822058] but task is already holding lock:
+>>> [   16.822058]  (&ldata->atomic_read_lock){+.+...}, at: [<ffffffff816aa0f0>] n_tty_read+0x1d0/0x660
+>>> [   16.822058]
+>>> [   16.822058] which lock already depends on the new lock.
+>>> [   16.822058]
+>>> [   16.822058]
+>>> [   16.822058] the existing dependency chain (in reverse order) is:
+>>> [   16.822058]
+>>> -> #1 (&ldata->atomic_read_lock){+.+...}:
+>>> [   16.822058]        [<ffffffff811111cc>] validate_chain+0x73c/0x850
+>>> [   16.822058]        [<ffffffff811117e0>] __lock_acquire+0x500/0x5d0
+>>> [   16.822058]        [<ffffffff81111a29>] lock_acquire+0x179/0x1d0
+>>> [   16.822058]        [<ffffffff81d34b9c>] mutex_lock_interruptible_nested+0x7c/0x540
+>>> [   16.822058]        [<ffffffff816aa0f0>] n_tty_read+0x1d0/0x660
+>>> [   16.822058]        [<ffffffff816a3bb6>] tty_read+0x86/0xf0
+>>> [   16.822058]        [<ffffffff811f21d3>] vfs_read+0xc3/0x130
+>>> [   16.822058]        [<ffffffff811f2702>] SyS_read+0x62/0xa0
+>>> [   16.822058]        [<ffffffff81d45259>] system_call_fastpath+0x16/0x1b
+>>> [   16.822058]
+>>> -> #0 (&tty->termios_rwsem){++++..}:
+>>> [   16.822058]        [<ffffffff8111064f>] check_prev_add+0x14f/0x590
+>>> [   16.822058]        [<ffffffff811111cc>] validate_chain+0x73c/0x850
+>>> [   16.822058]        [<ffffffff811117e0>] __lock_acquire+0x500/0x5d0
+>>> [   16.822058]        [<ffffffff81111a29>] lock_acquire+0x179/0x1d0
+>>> [   16.822058]        [<ffffffff81d372c1>] down_read+0x51/0xa0
+>>> [   16.822058]        [<ffffffff816aa3bb>] n_tty_read+0x49b/0x660
+>>> [   16.822058]        [<ffffffff816a3bb6>] tty_read+0x86/0xf0
+>>> [   16.822058]        [<ffffffff811f21d3>] vfs_read+0xc3/0x130
+>>> [   16.822058]        [<ffffffff811f2702>] SyS_read+0x62/0xa0
+>>> [   16.822058]        [<ffffffff81d45259>] system_call_fastpath+0x16/0x1b
+>>> [   16.822058]
+>>> [   16.822058] other info that might help us debug this:
+>>> [   16.822058]
+>>> [   16.822058]  Possible unsafe locking scenario:
+>>> [   16.822058]
+>>> [   16.822058]        CPU0                    CPU1
+>>> [   16.822058]        ----                    ----
+>>> [   16.822058]   lock(&ldata->atomic_read_lock);
+>>> [   16.822058]                                lock(&tty->termios_rwsem);
+>>> [   16.822058]                                lock(&ldata->atomic_read_lock);
+>>> [   16.822058]   lock(&tty->termios_rwsem);
+>>> [   16.822058]
+>>> [   16.822058]  *** DEADLOCK ***
+>>
+>> This situation is not possible since termios_rwsem is a read/write semaphore;
+>> CPU1 cannot prevent CPU0 from obtaining a read lock on termios_rwsem.
+> Oops, yes, sorry.
 >
-> The smack_parsed_rule structure is allocated.  If a rule is successfully
-> installed then the last reference to the object is lost.  This patch fixes this
-> leak. Moreover smack_parsed_rule is allocated on stack because it no longer
-> needed ofter smk_write_rules_list() is finished.
->
-> Signed-off-by: Tomasz Stanislawski <t.stanislaws@samsung.com>
+>> This looks like a regression caused by:
+>>
+>> commit a51805efae5dda0da66f79268ffcf0715f9dbea4
+>> Author: Michel Lespinasse <walken@google.com>
+>> Date:   Mon Jul 8 14:23:49 2013 -0700
+>>
+>>      lockdep: Introduce lock_acquire_exclusive()/shared() helper macros
+> Doesn't seem to be this commit. I see nothing wrong here and just to be
+> sure I've checked the kernel with this commit reverted. The issue is
+> still there.
 
-Acked-by: Casey Schaufler <casey@schaufler-ca.com>
+Yes, you're right. Apologies to Michel for the too-hasty blame.
 
+Thanks for the report anyway. I'll track down the lockdep regression
+as soon as I fix a real deadlock in the nouveau driver that disables
+lockdep.
 
-Applied to git://git.gitorious.org/smack-next/kernel.git#smack-for-3.12
-
-Rebasing was required. The change has been tested.
-
-> ---
->  security/smack/smackfs.c |   30 ++++++++++--------------------
->  1 file changed, 10 insertions(+), 20 deletions(-)
->
-> diff --git a/security/smack/smackfs.c b/security/smack/smackfs.c
-> index 53a08b8..08aebc2 100644
-> --- a/security/smack/smackfs.c
-> +++ b/security/smack/smackfs.c
-> @@ -446,7 +446,7 @@ static ssize_t smk_write_rules_list(struct file *file, const char __user *buf,
->  					struct mutex *rule_lock, int format)
->  {
->  	struct smack_known *skp;
-> -	struct smack_parsed_rule *rule;
-> +	struct smack_parsed_rule rule;
->  	char *data;
->  	int datalen;
->  	int rc = -EINVAL;
-> @@ -478,49 +478,39 @@ static ssize_t smk_write_rules_list(struct file *file, const char __user *buf,
->  		goto out;
->  	}
->
-> -	rule = kzalloc(sizeof(*rule), GFP_KERNEL);
-> -	if (rule == NULL) {
-> -		rc = -ENOMEM;
-> -		goto out;
-> -	}
-> -
->  	if (format == SMK_LONG_FMT) {
->  		/*
->  		 * Be sure the data string is terminated.
->  		 */
->  		data[count] = '\0';
-> -		if (smk_parse_long_rule(data, rule, 1, 0))
-> -			goto out_free_rule;
-> +		if (smk_parse_long_rule(data, &rule, 1, 0))
-> +			goto out;
->  	} else if (format == SMK_CHANGE_FMT) {
->  		data[count] = '\0';
-> -		if (smk_parse_long_rule(data, rule, 1, 1))
-> -			goto out_free_rule;
-> +		if (smk_parse_long_rule(data, &rule, 1, 1))
-> +			goto out;
->  	} else {
->  		/*
->  		 * More on the minor hack for backward compatibility
->  		 */
->  		if (count == (SMK_OLOADLEN))
->  			data[SMK_OLOADLEN] = '-';
-> -		if (smk_parse_rule(data, rule, 1))
-> -			goto out_free_rule;
-> +		if (smk_parse_rule(data, &rule, 1))
-> +			goto out;
->  	}
->
->
->  	if (rule_list == NULL) {
->  		load = 1;
-> -		skp = smk_find_entry(rule->smk_subject);
-> +		skp = smk_find_entry(rule.smk_subject);
->  		rule_list = &skp->smk_rules;
->  		rule_lock = &skp->smk_rules_lock;
->  	}
->
-> -	rc = smk_set_access(rule, rule_list, rule_lock, load);
-> -	if (rc == 0) {
-> +	rc = smk_set_access(&rule, rule_list, rule_lock, load);
-> +	if (rc == 0)
->  		rc = count;
-> -		goto out;
-> -	}
->
-> -out_free_rule:
-> -	kfree(rule);
->  out:
->  	kfree(data);
->  	return rc;
+Regards,
+Peter Hurley
 
