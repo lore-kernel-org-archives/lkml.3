@@ -1,91 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753118Ab3HAHmc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 03:42:32 -0400
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:58606 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752553Ab3HAHm3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 03:42:29 -0400
+	id S1752664Ab3HAHp2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 03:45:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17270 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750958Ab3HAHp0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 03:45:26 -0400
+Date: Thu, 1 Aug 2013 15:45:09 +0800
+From: Asias He <asias@redhat.com>
+To: Sudeep Dutt <sudeep.dutt@intel.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
+        "Yaozu (Eddie) Dong" <eddie.dong@intel.com>,
+        Arnd Bergmann <arnd@arndb.de>, "Michael S. Tsirkin" <mst@redhat.com>,
+        Harshavardhan R Kharche <harshavardhan.r.kharche@intel.com>,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Ashutosh Dixit <ashutosh.dixit@intel.com>,
+        Rob Landley <rob@landley.net>, Caz Yokoyama <Caz.Yokoyama@intel.com>,
+        Dasaratharaman Chandramouli 
+	<dasaratharaman.chandramouli@intel.com>
+Subject: Re: [PATCH 0/5] Enable Drivers for Intel MIC X100 Coprocessors.
+Message-ID: <20130801074509.GA27797@hj.localdomain>
+References: <cover.1374717252.git.sudeep.dutt@intel.com>
+ <20130801014608.GD6941@kroah.com>
 MIME-Version: 1.0
-In-Reply-To: <CAPDyKFpKYeqoFn=S6P2tu1s2C28daCh4vcHTUCCRUOx2_MHShg@mail.gmail.com>
-References: <1371146190-16786-1-git-send-email-zoran.markovic@linaro.org>
-	<CAPDyKFrD=q4hOQps5ENJdmAPJyKG1cj7+P6MtXdQ8KQ1cPjnpQ@mail.gmail.com>
-	<CAME+o4mM-YmcZ4pcdWo7mzrDUi2R2LhihgcnbYixOm8KnGfnBA@mail.gmail.com>
-	<CAMbhsRRokPi59J8SghGL0QhUWKDqMuvfbT3TdPosXud_WxRV2Q@mail.gmail.com>
-	<CAPDyKFqy9EEb6o8wYABYT6zE-7Rb0xxo8Y0DuAwooeYZp5=Grw@mail.gmail.com>
-	<CAMbhsRSC5XhhSK-DAoS7_JAj7XUfaM_Topp4UcBaVwRCYXSscQ@mail.gmail.com>
-	<CAPDyKFpMGS-JA47pY_n7xvqdtbPumGpc2fdnYZnSVQ_Rybre3g@mail.gmail.com>
-	<CAMbhsRQwGbpa4a1RziV92qnw4VFh6+=oQiadfqa17FANEiK8_Q@mail.gmail.com>
-	<CAPDyKFroFY3-NJCFpkDYyBVx25CSfk492H_TnoS60jn2CdfWUQ@mail.gmail.com>
-	<CAMbhsRTR9im-BsJ-1m+DD-67LM=s0=KOoy-o+2PmnkDyLOP0Gg@mail.gmail.com>
-	<CAPDyKFoX-ioDVVkfQ21epJyTqQD98xvsqBR1FXzgP9bN6_Zxjg@mail.gmail.com>
-	<CAME+o4=WrfpvJo=jN1KZ_JHnYq9Frfk3EPcwtG10=aCwrbY+Rw@mail.gmail.com>
-	<CAPDyKFpKYeqoFn=S6P2tu1s2C28daCh4vcHTUCCRUOx2_MHShg@mail.gmail.com>
-Date: Thu, 1 Aug 2013 00:42:28 -0700
-Message-ID: <CAME+o4kpsPkoTpS7_0STDpMQpZr0KyfD1prbYYJs147-5DiMkg@mail.gmail.com>
-Subject: Re: [RFC PATCH] mmc: Enable wakeup_sources for mmc core
-From: Zoran Markovic <zoran.markovic@linaro.org>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Colin Cross <ccross@android.com>, lkml <linux-kernel@vger.kernel.org>,
-        linux-mmc@vger.kernel.org, San Mehat <san@google.com>,
-        John Stultz <john.stultz@linaro.org>, Chris Ball <cjb@laptop.org>,
-        Johan Rudholm <johan.rudholm@stericsson.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Konstantin Dorfman <kdorfman@codeaurora.org>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130801014608.GD6941@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ulf,
-I got confirmation from Broadcom that all cell phone reference designs
-have card insert/removal configured as a wakeup IRQ. Unless our
-customers change that - which I doubt - this results in a considerable
-number of products implementing this feature.
+Hello Sudeep Dutt,
 
-Please let me know how you wish to proceed.
+On Wed, Jul 31, 2013 at 06:46:08PM -0700, Greg Kroah-Hartman wrote:
+> On Wed, Jul 24, 2013 at 08:31:31PM -0700, Sudeep Dutt wrote:
+> > An Intel MIC X100 device is a PCIe form factor add-in coprocessor
+> > card based on the Intel Many Integrated Core (MIC) architecture
+> > that runs a Linux OS. It is a PCIe endpoint in a platform and therefore
+> > implements the three required standard address spaces i.e. configuration,
+> > memory and I/O. The host OS loads a device driver as is typical for
+> > PCIe devices. The card itself runs a bootstrap after reset that
+> > transfers control to the card OS downloaded from the host driver.
+> > The card OS as shipped by Intel is a Linux kernel with modifications
+> > for the X100 devices.
+> > 
+> > Since it is a PCIe card, it does not have the ability to host hardware
+> > devices for networking, storage and console. We provide these devices
+> > on X100 coprocessors thus enabling a self-bootable equivalent environment
+> > for applications. A key benefit of our solution is that it leverages
+> > the standard virtio framework for network, disk and console devices,
+> > though in our case the virtio framework is used across a PCIe bus.
+> > 
+> > Here is a block diagram of the various components described above. The
+> > virtio backends are situated on the host rather than the card given better
+> > single threaded performance for the host compared to MIC and the ability of
+> > the host to initiate DMA's to/from the card using the MIC DMA engine.
+> > 
+> >                               |
+> >        +----------+           |             +----------+
+> >        | Card OS  |           |             | Host OS  |
+> >        +----------+           |             +----------+
+> >                               |
+> > +-------+ +--------+ +------+ | +---------+  +--------+ +--------+
+> > | Virtio| |Virtio  | |Virtio| | |Virtio   |  |Virtio  | |Virtio  |
+> > | Net   | |Console | |Block | | |Net      |  |Console | |Block   |
+> > | Driver| |Driver  | |Driver| | |backend  |  |backend | |backend |
+> > +-------+ +--------+ +------+ | +---------+  +--------+ +--------+
+> >     |         |         |     |      |            |         |
+> >     |         |         |     |Ring 3|            |         |
+> >     |         |         |     |------|------------|---------|-------
+> >     +-------------------+     |Ring 0+--------------------------+
+> >               |               |      | Virtio over PCIe IOCTLs  |
+> >               |               |      +--------------------------+
+> >       +--------------+        |                   |
+> >       |Intel MIC     |        |            +---------------+
+> >       |Card Driver   |        |            |Intel MIC      |
+> >       +--------------+        |            |Host Driver    |
+> >               |               |            +---------------+
+> >               |               |                   |
+> >      +-------------------------------------------------------------+
+> >      |                                                             |
+> >      |                    PCIe Bus                                 |
+> >      +-------------------------------------------------------------+
 
-Cheers,
-Zoran
 
-On 26 June 2013 13:57, Ulf Hansson <ulf.hansson@linaro.org> wrote:
-> On 24 June 2013 21:58, Zoran Markovic <zoran.markovic@linaro.org> wrote:
->>>> This patch is ported from the Android common tree, so you've probably
->>>> been using it.
->>>
->>> We removed more or less all Android code in the mmc subsystem, since
->>> it just didn't work. :-)
->>>
->>> The "deferred resume" was very useful though, so after some rework we
->>> kept it and could then improve the system resume time significantly.
->>
->> For what it's worth, I fixed one bug I noticed in the Android kernel:
->> if a system has a non-removable MMC device, a suspend/resume cycle on
->> this device would hold a wake lock forever. This was a visible issue
->> on the panda board I am using.
->>
->> If there are doubts on whether or not the system should stay awake
->> during a MMC mount, we have the option to make the calls to
->> wakeup_source_register/unregister configurable. Skipping these calls
->> would leave the .ws field NULL, in which case
->> __pm_stay_awake/__pm_relax/__pm_wakeup_event would do nothing.
->
-> Even if we make this feature configurable, I can't see any host driver
-> that would benefit from it as of today. The reason is simply that host
-> drivers do not configure it's card detect irq as a wakeup irq. Myself
-> is also having quite hard to see the benefit of doing that, but I
-> don't know all the use cases.
->
-> Let's see if we can get someone else to provide input...
->
->>
->> Thoughts?
->>
->> - Zoran
->
->
-> Kind regards
-> Ulf Hansson
+Could you send the whole series to virtualization@lists.linux-foundation.org next time?
+
+
+> That's some nice information, why isn't it in one of the patches you
+> sent, so that others can read it later on to try to figure out what is
+> going on with this codebase?
+> 
+> thanks,
+> 
+> greg k-h
+> _______________________________________________
+> Virtualization mailing list
+> Virtualization@lists.linux-foundation.org
+> https://lists.linuxfoundation.org/mailman/listinfo/virtualization
+
+-- 
+Asias
