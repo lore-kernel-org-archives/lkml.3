@@ -1,48 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751788Ab3HAAbp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 20:31:45 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:32312 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750856Ab3HAAbn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 20:31:43 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 72.84.113.162
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19SM6SNBdKQPursnozPemS5D7avSkfxxOE=
-Date: Wed, 31 Jul 2013 20:31:05 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: arm@kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Andrew Lunn <andrew@lunn.ch>
-Subject: Re: [PATCH 16/18] ARM: orion: Switch to sched_clock_register()
-Message-ID: <20130801003105.GU5882@titan.lakedaemon.net>
-References: <1375309877-16617-1-git-send-email-sboyd@codeaurora.org>
- <1375309877-16617-17-git-send-email-sboyd@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1375309877-16617-17-git-send-email-sboyd@codeaurora.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752102Ab3HAAbt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 20:31:49 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:60074 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751040Ab3HAAbq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 20:31:46 -0400
+From: Joe Perches <joe@perches.com>
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-afs@lists.infradead.org,
+        linux-hams@vger.kernel.org, linux-wireless@vger.kernel.org
+Subject: [PATCH 0/8] include/net: next set of extern removals
+Date: Wed, 31 Jul 2013 17:31:31 -0700
+Message-Id: <cover.1375316912.git.joe@perches.com>
+X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 31, 2013 at 03:31:15PM -0700, Stephen Boyd wrote:
-> The 32 bit sched_clock interface now supports 64 bits. Upgrade to
-> the 64 bit function to allow us to remove the 32 bit registration
-> interface.
-> 
-> Cc: Jason Cooper <jason@lakedaemon.net>
-> Cc: Andrew Lunn <andrew@lunn.ch>
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> ---
->  arch/arm/plat-orion/time.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
+Standardize on no extern use on function prototypes
 
-Acked-by: Jason Cooper <jason@lakedaemon.net>
+Joe Perches (8):
+  addrconf.h: Remove extern function prototypes
+  af_unix.h: Remove extern from function prototypes
+  af_rxrpc.h: Remove extern from function prototypes
+  arp/neighbour.h: Remove extern from function prototypes
+  ax25.h: Remove extern from function prototypes
+  cfg80211.h/mac80211.h: Remove extern from function prototypes
+  checksum: Remove extern from function prototypes
+  cls_cgroup.h netprio_cgroup.h: Remove extern from function prototypes
 
-thx,
+ include/net/addrconf.h       | 160 +++++++++++++++-----------------
+ include/net/af_rxrpc.h       |  35 ++++---
+ include/net/af_unix.h        |  16 ++--
+ include/net/arp.h            |  30 +++---
+ include/net/ax25.h           | 215 ++++++++++++++++++++++---------------------
+ include/net/cfg80211.h       |  34 +++----
+ include/net/checksum.h       |  10 +-
+ include/net/cls_cgroup.h     |   2 +-
+ include/net/mac80211.h       |  16 ++--
+ include/net/neighbour.h      |  98 ++++++++++----------
+ include/net/netprio_cgroup.h |   2 +-
+ 11 files changed, 300 insertions(+), 318 deletions(-)
 
-Jason.
+-- 
+1.8.1.2.459.gbcd45b4.dirty
+
