@@ -1,79 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756928Ab3HAVdq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 17:33:46 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:51136 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753272Ab3HAVdp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 17:33:45 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: rafael.j.wysocki@intel.com, vasilis.liaskovitis@profitbricks.com,
-        toshi.kani@hp.com, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, tangchen@cn.fujitsu.com,
-        wency@cn.fujitsu.com
-Subject: Re: Cannot hot remove a memory device
-Date: Thu, 01 Aug 2013 23:43:55 +0200
-Message-ID: <2995879.KDC1gYpzij@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <51FA1E41.20304@jp.fujitsu.com>
-References: <51FA1E41.20304@jp.fujitsu.com>
+	id S1757395Ab3HAVfI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 17:35:08 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39701 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754648Ab3HAVfG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 17:35:06 -0400
+Date: Thu, 1 Aug 2013 22:34:20 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Arnd Bergmann <arnd@arndb.de>, Catalin Marinas <catalin.marinas@arm.com>,
+        Chris Ball <cjb@laptop.org>, Jens Axboe <axboe@kernel.dk>,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Will Deacon <will.deacon@arm.com>
+Subject: [PATCH RFC 00/51] Preview of DMA mask changes
+Message-ID: <20130801213420.GL23006@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+So, this patch set is a preview of the DMA mask changes which I currently
+have in my tree.
 
-Thanks for your report.
+This started out as a request to look at the DMA mask situation, and how
+to solve the issues which we have on ARM.  One of those issues is how to
+deal with the DT side of things, which I haven't yet addressed.
 
-On Thursday, August 01, 2013 05:37:21 PM Yasuaki Ishimatsu wrote:
-> By following commit, I cannot hot remove a memory device.
-> 
-> ACPI / memhotplug: Bind removable memory blocks to ACPI device nodes
-> commit e2ff39400d81233374e780b133496a2296643d7d
-> 
-> Details are follows:
-> When I add a memory device, acpi_memory_enable_device() always fails
-> as follows:
-> 
-> ...
-> [ 1271.114116]  [ffffea121c400000-ffffea121c7fffff] PMD -> [ffff880813c00000-ffff880813ffffff] on node 3
-> [ 1271.128682]  [ffffea121c800000-ffffea121cbfffff] PMD -> [ffff880813800000-ffff880813bfffff] on node 3
-> [ 1271.143298]  [ffffea121cc00000-ffffea121cffffff] PMD -> [ffff880813000000-ffff8808133fffff] on node 3
-> [ 1271.157799]  [ffffea121d000000-ffffea121d3fffff] PMD -> [ffff880812c00000-ffff880812ffffff] on node 3
-> [ 1271.172341]  [ffffea121d400000-ffffea121d7fffff] PMD -> [ffff880812800000-ffff880812bfffff] on node 3
-> [ 1271.186872]  [ffffea121d800000-ffffea121dbfffff] PMD -> [ffff880812400000-ffff8808127fffff] on node 3
-> [ 1271.201481]  [ffffea121dc00000-ffffea121dffffff] PMD -> [ffff880812000000-ffff8808123fffff] on node 3
-> [ 1271.216041]  [ffffea121e000000-ffffea121e3fffff] PMD -> [ffff880811c00000-ffff880811ffffff] on node 3
-> [ 1271.230623]  [ffffea121e400000-ffffea121e7fffff] PMD -> [ffff880811800000-ffff880811bfffff] on node 3
-> [ 1271.245148]  [ffffea121e800000-ffffea121ebfffff] PMD -> [ffff880811400000-ffff8808117fffff] on node 3
-> [ 1271.259683]  [ffffea121ec00000-ffffea121effffff] PMD -> [ffff880811000000-ffff8808113fffff] on node 3
-> [ 1271.274194]  [ffffea121f000000-ffffea121f3fffff] PMD -> [ffff880810c00000-ffff880810ffffff] on node 3
-> [ 1271.288764]  [ffffea121f400000-ffffea121f7fffff] PMD -> [ffff880810800000-ffff880810bfffff] on node 3
-> ...	
-> [ 1271.325841] acpi PNP0C80:03: acpi_memory_enable_device() error
+However, I started off reviewing how the dma_mask and coherent_dma_mask
+was being used, and what I found was rather messy, and in some cases
+rather buggy.  I tried to get some of the bug fixes in before the last
+merge window, but it seems that the maintainers preferred to have the
+full solution rather than a simple -rc suitable bug fix.
 
-Well, the only new way acpi_memory_enable_device() can fail after that commit
-is a failure in acpi_bind_memory_blocks().
+So, this is an attempt to clean things up.
 
-This means that either handle is NULL, which I think we can exclude, because
-acpi_memory_enable_device() wouldn't be called at all if that were the case, or
-there's a more subtle error in acpi_bind_one().
+The first point here is that drivers performing DMA should be calling
+dma_set_mask()/dma_set_coherent_mask() in their probe function to verify
+that DMA can be performed.  Lots of ARM drivers omit this step; please
+refer to the DMA API documentation on this subject.
 
-One that comes to mind is that we may be calling acpi_bind_one() twice for the
-same memory region, in which it will trigger -EINVAL from the sanity check in
-there.
+What this means is that the DMA mask provided by bus code is a default
+value - nothing more.  It doesn't have to accurately reflect what the
+device is actually capable of.  Apart from the storage for dev->dma_mask
+being initialised for any device which is DMA capable, there is no other
+initialisation which is strictly necessary at device creation time.
 
-Also you may try to increase ACPI_MAX_PHYSICAL_NODE (in acpi_bus.h) and see if
-that helps.
+Now, these cleanups address two major areas:
+1. The setting of DMA masks, particularly when both the coherent and
+   streaming DMA masks are set together.
 
-Thanks,
-Rafael
+2. The initialisation of DMA masks by drivers - this seems to be becoming
+   a popular habbit, one which may not be entirely the right solution.
+   Rather than having this scattered throughout the tree, I've pulled
+   that into a central location (and called it coercing the DMA mask -
+   because it really is about forcing the DMA mask to be that value.)
 
+3. Finally, addressing the long held misbelief that DMA masks somehow
+   correspond with physical addresses.  We already have established
+   long ago that dma_addr_t values returned from the DMA API are the
+   values which you program into the DMA controller, and so are the
+   bus addresses.  It is _only_ sane that DMA masks are also bus
+   related too, and not related to physical address spaces.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+(3) is a very important point for LPAE systems, which may still have
+less than 4GB of memory, but this memory is all located above the 4GB
+physical boundary.  This means with the current model, any device
+using a 32-bit DMA mask fails - even though the DMA controller is
+still only a 32-bit DMA controller but the 32-bit bus addresses map
+to system memory.  To put it another way, the bus addresses have a
+4GB physical offset on them.
+
+This work is ongoing, and I'm still fixing the odd bug which the nightly
+autobuilder randconfigs find (when it doesn't hit some other problem.)
+
+I'm not using get_maintainer.pl for this series yet, because the list
+of recipients is gigantic and would not pass through vger's filters,
+let alone other mailing lists.  So this initial posting will only be
+sent to those listed explicitly in Cc:'s in the patches, linux-kernel
+and linux-arm-kernel... and it will take about an hour to send all
+these patches out.
+
+Patches based on -rc2.
+
+ Documentation/DMA-API-HOWTO.txt                   |   37 +++++++++------
+ Documentation/DMA-API.txt                         |    8 +++
+ arch/arm/include/asm/dma-mapping.h                |    8 +++
+ arch/arm/mm/dma-mapping.c                         |   49 ++++++++++++++++++--
+ arch/arm/mm/init.c                                |   12 +++---
+ arch/arm/mm/mm.h                                  |    2 +
+ arch/powerpc/kernel/vio.c                         |    3 +-
+ block/blk-settings.c                              |    8 ++--
+ drivers/amba/bus.c                                |    6 +--
+ drivers/ata/pata_ixp4xx_cf.c                      |    5 ++-
+ drivers/ata/pata_octeon_cf.c                      |    5 +-
+ drivers/block/nvme-core.c                         |    7 +--
+ drivers/crypto/ixp4xx_crypto.c                    |   48 ++++++++++----------
+ drivers/dma/amba-pl08x.c                          |    5 ++
+ drivers/dma/dw/platform.c                         |    8 +--
+ drivers/dma/edma.c                                |    6 +--
+ drivers/dma/pl330.c                               |    4 ++
+ drivers/firmware/dcdbas.c                         |   23 +++++-----
+ drivers/firmware/google/gsmi.c                    |   13 +++--
+ drivers/gpu/drm/exynos/exynos_drm_drv.c           |    7 +++-
+ drivers/gpu/drm/omapdrm/omap_dmm_tiler.c          |    5 +-
+ drivers/media/platform/omap3isp/isp.c             |    6 +-
+ drivers/media/platform/omap3isp/isp.h             |    3 -
+ drivers/mmc/card/queue.c                          |    3 +-
+ drivers/mmc/host/sdhci-acpi.c                     |    5 +-
+ drivers/net/ethernet/broadcom/b44.c               |    3 +-
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c  |    8 +---
+ drivers/net/ethernet/brocade/bna/bnad.c           |   13 ++----
+ drivers/net/ethernet/emulex/benet/be_main.c       |   12 +----
+ drivers/net/ethernet/intel/e1000/e1000_main.c     |    9 +---
+ drivers/net/ethernet/intel/e1000e/netdev.c        |   18 +++-----
+ drivers/net/ethernet/intel/igb/igb_main.c         |   18 +++-----
+ drivers/net/ethernet/intel/igbvf/netdev.c         |   18 +++-----
+ drivers/net/ethernet/intel/ixgb/ixgb_main.c       |   16 ++-----
+ drivers/net/ethernet/intel/ixgbe/ixgbe_main.c     |   15 ++----
+ drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c |   15 ++----
+ drivers/net/ethernet/nxp/lpc_eth.c                |    6 ++-
+ drivers/net/ethernet/octeon/octeon_mgmt.c         |    5 +-
+ drivers/net/ethernet/sfc/efx.c                    |   12 +-----
+ drivers/net/wireless/b43/dma.c                    |    9 +---
+ drivers/net/wireless/b43legacy/dma.c              |    9 +---
+ drivers/of/platform.c                             |    3 -
+ drivers/parport/parport_pc.c                      |    8 +++-
+ drivers/scsi/scsi_lib.c                           |    2 +-
+ drivers/staging/dwc2/platform.c                   |    5 +-
+ drivers/staging/et131x/et131x.c                   |   17 +------
+ drivers/staging/imx-drm/imx-drm-core.c            |    8 +++-
+ drivers/staging/imx-drm/ipuv3-crtc.c              |    4 +-
+ drivers/staging/media/dt3155v4l/dt3155v4l.c       |    5 +--
+ drivers/usb/chipidea/ci_hdrc_imx.c                |    7 +--
+ drivers/usb/dwc3/dwc3-exynos.c                    |    7 +--
+ drivers/usb/gadget/lpc32xx_udc.c                  |    4 +-
+ drivers/usb/host/bcma-hcd.c                       |    3 +-
+ drivers/usb/host/ehci-atmel.c                     |    7 +--
+ drivers/usb/host/ehci-octeon.c                    |    4 +-
+ drivers/usb/host/ehci-omap.c                      |   10 ++--
+ drivers/usb/host/ehci-orion.c                     |    7 +--
+ drivers/usb/host/ehci-platform.c                  |   10 ++--
+ drivers/usb/host/ehci-s5p.c                       |    7 +--
+ drivers/usb/host/ehci-spear.c                     |    7 +--
+ drivers/usb/host/ehci-tegra.c                     |    7 +--
+ drivers/usb/host/ohci-at91.c                      |    9 ++--
+ drivers/usb/host/ohci-exynos.c                    |    7 +--
+ drivers/usb/host/ohci-nxp.c                       |    5 +-
+ drivers/usb/host/ohci-octeon.c                    |    5 +-
+ drivers/usb/host/ohci-omap3.c                     |   10 ++--
+ drivers/usb/host/ohci-pxa27x.c                    |    8 ++--
+ drivers/usb/host/ohci-sa1111.c                    |    6 +++
+ drivers/usb/host/ohci-spear.c                     |    7 +--
+ drivers/usb/host/ssb-hcd.c                        |    3 +-
+ drivers/usb/host/uhci-platform.c                  |    7 +--
+ drivers/usb/musb/am35x.c                          |   50 +++++++--------------
+ drivers/usb/musb/da8xx.c                          |   49 +++++++-------------
+ drivers/usb/musb/davinci.c                        |   48 +++++++-------------
+ drivers/usb/musb/tusb6010.c                       |   49 +++++++-------------
+ drivers/video/amba-clcd.c                         |    5 ++
+ include/linux/amba/bus.h                          |    2 -
+ include/linux/dma-mapping.h                       |   31 +++++++++++++
+ sound/arm/pxa2xx-pcm.c                            |    9 +---
+ sound/soc/atmel/atmel-pcm.c                       |   11 ++---
+ sound/soc/blackfin/bf5xx-ac97-pcm.c               |   11 ++---
+ sound/soc/blackfin/bf5xx-i2s-pcm.c                |   10 ++---
+ sound/soc/davinci/davinci-pcm.c                   |    9 +---
+ sound/soc/fsl/fsl_dma.c                           |    9 +---
+ sound/soc/fsl/mpc5200_dma.c                       |   10 ++---
+ sound/soc/jz4740/jz4740-pcm.c                     |   12 ++---
+ sound/soc/kirkwood/kirkwood-dma.c                 |    9 +---
+ sound/soc/nuc900/nuc900-pcm.c                     |    9 ++--
+ sound/soc/omap/omap-pcm.c                         |   11 ++---
+ sound/soc/pxa/pxa2xx-pcm.c                        |   11 ++---
+ sound/soc/s6000/s6000-pcm.c                       |    9 +---
+ sound/soc/samsung/dma.c                           |   11 ++---
+ sound/soc/samsung/idma.c                          |   11 ++---
+ 93 files changed, 492 insertions(+), 565 deletions(-)
+
