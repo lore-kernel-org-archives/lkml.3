@@ -1,46 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752791Ab3HAAmV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 20:42:21 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:50743 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751958Ab3HAAmT (ORCPT
+	id S1751407Ab3HAAnk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 20:43:40 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:35367 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750858Ab3HAAnj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 20:42:19 -0400
-Date: Wed, 31 Jul 2013 17:42:17 -0700
-From: David Brown <davidb@codeaurora.org>
-To: ksummit-2013-discuss@lists.linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [ARM ATTEND] DT binding and support and general SOC
-Message-ID: <20130801004217.GA12730@codeaurora.org>
+	Wed, 31 Jul 2013 20:43:39 -0400
+Message-ID: <51F9AF1F.1060902@ti.com>
+Date: Wed, 31 Jul 2013 20:43:11 -0400
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stephen Boyd <sboyd@codeaurora.org>
+CC: <arm@kernel.org>, Tony Lindgren <tony@atomide.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 10/18] ARM: OMAP2+: Switch to sched_clock_register()
+References: <1375309877-16617-1-git-send-email-sboyd@codeaurora.org> <1375309877-16617-11-git-send-email-sboyd@codeaurora.org>
+In-Reply-To: <1375309877-16617-11-git-send-email-sboyd@codeaurora.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Qualcomm is starting to ramp up actually contributing support for MSM
-to the mainline kernel.  There are at least a couple of areas where I
-see direct discussion involvement would be useful:
+On Wednesday 31 July 2013 06:31 PM, Stephen Boyd wrote:
+> The 32 bit sched_clock interface now supports 64 bits. Upgrade to
+> the 64 bit function to allow us to remove the 32 bit registration
+> interface.
+> 
+> Cc: Tony Lindgren <tony@atomide.com>
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> ---
+>  arch/arm/mach-omap2/timer.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+Acked-by: Santosh Shilimkar<santosh.shilimkar@ti.com>
 
-  - DT binding.  The Qualcomm out-of-tree code has roughly 37k lines
-    of dts/dtsi files.  There has been a lot of effort here to try an
-    manage/organize these bindings, but for the most part, this work
-    has happened entirely internally.  As more MSM code is
-    contributed, there will be a lot more bindings coming in.  I can
-    bring experience with what we've done/learned with our current
-    internal bindings, as well as bring feedback to more align our
-    work with how the ARM bindings in general are moving.
-
-  - SoC code structure and layout.  As ARM increases in variants (new
-    CPU types, lots of SoCs, 64-bit etc), I think we should have some
-    discussion of how to best organize the code.
-
-David Brown
-
--- 
-sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
