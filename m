@@ -1,95 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757196Ab3HAS4F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 14:56:05 -0400
-Received: from che.mayfirst.org ([209.234.253.108]:50652 "EHLO
-	che.mayfirst.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752286Ab3HAS4D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 14:56:03 -0400
-Message-ID: <51FAAF3D.3010806@fifthhorseman.net>
-Date: Thu, 01 Aug 2013 14:55:57 -0400
-From: Daniel Kahn Gillmor <dkg@fifthhorseman.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130630 Icedove/17.0.7
+	id S1755594Ab3HAS70 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 14:59:26 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:47680 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752208Ab3HAS7Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 14:59:24 -0400
+Message-ID: <51FAB000.9050407@linux.vnet.ibm.com>
+Date: Thu, 01 Aug 2013 11:59:12 -0700
+From: Cody P Schafer <cody@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Simo Sorce <simo@redhat.com>
-CC: David Howells <dhowells@redhat.com>, keyrings@linux-nfs.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>, linux-nfs@vger.kernel.org,
-        krbdev@mit.edu, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] KEYS: Add per-user_namespace registers for persistent
- per-UID kerberos caches
-References: <20130801173846.28023.19009.stgit@warthog.procyon.org.uk>  <20130801173902.28023.68819.stgit@warthog.procyon.org.uk>  <51FAA0CC.7010106@fifthhorseman.net> <1375381798.15733.207.camel@willson.li.ssimo.org>
-In-Reply-To: <1375381798.15733.207.camel@willson.li.ssimo.org>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha512;
- protocol="application/pgp-signature";
- boundary="----enig2WHFTLRFBFVREFOWVNKHG"
+To: Xishi Qiu <qiuxishi@huawei.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Liujiang <jiang.liu@huawei.com>, Minchan Kim <minchan@kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        b.zolnierkie@samsung.com, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mm/hotplug: fix a drain pcp bug when offline pages
+References: <51FA2800.9070706@huawei.com>
+In-Reply-To: <51FA2800.9070706@huawei.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13080118-0320-0000-0000-00000084FC93
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
-------enig2WHFTLRFBFVREFOWVNKHG
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On 08/01/2013 02:18 AM, Xishi Qiu wrote:
+> __offline_pages()
+>     start_isolate_page_range()
+>        set_migratetype_isolate()
+>           set_pageblock_migratetype() -> this pageblock will be marked as MIGRATE_ISOLATE
+>           move_freepages_block() -> pages in PageBuddy will be moved into MIGRATE_ISOLATE list
+>           drain_all_pages() -> drain PCP
+>              free_pcppages_bulk()
+>                 mt = get_freepage_migratetype(page); -> PCP's migratetype is not MIGRATE_ISOLATE
+>                 __free_one_page(page, zone, 0, mt); -> so PCP will not be freed into into MIGRATE_ISOLATE list
+>
+> In this case, the PCP may be allocated again, because they are not in
+> PageBuddy's MIGRATE_ISOLATE list. This will cause offline_pages failed.
+>
+> Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
+> ---
+>   mm/page_alloc.c     |   10 ++++++----
+>   mm/page_isolation.c |   15 ++++++++++++++-
+>   2 files changed, 20 insertions(+), 5 deletions(-)
+>
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index b100255..d873471 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -965,11 +965,13 @@ int move_freepages(struct zone *zone,
+>   		}
+>
+>   		order = page_order(page);
+> -		list_move(&page->lru,
+> -			  &zone->free_area[order].free_list[migratetype]);
+> -		set_freepage_migratetype(page, migratetype);
+> +		if (get_freepage_migratetype(page) != migratetype) {
+> +			list_move(&page->lru,
+> +				&zone->free_area[order].free_list[migratetype]);
+> +			set_freepage_migratetype(page, migratetype);
+> +			pages_moved += 1 << order;
+> +		}
+>   		page += 1 << order;
+> -		pages_moved += 1 << order;
 
-On 08/01/2013 02:29 PM, Simo Sorce wrote:
+So this looks like it changes the return from move_freepages() to be the 
+"pages moved" from "the pages now belonging to the passed migrate type".
 
-> It's called 'abstraction' :-)
+The user of move_freepages_block()'s return value (and thus the return 
+value of move_freepages()) in mm/page_alloc.c expects that it is the 
+original meaning. The users in page_isolation.c expect it is the new 
+meaning. Those need to be reconciled.
 
-Good, I like abstraction :)
+>   	}
+>
+>   	return pages_moved;
+> diff --git a/mm/page_isolation.c b/mm/page_isolation.c
+> index 383bdbb..ba1afc9 100644
+> --- a/mm/page_isolation.c
+> +++ b/mm/page_isolation.c
+> @@ -65,8 +65,21 @@ out:
+>   	}
+>
+>   	spin_unlock_irqrestore(&zone->lock, flags);
+> -	if (!ret)
+> +
+> +	if (!ret) {
+>   		drain_all_pages();
+> +		/*
+> +		 * When drain_all_pages() frees cached pages into the buddy
+> +		 * system, it uses the stale migratetype cached in the
+> +		 * page->index field, so try to move free pages to ISOLATE
+> +		 * list again.
+> +		 */
+> +		spin_lock_irqsave(&zone->lock, flags);
+> +		nr_pages = move_freepages_block(zone, page, MIGRATE_ISOLATE);
+> +		__mod_zone_freepage_state(zone, -nr_pages, migratetype);
+> +		spin_unlock_irqrestore(&zone->lock, flags);
+> +	}
+> +
 
->> It seems like a non-privileged user could use this to store arbitrary
->> data in this keyring as a way of hiding what would otherwise be
->> filesystem activity or using it for some sort of odd/sneaky IPC
->> mechanism.  Is this an intentional side effect?
->=20
-> Just as a user can add data into a shm segment ?
-> Is there any difference ?
+Could we teach drain_all_pages() to use the right migrate type instead 
+(or add something similar that does)? (pages could be reallocated 
+between the drain_all_pages() and move_freepages_block()).
 
-I guess this raises the question from a different perspective: if the
-kernel already supports arbitrary shm segments, filesystem locations,
-etc, which can be used for storing/passing opaque bytestrings between
-different parts of userspace, what advantages do we gain from having
-this new specific mechanism in the kernel?  Why couldn't those parts of
-userspace just rely on already-existing mechanisms instead of
-introducing this new interface?
+>   	return ret;
+>   }
+>
 
-Again, i'm not trying to say it's a bad idea; there's probably a
-big-picture piece of the puzzle that i don't see that makes this all
-obvious.  i just want to understand what it is.  Thanks for your
-explanations!
-
-Regards,
-
-	--dkg
-
-
-------enig2WHFTLRFBFVREFOWVNKHG
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-Comment: Using GnuPG with Icedove - http://www.enigmail.net/
-
-iQJ8BAEBCgBmBQJR+q89XxSAAAAAAC4AKGlzc3Vlci1mcHJAbm90YXRpb25zLm9w
-ZW5wZ3AuZmlmdGhob3JzZW1hbi5uZXRFQjk2OTEyODdBN0FEREUzNzU3RDkxMUVB
-NTI0MDFCMTFCRkRGQTVDAAoJEKUkAbEb/fpccfsP/1YMyvzpT0lg/Hjk7lcZQNNn
-dlsMz+CjD/WMSFao4Y+lYjjXXb9YF0FQFyBrAFDS5RzEyDQzz2zuuEKxv6AM3omL
-BHFXoPJGeJ5VlbpChJKB9vX7JK2wt8HglO6CdtkSBDqcgwJ/NuvH3SVujqlzuUGk
-/y2pfS2EbgN5CHnpq/okoX4b80kfPmAo1NmCG6nxPSHhVTDE2aol67HyjmFENFeQ
-v1nFj8NuIuY2uMO/d1wHTfdCxdKiFKLVjuaJyWTuDaMiDbnoGBAsx/99NuBA/6Z5
-WkmkwKQT+fJrWbNFxHBsLuHyHiPL44RQ9HPKrOQ0rS/JVXX9VnHivN1IIplI7Qgd
-YdtB+SQqA+MBjavF+whg458wmiFadGQpXgFQrBYK0fsXHiZartFrbAT5+lhnkXAE
-+dibhXywP0B4cKsdKJDUcOijrTkgFAYkA39NdVFdVtcinjxmVBQBJgP2o2dtgWJZ
-IXQFM1JTdziiyuvk6MzNQLAGUjl/zoj4zzQKvRxElQ8HXWK5Yfxn9Ayb4Aa9uDJj
-8+/TuCNaD/0ABp7Noz+JPu2NTlF0aylHK03wjFf3JOD7zj4jY/Nt62u1EqPPmz6M
-NvIeNSg40O7OR2XRUtRMKWMmDm7Zz0ytPto3/Vb5s73sSoXJCR1zEIfF6IaK9kHk
-mg4QtsNWAh1CzXHap4T5
-=qcNT
------END PGP SIGNATURE-----
-
-------enig2WHFTLRFBFVREFOWVNKHG--
