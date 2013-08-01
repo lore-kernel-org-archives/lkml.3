@@ -1,114 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754080Ab3HAJE3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 05:04:29 -0400
-Received: from forward-corp1e.mail.yandex.net ([77.88.60.199]:52453 "EHLO
-	forward-corp1e.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751604Ab3HAJE0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 05:04:26 -0400
-Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
-Message-ID: <51FA2490.4020905@yandex-team.ru>
-Date: Thu, 01 Aug 2013 13:04:16 +0400
-From: Roman Gushchin <klamm@yandex-team.ru>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S1753428Ab3HAJGS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 05:06:18 -0400
+Received: from mga02.intel.com ([134.134.136.20]:9220 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751604Ab3HAJGP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 05:06:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,793,1367996400"; 
+   d="scan'208";a="355393190"
+Message-ID: <51FA2537.5040208@intel.com>
+Date: Thu, 01 Aug 2013 17:07:03 +0800
+From: Aaron Lu <aaron.lu@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: eric.dumazet@gmail.com, raise.sail@gmail.com, ebiederm@xmission.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net: check net.core.somaxconn sysctl values
-References: <51F917CF.7010905@yandex-team.ru> <20130731.171019.1991802407661623893.davem@davemloft.net>
-In-Reply-To: <20130731.171019.1991802407661623893.davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Borislav Petkov <bp@alien8.de>
+CC: intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+        lkml <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: i915 backlight
+References: <20130731162252.GC4724@pd.tnic> <20130731163623.GD4724@pd.tnic> <51F9B63F.7060509@intel.com> <20130801081215.GB3448@nazgul.tnic>
+In-Reply-To: <20130801081215.GB3448@nazgul.tnic>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01.08.2013 04:10, David Miller wrote:
-> From: Roman Gushchin <klamm@yandex-team.ru>
-> Date: Wed, 31 Jul 2013 17:57:35 +0400
->
->> ---
->>   net/core/sysctl_net_core.c | 6 +++++-
->>   1 file changed, 5 insertions(+), 1 deletion(-)
+On 08/01/2013 04:12 PM, Borislav Petkov wrote:
+> On Thu, Aug 01, 2013 at 09:13:35AM +0800, Aaron Lu wrote:
+>> Can you please run acpi_listen and then press the Fn-Fx key, see if the
+>> events are correctly sent out?
+> 
+> Like this?
+> 
+> # acpi_listen
+> video/brightnessdown BRTDN 00000087 00000000
+> video/brightnessup BRTUP 00000086 00000000
+> video/brightnessdown BRTDN 00000087 00000000
+> video/brightnessup BRTUP 00000086 00000000
+> video/brightnessdown BRTDN 00000087 00000000
+> video/brightnessup BRTUP 00000086 00000000
+> video/brightnessdown BRTDN 00000087 00000000
+> video/brightnessup BRTUP 00000086 00000000
+> video/brightnessdown BRTDN 00000087 00000000
+> ^C
+
+Yes, so the event is correctly sent out.
+
+> 
+>> From the bug page:
+>> https://bugzilla.kernel.org/show_bug.cgi?id=51231#c80
+>> I got the impression that both the acpi_video interface and the vendor
+>> interface thinkpad_screen are broken. So adding this cmdline here works
+>> suggests that either thinkpad_screen works or thinkpad vendor driver
+>> doesn't get loaded or doesn't create that interface for some reason.
 >>
->> diff --git a/net/core/sysctl_net_core.c b/net/core/sysctl_net_core.c
->> index cfdb46a..2ff093b 100644
->> --- a/net/core/sysctl_net_core.c
->> +++ b/net/core/sysctl_net_core.c
->> @@ -20,7 +20,9 @@
->
-> This patch is against old sources, please respin it against the current
-> tree.
->
-> Thanks.
->
+>> Alternatively, if the intel_backlight interface works(highly possible),
+>> you can use xorg.conf to specify the that backlight interface for X.
+>>
+>> Section "Device"
+>>         Option     "Backlight"	"intel_backlight"
+>> 	Identifier  "Card0"
+>> 	Driver      "intel"
+>> 	BusID       "PCI:0:2:0"
+>> EndSection
+> 
+> Yeah, that didn't work *but* manually writing to both:
+> 
+> /sys/class/backlight/acpi_video0/brightness
+> 
+> and
+> 
+> /sys/class/backlight/intel_backlight/brightness
+> 
+> works.
 
-net: check net.core.somaxconn sysctl values
+Err...we have the event sent out on hotkey press and the interface also
+works, but still, using hotkey to adjust brightness level is broken...
 
-It's possible to assign an invalid value to the net.core.somaxconn
-sysctl variable, because there is no checks at all.
+I just found an old acer laptop that has similar issue(or even worse: on
+X starts, an almost black screen is shown and hotkey adjust doesn't
+work), I'll look into this.
 
-The sk_max_ack_backlog field of the sock structure is defined as
-unsigned short. Therefore, the backlog argument in inet_listen()
-shouldn't exceed USHRT_MAX. The backlog argument in the listen() syscall
-is truncated to the somaxconn value. So, the somaxconn value shouldn't
-exceed 65535 (USHRT_MAX).
-Also, negative values of somaxconn are meaningless.
+> 
+> The ranges are different, though:
+> 
+> intel_backlight/actual_brightness:1000
+> intel_backlight/bl_power:0
+> intel_backlight/brightness:1000
+> intel_backlight/max_brightness:4437
+> intel_backlight/type:raw
+> 
+> acpi_video0/actual_brightness:41
+> acpi_video0/bl_power:0
+> acpi_video0/brightness:41
+> acpi_video0/max_brightness:100
+> acpi_video0/type:firmware
 
-before:
-$ sysctl -w net.core.somaxconn=256
-net.core.somaxconn = 256
-$ sysctl -w net.core.somaxconn=65536
-net.core.somaxconn = 65536
-$ sysctl -w net.core.somaxconn=-100
-net.core.somaxconn = -100
+Yes, different interface has different brightness ranges and a value in
+one range may turn out to be the same actual brightness level of another
+value in another range.
 
-after:
-$ sysctl -w net.core.somaxconn=256
-net.core.somaxconn = 256
-$ sysctl -w net.core.somaxconn=65536
-error: "Invalid argument" setting key "net.core.somaxconn"
-$ sysctl -w net.core.somaxconn=-100
-error: "Invalid argument" setting key "net.core.somaxconn"
+> 
+> I guess I need to write me a dirty script for now ... :-)
 
-Based on a prior patch from Changli Gao.
+:-)
 
-Signed-off-by: Roman Gushchin <klamm@yandex-team.ru>
-Reported-by: Changli Gao <xiaosuo@gmail.com>
-Suggested-by: Eric Dumazet <edumazet@google.com>
-Acked-by: Eric Dumazet <edumazet@google.com>
----
-  net/core/sysctl_net_core.c | 6 +++++-
-  1 file changed, 5 insertions(+), 1 deletion(-)
-
-diff --git a/net/core/sysctl_net_core.c b/net/core/sysctl_net_core.c
-index 6609686..7c37dcd 100644
---- a/net/core/sysctl_net_core.c
-+++ b/net/core/sysctl_net_core.c
-@@ -21,7 +21,9 @@
-  #include <net/net_ratelimit.h>
-  #include <net/busy_poll.h>
-
-+static int zero = 0;
-  static int one = 1;
-+static int ushort_max = USHRT_MAX;
-
-  #ifdef CONFIG_RPS
-  static int rps_sock_flow_sysctl(struct ctl_table *table, int write,
-@@ -339,7 +341,9 @@ static struct ctl_table netns_core_table[] = {
-  		.data		= &init_net.core.sysctl_somaxconn,
-  		.maxlen		= sizeof(int),
-  		.mode		= 0644,
--		.proc_handler	= proc_dointvec
-+		.extra1		= &zero,
-+		.extra2		= &ushort_max,
-+		.proc_handler	= proc_dointvec_minmax
-  	},
-  	{ }
-  };
--- 
-1.8.1.2
-
-
+> 
+> Thanks guys.
+> 
+Thanks,
+Aaron
