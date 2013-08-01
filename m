@@ -1,198 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753182Ab3HAIch (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 04:32:37 -0400
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:43817 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751194Ab3HAIcd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 04:32:33 -0400
+	id S1752761Ab3HAIey (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 04:34:54 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43626 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750742Ab3HAIeu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 04:34:50 -0400
+Date: Thu, 1 Aug 2013 10:34:47 +0200
+From: Jan Kara <jack@suse.cz>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Jan Kara <jack@suse.cz>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        davej@redhat.com, viro@zeniv.linux.org.uk, glommer@parallels.com
+Subject: Re: [PATCH 01/11] writeback: plug writeback at a high level
+Message-ID: <20130801083447.GA19219@quack.suse.cz>
+References: <1375244150-27296-1-git-send-email-david@fromorbit.com>
+ <1375244150-27296-2-git-send-email-david@fromorbit.com>
+ <20130731144019.GC22930@quack.suse.cz>
+ <20130801054805.GO7118@dastard>
 MIME-Version: 1.0
-In-Reply-To: <1375336979-14747-1-git-send-email-ch.naveen@samsung.com>
-References: <1375336979-14747-1-git-send-email-ch.naveen@samsung.com>
-Date: Thu, 1 Aug 2013 14:02:32 +0530
-X-Google-Sender-Auth: v11YGcZcbSpm2hEG7nMH0LKxCho
-Message-ID: <CADGdYn4DA83AcxAzEJW-ndg+wvojruqJYY=urKhxn_6GjJzE3w@mail.gmail.com>
-Subject: Re: [PATCH] thermal: exynos: Handle the misplaced TRIMINFO register
-From: amit daniel kachhap <amit.daniel@samsung.com>
-To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-Cc: linux-pm@vger.kernel.org, rui.zhang@intel.com, eduardo.valentin@ti.com,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kgene.kim@samsung.com, naveenkrishna.ch@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130801054805.GO7118@dastard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Naveen,
+On Thu 01-08-13 15:48:05, Dave Chinner wrote:
+> On Wed, Jul 31, 2013 at 04:40:19PM +0200, Jan Kara wrote:
+> > On Wed 31-07-13 14:15:40, Dave Chinner wrote:
+> > > From: Dave Chinner <dchinner@redhat.com>
+> > > 
+> > > Doing writeback on lots of little files causes terrible IOPS storms
+> > > because of the per-mapping writeback plugging we do. This
+> > > essentially causes imeediate dispatch of IO for each mapping,
+> > > regardless of the context in which writeback is occurring.
+> > > 
+> > > IOWs, running a concurrent write-lots-of-small 4k files using fsmark
+> > > on XFS results in a huge number of IOPS being issued for data
+> > > writes.  Metadata writes are sorted and plugged at a high level by
+> > > XFS, so aggregate nicely into large IOs. However, data writeback IOs
+> > > are dispatched in individual 4k IOs, even when the blocks of two
+> > > consecutively written files are adjacent.
+> > > 
+> > > Test VM: 8p, 8GB RAM, 4xSSD in RAID0, 100TB sparse XFS filesystem,
+> > > metadata CRCs enabled.
+> > > 
+> > > Kernel: 3.10-rc5 + xfsdev + my 3.11 xfs queue (~70 patches)
+> > > 
+> > > Test:
+> > > 
+> > > $ ./fs_mark  -D  10000  -S0  -n  10000  -s  4096  -L  120  -d
+> > > /mnt/scratch/0  -d  /mnt/scratch/1  -d  /mnt/scratch/2  -d
+> > > /mnt/scratch/3  -d  /mnt/scratch/4  -d  /mnt/scratch/5  -d
+> > > /mnt/scratch/6  -d  /mnt/scratch/7
+> > > 
+> > > Result:
+> > > 
+> > > 		wall	sys	create rate	Physical write IO
+> > > 		time	CPU	(avg files/s)	 IOPS	Bandwidth
+> > > 		-----	-----	------------	------	---------
+> > > unpatched	6m56s	15m47s	24,000+/-500	26,000	130MB/s
+> > > patched		5m06s	13m28s	32,800+/-600	 1,500	180MB/s
+> > > improvement	-26.44%	-14.68%	  +36.67%	-94.23%	+38.46%
+> > > 
+> > > If I use zero length files, this workload at about 500 IOPS, so
+> > > plugging drops the data IOs from roughly 25,500/s to 1000/s.
+> > > 3 lines of code, 35% better throughput for 15% less CPU.
+> > > 
+> > > The benefits of plugging at this layer are likely to be higher for
+> > > spinning media as the IO patterns for this workload are going make a
+> > > much bigger difference on high IO latency devices.....
+> > > 
+> > > Signed-off-by: Dave Chinner <dchinner@redhat.com>
+> >   Just one question: Won't this cause a regression when files are say 2 MB
+> > large? Then we generate maximum sized requests for these files with
+> > per-inode plugging anyway and they will unnecessarily sit in the plug list
+> > until the plug list gets full (that is after 16 requests). Granted it
+> > shouldn't be too long but with fast storage it may be measurable...
+> 
+> Latency of IO dispatch only matters for the initial IOs being
+> queued. This, however, is not a latency sensitive IO path -
+> writeback is our bulk throughput IO engine, and in those cases low
+> latency dispatch is precisely what we don't want. We want to
+> optimise IO patterns for maximum *bandwidth*, not minimal latency.
+> 
+> The problem is that fast storage with immediate dispatch and dep
+> queues can keep ahead of IO dispatch, preventing throughput
+> optimisations like IO aggregation from being made because there is
+> never any IO queued to aggregate. That's why I'm seeing a couple of
+> orders of magnitude higher IOPS than I should. Sure, the hardware
+> can do that, but it's not the *most efficient* method of dispatching
+> background IO.
+> 
+> Allowing IOs a chance to aggregate in the scheduler for a short
+> while because dispatch allows existing bulk throughput optimisations
+> to be made to the IO stream, and as we can see, where a delayed
+> allocation filesystem is optimised for adjacent allocation
+> across sequentially written inodes such oppportunites for IO
+> aggregation make a big difference to performance.
+  Yeah, I understand the reasoning but sometimes experimental results
+differ from theory :)
 
-Can you rebase these patches against
-https://git.kernel.org/cgit/linux/kernel/git/evalenti/linux-soc-thermal.git/log/?h=next.
-All these patches have been queued for 3.12 merge and contains the new
-re-structured TMU driver.
+> So, to test your 2MB IO case, I ran a fsmark test using 40,000
+> 2MB files instead of 10 million 4k files.
+> 
+> 		wall time	IOPS	BW
+> mmotm		170s		1000	350MB/s
+> patched		167s		1000	350MB/s
+> 
+> The IO profiles are near enough to be identical, and the wall time
+> is basically the same.
+> 
+> 
+> I just don't see any particular concern about larger IOs and initial
+> dispatch latency here from either a theoretical or an observed POV.
+> Indeed, I haven't seen a performance degradation as a result of this
+> patch in any of the testing I've done since I first posted it...
+  Thanks for doing the test! So I'm fine with this patch. You can add:
+Reviewed-by: Jan Kara <jack@suse.cz>
 
-Thanks,
-Amit Daniel
+> > Now if we have maximum sized request in the plug list, maybe we could just
+> > dispatch it right away but that's another story.
+> 
+> That, in itself is potentially an issue, too, as it prevents seek
+> minimisation optimisations from being made when we batch up multiple
+> IOs on the plug list...
+  Good point.
 
-On Thu, Aug 1, 2013 at 11:32 AM, Naveen Krishna Chatradhi
-<ch.naveen@samsung.com> wrote:
-> This patch adds code to handle the misplaced TRIMINFO register
-> incase of Exynos5420.
->
-> On Exynos5420 we have a TRIMINFO register being misplaced for
-> TMU channels 2, 3 and 4
->
-> TRIMINFO at 0x1006c000 contains data for TMU channel 3
-> TRIMINFO at 0x100a0000 contains data for TMU channel 4
-> TRIMINFO at 0x10068000 contains data for TMU channel 2
->
-> The misplaced register address is passed through devicetree and
-> map it seperately during probe.
-> Also, adds the documentation under devicetree/bindings/thermal/
->
-> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-> Reviewed-by: Doug Anderson <dianders@chromium.org>
-> ---
->
-> Rebased on http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
-> master branch. I'm not sure which one is the right tree to rebase.
->
->  .../devicetree/bindings/thermal/exynos-thermal.txt | 48 ++++++++++++++++++++++
->  drivers/thermal/exynos_thermal.c                   | 26 +++++++++++-
->  2 files changed, 72 insertions(+), 2 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/thermal/exynos-thermal.txt
->
-> diff --git a/Documentation/devicetree/bindings/thermal/exynos-thermal.txt b/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
-> new file mode 100644
-> index 0000000..1db279e
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
-> @@ -0,0 +1,48 @@
-> +* Exynos Thermal
-> +
-> +Required properties:
-> +- compatible: should be one of the following.
-> +    * "samsung,exynos4210-tmu" - for controllers compatible with exynos4210 tmu.
-> +    * "samsung,exynos5250-tmu" - for controllers compatible with exynos5250 tmu.
-> +    * "samsung,exynos5420-tmu" - for controllers compatible with exynos5420 tmu.
-> +
-> +- reg: physical base address of the controller and length of
-> +  memory mapped region.
-> +
-> +    ** NOTE FOR EXYNOS5420 **
-> +    TRIMINFO register is being misplaced for TMU channels 2, 3 and 4
-> +
-> +    TERMINFO for TMU channel 2 is present in address space of TMU channel 3
-> +    TERMINFO for TMU channel 3 is present in address space of TMU channel 4
-> +    TERMINFO for TMU channel 4 is present in address space of TMU channel 2
-> +
-> +    * In such cases the reg property contains the misplaced register address and
-> +      range as the second parameter.
-> +
-> +- interrupts : interrupt number to the cpu.
-> +- clocks : Clock number as per common clock framework for the cpu.
-> +- clock-names : clock name to be used in the driver
-> +
-> +Example:
-> +
-> +       /* tmu for CPU0 */
-> +       tmu@10060000 {
-> +               compatible = "samsung,exynos5420-tmu";
-> +               reg = <0x10060000 0x100>;
-> +               interrupts = <0 65 0>;
-> +               clocks = <&clock 318>;
-> +               clock-names = "tmu_apbif";
-> +       };
-> +
-> +Example: In case of Exynos5420 TMU channel 3
-> +
-> +       /* tmu for CPU3 */
-> +       tmu@1006c000 {
-> +               compatible = "samsung,exynos5420-tmu";
-> +               /* 2nd reg is for the misplaced TRIMINFO register */
-> +               reg = <0x1006c000 0x100>, <0x100a0000 0x4>;
-> +               interrupts = <0 185 0>;
-> +               clocks = <&clock 318>;
-> +               clock-names = "tmu_apbif";
-> +       };
-> +
-> diff --git a/drivers/thermal/exynos_thermal.c b/drivers/thermal/exynos_thermal.c
-> index cec3f1f..a229314 100644
-> --- a/drivers/thermal/exynos_thermal.c
-> +++ b/drivers/thermal/exynos_thermal.c
-> @@ -38,6 +38,7 @@
->  #include <linux/cpufreq.h>
->  #include <linux/cpu_cooling.h>
->  #include <linux/of.h>
-> +#include <linux/of_address.h>
->
->  #include <plat/cpu.h>
->  #include <mach/regs-pmu.h>     /* for EXYNOS5_PS_HOLD_CONTROL */
-> @@ -123,7 +124,7 @@ struct exynos_thermal_zone;
->  struct exynos_tmu_data {
->         struct exynos_tmu_platform_data *pdata;
->         struct resource *mem;
-> -       void __iomem *base;
-> +       void __iomem *base, *triminfo_base;
->         int irq;
->         enum soc_type soc;
->         struct work_struct irq_work;
-> @@ -665,8 +666,14 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
->                 __raw_writel(EXYNOS_TRIMINFO_RELOAD,
->                                 data->base + EXYNOS_TMU_TRIMINFO_CON);
->         }
-> +
->         /* Save trimming info in order to perform calibration */
-> -       trim_info = readl(data->base + EXYNOS_TMU_REG_TRIMINFO);
-> +       if (data->triminfo_base)
-> +               /* On exynos5420 TRIMINFO is misplaced for some channels */
-> +               trim_info = readl(data->triminfo_base);
-> +       else
-> +               trim_info = readl(data->base + EXYNOS_TMU_REG_TRIMINFO);
-> +
->         data->temp_error1 = trim_info & EXYNOS_TMU_TRIM_TEMP_MASK;
->         data->temp_error2 = ((trim_info >> 8) & EXYNOS_TMU_TRIM_TEMP_MASK);
->
-> @@ -1016,6 +1023,15 @@ static int exynos_tmu_probe(struct platform_device *pdev)
->                 return -ENODEV;
->         }
->
-> +       /* For Exynos5420 The misplaced TERMINFO register address will be
-> +        * passed from device tree node.
-> +        *
-> +        * We cannot use devm_request_and_ioremap, as the base address
-> +        * over laps with the address space of the other TMU channel.
-> +        * Check Documentation for details
-> +        */
-> +       data->triminfo_base = of_iomap(pdev->dev.of_node, 1);
-> +
->         data->clk = devm_clk_get(&pdev->dev, "tmu_apbif");
->         if (IS_ERR(data->clk)) {
->                 dev_err(&pdev->dev, "Failed to get clock\n");
-> @@ -1086,6 +1102,9 @@ static int exynos_tmu_probe(struct platform_device *pdev)
->  err_irq:
->         exynos_unregister_thermal(data);
->  err_clk:
-> +       if (data->triminfo_base)
-> +               iounmap(data->triminfo_base);
-> +
->         platform_set_drvdata(pdev, NULL);
->         clk_unprepare(data->clk);
->         return ret;
-> @@ -1100,6 +1119,9 @@ static int exynos_tmu_remove(struct platform_device *pdev)
->
->         exynos_unregister_thermal(data);
->
-> +       if (data->triminfo_base)
-> +               iounmap(data->triminfo_base);
-> +
->         clk_unprepare(data->clk);
->
->         platform_set_drvdata(pdev, NULL);
-> --
-> 1.7.12.4
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+								Honza
+
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
