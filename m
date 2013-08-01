@@ -1,110 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757896Ab3HAWPn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 18:15:43 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39828 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755357Ab3HAWPl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 18:15:41 -0400
-In-Reply-To: <20130801213420.GL23006@n2100.arm.linux.org.uk>
-References: <20130801213420.GL23006@n2100.arm.linux.org.uk>
-From: Russell King <rmk+kernel@arm.linux.org.uk>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH RFC 41/51] DMA-API: crypto: remove last references to 'static
- struct device *dev'
-Message-Id: <E1V519M-0006tj-Du@rmk-PC.arm.linux.org.uk>
-Date: Thu, 01 Aug 2013 23:15:12 +0100
+	id S1757774Ab3HAWQl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 18:16:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24327 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755357Ab3HAWQk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 18:16:40 -0400
+Date: Fri, 2 Aug 2013 00:16:28 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Rik van Riel <riel@redhat.com>, Minchan Kim <minchan@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 3/3] mm: page_alloc: fair zone allocator policy
+Message-ID: <20130801221628.GA9505@redhat.com>
+References: <1374267325-22865-1-git-send-email-hannes@cmpxchg.org>
+ <1374267325-22865-4-git-send-email-hannes@cmpxchg.org>
+ <20130801025636.GC19540@bbox>
+ <51F9E4A6.2090909@redhat.com>
+ <20130801155111.GO25926@redhat.com>
+ <20130801195823.GN715@cmpxchg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130801195823.GN715@cmpxchg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
----
- drivers/crypto/ixp4xx_crypto.c |   13 ++++++++-----
- 1 files changed, 8 insertions(+), 5 deletions(-)
+On Thu, Aug 01, 2013 at 03:58:23PM -0400, Johannes Weiner wrote:
+> But we might be able to get away with a small error.
 
-diff --git a/drivers/crypto/ixp4xx_crypto.c b/drivers/crypto/ixp4xx_crypto.c
-index 8306185..214357e 100644
---- a/drivers/crypto/ixp4xx_crypto.c
-+++ b/drivers/crypto/ixp4xx_crypto.c
-@@ -221,7 +221,6 @@ static int support_aes = 1;
- #define DRIVER_NAME "ixp4xx_crypto"
- 
- static struct platform_device *pdev;
--static struct device *dev;
- 
- static inline dma_addr_t crypt_virt2phys(struct crypt_ctl *virt)
- {
-@@ -250,6 +249,7 @@ static inline const struct ix_hash_algo *ix_hash(struct crypto_tfm *tfm)
- 
- static int setup_crypt_desc(void)
- {
-+	struct device *dev = &pdev->dev;
- 	BUILD_BUG_ON(sizeof(struct crypt_ctl) != 64);
- 	crypt_virt = dma_alloc_coherent(dev,
- 			NPE_QLEN * sizeof(struct crypt_ctl),
-@@ -350,6 +350,7 @@ static void finish_scattered_hmac(struct crypt_ctl *crypt)
- 
- static void one_packet(dma_addr_t phys)
- {
-+	struct device *dev = &pdev->dev;
- 	struct crypt_ctl *crypt;
- 	struct ixp_ctx *ctx;
- 	int failed;
-@@ -419,7 +420,7 @@ static void crypto_done_action(unsigned long arg)
- 	tasklet_schedule(&crypto_done_tasklet);
- }
- 
--static int init_ixp_crypto(void)
-+static int init_ixp_crypto(struct device *dev)
- {
- 	int ret = -ENODEV;
- 	u32 msg[2] = { 0, 0 };
-@@ -506,7 +507,7 @@ static int init_ixp_crypto(void)
- 	return ret;
- }
- 
--static void release_ixp_crypto(void)
-+static void release_ixp_crypto(struct device *dev)
- {
- 	qmgr_disable_irq(RECV_QID);
- 	tasklet_kill(&crypto_done_tasklet);
-@@ -873,6 +874,7 @@ static int ablk_perform(struct ablkcipher_request *req, int encrypt)
- 	enum dma_data_direction src_direction = DMA_BIDIRECTIONAL;
- 	struct ablk_ctx *req_ctx = ablkcipher_request_ctx(req);
- 	struct buffer_desc src_hook;
-+	struct device *dev = &pdev->dev;
- 	gfp_t flags = req->base.flags & CRYPTO_TFM_REQ_MAY_SLEEP ?
- 				GFP_KERNEL : GFP_ATOMIC;
- 
-@@ -997,6 +999,7 @@ static int aead_perform(struct aead_request *req, int encrypt,
- 	unsigned int cryptlen;
- 	struct buffer_desc *buf, src_hook;
- 	struct aead_ctx *req_ctx = aead_request_ctx(req);
-+	struct device *dev = &pdev->dev;
- 	gfp_t flags = req->base.flags & CRYPTO_TFM_REQ_MAY_SLEEP ?
- 				GFP_KERNEL : GFP_ATOMIC;
- 
-@@ -1426,7 +1429,7 @@ static int __init ixp_module_init(void)
- 	spin_lock_init(&desc_lock);
- 	spin_lock_init(&emerg_lock);
- 
--	err = init_ixp_crypto();
-+	err = init_ixp_crypto(&pdev->dev);
- 	if (err) {
- 		platform_device_unregister(pdev);
- 		return err;
-@@ -1492,7 +1495,7 @@ static void __exit ixp_module_exit(void)
- 		if (ixp4xx_algos[i].registered)
- 			crypto_unregister_alg(&ixp4xx_algos[i].crypto);
- 	}
--	release_ixp_crypto();
-+	release_ixp_crypto(&pdev->dev);
- 	platform_device_unregister(pdev);
- }
- 
--- 
-1.7.4.4
+The idea is that there's a small error anyway, because multiple CPUs
+can reset it at the same time, while another CPU is decreasing it, so
+the decrease sometime may get lost regardless if atomic or not. How
+worse the error will become I don't know for sure but I would expect
+to still be in the noise level.
 
+Removing the locked op won't help much when multiple processes
+allocates from the same node, but it'll speed it up when just one CPU
+runs.
+
+> So the discussion diverged between on-list and off-list.  I suggested
+> ignoring the alloc_batch in the slowpath completely (since allocations
+> are very unlikely to fail due to the batches immediately after they
+> were reset, and the occasional glitch does not matter).  This should
+> solve the problem of spurious direct reclaim invocations.  The
+
+I'm fine with this solution of ignoring alloc_batch in the slowpath,
+it definitely solves the risk of suprious direct reclaim and it
+contributes to solving zone_reclaim_mode too.
+
+> zone_reclaim_mode allocation sequence would basically be:
+> 
+> 1. Try zones in the local node with low watermark while maintaining
+>    fairness with the allocation batch and invoking zone reclaim if
+>    necessary
+> 
+> 2. If that fails, wake up kswapd and reset the alloc batches on the
+>    local node
+> 
+> 3. Try zones in order of preference with the min watermark, invoking
+>    zone reclaim if necessary, ignoring allocation batches.
+
+One difference is that kswapd wasn't involved before. But maybe it's
+beneficial.
+
+> So in the fastpath we try to be local and fair, in the slow path we
+> are likely to be local and fair, unless we have to spill into remote
+> nodes.  But then there is nothing we can do anyway.
+
+I think it should work well.
+
+And with these changes, alloc_batch will help tremendously
+zone_reclaim_mode too (not just prevent its breakage): the allocations
+will be spread evenly on multiple zones of the same nodes, instead of
+insisting calling zone_reclaim on the highest zone of the node until
+zone_reclaim finally fails on it (with the current behavior if
+zone_reclaim_mode is enabled, the LRU is rotated only the high zone
+until full). And it's common to have a least one node with two zones
+(pci32 zone).
+
+By skipping any non-local zone in the fast path if zone_reclaim_mode
+is enabled, will prevent multiple CPUs in different nodes to step in
+each other toes, and alloc_batch will never be resetted by remote CPUs
+with the zone_local check introduced in prepare_slowpath.
+
+Changing the prepare_slowpath to reset only the local node will also
+decrease the very distant interconnect traffic for very big NUMA where
+zone_reclaim_mode is enabled by default, so it'll speedup
+prepare_slowpath too.
+
+Can you submit the fixes to Andrew? I'm very happy with your patch, so
+then I can submit the compaction zone_reclaim_mode fixes on top of
+it.
+
+Changing topic on my zone_reclaim compaction fixes, hope to get more
+review on those, especially the high order watermark algorithm
+improvements. I'll try to get a specsfs with jumbo frames run on it
+too to see if there's any positive measurable effect out of the
+watermark changes and the substantial improvement in compaction
+reliability. (the increase of the low watermark level for high order
+pages is needed to get more accuracy out of zone_reclaim_mode hugepage
+placement, and the decrease of the min watermark level will avoid us
+to waste precious CPU to generate a zillon of high order pages that
+cannot be possibly be useful to PF_MEMALLOC, we've currently a ton 8k
+pages, that any GFP_ATOMIC or GFP_KERNEL allocation are totally
+forbidden to use, but we still generate those for nothing, and over
+time we split them right away at the first 4k allocation so they don't
+even stick)
+
+Thanks!
+Andrea
