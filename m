@@ -1,269 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757869Ab3HAV5W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 17:57:22 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:65460 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756855Ab3HAVuR (ORCPT
+	id S1757898Ab3HAV5h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 17:57:37 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39774 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757529Ab3HAV5f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 17:50:17 -0400
-From: Tejun Heo <tj@kernel.org>
-To: lizefan@huawei.com
-Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 06/23] cgroup: add/update accessors which obtain subsys specific data from css
-Date: Thu,  1 Aug 2013 17:49:44 -0400
-Message-Id: <1375393801-4817-7-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1375393801-4817-1-git-send-email-tj@kernel.org>
-References: <1375393801-4817-1-git-send-email-tj@kernel.org>
+	Thu, 1 Aug 2013 17:57:35 -0400
+In-Reply-To: <20130801213420.GL23006@n2100.arm.linux.org.uk>
+References: <20130801213420.GL23006@n2100.arm.linux.org.uk>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH RFC 23/51] DMA-API: dma: pl08x: add
+ dma_set_mask_and_coherent() call
+Message-Id: <E1V50rs-0006rf-UM@rmk-PC.arm.linux.org.uk>
+Date: Thu, 01 Aug 2013 22:57:08 +0100
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-css (cgroup_subsys_state) is usually embedded in a subsys specific
-data structure.  Subsystems either use container_of() directly to cast
-from css to such data structure or has an accessor function wrapping
-such cast.  As cgroup as whole is moving towards using css as the main
-interface handle, add and update such accessors to ease dealing with
-css's.
+The DMA API requires drivers to call the appropriate dma_set_mask()
+functions before doing any DMA mapping.  Add this required call to
+the AMBA PL08x driver.
 
-All accessors explicitly handle NULL input and return NULL in those
-cases.  While this looks like an extra branch in the code, as all
-controllers specific data structures have css as the first field, the
-casting doesn't involve any offsetting and the compiler can trivially
-optimize out the branch.
-
-* blkio, freezer, cpuset, cpu, cpuacct and net_cls didn't have such
-  accessor.  Added.
-
-* memory, hugetlb and devices already had one but didn't explicitly
-  handle NULL input.  Updated.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 ---
- block/blk-cgroup.h       | 12 ++++++++----
- kernel/cgroup_freezer.c  | 11 +++++++----
- kernel/cpuset.c          | 11 +++++++----
- kernel/sched/core.c      |  8 ++++++--
- kernel/sched/cpuacct.c   | 11 +++++++----
- mm/hugetlb_cgroup.c      |  2 +-
- mm/memcontrol.c          |  2 +-
- net/sched/cls_cgroup.c   | 11 +++++++----
- security/device_cgroup.c |  2 +-
- 9 files changed, 45 insertions(+), 25 deletions(-)
+ drivers/dma/amba-pl08x.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
-diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
-index 628e50f..8e5863e 100644
---- a/block/blk-cgroup.h
-+++ b/block/blk-cgroup.h
-@@ -179,21 +179,25 @@ int blkg_conf_prep(struct blkcg *blkcg, const struct blkcg_policy *pol,
- void blkg_conf_finish(struct blkg_conf_ctx *ctx);
+diff --git a/drivers/dma/amba-pl08x.c b/drivers/dma/amba-pl08x.c
+index 06fe45c..c23f876 100644
+--- a/drivers/dma/amba-pl08x.c
++++ b/drivers/dma/amba-pl08x.c
+@@ -1853,6 +1853,11 @@ static int pl08x_probe(struct amba_device *adev, const struct amba_id *id)
+ 	if (ret)
+ 		return ret;
  
- 
-+static inline struct blkcg *css_to_blkcg(struct cgroup_subsys_state *css)
-+{
-+	return css ? container_of(css, struct blkcg, css) : NULL;
-+}
++	/* Ensure that we can do DMA */
++	ret = dma_set_mask_and_coherent(&adev->dev, DMA_BIT_MASK(32));
++	if (ret)
++		goto out_no_pl08x;
 +
- static inline struct blkcg *cgroup_to_blkcg(struct cgroup *cgroup)
- {
--	return container_of(cgroup_css(cgroup, blkio_subsys_id),
--			    struct blkcg, css);
-+	return css_to_blkcg(cgroup_css(cgroup, blkio_subsys_id));
- }
- 
- static inline struct blkcg *task_blkcg(struct task_struct *tsk)
- {
--	return container_of(task_css(tsk, blkio_subsys_id), struct blkcg, css);
-+	return css_to_blkcg(task_css(tsk, blkio_subsys_id));
- }
- 
- static inline struct blkcg *bio_blkcg(struct bio *bio)
- {
- 	if (bio && bio->bi_css)
--		return container_of(bio->bi_css, struct blkcg, css);
-+		return css_to_blkcg(bio->bi_css);
- 	return task_blkcg(current);
- }
- 
-diff --git a/kernel/cgroup_freezer.c b/kernel/cgroup_freezer.c
-index 9d3f615..1db686e 100644
---- a/kernel/cgroup_freezer.c
-+++ b/kernel/cgroup_freezer.c
-@@ -45,16 +45,19 @@ struct freezer {
- 	spinlock_t			lock;
- };
- 
-+static inline struct freezer *css_freezer(struct cgroup_subsys_state *css)
-+{
-+	return css ? container_of(css, struct freezer, css) : NULL;
-+}
-+
- static inline struct freezer *cgroup_freezer(struct cgroup *cgroup)
- {
--	return container_of(cgroup_css(cgroup, freezer_subsys_id),
--			    struct freezer, css);
-+	return css_freezer(cgroup_css(cgroup, freezer_subsys_id));
- }
- 
- static inline struct freezer *task_freezer(struct task_struct *task)
- {
--	return container_of(task_css(task, freezer_subsys_id),
--			    struct freezer, css);
-+	return css_freezer(task_css(task, freezer_subsys_id));
- }
- 
- static struct freezer *parent_freezer(struct freezer *freezer)
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index f737134..6e9cbdd 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -114,18 +114,21 @@ struct cpuset {
- 	int relax_domain_level;
- };
- 
-+static inline struct cpuset *css_cs(struct cgroup_subsys_state *css)
-+{
-+	return css ? container_of(css, struct cpuset, css) : NULL;
-+}
-+
- /* Retrieve the cpuset for a cgroup */
- static inline struct cpuset *cgroup_cs(struct cgroup *cgrp)
- {
--	return container_of(cgroup_css(cgrp, cpuset_subsys_id),
--			    struct cpuset, css);
-+	return css_cs(cgroup_css(cgrp, cpuset_subsys_id));
- }
- 
- /* Retrieve the cpuset for a task */
- static inline struct cpuset *task_cs(struct task_struct *task)
- {
--	return container_of(task_css(task, cpuset_subsys_id),
--			    struct cpuset, css);
-+	return css_cs(task_css(task, cpuset_subsys_id));
- }
- 
- static inline struct cpuset *parent_cs(struct cpuset *cs)
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 323d907..5bccb02 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -7083,11 +7083,15 @@ int sched_rt_handler(struct ctl_table *table, int write,
- 
- #ifdef CONFIG_CGROUP_SCHED
- 
-+static inline struct task_group *css_tg(struct cgroup_subsys_state *css)
-+{
-+	return css ? container_of(css, struct task_group, css) : NULL;
-+}
-+
- /* return corresponding task_group object of a cgroup */
- static inline struct task_group *cgroup_tg(struct cgroup *cgrp)
- {
--	return container_of(cgroup_css(cgrp, cpu_cgroup_subsys_id),
--			    struct task_group, css);
-+	return css_tg(cgroup_css(cgrp, cpu_cgroup_subsys_id));
- }
- 
- static struct cgroup_subsys_state *cpu_cgroup_css_alloc(struct cgroup *cgrp)
-diff --git a/kernel/sched/cpuacct.c b/kernel/sched/cpuacct.c
-index 4a210fa..8ccfa10 100644
---- a/kernel/sched/cpuacct.c
-+++ b/kernel/sched/cpuacct.c
-@@ -33,18 +33,21 @@ struct cpuacct {
- 	struct kernel_cpustat __percpu *cpustat;
- };
- 
-+static inline struct cpuacct *css_ca(struct cgroup_subsys_state *css)
-+{
-+	return css ? container_of(css, struct cpuacct, css) : NULL;
-+}
-+
- /* return cpu accounting group corresponding to this container */
- static inline struct cpuacct *cgroup_ca(struct cgroup *cgrp)
- {
--	return container_of(cgroup_css(cgrp, cpuacct_subsys_id),
--			    struct cpuacct, css);
-+	return css_ca(cgroup_css(cgrp, cpuacct_subsys_id));
- }
- 
- /* return cpu accounting group to which this task belongs */
- static inline struct cpuacct *task_ca(struct task_struct *tsk)
- {
--	return container_of(task_css(tsk, cpuacct_subsys_id),
--			    struct cpuacct, css);
-+	return css_ca(task_css(tsk, cpuacct_subsys_id));
- }
- 
- static inline struct cpuacct *__parent_ca(struct cpuacct *ca)
-diff --git a/mm/hugetlb_cgroup.c b/mm/hugetlb_cgroup.c
-index d2f9fc0..95585a0 100644
---- a/mm/hugetlb_cgroup.c
-+++ b/mm/hugetlb_cgroup.c
-@@ -36,7 +36,7 @@ static struct hugetlb_cgroup *root_h_cgroup __read_mostly;
- static inline
- struct hugetlb_cgroup *hugetlb_cgroup_from_css(struct cgroup_subsys_state *s)
- {
--	return container_of(s, struct hugetlb_cgroup, css);
-+	return s ? container_of(s, struct hugetlb_cgroup, css) : NULL;
- }
- 
- static inline
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index b47bd3a..11d659e 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -486,7 +486,7 @@ static DEFINE_MUTEX(memcg_create_mutex);
- static inline
- struct mem_cgroup *mem_cgroup_from_css(struct cgroup_subsys_state *s)
- {
--	return container_of(s, struct mem_cgroup, css);
-+	return s ? container_of(s, struct mem_cgroup, css) : NULL;
- }
- 
- /* Some nice accessors for the vmpressure. */
-diff --git a/net/sched/cls_cgroup.c b/net/sched/cls_cgroup.c
-index 5ee72a0..af412ab 100644
---- a/net/sched/cls_cgroup.c
-+++ b/net/sched/cls_cgroup.c
-@@ -23,16 +23,19 @@
- #include <net/sock.h>
- #include <net/cls_cgroup.h>
- 
-+static inline struct cgroup_cls_state *css_cls_state(struct cgroup_subsys_state *css)
-+{
-+	return css ? container_of(css, struct cgroup_cls_state, css) : NULL;
-+}
-+
- static inline struct cgroup_cls_state *cgrp_cls_state(struct cgroup *cgrp)
- {
--	return container_of(cgroup_css(cgrp, net_cls_subsys_id),
--			    struct cgroup_cls_state, css);
-+	return css_cls_state(cgroup_css(cgrp, net_cls_subsys_id));
- }
- 
- static inline struct cgroup_cls_state *task_cls_state(struct task_struct *p)
- {
--	return container_of(task_css(p, net_cls_subsys_id),
--			    struct cgroup_cls_state, css);
-+	return css_cls_state(task_css(p, net_cls_subsys_id));
- }
- 
- static struct cgroup_subsys_state *cgrp_css_alloc(struct cgroup *cgrp)
-diff --git a/security/device_cgroup.c b/security/device_cgroup.c
-index 87a0a03..9095364 100644
---- a/security/device_cgroup.c
-+++ b/security/device_cgroup.c
-@@ -53,7 +53,7 @@ struct dev_cgroup {
- 
- static inline struct dev_cgroup *css_to_devcgroup(struct cgroup_subsys_state *s)
- {
--	return container_of(s, struct dev_cgroup, css);
-+	return s ? container_of(s, struct dev_cgroup, css) : NULL;
- }
- 
- static inline struct dev_cgroup *cgroup_to_devcgroup(struct cgroup *cgroup)
+ 	/* Create the driver state holder */
+ 	pl08x = kzalloc(sizeof(*pl08x), GFP_KERNEL);
+ 	if (!pl08x) {
 -- 
-1.8.3.1
+1.7.4.4
 
