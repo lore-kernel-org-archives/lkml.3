@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932069Ab3HAQ4L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 12:56:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17259 "EHLO mx1.redhat.com"
+	id S1757421Ab3HAQz7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 12:55:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47043 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757303Ab3HAQ4H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 12:56:07 -0400
-Subject: [PATCH v3 9/9] pci: Remove aer_do_secondary_bus_reset()
+	id S1757361Ab3HAQz5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 12:55:57 -0400
+Subject: [PATCH v3 2/9] pci: Add hotplug_slot_ops.reset_slot()
 To: bhelgaas@google.com, linux-pci@vger.kernel.org
 From: Alex Williamson <alex.williamson@redhat.com>
 Cc: indou.takao@jp.fujitsu.com, linux-kernel@vger.kernel.org
-Date: Thu, 01 Aug 2013 10:56:04 -0600
-Message-ID: <20130801165603.16145.48836.stgit@bling.home>
+Date: Thu, 01 Aug 2013 10:55:21 -0600
+Message-ID: <20130801165521.16145.76419.stgit@bling.home>
 In-Reply-To: <20130801164652.16145.79918.stgit@bling.home>
 References: <20130801164652.16145.79918.stgit@bling.home>
 User-Agent: StGit/0.16
@@ -22,91 +22,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-One PCI bus reset function to rule them all.
+This optional callback allows htoplug controllers to perform slot
+specific resets.  These may be necessary in cases where a normal
+secondary bus reset can interact with controller logic and expose
+spurious hotplugs.
 
 Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
 ---
- drivers/pci/pcie/aer/aerdrv.c      |    2 +-
- drivers/pci/pcie/aer/aerdrv.h      |    1 -
- drivers/pci/pcie/aer/aerdrv_core.c |   35 +----------------------------------
- 3 files changed, 2 insertions(+), 36 deletions(-)
+ include/linux/pci_hotplug.h |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/drivers/pci/pcie/aer/aerdrv.c b/drivers/pci/pcie/aer/aerdrv.c
-index 76ef634..0bf82a2 100644
---- a/drivers/pci/pcie/aer/aerdrv.c
-+++ b/drivers/pci/pcie/aer/aerdrv.c
-@@ -352,7 +352,7 @@ static pci_ers_result_t aer_root_reset(struct pci_dev *dev)
- 	reg32 &= ~ROOT_PORT_INTR_ON_MESG_MASK;
- 	pci_write_config_dword(dev, pos + PCI_ERR_ROOT_COMMAND, reg32);
- 
--	aer_do_secondary_bus_reset(dev);
-+	pci_reset_bridge_secondary_bus(dev);
- 	dev_printk(KERN_DEBUG, &dev->dev, "Root Port link has been reset\n");
- 
- 	/* Clear Root Error Status */
-diff --git a/drivers/pci/pcie/aer/aerdrv.h b/drivers/pci/pcie/aer/aerdrv.h
-index 90ea3e8..84420b7 100644
---- a/drivers/pci/pcie/aer/aerdrv.h
-+++ b/drivers/pci/pcie/aer/aerdrv.h
-@@ -106,7 +106,6 @@ static inline pci_ers_result_t merge_result(enum pci_ers_result orig,
- }
- 
- extern struct bus_type pcie_port_bus_type;
--void aer_do_secondary_bus_reset(struct pci_dev *dev);
- int aer_init(struct pcie_device *dev);
- void aer_isr(struct work_struct *work);
- void aer_print_error(struct pci_dev *dev, struct aer_err_info *info);
-diff --git a/drivers/pci/pcie/aer/aerdrv_core.c b/drivers/pci/pcie/aer/aerdrv_core.c
-index 8b68ae5..85ca36f 100644
---- a/drivers/pci/pcie/aer/aerdrv_core.c
-+++ b/drivers/pci/pcie/aer/aerdrv_core.c
-@@ -367,39 +367,6 @@ static pci_ers_result_t broadcast_error_message(struct pci_dev *dev,
- }
+diff --git a/include/linux/pci_hotplug.h b/include/linux/pci_hotplug.h
+index 8db71dc..bd32109 100644
+--- a/include/linux/pci_hotplug.h
++++ b/include/linux/pci_hotplug.h
+@@ -63,6 +63,9 @@ enum pcie_link_width {
+  * @get_adapter_status: Called to get see if an adapter is present in the slot or not.
+  *	If this field is NULL, the value passed in the struct hotplug_slot_info
+  *	will be used when this value is requested by a user.
++ * @reset_slot: Optional interface to allow override of a bus reset for the
++ *	slot for cases where a secondary bus reset can result in spurious
++ *	hotplug events or where a slot can be reset independent of the bus.
+  *
+  * The table of function pointers that is passed to the hotplug pci core by a
+  * hotplug pci driver.  These functions are called by the hotplug pci core when
+@@ -80,6 +83,7 @@ struct hotplug_slot_ops {
+ 	int (*get_attention_status)	(struct hotplug_slot *slot, u8 *value);
+ 	int (*get_latch_status)		(struct hotplug_slot *slot, u8 *value);
+ 	int (*get_adapter_status)	(struct hotplug_slot *slot, u8 *value);
++	int (*reset_slot)		(struct hotplug_slot *slot, int probe);
+ };
  
  /**
-- * aer_do_secondary_bus_reset - perform secondary bus reset
-- * @dev: pointer to bridge's pci_dev data structure
-- *
-- * Invoked when performing link reset at Root Port or Downstream Port.
-- */
--void aer_do_secondary_bus_reset(struct pci_dev *dev)
--{
--	u16 p2p_ctrl;
--
--	/* Assert Secondary Bus Reset */
--	pci_read_config_word(dev, PCI_BRIDGE_CONTROL, &p2p_ctrl);
--	p2p_ctrl |= PCI_BRIDGE_CTL_BUS_RESET;
--	pci_write_config_word(dev, PCI_BRIDGE_CONTROL, p2p_ctrl);
--
--	/*
--	 * we should send hot reset message for 2ms to allow it time to
--	 * propagate to all downstream ports
--	 */
--	msleep(2);
--
--	/* De-assert Secondary Bus Reset */
--	p2p_ctrl &= ~PCI_BRIDGE_CTL_BUS_RESET;
--	pci_write_config_word(dev, PCI_BRIDGE_CONTROL, p2p_ctrl);
--
--	/*
--	 * System software must wait for at least 100ms from the end
--	 * of a reset of one or more device before it is permitted
--	 * to issue Configuration Requests to those devices.
--	 */
--	msleep(200);
--}
--
--/**
-  * default_reset_link - default reset function
-  * @dev: pointer to pci_dev data structure
-  *
-@@ -408,7 +375,7 @@ void aer_do_secondary_bus_reset(struct pci_dev *dev)
-  */
- static pci_ers_result_t default_reset_link(struct pci_dev *dev)
- {
--	aer_do_secondary_bus_reset(dev);
-+	pci_reset_bridge_secondary_bus(dev);
- 	dev_printk(KERN_DEBUG, &dev->dev, "downstream link has been reset\n");
- 	return PCI_ERS_RESULT_RECOVERED;
- }
 
