@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753179Ab3HAAfS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 20:35:18 -0400
-Received: from mail-we0-f177.google.com ([74.125.82.177]:56914 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752876Ab3HAAcQ (ORCPT
+	id S1752845Ab3HAAcO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 20:32:14 -0400
+Received: from mail-we0-f178.google.com ([74.125.82.178]:35304 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752553Ab3HAAcF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 20:32:16 -0400
+	Wed, 31 Jul 2013 20:32:05 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -16,9 +16,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>, Borislav Petkov <bp@alien8.de>,
         Li Zhong <zhong@linux.vnet.ibm.com>, Mike Galbraith <efault@gmx.de>,
         Kevin Hilman <khilman@linaro.org>
-Subject: [PATCH 19/23] vtime: Always scale generic vtime accounting results
-Date: Thu,  1 Aug 2013 02:31:36 +0200
-Message-Id: <1375317100-20651-20-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 12/23] vtime: Remove a few unneeded generic vtime state checks
+Date: Thu,  1 Aug 2013 02:31:29 +0200
+Message-Id: <1375317100-20651-13-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1375317100-20651-1-git-send-email-fweisbec@gmail.com>
 References: <1375317100-20651-1-git-send-email-fweisbec@gmail.com>
@@ -26,13 +26,11 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The cputime accounting in full dynticks can be a subtle
-mixup of CPUs using tick based accounting and others using
-generic vtime.
+Some generic vtime APIs check if the vtime accounting
+is enabled on the local CPU before doing their work.
 
-As long as the tick can have a share on producing these stats, we
-want to scale the result against CFS precise accounting as the tick
-can miss some task hiding between the periodic interrupt.
+Some of these are not needed because all their callers already
+take care of that. Let's remove the checks on these.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Steven Rostedt <rostedt@goodmis.org>
@@ -45,26 +43,47 @@ Cc: Li Zhong <zhong@linux.vnet.ibm.com>
 Cc: Mike Galbraith <efault@gmx.de>
 Cc: Kevin Hilman <khilman@linaro.org>
 ---
- kernel/sched/cputime.c |    6 ------
- 1 files changed, 0 insertions(+), 6 deletions(-)
+ kernel/sched/cputime.c |   13 +------------
+ 1 files changed, 1 insertions(+), 12 deletions(-)
 
 diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
-index 0831b06..e9e742e 100644
+index bb6b29a..5f273b47 100644
 --- a/kernel/sched/cputime.c
 +++ b/kernel/sched/cputime.c
-@@ -553,12 +553,6 @@ static void cputime_adjust(struct task_cputime *curr,
+@@ -664,9 +664,6 @@ static void __vtime_account_system(struct task_struct *tsk)
+ 
+ void vtime_account_system(struct task_struct *tsk)
  {
- 	cputime_t rtime, stime, utime, total;
- 
--	if (vtime_accounting_enabled()) {
--		*ut = curr->utime;
--		*st = curr->stime;
+-	if (!vtime_accounting_enabled())
 -		return;
--	}
 -
- 	stime = curr->stime;
- 	total = stime + curr->utime;
+ 	write_seqlock(&tsk->vtime_seqlock);
+ 	__vtime_account_system(tsk);
+ 	write_sequnlock(&tsk->vtime_seqlock);
+@@ -686,12 +683,7 @@ void vtime_account_irq_exit(struct task_struct *tsk)
  
+ void vtime_account_user(struct task_struct *tsk)
+ {
+-	cputime_t delta_cpu;
+-
+-	if (!vtime_accounting_enabled())
+-		return;
+-
+-	delta_cpu = get_vtime_delta(tsk);
++	cputime_t delta_cpu = get_vtime_delta(tsk);
+ 
+ 	write_seqlock(&tsk->vtime_seqlock);
+ 	tsk->vtime_snap_whence = VTIME_SYS;
+@@ -701,9 +693,6 @@ void vtime_account_user(struct task_struct *tsk)
+ 
+ void vtime_user_enter(struct task_struct *tsk)
+ {
+-	if (!vtime_accounting_enabled())
+-		return;
+-
+ 	write_seqlock(&tsk->vtime_seqlock);
+ 	tsk->vtime_snap_whence = VTIME_USER;
+ 	__vtime_account_system(tsk);
 -- 
 1.7.5.4
 
