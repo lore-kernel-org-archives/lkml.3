@@ -1,89 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752790Ab3HAIMY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 04:12:24 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:50051 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750848Ab3HAIMR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 04:12:17 -0400
-Date: Thu, 1 Aug 2013 10:12:15 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Aaron Lu <aaron.lu@intel.com>
-Cc: intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
-        lkml <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: i915 backlight
-Message-ID: <20130801081215.GB3448@nazgul.tnic>
-References: <20130731162252.GC4724@pd.tnic>
- <20130731163623.GD4724@pd.tnic>
- <51F9B63F.7060509@intel.com>
+	id S1752927Ab3HAIMp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 04:12:45 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:43334 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750848Ab3HAIMi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 04:12:38 -0400
+Date: Thu, 1 Aug 2013 01:12:35 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Dave Chinner <david@fromorbit.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, davej@redhat.com, viro@zeniv.linux.org.uk,
+        jack@suse.cz, glommer@parallels.com
+Subject: Re: [PATCH 02/11] inode: add IOP_NOTHASHED to avoid inode hash lock
+ in evict
+Message-ID: <20130801081235.GA7261@infradead.org>
+References: <1375244150-27296-1-git-send-email-david@fromorbit.com>
+ <1375244150-27296-3-git-send-email-david@fromorbit.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51F9B63F.7060509@intel.com>
+In-Reply-To: <1375244150-27296-3-git-send-email-david@fromorbit.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 01, 2013 at 09:13:35AM +0800, Aaron Lu wrote:
-> Can you please run acpi_listen and then press the Fn-Fx key, see if the
-> events are correctly sent out?
-
-Like this?
-
-# acpi_listen
-video/brightnessdown BRTDN 00000087 00000000
-video/brightnessup BRTUP 00000086 00000000
-video/brightnessdown BRTDN 00000087 00000000
-video/brightnessup BRTUP 00000086 00000000
-video/brightnessdown BRTDN 00000087 00000000
-video/brightnessup BRTUP 00000086 00000000
-video/brightnessdown BRTDN 00000087 00000000
-video/brightnessup BRTUP 00000086 00000000
-video/brightnessdown BRTDN 00000087 00000000
-^C
-
-> From the bug page:
-> https://bugzilla.kernel.org/show_bug.cgi?id=51231#c80
-> I got the impression that both the acpi_video interface and the vendor
-> interface thinkpad_screen are broken. So adding this cmdline here works
-> suggests that either thinkpad_screen works or thinkpad vendor driver
-> doesn't get loaded or doesn't create that interface for some reason.
+On Wed, Jul 31, 2013 at 02:15:41PM +1000, Dave Chinner wrote:
+> From: Dave Chinner <dchinner@redhat.com>
 > 
-> Alternatively, if the intel_backlight interface works(highly possible),
-> you can use xorg.conf to specify the that backlight interface for X.
+> Some filesystems don't use the VFS inode hash and fake the fact they
+> are hashed so that all the writeback code works correctly. However,
+> this means the evict() path still tries to remove the inode from the
+> hash, meaning that the inode_hash_lock() needs to be taken
+> unnecessarily. Hence under certain workloads the inode_hash_lock can
+> be contended even if the inode is never actually hashed.
 > 
-> Section "Device"
->         Option     "Backlight"	"intel_backlight"
-> 	Identifier  "Card0"
-> 	Driver      "intel"
-> 	BusID       "PCI:0:2:0"
-> EndSection
+> To avoid this, add an inode opflag to allow inode_hash_remove() to
+> avoid taking the hash lock on inodes have never actually been
+> hashed.
 
-Yeah, that didn't work *but* manually writing to both:
+Good idea, but I don't like how it's implemented.
 
-/sys/class/backlight/acpi_video0/brightness
+First a formality: i_opflags really is for flags showing that inode
+operations exist, not for addional bits.  Just use i_flags for it.
 
-and
+Second this is a hack hacking around a hack.  We just mark the inode
+hashed so that writeback doesn't ignore it, and not we need to work
+around the fact that we don't want an inode marked hashed from the
+hashlist.
 
-/sys/class/backlight/intel_backlight/brightness
+As the most simple version I'd suggest to just add an I_NEEDS_WRITEBACK
+flag which gets set by __insert_inode_hash, and all the current users
+of hlist_add_fake on i_hash, as well as the block devices that currently
+have another special case in the writeback code.
 
-works.
+Thinking about it I'm not even sure I_NEEDS_WRITEBACK is needed, no
+that we have I_NEW as a marker a negative test for it should be
+enough, but doing this might require some further research.
 
-The ranges are different, though:
-
-intel_backlight/actual_brightness:1000
-intel_backlight/bl_power:0
-intel_backlight/brightness:1000
-intel_backlight/max_brightness:4437
-intel_backlight/type:raw
-
-acpi_video0/actual_brightness:41
-acpi_video0/bl_power:0
-acpi_video0/brightness:41
-acpi_video0/max_brightness:100
-acpi_video0/type:firmware
-
-I guess I need to write me a dirty script for now ... :-)
-
-Thanks guys.
