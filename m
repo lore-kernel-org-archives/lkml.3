@@ -1,77 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754362Ab3HAKG0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 06:06:26 -0400
-Received: from mail.southpole.se ([37.247.8.11]:44004 "EHLO mail.southpole.se"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753643Ab3HAKGY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 06:06:24 -0400
-Message-ID: <51FA2E77.1020809@southpole.se>
-Date: Thu, 01 Aug 2013 11:46:31 +0200
-From: Jonas Bonn <jonas@southpole.se>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
+	id S1754002Ab3HAKJs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 06:09:48 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:50066 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752039Ab3HAKJq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 06:09:46 -0400
 MIME-Version: 1.0
-To: Chen Gang <gang.chen@asianux.com>
-CC: linux@openrisc.net,
+In-Reply-To: <1374153691-25100-2-git-send-email-nlopezcasad@logitech.com>
+References: <1374153691-25100-1-git-send-email-nlopezcasad@logitech.com>
+	<1374153691-25100-2-git-send-email-nlopezcasad@logitech.com>
+Date: Thu, 1 Aug 2013 12:09:44 +0200
+Message-ID: <CAN+gG=GcS7pfK9K5FuW9TyX+PJWNkXZWLk8UX9PzLXom2PSpgQ@mail.gmail.com>
+Subject: Re: [PATCH 2/2] HID: hid-logitech-dj, querying_devices was never set
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Nestor Lopez Casado <nlopezcasad@logitech.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, Andrew de los Reyes <adlr@chromium.org>,
+        joseph.salisbury@canonical.com,
+        linux-input <linux-input@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] openrisc: Makefile: append "-D__linux__" to KBUILD_CFLAGS
-References: <51F885C3.3040501@asianux.com>
-In-Reply-To: <51F885C3.3040501@asianux.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Assp-Version: 2.3.3(13137) on assp.southpole.se
-X-Assp-ID: assp.southpole.se 50292-07404
-X-Assp-Session: 7F85AD896F58 (mail 1)
-X-Assp-Client-TLS: yes
-X-Assp-Server-TLS: yes
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/31/2013 05:34 AM, Chen Gang wrote:
-> Need append "_D__linux__" to KBUILD_CFLAGS, just like some of another
-> architectures have done, or 'allmodconfig' can not pass compiling.
+On Thu, Jul 18, 2013 at 3:21 PM, Nestor Lopez Casado
+<nlopezcasad@logitech.com> wrote:
+> Set querying_devices flag to true when we start the enumeration
+> process.
 >
-> The related error:
+> This was missing from the original patch. It never produced
+> undesirable effects as it is highly improbable to have a second
+> enumeration triggered while a first one was still in progress.
 >
->      CC [M]  fs/coda/psdev.o
->    In file included from include/linux/coda.h:65:0,
->                     from fs/coda/psdev.c:45:
->    include/uapi/linux/coda.h:221:2: error: expected specifier-qualifier-list before 'u_quad_t'
->
-> The related compiler information:
->
->    [root@dhcp122 ~]# /usr/local/bin/or32-linux-gcc -v
->    Using built-in specs.
->    COLLECT_GCC=/usr/local/bin/or32-linux-gcc
->    COLLECT_LTO_WRAPPER=/usr/local/libexec/gcc/or32-linux/4.5.1-or32-1.0rc1/lto-wrapper
->    Target: or32-linux
->    Configured with: ../gcc-openrisc/configure --target=or32-linux --disable-nls --enable-languages=c --without-headers --disable-shared --disable-threads --enable-werror=no
->    Thread model: single
->    gcc version 4.5.1-or32-1.0rc1 (GCC)
->
->
-> Signed-off-by: Chen Gang <gang.chen@asianux.com>
-
-Thanks.  Applied.
-/Jonas
-
+> Signed-off-by: Nestor Lopez Casado <nlopezcasad@logitech.com>
 > ---
->   arch/openrisc/Makefile |    2 +-
->   1 files changed, 1 insertions(+), 1 deletions(-)
+>  drivers/hid/hid-logitech-dj.c |    2 ++
+>  1 file changed, 2 insertions(+)
 >
-> diff --git a/arch/openrisc/Makefile b/arch/openrisc/Makefile
-> index 4739b83..89076a6 100644
-> --- a/arch/openrisc/Makefile
-> +++ b/arch/openrisc/Makefile
-> @@ -24,7 +24,7 @@ OBJCOPYFLAGS    := -O binary -R .note -R .comment -S
->   LDFLAGS_vmlinux :=
->   LIBGCC 		:= $(shell $(CC) $(KBUILD_CFLAGS) -print-libgcc-file-name)
+> diff --git a/drivers/hid/hid-logitech-dj.c b/drivers/hid/hid-logitech-dj.c
+> index 0d13389..d4657a5 100644
+> --- a/drivers/hid/hid-logitech-dj.c
+> +++ b/drivers/hid/hid-logitech-dj.c
+> @@ -488,6 +488,8 @@ static int logi_dj_recv_query_paired_devices(struct dj_receiver_dev *djrcv_dev)
+>         if (djrcv_dev->querying_devices)
+>                 return 0;
 >
-> -KBUILD_CFLAGS	+= -pipe -ffixed-r10
-> +KBUILD_CFLAGS	+= -pipe -ffixed-r10 -D__linux__
->
->   ifeq ($(CONFIG_OPENRISC_HAVE_INST_MUL),y)
->   	KBUILD_CFLAGS += $(call cc-option,-mhard-mul)
->
+> +       djrcv_dev->querying_devices = true;
+> +
 
+Unfortunately, this breaks the fallback mechanism :(
+We tried to add the two patches in Fedora [1], but this doesn't fix
+the bug because the driver actually things that it already asked for
+the enumeration, but as we get the -EPIPE error, the request was never
+sent.
+
+So, Jiri, if you were to submit that series to Linus (or Greg) for
+fixing the bug, please just drop this second patch.
+
+Cheers,
+Benjamin
+
+[1] https://bugzilla.redhat.com/show_bug.cgi?id=989138
+
+>         dj_report = kzalloc(sizeof(struct dj_report), GFP_KERNEL);
+>         if (!dj_report)
+>                 return -ENOMEM;
+> --
+> 1.7.9.5
+>
