@@ -1,94 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756853Ab3HAOod (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 10:44:33 -0400
-Received: from up.free-electrons.com ([94.23.35.102]:54125 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756353Ab3HAOob (ORCPT
+	id S1756937Ab3HAOpN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 10:45:13 -0400
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:51677 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756808Ab3HAOoc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 10:44:31 -0400
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: Emilio Lopez <emilio@elopez.com.ar>, kevin.z.m.zh@gmail.com,
-        sunny@allwinnertech.com, shuge@allwinnertech.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-sunxi@googlegroups.com,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCHv2 2/4] clk: sunxi: Allow to specify the divider width from the dividers data
-Date: Thu,  1 Aug 2013 16:44:18 +0200
-Message-Id: <1375368260-1740-3-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.4
-In-Reply-To: <1375368260-1740-1-git-send-email-maxime.ripard@free-electrons.com>
-References: <1375368260-1740-1-git-send-email-maxime.ripard@free-electrons.com>
+	Thu, 1 Aug 2013 10:44:32 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <51FA1818.2050203@linux.vnet.ibm.com>
+References: <2362640.pUofnXyzOi@vostro.rjw.lan>
+	<51FA1818.2050203@linux.vnet.ibm.com>
+Date: Thu, 1 Aug 2013 20:14:31 +0530
+Message-ID: <CAKohponkEWs2r5ibR8RTAN6D2LfNfDB7bvy1nqdTN4C3jQHdJA@mail.gmail.com>
+Subject: Re: [RFC][PATCH] cpufreq: Do not hold driver module references for
+ additional policy CPUs
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, cpufreq@vger.kernel.org,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The divider width used to be hardcoded. Some A31 dividers are no longer
-with the hardcoded width, so we need to make it specific to each divider
-and set it in the dividers data.
+On 1 August 2013 13:41, Srivatsa S. Bhat
+<srivatsa.bhat@linux.vnet.ibm.com> wrote:
+> On 08/01/2013 05:38 AM, Rafael J. Wysocki wrote:
+>> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>>
+>> The cpufreq core is a little inconsistent in the way it uses the
+>> driver module refcount.
+>>
+>> Namely, if __cpufreq_add_dev() is called for a CPU without siblings
+>> or generally a CPU for which a new policy object has to be created,
+>> it grabs a reference to the driver module to start with, but drops
+>> that reference before returning.  As a result, the driver module
+>> refcount is then equal to 0 after __cpufreq_add_dev() has returned.
+>>
+>> On the other hand, if the given CPU is a sibling of some other
+>> CPU already having a policy, cpufreq_add_policy_cpu() is called
+>> to link the new CPU to the existing policy.  In that case,
+>> cpufreq_cpu_get() is called to obtain that policy and grabs a
+>> reference to the driver module, but that reference is not
+>> released and the module refcount will be different from 0 after
+>> __cpufreq_add_dev() returns (unless there is an error).  That
+>> prevents the driver module from being unloaded until
+>> __cpufreq_remove_dev() is called for all the CPUs that
+>> cpufreq_add_policy_cpu() was called for previously.
+>>
+>> To remove that inconsistency make cpufreq_add_policy_cpu() execute
+>> cpufreq_cpu_put() for the given policy before returning, which
+>> decrements the driver module refcount so that it will be 0 after
+>> __cpufreq_add_dev() returns,
+>
+> Removing the inconsistency is a good thing, but I think we should
+> make it consistent the other way around - make a CPU-online increment
+> the driver module refcount and decrement it only on CPU-offline.
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-Reviewed-by: Emilio López <emilio@elopez.com.ar>
----
- drivers/clk/sunxi/clk-sunxi.c | 24 +++++++++++++-----------
- 1 file changed, 13 insertions(+), 11 deletions(-)
+I took time to review to this mail as I was looking at the problem
+yesterday. I am sorry to say, but I have completely different views as
+compared to You and Rafael both :)
 
-diff --git a/drivers/clk/sunxi/clk-sunxi.c b/drivers/clk/sunxi/clk-sunxi.c
-index ac34424..21997d6 100644
---- a/drivers/clk/sunxi/clk-sunxi.c
-+++ b/drivers/clk/sunxi/clk-sunxi.c
-@@ -277,26 +277,28 @@ static void __init sunxi_mux_clk_setup(struct device_node *node,
-  * sunxi_divider_clk_setup() - Setup function for simple divider clocks
-  */
- 
--#define SUNXI_DIVISOR_WIDTH	2
--
- struct div_data {
--	u8 shift;
--	u8 pow;
-+	u8	shift;
-+	u8	pow;
-+	u8	width;
- };
- 
- static const __initconst struct div_data sun4i_axi_data = {
--	.shift = 0,
--	.pow = 0,
-+	.shift	= 0,
-+	.pow	= 0,
-+	.width	= 2,
- };
- 
- static const __initconst struct div_data sun4i_ahb_data = {
--	.shift = 4,
--	.pow = 1,
-+	.shift	= 4,
-+	.pow	= 1,
-+	.width	= 2,
- };
- 
- static const __initconst struct div_data sun4i_apb0_data = {
--	.shift = 8,
--	.pow = 1,
-+	.shift	= 8,
-+	.pow	= 1,
-+	.width	= 2,
- };
- 
- static void __init sunxi_divider_clk_setup(struct device_node *node,
-@@ -312,7 +314,7 @@ static void __init sunxi_divider_clk_setup(struct device_node *node,
- 	clk_parent = of_clk_get_parent_name(node, 0);
- 
- 	clk = clk_register_divider(NULL, clk_name, clk_parent, 0,
--				   reg, data->shift, SUNXI_DIVISOR_WIDTH,
-+				   reg, data->shift, data->width,
- 				   data->pow ? CLK_DIVIDER_POWER_OF_TWO : 0,
- 				   &clk_lock);
- 	if (clk) {
--- 
-1.8.3.4
+First of all, Rafael's patch is incomplete as it hasn't fixed the issue
+completely. When we have multiple CPUs per policy and
+cpufreq_add_dev() is called for the first one, it call cpufreq_get_cpu()
+for all cpus of this policy(), so count is == x (no. of CPUs in this policy)
++ 1 (This is the initial value of .owner).
 
+And so we still have module count getting incremented for other cpus :)
+
+Now few lines about My point of view to this whole thing. I believe we
+should get rid of .owner field from struct cpufreq_driver completely. It
+doesn't make sense to me in doing all this management at all. Surprised?
+Shocked? Laughing at me? :)
+
+Well I may be wrong but this is what I think:
+- It looks stupid to me that I can't do this from userspace in one go:
+  $ insmod cpufreq_driver.ko
+  $ rmmod cpufreq_driver.ko
+
+What the hell changed in between that isn't visible to user? It looked
+completely stupid in that way..
+
+Something like this sure makes sense:
+$ insmod ondemand-governor.ko
+$ change governor to ondemand for few CPUs
+$ rmmod ondemand-governor.ko
+
+as we have deliberately add few users of governor. And so without second
+step, rmmod should really work smoothly. And it does.
+
+Now, why shouldn't there be a problem with this approach? I will write
+that inline to the problems you just described.
+
+> The reason is, one should not be able to unload the back-end cpufreq
+> driver module when some CPUs are still being managed. Nasty things
+> will result if we allow that. For example, if we unload the module,
+> and then try to do a CPU offline, then the cpufreq hotplug notifier
+> won't even be called (because cpufreq_unregister_driver also
+> unregisters the hotplug notifier). And that might be troublesome.
+
+So what? Its simply equivalent to we have booted our system, haven't
+inserted cpufreq module and taken out a cpu.
+
+> Even worse, if we unload a cpufreq driver module and load a new
+> one and *then* try to offline the CPU, then the cpufreq_driver->exit()
+> function that we call during CPU offline will end up calling the
+> corresponding function of an entirely different driver! So the
+> ->init() and ->exit() calls won't match.
+
+That's not true. When we unload the module, it must call
+cpufreq_unregister_driver() which should call cpufreq_remove_cpu()
+for all cpus and so exit() is already called for last module.
+
+If we get something new now, it should simply work.
+
+What do you think gentlemen?
+
+--
+viresh
