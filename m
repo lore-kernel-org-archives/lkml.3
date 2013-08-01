@@ -1,55 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753744Ab3HAC5t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 22:57:49 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:64109 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752088Ab3HACzq (ORCPT
+	id S1753494Ab3HAC7d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 22:59:33 -0400
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:33798 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752040Ab3HAC7c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 22:55:46 -0400
-X-AuditID: 9c930197-b7bfbae000000e88-c1-51f9ce31980e
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 1/9] perf sort: Fix a memory leak on srcline
-Date: Thu,  1 Aug 2013 11:55:36 +0900
-Message-Id: <1375325744-26613-2-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1375325744-26613-1-git-send-email-namhyung@kernel.org>
-References: <1375325744-26613-1-git-send-email-namhyung@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 31 Jul 2013 22:59:32 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AjgFAInO+VF5LPxHgWdsb2JhbABbDr0BhS6BIBcOAQEWJiiCJAEBBAE6HCgLCAMYCSUPBSUDIQESiAoFuUMWj3iECwOUCINWiiKKAlAq
+Date: Thu, 1 Aug 2013 12:59:14 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: "Theodore Ts'o" <tytso@mit.edu>, Namjae Jeon <linkinjeon@gmail.com>,
+        adilger.kernel@dilger.ca, bpm@sgi.com, elder@kernel.org,
+        hch@infradead.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        xfs@oss.sgi.com, a.sangwan@samsung.com,
+        Namjae Jeon <namjae.jeon@samsung.com>
+Subject: Re: [PATCH 1/3] fs: Introduce new flag FALLOC_FL_COLLAPSE_RANGE
+Message-ID: <20130801025914.GL7118@dastard>
+References: <1375281721-15840-1-git-send-email-linkinjeon@gmail.com>
+ <20130731220154.GA11378@thunk.org>
+ <20130801002341.GI7118@dastard>
+ <20130801004645.GC11378@thunk.org>
+ <20130801005447.GS13468@dastard>
+ <20130801010751.GD11378@thunk.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130801010751.GD11378@thunk.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+On Wed, Jul 31, 2013 at 09:07:52PM -0400, Theodore Ts'o wrote:
+> On Thu, Aug 01, 2013 at 10:54:47AM +1000, Dave Chinner wrote:
+> > > It's not just the range that it's operating on, but also the region
+> > > beyond the range that's been collapsed out.
+> > 
+> > Yes, that's part of "the range that it is operating over".
+> > 
+> > > A quick eyeball of the patch didn't seem to show any code that handled
+> > > this, which is why I asked the question.
+> > 
+> > Right, but really it's the least of the problems I've noticed - the
+> > XFS code is fundamentally broken in many ways - once I've finished
+> > commenting on it, I'll have a quick look to see if the ext4 code has
+> > the same fundamental flaws....
+> 
+> Well, the fundamental flaw of potential races if the file being
+> collapsed has been mmap'ed and there is another process making changes
+> beyond the range that is being collapsed is I suspect one that is
+> going to be very hard to solve, short of not allowing the collapse
+> while there are any read/write mmap's for the file in question.
 
-In the hist_entry__srcline_snprintf(), path and self->srcline are
-pointing the same memory region, but they are doubly allocated.
+This funtionality is not introducing any new problems w.r.t. mmap().
+In terms of truncating a mmap'd file, that can already occur and
+the behaviour is well known. The current patches don't do the
+operations in the correct order to ensure this is handled correctly
+(i.e. the inode size has to be changed before the page cache
+invalidation, not after), but otherwise there is no new issues
+introduced here.
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/util/sort.c | 5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
+The real problem is that it has the same problem as hole punching
+w.r.t. not being able to serialise page faults against the extent
+manipulations after the page cache invalidation has occurred.
+That's what Jan Kara's range locking patches we talked about at
+LSFMM will address, and so is beyond the scope of this patchset.
 
-diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index 5f118a089519..5ba29fc679c5 100644
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -269,10 +269,7 @@ static int hist_entry__srcline_snprintf(struct hist_entry *self, char *bf,
- 	if (!fp)
- 		goto out_ip;
- 
--	if (getline(&path, &line_len, fp) < 0 || !line_len)
--		goto out_ip;
--	self->srcline = strdup(path);
--	if (self->srcline == NULL)
-+	if (getline(&self->srcline, &line_len, fp) < 0 || !line_len)
- 		goto out_ip;
- 
- 	nl = strchr(self->srcline, '\n');
+> And I would think these sorts of VM issues should be handled with some
+> generic library functions, instead of reimplementing them from scratch
+> in each file system.
+
+Well, yes, we have one - truncate_page_cache_range(), and it's used
+correctly in the ext4 patch....
+
+Cheers,
+
+Dave.
 -- 
-1.7.11.7
-
+Dave Chinner
+david@fromorbit.com
