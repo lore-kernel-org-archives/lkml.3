@@ -1,50 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757868Ab3HAWN0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 18:13:26 -0400
-Received: from mga09.intel.com ([134.134.136.24]:3657 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755177Ab3HAWNZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 18:13:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,797,1367996400"; 
-   d="scan'208";a="380344143"
-Message-ID: <51FADD6F.3040804@linux.intel.com>
-Date: Thu, 01 Aug 2013 15:13:03 -0700
-From: Dave Hansen <dave.hansen@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Nathan Fontenot <nfont@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Nivedita Singhvi <niv@us.ibm.com>, Michael J Wolf <mjwolf@us.ibm.com>,
-        linux-kernel@vger.kernel.org, Linux-MM <linux-mm@kvack.org>
-Subject: Re: [PATCH] drivers: base: new memory config sysfs driver for large
- memory systems
-References: <1374786680-26197-1-git-send-email-sjenning@linux.vnet.ibm.com> <20130725234007.GB18349@kroah.com> <20130726144251.GB4379@variantweb.net> <20130801205724.GA13585@kroah.com>
-In-Reply-To: <20130801205724.GA13585@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1757937Ab3HAWNk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 18:13:40 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39822 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757903Ab3HAWNj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 18:13:39 -0400
+In-Reply-To: <20130801213420.GL23006@n2100.arm.linux.org.uk>
+References: <20130801213420.GL23006@n2100.arm.linux.org.uk>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH RFC 39/51] DMA-API: others: use dma_set_coherent_mask()
+Message-Id: <E1V517Q-0006tV-4z@rmk-PC.arm.linux.org.uk>
+Date: Thu, 01 Aug 2013 23:13:12 +0100
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/01/2013 01:57 PM, Greg Kroah-Hartman wrote:
->> > "memory" is the name used by the current sysfs memory layout code in
->> > drivers/base/memory.c. So it can't be the same unless we are going to
->> > create a toggle a boot time to select between the models, which is
->> > something I am looking to add if this code/design is acceptable to
->> > people.
-> I know it can't be the same, but this is like "memory_v2" or something,
-> right?  I suggest you make it an either/or option, given that you feel
-> the existing layout just will not work properly for you.
+The correct way for a driver to specify the coherent DMA mask is
+not to directly access the field in the struct device, but to use
+dma_set_coherent_mask().  Only arch and bus code should access this
+member directly.
 
-If there are existing tools or applications that look for memory hotplug
-events, how does this interact with those?  I know you guys have control
-over the ppc software that actually performs the probe/online
-operations, but what about other apps?
+Convert all direct write accesses to using the correct API.
 
-I also don't seem to see the original post to LKML.  Did you send
-privately to Greg, then he cc'd LKML on his reply?
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+---
+ drivers/ata/pata_ixp4xx_cf.c             |    5 ++++-
+ drivers/gpu/drm/exynos/exynos_drm_drv.c  |    7 ++++++-
+ drivers/gpu/drm/omapdrm/omap_dmm_tiler.c |    5 +++--
+ 3 files changed, 13 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/ata/pata_ixp4xx_cf.c b/drivers/ata/pata_ixp4xx_cf.c
+index dcc6b24..ad5ecf2 100644
+--- a/drivers/ata/pata_ixp4xx_cf.c
++++ b/drivers/ata/pata_ixp4xx_cf.c
+@@ -144,6 +144,7 @@ static int ixp4xx_pata_probe(struct platform_device *pdev)
+ 	struct ata_host *host;
+ 	struct ata_port *ap;
+ 	struct ixp4xx_pata_data *data = pdev->dev.platform_data;
++	int ret;
+ 
+ 	cs0 = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	cs1 = platform_get_resource(pdev, IORESOURCE_MEM, 1);
+@@ -157,7 +158,9 @@ static int ixp4xx_pata_probe(struct platform_device *pdev)
+ 		return -ENOMEM;
+ 
+ 	/* acquire resources and fill host */
+-	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
++	ret = dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(32));
++	if (ret)
++		return ret;
+ 
+ 	data->cs0 = devm_ioremap(&pdev->dev, cs0->start, 0x1000);
+ 	data->cs1 = devm_ioremap(&pdev->dev, cs1->start, 0x1000);
+diff --git a/drivers/gpu/drm/exynos/exynos_drm_drv.c b/drivers/gpu/drm/exynos/exynos_drm_drv.c
+index ca2729a..e9fb6c8 100644
+--- a/drivers/gpu/drm/exynos/exynos_drm_drv.c
++++ b/drivers/gpu/drm/exynos/exynos_drm_drv.c
+@@ -287,7 +287,12 @@ static struct drm_driver exynos_drm_driver = {
+ 
+ static int exynos_drm_platform_probe(struct platform_device *pdev)
+ {
+-	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
++	int ret;
++
++	ret = dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(32));
++	if (ret)
++		return ret;
++
+ 	exynos_drm_driver.num_ioctls = DRM_ARRAY_SIZE(exynos_ioctls);
+ 
+ 	return drm_platform_init(&exynos_drm_driver, pdev);
+diff --git a/drivers/gpu/drm/omapdrm/omap_dmm_tiler.c b/drivers/gpu/drm/omapdrm/omap_dmm_tiler.c
+index 9b794c9..ce837ae 100644
+--- a/drivers/gpu/drm/omapdrm/omap_dmm_tiler.c
++++ b/drivers/gpu/drm/omapdrm/omap_dmm_tiler.c
+@@ -664,8 +664,9 @@ static int omap_dmm_probe(struct platform_device *dev)
+ 	}
+ 
+ 	/* set dma mask for device */
+-	/* NOTE: this is a workaround for the hwmod not initializing properly */
+-	dev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
++	ret = dma_set_coherent_mask(&dev->dev, DMA_BIT_MASK(32));
++	if (ret)
++		goto fail;
+ 
+ 	omap_dmm->dummy_pa = page_to_phys(omap_dmm->dummy_page);
+ 
+-- 
+1.7.4.4
+
