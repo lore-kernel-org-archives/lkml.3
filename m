@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757308Ab3HAVib (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 17:38:31 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39710 "EHLO
+	id S1757386Ab3HAVjb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 17:39:31 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39715 "EHLO
 	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754200Ab3HAVia (ORCPT
+	with ESMTP id S1755671Ab3HAVja (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 17:38:30 -0400
+	Thu, 1 Aug 2013 17:39:30 -0400
 In-Reply-To: <20130801213420.GL23006@n2100.arm.linux.org.uk>
 References: <20130801213420.GL23006@n2100.arm.linux.org.uk>
 From: Russell King <rmk+kernel@arm.linux.org.uk>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH RFC 04/51] DMA-API: net: intel/igb: fix 32-bit DMA mask
+Subject: [PATCH RFC 05/51] DMA-API: net: intel/igbvf: fix 32-bit DMA mask
  handling
-Message-Id: <E1V50ZO-0006pj-VL@rmk-PC.arm.linux.org.uk>
-Date: Thu, 01 Aug 2013 22:38:02 +0100
+Message-Id: <E1V50aN-0006pq-DU@rmk-PC.arm.linux.org.uk>
+Date: Thu, 01 Aug 2013 22:39:03 +0100
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -32,8 +32,8 @@ The fallback to 32-bit DMA mask is rather odd:
 			err = dma_set_coherent_mask(&pdev->dev,
 						    DMA_BIT_MASK(32));
 			if (err) {
-				dev_err(&pdev->dev,
-					"No usable DMA configuration, aborting\n");
+				dev_err(&pdev->dev, "No usable DMA "
+					"configuration, aborting\n");
 				goto err_dma;
 			}
 		}
@@ -45,14 +45,14 @@ if either fails.
 
 Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 ---
- drivers/net/ethernet/intel/igb/igb_main.c |   18 ++++++------------
+ drivers/net/ethernet/intel/igbvf/netdev.c |   18 ++++++------------
  1 files changed, 6 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/net/ethernet/intel/igb/igb_main.c b/drivers/net/ethernet/intel/igb/igb_main.c
-index 6a0c1b6..24a337d 100644
---- a/drivers/net/ethernet/intel/igb/igb_main.c
-+++ b/drivers/net/ethernet/intel/igb/igb_main.c
-@@ -2020,21 +2020,15 @@ static int igb_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
+diff --git a/drivers/net/ethernet/intel/igbvf/netdev.c b/drivers/net/ethernet/intel/igbvf/netdev.c
+index 93eb7ee..4e6b02f 100644
+--- a/drivers/net/ethernet/intel/igbvf/netdev.c
++++ b/drivers/net/ethernet/intel/igbvf/netdev.c
+@@ -2638,21 +2638,15 @@ static int igbvf_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
  		return err;
  
  	pci_using_dac = 0;
@@ -70,12 +70,12 @@ index 6a0c1b6..24a337d 100644
 -			err = dma_set_coherent_mask(&pdev->dev,
 -						    DMA_BIT_MASK(32));
 -			if (err) {
--				dev_err(&pdev->dev,
--					"No usable DMA configuration, aborting\n");
+-				dev_err(&pdev->dev, "No usable DMA "
+-				        "configuration, aborting\n");
 -				goto err_dma;
 -			}
-+			dev_err(&pdev->dev,
-+				"No usable DMA configuration, aborting\n");
++			dev_err(&pdev->dev, "No usable DMA "
++			        "configuration, aborting\n");
 +			goto err_dma;
  		}
  	}
