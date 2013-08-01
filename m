@@ -1,59 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752536Ab3HAIKC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 04:10:02 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:38838 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750848Ab3HAIJ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 04:09:56 -0400
-Message-ID: <1375344595.2034.38.camel@joe-AO722>
-Subject: Re: [PATCH] MAINTAINERS: Add separate section for USB NETWORKING
- DRIVERS
-From: Joe Perches <joe@perches.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-usb <linux-usb@vger.kernel.org>
-Date: Thu, 01 Aug 2013 01:09:55 -0700
-In-Reply-To: <20130801075656.GA8074@kroah.com>
-References: <1375316960686@kroah.org> <1375343328.2034.34.camel@joe-AO722>
-	 <20130801075656.GA8074@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752358Ab3HAILk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 04:11:40 -0400
+Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:30184
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750742Ab3HAILb convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 04:11:31 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VS1(zzzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzzz2dh2a8h668h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e1dhbe9i1155h)
+From: Stoica Cristian-B18196 <B18196@freescale.com>
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+CC: "davem@davemloft.net" <davem@davemloft.net>,
+        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Geanta Neag Horia Ioan-B05471 <B05471@freescale.com>
+Subject: RE: [PATCH] crypto: remove double execution of the same test suite
+Thread-Topic: [PATCH] crypto: remove double execution of the same test suite
+Thread-Index: AQHOg9FdzcCcDGTvdUiYyn1yFz3yGZl/meaAgAB4waA=
+Date: Thu, 1 Aug 2013 08:11:25 +0000
+Message-ID: <1628287275CAA9409F1E349DEF3C6CCE4D31E1@039-SN2MPN1-013.039d.mgd.msft.net>
+References: <1374163027-17201-1-git-send-email-cristian.stoica@freescale.com>
+ <20130801004757.GA24286@gondor.apana.org.au>
+In-Reply-To: <20130801004757.GA24286@gondor.apana.org.au>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.171.73.198]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-08-01 at 15:56 +0800, Greg KH wrote:
-> On Thu, Aug 01, 2013 at 12:48:48AM -0700, Joe Perches wrote:
-> > There are several drivers in drivers/net/usb/ that
-> > do not have specific MAINTAINERS that should have
-> > emails forwarded to the linux-usb mailing list.
+> Which algorithm (apart from crc* which I know and will fix) uses the
+> same driver name as its algorithm name? Doing this will cause issues
+> when an alternative implementation for that algorithm gets added.
 
-> > diff --git a/MAINTAINERS b/MAINTAINERS
-[]
-> > +USB NETWORKING DRIVERS
-> > +L:	linux-usb@vger.kernel.org
-> > +S:	Odd Fixes
-> > +F:	drivers/net/usb/
-> 
-> But netdev is the one that applies these patches, not linux-usb, so this
-> isn't correct either.
-> 
-> sorry,
+Fixing names resolves double calls only for the thread cryptomgr_test->alg_test where the call is:
+    err = alg_test(param->driver, param->alg, type, CRYPTO_ALG_TESTED);
 
-Lots of "maintainers" don't apply patches.
+It doesn't fix the thread tcrypt_test->alg_test where the call is:
+    ret = alg_test(alg, alg, 0, 0);
 
-This is simply a means to forward patches to
-relevant lists that may have reviewers that care
-about changes to certain files.
-
-You suggested that linux-usb should get copies
-of these patches.
-
-These files are not marked as "Maintained", just
-"Odd fixes".  I suppose these could be marked
-"Orphan" instead.
-
-You have a suggestion otherwise?
+Cristian S.
 
