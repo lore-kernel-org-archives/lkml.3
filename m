@@ -1,129 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756592Ab3HAQyz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 12:54:55 -0400
-Received: from forward8.mail.yandex.net ([77.88.61.38]:44359 "EHLO
-	forward8.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753322Ab3HAQyy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 12:54:54 -0400
-From: Kirill Tkhai <tkhai@yandex.ru>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re:[PATCH] sched/rt: Fix pull_rt_task() skips not overloaded rqs
+	id S1756959Ab3HAQzQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 12:55:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37098 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756511Ab3HAQzO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 12:55:14 -0400
+Subject: [PATCH v3 0/9] pci: bus and slot reset interfaces
+To: bhelgaas@google.com, linux-pci@vger.kernel.org
+From: Alex Williamson <alex.williamson@redhat.com>
+Cc: indou.takao@jp.fujitsu.com, linux-kernel@vger.kernel.org
+Date: Thu, 01 Aug 2013 10:55:08 -0600
+Message-ID: <20130801164652.16145.79918.stgit@bling.home>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Message-Id: <281621375376081@web1e.yandex.ru>
-X-Mailer: Yamail [ http://yandex.ru ] 5.0
-Date: Thu, 01 Aug 2013 20:54:41 +0400
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is bad patch. Sorry for the noise.
+I posted a v2 of this back in May, but nack'd it because it had issues
+in cases where PCI hotplug was built as a module.  I pulled some of
+the code into core pci to alleviate that and module options are being
+removed from core pci hotplug and pciehp, so I think it's completely
+fixed now.  Since the RFC a couple days ago I've done more testing and
+added the last two patches, which tunes the delays for holding the bus
+in reset and allowing initialization time after.  These are my best
+interpretation of the spec, if anyone wants to adjust them, please
+suggest new values and spec or hardware evidence to support it.  We
+can also remove the duplicate bus reset code in AER, which is done in
+the last patch.  Including my most recent description of why we need
+this series below.  Thanks,
+
+Alex
+
+This series adds PCI bus and slot reset interfaces to the already
+existing function reset interface.  I need this for two reasons, the
+first is that not all devices support function level reset.  Even
+some of those that we detect as supporting a PM reset on D3hot->D0
+transition actually don't do any reset.  Others have no reset
+capability at all.  We currently implement a secondary bus reset
+escalation from the function reset path, but only when there is a
+single devfn on the bus.  Drivers like vfio can have ownership of
+all of the devices on a bus and should therefore have a path to
+initiate a secondary bus reset with multiple devices.  This is
+particularly required for use of GPUs by userspace, where none of
+the predominant GPUs implement a useful function level reset.
+
+The second reason is that even the current function reset escalating
+to a secondary bus reset can cause problems with hotplug controllers.
+If a root port supports PCIe HP with suprise removal, a bus reset
+can trigger a presence detection change, which results in an attempt
+to remove the struct device.  By having a slot reset interface, we
+can involve the hotplug controllers to allow for a controlled bus
+reset and avoid this spurious removal attempt.
+
+---
+
+Alex Williamson (9):
+      pci: Create pci_reset_bridge_secondary_bus()
+      pci: Add hotplug_slot_ops.reset_slot()
+      pci: Implement reset_slot for pciehp
+      pci: Add slot reset option to pci_dev_reset
+      pci: Split out pci_dev lock/unlock and save/restore
+      pci: Add slot and bus reset interfaces
+      pci: Wake-up devices before save for reset
+      pci: Tune secondary bus reset timing
+      pci: Remove aer_do_secondary_bus_reset()
 
 
-> The main patch profit is deletion of the following check
-> at the beginning of pull_rt_task():
-> 
-> if (likely(!rt_overloaded(this_rq)))
-> return 0;
-> 
-> This check makes pull_rt_task() nearly useless, because
-> it kills all cases like "last RT task has just gone away".
-> The check is better suitable for push_rt_task().
-> 
-> So, kill the check, now unusable rt_overloaded() and rto_count.
-> 
-> Move root_domain's refcount to the bottom of the structure
-> to keep its fields aligned.
-> 
-> Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
-> CC: Ingo Molnar <mingo@redhat.com>
-> CC: Peter Zijlstra <peterz@infradead.org>
-> CC: Steven Rostedt <rostedt@goodmis.org>
-> ---
-> kernel/sched/rt.c | 19 -------------------
-> kernel/sched/sched.h | 3 +--
-> 2 files changed, 1 insertions(+), 21 deletions(-)
-> diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-> index 01970c8..cf297a7 100644
-> --- a/kernel/sched/rt.c
-> +++ b/kernel/sched/rt.c
-> @@ -229,26 +229,12 @@ int alloc_rt_sched_group(struct task_group *tg, struct task_group *parent)
-> 
-> #ifdef CONFIG_SMP
-> 
-> -static inline int rt_overloaded(struct rq *rq)
-> -{
-> - return atomic_read(&rq->rd->rto_count);
-> -}
-> -
-> static inline void rt_set_overload(struct rq *rq)
-> {
-> if (!rq->online)
-> return;
-> 
-> cpumask_set_cpu(rq->cpu, rq->rd->rto_mask);
-> - /*
-> - * Make sure the mask is visible before we set
-> - * the overload count. That is checked to determine
-> - * if we should look at the mask. It would be a shame
-> - * if we looked at the mask, but the mask was not
-> - * updated yet.
-> - */
-> - wmb();
-> - atomic_inc(&rq->rd->rto_count);
-> }
-> 
-> static inline void rt_clear_overload(struct rq *rq)
-> @@ -256,8 +242,6 @@ static inline void rt_clear_overload(struct rq *rq)
-> if (!rq->online)
-> return;
-> 
-> - /* the order here really doesn't matter */
-> - atomic_dec(&rq->rd->rto_count);
-> cpumask_clear_cpu(rq->cpu, rq->rd->rto_mask);
-> }
-> 
-> @@ -1627,9 +1611,6 @@ static int pull_rt_task(struct rq *this_rq)
-> struct task_struct *p;
-> struct rq *src_rq;
-> 
-> - if (likely(!rt_overloaded(this_rq)))
-> - return 0;
-> -
-> for_each_cpu(cpu, this_rq->rd->rto_mask) {
-> if (this_cpu == cpu)
-> continue;
-> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-> index 4c1cb80..1f36afb 100644
-> --- a/kernel/sched/sched.h
-> +++ b/kernel/sched/sched.h
-> @@ -374,8 +374,6 @@ struct rt_rq {
-> *
-> */
-> struct root_domain {
-> - atomic_t refcount;
-> - atomic_t rto_count;
-> struct rcu_head rcu;
-> cpumask_var_t span;
-> cpumask_var_t online;
-> @@ -386,6 +384,7 @@ struct root_domain {
-> */
-> cpumask_var_t rto_mask;
-> struct cpupri cpupri;
-> + atomic_t refcount;
-> };
-> 
-> extern struct root_domain def_root_domain;
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at http://www.tux.org/lkml/
-
-
- -- 
+ drivers/pci/hotplug/pciehp.h       |    1 
+ drivers/pci/hotplug/pciehp_core.c  |   12 +
+ drivers/pci/hotplug/pciehp_hpc.c   |   31 +++
+ drivers/pci/pci.c                  |  331 +++++++++++++++++++++++++++++++++---
+ drivers/pci/pcie/aer/aerdrv.c      |    2 
+ drivers/pci/pcie/aer/aerdrv.h      |    1 
+ drivers/pci/pcie/aer/aerdrv_core.c |   35 ----
+ include/linux/pci.h                |    3 
+ include/linux/pci_hotplug.h        |    4 
+ 9 files changed, 358 insertions(+), 62 deletions(-)
