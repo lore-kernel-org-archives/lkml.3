@@ -1,292 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756093Ab3HAVXG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 17:23:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61650 "EHLO mx1.redhat.com"
+	id S1756427Ab3HAVYL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 17:24:11 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48383 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751957Ab3HAVXD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 17:23:03 -0400
-Message-ID: <51FAD1B3.5050503@redhat.com>
-Date: Thu, 01 Aug 2013 17:22:59 -0400
-From: Don Dutile <ddutile@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130108 Thunderbird/10.0.12
+	id S1752774Ab3HAVYI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 17:24:08 -0400
+Date: Thu, 1 Aug 2013 23:24:05 +0200
+From: Jan Kara <jack@suse.cz>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] jbd: use module parameters instead of debugfs for
+ jbd_debug
+Message-ID: <20130801212405.GD31857@quack.suse.cz>
+References: <1375383668-8072-1-git-send-email-paul.gortmaker@windriver.com>
+ <1375383668-8072-2-git-send-email-paul.gortmaker@windriver.com>
 MIME-Version: 1.0
-To: Alex Williamson <alex.williamson@redhat.com>
-CC: bhelgaas@google.com, linux-pci@vger.kernel.org, indou.takao@jp.fujitsu.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 6/9] pci: Add slot and bus reset interfaces
-References: <20130801164652.16145.79918.stgit@bling.home> <20130801165545.16145.74383.stgit@bling.home>
-In-Reply-To: <20130801165545.16145.74383.stgit@bling.home>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1375383668-8072-2-git-send-email-paul.gortmaker@windriver.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/01/2013 12:55 PM, Alex Williamson wrote:
-> Sometimes pci_reset_function is not sufficient.  We have cases where
-> devices do not support any kind of reset, but there might be multiple
-> functions on the bus preventing pci_reset_function from doing a
-> secondary bus reset.  We also have cases where a device will advertise
-> that it supports a PM reset, but really does nothing on D3hot->D0
-> (graphics cards are notorious for this).  These devices often also
-> have more than one function, so even blacklisting PM reset for them
-> wouldn't allow a secondary bus reset through pci_reset_function.
->
-> If a driver supports multiple devices it should have the ability to
-> induce a bus reset when it needs to.  This patch provides that ability
-> through pci_reset_slot and pci_reset_bus.  It's the caller's
-> responsibility when using these interfaces to understand that all of
-> the devices in or below the slot (or on or below the bus) will be
-> reset and therefore should be under control of the caller.  PCI state
-> of all the affected devices is saved and restored around these resets,
-> but internal state of all of the affected devices is reset (which
-> should be the intention).
->
-> Signed-off-by: Alex Williamson<alex.williamson@redhat.com>
+On Thu 01-08-13 15:01:05, Paul Gortmaker wrote:
+> This is a direct backport of commit b6e96d0067d81f6a300bedee
+> ("jbd2: use module parameters instead of debugfs for jbd_debug")
+> from jbd2 into jbd.  The value is in making ext4 and ext3 user
+> experiences consistent with each other.  Quoting the original:
+> 
+>  --------------
+>  There are multiple reasons to move away from debugfs.  First of all,
+>  we are only using it for a single parameter, and it is much more
+>  complicated to set up (some 30 lines of code compared to 3), and one
+>  more thing that might fail while loading the jbd2 module.
+> 
+>  Secondly, as a module paramter it can be specified as a boot option if
+>  jbd2 is built into the kernel, or as a parameter when the module is
+>  loaded, and it can also be manipulated dynamically under
+>  /sys/module/jbd2/parameters/jbd2_debug.  So it is more flexible.
+> 
+>  Ultimately we want to move away from using jbd_debug() towards
+>  tracepoints, but for now this is still a useful simplification of the
+>  code base.
+>  --------------
+> 
+> It is worth noting that we use /sys/module/jbd/parameters/jbd1_debug
+> (i.e. the "1" might appear odd) for the module parameter in order to
+> avoid namespace collisions with the existing jbd_debug used as a
+> function call.
+> 
+> In addition, we combine the content of jbd2 commit 75497d0607b56e16e4
+> ("jbd2: remove debug dependency on debug_fs and update Kconfig help text")
+> since they were only separate commits unintentionally in jbd2.
+  Thanks for the patch but is jbd_debug really worth it - especially with
+the somewhat ugly jbd1_debug? I don't thing anybody besides kernel
+developers really uses it and those can figure how to do what they need...
+
+								Honza
+> 
+> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 > ---
->   drivers/pci/pci.c   |  195 +++++++++++++++++++++++++++++++++++++++++++++++++++
->   include/linux/pci.h |    2 +
->   2 files changed, 197 insertions(+)
->
-> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-> index f6c757a..91f7bc4 100644
-> --- a/drivers/pci/pci.c
-> +++ b/drivers/pci/pci.c
-> @@ -3518,6 +3518,201 @@ int pci_reset_function(struct pci_dev *dev)
->   }
->   EXPORT_SYMBOL_GPL(pci_reset_function);
->
-> +static void pci_bus_lock(struct pci_bus *bus)
-> +{
-> +	struct pci_dev *dev;
+>  fs/jbd/Kconfig      |  6 +++---
+>  fs/jbd/journal.c    | 49 ++++++++-----------------------------------------
+>  include/linux/jbd.h |  3 +--
+>  3 files changed, 12 insertions(+), 46 deletions(-)
+> 
+> diff --git a/fs/jbd/Kconfig b/fs/jbd/Kconfig
+> index 4e28bee..54cbb55 100644
+> --- a/fs/jbd/Kconfig
+> +++ b/fs/jbd/Kconfig
+> @@ -15,7 +15,7 @@ config JBD
+>  
+>  config JBD_DEBUG
+>  	bool "JBD (ext3) debugging support"
+> -	depends on JBD && DEBUG_FS
+> +	depends on JBD
+>  	help
+>  	  If you are using the ext3 journaled file system (or potentially any
+>  	  other file system/device using JBD), this option allows you to
+> @@ -24,7 +24,7 @@ config JBD_DEBUG
+>  	  debugging output will be turned off.
+>  
+>  	  If you select Y here, then you will be able to turn on debugging
+> -	  with "echo N > /sys/kernel/debug/jbd/jbd-debug", where N is a
+> +	  with "echo N > /sys/module/jbd/parameters/jbd1_debug", where N is a
+>  	  number between 1 and 5, the higher the number, the more debugging
+>  	  output is generated.  To turn debugging off again, do
+> -	  "echo 0 > /sys/kernel/debug/jbd/jbd-debug".
+> +	  "echo 0 > /sys/module/jbd/parameters/jbd1_debug".
+> diff --git a/fs/jbd/journal.c b/fs/jbd/journal.c
+> index 6510d63..166263d 100644
+> --- a/fs/jbd/journal.c
+> +++ b/fs/jbd/journal.c
+> @@ -35,7 +35,6 @@
+>  #include <linux/kthread.h>
+>  #include <linux/poison.h>
+>  #include <linux/proc_fs.h>
+> -#include <linux/debugfs.h>
+>  #include <linux/ratelimit.h>
+>  
+>  #define CREATE_TRACE_POINTS
+> @@ -44,6 +43,14 @@
+>  #include <asm/uaccess.h>
+>  #include <asm/page.h>
+>  
+> +#ifdef CONFIG_JBD_DEBUG
+> +ushort jbd_journal_enable_debug __read_mostly;
+> +EXPORT_SYMBOL(jbd_journal_enable_debug);
 > +
-> +	list_for_each_entry(dev,&bus->devices, bus_list) {
-> +		pci_dev_lock(dev);
-> +		if (dev->subordinate)
-> +			pci_bus_lock(dev->subordinate);
-> +	}
-> +}
+> +module_param_named(jbd1_debug, jbd_journal_enable_debug, ushort, 0644);
+> +MODULE_PARM_DESC(jbd1_debug, "Debugging level for jbd");
+> +#endif
 > +
-> +static void pci_bus_unlock(struct pci_bus *bus)
-> +{
-> +	struct pci_dev *dev;
-> +
-> +	list_for_each_entry(dev,&bus->devices, bus_list) {
-> +		pci_dev_unlock(dev);
-> +		if (dev->subordinate)
-> +			pci_bus_unlock(dev->subordinate);
-> +	}
-> +}
-So, I'm wondering if the above locks from top of PCI tree down,
-should the unlock work from bottom back to the top ?
-i.e.,
-	list_for_each_entry(dev,&bus->devices, bus_list) {
-		if (dev->subordinate)
-			pci_bus_unlock(dev->subordinate);
-		pci_dev_unlock(dev);
-	}
-
-> +static void pci_slot_lock(struct pci_slot *slot)
-> +{
-> +	struct pci_dev *dev;
-> +
-> +	list_for_each_entry(dev,&slot->bus->devices, bus_list) {
-> +		if (!dev->slot || dev->slot != slot)
-> +			continue;
-> +		pci_dev_lock(dev);
-> +		if (dev->subordinate)
-> +			pci_bus_lock(dev->subordinate);
-> +	}
-> +}
-> +
-> +static void pci_slot_unlock(struct pci_slot *slot)
-> +{
-> +	struct pci_dev *dev;
-> +
-> +	list_for_each_entry(dev,&slot->bus->devices, bus_list) {
-> +		if (!dev->slot || dev->slot != slot)
-> +			continue;
-> +		pci_dev_unlock(dev);
-> +		if (dev->subordinate)
-> +			pci_bus_unlock(dev->subordinate);
-> +	}
-> +}
-ditto.
-
-> +
-> +static void pci_bus_save_and_disable(struct pci_bus *bus)
-> +{
-> +	struct pci_dev *dev;
-> +
-> +	list_for_each_entry(dev,&bus->devices, bus_list) {
-> +		pci_dev_save_and_disable(dev);
-> +		if (dev->subordinate)
-> +			pci_bus_save_and_disable(dev->subordinate);
-> +	}
-> +}
-> +
-> +static void pci_bus_restore(struct pci_bus *bus)
-> +{
-> +	struct pci_dev *dev;
-> +
-> +	list_for_each_entry(dev,&bus->devices, bus_list) {
-> +		pci_dev_restore(dev);
-> +		if (dev->subordinate)
-> +			pci_bus_restore(dev->subordinate);
-> +	}
-> +}
-but not in reverse here, b/c need top-most device restored
-to get to next level in PCI tree (since could be a PPB that needs
-restoring to get to next level bus/device(s)).
-
-> +
-> +static void pci_slot_save_and_disable(struct pci_slot *slot)
-> +{
-> +	struct pci_dev *dev;
-> +
-> +	list_for_each_entry(dev,&slot->bus->devices, bus_list) {
-> +		if (!dev->slot || dev->slot != slot)
-> +			continue;
-> +		pci_dev_save_and_disable(dev);
-> +		if (dev->subordinate)
-> +			pci_bus_save_and_disable(dev->subordinate);
-> +	}
-> +}
-> +
-> +static void pci_slot_restore(struct pci_slot *slot)
-> +{
-> +	struct pci_dev *dev;
-> +
-> +	list_for_each_entry(dev,&slot->bus->devices, bus_list) {
-> +		if (!dev->slot || dev->slot != slot)
-> +			continue;
-> +		pci_dev_restore(dev);
-> +		if (dev->subordinate)
-> +			pci_bus_restore(dev->subordinate);
-> +	}
-> +}
-ditto.
-
-> +
-> +static int pci_slot_reset(struct pci_slot *slot, int probe)
-> +{
-> +	int rc;
-> +
-> +	if (!slot)
-> +		return -ENOTTY;
-> +
-> +	if (!probe)
-> +		pci_slot_lock(slot);
-> +
-> +	might_sleep();
-> +
-> +	rc = pci_reset_hotplug_slot(slot->hotplug, probe);
-> +
-> +	if (!probe)
-> +		pci_slot_unlock(slot);
-> +
-> +	return rc;
-> +}
-> +
-> +/**
-> + * pci_reset_slot - reset a PCI slot
-> + * @slot: PCI slot to reset
-> + *
-> + * A PCI bus may host multiple slots, each slot may support a reset mechanism
-> + * independent of other slots.  For instance, some slots may support slot power
-> + * control.  In the case of a 1:1 bus to slot architecture, this function may
-> + * wrap the bus reset to avoid spurious slot related events such as hotplug.
-> + * Generally a slot reset should be attempted before a bus reset.  All of the
-> + * function of the slot and any subordinate buses behind the slot are reset
-> + * through this function.  PCI config space of all devices in the slot and
-> + * behind the slot is saved before and restored after reset.
-> + *
-> + * Return 0 on success, non-zero on error.
-> + */
-> +int pci_reset_slot(struct pci_slot *slot)
-> +{
-> +	int rc;
-> +
-> +	rc = pci_slot_reset(slot, 1);
-> +	if (rc)
-> +		return rc;
-> +
-> +	pci_slot_save_and_disable(slot);
-> +
-> +	rc = pci_slot_reset(slot, 0);
-> +
-> +	pci_slot_restore(slot);
-> +
-> +	return rc;
-> +}
-> +EXPORT_SYMBOL_GPL(pci_reset_slot);
-> +
-> +static int pci_bus_reset(struct pci_bus *bus, int probe)
-> +{
-> +	if (!bus->self)
-> +		return -ENOTTY;
-> +
-> +	if (probe)
-> +		return 0;
-> +
-> +	pci_bus_lock(bus);
-> +
-> +	might_sleep();
-> +
-> +	pci_reset_bridge_secondary_bus(bus->self);
-> +
-> +	pci_bus_unlock(bus);
-> +
-> +	return 0;
-> +}
-> +
-> +/**
-> + * pci_reset_bus - reset a PCI bus
-> + * @bus: top level PCI bus to reset
-> + *
-> + * Do a bus reset on the given bus and any subordinate buses, saving
-> + * and restoring state of all devices.
-> + *
-> + * Return 0 on success, non-zero on error.
-> + */
-> +int pci_reset_bus(struct pci_bus *bus)
-> +{
-> +	int rc;
-> +
-> +	rc = pci_bus_reset(bus, 1);
-> +	if (rc)
-> +		return rc;
-> +
-> +	pci_bus_save_and_disable(bus);
-> +
-> +	rc = pci_bus_reset(bus, 0);
-> +
-> +	pci_bus_restore(bus);
-> +
-> +	return rc;
-> +}
-> +EXPORT_SYMBOL_GPL(pci_reset_bus);
-> +
->   /**
->    * pcix_get_max_mmrbc - get PCI-X maximum designed memory read byte count
->    * @dev: PCI device to query
-> diff --git a/include/linux/pci.h b/include/linux/pci.h
-> index 35c1bc4..1a8fd34 100644
-> --- a/include/linux/pci.h
-> +++ b/include/linux/pci.h
-> @@ -924,6 +924,8 @@ int pcie_set_mps(struct pci_dev *dev, int mps);
->   int __pci_reset_function(struct pci_dev *dev);
->   int __pci_reset_function_locked(struct pci_dev *dev);
->   int pci_reset_function(struct pci_dev *dev);
-> +int pci_reset_slot(struct pci_slot *slot);
-> +int pci_reset_bus(struct pci_bus *bus);
->   void pci_reset_bridge_secondary_bus(struct pci_dev *dev);
->   void pci_update_resource(struct pci_dev *dev, int resno);
->   int __must_check pci_assign_resource(struct pci_dev *dev, int i);
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
+>  EXPORT_SYMBOL(journal_start);
+>  EXPORT_SYMBOL(journal_restart);
+>  EXPORT_SYMBOL(journal_extend);
+> @@ -2017,44 +2024,6 @@ void journal_put_journal_head(struct journal_head *jh)
+>  		jbd_unlock_bh_journal_head(bh);
+>  }
+>  
+> -/*
+> - * debugfs tunables
+> - */
+> -#ifdef CONFIG_JBD_DEBUG
+> -
+> -u8 journal_enable_debug __read_mostly;
+> -EXPORT_SYMBOL(journal_enable_debug);
+> -
+> -static struct dentry *jbd_debugfs_dir;
+> -static struct dentry *jbd_debug;
+> -
+> -static void __init jbd_create_debugfs_entry(void)
+> -{
+> -	jbd_debugfs_dir = debugfs_create_dir("jbd", NULL);
+> -	if (jbd_debugfs_dir)
+> -		jbd_debug = debugfs_create_u8("jbd-debug", S_IRUGO | S_IWUSR,
+> -					       jbd_debugfs_dir,
+> -					       &journal_enable_debug);
+> -}
+> -
+> -static void __exit jbd_remove_debugfs_entry(void)
+> -{
+> -	debugfs_remove(jbd_debug);
+> -	debugfs_remove(jbd_debugfs_dir);
+> -}
+> -
+> -#else
+> -
+> -static inline void jbd_create_debugfs_entry(void)
+> -{
+> -}
+> -
+> -static inline void jbd_remove_debugfs_entry(void)
+> -{
+> -}
+> -
+> -#endif
+> -
+>  struct kmem_cache *jbd_handle_cache;
+>  
+>  static int __init journal_init_handle_cache(void)
+> @@ -2109,7 +2078,6 @@ static int __init journal_init(void)
+>  	ret = journal_init_caches();
+>  	if (ret != 0)
+>  		journal_destroy_caches();
+> -	jbd_create_debugfs_entry();
+>  	return ret;
+>  }
+>  
+> @@ -2120,7 +2088,6 @@ static void __exit journal_exit(void)
+>  	if (n)
+>  		printk(KERN_EMERG "JBD: leaked %d journal_heads!\n", n);
+>  #endif
+> -	jbd_remove_debugfs_entry();
+>  	journal_destroy_caches();
+>  }
+>  
+> diff --git a/include/linux/jbd.h b/include/linux/jbd.h
+> index 8685d1b..e45b430 100644
+> --- a/include/linux/jbd.h
+> +++ b/include/linux/jbd.h
+> @@ -20,7 +20,6 @@
+>  #ifndef __KERNEL__
+>  #include "jfs_compat.h"
+>  #define JFS_DEBUG
+> -#define jfs_debug jbd_debug
+>  #else
+>  
+>  #include <linux/types.h>
+> @@ -55,7 +54,7 @@
+>   * CONFIG_JBD_DEBUG is on.
+>   */
+>  #define JBD_EXPENSIVE_CHECKING
+> -extern u8 journal_enable_debug;
+> +extern ushort journal_enable_debug;
+>  
+>  #define jbd_debug(n, f, a...)						\
+>  	do {								\
+> -- 
+> 1.8.1.2
+> 
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
