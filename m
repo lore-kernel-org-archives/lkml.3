@@ -1,78 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758043Ab3HAWXd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 18:23:33 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:51181 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758006Ab3HAWXb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 18:23:31 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Toshi Kani <toshi.kani@hp.com>
-Subject: [PATCH] ACPI: Do not fail acpi_bind_one() if device is already bound correctly
-Date: Fri, 02 Aug 2013 00:33:42 +0200
-Message-ID: <1888947.F5IBMfDKlY@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1758064Ab3HAWXn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 18:23:43 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39856 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757585Ab3HAWXl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 18:23:41 -0400
+In-Reply-To: <20130801213420.GL23006@n2100.arm.linux.org.uk>
+References: <20130801213420.GL23006@n2100.arm.linux.org.uk>
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        linux-scsi@vger.kernel.org
+Subject: [PATCH RFC 49/51] ARM: 7796/1: scsi: Use dma_max_pfn(dev) helper for
+ bounce_limit calculations
+Message-Id: <E1V51H8-0006ud-Ow@rmk-PC.arm.linux.org.uk>
+Date: Thu, 01 Aug 2013 23:23:14 +0100
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+DMA bounce limit is the maximum direct DMA'able memory beyond which
+bounce buffers has to be used to perform dma operations. SCSI driver
+relies on dma_mask but its calculation is based on max_*pfn which
+don't have uniform meaning across architectures. So make use of
+dma_max_pfn() which is expected to return the DMAable maximum pfn
+value across architectures.
 
-Modify acpi_bind_one() so that it doesn't fail if the device
-represented by its first argument has already been bound to the
-given ACPI handle (second argument), because that is not a good
-enough reason for returning an error code.
-
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 ---
- drivers/acpi/glue.c |   15 +++++++++++----
- 1 file changed, 11 insertions(+), 4 deletions(-)
+ drivers/scsi/scsi_lib.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Index: linux-pm/drivers/acpi/glue.c
-===================================================================
---- linux-pm.orig/drivers/acpi/glue.c
-+++ linux-pm/drivers/acpi/glue.c
-@@ -143,7 +143,10 @@ int acpi_bind_one(struct device *dev, ac
- 	list_for_each_entry(pn, &acpi_dev->physical_node_list, node)
- 		if (pn->dev == dev) {
- 			dev_warn(dev, "Already associated with ACPI node\n");
--			goto err_free;
-+			if (ACPI_HANDLE(dev) == handle)
-+				retval = 0;
-+
-+			goto out_free;
- 		}
+diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+index 124392f..1be55e3 100644
+--- a/drivers/scsi/scsi_lib.c
++++ b/drivers/scsi/scsi_lib.c
+@@ -1684,7 +1684,7 @@ u64 scsi_calculate_bounce_limit(struct Scsi_Host *shost)
  
- 	/* allocate physical node id according to physical_node_id_bitmap */
-@@ -152,7 +155,7 @@ int acpi_bind_one(struct device *dev, ac
- 		ACPI_MAX_PHYSICAL_NODE);
- 	if (physical_node->node_id >= ACPI_MAX_PHYSICAL_NODE) {
- 		retval = -ENOSPC;
--		goto err_free;
-+		goto out_free;
- 	}
+ 	host_dev = scsi_get_device(shost);
+ 	if (host_dev && host_dev->dma_mask)
+-		bounce_limit = *host_dev->dma_mask;
++		bounce_limit = dma_max_pfn(host_dev) << PAGE_SHIFT;
  
- 	set_bit(physical_node->node_id, acpi_dev->physical_node_id_bitmap);
-@@ -185,10 +188,14 @@ int acpi_bind_one(struct device *dev, ac
- 	put_device(dev);
- 	return retval;
- 
-- err_free:
-+ out_free:
- 	mutex_unlock(&acpi_dev->physical_node_lock);
- 	kfree(physical_node);
--	goto err;
-+	if (retval)
-+		goto err;
-+
-+	put_device(dev);
-+	return 0;
+ 	return bounce_limit;
  }
- EXPORT_SYMBOL_GPL(acpi_bind_one);
- 
+-- 
+1.7.4.4
 
