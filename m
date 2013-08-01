@@ -1,14 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752558Ab3HAHIW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 03:08:22 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:53021 "EHLO song.cn.fujitsu.com"
+	id S1752968Ab3HAHJo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 03:09:44 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:41295 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750958Ab3HAHIR convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 03:08:17 -0400
+	id S1752351Ab3HAHIT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 03:08:19 -0400
 X-IronPort-AV: E=Sophos;i="4.89,792,1367942400"; 
-   d="scan'208";a="8085217"
+   d="scan'208";a="8085219"
 From: Tang Chen <tangchen@cn.fujitsu.com>
 To: rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu,
         hpa@zytor.com, akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
@@ -21,109 +20,263 @@ To: rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu,
         zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com
 Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Subject: [PATCH v2 13/18] x86, numa, mem_hotplug: Skip all the regions the kernel resides in.
-Date: Thu, 1 Aug 2013 15:06:35 +0800
-Message-Id: <1375340800-19332-14-git-send-email-tangchen@cn.fujitsu.com>
+Subject: [PATCH v2 14/18] memblock, numa: Introduce flag into memblock.
+Date: Thu, 1 Aug 2013 15:06:36 +0800
+Message-Id: <1375340800-19332-15-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.10.1
 In-Reply-To: <1375340800-19332-1-git-send-email-tangchen@cn.fujitsu.com>
 References: <1375340800-19332-1-git-send-email-tangchen@cn.fujitsu.com>
-MIME-Version: 1.0
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
  2013/08/01 15:06:53,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/01 15:06:55
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+ 2013/08/01 15:06:55,
+	Serialize complete at 2013/08/01 15:06:55
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At early time, memblock will reserve some memory for the kernel,
-such as the kernel code and data segments, initrd file, and so on，
-which means the kernel resides in these memory regions.
+There is no flag in memblock to describe what type the memory is.
+Sometimes, we may use memblock to reserve some memory for special usage.
+And we want to know what kind of memory it is. So we need a way to
+differentiate memory for different usage.
 
-Even if these memory regions are hotpluggable, we should not
-mark them as hotpluggable. Otherwise the kernel won't have enough
-memory to boot.
+In hotplug environment, we want to reserve hotpluggable memory so the
+kernel won't be able to use it. And when the system is up, we have to
+free these hotpluggable memory to buddy. So we need to mark these memory
+first.
 
-This patch finds out which memory regions the kernel resides in,
-and skip them when finding all hotpluggable memory regions.
+In order to do so, we need to mark out these special memory in memblock.
+In this patch, we introduce a new "flags" member into memblock_region:
+   struct memblock_region {
+           phys_addr_t base;
+           phys_addr_t size;
+           unsigned long flags;		/* This is new. */
+   #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
+           int nid;
+   #endif
+   };
 
+This patch does the following things:
+1) Add "flags" member to memblock_region.
+2) Modify the following APIs' prototype:
+	memblock_add_region()
+	memblock_insert_region()
+3) Add memblock_reserve_region() to support reserve memory with flags, and keep
+   memblock_reserve()'s prototype unmodified.
+4) Modify other APIs to support flags, but keep their prototype unmodified.
+
+The idea is from Wen Congyang <wency@cn.fujitsu.com> and Liu Jiang <jiang.liu@huawei.com>.
+
+v1 -> v2:
+As tj suggested, a zero flag MEMBLK_DEFAULT will make users confused. If
+we want to specify any other flag, such MEMBLK_HOTPLUG, users don't know
+to use MEMBLK_DEFAULT | MEMBLK_HOTPLUG or just MEMBLK_HOTPLUG. So remove
+MEMBLK_DEFAULT (which is 0), and just use 0 by default to avoid confusions
+to users.
+
+Suggested-by: Wen Congyang <wency@cn.fujitsu.com>
+Suggested-by: Liu Jiang <jiang.liu@huawei.com>
 Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
 Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
 ---
- mm/memory_hotplug.c |   45 +++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 45 insertions(+), 0 deletions(-)
+ include/linux/memblock.h |    1 +
+ mm/memblock.c            |   53 +++++++++++++++++++++++++++++++++-------------
+ 2 files changed, 39 insertions(+), 15 deletions(-)
 
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index 326e2f2..b800c9c 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -31,6 +31,7 @@
- #include <linux/firmware-map.h>
- #include <linux/stop_machine.h>
- #include <linux/acpi.h>
-+#include <linux/memblock.h>
- 
- #include <asm/tlbflush.h>
- 
-@@ -93,6 +94,40 @@ static void release_memory_resource(struct resource *res)
- 
- #ifdef CONFIG_ACPI_NUMA
- /**
-+ * kernel_resides_in_range - Check if kernel resides in a memory region.
-+ * @base: The base address of the memory region.
-+ * @length: The length of the memory region.
-+ *
-+ * This function is used at early time. It iterates memblock.reserved and check
-+ * if the kernel has used any memory in [@base, @base + @length).
-+ *
-+ * Return true if the kernel resides in the memory region, false otherwise.
-+ */
-+static bool __init kernel_resides_in_region(phys_addr_t base, u64 length)
-+{
-+	int i;
-+	phys_addr_t start, end;
-+	struct memblock_region *region;
-+	struct memblock_type *reserved = &memblock.reserved;
-+
-+	for (i = 0; i < reserved->cnt; i++) {
-+		region = &reserved->regions[i];
-+
-+		if (region->flags != MEMBLOCK_HOTPLUG)
-+			continue;
-+
-+		start = region->base;
-+		end = region->base + region->size;
-+		if (end <= base || start >= base + length)
-+			continue;
-+
-+		return true;
-+	}
-+
-+	return false;
-+}
-+
-+/**
-  * find_hotpluggable_memory - Find out hotpluggable memory from ACPI SRAT.
-  *
-  * This function did the following:
-@@ -129,6 +164,16 @@ void __init find_hotpluggable_memory(void)
- 
- 	while (ACPI_SUCCESS(acpi_hotplug_mem_affinity(srat_vaddr, &base,
- 						      &size, &offset))) {
-+		/*
-+		 * At early time, memblock will reserve some memory for the
-+		 * kernel, such as the kernel code and data segments, initrd
-+		 * file, and so on，which means the kernel resides in these
-+		 * memory regions. These regions should not be hotpluggable.
-+		 * So do not mark them as hotpluggable.
-+		 */
-+		if (kernel_resides_in_region(base, size))
-+			continue;
-+
- 		/* Will mark hotpluggable memory regions here */
+diff --git a/include/linux/memblock.h b/include/linux/memblock.h
+index f388203..e89e0cd 100644
+--- a/include/linux/memblock.h
++++ b/include/linux/memblock.h
+@@ -22,6 +22,7 @@
+ struct memblock_region {
+ 	phys_addr_t base;
+ 	phys_addr_t size;
++	unsigned long flags;
+ #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
+ 	int nid;
+ #endif
+diff --git a/mm/memblock.c b/mm/memblock.c
+index c5fad93..f494a89 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -157,6 +157,7 @@ static void __init_memblock memblock_remove_region(struct memblock_type *type, u
+ 		type->cnt = 1;
+ 		type->regions[0].base = 0;
+ 		type->regions[0].size = 0;
++		type->regions[0].flags = 0;
+ 		memblock_set_region_node(&type->regions[0], MAX_NUMNODES);
  	}
+ }
+@@ -307,7 +308,8 @@ static void __init_memblock memblock_merge_regions(struct memblock_type *type)
+ 
+ 		if (this->base + this->size != next->base ||
+ 		    memblock_get_region_node(this) !=
+-		    memblock_get_region_node(next)) {
++		    memblock_get_region_node(next) ||
++		    this->flags != next->flags) {
+ 			BUG_ON(this->base + this->size > next->base);
+ 			i++;
+ 			continue;
+@@ -327,13 +329,15 @@ static void __init_memblock memblock_merge_regions(struct memblock_type *type)
+  * @base:	base address of the new region
+  * @size:	size of the new region
+  * @nid:	node id of the new region
++ * @flags:	flags of the new region
+  *
+  * Insert new memblock region [@base,@base+@size) into @type at @idx.
+  * @type must already have extra room to accomodate the new region.
+  */
+ static void __init_memblock memblock_insert_region(struct memblock_type *type,
+ 						   int idx, phys_addr_t base,
+-						   phys_addr_t size, int nid)
++						   phys_addr_t size,
++						   int nid, unsigned long flags)
+ {
+ 	struct memblock_region *rgn = &type->regions[idx];
+ 
+@@ -341,6 +345,7 @@ static void __init_memblock memblock_insert_region(struct memblock_type *type,
+ 	memmove(rgn + 1, rgn, (type->cnt - idx) * sizeof(*rgn));
+ 	rgn->base = base;
+ 	rgn->size = size;
++	rgn->flags = flags;
+ 	memblock_set_region_node(rgn, nid);
+ 	type->cnt++;
+ 	type->total_size += size;
+@@ -352,6 +357,7 @@ static void __init_memblock memblock_insert_region(struct memblock_type *type,
+  * @base: base address of the new region
+  * @size: size of the new region
+  * @nid: nid of the new region
++ * @flags: flags of the new region
+  *
+  * Add new memblock region [@base,@base+@size) into @type.  The new region
+  * is allowed to overlap with existing ones - overlaps don't affect already
+@@ -362,7 +368,8 @@ static void __init_memblock memblock_insert_region(struct memblock_type *type,
+  * 0 on success, -errno on failure.
+  */
+ static int __init_memblock memblock_add_region(struct memblock_type *type,
+-				phys_addr_t base, phys_addr_t size, int nid)
++				phys_addr_t base, phys_addr_t size,
++				int nid, unsigned long flags)
+ {
+ 	bool insert = false;
+ 	phys_addr_t obase = base;
+@@ -377,6 +384,7 @@ static int __init_memblock memblock_add_region(struct memblock_type *type,
+ 		WARN_ON(type->cnt != 1 || type->total_size);
+ 		type->regions[0].base = base;
+ 		type->regions[0].size = size;
++		type->regions[0].flags = flags;
+ 		memblock_set_region_node(&type->regions[0], nid);
+ 		type->total_size = size;
+ 		return 0;
+@@ -407,7 +415,8 @@ repeat:
+ 			nr_new++;
+ 			if (insert)
+ 				memblock_insert_region(type, i++, base,
+-						       rbase - base, nid);
++						       rbase - base, nid,
++						       flags);
+ 		}
+ 		/* area below @rend is dealt with, forget about it */
+ 		base = min(rend, end);
+@@ -417,7 +426,8 @@ repeat:
+ 	if (base < end) {
+ 		nr_new++;
+ 		if (insert)
+-			memblock_insert_region(type, i, base, end - base, nid);
++			memblock_insert_region(type, i, base, end - base,
++					       nid, flags);
+ 	}
+ 
+ 	/*
+@@ -439,12 +449,13 @@ repeat:
+ int __init_memblock memblock_add_node(phys_addr_t base, phys_addr_t size,
+ 				       int nid)
+ {
+-	return memblock_add_region(&memblock.memory, base, size, nid);
++	return memblock_add_region(&memblock.memory, base, size, nid, 0);
+ }
+ 
+ int __init_memblock memblock_add(phys_addr_t base, phys_addr_t size)
+ {
+-	return memblock_add_region(&memblock.memory, base, size, MAX_NUMNODES);
++	return memblock_add_region(&memblock.memory, base, size,
++				   MAX_NUMNODES, 0);
+ }
+ 
+ /**
+@@ -499,7 +510,8 @@ static int __init_memblock memblock_isolate_range(struct memblock_type *type,
+ 			rgn->size -= base - rbase;
+ 			type->total_size -= base - rbase;
+ 			memblock_insert_region(type, i, rbase, base - rbase,
+-					       memblock_get_region_node(rgn));
++					       memblock_get_region_node(rgn),
++					       rgn->flags);
+ 		} else if (rend > end) {
+ 			/*
+ 			 * @rgn intersects from above.  Split and redo the
+@@ -509,7 +521,8 @@ static int __init_memblock memblock_isolate_range(struct memblock_type *type,
+ 			rgn->size -= end - rbase;
+ 			type->total_size -= end - rbase;
+ 			memblock_insert_region(type, i--, rbase, end - rbase,
+-					       memblock_get_region_node(rgn));
++					       memblock_get_region_node(rgn),
++					       rgn->flags);
+ 		} else {
+ 			/* @rgn is fully contained, record it */
+ 			if (!*end_rgn)
+@@ -551,16 +564,24 @@ int __init_memblock memblock_free(phys_addr_t base, phys_addr_t size)
+ 	return __memblock_remove(&memblock.reserved, base, size);
+ }
+ 
+-int __init_memblock memblock_reserve(phys_addr_t base, phys_addr_t size)
++static int __init_memblock memblock_reserve_region(phys_addr_t base,
++						   phys_addr_t size,
++						   int nid,
++						   unsigned long flags)
+ {
+ 	struct memblock_type *_rgn = &memblock.reserved;
+ 
+-	memblock_dbg("memblock_reserve: [%#016llx-%#016llx] %pF\n",
++	memblock_dbg("memblock_reserve: [%#016llx-%#016llx] flags %#02lx %pF\n",
+ 		     (unsigned long long)base,
+ 		     (unsigned long long)base + size,
+-		     (void *)_RET_IP_);
++		     flags, (void *)_RET_IP_);
++
++	return memblock_add_region(_rgn, base, size, nid, flags);
++}
+ 
+-	return memblock_add_region(_rgn, base, size, MAX_NUMNODES);
++int __init_memblock memblock_reserve(phys_addr_t base, phys_addr_t size)
++{
++	return memblock_reserve_region(base, size, MAX_NUMNODES, 0);
+ }
+ 
+ /**
+@@ -985,6 +1006,7 @@ void __init_memblock memblock_set_current_limit(phys_addr_t limit)
+ static void __init_memblock memblock_dump(struct memblock_type *type, char *name)
+ {
+ 	unsigned long long base, size;
++	unsigned long flags;
+ 	int i;
+ 
+ 	pr_info(" %s.cnt  = 0x%lx\n", name, type->cnt);
+@@ -995,13 +1017,14 @@ static void __init_memblock memblock_dump(struct memblock_type *type, char *name
+ 
+ 		base = rgn->base;
+ 		size = rgn->size;
++		flags = rgn->flags;
+ #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
+ 		if (memblock_get_region_node(rgn) != MAX_NUMNODES)
+ 			snprintf(nid_buf, sizeof(nid_buf), " on node %d",
+ 				 memblock_get_region_node(rgn));
+ #endif
+-		pr_info(" %s[%#x]\t[%#016llx-%#016llx], %#llx bytes%s\n",
+-			name, i, base, base + size - 1, size, nid_buf);
++		pr_info(" %s[%#x]\t[%#016llx-%#016llx], %#llx bytes%s flags: %#lx\n",
++			name, i, base, base + size - 1, size, nid_buf, flags);
+ 	}
+ }
  
 -- 
 1.7.1
