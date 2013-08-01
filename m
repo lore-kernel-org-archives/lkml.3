@@ -1,77 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754245Ab3HALaP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 07:30:15 -0400
-Received: from www.linutronix.de ([62.245.132.108]:41525 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752204Ab3HALaO (ORCPT
+	id S1754216Ab3HALdr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 07:33:47 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:38503 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752204Ab3HALdq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 07:30:14 -0400
-Message-ID: <51FA46C3.9000101@linutronix.de>
-Date: Thu, 01 Aug 2013 13:30:11 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130630 Icedove/17.0.7
-MIME-Version: 1.0
-To: George Cherian <george.cherian@ti.com>
-CC: linux-usb@vger.kernel.org, balbi@ti.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/5] usb: musb: dsps: use proper child nodes
-References: <1375215401-19729-1-git-send-email-bigeasy@linutronix.de> <1375215401-19729-6-git-send-email-bigeasy@linutronix.de> <51F9F10A.4000908@ti.com> <51FA3DD9.9080207@linutronix.de>
-In-Reply-To: <51FA3DD9.9080207@linutronix.de>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Thu, 1 Aug 2013 07:33:46 -0400
+From: Chen Baozi <baozich@gmail.com>
+To: Tony Lindgren <tony@atomide.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Chen Baozi <baozich@gmail.com>
+Subject: [PATCH] ARM: fix wrong address when loading PRM_FRAC_INCREMENTOR_DENUMERATOR_RELOAD
+Date: Thu,  1 Aug 2013 19:27:54 +0800
+Message-Id: <1375356474-24203-1-git-send-email-baozich@gmail.com>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/01/2013 12:52 PM, Sebastian Andrzej Siewior wrote:
-> On 08/01/2013 07:24 AM, George Cherian wrote:
->>> b/arch/arm/boot/dts/am33xx.dtsi
->>> index 38b446b..0f756ca 100644
->>> --- a/arch/arm/boot/dts/am33xx.dtsi
->>> +++ b/arch/arm/boot/dts/am33xx.dtsi
->>> @@ -333,21 +337,85 @@
->>>               status = "disabled";
->>>           };
->>>   -        usb@47400000 {
->>> -            compatible = "ti,musb-am33xx";
->>> -            reg = <0x47400000 0x1000    /* usbss */
->>> -                   0x47401000 0x800        /* musb instance 0 */
->>> -                   0x47401800 0x800>;    /* musb instance 1 */
->>> -            interrupts = <17        /* usbss */
->>> -                      18        /* musb instance 0 */
->>> -                      19>;        /* musb instance 1 */
->>> -            multipoint = <1>;
->>> -            num-eps = <16>;
->>> -            ram-bits = <12>;
->>> -            port0-mode = <3>;
->>> -            port1-mode = <3>;
->>> -            power = <250>;
->>> +        usb: usb@47400000 {
->>> +            compatible = "ti,am33xx-usb";
->>> +            reg = <0x47400000 0x1000>;
->>> +            ranges;
->>> +            #address-cells = <1>;
->>> +            #size-cells = <1>;
->>>               ti,hwmods = "usb_otg_hs";
->>> +            status = "disabled";
->>> +
->>> +            ctrl_mod: control@44e10000 {
->>> +                compatible = "ti,am335x-ctrl-module";
->>> +                reg = <0x44e10000 0x650>;
->>
->> Do you really need to map Control Module base to 0x650? If some other
->> driver does this mapping
-> 
-> This is what I cam currently not sure about. Either we minimize the
-> register window and introduce two (the other wakeup) or we keep using
-> the same reset driver for other devices.
+The denominator should be load from INCREMENTOR_DENUMERATOR_RELOAD_OFFSET
+rather than INCREMENTER_NUMERATOR_OFFSET.
 
-I mean drivers/reset or something like that.
+Signed-off-by: Chen Baozi <baozich@gmail.com>
+---
+ arch/arm/mach-omap2/timer.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff --git a/arch/arm/mach-omap2/timer.c b/arch/arm/mach-omap2/timer.c
+index b37e1fc..9265e03 100644
+--- a/arch/arm/mach-omap2/timer.c
++++ b/arch/arm/mach-omap2/timer.c
+@@ -537,7 +537,7 @@ static void __init realtime_counter_init(void)
+ 	reg |= num;
+ 	__raw_writel(reg, base + INCREMENTER_NUMERATOR_OFFSET);
+ 
+-	reg = __raw_readl(base + INCREMENTER_NUMERATOR_OFFSET) &
++	reg = __raw_readl(base + INCREMENTER_DENUMERATOR_RELOAD_OFFSET) &
+ 			NUMERATOR_DENUMERATOR_MASK;
+ 	reg |= den;
+ 	__raw_writel(reg, base + INCREMENTER_DENUMERATOR_RELOAD_OFFSET);
+-- 
+1.8.1.4
 
-
-Sebastian
