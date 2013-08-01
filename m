@@ -1,55 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756343Ab3HAQvx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 12:51:53 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:37493 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753278Ab3HAQvw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 12:51:52 -0400
-Date: Thu, 1 Aug 2013 18:51:50 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Matt Fleming <matt@console-pimps.org>, linux-efi@vger.kernel.org,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: Corrupted EFI region
-Message-ID: <20130801165150.GB7445@pd.tnic>
-References: <20130731205431.GG4724@pd.tnic>
- <20130731205858.GA1678@srcf.ucam.org>
- <20130731215130.GA6087@pd.tnic>
- <20130731215423.GA2628@srcf.ucam.org>
+	id S1756592Ab3HAQyz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 12:54:55 -0400
+Received: from forward8.mail.yandex.net ([77.88.61.38]:44359 "EHLO
+	forward8.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753322Ab3HAQyy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 12:54:54 -0400
+From: Kirill Tkhai <tkhai@yandex.ru>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re:[PATCH] sched/rt: Fix pull_rt_task() skips not overloaded rqs
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130731215423.GA2628@srcf.ucam.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Message-Id: <281621375376081@web1e.yandex.ru>
+X-Mailer: Yamail [ http://yandex.ru ] 5.0
+Date: Thu, 01 Aug 2013 20:54:41 +0400
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 31, 2013 at 10:54:23PM +0100, Matthew Garrett wrote:
-> On Wed, Jul 31, 2013 at 11:51:30PM +0200, Borislav Petkov wrote:
+This is bad patch. Sorry for the noise.
+
+
+> The main patch profit is deletion of the following check
+> at the beginning of pull_rt_task():
 > 
-> > But the problem is, something messes up the upper boundary of the region
-> > and it is an EFI_BOOT_SERVICES_DATA region which we need for the runtime
-> > services mapping and if we can't map it properly, we're probably going
-> > to miss functionality or not have runtime at all.
+> if (likely(!rt_overloaded(this_rq)))
+> return 0;
 > 
-> "Easiest" way around this would probably be to stash the address map
-> after ExitBootServices() and compare it at SetVirtualAddressMap()
-> time, then take the widest boundaries and trim the e820 map to match.
-> This is obviously dependent upon the system not allocating anything
-> further after that, but it seems safest. The worst case is finding the
-> firmware writing over bits of the kernel.
+> This check makes pull_rt_task() nearly useless, because
+> it kills all cases like "last RT task has just gone away".
+> The check is better suitable for push_rt_task().
+> 
+> So, kill the check, now unusable rt_overloaded() and rto_count.
+> 
+> Move root_domain's refcount to the bottom of the structure
+> to keep its fields aligned.
+> 
+> Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
+> CC: Ingo Molnar <mingo@redhat.com>
+> CC: Peter Zijlstra <peterz@infradead.org>
+> CC: Steven Rostedt <rostedt@goodmis.org>
+> ---
+> kernel/sched/rt.c | 19 -------------------
+> kernel/sched/sched.h | 3 +--
+> 2 files changed, 1 insertions(+), 21 deletions(-)
+> diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
+> index 01970c8..cf297a7 100644
+> --- a/kernel/sched/rt.c
+> +++ b/kernel/sched/rt.c
+> @@ -229,26 +229,12 @@ int alloc_rt_sched_group(struct task_group *tg, struct task_group *parent)
+> 
+> #ifdef CONFIG_SMP
+> 
+> -static inline int rt_overloaded(struct rq *rq)
+> -{
+> - return atomic_read(&rq->rd->rto_count);
+> -}
+> -
+> static inline void rt_set_overload(struct rq *rq)
+> {
+> if (!rq->online)
+> return;
+> 
+> cpumask_set_cpu(rq->cpu, rq->rd->rto_mask);
+> - /*
+> - * Make sure the mask is visible before we set
+> - * the overload count. That is checked to determine
+> - * if we should look at the mask. It would be a shame
+> - * if we looked at the mask, but the mask was not
+> - * updated yet.
+> - */
+> - wmb();
+> - atomic_inc(&rq->rd->rto_count);
+> }
+> 
+> static inline void rt_clear_overload(struct rq *rq)
+> @@ -256,8 +242,6 @@ static inline void rt_clear_overload(struct rq *rq)
+> if (!rq->online)
+> return;
+> 
+> - /* the order here really doesn't matter */
+> - atomic_dec(&rq->rd->rto_count);
+> cpumask_clear_cpu(rq->cpu, rq->rd->rto_mask);
+> }
+> 
+> @@ -1627,9 +1611,6 @@ static int pull_rt_task(struct rq *this_rq)
+> struct task_struct *p;
+> struct rq *src_rq;
+> 
+> - if (likely(!rt_overloaded(this_rq)))
+> - return 0;
+> -
+> for_each_cpu(cpu, this_rq->rd->rto_mask) {
+> if (this_cpu == cpu)
+> continue;
+> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+> index 4c1cb80..1f36afb 100644
+> --- a/kernel/sched/sched.h
+> +++ b/kernel/sched/sched.h
+> @@ -374,8 +374,6 @@ struct rt_rq {
+> *
+> */
+> struct root_domain {
+> - atomic_t refcount;
+> - atomic_t rto_count;
+> struct rcu_head rcu;
+> cpumask_var_t span;
+> cpumask_var_t online;
+> @@ -386,6 +384,7 @@ struct root_domain {
+> */
+> cpumask_var_t rto_mask;
+> struct cpupri cpupri;
+> + atomic_t refcount;
+> };
+> 
+> extern struct root_domain def_root_domain;
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at http://www.tux.org/lkml/
 
-Actually, with UEFI impl. f*ckup like that, I'd rather kick it back to
-the curb and simply not init runtime services instead of fixing stuff
-around it. SetVirtualAddressMap in itself is a f*ckup as it is already.
 
-Oh well, let's see what edk2 guys would say first.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+ -- 
