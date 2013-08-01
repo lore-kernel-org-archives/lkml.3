@@ -1,116 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751494Ab3HAHHA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 03:07:00 -0400
-Received: from 3.mo2.mail-out.ovh.net ([46.105.58.226]:53662 "EHLO
-	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750756Ab3HAHG7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 03:06:59 -0400
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Boris BREZILLON <b.brezillon@overkiz.com>
-X-Ovh-Mailout: 178.32.228.2 (mo2.mail-out.ovh.net)
-Subject: [PATCH 0/8] ARM: at91/dt: make use of periph id macros 
-Date: Thu,  1 Aug 2013 08:48:53 +0200
-Message-Id: <1375339733-3488-1-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Ovh-Tracer-Id: 423056891267545196
-X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedrheelucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedrheelucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	id S1751335Ab3HAHIO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 03:08:14 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:63369 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750918Ab3HAHIK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 03:08:10 -0400
+X-IronPort-AV: E=Sophos;i="4.89,792,1367942400"; 
+   d="scan'208";a="8085204"
+From: Tang Chen <tangchen@cn.fujitsu.com>
+To: rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu,
+        hpa@zytor.com, akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
+        mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
+        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com
+Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-acpi@vger.kernel.org
+Subject: [PATCH v2 02/18] earlycpio.c: Fix the confusing comment of find_cpio_data().
+Date: Thu, 1 Aug 2013 15:06:24 +0800
+Message-Id: <1375340800-19332-3-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.10.1
+In-Reply-To: <1375340800-19332-1-git-send-email-tangchen@cn.fujitsu.com>
+References: <1375340800-19332-1-git-send-email-tangchen@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/01 15:06:52,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/01 15:06:53,
+	Serialize complete at 2013/08/01 15:06:53
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+The comments of find_cpio_data() says:
 
-This patch series move at91 SoCs peripheral id definitions from machine
-specific include dir to dt-bindings include dir.
-These macros are used to reference interrupts instead of peripheral numbers.
+  * @offset: When a matching file is found, this is the offset to the
+  *          beginning of the cpio. ......
 
-This makes dt definitions cleaner and easier to debug (one can easily tell if
-the peripheral macro used to reference an interrupt line is not the good one).
+But according to the code,
 
-These macros will be used for clk definitions and references too.
+  dptr = PTR_ALIGN(p + ch[C_NAMESIZE], 4);
+  nptr = PTR_ALIGN(dptr + ch[C_FILESIZE], 4);
+  ....
+  *offset = (long)nptr - (long)data;	/* data is the cpio file */
 
-I am not sure 'include/dt-bindings/at91/xxx' is the best place to put these
-definitions as there are no soc specific directories in dt-bindings include
-dir right now. Maybe something like 'include/dt-bindings/soc/at91/xxx' or
-'include/dt-bindings/peripherals/at91/xxx' would be better.
-What do you think ?
+@offset is the offset of the next file, not the matching file itself.
+This is confused and may cause unnecessary waste of time to debug.
+So fix it.
 
-Best Regards,
+v1 -> v2:
+As tj suggested, rename @offset to @nextoff which is more clear to
+users. And also adjust the new comments.
 
-Boris
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+---
+ lib/earlycpio.c |   27 ++++++++++++++-------------
+ 1 files changed, 14 insertions(+), 13 deletions(-)
 
-Boris BREZILLON (8):
-  ARM: at91: move peripheral id definitions to dt-bindings include dir
-  ARM: at91/dt: use periph id macros for at91rm9200 interrupt
-    definitions
-  ARM: at91/dt: use periph id macros for at91sam9260 interrupt
-    definitions
-  ARM: at91/dt: use periph id macros for at91sam9263 interrupt
-    definitions
-  ARM: at91/dt: use periph id macros for at91sam9g45 interrupt
-    definitions
-  ARM: at91/dt: use periph id macros for at91sam9n12 interrupt
-    definitions
-  ARM: at91/dt: use periph id macros for at91sam9x5 interrupt
-    definitions
-  ARM: at91/dt: use periph id macros for sama5d3 interrupt definitions
-
- arch/arm/boot/dts/at91rm9200.dtsi                  |   59 ++++++++------
- arch/arm/boot/dts/at91sam9260.dtsi                 |   57 +++++++-------
- arch/arm/boot/dts/at91sam9263.dtsi                 |   46 +++++------
- arch/arm/boot/dts/at91sam9g45.dtsi                 |   57 +++++++-------
- arch/arm/boot/dts/at91sam9n12.dtsi                 |   43 +++++-----
- arch/arm/boot/dts/at91sam9x5.dtsi                  |   63 +++++++--------
- arch/arm/boot/dts/sama5d3.dtsi                     |   83 ++++++++++----------
- arch/arm/mach-at91/include/mach/at91rm9200.h       |   31 +-------
- arch/arm/mach-at91/include/mach/at91sam9260.h      |   29 +------
- arch/arm/mach-at91/include/mach/at91sam9261.h      |   23 +-----
- arch/arm/mach-at91/include/mach/at91sam9263.h      |   27 +------
- arch/arm/mach-at91/include/mach/at91sam9g45.h      |   31 +-------
- arch/arm/mach-at91/include/mach/at91sam9n12.h      |   26 +-----
- arch/arm/mach-at91/include/mach/at91sam9rl.h       |   25 +-----
- arch/arm/mach-at91/include/mach/at91sam9x5.h       |   32 +-------
- arch/arm/mach-at91/include/mach/hardware.h         |    3 +-
- arch/arm/mach-at91/include/mach/sama5d3.h          |   48 +----------
- include/dt-bindings/at91/at91rm9200/peripherals.h  |   44 +++++++++++
- include/dt-bindings/at91/at91sam9260/peripherals.h |   42 ++++++++++
- include/dt-bindings/at91/at91sam9261/peripherals.h |   36 +++++++++
- include/dt-bindings/at91/at91sam9263/peripherals.h |   40 ++++++++++
- include/dt-bindings/at91/at91sam9g45/peripherals.h |   44 +++++++++++
- include/dt-bindings/at91/at91sam9n12/peripherals.h |   41 ++++++++++
- include/dt-bindings/at91/at91sam9rl/peripherals.h  |   38 +++++++++
- include/dt-bindings/at91/at91sam9x5/peripherals.h  |   45 +++++++++++
- include/dt-bindings/at91/common/peripherals.h      |   14 ++++
- include/dt-bindings/at91/sama5d3/peripherals.h     |   63 +++++++++++++++
- 27 files changed, 629 insertions(+), 461 deletions(-)
- create mode 100644 include/dt-bindings/at91/at91rm9200/peripherals.h
- create mode 100644 include/dt-bindings/at91/at91sam9260/peripherals.h
- create mode 100644 include/dt-bindings/at91/at91sam9261/peripherals.h
- create mode 100644 include/dt-bindings/at91/at91sam9263/peripherals.h
- create mode 100644 include/dt-bindings/at91/at91sam9g45/peripherals.h
- create mode 100644 include/dt-bindings/at91/at91sam9n12/peripherals.h
- create mode 100644 include/dt-bindings/at91/at91sam9rl/peripherals.h
- create mode 100644 include/dt-bindings/at91/at91sam9x5/peripherals.h
- create mode 100644 include/dt-bindings/at91/common/peripherals.h
- create mode 100644 include/dt-bindings/at91/sama5d3/peripherals.h
-
+diff --git a/lib/earlycpio.c b/lib/earlycpio.c
+index 8078ef4..7affac0 100644
+--- a/lib/earlycpio.c
++++ b/lib/earlycpio.c
+@@ -49,22 +49,23 @@ enum cpio_fields {
+ 
+ /**
+  * cpio_data find_cpio_data - Search for files in an uncompressed cpio
+- * @path:   The directory to search for, including a slash at the end
+- * @data:   Pointer to the the cpio archive or a header inside
+- * @len:    Remaining length of the cpio based on data pointer
+- * @offset: When a matching file is found, this is the offset to the
+- *          beginning of the cpio. It can be used to iterate through
+- *          the cpio to find all files inside of a directory path
++ * @path:       The directory to search for, including a slash at the end
++ * @data:       Pointer to the the cpio archive or a header inside
++ * @len:        Remaining length of the cpio based on data pointer
++ * @nextoff:    When a matching file is found, this is the offset from the
++ *              beginning of the cpio to the beginning of the next file, not the
++ *              matching file itself. It can be used to iterate through the cpio
++ *              to find all files inside of a directory path
+  *
+- * @return: struct cpio_data containing the address, length and
+- *          filename (with the directory path cut off) of the found file.
+- *          If you search for a filename and not for files in a directory,
+- *          pass the absolute path of the filename in the cpio and make sure
+- *          the match returned an empty filename string.
++ * @return:     struct cpio_data containing the address, length and
++ *              filename (with the directory path cut off) of the found file.
++ *              If you search for a filename and not for files in a directory,
++ *              pass the absolute path of the filename in the cpio and make sure
++ *              the match returned an empty filename string.
+  */
+ 
+ struct cpio_data __cpuinit find_cpio_data(const char *path, void *data,
+-					  size_t len,  long *offset)
++					  size_t len,  long *nextoff)
+ {
+ 	const size_t cpio_header_len = 8*C_NFIELDS - 2;
+ 	struct cpio_data cd = { NULL, 0, "" };
+@@ -124,7 +125,7 @@ struct cpio_data __cpuinit find_cpio_data(const char *path, void *data,
+ 		if ((ch[C_MODE] & 0170000) == 0100000 &&
+ 		    ch[C_NAMESIZE] >= mypathsize &&
+ 		    !memcmp(p, path, mypathsize)) {
+-			*offset = (long)nptr - (long)data;
++			*nextoff = (long)nptr - (long)data;
+ 			if (ch[C_NAMESIZE] - mypathsize >= MAX_CPIO_FILE_NAME) {
+ 				pr_warn(
+ 				"File %s exceeding MAX_CPIO_FILE_NAME [%d]\n",
 -- 
-1.7.9.5
+1.7.1
 
