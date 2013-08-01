@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752702Ab3HAHIY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 03:08:24 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:41295 "EHLO song.cn.fujitsu.com"
+	id S1753027Ab3HAHIr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 03:08:47 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:53021 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752214Ab3HAHIR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 03:08:17 -0400
+	id S1752497Ab3HAHIX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 03:08:23 -0400
 X-IronPort-AV: E=Sophos;i="4.89,792,1367942400"; 
-   d="scan'208";a="8085215"
+   d="scan'208";a="8085223"
 From: Tang Chen <tangchen@cn.fujitsu.com>
 To: rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu,
         hpa@zytor.com, akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
@@ -20,14 +20,14 @@ To: rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu,
         zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com
 Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Subject: [PATCH v2 10/18] x86, acpi: Try to find if SRAT is overrided earlier.
-Date: Thu, 1 Aug 2013 15:06:32 +0800
-Message-Id: <1375340800-19332-11-git-send-email-tangchen@cn.fujitsu.com>
+Subject: [PATCH v2 17/18] mem-hotplug: Introduce movablenode boot option to {en|dis}able using SRAT.
+Date: Thu, 1 Aug 2013 15:06:39 +0800
+Message-Id: <1375340800-19332-18-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.10.1
 In-Reply-To: <1375340800-19332-1-git-send-email-tangchen@cn.fujitsu.com>
 References: <1375340800-19332-1-git-send-email-tangchen@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/01 15:06:52,
+ 2013/08/01 15:06:53,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
  2013/08/01 15:06:55,
 	Serialize complete at 2013/08/01 15:06:55
@@ -35,238 +35,127 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linux cannot migrate pages used by the kernel due to the direct mapping
-(va = pa + PAGE_OFFSET), any memory used by the kernel cannot be hot-removed.
-So when using memory hotplug, we have to prevent the kernel from using
-hotpluggable memory.
+The Hot-Pluggable fired in SRAT specifies which memory is hotpluggable.
+As we mentioned before, if hotpluggable memory is used by the kernel,
+it cannot be hot-removed. So memory hotplug users may want to set all
+hotpluggable memory in ZONE_MOVABLE so that the kernel won't use it.
 
-The ACPI table SRAT (System Resource Affinity Table) contains info to specify
-which memory is hotpluggble. After SRAT is parsed, we are aware of which
-memory is hotpluggable.
+Memory hotplug users may also set a node as movable node, which has
+ZONE_MOVABLE only, so that the whole node can be hot-removed.
 
-At the early time when system is booting, SRAT has not been parsed. The boot
-memory allocator memblock will allocate any memory to the kernel. So we need
-SRAT parsed before memblock starts to work.
+But the kernel cannot use memory in ZONE_MOVABLE. By doing this, the
+kernel cannot use memory in movable nodes. This will cause NUMA
+performance down. And other users may be unhappy.
 
-In this patch, we are going to parse SRAT earlier, right after memblock is ready.
+So we need a way to allow users to enable and disable this functionality.
+In this patch, we introduce movablenode boot option to allow users to
+choose to reserve hotpluggable memory and set it as ZONE_MOVABLE or not.
 
-Generally speaking, tables such as SRAT are provided by firmware. But
-ACPI_INITRD_TABLE_OVERRIDE functionality allows users to customize their own
-tables in initrd, and override the ones from firmware. So if we want to parse
-SRAT earlier, we also need to do SRAT override earlier.
+Users can specify "movablenode" in kernel commandline to enable this
+functionality. For those who don't use memory hotplug or who don't want
+to lose their NUMA performance, just don't specify anything. The kernel
+will work as before.
 
-First, we introduce early_acpi_override_srat() to check if SRAT will be overridden
-from initrd.
-
-Second, we introduce find_hotpluggable_memory() to reserve hotpluggable memory,
-which will firstly call early_acpi_override_srat() to find out which memory is
-hotpluggable in the override SRAT.
-
+Suggested-by: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
 ---
- arch/x86/kernel/setup.c        |   10 +++++++
- drivers/acpi/osl.c             |   58 ++++++++++++++++++++++++++++++++++++++++
- include/linux/acpi.h           |   14 ++++++++-
- include/linux/memory_hotplug.h |    2 +
- mm/memory_hotplug.c            |   25 ++++++++++++++++-
- 5 files changed, 106 insertions(+), 3 deletions(-)
+ Documentation/kernel-parameters.txt |   15 +++++++++++++++
+ arch/x86/kernel/setup.c             |   10 ++++++++--
+ include/linux/memory_hotplug.h      |    3 +++
+ mm/memory_hotplug.c                 |   11 +++++++++++
+ 4 files changed, 37 insertions(+), 2 deletions(-)
 
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 2fe6e76..3f77ba3 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -1714,6 +1714,21 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 			that the amount of memory usable for all allocations
+ 			is not too small.
+ 
++	movablenode		[KNL,X86] This parameter enables/disables the
++			kernel to arrange hotpluggable memory ranges recorded
++			in ACPI SRAT(System Resource Affinity Table) as
++			ZONE_MOVABLE. And these memory can be hot-removed when
++			the system is up.
++			By specifying this option, all the hotpluggable memory
++			will be in ZONE_MOVABLE, which the kernel cannot use.
++			This will cause NUMA performance down. For users who
++			care about NUMA performance, just don't use it.
++			If all the memory ranges in the system are hotpluggable,
++			then the ones used by the kernel at early time, such as
++			kernel code and data segments, initrd file and so on,
++			won't be set as ZONE_MOVABLE, and won't be hotpluggable.
++			Otherwise the kernel won't have enough memory to boot.
++
+ 	MTD_Partition=	[MTD]
+ 			Format: <name>,<region-number>,<size>,<offset>
+ 
 diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index c8f5d1a..8b1bddd 100644
+index 8b1bddd..7c94e92 100644
 --- a/arch/x86/kernel/setup.c
 +++ b/arch/x86/kernel/setup.c
-@@ -1060,6 +1060,16 @@ void __init setup_arch(char **cmdline_p)
+@@ -1060,14 +1060,20 @@ void __init setup_arch(char **cmdline_p)
  	/* Initialize ACPI root table */
  	acpi_root_table_init();
  
-+#ifdef CONFIG_ACPI_NUMA
-+	/*
-+	 * Linux kernel cannot migrate kernel pages, as a result, memory used
-+	 * by the kernel cannot be hot-removed. Find and mark hotpluggable
-+	 * memory in memblock to prevent memblock from allocating hotpluggable
-+	 * memory for the kernel.
-+	 */
-+	find_hotpluggable_memory();
-+#endif
-+
+-#ifdef CONFIG_ACPI_NUMA
++#if defined(CONFIG_ACPI_NUMA) && defined(CONFIG_MOVABLE_NODE)
  	/*
- 	 * The EFI specification says that boot service code won't be called
- 	 * after ExitBootServices(). This is, in fact, a lie.
-diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-index 8df8a93..d0b687c 100644
---- a/drivers/acpi/osl.c
-+++ b/drivers/acpi/osl.c
-@@ -48,6 +48,7 @@
+ 	 * Linux kernel cannot migrate kernel pages, as a result, memory used
+ 	 * by the kernel cannot be hot-removed. Find and mark hotpluggable
+ 	 * memory in memblock to prevent memblock from allocating hotpluggable
+ 	 * memory for the kernel.
++	 *
++	 * If all the memory in a node is hotpluggable, then the kernel won't
++	 * be able to use memory on that node. This will cause NUMA performance
++	 * down. So by default, we don't reserve any hotpluggable memory. Users
++	 * may use "movablenode" boot option to enable this functionality.
+ 	 */
+-	find_hotpluggable_memory();
++	if (movablenode_enable_srat)
++		find_hotpluggable_memory();
+ #endif
  
- #include <asm/io.h>
- #include <asm/uaccess.h>
-+#include <asm/setup.h>
- 
- #include <acpi/acpi.h>
- #include <acpi/acpi_bus.h>
-@@ -631,6 +632,63 @@ int __init acpi_invalid_table(struct cpio_data *file,
- 	return 0;
- }
- 
-+#ifdef CONFIG_ACPI_NUMA
-+/*******************************************************************************
-+ *
-+ * FUNCTION:    early_acpi_override_srat
-+ *
-+ * RETURN:      Phys addr of SRAT on success, 0 on error.
-+ *
-+ * DESCRIPTION: Try to get the phys addr of SRAT in initrd.
-+ *              The ACPI_INITRD_TABLE_OVERRIDE procedure is able to use tables
-+ *              in initrd file to override the ones provided by firmware. This
-+ *              function checks if there is a SRAT in initrd at early time. If
-+ *              so, return the phys addr of the SRAT.
-+ *
-+ ******************************************************************************/
-+phys_addr_t __init early_acpi_override_srat(void)
-+{
-+	int i;
-+	u32 length;
-+	long offset;
-+	void *ramdisk_vaddr;
-+	struct acpi_table_header *table;
-+	struct cpio_data file;
-+	unsigned long map_step = NR_FIX_BTMAPS << PAGE_SHIFT;
-+	phys_addr_t ramdisk_image = get_ramdisk_image();
-+	char cpio_path[32] = "kernel/firmware/acpi/";
-+
-+	/* Try to find if SRAT is overrided */
-+	for (i = 0; i < ACPI_OVERRIDE_TABLES; i++) {
-+		ramdisk_vaddr = early_ioremap(ramdisk_image, map_step);
-+
-+		file = find_cpio_data(cpio_path, ramdisk_vaddr,
-+				      map_step, &offset);
-+		if (!file.data) {
-+			early_iounmap(ramdisk_vaddr, map_step);
-+			return 0;
-+		}
-+
-+		table = file.data;
-+		length = table->length;
-+
-+		if (acpi_invalid_table(&file, cpio_path, ACPI_SIG_SRAT)) {
-+			ramdisk_image += offset;
-+			early_iounmap(ramdisk_vaddr, map_step);
-+			continue;
-+		}
-+
-+		/* Found SRAT */
-+		early_iounmap(ramdisk_vaddr, map_step);
-+		ramdisk_image = ramdisk_image + offset - length;
-+
-+		break;
-+	}
-+
-+	return ramdisk_image;
-+}
-+#endif	/* CONFIG_ACPI_NUMA */
-+
- void __init acpi_initrd_override(void *data, size_t size)
- {
- 	int no, table_nr = 0, total_offset = 0;
-diff --git a/include/linux/acpi.h b/include/linux/acpi.h
-index 95f600c..17155bc 100644
---- a/include/linux/acpi.h
-+++ b/include/linux/acpi.h
-@@ -81,11 +81,21 @@ typedef int (*acpi_tbl_entry_handler)(struct acpi_subtable_header *header,
- 
- #ifdef CONFIG_ACPI_INITRD_TABLE_OVERRIDE
- void acpi_initrd_override(void *data, size_t size);
--#else
-+
-+#ifdef CONFIG_ACPI_NUMA
-+phys_addr_t early_acpi_override_srat(void);
-+#endif	/* CONFIG_ACPI_NUMA */
-+
-+#else	/* CONFIG_ACPI_INITRD_TABLE_OVERRIDE */
- static inline void acpi_initrd_override(void *data, size_t size)
- {
- }
--#endif
-+
-+static inline phys_addr_t early_acpi_override_srat(void)
-+{
-+	return 0;
-+}
-+#endif	/* CONFIG_ACPI_INITRD_TABLE_OVERRIDE */
- 
- char * __acpi_map_table (unsigned long phys_addr, unsigned long size);
- void __acpi_unmap_table(char *map, unsigned long size);
+ 	/*
 diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
-index 3e622c6..c32af49 100644
+index c32af49..65b2a48 100644
 --- a/include/linux/memory_hotplug.h
 +++ b/include/linux/memory_hotplug.h
-@@ -104,6 +104,7 @@ extern int __remove_pages(struct zone *zone, unsigned long start_pfn,
- /* reasonably generic interface to expand the physical pages in a zone  */
- extern int __add_pages(int nid, struct zone *zone, unsigned long start_pfn,
- 	unsigned long nr_pages);
-+extern void find_hotpluggable_memory(void);
+@@ -33,6 +33,9 @@ enum {
+ 	ONLINE_MOVABLE,
+ };
  
- #ifdef CONFIG_NUMA
- extern int memory_add_physaddr_to_nid(u64 start);
-@@ -181,6 +182,7 @@ static inline void register_page_bootmem_info_node(struct pglist_data *pgdat)
- {
- }
- #endif
++/* Enable/disable SRAT in movablenode boot option */
++extern bool movablenode_enable_srat;
 +
- extern void put_page_bootmem(struct page *page);
- extern void get_page_bootmem(unsigned long ingo, struct page *page,
- 			     unsigned long type);
+ /*
+  * pgdat resizing functions
+  */
 diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index 1ad92b4..48964bf 100644
+index 3e95fe5..97eb26b 100644
 --- a/mm/memory_hotplug.c
 +++ b/mm/memory_hotplug.c
-@@ -30,6 +30,7 @@
- #include <linux/mm_inline.h>
- #include <linux/firmware-map.h>
- #include <linux/stop_machine.h>
-+#include <linux/acpi.h>
- 
- #include <asm/tlbflush.h>
- 
-@@ -62,7 +63,6 @@ void unlock_memory_hotplug(void)
- 	mutex_unlock(&mem_hotplug_mutex);
+@@ -93,6 +93,17 @@ static void release_memory_resource(struct resource *res)
  }
  
--
- /* add this memory to iomem resource */
- static struct resource *register_memory_resource(u64 start, u64 size)
- {
-@@ -91,6 +91,29 @@ static void release_memory_resource(struct resource *res)
- 	return;
- }
- 
-+#ifdef CONFIG_ACPI_NUMA
-+/**
-+ * find_hotpluggable_memory - Find out hotpluggable memory from ACPI SRAT.
-+ *
-+ * This function did the following:
-+ * 1. Try to find if there is a SRAT in initrd file used to override the one
-+ *    provided by firmware. If so, get its phys addr.
-+ * 2. If there is no override SRAT, get the phys addr of the SRAT in firmware.
-+ * 3. Parse SRAT, find out which memory is hotpluggable.
-+ */
-+void __init find_hotpluggable_memory(void)
+ #ifdef CONFIG_ACPI_NUMA
++#ifdef CONFIG_MOVABLE_NODE
++bool __initdata movablenode_enable_srat;
++
++static int __init cmdline_parse_movablenode(char *p)
 +{
-+	phys_addr_t srat_paddr;
-+
-+	/* Try to find if SRAT is overridden */
-+	srat_paddr = early_acpi_override_srat();
-+	if (!srat_paddr)
-+		return;
-+
-+	/* Will parse SRAT and find out hotpluggable memory here */
++	movablenode_enable_srat = true;
++	return 0;
 +}
-+#endif	/* CONFIG_ACPI_NUMA */
++early_param("movablenode", cmdline_parse_movablenode);
++#endif	/* CONFIG_MOVABLE_NODE */
 +
- #ifdef CONFIG_MEMORY_HOTPLUG_SPARSE
- void get_page_bootmem(unsigned long info,  struct page *page,
- 		      unsigned long type)
+ /**
+  * kernel_resides_in_range - Check if kernel resides in a memory region.
+  * @base: The base address of the memory region.
 -- 
 1.7.1
 
