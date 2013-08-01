@@ -1,63 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757339Ab3HAUbR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 16:31:17 -0400
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:58242 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751877Ab3HAUbP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 16:31:15 -0400
+	id S1756847Ab3HAUdY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 16:33:24 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47126 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752412Ab3HAUdW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 16:33:22 -0400
+Date: Thu, 1 Aug 2013 22:33:20 +0200
+From: Jan Kara <jack@suse.cz>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Jan Kara <jack@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>,
+        Guenter Roeck <linux@roeck-us.net>,
+        LKML <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org
+Subject: Re: WARNING: CPU: 26 PID: 93793 at fs/ext4/inode.c:230
+ ext4_evict_inode+0x4c9/0x500 [ext4]() still in 3.11-rc3
+Message-ID: <20130801203320.GB31857@quack.suse.cz>
+References: <1375388059.2097.10.camel@buesod1.americas.hpqcorp.net>
 MIME-Version: 1.0
-X-Originating-IP: [173.13.129.225]
-In-Reply-To: <4170130535e4ea14c66f8510042577be21941f4d.1375387593.git.joe@perches.com>
-References: <cover.1375387593.git.joe@perches.com>
-	<4170130535e4ea14c66f8510042577be21941f4d.1375387593.git.joe@perches.com>
-Date: Thu, 1 Aug 2013 13:31:09 -0700
-Message-ID: <CAOesGMhmxJTDjcPeD4b1FvRsbP8df369F01SQBK6dk4nXmRGjA@mail.gmail.com>
-Subject: Re: [PATCH V2 3/3] ethernet: Convert mac address uses of 6 to ETH_ALEN
-From: Olof Johansson <olof@lixom.net>
-To: Joe Perches <joe@perches.com>
-Cc: Network Development <netdev@vger.kernel.org>,
-        Don Fry <pcnet32@frontier.com>,
-        Grant Grundler <grundler@parisc-linux.org>,
-        Sam Creasey <sammy@sammy.net>, Andrew Gallatin <gallatin@myri.com>,
-        Wan ZongShun <mcuos.com@gmail.com>,
-        Manish Chopra <manish.chopra@qlogic.com>,
-        Sony Chacko <sony.chacko@qlogic.com>,
-        Rajesh Borundia <rajesh.borundia@qlogic.com>,
-        Shahed Shaikh <shahed.shaikh@qlogic.com>,
-        Jitendra Kalsaria <jitendra.kalsaria@qlogic.com>,
-        Ron Mercer <ron.mercer@qlogic.com>, linux-driver@qlogic.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1375388059.2097.10.camel@buesod1.americas.hpqcorp.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+  Hi,
 
-On Thu, Aug 1, 2013 at 1:14 PM, Joe Perches <joe@perches.com> wrote:
+On Thu 01-08-13 13:14:19, Davidlohr Bueso wrote:
+> FYI I'm seeing loads of the following messages with Linus' latest
+> 3.11-rc3 (which includes 822dbba33458cd6ad)
+  Thanks for notice. I see you are running reaim to trigger this. What
+workload?
 
-> diff --git a/drivers/net/ethernet/pasemi/pasemi_mac.h b/drivers/net/ethernet/pasemi/pasemi_mac.h
-> index e2f4efa..649fdb4 100644
-> --- a/drivers/net/ethernet/pasemi/pasemi_mac.h
-> +++ b/drivers/net/ethernet/pasemi/pasemi_mac.h
-> @@ -79,11 +79,11 @@ struct pasemi_mac {
->         int             last_cs;
->         int             num_cs;
->         u32             dma_if;
-> -       u8              type;
->  #define MAC_TYPE_GMAC  1
->  #define MAC_TYPE_XAUI  2
->
-> -       u8              mac_addr[6];
-> +       u8              mac_addr[ETH_ALEN];
-> +       u8              type;
+								Honza
 
-Just promote 'type' to u32 instead, saves you from moving the #defines
-down, etc, etc.
-
-
--Olof
+> ------------[ cut here ]------------
+> WARNING: CPU: 26 PID: 93793 at fs/ext4/inode.c:230 ext4_evict_inode+0x4c9/0x500 [ext4]()
+> Modules linked in: autofs4 cpufreq_ondemand freq_table sunrpc 8021q garp stp llc pcc_cpufreq ipt_REJECT nf_conntrack_ipv4 nf_defrag_ipv4 iptable_filter ip_tables ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables ipv6 dm_mirror dm_region_hash dm_log dm_mod uinput iTCO_wdt iTCO_vendor_support coretemp kvm_intel kvm crc32c_intel ghash_clmulni_intel microcode pcspkr sg lpc_ich mfd_core hpilo hpwdt i7core_edac edac_core netxen_nic mperf ext4 jbd2 mbcache sd_mod crc_t10dif aesni_intel ablk_helper cryptd lrw gf128mul glue_helper aes_x86_64 hpsa radeon ttm drm_kms_helper drm i2c_algo_bit i2c_core [last unloaded: freq_table]
+> CPU: 26 PID: 93793 Comm: reaim Tainted: G        W    3.11.0-rc3+ #1
+> Hardware name: HP ProLiant DL980 G7, BIOS P66 06/24/2011
+>  00000000000000e6 ffff8985db603d78 ffffffff8153ce4d 00000000000000e6
+>  0000000000000000 ffff8985db603db8 ffffffff8104cf1c ffff8985db603dc8
+>  ffff8b05c485b8b0 ffff8b05c485b9b8 ffff8b05c485b800 00000000ffffff9c
+> Call Trace:
+>  [<ffffffff8153ce4d>] dump_stack+0x49/0x5c
+>  [<ffffffff8104cf1c>] warn_slowpath_common+0x8c/0xc0
+>  [<ffffffff8104cf6a>] warn_slowpath_null+0x1a/0x20
+>  [<ffffffffa02a0179>] ext4_evict_inode+0x4c9/0x500 [ext4]
+>  [<ffffffff811915e7>] evict+0xa7/0x1c0
+>  [<ffffffff811917e3>] iput_final+0xe3/0x170
+>  [<ffffffff811918ae>] iput+0x3e/0x50
+>  [<ffffffff81187aa6>] do_unlinkat+0x1c6/0x280
+>  [<ffffffff8106f3e4>] ? task_work_run+0x94/0xf0
+>  [<ffffffff81003a44>] ? do_notify_resume+0x84/0x90
+>  [<ffffffff81187b76>] SyS_unlink+0x16/0x20
+>  [<ffffffff81549a02>] system_call_fastpath+0x16/0x1b
+> ---[ end trace 15e812809616488b ]---
+> 
+> 
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
