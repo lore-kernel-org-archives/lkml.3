@@ -1,125 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753071Ab3HACs7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 22:48:59 -0400
-Received: from mail-ve0-f176.google.com ([209.85.128.176]:39002 "EHLO
-	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752006Ab3HACs5 (ORCPT
+	id S1753154Ab3HACuS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 22:50:18 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:26428 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752172Ab3HACuQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 22:48:57 -0400
-MIME-Version: 1.0
-In-Reply-To: <51F16CFB.6040603@schaufler-ca.com>
-References: <51F16CFB.6040603@schaufler-ca.com>
-Date: Thu, 1 Aug 2013 08:18:56 +0530
-Message-ID: <CAKTCnzm7eipNPc22=NfOm3X7+ECu1zfckEyjBK+RDY69EZZeDw@mail.gmail.com>
-Subject: Re: [PATCH v14 0/6] LSM: Multiple concurrent LSMs
-From: Balbir Singh <bsingharora@gmail.com>
-To: Casey Schaufler <casey@schaufler-ca.com>
-Cc: LKLM <linux-kernel@vger.kernel.org>,
-        LSM <linux-security-module@vger.kernel.org>,
-        SE Linux <selinux@tycho.nsa.gov>, James Morris <jmorris@namei.org>,
-        John Johansen <john.johansen@canonical.com>,
-        Eric Paris <eparis@redhat.com>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Kees Cook <keescook@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 31 Jul 2013 22:50:16 -0400
+X-Authority-Analysis: v=2.0 cv=P6i4d18u c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=0VS4G58IZu0A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=laNjaRT52OkA:10 a=VwQbUJbxAAAA:8 a=3nbZYyFuAAAA:8 a=F42ZoO8DAAAA:8 a=S6CwlI7X9LIZeeddtvAA:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=EvKJbDF4Ut8A:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-ID: <1375325414.5418.50.camel@gandalf.local.home>
+Subject: Re: [RFC][PATCH 3/4] tracing/kprobes: Fail to unregister if probe
+ event files are open
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: linux-kernel@vger.kernel.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Wed, 31 Jul 2013 22:50:14 -0400
+In-Reply-To: <1375322866.5418.46.camel@gandalf.local.home>
+References: <20130704033347.807661713@goodmis.org>
+	 <20130704034038.819592356@goodmis.org>
+	 <1375300192.5418.17.camel@gandalf.local.home>
+	 <20130731204003.GA30188@redhat.com>
+	 <1375310548.5418.21.camel@gandalf.local.home>
+	 <1375322866.5418.46.camel@gandalf.local.home>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 25, 2013 at 11:52 PM, Casey Schaufler
-<casey@schaufler-ca.com> wrote:
-> Subject: [PATCH v14 0/6] LSM: Multiple concurrent LSMs
->
-> Version 14 of this patchset is based on v3.10.
-> It required significant change from version 13 due to changes
-> in the audit code. It came out cleaner, especially in the changes
-> to NetLabel. This version supports all existing LSMs running
-> together at the same time. The combinations tested most completely
-> are:
->
->     apparmor,tomoyo,smack,yama  - Ubuntu
->     apparmor,selinux,smack,yama - Fedora
->
+Here's the new change log, but the same patch. Does this sound ok to you
+guys?
 
-Does this change the way one would develop a new LSM module? I presume
-it does not
+-- Steve
 
-> I have been unable to figure out how to configure SELinux on
-> Ubuntu and TOMOYO on Fedora. That's the only reason the list
-> does not include all five LSMs at once. Combining LSMs that
-> use networking is tricky, but can be done. There are changes
-> coming from AppArmor that might make it even trickier, but
-> that's a problem for the future.
->
->
-> Change the infrastructure for Linux Security Modules (LSM)s from a
-> single vector of hook handlers to a list based method for handling
-> multiple concurrent modules. All combinations of existing LSMs
-> are supported.
->
-> The "security=" boot option takes a comma separated list of LSMs,
-> registering them in the order presented. The LSM hooks will be
-> executed in the order registered. Hooks that return errors are
-> not short circuited. All hooks are called even if one of the LSM
-> hooks fails. The result returned will be that of the last LSM
-> hook that failed.
->
+>From 40c32592668b727cbfcf7b1c0567f581bd62a5e4 Mon Sep 17 00:00:00 2001
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+Date: Wed, 3 Jul 2013 23:33:50 -0400
+Subject: [PATCH] tracing/kprobes: Fail to unregister if probe event files are
+ in use
 
-This is an important design trade-off. From my perspective I think you
-might want to revisit this, today it sounds like effective security ==
-all hooks process and allow the operation. In this world a lack of
-proper policy/setting can make hooks fail. I've not yet looked at the
-code, but you might want to revisit this.
+When a probe is being removed, it cleans up the event files that correspond
+to the probe. But there is a race between writing to one of these files
+and deleting the probe. This is especially true for the "enable" file.
 
-> All behavior from security/capability.c has been moved into
-> the hook handling.  The security/commoncap functions used
-> to get called from the LSM specific code. The handling of the
-> capability functions has been moved out of the LSMs and into the
-> hook handling.
->
-> A level of indirection has been introduced in the handling of
-> security blobs. LSMs no longer access ->security fields directly,
-> instead they use an abstraction provided by lsm_[gs]et field
-> functions.
->
-> The notion that "the security context" can be represented as a
-> single u32 "secid" does not scale to the case where multiple LSMs
-> want to provide "the security context". The XFRM and secmark
-> facilities appear unlikely to ever allow for more than the existing
-> 32 bit values. The NetLabel scheme might possibly be used to
-> represent more than one labeling scheme (CIPSO does allow for
-> multiple tags) although there is no plan to do so at this time.
-> The SO_PEERSEC scheme is capable of providing information from
-> multiple LSMs. Auditing can deal with multiple secids.
->
-> The NetLabel, XFRM and secmark facilities are restricted to use
-> by one LSM at a time. The SO_PEERSEC facility can provide information
-> from multiple LSMs, but existing user space tools don't understand
-> that. The default behavior is to assign each of these facilities
-> to the first registered LSM that uses them. They can be configured
-> for use by any of the LSMs that provide hooks for them. SO_PEERSEC
-> can be configured to provide information from all of the LSMs that
-> provide hooks.
->
-> The /proc/*/attr interfaces are given to one LSM. This can be
-> done by setting CONFIG_SECURITY_PRESENT. Additional interfaces
-> have been created in /proc/*/attr so that each LSM has its own
-> named interfaces. The name of the presenting LSM can be read from
-> /sys/kernel/security/present. The list of LSMs being used can be
-> read from /sys/kernel/security/lsm.
->
-> A "security context" may now contrain information processed by
-> more than one LSM. The proper form of a security context identifies
-> the information it contains by LSM:
->
->     smack='Pop'selinux='system_u:object_r:etc_r:s0'
->
-> A security context without the LSM identifying lsm='<text>' gets
-> passed through to all of the LSMs that use a security context. This
-> maintains compatability in the case where there is only one LSM
-> using the security context.
->
-> Signed-off-by: Casey Schaufler <casey@schaufler-ca.com>
+	CPU 0				CPU 1
+	-----				-----
 
-Balbir Singh
+				  fd = open("enable",O_WRONLY);
+
+  probes_open()
+  release_all_trace_probes()
+  unregister_trace_probe()
+  if (trace_probe_is_enabled(tp))
+	return -EBUSY
+
+				   write(fd, "1", 1)
+				   __ftrace_set_clr_event()
+				   call->class->reg()
+				    (kprobe_register)
+				     enable_trace_probe(tp)
+
+  __unregister_trace_probe(tp);
+  list_del(&tp->list)
+  unregister_probe_event(tp) <-- fails!
+  free_trace_probe(tp)
+
+				   write(fd, "0", 1)
+				   __ftrace_set_clr_event()
+				   call->class->unreg
+				    (kprobe_register)
+				    disable_trace_probe(tp) <-- BOOM!
+
+A test program was written that used two threads to simulate the
+above scenario adding a nanosleep() interval to change the timings
+and after several thousand runs, it was able to trigger this bug
+and crash:
+
+BUG: unable to handle kernel paging request at 00000005000000f9
+IP: [<ffffffff810dee70>] probes_open+0x3b/0xa7
+PGD 7808a067 PUD 0
+Oops: 0000 [#1] PREEMPT SMP
+Dumping ftrace buffer:
+---------------------------------
+Modules linked in: ipt_MASQUERADE sunrpc ip6t_REJECT nf_conntrack_ipv6
+CPU: 1 PID: 2070 Comm: test-kprobe-rem Not tainted 3.11.0-rc3-test+ #47
+Hardware name: To Be Filled By O.E.M. To Be Filled By O.E.M./To be filled by O.E.M., BIOS SDBLI944.86P 05/08/2007
+task: ffff880077756440 ti: ffff880076e52000 task.ti: ffff880076e52000
+RIP: 0010:[<ffffffff810dee70>]  [<ffffffff810dee70>] probes_open+0x3b/0xa7
+RSP: 0018:ffff880076e53c38  EFLAGS: 00010203
+RAX: 0000000500000001 RBX: ffff88007844f440 RCX: 0000000000000003
+RDX: 0000000000000003 RSI: 0000000000000003 RDI: ffff880076e52000
+RBP: ffff880076e53c58 R08: ffff880076e53bd8 R09: 0000000000000000
+R10: ffff880077756440 R11: 0000000000000006 R12: ffffffff810dee35
+R13: ffff880079250418 R14: 0000000000000000 R15: ffff88007844f450
+FS:  00007f87a276f700(0000) GS:ffff88007d480000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: 00000005000000f9 CR3: 0000000077262000 CR4: 00000000000007e0
+Stack:
+ ffff880076e53c58 ffffffff81219ea0 ffff88007844f440 ffffffff810dee35
+ ffff880076e53ca8 ffffffff81130f78 ffff8800772986c0 ffff8800796f93a0
+ ffffffff81d1b5d8 ffff880076e53e04 0000000000000000 ffff88007844f440
+Call Trace:
+ [<ffffffff81219ea0>] ? security_file_open+0x2c/0x30
+ [<ffffffff810dee35>] ? unregister_trace_probe+0x4b/0x4b
+ [<ffffffff81130f78>] do_dentry_open+0x162/0x226
+ [<ffffffff81131186>] finish_open+0x46/0x54
+ [<ffffffff8113f30b>] do_last+0x7f6/0x996
+ [<ffffffff8113cc6f>] ? inode_permission+0x42/0x44
+ [<ffffffff8113f6dd>] path_openat+0x232/0x496
+ [<ffffffff8113fc30>] do_filp_open+0x3a/0x8a
+ [<ffffffff8114ab32>] ? __alloc_fd+0x168/0x17a
+ [<ffffffff81131f4e>] do_sys_open+0x70/0x102
+ [<ffffffff8108f06e>] ? trace_hardirqs_on_caller+0x160/0x197
+ [<ffffffff81131ffe>] SyS_open+0x1e/0x20
+ [<ffffffff81522742>] system_call_fastpath+0x16/0x1b
+Code: e5 41 54 53 48 89 f3 48 83 ec 10 48 23 56 78 48 39 c2 75 6c 31 f6 48 c7
+RIP  [<ffffffff810dee70>] probes_open+0x3b/0xa7
+ RSP <ffff880076e53c38>
+CR2: 00000005000000f9
+---[ end trace 35f17d68fc569897 ]---
+
+The unregister_trace_probe() must be done first, and if it fails it must
+fail the removal of the kprobe.
+
+Several changes have already been made by Oleg Nesterov and Masami Hiramatsu
+to allow moving the unregister_probe_event() before the removal of
+the probe and exit the function if it fails. This prevents the tp
+structure from being used after it is freed.
+
+Link: http://lkml.kernel.org/r/20130704034038.819592356@goodmis.org
+
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/trace_kprobe.c | 21 +++++++++++++++------
+ 1 file changed, 15 insertions(+), 6 deletions(-)
+
+diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+index 3811487..243f683 100644
+--- a/kernel/trace/trace_kprobe.c
++++ b/kernel/trace/trace_kprobe.c
+@@ -95,7 +95,7 @@ static __kprobes bool trace_probe_is_on_module(struct trace_probe *tp)
+ }
+ 
+ static int register_probe_event(struct trace_probe *tp);
+-static void unregister_probe_event(struct trace_probe *tp);
++static int unregister_probe_event(struct trace_probe *tp);
+ 
+ static DEFINE_MUTEX(probe_lock);
+ static LIST_HEAD(probe_list);
+@@ -351,9 +351,12 @@ static int unregister_trace_probe(struct trace_probe *tp)
+ 	if (trace_probe_is_enabled(tp))
+ 		return -EBUSY;
+ 
++	/* Will fail if probe is being used by ftrace or perf */
++	if (unregister_probe_event(tp))
++		return -EBUSY;
++
+ 	__unregister_trace_probe(tp);
+ 	list_del(&tp->list);
+-	unregister_probe_event(tp);
+ 
+ 	return 0;
+ }
+@@ -632,7 +635,9 @@ static int release_all_trace_probes(void)
+ 	/* TODO: Use batch unregistration */
+ 	while (!list_empty(&probe_list)) {
+ 		tp = list_entry(probe_list.next, struct trace_probe, list);
+-		unregister_trace_probe(tp);
++		ret = unregister_trace_probe(tp);
++		if (ret)
++			goto end;
+ 		free_trace_probe(tp);
+ 	}
+ 
+@@ -1247,11 +1252,15 @@ static int register_probe_event(struct trace_probe *tp)
+ 	return ret;
+ }
+ 
+-static void unregister_probe_event(struct trace_probe *tp)
++static int unregister_probe_event(struct trace_probe *tp)
+ {
++	int ret;
++
+ 	/* tp->event is unregistered in trace_remove_event_call() */
+-	trace_remove_event_call(&tp->call);
+-	kfree(tp->call.print_fmt);
++	ret = trace_remove_event_call(&tp->call);
++	if (!ret)
++		kfree(tp->call.print_fmt);
++	return ret;
+ }
+ 
+ /* Make a debugfs interface for controlling probe points */
+-- 
+1.8.1.4
+
+
+
