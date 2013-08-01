@@ -1,52 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756991Ab3HAXaj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 19:30:39 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:56518 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751466Ab3HAXah (ORCPT
+	id S1757389Ab3HAXdU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 19:33:20 -0400
+Received: from g6t0187.atlanta.hp.com ([15.193.32.64]:13279 "EHLO
+	g6t0187.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755697Ab3HAXdR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 19:30:37 -0400
-MIME-Version: 1.0
-X-Originating-IP: [173.13.129.225]
-In-Reply-To: <9ab1185f349544b160632bfec566391928fa0768.1375398692.git.joe@perches.com>
-References: <cover.1375398692.git.joe@perches.com>
-	<20130801.143137.331385226409040561.davem@davemloft.net>
-	<9ab1185f349544b160632bfec566391928fa0768.1375398692.git.joe@perches.com>
-Date: Thu, 1 Aug 2013 16:30:36 -0700
-Message-ID: <CAOesGMjDgH-uRsjd1g2R_aTjUsPPLge17X2hBPogVv6ZFd_LnQ@mail.gmail.com>
-Subject: Re: [PATCH V3 3/3] ethernet: Convert mac address uses of 6 to ETH_ALEN
-From: Olof Johansson <olof@lixom.net>
-To: Joe Perches <joe@perches.com>
-Cc: Network Development <netdev@vger.kernel.org>,
-        Don Fry <pcnet32@frontier.com>,
-        Grant Grundler <grundler@parisc-linux.org>,
-        Sam Creasey <sammy@sammy.net>, Andrew Gallatin <gallatin@myri.com>,
-        Wan ZongShun <mcuos.com@gmail.com>,
-        Manish Chopra <manish.chopra@qlogic.com>,
-        Sony Chacko <sony.chacko@qlogic.com>,
-        Rajesh Borundia <rajesh.borundia@qlogic.com>,
-        Shahed Shaikh <shahed.shaikh@qlogic.com>,
-        Jitendra Kalsaria <jitendra.kalsaria@qlogic.com>,
-        Ron Mercer <ron.mercer@qlogic.com>, linux-driver@qlogic.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 1 Aug 2013 19:33:17 -0400
+Message-ID: <1375399931.10300.36.camel@misato.fc.hp.com>
+Subject: Re: [PATCH v2 05/18] x86, acpi: Split acpi_boot_table_init() into
+ two parts.
+From: Toshi Kani <toshi.kani@hp.com>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu,
+        hpa@zytor.com, akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
+        mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
+        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com, x86@kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-acpi@vger.kernel.org, robert.moore@intel.com
+Date: Thu, 01 Aug 2013 17:32:11 -0600
+In-Reply-To: <1375340800-19332-6-git-send-email-tangchen@cn.fujitsu.com>
+References: <1375340800-19332-1-git-send-email-tangchen@cn.fujitsu.com>
+	 <1375340800-19332-6-git-send-email-tangchen@cn.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 1, 2013 at 4:17 PM, Joe Perches <joe@perches.com> wrote:
-> Use the normal #define to help grep find mac addresses
-> and ensure that addresses are aligned.
->
-> pasemi.h has an unaligned access to mac_addr, unchanged
-> for now.
->
-> Signed-off-by: Joe Perches <joe@perches.com>
+On Thu, 2013-08-01 at 15:06 +0800, Tang Chen wrote:
+> In ACPI, SRAT(System Resource Affinity Table) contains NUMA info.
+> The memory affinities in SRAT record every memory range in the
+> system, and also, flags specifying if the memory range is
+> hotpluggable.
+> (Please refer to ACPI spec 5.0 5.2.16)
+> 
+> memblock starts to work at very early time, and SRAT has not been
+> parsed. So we don't know which memory is hotpluggable. In order
+> to use memblock to reserve hotpluggable memory, we need to obtain
+> SRAT memory affinity info earlier.
+> 
+> In the current acpi_boot_table_init(), it does the following:
+> 1. Parse RSDT, so that we can find all the tables.
+> 2. Initialize acpi_gbl_root_table_list, an array of acpi table
+>    descriptorsused to store each table's address, length, signature,
+>    and so on.
+> 3. Check if there is any table in initrd intending to override
+>    tables from firmware. If so, override the firmware tables.
+> 4. Initialize all the data in acpi_gbl_root_table_list.
+> 
+> In order to parse SRAT at early time, we need to do similar job as
+> step 1 and 2 above earlier to obtain SRAT. It will be very convenient
+> if we have acpi_gbl_root_table_list initialized. We can use address
+> and signature to find SRAT.
+> 
+> Since step 1 and 2 allocates no memory, it is OK to do these two
+> steps earlier.
+> 
+> But step 3 will check acpi initrd table override, not just SRAT,
+> but also all the other tables. So it is better to keep it untouched.
+> 
+> This patch splits acpi_boot_table_init() into two steps:
+> 1. Parse RSDT, which cannot be overrided, and initialize
+>    acpi_gbl_root_table_list. (step 1 + 2 above)
+> 2. Install all ACPI tables into acpi_gbl_root_table_list.
+>    (step 3 + 4 above)
+> 
+> In later patches, we will do step 1 + 2 earlier.
+> 
+> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+> Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+> ---
+>  drivers/acpi/acpica/tbutils.c |   25 ++++++++++++++++++++++---
+>  drivers/acpi/tables.c         |    2 ++
+>  include/acpi/acpixf.h         |    2 ++
+>  3 files changed, 26 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/acpi/acpica/tbutils.c b/drivers/acpi/acpica/tbutils.c
 
-Acked-by: Olof Johansson <olof@lixom.net> # pasemi_mac pieces
+This patch needs to be reviewed by ACPICA folks.  I'd suggest to change
+the patch title to "x86, ACPICA:".  I added Bob to the list.
+
+Thanks,
+-Toshi
 
 
--Olof
+
+> index ce3d5db..9d68ffc 100644
+> --- a/drivers/acpi/acpica/tbutils.c
+> +++ b/drivers/acpi/acpica/tbutils.c
+> @@ -766,9 +766,30 @@ acpi_tb_parse_root_table(acpi_physical_address rsdp_address)
+>  	 */
+>  	acpi_os_unmap_memory(table, length);
+>  
+> +	return_ACPI_STATUS(AE_OK);
+> +}
+> +
+> +/*******************************************************************************
+> + *
+> + * FUNCTION:    acpi_tb_install_root_table
+> + *
+> + * DESCRIPTION: This function installs all the ACPI tables in RSDT into
+> + *              acpi_gbl_root_table_list.
+> + *
+> + ******************************************************************************/
+> +
+> +void __init
+> +acpi_tb_install_root_table()
+> +{
+> +	int i;
+> +
+>  	/*
+>  	 * Complete the initialization of the root table array by examining
+> -	 * the header of each table
+> +	 * the header of each table.
+> +	 *
+> +	 * First two entries in the table array are reserved for the DSDT
+> +	 * and FACS, which are not actually present in the RSDT/XSDT - they
+> +	 * come from the FADT.
+>  	 */
+>  	for (i = 2; i < acpi_gbl_root_table_list.current_table_count; i++) {
+>  		acpi_tb_install_table(acpi_gbl_root_table_list.tables[i].
+> @@ -782,6 +803,4 @@ acpi_tb_parse_root_table(acpi_physical_address rsdp_address)
+>  			acpi_tb_parse_fadt(i);
+>  		}
+>  	}
+> -
+> -	return_ACPI_STATUS(AE_OK);
+>  }
+> diff --git a/drivers/acpi/tables.c b/drivers/acpi/tables.c
+> index d67a1fe..8860e79 100644
+> --- a/drivers/acpi/tables.c
+> +++ b/drivers/acpi/tables.c
+> @@ -353,6 +353,8 @@ int __init acpi_table_init(void)
+>  	if (ACPI_FAILURE(status))
+>  		return 1;
+>  
+> +	acpi_tb_install_root_table();
+> +
+>  	check_multiple_madt();
+>  	return 0;
+>  }
+> diff --git a/include/acpi/acpixf.h b/include/acpi/acpixf.h
+> index 454881e..f5549b5 100644
+> --- a/include/acpi/acpixf.h
+> +++ b/include/acpi/acpixf.h
+> @@ -116,6 +116,8 @@ acpi_status
+>  acpi_initialize_tables(struct acpi_table_desc *initial_storage,
+>  		       u32 initial_table_count, u8 allow_resize);
+>  
+> +void acpi_tb_install_root_table(void);
+> +
+>  acpi_status __init acpi_initialize_subsystem(void);
+>  
+>  acpi_status acpi_enable_subsystem(u32 flags);
+
+
