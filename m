@@ -1,114 +1,271 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757535Ab3HAWfF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 18:35:05 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50490 "EHLO mx2.suse.de"
+	id S1757533Ab3HAWhV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 18:37:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9215 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751957Ab3HAWfC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 18:35:02 -0400
-Date: Fri, 2 Aug 2013 00:35:00 +0200
-From: Jan Kara <jack@suse.cz>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] jbd: drop checkpoint mutex when waiting in
- __log_wait_for_space()
-Message-ID: <20130801223500.GH31857@quack.suse.cz>
-References: <1375383668-8072-1-git-send-email-paul.gortmaker@windriver.com>
- <1375383668-8072-4-git-send-email-paul.gortmaker@windriver.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1375383668-8072-4-git-send-email-paul.gortmaker@windriver.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755177Ab3HAWhT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 18:37:19 -0400
+Date: Thu, 1 Aug 2013 18:36:46 -0400
+From: Rik van Riel <riel@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Mel Gorman <mgorman@suse.de>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [RFC PATCH -v2] numa,sched: use group fault statistics in numa
+ placement
+Message-ID: <20130801183646.37b04171@annuminas.surriel.com>
+In-Reply-To: <20130730113857.GR3008@twins.programming.kicks-ass.net>
+References: <1373901620-2021-1-git-send-email-mgorman@suse.de>
+	<20130730113857.GR3008@twins.programming.kicks-ass.net>
+Organization: Red Hat, Inc.
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 01-08-13 15:01:07, Paul Gortmaker wrote:
-> Backport of jbd2 commit 0ef54180e0187117062939202b96faf04c8673bc
-> ("jbd2: drop checkpoint mutex when waiting in __jbd2_log_wait_for_space()")
-> 
-> Quoting that commit:
->  --------------
->  While trying to debug an an issue under extreme I/O loading
->  on preempt-rt kernels, the following backtrace was observed
->  via SysRQ output:
-> 
->  rm              D ffff8802203afbc0  4600  4878   4748 0x00000000
->   ffff8802217bfb78 0000000000000082 ffff88021fc2bb80 ffff88021fc2bb80
->   ffff88021fc2bb80 ffff8802217bffd8 ffff8802217bffd8 ffff8802217bffd8
->   ffff88021f1d4c80 ffff88021fc2bb80 ffff8802217bfb88 ffff88022437b000
->  Call Trace:
->   [<ffffffff8172dc34>] schedule+0x24/0x70
->   [<ffffffff81225b5d>] jbd2_log_wait_commit+0xbd/0x140
->   [<ffffffff81060390>] ? __init_waitqueue_head+0x50/0x50
->   [<ffffffff81223635>] jbd2_log_do_checkpoint+0xf5/0x520
->   [<ffffffff81223b09>] __jbd2_log_wait_for_space+0xa9/0x1f0
->   [<ffffffff8121dc40>] start_this_handle.isra.10+0x2e0/0x530
->   [<ffffffff81060390>] ? __init_waitqueue_head+0x50/0x50
->   [<ffffffff8121e0a3>] jbd2__journal_start+0xc3/0x110
->   [<ffffffff811de7ce>] ? ext4_rmdir+0x6e/0x230
->   [<ffffffff8121e0fe>] jbd2_journal_start+0xe/0x10
->   [<ffffffff811f308b>] ext4_journal_start_sb+0x5b/0x160
->   [<ffffffff811de7ce>] ext4_rmdir+0x6e/0x230
->   [<ffffffff811435c5>] vfs_rmdir+0xd5/0x140
->   [<ffffffff8114370f>] do_rmdir+0xdf/0x120
->   [<ffffffff8105c6b4>] ? task_work_run+0x44/0x80
->   [<ffffffff81002889>] ? do_notify_resume+0x89/0x100
->   [<ffffffff817361ae>] ? int_signal+0x12/0x17
->   [<ffffffff81145d85>] sys_unlinkat+0x25/0x40
->   [<ffffffff81735f22>] system_call_fastpath+0x16/0x1b
-> 
->  What is interesting here, is that we call log_wait_commit, from
->  within wait_for_space, but we are still holding the checkpoint_mutex
->  as it surrounds mostly the whole of wait_for_space.  And then, as we
->  are waiting, journal_commit_transaction can run, and if the JBD2_FLUSHED
->  bit is set, then we will also try to take the same checkpoint_mutex.
-> 
->  It seems that we need to drop the checkpoint_mutex while sitting in
->  jbd2_log_wait_commit, if we want to guarantee that progress can be made
->  by jbd2_journal_commit_transaction().  There does not seem to be
->  anything preempt-rt specific about this, other then perhaps increasing
->  the odds of it happening.
->  --------------
-  As much as this is a sensible optimization, I don't agree with the
-analysis that the system can deadlock when JBD2_FLUSHED is set. We call
-jbd2_log_wait_commit() only if there is already committing transaction and
-that gets set *after* JBD2_FLUSHED is handled. So it would be good if you
-went back and actually checked where exactly did we hang in
-jbd2_journal_commit_transaction()...
+On Tue, 30 Jul 2013 13:38:57 +0200
+Peter Zijlstra <peterz@infradead.org> wrote:
 
-								Honza
 > 
-> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-> ---
->  fs/jbd/checkpoint.c | 8 ++++++++
->  1 file changed, 8 insertions(+)
+> Subject: sched, numa: Use {cpu, pid} to create task groups for shared faults
+> From: Peter Zijlstra <peterz@infradead.org>
+> Date: Tue Jul 30 10:40:20 CEST 2013
 > 
-> diff --git a/fs/jbd/checkpoint.c b/fs/jbd/checkpoint.c
-> index 08c0304..8e8e0ee 100644
-> --- a/fs/jbd/checkpoint.c
-> +++ b/fs/jbd/checkpoint.c
-> @@ -160,7 +160,15 @@ void __log_wait_for_space(journal_t *journal)
->  				/* We were able to recover space; yay! */
->  				;
->  			} else if (tid) {
-> +				/*
-> +				 * jbd_journal_commit_transaction() may want
-> +				 * to take the checkpoint_mutex if JBD_FLUSHED
-> +				 * is set.  So we need to temporarily drop it.
-> +				 */
-> +				mutex_unlock(&journal->j_checkpoint_mutex);
->  				log_wait_commit(journal, tid);
-> +				spin_lock(&journal->j_state_lock);
-> +				continue;
->  			} else {
->  				printk(KERN_ERR "%s: needed %d blocks and "
->  				       "only had %d space available\n",
-> -- 
-> 1.8.1.2
-> 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+> A very simple/straight forward shared fault task grouping
+> implementation.
+
+Here is another (untested) version of task placement on top of
+your task grouping. Better send it to you now, rather than on
+your friday evening :)
+
+The algorithm is loosely based on Andrea's placement algorithm,
+but not as strict because I am not entirely confident that the
+task grouping code works right yet...
+
+It also has no "fall back to a better node than the current one" 
+code yet, for the case where we fail to migrate to the best node,
+but that should be a separate patch anyway.
+
+
+Subject: [PATCH,RFC] numa,sched: use group fault statistics in numa placement
+
+This version uses the fraction of faults on a particular node for
+both task and group, to figure out the best node to place a task.
+
+I wish I had benchmark numbers to report, but our timezones just
+don't seem to work out that way. Enjoy at your own peril :)
+
+I will be testing these tomorrow.
+
+Signed-off-by: Rik van Riel <riel@redhat.com>
+---
+ include/linux/sched.h |  1 +
+ kernel/sched/fair.c   | 94 +++++++++++++++++++++++++++++++++++++++++----------
+ 2 files changed, 77 insertions(+), 18 deletions(-)
+
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 9e7fcfe..5e175ae 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1355,6 +1355,7 @@ struct task_struct {
+ 	 * The values remain static for the duration of a PTE scan
+ 	 */
+ 	unsigned long *numa_faults;
++	unsigned long total_numa_faults;
+ 
+ 	/*
+ 	 * numa_faults_buffer records faults per node during the current
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 6a06bef..3ef4d45 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -844,6 +844,18 @@ static unsigned int task_scan_max(struct task_struct *p)
+  */
+ unsigned int sysctl_numa_balancing_settle_count __read_mostly = 3;
+ 
++struct numa_group {
++	atomic_t refcount;
++
++	spinlock_t lock; /* nr_tasks, tasks */
++	int nr_tasks;
++	struct list_head task_list;
++
++	struct rcu_head rcu;
++	atomic_long_t total_faults;
++	atomic_long_t faults[0];
++};
++
+ static inline int task_faults_idx(int nid, int priv)
+ {
+ 	return 2 * nid + priv;
+@@ -857,6 +869,38 @@ static inline unsigned long task_faults(struct task_struct *p, int nid)
+ 	return p->numa_faults[2*nid] + p->numa_faults[2*nid+1];
+ }
+ 
++static inline unsigned long group_faults(struct task_struct *p, int nid)
++{
++	if (!p->numa_group)
++		return 0;
++
++	return atomic_long_read(&p->numa_group->faults[2*nid]) +
++	       atomic_long_read(&p->numa_group->faults[2*nid+1]);
++}
++
++/*
++ * These return the fraction of accesses done by a particular task, or
++ * task group, on a particular numa node.  The group weight is given a
++ * larger multiplier, in order to group tasks together that are almost
++ * evenly spread out between numa nodes.
++ */
++static inline unsigned long task_weight(struct task_struct *p, int nid)
++{
++	if (!p->numa_faults)
++		return 0;
++
++	return 1000 * task_faults(p, nid) / p->total_numa_faults;
++}
++
++static inline unsigned long group_weight(struct task_struct *p, int nid)
++{
++	if (!p->numa_group)
++		return 0;
++
++	return 1200 * group_faults(p, nid) /
++			atomic_long_read(&p->numa_group->total_faults);
++}
++
+ /*
+  * Create/Update p->mempolicy MPOL_INTERLEAVE to match p->numa_faults[].
+  */
+@@ -979,8 +1023,10 @@ static void task_numa_compare(struct task_numa_env *env, long imp)
+ 		cur = NULL;
+ 
+ 	if (cur) {
+-		imp += task_faults(cur, env->src_nid) -
+-		       task_faults(cur, env->dst_nid);
++		imp += task_faults(cur, env->src_nid) +
++		       group_faults(cur, env->src_nid) -
++		       task_faults(cur, env->dst_nid) -
++		       group_faults(cur, env->dst_nid);
+ 	}
+ 
+ 	trace_printk("compare[%d] task:%s/%d improvement: %ld\n",
+@@ -1067,7 +1113,7 @@ static int task_numa_migrate(struct task_struct *p)
+ 	}
+ 	rcu_read_unlock();
+ 
+-	faults = task_faults(p, env.src_nid);
++	faults = task_faults(p, env.src_nid) + group_faults(p, env.src_nid);
+ 	update_numa_stats(&env.src_stats, env.src_nid);
+ 
+ 	for_each_online_node(nid) {
+@@ -1076,7 +1122,7 @@ static int task_numa_migrate(struct task_struct *p)
+ 		if (nid == env.src_nid)
+ 			continue;
+ 
+-		imp = task_faults(p, nid) - faults;
++		imp = task_faults(p, nid) + group_faults(p, nid) - faults;
+ 		if (imp < 0)
+ 			continue;
+ 
+@@ -1122,21 +1168,10 @@ static void numa_migrate_preferred(struct task_struct *p)
+ 	p->numa_migrate_retry = jiffies + HZ/10;
+ }
+ 
+-struct numa_group {
+-	atomic_t refcount;
+-
+-	spinlock_t lock; /* nr_tasks, tasks */
+-	int nr_tasks;
+-	struct list_head task_list;
+-
+-	struct rcu_head rcu;
+-	atomic_long_t faults[0];
+-};
+-
+ static void task_numa_placement(struct task_struct *p)
+ {
+-	int seq, nid, max_nid = -1;
+-	unsigned long max_faults = 0;
++	int seq, nid, max_nid = -1, max_group_nid = -1;
++	unsigned long max_faults = 0, max_group_faults = 0;
+ 
+ 	seq = ACCESS_ONCE(p->mm->numa_scan_seq);
+ 	if (p->numa_scan_seq == seq)
+@@ -1148,7 +1183,7 @@ static void task_numa_placement(struct task_struct *p)
+ 
+ 	/* Find the node with the highest number of faults */
+ 	for (nid = 0; nid < nr_node_ids; nid++) {
+-		unsigned long faults = 0;
++		unsigned long faults = 0, group_faults = 0;
+ 		int priv, i;
+ 
+ 		for (priv = 0; priv < 2; priv++) {
+@@ -1161,6 +1196,7 @@ static void task_numa_placement(struct task_struct *p)
+ 			/* Decay existing window, copy faults since last scan */
+ 			p->numa_faults[i] >>= 1;
+ 			p->numa_faults[i] += p->numa_faults_buffer[i];
++			p->total_numa_faults += p->numa_faults_buffer[i];
+ 			p->numa_faults_buffer[i] = 0;
+ 
+ 			diff += p->numa_faults[i];
+@@ -1169,6 +1205,8 @@ static void task_numa_placement(struct task_struct *p)
+ 			if (p->numa_group) {
+ 				/* safe because we can only change our own group */
+ 				atomic_long_add(diff, &p->numa_group->faults[i]);
++				atomic_long_add(diff, &p->numa_group->total_faults);
++				group_faults += atomic_long_read(&p->numa_group->faults[i]);
+ 			}
+ 		}
+ 
+@@ -1176,11 +1214,29 @@ static void task_numa_placement(struct task_struct *p)
+ 			max_faults = faults;
+ 			max_nid = nid;
+ 		}
++
++		if (group_faults > max_group_faults) {
++			max_group_faults = group_faults;
++			max_group_nid = nid;
++		}
+ 	}
+ 
+ 	if (sched_feat(NUMA_INTERLEAVE))
+ 		task_numa_mempol(p, max_faults);
+ 
++	/*
++	 * Should we stay on our own, or move in with the group?
++	 * If the task's memory accesses are concentrated on one node, go
++	 * to (more likely, stay on) that node. If the group's accesses
++	 * are more concentrated than the task's accesses, join the group.
++	 *
++	 *  max_group_faults     max_faults
++	 * ------------------ > ------------
++	 * total_group_faults   total_faults
++	 */
++	if (group_weight(p, max_group_nid) > task_weight(p, max_nid))
++		max_nid = max_group_nid;
++
+ 	/* Preferred node as the node with the most faults */
+ 	if (max_faults && max_nid != p->numa_preferred_nid) {
+ 
+@@ -1242,6 +1298,7 @@ void task_numa_group(struct task_struct *p, int cpu, int pid)
+ 		atomic_set(&grp->refcount, 1);
+ 		spin_lock_init(&grp->lock);
+ 		INIT_LIST_HEAD(&grp->task_list);
++		atomic_long_set(&grp->total_faults, 0);
+ 
+ 		spin_lock(&p->numa_lock);
+ 		list_add(&p->numa_entry, &grp->task_list);
+@@ -1336,6 +1393,7 @@ void task_numa_fault(int last_cpupid, int node, int pages, bool migrated)
+ 
+ 		BUG_ON(p->numa_faults_buffer);
+ 		p->numa_faults_buffer = p->numa_faults + (2 * nr_node_ids);
++		p->total_numa_faults = 0;
+ 	}
+ 
+ 	/*
