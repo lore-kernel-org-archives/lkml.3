@@ -1,263 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932341Ab3HAVvV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 17:51:21 -0400
-Received: from mail-qe0-f53.google.com ([209.85.128.53]:64760 "EHLO
-	mail-qe0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932243Ab3HAVul (ORCPT
+	id S932353Ab3HAVvf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 17:51:35 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39753 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932091Ab3HAVve (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 17:50:41 -0400
-From: Tejun Heo <tj@kernel.org>
-To: lizefan@huawei.com
-Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Matt Helsley <matthltc@us.ibm.com>,
-        Daniel Wagner <daniel.wagner@bmw-carit.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 22/23] cgroup: make cgroup_taskset deal with cgroup_subsys_state instead of cgroup
-Date: Thu,  1 Aug 2013 17:50:00 -0400
-Message-Id: <1375393801-4817-23-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1375393801-4817-1-git-send-email-tj@kernel.org>
-References: <1375393801-4817-1-git-send-email-tj@kernel.org>
+	Thu, 1 Aug 2013 17:51:34 -0400
+In-Reply-To: <20130801213420.GL23006@n2100.arm.linux.org.uk>
+References: <20130801213420.GL23006@n2100.arm.linux.org.uk>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH RFC 17/51] DMA-API: block: nvme-core: replace
+ dma_set_mask()+dma_set_coherent_mask() with new
+ helper
+Message-Id: <E1V50m3-0006r5-12@rmk-PC.arm.linux.org.uk>
+Date: Thu, 01 Aug 2013 22:51:07 +0100
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cgroup is in the process of converting to css (cgroup_subsys_state)
-from cgroup as the principal subsystem interface handle.  This is
-mostly to prepare for the unified hierarchy support where css's will
-be created and destroyed dynamically but also helps cleaning up
-subsystem implementations as css is usually what they are interested
-in anyway.
+Replace the following sequence:
 
-cgroup_taskset which is used by the subsystem attach methods is the
-last cgroup subsystem API which isn't using css as the handle.  Update
-cgroup_taskset_cur_cgroup() to cgroup_taskset_cur_css() and
-cgroup_taskset_for_each() to take @skip_css instead of @skip_cgrp.
+	dma_set_mask(dev, mask);
+	dma_set_coherent_mask(dev, mask);
 
-The conversions are pretty mechanical.  One exception is
-cpuset::cgroup_cs(), which lost its last user and got removed.
+with a call to the new helper dma_set_mask_and_coherent().
 
-This patch shouldn't introduce any functional changes.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Li Zefan <lizefan@huawei.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Matt Helsley <matthltc@us.ibm.com>
-Cc: Daniel Wagner <daniel.wagner@bmw-carit.de>
-Cc: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 ---
- block/blk-cgroup.c        |  2 +-
- include/linux/cgroup.h    | 12 +++++++-----
- kernel/cgroup.c           | 16 +++++++++-------
- kernel/cgroup_freezer.c   |  2 +-
- kernel/cpuset.c           | 15 +++++----------
- kernel/events/core.c      |  2 +-
- kernel/sched/core.c       |  4 ++--
- net/core/netprio_cgroup.c |  2 +-
- net/sched/cls_cgroup.c    |  2 +-
- 9 files changed, 28 insertions(+), 29 deletions(-)
+ drivers/block/nvme-core.c |    7 ++-----
+ 1 files changed, 2 insertions(+), 5 deletions(-)
 
-diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-index 4b40640..54ad002 100644
---- a/block/blk-cgroup.c
-+++ b/block/blk-cgroup.c
-@@ -891,7 +891,7 @@ static int blkcg_can_attach(struct cgroup_subsys_state *css,
- 	int ret = 0;
+diff --git a/drivers/block/nvme-core.c b/drivers/block/nvme-core.c
+index ce79a59..ac38edd 100644
+--- a/drivers/block/nvme-core.c
++++ b/drivers/block/nvme-core.c
+@@ -1949,11 +1949,8 @@ static int nvme_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+ 	dev->pci_dev = pdev;
+ 	pci_set_drvdata(pdev, dev);
  
- 	/* task_lock() is needed to avoid races with exit_io_context() */
--	cgroup_taskset_for_each(task, css->cgroup, tset) {
-+	cgroup_taskset_for_each(task, css, tset) {
- 		task_lock(task);
- 		ioc = task->io_context;
- 		if (ioc && atomic_read(&ioc->nr_tasks) > 1)
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index 8f44411..28e21f9 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -563,20 +563,22 @@ int cgroup_task_count(const struct cgroup *cgrp);
- struct cgroup_taskset;
- struct task_struct *cgroup_taskset_first(struct cgroup_taskset *tset);
- struct task_struct *cgroup_taskset_next(struct cgroup_taskset *tset);
--struct cgroup *cgroup_taskset_cur_cgroup(struct cgroup_taskset *tset);
-+struct cgroup_subsys_state *cgroup_taskset_cur_css(struct cgroup_taskset *tset,
-+						   int subsys_id);
- int cgroup_taskset_size(struct cgroup_taskset *tset);
+-	if (!dma_set_mask(&pdev->dev, DMA_BIT_MASK(64)))
+-		dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(64));
+-	else if (!dma_set_mask(&pdev->dev, DMA_BIT_MASK(32)))
+-		dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(32));
+-	else
++	if (dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(64)) &&
++	    dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(32)))
+ 		goto disable;
  
- /**
-  * cgroup_taskset_for_each - iterate cgroup_taskset
-  * @task: the loop cursor
-- * @skip_cgrp: skip if task's cgroup matches this, %NULL to iterate through all
-+ * @skip_css: skip if task's css matches this, %NULL to iterate through all
-  * @tset: taskset to iterate
-  */
--#define cgroup_taskset_for_each(task, skip_cgrp, tset)			\
-+#define cgroup_taskset_for_each(task, skip_css, tset)			\
- 	for ((task) = cgroup_taskset_first((tset)); (task);		\
- 	     (task) = cgroup_taskset_next((tset)))			\
--		if (!(skip_cgrp) ||					\
--		    cgroup_taskset_cur_cgroup((tset)) != (skip_cgrp))
-+		if (!(skip_css) ||					\
-+		    cgroup_taskset_cur_css((tset),			\
-+			(skip_css)->ss->subsys_id) != (skip_css))
- 
- /*
-  * Control Group subsystem type.
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index e0ef58e..ead0088 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -1900,18 +1900,20 @@ struct task_struct *cgroup_taskset_next(struct cgroup_taskset *tset)
- EXPORT_SYMBOL_GPL(cgroup_taskset_next);
- 
- /**
-- * cgroup_taskset_cur_cgroup - return the matching cgroup for the current task
-+ * cgroup_taskset_cur_css - return the matching css for the current task
-  * @tset: taskset of interest
-+ * @subsys_id: the ID of the target subsystem
-  *
-- * Return the cgroup for the current (last returned) task of @tset.  This
-- * function must be preceded by either cgroup_taskset_first() or
-- * cgroup_taskset_next().
-+ * Return the css for the current (last returned) task of @tset for
-+ * subsystem specified by @subsys_id.  This function must be preceded by
-+ * either cgroup_taskset_first() or cgroup_taskset_next().
-  */
--struct cgroup *cgroup_taskset_cur_cgroup(struct cgroup_taskset *tset)
-+struct cgroup_subsys_state *cgroup_taskset_cur_css(struct cgroup_taskset *tset,
-+						   int subsys_id)
- {
--	return tset->cur_cgrp;
-+	return cgroup_css(tset->cur_cgrp, subsys_id);
- }
--EXPORT_SYMBOL_GPL(cgroup_taskset_cur_cgroup);
-+EXPORT_SYMBOL_GPL(cgroup_taskset_cur_css);
- 
- /**
-  * cgroup_taskset_size - return the number of tasks in taskset
-diff --git a/kernel/cgroup_freezer.c b/kernel/cgroup_freezer.c
-index 5cd2b6d..224da9a 100644
---- a/kernel/cgroup_freezer.c
-+++ b/kernel/cgroup_freezer.c
-@@ -189,7 +189,7 @@ static void freezer_attach(struct cgroup_subsys_state *new_css,
- 	 * current state before executing the following - !frozen tasks may
- 	 * be visible in a FROZEN cgroup and frozen tasks in a THAWED one.
- 	 */
--	cgroup_taskset_for_each(task, new_css->cgroup, tset) {
-+	cgroup_taskset_for_each(task, new_css, tset) {
- 		if (!(freezer->state & CGROUP_FREEZING)) {
- 			__thaw_task(task);
- 		} else {
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index 39e5217..bf69717 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -119,12 +119,6 @@ static inline struct cpuset *css_cs(struct cgroup_subsys_state *css)
- 	return css ? container_of(css, struct cpuset, css) : NULL;
- }
- 
--/* Retrieve the cpuset for a cgroup */
--static inline struct cpuset *cgroup_cs(struct cgroup *cgrp)
--{
--	return css_cs(cgroup_css(cgrp, cpuset_subsys_id));
--}
--
- /* Retrieve the cpuset for a task */
- static inline struct cpuset *task_cs(struct task_struct *task)
- {
-@@ -1459,7 +1453,7 @@ static int cpuset_can_attach(struct cgroup_subsys_state *css,
- 	    (cpumask_empty(cs->cpus_allowed) || nodes_empty(cs->mems_allowed)))
- 		goto out_unlock;
- 
--	cgroup_taskset_for_each(task, css->cgroup, tset) {
-+	cgroup_taskset_for_each(task, css, tset) {
- 		/*
- 		 * Kthreads which disallow setaffinity shouldn't be moved
- 		 * to a new cpuset; we don't want to change their cpu
-@@ -1511,9 +1505,10 @@ static void cpuset_attach(struct cgroup_subsys_state *css,
- 	struct mm_struct *mm;
- 	struct task_struct *task;
- 	struct task_struct *leader = cgroup_taskset_first(tset);
--	struct cgroup *oldcgrp = cgroup_taskset_cur_cgroup(tset);
-+	struct cgroup_subsys_state *oldcss = cgroup_taskset_cur_css(tset,
-+							cpuset_subsys_id);
- 	struct cpuset *cs = css_cs(css);
--	struct cpuset *oldcs = cgroup_cs(oldcgrp);
-+	struct cpuset *oldcs = css_cs(oldcss);
- 	struct cpuset *cpus_cs = effective_cpumask_cpuset(cs);
- 	struct cpuset *mems_cs = effective_nodemask_cpuset(cs);
- 
-@@ -1527,7 +1522,7 @@ static void cpuset_attach(struct cgroup_subsys_state *css,
- 
- 	guarantee_online_mems(mems_cs, &cpuset_attach_nodemask_to);
- 
--	cgroup_taskset_for_each(task, css->cgroup, tset) {
-+	cgroup_taskset_for_each(task, css, tset) {
- 		/*
- 		 * can_attach beforehand should guarantee that this doesn't
- 		 * fail.  TODO: have a better way to handle failure here
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 9705a0e..c199c4f 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -7816,7 +7816,7 @@ static void perf_cgroup_attach(struct cgroup_subsys_state *css,
- {
- 	struct task_struct *task;
- 
--	cgroup_taskset_for_each(task, css->cgroup, tset)
-+	cgroup_taskset_for_each(task, css, tset)
- 		task_function_call(task, __perf_cgroup_move, task);
- }
- 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index cc9a492..a7122d5 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -7135,7 +7135,7 @@ static int cpu_cgroup_can_attach(struct cgroup_subsys_state *css,
- {
- 	struct task_struct *task;
- 
--	cgroup_taskset_for_each(task, css->cgroup, tset) {
-+	cgroup_taskset_for_each(task, css, tset) {
- #ifdef CONFIG_RT_GROUP_SCHED
- 		if (!sched_rt_can_attach(css_tg(css), task))
- 			return -EINVAL;
-@@ -7153,7 +7153,7 @@ static void cpu_cgroup_attach(struct cgroup_subsys_state *css,
- {
- 	struct task_struct *task;
- 
--	cgroup_taskset_for_each(task, css->cgroup, tset)
-+	cgroup_taskset_for_each(task, css, tset)
- 		sched_move_task(task);
- }
- 
-diff --git a/net/core/netprio_cgroup.c b/net/core/netprio_cgroup.c
-index e00f60e..d9cd627 100644
---- a/net/core/netprio_cgroup.c
-+++ b/net/core/netprio_cgroup.c
-@@ -224,7 +224,7 @@ static void net_prio_attach(struct cgroup_subsys_state *css,
- 	struct task_struct *p;
- 	void *v;
- 
--	cgroup_taskset_for_each(p, css->cgroup, tset) {
-+	cgroup_taskset_for_each(p, css, tset) {
- 		task_lock(p);
- 		v = (void *)(unsigned long)task_netprioidx(p);
- 		iterate_fd(p->files, 0, update_netprio, v);
-diff --git a/net/sched/cls_cgroup.c b/net/sched/cls_cgroup.c
-index 8ea1184..867b4a3 100644
---- a/net/sched/cls_cgroup.c
-+++ b/net/sched/cls_cgroup.c
-@@ -74,7 +74,7 @@ static void cgrp_attach(struct cgroup_subsys_state *css,
- 	struct task_struct *p;
- 	void *v;
- 
--	cgroup_taskset_for_each(p, css->cgroup, tset) {
-+	cgroup_taskset_for_each(p, css, tset) {
- 		task_lock(p);
- 		v = (void *)(unsigned long)task_cls_classid(p);
- 		iterate_fd(p->files, 0, update_classid, v);
+ 	result = nvme_set_instance(dev);
 -- 
-1.8.3.1
+1.7.4.4
 
