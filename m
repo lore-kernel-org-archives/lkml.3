@@ -1,65 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756018Ab3HAN6F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 09:58:05 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:59340 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755441Ab3HAN6D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 09:58:03 -0400
-Date: Thu, 1 Aug 2013 15:57:59 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung@kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 2/8] perf: Sanitize get_callchain_buffer()
-Message-ID: <20130801135757.GF431@somewhere>
-References: <1374539466-4799-1-git-send-email-fweisbec@gmail.com>
- <1374539466-4799-3-git-send-email-fweisbec@gmail.com>
- <20130801130146.GE1032@krava.brq.redhat.com>
- <20130801132833.GA431@somewhere>
- <20130801133217.GH1032@krava.brq.redhat.com>
- <20130801134931.GD431@somewhere>
- <20130801135401.GK1032@krava.brq.redhat.com>
+	id S1755973Ab3HAOAW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 10:00:22 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:41406 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755584Ab3HAOAU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 10:00:20 -0400
+From: Sourav Poddar <sourav.poddar@ti.com>
+To: <broonie@kernel.org>, <spi-devel-general@lists.sourceforge.net>,
+        <grant.likely@linaro.org>
+CC: <balbi@ti.com>, <rnayak@ti.com>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Sourav Poddar <sourav.poddar@ti.com>
+Subject: [PATCHv8 0/2] Add ti qspi controller
+Date: Thu, 1 Aug 2013 19:30:00 +0530
+Message-ID: <1375365602-31321-1-git-send-email-sourav.poddar@ti.com>
+X-Mailer: git-send-email 1.7.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130801135401.GK1032@krava.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 01, 2013 at 03:54:01PM +0200, Jiri Olsa wrote:
-> On Thu, Aug 01, 2013 at 03:49:36PM +0200, Frederic Weisbecker wrote:
-> > On Thu, Aug 01, 2013 at 03:32:17PM +0200, Jiri Olsa wrote:
-> > > On Thu, Aug 01, 2013 at 03:28:34PM +0200, Frederic Weisbecker wrote:
-> > > 
-> > > SNIP
-> > > 
-> > > > > also for following case:
-> > > > > 
-> > > > >         count = atomic_inc_return(&nr_callchain_events);
-> > > > >         if (WARN_ON_ONCE(count < 1)) {
-> > > > >                 err = -EINVAL;
-> > > > >                 goto exit;
-> > > > >         }
-> > > > > 
-> > > > > seems like it screws the count
-> > > > 
-> > > > I'm not sure what you mean here. You mean that it could be negative when the dec is done
-> > > > outside the lock?
-> > > 
-> > > yes
-> > > 
-> > 
-> > I don't understand why.
-> 
-> ah ok, with the count being 0 the nr_callchain_events still
-> increments right? then it's ok..
+This patch series add support for ti qspi controller.
+Adapted this series on top of Mark brown series[1]:
 
-Yep. But I still need to move the dec into the lock though.
+[1]: https://patchwork.kernel.org/patch/2834694/
+ 
+Sourav Poddar (2):
+  drivers: spi: Add qspi flash controller
+  driver: spi: Add quad spi read support
 
-Thanks for catching this!
+ Documentation/devicetree/bindings/spi/ti_qspi.txt |   22 +
+ drivers/spi/Kconfig                               |    8 +
+ drivers/spi/Makefile                              |    1 +
+ drivers/spi/spi-ti-qspi.c                         |  600 +++++++++++++++++++++
+ 4 files changed, 631 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/spi/ti_qspi.txt
+ create mode 100644 drivers/spi/spi-ti-qspi.c
+
