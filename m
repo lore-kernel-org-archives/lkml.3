@@ -1,78 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756362Ab3HAPO5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 11:14:57 -0400
-Received: from 8.mo2.mail-out.ovh.net ([188.165.52.147]:57795 "EHLO
-	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755605Ab3HAPOz (ORCPT
+	id S1756749Ab3HAPPx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 11:15:53 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:12695 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755477Ab3HAPPw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 11:14:55 -0400
-Message-ID: <51FA7B6A.80106@overkiz.com>
-Date: Thu, 01 Aug 2013 17:14:50 +0200
-From: boris brezillon <b.brezillon@overkiz.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Thu, 1 Aug 2013 11:15:52 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 01 Aug 2013 08:15:51 -0700
+Message-ID: <51FA7BA4.8010301@nvidia.com>
+Date: Thu, 1 Aug 2013 18:15:48 +0300
+From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-X-Ovh-Mailout: 178.32.228.2 (mo2.mail-out.ovh.net)
-Subject: Re: [PATCH] USB: ohci-at91: add usb_clk for transition to common
- clk framework
-References: <Pine.LNX.4.44L0.1308011038380.1534-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1308011038380.1534-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH 1/2] ARM: DTS: tegra: Add USB entries for Tegra30
+References: <1375292543-7896-1-git-send-email-ttynkkynen@nvidia.com> <1375292543-7896-2-git-send-email-ttynkkynen@nvidia.com> <51F98C27.40904@wwwdotorg.org>
+In-Reply-To: <51F98C27.40904@wwwdotorg.org>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Ovh-Tracer-Id: 8964978009801324646
-X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedriedtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedriedtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/08/2013 16:39, Alan Stern wrote:
-> On Thu, 1 Aug 2013, Boris BREZILLON wrote:
->
->> The AT91 PMC (Power Management Controller) provides an USB clock used by
->> USB Full Speed host (ohci) and USB Full Speed device (udc).
->> The usb drivers (ohci and udc) must configure this clock to 48Mhz.
->> This configuration was formely done in mach-at91/clock.c, but this
->> implementation will be removed when moving to common clk framework.
+On 08/01/2013 01:13 AM, Stephen Warren wrote:
+> On 07/31/2013 11:42 AM, Tuomas Tynkkynen wrote:
+>> Add device tree entries for the 3 USB controllers and PHYs and
+>> enable the third controller on Cardhu and Beaver boards.
 >>
->> This patch adds support for usb clock retrieval and configuration, and is
->> backward compatible with the current at91 clk implementation (if usb clk
->> is not found, it does not configure/enable it).
->>
->> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
->> @@ -163,6 +169,8 @@ static int usb_hcd_at91_probe(const struct hc_driver *driver,
->>   		goto err5;
->>   	}
->>   
->> +	uclk = clk_get(&pdev->dev, "usb_clk");
-> What happens if uclk isn't found but it is needed?
-It will not fail but I guess the usb host won't work as the clock won't 
-be correctly
-configured.
+>> Fix VBUS regulator entries on Beaver. The GPIO pins were wrong.
+> 
+> That much is correct.
+> 
+>> Also, a third GPIO is required to power the pullup resistors that drive
+>> the VBUS voltage switches, so add an regulator entry for that.
+> 
+> That is not true. GMI_AD13 / PH5 / 61 is a signal that pulls up all of
+> USB1 VBUS, USB3 VBUS, and GMI_AD15, which as far as I can tell is
+> entirely unrelated to USB in any way.
 
-I agree with you: this is not a good solution.
+I sent a v2 that enables the internal pullups on those pins.
 
-Another option is to keep the previous version of this patch and put 
-uclk handling
-in "#ifdef CONFIG_COMMON_CLK #endif" sections.
+> This part of the change should be removed. I know you mentioned that
+> downstream does this, but that means very little; there are many
+> mistakes there.
 
-Would this be acceptable ?
-
->
-> Alan Stern
->
-
+It looks like the pullup resistor from PH5 to GMI_AD15 was added in a later board revision,
+so the HW guys are to blame this time.
