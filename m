@@ -1,213 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753154Ab3HACuS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 22:50:18 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:26428 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752172Ab3HACuQ (ORCPT
+	id S1753788Ab3HACzx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 22:55:53 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:64109 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752838Ab3HACzr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 22:50:16 -0400
-X-Authority-Analysis: v=2.0 cv=P6i4d18u c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=0VS4G58IZu0A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=laNjaRT52OkA:10 a=VwQbUJbxAAAA:8 a=3nbZYyFuAAAA:8 a=F42ZoO8DAAAA:8 a=S6CwlI7X9LIZeeddtvAA:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=EvKJbDF4Ut8A:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-ID: <1375325414.5418.50.camel@gandalf.local.home>
-Subject: Re: [RFC][PATCH 3/4] tracing/kprobes: Fail to unregister if probe
- event files are open
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Wed, 31 Jul 2013 22:50:14 -0400
-In-Reply-To: <1375322866.5418.46.camel@gandalf.local.home>
-References: <20130704033347.807661713@goodmis.org>
-	 <20130704034038.819592356@goodmis.org>
-	 <1375300192.5418.17.camel@gandalf.local.home>
-	 <20130731204003.GA30188@redhat.com>
-	 <1375310548.5418.21.camel@gandalf.local.home>
-	 <1375322866.5418.46.camel@gandalf.local.home>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 31 Jul 2013 22:55:47 -0400
+X-AuditID: 9c930197-b7bfbae000000e88-c7-51f9ce31675d
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH 5/9] perf tools: Do not try to call addr2line for non-binary files
+Date: Thu,  1 Aug 2013 11:55:40 +0900
+Message-Id: <1375325744-26613-6-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1375325744-26613-1-git-send-email-namhyung@kernel.org>
+References: <1375325744-26613-1-git-send-email-namhyung@kernel.org>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here's the new change log, but the same patch. Does this sound ok to you
-guys?
+From: Namhyung Kim <namhyung.kim@lge.com>
 
--- Steve
+No need to call addr2line since they don't have such information.
 
->From 40c32592668b727cbfcf7b1c0567f581bd62a5e4 Mon Sep 17 00:00:00 2001
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
-Date: Wed, 3 Jul 2013 23:33:50 -0400
-Subject: [PATCH] tracing/kprobes: Fail to unregister if probe event files are
- in use
-
-When a probe is being removed, it cleans up the event files that correspond
-to the probe. But there is a race between writing to one of these files
-and deleting the probe. This is especially true for the "enable" file.
-
-	CPU 0				CPU 1
-	-----				-----
-
-				  fd = open("enable",O_WRONLY);
-
-  probes_open()
-  release_all_trace_probes()
-  unregister_trace_probe()
-  if (trace_probe_is_enabled(tp))
-	return -EBUSY
-
-				   write(fd, "1", 1)
-				   __ftrace_set_clr_event()
-				   call->class->reg()
-				    (kprobe_register)
-				     enable_trace_probe(tp)
-
-  __unregister_trace_probe(tp);
-  list_del(&tp->list)
-  unregister_probe_event(tp) <-- fails!
-  free_trace_probe(tp)
-
-				   write(fd, "0", 1)
-				   __ftrace_set_clr_event()
-				   call->class->unreg
-				    (kprobe_register)
-				    disable_trace_probe(tp) <-- BOOM!
-
-A test program was written that used two threads to simulate the
-above scenario adding a nanosleep() interval to change the timings
-and after several thousand runs, it was able to trigger this bug
-and crash:
-
-BUG: unable to handle kernel paging request at 00000005000000f9
-IP: [<ffffffff810dee70>] probes_open+0x3b/0xa7
-PGD 7808a067 PUD 0
-Oops: 0000 [#1] PREEMPT SMP
-Dumping ftrace buffer:
----------------------------------
-Modules linked in: ipt_MASQUERADE sunrpc ip6t_REJECT nf_conntrack_ipv6
-CPU: 1 PID: 2070 Comm: test-kprobe-rem Not tainted 3.11.0-rc3-test+ #47
-Hardware name: To Be Filled By O.E.M. To Be Filled By O.E.M./To be filled by O.E.M., BIOS SDBLI944.86P 05/08/2007
-task: ffff880077756440 ti: ffff880076e52000 task.ti: ffff880076e52000
-RIP: 0010:[<ffffffff810dee70>]  [<ffffffff810dee70>] probes_open+0x3b/0xa7
-RSP: 0018:ffff880076e53c38  EFLAGS: 00010203
-RAX: 0000000500000001 RBX: ffff88007844f440 RCX: 0000000000000003
-RDX: 0000000000000003 RSI: 0000000000000003 RDI: ffff880076e52000
-RBP: ffff880076e53c58 R08: ffff880076e53bd8 R09: 0000000000000000
-R10: ffff880077756440 R11: 0000000000000006 R12: ffffffff810dee35
-R13: ffff880079250418 R14: 0000000000000000 R15: ffff88007844f450
-FS:  00007f87a276f700(0000) GS:ffff88007d480000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: 00000005000000f9 CR3: 0000000077262000 CR4: 00000000000007e0
-Stack:
- ffff880076e53c58 ffffffff81219ea0 ffff88007844f440 ffffffff810dee35
- ffff880076e53ca8 ffffffff81130f78 ffff8800772986c0 ffff8800796f93a0
- ffffffff81d1b5d8 ffff880076e53e04 0000000000000000 ffff88007844f440
-Call Trace:
- [<ffffffff81219ea0>] ? security_file_open+0x2c/0x30
- [<ffffffff810dee35>] ? unregister_trace_probe+0x4b/0x4b
- [<ffffffff81130f78>] do_dentry_open+0x162/0x226
- [<ffffffff81131186>] finish_open+0x46/0x54
- [<ffffffff8113f30b>] do_last+0x7f6/0x996
- [<ffffffff8113cc6f>] ? inode_permission+0x42/0x44
- [<ffffffff8113f6dd>] path_openat+0x232/0x496
- [<ffffffff8113fc30>] do_filp_open+0x3a/0x8a
- [<ffffffff8114ab32>] ? __alloc_fd+0x168/0x17a
- [<ffffffff81131f4e>] do_sys_open+0x70/0x102
- [<ffffffff8108f06e>] ? trace_hardirqs_on_caller+0x160/0x197
- [<ffffffff81131ffe>] SyS_open+0x1e/0x20
- [<ffffffff81522742>] system_call_fastpath+0x16/0x1b
-Code: e5 41 54 53 48 89 f3 48 83 ec 10 48 23 56 78 48 39 c2 75 6c 31 f6 48 c7
-RIP  [<ffffffff810dee70>] probes_open+0x3b/0xa7
- RSP <ffff880076e53c38>
-CR2: 00000005000000f9
----[ end trace 35f17d68fc569897 ]---
-
-The unregister_trace_probe() must be done first, and if it fails it must
-fail the removal of the kprobe.
-
-Several changes have already been made by Oleg Nesterov and Masami Hiramatsu
-to allow moving the unregister_probe_event() before the removal of
-the probe and exit the function if it fails. This prevents the tp
-structure from being used after it is freed.
-
-Link: http://lkml.kernel.org/r/20130704034038.819592356@goodmis.org
-
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- kernel/trace/trace_kprobe.c | 21 +++++++++++++++------
- 1 file changed, 15 insertions(+), 6 deletions(-)
+ tools/perf/util/sort.c    |  3 ---
+ tools/perf/util/srcline.c | 11 +++++++++--
+ 2 files changed, 9 insertions(+), 5 deletions(-)
 
-diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-index 3811487..243f683 100644
---- a/kernel/trace/trace_kprobe.c
-+++ b/kernel/trace/trace_kprobe.c
-@@ -95,7 +95,7 @@ static __kprobes bool trace_probe_is_on_module(struct trace_probe *tp)
- }
+diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+index 0d633a059df4..113aa92b1191 100644
+--- a/tools/perf/util/sort.c
++++ b/tools/perf/util/sort.c
+@@ -259,9 +259,6 @@ static int hist_entry__srcline_snprintf(struct hist_entry *self, char *bf,
+ 	if (!self->ms.map)
+ 		goto out_ip;
  
- static int register_probe_event(struct trace_probe *tp);
--static void unregister_probe_event(struct trace_probe *tp);
-+static int unregister_probe_event(struct trace_probe *tp);
+-	if (!strncmp(self->ms.map->dso->long_name, "/tmp/perf-", 10))
+-		goto out_ip;
+-
+ 	path = get_srcline(self->ms.map->dso->long_name, self->ip);
+ 	self->srcline = path;
  
- static DEFINE_MUTEX(probe_lock);
- static LIST_HEAD(probe_list);
-@@ -351,9 +351,12 @@ static int unregister_trace_probe(struct trace_probe *tp)
- 	if (trace_probe_is_enabled(tp))
- 		return -EBUSY;
- 
-+	/* Will fail if probe is being used by ftrace or perf */
-+	if (unregister_probe_event(tp))
-+		return -EBUSY;
-+
- 	__unregister_trace_probe(tp);
- 	list_del(&tp->list);
--	unregister_probe_event(tp);
- 
- 	return 0;
- }
-@@ -632,7 +635,9 @@ static int release_all_trace_probes(void)
- 	/* TODO: Use batch unregistration */
- 	while (!list_empty(&probe_list)) {
- 		tp = list_entry(probe_list.next, struct trace_probe, list);
--		unregister_trace_probe(tp);
-+		ret = unregister_trace_probe(tp);
-+		if (ret)
-+			goto end;
- 		free_trace_probe(tp);
- 	}
- 
-@@ -1247,11 +1252,15 @@ static int register_probe_event(struct trace_probe *tp)
- 	return ret;
- }
- 
--static void unregister_probe_event(struct trace_probe *tp)
-+static int unregister_probe_event(struct trace_probe *tp)
+diff --git a/tools/perf/util/srcline.c b/tools/perf/util/srcline.c
+index 7e92cca6f502..777f91880cdb 100644
+--- a/tools/perf/util/srcline.c
++++ b/tools/perf/util/srcline.c
+@@ -57,11 +57,17 @@ char *get_srcline(const char *dso_name, unsigned long addr)
  {
-+	int ret;
+ 	char *file;
+ 	unsigned line;
+-	char *srcline;
++	char *srcline = SRCLINE_UNKNOWN;
+ 	size_t size;
+ 
++	if (dso_name[0] == '[')
++		goto out;
 +
- 	/* tp->event is unregistered in trace_remove_event_call() */
--	trace_remove_event_call(&tp->call);
--	kfree(tp->call.print_fmt);
-+	ret = trace_remove_event_call(&tp->call);
-+	if (!ret)
-+		kfree(tp->call.print_fmt);
-+	return ret;
++	if (!strncmp(dso_name, "/tmp/perf-", 10))
++		goto out;
++
+ 	if (!addr2line(dso_name, addr, &file, &line))
+-		return SRCLINE_UNKNOWN;
++		goto out;
+ 
+ 	/* just calculate actual length */
+ 	size = snprintf(NULL, 0, "%s:%u", file, line) + 1;
+@@ -73,6 +79,7 @@ char *get_srcline(const char *dso_name, unsigned long addr)
+ 		srcline = SRCLINE_UNKNOWN;
+ 
+ 	free(file);
++out:
+ 	return srcline;
  }
  
- /* Make a debugfs interface for controlling probe points */
 -- 
-1.8.1.4
-
-
+1.7.11.7
 
