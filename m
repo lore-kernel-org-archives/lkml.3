@@ -1,69 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754497Ab3HAQVt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 12:21:49 -0400
-Received: from mailgw1.uni-kl.de ([131.246.120.220]:39741 "EHLO
-	mailgw1.uni-kl.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752480Ab3HAQVr (ORCPT
+	id S1756904Ab3HAQW0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 12:22:26 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:41432 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753322Ab3HAQWX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 12:21:47 -0400
-Message-ID: <51FA8B16.20507@fastmail.fm>
-Date: Thu, 01 Aug 2013 18:21:42 +0200
-From: Bernd Schubert <bernd.schubert@fastmail.fm>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Thu, 1 Aug 2013 12:22:23 -0400
+Message-ID: <51FA8B3B.8070504@wwwdotorg.org>
+Date: Thu, 01 Aug 2013 10:22:19 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Nix <nix@esperi.org.uk>
-CC: Douglas Gilbert <dgilbert@interlog.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-scsi@vger.kernel.org,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        nick.cheng@areca.com.tw, stable@vger.kernel.org
-Subject: Re: [SCSI REGRESSION] 3.10.2 or 3.10.3: arcmsr failure at bootup
- / early userspace transition
-References: <87r4ehfzhf.fsf@spindle.srvr.nix> <51F667C2.4020801@fastmail.fm> <87mwp5frdl.fsf@spindle.srvr.nix> <51F67959.2060803@fastmail.fm> <87fvuxdqes.fsf@spindle.srvr.nix> <51F708A4.9090207@interlog.com> <87ob9koogb.fsf@spindle.srvr.nix> <51F80294.50804@fastmail.fm> <877gg7n3rc.fsf@spindle.srvr.nix> <51FA76D6.2060905@fastmail.fm> <871u6dieie.fsf@spindle.srvr.nix>
-In-Reply-To: <871u6dieie.fsf@spindle.srvr.nix>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+CC: "balbi@ti.com" <balbi@ti.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>
+Subject: Re: [PATCH 0/6] USB tree changes for Tegra30 and Tegra114 USB Host
+ support
+References: <1375292522-7855-1-git-send-email-ttynkkynen@nvidia.com> <51F99C4C.6050508@wwwdotorg.org> <51FA5C5A.2080900@nvidia.com>
+In-Reply-To: <51FA5C5A.2080900@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-ITWM-CharSet: UTF-8
-X-ITWM-Scanned-By: mail2.itwm.fhg.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/01/2013 06:04 PM, Nix wrote:
-> On 1 Aug 2013, Bernd Schubert verbalised:
->
->> On 07/30/2013 11:20 PM, Nix wrote:
->>> On 30 Jul 2013, Bernd Schubert told this:
+On 08/01/2013 07:02 AM, Tuomas Tynkkynen wrote:
+> On 08/01/2013 02:22 AM, Stephen Warren wrote:
+>> On 07/31/2013 11:41 AM, Tuomas Tynkkynen wrote:
+>>> Hi all,
 >>>
->>>> On 07/30/2013 02:56 AM, Nix wrote:
->>>>> On 30 Jul 2013, Douglas Gilbert outgrape:
->>>>>
->>>>>> Please supply the information that Martin Petersen asked
->>>>>> for.
->>>>>
->>>>> Did it in private IRC (the advantage of working for the same division of
->>>>> the same company!)
->>>>>
->>>>> I didn't realise the original fix was actually implemented to allow
->>>>> Bernd, with a different Areca controller, to boot... obviously, in that
->>>>> situation, reversion is wrong, since that would just replace one won't-
->>>>> boot situation with another.
->>>>
->>>> Unless there is very simple fix the commit should reverted, imho. It
->>>> would better then to remove write-same support from the md-layer.
->>>
->>> I'm not using md on that machine, just LVM. Our suspicion is that ext4
->>> is doing a WRITE SAME for some reason.
+>>> Here are the patches for the USB tree to enable USB Host support on Tegra30 and
+>>> Tegra114. These are based on my and Mikko's cleanup patches that just got
+>>> merged to Felipe's tree.
 >>
->> I didn't check yet for other cases, mkfs.ext4 does WRITE SAME and with
->> lazy init it also will happen after mounting the file system, while
->> lazy init is running (inode zeroing).
->
-> Well, it'll happen the first few times you mount the fs. If your fs is
-> years old (as mine are) the inode tables will probably have been
-> initialized by now!
->
+>> This series works fine for me on Dalmore. However, on Beaver, I see the
+>> following:
+>>
+>> [    2.428480] platform 7d008000.usb: Driver tegra-ehci requests probe
+>> deferral
+>>
+>> ... which never seems to be resolved. You can take a look at my
+>> linux-next_common branch to repro this. Does Beaver work for you?
+>>
+> 
+> The clock driver patch is missing from your branch. Applying it should fix that.
 
-I'm frequently doing tests with millions of files and reformating is 
-ways faster than deleting the all these files.
+Oh so it does. Sorry for forgetting about that patch. Given that, the
+series,
+
+Tested-by: Stephen Warren <swarren@nvidia.com>
+
+I'll also try to review/ack the patches ASAP.
