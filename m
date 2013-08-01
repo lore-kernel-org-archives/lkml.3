@@ -1,70 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757244Ab3HAQEk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 12:04:40 -0400
-Received: from icebox.esperi.org.uk ([81.187.191.129]:49751 "EHLO
-	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756334Ab3HAQEi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 12:04:38 -0400
-From: Nix <nix@esperi.org.uk>
-To: Bernd Schubert <bernd.schubert@fastmail.fm>
-Cc: Douglas Gilbert <dgilbert@interlog.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-scsi@vger.kernel.org,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        nick.cheng@areca.com.tw, stable@vger.kernel.org
-Subject: Re: [SCSI REGRESSION] 3.10.2 or 3.10.3: arcmsr failure at bootup / early userspace transition
-References: <87r4ehfzhf.fsf@spindle.srvr.nix> <51F667C2.4020801@fastmail.fm>
-	<87mwp5frdl.fsf@spindle.srvr.nix> <51F67959.2060803@fastmail.fm>
-	<87fvuxdqes.fsf@spindle.srvr.nix> <51F708A4.9090207@interlog.com>
-	<87ob9koogb.fsf@spindle.srvr.nix> <51F80294.50804@fastmail.fm>
-	<877gg7n3rc.fsf@spindle.srvr.nix> <51FA76D6.2060905@fastmail.fm>
-Emacs: the answer to the world surplus of CPU cycles.
-Date: Thu, 01 Aug 2013 17:04:25 +0100
-In-Reply-To: <51FA76D6.2060905@fastmail.fm> (Bernd Schubert's message of "Thu,
-	01 Aug 2013 16:55:18 +0200")
-Message-ID: <871u6dieie.fsf@spindle.srvr.nix>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
+	id S1757189Ab3HAQIH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 12:08:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51451 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756125Ab3HAQIF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 12:08:05 -0400
+Date: Thu, 1 Aug 2013 19:09:28 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>,
+        John Fastabend <john.r.fastabend@intel.com>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org
+Subject: [PATCH v2] macvlan: validate flags
+Message-ID: <1375373227-17986-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-DCC-wuwien-Metrics: spindle 1290; Body=7 Fuz1=7 Fuz2=7
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1 Aug 2013, Bernd Schubert verbalised:
+commit df8ef8f3aaa6692970a436204c4429210addb23a
+    macvlan: add FDB bridge ops and macvlan flags
+added a flags field to macvlan, which can be
+controlled from userspace.
+The idea is to make the interface future-proof
+so we can add flags and not new fields.
 
-> On 07/30/2013 11:20 PM, Nix wrote:
->> On 30 Jul 2013, Bernd Schubert told this:
->>
->>> On 07/30/2013 02:56 AM, Nix wrote:
->>>> On 30 Jul 2013, Douglas Gilbert outgrape:
->>>>
->>>>> Please supply the information that Martin Petersen asked
->>>>> for.
->>>>
->>>> Did it in private IRC (the advantage of working for the same division of
->>>> the same company!)
->>>>
->>>> I didn't realise the original fix was actually implemented to allow
->>>> Bernd, with a different Areca controller, to boot... obviously, in that
->>>> situation, reversion is wrong, since that would just replace one won't-
->>>> boot situation with another.
->>>
->>> Unless there is very simple fix the commit should reverted, imho. It
->>> would better then to remove write-same support from the md-layer.
->>
->> I'm not using md on that machine, just LVM. Our suspicion is that ext4
->> is doing a WRITE SAME for some reason.
->
-> I didn't check yet for other cases, mkfs.ext4 does WRITE SAME and with
-> lazy init it also will happen after mounting the file system, while
-> lazy init is running (inode zeroing).
+However, flags value isn't validated, as a result,
+userspace can't detect which flags are supported.
 
-Well, it'll happen the first few times you mount the fs. If your fs is
-years old (as mine are) the inode tables will probably have been
-initialized by now!
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: John Fastabend <john.r.fastabend@intel.com>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
 
+Changes from v1:
+	tweaked commit message
+	no code changes
+
+Please consider this patch for -stable.
+
+The idea is by the time we add more flags,
+everyone has updated to a kernel that
+detects errors, so userspace will be able
+to detect supported flags cleanly.
+
+
+ drivers/net/macvlan.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/drivers/net/macvlan.c b/drivers/net/macvlan.c
+index 18373b6..8445a94 100644
+--- a/drivers/net/macvlan.c
++++ b/drivers/net/macvlan.c
+@@ -736,6 +736,10 @@ static int macvlan_validate(struct nlattr *tb[], struct nlattr *data[])
+ 			return -EADDRNOTAVAIL;
+ 	}
+ 
++	if (data && data[IFLA_MACVLAN_FLAGS] &&
++	    nla_get_u16(data[IFLA_MACVLAN_FLAGS]) & ~MACVLAN_FLAG_NOPROMISC)
++		return -EINVAL;
++
+ 	if (data && data[IFLA_MACVLAN_MODE]) {
+ 		switch (nla_get_u32(data[IFLA_MACVLAN_MODE])) {
+ 		case MACVLAN_MODE_PRIVATE:
+@@ -809,6 +813,9 @@ int macvlan_common_newlink(struct net *src_net, struct net_device *dev,
+ 	if (data && data[IFLA_MACVLAN_FLAGS])
+ 		vlan->flags = nla_get_u16(data[IFLA_MACVLAN_FLAGS]);
+ 
++	if (vlan->flags & ~MACVLAN_FLAG_NOPROMISC)
++		return -EINVAL;
++
+ 	if (vlan->mode == MACVLAN_MODE_PASSTHRU) {
+ 		if (port->count)
+ 			return -EINVAL;
 -- 
-NULL && (void)
+MST
