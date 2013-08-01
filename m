@@ -1,52 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756614Ab3HAOG0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 10:06:26 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:40469 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756138Ab3HAOGY (ORCPT
+	id S1756391Ab3HAOFf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 10:05:35 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:48794 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755645Ab3HAOFb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 10:06:24 -0400
-Date: Thu, 1 Aug 2013 16:06:15 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung@kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 6/8] perf: Account freq events per cpu
-Message-ID: <20130801140615.GF27162@twins.programming.kicks-ass.net>
-References: <1374539466-4799-1-git-send-email-fweisbec@gmail.com>
- <1374539466-4799-7-git-send-email-fweisbec@gmail.com>
- <20130801124658.GC1032@krava.brq.redhat.com>
- <20130801133155.GB27162@twins.programming.kicks-ass.net>
- <20130801135525.GE431@somewhere>
- <20130801140352.GE27162@twins.programming.kicks-ass.net>
+	Thu, 1 Aug 2013 10:05:31 -0400
+From: Roger Quadros <rogerq@ti.com>
+To: <balbi@ti.com>
+CC: <tony@atomide.com>, <kishon@ti.com>, <george.cherian@ti.com>,
+        <dmurphy@ti.com>, <linux-usb@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Roger Quadros <rogerq@ti.com>
+Subject: [PATCH 4/7] usb: musb: omap2430: Don't use omap_get_control_dev()
+Date: Thu, 1 Aug 2013 17:05:12 +0300
+Message-ID: <1375365915-21380-5-git-send-email-rogerq@ti.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1375365915-21380-1-git-send-email-rogerq@ti.com>
+References: <1375365915-21380-1-git-send-email-rogerq@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130801140352.GE27162@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 01, 2013 at 04:03:52PM +0200, Peter Zijlstra wrote:
-> On Thu, Aug 01, 2013 at 03:55:27PM +0200, Frederic Weisbecker wrote:
-> > On Thu, Aug 01, 2013 at 03:31:55PM +0200, Peter Zijlstra wrote:
-> > > 
-> > > Where the freq thing is new and shiney, but we already had the other
-> > > two. Of those, cgroup events must be per cpu so that should be good,
-> > > the branch_stack thing tests ATTACH_TASK, which should also be good, but
-> > > leaves me wonder wth they do for those that are attached to tasks.
-> > > 
-> > > But yes, the frequency thing is borken.
-> > 
-> > Aie, so the freq thing,  I can either account to all CPUs (inc to all
-> > and send an IPI to all), or when the event scheds in/out. Probably we
-> > should do the former to avoid sending an IPI at all context switches.
-> 
-> Yeah, just go with a single global state for now..
+omap_get_control_dev() is being deprecated as it doesn't support
+multiple instances. As control device is present only from OMAP4
+onwards which supports DT only, we use phandles to get the
+reference to the control device.
 
-The perf default is to create inherited counter, which are per cpu
-anyway. So we'll not loose much.
+Signed-off-by: Roger Quadros <rogerq@ti.com>
+---
+ drivers/usb/musb/omap2430.c |   22 ++++++++++++++++++----
+ 1 files changed, 18 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/usb/musb/omap2430.c b/drivers/usb/musb/omap2430.c
+index ebb46ec..1db9588 100644
+--- a/drivers/usb/musb/omap2430.c
++++ b/drivers/usb/musb/omap2430.c
+@@ -38,6 +38,7 @@
+ #include <linux/delay.h>
+ #include <linux/usb/musb-omap.h>
+ #include <linux/usb/omap_control_usb.h>
++#include <linux/of_platform.h>
+ 
+ #include "musb_core.h"
+ #include "omap2430.h"
+@@ -547,12 +548,25 @@ static int omap2430_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	if (pdata->has_mailbox) {
+-		glue->control_otghs = omap_get_control_dev();
+-		if (IS_ERR(glue->control_otghs)) {
+-			dev_vdbg(&pdev->dev, "Failed to get control device\n");
+-			ret = PTR_ERR(glue->control_otghs);
++		struct device_node *control_node;
++		struct platform_device *control_pdev;
++
++		control_node = of_parse_phandle(np, "ctrl-module", 0);
++		if (!control_node) {
++			dev_err(&pdev->dev, "Failed to get control device phandle\n");
++			ret = -ENODEV;
++			goto err2;
++		}
++
++		control_pdev = of_find_device_by_node(control_node);
++		if (!control_pdev) {
++			dev_err(&pdev->dev, "Failed to get control device\n");
++			ret = -ENODEV;
+ 			goto err2;
+ 		}
++
++		glue->control_otghs = &control_pdev->dev;
++
+ 	} else {
+ 		glue->control_otghs = ERR_PTR(-ENODEV);
+ 	}
+-- 
+1.7.4.1
+
