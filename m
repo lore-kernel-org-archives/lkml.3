@@ -1,67 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756266Ab3HATFK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 15:05:10 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:33316 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752050Ab3HATFH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 15:05:07 -0400
-Message-ID: <51FAB083.5050900@linux.vnet.ibm.com>
-Date: Fri, 02 Aug 2013 00:31:23 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	id S1756324Ab3HATGg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 15:06:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8003 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752286Ab3HATGe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 15:06:34 -0400
+Date: Thu, 1 Aug 2013 15:05:56 -0400
+From: Dave Jones <davej@redhat.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Kees Cook <keescook@chromium.org>,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [Ksummit-2013-discuss] [ARM ATTEND] catching up on exploit
+ mitigations
+Message-ID: <20130801190556.GA1495@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Dan Carpenter <dan.carpenter@oracle.com>,
+	Kees Cook <keescook@chromium.org>,
+	ksummit-2013-discuss@lists.linuxfoundation.org,
+	LKML <linux-kernel@vger.kernel.org>,
+	"linux-arm-kernel@lists.infradead.org" <linux-arm-kernel@lists.infradead.org>
+References: <CAGXu5jKv9Vt+Hu0mFYaxggLLDZ46U3KR9MKegUoHH8StXCkBtQ@mail.gmail.com>
+ <20130801091322.GA5302@mwanda>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Viresh Kumar <viresh.kumar@linaro.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, cpufreq@vger.kernel.org,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
-Subject: Re: [RFC][PATCH] cpufreq: Do not hold driver module references for
- additional policy CPUs
-References: <2362640.pUofnXyzOi@vostro.rjw.lan> <1864010.r8gSosnm8c@vostro.rjw.lan> <51FAA3B9.7040009@linux.vnet.ibm.com> <1656801.jLHjvytfNU@vostro.rjw.lan>
-In-Reply-To: <1656801.jLHjvytfNU@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13080118-9574-0000-0000-000008FE3A26
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130801091322.GA5302@mwanda>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02/2013 12:31 AM, Rafael J. Wysocki wrote:
-> On Thursday, August 01, 2013 11:36:49 PM Srivatsa S. Bhat wrote:
->> Its the cpufreq_cpu_get() hidden away in cpufreq_add_dev_symlink(). With
->> that taken care of, everything should be OK. Then we can change the
->> synchronization part to avoid using refcounts.
-> 
-> So I actually don't see why cpufreq_add_dev_symlink() needs to call
-> cpufreq_cpu_get() at all, since the policy refcount is already 1 at the
-> point it is called and the bumping up of the driver module refcount is
-> pointless.
-> 
+On Thu, Aug 01, 2013 at 12:13:22PM +0300, Dan Carpenter wrote:
+ > I was just reading http://faultlinux.lip6.fr/ which says that in
+ > 2011 the static checker fault rate in arch/ and fs/ was worse than
+ > in drivers/
 
-Hmm, yes, it seems so.
+I've been working on getting more regular builds in coverity, so we can
+get more meaningful statistics on things like "what area is getting worse".
 
-> However, if I change that I also need to change the piece of code that
-> calls the complementary cpufreq_cpu_put() and I kind of cannot find it.
-> 
+Of the current bugs I've categorised so far, here's the breakdown for 3.11-rc3
+in terms of highest bug counts.
 
-... I guess that's because you are looking at the code with your patch
-applied (and your patch removed that _put()) ;-)
+Drivers/net/wireless: 659 
+Drivers/ [1] : 600
+Drivers/staging: 449
+Drivers/scsi: 409
+Drivers/net: 350
+Net/[2] : 297
+Drivers/media: 286
+Sound: 220
+Drivers/GPU: 217
 
-Its this part in __cpufreq_remove_dev():
+That's the top categories for the whole kernel.
 
-1303         } else {
-1304 
-1305                 if (!frozen) {
-1306                         pr_debug("%s: removing link, cpu: %d\n", __func__, cpu);
-1307                         cpufreq_cpu_put(data);
-1308                 }
-1309 
+That wireless was top of the list was the least shocking thing to me,
+based on what we get reported to Fedora bugzilla.  That it found more
+bugs there than in staging was amusing though. The good news is that
+wireless also takes the top slot for 'resolved' issues.
 
- 
-Regards,
-Srivatsa S. Bhat
+The paper above talks about 'arch' but doesn't indicate if it's counting
+all arches, or just the one they run the tests on. (Coverity only covers x86,
+so arch/ shows up in 10th place there).
+FS doesn't show up on the list until 14th place, where there's a another
+catchall category like [1][2]. The first actual fs category with the most
+bugs is btrfs at 16th place, with 68 outstanding reports.
+
+There's a lot of work to do picking through their database, including writing
+modelling functions to reduce false positives. But, I'm on it.
+I'll write up something a bit more in-depth later.
+
+	Dave
+
+[1] This is everything that doesn't match one of the more specific drivers category, 
+    of which there's those mentioned above, plus about a dozen others.
+[2] This is everything in net/ except for ipv4/ipv6/sctp, so all the weirdo protocols basically.
 
