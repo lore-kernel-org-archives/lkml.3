@@ -1,95 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757066Ab3HARYX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 13:24:23 -0400
-Received: from mga02.intel.com ([134.134.136.20]:31683 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751855Ab3HARYU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 13:24:20 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,795,1367996400"; 
-   d="scan'208";a="355628842"
-Message-ID: <51FA99C3.8020508@intel.com>
-Date: Thu, 01 Aug 2013 10:24:19 -0700
-From: John Fastabend <john.r.fastabend@intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S1752651Ab3HAR3N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 13:29:13 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:45627 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751194Ab3HAR3L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 13:29:11 -0400
+Message-ID: <51FA9AE8.1060004@linaro.org>
+Date: Thu, 01 Aug 2013 19:29:12 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org
-Subject: Re: [PATCH v2] macvlan: validate flags
-References: <1375373227-17986-1-git-send-email-mst@redhat.com>
-In-Reply-To: <1375373227-17986-1-git-send-email-mst@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+To: =?UTF-8?B?U8O2cmVuIEJyaW5rbWFubg==?= <soren.brinkmann@xilinx.com>,
+        Stuart Menefy <stuart.menefy@st.com>
+CC: Stephen Boyd <sboyd@codeaurora.org>, John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: Enable arm_global_timer for Zynq brakes boot
+References: <20130722201348.GI453@xsjandreislx> <0735ab8c-0f80-4b64-b2b2-8d4553482c2a@CO9EHSMHS013.ehs.local> <51F66565.7010600@linaro.org> <8d56935e-2a20-46c7-b80a-f779572dd839@CO1EHSMHS014.ehs.local> <51F77D93.4030505@linaro.org> <51F97842.6050200@linaro.org> <068436c6-ff98-428f-8875-bb1c6f86466b@TX2EHSMHS008.ehs.local> <51F97CE3.9030306@linaro.org> <15e19315-ce88-4d3c-bad9-0a37d9e52f6b@CO1EHSMHS007.ehs.local> <51F99747.4060901@linaro.org> <a48f159a-e88c-42fa-b76b-662302d3a585@AM1EHSMHS003.ehs.local>
+In-Reply-To: <a48f159a-e88c-42fa-b76b-662302d3a585@AM1EHSMHS003.ehs.local>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/1/2013 9:09 AM, Michael S. Tsirkin wrote:
-> commit df8ef8f3aaa6692970a436204c4429210addb23a
->      macvlan: add FDB bridge ops and macvlan flags
-> added a flags field to macvlan, which can be
-> controlled from userspace.
-> The idea is to make the interface future-proof
-> so we can add flags and not new fields.
->
-> However, flags value isn't validated, as a result,
-> userspace can't detect which flags are supported.
->
-> Cc: "David S. Miller" <davem@davemloft.net>
-> Cc: John Fastabend <john.r.fastabend@intel.com>
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> ---
->
-> Changes from v1:
-> 	tweaked commit message
-> 	no code changes
->
-> Please consider this patch for -stable.
->
-> The idea is by the time we add more flags,
-> everyone has updated to a kernel that
-> detects errors, so userspace will be able
-> to detect supported flags cleanly.
->
+On 08/01/2013 01:38 AM, Sören Brinkmann wrote:
+> On Thu, Aug 01, 2013 at 01:01:27AM +0200, Daniel Lezcano wrote:
+>> On 08/01/2013 12:18 AM, Sören Brinkmann wrote:
+>>> On Wed, Jul 31, 2013 at 11:08:51PM +0200, Daniel Lezcano wrote:
+>>>> On 07/31/2013 10:58 PM, Sören Brinkmann wrote:
+>>>>> On Wed, Jul 31, 2013 at 10:49:06PM +0200, Daniel Lezcano wrote:
+>>>>>> On 07/31/2013 12:34 AM, Sören Brinkmann wrote:
+>>>>>>> On Tue, Jul 30, 2013 at 10:47:15AM +0200, Daniel Lezcano wrote:
+>>>>>>>> On 07/30/2013 02:03 AM, Sören Brinkmann wrote:
+>>>>>>>>> Hi Daniel,
+>>>>>>>>>
+>>>>>>>>> On Mon, Jul 29, 2013 at 02:51:49PM +0200, Daniel Lezcano wrote:
+>>>>>>>>> (snip)
+>>>>>>>>>>
+>>>>>>>>>> the CPUIDLE_FLAG_TIMER_STOP flag tells the cpuidle framework the local
+>>>>>>>>>> timer will be stopped when entering to the idle state. In this case, the
+>>>>>>>>>> cpuidle framework will call clockevents_notify(ENTER) and switches to a
+>>>>>>>>>> broadcast timer and will call clockevents_notify(EXIT) when exiting the
+>>>>>>>>>> idle state, switching the local timer back in use.
+>>>>>>>>>
+>>>>>>>>> I've been thinking about this, trying to understand how this makes my
+>>>>>>>>> boot attempts on Zynq hang. IIUC, the wrongly provided TIMER_STOP flag
+>>>>>>>>> would make the timer core switch to a broadcast device even though it
+>>>>>>>>> wouldn't be necessary. But shouldn't it still work? It sounds like we do
+>>>>>>>>> something useless, but nothing wrong in a sense that it should result in
+>>>>>>>>> breakage. I guess I'm missing something obvious. This timer system will
+>>>>>>>>> always remain a mystery to me.
+>>>>>>>>>
+>>>>>>>>> Actually this more or less leads to the question: What is this
+>>>>>>>>> 'broadcast timer'. I guess that is some clockevent device which is
+>>>>>>>>> common to all cores? (that would be the cadence_ttc for Zynq). Is the
+>>>>>>>>> hang pointing to some issue with that driver?
+>>>>>>>>
+>>>>>>>> If you look at the /proc/timer_list, which timer is used for broadcasting ?
+>>>>>>>
+>>>>>>> So, the correct run results (full output attached).
+>>>>>>>
+>>>>>>> The vanilla kernel uses the twd timers as local timers and the TTC as
+>>>>>>> broadcast device:
+>>>>>>> 	Tick Device: mode:     1                                                         
+>>>>>>> 	Broadcast device  
+>>>>>>> 	Clock Event Device: ttc_clockevent
+>>>>>>>
+>>>>>>> When I remove the offending CPUIDLE flag and add the DT fragment to
+>>>>>>> enable the global timer, the twd timers are still used as local timers
+>>>>>>> and the broadcast device is the global timer:
+>>>>>>> 	Tick Device: mode:     1                                                         
+>>>>>>> 	Broadcast device                                                                 
+>>>>>>> 	Clock Event Device: arm_global_timer
+>>>>>>>
+>>>>>>> Again, since boot hangs in the actually broken case, I don't see way to
+>>>>>>> obtain this information for that case.
+>>>>>>
+>>>>>> Can't you use the maxcpus=1 option to ensure the system to boot up ?
+>>>>>
+>>>>> Right, that works. I forgot about that option after you mentioned, that
+>>>>> it is most likely not that useful.
+>>>>>
+>>>>> Anyway, this are those sysfs files with an unmodified cpuidle driver and
+>>>>> the gt enabled and having maxcpus=1 set.
+>>>>>
+>>>>> /proc/timer_list:
+>>>>> 	Tick Device: mode:     1
+>>>>> 	Broadcast device
+>>>>> 	Clock Event Device: arm_global_timer
+>>>>> 	 max_delta_ns:   12884902005
+>>>>> 	 min_delta_ns:   1000
+>>>>> 	 mult:           715827876
+>>>>> 	 shift:          31
+>>>>> 	 mode:           3
+>>>>
+>>>> Here the mode is 3 (CLOCK_EVT_MODE_ONESHOT)
+>>>>
+>>>> The previous timer_list output you gave me when removing the offending
+>>>> cpuidle flag, it was 1 (CLOCK_EVT_MODE_SHUTDOWN).
+>>>>
+>>>> Is it possible you try to get this output again right after onlining the
+>>>> cpu1 in order to check if the broadcast device switches to SHUTDOWN ?
+>>>
+>>> How do I do that? I tried to online CPU1 after booting with maxcpus=1
+>>> and that didn't end well:
+>>> 	# echo 1 > online && cat /proc/timer_list 
+>>
+>> Hmm, I was hoping to have a small delay before the kernel hangs but
+>> apparently this is not the case... :(
+>>
+>> I suspect the global timer is shutdown at one moment but I don't
+>> understand why and when.
+>>
+>> Can you add a stack trace in the "clockevents_shutdown" function with
+>> the clockevent device name ? Perhaps, we may see at boot time an
+>> interesting trace when it hangs.
+> 
+> I did this change:
+> 	diff --git a/kernel/time/clockevents.c b/kernel/time/clockevents.c
+> 	index 38959c8..3ab11c1 100644
+> 	--- a/kernel/time/clockevents.c
+> 	+++ b/kernel/time/clockevents.c
+> 	@@ -92,6 +92,8 @@ void clockevents_set_mode(struct clock_event_device *dev,
+> 	  */
+> 	 void clockevents_shutdown(struct clock_event_device *dev)
+> 	 {
+> 	+       pr_info("ce->name:%s\n", dev->name);
+> 	+       dump_stack();
+> 	        clockevents_set_mode(dev, CLOCK_EVT_MODE_SHUTDOWN);
+> 	        dev->next_event.tv64 = KTIME_MAX;
+> 	 }
+> 
+> It is hit a few times during boot, so I attach a full boot log. I really
+> don't know what to look for, but I hope you can spot something in it. I
+> really appreciate you taking the time.
 
-Agreed and because we haven't added more flags yet this shouldn't
-break uapi. Thanks for catching this.
+Thanks for the traces.
 
->
->   drivers/net/macvlan.c | 7 +++++++
->   1 file changed, 7 insertions(+)
->
+If you try without the ttc_clockevent configured in the kernel (but with
+twd and gt), does it boot ?
 
-By the same logic should we also add the check to macvlan_changelink()?
 
-> diff --git a/drivers/net/macvlan.c b/drivers/net/macvlan.c
-> index 18373b6..8445a94 100644
-> --- a/drivers/net/macvlan.c
-> +++ b/drivers/net/macvlan.c
-> @@ -736,6 +736,10 @@ static int macvlan_validate(struct nlattr *tb[], struct nlattr *data[])
->   			return -EADDRNOTAVAIL;
->   	}
->
-> +	if (data && data[IFLA_MACVLAN_FLAGS] &&
-> +	    nla_get_u16(data[IFLA_MACVLAN_FLAGS]) & ~MACVLAN_FLAG_NOPROMISC)
-> +		return -EINVAL;
-> +
->   	if (data && data[IFLA_MACVLAN_MODE]) {
->   		switch (nla_get_u32(data[IFLA_MACVLAN_MODE])) {
->   		case MACVLAN_MODE_PRIVATE:
-> @@ -809,6 +813,9 @@ int macvlan_common_newlink(struct net *src_net, struct net_device *dev,
->   	if (data && data[IFLA_MACVLAN_FLAGS])
->   		vlan->flags = nla_get_u16(data[IFLA_MACVLAN_FLAGS]);
->
-> +	if (vlan->flags & ~MACVLAN_FLAG_NOPROMISC)
-> +		return -EINVAL;
-> +
+-- 
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
 
-Is there really a case where newlink is called without first calling
-validate? I don't think there is so the snippet here in newlink could
-be dropped.
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
-Thanks,
-John
