@@ -1,172 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758028Ab3HAW2M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 18:28:12 -0400
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:14604 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755118Ab3HAW2I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 18:28:08 -0400
-Message-ID: <1375396019.10300.32.camel@misato.fc.hp.com>
-Subject: Re: [PATCH v2 04/18] acpi: Introduce acpi_invalid_table() to check
- if a table is invalid.
-From: Toshi Kani <toshi.kani@hp.com>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu,
-        hpa@zytor.com, akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
-        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
-        mina86@mina86.com, gong.chen@linux.intel.com,
-        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
-        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
-        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com, x86@kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Date: Thu, 01 Aug 2013 16:26:59 -0600
-In-Reply-To: <1375340800-19332-5-git-send-email-tangchen@cn.fujitsu.com>
-References: <1375340800-19332-1-git-send-email-tangchen@cn.fujitsu.com>
-	 <1375340800-19332-5-git-send-email-tangchen@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+	id S1757800Ab3HAWdk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 18:33:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51888 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753272Ab3HAWdj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 18:33:39 -0400
+Date: Thu, 1 Aug 2013 18:33:03 -0400
+From: Rik van Riel <riel@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Mel Gorman <mgorman@suse.de>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mm, numa: Change page last {nid,pid} into {cpu,pid}
+Message-ID: <20130801183303.18880ad4@annuminas.surriel.com>
+In-Reply-To: <20130730112438.GQ3008@twins.programming.kicks-ass.net>
+References: <1373901620-2021-1-git-send-email-mgorman@suse.de>
+	<20130730112438.GQ3008@twins.programming.kicks-ass.net>
+Organization: Red Hat, Inc.
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-08-01 at 15:06 +0800, Tang Chen wrote:
-> In acpi_initrd_override(), it checks several things to ensure the
-> table it found is valid. In later patches, we need to do these check
-> somewhere else. So this patch introduces a common function
-> acpi_invalid_table() to do all these checks, and reuse it in different
-> places. The function will be used in the subsequent patches.
+On Tue, 30 Jul 2013 13:24:39 +0200
+Peter Zijlstra <peterz@infradead.org> wrote:
+
 > 
-> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-> Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-> ---
->  drivers/acpi/osl.c |   86 +++++++++++++++++++++++++++++++++++++---------------
->  1 files changed, 61 insertions(+), 25 deletions(-)
+> Subject: mm, numa: Change page last {nid,pid} into {cpu,pid}
+> From: Peter Zijlstra <peterz@infradead.org>
+> Date: Thu Jul 25 18:44:50 CEST 2013
 > 
-> diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-> index 91d9f54..8df8a93 100644
-> --- a/drivers/acpi/osl.c
-> +++ b/drivers/acpi/osl.c
-> @@ -572,9 +572,68 @@ static const char * const table_sigs[] = {
->  /* Must not increase 10 or needs code modification below */
->  #define ACPI_OVERRIDE_TABLES 10
->  
-> +/*******************************************************************************
-> + *
-> + * FUNCTION:    acpi_invalid_table
-> + *
-> + * PARAMETERS:  File               - The initrd file
-> + *              Path               - Path to acpi overriding tables in cpio file
-> + *              Signature          - Signature of the table
-> + *
-> + * RETURN:      0 if it passes all the checks, -EINVAL if any check fails.
-> + *
-> + * DESCRIPTION: Check if an acpi table found in initrd is invalid.
-> + *              @signature can be NULL. If it is NULL, the function will check
-> + *              if the table signature matches any signature in table_sigs[].
-> + *
-> + ******************************************************************************/
-> +int __init acpi_invalid_table(struct cpio_data *file,
-> +			      const char *path, const char *signature)
+> Change the per page last fault tracking to use cpu,pid instead of
+> nid,pid. This will allow us to try and lookup the alternate task more
+> easily.
+> 
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 
-Since this function verifies a given acpi table in initrd (not that the
-table is invalid), I'd suggest to rename it something like
-acpi_verify_initrd().  Otherwise, it looks good to me.
+Here are some compile fixes for !CONFIG_NUMA_BALANCING
 
-Acked-by: Toshi Kani <toshi.kani@hp.com>
+Signed-off-by: Rik van Riel <riel@redhat.com>
 
-Thanks,
--Toshi
+---
+ include/linux/mm.h | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-
-> +{
-> +	int idx;
-> +	struct acpi_table_header *table = file->data;
-> +
-> +	if (file->size < sizeof(struct acpi_table_header)) {
-> +		INVALID_TABLE("Table smaller than ACPI header",
-> +			      path, file->name);
-> +		return -EINVAL;
-> +	}
-> +
-> +	if (signature) {
-> +		if (memcmp(table->signature, signature, 4)) {
-> +			INVALID_TABLE("Table signature does not match",
-> +				      path, file->name);
-> +			return -EINVAL;
-> +		}
-> +	} else {
-> +		for (idx = 0; table_sigs[idx]; idx++)
-> +			if (!memcmp(table->signature, table_sigs[idx], 4))
-> +				break;
-> +
-> +		if (!table_sigs[idx]) {
-> +			INVALID_TABLE("Unknown signature", path, file->name);
-> +			return -EINVAL;
-> +		}
-> +	}
-> +
-> +	if (file->size != table->length) {
-> +		INVALID_TABLE("File length does not match table length",
-> +			      path, file->name);
-> +		return -EINVAL;
-> +	}
-> +
-> +	if (acpi_table_checksum(file->data, table->length)) {
-> +		INVALID_TABLE("Bad table checksum",
-> +			      path, file->name);
-> +		return -EINVAL;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
->  void __init acpi_initrd_override(void *data, size_t size)
->  {
-> -	int sig, no, table_nr = 0, total_offset = 0;
-> +	int no, table_nr = 0, total_offset = 0;
->  	long offset = 0;
->  	struct acpi_table_header *table;
->  	char cpio_path[32] = "kernel/firmware/acpi/";
-> @@ -593,33 +652,10 @@ void __init acpi_initrd_override(void *data, size_t size)
->  		data += offset;
->  		size -= offset;
->  
-> -		if (file.size < sizeof(struct acpi_table_header)) {
-> -			INVALID_TABLE("Table smaller than ACPI header",
-> -				      cpio_path, file.name);
-> -			continue;
-> -		}
-> -
->  		table = file.data;
->  
-> -		for (sig = 0; table_sigs[sig]; sig++)
-> -			if (!memcmp(table->signature, table_sigs[sig], 4))
-> -				break;
-> -
-> -		if (!table_sigs[sig]) {
-> -			INVALID_TABLE("Unknown signature",
-> -				      cpio_path, file.name);
-> +		if (acpi_invalid_table(&file, cpio_path, NULL))
->  			continue;
-> -		}
-> -		if (file.size != table->length) {
-> -			INVALID_TABLE("File length does not match table length",
-> -				      cpio_path, file.name);
-> -			continue;
-> -		}
-> -		if (acpi_table_checksum(file.data, table->length)) {
-> -			INVALID_TABLE("Bad table checksum",
-> -				      cpio_path, file.name);
-> -			continue;
-> -		}
->  
->  		pr_info("%4.4s ACPI table found in initrd [%s%s][0x%x]\n",
->  			table->signature, cpio_path, file.name, table->length);
-
-
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index d2f91a2..4f34a37 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -746,7 +746,12 @@ static inline int cpupid_to_pid(int cpupid)
+ 	return -1;
+ }
+ 
+-static inline int nid_pid_to_cpupid(int nid, int pid)
++static inline int cpupid_to_cpu(int cpupid)
++{
++	return -1;
++}
++
++static inline int cpu_pid_to_cpupid(int nid, int pid)
+ {
+ 	return -1;
+ }
