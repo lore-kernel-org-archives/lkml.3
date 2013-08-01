@@ -1,103 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755348Ab3HANaJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 09:30:09 -0400
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:48401 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751066Ab3HANaH (ORCPT
+	id S1755464Ab3HANaQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 09:30:16 -0400
+Received: from mail-qc0-f181.google.com ([209.85.216.181]:49642 "EHLO
+	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751066Ab3HANaN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 09:30:07 -0400
-Date: Thu, 1 Aug 2013 15:30:02 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung@kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 3/8] perf: Gather event accounting code
-Message-ID: <20130801132956.GB431@somewhere>
-References: <1374539466-4799-1-git-send-email-fweisbec@gmail.com>
- <1374539466-4799-4-git-send-email-fweisbec@gmail.com>
- <20130801131329.GF1032@krava.brq.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130801131329.GF1032@krava.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 1 Aug 2013 09:30:13 -0400
+Content-Type: text/plain; charset=US-ASCII
+Mime-Version: 1.0 (Mac OS X Mail 6.3 \(1503\))
+Subject: Re: [PATCH] Xen: Fix retry calls into PRIVCMD_MMAPBATCH*.
+From: Andres Lagar-Cavilla <andreslc@gridcentric.ca>
+In-Reply-To: <51FA4EDD.4040509@citrix.com>
+Date: Thu, 1 Aug 2013 09:30:08 -0400
+Cc: Andres Lagar-Cavilla <andreslc@gridcentric.ca>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andres Lagar-Cavilla <andres@lagarcavilla.com>,
+        <boris.ostrovsky@oracle.com>
+Content-Transfer-Encoding: 7BIT
+Message-Id: <36C91A76-8C6D-47F0-8229-099779634A53@gridcentric.ca>
+References: <1375203632-23854-1-git-send-email-andres@lagarcavilla.org> <2BE2F119-7375-4C8D-933D-9BCD5A9B7552@gridcentric.ca> <51FA4547.7080408@citrix.com> <5373EBB3-5CF1-4A2F-B821-1DD788877F75@gridcentric.ca> <51FA4EDD.4040509@citrix.com>
+To: David Vrabel <david.vrabel@citrix.com>
+X-Mailer: Apple Mail (2.1503)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 01, 2013 at 03:13:30PM +0200, Jiri Olsa wrote:
-> On Tue, Jul 23, 2013 at 02:31:01AM +0200, Frederic Weisbecker wrote:
-> > Gather all the event accounting code to a single place,
-> > once all the prerequisites are completed. This simplifies
-> > the refcounting.
-> > 
-> > Original-patch-by: Peter Zijlstra <peterz@infradead.org>
-> > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> > Cc: Jiri Olsa <jolsa@redhat.com>
-> > Cc: Peter Zijlstra <peterz@infradead.org>
-> > Cc: Namhyung Kim <namhyung@kernel.org>
-> > Cc: Ingo Molnar <mingo@kernel.org>
-> > Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-> > Cc: Stephane Eranian <eranian@google.com>
-> > ---
-> >  kernel/events/core.c |   79 +++++++++++++++++++++++++++++--------------------
-> >  1 files changed, 47 insertions(+), 32 deletions(-)
-> > 
-> > diff --git a/kernel/events/core.c b/kernel/events/core.c
-> > index c5f435f..3bb73af 100644
-> > --- a/kernel/events/core.c
-> > +++ b/kernel/events/core.c
-> > @@ -3128,6 +3128,21 @@ static void free_event_rcu(struct rcu_head *head)
-> >  static void ring_buffer_put(struct ring_buffer *rb);
-> >  static void ring_buffer_detach(struct perf_event *event, struct ring_buffer *rb);
-> >  
-> > +static void __free_event(struct perf_event *event)
-> > +{
-> > +	if (!event->parent) {
-> > +		if (event->attr.sample_type & PERF_SAMPLE_CALLCHAIN)
-> > +			put_callchain_buffers();
-> > +	}
-> > +
-> > +	if (event->destroy)
-> > +		event->destroy(event);
-> > +
-> > +	if (event->ctx)
-> > +		put_ctx(event->ctx);
-> > +
-> > +	call_rcu(&event->rcu_head, free_event_rcu);
-> > +}
-> >  static void free_event(struct perf_event *event)
-> >  {
-> 
-> nitpick, missing nl between functions
-> 
-> >  	irq_work_sync(&event->pending);
-> > @@ -3141,8 +3156,6 @@ static void free_event(struct perf_event *event)
-> >  			atomic_dec(&nr_comm_events);
-> >  		if (event->attr.task)
-> >  			atomic_dec(&nr_task_events);
-> > -		if (event->attr.sample_type & PERF_SAMPLE_CALLCHAIN)
-> > -			put_callchain_buffers();
-> >  		if (is_cgroup_event(event)) {
-> >  			atomic_dec(&per_cpu(perf_cgroup_events, event->cpu));
-> >  			static_key_slow_dec_deferred(&perf_sched_events);
-> > @@ -3180,13 +3193,8 @@ static void free_event(struct perf_event *event)
-> >  	if (is_cgroup_event(event))
-> >  		perf_detach_cgroup(event);
-> >  
-> > -	if (event->destroy)
-> > -		event->destroy(event);
-> > -
-> > -	if (event->ctx)
-> > -		put_ctx(event->ctx);
-> >  
-> > -	call_rcu(&event->rcu_head, free_event_rcu);
-> > +	__free_event(event);
-> 
-> nitpick, extra nl above
 
+On Aug 1, 2013, at 8:04 AM, David Vrabel <david.vrabel@citrix.com> wrote:
 
-Ok, I'll fix, thanks!
+> On 01/08/13 12:49, Andres Lagar-Cavilla wrote:
+>> On Aug 1, 2013, at 7:23 AM, David Vrabel <david.vrabel@citrix.com> wrote:
+>> 
+>>> On 01/08/13 04:30, Andres Lagar-Cavilla wrote:
+>>>> -- Resend as I haven't seen this hit the lists. Maybe some smtp misconfig. Apologies. Also expanded cc --
+>>>> 
+>>>> When a foreign mapper attempts to map guest frames that are paged out,
+>>>> the mapper receives an ENOENT response and will have to try again
+>>>> while a helper process pages the target frame back in.
+>>>> 
+>>>> Gating checks on PRIVCMD_MMAPBATCH* ioctl args were preventing retries
+>>>> of mapping calls.
+>>> 
+>>> This breaks the auto_translated_physmap case as will allocate another
+>>> set of empty pages and leak the previous set.
+>> 
+>> David,
+>> not able to follow you here. Under what circumstances will another
+>> set of empty pages be allocated? And where? are we talking page table pages?
+> 
+> 	....
+> 	vma = find_vma(mm, m.addr);
+> 	if (!vma ||
+> 	    vma->vm_ops != &privcmd_vm_ops ||
+> 	    (m.addr != vma->vm_start) ||
+> 	    ((m.addr + (nr_pages << PAGE_SHIFT)) != vma->vm_end) ||
+> 	    !privcmd_enforce_singleshot_mapping(vma)) {
+> 		up_write(&mm->mmap_sem);
+> 		ret = -EINVAL;
+> 		goto out;
+> 	}
+> 	if (xen_feature(XENFEAT_auto_translated_physmap)) {
+> 		ret = alloc_empty_pages(vma, m.num);
+> 
+> Here.
+
+Right right right. Excellent observation thanks. I fwd ported from 3.4 and this slipped through the cracks. Ok, V2 coming.
+> 
+> 		if (ret < 0) {
+> 			up_write(&mm->mmap_sem);
+> 			goto out;
+> 		}
+> 	}
+> 
+> 
+>>> This privcmd_enforce_singleshot_mapping() stuff seems very odd anyway.
+>>> Does anyone know what it was for originally?  It would be preferrable if
+>>> we could update the mappings with a new set of foreign MFNs without
+>>> having to tear down the VMA and recreate a new VMA.
+>> 
+>> I believe it's mostly historical. I agree with you on principle, but recreating VMAs is super-cheap.
+> 
+> Tearing them down is not cheap as each page requires a trap-and-emulate
+> to clear the PTE (see ptep_get_and_clear_full() in zap_pte_range()).
+
+You need to tell the hypervisor to drop the ref on the mapped page. So you'd need a hyper call (arguably a multi-call) to do that, which is not free. Then you'd need privcmd and libxc to collude on agreeing to reuse the vma -- which has very low value in itself, just a piece of metadata. And you still need to deal with cleaning up the mapped refs when the mapping process crashes.
+
+So a whole lot of new complexity for small value, imho.
+
+Probably that's the whole point of the singleshot: don't forget you have something mapped in there. Because if you do you might leak the ref forever.
+
+Andres
+> 
+> David
+
