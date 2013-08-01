@@ -1,104 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754409Ab3HAGQI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 02:16:08 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:60529 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753271Ab3HAGQF (ORCPT
+	id S1754516Ab3HAGQX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 02:16:23 -0400
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:49307 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753278Ab3HAGQV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 02:16:05 -0400
-X-AuditID: 9c93016f-b7b05ae000002bbd-d8-51f9fd24a9fb
-Date: Thu, 1 Aug 2013 15:16:32 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, luto@amacapital.net,
-        xemul@parallels.com, akpm@linux-foundation.org, mpm@selenic.com,
-        xiaoguangrong@linux.vnet.ibm.com, mtosatti@redhat.com,
-        kosaki.motohiro@gmail.com, sfr@canb.auug.org.au, peterz@infradead.org,
-        aneesh.kumar@linux.vnet.ibm.com
-Subject: Re: [patch 1/2] [PATCH] mm: Save soft-dirty bits on swapped pages
-Message-ID: <20130801061632.GE19540@bbox>
-References: <20130730204154.407090410@gmail.com>
- <20130730204654.844299768@gmail.com>
- <20130801005132.GB19540@bbox>
- <20130801055303.GA1764@moon>
+	Thu, 1 Aug 2013 02:16:21 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AjgFAHr8+VF5LPxHgWdsb2JhbABavQ+FLoEfFw4BARYmKIIkAQEFJxMcIxAIAw4HAwklDwUlAyETiA+5TRaPcQeECwOXXpR0Kg
+Date: Thu, 1 Aug 2013 16:16:18 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Jan Kara <jack@suse.cz>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, davej@redhat.com, viro@zeniv.linux.org.uk,
+        glommer@parallels.com
+Subject: Re: [PATCH 07/11] writeback: periodically trim the writeback list
+Message-ID: <20130801061618.GQ7118@dastard>
+References: <1375244150-27296-1-git-send-email-david@fromorbit.com>
+ <1375244150-27296-8-git-send-email-david@fromorbit.com>
+ <20130731151542.GI22930@quack.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130801055303.GA1764@moon>
+In-Reply-To: <20130731151542.GI22930@quack.suse.cz>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 01, 2013 at 09:53:03AM +0400, Cyrill Gorcunov wrote:
-> On Thu, Aug 01, 2013 at 09:51:32AM +0900, Minchan Kim wrote:
-> > > Index: linux-2.6.git/include/linux/swapops.h
-> > > ===================================================================
-> > > --- linux-2.6.git.orig/include/linux/swapops.h
-> > > +++ linux-2.6.git/include/linux/swapops.h
-> > > @@ -67,6 +67,8 @@ static inline swp_entry_t pte_to_swp_ent
-> > >  	swp_entry_t arch_entry;
-> > >  
-> > >  	BUG_ON(pte_file(pte));
-> > > +	if (pte_swp_soft_dirty(pte))
-> > > +		pte = pte_swp_clear_soft_dirty(pte);
+On Wed, Jul 31, 2013 at 05:15:42PM +0200, Jan Kara wrote:
+> On Wed 31-07-13 14:15:46, Dave Chinner wrote:
+> > From: Dave Chinner <dchinner@redhat.com>
 > > 
-> > Why do you remove soft-dirty flag whenever pte_to_swp_entry is called?
-> > Isn't there any problem if we use mincore?
-> 
-> No, there is no problem. pte_to_swp_entry caller when we know that pte
-> we're decoding is having swap format (except the case in swap code which
-> figures out the number of bits allowed for offset). Still since this bit
-> is set on "higher" level than __swp_type/__swp_offset helpers it should
-> be cleaned before the value from pte comes to "one level down" helpers
-> function.
-
-I don't get it. Could you correct me with below example?
-
-Process A context
-        try_to_unmap
-                swp_pte = swp_entry_to_pte /* change generic swp into arch swap */
-                swp_pte = pte_swp_mksoft_dirty(swp_pte);
-                set_pte_at(, swp_pte);
-
-Process A context
-        ..
-        mincore_pte_range
-                pte_to_swp_entry
-                        pte = pte_swp_clear_soft_dirty  <=== 1)
-                        change arch swp with generic swp
-                mincore_page 
-
-Process B want to know dirty state of the page
-        ..
-        pagemap_read
-        pte_to_pagemap_entry
-        is_swap_pte
-                if (pte_swap_soft_dirty(pte)) <=== but failed by 1)
-
-So, Process B can't get the dirty status from process A's the page.
-
-> 
-> > > +static inline int maybe_same_pte(pte_t pte, pte_t swp_pte)
+> > Inodes are removed lazily from the bdi writeback list, so in the
+> > absence of sync(2) work inodes will build up on the bdi writback
+> > list even though they are no longer under IO. Use the periodic
+> > kupdate work check to remove inodes no longer under IO from the
+> > writeback list.
 > > 
-> > Nitpick.
-> > If maybe_same_pte is used widely, it looks good to me
-> > but it's used for only swapoff at the moment so I think pte_swap_same
-> > would be better name.
-> 
-> I don't see much difference, but sure, lets rename it on top once series
-> in -mm tree, sounds good?
-> 
-> 	Cyrill
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> > Signed-off-by: Dave Chinner <dchinner@redhat.com>
+> > ---
+> >  fs/fs-writeback.c | 19 +++++++++++++++++++
+> >  1 file changed, 19 insertions(+)
+> > 
+> > diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+> > index 638f122..7c9bbf0 100644
+> > --- a/fs/fs-writeback.c
+> > +++ b/fs/fs-writeback.c
+> > @@ -962,6 +962,23 @@ static long wb_check_background_flush(struct bdi_writeback *wb)
+> >  	return 0;
+> >  }
+> >  
+> > +/*
+> > + * clean out writeback list for all inodes that don't have IO in progress
+> > + */
+> > +static void wb_trim_writeback_list(struct bdi_writeback *wb)
+> > +{
+> > +	struct inode *inode;
+> > +	struct inode *tmp;
+> > +
+> > +	spin_lock(&wb->list_lock);
+> > +	list_for_each_entry_safe(inode, tmp, &wb->b_writeback, i_wb_list) {
+> > +		if (!mapping_tagged(inode->i_mapping, PAGECACHE_TAG_WRITEBACK))
+> > +			list_del_init(&inode->i_wb_list);
+> > +	}
+>    Oo, and here you manipulate i_wb_list without mapping->tree_lock so that
+> can race with the list_empty() check in bdi_mark_inode_writeback().
 
+I'm not sure it does - we only remove is the PAGECACHE_TAG_WRITEBACK
+is not set, and only insert after we set the tag. Hence, if we are
+walking the &wb->b_writeback list here and PAGECACHE_TAG_WRITEBACK
+is set because there is an insert in progress then we can't race
+with the insert because we won't be trying to delete it from the
+list...
+
+Cheers,
+
+Dave.
 -- 
-Kind regards,
-Minchan Kim
+Dave Chinner
+david@fromorbit.com
