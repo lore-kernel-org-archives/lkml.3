@@ -1,33 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755830Ab3HAUpZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 16:45:25 -0400
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:41490 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753257Ab3HAUpX (ORCPT
+	id S1756159Ab3HAUqo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 16:46:44 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39656 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751957Ab3HAUqm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 16:45:23 -0400
+	Thu, 1 Aug 2013 16:46:42 -0400
+Date: Thu, 1 Aug 2013 21:45:52 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Andreas Herrmann <andreas.herrmann@calxeda.com>
+Cc: Rob Herring <rob.herring@calxeda.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Hiroshi Doyu <hdoyu@nvidia.com>, Will Deacon <will.deacon@arm.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: dma-mapping: highbank: Restrict DMA to 32-bit
+	addresses
+Message-ID: <20130801204552.GI23006@n2100.arm.linux.org.uk>
+References: <20130801204047.GY20842@alberich>
 MIME-Version: 1.0
-In-Reply-To: <51FAC481.2050905@zytor.com>
-References: <1375202858-28470-1-git-send-email-leif.lindholm@linaro.org>
-	<51FAC481.2050905@zytor.com>
-Date: Thu, 1 Aug 2013 21:45:21 +0100
-Message-ID: <CAL01qpvhoCJH8mnS89_L=zEeUO1DD24myPEV6BzeyA4ZSd-Uqg@mail.gmail.com>
-Subject: Re: [PATCH 0/4] Make commonly useful UEFI functions common
-From: "Fleming, Matt" <matt.fleming@intel.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Leif Lindholm <leif.lindholm@linaro.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-ia64@vger.kernel.org, "tglx@linutronix.de" <tglx@linutronix.de>,
-        patches@linaro.org, "Luck, Tony" <tony.luck@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130801204047.GY20842@alberich>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1 August 2013 21:26, H. Peter Anvin <hpa@zytor.com> wrote:
-> Matt, I assume you're picking this up once the missing bits are plugged
-> in, right?
+On Thu, Aug 01, 2013 at 10:40:47PM +0200, Andreas Herrmann wrote:
+> 
+> Some devices on Calxeda ECX-2000 are restricted to 32-bit DMA. Thus
+> the platform needs to set dma_zone_size, otherwise dma-mapping code is
+> complaining, e.g.
+> 
+>   calxedaxgmac fff50000.ethernet: coherent DMA mask 0xffffffff is smaller than system
+>     GFP_DMA mask 0xffffffffffffffff
+> 
+> Same is true for sata_highbank. For the latter dma_coherent_mask could
+> be increased but due to the lack of DMA32 zone we need to adapt
+> arm_dma_limit in general.
 
-Yep, that was my plan.
+Please wait until I post my dma mask patches.  Thanks.
