@@ -1,124 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754583Ab3HAGXT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 02:23:19 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:65202 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754200Ab3HAGXR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 02:23:17 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130801024800.GK7118@dastard>
-References: <1375281746-15908-1-git-send-email-linkinjeon@gmail.com>
-	<20130801024800.GK7118@dastard>
-Date: Thu, 1 Aug 2013 15:23:16 +0900
-Message-ID: <CAKYAXd-Ja1JraEA95GKq7c=nzHF0KkgNeRy5vKL4KnjymuXPsw@mail.gmail.com>
-Subject: Re: [PATCH 3/3] ext4: Implement FALLOC_FL_COLLAPSE_RANGE
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: tytso@mit.edu, adilger.kernel@dilger.ca, bpm@sgi.com, elder@kernel.org,
-        hch@infradead.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        xfs@oss.sgi.com, a.sangwan@samsung.com,
-        Namjae Jeon <namjae.jeon@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1754617Ab3HAGYE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 02:24:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60276 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753278Ab3HAGYB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 02:24:01 -0400
+Date: Thu, 1 Aug 2013 02:23:19 -0400
+From: Rik van Riel <riel@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Mel Gorman <mgorman@suse.de>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH,RFC] numa,sched: use group fault statistics in numa
+ placement
+Message-ID: <20130801022319.4a6a977a@annuminas.surriel.com>
+In-Reply-To: <20130730113857.GR3008@twins.programming.kicks-ass.net>
+References: <1373901620-2021-1-git-send-email-mgorman@suse.de>
+	<20130730113857.GR3008@twins.programming.kicks-ass.net>
+Organization: Red Hat, Inc.
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/8/1, Dave Chinner <david@fromorbit.com>:
-> On Wed, Jul 31, 2013 at 11:42:26PM +0900, Namjae Jeon wrote:
->> From: Namjae Jeon <namjae.jeon@samsung.com>
->>
->> New fallocate flag FALLOC_FL_COLLAPSE_RANGE implementation for Ext4
-> .....
->> +
->> +	punch_start = offset >> EXT4_BLOCK_SIZE_BITS(sb);
->> +	punch_stop = (offset + len) >> EXT4_BLOCK_SIZE_BITS(sb);
->> +
->> +	rounding = max_t(uint, 1 << EXT4_BLOCK_SIZE_BITS(sb), PAGE_CACHE_SIZE);
->> +	ioffset = offset & ~(rounding - 1);
->> +
->> +	/* Write out all dirty pages */
->> +	ret = filemap_write_and_wait_range(inode->i_mapping, ioffset, -1);
->> +	if (ret)
->> +		return ret;
->> +
->> +	/* Take mutex lock */
->> +	mutex_lock(&inode->i_mutex);
->> +
->> +	truncate_pagecache_range(inode, ioffset, -1);
->
-> Ted, that's invalidating the page cache from the start of the
-> collaspse range to the end of the file. So the ext4 code is doing
-> this bit correctly.  Why isn't this in the XFS patches? Clearly the
-> need for this was understood, and, well, this code is obviously
-> copied from the XFS hole punching code. i.e. from
-> xfs_free_file_space().
-we already called xfs_free_file_space for collpase range in XFS patch.
-So invalidate page cache has been calling from xfs_free_file_space in
-this patch :)
->
->> +	/* Wait for existing dio to complete */
->> +	ext4_inode_block_unlocked_dio(inode);
->> +	inode_dio_wait(inode);
->
-> That should be done before invalidating the pagecache....
-Ah, correct. will move it before invalidating.
->
->> +	credits = ext4_writepage_trans_blocks(inode);
->> +	handle = ext4_journal_start(inode, EXT4_HT_TRUNCATE, credits);
->> +	if (IS_ERR(handle)) {
->> +		ret = PTR_ERR(handle);
->> +		goto out_dio;
->> +	}
->> +
->> +	down_write(&EXT4_I(inode)->i_data_sem);
->> +
->> +	ext4_discard_preallocations(inode);
->> +
->> +	ret = ext4_es_remove_extent(inode, punch_start,
->> +				    EXT_MAX_BLOCKS - punch_start - 1);
->> +	if (ret)
->> +		goto journal_stop;
->> +
->> +	ret = ext4_ext_remove_space(inode, punch_start, punch_stop - 1);
->> +	if (ret)
->> +		goto journal_stop;
->
-> So, this code punches out the existing space in the file so that the
-> extent shifting is moving extents into a hole. Why is this in the
-> ext4 code, but not the XFS code?
-for Ext4, we are calling ext4_ext_remove_space directly from collapse
-range function while in xfs we are using its punch hole functionality.
-This is because Ext4 punch hole does not work beyond EOF. Moreover,
-there is i_mutex acquired within ext4_punch_hole which can leads to
-race.
+Subject: [PATCH,RFC] numa,sched: use group fault statistics in numa placement
 
-Something like:
-ext4_fallocate {
-    ext4_punch_hole{
-        grab i_mutex;
-        do punching;
-        release i_mutex:
-        }
-    ext4_collapse_space{
-        sync dirty pages
-        grab i_mutex;
-        update extent;
-        release i_mutex;
-    }
-} // ext4_fallocate_ends
+Here is a quick strawman on how the group fault stuff could be used
+to help pick the best node for a task. This is likely to be quite
+suboptimal and in need of tweaking. My main goal is to get this to
+Peter & Mel before it's breakfast time on their side of the Atlantic...
 
-XFS has no such problem as xfs_iolock is taken after entering in
-xfs_file_fallocate and released on exit.
+This goes on top of "sched, numa: Use {cpu, pid} to create task groups for shared faults"
 
-Thanks for review :)
->
-> Cheers,
->
-> Dave.
-> --
-> Dave Chinner
-> david@fromorbit.com
->
+Enjoy :)
+
+Signed-off-by: Rik van Riel <riel@redhat.com>
+---
+ kernel/sched/fair.c | 32 +++++++++++++++++++++++++++++---
+ 1 file changed, 29 insertions(+), 3 deletions(-)
+
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 6a06bef..fb2e229 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -1135,8 +1135,9 @@ struct numa_group {
+ 
+ static void task_numa_placement(struct task_struct *p)
+ {
+-	int seq, nid, max_nid = -1;
+-	unsigned long max_faults = 0;
++	int seq, nid, max_nid = -1, max_group_nid = -1;
++	unsigned long max_faults = 0, max_group_faults = 0;
++	unsigned long total_faults = 0, total_group_faults = 0;
+ 
+ 	seq = ACCESS_ONCE(p->mm->numa_scan_seq);
+ 	if (p->numa_scan_seq == seq)
+@@ -1148,7 +1149,7 @@ static void task_numa_placement(struct task_struct *p)
+ 
+ 	/* Find the node with the highest number of faults */
+ 	for (nid = 0; nid < nr_node_ids; nid++) {
+-		unsigned long faults = 0;
++		unsigned long faults = 0, group_faults = 0;
+ 		int priv, i;
+ 
+ 		for (priv = 0; priv < 2; priv++) {
+@@ -1169,6 +1170,7 @@ static void task_numa_placement(struct task_struct *p)
+ 			if (p->numa_group) {
+ 				/* safe because we can only change our own group */
+ 				atomic_long_add(diff, &p->numa_group->faults[i]);
++				group_faults += atomic_long_read(&p->numa_group->faults[i]);
+ 			}
+ 		}
+ 
+@@ -1176,11 +1178,35 @@ static void task_numa_placement(struct task_struct *p)
+ 			max_faults = faults;
+ 			max_nid = nid;
+ 		}
++
++		if (group_faults > max_group_faults) {
++			max_group_faults = group_faults;
++			max_group_nid = nid;
++		}
++
++		total_faults += faults;
++		total_group_faults += group_faults;
+ 	}
+ 
+ 	if (sched_feat(NUMA_INTERLEAVE))
+ 		task_numa_mempol(p, max_faults);
+ 
++	/*
++	 * Should we stay on our own, or move in with the group?
++	 * The absolute count of faults may not be useful, but comparing
++	 * the fraction of accesses in each top node may give us a hint
++	 * where to start looking for a migration target.
++	 *
++	 *  max_group_faults     max_faults
++	 * ------------------ > ------------
++	 * total_group_faults   total_faults
++	 */
++	if (max_group_nid >= 0 && max_group_nid != max_nid) {
++		if (max_group_faults * total_faults >
++				max_faults * total_group_faults)
++			max_nid = max_group_nid;
++	}
++
+ 	/* Preferred node as the node with the most faults */
+ 	if (max_faults && max_nid != p->numa_preferred_nid) {
+ 
