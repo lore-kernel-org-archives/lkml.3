@@ -1,156 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752194Ab3HAHOZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 03:14:25 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:6865 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750848Ab3HAHOW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 03:14:22 -0400
-X-IronPort-AV: E=Sophos;i="4.89,792,1367942400"; 
-   d="scan'208";a="8085324"
-From: Tang Chen <tangchen@cn.fujitsu.com>
-To: rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu,
-        hpa@zytor.com, akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
-        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
-        mina86@mina86.com, gong.chen@linux.intel.com,
-        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
-        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
-        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com
-Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Subject: [PATCH v2 18/18] x86, numa, acpi, memory-hotplug: Make movablenode have higher priority.
-Date: Thu, 1 Aug 2013 15:06:40 +0800
-Message-Id: <1375340800-19332-19-git-send-email-tangchen@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.10.1
-In-Reply-To: <1375340800-19332-1-git-send-email-tangchen@cn.fujitsu.com>
-References: <1375340800-19332-1-git-send-email-tangchen@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/01 15:06:53,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/01 15:06:56,
-	Serialize complete at 2013/08/01 15:06:56
+	id S1752085Ab3HAHSq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 03:18:46 -0400
+Received: from mail-bk0-f45.google.com ([209.85.214.45]:57108 "EHLO
+	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751663Ab3HAHSp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 03:18:45 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130731153115.GA5233@pd.tnic>
+References: <CALkWK0n7zedKD4tnxKh-qMuDnMJ5RXjnPJ9EUWT=cCgiokX11A@mail.gmail.com>
+	<51E97779.3020103@zytor.com>
+	<87zjte9iah.fsf@rustcorp.com.au>
+	<CABpLfohrweJd0=0eFJDO7dv2HHxx_mbP0uySMDrsZZZXExdXug@mail.gmail.com>
+	<20130731153115.GA5233@pd.tnic>
+Date: Thu, 1 Aug 2013 10:18:44 +0300
+Message-ID: <CABpLfoi8gG5o6Qp2e8m1-GnP5+dKjH4bwDJorN+6g0EybXaa6g@mail.gmail.com>
+Subject: Re: [QUERY] lguest64
+From: Mike Rapoport <mike.rapoport@gmail.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ramkumar Ramachandra <artagnon@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arrange hotpluggable memory as ZONE_MOVABLE will cause NUMA performance down
-because the kernel cannot use movable memory. For users who don't use memory
-hotplug and who don't want to lose their NUMA performance, they need a way to
-disable this functionality. So we improved movablecore boot option.
+On Wed, Jul 31, 2013 at 6:31 PM, Borislav Petkov <bp@alien8.de> wrote:
+> On Wed, Jul 31, 2013 at 12:39:23PM +0300, Mike Rapoport wrote:
+>> There are plenty virtual machines in EC2, Rackspace, HP and other
+>> clouds that do not have hardware virtualization. I believe that
+>> running a hypervisor on them may be pretty interesting.
+>
+> Interesting how?
+>
+> How interesting is it really to run nested on a public
+> surveillance^Wcloud platform vs say, using nested kvm on your own
+> machine?
 
-If users specify the original movablecore=nn@ss boot option, the kernel will
-arrange [ss, ss+nn) as ZONE_MOVABLE. The kernelcore=nn@ss boot option is similar
-except it specifies ZONE_NORMAL ranges.
+There are people that use public clouds^Wsurveliance platforms. Why do
+they prefer these platforms over kvm on their own machines is another
+question. But, it is their choice and their right to use whatever
+platform they'd like. I've only suggested to provide them with ability
+to use nested virtualizatoin on their platform...
 
-Now, if users specify "movablenode" in kernel commandline, the kernel will
-arrange hotpluggable memory in SRAT as ZONE_MOVABLE. And if users do this, all
-the other movablecore=nn@ss and kernelcore=nn@ss options should be ignored.
+> What are those very important use cases which warrant growing more of
+> that pvops gunk^Wcreativity?
 
-For those who don't want this, just specify nothing. The kernel will act as
-before.
+For instance, you can run several exact copies of OpenStack deployment
+on Amazon EC2 :-)
 
-Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
----
- include/linux/memblock.h |    1 +
- mm/memblock.c            |    5 +++++
- mm/page_alloc.c          |   31 ++++++++++++++++++++++++++++---
- 3 files changed, 34 insertions(+), 3 deletions(-)
+> :-)
+>
+> --
+> Regards/Gruss,
+>     Boris.
+>
+> Sent from a fat crate under my desk. Formatting is fine.
+> --
 
-diff --git a/include/linux/memblock.h b/include/linux/memblock.h
-index 637ec3d..545d143 100644
---- a/include/linux/memblock.h
-+++ b/include/linux/memblock.h
-@@ -64,6 +64,7 @@ int memblock_reserve(phys_addr_t base, phys_addr_t size);
- void memblock_trim_memory(phys_addr_t align);
- 
- int memblock_mark_hotplug(phys_addr_t base, phys_addr_t size);
-+bool memblock_is_hotpluggable(struct memblock_region *region);
- 
- #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
- void __next_mem_pfn_range(int *idx, int nid, unsigned long *out_start_pfn,
-diff --git a/mm/memblock.c b/mm/memblock.c
-index 84bd568..97d7f41 100644
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -610,6 +610,11 @@ int __init_memblock memblock_mark_hotplug(phys_addr_t base, phys_addr_t size)
- 	return 0;
- }
- 
-+bool __init_memblock memblock_is_hotpluggable(struct memblock_region *region)
-+{
-+	return region->flags & MEMBLOCK_HOTPLUG;
-+}
-+
- /**
-  * __next_free_mem_range - next function for for_each_free_mem_range()
-  * @idx: pointer to u64 loop variable
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index c3edb62..21017d3 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -4878,9 +4878,35 @@ static void __init find_zone_movable_pfns_for_nodes(void)
- 	nodemask_t saved_node_state = node_states[N_MEMORY];
- 	unsigned long totalpages = early_calculate_totalpages();
- 	int usable_nodes = nodes_weight(node_states[N_MEMORY]);
-+	struct memblock_type *type = &memblock.memory;
- 
-+	/* Need to find movable_zone earlier when movablenode is specified. */
-+	find_usable_zone_for_movable();
-+
-+#ifdef CONFIG_MOVABLE_NODE
- 	/*
--	 * If movablecore was specified, calculate what size of
-+	 * If movablenode is specified, ignore kernelcore and movablecore
-+	 * options.
-+	 */
-+	if (movablenode_enable_srat) {
-+		for (i = 0; i < type->cnt; i++) {
-+			if (!memblock_is_hotpluggable(&type->regions[i]))
-+				continue;
-+
-+			nid = type->regions[i].nid;
-+
-+			usable_startpfn = PFN_DOWN(type->regions[i].base);
-+			zone_movable_pfn[nid] = zone_movable_pfn[nid] ?
-+				min(usable_startpfn, zone_movable_pfn[nid]) :
-+				usable_startpfn;
-+		}
-+
-+		goto out;
-+	}
-+#endif
-+
-+	/*
-+	 * If movablecore=nn[KMG] was specified, calculate what size of
- 	 * kernelcore that corresponds so that memory usable for
- 	 * any allocation type is evenly spread. If both kernelcore
- 	 * and movablecore are specified, then the value of kernelcore
-@@ -4906,7 +4932,6 @@ static void __init find_zone_movable_pfns_for_nodes(void)
- 		goto out;
- 
- 	/* usable_startpfn is the lowest possible pfn ZONE_MOVABLE can be at */
--	find_usable_zone_for_movable();
- 	usable_startpfn = arch_zone_lowest_possible_pfn[movable_zone];
- 
- restart:
-@@ -4997,12 +5022,12 @@ restart:
- 	if (usable_nodes && required_kernelcore > usable_nodes)
- 		goto restart;
- 
-+out:
- 	/* Align start of ZONE_MOVABLE on all nids to MAX_ORDER_NR_PAGES */
- 	for (nid = 0; nid < MAX_NUMNODES; nid++)
- 		zone_movable_pfn[nid] =
- 			roundup(zone_movable_pfn[nid], MAX_ORDER_NR_PAGES);
- 
--out:
- 	/* restore the node_state */
- 	node_states[N_MEMORY] = saved_node_state;
- }
 -- 
-1.7.1
-
+Sincerely yours,
+Mike.
