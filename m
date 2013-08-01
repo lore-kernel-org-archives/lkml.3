@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753530Ab3HAAct (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 20:32:49 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:59453 "EHLO
+	id S1753590Ab3HAAc7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 20:32:59 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:35559 "EHLO
 	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752133Ab3HAAcs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 20:32:48 -0400
+	id S1752133Ab3HAAc5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 20:32:57 -0400
 From: Joe Perches <joe@perches.com>
 To: netdev@vger.kernel.org
 Cc: "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
-Subject: [PATCH 7/8] checksum: Remove extern from function prototypes
-Date: Wed, 31 Jul 2013 17:31:38 -0700
-Message-Id: <c3c67906ed477f9f851d43d61c8d927767212458.1375316912.git.joe@perches.com>
+Subject: [PATCH 8/8] cls_cgroup.h netprio_cgroup.h: Remove extern from function prototypes
+Date: Wed, 31 Jul 2013 17:31:39 -0700
+Message-Id: <2d25335e101a20b760b0cd422b24d91aef60c720.1375316912.git.joe@perches.com>
 X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
 In-Reply-To: <cover.1375316912.git.joe@perches.com>
 References: <cover.1375316912.git.joe@perches.com>
@@ -29,30 +29,36 @@ using auto to declare automatic/local variables in a block.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- include/net/checksum.h | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ include/net/cls_cgroup.h     | 2 +-
+ include/net/netprio_cgroup.h | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/include/net/checksum.h b/include/net/checksum.h
-index 600d1d7..8f59ca5 100644
---- a/include/net/checksum.h
-+++ b/include/net/checksum.h
-@@ -107,11 +107,11 @@ static inline void csum_replace2(__sum16 *sum, __be16 from, __be16 to)
- }
+diff --git a/include/net/cls_cgroup.h b/include/net/cls_cgroup.h
+index 0fee061..f55c145 100644
+--- a/include/net/cls_cgroup.h
++++ b/include/net/cls_cgroup.h
+@@ -24,7 +24,7 @@ struct cgroup_cls_state
+ 	u32 classid;
+ };
  
- struct sk_buff;
--extern void inet_proto_csum_replace4(__sum16 *sum, struct sk_buff *skb,
--				     __be32 from, __be32 to, int pseudohdr);
--extern void inet_proto_csum_replace16(__sum16 *sum, struct sk_buff *skb,
--				      const __be32 *from, const __be32 *to,
--				      int pseudohdr);
-+void inet_proto_csum_replace4(__sum16 *sum, struct sk_buff *skb,
-+			      __be32 from, __be32 to, int pseudohdr);
-+void inet_proto_csum_replace16(__sum16 *sum, struct sk_buff *skb,
-+			       const __be32 *from, const __be32 *to,
-+			       int pseudohdr);
+-extern void sock_update_classid(struct sock *sk);
++void sock_update_classid(struct sock *sk);
  
- static inline void inet_proto_csum_replace2(__sum16 *sum, struct sk_buff *skb,
- 					    __be16 from, __be16 to,
+ #if IS_BUILTIN(CONFIG_NET_CLS_CGROUP)
+ static inline u32 task_cls_classid(struct task_struct *p)
+diff --git a/include/net/netprio_cgroup.h b/include/net/netprio_cgroup.h
+index 50ab8c2..379dd5d 100644
+--- a/include/net/netprio_cgroup.h
++++ b/include/net/netprio_cgroup.h
+@@ -29,7 +29,7 @@ struct cgroup_netprio_state {
+ 	struct cgroup_subsys_state css;
+ };
+ 
+-extern void sock_update_netprioidx(struct sock *sk);
++void sock_update_netprioidx(struct sock *sk);
+ 
+ #if IS_BUILTIN(CONFIG_NETPRIO_CGROUP)
+ 
 -- 
 1.8.1.2.459.gbcd45b4.dirty
 
