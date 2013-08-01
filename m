@@ -1,128 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755188Ab3HAMee (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 08:34:34 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.160]:35212 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754630Ab3HAMed (ORCPT
+	id S1755199Ab3HAMfn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 08:35:43 -0400
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:62914 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753450Ab3HAMfm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 08:34:33 -0400
-X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+yackYocTD1iAi8x+OWJ8KkvZ5rHdwZi2MQ==
-X-RZG-CLASS-ID: mo00
-From: Olaf Hering <olaf@aepfle.de>
-To: kys@microsoft.com, gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, Olaf Hering <olaf@aepfle.de>
-Subject: [PATCH] Tools: hv: fix send/recv buffer allocation
-Date: Thu,  1 Aug 2013 14:34:26 +0200
-Message-Id: <1375360466-11366-1-git-send-email-olaf@aepfle.de>
-X-Mailer: git-send-email 1.8.3.1
+	Thu, 1 Aug 2013 08:35:42 -0400
+Date: Thu, 1 Aug 2013 08:35:32 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Shaohua Li <shli@kernel.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] workqueue: copy workqueue_attrs with all fields
+Message-ID: <20130801123532.GC24966@htj.dyndns.org>
+References: <20130729062412.GA6448@kernel.org>
+ <20130729111401.GA20951@mtj.dyndns.org>
+ <20130729125259.GA9306@kernel.org>
+ <20130729153523.GA22605@mtj.dyndns.org>
+ <20130730054955.GA5225@kernel.org>
+ <20130730141419.GG12016@htj.dyndns.org>
+ <20130731013929.GB1504@kernel.org>
+ <20130731102752.GD2810@htj.dyndns.org>
+ <20130801015636.GA12580@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130801015636.GA12580@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hv_kvp_daemon fails to start in current openSuSE 13.1 snapshots because
-the kvp_send_buffer is too small to hold cn_msg+hv_kvp_msg, the very
-first sendmsg returns with EFAULT. In addition it fixes the Network info
-tab in Windows Server 2012R2 in SLES11.
+Hello,
 
-Adjust the code in kvp and vss daemon to allocate the needed buffers at
-runtime. To keep the code simple, the buffer_len includes also the
-nlmsghdr, although only the recv_buffer needs this extra space.
+Applied w/ some doc updates to wq/for-3.11f-fixes.
 
-Signed-off-by: Olaf Hering <olaf@aepfle.de>
+Thanks a lot!
+---------- 8< -----------
+>From 4fb228c35f4522f83abacaecc9838f0ab391a9b6 Mon Sep 17 00:00:00 2001
+From: Shaohua Li <shli@kernel.org>
+Date: Thu, 1 Aug 2013 09:56:36 +0800
+
+ $echo '0' > /sys/bus/workqueue/devices/xxx/numa
+ $cat /sys/bus/workqueue/devices/xxx/numa
+
+I got 1. It should be 0, the reason is copy_workqueue_attrs() called
+in apply_workqueue_attrs() doesn't copy no_numa field.
+
+Fix it by making copy_workqueue_attrs() copy ->no_numa too.  This
+would also make get_unbound_pool() set a pool's ->no_numa attribute
+according to the workqueue attributes used when the pool was created.
+While harmelss, as ->no_numa isn't a pool attribute, this is a bit
+confusing.  Clear it explicitly.
+
+tj: Updated description and comments a bit.
+
+Signed-off-by: Shaohua Li <shli@fusionio.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: stable@vger.kernel.org
 ---
- tools/hv/hv_kvp_daemon.c | 15 ++++++++++++---
- tools/hv/hv_vss_daemon.c | 15 ++++++++++++---
- 2 files changed, 24 insertions(+), 6 deletions(-)
+ kernel/workqueue.c | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
-diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
-index 07819bf..657c1d2 100644
---- a/tools/hv/hv_kvp_daemon.c
-+++ b/tools/hv/hv_kvp_daemon.c
-@@ -79,8 +79,6 @@ enum {
- 	DNS
- };
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 55f5f0a..cc5fa06 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -3416,6 +3416,12 @@ static void copy_workqueue_attrs(struct workqueue_attrs *to,
+ {
+ 	to->nice = from->nice;
+ 	cpumask_copy(to->cpumask, from->cpumask);
++	/*
++	 * Unlike hash and equality test, this function doesn't ignore
++	 * ->no_numa as it is used for both pool and wq attrs.  Instead,
++	 * get_unbound_pool() explicitly clears ->no_numa after copying.
++	 */
++	to->no_numa = from->no_numa;
+ }
  
--static char kvp_send_buffer[4096];
--static char kvp_recv_buffer[4096 * 2];
- static struct sockaddr_nl addr;
- static int in_hand_shake = 1;
+ /* hash value of the content of @attr */
+@@ -3583,6 +3589,12 @@ static struct worker_pool *get_unbound_pool(const struct workqueue_attrs *attrs)
+ 	lockdep_set_subclass(&pool->lock, 1);	/* see put_pwq() */
+ 	copy_workqueue_attrs(pool->attrs, attrs);
  
-@@ -1437,10 +1435,21 @@ int main(void)
- 	int	pool;
- 	char	*if_name;
- 	struct hv_kvp_ipaddr_value *kvp_ip_val;
-+	char *kvp_send_buffer;
-+	char *kvp_recv_buffer;
-+	size_t kvp_recv_buffer_len;
- 
- 	daemon(1, 0);
- 	openlog("KVP", 0, LOG_USER);
- 	syslog(LOG_INFO, "KVP starting; pid is:%d", getpid());
++	/*
++	 * no_numa isn't a worker_pool attribute, always clear it.  See
++	 * 'struct workqueue_attrs' comments for detail.
++	 */
++	pool->attrs->no_numa = 0;
 +
-+	kvp_recv_buffer_len = NLMSG_HDRLEN + sizeof(struct cn_msg) + sizeof(struct hv_kvp_msg);
-+	kvp_send_buffer = calloc(1, kvp_recv_buffer_len);
-+	kvp_recv_buffer = calloc(1, kvp_recv_buffer_len);
-+	if (!(kvp_send_buffer && kvp_recv_buffer)) {
-+		syslog(LOG_ERR, "Failed to allocate netlink buffers");
-+		exit(EXIT_FAILURE);
-+	}
- 	/*
- 	 * Retrieve OS release information.
- 	 */
-@@ -1514,7 +1523,7 @@ int main(void)
- 				continue;
- 		}
- 
--		len = recvfrom(fd, kvp_recv_buffer, sizeof(kvp_recv_buffer), 0,
-+		len = recvfrom(fd, kvp_recv_buffer, kvp_recv_buffer_len, 0,
- 				addr_p, &addr_l);
- 
- 		if (len < 0) {
-diff --git a/tools/hv/hv_vss_daemon.c b/tools/hv/hv_vss_daemon.c
-index fea03a3..4c34675 100644
---- a/tools/hv/hv_vss_daemon.c
-+++ b/tools/hv/hv_vss_daemon.c
-@@ -38,8 +38,6 @@
- #include <linux/netlink.h>
- #include <syslog.h>
- 
--static char vss_recv_buffer[4096];
--static char vss_send_buffer[4096];
- static struct sockaddr_nl addr;
- 
- #ifndef SOL_NETLINK
-@@ -147,6 +145,9 @@ int main(void)
- 	struct cn_msg	*incoming_cn_msg;
- 	int	op;
- 	struct hv_vss_msg *vss_msg;
-+	char *vss_send_buffer;
-+	char *vss_recv_buffer;
-+	size_t vss_recv_buffer_len;
- 
- 	if (daemon(1, 0))
- 		return 1;
-@@ -154,6 +155,14 @@ int main(void)
- 	openlog("Hyper-V VSS", 0, LOG_USER);
- 	syslog(LOG_INFO, "VSS starting; pid is:%d", getpid());
- 
-+	vss_recv_buffer_len = NLMSG_HDRLEN + sizeof(struct cn_msg) + sizeof(struct hv_vss_msg);
-+	vss_send_buffer = calloc(1, vss_recv_buffer_len);
-+	vss_recv_buffer = calloc(1, vss_recv_buffer_len);
-+	if (!(vss_send_buffer && vss_recv_buffer)) {
-+		syslog(LOG_ERR, "Failed to allocate netlink buffers");
-+		exit(EXIT_FAILURE);
-+	}
-+
- 	fd = socket(AF_NETLINK, SOCK_DGRAM, NETLINK_CONNECTOR);
- 	if (fd < 0) {
- 		syslog(LOG_ERR, "netlink socket creation failed; error:%d", fd);
-@@ -201,7 +210,7 @@ int main(void)
- 		pfd.revents = 0;
- 		poll(&pfd, 1, -1);
- 
--		len = recvfrom(fd, vss_recv_buffer, sizeof(vss_recv_buffer), 0,
-+		len = recvfrom(fd, vss_recv_buffer, vss_recv_buffer_len, 0,
- 				addr_p, &addr_l);
- 
- 		if (len < 0) {
+ 	/* if cpumask is contained inside a NUMA node, we belong to that node */
+ 	if (wq_numa_enabled) {
+ 		for_each_node(node) {
+-- 
+1.8.3.1
+
