@@ -1,74 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752810Ab3HANBG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 09:01:06 -0400
-Received: from mms3.broadcom.com ([216.31.210.19]:2163 "EHLO mms3.broadcom.com"
+	id S1754099Ab3HANCR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 09:02:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7715 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751267Ab3HANBF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 09:01:05 -0400
-X-Server-Uuid: B86B6450-0931-4310-942E-F00ED04CA7AF
-Message-ID: <51FA5BFF.6050901@broadcom.com>
-Date: Thu, 1 Aug 2013 15:00:47 +0200
-From: "Arend van Spriel" <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623
- Thunderbird/17.0.7
+	id S1750834Ab3HANCQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 09:02:16 -0400
+Date: Thu, 1 Aug 2013 15:01:46 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung@kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 2/8] perf: Sanitize get_callchain_buffer()
+Message-ID: <20130801130146.GE1032@krava.brq.redhat.com>
+References: <1374539466-4799-1-git-send-email-fweisbec@gmail.com>
+ <1374539466-4799-3-git-send-email-fweisbec@gmail.com>
 MIME-Version: 1.0
-To: "David Howells" <dhowells@redhat.com>
-cc: "Joe Perches" <joe@perches.com>,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        "Andy Whitcroft" <apw@canonical.com>,
-        "Hannes Frederic Sowa" <hannes@stressinduktion.org>,
-        "Cong Wang" <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH] checkpatch: Warn when using extern with function
- prototypes in .h files
-References: <1374721150.1924.26.camel@joe-AO722>
- <1374602291.3387.17.camel@joe-AO722> <kspuuk$k2v$1@ger.gmane.org>
- <1374716480.1924.18.camel@joe-AO722>
- <20130725014732.GA10036@order.stressinduktion.org>
- <25105.1375359664@warthog.procyon.org.uk>
-In-Reply-To: <25105.1375359664@warthog.procyon.org.uk>
-X-WSS-ID: 7DE4863E2L869572949-01-01
-Content-Type: text/plain;
- charset=iso-8859-1;
- format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1374539466-4799-3-git-send-email-fweisbec@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/01/2013 02:21 PM, David Howells wrote:
-> Joe Perches <joe@perches.com> wrote:
->
->> Using the extern keyword on function prototypes is superfluous
->> visual noise so suggest removing it.
->>
->> Using extern can cause unnecessary line wrapping at 80 columns
->> and unnecessarily long multi-line function prototypes.
->>
->> Suggested-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
->> Signed-off-by: Joe Perches <joe@perches.com>
->
-> Nak.
->
-> The "extern" makes it much easier to pick out at a glance.
+On Tue, Jul 23, 2013 at 02:31:00AM +0200, Frederic Weisbecker wrote:
+> In case of allocation failure, get_callchain_buffer() keeps the
+> refcount incremented for the current event.
+> 
+> As a result, when get_callchain_buffers() returns an error,
+> we must cleanup what it did by cancelling its last refcount
+> with a call to put_callchain_buffers().
+> 
+> This is a hack in order to be able to call free_event()
+> after that failure.
+> 
+> The original purpose of that was to simplify the failure
+> path. But this error handling is actually counter intuitive,
+> ugly and not very easy to follow because one expect to
+> see the resources used to perform a service to be cleaned
+> by the callee if case of failure, not by the caller.
+> 
+> So lets clean this up by cancelling the refcount from
+> get_callchain_buffer() in case of failure. And correctly free
+> the event accordingly in perf_event_alloc().
+> 
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Jiri Olsa <jolsa@redhat.com>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Namhyung Kim <namhyung@kernel.org>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+> Cc: Stephane Eranian <eranian@google.com>
+> ---
+>  kernel/events/callchain.c |    2 ++
+>  kernel/events/core.c      |   41 +++++++++++++++++++++--------------------
+>  2 files changed, 23 insertions(+), 20 deletions(-)
+> 
+> diff --git a/kernel/events/callchain.c b/kernel/events/callchain.c
+> index c772061..76a8bc5 100644
+> --- a/kernel/events/callchain.c
+> +++ b/kernel/events/callchain.c
+> @@ -117,6 +117,8 @@ int get_callchain_buffers(void)
+>  	err = alloc_callchain_buffers();
+>  exit:
+>  	mutex_unlock(&callchain_mutex);
+> +	if (err)
+> +		atomic_dec(&nr_callchain_events);
 
-Really? Grouping function prototypes within the header file is much more 
-helpful for spotting them.
+shouldn't we touch this under above lock?
 
-Regards,
-Arend
+also that above hunk decrements nr_callchain_events
+also for following case:
 
-> Please standardise on there _being_ externs if you must do this.
->
-> It's gratuitous change anyway and not worth the churn.
->
-> David
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+        count = atomic_inc_return(&nr_callchain_events);
+        if (WARN_ON_ONCE(count < 1)) {
+                err = -EINVAL;
+                goto exit;
+        }
 
+seems like it screws the count
 
+jirka
