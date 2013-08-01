@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752776Ab3HAAjb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 20:39:31 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:59532 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752055Ab3HAAb6 (ORCPT
+	id S1752279Ab3HAAb5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 20:31:57 -0400
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:33559 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752055Ab3HAAbt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 20:31:58 -0400
+	Wed, 31 Jul 2013 20:31:49 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>, Borislav Petkov <bp@alien8.de>,
-        Li Zhong <zhong@linux.vnet.ibm.com>, Mike Galbraith <efault@gmx.de>,
-        Kevin Hilman <khilman@linaro.org>
-Subject: [PATCH 07/23] context_tracking: Ground setup for static key use
-Date: Thu,  1 Aug 2013 02:31:24 +0200
-Message-Id: <1375317100-20651-8-git-send-email-fweisbec@gmail.com>
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Borislav Petkov <bp@alien8.de>,
+        Alex Shi <alex.shi@intel.com>, Paul Turner <pjt@google.com>,
+        Mike Galbraith <efault@gmx.de>,
+        Vincent Guittot <vincent.guittot@linaro.org>
+Subject: [PATCH 01/23] sched: Consolidate open coded preemptible() checks
+Date: Thu,  1 Aug 2013 02:31:18 +0200
+Message-Id: <1375317100-20651-2-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1375317100-20651-1-git-send-email-fweisbec@gmail.com>
 References: <1375317100-20651-1-git-send-email-fweisbec@gmail.com>
@@ -26,91 +28,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Prepare for using a static key in the context tracking subsystem.
-This will help optimizing the off case on its many users:
+preempt_schedule() and preempt_schedule_context() open
+code their preemptability checks.
 
-* user_enter, user_exit, exception_enter, exception_exit, guest_enter,
-  guest_exit, vtime_*()
+Use the standard API instead for consolidation.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Borislav Petkov <bp@alien8.de>
 Cc: Li Zhong <zhong@linux.vnet.ibm.com>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Borislav Petkov <bp@alien8.de>
+Cc: Alex Shi <alex.shi@intel.com>
+Cc: Paul Turner <pjt@google.com>
 Cc: Mike Galbraith <efault@gmx.de>
-Cc: Kevin Hilman <khilman@linaro.org>
+Cc: Vincent Guittot <vincent.guittot@linaro.org>
 ---
- include/linux/context_tracking.h |    2 ++
- kernel/context_tracking.c        |   26 ++++++++++++++++++++------
- 2 files changed, 22 insertions(+), 6 deletions(-)
+ kernel/context_tracking.c |    3 +--
+ kernel/sched/core.c       |    4 +---
+ 2 files changed, 2 insertions(+), 5 deletions(-)
 
-diff --git a/include/linux/context_tracking.h b/include/linux/context_tracking.h
-index 1ae37c7..f9356eb 100644
---- a/include/linux/context_tracking.h
-+++ b/include/linux/context_tracking.h
-@@ -4,6 +4,7 @@
- #include <linux/sched.h>
- #include <linux/percpu.h>
- #include <linux/vtime.h>
-+#include <linux/static_key.h>
- #include <asm/ptrace.h>
- 
- struct context_tracking {
-@@ -22,6 +23,7 @@ struct context_tracking {
- 
- 
- #ifdef CONFIG_CONTEXT_TRACKING
-+extern struct static_key context_tracking_enabled;
- DECLARE_PER_CPU(struct context_tracking, context_tracking);
- 
- static inline bool context_tracking_in_user(void)
 diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
-index 72bcb25..f07505c 100644
+index 383f823..942835c 100644
 --- a/kernel/context_tracking.c
 +++ b/kernel/context_tracking.c
-@@ -20,15 +20,16 @@
- #include <linux/hardirq.h>
- #include <linux/export.h>
- 
--DEFINE_PER_CPU(struct context_tracking, context_tracking) = {
--#ifdef CONFIG_CONTEXT_TRACKING_FORCE
--	.active = true,
--#endif
--};
-+struct static_key context_tracking_enabled = STATIC_KEY_INIT_FALSE;
-+
-+DEFINE_PER_CPU(struct context_tracking, context_tracking);
- 
- void context_tracking_cpu_set(int cpu)
+@@ -87,10 +87,9 @@ void user_enter(void)
+  */
+ void __sched notrace preempt_schedule_context(void)
  {
--	per_cpu(context_tracking.active, cpu) = true;
-+	if (!per_cpu(context_tracking.active, cpu)) {
-+		per_cpu(context_tracking.active, cpu) = true;
-+		static_key_slow_inc(&context_tracking_enabled);
-+	}
- }
+-	struct thread_info *ti = current_thread_info();
+ 	enum ctx_state prev_ctx;
  
- /**
-@@ -202,3 +203,16 @@ void context_tracking_task_switch(struct task_struct *prev,
- 	clear_tsk_thread_flag(prev, TIF_NOHZ);
- 	set_tsk_thread_flag(next, TIF_NOHZ);
- }
-+
-+#ifdef CONFIG_CONTEXT_TRACKING_FORCE
-+static int __init context_tracking_init(void)
-+{
-+	int cpu;
-+
-+	for_each_possible_cpu(cpu)
-+		context_tracking_cpu_set(cpu);
-+
-+	return 0;
-+}
-+early_initcall(context_tracking_init);
-+#endif
+-	if (likely(ti->preempt_count || irqs_disabled()))
++	if (likely(!preemptible()))
+ 		return;
+ 
+ 	/*
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index b7c32cb..3fb7ace 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -2510,13 +2510,11 @@ void __sched schedule_preempt_disabled(void)
+  */
+ asmlinkage void __sched notrace preempt_schedule(void)
+ {
+-	struct thread_info *ti = current_thread_info();
+-
+ 	/*
+ 	 * If there is a non-zero preempt_count or interrupts are disabled,
+ 	 * we do not want to preempt the current task. Just return..
+ 	 */
+-	if (likely(ti->preempt_count || irqs_disabled()))
++	if (likely(!preemptible()))
+ 		return;
+ 
+ 	do {
 -- 
 1.7.5.4
 
