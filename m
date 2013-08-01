@@ -1,90 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754525Ab3HAKMA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 06:12:00 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:56747 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753784Ab3HAKL6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 06:11:58 -0400
-Date: Thu, 1 Aug 2013 12:11:55 +0200
-From: Leif Lindholm <leif.lindholm@linaro.org>
-To: Matt Fleming <matt.fleming@intel.com>
-Cc: tony.luck@gmail.com, linux-efi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-ia64@vger.kernel.org,
-        hpa@zytor.com, tglx@linutronix.de, patches@linaro.org
-Subject: Re: [PATCH 4/4] efi: x86: make efi_lookup_mapped_addr() a common
- function
-Message-ID: <20130801101155.GK18151@rocoto.smurfnet.nu>
-References: <1375202858-28470-1-git-send-email-leif.lindholm@linaro.org>
- <1375202858-28470-5-git-send-email-leif.lindholm@linaro.org>
- <51F8D1AC.4040501@intel.com>
+	id S1754457Ab3HAKMm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 06:12:42 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:2386 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752459Ab3HAKMk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 06:12:40 -0400
+X-IronPort-AV: E=Sophos;i="4.89,793,1367971200"; 
+   d="scan'208";a="40707909"
+Message-ID: <51FA3496.6020803@citrix.com>
+Date: Thu, 1 Aug 2013 11:12:38 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51F8D1AC.4040501@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Roger Pau Monne <roger.pau@citrix.com>
+CC: <xen-devel@lists.xen.org>, <linux-kernel@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: [PATCH 1/3] xen-gnt: prevent adding duplicate gnt callbacks
+References: <1375282844-4314-1-git-send-email-roger.pau@citrix.com> <1375282844-4314-2-git-send-email-roger.pau@citrix.com>
+In-Reply-To: <1375282844-4314-2-git-send-email-roger.pau@citrix.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.76]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 31, 2013 at 09:58:20AM +0100, Matt Fleming wrote:
-> On 07/30/2013 05:47 PM, Leif Lindholm wrote:
-> > efi_lookup_mapped_addr() is a handy utility for other platforms
-> > than x86. Move it from arch/x86 to drivers/firmware/efi.
-> > 
-> > This function will be used by future ARM patches.
-> > 
-> > Signed-off-by: Leif Lindholm <leif.lindholm@linaro.org>
-> > ---
-> >  arch/x86/platform/efi/efi.c |   28 ----------------------------
-> >  drivers/firmware/efi/efi.c  |   30 ++++++++++++++++++++++++++++++
-> >  2 files changed, 30 insertions(+), 28 deletions(-)
-> > 
+On 31/07/13 16:00, Roger Pau Monne wrote:
+> With the current implementation, the callback in the tail of the list
+> can be added twice, because the check done in
+> gnttab_request_free_callback is bogus, callback->next can be NULL if
+> it is the last callback in the list. If we add the same callback twice
+> we end up with an infinite loop, were callback == callback->next.
 > 
-> [...]
-> 
-> > +#if defined(CONFIG_X86)
-> > +/*
-> > + * We can't ioremap data in EFI boot services RAM, because we've already mapped
-> > + * it as RAM.  So, look it up in the existing EFI memory map instead.  Only
-> > + * callable after efi_enter_virtual_mode and before efi_free_boot_services.
-> > + */
-> > +void __iomem *efi_lookup_mapped_addr(u64 phys_addr)
-> > +{
-> > +	void *p;
-> > +	if (WARN_ON(!memmap.map))
-> > +		return NULL;
-> > +	for (p = memmap.map; p < memmap.map_end; p += memmap.desc_size) {
-> > +		efi_memory_desc_t *md = p;
-> > +		u64 size = md->num_pages << EFI_PAGE_SHIFT;
-> > +		u64 end = md->phys_addr + size;
-> > +		if (!(md->attribute & EFI_MEMORY_RUNTIME) &&
-> > +		    md->type != EFI_BOOT_SERVICES_CODE &&
-> > +		    md->type != EFI_BOOT_SERVICES_DATA)
-> > +			continue;
-> > +		if (!md->virt_addr)
-> > +			continue;
-> > +		if (phys_addr >= md->phys_addr && phys_addr < end) {
-> > +			phys_addr += md->virt_addr - md->phys_addr;
-> > +			return (__force void __iomem *)(unsigned long)phys_addr;
-> > +		}
-> > +	}
-> > +	return NULL;
-> > +}
-> > +#endif
-> > +
-> 
-> If we hang a 'struct efi_memory_map' off of 'struct efi', can we get rid
-> of this #ifdef?
+> Replace this check with a proper one that iterates over the list to
+> see if the callback has already been added.
 
-Sure.
+As a minimal fix suitable for stable,
 
-It would just be a small bit of wasted memory for IA64 (struct +
-code). On the flip side, having that on all platforms could lend
-itself to making a little bit more code common.
+Reviewed-by: David Vrabel <david.vrabel@citrix.com>
 
-Tony?
-
-/
-    Leif
+David
