@@ -1,96 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751632Ab3GaX5W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 19:57:22 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:41457 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751173Ab3GaX5V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 19:57:21 -0400
-Date: Thu, 1 Aug 2013 09:57:08 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Stupid linux-next git question...
-Message-Id: <20130801095708.b43c432b2bf914827fd45d79@canb.auug.org.au>
-In-Reply-To: <24590.1375311493@turing-police.cc.vt.edu>
-References: <24590.1375311493@turing-police.cc.vt.edu>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__1_Aug_2013_09_57_08_+1000_Les5tUHxOEwOBMHW"
+	id S1751719Ab3GaX6H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 19:58:07 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:49614 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751305Ab3GaX6F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 19:58:05 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Viresh Kumar <viresh.kumar@linaro.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, cpufreq@vger.kernel.org
+Subject: [RFC][PATCH] cpufreq: Do not hold driver module references for additional policy CPUs
+Date: Thu, 01 Aug 2013 02:08:15 +0200
+Message-ID: <2362640.pUofnXyzOi@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__1_Aug_2013_09_57_08_+1000_Les5tUHxOEwOBMHW
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Hi Valdis,
+The cpufreq core is a little inconsistent in the way it uses the
+driver module refcount.
 
-On Wed, 31 Jul 2013 18:58:13 -0400 Valdis Kletnieks <Valdis.Kletnieks@vt.ed=
-u> wrote:
->
-> OK... So I have (as usual) found some issues in linux-next, so I'm lookin=
-g at 3
-> bisects.  I already know that bisecting between (say) next-20130715 and
-> next-20130730 won't work, but bisecting between the 3.11-rc1 base of
-> next-20130715 and next-20130730 *will* work.
->=20
-> Question 1:
->=20
-> Does bisecting between "the HEAD of Linus's tree when a given next- is bu=
-ilt"
-> and "some later next-" work? (basically, I know that anything in Linus's =
-tree
-> as of -0715 is 'Good', so I'd rather start from there than from 3.11-rc1 =
-to
-> save several bisects).
+Namely, if __cpufreq_add_dev() is called for a CPU without siblings
+or generally a CPU for which a new policy object has to be created,
+it grabs a reference to the driver module to start with, but drops
+that reference before returning.  As a result, the driver module
+refcount is then equal to 0 after __cpufreq_add_dev() has returned.
 
-Yes, because that point only moves forward (obviously).
+On the other hand, if the given CPU is a sibling of some other
+CPU already having a policy, cpufreq_add_policy_cpu() is called
+to link the new CPU to the existing policy.  In that case,
+cpufreq_cpu_get() is called to obtain that policy and grabs a
+reference to the driver module, but that reference is not
+released and the module refcount will be different from 0 after
+__cpufreq_add_dev() returns (unless there is an error).  That
+prevents the driver module from being unloaded until
+__cpufreq_remove_dev() is called for all the CPUs that
+cpufreq_add_policy_cpu() was called for previously.
 
-> Question 2:
->=20
-> If that works, how do I determine the commit ID to feed to 'git bisect go=
-od'?
-> I *hope* this in Next/merge.log is the magic I'm looking for:
->=20
-> $ git reset --hard stable
-> HEAD is now at 6c504ec Merge branch 'drm-fixes' of git://people.freedeskt=
-op.org/~airlied/linux
-> Merging origin/master (5ae90d8 Linux 3.11-rc3)
+To remove that inconsistency make cpufreq_add_policy_cpu() execute
+cpufreq_cpu_put() for the given policy before returning, which
+decrements the driver module refcount so that it will be 0 after
+__cpufreq_add_dev() returns, but also make it take a reference to
+the policy itself using kobject_get() and do not release that
+reference (unless there's an error or system resume is under way),
+which again is consistent with the "raw" __cpufreq_add_dev()
+behavior.
 
-Yes, that, or if you look in Next/SHA1s, my start point in Linus' tree is
-labelled "origin".  Also, it is the "stable" branch in the current
-linux-next tree (which is moved forward each day).
+Accordingly, modify __cpufreq_remove_dev() to use kobject_put() to
+drop policy references taken by cpufreq_add_policy_cpu().
 
-These are not stupid questions, by the way :-)
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
 
---Signature=_Thu__1_Aug_2013_09_57_08_+1000_Les5tUHxOEwOBMHW
-Content-Type: application/pgp-signature
+On top of current linux-pm.git/linux-next.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+Thanks,
+Rafael
 
-iQIcBAEBCAAGBQJR+aRdAAoJEECxmPOUX5FE6QwQAKKGJ+vFxjHsiscq4JRBkOPE
-NOfqj7oSmyYQ0UyLIMrlQykEg7JAXzwqVOmR+qkX9zc34toZ6seBRAR/JU5VbNqT
-GFO37wXO4Op1JRZuE8SpcGC3VcM9aXCcvx6rWTNuPmJ6MXIor/LIJHkgL0pOUSj2
-d3uHpBfo1RKeB5lHkrldwMCDxXiqSpYn1l8ItAA9WxyyaQEfTbe9uVnDxaOZgyie
-3XhuGtQ5dcIL5x2H2/I77zRceCDQObuwkzXMh5QrjzzVkz2A1V98S1WvDfU63JV1
-/8GHU1kIYSEaTlWRslGAiHWKy1oKZm+b6EfiHaUJ2gMp1hWu8XjF34jeEzdm+M5J
-i0xyAxK+T5yJ5IXT4fuOssV7VuFSyUBc82uQ6FcT9n+Y/cmRqGqw5k8mqloD6po9
-6rvrvPxGadAp5Yth8ijqJcxWl4dXU7L5bJ0RLmzlp4FTxp+/sSezS5Wf6JhueEKU
-mHaB9fl77x9CjPJrCjJq/xvpkd7YA22dsZ+0lNbZsV3gw0zHEj1mD+6CtKtZnyoo
-VgioZTLF+qIfhcxsYZ2SvPiHmKkh06XZVvaEhZKkUrSWaN1WrfpM4zYHGc9qkhHQ
-sf6P+D+YHxLqpf6hInpMeWDwn5urq3LALq4Ijjkutfg1r1JCwl7A/yaBB1b6Fgzg
-Btw++55PwEfPKodRS7+3
-=obI1
------END PGP SIGNATURE-----
+---
+ drivers/cpufreq/cpufreq.c |   24 +++++++++++++++---------
+ 1 file changed, 15 insertions(+), 9 deletions(-)
 
---Signature=_Thu__1_Aug_2013_09_57_08_+1000_Les5tUHxOEwOBMHW--
+Index: linux-pm/drivers/cpufreq/cpufreq.c
+===================================================================
+--- linux-pm.orig/drivers/cpufreq/cpufreq.c
++++ linux-pm/drivers/cpufreq/cpufreq.c
+@@ -908,8 +908,10 @@ static int cpufreq_add_policy_cpu(unsign
+ 	unsigned long flags;
+ 
+ 	policy = cpufreq_cpu_get(sibling);
+-	WARN_ON(!policy);
++	if (WARN_ON_ONCE(!policy))
++		return -ENODATA;
+ 
++	kobject_get(&policy->kobj);
+ 	if (has_target)
+ 		__cpufreq_governor(policy, CPUFREQ_GOV_STOP);
+ 
+@@ -932,14 +934,14 @@ static int cpufreq_add_policy_cpu(unsign
+ 	/* Don't touch sysfs links during light-weight init */
+ 	if (frozen) {
+ 		/* Drop the extra refcount that we took above */
+-		cpufreq_cpu_put(policy);
+-		return 0;
++		kobject_put(&policy->kobj);
++	} else {
++		ret = sysfs_create_link(&dev->kobj, &policy->kobj, "cpufreq");
++		if (ret)
++			kobject_put(&policy->kobj);
+ 	}
+ 
+-	ret = sysfs_create_link(&dev->kobj, &policy->kobj, "cpufreq");
+-	if (ret)
+-		cpufreq_cpu_put(policy);
+-
++	cpufreq_cpu_put(policy);
+ 	return ret;
+ }
+ #endif
+@@ -1298,10 +1300,14 @@ static int __cpufreq_remove_dev(struct d
+ 		if (!frozen)
+ 			cpufreq_policy_free(data);
+ 	} else {
+-
++		/*
++		 * There are more CPUs using the same policy, so only drop the
++		 * reference taken by cpufreq_add_policy_cpu() (unless the
++		 * system is suspending).
++		 */
+ 		if (!frozen) {
+ 			pr_debug("%s: removing link, cpu: %d\n", __func__, cpu);
+-			cpufreq_cpu_put(data);
++			kobject_put(&data->kobj);
+ 		}
+ 
+ 		if (cpufreq_driver->target) {
+
