@@ -1,73 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756808Ab3HAPYY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 11:24:24 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:54210 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755725Ab3HAPYX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 11:24:23 -0400
-Date: Thu, 1 Aug 2013 16:23:56 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
-Cc: lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Message-ID: <20130801152356.GW9858@sirena.org.uk>
-References: <20130731131627.GA32631@opensource.wolfsonmicro.com>
- <20130731132522.GP9858@sirena.org.uk>
- <20130801151336.GA1112@opensource.wolfsonmicro.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="l+pUxxqDKySPXtXF"
-Content-Disposition: inline
-In-Reply-To: <20130801151336.GA1112@opensource.wolfsonmicro.com>
-X-Cookie: You will be awarded some great honor.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] ASoC: core: init delayed_work for codec-codec links
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	id S1756850Ab3HAPZw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 11:25:52 -0400
+Received: from mail.tpi.com ([74.45.170.26]:2583 "EHLO mail.tpi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755700Ab3HAPZv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 11:25:51 -0400
+From: Tim Gardner <tim.gardner@canonical.com>
+To: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Cc: Tim Gardner <tim.gardner@canonical.com>, David Airlie <airlied@linux.ie>,
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [PATCH 3.11-rc3+] radeon: si_dpm: Fix 32 bit __divdi3 modpost failure
+Date: Thu,  1 Aug 2013 09:25:31 -0600
+Message-Id: <1375370731-64547-1-git-send-email-tim.gardner@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+ERROR: "__divdi3" [drivers/gpu/drm/radeon/radeon.ko] undefined!
+make[3]: *** [__modpost] Error 1
 
---l+pUxxqDKySPXtXF
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+gcc version 4.8.1
 
-On Thu, Aug 01, 2013 at 04:13:52PM +0100, Richard Fitzgerald wrote:
-> On Wed, Jul 31, 2013 at 02:25:22PM +0100, Mark Brown wrote:
+Cc: David Airlie <airlied@linux.ie>
+Cc: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+---
+ drivers/gpu/drm/radeon/si_dpm.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> > Why is this better than pointing at the normal work that you'd expect to
-> > be used there?
+diff --git a/drivers/gpu/drm/radeon/si_dpm.c b/drivers/gpu/drm/radeon/si_dpm.c
+index 7ad22e87..4182557 100644
+--- a/drivers/gpu/drm/radeon/si_dpm.c
++++ b/drivers/gpu/drm/radeon/si_dpm.c
+@@ -1767,7 +1767,7 @@ static void si_calculate_leakage_for_v_and_t_formula(const struct ni_leakage_coe
+ 	s64 temperature, t_slope, t_intercept, av, bv, t_ref;
+ 	s64 tmp;
+ 
+-	i_leakage = drm_int2fixp(ileakage) / 100;
++	i_leakage = div64_s64(drm_int2fixp(ileakage), 100);
+ 	vddc = div64_s64(drm_int2fixp(v), 1000);
+ 	temperature = div64_s64(drm_int2fixp(t), 1000);
+ 
+-- 
+1.7.9.5
 
-> By 'normal work' do you mean the close_delayed_work() used for
-> standard PCM DAIs?
-
-Yes - making up this empty work doesn't seem like a robust approach.
-
---l+pUxxqDKySPXtXF
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR+n2JAAoJELSic+t+oim9b+8P/14vvuE2H3/wOa8+XFu5TNx8
-zY4ryRH5SXvL1CDOmOth16EwDjI+bqeDB7wI0MzafaE1MHOCHW84KLR0Bhso1c2E
-KDTecSl5geJkimJPiqlEJfbLK0VnP+rFQlz6aEBpl310+vs7krLxOJLxZKDgQJDG
-81WL5MD6gMfr/AoFyg8LIxDUE7oYe9NwWHoDwZaugO81AckOBuVHB4b1q6MppTbQ
-xkCwx3fAnW5/suUj/aaA2IaWFIeHh5gDko+JXmJH/m0ddI/Kle3Y82Z7Fcde5BIQ
-TqSWsW+JI7jbwPzpyOG47oBUc2ydPJ/+pPcQemU8Vi3pPuAibG2id5OYLHfVkeLS
-/hJkPxFEXrorZUbfUSwV4KnICQTy1lP9007Lu94N29PEAFXoiLf99oSgDSePHIo/
-mEinb8TkpNlq5sH/WI4sg4mD/xQkuVIDsbfhtamG492lbwwOi7k4Zc1699BNv/GJ
-p50+WDv8Ck4BIIaQ86z0pKj6pP8pR0eV7Vv2pqx6co9EqALYBfYFTTaUd+7G6V2Q
-oAcDBBp9CKUBYTAlP+uSHoEg6Z1DY4lncfIOmy8AXTUnWKBX6zu9U4qBMEw+PM9z
-5uyildvUtKiv7ulODxtsuN1UWTgc9cpjwKb4hT3xdIW2PWB7qvqxEOmIvBMTvdXk
-3RX5u2zoMCrsboq+AEqY
-=4ws9
------END PGP SIGNATURE-----
-
---l+pUxxqDKySPXtXF--
