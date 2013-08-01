@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753508Ab3HAHNR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 03:13:17 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:53021 "EHLO song.cn.fujitsu.com"
+	id S1752194Ab3HAHOZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 03:14:25 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:6865 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751173Ab3HAHIM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 03:08:12 -0400
+	id S1750848Ab3HAHOW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 03:14:22 -0400
 X-IronPort-AV: E=Sophos;i="4.89,792,1367942400"; 
-   d="scan'208";a="8085209"
+   d="scan'208";a="8085324"
 From: Tang Chen <tangchen@cn.fujitsu.com>
 To: rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu,
         hpa@zytor.com, akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
@@ -20,116 +20,137 @@ To: rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu,
         zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com
 Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Subject: [PATCH v2 03/18] acpi: Remove "continue" in macro INVALID_TABLE().
-Date: Thu, 1 Aug 2013 15:06:25 +0800
-Message-Id: <1375340800-19332-4-git-send-email-tangchen@cn.fujitsu.com>
+Subject: [PATCH v2 18/18] x86, numa, acpi, memory-hotplug: Make movablenode have higher priority.
+Date: Thu, 1 Aug 2013 15:06:40 +0800
+Message-Id: <1375340800-19332-19-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.10.1
 In-Reply-To: <1375340800-19332-1-git-send-email-tangchen@cn.fujitsu.com>
 References: <1375340800-19332-1-git-send-email-tangchen@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/01 15:06:52,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
  2013/08/01 15:06:53,
-	Serialize complete at 2013/08/01 15:06:53
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/01 15:06:56,
+	Serialize complete at 2013/08/01 15:06:56
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The macro INVALID_TABLE() is defined like this:
+Arrange hotpluggable memory as ZONE_MOVABLE will cause NUMA performance down
+because the kernel cannot use movable memory. For users who don't use memory
+hotplug and who don't want to lose their NUMA performance, they need a way to
+disable this functionality. So we improved movablecore boot option.
 
- #define INVALID_TABLE(x, path, name)                                    \
-         { pr_err("ACPI OVERRIDE: " x " [%s%s]\n", path, name); continue; }
+If users specify the original movablecore=nn@ss boot option, the kernel will
+arrange [ss, ss+nn) as ZONE_MOVABLE. The kernelcore=nn@ss boot option is similar
+except it specifies ZONE_NORMAL ranges.
 
-And it is used like this:
+Now, if users specify "movablenode" in kernel commandline, the kernel will
+arrange hotpluggable memory in SRAT as ZONE_MOVABLE. And if users do this, all
+the other movablecore=nn@ss and kernelcore=nn@ss options should be ignored.
 
-	for (...) {
-		...
-		if (...)
-			INVALID_TABLE()
-		...
-	}
-
-The "continue" in the macro makes the code hard to understand.
-Change it to the style like other macros:
-
- #define INVALID_TABLE(x, path, name)                                    \
-         do { pr_err("ACPI OVERRIDE: " x " [%s%s]\n", path, name); } while (0)
-
-So after this patch, this macro should be used like this:
-
-	for (...) {
-		...
-		if (...) {
-			INVALID_TABLE()
-			continue;
-		}
-		...
-	}
-
-Add the "continue" wherever the macro is called.
-(For now, it is only called in acpi_initrd_override().)
-
-The idea is from Yinghai Lu <yinghai@kernel.org>.
+For those who don't want this, just specify nothing. The kernel will act as
+before.
 
 Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Acked-by: Tejun Heo <tj@kernel.org>
+Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
 ---
- drivers/acpi/osl.c |   18 +++++++++++++-----
- 1 files changed, 13 insertions(+), 5 deletions(-)
+ include/linux/memblock.h |    1 +
+ mm/memblock.c            |    5 +++++
+ mm/page_alloc.c          |   31 ++++++++++++++++++++++++++++---
+ 3 files changed, 34 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-index e721863..91d9f54 100644
---- a/drivers/acpi/osl.c
-+++ b/drivers/acpi/osl.c
-@@ -565,7 +565,7 @@ static const char * const table_sigs[] = {
+diff --git a/include/linux/memblock.h b/include/linux/memblock.h
+index 637ec3d..545d143 100644
+--- a/include/linux/memblock.h
++++ b/include/linux/memblock.h
+@@ -64,6 +64,7 @@ int memblock_reserve(phys_addr_t base, phys_addr_t size);
+ void memblock_trim_memory(phys_addr_t align);
  
- /* Non-fatal errors: Affected tables/files are ignored */
- #define INVALID_TABLE(x, path, name)					\
--	{ pr_err("ACPI OVERRIDE: " x " [%s%s]\n", path, name); continue; }
-+	do { pr_err("ACPI OVERRIDE: " x " [%s%s]\n", path, name); } while (0)
+ int memblock_mark_hotplug(phys_addr_t base, phys_addr_t size);
++bool memblock_is_hotpluggable(struct memblock_region *region);
  
- #define ACPI_HEADER_SIZE sizeof(struct acpi_table_header)
+ #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
+ void __next_mem_pfn_range(int *idx, int nid, unsigned long *out_start_pfn,
+diff --git a/mm/memblock.c b/mm/memblock.c
+index 84bd568..97d7f41 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -610,6 +610,11 @@ int __init_memblock memblock_mark_hotplug(phys_addr_t base, phys_addr_t size)
+ 	return 0;
+ }
  
-@@ -593,9 +593,11 @@ void __init acpi_initrd_override(void *data, size_t size)
- 		data += offset;
- 		size -= offset;
++bool __init_memblock memblock_is_hotpluggable(struct memblock_region *region)
++{
++	return region->flags & MEMBLOCK_HOTPLUG;
++}
++
+ /**
+  * __next_free_mem_range - next function for for_each_free_mem_range()
+  * @idx: pointer to u64 loop variable
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index c3edb62..21017d3 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -4878,9 +4878,35 @@ static void __init find_zone_movable_pfns_for_nodes(void)
+ 	nodemask_t saved_node_state = node_states[N_MEMORY];
+ 	unsigned long totalpages = early_calculate_totalpages();
+ 	int usable_nodes = nodes_weight(node_states[N_MEMORY]);
++	struct memblock_type *type = &memblock.memory;
  
--		if (file.size < sizeof(struct acpi_table_header))
-+		if (file.size < sizeof(struct acpi_table_header)) {
- 			INVALID_TABLE("Table smaller than ACPI header",
- 				      cpio_path, file.name);
-+			continue;
++	/* Need to find movable_zone earlier when movablenode is specified. */
++	find_usable_zone_for_movable();
++
++#ifdef CONFIG_MOVABLE_NODE
+ 	/*
+-	 * If movablecore was specified, calculate what size of
++	 * If movablenode is specified, ignore kernelcore and movablecore
++	 * options.
++	 */
++	if (movablenode_enable_srat) {
++		for (i = 0; i < type->cnt; i++) {
++			if (!memblock_is_hotpluggable(&type->regions[i]))
++				continue;
++
++			nid = type->regions[i].nid;
++
++			usable_startpfn = PFN_DOWN(type->regions[i].base);
++			zone_movable_pfn[nid] = zone_movable_pfn[nid] ?
++				min(usable_startpfn, zone_movable_pfn[nid]) :
++				usable_startpfn;
 +		}
++
++		goto out;
++	}
++#endif
++
++	/*
++	 * If movablecore=nn[KMG] was specified, calculate what size of
+ 	 * kernelcore that corresponds so that memory usable for
+ 	 * any allocation type is evenly spread. If both kernelcore
+ 	 * and movablecore are specified, then the value of kernelcore
+@@ -4906,7 +4932,6 @@ static void __init find_zone_movable_pfns_for_nodes(void)
+ 		goto out;
  
- 		table = file.data;
+ 	/* usable_startpfn is the lowest possible pfn ZONE_MOVABLE can be at */
+-	find_usable_zone_for_movable();
+ 	usable_startpfn = arch_zone_lowest_possible_pfn[movable_zone];
  
-@@ -603,15 +605,21 @@ void __init acpi_initrd_override(void *data, size_t size)
- 			if (!memcmp(table->signature, table_sigs[sig], 4))
- 				break;
+ restart:
+@@ -4997,12 +5022,12 @@ restart:
+ 	if (usable_nodes && required_kernelcore > usable_nodes)
+ 		goto restart;
  
--		if (!table_sigs[sig])
-+		if (!table_sigs[sig]) {
- 			INVALID_TABLE("Unknown signature",
- 				      cpio_path, file.name);
--		if (file.size != table->length)
-+			continue;
-+		}
-+		if (file.size != table->length) {
- 			INVALID_TABLE("File length does not match table length",
- 				      cpio_path, file.name);
--		if (acpi_table_checksum(file.data, table->length))
-+			continue;
-+		}
-+		if (acpi_table_checksum(file.data, table->length)) {
- 			INVALID_TABLE("Bad table checksum",
- 				      cpio_path, file.name);
-+			continue;
-+		}
++out:
+ 	/* Align start of ZONE_MOVABLE on all nids to MAX_ORDER_NR_PAGES */
+ 	for (nid = 0; nid < MAX_NUMNODES; nid++)
+ 		zone_movable_pfn[nid] =
+ 			roundup(zone_movable_pfn[nid], MAX_ORDER_NR_PAGES);
  
- 		pr_info("%4.4s ACPI table found in initrd [%s%s][0x%x]\n",
- 			table->signature, cpio_path, file.name, table->length);
+-out:
+ 	/* restore the node_state */
+ 	node_states[N_MEMORY] = saved_node_state;
+ }
 -- 
 1.7.1
 
