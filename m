@@ -1,146 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756833Ab3HAPQY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 11:16:24 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:10859 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756409Ab3HAPQW (ORCPT
+	id S1756915Ab3HAPQd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 11:16:33 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:43519 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756003Ab3HAPQ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 11:16:22 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 01 Aug 2013 08:14:53 -0700
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <akpm@linux-foundation.org>
-CC: <grant.likely@linaro.org>, <rob.herring@calxeda.com>, <rob@landley.net>,
-        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <rtc-linux@googlegroups.com>,
-        <gg@slimlogic.co.uk>, <kishon@ti.com>, <swarren@nvidia.com>,
-        <pawel.moll@arm.com>, <Mark.Rutland@arm.com>,
-        <ian.campbell@citrix.com>, <broonie@kernel.org>,
-        Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH V3] drivers/rtc/rtc-palmas.c: support for backup battery charging
-Date: Thu, 1 Aug 2013 20:58:51 +0530
-Message-ID: <1375370931-2194-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
+	Thu, 1 Aug 2013 11:16:29 -0400
+Date: Thu, 1 Aug 2013 11:16:19 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: zhenzhong.duan@oracle.com,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        xen-devel <xen-devel@lists.xen.org>, Feng Jin <joe.jin@oracle.com>,
+        Sucheta Chakraborty <sucheta.chakraborty@qlogic.com>
+Subject: Re: [PATCH 2/3] Refactor msi/msix restore code Part2
+Message-ID: <20130801151616.GE21528@konrad-lan.dumpdata.com>
+References: <51EF451A.8050003@oracle.com>
+ <CAErSpo5phkLpdR35eaMnYthVXiAAAr-JLD44QkntOZi2-NppOg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAErSpo5phkLpdR35eaMnYthVXiAAAr-JLD44QkntOZi2-NppOg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Palmas series device like TPS65913, TPS80036 supports the backup battery
-for powering the RTC when no other energy source is available.
+On Wed, Jul 31, 2013 at 04:41:32PM -0600, Bjorn Helgaas wrote:
+> On Tue, Jul 23, 2013 at 9:08 PM, Zhenzhong Duan
+> <zhenzhong.duan@oracle.com> wrote:
+> > xen_initdom_restore_msi_irqs trigger a hypercall to restore addr/data/mask
+> > in dom0. It's better to do the same for default_restore_msi_irqs in baremetal.
+> >
+> > Move restore of mask in default_restore_msi_irqs, this could avoid mask
+> > restored twice in dom0, once in hypercall, the other in kernel.
+> >
+> > Without that, qlcnic driver calling pci_reset_function will lost interrupt
+> > in dom0.
+> >
+> > Tested-by: Sucheta Chakraborty <sucheta.chakraborty@qlogic.com>
+> > Signed-off-by: Zhenzhong Duan <zhenzhong.duan@oracle.com>
+> > ---
+> >  drivers/pci/msi.c |   17 ++++++++++++++---
+> >  1 files changed, 14 insertions(+), 3 deletions(-)
+> >
+> > diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
+> > index 87223ae..922fb49 100644
+> > --- a/drivers/pci/msi.c
+> > +++ b/drivers/pci/msi.c
+> > @@ -216,6 +216,8 @@ void unmask_msi_irq(struct irq_data *data)
+> >  #ifdef HAVE_DEFAULT_MSI_RESTORE_IRQS
+> >  void default_restore_msi_irqs(struct pci_dev *dev, int irq)
+> >  {
+> > +       int pos;
+> > +       u16 control;
+> >         struct msi_desc *entry;
+> >
+> >         entry = NULL;
+> > @@ -228,8 +230,19 @@ void default_restore_msi_irqs(struct pci_dev *dev, int irq)
+> >                 entry = irq_get_msi_desc(irq);
+> >         }
+> >
+> > -       if (entry)
+> > +       if (entry) {
+> >                 write_msi_msg(irq, &entry->msg);
+> > +               if (dev->msix_enabled) {
+> > +                       msix_mask_irq(entry, entry->masked);
+> > +                       readl(entry->mask_base);
+> > +               } else {
+> > +                       pos = entry->msi_attrib.pos;
+> > +                       pci_read_config_word(dev, pos + PCI_MSI_FLAGS,
+> > +                                            &control);
+> > +                       msi_mask_irq(entry, msi_capable_mask(control),
+> > +                                    entry->masked);
+> > +               }
+> > +       }
+> >  }
+> >  #endif
+> >
+> > @@ -406,7 +419,6 @@ static void __pci_restore_msi_state(struct pci_dev *dev)
+> >         arch_restore_msi_irqs(dev, dev->irq);
+> >
+> >         pci_read_config_word(dev, dev->msi_cap + PCI_MSI_FLAGS, &control);
+> > -       msi_mask_irq(entry, msi_capable_mask(control), entry->masked);
+> >         control &= ~PCI_MSI_FLAGS_QSIZE;
+> >         control |= (entry->msi_attrib.multiple << 4) | PCI_MSI_FLAGS_ENABLE;
+> >         pci_write_config_word(dev, dev->msi_cap + PCI_MSI_FLAGS, control);
+> > @@ -430,7 +442,6 @@ static void __pci_restore_msix_state(struct pci_dev *dev)
+> >
+> >         list_for_each_entry(entry, &dev->msi_list, list) {
+> >                 arch_restore_msi_irqs(dev, entry->irq);
+> > -               msix_mask_irq(entry, entry->masked);
+> >         }
+> >
+> >         control &= ~PCI_MSIX_FLAGS_MASKALL;
+> 
+> Konrad, are you OK with this patch now?
 
-The backup battery is optional, connected to the VBACKUP pin, and can be
-nonrechargeable or rechargeable. The rechargeable battery can be charged
-from the system supply using the backup battery charger.
+Yes, I wanted to make sure that the existing behavior under baremetal
+was not altered.
 
-Add support for enabling charging of this backup battery.  Also add the DT
-binding document and the new properties to have this support.
+And Duan had confirmed it was not  - thought to be on a safe side it
+would be good to confirm this via testing just in case.
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
-Changes from V1: 
-- Converted DT property to boolean.
-- cleanups as use "...".
-
-Changes from V2:
-- Change the property name "ti,back-charge-low-current" to
-  "ti,back-battery-charge-low-current"
-
- .../devicetree/bindings/rtc/rtc-palmas.txt         |   29 ++++++++++++++++
- drivers/rtc/rtc-palmas.c                           |   35 ++++++++++++++++++++
- 2 files changed, 64 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/rtc/rtc-palmas.txt
-
-diff --git a/Documentation/devicetree/bindings/rtc/rtc-palmas.txt b/Documentation/devicetree/bindings/rtc/rtc-palmas.txt
-new file mode 100644
-index 0000000..4f930b0
---- /dev/null
-+++ b/Documentation/devicetree/bindings/rtc/rtc-palmas.txt
-@@ -0,0 +1,29 @@
-+Palmas RTC controller bindings
-+
-+Required properties:
-+- compatible:
-+  - "ti,palmas-rtc" for palma series of the RTC controller
-+- interrupt-parent: Parent interrupt device, must be handle of palmas node.
-+- interrupts: Interrupt number of RTC submodule on device.
-+
-+Optional properties:
-+- ti,back-battery-charge-enable: The palmas series device like TPS65913 or
-+	TPS80036 supports the battery backup for powering the RTC when main
-+	battery is removed or in very low power state. This flag will enable
-+	the backup battery charging.
-+- ti,back-battery-charge-low-current: Configure lower charging current. Device
-+	supports the charging current as < 100mA or >100mA. Low current will
-+	set as <100mA.
-+
-+Example:
-+	palmas: tps65913@58 {
-+		...
-+		palmas_rtc: rtc {
-+			compatible = "ti,palmas-rtc";
-+			interrupt-parent = <&palmas>;
-+			interrupts = <8 0>;
-+			ti,back-battery-charge-enable;
-+			ti,back-battery-charge-low-current;
-+		};
-+		...
-+	};
-diff --git a/drivers/rtc/rtc-palmas.c b/drivers/rtc/rtc-palmas.c
-index a1fecc8..adb6e71 100644
---- a/drivers/rtc/rtc-palmas.c
-+++ b/drivers/rtc/rtc-palmas.c
-@@ -238,6 +238,15 @@ static int palmas_rtc_probe(struct platform_device *pdev)
- 	struct palmas *palmas = dev_get_drvdata(pdev->dev.parent);
- 	struct palmas_rtc *palmas_rtc = NULL;
- 	int ret;
-+	bool enable_bb_charging = false;
-+	bool low_bb_charging;
-+
-+	if (pdev->dev.of_node) {
-+		enable_bb_charging = of_property_read_bool(pdev->dev.of_node,
-+					"ti,back-battery-charge-enable");
-+		low_bb_charging = of_property_read_bool(pdev->dev.of_node,
-+					"ti,back-battery-charge-low-current");
-+	}
- 
- 	palmas_rtc = devm_kzalloc(&pdev->dev, sizeof(struct palmas_rtc),
- 			GFP_KERNEL);
-@@ -254,6 +263,32 @@ static int palmas_rtc_probe(struct platform_device *pdev)
- 	palmas_rtc->dev = &pdev->dev;
- 	platform_set_drvdata(pdev, palmas_rtc);
- 
-+	if (enable_bb_charging) {
-+		unsigned reg = 0;
-+
-+		if (low_bb_charging)
-+			reg |= PALMAS_BACKUP_BATTERY_CTRL_BBS_BBC_LOW_ICHRG;
-+
-+		ret = palmas_update_bits(palmas, PALMAS_PMU_CONTROL_BASE,
-+			PALMAS_BACKUP_BATTERY_CTRL,
-+			PALMAS_BACKUP_BATTERY_CTRL_BBS_BBC_LOW_ICHRG, reg);
-+		if (ret < 0) {
-+			dev_err(&pdev->dev,
-+				"BACKUP_BATTERY_CTRL update failed, %d\n", ret);
-+			return ret;
-+		}
-+
-+		ret = palmas_update_bits(palmas, PALMAS_PMU_CONTROL_BASE,
-+			PALMAS_BACKUP_BATTERY_CTRL,
-+			PALMAS_BACKUP_BATTERY_CTRL_BB_CHG_EN,
-+			PALMAS_BACKUP_BATTERY_CTRL_BB_CHG_EN);
-+		if (ret < 0) {
-+			dev_err(&pdev->dev,
-+				"BACKUP_BATTERY_CTRL update failed, %d\n", ret);
-+			return ret;
-+		}
-+	}
-+
- 	/* Start RTC */
- 	ret = palmas_update_bits(palmas, PALMAS_RTC_BASE, PALMAS_RTC_CTRL_REG,
- 			PALMAS_RTC_CTRL_REG_STOP_RTC,
--- 
-1.7.1.1
-
+> 
+> If so, can you (Zhenzhong) update the changelog with some of the info
+> from the conversation with Konrad?  It seems like a few more details
+> are needed to make it clear why we need this change.
+> 
+> Bjorn
