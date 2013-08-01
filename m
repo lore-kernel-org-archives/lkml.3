@@ -1,146 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757797Ab3HAWH6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 18:07:58 -0400
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:30547 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757654Ab3HAWHz (ORCPT
+	id S1757686Ab3HAWIj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 18:08:39 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39807 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753507Ab3HAWIi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 18:07:55 -0400
-Message-ID: <1375394806.10300.24.camel@misato.fc.hp.com>
-Subject: Re: [PATCH v2 03/18] acpi: Remove "continue" in macro
- INVALID_TABLE().
-From: Toshi Kani <toshi.kani@hp.com>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu,
-        hpa@zytor.com, akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
-        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
-        mina86@mina86.com, gong.chen@linux.intel.com,
-        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
-        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
-        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com, x86@kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Date: Thu, 01 Aug 2013 16:06:46 -0600
-In-Reply-To: <1375340800-19332-4-git-send-email-tangchen@cn.fujitsu.com>
-References: <1375340800-19332-1-git-send-email-tangchen@cn.fujitsu.com>
-	 <1375340800-19332-4-git-send-email-tangchen@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 1 Aug 2013 18:08:38 -0400
+In-Reply-To: <20130801213420.GL23006@n2100.arm.linux.org.uk>
+References: <20130801213420.GL23006@n2100.arm.linux.org.uk>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH RFC 34/51] DMA-API: net: octeon: use
+ dma_coerce_mask_and_coherent()
+Message-Id: <E1V512Z-0006t1-Eu@rmk-PC.arm.linux.org.uk>
+Date: Thu, 01 Aug 2013 23:08:11 +0100
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-08-01 at 15:06 +0800, Tang Chen wrote:
-> The macro INVALID_TABLE() is defined like this:
-> 
->  #define INVALID_TABLE(x, path, name)                                    \
->          { pr_err("ACPI OVERRIDE: " x " [%s%s]\n", path, name); continue; }
-> 
-> And it is used like this:
-> 
-> 	for (...) {
-> 		...
-> 		if (...)
-> 			INVALID_TABLE()
-> 		...
-> 	}
-> 
-> The "continue" in the macro makes the code hard to understand.
-> Change it to the style like other macros:
-> 
->  #define INVALID_TABLE(x, path, name)                                    \
->          do { pr_err("ACPI OVERRIDE: " x " [%s%s]\n", path, name); } while (0)
-> 
-> So after this patch, this macro should be used like this:
-> 
-> 	for (...) {
-> 		...
-> 		if (...) {
-> 			INVALID_TABLE()
-> 			continue;
-> 		}
-> 		...
-> 	}
-> 
-> Add the "continue" wherever the macro is called.
-> (For now, it is only called in acpi_initrd_override().)
-> 
-> The idea is from Yinghai Lu <yinghai@kernel.org>.
-> 
-> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> Acked-by: Tejun Heo <tj@kernel.org>
-> Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-> ---
->  drivers/acpi/osl.c |   18 +++++++++++++-----
->  1 files changed, 13 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-> index e721863..91d9f54 100644
-> --- a/drivers/acpi/osl.c
-> +++ b/drivers/acpi/osl.c
-> @@ -565,7 +565,7 @@ static const char * const table_sigs[] = {
->  
->  /* Non-fatal errors: Affected tables/files are ignored */
->  #define INVALID_TABLE(x, path, name)					\
+The code sequence:
+	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(64);
+	pdev->dev.dma_mask = &pdev->dev.coherent_dma_mask;
+bypasses the architectures check on the DMA mask.  It can be replaced
+with dma_coerce_mask_and_coherent(), avoiding the direct initialization
+of this mask.
 
-Since you are touching this macro, I'd suggest to rename it something
-like ACPI_INVALID_TABLE().  INVALID_TABLE() sounds too generic to me.
-Otherwise, it looks good.
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+---
+ drivers/net/ethernet/octeon/octeon_mgmt.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
-Acked-by: Toshi Kani <toshi.kani@hp.com>
-
-Thanks,
--Toshi
-
-
-> -	{ pr_err("ACPI OVERRIDE: " x " [%s%s]\n", path, name); continue; }
-> +	do { pr_err("ACPI OVERRIDE: " x " [%s%s]\n", path, name); } while (0)
->  
->  #define ACPI_HEADER_SIZE sizeof(struct acpi_table_header)
->  
-> @@ -593,9 +593,11 @@ void __init acpi_initrd_override(void *data, size_t size)
->  		data += offset;
->  		size -= offset;
->  
-> -		if (file.size < sizeof(struct acpi_table_header))
-> +		if (file.size < sizeof(struct acpi_table_header)) {
->  			INVALID_TABLE("Table smaller than ACPI header",
->  				      cpio_path, file.name);
-> +			continue;
-> +		}
->  
->  		table = file.data;
->  
-> @@ -603,15 +605,21 @@ void __init acpi_initrd_override(void *data, size_t size)
->  			if (!memcmp(table->signature, table_sigs[sig], 4))
->  				break;
->  
-> -		if (!table_sigs[sig])
-> +		if (!table_sigs[sig]) {
->  			INVALID_TABLE("Unknown signature",
->  				      cpio_path, file.name);
-> -		if (file.size != table->length)
-> +			continue;
-> +		}
-> +		if (file.size != table->length) {
->  			INVALID_TABLE("File length does not match table length",
->  				      cpio_path, file.name);
-> -		if (acpi_table_checksum(file.data, table->length))
-> +			continue;
-> +		}
-> +		if (acpi_table_checksum(file.data, table->length)) {
->  			INVALID_TABLE("Bad table checksum",
->  				      cpio_path, file.name);
-> +			continue;
-> +		}
->  
->  		pr_info("%4.4s ACPI table found in initrd [%s%s][0x%x]\n",
->  			table->signature, cpio_path, file.name, table->length);
-
+diff --git a/drivers/net/ethernet/octeon/octeon_mgmt.c b/drivers/net/ethernet/octeon/octeon_mgmt.c
+index 622aa75..2006a07 100644
+--- a/drivers/net/ethernet/octeon/octeon_mgmt.c
++++ b/drivers/net/ethernet/octeon/octeon_mgmt.c
+@@ -1552,8 +1552,9 @@ static int octeon_mgmt_probe(struct platform_device *pdev)
+ 
+ 	p->phy_np = of_parse_phandle(pdev->dev.of_node, "phy-handle", 0);
+ 
+-	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(64);
+-	pdev->dev.dma_mask = &pdev->dev.coherent_dma_mask;
++	result = dma_coerce_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(64));
++	if (result)
++		goto err;
+ 
+ 	netif_carrier_off(netdev);
+ 	result = register_netdev(netdev);
+-- 
+1.7.4.4
 
