@@ -1,68 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757657Ab3HATjE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 15:39:04 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:21406 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757491Ab3HATf0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 15:35:26 -0400
-Message-ID: <05a1a2179d26849d97cb5ea15f8381cf6e93f6f4.1375385120.git.cmetcalf@tilera.com>
-In-Reply-To: <cover.1375385119.git.cmetcalf@tilera.com>
-References: <20130801.113100.2059303096028571906.davem@davemloft.net>
-	<cover.1375385119.git.cmetcalf@tilera.com>
-From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Thu, 1 Aug 2013 11:36:42 -0400
-Subject: [PATCH v3 03/13] tile: avoid bug in tilepro net driver built with old hypervisor
-To: <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>
+	id S1756582Ab3HATmQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 15:42:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62781 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754887Ab3HATmP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 15:42:15 -0400
+Date: Thu, 1 Aug 2013 22:43:46 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: John Fastabend <john.r.fastabend@intel.com>
+Cc: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org
+Subject: Re: [PATCH v2] macvlan: validate flags
+Message-ID: <20130801194346.GB20061@redhat.com>
+References: <1375373227-17986-1-git-send-email-mst@redhat.com>
+ <51FA99C3.8020508@intel.com>
+ <20130801191957.GA19580@redhat.com>
+ <51FAB840.6000705@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51FAB840.6000705@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Building against headers from an older Tilera hypervisor can cause
-the frags[] array to be overrun.  Don't enable TSO in that case.
+On Thu, Aug 01, 2013 at 12:34:24PM -0700, John Fastabend wrote:
+> On 8/1/2013 12:19 PM, Michael S. Tsirkin wrote:
+> >On Thu, Aug 01, 2013 at 10:24:19AM -0700, John Fastabend wrote:
+> >>On 8/1/2013 9:09 AM, Michael S. Tsirkin wrote:
+> >>>commit df8ef8f3aaa6692970a436204c4429210addb23a
+> >>>     macvlan: add FDB bridge ops and macvlan flags
+> >>>added a flags field to macvlan, which can be
+> >>>controlled from userspace.
+> >>>The idea is to make the interface future-proof
+> >>>so we can add flags and not new fields.
+> >>>
+> >>>However, flags value isn't validated, as a result,
+> >>>userspace can't detect which flags are supported.
+> >>>
+> >>>Cc: "David S. Miller" <davem@davemloft.net>
+> >>>Cc: John Fastabend <john.r.fastabend@intel.com>
+> >>>Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> >>>---
+> >>>
+> >>>Changes from v1:
+> >>>	tweaked commit message
+> >>>	no code changes
+> >>>
+> >>>Please consider this patch for -stable.
+> >>>
+> >>>The idea is by the time we add more flags,
+> >>>everyone has updated to a kernel that
+> >>>detects errors, so userspace will be able
+> >>>to detect supported flags cleanly.
+> >>>
+> >>
+> >>Agreed and because we haven't added more flags yet this shouldn't
+> >>break uapi. Thanks for catching this.
+> >>
+> >>>
+> >>>  drivers/net/macvlan.c | 7 +++++++
+> >>>  1 file changed, 7 insertions(+)
+> >>>
+> >>
+> >>By the same logic should we also add the check to macvlan_changelink()?
+> >
+> >I'm not sure what do you mean "By the same logic" -
+> >macvlan_changelink is static unlike macvlan_common_newlink
+> >which is exported to modules.
+> 
+> "By the same logic" I only meant to allow userspace to cleanly detect
+> supported flags even in the changelink case.
+> 
+> >So why isn't macvlan_validate sufficient for macvlan_changelink?
+> 
+> It is you are correct.
+> 
+> >
+> >>>diff --git a/drivers/net/macvlan.c b/drivers/net/macvlan.c
+> >>>index 18373b6..8445a94 100644
+> >>>--- a/drivers/net/macvlan.c
+> >>>+++ b/drivers/net/macvlan.c
+> >>>@@ -736,6 +736,10 @@ static int macvlan_validate(struct nlattr *tb[], struct nlattr *data[])
+> >>>  			return -EADDRNOTAVAIL;
+> >>>  	}
+> >>>
+> >>>+	if (data && data[IFLA_MACVLAN_FLAGS] &&
+> >>>+	    nla_get_u16(data[IFLA_MACVLAN_FLAGS]) & ~MACVLAN_FLAG_NOPROMISC)
+> >>>+		return -EINVAL;
+> >>>+
+> >>>  	if (data && data[IFLA_MACVLAN_MODE]) {
+> >>>  		switch (nla_get_u32(data[IFLA_MACVLAN_MODE])) {
+> >>>  		case MACVLAN_MODE_PRIVATE:
+> >>>@@ -809,6 +813,9 @@ int macvlan_common_newlink(struct net *src_net, struct net_device *dev,
+> >>>  	if (data && data[IFLA_MACVLAN_FLAGS])
+> >>>  		vlan->flags = nla_get_u16(data[IFLA_MACVLAN_FLAGS]);
+> >>>
+> >>>+	if (vlan->flags & ~MACVLAN_FLAG_NOPROMISC)
+> >>>+		return -EINVAL;
+> >>>+
+> >>
+> >>Is there really a case where newlink is called without first calling
+> >>validate? I don't think there is so the snippet here in newlink could
+> >>be dropped.
+> >>
+> >>Thanks,
+> >>John
+> >
+> >It seems so - macvtap_newlink calls macvlan_common_newlink.
+> >macvtap does not seem to have .validate.
+> >
+> 
+> but it calls macvlan_link_register() from macvtap_init which sets
+> up the validate ops,
+> 
+> int macvlan_link_register(struct rtnl_link_ops *ops)
+> {
+>         /* common fields */
+>         ops->priv_size          = sizeof(struct macvlan_dev);
+>         ops->validate           = macvlan_validate
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
----
- drivers/net/ethernet/tile/tilepro.c | 9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+I see. I'll drop this second chunk in the patch,
+thanks for catching this.
 
-diff --git a/drivers/net/ethernet/tile/tilepro.c b/drivers/net/ethernet/tile/tilepro.c
-index 327ff7b..2f4b7b9 100644
---- a/drivers/net/ethernet/tile/tilepro.c
-+++ b/drivers/net/ethernet/tile/tilepro.c
-@@ -1929,7 +1929,7 @@ static int tile_net_tx(struct sk_buff *skb, struct net_device *dev)
- 
- 	unsigned int csum_start = skb_checksum_start_offset(skb);
- 
--	lepp_frag_t frags[LEPP_MAX_FRAGS];
-+	lepp_frag_t frags[1 + MAX_SKB_FRAGS];
- 
- 	unsigned int num_frags;
- 
-@@ -1944,7 +1944,7 @@ static int tile_net_tx(struct sk_buff *skb, struct net_device *dev)
- 	unsigned int cmd_head, cmd_tail, cmd_next;
- 	unsigned int comp_tail;
- 
--	lepp_cmd_t cmds[LEPP_MAX_FRAGS];
-+	lepp_cmd_t cmds[1 + MAX_SKB_FRAGS];
- 
- 
- 	/*
-@@ -2332,7 +2332,10 @@ static void tile_net_setup(struct net_device *dev)
- 	features |= NETIF_F_LLTX;
- 	features |= NETIF_F_HW_CSUM;
- 	features |= NETIF_F_SG;
--	features |= NETIF_F_TSO;
-+
-+	/* We support TSO iff the HV supports sufficient frags. */
-+	if (LEPP_MAX_FRAGS >= 1 + MAX_SKB_FRAGS)
-+		features |= NETIF_F_TSO;
- 
- 	/* We can't support HIGHDMA without hash_default, since we need
- 	 * to be able to finv() with a VA if we don't have hash_default.
 -- 
-1.8.3.1
-
+MST
