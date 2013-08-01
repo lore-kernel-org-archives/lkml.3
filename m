@@ -1,41 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755409Ab3HANOt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 09:14:49 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.160]:60191 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751958Ab3HANOs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 09:14:48 -0400
-X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+yackYocTD1iAi8x+OWJ8KkvZ5rHdwZi2MQ==
-X-RZG-CLASS-ID: mo00
-From: Olaf Hering <olaf@aepfle.de>
-To: kys@microsoft.com, gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, Olaf Hering <olaf@aepfle.de>
-Subject: [PATCH] Tools: hv: log errors to syslog in kvp_set_ip_info
-Date: Thu,  1 Aug 2013 15:14:44 +0200
-Message-Id: <1375362884-15841-1-git-send-email-olaf@aepfle.de>
-X-Mailer: git-send-email 1.8.3.1
+	id S1755129Ab3HANQj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 09:16:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4510 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751958Ab3HANQh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 09:16:37 -0400
+Date: Thu, 1 Aug 2013 15:10:53 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC][PATCH 3/4] tracing/kprobes: Fail to unregister if probe
+	event files are open
+Message-ID: <20130801131053.GA8703@redhat.com>
+References: <20130704033347.807661713@goodmis.org> <20130704034038.819592356@goodmis.org> <1375300192.5418.17.camel@gandalf.local.home> <20130731204003.GA30188@redhat.com> <1375310548.5418.21.camel@gandalf.local.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1375310548.5418.21.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Olaf Hering <olaf@aepfle.de>
----
- tools/hv/hv_kvp_daemon.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+On 07/31, Steven Rostedt wrote:
+>
+> On Wed, 2013-07-31 at 22:40 +0200, Oleg Nesterov wrote:
+> >
+> > This should be fine. Either event_remove() path takes event_mutex
+> > first and then ->write() fails, or ftrace_event_enable_disable()
+> > actually disables this even successfully.
+>
+> Actually I meant while in unregister_trace_probe(), it gets by the
+> trace_probe_is_enabled() part first, then the write succeeds (as the
+> event_mutex isn't taken till unregister_probe_event()). The the
+> unregister_probe_event fails,
 
-diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
-index b96eccc..6a31ca0 100644
---- a/tools/hv/hv_kvp_daemon.c
-+++ b/tools/hv/hv_kvp_daemon.c
-@@ -1361,7 +1361,8 @@ setval_done:
- 	return 0;
- 
- setval_error:
--	syslog(LOG_ERR, "Failed to write config file");
-+	syslog(LOG_ERR, "Failed to write config file. error: %d %s",
-+		errno, strerror(errno));
- 	fclose(file);
- 	return error;
- }
+Yes sure. In this case evrything is clear. But this looks as if
+unregister_probe_event() should not fail. IOW, this looks as if
+the bug was introduce by the previous "trace_remove_event_call()
+should fail if call/file is in use" change.
+
+Oleg.
+
