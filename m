@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752534Ab3HAEo4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 00:44:56 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:60334 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751004Ab3HAEow (ORCPT
+	id S1753155Ab3HAEpH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 00:45:07 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:42864 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751380Ab3HAEpE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 00:44:52 -0400
+	Thu, 1 Aug 2013 00:45:04 -0400
 From: Alexey Kardashevskiy <aik@ozlabs.ru>
 To: linuxppc-dev@lists.ozlabs.org
 Cc: Alexey Kardashevskiy <aik@ozlabs.ru>,
@@ -14,9 +14,9 @@ Cc: Alexey Kardashevskiy <aik@ozlabs.ru>,
         Paul Mackerras <paulus@samba.org>, Alexander Graf <agraf@suse.de>,
         kvm@vger.kernel.org, linux-doc@vger.kernel.org,
         linux-kernel@vger.kernel.org, kvm-ppc@vger.kernel.org
-Subject: [PATCH 01/10] hashtable: add hash_for_each_possible_rcu_notrace()
-Date: Thu,  1 Aug 2013 14:44:23 +1000
-Message-Id: <1375332272-22176-2-git-send-email-aik@ozlabs.ru>
+Subject: [PATCH 03/10] KVM: PPC: reserve a capability and ioctl numbers for realmode VFIO
+Date: Thu,  1 Aug 2013 14:44:25 +1000
+Message-Id: <1375332272-22176-4-git-send-email-aik@ozlabs.ru>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1375332272-22176-1-git-send-email-aik@ozlabs.ru>
 References: <1375332272-22176-1-git-send-email-aik@ozlabs.ru>
@@ -24,41 +24,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds hash_for_each_possible_rcu_notrace() which is basically
-a notrace clone of hash_for_each_possible_rcu() which cannot be
-used in real mode due to its tracing/debugging capability.
+This is to reserve a capablity number for upcoming support
+of VFIO-IOMMU DMA operations in real mode.
+
+Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+
+---
+Changes:
+2013/07/16:
+* changed the number
+
+2013/07/11:
+* changed order in a file, added comment about a gap in ioctl number
 
 Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
 ---
- include/linux/hashtable.h | 15 +++++++++++++++
- 1 file changed, 15 insertions(+)
+ include/uapi/linux/kvm.h | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/include/linux/hashtable.h b/include/linux/hashtable.h
-index a9df51f..af8b169 100644
---- a/include/linux/hashtable.h
-+++ b/include/linux/hashtable.h
-@@ -174,6 +174,21 @@ static inline void hash_del_rcu(struct hlist_node *node)
- 		member)
+diff --git a/include/uapi/linux/kvm.h b/include/uapi/linux/kvm.h
+index 99c2533..53c3f1f 100644
+--- a/include/uapi/linux/kvm.h
++++ b/include/uapi/linux/kvm.h
+@@ -668,6 +668,7 @@ struct kvm_ppc_smmu_info {
+ #define KVM_CAP_IRQ_XICS 92
+ #define KVM_CAP_ARM_EL1_32BIT 93
+ #define KVM_CAP_SPAPR_MULTITCE 94
++#define KVM_CAP_SPAPR_TCE_IOMMU 95
  
- /**
-+ * hash_for_each_possible_rcu_notrace - iterate over all possible objects hashing
-+ * to the same bucket in an rcu enabled hashtable in a rcu enabled hashtable
-+ * @name: hashtable to iterate
-+ * @obj: the type * to use as a loop cursor for each entry
-+ * @member: the name of the hlist_node within the struct
-+ * @key: the key of the objects to iterate over
-+ *
-+ * This is the same as hash_for_each_possible_rcu() except that it does
-+ * not do any RCU debugging or tracing.
-+ */
-+#define hash_for_each_possible_rcu_notrace(name, obj, member, key)	\
-+	hlist_for_each_entry_rcu_notrace(obj, &name[hash_min(key, HASH_BITS(name))],\
-+		member)
-+
-+/**
-  * hash_for_each_possible_safe - iterate over all possible objects hashing to the
-  * same bucket safe against removals
-  * @name: hashtable to iterate
+ #ifdef KVM_CAP_IRQ_ROUTING
+ 
+@@ -933,6 +934,9 @@ struct kvm_s390_ucas_mapping {
+ #define KVM_ARM_SET_DEVICE_ADDR	  _IOW(KVMIO,  0xab, struct kvm_arm_device_addr)
+ /* Available with KVM_CAP_PPC_RTAS */
+ #define KVM_PPC_RTAS_DEFINE_TOKEN _IOW(KVMIO,  0xac, struct kvm_rtas_token_args)
++/* 0xad and 0xaf are already taken */
++/* Available with KVM_CAP_SPAPR_TCE_IOMMU */
++#define KVM_CREATE_SPAPR_TCE_IOMMU _IOW(KVMIO,  0xaf, struct kvm_create_spapr_tce_iommu)
+ 
+ /* ioctl for vm fd */
+ #define KVM_CREATE_DEVICE	  _IOWR(KVMIO,  0xe0, struct kvm_create_device)
 -- 
 1.8.3.2
 
