@@ -1,433 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753715Ab3HAJPU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 05:15:20 -0400
-Received: from mail-bk0-f53.google.com ([209.85.214.53]:61874 "EHLO
-	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751108Ab3HAJPP (ORCPT
+	id S1753383Ab3HAJTf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 05:19:35 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:25719 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751166Ab3HAJTe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 05:15:15 -0400
-From: Marek Belisko <marek.belisko@gmail.com>
-To: perex@perex.cz, tiwai@suse.de
-Cc: grant.likely@linaro.org, rob.herring@calxeda.com, lgirdwood@gmail.com,
-        broonie@kernel.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org, zonque@gmail.com,
-        Marek Belisko <marek.belisko@streamunlimited.com>
-Subject: [PATCH v2] ASoC: Add PCM1681 codec driver.
-Date: Thu,  1 Aug 2013 11:14:58 +0200
-Message-Id: <1375348498-2941-1-git-send-email-marek.belisko@streamunlimited.com>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 1 Aug 2013 05:19:34 -0400
+Message-ID: <51FA2800.9070706@huawei.com>
+Date: Thu, 1 Aug 2013 17:18:56 +0800
+From: Xishi Qiu <qiuxishi@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        <cody@linux.vnet.ibm.com>, Liujiang <jiang.liu@huawei.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        <b.zolnierkie@samsung.com>
+CC: <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] mm/hotplug: fix a drain pcp bug when offline pages
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.74.196]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PCM1681 can be controlled via I2C, SPI or in bootstrap mode (no control mode). This code add
-support only for I2C mode.
+__offline_pages()
+   start_isolate_page_range()
+      set_migratetype_isolate()
+         set_pageblock_migratetype() -> this pageblock will be marked as MIGRATE_ISOLATE
+         move_freepages_block() -> pages in PageBuddy will be moved into MIGRATE_ISOLATE list
+         drain_all_pages() -> drain PCP
+            free_pcppages_bulk()
+               mt = get_freepage_migratetype(page); -> PCP's migratetype is not MIGRATE_ISOLATE
+               __free_one_page(page, zone, 0, mt); -> so PCP will not be freed into into MIGRATE_ISOLATE list
 
-Signed-off-by: Marek Belisko <marek.belisko@streamunlimited.com>
+In this case, the PCP may be allocated again, because they are not in 
+PageBuddy's MIGRATE_ISOLATE list. This will cause offline_pages failed.
+
+Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
 ---
+ mm/page_alloc.c     |   10 ++++++----
+ mm/page_isolation.c |   15 ++++++++++++++-
+ 2 files changed, 20 insertions(+), 5 deletions(-)
 
-Changes from v1:
-- fix de-emphasis handling (disable when invalid freq is used)
-- constify deemph freq
-- digital_mute refactoring
-- remove empty functions (probe and remove)
-- call set_deemph in hw_params
-- remove CONFIG_I2C
-- small refactoring
-- remove PCM1681 from controls
-
- .../devicetree/bindings/sound/ti,pcm1681.txt       |   15 +
- sound/soc/codecs/Kconfig                           |    4 +
- sound/soc/codecs/Makefile                          |    2 +
- sound/soc/codecs/pcm1681.c                         |  313 ++++++++++++++++++++
- 4 files changed, 334 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/sound/ti,pcm1681.txt
- create mode 100644 sound/soc/codecs/pcm1681.c
-
-diff --git a/Documentation/devicetree/bindings/sound/ti,pcm1681.txt b/Documentation/devicetree/bindings/sound/ti,pcm1681.txt
-new file mode 100644
-index 0000000..4df1718
---- /dev/null
-+++ b/Documentation/devicetree/bindings/sound/ti,pcm1681.txt
-@@ -0,0 +1,15 @@
-+Texas Instruments PCM1681 8-channel PWM Processor
-+
-+Required properties:
-+
-+ - compatible:		Should contain "ti,pcm1681".
-+ - reg:			The i2c address. Should contain <0x4c>.
-+
-+Examples:
-+
-+	i2c_bus {
-+		pcm1681@4c {
-+			compatible = "ti,pcm1681";
-+			reg = <0x4c>;
-+		};
-+	};
-diff --git a/sound/soc/codecs/Kconfig b/sound/soc/codecs/Kconfig
-index d038a58..8ace02a 100644
---- a/sound/soc/codecs/Kconfig
-+++ b/sound/soc/codecs/Kconfig
-@@ -56,6 +56,7 @@ config SND_SOC_ALL_CODECS
- 	select SND_SOC_MC13783 if MFD_MC13XXX
- 	select SND_SOC_ML26124 if I2C
- 	select SND_SOC_HDMI_CODEC
-+	select SND_SOC_PCM1681 if I2C
- 	select SND_SOC_PCM3008
- 	select SND_SOC_RT5631 if I2C
- 	select SND_SOC_RT5640 if I2C
-@@ -297,6 +298,9 @@ config SND_SOC_MAX9850
- config SND_SOC_HDMI_CODEC
-        tristate
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index b100255..d873471 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -965,11 +965,13 @@ int move_freepages(struct zone *zone,
+ 		}
  
-+config SND_SOC_PCM1681
-+       tristate
-+
- config SND_SOC_PCM3008
-        tristate
+ 		order = page_order(page);
+-		list_move(&page->lru,
+-			  &zone->free_area[order].free_list[migratetype]);
+-		set_freepage_migratetype(page, migratetype);
++		if (get_freepage_migratetype(page) != migratetype) {
++			list_move(&page->lru,
++				&zone->free_area[order].free_list[migratetype]);
++			set_freepage_migratetype(page, migratetype);
++			pages_moved += 1 << order;
++		}
+ 		page += 1 << order;
+-		pages_moved += 1 << order;
+ 	}
  
-diff --git a/sound/soc/codecs/Makefile b/sound/soc/codecs/Makefile
-index fab4086..d8fa18e 100644
---- a/sound/soc/codecs/Makefile
-+++ b/sound/soc/codecs/Makefile
-@@ -43,6 +43,7 @@ snd-soc-max9850-objs := max9850.o
- snd-soc-mc13783-objs := mc13783.o
- snd-soc-ml26124-objs := ml26124.o
- snd-soc-hdmi-codec-objs := hdmi.o
-+snd-soc-pcm1681-objs := pcm1681.o
- snd-soc-pcm3008-objs := pcm3008.o
- snd-soc-rt5631-objs := rt5631.o
- snd-soc-rt5640-objs := rt5640.o
-@@ -173,6 +174,7 @@ obj-$(CONFIG_SND_SOC_MAX9850)	+= snd-soc-max9850.o
- obj-$(CONFIG_SND_SOC_MC13783)	+= snd-soc-mc13783.o
- obj-$(CONFIG_SND_SOC_ML26124)	+= snd-soc-ml26124.o
- obj-$(CONFIG_SND_SOC_HDMI_CODEC) += snd-soc-hdmi-codec.o
-+obj-$(CONFIG_SND_SOC_PCM1681)	+= snd-soc-pcm1681.o
- obj-$(CONFIG_SND_SOC_PCM3008)	+= snd-soc-pcm3008.o
- obj-$(CONFIG_SND_SOC_RT5631)	+= snd-soc-rt5631.o
- obj-$(CONFIG_SND_SOC_RT5640)	+= snd-soc-rt5640.o
-diff --git a/sound/soc/codecs/pcm1681.c b/sound/soc/codecs/pcm1681.c
-new file mode 100644
-index 0000000..27da41b
---- /dev/null
-+++ b/sound/soc/codecs/pcm1681.c
-@@ -0,0 +1,313 @@
-+/*
-+ * PCM1681 ASoC codec driver
-+ *
-+ * Copyright (c) StreamUnlimited GmbH 2013
-+ *	Marek Belisko <marek.belisko@streamunlimited.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; either version 2
-+ * of the License, or (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
+ 	return pages_moved;
+diff --git a/mm/page_isolation.c b/mm/page_isolation.c
+index 383bdbb..ba1afc9 100644
+--- a/mm/page_isolation.c
++++ b/mm/page_isolation.c
+@@ -65,8 +65,21 @@ out:
+ 	}
+ 
+ 	spin_unlock_irqrestore(&zone->lock, flags);
+-	if (!ret)
 +
-+#include <linux/module.h>
-+#include <linux/slab.h>
-+#include <linux/delay.h>
-+#include <linux/gpio.h>
-+#include <linux/i2c.h>
-+#include <linux/regmap.h>
-+#include <linux/of_device.h>
-+#include <linux/of_gpio.h>
-+#include <sound/pcm.h>
-+#include <sound/pcm_params.h>
-+#include <sound/soc.h>
-+#include <sound/tlv.h>
-+
-+#define PCM1681_PCM_FORMATS (SNDRV_PCM_FMTBIT_S16_LE  |		\
-+			     SNDRV_PCM_FMTBIT_S24_LE)
-+
-+#define PCM1681_PCM_RATES   (SNDRV_PCM_RATE_8000 | SNDRV_PCM_RATE_16000 | \
-+			     SNDRV_PCM_RATE_32000 | SNDRV_PCM_RATE_44100  | \
-+			     SNDRV_PCM_RATE_48000 | SNDRV_PCM_RATE_88200  | \
-+			     SNDRV_PCM_RATE_96000 | SNDRV_PCM_RATE_192000)
-+
-+#define PCM1681_SOFT_MUTE_ALL		0xff
-+#define PCM1681_DEEMPH_RATE_MASK	0x18
-+#define PCM1681_DEEMPH_MASK		0x01
-+
-+#define PCM1681_ATT_CONTROL(X)	(X <= 6 ? X : X + 9) /* Attenuation level */
-+#define PCM1681_SOFT_MUTE	0x07	/* Soft mute control register */
-+#define PCM1681_DAC_CONTROL	0x08	/* DAC operation control */
-+#define PCM1681_FMT_CONTROL	0x09	/* Audio interface data format */
-+#define PCM1681_DEEMPH_CONTROL	0x0a	/* De-emphasis control */
-+#define PCM1681_ZERO_DETECT_STATUS	0x0e	/* Zero detect status reg */
-+
-+static const struct reg_default pcm1681_reg_defaults[] = {
-+	{ 0x01,	0xff },
-+	{ 0x02,	0xff },
-+	{ 0x03,	0xff },
-+	{ 0x04,	0xff },
-+	{ 0x05,	0xff },
-+	{ 0x06,	0xff },
-+	{ 0x07,	0x00 },
-+	{ 0x08,	0x00 },
-+	{ 0x09,	0x06 },
-+	{ 0x0A,	0x00 },
-+	{ 0x0B,	0xff },
-+	{ 0x0C,	0x0f },
-+	{ 0x0D,	0x00 },
-+	{ 0x10,	0xff },
-+	{ 0x11,	0xff },
-+	{ 0x12,	0x00 },
-+	{ 0x13,	0x00 },
-+};
-+
-+static bool pcm1681_accessible_reg(struct device *dev, unsigned int reg)
-+{
-+	return !((reg == 0x00) || (reg == 0x0f));
-+}
-+
-+static bool pcm1681_writeable_reg(struct device *dev, unsigned register reg)
-+{
-+	return pcm1681_accessible_reg(dev, reg) &&
-+		(reg != PCM1681_ZERO_DETECT_STATUS);
-+}
-+
-+struct pcm1681_private {
-+	struct regmap *regmap;
-+	unsigned int format;
-+	/* Current deemphasis status */
-+	unsigned int deemph;
-+	/* Current rate for deemphasis control */
-+	unsigned int rate;
-+};
-+
-+static const int pcm1681_deemph[] = { 44100, 48000, 32000 };
-+
-+static int pcm1681_set_deemph(struct snd_soc_codec *codec)
-+{
-+	struct pcm1681_private *priv = snd_soc_codec_get_drvdata(codec);
-+	int i = 0, val = -1, enable = 0;
-+
-+	if (priv->deemph)
-+		for (i = 0; i < ARRAY_SIZE(pcm1681_deemph); i++)
-+			if (pcm1681_deemph[i] == priv->rate)
-+				val = i;
-+
-+	if (val != -1) {
-+		regmap_update_bits(priv->regmap, PCM1681_DEEMPH_CONTROL,
-+					PCM1681_DEEMPH_RATE_MASK, val);
-+		enable = 1;
-+	} else
-+		enable = 0;
-+
-+	/* enable/disable deemphasis functionality */
-+	return regmap_update_bits(priv->regmap, PCM1681_DEEMPH_CONTROL,
-+					PCM1681_DEEMPH_MASK, enable);
-+}
-+
-+static int pcm1681_get_deemph(struct snd_kcontrol *kcontrol,
-+			      struct snd_ctl_elem_value *ucontrol)
-+{
-+	struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
-+	struct pcm1681_private *priv = snd_soc_codec_get_drvdata(codec);
-+
-+	ucontrol->value.enumerated.item[0] = priv->deemph;
-+
-+	return 0;
-+}
-+
-+static int pcm1681_put_deemph(struct snd_kcontrol *kcontrol,
-+			      struct snd_ctl_elem_value *ucontrol)
-+{
-+	struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
-+	struct pcm1681_private *priv = snd_soc_codec_get_drvdata(codec);
-+
-+	priv->deemph = ucontrol->value.enumerated.item[0];
-+
-+	return pcm1681_set_deemph(codec);
-+}
-+
-+static int pcm1681_set_dai_fmt(struct snd_soc_dai *codec_dai,
-+			      unsigned int format)
-+{
-+	struct snd_soc_codec *codec = codec_dai->codec;
-+	struct pcm1681_private *priv = snd_soc_codec_get_drvdata(codec);
-+
-+	/* The PCM1681 can only be slave to all clocks */
-+	if ((format & SND_SOC_DAIFMT_MASTER_MASK) != SND_SOC_DAIFMT_CBS_CFS) {
-+		dev_err(codec->dev, "Invalid clocking mode\n");
-+		return -EINVAL;
++	if (!ret) {
+ 		drain_all_pages();
++		/*
++		 * When drain_all_pages() frees cached pages into the buddy
++		 * system, it uses the stale migratetype cached in the
++		 * page->index field, so try to move free pages to ISOLATE
++		 * list again.
++		 */
++		spin_lock_irqsave(&zone->lock, flags);
++		nr_pages = move_freepages_block(zone, page, MIGRATE_ISOLATE);
++		__mod_zone_freepage_state(zone, -nr_pages, migratetype);
++		spin_unlock_irqrestore(&zone->lock, flags);
 +	}
 +
-+	priv->format = format;
-+
-+	return 0;
-+}
-+
-+static int pcm1681_digital_mute(struct snd_soc_dai *dai, int mute)
-+{
-+	struct snd_soc_codec *codec = dai->codec;
-+	struct pcm1681_private *priv = snd_soc_codec_get_drvdata(codec);
-+	int val;
-+
-+	if (mute)
-+		val = PCM1681_SOFT_MUTE_ALL;
-+	else
-+		val = 0;
-+
-+	return regmap_write(priv->regmap, PCM1681_SOFT_MUTE, val);
-+}
-+
-+static int pcm1681_hw_params(struct snd_pcm_substream *substream,
-+			     struct snd_pcm_hw_params *params,
-+			     struct snd_soc_dai *dai)
-+{
-+	struct snd_soc_codec *codec = dai->codec;
-+	struct pcm1681_private *priv = snd_soc_codec_get_drvdata(codec);
-+	int val = 0, ret;
-+	int pcm_format = params_format(params);
-+
-+	priv->rate = params_rate(params);
-+
-+	switch (priv->format & SND_SOC_DAIFMT_FORMAT_MASK) {
-+	case SND_SOC_DAIFMT_RIGHT_J:
-+		if (pcm_format == SNDRV_PCM_FORMAT_S24_LE)
-+			val = 0x00;
-+		else if (pcm_format == SNDRV_PCM_FORMAT_S16_LE)
-+			val = 0x03;
-+		break;
-+	case SND_SOC_DAIFMT_I2S:
-+		val = 0x04;
-+		break;
-+	case SND_SOC_DAIFMT_LEFT_J:
-+		val = 0x05;
-+		break;
-+	default:
-+		dev_err(codec->dev, "Invalid DAI format\n");
-+		return -EINVAL;
-+	}
-+
-+	ret = regmap_update_bits(priv->regmap, PCM1681_FMT_CONTROL, 0x0f, val);
-+	if (ret < 0)
-+		return ret;
-+
-+	return pcm1681_set_deemph(codec);
-+}
-+
-+static const struct snd_soc_dai_ops pcm1681_dai_ops = {
-+	.set_fmt	= pcm1681_set_dai_fmt,
-+	.hw_params	= pcm1681_hw_params,
-+	.digital_mute	= pcm1681_digital_mute,
-+};
-+
-+static const DECLARE_TLV_DB_SCALE(pcm1681_dac_tlv, -6350, 50, 1);
-+
-+static const struct snd_kcontrol_new pcm1681_controls[] = {
-+	SOC_DOUBLE_R_TLV("Channel 1/2 Playback Volume",
-+			PCM1681_ATT_CONTROL(1), PCM1681_ATT_CONTROL(2), 0,
-+			0x7f, 0, pcm1681_dac_tlv),
-+	SOC_DOUBLE_R_TLV("Channel 3/4 Playback Volume",
-+			PCM1681_ATT_CONTROL(3), PCM1681_ATT_CONTROL(4), 0,
-+			0x7f, 0, pcm1681_dac_tlv),
-+	SOC_DOUBLE_R_TLV("Channel 5/6 Playback Volume",
-+			PCM1681_ATT_CONTROL(5), PCM1681_ATT_CONTROL(6), 0,
-+			0x7f, 0, pcm1681_dac_tlv),
-+	SOC_DOUBLE_R_TLV("Channel 7/8 Playback Volume",
-+			PCM1681_ATT_CONTROL(7), PCM1681_ATT_CONTROL(8), 0,
-+			0x7f, 0, pcm1681_dac_tlv),
-+	SOC_SINGLE_BOOL_EXT("De-emphasis Switch", 0,
-+			    pcm1681_get_deemph, pcm1681_put_deemph),
-+};
-+
-+struct snd_soc_dai_driver pcm1681_dai = {
-+	.name = "pcm1681-hifi",
-+	.playback = {
-+		.stream_name = "Playback",
-+		.channels_min = 2,
-+		.channels_max = 8,
-+		.rates = PCM1681_PCM_RATES,
-+		.formats = PCM1681_PCM_FORMATS,
-+	},
-+	.ops = &pcm1681_dai_ops,
-+};
-+
-+#ifdef CONFIG_OF
-+static const struct of_device_id pcm1681_dt_ids[] = {
-+	{ .compatible = "ti,pcm1681", },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(of, pcm1681_dt_ids);
-+#endif
-+
-+static const struct regmap_config pcm1681_regmap = {
-+	.reg_bits		= 8,
-+	.val_bits		= 8,
-+	.max_register		= ARRAY_SIZE(pcm1681_reg_defaults) + 1,
-+	.reg_defaults		= pcm1681_reg_defaults,
-+	.num_reg_defaults	= ARRAY_SIZE(pcm1681_reg_defaults),
-+	.writeable_reg		= pcm1681_writeable_reg,
-+	.readable_reg		= pcm1681_accessible_reg,
-+};
-+
-+static struct snd_soc_codec_driver soc_codec_dev_pcm1681 = {
-+	.controls		= pcm1681_controls,
-+	.num_controls		= ARRAY_SIZE(pcm1681_controls),
-+};
-+
-+static const struct i2c_device_id pcm1681_i2c_id[] = {
-+	{"pcm1681", 0},
-+	{}
-+};
-+MODULE_DEVICE_TABLE(i2c, pcm1681_i2c_id);
-+
-+static int pcm1681_i2c_probe(struct i2c_client *client,
-+			      const struct i2c_device_id *id)
-+{
-+	int ret;
-+	struct pcm1681_private *priv;
-+
-+	priv = devm_kzalloc(&client->dev, sizeof(*priv), GFP_KERNEL);
-+	if (!priv)
-+		return -ENOMEM;
-+
-+	priv->regmap = devm_regmap_init_i2c(client, &pcm1681_regmap);
-+	if (IS_ERR(priv->regmap)) {
-+		ret = PTR_ERR(priv->regmap);
-+		dev_err(&client->dev, "Failed to create regmap: %d\n", ret);
-+		return ret;
-+	}
-+
-+	i2c_set_clientdata(client, priv);
-+
-+	return snd_soc_register_codec(&client->dev, &soc_codec_dev_pcm1681,
-+		&pcm1681_dai, 1);
-+}
-+
-+static int pcm1681_i2c_remove(struct i2c_client *client)
-+{
-+	snd_soc_unregister_codec(&client->dev);
-+	return 0;
-+}
-+
-+static struct i2c_driver pcm1681_i2c_driver = {
-+	.driver = {
-+		.name	= "pcm1681",
-+		.owner	= THIS_MODULE,
-+		.of_match_table = of_match_ptr(pcm1681_dt_ids),
-+	},
-+	.id_table	= pcm1681_i2c_id,
-+	.probe		= pcm1681_i2c_probe,
-+	.remove		= pcm1681_i2c_remove,
-+};
-+
-+module_i2c_driver(pcm1681_i2c_driver);
-+
-+MODULE_DESCRIPTION("Texas Instruments PCM1681 ALSA SoC Codec Driver");
-+MODULE_AUTHOR("Marek Belisko <marek.belisko@streamunlimited.com>");
-+MODULE_LICENSE("GPL");
+ 	return ret;
+ }
+ 
 -- 
-1.7.9.5
+1.7.1
 
