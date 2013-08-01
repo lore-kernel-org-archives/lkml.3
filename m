@@ -1,106 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752619Ab3HABw7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 21:52:59 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:13819 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751690Ab3HABw5 (ORCPT
+	id S1752556Ab3HAB4r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 21:56:47 -0400
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:35691 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751335Ab3HAB4q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 21:52:57 -0400
-X-AuditID: cbfee68e-b7f276d000002279-4e-51f9bf78dab3
-From: Jingoo Han <jg1.han@samsung.com>
-To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
-Cc: linux-kernel@vger.kernel.org,
-        "'Florian Vaussard'" <florian.vaussard@epfl.ch>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Jingoo Han <jg1.han@samsung.com>
-Subject: [PATCH] mfd: twl4030-power: Staticize local functions
-Date: Thu, 01 Aug 2013 10:52:55 +0900
-Message-id: <002b01ce8e59$d763f990$862becb0$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac6OWdPD/wXl5I/qQ/6L5xlK++npUg==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrOIsWRmVeSWpSXmKPExsVy+t8zY92K/T8DDa7dZbM486qP0eLywkus
-	Fve/HgWyds1hs5j18QerxeluVgc2j2Wtq5k97lzbw+Yx72SgR9+WVYwex29sZ/L4vEkugC2K
-	yyYlNSezLLVI3y6BK+NjZ2LBUr6K9Wf6WBsYV/F0MXJySAiYSExds4sNwhaTuHBvPZDNxSEk
-	sIxRYufaKYwwRQ1ftzKD2EIC0xkl9v/Jgyj6xShxZtFBsASbgJrEly+H2bsYOThEBLwkbt0J
-	AqlhFpjLKDHn5BawQcICdhINt96BbWMRUJV4tXE1mM0rYCnR2NAJZQtK/Jh8jwXEZhbQkli/
-	8zgThC0vsXnNW2aIgxQkdpx9DTZTREBPYumJS4wQNSIS+168YwRZLCFwil2icc1HZohlAhLf
-	Jh9iATlOQkBWYtMBqDmSEgdX3GCZwCg2C8nqWUhWz0KyehaSFQsYWVYxiqYWJBcUJ6UXGekV
-	J+YWl+al6yXn525ihERi3w7GmwesDzEmA62fyCwlmpwPjOS8knhDYzMjC1MTU2Mjc0sz0oSV
-	xHnVWqwDhQTSE0tSs1NTC1KL4otKc1KLDzEycXBKNTBOf/XPXGT7K6f6zXU8wlPXX1rZl6T5
-	M7PxXfHsRznBD2L69cxveDcsC2Df9Tz9LOvmrkhO5+JX6sp/hNzmB59TsX07a95Z3dmdP2NU
-	Ov46FjdY1pvN/L3A6oVHyKLEW69cA/TMTxYd2XvBQOOsgP6ZWSllyysubqxl26355531Zb9T
-	rA6LBT4rsRRnJBpqMRcVJwIA6M7nkdoCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrCKsWRmVeSWpSXmKPExsVy+t9jQd2K/T8DDd4tYbI486qP0eLywkus
-	Fve/HgWyds1hs5j18QerxeluVgc2j2Wtq5k97lzbw+Yx72SgR9+WVYwex29sZ/L4vEkugC2q
-	gdEmIzUxJbVIITUvOT8lMy/dVsk7ON453tTMwFDX0NLCXEkhLzE31VbJxSdA1y0zB+gKJYWy
-	xJxSoFBAYnGxkr4dpgmhIW66FjCNEbq+IUFwPUYGaCBhHWPGx87EgqV8FevP9LE2MK7i6WLk
-	5JAQMJFo+LqVGcIWk7hwbz0biC0kMJ1RYv+fvC5GLiD7F6PEmUUHwYrYBNQkvnw5zN7FyMEh
-	IuAlcetOEEgNs8BcRok5J7cwgtQIC9hJNNx6BzaIRUBV4tXG1WA2r4ClRGNDJ5QtKPFj8j0W
-	EJtZQEti/c7jTBC2vMTmNW+hDlKQ2HH2NdhMEQE9iaUnLjFC1IhI7HvxjnECo8AsJKNmIRk1
-	C8moWUhaFjCyrGIUTS1ILihOSs811CtOzC0uzUvXS87P3cQIjvNnUjsYVzZYHGIU4GBU4uHN
-	2PozUIg1say4MvcQowQHs5II79Z0oBBvSmJlVWpRfnxRaU5q8SHGZKBPJzJLiSbnA1NQXkm8
-	obGJmZGlkZmFkYm5OWnCSuK8B1qtA4UE0hNLUrNTUwtSi2C2MHFwSjUwZr8/aLX1XGHo1QOb
-	5p29JSO3m7/P+bOvtpP8pvAPH2e0fFgV2n2Jz9Os9bfoxShPyc7MqTs6uW0Sr3p/yBF0e7hr
-	98boX+s/Ht+4YeH3SzqH1oquZ7ghc/9F89r9J9IyM5UMS2adX7g+oDPkNNffqKJzE8uefVQ4
-	vrhJdJuhE/sxIaG8GnGBMCWW4oxEQy3mouJEAMGR3as3AwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Wed, 31 Jul 2013 21:56:46 -0400
+Date: Thu, 1 Aug 2013 09:56:36 +0800
+From: Shaohua Li <shli@kernel.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [patch]workqueue: copy attr with all fields.
+Message-ID: <20130801015636.GA12580@kernel.org>
+References: <20130729062412.GA6448@kernel.org>
+ <20130729111401.GA20951@mtj.dyndns.org>
+ <20130729125259.GA9306@kernel.org>
+ <20130729153523.GA22605@mtj.dyndns.org>
+ <20130730054955.GA5225@kernel.org>
+ <20130730141419.GG12016@htj.dyndns.org>
+ <20130731013929.GB1504@kernel.org>
+ <20130731102752.GD2810@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130731102752.GD2810@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-twl4030_power_configure_scripts(), twl4030_power_configure_resources(),
-twl4030_power_probe() are used only in this file.
+On Wed, Jul 31, 2013 at 06:27:52AM -0400, Tejun Heo wrote:
+> Hello,
+> 
+> On Wed, Jul 31, 2013 at 09:39:29AM +0800, Shaohua Li wrote:
+> > Hmm, I didn't agree it's more confusing to change copy_workqueue_attrs(), the
+> 
+> We're talking past each other.  I'm not saying copy_workqueue_attrs()
+> shouldn't copy no_numa.  I'm saying get_unbound_pool() should clear
+> no_numa so that pools don't have random no_numa settings.
+> 
+> > name of the function suggests it is a 'copy'. And clearing no_numa in
+> > apply_workqueue_attrs() after copy_workqueue_attrs() looks like a hack to me.
+> 
+> Why would apply_workqueue_attrs() modify no_numa when it *is* dealing
+> with an actual workqueue attr.  I've been talking about
+> get_unbound_pool() not apply_workqueue_attrs() the whole time.
+> 
+> > But it depends on you, feel free to fix it by yourself.
+> 
+> Please update the patch to add no_numa clearing to get_unbound_pool()
+> and explain what's going on.
 
-Fix the following sparse warnings:
+Something like this?
 
-drivers/mfd/twl4030-power.c:496:5: warning: symbol 'twl4030_power_configure_scripts' was not declared. Should it be static?
-drivers/mfd/twl4030-power.c:512:5: warning: symbol 'twl4030_power_configure_resources' was not declared. Should it be static?
-drivers/mfd/twl4030-power.c:556:5: warning: symbol 'twl4030_power_probe' was not declared. Should it be static?
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
----
- drivers/mfd/twl4030-power.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+Subject: workqueue: copy workqueue_attrs with all fields
 
-diff --git a/drivers/mfd/twl4030-power.c b/drivers/mfd/twl4030-power.c
-index a5fd3c7..adce79d 100644
---- a/drivers/mfd/twl4030-power.c
-+++ b/drivers/mfd/twl4030-power.c
-@@ -493,7 +493,7 @@ int twl4030_remove_script(u8 flags)
- 	return err;
+$echo '0' > /sys/bus/workqueue/devices/xxx/numa
+$cat /sys/bus/workqueue/devices/xxx/numa
+I got 1. It should be 0, the reason is copy_workqueue_attrs() called in
+apply_workqueue_attrs() doesn't copy no_numa field.
+
+Signed-off-by: Shaohua Li <shli@fusionio.com>
+
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 0b72e81..daf3f03 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -3411,6 +3411,7 @@ static void copy_workqueue_attrs(struct workqueue_attrs *to,
+ {
+ 	to->nice = from->nice;
+ 	cpumask_copy(to->cpumask, from->cpumask);
++	to->no_numa = from->no_numa;
  }
  
--int twl4030_power_configure_scripts(struct twl4030_power_data *pdata)
-+static int twl4030_power_configure_scripts(struct twl4030_power_data *pdata)
- {
- 	int err;
- 	int i;
-@@ -509,7 +509,7 @@ int twl4030_power_configure_scripts(struct twl4030_power_data *pdata)
- 	return 0;
- }
+ /* hash value of the content of @attr */
+@@ -3578,6 +3579,12 @@ static struct worker_pool *get_unbound_pool(const struct workqueue_attrs *attrs)
+ 	lockdep_set_subclass(&pool->lock, 1);	/* see put_pwq() */
+ 	copy_workqueue_attrs(pool->attrs, attrs);
  
--int twl4030_power_configure_resources(struct twl4030_power_data *pdata)
-+static int twl4030_power_configure_resources(struct twl4030_power_data *pdata)
- {
- 	struct twl4030_resconfig *resconfig = pdata->resource_config;
- 	int err;
-@@ -553,7 +553,7 @@ static bool twl4030_power_use_poweroff(struct twl4030_power_data *pdata,
- 	return false;
- }
- 
--int twl4030_power_probe(struct platform_device *pdev)
-+static int twl4030_power_probe(struct platform_device *pdev)
- {
- 	struct twl4030_power_data *pdata = pdev->dev.platform_data;
- 	struct device_node *node = pdev->dev.of_node;
--- 
-1.7.10.4
-
-
++	/*
++	 * no_numa isn't a worker_pool attribute, always clear it. See 'struct
++	 * workqueue_attrs' comments for detail.
++	 */
++	pool->attrs->no_numa = 0;
++
+ 	/* if cpumask is contained inside a NUMA node, we belong to that node */
+ 	if (wq_numa_enabled) {
+ 		for_each_node(node) {
