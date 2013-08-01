@@ -1,86 +1,336 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753385Ab3HAAgl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 20:36:41 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:52968 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752437Ab3HAAcM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 20:32:12 -0400
-From: Joe Perches <joe@perches.com>
-To: netdev@vger.kernel.org
-Cc: David Howells <dhowells@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>, linux-afs@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 3/8] af_rxrpc.h: Remove extern from function prototypes
-Date: Wed, 31 Jul 2013 17:31:34 -0700
-Message-Id: <e5aa8f4892a700e56cdd9f3da6ca8a26dbe2fe5d.1375316912.git.joe@perches.com>
-X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
-In-Reply-To: <cover.1375316912.git.joe@perches.com>
-References: <cover.1375316912.git.joe@perches.com>
+	id S1753111Ab3HAAht (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 20:37:49 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:41986 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752667Ab3HAAcK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 20:32:10 -0400
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>, Borislav Petkov <bp@alien8.de>,
+        Li Zhong <zhong@linux.vnet.ibm.com>, Mike Galbraith <efault@gmx.de>,
+        Kevin Hilman <khilman@linaro.org>
+Subject: [PATCH 15/23] hardirq: Split preempt count mask definitions
+Date: Thu,  1 Aug 2013 02:31:32 +0200
+Message-Id: <1375317100-20651-16-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1375317100-20651-1-git-send-email-fweisbec@gmail.com>
+References: <1375317100-20651-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are a mix of function prototypes with and without extern
-in the kernel sources.  Standardize on not using extern for
-function prototypes.
+In order to use static keys with vtime APIs, we'll need to
+add static keys headers to vtime.h
 
-Function prototypes don't need to be written with extern.
-extern is assumed by the compiler.  Its use is as unnecessary as
-using auto to declare automatic/local variables in a block.
+hardirq.h then becomes a problem because it needs vtime.h
+for irqtime accounting in irq_enter/irq_exit, but it's
+often included just to get the irq mask definitions in the
+task preempt_count field and the APIs that come along:
+in_interrupt(), in_hardirq(), etc...
 
-Reflow modified prototypes to 80 columns.
+Some very low level arch headers sometimes need these masks
+and APIs such as arch/m68k/include/asm/irqflags.h for example.
+But they don't want to include hardirq.h if vtime.h, jump_label.h
+and even workqueue.h come along. Including such bloated high
+level header from arch headers can quickly result in circular
+headers dependency that crash the build.
 
-Signed-off-by: Joe Perches <joe@perches.com>
+So let's split hardirq.h in two parts:
+
+* preempt_mask.h that gathers all the preempt_count definitions
+and the APIs associated. This one is considered low level and can
+be safely included anywhere.
+
+* hardirq.h that includes the previous one. It defines the irq
+entry/exit APIs.
+
+To avoid future circular headers dependencies, the preempt_mask.h
+inclusion can replace hardirq.h on files that don't implement irq
+low level handlers but just need the atomic/context check APIs.
+
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Borislav Petkov <bp@alien8.de>
+Cc: Li Zhong <zhong@linux.vnet.ibm.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Kevin Hilman <khilman@linaro.org>
 ---
- include/net/af_rxrpc.h | 35 ++++++++++++++++-------------------
- 1 file changed, 16 insertions(+), 19 deletions(-)
+ include/linux/hardirq.h      |  117 +---------------------------------------
+ include/linux/preempt_mask.h |  122 ++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 123 insertions(+), 116 deletions(-)
+ create mode 100644 include/linux/preempt_mask.h
 
-diff --git a/include/net/af_rxrpc.h b/include/net/af_rxrpc.h
-index 03e6e94..e797d45 100644
---- a/include/net/af_rxrpc.h
-+++ b/include/net/af_rxrpc.h
-@@ -31,24 +31,21 @@ enum {
+diff --git a/include/linux/hardirq.h b/include/linux/hardirq.h
+index 05bcc09..ccfe17c 100644
+--- a/include/linux/hardirq.h
++++ b/include/linux/hardirq.h
+@@ -1,126 +1,11 @@
+ #ifndef LINUX_HARDIRQ_H
+ #define LINUX_HARDIRQ_H
  
- typedef void (*rxrpc_interceptor_t)(struct sock *, unsigned long,
- 				    struct sk_buff *);
--extern void rxrpc_kernel_intercept_rx_messages(struct socket *,
--					       rxrpc_interceptor_t);
--extern struct rxrpc_call *rxrpc_kernel_begin_call(struct socket *,
--						  struct sockaddr_rxrpc *,
--						  struct key *,
--						  unsigned long,
--						  gfp_t);
--extern int rxrpc_kernel_send_data(struct rxrpc_call *, struct msghdr *,
--				  size_t);
--extern void rxrpc_kernel_abort_call(struct rxrpc_call *, u32);
--extern void rxrpc_kernel_end_call(struct rxrpc_call *);
--extern bool rxrpc_kernel_is_data_last(struct sk_buff *);
--extern u32 rxrpc_kernel_get_abort_code(struct sk_buff *);
--extern int rxrpc_kernel_get_error_number(struct sk_buff *);
--extern void rxrpc_kernel_data_delivered(struct sk_buff *);
--extern void rxrpc_kernel_free_skb(struct sk_buff *);
--extern struct rxrpc_call *rxrpc_kernel_accept_call(struct socket *,
--						   unsigned long);
--extern int rxrpc_kernel_reject_call(struct socket *);
-+void rxrpc_kernel_intercept_rx_messages(struct socket *, rxrpc_interceptor_t);
-+struct rxrpc_call *rxrpc_kernel_begin_call(struct socket *,
-+					   struct sockaddr_rxrpc *,
-+					   struct key *,
-+					   unsigned long,
-+					   gfp_t);
-+int rxrpc_kernel_send_data(struct rxrpc_call *, struct msghdr *, size_t);
-+void rxrpc_kernel_abort_call(struct rxrpc_call *, u32);
-+void rxrpc_kernel_end_call(struct rxrpc_call *);
-+bool rxrpc_kernel_is_data_last(struct sk_buff *);
-+u32 rxrpc_kernel_get_abort_code(struct sk_buff *);
-+int rxrpc_kernel_get_error_number(struct sk_buff *);
-+void rxrpc_kernel_data_delivered(struct sk_buff *);
-+void rxrpc_kernel_free_skb(struct sk_buff *);
-+struct rxrpc_call *rxrpc_kernel_accept_call(struct socket *, unsigned long);
-+int rxrpc_kernel_reject_call(struct socket *);
+-#include <linux/preempt.h>
++#include <linux/preempt_mask.h>
+ #include <linux/lockdep.h>
+ #include <linux/ftrace_irq.h>
+ #include <linux/vtime.h>
+-#include <asm/hardirq.h>
  
- #endif /* _NET_RXRPC_H */
+-/*
+- * We put the hardirq and softirq counter into the preemption
+- * counter. The bitmask has the following meaning:
+- *
+- * - bits 0-7 are the preemption count (max preemption depth: 256)
+- * - bits 8-15 are the softirq count (max # of softirqs: 256)
+- *
+- * The hardirq count can in theory reach the same as NR_IRQS.
+- * In reality, the number of nested IRQS is limited to the stack
+- * size as well. For archs with over 1000 IRQS it is not practical
+- * to expect that they will all nest. We give a max of 10 bits for
+- * hardirq nesting. An arch may choose to give less than 10 bits.
+- * m68k expects it to be 8.
+- *
+- * - bits 16-25 are the hardirq count (max # of nested hardirqs: 1024)
+- * - bit 26 is the NMI_MASK
+- * - bit 27 is the PREEMPT_ACTIVE flag
+- *
+- * PREEMPT_MASK: 0x000000ff
+- * SOFTIRQ_MASK: 0x0000ff00
+- * HARDIRQ_MASK: 0x03ff0000
+- *     NMI_MASK: 0x04000000
+- */
+-#define PREEMPT_BITS	8
+-#define SOFTIRQ_BITS	8
+-#define NMI_BITS	1
+-
+-#define MAX_HARDIRQ_BITS 10
+-
+-#ifndef HARDIRQ_BITS
+-# define HARDIRQ_BITS	MAX_HARDIRQ_BITS
+-#endif
+-
+-#if HARDIRQ_BITS > MAX_HARDIRQ_BITS
+-#error HARDIRQ_BITS too high!
+-#endif
+-
+-#define PREEMPT_SHIFT	0
+-#define SOFTIRQ_SHIFT	(PREEMPT_SHIFT + PREEMPT_BITS)
+-#define HARDIRQ_SHIFT	(SOFTIRQ_SHIFT + SOFTIRQ_BITS)
+-#define NMI_SHIFT	(HARDIRQ_SHIFT + HARDIRQ_BITS)
+-
+-#define __IRQ_MASK(x)	((1UL << (x))-1)
+-
+-#define PREEMPT_MASK	(__IRQ_MASK(PREEMPT_BITS) << PREEMPT_SHIFT)
+-#define SOFTIRQ_MASK	(__IRQ_MASK(SOFTIRQ_BITS) << SOFTIRQ_SHIFT)
+-#define HARDIRQ_MASK	(__IRQ_MASK(HARDIRQ_BITS) << HARDIRQ_SHIFT)
+-#define NMI_MASK	(__IRQ_MASK(NMI_BITS)     << NMI_SHIFT)
+-
+-#define PREEMPT_OFFSET	(1UL << PREEMPT_SHIFT)
+-#define SOFTIRQ_OFFSET	(1UL << SOFTIRQ_SHIFT)
+-#define HARDIRQ_OFFSET	(1UL << HARDIRQ_SHIFT)
+-#define NMI_OFFSET	(1UL << NMI_SHIFT)
+-
+-#define SOFTIRQ_DISABLE_OFFSET	(2 * SOFTIRQ_OFFSET)
+-
+-#ifndef PREEMPT_ACTIVE
+-#define PREEMPT_ACTIVE_BITS	1
+-#define PREEMPT_ACTIVE_SHIFT	(NMI_SHIFT + NMI_BITS)
+-#define PREEMPT_ACTIVE	(__IRQ_MASK(PREEMPT_ACTIVE_BITS) << PREEMPT_ACTIVE_SHIFT)
+-#endif
+-
+-#if PREEMPT_ACTIVE < (1 << (NMI_SHIFT + NMI_BITS))
+-#error PREEMPT_ACTIVE is too low!
+-#endif
+-
+-#define hardirq_count()	(preempt_count() & HARDIRQ_MASK)
+-#define softirq_count()	(preempt_count() & SOFTIRQ_MASK)
+-#define irq_count()	(preempt_count() & (HARDIRQ_MASK | SOFTIRQ_MASK \
+-				 | NMI_MASK))
+-
+-/*
+- * Are we doing bottom half or hardware interrupt processing?
+- * Are we in a softirq context? Interrupt context?
+- * in_softirq - Are we currently processing softirq or have bh disabled?
+- * in_serving_softirq - Are we currently processing softirq?
+- */
+-#define in_irq()		(hardirq_count())
+-#define in_softirq()		(softirq_count())
+-#define in_interrupt()		(irq_count())
+-#define in_serving_softirq()	(softirq_count() & SOFTIRQ_OFFSET)
+-
+-/*
+- * Are we in NMI context?
+- */
+-#define in_nmi()	(preempt_count() & NMI_MASK)
+-
+-#if defined(CONFIG_PREEMPT_COUNT)
+-# define PREEMPT_CHECK_OFFSET 1
+-#else
+-# define PREEMPT_CHECK_OFFSET 0
+-#endif
+-
+-/*
+- * Are we running in atomic context?  WARNING: this macro cannot
+- * always detect atomic context; in particular, it cannot know about
+- * held spinlocks in non-preemptible kernels.  Thus it should not be
+- * used in the general case to determine whether sleeping is possible.
+- * Do not use in_atomic() in driver code.
+- */
+-#define in_atomic()	((preempt_count() & ~PREEMPT_ACTIVE) != 0)
+-
+-/*
+- * Check whether we were atomic before we did preempt_disable():
+- * (used by the scheduler, *after* releasing the kernel lock)
+- */
+-#define in_atomic_preempt_off() \
+-		((preempt_count() & ~PREEMPT_ACTIVE) != PREEMPT_CHECK_OFFSET)
+-
+-#ifdef CONFIG_PREEMPT_COUNT
+-# define preemptible()	(preempt_count() == 0 && !irqs_disabled())
+-#else
+-# define preemptible()	0
+-#endif
+ 
+ #if defined(CONFIG_SMP) || defined(CONFIG_GENERIC_HARDIRQS)
+ extern void synchronize_irq(unsigned int irq);
+diff --git a/include/linux/preempt_mask.h b/include/linux/preempt_mask.h
+new file mode 100644
+index 0000000..931bc61
+--- /dev/null
++++ b/include/linux/preempt_mask.h
+@@ -0,0 +1,122 @@
++#ifndef LINUX_PREEMPT_MASK_H
++#define LINUX_PREEMPT_MASK_H
++
++#include <linux/preempt.h>
++#include <asm/hardirq.h>
++
++/*
++ * We put the hardirq and softirq counter into the preemption
++ * counter. The bitmask has the following meaning:
++ *
++ * - bits 0-7 are the preemption count (max preemption depth: 256)
++ * - bits 8-15 are the softirq count (max # of softirqs: 256)
++ *
++ * The hardirq count can in theory reach the same as NR_IRQS.
++ * In reality, the number of nested IRQS is limited to the stack
++ * size as well. For archs with over 1000 IRQS it is not practical
++ * to expect that they will all nest. We give a max of 10 bits for
++ * hardirq nesting. An arch may choose to give less than 10 bits.
++ * m68k expects it to be 8.
++ *
++ * - bits 16-25 are the hardirq count (max # of nested hardirqs: 1024)
++ * - bit 26 is the NMI_MASK
++ * - bit 27 is the PREEMPT_ACTIVE flag
++ *
++ * PREEMPT_MASK: 0x000000ff
++ * SOFTIRQ_MASK: 0x0000ff00
++ * HARDIRQ_MASK: 0x03ff0000
++ *     NMI_MASK: 0x04000000
++ */
++#define PREEMPT_BITS	8
++#define SOFTIRQ_BITS	8
++#define NMI_BITS	1
++
++#define MAX_HARDIRQ_BITS 10
++
++#ifndef HARDIRQ_BITS
++# define HARDIRQ_BITS	MAX_HARDIRQ_BITS
++#endif
++
++#if HARDIRQ_BITS > MAX_HARDIRQ_BITS
++#error HARDIRQ_BITS too high!
++#endif
++
++#define PREEMPT_SHIFT	0
++#define SOFTIRQ_SHIFT	(PREEMPT_SHIFT + PREEMPT_BITS)
++#define HARDIRQ_SHIFT	(SOFTIRQ_SHIFT + SOFTIRQ_BITS)
++#define NMI_SHIFT	(HARDIRQ_SHIFT + HARDIRQ_BITS)
++
++#define __IRQ_MASK(x)	((1UL << (x))-1)
++
++#define PREEMPT_MASK	(__IRQ_MASK(PREEMPT_BITS) << PREEMPT_SHIFT)
++#define SOFTIRQ_MASK	(__IRQ_MASK(SOFTIRQ_BITS) << SOFTIRQ_SHIFT)
++#define HARDIRQ_MASK	(__IRQ_MASK(HARDIRQ_BITS) << HARDIRQ_SHIFT)
++#define NMI_MASK	(__IRQ_MASK(NMI_BITS)     << NMI_SHIFT)
++
++#define PREEMPT_OFFSET	(1UL << PREEMPT_SHIFT)
++#define SOFTIRQ_OFFSET	(1UL << SOFTIRQ_SHIFT)
++#define HARDIRQ_OFFSET	(1UL << HARDIRQ_SHIFT)
++#define NMI_OFFSET	(1UL << NMI_SHIFT)
++
++#define SOFTIRQ_DISABLE_OFFSET	(2 * SOFTIRQ_OFFSET)
++
++#ifndef PREEMPT_ACTIVE
++#define PREEMPT_ACTIVE_BITS	1
++#define PREEMPT_ACTIVE_SHIFT	(NMI_SHIFT + NMI_BITS)
++#define PREEMPT_ACTIVE	(__IRQ_MASK(PREEMPT_ACTIVE_BITS) << PREEMPT_ACTIVE_SHIFT)
++#endif
++
++#if PREEMPT_ACTIVE < (1 << (NMI_SHIFT + NMI_BITS))
++#error PREEMPT_ACTIVE is too low!
++#endif
++
++#define hardirq_count()	(preempt_count() & HARDIRQ_MASK)
++#define softirq_count()	(preempt_count() & SOFTIRQ_MASK)
++#define irq_count()	(preempt_count() & (HARDIRQ_MASK | SOFTIRQ_MASK \
++				 | NMI_MASK))
++
++/*
++ * Are we doing bottom half or hardware interrupt processing?
++ * Are we in a softirq context? Interrupt context?
++ * in_softirq - Are we currently processing softirq or have bh disabled?
++ * in_serving_softirq - Are we currently processing softirq?
++ */
++#define in_irq()		(hardirq_count())
++#define in_softirq()		(softirq_count())
++#define in_interrupt()		(irq_count())
++#define in_serving_softirq()	(softirq_count() & SOFTIRQ_OFFSET)
++
++/*
++ * Are we in NMI context?
++ */
++#define in_nmi()	(preempt_count() & NMI_MASK)
++
++#if defined(CONFIG_PREEMPT_COUNT)
++# define PREEMPT_CHECK_OFFSET 1
++#else
++# define PREEMPT_CHECK_OFFSET 0
++#endif
++
++/*
++ * Are we running in atomic context?  WARNING: this macro cannot
++ * always detect atomic context; in particular, it cannot know about
++ * held spinlocks in non-preemptible kernels.  Thus it should not be
++ * used in the general case to determine whether sleeping is possible.
++ * Do not use in_atomic() in driver code.
++ */
++#define in_atomic()	((preempt_count() & ~PREEMPT_ACTIVE) != 0)
++
++/*
++ * Check whether we were atomic before we did preempt_disable():
++ * (used by the scheduler, *after* releasing the kernel lock)
++ */
++#define in_atomic_preempt_off() \
++		((preempt_count() & ~PREEMPT_ACTIVE) != PREEMPT_CHECK_OFFSET)
++
++#ifdef CONFIG_PREEMPT_COUNT
++# define preemptible()	(preempt_count() == 0 && !irqs_disabled())
++#else
++# define preemptible()	0
++#endif
++
++#endif /* LINUX_PREEMPT_MASK_H */
 -- 
-1.8.1.2.459.gbcd45b4.dirty
+1.7.5.4
 
