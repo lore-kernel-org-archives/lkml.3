@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753448Ab3HAHLg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 03:11:36 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:63369 "EHLO song.cn.fujitsu.com"
+	id S1753050Ab3HAHMO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 03:12:14 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:53021 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750918Ab3HAHIP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 03:08:15 -0400
+	id S1751991Ab3HAHIN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 03:08:13 -0400
 X-IronPort-AV: E=Sophos;i="4.89,792,1367942400"; 
-   d="scan'208";a="8085213"
+   d="scan'208";a="8085211"
 From: Tang Chen <tangchen@cn.fujitsu.com>
 To: rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu,
         hpa@zytor.com, akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
@@ -20,9 +20,9 @@ To: rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu,
         zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com
 Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Subject: [PATCH v2 08/18] x86: get pg_data_t's memory from other node
-Date: Thu, 1 Aug 2013 15:06:30 +0800
-Message-Id: <1375340800-19332-9-git-send-email-tangchen@cn.fujitsu.com>
+Subject: [PATCH v2 05/18] x86, acpi: Split acpi_boot_table_init() into two parts.
+Date: Thu, 1 Aug 2013 15:06:27 +0800
+Message-Id: <1375340800-19332-6-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.10.1
 In-Reply-To: <1375340800-19332-1-git-send-email-tangchen@cn.fujitsu.com>
 References: <1375340800-19332-1-git-send-email-tangchen@cn.fujitsu.com>
@@ -35,64 +35,122 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+In ACPI, SRAT(System Resource Affinity Table) contains NUMA info.
+The memory affinities in SRAT record every memory range in the
+system, and also, flags specifying if the memory range is
+hotpluggable.
+(Please refer to ACPI spec 5.0 5.2.16)
 
-If system can create movable node which all memory of the node is allocated
-as ZONE_MOVABLE, setup_node_data() cannot allocate memory for the node's
-pg_data_t. So, use memblock_alloc_try_nid() instead of memblock_alloc_nid()
-to retry when the first allocation fails. Otherwise, the system could failed
-to boot.
+memblock starts to work at very early time, and SRAT has not been
+parsed. So we don't know which memory is hotpluggable. In order
+to use memblock to reserve hotpluggable memory, we need to obtain
+SRAT memory affinity info earlier.
 
-The node_data could be on hotpluggable node. And so could pagetable and
-vmemmap. But for now, doing so will break memory hot-remove path.
+In the current acpi_boot_table_init(), it does the following:
+1. Parse RSDT, so that we can find all the tables.
+2. Initialize acpi_gbl_root_table_list, an array of acpi table
+   descriptorsused to store each table's address, length, signature,
+   and so on.
+3. Check if there is any table in initrd intending to override
+   tables from firmware. If so, override the firmware tables.
+4. Initialize all the data in acpi_gbl_root_table_list.
 
-A node could have several memory devices. And the device who holds node
-data should be hot-removed in the last place. But in NUAM level, we don't
-know which memory_block (/sys/devices/system/node/nodeX/memoryXXX) belongs
-to which memory device. We only have node. So we can only do node hotplug.
+In order to parse SRAT at early time, we need to do similar job as
+step 1 and 2 above earlier to obtain SRAT. It will be very convenient
+if we have acpi_gbl_root_table_list initialized. We can use address
+and signature to find SRAT.
 
-But in virtualization, developers are now developing memory hotplug in qemu,
-which support a single memory device hotplug. So a whole node hotplug will
-not satisfy virtualization users.
+Since step 1 and 2 allocates no memory, it is OK to do these two
+steps earlier.
 
-So at last, we concluded that we'd better do memory hotplug and local node
-things (local node node data, pagetable, vmemmap, ...) in two steps.
-Please refer to https://lkml.org/lkml/2013/6/19/73
+But step 3 will check acpi initrd table override, not just SRAT,
+but also all the other tables. So it is better to keep it untouched.
 
-For now, we put node_data of movable node to another node, and then improve
-it in the future.
+This patch splits acpi_boot_table_init() into two steps:
+1. Parse RSDT, which cannot be overrided, and initialize
+   acpi_gbl_root_table_list. (step 1 + 2 above)
+2. Install all ACPI tables into acpi_gbl_root_table_list.
+   (step 3 + 4 above)
 
-In the later patches, a boot option will be introduced to enable/disable this
-functionality. If users disable it, the node_data will still be put on the
-local node.
+In later patches, we will do step 1 + 2 earlier.
 
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
 ---
- arch/x86/mm/numa.c |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
+ drivers/acpi/acpica/tbutils.c |   25 ++++++++++++++++++++++---
+ drivers/acpi/tables.c         |    2 ++
+ include/acpi/acpixf.h         |    2 ++
+ 3 files changed, 26 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-index a71c4e2..5013583 100644
---- a/arch/x86/mm/numa.c
-+++ b/arch/x86/mm/numa.c
-@@ -209,10 +209,9 @@ static void __init setup_node_data(int nid, u64 start, u64 end)
- 	 * Allocate node data.  Try node-local memory and then any node.
- 	 * Never allocate in DMA zone.
+diff --git a/drivers/acpi/acpica/tbutils.c b/drivers/acpi/acpica/tbutils.c
+index ce3d5db..9d68ffc 100644
+--- a/drivers/acpi/acpica/tbutils.c
++++ b/drivers/acpi/acpica/tbutils.c
+@@ -766,9 +766,30 @@ acpi_tb_parse_root_table(acpi_physical_address rsdp_address)
  	 */
--	nd_pa = memblock_alloc_nid(nd_size, SMP_CACHE_BYTES, nid);
-+	nd_pa = memblock_alloc_try_nid(nd_size, SMP_CACHE_BYTES, nid);
- 	if (!nd_pa) {
--		pr_err("Cannot find %zu bytes in node %d\n",
--		       nd_size, nid);
-+		pr_err("Cannot find %zu bytes in any node\n", nd_size);
- 		return;
+ 	acpi_os_unmap_memory(table, length);
+ 
++	return_ACPI_STATUS(AE_OK);
++}
++
++/*******************************************************************************
++ *
++ * FUNCTION:    acpi_tb_install_root_table
++ *
++ * DESCRIPTION: This function installs all the ACPI tables in RSDT into
++ *              acpi_gbl_root_table_list.
++ *
++ ******************************************************************************/
++
++void __init
++acpi_tb_install_root_table()
++{
++	int i;
++
+ 	/*
+ 	 * Complete the initialization of the root table array by examining
+-	 * the header of each table
++	 * the header of each table.
++	 *
++	 * First two entries in the table array are reserved for the DSDT
++	 * and FACS, which are not actually present in the RSDT/XSDT - they
++	 * come from the FADT.
+ 	 */
+ 	for (i = 2; i < acpi_gbl_root_table_list.current_table_count; i++) {
+ 		acpi_tb_install_table(acpi_gbl_root_table_list.tables[i].
+@@ -782,6 +803,4 @@ acpi_tb_parse_root_table(acpi_physical_address rsdp_address)
+ 			acpi_tb_parse_fadt(i);
+ 		}
  	}
- 	nd = __va(nd_pa);
+-
+-	return_ACPI_STATUS(AE_OK);
+ }
+diff --git a/drivers/acpi/tables.c b/drivers/acpi/tables.c
+index d67a1fe..8860e79 100644
+--- a/drivers/acpi/tables.c
++++ b/drivers/acpi/tables.c
+@@ -353,6 +353,8 @@ int __init acpi_table_init(void)
+ 	if (ACPI_FAILURE(status))
+ 		return 1;
+ 
++	acpi_tb_install_root_table();
++
+ 	check_multiple_madt();
+ 	return 0;
+ }
+diff --git a/include/acpi/acpixf.h b/include/acpi/acpixf.h
+index 454881e..f5549b5 100644
+--- a/include/acpi/acpixf.h
++++ b/include/acpi/acpixf.h
+@@ -116,6 +116,8 @@ acpi_status
+ acpi_initialize_tables(struct acpi_table_desc *initial_storage,
+ 		       u32 initial_table_count, u8 allow_resize);
+ 
++void acpi_tb_install_root_table(void);
++
+ acpi_status __init acpi_initialize_subsystem(void);
+ 
+ acpi_status acpi_enable_subsystem(u32 flags);
 -- 
 1.7.1
 
