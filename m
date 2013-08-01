@@ -1,118 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752490Ab3HAG1F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 02:27:05 -0400
-Received: from 7.mo2.mail-out.ovh.net ([188.165.48.182]:38288 "EHLO
-	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750936Ab3HAG1B (ORCPT
+	id S1752576Ab3HAG2T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 02:28:19 -0400
+Received: from mail-la0-f42.google.com ([209.85.215.42]:35282 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750850Ab3HAG2S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 02:27:01 -0400
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Boris BREZILLON <b.brezillon@overkiz.com>
-X-Ovh-Mailout: 178.32.228.2 (mo2.mail-out.ovh.net)
-Subject: [PATCH] USB: ohci-at91: add usb_clk for transition to common clk framework
-Date: Thu,  1 Aug 2013 08:16:40 +0200
-Message-Id: <1375337800-2605-1-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Ovh-Tracer-Id: 18326272783991928934
-X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedrheelucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedrheelucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Thu, 1 Aug 2013 02:28:18 -0400
+Date: Thu, 1 Aug 2013 10:28:14 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, luto@amacapital.net,
+        xemul@parallels.com, akpm@linux-foundation.org, mpm@selenic.com,
+        xiaoguangrong@linux.vnet.ibm.com, mtosatti@redhat.com,
+        kosaki.motohiro@gmail.com, sfr@canb.auug.org.au, peterz@infradead.org,
+        aneesh.kumar@linux.vnet.ibm.com
+Subject: Re: [patch 1/2] [PATCH] mm: Save soft-dirty bits on swapped pages
+Message-ID: <20130801062814.GB1764@moon>
+References: <20130730204154.407090410@gmail.com>
+ <20130730204654.844299768@gmail.com>
+ <20130801005132.GB19540@bbox>
+ <20130801055303.GA1764@moon>
+ <20130801061632.GE19540@bbox>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130801061632.GE19540@bbox>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The AT91 PMC (Power Management Controller) provides an USB clock used by
-USB Full Speed host (ohci) and USB Full Speed device (udc).
-The usb drivers (ohci and udc) must configure this clock to 48Mhz.
-This configuration was formely done in mach-at91/clock.c, but this
-implementation will be removed when moving to common clk framework.
-
-This patch adds support for usb clock retrieval and configuration, and is
-backward compatible with the current at91 clk implementation (if usb clk
-is not found, it does not configure/enable it).
-
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
----
- drivers/usb/host/ohci-at91.c |   17 +++++++++++++++--
- 1 file changed, 15 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/usb/host/ohci-at91.c b/drivers/usb/host/ohci-at91.c
-index 9677f68..913d293 100644
---- a/drivers/usb/host/ohci-at91.c
-+++ b/drivers/usb/host/ohci-at91.c
-@@ -31,8 +31,8 @@
- #define at91_for_each_port(index)	\
- 		for ((index) = 0; (index) < AT91_MAX_USBH_PORTS; (index)++)
- 
--/* interface and function clocks; sometimes also an AHB clock */
--static struct clk *iclk, *fclk, *hclk;
-+/* interface, function and usb clocks; sometimes also an AHB clock */
-+static struct clk *iclk, *fclk, *uclk, *hclk;
- static int clocked;
- 
- extern int usb_disabled(void);
-@@ -41,6 +41,10 @@ extern int usb_disabled(void);
- 
- static void at91_start_clock(void)
- {
-+	if (!IS_ERR(uclk)) {
-+		clk_set_rate(uclk, 48000000);
-+		clk_prepare_enable(uclk);
-+	}
- 	clk_prepare_enable(hclk);
- 	clk_prepare_enable(iclk);
- 	clk_prepare_enable(fclk);
-@@ -52,6 +56,8 @@ static void at91_stop_clock(void)
- 	clk_disable_unprepare(fclk);
- 	clk_disable_unprepare(iclk);
- 	clk_disable_unprepare(hclk);
-+	if (!IS_ERR(uclk))
-+		clk_disable_unprepare(uclk);
- 	clocked = 0;
- }
- 
-@@ -163,6 +169,8 @@ static int usb_hcd_at91_probe(const struct hc_driver *driver,
- 		goto err5;
- 	}
- 
-+	uclk = clk_get(&pdev->dev, "usb_clk");
-+
- 	at91_start_hc(pdev);
- 	ohci_hcd_init(hcd_to_ohci(hcd));
- 
-@@ -173,6 +181,9 @@ static int usb_hcd_at91_probe(const struct hc_driver *driver,
- 	/* Error handling */
- 	at91_stop_hc(pdev);
- 
-+	if (!IS_ERR(uclk))
-+		clk_put(uclk);
-+
- 	clk_put(hclk);
-  err5:
- 	clk_put(fclk);
-@@ -212,6 +223,8 @@ static void usb_hcd_at91_remove(struct usb_hcd *hcd,
- 	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
- 	usb_put_hcd(hcd);
- 
-+	if (!IS_ERR(uclk))
-+		clk_put(uclk);
- 	clk_put(hclk);
- 	clk_put(fclk);
- 	clk_put(iclk);
--- 
-1.7.9.5
-
+On Thu, Aug 01, 2013 at 03:16:32PM +0900, Minchan Kim wrote:
+> 
+> I don't get it. Could you correct me with below example?
+> 
+> Process A context
+>         try_to_unmap
+>                 swp_pte = swp_entry_to_pte /* change generic swp into arch swap */
+>                 swp_pte = pte_swp_mksoft_dirty(swp_pte);
+>                 set_pte_at(, swp_pte);
+> 
+> Process A context
+>         ..
+>         mincore_pte_range
+		pte_t pte = *ptep;	<-- local copy of the pte value, in memory it remains the same
+						with swap softdirty bit set
+>                 pte_to_swp_entry
+>                         pte = pte_swp_clear_soft_dirty  <=== 1)
+>                         change arch swp with generic swp
+>                 mincore_page 
+> 
+> Process B want to know dirty state of the page
+>         ..
+>         pagemap_read
+>         pte_to_pagemap_entry
+>         is_swap_pte
+>                 if (pte_swap_soft_dirty(pte)) <=== but failed by 1)
+> 
+> So, Process B can't get the dirty status from process A's the page.
