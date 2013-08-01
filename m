@@ -1,849 +1,436 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755023Ab3HAKhE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 06:37:04 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:38238 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754922Ab3HAKg6 (ORCPT
+	id S1755121Ab3HAKhm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 06:37:42 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:33681 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754985Ab3HAKhj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 06:36:58 -0400
-From: Rui Wang <ruiv.wang@gmail.com>
-To: bhelgaas@google.com
-Cc: tony.luck@intel.com, chaohong.guo@intel.com, gong.chen@linux.intel.com,
-        rafael.j.wysocki@intel.com, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        Rui Wang <rui.y.wang@intel.com>
-Subject: [RFC v2 3/3] I/O Hook: sysfs interface to emulate h/w events
-Date: Thu,  1 Aug 2013 18:31:33 +0800
-Message-Id: <1375353093-3206-4-git-send-email-rui.y.wang@intel.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1375353093-3206-1-git-send-email-rui.y.wang@intel.com>
-References: <1375353093-3206-1-git-send-email-rui.y.wang@intel.com>
+	Thu, 1 Aug 2013 06:37:39 -0400
+Date: Thu, 1 Aug 2013 12:37:13 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Rik van Riel <riel@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH,RFC] numa,sched: use group fault statistics in numa
+ placement
+Message-ID: <20130801103713.GO3008@twins.programming.kicks-ass.net>
+References: <1373901620-2021-1-git-send-email-mgorman@suse.de>
+ <20130730113857.GR3008@twins.programming.kicks-ass.net>
+ <20130801022319.4a6a977a@annuminas.surriel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130801022319.4a6a977a@annuminas.surriel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add sysfs interface used to emulate h/w events. Here's how it works:
+On Thu, Aug 01, 2013 at 02:23:19AM -0400, Rik van Riel wrote:
+> Subject: [PATCH,RFC] numa,sched: use group fault statistics in numa placement
+> 
+> Here is a quick strawman on how the group fault stuff could be used
+> to help pick the best node for a task. This is likely to be quite
+> suboptimal and in need of tweaking. My main goal is to get this to
+> Peter & Mel before it's breakfast time on their side of the Atlantic...
+> 
+> This goes on top of "sched, numa: Use {cpu, pid} to create task groups for shared faults"
+> 
+> Enjoy :)
+> 
+> +	/*
+> +	 * Should we stay on our own, or move in with the group?
+> +	 * The absolute count of faults may not be useful, but comparing
+> +	 * the fraction of accesses in each top node may give us a hint
+> +	 * where to start looking for a migration target.
+> +	 *
+> +	 *  max_group_faults     max_faults
+> +	 * ------------------ > ------------
+> +	 * total_group_faults   total_faults
+> +	 */
+> +	if (max_group_nid >= 0 && max_group_nid != max_nid) {
+> +		if (max_group_faults * total_faults >
+> +				max_faults * total_group_faults)
+> +			max_nid = max_group_nid;
+> +	}
 
-The sysfs interface can be used to add/delete Register Overrides with user-
-defined values. The user can also specify which IRQ to be triggered via
-Inter-Processor Interrupt (IPI) while the h/w registers are being overridden.
-When the irq handler is triggered by the IPI it looks for the registers
-specific to some h/w events. As long as the Register Overrides are setup
-correctly, the irq  handler  will believe that the h/w is in a state
-corresponding to a predefined interrupt, thus process the event.
+This makes sense.. another part of the problem, which you might already
+have spotted is selecting a task to swap with. 
 
-This can be typically used to generate ACPI events, PCI interrupts, PCIe
-AER injection etc., and can thus be used to help test RAS features like
-the hotplug of CPU/MEM/IOH on machines that are not capable of generating
-the events.
+If you only look at per task faults its often impossible to find a
+suitable swap task because moving you to a more suitable node would
+degrade the other task -- below a patch you've already seen but I
+haven't yet posted because I'm not at all sure its something 'sane' :-)
 
-See Documentation/PCI/iohook.txt for usage details.
+With group information your case might be stronger because you already
+have many tasks on that node.
 
-Signed-off-by: Rui Wang <rui.y.wang@intel.com>
+Still there's the tie where there's two groups with each exactly half
+their tasks crossed between two nodes. I suppose we should forcefully
+tie break in this case.
+
+And all this while also maintaining the invariants placed by the regular
+balancer. It would be no good to move tasks about if the balancer would
+then have to shuffle stuff right back (or worse) in order to maintain
+fairness.
+
 ---
- Documentation/PCI/iohook.txt |  282 ++++++++++++++++++++++++
- drivers/misc/iohook/iohook.c |  490 ++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 772 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/PCI/iohook.txt
+Subject: sched, numa: Alternative migration scheme
+From: Peter Zijlstra <peterz@infradead.org>
+Date: Sun Jul 21 23:12:13 CEST 2013
 
-diff --git a/Documentation/PCI/iohook.txt b/Documentation/PCI/iohook.txt
-new file mode 100644
-index 0000000..07777d2
---- /dev/null
-+++ b/Documentation/PCI/iohook.txt
-@@ -0,0 +1,282 @@
-+Emulating h/w events via iohook
-+=================================
-+
-+1. Introduction
-+2. How to use it
-+3. Use cases
-+
-+1. Introduction
-+---------------------
-+I/O Hook is  a  mechanism to intercept  i/o register access  functions in the
-+kernel. By overriding h/w register bits with user-defined bits in RAM called
-+Register Override, it is possible to emulate h/w states without modifying
-+the driver specific to that hardware.
-+
-+iohook is a driver that exports sysfs interface used to talk to the I/O Hook
-+in the kernel in order to emulate h/w events. Here's how it works:
-+
-+The sysfs interface can be used to add/delete Register Overrides with user-
-+defined values. The user can also specify which IRQ  to  be  triggered  via
-+Inter-Processor Interrupt (IPI)  while  the  h/w registers are being over-
-+ridden. When  the irq  handler  is  triggered  by  the IPI it looks for the
-+registers specific to some h/w events. As long as the Register Overrides are
-+setup correctly, the irq  handler  will believe that the h/w is in a state
-+corresponding to a predefined interrupt, thus process the event.
-+
-+A Register Override can be defined in whatever bit-width, identified by its
-+address, bitmask, initial value and attributes like read-only, read-write,
-+write-clear, etc., similar to how a hardware register behaves when accessed.
-+
-+A Register Override may not use every bit in a byte. Its bitmask identifies
-+which bits are used (overridden). The unused bits are accessed on the h/w
-+and combined with the overridden bits to form the final result. The reason
-+to support this combination is that many h/w events are controlled by only
-+a few bits. For example the ACPI GPEx_STS and GPEx_EN are encoded such that
-+each bit represents a different General Purpose Event. The user is supposed
-+to fully understand the side-effect, if any, of reading adjacent bits when
-+he or she adds a Register Override not in the entirety of a byte, a word, a
-+dword, or a qword.
-+
-+iohook can be typically used to generate ACPI events, PCI interrupts, PCIe
-+AER injection etc., and can thus be used to help test RAS features like
-+the hotplug of CPU/MEM/IOH on machines that are not capable of generating
-+these events.
-+
-+2. How to use it
-+-------------------
-+
-+2.1 Kernel compilation and sysfs interface
-+
-+First compile the kernel with CONFIG_IO_HOOK. After the new kernel is loaded
-+a directory subtree is created under /sys/kernel/debug/iohook
-+
-+bash# cd /sys/kernel/debug/iohook
-+bash# ls
-+io  irq  mem  pciconf  trigger
-+
-+Each file is used to manage a type of resource.
-+'io' is used to add/show Register Overrides in IO port space.
-+'mem' is used to add/show Register Overrides in memory space.
-+'pciconf' is used to add/show Register Overrides in pci config space.
-+'irq' is used to set the desired IRQ to be triggered via IPI.
-+'trigger' is used to turn on/off the I/O Hook.
-+
-+2.2 Add Register Overrides
-+
-+A Register Override can be specified on the command line with the following
-+syntax (all numbers are in hex without space between each element)
-+
-+for a Register Override in IO port or memory space, it's specified as:
-+
-+	address-length[value/mask]attribute
-+
-+for a Register Override in PCI config space, it's specified as:
-+
-+	domain|bus:dev.func+offset-length[value/mask]attribute
-+
-+where
-+	address - the 64bit address of the h/w register to be overridden
-+
-+	length - the number of bytes affected. Affected here means that
-+		 at least one bit in that byte is overridden. For 'length'
-+		 less than 8, the overridden bits are determined by the
-+		 corresponding bits set in 'mask'. Other bits are unaffected
-+		 and accessed on the h/w. For 'length' >= 8 then 'mask' is
-+		 ignored and the entire range of bytes are overridden to be
-+		 a single value specified by the first byte of 'value'. This
-+		 can be used, for example, to set the entire PCI Config
-+		 space of a device to 0xff.
-+
-+	value -  the user-defined value to replace the content of the
-+		 corresponding h/w register. for 'length' < 8, only the bits
-+		 masked by 'mask' are used.
-+
-+	mask -   is the bit-mask specifying the bits to be overridden when
-+		 'length' < 8.
-+
-+	attribute - used to specify the attribute of the overridden bits.
-+		 It can be ro, rw, wc, rc to mean read-only, read-write,
-+		 write-clear, and read-clear respectively.
-+
-+	domain - pci domain number
-+	bus    - pci bus number
-+	dev    - pci device number
-+	func   - pci function number
-+	offset - used to specify the offset of the affected bytes in the
-+		 PCI config space.
-+
-+Multiple registers can be specified on one line with each separated by at
-+least one space.  For example, to override two registers in IO space at port
-+0x420 and port 0x428, with the former in write-clear mode and the latter in
-+read-only mode:
-+
-+bash# cd /sys/kernel/debug/iohook
-+bash# echo "420-1[04/04]wc 428-1[04/04]ro" > io
-+The syntax is "address-length[value/mask]attribute".
-+Since only one bit is overridden (mask is 0x04), the affected byte is 1.
-+So 'length' is 1.
-+
-+As another example, to add two Register Overrides in the PCI config space of
-+device 00:05.0 at offsets 0x130 and 0x134 respectively:
-+
-+bash# echo "0000|00:05.0+130-1[01/01]wc 0000|00:05.0+134-2[0500/ffff]ro">pciconf
-+The syntax is "domain|bus:dev.func+offset-length[value/mask]attribute"
-+The first register overrides only bit0 and the second register overrides the
-+first 2 bytes (mask == 0xffff), with an initial value of 0x0500.
-+
-+Register Overrides are disabled when added. They can be enabled by using the
-+'trigger' file. See below.
-+
-+2.3 Add IRQ and enable the Register Overrides
-+
-+To specify an IRQ to be triggered via IPI, just echo the IRQ number in decimal
-+to the 'irq' file. For example:
-+
-+bash# cd /sys/kernel/debug/iohook
-+bash# echo 9 > irq
-+This specifies that IRQ9 be triggered after the Register Overrides are enabled.
-+
-+To enable the Register Overrides in the kernel:
-+
-+bash# echo 1 > trigger
-+
-+This immediately enables all the Register Overrides and if an IRQ number was
-+specified, generate the IPI.
-+
-+To disable the Register Overrides in the kernel:
-+
-+bash echo 0 > trigger
-+This immediately disables all Register Overrides. The kernel starts to see
-+real h/w registers again. This does not delete the Register Overrides. They
-+can be re-enabled again by echo 1 > trigger.
-+
-+3. Use cases
-+-----------------
-+
-+3.1 Generate ACPI Events
-+
-+A typical use case is to generate ACPI events. Suppose we want to test IOH
-+hotplug on a machine whose BIOS doesn't support it. We can override its DSDT
-+and add a GPE to notify the OS the hot-add/removal of the IOH device. We can
-+then use iohook to trigger the imaginary GPE and the OS will have to process
-+the hotplug event. (For detailed instructions on how to override DSDT see
-+Documentation/acpi/initrd_table_override.txt.) The following is an example:
-+
-+We first extract the DSDT
-+bash # cat /sys/firmware/acpi/tables/DSDT > DSDT
-+bash # iasl -d DSDT
-+Now we have disassembled the DSDT into DSDT.dsl. We vi DSDT.dsl and notice
-+that there's a IOH device named \_SB.IOH1. Since GPEs are named _Lxx with xx
-+being the GPE numbers, we notice that there's no _L02 in DSDT.dsl, so we can
-+use this spare GPE to notify the OS the hotplug of \_SB.IOH1. We add a new
-+method in DSDT.dsl:
-+
-+    Method (_L02, 0, NotSerialized) // _Lxx: Level-Triggered GPE
-+    {
-+	Notify (\_SB.IOH1, 0x0)     // 0x0: hot-add event
-+    }
-+
-+ACPI uses a single interrupt (SCI) to dispatch all GPEs. The SCI IRQ number
-+can be found from:
-+
-+bash # grep acpi /proc/interrupts | awk '{ print $1; }'
-+9:
-+
-+which means SCI is IRQ9. What we need to do is to generate IRQ9 via IPI and
-+let the SCI interrupt handler call _L02. Each _Lxx has a status bit in
-+GPEx_STS to reflect if it is asserted and a controlling bit in GPEx_EN to
-+reflect if it is enabled. The SCI interrupt handler reads GPEx_STS and
-+GPEx_EN to decide whether to call a _Lxx. a _Lxx is called if it is both
-+enabled and asserted. We can use Register Overrides to override the bits
-+controlling _L02 in GPEx_STS and GPEx_EN so that the SCI handler will believe
-+that _L02 is asserted and enabled, and will call the ACPI method that we
-+added.
-+
-+_L02's controlling bits are in GPE0_STS and GPE0_EN, whose addresses can be
-+found from FACP as follows.
-+
-+bash # cat /sys/firmware/acpi/tables/FACP > FACP
-+bash # iasl -d FACP
-+[root@TXT acpi]# grep GPE FACP.dsl
-+[050h 080  4]           GPE0 Block Address : 00000420
-+[054h 084  4]           GPE1 Block Address : 00000000
-+[05Ch 092  1]            GPE0 Block Length : 10
-+
-+So according to FACP, GPE0 block is at port 0x420; GPE0 block length is 0x10.
-+GPE0_STS/GPE0_EN each occupies half the block length, with GPE0_STS at 0x420
-+and GPE0_EN at 0x428. _L02 is controlled by bit2 of each of them. We need to
-+override bit2 of both IO port 0x420 and IO port 0x428.
-+
-+Before adding the Register Override we need to replace the DSDT provided by
-+BIOS with our modified DSDT.dsl, by following initrd_table_override.txt.
-+Once the new DSDT is injected into initrd we reboot the system and add the
-+Register Override as follows.
-+
-+bash # cd /sys/kernel/debug/iohook/
-+bash # echo "420-1[4/4]wc 428-1[4/4]ro" > io
-+bash # echo 9 > irq
-+bash # echo 1 > trigger
-+
-+The last command immediately triggers the _L02 method that we provided and
-+Linux sees a hot-add ACPI event for the IOH device.
-+
-+
-+3.2 Generate PCIe Native Hotplug
-+
-+The pciehp driver allocates an irq to handle each native PCIe hotplug slot.
-+The driver prints the status of each hotplug slot when debugging is enabled
-+so we can see which irq it's using.
-+
-+bash # modprobe pciehp pciehp_debug=1
-+
-+dmesg shows:
-+
-+pciehp 0000:00:1c.0:pcie04: Hotplug Controller:
-+pciehp 0000:00:1c.0:pcie04:   Seg/Bus/Dev/Func/IRQ : 0000:00:1c.0 IRQ 70
-+
-+So we pick this hotplug slot at 00:1c.0 which uses IRQ70. Its PCIe Slot
-+Status Register is at offset 0x5a of its pci config space. We can easily
-+inject a Hot-Add (Presence Detect) event into the system by adding a
-+Register Override to override the register at offset 0x5a in the PCI config
-+space of 00:1c.0
-+
-+bash # cd /sys/kernel/debug/iohook/
-+bash # echo "00|00:1c.0+5a-1[48/ff]wc" > pciconf
-+bash # echo 70 > irq
-+bash # echo 1 > trigger
-+
-+dmesg shows:
-+
-+pciehp 0000:00:1c.0:pcie04: Card present on Slot(1)
-+pciehp 0000:00:1c.0:pcie04: Device 0000:0f:00.0 already exists at 0000:0f:00,
-+cannot hot-add
-+pciehp 0000:00:1c.0:pcie04: Cannot add device at 0000:0f:00
-+
-+We can then inject an Attention Button Pressed event:
-+
-+bash # echo "00|00:1c.0+5a-1[41/ff]wc" > pciconf
-+bash # echo 70 > irq
-+bash # echo 1 > trigger
-+
-+dmesg shows:
-+
-+pciehp 0000:00:1c.0:pcie04: Button pressed on Slot(1)
-+pciehp 0000:00:1c.0:pcie04: PCI slot #1 - powering off due to button press
-+
-+3.3 PCIe AER error injection
-+
-+The aerdrv driver allocates a few irqs to handle AER. Each of them handles a
-+PCIe root port device. In an example aerdrv uses irq66 to handle AER on root
-+port 00:05.0. As seen in lspci, the AER capability is at offset 0x100 of its
-+pci config space. So the Root Error Status Register is at offset 0x130, and
-+the Error Source Identification Register is at offset 0x134. We can inject a
-+Correctable Error with a source id to identify its child at 05:00.0.
-+
-+bash # cd /sys/kernel/debug/iohook/
-+bash # echo "00|00:05.0+130-1[01/01]wc 00|00:05.0+134-2[0500/ffff]ro" > pciconf
-+bash # echo 66 > irq
-+bash # echo 1 > trigger
-+
-+dmesg shows:
-+pcieport 0000:00:05.0: AER: Corrected error received: id=0500
-+
-diff --git a/drivers/misc/iohook/iohook.c b/drivers/misc/iohook/iohook.c
-index be671d7..15ae94a 100644
---- a/drivers/misc/iohook/iohook.c
-+++ b/drivers/misc/iohook/iohook.c
-@@ -1,10 +1,34 @@
- #include <linux/init.h>
- #include <linux/module.h>
- #include <linux/kernel.h>
-+#include <linux/uaccess.h>
-+#include <linux/debugfs.h>
-+#include <linux/cpu.h>
-+#include <linux/interrupt.h>
-+#include <linux/kernel_stat.h>
-+#include <linux/of.h>
-+#include <linux/seq_file.h>
-+#include <linux/smp.h>
-+#include <linux/ftrace.h>
-+#include <linux/delay.h>
-+#include <linux/export.h>
-+#include <linux/slab.h>
-+
-+#include <asm/apic.h>
-+#include <asm/io_apic.h>
-+#include <asm/irq.h>
-+#include <asm/idle.h>
-+#include <asm/mce.h>
-+#include <asm/hw_irq.h>
- #include <linux/reg_ovrd.h>
- #include <linux/pci.h>
- #include "iohook.h"
+
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+---
+ kernel/sched/fair.c |  260 +++++++++++++++++++++++++++++++++++++---------------
+ 1 file changed, 187 insertions(+), 73 deletions(-)
+
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -816,6 +816,8 @@ update_stats_curr_start(struct cfs_rq *c
+  * Scheduling class queueing methods:
+  */
  
-+MODULE_LICENSE("GPL");
++static unsigned long task_h_load(struct task_struct *p);
 +
-+static struct dentry *hook_irq_dentry;
-+static struct dentry *hook_reg_dentry;
-+
- static DEFINE_RAW_SPINLOCK(io_hook_lock);
- static DEFINE_RAW_SPINLOCK(engine_lock);
- 
-@@ -533,3 +557,469 @@ int write_ovrd_common(int spaceid, u64 address, int len, void *data, void *bus)
- 	return ret;
+ #ifdef CONFIG_NUMA_BALANCING
+ /*
+  * Approximate time to scan a full NUMA task in ms. The task scan period is
+@@ -885,92 +887,206 @@ static inline int task_faults_idx(int ni
+ 	return 2 * nid + priv;
  }
- EXPORT_SYMBOL(write_ovrd_common);
-+
-+static void trigger_irq_by_ipi(unsigned long irqnum)
+ 
++static inline unsigned long task_faults(struct task_struct *p, int nid)
 +{
-+	struct irq_desc *desc;
-+	struct irq_data *data;
-+	struct irq_chip *chip;
++	if (!p->numa_faults)
++		return 0;
 +
-+	desc = irq_to_desc(irqnum);
-+	data = irq_desc_get_irq_data(desc);
-+	chip = irq_data_get_irq_chip(data);
-+
-+	raw_spin_lock(&desc->lock);
-+
-+	if (chip->irq_retrigger)
-+		chip->irq_retrigger(data);
-+	else
-+		pr_err("platform doesn't support irq_retrigger?\n");
-+
-+	raw_spin_unlock(&desc->lock);
-+
++	return p->numa_faults[2*nid] + p->numa_faults[2*nid+1];
 +}
 +
-+/* currently there can be one hook_ irq */
-+int	g_irq_num;
-+
-+ssize_t hook_trigger_read(struct file *file, char __user *ubuf, size_t cnt,
-+		loff_t *ppos)
-+{
-+	char buf[64];		/* big enough to hold a number */
-+	int r;
-+
-+	r = sprintf(buf, "%u\n", hook_get_status() ? 1 : 0);
-+	return simple_read_from_buffer(ubuf, cnt, ppos, buf, r);
-+
-+}
-+
-+static ssize_t hook_trigger_write(struct file *file,
-+	const char __user *user_buf, size_t count, loff_t *ppos)
-+{
-+	char *trigger = NULL;
-+	unsigned long on, ret = -EINVAL;
-+
-+	trigger = kmalloc(count+1, GFP_ATOMIC);
-+	if (!trigger) {
-+		pr_err("hook_trigger: Memory allocation failed\n");
-+		return count;
-+	}
-+	trigger[count] = '\0';
-+	if (copy_from_user(trigger, user_buf, count))
-+		goto end;
-+	ret = kstrtoul(trigger, 10, &on);
-+	if (ret)
-+		goto end;
-+
-+	if (on == 1) {
-+		hook_start_ovrd();
-+		if (g_irq_num)
-+			trigger_irq_by_ipi(g_irq_num);
-+	} else if (on == 0) {
-+		hook_stop_ovrd();
-+	}
-+end:
-+	kfree(trigger);
-+	return count;
-+}
-+
-+ssize_t hook_irq_read(struct file *file, char __user *ubuf, size_t cnt,
-+		loff_t *ppos)
-+{
-+	char buf[64];		/* big enough to hold a number */
-+	int r;
-+
-+	r = sprintf(buf, "%u\n", g_irq_num);
-+	return simple_read_from_buffer(ubuf, cnt, ppos, buf, r);
-+}
-+
-+static ssize_t hook_irq_write(struct file *file, const char __user *user_buf,
-+			size_t count, loff_t *ppos)
-+{
-+	char *irq = NULL;
-+	unsigned long irqnum, ret;
-+
-+	irq = kmalloc(count+1, GFP_ATOMIC);
-+	if (!irq) {
-+		pr_err("hook_irq_write: Memory allocation failed\n");
-+		return count;
-+	}
-+	irq[count] = '\0';
-+	if (copy_from_user(irq, user_buf, count))
-+		goto end;
-+	ret = kstrtoul(irq, 10, &irqnum);
-+	if (ret) {
-+		pr_err("bogus irq number? %s\n", irq);
-+		goto end;
-+	}
-+	if (irqnum > NR_IRQS) {
-+		pr_err("irq num too big: %lu\n", irqnum);
-+		goto end;
-+	}
-+
-+	g_irq_num = irqnum;
-+end:
-+	kfree(irq);
-+	return count;
-+}
-+
-+struct hook_iter {
-+	int spaceid; /* io/mem/pciconf */
++static unsigned long weighted_cpuload(const int cpu);
+ static unsigned long source_load(int cpu, int type);
+ static unsigned long target_load(int cpu, int type);
+ static unsigned long power_of(int cpu);
+ static long effective_load(struct task_group *tg, int cpu, long wl, long wg);
+ 
+-static int task_numa_find_cpu(struct task_struct *p, int nid)
++struct numa_stats {
++	unsigned long nr_running;
++	unsigned long load;
++	unsigned long power;
++	unsigned long capacity;
++	int has_capacity;
 +};
-+
-+static void
-+hook_seq_stop(struct seq_file *s, void *it)
-+{
-+}
-+
-+static void *
-+hook_seq_next(struct seq_file *s, void *it, loff_t *offset)
-+{
-+	struct hook_iter *iter = s->private;
-+	int idx;
-+	struct reg_ovrd *regmap;
-+
-+	idx = *offset;
-+	regmap = hook_query_ovrd(iter->spaceid, idx);
-+	if (regmap)
-+		(*offset)++;
-+
-+	return regmap;
-+}
-+
-+static void *
-+hook_seq_start(struct seq_file *s, loff_t *offset)
-+{
-+	return hook_seq_next(s, NULL, offset);
-+}
-+
-+char *hook_attrib(int attrib)
-+{
-+	switch (attrib) {
-+	case OVRD_RO:
-+		return "ro";
-+	case OVRD_RW:
-+		return "rw";
-+	case OVRD_WC:
-+		return "wc";
-+	case OVRD_RC:
-+		return "rc";
-+	}
-+
-+	return "(null)";
-+
-+}
-+
-+static int
-+hook_seq_show(struct seq_file *s, void *it)
-+{
-+	struct hook_iter *iter = s->private;
-+	struct reg_ovrd *regmap;
-+
-+	regmap = (struct reg_ovrd *)it;
-+	switch (iter->spaceid) {
-+	case OVRD_SPACE_IO:
-+	case OVRD_SPACE_MEM:
-+		seq_printf(s,
-+		"addr: 0x%llx lenght: 0x%x value: 0x%llx mask: 0x%llx attrib: %s\n",
-+			regmap->address, regmap->length, regmap->val,
-+			regmap->bit_mask, hook_attrib(regmap->attrib));
-+		break;
-+	case OVRD_SPACE_PCICONF:
-+		seq_printf(s,
-+			"pciconf: 0x%04x|%02x:%02x.%02x offset: 0x%x lenght: 0x%x value: 0x%llx mask: 0x%llx attrib: %s\n",
-+			PCI_DECODE_DOMAIN(regmap->address),
-+			PCI_DECODE_BUSN(regmap->address),
-+			PCI_SLOT(PCI_DECODE_DEVFN(regmap->address)),
-+			PCI_FUNC(PCI_DECODE_DEVFN(regmap->address)),
-+			PCI_DECODE_POS(regmap->address), regmap->length,
-+			regmap->val,
-+			regmap->bit_mask, hook_attrib(regmap->attrib));
-+		break;
-+	default:
-+		seq_puts(s, "error: unknown spaceid\n");
-+		break;
-+	}
-+	return 0;
-+}
-+
-+static const struct seq_operations hook_seq_ops = {
-+	.start = hook_seq_start,
-+	.stop  = hook_seq_stop,
-+	.next  = hook_seq_next,
-+	.show  = hook_seq_show,
-+};
-+
-+static int
-+hook_io_open(struct inode *inode, struct file *file)
-+{
-+	struct hook_iter *iter;
-+
-+	iter = __seq_open_private(file, &hook_seq_ops,
-+				sizeof(struct hook_iter));
-+	if (iter)
-+		iter->spaceid = OVRD_SPACE_IO;
-+
-+	return iter ? 0 : -ENOMEM;
-+}
-+
-+static int
-+hook_mem_open(struct inode *inode, struct file *file)
-+{
-+	struct hook_iter *iter;
-+
-+	iter = __seq_open_private(file, &hook_seq_ops,
-+				sizeof(struct hook_iter));
-+	if (iter)
-+		iter->spaceid = OVRD_SPACE_MEM;
-+
-+	return iter ? 0 : -ENOMEM;
-+}
-+
-+static int
-+hook_pciconf_open(struct inode *inode, struct file *file)
-+{
-+	struct hook_iter *iter;
-+
-+	iter = __seq_open_private(file, &hook_seq_ops,
-+				sizeof(struct hook_iter));
-+	if (iter)
-+		iter->spaceid = OVRD_SPACE_PCICONF;
-+
-+	return iter ? 0 : -ENOMEM;
-+}
 +
 +/*
-+ * IO & MEM entries are formatted as follows (all values are in hex):
-+ *
-+ * address-length[value/mask]attrib
-+ *
-+ * For example: 420-1[20/20]rw
-+ * It means io port 0x420, 1 byte, value 0x20, mask 0x20, read/write
-+ * PCI config entries are formatted as (all values are in hex):
-+ *
-+ * domain|bus:dev.func+offset-length[value/mask]attrib
-+ *
-+ * For example: 0000|00:1e.0+10-4[fe930000/ffffffff]rw
-+ * It means pci domain 0, bus 0, dev 1e, func 0, offset 10, 4 bytes
-+ * with a overridden value of 0xfe930000, mask 0xffffffff, read/write
++ * XXX borrowed from update_sg_lb_stats
 + */
-+static int
-+hook_parse_entry(char *entry, int spaceid)
-+{
-+	char *field;
-+	u64 address, length, value, mask;
-+	unsigned long domain, bus, dev, func;
-+	int attrib, ret;
-+	u16 cval;
++static void update_numa_stats(struct numa_stats *ns, int nid)
+ {
+-	int node_cpu = cpumask_first(cpumask_of_node(nid));
+-	int cpu, src_cpu = task_cpu(p), dst_cpu = src_cpu;
+-	unsigned long src_load, dst_load;
+-	unsigned long min_load = ULONG_MAX;
+-	struct task_group *tg = task_group(p);
+-	s64 src_eff_load, dst_eff_load;
+-	struct sched_domain *sd;
+-	unsigned long weight;
+-	bool balanced;
+-	int imbalance_pct, idx = -1;
++	int cpu;
 +
-+	if (spaceid != OVRD_SPACE_PCICONF)
-+		goto mem_io;
++	memset(ns, 0, sizeof(*ns));
++	for_each_cpu(cpu, cpumask_of_node(nid)) {
++		struct rq *rq = cpu_rq(cpu);
 +
-+	field = strsep(&entry, "|");
-+	ret = kstrtoul(field, 16, &domain);
-+	if (ret || !entry)
-+		return -1;
-+
-+	field = strsep(&entry, ":");
-+	ret = kstrtoul(field, 16, &bus);
-+	if (ret || !entry)
-+		return -1;
-+
-+	field = strsep(&entry, ".");
-+	ret = kstrtoul(field, 16, &dev);
-+	if (ret || !entry)
-+		return -1;
-+
-+	field = strsep(&entry, "+");
-+	ret = kstrtoul(field, 16, &func);
-+	if (ret || !entry)
-+		return -1;
-+
-+mem_io:
-+	field = strsep(&entry, "-");
-+	ret = kstrtoull(field, 16, &address);
-+	if (ret || !entry)
-+		return -1;
-+
-+	pr_info("parse_hook_entry() address=0x%llx\n", address);
-+
-+	field = strsep(&entry, "[");
-+	ret = kstrtoull(field, 16, &length);
-+	if (ret || !entry)
-+		return -1;
-+
-+	pr_info("parse_hook_entry() length=0x%llx\n", length);
-+
-+	field = strsep(&entry, "/");
-+	ret = kstrtoull(field, 16, &value);
-+	if (ret || !entry)
-+		return -1;
-+	pr_info("parse_hook_entry() value=0x%llx\n", value);
-+
-+	field = strsep(&entry, "]");
-+	ret = kstrtoull(field, 16, &mask);
-+	if (ret || !entry)
-+		return -1;
-+	pr_info("parse_hook_entry() mask=0x%llx\n", mask);
-+
-+	cval = (*(u16 *)entry);
-+	pr_info("parse_hook_entry() attrib:%s, cval=0x%x\n",
-+		entry, cval);
-+	if (cval == *(u16 *)"ro")
-+		attrib = OVRD_RO;
-+	else if (cval == *(u16 *)"rw")
-+		attrib = OVRD_RW;
-+	else if (cval == *(u16 *)"rc")
-+		attrib = OVRD_RC;
-+	else if (cval == *(u16 *)"wc")
-+		attrib = OVRD_WC;
-+	else
-+		return -1;
-+
-+	if (spaceid == OVRD_SPACE_PCICONF) {
-+		address = PCI_ENCODE_ADDR(domain, bus, PCI_DEVFN(dev, func),
-+			address);
++		ns->nr_running += rq->nr_running;
++		ns->load += weighted_cpuload(cpu);
++		ns->power += power_of(cpu);
 +	}
 +
-+	hook_add_ovrd(spaceid, address, value, mask, length, attrib);
-+
-+	return 0;
++	ns->load = (ns->load * SCHED_POWER_SCALE) / ns->power;
++	ns->capacity = DIV_ROUND_CLOSEST(ns->power, SCHED_POWER_SCALE);
++	ns->has_capacity = (ns->nr_running < ns->capacity);
 +}
 +
-+static ssize_t
-+hook_write(struct file *file, const char __user *user_buf,
-+		 size_t user_len, loff_t *offset, int spaceid)
++struct task_numa_env {
++	struct task_struct *p;
++
++	int src_cpu, src_nid;
++	int dst_cpu, dst_nid;
++
++	struct numa_stats src_stats, dst_stats;
++
++	int imbalance_pct, idx;
++
++	struct task_struct *best_task;
++	long best_imp;
++	int best_cpu;
++};
++
++static void task_numa_assign(struct task_numa_env *env,
++			     struct task_struct *p, long imp)
 +{
-+	char *buf, *pstr, *entry;
-+	ssize_t rc;
++	if (env->best_task)
++		put_task_struct(env->best_task);
++	if (p)
++		get_task_struct(p);
 +
-+	if (*offset)
-+		return -EINVAL;
++	env->best_task = p;
++	env->best_imp = imp;
++	env->best_cpu = env->dst_cpu;
++}
 +
-+	buf = vzalloc(user_len + 1);
-+	if (buf == NULL)
-+		return -ENOMEM;
++static void task_numa_compare(struct task_numa_env *env, long imp)
++{
++	struct rq *src_rq = cpu_rq(env->src_cpu);
++	struct rq *dst_rq = cpu_rq(env->dst_cpu);
++	struct task_struct *cur;
++	unsigned long dst_load, src_load;
++	unsigned long load;
 +
-+	if (strncpy_from_user(buf, user_buf, user_len) < 0) {
-+		rc = -EFAULT;
-+		goto out_free;
++	rcu_read_lock();
++	cur = ACCESS_ONCE(dst_rq->curr);
++	if (cur->pid == 0) /* idle */
++		cur = NULL;
++
++	if (cur) {
++		imp += task_faults(cur, env->src_nid) -
++		       task_faults(cur, env->dst_nid);
 +	}
 +
-+	/* first delete all overridden registers */
-+	hook_cleanup_ovrd(spaceid);
++	if (imp < env->best_imp)
++		goto unlock;
 +
-+	buf[user_len] = '\0';
-+	pstr = buf;
-+	while (pstr && *pstr) {
-+		pstr = skip_spaces(pstr);
-+		entry = strsep(&pstr, " \t\x0D\x0A");
-+		pr_info("hook_write input: %s\n", entry);
-+		if (hook_parse_entry(entry, spaceid)) {
-+			rc = -EINVAL;
-+			goto out_free;
-+		}
++	if (!cur) {
++		/* If there's room for an extra task; go ahead */
++		if (env->dst_stats.has_capacity)
++			goto assign;
++
++		/* If we're both over-capacity; balance */
++		if (!env->src_stats.has_capacity)
++			goto balance;
++
++		goto unlock;
 +	}
 +
-+	rc = user_len;
++	/* Balance doesn't matter much if we're running a task per cpu */
++	if (src_rq->nr_running == 1 && dst_rq->nr_running == 1)
++		goto assign;
 +
-+out_free:
-+	vfree(buf);
-+	return rc;
++	/*
++	 * In the overloaded case, try and keep the load balanced.
++	 */
++balance:
++	dst_load = env->dst_stats.load;
++	src_load = env->src_stats.load;
++
++	/* XXX missing power terms */
++	load = task_h_load(env->p);
++	dst_load += load;
++	src_load -= load;
++
++	if (cur) {
++		load = task_h_load(cur);
++		dst_load -= load;
++		src_load += load;
++	}
++
++	/* make src_load the smaller */
++	if (dst_load < src_load)
++		swap(dst_load, src_load);
+ 
+-	/* No harm being optimistic */
+-	if (idle_cpu(node_cpu))
+-		return node_cpu;
++	if (src_load * env->imbalance_pct < dst_load * 100)
++		goto unlock;
++
++assign:
++	task_numa_assign(env, cur, imp);
++unlock:
++	rcu_read_unlock();
 +}
 +
-+static ssize_t
-+hook_io_write(struct file *file, const char __user *user_buf,
-+		 size_t user_len, loff_t *offset)
++static int task_numa_migrate(struct task_struct *p)
 +{
++	struct task_numa_env env = {
++		.p = p,
 +
-+	return hook_write(file, user_buf, user_len, offset, OVRD_SPACE_IO);
-+}
++		.src_cpu = task_cpu(p),
++		.src_nid = cpu_to_node(task_cpu(p)),
 +
-+static ssize_t
-+hook_mem_write(struct file *file, const char __user *user_buf,
-+		 size_t user_len, loff_t *offset)
-+{
++		.imbalance_pct = 112,
 +
-+	return hook_write(file, user_buf, user_len, offset, OVRD_SPACE_MEM);
-+}
++		.best_task = NULL,
++		.best_imp = 0,
++		.best_cpu = -1
++	};
++	struct sched_domain *sd;
++	unsigned long faults;
++	int nid, cpu, ret;
+ 
+ 	/*
+ 	 * Find the lowest common scheduling domain covering the nodes of both
+ 	 * the CPU the task is currently running on and the target NUMA node.
+ 	 */
+ 	rcu_read_lock();
+-	for_each_domain(src_cpu, sd) {
+-		if (cpumask_test_cpu(node_cpu, sched_domain_span(sd))) {
+-			/*
+-			 * busy_idx is used for the load decision as it is the
+-			 * same index used by the regular load balancer for an
+-			 * active cpu.
+-			 */
+-			idx = sd->busy_idx;
+-			imbalance_pct = sd->imbalance_pct;
++	for_each_domain(env.src_cpu, sd) {
++		if (cpumask_intersects(cpumask_of_node(env.src_nid), sched_domain_span(sd))) {
++			env.imbalance_pct = 100 + (sd->imbalance_pct - 100) / 2;
+ 			break;
+ 		}
+ 	}
+ 	rcu_read_unlock();
+ 
+-	if (WARN_ON_ONCE(idx == -1))
+-		return src_cpu;
++	faults = task_faults(p, env.src_nid);
++	update_numa_stats(&env.src_stats, env.src_nid);
+ 
+-	/*
+-	 * XXX the below is mostly nicked from wake_affine(); we should
+-	 * see about sharing a bit if at all possible; also it might want
+-	 * some per entity weight love.
+-	 */
+-	weight = p->se.load.weight;
++	for_each_online_node(nid) {
++		long imp;
+ 
+-	src_load = source_load(src_cpu, idx);
+-
+-	src_eff_load = 100 + (imbalance_pct - 100) / 2;
+-	src_eff_load *= power_of(src_cpu);
+-	src_eff_load *= src_load + effective_load(tg, src_cpu, -weight, -weight);
+-
+-	for_each_cpu(cpu, cpumask_of_node(nid)) {
+-		dst_load = target_load(cpu, idx);
+-
+-		/* If the CPU is idle, use it */
+-		if (!dst_load)
+-			return cpu;
+-
+-		/* Otherwise check the target CPU load */
+-		dst_eff_load = 100;
+-		dst_eff_load *= power_of(cpu);
+-		dst_eff_load *= dst_load + effective_load(tg, cpu, weight, weight);
++		if (nid == env.src_nid)
++			continue;
+ 
+-		/*
+-		 * Destination is considered balanced if the destination CPU is
+-		 * less loaded than the source CPU. Unfortunately there is a
+-		 * risk that a task running on a lightly loaded CPU will not
+-		 * migrate to its preferred node due to load imbalances.
+-		 */
+-		balanced = (dst_eff_load <= src_eff_load);
+-		if (!balanced)
++		imp = task_faults(p, nid) - faults;
++		if (imp < 0)
+ 			continue;
+ 
+-		if (dst_load < min_load) {
+-			min_load = dst_load;
+-			dst_cpu = cpu;
++		env.dst_nid = nid;
++		update_numa_stats(&env.dst_stats, env.dst_nid);
++		for_each_cpu(cpu, cpumask_of_node(nid)) {
++			env.dst_cpu = cpu;
++			task_numa_compare(&env, imp);
+ 		}
+ 	}
+ 
+-	return dst_cpu;
++	if (env.best_cpu == -1)
++		return -EAGAIN;
 +
-+static ssize_t
-+hook_pciconf_write(struct file *file, const char __user *user_buf,
-+		 size_t user_len, loff_t *offset)
-+{
++	if (env.best_task == NULL)
++		return migrate_task_to(p, env.best_cpu);
 +
-+	return hook_write(file, user_buf, user_len, offset, OVRD_SPACE_PCICONF);
-+}
++	ret = migrate_swap(p, env.best_task);
++	put_task_struct(env.best_task);
++	return ret;
+ }
+ 
+ /* Attempt to migrate a task to a CPU on the preferred node. */
+@@ -983,10 +1099,13 @@ static void numa_migrate_preferred(struc
+ 	if (cpu_to_node(preferred_cpu) == p->numa_preferred_nid)
+ 		return;
+ 
+-	/* Otherwise, try migrate to a CPU on the preferred node */
+-	preferred_cpu = task_numa_find_cpu(p, p->numa_preferred_nid);
+-	if (migrate_task_to(p, preferred_cpu) != 0)
+-		p->numa_migrate_retry = jiffies + HZ*5;
++	if (!sched_feat(NUMA_BALANCE))
++		return;
 +
-+static const struct file_operations hook_io_fops = {
-+	.open = hook_io_open,
-+	.read = seq_read,
-+	.llseek = seq_lseek,
-+	.release = seq_release_private,
-+	.write = hook_io_write,
-+};
++	task_numa_migrate(p);
 +
-+static const struct file_operations hook_mem_fops = {
-+	.open = hook_mem_open,
-+	.read = seq_read,
-+	.llseek = seq_lseek,
-+	.release = seq_release_private,
-+	.write = hook_mem_write,
-+};
++	/* Try again until we hit the preferred node */
++	p->numa_migrate_retry = jiffies + HZ/10;
+ }
+ 
+ static void task_numa_placement(struct task_struct *p)
+@@ -1003,7 +1122,7 @@ static void task_numa_placement(struct t
+ 
+ 	/* Find the node with the highest number of faults */
+ 	for (nid = 0; nid < nr_node_ids; nid++) {
+-		unsigned long faults;
++		unsigned long faults = 0;
+ 		int priv, i;
+ 
+ 		for (priv = 0; priv < 2; priv++) {
+@@ -1013,19 +1132,16 @@ static void task_numa_placement(struct t
+ 			p->numa_faults[i] >>= 1;
+ 			p->numa_faults[i] += p->numa_faults_buffer[i];
+ 			p->numa_faults_buffer[i] = 0;
 +
-+static const struct file_operations hook_pciconf_fops = {
-+	.open = hook_pciconf_open,
-+	.read = seq_read,
-+	.llseek = seq_lseek,
-+	.release = seq_release_private,
-+	.write = hook_pciconf_write,
-+};
-+
-+static const struct file_operations hook_irq_fops = {
-+	.read = hook_irq_read,
-+	.write = hook_irq_write,
-+};
-+
-+static const struct file_operations hook_trigger_fops = {
-+	.read = hook_trigger_read,
-+	.write = hook_trigger_write,
-+};
-+
-+static int __init iohook_init(void)
-+{
-+	struct dentry *root;
-+
-+	root = debugfs_create_dir("iohook", NULL);
-+	if (root == NULL)
-+		return -ENODEV;
-+
-+	hook_irq_dentry = debugfs_create_file("irq", S_IWUSR,
-+				root, NULL, &hook_irq_fops);
-+	if (hook_irq_dentry == NULL)
-+		return -ENODEV;
-+
-+	hook_reg_dentry = debugfs_create_file("io", S_IWUSR,
-+				root, NULL, &hook_io_fops);
-+	if (hook_reg_dentry == NULL)
-+		return -ENODEV;
-+
-+	hook_reg_dentry = debugfs_create_file("mem", S_IWUSR,
-+				root, NULL, &hook_mem_fops);
-+	if (hook_reg_dentry == NULL)
-+		return -ENODEV;
-+
-+	hook_reg_dentry = debugfs_create_file("pciconf", S_IWUSR,
-+				root, NULL, &hook_pciconf_fops);
-+	if (hook_reg_dentry == NULL)
-+		return -ENODEV;
-+
-+	hook_reg_dentry = debugfs_create_file("trigger", S_IWUSR,
-+				root, NULL, &hook_trigger_fops);
-+	if (hook_reg_dentry == NULL)
-+		return -ENODEV;
-+
-+	return 0;
-+}
-+
-+device_initcall(iohook_init);
--- 
-1.7.5.4
-
++			faults += p->numa_faults[i];
+ 		}
+ 
+-		/* Find maximum private faults */
+-		faults = p->numa_faults[task_faults_idx(nid, 1)];
+ 		if (faults > max_faults) {
+ 			max_faults = faults;
+ 			max_nid = nid;
+ 		}
+ 	}
+ 
+-	if (!sched_feat(NUMA_BALANCE))
+-		return;
+-
+ 	/* Preferred node as the node with the most faults */
+ 	if (max_faults && max_nid != p->numa_preferred_nid) {
+ 		int old_migrate_seq = p->numa_migrate_seq;
+@@ -3342,7 +3458,7 @@ static long effective_load(struct task_g
+ {
+ 	struct sched_entity *se = tg->se[cpu];
+ 
+-	if (!tg->parent)	/* the trivial, non-cgroup case */
++	if (!tg->parent || !wl)	/* the trivial / non-cgroup case */
+ 		return wl;
+ 
+ 	for_each_sched_entity(se) {
+@@ -4347,8 +4463,6 @@ static int move_one_task(struct lb_env *
+ 	return 0;
+ }
+ 
+-static unsigned long task_h_load(struct task_struct *p);
+-
+ static const unsigned int sched_nr_migrate_break = 32;
+ 
+ /*
