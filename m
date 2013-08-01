@@ -1,95 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757937Ab3HAWNk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 18:13:40 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39822 "EHLO
+	id S1757611Ab3HAWOk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 18:14:40 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39825 "EHLO
 	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757903Ab3HAWNj (ORCPT
+	with ESMTP id S1753507Ab3HAWOj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 18:13:39 -0400
+	Thu, 1 Aug 2013 18:14:39 -0400
 In-Reply-To: <20130801213420.GL23006@n2100.arm.linux.org.uk>
 References: <20130801213420.GL23006@n2100.arm.linux.org.uk>
 From: Russell King <rmk+kernel@arm.linux.org.uk>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH RFC 39/51] DMA-API: others: use dma_set_coherent_mask()
-Message-Id: <E1V517Q-0006tV-4z@rmk-PC.arm.linux.org.uk>
-Date: Thu, 01 Aug 2013 23:13:12 +0100
+Subject: [PATCH RFC 40/51] DMA-API: crypto: fix ixp4xx crypto platform device
+ support
+Message-Id: <E1V518O-0006te-9U@rmk-PC.arm.linux.org.uk>
+Date: Thu, 01 Aug 2013 23:14:12 +0100
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The correct way for a driver to specify the coherent DMA mask is
-not to directly access the field in the struct device, but to use
-dma_set_coherent_mask().  Only arch and bus code should access this
-member directly.
-
-Convert all direct write accesses to using the correct API.
+Don't statically allocate struct device's in modules, and shut the
+warning up with an empty release() function.  There's a reason that
+warning is there and that's not for people to hide in this way.  It's
+there to persuade people to use the correct APIs to allocate platform
+devices.
 
 Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 ---
- drivers/ata/pata_ixp4xx_cf.c             |    5 ++++-
- drivers/gpu/drm/exynos/exynos_drm_drv.c  |    7 ++++++-
- drivers/gpu/drm/omapdrm/omap_dmm_tiler.c |    5 +++--
- 3 files changed, 13 insertions(+), 4 deletions(-)
+ drivers/crypto/ixp4xx_crypto.c |   37 +++++++++++++++++--------------------
+ 1 files changed, 17 insertions(+), 20 deletions(-)
 
-diff --git a/drivers/ata/pata_ixp4xx_cf.c b/drivers/ata/pata_ixp4xx_cf.c
-index dcc6b24..ad5ecf2 100644
---- a/drivers/ata/pata_ixp4xx_cf.c
-+++ b/drivers/ata/pata_ixp4xx_cf.c
-@@ -144,6 +144,7 @@ static int ixp4xx_pata_probe(struct platform_device *pdev)
- 	struct ata_host *host;
- 	struct ata_port *ap;
- 	struct ixp4xx_pata_data *data = pdev->dev.platform_data;
-+	int ret;
+diff --git a/drivers/crypto/ixp4xx_crypto.c b/drivers/crypto/ixp4xx_crypto.c
+index 21180d6..8306185 100644
+--- a/drivers/crypto/ixp4xx_crypto.c
++++ b/drivers/crypto/ixp4xx_crypto.c
+@@ -218,23 +218,10 @@ static dma_addr_t crypt_phys;
  
- 	cs0 = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	cs1 = platform_get_resource(pdev, IORESOURCE_MEM, 1);
-@@ -157,7 +158,9 @@ static int ixp4xx_pata_probe(struct platform_device *pdev)
- 		return -ENOMEM;
+ static int support_aes = 1;
  
- 	/* acquire resources and fill host */
--	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
-+	ret = dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(32));
-+	if (ret)
-+		return ret;
+-static void dev_release(struct device *dev)
+-{
+-	return;
+-}
+-
+ #define DRIVER_NAME "ixp4xx_crypto"
+-static struct platform_device pseudo_dev = {
+-	.name = DRIVER_NAME,
+-	.id   = 0,
+-	.num_resources = 0,
+-	.dev  = {
+-		.coherent_dma_mask = DMA_BIT_MASK(32),
+-		.release = dev_release,
+-	}
+-};
  
- 	data->cs0 = devm_ioremap(&pdev->dev, cs0->start, 0x1000);
- 	data->cs1 = devm_ioremap(&pdev->dev, cs1->start, 0x1000);
-diff --git a/drivers/gpu/drm/exynos/exynos_drm_drv.c b/drivers/gpu/drm/exynos/exynos_drm_drv.c
-index ca2729a..e9fb6c8 100644
---- a/drivers/gpu/drm/exynos/exynos_drm_drv.c
-+++ b/drivers/gpu/drm/exynos/exynos_drm_drv.c
-@@ -287,7 +287,12 @@ static struct drm_driver exynos_drm_driver = {
+-static struct device *dev = &pseudo_dev.dev;
++static struct platform_device *pdev;
++static struct device *dev;
  
- static int exynos_drm_platform_probe(struct platform_device *pdev)
+ static inline dma_addr_t crypt_virt2phys(struct crypt_ctl *virt)
  {
--	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
-+	int ret;
-+
-+	ret = dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(32));
-+	if (ret)
-+		return ret;
-+
- 	exynos_drm_driver.num_ioctls = DRM_ARRAY_SIZE(exynos_ioctls);
+@@ -1418,20 +1405,30 @@ static struct ixp_alg ixp4xx_algos[] = {
+ } };
  
- 	return drm_platform_init(&exynos_drm_driver, pdev);
-diff --git a/drivers/gpu/drm/omapdrm/omap_dmm_tiler.c b/drivers/gpu/drm/omapdrm/omap_dmm_tiler.c
-index 9b794c9..ce837ae 100644
---- a/drivers/gpu/drm/omapdrm/omap_dmm_tiler.c
-+++ b/drivers/gpu/drm/omapdrm/omap_dmm_tiler.c
-@@ -664,8 +664,9 @@ static int omap_dmm_probe(struct platform_device *dev)
+ #define IXP_POSTFIX "-ixp4xx"
++
++static const struct platform_device_info ixp_dev_info __initdata = {
++	.name		= DRIVER_NAME,
++	.id		= 0,
++	.dma_mask	= DMA_BIT_MASK(32),
++};
++
+ static int __init ixp_module_init(void)
+ {
+ 	int num = ARRAY_SIZE(ixp4xx_algos);
+-	int i,err ;
++	int i, err ;
+ 
+-	if (platform_device_register(&pseudo_dev))
+-		return -ENODEV;
++	pdev = platform_device_register_full(&ixp_dev_info);
++	if (IS_ERR(pdev))
++		return PTR_ERR(pdev);
++
++	dev = &pdev->dev;
+ 
+ 	spin_lock_init(&desc_lock);
+ 	spin_lock_init(&emerg_lock);
+ 
+ 	err = init_ixp_crypto();
+ 	if (err) {
+-		platform_device_unregister(&pseudo_dev);
++		platform_device_unregister(pdev);
+ 		return err;
  	}
+ 	for (i=0; i< num; i++) {
+@@ -1496,7 +1493,7 @@ static void __exit ixp_module_exit(void)
+ 			crypto_unregister_alg(&ixp4xx_algos[i].crypto);
+ 	}
+ 	release_ixp_crypto();
+-	platform_device_unregister(&pseudo_dev);
++	platform_device_unregister(pdev);
+ }
  
- 	/* set dma mask for device */
--	/* NOTE: this is a workaround for the hwmod not initializing properly */
--	dev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
-+	ret = dma_set_coherent_mask(&dev->dev, DMA_BIT_MASK(32));
-+	if (ret)
-+		goto fail;
- 
- 	omap_dmm->dummy_pa = page_to_phys(omap_dmm->dummy_page);
- 
+ module_init(ixp_module_init);
 -- 
 1.7.4.4
 
