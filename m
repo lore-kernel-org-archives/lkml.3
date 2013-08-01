@@ -1,86 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752044Ab3HABdY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 21:33:24 -0400
-Received: from co1ehsobe005.messaging.microsoft.com ([216.32.180.188]:35105
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751112Ab3HABdW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 21:33:22 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(zz98dI1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzzz2dh2a8h668h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1155h)
-Date: Thu, 1 Aug 2013 09:33:12 +0800
-From: Peter Chen <peter.chen@freescale.com>
-To: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-CC: Peter Chen <hzpeterchen@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Fabio Estevam <festevam@gmail.com>,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        <kernel@pengutronix.de>, Tejun Heo <htejun@gmail.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Jeff Garzik <jeff@garzik.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-kernel@vger.kernel.org>, Mike Turquette <mturquette@linaro.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 2/2] chipidea: Use devm_request_irq()
-Message-ID: <20130801013311.GH8540@nchen-desktop>
-References: <20130731090512.GD9858@sirena.org.uk>
- <20130731094434.GC1754@pengutronix.de>
- <20130731095411.GA2810@htj.dyndns.org>
- <20130731111853.GJ9858@sirena.org.uk>
- <20130731113244.GI2810@htj.dyndns.org>
- <20130731115027.GN9858@sirena.org.uk>
- <20130731115527.GR2810@htj.dyndns.org>
- <20130731132708.GQ9858@sirena.org.uk>
- <CAL411-qQm9vgDHswEM6PEvFKAaqd=e3qm-zViUbNztv0tJYa8Q@mail.gmail.com>
- <20130731141512.GU2810@htj.dyndns.org>
+	id S1752164Ab3HABfY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 21:35:24 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:38216 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751112Ab3HABfX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 21:35:23 -0400
+X-IronPort-AV: E=Sophos;i="4.89,791,1367942400"; 
+   d="scan'208";a="8081853"
+Message-ID: <51F9BBAB.1080306@cn.fujitsu.com>
+Date: Thu, 01 Aug 2013 09:36:43 +0800
+From: Gao feng <gaofeng@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20130731141512.GU2810@htj.dyndns.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+To: Rui Xiang <rui.xiang@huawei.com>
+CC: containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        serge.hallyn@ubuntu.com, ebiederm@xmission.com,
+        akpm@linux-foundation.org, libo.chen@huawei.com
+Subject: Re: [PATCH 4/9] syslog_ns: make syslog handling per namespace
+References: <1375065080-26740-1-git-send-email-rui.xiang@huawei.com> <1375065080-26740-5-git-send-email-rui.xiang@huawei.com>
+In-Reply-To: <1375065080-26740-5-git-send-email-rui.xiang@huawei.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/01 09:33:07,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/01 09:33:07,
+	Serialize complete at 2013/08/01 09:33:07
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 31, 2013 at 10:15:12AM -0400, Tejun Heo wrote:
-> hello,
+On 07/29/2013 10:31 AM, Rui Xiang wrote:
+> This patch makes syslog buf and other fields per
+> namespace.
 > 
-> On Wed, Jul 31, 2013 at 09:55:26PM +0800, Peter Chen wrote:
-> > I think the main point is we should allocate managed resource which is used
-> > at interrupt handler before devm_request_irq, and all resources used
-> > at interrupt
-> > handler should be managed.
-> > 
-> > If we use non-managed resource at interrupt handler, but using managed interrupt
-> > handler, things still will go wrong if there is an odd (unexpected)
-> > interrupt after
-> > we finish deactivation at removal.
+> Here use ns->log_buf(log_buf_len, logbuf_lock,
+> log_first_seq, logbuf_lock, and so on) fields
+> instead of global ones to handle syslog.
 > 
-> In general, applying devm partially isn't a good idea.  It's very easy
-> to get into trouble thanks to release order dependency which isn't
-> immediately noticeable and there have been actual bugs caused by that.
-> The strategies which seem to work are either
-> 
-> * Convert everything over to devm by wrapping deactivation in a devres
->   callback too.  As long as your init sequence is sane (ie. irq
->   shouldn't be request before things used by irq are ready).
-> 
-> * Allocate all resources using devres but shut down the execution
->   engine in the remove_one().  Again, as all releases are controlled
->   by devres, you won't have to worry about messing up the release
->   sequencing.
+> Syslog interfaces such as /dev/kmsg, /proc/kmsg,
+> and syslog syscall are all containerized for
+> container users.
 > 
 
-thanks, Tejun. So, Alex and Fabio, this patch may not be suitable currently,
-since many resources at both EHCI and device side are non-managed.
--- 
+/dev/kmsg is used by the syslog api closelog, openlog, syslog, vsyslog,
+this should be per user namespace, but seems in your patch,
+the syslog message generated through these APIs on host can be exported
+to the /dev/kmsg of container, is this want we want?
 
-Best Regards,
-Peter Chen
-
+Thanks
