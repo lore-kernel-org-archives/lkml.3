@@ -1,105 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753828Ab3HAJxS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 05:53:18 -0400
-Received: from up.free-electrons.com ([94.23.35.102]:52617 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751108Ab3HAJxR (ORCPT
+	id S1754133Ab3HAJxu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 05:53:50 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:60080 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753409Ab3HAJxt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 05:53:17 -0400
-Date: Thu, 1 Aug 2013 11:53:13 +0200
-From: "maxime.ripard" <maxime.ripard@free-electrons.com>
-To: "kevin.z.m" <kevin.z.m.zh@gmail.com>
-Cc: Emilio Lopez <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>,
-        =?utf-8?B?5a2Z5b2m6YKm?= <sunny@allwinnertech.com>,
-        =?utf-8?B?5ZC05Lmm6ICV?= <shuge@allwinnertech.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Re: [PATCH 4/4] ARM: sun6i: Enable clock support in the DTSI
-Message-ID: <20130801095313.GK2911@lukather>
-References: <1375195462-19566-1-git-send-email-maxime.ripard@free-electrons.com>
- <1375195462-19566-5-git-send-email-maxime.ripard@free-electrons.com>
- <51F86A2E.10505@elopez.com.ar>
- <20130731073724.GA24439@lukather>
- <2013073116110750016327@gmail.com>
- <20130731114957.GD2911@lukather>
- <2013073120102496855035@gmail.com>
- <20130731154953.GG2911@lukather>
- <2013080108343040654547@gmail.com>
+	Thu, 1 Aug 2013 05:53:49 -0400
+X-IronPort-AV: E=Sophos;i="4.89,793,1367971200"; 
+   d="scan'208";a="38741852"
+Message-ID: <51FA302B.90106@citrix.com>
+Date: Thu, 1 Aug 2013 10:53:47 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ICrdrp3pM9DyZLTK"
-Content-Disposition: inline
-In-Reply-To: <2013080108343040654547@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Roger Pau Monne <roger.pau@citrix.com>
+CC: <xen-devel@lists.xen.org>, <linux-kernel@vger.kernel.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: Re: [Xen-devel] [PATCH RFC] p2m: use GNTTABOP_unmap_and_duplicate
+ if	available
+References: <1375286855-4861-1-git-send-email-roger.pau@citrix.com>
+In-Reply-To: <1375286855-4861-1-git-send-email-roger.pau@citrix.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.76]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 31/07/13 17:07, Roger Pau Monne wrote:
+> The new GNTTABOP_unmap_and_duplicate operation doesn't zero the
+> mapping passed in new_addr, allowing us to perform batch unmaps in p2m
+> code without requiring the use of a multicall.
 
---ICrdrp3pM9DyZLTK
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Thanks. This looks like it should be a good performance improvement for
+userspace-based backends.  Do you have any performance measurements for
+(e.g.) qemu's disk backend?
 
-Hi Kevin,
+> --- a/arch/x86/xen/p2m.c
+> +++ b/arch/x86/xen/p2m.c
+[...]
+> +int m2p_remove_override_batch(struct page **pages,
+> +		struct gnttab_map_grant_ref *kmap_ops, int count)
+> +{
 
-On Thu, Aug 01, 2013 at 08:34:35AM +0800, kevin.z.m wrote:
-> > Ok, just so that we're on the same page, we have two oscillators running
-> > at 32kHz, the internal being always there, and the external that could
-> > or could not be there, and it's each different hardware block that can
-> > be wired to one, the other or both?
-> The selection of internal or external is a global setting for system.
-> Hardware blocks =EF=BC=88such as cpu=E3=80=81twi for ex.) just see a 32kH=
-z clock
-> source, but they don't care where the 32kHz clock
-> from.
+Is it possible to refactor this function and
+m2p_remove_override_single() to share some common helper functions?
 
-Ok.
+> +	struct gnttab_unmap_and_duplicate *unmap_ops = NULL;
+> +	unsigned long *mfn = kcalloc(count, sizeof(mfn[0]), GFP_KERNEL);
+> +	unsigned long flags;
+> +	unsigned long pfn;
+> +	unsigned long uninitialized_var(address);
+> +	unsigned level;
+> +	struct page *page;
+> +	pte_t *ptep = NULL;
+> +	int ret = 0, i;
+> +
+> +
+> +	for (i = 0; i < count; i++) {
+> +		page = pages[i];
+> +		pfn = page_to_pfn(page);
 
-> > There's no global mux that could use either one of the two 32k to
-> > provide the only 32kHz source in the system, right?
-> There is a global mux to select internal or external, but no mux for
-> every hardware blocks. I think that the mux need not be managed in the
-> clock driver. It should be set earlier in the boot loader.=20
-> And the selection is keeping either system is power-on or power-off,
-> when there is a power supply with battery or DC. Because the mux is in
-> RTC power domain.
+The bits in this loop...
 
-Yes, in that case, we mostly don't care for now. Maybe we will at some
-point if we need to add power management features, but we'd better
-consider a fixed-rate clock for now and not worry too much about it.
+[...]
+> +	for (i = 0; i < count; i++) {
+> +		/* p2m(m2p(mfn)) == FOREIGN_FRAME(mfn): the mfn is already present
+> +		 * somewhere in this domain, even before being added to the
 
-Thanks for your help!
-Maxime
+... and this one look they should be common between the two.
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---ICrdrp3pM9DyZLTK
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR+jAIAAoJEBx+YmzsjxAgzPMP/R3rGga915clXPy2nqOB2wx7
-O1Ype8b6kpdAksyqccwDETNQG3IvZFxGHdptrJJI1tUW2qWPG0DHAx5FVqJMn4T+
-UaaYD3XXkubfUDY73DMT0LX51VnfERZaoguYi7MpTEhZdBw1bGOXK7FKhlUCjuiM
-PQW8wGKYmopE7lRBAV9DbdajpfNP3IPKoHYZjC2j3aYWldVw6l12kQOyjFT7nfCX
-7lv9rMCeQzxa3zmfjaE0gD7+A0/Dbfk9/n86IPpgwIUik4ElduTxnJtIxzJKPMsB
-4R1Nj/qJOWUNLgQkSxkwfeHSBc6baT4O6DFcjNKE+9IKA9t/p3na6kn3poyo1oHZ
-8K0OBQenUVOFt6SIfZZEUmcBtHoC00/VH/45FjlO3XRSxy5GdA0SL9b6kMTjbdeq
-Yt9TH3JG+cMo1nbpvNOG7Mg5DZPDwA2a+dKKzOf0x9pEkVlkF6OA5zYZSanlxiKH
-9shjP/JeMuU9pc6HtdvsyteslrRP/Uwh7lAppjFA+yoaBmplxeYjQYYhIJhk8IqU
-umx99QKcA9Uxm4AHsha8JDIH3MepOtJNH25mn7KI/FQEMmdJLppyhRvDdBrWxo5h
-F0okyWYEGKP5CEYDUJGUcNn8prjfx2JbuXB1MBSkfY2qlLaYlmaNfIne12YgCIkf
-m+n3SERxWKmlsGdv3gGy
-=/UM/
------END PGP SIGNATURE-----
-
---ICrdrp3pM9DyZLTK--
+David
