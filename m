@@ -1,92 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757026Ab3HASBY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 14:01:24 -0400
-Received: from che.mayfirst.org ([209.234.253.108]:50628 "EHLO
-	che.mayfirst.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756334Ab3HASBW (ORCPT
+	id S1756744Ab3HASBu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 14:01:50 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:57407 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753507Ab3HASBs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 14:01:22 -0400
-X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Thu, 01 Aug 2013 14:01:22 EDT
-Message-ID: <51FAA0CC.7010106@fifthhorseman.net>
-Date: Thu, 01 Aug 2013 13:54:20 -0400
-From: Daniel Kahn Gillmor <dkg@fifthhorseman.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130630 Icedove/17.0.7
+	Thu, 1 Aug 2013 14:01:48 -0400
+Date: Thu, 1 Aug 2013 19:01:44 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Aaron Lu <aaron.lwe@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        Len Brown <lenb@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [REGRESSION/PATCH] acpi: blacklist win8 OSI for ASUS Zenbok
+ Prime UX31A
+Message-ID: <20130801180144.GA20520@srcf.ucam.org>
+References: <20130731051421.GA15766@srcf.ucam.org>
+ <CAMP44s2B=nQLnZm7gyYAJZgt_x3KszRZLUC=fom0t9=Eze+smA@mail.gmail.com>
+ <20130731140010.GA24560@srcf.ucam.org>
+ <CAMP44s1cLou9TMfLS+FHwPM_b3bG5HN1-hzgvhz0fVRCZ8XqWw@mail.gmail.com>
+ <20130731175232.GA29987@srcf.ucam.org>
+ <CAMP44s1c5pmiC2fvmRi9vFrJXb2zYUT_F=paM2LR_V+7THnFVg@mail.gmail.com>
+ <20130731184724.GA30896@srcf.ucam.org>
+ <CAMP44s25aRcK2bB=WLMkuD45fztFBNug8prArczRqZqzeEvj3A@mail.gmail.com>
+ <20130801174237.GA20121@srcf.ucam.org>
+ <CAMP44s3EgZBtv-ifO9b+VzmTBE2wejNK7RN3ERL0+imrXzgBCg@mail.gmail.com>
 MIME-Version: 1.0
-To: David Howells <dhowells@redhat.com>
-CC: keyrings@linux-nfs.org, linux-nfs@vger.kernel.org, krbdev@mit.edu,
-        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
-        linux-kernel@vger.kernel.org, simo@redhat.com,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [PATCH 2/2] KEYS: Add per-user_namespace registers for persistent
- per-UID kerberos caches
-References: <20130801173846.28023.19009.stgit@warthog.procyon.org.uk> <20130801173902.28023.68819.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20130801173902.28023.68819.stgit@warthog.procyon.org.uk>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha512;
- protocol="application/pgp-signature";
- boundary="----enig2HPEGVJSWILCKRSSWXCEJ"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMP44s3EgZBtv-ifO9b+VzmTBE2wejNK7RN3ERL0+imrXzgBCg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
-------enig2HPEGVJSWILCKRSSWXCEJ
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On Thu, Aug 01, 2013 at 12:50:18PM -0500, Felipe Contreras wrote:
+> On Thu, Aug 1, 2013 at 12:42 PM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+> > An interface that describes reality is better than one that doesn't. But
+> > hey, feel free to disagree and post a patch for the ABI docs.
+> 
+> An interface that is useful to the user is better than one that is not.
 
-On 08/01/2013 01:39 PM, David Howells wrote:
-> The uid is -1 or the user's own UID for the user's own cache or the uid=
- of some
-> other user's cache (requires CAP_SETUID).  This permits rpc.gssd or wha=
-tever to
-> mess with the cache.
+The interface is useful. There are plenty of machines out there that 
+disable the backlight at minimum brightness setting (see every Apple, 
+for example), and assuming otherwise has always been incorrect. But, 
+like I said, send the patch.
 
-Is the goal here eventually to be able to avoid the upcall to rpc.gssd
-entirely?  It seems a little bit roundabout to have the kernel call up
-into userspace for the credentials, only to talk to a process which then
-calls back into the kernel for something that the kernel has already
-well-defined internally.
-
-It seems like a non-privileged user could use this to store arbitrary
-data in this keyring as a way of hiding what would otherwise be
-filesystem activity or using it for some sort of odd/sneaky IPC
-mechanism.  Is this an intentional side effect?
-
-Sorry if these are obvious questions.  feel free to point me to
-already-documented answers if they exist.
-
-Thanks for all your work on this!
-
-Regards,
-
-	--dkg
-
-
-------enig2HPEGVJSWILCKRSSWXCEJ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-Comment: Using GnuPG with Icedove - http://www.enigmail.net/
-
-iQJ8BAEBCgBmBQJR+qDMXxSAAAAAAC4AKGlzc3Vlci1mcHJAbm90YXRpb25zLm9w
-ZW5wZ3AuZmlmdGhob3JzZW1hbi5uZXRFQjk2OTEyODdBN0FEREUzNzU3RDkxMUVB
-NTI0MDFCMTFCRkRGQTVDAAoJEKUkAbEb/fpciGkP/1UCt9/H0KQVVaeSjm9rl4EJ
-hmpUVJWHm8yPleOoKZxhuMmZMGhzxhDCt2q1itj9iBdBFCxdKVn3I6XZAEQoRDnW
-l4Ys6hZ9RvZnfNd5c7W5Nhi8kRxDWAaa7pcuVYsCfWW5T+Z2hROVBqnW6IeewYn8
-BAe7ajZfWB7mR4IZX12fxhX2yUa0pFlMEqDxmA+h67TmgQuF2nudYpMGpzNZYXxH
-s5QJohgfPpldZuFBgjpEQCWtWIxdCrmv8UoljuLekUT4rwevIE/T9pJBWSExFimI
-ehnmYlF6SUU0pzoAjtIFv+XO1y+5Yeizstqlu5gu0LqjjQEaZ1+aknb5YVpVb0Xh
-/tA5EMnToH486CC09ZOEywN3jTjrX9xwddVijqyFSCp3+EPprVjv+A88WsLXrjE2
-25xXDQ5MOdaR2n9Tth06BZiZM+7xmiNVmsCwWeB40AH+UvcZR/y0JMLn/Bq8QEKV
-CroZBiCfHqF7/+cHlDwdK7JtSySe2pv8m6KQs13PTbX610gR3d+oSh7YINKKceGc
-k9DJvMo7d6gQrChR0i3RQKDnYEDD7g86zGM4QuwQzSSc6eZ+DDBpYR2XmTY19YgB
-7538qD/EbF1D6s0wTE+b1KfTrulv8/2Fp3sflVDY9753BZCK8uDmPJlgZU1XanMv
-3oQTGIvPL+sotqlhj1S0
-=TWzs
------END PGP SIGNATURE-----
-
-------enig2HPEGVJSWILCKRSSWXCEJ--
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
