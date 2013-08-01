@@ -1,61 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754608Ab3HALYL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 07:24:11 -0400
-Received: from www.linutronix.de ([62.245.132.108]:41473 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751418Ab3HALYJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 07:24:09 -0400
-Date: Thu, 1 Aug 2013 13:24:10 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-cc: linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Sebastian Sewior <bigeasy@linutronix.de>
-Subject: [ANNOUNCE] 3.10.4-rt1
-Message-ID: <alpine.DEB.2.02.1308011215160.4089@ionos.tec.linutronix.de>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1754192Ab3HAL17 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 07:27:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2034 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753193Ab3HAL16 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 07:27:58 -0400
+Date: Thu, 1 Aug 2013 13:30:50 +0200
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: Dong Zhu <bluezhudong@gmail.com>
+Cc: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] posix_cpu_timers: fix timer never expires when executes
+ clock_nanosleep
+Message-ID: <20130801113049.GB7334@redhat.com>
+References: <20130801101018.GJ6721@zhudong.nay.redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130801101018.GJ6721@zhudong.nay.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear RT folks!
+Hi Dong Zhu
 
-I'm pleased to announce the 3.10.4-rt1 patch set.
+On Thu, Aug 01, 2013 at 06:10:19PM +0800, Dong Zhu wrote:
+> diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
+> index c7f31aa..cc03290 100644
+> --- a/kernel/posix-cpu-timers.c
+> +++ b/kernel/posix-cpu-timers.c
+> @@ -1413,9 +1413,9 @@ static int posix_cpu_nsleep(const clockid_t which_clock, int flags,
+>  	/*
+>  	 * Diagnose required errors first.
+>  	 */
+> -	if (CPUCLOCK_PERTHREAD(which_clock) &&
+> -	    (CPUCLOCK_PID(which_clock) == 0 ||
+> -	     CPUCLOCK_PID(which_clock) == current->pid))
+> +	if (CPUCLOCK_PID(which_clock) == current->pid ||
+> +	    (CPUCLOCK_PERTHREAD(which_clock) &&
+> +	     CPUCLOCK_PID(which_clock) == 0))
+>  		return -EINVAL;
 
-This is a mostly straight forward port of the 3.8 set. I had
-experimented with a new implementation detail, but I did not get it
-into a shape which would have made it applicable to RT.
+Nope, this is wrong. We have to allow own pid process clock, because it
+can be used correctly on multi-threaded processes. Own tid thread clock
+has no sense and we correctly return -EINVAL in such case.
 
-Known issues:
+We could possibly add check for own pid together with check if process 
+consist of one thread, but that is too complicated IMHO especially
+taking into account that threads on the process can be destroyed and
+created dynamically.
 
-      - SLAB support not working
-
-      - Untested on ARM and PPC (hapless victims^W^Wtesters are
-        welcome)
-
-I'm about to leave for my annual kids summer camp kitchen duty, so I
-let you fool around with the current pile.
-
-Sebastian will help out while I'm away, so please send tons of patches
-in the next couple of days and get this thing fixed before I
-return. All I'm going to look for in my mail backlog is a mail with
-the subject: 3.10.x-rty is perfect :)
-
-The RT patch against 3.10.4 can be found here:
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.8/patch-3.10.4-rt1.patch.xz
-
-The split quilt queue is available at:
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.8/patches-3.10.4-rt1.tar.xz
-
-Enjoy,
-
-        tglx
+Stanislaw
 
