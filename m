@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757288Ab3HATKi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 15:10:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24498 "EHLO mx1.redhat.com"
+	id S1757349Ab3HATKq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 15:10:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25581 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756997Ab3HATKg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 15:10:36 -0400
-Date: Thu, 1 Aug 2013 21:05:14 +0200
+	id S1756907Ab3HATKo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 15:10:44 -0400
+Date: Thu, 1 Aug 2013 21:05:16 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Andrew Morton <akpm@linux-foundation.org>,
         Zach Levis <zml@linux.vnet.ibm.com>
 Cc: Al Viro <viro@ZenIV.linux.org.uk>, Evgeniy Polyakov <zbr@ioremap.net>,
         Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/3] exec: kill "int depth" in search_binary_handler()
-Message-ID: <20130801190514.GA3216@redhat.com>
+Subject: [PATCH 3/3] exec: proc_exec_connector() should be called only once
+Message-ID: <20130801190516.GA3223@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -23,49 +23,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nobody except search_binary_handler() should touch ->recursion_depth,
-"int depth" buys nothing but complicates the code, kill it.
+A separate one-liner with the minor fix.
 
-Probably we should also kill "fn" and the !NULL check, ->load_binary
-should be always defined. And it can not go away after read_unlock()
-or this code is buggy anyway.
+PROC_EVENT_EXEC reports the "exec" event, but this message
+is sent at least twice if search_binary_handler() is called
+by ->load_binary() recursively, say, load_script().
+
+Move it to exec_binprm(), this is "depth == 0" code too.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- fs/exec.c |    9 ++++-----
- 1 files changed, 4 insertions(+), 5 deletions(-)
+ fs/exec.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
 diff --git a/fs/exec.c b/fs/exec.c
-index a9ae4f2..f32079c 100644
+index f32079c..ad7d624 100644
 --- a/fs/exec.c
 +++ b/fs/exec.c
-@@ -1370,12 +1370,11 @@ EXPORT_SYMBOL(remove_arg_zero);
-  */
- int search_binary_handler(struct linux_binprm *bprm)
- {
--	unsigned int depth = bprm->recursion_depth;
--	int try,retval;
-+	int try, retval;
- 	struct linux_binfmt *fmt;
+@@ -1404,7 +1404,6 @@ int search_binary_handler(struct linux_binprm *bprm)
+ 				if (bprm->file)
+ 					fput(bprm->file);
+ 				bprm->file = NULL;
+-				proc_exec_connector(current);
+ 				return retval;
+ 			}
+ 			read_lock(&binfmt_lock);
+@@ -1455,6 +1454,7 @@ static int exec_binprm(struct linux_binprm *bprm)
+ 		trace_sched_process_exec(current, old_pid, bprm);
+ 		ptrace_event(PTRACE_EVENT_EXEC, old_vpid);
+ 		current->did_exec = 1;
++		proc_exec_connector(current);
+ 	}
  
- 	/* This allows 4 levels of binfmt rewrites before failing hard. */
--	if (depth > 5)
-+	if (bprm->recursion_depth > 5)
- 		return -ELOOP;
- 
- 	retval = security_bprm_check(bprm);
-@@ -1396,9 +1395,9 @@ int search_binary_handler(struct linux_binprm *bprm)
- 			if (!try_module_get(fmt->module))
- 				continue;
- 			read_unlock(&binfmt_lock);
--			bprm->recursion_depth = depth + 1;
-+			bprm->recursion_depth++;
- 			retval = fn(bprm);
--			bprm->recursion_depth = depth;
-+			bprm->recursion_depth--;
- 			if (retval >= 0) {
- 				put_binfmt(fmt);
- 				allow_write_access(bprm->file);
+ 	return ret;
 -- 
 1.5.5.1
 
