@@ -1,152 +1,254 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753700Ab3HACzw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 22:55:52 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:43062 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752842Ab3HACzs (ORCPT
+	id S1753921Ab3HAC4P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 22:56:15 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:58425 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753867Ab3HAC4L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 22:55:48 -0400
-X-AuditID: 9c930197-b7bfbae000000e88-c8-51f9ce31609c
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 6/9] perf tools: Pass dso instead of dso_name to get_srcline()
-Date: Thu,  1 Aug 2013 11:55:41 +0900
-Message-Id: <1375325744-26613-7-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1375325744-26613-1-git-send-email-namhyung@kernel.org>
-References: <1375325744-26613-1-git-send-email-namhyung@kernel.org>
+	Wed, 31 Jul 2013 22:56:11 -0400
+X-AuditID: 9c93016f-b7b05ae000002bbd-e8-51f9ce497156
+Date: Thu, 1 Aug 2013 11:56:36 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 3/3] mm: page_alloc: fair zone allocator policy
+Message-ID: <20130801025636.GC19540@bbox>
+References: <1374267325-22865-1-git-send-email-hannes@cmpxchg.org>
+ <1374267325-22865-4-git-send-email-hannes@cmpxchg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1374267325-22865-4-git-send-email-hannes@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+Hi Hannes,
 
-This is a preparation of next change.  No functional changes are
-intended.
+On Fri, Jul 19, 2013 at 04:55:25PM -0400, Johannes Weiner wrote:
+> Each zone that holds userspace pages of one workload must be aged at a
+> speed proportional to the zone size.  Otherwise, the time an
+> individual page gets to stay in memory depends on the zone it happened
+> to be allocated in.  Asymmetry in the zone aging creates rather
+> unpredictable aging behavior and results in the wrong pages being
+> reclaimed, activated etc.
+> 
+> But exactly this happens right now because of the way the page
+> allocator and kswapd interact.  The page allocator uses per-node lists
+> of all zones in the system, ordered by preference, when allocating a
+> new page.  When the first iteration does not yield any results, kswapd
+> is woken up and the allocator retries.  Due to the way kswapd reclaims
+> zones below the high watermark while a zone can be allocated from when
+> it is above the low watermark, the allocator may keep kswapd running
+> while kswapd reclaim ensures that the page allocator can keep
+> allocating from the first zone in the zonelist for extended periods of
+> time.  Meanwhile the other zones rarely see new allocations and thus
+> get aged much slower in comparison.
+> 
+> The result is that the occasional page placed in lower zones gets
+> relatively more time in memory, even get promoted to the active list
+> after its peers have long been evicted.  Meanwhile, the bulk of the
+> working set may be thrashing on the preferred zone even though there
+> may be significant amounts of memory available in the lower zones.
+> 
+> Even the most basic test -- repeatedly reading a file slightly bigger
+> than memory -- shows how broken the zone aging is.  In this scenario,
+> no single page should be able stay in memory long enough to get
+> referenced twice and activated, but activation happens in spades:
+> 
+>   $ grep active_file /proc/zoneinfo
+>       nr_inactive_file 0
+>       nr_active_file 0
+>       nr_inactive_file 0
+>       nr_active_file 8
+>       nr_inactive_file 1582
+>       nr_active_file 11994
+>   $ cat data data data data >/dev/null
+>   $ grep active_file /proc/zoneinfo
+>       nr_inactive_file 0
+>       nr_active_file 70
+>       nr_inactive_file 258753
+>       nr_active_file 443214
+>       nr_inactive_file 149793
+>       nr_active_file 12021
+> 
+> Fix this with a very simple round robin allocator.  Each zone is
+> allowed a batch of allocations that is proportional to the zone's
+> size, after which it is treated as full.  The batch counters are reset
+> when all zones have been tried and the allocator enters the slowpath
+> and kicks off kswapd reclaim:
+> 
+>   $ grep active_file /proc/zoneinfo
+>       nr_inactive_file 0
+>       nr_active_file 0
+>       nr_inactive_file 174
+>       nr_active_file 4865
+>       nr_inactive_file 53
+>       nr_active_file 860
+>   $ cat data data data data >/dev/null
+>   $ grep active_file /proc/zoneinfo
+>       nr_inactive_file 0
+>       nr_active_file 0
+>       nr_inactive_file 666622
+>       nr_active_file 4988
+>       nr_inactive_file 190969
+>       nr_active_file 937
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/util/annotate.c | 11 ++++-------
- tools/perf/util/dso.h      |  1 +
- tools/perf/util/sort.c     |  2 +-
- tools/perf/util/srcline.c  |  4 +++-
- tools/perf/util/util.h     |  4 +++-
- 5 files changed, 12 insertions(+), 10 deletions(-)
+First of all, I should appreciate your great work!
+It's amazing and I saw Zlatko proved it enhances real works.
+Thanks Zlatko, too!
 
-diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-index c8a0d5762b1d..0137f028c0d6 100644
---- a/tools/perf/util/annotate.c
-+++ b/tools/perf/util/annotate.c
-@@ -1029,8 +1029,7 @@ static void symbol__free_source_line(struct symbol *sym, int len)
- /* Get the filename:line for the colored entries */
- static int symbol__get_source_line(struct symbol *sym, struct map *map,
- 				   struct perf_evsel *evsel,
--				   struct rb_root *root, int len,
--				   const char *filename)
-+				   struct rb_root *root, int len)
- {
- 	u64 start;
- 	int i, k;
-@@ -1079,7 +1078,7 @@ static int symbol__get_source_line(struct symbol *sym, struct map *map,
- 			goto next;
- 
- 		offset = start + i;
--		src_line->path = get_srcline(filename, offset);
-+		src_line->path = get_srcline(map->dso, offset);
- 		insert_source_line(&tmp_root, src_line);
- 
- 	next:
-@@ -1286,7 +1285,6 @@ int symbol__tty_annotate(struct symbol *sym, struct map *map,
- 			 bool full_paths, int min_pcnt, int max_lines)
- {
- 	struct dso *dso = map->dso;
--	const char *filename = dso->long_name;
- 	struct rb_root source_line = RB_ROOT;
- 	u64 len;
- 
-@@ -1296,9 +1294,8 @@ int symbol__tty_annotate(struct symbol *sym, struct map *map,
- 	len = symbol__size(sym);
- 
- 	if (print_lines) {
--		symbol__get_source_line(sym, map, evsel, &source_line,
--					len, filename);
--		print_summary(&source_line, filename);
-+		symbol__get_source_line(sym, map, evsel, &source_line, len);
-+		print_summary(&source_line, dso->long_name);
- 	}
- 
- 	symbol__annotate_printf(sym, map, evsel, full_paths,
-diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
-index d51aaf272c68..94c2f1a8b116 100644
---- a/tools/perf/util/dso.h
-+++ b/tools/perf/util/dso.h
-@@ -5,6 +5,7 @@
- #include <linux/rbtree.h>
- #include "types.h"
- #include "map.h"
-+#include "build-id.h"
- 
- enum dso_binary_type {
- 	DSO_BINARY_TYPE__KALLSYMS = 0,
-diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index 113aa92b1191..58cfe69d3a6c 100644
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -259,7 +259,7 @@ static int hist_entry__srcline_snprintf(struct hist_entry *self, char *bf,
- 	if (!self->ms.map)
- 		goto out_ip;
- 
--	path = get_srcline(self->ms.map->dso->long_name, self->ip);
-+	path = get_srcline(self->ms.map->dso, self->ip);
- 	self->srcline = path;
- 
- out_path:
-diff --git a/tools/perf/util/srcline.c b/tools/perf/util/srcline.c
-index 777f91880cdb..c736d9428cf2 100644
---- a/tools/perf/util/srcline.c
-+++ b/tools/perf/util/srcline.c
-@@ -4,6 +4,7 @@
- 
- #include <linux/kernel.h>
- 
-+#include "util/dso.h"
- #include "util/util.h"
- #include "util/debug.h"
- 
-@@ -53,11 +54,12 @@ out:
- 	return ret;
- }
- 
--char *get_srcline(const char *dso_name, unsigned long addr)
-+char *get_srcline(struct dso *dso, unsigned long addr)
- {
- 	char *file;
- 	unsigned line;
- 	char *srcline = SRCLINE_UNKNOWN;
-+	char *dso_name = dso->long_name;
- 	size_t size;
- 
- 	if (dso_name[0] == '[')
-diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
-index 9a0bbe45f642..20dd24d8f338 100644
---- a/tools/perf/util/util.h
-+++ b/tools/perf/util/util.h
-@@ -282,7 +282,9 @@ void get_term_dimensions(struct winsize *ws);
- 
- #define SRCLINE_UNKNOWN  ((char *) "??:0")
- 
--char *get_srcline(const char *dso_name, unsigned long addr);
-+struct dso;
-+
-+char *get_srcline(struct dso *dso, unsigned long addr);
- void free_srcline(char *srcline);
- 
- #endif /* GIT_COMPAT_UTIL_H */
+So, I don't want to prevent merging but I think at least, we should
+discuss some issues.
+
+The concern I have is that it could accelerate low memory pinning
+problems like mlock. Actually, I don't have such workload that makes
+pin lots of pages but that's why we introduced lowmem_reserve_ratio,
+as you know well so we should cover this issue, at least.
+
+Other thing of my concerns is to add overhead in fast path.
+Sometime, we are really reluctant to add simple even "if" condition
+in fastpath but you are adding atomic op whenever page is allocated and
+enter slowpath whenever all of given zones's batchcount is zero.
+Yes, it's not really slow path because it could return to normal status
+without calling significant slow functions by reset batchcount of
+prepare_slowpath.
+
+I think it's tradeoff and I am biased your approach although we would
+lose a little performance because fair aging would recover the loss by
+fastpath's overhead. But who knows? Someone has a concern.
+
+So we should mention about such problems.
+
+> 
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> ---
+>  include/linux/mmzone.h |  1 +
+>  mm/page_alloc.c        | 39 +++++++++++++++++++++++++++++----------
+>  2 files changed, 30 insertions(+), 10 deletions(-)
+> 
+> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+> index af4a3b7..0c41d59 100644
+> --- a/include/linux/mmzone.h
+> +++ b/include/linux/mmzone.h
+> @@ -352,6 +352,7 @@ struct zone {
+>  	 * free areas of different sizes
+>  	 */
+>  	spinlock_t		lock;
+> +	atomic_t		alloc_batch;
+>  	int                     all_unreclaimable; /* All pages pinned */
+>  #if defined CONFIG_COMPACTION || defined CONFIG_CMA
+>  	/* Set to true when the PG_migrate_skip bits should be cleared */
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index af1d956b..d938b67 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -1879,6 +1879,14 @@ zonelist_scan:
+>  		if (alloc_flags & ALLOC_NO_WATERMARKS)
+>  			goto try_this_zone;
+>  		/*
+> +		 * Distribute pages in proportion to the individual
+> +		 * zone size to ensure fair page aging.  The zone a
+> +		 * page was allocated in should have no effect on the
+> +		 * time the page has in memory before being reclaimed.
+> +		 */
+> +		if (atomic_read(&zone->alloc_batch) <= 0)
+> +			continue;
+> +		/*
+>  		 * When allocating a page cache page for writing, we
+>  		 * want to get it from a zone that is within its dirty
+>  		 * limit, such that no single zone holds more than its
+> @@ -1984,7 +1992,8 @@ this_zone_full:
+>  		goto zonelist_scan;
+>  	}
+>  
+> -	if (page)
+> +	if (page) {
+> +		atomic_sub(1U << order, &zone->alloc_batch);
+>  		/*
+>  		 * page->pfmemalloc is set when ALLOC_NO_WATERMARKS was
+>  		 * necessary to allocate the page. The expectation is
+> @@ -1993,6 +2002,7 @@ this_zone_full:
+>  		 * for !PFMEMALLOC purposes.
+>  		 */
+>  		page->pfmemalloc = !!(alloc_flags & ALLOC_NO_WATERMARKS);
+> +	}
+>  
+>  	return page;
+>  }
+> @@ -2342,16 +2352,20 @@ __alloc_pages_high_priority(gfp_t gfp_mask, unsigned int order,
+>  	return page;
+>  }
+>  
+> -static inline
+> -void wake_all_kswapd(unsigned int order, struct zonelist *zonelist,
+> -						enum zone_type high_zoneidx,
+> -						enum zone_type classzone_idx)
+> +static void prepare_slowpath(gfp_t gfp_mask, unsigned int order,
+> +			     struct zonelist *zonelist,
+> +			     enum zone_type high_zoneidx,
+> +			     enum zone_type classzone_idx)
+>  {
+>  	struct zoneref *z;
+>  	struct zone *zone;
+>  
+> -	for_each_zone_zonelist(zone, z, zonelist, high_zoneidx)
+> -		wakeup_kswapd(zone, order, classzone_idx);
+> +	for_each_zone_zonelist(zone, z, zonelist, high_zoneidx) {
+> +		atomic_set(&zone->alloc_batch,
+> +			   high_wmark_pages(zone) - low_wmark_pages(zone));
+> +		if (!(gfp_mask & __GFP_NO_KSWAPD))
+> +			wakeup_kswapd(zone, order, classzone_idx);
+> +	}
+>  }
+>  
+>  static inline int
+> @@ -2447,9 +2461,8 @@ __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
+>  		goto nopage;
+>  
+>  restart:
+> -	if (!(gfp_mask & __GFP_NO_KSWAPD))
+> -		wake_all_kswapd(order, zonelist, high_zoneidx,
+> -						zone_idx(preferred_zone));
+> +	prepare_slowpath(gfp_mask, order, zonelist,
+> +			 high_zoneidx, zone_idx(preferred_zone));
+>  
+>  	/*
+>  	 * OK, we're below the kswapd watermark and have kicked background
+> @@ -4758,6 +4771,9 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
+>  		zone_seqlock_init(zone);
+>  		zone->zone_pgdat = pgdat;
+>  
+> +		/* For bootup, initialized properly in watermark setup */
+> +		atomic_set(&zone->alloc_batch, zone->managed_pages);
+> +
+>  		zone_pcp_init(zone);
+>  		lruvec_init(&zone->lruvec);
+>  		if (!size)
+> @@ -5533,6 +5549,9 @@ static void __setup_per_zone_wmarks(void)
+>  		zone->watermark[WMARK_LOW]  = min_wmark_pages(zone) + (tmp >> 2);
+>  		zone->watermark[WMARK_HIGH] = min_wmark_pages(zone) + (tmp >> 1);
+>  
+> +		atomic_set(&zone->alloc_batch,
+> +			   high_wmark_pages(zone) - low_wmark_pages(zone));
+> +
+>  		setup_zone_migrate_reserve(zone);
+>  		spin_unlock_irqrestore(&zone->lock, flags);
+>  	}
+> -- 
+> 1.8.3.2
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
 -- 
-1.7.11.7
-
+Kind regards,
+Minchan Kim
