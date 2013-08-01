@@ -1,109 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753405Ab3HAAi0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 20:38:26 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:64081 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752354Ab3HAAcC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 20:32:02 -0400
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>, Borislav Petkov <bp@alien8.de>,
-        Li Zhong <zhong@linux.vnet.ibm.com>, Mike Galbraith <efault@gmx.de>,
-        Kevin Hilman <khilman@linaro.org>
-Subject: [PATCH 10/23] context_tracking: Optimize context switch off case with static keys
-Date: Thu,  1 Aug 2013 02:31:27 +0200
-Message-Id: <1375317100-20651-11-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1375317100-20651-1-git-send-email-fweisbec@gmail.com>
-References: <1375317100-20651-1-git-send-email-fweisbec@gmail.com>
+	id S1753686Ab3HAAi1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 20:38:27 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:33005 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752412Ab3HAAcD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 20:32:03 -0400
+From: Joe Perches <joe@perches.com>
+To: netdev@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/8] af_unix.h: Remove extern from function prototypes
+Date: Wed, 31 Jul 2013 17:31:33 -0700
+Message-Id: <af5dade8ea13d08a6aca3df8198b664a022d2146.1375316912.git.joe@perches.com>
+X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
+In-Reply-To: <cover.1375316912.git.joe@perches.com>
+References: <cover.1375316912.git.joe@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No need for syscall slowpath if no CPU is full dynticks,
-rather nop this in this case.
+There are a mix of function prototypes with and without extern
+in the kernel sources.  Standardize on not using extern for
+function prototypes.
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Borislav Petkov <bp@alien8.de>
-Cc: Li Zhong <zhong@linux.vnet.ibm.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Kevin Hilman <khilman@linaro.org>
+Function prototypes don't need to be written with extern.
+extern is assumed by the compiler.  Its use is as unnecessary as
+using auto to declare automatic/local variables in a block.
+
+Reflow modified prototypes to 80 columns.
+
+Signed-off-by: Joe Perches <joe@perches.com>
 ---
- include/linux/context_tracking.h |   11 +++++++++--
- kernel/context_tracking.c        |    6 +++---
- 2 files changed, 12 insertions(+), 5 deletions(-)
+ include/net/af_unix.h | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/include/linux/context_tracking.h b/include/linux/context_tracking.h
-index 03a32b0..66a8397 100644
---- a/include/linux/context_tracking.h
-+++ b/include/linux/context_tracking.h
-@@ -40,6 +40,8 @@ extern void context_tracking_cpu_set(int cpu);
+diff --git a/include/net/af_unix.h b/include/net/af_unix.h
+index dbdfd2b..05442df 100644
+--- a/include/net/af_unix.h
++++ b/include/net/af_unix.h
+@@ -6,12 +6,12 @@
+ #include <linux/mutex.h>
+ #include <net/sock.h>
  
- extern void context_tracking_user_enter(void);
- extern void context_tracking_user_exit(void);
-+extern void __context_tracking_task_switch(struct task_struct *prev,
-+					   struct task_struct *next);
+-extern void unix_inflight(struct file *fp);
+-extern void unix_notinflight(struct file *fp);
+-extern void unix_gc(void);
+-extern void wait_for_unix_gc(void);
+-extern struct sock *unix_get_socket(struct file *filp);
+-extern struct sock *unix_peer_get(struct sock *);
++void unix_inflight(struct file *fp);
++void unix_notinflight(struct file *fp);
++void unix_gc(void);
++void wait_for_unix_gc(void);
++struct sock *unix_get_socket(struct file *filp);
++struct sock *unix_peer_get(struct sock *);
  
- static inline void user_enter(void)
- {
-@@ -74,8 +76,12 @@ static inline void exception_exit(enum ctx_state prev_ctx)
- 	}
- }
+ #define UNIX_HASH_SIZE	256
+ #define UNIX_HASH_BITS	8
+@@ -71,8 +71,8 @@ long unix_inq_len(struct sock *sk);
+ long unix_outq_len(struct sock *sk);
  
--extern void context_tracking_task_switch(struct task_struct *prev,
--					 struct task_struct *next);
-+static inline void context_tracking_task_switch(struct task_struct *prev,
-+						struct task_struct *next)
-+{
-+	if (static_key_false(&context_tracking_enabled))
-+		__context_tracking_task_switch(prev, next);
-+}
+ #ifdef CONFIG_SYSCTL
+-extern int unix_sysctl_register(struct net *net);
+-extern void unix_sysctl_unregister(struct net *net);
++int unix_sysctl_register(struct net *net);
++void unix_sysctl_unregister(struct net *net);
  #else
- static inline bool context_tracking_in_user(void) { return false; }
- static inline void user_enter(void) { }
-@@ -104,6 +110,7 @@ static inline void guest_exit(void)
- 	else
- 		current->flags &= ~PF_VCPU;
- }
-+
- #else
- static inline void guest_enter(void)
- {
-diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
-index 5afa36b..ef21e4f 100644
---- a/kernel/context_tracking.c
-+++ b/kernel/context_tracking.c
-@@ -166,7 +166,7 @@ void context_tracking_user_exit(void)
- }
- 
- /**
-- * context_tracking_task_switch - context switch the syscall callbacks
-+ * __context_tracking_task_switch - context switch the syscall callbacks
-  * @prev: the task that is being switched out
-  * @next: the task that is being switched in
-  *
-@@ -178,8 +178,8 @@ void context_tracking_user_exit(void)
-  * migrate to some CPU that doesn't do the context tracking. As such the TIF
-  * flag may not be desired there.
-  */
--void context_tracking_task_switch(struct task_struct *prev,
--			     struct task_struct *next)
-+void __context_tracking_task_switch(struct task_struct *prev,
-+				    struct task_struct *next)
- {
- 	clear_tsk_thread_flag(prev, TIF_NOHZ);
- 	set_tsk_thread_flag(next, TIF_NOHZ);
+ static inline int unix_sysctl_register(struct net *net) { return 0; }
+ static inline void unix_sysctl_unregister(struct net *net) {}
 -- 
-1.7.5.4
+1.8.1.2.459.gbcd45b4.dirty
 
