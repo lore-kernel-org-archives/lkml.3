@@ -1,59 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752669Ab3HAFP1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 01:15:27 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:58883 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751900Ab3HAFPZ (ORCPT
+	id S1752565Ab3HAFWJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 01:22:09 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:55231 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750830Ab3HAFWG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 01:15:25 -0400
-Date: Thu, 1 Aug 2013 10:43:27 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 17/18] sched: Retry migration of tasks to CPU on a
- preferred node
-Message-ID: <20130801051327.GF4880@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <1373901620-2021-1-git-send-email-mgorman@suse.de>
- <1373901620-2021-18-git-send-email-mgorman@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1373901620-2021-18-git-send-email-mgorman@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13080105-3620-0000-0000-000003C5C99F
+	Thu, 1 Aug 2013 01:22:06 -0400
+Date: Thu, 1 Aug 2013 15:21:48 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jiri Pirko <jiri@resnulli.us>, David Miller <davem@davemloft.net>,
+        <netdev@vger.kernel.org>
+Subject: linux-next: manual merge of the driver-core tree with the net-next
+ tree
+Message-Id: <20130801152148.c98a281ec6e076646edeb7cb@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__1_Aug_2013_15_21_48_+1000_K1aA6E80bP5x_tIB"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Mel Gorman <mgorman@suse.de> [2013-07-15 16:20:19]:
+--Signature=_Thu__1_Aug_2013_15_21_48_+1000_K1aA6E80bP5x_tIB
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> When a preferred node is selected for a tasks there is an attempt to migrate
-> the task to a CPU there. This may fail in which case the task will only
-> migrate if the active load balancer takes action. This may never happen if
+Hi Greg,
 
-Apart from load imbalance or heavily loaded cpus on the preferred node,
-what could be the other reasons for migration failure with
-migrate_task_to()? I see it almost similar to active load balance except
-for pushing instead of pulling tasks.
+Today's linux-next merge of the driver-core tree got a conflict in
+net/core/net-sysfs.c between commit ff80e519ab1b ("net: export physical
+port id via sysfs") from the net-next tree and commit 6be8aeef348a ("net:
+core: convert class code to use dev_groups") from the driver-core tree.
 
-If load imbalance is the only reason, do we need to retry? If the task
-is really so attached to memory on that node, shouldn't we getting
-task_numa_placement hit before the next 5 seconds? 
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-> the conditions are not right. This patch will check at NUMA hinting fault
-> time if another attempt should be made to migrate the task. It will only
-> make an attempt once every five seconds.
-> 
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
--- 
-Thanks and Regards
-Srikar Dronamraju
+diff --cc net/core/net-sysfs.c
+index 8826b0d,707c313..0000000
+--- a/net/core/net-sysfs.c
++++ b/net/core/net-sysfs.c
+@@@ -237,9 -250,9 +250,31 @@@ static ssize_t operstate_show(struct de
+ =20
+  	return sprintf(buf, "%s\n", operstates[operstate]);
+  }
++ static DEVICE_ATTR_RO(operstate);
++=20
+++static ssize_t phys_port_id_show(struct device *dev,
+++				 struct device_attribute *attr, char *buf)
+++{
+++	struct net_device *netdev =3D to_net_dev(dev);
+++	ssize_t ret =3D -EINVAL;
+++
+++	if (!rtnl_trylock())
+++		return restart_syscall();
+++
+++	if (dev_isalive(netdev)) {
+++		struct netdev_phys_port_id ppid;
+++
+++		ret =3D dev_get_phys_port_id(netdev, &ppid);
+++		if (!ret)
+++			ret =3D sprintf(buf, "%*phN\n", ppid.id_len, ppid.id);
+++	}
+++	rtnl_unlock();
+++
+++	return ret;
+++}
+++static DEVICE_ATTR_RO(phys_port_id);
+ +
+  /* read-write attributes */
+- NETDEVICE_SHOW(mtu, fmt_dec);
+ =20
+  static int change_mtu(struct net_device *net, unsigned long new_mtu)
+  {
+@@@ -333,52 -344,32 +366,33 @@@ static ssize_t group_store(struct devic
+  {
+  	return netdev_store(dev, attr, buf, len, change_group);
+  }
+-=20
+- static ssize_t show_phys_port_id(struct device *dev,
+- 				 struct device_attribute *attr, char *buf)
+- {
+- 	struct net_device *netdev =3D to_net_dev(dev);
+- 	ssize_t ret =3D -EINVAL;
+-=20
+- 	if (!rtnl_trylock())
+- 		return restart_syscall();
+-=20
+- 	if (dev_isalive(netdev)) {
+- 		struct netdev_phys_port_id ppid;
+-=20
+- 		ret =3D dev_get_phys_port_id(netdev, &ppid);
+- 		if (!ret)
+- 			ret =3D sprintf(buf, "%*phN\n", ppid.id_len, ppid.id);
+- 	}
+- 	rtnl_unlock();
+-=20
+- 	return ret;
+- }
+-=20
+- static struct device_attribute net_class_attributes[] =3D {
+- 	__ATTR(addr_assign_type, S_IRUGO, show_addr_assign_type, NULL),
+- 	__ATTR(addr_len, S_IRUGO, show_addr_len, NULL),
+- 	__ATTR(dev_id, S_IRUGO, show_dev_id, NULL),
+- 	__ATTR(ifalias, S_IRUGO | S_IWUSR, show_ifalias, store_ifalias),
+- 	__ATTR(iflink, S_IRUGO, show_iflink, NULL),
+- 	__ATTR(ifindex, S_IRUGO, show_ifindex, NULL),
+- 	__ATTR(type, S_IRUGO, show_type, NULL),
+- 	__ATTR(link_mode, S_IRUGO, show_link_mode, NULL),
+- 	__ATTR(address, S_IRUGO, show_address, NULL),
+- 	__ATTR(broadcast, S_IRUGO, show_broadcast, NULL),
+- 	__ATTR(carrier, S_IRUGO | S_IWUSR, show_carrier, store_carrier),
+- 	__ATTR(speed, S_IRUGO, show_speed, NULL),
+- 	__ATTR(duplex, S_IRUGO, show_duplex, NULL),
+- 	__ATTR(dormant, S_IRUGO, show_dormant, NULL),
+- 	__ATTR(operstate, S_IRUGO, show_operstate, NULL),
+- 	__ATTR(mtu, S_IRUGO | S_IWUSR, show_mtu, store_mtu),
+- 	__ATTR(flags, S_IRUGO | S_IWUSR, show_flags, store_flags),
+- 	__ATTR(tx_queue_len, S_IRUGO | S_IWUSR, show_tx_queue_len,
+- 	       store_tx_queue_len),
+- 	__ATTR(netdev_group, S_IRUGO | S_IWUSR, show_group, store_group),
+- 	__ATTR(phys_port_id, S_IRUGO, show_phys_port_id, NULL),
+- 	{}
++ NETDEVICE_SHOW(group, fmt_dec);
++ static DEVICE_ATTR(netdev_group, S_IRUGO | S_IWUSR, group_show, group_sto=
+re);
++=20
++ static struct attribute *net_class_attrs[] =3D {
++ 	&dev_attr_netdev_group.attr,
++ 	&dev_attr_type.attr,
++ 	&dev_attr_dev_id.attr,
++ 	&dev_attr_iflink.attr,
++ 	&dev_attr_ifindex.attr,
++ 	&dev_attr_addr_assign_type.attr,
++ 	&dev_attr_addr_len.attr,
++ 	&dev_attr_link_mode.attr,
++ 	&dev_attr_address.attr,
++ 	&dev_attr_broadcast.attr,
++ 	&dev_attr_speed.attr,
++ 	&dev_attr_duplex.attr,
++ 	&dev_attr_dormant.attr,
++ 	&dev_attr_operstate.attr,
+++	&dev_attr_phys_port_id.attr,
++ 	&dev_attr_ifalias.attr,
++ 	&dev_attr_carrier.attr,
++ 	&dev_attr_mtu.attr,
++ 	&dev_attr_flags.attr,
++ 	&dev_attr_tx_queue_len.attr,
++ 	NULL,
+  };
++ ATTRIBUTE_GROUPS(net_class);
+ =20
+  /* Show a given an attribute in the statistics group */
+  static ssize_t netstat_show(const struct device *d,
 
+--Signature=_Thu__1_Aug_2013_15_21_48_+1000_K1aA6E80bP5x_tIB
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBCAAGBQJR+fB0AAoJEECxmPOUX5FEX6AP+QEfxyxtAlYZTL2HmtaidYZx
+UsuBLK8huEZ3tEjJix9MAIsTZWNWO40gYfhrDeVI3B3iK5+I407NH8Xw7bxh6FVv
+s8EuDvdv3hbR5gTTUk4/ytNDHhUVvg0KeFa3FxZGfEmHrsr570UjXD1YqtNinsEJ
+NHtuTGLO5q0oRpV95uNydeJ7M6//KzZRaPKAZKWxNkHqwFMDe+Cp5O1CG8mtmkEd
+JZMGDiDCspXi+Q+dHUa1hFD2w22oNXEpH0O8p2XmVZOcocRHCj/jr9yNMrCIMSQR
+3dgZhVeLbBCQKv83GeTkfpcxWAqxqEKidZNUxU4gOlj9mOfHCdT/SLU1mD3GA6ar
+PFPk1ZcAN2kSFXPnMShEQphcNt5VCLGT9q6hZE0Qk1V7q22PgcDpcXHylVPpvM4f
+m3nwGbBNlgHXa0jqrSBZUtJIqkuDLR081kWfo/kFfPfhbZMW9f9QMTK1Y7Ac6jna
+j7iKhKoWU42Lp1drbwcHK28h+lykEDYwa1tPoKUq3Qp9lcsgQEAp89k2gM3G5n6h
+qbueOXC1eWmZYvLSR74LiR5CFRoJbeyZ3n6Ukislt3AlchLb8DxC7PlJe+b9v7H9
+5xxLXVJeEaILxN0zLDclQXJiwR9xCgrI5j8YrzY+sYBjYlKOotO8e5pvpPpls57p
+ZCGtYhVnAEJf727vVPmi
+=3PaK
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__1_Aug_2013_15_21_48_+1000_K1aA6E80bP5x_tIB--
