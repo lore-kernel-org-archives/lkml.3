@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757078Ab3HAQzZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 12:55:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18419 "EHLO mx1.redhat.com"
+	id S1757242Ab3HAQzf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 12:55:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1941 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756977Ab3HAQzU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 12:55:20 -0400
-Subject: [PATCH v3 1/9] pci: Create pci_reset_bridge_secondary_bus()
+	id S1756427Ab3HAQzb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 12:55:31 -0400
+Subject: [PATCH v3 3/9] pci: Implement reset_slot for pciehp
 To: bhelgaas@google.com, linux-pci@vger.kernel.org
 From: Alex Williamson <alex.williamson@redhat.com>
 Cc: indou.takao@jp.fujitsu.com, linux-kernel@vger.kernel.org
-Date: Thu, 01 Aug 2013 10:55:15 -0600
-Message-ID: <20130801165514.16145.62825.stgit@bling.home>
+Date: Thu, 01 Aug 2013 10:55:27 -0600
+Message-ID: <20130801165527.16145.8953.stgit@bling.home>
 In-Reply-To: <20130801164652.16145.79918.stgit@bling.home>
 References: <20130801164652.16145.79918.stgit@bling.home>
 User-Agent: StGit/0.16
@@ -22,78 +22,108 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the secondary bus reset code from pci_parent_bus_reset() into its own
-function.  Export it as we'll later be calling it from hotplug controllers
-and elsewhere.
+PCIe hotplug has a bus per slot, so we can just use a normal
+secondary bus reset.  However, if a slot supports surprise removal
+then a bus reset can be seen as a presence detection change triggering
+a hot-remove followed by a hot-add.  Disable presence detection from
+triggering an interrupt or being polled around the bus reset.
 
 Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
 ---
- drivers/pci/pci.c   |   32 +++++++++++++++++++++++---------
- include/linux/pci.h |    1 +
- 2 files changed, 24 insertions(+), 9 deletions(-)
+ drivers/pci/hotplug/pciehp.h      |    1 +
+ drivers/pci/hotplug/pciehp_core.c |   12 ++++++++++++
+ drivers/pci/hotplug/pciehp_hpc.c  |   31 +++++++++++++++++++++++++++++++
+ 3 files changed, 44 insertions(+)
 
-diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-index a599a6b..bfd629c 100644
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -3276,9 +3276,30 @@ static int pci_pm_reset(struct pci_dev *dev, int probe)
- 	return 0;
- }
+diff --git a/drivers/pci/hotplug/pciehp.h b/drivers/pci/hotplug/pciehp.h
+index 7fb3269..541bbe6 100644
+--- a/drivers/pci/hotplug/pciehp.h
++++ b/drivers/pci/hotplug/pciehp.h
+@@ -155,6 +155,7 @@ void pciehp_green_led_off(struct slot *slot);
+ void pciehp_green_led_blink(struct slot *slot);
+ int pciehp_check_link_status(struct controller *ctrl);
+ void pciehp_release_ctrl(struct controller *ctrl);
++int pciehp_reset_slot(struct slot *slot, int probe);
  
--static int pci_parent_bus_reset(struct pci_dev *dev, int probe)
-+/**
-+ * pci_reset_bridge_secondary_bus - Reset the secondary bus on a PCI bridge.
-+ * @dev: Bridge device
-+ *
-+ * Use the bridge control register to assert reset on the secondary bus.
-+ * Devices on the secondary bus are left in power-on state.
-+ */
-+void pci_reset_bridge_secondary_bus(struct pci_dev *dev)
+ static inline const char *slot_name(struct slot *slot)
  {
- 	u16 ctrl;
-+
-+	pci_read_config_word(dev, PCI_BRIDGE_CONTROL, &ctrl);
-+	ctrl |= PCI_BRIDGE_CTL_BUS_RESET;
-+	pci_write_config_word(dev, PCI_BRIDGE_CONTROL, ctrl);
-+	msleep(100);
-+
-+	ctrl &= ~PCI_BRIDGE_CTL_BUS_RESET;
-+	pci_write_config_word(dev, PCI_BRIDGE_CONTROL, ctrl);
-+	msleep(100);
-+}
-+EXPORT_SYMBOL_GPL(pci_reset_bridge_secondary_bus);
-+
-+static int pci_parent_bus_reset(struct pci_dev *dev, int probe)
-+{
- 	struct pci_dev *pdev;
+diff --git a/drivers/pci/hotplug/pciehp_core.c b/drivers/pci/hotplug/pciehp_core.c
+index 7d72c5e..f4a18f5 100644
+--- a/drivers/pci/hotplug/pciehp_core.c
++++ b/drivers/pci/hotplug/pciehp_core.c
+@@ -69,6 +69,7 @@ static int get_power_status	(struct hotplug_slot *slot, u8 *value);
+ static int get_attention_status	(struct hotplug_slot *slot, u8 *value);
+ static int get_latch_status	(struct hotplug_slot *slot, u8 *value);
+ static int get_adapter_status	(struct hotplug_slot *slot, u8 *value);
++static int reset_slot		(struct hotplug_slot *slot, int probe);
  
- 	if (pci_is_root_bus(dev->bus) || dev->subordinate || !dev->bus->self)
-@@ -3291,14 +3312,7 @@ static int pci_parent_bus_reset(struct pci_dev *dev, int probe)
- 	if (probe)
- 		return 0;
- 
--	pci_read_config_word(dev->bus->self, PCI_BRIDGE_CONTROL, &ctrl);
--	ctrl |= PCI_BRIDGE_CTL_BUS_RESET;
--	pci_write_config_word(dev->bus->self, PCI_BRIDGE_CONTROL, ctrl);
--	msleep(100);
--
--	ctrl &= ~PCI_BRIDGE_CTL_BUS_RESET;
--	pci_write_config_word(dev->bus->self, PCI_BRIDGE_CONTROL, ctrl);
--	msleep(100);
-+	pci_reset_bridge_secondary_bus(dev->bus->self);
- 
- 	return 0;
+ /**
+  * release_slot - free up the memory used by a slot
+@@ -111,6 +112,7 @@ static int init_slot(struct controller *ctrl)
+ 	ops->disable_slot = disable_slot;
+ 	ops->get_power_status = get_power_status;
+ 	ops->get_adapter_status = get_adapter_status;
++	ops->reset_slot = reset_slot;
+ 	if (MRL_SENS(ctrl))
+ 		ops->get_latch_status = get_latch_status;
+ 	if (ATTN_LED(ctrl)) {
+@@ -223,6 +225,16 @@ static int get_adapter_status(struct hotplug_slot *hotplug_slot, u8 *value)
+ 	return pciehp_get_adapter_status(slot, value);
  }
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index 0fd1f15..35c1bc4 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -924,6 +924,7 @@ int pcie_set_mps(struct pci_dev *dev, int mps);
- int __pci_reset_function(struct pci_dev *dev);
- int __pci_reset_function_locked(struct pci_dev *dev);
- int pci_reset_function(struct pci_dev *dev);
-+void pci_reset_bridge_secondary_bus(struct pci_dev *dev);
- void pci_update_resource(struct pci_dev *dev, int resno);
- int __must_check pci_assign_resource(struct pci_dev *dev, int i);
- int __must_check pci_reassign_resource(struct pci_dev *dev, int i, resource_size_t add_size, resource_size_t align);
+ 
++static int reset_slot(struct hotplug_slot *hotplug_slot, int probe)
++{
++	struct slot *slot = hotplug_slot->private;
++
++	ctrl_dbg(slot->ctrl, "%s: physical_slot = %s\n",
++		 __func__, slot_name(slot));
++
++	return pciehp_reset_slot(slot, probe);
++}
++
+ static int pciehp_probe(struct pcie_device *dev)
+ {
+ 	int rc;
+diff --git a/drivers/pci/hotplug/pciehp_hpc.c b/drivers/pci/hotplug/pciehp_hpc.c
+index b225573..51f56ef 100644
+--- a/drivers/pci/hotplug/pciehp_hpc.c
++++ b/drivers/pci/hotplug/pciehp_hpc.c
+@@ -749,6 +749,37 @@ static void pcie_disable_notification(struct controller *ctrl)
+ 		ctrl_warn(ctrl, "Cannot disable software notification\n");
+ }
+ 
++/*
++ * pciehp has a 1:1 bus:slot relationship so we ultimately want a secondary
++ * bus reset of the bridge, but if the slot supports surprise removal we need
++ * to disable presence detection around the bus reset and clear any spurious
++ * events after.
++ */
++int pciehp_reset_slot(struct slot *slot, int probe)
++{
++	struct controller *ctrl = slot->ctrl;
++
++	if (probe)
++		return 0;
++
++	if (HP_SUPR_RM(ctrl)) {
++		pcie_write_cmd(ctrl, 0, PCI_EXP_SLTCTL_PDCE);
++		if (pciehp_poll_mode)
++			del_timer_sync(&ctrl->poll_timer);
++	}
++
++	pci_reset_bridge_secondary_bus(ctrl->pcie->port);
++
++	if (HP_SUPR_RM(ctrl)) {
++		pciehp_writew(ctrl, PCI_EXP_SLTSTA, PCI_EXP_SLTSTA_PDC);
++		pcie_write_cmd(ctrl, PCI_EXP_SLTCTL_PDCE, PCI_EXP_SLTCTL_PDCE);
++		if (pciehp_poll_mode)
++			int_poll_timeout(ctrl->poll_timer.data);
++	}
++
++	return 0;
++}
++
+ int pcie_init_notification(struct controller *ctrl)
+ {
+ 	if (pciehp_request_irq(ctrl))
 
