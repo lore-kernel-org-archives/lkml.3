@@ -1,436 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755121Ab3HAKhm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 06:37:42 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:33681 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754985Ab3HAKhj (ORCPT
+	id S1754759Ab3HAKkV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 06:40:21 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:39633 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753558Ab3HAKkT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 06:37:39 -0400
-Date: Thu, 1 Aug 2013 12:37:13 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Rik van Riel <riel@redhat.com>
-Cc: Mel Gorman <mgorman@suse.de>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH,RFC] numa,sched: use group fault statistics in numa
- placement
-Message-ID: <20130801103713.GO3008@twins.programming.kicks-ass.net>
-References: <1373901620-2021-1-git-send-email-mgorman@suse.de>
- <20130730113857.GR3008@twins.programming.kicks-ass.net>
- <20130801022319.4a6a977a@annuminas.surriel.com>
+	Thu, 1 Aug 2013 06:40:19 -0400
+Message-ID: <51FA3B02.7060004@linux.vnet.ibm.com>
+Date: Thu, 01 Aug 2013 16:10:02 +0530
+From: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130801022319.4a6a977a@annuminas.surriel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: linuxppc-dev@ozlabs.org, paulus@samba.org, linux-kernel@vger.kernel.org,
+        benh@kernel.crashing.org, tony.luck@intel.com, keescook@chromium.org
+CC: jkenisto@linux.vnet.ibm.com, mahesh@linux.vnet.ibm.com,
+        cbouatmailru@gmail.com, anton@samba.org, ccross@android.com
+Subject: Re: [PATCH 00/11] Add compression support to pstore
+References: <20130715164844.1520.27771.stgit@aruna-ThinkPad-T420>
+In-Reply-To: <20130715164844.1520.27771.stgit@aruna-ThinkPad-T420>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13080110-1618-0000-0000-0000046204EB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 01, 2013 at 02:23:19AM -0400, Rik van Riel wrote:
-> Subject: [PATCH,RFC] numa,sched: use group fault statistics in numa placement
-> 
-> Here is a quick strawman on how the group fault stuff could be used
-> to help pick the best node for a task. This is likely to be quite
-> suboptimal and in need of tweaking. My main goal is to get this to
-> Peter & Mel before it's breakfast time on their side of the Atlantic...
-> 
-> This goes on top of "sched, numa: Use {cpu, pid} to create task groups for shared faults"
-> 
-> Enjoy :)
-> 
-> +	/*
-> +	 * Should we stay on our own, or move in with the group?
-> +	 * The absolute count of faults may not be useful, but comparing
-> +	 * the fraction of accesses in each top node may give us a hint
-> +	 * where to start looking for a migration target.
-> +	 *
-> +	 *  max_group_faults     max_faults
-> +	 * ------------------ > ------------
-> +	 * total_group_faults   total_faults
-> +	 */
-> +	if (max_group_nid >= 0 && max_group_nid != max_nid) {
-> +		if (max_group_faults * total_faults >
-> +				max_faults * total_group_faults)
-> +			max_nid = max_group_nid;
-> +	}
+Hi Tony/Kees,
 
-This makes sense.. another part of the problem, which you might already
-have spotted is selecting a task to swap with. 
+     Could you please review and let me know your comments!!
 
-If you only look at per task faults its often impossible to find a
-suitable swap task because moving you to a more suitable node would
-degrade the other task -- below a patch you've already seen but I
-haven't yet posted because I'm not at all sure its something 'sane' :-)
+Regards,
+Aruna
 
-With group information your case might be stronger because you already
-have many tasks on that node.
+On Monday 15 July 2013 10:25 PM, Aruna Balakrishnaiah wrote:
+> The patchset adds compression support to pstore.
+>
+> As the non-volatile storage space is limited, adding compression
+> support results in capturing more data within limited space.
+>
+> Size of dmesg file in a powerpc/pseries box with nvram's
+> oops partition (to store oops-log) size 4k:
+>
+> Without compression:
+> dmesg-nvram-1:  ~ 4k (3980)
+> WIth compression:
+> dmesg-nvram-1: ~8.8k (8844)
+>
+> Writing to persistent store
+> ----------------------------
+> Compression will reduce the size of oops/panic report to atmost 45% of its
+> original size. (Based on experiments done while providing compression support
+> to nvram by Jim keniston).
+> Hence buffer of size ( (100/45 approx 2.22) *<registered_buffer> is allocated).
+> The compression parameters selected based on some experiments:
+> compression_level = 6, window_bits = 12, memory_level = 4  which achieved a
+> significant compression of 12 % of uncompressed buffer size tried upto 36k.
+> Data is compressed from the bigger buffer to registered buffer which is
+> returned to backends.
+> Pstore will indicate that with a flag 'compressed' which is passed to backends.
+> Using this flag, backends will add a flag in their header to indicate the data
+> is compressed or not while writing to persistent store.
+>
+>
+> Reading from persistent store
+> -----------------------------
+> When backends read data from persistent store it will use the flag added by it
+> while writing to persistent store to determine if the data is compressed or not.
+> Using the information, it will set the flag in pstore's read call back.
+> Pstore will decompress the data based on the flag and writes decompressed data
+> to the file.
+>
+> Test results:
+>
+> Have tested the patches on powerpc/pseries.
+> On Intel have only tested with erst backend.
+>
+> Efi-pstore and RAM persistent buffer requires testing.
+>
+>
+> ---
+>
+> Aruna Balakrishnaiah (11):
+>        powerpc/pseries: Remove (de)compression in nvram with pstore enabled
+>        pstore: Add new argument 'compressed' in pstore write callback
+>        pstore/Kconfig: Select ZLIB_DEFLATE and ZLIB_INFLATE when PSTORE is selected
+>        pstore: Add compression support to pstore
+>        pstore: Introduce new argument 'compressed' in the read callback
+>        pstore: Provide decompression support to pstore
+>        pstore: Add file extension to pstore file if compressed
+>        powerpc/pseries: Read and write to the 'compressed' flag of pstore
+>        erst: Read and write to the 'compressed' flag of pstore
+>        efi-pstore: Read and write to the 'compressed' flag of pstore
+>        pstore/ram: Read and write to the 'compressed' flag of pstore
+>
+>
+>   arch/powerpc/platforms/pseries/nvram.c |  131 ++++----------------
+>   drivers/acpi/apei/erst.c               |   21 ++-
+>   drivers/firmware/efi/efi-pstore.c      |   27 +++-
+>   fs/pstore/Kconfig                      |    2
+>   fs/pstore/inode.c                      |    9 +
+>   fs/pstore/internal.h                   |    5 -
+>   fs/pstore/platform.c                   |  214 ++++++++++++++++++++++++++++++--
+>   fs/pstore/ram.c                        |   41 +++++-
+>   include/linux/pstore.h                 |    6 -
+>   9 files changed, 307 insertions(+), 149 deletions(-)
+>
 
-Still there's the tie where there's two groups with each exactly half
-their tasks crossed between two nodes. I suppose we should forcefully
-tie break in this case.
-
-And all this while also maintaining the invariants placed by the regular
-balancer. It would be no good to move tasks about if the balancer would
-then have to shuffle stuff right back (or worse) in order to maintain
-fairness.
-
----
-Subject: sched, numa: Alternative migration scheme
-From: Peter Zijlstra <peterz@infradead.org>
-Date: Sun Jul 21 23:12:13 CEST 2013
-
-
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
----
- kernel/sched/fair.c |  260 +++++++++++++++++++++++++++++++++++++---------------
- 1 file changed, 187 insertions(+), 73 deletions(-)
-
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -816,6 +816,8 @@ update_stats_curr_start(struct cfs_rq *c
-  * Scheduling class queueing methods:
-  */
- 
-+static unsigned long task_h_load(struct task_struct *p);
-+
- #ifdef CONFIG_NUMA_BALANCING
- /*
-  * Approximate time to scan a full NUMA task in ms. The task scan period is
-@@ -885,92 +887,206 @@ static inline int task_faults_idx(int ni
- 	return 2 * nid + priv;
- }
- 
-+static inline unsigned long task_faults(struct task_struct *p, int nid)
-+{
-+	if (!p->numa_faults)
-+		return 0;
-+
-+	return p->numa_faults[2*nid] + p->numa_faults[2*nid+1];
-+}
-+
-+static unsigned long weighted_cpuload(const int cpu);
- static unsigned long source_load(int cpu, int type);
- static unsigned long target_load(int cpu, int type);
- static unsigned long power_of(int cpu);
- static long effective_load(struct task_group *tg, int cpu, long wl, long wg);
- 
--static int task_numa_find_cpu(struct task_struct *p, int nid)
-+struct numa_stats {
-+	unsigned long nr_running;
-+	unsigned long load;
-+	unsigned long power;
-+	unsigned long capacity;
-+	int has_capacity;
-+};
-+
-+/*
-+ * XXX borrowed from update_sg_lb_stats
-+ */
-+static void update_numa_stats(struct numa_stats *ns, int nid)
- {
--	int node_cpu = cpumask_first(cpumask_of_node(nid));
--	int cpu, src_cpu = task_cpu(p), dst_cpu = src_cpu;
--	unsigned long src_load, dst_load;
--	unsigned long min_load = ULONG_MAX;
--	struct task_group *tg = task_group(p);
--	s64 src_eff_load, dst_eff_load;
--	struct sched_domain *sd;
--	unsigned long weight;
--	bool balanced;
--	int imbalance_pct, idx = -1;
-+	int cpu;
-+
-+	memset(ns, 0, sizeof(*ns));
-+	for_each_cpu(cpu, cpumask_of_node(nid)) {
-+		struct rq *rq = cpu_rq(cpu);
-+
-+		ns->nr_running += rq->nr_running;
-+		ns->load += weighted_cpuload(cpu);
-+		ns->power += power_of(cpu);
-+	}
-+
-+	ns->load = (ns->load * SCHED_POWER_SCALE) / ns->power;
-+	ns->capacity = DIV_ROUND_CLOSEST(ns->power, SCHED_POWER_SCALE);
-+	ns->has_capacity = (ns->nr_running < ns->capacity);
-+}
-+
-+struct task_numa_env {
-+	struct task_struct *p;
-+
-+	int src_cpu, src_nid;
-+	int dst_cpu, dst_nid;
-+
-+	struct numa_stats src_stats, dst_stats;
-+
-+	int imbalance_pct, idx;
-+
-+	struct task_struct *best_task;
-+	long best_imp;
-+	int best_cpu;
-+};
-+
-+static void task_numa_assign(struct task_numa_env *env,
-+			     struct task_struct *p, long imp)
-+{
-+	if (env->best_task)
-+		put_task_struct(env->best_task);
-+	if (p)
-+		get_task_struct(p);
-+
-+	env->best_task = p;
-+	env->best_imp = imp;
-+	env->best_cpu = env->dst_cpu;
-+}
-+
-+static void task_numa_compare(struct task_numa_env *env, long imp)
-+{
-+	struct rq *src_rq = cpu_rq(env->src_cpu);
-+	struct rq *dst_rq = cpu_rq(env->dst_cpu);
-+	struct task_struct *cur;
-+	unsigned long dst_load, src_load;
-+	unsigned long load;
-+
-+	rcu_read_lock();
-+	cur = ACCESS_ONCE(dst_rq->curr);
-+	if (cur->pid == 0) /* idle */
-+		cur = NULL;
-+
-+	if (cur) {
-+		imp += task_faults(cur, env->src_nid) -
-+		       task_faults(cur, env->dst_nid);
-+	}
-+
-+	if (imp < env->best_imp)
-+		goto unlock;
-+
-+	if (!cur) {
-+		/* If there's room for an extra task; go ahead */
-+		if (env->dst_stats.has_capacity)
-+			goto assign;
-+
-+		/* If we're both over-capacity; balance */
-+		if (!env->src_stats.has_capacity)
-+			goto balance;
-+
-+		goto unlock;
-+	}
-+
-+	/* Balance doesn't matter much if we're running a task per cpu */
-+	if (src_rq->nr_running == 1 && dst_rq->nr_running == 1)
-+		goto assign;
-+
-+	/*
-+	 * In the overloaded case, try and keep the load balanced.
-+	 */
-+balance:
-+	dst_load = env->dst_stats.load;
-+	src_load = env->src_stats.load;
-+
-+	/* XXX missing power terms */
-+	load = task_h_load(env->p);
-+	dst_load += load;
-+	src_load -= load;
-+
-+	if (cur) {
-+		load = task_h_load(cur);
-+		dst_load -= load;
-+		src_load += load;
-+	}
-+
-+	/* make src_load the smaller */
-+	if (dst_load < src_load)
-+		swap(dst_load, src_load);
- 
--	/* No harm being optimistic */
--	if (idle_cpu(node_cpu))
--		return node_cpu;
-+	if (src_load * env->imbalance_pct < dst_load * 100)
-+		goto unlock;
-+
-+assign:
-+	task_numa_assign(env, cur, imp);
-+unlock:
-+	rcu_read_unlock();
-+}
-+
-+static int task_numa_migrate(struct task_struct *p)
-+{
-+	struct task_numa_env env = {
-+		.p = p,
-+
-+		.src_cpu = task_cpu(p),
-+		.src_nid = cpu_to_node(task_cpu(p)),
-+
-+		.imbalance_pct = 112,
-+
-+		.best_task = NULL,
-+		.best_imp = 0,
-+		.best_cpu = -1
-+	};
-+	struct sched_domain *sd;
-+	unsigned long faults;
-+	int nid, cpu, ret;
- 
- 	/*
- 	 * Find the lowest common scheduling domain covering the nodes of both
- 	 * the CPU the task is currently running on and the target NUMA node.
- 	 */
- 	rcu_read_lock();
--	for_each_domain(src_cpu, sd) {
--		if (cpumask_test_cpu(node_cpu, sched_domain_span(sd))) {
--			/*
--			 * busy_idx is used for the load decision as it is the
--			 * same index used by the regular load balancer for an
--			 * active cpu.
--			 */
--			idx = sd->busy_idx;
--			imbalance_pct = sd->imbalance_pct;
-+	for_each_domain(env.src_cpu, sd) {
-+		if (cpumask_intersects(cpumask_of_node(env.src_nid), sched_domain_span(sd))) {
-+			env.imbalance_pct = 100 + (sd->imbalance_pct - 100) / 2;
- 			break;
- 		}
- 	}
- 	rcu_read_unlock();
- 
--	if (WARN_ON_ONCE(idx == -1))
--		return src_cpu;
-+	faults = task_faults(p, env.src_nid);
-+	update_numa_stats(&env.src_stats, env.src_nid);
- 
--	/*
--	 * XXX the below is mostly nicked from wake_affine(); we should
--	 * see about sharing a bit if at all possible; also it might want
--	 * some per entity weight love.
--	 */
--	weight = p->se.load.weight;
-+	for_each_online_node(nid) {
-+		long imp;
- 
--	src_load = source_load(src_cpu, idx);
--
--	src_eff_load = 100 + (imbalance_pct - 100) / 2;
--	src_eff_load *= power_of(src_cpu);
--	src_eff_load *= src_load + effective_load(tg, src_cpu, -weight, -weight);
--
--	for_each_cpu(cpu, cpumask_of_node(nid)) {
--		dst_load = target_load(cpu, idx);
--
--		/* If the CPU is idle, use it */
--		if (!dst_load)
--			return cpu;
--
--		/* Otherwise check the target CPU load */
--		dst_eff_load = 100;
--		dst_eff_load *= power_of(cpu);
--		dst_eff_load *= dst_load + effective_load(tg, cpu, weight, weight);
-+		if (nid == env.src_nid)
-+			continue;
- 
--		/*
--		 * Destination is considered balanced if the destination CPU is
--		 * less loaded than the source CPU. Unfortunately there is a
--		 * risk that a task running on a lightly loaded CPU will not
--		 * migrate to its preferred node due to load imbalances.
--		 */
--		balanced = (dst_eff_load <= src_eff_load);
--		if (!balanced)
-+		imp = task_faults(p, nid) - faults;
-+		if (imp < 0)
- 			continue;
- 
--		if (dst_load < min_load) {
--			min_load = dst_load;
--			dst_cpu = cpu;
-+		env.dst_nid = nid;
-+		update_numa_stats(&env.dst_stats, env.dst_nid);
-+		for_each_cpu(cpu, cpumask_of_node(nid)) {
-+			env.dst_cpu = cpu;
-+			task_numa_compare(&env, imp);
- 		}
- 	}
- 
--	return dst_cpu;
-+	if (env.best_cpu == -1)
-+		return -EAGAIN;
-+
-+	if (env.best_task == NULL)
-+		return migrate_task_to(p, env.best_cpu);
-+
-+	ret = migrate_swap(p, env.best_task);
-+	put_task_struct(env.best_task);
-+	return ret;
- }
- 
- /* Attempt to migrate a task to a CPU on the preferred node. */
-@@ -983,10 +1099,13 @@ static void numa_migrate_preferred(struc
- 	if (cpu_to_node(preferred_cpu) == p->numa_preferred_nid)
- 		return;
- 
--	/* Otherwise, try migrate to a CPU on the preferred node */
--	preferred_cpu = task_numa_find_cpu(p, p->numa_preferred_nid);
--	if (migrate_task_to(p, preferred_cpu) != 0)
--		p->numa_migrate_retry = jiffies + HZ*5;
-+	if (!sched_feat(NUMA_BALANCE))
-+		return;
-+
-+	task_numa_migrate(p);
-+
-+	/* Try again until we hit the preferred node */
-+	p->numa_migrate_retry = jiffies + HZ/10;
- }
- 
- static void task_numa_placement(struct task_struct *p)
-@@ -1003,7 +1122,7 @@ static void task_numa_placement(struct t
- 
- 	/* Find the node with the highest number of faults */
- 	for (nid = 0; nid < nr_node_ids; nid++) {
--		unsigned long faults;
-+		unsigned long faults = 0;
- 		int priv, i;
- 
- 		for (priv = 0; priv < 2; priv++) {
-@@ -1013,19 +1132,16 @@ static void task_numa_placement(struct t
- 			p->numa_faults[i] >>= 1;
- 			p->numa_faults[i] += p->numa_faults_buffer[i];
- 			p->numa_faults_buffer[i] = 0;
-+
-+			faults += p->numa_faults[i];
- 		}
- 
--		/* Find maximum private faults */
--		faults = p->numa_faults[task_faults_idx(nid, 1)];
- 		if (faults > max_faults) {
- 			max_faults = faults;
- 			max_nid = nid;
- 		}
- 	}
- 
--	if (!sched_feat(NUMA_BALANCE))
--		return;
--
- 	/* Preferred node as the node with the most faults */
- 	if (max_faults && max_nid != p->numa_preferred_nid) {
- 		int old_migrate_seq = p->numa_migrate_seq;
-@@ -3342,7 +3458,7 @@ static long effective_load(struct task_g
- {
- 	struct sched_entity *se = tg->se[cpu];
- 
--	if (!tg->parent)	/* the trivial, non-cgroup case */
-+	if (!tg->parent || !wl)	/* the trivial / non-cgroup case */
- 		return wl;
- 
- 	for_each_sched_entity(se) {
-@@ -4347,8 +4463,6 @@ static int move_one_task(struct lb_env *
- 	return 0;
- }
- 
--static unsigned long task_h_load(struct task_struct *p);
--
- static const unsigned int sched_nr_migrate_break = 32;
- 
- /*
