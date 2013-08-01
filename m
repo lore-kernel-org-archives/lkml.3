@@ -1,84 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758144Ab3HAXso (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 19:48:44 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:38638 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751627Ab3HAXsm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 19:48:42 -0400
-Message-ID: <1375400915.2034.91.camel@joe-AO722>
-Subject: Re: [PATCH] Staging: wlags49_h2: fixed 80 line character and white
- space issue in ap_h2.c Fixed various coding style warnings found by the
- checkpatch.pl tool
-From: Joe Perches <joe@perches.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Evan Ng <evan.sin.ng@gmail.com>, pe1dnn@amsat.org, johanmeiring@gmail.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Date: Thu, 01 Aug 2013 16:48:35 -0700
-In-Reply-To: <20130801222840.GA5444@kroah.com>
-References: <1375303465-3437-1-git-send-email-evan.sin.ng@gmail.com>
-	 <20130801215019.GA4427@kroah.com>
-	 <CAGkkOHezKfjYaGJHcbPPiE4EobOLMp=K62-NWhpbvp2QDhLOfA@mail.gmail.com>
-	 <20130801222840.GA5444@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1758175Ab3HAXtR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 19:49:17 -0400
+Received: from mail-gh0-f172.google.com ([209.85.160.172]:33941 "EHLO
+	mail-gh0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753892Ab3HAXp7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 19:45:59 -0400
+From: David Long <dave.long@linaro.org>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Rabin Vincent <rabin@rab.in>, "Jon Medhurst (Tixy)" <tixy@linaro.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 2/9] uprobes: allow ignoring of probe hits
+Date: Thu,  1 Aug 2013 19:45:46 -0400
+Message-Id: <1375400753-3454-3-git-send-email-dave.long@linaro.org>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1375400753-3454-1-git-send-email-dave.long@linaro.org>
+References: <1375400753-3454-1-git-send-email-dave.long@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-08-02 at 06:28 +0800, Greg KH wrote:
-> On Thu, Aug 01, 2013 at 03:08:21PM -0700, Evan Ng wrote:
-> > Thanks for the reply, 
-> > 
-> > Being this is my first patch that I have submitted, I want to clarify a few
-> > things:
-> > 
-> > My *corrected* subject should read something like this? 
-> > 
-> > "Subject: [PATCH] Staging: wlags49_h2: fixed 80 line character and white space
-> >                issue in ap_h2.c Fixed various coding style warnings found by
-> > the
-> >                checkpatch.pl tool
-> > \n
-> > LONGER DESCRIPTION GOES HERE"
-> 
-> No.
-> 
-> It should be:
-> 	Subject: [PATCH] Staging: wlags48_h2: ap_h2.c: fixed tab whitespace issue
-> 
-> 	This patch fixes the tab vs. spaces white space issues in this
-> 	file.
-> 
-> 	Signed-off-by: ....
+From: Rabin Vincent <rabin@rab.in>
 
-> > As for the doing "one thing at a time" would it be preferred if I fix the
-> > syntax of one function within a file a time?  Would that mean that for one
-> > simple .c file I could be making 15 or so commits to it?
-> 
-> How about fixing one specific warning at a time for the whole file?
-> Like tab issues, and then { issues, and then ' ' issues, and so on.  See
-> the archives of the mailing list for lots of examples of how to do this
-> properly.
+Allow arches to decided to ignore a probe hit.  ARM will use this to
+only call handlers if the conditions to execute a conditionally executed
+instruction are satisfied.
 
-Another possibility is to do all the individual line
-whitespace changes in a single patch like trailing spaces,
-spaces to tabs, pointer positioning, spaces after
-if/while/do/for, etc.
+Upleveled for v3.10-rc7.
 
-Make sure these changes don't add or delete lines.
+Signed-off-by: David A. Long <dave.long@linaro.org>
+---
+ include/linux/uprobes.h |  1 +
+ kernel/events/uprobes.c | 17 ++++++++++++-----
+ 2 files changed, 13 insertions(+), 5 deletions(-)
 
-Use "git diff -w" to make sure that are no other changes.
-
-Verify that the objects do not change before and after
-the change.
-
-That way you don't have to touch the same line multiple
-times with all the different types of whitespace changes.
-
-Submit that single patch then do other changes like
-80 column wrapping if that sort of change appeals to you.
-
+diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
+index 4e3b847..7a7c035 100644
+--- a/include/linux/uprobes.h
++++ b/include/linux/uprobes.h
+@@ -133,6 +133,7 @@ extern int  arch_uprobe_post_xol(struct arch_uprobe *aup, struct pt_regs *regs);
+ extern bool arch_uprobe_xol_was_trapped(struct task_struct *tsk);
+ extern int  arch_uprobe_exception_notify(struct notifier_block *self, unsigned long val, void *data);
+ extern void arch_uprobe_abort_xol(struct arch_uprobe *aup, struct pt_regs *regs);
++extern bool __weak arch_uprobe_ignore(struct arch_uprobe *aup, struct pt_regs *regs);
+ #else /* !CONFIG_UPROBES */
+ struct uprobes_state {
+ };
+diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+index f356974..2f3a4cb 100644
+--- a/kernel/events/uprobes.c
++++ b/kernel/events/uprobes.c
+@@ -1734,9 +1734,6 @@ static void handle_swbp(struct pt_regs *regs)
+ 		return;
+ 	}
+ 
+-	/* change it in advance for ->handler() and restart */
+-	instruction_pointer_set(regs, bp_vaddr);
+-
+ 	/*
+ 	 * TODO: move copy_insn/etc into _register and remove this hack.
+ 	 * After we hit the bp, _unregister + _register can install the
+@@ -1744,16 +1741,26 @@ static void handle_swbp(struct pt_regs *regs)
+ 	 */
+ 	smp_rmb(); /* pairs with wmb() in install_breakpoint() */
+ 	if (unlikely(!test_bit(UPROBE_COPY_INSN, &uprobe->flags)))
+-		goto out;
++		goto restart;
+ 
+ 	handler_chain(uprobe, regs);
++
++	if (arch_uprobe_ignore(&uprobe->arch, regs))
++		goto out;
++
+ 	if (can_skip_sstep(uprobe, regs))
+ 		goto out;
+ 
+ 	if (!pre_ssout(uprobe, regs, bp_vaddr))
+ 		return;
+ 
+-	/* can_skip_sstep() succeeded, or restart if can't singlestep */
++restart:
++	/*
++	 * cannot singlestep; cannot skip instruction;
++	 * re-execute the instruction.
++	 */
++	instruction_pointer_set(regs, bp_vaddr);
++
+ out:
+ 	put_uprobe(uprobe);
+ }
+-- 
+1.8.1.2
 
