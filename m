@@ -1,208 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756427Ab3HAVYL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 17:24:11 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48383 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752774Ab3HAVYI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 17:24:08 -0400
-Date: Thu, 1 Aug 2013 23:24:05 +0200
-From: Jan Kara <jack@suse.cz>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] jbd: use module parameters instead of debugfs for
- jbd_debug
-Message-ID: <20130801212405.GD31857@quack.suse.cz>
-References: <1375383668-8072-1-git-send-email-paul.gortmaker@windriver.com>
- <1375383668-8072-2-git-send-email-paul.gortmaker@windriver.com>
+	id S1757010Ab3HAVYe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 17:24:34 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:36916 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756692Ab3HAVYc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 17:24:32 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1375383668-8072-2-git-send-email-paul.gortmaker@windriver.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [173.13.129.225]
+In-Reply-To: <20130801.141016.1475274289112004539.davem@davemloft.net>
+References: <20130801205817.GJ23006@n2100.arm.linux.org.uk>
+	<1375391087.2034.82.camel@joe-AO722>
+	<20130801210618.GK23006@n2100.arm.linux.org.uk>
+	<20130801.141016.1475274289112004539.davem@davemloft.net>
+Date: Thu, 1 Aug 2013 14:24:32 -0700
+Message-ID: <CAOesGMhf-2KE1B8_4CGJADCG=ceDFRrDbhTnA56kXYPWoKTScg@mail.gmail.com>
+Subject: Re: [PATCH V2 3/3] ethernet: Convert mac address uses of 6 to ETH_ALEN
+From: Olof Johansson <olof@lixom.net>
+To: David Miller <davem@davemloft.net>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Joe Perches <joe@perches.com>, Sam Creasey <sammy@sammy.net>,
+        Grant Grundler <grundler@parisc-linux.org>,
+        ZongShun Wan <mcuos.com@gmail.com>,
+        Rajesh Borundia <rajesh.borundia@qlogic.com>,
+        Network Development <netdev@vger.kernel.org>,
+        Sony Chacko <sony.chacko@qlogic.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Manish Chopra <manish.chopra@qlogic.com>,
+        Don Fry <pcnet32@frontier.com>, Ron Mercer <ron.mercer@qlogic.com>,
+        Andrew Gallatin <gallatin@myri.com>, linux-driver@qlogic.com,
+        Jitendra Kalsaria <jitendra.kalsaria@qlogic.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Shahed Shaikh <shahed.shaikh@qlogic.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 01-08-13 15:01:05, Paul Gortmaker wrote:
-> This is a direct backport of commit b6e96d0067d81f6a300bedee
-> ("jbd2: use module parameters instead of debugfs for jbd_debug")
-> from jbd2 into jbd.  The value is in making ext4 and ext3 user
-> experiences consistent with each other.  Quoting the original:
-> 
->  --------------
->  There are multiple reasons to move away from debugfs.  First of all,
->  we are only using it for a single parameter, and it is much more
->  complicated to set up (some 30 lines of code compared to 3), and one
->  more thing that might fail while loading the jbd2 module.
-> 
->  Secondly, as a module paramter it can be specified as a boot option if
->  jbd2 is built into the kernel, or as a parameter when the module is
->  loaded, and it can also be manipulated dynamically under
->  /sys/module/jbd2/parameters/jbd2_debug.  So it is more flexible.
-> 
->  Ultimately we want to move away from using jbd_debug() towards
->  tracepoints, but for now this is still a useful simplification of the
->  code base.
->  --------------
-> 
-> It is worth noting that we use /sys/module/jbd/parameters/jbd1_debug
-> (i.e. the "1" might appear odd) for the module parameter in order to
-> avoid namespace collisions with the existing jbd_debug used as a
-> function call.
-> 
-> In addition, we combine the content of jbd2 commit 75497d0607b56e16e4
-> ("jbd2: remove debug dependency on debug_fs and update Kconfig help text")
-> since they were only separate commits unintentionally in jbd2.
-  Thanks for the patch but is jbd_debug really worth it - especially with
-the somewhat ugly jbd1_debug? I don't thing anybody besides kernel
-developers really uses it and those can figure how to do what they need...
+On Thu, Aug 1, 2013 at 2:10 PM, David Miller <davem@davemloft.net> wrote:
+> From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+> Date: Thu, 1 Aug 2013 22:06:18 +0100
+>
+>> On Thu, Aug 01, 2013 at 02:04:47PM -0700, Joe Perches wrote:
+>>> On Thu, 2013-08-01 at 21:58 +0100, Russell King - ARM Linux wrote:
+>>> > This seems rather obscure - I mean, it's not obvious to driver authors
+>>> > that should be the case.  Would it not be better to make this a little
+>>> > more obvious somehow?  Maybe __aligned(2) against mac_addr?  Or
+>>> > maybe have a debugging check for it?
+>>>
+>>> That'd be for David Miller (cc'd).
+>>>
+>>> I believe he's argued in the past that any alignment check
+>>> for mac addresses was unnecessary.
+>>>
+>>> For all I know it really might not matter because pasemi
+>>> can successfully dereference a ushort against an odd char
+>>> pointer.
+>>>
+>>> I just noticed it and thought it'd be better moved.
+>>
+>> As can ARM too for years now - either in hardware or via fixup for
+>> kernel code.
+>
+> But probably not a good idea if it's done in a fast path.
 
-								Honza
-> 
-> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-> ---
->  fs/jbd/Kconfig      |  6 +++---
->  fs/jbd/journal.c    | 49 ++++++++-----------------------------------------
->  include/linux/jbd.h |  3 +--
->  3 files changed, 12 insertions(+), 46 deletions(-)
-> 
-> diff --git a/fs/jbd/Kconfig b/fs/jbd/Kconfig
-> index 4e28bee..54cbb55 100644
-> --- a/fs/jbd/Kconfig
-> +++ b/fs/jbd/Kconfig
-> @@ -15,7 +15,7 @@ config JBD
->  
->  config JBD_DEBUG
->  	bool "JBD (ext3) debugging support"
-> -	depends on JBD && DEBUG_FS
-> +	depends on JBD
->  	help
->  	  If you are using the ext3 journaled file system (or potentially any
->  	  other file system/device using JBD), this option allows you to
-> @@ -24,7 +24,7 @@ config JBD_DEBUG
->  	  debugging output will be turned off.
->  
->  	  If you select Y here, then you will be able to turn on debugging
-> -	  with "echo N > /sys/kernel/debug/jbd/jbd-debug", where N is a
-> +	  with "echo N > /sys/module/jbd/parameters/jbd1_debug", where N is a
->  	  number between 1 and 5, the higher the number, the more debugging
->  	  output is generated.  To turn debugging off again, do
-> -	  "echo 0 > /sys/kernel/debug/jbd/jbd-debug".
-> +	  "echo 0 > /sys/module/jbd/parameters/jbd1_debug".
-> diff --git a/fs/jbd/journal.c b/fs/jbd/journal.c
-> index 6510d63..166263d 100644
-> --- a/fs/jbd/journal.c
-> +++ b/fs/jbd/journal.c
-> @@ -35,7 +35,6 @@
->  #include <linux/kthread.h>
->  #include <linux/poison.h>
->  #include <linux/proc_fs.h>
-> -#include <linux/debugfs.h>
->  #include <linux/ratelimit.h>
->  
->  #define CREATE_TRACE_POINTS
-> @@ -44,6 +43,14 @@
->  #include <asm/uaccess.h>
->  #include <asm/page.h>
->  
-> +#ifdef CONFIG_JBD_DEBUG
-> +ushort jbd_journal_enable_debug __read_mostly;
-> +EXPORT_SYMBOL(jbd_journal_enable_debug);
-> +
-> +module_param_named(jbd1_debug, jbd_journal_enable_debug, ushort, 0644);
-> +MODULE_PARM_DESC(jbd1_debug, "Debugging level for jbd");
-> +#endif
-> +
->  EXPORT_SYMBOL(journal_start);
->  EXPORT_SYMBOL(journal_restart);
->  EXPORT_SYMBOL(journal_extend);
-> @@ -2017,44 +2024,6 @@ void journal_put_journal_head(struct journal_head *jh)
->  		jbd_unlock_bh_journal_head(bh);
->  }
->  
-> -/*
-> - * debugfs tunables
-> - */
-> -#ifdef CONFIG_JBD_DEBUG
-> -
-> -u8 journal_enable_debug __read_mostly;
-> -EXPORT_SYMBOL(journal_enable_debug);
-> -
-> -static struct dentry *jbd_debugfs_dir;
-> -static struct dentry *jbd_debug;
-> -
-> -static void __init jbd_create_debugfs_entry(void)
-> -{
-> -	jbd_debugfs_dir = debugfs_create_dir("jbd", NULL);
-> -	if (jbd_debugfs_dir)
-> -		jbd_debug = debugfs_create_u8("jbd-debug", S_IRUGO | S_IWUSR,
-> -					       jbd_debugfs_dir,
-> -					       &journal_enable_debug);
-> -}
-> -
-> -static void __exit jbd_remove_debugfs_entry(void)
-> -{
-> -	debugfs_remove(jbd_debug);
-> -	debugfs_remove(jbd_debugfs_dir);
-> -}
-> -
-> -#else
-> -
-> -static inline void jbd_create_debugfs_entry(void)
-> -{
-> -}
-> -
-> -static inline void jbd_remove_debugfs_entry(void)
-> -{
-> -}
-> -
-> -#endif
-> -
->  struct kmem_cache *jbd_handle_cache;
->  
->  static int __init journal_init_handle_cache(void)
-> @@ -2109,7 +2078,6 @@ static int __init journal_init(void)
->  	ret = journal_init_caches();
->  	if (ret != 0)
->  		journal_destroy_caches();
-> -	jbd_create_debugfs_entry();
->  	return ret;
->  }
->  
-> @@ -2120,7 +2088,6 @@ static void __exit journal_exit(void)
->  	if (n)
->  		printk(KERN_EMERG "JBD: leaked %d journal_heads!\n", n);
->  #endif
-> -	jbd_remove_debugfs_entry();
->  	journal_destroy_caches();
->  }
->  
-> diff --git a/include/linux/jbd.h b/include/linux/jbd.h
-> index 8685d1b..e45b430 100644
-> --- a/include/linux/jbd.h
-> +++ b/include/linux/jbd.h
-> @@ -20,7 +20,6 @@
->  #ifndef __KERNEL__
->  #include "jfs_compat.h"
->  #define JFS_DEBUG
-> -#define jfs_debug jbd_debug
->  #else
->  
->  #include <linux/types.h>
-> @@ -55,7 +54,7 @@
->   * CONFIG_JBD_DEBUG is on.
->   */
->  #define JBD_EXPENSIVE_CHECKING
-> -extern u8 journal_enable_debug;
-> +extern ushort journal_enable_debug;
->  
->  #define jbd_debug(n, f, a...)						\
->  	do {								\
-> -- 
-> 1.8.1.2
-> 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+This particular driver is for the PA Semi chips, and I very much doubt
+that compatible hardware will ever show up anywhere else; they're
+fairly dependent on the I/O architecture of the chip and Apple has not
+brought those aspects forward in their ARM chips, as far as I know.
+
+So, you might as well leave the code alone for now. It's not used on
+fast path, and the system definitely handles unaligned accesses for
+this -- it has for years already.
+
+
+-Olof
