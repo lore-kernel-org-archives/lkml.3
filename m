@@ -1,81 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757189Ab3HAQIH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 12:08:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51451 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756125Ab3HAQIF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 12:08:05 -0400
-Date: Thu, 1 Aug 2013 19:09:28 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: "David S. Miller" <davem@davemloft.net>,
-        John Fastabend <john.r.fastabend@intel.com>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org
-Subject: [PATCH v2] macvlan: validate flags
-Message-ID: <1375373227-17986-1-git-send-email-mst@redhat.com>
+	id S1757217Ab3HAQM7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 12:12:59 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:60507 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755679Ab3HAQM6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 12:12:58 -0400
+Date: Thu, 1 Aug 2013 09:12:55 -0700
+From: David Brown <davidb@codeaurora.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: arm@kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 08/18] ARM: msm: Switch to sched_clock_register()
+Message-ID: <20130801161255.GA17642@codeaurora.org>
+References: <1375309877-16617-1-git-send-email-sboyd@codeaurora.org>
+ <1375309877-16617-9-git-send-email-sboyd@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=us-ascii; format=flowed
 Content-Disposition: inline
-X-Mutt-Fcc: =sent
+In-Reply-To: <1375309877-16617-9-git-send-email-sboyd@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit df8ef8f3aaa6692970a436204c4429210addb23a
-    macvlan: add FDB bridge ops and macvlan flags
-added a flags field to macvlan, which can be
-controlled from userspace.
-The idea is to make the interface future-proof
-so we can add flags and not new fields.
+On Wed, Jul 31, 2013 at 03:31:07PM -0700, Stephen Boyd wrote:
+>The 32 bit sched_clock interface now supports 64 bits. Upgrade to
+>the 64 bit function to allow us to remove the 32 bit registration
+>interface.
+>
+>Cc: David Brown <davidb@codeaurora.org>
+>Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+>---
+> arch/arm/mach-msm/timer.c | 4 ++--
+> 1 file changed, 2 insertions(+), 2 deletions(-)
 
-However, flags value isn't validated, as a result,
-userspace can't detect which flags are supported.
+Acked-by: David Brown <davidb@codeaurora.org>
 
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: John Fastabend <john.r.fastabend@intel.com>
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
-
-Changes from v1:
-	tweaked commit message
-	no code changes
-
-Please consider this patch for -stable.
-
-The idea is by the time we add more flags,
-everyone has updated to a kernel that
-detects errors, so userspace will be able
-to detect supported flags cleanly.
-
-
- drivers/net/macvlan.c | 7 +++++++
- 1 file changed, 7 insertions(+)
-
-diff --git a/drivers/net/macvlan.c b/drivers/net/macvlan.c
-index 18373b6..8445a94 100644
---- a/drivers/net/macvlan.c
-+++ b/drivers/net/macvlan.c
-@@ -736,6 +736,10 @@ static int macvlan_validate(struct nlattr *tb[], struct nlattr *data[])
- 			return -EADDRNOTAVAIL;
- 	}
- 
-+	if (data && data[IFLA_MACVLAN_FLAGS] &&
-+	    nla_get_u16(data[IFLA_MACVLAN_FLAGS]) & ~MACVLAN_FLAG_NOPROMISC)
-+		return -EINVAL;
-+
- 	if (data && data[IFLA_MACVLAN_MODE]) {
- 		switch (nla_get_u32(data[IFLA_MACVLAN_MODE])) {
- 		case MACVLAN_MODE_PRIVATE:
-@@ -809,6 +813,9 @@ int macvlan_common_newlink(struct net *src_net, struct net_device *dev,
- 	if (data && data[IFLA_MACVLAN_FLAGS])
- 		vlan->flags = nla_get_u16(data[IFLA_MACVLAN_FLAGS]);
- 
-+	if (vlan->flags & ~MACVLAN_FLAG_NOPROMISC)
-+		return -EINVAL;
-+
- 	if (vlan->mode == MACVLAN_MODE_PASSTHRU) {
- 		if (port->count)
- 			return -EINVAL;
 -- 
-MST
+sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
