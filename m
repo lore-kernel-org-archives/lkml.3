@@ -1,60 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756195Ab3HAVGw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 17:06:52 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39683 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753109Ab3HAVGu (ORCPT
+	id S1757156Ab3HAVJN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 17:09:13 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:33677 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753905Ab3HAVJL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 17:06:50 -0400
-Date: Thu, 1 Aug 2013 22:06:18 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Joe Perches <joe@perches.com>
-Cc: David Miller <davem@davemloft.net>, Olof Johansson <olof@lixom.net>,
-        Sam Creasey <sammy@sammy.net>,
-        Grant Grundler <grundler@parisc-linux.org>,
-        Wan ZongShun <mcuos.com@gmail.com>,
-        Rajesh Borundia <rajesh.borundia@qlogic.com>,
-        Network Development <netdev@vger.kernel.org>,
-        Sony Chacko <sony.chacko@qlogic.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Manish Chopra <manish.chopra@qlogic.com>,
-        Don Fry <pcnet32@frontier.com>, Ron Mercer <ron.mercer@qlogic.com>,
-        Andrew Gallatin <gallatin@myri.com>, linux-driver@qlogic.com,
-        Jitendra Kalsaria <jitendra.kalsaria@qlogic.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Shahed Shaikh <shahed.shaikh@qlogic.com>
-Subject: Re: [PATCH V2 3/3] ethernet: Convert mac address uses of 6 to
-	ETH_ALEN
-Message-ID: <20130801210618.GK23006@n2100.arm.linux.org.uk>
-References: <cover.1375387593.git.joe@perches.com> <4170130535e4ea14c66f8510042577be21941f4d.1375387593.git.joe@perches.com> <CAOesGMhmxJTDjcPeD4b1FvRsbP8df369F01SQBK6dk4nXmRGjA@mail.gmail.com> <20130801203343.GG23006@n2100.arm.linux.org.uk> <1375390528.2034.77.camel@joe-AO722> <20130801205817.GJ23006@n2100.arm.linux.org.uk> <1375391087.2034.82.camel@joe-AO722>
+	Thu, 1 Aug 2013 17:09:11 -0400
+Message-ID: <51FACE74.3070909@wwwdotorg.org>
+Date: Thu, 01 Aug 2013 15:09:08 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1375391087.2034.82.camel@joe-AO722>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+CC: balbi@ti.com, linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org, gregkh@linuxfoundation.org,
+        stern@rowland.harvard.edu
+Subject: Re: [PATCH 2/6] usb: phy: tegra: Fix wrong PHY parameters
+References: <1375292522-7855-1-git-send-email-ttynkkynen@nvidia.com> <1375292522-7855-3-git-send-email-ttynkkynen@nvidia.com>
+In-Reply-To: <1375292522-7855-3-git-send-email-ttynkkynen@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 01, 2013 at 02:04:47PM -0700, Joe Perches wrote:
-> On Thu, 2013-08-01 at 21:58 +0100, Russell King - ARM Linux wrote:
-> > This seems rather obscure - I mean, it's not obvious to driver authors
-> > that should be the case.  Would it not be better to make this a little
-> > more obvious somehow?  Maybe __aligned(2) against mac_addr?  Or
-> > maybe have a debugging check for it?
+On 07/31/2013 11:41 AM, Tuomas Tynkkynen wrote:
+> Some of the PHY parameters are not set according to the TRMs:
 > 
-> That'd be for David Miller (cc'd).
-> 
-> I believe he's argued in the past that any alignment check
-> for mac addresses was unnecessary.
-> 
-> For all I know it really might not matter because pasemi
-> can successfully dereference a ushort against an odd char
-> pointer.
-> 
-> I just noticed it and thought it'd be better moved.
+> - UTMIP_FS_PREABMLE_J should be set, not cleared
+> - UTMIP_XCVR_LSBIAS_SEL should be cleared, not set
+> - UTMIP_PD_CHRG should be set in host mode and cleared in device mode
+> - UTMIP_XCVR_SETUP is a two-part field; the upper bits were not set
 
-As can ARM too for years now - either in hardware or via fixup for
-kernel code.
+> diff --git a/drivers/usb/phy/phy-tegra-usb.c b/drivers/usb/phy/phy-tegra-usb.c
+
+>  #define   UTMIP_XCVR_SETUP(x)			(((x) & 0xf) << 0)
+> +#define   UTMIP_XCVR_SETUP_MSB(x)		((((x) & 0x7f) >> 4) << 22)
+
+You may as well s/0x7f/0x70/ since the shift clears the 4 LSBs. I'm
+pretty sure I mentioned this in downstream review. Perhaps check my
+review comments to see if anything else was missed?
