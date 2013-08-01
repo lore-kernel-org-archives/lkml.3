@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754351Ab3HAEq0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 00:46:26 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:51427 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753698Ab3HAEpf (ORCPT
+	id S1753559Ab3HAEpW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 00:45:22 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:39679 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753383Ab3HAEpR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 00:45:35 -0400
+	Thu, 1 Aug 2013 00:45:17 -0400
 From: Alexey Kardashevskiy <aik@ozlabs.ru>
 To: linuxppc-dev@lists.ozlabs.org
 Cc: Alexey Kardashevskiy <aik@ozlabs.ru>,
@@ -14,9 +14,9 @@ Cc: Alexey Kardashevskiy <aik@ozlabs.ru>,
         Paul Mackerras <paulus@samba.org>, Alexander Graf <agraf@suse.de>,
         kvm@vger.kernel.org, linux-doc@vger.kernel.org,
         linux-kernel@vger.kernel.org, kvm-ppc@vger.kernel.org
-Subject: [PATCH 08/10] powerpc/iommu: rework to support realmode
-Date: Thu,  1 Aug 2013 14:44:30 +1000
-Message-Id: <1375332272-22176-9-git-send-email-aik@ozlabs.ru>
+Subject: [PATCH 05/10] powerpc: add real mode support for dma operations on powernv
+Date: Thu,  1 Aug 2013 14:44:27 +1000
+Message-Id: <1375332272-22176-6-git-send-email-aik@ozlabs.ru>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1375332272-22176-1-git-send-email-aik@ozlabs.ru>
 References: <1375332272-22176-1-git-send-email-aik@ozlabs.ru>
@@ -24,341 +24,272 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The TCE tables handling may differ for real and virtual modes so
-additional ppc_md.tce_build_rm/ppc_md.tce_free_rm/ppc_md.tce_flush_rm
-handlers were introduced earlier.
+The existing TCE machine calls (tce_build and tce_free) only support
+virtual mode as they call __raw_writeq for TCE invalidation what
+fails in real mode.
 
-So this adds the following:
-1. support for the new ppc_md calls;
-2. ability to iommu_tce_build to process mupltiple entries per
-call;
-3. arch_spin_lock to protect TCE table from races in both real and virtual
-modes;
-4. proper TCE table protection from races with the existing IOMMU code
-in iommu_take_ownership/iommu_release_ownership;
-5. hwaddr variable renamed to hpa as it better describes what it
-actually represents;
-6. iommu_tce_direction is static now as it is not called from anywhere else.
+This introduces tce_build_rm and tce_free_rm real mode versions
+which do mostly the same but use "Store Doubleword Caching Inhibited
+Indexed" instruction for TCE invalidation.
 
-This will be used by upcoming real mode support of VFIO on POWER.
+This new feature is going to be utilized by real mode support of VFIO.
 
 Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
 ---
- arch/powerpc/include/asm/iommu.h |   9 +-
- arch/powerpc/kernel/iommu.c      | 198 ++++++++++++++++++++++++++-------------
- 2 files changed, 136 insertions(+), 71 deletions(-)
+Changes:
+2013/11/07:
+* added comment why stdcix cannot be used in virtual mode
 
-diff --git a/arch/powerpc/include/asm/iommu.h b/arch/powerpc/include/asm/iommu.h
-index c34656a..b01bde1 100644
---- a/arch/powerpc/include/asm/iommu.h
-+++ b/arch/powerpc/include/asm/iommu.h
-@@ -78,6 +78,7 @@ struct iommu_table {
- 	unsigned long *it_map;       /* A simple allocation bitmap for now */
- #ifdef CONFIG_IOMMU_API
- 	struct iommu_group *it_group;
-+	arch_spinlock_t it_rm_lock;
- #endif
- };
+2013/08/07:
+* tested on p7ioc and fixed a bug with realmode addresses
+
+Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+---
+ arch/powerpc/include/asm/machdep.h        | 12 ++++++++
+ arch/powerpc/platforms/powernv/pci-ioda.c | 47 +++++++++++++++++++++++--------
+ arch/powerpc/platforms/powernv/pci.c      | 38 +++++++++++++++++++++----
+ arch/powerpc/platforms/powernv/pci.h      |  3 +-
+ 4 files changed, 81 insertions(+), 19 deletions(-)
+
+diff --git a/arch/powerpc/include/asm/machdep.h b/arch/powerpc/include/asm/machdep.h
+index 8b48090..07dd3b1 100644
+--- a/arch/powerpc/include/asm/machdep.h
++++ b/arch/powerpc/include/asm/machdep.h
+@@ -78,6 +78,18 @@ struct machdep_calls {
+ 				    long index);
+ 	void		(*tce_flush)(struct iommu_table *tbl);
  
-@@ -152,9 +153,9 @@ extern int iommu_tce_clear_param_check(struct iommu_table *tbl,
- extern int iommu_tce_put_param_check(struct iommu_table *tbl,
- 		unsigned long ioba, unsigned long tce);
- extern int iommu_tce_build(struct iommu_table *tbl, unsigned long entry,
--		unsigned long hwaddr, enum dma_data_direction direction);
--extern unsigned long iommu_clear_tce(struct iommu_table *tbl,
--		unsigned long entry);
-+		unsigned long *hpas, unsigned long npages, bool rm);
-+extern int iommu_free_tces(struct iommu_table *tbl, unsigned long entry,
-+		unsigned long npages, bool rm);
- extern int iommu_clear_tces_and_put_pages(struct iommu_table *tbl,
- 		unsigned long entry, unsigned long pages);
- extern int iommu_put_tce_user_mode(struct iommu_table *tbl,
-@@ -164,7 +165,5 @@ extern void iommu_flush_tce(struct iommu_table *tbl);
- extern int iommu_take_ownership(struct iommu_table *tbl);
- extern void iommu_release_ownership(struct iommu_table *tbl);
++	/* _rm versions are for real mode use only */
++	int		(*tce_build_rm)(struct iommu_table *tbl,
++				     long index,
++				     long npages,
++				     unsigned long uaddr,
++				     enum dma_data_direction direction,
++				     struct dma_attrs *attrs);
++	void		(*tce_free_rm)(struct iommu_table *tbl,
++				    long index,
++				    long npages);
++	void		(*tce_flush_rm)(struct iommu_table *tbl);
++
+ 	void __iomem *	(*ioremap)(phys_addr_t addr, unsigned long size,
+ 				   unsigned long flags, void *caller);
+ 	void		(*iounmap)(volatile void __iomem *token);
+diff --git a/arch/powerpc/platforms/powernv/pci-ioda.c b/arch/powerpc/platforms/powernv/pci-ioda.c
+index d8140b1..5815f1d 100644
+--- a/arch/powerpc/platforms/powernv/pci-ioda.c
++++ b/arch/powerpc/platforms/powernv/pci-ioda.c
+@@ -70,6 +70,16 @@ define_pe_printk_level(pe_err, KERN_ERR);
+ define_pe_printk_level(pe_warn, KERN_WARNING);
+ define_pe_printk_level(pe_info, KERN_INFO);
  
--extern enum dma_data_direction iommu_tce_direction(unsigned long tce);
--
- #endif /* __KERNEL__ */
- #endif /* _ASM_IOMMU_H */
-diff --git a/arch/powerpc/kernel/iommu.c b/arch/powerpc/kernel/iommu.c
-index b20ff17..8314c80 100644
---- a/arch/powerpc/kernel/iommu.c
-+++ b/arch/powerpc/kernel/iommu.c
-@@ -903,7 +903,7 @@ void iommu_register_group(struct iommu_table *tbl,
- 	kfree(name);
- }
- 
--enum dma_data_direction iommu_tce_direction(unsigned long tce)
-+static enum dma_data_direction iommu_tce_direction(unsigned long tce)
- {
- 	if ((tce & TCE_PCI_READ) && (tce & TCE_PCI_WRITE))
- 		return DMA_BIDIRECTIONAL;
-@@ -914,7 +914,6 @@ enum dma_data_direction iommu_tce_direction(unsigned long tce)
- 	else
- 		return DMA_NONE;
- }
--EXPORT_SYMBOL_GPL(iommu_tce_direction);
- 
- void iommu_flush_tce(struct iommu_table *tbl)
- {
-@@ -972,73 +971,117 @@ int iommu_tce_put_param_check(struct iommu_table *tbl,
- }
- EXPORT_SYMBOL_GPL(iommu_tce_put_param_check);
- 
--unsigned long iommu_clear_tce(struct iommu_table *tbl, unsigned long entry)
--{
--	unsigned long oldtce;
--	struct iommu_pool *pool = get_pool(tbl, entry);
--
--	spin_lock(&(pool->lock));
--
--	oldtce = ppc_md.tce_get(tbl, entry);
--	if (oldtce & (TCE_PCI_WRITE | TCE_PCI_READ))
--		ppc_md.tce_free(tbl, entry, 1);
--	else
--		oldtce = 0;
--
--	spin_unlock(&(pool->lock));
--
--	return oldtce;
--}
--EXPORT_SYMBOL_GPL(iommu_clear_tce);
--
- int iommu_clear_tces_and_put_pages(struct iommu_table *tbl,
- 		unsigned long entry, unsigned long pages)
- {
--	unsigned long oldtce;
--	struct page *page;
--
--	for ( ; pages; --pages, ++entry) {
--		oldtce = iommu_clear_tce(tbl, entry);
--		if (!oldtce)
--			continue;
--
--		page = pfn_to_page(oldtce >> PAGE_SHIFT);
--		WARN_ON(!page);
--		if (page) {
--			if (oldtce & TCE_PCI_WRITE)
--				SetPageDirty(page);
--			put_page(page);
--		}
--	}
--
--	return 0;
-+	return iommu_free_tces(tbl, entry, pages, false);
- }
- EXPORT_SYMBOL_GPL(iommu_clear_tces_and_put_pages);
- 
--/*
-- * hwaddr is a kernel virtual address here (0xc... bazillion),
-- * tce_build converts it to a physical address.
-- */
-+int iommu_free_tces(struct iommu_table *tbl, unsigned long entry,
-+		unsigned long npages, bool rm)
++/*
++ * stdcix is only supposed to be used in hypervisor real mode as per
++ * the architecture spec
++ */
++static inline void __raw_rm_writeq(u64 val, volatile void __iomem *paddr)
 +{
-+	int i, ret = 0, to_free = 0;
-+
-+	if (rm && !ppc_md.tce_free_rm)
-+		return -EAGAIN;
-+
-+	arch_spin_lock(&tbl->it_rm_lock);
-+
-+	for (i = 0; i < npages; ++i) {
-+		unsigned long oldtce = ppc_md.tce_get(tbl, entry + i);
-+		if (!(oldtce & (TCE_PCI_WRITE | TCE_PCI_READ)))
-+			continue;
-+
-+		if (rm) {
-+			struct page *pg = realmode_pfn_to_page(
-+					oldtce >> PAGE_SHIFT);
-+			if (!pg) {
-+				ret = -EAGAIN;
-+			} else if (PageCompound(pg)) {
-+				ret = -EAGAIN;
-+			} else {
-+				if (oldtce & TCE_PCI_WRITE)
-+					SetPageDirty(pg);
-+				if (!put_page_unless_one(pg))
-+					ret = -EAGAIN;
-+			}
-+		} else {
-+			struct page *pg = pfn_to_page(oldtce >> PAGE_SHIFT);
-+			if (!pg) {
-+				ret = -EAGAIN;
-+			} else {
-+				if (oldtce & TCE_PCI_WRITE)
-+					SetPageDirty(pg);
-+				put_page(pg);
-+			}
-+		}
-+		if (ret)
-+			break;
-+		to_free = i + 1;
-+	}
-+
-+	if (to_free) {
-+		if (rm)
-+			ppc_md.tce_free_rm(tbl, entry, to_free);
-+		else
-+			ppc_md.tce_free(tbl, entry, to_free);
-+
-+		if (rm && ppc_md.tce_flush_rm)
-+			ppc_md.tce_flush_rm(tbl);
-+		else if (!rm && ppc_md.tce_flush)
-+			ppc_md.tce_flush(tbl);
-+	}
-+	arch_spin_unlock(&tbl->it_rm_lock);
-+
-+	/* Make sure updates are seen by hardware */
-+	mb();
-+
-+	return ret;
++	__asm__ __volatile__("stdcix %0,0,%1"
++		: : "r" (val), "r" (paddr) : "memory");
 +}
-+EXPORT_SYMBOL_GPL(iommu_free_tces);
 +
- int iommu_tce_build(struct iommu_table *tbl, unsigned long entry,
--		unsigned long hwaddr, enum dma_data_direction direction)
-+		unsigned long *hpas, unsigned long npages, bool rm)
+ static int pnv_ioda_alloc_pe(struct pnv_phb *phb)
  {
--	int ret = -EBUSY;
--	unsigned long oldtce;
--	struct iommu_pool *pool = get_pool(tbl, entry);
-+	int i, ret = 0;
- 
--	spin_lock(&(pool->lock));
-+	if (rm && !ppc_md.tce_build_rm)
-+		return -EAGAIN;
- 
--	oldtce = ppc_md.tce_get(tbl, entry);
--	/* Add new entry if it is not busy */
--	if (!(oldtce & (TCE_PCI_WRITE | TCE_PCI_READ)))
--		ret = ppc_md.tce_build(tbl, entry, 1, hwaddr, direction, NULL);
-+	arch_spin_lock(&tbl->it_rm_lock);
- 
--	spin_unlock(&(pool->lock));
-+	for (i = 0; i < npages; ++i) {
-+		if (ppc_md.tce_get(tbl, entry + i) &
-+				(TCE_PCI_WRITE | TCE_PCI_READ)) {
-+			arch_spin_unlock(&tbl->it_rm_lock);
-+			return -EBUSY;
-+		}
-+	}
- 
--	/* if (unlikely(ret))
--		pr_err("iommu_tce: %s failed on hwaddr=%lx ioba=%lx kva=%lx ret=%d\n",
--				__func__, hwaddr, entry << IOMMU_PAGE_SHIFT,
--				hwaddr, ret); */
-+	for (i = 0; i < npages; ++i) {
-+		unsigned long volatile hva = (unsigned long) __va(hpas[i]);
-+		enum dma_data_direction dir = iommu_tce_direction(hva);
-+
-+		if (rm)
-+			ret = ppc_md.tce_build_rm(tbl, entry + i, 1,
-+					hva, dir, NULL);
-+		else
-+			ret = ppc_md.tce_build(tbl, entry + i, 1,
-+					hva, dir, NULL);
-+		if (ret)
-+			break;
-+	}
-+
-+	if (rm && ppc_md.tce_flush_rm)
-+		ppc_md.tce_flush_rm(tbl);
-+	else if (!rm && ppc_md.tce_flush)
-+		ppc_md.tce_flush(tbl);
-+
-+	arch_spin_unlock(&tbl->it_rm_lock);
-+
-+	/* Make sure updates are seen by hardware */
-+	mb();
- 
- 	return ret;
+ 	unsigned long pe;
+@@ -454,10 +464,13 @@ static void pnv_ioda_setup_bus_dma(struct pnv_ioda_pe *pe, struct pci_bus *bus)
+ 	}
  }
-@@ -1049,7 +1092,7 @@ int iommu_put_tce_user_mode(struct iommu_table *tbl, unsigned long entry,
+ 
+-static void pnv_pci_ioda1_tce_invalidate(struct iommu_table *tbl,
+-					 u64 *startp, u64 *endp)
++static void pnv_pci_ioda1_tce_invalidate(struct pnv_ioda_pe *pe,
++					 struct iommu_table *tbl,
++					 u64 *startp, u64 *endp, bool rm)
  {
- 	int ret;
- 	struct page *page = NULL;
--	unsigned long hwaddr, offset = tce & IOMMU_PAGE_MASK & ~PAGE_MASK;
-+	unsigned long hpa, offset = tce & IOMMU_PAGE_MASK & ~PAGE_MASK;
- 	enum dma_data_direction direction = iommu_tce_direction(tce);
+-	u64 __iomem *invalidate = (u64 __iomem *)tbl->it_index;
++	u64 __iomem *invalidate = rm?
++		(u64 __iomem *)pe->tce_inval_reg_phys:
++		(u64 __iomem *)tbl->it_index;
+ 	unsigned long start, end, inc;
  
- 	ret = get_user_pages_fast(tce & PAGE_MASK, 1,
-@@ -1059,9 +1102,9 @@ int iommu_put_tce_user_mode(struct iommu_table *tbl, unsigned long entry,
- 				tce, entry << IOMMU_PAGE_SHIFT, ret); */
- 		return -EFAULT;
- 	}
--	hwaddr = (unsigned long) page_address(page) + offset;
-+	hpa = __pa((unsigned long) page_address(page)) + offset;
+ 	start = __pa(startp);
+@@ -484,7 +497,10 @@ static void pnv_pci_ioda1_tce_invalidate(struct iommu_table *tbl,
  
--	ret = iommu_tce_build(tbl, entry, hwaddr, direction);
-+	ret = iommu_tce_build(tbl, entry, &hpa, 1, false);
- 	if (ret)
- 		put_page(page);
+         mb(); /* Ensure above stores are visible */
+         while (start <= end) {
+-                __raw_writeq(start, invalidate);
++		if (rm)
++			__raw_rm_writeq(start, invalidate);
++		else
++			__raw_writeq(start, invalidate);
+                 start += inc;
+         }
  
-@@ -1075,18 +1118,32 @@ EXPORT_SYMBOL_GPL(iommu_put_tce_user_mode);
+@@ -496,10 +512,12 @@ static void pnv_pci_ioda1_tce_invalidate(struct iommu_table *tbl,
  
- int iommu_take_ownership(struct iommu_table *tbl)
+ static void pnv_pci_ioda2_tce_invalidate(struct pnv_ioda_pe *pe,
+ 					 struct iommu_table *tbl,
+-					 u64 *startp, u64 *endp)
++					 u64 *startp, u64 *endp, bool rm)
  {
--	unsigned long sz = (tbl->it_size + 7) >> 3;
-+	unsigned long flags, i, sz = (tbl->it_size + 7) >> 3;
-+	int ret = 0;
-+
-+	spin_lock_irqsave(&tbl->large_pool.lock, flags);
-+	for (i = 0; i < tbl->nr_pools; i++)
-+		spin_lock(&tbl->pools[i].lock);
+ 	unsigned long start, end, inc;
+-	u64 __iomem *invalidate = (u64 __iomem *)tbl->it_index;
++	u64 __iomem *invalidate = rm?
++		(u64 __iomem *)pe->tce_inval_reg_phys:
++		(u64 __iomem *)tbl->it_index;
  
- 	if (tbl->it_offset == 0)
- 		clear_bit(0, tbl->it_map);
+ 	/* We'll invalidate DMA address in PE scope */
+ 	start = 0x2ul << 60;
+@@ -515,22 +533,25 @@ static void pnv_pci_ioda2_tce_invalidate(struct pnv_ioda_pe *pe,
+ 	mb();
  
- 	if (!bitmap_empty(tbl->it_map, tbl->it_size)) {
- 		pr_err("iommu_tce: it_map is not empty");
--		return -EBUSY;
-+		ret = -EBUSY;
-+		if (tbl->it_offset == 0)
-+			clear_bit(1, tbl->it_map);
-+
-+	} else {
-+		memset(tbl->it_map, 0xff, sz);
+ 	while (start <= end) {
+-		__raw_writeq(start, invalidate);
++		if (rm)
++			__raw_rm_writeq(start, invalidate);
++		else
++			__raw_writeq(start, invalidate);
+ 		start += inc;
  	}
+ }
  
--	memset(tbl->it_map, 0xff, sz);
--	iommu_clear_tces_and_put_pages(tbl, tbl->it_offset, tbl->it_size);
-+	for (i = 0; i < tbl->nr_pools; i++)
-+		spin_unlock(&tbl->pools[i].lock);
-+	spin_unlock_irqrestore(&tbl->large_pool.lock, flags);
-+
-+	if (!ret)
-+		iommu_free_tces(tbl, tbl->it_offset, tbl->it_size, false);
+ void pnv_pci_ioda_tce_invalidate(struct iommu_table *tbl,
+-				 u64 *startp, u64 *endp)
++				 u64 *startp, u64 *endp, bool rm)
+ {
+ 	struct pnv_ioda_pe *pe = container_of(tbl, struct pnv_ioda_pe,
+ 					      tce32_table);
+ 	struct pnv_phb *phb = pe->phb;
+ 
+ 	if (phb->type == PNV_PHB_IODA1)
+-		pnv_pci_ioda1_tce_invalidate(tbl, startp, endp);
++		pnv_pci_ioda1_tce_invalidate(pe, tbl, startp, endp, rm);
+ 	else
+-		pnv_pci_ioda2_tce_invalidate(pe, tbl, startp, endp);
++		pnv_pci_ioda2_tce_invalidate(pe, tbl, startp, endp, rm);
+ }
+ 
+ static void pnv_pci_ioda_setup_dma_pe(struct pnv_phb *phb,
+@@ -603,7 +624,8 @@ static void pnv_pci_ioda_setup_dma_pe(struct pnv_phb *phb,
+ 		 * bus number, print that out instead.
+ 		 */
+ 		tbl->it_busno = 0;
+-		tbl->it_index = (unsigned long)ioremap(be64_to_cpup(swinvp), 8);
++		pe->tce_inval_reg_phys = be64_to_cpup(swinvp);
++		tbl->it_index = (unsigned long)ioremap(pe->tce_inval_reg_phys, 8);
+ 		tbl->it_type = TCE_PCI_SWINV_CREATE | TCE_PCI_SWINV_FREE |
+ 			       TCE_PCI_SWINV_PAIR;
+ 	}
+@@ -681,7 +703,8 @@ static void pnv_pci_ioda2_setup_dma_pe(struct pnv_phb *phb,
+ 		 * bus number, print that out instead.
+ 		 */
+ 		tbl->it_busno = 0;
+-		tbl->it_index = (unsigned long)ioremap(be64_to_cpup(swinvp), 8);
++		pe->tce_inval_reg_phys = be64_to_cpup(swinvp);
++		tbl->it_index = (unsigned long)ioremap(pe->tce_inval_reg_phys, 8);
+ 		tbl->it_type = TCE_PCI_SWINV_CREATE | TCE_PCI_SWINV_FREE;
+ 	}
+ 	iommu_init_table(tbl, phb->hose->node);
+diff --git a/arch/powerpc/platforms/powernv/pci.c b/arch/powerpc/platforms/powernv/pci.c
+index a28d3b5..2b58549 100644
+--- a/arch/powerpc/platforms/powernv/pci.c
++++ b/arch/powerpc/platforms/powernv/pci.c
+@@ -401,7 +401,7 @@ struct pci_ops pnv_pci_ops = {
+ 
+ static int pnv_tce_build(struct iommu_table *tbl, long index, long npages,
+ 			 unsigned long uaddr, enum dma_data_direction direction,
+-			 struct dma_attrs *attrs)
++			 struct dma_attrs *attrs, bool rm)
+ {
+ 	u64 proto_tce;
+ 	u64 *tcep, *tces;
+@@ -423,12 +423,19 @@ static int pnv_tce_build(struct iommu_table *tbl, long index, long npages,
+ 	 * of flags if that becomes the case
+ 	 */
+ 	if (tbl->it_type & TCE_PCI_SWINV_CREATE)
+-		pnv_pci_ioda_tce_invalidate(tbl, tces, tcep - 1);
++		pnv_pci_ioda_tce_invalidate(tbl, tces, tcep - 1, rm);
  
  	return 0;
  }
-@@ -1094,14 +1151,23 @@ EXPORT_SYMBOL_GPL(iommu_take_ownership);
  
- void iommu_release_ownership(struct iommu_table *tbl)
+-static void pnv_tce_free(struct iommu_table *tbl, long index, long npages)
++static int pnv_tce_build_vm(struct iommu_table *tbl, long index, long npages,
++			    unsigned long uaddr, enum dma_data_direction direction,
++			    struct dma_attrs *attrs)
++{
++	return pnv_tce_build(tbl, index, npages, uaddr, direction, attrs, false);
++}
++
++static void pnv_tce_free(struct iommu_table *tbl, long index, long npages, bool rm)
  {
--	unsigned long sz = (tbl->it_size + 7) >> 3;
-+	unsigned long flags, i, sz = (tbl->it_size + 7) >> 3;
-+
-+	iommu_free_tces(tbl, tbl->it_offset, tbl->it_size, false);
-+
-+	spin_lock_irqsave(&tbl->large_pool.lock, flags);
-+	for (i = 0; i < tbl->nr_pools; i++)
-+		spin_lock(&tbl->pools[i].lock);
+ 	u64 *tcep, *tces;
  
--	iommu_clear_tces_and_put_pages(tbl, tbl->it_offset, tbl->it_size);
- 	memset(tbl->it_map, 0, sz);
+@@ -438,7 +445,12 @@ static void pnv_tce_free(struct iommu_table *tbl, long index, long npages)
+ 		*(tcep++) = 0;
  
- 	/* Restore bit#0 set by iommu_init_table() */
- 	if (tbl->it_offset == 0)
- 		set_bit(0, tbl->it_map);
+ 	if (tbl->it_type & TCE_PCI_SWINV_FREE)
+-		pnv_pci_ioda_tce_invalidate(tbl, tces, tcep - 1);
++		pnv_pci_ioda_tce_invalidate(tbl, tces, tcep - 1, rm);
++}
 +
-+	for (i = 0; i < tbl->nr_pools; i++)
-+		spin_unlock(&tbl->pools[i].lock);
-+	spin_unlock_irqrestore(&tbl->large_pool.lock, flags);
++static void pnv_tce_free_vm(struct iommu_table *tbl, long index, long npages)
++{
++	pnv_tce_free(tbl, index, npages, false);
  }
- EXPORT_SYMBOL_GPL(iommu_release_ownership);
  
+ static unsigned long pnv_tce_get(struct iommu_table *tbl, long index)
+@@ -446,6 +458,18 @@ static unsigned long pnv_tce_get(struct iommu_table *tbl, long index)
+ 	return ((u64 *)tbl->it_base)[index - tbl->it_offset];
+ }
+ 
++static int pnv_tce_build_rm(struct iommu_table *tbl, long index, long npages,
++			    unsigned long uaddr, enum dma_data_direction direction,
++			    struct dma_attrs *attrs)
++{
++	return pnv_tce_build(tbl, index, npages, uaddr, direction, attrs, true);
++}
++
++static void pnv_tce_free_rm(struct iommu_table *tbl, long index, long npages)
++{
++	pnv_tce_free(tbl, index, npages, true);
++}
++
+ void pnv_pci_setup_iommu_table(struct iommu_table *tbl,
+ 			       void *tce_mem, u64 tce_size,
+ 			       u64 dma_offset)
+@@ -610,8 +634,10 @@ void __init pnv_pci_init(void)
+ 
+ 	/* Configure IOMMU DMA hooks */
+ 	ppc_md.pci_dma_dev_setup = pnv_pci_dma_dev_setup;
+-	ppc_md.tce_build = pnv_tce_build;
+-	ppc_md.tce_free = pnv_tce_free;
++	ppc_md.tce_build = pnv_tce_build_vm;
++	ppc_md.tce_free = pnv_tce_free_vm;
++	ppc_md.tce_build_rm = pnv_tce_build_rm;
++	ppc_md.tce_free_rm = pnv_tce_free_rm;
+ 	ppc_md.tce_get = pnv_tce_get;
+ 	ppc_md.pci_probe_mode = pnv_pci_probe_mode;
+ 	set_pci_dma_ops(&dma_iommu_ops);
+diff --git a/arch/powerpc/platforms/powernv/pci.h b/arch/powerpc/platforms/powernv/pci.h
+index d633c64..170dd98 100644
+--- a/arch/powerpc/platforms/powernv/pci.h
++++ b/arch/powerpc/platforms/powernv/pci.h
+@@ -52,6 +52,7 @@ struct pnv_ioda_pe {
+ 	int			tce32_seg;
+ 	int			tce32_segcount;
+ 	struct iommu_table	tce32_table;
++	phys_addr_t		tce_inval_reg_phys;
+ 
+ 	/* XXX TODO: Add support for additional 64-bit iommus */
+ 
+@@ -193,6 +194,6 @@ extern void pnv_pci_init_p5ioc2_hub(struct device_node *np);
+ extern void pnv_pci_init_ioda_hub(struct device_node *np);
+ extern void pnv_pci_init_ioda2_phb(struct device_node *np);
+ extern void pnv_pci_ioda_tce_invalidate(struct iommu_table *tbl,
+-					u64 *startp, u64 *endp);
++					u64 *startp, u64 *endp, bool rm);
+ 
+ #endif /* __POWERNV_PCI_H */
 -- 
 1.8.3.2
 
