@@ -1,81 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757519Ab3HAVmc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 17:42:32 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39726 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757141Ab3HAVmb (ORCPT
+	id S1757582Ab3HAVmf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 17:42:35 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:54691 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757141Ab3HAVmd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 17:42:31 -0400
-In-Reply-To: <20130801213420.GL23006@n2100.arm.linux.org.uk>
-References: <20130801213420.GL23006@n2100.arm.linux.org.uk>
-From: Russell King <rmk+kernel@arm.linux.org.uk>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH RFC 08/51] DMA-API: net: intel/ixgbevf: fix 32-bit DMA mask
- handling
-Message-Id: <E1V50dI-0006qA-3v@rmk-PC.arm.linux.org.uk>
-Date: Thu, 01 Aug 2013 22:42:04 +0100
+	Thu, 1 Aug 2013 17:42:33 -0400
+Date: Thu, 01 Aug 2013 14:42:31 -0700 (PDT)
+Message-Id: <20130801.144231.1629813856606655018.davem@davemloft.net>
+To: cmetcalf@tilera.com
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        richardcochran@gmail.com, eric.dumazet@gmail.com
+Subject: Re: [PATCH v3 00/13] update tile network drivers
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <cover.1375385119.git.cmetcalf@tilera.com>
+References: <20130731.122534.774117327230299927.davem@redhat.com>
+	<201308011545.r71Fjbco017295@farm-0002.internal.tilera.com>
+	<cover.1375385119.git.cmetcalf@tilera.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Thu, 01 Aug 2013 14:42:32 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The fallback to 32-bit DMA mask is rather odd:
-	if (!dma_set_mask(&pdev->dev, DMA_BIT_MASK(64)) &&
-	    !dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(64))) {
-		pci_using_dac = 1;
-	} else {
-		err = dma_set_mask(&pdev->dev, DMA_BIT_MASK(32));
-		if (err) {
-			err = dma_set_coherent_mask(&pdev->dev,
-						    DMA_BIT_MASK(32));
-			if (err) {
-				dev_err(&pdev->dev, "No usable DMA "
-					"configuration, aborting\n");
-				goto err_dma;
-			}
-		}
-		pci_using_dac = 0;
-	}
-This means we only set the coherent DMA mask in the fallback path if
-the DMA mask set failed, which is silly.  This fixes it to set the
-coherent DMA mask only if dma_set_mask() succeeded, and to error out
-if either fails.
+From: Chris Metcalf <cmetcalf@tilera.com>
+Date: Thu, 1 Aug 2013 15:25:19 -0400
 
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
----
- drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c |   15 +++++----------
- 1 files changed, 5 insertions(+), 10 deletions(-)
+> This is v3 of the patch series to update the Tilera network drivers.
+> 
+> From the v1 00/13 cover letter: "This patch series contains changes made
+> to the Tilera on-chip network drivers for both the 64-bit tilegx and
+> 32-bit tilepro architectures.  The changes involve a number of bug fixes,
+> support for the multiple mPIPEs on the new Gx72 chip, support for jumbo
+> frames, TSO for IPv6, GRO, PTP support, and statistics improvements."
+> 
+> David has already applied the v2 patch for what was patch 01/13 in the
+> first series ("handle 64-bit statistics in tilepro network driver")
+> so it is not included in this v3 series.
 
-diff --git a/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c b/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c
-index 1f5166a..cf1e939 100644
---- a/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c
-+++ b/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c
-@@ -3326,19 +3326,14 @@ static int ixgbevf_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
- 	if (err)
- 		return err;
- 
--	if (!dma_set_mask(&pdev->dev, DMA_BIT_MASK(64)) &&
--	    !dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(64))) {
-+	if (!dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(64))) {
- 		pci_using_dac = 1;
- 	} else {
--		err = dma_set_mask(&pdev->dev, DMA_BIT_MASK(32));
-+		err = dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(32));
- 		if (err) {
--			err = dma_set_coherent_mask(&pdev->dev,
--						    DMA_BIT_MASK(32));
--			if (err) {
--				dev_err(&pdev->dev, "No usable DMA "
--					"configuration, aborting\n");
--				goto err_dma;
--			}
-+			dev_err(&pdev->dev, "No usable DMA "
-+				"configuration, aborting\n");
-+			goto err_dma;
- 		}
- 		pci_using_dac = 0;
- 	}
--- 
-1.7.4.4
-
+Series applied to net-next, thanks.
