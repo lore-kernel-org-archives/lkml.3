@@ -1,53 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756590Ab3HAOjn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 10:39:43 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:57676 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756349Ab3HAOjl (ORCPT
+	id S1756541Ab3HAOkO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 10:40:14 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:41566 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755405Ab3HAOkN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 10:39:41 -0400
-Date: Thu, 1 Aug 2013 10:39:40 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Boris BREZILLON <b.brezillon@overkiz.com>
-cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] USB: ohci-at91: add usb_clk for transition to common
- clk framework
-In-Reply-To: <1375337800-2605-1-git-send-email-b.brezillon@overkiz.com>
-Message-ID: <Pine.LNX.4.44L0.1308011038380.1534-100000@iolanthe.rowland.org>
+	Thu, 1 Aug 2013 10:40:13 -0400
+Date: Thu, 1 Aug 2013 16:40:05 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung@kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 6/8] perf: Account freq events per cpu
+Message-ID: <20130801144005.GG27162@twins.programming.kicks-ass.net>
+References: <1374539466-4799-1-git-send-email-fweisbec@gmail.com>
+ <1374539466-4799-7-git-send-email-fweisbec@gmail.com>
+ <20130801124658.GC1032@krava.brq.redhat.com>
+ <20130801133155.GB27162@twins.programming.kicks-ass.net>
+ <20130801135525.GE431@somewhere>
+ <20130801140352.GE27162@twins.programming.kicks-ass.net>
+ <20130801140615.GF27162@twins.programming.kicks-ass.net>
+ <20130801142109.GH431@somewhere>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130801142109.GH431@somewhere>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 1 Aug 2013, Boris BREZILLON wrote:
-
-> The AT91 PMC (Power Management Controller) provides an USB clock used by
-> USB Full Speed host (ohci) and USB Full Speed device (udc).
-> The usb drivers (ohci and udc) must configure this clock to 48Mhz.
-> This configuration was formely done in mach-at91/clock.c, but this
-> implementation will be removed when moving to common clk framework.
+On Thu, Aug 01, 2013 at 04:21:11PM +0200, Frederic Weisbecker wrote:
+> > > Yeah, just go with a single global state for now..
+> > 
+> > The perf default is to create inherited counter, which are per cpu
+> > anyway. So we'll not loose much.
 > 
-> This patch adds support for usb clock retrieval and configuration, and is
-> backward compatible with the current at91 clk implementation (if usb clk
-> is not found, it does not configure/enable it).
-> 
-> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+> So you mean that I keep the per cpu state when event->cpu != -1 and also have
+> a global counter for the others. Right?
 
-> @@ -163,6 +169,8 @@ static int usb_hcd_at91_probe(const struct hc_driver *driver,
->  		goto err5;
->  	}
->  
-> +	uclk = clk_get(&pdev->dev, "usb_clk");
-
-What happens if uclk isn't found but it is needed?
-
-Alan Stern
-
+No, only a single global counter. The fact that perf, by default,
+creates a counter per cpu, means that there's little effective
+difference between a single global counter and per-cpu counters.
