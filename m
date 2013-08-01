@@ -1,113 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753428Ab3HAJGS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 05:06:18 -0400
-Received: from mga02.intel.com ([134.134.136.20]:9220 "EHLO mga02.intel.com"
+	id S1754137Ab3HAJGd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 05:06:33 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45282 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751604Ab3HAJGP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 05:06:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,793,1367996400"; 
-   d="scan'208";a="355393190"
-Message-ID: <51FA2537.5040208@intel.com>
-Date: Thu, 01 Aug 2013 17:07:03 +0800
-From: Aaron Lu <aaron.lu@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1751744Ab3HAJGW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 05:06:22 -0400
+Date: Thu, 1 Aug 2013 11:06:20 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Li Zefan <lizefan@huawei.com>, Tejun Heo <tj@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        cgroups@vger.kernel.org, containers@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, kent.overstreet@gmail.com,
+        Glauber Costa <glommer@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: memcg creates an unkillable task in 3.11-rc2
+Message-ID: <20130801090620.GA5198@dhcp22.suse.cz>
+References: <87ehahg312.fsf@xmission.com>
+ <20130729095109.GB4678@dhcp22.suse.cz>
+ <20130729161026.GD22605@mtj.dyndns.org>
+ <87r4eh70yg.fsf@xmission.com>
+ <51F71DE2.4020102@huawei.com>
+ <87ppu0a298.fsf_-_@tw-ebiederman.twitter.com>
+ <20130730123120.GA15847@dhcp22.suse.cz>
+ <874nbc3sx1.fsf@tw-ebiederman.twitter.com>
+ <20130731073726.GC30514@dhcp22.suse.cz>
+ <87zjt2tm9f.fsf@xmission.com>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
-        lkml <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: i915 backlight
-References: <20130731162252.GC4724@pd.tnic> <20130731163623.GD4724@pd.tnic> <51F9B63F.7060509@intel.com> <20130801081215.GB3448@nazgul.tnic>
-In-Reply-To: <20130801081215.GB3448@nazgul.tnic>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87zjt2tm9f.fsf@xmission.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/01/2013 04:12 PM, Borislav Petkov wrote:
-> On Thu, Aug 01, 2013 at 09:13:35AM +0800, Aaron Lu wrote:
->> Can you please run acpi_listen and then press the Fn-Fx key, see if the
->> events are correctly sent out?
+On Wed 31-07-13 15:09:16, Eric W. Biederman wrote:
+> Michal Hocko <mhocko@suse.cz> writes:
 > 
-> Like this?
+> > [I am CCing David here as well]
+> >
+> > On Tue 30-07-13 09:37:46, Eric W. Biederman wrote:
+> >> Michal Hocko <mhocko@suse.cz> writes:
+> >> 
+> >> > On Tue 30-07-13 01:19:31, Eric W. Biederman wrote:
+> >> > [...]
+> >> >> Hmm. Looking farther I see what is going on. And it has nothing to do
+> >> >> with the freezer. (I have commented out that code and reproduced it
+> >> >> without the freezer to be doubly certain).
+> >> >> 
+> >> >> 
+> >> >> On the exit path exit_robust_list is triggering a page fault to fault a
+> >> >> page back in.  Which since we have no memory causes the exit path
+> >> >> to get stuck in mem_cgroup_handle_oom.
+> >> >
+> >> > Hmm, interesting. I assume the exit is caused by the SIGKILL, right?
+> >> > If yes, then why it hasn't coughed early in __mem_cgroup_try_charge
+> >> 
+> >> Interesting question.  This isn't the primary thread but we do send
+> >> SIGKILL to the secondary threads as well.
+> >> 
+> >> We definitely need those checks on both paths making my change valid.
+> >> 
+> >> Oh. Duh!  This is after we act on SIGKILL so SIGKILL is no longer
+> >> pending.
+> >
+> > Very well spotted Eric! What do you think about the following patch?
+> > I would have to check since when the exit path could trigger the fault
+> > but I guess this is worth stable backport.
 > 
-> # acpi_listen
-> video/brightnessdown BRTDN 00000087 00000000
-> video/brightnessup BRTUP 00000086 00000000
-> video/brightnessdown BRTDN 00000087 00000000
-> video/brightnessup BRTUP 00000086 00000000
-> video/brightnessdown BRTDN 00000087 00000000
-> video/brightnessup BRTUP 00000086 00000000
-> video/brightnessdown BRTDN 00000087 00000000
-> video/brightnessup BRTUP 00000086 00000000
-> video/brightnessdown BRTDN 00000087 00000000
-> ^C
+> It doesn't have a prayer of working.
 
-Yes, so the event is correctly sent out.
+So it hasn't passed your test?
 
-> 
->> From the bug page:
->> https://bugzilla.kernel.org/show_bug.cgi?id=51231#c80
->> I got the impression that both the acpi_video interface and the vendor
->> interface thinkpad_screen are broken. So adding this cmdline here works
->> suggests that either thinkpad_screen works or thinkpad vendor driver
->> doesn't get loaded or doesn't create that interface for some reason.
->>
->> Alternatively, if the intel_backlight interface works(highly possible),
->> you can use xorg.conf to specify the that backlight interface for X.
->>
->> Section "Device"
->>         Option     "Backlight"	"intel_backlight"
->> 	Identifier  "Card0"
->> 	Driver      "intel"
->> 	BusID       "PCI:0:2:0"
->> EndSection
-> 
-> Yeah, that didn't work *but* manually writing to both:
-> 
-> /sys/class/backlight/acpi_video0/brightness
-> 
-> and
-> 
-> /sys/class/backlight/intel_backlight/brightness
-> 
-> works.
+> You leave open the race of a fatal signal being received before we go to
+> sleep.
 
-Err...we have the event sent out on hotkey press and the interface also
-works, but still, using hotkey to adjust brightness level is broken...
+If a fatal signal is received before we're going to sleep then
+schedule() should keep it on the runqueue, no?
 
-I just found an old acer laptop that has similar issue(or even worse: on
-X starts, an almost black screen is shown and hotkey adjust doesn't
-work), I'll look into this.
+static void __sched __schedule(void)
+{
+[...]
+        if (prev->state && !(preempt_count() & PREEMPT_ACTIVE)) {
+                if (unlikely(signal_pending_state(prev->state, prev))) {
+                        prev->state = TASK_RUNNING;
+                } else {
 
-> 
-> The ranges are different, though:
-> 
-> intel_backlight/actual_brightness:1000
-> intel_backlight/bl_power:0
-> intel_backlight/brightness:1000
-> intel_backlight/max_brightness:4437
-> intel_backlight/type:raw
-> 
-> acpi_video0/actual_brightness:41
-> acpi_video0/bl_power:0
-> acpi_video0/brightness:41
-> acpi_video0/max_brightness:100
-> acpi_video0/type:firmware
+so it should get a timeslice eventually, mem_cgroup_handle_oom sees
+fatal_signal_pending and sets TIF_MEMDIE, bypass the charge, get to
+signal handling, start exiting, fault in, get to charge and bail out in
+__mem_cgroup_try_charge because it sees TIF_MEMDIE.
 
-Yes, different interface has different brightness ranges and a value in
-one range may turn out to be the same actual brightness level of another
-value in another range.
+Or what am I missing?
 
+> You don't handle a task that has processed the fatal signal and is in
+> PF_EXITING.  Which is what I experienced.
 > 
-> I guess I need to write me a dirty script for now ... :-)
+> From earlier comments about my code not being early enough I thought I
+> was going to see a patch in __mem_cgroup_try_change so that the bypass
+> case will kick in also for tasks in PF_EXITING.
 
-:-)
+This shouldn't be necessary because TIF_MEMDIE was set for the killed
+task.  I was playing with PF_EXITING there as well but TIF_MEMDIE sounds
+like a more appropriate solution.
 
+> You change actually addresses things later in the code path than mine
+> does.
 > 
-> Thanks guys.
+> I do like your summary of the problem.
 > 
-Thanks,
-Aaron
+> Eric
+> 
+> > ---
+> > From 411408558f2858328ea25e69567e9a53a8314032 Mon Sep 17 00:00:00 2001
+> > From: Michal Hocko <mhocko@suse.cz>
+> > Date: Wed, 31 Jul 2013 08:48:54 +0200
+> > Subject: [PATCH] memcg: Do not hang on OOM when killed by userspace OOM
+> >
+> > Eric has reported that he can see task(s) stuck in memcg OOM handler
+> > regularly. The only way out is to
+> > 	echo 0 > $GROUP/memory.oom_controll
+> >
+> > His usecase is:
+> > - Setup a hierarchy with memory and the freezer
+> >   (disable kernel oom and have a process watch for oom).
+> > - In that memory cgroup add a process with one thread per cpu.
+> > - In one thread slowly allocate once per second I think it is 16M of ram
+> >   and mlock and dirty it (just to force the pages into ram and stay there).
+> > - When oom is achieved loop:
+> >   * attempt to freeze all of the tasks.
+> >   * if frozen send every task SIGKILL, unfreeze, remove the directory in
+> >     cgroupfs.
+> >
+> > Eric has then pinpointed the issue to be memcg specific.
+> >
+> > All tasks are sitting on the memcg_oom_waitq when memcg oom is disabled.
+> > Those that have received fatal signal will bypass the charge and should
+> > continue on their way out. The tricky part is that that exit path might
+> > trigger a page fault (e.g. exit_robust_list) thus the memcg charge
+> > while its memcg is still under OOM because nobody has released any
+> > charges. Unlike with the in-kernel OOM handler the exiting task doesn't
+> > get TIF_MEMDIE set so it doesn't shortcut charges and falls to the
+> > memcg OOM again without any way out of it as there are no fatal signals
+> > pending anymore.
+> >
+> > This patch sets the TIF_MEMDIE flag pro actively in mem_cgroup_handle_oom
+> > if the memcg is disabled after the task is woken up with fatal signal
+> > pending. This means that any further charges will be bypassed early in
+> > __mem_cgroup_try_charge and the task will have chance to exit finally.
+> >
+> > Strictly speaking we might mark also a task which hasn't been killed by
+> > userspace OOM handler but this is not harmful as the task is going away
+> > anyway and under-oom group would like to see it go as soon as possible.
+> >
+> > Reported-by: Eric W. Biederman <ebiederm@xmission.com>
+> > Debugged-by: Eric W. Biederman <ebiederm@xmission.com>
+> > Signed-off-by: Michal Hocko <mhocko@suse.cz>
+> > ---
+> >  mm/memcontrol.c | 13 ++++++++++++-
+> >  1 file changed, 12 insertions(+), 1 deletion(-)
+> >
+> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> > index d12ca6f..d4103b0 100644
+> > --- a/mm/memcontrol.c
+> > +++ b/mm/memcontrol.c
+> > @@ -2235,8 +2235,19 @@ static bool mem_cgroup_handle_oom(struct mem_cgroup *memcg, gfp_t mask,
+> >  
+> >  	mem_cgroup_unmark_under_oom(memcg);
+> >  
+> > -	if (test_thread_flag(TIF_MEMDIE) || fatal_signal_pending(current))
+> > +	if (test_thread_flag(TIF_MEMDIE))
+> >  		return false;
+> > +
+> > +	/*
+> > +	 * Userspace OOM killer might have killed this task but
+> > +	 * there is no way it could have set TIF_MEMDIE as well
+> > +	 * so we have to set it manually.
+> > +	 */
+> > +	if (fatal_signal_pending(current)) {
+> > +		if (memcg->oom_kill_disable)
+> > +			set_thread_flag(TIF_MEMDIE);
+> > +		return false;
+> > +	}
+> >  	/* Give chance to dying process */
+> >  	schedule_timeout_uninterruptible(1);
+> >  	return true;
+> > -- 
+> > 1.8.3.2
+> --
+> To unsubscribe from this list: send the line "unsubscribe cgroups" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+-- 
+Michal Hocko
+SUSE Labs
