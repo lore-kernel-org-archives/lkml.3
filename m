@@ -1,135 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757022Ab3HAPAd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 11:00:33 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:12081 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756593Ab3HAPA2 (ORCPT
+	id S1757087Ab3HAPAl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 11:00:41 -0400
+Received: from 3.mo2.mail-out.ovh.net ([46.105.58.226]:34212 "EHLO
+	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757031Ab3HAPAi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 11:00:28 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 01 Aug 2013 08:00:27 -0700
-From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-To: <swarren@wwwdotorg.org>
-CC: <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, Mikko Perttunen <mperttunen@nvidia.com>
-Subject: [PATCH v2 2/2] ARM: dts: USB for Tegra114 Dalmore
-Date: Thu, 1 Aug 2013 18:00:18 +0300
-Message-ID: <1375369218-11288-3-git-send-email-ttynkkynen@nvidia.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1375369218-11288-1-git-send-email-ttynkkynen@nvidia.com>
-References: <1375369218-11288-1-git-send-email-ttynkkynen@nvidia.com>
-X-NVConfidentiality: public
-MIME-Version: 1.0
-Content-Type: text/plain
+	Thu, 1 Aug 2013 11:00:38 -0400
+From: Boris BREZILLON <b.brezillon@overkiz.com>
+To: Mike Turquette <mturquette@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Boris BREZILLON <b.brezillon@overkiz.com>
+X-Ovh-Mailout: 178.32.228.2 (mo2.mail-out.ovh.net)
+Subject: [RFC PATCH 0/2] clk: add clk accuracy support
+Date: Thu,  1 Aug 2013 16:59:24 +0200
+Message-Id: <1375369164-27901-1-git-send-email-b.brezillon@overkiz.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Ovh-Tracer-Id: 8724035429705873436
+X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedriedtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.500054/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedriedtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mikko Perttunen <mperttunen@nvidia.com>
+Hello,
 
-Device tree entries for the three EHCI controllers on Tegra114.
-Enables the the third controller (USB host) on Dalmore.
+This patch series is a proposal to add clock accuracy retrieval support to the
+common clk framework.
 
-Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
----
- arch/arm/boot/dts/tegra114-dalmore.dts |  9 +++++
- arch/arm/boot/dts/tegra114.dtsi        | 62 ++++++++++++++++++++++++++++++++++
- 2 files changed, 71 insertions(+)
+The support of accuracy retrieval may benefit to the at91 platform (I explain
+why in the following paragraphs).
 
-diff --git a/arch/arm/boot/dts/tegra114-dalmore.dts b/arch/arm/boot/dts/tegra114-dalmore.dts
-index cb640eb..f3fc2b0 100644
---- a/arch/arm/boot/dts/tegra114-dalmore.dts
-+++ b/arch/arm/boot/dts/tegra114-dalmore.dts
-@@ -870,6 +870,15 @@
- 		non-removable;
- 	};
- 
-+	usb@7d008000 {
-+		status = "okay";
-+	};
-+
-+	usb-phy@7d008000 {
-+		status = "okay";
-+		vbus-supply = <&usb3_vbus_reg>;
-+	};
-+
- 	clocks {
- 		compatible = "simple-bus";
- 		#address-cells = <1>;
-diff --git a/arch/arm/boot/dts/tegra114.dtsi b/arch/arm/boot/dts/tegra114.dtsi
-index abf6c40..2905145 100644
---- a/arch/arm/boot/dts/tegra114.dtsi
-+++ b/arch/arm/boot/dts/tegra114.dtsi
-@@ -430,6 +430,68 @@
- 		status = "disable";
- 	};
- 
-+	usb@7d000000 {
-+		compatible = "nvidia,tegra30-ehci", "usb-ehci";
-+		reg = <0x7d000000 0x4000>;
-+		interrupts = <GIC_SPI 20 IRQ_TYPE_LEVEL_HIGH>;
-+		phy_type = "utmi";
-+		clocks = <&tegra_car TEGRA114_CLK_USBD>;
-+		nvidia,phy = <&phy1>;
-+		status = "disabled";
-+	};
-+
-+	phy1: usb-phy@7d000000 {
-+		compatible = "nvidia,tegra30-usb-phy";
-+		reg = <0x7d000000 0x4000 0x7d000000 0x4000>;
-+		phy_type = "utmi";
-+		clocks = <&tegra_car TEGRA114_CLK_USBD>,
-+			 <&tegra_car TEGRA114_CLK_PLL_U>,
-+			 <&tegra_car TEGRA114_CLK_USBD>;
-+		clock-names = "reg", "pll_u", "utmi-pads";
-+		nvidia,hssync-start-delay = <0>;
-+		nvidia,idle-wait-delay = <17>;
-+		nvidia,elastic-limit = <16>;
-+		nvidia,term-range-adj = <6>;
-+		nvidia,xcvr-setup = <9>;
-+		nvidia,xcvr-lsfslew = <0>;
-+		nvidia,xcvr-lsrslew = <3>;
-+		nvidia,hssquelch-level = <2>;
-+		nvidia,hsdiscon-level = <5>;
-+		nvidia,xcvr-hsslew = <12>;
-+		status = "disabled";
-+	};
-+
-+	usb@7d008000 {
-+		compatible = "nvidia,tegra30-ehci", "usb-ehci";
-+		reg = <0x7d008000 0x4000>;
-+		interrupts = <GIC_SPI 97 IRQ_TYPE_LEVEL_HIGH>;
-+		phy_type = "utmi";
-+		clocks = <&tegra_car TEGRA114_CLK_USB3>;
-+		nvidia,phy = <&phy3>;
-+		status = "disabled";
-+	};
-+
-+	phy3: usb-phy@7d008000 {
-+		compatible = "nvidia,tegra30-usb-phy";
-+		reg = <0x7d008000 0x4000 0x7d000000 0x4000>;
-+		phy_type = "utmi";
-+		clocks = <&tegra_car TEGRA114_CLK_USB3>,
-+			 <&tegra_car TEGRA114_CLK_PLL_U>,
-+			 <&tegra_car TEGRA114_CLK_USBD>;
-+		clock-names = "reg", "pll_u", "utmi-pads";
-+		nvidia,hssync-start-delay = <0>;
-+		nvidia,idle-wait-delay = <17>;
-+		nvidia,elastic-limit = <16>;
-+		nvidia,term-range-adj = <6>;
-+		nvidia,xcvr-setup = <9>;
-+		nvidia,xcvr-lsfslew = <0>;
-+		nvidia,xcvr-lsrslew = <3>;
-+		nvidia,hssquelch-level = <2>;
-+		nvidia,hsdiscon-level = <5>;
-+		nvidia,xcvr-hsslew = <12>;
-+		status = "disabled";
-+	};
-+
- 	cpus {
- 		#address-cells = <1>;
- 		#size-cells = <0>;
+I don't know if other platforms may benefit from this accuracy support. This
+series is here to get feedbacks from other developpers/maintainers, and see if
+this can be integrated in the clk framework.
+
+Here is why at91 platform may need the clk accuracy informations:
+
+AT91 SoCs provide a slow clock (32 KHz clock) which can be used as a clock
+source for some peripherals (USART, TC blocks, ...).
+
+This slow clock can be generated from 2 sources:
+- a 32KHz internal RC with a poor accuracy (50000 ppm)
+- a 32KHz external crystal oscillator
+
+Most of the supported at91 boards (if not all) use the external 32KHz crystal
+source except for the kizbox (the board I'm working with :)).
+Most of you will say this is a bad hardware design and the hardware team
+should have connected a crystal oscillator to the SoC instead of relying
+on the unaccurate internal RC (and they are probably right).
+But I can't change the hardware as it is already widely deployed.
+
+What I'm proposing is to give clock users the ability to retrieve clocks
+accuracies in order to choose the most accurate source (or at least discard
+clocks with poor accuracy).
+
+Could you tell me if this approach is right, and if other platforms/boards have
+similar issues and would be interrested by this series ?
+
+Best Regards,
+
+Boris
+
+Boris BREZILLON (2):
+  clk: add clk accuracy retrieval support
+  clk: add accuracy support for fixed clock
+
+ Documentation/clk.txt                              |    4 +
+ .../devicetree/bindings/clock/fixed-clock.txt      |    3 +
+ drivers/clk/Kconfig                                |    4 +
+ drivers/clk/clk-fixed-rate.c                       |   41 +++++++--
+ drivers/clk/clk.c                                  |   91 +++++++++++++++++++-
+ include/linux/clk-private.h                        |    1 +
+ include/linux/clk-provider.h                       |   14 +++
+ include/linux/clk.h                                |   17 ++++
+ 8 files changed, 166 insertions(+), 9 deletions(-)
+
 -- 
-1.8.1.5
+1.7.9.5
 
