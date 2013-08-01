@@ -1,79 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757260Ab3HAQRr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 12:17:47 -0400
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:47818 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754397Ab3HAQRq (ORCPT
+	id S1754497Ab3HAQVt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 12:21:49 -0400
+Received: from mailgw1.uni-kl.de ([131.246.120.220]:39741 "EHLO
+	mailgw1.uni-kl.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752480Ab3HAQVr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 12:17:46 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Hillf Danton <dhillf@gmail.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Subject: Re: [PATCH 01/18] mm, hugetlb: protect reserved pages when softofflining requests the pages
-In-Reply-To: <CAJd=RBCj_wAHjv10FhhX+Fzx8p4ybeGykEfvqF=jZaok3s+j9w@mail.gmail.com>
-References: <1375075929-6119-1-git-send-email-iamjoonsoo.kim@lge.com> <1375075929-6119-2-git-send-email-iamjoonsoo.kim@lge.com> <CAJd=RBCUJg5GJEQ2_heCt8S9LZzedGLbvYvivFkmvfMChPqaCg@mail.gmail.com> <20130731022751.GA2548@lge.com> <CAJd=RBD=SNm9TG-kxKcd-BiMduOhLUubq=JpRwCy_MmiDtO9Tw@mail.gmail.com> <20130731044101.GE2548@lge.com> <CAJd=RBDr72T+O+aNdb-HyB3U+k5JiVWMoXfPNA0y-Hxw-wDD-g@mail.gmail.com> <20130731063740.GA4212@lge.com> <CAJd=RBCj_wAHjv10FhhX+Fzx8p4ybeGykEfvqF=jZaok3s+j9w@mail.gmail.com>
-User-Agent: Notmuch/0.15.2+167~g5306b2b (http://notmuchmail.org) Emacs/24.3.50.1 (x86_64-unknown-linux-gnu)
-Date: Thu, 01 Aug 2013 21:47:31 +0530
-Message-ID: <87siytwfl0.fsf@linux.vnet.ibm.com>
+	Thu, 1 Aug 2013 12:21:47 -0400
+Message-ID: <51FA8B16.20507@fastmail.fm>
+Date: Thu, 01 Aug 2013 18:21:42 +0200
+From: Bernd Schubert <bernd.schubert@fastmail.fm>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13080116-2674-0000-0000-00000A0F1A7F
+To: Nix <nix@esperi.org.uk>
+CC: Douglas Gilbert <dgilbert@interlog.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-scsi@vger.kernel.org,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        nick.cheng@areca.com.tw, stable@vger.kernel.org
+Subject: Re: [SCSI REGRESSION] 3.10.2 or 3.10.3: arcmsr failure at bootup
+ / early userspace transition
+References: <87r4ehfzhf.fsf@spindle.srvr.nix> <51F667C2.4020801@fastmail.fm> <87mwp5frdl.fsf@spindle.srvr.nix> <51F67959.2060803@fastmail.fm> <87fvuxdqes.fsf@spindle.srvr.nix> <51F708A4.9090207@interlog.com> <87ob9koogb.fsf@spindle.srvr.nix> <51F80294.50804@fastmail.fm> <877gg7n3rc.fsf@spindle.srvr.nix> <51FA76D6.2060905@fastmail.fm> <871u6dieie.fsf@spindle.srvr.nix>
+In-Reply-To: <871u6dieie.fsf@spindle.srvr.nix>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-ITWM-CharSet: UTF-8
+X-ITWM-Scanned-By: mail2.itwm.fhg.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hillf Danton <dhillf@gmail.com> writes:
-
-> On Wed, Jul 31, 2013 at 2:37 PM, Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
->> On Wed, Jul 31, 2013 at 02:21:38PM +0800, Hillf Danton wrote:
->>> On Wed, Jul 31, 2013 at 12:41 PM, Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
->>> > On Wed, Jul 31, 2013 at 10:49:24AM +0800, Hillf Danton wrote:
->>> >> On Wed, Jul 31, 2013 at 10:27 AM, Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
->>> >> > On Mon, Jul 29, 2013 at 03:24:46PM +0800, Hillf Danton wrote:
->>> >> >> On Mon, Jul 29, 2013 at 1:31 PM, Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
->>> >> >> > alloc_huge_page_node() use dequeue_huge_page_node() without
->>> >> >> > any validation check, so it can steal reserved page unconditionally.
->>> >> >>
->>> >> >> Well, why is it illegal to use reserved page here?
->>> >> >
->>> >> > If we use reserved page here, other processes which are promised to use
->>> >> > enough hugepages cannot get enough hugepages and can die. This is
->>> >> > unexpected result to them.
->>> >> >
->>> >> But, how do you determine that a huge page is requested by a process
->>> >> that is not allowed to use reserved pages?
->>> >
->>> > Reserved page is just one for each address or file offset. If we need to
->>> > move this page, this means that it already use it's own reserved page, this
->>> > page is it. So we should not use other reserved page for moving this page.
->>> >
->>> Hm, how do you determine "this page" is not buddy?
+On 08/01/2013 06:04 PM, Nix wrote:
+> On 1 Aug 2013, Bernd Schubert verbalised:
+>
+>> On 07/30/2013 11:20 PM, Nix wrote:
+>>> On 30 Jul 2013, Bernd Schubert told this:
+>>>
+>>>> On 07/30/2013 02:56 AM, Nix wrote:
+>>>>> On 30 Jul 2013, Douglas Gilbert outgrape:
+>>>>>
+>>>>>> Please supply the information that Martin Petersen asked
+>>>>>> for.
+>>>>>
+>>>>> Did it in private IRC (the advantage of working for the same division of
+>>>>> the same company!)
+>>>>>
+>>>>> I didn't realise the original fix was actually implemented to allow
+>>>>> Bernd, with a different Areca controller, to boot... obviously, in that
+>>>>> situation, reversion is wrong, since that would just replace one won't-
+>>>>> boot situation with another.
+>>>>
+>>>> Unless there is very simple fix the commit should reverted, imho. It
+>>>> would better then to remove write-same support from the md-layer.
+>>>
+>>> I'm not using md on that machine, just LVM. Our suspicion is that ext4
+>>> is doing a WRITE SAME for some reason.
 >>
->> If this page comes from the buddy, it doesn't matter. It imply that
->> this mapping cannot use reserved page pool, because we always allocate
->> a page from reserved page pool first.
->>
-> A buddy page also implies, if the mapping can use reserved pages, that no
-> reserved page was available when requested. Now we can try reserved
-> page again.
+>> I didn't check yet for other cases, mkfs.ext4 does WRITE SAME and with
+>> lazy init it also will happen after mounting the file system, while
+>> lazy init is running (inode zeroing).
+>
+> Well, it'll happen the first few times you mount the fs. If your fs is
+> years old (as mine are) the inode tables will probably have been
+> initialized by now!
+>
 
-I didn't quiet get that. My understanding is, the new page we are
-allocating here for soft offline should not be allocated from the
-reserve pool. If we do that we may possibly have allocation failure
-later for a request that had done page reservation. Now to
-avoid that we make sure we have enough free pages outside reserve pool
-so that we can dequeue the huge page. If not we use buddy to allocate
-the hugepage.
-
--aneesh
-
+I'm frequently doing tests with millions of files and reformating is 
+ways faster than deleting the all these files.
