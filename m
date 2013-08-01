@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753788Ab3HACzx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 22:55:53 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:64109 "EHLO
+	id S1753700Ab3HACzw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 22:55:52 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:43062 "EHLO
 	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752838Ab3HACzr (ORCPT
+	with ESMTP id S1752842Ab3HACzs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 22:55:47 -0400
-X-AuditID: 9c930197-b7bfbae000000e88-c7-51f9ce31675d
+	Wed, 31 Jul 2013 22:55:48 -0400
+X-AuditID: 9c930197-b7bfbae000000e88-c8-51f9ce31609c
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
         LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 5/9] perf tools: Do not try to call addr2line for non-binary files
-Date: Thu,  1 Aug 2013 11:55:40 +0900
-Message-Id: <1375325744-26613-6-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 6/9] perf tools: Pass dso instead of dso_name to get_srcline()
+Date: Thu,  1 Aug 2013 11:55:41 +0900
+Message-Id: <1375325744-26613-7-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1375325744-26613-1-git-send-email-namhyung@kernel.org>
 References: <1375325744-26613-1-git-send-email-namhyung@kernel.org>
@@ -26,60 +26,127 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-No need to call addr2line since they don't have such information.
+This is a preparation of next change.  No functional changes are
+intended.
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/util/sort.c    |  3 ---
- tools/perf/util/srcline.c | 11 +++++++++--
- 2 files changed, 9 insertions(+), 5 deletions(-)
+ tools/perf/util/annotate.c | 11 ++++-------
+ tools/perf/util/dso.h      |  1 +
+ tools/perf/util/sort.c     |  2 +-
+ tools/perf/util/srcline.c  |  4 +++-
+ tools/perf/util/util.h     |  4 +++-
+ 5 files changed, 12 insertions(+), 10 deletions(-)
 
+diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
+index c8a0d5762b1d..0137f028c0d6 100644
+--- a/tools/perf/util/annotate.c
++++ b/tools/perf/util/annotate.c
+@@ -1029,8 +1029,7 @@ static void symbol__free_source_line(struct symbol *sym, int len)
+ /* Get the filename:line for the colored entries */
+ static int symbol__get_source_line(struct symbol *sym, struct map *map,
+ 				   struct perf_evsel *evsel,
+-				   struct rb_root *root, int len,
+-				   const char *filename)
++				   struct rb_root *root, int len)
+ {
+ 	u64 start;
+ 	int i, k;
+@@ -1079,7 +1078,7 @@ static int symbol__get_source_line(struct symbol *sym, struct map *map,
+ 			goto next;
+ 
+ 		offset = start + i;
+-		src_line->path = get_srcline(filename, offset);
++		src_line->path = get_srcline(map->dso, offset);
+ 		insert_source_line(&tmp_root, src_line);
+ 
+ 	next:
+@@ -1286,7 +1285,6 @@ int symbol__tty_annotate(struct symbol *sym, struct map *map,
+ 			 bool full_paths, int min_pcnt, int max_lines)
+ {
+ 	struct dso *dso = map->dso;
+-	const char *filename = dso->long_name;
+ 	struct rb_root source_line = RB_ROOT;
+ 	u64 len;
+ 
+@@ -1296,9 +1294,8 @@ int symbol__tty_annotate(struct symbol *sym, struct map *map,
+ 	len = symbol__size(sym);
+ 
+ 	if (print_lines) {
+-		symbol__get_source_line(sym, map, evsel, &source_line,
+-					len, filename);
+-		print_summary(&source_line, filename);
++		symbol__get_source_line(sym, map, evsel, &source_line, len);
++		print_summary(&source_line, dso->long_name);
+ 	}
+ 
+ 	symbol__annotate_printf(sym, map, evsel, full_paths,
+diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
+index d51aaf272c68..94c2f1a8b116 100644
+--- a/tools/perf/util/dso.h
++++ b/tools/perf/util/dso.h
+@@ -5,6 +5,7 @@
+ #include <linux/rbtree.h>
+ #include "types.h"
+ #include "map.h"
++#include "build-id.h"
+ 
+ enum dso_binary_type {
+ 	DSO_BINARY_TYPE__KALLSYMS = 0,
 diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index 0d633a059df4..113aa92b1191 100644
+index 113aa92b1191..58cfe69d3a6c 100644
 --- a/tools/perf/util/sort.c
 +++ b/tools/perf/util/sort.c
-@@ -259,9 +259,6 @@ static int hist_entry__srcline_snprintf(struct hist_entry *self, char *bf,
+@@ -259,7 +259,7 @@ static int hist_entry__srcline_snprintf(struct hist_entry *self, char *bf,
  	if (!self->ms.map)
  		goto out_ip;
  
--	if (!strncmp(self->ms.map->dso->long_name, "/tmp/perf-", 10))
--		goto out_ip;
--
- 	path = get_srcline(self->ms.map->dso->long_name, self->ip);
+-	path = get_srcline(self->ms.map->dso->long_name, self->ip);
++	path = get_srcline(self->ms.map->dso, self->ip);
  	self->srcline = path;
  
+ out_path:
 diff --git a/tools/perf/util/srcline.c b/tools/perf/util/srcline.c
-index 7e92cca6f502..777f91880cdb 100644
+index 777f91880cdb..c736d9428cf2 100644
 --- a/tools/perf/util/srcline.c
 +++ b/tools/perf/util/srcline.c
-@@ -57,11 +57,17 @@ char *get_srcline(const char *dso_name, unsigned long addr)
+@@ -4,6 +4,7 @@
+ 
+ #include <linux/kernel.h>
+ 
++#include "util/dso.h"
+ #include "util/util.h"
+ #include "util/debug.h"
+ 
+@@ -53,11 +54,12 @@ out:
+ 	return ret;
+ }
+ 
+-char *get_srcline(const char *dso_name, unsigned long addr)
++char *get_srcline(struct dso *dso, unsigned long addr)
  {
  	char *file;
  	unsigned line;
--	char *srcline;
-+	char *srcline = SRCLINE_UNKNOWN;
+ 	char *srcline = SRCLINE_UNKNOWN;
++	char *dso_name = dso->long_name;
  	size_t size;
  
-+	if (dso_name[0] == '[')
-+		goto out;
+ 	if (dso_name[0] == '[')
+diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
+index 9a0bbe45f642..20dd24d8f338 100644
+--- a/tools/perf/util/util.h
++++ b/tools/perf/util/util.h
+@@ -282,7 +282,9 @@ void get_term_dimensions(struct winsize *ws);
+ 
+ #define SRCLINE_UNKNOWN  ((char *) "??:0")
+ 
+-char *get_srcline(const char *dso_name, unsigned long addr);
++struct dso;
 +
-+	if (!strncmp(dso_name, "/tmp/perf-", 10))
-+		goto out;
-+
- 	if (!addr2line(dso_name, addr, &file, &line))
--		return SRCLINE_UNKNOWN;
-+		goto out;
++char *get_srcline(struct dso *dso, unsigned long addr);
+ void free_srcline(char *srcline);
  
- 	/* just calculate actual length */
- 	size = snprintf(NULL, 0, "%s:%u", file, line) + 1;
-@@ -73,6 +79,7 @@ char *get_srcline(const char *dso_name, unsigned long addr)
- 		srcline = SRCLINE_UNKNOWN;
- 
- 	free(file);
-+out:
- 	return srcline;
- }
- 
+ #endif /* GIT_COMPAT_UTIL_H */
 -- 
 1.7.11.7
 
