@@ -1,52 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757291Ab3HAWDi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 18:03:38 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39792 "EHLO
+	id S1757332Ab3HAWEi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 18:04:38 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39795 "EHLO
 	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753202Ab3HAWDh (ORCPT
+	with ESMTP id S1753202Ab3HAWEh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 18:03:37 -0400
+	Thu, 1 Aug 2013 18:04:37 -0400
 In-Reply-To: <20130801213420.GL23006@n2100.arm.linux.org.uk>
 References: <20130801213420.GL23006@n2100.arm.linux.org.uk>
 From: Russell King <rmk+kernel@arm.linux.org.uk>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH RFC 29/51] DMA-API: ata: pata_octeon_cf: convert to use
+Subject: [PATCH RFC 30/51] DMA-API: dma: dw_dmac.c: convert to use
  dma_coerce_mask_and_coherent()
-Message-Id: <E1V50xi-0006sT-OX@rmk-PC.arm.linux.org.uk>
-Date: Thu, 01 Aug 2013 23:03:10 +0100
+Message-Id: <E1V50yg-0006sc-Tm@rmk-PC.arm.linux.org.uk>
+Date: Thu, 01 Aug 2013 23:04:10 +0100
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert this code sequence:
-	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(64);
-	pdev->dev.dma_mask = &pdev->dev.coherent_dma_mask;
-to use dma_coerce_mask_and_coherent() to avoid bypassing the architecture
-check on the DMA mask.
+This code sequence:
+	if (!pdev->dev.dma_mask) {
+		pdev->dev.dma_mask = &pdev->dev.coherent_dma_mask;
+		pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
+	}
+bypasses the architectures check on the DMA mask.  It can be replaced
+with dma_coerce_mask_and_coherent(), avoiding the direct initialization
+of this mask.
 
 Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 ---
- drivers/ata/pata_octeon_cf.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+ drivers/dma/dw/platform.c |    8 +++-----
+ 1 files changed, 3 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/ata/pata_octeon_cf.c b/drivers/ata/pata_octeon_cf.c
-index e73bef3..4c393a3 100644
---- a/drivers/ata/pata_octeon_cf.c
-+++ b/drivers/ata/pata_octeon_cf.c
-@@ -1014,8 +1014,9 @@ static int octeon_cf_probe(struct platform_device *pdev)
- 	}
- 	cf_port->c0 = ap->ioaddr.ctl_addr;
+diff --git a/drivers/dma/dw/platform.c b/drivers/dma/dw/platform.c
+index 6c9449c..2608550 100644
+--- a/drivers/dma/dw/platform.c
++++ b/drivers/dma/dw/platform.c
+@@ -191,11 +191,9 @@ static int dw_probe(struct platform_device *pdev)
+ 	if (IS_ERR(chip->regs))
+ 		return PTR_ERR(chip->regs);
  
--	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(64);
--	pdev->dev.dma_mask = &pdev->dev.coherent_dma_mask;
-+	rv = dma_coerce_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(64));
-+	if (rv)
-+		return ret;
+-	/* Apply default dma_mask if needed */
+-	if (!dev->dma_mask) {
+-		dev->dma_mask = &dev->coherent_dma_mask;
+-		dev->coherent_dma_mask = DMA_BIT_MASK(32);
+-	}
++	err = dma_coerce_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(32));
++	if (err)
++		return err;
  
- 	ata_port_desc(ap, "cmd %p ctl %p", base, ap->ioaddr.ctl_addr);
- 
+ 	pdata = dev_get_platdata(dev);
+ 	if (!pdata)
 -- 
 1.7.4.4
 
