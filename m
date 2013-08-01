@@ -1,38 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756873Ab3HAV1S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 17:27:18 -0400
-Received: from mail-wi0-f195.google.com ([209.85.212.195]:52996 "EHLO
-	mail-wi0-f195.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753985Ab3HAV1Q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 17:27:16 -0400
+	id S1755314Ab3HAV3e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 17:29:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13165 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751723Ab3HAV3d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 17:29:33 -0400
+Message-ID: <51FAD338.5000306@redhat.com>
+Date: Thu, 01 Aug 2013 17:29:28 -0400
+From: Don Dutile <ddutile@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130108 Thunderbird/10.0.12
 MIME-Version: 1.0
-Date: Thu, 1 Aug 2013 15:09:06 -0600
-Message-ID: <CAOpSVYqHbQ9K0Op7NRB1vH17YOKpaGsmFkavwxTO0vu=BC3swg@mail.gmail.com>
-Subject: Invalid checksum calculated for ipv4 SYN+ACK when opt.srr is set?
-From: Jeroen van Bemmel <jvb127@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Alex Williamson <alex.williamson@redhat.com>
+CC: bhelgaas@google.com, linux-pci@vger.kernel.org, indou.takao@jp.fujitsu.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 8/9] pci: Tune secondary bus reset timing
+References: <20130801164652.16145.79918.stgit@bling.home> <20130801165557.16145.57324.stgit@bling.home>
+In-Reply-To: <20130801165557.16145.57324.stgit@bling.home>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 08/01/2013 12:55 PM, Alex Williamson wrote:
+> The PCI spec indicates that with stable power, reset needs to be
+> asserted for a minimum of 1ms (Trst).  Seems like we should be able
+> to assume power is stable for a runtime secondary bus reset.  The
+> current code has always used 100ms with no explanation where that
+> came from.  The aer_do_secondary_bus_reset() function uses 2ms, but
+> that seems to be a misinterpretation of the PCIe spec, where hot
+> reset is implemented by TS1 ordered sets containing the hot reset
+> command.  After a 2ms delay the state machine enters the detect state,
+> but to generate a link down, only two consecutive TS1 hot reset
+> ordered sets are requred.  1ms should be plenty for that.
+>
+> After reset is de-asserted we must wait for devices to complete
+> initialization.  The specs refer to this as "recovery time" (Trhfa).
+> For PCI this is 2^25 clock cycles or 2^26 for PCI-X.  For minimum
+> bus speeds, both of those come to 1s.  PCIe "softens" this
+> requirement with the Configuration Request Retry Status (CRS)
+> completion status.  Theoretically we could use CRS to shorten the
+> wait time.  We don't make use of that here, using a fixed 1s delay
+> to allow devices to re-initialize.
+Unfortunately, I don't think CRS is widely supported to make it worth
+the additional checking & use, atm.
 
-Although rarely used and considered plain evil by some, the kernel
-code allows one to use IP source routing for TCP.
+>
+> Signed-off-by: Alex Williamson<alex.williamson@redhat.com>
+> ---
+>   drivers/pci/pci.c |   15 +++++++++++++--
+>   1 file changed, 13 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+> index 3e71887..a5c6a9b 100644
+> --- a/drivers/pci/pci.c
+> +++ b/drivers/pci/pci.c
+> @@ -3291,11 +3291,22 @@ void pci_reset_bridge_secondary_bus(struct pci_dev *dev)
+>   	pci_read_config_word(dev, PCI_BRIDGE_CONTROL,&ctrl);
+>   	ctrl |= PCI_BRIDGE_CTL_BUS_RESET;
+>   	pci_write_config_word(dev, PCI_BRIDGE_CONTROL, ctrl);
+> -	msleep(100);
+> +	/*
+> +	 * PCI spec v3.0 7.6.4.2 requires minimum Trst of 1ms.
+> +	 */
+> +	msleep(1);
+>
+>   	ctrl&= ~PCI_BRIDGE_CTL_BUS_RESET;
+>   	pci_write_config_word(dev, PCI_BRIDGE_CONTROL, ctrl);
+> -	msleep(100);
+> +
+> +	/*
+> +	 * Trhfa for conventional PCI is 2^25 clock cycles.
+> +	 * Assuming a minimum 33MHz clock this results in a 1s
+> +	 * delay before we can consider subordinate devices to
+> +	 * be re-initialized.  PCIe has some ways to shorten this,
+> +	 * but we don't make use of them yet.
+> +	 */
+> +	ssleep(1);
+Can't bus speed be determined from (config space) status bits, so
+this time can be minimized, esp. on modern, PCIe busses/links ?
+Not too many 33Mhz, legacy PCI busses that this type of
+timing is desired, or will be done to (for device assignment/vfio). :-/
 
-In tcp_v4_send_synack the following two lines of code are used:
-[...]
-__tcp_v4_send_check(skb, ireq->loc_addr, ireq->rmt_addr);
-[...]
-err = ip_build_and_send_pkt(skb, sk, ireq->loc_addr,ireq->rmt_addr,ireq->opt);
+>   }
+>   EXPORT_SYMBOL_GPL(pci_reset_bridge_secondary_bus);
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-In ip_build_and_send_pkt the 'daddr' parameter is used as follows:
-iph->daddr = (opt && opt->opt.srr ? opt->opt.faddr : daddr);
-
-It looks like the checksum may be off when (opt && opt->opt.srr ) is true?
-
-Thanks,
-Jeroen
