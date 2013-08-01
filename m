@@ -1,80 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753180Ab3HAJdq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 05:33:46 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:61560 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751258Ab3HAJdo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 05:33:44 -0400
-X-AuditID: cbfee690-b7f6f6d00000740c-fd-51fa2b77ce92
-From: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-To: linux-samsung-soc@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, kgene.kim@samsung.com, dianders@chromium.org
-Subject: [PATCH] ARM: dts: exynos5420: add ADC device tree node
-Date: Thu, 01 Aug 2013 14:58:41 +0530
-Message-id: <1375349321-18646-1-git-send-email-ch.naveen@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrMLMWRmVeSWpSXmKPExsWyRsSkWrdc+1egwfNeIYuzyw6yWfQuuMpm
-	cXnXHDaLGef3MTmweMxuuMji0bdlFaPH501yAcxRXDYpqTmZZalF+nYJXBlXlx1gKpjFXvH8
-	zkTmBsYfrF2MHBwSAiYSB94JdjFyApliEhfurWfrYuTiEBJYyihx5tosJoiEicSrhjPMILaQ
-	wCJGiaNtdRBFPUwSZ05PYwVJsAmYSRxctJodxBYRUJX43LYAzGYW8JPouP8abJCwgL3EhNsL
-	GUFsFqCa/duXgPXyCrhK3Fs3lQniIAWJOZNsQOZLCNxmk2iacZYFol5A4tvkQywQNbISmw4w
-	Q9wmKXFwxQ2WCYyCCxgZVjGKphYkFxQnpReZ6BUn5haX5qXrJefnbmIEBuDpf88m7GC8d8D6
-	EGMy0LiJzFKiyfnAAM4riTc0NjOyMDUxNTYytzQjTVhJnFe9xTpQSCA9sSQ1OzW1ILUovqg0
-	J7X4ECMTB6dUA+MkJefkJ4qC/Fd6wr5lrJoWFhpxbvYfma6pqTriX1497mH5YLb3bX/tDdEn
-	DTXSXXeOHH5Y+f+637Rfr7fP1fn3WlSA30ozpmLSggNL1e4zZF8LPnyFcetan+iir0sVZ0dN
-	bBHf/qnr40LbN8cv5P1adMRM39TC7RJLVcDnDOfUq4/vph9gVGdWYinOSDTUYi4qTgQA61K/
-	9FYCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrIIsWRmVeSWpSXmKPExsVy+t9jAd1y7V+BBvues1ucXXaQzaJ3wVU2
-	i8u75rBZzDi/j8mBxWN2w0UWj74tqxg9Pm+SC2COamC0yUhNTEktUkjNS85PycxLt1XyDo53
-	jjc1MzDUNbS0MFdSyEvMTbVVcvEJ0HXLzAFap6RQlphTChQKSCwuVtK3wzQhNMRN1wKmMULX
-	NyQIrsfIAA0krGHMuLrsAFPBLPaK53cmMjcw/mDtYuTkkBAwkXjVcIYZwhaTuHBvPRuILSSw
-	iFHiaFtdFyMXkN3DJHHm9DSwBjYBM4mDi1azg9giAqoSn9sWgNnMAn4SHfdfM4HYwgL2EhNu
-	L2QEsVmAavZvXwLWyyvgKnFv3VSgGg6gZQoScybZTGDkXsDIsIpRNLUguaA4KT3XUK84Mbe4
-	NC9dLzk/dxMjOMCfSe1gXNlgcYhRgINRiYc3Y+vPQCHWxLLiytxDjBIczEoivI81fgUK8aYk
-	VlalFuXHF5XmpBYfYkwGWj6RWUo0OR8YfXkl8YbGJuamxqaWJhYmZpakCSuJ8x5otQ4UEkhP
-	LEnNTk0tSC2C2cLEwSnVwLhmCktX8Umd82yNvGrc0j+2nCir7ehTdZRuWfP6keZzd8G5rYz/
-	bFN+mS2I7LaIFn64ijXulfax+Zo6PF2Wy91CJnzkkN4sFj77LfvbC+5T06ZPM/KrWmnM/3S2
-	m8baD66l+RaXSrp26CWLitiz8GdNz/T3KDt5bcrrHc027822eaR83flSSImlOCPRUIu5qDgR
-	AAVRix60AgAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1754070Ab3HAJin (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 05:38:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26410 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753734Ab3HAJil (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 05:38:41 -0400
+Message-ID: <51FA2C81.9040007@redhat.com>
+Date: Thu, 01 Aug 2013 11:38:09 +0200
+From: Jan Vesely <jvesely@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Jens Axboe <axboe@kernel.dk>
+CC: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        fujita.tomonori@lab.ntt.co.jp,
+        =?UTF-8?B?S2FpIE3DpGtpc2FyYQ==?= <kai.makisara@kolumbus.fi>,
+        James Bottomley <james.bottomley@hansenpartnership.com>
+Subject: Re: [PATCH RESEND v2] block: modify __bio_add_page check to accept
+ pages that don't start a new segment
+References: <51505AC1.60809@redhat.com> <20130325142457.GD5401@kernel.dk> <51506EBA.8060708@redhat.com> <20130325194009.GL5401@kernel.dk>
+In-Reply-To: <20130325194009.GL5401@kernel.dk>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jaehoon Kim <jh228.kim@samsung.com>
+On Mon 25 Mar 2013 20:40:09 CET, Jens Axboe wrote:
+> On Mon, Mar 25 2013, Jan Vesely wrote:
+>>  51506edc5741209311913
+>>
+>> On Mon 25 Mar 2013 15:24:57 CET, Jens Axboe wrote:
+>>> On Mon, Mar 25 2013, Jan Vesely wrote:
+>>>> v2: changed a comment
+>>>>
+>>>> The original behavior was to refuse all pages after the maximum number of
+>>>> segments has been reached. However, some drivers (like st) craft their buffers
+>>>> to potentially require exactly max segments and multiple pages in the last
+>>>> segment. This patch modifies the check to allow pages that can be merged into
+>>>> the last segment.
+>>>>
+>>>> Fixes EBUSY failures when using large tape block size in high
+>>>> memory fragmentation condition.
+>>>> This regression was introduced by commit
+>>>>  46081b166415acb66d4b3150ecefcd9460bb48a1
+>>>>  st: Increase success probability in driver buffer allocation
+>>>>
+>>>> Signed-off-by: Jan Vesely <jvesely@redhat.com>
+>>>>
+>>>> CC: Alexander Viro <viro@zeniv.linux.org.uk>
+>>>> CC: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+>>>> CC: Kai Makisara <kai.makisara@kolumbus.fi>
+>>>> CC: James Bottomley <james.bottomley@hansenpartnership.com>
+>>>> CC: Jens Axboe <axboe@kernel.dk>
+>>>> CC: stable@vger.kernel.org
+>>>> ---
+>>>>  fs/bio.c | 27 +++++++++++++++++----------
+>>>>  1 file changed, 17 insertions(+), 10 deletions(-)
+>>>>
+>>>> diff --git a/fs/bio.c b/fs/bio.c
+>>>> index bb5768f..bc6af71 100644
+>>>> --- a/fs/bio.c
+>>>> +++ b/fs/bio.c
+>>>> @@ -500,7 +500,6 @@ static int __bio_add_page(struct request_queue *q, struct bio *bio, struct page
+>>>>  			  *page, unsigned int len, unsigned int offset,
+>>>>  			  unsigned short max_sectors)
+>>>>  {
+>>>> -	int retried_segments = 0;
+>>>>  	struct bio_vec *bvec;
+>>>>
+>>>>  	/*
+>>>> @@ -551,18 +550,13 @@ static int __bio_add_page(struct request_queue *q, struct bio *bio, struct page
+>>>>  		return 0;
+>>>>
+>>>>  	/*
+>>>> -	 * we might lose a segment or two here, but rather that than
+>>>> -	 * make this too complex.
+>>>> +	 * The first part of the segment count check,
+>>>> +	 * reduce segment count if possible
+>>>>  	 */
+>>>>
+>>>> -	while (bio->bi_phys_segments >= queue_max_segments(q)) {
+>>>> -
+>>>> -		if (retried_segments)
+>>>> -			return 0;
+>>>> -
+>>>> -		retried_segments = 1;
+>>>> +	if (bio->bi_phys_segments >= queue_max_segments(q))
+>>>>  		blk_recount_segments(q, bio);
+>>>> -	}
+>>>> +
+>>>>
+>>>>  	/*
+>>>>  	 * setup the new entry, we might clear it again later if we
+>>>> @@ -572,6 +566,19 @@ static int __bio_add_page(struct request_queue *q, struct bio *bio, struct page
+>>>>  	bvec->bv_page = page;
+>>>>  	bvec->bv_len = len;
+>>>>  	bvec->bv_offset = offset;
+>>>> +	
+>>>> +	/*
+>>>> +	 * the other part of the segment count check, allow mergeable pages
+>>>> +	 */
+>>>> +	if ((bio->bi_phys_segments > queue_max_segments(q)) ||
+>>>> +		( (bio->bi_phys_segments == queue_max_segments(q)) &&
+>>>> +		!BIOVEC_PHYS_MERGEABLE(bvec - 1, bvec))) {
+>>>> +			bvec->bv_page = NULL;
+>>>> +			bvec->bv_len = 0;
+>>>> +			bvec->bv_offset = 0;
+>>>> +			return 0;
+>>>> +	}
+>>>> +
+>>>
+>>> This is a bit messy, I think. bi_phys_segments should never be allowed
+>>> to go beyond queue_ma_segments(), so the > test does not look right.
+>>> Maybe it's an artifact of when we fall through with this patch, we bump
+>>> bi_phys_segments even if the segments are physicall contig and
+>>> mergeable.
+>>
+>> yeah. it is messy, I tried to go for the least invasive changes.
+>>
+>> I took the '>' test from the original while loop '>='. The original
+>> behavior guaranteed bio->bi_phys_segments <= max_segments, if the bio
+>> satisfied this condition to begin with.  I did not find any guarantees
+>> that the 'bio' parameter of this function has to satisfy this
+>> condition in general.
+>>
+>> My understanding is that if a caller of this function (or one of the
+>> two that call this one) provides an invalid (segment-count-wise) bio,
+>> it will fail (return 0 added length), and let the caller handle the
+>> situation.  I admit, I did not check all the call paths that use these
+>> functions.
+>
+> Yes, that is how it works. So that should be fine.
+>
+>>> What happens when the segment is physically mergeable, but the resulting
+>>> merged segment is too large (bigger than q->limits.max_segment_size)?
+>>>
+>>
+>> ah, yes. I guess I need a check that follows __blk_recalc_rq_segments
+>> more closely.  We know that at this point all pages are merged into
+>> segments, so a helper function that would be used by both
+>> __blk_recalc_rq_segments and this check is possible.
+>>
+>>
+>> I still assume that a temporary increase of bi_phys_segments above
+>> max_segments is ok.  If we want to avoid this situation we would need
+>> to merge tail pages right away. That's imo uglier.
+>
+> Yes, it's OK if we just ensure that we clear the valid segment flag. At
+> least that would be the best sort of solution, to ensure that it's
+> recalculated properly when someone checks it.
+>
 
-Add device tree node for ADC in exynos5420.dtsi
+Hi Jens,
 
-Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-Signed-off-by: Doug Anderson <dianders@chromium.org>
----
- arch/arm/boot/dts/exynos5420.dtsi |   11 +++++++++++
- 1 file changed, 11 insertions(+)
+v3 has been around for few months and I posted v4(whitespace changes) 
+two weeks ago.
+Let me know if there's something more I can do to get these patches 
+merged.
 
-diff --git a/arch/arm/boot/dts/exynos5420.dtsi b/arch/arm/boot/dts/exynos5420.dtsi
-index 8c54c4b..074e1bc 100644
---- a/arch/arm/boot/dts/exynos5420.dtsi
-+++ b/arch/arm/boot/dts/exynos5420.dtsi
-@@ -145,4 +145,15 @@
- 		clocks = <&clock 260>, <&clock 131>;
- 		clock-names = "uart", "clk_uart_baud0";
- 	};
-+
-+	adc: adc@12D10000 {
-+		compatible = "samsung,exynos-adc-v2";
-+		reg = <0x12D10000 0x100>, <0x10040720 0x4>;
-+		interrupts = <0 106 0>;
-+		#io-channel-cells = <1>;
-+		io-channel-ranges;
-+		clocks = <&clock 270>;
-+		clock-names = "adc";
-+		status = "disabled";
-+	};
- };
--- 
-1.7.9.5
-
+regards,
+--
+Jan Vesely <jvesely@redhat.com>
