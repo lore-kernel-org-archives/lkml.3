@@ -1,77 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755166Ab3HANUy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 09:20:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57847 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751192Ab3HANUw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 09:20:52 -0400
-Date: Thu, 1 Aug 2013 09:20:17 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Takao Indoh <indou.takao@jp.fujitsu.com>
-Cc: bhelgaas@google.com, rjw@sisk.pl, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, iommu@lists.linux-foundation.org,
-        kexec@lists.infradead.org, ishii.hironobu@jp.fujitsu.com,
-        ddutile@redhat.com, bill.sumner@hp.com, alex.williamson@redhat.com,
-        hbabu@us.ibm.com, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH v2] PCI: Reset PCIe devices to stop ongoing DMA
-Message-ID: <20130801132017.GA15235@redhat.com>
-References: <1368509365-2260-1-git-send-email-indou.takao@jp.fujitsu.com>
- <51F85BCC.2070103@jp.fujitsu.com>
- <CAErSpo4yJ2yqCWv7GT7jWSVd_8SktU=xJXT78m8Vxp_wLA4Fow@mail.gmail.com>
- <1699397.FXoFYIGzbk@vostro.rjw.lan>
- <51FA015E.10901@jp.fujitsu.com>
+	id S1755295Ab3HAN2k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 09:28:40 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:49185 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751066Ab3HAN2i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 09:28:38 -0400
+Date: Thu, 1 Aug 2013 15:28:34 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung@kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 2/8] perf: Sanitize get_callchain_buffer()
+Message-ID: <20130801132833.GA431@somewhere>
+References: <1374539466-4799-1-git-send-email-fweisbec@gmail.com>
+ <1374539466-4799-3-git-send-email-fweisbec@gmail.com>
+ <20130801130146.GE1032@krava.brq.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51FA015E.10901@jp.fujitsu.com>
+In-Reply-To: <20130801130146.GE1032@krava.brq.redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 01, 2013 at 03:34:06PM +0900, Takao Indoh wrote:
-> (2013/08/01 6:23), Rafael J. Wysocki wrote:
-> > On Wednesday, July 31, 2013 03:08:03 PM Bjorn Helgaas wrote:
-> >> [+cc Rafael, linux-acpi]
-> >>
-> >> On Tue, Jul 30, 2013 at 6:35 PM, Takao Indoh <indou.takao@jp.fujitsu.com> wrote:
-> >>
-> >>> On x86, currently IOMMU initialization run *after* PCI enumeration, but
-> >>> what you are talking about is that it should be changed so that x86
-> >>> IOMMU initialization is done *before* PCI enumeration like sparc, right?
-> >>
-> >> Yes.  I don't know whether or when that initialization order will ever
-> >> be changed, but I do think we should avoid building more
-> >> infrastructure that depends on the current order.
-> >>
-> >> Changing the order is a pretty big deal because it's a lot more than
-> >> just the IOMMU.  Basically I think we should be enumerating ACPI
-> >> devices, including the IOMMU, before PCI devices, but there's a lot of
-> >> legacy involved in that area.  Added Rafael in case he has any
-> >> thoughts.
+On Thu, Aug 01, 2013 at 03:01:46PM +0200, Jiri Olsa wrote:
+> On Tue, Jul 23, 2013 at 02:31:00AM +0200, Frederic Weisbecker wrote:
+> > In case of allocation failure, get_callchain_buffer() keeps the
+> > refcount incremented for the current event.
 > > 
-> > Well, actually, I'm not really familiar with IOMMUs, sorry.
+> > As a result, when get_callchain_buffers() returns an error,
+> > we must cleanup what it did by cancelling its last refcount
+> > with a call to put_callchain_buffers().
 > > 
-> > I do think that initializing IOMMU before PCI enumeration would be better,
-> > however.  At least if the ordering should be the same on all architectures,
-> > which I suppose is the case, that's the one I'd choose.
+> > This is a hack in order to be able to call free_event()
+> > after that failure.
+> > 
+> > The original purpose of that was to simplify the failure
+> > path. But this error handling is actually counter intuitive,
+> > ugly and not very easy to follow because one expect to
+> > see the resources used to perform a service to be cleaned
+> > by the callee if case of failure, not by the caller.
+> > 
+> > So lets clean this up by cancelling the refcount from
+> > get_callchain_buffer() in case of failure. And correctly free
+> > the event accordingly in perf_event_alloc().
+> > 
+> > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> > Cc: Jiri Olsa <jolsa@redhat.com>
+> > Cc: Peter Zijlstra <peterz@infradead.org>
+> > Cc: Namhyung Kim <namhyung@kernel.org>
+> > Cc: Ingo Molnar <mingo@kernel.org>
+> > Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+> > Cc: Stephane Eranian <eranian@google.com>
+> > ---
+> >  kernel/events/callchain.c |    2 ++
+> >  kernel/events/core.c      |   41 +++++++++++++++++++++--------------------
+> >  2 files changed, 23 insertions(+), 20 deletions(-)
+> > 
+> > diff --git a/kernel/events/callchain.c b/kernel/events/callchain.c
+> > index c772061..76a8bc5 100644
+> > --- a/kernel/events/callchain.c
+> > +++ b/kernel/events/callchain.c
+> > @@ -117,6 +117,8 @@ int get_callchain_buffers(void)
+> >  	err = alloc_callchain_buffers();
+> >  exit:
+> >  	mutex_unlock(&callchain_mutex);
+> > +	if (err)
+> > +		atomic_dec(&nr_callchain_events);
 > 
-> Ok guys. If x86 IOMMU maintainer also thinks changing order is
-> necessary, maybe I need to give up device reset in kdump kernel and
-> consider doing it in panic kernel.
+> shouldn't we touch this under above lock?
 
-I don't think trying to reset all the devices in panic kernel is
-a good idea.
+Right, we should move that under the lock, or another user of the callchains may see that we failed
+the allocation and simply give up instead of retrying.
 
-We need to handle the problem at IOMMU level first which is 
-independent of whether devices have been reset or not.
+> 
+> also that above hunk decrements nr_callchain_events
+> also for following case:
+> 
+>         count = atomic_inc_return(&nr_callchain_events);
+>         if (WARN_ON_ONCE(count < 1)) {
+>                 err = -EINVAL;
+>                 goto exit;
+>         }
+> 
+> seems like it screws the count
 
-IOW, we should have the capability to initialize IOMMU first
-and be able to deal with devices which are doing DMA.
+I'm not sure what you mean here. You mean that it could be negative when the dec is done
+outside the lock?
 
-I am not against doing device reset and it most likely is a good thing
-but it should happen in second kernel and not in crashed kernel.
+> 
+> jirka
 
-Thanks
-Vivek
