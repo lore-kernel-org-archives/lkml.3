@@ -1,98 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754376Ab3HAFtw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 01:49:52 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:51694 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753180Ab3HAFtu (ORCPT
+	id S1753488Ab3HAFxW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 01:53:22 -0400
+Received: from mail-lb0-f170.google.com ([209.85.217.170]:36775 "EHLO
+	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751882Ab3HAFxU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 01:49:50 -0400
-Message-ID: <51F9F6DF.5070306@ti.com>
-Date: Thu, 1 Aug 2013 08:49:19 +0300
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Thu, 1 Aug 2013 01:53:20 -0400
+Date: Thu, 1 Aug 2013 09:53:03 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, luto@amacapital.net,
+        xemul@parallels.com, akpm@linux-foundation.org, mpm@selenic.com,
+        xiaoguangrong@linux.vnet.ibm.com, mtosatti@redhat.com,
+        kosaki.motohiro@gmail.com, sfr@canb.auug.org.au, peterz@infradead.org,
+        aneesh.kumar@linux.vnet.ibm.com
+Subject: Re: [patch 1/2] [PATCH] mm: Save soft-dirty bits on swapped pages
+Message-ID: <20130801055303.GA1764@moon>
+References: <20130730204154.407090410@gmail.com>
+ <20130730204654.844299768@gmail.com>
+ <20130801005132.GB19540@bbox>
 MIME-Version: 1.0
-To: Ben Hutchings <ben@decadent.org.uk>, Aaro Koskinen <aaro.koskinen@iki.fi>
-CC: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>,
-        <akpm@linux-foundation.org>, Felipe Balbi <balbi@ti.com>,
-        =?UTF-8?B?UGFsaSA=?= =?UTF-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>,
-        Sebastian Reichel <sre@debian.org>, Tony Lindgren <tony@atomide.com>,
-        Joni Lapilainen <joni.lapilainen@gmail.com>
-Subject: Re: [26/84] ARM: OMAP: RX-51: change probe order of touchscreen and
- panel SPI devices
-References: <lsq.1375276989.521602504@decadent.org.uk>
-In-Reply-To: <lsq.1375276989.521602504@decadent.org.uk>
-X-Enigmail-Version: 1.5.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="gHt6uuDvHioS6fAJu3F5Mhtjcn1MRxQk0"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130801005132.GB19540@bbox>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---gHt6uuDvHioS6fAJu3F5Mhtjcn1MRxQk0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On Thu, Aug 01, 2013 at 09:51:32AM +0900, Minchan Kim wrote:
+> > Index: linux-2.6.git/include/linux/swapops.h
+> > ===================================================================
+> > --- linux-2.6.git.orig/include/linux/swapops.h
+> > +++ linux-2.6.git/include/linux/swapops.h
+> > @@ -67,6 +67,8 @@ static inline swp_entry_t pte_to_swp_ent
+> >  	swp_entry_t arch_entry;
+> >  
+> >  	BUG_ON(pte_file(pte));
+> > +	if (pte_swp_soft_dirty(pte))
+> > +		pte = pte_swp_clear_soft_dirty(pte);
+> 
+> Why do you remove soft-dirty flag whenever pte_to_swp_entry is called?
+> Isn't there any problem if we use mincore?
 
-Hi,
+No, there is no problem. pte_to_swp_entry caller when we know that pte
+we're decoding is having swap format (except the case in swap code which
+figures out the number of bits allowed for offset). Still since this bit
+is set on "higher" level than __swp_type/__swp_offset helpers it should
+be cleaned before the value from pte comes to "one level down" helpers
+function.
 
-On 31/07/13 16:23, Ben Hutchings wrote:
-> 3.2.50-rc1 review patch.  If anyone has any objections, please let me k=
-now.
->=20
-> ------------------
->=20
-> From: Aaro Koskinen <aaro.koskinen@iki.fi>
->=20
-> commit e65f131a14726e5f1b880a528271a52428e5b3a5 upstream.
->=20
-> Commit 9fdca9df (spi: omap2-mcspi: convert to module_platform_driver)
-> broke the SPI display/panel driver probe on RX-51/N900. The exact cause=
- is
-> not fully understood, but it seems to be related to the probe order. SP=
-I
-> communication to the panel driver (spi1.2) fails unless the touchscreen=
+> > +static inline int maybe_same_pte(pte_t pte, pte_t swp_pte)
+> 
+> Nitpick.
+> If maybe_same_pte is used widely, it looks good to me
+> but it's used for only swapoff at the moment so I think pte_swap_same
+> would be better name.
 
-> (spi1.0) has been probed/initialized before. When the omap2-mcspi drive=
-r
-> was converted to a platform driver, it resulted in that the devices are=
+I don't see much difference, but sure, lets rename it on top once series
+in -mm tree, sounds good?
 
-> probed immediately after the board registers them in the order they are=
-
-> listed in the board file.
-
-I'm not really familiar with this issue, but:
-
-The commit 9fdca9df was merged to v3.5. Has that also been backported to
-3.2? If not, I don't think this patch is needed for 3.2, as the patch
-causing the problem is not in 3.2.
-
- Tomi
-
-
-
---gHt6uuDvHioS6fAJu3F5Mhtjcn1MRxQk0
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQIcBAEBAgAGBQJR+fbfAAoJEPo9qoy8lh716foQAK6EuU4G5Y3IXpsA/Zt5sPp4
-CK0GIoRcXIAz9tYqSbPG1+leIXDgsy9G7l9FSSWCcbfdo9pHCwlhUqsOs9enM7vo
-qiD5NjIln1+aoXnsdkjj/YwrArE/fec8DrnLzqjEubKDwWyeMDaBReEpS+nX5hof
-Kar5fYB30hNComcI8ReEzYS7ES5LkXir4Vn8HHDTuTign3ezMQTesLWHzefsRyXq
-EeIuDlX1qzVLQIKAwMoVmNQnycQ/H5P7Cv4DVfihaaQsn7Bmbtb+B4tGpT6U44Q4
-uBpz0O4PjL3vNIZUYzlV7fFqpTpAjJgaOC0RCsiA8o9AJmio/0oNxGiH8sf7yi9g
-8amCnwRVGi8dnYuZfwwvCoS3yZn0KISwn+gFLy2VFjeweGWZ9ErGOYcp4IKBOgRW
-K36gVZqJ3H/eAfZfhLYlOm5h1pbdisAFl57HmawIWSvSCVMPreK9ToYwtC87/jz+
-/7gC6bcx/KxQsAqYTiH7oXPUT45jH0O+iaz+/qHRsFxkxMgVJmpC+e6sKW1bNuk6
-ASWPPLczsZIQDck6dmjKbNHRdlo20bPIqbJSBNlwSQFcUnC7h+tmtuhuue15Dt45
-XdlHOlSjtAYEmrESc3NZuk7r1d8OCkZNC/iEumQCKPQ8bcstTj1o2gCEb3boOkXM
-We9B+iqFvYGXIf4pugux
-=pJkk
------END PGP SIGNATURE-----
-
---gHt6uuDvHioS6fAJu3F5Mhtjcn1MRxQk0--
+	Cyrill
