@@ -1,79 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756251Ab3HAOFX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 10:05:23 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:57463 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755365Ab3HAOFU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 10:05:20 -0400
-From: Roger Quadros <rogerq@ti.com>
-To: <balbi@ti.com>
-CC: <tony@atomide.com>, <kishon@ti.com>, <george.cherian@ti.com>,
-        <dmurphy@ti.com>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Roger Quadros <rogerq@ti.com>
-Subject: [PATCH 0/7] phy: omap-usb: Support multiple instances and new types
-Date: Thu, 1 Aug 2013 17:05:08 +0300
-Message-ID: <1375365915-21380-1-git-send-email-rogerq@ti.com>
-X-Mailer: git-send-email 1.7.4.1
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1756748Ab3HAOKT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 10:10:19 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:52689 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754803Ab3HAOKQ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 10:10:16 -0400
+Subject: Re: [PATCH] hwspinlock/msm: Add support for Qualcomm MSM HW Mutex block
+Mime-Version: 1.0 (Apple Message framework v1283)
+Content-Type: text/plain; charset=us-ascii
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <9EB1A821-7137-4812-B58A-20F669BCA7DD@codeaurora.org>
+Date: Thu, 1 Aug 2013 09:10:30 -0500
+Cc: "linux-kernel@vger.kernel.org list" <linux-kernel@vger.kernel.org>,
+        linux-arm-msm@vger.kernel.org, devicetree@vger.kernel.org,
+        Jeffrey Hugo <jhugo@codeaurora.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Eric Holmberg <eholmber@codeaurora.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <0A09DA0F-86B4-4961-88E2-64FA0A4D380D@codeaurora.org>
+References: <1375128719-23642-1-git-send-email-galak@codeaurora.org> <E9700EA7-7154-46C5-9258-03F030DF69F6@codeaurora.org> <20130729214035.GC8868@codeaurora.org> <9EB1A821-7137-4812-B58A-20F669BCA7DD@codeaurora.org>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+X-Mailer: Apple Mail (2.1283)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-This patchset does the following:
+On Jul 29, 2013, at 4:54 PM, Kumar Gala wrote:
 
-* Restructure and add support for new PHY types. We now support the follwing
-four types
+> 
+> On Jul 29, 2013, at 4:40 PM, Stephen Boyd wrote:
+> 
+>> On 07/29, Kumar Gala wrote:
+>>>> diff --git a/Documentation/devicetree/bindings/arm/msm/tcsr-mutex.txt b/Documentation/devicetree/bindings/arm/msm/tcsr-mutex.txt
+>>>> new file mode 100644
+>>>> index 0000000..ddd6889
+>>>> --- /dev/null
+>>>> +++ b/Documentation/devicetree/bindings/arm/msm/tcsr-mutex.txt
+>> 
+>> Maybe this should go under a new hwspinlock directory?
+> 
+> Will look for Ohad to comment on this.
+> 
+>> 
+>>>> @@ -0,0 +1,20 @@
+>>>> +Qualcomm MSM Hardware Mutex Block:
+>>>> +
+>>>> +The hardware block provides mutexes utilized between different processors
+>>>> +on the SoC as part of the communication protocol used by these processors.
+>>>> +
+>>>> +Required properties:
+>>>> +- compatible: should be "qcom,tcsr-mutex"
+>>>> +- reg: Should contain registers location and length of mutex registers
+>>>> +- reg-names:
+>>>> +	"mutex-base"  - string to identify mutex registers
+>>>> +- qcom,num-locks: the number of locks/mutexes supported
+>>>> +
+>>>> +Example:
+>>>> +
+>>>> +	qcom,tcsr-mutex@fd484000 {
+>> 
+>> Maybe it should be hw-mutex@fd484000?
+> 
+> again, will look for Ohad to make some comment on this.
+> 
+>>>> +		compatible = "qcom,tcsr-mutex";
+>>>> +		reg = <0xfd484000 0x1000>;
+>>>> +		reg-names = "mutex-base";
+>>>> +		qcom,num-locks = <32>;
+>>>> +	};
 
- TYPE1 - if it has otghs_control mailbox register (e.g. on OMAP4)
- TYPE2 - if it has Power down bit in control_dev_conf register. e.g. USB2 PHY
- TYPE3 - if it has DPLL and individual Rx & Tx power control. e.g. USB3 PHY or SATA PHY
- TYPE4 - if it has both power down and power aux registers. e.g. USB2 PHY on DRA7
+Ohad, ping.
 
-* Have only one power control API "omap_control_usb_phy_power()" instead of a
-different one for each PHY type.
+- k
 
-* Get rid of omap_get_control_dev() so that we can support multiple instances
-of the control device. We take advantage of the fact that omap control USB device
-is only present on OMAP4 onwards and hence only supports DT boot. The users
-of control USB device can get a reference to it from the device node's phandle.
-
-Patches are based on top of v3.11-rc3 with balbi/next on top.
-
-Smoke tested on OMAP4 panda with MUSB in gadget mode (g_zero).
-
-You can find the patches in branch
- usb-control-module
-in git tree
- git://github.com/rogerq/linux.git
-
-cheers,
--roger
-
-Roger Quadros (7):
-  usb: phy: omap: Add new PHY types and remove
-    omap_control_usb3_phy_power()
-  usb: phy: omap-usb2: Don't use omap_get_control_dev()
-  usb: phy: omap-usb3: Don't use omap_get_control_dev()
-  usb: musb: omap2430: Don't use omap_get_control_dev()
-  usb: phy: omap: get rid of omap_get_control_dev()
-  ARM: dts: omap4: update omap-control-usb nodes
-  ARM: dts: omap5: update omap-control-usb node
-
- Documentation/devicetree/bindings/usb/omap-usb.txt |   23 ++--
- arch/arm/boot/dts/omap4.dtsi                       |   17 ++-
- arch/arm/boot/dts/omap5.dtsi                       |   18 ++-
- drivers/usb/musb/omap2430.c                        |   22 +++-
- drivers/usb/phy/phy-omap-control.c                 |  160 ++++++++++---------
- drivers/usb/phy/phy-omap-usb2.c                    |   20 ++-
- drivers/usb/phy/phy-omap-usb3.c                    |   26 +++-
- include/linux/usb/omap_control_usb.h               |   23 +--
- 8 files changed, 182 insertions(+), 127 deletions(-)
-
--- 
-1.7.4.1
+--
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
 
