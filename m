@@ -1,52 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752358Ab3HAILk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 04:11:40 -0400
-Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:30184
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750742Ab3HAILb convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 04:11:31 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VS1(zzzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzzz2dh2a8h668h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e1dhbe9i1155h)
-From: Stoica Cristian-B18196 <B18196@freescale.com>
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-CC: "davem@davemloft.net" <davem@davemloft.net>,
-        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Geanta Neag Horia Ioan-B05471 <B05471@freescale.com>
-Subject: RE: [PATCH] crypto: remove double execution of the same test suite
-Thread-Topic: [PATCH] crypto: remove double execution of the same test suite
-Thread-Index: AQHOg9FdzcCcDGTvdUiYyn1yFz3yGZl/meaAgAB4waA=
-Date: Thu, 1 Aug 2013 08:11:25 +0000
-Message-ID: <1628287275CAA9409F1E349DEF3C6CCE4D31E1@039-SN2MPN1-013.039d.mgd.msft.net>
-References: <1374163027-17201-1-git-send-email-cristian.stoica@freescale.com>
- <20130801004757.GA24286@gondor.apana.org.au>
-In-Reply-To: <20130801004757.GA24286@gondor.apana.org.au>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.171.73.198]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752790Ab3HAIMY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 04:12:24 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:50051 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750848Ab3HAIMR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 04:12:17 -0400
+Date: Thu, 1 Aug 2013 10:12:15 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Aaron Lu <aaron.lu@intel.com>
+Cc: intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+        lkml <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: i915 backlight
+Message-ID: <20130801081215.GB3448@nazgul.tnic>
+References: <20130731162252.GC4724@pd.tnic>
+ <20130731163623.GD4724@pd.tnic>
+ <51F9B63F.7060509@intel.com>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <51F9B63F.7060509@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Which algorithm (apart from crc* which I know and will fix) uses the
-> same driver name as its algorithm name? Doing this will cause issues
-> when an alternative implementation for that algorithm gets added.
+On Thu, Aug 01, 2013 at 09:13:35AM +0800, Aaron Lu wrote:
+> Can you please run acpi_listen and then press the Fn-Fx key, see if the
+> events are correctly sent out?
 
-Fixing names resolves double calls only for the thread cryptomgr_test->alg_test where the call is:
-    err = alg_test(param->driver, param->alg, type, CRYPTO_ALG_TESTED);
+Like this?
 
-It doesn't fix the thread tcrypt_test->alg_test where the call is:
-    ret = alg_test(alg, alg, 0, 0);
+# acpi_listen
+video/brightnessdown BRTDN 00000087 00000000
+video/brightnessup BRTUP 00000086 00000000
+video/brightnessdown BRTDN 00000087 00000000
+video/brightnessup BRTUP 00000086 00000000
+video/brightnessdown BRTDN 00000087 00000000
+video/brightnessup BRTUP 00000086 00000000
+video/brightnessdown BRTDN 00000087 00000000
+video/brightnessup BRTUP 00000086 00000000
+video/brightnessdown BRTDN 00000087 00000000
+^C
 
-Cristian S.
+> From the bug page:
+> https://bugzilla.kernel.org/show_bug.cgi?id=51231#c80
+> I got the impression that both the acpi_video interface and the vendor
+> interface thinkpad_screen are broken. So adding this cmdline here works
+> suggests that either thinkpad_screen works or thinkpad vendor driver
+> doesn't get loaded or doesn't create that interface for some reason.
+> 
+> Alternatively, if the intel_backlight interface works(highly possible),
+> you can use xorg.conf to specify the that backlight interface for X.
+> 
+> Section "Device"
+>         Option     "Backlight"	"intel_backlight"
+> 	Identifier  "Card0"
+> 	Driver      "intel"
+> 	BusID       "PCI:0:2:0"
+> EndSection
 
+Yeah, that didn't work *but* manually writing to both:
+
+/sys/class/backlight/acpi_video0/brightness
+
+and
+
+/sys/class/backlight/intel_backlight/brightness
+
+works.
+
+The ranges are different, though:
+
+intel_backlight/actual_brightness:1000
+intel_backlight/bl_power:0
+intel_backlight/brightness:1000
+intel_backlight/max_brightness:4437
+intel_backlight/type:raw
+
+acpi_video0/actual_brightness:41
+acpi_video0/bl_power:0
+acpi_video0/brightness:41
+acpi_video0/max_brightness:100
+acpi_video0/type:firmware
+
+I guess I need to write me a dirty script for now ... :-)
+
+Thanks guys.
