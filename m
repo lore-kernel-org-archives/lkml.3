@@ -1,103 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753234Ab3HACAO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 22:00:14 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:52981 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751453Ab3HACAM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 22:00:12 -0400
-Message-ID: <51F9C0FF.7030703@ti.com>
-Date: Wed, 31 Jul 2013 20:59:27 -0500
-From: Joel Fernandes <joelf@ti.com>
-Reply-To: <joelf@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S1753321Ab3HACBL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 22:01:11 -0400
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:57520 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752198Ab3HACBJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 22:01:09 -0400
+Date: Thu, 1 Aug 2013 10:01:01 +0800
+From: Shaohua Li <shli@kernel.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org, neilb@suse.de,
+        djbw@fb.com
+Subject: Re: [patch 1/3] raid5: offload stripe handle to workqueue
+Message-ID: <20130801020101.GB12580@kernel.org>
+References: <20130730055207.698660010@kernel.org>
+ <20130730055257.527231772@kernel.org>
+ <20130730125306.GC2599@htj.dyndns.org>
+ <20130730130708.GA30352@kernel.org>
+ <20130730135751.GD12016@htj.dyndns.org>
+ <20130731012434.GA1504@kernel.org>
+ <20130731103332.GE2810@htj.dyndns.org>
 MIME-Version: 1.0
-To: Sekhar Nori <nsekhar@ti.com>
-CC: Tony Lindgren <tony@atomide.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Sricharan R <r.sricharan@ti.com>, Rajendra Nayak <rnayak@ti.com>,
-        Lokesh Vutla <lokeshvutla@ti.com>, Matt Porter <matt@ohporter.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
-        Mark Brown <broonie@linaro.org>,
-        Benoit Cousson <benoit.cousson@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>, Balaji TK <balajitk@ti.com>,
-        Gururaja Hebbar <gururaja.hebbar@ti.com>, Chris Ball <cjb@laptop.org>,
-        Jason Kridner <jkridner@beagleboard.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>
-Subject: Re: [PATCH 7/9] ARM: edma: Don't clear EMR of channel in edma_stop
-References: <1375104595-16018-1-git-send-email-joelf@ti.com> <1375104595-16018-8-git-send-email-joelf@ti.com> <51F77982.7030601@ti.com> <51F89B0B.4080803@ti.com> <51F8DA5C.9060503@ti.com>
-In-Reply-To: <51F8DA5C.9060503@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130731103332.GE2810@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/31/2013 04:35 AM, Sekhar Nori wrote:
-> On Wednesday 31 July 2013 10:35 AM, Joel Fernandes wrote:
->> On 07/30/2013 03:29 AM, Sekhar Nori wrote:
->>> On Monday 29 July 2013 06:59 PM, Joel Fernandes wrote:
->>>> We certainly don't want error conditions to be cleared anywhere
->>>
->>> 'anywhere' is a really loaded term.
->>>
->>>> as this will make us 'forget' about missed events. We depend on
->>>> knowing which events were missed in order to be able to reissue them.
->>>
->>>> This fixes a race condition where the EMR was being cleared
->>>> by the transfer completion interrupt handler.
->>>>
->>>> Basically, what was happening was:
->>>>
->>>>             Missed event
->>>>              |
->>>>              |
->>>>              V
->>>> SG1-SG2-SG3-Null
->>>>          \
->>>>           \__TC Interrupt (Almost same time as ARM is executing
->>>> TC interrupt handler, an event got missed and also forgotten
->>>> by clearing the EMR).
->>>
->>> Sorry, but I dont see how edma_stop() is coming into picture in the race
->>> you describe?
->>
->> In edma_callback function, for the case of DMA_COMPLETE (Transfer
->> completion interrupt), edma_stop() is called when all sets have been
->> processed. This had the effect of clearing the EMR.
+On Wed, Jul 31, 2013 at 06:33:32AM -0400, Tejun Heo wrote:
+> Hello,
 > 
-> Ah, thanks. I was missing the fact that the race comes into picture only
-> when using the DMA engine driver. I guess that should be mentioned
-> somewhere since it is not immediately obvious.
+> On Wed, Jul 31, 2013 at 09:24:34AM +0800, Shaohua Li wrote:
+> > stripe is the work unit actually. As I said, if I queue a work for each stripe,
+> > just queue_work() will make the system blast because of the pwq->pool->lock
+> > contention. dispatching one work has another side effect that I can't add block
 > 
-> The patch looks good to me. So if you respin just this one with some
-> updated explanation based on what you wrote below, I will take it.
+> Hmmm.... I see.  I'm not familiar with the code base and could be
+> missing something but how does the custom stripe dispatch queue
+> synchronize?  Doesn't that make use of a lock anyway?  If so, how
+> would scheduling separate work items be worse?  
 
-Sure I'll do that. Also the trigger_channel patch, will you be taking
-that one too? I can send these 2 in a series as they touch
-arch/arm/common/edma.c
+It does have lock, but when a stripe is queued to handle, no lock is required.
+So the workqueue lock will be high contended.
+
+> Also, can you please
+> elaborate the block plug part?
+
+Basically I do:
+
+blk_start_plug()
+handle_stripe() //may dispatch request
+blk_end_plug()
+
+If only handle one stripe between block plug, the plug is useless, so I need
+handle several stripes.
 
 Thanks,
-
--Joel
-
-
-
-> 
-> Thanks,
-> Sekhar
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-
+Shaohua
