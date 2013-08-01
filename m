@@ -1,69 +1,361 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754426Ab3HALtl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 07:49:41 -0400
-Received: from mail-qe0-f44.google.com ([209.85.128.44]:33132 "EHLO
-	mail-qe0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753450Ab3HALtk convert rfc822-to-8bit (ORCPT
+	id S1754729Ab3HALuJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 07:50:09 -0400
+Received: from smtp.eu.citrix.com ([46.33.159.39]:59956 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753972Ab3HALuH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 07:49:40 -0400
-Content-Type: text/plain; charset=US-ASCII
-Mime-Version: 1.0 (Mac OS X Mail 6.3 \(1503\))
-Subject: Re: [PATCH] Xen: Fix retry calls into PRIVCMD_MMAPBATCH*.
-From: Andres Lagar-Cavilla <andreslc@gridcentric.ca>
-In-Reply-To: <51FA4547.7080408@citrix.com>
-Date: Thu, 1 Aug 2013 07:49:37 -0400
-Cc: Andres Lagar-Cavilla <andreslc@gridcentric.ca>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
+	Thu, 1 Aug 2013 07:50:07 -0400
+X-IronPort-AV: E=Sophos;i="4.89,793,1367971200"; 
+   d="scan'208";a="7361895"
+From: Roger Pau Monne <roger.pau@citrix.com>
+To: <xen-devel@lists.xen.org>, <linux-kernel@vger.kernel.org>
+CC: Roger Pau Monne <roger.pau@citrix.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andres Lagar-Cavilla <andres@lagarcavilla.com>,
-        <boris.ostrovsky@oracle.com>
-Content-Transfer-Encoding: 7BIT
-Message-Id: <5373EBB3-5CF1-4A2F-B821-1DD788877F75@gridcentric.ca>
-References: <1375203632-23854-1-git-send-email-andres@lagarcavilla.org> <2BE2F119-7375-4C8D-933D-9BCD5A9B7552@gridcentric.ca> <51FA4547.7080408@citrix.com>
-To: David Vrabel <david.vrabel@citrix.com>
-X-Mailer: Apple Mail (2.1503)
+        David Vrabel <david.vrabel@citrix.com>
+Subject: [PATCH v1] p2m: use GNTTABOP_unmap_and_duplicate if available
+Date: Thu, 1 Aug 2013 13:46:37 +0200
+Message-ID: <1375357597-6186-1-git-send-email-roger.pau@citrix.com>
+X-Mailer: git-send-email 1.7.7.5 (Apple Git-26)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Aug 1, 2013, at 7:23 AM, David Vrabel <david.vrabel@citrix.com> wrote:
+The new GNTTABOP_unmap_and_duplicate operation doesn't zero the
+mapping passed in new_addr, allowing us to perform batch unmaps in p2m
+code without requiring the use of a multicall.
 
-> On 01/08/13 04:30, Andres Lagar-Cavilla wrote:
->> -- Resend as I haven't seen this hit the lists. Maybe some smtp misconfig. Apologies. Also expanded cc --
->> 
->> When a foreign mapper attempts to map guest frames that are paged out,
->> the mapper receives an ENOENT response and will have to try again
->> while a helper process pages the target frame back in.
->> 
->> Gating checks on PRIVCMD_MMAPBATCH* ioctl args were preventing retries
->> of mapping calls.
-> 
-> This breaks the auto_translated_physmap case as will allocate another
-> set of empty pages and leak the previous set.
+Signed-off-by: Roger Pau Monné <roger.pau@citrix.com>
+Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: David Vrabel <david.vrabel@citrix.com>
+---
+Changes since RFC:
+ * Move shared code between _single and _batch to helper
+   functions.
+---
+I don't currently have a NFS server (the one I had is currently not
+working due to SD card corruption) and I cannot set up one right now,
+so I've only tested this with a raw image stored in a local disk.
+---
+ arch/x86/include/asm/xen/page.h     |    4 +-
+ arch/x86/xen/p2m.c                  |  154 +++++++++++++++++++++++++++++++----
+ drivers/xen/grant-table.c           |   24 ++----
+ include/xen/interface/grant_table.h |   22 +++++
+ 4 files changed, 169 insertions(+), 35 deletions(-)
 
-David,
-not able to follow you here. Under what circumstances will another set of empty pages be allocated? And where? are we talking page table pages?
-
-> 
-> This privcmd_enforce_singleshot_mapping() stuff seems very odd anyway.
-> Does anyone know what it was for originally?  It would be preferrable if
-> we could update the mappings with a new set of foreign MFNs without
-> having to tear down the VMA and recreate a new VMA.
-
-I believe it's mostly historical. I agree with you on principle, but recreating VMAs is super-cheap.
-
-Andres
-> 
->> --- a/drivers/xen/privcmd.c
->> +++ b/drivers/xen/privcmd.c
-> [...]
->> +/* For MMAPBATCH*. This allows asserting the singleshot mapping
->> + * on a per pfn/pte basis. Mapping calls that fail with ENOENT
->> + * can be then retried until success. */
-> 
-> Comment coding style.
-> 
-> David
+diff --git a/arch/x86/include/asm/xen/page.h b/arch/x86/include/asm/xen/page.h
+index 6aef9fb..ea1dce6 100644
+--- a/arch/x86/include/asm/xen/page.h
++++ b/arch/x86/include/asm/xen/page.h
+@@ -51,8 +51,8 @@ extern unsigned long set_phys_range_identity(unsigned long pfn_s,
+ 
+ extern int m2p_add_override(unsigned long mfn, struct page *page,
+ 			    struct gnttab_map_grant_ref *kmap_op);
+-extern int m2p_remove_override(struct page *page,
+-				struct gnttab_map_grant_ref *kmap_op);
++extern int m2p_remove_override(struct page **pages,
++				struct gnttab_map_grant_ref *kmap_ops, int count);
+ extern struct page *m2p_find_override(unsigned long mfn);
+ extern unsigned long m2p_find_override_pfn(unsigned long mfn, unsigned long pfn);
+ 
+diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
+index 0d4ec35..e92636c 100644
+--- a/arch/x86/xen/p2m.c
++++ b/arch/x86/xen/p2m.c
+@@ -154,6 +154,8 @@
+ #include <linux/hash.h>
+ #include <linux/sched.h>
+ #include <linux/seq_file.h>
++#include <linux/slab.h>
++#include <linux/hardirq.h>
+ 
+ #include <asm/cache.h>
+ #include <asm/setup.h>
+@@ -853,6 +855,7 @@ bool set_phys_to_machine(unsigned long pfn, unsigned long mfn)
+ 
+ static RESERVE_BRK_ARRAY(struct list_head, m2p_overrides, M2P_OVERRIDE_HASH);
+ static DEFINE_SPINLOCK(m2p_override_lock);
++extern bool gnttab_supports_duplicate;
+ 
+ static void __init m2p_override_init(void)
+ {
+@@ -933,8 +936,8 @@ int m2p_add_override(unsigned long mfn, struct page *page,
+ 	return 0;
+ }
+ EXPORT_SYMBOL_GPL(m2p_add_override);
+-int m2p_remove_override(struct page *page,
+-		struct gnttab_map_grant_ref *kmap_op)
++
++static inline int remove_page_override(struct page *page)
+ {
+ 	unsigned long flags;
+ 	unsigned long mfn;
+@@ -965,6 +968,49 @@ int m2p_remove_override(struct page *page,
+ 	ClearPagePrivate(page);
+ 
+ 	set_phys_to_machine(pfn, page->index);
++
++	return 0;
++}
++
++static inline int check_duplicate_mfn(struct page *page, unsigned long mfn)
++{
++	unsigned long pfn;
++	int ret = 0;
++
++	/*
++	 * p2m(m2p(mfn)) == FOREIGN_FRAME(mfn): the mfn is already present
++	 * somewhere in this domain, even before being added to the
++	 * m2p_override (see comment above in m2p_add_override).
++	 * If there are no other entries in the m2p_override corresponding
++	 * to this mfn, then remove the FOREIGN_FRAME_BIT from the p2m for
++	 * the original pfn (the one shared by the frontend): the backend
++	 * cannot do any IO on this page anymore because it has been
++	 * unshared. Removing the FOREIGN_FRAME_BIT from the p2m entry of
++	 * the original pfn causes mfn_to_pfn(mfn) to return the frontend
++	 * pfn again.
++	 */
++	mfn &= ~FOREIGN_FRAME_BIT;
++	ret = __get_user(pfn, &machine_to_phys_mapping[mfn]);
++	if (ret == 0 && get_phys_to_machine(pfn) == FOREIGN_FRAME(mfn) &&
++			m2p_find_override(mfn) == NULL)
++		set_phys_to_machine(pfn, mfn);
++
++	return ret;
++}
++
++int m2p_remove_override_single(struct page *page,
++		struct gnttab_map_grant_ref *kmap_op)
++{
++	unsigned long mfn;
++	unsigned long pfn;
++	int ret = 0;
++
++	pfn = page_to_pfn(page);
++	mfn = get_phys_to_machine(pfn);
++	ret = remove_page_override(page);
++	if (ret)
++		return ret;
++
+ 	if (kmap_op != NULL) {
+ 		if (!PageHighMem(page)) {
+ 			struct multicall_space mcs;
+@@ -1016,24 +1062,98 @@ int m2p_remove_override(struct page *page,
+ 		}
+ 	}
+ 
+-	/* p2m(m2p(mfn)) == FOREIGN_FRAME(mfn): the mfn is already present
+-	 * somewhere in this domain, even before being added to the
+-	 * m2p_override (see comment above in m2p_add_override).
+-	 * If there are no other entries in the m2p_override corresponding
+-	 * to this mfn, then remove the FOREIGN_FRAME_BIT from the p2m for
+-	 * the original pfn (the one shared by the frontend): the backend
+-	 * cannot do any IO on this page anymore because it has been
+-	 * unshared. Removing the FOREIGN_FRAME_BIT from the p2m entry of
+-	 * the original pfn causes mfn_to_pfn(mfn) to return the frontend
+-	 * pfn again. */
+-	mfn &= ~FOREIGN_FRAME_BIT;
+-	ret = __get_user(pfn, &machine_to_phys_mapping[mfn]);
+-	if (ret == 0 && get_phys_to_machine(pfn) == FOREIGN_FRAME(mfn) &&
+-			m2p_find_override(mfn) == NULL)
+-		set_phys_to_machine(pfn, mfn);
++	ret = check_duplicate_mfn(page, mfn);
++	if (ret)
++		return ret;
+ 
+ 	return 0;
+ }
++
++int m2p_remove_override_batch(struct page **pages,
++		struct gnttab_map_grant_ref *kmap_ops, int count)
++{
++	struct gnttab_unmap_and_duplicate *unmap_ops = NULL;
++	unsigned long *mfn = kcalloc(count, sizeof(mfn[0]), GFP_KERNEL);
++	int ret = 0, i;
++
++	if (!mfn)
++		return -ENOMEM;
++
++	for (i = 0; i < count; i++) {
++		mfn[i] = get_phys_to_machine(page_to_pfn(pages[i]));
++		ret = remove_page_override(pages[i]);
++		if (ret)
++			goto out;
++	}
++
++	if (kmap_ops != NULL) {
++		struct page *scratch_page = get_balloon_scratch_page();
++		unsigned long scratch_page_address = (unsigned long)
++					__va(page_to_pfn(scratch_page) << PAGE_SHIFT);
++		int invcount = 0;
++
++		unmap_ops = kcalloc(count, sizeof(unmap_ops[0]), GFP_KERNEL);
++		if (!unmap_ops) {
++			put_balloon_scratch_page();
++			ret = -ENOMEM;
++			goto out;
++		}
++		for (i = 0; i < count; i++) {
++			if (!PageHighMem(pages[i])) {
++				unmap_ops[invcount].host_addr = kmap_ops[i].host_addr;
++				unmap_ops[invcount].new_addr = scratch_page_address;
++				unmap_ops[invcount].handle = kmap_ops[i].handle;
++				invcount++;
++			}
++		}
++		ret = HYPERVISOR_grant_table_op(GNTTABOP_unmap_and_duplicate, unmap_ops, invcount);
++		if (ret) {
++			pr_warning("m2p_remove_override_batch: GNTTABOP_unmap_and_duplicate failed");
++			put_balloon_scratch_page();
++			ret = -1;
++			goto out;
++		}
++		put_balloon_scratch_page();
++	}
++
++	for (i = 0; i < count; i++) {
++		ret = check_duplicate_mfn(pages[i], mfn[i]);
++		if (ret)
++			goto out;
++	}
++
++out:
++	kfree(unmap_ops);
++	kfree(mfn);
++	return ret;
++}
++
++int m2p_remove_override(struct page **pages,
++		struct gnttab_map_grant_ref *kmap_ops, int count)
++{
++	int i, ret;
++	bool lazy = false;
++
++	if (gnttab_supports_duplicate) {
++		ret = m2p_remove_override_batch(pages, kmap_ops, count);
++		if (ret)
++			return ret;
++	} else {
++		if (!in_interrupt() && paravirt_get_lazy_mode() == PARAVIRT_LAZY_NONE) {
++			arch_enter_lazy_mmu_mode();
++			lazy = true;
++		}
++		for (i = 0; i < count; i++) {
++			ret = m2p_remove_override_single(pages[i], kmap_ops ?
++					       &kmap_ops[i] : NULL);
++			if (ret)
++				return ret;
++		}
++		if (lazy)
++			arch_leave_lazy_mmu_mode();
++	}
++	return ret;
++}
+ EXPORT_SYMBOL_GPL(m2p_remove_override);
+ 
+ struct page *m2p_find_override(unsigned long mfn)
+diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
+index d5418c1..835f600 100644
+--- a/drivers/xen/grant-table.c
++++ b/drivers/xen/grant-table.c
+@@ -64,6 +64,7 @@ static int gnttab_free_count;
+ static grant_ref_t gnttab_free_head;
+ static DEFINE_SPINLOCK(gnttab_list_lock);
+ unsigned long xen_hvm_resume_frames;
++bool gnttab_supports_duplicate;
+ EXPORT_SYMBOL_GPL(xen_hvm_resume_frames);
+ 
+ static union {
+@@ -934,8 +935,7 @@ int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
+ 		      struct gnttab_map_grant_ref *kmap_ops,
+ 		      struct page **pages, unsigned int count)
+ {
+-	int i, ret;
+-	bool lazy = false;
++	int ret;
+ 
+ 	ret = HYPERVISOR_grant_table_op(GNTTABOP_unmap_grant_ref, unmap_ops, count);
+ 	if (ret)
+@@ -944,20 +944,7 @@ int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
+ 	if (xen_feature(XENFEAT_auto_translated_physmap))
+ 		return ret;
+ 
+-	if (!in_interrupt() && paravirt_get_lazy_mode() == PARAVIRT_LAZY_NONE) {
+-		arch_enter_lazy_mmu_mode();
+-		lazy = true;
+-	}
+-
+-	for (i = 0; i < count; i++) {
+-		ret = m2p_remove_override(pages[i], kmap_ops ?
+-				       &kmap_ops[i] : NULL);
+-		if (ret)
+-			return ret;
+-	}
+-
+-	if (lazy)
+-		arch_leave_lazy_mmu_mode();
++	ret = m2p_remove_override(pages, kmap_ops, count);
+ 
+ 	return ret;
+ }
+@@ -1247,6 +1234,11 @@ int gnttab_init(void)
+ 	gnttab_free_count = nr_init_grefs - NR_RESERVED_ENTRIES;
+ 	gnttab_free_head  = NR_RESERVED_ENTRIES;
+ 
++	if (HYPERVISOR_grant_table_op(GNTTABOP_unmap_and_duplicate, NULL, 0))
++		gnttab_supports_duplicate = false;
++	else
++		gnttab_supports_duplicate = true;
++
+ 	printk("Grant table initialized\n");
+ 	return 0;
+ 
+diff --git a/include/xen/interface/grant_table.h b/include/xen/interface/grant_table.h
+index e40fae9..1f49dc1 100644
+--- a/include/xen/interface/grant_table.h
++++ b/include/xen/interface/grant_table.h
+@@ -428,6 +428,27 @@ struct gnttab_unmap_and_replace {
+ DEFINE_GUEST_HANDLE_STRUCT(gnttab_unmap_and_replace);
+ 
+ /*
++ * GNTTABOP_unmap_and_duplicate: Destroy one or more grant-reference mappings
++ * tracked by <handle> but atomically replace the page table entry with one
++ * pointing to the machine address under <new_addr>.
++ * NOTES:
++ *  1. The call may fail in an undefined manner if either mapping is not
++ *     tracked by <handle>.
++ *  2. After executing a batch of unmaps, it is guaranteed that no stale
++ *     mappings will remain in the device or host TLBs.
++ */
++#define GNTTABOP_unmap_and_duplicate  12
++struct gnttab_unmap_and_duplicate {
++    /* IN parameters. */
++    uint64_t host_addr;
++    uint64_t new_addr;
++    grant_handle_t handle;
++    /* OUT parameters. */
++    int16_t  status;              /* => enum grant_status */
++};
++DEFINE_GUEST_HANDLE_STRUCT(gnttab_unmap_and_duplicate_t);
++
++/*
+  * GNTTABOP_set_version: Request a particular version of the grant
+  * table shared table structure.  This operation can only be performed
+  * once in any given domain.  It must be performed before any grants
+@@ -522,6 +543,7 @@ DEFINE_GUEST_HANDLE_STRUCT(gnttab_get_version);
+ #define GNTST_bad_copy_arg    (-10) /* copy arguments cross page boundary.   */
+ #define GNTST_address_too_big (-11) /* transfer page address too large.      */
+ #define GNTST_eagain          (-12) /* Operation not done; try again.        */
++#define GNTST_enosys          (-13) /* Operation not implemented.            */
+ 
+ #define GNTTABOP_error_msgs {                   \
+     "okay",                                     \
+-- 
+1.7.7.5 (Apple Git-26)
 
