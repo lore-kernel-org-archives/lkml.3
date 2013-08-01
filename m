@@ -1,57 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756753Ab3HARYL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 13:24:11 -0400
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:56605 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751980Ab3HARYI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 13:24:08 -0400
+	id S1757066Ab3HARYX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 13:24:23 -0400
+Received: from mga02.intel.com ([134.134.136.20]:31683 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751855Ab3HARYU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 13:24:20 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,795,1367996400"; 
+   d="scan'208";a="355628842"
+Message-ID: <51FA99C3.8020508@intel.com>
+Date: Thu, 01 Aug 2013 10:24:19 -0700
+From: John Fastabend <john.r.fastabend@intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <51FA7DCB.5090201@linux.vnet.ibm.com>
-References: <2362640.pUofnXyzOi@vostro.rjw.lan>
-	<51FA1818.2050203@linux.vnet.ibm.com>
-	<CAKohponkEWs2r5ibR8RTAN6D2LfNfDB7bvy1nqdTN4C3jQHdJA@mail.gmail.com>
-	<51FA7DCB.5090201@linux.vnet.ibm.com>
-Date: Thu, 1 Aug 2013 22:54:08 +0530
-Message-ID: <CAKohpokdZ=JE8riYxJd+abfaDo6RfqnOjNpbFkb+ph_E-O6L_A@mail.gmail.com>
-Subject: Re: [RFC][PATCH] cpufreq: Do not hold driver module references for
- additional policy CPUs
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, cpufreq@vger.kernel.org,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org
+Subject: Re: [PATCH v2] macvlan: validate flags
+References: <1375373227-17986-1-git-send-email-mst@redhat.com>
+In-Reply-To: <1375373227-17986-1-git-send-email-mst@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1 August 2013 20:54, Srivatsa S. Bhat
-<srivatsa.bhat@linux.vnet.ibm.com> wrote:
-> Well, I now agree that we don't have to keep the module refcount
-> non-zero as long as CPUs are being managed (that was just my
-> misunderstanding, sorry for the noise). However, I think the _get()
-> and _put() used in the existing code is for synchronization: that
-> is, to avoid races between trying to unload the cpufreq driver
-> module and running a hotplug notifier (and calling the driver module's
-> ->init() or ->exit() function).
+On 8/1/2013 9:09 AM, Michael S. Tsirkin wrote:
+> commit df8ef8f3aaa6692970a436204c4429210addb23a
+>      macvlan: add FDB bridge ops and macvlan flags
+> added a flags field to macvlan, which can be
+> controlled from userspace.
+> The idea is to make the interface future-proof
+> so we can add flags and not new fields.
 >
-> With that being the case, I think we can retain the module refcounts
-> and use them only for synchronization. And naturally the refcount
-> should drop to zero after the critical section; no point keeping
-> it incremented until the CPU is taken offline.
+> However, flags value isn't validated, as a result,
+> userspace can't detect which flags are supported.
 >
-> Or, am I confused again?
+> Cc: "David S. Miller" <davem@davemloft.net>
+> Cc: John Fastabend <john.r.fastabend@intel.com>
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> ---
+>
+> Changes from v1:
+> 	tweaked commit message
+> 	no code changes
+>
+> Please consider this patch for -stable.
+>
+> The idea is by the time we add more flags,
+> everyone has updated to a kernel that
+> detects errors, so userspace will be able
+> to detect supported flags cleanly.
+>
 
-No, you aren't.
+Agreed and because we haven't added more flags yet this shouldn't
+break uapi. Thanks for catching this.
 
-But, for synchronization we need some blocking stuff, so that when
-user tries to rmmod the module, it should wait until other critical
-sections are over and then unload the module. But here, we are
-simply returning from rmmod, saying that we are busy :)
+>
+>   drivers/net/macvlan.c | 7 +++++++
+>   1 file changed, 7 insertions(+)
+>
 
-So, for that kind of synchronization we better use locks available
-inside cpufreq core of if required another variable which can be
-used for refcount. But now this.
+By the same logic should we also add the check to macvlan_changelink()?
+
+> diff --git a/drivers/net/macvlan.c b/drivers/net/macvlan.c
+> index 18373b6..8445a94 100644
+> --- a/drivers/net/macvlan.c
+> +++ b/drivers/net/macvlan.c
+> @@ -736,6 +736,10 @@ static int macvlan_validate(struct nlattr *tb[], struct nlattr *data[])
+>   			return -EADDRNOTAVAIL;
+>   	}
+>
+> +	if (data && data[IFLA_MACVLAN_FLAGS] &&
+> +	    nla_get_u16(data[IFLA_MACVLAN_FLAGS]) & ~MACVLAN_FLAG_NOPROMISC)
+> +		return -EINVAL;
+> +
+>   	if (data && data[IFLA_MACVLAN_MODE]) {
+>   		switch (nla_get_u32(data[IFLA_MACVLAN_MODE])) {
+>   		case MACVLAN_MODE_PRIVATE:
+> @@ -809,6 +813,9 @@ int macvlan_common_newlink(struct net *src_net, struct net_device *dev,
+>   	if (data && data[IFLA_MACVLAN_FLAGS])
+>   		vlan->flags = nla_get_u16(data[IFLA_MACVLAN_FLAGS]);
+>
+> +	if (vlan->flags & ~MACVLAN_FLAG_NOPROMISC)
+> +		return -EINVAL;
+> +
+
+Is there really a case where newlink is called without first calling
+validate? I don't think there is so the snippet here in newlink could
+be dropped.
+
+Thanks,
+John
