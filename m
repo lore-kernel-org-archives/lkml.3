@@ -1,51 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754888Ab3HALUt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 07:20:49 -0400
-Received: from 7.mo2.mail-out.ovh.net ([188.165.48.182]:59038 "EHLO
-	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754106Ab3HALUr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 07:20:47 -0400
-Message-ID: <51FA448B.9080708@overkiz.com>
-Date: Thu, 01 Aug 2013 13:20:43 +0200
-From: boris brezillon <b.brezillon@overkiz.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S1754066Ab3HALYG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 07:24:06 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:35768 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751418Ab3HALYE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 07:24:04 -0400
+X-IronPort-AV: E=Sophos;i="4.89,793,1367971200"; 
+   d="scan'208";a="40720716"
+Message-ID: <51FA4547.7080408@citrix.com>
+Date: Thu, 1 Aug 2013 12:23:51 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Richard Genoud <richard.genoud@gmail.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-X-Ovh-Mailout: 178.32.228.2 (mo2.mail-out.ovh.net)
-Subject: Re: [PATCH 0/8] ARM: at91/dt: make use of periph id macros
-References: <1375339733-3488-1-git-send-email-b.brezillon@overkiz.com> <CACQ1gAj_KCJUnBGzv0bnGaUwMgWq-7Noe280YdLGPxK8Ofp3Bw@mail.gmail.com> <CACQ1gAjQ4raVHbMUfPZM=BQ-+SCbOJvxmR_5Vh=xpX592MZo7A@mail.gmail.com> <51FA412C.9080900@overkiz.com> <20130801111349.GQ9858@sirena.org.uk>
-In-Reply-To: <20130801111349.GQ9858@sirena.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Andres Lagar-Cavilla <andreslc@gridcentric.ca>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andres Lagar-Cavilla <andres@lagarcavilla.com>,
+        <boris.ostrovsky@oracle.com>
+Subject: Re: [PATCH] Xen: Fix retry calls into PRIVCMD_MMAPBATCH*.
+References: <1375203632-23854-1-git-send-email-andres@lagarcavilla.org> <2BE2F119-7375-4C8D-933D-9BCD5A9B7552@gridcentric.ca>
+In-Reply-To: <2BE2F119-7375-4C8D-933D-9BCD5A9B7552@gridcentric.ca>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Ovh-Tracer-Id: 5011099010777839846
-X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedriedtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedriedtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Originating-IP: [10.80.2.76]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/08/2013 13:13, Mark Brown wrote:
-> On Thu, Aug 01, 2013 at 01:06:20PM +0200, boris brezillon wrote:
->
->>> [changed Mark Brown address from opensource.wolfsonmicro.com to
->>> kernel.org (the 1st one failed)]
->> Sorry Mark. Do you want me to resend you the whole series ?
-> If it's just DT changes that don't require driver changes it's probably
-> not worth worrying about.  If there's driver changes please resend at
-> least those.
-It's just DT changes.
+On 01/08/13 04:30, Andres Lagar-Cavilla wrote:
+> -- Resend as I haven't seen this hit the lists. Maybe some smtp misconfig. Apologies. Also expanded cc --
+> 
+> When a foreign mapper attempts to map guest frames that are paged out,
+> the mapper receives an ENOENT response and will have to try again
+> while a helper process pages the target frame back in.
+> 
+> Gating checks on PRIVCMD_MMAPBATCH* ioctl args were preventing retries
+> of mapping calls.
+
+This breaks the auto_translated_physmap case as will allocate another
+set of empty pages and leak the previous set.
+
+This privcmd_enforce_singleshot_mapping() stuff seems very odd anyway.
+Does anyone know what it was for originally?  It would be preferrable if
+we could update the mappings with a new set of foreign MFNs without
+having to tear down the VMA and recreate a new VMA.
+
+> --- a/drivers/xen/privcmd.c
+> +++ b/drivers/xen/privcmd.c
+[...]
+> +/* For MMAPBATCH*. This allows asserting the singleshot mapping
+> + * on a per pfn/pte basis. Mapping calls that fail with ENOENT
+> + * can be then retried until success. */
+
+Comment coding style.
+
+David
