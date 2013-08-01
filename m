@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752661Ab3HAAcG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 20:32:06 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:43768 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752437Ab3HAAcB (ORCPT
+	id S1752933Ab3HAAcR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 20:32:17 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:40437 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752190Ab3HAAcI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 20:32:01 -0400
+	Wed, 31 Jul 2013 20:32:08 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -16,9 +16,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>, Borislav Petkov <bp@alien8.de>,
         Li Zhong <zhong@linux.vnet.ibm.com>, Mike Galbraith <efault@gmx.de>,
         Kevin Hilman <khilman@linaro.org>
-Subject: [PATCH 09/23] context_tracking: Optimize guest APIs off case with static key
-Date: Thu,  1 Aug 2013 02:31:26 +0200
-Message-Id: <1375317100-20651-10-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 14/23] context_tracking: Split low level state headers
+Date: Thu,  1 Aug 2013 02:31:31 +0200
+Message-Id: <1375317100-20651-15-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1375317100-20651-1-git-send-email-fweisbec@gmail.com>
 References: <1375317100-20651-1-git-send-email-fweisbec@gmail.com>
@@ -26,10 +26,19 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Optimize guest entry/exit APIs with static keys. This minimize
-the overhead for those who enable CONFIG_NO_HZ_FULL without
-always using it. Having no range passed to nohz_full= should
-result in the probes overhead to be minimized.
+We plan to use the context tracking static key on inline
+vtime APIs. For this we need to include the context tracking
+headers from those of vtime.
+
+However vtime headers need to stay low level because they are
+included in hardirq.h that mostly contains standalone
+definitions. But context_tracking.h includes sched.h for
+a few task_struct references, therefore it wouldn't be sensible
+to include it from vtime.h
+
+To solve this, lets split the context tracking headers and move
+out the pure state definitions that only require a few low level
+headers. We can safely include that small part in vtime.h later.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Steven Rostedt <rostedt@goodmis.org>
@@ -42,104 +51,110 @@ Cc: Li Zhong <zhong@linux.vnet.ibm.com>
 Cc: Mike Galbraith <efault@gmx.de>
 Cc: Kevin Hilman <khilman@linaro.org>
 ---
- include/linux/context_tracking.h |   19 +++++++++++++++++--
- kernel/context_tracking.c        |   23 ++---------------------
- kernel/sched/cputime.c           |    2 ++
- 3 files changed, 21 insertions(+), 23 deletions(-)
+ include/linux/context_tracking.h       |   31 +------------------------
+ include/linux/context_tracking_state.h |   39 ++++++++++++++++++++++++++++++++
+ 2 files changed, 40 insertions(+), 30 deletions(-)
+ create mode 100644 include/linux/context_tracking_state.h
 
 diff --git a/include/linux/context_tracking.h b/include/linux/context_tracking.h
-index e5ec0c9..03a32b0 100644
+index 66a8397..8b6eedb 100644
 --- a/include/linux/context_tracking.h
 +++ b/include/linux/context_tracking.h
-@@ -87,8 +87,23 @@ static inline void context_tracking_task_switch(struct task_struct *prev,
- #endif /* !CONFIG_CONTEXT_TRACKING */
+@@ -2,40 +2,12 @@
+ #define _LINUX_CONTEXT_TRACKING_H
  
- #ifdef CONFIG_VIRT_CPU_ACCOUNTING_GEN
--extern void guest_enter(void);
--extern void guest_exit(void);
-+static inline void guest_enter(void)
+ #include <linux/sched.h>
+-#include <linux/percpu.h>
+ #include <linux/vtime.h>
+-#include <linux/static_key.h>
++#include <linux/context_tracking_state.h>
+ #include <asm/ptrace.h>
+ 
+-struct context_tracking {
+-	/*
+-	 * When active is false, probes are unset in order
+-	 * to minimize overhead: TIF flags are cleared
+-	 * and calls to user_enter/exit are ignored. This
+-	 * may be further optimized using static keys.
+-	 */
+-	bool active;
+-	enum ctx_state {
+-		IN_KERNEL = 0,
+-		IN_USER,
+-	} state;
+-};
+-
+ 
+ #ifdef CONFIG_CONTEXT_TRACKING
+-extern struct static_key context_tracking_enabled;
+-DECLARE_PER_CPU(struct context_tracking, context_tracking);
+-
+-static inline bool context_tracking_in_user(void)
+-{
+-	return __this_cpu_read(context_tracking.state) == IN_USER;
+-}
+-
+-static inline bool context_tracking_active(void)
+-{
+-	return __this_cpu_read(context_tracking.active);
+-}
+-
+ extern void context_tracking_cpu_set(int cpu);
+ 
+ extern void context_tracking_user_enter(void);
+@@ -83,7 +55,6 @@ static inline void context_tracking_task_switch(struct task_struct *prev,
+ 		__context_tracking_task_switch(prev, next);
+ }
+ #else
+-static inline bool context_tracking_in_user(void) { return false; }
+ static inline void user_enter(void) { }
+ static inline void user_exit(void) { }
+ static inline enum ctx_state exception_enter(void) { return 0; }
+diff --git a/include/linux/context_tracking_state.h b/include/linux/context_tracking_state.h
+new file mode 100644
+index 0000000..0f1979d
+--- /dev/null
++++ b/include/linux/context_tracking_state.h
+@@ -0,0 +1,39 @@
++#ifndef _LINUX_CONTEXT_TRACKING_STATE_H
++#define _LINUX_CONTEXT_TRACKING_STATE_H
++
++#include <linux/percpu.h>
++#include <linux/static_key.h>
++
++struct context_tracking {
++	/*
++	 * When active is false, probes are unset in order
++	 * to minimize overhead: TIF flags are cleared
++	 * and calls to user_enter/exit are ignored. This
++	 * may be further optimized using static keys.
++	 */
++	bool active;
++	enum ctx_state {
++		IN_KERNEL = 0,
++		IN_USER,
++	} state;
++};
++
++#ifdef CONFIG_CONTEXT_TRACKING
++extern struct static_key context_tracking_enabled;
++DECLARE_PER_CPU(struct context_tracking, context_tracking);
++
++static inline bool context_tracking_in_user(void)
 +{
-+	if (static_key_false(&context_tracking_enabled) &&
-+	    vtime_accounting_enabled())
-+		vtime_guest_enter(current);
-+	else
-+		current->flags |= PF_VCPU;
++	return __this_cpu_read(context_tracking.state) == IN_USER;
 +}
 +
-+static inline void guest_exit(void)
++static inline bool context_tracking_active(void)
 +{
-+	if (static_key_false(&context_tracking_enabled) &&
-+	    vtime_accounting_enabled())
-+		vtime_guest_exit(current);
-+	else
-+		current->flags &= ~PF_VCPU;
++	return __this_cpu_read(context_tracking.active);
 +}
- #else
- static inline void guest_enter(void)
- {
-diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
-index 657f668..5afa36b 100644
---- a/kernel/context_tracking.c
-+++ b/kernel/context_tracking.c
-@@ -21,8 +21,10 @@
- #include <linux/export.h>
- 
- struct static_key context_tracking_enabled = STATIC_KEY_INIT_FALSE;
-+EXPORT_SYMBOL_GPL(context_tracking_enabled);
- 
- DEFINE_PER_CPU(struct context_tracking, context_tracking);
-+EXPORT_SYMBOL_GPL(context_tracking);
- 
- void context_tracking_cpu_set(int cpu)
- {
-@@ -163,27 +165,6 @@ void context_tracking_user_exit(void)
- 	local_irq_restore(flags);
- }
- 
--#ifdef CONFIG_VIRT_CPU_ACCOUNTING_GEN
--void guest_enter(void)
--{
--	if (vtime_accounting_enabled())
--		vtime_guest_enter(current);
--	else
--		current->flags |= PF_VCPU;
--}
--EXPORT_SYMBOL_GPL(guest_enter);
--
--void guest_exit(void)
--{
--	if (vtime_accounting_enabled())
--		vtime_guest_exit(current);
--	else
--		current->flags &= ~PF_VCPU;
--}
--EXPORT_SYMBOL_GPL(guest_exit);
--#endif /* CONFIG_VIRT_CPU_ACCOUNTING_GEN */
--
--
- /**
-  * context_tracking_task_switch - context switch the syscall callbacks
-  * @prev: the task that is being switched out
-diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
-index 223a35e..bb6b29a 100644
---- a/kernel/sched/cputime.c
-+++ b/kernel/sched/cputime.c
-@@ -724,6 +724,7 @@ void vtime_guest_enter(struct task_struct *tsk)
- 	current->flags |= PF_VCPU;
- 	write_sequnlock(&tsk->vtime_seqlock);
- }
-+EXPORT_SYMBOL_GPL(vtime_guest_enter);
- 
- void vtime_guest_exit(struct task_struct *tsk)
- {
-@@ -732,6 +733,7 @@ void vtime_guest_exit(struct task_struct *tsk)
- 	current->flags &= ~PF_VCPU;
- 	write_sequnlock(&tsk->vtime_seqlock);
- }
-+EXPORT_SYMBOL_GPL(vtime_guest_exit);
- 
- void vtime_account_idle(struct task_struct *tsk)
- {
++#else
++static inline bool context_tracking_in_user(void) { return false; }
++static inline bool context_tracking_active(void) { return false; }
++#endif /* CONFIG_CONTEXT_TRACKING */
++
++#endif
 -- 
 1.7.5.4
 
