@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753838Ab3HAIkz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 04:40:55 -0400
-Received: from up.free-electrons.com ([94.23.35.102]:52072 "EHLO
+	id S1753789Ab3HAIkv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 04:40:51 -0400
+Received: from up.free-electrons.com ([94.23.35.102]:52078 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751754Ab3HAIkq (ORCPT
+	with ESMTP id S1752138Ab3HAIkq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 1 Aug 2013 04:40:46 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
@@ -14,50 +14,92 @@ Cc: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-fbdev@vger.kernel.org,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCHv3 0/3] Few ignored framebuffer fixes/additions
-Date: Thu,  1 Aug 2013 10:40:34 +0200
-Message-Id: <1375346437-18991-1-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCHv3 1/3] video: mxsfb: fix color settings for 18bit data bus and 32bpp
+Date: Thu,  1 Aug 2013 10:40:35 +0200
+Message-Id: <1375346437-18991-2-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 1.8.3.4
+In-Reply-To: <1375346437-18991-1-git-send-email-maxime.ripard@free-electrons.com>
+References: <1375346437-18991-1-git-send-email-maxime.ripard@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Hector Palacios <hector.palacios@digi.com>
 
-This is the v2 of a set of patches that got forgotten.
+For a combination of 18bit LCD data bus width and a color
+mode of 32bpp, the driver was setting the color mapping to
+rgb666, which is wrong, as the color in memory realy has an
+rgb888 layout.
 
-These have been around for a while without any functionnal comments recently,
-so I guess we should be pretty close to merge them.
+This patch also removes the setting of flag CTRL_DF24 that
+makes the driver dimiss the upper 2 bits when handling 32/24bpp
+colors in a diplay with 18bit data bus width. This flag made
+true color images display wrong in such configurations.
 
-It would be great if we could have comments from the maintainer on these
-patches though (three patches iterations and 41 days since last sign of life of
-the maintainer).
+Finally, the color mapping rgb666 has also been removed as nobody
+is using it and high level applications like Qt5 cannot work
+with it either.
 
-Thanks,
-Maxime
+Reference: https://lkml.org/lkml/2013/5/23/220
+Signed-off-by: Hector Palacios <hector.palacios@digi.com>
+Acked-by: Juergen Beisert <jbe@pengutronix.de>
+Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+---
+ drivers/video/mxsfb.c | 26 --------------------------
+ 1 file changed, 26 deletions(-)
 
-Changes from v2:
-  - Few minor coding style fixes
-  - Removed the useless msleep(100) in the hx8369 init function
-
-Changes from v1:
-  - Fix line wrapping in patch 2
-  - Added some comments on the msleep in patch 3
-
-
-Alexandre Belloni (1):
-  fb: backlight: HX8357: Add HX8369 support
-
-Hector Palacios (1):
-  video: mxsfb: fix color settings for 18bit data bus and 32bpp
-
-Maxime Ripard (1):
-  video: hx8357: Make IM pins optional
-
- drivers/video/backlight/hx8357.c | 269 ++++++++++++++++++++++++++++++++++-----
- drivers/video/mxsfb.c            |  26 ----
- 2 files changed, 234 insertions(+), 61 deletions(-)
-
+diff --git a/drivers/video/mxsfb.c b/drivers/video/mxsfb.c
+index 3ba3771..dc09ebe 100644
+--- a/drivers/video/mxsfb.c
++++ b/drivers/video/mxsfb.c
+@@ -239,24 +239,6 @@ static const struct fb_bitfield def_rgb565[] = {
+ 	}
+ };
+ 
+-static const struct fb_bitfield def_rgb666[] = {
+-	[RED] = {
+-		.offset = 16,
+-		.length = 6,
+-	},
+-	[GREEN] = {
+-		.offset = 8,
+-		.length = 6,
+-	},
+-	[BLUE] = {
+-		.offset = 0,
+-		.length = 6,
+-	},
+-	[TRANSP] = {	/* no support for transparency */
+-		.length = 0,
+-	}
+-};
+-
+ static const struct fb_bitfield def_rgb888[] = {
+ 	[RED] = {
+ 		.offset = 16,
+@@ -309,9 +291,6 @@ static int mxsfb_check_var(struct fb_var_screeninfo *var,
+ 			break;
+ 		case STMLCDIF_16BIT:
+ 		case STMLCDIF_18BIT:
+-			/* 24 bit to 18 bit mapping */
+-			rgb = def_rgb666;
+-			break;
+ 		case STMLCDIF_24BIT:
+ 			/* real 24 bit */
+ 			rgb = def_rgb888;
+@@ -453,11 +432,6 @@ static int mxsfb_set_par(struct fb_info *fb_info)
+ 			return -EINVAL;
+ 		case STMLCDIF_16BIT:
+ 		case STMLCDIF_18BIT:
+-			/* 24 bit to 18 bit mapping */
+-			ctrl |= CTRL_DF24; /* ignore the upper 2 bits in
+-					    *  each colour component
+-					    */
+-			break;
+ 		case STMLCDIF_24BIT:
+ 			/* real 24 bit */
+ 			break;
 -- 
 1.8.3.4
 
