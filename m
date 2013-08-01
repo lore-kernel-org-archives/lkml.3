@@ -1,79 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757464Ab3HAU6t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 16:58:49 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39665 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752788Ab3HAU6r (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 16:58:47 -0400
-Date: Thu, 1 Aug 2013 21:58:18 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Joe Perches <joe@perches.com>
-Cc: Olof Johansson <olof@lixom.net>, Sam Creasey <sammy@sammy.net>,
-        Grant Grundler <grundler@parisc-linux.org>,
-        Wan ZongShun <mcuos.com@gmail.com>,
-        Rajesh Borundia <rajesh.borundia@qlogic.com>,
-        Network Development <netdev@vger.kernel.org>,
-        Sony Chacko <sony.chacko@qlogic.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Manish Chopra <manish.chopra@qlogic.com>,
-        Don Fry <pcnet32@frontier.com>, Ron Mercer <ron.mercer@qlogic.com>,
-        Andrew Gallatin <gallatin@myri.com>, linux-driver@qlogic.com,
-        Jitendra Kalsaria <jitendra.kalsaria@qlogic.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Shahed Shaikh <shahed.shaikh@qlogic.com>
-Subject: Re: [PATCH V2 3/3] ethernet: Convert mac address uses of 6 to
-	ETH_ALEN
-Message-ID: <20130801205817.GJ23006@n2100.arm.linux.org.uk>
-References: <cover.1375387593.git.joe@perches.com> <4170130535e4ea14c66f8510042577be21941f4d.1375387593.git.joe@perches.com> <CAOesGMhmxJTDjcPeD4b1FvRsbP8df369F01SQBK6dk4nXmRGjA@mail.gmail.com> <20130801203343.GG23006@n2100.arm.linux.org.uk> <1375390528.2034.77.camel@joe-AO722>
+	id S1757507Ab3HAU7V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 16:59:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53530 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757311Ab3HAU7T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 16:59:19 -0400
+Message-ID: <51FACC22.10500@redhat.com>
+Date: Thu, 01 Aug 2013 16:59:14 -0400
+From: Don Dutile <ddutile@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130108 Thunderbird/10.0.12
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1375390528.2034.77.camel@joe-AO722>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Alex Williamson <alex.williamson@redhat.com>
+CC: bhelgaas@google.com, linux-pci@vger.kernel.org, indou.takao@jp.fujitsu.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 5/9] pci: Split out pci_dev lock/unlock and save/restore
+References: <20130801164652.16145.79918.stgit@bling.home> <20130801165539.16145.79655.stgit@bling.home>
+In-Reply-To: <20130801165539.16145.79655.stgit@bling.home>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 01, 2013 at 01:55:28PM -0700, Joe Perches wrote:
-> On Thu, 2013-08-01 at 21:33 +0100, Russell King - ARM Linux wrote:
-> > On Thu, Aug 01, 2013 at 01:31:09PM -0700, Olof Johansson wrote:
-> > > Hi,
-> 
-> Hi all.
-> 
-> > > On Thu, Aug 1, 2013 at 1:14 PM, Joe Perches <joe@perches.com> wrote:
-> > > > diff --git a/drivers/net/ethernet/pasemi/pasemi_mac.h b/drivers/net/ethernet/pasemi/pasemi_mac.h
-> []
-> > > > @@ -79,11 +79,11 @@ struct pasemi_mac {
-> > > >         int             last_cs;
-> > > >         int             num_cs;
-> > > >         u32             dma_if;
-> > > > -       u8              type;
-> > > >  #define MAC_TYPE_GMAC  1
-> > > >  #define MAC_TYPE_XAUI  2
-> > > >
-> > > > -       u8              mac_addr[6];
-> > > > +       u8              mac_addr[ETH_ALEN];
-> > > > +       u8              type;
-> > > 
-> > > Just promote 'type' to u32 instead, saves you from moving the #defines
-> > > down, etc, etc.
-> 
-> type is already u8, why change it?
-> That would also change struct size.
-> 
-> > There's a more fundamental question which has to be asked: what is the
-> > point of moving that in the first place?
-> 
-> Some is_<foo>_ether_addr tests assume __aligned(2)
-> by a casting char * to u16/be16 * and dereferencing.
-> 
-> see patch 0/3 and include/linux/etherdevice.h
+On 08/01/2013 12:55 PM, Alex Williamson wrote:
+> Only cosmetic changes to existing paths.
+>
+> Signed-off-by: Alex Williamson<alex.williamson@redhat.com>
+> ---
+>   drivers/pci/pci.c |   52 +++++++++++++++++++++++++++++++++++-----------------
+>   1 file changed, 35 insertions(+), 17 deletions(-)
+>
+> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+> index db90692..f6c757a 100644
+> --- a/drivers/pci/pci.c
+> +++ b/drivers/pci/pci.c
+> @@ -3378,22 +3378,46 @@ done:
+>   	return rc;
+>   }
+>
+> +static void pci_dev_lock(struct pci_dev *dev)
+> +{
+> +	pci_cfg_access_lock(dev);
+> +	/* block PM suspend, driver probe, etc. */
+> +	device_lock(&dev->dev);
+> +}
+> +
+> +static void pci_dev_unlock(struct pci_dev *dev)
+> +{
+> +	device_unlock(&dev->dev);
+> +	pci_cfg_access_unlock(dev);
+> +}
+> +
+> +static void pci_dev_save_and_disable(struct pci_dev *dev)
+> +{
+> +	pci_save_state(dev);
+> +	/*
+> +	 * both INTx and MSI are disabled after the Interrupt Disable bit
+> +	 * is set and the Bus Master bit is cleared.
+> +	 */
+> +	pci_write_config_word(dev, PCI_COMMAND, PCI_COMMAND_INTX_DISABLE);
+> +}
+although the above is just a shuffling of the previous code,
+does the comment need to point out that BARs are disabled by this write as well ?
 
-This seems rather obscure - I mean, it's not obvious to driver authors
-that should be the case.  Would it not be better to make this a little
-more obvious somehow?  Maybe __aligned(2) against mac_addr?  Or
-maybe have a debugging check for it?
+> +
+> +static void pci_dev_restore(struct pci_dev *dev)
+> +{
+> +	pci_restore_state(dev);
+> +}
+> +
+>   static int pci_dev_reset(struct pci_dev *dev, int probe)
+>   {
+>   	int rc;
+>
+> -	if (!probe) {
+> -		pci_cfg_access_lock(dev);
+> -		/* block PM suspend, driver probe, etc. */
+> -		device_lock(&dev->dev);
+> -	}
+> +	if (!probe)
+> +		pci_dev_lock(dev);
+>
+>   	rc = __pci_dev_reset(dev, probe);
+>
+> -	if (!probe) {
+> -		device_unlock(&dev->dev);
+> -		pci_cfg_access_unlock(dev);
+> -	}
+> +	if (!probe)
+> +		pci_dev_unlock(dev);
+> +
+>   	return rc;
+>   }
+>   /**
+> @@ -3484,17 +3508,11 @@ int pci_reset_function(struct pci_dev *dev)
+>   	if (rc)
+>   		return rc;
+>
+> -	pci_save_state(dev);
+> -
+> -	/*
+> -	 * both INTx and MSI are disabled after the Interrupt Disable bit
+> -	 * is set and the Bus Master bit is cleared.
+> -	 */
+> -	pci_write_config_word(dev, PCI_COMMAND, PCI_COMMAND_INTX_DISABLE);
+> +	pci_dev_save_and_disable(dev);
+>
+>   	rc = pci_dev_reset(dev, 0);
+>
+> -	pci_restore_state(dev);
+> +	pci_dev_restore(dev);
+>
+>   	return rc;
+>   }
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
