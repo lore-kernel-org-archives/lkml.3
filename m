@@ -1,44 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751459Ab3HAAKW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 20:10:22 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:35920 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750748Ab3HAAKV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 20:10:21 -0400
-Date: Wed, 31 Jul 2013 17:10:19 -0700 (PDT)
-Message-Id: <20130731.171019.1991802407661623893.davem@davemloft.net>
-To: klamm@yandex-team.ru
-Cc: eric.dumazet@gmail.com, raise.sail@gmail.com, ebiederm@xmission.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net: check net.core.somaxconn sysctl values
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <51F917CF.7010905@yandex-team.ru>
-References: <51F917CF.7010905@yandex-team.ru>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1751482Ab3HAANI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 20:13:08 -0400
+Received: from muin.pair.com ([209.68.1.55]:64929 "EHLO muin.pair.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750845Ab3HAANG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 20:13:06 -0400
+Message-ID: <51F9A80E.5010307@tabi.org>
+Date: Wed, 31 Jul 2013 19:13:02 -0500
+From: Timur Tabi <timur@tabi.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Stephen Boyd <sboyd@codeaurora.org>
+CC: Arpit Goel <B44344@freescale.com>, linux@arm.linux.org.uk,
+        takata@linux-m32r.org, philb@gnu.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>, schwidefsky@de.ibm.com,
+        heiko.carstens@de.ibm.com, linux390@de.ibm.com,
+        David Miller <davem@davemloft.net>,
+        Rob Herring <rob.herring@calxeda.com>, Arnd Bergmann <arnd@arndb.de>,
+        Stephen Warren <swarren@nvidia.com>, john.stultz@linaro.org,
+        jesper.nilsson@axis.com, gregkh@linuxfoundation.org, sam@ravnborg.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        lkml <linux-kernel@vger.kernel.org>, linux-m32r@ml.linux-m32r.org,
+        linux-m32r-ja@ml.linux-m32r.org, linux-m68k@vger.kernel.org,
+        linux-s390@vger.kernel.org, sparclinux@vger.kernel.org,
+        mattw@codeaurora.org
+Subject: Re: [PATCH 2/2] Convert PowerPC macro spin_event_timeout() to architecture
+ independent macro
+References: <1375187900-17582-1-git-send-email-B44344@freescale.com> <1375187900-17582-3-git-send-email-B44344@freescale.com> <20130731071630.GI8868@codeaurora.org> <CAOZdJXVvNBR-qf7LXNOHZVstH_Rebxwn-wAkSaBS53Wn55mYCw@mail.gmail.com> <51F9A5FE.8030608@codeaurora.org>
+In-Reply-To: <51F9A5FE.8030608@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Wed, 31 Jul 2013 17:10:20 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Roman Gushchin <klamm@yandex-team.ru>
-Date: Wed, 31 Jul 2013 17:57:35 +0400
+On 07/31/2013 07:04 PM, Stephen Boyd wrote:
+> If it yields why are we using udelay? Why not usleep_range()? It would
+> be useful to have a variant that worked in interrupt context and it
+> looked like that was almost possible.
 
-> ---
->  net/core/sysctl_net_core.c | 6 +++++-
->  1 file changed, 5 insertions(+), 1 deletion(-)
-> 
-> diff --git a/net/core/sysctl_net_core.c b/net/core/sysctl_net_core.c
-> index cfdb46a..2ff093b 100644
-> --- a/net/core/sysctl_net_core.c
-> +++ b/net/core/sysctl_net_core.c
-> @@ -20,7 +20,9 @@
+I've never heard of usleep_range() before, so I don't know if it
+applies.  Apparently, udelay() includes its own call to cpu_relax().  Is
+it possible that cpu_relax() is a "lightweight" yield, compared to sleeping?
 
-This patch is against old sources, please respin it against the current
-tree.
+FYI, you might want to look at the code reviews for spin_event_timeout()
+on the linuxppc-dev mailing list, back in March 2009.
 
-Thanks.
+-- 
+-- 
+Timur Tabi
