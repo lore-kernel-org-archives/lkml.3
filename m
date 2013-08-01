@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753836Ab3HAC5I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 22:57:08 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:64109 "EHLO
+	id S1753995Ab3HAC5b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 22:57:31 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:59615 "EHLO
 	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753047Ab3HACzt (ORCPT
+	with ESMTP id S1752968Ab3HACzt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 31 Jul 2013 22:55:49 -0400
-X-AuditID: 9c930197-b7bfbae000000e88-ca-51f9ce31f832
+X-AuditID: 9c930197-b7bfbae000000e88-c9-51f9ce312e0d
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Roberto Vitillo <ravitillo@lbl.gov>
-Subject: [PATCH 8/9] perf tools: Implement addr2line directly using libbfd
-Date: Thu,  1 Aug 2013 11:55:43 +0900
-Message-Id: <1375325744-26613-9-git-send-email-namhyung@kernel.org>
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH 7/9] perf tools: Save failed result of get_srcline()
+Date: Thu,  1 Aug 2013 11:55:42 +0900
+Message-Id: <1375325744-26613-8-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1375325744-26613-1-git-send-email-namhyung@kernel.org>
 References: <1375325744-26613-1-git-send-email-namhyung@kernel.org>
@@ -25,224 +24,74 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Roberto Vitillo <ravitillo@lbl.gov>
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-When the srcline sort key is used , the external addr2line utility
-needs to be run for each hist entry to get the srcline info.  This can
-consume quite a time if one has a huge perf.data file.
+Some dso's lack srcline info, so there's no point to keep trying on
+them.  Just save failture status and skip them.
 
-So rather than executing the external utility, implement it internally
-and just call it.  We can do it since we've linked with libbfd
-already.
-
-Signed-off-by: Roberto Agostino Vitillo <ravitillo@lbl.gov>
-[namhyung@kernel.org: Use a2l_data struct instead of static globals]
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/config/Makefile |   4 ++
- tools/perf/util/srcline.c  | 167 +++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 171 insertions(+)
+ tools/perf/util/dso.c     |  1 +
+ tools/perf/util/dso.h     |  1 +
+ tools/perf/util/srcline.c | 10 ++++++++--
+ 3 files changed, 10 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 214e17e97e5c..128d580ca397 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -396,6 +396,10 @@ else
-   endif
- endif
- 
-+ifndef ($(filter -lbfd,$(EXTLIBS)),)
-+  CFLAGS += -DLIBBFD_SUPPORT
-+endif
-+
- ifndef NO_STRLCPY
-   ifeq ($(call try-cc,$(SOURCE_STRLCPY),,-DHAVE_STRLCPY),y)
-     CFLAGS += -DHAVE_STRLCPY
+diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
+index c4374f07603c..cc959d2fa5da 100644
+--- a/tools/perf/util/dso.c
++++ b/tools/perf/util/dso.c
+@@ -421,6 +421,7 @@ struct dso *dso__new(const char *name)
+ 		dso->loaded = 0;
+ 		dso->sorted_by_name = 0;
+ 		dso->has_build_id = 0;
++		dso->has_srcline = 1;
+ 		dso->kernel = DSO_TYPE_USER;
+ 		dso->needs_swap = DSO_SWAP__UNSET;
+ 		INIT_LIST_HEAD(&dso->node);
+diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
+index 94c2f1a8b116..2a1ae2a8d39c 100644
+--- a/tools/perf/util/dso.h
++++ b/tools/perf/util/dso.h
+@@ -79,6 +79,7 @@ struct dso {
+ 	enum dso_binary_type	data_type;
+ 	u8		 adjust_symbols:1;
+ 	u8		 has_build_id:1;
++	u8		 has_srcline:1;
+ 	u8		 hit:1;
+ 	u8		 annotate_warned:1;
+ 	u8		 sname_alloc:1;
 diff --git a/tools/perf/util/srcline.c b/tools/perf/util/srcline.c
-index dcff10bed7da..10983a92bb5e 100644
+index c736d9428cf2..dcff10bed7da 100644
 --- a/tools/perf/util/srcline.c
 +++ b/tools/perf/util/srcline.c
-@@ -8,6 +8,172 @@
- #include "util/util.h"
- #include "util/debug.h"
+@@ -58,10 +58,13 @@ char *get_srcline(struct dso *dso, unsigned long addr)
+ {
+ 	char *file;
+ 	unsigned line;
+-	char *srcline = SRCLINE_UNKNOWN;
++	char *srcline;
+ 	char *dso_name = dso->long_name;
+ 	size_t size;
  
-+#ifdef LIBBFD_SUPPORT
++	if (!dso->has_srcline)
++		return SRCLINE_UNKNOWN;
 +
-+/*
-+ * Implement addr2line using libbfd.
-+ */
-+#define PACKAGE "perf"
-+#include <bfd.h>
-+
-+struct a2l_data {
-+	const char 	*input;
-+	unsigned long 	addr;
-+
-+	bool 		found;
-+	const char 	*filename;
-+	const char 	*funcname;
-+	unsigned 	line;
-+
-+	bfd 		*abfd;
-+	asymbol 	**syms;
-+};
-+
-+static int bfd_error(const char *string)
-+{
-+	const char *errmsg;
-+
-+	errmsg = bfd_errmsg(bfd_get_error());
-+	fflush(stdout);
-+
-+	if (string)
-+		pr_debug("%s: %s\n", string, errmsg);
-+	else
-+		pr_debug("%s\n", errmsg);
-+
-+	return -1;
-+}
-+
-+static int slurp_symtab(bfd *abfd, struct a2l_data *a2l)
-+{
-+	long storage;
-+	long symcount;
-+	asymbol **syms;
-+	bfd_boolean dynamic = FALSE;
-+
-+	if ((bfd_get_file_flags(abfd) & HAS_SYMS) == 0)
-+		return bfd_error(bfd_get_filename(abfd));
-+
-+	storage = bfd_get_symtab_upper_bound(abfd);
-+	if (storage == 0L) {
-+		storage = bfd_get_dynamic_symtab_upper_bound(abfd);
-+		dynamic = TRUE;
-+	}
-+	if (storage < 0L)
-+		return bfd_error(bfd_get_filename(abfd));
-+
-+	syms = malloc(storage);
-+	if (dynamic)
-+		symcount = bfd_canonicalize_dynamic_symtab(abfd, syms);
-+	else
-+		symcount = bfd_canonicalize_symtab(abfd, syms);
-+
-+	if (symcount < 0) {
-+		free(syms);
-+		return bfd_error(bfd_get_filename(abfd));
-+	}
-+
-+	a2l->syms = syms;
-+	return 0;
-+}
-+
-+static void find_address_in_section(bfd *abfd, asection *section, void *data)
-+{
-+	bfd_vma pc, vma;
-+	bfd_size_type size;
-+	struct a2l_data *a2l = data;
-+
-+	if (a2l->found)
-+		return;
-+
-+	if ((bfd_get_section_flags(abfd, section) & SEC_ALLOC) == 0)
-+		return;
-+
-+	pc = a2l->addr;
-+	vma = bfd_get_section_vma(abfd, section);
-+	size = bfd_get_section_size(section);
-+
-+	if (pc < vma || pc >= vma + size)
-+		return;
-+
-+	a2l->found = bfd_find_nearest_line(abfd, section, a2l->syms, pc - vma,
-+					   &a2l->filename, &a2l->funcname,
-+					   &a2l->line);
-+}
-+
-+static struct a2l_data *addr2line_init(const char *path)
-+{
-+	bfd *abfd;
-+	struct a2l_data *a2l = NULL;
-+
-+	abfd = bfd_openr(path, NULL);
-+	if (abfd == NULL)
-+		return NULL;
-+
-+	if (!bfd_check_format(abfd, bfd_object))
-+		goto out;
-+
-+	a2l = zalloc(sizeof(*a2l));
-+	if (a2l == NULL)
-+		goto out;
-+
-+	a2l->abfd = abfd;
-+	a2l->input = strdup(path);
-+	if (a2l->input == NULL)
-+		goto out;
-+
-+	if (slurp_symtab(abfd, a2l))
-+		goto out;
-+
-+	return a2l;
+ 	if (dso_name[0] == '[')
+ 		goto out;
+ 
+@@ -81,8 +84,11 @@ char *get_srcline(struct dso *dso, unsigned long addr)
+ 		srcline = SRCLINE_UNKNOWN;
+ 
+ 	free(file);
+-out:
+ 	return srcline;
 +
 +out:
-+	if (a2l) {
-+		free((void *)a2l->input);
-+		free(a2l);
-+	}
-+	bfd_close(abfd);
-+	return NULL;
-+}
-+
-+static void addr2line_cleanup(struct a2l_data *a2l)
-+{
-+	if (a2l->abfd)
-+		bfd_close(a2l->abfd);
-+	free((void *)a2l->input);
-+	free(a2l->syms);
-+	free(a2l);
-+}
-+
-+static int addr2line(const char *dso_name, unsigned long addr,
-+		     char **file, unsigned int *line)
-+{
-+	int ret = 0;
-+	struct a2l_data *a2l;
-+
-+	a2l = addr2line_init(dso_name);
-+	if (a2l == NULL) {
-+		pr_warning("addr2line_init failed for %s\n", dso_name);
-+		return 0;
-+	}
-+
-+	a2l->addr = addr;
-+	bfd_map_over_sections(a2l->abfd, find_address_in_section, a2l);
-+
-+	if (a2l->found && a2l->filename) {
-+		*file = strdup(a2l->filename);
-+		*line = a2l->line;
-+
-+		if (*file)
-+			ret = 1;
-+	}
-+
-+	addr2line_cleanup(a2l);
-+	return ret;
-+}
-+
-+#else /* LIBBFD_SUPPORT */
-+
- static int addr2line(const char *dso_name, unsigned long addr,
- 		     char **file, unsigned int *line_nr)
- {
-@@ -53,6 +219,7 @@ out:
- 	pclose(fp);
- 	return ret;
++	dso->has_srcline = 0;
++	return SRCLINE_UNKNOWN;
  }
-+#endif /* LIBBFD_SUPPORT */
  
- char *get_srcline(struct dso *dso, unsigned long addr)
- {
+ void free_srcline(char *srcline)
 -- 
 1.7.11.7
 
