@@ -1,102 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753642Ab3HAAeA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 20:34:00 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:43416 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752922Ab3HAAd6 convert rfc822-to-8bit (ORCPT
+	id S1753556Ab3HAAeb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 20:34:31 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:58823 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752996Ab3HAAcV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 20:33:58 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <1375292732-7627-1-git-send-email-stefano.stabellini@eu.citrix.com>
-References: <alpine.DEB.2.02.1307311833040.4893@kaball.uk.xensource.com> <1375292732-7627-1-git-send-email-stefano.stabellini@eu.citrix.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: [PATCH RFC 1/8] arm: make SWIOTLB available
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Date: Wed, 31 Jul 2013 20:32:54 -0400
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        xen-devel@lists.xensource.com
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Stefano.Stabellini@eu.citrix.com, Ian.Campbell@citrix.com,
-        will.deacon@arm.com, linux@arm.linux.org.uk
-Message-ID: <334c4fe7-e40c-489c-84db-9bb58c705d44@email.android.com>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Wed, 31 Jul 2013 20:32:21 -0400
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>, Borislav Petkov <bp@alien8.de>,
+        Li Zhong <zhong@linux.vnet.ibm.com>, Mike Galbraith <efault@gmx.de>,
+        Kevin Hilman <khilman@linaro.org>
+Subject: [PATCH 22/23] nohz: Optimize full dynticks state checks with static keys
+Date: Thu,  1 Aug 2013 02:31:39 +0200
+Message-Id: <1375317100-20651-23-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1375317100-20651-1-git-send-email-fweisbec@gmail.com>
+References: <1375317100-20651-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stefano Stabellini <stefano.stabellini@eu.citrix.com> wrote:
->Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
->CC: will.deacon@arm.com
->CC: linux@arm.linux.org.uk
->---
-> arch/arm/Kconfig                   |    7 +++++++
-> arch/arm/include/asm/dma-mapping.h |   24 ++++++++++++++++++++++++
-> 2 files changed, 31 insertions(+), 0 deletions(-)
->
->diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
->index ba412e0..05125ab 100644
->--- a/arch/arm/Kconfig
->+++ b/arch/arm/Kconfig
->@@ -1832,6 +1832,13 @@ config CC_STACKPROTECTOR
-> 	  neutralized via a kernel panic.
-> 	  This feature requires gcc version 4.2 or above.
-> 
->+config SWIOTLB
->+	def_bool y
->+	select NEED_SG_DMA_LENGTH
->+
->+config IOMMU_HELPER
->+	def_bool SWIOTLB
->+
+These APIs are frequenctly accessed and priority is given
+to optimize the full dynticks off-case in order to let
+distros enable this feature without suffering from
+significant performance regressions.
 
-Could you explain the purpose of these two a bit more please? 
+Let's inline these APIs and optimize them with static keys.
 
-> config XEN_DOM0
-> 	def_bool y
-> 	depends on XEN
->diff --git a/arch/arm/include/asm/dma-mapping.h
->b/arch/arm/include/asm/dma-mapping.h
->index 5b579b9..ad89e0f 100644
->--- a/arch/arm/include/asm/dma-mapping.h
->+++ b/arch/arm/include/asm/dma-mapping.h
->@@ -86,6 +86,30 @@ static inline dma_addr_t virt_to_dma(struct device
->*dev, void *addr)
-> }
-> #endif
-> 
->+static inline dma_addr_t phys_to_dma(struct device *dev, phys_addr_t
->paddr)
->+{
->+	unsigned int offset = paddr & ~PAGE_MASK;
->+	return pfn_to_dma(dev, paddr >> PAGE_SHIFT) + offset;
->+}
->+
->+static inline phys_addr_t dma_to_phys(struct device *dev, dma_addr_t
->dev_addr)
->+{
->+	unsigned int offset = dev_addr & ~PAGE_MASK;
->+	return (dma_to_pfn(dev, dev_addr) << PAGE_SHIFT) + offset;
->+}
->+
->+static inline bool dma_capable(struct device *dev, dma_addr_t addr,
->size_t size)
->+{
->+	if (!dev->dma_mask)
->+		return 0;
->+
->+	return addr + size - 1 <= *dev->dma_mask;
->+}
->+
->+static inline void dma_mark_clean(void *addr, size_t size)
->+{
->+}
->+
-> /*
->  * DMA errors are defined by all-bits-set in the DMA address.
->  */
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Borislav Petkov <bp@alien8.de>
+Cc: Li Zhong <zhong@linux.vnet.ibm.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Kevin Hilman <khilman@linaro.org>
+---
+ include/linux/tick.h     |   25 +++++++++++++++++++++++--
+ kernel/time/tick-sched.c |   14 ++------------
+ 2 files changed, 25 insertions(+), 14 deletions(-)
 
+diff --git a/include/linux/tick.h b/include/linux/tick.h
+index 9180f4b..c60b079 100644
+--- a/include/linux/tick.h
++++ b/include/linux/tick.h
+@@ -10,6 +10,8 @@
+ #include <linux/irqflags.h>
+ #include <linux/percpu.h>
+ #include <linux/hrtimer.h>
++#include <linux/context_tracking_state.h>
++#include <linux/cpumask.h>
+ 
+ #ifdef CONFIG_GENERIC_CLOCKEVENTS
+ 
+@@ -158,15 +160,34 @@ static inline u64 get_cpu_iowait_time_us(int cpu, u64 *unused) { return -1; }
+ # endif /* !CONFIG_NO_HZ_COMMON */
+ 
+ #ifdef CONFIG_NO_HZ_FULL
++extern bool tick_nohz_full_running;
++extern cpumask_var_t tick_nohz_full_mask;
++
++static inline bool tick_nohz_full_enabled(void)
++{
++	if (!static_key_false(&context_tracking_enabled))
++		return false;
++
++	return tick_nohz_full_running;
++}
++
++static inline bool tick_nohz_full_cpu(int cpu)
++{
++	if (!tick_nohz_full_enabled())
++		return false;
++
++	return cpumask_test_cpu(cpu, tick_nohz_full_mask);
++}
++
+ extern void tick_nohz_init(void);
+-extern int tick_nohz_full_cpu(int cpu);
+ extern void tick_nohz_full_check(void);
+ extern void tick_nohz_full_kick(void);
+ extern void tick_nohz_full_kick_all(void);
+ extern void tick_nohz_task_switch(struct task_struct *tsk);
+ #else
+ static inline void tick_nohz_init(void) { }
+-static inline int tick_nohz_full_cpu(int cpu) { return 0; }
++static inline bool tick_nohz_full_enabled(void) { return false; }
++static inline bool tick_nohz_full_cpu(int cpu) { return false; }
+ static inline void tick_nohz_full_check(void) { }
+ static inline void tick_nohz_full_kick(void) { }
+ static inline void tick_nohz_full_kick_all(void) { }
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index 71735ea..6d6bd6e 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -149,7 +149,7 @@ static void tick_sched_handle(struct tick_sched *ts, struct pt_regs *regs)
+ }
+ 
+ #ifdef CONFIG_NO_HZ_FULL
+-static cpumask_var_t tick_nohz_full_mask;
++cpumask_var_t tick_nohz_full_mask;
+ bool tick_nohz_full_running;
+ 
+ static bool can_stop_full_tick(void)
+@@ -269,14 +269,6 @@ out:
+ 	local_irq_restore(flags);
+ }
+ 
+-int tick_nohz_full_cpu(int cpu)
+-{
+-	if (!tick_nohz_full_running)
+-		return 0;
+-
+-	return cpumask_test_cpu(cpu, tick_nohz_full_mask);
+-}
+-
+ /* Parse the boot-time nohz CPU list from the kernel parameters. */
+ static int __init tick_nohz_full_setup(char *str)
+ {
+@@ -358,8 +350,6 @@ void __init tick_nohz_init(void)
+ 	cpulist_scnprintf(nohz_full_buf, sizeof(nohz_full_buf), tick_nohz_full_mask);
+ 	pr_info("NO_HZ: Full dynticks CPUs: %s.\n", nohz_full_buf);
+ }
+-#else
+-#define tick_nohz_full_running (0)
+ #endif
+ 
+ /*
+@@ -737,7 +727,7 @@ static bool can_stop_idle_tick(int cpu, struct tick_sched *ts)
+ 		return false;
+ 	}
+ 
+-	if (tick_nohz_full_running) {
++	if (tick_nohz_full_enabled()) {
+ 		/*
+ 		 * Keep the tick alive to guarantee timekeeping progression
+ 		 * if there are full dynticks CPUs around
+-- 
+1.7.5.4
 
