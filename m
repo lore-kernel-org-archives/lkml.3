@@ -1,40 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757274Ab3HATTk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 15:19:40 -0400
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:57904 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756742Ab3HATTj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 15:19:39 -0400
-MIME-Version: 1.0
-Date: Thu, 1 Aug 2013 21:19:39 +0200
-Message-ID: <CAPBO7TZhqkZ9vArSBiUO78f-9M=FGLe1StyR-6Y7Zv3drtviZw@mail.gmail.com>
-Subject: About sensors (temperature) and 3.10.x kernels
-From: Josep Lladonosa <jlladono@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1757302Ab3HATVI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 15:21:08 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:41094 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755898Ab3HATVH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 15:21:07 -0400
+Message-ID: <1375384865.2034.70.camel@joe-AO722>
+Subject: Re: [PATCH 4/4] jbd: use a single printk for jbd_debug()
+From: Joe Perches <joe@perches.com>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Thu, 01 Aug 2013 12:21:05 -0700
+In-Reply-To: <1375383668-8072-5-git-send-email-paul.gortmaker@windriver.com>
+References: <1375383668-8072-1-git-send-email-paul.gortmaker@windriver.com>
+	 <1375383668-8072-5-git-send-email-paul.gortmaker@windriver.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thu, 2013-08-01 at 15:01 -0400, Paul Gortmaker wrote:
+> Backport of jbd2 commit 169f1a2a87aae44034da4b9f81be1683d33de6d0
+> ("jbd2: use a single printk for jbd_debug()")
 
-I have just joined this list to point out that
+Hey Paul.
 
-using 3.11.0-rcX brancheskernel (x86_64 compilation) the temperature
-sensors work (as in the 3.2.x, 3.8.x),
+> diff --git a/include/linux/jbd.h b/include/linux/jbd.h
+[]
+> @@ -56,16 +56,13 @@
+>  #define JBD_EXPENSIVE_CHECKING
+>  extern ushort journal_enable_debug;
+>  
+> -#define jbd_debug(n, f, a...)						\
+> -	do {								\
+> -		if ((n) <= journal_enable_debug) {			\
+> -			printk (KERN_DEBUG "(%s, %d): %s: ",		\
+> -				__FILE__, __LINE__, __func__);	\
+> -			printk (f, ## a);				\
+> -		}							\
+> -	} while (0)
+> +void __jbd_debug(int level, const char *file, const char *func,
+> +		 unsigned int line, const char *fmt, ...
+> +
+> +#define jbd_debug(n, fmt, a...) \
+> +	__jbd_debug((n), __FILE__, __func__, __LINE__, (fmt), ##a)
+>  #else
+> -#define jbd_debug(f, a...)	/**/
+> +#define jbd_debug(n, fmt, a...)    /**/
+>  #endif
+
+It might have been (and may still be) simpler/better
+to use a single macro like:
+
+#define jbd_dbg(n, fmt, ...)			\
+do {						\
+	if ((n) < journal_enable_debug)		\
+		pr_debug(fmt, ##__VA_ARGS__);	\
+} while (0)
+
+and then use dynamic_debug to add the __func__,
+and __LINE__ when desired.
+
+echo -n 'module jbd +pfl' <dynamic_debug>/control
 
 
-BUT 3.10.x kernel versions do not let run applications that read
-sensors. I am using xfce4-sensors-plugin (under Debian) and it
-coredumps under this kernel version. I have seen this at least in
-3.10.4...
-
-I wish it helps...
-
-
--- 
---
-Salutacions...Josep
---
