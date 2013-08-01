@@ -1,80 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756564Ab3HAPjF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 11:39:05 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37188 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755558Ab3HAPjD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 11:39:03 -0400
-Date: Thu, 1 Aug 2013 16:38:57 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 08/18] sched: Reschedule task on preferred NUMA node once
- selected
-Message-ID: <20130801153857.GD2296@suse.de>
-References: <1373901620-2021-1-git-send-email-mgorman@suse.de>
- <1373901620-2021-9-git-send-email-mgorman@suse.de>
- <20130801044757.GA6151@linux.vnet.ibm.com>
+	id S1756858Ab3HAPlA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 11:41:00 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:54088 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755558Ab3HAPk6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 11:40:58 -0400
+Date: Thu, 1 Aug 2013 18:40:20 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+CC: <akpm@linux-foundation.org>, <grant.likely@linaro.org>,
+        <rob.herring@calxeda.com>, <rob@landley.net>,
+        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <rtc-linux@googlegroups.com>,
+        <gg@slimlogic.co.uk>, <kishon@ti.com>, <swarren@nvidia.com>,
+        <pawel.moll@arm.com>, <Mark.Rutland@arm.com>,
+        <ian.campbell@citrix.com>, <broonie@kernel.org>
+Subject: Re: [PATCH V3] drivers/rtc/rtc-palmas.c: support for backup battery
+ charging
+Message-ID: <20130801154020.GD11286@radagast>
+Reply-To: <balbi@ti.com>
+References: <1375370931-2194-1-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="JwB53PgKC5A7+0Ej"
 Content-Disposition: inline
-In-Reply-To: <20130801044757.GA6151@linux.vnet.ibm.com>
+In-Reply-To: <1375370931-2194-1-git-send-email-ldewangan@nvidia.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 01, 2013 at 10:17:57AM +0530, Srikar Dronamraju wrote:
-> * Mel Gorman <mgorman@suse.de> [2013-07-15 16:20:10]:
-> 
-> > A preferred node is selected based on the node the most NUMA hinting
-> > faults was incurred on. There is no guarantee that the task is running
-> > on that node at the time so this patch rescheules the task to run on
-> > the most idle CPU of the selected node when selected. This avoids
-> > waiting for the balancer to make a decision.
-> > 
-> > Signed-off-by: Mel Gorman <mgorman@suse.de>
-> > ---
-> >  kernel/sched/core.c  | 17 +++++++++++++++++
-> >  kernel/sched/fair.c  | 46 +++++++++++++++++++++++++++++++++++++++++++++-
-> >  kernel/sched/sched.h |  1 +
-> >  3 files changed, 63 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> > index 5e02507..b67a102 100644
-> > --- a/kernel/sched/core.c
-> > +++ b/kernel/sched/core.c
-> > @@ -4856,6 +4856,23 @@ fail:
-> >  	return ret;
-> >  }
-> > 
-> > +#ifdef CONFIG_NUMA_BALANCING
-> > +/* Migrate current task p to target_cpu */
-> > +int migrate_task_to(struct task_struct *p, int target_cpu)
-> > +{
-> > +	struct migration_arg arg = { p, target_cpu };
-> > +	int curr_cpu = task_cpu(p);
-> > +
-> > +	if (curr_cpu == target_cpu)
-> > +		return 0;
-> > +
-> > +	if (!cpumask_test_cpu(target_cpu, tsk_cpus_allowed(p)))
-> > +		return -EINVAL;
-> > +
-> > +	return stop_one_cpu(curr_cpu, migration_cpu_stop, &arg);
-> 
-> As I had noted earlier, this upsets schedstats badly.
-> Can we add a TODO for this patch, which mentions that schedstats need to
-> taken care.
-> 
+--JwB53PgKC5A7+0Ej
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I added a TODO comment because there is a possibility that this will all
-change again with the stop_two_cpus patch.
+On Thu, Aug 01, 2013 at 08:58:51PM +0530, Laxman Dewangan wrote:
+> Palmas series device like TPS65913, TPS80036 supports the backup battery
+> for powering the RTC when no other energy source is available.
+>=20
+> The backup battery is optional, connected to the VBACKUP pin, and can be
+> nonrechargeable or rechargeable. The rechargeable battery can be charged
+> from the system supply using the backup battery charger.
+>=20
+> Add support for enabling charging of this backup battery.  Also add the DT
+> binding document and the new properties to have this support.
+>=20
+> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
 
--- 
-Mel Gorman
-SUSE Labs
+Reviewed-by: Felipe Balbi <balbi@ti.com>
+
+--=20
+balbi
+
+--JwB53PgKC5A7+0Ej
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR+oFkAAoJEIaOsuA1yqREe40P/jgvgPeOPU6EksuQBoylj2Oi
+tDeb43CAiN9OMP1R8V0yv48Lm0T8Y20hdaSrGtqIGU76VfEl7puGmRBkpszoMfr2
++gZL/KtmWVbUEzy2/jLrQ1KQhC1YPEgPp8Zck5T5nPU7/vbj85FgGqFSgpbKZBB6
+UD1Pt77l26qL/7dRr1ec6yauk0q0ZfTeKopuG8HKW8FQOhRAX7XZzzgh1cNQtBFT
+9GTk54DfAFS3+jqCA5DyRRJKCmZPlKCSOXrHAyj0tylQJ3O1OCLv+gu6OgR5DqsV
+JgnCXFflr8yuMvVf5ZFfhZu4GSnw+TScjUJP1TmgHKhC/IJShvDQOAvIzPB1SFD1
+8C+VIDjdR4Dvf8a1qEy3vvUmipZbmvEqp1DoBJNa7JQXsqOa9CK/3ZyoO559MBqQ
+UgNwexcEROILIpy8sFgM1Z07GjzLqofR2FfbWjp39HqcsL+dyKmRQVg89ODv+4zx
+FbhqpuJ1mns1zkQt27P3kTRvktSKefqL+sL58ola/2J8nIW38TieF90BnMj833JT
+WkA4D6XgedPVmXae43Jg96ZgbYTnE0LosU+PICEU3VffTUscf23ZKadYg/oFWgUW
+gZGVcLwEPvWMSQj33Pw0Gf2bPhxB2inJQC6ZFp12/2rhNK+RjU7k/xUFnd59zwaU
+14TAkTOmkYF9+n3Ua5iG
+=LHc1
+-----END PGP SIGNATURE-----
+
+--JwB53PgKC5A7+0Ej--
