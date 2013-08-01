@@ -1,88 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753481Ab3HAIrO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 04:47:14 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:59682 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752001Ab3HAIrI (ORCPT
+	id S1753634Ab3HAIsr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 04:48:47 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:63225 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751108Ab3HAIsn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 04:47:08 -0400
-Date: Thu, 1 Aug 2013 09:47:02 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Bill Huang <bilhuang@nvidia.com>, sameo@linux.intel.com,
-        rob.herring@calxeda.com, pawel.moll@arm.com, mark.rutland@arm.com,
-        ian.campbell@citrix.com, rob@landley.net, broonie@linaro.org,
-        nm@ti.com, j-keerthy@ti.com, grant.likely@linaro.org,
-        ian@slimlogic.co.uk, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mallikarjun Kasoju <mkasoju@nvidia.com>
-Subject: Re: [PATCH 1/1] mfd: palmas: Add power off control
-Message-ID: <20130801084702.GM13298@lee--X1>
-References: <1375185957-28212-1-git-send-email-bilhuang@nvidia.com>
- <20130731095636.GB13298@lee--X1>
- <51F946C7.2080205@wwwdotorg.org>
+	Thu, 1 Aug 2013 04:48:43 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <51F946C7.2080205@wwwdotorg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CADGdYn4DA83AcxAzEJW-ndg+wvojruqJYY=urKhxn_6GjJzE3w@mail.gmail.com>
+References: <1375336979-14747-1-git-send-email-ch.naveen@samsung.com> <CADGdYn4DA83AcxAzEJW-ndg+wvojruqJYY=urKhxn_6GjJzE3w@mail.gmail.com>
+From: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
+Date: Thu, 1 Aug 2013 14:18:22 +0530
+Message-ID: <CAHfPSqAQ_tc+kKR+EBNCa5gM=2AJtnjt8uCdUgHV-1VNA_-9bQ@mail.gmail.com>
+Subject: Re: [PATCH] thermal: exynos: Handle the misplaced TRIMINFO register
+To: amit daniel kachhap <amit.daniel@samsung.com>
+Cc: Naveen Krishna Chatradhi <ch.naveen@samsung.com>, linux-pm@vger.kernel.org,
+        rui.zhang@intel.com, eduardo.valentin@ti.com,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kgene.kim@samsung.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 31 Jul 2013, Stephen Warren wrote:
+On 1 August 2013 14:02, amit daniel kachhap <amit.daniel@samsung.com> wrote:
+> Hi Naveen,
+>
+> Can you rebase these patches against
+> https://git.kernel.org/cgit/linux/kernel/git/evalenti/linux-soc-thermal.git/log/?h=next.
+> All these patches have been queued for 3.12 merge and contains the new
+> re-structured TMU driver.
+Sure, I will re base and submit.
+>
+> Thanks,
+> Amit Daniel
+>
+> On Thu, Aug 1, 2013 at 11:32 AM, Naveen Krishna Chatradhi
+> <ch.naveen@samsung.com> wrote:
+>> This patch adds code to handle the misplaced TRIMINFO register
+>> incase of Exynos5420.
+>>
+>> On Exynos5420 we have a TRIMINFO register being misplaced for
+>> TMU channels 2, 3 and 4
+>>
+>> TRIMINFO at 0x1006c000 contains data for TMU channel 3
+>> TRIMINFO at 0x100a0000 contains data for TMU channel 4
+>> TRIMINFO at 0x10068000 contains data for TMU channel 2
+>>
+>> The misplaced register address is passed through devicetree and
+>> map it seperately during probe.
+>> Also, adds the documentation under devicetree/bindings/thermal/
+>>
+>> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+>> Reviewed-by: Doug Anderson <dianders@chromium.org>
+>> ---
+>>
+>> Rebased on http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
+>> master branch. I'm not sure which one is the right tree to rebase.
+>>
+>>  .../devicetree/bindings/thermal/exynos-thermal.txt | 48 ++++++++++++++++++++++
+>>  drivers/thermal/exynos_thermal.c                   | 26 +++++++++++-
+>>  2 files changed, 72 insertions(+), 2 deletions(-)
+>>  create mode 100644 Documentation/devicetree/bindings/thermal/exynos-thermal.txt
+>>
+>> diff --git a/Documentation/devicetree/bindings/thermal/exynos-thermal.txt b/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
+>> new file mode 100644
+>> index 0000000..1db279e
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
+>> @@ -0,0 +1,48 @@
+>> +* Exynos Thermal
+>> +
+>> +Required properties:
+>> +- compatible: should be one of the following.
+>> +    * "samsung,exynos4210-tmu" - for controllers compatible with exynos4210 tmu.
+>> +    * "samsung,exynos5250-tmu" - for controllers compatible with exynos5250 tmu.
+>> +    * "samsung,exynos5420-tmu" - for controllers compatible with exynos5420 tmu.
+>> +
+>> +- reg: physical base address of the controller and length of
+>> +  memory mapped region.
+>> +
+>> +    ** NOTE FOR EXYNOS5420 **
+>> +    TRIMINFO register is being misplaced for TMU channels 2, 3 and 4
+>> +
+>> +    TERMINFO for TMU channel 2 is present in address space of TMU channel 3
+>> +    TERMINFO for TMU channel 3 is present in address space of TMU channel 4
+>> +    TERMINFO for TMU channel 4 is present in address space of TMU channel 2
+>> +
+>> +    * In such cases the reg property contains the misplaced register address and
+>> +      range as the second parameter.
+>> +
+>> +- interrupts : interrupt number to the cpu.
+>> +- clocks : Clock number as per common clock framework for the cpu.
+>> +- clock-names : clock name to be used in the driver
+>> +
+>> +Example:
+>> +
+>> +       /* tmu for CPU0 */
+>> +       tmu@10060000 {
+>> +               compatible = "samsung,exynos5420-tmu";
+>> +               reg = <0x10060000 0x100>;
+>> +               interrupts = <0 65 0>;
+>> +               clocks = <&clock 318>;
+>> +               clock-names = "tmu_apbif";
+>> +       };
+>> +
+>> +Example: In case of Exynos5420 TMU channel 3
+>> +
+>> +       /* tmu for CPU3 */
+>> +       tmu@1006c000 {
+>> +               compatible = "samsung,exynos5420-tmu";
+>> +               /* 2nd reg is for the misplaced TRIMINFO register */
+>> +               reg = <0x1006c000 0x100>, <0x100a0000 0x4>;
+>> +               interrupts = <0 185 0>;
+>> +               clocks = <&clock 318>;
+>> +               clock-names = "tmu_apbif";
+>> +       };
+>> +
+>> diff --git a/drivers/thermal/exynos_thermal.c b/drivers/thermal/exynos_thermal.c
+>> index cec3f1f..a229314 100644
+>> --- a/drivers/thermal/exynos_thermal.c
+>> +++ b/drivers/thermal/exynos_thermal.c
+>> @@ -38,6 +38,7 @@
+>>  #include <linux/cpufreq.h>
+>>  #include <linux/cpu_cooling.h>
+>>  #include <linux/of.h>
+>> +#include <linux/of_address.h>
+>>
+>>  #include <plat/cpu.h>
+>>  #include <mach/regs-pmu.h>     /* for EXYNOS5_PS_HOLD_CONTROL */
+>> @@ -123,7 +124,7 @@ struct exynos_thermal_zone;
+>>  struct exynos_tmu_data {
+>>         struct exynos_tmu_platform_data *pdata;
+>>         struct resource *mem;
+>> -       void __iomem *base;
+>> +       void __iomem *base, *triminfo_base;
+>>         int irq;
+>>         enum soc_type soc;
+>>         struct work_struct irq_work;
+>> @@ -665,8 +666,14 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
+>>                 __raw_writel(EXYNOS_TRIMINFO_RELOAD,
+>>                                 data->base + EXYNOS_TMU_TRIMINFO_CON);
+>>         }
+>> +
+>>         /* Save trimming info in order to perform calibration */
+>> -       trim_info = readl(data->base + EXYNOS_TMU_REG_TRIMINFO);
+>> +       if (data->triminfo_base)
+>> +               /* On exynos5420 TRIMINFO is misplaced for some channels */
+>> +               trim_info = readl(data->triminfo_base);
+>> +       else
+>> +               trim_info = readl(data->base + EXYNOS_TMU_REG_TRIMINFO);
+>> +
+>>         data->temp_error1 = trim_info & EXYNOS_TMU_TRIM_TEMP_MASK;
+>>         data->temp_error2 = ((trim_info >> 8) & EXYNOS_TMU_TRIM_TEMP_MASK);
+>>
+>> @@ -1016,6 +1023,15 @@ static int exynos_tmu_probe(struct platform_device *pdev)
+>>                 return -ENODEV;
+>>         }
+>>
+>> +       /* For Exynos5420 The misplaced TERMINFO register address will be
+>> +        * passed from device tree node.
+>> +        *
+>> +        * We cannot use devm_request_and_ioremap, as the base address
+>> +        * over laps with the address space of the other TMU channel.
+>> +        * Check Documentation for details
+>> +        */
+>> +       data->triminfo_base = of_iomap(pdev->dev.of_node, 1);
+>> +
+>>         data->clk = devm_clk_get(&pdev->dev, "tmu_apbif");
+>>         if (IS_ERR(data->clk)) {
+>>                 dev_err(&pdev->dev, "Failed to get clock\n");
+>> @@ -1086,6 +1102,9 @@ static int exynos_tmu_probe(struct platform_device *pdev)
+>>  err_irq:
+>>         exynos_unregister_thermal(data);
+>>  err_clk:
+>> +       if (data->triminfo_base)
+>> +               iounmap(data->triminfo_base);
+>> +
+>>         platform_set_drvdata(pdev, NULL);
+>>         clk_unprepare(data->clk);
+>>         return ret;
+>> @@ -1100,6 +1119,9 @@ static int exynos_tmu_remove(struct platform_device *pdev)
+>>
+>>         exynos_unregister_thermal(data);
+>>
+>> +       if (data->triminfo_base)
+>> +               iounmap(data->triminfo_base);
+>> +
+>>         clk_unprepare(data->clk);
+>>
+>>         platform_set_drvdata(pdev, NULL);
+>> --
+>> 1.7.12.4
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-> On 07/31/2013 03:56 AM, Lee Jones wrote:
-> > On Tue, 30 Jul 2013, Bill Huang wrote:
-> > 
-> >> Hook up "pm_power_off" to palmas power off routine if there is DT
-> >> property "ti,system-power-controller" defined, so platform which is
-> >> powered by this regulator can be powered off properly.
-> >>
-> >> Based on work by:
-> >> Mallikarjun Kasoju <mkasoju@nvidia.com>
-> >>
-> >> Signed-off-by: Bill Huang <bilhuang@nvidia.com>
-> >> cc: Mallikarjun Kasoju <mkasoju@nvidia.com>
-> > 
-> > Please put the 'Cc:' (not 'cc:') above the SoBs, then drop the "Based
-> > on work by:" and replace with:
-> > 
-> > Signed-off-by: Mallikarjun Kasoju <mkasoju@nvidia.com>
-> > Signed-off-by: Bill Huang <bilhuang@nvidia.com>
-> > 
-> > This insinuates that the original patch was crated by Mallikarjun.
-> 
-> That advice may not be correct. Did Mallikarjun actually create *this*
-> patch? More likely, this patch was based on an equivalent change to some
-> other PMIC, and Bill just applied the same technique to this other
-> driver.
 
-Yes, I agree with this, and I'm sure there is a place for "Based on
-work by:" or "Originally authored by:" tags, but in general, I think
-the SoBs can paint a pretty good picture.
-
-For example, if this patch is simply using techniques which already
-exist in other drivers, I would personally not mention it in the
-commit message. A massive percentage of kernel code has been
-influenced by already existing implementations. Not much truly new and
-unique kernel code enters the kernel these days.
-
-> If Mallikarjun really did write this patch, then the git author
-> field should also be set to Mallikarjun not Bill.
-
-That's not how I'm lead to believe it works. I am under the impression
-that if you take an already existing patch and upstream it with little
-changes, then you keep the original creator's authorship and apply
-your SoB before sending. Whereas if you have make considerable (down
-to perception) changes to the patch, then you may adopt authorship. To
-credit the efforts of the original author in this case I would advise
-to keep the first SoB. Providing they agree with the changes of course.
 
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Shine bright,
+(: Nav :)
