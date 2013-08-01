@@ -1,67 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756609Ab3HASLg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 14:11:36 -0400
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:54127 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753558Ab3HASLe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 14:11:34 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130801180144.GA20520@srcf.ucam.org>
-References: <20130731051421.GA15766@srcf.ucam.org>
-	<CAMP44s2B=nQLnZm7gyYAJZgt_x3KszRZLUC=fom0t9=Eze+smA@mail.gmail.com>
-	<20130731140010.GA24560@srcf.ucam.org>
-	<CAMP44s1cLou9TMfLS+FHwPM_b3bG5HN1-hzgvhz0fVRCZ8XqWw@mail.gmail.com>
-	<20130731175232.GA29987@srcf.ucam.org>
-	<CAMP44s1c5pmiC2fvmRi9vFrJXb2zYUT_F=paM2LR_V+7THnFVg@mail.gmail.com>
-	<20130731184724.GA30896@srcf.ucam.org>
-	<CAMP44s25aRcK2bB=WLMkuD45fztFBNug8prArczRqZqzeEvj3A@mail.gmail.com>
-	<20130801174237.GA20121@srcf.ucam.org>
-	<CAMP44s3EgZBtv-ifO9b+VzmTBE2wejNK7RN3ERL0+imrXzgBCg@mail.gmail.com>
-	<20130801180144.GA20520@srcf.ucam.org>
-Date: Thu, 1 Aug 2013 13:11:31 -0500
-Message-ID: <CAMP44s2OOX8=tumzwiK3_PRJCxfLfDECrz3dPbzNPiUOuYT8TA@mail.gmail.com>
-Subject: Re: [REGRESSION/PATCH] acpi: blacklist win8 OSI for ASUS Zenbok Prime UX31A
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Aaron Lu <aaron.lwe@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        Len Brown <lenb@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1756581Ab3HASRn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 14:17:43 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:48954 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754046Ab3HASRm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 14:17:42 -0400
+Message-ID: <1375381061.2034.62.camel@joe-AO722>
+Subject: Re: [PATCH 2/6] staging: ozwpan: Mark string as const
+From: Joe Perches <joe@perches.com>
+To: Rupesh Gujare <rupesh.gujare@atmel.com>
+Cc: devel@linuxdriverproject.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org
+Date: Thu, 01 Aug 2013 11:17:41 -0700
+In-Reply-To: <1375378806-17948-3-git-send-email-rupesh.gujare@atmel.com>
+References: <1375378806-17948-1-git-send-email-rupesh.gujare@atmel.com>
+	 <1375378806-17948-3-git-send-email-rupesh.gujare@atmel.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 1, 2013 at 1:01 PM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
-> On Thu, Aug 01, 2013 at 12:50:18PM -0500, Felipe Contreras wrote:
->> On Thu, Aug 1, 2013 at 12:42 PM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
->> > An interface that describes reality is better than one that doesn't. But
->> > hey, feel free to disagree and post a patch for the ABI docs.
->>
->> An interface that is useful to the user is better than one that is not.
->
-> The interface is useful.
+On Thu, 2013-08-01 at 18:40 +0100, Rupesh Gujare wrote:
+> Make sure that we mark const string so that it does not get modified.
+[]
+> diff --git a/drivers/staging/ozwpan/ozproto.h b/drivers/staging/ozwpan/ozproto.h
+[]
+> -void oz_binding_add(char *net_dev);
+> -void oz_binding_remove(char *net_dev);
+> +void oz_binding_add(const char *net_dev);
+> +void oz_binding_remove(const char *net_dev);
 
-Not 100% useful.
+const char *net_dev is a poor naming choice.
+const char *name might be better.
 
-If you are going to claim that 99% true is not true, then useful but
-inconsistent is not useful.
 
-I think it is useful, and I think it can be consistent if we want it to.
-
-> There are plenty of machines out there that
-> disable the backlight at minimum brightness setting (see every Apple,
-> for example), and assuming otherwise has always been incorrect. But,
-> like I said, send the patch.
-
-The key word in "every Apple" is *every*; what level 0 does in every
-apple is consistent. If 0 should turn off the screen, it should do so
-on all Linux machines.
-
-I will investigate and prepare an update to the documentation and the
-quirks to do so.
-
--- 
-Felipe Contreras
