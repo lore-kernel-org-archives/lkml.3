@@ -1,76 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757439Ab3HAU4o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 16:56:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53779 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751723Ab3HAU4n (ORCPT
+	id S1757464Ab3HAU6t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 16:58:49 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39665 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752788Ab3HAU6r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 16:56:43 -0400
-Date: Fri, 2 Aug 2013 04:57:58 +0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Nathan Fontenot <nfont@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Nivedita Singhvi <niv@us.ibm.com>, Michael J Wolf <mjwolf@us.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers: base: new memory config sysfs driver for large
- memory systems
-Message-ID: <20130801205758.GB13585@kroah.com>
-References: <1374786680-26197-1-git-send-email-sjenning@linux.vnet.ibm.com>
- <20130725233800.GA18349@kroah.com>
- <20130726143344.GA4379@variantweb.net>
+	Thu, 1 Aug 2013 16:58:47 -0400
+Date: Thu, 1 Aug 2013 21:58:18 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Joe Perches <joe@perches.com>
+Cc: Olof Johansson <olof@lixom.net>, Sam Creasey <sammy@sammy.net>,
+        Grant Grundler <grundler@parisc-linux.org>,
+        Wan ZongShun <mcuos.com@gmail.com>,
+        Rajesh Borundia <rajesh.borundia@qlogic.com>,
+        Network Development <netdev@vger.kernel.org>,
+        Sony Chacko <sony.chacko@qlogic.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Manish Chopra <manish.chopra@qlogic.com>,
+        Don Fry <pcnet32@frontier.com>, Ron Mercer <ron.mercer@qlogic.com>,
+        Andrew Gallatin <gallatin@myri.com>, linux-driver@qlogic.com,
+        Jitendra Kalsaria <jitendra.kalsaria@qlogic.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Shahed Shaikh <shahed.shaikh@qlogic.com>
+Subject: Re: [PATCH V2 3/3] ethernet: Convert mac address uses of 6 to
+	ETH_ALEN
+Message-ID: <20130801205817.GJ23006@n2100.arm.linux.org.uk>
+References: <cover.1375387593.git.joe@perches.com> <4170130535e4ea14c66f8510042577be21941f4d.1375387593.git.joe@perches.com> <CAOesGMhmxJTDjcPeD4b1FvRsbP8df369F01SQBK6dk4nXmRGjA@mail.gmail.com> <20130801203343.GG23006@n2100.arm.linux.org.uk> <1375390528.2034.77.camel@joe-AO722>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130726143344.GA4379@variantweb.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1375390528.2034.77.camel@joe-AO722>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 26, 2013 at 09:33:44AM -0500, Seth Jennings wrote:
-> On Thu, Jul 25, 2013 at 04:38:00PM -0700, Greg Kroah-Hartman wrote:
-> > On Thu, Jul 25, 2013 at 04:11:20PM -0500, Seth Jennings wrote:
-> > > From: Nathan Fontenot <nfont@linux.vnet.ibm.com>
-> > > 
-> > > Large memory systems (1TB or more) experience boot delays on the order
-> > > of minutes due to the initializing the memory configuration part of
-> > > sysfs at /sys/devices/system/memory/.
-> > > 
-> > > ppc64 has a memory block size of 256M and (I think) x86 is 128M.  With 1TB
-> > > of RAM and a 256M block size, that's 4k memory blocks with 20 sysfs
-> > > entries per block that's around 80k items that need be created at boot
-> > > time in sysfs.  Some systems go up to 16TB where the issue is
-> > > even more severe.
-> > > 
-> > > This patch is a prototype for a new sysfs memory layout where the
-> > > entries are created on demand by writing memory block numbers into a
-> > > "show" and "hide" files to create and destroy the memory block
-> > > configuration attributes in sysfs.  This would decouple the number of
-> > > sysfs entries created at boot time from the memory size, resulting in a
-> > > sysfs initialization time that doesn't increase and memory size
-> > > increase.
-> > > 
-> > > Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
-> > > Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
-> > 
-> > How does this tie into the patches Nathan sent yesterday for memory
-> > hotplug stuff that I thought modified the same part of the kernel?
+On Thu, Aug 01, 2013 at 01:55:28PM -0700, Joe Perches wrote:
+> On Thu, 2013-08-01 at 21:33 +0100, Russell King - ARM Linux wrote:
+> > On Thu, Aug 01, 2013 at 01:31:09PM -0700, Olof Johansson wrote:
+> > > Hi,
 > 
-> So this patch introduces the new layout in a new file
-> drives/base/memfs.c (which, in light of your last comment should
-> probably be something more like largememory.c).
+> Hi all.
 > 
-> It doesn't clash with Nathan's, but it doesn't contain the new
-> is_memblock_[removable|offline] functions or the new "release"
-> attribute.  But that can be added easily.
+> > > On Thu, Aug 1, 2013 at 1:14 PM, Joe Perches <joe@perches.com> wrote:
+> > > > diff --git a/drivers/net/ethernet/pasemi/pasemi_mac.h b/drivers/net/ethernet/pasemi/pasemi_mac.h
+> []
+> > > > @@ -79,11 +79,11 @@ struct pasemi_mac {
+> > > >         int             last_cs;
+> > > >         int             num_cs;
+> > > >         u32             dma_if;
+> > > > -       u8              type;
+> > > >  #define MAC_TYPE_GMAC  1
+> > > >  #define MAC_TYPE_XAUI  2
+> > > >
+> > > > -       u8              mac_addr[6];
+> > > > +       u8              mac_addr[ETH_ALEN];
+> > > > +       u8              type;
+> > > 
+> > > Just promote 'type' to u32 instead, saves you from moving the #defines
+> > > down, etc, etc.
+> 
+> type is already u8, why change it?
+> That would also change struct size.
+> 
+> > There's a more fundamental question which has to be asked: what is the
+> > point of moving that in the first place?
+> 
+> Some is_<foo>_ether_addr tests assume __aligned(2)
+> by a casting char * to u16/be16 * and dereferencing.
+> 
+> see patch 0/3 and include/linux/etherdevice.h
 
-Can you two please work together on this so I we don't have to deal with
-competing patch sets and get confused as to what is really going on
-here?
-
-thanks,
-
-greg k-h
+This seems rather obscure - I mean, it's not obvious to driver authors
+that should be the case.  Would it not be better to make this a little
+more obvious somehow?  Maybe __aligned(2) against mac_addr?  Or
+maybe have a debugging check for it?
