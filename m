@@ -1,64 +1,303 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751696Ab3HAHzn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 03:55:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43217 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750742Ab3HAHzl (ORCPT
+	id S1751959Ab3HAH4r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 03:56:47 -0400
+Received: from smtp-69.nebula.fi ([83.145.220.69]:41620 "EHLO
+	smtp-68.nebula.fi" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751108Ab3HAH4q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 03:55:41 -0400
-Date: Thu, 1 Aug 2013 15:56:56 +0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Joe Perches <joe@perches.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-usb <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH] MAINTAINERS: Add separate section for USB NETWORKING
- DRIVERS
-Message-ID: <20130801075656.GA8074@kroah.com>
-References: <1375316960686@kroah.org>
- <1375343328.2034.34.camel@joe-AO722>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1375343328.2034.34.camel@joe-AO722>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 1 Aug 2013 03:56:46 -0400
+X-Greylist: delayed 562 seconds by postgrey-1.27 at vger.kernel.org; Thu, 01 Aug 2013 03:56:46 EDT
+From: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
+To: linux-kernel@vger.kernel.org, linux@openrisc.net
+Cc: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
+Subject: [PATCH] openrisc: tlb miss handler optimizations
+Date: Thu,  1 Aug 2013 10:46:10 +0300
+Message-Id: <1375343170-17848-1-git-send-email-stefan.kristiansson@saunalahti.fi>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 01, 2013 at 12:48:48AM -0700, Joe Perches wrote:
-> There are several drivers in drivers/net/usb/ that
-> do not have specific MAINTAINERS that should have
-> emails forwarded to the linux-usb mailing list.
-> 
-> Add a section for those drivers.
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
-> > In the future, you do not need to send drivers/net/usb/ patches to me,
-> > netdev and the linux-usb mailing lists should be sufficient.
-> 
-> I should have done this in the first patch.
-> Oh well...
-> 
->  MAINTAINERS | 5 +++++
->  1 file changed, 5 insertions(+)
-> 
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index d83f70f..4af7539 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -8656,6 +8656,11 @@ T:	git git://git.alsa-project.org/alsa-kernel.git
->  S:	Maintained
->  F:	sound/usb/midi.*
->  
-> +USB NETWORKING DRIVERS
-> +L:	linux-usb@vger.kernel.org
-> +S:	Odd Fixes
-> +F:	drivers/net/usb/
+By slightly reorganizing the code, the number of registers
+used in the tlb miss handlers can be reduced by two,
+thus removing the need to save them to memory.
 
-But netdev is the one that applies these patches, not linux-usb, so this
-isn't correct either.
+Also, some dead and commented out code is removed.
 
-sorry,
+No functional change.
 
-greg k-h
+Signed-off-by: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
+---
+ arch/openrisc/kernel/head.S | 141 +++++++++++++++-----------------------------
+ 1 file changed, 46 insertions(+), 95 deletions(-)
+
+diff --git a/arch/openrisc/kernel/head.S b/arch/openrisc/kernel/head.S
+index 1d3c9c2..eecc8df 100644
+--- a/arch/openrisc/kernel/head.S
++++ b/arch/openrisc/kernel/head.S
+@@ -976,8 +976,6 @@ ENTRY(dtlb_miss_handler)
+ 	EXCEPTION_STORE_GPR2
+ 	EXCEPTION_STORE_GPR3
+ 	EXCEPTION_STORE_GPR4
+-	EXCEPTION_STORE_GPR5
+-	EXCEPTION_STORE_GPR6
+ 	/*
+ 	 * get EA of the miss
+ 	 */
+@@ -985,91 +983,70 @@ ENTRY(dtlb_miss_handler)
+ 	/*
+ 	 * pmd = (pmd_t *)(current_pgd + pgd_index(daddr));
+ 	 */
+-	GET_CURRENT_PGD(r3,r5)		// r3 is current_pgd, r5 is temp
++	GET_CURRENT_PGD(r3,r4)		// r3 is current_pgd, r4 is temp
+ 	l.srli	r4,r2,0x18		// >> PAGE_SHIFT + (PAGE_SHIFT - 2)
+ 	l.slli	r4,r4,0x2		// to get address << 2
+-	l.add	r5,r4,r3		// r4 is pgd_index(daddr)
++	l.add	r3,r4,r3		// r4 is pgd_index(daddr)
+ 	/*
+ 	 * if (pmd_none(*pmd))
+ 	 *   goto pmd_none:
+ 	 */
+-	tophys	(r4,r5)
++	tophys	(r4,r3)
+ 	l.lwz	r3,0x0(r4)		// get *pmd value
+ 	l.sfne	r3,r0
+ 	l.bnf	d_pmd_none
+-	 l.andi	r3,r3,~PAGE_MASK //0x1fff		// ~PAGE_MASK
+-	/*
+-	 * if (pmd_bad(*pmd))
+-	 *   pmd_clear(pmd)
+-	 *   goto pmd_bad:
+-	 */
+-//	l.sfeq	r3,r0			// check *pmd value
+-//	l.bf	d_pmd_good
+-	l.addi	r3,r0,0xffffe000	// PAGE_MASK
+-//	l.j	d_pmd_bad
+-//	l.sw	0x0(r4),r0		// clear pmd
++	 l.addi	r3,r0,0xffffe000	// PAGE_MASK
++
+ d_pmd_good:
+ 	/*
+ 	 * pte = *pte_offset(pmd, daddr);
+ 	 */
+ 	l.lwz	r4,0x0(r4)		// get **pmd value
+ 	l.and	r4,r4,r3		// & PAGE_MASK
+-	l.srli	r5,r2,0xd		// >> PAGE_SHIFT, r2 == EEAR
+-	l.andi	r3,r5,0x7ff		// (1UL << PAGE_SHIFT - 2) - 1
++	l.srli	r2,r2,0xd		// >> PAGE_SHIFT, r2 == EEAR
++	l.andi	r3,r2,0x7ff		// (1UL << PAGE_SHIFT - 2) - 1
+ 	l.slli	r3,r3,0x2		// to get address << 2
+ 	l.add	r3,r3,r4
+-	l.lwz	r2,0x0(r3)		// this is pte at last
++	l.lwz	r3,0x0(r3)		// this is pte at last
+ 	/*
+ 	 * if (!pte_present(pte))
+ 	 */
+-	l.andi	r4,r2,0x1
++	l.andi	r4,r3,0x1
+ 	l.sfne	r4,r0			// is pte present
+ 	l.bnf	d_pte_not_present
+-	l.addi	r3,r0,0xffffe3fa	// PAGE_MASK | DTLB_UP_CONVERT_MASK
++	l.addi	r4,r0,0xffffe3fa	// PAGE_MASK | DTLB_UP_CONVERT_MASK
+ 	/*
+ 	 * fill DTLB TR register
+ 	 */
+-	l.and	r4,r2,r3		// apply the mask
++	l.and	r4,r3,r4		// apply the mask
+ 	// Determine number of DMMU sets
+-	l.mfspr r6, r0, SPR_DMMUCFGR
+-	l.andi	r6, r6, SPR_DMMUCFGR_NTS
+-	l.srli	r6, r6, SPR_DMMUCFGR_NTS_OFF
++	l.mfspr r2, r0, SPR_DMMUCFGR
++	l.andi	r2, r2, SPR_DMMUCFGR_NTS
++	l.srli	r2, r2, SPR_DMMUCFGR_NTS_OFF
+ 	l.ori	r3, r0, 0x1
+-	l.sll	r3, r3, r6 	// r3 = number DMMU sets DMMUCFGR
+-	l.addi	r6, r3, -1  	// r6 = nsets mask
+-	l.and	r5, r5, r6	// calc offset:	 & (NUM_TLB_ENTRIES-1)
++	l.sll	r3, r3, r2 	// r3 = number DMMU sets DMMUCFGR
++	l.addi	r2, r3, -1  	// r2 = nsets mask
++	l.mfspr	r3, r0, SPR_EEAR_BASE
++	l.srli	r3, r3, 0xd	// >> PAGE_SHIFT
++	l.and	r2, r3, r2	// calc offset:	 & (NUM_TLB_ENTRIES-1)
+ 	                                                   //NUM_TLB_ENTRIES
+-	l.mtspr	r5,r4,SPR_DTLBTR_BASE(0)
++	l.mtspr	r2,r4,SPR_DTLBTR_BASE(0)
+ 	/*
+ 	 * fill DTLB MR register
+ 	 */
+-	l.mfspr	r2,r0,SPR_EEAR_BASE
+-	l.addi	r3,r0,0xffffe000	// PAGE_MASK
+-	l.and	r4,r2,r3		// apply PAGE_MASK to EA (__PHX__ do we really need this?)
+-	l.ori	r4,r4,0x1		// set hardware valid bit: DTBL_MR entry
+-	l.mtspr	r5,r4,SPR_DTLBMR_BASE(0)
++	l.slli	r3, r3, 0xd		/* << PAGE_SHIFT => EA & PAGE_MASK */
++	l.ori	r4,r3,0x1		// set hardware valid bit: DTBL_MR entry
++	l.mtspr	r2,r4,SPR_DTLBMR_BASE(0)
+ 
+ 	EXCEPTION_LOAD_GPR2
+ 	EXCEPTION_LOAD_GPR3
+ 	EXCEPTION_LOAD_GPR4
+-	EXCEPTION_LOAD_GPR5
+-	EXCEPTION_LOAD_GPR6
+-	l.rfe
+-d_pmd_bad:
+-	l.nop	1
+-	EXCEPTION_LOAD_GPR2
+-	EXCEPTION_LOAD_GPR3
+-	EXCEPTION_LOAD_GPR4
+-	EXCEPTION_LOAD_GPR5
+-	EXCEPTION_LOAD_GPR6
+ 	l.rfe
+ d_pmd_none:
+ d_pte_not_present:
+ 	EXCEPTION_LOAD_GPR2
+ 	EXCEPTION_LOAD_GPR3
+ 	EXCEPTION_LOAD_GPR4
+-	EXCEPTION_LOAD_GPR5
+-	EXCEPTION_LOAD_GPR6
+ 	EXCEPTION_HANDLE(_dtlb_miss_page_fault_handler)
+ 
+ /* ==============================================[ ITLB miss handler ]=== */
+@@ -1077,8 +1054,6 @@ ENTRY(itlb_miss_handler)
+ 	EXCEPTION_STORE_GPR2
+ 	EXCEPTION_STORE_GPR3
+ 	EXCEPTION_STORE_GPR4
+-	EXCEPTION_STORE_GPR5
+-	EXCEPTION_STORE_GPR6
+ 	/*
+ 	 * get EA of the miss
+ 	 */
+@@ -1088,30 +1063,19 @@ ENTRY(itlb_miss_handler)
+ 	 * pmd = (pmd_t *)(current_pgd + pgd_index(daddr));
+ 	 *
+ 	 */
+-	GET_CURRENT_PGD(r3,r5)		// r3 is current_pgd, r5 is temp
++	GET_CURRENT_PGD(r3,r4)		// r3 is current_pgd, r5 is temp
+ 	l.srli	r4,r2,0x18		// >> PAGE_SHIFT + (PAGE_SHIFT - 2)
+ 	l.slli	r4,r4,0x2		// to get address << 2
+-	l.add	r5,r4,r3		// r4 is pgd_index(daddr)
++	l.add	r3,r4,r3		// r4 is pgd_index(daddr)
+ 	/*
+ 	 * if (pmd_none(*pmd))
+ 	 *   goto pmd_none:
+ 	 */
+-	tophys	(r4,r5)
++	tophys	(r4,r3)
+ 	l.lwz	r3,0x0(r4)		// get *pmd value
+ 	l.sfne	r3,r0
+ 	l.bnf	i_pmd_none
+-	l.andi	r3,r3,0x1fff		// ~PAGE_MASK
+-	/*
+-	 * if (pmd_bad(*pmd))
+-	 *   pmd_clear(pmd)
+-	 *   goto pmd_bad:
+-	 */
+-
+-//	l.sfeq	r3,r0			// check *pmd value
+-//	l.bf	i_pmd_good
+-	l.addi	r3,r0,0xffffe000	// PAGE_MASK
+-//	l.j	i_pmd_bad
+-//	l.sw	0x0(r4),r0		// clear pmd
++	 l.addi	r3,r0,0xffffe000	// PAGE_MASK
+ 
+ i_pmd_good:
+ 	/*
+@@ -1120,35 +1084,36 @@ i_pmd_good:
+ 	 */
+ 	l.lwz	r4,0x0(r4)		// get **pmd value
+ 	l.and	r4,r4,r3		// & PAGE_MASK
+-	l.srli	r5,r2,0xd		// >> PAGE_SHIFT, r2 == EEAR
+-	l.andi	r3,r5,0x7ff		// (1UL << PAGE_SHIFT - 2) - 1
++	l.srli	r2,r2,0xd		// >> PAGE_SHIFT, r2 == EEAR
++	l.andi	r3,r2,0x7ff		// (1UL << PAGE_SHIFT - 2) - 1
+ 	l.slli	r3,r3,0x2		// to get address << 2
+ 	l.add	r3,r3,r4
+-	l.lwz	r2,0x0(r3)		// this is pte at last
++	l.lwz	r3,0x0(r3)		// this is pte at last
+ 	/*
+ 	 * if (!pte_present(pte))
+ 	 *
+ 	 */
+-	l.andi	r4,r2,0x1
++	l.andi	r4,r3,0x1
+ 	l.sfne	r4,r0			// is pte present
+ 	l.bnf	i_pte_not_present
+-	l.addi	r3,r0,0xffffe03a	// PAGE_MASK | ITLB_UP_CONVERT_MASK
++	 l.addi	r4,r0,0xffffe03a	// PAGE_MASK | ITLB_UP_CONVERT_MASK
+ 	/*
+ 	 * fill ITLB TR register
+ 	 */
+-	l.and	r4,r2,r3		// apply the mask
+-	l.andi	r3,r2,0x7c0		// _PAGE_EXEC | _PAGE_SRE | _PAGE_SWE |  _PAGE_URE | _PAGE_UWE
+-//	l.andi	r3,r2,0x400		// _PAGE_EXEC
++	l.and	r4,r3,r4		// apply the mask
++	l.andi	r3,r3,0x7c0		// _PAGE_EXEC | _PAGE_SRE | _PAGE_SWE |  _PAGE_URE | _PAGE_UWE
+ 	l.sfeq	r3,r0
+ 	l.bf	itlb_tr_fill //_workaround
+ 	// Determine number of IMMU sets
+-	l.mfspr r6, r0, SPR_IMMUCFGR
+-	l.andi	r6, r6, SPR_IMMUCFGR_NTS
+-	l.srli	r6, r6, SPR_IMMUCFGR_NTS_OFF
++	l.mfspr r2, r0, SPR_IMMUCFGR
++	l.andi	r2, r2, SPR_IMMUCFGR_NTS
++	l.srli	r2, r2, SPR_IMMUCFGR_NTS_OFF
+ 	l.ori	r3, r0, 0x1
+-	l.sll	r3, r3, r6 	// r3 = number IMMU sets IMMUCFGR
+-	l.addi	r6, r3, -1  	// r6 = nsets mask
+-	l.and	r5, r5, r6	// calc offset:	 & (NUM_TLB_ENTRIES-1)
++	l.sll	r3, r3, r2 	// r3 = number IMMU sets IMMUCFGR
++	l.addi	r2, r3, -1  	// r2 = nsets mask
++	l.mfspr	r3, r0, SPR_EEAR_BASE
++	l.srli	r3, r3, 0xd	// >> PAGE_SHIFT
++	l.and	r2, r3, r2	// calc offset:	 & (NUM_TLB_ENTRIES-1)
+ 
+ /*
+  * __PHX__ :: fixme
+@@ -1160,38 +1125,24 @@ i_pmd_good:
+ itlb_tr_fill_workaround:
+ 	l.ori	r4,r4,0xc0		// | (SPR_ITLBTR_UXE | ITLBTR_SXE)
+ itlb_tr_fill:
+-	l.mtspr	r5,r4,SPR_ITLBTR_BASE(0)
++	l.mtspr	r2,r4,SPR_ITLBTR_BASE(0)
+ 	/*
+ 	 * fill DTLB MR register
+ 	 */
+-	l.mfspr	r2,r0,SPR_EEAR_BASE
+-	l.addi	r3,r0,0xffffe000	// PAGE_MASK
+-	l.and	r4,r2,r3		// apply PAGE_MASK to EA (__PHX__ do we really need this?)
+-	l.ori	r4,r4,0x1		// set hardware valid bit: DTBL_MR entry
+-	l.mtspr	r5,r4,SPR_ITLBMR_BASE(0)
++	l.slli	r3, r3, 0xd		/* << PAGE_SHIFT => EA & PAGE_MASK */
++	l.ori	r4,r3,0x1		// set hardware valid bit: ITBL_MR entry
++	l.mtspr	r2,r4,SPR_ITLBMR_BASE(0)
+ 
+ 	EXCEPTION_LOAD_GPR2
+ 	EXCEPTION_LOAD_GPR3
+ 	EXCEPTION_LOAD_GPR4
+-	EXCEPTION_LOAD_GPR5
+-	EXCEPTION_LOAD_GPR6
+ 	l.rfe
+ 
+-i_pmd_bad:
+-	l.nop	1
+-	EXCEPTION_LOAD_GPR2
+-	EXCEPTION_LOAD_GPR3
+-	EXCEPTION_LOAD_GPR4
+-	EXCEPTION_LOAD_GPR5
+-	EXCEPTION_LOAD_GPR6
+-	l.rfe
+ i_pmd_none:
+ i_pte_not_present:
+ 	EXCEPTION_LOAD_GPR2
+ 	EXCEPTION_LOAD_GPR3
+ 	EXCEPTION_LOAD_GPR4
+-	EXCEPTION_LOAD_GPR5
+-	EXCEPTION_LOAD_GPR6
+ 	EXCEPTION_HANDLE(_itlb_miss_page_fault_handler)
+ 
+ /* ==============================================[ boot tlb handlers ]=== */
+-- 
+1.8.1.2
+
