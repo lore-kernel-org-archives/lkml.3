@@ -1,171 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757021Ab3HARsF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 13:48:05 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:51963 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753572Ab3HARsD (ORCPT
+	id S1754250Ab3HARuW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 13:50:22 -0400
+Received: from mail-la0-f43.google.com ([209.85.215.43]:43448 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751194Ab3HARuU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 13:48:03 -0400
-Message-ID: <51FA9F54.3060704@linaro.org>
-Date: Thu, 01 Aug 2013 19:48:04 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Thu, 1 Aug 2013 13:50:20 -0400
 MIME-Version: 1.0
-To: =?UTF-8?B?U8O2cmVuIEJyaW5rbWFubg==?= <soren.brinkmann@xilinx.com>
-CC: Stuart Menefy <stuart.menefy@st.com>, Stephen Boyd <sboyd@codeaurora.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: Enable arm_global_timer for Zynq brakes boot
-References: <51F66565.7010600@linaro.org> <8d56935e-2a20-46c7-b80a-f779572dd839@CO1EHSMHS014.ehs.local> <51F77D93.4030505@linaro.org> <51F97842.6050200@linaro.org> <068436c6-ff98-428f-8875-bb1c6f86466b@TX2EHSMHS008.ehs.local> <51F97CE3.9030306@linaro.org> <15e19315-ce88-4d3c-bad9-0a37d9e52f6b@CO1EHSMHS007.ehs.local> <51F99747.4060901@linaro.org> <a48f159a-e88c-42fa-b76b-662302d3a585@AM1EHSMHS003.ehs.local> <51FA9AE8.1060004@linaro.org> <1c83c081-60c6-49e3-a85c-f64dd5be0e60@CH1EHSMHS030.ehs.local>
-In-Reply-To: <1c83c081-60c6-49e3-a85c-f64dd5be0e60@CH1EHSMHS030.ehs.local>
+In-Reply-To: <20130801174237.GA20121@srcf.ucam.org>
+References: <37178266.QXgbv9rq0i@vostro.rjw.lan>
+	<CAMP44s2LqiEGtS72FuTjsHUa1MH2kfaYHmcpNKMmAm2LnbFCCQ@mail.gmail.com>
+	<20130731051421.GA15766@srcf.ucam.org>
+	<CAMP44s2B=nQLnZm7gyYAJZgt_x3KszRZLUC=fom0t9=Eze+smA@mail.gmail.com>
+	<20130731140010.GA24560@srcf.ucam.org>
+	<CAMP44s1cLou9TMfLS+FHwPM_b3bG5HN1-hzgvhz0fVRCZ8XqWw@mail.gmail.com>
+	<20130731175232.GA29987@srcf.ucam.org>
+	<CAMP44s1c5pmiC2fvmRi9vFrJXb2zYUT_F=paM2LR_V+7THnFVg@mail.gmail.com>
+	<20130731184724.GA30896@srcf.ucam.org>
+	<CAMP44s25aRcK2bB=WLMkuD45fztFBNug8prArczRqZqzeEvj3A@mail.gmail.com>
+	<20130801174237.GA20121@srcf.ucam.org>
+Date: Thu, 1 Aug 2013 12:50:18 -0500
+Message-ID: <CAMP44s3EgZBtv-ifO9b+VzmTBE2wejNK7RN3ERL0+imrXzgBCg@mail.gmail.com>
+Subject: Re: [REGRESSION/PATCH] acpi: blacklist win8 OSI for ASUS Zenbok Prime UX31A
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Aaron Lu <aaron.lwe@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        Len Brown <lenb@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/01/2013 07:43 PM, Sören Brinkmann wrote:
-> On Thu, Aug 01, 2013 at 07:29:12PM +0200, Daniel Lezcano wrote:
->> On 08/01/2013 01:38 AM, Sören Brinkmann wrote:
->>> On Thu, Aug 01, 2013 at 01:01:27AM +0200, Daniel Lezcano wrote:
->>>> On 08/01/2013 12:18 AM, Sören Brinkmann wrote:
->>>>> On Wed, Jul 31, 2013 at 11:08:51PM +0200, Daniel Lezcano wrote:
->>>>>> On 07/31/2013 10:58 PM, Sören Brinkmann wrote:
->>>>>>> On Wed, Jul 31, 2013 at 10:49:06PM +0200, Daniel Lezcano wrote:
->>>>>>>> On 07/31/2013 12:34 AM, Sören Brinkmann wrote:
->>>>>>>>> On Tue, Jul 30, 2013 at 10:47:15AM +0200, Daniel Lezcano wrote:
->>>>>>>>>> On 07/30/2013 02:03 AM, Sören Brinkmann wrote:
->>>>>>>>>>> Hi Daniel,
->>>>>>>>>>>
->>>>>>>>>>> On Mon, Jul 29, 2013 at 02:51:49PM +0200, Daniel Lezcano wrote:
->>>>>>>>>>> (snip)
->>>>>>>>>>>>
->>>>>>>>>>>> the CPUIDLE_FLAG_TIMER_STOP flag tells the cpuidle framework the local
->>>>>>>>>>>> timer will be stopped when entering to the idle state. In this case, the
->>>>>>>>>>>> cpuidle framework will call clockevents_notify(ENTER) and switches to a
->>>>>>>>>>>> broadcast timer and will call clockevents_notify(EXIT) when exiting the
->>>>>>>>>>>> idle state, switching the local timer back in use.
->>>>>>>>>>>
->>>>>>>>>>> I've been thinking about this, trying to understand how this makes my
->>>>>>>>>>> boot attempts on Zynq hang. IIUC, the wrongly provided TIMER_STOP flag
->>>>>>>>>>> would make the timer core switch to a broadcast device even though it
->>>>>>>>>>> wouldn't be necessary. But shouldn't it still work? It sounds like we do
->>>>>>>>>>> something useless, but nothing wrong in a sense that it should result in
->>>>>>>>>>> breakage. I guess I'm missing something obvious. This timer system will
->>>>>>>>>>> always remain a mystery to me.
->>>>>>>>>>>
->>>>>>>>>>> Actually this more or less leads to the question: What is this
->>>>>>>>>>> 'broadcast timer'. I guess that is some clockevent device which is
->>>>>>>>>>> common to all cores? (that would be the cadence_ttc for Zynq). Is the
->>>>>>>>>>> hang pointing to some issue with that driver?
->>>>>>>>>>
->>>>>>>>>> If you look at the /proc/timer_list, which timer is used for broadcasting ?
->>>>>>>>>
->>>>>>>>> So, the correct run results (full output attached).
->>>>>>>>>
->>>>>>>>> The vanilla kernel uses the twd timers as local timers and the TTC as
->>>>>>>>> broadcast device:
->>>>>>>>> 	Tick Device: mode:     1                                                         
->>>>>>>>> 	Broadcast device  
->>>>>>>>> 	Clock Event Device: ttc_clockevent
->>>>>>>>>
->>>>>>>>> When I remove the offending CPUIDLE flag and add the DT fragment to
->>>>>>>>> enable the global timer, the twd timers are still used as local timers
->>>>>>>>> and the broadcast device is the global timer:
->>>>>>>>> 	Tick Device: mode:     1                                                         
->>>>>>>>> 	Broadcast device                                                                 
->>>>>>>>> 	Clock Event Device: arm_global_timer
->>>>>>>>>
->>>>>>>>> Again, since boot hangs in the actually broken case, I don't see way to
->>>>>>>>> obtain this information for that case.
->>>>>>>>
->>>>>>>> Can't you use the maxcpus=1 option to ensure the system to boot up ?
->>>>>>>
->>>>>>> Right, that works. I forgot about that option after you mentioned, that
->>>>>>> it is most likely not that useful.
->>>>>>>
->>>>>>> Anyway, this are those sysfs files with an unmodified cpuidle driver and
->>>>>>> the gt enabled and having maxcpus=1 set.
->>>>>>>
->>>>>>> /proc/timer_list:
->>>>>>> 	Tick Device: mode:     1
->>>>>>> 	Broadcast device
->>>>>>> 	Clock Event Device: arm_global_timer
->>>>>>> 	 max_delta_ns:   12884902005
->>>>>>> 	 min_delta_ns:   1000
->>>>>>> 	 mult:           715827876
->>>>>>> 	 shift:          31
->>>>>>> 	 mode:           3
->>>>>>
->>>>>> Here the mode is 3 (CLOCK_EVT_MODE_ONESHOT)
->>>>>>
->>>>>> The previous timer_list output you gave me when removing the offending
->>>>>> cpuidle flag, it was 1 (CLOCK_EVT_MODE_SHUTDOWN).
->>>>>>
->>>>>> Is it possible you try to get this output again right after onlining the
->>>>>> cpu1 in order to check if the broadcast device switches to SHUTDOWN ?
->>>>>
->>>>> How do I do that? I tried to online CPU1 after booting with maxcpus=1
->>>>> and that didn't end well:
->>>>> 	# echo 1 > online && cat /proc/timer_list 
->>>>
->>>> Hmm, I was hoping to have a small delay before the kernel hangs but
->>>> apparently this is not the case... :(
->>>>
->>>> I suspect the global timer is shutdown at one moment but I don't
->>>> understand why and when.
->>>>
->>>> Can you add a stack trace in the "clockevents_shutdown" function with
->>>> the clockevent device name ? Perhaps, we may see at boot time an
->>>> interesting trace when it hangs.
->>>
->>> I did this change:
->>> 	diff --git a/kernel/time/clockevents.c b/kernel/time/clockevents.c
->>> 	index 38959c8..3ab11c1 100644
->>> 	--- a/kernel/time/clockevents.c
->>> 	+++ b/kernel/time/clockevents.c
->>> 	@@ -92,6 +92,8 @@ void clockevents_set_mode(struct clock_event_device *dev,
->>> 	  */
->>> 	 void clockevents_shutdown(struct clock_event_device *dev)
->>> 	 {
->>> 	+       pr_info("ce->name:%s\n", dev->name);
->>> 	+       dump_stack();
->>> 	        clockevents_set_mode(dev, CLOCK_EVT_MODE_SHUTDOWN);
->>> 	        dev->next_event.tv64 = KTIME_MAX;
->>> 	 }
->>>
->>> It is hit a few times during boot, so I attach a full boot log. I really
->>> don't know what to look for, but I hope you can spot something in it. I
->>> really appreciate you taking the time.
+On Thu, Aug 1, 2013 at 12:42 PM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+> On Thu, Aug 01, 2013 at 12:37:04PM -0500, Felipe Contreras wrote:
+>> On Wed, Jul 31, 2013 at 1:47 PM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+>> > If we can't make an interface 100% consistent, we shouldn't pretend that
+>> > the interface is 100% consistent. We can't, and so we don't. Setting a
+>> > backlight value of 0 may turn the screen off, and userspace needs to
+>> > deal with that.
 >>
->> Thanks for the traces.
-> 
-> Sure.
-> 
+>> This is insanity; we can never guarantee 100% of anything.
 >>
->> If you try without the ttc_clockevent configured in the kernel (but with
->> twd and gt), does it boot ?
-> 
-> Absence of the TTC doesn't seem to make any difference. It hangs at the
-> same location.
+>> Better is better. And 99% is better than 90%
+>
+> An interface that describes reality is better than one that doesn't. But
+> hey, feel free to disagree and post a patch for the ABI docs.
 
-Ok, IMO there is a problem with the broadcast device registration (may
-be vs twd).
-
-I will check later (kid duty) :)
-
-Thanks
-  -- Daniel
-
+An interface that is useful to the user is better than one that is not.
 
 -- 
- <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+Felipe Contreras
