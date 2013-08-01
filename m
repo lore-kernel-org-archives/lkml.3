@@ -1,307 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756797Ab3HAVcV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 17:32:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16062 "EHLO mx1.redhat.com"
+	id S1756928Ab3HAVdq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 17:33:46 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:51136 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753272Ab3HAVcT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 17:32:19 -0400
-Message-ID: <1375392736.31262.246.camel@ul30vt.home>
-Subject: Re: [PATCH v3 6/9] pci: Add slot and bus reset interfaces
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Don Dutile <ddutile@redhat.com>
-Cc: bhelgaas@google.com, linux-pci@vger.kernel.org, indou.takao@jp.fujitsu.com,
-        linux-kernel@vger.kernel.org
-Date: Thu, 01 Aug 2013 15:32:16 -0600
-In-Reply-To: <51FAD1B3.5050503@redhat.com>
-References: <20130801164652.16145.79918.stgit@bling.home>
-	 <20130801165545.16145.74383.stgit@bling.home> <51FAD1B3.5050503@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753272Ab3HAVdp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 17:33:45 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: rafael.j.wysocki@intel.com, vasilis.liaskovitis@profitbricks.com,
+        toshi.kani@hp.com, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, tangchen@cn.fujitsu.com,
+        wency@cn.fujitsu.com
+Subject: Re: Cannot hot remove a memory device
+Date: Thu, 01 Aug 2013 23:43:55 +0200
+Message-ID: <2995879.KDC1gYpzij@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <51FA1E41.20304@jp.fujitsu.com>
+References: <51FA1E41.20304@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-08-01 at 17:22 -0400, Don Dutile wrote:
-> On 08/01/2013 12:55 PM, Alex Williamson wrote:
-> > Sometimes pci_reset_function is not sufficient.  We have cases where
-> > devices do not support any kind of reset, but there might be multiple
-> > functions on the bus preventing pci_reset_function from doing a
-> > secondary bus reset.  We also have cases where a device will advertise
-> > that it supports a PM reset, but really does nothing on D3hot->D0
-> > (graphics cards are notorious for this).  These devices often also
-> > have more than one function, so even blacklisting PM reset for them
-> > wouldn't allow a secondary bus reset through pci_reset_function.
-> >
-> > If a driver supports multiple devices it should have the ability to
-> > induce a bus reset when it needs to.  This patch provides that ability
-> > through pci_reset_slot and pci_reset_bus.  It's the caller's
-> > responsibility when using these interfaces to understand that all of
-> > the devices in or below the slot (or on or below the bus) will be
-> > reset and therefore should be under control of the caller.  PCI state
-> > of all the affected devices is saved and restored around these resets,
-> > but internal state of all of the affected devices is reset (which
-> > should be the intention).
-> >
-> > Signed-off-by: Alex Williamson<alex.williamson@redhat.com>
-> > ---
-> >   drivers/pci/pci.c   |  195 +++++++++++++++++++++++++++++++++++++++++++++++++++
-> >   include/linux/pci.h |    2 +
-> >   2 files changed, 197 insertions(+)
-> >
-> > diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-> > index f6c757a..91f7bc4 100644
-> > --- a/drivers/pci/pci.c
-> > +++ b/drivers/pci/pci.c
-> > @@ -3518,6 +3518,201 @@ int pci_reset_function(struct pci_dev *dev)
-> >   }
-> >   EXPORT_SYMBOL_GPL(pci_reset_function);
-> >
-> > +static void pci_bus_lock(struct pci_bus *bus)
-> > +{
-> > +	struct pci_dev *dev;
-> > +
-> > +	list_for_each_entry(dev,&bus->devices, bus_list) {
-> > +		pci_dev_lock(dev);
-> > +		if (dev->subordinate)
-> > +			pci_bus_lock(dev->subordinate);
-> > +	}
-> > +}
-> > +
-> > +static void pci_bus_unlock(struct pci_bus *bus)
-> > +{
-> > +	struct pci_dev *dev;
-> > +
-> > +	list_for_each_entry(dev,&bus->devices, bus_list) {
-> > +		pci_dev_unlock(dev);
-> > +		if (dev->subordinate)
-> > +			pci_bus_unlock(dev->subordinate);
-> > +	}
-> > +}
-> So, I'm wondering if the above locks from top of PCI tree down,
-> should the unlock work from bottom back to the top ?
-> i.e.,
-> 	list_for_each_entry(dev,&bus->devices, bus_list) {
-> 		if (dev->subordinate)
-> 			pci_bus_unlock(dev->subordinate);
-> 		pci_dev_unlock(dev);
-> 	}
+Hi,
 
+Thanks for your report.
 
-I hadn't considered that, it does seem like a good idea though.
-
-> > +static void pci_slot_lock(struct pci_slot *slot)
-> > +{
-> > +	struct pci_dev *dev;
-> > +
-> > +	list_for_each_entry(dev,&slot->bus->devices, bus_list) {
-> > +		if (!dev->slot || dev->slot != slot)
-> > +			continue;
-> > +		pci_dev_lock(dev);
-> > +		if (dev->subordinate)
-> > +			pci_bus_lock(dev->subordinate);
-> > +	}
-> > +}
-> > +
-> > +static void pci_slot_unlock(struct pci_slot *slot)
-> > +{
-> > +	struct pci_dev *dev;
-> > +
-> > +	list_for_each_entry(dev,&slot->bus->devices, bus_list) {
-> > +		if (!dev->slot || dev->slot != slot)
-> > +			continue;
-> > +		pci_dev_unlock(dev);
-> > +		if (dev->subordinate)
-> > +			pci_bus_unlock(dev->subordinate);
-> > +	}
-> > +}
-> ditto.
+On Thursday, August 01, 2013 05:37:21 PM Yasuaki Ishimatsu wrote:
+> By following commit, I cannot hot remove a memory device.
 > 
-> > +
-> > +static void pci_bus_save_and_disable(struct pci_bus *bus)
-> > +{
-> > +	struct pci_dev *dev;
-> > +
-> > +	list_for_each_entry(dev,&bus->devices, bus_list) {
-> > +		pci_dev_save_and_disable(dev);
-> > +		if (dev->subordinate)
-> > +			pci_bus_save_and_disable(dev->subordinate);
-> > +	}
-> > +}
-> > +
-> > +static void pci_bus_restore(struct pci_bus *bus)
-> > +{
-> > +	struct pci_dev *dev;
-> > +
-> > +	list_for_each_entry(dev,&bus->devices, bus_list) {
-> > +		pci_dev_restore(dev);
-> > +		if (dev->subordinate)
-> > +			pci_bus_restore(dev->subordinate);
-> > +	}
-> > +}
-> but not in reverse here, b/c need top-most device restored
-> to get to next level in PCI tree (since could be a PPB that needs
-> restoring to get to next level bus/device(s)).
-
-Right.  Thanks, I'll see if there are any more comments and respin.
-
-Alex
-
-> > +
-> > +static void pci_slot_save_and_disable(struct pci_slot *slot)
-> > +{
-> > +	struct pci_dev *dev;
-> > +
-> > +	list_for_each_entry(dev,&slot->bus->devices, bus_list) {
-> > +		if (!dev->slot || dev->slot != slot)
-> > +			continue;
-> > +		pci_dev_save_and_disable(dev);
-> > +		if (dev->subordinate)
-> > +			pci_bus_save_and_disable(dev->subordinate);
-> > +	}
-> > +}
-> > +
-> > +static void pci_slot_restore(struct pci_slot *slot)
-> > +{
-> > +	struct pci_dev *dev;
-> > +
-> > +	list_for_each_entry(dev,&slot->bus->devices, bus_list) {
-> > +		if (!dev->slot || dev->slot != slot)
-> > +			continue;
-> > +		pci_dev_restore(dev);
-> > +		if (dev->subordinate)
-> > +			pci_bus_restore(dev->subordinate);
-> > +	}
-> > +}
-> ditto.
+> ACPI / memhotplug: Bind removable memory blocks to ACPI device nodes
+> commit e2ff39400d81233374e780b133496a2296643d7d
 > 
-> > +
-> > +static int pci_slot_reset(struct pci_slot *slot, int probe)
-> > +{
-> > +	int rc;
-> > +
-> > +	if (!slot)
-> > +		return -ENOTTY;
-> > +
-> > +	if (!probe)
-> > +		pci_slot_lock(slot);
-> > +
-> > +	might_sleep();
-> > +
-> > +	rc = pci_reset_hotplug_slot(slot->hotplug, probe);
-> > +
-> > +	if (!probe)
-> > +		pci_slot_unlock(slot);
-> > +
-> > +	return rc;
-> > +}
-> > +
-> > +/**
-> > + * pci_reset_slot - reset a PCI slot
-> > + * @slot: PCI slot to reset
-> > + *
-> > + * A PCI bus may host multiple slots, each slot may support a reset mechanism
-> > + * independent of other slots.  For instance, some slots may support slot power
-> > + * control.  In the case of a 1:1 bus to slot architecture, this function may
-> > + * wrap the bus reset to avoid spurious slot related events such as hotplug.
-> > + * Generally a slot reset should be attempted before a bus reset.  All of the
-> > + * function of the slot and any subordinate buses behind the slot are reset
-> > + * through this function.  PCI config space of all devices in the slot and
-> > + * behind the slot is saved before and restored after reset.
-> > + *
-> > + * Return 0 on success, non-zero on error.
-> > + */
-> > +int pci_reset_slot(struct pci_slot *slot)
-> > +{
-> > +	int rc;
-> > +
-> > +	rc = pci_slot_reset(slot, 1);
-> > +	if (rc)
-> > +		return rc;
-> > +
-> > +	pci_slot_save_and_disable(slot);
-> > +
-> > +	rc = pci_slot_reset(slot, 0);
-> > +
-> > +	pci_slot_restore(slot);
-> > +
-> > +	return rc;
-> > +}
-> > +EXPORT_SYMBOL_GPL(pci_reset_slot);
-> > +
-> > +static int pci_bus_reset(struct pci_bus *bus, int probe)
-> > +{
-> > +	if (!bus->self)
-> > +		return -ENOTTY;
-> > +
-> > +	if (probe)
-> > +		return 0;
-> > +
-> > +	pci_bus_lock(bus);
-> > +
-> > +	might_sleep();
-> > +
-> > +	pci_reset_bridge_secondary_bus(bus->self);
-> > +
-> > +	pci_bus_unlock(bus);
-> > +
-> > +	return 0;
-> > +}
-> > +
-> > +/**
-> > + * pci_reset_bus - reset a PCI bus
-> > + * @bus: top level PCI bus to reset
-> > + *
-> > + * Do a bus reset on the given bus and any subordinate buses, saving
-> > + * and restoring state of all devices.
-> > + *
-> > + * Return 0 on success, non-zero on error.
-> > + */
-> > +int pci_reset_bus(struct pci_bus *bus)
-> > +{
-> > +	int rc;
-> > +
-> > +	rc = pci_bus_reset(bus, 1);
-> > +	if (rc)
-> > +		return rc;
-> > +
-> > +	pci_bus_save_and_disable(bus);
-> > +
-> > +	rc = pci_bus_reset(bus, 0);
-> > +
-> > +	pci_bus_restore(bus);
-> > +
-> > +	return rc;
-> > +}
-> > +EXPORT_SYMBOL_GPL(pci_reset_bus);
-> > +
-> >   /**
-> >    * pcix_get_max_mmrbc - get PCI-X maximum designed memory read byte count
-> >    * @dev: PCI device to query
-> > diff --git a/include/linux/pci.h b/include/linux/pci.h
-> > index 35c1bc4..1a8fd34 100644
-> > --- a/include/linux/pci.h
-> > +++ b/include/linux/pci.h
-> > @@ -924,6 +924,8 @@ int pcie_set_mps(struct pci_dev *dev, int mps);
-> >   int __pci_reset_function(struct pci_dev *dev);
-> >   int __pci_reset_function_locked(struct pci_dev *dev);
-> >   int pci_reset_function(struct pci_dev *dev);
-> > +int pci_reset_slot(struct pci_slot *slot);
-> > +int pci_reset_bus(struct pci_bus *bus);
-> >   void pci_reset_bridge_secondary_bus(struct pci_dev *dev);
-> >   void pci_update_resource(struct pci_dev *dev, int resno);
-> >   int __must_check pci_assign_resource(struct pci_dev *dev, int i);
-> >
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Details are follows:
+> When I add a memory device, acpi_memory_enable_device() always fails
+> as follows:
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> ...
+> [ 1271.114116]  [ffffea121c400000-ffffea121c7fffff] PMD -> [ffff880813c00000-ffff880813ffffff] on node 3
+> [ 1271.128682]  [ffffea121c800000-ffffea121cbfffff] PMD -> [ffff880813800000-ffff880813bfffff] on node 3
+> [ 1271.143298]  [ffffea121cc00000-ffffea121cffffff] PMD -> [ffff880813000000-ffff8808133fffff] on node 3
+> [ 1271.157799]  [ffffea121d000000-ffffea121d3fffff] PMD -> [ffff880812c00000-ffff880812ffffff] on node 3
+> [ 1271.172341]  [ffffea121d400000-ffffea121d7fffff] PMD -> [ffff880812800000-ffff880812bfffff] on node 3
+> [ 1271.186872]  [ffffea121d800000-ffffea121dbfffff] PMD -> [ffff880812400000-ffff8808127fffff] on node 3
+> [ 1271.201481]  [ffffea121dc00000-ffffea121dffffff] PMD -> [ffff880812000000-ffff8808123fffff] on node 3
+> [ 1271.216041]  [ffffea121e000000-ffffea121e3fffff] PMD -> [ffff880811c00000-ffff880811ffffff] on node 3
+> [ 1271.230623]  [ffffea121e400000-ffffea121e7fffff] PMD -> [ffff880811800000-ffff880811bfffff] on node 3
+> [ 1271.245148]  [ffffea121e800000-ffffea121ebfffff] PMD -> [ffff880811400000-ffff8808117fffff] on node 3
+> [ 1271.259683]  [ffffea121ec00000-ffffea121effffff] PMD -> [ffff880811000000-ffff8808113fffff] on node 3
+> [ 1271.274194]  [ffffea121f000000-ffffea121f3fffff] PMD -> [ffff880810c00000-ffff880810ffffff] on node 3
+> [ 1271.288764]  [ffffea121f400000-ffffea121f7fffff] PMD -> [ffff880810800000-ffff880810bfffff] on node 3
+> ...	
+> [ 1271.325841] acpi PNP0C80:03: acpi_memory_enable_device() error
+
+Well, the only new way acpi_memory_enable_device() can fail after that commit
+is a failure in acpi_bind_memory_blocks().
+
+This means that either handle is NULL, which I think we can exclude, because
+acpi_memory_enable_device() wouldn't be called at all if that were the case, or
+there's a more subtle error in acpi_bind_one().
+
+One that comes to mind is that we may be calling acpi_bind_one() twice for the
+same memory region, in which it will trigger -EINVAL from the sanity check in
+there.
+
+Also you may try to increase ACPI_MAX_PHYSICAL_NODE (in acpi_bus.h) and see if
+that helps.
+
+Thanks,
+Rafael
 
 
-
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
