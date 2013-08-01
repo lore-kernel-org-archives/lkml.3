@@ -1,122 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757507Ab3HAU7V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 16:59:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53530 "EHLO mx1.redhat.com"
+	id S1756240Ab3HAVEq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 17:04:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38664 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757311Ab3HAU7T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 16:59:19 -0400
-Message-ID: <51FACC22.10500@redhat.com>
-Date: Thu, 01 Aug 2013 16:59:14 -0400
-From: Don Dutile <ddutile@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130108 Thunderbird/10.0.12
-MIME-Version: 1.0
-To: Alex Williamson <alex.williamson@redhat.com>
-CC: bhelgaas@google.com, linux-pci@vger.kernel.org, indou.takao@jp.fujitsu.com,
+	id S1751957Ab3HAVEp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 17:04:45 -0400
+Message-ID: <1375391081.31262.236.camel@ul30vt.home>
+Subject: Re: [PATCH v3 5/9] pci: Split out pci_dev lock/unlock and
+ save/restore
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Don Dutile <ddutile@redhat.com>
+Cc: bhelgaas@google.com, linux-pci@vger.kernel.org, indou.takao@jp.fujitsu.com,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 5/9] pci: Split out pci_dev lock/unlock and save/restore
-References: <20130801164652.16145.79918.stgit@bling.home> <20130801165539.16145.79655.stgit@bling.home>
-In-Reply-To: <20130801165539.16145.79655.stgit@bling.home>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Date: Thu, 01 Aug 2013 15:04:41 -0600
+In-Reply-To: <51FACC22.10500@redhat.com>
+References: <20130801164652.16145.79918.stgit@bling.home>
+	 <20130801165539.16145.79655.stgit@bling.home> <51FACC22.10500@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/01/2013 12:55 PM, Alex Williamson wrote:
-> Only cosmetic changes to existing paths.
->
-> Signed-off-by: Alex Williamson<alex.williamson@redhat.com>
-> ---
->   drivers/pci/pci.c |   52 +++++++++++++++++++++++++++++++++++-----------------
->   1 file changed, 35 insertions(+), 17 deletions(-)
->
-> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-> index db90692..f6c757a 100644
-> --- a/drivers/pci/pci.c
-> +++ b/drivers/pci/pci.c
-> @@ -3378,22 +3378,46 @@ done:
->   	return rc;
->   }
->
-> +static void pci_dev_lock(struct pci_dev *dev)
-> +{
-> +	pci_cfg_access_lock(dev);
-> +	/* block PM suspend, driver probe, etc. */
-> +	device_lock(&dev->dev);
-> +}
-> +
-> +static void pci_dev_unlock(struct pci_dev *dev)
-> +{
-> +	device_unlock(&dev->dev);
-> +	pci_cfg_access_unlock(dev);
-> +}
-> +
-> +static void pci_dev_save_and_disable(struct pci_dev *dev)
-> +{
-> +	pci_save_state(dev);
-> +	/*
-> +	 * both INTx and MSI are disabled after the Interrupt Disable bit
-> +	 * is set and the Bus Master bit is cleared.
-> +	 */
-> +	pci_write_config_word(dev, PCI_COMMAND, PCI_COMMAND_INTX_DISABLE);
-> +}
-although the above is just a shuffling of the previous code,
-does the comment need to point out that BARs are disabled by this write as well ?
+On Thu, 2013-08-01 at 16:59 -0400, Don Dutile wrote:
+> On 08/01/2013 12:55 PM, Alex Williamson wrote:
+> > Only cosmetic changes to existing paths.
+> >
+> > Signed-off-by: Alex Williamson<alex.williamson@redhat.com>
+> > ---
+> >   drivers/pci/pci.c |   52 +++++++++++++++++++++++++++++++++++-----------------
+> >   1 file changed, 35 insertions(+), 17 deletions(-)
+> >
+> > diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+> > index db90692..f6c757a 100644
+> > --- a/drivers/pci/pci.c
+> > +++ b/drivers/pci/pci.c
+> > @@ -3378,22 +3378,46 @@ done:
+> >   	return rc;
+> >   }
+> >
+> > +static void pci_dev_lock(struct pci_dev *dev)
+> > +{
+> > +	pci_cfg_access_lock(dev);
+> > +	/* block PM suspend, driver probe, etc. */
+> > +	device_lock(&dev->dev);
+> > +}
+> > +
+> > +static void pci_dev_unlock(struct pci_dev *dev)
+> > +{
+> > +	device_unlock(&dev->dev);
+> > +	pci_cfg_access_unlock(dev);
+> > +}
+> > +
+> > +static void pci_dev_save_and_disable(struct pci_dev *dev)
+> > +{
+> > +	pci_save_state(dev);
+> > +	/*
+> > +	 * both INTx and MSI are disabled after the Interrupt Disable bit
+> > +	 * is set and the Bus Master bit is cleared.
+> > +	 */
+> > +	pci_write_config_word(dev, PCI_COMMAND, PCI_COMMAND_INTX_DISABLE);
+> > +}
+> although the above is just a shuffling of the previous code,
+> does the comment need to point out that BARs are disabled by this write as well ?
 
-> +
-> +static void pci_dev_restore(struct pci_dev *dev)
-> +{
-> +	pci_restore_state(dev);
-> +}
-> +
->   static int pci_dev_reset(struct pci_dev *dev, int probe)
->   {
->   	int rc;
->
-> -	if (!probe) {
-> -		pci_cfg_access_lock(dev);
-> -		/* block PM suspend, driver probe, etc. */
-> -		device_lock(&dev->dev);
-> -	}
-> +	if (!probe)
-> +		pci_dev_lock(dev);
->
->   	rc = __pci_dev_reset(dev, probe);
->
-> -	if (!probe) {
-> -		device_unlock(&dev->dev);
-> -		pci_cfg_access_unlock(dev);
-> -	}
-> +	if (!probe)
-> +		pci_dev_unlock(dev);
-> +
->   	return rc;
->   }
->   /**
-> @@ -3484,17 +3508,11 @@ int pci_reset_function(struct pci_dev *dev)
->   	if (rc)
->   		return rc;
->
-> -	pci_save_state(dev);
-> -
-> -	/*
-> -	 * both INTx and MSI are disabled after the Interrupt Disable bit
-> -	 * is set and the Bus Master bit is cleared.
-> -	 */
-> -	pci_write_config_word(dev, PCI_COMMAND, PCI_COMMAND_INTX_DISABLE);
-> +	pci_dev_save_and_disable(dev);
->
->   	rc = pci_dev_reset(dev, 0);
->
-> -	pci_restore_state(dev);
-> +	pci_dev_restore(dev);
->
->   	return rc;
->   }
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+I could certainly add such a comment.  That's also why I added the
+_and_disable to this function name instead of just pci_dev_save().
+Thanks,
+
+Alex
+
+> > +
+> > +static void pci_dev_restore(struct pci_dev *dev)
+> > +{
+> > +	pci_restore_state(dev);
+> > +}
+> > +
+> >   static int pci_dev_reset(struct pci_dev *dev, int probe)
+> >   {
+> >   	int rc;
+> >
+> > -	if (!probe) {
+> > -		pci_cfg_access_lock(dev);
+> > -		/* block PM suspend, driver probe, etc. */
+> > -		device_lock(&dev->dev);
+> > -	}
+> > +	if (!probe)
+> > +		pci_dev_lock(dev);
+> >
+> >   	rc = __pci_dev_reset(dev, probe);
+> >
+> > -	if (!probe) {
+> > -		device_unlock(&dev->dev);
+> > -		pci_cfg_access_unlock(dev);
+> > -	}
+> > +	if (!probe)
+> > +		pci_dev_unlock(dev);
+> > +
+> >   	return rc;
+> >   }
+> >   /**
+> > @@ -3484,17 +3508,11 @@ int pci_reset_function(struct pci_dev *dev)
+> >   	if (rc)
+> >   		return rc;
+> >
+> > -	pci_save_state(dev);
+> > -
+> > -	/*
+> > -	 * both INTx and MSI are disabled after the Interrupt Disable bit
+> > -	 * is set and the Bus Master bit is cleared.
+> > -	 */
+> > -	pci_write_config_word(dev, PCI_COMMAND, PCI_COMMAND_INTX_DISABLE);
+> > +	pci_dev_save_and_disable(dev);
+> >
+> >   	rc = pci_dev_reset(dev, 0);
+> >
+> > -	pci_restore_state(dev);
+> > +	pci_dev_restore(dev);
+> >
+> >   	return rc;
+> >   }
+> >
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+
+
 
