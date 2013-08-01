@@ -1,47 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756541Ab3HAOkO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 10:40:14 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:41566 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755405Ab3HAOkN (ORCPT
+	id S1756664Ab3HAOk6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 10:40:58 -0400
+Received: from mail-ea0-f176.google.com ([209.85.215.176]:37371 "EHLO
+	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755405Ab3HAOk4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 10:40:13 -0400
-Date: Thu, 1 Aug 2013 16:40:05 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung@kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 6/8] perf: Account freq events per cpu
-Message-ID: <20130801144005.GG27162@twins.programming.kicks-ass.net>
-References: <1374539466-4799-1-git-send-email-fweisbec@gmail.com>
- <1374539466-4799-7-git-send-email-fweisbec@gmail.com>
- <20130801124658.GC1032@krava.brq.redhat.com>
- <20130801133155.GB27162@twins.programming.kicks-ass.net>
- <20130801135525.GE431@somewhere>
- <20130801140352.GE27162@twins.programming.kicks-ass.net>
- <20130801140615.GF27162@twins.programming.kicks-ass.net>
- <20130801142109.GH431@somewhere>
+	Thu, 1 Aug 2013 10:40:56 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130801142109.GH431@somewhere>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20130801143650.GB22250@order.stressinduktion.org>
+References: <CAOSRKdTOcYOZ4fD5gXe_57dA028rGmR30T32FQ6MeruAq2p04g@mail.gmail.com>
+	<20130801143650.GB22250@order.stressinduktion.org>
+Date: Thu, 1 Aug 2013 16:40:55 +0200
+Message-ID: <CAOSRKdRTrORuV0zibXZT=P-aL98QOkouZ=PreFs7wWSjjaAFLA@mail.gmail.com>
+Subject: Re: PROBLEM: 3.11.0-rc2+ lost of connectivity
+From: Sebastiano Spicuglia <spicuglia.sebastiano@gmail.com>
+To: Sebastiano Spicuglia <spicuglia.sebastiano@gmail.com>,
+        linux-kernel@vger.kernel.org, jeffrey.t.kirsher@intel.com,
+        jesse.brandeburg@intel.com, bruce.w.allan@intel.com,
+        carolyn.wyborny@intel.com, donald.c.skidmore@intel.com,
+        gregory.v.rose@intel.com, peter.p.waskiewicz.jr@intel.com,
+        alexander.h.duyck@intel.com, john.ronciak@intel.com,
+        tushar.n.dave@intel.com, davem@davemloft.net, netdev@vger.kernel.org,
+        kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        kaber@trash.net
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 01, 2013 at 04:21:11PM +0200, Frederic Weisbecker wrote:
-> > > Yeah, just go with a single global state for now..
-> > 
-> > The perf default is to create inherited counter, which are per cpu
-> > anyway. So we'll not loose much.
-> 
-> So you mean that I keep the per cpu state when event->cpu != -1 and also have
-> a global counter for the others. Right?
+Hi Hannes,
 
-No, only a single global counter. The fact that perf, by default,
-creates a counter per cpu, means that there's little effective
-difference between a single global counter and per-cpu counters.
+here the info about the commit:
+
+commit 6c504ecf506705a6575541b28824e13090bd223b
+Merge: 2408c2e bf903e4
+Author: Linus Torvalds <torvalds@linux-foundation.org>
+Date:   Fri Jul 26 14:40:10 2013 -0700
+
+Regards
+Sebastiano
+
+
+On Thu, Aug 1, 2013 at 4:36 PM, Hannes Frederic Sowa
+<hannes@stressinduktion.org> wrote:
+> On Thu, Aug 01, 2013 at 04:34:00PM +0200, Sebastiano Spicuglia wrote:
+>> [Kernel version from /proc/version ]
+>>
+>> Linux version 3.11.0-rc2+ (root@cache.pdbg) (gcc version 4.7.2 (Debian
+>> 4.7.2-5) ) #5 SMP Thu Aug 1 14:20:35 CEST 2013
+>
+> Which commit exactly?
+>
+> Thanks,
+>
+>   Hannes
+>
