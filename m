@@ -1,45 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756704Ab3HATuG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 15:50:06 -0400
-Received: from mga02.intel.com ([134.134.136.20]:54090 "EHLO mga02.intel.com"
+	id S1756801Ab3HATvG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 15:51:06 -0400
+Received: from mail.ispras.ru ([83.149.199.45]:36368 "EHLO mail.ispras.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754478Ab3HATuE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 15:50:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,796,1367996400"; 
-   d="scan'208";a="355697374"
-Date: Thu, 1 Aug 2013 12:50:10 -0700
-From: Jacob Pan <jacob.jun.pan@linux.intel.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>,
-        "Pandruvada, Srinivas" <srinivas.pandruvada@intel.com>
-Subject: Re: [PATCH] x86/msr: add 64bit _on_cpu access functions
-Message-ID: <20130801125010.0c374d17@chromoly>
-In-Reply-To: <277225b8-a264-4d85-aace-d9199e1573b1@email.android.com>
-References: <1375352553-5695-1-git-send-email-jacob.jun.pan@linux.intel.com>
-	<277225b8-a264-4d85-aace-d9199e1573b1@email.android.com>
-Organization: OTC
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755898Ab3HATvF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 15:51:05 -0400
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+To: Thomas Dahlmann <dahlmann.thomas@arcor.de>, Felipe Balbi <balbi@ti.com>
+Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
+        linux-geode@lists.infradead.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
+Subject: [PATCH] usb: gadget: amd5536udc: unconditionally use GFP_ATOMIC in udc_queue()
+Date: Thu,  1 Aug 2013 23:50:47 +0400
+Message-Id: <1375386647-32478-1-git-send-email-khoroshilov@ispras.ru>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 01 Aug 2013 12:31:07 -0700
-"H. Peter Anvin" <hpa@zytor.com> wrote:
+As far as prep_dma() is called with spinlock held,
+we have to pass GFP_ATOMIC regardless of gfp argument.
 
-> The patch is fine but please use it asa preface to a patch series
-> that actually used these interfaces.
-will do.
-It will be used for upcoming Intel RAPL driver. I was hoping to avoid
-time consuming rebuild of the entire kernel when the patchset touches
-msr.h.
+Found by Linux Driver Verification project (linuxtesting.org).
 
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+---
+ drivers/usb/gadget/amd5536udc.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/usb/gadget/amd5536udc.c b/drivers/usb/gadget/amd5536udc.c
+index f52dcfe..a9a4346 100644
+--- a/drivers/usb/gadget/amd5536udc.c
++++ b/drivers/usb/gadget/amd5536udc.c
+@@ -1122,7 +1122,7 @@ udc_queue(struct usb_ep *usbep, struct usb_request *usbreq, gfp_t gfp)
+ 			goto finished;
+ 		}
+ 		if (ep->dma) {
+-			retval = prep_dma(ep, req, gfp);
++			retval = prep_dma(ep, req, GFP_ATOMIC);
+ 			if (retval != 0)
+ 				goto finished;
+ 			/* write desc pointer to enable DMA */
+@@ -1190,7 +1190,7 @@ udc_queue(struct usb_ep *usbep, struct usb_request *usbreq, gfp_t gfp)
+ 		 * for PPB modes, because of chain creation reasons
+ 		 */
+ 		if (ep->in) {
+-			retval = prep_dma(ep, req, gfp);
++			retval = prep_dma(ep, req, GFP_ATOMIC);
+ 			if (retval != 0)
+ 				goto finished;
+ 		}
 -- 
-Thanks,
+1.8.1.2
 
-Jacob
