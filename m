@@ -1,83 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752814Ab3HAUKk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 16:10:40 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:53598 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751595Ab3HAUKj (ORCPT
+	id S1754568Ab3HAUOW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 16:14:22 -0400
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:13014 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752214Ab3HAUOU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 16:10:39 -0400
-Date: Thu, 1 Aug 2013 22:10:18 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Cc: Waiman Long <waiman.long@hp.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Richard Weinberger <richard@nod.at>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Akinobu Mita <akinobu.mita@gmail.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Michel Lespinasse <walken@google.com>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        George Spelvin <linux@horizon.com>,
-        Harvey Harrison <harvey.harrison@gmail.com>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Subject: Re: [PATCH RFC 1/2] qspinlock: Introducing a 4-byte queue spinlock
- implementation
-Message-ID: <20130801201018.GR3008@twins.programming.kicks-ass.net>
-References: <1375324631-32868-1-git-send-email-Waiman.Long@hp.com>
- <1375324631-32868-2-git-send-email-Waiman.Long@hp.com>
- <20130801094029.GK3008@twins.programming.kicks-ass.net>
- <51FAA1C3.2050507@hp.com>
- <51FAA5F8.2070209@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51FAA5F8.2070209@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Thu, 1 Aug 2013 16:14:20 -0400
+Message-ID: <1375388059.2097.10.camel@buesod1.americas.hpqcorp.net>
+Subject: WARNING: CPU: 26 PID: 93793 at fs/ext4/inode.c:230
+ ext4_evict_inode+0x4c9/0x500 [ext4]() still in 3.11-rc3
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Jan Kara <jack@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>,
+        Guenter Roeck <linux@roeck-us.net>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org
+Date: Thu, 01 Aug 2013 13:14:19 -0700
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 01, 2013 at 11:46:24PM +0530, Raghavendra K T wrote:
-> On 08/01/2013 11:28 PM, Waiman Long wrote:
-> >On 08/01/2013 05:40 AM, Peter Zijlstra wrote:
-> >>On Wed, Jul 31, 2013 at 10:37:10PM -0400, Waiman Long wrote:
-> >>
-> [...]
-> >>
-> >>>+         */
-> >>>+        for (qn_idx = 1; qn_idx<  MAX_QNODES; qn_idx++) {
-> >>>+            if (!node[qn_idx].used)
-> >>>+                break;
-> >>        }
-> >>
-> >>>+        if (unlikely(qn_idx == MAX_QNODES)) {
-> >>>+            /*
-> >>>+             * This shouldn't happen, print a warning message
-> >>>+             *&  busy spinning on the lock.
-> >>>+             */
-> >>>+            pr_warn("qspinlock: queue node table exhausted at "
-> >>>+                "cpu %d!\n", cpu_nr);
-> >>This could make your machine die hard.. not all contexts can printk().
-> >
-> >Do you have any suggestion? I could skip the warning and silently do the
-> >busy spinning. I just want some way to notify the user of this rare event.
-> 
-> We have used debugfs in pv-spinlock to avoid that since printk uses
-> spinlock again. may be it will help to profile many other parts of
-> code too.
+Hi,
 
-I always use early_printk(), but that requires you set up your serial
-console properly and joe-user won't have done that.
+FYI I'm seeing loads of the following messages with Linus' latest
+3.11-rc3 (which includes 822dbba33458cd6ad)
+
+------------[ cut here ]------------
+WARNING: CPU: 26 PID: 93793 at fs/ext4/inode.c:230 ext4_evict_inode+0x4c9/0x500 [ext4]()
+Modules linked in: autofs4 cpufreq_ondemand freq_table sunrpc 8021q garp stp llc pcc_cpufreq ipt_REJECT nf_conntrack_ipv4 nf_defrag_ipv4 iptable_filter ip_tables ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables ipv6 dm_mirror dm_region_hash dm_log dm_mod uinput iTCO_wdt iTCO_vendor_support coretemp kvm_intel kvm crc32c_intel ghash_clmulni_intel microcode pcspkr sg lpc_ich mfd_core hpilo hpwdt i7core_edac edac_core netxen_nic mperf ext4 jbd2 mbcache sd_mod crc_t10dif aesni_intel ablk_helper cryptd lrw gf128mul glue_helper aes_x86_64 hpsa radeon ttm drm_kms_helper drm i2c_algo_bit i2c_core [last unloaded: freq_table]
+CPU: 26 PID: 93793 Comm: reaim Tainted: G        W    3.11.0-rc3+ #1
+Hardware name: HP ProLiant DL980 G7, BIOS P66 06/24/2011
+ 00000000000000e6 ffff8985db603d78 ffffffff8153ce4d 00000000000000e6
+ 0000000000000000 ffff8985db603db8 ffffffff8104cf1c ffff8985db603dc8
+ ffff8b05c485b8b0 ffff8b05c485b9b8 ffff8b05c485b800 00000000ffffff9c
+Call Trace:
+ [<ffffffff8153ce4d>] dump_stack+0x49/0x5c
+ [<ffffffff8104cf1c>] warn_slowpath_common+0x8c/0xc0
+ [<ffffffff8104cf6a>] warn_slowpath_null+0x1a/0x20
+ [<ffffffffa02a0179>] ext4_evict_inode+0x4c9/0x500 [ext4]
+ [<ffffffff811915e7>] evict+0xa7/0x1c0
+ [<ffffffff811917e3>] iput_final+0xe3/0x170
+ [<ffffffff811918ae>] iput+0x3e/0x50
+ [<ffffffff81187aa6>] do_unlinkat+0x1c6/0x280
+ [<ffffffff8106f3e4>] ? task_work_run+0x94/0xf0
+ [<ffffffff81003a44>] ? do_notify_resume+0x84/0x90
+ [<ffffffff81187b76>] SyS_unlink+0x16/0x20
+ [<ffffffff81549a02>] system_call_fastpath+0x16/0x1b
+---[ end trace 15e812809616488b ]---
 
 
