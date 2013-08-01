@@ -1,149 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753325Ab3HAHK0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 03:10:26 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:53160 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750756Ab3HAHKX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 03:10:23 -0400
-Date: Thu, 1 Aug 2013 12:40:13 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 16/18] sched: Avoid overloading CPUs on a preferred NUMA
- node
-Message-ID: <20130801071013.GG4880@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <1373901620-2021-1-git-send-email-mgorman@suse.de>
- <1373901620-2021-17-git-send-email-mgorman@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1373901620-2021-17-git-send-email-mgorman@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13080107-3620-0000-0000-000003C5F9E4
+	id S1753260Ab3HAHLC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 03:11:02 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:53021 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751040Ab3HAHIP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 03:08:15 -0400
+X-IronPort-AV: E=Sophos;i="4.89,792,1367942400"; 
+   d="scan'208";a="8085214"
+From: Tang Chen <tangchen@cn.fujitsu.com>
+To: rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu,
+        hpa@zytor.com, akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
+        mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
+        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com
+Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-acpi@vger.kernel.org
+Subject: [PATCH v2 11/18] x86, acpi: Try to find SRAT in firmware earlier.
+Date: Thu, 1 Aug 2013 15:06:33 +0800
+Message-Id: <1375340800-19332-12-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.10.1
+In-Reply-To: <1375340800-19332-1-git-send-email-tangchen@cn.fujitsu.com>
+References: <1375340800-19332-1-git-send-email-tangchen@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/01 15:06:52,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/01 15:06:55,
+	Serialize complete at 2013/08/01 15:06:55
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +static int task_numa_find_cpu(struct task_struct *p, int nid)
-> +{
-> +	int node_cpu = cpumask_first(cpumask_of_node(nid));
-> +	int cpu, src_cpu = task_cpu(p), dst_cpu = src_cpu;
-> +	unsigned long src_load, dst_load;
-> +	unsigned long min_load = ULONG_MAX;
-> +	struct task_group *tg = task_group(p);
-> +	s64 src_eff_load, dst_eff_load;
-> +	struct sched_domain *sd;
-> +	unsigned long weight;
-> +	bool balanced;
-> +	int imbalance_pct, idx = -1;
-> 
-> +	/* No harm being optimistic */
-> +	if (idle_cpu(node_cpu))
-> +		return node_cpu;
+This patch introduce early_acpi_firmware_srat() to find the
+phys addr of SRAT provided by firmware. And call it in
+find_hotpluggable_memory().
 
-Cant this lead to lot of imbalance across nodes? Wont this lead to lot
-of ping-pong of tasks between different nodes resulting in performance
-hit? Lets say the system is not fully loaded, something like a numa01
-but with far lesser number of threads probably nr_cpus/2 or nr_cpus/4,
-then all threads will try to move to single node as we can keep seeing
-idle threads. No? Wont it lead all load moving to one node and load
-balancer spreading it out...
+Since we have initialized acpi_gbl_root_table_list earlier,
+and store all the tables' phys addrs and signatures in it,
+it is easy to find the SRAT.
 
-> 
-> -static int
-> -find_idlest_cpu_node(int this_cpu, int nid)
-> -{
-> -	unsigned long load, min_load = ULONG_MAX;
-> -	int i, idlest_cpu = this_cpu;
-> +	/*
-> +	 * Find the lowest common scheduling domain covering the nodes of both
-> +	 * the CPU the task is currently running on and the target NUMA node.
-> +	 */
-> +	rcu_read_lock();
-> +	for_each_domain(src_cpu, sd) {
-> +		if (cpumask_test_cpu(node_cpu, sched_domain_span(sd))) {
-> +			/*
-> +			 * busy_idx is used for the load decision as it is the
-> +			 * same index used by the regular load balancer for an
-> +			 * active cpu.
-> +			 */
-> +			idx = sd->busy_idx;
-> +			imbalance_pct = sd->imbalance_pct;
-> +			break;
-> +		}
-> +	}
-> +	rcu_read_unlock();
-> 
-> -	BUG_ON(cpu_to_node(this_cpu) == nid);
-> +	if (WARN_ON_ONCE(idx == -1))
-> +		return src_cpu;
-> 
-> -	rcu_read_lock();
-> -	for_each_cpu(i, cpumask_of_node(nid)) {
-> -		load = weighted_cpuload(i);
-> +	/*
-> +	 * XXX the below is mostly nicked from wake_affine(); we should
-> +	 * see about sharing a bit if at all possible; also it might want
-> +	 * some per entity weight love.
-> +	 */
-> +	weight = p->se.load.weight;
-> 
-> -		if (load < min_load) {
-> -			min_load = load;
-> -			idlest_cpu = i;
-> +	src_load = source_load(src_cpu, idx);
-> +
-> +	src_eff_load = 100 + (imbalance_pct - 100) / 2;
-> +	src_eff_load *= power_of(src_cpu);
-> +	src_eff_load *= src_load + effective_load(tg, src_cpu, -weight, -weight);
-> +
-> +	for_each_cpu(cpu, cpumask_of_node(nid)) {
-> +		dst_load = target_load(cpu, idx);
-> +
-> +		/* If the CPU is idle, use it */
-> +		if (!dst_load)
-> +			return dst_cpu;
-> +
-> +		/* Otherwise check the target CPU load */
-> +		dst_eff_load = 100;
-> +		dst_eff_load *= power_of(cpu);
-> +		dst_eff_load *= dst_load + effective_load(tg, cpu, weight, weight);
-> +
-> +		/*
-> +		 * Destination is considered balanced if the destination CPU is
-> +		 * less loaded than the source CPU. Unfortunately there is a
-> +		 * risk that a task running on a lightly loaded CPU will not
-> +		 * migrate to its preferred node due to load imbalances.
-> +		 */
-> +		balanced = (dst_eff_load <= src_eff_load);
-> +		if (!balanced)
-> +			continue;
-> +
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+---
+ drivers/acpi/acpica/tbxface.c |   32 ++++++++++++++++++++++++++++++++
+ drivers/acpi/osl.c            |   22 ++++++++++++++++++++++
+ include/acpi/acpixf.h         |    4 ++++
+ include/linux/acpi.h          |    4 ++++
+ mm/memory_hotplug.c           |    8 ++++++--
+ 5 files changed, 68 insertions(+), 2 deletions(-)
 
-Okay same case as above, the cpu could be lightly loaded, but the
-destination node could be heavier than the source node. No?
-
-> +		if (dst_load < min_load) {
-> +			min_load = dst_load;
-> +			dst_cpu = cpu;
->  		}
->  	}
-> -	rcu_read_unlock();
-> 
-> -	return idlest_cpu;
-> +	return dst_cpu;
->  }
-> 
-
+diff --git a/drivers/acpi/acpica/tbxface.c b/drivers/acpi/acpica/tbxface.c
+index ad11162..6a92f12 100644
+--- a/drivers/acpi/acpica/tbxface.c
++++ b/drivers/acpi/acpica/tbxface.c
+@@ -181,6 +181,38 @@ acpi_status acpi_reallocate_root_table(void)
+ 	return_ACPI_STATUS(status);
+ }
+ 
++/**
++ * acpi_get_table_desc - Get the acpi table descriptor of a specific table.
++ * @signature: The signature of the table to be found.
++ * @out_desc: The out returned descriptor.
++ *
++ * Iterate over acpi_gbl_root_table_list to find a specific table and then
++ * return its phys addr.
++ *
++ * NOTE: The caller has the responsibility to allocate memory for @out_desc.
++ *
++ * Return AE_OK on success, AE_NOT_FOUND if the table is not found.
++ */
++acpi_status acpi_get_table_desc(char *signature,
++				struct acpi_table_desc *out_desc)
++{
++	struct acpi_table_desc *desc;
++	int pos, count = acpi_gbl_root_table_list.current_table_count;
++
++	for (pos = 0; pos < count; pos++) {
++		desc = &acpi_gbl_root_table_list.tables[pos];
++
++		if (!ACPI_COMPARE_NAME(&desc->signature, signature))
++			continue;
++
++		memcpy(out_desc, desc, sizeof(struct acpi_table_desc));
++
++		return_ACPI_STATUS(AE_OK);
++	}
++
++	return_ACPI_STATUS(AE_NOT_FOUND);
++}
++
+ /*******************************************************************************
+  *
+  * FUNCTION:    acpi_get_table_header
+diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
+index d0b687c..319a274 100644
+--- a/drivers/acpi/osl.c
++++ b/drivers/acpi/osl.c
+@@ -53,6 +53,7 @@
+ #include <acpi/acpi.h>
+ #include <acpi/acpi_bus.h>
+ #include <acpi/processor.h>
++#include <acpi/acpixf.h>
+ 
+ #define _COMPONENT		ACPI_OS_SERVICES
+ ACPI_MODULE_NAME("osl");
+@@ -757,6 +758,27 @@ void __init acpi_initrd_override(void *data, size_t size)
+ }
+ #endif /* CONFIG_ACPI_INITRD_TABLE_OVERRIDE */
+ 
++#ifdef CONFIG_ACPI_NUMA
++/*******************************************************************************
++ *
++ * FUNCTION:    early_acpi_firmware_srat
++ *
++ * RETURN:      Phys addr of SRAT on success, 0 on error.
++ *
++ * DESCRIPTION: Get the phys addr of SRAT provided by firmware.
++ *
++ ******************************************************************************/
++phys_addr_t __init early_acpi_firmware_srat(void)
++{
++	struct acpi_table_desc table_desc;
++
++	if (acpi_get_table_desc(ACPI_SIG_SRAT, &table_desc))
++		return 0;
++
++	return table_desc.address;
++}
++#endif	/* CONFIG_ACPI_NUMA */
++
+ static void acpi_table_taint(struct acpi_table_header *table)
+ {
+ 	pr_warn(PREFIX
+diff --git a/include/acpi/acpixf.h b/include/acpi/acpixf.h
+index f5549b5..1d94f89 100644
+--- a/include/acpi/acpixf.h
++++ b/include/acpi/acpixf.h
+@@ -184,6 +184,10 @@ acpi_status acpi_find_root_pointer(acpi_size *rsdp_address);
+ acpi_status acpi_unload_table_id(acpi_owner_id id);
+ 
+ acpi_status
++acpi_get_table_desc(char *signature,
++		    struct acpi_table_desc *out_desc);
++
++acpi_status
+ acpi_get_table_header(acpi_string signature,
+ 		      u32 instance, struct acpi_table_header *out_table_header);
+ 
+diff --git a/include/linux/acpi.h b/include/linux/acpi.h
+index 17155bc..6fa7543 100644
+--- a/include/linux/acpi.h
++++ b/include/linux/acpi.h
+@@ -97,6 +97,10 @@ static inline phys_addr_t early_acpi_override_srat(void)
+ }
+ #endif	/* CONFIG_ACPI_INITRD_TABLE_OVERRIDE */
+ 
++#ifdef CONFIG_ACPI_NUMA
++phys_addr_t early_acpi_firmware_srat(void);
++#endif  /* CONFIG_ACPI_NUMA */
++
+ char * __acpi_map_table (unsigned long phys_addr, unsigned long size);
+ void __acpi_unmap_table(char *map, unsigned long size);
+ int early_acpi_boot_init(void);
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+index 48964bf..4ccffe6 100644
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -107,8 +107,12 @@ void __init find_hotpluggable_memory(void)
+ 
+ 	/* Try to find if SRAT is overridden */
+ 	srat_paddr = early_acpi_override_srat();
+-	if (!srat_paddr)
+-		return;
++	if (!srat_paddr) {
++		/* Try to find SRAT from firmware if it wasn't overridden */
++		srat_paddr = early_acpi_firmware_srat();
++		if (!srat_paddr)
++			return;
++	}
+ 
+ 	/* Will parse SRAT and find out hotpluggable memory here */
+ }
 -- 
-Thanks and Regards
-Srikar Dronamraju
+1.7.1
 
