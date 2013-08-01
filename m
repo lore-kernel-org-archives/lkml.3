@@ -1,128 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757997Ab3HAWTt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 18:19:49 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50152 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757834Ab3HAWTr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 18:19:47 -0400
-Date: Fri, 2 Aug 2013 00:19:44 +0200
-From: Jan Kara <jack@suse.cz>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] jbd: use a single printk for jbd_debug()
-Message-ID: <20130801221944.GF31857@quack.suse.cz>
-References: <1375383668-8072-1-git-send-email-paul.gortmaker@windriver.com>
- <1375383668-8072-5-git-send-email-paul.gortmaker@windriver.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1375383668-8072-5-git-send-email-paul.gortmaker@windriver.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757971Ab3HAWUn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 18:20:43 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39843 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753572Ab3HAWUm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 18:20:42 -0400
+In-Reply-To: <20130801213420.GL23006@n2100.arm.linux.org.uk>
+References: <20130801213420.GL23006@n2100.arm.linux.org.uk>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH RFC 46/51] ARM: DMA-API: better handing of DMA masks for
+ coherent allocations
+Message-Id: <E1V51EE-0006uO-C2@rmk-PC.arm.linux.org.uk>
+Date: Thu, 01 Aug 2013 23:20:14 +0100
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 01-08-13 15:01:08, Paul Gortmaker wrote:
-> Backport of jbd2 commit 169f1a2a87aae44034da4b9f81be1683d33de6d0
-> ("jbd2: use a single printk for jbd_debug()")
-> 
-> Quoting the original:
->  --------------
->  Since the jbd_debug() is implemented with two separate printk()
->  calls, it can lead to corrupted and misleading debug output like
->  the following (see lines marked with "*"):
-> 
->  [  290.339362] (fs/jbd2/journal.c, 203): kjournald2: kjournald2 wakes
->  [  290.339365] (fs/jbd2/journal.c, 155): kjournald2: commit_sequence=42103, commit_request=42104
->  [  290.339369] (fs/jbd2/journal.c, 158): kjournald2: OK, requests differ
->  [* 290.339376] (fs/jbd2/journal.c, 648): jbd2_log_wait_commit:
->  [* 290.339379] (fs/jbd2/commit.c, 370): jbd2_journal_commit_transaction: JBD2: want 42104, j_commit_sequence=42103
->  [* 290.339382] JBD2: starting commit of transaction 42104
->  [  290.339410] (fs/jbd2/revoke.c, 566): jbd2_journal_write_revoke_records: Wrote 0 revoke records
->  [  290.376555] (fs/jbd2/commit.c, 1088): jbd2_journal_commit_transaction: JBD2: commit 42104 complete, head 42079
-> 
->  i.e. the debug output from log_wait_commit and journal_commit_transaction
->  have become interleaved.  The output should have been:
-> 
->  (fs/jbd2/journal.c, 648): jbd2_log_wait_commit: JBD2: want 42104, j_commit_sequence=42103
->  (fs/jbd2/commit.c, 370): jbd2_journal_commit_transaction: JBD2: starting commit of transaction 42104
-> 
->  It is expected that this is not easy to replicate -- I was only able
->  to cause it on preempt-rt kernels, and even then only under heavy
->  I/O load.
->  --------------
-  Thanks. I've merged the patch to my tree.
+We need to start treating DMA masks as something which is specific to
+the bus that the device resides on, otherwise we're going to hit all
+sorts of nasty issues with LPAE and 32-bit DMA controllers in >32-bit
+systems, where memory is offset from PFN 0.
 
-								Honza
+In order to start doing this, we convert the DMA mask to a PFN using
+the device specific dma_to_pfn() macro.  This is the reverse of the
+pfn_to_dma() macro which is used to get the DMA address for the device.
 
-> 
-> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-> ---
->  fs/jbd/journal.c    | 18 ++++++++++++++++++
->  include/linux/jbd.h | 15 ++++++---------
->  2 files changed, 24 insertions(+), 9 deletions(-)
-> 
-> diff --git a/fs/jbd/journal.c b/fs/jbd/journal.c
-> index 166263d..f45f0a3 100644
-> --- a/fs/jbd/journal.c
-> +++ b/fs/jbd/journal.c
-> @@ -97,6 +97,24 @@ static int journal_convert_superblock_v1(journal_t *, journal_superblock_t *);
->  static void __journal_abort_soft (journal_t *journal, int errno);
->  static const char *journal_dev_name(journal_t *journal, char *buffer);
->  
-> +#ifdef CONFIG_JBD_DEBUG
-> +void __jbd_debug(int level, const char *file, const char *func,
-> +		 unsigned int line, const char *fmt, ...)
-> +{
-> +	struct va_format vaf;
-> +	va_list args;
-> +
-> +	if (level > jbd_journal_enable_debug)
-> +		return;
-> +	va_start(args, fmt);
-> +	vaf.fmt = fmt;
-> +	vaf.va = &args;
-> +	printk(KERN_DEBUG "%s: (%s, %u): %pV\n", file, func, line, &vaf);
-> +	va_end(args);
-> +}
-> +EXPORT_SYMBOL(__jbd_debug);
-> +#endif
-> +
->  /*
->   * Helper function used to manage commit timeouts
->   */
-> diff --git a/include/linux/jbd.h b/include/linux/jbd.h
-> index e45b430..d6d3ae0 100644
-> --- a/include/linux/jbd.h
-> +++ b/include/linux/jbd.h
-> @@ -56,16 +56,13 @@
->  #define JBD_EXPENSIVE_CHECKING
->  extern ushort journal_enable_debug;
->  
-> -#define jbd_debug(n, f, a...)						\
-> -	do {								\
-> -		if ((n) <= journal_enable_debug) {			\
-> -			printk (KERN_DEBUG "(%s, %d): %s: ",		\
-> -				__FILE__, __LINE__, __func__);	\
-> -			printk (f, ## a);				\
-> -		}							\
-> -	} while (0)
-> +void __jbd_debug(int level, const char *file, const char *func,
-> +		 unsigned int line, const char *fmt, ...);
-> +
-> +#define jbd_debug(n, fmt, a...) \
-> +	__jbd_debug((n), __FILE__, __func__, __LINE__, (fmt), ##a)
->  #else
-> -#define jbd_debug(f, a...)	/**/
-> +#define jbd_debug(n, fmt, a...)    /**/
->  #endif
->  
->  static inline void *jbd_alloc(size_t size, gfp_t flags)
-> -- 
-> 1.8.1.2
-> 
+This gives us a PFN mask, which we can then check against the PFN
+limit of the DMA zone.
+
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+---
+ arch/arm/mm/dma-mapping.c |   49 ++++++++++++++++++++++++++++++++++++++++----
+ arch/arm/mm/init.c        |    2 +
+ arch/arm/mm/mm.h          |    2 +
+ 3 files changed, 48 insertions(+), 5 deletions(-)
+
+diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
+index 7f9b179..ef0efab 100644
+--- a/arch/arm/mm/dma-mapping.c
++++ b/arch/arm/mm/dma-mapping.c
+@@ -173,10 +173,30 @@ static u64 get_coherent_dma_mask(struct device *dev)
+ 			return 0;
+ 		}
+ 
+-		if ((~mask) & (u64)arm_dma_limit) {
+-			dev_warn(dev, "coherent DMA mask %#llx is smaller "
+-				 "than system GFP_DMA mask %#llx\n",
+-				 mask, (u64)arm_dma_limit);
++		/*
++		 * If the mask allows for more memory than we can address,
++		 * and we actually have that much memory, then fail the
++		 * allocation.
++		 */
++		if (sizeof(mask) != sizeof(dma_addr_t) &&
++		    mask > (dma_addr_t)~0 &&
++		    dma_to_pfn(dev, ~0) > arm_dma_pfn_limit) {
++			dev_warn(dev, "Coherent DMA mask %#llx is larger than dma_addr_t allows\n",
++				 mask);
++			dev_warn(dev, "Driver did not use or check the return value from dma_set_coherent_mask()?\n");
++			return 0;
++		}
++
++		/*
++		 * Now check that the mask, when translated to a PFN,
++		 * fits within the allowable addresses which we can
++		 * allocate.
++		 */
++		if (dma_to_pfn(dev, mask) < arm_dma_pfn_limit) {
++			dev_warn(dev, "Coherent DMA mask %#llx (pfn %#lx-%#lx) covers a smaller range of system memory than the DMA zone pfn 0x0-%#lx\n",
++				 mask,
++				 dma_to_pfn(dev, 0), dma_to_pfn(dev, mask) + 1,
++				 arm_dma_pfn_limit + 1);
+ 			return 0;
+ 		}
+ 	}
+@@ -1008,8 +1028,27 @@ void arm_dma_sync_sg_for_device(struct device *dev, struct scatterlist *sg,
+  */
+ int dma_supported(struct device *dev, u64 mask)
+ {
+-	if (mask < (u64)arm_dma_limit)
++	unsigned long limit;
++
++	/*
++	 * If the mask allows for more memory than we can address,
++	 * and we actually have that much memory, then we must
++	 * indicate that DMA to this device is not supported.
++	 */
++	if (sizeof(mask) != sizeof(dma_addr_t) &&
++	    mask > (dma_addr_t)~0 &&
++	    dma_to_pfn(dev, ~0) > arm_dma_pfn_limit)
++		return 0;
++
++	/*
++	 * Translate the device's DMA mask to a PFN limit.  This
++	 * PFN number includes the page which we can DMA to.
++	 */
++	limit = dma_to_pfn(dev, mask);
++
++	if (limit < arm_dma_pfn_limit)
+ 		return 0;
++
+ 	return 1;
+ }
+ EXPORT_SYMBOL(dma_supported);
+diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
+index 15225d8..b5b5836 100644
+--- a/arch/arm/mm/init.c
++++ b/arch/arm/mm/init.c
+@@ -217,6 +217,7 @@ EXPORT_SYMBOL(arm_dma_zone_size);
+  * so a successful GFP_DMA allocation will always satisfy this.
+  */
+ phys_addr_t arm_dma_limit;
++unsigned long arm_dma_pfn_limit;
+ 
+ static void __init arm_adjust_dma_zone(unsigned long *size, unsigned long *hole,
+ 	unsigned long dma_size)
+@@ -239,6 +240,7 @@ void __init setup_dma_zone(struct machine_desc *mdesc)
+ 		arm_dma_limit = PHYS_OFFSET + arm_dma_zone_size - 1;
+ 	} else
+ 		arm_dma_limit = 0xffffffff;
++	arm_dma_pfn_limit = arm_dma_limit >> PAGE_SHIFT;
+ #endif
+ }
+ 
+diff --git a/arch/arm/mm/mm.h b/arch/arm/mm/mm.h
+index d5a4e9a..d5a982d 100644
+--- a/arch/arm/mm/mm.h
++++ b/arch/arm/mm/mm.h
+@@ -81,8 +81,10 @@ extern __init void add_static_vm_early(struct static_vm *svm);
+ 
+ #ifdef CONFIG_ZONE_DMA
+ extern phys_addr_t arm_dma_limit;
++extern unsigned long arm_dma_pfn_limit;
+ #else
+ #define arm_dma_limit ((phys_addr_t)~0)
++#define arm_dma_pfn_limit (~0ul >> PAGE_SHIFT)
+ #endif
+ 
+ extern phys_addr_t arm_lowmem_limit;
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.7.4.4
+
