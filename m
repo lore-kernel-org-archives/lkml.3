@@ -1,108 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754078Ab3HADoC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 23:44:02 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:39318 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752594Ab3HADoA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 23:44:00 -0400
-Message-ID: <51F9D94D.5060702@ti.com>
-Date: Wed, 31 Jul 2013 22:43:09 -0500
-From: Joel Fernandes <joelf@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S1754069Ab3HADsd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 23:48:33 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:33530 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751428Ab3HADsc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 23:48:32 -0400
+Message-ID: <51F9DA8B.8050302@felipetonello.com>
+Date: Wed, 31 Jul 2013 20:48:27 -0700
+From: Felipe Ferreri Tonello <eu@felipetonello.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: <joelf@ti.com>
-CC: Sekhar Nori <nsekhar@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Sricharan R <r.sricharan@ti.com>, Rajendra Nayak <rnayak@ti.com>,
-        Lokesh Vutla <lokeshvutla@ti.com>, Matt Porter <matt@ohporter.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
-        Mark Brown <broonie@linaro.org>,
-        Benoit Cousson <benoit.cousson@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>, Balaji TK <balajitk@ti.com>,
-        Gururaja Hebbar <gururaja.hebbar@ti.com>, Chris Ball <cjb@laptop.org>,
-        Jason Kridner <jkridner@beagleboard.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>
-Subject: Re: [PATCH 4/9] dma: edma: Find missed events and issue them
-References: <1375104595-16018-1-git-send-email-joelf@ti.com> <1375104595-16018-5-git-send-email-joelf@ti.com> <51F7659E.3040302@ti.com> <51F89763.1010102@ti.com> <51F8D667.2040406@ti.com> <51F9C793.2000001@ti.com>
-In-Reply-To: <51F9C793.2000001@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Mark Brown <broonie@kernel.org>
+CC: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        Takashi Iwai <tiwai@suse.de>,
+        David Henningsson <david.henningsson@canonical.com>,
+        Wang Xingchao <xingchao.wang@linux.intel.com>,
+        Jaroslav Kysela <perex@perex.cz>
+Subject: Re: [PATCH 1/4] ALSA: Added jack detection kcontrol support
+References: <1374863133-6745-1-git-send-email-eu@felipetonello.com> <1374863133-6745-2-git-send-email-eu@felipetonello.com> <20130726185458.GX9858@sirena.org.uk> <CAGrhNMy7qZ8CbAjFX5Gv8OqYkit+Eqzr2zZTYXeQ-cNO22+pTQ@mail.gmail.com> <20130726224813.GB9858@sirena.org.uk> <CAGrhNMwGdMwhd5L2gGxQ=N=8nFk4L5txYmhEtLBVcFj-Etphnw@mail.gmail.com> <20130727122524.GH9858@sirena.org.uk>
+In-Reply-To: <20130727122524.GH9858@sirena.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/31/2013 09:27 PM, Joel Fernandes wrote:
-> On 07/31/2013 04:18 AM, Sekhar Nori wrote:
->> On Wednesday 31 July 2013 10:19 AM, Joel Fernandes wrote:
->>> Hi Sekhar,
->>>
->>> On 07/30/2013 02:05 AM, Sekhar Nori wrote:
->>>> On Monday 29 July 2013 06:59 PM, Joel Fernandes wrote:
->>>>> In an effort to move to using Scatter gather lists of any size with
->>>>> EDMA as discussed at [1] instead of placing limitations on the driver,
->>>>> we work through the limitations of the EDMAC hardware to find missed
->>>>> events and issue them.
->>>>>
->>>>> The sequence of events that require this are:
->>>>>
->>>>> For the scenario where MAX slots for an EDMA channel is 3:
->>>>>
->>>>> SG1 -> SG2 -> SG3 -> SG4 -> SG5 -> SG6 -> Null
->>>>>
->>>>> The above SG list will have to be DMA'd in 2 sets:
->>>>>
->>>>> (1) SG1 -> SG2 -> SG3 -> Null
->>>>> (2) SG4 -> SG5 -> SG6 -> Null
->>>>>
->>>>> After (1) is succesfully transferred, the events from the MMC controller
->>>>> donot stop coming and are missed by the time we have setup the transfer
->>>>> for (2). So here, we catch the events missed as an error condition and
->>>>> issue them manually.
->>>>
->>>> Are you sure there wont be any effect of these missed events on the
->>>> peripheral side. For example, wont McASP get into an underrun condition
->>>> when it encounters a null PaRAM set? Even UART has to transmit to a
->>>
->>> But it will not encounter null PaRAM set because McASP uses contiguous
->>> buffers for transfer which are not scattered across physical memory.
->>> This can be accomplished with an SG of size 1. For such SGs, this patch
->>> series leaves it linked Dummy and does not link to Null set. Null set is
->>> only used for SG lists that are > MAX_NR_SG in size such as those
->>> created for example by MMC and Crypto.
->>>
->>>> particular baud so I guess it cannot wait like the way MMC/SD can.
->>>
->>> Existing driver have to wait anyway if they hit MAX SG limit today. If
->>> they don't want to wait, they would have allocated a contiguous block of
->>> memory and DMA that in one stretch so they don't lose any events, and in
->>> such cases we are not linking to Null.
->>
->> As long as DMA driver can advertize its MAX SG limit, peripherals can
->> always work around that by limiting the number of sync events they
->> generate so as to not having any of the events getting missed. With this
->> series, I am worried that EDMA drivers is advertizing that it can handle
->> any length SG list while not taking care of missing any events while
->> doing so. This will break the assumptions that driver writers make.
+On 07/27/2013 05:25 AM, Mark Brown wrote:
+> On Fri, Jul 26, 2013 at 04:13:40PM -0700, Felipe Tonello wrote:
+>> On Fri, Jul 26, 2013 at 3:48 PM, Mark Brown <broonie@kernel.org> wrote:
+>
+>>>>> What I'd expect to happen here is that for multi function jacks we
+>>>>> create a control per function if the controls are valid.
+>
+>> Ok, so the idea is just to change the control to type integer instead
+>> of boolean, right?
+>> Because as you say, the user will be able to check the type of jack
+>> based on the status value, right?
+>
+> It might be more idiomatic and more compatible with userspace to create
+> multiple controls for the jack, there was some discussion of this in the
+> past I think but I can't remember the result.
+>
+>>> Yes.  If there's only one function supported the current code is fine
+>>> but for multiple functions it's going to discard useful information.
+>
+>> So, what do you suggest to do that? I'm not sure if I understand what
+>> you are saying.
+>> When you mean function, do you mean the SND_JACK_BTN_n or the the jack
+>> types, such as SND_JACK_HEADPHONE, and so on?
+>
+> The jack types, the buttons definitely sohuld be going up as input
+> events.
+>
+>> If a codec creates a jack type SND_JACK_HEADSET (= SND_JACK_HEADPHONE
+>> | SND_JACK_MICROPHONE). It should be created two controls, name +
+>> "Headphone Jack" and name + "Microphone Jack"? If so, what about the
+>> status to report? How to know which control to report?
+>
+> The drivers report a bitmask for status.
+>
 
-Sorry, just forgot to respond to "not taking care of missing any events
-while doing so". Can you clarify this? DMA engine driver is taking care
-of missed events.
+I did that but I'm not happy with the control name. Usually drivers add 
+jacks like: "Headset" for a headset, "Headphone" for a headphone and so on.
+I did the following: control name is jack name + (jack type) + Jack. If 
+jack type == jack name, don't add (jack type) to the name.
 
-Also- missing of events doesn't result in feedback to the peripheral.
-Peripheral sends even to DMA controller, event is missed. Peripheral
-doesn't know anything about what happened and is waiting for transfer
-from the DMA controller.
-
-Thanks,
-
--Joel
-
+Any suggestion how it should be?
