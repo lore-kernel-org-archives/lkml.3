@@ -1,578 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752190Ab3HAChe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 22:37:34 -0400
-Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:41897 "EHLO
-	g6t0186.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751083Ab3HAChc (ORCPT
+	id S1752446Ab3HACrc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 22:47:32 -0400
+Received: from mail-qe0-f54.google.com ([209.85.128.54]:40167 "EHLO
+	mail-qe0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751083Ab3HACrb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 22:37:32 -0400
-From: Waiman Long <Waiman.Long@hp.com>
-Cc: Waiman Long <Waiman.Long@hp.com>, linux-arch@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Richard Weinberger <richard@nod.at>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Akinobu Mita <akinobu.mita@gmail.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Michel Lespinasse <walken@google.com>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        George Spelvin <linux@horizon.com>,
-        Harvey Harrison <harvey.harrison@gmail.com>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Subject: [PATCH RFC 1/2] qspinlock: Introducing a 4-byte queue spinlock implementation
-Date: Wed, 31 Jul 2013 22:37:10 -0400
-Message-Id: <1375324631-32868-2-git-send-email-Waiman.Long@hp.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1375324631-32868-1-git-send-email-Waiman.Long@hp.com>
-References: <1375324631-32868-1-git-send-email-Waiman.Long@hp.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>
+	Wed, 31 Jul 2013 22:47:31 -0400
+MIME-Version: 1.0
+X-Originating-IP: [173.13.129.225]
+In-Reply-To: <20130731142430.GA4545@redhat.com>
+References: <CAGXu5jKv9Vt+Hu0mFYaxggLLDZ46U3KR9MKegUoHH8StXCkBtQ@mail.gmail.com>
+	<20130730221435.GA22240@redhat.com>
+	<20130730231120.GC30725@blackmetal.musicnaut.iki.fi>
+	<20130730231533.GA26824@redhat.com>
+	<20130730235834.GD30725@blackmetal.musicnaut.iki.fi>
+	<20130731000444.GC1281@redhat.com>
+	<20130731094012.GU24642@n2100.arm.linux.org.uk>
+	<20130731142430.GA4545@redhat.com>
+Date: Wed, 31 Jul 2013 19:47:30 -0700
+Message-ID: <CAOesGMiBa7fT+HZquNrwV=3P=Z-F9c8L7YQr7=D2BO_6pJXQ0w@mail.gmail.com>
+Subject: Re: [Ksummit-2013-discuss] [ARM ATTEND] catching up on exploit mitigations
+From: Olof Johansson <olof@lixom.net>
+To: Dave Jones <davej@redhat.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>,
+        "ksummit-2013-discuss@lists.linuxfoundation.org" 
+	<ksummit-2013-discuss@lists.linuxfoundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces a new queue spinlock implementation that can
-serve as an alternative to the default ticket spinlock. Compared
-with the ticket spinlock, this queue spinlock should be as fair as
-the ticket spinlock. It is faster both in single-thread and in high
-contention situations. Only in light to moderate contention where
-the average queue depth is around 1-2 will this queue spinlock be
-potentially a bit slower due to the higher slowpath overhead.
+On Wed, Jul 31, 2013 at 7:24 AM, Dave Jones <davej@redhat.com> wrote:
+> On Wed, Jul 31, 2013 at 10:40:12AM +0100, Russell King - ARM Linux wrote:
+>  > On Tue, Jul 30, 2013 at 08:04:44PM -0400, Dave Jones wrote:
+>  > > To use ARM as an example, the bugs I've seen have mostly been in arch specific
+>  > > code that does things like page-table manipulation.  The chromebook bugs I
+>  > > was hitting for eg were various kinds of PTE corruption warnings.
+>  >
+>  > Hmm, really?  Did you reported these bugs?  I'm not aware of mainline
+>  > having any changes related to bug reports on PTEs on ARM.
+>
+> I wasn't sure if it was a googleism, or happens on mainline, so no.
 
-This queue spinlock is especially suit to NUMA machines with a large
-number of cores as the chance of spinlock contention is much higher
-in those machines.
+We'd definitely be interested in hearing about what you've found. The
+3.4 kernel has a lot of out-of-tree code for exynos, we've reduced it
+quite a bit on the upcoming 3.8 one but it needs a bit more baking.
 
-The idea behind this spinlock implementation is the fact that spinlocks
-are acquired with preemption disabled. In other words, the process
-will not be migrated to another CPU while it is trying to get a
-spinlock. Ignoring interrupt handling, a CPU can only be contending
-in one spinlock at any one time. Of course, interrupt handler can try
-to acquire one spinlock while the interrupted user process is in the
-process of getting another spinlock. By allocating a set of per-cpu
-queue nodes and used them to form a waiting queue, we can encode the
-queue node address into a much smaller 16-bit size. Together with
-the 1-byte lock bit, this queue spinlock implementation will only
-need 4 bytes to hold all the information that it needs.
+As of 3.10, it's not actually hard to run a mainline kernel on the
+chromebook, but you have limited functionality (no wifi, no USB3, no
+accellerated graphics). Easiest is to do it by booting from SD card.
+See instructions at
+http://www.chromium.org/chromium-os/u-boot-porting-guide/using-nv-u-boot-on-the-samsung-arm-chromebook.
 
-The current queue node address encoding is as follows:
-Bits 0-1 : queue node index in the per-cpu array (4 entries)
-Bits 2-16: cpu number + 1 (max cpus = 16383)
 
-By using also the unused byte, we could support more cpus and queue
-node entries in the array at the expense of more coding and probably
-performance overheads.
+How long would a useful run of trinity take? I've got an
+autobuilder/autobooter setup here with a cross-section of current ARM
+hardware (7 platforms and counting) that I mostly do boot testing on,
+and I should add a smallish suite of testcases to the same. Trinity
+would be a good candidate for that.
 
-In the extremely unlikely case that all the queue node entries are
-used up, the current code will fall back to busy spinning without
-waiting in a queue with warning message.
 
-With minor modification to the lock fastpath, we could also make a
-less fair version of queue spinlock that allows lock stealing. This
-can potentially provide better performance for some workloads.
-
-This patch allows the optional replacement of architecture specific
-implementation of ticket spinlock by this generic version of queue
-spinlock. Two new config parameters are introduced:
-
-1. QUEUE_SPINLOCK
-   A select-able option that enables the building and replacement of
-   architecture specific spinlock by queue spinlock.
-2. ARCH_QUEUE_SPINLOCK
-   Have to be defined in arch/$(ARCH)/Kconfig to enable QUEUE_SPINLOCK
-   option. This option, by itself, will not enable the queue spinlock
-   feature.
-
-For single-thread performance (no contention), a 256K lock/unlock
-loop was run on a 2.93Ghz Westmere x86-64 CPU.  The following table
-shows the average time (in ns) for a single lock/unlock sequence
-(including the looping and timing overhead):
-
-Lock Type		Time (ns)
----------		---------
-Ticket spinlock		  12.1
-Queue spinlock		  10.9
-
-So the queue spinlock is slightly faster.
-
-The AIM7 benchmark was run on a 8-socket 80-core DL980 with Westmere
-x86-64 CPUs to evaluate the performance impact of this patch on the
-3.10.1 kernel. The jobs per minute (JPM) results for the 1100-2000
-user ranges are shown below:
-
-+------------+--------+--------+--------+--------+--------+--------+
-| Kernel     | 3.10.1 | 3.10.1 |%Change | 3.10.1 | 3.10.1 |%Change |
-|            |        | qlock  |        |        | qlock  |        |
-| HT         |  off   |  off   |        |   on   |   on   |        |
-+------------+--------+--------+--------+--------+--------+--------+
-|alltests    | 403590 | 397622 |  -1.5% | 411479 | 411428 |   0.0% |
-|custom      | 304581 | 307165 |  +0.9% | 230335 | 254798 | +10.6% |
-|dbase       | 896252 | 900597 |  +0.5% |1134659 |1137730 |  +0.3% |
-|disk        | 213679 | 270597 | +26.6% | 203974 | 249998 | +22.6% |
-|five_sec    | 144012 | 157286 |  +9.2% | 132599 | 150812 | +13.7% |
-|fserver     | 472741 | 467213 |  -1.2% | 270601 | 285737 |  +5.6% |
-|high_systime| 131106 | 139015 |  +6.0% | 120294 | 125802 |  +4.6% |
-|new_dbase   | 934871 | 936860 |  +0.2  |1177640 |1181679 |  +0.3% |
-|new_fserver | 452544 | 444967 |  -1.7% | 262368 | 275827 |  +5.1% |
-|shared      | 366750 | 369901 |  +0.9% | 403645 | 415840 |  +3.0% |
-|short       |1061663 |3003942 |+183.0% |1040392 |2834437 |+172.4% |
-+------------+--------+--------+--------+--------+--------+--------+
-
-There are cases where the performance drops 1-2%, but the majority
-of them are performance gains and some of them are pretty significant.
-
-For the disk workload, the spinlock bottleneck is the standalone
-mb_cache_spinlock in fs/mbcache.c. For the short workload, the spinlock
-bottleneck is the d_lock in the dentry structure.
-
-The following table shows the %time used up by the locks as reported
-by the perf command at 1000 users for disk workload & 1500 users for
-short workload with HT off.
-
------------------+----------+----------+----------+
-    Lock 	 | ticket   |  qlock   |  qlock   |
-		 | spinlock | fastpath | slowpath |
------------------+----------+----------+----------+
-Disk w/o patch	 |  69.0%   |    -     |    -     |
-Disk with patch	 |    -     |  0.31%   |  73.6%   |
-Short w/o patch	 |  74.3%   |    -     |    -     |
-Short with patch |    -     |  0.72%   |  72.3%   |
------------------+----------+----------+----------+
-
-There are 2 observations here:
-1. The %CPU time actually increases in the disk workload with the
-   patch. The fact that most of them are spinning on their own
-   cacheline with less congestion can probably skew the number up.
-
-2. Both the short and disk workloads spend about 70% of their time
-   in the lock. However, performance improvement is 2.8X vs 1.3X.
-   This is probably due to the fact that d_lock is embedded next
-   to the d_count to be updated whereas mb_cache_spinlock is in a
-   standalone cacheline not shared by the data to be updated.
-
-Signed-off-by: Waiman Long <Waiman.Long@hp.com>
----
- include/asm-generic/qspinlock.h |  120 ++++++++++++++++++++
- lib/Kconfig                     |   14 +++
- lib/Makefile                    |    1 +
- lib/qspinlock.c                 |  237 +++++++++++++++++++++++++++++++++++++++
- 4 files changed, 372 insertions(+), 0 deletions(-)
- create mode 100644 include/asm-generic/qspinlock.h
- create mode 100644 lib/qspinlock.c
-
-diff --git a/include/asm-generic/qspinlock.h b/include/asm-generic/qspinlock.h
-new file mode 100644
-index 0000000..4cfb369
---- /dev/null
-+++ b/include/asm-generic/qspinlock.h
-@@ -0,0 +1,120 @@
-+/*
-+ * Queue spinlock
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * (C) Copyright 2013 Hewlett-Packard Development Company, L.P.
-+ *
-+ * Authors: Waiman Long <waiman.long@hp.com>
-+ */
-+#ifndef __ASM_GENERIC_QSPINLOCK_H
-+#define __ASM_GENERIC_QSPINLOCK_H
-+
-+#include <linux/types.h>
-+#include <asm/cmpxchg.h>
-+#include <asm/barrier.h>
-+#include <asm/processor.h>
-+
-+#ifdef CONFIG_PARAVIRT_SPINLOCKS
-+#define	qspinlock arch_spinlock
-+#endif
-+
-+/*
-+ * The queue spinlock data structure
-+ */
-+typedef struct qspinlock {
-+	union {
-+		struct {
-+			u8	locked;		/* Bit lock */
-+			u8	reserved;
-+			u16	qcode;		/* Wait queue code */
-+		};
-+		u32		qlock;
-+	};
-+} arch_spinlock_t;
-+
-+/*
-+ * External function declarations
-+ */
-+extern void queue_spin_lock_slowpath(struct qspinlock *lock);
-+
-+/**
-+ * queue_spin_is_locked - is the spinlock locked?
-+ * @lock: Pointer to queue spinlock structure
-+ * Return: 1 if it is locked, 0 otherwise
-+ */
-+static __always_inline int queue_spin_is_locked(struct qspinlock *lock)
-+{
-+	return ACCESS_ONCE(lock->locked);
-+}
-+
-+/**
-+ * queue_spin_is_contended - check if the lock is contended
-+ * @lock : Pointer to queue spinlock structure
-+ * Return: 1 if lock contended, 0 otherwise
-+ */
-+static __always_inline int queue_spin_is_contended(struct qspinlock *lock)
-+{
-+	return ACCESS_ONCE(lock->qcode);
-+}
-+/**
-+ * queue_spin_trylock - try to acquire the queue spinlock
-+ * @lock : Pointer to queue spinlock structure
-+ * Return: 1 if lock acquired, 0 if failed
-+ */
-+static __always_inline int queue_spin_trylock(struct qspinlock *lock)
-+{
-+	if (!queue_spin_is_contended(lock) && (xchg(&lock->locked, 1) == 0))
-+		return 1;
-+	return 0;
-+}
-+
-+/**
-+ * queue_spin_lock - acquire a queue spinlock
-+ * @lock: Pointer to queue spinlock structure
-+ */
-+static __always_inline void queue_spin_lock(struct qspinlock *lock)
-+{
-+	if (likely(queue_spin_trylock(lock)))
-+		return;
-+	queue_spin_lock_slowpath(lock);
-+}
-+
-+/**
-+ * queue_spin_unlock - release a queue spinlock
-+ * @lock : Pointer to queue spinlock structure
-+ */
-+static __always_inline void queue_spin_unlock(struct qspinlock *lock)
-+{
-+	barrier();
-+	ACCESS_ONCE(lock->locked) = 0;
-+	smp_wmb();
-+}
-+
-+/*
-+ * Initializier
-+ */
-+#define	__ARCH_SPIN_LOCK_UNLOCKED	{ { .qlock = 0 } }
-+
-+#ifndef CONFIG_PARAVIRT_SPINLOCKS
-+/*
-+ * Remapping spinlock architecture specific functions to the corresponding
-+ * queue spinlock functions.
-+ */
-+#define arch_spin_is_locked(l)		queue_spin_is_locked(l)
-+#define arch_spin_is_contended(l)	queue_spin_is_contended(l)
-+#define arch_spin_lock(l)		queue_spin_lock(l)
-+#define arch_spin_trylock(l)		queue_spin_trylock(l)
-+#define arch_spin_unlock(l)		queue_spin_unlock(l)
-+#define arch_spin_lock_flags(l, f)	queue_spin_lock(l)
-+#endif
-+
-+#endif /* __ASM_GENERIC_QSPINLOCK_H */
-diff --git a/lib/Kconfig b/lib/Kconfig
-index 35da513..15e0e02 100644
---- a/lib/Kconfig
-+++ b/lib/Kconfig
-@@ -412,6 +412,20 @@ config SIGNATURE
- 	  Implementation is done using GnuPG MPI library
- 
- #
-+# Generic queue spinlock
-+#
-+config QUEUE_SPINLOCK
-+	bool "Generic queue spinlock"
-+	depends on ARCH_QUEUE_SPINLOCK
-+	default n
-+	help
-+	  Use an alternative spinlock implementation that has the same
-+	  spinlock structure size but is more optimized for larger
-+	  NUMA systems with a lot of CPU cores. Specifically, waiting
-+	  lock spinners are put to wait in a queue on a local cacheline
-+	  rather than all spinning on the same lock cacheline.
-+
-+#
- # libfdt files, only selected if needed.
- #
- config LIBFDT
-diff --git a/lib/Makefile b/lib/Makefile
-index 7baccfd..b53710a 100644
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -187,3 +187,4 @@ quiet_cmd_build_OID_registry = GEN     $@
- clean-files	+= oid_registry_data.c
- 
- obj-$(CONFIG_UCS2_STRING) += ucs2_string.o
-+obj-$(CONFIG_QUEUE_SPINLOCK) += qspinlock.o
-diff --git a/lib/qspinlock.c b/lib/qspinlock.c
-new file mode 100644
-index 0000000..21d5f6e
---- /dev/null
-+++ b/lib/qspinlock.c
-@@ -0,0 +1,237 @@
-+/*
-+ * Queue spinlock
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * (C) Copyright 2013 Hewlett-Packard Development Company, L.P.
-+ *
-+ * Authors: Waiman Long <waiman.long@hp.com>
-+ */
-+#include <linux/smp.h>
-+#include <linux/bug.h>
-+#include <linux/cpumask.h>
-+#include <linux/percpu.h>
-+#include <linux/hardirq.h>
-+#include <asm-generic/qspinlock.h>
-+
-+/*
-+ * The queue spinlock fastpath is as simple as it can get, all the heavy
-+ * lifting is done in the lock slowpath. The main idea behind this queue
-+ * spinlock implementation is to keep the spinlock size at 4 bytes while
-+ * at the same time implement a queue structure to queue up the waiting
-+ * lock spinners.
-+ *
-+ * Since preemption is disabled before getting the lock, a given CPU will
-+ * only need to use one queue node structure in a non-interrupt context.
-+ * A percpu queue node structure will be allocated for this purpose and the
-+ * cpu number will be put into the queue spinlock structure to indicate the
-+ * tail of the queue.
-+ *
-+ * To handle spinlock acquisition at interrupt context (softirq or hardirq),
-+ * the queue node structure is actually an array for supporting nested spin
-+ * locking operations in interrupt handlers. If all the entries in the
-+ * array are used up, a warning message will be printed (as that shouldn't
-+ * happen in normal circumstances) and the lock spinner will fall back to
-+ * busy spinning instead of waiting in a queue.
-+ */
-+
-+/*
-+#ifndef CONFIG_DEBUG_SPINLOCK
-+#define CONFIG_DEBUG_SPINLOCK 1
-+#endif
-+ */
-+
-+/*
-+ * The queue node structure
-+ */
-+struct qnode {
-+	struct qnode	*next;
-+	u8		 wait;		/* Waiting flag	*/
-+	u8		 used;		/* Used flag	*/
-+#ifdef	CONFIG_DEBUG_SPINLOCK
-+	u16		 cpu_nr;	/* CPU number	*/
-+	void		*lock;		/* Lock address */
-+#endif
-+};
-+
-+/*
-+ * The 16-bit wait queue code is divided into the following 2 fields:
-+ * Bits 0-1 : queue node index
-+ * Bits 2-15: cpu number + 1
-+ *
-+ * The current implementation will allow a maximum of (1<<14)-1 = 16383 CPUs.
-+ */
-+#define	GET_QN_IDX(code)	((code) & 0x3)
-+#define GET_CPU_NR(code)	(((code) >> 2) - 1)
-+#define	SET_CPU_CODE(cpu, idx)	((((cpu) + 1) << 2) | idx)
-+#define	MAX_QNODES		4
-+#define	MAX_CPUS		((1<<14)-1)
-+
-+/*
-+ * Per-CPU queue node structures
-+ */
-+static DEFINE_PER_CPU(struct qnode [MAX_QNODES], qnodes) = { { 0 } };
-+
-+/**
-+ * queue_trylock - try to acquire the lock bit ignoring the qcode in lock
-+ * @lock: Pointer to queue spinlock structure
-+ * Return: 1 if lock acquired, 0 if failed
-+ */
-+static __always_inline int queue_trylock(struct qspinlock *lock)
-+{
-+	if (!ACCESS_ONCE(lock->locked) && (xchg(&lock->locked, 1) == 0))
-+		return 1;
-+	return 0;
-+}
-+
-+/**
-+ * queue_spin_lock_slowpath - acquire the queue spinlock
-+ * @lock: Pointer to queue spinlock structure
-+ */
-+void queue_spin_lock_slowpath(struct qspinlock *lock)
-+{
-+	unsigned int cpu_nr, qn_idx;
-+	struct qnode *node, *prev, *next;
-+	u16 oldcode, newcode;
-+
-+	/*
-+	 * The current code does not work with more than 64K-1 cpus.
-+	 */
-+	BUILD_BUG_ON(CONFIG_NR_CPUS >= MAX_CPUS);
-+
-+	/*
-+	 * Get the queue node
-+	 */
-+	cpu_nr = smp_processor_id();
-+	node   = per_cpu_ptr(&qnodes[0], cpu_nr);
-+	qn_idx = 0;
-+
-+	if (unlikely(node->used)) {
-+		/*
-+		 * The node has bee used, try to find an empty queue node entry
-+		 */
-+		for (qn_idx = 1; qn_idx < MAX_QNODES; qn_idx++)
-+			if (!node[qn_idx].used)
-+				break;
-+		if (unlikely(qn_idx == MAX_QNODES)) {
-+			/*
-+			 * This shouldn't happen, print a warning message
-+			 * & busy spinning on the lock.
-+			 */
-+			pr_warn("qspinlock: queue node table exhausted at "
-+				"cpu %d!\n", cpu_nr);
-+			while (!queue_trylock(lock))
-+				cpu_relax();
-+			return;
-+		}
-+		/* Adjust node pointer */
-+		node += qn_idx;
-+	}
-+
-+	/*
-+	 * Set up the new cpu code to be exchanged
-+	 */
-+	newcode = SET_CPU_CODE(cpu_nr, qn_idx);
-+
-+	/*
-+	 * The lock may be available at this point, try again before waiting
-+	 * in a queue.
-+	 */
-+	if (queue_spin_trylock(lock))
-+		return;
-+
-+	/*
-+	 * Set up the queue node
-+	 */
-+#ifdef	CONFIG_DEBUG_SPINLOCK
-+	BUG_ON(node->used);
-+#endif
-+	node->used = true;
-+	barrier();
-+#ifdef	CONFIG_DEBUG_SPINLOCK
-+	BUG_ON(node->lock || node->next || node->wait);
-+	node->cpu_nr = cpu_nr;
-+	node->lock   = (void *)lock;
-+#endif
-+	node->wait = true;
-+	node->next = NULL;
-+
-+	/*
-+	 * Exchange current copy of the cpu code
-+	 */
-+	oldcode = xchg(&lock->qcode, newcode);
-+	if (oldcode) {
-+		/*
-+		 * Not at the queue head, get the address of the previous node
-+		 * and setup the "next" pointer of that node.
-+		 */
-+		prev = per_cpu_ptr(&qnodes[GET_QN_IDX(oldcode)],
-+				   GET_CPU_NR(oldcode));
-+#ifdef	CONFIG_DEBUG_SPINLOCK
-+		BUG_ON(prev->cpu_nr == cpu_nr);
-+		BUG_ON(prev->lock != (void *)lock);
-+		BUG_ON(!prev->used || (prev->next != NULL));
-+#endif
-+		ACCESS_ONCE(prev->next) = node;
-+		smp_wmb();
-+		/*
-+		 * Wait until the waiting flag is off
-+		 */
-+		while (ACCESS_ONCE(node->wait))
-+			cpu_relax();
-+	}
-+
-+	/*
-+	 * At the head of the wait queue now, try to get the lock in a
-+	 * spin loop.
-+	 */
-+	while (!queue_trylock(lock))
-+		cpu_relax();
-+
-+	next = ACCESS_ONCE(node->next);
-+	if (next)
-+		goto notify_next;
-+	/*
-+	 * Clear the wait queue if it is the last node
-+	 */
-+	if ((ACCESS_ONCE(lock->qcode) == newcode) &&
-+	    (cmpxchg(&lock->qcode, newcode, 0) == newcode))
-+			goto release_qnode;
-+	/*
-+	 * Wait until the next one in queue set up the next field
-+	 */
-+	while (!(next = ACCESS_ONCE(node->next)))
-+		cpu_relax();
-+notify_next:
-+#ifdef	CONFIG_DEBUG_SPINLOCK
-+	BUG_ON(next->cpu_nr == cpu_nr);
-+	BUG_ON(next->lock != (void *)lock);
-+	BUG_ON(!next->wait || !next->used);
-+#endif
-+	/*
-+	 * The next one in queue is now at the head
-+	 */
-+	ACCESS_ONCE(next->wait) = false;
-+
-+release_qnode:
-+	/*
-+	 * Release the queue node
-+	 */
-+	node->next = NULL;
-+	node->used = false;
-+	node->wait = false;
-+#ifdef	CONFIG_DEBUG_SPINLOCK
-+	node->lock = NULL;
-+	BUG_ON(cpu_nr != smp_processor_id());
-+#endif
-+	smp_wmb();
-+}
-+EXPORT_SYMBOL(queue_spin_lock_slowpath);
--- 
-1.7.1
-
+-Olof
