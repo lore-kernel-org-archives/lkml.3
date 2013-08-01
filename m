@@ -1,77 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757247Ab3HAUzb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 16:55:31 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:49350 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752339Ab3HAUza (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 16:55:30 -0400
-Message-ID: <1375390528.2034.77.camel@joe-AO722>
-Subject: Re: [PATCH V2 3/3] ethernet: Convert mac address uses of 6 to
- ETH_ALEN
-From: Joe Perches <joe@perches.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Olof Johansson <olof@lixom.net>, Sam Creasey <sammy@sammy.net>,
-        Grant Grundler <grundler@parisc-linux.org>,
-        Wan ZongShun <mcuos.com@gmail.com>,
-        Rajesh Borundia <rajesh.borundia@qlogic.com>,
-        Network Development <netdev@vger.kernel.org>,
-        Sony Chacko <sony.chacko@qlogic.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Manish Chopra <manish.chopra@qlogic.com>,
-        Don Fry <pcnet32@frontier.com>, Ron Mercer <ron.mercer@qlogic.com>,
-        Andrew Gallatin <gallatin@myri.com>, linux-driver@qlogic.com,
-        Jitendra Kalsaria <jitendra.kalsaria@qlogic.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Shahed Shaikh <shahed.shaikh@qlogic.com>
-Date: Thu, 01 Aug 2013 13:55:28 -0700
-In-Reply-To: <20130801203343.GG23006@n2100.arm.linux.org.uk>
-References: <cover.1375387593.git.joe@perches.com>
-	 <4170130535e4ea14c66f8510042577be21941f4d.1375387593.git.joe@perches.com>
-	 <CAOesGMhmxJTDjcPeD4b1FvRsbP8df369F01SQBK6dk4nXmRGjA@mail.gmail.com>
-	 <20130801203343.GG23006@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1757397Ab3HAU4K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 16:56:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53775 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752214Ab3HAU4J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 16:56:09 -0400
+Date: Fri, 2 Aug 2013 04:57:24 +0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Cc: Nathan Fontenot <nfont@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Nivedita Singhvi <niv@us.ibm.com>, Michael J Wolf <mjwolf@us.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers: base: new memory config sysfs driver for large
+ memory systems
+Message-ID: <20130801205724.GA13585@kroah.com>
+References: <1374786680-26197-1-git-send-email-sjenning@linux.vnet.ibm.com>
+ <20130725234007.GB18349@kroah.com>
+ <20130726144251.GB4379@variantweb.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130726144251.GB4379@variantweb.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-08-01 at 21:33 +0100, Russell King - ARM Linux wrote:
-> On Thu, Aug 01, 2013 at 01:31:09PM -0700, Olof Johansson wrote:
-> > Hi,
+On Fri, Jul 26, 2013 at 09:42:51AM -0500, Seth Jennings wrote:
 
-Hi all.
+Sorry for the delay, google decided to mark your responses as "spam" :(
 
-> > On Thu, Aug 1, 2013 at 1:14 PM, Joe Perches <joe@perches.com> wrote:
-> > > diff --git a/drivers/net/ethernet/pasemi/pasemi_mac.h b/drivers/net/ethernet/pasemi/pasemi_mac.h
-[]
-> > > @@ -79,11 +79,11 @@ struct pasemi_mac {
-> > >         int             last_cs;
-> > >         int             num_cs;
-> > >         u32             dma_if;
-> > > -       u8              type;
-> > >  #define MAC_TYPE_GMAC  1
-> > >  #define MAC_TYPE_XAUI  2
-> > >
-> > > -       u8              mac_addr[6];
-> > > +       u8              mac_addr[ETH_ALEN];
-> > > +       u8              type;
+> On Thu, Jul 25, 2013 at 04:40:07PM -0700, Greg Kroah-Hartman wrote:
+> > On Thu, Jul 25, 2013 at 04:11:20PM -0500, Seth Jennings wrote:
+> > > +#define MEMFS_CLASS_NAME	"memoryfs"
 > > 
-> > Just promote 'type' to u32 instead, saves you from moving the #defines
-> > down, etc, etc.
+> > One question, a "*fs" name in the kernel usually implies it is a
+> > separate filesystem, which this isn't at all, it's just a "normal"
+> > class/subsystem in the kernel.  So how about "memory" instead?
+> 
+> "memory" is the name used by the current sysfs memory layout code in
+> drivers/base/memory.c. So it can't be the same unless we are going to
+> create a toggle a boot time to select between the models, which is
+> something I am looking to add if this code/design is acceptable to
+> people.
 
-type is already u8, why change it?
-That would also change struct size.
+I know it can't be the same, but this is like "memory_v2" or something,
+right?  I suggest you make it an either/or option, given that you feel
+the existing layout just will not work properly for you.
 
-> There's a more fundamental question which has to be asked: what is the
-> point of moving that in the first place?
+> The design is that people with large memory systems would pass a boot
+> parameter that selects this alternate layout, so that the majority
+> of non-large-memory users and any userspace programs that depend on the
+> old layout would be unaffected.
+> 
+> In the meantime, the name "memfs" was chosen for the RFC so that people
+> could compile and run the new model concurrently with the current model.
 
-Some is_<foo>_ether_addr tests assume __aligned(2)
-by a casting char * to u16/be16 * and dereferencing.
+It's a really bad name for a driver subsystem, please don't use it.
 
-see patch 0/3 and include/linux/etherdevice.h
+thanks,
 
-
+greg k-h
