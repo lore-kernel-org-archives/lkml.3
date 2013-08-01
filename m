@@ -1,49 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753299Ab3HAI3z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 04:29:55 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:43420 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751744Ab3HAI3w (ORCPT
+	id S1753332Ab3HAIab (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 04:30:31 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:47097 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751744Ab3HAIa3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 04:29:52 -0400
-Date: Thu, 1 Aug 2013 01:29:51 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Colin Cross <ccross@google.com>
-Cc: Christoph Hellwig <hch@infradead.org>, lkml <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        John Stultz <john.stultz@linaro.org>, libc-alpha@sourceware.org
-Subject: Re: RFC: named anonymous vmas
-Message-ID: <20130801082951.GA23563@infradead.org>
-References: <CAMbhsRQU=xrcum+ZUbG3S+JfFUJK_qm_VB96Vz=PpL=vQYhUvg@mail.gmail.com>
- <20130622103158.GA16304@infradead.org>
- <CAMbhsRTz246dWPQOburNor2HvrgbN-AWb2jT_AEywtJHFbKWsA@mail.gmail.com>
+	Thu, 1 Aug 2013 04:30:29 -0400
+Date: Thu, 1 Aug 2013 10:29:59 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Borislav Petkov <bp@alien8.de>, Li Zhong <zhong@linux.vnet.ibm.com>,
+        Mike Galbraith <efault@gmx.de>, Kevin Hilman <khilman@linaro.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Alex Shi <alex.shi@intel.com>, Paul Turner <pjt@google.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>
+Subject: Re: [GIT PULL] nohz patches for 3.12 preview v3
+Message-ID: <20130801082959.GJ3008@twins.programming.kicks-ass.net>
+References: <1375317100-20651-1-git-send-email-fweisbec@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAMbhsRTz246dWPQOburNor2HvrgbN-AWb2jT_AEywtJHFbKWsA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <1375317100-20651-1-git-send-email-fweisbec@gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Btw, FreeBSD has an extension to shm_open to create unnamed but fd
-passable segments.  From their man page:
+On Thu, Aug 01, 2013 at 02:31:17AM +0200, Frederic Weisbecker wrote:
+> Hi,
+> 
+> So none of the patches from the previous v2 posting have changed.
+> I've just added two more in order to fix build crashes reported
+> by Wu Fengguang:
+> 
+>       hardirq: Split preempt count mask definitions
+>       m68k: hardirq_count() only need preempt_mask.h
+> 
+> If no comment arise, I'll send a pull request to Ingo in a few days.
 
-    As a FreeBSD extension, the constant SHM_ANON may be used for the path
-    argument to shm_open().  In this case, an anonymous, unnamed shared
-    memory object is created.  Since the object has no name, it cannot be
-    removed via a subsequent call to shm_unlink().  Instead, the shared
-    memory object will be garbage collected when the last reference to the
-    shared memory object is removed.  The shared memory object may be shared
-    with other processes by sharing the file descriptor via fork(2) or
-    sendmsg(2).  Attempting to open an anonymous shared memory object with
-    O_RDONLY will fail with EINVAL. All other flags are ignored.
+So I did a drive-by review and didn't spot anything really weird.
 
-To me this sounds like the best way to expose this functionality to the
-user.  Implementing it is another question as shm_open sits in libc,
-we could either take it and shm_unlink to the kernel, or use O_TMPFILE
-on tmpfs as the backend.
+However, it would be very good to include some performance figures that
+show what effect all this effort had.
+
+I'm assuming its good (TM) ;-)
