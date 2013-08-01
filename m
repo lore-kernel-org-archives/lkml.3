@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757680Ab3HATfm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 15:35:42 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:21419 "EHLO
+	id S932125Ab3HATf4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 15:35:56 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:21427 "EHLO
 	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757624Ab3HATfh (ORCPT
+	with ESMTP id S1757797Ab3HATfx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 15:35:37 -0400
-Message-ID: <ef7f97bf9c45238fea2caa11143c306d0d528466.1375385120.git.cmetcalf@tilera.com>
+	Thu, 1 Aug 2013 15:35:53 -0400
+Message-ID: <0415298704a27a9b52ec5e82e8d7d0ed72febb0d.1375385120.git.cmetcalf@tilera.com>
 In-Reply-To: <cover.1375385119.git.cmetcalf@tilera.com>
 References: <20130801.113100.2059303096028571906.davem@davemloft.net>
 	<cover.1375385119.git.cmetcalf@tilera.com>
 From: Chris Metcalf <cmetcalf@tilera.com>
 Date: Thu, 1 Aug 2013 11:36:42 -0400
-Subject: [PATCH v3 07/13] tile: fix panic bug in napi support for tilegx network driver
+Subject: [PATCH v3 12/13] tile: remove deprecated NETIF_F_LLTX flag from tile drivers
 To: <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -21,107 +21,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The code used to call napi_disable() in an interrupt handler
-(from smp_call_function), which in turn could call msleep().
-Unfortunately you can't sleep in an interrupt context.
-
-Luckily it turns out all the NAPI support functions are
-just operating on data structures and not on any deeply
-per-cpu data, so we can arrange to set up and tear down all
-the NAPI state on the core driving the process, and just
-do the IRQ enable/disable as a smp_call_function thing.
-
 Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 ---
- drivers/net/ethernet/tile/tilegx.c | 65 +++++++++++++++++++-------------------
- 1 file changed, 33 insertions(+), 32 deletions(-)
+ drivers/net/ethernet/tile/tilegx.c  | 1 -
+ drivers/net/ethernet/tile/tilepro.c | 1 -
+ 2 files changed, 2 deletions(-)
 
 diff --git a/drivers/net/ethernet/tile/tilegx.c b/drivers/net/ethernet/tile/tilegx.c
-index e9eba2b..17bcf33 100644
+index 7302e84..0beed7e 100644
 --- a/drivers/net/ethernet/tile/tilegx.c
 +++ b/drivers/net/ethernet/tile/tilegx.c
-@@ -650,37 +650,13 @@ static enum hrtimer_restart tile_net_handle_egress_timer(struct hrtimer *t)
- 	return HRTIMER_NORESTART;
- }
+@@ -1963,7 +1963,6 @@ static void tile_net_setup(struct net_device *dev)
+ 	dev->watchdog_timeo = TILE_NET_TIMEOUT;
+ 	dev->mtu = 1500;
  
--/* Helper function for "tile_net_update()".
-- * "dev" (i.e. arg) is the device being brought up or down,
-- * or NULL if all devices are now down.
-- */
--static void tile_net_update_cpu(void *arg)
-+/* Helper function for "tile_net_update()". */
-+static void manage_ingress_irq(void *enable)
- {
--	struct tile_net_info *info = &__get_cpu_var(per_cpu_info);
--	struct net_device *dev = arg;
--
--	if (!info->has_iqueue)
--		return;
--
--	if (dev != NULL) {
--		if (!info->napi_added) {
--			netif_napi_add(dev, &info->napi,
--				       tile_net_poll, TILE_NET_WEIGHT);
--			info->napi_added = true;
--		}
--		if (!info->napi_enabled) {
--			napi_enable(&info->napi);
--			info->napi_enabled = true;
--		}
-+	if (enable)
- 		enable_percpu_irq(ingress_irq, 0);
--	} else {
-+	else
- 		disable_percpu_irq(ingress_irq);
--		if (info->napi_enabled) {
--			napi_disable(&info->napi);
--			info->napi_enabled = false;
--		}
--		/* FIXME: Drain the iqueue. */
--	}
- }
+-	features |= NETIF_F_LLTX;
+ 	features |= NETIF_F_HW_CSUM;
+ 	features |= NETIF_F_SG;
+ 	features |= NETIF_F_TSO;
+diff --git a/drivers/net/ethernet/tile/tilepro.c b/drivers/net/ethernet/tile/tilepro.c
+index fd17af5..106be47 100644
+--- a/drivers/net/ethernet/tile/tilepro.c
++++ b/drivers/net/ethernet/tile/tilepro.c
+@@ -2253,7 +2253,6 @@ static void tile_net_setup(struct net_device *dev)
+ 	dev->tx_queue_len = TILE_NET_TX_QUEUE_LEN;
+ 	dev->mtu = TILE_NET_MTU;
  
- /* Helper function for tile_net_open() and tile_net_stop().
-@@ -717,10 +693,35 @@ static int tile_net_update(struct net_device *dev)
- 		return -EIO;
- 	}
+-	features |= NETIF_F_LLTX;
+ 	features |= NETIF_F_HW_CSUM;
+ 	features |= NETIF_F_SG;
  
--	/* Update all cpus, sequentially (to protect "netif_napi_add()"). */
--	for_each_online_cpu(cpu)
--		smp_call_function_single(cpu, tile_net_update_cpu,
--					 (saw_channel ? dev : NULL), 1);
-+	/* Update all cpus, sequentially (to protect "netif_napi_add()").
-+	 * We use on_each_cpu to handle the IPI mask or unmask.
-+	 */
-+	if (!saw_channel)
-+		on_each_cpu(manage_ingress_irq, (void *)0, 1);
-+	for_each_online_cpu(cpu) {
-+		struct tile_net_info *info = &per_cpu(per_cpu_info, cpu);
-+		if (!info->has_iqueue)
-+			continue;
-+		if (saw_channel) {
-+			if (!info->napi_added) {
-+				netif_napi_add(dev, &info->napi,
-+					       tile_net_poll, TILE_NET_WEIGHT);
-+				info->napi_added = true;
-+			}
-+			if (!info->napi_enabled) {
-+				napi_enable(&info->napi);
-+				info->napi_enabled = true;
-+			}
-+		} else {
-+			if (info->napi_enabled) {
-+				napi_disable(&info->napi);
-+				info->napi_enabled = false;
-+			}
-+			/* FIXME: Drain the iqueue. */
-+		}
-+	}
-+	if (saw_channel)
-+		on_each_cpu(manage_ingress_irq, (void *)1, 1);
- 
- 	/* HACK: Allow packets to flow in the simulator. */
- 	if (saw_channel)
 -- 
 1.8.3.1
 
