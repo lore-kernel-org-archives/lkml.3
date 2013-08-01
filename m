@@ -1,81 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752696Ab3HAGbn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 02:31:43 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:33583 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750742Ab3HAGbl (ORCPT
+	id S1751395Ab3HAGet (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 02:34:49 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:42441 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750756Ab3HAGer (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 02:31:41 -0400
+	Thu, 1 Aug 2013 02:34:47 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <51FA015E.10901@jp.fujitsu.com>
+Date: Thu, 01 Aug 2013 15:34:06 +0900
+From: Takao Indoh <indou.takao@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <20130801061928.GR7118@dastard>
-References: <1375244150-27296-1-git-send-email-david@fromorbit.com>
-	<CA+icZUX7aFAPBo_nhBLQ7-F465_Bujg5Cr5+xL+hfcwn6BMo=Q@mail.gmail.com>
-	<20130801061928.GR7118@dastard>
-Date: Thu, 1 Aug 2013 08:31:39 +0200
-Message-ID: <CA+icZUXEFMdRGUXHXu12JYVK7Qsumb2UH6GmrAL6zuQmabheaw@mail.gmail.com>
-Subject: Re: [PATCH 00/11] Sync and VFS scalability improvements
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, davej@redhat.com, viro@zeniv.linux.org.uk,
-        jack@suse.cz, glommer@parallels.com
-Content-Type: text/plain; charset=UTF-8
+To: bhelgaas@google.com
+CC: rjw@sisk.pl, vgoyal@redhat.com, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, iommu@lists.linux-foundation.org,
+        kexec@lists.infradead.org, ishii.hironobu@jp.fujitsu.com,
+        ddutile@redhat.com, bill.sumner@hp.com, alex.williamson@redhat.com,
+        hbabu@us.ibm.com, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH v2] PCI: Reset PCIe devices to stop ongoing DMA
+References: <1368509365-2260-1-git-send-email-indou.takao@jp.fujitsu.com> <51F85BCC.2070103@jp.fujitsu.com> <CAErSpo4yJ2yqCWv7GT7jWSVd_8SktU=xJXT78m8Vxp_wLA4Fow@mail.gmail.com> <1699397.FXoFYIGzbk@vostro.rjw.lan>
+In-Reply-To: <1699397.FXoFYIGzbk@vostro.rjw.lan>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 1, 2013 at 8:19 AM, Dave Chinner <david@fromorbit.com> wrote:
-> On Wed, Jul 31, 2013 at 08:48:40AM +0200, Sedat Dilek wrote:
->> On Wed, Jul 31, 2013 at 6:15 AM, Dave Chinner <david@fromorbit.com> wrote:
->> > Hi folks,
->> >
->> > This series of patches is against the curent mmotm tree here:
->> >
->> > http://git.cmpxchg.org/cgit/linux-mmotm.git/
->> >
+(2013/08/01 6:23), Rafael J. Wysocki wrote:
+> On Wednesday, July 31, 2013 03:08:03 PM Bjorn Helgaas wrote:
+>> [+cc Rafael, linux-acpi]
 >>
->> "Current" is not precise enough... above tree has git-tags.
->
-> It's most certainly precise.  "current" always means the master
-> branch at the time the series was posted. I.e. same definition as
-> "top of tree"....
->
+>> On Tue, Jul 30, 2013 at 6:35 PM, Takao Indoh <indou.takao@jp.fujitsu.com> wrote:
+>>
+>>> On x86, currently IOMMU initialization run *after* PCI enumeration, but
+>>> what you are talking about is that it should be changed so that x86
+>>> IOMMU initialization is done *before* PCI enumeration like sparc, right?
+>>
+>> Yes.  I don't know whether or when that initialization order will ever
+>> be changed, but I do think we should avoid building more
+>> infrastructure that depends on the current order.
+>>
+>> Changing the order is a pretty big deal because it's a lot more than
+>> just the IOMMU.  Basically I think we should be enumerating ACPI
+>> devices, including the IOMMU, before PCI devices, but there's a lot of
+>> legacy involved in that area.  Added Rafael in case he has any
+>> thoughts.
+> 
+> Well, actually, I'm not really familiar with IOMMUs, sorry.
+> 
+> I do think that initializing IOMMU before PCI enumeration would be better,
+> however.  At least if the ordering should be the same on all architectures,
+> which I suppose is the case, that's the one I'd choose.
 
-Today, I see in my inbox "mmotm 2013-07-31-16-52 uploaded" which means
-"master" will change (or has changed).
-Think of all the people being on vacation and reading your email later.
-People waste their time if they don't know on what a patchset is based on.
+Ok guys. If x86 IOMMU maintainer also thinks changing order is
+necessary, maybe I need to give up device reset in kdump kernel and
+consider doing it in panic kernel.
 
-Pointing to the git-tag does not hurt.
+Either way, I need bus reset interface to reset devices. Bjorn, could
+you review the bus reset patches Alex posted yesterday?
 
->> As I am not a linux-fs expert I can try to test, preferably against a
->> Linux-next release.
->> Would you like to test against "vanilla" mmotm or is Linux-next
->> suitable in your eyes?
->
-> mmotm is based on the linux-next tree at the time the tree was made.
->
+Thanks,
+Takao Indoh
 
-No, linux-next includes patches from Andrew's mmotm marked in his series file.
-So, your patches can fit or not, that's why I asked.
-
-[1] http://ozlabs.org/~akpm/mmotm/series
-[2] http://ozlabs.org/~akpm/mmotm/mmotm-readme.txt
-
->> I have seen some typos... are you interested in such feedback?
->
-> feel free to point them out.
->
-
-Cannot promise anything. Dealing with some embedded stuff.
-
-- Sedat -
-
-> Cheers,
->
-> Dave.
-> --
-> Dave Chinner
-> david@fromorbit.com
