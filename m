@@ -1,136 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752761Ab3HAIey (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 04:34:54 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43626 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750742Ab3HAIeu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 04:34:50 -0400
-Date: Thu, 1 Aug 2013 10:34:47 +0200
-From: Jan Kara <jack@suse.cz>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Jan Kara <jack@suse.cz>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        davej@redhat.com, viro@zeniv.linux.org.uk, glommer@parallels.com
-Subject: Re: [PATCH 01/11] writeback: plug writeback at a high level
-Message-ID: <20130801083447.GA19219@quack.suse.cz>
-References: <1375244150-27296-1-git-send-email-david@fromorbit.com>
- <1375244150-27296-2-git-send-email-david@fromorbit.com>
- <20130731144019.GC22930@quack.suse.cz>
- <20130801054805.GO7118@dastard>
+	id S1752521Ab3HAIgl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 04:36:41 -0400
+Received: from 216-12-86-13.cv.mvl.ntelos.net ([216.12.86.13]:55675 "EHLO
+	brightrain.aerifal.cx" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750742Ab3HAIgj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 04:36:39 -0400
+Date: Thu, 1 Aug 2013 04:36:08 -0400
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Colin Cross <ccross@google.com>, lkml <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        John Stultz <john.stultz@linaro.org>, libc-alpha@sourceware.org
+Subject: Re: RFC: named anonymous vmas
+Message-ID: <20130801083608.GJ221@brightrain.aerifal.cx>
+References: <CAMbhsRQU=xrcum+ZUbG3S+JfFUJK_qm_VB96Vz=PpL=vQYhUvg@mail.gmail.com>
+ <20130622103158.GA16304@infradead.org>
+ <CAMbhsRTz246dWPQOburNor2HvrgbN-AWb2jT_AEywtJHFbKWsA@mail.gmail.com>
+ <20130801082951.GA23563@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130801054805.GO7118@dastard>
+In-Reply-To: <20130801082951.GA23563@infradead.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+From: Rich Felker <dalias@aerifal.cx>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 01-08-13 15:48:05, Dave Chinner wrote:
-> On Wed, Jul 31, 2013 at 04:40:19PM +0200, Jan Kara wrote:
-> > On Wed 31-07-13 14:15:40, Dave Chinner wrote:
-> > > From: Dave Chinner <dchinner@redhat.com>
-> > > 
-> > > Doing writeback on lots of little files causes terrible IOPS storms
-> > > because of the per-mapping writeback plugging we do. This
-> > > essentially causes imeediate dispatch of IO for each mapping,
-> > > regardless of the context in which writeback is occurring.
-> > > 
-> > > IOWs, running a concurrent write-lots-of-small 4k files using fsmark
-> > > on XFS results in a huge number of IOPS being issued for data
-> > > writes.  Metadata writes are sorted and plugged at a high level by
-> > > XFS, so aggregate nicely into large IOs. However, data writeback IOs
-> > > are dispatched in individual 4k IOs, even when the blocks of two
-> > > consecutively written files are adjacent.
-> > > 
-> > > Test VM: 8p, 8GB RAM, 4xSSD in RAID0, 100TB sparse XFS filesystem,
-> > > metadata CRCs enabled.
-> > > 
-> > > Kernel: 3.10-rc5 + xfsdev + my 3.11 xfs queue (~70 patches)
-> > > 
-> > > Test:
-> > > 
-> > > $ ./fs_mark  -D  10000  -S0  -n  10000  -s  4096  -L  120  -d
-> > > /mnt/scratch/0  -d  /mnt/scratch/1  -d  /mnt/scratch/2  -d
-> > > /mnt/scratch/3  -d  /mnt/scratch/4  -d  /mnt/scratch/5  -d
-> > > /mnt/scratch/6  -d  /mnt/scratch/7
-> > > 
-> > > Result:
-> > > 
-> > > 		wall	sys	create rate	Physical write IO
-> > > 		time	CPU	(avg files/s)	 IOPS	Bandwidth
-> > > 		-----	-----	------------	------	---------
-> > > unpatched	6m56s	15m47s	24,000+/-500	26,000	130MB/s
-> > > patched		5m06s	13m28s	32,800+/-600	 1,500	180MB/s
-> > > improvement	-26.44%	-14.68%	  +36.67%	-94.23%	+38.46%
-> > > 
-> > > If I use zero length files, this workload at about 500 IOPS, so
-> > > plugging drops the data IOs from roughly 25,500/s to 1000/s.
-> > > 3 lines of code, 35% better throughput for 15% less CPU.
-> > > 
-> > > The benefits of plugging at this layer are likely to be higher for
-> > > spinning media as the IO patterns for this workload are going make a
-> > > much bigger difference on high IO latency devices.....
-> > > 
-> > > Signed-off-by: Dave Chinner <dchinner@redhat.com>
-> >   Just one question: Won't this cause a regression when files are say 2 MB
-> > large? Then we generate maximum sized requests for these files with
-> > per-inode plugging anyway and they will unnecessarily sit in the plug list
-> > until the plug list gets full (that is after 16 requests). Granted it
-> > shouldn't be too long but with fast storage it may be measurable...
+On Thu, Aug 01, 2013 at 01:29:51AM -0700, Christoph Hellwig wrote:
+> Btw, FreeBSD has an extension to shm_open to create unnamed but fd
+> passable segments.  From their man page:
 > 
-> Latency of IO dispatch only matters for the initial IOs being
-> queued. This, however, is not a latency sensitive IO path -
-> writeback is our bulk throughput IO engine, and in those cases low
-> latency dispatch is precisely what we don't want. We want to
-> optimise IO patterns for maximum *bandwidth*, not minimal latency.
+>     As a FreeBSD extension, the constant SHM_ANON may be used for the path
+>     argument to shm_open().  In this case, an anonymous, unnamed shared
+>     memory object is created.  Since the object has no name, it cannot be
+>     removed via a subsequent call to shm_unlink().  Instead, the shared
+>     memory object will be garbage collected when the last reference to the
+>     shared memory object is removed.  The shared memory object may be shared
+>     with other processes by sharing the file descriptor via fork(2) or
+>     sendmsg(2).  Attempting to open an anonymous shared memory object with
+>     O_RDONLY will fail with EINVAL. All other flags are ignored.
 > 
-> The problem is that fast storage with immediate dispatch and dep
-> queues can keep ahead of IO dispatch, preventing throughput
-> optimisations like IO aggregation from being made because there is
-> never any IO queued to aggregate. That's why I'm seeing a couple of
-> orders of magnitude higher IOPS than I should. Sure, the hardware
-> can do that, but it's not the *most efficient* method of dispatching
-> background IO.
-> 
-> Allowing IOs a chance to aggregate in the scheduler for a short
-> while because dispatch allows existing bulk throughput optimisations
-> to be made to the IO stream, and as we can see, where a delayed
-> allocation filesystem is optimised for adjacent allocation
-> across sequentially written inodes such oppportunites for IO
-> aggregation make a big difference to performance.
-  Yeah, I understand the reasoning but sometimes experimental results
-differ from theory :)
+> To me this sounds like the best way to expose this functionality to the
+> user.  Implementing it is another question as shm_open sits in libc,
+> we could either take it and shm_unlink to the kernel, or use O_TMPFILE
+> on tmpfs as the backend.
 
-> So, to test your 2MB IO case, I ran a fsmark test using 40,000
-> 2MB files instead of 10 million 4k files.
-> 
-> 		wall time	IOPS	BW
-> mmotm		170s		1000	350MB/s
-> patched		167s		1000	350MB/s
-> 
-> The IO profiles are near enough to be identical, and the wall time
-> is basically the same.
-> 
-> 
-> I just don't see any particular concern about larger IOs and initial
-> dispatch latency here from either a theoretical or an observed POV.
-> Indeed, I haven't seen a performance degradation as a result of this
-> patch in any of the testing I've done since I first posted it...
-  Thanks for doing the test! So I'm fine with this patch. You can add:
-Reviewed-by: Jan Kara <jack@suse.cz>
+I'm not sure what the purpose is. shm_open with a long random filename
+and O_EXCL|O_CREAT, followed immediately by shm_unlink, is just as
+good except in the case where you have a malicious user killing the
+process in between these two operations.
 
-> > Now if we have maximum sized request in the plug list, maybe we could just
-> > dispatch it right away but that's another story.
-> 
-> That, in itself is potentially an issue, too, as it prevents seek
-> minimisation optimisations from being made when we batch up multiple
-> IOs on the plug list...
-  Good point.
-
-								Honza
-
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Rich
