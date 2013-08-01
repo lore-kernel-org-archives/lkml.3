@@ -1,86 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754099Ab3HANCR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 09:02:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7715 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750834Ab3HANCQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 09:02:16 -0400
-Date: Thu, 1 Aug 2013 15:01:46 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung@kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 2/8] perf: Sanitize get_callchain_buffer()
-Message-ID: <20130801130146.GE1032@krava.brq.redhat.com>
-References: <1374539466-4799-1-git-send-email-fweisbec@gmail.com>
- <1374539466-4799-3-git-send-email-fweisbec@gmail.com>
+	id S1755251Ab3HANCY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 09:02:24 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:17887 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754561Ab3HANCV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 09:02:21 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 01 Aug 2013 06:00:53 -0700
+Message-ID: <51FA5C5A.2080900@nvidia.com>
+Date: Thu, 1 Aug 2013 16:02:18 +0300
+From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1374539466-4799-3-git-send-email-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: "balbi@ti.com" <balbi@ti.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>
+Subject: Re: [PATCH 0/6] USB tree changes for Tegra30 and Tegra114 USB Host
+ support
+References: <1375292522-7855-1-git-send-email-ttynkkynen@nvidia.com> <51F99C4C.6050508@wwwdotorg.org>
+In-Reply-To: <51F99C4C.6050508@wwwdotorg.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 23, 2013 at 02:31:00AM +0200, Frederic Weisbecker wrote:
-> In case of allocation failure, get_callchain_buffer() keeps the
-> refcount incremented for the current event.
+On 08/01/2013 02:22 AM, Stephen Warren wrote:
+> On 07/31/2013 11:41 AM, Tuomas Tynkkynen wrote:
+>> Hi all,
+>>
+>> Here are the patches for the USB tree to enable USB Host support on Tegra30 and
+>> Tegra114. These are based on my and Mikko's cleanup patches that just got
+>> merged to Felipe's tree.
 > 
-> As a result, when get_callchain_buffers() returns an error,
-> we must cleanup what it did by cancelling its last refcount
-> with a call to put_callchain_buffers().
+> This series works fine for me on Dalmore. However, on Beaver, I see the
+> following:
 > 
-> This is a hack in order to be able to call free_event()
-> after that failure.
+> [    2.428480] platform 7d008000.usb: Driver tegra-ehci requests probe
+> deferral
 > 
-> The original purpose of that was to simplify the failure
-> path. But this error handling is actually counter intuitive,
-> ugly and not very easy to follow because one expect to
-> see the resources used to perform a service to be cleaned
-> by the callee if case of failure, not by the caller.
+> ... which never seems to be resolved. You can take a look at my
+> linux-next_common branch to repro this. Does Beaver work for you?
 > 
-> So lets clean this up by cancelling the refcount from
-> get_callchain_buffer() in case of failure. And correctly free
-> the event accordingly in perf_event_alloc().
-> 
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Jiri Olsa <jolsa@redhat.com>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Namhyung Kim <namhyung@kernel.org>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-> Cc: Stephane Eranian <eranian@google.com>
-> ---
->  kernel/events/callchain.c |    2 ++
->  kernel/events/core.c      |   41 +++++++++++++++++++++--------------------
->  2 files changed, 23 insertions(+), 20 deletions(-)
-> 
-> diff --git a/kernel/events/callchain.c b/kernel/events/callchain.c
-> index c772061..76a8bc5 100644
-> --- a/kernel/events/callchain.c
-> +++ b/kernel/events/callchain.c
-> @@ -117,6 +117,8 @@ int get_callchain_buffers(void)
->  	err = alloc_callchain_buffers();
->  exit:
->  	mutex_unlock(&callchain_mutex);
-> +	if (err)
-> +		atomic_dec(&nr_callchain_events);
 
-shouldn't we touch this under above lock?
-
-also that above hunk decrements nr_callchain_events
-also for following case:
-
-        count = atomic_inc_return(&nr_callchain_events);
-        if (WARN_ON_ONCE(count < 1)) {
-                err = -EINVAL;
-                goto exit;
-        }
-
-seems like it screws the count
-
-jirka
+The clock driver patch is missing from your branch. Applying it should fix that.
