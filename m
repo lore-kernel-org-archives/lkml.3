@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753665Ab3HAAey (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 20:34:54 -0400
-Received: from mail-wg0-f53.google.com ([74.125.82.53]:50300 "EHLO
-	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752937Ab3HAAcT (ORCPT
+	id S1753179Ab3HAAfS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 20:35:18 -0400
+Received: from mail-we0-f177.google.com ([74.125.82.177]:56914 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752876Ab3HAAcQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 20:32:19 -0400
+	Wed, 31 Jul 2013 20:32:16 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -16,9 +16,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>, Borislav Petkov <bp@alien8.de>,
         Li Zhong <zhong@linux.vnet.ibm.com>, Mike Galbraith <efault@gmx.de>,
         Kevin Hilman <khilman@linaro.org>
-Subject: [PATCH 21/23] nohz: Rename a few state variables
-Date: Thu,  1 Aug 2013 02:31:38 +0200
-Message-Id: <1375317100-20651-22-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 19/23] vtime: Always scale generic vtime accounting results
+Date: Thu,  1 Aug 2013 02:31:36 +0200
+Message-Id: <1375317100-20651-20-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1375317100-20651-1-git-send-email-fweisbec@gmail.com>
 References: <1375317100-20651-1-git-send-email-fweisbec@gmail.com>
@@ -26,11 +26,13 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rename the full dynticks's cpumask and cpumask state variables
-to some more exportable names.
+The cputime accounting in full dynticks can be a subtle
+mixup of CPUs using tick based accounting and others using
+generic vtime.
 
-These will be used later from global headers to optimize
-the main full dynticks APIs in conjunction with static keys.
+As long as the tick can have a share on producing these stats, we
+want to scale the result against CFS precise accounting as the tick
+can miss some task hiding between the periodic interrupt.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Steven Rostedt <rostedt@goodmis.org>
@@ -43,137 +45,26 @@ Cc: Li Zhong <zhong@linux.vnet.ibm.com>
 Cc: Mike Galbraith <efault@gmx.de>
 Cc: Kevin Hilman <khilman@linaro.org>
 ---
- kernel/time/tick-sched.c |   42 +++++++++++++++++++++---------------------
- 1 files changed, 21 insertions(+), 21 deletions(-)
+ kernel/sched/cputime.c |    6 ------
+ 1 files changed, 0 insertions(+), 6 deletions(-)
 
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 6d604fd..71735ea 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -149,8 +149,8 @@ static void tick_sched_handle(struct tick_sched *ts, struct pt_regs *regs)
- }
- 
- #ifdef CONFIG_NO_HZ_FULL
--static cpumask_var_t nohz_full_mask;
--bool have_nohz_full_mask;
-+static cpumask_var_t tick_nohz_full_mask;
-+bool tick_nohz_full_running;
- 
- static bool can_stop_full_tick(void)
+diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
+index 0831b06..e9e742e 100644
+--- a/kernel/sched/cputime.c
++++ b/kernel/sched/cputime.c
+@@ -553,12 +553,6 @@ static void cputime_adjust(struct task_cputime *curr,
  {
-@@ -239,11 +239,11 @@ static void nohz_full_kick_ipi(void *info)
-  */
- void tick_nohz_full_kick_all(void)
- {
--	if (!have_nohz_full_mask)
-+	if (!tick_nohz_full_running)
- 		return;
+ 	cputime_t rtime, stime, utime, total;
  
- 	preempt_disable();
--	smp_call_function_many(nohz_full_mask,
-+	smp_call_function_many(tick_nohz_full_mask,
- 			       nohz_full_kick_ipi, NULL, false);
- 	preempt_enable();
- }
-@@ -271,10 +271,10 @@ out:
+-	if (vtime_accounting_enabled()) {
+-		*ut = curr->utime;
+-		*st = curr->stime;
+-		return;
+-	}
+-
+ 	stime = curr->stime;
+ 	total = stime + curr->utime;
  
- int tick_nohz_full_cpu(int cpu)
- {
--	if (!have_nohz_full_mask)
-+	if (!tick_nohz_full_running)
- 		return 0;
- 
--	return cpumask_test_cpu(cpu, nohz_full_mask);
-+	return cpumask_test_cpu(cpu, tick_nohz_full_mask);
- }
- 
- /* Parse the boot-time nohz CPU list from the kernel parameters. */
-@@ -282,18 +282,18 @@ static int __init tick_nohz_full_setup(char *str)
- {
- 	int cpu;
- 
--	alloc_bootmem_cpumask_var(&nohz_full_mask);
--	if (cpulist_parse(str, nohz_full_mask) < 0) {
-+	alloc_bootmem_cpumask_var(&tick_nohz_full_mask);
-+	if (cpulist_parse(str, tick_nohz_full_mask) < 0) {
- 		pr_warning("NOHZ: Incorrect nohz_full cpumask\n");
- 		return 1;
- 	}
- 
- 	cpu = smp_processor_id();
--	if (cpumask_test_cpu(cpu, nohz_full_mask)) {
-+	if (cpumask_test_cpu(cpu, tick_nohz_full_mask)) {
- 		pr_warning("NO_HZ: Clearing %d from nohz_full range for timekeeping\n", cpu);
--		cpumask_clear_cpu(cpu, nohz_full_mask);
-+		cpumask_clear_cpu(cpu, tick_nohz_full_mask);
- 	}
--	have_nohz_full_mask = true;
-+	tick_nohz_full_running = true;
- 
- 	return 1;
- }
-@@ -311,7 +311,7 @@ static int tick_nohz_cpu_down_callback(struct notifier_block *nfb,
- 		 * If we handle the timekeeping duty for full dynticks CPUs,
- 		 * we can't safely shutdown that CPU.
- 		 */
--		if (have_nohz_full_mask && tick_do_timer_cpu == cpu)
-+		if (tick_nohz_full_running && tick_do_timer_cpu == cpu)
- 			return NOTIFY_BAD;
- 		break;
- 	}
-@@ -330,14 +330,14 @@ static int tick_nohz_init_all(void)
- 	int err = -1;
- 
- #ifdef CONFIG_NO_HZ_FULL_ALL
--	if (!alloc_cpumask_var(&nohz_full_mask, GFP_KERNEL)) {
-+	if (!alloc_cpumask_var(&tick_nohz_full_mask, GFP_KERNEL)) {
- 		pr_err("NO_HZ: Can't allocate full dynticks cpumask\n");
- 		return err;
- 	}
- 	err = 0;
--	cpumask_setall(nohz_full_mask);
--	cpumask_clear_cpu(smp_processor_id(), nohz_full_mask);
--	have_nohz_full_mask = true;
-+	cpumask_setall(tick_nohz_full_mask);
-+	cpumask_clear_cpu(smp_processor_id(), tick_nohz_full_mask);
-+	tick_nohz_full_running = true;
- #endif
- 	return err;
- }
-@@ -346,20 +346,20 @@ void __init tick_nohz_init(void)
- {
- 	int cpu;
- 
--	if (!have_nohz_full_mask) {
-+	if (!tick_nohz_full_running) {
- 		if (tick_nohz_init_all() < 0)
- 			return;
- 	}
- 
--	for_each_cpu(cpu, nohz_full_mask)
-+	for_each_cpu(cpu, tick_nohz_full_mask)
- 		context_tracking_cpu_set(cpu);
- 
- 	cpu_notifier(tick_nohz_cpu_down_callback, 0);
--	cpulist_scnprintf(nohz_full_buf, sizeof(nohz_full_buf), nohz_full_mask);
-+	cpulist_scnprintf(nohz_full_buf, sizeof(nohz_full_buf), tick_nohz_full_mask);
- 	pr_info("NO_HZ: Full dynticks CPUs: %s.\n", nohz_full_buf);
- }
- #else
--#define have_nohz_full_mask (0)
-+#define tick_nohz_full_running (0)
- #endif
- 
- /*
-@@ -737,7 +737,7 @@ static bool can_stop_idle_tick(int cpu, struct tick_sched *ts)
- 		return false;
- 	}
- 
--	if (have_nohz_full_mask) {
-+	if (tick_nohz_full_running) {
- 		/*
- 		 * Keep the tick alive to guarantee timekeeping progression
- 		 * if there are full dynticks CPUs around
 -- 
 1.7.5.4
 
