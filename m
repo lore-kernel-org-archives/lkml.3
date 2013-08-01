@@ -1,89 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756353Ab3HAOws (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 10:52:48 -0400
-Received: from mail-db9lp0252.outbound.messaging.microsoft.com ([213.199.154.252]:22101
-	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755468Ab3HAOwr convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 10:52:47 -0400
-X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC101.redmond.corp.microsoft.com;RD:autodiscover.service.exchange.microsoft.com;EFVD:NLI
-X-SpamScore: -1
-X-BigFish: VS-1(zz9371I542I1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275bh8275dh1de097hz2fh2a8h683h839h944hd24hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h19ceh1b0ah1d07h1d0ch1d2eh1d3fh1de9h1dfeh1dffh1e1dh9a9j1155h)
-X-Forefront-Antispam-Report-Untrusted: CIP:157.56.240.21;KIP:(null);UIP:(null);(null);H:BL2PRD0310HT005.namprd03.prod.outlook.com;R:internal;EFV:INT
-X-Forefront-Antispam-Report-Untrusted: SFV:NSPM;SFS:(51704005)(199002)(189002)(377454003)(13464003)(16406001)(19580395003)(81542001)(33646001)(51856001)(74316001)(81342001)(53806001)(66066001)(80022001)(54356001)(56776001)(83322001)(49866001)(65816001)(46102001)(80976001)(47976001)(74706001)(19580405001)(56816003)(76482001)(74662001)(4396001)(76576001)(74876001)(54316002)(77096001)(74502001)(47736001)(76786001)(59766001)(47446002)(76796001)(63696002)(74366001)(77982001)(69226001)(83072001)(50986001)(79102001)(31966008)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:SN2PR03MB063;H:SN2PR03MB061.namprd03.prod.outlook.com;CLIP:173.61.119.57;RD:InfoNoRecords;A:1;MX:1;LANG:en;
-From: KY Srinivasan <kys@microsoft.com>
-To: Olaf Hering <olaf@aepfle.de>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] Tools: hv: check return value of system in hv_kvp_daemon
-Thread-Topic: [PATCH] Tools: hv: check return value of system in
- hv_kvp_daemon
-Thread-Index: AQHOjrep+87OCMFC/UqB28gTYOdOV5mAa3NQ
-Date: Thu, 1 Aug 2013 14:36:10 +0000
-Message-ID: <025723e33c064320904b285318896ade@SN2PR03MB061.namprd03.prod.outlook.com>
-References: <1375362236-15661-1-git-send-email-olaf@aepfle.de>
-In-Reply-To: <1375362236-15661-1-git-send-email-olaf@aepfle.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [173.61.119.57]
-x-forefront-prvs: 0925081676
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1756178Ab3HAOzX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 10:55:23 -0400
+Received: from mailgw1.uni-kl.de ([131.246.120.220]:34243 "EHLO
+	mailgw1.uni-kl.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755725Ab3HAOzW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 10:55:22 -0400
+Message-ID: <51FA76D6.2060905@fastmail.fm>
+Date: Thu, 01 Aug 2013 16:55:18 +0200
+From: Bernd Schubert <bernd.schubert@fastmail.fm>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-X-OrganizationHeadersPreserved: SN2PR03MB063.namprd03.prod.outlook.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-CrossPremisesHeadersPromoted: TK5EX14HUBC101.redmond.corp.microsoft.com
-X-CrossPremisesHeadersFiltered: TK5EX14HUBC101.redmond.corp.microsoft.com
-X-OriginatorOrg: microsoft.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+To: Nix <nix@esperi.org.uk>
+CC: Douglas Gilbert <dgilbert@interlog.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-scsi@vger.kernel.org,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        nick.cheng@areca.com.tw, stable@vger.kernel.org
+Subject: Re: [SCSI REGRESSION] 3.10.2 or 3.10.3: arcmsr failure at bootup
+ / early userspace transition
+References: <87r4ehfzhf.fsf@spindle.srvr.nix> <51F667C2.4020801@fastmail.fm> <87mwp5frdl.fsf@spindle.srvr.nix> <51F67959.2060803@fastmail.fm> <87fvuxdqes.fsf@spindle.srvr.nix> <51F708A4.9090207@interlog.com> <87ob9koogb.fsf@spindle.srvr.nix> <51F80294.50804@fastmail.fm> <877gg7n3rc.fsf@spindle.srvr.nix>
+In-Reply-To: <877gg7n3rc.fsf@spindle.srvr.nix>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-ITWM-CharSet: UTF-8
+X-ITWM-Scanned-By: mail2.itwm.fhg.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/30/2013 11:20 PM, Nix wrote:
+> On 30 Jul 2013, Bernd Schubert told this:
+>
+>> On 07/30/2013 02:56 AM, Nix wrote:
+>>> On 30 Jul 2013, Douglas Gilbert outgrape:
+>>>
+>>>> Please supply the information that Martin Petersen asked
+>>>> for.
+>>>
+>>> Did it in private IRC (the advantage of working for the same division of
+>>> the same company!)
+>>>
+>>> I didn't realise the original fix was actually implemented to allow
+>>> Bernd, with a different Areca controller, to boot... obviously, in that
+>>> situation, reversion is wrong, since that would just replace one won't-
+>>> boot situation with another.
+>>
+>> Unless there is very simple fix the commit should reverted, imho. It
+>> would better then to remove write-same support from the md-layer.
+>
+> I'm not using md on that machine, just LVM. Our suspicion is that ext4
+> is doing a WRITE SAME for some reason.
+>
+
+I didn't check yet for other cases, mkfs.ext4 does WRITE SAME and with 
+lazy init it also will happen after mounting the file system, while lazy 
+init is running (inode zeroing).
 
 
-> -----Original Message-----
-> From: Olaf Hering [mailto:olaf@aepfle.de]
-> Sent: Thursday, August 01, 2013 9:04 AM
-> To: KY Srinivasan; gregkh@linuxfoundation.org
-> Cc: linux-kernel@vger.kernel.org; Olaf Hering
-> Subject: [PATCH] Tools: hv: check return value of system in hv_kvp_daemon
-> 
-> hv_kvp_daemon.c: In function 'main':
-> hv_kvp_daemon.c:1441:8: warning: ignoring return value of 'daemon', declared
-> with attribute warn_unused_result [-Wunused-result]
-> 
-> Signed-off-by: Olaf Hering <olaf@aepfle.de>
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> ---
->  tools/hv/hv_kvp_daemon.c | 6 +++++-
->  1 file changed, 5 insertions(+), 1 deletion(-)
-> 
-> diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
-> index ba075e5..b96eccc 100644
-> --- a/tools/hv/hv_kvp_daemon.c
-> +++ b/tools/hv/hv_kvp_daemon.c
-> @@ -1353,7 +1353,11 @@ setval_done:
->  	 */
-> 
->  	snprintf(cmd, sizeof(cmd), "%s %s", "hv_set_ifconfig", if_file);
-> -	system(cmd);
-> +	if (system(cmd)) {
-> +		syslog(LOG_ERR, "Failed to execute cmd '%s'; error: %d %s",
-> +				cmd, errno, strerror(errno));
-> +		return HV_E_FAIL;
-> +	}
->  	return 0;
-> 
->  setval_error:
-> 
-> 
-
-
-
+Cheers,
+Bernd
