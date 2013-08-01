@@ -1,71 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757302Ab3HATVI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 15:21:08 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:41094 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755898Ab3HATVH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 15:21:07 -0400
-Message-ID: <1375384865.2034.70.camel@joe-AO722>
-Subject: Re: [PATCH 4/4] jbd: use a single printk for jbd_debug()
-From: Joe Perches <joe@perches.com>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 01 Aug 2013 12:21:05 -0700
-In-Reply-To: <1375383668-8072-5-git-send-email-paul.gortmaker@windriver.com>
-References: <1375383668-8072-1-git-send-email-paul.gortmaker@windriver.com>
-	 <1375383668-8072-5-git-send-email-paul.gortmaker@windriver.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
+	id S1757345Ab3HATZK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 15:25:10 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:43547 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756517Ab3HATZG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 15:25:06 -0400
+Message-ID: <51FAB534.1070301@linux.vnet.ibm.com>
+Date: Fri, 02 Aug 2013 00:51:24 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Viresh Kumar <viresh.kumar@linaro.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, cpufreq@vger.kernel.org,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
+Subject: Re: [RFC][PATCH] cpufreq: Do not hold driver module references for
+ additional policy CPUs
+References: <2362640.pUofnXyzOi@vostro.rjw.lan> <1656801.jLHjvytfNU@vostro.rjw.lan> <51FAB083.5050900@linux.vnet.ibm.com> <7752148.JjTSgAt1Xy@vostro.rjw.lan>
+In-Reply-To: <7752148.JjTSgAt1Xy@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13080119-9574-0000-0000-000008FE46C7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-08-01 at 15:01 -0400, Paul Gortmaker wrote:
-> Backport of jbd2 commit 169f1a2a87aae44034da4b9f81be1683d33de6d0
-> ("jbd2: use a single printk for jbd_debug()")
+On 08/02/2013 12:51 AM, Rafael J. Wysocki wrote:
+> On Friday, August 02, 2013 12:31:23 AM Srivatsa S. Bhat wrote:
+>> On 08/02/2013 12:31 AM, Rafael J. Wysocki wrote:
+>>> On Thursday, August 01, 2013 11:36:49 PM Srivatsa S. Bhat wrote:
+>>>> Its the cpufreq_cpu_get() hidden away in cpufreq_add_dev_symlink(). With
+>>>> that taken care of, everything should be OK. Then we can change the
+>>>> synchronization part to avoid using refcounts.
+>>>
+>>> So I actually don't see why cpufreq_add_dev_symlink() needs to call
+>>> cpufreq_cpu_get() at all, since the policy refcount is already 1 at the
+>>> point it is called and the bumping up of the driver module refcount is
+>>> pointless.
+>>>
+>>
+>> Hmm, yes, it seems so.
+>>
+>>> However, if I change that I also need to change the piece of code that
+>>> calls the complementary cpufreq_cpu_put() and I kind of cannot find it.
+>>>
+>>
+>> ... I guess that's because you are looking at the code with your patch
+>> applied (and your patch removed that _put()) ;-)
+> 
+> No, it's not that one.  That one was complementary to the cpufreq_cpu_get()
+> done by cpufreq_add_policy_cpu() before my patch.  Since my patch changes
+> cpufreq_add_policy_cpu() to call cpufreq_cpu_put() before returning and
+> bump up the policy refcount with kobject_get(), the one in
+> __cpufreq_remove_dev() is changed into kobject_put() (correctly, IMO).
+> 
+> What gives?
+> 
 
-Hey Paul.
+Actually, it _is_ the one I pointed above. This thing is tricky, here's why:
 
-> diff --git a/include/linux/jbd.h b/include/linux/jbd.h
-[]
-> @@ -56,16 +56,13 @@
->  #define JBD_EXPENSIVE_CHECKING
->  extern ushort journal_enable_debug;
->  
-> -#define jbd_debug(n, f, a...)						\
-> -	do {								\
-> -		if ((n) <= journal_enable_debug) {			\
-> -			printk (KERN_DEBUG "(%s, %d): %s: ",		\
-> -				__FILE__, __LINE__, __func__);	\
-> -			printk (f, ## a);				\
-> -		}							\
-> -	} while (0)
-> +void __jbd_debug(int level, const char *file, const char *func,
-> +		 unsigned int line, const char *fmt, ...
-> +
-> +#define jbd_debug(n, fmt, a...) \
-> +	__jbd_debug((n), __FILE__, __func__, __LINE__, (fmt), ##a)
->  #else
-> -#define jbd_debug(f, a...)	/**/
-> +#define jbd_debug(n, fmt, a...)    /**/
->  #endif
+cpufreq_add_policy_cpu() is called only if:
+a. The CPU being onlined has per_cpu(cpufreq_cpu_data, cpu) == NULL
+and 
+b. Its is present in some CPU's related_cpus mask. 
 
-It might have been (and may still be) simpler/better
-to use a single macro like:
+If condition (a) doesn't hold good, you get out right in the beginning of
+__cpufreq_add_dev().
 
-#define jbd_dbg(n, fmt, ...)			\
-do {						\
-	if ((n) < journal_enable_debug)		\
-		pr_debug(fmt, ##__VA_ARGS__);	\
-} while (0)
+So, cpufreq_add_policy_cpu() is called very rarely because, inside
+__cpufreq_add_dev we do:
 
-and then use dynamic_debug to add the __func__,
-and __LINE__ when desired.
+1093         write_lock_irqsave(&cpufreq_driver_lock, flags);
+1094         for_each_cpu(j, policy->cpus) {
+1095                 per_cpu(cpufreq_cpu_data, j) = policy;
+1096                 per_cpu(cpufreq_policy_cpu, j) = policy->cpu;
+1097         }
+1098         write_unlock_irqrestore(&cpufreq_driver_lock, flags);
 
-echo -n 'module jbd +pfl' <dynamic_debug>/control
+So for all the CPUs in the above policy->cpus mask, we simply return
+without further ado when they are onlined. In particular, we *dont* call
+cpufreq_add_policy_cpu() for any of them.
 
+And their refcounts are incremented by the cpufreq_add_dev_interface()->
+cpufreq_add_dev_symlink() function.
+
+So, ultimately, we increment the refcount for a given non-policy-owner CPU
+only once. *Either* in cpufreq_add_dev_symlink() *or* in cpufreq_add_policy_cpu(),
+but never both.
+
+So, in the teardown path, __cpufreq_remove_dev() needs only one place to
+decrement it as shown below:
+
+1303         } else {
+1304 
+1305                 if (!frozen) {
+1306                         pr_debug("%s: removing link, cpu: %d\n", __func__, cpu);
+1307                         cpufreq_cpu_put(data);
+1308                 }
+
+
+Pretty good maze, right? ;-(
+ 
+Regards,
+Srivatsa S. Bhat
 
