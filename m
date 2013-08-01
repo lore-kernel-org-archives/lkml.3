@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932094Ab3HAOoi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 10:44:38 -0400
-Received: from up.free-electrons.com ([94.23.35.102]:54134 "EHLO
+	id S1756884Ab3HAOoh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 10:44:37 -0400
+Received: from up.free-electrons.com ([94.23.35.102]:54143 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756818Ab3HAOod (ORCPT
+	with ESMTP id S1756857Ab3HAOoe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 10:44:33 -0400
+	Thu, 1 Aug 2013 10:44:34 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: Mike Turquette <mturquette@linaro.org>
 Cc: Emilio Lopez <emilio@elopez.com.ar>, kevin.z.m.zh@gmail.com,
@@ -14,9 +14,9 @@ Cc: Emilio Lopez <emilio@elopez.com.ar>, kevin.z.m.zh@gmail.com,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         linux-sunxi@googlegroups.com,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCHv2 3/4] clk: sunxi: Add A31 clocks support
-Date: Thu,  1 Aug 2013 16:44:19 +0200
-Message-Id: <1375368260-1740-4-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCHv2 4/4] ARM: sun6i: Enable clock support in the DTSI
+Date: Thu,  1 Aug 2013 16:44:20 +0200
+Message-Id: <1375368260-1740-5-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 1.8.3.4
 In-Reply-To: <1375368260-1740-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1375368260-1740-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -24,226 +24,229 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The A31 has a mostly different clock set compared to the other older
-SoCs currently supported in the Allwinner clock driver.
-
-Add support for the basic useful clocks. The other ones will come in
-eventually.
+Now that the clock driver has support for the A31 clocks, we can add
+them to the DTSI and start using them in the relevant hardware blocks.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- drivers/clk/sunxi/clk-sunxi.c | 124 ++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 124 insertions(+)
+ arch/arm/boot/dts/sun6i-a31.dtsi | 144 ++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 134 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/clk/sunxi/clk-sunxi.c b/drivers/clk/sunxi/clk-sunxi.c
-index 21997d6..1800205 100644
---- a/drivers/clk/sunxi/clk-sunxi.c
-+++ b/drivers/clk/sunxi/clk-sunxi.c
-@@ -124,7 +124,89 @@ static void sun4i_get_pll1_factors(u32 *freq, u32 parent_rate,
- 	*n = div / 4;
- }
+diff --git a/arch/arm/boot/dts/sun6i-a31.dtsi b/arch/arm/boot/dts/sun6i-a31.dtsi
+index e6ccddf..1fab475 100644
+--- a/arch/arm/boot/dts/sun6i-a31.dtsi
++++ b/arch/arm/boot/dts/sun6i-a31.dtsi
+@@ -51,13 +51,137 @@
  
-+/**
-+ * sun6i_get_pll1_factors() - calculates n, k and m factors for PLL1
-+ * PLL1 rate is calculated as follows
-+ * rate = parent_rate * (n + 1) * (k + 1) / (m + 1);
-+ * parent_rate should always be 24MHz
-+ */
-+static void sun6i_get_pll1_factors(u32 *freq, u32 parent_rate,
-+				   u8 *n, u8 *k, u8 *m, u8 *p)
-+{
-+	/*
-+	 * We can operate only on MHz, this will make our life easier
-+	 * later.
-+	 */
-+	u32 freq_mhz = *freq / 1000000;
-+	u32 parent_freq_mhz = parent_rate / 1000000;
-+
-+	/*
-+	 * Round down the frequency to the closest multiple of either
-+	 * 6 or 16
-+	 */
-+	u32 round_freq_6 = round_down(freq_mhz, 6);
-+	u32 round_freq_16 = round_down(freq_mhz, 16);
-+
-+	if (round_freq_6 > round_freq_16)
-+		freq_mhz = round_freq_6;
-+	else
-+		freq_mhz = round_freq_16;
+ 	clocks {
+ 		#address-cells = <1>;
+-		#size-cells = <0>;
++		#size-cells = <1>;
++		ranges;
  
-+	*freq = freq_mhz * 1000000;
+-		osc: oscillator {
++		osc24M: osc24M {
+ 			#clock-cells = <0>;
+ 			compatible = "fixed-clock";
+ 			clock-frequency = <24000000>;
+ 		};
 +
-+	/*
-+	 * If the factors pointer are null, we were just called to
-+	 * round down the frequency.
-+	 * Exit.
-+	 */
-+	if (n == NULL)
-+		return;
++		osc32k: osc32k {
++			#clock-cells = <0>;
++			compatible = "fixed-clock";
++			clock-frequency = <32768>;
++		};
 +
-+	/* If the frequency is a multiple of 32 MHz, k is always 3 */
-+	if (!(freq_mhz % 32))
-+		*k = 3;
-+	/* If the frequency is a multiple of 9 MHz, k is always 2 */
-+	else if (!(freq_mhz % 9))
-+		*k = 2;
-+	/* If the frequency is a multiple of 8 MHz, k is always 1 */
-+	else if (!(freq_mhz % 8))
-+		*k = 1;
-+	/* Otherwise, we don't use the k factor */
-+	else
-+		*k = 0;
++		pll1: pll1@01c20000 {
++			#clock-cells = <0>;
++			compatible = "allwinner,sun6i-pll1-clk";
++			reg = <0x01c20000 0x4>;
++			clocks = <&osc24M>;
++		};
 +
-+	/*
-+	 * If the frequency is a multiple of 2 but not a multiple of
-+	 * 3, m is 3. This is the first time we use 6 here, yet we
-+	 * will use it on several other places.
-+	 * We use this number because it's the lowest frequency we can
-+	 * generate (with n = 0, k = 0, m = 3), so every other frequency
-+	 * somehow relates to this frequency.
-+	 */
-+	if ((freq_mhz % 6) == 2 || (freq_mhz % 6) == 4)
-+		*m = 2;
-+	/*
-+	 * If the frequency is a multiple of 6MHz, but the factor is
-+	 * odd, m will be 3
-+	 */
-+	else if ((freq_mhz / 6) & 1)
-+		*m = 3;
-+	/* Otherwise, we end up with m = 1 */
-+	else
-+		*m = 1;
++		/*
++		 * This is a dummy clock, to be used as placeholder on
++		 * other mux clocks when a specific parent clock is not
++		 * yet implemented. It should be dropped when the driver
++		 * is complete.
++		 */
++		pll6: pll6 {
++			#clock-cells = <0>;
++			compatible = "fixed-clock";
++			clock-frequency = <0>;
++		};
 +
-+	/* Calculate n thanks to the above factors we already got */
-+	*n = freq_mhz * (*m + 1) / ((*k + 1) * parent_freq_mhz) - 1;
++		cpu: cpu@01c20050 {
++			#clock-cells = <0>;
++			compatible = "allwinner,sun4i-cpu-clk";
++			reg = <0x01c20050 0x4>;
 +
-+	/*
-+	 * If n end up being outbound, and that we can still decrease
-+	 * m, do it.
-+	 */
-+	if ((*n + 1) > 31 && (*m + 1) > 1) {
-+		*n = (*n + 1) / 2 - 1;
-+		*m = (*m + 1) / 2 - 1;
-+	}
-+}
++			/*
++			 * PLL1 is listed twice here.
++			 * While it looks suspicious, it's actually documented
++			 * that way both in the datasheet and in the code from
++			 * Allwinner.
++			 */
++			clocks = <&osc32k>, <&osc24M>, <&pll1>, <&pll1>;
++		};
++
++		axi: axi@01c20050 {
++			#clock-cells = <0>;
++			compatible = "allwinner,sun4i-axi-clk";
++			reg = <0x01c20050 0x4>;
++			clocks = <&cpu>;
++		};
++
++		ahb1_mux: ahb1_mux@01c20054 {
++			#clock-cells = <0>;
++			compatible = "allwinner,sun6i-ahb1-mux-clk";
++			reg = <0x01c20054 0x4>;
++			clocks = <&osc32k>, <&osc24M>, <&axi>, <&pll6>;
++		};
++
++		ahb1: ahb1@01c20054 {
++			#clock-cells = <0>;
++			compatible = "allwinner,sun4i-ahb-clk";
++			reg = <0x01c20054 0x4>;
++			clocks = <&ahb1_mux>;
++		};
++
++		ahb1_gates: ahb1_gates@01c20060 {
++			#clock-cells = <1>;
++			compatible = "allwinner,sun6i-a31-ahb1-gates-clk";
++			reg = <0x01c20060 0x8>;
++			clocks = <&ahb1>;
++			clock-output-names = "ahb1_mipidsi", "ahb1_ss",
++					"ahb1_dma", "ahb1_mmc0", "ahb1_mmc1",
++					"ahb1_mmc2", "ahb1_mmc3", "ahb1_nand1",
++					"ahb1_nand0", "ahb1_sdram",
++					"ahb1_gmac", "ahb1_ts", "ahb1_hstimer",
++					"ahb1_spi0", "ahb1_spi1", "ahb1_spi2",
++					"ahb1_spi3", "ahb1_otg", "ahb1_ehci0",
++					"ahb1_ehci1", "ahb1_ohci0",
++					"ahb1_ohci1", "ahb1_ohci2", "ahb1_ve",
++					"ahb1_lcd0", "ahb1_lcd1", "ahb1_csi",
++					"ahb1_hdmi", "ahb1_de0", "ahb1_de1",
++					"ahb1_fe0", "ahb1_fe1", "ahb1_mp",
++					"ahb1_gpu", "ahb1_deu0", "ahb1_deu1",
++					"ahb1_drc0", "ahb1_drc1";
++		};
++
++		apb1: apb1@01c20054 {
++			#clock-cells = <0>;
++			compatible = "allwinner,sun4i-apb0-clk";
++			reg = <0x01c20054 0x4>;
++			clocks = <&ahb1>;
++		};
++
++		apb1_gates: apb1_gates@01c20060 {
++			#clock-cells = <1>;
++			compatible = "allwinner,sun6i-a31-apb1-gates-clk";
++			reg = <0x01c20068 0x4>;
++			clocks = <&apb1>;
++			clock-output-names = "apb1_codec", "apb1_digital_mic",
++					"apb1_pio", "apb1_daudio0",
++					"apb1_daudio1";
++		};
++
++		apb2_mux: apb2_mux@01c20058 {
++			#clock-cells = <0>;
++			compatible = "allwinner,sun4i-apb1-mux-clk";
++			reg = <0x01c20058 0x4>;
++			clocks = <&osc32k>, <&osc24M>, <&pll6>, <&pll6>;
++		};
++
++		apb2: apb2@01c20058 {
++			#clock-cells = <0>;
++			compatible = "allwinner,sun6i-apb2-div-clk";
++			reg = <0x01c20058 0x4>;
++			clocks = <&apb2_mux>;
++		};
++
++		apb2_gates: apb2_gates@01c2006c {
++			#clock-cells = <1>;
++			compatible = "allwinner,sun6i-a31-apb2-gates-clk";
++			reg = <0x01c2006c 0x8>;
++			clocks = <&apb2>;
++			clock-output-names = "apb2_i2c0", "apb2_i2c1",
++					"apb2_i2c2", "apb2_i2c3", "apb2_uart0",
++					"apb2_uart1", "apb2_uart2", "apb2_uart3",
++					"apb2_uart4", "apb2_uart5";
++		};
+ 	};
  
- /**
-  * sun4i_get_apb1_factors() - calculates m, p factors for APB1
-@@ -189,6 +271,15 @@ static struct clk_factors_config sun4i_pll1_config = {
- 	.pwidth = 2,
- };
+ 	soc@01c20000 {
+@@ -70,7 +194,7 @@
+ 			compatible = "allwinner,sun6i-a31-pinctrl";
+ 			reg = <0x01c20800 0x400>;
+ 			interrupts = <0 11 1>, <0 15 1>, <0 16 1>, <0 17 1>;
+-			clocks = <&osc>;
++			clocks = <&apb1_gates 5>;
+ 			gpio-controller;
+ 			interrupt-controller;
+ 			#address-cells = <1>;
+@@ -93,7 +217,7 @@
+ 				     <0 20 1>,
+ 				     <0 21 1>,
+ 				     <0 22 1>;
+-			clocks = <&osc>;
++			clocks = <&osc24M>;
+ 		};
  
-+static struct clk_factors_config sun6i_pll1_config = {
-+	.nshift	= 8,
-+	.nwidth = 5,
-+	.kshift = 4,
-+	.kwidth = 2,
-+	.mshift = 0,
-+	.mwidth = 2,
-+};
-+
- static struct clk_factors_config sun4i_apb1_config = {
- 	.mshift = 0,
- 	.mwidth = 5,
-@@ -201,6 +292,11 @@ static const __initconst struct factors_data sun4i_pll1_data = {
- 	.getter = sun4i_get_pll1_factors,
- };
+ 		wdt1: watchdog@01c20ca0 {
+@@ -107,7 +231,7 @@
+ 			interrupts = <0 0 1>;
+ 			reg-shift = <2>;
+ 			reg-io-width = <4>;
+-			clocks = <&osc>;
++			clocks = <&apb2_gates 16>;
+ 			status = "disabled";
+ 		};
  
-+static const __initconst struct factors_data sun6i_pll1_data = {
-+	.table = &sun6i_pll1_config,
-+	.getter = sun6i_get_pll1_factors,
-+};
-+
- static const __initconst struct factors_data sun4i_apb1_data = {
- 	.table = &sun4i_apb1_config,
- 	.getter = sun4i_get_apb1_factors,
-@@ -243,6 +339,10 @@ static const __initconst struct mux_data sun4i_cpu_mux_data = {
- 	.shift = 16,
- };
+@@ -117,7 +241,7 @@
+ 			interrupts = <0 1 1>;
+ 			reg-shift = <2>;
+ 			reg-io-width = <4>;
+-			clocks = <&osc>;
++			clocks = <&apb2_gates 17>;
+ 			status = "disabled";
+ 		};
  
-+static const __initconst struct mux_data sun6i_ahb1_mux_data = {
-+	.shift = 12,
-+};
-+
- static const __initconst struct mux_data sun4i_apb1_mux_data = {
- 	.shift = 24,
- };
-@@ -301,6 +401,12 @@ static const __initconst struct div_data sun4i_apb0_data = {
- 	.width	= 2,
- };
+@@ -127,7 +251,7 @@
+ 			interrupts = <0 2 1>;
+ 			reg-shift = <2>;
+ 			reg-io-width = <4>;
+-			clocks = <&osc>;
++			clocks = <&apb2_gates 18>;
+ 			status = "disabled";
+ 		};
  
-+static const __initconst struct div_data sun6i_apb2_div_data = {
-+	.shift	= 0,
-+	.pow	= 0,
-+	.width	= 4,
-+};
-+
- static void __init sunxi_divider_clk_setup(struct device_node *node,
- 					   struct div_data *data)
- {
-@@ -347,6 +453,10 @@ static const __initconst struct gates_data sun5i_a13_ahb_gates_data = {
- 	.mask = {0x107067e7, 0x185111},
- };
+@@ -137,7 +261,7 @@
+ 			interrupts = <0 3 1>;
+ 			reg-shift = <2>;
+ 			reg-io-width = <4>;
+-			clocks = <&osc>;
++			clocks = <&apb2_gates 19>;
+ 			status = "disabled";
+ 		};
  
-+static const __initconst struct gates_data sun6i_a31_ahb1_gates_data = {
-+	.mask = {0xEDFE7F62, 0x794F931},
-+};
-+
- static const __initconst struct gates_data sun4i_apb0_gates_data = {
- 	.mask = {0x4EF},
- };
-@@ -363,6 +473,14 @@ static const __initconst struct gates_data sun5i_a13_apb1_gates_data = {
- 	.mask = {0xa0007},
- };
+@@ -147,7 +271,7 @@
+ 			interrupts = <0 4 1>;
+ 			reg-shift = <2>;
+ 			reg-io-width = <4>;
+-			clocks = <&osc>;
++			clocks = <&apb2_gates 20>;
+ 			status = "disabled";
+ 		};
  
-+static const __initconst struct gates_data sun6i_a31_apb1_gates_data = {
-+	.mask = {0x3031},
-+};
-+
-+static const __initconst struct gates_data sun6i_a31_apb2_gates_data = {
-+	.mask = {0x3F000F},
-+};
-+
- static void __init sunxi_gates_clk_setup(struct device_node *node,
- 					 struct gates_data *data)
- {
-@@ -416,6 +534,7 @@ CLK_OF_DECLARE(sun4i_osc, "allwinner,sun4i-osc-clk", sun4i_osc_clk_setup);
- /* Matches for factors clocks */
- static const __initconst struct of_device_id clk_factors_match[] = {
- 	{.compatible = "allwinner,sun4i-pll1-clk", .data = &sun4i_pll1_data,},
-+	{.compatible = "allwinner,sun6i-pll1-clk", .data = &sun6i_pll1_data,},
- 	{.compatible = "allwinner,sun4i-apb1-clk", .data = &sun4i_apb1_data,},
- 	{}
- };
-@@ -425,6 +544,7 @@ static const __initconst struct of_device_id clk_div_match[] = {
- 	{.compatible = "allwinner,sun4i-axi-clk", .data = &sun4i_axi_data,},
- 	{.compatible = "allwinner,sun4i-ahb-clk", .data = &sun4i_ahb_data,},
- 	{.compatible = "allwinner,sun4i-apb0-clk", .data = &sun4i_apb0_data,},
-+	{.compatible = "allwinner,sun6i-apb2-div-clk", .data = &sun6i_apb2_div_data,},
- 	{}
- };
- 
-@@ -432,6 +552,7 @@ static const __initconst struct of_device_id clk_div_match[] = {
- static const __initconst struct of_device_id clk_mux_match[] = {
- 	{.compatible = "allwinner,sun4i-cpu-clk", .data = &sun4i_cpu_mux_data,},
- 	{.compatible = "allwinner,sun4i-apb1-mux-clk", .data = &sun4i_apb1_mux_data,},
-+	{.compatible = "allwinner,sun6i-ahb1-mux-clk", .data = &sun6i_ahb1_mux_data,},
- 	{}
- };
- 
-@@ -440,10 +561,13 @@ static const __initconst struct of_device_id clk_gates_match[] = {
- 	{.compatible = "allwinner,sun4i-axi-gates-clk",	.data = &sun4i_axi_gates_data,},
- 	{.compatible = "allwinner,sun4i-ahb-gates-clk",	.data = &sun4i_ahb_gates_data,},
- 	{.compatible = "allwinner,sun5i-a13-ahb-gates-clk", .data = &sun5i_a13_ahb_gates_data,},
-+	{.compatible = "allwinner,sun6i-a31-ahb1-gates-clk", .data = &sun6i_a31_ahb1_gates_data,},
- 	{.compatible = "allwinner,sun4i-apb0-gates-clk", .data = &sun4i_apb0_gates_data,},
- 	{.compatible = "allwinner,sun5i-a13-apb0-gates-clk", .data = &sun5i_a13_apb0_gates_data,},
- 	{.compatible = "allwinner,sun4i-apb1-gates-clk", .data = &sun4i_apb1_gates_data,},
- 	{.compatible = "allwinner,sun5i-a13-apb1-gates-clk", .data = &sun5i_a13_apb1_gates_data,},
-+	{.compatible = "allwinner,sun6i-a31-apb1-gates-clk", .data = &sun6i_a31_apb1_gates_data,},
-+	{.compatible = "allwinner,sun6i-a31-apb2-gates-clk", .data = &sun6i_a31_apb2_gates_data,},
- 	{}
- };
+@@ -157,7 +281,7 @@
+ 			interrupts = <0 5 1>;
+ 			reg-shift = <2>;
+ 			reg-io-width = <4>;
+-			clocks = <&osc>;
++			clocks = <&apb2_gates 21>;
+ 			status = "disabled";
+ 		};
  
 -- 
 1.8.3.4
