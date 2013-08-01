@@ -1,61 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754785Ab3HAQoN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 12:44:13 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:45848 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751941Ab3HAQoM (ORCPT
+	id S1755957Ab3HAQov (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 12:44:51 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:58055 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751941Ab3HAQot (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 12:44:12 -0400
-Message-ID: <51FA9056.7010104@wwwdotorg.org>
-Date: Thu, 01 Aug 2013 10:44:06 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: akpm@linux-foundation.org, grant.likely@linaro.org,
-        rob.herring@calxeda.com, rob@landley.net, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        rtc-linux@googlegroups.com, gg@slimlogic.co.uk, kishon@ti.com,
-        swarren@nvidia.com, pawel.moll@arm.com, Mark.Rutland@arm.com,
-        ian.campbell@citrix.com, broonie@kernel.org
-Subject: Re: [PATCH V2] drivers/rtc/rtc-palmas.c: support for backup battery
- charging
-References: <1375367471-29908-1-git-send-email-ldewangan@nvidia.com>
-In-Reply-To: <1375367471-29908-1-git-send-email-ldewangan@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 1 Aug 2013 12:44:49 -0400
+Message-ID: <1375375486.10515.170.camel@edumazet-glaptop>
+Subject: Re: [PATCH 0/8] include/net: next set of extern removals
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: David Howells <dhowells@redhat.com>, netdev@vger.kernel.org,
+        linux-hams@vger.kernel.org, linux-wireless@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-afs@lists.infradead.org
+Date: Thu, 01 Aug 2013 09:44:46 -0700
+In-Reply-To: <1375374560.2034.52.camel@joe-AO722>
+References: <cover.1375316912.git.joe@perches.com>
+	 <24958.1375358650@warthog.procyon.org.uk>
+	 <1375374560.2034.52.camel@joe-AO722>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/01/2013 08:31 AM, Laxman Dewangan wrote:
-> Palmas series device like TPS65913, TPS80036 supports the backup battery
-> for powering the RTC when no other energy source is available.
+On Thu, 2013-08-01 at 09:29 -0700, Joe Perches wrote:
+> On Thu, 2013-08-01 at 13:04 +0100, David Howells wrote:
+> > Joe Perches <joe@perches.com> wrote:
+> > > Standardize on no extern use on function prototypes
+> > Can we please standardise on _having_ externs on function prototypes?
 > 
-> The backup battery is optional, connected to the VBACKUP pin, and can be
-> nonrechargeable or rechargeable. The rechargeable battery can be charged
-> from the system supply using the backup battery charger.
+> Why?
 > 
-> Add support for enabling charging of this backup battery.  Also add the DT
-> binding document and the new properties to have this support.
+> What value is there in using extern for function prototypes?
+> 
+> Your argument for "picking out at a glance"
+> https://lkml.org/lkml/2013/8/1/237
+> really doesn't make sense to me.
+> 
+> Basically, anything with parentheses that's not a #define
+> is an extern.
+> 
+> Exceptions exist for extern function pointers, but those
+> are fairly unusual anyway.  Outside of netfilter,
+> extern function pointers are only used about a dozen times
+> total in the kernel tree.
+> 
+> So, please provide some examples supporting your view.
 
-> diff --git a/Documentation/devicetree/bindings/rtc/rtc-palmas.txt b/Documentation/devicetree/bindings/rtc/rtc-palmas.txt
+My main concern about these changes is they are a huge pain for us
+doing bug tracking, rebases and backports. "git blame" and friends will
+show lot of noise.
 
-> +Palmas RTC controller bindings
-> +
-> +Required properties:
-> +- compatible:
-> +  - "ti,palmas-rtc" for palma series of the RTC controller
+'extern' in include files are an easy way to have a grep friendly
+marker, and otherwise are harmless.
 
-Nit: Here is another Palma -vs- Palmas inconsistency. What is the
-correct name for the device; Palma or Palmas? Either way, the should
-always have an initial capital letter in free-form text (i.e. but not in
-property/node names).
+_You_ believe they are useless, other people think otherwise.
 
-Aside from that, the binding looks fine to me now, assuming it's fully
-describing the RTC module's functionality. So, the binding,
+I really don't see any value doing all these changes on existing code,
+apart from adding noise to netdev and adding more work for us.
 
-Reviewed-by: Stephen Warren <swarren@nvidia.com>
+Using rules for new code is fine, but changing 10 years old code is
+really not worth the pain.
+
+I learned C 30 years ago, and using 'extern' is quite natural for me.
+
+It's crazy the time we have to spend on these issues, while we have so
+many bugs to fix in the kernel.
+
+
 
