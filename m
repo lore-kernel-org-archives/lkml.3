@@ -1,160 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756294Ab3HATci (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 15:32:38 -0400
-Received: from mail-bk0-f51.google.com ([209.85.214.51]:64620 "EHLO
-	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752245Ab3HATch (ORCPT
+	id S1756426Ab3HATdm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 15:33:42 -0400
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:60452 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753471Ab3HATdl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 15:32:37 -0400
-Date: Thu, 1 Aug 2013 22:31:46 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Peter Hurley <peter@hurleysoftware.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH next] n_tty: change lock oreding in n_tty_read()
-Message-ID: <20130801193146.GA3109@swordfish>
+	Thu, 1 Aug 2013 15:33:41 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <9BBC4E0CF881AA4299206E2E1412B6264F92AA6C@ORSMSX102.amr.corp.intel.com>
+References: <20130709012611.GA22371@amd.pavel.ucw.cz> <20130709041321.GA30555@kroah.com>
+ <20130709094906.GA3870@amd.pavel.ucw.cz> <20130709101039.GA4479@amd.pavel.ucw.cz>
+ <CAErSpo57qjTkGbNK5qLzJcKuqBGK5=R=raEdyL6M1d5O=FkK_Q@mail.gmail.com>
+ <20130710132950.GA3684@amd.pavel.ucw.cz> <CAErSpo5ig3bxZ3hBUUrzTdc=YqHy7cBGBxOLru4NYdyOOR+W5w@mail.gmail.com>
+ <20130712111121.GB3515@amd.pavel.ucw.cz> <CAErSpo6NYZNHyV9xh2wRSQp72-dxg+FrFW4XrjE5Ps=bW6AGCw@mail.gmail.com>
+ <CAErSpo4XrJL48boVNiEb-7Y=52Bx_79hqP909ayLOdm7we_m3Q@mail.gmail.com> <9BBC4E0CF881AA4299206E2E1412B6264F92AA6C@ORSMSX102.amr.corp.intel.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 1 Aug 2013 13:33:20 -0600
+Message-ID: <CAErSpo4YDSHoGSScn7q0kA+FuXOt5+i-j_gYKj1QjWeRLoUcMQ@mail.gmail.com>
+Subject: Re: /sys/module/pcie_aspm/parameters/policy not writable?
+To: "Wyborny, Carolyn" <carolyn.wyborny@intel.com>
+Cc: Pavel Machek <pavel@ucw.cz>, Greg KH <greg@kroah.com>,
+        kernel list <linux-kernel@vger.kernel.org>,
+        Joe Lawrence <joe.lawrence@stratus.com>,
+        Myron Stowe <myron.stowe@redhat.com>,
+        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
+        "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
+        "Allan, Bruce W" <bruce.w.allan@intel.com>,
+        "Skidmore, Donald C" <donald.c.skidmore@intel.com>,
+        "Rose, Gregory V" <gregory.v.rose@intel.com>,
+        "Waskiewicz Jr, Peter P" <peter.p.waskiewicz.jr@intel.com>,
+        "Duyck, Alexander H" <alexander.h.duyck@intel.com>,
+        "Ronciak, John" <john.ronciak@intel.com>,
+        "Dave, Tushar N" <tushar.n.dave@intel.com>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acquire atomic_read_lock before termios_rwsem rw-lock in n_tty_read().
-termios_rwsem is getting released and re-acquired, while remaining
-readers are blocked on atomic_read_lock mutex, in case when process
-must wait for input_available_p(), making lockdep unhappy:
+On Thu, Aug 1, 2013 at 8:57 AM, Wyborny, Carolyn
+<carolyn.wyborny@intel.com> wrote:
+>> -----Original Message-----
+>> From: Bjorn Helgaas [mailto:bhelgaas@google.com]
+>> Sent: Wednesday, July 31, 2013 4:53 PM
+>> To: Pavel Machek
+>> Cc: Greg KH; kernel list; Joe Lawrence; Myron Stowe; Kirsher, Jeffrey T;
+>> Brandeburg, Jesse; Allan, Bruce W; Wyborny, Carolyn; Skidmore, Donald C;
+>> Rose, Gregory V; Waskiewicz Jr, Peter P; Duyck, Alexander H; Ronciak, John;
+>> Dave, Tushar N; e1000-devel@lists.sourceforge.net
+>> Subject: Re: /sys/module/pcie_aspm/parameters/policy not writable?
+>>
+>> On Fri, Jul 19, 2013 at 11:46 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>>
+>> > Just to make sure I understand you correctly: I think you are saying
+>> > that the NIC has the same problem under Windows.
+>>
+>> Can you confirm or deny that the same problem occurs with Windows?
+>
+> In our testing here we saw the same problem with Windows.
+>>
+>> > But since the problem also occurs with Windows, it's pretty likely
+>> > that there's a BIOS update to fix it.  I notice on the X60 support
+>> > page that there are several versions newer than what you're running.
+>>
+>> Do you have any interest in trying a newer BIOS to see if it's fixed there?  If not, I
+>> understand; BIOS updates are a hassle at best.
+>> You're running BIOS 2.14, and it looks like the current BIOS for an
+>> X60 1709 7HU is 2.19 (from http://support.lenovo.com).
+>>
+>> Carolyn's patch will likely work, at least most of the time, but I think there's a
+>> small possibility that it could cause a conflict between the BIOS and the OS over
+>> ASPM control, so I'm not 100% in support of that approach.  A conflict may not
+>> happen on your machine, and not on my machine, but it may happen
+>> somewhere, and if it does happen, it's likely to be rare and difficult to debug.
+>>
+> I've proposed a patch for Pavel to test.  I understand your position, but do you have any other proposal?  We have a severe hw problem we are trying alleviate as best we can.
 
-[  463.542463] ======================================================
-[  463.542464] [ INFO: possible circular locking dependency detected ]
-[  463.542466] 3.11.0-rc3-next-20130801-dbg-dirty #5 Not tainted
-[  463.542467] -------------------------------------------------------
-[  463.542469] agetty/2075 is trying to acquire lock:
-[  463.542484]  (&tty->termios_rwsem){++++..}, at: [<ffffffff81398660>] n_tty_read+0x460/0xab0
-[  463.542484] 
-but task is already holding lock:
-[  463.542496]  (&ldata->atomic_read_lock){+.+...}, at: [<ffffffff81398959>] n_tty_read+0x759/0xab0
-[  463.542497] 
-which lock already depends on the new lock.
+I think the safest route is to change the BIOS so it either leaves
+ASPM disabled, or enables it but grants control to the OS.  It seems
+way too risky in general for the BIOS to enable ASPM and tell the OS
+"you can't change this."  There's no way the BIOS can know about
+device errata that may make ASPM unsafe.
 
-[  463.542497] 
-the existing dependency chain (in reverse order) is:
-[  463.542502] 
--> #1 (&ldata->atomic_read_lock){+.+...}:
-[  463.542508]        [<ffffffff810b9394>] lock_acquire+0xa4/0x200
-[  463.542514]        [<ffffffff8160a787>] mutex_lock_interruptible_nested+0x77/0x4e0
-[  463.542518]        [<ffffffff81398959>] n_tty_read+0x759/0xab0
-[  463.542524]        [<ffffffff81393e8d>] tty_read+0x8d/0x100
-[  463.542528]        [<ffffffff8117987a>] vfs_read+0x9a/0x170
-[  463.542531]        [<ffffffff8117a05c>] SyS_read+0x4c/0xa0
-[  463.542536]        [<ffffffff81610c7e>] tracesys+0xd0/0xd5
-[  463.542540] 
--> #0 (&tty->termios_rwsem){++++..}:
-[  463.542543]        [<ffffffff810b84e6>] __lock_acquire+0x1756/0x1d20
-[  463.542547]        [<ffffffff810b9394>] lock_acquire+0xa4/0x200
-[  463.542550]        [<ffffffff8160c1b7>] down_read+0x47/0x60
-[  463.542554]        [<ffffffff81398660>] n_tty_read+0x460/0xab0
-[  463.542557]        [<ffffffff81393e8d>] tty_read+0x8d/0x100
-[  463.542560]        [<ffffffff8117987a>] vfs_read+0x9a/0x170
-[  463.542563]        [<ffffffff8117a05c>] SyS_read+0x4c/0xa0
-[  463.542566]        [<ffffffff81610c7e>] tracesys+0xd0/0xd5
-[  463.542567] 
-other info that might help us debug this:
+If the same problem happens on Windows, I can hardly believe the BIOS
+would pass Windows logo testing or that customers would tolerate it,
+so I would think vendors would step up and update the BIOS.  This is a
+built-in device, for goodness sake!  It's not like this is some random
+plug-in device that the vendor might not have tested.
 
-[  463.542569]  Possible unsafe locking scenario:
+At a minimum, I think it would be good if the driver logged a warning
+about "ASPM enabled and device may not work; check for BIOS update" so
+future issues would be easier to debug.  For the reason above, I'm not
+comfortable forcing the disable in the PCI core.  It *might* make
+sense to forcibly disable ASPM in the driver if you're willing to take
+the risk of conflicts, but I think you should also log a warning in
+that case so you have a clue if a conflict does turn up somewhere.
 
-[  463.542570]        CPU0                    CPU1
-[  463.542570]        ----                    ----
-[  463.542573]   lock(&ldata->atomic_read_lock);
-[  463.542575]                                lock(&tty->termios_rwsem);
-[  463.542577]                                lock(&ldata->atomic_read_lock);
-[  463.542579]   lock(&tty->termios_rwsem);
-[  463.542580] 
- *** DEADLOCK ***
-
-[  463.542582] 2 locks held by agetty/2075:
-[  463.542590]  #0:  (&tty->ldisc_sem){++++++}, at: [<ffffffff8139c130>] tty_ldisc_ref_wait+0x20/0x50
-[  463.542597]  #1:  (&ldata->atomic_read_lock){+.+...}, at: [<ffffffff81398959>] n_tty_read+0x759/0xab0
-[  463.542598] 
-stack backtrace:
-[  463.542602] CPU: 0 PID: 2075 Comm: agetty Not tainted 3.11.0-rc3-next-20130801-dbg-dirty #5
-[  463.542603] Hardware name: Acer             Aspire 5741G    /Aspire 5741G    , BIOS V1.20 02/08/2011
-[  463.542609]  ffffffff82236010 ffff88009af67c28 ffffffff8160630a ffffffff82236010
-[  463.542613]  ffff88009af67c68 ffffffff816031b7 ffff880151ac0000 ffff880151ac0790
-[  463.542617]  000000073469e1bd ffff880151ac0768 ffff880151ac0790 ffff880151ac0000
-[  463.542618] Call Trace:
-[  463.542625]  [<ffffffff8160630a>] dump_stack+0x4e/0x82
-[  463.542630]  [<ffffffff816031b7>] print_circular_bug+0x2b6/0x2c5
-[  463.542634]  [<ffffffff810b84e6>] __lock_acquire+0x1756/0x1d20
-[  463.542638]  [<ffffffff810b9394>] lock_acquire+0xa4/0x200
-[  463.542642]  [<ffffffff81398660>] ? n_tty_read+0x460/0xab0
-[  463.542645]  [<ffffffff8160c1b7>] down_read+0x47/0x60
-[  463.542649]  [<ffffffff81398660>] ? n_tty_read+0x460/0xab0
-[  463.542653]  [<ffffffff81398660>] n_tty_read+0x460/0xab0
-[  463.542661]  [<ffffffff81085020>] ? wake_up_process+0x40/0x40
-[  463.542665]  [<ffffffff81393e8d>] tty_read+0x8d/0x100
-[  463.542668]  [<ffffffff8117987a>] vfs_read+0x9a/0x170
-[  463.542671]  [<ffffffff8117a05c>] SyS_read+0x4c/0xa0
-[  463.542674]  [<ffffffff81610c7e>] tracesys+0xd0/0xd5
-
-Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-
----
-
- drivers/tty/n_tty.c | 15 ++++++---------
- 1 file changed, 6 insertions(+), 9 deletions(-)
-
-diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
-index dd8ae0c..03bd6e8 100644
---- a/drivers/tty/n_tty.c
-+++ b/drivers/tty/n_tty.c
-@@ -2122,8 +2122,6 @@ static ssize_t n_tty_read(struct tty_struct *tty, struct file *file,
- 	if (c < 0)
- 		return c;
- 
--	down_read(&tty->termios_rwsem);
--
- 	minimum = time = 0;
- 	timeout = MAX_SCHEDULE_TIMEOUT;
- 	if (!ldata->icanon) {
-@@ -2145,16 +2143,15 @@ static ssize_t n_tty_read(struct tty_struct *tty, struct file *file,
- 	 *	Internal serialization of reads.
- 	 */
- 	if (file->f_flags & O_NONBLOCK) {
--		if (!mutex_trylock(&ldata->atomic_read_lock)) {
--			up_read(&tty->termios_rwsem);
-+		if (!mutex_trylock(&ldata->atomic_read_lock))
- 			return -EAGAIN;
--		}
- 	} else {
--		if (mutex_lock_interruptible(&ldata->atomic_read_lock)) {
--			up_read(&tty->termios_rwsem);
-+		if (mutex_lock_interruptible(&ldata->atomic_read_lock))
- 			return -ERESTARTSYS;
--		}
- 	}
-+
-+	down_read(&tty->termios_rwsem);
-+
- 	packet = tty->packet;
- 
- 	add_wait_queue(&tty->read_wait, &wait);
-@@ -2248,7 +2245,6 @@ static ssize_t n_tty_read(struct tty_struct *tty, struct file *file,
- 		if (time)
- 			timeout = time;
- 	}
--	mutex_unlock(&ldata->atomic_read_lock);
- 	remove_wait_queue(&tty->read_wait, &wait);
- 
- 	if (!waitqueue_active(&tty->read_wait))
-@@ -2260,6 +2256,7 @@ static ssize_t n_tty_read(struct tty_struct *tty, struct file *file,
- 
- 	n_tty_set_room(tty);
- 	up_read(&tty->termios_rwsem);
-+	mutex_unlock(&ldata->atomic_read_lock);
- 	return retval;
- }
- 
-
+Bjorn
