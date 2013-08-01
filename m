@@ -1,168 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757425Ab3HAXSN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 19:18:13 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:53138 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757055Ab3HAXSJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 19:18:09 -0400
-From: Joe Perches <joe@perches.com>
-To: netdev@vger.kernel.org
-Cc: Bart De Schuymer <bart.de.schuymer@pandora.be>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Inaky Perez-Gonzalez <inaky.perez-gonzalez@intel.com>,
-        linux-wimax@intel.com, linux-kernel@vger.kernel.org,
-        netfilter-devel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, wimax@linuxwimax.org
-Subject: [PATCH V3 1/3] uapi: Convert some uses of 6 to ETH_ALEN
-Date: Thu,  1 Aug 2013 16:17:47 -0700
-Message-Id: <87cc4bbcb51cb65dff670cfb6d4bc66b51e319c3.1375398692.git.joe@perches.com>
-X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
-In-Reply-To: <20130801.143137.331385226409040561.davem@davemloft.net>
-References: <20130801.143137.331385226409040561.davem@davemloft.net>
-In-Reply-To: <cover.1375398692.git.joe@perches.com>
+	id S1756991Ab3HAXaj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 19:30:39 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:56518 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751466Ab3HAXah (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 19:30:37 -0400
+MIME-Version: 1.0
+X-Originating-IP: [173.13.129.225]
+In-Reply-To: <9ab1185f349544b160632bfec566391928fa0768.1375398692.git.joe@perches.com>
 References: <cover.1375398692.git.joe@perches.com>
+	<20130801.143137.331385226409040561.davem@davemloft.net>
+	<9ab1185f349544b160632bfec566391928fa0768.1375398692.git.joe@perches.com>
+Date: Thu, 1 Aug 2013 16:30:36 -0700
+Message-ID: <CAOesGMjDgH-uRsjd1g2R_aTjUsPPLge17X2hBPogVv6ZFd_LnQ@mail.gmail.com>
+Subject: Re: [PATCH V3 3/3] ethernet: Convert mac address uses of 6 to ETH_ALEN
+From: Olof Johansson <olof@lixom.net>
+To: Joe Perches <joe@perches.com>
+Cc: Network Development <netdev@vger.kernel.org>,
+        Don Fry <pcnet32@frontier.com>,
+        Grant Grundler <grundler@parisc-linux.org>,
+        Sam Creasey <sammy@sammy.net>, Andrew Gallatin <gallatin@myri.com>,
+        Wan ZongShun <mcuos.com@gmail.com>,
+        Manish Chopra <manish.chopra@qlogic.com>,
+        Sony Chacko <sony.chacko@qlogic.com>,
+        Rajesh Borundia <rajesh.borundia@qlogic.com>,
+        Shahed Shaikh <shahed.shaikh@qlogic.com>,
+        Jitendra Kalsaria <jitendra.kalsaria@qlogic.com>,
+        Ron Mercer <ron.mercer@qlogic.com>, linux-driver@qlogic.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the #define where appropriate.
+On Thu, Aug 1, 2013 at 4:17 PM, Joe Perches <joe@perches.com> wrote:
+> Use the normal #define to help grep find mac addresses
+> and ensure that addresses are aligned.
+>
+> pasemi.h has an unaligned access to mac_addr, unchanged
+> for now.
+>
+> Signed-off-by: Joe Perches <joe@perches.com>
 
-Add #include <linux/if_ether.h>
-where appropriate too.
+Acked-by: Olof Johansson <olof@lixom.net> # pasemi_mac pieces
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- include/uapi/linux/dn.h                           | 3 ++-
- include/uapi/linux/if_bridge.h                    | 3 ++-
- include/uapi/linux/netfilter_bridge/ebt_802_3.h   | 5 +++--
- include/uapi/linux/netfilter_ipv4/ipt_CLUSTERIP.h | 3 ++-
- include/uapi/linux/virtio_net.h                   | 2 +-
- include/uapi/linux/wimax/i2400m.h                 | 4 ++--
- 6 files changed, 12 insertions(+), 8 deletions(-)
 
-diff --git a/include/uapi/linux/dn.h b/include/uapi/linux/dn.h
-index 9c50445..5fbdd3d 100644
---- a/include/uapi/linux/dn.h
-+++ b/include/uapi/linux/dn.h
-@@ -2,6 +2,7 @@
- #define _LINUX_DN_H
- 
- #include <linux/types.h>
-+#include <linux/if_ether.h>
- 
- /*
- 
-@@ -120,7 +121,7 @@ struct linkinfo_dn {
-  * Ethernet address format (for DECnet)
-  */
- union etheraddress {
--        __u8 dne_addr[6];             /* Full ethernet address */
-+        __u8 dne_addr[ETH_ALEN];      /* Full ethernet address */
-   struct {
-                 __u8 dne_hiord[4];    /* DECnet HIORD prefix   */
-                 __u8 dne_nodeaddr[2]; /* DECnet node address   */
-diff --git a/include/uapi/linux/if_bridge.h b/include/uapi/linux/if_bridge.h
-index 2d70d79..39f621a 100644
---- a/include/uapi/linux/if_bridge.h
-+++ b/include/uapi/linux/if_bridge.h
-@@ -14,6 +14,7 @@
- #define _UAPI_LINUX_IF_BRIDGE_H
- 
- #include <linux/types.h>
-+#include <linux/if_ether.h>
- 
- #define SYSFS_BRIDGE_ATTR	"bridge"
- #define SYSFS_BRIDGE_FDB	"brforward"
-@@ -88,7 +89,7 @@ struct __port_info {
- };
- 
- struct __fdb_entry {
--	__u8 mac_addr[6];
-+	__u8 mac_addr[ETH_ALEN];
- 	__u8 port_no;
- 	__u8 is_local;
- 	__u32 ageing_timer_value;
-diff --git a/include/uapi/linux/netfilter_bridge/ebt_802_3.h b/include/uapi/linux/netfilter_bridge/ebt_802_3.h
-index 5bf8491..f37522a 100644
---- a/include/uapi/linux/netfilter_bridge/ebt_802_3.h
-+++ b/include/uapi/linux/netfilter_bridge/ebt_802_3.h
-@@ -2,6 +2,7 @@
- #define _UAPI__LINUX_BRIDGE_EBT_802_3_H
- 
- #include <linux/types.h>
-+#include <linux/if_ether.h>
- 
- #define EBT_802_3_SAP 0x01
- #define EBT_802_3_TYPE 0x02
-@@ -42,8 +43,8 @@ struct hdr_ni {
- };
- 
- struct ebt_802_3_hdr {
--	__u8  daddr[6];
--	__u8  saddr[6];
-+	__u8  daddr[ETH_ALEN];
-+	__u8  saddr[ETH_ALEN];
- 	__be16 len;
- 	union {
- 		struct hdr_ui ui;
-diff --git a/include/uapi/linux/netfilter_ipv4/ipt_CLUSTERIP.h b/include/uapi/linux/netfilter_ipv4/ipt_CLUSTERIP.h
-index c6a204c..eac0f65 100644
---- a/include/uapi/linux/netfilter_ipv4/ipt_CLUSTERIP.h
-+++ b/include/uapi/linux/netfilter_ipv4/ipt_CLUSTERIP.h
-@@ -2,6 +2,7 @@
- #define _IPT_CLUSTERIP_H_target
- 
- #include <linux/types.h>
-+#include <linux/if_ether.h>
- 
- enum clusterip_hashmode {
-     CLUSTERIP_HASHMODE_SIP = 0,
-@@ -22,7 +23,7 @@ struct ipt_clusterip_tgt_info {
- 	__u32 flags;
- 
- 	/* only relevant for new ones */
--	__u8 clustermac[6];
-+	__u8 clustermac[ETH_ALEN];
- 	__u16 num_total_nodes;
- 	__u16 num_local_nodes;
- 	__u16 local_nodes[CLUSTERIP_MAX_NODES];
-diff --git a/include/uapi/linux/virtio_net.h b/include/uapi/linux/virtio_net.h
-index 227d4ce..172a7f0 100644
---- a/include/uapi/linux/virtio_net.h
-+++ b/include/uapi/linux/virtio_net.h
-@@ -60,7 +60,7 @@
- 
- struct virtio_net_config {
- 	/* The config defining mac address (if VIRTIO_NET_F_MAC) */
--	__u8 mac[6];
-+	__u8 mac[ETH_ALEN];
- 	/* See VIRTIO_NET_F_STATUS and VIRTIO_NET_S_* above */
- 	__u16 status;
- 	/* Maximum number of each of transmit and receive queues;
-diff --git a/include/uapi/linux/wimax/i2400m.h b/include/uapi/linux/wimax/i2400m.h
-index 62d3561..fd198bc 100644
---- a/include/uapi/linux/wimax/i2400m.h
-+++ b/include/uapi/linux/wimax/i2400m.h
-@@ -122,7 +122,7 @@
- #define __LINUX__WIMAX__I2400M_H__
- 
- #include <linux/types.h>
--
-+#include <linux/if_ether.h>
- 
- /*
-  * Host Device Interface (HDI) common to all busses
-@@ -487,7 +487,7 @@ struct i2400m_tlv_l4_message_versions {
- struct i2400m_tlv_detailed_device_info {
- 	struct i2400m_tlv_hdr hdr;
- 	__u8 reserved1[400];
--	__u8 mac_address[6];
-+	__u8 mac_address[ETH_ALEN];
- 	__u8 reserved2[2];
- } __attribute__((packed));
- 
--- 
-1.8.1.2.459.gbcd45b4.dirty
-
+-Olof
