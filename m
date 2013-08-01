@@ -1,506 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756083Ab3HASBM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 14:01:12 -0400
-Received: from mailout4.w2.samsung.com ([211.189.100.14]:56100 "EHLO
-	usmailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751363Ab3HASBK (ORCPT
+	id S1757026Ab3HASBY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 14:01:24 -0400
+Received: from che.mayfirst.org ([209.234.253.108]:50628 "EHLO
+	che.mayfirst.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756334Ab3HASBW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 14:01:10 -0400
-X-Greylist: delayed 602 seconds by postgrey-1.27 at vger.kernel.org; Thu, 01 Aug 2013 14:01:10 EDT
-X-AuditID: cbfec373-b7fca6d0000018b9-c0-51faa0094e24
-Date: Thu, 01 Aug 2013 14:50:57 -0300
-From: Mauro Carvalho Chehab <m.chehab@samsung.com>
-To: Joe Perches <joe@perches.com>
-Cc: netdev@vger.kernel.org, Len Brown <lenb@kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Pantelis Antoniou <pantelis.antoniou@gmail.com>,
-        Vitaly Bordug <vbordug@ru.mvista.com>,
-        Steve Glendinning <steve.glendinning@shawell.net>,
-        Samuel Ortiz <samuel@sortiz.org>,
-        "David S. Miller" <davem@davemloft.net>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-usb@vger.kernel.org, linux-media@vger.kernel.org
-Subject: Re: [PATCH 2/3] include: Convert ethernet mac address declarations to
- use ETH_ALEN
-Message-id: <20130801145057.537508a4@samsung.com>
-In-reply-to: <a769aba61c43967257854413f16d2b935cc54972.1375075325.git.joe@perches.com>
-References: <cover.1375075325.git.joe@perches.com>
- <a769aba61c43967257854413f16d2b935cc54972.1375075325.git.joe@perches.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.19; x86_64-redhat-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrKLMWRmVeSWpSXmKPExsVy+t/hIF3OBb8CDfac5rSYc76FxWL2/ccs
-	FjsfvmWzWL6vn9Hi8q45bBY9G7ayWixa1sps8fv7P1aLYwvELH6/28Nk0b+wl8ni7b5tzBbN
-	n14xWRyaLe3A57Fl5U0mj52z7rJ7bFrVyeZxfsZCRo8vq64xe8w5No/F43/zZRaPR4tbGD2m
-	vE7x+LxJLoArissmJTUnsyy1SN8ugStjwqrXLAXtKRXLn15ma2D85tvFyMkhIWAice3PT0YI
-	W0ziwr31bCC2kMASRonHFxO7GLmA7G4mibYpl5hBEiwCqhJf5y5gArHZBIwkXjW2sHYxcnCI
-	CChK3N3CD1LPLHCRWeLF/glgg4QFYiU6njWC1fMKGEr0HpjECmJzCkRI/H4/lQliWZ3Ezq5P
-	bCBzJAScJLZO9YUoF5T4MfkeC4jNLKAlsXlbEyuELS+xec1b5gmMArOQlM1CUjYLSdkCRuZV
-	jKKlxckFxUnpuUZ6xYm5xaV56XrJ+bmbGCFRVbyD8cUGq0OMAhyMSjy8DzN/BQqxJpYVV+Ye
-	YpTgYFYS4f0zGyjEm5JYWZValB9fVJqTWnyIkYmDU6qB0e/AxFBP+XUJDm8kDjsZLlm6pXCe
-	ydKHuutuz5b/JPneTu168YbI7PO37xQErqzL1A6TuTP3/lGLNBnrAxWT/2ytLvu/rfi17iQX
-	7tKFhywnfXaMf+C8JSH7Y9iTyTrnF/z73MdZKv+t8XRhvFv6LMPKcNdHBR3ecuFrF71x1pv4
-	4uoaxfvJa5VYijMSDbWYi4oTAVAMXmmIAgAA
+	Thu, 1 Aug 2013 14:01:22 -0400
+X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Thu, 01 Aug 2013 14:01:22 EDT
+Message-ID: <51FAA0CC.7010106@fifthhorseman.net>
+Date: Thu, 01 Aug 2013 13:54:20 -0400
+From: Daniel Kahn Gillmor <dkg@fifthhorseman.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130630 Icedove/17.0.7
+MIME-Version: 1.0
+To: David Howells <dhowells@redhat.com>
+CC: keyrings@linux-nfs.org, linux-nfs@vger.kernel.org, krbdev@mit.edu,
+        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
+        linux-kernel@vger.kernel.org, simo@redhat.com,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [PATCH 2/2] KEYS: Add per-user_namespace registers for persistent
+ per-UID kerberos caches
+References: <20130801173846.28023.19009.stgit@warthog.procyon.org.uk> <20130801173902.28023.68819.stgit@warthog.procyon.org.uk>
+In-Reply-To: <20130801173902.28023.68819.stgit@warthog.procyon.org.uk>
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha512;
+ protocol="application/pgp-signature";
+ boundary="----enig2HPEGVJSWILCKRSSWXCEJ"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Sun, 28 Jul 2013 22:29:04 -0700
-Joe Perches <joe@perches.com> escreveu:
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+------enig2HPEGVJSWILCKRSSWXCEJ
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-> It's convenient to have ethernet mac addresses use
-> ETH_ALEN to be able to grep for them a bit easier and
-> also to ensure that the addresses are __aligned(2).
-> 
-> Add #include <linux/if_ether.h> as necessary.
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->  include/acpi/actbl2.h           |  4 ++-
->  include/linux/dm9000.h          |  4 ++-
->  include/linux/fs_enet_pd.h      |  3 ++-
->  include/linux/ieee80211.h       | 59 +++++++++++++++++++++--------------------
->  include/linux/mlx4/device.h     | 11 ++++----
->  include/linux/mlx4/qp.h         |  5 ++--
->  include/linux/mv643xx_eth.h     |  3 ++-
->  include/linux/sh_eth.h          |  3 ++-
->  include/linux/smsc911x.h        |  3 ++-
->  include/linux/uwb/spec.h        |  5 ++--
->  include/media/tveeprom.h        |  4 ++-
+On 08/01/2013 01:39 PM, David Howells wrote:
+> The uid is -1 or the user's own UID for the user's own cache or the uid=
+ of some
+> other user's cache (requires CAP_SETUID).  This permits rpc.gssd or wha=
+tever to
+> mess with the cache.
 
-I'm ok with the change at media/tveeprom.h.
+Is the goal here eventually to be able to avoid the upcall to rpc.gssd
+entirely?  It seems a little bit roundabout to have the kernel call up
+into userspace for the credentials, only to talk to a process which then
+calls back into the kernel for something that the kernel has already
+well-defined internally.
 
-Please add my ack on the next version after handling Rafael's request
-on acpi.
+It seems like a non-privileged user could use this to store arbitrary
+data in this keyring as a way of hiding what would otherwise be
+filesystem activity or using it for some sort of odd/sneaky IPC
+mechanism.  Is this an intentional side effect?
 
-Acked-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Sorry if these are obvious questions.  feel free to point me to
+already-documented answers if they exist.
 
->  include/net/irda/irlan_common.h |  3 ++-
->  12 files changed, 61 insertions(+), 46 deletions(-)
-> 
-> diff --git a/include/acpi/actbl2.h b/include/acpi/actbl2.h
-> index ffaac0e..3f0f11c 100644
-> --- a/include/acpi/actbl2.h
-> +++ b/include/acpi/actbl2.h
-> @@ -44,6 +44,8 @@
->  #ifndef __ACTBL2_H__
->  #define __ACTBL2_H__
->  
-> +#include <linux/if_ether.h>
-> +
->  /*******************************************************************************
->   *
->   * Additional ACPI Tables (2)
-> @@ -605,7 +607,7 @@ struct acpi_ibft_nic {
->  	u8 secondary_dns[16];
->  	u8 dhcp[16];
->  	u16 vlan;
-> -	u8 mac_address[6];
-> +	u8 mac_address[ETH_ALEN];
->  	u16 pci_address;
->  	u16 name_length;
->  	u16 name_offset;
-> diff --git a/include/linux/dm9000.h b/include/linux/dm9000.h
-> index 96e8769..841925f 100644
-> --- a/include/linux/dm9000.h
-> +++ b/include/linux/dm9000.h
-> @@ -14,6 +14,8 @@
->  #ifndef __DM9000_PLATFORM_DATA
->  #define __DM9000_PLATFORM_DATA __FILE__
->  
-> +#include <linux/if_ether.h>
-> +
->  /* IO control flags */
->  
->  #define DM9000_PLATF_8BITONLY	(0x0001)
-> @@ -27,7 +29,7 @@
->  
->  struct dm9000_plat_data {
->  	unsigned int	flags;
-> -	unsigned char	dev_addr[6];
-> +	unsigned char	dev_addr[ETH_ALEN];
->  
->  	/* allow replacement IO routines */
->  
-> diff --git a/include/linux/fs_enet_pd.h b/include/linux/fs_enet_pd.h
-> index 51b7934..343d82a 100644
-> --- a/include/linux/fs_enet_pd.h
-> +++ b/include/linux/fs_enet_pd.h
-> @@ -18,6 +18,7 @@
->  
->  #include <linux/string.h>
->  #include <linux/of_mdio.h>
-> +#include <linux/if_ether.h>
->  #include <asm/types.h>
->  
->  #define FS_ENET_NAME	"fs_enet"
-> @@ -135,7 +136,7 @@ struct fs_platform_info {
->  	const struct fs_mii_bus_info *bus_info;
->  
->  	int rx_ring, tx_ring;	/* number of buffers on rx     */
-> -	__u8 macaddr[6];	/* mac address                 */
-> +	__u8 macaddr[ETH_ALEN];	/* mac address                 */
->  	int rx_copybreak;	/* limit we copy small frames  */
->  	int use_napi;		/* use NAPI                    */
->  	int napi_weight;	/* NAPI weight                 */
-> diff --git a/include/linux/ieee80211.h b/include/linux/ieee80211.h
-> index b0dc87a..4e101af 100644
-> --- a/include/linux/ieee80211.h
-> +++ b/include/linux/ieee80211.h
-> @@ -16,6 +16,7 @@
->  #define LINUX_IEEE80211_H
->  
->  #include <linux/types.h>
-> +#include <linux/if_ether.h>
->  #include <asm/byteorder.h>
->  
->  /*
-> @@ -209,28 +210,28 @@ static inline u16 ieee80211_sn_sub(u16 sn1, u16 sn2)
->  struct ieee80211_hdr {
->  	__le16 frame_control;
->  	__le16 duration_id;
-> -	u8 addr1[6];
-> -	u8 addr2[6];
-> -	u8 addr3[6];
-> +	u8 addr1[ETH_ALEN];
-> +	u8 addr2[ETH_ALEN];
-> +	u8 addr3[ETH_ALEN];
->  	__le16 seq_ctrl;
-> -	u8 addr4[6];
-> +	u8 addr4[ETH_ALEN];
->  } __packed __aligned(2);
->  
->  struct ieee80211_hdr_3addr {
->  	__le16 frame_control;
->  	__le16 duration_id;
-> -	u8 addr1[6];
-> -	u8 addr2[6];
-> -	u8 addr3[6];
-> +	u8 addr1[ETH_ALEN];
-> +	u8 addr2[ETH_ALEN];
-> +	u8 addr3[ETH_ALEN];
->  	__le16 seq_ctrl;
->  } __packed __aligned(2);
->  
->  struct ieee80211_qos_hdr {
->  	__le16 frame_control;
->  	__le16 duration_id;
-> -	u8 addr1[6];
-> -	u8 addr2[6];
-> -	u8 addr3[6];
-> +	u8 addr1[ETH_ALEN];
-> +	u8 addr2[ETH_ALEN];
-> +	u8 addr3[ETH_ALEN];
->  	__le16 seq_ctrl;
->  	__le16 qos_ctrl;
->  } __packed __aligned(2);
-> @@ -608,8 +609,8 @@ struct ieee80211s_hdr {
->  	u8 flags;
->  	u8 ttl;
->  	__le32 seqnum;
-> -	u8 eaddr1[6];
-> -	u8 eaddr2[6];
-> +	u8 eaddr1[ETH_ALEN];
-> +	u8 eaddr2[ETH_ALEN];
->  } __packed __aligned(2);
->  
->  /* Mesh flags */
-> @@ -758,7 +759,7 @@ struct ieee80211_rann_ie {
->  	u8 rann_flags;
->  	u8 rann_hopcount;
->  	u8 rann_ttl;
-> -	u8 rann_addr[6];
-> +	u8 rann_addr[ETH_ALEN];
->  	__le32 rann_seq;
->  	__le32 rann_interval;
->  	__le32 rann_metric;
-> @@ -802,9 +803,9 @@ enum ieee80211_vht_opmode_bits {
->  struct ieee80211_mgmt {
->  	__le16 frame_control;
->  	__le16 duration;
-> -	u8 da[6];
-> -	u8 sa[6];
-> -	u8 bssid[6];
-> +	u8 da[ETH_ALEN];
-> +	u8 sa[ETH_ALEN];
-> +	u8 bssid[ETH_ALEN];
->  	__le16 seq_ctrl;
->  	union {
->  		struct {
-> @@ -833,7 +834,7 @@ struct ieee80211_mgmt {
->  		struct {
->  			__le16 capab_info;
->  			__le16 listen_interval;
-> -			u8 current_ap[6];
-> +			u8 current_ap[ETH_ALEN];
->  			/* followed by SSID and Supported rates */
->  			u8 variable[0];
->  		} __packed reassoc_req;
-> @@ -966,21 +967,21 @@ struct ieee80211_vendor_ie {
->  struct ieee80211_rts {
->  	__le16 frame_control;
->  	__le16 duration;
-> -	u8 ra[6];
-> -	u8 ta[6];
-> +	u8 ra[ETH_ALEN];
-> +	u8 ta[ETH_ALEN];
->  } __packed __aligned(2);
->  
->  struct ieee80211_cts {
->  	__le16 frame_control;
->  	__le16 duration;
-> -	u8 ra[6];
-> +	u8 ra[ETH_ALEN];
->  } __packed __aligned(2);
->  
->  struct ieee80211_pspoll {
->  	__le16 frame_control;
->  	__le16 aid;
-> -	u8 bssid[6];
-> -	u8 ta[6];
-> +	u8 bssid[ETH_ALEN];
-> +	u8 ta[ETH_ALEN];
->  } __packed __aligned(2);
->  
->  /* TDLS */
-> @@ -989,14 +990,14 @@ struct ieee80211_pspoll {
->  struct ieee80211_tdls_lnkie {
->  	u8 ie_type; /* Link Identifier IE */
->  	u8 ie_len;
-> -	u8 bssid[6];
-> -	u8 init_sta[6];
-> -	u8 resp_sta[6];
-> +	u8 bssid[ETH_ALEN];
-> +	u8 init_sta[ETH_ALEN];
-> +	u8 resp_sta[ETH_ALEN];
->  } __packed;
->  
->  struct ieee80211_tdls_data {
-> -	u8 da[6];
-> -	u8 sa[6];
-> +	u8 da[ETH_ALEN];
-> +	u8 sa[ETH_ALEN];
->  	__be16 ether_type;
->  	u8 payload_type;
->  	u8 category;
-> @@ -1090,8 +1091,8 @@ struct ieee80211_p2p_noa_attr {
->  struct ieee80211_bar {
->  	__le16 frame_control;
->  	__le16 duration;
-> -	__u8 ra[6];
-> -	__u8 ta[6];
-> +	__u8 ra[ETH_ALEN];
-> +	__u8 ta[ETH_ALEN];
->  	__le16 control;
->  	__le16 start_seq_num;
->  } __packed;
-> diff --git a/include/linux/mlx4/device.h b/include/linux/mlx4/device.h
-> index 52c23a8..e37ac2b 100644
-> --- a/include/linux/mlx4/device.h
-> +++ b/include/linux/mlx4/device.h
-> @@ -33,6 +33,7 @@
->  #ifndef MLX4_DEVICE_H
->  #define MLX4_DEVICE_H
->  
-> +#include <linux/if_ether.h>
->  #include <linux/pci.h>
->  #include <linux/completion.h>
->  #include <linux/radix-tree.h>
-> @@ -619,7 +620,7 @@ struct mlx4_eth_av {
->  	u8		dgid[16];
->  	u32		reserved4[2];
->  	__be16		vlan;
-> -	u8		mac[6];
-> +	u8		mac[ETH_ALEN];
->  };
->  
->  union mlx4_ext_av {
-> @@ -913,10 +914,10 @@ enum mlx4_net_trans_promisc_mode {
->  };
->  
->  struct mlx4_spec_eth {
-> -	u8	dst_mac[6];
-> -	u8	dst_mac_msk[6];
-> -	u8	src_mac[6];
-> -	u8	src_mac_msk[6];
-> +	u8	dst_mac[ETH_ALEN];
-> +	u8	dst_mac_msk[ETH_ALEN];
-> +	u8	src_mac[ETH_ALEN];
-> +	u8	src_mac_msk[ETH_ALEN];
->  	u8	ether_type_enable;
->  	__be16	ether_type;
->  	__be16	vlan_id_msk;
-> diff --git a/include/linux/mlx4/qp.h b/include/linux/mlx4/qp.h
-> index 262deac..6d35147 100644
-> --- a/include/linux/mlx4/qp.h
-> +++ b/include/linux/mlx4/qp.h
-> @@ -34,6 +34,7 @@
->  #define MLX4_QP_H
->  
->  #include <linux/types.h>
-> +#include <linux/if_ether.h>
->  
->  #include <linux/mlx4/device.h>
->  
-> @@ -143,7 +144,7 @@ struct mlx4_qp_path {
->  	u8			feup;
->  	u8			fvl_rx;
->  	u8			reserved4[2];
-> -	u8			dmac[6];
-> +	u8			dmac[ETH_ALEN];
->  };
->  
->  enum { /* fl */
-> @@ -318,7 +319,7 @@ struct mlx4_wqe_datagram_seg {
->  	__be32			dqpn;
->  	__be32			qkey;
->  	__be16			vlan;
-> -	u8			mac[6];
-> +	u8			mac[ETH_ALEN];
->  };
->  
->  struct mlx4_wqe_lso_seg {
-> diff --git a/include/linux/mv643xx_eth.h b/include/linux/mv643xx_eth.h
-> index 6e8215b..61a0da3 100644
-> --- a/include/linux/mv643xx_eth.h
-> +++ b/include/linux/mv643xx_eth.h
-> @@ -6,6 +6,7 @@
->  #define __LINUX_MV643XX_ETH_H
->  
->  #include <linux/mbus.h>
-> +#include <linux/if_ether.h>
->  
->  #define MV643XX_ETH_SHARED_NAME		"mv643xx_eth"
->  #define MV643XX_ETH_NAME		"mv643xx_eth_port"
-> @@ -48,7 +49,7 @@ struct mv643xx_eth_platform_data {
->  	 * Use this MAC address if it is valid, overriding the
->  	 * address that is already in the hardware.
->  	 */
-> -	u8			mac_addr[6];
-> +	u8			mac_addr[ETH_ALEN];
->  
->  	/*
->  	 * If speed is 0, autonegotiation is enabled.
-> diff --git a/include/linux/sh_eth.h b/include/linux/sh_eth.h
-> index fc30571..6205eeb 100644
-> --- a/include/linux/sh_eth.h
-> +++ b/include/linux/sh_eth.h
-> @@ -2,6 +2,7 @@
->  #define __ASM_SH_ETH_H__
->  
->  #include <linux/phy.h>
-> +#include <linux/if_ether.h>
->  
->  enum {EDMAC_LITTLE_ENDIAN, EDMAC_BIG_ENDIAN};
->  enum {
-> @@ -18,7 +19,7 @@ struct sh_eth_plat_data {
->  	phy_interface_t phy_interface;
->  	void (*set_mdio_gate)(void *addr);
->  
-> -	unsigned char mac_addr[6];
-> +	unsigned char mac_addr[ETH_ALEN];
->  	unsigned no_ether_link:1;
->  	unsigned ether_link_active_low:1;
->  	unsigned needs_init:1;
-> diff --git a/include/linux/smsc911x.h b/include/linux/smsc911x.h
-> index 4dde70e..eec3efd 100644
-> --- a/include/linux/smsc911x.h
-> +++ b/include/linux/smsc911x.h
-> @@ -22,6 +22,7 @@
->  #define __LINUX_SMSC911X_H__
->  
->  #include <linux/phy.h>
-> +#include <linux/if_ether.h>
->  
->  /* platform_device configuration data, should be assigned to
->   * the platform_device's dev.platform_data */
-> @@ -31,7 +32,7 @@ struct smsc911x_platform_config {
->  	unsigned int flags;
->  	unsigned int shift;
->  	phy_interface_t phy_interface;
-> -	unsigned char mac[6];
-> +	unsigned char mac[ETH_ALEN];
->  };
->  
->  /* Constants for platform_device irq polarity configuration */
-> diff --git a/include/linux/uwb/spec.h b/include/linux/uwb/spec.h
-> index b52e44f..0df24bf 100644
-> --- a/include/linux/uwb/spec.h
-> +++ b/include/linux/uwb/spec.h
-> @@ -32,6 +32,7 @@
->  
->  #include <linux/types.h>
->  #include <linux/bitmap.h>
-> +#include <linux/if_ether.h>
->  
->  #define i1480_FW 0x00000303
->  /* #define i1480_FW 0x00000302 */
-> @@ -130,7 +131,7 @@ enum { UWB_DRP_BACKOFF_WIN_MAX = 16 };
->   * it is also used to define headers sent down and up the wire/radio).
->   */
->  struct uwb_mac_addr {
-> -	u8 data[6];
-> +	u8 data[ETH_ALEN];
->  } __attribute__((packed));
->  
->  
-> @@ -568,7 +569,7 @@ struct uwb_rc_evt_confirm {
->  /* Device Address Management event. [WHCI] section 3.1.3.2. */
->  struct uwb_rc_evt_dev_addr_mgmt {
->  	struct uwb_rceb rceb;
-> -	u8 baAddr[6];
-> +	u8 baAddr[ETH_ALEN];
->  	u8 bResultCode;
->  } __attribute__((packed));
->  
-> diff --git a/include/media/tveeprom.h b/include/media/tveeprom.h
-> index 4a1191a..f7119ee 100644
-> --- a/include/media/tveeprom.h
-> +++ b/include/media/tveeprom.h
-> @@ -12,6 +12,8 @@ enum tveeprom_audio_processor {
->  	TVEEPROM_AUDPROC_OTHER,
->  };
->  
-> +#include <linux/if_ether.h>
-> +
->  struct tveeprom {
->  	u32 has_radio;
->  	/* If has_ir == 0, then it is unknown what the IR capabilities are,
-> @@ -40,7 +42,7 @@ struct tveeprom {
->  	u32 revision;
->  	u32 serial_number;
->  	char rev_str[5];
-> -	u8 MAC_address[6];
-> +	u8 MAC_address[ETH_ALEN];
->  };
->  
->  void tveeprom_hauppauge_analog(struct i2c_client *c, struct tveeprom *tvee,
-> diff --git a/include/net/irda/irlan_common.h b/include/net/irda/irlan_common.h
-> index 0af8b8d..550c2d6 100644
-> --- a/include/net/irda/irlan_common.h
-> +++ b/include/net/irda/irlan_common.h
-> @@ -32,6 +32,7 @@
->  #include <linux/types.h>
->  #include <linux/skbuff.h>
->  #include <linux/netdevice.h>
-> +#include <linux/if_ether.h>
->  
->  #include <net/irda/irttp.h>
->  
-> @@ -161,7 +162,7 @@ struct irlan_provider_cb {
->  	int access_type;     /* Access type */
->  	__u16 send_arb_val;
->  
-> -	__u8 mac_address[6]; /* Generated MAC address for peer device */
-> +	__u8 mac_address[ETH_ALEN]; /* Generated MAC address for peer device */
->  };
->  
->  /*
+Thanks for all your work on this!
+
+Regards,
+
+	--dkg
 
 
--- 
+------enig2HPEGVJSWILCKRSSWXCEJ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-Cheers,
-Mauro
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+Comment: Using GnuPG with Icedove - http://www.enigmail.net/
+
+iQJ8BAEBCgBmBQJR+qDMXxSAAAAAAC4AKGlzc3Vlci1mcHJAbm90YXRpb25zLm9w
+ZW5wZ3AuZmlmdGhob3JzZW1hbi5uZXRFQjk2OTEyODdBN0FEREUzNzU3RDkxMUVB
+NTI0MDFCMTFCRkRGQTVDAAoJEKUkAbEb/fpciGkP/1UCt9/H0KQVVaeSjm9rl4EJ
+hmpUVJWHm8yPleOoKZxhuMmZMGhzxhDCt2q1itj9iBdBFCxdKVn3I6XZAEQoRDnW
+l4Ys6hZ9RvZnfNd5c7W5Nhi8kRxDWAaa7pcuVYsCfWW5T+Z2hROVBqnW6IeewYn8
+BAe7ajZfWB7mR4IZX12fxhX2yUa0pFlMEqDxmA+h67TmgQuF2nudYpMGpzNZYXxH
+s5QJohgfPpldZuFBgjpEQCWtWIxdCrmv8UoljuLekUT4rwevIE/T9pJBWSExFimI
+ehnmYlF6SUU0pzoAjtIFv+XO1y+5Yeizstqlu5gu0LqjjQEaZ1+aknb5YVpVb0Xh
+/tA5EMnToH486CC09ZOEywN3jTjrX9xwddVijqyFSCp3+EPprVjv+A88WsLXrjE2
+25xXDQ5MOdaR2n9Tth06BZiZM+7xmiNVmsCwWeB40AH+UvcZR/y0JMLn/Bq8QEKV
+CroZBiCfHqF7/+cHlDwdK7JtSySe2pv8m6KQs13PTbX610gR3d+oSh7YINKKceGc
+k9DJvMo7d6gQrChR0i3RQKDnYEDD7g86zGM4QuwQzSSc6eZ+DDBpYR2XmTY19YgB
+7538qD/EbF1D6s0wTE+b1KfTrulv8/2Fp3sflVDY9753BZCK8uDmPJlgZU1XanMv
+3oQTGIvPL+sotqlhj1S0
+=TWzs
+-----END PGP SIGNATURE-----
+
+------enig2HPEGVJSWILCKRSSWXCEJ--
