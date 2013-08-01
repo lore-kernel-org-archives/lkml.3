@@ -1,111 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757345Ab3HATZK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 15:25:10 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:43547 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756517Ab3HATZG (ORCPT
+	id S1757364Ab3HAT01 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 15:26:27 -0400
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:33233 "EHLO
+	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756125Ab3HAT00 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 15:25:06 -0400
-Message-ID: <51FAB534.1070301@linux.vnet.ibm.com>
-Date: Fri, 02 Aug 2013 00:51:24 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Thu, 1 Aug 2013 15:26:26 -0400
+X-IronPort-AV: E=Sophos;i="4.89,796,1367964000"; 
+   d="scan'208";a="28222835"
+Date: Thu, 1 Aug 2013 21:26:24 +0200 (CEST)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@localhost6.localdomain6
+To: Dan Carpenter <dan.carpenter@oracle.com>
+cc: Dave Jones <davej@redhat.com>, Kees Cook <keescook@chromium.org>,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Julia Lawall <julia.lawall@lip6.fr>,
+        Gilles Muller <Gilles.Muller@lip6.fr>, npalix@diku.dk
+Subject: Re: [Ksummit-2013-discuss] [ARM ATTEND] catching up on exploit
+ mitigations
+In-Reply-To: <20130801191649.GB5102@mwanda>
+Message-ID: <alpine.DEB.2.02.1308012122480.2009@localhost6.localdomain6>
+References: <CAGXu5jKv9Vt+Hu0mFYaxggLLDZ46U3KR9MKegUoHH8StXCkBtQ@mail.gmail.com> <20130801091322.GA5302@mwanda> <20130801190556.GA1495@redhat.com> <20130801191649.GB5102@mwanda>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Viresh Kumar <viresh.kumar@linaro.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, cpufreq@vger.kernel.org,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
-Subject: Re: [RFC][PATCH] cpufreq: Do not hold driver module references for
- additional policy CPUs
-References: <2362640.pUofnXyzOi@vostro.rjw.lan> <1656801.jLHjvytfNU@vostro.rjw.lan> <51FAB083.5050900@linux.vnet.ibm.com> <7752148.JjTSgAt1Xy@vostro.rjw.lan>
-In-Reply-To: <7752148.JjTSgAt1Xy@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13080119-9574-0000-0000-000008FE46C7
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02/2013 12:51 AM, Rafael J. Wysocki wrote:
-> On Friday, August 02, 2013 12:31:23 AM Srivatsa S. Bhat wrote:
->> On 08/02/2013 12:31 AM, Rafael J. Wysocki wrote:
->>> On Thursday, August 01, 2013 11:36:49 PM Srivatsa S. Bhat wrote:
->>>> Its the cpufreq_cpu_get() hidden away in cpufreq_add_dev_symlink(). With
->>>> that taken care of, everything should be OK. Then we can change the
->>>> synchronization part to avoid using refcounts.
->>>
->>> So I actually don't see why cpufreq_add_dev_symlink() needs to call
->>> cpufreq_cpu_get() at all, since the policy refcount is already 1 at the
->>> point it is called and the bumping up of the driver module refcount is
->>> pointless.
->>>
->>
->> Hmm, yes, it seems so.
->>
->>> However, if I change that I also need to change the piece of code that
->>> calls the complementary cpufreq_cpu_put() and I kind of cannot find it.
->>>
->>
->> ... I guess that's because you are looking at the code with your patch
->> applied (and your patch removed that _put()) ;-)
+On Thu, 1 Aug 2013, Dan Carpenter wrote:
+
+> On Thu, Aug 01, 2013 at 03:05:56PM -0400, Dave Jones wrote:
+> > On Thu, Aug 01, 2013 at 12:13:22PM +0300, Dan Carpenter wrote:
+> >  > I was just reading http://faultlinux.lip6.fr/ which says that in
+> >  > 2011 the static checker fault rate in arch/ and fs/ was worse than
+> >  > in drivers/
+> > 
+> > I've been working on getting more regular builds in coverity, so we can
+> > get more meaningful statistics on things like "what area is getting worse".
+> > 
+> > Of the current bugs I've categorised so far, here's the breakdown for 3.11-rc3
+> > in terms of highest bug counts.
+> > 
+> > Drivers/net/wireless: 659 
+> > Drivers/ [1] : 600
+> > Drivers/staging: 449
+> > Drivers/scsi: 409
+> > Drivers/net: 350
+> > Net/[2] : 297
+> > Drivers/media: 286
+> > Sound: 220
+> > Drivers/GPU: 217
+> > 
+> > That's the top categories for the whole kernel.
+> > 
+> > That wireless was top of the list was the least shocking thing to me,
+> > based on what we get reported to Fedora bugzilla.  That it found more
+> > bugs there than in staging was amusing though. The good news is that
+> > wireless also takes the top slot for 'resolved' issues.
+> > 
+> > The paper above talks about 'arch' but doesn't indicate if it's counting
+> > all arches, or just the one they run the tests on. (Coverity only covers x86,
+> > so arch/ shows up in 10th place there).
 > 
-> No, it's not that one.  That one was complementary to the cpufreq_cpu_get()
-> done by cpufreq_add_policy_cpu() before my patch.  Since my patch changes
-> cpufreq_add_policy_cpu() to call cpufreq_cpu_put() before returning and
-> bump up the policy refcount with kobject_get(), the one in
-> __cpufreq_remove_dev() is changed into kobject_put() (correctly, IMO).
-> 
-> What gives?
-> 
+> It's Coccinelle, so my guess is they ran it on all the .c files.
 
-Actually, it _is_ the one I pointed above. This thing is tricky, here's why:
+Coccinelle runs on all C files.  The rates in the paper are relative to 
+what are referred to as notes, ie the number of potential bug sites.  
+For example, code that does not use kmalloc is not likely to contain 
+missing kfrees.
 
-cpufreq_add_policy_cpu() is called only if:
-a. The CPU being onlined has per_cpu(cpufreq_cpu_data, cpu) == NULL
-and 
-b. Its is present in some CPU's related_cpus mask. 
-
-If condition (a) doesn't hold good, you get out right in the beginning of
-__cpufreq_add_dev().
-
-So, cpufreq_add_policy_cpu() is called very rarely because, inside
-__cpufreq_add_dev we do:
-
-1093         write_lock_irqsave(&cpufreq_driver_lock, flags);
-1094         for_each_cpu(j, policy->cpus) {
-1095                 per_cpu(cpufreq_cpu_data, j) = policy;
-1096                 per_cpu(cpufreq_policy_cpu, j) = policy->cpu;
-1097         }
-1098         write_unlock_irqrestore(&cpufreq_driver_lock, flags);
-
-So for all the CPUs in the above policy->cpus mask, we simply return
-without further ado when they are onlined. In particular, we *dont* call
-cpufreq_add_policy_cpu() for any of them.
-
-And their refcounts are incremented by the cpufreq_add_dev_interface()->
-cpufreq_add_dev_symlink() function.
-
-So, ultimately, we increment the refcount for a given non-policy-owner CPU
-only once. *Either* in cpufreq_add_dev_symlink() *or* in cpufreq_add_policy_cpu(),
-but never both.
-
-So, in the teardown path, __cpufreq_remove_dev() needs only one place to
-decrement it as shown below:
-
-1303         } else {
-1304 
-1305                 if (!frozen) {
-1306                         pr_debug("%s: removing link, cpu: %d\n", __func__, cpu);
-1307                         cpufreq_cpu_put(data);
-1308                 }
-
-
-Pretty good maze, right? ;-(
- 
-Regards,
-Srivatsa S. Bhat
-
+julia
