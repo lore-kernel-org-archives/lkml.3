@@ -1,59 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754665Ab3HAKOo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 06:14:44 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:33335 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751900Ab3HAKOm (ORCPT
+	id S1754563Ab3HAKQm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 06:16:42 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:56951 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753779Ab3HAKQl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 06:14:42 -0400
-Date: Thu, 1 Aug 2013 12:14:24 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Cc: Waiman Long <Waiman.Long@hp.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Richard Weinberger <richard@nod.at>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Akinobu Mita <akinobu.mita@gmail.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Michel Lespinasse <walken@google.com>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        George Spelvin <linux@horizon.com>,
-        Harvey Harrison <harvey.harrison@gmail.com>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Subject: Re: [PATCH RFC 1/2] qspinlock: Introducing a 4-byte queue spinlock
- implementation
-Message-ID: <20130801101424.GN3008@twins.programming.kicks-ass.net>
-References: <1375324631-32868-1-git-send-email-Waiman.Long@hp.com>
- <1375324631-32868-2-git-send-email-Waiman.Long@hp.com>
- <20130801094029.GK3008@twins.programming.kicks-ass.net>
- <51FA3455.1000607@linux.vnet.ibm.com>
+	Thu, 1 Aug 2013 06:16:41 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51FA3455.1000607@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <3402784.vRBPhVDbi3@vostro.rjw.lan>
+References: <20130729102452.GA2682@zurbaran>
+	<7008541.g5m1pJPVp1@vostro.rjw.lan>
+	<20130729081141.00818596@lwn.net>
+	<3402784.vRBPhVDbi3@vostro.rjw.lan>
+Date: Thu, 1 Aug 2013 12:16:40 +0200
+X-Google-Sender-Auth: 9OwuH7u1-Y_wcxm6ehbhy-zhSb4
+Message-ID: <CAMuHMdVRPU5mE+ehx2dFLjqod4gGHiOHUy0ufP+rEs_ZtNkuDA@mail.gmail.com>
+Subject: Re: [Ksummit-2013-discuss] [ATTEND] DT, maintainership, development process
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Jonathan Corbet <corbet@lwn.net>, Jiri Kosina <jkosina@suse.cz>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 01, 2013 at 03:41:33PM +0530, Raghavendra K T wrote:
-> It is exactly 16k-1 not 15k
-> That is because CPU_CODE of 1 to 16k represents cpu 0..16k-1
-> 
+On Tue, Jul 30, 2013 at 12:09 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> A single SOB tag usually means that the committer himself is the author of
+> the change set and I don't see why this should be regarded as a bad thing in
+> principle.  Yes, it is technically possible for maintainers to "cheat", for
+> example by making unreviewed changes and pushing them upstream with their
+> own SOBs even without any linux-next testing, but they can do damage in some
+> other ways too if they are irresponsible.
+>
+> We generally don't record information about what mailing lists the given patch
+> was submitted and how much time the maintainer waited for comments before
+> applying that patch.  I suppose we possibly could record it, but then I'm not
+> sure how useful that will be in general.  It definitely would mean more work
+> for maintainers and it's not like they don't have enough of that already.
+> Moreover, perhaps we can simply expect maintainers not to abuse the process?
+>
+> I guess my point is that the fact that there are commits with one SOB tag only
+> doesn't have to mean that we have a problem of any sort and it even doesn't
+> have to indicate the existence of such a problem.
+>
+> Commits that have never been in linux-next are much more problematic in my
+> opinion.
 
-More specifically:
+And we still have (too many of) them...
 
-+       BUILD_BUG_ON(CONFIG_NR_CPUS >= MAX_CPUS);
+Once in a while, I do find suspicious commits that
+  (a) weren't in -next,
+  (b) weren't in my email archive (not unreasonable, as I'm not
+subscribed to all
+      Linux mailing lists ;-),
+  (c) are not to be found by Google, which means they may not have been
+      posted for public review at all (are there Linux mailing lists that do not
+     have a web archive?).
 
-Our NR_CPUS is very much a power of two.
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
