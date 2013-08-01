@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752937Ab3HAIw3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 04:52:29 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:33030 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750856Ab3HAIw1 (ORCPT
+	id S1753769Ab3HAIw7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 04:52:59 -0400
+Received: from mail-we0-f176.google.com ([74.125.82.176]:59527 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750856Ab3HAIw6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 04:52:27 -0400
-Date: Thu, 1 Aug 2013 09:52:21 +0100
+	Thu, 1 Aug 2013 04:52:58 -0400
+Date: Thu, 1 Aug 2013 09:52:52 +0100
 From: Lee Jones <lee.jones@linaro.org>
 To: Jingoo Han <jg1.han@samsung.com>
 Cc: "'Samuel Ortiz'" <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>
-Subject: Re: [PATCH] mfd: max8997: cast void pointer to data of
- max8997_pmic_dt_match
-Message-ID: <20130801085221.GN13298@lee--X1>
-References: <002e01ce8e5b$08700410$19500c30$@samsung.com>
+        "'Peter Tyser'" <ptyser@xes-inc.com>
+Subject: Re: [PATCH] mfd: lpc_ich: Staticize struct 'lpc_chipset_info'
+Message-ID: <20130801085252.GO13298@lee--X1>
+References: <002d01ce8e5a$b73e3030$25ba9090$@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <002e01ce8e5b$08700410$19500c30$@samsung.com>
+In-Reply-To: <002d01ce8e5a$b73e3030$25ba9090$@samsung.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,28 +27,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Thu, 01 Aug 2013, Jingoo Han wrote:
 
-> Casting (void *) data of max8997_pmic_dt_match is necessary,
-> because variable 'data' of struct 'of_device_id' is defined as
-> 'const void *data'. Thus, pointer should be used instead of value.
+> 'lpc_chipset_info' is used only in this file.
+> 
+> Fix the following sparse warning:
+> 
+> drivers/mfd/lpc_ich.c:216:21: warning: symbol 'lpc_chipset_info' was not declared. Should it be static?
 > 
 > Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 > ---
->  drivers/mfd/max8997.c |    2 +-
+>  drivers/mfd/lpc_ich.c |    2 +-
 >  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> diff --git a/drivers/mfd/max8997.c b/drivers/mfd/max8997.c
-> index 1471405..e6d668a 100644
-> --- a/drivers/mfd/max8997.c
-> +++ b/drivers/mfd/max8997.c
-> @@ -51,7 +51,7 @@ static struct mfd_cell max8997_devs[] = {
->  
->  #ifdef CONFIG_OF
->  static struct of_device_id max8997_pmic_dt_match[] = {
-> -	{ .compatible = "maxim,max8997-pmic", .data = TYPE_MAX8997 },
-> +	{ .compatible = "maxim,max8997-pmic", .data = (void *)TYPE_MAX8997 },
->  	{},
+> diff --git a/drivers/mfd/lpc_ich.c b/drivers/mfd/lpc_ich.c
+> index 2403332..9483bc8 100644
+> --- a/drivers/mfd/lpc_ich.c
+> +++ b/drivers/mfd/lpc_ich.c
+> @@ -213,7 +213,7 @@ enum lpc_chipsets {
+>  	LPC_COLETO,	/* Coleto Creek */
 >  };
->  #endif
+>  
+> -struct lpc_ich_info lpc_chipset_info[] = {
+> +static struct lpc_ich_info lpc_chipset_info[] = {
+>  	[LPC_ICH] = {
+>  		.name = "ICH",
+>  		.iTCO_version = 1,
 
 Applied, thanks.
 
