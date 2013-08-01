@@ -1,85 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753761Ab3HAQf6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 12:35:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34043 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751027Ab3HAQf4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 12:35:56 -0400
-Message-ID: <51FA8E3D.4070204@redhat.com>
-Date: Thu, 01 Aug 2013 12:35:09 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Mel Gorman <mgorman@suse.de>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH,RFC] numa,sched: use group fault statistics in numa placement
-References: <1373901620-2021-1-git-send-email-mgorman@suse.de> <20130730113857.GR3008@twins.programming.kicks-ass.net> <20130801022319.4a6a977a@annuminas.surriel.com> <20130801103713.GO3008@twins.programming.kicks-ass.net>
-In-Reply-To: <20130801103713.GO3008@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1754009Ab3HAQhD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 12:37:03 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:49453 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751075Ab3HAQhB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 12:37:01 -0400
+From: Soren Brinkmann <soren.brinkmann@xilinx.com>
+To: Michal Simek <michal.simek@xilinx.com>,
+        Russell King <linux@arm.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Soren Brinkmann <soren.brinkmann@xilinx.com>
+Subject: [PATCH] arm: zynq: hotplug: Remove unreachable code
+Date: Thu,  1 Aug 2013 09:36:53 -0700
+Message-Id: <1375375013-17117-1-git-send-email-soren.brinkmann@xilinx.com>
+X-Mailer: git-send-email 1.8.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/01/2013 06:37 AM, Peter Zijlstra wrote:
-> On Thu, Aug 01, 2013 at 02:23:19AM -0400, Rik van Riel wrote:
->> Subject: [PATCH,RFC] numa,sched: use group fault statistics in numa placement
->>
->> Here is a quick strawman on how the group fault stuff could be used
->> to help pick the best node for a task. This is likely to be quite
->> suboptimal and in need of tweaking. My main goal is to get this to
->> Peter & Mel before it's breakfast time on their side of the Atlantic...
->>
->> This goes on top of "sched, numa: Use {cpu, pid} to create task groups for shared faults"
->>
->> Enjoy :)
->>
->> +	/*
->> +	 * Should we stay on our own, or move in with the group?
->> +	 * The absolute count of faults may not be useful, but comparing
->> +	 * the fraction of accesses in each top node may give us a hint
->> +	 * where to start looking for a migration target.
->> +	 *
->> +	 *  max_group_faults     max_faults
->> +	 * ------------------ > ------------
->> +	 * total_group_faults   total_faults
->> +	 */
->> +	if (max_group_nid >= 0 && max_group_nid != max_nid) {
->> +		if (max_group_faults * total_faults >
->> +				max_faults * total_group_faults)
->> +			max_nid = max_group_nid;
->> +	}
->
-> This makes sense.. another part of the problem, which you might already
-> have spotted is selecting a task to swap with.
->
-> If you only look at per task faults its often impossible to find a
-> suitable swap task because moving you to a more suitable node would
-> degrade the other task -- below a patch you've already seen but I
-> haven't yet posted because I'm not at all sure its something 'sane' :-)
+zynq_platform_do_lowpower() does never return. Hence remove
+all code which relies on that function returning and consolidate the
+remains.
 
-I did not realize you had not posted that patch yet, and was
-actually building on top of it :)
+Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+---
+ arch/arm/mach-zynq/hotplug.c | 55 ++++----------------------------------------
+ 1 file changed, 5 insertions(+), 50 deletions(-)
 
-I suspect that comparing both per-task and per-group fault weights
-in task_numa_compare should make your code do the right thing in
-task_numa_migrate.
-
-I suspect there will be enough randomness in accesses that they
-will never be exactly the same, so we might not need an explicit
-tie breaker.
-
-However, if numa_migrate_preferred fails, we may want to try
-migrating to any node that has a better score than the current
-one.  After all, if we have a group of tasks that would fit in
-2 NUMA nodes, we don't want half of the tasks to not migrate
-at all because the top node is full. We want them to move to
-the #2 node at some point.
-
+diff --git a/arch/arm/mach-zynq/hotplug.c b/arch/arm/mach-zynq/hotplug.c
+index c89672b..5052c70 100644
+--- a/arch/arm/mach-zynq/hotplug.c
++++ b/arch/arm/mach-zynq/hotplug.c
+@@ -40,44 +40,6 @@ static inline void zynq_cpu_enter_lowpower(void)
+ 	  : "cc");
+ }
+ 
+-static inline void zynq_cpu_leave_lowpower(void)
+-{
+-	unsigned int v;
+-
+-	asm volatile(
+-	"	mrc	p15, 0, %0, c1, c0, 0\n"
+-	"	orr	%0, %0, %1\n"
+-	"	mcr	p15, 0, %0, c1, c0, 0\n"
+-	"	mrc	p15, 0, %0, c1, c0, 1\n"
+-	"	orr	%0, %0, #0x40\n"
+-	"	mcr	p15, 0, %0, c1, c0, 1\n"
+-	  : "=&r" (v)
+-	  : "Ir" (CR_C)
+-	  : "cc");
+-}
+-
+-static inline void zynq_platform_do_lowpower(unsigned int cpu, int *spurious)
+-{
+-	/*
+-	 * there is no power-control hardware on this platform, so all
+-	 * we can do is put the core into WFI; this is safe as the calling
+-	 * code will have already disabled interrupts
+-	 */
+-	for (;;) {
+-		dsb();
+-		wfi();
+-
+-		/*
+-		 * Getting here, means that we have come out of WFI without
+-		 * having been woken up - this shouldn't happen
+-		 *
+-		 * Just note it happening - when we're woken, we can report
+-		 * its occurrence.
+-		 */
+-		(*spurious)++;
+-	}
+-}
+-
+ /*
+  * platform-specific code to shutdown a CPU
+  *
+@@ -85,20 +47,13 @@ static inline void zynq_platform_do_lowpower(unsigned int cpu, int *spurious)
+  */
+ void zynq_platform_cpu_die(unsigned int cpu)
+ {
+-	int spurious = 0;
+-
+-	/*
+-	 * we're ready for shutdown now, so do it
+-	 */
+ 	zynq_cpu_enter_lowpower();
+-	zynq_platform_do_lowpower(cpu, &spurious);
+ 
+ 	/*
+-	 * bring this CPU back into the world of cache
+-	 * coherency, and then restore interrupts
++	 * there is no power-control hardware on this platform, so all
++	 * we can do is put the core into WFI; this is safe as the calling
++	 * code will have already disabled interrupts
+ 	 */
+-	zynq_cpu_leave_lowpower();
+-
+-	if (spurious)
+-		pr_warn("CPU%u: %u spurious wakeup calls\n", cpu, spurious);
++	for (;;)
++		cpu_do_idle();
+ }
 -- 
-All rights reversed
+1.8.3.4
+
