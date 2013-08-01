@@ -1,107 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755385Ab3HANcG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 09:32:06 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:38892 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752230Ab3HANcF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 09:32:05 -0400
-Date: Thu, 1 Aug 2013 15:31:55 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
+	id S1755569Ab3HANct (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 09:32:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23450 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754889Ab3HANcs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 09:32:48 -0400
+Date: Thu, 1 Aug 2013 15:32:17 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
         Namhyung Kim <namhyung@kernel.org>, Ingo Molnar <mingo@kernel.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
         Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 6/8] perf: Account freq events per cpu
-Message-ID: <20130801133155.GB27162@twins.programming.kicks-ass.net>
+Subject: Re: [PATCH 2/8] perf: Sanitize get_callchain_buffer()
+Message-ID: <20130801133217.GH1032@krava.brq.redhat.com>
 References: <1374539466-4799-1-git-send-email-fweisbec@gmail.com>
- <1374539466-4799-7-git-send-email-fweisbec@gmail.com>
- <20130801124658.GC1032@krava.brq.redhat.com>
+ <1374539466-4799-3-git-send-email-fweisbec@gmail.com>
+ <20130801130146.GE1032@krava.brq.redhat.com>
+ <20130801132833.GA431@somewhere>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130801124658.GC1032@krava.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20130801132833.GA431@somewhere>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 01, 2013 at 02:46:58PM +0200, Jiri Olsa wrote:
-> On Tue, Jul 23, 2013 at 02:31:04AM +0200, Frederic Weisbecker wrote:
-> > This is going to be used by the full dynticks subsystem
-> > as a finer-grained information to know when to keep and
-> > when to stop the tick.
+On Thu, Aug 01, 2013 at 03:28:34PM +0200, Frederic Weisbecker wrote:
+
+SNIP
+
+> > also for following case:
 > > 
-> > Original-patch-by: Peter Zijlstra <peterz@infradead.org>
-> > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> > Cc: Jiri Olsa <jolsa@redhat.com>
-> > Cc: Peter Zijlstra <peterz@infradead.org>
-> > Cc: Namhyung Kim <namhyung@kernel.org>
-> > Cc: Ingo Molnar <mingo@kernel.org>
-> > Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-> > Cc: Stephane Eranian <eranian@google.com>
-> > ---
-> >  kernel/events/core.c |    7 +++++++
-> >  1 files changed, 7 insertions(+), 0 deletions(-)
+> >         count = atomic_inc_return(&nr_callchain_events);
+> >         if (WARN_ON_ONCE(count < 1)) {
+> >                 err = -EINVAL;
+> >                 goto exit;
+> >         }
 > > 
-> > diff --git a/kernel/events/core.c b/kernel/events/core.c
-> > index b40c3db..f9bd39b 100644
-> > --- a/kernel/events/core.c
-> > +++ b/kernel/events/core.c
-> > @@ -141,6 +141,7 @@ enum event_type_t {
-> >  struct static_key_deferred perf_sched_events __read_mostly;
-> >  static DEFINE_PER_CPU(atomic_t, perf_cgroup_events);
-> >  static DEFINE_PER_CPU(atomic_t, perf_branch_stack_events);
-> > +static DEFINE_PER_CPU(atomic_t, perf_freq_events);
-> >  
-> >  static atomic_t nr_mmap_events __read_mostly;
-> >  static atomic_t nr_comm_events __read_mostly;
-> > @@ -3139,6 +3140,9 @@ static void unaccount_event_cpu(struct perf_event *event, int cpu)
-> >  	}
-> >  	if (is_cgroup_event(event))
-> >  		atomic_dec(&per_cpu(perf_cgroup_events, cpu));
-> > +
-> > +	if (event->attr.freq)
-> > +		atomic_dec(&per_cpu(perf_freq_events, cpu));
-> >  }
-> >  
-> >  static void unaccount_event(struct perf_event *event)
-> > @@ -6473,6 +6477,9 @@ static void account_event_cpu(struct perf_event *event, int cpu)
-> >  	}
-> >  	if (is_cgroup_event(event))
-> >  		atomic_inc(&per_cpu(perf_cgroup_events, cpu));
-> > +
-> > +	if (event->attr.freq)
-> > +		atomic_inc(&per_cpu(perf_freq_events, cpu));
+> > seems like it screws the count
 > 
-> cpu could be -1 in here.. getting:
+> I'm not sure what you mean here. You mean that it could be negative when the dec is done
+> outside the lock?
 
-Ho humm, right you are. 
+yes
 
-So we have:
-
-static void account_event_cpu(struct perf_event *event, int cpu)
-{
-	if (event->parent)
-		return;
-
-	if (has_branch_stack(event)) {
-		if (!(event->attach_state & PERF_ATTACH_TASK))
-			atomic_inc(&per_cpu(perf_branch_stack_events, cpu));
-	}
-	if (is_cgroup_event(event))
-		atomic_inc(&per_cpu(perf_cgroup_events, cpu));
-
-	if (event->attr.freq)
-		atomic_inc(&per_cpu(perf_freq_events, cpu));
-}
-
-Where the freq thing is new and shiney, but we already had the other
-two. Of those, cgroup events must be per cpu so that should be good,
-the branch_stack thing tests ATTACH_TASK, which should also be good, but
-leaves me wonder wth they do for those that are attached to tasks.
-
-But yes, the frequency thing is borken.
