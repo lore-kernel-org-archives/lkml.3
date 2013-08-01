@@ -1,37 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752329Ab3HAIHd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 04:07:33 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:34465 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751384Ab3HAIH1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 04:07:27 -0400
-Date: Thu, 1 Aug 2013 10:07:24 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Aaron Lu <aaron.lu@intel.com>
-Subject: Re: i915 backlight
-Message-ID: <20130801080724.GA3448@nazgul.tnic>
-References: <20130731162252.GC4724@pd.tnic>
- <20130731163623.GD4724@pd.tnic>
- <1419236.138PcnXVBh@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1419236.138PcnXVBh@vostro.rjw.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752536Ab3HAIKC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 04:10:02 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:38838 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750848Ab3HAIJ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 04:09:56 -0400
+Message-ID: <1375344595.2034.38.camel@joe-AO722>
+Subject: Re: [PATCH] MAINTAINERS: Add separate section for USB NETWORKING
+ DRIVERS
+From: Joe Perches <joe@perches.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-usb <linux-usb@vger.kernel.org>
+Date: Thu, 01 Aug 2013 01:09:55 -0700
+In-Reply-To: <20130801075656.GA8074@kroah.com>
+References: <1375316960686@kroah.org> <1375343328.2034.34.camel@joe-AO722>
+	 <20130801075656.GA8074@kroah.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 31, 2013 at 11:16:52PM +0200, Rafael J. Wysocki wrote:
-> Does reverting efaa14c help?
+On Thu, 2013-08-01 at 15:56 +0800, Greg KH wrote:
+> On Thu, Aug 01, 2013 at 12:48:48AM -0700, Joe Perches wrote:
+> > There are several drivers in drivers/net/usb/ that
+> > do not have specific MAINTAINERS that should have
+> > emails forwarded to the linux-usb mailing list.
 
-Nope.
+> > diff --git a/MAINTAINERS b/MAINTAINERS
+[]
+> > +USB NETWORKING DRIVERS
+> > +L:	linux-usb@vger.kernel.org
+> > +S:	Odd Fixes
+> > +F:	drivers/net/usb/
+> 
+> But netdev is the one that applies these patches, not linux-usb, so this
+> isn't correct either.
+> 
+> sorry,
 
-But see my other reply to Aaron.
+Lots of "maintainers" don't apply patches.
 
-Thanks.
+This is simply a means to forward patches to
+relevant lists that may have reviewers that care
+about changes to certain files.
+
+You suggested that linux-usb should get copies
+of these patches.
+
+These files are not marked as "Maintained", just
+"Odd fixes".  I suppose these could be marked
+"Orphan" instead.
+
+You have a suggestion otherwise?
+
