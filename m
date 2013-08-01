@@ -1,176 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932407Ab3HAVyi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 17:54:38 -0400
-Received: from mail-qe0-f42.google.com ([209.85.128.42]:53563 "EHLO
-	mail-qe0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932087Ab3HAVu2 (ORCPT
+	id S932377Ab3HAVyh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 17:54:37 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39764 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932102Ab3HAVyf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 17:50:28 -0400
-From: Tejun Heo <tj@kernel.org>
-To: lizefan@huawei.com
-Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 13/23] cgroup: convert cgroup_next_sibling() to cgroup_next_child()
-Date: Thu,  1 Aug 2013 17:49:51 -0400
-Message-Id: <1375393801-4817-14-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1375393801-4817-1-git-send-email-tj@kernel.org>
-References: <1375393801-4817-1-git-send-email-tj@kernel.org>
+	Thu, 1 Aug 2013 17:54:35 -0400
+In-Reply-To: <20130801213420.GL23006@n2100.arm.linux.org.uk>
+References: <20130801213420.GL23006@n2100.arm.linux.org.uk>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH RFC 20/51] DMA-API: usb: bcma: replace
+ dma_set_mask()+dma_set_coherent_mask() with new
+ helper
+Message-Id: <E1V50oy-0006rP-9T@rmk-PC.arm.linux.org.uk>
+Date: Thu, 01 Aug 2013 22:54:08 +0100
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cgroup is transitioning to using css (cgroup_subsys_state) as the main
-subsys interface handle instead of cgroup and the iterators will be
-updated to use css too.  The iterators need to walk the cgroup
-hierarchy and return the css's matching the origin css, which is a bit
-cumbersome to open code.
+Replace the following sequence:
 
-This patch converts cgroup_next_sibling() to cgroup_next_child() so
-that it can handle all steps of direct child iteration.  This will be
-used to update iterators to take @css instead of @cgrp.  In addition
-to the new iteration init handling, cgroup_next_child() is
-restructured so that the different branches share the end of iteration
-condition check.
+	dma_set_mask(dev, mask);
+	dma_set_coherent_mask(dev, mask);
 
-This patch doesn't change any behavior.
+with a call to the new helper dma_set_mask_and_coherent().
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 ---
- include/linux/cgroup.h |  4 ++--
- kernel/cgroup.c        | 59 +++++++++++++++++++++++++-------------------------
- 2 files changed, 32 insertions(+), 31 deletions(-)
+ drivers/usb/host/bcma-hcd.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index 9749d63..a91c304 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -780,7 +780,7 @@ static inline struct cgroup *cgroup_from_id(struct cgroup_subsys *ss, int id)
- 	return idr_find(&ss->root->cgroup_idr, id);
- }
+diff --git a/drivers/usb/host/bcma-hcd.c b/drivers/usb/host/bcma-hcd.c
+index df13d42..205f4a3 100644
+--- a/drivers/usb/host/bcma-hcd.c
++++ b/drivers/usb/host/bcma-hcd.c
+@@ -227,8 +227,7 @@ static int bcma_hcd_probe(struct bcma_device *dev)
  
--struct cgroup *cgroup_next_sibling(struct cgroup *pos);
-+struct cgroup *cgroup_next_child(struct cgroup *pos, struct cgroup *cgrp);
+ 	/* TODO: Probably need checks here; is the core connected? */
  
- /**
-  * cgroup_for_each_child - iterate through children of a cgroup
-@@ -803,7 +803,7 @@ struct cgroup *cgroup_next_sibling(struct cgroup *pos);
- #define cgroup_for_each_child(pos, cgrp)				\
- 	for ((pos) = list_first_or_null_rcu(&(cgrp)->children,		\
- 					    struct cgroup, sibling);	\
--	     (pos); (pos) = cgroup_next_sibling((pos)))
-+	     (pos); (pos) = cgroup_next_child((pos), (cgrp)))
+-	if (dma_set_mask(dev->dma_dev, DMA_BIT_MASK(32)) ||
+-	    dma_set_coherent_mask(dev->dma_dev, DMA_BIT_MASK(32)))
++	if (dma_set_mask_and_coherent(dev->dma_dev, DMA_BIT_MASK(32)))
+ 		return -EOPNOTSUPP;
  
- struct cgroup *cgroup_next_descendant_pre(struct cgroup *pos,
- 					  struct cgroup *cgroup);
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 6c68192..e88b50e 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -3030,15 +3030,16 @@ static void cgroup_enable_task_cg_lists(void)
- }
- 
- /**
-- * cgroup_next_sibling - find the next sibling of a given cgroup
-- * @pos: the current cgroup
-+ * cgroup_next_child - find the next child of a given cgroup
-+ * @pos: the current position (%NULL to initiate traversal)
-+ * @cgrp: cgroup whose descendants to walk
-  *
-- * This function returns the next sibling of @pos and should be called
-- * under RCU read lock.  The only requirement is that @pos is accessible.
-- * The next sibling is guaranteed to be returned regardless of @pos's
-- * state.
-+ * This function returns the next child of @cgrp and should be called under
-+ * RCU read lock.  The only requirement is that @cgrp and @pos are
-+ * accessible.  The next sibling is guaranteed to be returned regardless of
-+ * their states.
-  */
--struct cgroup *cgroup_next_sibling(struct cgroup *pos)
-+struct cgroup *cgroup_next_child(struct cgroup *pos, struct cgroup *cgrp)
- {
- 	struct cgroup *next;
- 
-@@ -3054,30 +3055,30 @@ struct cgroup *cgroup_next_sibling(struct cgroup *pos)
- 	 * safe to dereference from this RCU critical section.  If
- 	 * ->sibling.next is inaccessible, cgroup_is_dead() is guaranteed
- 	 * to be visible as %true here.
-+	 *
-+	 * If @pos is dead, its next pointer can't be dereferenced;
-+	 * however, as each cgroup is given a monotonically increasing
-+	 * unique serial number and always appended to the sibling list,
-+	 * the next one can be found by walking the parent's children until
-+	 * we see a cgroup with higher serial number than @pos's.  While
-+	 * this path can be slower, it's taken only when either the current
-+	 * cgroup is removed or iteration and removal race.
- 	 */
--	if (likely(!cgroup_is_dead(pos))) {
-+	if (!pos) {
-+		next = list_entry_rcu(cgrp->children.next, struct cgroup, sibling);
-+	} else if (likely(!cgroup_is_dead(pos))) {
- 		next = list_entry_rcu(pos->sibling.next, struct cgroup, sibling);
--		if (&next->sibling != &pos->parent->children)
--			return next;
--		return NULL;
-+	} else {
-+		list_for_each_entry_rcu(next, &cgrp->children, sibling)
-+			if (next->serial_nr > pos->serial_nr)
-+				break;
- 	}
- 
--	/*
--	 * Can't dereference the next pointer.  Each cgroup is given a
--	 * monotonically increasing unique serial number and always
--	 * appended to the sibling list, so the next one can be found by
--	 * walking the parent's children until we see a cgroup with higher
--	 * serial number than @pos's.
--	 *
--	 * While this path can be slow, it's taken only when either the
--	 * current cgroup is removed or iteration and removal race.
--	 */
--	list_for_each_entry_rcu(next, &pos->parent->children, sibling)
--		if (next->serial_nr > pos->serial_nr)
--			return next;
-+	if (&next->sibling != &cgrp->children)
-+		return next;
- 	return NULL;
- }
--EXPORT_SYMBOL_GPL(cgroup_next_sibling);
-+EXPORT_SYMBOL_GPL(cgroup_next_child);
- 
- /**
-  * cgroup_next_descendant_pre - find the next descendant for pre-order walk
-@@ -3110,7 +3111,7 @@ struct cgroup *cgroup_next_descendant_pre(struct cgroup *pos,
- 
- 	/* no child, visit my or the closest ancestor's next sibling */
- 	while (pos != cgroup) {
--		next = cgroup_next_sibling(pos);
-+		next = cgroup_next_child(pos, pos->parent);
- 		if (next)
- 			return next;
- 		pos = pos->parent;
-@@ -3191,7 +3192,7 @@ struct cgroup *cgroup_next_descendant_post(struct cgroup *pos,
- 	}
- 
- 	/* if there's an unvisited sibling, visit its leftmost descendant */
--	next = cgroup_next_sibling(pos);
-+	next = cgroup_next_child(pos, pos->parent);
- 	if (next)
- 		return cgroup_leftmost_descendant(next);
- 
-@@ -4540,9 +4541,9 @@ static int cgroup_destroy_locked(struct cgroup *cgrp)
- 	/*
- 	 * Mark @cgrp dead.  This prevents further task migration and child
- 	 * creation by disabling cgroup_lock_live_group().  Note that
--	 * CGRP_DEAD assertion is depended upon by cgroup_next_sibling() to
-+	 * CGRP_DEAD assertion is depended upon by cgroup_next_child() to
- 	 * resume iteration after dropping RCU read lock.  See
--	 * cgroup_next_sibling() for details.
-+	 * cgroup_next_child() for details.
- 	 */
- 	set_bit(CGRP_DEAD, &cgrp->flags);
- 
+ 	usb_dev = kzalloc(sizeof(struct bcma_hcd_device), GFP_KERNEL);
 -- 
-1.8.3.1
+1.7.4.4
 
