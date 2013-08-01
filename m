@@ -1,115 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753444Ab3HAUGU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 16:06:20 -0400
-Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:56886 "EHLO
-	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751723Ab3HAUGS (ORCPT
+	id S1752814Ab3HAUKk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 16:10:40 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:53598 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751595Ab3HAUKj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 16:06:18 -0400
-Message-ID: <51FABFB7.9070409@hurleysoftware.com>
-Date: Thu, 01 Aug 2013 16:06:15 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Thu, 1 Aug 2013 16:10:39 -0400
+Date: Thu, 1 Aug 2013 22:10:18 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Cc: Waiman Long <waiman.long@hp.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Richard Weinberger <richard@nod.at>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Akinobu Mita <akinobu.mita@gmail.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Michel Lespinasse <walken@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        George Spelvin <linux@horizon.com>,
+        Harvey Harrison <harvey.harrison@gmail.com>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Subject: Re: [PATCH RFC 1/2] qspinlock: Introducing a 4-byte queue spinlock
+ implementation
+Message-ID: <20130801201018.GR3008@twins.programming.kicks-ass.net>
+References: <1375324631-32868-1-git-send-email-Waiman.Long@hp.com>
+ <1375324631-32868-2-git-send-email-Waiman.Long@hp.com>
+ <20130801094029.GK3008@twins.programming.kicks-ass.net>
+ <51FAA1C3.2050507@hp.com>
+ <51FAA5F8.2070209@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Michel Lespinasse <walken@google.com>,
-        Artem Savkov <artem.savkov@gmail.com>
-CC: gregkh@linuxfoundation.org, jslaby@suse.cz, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH] n_tty: release atomic_read_lock before calling schedule_timeout()
-References: <1375198500-17414-1-git-send-email-artem.savkov@gmail.com> <51F7EC5A.2030609@hurleysoftware.com> <20130731114726.GA11570@cpv436-motbuntu.spb.ea.mot-mobility.com>
-In-Reply-To: <20130731114726.GA11570@cpv436-motbuntu.spb.ea.mot-mobility.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51FAA5F8.2070209@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/31/2013 07:47 AM, Artem Savkov wrote:
-> On Tue, Jul 30, 2013 at 12:39:54PM -0400, Peter Hurley wrote:
->> On 07/30/2013 11:35 AM, Artem Savkov wrote:
->>> ldata->atomic_read_lock should be released before scheduling as well as
->>> tty->termios_rwsem, otherwise there is a potential deadlock detected by lockdep
->>
->> False positive.
->>
->>> Introduced in "n_tty: Access termios values safely"
->>> (9356b535fcb71db494fc434acceb79f56d15bda2 in linux-next.git)
->>>
->>> [   16.822058] ======================================================
->>> [   16.822058] [ INFO: possible circular locking dependency detected ]
->>> [   16.822058] 3.11.0-rc3-next-20130730+ #140 Tainted: G        W
->>> [   16.822058] -------------------------------------------------------
->>> [   16.822058] bash/1198 is trying to acquire lock:
->>> [   16.822058]  (&tty->termios_rwsem){++++..}, at: [<ffffffff816aa3bb>] n_tty_read+0x49b/0x660
->>> [   16.822058]
->>> [   16.822058] but task is already holding lock:
->>> [   16.822058]  (&ldata->atomic_read_lock){+.+...}, at: [<ffffffff816aa0f0>] n_tty_read+0x1d0/0x660
->>> [   16.822058]
->>> [   16.822058] which lock already depends on the new lock.
->>> [   16.822058]
->>> [   16.822058]
->>> [   16.822058] the existing dependency chain (in reverse order) is:
->>> [   16.822058]
->>> -> #1 (&ldata->atomic_read_lock){+.+...}:
->>> [   16.822058]        [<ffffffff811111cc>] validate_chain+0x73c/0x850
->>> [   16.822058]        [<ffffffff811117e0>] __lock_acquire+0x500/0x5d0
->>> [   16.822058]        [<ffffffff81111a29>] lock_acquire+0x179/0x1d0
->>> [   16.822058]        [<ffffffff81d34b9c>] mutex_lock_interruptible_nested+0x7c/0x540
->>> [   16.822058]        [<ffffffff816aa0f0>] n_tty_read+0x1d0/0x660
->>> [   16.822058]        [<ffffffff816a3bb6>] tty_read+0x86/0xf0
->>> [   16.822058]        [<ffffffff811f21d3>] vfs_read+0xc3/0x130
->>> [   16.822058]        [<ffffffff811f2702>] SyS_read+0x62/0xa0
->>> [   16.822058]        [<ffffffff81d45259>] system_call_fastpath+0x16/0x1b
->>> [   16.822058]
->>> -> #0 (&tty->termios_rwsem){++++..}:
->>> [   16.822058]        [<ffffffff8111064f>] check_prev_add+0x14f/0x590
->>> [   16.822058]        [<ffffffff811111cc>] validate_chain+0x73c/0x850
->>> [   16.822058]        [<ffffffff811117e0>] __lock_acquire+0x500/0x5d0
->>> [   16.822058]        [<ffffffff81111a29>] lock_acquire+0x179/0x1d0
->>> [   16.822058]        [<ffffffff81d372c1>] down_read+0x51/0xa0
->>> [   16.822058]        [<ffffffff816aa3bb>] n_tty_read+0x49b/0x660
->>> [   16.822058]        [<ffffffff816a3bb6>] tty_read+0x86/0xf0
->>> [   16.822058]        [<ffffffff811f21d3>] vfs_read+0xc3/0x130
->>> [   16.822058]        [<ffffffff811f2702>] SyS_read+0x62/0xa0
->>> [   16.822058]        [<ffffffff81d45259>] system_call_fastpath+0x16/0x1b
->>> [   16.822058]
->>> [   16.822058] other info that might help us debug this:
->>> [   16.822058]
->>> [   16.822058]  Possible unsafe locking scenario:
->>> [   16.822058]
->>> [   16.822058]        CPU0                    CPU1
->>> [   16.822058]        ----                    ----
->>> [   16.822058]   lock(&ldata->atomic_read_lock);
->>> [   16.822058]                                lock(&tty->termios_rwsem);
->>> [   16.822058]                                lock(&ldata->atomic_read_lock);
->>> [   16.822058]   lock(&tty->termios_rwsem);
->>> [   16.822058]
->>> [   16.822058]  *** DEADLOCK ***
->>
->> This situation is not possible since termios_rwsem is a read/write semaphore;
->> CPU1 cannot prevent CPU0 from obtaining a read lock on termios_rwsem.
-> Oops, yes, sorry.
->
->> This looks like a regression caused by:
->>
->> commit a51805efae5dda0da66f79268ffcf0715f9dbea4
->> Author: Michel Lespinasse <walken@google.com>
->> Date:   Mon Jul 8 14:23:49 2013 -0700
->>
->>      lockdep: Introduce lock_acquire_exclusive()/shared() helper macros
-> Doesn't seem to be this commit. I see nothing wrong here and just to be
-> sure I've checked the kernel with this commit reverted. The issue is
-> still there.
+On Thu, Aug 01, 2013 at 11:46:24PM +0530, Raghavendra K T wrote:
+> On 08/01/2013 11:28 PM, Waiman Long wrote:
+> >On 08/01/2013 05:40 AM, Peter Zijlstra wrote:
+> >>On Wed, Jul 31, 2013 at 10:37:10PM -0400, Waiman Long wrote:
+> >>
+> [...]
+> >>
+> >>>+         */
+> >>>+        for (qn_idx = 1; qn_idx<  MAX_QNODES; qn_idx++) {
+> >>>+            if (!node[qn_idx].used)
+> >>>+                break;
+> >>        }
+> >>
+> >>>+        if (unlikely(qn_idx == MAX_QNODES)) {
+> >>>+            /*
+> >>>+             * This shouldn't happen, print a warning message
+> >>>+             *&  busy spinning on the lock.
+> >>>+             */
+> >>>+            pr_warn("qspinlock: queue node table exhausted at "
+> >>>+                "cpu %d!\n", cpu_nr);
+> >>This could make your machine die hard.. not all contexts can printk().
+> >
+> >Do you have any suggestion? I could skip the warning and silently do the
+> >busy spinning. I just want some way to notify the user of this rare event.
+> 
+> We have used debugfs in pv-spinlock to avoid that since printk uses
+> spinlock again. may be it will help to profile many other parts of
+> code too.
 
-Yes, you're right. Apologies to Michel for the too-hasty blame.
+I always use early_printk(), but that requires you set up your serial
+console properly and joe-user won't have done that.
 
-Thanks for the report anyway. I'll track down the lockdep regression
-as soon as I fix a real deadlock in the nouveau driver that disables
-lockdep.
-
-Regards,
-Peter Hurley
 
