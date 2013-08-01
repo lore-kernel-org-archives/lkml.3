@@ -1,151 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752586Ab3HAFHm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 01:07:42 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:59847 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751246Ab3HAFHk (ORCPT
+	id S1752669Ab3HAFP1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 01:15:27 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:58883 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751900Ab3HAFPZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 01:07:40 -0400
+	Thu, 1 Aug 2013 01:15:25 -0400
+Date: Thu, 1 Aug 2013 10:43:27 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 17/18] sched: Retry migration of tasks to CPU on a
+ preferred node
+Message-ID: <20130801051327.GF4880@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <1373901620-2021-1-git-send-email-mgorman@suse.de>
+ <1373901620-2021-18-git-send-email-mgorman@suse.de>
 MIME-Version: 1.0
-In-Reply-To: <20130801002241.GH7118@dastard>
-References: <1375281721-15840-1-git-send-email-linkinjeon@gmail.com>
-	<20130801002241.GH7118@dastard>
-Date: Thu, 1 Aug 2013 14:07:39 +0900
-Message-ID: <CAKYAXd_VvGQL6KW3+FmfPogxzkXq7yF-4WPM9iebXcTn7tiN9A@mail.gmail.com>
-Subject: Re: [PATCH 1/3] fs: Introduce new flag FALLOC_FL_COLLAPSE_RANGE
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: tytso@mit.edu, adilger.kernel@dilger.ca, bpm@sgi.com, elder@kernel.org,
-        hch@infradead.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        xfs@oss.sgi.com, a.sangwan@samsung.com,
-        Namjae Jeon <namjae.jeon@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <1373901620-2021-18-git-send-email-mgorman@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13080105-3620-0000-0000-000003C5C99F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/8/1, Dave Chinner <david@fromorbit.com>:
-> On Wed, Jul 31, 2013 at 11:42:00PM +0900, Namjae Jeon wrote:
->> From: Namjae Jeon <namjae.jeon@samsung.com>
->>
->> Fallocate now supports new FALLOC_FL_COLLAPSE_RANGE flag.
->> The semantics of this flag are following:
->> 1) It collapses the range lying between offset and length by removing any
->> data
->>    blocks which are present in this range and than updates all the
->> logical
->>    offsets of extents beyond "offset + len" to nullify the hole created
->> by
->>    removing blocks. In short, it does not leave a hole.
->> 1) It should be used exclusively. No other fallocate flag in combination.
->> 2) Offset and length supplied to fallocate should be fs block size
->> aligned.
->
-Hi Dave.
+* Mel Gorman <mgorman@suse.de> [2013-07-15 16:20:19]:
 
-> Given that the rest of fallocate() interfaces are byte based, this
-> is going to cause some confusion if it's not well documented. i.e.
-> this restriction needs to be documented in the header file that is
-> exposed to userspace, as well as in the fallocate(2) man page.
-Agree.
+> When a preferred node is selected for a tasks there is an attempt to migrate
+> the task to a CPU there. This may fail in which case the task will only
+> migrate if the active load balancer takes action. This may never happen if
 
->
->> 3) It wokrs beyond "EOF", so the extents which are pre-allocated beyond
->> "EOF"
->>    are also updated.
->
-> I don't think that's valid for this operation. If the range is
-> beyond EOF, you are not modifying anything visible to userspace, and
-> that makes it the same as a hole punch operation. So, I'd get rid of
-> thisnasty implementation complexity altogether.
-The basic idea behind collapse range is that it does'nt leaves a hole.
-And this is achieved by updating starting block of each of the extents
-which lies beyond hole.
-When we are updating an extent, we are actually moving hole to the
-right, towards the last allocated block in the file space.
-We continue doing this for each extent and finally when this operation
-completes, the hole is gone.
-If the file has preallocated extent(s) beyond EOF, something like this=>
-hole, extent1, extent2, extent_beyond_EOF1.
-And we start updating extents one by one, to nullify the effect of hole=>
-STEP1: After updating extent1: extent1, hole, extent2, extent_beyond_EOF1.
-STEP2: After updating extent2: extent1, extent2, hole, extent_beyond_EOF1.
-STEP3: After updating extent_beyond_EOF1: extent1, extent2,
-extent_beyond_EOF1, hole => And this removes hole from the file.
-If we stop updating just after extent2, this will not remove hole from
-the file space but instead, it will place the hole between EOF and 1st
-preallcoated extent beyond EOF as in STEP2.
-So, if user does an extending truncate, hole will became visible as it
-is still there.
+Apart from load imbalance or heavily loaded cpus on the preferred node,
+what could be the other reasons for migration failure with
+migrate_task_to()? I see it almost similar to active load balance except
+for pushing instead of pulling tasks.
 
->
->> 4) It reduces the i_size of inode by the amount of collapse range which
->> lies
->>    within i_size. So, if offset >= i_size, i_size won't be changed at
->> all.
->
-> Similarly, I don't think that asking for a range that overlaps EOF
-> is valid, either. The moment you overlap or go beyond EOF, you are
-> effectively truncating the file as there is no data to collapse into
-> the range
-Yes, we could put a restriction on that, something like: if (len +
-offset > i_size) { return -EINVAL;}
+If load imbalance is the only reason, do we need to retry? If the task
+is really so attached to memory on that node, shouldn't we getting
+task_numa_placement hit before the next 5 seconds? 
 
->
-> As it is, I don't see these EOF rules enforced by this patch, nor
-> are they documented at all in the patch.
-The EOF file rules are handled in the fs specific patches. As in XFS =>
-+       if (mode & FALLOC_FL_COLLAPSE_RANGE) {
-+               error = -xfs_collapse_file_space(ip, offset + len, len);
-+               if (error || offset >= i_size_read(inode))
-+                       goto out_unlock;
-+
-+               /* Shrink size in case of FALLOC_FL_COLLAPSE_RANGE */
-+               if ((offset + len) > i_size_read(inode))
-+                       new_size = offset;
-+               else
-+                       new_size = i_size_read(inode) - len;
-+               error = -xfs_update_file_size(ip, new_size);
-But it seems ok to not allow (offset + len) > i_size.
+> the conditions are not right. This patch will check at NUMA hinting fault
+> time if another attempt should be made to migrate the task. It will only
+> make an attempt once every five seconds.
+> 
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
 
->
-> Regardless of what semantics we decide on, this needs xfs_io
-> support and extensive corner case tests added to xfstests so that we
-> can confirm the implementation in every filesystem is correct and we
-> don't introduce regressions in future. it also needs documentation
-> in the fallocate(2) man page.
-Yes, we are currently working on it.
-With next version of collapse_range patches, we will also send xfs_io
-and xfstests patches and manpage also.
+-- 
+Thanks and Regards
+Srikar Dronamraju
 
->
->> diff --git a/include/uapi/linux/falloc.h b/include/uapi/linux/falloc.h
->> index 990c4cc..7567c8c 100644
->> --- a/include/uapi/linux/falloc.h
->> +++ b/include/uapi/linux/falloc.h
->> @@ -1,9 +1,10 @@
->>  #ifndef _UAPI_FALLOC_H_
->>  #define _UAPI_FALLOC_H_
->>
->> -#define FALLOC_FL_KEEP_SIZE	0x01 /* default is extend size */
->> -#define FALLOC_FL_PUNCH_HOLE	0x02 /* de-allocates range */
->> +#define FALLOC_FL_KEEP_SIZE		0x01 /* default is extend size */
->> +#define FALLOC_FL_PUNCH_HOLE		0x02 /* de-allocates range */
->>  #define FALLOC_FL_NO_HIDE_STALE	0x04 /* reserved codepoint */
->> +#define FALLOC_FL_COLLAPSE_RANGE	0x08 /* it does not leave a hole */
->
-> I'd suggest that you need to explain what FALLOC_FL_COLLAPSE_RANGE
-> does in great detail right here.
-Okay!
-
-Thanks for review!
->
-> Cheers,
->
-> Dave.
-> --
-> Dave Chinner
-> david@fromorbit.com
->
