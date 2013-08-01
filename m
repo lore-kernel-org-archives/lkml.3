@@ -1,141 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755709Ab3HAOSp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 10:18:45 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:8980 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755359Ab3HAOSn (ORCPT
+	id S1755918Ab3HAOS5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 10:18:57 -0400
+Received: from smtp.eu.citrix.com ([46.33.159.39]:60681 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755815Ab3HAOSz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 10:18:43 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 01 Aug 2013 07:17:14 -0700
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <akpm@linux-foundation.org>
-CC: <grant.likely@linaro.org>, <rob.herring@calxeda.com>, <rob@landley.net>,
-        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <rtc-linux@googlegroups.com>,
-        <gg@slimlogic.co.uk>, <kishon@ti.com>, <swarren@nvidia.com>,
-        <pawel.moll@arm.com>, <Mark.Rutland@arm.com>,
-        <ian.campbell@citrix.com>, <broonie@kernel.org>,
-        Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH V2] drivers/rtc/rtc-palmas.c: support for backup battery charging
-Date: Thu, 1 Aug 2013 20:01:11 +0530
-Message-ID: <1375367471-29908-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
+	Thu, 1 Aug 2013 10:18:55 -0400
+X-IronPort-AV: E=Sophos;i="4.89,794,1367971200"; 
+   d="scan'208";a="7368726"
+Message-ID: <51FA6E4E.2080001@citrix.com>
+Date: Thu, 1 Aug 2013 16:18:54 +0200
+From: =?UTF-8?B?Um9nZXIgUGF1IE1vbm7DqQ==?= <roger.pau@citrix.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain
+To: David Vrabel <david.vrabel@citrix.com>
+CC: <xen-devel@lists.xen.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH] xen-blkback: use bigger array for batch gnt
+ operations
+References: <1375358934-6335-1-git-send-email-roger.pau@citrix.com> <51FA54EC.6030604@citrix.com>
+In-Reply-To: <51FA54EC.6030604@citrix.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.203.1]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Palmas series device like TPS65913, TPS80036 supports the backup battery
-for powering the RTC when no other energy source is available.
+On 01/08/13 14:30, David Vrabel wrote:
+> On 01/08/13 13:08, Roger Pau Monne wrote:
+>> Right now the maximum number of grant operations that can be batched
+>> in a single request is BLKIF_MAX_SEGMENTS_PER_REQUEST (11). This was
+>> OK before indirect descriptors because the maximum number of segments
+>> in a request was 11, but with the introduction of indirect
+>> descriptors the maximum number of segments in a request has been
+>> increased past 11.
+>>
+>> The memory used by the structures that are passed in the hypercall was
+>> allocated from the stack, but if we have to increase the size of the
+>> array we can no longer use stack memory, so we have to pre-allocate
+>> it.
+>>
+>> This patch increases the maximum size of batch grant operations and
+>> replaces the use of stack memory with pre-allocated memory, that is
+>> reserved when the blkback instance is initialized.
+> [...]
+>> --- a/drivers/block/xen-blkback/xenbus.c
+>> +++ b/drivers/block/xen-blkback/xenbus.c
+> [...]
+>> @@ -148,6 +155,16 @@ static struct xen_blkif *xen_blkif_alloc(domid_t domid)
+>>  			if (!req->indirect_pages[j])
+>>  				goto fail;
+>>  		}
+>> +		req->map = kcalloc(GNT_OPERATIONS_SIZE, sizeof(req->map[0]), GFP_KERNEL);
+>> +		if (!req->map)
+>> +			goto fail;
+>> +		req->unmap = kcalloc(GNT_OPERATIONS_SIZE, sizeof(req->unmap[0]), GFP_KERNEL);
+>> +		if (!req->unmap)
+>> +			goto fail;
+>> +		req->pages_to_gnt = kcalloc(GNT_OPERATIONS_SIZE, sizeof(req->pages_to_gnt[0]),
+>> +		                            GFP_KERNEL);
+>> +		if (!req->pages_to_gnt)
+>> +			goto fail;
+> 
+> Do these need to be per-request? Or can they all share a common set of
+> arrays?
 
-The backup battery is optional, connected to the VBACKUP pin, and can be
-nonrechargeable or rechargeable. The rechargeable battery can be charged
-from the system supply using the backup battery charger.
-
-Add support for enabling charging of this backup battery.  Also add the DT
-binding document and the new properties to have this support.
-
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
-Changes from V1:
-- Converted DT property to boolean.
-- cleanups as use "...".
-
- .../devicetree/bindings/rtc/rtc-palmas.txt         |   28 ++++++++++++++++
- drivers/rtc/rtc-palmas.c                           |   35 ++++++++++++++++++++
- 2 files changed, 63 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/rtc/rtc-palmas.txt
-
-diff --git a/Documentation/devicetree/bindings/rtc/rtc-palmas.txt b/Documentation/devicetree/bindings/rtc/rtc-palmas.txt
-new file mode 100644
-index 0000000..c8c9def
---- /dev/null
-+++ b/Documentation/devicetree/bindings/rtc/rtc-palmas.txt
-@@ -0,0 +1,28 @@
-+Palmas RTC controller bindings
-+
-+Required properties:
-+- compatible:
-+  - "ti,palmas-rtc" for palma series of the RTC controller
-+- interrupt-parent: Parent interrupt device, must be handle of palmas node.
-+- interrupts: Interrupt number of RTC submodule on device.
-+
-+Optional properties:
-+- ti,back-battery-charge-enable: The palmas series device like TPS65913 or
-+	TPS80036 supports the battery backup for powering the RTC when main
-+	battery is removed or in very low power state. This flag will enable
-+	the backup battery charging.
-+- ti,back-charge-low-current: Configure lower charging current. Device supports the
-+	charging current as < 100mA or >100mA. Low current will set as <100mA.
-+
-+Example:
-+	palmas: tps65913@58 {
-+		...
-+		palmas_rtc: rtc {
-+			compatible = "ti,palmas-rtc";
-+			interrupt-parent = <&palmas>;
-+			interrupts = <8 0>;
-+			ti,back-battery-charge-enable;
-+			ti,back-charge-low-current;
-+		};
-+		...
-+	};
-diff --git a/drivers/rtc/rtc-palmas.c b/drivers/rtc/rtc-palmas.c
-index a1fecc8..7f34e33 100644
---- a/drivers/rtc/rtc-palmas.c
-+++ b/drivers/rtc/rtc-palmas.c
-@@ -238,6 +238,15 @@ static int palmas_rtc_probe(struct platform_device *pdev)
- 	struct palmas *palmas = dev_get_drvdata(pdev->dev.parent);
- 	struct palmas_rtc *palmas_rtc = NULL;
- 	int ret;
-+	bool enable_bb_charging = false;
-+	bool low_bb_charging;
-+
-+	if (pdev->dev.of_node) {
-+		enable_bb_charging = of_property_read_bool(pdev->dev.of_node,
-+					"ti,back-battery-charge-enable");
-+		low_bb_charging = of_property_read_bool(pdev->dev.of_node,
-+					"ti,back-charge-low-current");
-+	}
- 
- 	palmas_rtc = devm_kzalloc(&pdev->dev, sizeof(struct palmas_rtc),
- 			GFP_KERNEL);
-@@ -254,6 +263,32 @@ static int palmas_rtc_probe(struct platform_device *pdev)
- 	palmas_rtc->dev = &pdev->dev;
- 	platform_set_drvdata(pdev, palmas_rtc);
- 
-+	if (enable_bb_charging) {
-+		unsigned reg = 0;
-+
-+		if (low_bb_charging)
-+			reg |= PALMAS_BACKUP_BATTERY_CTRL_BBS_BBC_LOW_ICHRG;
-+
-+		ret = palmas_update_bits(palmas, PALMAS_PMU_CONTROL_BASE,
-+			PALMAS_BACKUP_BATTERY_CTRL,
-+			PALMAS_BACKUP_BATTERY_CTRL_BBS_BBC_LOW_ICHRG, reg);
-+		if (ret < 0) {
-+			dev_err(&pdev->dev,
-+				"BACKUP_BATTERY_CTRL update failed, %d\n", ret);
-+			return ret;
-+		}
-+
-+		ret = palmas_update_bits(palmas, PALMAS_PMU_CONTROL_BASE,
-+			PALMAS_BACKUP_BATTERY_CTRL,
-+			PALMAS_BACKUP_BATTERY_CTRL_BB_CHG_EN,
-+			PALMAS_BACKUP_BATTERY_CTRL_BB_CHG_EN);
-+		if (ret < 0) {
-+			dev_err(&pdev->dev,
-+				"BACKUP_BATTERY_CTRL update failed, %d\n", ret);
-+			return ret;
-+		}
-+	}
-+
- 	/* Start RTC */
- 	ret = palmas_update_bits(palmas, PALMAS_RTC_BASE, PALMAS_RTC_CTRL_REG,
- 			PALMAS_RTC_CTRL_REG_STOP_RTC,
--- 
-1.7.1.1
+No, we cannot share them unless we serialize the unmap of grants using a
+spinlock (like we do when writing the reponse on the ring).
 
