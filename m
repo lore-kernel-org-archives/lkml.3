@@ -1,68 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754650Ab3HAKK6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 06:10:58 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:58871 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754625Ab3HAKKz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 06:10:55 -0400
-Message-ID: <51FA341A.7060307@linux.vnet.ibm.com>
-Date: Thu, 01 Aug 2013 15:40:34 +0530
-From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1754661Ab3HAKLT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 06:11:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44387 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753884Ab3HAKLP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 06:11:15 -0400
+Date: Thu, 1 Aug 2013 18:10:19 +0800
+From: Dong Zhu <bluezhudong@gmail.com>
+To: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] posix_cpu_timers: fix timer never expires when executes
+ clock_nanosleep
+Message-ID: <20130801101018.GJ6721@zhudong.nay.redhat.com>
 MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
-CC: Joe Perches <joe@perches.com>, Borislav Petkov <bp@alien8.de>,
-        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
-        Anton Vorontsov <anton@enomsg.org>, Colin Cross <ccross@android.com>,
-        Kees Cook <keescook@chromium.org>, Tony Luck <tony.luck@intel.com>,
-        Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "Huang, Ying" <ying.huang@intel.com>
-Subject: Re: [PATCH] APEI/ERST: Fix error message formatting
-References: <1374526866-6813-1-git-send-email-bp@alien8.de> <20130724171347.GB29756@naverao1-tp.watson.ibm.com> <1374686598.18818.18.camel@joe-AO722> <51F10AA8.2050901@linux.vnet.ibm.com> <CAErSpo5vLbsM5BXjrCVy1AKBxRRSH33TthyyK3O35Mghqw81nQ@mail.gmail.com> <51F8DCFC.9050205@linux.vnet.ibm.com> <CAErSpo6hcjL_A9Vr1R0GqobUysdskd8B1S_9r7-zBSUvELFPXw@mail.gmail.com>
-In-Reply-To: <CAErSpo6hcjL_A9Vr1R0GqobUysdskd8B1S_9r7-zBSUvELFPXw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13080109-9264-0000-0000-0000043ED75E
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/31/2013 11:30 PM, Bjorn Helgaas wrote:
-> On Wed, Jul 31, 2013 at 3:46 AM, Naveen N. Rao
-> <naveen.n.rao@linux.vnet.ibm.com> wrote:
->
->> My key question was about why we are using a field width of 10 implying a
->> 32-bit value, rather than a field width of 18 as suggested by the data type?
->> This shouldn't truncate the value, but if we are specifying the field width
->> for alignment, seems to me it is better to match the data type.
->
-> %pR uses a field width of 10 (two for "0x", eight for the value)
-> simply because the majority of resource values fit in 32 bits.  Larger
-> values extend the width, so it's not a question of truncating any
-> data.  But it's no fun to read memory addresses when most of them have
-> eight extra leading zeros (the high 32-bits of a 64-bit value).  I
-> think the same applies here; most ACPI table addresses still fit in 32
-> bits.
->
-> We *do* use a field width of 18 for the e820 table, even though many
-> of those regions fit in 32 bits.  But that's sort of an exception
-> because it's a table where addresses above 4GB are pretty common.
+>From c7439b90b0794c016b29356f0e232f7413ef7b60 Mon Sep 17 00:00:00 2001
+From: Dong Zhu <bluezhudong@gmail.com> 
+Date: Thu, 1 Aug 2013 11:39:04 +0800
 
-Makes sense, thanks for the explanation.
+When use the current process pid as the clockid, then executes
+clock_nanosleep syscall the timer will never expire. Kernel should
+prevent user doing like this and this patch is supposed to fix it.I
+wrote a simple case to test it:
 
->
-> But at the end of the day, I guess I'm just stating my personal
-> preferences and yours might be different.
+    #include <time.h>
+    #include <errno.h>
+    #include <unistd.h>
+    #include <sys/types.h>
 
-Right - I'd probably prefer just %#llx. But yeah, the currently used 
-field width of 10 looks fine too.
+    #define CPU_CLOCK_PROF           0
+    #define CPU_CLOCK_VIRT           1
+    #define CPU_CLOCK_SCHED          2
+
+    #define CPU_CLOCK_THREAD         4
+    #define PID_TO_CLOCKID(pid, clock) ((~(clockid_t) (pid) << 3) | (clockid_t) (clock))
+
+    int main(void)
+    {
+            int ret;
+            pid_t pid;
+            clockid_t clk;
+            struct timespec ts;
+
+            ts.tv_sec = 1;
+            ts.tv_nsec = 0;
+
+            pid = getpid();
+            clk = PID_TO_CLOCKID(pid, CPU_CLOCK_PROF);
+            if ((ret = clock_nanosleep(clk, 0, &ts, NULL)) != 0) {
+                    perror("clock_nanosleep");
+                    return ret;
+            }
+
+            return 0;
+    }
+
+Signed-off-by: Dong Zhu <bluezhudong@gmail.com>
+---
+ kernel/posix-cpu-timers.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
+index c7f31aa..cc03290 100644
+--- a/kernel/posix-cpu-timers.c
++++ b/kernel/posix-cpu-timers.c
+@@ -1413,9 +1413,9 @@ static int posix_cpu_nsleep(const clockid_t which_clock, int flags,
+ 	/*
+ 	 * Diagnose required errors first.
+ 	 */
+-	if (CPUCLOCK_PERTHREAD(which_clock) &&
+-	    (CPUCLOCK_PID(which_clock) == 0 ||
+-	     CPUCLOCK_PID(which_clock) == current->pid))
++	if (CPUCLOCK_PID(which_clock) == current->pid ||
++	    (CPUCLOCK_PERTHREAD(which_clock) &&
++	     CPUCLOCK_PID(which_clock) == 0))
+ 		return -EINVAL;
+ 
+ 	error = do_cpu_nanosleep(which_clock, flags, rqtp, &it);
+-- 
+1.7.11.7
 
 
-Thanks,
-Naveen
-
+-- 
+Best Regards,
+Dong Zhu
