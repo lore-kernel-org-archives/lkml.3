@@ -1,122 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753725Ab3HAAgq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 20:36:46 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:36434 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752734Ab3HAAgn convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 20:36:43 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <1375292732-7627-5-git-send-email-stefano.stabellini@eu.citrix.com>
-References: <alpine.DEB.2.02.1307311833040.4893@kaball.uk.xensource.com> <1375292732-7627-5-git-send-email-stefano.stabellini@eu.citrix.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: [PATCH RFC 5/8] xen: introduce XENMEM_get_dma_buf and xen_put_dma_buf
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Date: Wed, 31 Jul 2013 20:36:03 -0400
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        xen-devel@lists.xensource.com
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Stefano.Stabellini@eu.citrix.com, Ian.Campbell@citrix.com
-Message-ID: <22032fc7-81f5-4271-81b6-cd2bee277fb5@email.android.com>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	id S1753385Ab3HAAgl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 20:36:41 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:52968 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752437Ab3HAAcM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 20:32:12 -0400
+From: Joe Perches <joe@perches.com>
+To: netdev@vger.kernel.org
+Cc: David Howells <dhowells@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>, linux-afs@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 3/8] af_rxrpc.h: Remove extern from function prototypes
+Date: Wed, 31 Jul 2013 17:31:34 -0700
+Message-Id: <e5aa8f4892a700e56cdd9f3da6ca8a26dbe2fe5d.1375316912.git.joe@perches.com>
+X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
+In-Reply-To: <cover.1375316912.git.joe@perches.com>
+References: <cover.1375316912.git.joe@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stefano Stabellini <stefano.stabellini@eu.citrix.com> wrote:
->Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
->---
->include/xen/interface/memory.h |   62
->++++++++++++++++++++++++++++++++++++++++
-> 1 files changed, 62 insertions(+), 0 deletions(-)
->
->diff --git a/include/xen/interface/memory.h
->b/include/xen/interface/memory.h
->index 2ecfe4f..ffd7f4e 100644
->--- a/include/xen/interface/memory.h
->+++ b/include/xen/interface/memory.h
->@@ -263,4 +263,66 @@ struct xen_remove_from_physmap {
-> };
-> DEFINE_GUEST_HANDLE_STRUCT(xen_remove_from_physmap);
-> 
->+#define XENMEM_get_dma_buf             26
->+/*
->+ * This hypercall is similar to XENMEM_exchange: it exchanges the
->pages
+There are a mix of function prototypes with and without extern
+in the kernel sources.  Standardize on not using extern for
+function prototypes.
 
-Could you elaborate why the existing hyper call won't work? 
+Function prototypes don't need to be written with extern.
+extern is assumed by the compiler.  Its use is as unnecessary as
+using auto to declare automatic/local variables in a block.
 
->+ * passed in with a new set of pages, contiguous and under 4G if so
->+ * requested. The new pages are going to be "pinned": it's guaranteed
->+ * that their p2m mapping won't be changed until explicitly
->"unpinned".
->+ * If return code is zero then @out.extent_list provides the MFNs of
->the
->+ * newly-allocated memory.  Returns zero on complete success,
->otherwise
->+ * a negative error code.
->+ * On complete success then always @nr_exchanged == @in.nr_extents. 
->On
->+ * partial success @nr_exchanged indicates how much work was done.
->+ */
->+struct xen_get_dma_buf {
->+    /*
->+     * [IN] Details of memory extents to be exchanged (GMFN bases).
->+     * Note that @in.address_bits is ignored and unused.
->+     */
->+    struct xen_memory_reservation in;
->+
->+    /*
->+     * [IN/OUT] Details of new memory extents.
->+     * We require that:
->+     *  1. @in.domid == @out.domid
->+     *  2. @in.nr_extents  << @in.extent_order == 
->+     *     @out.nr_extents << @out.extent_order
->+     *  3. @in.extent_start and @out.extent_start lists must not
->overlap
->+     *  4. @out.extent_start lists GPFN bases to be populated
->+     *  5. @out.extent_start is overwritten with allocated GMFN bases
->+     */
->+    struct xen_memory_reservation out;
->+
->+    /*
->+     * [OUT] Number of input extents that were successfully exchanged:
->+     *  1. The first @nr_exchanged input extents were successfully
->+     *     deallocated.
->+     *  2. The corresponding first entries in the output extent list
->correctly
->+     *     indicate the GMFNs that were successfully exchanged.
->+     *  3. All other input and output extents are untouched.
->+     *  4. If not all input exents are exchanged then the return code
->of this
->+     *     command will be non-zero.
->+     *  5. THIS FIELD MUST BE INITIALISED TO ZERO BY THE CALLER!
->+     */
->+    xen_ulong_t nr_exchanged;
->+};
->+DEFINE_GUEST_HANDLE_STRUCT(xen_get_dma_buf);
->+
->+#define XENMEM_put_dma_buf             27
->+/*
->+ * XENMEM_put_dma_buf unpins a set of pages, previously pinned by
->+ * XENMEM_get_dma_buf. After this call the p2m mapping of the pages
->can
->+ * be transparently changed by the hypervisor, as usual. The pages are
->+ * still accessible from the guest.
->+ */
->+struct xen_put_dma_buf {
->+    /*
->+     * [IN] Details of memory extents to be exchanged (GMFN bases).
->+     * Note that @in.address_bits is ignored and unused.
->+     */
->+    struct xen_memory_reservation in;
->+};
->+DEFINE_GUEST_HANDLE_STRUCT(xen_put_dma_buf);
->+
-> #endif /* __XEN_PUBLIC_MEMORY_H__ */
+Reflow modified prototypes to 80 columns.
 
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ include/net/af_rxrpc.h | 35 ++++++++++++++++-------------------
+ 1 file changed, 16 insertions(+), 19 deletions(-)
+
+diff --git a/include/net/af_rxrpc.h b/include/net/af_rxrpc.h
+index 03e6e94..e797d45 100644
+--- a/include/net/af_rxrpc.h
++++ b/include/net/af_rxrpc.h
+@@ -31,24 +31,21 @@ enum {
+ 
+ typedef void (*rxrpc_interceptor_t)(struct sock *, unsigned long,
+ 				    struct sk_buff *);
+-extern void rxrpc_kernel_intercept_rx_messages(struct socket *,
+-					       rxrpc_interceptor_t);
+-extern struct rxrpc_call *rxrpc_kernel_begin_call(struct socket *,
+-						  struct sockaddr_rxrpc *,
+-						  struct key *,
+-						  unsigned long,
+-						  gfp_t);
+-extern int rxrpc_kernel_send_data(struct rxrpc_call *, struct msghdr *,
+-				  size_t);
+-extern void rxrpc_kernel_abort_call(struct rxrpc_call *, u32);
+-extern void rxrpc_kernel_end_call(struct rxrpc_call *);
+-extern bool rxrpc_kernel_is_data_last(struct sk_buff *);
+-extern u32 rxrpc_kernel_get_abort_code(struct sk_buff *);
+-extern int rxrpc_kernel_get_error_number(struct sk_buff *);
+-extern void rxrpc_kernel_data_delivered(struct sk_buff *);
+-extern void rxrpc_kernel_free_skb(struct sk_buff *);
+-extern struct rxrpc_call *rxrpc_kernel_accept_call(struct socket *,
+-						   unsigned long);
+-extern int rxrpc_kernel_reject_call(struct socket *);
++void rxrpc_kernel_intercept_rx_messages(struct socket *, rxrpc_interceptor_t);
++struct rxrpc_call *rxrpc_kernel_begin_call(struct socket *,
++					   struct sockaddr_rxrpc *,
++					   struct key *,
++					   unsigned long,
++					   gfp_t);
++int rxrpc_kernel_send_data(struct rxrpc_call *, struct msghdr *, size_t);
++void rxrpc_kernel_abort_call(struct rxrpc_call *, u32);
++void rxrpc_kernel_end_call(struct rxrpc_call *);
++bool rxrpc_kernel_is_data_last(struct sk_buff *);
++u32 rxrpc_kernel_get_abort_code(struct sk_buff *);
++int rxrpc_kernel_get_error_number(struct sk_buff *);
++void rxrpc_kernel_data_delivered(struct sk_buff *);
++void rxrpc_kernel_free_skb(struct sk_buff *);
++struct rxrpc_call *rxrpc_kernel_accept_call(struct socket *, unsigned long);
++int rxrpc_kernel_reject_call(struct socket *);
+ 
+ #endif /* _NET_RXRPC_H */
+-- 
+1.8.1.2.459.gbcd45b4.dirty
 
