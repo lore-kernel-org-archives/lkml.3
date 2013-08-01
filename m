@@ -1,59 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753516Ab3HAHsv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 03:48:51 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:53860 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751418Ab3HAHst (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752437Ab3HAHsu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 03:48:50 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:45523 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751065Ab3HAHst (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 1 Aug 2013 03:48:49 -0400
-Message-ID: <1375343328.2034.34.camel@joe-AO722>
-Subject: [PATCH] MAINTAINERS: Add separate section for USB NETWORKING DRIVERS
-From: Joe Perches <joe@perches.com>
-To: gregkh@linuxfoundation.org
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-usb <linux-usb@vger.kernel.org>
-Date: Thu, 01 Aug 2013 00:48:48 -0700
-In-Reply-To: <1375316960686@kroah.org>
-References: <1375316960686@kroah.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Date: Thu, 1 Aug 2013 09:48:29 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jason Low <jason.low2@hp.com>
+Cc: Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        KML <linux-kernel@vger.kernel.org>, Mike Galbraith <efault@gmx.de>,
+        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
+        Alex Shi <alex.shi@intel.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>, Mel Gorman <mgorman@suse.de>,
+        aswin@hp.com, scott.norton@hp.com, chegu_vinod@hp.com,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Subject: Re: [RFC PATCH] sched: Reduce overestimating avg_idle
+Message-ID: <20130801074829.GH3008@twins.programming.kicks-ass.net>
+References: <1375263472.3922.26.camel@j-VirtualBox>
+ <51F9349A.3090605@redhat.com>
+ <1375342601.1974.104.camel@j-VirtualBox>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1375342601.1974.104.camel@j-VirtualBox>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are several drivers in drivers/net/usb/ that
-do not have specific MAINTAINERS that should have
-emails forwarded to the linux-usb mailing list.
+On Thu, Aug 01, 2013 at 12:36:41AM -0700, Jason Low wrote:
+> So how acceptable is setting a limit of 2*migration cost or less on the
+> delta rather than on the avg?
 
-Add a section for those drivers.
-
-Signed-off-by: Joe Perches <joe@perches.com>
----
-> In the future, you do not need to send drivers/net/usb/ patches to me,
-> netdev and the linux-usb mailing lists should be sufficient.
-
-I should have done this in the first patch.
-Oh well...
-
- MAINTAINERS | 5 +++++
- 1 file changed, 5 insertions(+)
-
-diff --git a/MAINTAINERS b/MAINTAINERS
-index d83f70f..4af7539 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -8656,6 +8656,11 @@ T:	git git://git.alsa-project.org/alsa-kernel.git
- S:	Maintained
- F:	sound/usb/midi.*
- 
-+USB NETWORKING DRIVERS
-+L:	linux-usb@vger.kernel.org
-+S:	Odd Fixes
-+F:	drivers/net/usb/
-+
- USB OHCI DRIVER
- M:	Alan Stern <stern@rowland.harvard.edu>
- L:	linux-usb@vger.kernel.org
-
-
+Its fine with me as we're already doing that. But since you asked last
+time around if those two things weren't unrelated etc.. 
