@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757560Ab3HAVqe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 17:46:34 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39738 "EHLO
+	id S1757587Ab3HAVrd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 17:47:33 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39741 "EHLO
 	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756227Ab3HAVqd (ORCPT
+	with ESMTP id S1756227Ab3HAVrc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 17:46:33 -0400
+	Thu, 1 Aug 2013 17:47:32 -0400
 In-Reply-To: <20130801213420.GL23006@n2100.arm.linux.org.uk>
 References: <20130801213420.GL23006@n2100.arm.linux.org.uk>
 From: Russell King <rmk+kernel@arm.linux.org.uk>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH RFC 12/51] DMA-API: net: intel/e1000: replace
+Subject: [PATCH RFC 13/51] DMA-API: net: sfc/efx.c: replace
  dma_set_mask()+dma_set_coherent_mask() with new
  helper
-Message-Id: <E1V50hA-0006qa-Vz@rmk-PC.arm.linux.org.uk>
-Date: Thu, 01 Aug 2013 22:46:04 +0100
+Message-Id: <E1V50i9-0006qf-Ed@rmk-PC.arm.linux.org.uk>
+Date: Thu, 01 Aug 2013 22:47:05 +0100
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,35 +30,39 @@ with a call to the new helper dma_set_mask_and_coherent().
 
 Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 ---
- drivers/net/ethernet/intel/e1000/e1000_main.c |    9 ++-------
- 1 files changed, 2 insertions(+), 7 deletions(-)
+ drivers/net/ethernet/sfc/efx.c |   12 +-----------
+ 1 files changed, 1 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/net/ethernet/intel/e1000/e1000_main.c b/drivers/net/ethernet/intel/e1000/e1000_main.c
-index 59ad007..34672f8 100644
---- a/drivers/net/ethernet/intel/e1000/e1000_main.c
-+++ b/drivers/net/ethernet/intel/e1000/e1000_main.c
-@@ -1018,19 +1018,14 @@ static int e1000_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
+diff --git a/drivers/net/ethernet/sfc/efx.c b/drivers/net/ethernet/sfc/efx.c
+index c729688..37c3f7e 100644
+--- a/drivers/net/ethernet/sfc/efx.c
++++ b/drivers/net/ethernet/sfc/efx.c
+@@ -1164,7 +1164,7 @@ static int efx_init_io(struct efx_nic *efx)
  	 */
- 	pci_using_dac = 0;
- 	if ((hw->bus_type == e1000_bus_type_pcix) &&
--	    !dma_set_mask(&pdev->dev, DMA_BIT_MASK(64))) {
--		/* according to DMA-API-HOWTO, coherent calls will always
--		 * succeed if the set call did
--		 */
--		dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(64));
-+	    !dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(64))) {
- 		pci_using_dac = 1;
- 	} else {
--		err = dma_set_mask(&pdev->dev, DMA_BIT_MASK(32));
-+		err = dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(32));
- 		if (err) {
- 			pr_err("No usable DMA config, aborting\n");
- 			goto err_dma;
+ 	while (dma_mask > 0x7fffffffUL) {
+ 		if (dma_supported(&pci_dev->dev, dma_mask)) {
+-			rc = dma_set_mask(&pci_dev->dev, dma_mask);
++			rc = dma_set_mask_and_coherent(&pci_dev->dev, dma_mask);
+ 			if (rc == 0)
+ 				break;
  		}
--		dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(32));
+@@ -1177,16 +1177,6 @@ static int efx_init_io(struct efx_nic *efx)
  	}
+ 	netif_dbg(efx, probe, efx->net_dev,
+ 		  "using DMA mask %llx\n", (unsigned long long) dma_mask);
+-	rc = dma_set_coherent_mask(&pci_dev->dev, dma_mask);
+-	if (rc) {
+-		/* dma_set_coherent_mask() is not *allowed* to
+-		 * fail with a mask that dma_set_mask() accepted,
+-		 * but just in case...
+-		 */
+-		netif_err(efx, probe, efx->net_dev,
+-			  "failed to set consistent DMA mask\n");
+-		goto fail2;
+-	}
  
- 	netdev->netdev_ops = &e1000_netdev_ops;
+ 	efx->membase_phys = pci_resource_start(efx->pci_dev, EFX_MEM_BAR);
+ 	rc = pci_request_region(pci_dev, EFX_MEM_BAR, "sfc");
 -- 
 1.7.4.4
 
