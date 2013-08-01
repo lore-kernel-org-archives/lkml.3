@@ -1,162 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755863Ab3HANqg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 09:46:36 -0400
-Received: from vm1.sequanux.org ([188.165.36.56]:53835 "EHLO vm1.sequanux.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755414Ab3HANqf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 09:46:35 -0400
-Date: Thu, 1 Aug 2013 15:46:32 +0200
-From: Simon Guinot <simon.guinot@sequanux.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: Re: [PATCH v3] gpio: add GPIO support for F71882FG and F71889F
-Message-ID: <20130801134632.GY9916@kw.sim.vm.gnt>
-References: <1374486633-9737-1-git-send-email-simon.guinot@sequanux.org>
- <CACRpkda2bH_TkFR6c0cXvjye4SmFWN5xuzQSO=NqBq8mNDgV0g@mail.gmail.com>
+	id S1755826Ab3HANsY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 09:48:24 -0400
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:43423 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752230Ab3HANsW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 09:48:22 -0400
+Message-ID: <51FA6723.9010608@gmail.com>
+Date: Thu, 01 Aug 2013 08:48:19 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="1RftZa7o64Huaoir"
-Content-Disposition: inline
-In-Reply-To: <CACRpkda2bH_TkFR6c0cXvjye4SmFWN5xuzQSO=NqBq8mNDgV0g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: David Woodhouse <dwmw2@infradead.org>
+CC: "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "ksummit-2013-discuss@lists.linuxfoundation.org" 
+	<ksummit-2013-discuss@lists.linuxfoundation.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Richard Cochran <richardcochran@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Domenico Andreoli <cavokz@gmail.com>, mbizon@freebox.fr,
+        Dave P Martin <Dave.Martin@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [Ksummit-2013-discuss] DT bindings as ABI [was: Do we have people
+ interested in device tree janitoring / cleanup?]
+References: <20130725175702.GC22291@e106331-lin.cambridge.arm.com>  <1999586.84BnWE5EUh@thinkpad> <20130731191209.GA8027@netboy>  <1409617.9untvfnOTJ@flatron> <20130731200017.GC8027@netboy>  <20130731201457.GA24642@n2100.arm.linux.org.uk>  <CAKON4Ow7rE9cDj_tS7kmYN4incM+ay=BK96q-ph2JxYH3xiQzg@mail.gmail.com>  <20130731204817.GC24642@n2100.arm.linux.org.uk>  <CAKON4Ozfe=endqnXWkcWR2HuJ489Otpcu2QsjB0DNg6jpRgG+Q@mail.gmail.com> <1375352315.22084.138.camel@shinybook.infradead.org>
+In-Reply-To: <1375352315.22084.138.camel@shinybook.infradead.org>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 08/01/2013 05:18 AM, David Woodhouse wrote:
+> On Wed, 2013-07-31 at 17:26 -0400, jonsmirl@gmail.com wrote:
+>> Alternatively you may be of the belief that it is impossible to get
+>> rid of the board specific code. But x86 doesn't have any of it, why
+>> should ARM?
+> 
+> The reason x86 doesn't have it is because it carries three decades worth
+> of legacy baggage so that it can still look like a 1980s IBM PC when
+> necessary.
+> 
+> There *have* been some x86 platforms which abandon that legacy crap, and
+> for those we *do* have board-specific code. (Is James still maintaining
+> Voyager support? It feels very strange to talk about Voyager with it
+> *not* being the 'legacy crap' in question...)
+> 
+> We've even seen *recent* attempts to abandon the legacy crap in the
+> embedded x86 space, which backtracked and added it all back again — in
+> part because x86 lacked any sane way to describe the hardware if it
+> wasn't pretending to be a PC. ACPI doesn't cut it, and DT "wasn't
+> invented here"...
+>
+> Unless you want the ARM world to settle on a strategy of "all the world
+> is an Assabet", I'd be careful what you wish for...
 
---1RftZa7o64Huaoir
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+There is some level of belief that ACPI will enable running this years
+OS on next years h/w. This idea is completely flawed as long as ARM
+vendors don't design for compatibility, spin the Si for compatibility
+issues, and have some mechanism to emulate legacy h/w. All the
+discussions and issues around DT bindings and processes will apply to
+ACPI bindings as well.
 
-On Mon, Jul 29, 2013 at 05:59:08PM +0200, Linus Walleij wrote:
-> On Mon, Jul 22, 2013 at 11:50 AM, Simon Guinot
-> <simon.guinot@sequanux.org> wrote:
->=20
-> > This patch adds support for the GPIOs found on the Fintek super-I/O
-> > chips F71882FG and F71889F.
-> >
-> > A super-I/O is a legacy I/O controller embedded on x86 motherboards. It
-> > is used to connect the low-bandwidth devices. Among others functions the
-> > F71882FG/F71889F provides: a parallel port, two serial ports, a keyboard
-> > controller, an hardware monitoring controller and some GPIO pins.
-> >
-> > Note that this super-I/Os are embedded on some Atom-based LaCie NASes.
-> > The GPIOs are used to control the LEDs and the hard drive power.
-> >
-> > Signed-off-by: Simon Guinot <simon.guinot@sequanux.org>
-> > ---
-> > Changes since v2:
-> > - Remove useless NULL setters for driver data.
-
-Hi Linus,
-
->=20
-> Given the recent discussion with Rafael I want to have an
-> extended discussion of this patch.
->=20
-> It is my current understanding that:
->=20
-> - It is possible to define the whereabouts of the SuperIO
->   chips using ACPI
-
-Agreed.
-
-> - It is possible for developers to influence the source
->   AML for the DSDT tables of these systems.
-
-I am not sure about that. Let's consider the LaCie x86-based boards.
-LaCie only adds a few devices on the top of a motherboard provided by
-an another manufacturer. In turns, this last gets a Super-I/O from an
-another manufacturer. In my understanding, the Super-I/O manufacturer is
-responsible for registering the PNP IDs (one per device functionality).
-
-LaCie may have enough leverage to obtain some modifications on the ACPI
-DSDT tables but about the PNP IDs registration, let's say it is less
-that certain. The problem is that LaCie don't have any contacts with the
-Super-I/O manufacturer.
-
-I have to say that all this process is not as easy as adding a node in
-a dts file.
-
-> - It is the proper thing to do.
-
-Yes, it may be.
-
-> - So we should atleast support ACPI probing with the
->   port-based detection as a final fallback if all else fails.
->=20
-> Why can I not get something like:
->=20
-> #include <linux/acpi.h>
-> (...)
-> static const struct acpi_device_id gpio_acpi_match[] =3D {
->         { "FOOBAR", 0 },
-
-After some checks on my boards, it appears that there is no PNP ID
-available for the Super-I/O GPIO functionality (or any others). Moreover
-I think this IDs don't have been registered to Microsoft by Fintech
-(the super-I/O manufacturer).
-
-How do you envisage the follow-up ?
-
->         { }
-> };
-> MODULE_DEVICE_TABLE(acpi, gpio_acpi_match);
->=20
-> static struct platform_driver gpio_driver =3D {
->         (...)
->         .driver         =3D {
->                  (...)
->                 .acpi_match_table =3D ACPI_PTR(gpio_acpi_match),
->         },
-> };
-
-It seems to me that the ACPI probing is the easiest part. How do you see
-the ioport probing fallback ?
-
-I can only figure out broken solutions:
-
-1. From the init function, we could check that the PNP IDs are well
-   available in the ACPI DSDT tables before registering the platform
-   driver. If not, we could fall back on the ioport probing method.
-   I don't know if checking the DSDT tables is even possible. It is at
-   least weird and it defeats completely the purpos of acpi_match_table.
-2. In a late initcall, we could check that the driver is well
-   registered else fall back on the ioport detection.
-   As GPIOs may be needed early, I don't think this method is suitable.
-
-And I have no more ideas...
-
-Please, help me to find a correct way to combine this probing methods.
-
->=20
-> ?
->=20
-> If there is something wrong in my reasoning above, please
-> share it!
-
-I'd rather say that your reasoning adds some difficulties :)
-
-Thanks,
-
-Simon
-
---1RftZa7o64Huaoir
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEARECAAYFAlH6ZrgACgkQgtp0PDeOcDr25ACeIyOZsoLjb5UnrwAzJUt/kmoz
-sAcAniTfAXgH8EUQknPD0cvNDobZa3k2
-=Rae9
------END PGP SIGNATURE-----
-
---1RftZa7o64Huaoir--
+Rob
