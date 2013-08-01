@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753769Ab3HAIw7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 04:52:59 -0400
-Received: from mail-we0-f176.google.com ([74.125.82.176]:59527 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750856Ab3HAIw6 (ORCPT
+	id S1753871Ab3HAIxg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 04:53:36 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:64986 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751479Ab3HAIxe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 04:52:58 -0400
-Date: Thu, 1 Aug 2013 09:52:52 +0100
+	Thu, 1 Aug 2013 04:53:34 -0400
+Date: Thu, 1 Aug 2013 09:53:29 +0100
 From: Lee Jones <lee.jones@linaro.org>
 To: Jingoo Han <jg1.han@samsung.com>
-Cc: "'Samuel Ortiz'" <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        "'Peter Tyser'" <ptyser@xes-inc.com>
-Subject: Re: [PATCH] mfd: lpc_ich: Staticize struct 'lpc_chipset_info'
-Message-ID: <20130801085252.GO13298@lee--X1>
-References: <002d01ce8e5a$b73e3030$25ba9090$@samsung.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        "'Florian Vaussard'" <florian.vaussard@epfl.ch>,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>
+Subject: Re: [PATCH] mfd: twl4030-power: Staticize local functions
+Message-ID: <20130801085329.GP13298@lee--X1>
+References: <002b01ce8e59$d763f990$862becb0$@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <002d01ce8e5a$b73e3030$25ba9090$@samsung.com>
+In-Reply-To: <002b01ce8e59$d763f990$862becb0$@samsung.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,30 +28,19 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Thu, 01 Aug 2013, Jingoo Han wrote:
 
-> 'lpc_chipset_info' is used only in this file.
+> twl4030_power_configure_scripts(), twl4030_power_configure_resources(),
+> twl4030_power_probe() are used only in this file.
 > 
-> Fix the following sparse warning:
+> Fix the following sparse warnings:
 > 
-> drivers/mfd/lpc_ich.c:216:21: warning: symbol 'lpc_chipset_info' was not declared. Should it be static?
+> drivers/mfd/twl4030-power.c:496:5: warning: symbol 'twl4030_power_configure_scripts' was not declared. Should it be static?
+> drivers/mfd/twl4030-power.c:512:5: warning: symbol 'twl4030_power_configure_resources' was not declared. Should it be static?
+> drivers/mfd/twl4030-power.c:556:5: warning: symbol 'twl4030_power_probe' was not declared. Should it be static?
 > 
 > Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 > ---
->  drivers/mfd/lpc_ich.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/mfd/lpc_ich.c b/drivers/mfd/lpc_ich.c
-> index 2403332..9483bc8 100644
-> --- a/drivers/mfd/lpc_ich.c
-> +++ b/drivers/mfd/lpc_ich.c
-> @@ -213,7 +213,7 @@ enum lpc_chipsets {
->  	LPC_COLETO,	/* Coleto Creek */
->  };
->  
-> -struct lpc_ich_info lpc_chipset_info[] = {
-> +static struct lpc_ich_info lpc_chipset_info[] = {
->  	[LPC_ICH] = {
->  		.name = "ICH",
->  		.iTCO_version = 1,
+>  drivers/mfd/twl4030-power.c |    6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
 
 Applied, thanks.
 
