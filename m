@@ -1,59 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754066Ab3HALYG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 07:24:06 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:35768 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751418Ab3HALYE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 07:24:04 -0400
-X-IronPort-AV: E=Sophos;i="4.89,793,1367971200"; 
-   d="scan'208";a="40720716"
-Message-ID: <51FA4547.7080408@citrix.com>
-Date: Thu, 1 Aug 2013 12:23:51 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
+	id S1754608Ab3HALYL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 07:24:11 -0400
+Received: from www.linutronix.de ([62.245.132.108]:41473 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751418Ab3HALYJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 07:24:09 -0400
+Date: Thu, 1 Aug 2013 13:24:10 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+cc: linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Sebastian Sewior <bigeasy@linutronix.de>
+Subject: [ANNOUNCE] 3.10.4-rt1
+Message-ID: <alpine.DEB.2.02.1308011215160.4089@ionos.tec.linutronix.de>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Andres Lagar-Cavilla <andreslc@gridcentric.ca>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andres Lagar-Cavilla <andres@lagarcavilla.com>,
-        <boris.ostrovsky@oracle.com>
-Subject: Re: [PATCH] Xen: Fix retry calls into PRIVCMD_MMAPBATCH*.
-References: <1375203632-23854-1-git-send-email-andres@lagarcavilla.org> <2BE2F119-7375-4C8D-933D-9BCD5A9B7552@gridcentric.ca>
-In-Reply-To: <2BE2F119-7375-4C8D-933D-9BCD5A9B7552@gridcentric.ca>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/08/13 04:30, Andres Lagar-Cavilla wrote:
-> -- Resend as I haven't seen this hit the lists. Maybe some smtp misconfig. Apologies. Also expanded cc --
-> 
-> When a foreign mapper attempts to map guest frames that are paged out,
-> the mapper receives an ENOENT response and will have to try again
-> while a helper process pages the target frame back in.
-> 
-> Gating checks on PRIVCMD_MMAPBATCH* ioctl args were preventing retries
-> of mapping calls.
+Dear RT folks!
 
-This breaks the auto_translated_physmap case as will allocate another
-set of empty pages and leak the previous set.
+I'm pleased to announce the 3.10.4-rt1 patch set.
 
-This privcmd_enforce_singleshot_mapping() stuff seems very odd anyway.
-Does anyone know what it was for originally?  It would be preferrable if
-we could update the mappings with a new set of foreign MFNs without
-having to tear down the VMA and recreate a new VMA.
+This is a mostly straight forward port of the 3.8 set. I had
+experimented with a new implementation detail, but I did not get it
+into a shape which would have made it applicable to RT.
 
-> --- a/drivers/xen/privcmd.c
-> +++ b/drivers/xen/privcmd.c
-[...]
-> +/* For MMAPBATCH*. This allows asserting the singleshot mapping
-> + * on a per pfn/pte basis. Mapping calls that fail with ENOENT
-> + * can be then retried until success. */
+Known issues:
 
-Comment coding style.
+      - SLAB support not working
 
-David
+      - Untested on ARM and PPC (hapless victims^W^Wtesters are
+        welcome)
+
+I'm about to leave for my annual kids summer camp kitchen duty, so I
+let you fool around with the current pile.
+
+Sebastian will help out while I'm away, so please send tons of patches
+in the next couple of days and get this thing fixed before I
+return. All I'm going to look for in my mail backlog is a mail with
+the subject: 3.10.x-rty is perfect :)
+
+The RT patch against 3.10.4 can be found here:
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.8/patch-3.10.4-rt1.patch.xz
+
+The split quilt queue is available at:
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.8/patches-3.10.4-rt1.tar.xz
+
+Enjoy,
+
+        tglx
+
