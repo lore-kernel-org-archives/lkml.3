@@ -1,126 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757211Ab3HATKh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 15:10:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63001 "EHLO mx1.redhat.com"
+	id S1757369Ab3HATL0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 15:11:26 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:50909 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756759Ab3HATKe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 15:10:34 -0400
-Date: Thu, 1 Aug 2013 21:05:11 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Zach Levis <zml@linux.vnet.ibm.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, Evgeniy Polyakov <zbr@ioremap.net>,
-        Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/3] exec: introduce exec_binprm() for "depth == 0" code
-Message-ID: <20130801190511.GA3213@redhat.com>
+	id S1757248Ab3HATLY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 15:11:24 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, cpufreq@vger.kernel.org,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
+Subject: Re: [RFC][PATCH] cpufreq: Do not hold driver module references for additional policy CPUs
+Date: Thu, 01 Aug 2013 21:21:35 +0200
+Message-ID: <7752148.JjTSgAt1Xy@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <51FAB083.5050900@linux.vnet.ibm.com>
+References: <2362640.pUofnXyzOi@vostro.rjw.lan> <1656801.jLHjvytfNU@vostro.rjw.lan> <51FAB083.5050900@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130801190455.GA3194@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-task_pid_nr_ns() and trace/ptrace code in the middle of the
-recursive search_binary_handler() looks confusing and imho
-annoying. We only need this code if "depth == 0", lets add
-a simple helper which calls search_binary_handler() and does
-trace_sched_process_exec() + ptrace_event().
+On Friday, August 02, 2013 12:31:23 AM Srivatsa S. Bhat wrote:
+> On 08/02/2013 12:31 AM, Rafael J. Wysocki wrote:
+> > On Thursday, August 01, 2013 11:36:49 PM Srivatsa S. Bhat wrote:
+> >> Its the cpufreq_cpu_get() hidden away in cpufreq_add_dev_symlink(). With
+> >> that taken care of, everything should be OK. Then we can change the
+> >> synchronization part to avoid using refcounts.
+> > 
+> > So I actually don't see why cpufreq_add_dev_symlink() needs to call
+> > cpufreq_cpu_get() at all, since the policy refcount is already 1 at the
+> > point it is called and the bumping up of the driver module refcount is
+> > pointless.
+> > 
+> 
+> Hmm, yes, it seems so.
+> 
+> > However, if I change that I also need to change the piece of code that
+> > calls the complementary cpufreq_cpu_put() and I kind of cannot find it.
+> > 
+> 
+> ... I guess that's because you are looking at the code with your patch
+> applied (and your patch removed that _put()) ;-)
 
-The patch also moves the setting of task->did_exec, we need
-to do this only once.
+No, it's not that one.  That one was complementary to the cpufreq_cpu_get()
+done by cpufreq_add_policy_cpu() before my patch.  Since my patch changes
+cpufreq_add_policy_cpu() to call cpufreq_cpu_put() before returning and
+bump up the policy refcount with kobject_get(), the one in
+__cpufreq_remove_dev() is changed into kobject_put() (correctly, IMO).
 
-Note: we can kill either task->did_exec or PF_FORKNOEXEC.
+What gives?
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- fs/exec.c |   36 ++++++++++++++++++++++--------------
- 1 files changed, 22 insertions(+), 14 deletions(-)
+Rafael
 
-diff --git a/fs/exec.c b/fs/exec.c
-index 9c73def..a9ae4f2 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -1373,7 +1373,6 @@ int search_binary_handler(struct linux_binprm *bprm)
- 	unsigned int depth = bprm->recursion_depth;
- 	int try,retval;
- 	struct linux_binfmt *fmt;
--	pid_t old_pid, old_vpid;
- 
- 	/* This allows 4 levels of binfmt rewrites before failing hard. */
- 	if (depth > 5)
-@@ -1387,12 +1386,6 @@ int search_binary_handler(struct linux_binprm *bprm)
- 	if (retval)
- 		return retval;
- 
--	/* Need to fetch pid before load_binary changes it */
--	old_pid = current->pid;
--	rcu_read_lock();
--	old_vpid = task_pid_nr_ns(current, task_active_pid_ns(current->parent));
--	rcu_read_unlock();
--
- 	retval = -ENOENT;
- 	for (try=0; try<2; try++) {
- 		read_lock(&binfmt_lock);
-@@ -1407,16 +1400,11 @@ int search_binary_handler(struct linux_binprm *bprm)
- 			retval = fn(bprm);
- 			bprm->recursion_depth = depth;
- 			if (retval >= 0) {
--				if (depth == 0) {
--					trace_sched_process_exec(current, old_pid, bprm);
--					ptrace_event(PTRACE_EVENT_EXEC, old_vpid);
--				}
- 				put_binfmt(fmt);
- 				allow_write_access(bprm->file);
- 				if (bprm->file)
- 					fput(bprm->file);
- 				bprm->file = NULL;
--				current->did_exec = 1;
- 				proc_exec_connector(current);
- 				return retval;
- 			}
-@@ -1450,9 +1438,29 @@ int search_binary_handler(struct linux_binprm *bprm)
- 	}
- 	return retval;
- }
--
- EXPORT_SYMBOL(search_binary_handler);
- 
-+static int exec_binprm(struct linux_binprm *bprm)
-+{
-+	pid_t old_pid, old_vpid;
-+	int ret;
-+
-+	/* Need to fetch pid before load_binary changes it */
-+	old_pid = current->pid;
-+	rcu_read_lock();
-+	old_vpid = task_pid_nr_ns(current, task_active_pid_ns(current->parent));
-+	rcu_read_unlock();
-+
-+	ret = search_binary_handler(bprm);
-+	if (ret >= 0) {
-+		trace_sched_process_exec(current, old_pid, bprm);
-+		ptrace_event(PTRACE_EVENT_EXEC, old_vpid);
-+		current->did_exec = 1;
-+	}
-+
-+	return ret;
-+}
-+
- /*
-  * sys_execve() executes a new program.
-  */
-@@ -1541,7 +1549,7 @@ static int do_execve_common(const char *filename,
- 	if (retval < 0)
- 		goto out;
- 
--	retval = search_binary_handler(bprm);
-+	retval = exec_binprm(bprm);
- 	if (retval < 0)
- 		goto out;
- 
+
 -- 
-1.5.5.1
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
