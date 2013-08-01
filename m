@@ -1,126 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757300Ab3HAXzW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 19:55:22 -0400
-Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:2484 "EHLO
-	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752218Ab3HAXzU (ORCPT
+	id S1757222Ab3HAX6n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 19:58:43 -0400
+Received: from smtp104.biz.mail.gq1.yahoo.com ([98.137.12.179]:29910 "HELO
+	smtp104.biz.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751484Ab3HAX6k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 19:55:20 -0400
-Message-ID: <1375401251.10300.53.camel@misato.fc.hp.com>
-Subject: Re: [PATCH v2 06/18] x86, acpi: Initialize ACPI root table list
- earlier.
-From: Toshi Kani <toshi.kani@hp.com>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu,
-        hpa@zytor.com, akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
-        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
-        mina86@mina86.com, gong.chen@linux.intel.com,
-        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
-        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
-        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com, x86@kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Date: Thu, 01 Aug 2013 17:54:11 -0600
-In-Reply-To: <1375340800-19332-7-git-send-email-tangchen@cn.fujitsu.com>
-References: <1375340800-19332-1-git-send-email-tangchen@cn.fujitsu.com>
-	 <1375340800-19332-7-git-send-email-tangchen@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
+	Thu, 1 Aug 2013 19:58:40 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: ch5.zrsVM1n0lo2BPeFiXOX7rhHIx.h3Du6Z.n_ZkKQTlbx
+ jd7dZNV47aIhQkyFdIXaRwV73wxmcOfmtmLbZuQKgznEoHl3Csx6jBvAtr6l
+ HrC5GRXX7psuw2dU0zfqayM.tmcVsmuZVtYERBqWguE1.7bVqcn_kmBGkAV6
+ Tnjr91w_8hzJOfgB3mr6R2JfFsBtpWx_ZrrATTMpEzWrNp3J6DVNlYxEqnVN
+ UiH61v29Vs827P8cjER3S1fHnARICjCNVUcgzWN8ITPyXOPeJhIyR_fkySqE
+ .iJFF6Pns.cCpFnII3b4F3WqKxbsgo1uGnhccBIIskmXHahZNwnI7ko4Jzdn
+ 59.RDh3iCmfeM5jwGJhRDhVSut6uypjZzkqUQI0aWXlIyLwaz0lCL7luKh.i
+ W8TXQnQ4Ha8vYi1IYZgHZqBn1yT0b7ohe6xGhpIc5S4ZRqVwfpiY9i5dtXhA
+ DqpmWQmrABYrd_R_O68tLH39EEw2E8iTe.STuES9rzRBLYxy59lHTZikUSB1
+ U75jyY8Qs3A.kxysolK1M7uoKM2_RwXIvdoCMWC5daPe9vKU4358Qf0QLHGK
+ Xzdl1WAGUCp1PEwEx2tsewSUjbU5vonfZEve7lGL_DIXMgoeT2S9gqSL5iya
+ Rg0DNUg--
+X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
+X-Rocket-Received: from [192.168.0.103] (casey@24.6.250.25 with )
+        by smtp104.biz.mail.gq1.yahoo.com with SMTP; 01 Aug 2013 16:58:39 -0700 PDT
+Message-ID: <51FAF62F.9090301@schaufler-ca.com>
+Date: Thu, 01 Aug 2013 16:58:39 -0700
+From: Casey Schaufler <casey@schaufler-ca.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Tomasz Stanislawski <t.stanislaws@samsung.com>
+CC: linux-security-module@vger.kernel.org, m.szyprowski@samsung.com,
+        kyungmin.park@samsung.com, r.krypa@samsung.com,
+        linux-kernel@vger.kernel.org, Casey Schaufler <casey@schaufler-ca.com>
+Subject: Re: [RFCv2] security: smack: add a hash table to quicken smk_find_entry()
+References: <1370955313-3605-1-git-send-email-t.stanislaws@samsung.com> <1370955313-3605-2-git-send-email-t.stanislaws@samsung.com> <51CCAA7C.2070606@schaufler-ca.com>
+In-Reply-To: <51CCAA7C.2070606@schaufler-ca.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-08-01 at 15:06 +0800, Tang Chen wrote:
-> We have split acpi_table_init() into two steps:
-> 1. Pares RSDT or XSDT, and initialize acpi_gbl_root_table_list.
->    This step will record all tables' physical address in memory.
-> 2. Check acpi initrd table override and install all tables into
->    acpi_gbl_root_table_list.
-> 
-> This patch does step 1 earlier, right after memblock is ready.
-> 
-> When memblock_x86_fill() is called to fulfill memblock.memory[],
-> memblock is able to allocate memory.
-> 
-> This patch introduces a new function acpi_root_table_init() to
-> do step 1, and call this function right after memblock_x86_fill()
-> is called.
-> 
-> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-> Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-> ---
->  arch/x86/kernel/acpi/boot.c |   38 +++++++++++++++++++++++---------------
->  arch/x86/kernel/setup.c     |    3 +++
->  drivers/acpi/tables.c       |    7 +++++--
->  include/linux/acpi.h        |    2 ++
->  4 files changed, 33 insertions(+), 17 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-> index 230c8ea..3da5b3c 100644
-> --- a/arch/x86/kernel/acpi/boot.c
-> +++ b/arch/x86/kernel/acpi/boot.c
-> @@ -1491,6 +1491,28 @@ static struct dmi_system_id __initdata acpi_dmi_table_late[] = {
->  };
->  
->  /*
-> + * acpi_root_table_init - Initialize acpi_gbl_root_table_list.
-> + *
-> + * This function will parse RSDT or XSDT, find all tables' phys addr,
-> + * initialize acpi_gbl_root_table_list, and record all tables' phys addr
-> + * in acpi_gbl_root_table_list.
-> + */
-> +void __init acpi_root_table_init(void)
+On 6/27/2013 2:11 PM, Casey Schaufler wrote:
+> On 6/11/2013 5:55 AM, Tomasz Stanislawski wrote:
+>> This patch adds a hash table to quicken searching of a smack label by its name.
+>>
+>> Basically, the patch improves performance of SMACK initialization.  Parsing of
+>> rules involves translation from a string to a smack_known (aka label) entity
+>> which is done in smk_find_entry().
+>>
+>> The current implementation of the function iterates over a global list of
+>> smack_known resulting in O(N) complexity for smk_find_entry().  The total
+>> complexity of SMACK initialization becomes O(rules * labels).  Therefore it
+>> scales quadratically with a complexity of a system.
+>>
+>> Applying the patch reduced the complexity of smk_find_entry() to O(1) as long
+>> as number of label is in hundreds. If the number of labels is increased please
+>> update SMACK_HASH_SLOTS constant defined in security/smack/smack.h. Introducing
+>> the configuration of this constant with Kconfig or cmdline might be a good
+>> idea.
+>>
+>> The size of the hash table was adjusted experimentally.  The rule set used by
+>> TIZEN contains circa 17K rules for 500 labels.  The table above contains
+>> results of SMACK initialization using 'time smackctl apply' bash command.
+>> The 'Ref' is a kernel without this patch applied. The consecutive values
+>> refers to value of SMACK_HASH_SLOTS.  Every measurement was repeated three
+>> times to reduce noise.
+>>
+>>      |  Ref  |   1   |   2   |   4   |   8   |   16  |   32  |   64  |  128  |  256  |  512
+>> --------------------------------------------------------------------------------------------
+>> Run1 | 1.156 | 1.096 | 0.883 | 0.764 | 0.692 | 0.667 | 0.649 | 0.633 | 0.634 | 0.629 | 0.620
+>> Run2 | 1.156 | 1.111 | 0.885 | 0.764 | 0.694 | 0.661 | 0.649 | 0.651 | 0.634 | 0.638 | 0.623
+>> Run3 | 1.160 | 1.107 | 0.886 | 0.764 | 0.694 | 0.671 | 0.661 | 0.638 | 0.631 | 0.624 | 0.638
+>> AVG  | 1.157 | 1.105 | 0.885 | 0.764 | 0.693 | 0.666 | 0.653 | 0.641 | 0.633 | 0.630 | 0.627
+>>
+>> Surprisingly, a single hlist is slightly faster than a double-linked list.
+>> The speed-up saturates near 64 slots.  Therefore I chose value 128 to provide
+>> some margin if more labels were used.
+>> It looks that IO becomes a new bottleneck.
+>>
+>> Signed-off-by: Tomasz Stanislawski <t.stanislaws@samsung.com>
+> I will take this into my tree after changing SMACK_HASH_SLOTS to 16.
+>
+> Acked-by: Casey Schaufler <casey@schaufler-ca.com>
 
-I think acpi_root_table_init() is a bit confusing with
-acpi_boot_table_init().  Perhaps, something like
-acpi_boot_table_pre_init() or early_acpi_boot_table_init() is better to
-indicate that this new function is called before acpi_boot_table_init().
+Applied to git://git.gitorious.org/smack-next/kernel.git#smack-for-3.12
 
-> +{
-> +	dmi_check_system(acpi_dmi_table);
-> +
-> +	/* If acpi_disabled, bail out */
-> +	if (acpi_disabled)
-> +		return;
-> +
-> +	/* Initialize the ACPI boot-time table parser */
-> +	if (acpi_table_init()) {
-> +		disable_acpi();
-> +		return;
-> +	}
-> +}
-> +
-> +/*
->   * acpi_boot_table_init() and acpi_boot_init()
->   *  called from setup_arch(), always.
->   *	1. checksums all tables
-> @@ -1511,21 +1533,7 @@ static struct dmi_system_id __initdata acpi_dmi_table_late[] = {
->  
->  void __init acpi_boot_table_init(void)
+Rebasing was required. The change has been tested.
 
-The comment of this function needs to be updated.  For instance, it
-describes acpi_table_init(), which you just relocated.
 
- * acpi_table_init() is separate to allow reading SRAT without
- * other side effects.
- *
-
->  {
-> -	dmi_check_system(acpi_dmi_table);
-> -
-> -	/*
-> -	 * If acpi_disabled, bail out
-> -	 */
-> -	if (acpi_disabled)
-> -		return; 
-
-I think this check is still necessary.
-
-Thanks,
--Toshi
+>
+>> ---
+>>  security/smack/smack.h        |    5 +++++
+>>  security/smack/smack_access.c |   30 +++++++++++++++++++++++++++---
+>>  security/smack/smack_lsm.c    |   12 ++++++------
+>>  3 files changed, 38 insertions(+), 9 deletions(-)
+>>
+>> diff --git a/security/smack/smack.h b/security/smack/smack.h
+>> index 339614c..b1d9441 100644
+>> --- a/security/smack/smack.h
+>> +++ b/security/smack/smack.h
+>> @@ -53,6 +53,7 @@
+>>   */
+>>  struct smack_known {
+>>  	struct list_head		list;
+>> +	struct hlist_node		smk_hashed;
+>>  	char				*smk_known;
+>>  	u32				smk_secid;
+>>  	struct netlbl_lsm_secattr	smk_netlabel;	/* on wire labels */
+>> @@ -222,6 +223,7 @@ char *smk_parse_smack(const char *string, int len);
+>>  int smk_netlbl_mls(int, char *, struct netlbl_lsm_secattr *, int);
+>>  char *smk_import(const char *, int);
+>>  struct smack_known *smk_import_entry(const char *, int);
+>> +void smk_insert_entry(struct smack_known *skp);
+>>  struct smack_known *smk_find_entry(const char *);
+>>  u32 smack_to_secid(const char *);
+>>  
+>> @@ -247,6 +249,9 @@ extern struct list_head smk_netlbladdr_list;
+>>  
+>>  extern struct security_operations smack_ops;
+>>  
+>> +#define SMACK_HASH_SLOTS 128
+>> +extern struct hlist_head smack_known_hash[SMACK_HASH_SLOTS];
+>> +
+>>  /*
+>>   * Is the directory transmuting?
+>>   */
+>> diff --git a/security/smack/smack_access.c b/security/smack/smack_access.c
+>> index 6a0377f..b598c32 100644
+>> --- a/security/smack/smack_access.c
+>> +++ b/security/smack/smack_access.c
+>> @@ -325,6 +325,25 @@ void smack_log(char *subject_label, char *object_label, int request,
+>>  
+>>  DEFINE_MUTEX(smack_known_lock);
+>>  
+>> +struct hlist_head smack_known_hash[SMACK_HASH_SLOTS];
+>> +
+>> +/**
+>> + * smk_insert_entry - insert a smack label into a hash map,
+>> + *
+>> + * this function must be called under smack_known_lock
+>> + */
+>> +void smk_insert_entry(struct smack_known *skp)
+>> +{
+>> +	unsigned int hash;
+>> +	struct hlist_head *head;
+>> +
+>> +	hash = full_name_hash(skp->smk_known, strlen(skp->smk_known));
+>> +	head = &smack_known_hash[hash & (SMACK_HASH_SLOTS - 1)];
+>> +
+>> +	hlist_add_head_rcu(&skp->smk_hashed, head);
+>> +	list_add_rcu(&skp->list, &smack_known_list);
+>> +}
+>> +
+>>  /**
+>>   * smk_find_entry - find a label on the list, return the list entry
+>>   * @string: a text string that might be a Smack label
+>> @@ -334,12 +353,17 @@ DEFINE_MUTEX(smack_known_lock);
+>>   */
+>>  struct smack_known *smk_find_entry(const char *string)
+>>  {
+>> +	unsigned int hash;
+>> +	struct hlist_head *head;
+>> +	struct hlist_node *cursor;
+>>  	struct smack_known *skp;
+>>  
+>> -	list_for_each_entry_rcu(skp, &smack_known_list, list) {
+>> +	hash = full_name_hash(string, strlen(string));
+>> +	head = &smack_known_hash[hash & (SMACK_HASH_SLOTS - 1)];
+>> +
+>> +	hlist_for_each_entry_rcu(skp, cursor, head, smk_hashed)
+>>  		if (strcmp(skp->smk_known, string) == 0)
+>>  			return skp;
+>> -	}
+>>  
+>>  	return NULL;
+>>  }
+>> @@ -475,7 +499,7 @@ struct smack_known *smk_import_entry(const char *string, int len)
+>>  		 * Make sure that the entry is actually
+>>  		 * filled before putting it on the list.
+>>  		 */
+>> -		list_add_rcu(&skp->list, &smack_known_list);
+>> +		smk_insert_entry(skp);
+>>  		goto unlockout;
+>>  	}
+>>  	/*
+>> diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
+>> index 6a08330..6cabca6 100644
+>> --- a/security/smack/smack_lsm.c
+>> +++ b/security/smack/smack_lsm.c
+>> @@ -3868,12 +3868,12 @@ static __init void init_smack_known_list(void)
+>>  	/*
+>>  	 * Create the known labels list
+>>  	 */
+>> -	list_add(&smack_known_huh.list, &smack_known_list);
+>> -	list_add(&smack_known_hat.list, &smack_known_list);
+>> -	list_add(&smack_known_star.list, &smack_known_list);
+>> -	list_add(&smack_known_floor.list, &smack_known_list);
+>> -	list_add(&smack_known_invalid.list, &smack_known_list);
+>> -	list_add(&smack_known_web.list, &smack_known_list);
+>> +	smk_insert_entry(&smack_known_huh);
+>> +	smk_insert_entry(&smack_known_hat);
+>> +	smk_insert_entry(&smack_known_star);
+>> +	smk_insert_entry(&smack_known_floor);
+>> +	smk_insert_entry(&smack_known_invalid);
+>> +	smk_insert_entry(&smack_known_web);
+>>  }
+>>  
+>>  /**
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
 
