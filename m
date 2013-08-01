@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756339Ab3HAUXG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 16:23:06 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:56925 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753282Ab3HAUWr (ORCPT
+	id S1755731Ab3HAUXD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 16:23:03 -0400
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:64511 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753290Ab3HAUWr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 1 Aug 2013 16:22:47 -0400
 From: David Daney <ddaney.cavm@gmail.com>
 To: linux-mips@linux-mips.org, ralf@linux-mips.org, kvm@vger.kernel.org,
         Sanjay Lal <sanjayl@kymasys.com>, Gleb Natapov <gleb@redhat.com>
 Cc: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
-Subject: [PATCH 2/3] mips/kvm: Cleanup .push/.pop directives in kvm_locore.S
-Date: Thu,  1 Aug 2013 13:22:34 -0700
-Message-Id: <1375388555-4045-3-git-send-email-ddaney.cavm@gmail.com>
+Subject: [PATCH 3/3] mips/kvm: Make kvm_locore.S 64-bit buildable/safe.
+Date: Thu,  1 Aug 2013 13:22:35 -0700
+Message-Id: <1375388555-4045-4-git-send-email-ddaney.cavm@gmail.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1375388555-4045-1-git-send-email-ddaney.cavm@gmail.com>
 References: <1375388555-4045-1-git-send-email-ddaney.cavm@gmail.com>
@@ -23,90 +23,197 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: David Daney <david.daney@cavium.com>
 
-There are:
-	.set	push
-	.set	noreorder
-	.set	noat
-	 .
-	 .
-	 .
-	.set	pop
+We need to use more of the Macros in asm.h to allow kvm_locore.S to
+build in a 64-bit kernel.
 
-Sequences all over the place in this file, but in some places the
-final ".set pop" is erroneously converted to ".set push", so none of
-these really do what they appear to.
-
-Clean up the whole mess by moving ".set noreorder", ".set noat" to the
-top, and get rid of everything else.
-
-Generated object code is unchanged.
+For 32-bit there is no change in the generated object code.
 
 Signed-off-by: David Daney <david.daney@cavium.com>
+Acked-by: Ralf Baechle <ralf@linux-mips.org>
 ---
- arch/mips/kvm/kvm_locore.S | 14 +-------------
- 1 file changed, 1 insertion(+), 13 deletions(-)
+ arch/mips/kvm/kvm_locore.S | 54 +++++++++++++++++++++++-----------------------
+ 1 file changed, 27 insertions(+), 27 deletions(-)
 
 diff --git a/arch/mips/kvm/kvm_locore.S b/arch/mips/kvm/kvm_locore.S
-index 2b4fdd1..fdc169d 100644
+index fdc169d..bce2247 100644
 --- a/arch/mips/kvm/kvm_locore.S
 +++ b/arch/mips/kvm/kvm_locore.S
-@@ -55,12 +55,10 @@
-  * a0: run
-  * a1: vcpu
-  */
--
--FEXPORT(__kvm_mips_vcpu_run)
--	.set	push
- 	.set	noreorder
- 	.set	noat
+@@ -60,7 +60,7 @@
  
-+FEXPORT(__kvm_mips_vcpu_run)
+ FEXPORT(__kvm_mips_vcpu_run)
  	/* k0/k1 not being used in host kernel context */
- 	addiu	k1, sp, -PT_SIZE
+-	addiu	k1, sp, -PT_SIZE
++	INT_ADDIU k1, sp, -PT_SIZE
  	LONG_S	$0, PT_R0(k1)
-@@ -229,15 +227,11 @@ FEXPORT(__kvm_mips_load_k0k1)
+ 	LONG_S	$1, PT_R1(k1)
+ 	LONG_S	$2, PT_R2(k1)
+@@ -121,7 +121,7 @@ FEXPORT(__kvm_mips_vcpu_run)
+ 	mtc0	a1, CP0_DDATA_LO
  
- 	/* Jump to guest */
- 	eret
--	.set	pop
+ 	/* Offset into vcpu->arch */
+-	addiu	k1, a1, VCPU_HOST_ARCH
++	INT_ADDIU k1, a1, VCPU_HOST_ARCH
  
- VECTOR(MIPSX(exception), unknown)
- /*
-  * Find out what mode we came from and jump to the proper handler.
-  */
--	.set	push
--	.set	noat
--	.set	noreorder
- 	mtc0	k0, CP0_ERROREPC	#01: Save guest k0
+ 	/*
+ 	 * Save the host stack to VCPU, used for exception processing
+@@ -159,16 +159,16 @@ FEXPORT(__kvm_mips_vcpu_run)
+ 
+ FEXPORT(__kvm_mips_load_asid)
+ 	/* Set the ASID for the Guest Kernel */
+-	sll	t0, t0, 1	/* with kseg0 @ 0x40000000, kernel */
++	INT_SLL	t0, t0, 1	/* with kseg0 @ 0x40000000, kernel */
+ 			        /* addresses shift to 0x80000000 */
+ 	bltz	t0, 1f		/* If kernel */
+-	 addiu	t1, k1, VCPU_GUEST_KERNEL_ASID  /* (BD)  */
+-	addiu	t1, k1, VCPU_GUEST_USER_ASID    /* else user */
++	 INT_ADDIU t1, k1, VCPU_GUEST_KERNEL_ASID  /* (BD)  */
++	INT_ADDIU t1, k1, VCPU_GUEST_USER_ASID    /* else user */
+ 1:
+ 	     /* t1: contains the base of the ASID array, need to get the cpu id  */
+ 	LONG_L	t2, TI_CPU($28)             /* smp_processor_id */
+-	sll	t2, t2, 2                   /* x4 */
+-	addu	t3, t1, t2
++	INT_SLL	t2, t2, 2                   /* x4 */
++	REG_ADDU t3, t1, t2
+ 	LONG_L	k0, (t3)
+ 	andi	k0, k0, 0xff
+ 	mtc0	k0, CP0_ENTRYHI
+@@ -236,10 +236,10 @@ VECTOR(MIPSX(exception), unknown)
  	ehb				#02:
  
-@@ -248,7 +242,6 @@ VECTOR(MIPSX(exception), unknown)
- 	addiu	k0, k0, 0x2000		#06: Exception handler is installed @ offset 0x2000
+ 	mfc0	k0, CP0_EBASE		#02: Get EBASE
+-	srl	k0, k0, 10		#03: Get rid of CPUNum
+-	sll	k0, k0, 10		#04
++	INT_SRL	k0, k0, 10		#03: Get rid of CPUNum
++	INT_SLL	k0, k0, 10		#04
+ 	LONG_S	k1, 0x3000(k0)		#05: Save k1 @ offset 0x3000
+-	addiu	k0, k0, 0x2000		#06: Exception handler is installed @ offset 0x2000
++	INT_ADDIU k0, k0, 0x2000		#06: Exception handler is installed @ offset 0x2000
  	j	k0			#07: jump to the function
  	 nop				#08: branch delay slot
--	.set	push
  VECTOR_END(MIPSX(exceptionEnd))
- .end MIPSX(exception)
- 
-@@ -258,10 +251,6 @@ VECTOR_END(MIPSX(exceptionEnd))
-  *
-  */
+@@ -253,7 +253,7 @@ VECTOR_END(MIPSX(exceptionEnd))
  NESTED (MIPSX(GuestException), CALLFRAME_SIZ, ra)
--	.set	push
--	.set	noat
--	.set	noreorder
--
  	/* Get the VCPU pointer from DDTATA_LO */
  	mfc0	k1, CP0_DDATA_LO
- 	addiu	k1, k1, VCPU_HOST_ARCH
-@@ -583,7 +572,6 @@ __kvm_mips_return_to_host:
- 	j       ra
+-	addiu	k1, k1, VCPU_HOST_ARCH
++	INT_ADDIU k1, k1, VCPU_HOST_ARCH
+ 
+ 	/* Start saving Guest context to VCPU */
+ 	LONG_S	$0, VCPU_R0(k1)
+@@ -304,7 +304,7 @@ NESTED (MIPSX(GuestException), CALLFRAME_SIZ, ra)
+ 	LONG_S	t0, VCPU_R26(k1)
+ 
+ 	/* Get GUEST k1 and save it in VCPU */
+-	la	t1, ~0x2ff
++	PTR_LI	t1, ~0x2ff
+ 	mfc0	t0, CP0_EBASE
+ 	and	t0, t0, t1
+ 	LONG_L	t0, 0x3000(t0)
+@@ -367,7 +367,7 @@ NESTED (MIPSX(GuestException), CALLFRAME_SIZ, ra)
+ 	LONG_L	sp, VCPU_HOST_STACK(k1)
+ 
+ 	/* Saved host state */
+-	addiu	sp, sp, -PT_SIZE
++	INT_ADDIU sp, sp, -PT_SIZE
+ 
+ 	/* XXXKYMA do we need to load the host ASID, maybe not because the
+ 	 * kernel entries are marked GLOBAL, need to verify
+@@ -378,7 +378,7 @@ NESTED (MIPSX(GuestException), CALLFRAME_SIZ, ra)
+ 	mtc0	k0, CP0_DDATA_LO
+ 
+ 	/* Restore RDHWR access */
+-	la	k0, 0x2000000F
++	PTR_LI	k0, 0x2000000F
+ 	mtc0	k0, CP0_HWRENA
+ 
+ 	/* Jump to handler */
+@@ -386,9 +386,9 @@ FEXPORT(__kvm_mips_jump_to_handler)
+ 	/* XXXKYMA: not sure if this is safe, how large is the stack??
+ 	 * Now jump to the kvm_mips_handle_exit() to see if we can deal
+ 	 * with this in the kernel */
+-	la	t9, kvm_mips_handle_exit
++	PTR_LA	t9, kvm_mips_handle_exit
+ 	jalr.hb	t9
+-	 addiu	sp, sp, -CALLFRAME_SIZ           /* BD Slot */
++	 INT_ADDIU sp, sp, -CALLFRAME_SIZ           /* BD Slot */
+ 
+ 	/* Return from handler Make sure interrupts are disabled */
+ 	di
+@@ -400,7 +400,7 @@ FEXPORT(__kvm_mips_jump_to_handler)
+ 	 */
+ 
+ 	move	k1, s1
+-	addiu	k1, k1, VCPU_HOST_ARCH
++	INT_ADDIU k1, k1, VCPU_HOST_ARCH
+ 
+ 	/* Check return value, should tell us if we are returning to the
+ 	 * host (handle I/O etc)or resuming the guest
+@@ -438,16 +438,16 @@ __kvm_mips_return_to_guest:
+ 	mtc0	t0, CP0_EPC
+ 
+ 	/* Set the ASID for the Guest Kernel */
+-	sll	t0, t0, 1	/* with kseg0 @ 0x40000000, kernel */
++	INT_SLL	t0, t0, 1	/* with kseg0 @ 0x40000000, kernel */
+ 				/* addresses shift to 0x80000000 */
+ 	bltz	t0, 1f		/* If kernel */
+-	 addiu	t1, k1, VCPU_GUEST_KERNEL_ASID  /* (BD)  */
+-	addiu	t1, k1, VCPU_GUEST_USER_ASID    /* else user */
++	 INT_ADDIU t1, k1, VCPU_GUEST_KERNEL_ASID  /* (BD)  */
++	INT_ADDIU t1, k1, VCPU_GUEST_USER_ASID    /* else user */
+ 1:
+ 	/* t1: contains the base of the ASID array, need to get the cpu id  */
+ 	LONG_L	t2, TI_CPU($28)		/* smp_processor_id */
+-	sll	t2, t2, 2		/* x4 */
+-	addu	t3, t1, t2
++	INT_SLL	t2, t2, 2		/* x4 */
++	REG_ADDU t3, t1, t2
+ 	LONG_L	k0, (t3)
+ 	andi	k0, k0, 0xff
+ 	mtc0	k0,CP0_ENTRYHI
+@@ -505,7 +505,7 @@ FEXPORT(__kvm_mips_skip_guest_restore)
+ __kvm_mips_return_to_host:
+ 	/* EBASE is already pointing to Linux */
+ 	LONG_L	k1, VCPU_HOST_STACK(k1)
+-	addiu	k1,k1, -PT_SIZE
++	INT_ADDIU k1,k1, -PT_SIZE
+ 
+ 	/* Restore host DDATA_LO */
+ 	LONG_L	k0, PT_HOST_USERLOCAL(k1)
+@@ -523,7 +523,7 @@ __kvm_mips_return_to_host:
+ 
+ 	/* r2/v0 is the return code, shift it down by 2 (arithmetic)
+ 	 * to recover the err code  */
+-	sra	k0, v0, 2
++	INT_SRA	k0, v0, 2
+ 	move	$2, k0
+ 
+ 	LONG_L	$3, PT_R3(k1)
+@@ -563,7 +563,7 @@ __kvm_mips_return_to_host:
+ 	mtlo	k0
+ 
+ 	/* Restore RDHWR access */
+-	la	k0, 0x2000000F
++	PTR_LI	k0, 0x2000000F
+ 	mtc0	k0,  CP0_HWRENA
+ 
+ 
+@@ -627,13 +627,13 @@ LEAF(MIPSX(SyncICache))
+ 	.set	mips32r2
+ 	beq	a1, zero, 20f
  	 nop
- 
--	.set    pop
- VECTOR_END(MIPSX(GuestExceptionEnd))
- .end MIPSX(GuestException)
- 
+-	addu	a1, a0, a1
++	REG_ADDU a1, a0, a1
+ 	rdhwr	v0, HW_SYNCI_Step
+ 	beq	v0, zero, 20f
+ 	 nop
+ 10:
+ 	synci	0(a0)
+-	addu	a0, a0, v0
++	REG_ADDU a0, a0, v0
+ 	sltu	v1, a0, a1
+ 	bne	v1, zero, 10b
+ 	 nop
 -- 
 1.7.11.7
 
