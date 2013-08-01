@@ -1,434 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932207Ab3HATgZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 15:36:25 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:21428 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757818Ab3HATfz (ORCPT
+	id S932228Ab3HATgq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 15:36:46 -0400
+Received: from mail-bk0-f54.google.com ([209.85.214.54]:46699 "EHLO
+	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932100Ab3HATgn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 15:35:55 -0400
-Message-ID: <2e81df73741441ddaf91d0a0fe6fc140ebe935a3.1375385120.git.cmetcalf@tilera.com>
-In-Reply-To: <cover.1375385119.git.cmetcalf@tilera.com>
-References: <20130801.113100.2059303096028571906.davem@davemloft.net>
-	<cover.1375385119.git.cmetcalf@tilera.com>
-From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Thu, 1 Aug 2013 11:36:42 -0400
-Subject: [PATCH v3 13/13] tile: support PTP using the tilegx mPIPE (IEEE 1588)
-To: <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>
+	Thu, 1 Aug 2013 15:36:43 -0400
+Date: Thu, 1 Aug 2013 22:35:53 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Peter Hurley <peter@hurleysoftware.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH next] n_tty: change lock oreding in n_tty_read()
+Message-ID: <20130801193553.GB3109@swordfish>
+References: <20130801193146.GA3109@swordfish>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130801193146.GA3109@swordfish>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
-Acked-by: Richard Cochran <richardcochran@gmail.com>
----
- arch/tile/gxio/iorpc_mpipe.c         |  19 +++
- arch/tile/include/gxio/iorpc_mpipe.h |  10 +-
- arch/tile/include/gxio/mpipe.h       |  14 +++
- drivers/net/ethernet/tile/Kconfig    |  11 ++
- drivers/net/ethernet/tile/tilegx.c   | 216 ++++++++++++++++++++++++++++++++++-
- 5 files changed, 266 insertions(+), 4 deletions(-)
+Oops. Really sorry about that. I didn't pay attention and made a silly
+typo in the Subject line. Of course, it was going to be "change lock
+*ordering* in n_tty_read()". I'll resend the patch.
 
-diff --git a/arch/tile/gxio/iorpc_mpipe.c b/arch/tile/gxio/iorpc_mpipe.c
-index c2fb1516..4f8f3d6 100644
---- a/arch/tile/gxio/iorpc_mpipe.c
-+++ b/arch/tile/gxio/iorpc_mpipe.c
-@@ -475,6 +475,25 @@ int gxio_mpipe_adjust_timestamp_aux(gxio_mpipe_context_t * context,
- 
- EXPORT_SYMBOL(gxio_mpipe_adjust_timestamp_aux);
- 
-+struct adjust_timestamp_freq_param {
-+	int32_t ppb;
-+};
-+
-+int gxio_mpipe_adjust_timestamp_freq(gxio_mpipe_context_t * context,
-+				     int32_t ppb)
-+{
-+	struct adjust_timestamp_freq_param temp;
-+	struct adjust_timestamp_freq_param *params = &temp;
-+
-+	params->ppb = ppb;
-+
-+	return hv_dev_pwrite(context->fd, 0, (HV_VirtAddr) params,
-+			     sizeof(*params),
-+			     GXIO_MPIPE_OP_ADJUST_TIMESTAMP_FREQ);
-+}
-+
-+EXPORT_SYMBOL(gxio_mpipe_adjust_timestamp_freq);
-+
- struct config_edma_ring_blks_param {
- 	unsigned int ering;
- 	unsigned int max_blks;
-diff --git a/arch/tile/include/gxio/iorpc_mpipe.h b/arch/tile/include/gxio/iorpc_mpipe.h
-index eef60fd..fdd07f8 100644
---- a/arch/tile/include/gxio/iorpc_mpipe.h
-+++ b/arch/tile/include/gxio/iorpc_mpipe.h
-@@ -46,10 +46,11 @@
- #define GXIO_MPIPE_OP_LINK_CLOSE_AUX   IORPC_OPCODE(IORPC_FORMAT_NONE, 0x1212)
- #define GXIO_MPIPE_OP_LINK_SET_ATTR_AUX IORPC_OPCODE(IORPC_FORMAT_NONE, 0x1213)
- 
--#define GXIO_MPIPE_OP_GET_TIMESTAMP_AUX IORPC_OPCODE(IORPC_FORMAT_NONE_NOUSER, 0x121e)
--#define GXIO_MPIPE_OP_SET_TIMESTAMP_AUX IORPC_OPCODE(IORPC_FORMAT_NONE_NOUSER, 0x121f)
--#define GXIO_MPIPE_OP_ADJUST_TIMESTAMP_AUX IORPC_OPCODE(IORPC_FORMAT_NONE_NOUSER, 0x1220)
-+#define GXIO_MPIPE_OP_GET_TIMESTAMP_AUX IORPC_OPCODE(IORPC_FORMAT_NONE, 0x121e)
-+#define GXIO_MPIPE_OP_SET_TIMESTAMP_AUX IORPC_OPCODE(IORPC_FORMAT_NONE, 0x121f)
-+#define GXIO_MPIPE_OP_ADJUST_TIMESTAMP_AUX IORPC_OPCODE(IORPC_FORMAT_NONE, 0x1220)
- #define GXIO_MPIPE_OP_CONFIG_EDMA_RING_BLKS IORPC_OPCODE(IORPC_FORMAT_NONE, 0x1221)
-+#define GXIO_MPIPE_OP_ADJUST_TIMESTAMP_FREQ IORPC_OPCODE(IORPC_FORMAT_NONE, 0x1222)
- #define GXIO_MPIPE_OP_ARM_POLLFD       IORPC_OPCODE(IORPC_FORMAT_KERNEL_POLLFD, 0x9000)
- #define GXIO_MPIPE_OP_CLOSE_POLLFD     IORPC_OPCODE(IORPC_FORMAT_KERNEL_POLLFD, 0x9001)
- #define GXIO_MPIPE_OP_GET_MMIO_BASE    IORPC_OPCODE(IORPC_FORMAT_NONE_NOUSER, 0x8000)
-@@ -128,6 +129,9 @@ int gxio_mpipe_set_timestamp_aux(gxio_mpipe_context_t * context, uint64_t sec,
- int gxio_mpipe_adjust_timestamp_aux(gxio_mpipe_context_t * context,
- 				    int64_t nsec);
- 
-+int gxio_mpipe_adjust_timestamp_freq(gxio_mpipe_context_t * context,
-+				     int32_t ppb);
-+
- int gxio_mpipe_arm_pollfd(gxio_mpipe_context_t * context, int pollfd_cookie);
- 
- int gxio_mpipe_close_pollfd(gxio_mpipe_context_t * context, int pollfd_cookie);
-diff --git a/arch/tile/include/gxio/mpipe.h b/arch/tile/include/gxio/mpipe.h
-index eb7fee4..e37cf4f 100644
---- a/arch/tile/include/gxio/mpipe.h
-+++ b/arch/tile/include/gxio/mpipe.h
-@@ -1854,4 +1854,18 @@ extern int gxio_mpipe_set_timestamp(gxio_mpipe_context_t *context,
- extern int gxio_mpipe_adjust_timestamp(gxio_mpipe_context_t *context,
- 				       int64_t delta);
- 
-+/** Adjust the mPIPE timestamp clock frequency.
-+ *
-+ * @param context An initialized mPIPE context.
-+ * @param ppb A 32-bit signed PPB (Parts Per Billion) value to adjust.
-+ * The absolute value of ppb must be less than or equal to 1000000000.
-+ * Values less than about 30000 will generally cause a GXIO_ERR_INVAL
-+ * return due to the granularity of the hardware that converts reference
-+ * clock cycles into seconds and nanoseconds.
-+ * @return If the call was successful, zero; otherwise, a negative error
-+ *  code.
-+ */
-+extern int gxio_mpipe_adjust_timestamp_freq(gxio_mpipe_context_t* context,
-+                                            int32_t ppb);
-+
- #endif /* !_GXIO_MPIPE_H_ */
-diff --git a/drivers/net/ethernet/tile/Kconfig b/drivers/net/ethernet/tile/Kconfig
-index 098b1c4..4083ba8 100644
---- a/drivers/net/ethernet/tile/Kconfig
-+++ b/drivers/net/ethernet/tile/Kconfig
-@@ -15,3 +15,14 @@ config TILE_NET
- 
- 	  To compile this driver as a module, choose M here: the module
- 	  will be called tile_net.
-+
-+config PTP_1588_CLOCK_TILEGX
-+        tristate "Tilera TILE-Gx mPIPE as PTP clock"
-+        select PTP_1588_CLOCK
-+        depends on TILE_NET
-+        depends on TILEGX
-+        ---help---
-+          This driver adds support for using the mPIPE as a PTP
-+          clock. This clock is only useful if your PTP programs are
-+          getting hardware time stamps on the PTP Ethernet packets
-+          using the SO_TIMESTAMPING API.
-diff --git a/drivers/net/ethernet/tile/tilegx.c b/drivers/net/ethernet/tile/tilegx.c
-index 0beed7e..907b577 100644
---- a/drivers/net/ethernet/tile/tilegx.c
-+++ b/drivers/net/ethernet/tile/tilegx.c
-@@ -38,6 +38,8 @@
- #include <linux/ip.h>
- #include <linux/ipv6.h>
- #include <linux/tcp.h>
-+#include <linux/net_tstamp.h>
-+#include <linux/ptp_clock_kernel.h>
- 
- #include <asm/checksum.h>
- #include <asm/homecache.h>
-@@ -185,6 +187,10 @@ struct tile_net_priv {
- 	int echannel;
- 	/* mPIPE instance, 0 or 1. */
- 	int instance;
-+#ifdef CONFIG_PTP_1588_CLOCK_TILEGX
-+	/* The timestamp config. */
-+	struct hwtstamp_config stamp_cfg;
-+#endif
- };
- 
- static struct mpipe_data {
-@@ -223,6 +229,15 @@ static struct mpipe_data {
- 	int first_bucket;
- 	int num_buckets;
- 
-+#ifdef CONFIG_PTP_1588_CLOCK_TILEGX
-+	/* PTP-specific data. */
-+	struct ptp_clock *ptp_clock;
-+	struct ptp_clock_info caps;
-+
-+	/* Lock for ptp accessors. */
-+	struct mutex ptp_lock;
-+#endif
-+
- } mpipe_data[NR_MPIPE_MAX] = {
- 	[0 ... (NR_MPIPE_MAX - 1)] {
- 		.ingress_irq = -1,
-@@ -432,6 +447,94 @@ static void tile_net_provide_needed_buffers(void)
- 	}
- }
- 
-+/* Get RX timestamp, and store it in the skb. */
-+static void tile_rx_timestamp(struct tile_net_priv *priv, struct sk_buff *skb,
-+			      gxio_mpipe_idesc_t *idesc)
-+{
-+#ifdef CONFIG_PTP_1588_CLOCK_TILEGX
-+	if (unlikely(priv->stamp_cfg.rx_filter != HWTSTAMP_FILTER_NONE)) {
-+		struct skb_shared_hwtstamps *shhwtstamps = skb_hwtstamps(skb);
-+		memset(shhwtstamps, 0, sizeof(*shhwtstamps));
-+		shhwtstamps->hwtstamp = ktime_set(idesc->time_stamp_sec,
-+						  idesc->time_stamp_ns);
-+	}
-+#endif
-+}
-+
-+/* Get TX timestamp, and store it in the skb. */
-+static void tile_tx_timestamp(struct sk_buff *skb, int instance)
-+{
-+#ifdef CONFIG_PTP_1588_CLOCK_TILEGX
-+	struct skb_shared_info *shtx = skb_shinfo(skb);
-+	if (unlikely((shtx->tx_flags & SKBTX_HW_TSTAMP) != 0)) {
-+		struct mpipe_data *md = &mpipe_data[instance];
-+		struct skb_shared_hwtstamps shhwtstamps;
-+		struct timespec ts;
-+
-+		shtx->tx_flags |= SKBTX_IN_PROGRESS;
-+		gxio_mpipe_get_timestamp(&md->context, &ts);
-+		memset(&shhwtstamps, 0, sizeof(shhwtstamps));
-+		shhwtstamps.hwtstamp = ktime_set(ts.tv_sec, ts.tv_nsec);
-+		skb_tstamp_tx(skb, &shhwtstamps);
-+	}
-+#endif
-+}
-+
-+/* Use ioctl() to enable or disable TX or RX timestamping. */
-+static int tile_hwtstamp_ioctl(struct net_device *dev, struct ifreq *rq,
-+			       int cmd)
-+{
-+#ifdef CONFIG_PTP_1588_CLOCK_TILEGX
-+	struct hwtstamp_config config;
-+	struct tile_net_priv *priv = netdev_priv(dev);
-+
-+	if (copy_from_user(&config, rq->ifr_data, sizeof(config)))
-+		return -EFAULT;
-+
-+	if (config.flags)  /* reserved for future extensions */
-+		return -EINVAL;
-+
-+	switch (config.tx_type) {
-+	case HWTSTAMP_TX_OFF:
-+	case HWTSTAMP_TX_ON:
-+		break;
-+	default:
-+		return -ERANGE;
-+	}
-+
-+	switch (config.rx_filter) {
-+	case HWTSTAMP_FILTER_NONE:
-+		break;
-+	case HWTSTAMP_FILTER_ALL:
-+	case HWTSTAMP_FILTER_SOME:
-+	case HWTSTAMP_FILTER_PTP_V1_L4_EVENT:
-+	case HWTSTAMP_FILTER_PTP_V1_L4_SYNC:
-+	case HWTSTAMP_FILTER_PTP_V1_L4_DELAY_REQ:
-+	case HWTSTAMP_FILTER_PTP_V2_L4_EVENT:
-+	case HWTSTAMP_FILTER_PTP_V2_L4_SYNC:
-+	case HWTSTAMP_FILTER_PTP_V2_L4_DELAY_REQ:
-+	case HWTSTAMP_FILTER_PTP_V2_L2_EVENT:
-+	case HWTSTAMP_FILTER_PTP_V2_L2_SYNC:
-+	case HWTSTAMP_FILTER_PTP_V2_L2_DELAY_REQ:
-+	case HWTSTAMP_FILTER_PTP_V2_EVENT:
-+	case HWTSTAMP_FILTER_PTP_V2_SYNC:
-+	case HWTSTAMP_FILTER_PTP_V2_DELAY_REQ:
-+		config.rx_filter = HWTSTAMP_FILTER_ALL;
-+		break;
-+	default:
-+		return -ERANGE;
-+	}
-+
-+	if (copy_to_user(rq->ifr_data, &config, sizeof(config)))
-+		return -EFAULT;
-+
-+	priv->stamp_cfg = config;
-+	return 0;
-+#else
-+	return -EOPNOTSUPP;
-+#endif
-+}
-+
- static inline bool filter_packet(struct net_device *dev, void *buf)
- {
- 	/* Filter packets received before we're up. */
-@@ -451,7 +554,8 @@ static void tile_net_receive_skb(struct net_device *dev, struct sk_buff *skb,
- 				 gxio_mpipe_idesc_t *idesc, unsigned long len)
- {
- 	struct tile_net_info *info = &__get_cpu_var(per_cpu_info);
--	int instance = mpipe_instance(dev);
-+	struct tile_net_priv *priv = netdev_priv(dev);
-+	int instance = priv->instance;
- 
- 	/* Encode the actual packet length. */
- 	skb_put(skb, len);
-@@ -462,6 +566,9 @@ static void tile_net_receive_skb(struct net_device *dev, struct sk_buff *skb,
- 	if (idesc->cs && idesc->csum_seed_val == 0xFFFF)
- 		skb->ip_summed = CHECKSUM_UNNECESSARY;
- 
-+	/* Get RX timestamp from idesc. */
-+	tile_rx_timestamp(priv, skb, idesc);
-+
- 	napi_gro_receive(&info->mpipe[instance].napi, skb);
- 
- 	/* Update stats. */
-@@ -707,6 +814,103 @@ static enum hrtimer_restart tile_net_handle_egress_timer(struct hrtimer *t)
- 	return HRTIMER_NORESTART;
- }
- 
-+#ifdef CONFIG_PTP_1588_CLOCK_TILEGX
-+
-+/* PTP clock operations. */
-+
-+static int ptp_mpipe_adjfreq(struct ptp_clock_info *ptp, s32 ppb)
-+{
-+	int ret = 0;
-+	struct mpipe_data *md = container_of(ptp, struct mpipe_data, caps);
-+	mutex_lock(&md->ptp_lock);
-+	if (gxio_mpipe_adjust_timestamp_freq(&md->context, ppb))
-+		ret = -EINVAL;
-+	mutex_unlock(&md->ptp_lock);
-+	return ret;
-+}
-+
-+static int ptp_mpipe_adjtime(struct ptp_clock_info *ptp, s64 delta)
-+{
-+	int ret = 0;
-+	struct mpipe_data *md = container_of(ptp, struct mpipe_data, caps);
-+	mutex_lock(&md->ptp_lock);
-+	if (gxio_mpipe_adjust_timestamp(&md->context, delta))
-+		ret = -EBUSY;
-+	mutex_unlock(&md->ptp_lock);
-+	return ret;
-+}
-+
-+static int ptp_mpipe_gettime(struct ptp_clock_info *ptp, struct timespec *ts)
-+{
-+	int ret = 0;
-+	struct mpipe_data *md = container_of(ptp, struct mpipe_data, caps);
-+	mutex_lock(&md->ptp_lock);
-+	if (gxio_mpipe_get_timestamp(&md->context, ts))
-+		ret = -EBUSY;
-+	mutex_unlock(&md->ptp_lock);
-+	return ret;
-+}
-+
-+static int ptp_mpipe_settime(struct ptp_clock_info *ptp,
-+			     const struct timespec *ts)
-+{
-+	int ret = 0;
-+	struct mpipe_data *md = container_of(ptp, struct mpipe_data, caps);
-+	mutex_lock(&md->ptp_lock);
-+	if (gxio_mpipe_set_timestamp(&md->context, ts))
-+		ret = -EBUSY;
-+	mutex_unlock(&md->ptp_lock);
-+	return ret;
-+}
-+
-+static int ptp_mpipe_enable(struct ptp_clock_info *ptp,
-+			    struct ptp_clock_request *request, int on)
-+{
-+	return -EOPNOTSUPP;
-+}
-+
-+static struct ptp_clock_info ptp_mpipe_caps = {
-+	.owner		= THIS_MODULE,
-+	.name		= "mPIPE clock",
-+	.max_adj	= 999999999,
-+	.n_ext_ts	= 0,
-+	.pps		= 0,
-+	.adjfreq	= ptp_mpipe_adjfreq,
-+	.adjtime	= ptp_mpipe_adjtime,
-+	.gettime	= ptp_mpipe_gettime,
-+	.settime	= ptp_mpipe_settime,
-+	.enable		= ptp_mpipe_enable,
-+};
-+
-+#endif /* CONFIG_PTP_1588_CLOCK_TILEGX */
-+
-+/* Sync mPIPE's timestamp up with Linux system time and register PTP clock. */
-+static void register_ptp_clock(struct net_device *dev, struct mpipe_data *md)
-+{
-+#ifdef CONFIG_PTP_1588_CLOCK_TILEGX
-+	struct timespec ts;
-+
-+	getnstimeofday(&ts);
-+	gxio_mpipe_set_timestamp(&md->context, &ts);
-+
-+	mutex_init(&md->ptp_lock);
-+	md->caps = ptp_mpipe_caps;
-+	md->ptp_clock = ptp_clock_register(&md->caps, NULL);
-+	if (IS_ERR(md->ptp_clock))
-+		netdev_err(dev, "ptp_clock_register failed %ld\n",
-+			   PTR_ERR(md->ptp_clock));
-+#endif
-+}
-+
-+/* Initialize PTP fields in a new device. */
-+static void init_ptp_dev(struct tile_net_priv *priv)
-+{
-+#ifdef CONFIG_PTP_1588_CLOCK_TILEGX
-+	priv->stamp_cfg.rx_filter = HWTSTAMP_FILTER_NONE;
-+	priv->stamp_cfg.tx_type = HWTSTAMP_TX_OFF;
-+#endif
-+}
-+
- /* Helper functions for "tile_net_update()". */
- static void enable_ingress_irq(void *irq)
- {
-@@ -1149,6 +1353,9 @@ static int tile_net_init_mpipe(struct net_device *dev)
- 	if (rc != 0)
- 		goto fail;
- 
-+	/* Register PTP clock and set mPIPE timestamp, if configured. */
-+	register_ptp_clock(dev, md);
-+
- 	return 0;
- 
- fail:
-@@ -1851,6 +2058,9 @@ static int tile_net_tx(struct sk_buff *skb, struct net_device *dev)
- 	for (i = 0; i < num_edescs; i++)
- 		gxio_mpipe_equeue_put_at(equeue, edescs[i], slot++);
- 
-+	/* Store TX timestamp if needed. */
-+	tile_tx_timestamp(skb, instance);
-+
- 	/* Add a completion record. */
- 	add_comp(equeue, comps, slot - 1, skb);
- 
-@@ -1885,6 +2095,9 @@ static void tile_net_tx_timeout(struct net_device *dev)
- /* Ioctl commands. */
- static int tile_net_ioctl(struct net_device *dev, struct ifreq *rq, int cmd)
- {
-+	if (cmd == SIOCSHWTSTAMP)
-+		return tile_hwtstamp_ioctl(dev, rq, cmd);
-+
- 	return -EOPNOTSUPP;
- }
- 
-@@ -2005,6 +2218,7 @@ static void tile_net_dev_init(const char *name, const uint8_t *mac)
- 	priv->channel = -1;
- 	priv->loopify_channel = -1;
- 	priv->echannel = -1;
-+	init_ptp_dev(priv);
- 
- 	/* Get the MAC address and set it in the device struct; this must
- 	 * be done before the device is opened.  If the MAC is all zeroes,
--- 
-1.8.3.1
 
+	-ss
+
+On (08/01/13 22:31), Sergey Senozhatsky wrote:
+> Acquire atomic_read_lock before termios_rwsem rw-lock in n_tty_read().
+> termios_rwsem is getting released and re-acquired, while remaining
+> readers are blocked on atomic_read_lock mutex, in case when process
+> must wait for input_available_p(), making lockdep unhappy:
+> 
+> [  463.542463] ======================================================
+> [  463.542464] [ INFO: possible circular locking dependency detected ]
+> [  463.542466] 3.11.0-rc3-next-20130801-dbg-dirty #5 Not tainted
+> [  463.542467] -------------------------------------------------------
+> [  463.542469] agetty/2075 is trying to acquire lock:
+> [  463.542484]  (&tty->termios_rwsem){++++..}, at: [<ffffffff81398660>] n_tty_read+0x460/0xab0
+> [  463.542484] 
+> but task is already holding lock:
+> [  463.542496]  (&ldata->atomic_read_lock){+.+...}, at: [<ffffffff81398959>] n_tty_read+0x759/0xab0
+> [  463.542497] 
+> which lock already depends on the new lock.
+> 
+> [  463.542497] 
+> the existing dependency chain (in reverse order) is:
+> [  463.542502] 
+> -> #1 (&ldata->atomic_read_lock){+.+...}:
+> [  463.542508]        [<ffffffff810b9394>] lock_acquire+0xa4/0x200
+> [  463.542514]        [<ffffffff8160a787>] mutex_lock_interruptible_nested+0x77/0x4e0
+> [  463.542518]        [<ffffffff81398959>] n_tty_read+0x759/0xab0
+> [  463.542524]        [<ffffffff81393e8d>] tty_read+0x8d/0x100
+> [  463.542528]        [<ffffffff8117987a>] vfs_read+0x9a/0x170
+> [  463.542531]        [<ffffffff8117a05c>] SyS_read+0x4c/0xa0
+> [  463.542536]        [<ffffffff81610c7e>] tracesys+0xd0/0xd5
+> [  463.542540] 
+> -> #0 (&tty->termios_rwsem){++++..}:
+> [  463.542543]        [<ffffffff810b84e6>] __lock_acquire+0x1756/0x1d20
+> [  463.542547]        [<ffffffff810b9394>] lock_acquire+0xa4/0x200
+> [  463.542550]        [<ffffffff8160c1b7>] down_read+0x47/0x60
+> [  463.542554]        [<ffffffff81398660>] n_tty_read+0x460/0xab0
+> [  463.542557]        [<ffffffff81393e8d>] tty_read+0x8d/0x100
+> [  463.542560]        [<ffffffff8117987a>] vfs_read+0x9a/0x170
+> [  463.542563]        [<ffffffff8117a05c>] SyS_read+0x4c/0xa0
+> [  463.542566]        [<ffffffff81610c7e>] tracesys+0xd0/0xd5
+> [  463.542567] 
+> other info that might help us debug this:
+> 
+> [  463.542569]  Possible unsafe locking scenario:
+> 
+> [  463.542570]        CPU0                    CPU1
+> [  463.542570]        ----                    ----
+> [  463.542573]   lock(&ldata->atomic_read_lock);
+> [  463.542575]                                lock(&tty->termios_rwsem);
+> [  463.542577]                                lock(&ldata->atomic_read_lock);
+> [  463.542579]   lock(&tty->termios_rwsem);
+> [  463.542580] 
+>  *** DEADLOCK ***
+> 
+> [  463.542582] 2 locks held by agetty/2075:
+> [  463.542590]  #0:  (&tty->ldisc_sem){++++++}, at: [<ffffffff8139c130>] tty_ldisc_ref_wait+0x20/0x50
+> [  463.542597]  #1:  (&ldata->atomic_read_lock){+.+...}, at: [<ffffffff81398959>] n_tty_read+0x759/0xab0
+> [  463.542598] 
+> stack backtrace:
+> [  463.542602] CPU: 0 PID: 2075 Comm: agetty Not tainted 3.11.0-rc3-next-20130801-dbg-dirty #5
+> [  463.542603] Hardware name: Acer             Aspire 5741G    /Aspire 5741G    , BIOS V1.20 02/08/2011
+> [  463.542609]  ffffffff82236010 ffff88009af67c28 ffffffff8160630a ffffffff82236010
+> [  463.542613]  ffff88009af67c68 ffffffff816031b7 ffff880151ac0000 ffff880151ac0790
+> [  463.542617]  000000073469e1bd ffff880151ac0768 ffff880151ac0790 ffff880151ac0000
+> [  463.542618] Call Trace:
+> [  463.542625]  [<ffffffff8160630a>] dump_stack+0x4e/0x82
+> [  463.542630]  [<ffffffff816031b7>] print_circular_bug+0x2b6/0x2c5
+> [  463.542634]  [<ffffffff810b84e6>] __lock_acquire+0x1756/0x1d20
+> [  463.542638]  [<ffffffff810b9394>] lock_acquire+0xa4/0x200
+> [  463.542642]  [<ffffffff81398660>] ? n_tty_read+0x460/0xab0
+> [  463.542645]  [<ffffffff8160c1b7>] down_read+0x47/0x60
+> [  463.542649]  [<ffffffff81398660>] ? n_tty_read+0x460/0xab0
+> [  463.542653]  [<ffffffff81398660>] n_tty_read+0x460/0xab0
+> [  463.542661]  [<ffffffff81085020>] ? wake_up_process+0x40/0x40
+> [  463.542665]  [<ffffffff81393e8d>] tty_read+0x8d/0x100
+> [  463.542668]  [<ffffffff8117987a>] vfs_read+0x9a/0x170
+> [  463.542671]  [<ffffffff8117a05c>] SyS_read+0x4c/0xa0
+> [  463.542674]  [<ffffffff81610c7e>] tracesys+0xd0/0xd5
+> 
+> Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> 
+> ---
+> 
+>  drivers/tty/n_tty.c | 15 ++++++---------
+>  1 file changed, 6 insertions(+), 9 deletions(-)
+> 
+> diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
+> index dd8ae0c..03bd6e8 100644
+> --- a/drivers/tty/n_tty.c
+> +++ b/drivers/tty/n_tty.c
+> @@ -2122,8 +2122,6 @@ static ssize_t n_tty_read(struct tty_struct *tty, struct file *file,
+>  	if (c < 0)
+>  		return c;
+>  
+> -	down_read(&tty->termios_rwsem);
+> -
+>  	minimum = time = 0;
+>  	timeout = MAX_SCHEDULE_TIMEOUT;
+>  	if (!ldata->icanon) {
+> @@ -2145,16 +2143,15 @@ static ssize_t n_tty_read(struct tty_struct *tty, struct file *file,
+>  	 *	Internal serialization of reads.
+>  	 */
+>  	if (file->f_flags & O_NONBLOCK) {
+> -		if (!mutex_trylock(&ldata->atomic_read_lock)) {
+> -			up_read(&tty->termios_rwsem);
+> +		if (!mutex_trylock(&ldata->atomic_read_lock))
+>  			return -EAGAIN;
+> -		}
+>  	} else {
+> -		if (mutex_lock_interruptible(&ldata->atomic_read_lock)) {
+> -			up_read(&tty->termios_rwsem);
+> +		if (mutex_lock_interruptible(&ldata->atomic_read_lock))
+>  			return -ERESTARTSYS;
+> -		}
+>  	}
+> +
+> +	down_read(&tty->termios_rwsem);
+> +
+>  	packet = tty->packet;
+>  
+>  	add_wait_queue(&tty->read_wait, &wait);
+> @@ -2248,7 +2245,6 @@ static ssize_t n_tty_read(struct tty_struct *tty, struct file *file,
+>  		if (time)
+>  			timeout = time;
+>  	}
+> -	mutex_unlock(&ldata->atomic_read_lock);
+>  	remove_wait_queue(&tty->read_wait, &wait);
+>  
+>  	if (!waitqueue_active(&tty->read_wait))
+> @@ -2260,6 +2256,7 @@ static ssize_t n_tty_read(struct tty_struct *tty, struct file *file,
+>  
+>  	n_tty_set_room(tty);
+>  	up_read(&tty->termios_rwsem);
+> +	mutex_unlock(&ldata->atomic_read_lock);
+>  	return retval;
+>  }
+>  
+> 
