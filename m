@@ -1,123 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932427Ab3HAV7E (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 17:59:04 -0400
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:45332 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932386Ab3HAV67 (ORCPT
+	id S932121Ab3HAV6x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 17:58:53 -0400
+Received: from mail-qc0-f175.google.com ([209.85.216.175]:37632 "EHLO
+	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757477Ab3HAVuK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 17:58:59 -0400
-Message-ID: <1375394271.10300.18.camel@misato.fc.hp.com>
-Subject: Re: [PATCH v2 02/18] earlycpio.c: Fix the confusing comment of
- find_cpio_data().
-From: Toshi Kani <toshi.kani@hp.com>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu,
-        hpa@zytor.com, akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
-        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
-        mina86@mina86.com, gong.chen@linux.intel.com,
-        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
-        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
-        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com, x86@kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Date: Thu, 01 Aug 2013 15:57:51 -0600
-In-Reply-To: <1375340800-19332-3-git-send-email-tangchen@cn.fujitsu.com>
-References: <1375340800-19332-1-git-send-email-tangchen@cn.fujitsu.com>
-	 <1375340800-19332-3-git-send-email-tangchen@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 1 Aug 2013 17:50:10 -0400
+From: Tejun Heo <tj@kernel.org>
+To: lizefan@huawei.com
+Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 02/23] cpuset: drop "const" qualifiers from struct cpuset instances
+Date: Thu,  1 Aug 2013 17:49:40 -0400
+Message-Id: <1375393801-4817-3-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1375393801-4817-1-git-send-email-tj@kernel.org>
+References: <1375393801-4817-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-08-01 at 15:06 +0800, Tang Chen wrote:
-> The comments of find_cpio_data() says:
-> 
->   * @offset: When a matching file is found, this is the offset to the
->   *          beginning of the cpio. ......
-> 
-> But according to the code,
-> 
->   dptr = PTR_ALIGN(p + ch[C_NAMESIZE], 4);
->   nptr = PTR_ALIGN(dptr + ch[C_FILESIZE], 4);
->   ....
->   *offset = (long)nptr - (long)data;	/* data is the cpio file */
-> 
-> @offset is the offset of the next file, not the matching file itself.
-> This is confused and may cause unnecessary waste of time to debug.
-> So fix it.
-> 
-> v1 -> v2:
-> As tj suggested, rename @offset to @nextoff which is more clear to
-> users. And also adjust the new comments.
-> 
-> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-> Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-> ---
->  lib/earlycpio.c |   27 ++++++++++++++-------------
->  1 files changed, 14 insertions(+), 13 deletions(-)
-> 
-> diff --git a/lib/earlycpio.c b/lib/earlycpio.c
-> index 8078ef4..7affac0 100644
-> --- a/lib/earlycpio.c
-> +++ b/lib/earlycpio.c
-> @@ -49,22 +49,23 @@ enum cpio_fields {
->  
->  /**
->   * cpio_data find_cpio_data - Search for files in an uncompressed cpio
-> - * @path:   The directory to search for, including a slash at the end
-> - * @data:   Pointer to the the cpio archive or a header inside
-> - * @len:    Remaining length of the cpio based on data pointer
-> - * @offset: When a matching file is found, this is the offset to the
-> - *          beginning of the cpio. It can be used to iterate through
-> - *          the cpio to find all files inside of a directory path
-> + * @path:       The directory to search for, including a slash at the end
-> + * @data:       Pointer to the the cpio archive or a header inside
-> + * @len:        Remaining length of the cpio based on data pointer
-> + * @nextoff:    When a matching file is found, this is the offset from the
-> + *              beginning of the cpio to the beginning of the next file, not the
-> + *              matching file itself. It can be used to iterate through the cpio
-> + *              to find all files inside of a directory path
->   *
-> - * @return: struct cpio_data containing the address, length and
-> - *          filename (with the directory path cut off) of the found file.
-> - *          If you search for a filename and not for files in a directory,
-> - *          pass the absolute path of the filename in the cpio and make sure
-> - *          the match returned an empty filename string.
-> + * @return:     struct cpio_data containing the address, length and
-> + *              filename (with the directory path cut off) of the found file.
-> + *              If you search for a filename and not for files in a directory,
-> + *              pass the absolute path of the filename in the cpio and make sure
-> + *              the match returned an empty filename string.
->   */
->  
->  struct cpio_data __cpuinit find_cpio_data(const char *path, void *data,
+cpuset uses "const" qualifiers on struct cpuset in some functions;
+however, it doesn't work well when a value derived from returned const
+pointer has to be passed to an accessor.  It's C after all.
 
-This patch does not apply cleanly.  It seems that your branch does not
-have 0db0628d90125193280eabb501c94feaf48fa9ab.
+Drop the "const" qualifiers except for the trivially leaf ones.  This
+patch doesn't make any functional changes.
 
-Thanks,
--Toshi
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Li Zefan <lizefan@huawei.com>
+---
+ kernel/cpuset.c | 17 ++++++++---------
+ 1 file changed, 8 insertions(+), 9 deletions(-)
 
-
-> -					  size_t len,  long *offset)
-> +					  size_t len,  long *nextoff)
->  {
->  	const size_t cpio_header_len = 8*C_NFIELDS - 2;
->  	struct cpio_data cd = { NULL, 0, "" };
-> @@ -124,7 +125,7 @@ struct cpio_data __cpuinit find_cpio_data(const char *path, void *data,
->  		if ((ch[C_MODE] & 0170000) == 0100000 &&
->  		    ch[C_NAMESIZE] >= mypathsize &&
->  		    !memcmp(p, path, mypathsize)) {
-> -			*offset = (long)nptr - (long)data;
-> +			*nextoff = (long)nptr - (long)data;
->  			if (ch[C_NAMESIZE] - mypathsize >= MAX_CPIO_FILE_NAME) {
->  				pr_warn(
->  				"File %s exceeding MAX_CPIO_FILE_NAME [%d]\n",
-
+diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+index be4512b..f737134 100644
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -128,7 +128,7 @@ static inline struct cpuset *task_cs(struct task_struct *task)
+ 			    struct cpuset, css);
+ }
+ 
+-static inline struct cpuset *parent_cs(const struct cpuset *cs)
++static inline struct cpuset *parent_cs(struct cpuset *cs)
+ {
+ 	struct cgroup *pcgrp = cs->css.cgroup->parent;
+ 
+@@ -319,8 +319,7 @@ static struct file_system_type cpuset_fs_type = {
+  *
+  * Call with callback_mutex held.
+  */
+-static void guarantee_online_cpus(const struct cpuset *cs,
+-				  struct cpumask *pmask)
++static void guarantee_online_cpus(struct cpuset *cs, struct cpumask *pmask)
+ {
+ 	while (!cpumask_intersects(cs->cpus_allowed, cpu_online_mask))
+ 		cs = parent_cs(cs);
+@@ -338,7 +337,7 @@ static void guarantee_online_cpus(const struct cpuset *cs,
+  *
+  * Call with callback_mutex held.
+  */
+-static void guarantee_online_mems(const struct cpuset *cs, nodemask_t *pmask)
++static void guarantee_online_mems(struct cpuset *cs, nodemask_t *pmask)
+ {
+ 	while (!nodes_intersects(cs->mems_allowed, node_states[N_MEMORY]))
+ 		cs = parent_cs(cs);
+@@ -383,7 +382,7 @@ static int is_cpuset_subset(const struct cpuset *p, const struct cpuset *q)
+  * alloc_trial_cpuset - allocate a trial cpuset
+  * @cs: the cpuset that the trial cpuset duplicates
+  */
+-static struct cpuset *alloc_trial_cpuset(const struct cpuset *cs)
++static struct cpuset *alloc_trial_cpuset(struct cpuset *cs)
+ {
+ 	struct cpuset *trial;
+ 
+@@ -430,7 +429,7 @@ static void free_trial_cpuset(struct cpuset *trial)
+  * Return 0 if valid, -errno if not.
+  */
+ 
+-static int validate_change(const struct cpuset *cur, const struct cpuset *trial)
++static int validate_change(struct cpuset *cur, struct cpuset *trial)
+ {
+ 	struct cgroup *cgrp;
+ 	struct cpuset *c, *par;
+@@ -2343,7 +2342,7 @@ void cpuset_cpus_allowed(struct task_struct *tsk, struct cpumask *pmask)
+ 
+ void cpuset_cpus_allowed_fallback(struct task_struct *tsk)
+ {
+-	const struct cpuset *cpus_cs;
++	struct cpuset *cpus_cs;
+ 
+ 	rcu_read_lock();
+ 	cpus_cs = effective_cpumask_cpuset(task_cs(tsk));
+@@ -2416,7 +2415,7 @@ int cpuset_nodemask_valid_mems_allowed(nodemask_t *nodemask)
+  * callback_mutex.  If no ancestor is mem_exclusive or mem_hardwall
+  * (an unusual configuration), then returns the root cpuset.
+  */
+-static const struct cpuset *nearest_hardwall_ancestor(const struct cpuset *cs)
++static struct cpuset *nearest_hardwall_ancestor(struct cpuset *cs)
+ {
+ 	while (!(is_mem_exclusive(cs) || is_mem_hardwall(cs)) && parent_cs(cs))
+ 		cs = parent_cs(cs);
+@@ -2486,7 +2485,7 @@ static const struct cpuset *nearest_hardwall_ancestor(const struct cpuset *cs)
+  */
+ int __cpuset_node_allowed_softwall(int node, gfp_t gfp_mask)
+ {
+-	const struct cpuset *cs;	/* current cpuset ancestors */
++	struct cpuset *cs;		/* current cpuset ancestors */
+ 	int allowed;			/* is allocation in zone z allowed? */
+ 
+ 	if (in_interrupt() || (gfp_mask & __GFP_THISNODE))
+-- 
+1.8.3.1
 
