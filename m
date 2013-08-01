@@ -1,53 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752978Ab3HAAkm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 20:40:42 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:37036 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752190Ab3HAAki convert rfc822-to-8bit (ORCPT
+	id S1753268Ab3HAAl0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 20:41:26 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:50505 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752151Ab3HAAbx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 20:40:38 -0400
-Date: Wed, 31 Jul 2013 17:40:37 -0700 (PDT)
-Message-Id: <20130731.174037.1794753574143053874.davem@davemloft.net>
-To: linus.luessing@web.de
-Cc: bridge@lists.linux-foundation.org, stephen@networkplumber.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        herbert@gondor.hengli.com.au, amwang@redhat.com,
-        linux@baker-net.org.uk
-Subject: Re: [PATCHv3] bridge: disable snooping if there is no querier
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1375311980-25575-1-git-send-email-linus.luessing@web.de>
-References: <20130730.161035.1646022729333223847.davem@davemloft.net>
-	<1375311980-25575-1-git-send-email-linus.luessing@web.de>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Wed, 31 Jul 2013 17:40:38 -0700 (PDT)
+	Wed, 31 Jul 2013 20:31:53 -0400
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>, Borislav Petkov <bp@alien8.de>,
+        Li Zhong <zhong@linux.vnet.ibm.com>, Mike Galbraith <efault@gmx.de>,
+        Kevin Hilman <khilman@linaro.org>
+Subject: [PATCH 04/23] context_tracking: Fix runtime CPU off-case
+Date: Thu,  1 Aug 2013 02:31:21 +0200
+Message-Id: <1375317100-20651-5-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1375317100-20651-1-git-send-email-fweisbec@gmail.com>
+References: <1375317100-20651-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Lüssing <linus.luessing@web.de>
-Date: Thu,  1 Aug 2013 01:06:20 +0200
+As long as the context tracking is enabled on any CPU, even
+a single one, all other CPUs need to keep track of their
+user <-> kernel boundaries cross as well.
 
-> If there is no querier on a link then we won't get periodic reports and
-> therefore won't be able to learn about multicast listeners behind ports,
-> potentially leading to lost multicast packets, especially for multicast
-> listeners that joined before the creation of the bridge.
-> 
-> These lost multicast packets can appear since c5c23260594
-> ("bridge: Add multicast_querier toggle and disable queries by default")
-> in particular.
-> 
-> With this patch we are flooding multicast packets if our querier is
-> disabled and if we didn't detect any other querier.
-> 
-> A grace period of the Maximum Response Delay of the querier is added to
-> give multicast responses enough time to arrive and to be learned from
-> before disabling the flooding behaviour again.
-> 
-> Signed-off-by: Linus Lüssing <linus.luessing@web.de>
+This is because a task can sleep while servicing an exception
+that happened in the kernel or in userspace. Then when the task
+eventually wakes up and return from the exception, the CPU needs
+to know if we resume in userspace or in the kernel. exception_exit()
+get this information from exception_enter() that saved the previous
+state.
 
-Looks good, applied, thanks Linus.
+If the CPU where the exception happened didn't keep track of
+these informations, exception_exit() doesn't know which state
+tracking to restore on the CPU where the task got migrated
+and we may return to userspace with the context tracking
+subsystem thinking that we are in kernel mode.
+
+This can be fixed in the long term if we move our context tracking
+probes on very low level arch fast path user <-> kernel boundary,
+although even that is worrisome as an exception can still happen
+in the few instructions between the probe and the actual iret.
+
+Also we are not yet ready to set these probes in the fast path given
+the potential overhead problem it induces.
+
+So let's fix this by always enable context tracking even on CPUs
+that are not in the full dynticks range. OTOH we can spare the
+rcu_user_*() and vtime_user_*() calls there because the tick runs
+on these CPUs and we can handle RCU state machine and cputime
+accounting through it.
+
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Borislav Petkov <bp@alien8.de>
+Cc: Li Zhong <zhong@linux.vnet.ibm.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Kevin Hilman <khilman@linaro.org>
+---
+ kernel/context_tracking.c |   52 ++++++++++++++++++++++++++++----------------
+ 1 files changed, 33 insertions(+), 19 deletions(-)
+
+diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
+index 1f47119..7b095de 100644
+--- a/kernel/context_tracking.c
++++ b/kernel/context_tracking.c
+@@ -54,17 +54,31 @@ void user_enter(void)
+ 	WARN_ON_ONCE(!current->mm);
+ 
+ 	local_irq_save(flags);
+-	if (__this_cpu_read(context_tracking.active) &&
+-	    __this_cpu_read(context_tracking.state) != IN_USER) {
++	if ( __this_cpu_read(context_tracking.state) != IN_USER) {
++		if (__this_cpu_read(context_tracking.active)) {
++			/*
++			 * At this stage, only low level arch entry code remains and
++			 * then we'll run in userspace. We can assume there won't be
++			 * any RCU read-side critical section until the next call to
++			 * user_exit() or rcu_irq_enter(). Let's remove RCU's dependency
++			 * on the tick.
++			 */
++			vtime_user_enter(current);
++			rcu_user_enter();
++		}
+ 		/*
+-		 * At this stage, only low level arch entry code remains and
+-		 * then we'll run in userspace. We can assume there won't be
+-		 * any RCU read-side critical section until the next call to
+-		 * user_exit() or rcu_irq_enter(). Let's remove RCU's dependency
+-		 * on the tick.
++		 * Even if context tracking is disabled on this CPU, because it's outside
++		 * the full dynticks mask for example, we still have to keep track of the
++		 * context transitions and states to prevent inconsistency on those of
++		 * other CPUs.
++		 * If a task triggers an exception in userspace, sleep on the exception
++		 * handler and then migrate to another CPU, that new CPU must know where
++		 * the exception returns by the time we call exception_exit().
++		 * This information can only be provided by the previous CPU when it called
++		 * exception_enter().
++		 * OTOH we can spare the calls to vtime and RCU when context_tracking.active
++		 * is false because we know that CPU is not tickless.
+ 		 */
+-		vtime_user_enter(current);
+-		rcu_user_enter();
+ 		__this_cpu_write(context_tracking.state, IN_USER);
+ 	}
+ 	local_irq_restore(flags);
+@@ -130,12 +144,14 @@ void user_exit(void)
+ 
+ 	local_irq_save(flags);
+ 	if (__this_cpu_read(context_tracking.state) == IN_USER) {
+-		/*
+-		 * We are going to run code that may use RCU. Inform
+-		 * RCU core about that (ie: we may need the tick again).
+-		 */
+-		rcu_user_exit();
+-		vtime_user_exit(current);
++		if (__this_cpu_read(context_tracking.active)) {
++			/*
++			 * We are going to run code that may use RCU. Inform
++			 * RCU core about that (ie: we may need the tick again).
++			 */
++			rcu_user_exit();
++			vtime_user_exit(current);
++		}
+ 		__this_cpu_write(context_tracking.state, IN_KERNEL);
+ 	}
+ 	local_irq_restore(flags);
+@@ -178,8 +194,6 @@ EXPORT_SYMBOL_GPL(guest_exit);
+ void context_tracking_task_switch(struct task_struct *prev,
+ 			     struct task_struct *next)
+ {
+-	if (__this_cpu_read(context_tracking.active)) {
+-		clear_tsk_thread_flag(prev, TIF_NOHZ);
+-		set_tsk_thread_flag(next, TIF_NOHZ);
+-	}
++	clear_tsk_thread_flag(prev, TIF_NOHZ);
++	set_tsk_thread_flag(next, TIF_NOHZ);
+ }
+-- 
+1.7.5.4
 
