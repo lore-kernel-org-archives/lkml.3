@@ -1,43 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757151Ab3HAPvA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 11:51:00 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43529 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755957Ab3HAPu7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 11:50:59 -0400
-Date: Thu, 1 Aug 2013 16:50:56 +0100
-From: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ASoC: core: init delayed_work for codec-codec links
-Message-ID: <20130801155056.GA3996@opensource.wolfsonmicro.com>
-References: <20130731131627.GA32631@opensource.wolfsonmicro.com> <20130731132522.GP9858@sirena.org.uk> <20130801151336.GA1112@opensource.wolfsonmicro.com> <20130801152356.GW9858@sirena.org.uk>
+	id S1757201Ab3HAPv1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 11:51:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51591 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756394Ab3HAPv0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 11:51:26 -0400
+Date: Thu, 1 Aug 2013 17:51:11 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: Minchan Kim <minchan@kernel.org>, Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 3/3] mm: page_alloc: fair zone allocator policy
+Message-ID: <20130801155111.GO25926@redhat.com>
+References: <1374267325-22865-1-git-send-email-hannes@cmpxchg.org>
+ <1374267325-22865-4-git-send-email-hannes@cmpxchg.org>
+ <20130801025636.GC19540@bbox>
+ <51F9E4A6.2090909@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130801152356.GW9858@sirena.org.uk>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <51F9E4A6.2090909@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 01, 2013 at 04:23:56PM +0100, Mark Brown wrote:
-> On Thu, Aug 01, 2013 at 04:13:52PM +0100, Richard Fitzgerald wrote:
-> > On Wed, Jul 31, 2013 at 02:25:22PM +0100, Mark Brown wrote:
+On Thu, Aug 01, 2013 at 12:31:34AM -0400, Rik van Riel wrote:
+> On 07/31/2013 10:56 PM, Minchan Kim wrote:
 > 
-> > > Why is this better than pointing at the normal work that you'd expect to
-> > > be used there?
+> > Yes, it's not really slow path because it could return to normal status
+> > without calling significant slow functions by reset batchcount of
+> > prepare_slowpath.
+> >
+> > I think it's tradeoff and I am biased your approach although we would
+> > lose a little performance because fair aging would recover the loss by
+> > fastpath's overhead. But who knows? Someone has a concern.
+> >
+> > So we should mention about such problems.
 > 
-> > By 'normal work' do you mean the close_delayed_work() used for
-> > standard PCM DAIs?
+> If the atomic operation in the fast path turns out to be a problem,
+> I suspect we may be able to fix it by using per-cpu counters, and
+> consolidating those every once in a while.
 > 
-> Yes - making up this empty work doesn't seem like a robust approach.
+> However, it may be good to see whether there is a problem in the
+> first place, before adding complexity.
 
-Yeah, I think the problem is more one of bad naming. I should define that
-function as the delayed work for codec-2-codec links, it just happens
-that we don't currently have to do anything for them. The only thing
-the pcm close_delayed_work() does is to send a SND_SOC_DAPM_STREAM_STOP
-but for c2c links we never send a start anyway.
+prepare_slowpath is racy anyway, so I don't see the point in wanting
+to do atomic ops in the first place.
+
+Much better to do the increment in assembly in a single insn to reduce
+the window, but there's no point in using the lock prefix when
+atomic_set will screw it over while somebody does atomic_dec under it
+anyway. atomic_set cannot be atomic, so it'll screw over any
+perfectly accurate accounted atomic_dec anyway.
+
+I think it should be done in C without atomic_dec or by introducing an
+__atomic_dec that isn't using the lock prefix and just tries to do the
+dec in a single (or as few as possible) asm insn.
+
+And because the whole thing is racy, after prepare_slowpath (which I
+think is a too generic name and should be renamed
+reset_zonelist_alloc_batch), this last attempt before invoking
+reclaim:
+
+	/* This is the last chance, in general, before the goto nopage. */
+	page = get_page_from_freelist(gfp_mask, nodemask, order, zonelist,
+			high_zoneidx, alloc_flags & ~ALLOC_NO_WATERMARKS,
+			preferred_zone, migratetype);
+
+which is trying again with the MIN wmark, should be also altered so
+that we do one pass totally disregarding alloc_batch, just before
+declaring MIN-wmark failure in the allocation, and invoking direct
+reclaim.
+
+Either we add a (alloc_flags | ALLOC_NO_ALLOC_BATCH) to the above
+alloc_flags in the above call, or we run a second
+get_page_from_freelist if the above one fails with
+ALLOC_NO_ALLOC_BATCH set.
+
+Otherwise because of the inherent racy behavior of the alloc_batch
+logic, what will happen is that we'll eventually have enough hugepage
+allocations in enough CPUs to hit the alloc_batch limit again in
+between the prepare_slowpath and the above get_page_from_freelist,
+that will lead us to call spurious direct_reclaim invocations, when it
+was just a false negative of alloc_batch.
