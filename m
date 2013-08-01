@@ -1,114 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756915Ab3HAPQd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 11:16:33 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:43519 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756003Ab3HAPQ3 (ORCPT
+	id S1756762Ab3HAPUk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 11:20:40 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:3589 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755700Ab3HAPUj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 11:16:29 -0400
-Date: Thu, 1 Aug 2013 11:16:19 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: zhenzhong.duan@oracle.com,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        xen-devel <xen-devel@lists.xen.org>, Feng Jin <joe.jin@oracle.com>,
-        Sucheta Chakraborty <sucheta.chakraborty@qlogic.com>
-Subject: Re: [PATCH 2/3] Refactor msi/msix restore code Part2
-Message-ID: <20130801151616.GE21528@konrad-lan.dumpdata.com>
-References: <51EF451A.8050003@oracle.com>
- <CAErSpo5phkLpdR35eaMnYthVXiAAAr-JLD44QkntOZi2-NppOg@mail.gmail.com>
+	Thu, 1 Aug 2013 11:20:39 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 01 Aug 2013 08:20:38 -0700
+Message-ID: <51FA7FB9.8000209@nvidia.com>
+Date: Thu, 1 Aug 2013 21:03:13 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAErSpo5phkLpdR35eaMnYthVXiAAAr-JLD44QkntOZi2-NppOg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+To: "balbi@ti.com" <balbi@ti.com>
+CC: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "rob@landley.net" <rob@landley.net>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
+        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
+        "kishon@ti.com" <kishon@ti.com>, Stephen Warren <swarren@nvidia.com>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "Mark.Rutland@arm.com" <Mark.Rutland@arm.com>,
+        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
+        "broonie@kernel.org" <broonie@kernel.org>
+Subject: Re: [PATCH V2] drivers/rtc/rtc-palmas.c: support for backup battery
+ charging
+References: <1375367471-29908-1-git-send-email-ldewangan@nvidia.com> <20130801150941.GA11286@radagast>
+In-Reply-To: <20130801150941.GA11286@radagast>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 31, 2013 at 04:41:32PM -0600, Bjorn Helgaas wrote:
-> On Tue, Jul 23, 2013 at 9:08 PM, Zhenzhong Duan
-> <zhenzhong.duan@oracle.com> wrote:
-> > xen_initdom_restore_msi_irqs trigger a hypercall to restore addr/data/mask
-> > in dom0. It's better to do the same for default_restore_msi_irqs in baremetal.
-> >
-> > Move restore of mask in default_restore_msi_irqs, this could avoid mask
-> > restored twice in dom0, once in hypercall, the other in kernel.
-> >
-> > Without that, qlcnic driver calling pci_reset_function will lost interrupt
-> > in dom0.
-> >
-> > Tested-by: Sucheta Chakraborty <sucheta.chakraborty@qlogic.com>
-> > Signed-off-by: Zhenzhong Duan <zhenzhong.duan@oracle.com>
-> > ---
-> >  drivers/pci/msi.c |   17 ++++++++++++++---
-> >  1 files changed, 14 insertions(+), 3 deletions(-)
-> >
-> > diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
-> > index 87223ae..922fb49 100644
-> > --- a/drivers/pci/msi.c
-> > +++ b/drivers/pci/msi.c
-> > @@ -216,6 +216,8 @@ void unmask_msi_irq(struct irq_data *data)
-> >  #ifdef HAVE_DEFAULT_MSI_RESTORE_IRQS
-> >  void default_restore_msi_irqs(struct pci_dev *dev, int irq)
-> >  {
-> > +       int pos;
-> > +       u16 control;
-> >         struct msi_desc *entry;
-> >
-> >         entry = NULL;
-> > @@ -228,8 +230,19 @@ void default_restore_msi_irqs(struct pci_dev *dev, int irq)
-> >                 entry = irq_get_msi_desc(irq);
-> >         }
-> >
-> > -       if (entry)
-> > +       if (entry) {
-> >                 write_msi_msg(irq, &entry->msg);
-> > +               if (dev->msix_enabled) {
-> > +                       msix_mask_irq(entry, entry->masked);
-> > +                       readl(entry->mask_base);
-> > +               } else {
-> > +                       pos = entry->msi_attrib.pos;
-> > +                       pci_read_config_word(dev, pos + PCI_MSI_FLAGS,
-> > +                                            &control);
-> > +                       msi_mask_irq(entry, msi_capable_mask(control),
-> > +                                    entry->masked);
-> > +               }
-> > +       }
-> >  }
-> >  #endif
-> >
-> > @@ -406,7 +419,6 @@ static void __pci_restore_msi_state(struct pci_dev *dev)
-> >         arch_restore_msi_irqs(dev, dev->irq);
-> >
-> >         pci_read_config_word(dev, dev->msi_cap + PCI_MSI_FLAGS, &control);
-> > -       msi_mask_irq(entry, msi_capable_mask(control), entry->masked);
-> >         control &= ~PCI_MSI_FLAGS_QSIZE;
-> >         control |= (entry->msi_attrib.multiple << 4) | PCI_MSI_FLAGS_ENABLE;
-> >         pci_write_config_word(dev, dev->msi_cap + PCI_MSI_FLAGS, control);
-> > @@ -430,7 +442,6 @@ static void __pci_restore_msix_state(struct pci_dev *dev)
-> >
-> >         list_for_each_entry(entry, &dev->msi_list, list) {
-> >                 arch_restore_msi_irqs(dev, entry->irq);
-> > -               msix_mask_irq(entry, entry->masked);
-> >         }
-> >
-> >         control &= ~PCI_MSIX_FLAGS_MASKALL;
-> 
-> Konrad, are you OK with this patch now?
+On Thursday 01 August 2013 08:39 PM, Felipe Balbi wrote:
+> * PGP Signed by an unknown key
+>
+> Hi,
+>
+> On Thu, Aug 01, 2013 at 08:01:11PM +0530, Laxman Dewangan wrote:
+> I wonder if this should be exposed via power_supply class, although it's
+> not really a power supply. So perhaps not needed :-s
 
-Yes, I wanted to make sure that the existing behavior under baremetal
-was not altered.
+Yes, there is another charger module on the device which actually need 
+the driver through power supply. Charger submodule used for charging the 
+main battery through USB VBUS.
 
-And Duan had confirmed it was not  - thought to be on a safe side it
-would be good to confirm this via testing just in case.
 
-> 
-> If so, can you (Zhenzhong) update the changelog with some of the info
-> from the conversation with Konrad?  It seems like a few more details
-> are needed to make it clear why we need this change.
-> 
-> Bjorn
+
+
+>
+> looks good though (can't test as I don't have any boards available right
+> now):
+>
+> Reviewed-by: Felipe Balbi <balbi@ti.com>
+
+Thanks for review.
+>
+
