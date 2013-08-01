@@ -1,115 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754617Ab3HAGYE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 02:24:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60276 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753278Ab3HAGYB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 02:24:01 -0400
-Date: Thu, 1 Aug 2013 02:23:19 -0400
-From: Rik van Riel <riel@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Mel Gorman <mgorman@suse.de>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH,RFC] numa,sched: use group fault statistics in numa
- placement
-Message-ID: <20130801022319.4a6a977a@annuminas.surriel.com>
-In-Reply-To: <20130730113857.GR3008@twins.programming.kicks-ass.net>
-References: <1373901620-2021-1-git-send-email-mgorman@suse.de>
-	<20130730113857.GR3008@twins.programming.kicks-ass.net>
-Organization: Red Hat, Inc.
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752490Ab3HAG1F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 02:27:05 -0400
+Received: from 7.mo2.mail-out.ovh.net ([188.165.48.182]:38288 "EHLO
+	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750936Ab3HAG1B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 02:27:01 -0400
+From: Boris BREZILLON <b.brezillon@overkiz.com>
+To: Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Boris BREZILLON <b.brezillon@overkiz.com>
+X-Ovh-Mailout: 178.32.228.2 (mo2.mail-out.ovh.net)
+Subject: [PATCH] USB: ohci-at91: add usb_clk for transition to common clk framework
+Date: Thu,  1 Aug 2013 08:16:40 +0200
+Message-Id: <1375337800-2605-1-git-send-email-b.brezillon@overkiz.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Ovh-Tracer-Id: 18326272783991928934
+X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedrheelucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedrheelucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Subject: [PATCH,RFC] numa,sched: use group fault statistics in numa placement
+The AT91 PMC (Power Management Controller) provides an USB clock used by
+USB Full Speed host (ohci) and USB Full Speed device (udc).
+The usb drivers (ohci and udc) must configure this clock to 48Mhz.
+This configuration was formely done in mach-at91/clock.c, but this
+implementation will be removed when moving to common clk framework.
 
-Here is a quick strawman on how the group fault stuff could be used
-to help pick the best node for a task. This is likely to be quite
-suboptimal and in need of tweaking. My main goal is to get this to
-Peter & Mel before it's breakfast time on their side of the Atlantic...
+This patch adds support for usb clock retrieval and configuration, and is
+backward compatible with the current at91 clk implementation (if usb clk
+is not found, it does not configure/enable it).
 
-This goes on top of "sched, numa: Use {cpu, pid} to create task groups for shared faults"
-
-Enjoy :)
-
-Signed-off-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
 ---
- kernel/sched/fair.c | 32 +++++++++++++++++++++++++++++---
- 1 file changed, 29 insertions(+), 3 deletions(-)
+ drivers/usb/host/ohci-at91.c |   17 +++++++++++++++--
+ 1 file changed, 15 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 6a06bef..fb2e229 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -1135,8 +1135,9 @@ struct numa_group {
+diff --git a/drivers/usb/host/ohci-at91.c b/drivers/usb/host/ohci-at91.c
+index 9677f68..913d293 100644
+--- a/drivers/usb/host/ohci-at91.c
++++ b/drivers/usb/host/ohci-at91.c
+@@ -31,8 +31,8 @@
+ #define at91_for_each_port(index)	\
+ 		for ((index) = 0; (index) < AT91_MAX_USBH_PORTS; (index)++)
  
- static void task_numa_placement(struct task_struct *p)
+-/* interface and function clocks; sometimes also an AHB clock */
+-static struct clk *iclk, *fclk, *hclk;
++/* interface, function and usb clocks; sometimes also an AHB clock */
++static struct clk *iclk, *fclk, *uclk, *hclk;
+ static int clocked;
+ 
+ extern int usb_disabled(void);
+@@ -41,6 +41,10 @@ extern int usb_disabled(void);
+ 
+ static void at91_start_clock(void)
  {
--	int seq, nid, max_nid = -1;
--	unsigned long max_faults = 0;
-+	int seq, nid, max_nid = -1, max_group_nid = -1;
-+	unsigned long max_faults = 0, max_group_faults = 0;
-+	unsigned long total_faults = 0, total_group_faults = 0;
++	if (!IS_ERR(uclk)) {
++		clk_set_rate(uclk, 48000000);
++		clk_prepare_enable(uclk);
++	}
+ 	clk_prepare_enable(hclk);
+ 	clk_prepare_enable(iclk);
+ 	clk_prepare_enable(fclk);
+@@ -52,6 +56,8 @@ static void at91_stop_clock(void)
+ 	clk_disable_unprepare(fclk);
+ 	clk_disable_unprepare(iclk);
+ 	clk_disable_unprepare(hclk);
++	if (!IS_ERR(uclk))
++		clk_disable_unprepare(uclk);
+ 	clocked = 0;
+ }
  
- 	seq = ACCESS_ONCE(p->mm->numa_scan_seq);
- 	if (p->numa_scan_seq == seq)
-@@ -1148,7 +1149,7 @@ static void task_numa_placement(struct task_struct *p)
- 
- 	/* Find the node with the highest number of faults */
- 	for (nid = 0; nid < nr_node_ids; nid++) {
--		unsigned long faults = 0;
-+		unsigned long faults = 0, group_faults = 0;
- 		int priv, i;
- 
- 		for (priv = 0; priv < 2; priv++) {
-@@ -1169,6 +1170,7 @@ static void task_numa_placement(struct task_struct *p)
- 			if (p->numa_group) {
- 				/* safe because we can only change our own group */
- 				atomic_long_add(diff, &p->numa_group->faults[i]);
-+				group_faults += atomic_long_read(&p->numa_group->faults[i]);
- 			}
- 		}
- 
-@@ -1176,11 +1178,35 @@ static void task_numa_placement(struct task_struct *p)
- 			max_faults = faults;
- 			max_nid = nid;
- 		}
-+
-+		if (group_faults > max_group_faults) {
-+			max_group_faults = group_faults;
-+			max_group_nid = nid;
-+		}
-+
-+		total_faults += faults;
-+		total_group_faults += group_faults;
+@@ -163,6 +169,8 @@ static int usb_hcd_at91_probe(const struct hc_driver *driver,
+ 		goto err5;
  	}
  
- 	if (sched_feat(NUMA_INTERLEAVE))
- 		task_numa_mempol(p, max_faults);
- 
-+	/*
-+	 * Should we stay on our own, or move in with the group?
-+	 * The absolute count of faults may not be useful, but comparing
-+	 * the fraction of accesses in each top node may give us a hint
-+	 * where to start looking for a migration target.
-+	 *
-+	 *  max_group_faults     max_faults
-+	 * ------------------ > ------------
-+	 * total_group_faults   total_faults
-+	 */
-+	if (max_group_nid >= 0 && max_group_nid != max_nid) {
-+		if (max_group_faults * total_faults >
-+				max_faults * total_group_faults)
-+			max_nid = max_group_nid;
-+	}
++	uclk = clk_get(&pdev->dev, "usb_clk");
 +
- 	/* Preferred node as the node with the most faults */
- 	if (max_faults && max_nid != p->numa_preferred_nid) {
+ 	at91_start_hc(pdev);
+ 	ohci_hcd_init(hcd_to_ohci(hcd));
  
+@@ -173,6 +181,9 @@ static int usb_hcd_at91_probe(const struct hc_driver *driver,
+ 	/* Error handling */
+ 	at91_stop_hc(pdev);
+ 
++	if (!IS_ERR(uclk))
++		clk_put(uclk);
++
+ 	clk_put(hclk);
+  err5:
+ 	clk_put(fclk);
+@@ -212,6 +223,8 @@ static void usb_hcd_at91_remove(struct usb_hcd *hcd,
+ 	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
+ 	usb_put_hcd(hcd);
+ 
++	if (!IS_ERR(uclk))
++		clk_put(uclk);
+ 	clk_put(hclk);
+ 	clk_put(fclk);
+ 	clk_put(iclk);
+-- 
+1.7.9.5
+
