@@ -1,132 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756030Ab3HARcE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 13:32:04 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:56207 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751194Ab3HARcC (ORCPT
+	id S1755866Ab3HARhL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 13:37:11 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:38479 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752245Ab3HARhF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 13:32:02 -0400
-From: Stephen Warren <swarren@wwwdotorg.org>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: ebiederm@xmission.com, Simon Horman <horms@verge.net.au>,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Will Deacon <will.deacon@arm.com>, Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH V2] ARM: kexec: validate CPU hotplug support
-Date: Thu,  1 Aug 2013 11:31:54 -0600
-Message-Id: <1375378314-26372-1-git-send-email-swarren@wwwdotorg.org>
-X-Mailer: git-send-email 1.8.1.5
-X-NVConfidentiality: public
+	Thu, 1 Aug 2013 13:37:05 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130731184724.GA30896@srcf.ucam.org>
+References: <3453253.oZLO1ChPbL@vostro.rjw.lan>
+	<CAMP44s02V_FO1BPJZqo6MB9RMknXYdV7AXDqbJzYHpgK1GUuJw@mail.gmail.com>
+	<37178266.QXgbv9rq0i@vostro.rjw.lan>
+	<CAMP44s2LqiEGtS72FuTjsHUa1MH2kfaYHmcpNKMmAm2LnbFCCQ@mail.gmail.com>
+	<20130731051421.GA15766@srcf.ucam.org>
+	<CAMP44s2B=nQLnZm7gyYAJZgt_x3KszRZLUC=fom0t9=Eze+smA@mail.gmail.com>
+	<20130731140010.GA24560@srcf.ucam.org>
+	<CAMP44s1cLou9TMfLS+FHwPM_b3bG5HN1-hzgvhz0fVRCZ8XqWw@mail.gmail.com>
+	<20130731175232.GA29987@srcf.ucam.org>
+	<CAMP44s1c5pmiC2fvmRi9vFrJXb2zYUT_F=paM2LR_V+7THnFVg@mail.gmail.com>
+	<20130731184724.GA30896@srcf.ucam.org>
+Date: Thu, 1 Aug 2013 12:37:04 -0500
+Message-ID: <CAMP44s25aRcK2bB=WLMkuD45fztFBNug8prArczRqZqzeEvj3A@mail.gmail.com>
+Subject: Re: [REGRESSION/PATCH] acpi: blacklist win8 OSI for ASUS Zenbok Prime UX31A
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Aaron Lu <aaron.lwe@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        Len Brown <lenb@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Warren <swarren@nvidia.com>
+On Wed, Jul 31, 2013 at 1:47 PM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+> On Wed, Jul 31, 2013 at 01:07:57PM -0500, Felipe Contreras wrote:
+>> If we can make the software behave consistently for 99% of the
+>> machines out there instead of only 90%, that's better.
+>
+> If we can't make an interface 100% consistent, we shouldn't pretend that
+> the interface is 100% consistent. We can't, and so we don't. Setting a
+> backlight value of 0 may turn the screen off, and userspace needs to
+> deal with that.
 
-Architectures should fully validate whether kexec is possible as part of
-machine_kexec_prepare(), so that user-space's kexec_load() operation can
-report any problems. Performing validation in machine_kexec() itself is
-too late, since it is not allowed to return.
+This is insanity; we can never guarantee 100% of anything.
 
-Prior to this patch, ARM's machine_kexec() was testing after-the-fact
-whether machine_kexec_prepare() was able to disable all but one CPU.
-Instead, modify machine_kexec_prepare() to validate all conditions
-necessary for machine_kexec_prepare()'s to succeed. BUG if the validation
-succeeded, yet disabling the CPUs didn't actually work.
+Better is better. And 99% is better than 90%
 
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
-Acked-by: "Eric W. Biederman" <ebiederm@xmission.com>
----
-v2: Fix compilation issue when !CONFIG_HOTPLUG_CPU
+% git grep quirks | wc -l
+1585
 
-I assume I should add this to the ARM patch tracker immediately, since
-it's basically been OK'd except for the compilation issue which this
-version fixes.
----
- arch/arm/include/asm/smp_plat.h |  3 +++
- arch/arm/kernel/machine_kexec.c | 20 ++++++++++++++++----
- arch/arm/kernel/smp.c           | 10 ++++++++++
- 3 files changed, 29 insertions(+), 4 deletions(-)
+Moreover, Linux already does quirks, and when there are quirks it
+means there's no 100% guarantee of the thing working as it should;
+hence the need for quirks, which is never complete, never 100%.
 
-diff --git a/arch/arm/include/asm/smp_plat.h b/arch/arm/include/asm/smp_plat.h
-index 6462a72..a252c0b 100644
---- a/arch/arm/include/asm/smp_plat.h
-+++ b/arch/arm/include/asm/smp_plat.h
-@@ -88,4 +88,7 @@ static inline u32 mpidr_hash_size(void)
- {
- 	return 1 << mpidr_hash.bits;
- }
-+
-+extern int platform_can_cpu_hotplug(void);
-+
- #endif
-diff --git a/arch/arm/kernel/machine_kexec.c b/arch/arm/kernel/machine_kexec.c
-index 4fb074c..d7c82df 100644
---- a/arch/arm/kernel/machine_kexec.c
-+++ b/arch/arm/kernel/machine_kexec.c
-@@ -15,6 +15,7 @@
- #include <asm/mmu_context.h>
- #include <asm/cacheflush.h>
- #include <asm/mach-types.h>
-+#include <asm/smp_plat.h>
- #include <asm/system_misc.h>
- 
- extern const unsigned char relocate_new_kernel[];
-@@ -39,6 +40,14 @@ int machine_kexec_prepare(struct kimage *image)
- 	int i, err;
- 
- 	/*
-+	 * Validate that if the current HW supports SMP, then the SW supports
-+	 * and implements CPU hotplug for the current HW. If not, we won't be
-+	 * able to kexec reliably, so fail the prepare operation.
-+	 */
-+	if (num_possible_cpus() > 1 && !platform_can_cpu_hotplug())
-+		return -EINVAL;
-+
-+	/*
- 	 * No segment at default ATAGs address. try to locate
- 	 * a dtb using magic.
- 	 */
-@@ -134,10 +143,13 @@ void machine_kexec(struct kimage *image)
- 	unsigned long reboot_code_buffer_phys;
- 	void *reboot_code_buffer;
- 
--	if (num_online_cpus() > 1) {
--		pr_err("kexec: error: multiple CPUs still online\n");
--		return;
--	}
-+	/*
-+	 * This can only happen if machine_shutdown() failed to disable some
-+	 * CPU, and that can only happen if the checks in
-+	 * machine_kexec_prepare() were not correct. If this fails, we can't
-+	 * reliably kexec anyway, so BUG_ON is appropriate.
-+	 */
-+	BUG_ON(num_online_cpus() > 1);
- 
- 	page_list = image->head & PAGE_MASK;
- 
-diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
-index 3a98192..bd1b9e6 100644
---- a/arch/arm/kernel/smp.c
-+++ b/arch/arm/kernel/smp.c
-@@ -144,6 +144,16 @@ int boot_secondary(unsigned int cpu, struct task_struct *idle)
- 	return -ENOSYS;
- }
- 
-+int platform_can_cpu_hotplug(void)
-+{
-+#ifdef CONFIG_HOTPLUG_CPU
-+	if (smp_ops.cpu_kill)
-+		return 1;
-+#endif
-+
-+	return 0;
-+}
-+
- #ifdef CONFIG_HOTPLUG_CPU
- static int platform_cpu_kill(unsigned int cpu)
- {
+Anyway, screw the users, right? All you care about is that the code
+looks good to you.
+
+If we care about the users, we would provide a consistent interface,
+where 0 means the same thing on all the backlight drivers. If all we
+can do is provide this consistency 99% of the time through quirks,
+that is the way to go.
+
 -- 
-1.8.1.5
-
+Felipe Contreras
