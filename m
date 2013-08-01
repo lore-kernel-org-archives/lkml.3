@@ -1,108 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755249Ab3HAMkA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 08:40:00 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:52638 "EHLO comal.ext.ti.com"
+	id S1755310Ab3HAMmw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 08:42:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38030 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752934Ab3HAMj7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 08:39:59 -0400
-Message-ID: <51FA56FF.8090308@ti.com>
-Date: Thu, 1 Aug 2013 15:39:27 +0300
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-CC: <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        <hector.palacios@digi.com>,
-        Thomas Petazzoni <thomas@free-electrons.com>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-fbdev@vger.kernel.org>
-Subject: Re: [PATCHv3 3/3] fb: backlight: HX8357: Add HX8369 support
-References: <1375346437-18991-1-git-send-email-maxime.ripard@free-electrons.com> <1375346437-18991-4-git-send-email-maxime.ripard@free-electrons.com>
-In-Reply-To: <1375346437-18991-4-git-send-email-maxime.ripard@free-electrons.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="2MpgVLSBJJ2CHwp5UT3gBgbKE9GqBat9n"
+	id S1754291Ab3HAMmu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 08:42:50 -0400
+Message-ID: <1375360934.31262.156.camel@ul30vt.home>
+Subject: Re: [PATCH v2] PCI: Reset PCIe devices to stop ongoing DMA
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Takao Indoh <indou.takao@jp.fujitsu.com>
+Cc: bhelgaas@google.com, rjw@sisk.pl, vgoyal@redhat.com,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        iommu@lists.linux-foundation.org, kexec@lists.infradead.org,
+        ishii.hironobu@jp.fujitsu.com, ddutile@redhat.com, bill.sumner@hp.com,
+        hbabu@us.ibm.com, linux-acpi@vger.kernel.org
+Date: Thu, 01 Aug 2013 06:42:14 -0600
+In-Reply-To: <51FA015E.10901@jp.fujitsu.com>
+References: <1368509365-2260-1-git-send-email-indou.takao@jp.fujitsu.com>
+	 <51F85BCC.2070103@jp.fujitsu.com>
+	 <CAErSpo4yJ2yqCWv7GT7jWSVd_8SktU=xJXT78m8Vxp_wLA4Fow@mail.gmail.com>
+	 <1699397.FXoFYIGzbk@vostro.rjw.lan> <51FA015E.10901@jp.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---2MpgVLSBJJ2CHwp5UT3gBgbKE9GqBat9n
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Thu, 2013-08-01 at 15:34 +0900, Takao Indoh wrote:
+> (2013/08/01 6:23), Rafael J. Wysocki wrote:
+> > On Wednesday, July 31, 2013 03:08:03 PM Bjorn Helgaas wrote:
+> >> [+cc Rafael, linux-acpi]
+> >>
+> >> On Tue, Jul 30, 2013 at 6:35 PM, Takao Indoh <indou.takao@jp.fujitsu.com> wrote:
+> >>
+> >>> On x86, currently IOMMU initialization run *after* PCI enumeration, but
+> >>> what you are talking about is that it should be changed so that x86
+> >>> IOMMU initialization is done *before* PCI enumeration like sparc, right?
+> >>
+> >> Yes.  I don't know whether or when that initialization order will ever
+> >> be changed, but I do think we should avoid building more
+> >> infrastructure that depends on the current order.
+> >>
+> >> Changing the order is a pretty big deal because it's a lot more than
+> >> just the IOMMU.  Basically I think we should be enumerating ACPI
+> >> devices, including the IOMMU, before PCI devices, but there's a lot of
+> >> legacy involved in that area.  Added Rafael in case he has any
+> >> thoughts.
+> > 
+> > Well, actually, I'm not really familiar with IOMMUs, sorry.
+> > 
+> > I do think that initializing IOMMU before PCI enumeration would be better,
+> > however.  At least if the ordering should be the same on all architectures,
+> > which I suppose is the case, that's the one I'd choose.
+> 
+> Ok guys. If x86 IOMMU maintainer also thinks changing order is
+> necessary, maybe I need to give up device reset in kdump kernel and
+> consider doing it in panic kernel.
+> 
+> Either way, I need bus reset interface to reset devices. Bjorn, could
+> you review the bus reset patches Alex posted yesterday?
 
-Hi,
+I'll post a non-RFC version today, I've made a couple cleanups, tuned
+the delays and rolled in the AER version of secondary bus reset.
+Thanks,
 
-On 01/08/13 11:40, Maxime Ripard wrote:
-> From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
->=20
-> Add support for the Himax HX8369 controller as it is quite similar to t=
-he
-> hx8357.
->=20
-> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>=
-
-> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> Acked-by: Jingoo Han <jg1.han@samsung.com>
-> ---
->  drivers/video/backlight/hx8357.c | 219 +++++++++++++++++++++++++++++++=
-+++++---
->  1 file changed, 204 insertions(+), 15 deletions(-)
-
-I don't have comments about this patch as such, but hx8357.c in general:
-
-- The commands used look like MIPI DCS commands. We have defined those
-in include/video/mipi_display.h.
-
-- The command arrays could be const
-
-- I don't like command arrays. Rather than having array for
-"HX8357_SET_COLUMN_ADDRESS, 0x00, 0x00, 0x01, 0x3f,", I'd much more like
-a function hx8357_set_column_address(int x1, int x2) or such.
-
-- Looking at the driver makes me think it resembles very much the panel
-driver(s) we have for OMAP. If only CDF was ready... ;)
-
-Those said, I don't see a problem with applying this. We could clean up
-later those things mentioned above, but maybe it's better to do that
-when moving to CDF.
-
-For this and the two other patches:
-
-Acked-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
-
-I can apply these to my 3.12-fbdev branch some day soon, if
-Jean-Christophe hasn't come back yet (I'd normally rather deal only with
-trivial patches, and leave the rest to Jean-Christophe).
-
- Tomi
+Alex
 
 
-
---2MpgVLSBJJ2CHwp5UT3gBgbKE9GqBat9n
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQIcBAEBAgAGBQJR+lb/AAoJEPo9qoy8lh71sygQAIq9l45+5Vum/+aPVoxg9xT+
-9/nxPTJiqaEfYEz3fQJdxioWyCVo4f5va8nV/iRsR227DuFlFjTOD5b8oZRaIa4u
-Ccc8CxVjFpHkEvV1IATlJ6+ruSb4zUcV6MVQE6wQzqOpvH7HPzDUItd7kQCpAKAy
-pc9Ftrt1v6vdOJBJ81clqTDKytMdNHe0UesfxpnviHfXTOO14Xo89cTf22JI9N5F
-wqVYgozr2Hz4R2U1aowB7mTpZlCEE+jJrr4q0Udc/W5awC2UiCISVPtSSNr1wXUl
-2CB5WAQaz6mn71pKhQbEwlCWvfueAP8kazc/far7QJsSxE7GK3PCXzs/HqoVI0SL
-sZd1LTmxqTfOYc+TRDcp/hlyfrsPQMKKYlkUb1ndir3G3icBHM7IfMmGImOIdcYx
-6/suh2MfZbbGaMQYkJZf31C4s5jGPHG6eQIVy60XDOGzh8+vqNGq5IfJDdqAJQjM
-wL0Ia09ZMFD5OWhzLZy55I+RIaLThYJ91u0g2kSUHNxKKv++6i2p1fdXZaRa6W5H
-m08g4enD9hZ4VoSlLO8v/QM0NITvmaqYMft4o38QvyLziFuKqJFF7L5pPcMTexRz
-YIqtwU44XuL1fIq7poLecIvQLssEYbIdeeqAebGgAkqUpKJXVYORA/YEQ86D8/nS
-jNuK3+thOvVQ5XUarXnE
-=N1cE
------END PGP SIGNATURE-----
-
---2MpgVLSBJJ2CHwp5UT3gBgbKE9GqBat9n--
