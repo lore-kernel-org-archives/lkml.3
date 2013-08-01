@@ -1,201 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756722Ab3HATx4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 15:53:56 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:50968 "EHLO hydra.sisk.pl"
+	id S1756757Ab3HAT5c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 15:57:32 -0400
+Received: from mga03.intel.com ([143.182.124.21]:16606 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751304Ab3HATxy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 15:53:54 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, cpufreq@vger.kernel.org,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
-Subject: Re: [RFC][PATCH] cpufreq: Do not hold driver module references for additional policy CPUs
-Date: Thu, 01 Aug 2013 22:04:05 +0200
-Message-ID: <31284072.zAs57d3QXU@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <51FAB534.1070301@linux.vnet.ibm.com>
-References: <2362640.pUofnXyzOi@vostro.rjw.lan> <7752148.JjTSgAt1Xy@vostro.rjw.lan> <51FAB534.1070301@linux.vnet.ibm.com>
+	id S1756029Ab3HAT5b convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 15:57:31 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,796,1367996400"; 
+   d="scan'208";a="340309660"
+From: "Dilger, Andreas" <andreas.dilger@intel.com>
+To: Christoph Hellwig <hch@infradead.org>,
+        Xiong Zhou <jencce.kernel@gmail.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Peng Tao <bergwolf@gmail.com>, Paul Bolle <pebolle@tiscali.nl>,
+        Jiri Kosina <trivial@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>
+Subject: Re: [PATCH v2] staging/lustre: lloop depends on BLOCK
+Thread-Topic: [PATCH v2] staging/lustre: lloop depends on BLOCK
+Thread-Index: AQHOjLwGfTLDngp0wkGXFdutzRRQL5mAgt+AgABXF4A=
+Date: Thu, 1 Aug 2013 19:57:22 +0000
+Message-ID: <CE20190F.5958F%andreas.dilger@intel.com>
+In-Reply-To: <20130801084539.GA13306@infradead.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.254.123.219]
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <0C5FFF7E63AA0842ADDEDA7225C7A1E5@intel.com>
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, August 02, 2013 12:51:24 AM Srivatsa S. Bhat wrote:
-> On 08/02/2013 12:51 AM, Rafael J. Wysocki wrote:
-> > On Friday, August 02, 2013 12:31:23 AM Srivatsa S. Bhat wrote:
-> >> On 08/02/2013 12:31 AM, Rafael J. Wysocki wrote:
-> >>> On Thursday, August 01, 2013 11:36:49 PM Srivatsa S. Bhat wrote:
-> >>>> Its the cpufreq_cpu_get() hidden away in cpufreq_add_dev_symlink(). With
-> >>>> that taken care of, everything should be OK. Then we can change the
-> >>>> synchronization part to avoid using refcounts.
-> >>>
-> >>> So I actually don't see why cpufreq_add_dev_symlink() needs to call
-> >>> cpufreq_cpu_get() at all, since the policy refcount is already 1 at the
-> >>> point it is called and the bumping up of the driver module refcount is
-> >>> pointless.
-> >>>
-> >>
-> >> Hmm, yes, it seems so.
-> >>
-> >>> However, if I change that I also need to change the piece of code that
-> >>> calls the complementary cpufreq_cpu_put() and I kind of cannot find it.
-> >>>
-> >>
-> >> ... I guess that's because you are looking at the code with your patch
-> >> applied (and your patch removed that _put()) ;-)
-> > 
-> > No, it's not that one.  That one was complementary to the cpufreq_cpu_get()
-> > done by cpufreq_add_policy_cpu() before my patch.  Since my patch changes
-> > cpufreq_add_policy_cpu() to call cpufreq_cpu_put() before returning and
-> > bump up the policy refcount with kobject_get(), the one in
-> > __cpufreq_remove_dev() is changed into kobject_put() (correctly, IMO).
-> > 
-> > What gives?
-> > 
-> 
-> Actually, it _is_ the one I pointed above. This thing is tricky, here's why:
-> 
-> cpufreq_add_policy_cpu() is called only if:
-> a. The CPU being onlined has per_cpu(cpufreq_cpu_data, cpu) == NULL
-> and 
-> b. Its is present in some CPU's related_cpus mask. 
-> 
-> If condition (a) doesn't hold good, you get out right in the beginning of
-> __cpufreq_add_dev().
-> 
-> So, cpufreq_add_policy_cpu() is called very rarely because, inside
-> __cpufreq_add_dev we do:
-> 
-> 1093         write_lock_irqsave(&cpufreq_driver_lock, flags);
-> 1094         for_each_cpu(j, policy->cpus) {
-> 1095                 per_cpu(cpufreq_cpu_data, j) = policy;
-> 1096                 per_cpu(cpufreq_policy_cpu, j) = policy->cpu;
-> 1097         }
-> 1098         write_unlock_irqrestore(&cpufreq_driver_lock, flags);
-> 
-> So for all the CPUs in the above policy->cpus mask, we simply return
-> without further ado when they are onlined. In particular, we *dont* call
-> cpufreq_add_policy_cpu() for any of them.
-> 
-> And their refcounts are incremented by the cpufreq_add_dev_interface()->
-> cpufreq_add_dev_symlink() function.
-> 
-> So, ultimately, we increment the refcount for a given non-policy-owner CPU
-> only once. *Either* in cpufreq_add_dev_symlink() *or* in cpufreq_add_policy_cpu(),
-> but never both.
-> 
-> So, in the teardown path, __cpufreq_remove_dev() needs only one place to
-> decrement it as shown below:
-> 
-> 1303         } else {
-> 1304 
-> 1305                 if (!frozen) {
-> 1306                         pr_debug("%s: removing link, cpu: %d\n", __func__, cpu);
-> 1307                         cpufreq_cpu_put(data);
-> 1308                 }
-> 
-> 
-> Pretty good maze, right? ;-(
+On 2013/08/01 2:45 AM, "Christoph Hellwig" <hch@infradead.org> wrote:
 
-Oh dear.  Right.
+>On Tue, Jul 30, 2013 at 08:29:51AM +0800, Xiong Zhou wrote:
+>> From: Xiong Zhou <jencce.kernel@gmail.com>
+>> 
+>> In the lustre client driver, lloop depends on BLOCK. Add an
+>> option for this dependence. Last version of this patch makes
+>> LUSTRE_FS depends on BLOCK.
+>> Remove unnecessary jdb head files which depends on BLOCK.
+>
+>The driver should be removed, a filesystem has no business bringing
+>its own loop driver.
 
-I tgought I could change cpufreq_add_dev_symlink() to use kobject_get() to bump
-up the policy refcount in analogy with cpufreq_add_policy_cpu() and then it
-wouldn't need to call cpufreq_cpu_get() at all, but there is a bug in the
-error code path of cpufreq_add_dev_interface(), because if
-cpufreq_add_dev_symlink() fails for one of the CPUs sharing the policy,
-it will just fail to drop references grabbed in there.  [Moreover, if it
-fails for the first one different from policy->cpu, kobject_put() will be
-called for that policy twice in a row if I'm not mistaken (first by
-cpufreq_add_dev_interface() and then by __cpufreq_add_dev()), but that's
-a different matter.]
+It provides significant performance improvement for network IO on Lustre.
+It bypasses DLM locking in Lustre and the VFS layer on the client, copying
+in the loop driver, and page-by-page IO submission in the normal IO path.
 
-So I think that neither cpufreq_add_dev_symlink() nor
-cpufreq_add_policy_cpu() should bump up the policy refcount in any way.
+Cheers, Andreas
+-- 
+Andreas Dilger
 
-Which entirely boils down to something like this:
+Lustre Software Architect
+Intel High Performance Data Division
 
----
- drivers/cpufreq/cpufreq.c |   31 +++++++------------------------
- 1 file changed, 7 insertions(+), 24 deletions(-)
-
-Index: linux-pm/drivers/cpufreq/cpufreq.c
-===================================================================
---- linux-pm.orig/drivers/cpufreq/cpufreq.c
-+++ linux-pm/drivers/cpufreq/cpufreq.c
-@@ -818,14 +818,11 @@ static int cpufreq_add_dev_symlink(struc
- 			continue;
- 
- 		pr_debug("Adding link for CPU: %u\n", j);
--		cpufreq_cpu_get(policy->cpu);
- 		cpu_dev = get_cpu_device(j);
- 		ret = sysfs_create_link(&cpu_dev->kobj, &policy->kobj,
- 					"cpufreq");
--		if (ret) {
--			cpufreq_cpu_put(policy);
--			return ret;
--		}
-+		if (ret)
-+			break;
- 	}
- 	return ret;
- }
-@@ -908,7 +905,8 @@ static int cpufreq_add_policy_cpu(unsign
- 	unsigned long flags;
- 
- 	policy = cpufreq_cpu_get(sibling);
--	WARN_ON(!policy);
-+	if (WARN_ON_ONCE(!policy))
-+		return -ENODATA;
- 
- 	if (has_target)
- 		__cpufreq_governor(policy, CPUFREQ_GOV_STOP);
-@@ -930,16 +928,10 @@ static int cpufreq_add_policy_cpu(unsign
- 	}
- 
- 	/* Don't touch sysfs links during light-weight init */
--	if (frozen) {
--		/* Drop the extra refcount that we took above */
--		cpufreq_cpu_put(policy);
--		return 0;
--	}
--
--	ret = sysfs_create_link(&dev->kobj, &policy->kobj, "cpufreq");
--	if (ret)
--		cpufreq_cpu_put(policy);
-+	if (!frozen)
-+		ret = sysfs_create_link(&dev->kobj, &policy->kobj, "cpufreq");
- 
-+	cpufreq_cpu_put(policy);
- 	return ret;
- }
- #endif
-@@ -1117,9 +1109,6 @@ err_out_unregister:
- 	}
- 	write_unlock_irqrestore(&cpufreq_driver_lock, flags);
- 
--	kobject_put(&policy->kobj);
--	wait_for_completion(&policy->kobj_unregister);
--
- err_set_policy_cpu:
- 	per_cpu(cpufreq_policy_cpu, cpu) = -1;
- 	cpufreq_policy_free(policy);
-@@ -1298,12 +1287,6 @@ static int __cpufreq_remove_dev(struct d
- 		if (!frozen)
- 			cpufreq_policy_free(data);
- 	} else {
--
--		if (!frozen) {
--			pr_debug("%s: removing link, cpu: %d\n", __func__, cpu);
--			cpufreq_cpu_put(data);
--		}
--
- 		if (cpufreq_driver->target) {
- 			__cpufreq_governor(data, CPUFREQ_GOV_START);
- 			__cpufreq_governor(data, CPUFREQ_GOV_LIMITS);
 
