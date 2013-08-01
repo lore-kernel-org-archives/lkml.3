@@ -1,58 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757563Ab3HAVsd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 17:48:33 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39744 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757055Ab3HAVsc (ORCPT
+	id S1757597Ab3HAVtH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 17:49:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54547 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757055Ab3HAVtE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 17:48:32 -0400
-In-Reply-To: <20130801213420.GL23006@n2100.arm.linux.org.uk>
-References: <20130801213420.GL23006@n2100.arm.linux.org.uk>
-From: Russell King <rmk+kernel@arm.linux.org.uk>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH RFC 14/51] DMA-API: net: b43: replace
- dma_set_mask()+dma_set_coherent_mask() with new
- helper
-Message-Id: <E1V50j7-0006qn-J7@rmk-PC.arm.linux.org.uk>
-Date: Thu, 01 Aug 2013 22:48:05 +0100
+	Thu, 1 Aug 2013 17:49:04 -0400
+Date: Fri, 2 Aug 2013 05:50:19 +0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Evan Ng <evan.sin.ng@gmail.com>
+Cc: pe1dnn@amsat.org, johanmeiring@gmail.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: wlags49_h2: fixed 80 line character and white
+ space issue in ap_h2.c Fixed various coding style warnings found by the
+ checkpatch.pl tool
+Message-ID: <20130801215019.GA4427@kroah.com>
+References: <1375303465-3437-1-git-send-email-evan.sin.ng@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1375303465-3437-1-git-send-email-evan.sin.ng@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace the following sequence:
+On Wed, Jul 31, 2013 at 01:44:25PM -0700, Evan Ng wrote:
+> From: esn89 <evan.sin.ng@gmail.com>
 
-	dma_set_mask(dev, mask);
-	dma_set_coherent_mask(dev, mask);
+I need a real name here, odds are "esn89" isn't yours :)
 
-with a call to the new helper dma_set_mask_and_coherent().
+Also, look at the subject you created, it's not correct, you need to add
+a newline after a short description, followed by the longer description,
+for git to pick this up properly.
 
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
----
- drivers/net/wireless/b43/dma.c |    9 +++------
- 1 files changed, 3 insertions(+), 6 deletions(-)
+> Signed-off-by: Evan Ng <evan.sin.ng@gmail.com>
+> ---
+>  drivers/staging/wlags49_h2/ap_h2.c | 7884 +++++++++++++++++++++---------------
+>  1 file changed, 4668 insertions(+), 3216 deletions(-)
 
-diff --git a/drivers/net/wireless/b43/dma.c b/drivers/net/wireless/b43/dma.c
-index f7c70b3..88aa314 100644
---- a/drivers/net/wireless/b43/dma.c
-+++ b/drivers/net/wireless/b43/dma.c
-@@ -1065,12 +1065,9 @@ static int b43_dma_set_mask(struct b43_wldev *dev, u64 mask)
- 	/* Try to set the DMA mask. If it fails, try falling back to a
- 	 * lower mask, as we can always also support a lower one. */
- 	while (1) {
--		err = dma_set_mask(dev->dev->dma_dev, mask);
--		if (!err) {
--			err = dma_set_coherent_mask(dev->dev->dma_dev, mask);
--			if (!err)
--				break;
--		}
-+		err = dma_set_mask_and_coherent(dev->dev->dma_dev, mask);
-+		if (!err)
-+			break;
- 		if (mask == DMA_BIT_MASK(64)) {
- 			mask = DMA_BIT_MASK(32);
- 			fallback = true;
--- 
-1.7.4.4
+That's almos impossible to review, can you do "one thing at a time" so
+that we can review it?  Break it up into lots of different pieces and
+send a series of patches.
 
+thanks,
+
+greg k-h
