@@ -1,101 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753216Ab3HAHKB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 03:10:01 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:53021 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752353Ab3HAHIS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 03:08:18 -0400
-X-IronPort-AV: E=Sophos;i="4.89,792,1367942400"; 
-   d="scan'208";a="8085220"
-From: Tang Chen <tangchen@cn.fujitsu.com>
-To: rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu,
-        hpa@zytor.com, akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
-        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
-        mina86@mina86.com, gong.chen@linux.intel.com,
-        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
-        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
-        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com
-Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Subject: [PATCH v2 16/18] memblock, mem_hotplug: Make memblock skip hotpluggable regions by default.
-Date: Thu, 1 Aug 2013 15:06:38 +0800
-Message-Id: <1375340800-19332-17-git-send-email-tangchen@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.10.1
-In-Reply-To: <1375340800-19332-1-git-send-email-tangchen@cn.fujitsu.com>
-References: <1375340800-19332-1-git-send-email-tangchen@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/01 15:06:53,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/01 15:06:55,
-	Serialize complete at 2013/08/01 15:06:55
+	id S1753325Ab3HAHK0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 03:10:26 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:53160 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750756Ab3HAHKX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 03:10:23 -0400
+Date: Thu, 1 Aug 2013 12:40:13 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 16/18] sched: Avoid overloading CPUs on a preferred NUMA
+ node
+Message-ID: <20130801071013.GG4880@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <1373901620-2021-1-git-send-email-mgorman@suse.de>
+ <1373901620-2021-17-git-send-email-mgorman@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <1373901620-2021-17-git-send-email-mgorman@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13080107-3620-0000-0000-000003C5F9E4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linux kernel cannot migrate pages used by the kernel. As a result, hotpluggable
-memory used by the kernel won't be able to be hot-removed. To solve this
-problem, the basic idea is to prevent memblock from allocating hotpluggable
-memory for the kernel at early time, and arrange all hotpluggable memory in
-ACPI SRAT(System Resource Affinity Table) as ZONE_MOVABLE when initializing
-zones.
+> +static int task_numa_find_cpu(struct task_struct *p, int nid)
+> +{
+> +	int node_cpu = cpumask_first(cpumask_of_node(nid));
+> +	int cpu, src_cpu = task_cpu(p), dst_cpu = src_cpu;
+> +	unsigned long src_load, dst_load;
+> +	unsigned long min_load = ULONG_MAX;
+> +	struct task_group *tg = task_group(p);
+> +	s64 src_eff_load, dst_eff_load;
+> +	struct sched_domain *sd;
+> +	unsigned long weight;
+> +	bool balanced;
+> +	int imbalance_pct, idx = -1;
+> 
+> +	/* No harm being optimistic */
+> +	if (idle_cpu(node_cpu))
+> +		return node_cpu;
 
-In the previous patches, we have marked hotpluggable memory regions with
-MEMBLOCK_HOTPLUG flag in memblock.memory.
+Cant this lead to lot of imbalance across nodes? Wont this lead to lot
+of ping-pong of tasks between different nodes resulting in performance
+hit? Lets say the system is not fully loaded, something like a numa01
+but with far lesser number of threads probably nr_cpus/2 or nr_cpus/4,
+then all threads will try to move to single node as we can keep seeing
+idle threads. No? Wont it lead all load moving to one node and load
+balancer spreading it out...
 
-In this patch, we make memblock skip these hotpluggable memory regions in
-the default allocate function.
+> 
+> -static int
+> -find_idlest_cpu_node(int this_cpu, int nid)
+> -{
+> -	unsigned long load, min_load = ULONG_MAX;
+> -	int i, idlest_cpu = this_cpu;
+> +	/*
+> +	 * Find the lowest common scheduling domain covering the nodes of both
+> +	 * the CPU the task is currently running on and the target NUMA node.
+> +	 */
+> +	rcu_read_lock();
+> +	for_each_domain(src_cpu, sd) {
+> +		if (cpumask_test_cpu(node_cpu, sched_domain_span(sd))) {
+> +			/*
+> +			 * busy_idx is used for the load decision as it is the
+> +			 * same index used by the regular load balancer for an
+> +			 * active cpu.
+> +			 */
+> +			idx = sd->busy_idx;
+> +			imbalance_pct = sd->imbalance_pct;
+> +			break;
+> +		}
+> +	}
+> +	rcu_read_unlock();
+> 
+> -	BUG_ON(cpu_to_node(this_cpu) == nid);
+> +	if (WARN_ON_ONCE(idx == -1))
+> +		return src_cpu;
+> 
+> -	rcu_read_lock();
+> -	for_each_cpu(i, cpumask_of_node(nid)) {
+> -		load = weighted_cpuload(i);
+> +	/*
+> +	 * XXX the below is mostly nicked from wake_affine(); we should
+> +	 * see about sharing a bit if at all possible; also it might want
+> +	 * some per entity weight love.
+> +	 */
+> +	weight = p->se.load.weight;
+> 
+> -		if (load < min_load) {
+> -			min_load = load;
+> -			idlest_cpu = i;
+> +	src_load = source_load(src_cpu, idx);
+> +
+> +	src_eff_load = 100 + (imbalance_pct - 100) / 2;
+> +	src_eff_load *= power_of(src_cpu);
+> +	src_eff_load *= src_load + effective_load(tg, src_cpu, -weight, -weight);
+> +
+> +	for_each_cpu(cpu, cpumask_of_node(nid)) {
+> +		dst_load = target_load(cpu, idx);
+> +
+> +		/* If the CPU is idle, use it */
+> +		if (!dst_load)
+> +			return dst_cpu;
+> +
+> +		/* Otherwise check the target CPU load */
+> +		dst_eff_load = 100;
+> +		dst_eff_load *= power_of(cpu);
+> +		dst_eff_load *= dst_load + effective_load(tg, cpu, weight, weight);
+> +
+> +		/*
+> +		 * Destination is considered balanced if the destination CPU is
+> +		 * less loaded than the source CPU. Unfortunately there is a
+> +		 * risk that a task running on a lightly loaded CPU will not
+> +		 * migrate to its preferred node due to load imbalances.
+> +		 */
+> +		balanced = (dst_eff_load <= src_eff_load);
+> +		if (!balanced)
+> +			continue;
+> +
 
-memblock_find_in_range_node()
-  |-->for_each_free_mem_range_reverse()
-        |-->__next_free_mem_range_rev()
+Okay same case as above, the cpu could be lightly loaded, but the
+destination node could be heavier than the source node. No?
 
-The above is the only place where __next_free_mem_range_rev() is used. So
-skip hotpluggable memory regions when iterating memblock.memory to find
-free memory.
+> +		if (dst_load < min_load) {
+> +			min_load = dst_load;
+> +			dst_cpu = cpu;
+>  		}
+>  	}
+> -	rcu_read_unlock();
+> 
+> -	return idlest_cpu;
+> +	return dst_cpu;
+>  }
+> 
 
-In the later patches, a boot option named "movablenode" will be introduced
-to enable/disable using SRAT to arrange ZONE_MOVABLE.
-
-
-NOTE: This check will always be done. It is OK because if users didn't specify
-      movablenode option, the hotpluggable memory won't be marked. So this
-      check won't skip any memory, which means the kernel will act as before.
-
-Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
----
- mm/memblock.c |    8 ++++++++
- 1 files changed, 8 insertions(+), 0 deletions(-)
-
-diff --git a/mm/memblock.c b/mm/memblock.c
-index 05e142b..84bd568 100644
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -695,6 +695,10 @@ void __init_memblock __next_free_mem_range(u64 *idx, int nid,
-  * @out_nid: ptr to int for nid of the range, can be %NULL
-  *
-  * Reverse of __next_free_mem_range().
-+ *
-+ * Linux kernel cannot migrate pages used by itself. Memory hotplug users won't
-+ * be able to hot-remove hotpluggable memory used by the kernel. So this
-+ * function skip hotpluggable regions when allocating memory for the kernel.
-  */
- void __init_memblock __next_free_mem_range_rev(u64 *idx, int nid,
- 					   phys_addr_t *out_start,
-@@ -719,6 +723,10 @@ void __init_memblock __next_free_mem_range_rev(u64 *idx, int nid,
- 		if (nid != MAX_NUMNODES && nid != memblock_get_region_node(m))
- 			continue;
- 
-+		/* skip hotpluggable memory regions */
-+		if (m->flags & MEMBLOCK_HOTPLUG)
-+			continue;
-+
- 		/* scan areas before each reservation for intersection */
- 		for ( ; ri >= 0; ri--) {
- 			struct memblock_region *r = &rsv->regions[ri];
 -- 
-1.7.1
+Thanks and Regards
+Srikar Dronamraju
 
