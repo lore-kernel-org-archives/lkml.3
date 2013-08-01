@@ -1,79 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752340Ab3HABf2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 21:35:28 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:16329 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751112Ab3HABf0 (ORCPT
+	id S1752256Ab3HABgS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 21:36:18 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:52197 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751485Ab3HABgQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 21:35:26 -0400
-Message-ID: <51F9BB50.1010905@huawei.com>
-Date: Thu, 1 Aug 2013 09:35:12 +0800
-From: Xishi Qiu <qiuxishi@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Wed, 31 Jul 2013 21:36:16 -0400
+Message-ID: <51F9BB8D.6060907@codeaurora.org>
+Date: Wed, 31 Jul 2013 18:36:13 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Dave Hansen <dave.hansen@intel.com>
-CC: <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH] mm/hotplug: remove unnecessary BUG_ON in __offline_pages()
-References: <51F761E7.5090403@huawei.com> <51F9419F.6070306@intel.com>
-In-Reply-To: <51F9419F.6070306@intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Timur Tabi <timur@tabi.org>, Andrew Morton <akpm@linux-foundation.org>
+CC: Arpit Goel <B44344@freescale.com>, linux@arm.linux.org.uk,
+        takata@linux-m32r.org, philb@gnu.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>, schwidefsky@de.ibm.com,
+        heiko.carstens@de.ibm.com, linux390@de.ibm.com,
+        David Miller <davem@davemloft.net>,
+        Rob Herring <rob.herring@calxeda.com>, Arnd Bergmann <arnd@arndb.de>,
+        Stephen Warren <swarren@nvidia.com>, john.stultz@linaro.org,
+        jesper.nilsson@axis.com, gregkh@linuxfoundation.org, sam@ravnborg.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        lkml <linux-kernel@vger.kernel.org>, linux-m32r@ml.linux-m32r.org,
+        linux-m32r-ja@ml.linux-m32r.org, linux-m68k@vger.kernel.org,
+        linux-s390@vger.kernel.org, sparclinux@vger.kernel.org,
+        mattw@codeaurora.org
+Subject: Re: [PATCH 2/2] Convert PowerPC macro spin_event_timeout() to architecture
+ independent macro
+References: <1375187900-17582-1-git-send-email-B44344@freescale.com> <1375187900-17582-3-git-send-email-B44344@freescale.com> <20130731071630.GI8868@codeaurora.org> <CAOZdJXVvNBR-qf7LXNOHZVstH_Rebxwn-wAkSaBS53Wn55mYCw@mail.gmail.com> <51F9A5FE.8030608@codeaurora.org> <51F9A80E.5010307@tabi.org> <51F9A8F1.9020704@codeaurora.org> <51F9A9CD.1040804@tabi.org>
+In-Reply-To: <51F9A9CD.1040804@tabi.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.74.196]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/8/1 0:55, Dave Hansen wrote:
+On 07/31/13 17:20, Timur Tabi wrote:
+> On 07/31/2013 07:16 PM, Stephen Boyd wrote:
+>> cpu_relax() is usually just a compiler barrier or an instruction hint to
+>> the cpu that it should cool down because we're spinning in a tight loop.
+>> It certainly shouldn't be calling into the  scheduler.
+> Ah yes, I remember now.  So it does seem that if we can fix the problem
+> of non-incrementing 'jiffies', then this macro can be used in interrupts.
 
-> On 07/29/2013 11:49 PM, Xishi Qiu wrote:
->> I think we can remove "BUG_ON(start_pfn >= end_pfn)" in __offline_pages(),
->> because in memory_block_action() "nr_pages = PAGES_PER_SECTION * sections_per_block" 
->> is always greater than 0.
-> ...
->> --- a/mm/memory_hotplug.c
->> +++ b/mm/memory_hotplug.c
->> @@ -1472,7 +1472,6 @@ static int __ref __offline_pages(unsigned long start_pfn,
->>  	struct zone *zone;
->>  	struct memory_notify arg;
->>  
->> -	BUG_ON(start_pfn >= end_pfn);
->>  	/* at least, alignment against pageblock is necessary */
->>  	if (!IS_ALIGNED(start_pfn, pageblock_nr_pages))
->>  		return -EINVAL;
-> 
-> I think you're saying that you don't see a way to hit this BUG_ON() in
-> practice.  That does appear to be true, unless sections_per_block ended
-> up 0 or negative.  The odds of getting in to this code if
-> 'sections_per_block' was bogus are pretty small.
-> 
+That's encouraging. It looks like you introduced it to use in interrupt
+context but then it got shot down[1]? I lost track in all the versions.
 
-Yes, I find there is an only to hit this BUG_ON() in v3.11, and "sections_per_block"
-seems to be always greater than 0.
+>
+> Of course, that assumes that spinning in interrupt context is a good
+> idea to begin with.  Maybe we shouldn't be encouraging it?
 
-> Or, is this a theoretical thing that folks might run in to when adding
-> new features or developing?  It's in a cold path and the cost of the
-> check is miniscule.  The original author (cc'd) also saw a need to put
-> this in probably because he actually ran in to this.
-> 
+I read through the v5 discussion and it seems I'm about to walk through
+some tall grass on the way to Cerulean City.
 
-In v2.6.32, If info->length==0, this way may hit this BUG_ON().
-acpi_memory_disable_device()
-	remove_memory(info->start_addr, info->length)
-		offline_pages()
+Andrew Morton, I choose you! Use your mind-power move to convince
+everyone that having a macro for spinning on a register in interrupt
+context is a good thing. At least it will be more obvious.
 
-Later Fujitsu's patch rename this function and the BUG_ON() is unnecessary.
+>
+>>>> FYI, you might want to look at the code reviews for spin_event_timeout()
+>>>> on the linuxppc-dev mailing list, back in March 2009.
+>>>>
+>> Sure. Any pointers? Otherwise I'll go digging around the archives.
+> https://lists.ozlabs.org/pipermail/linuxppc-dev/2009-March/thread.html
+>
 
-Thanks,
-Xishi Qiu
+[1] https://lists.ozlabs.org/pipermail/linuxppc-dev/2009-May/072521.html
 
-> In any case, it looks fairly safe to me:
-> 
-> Reviewed-by: Dave Hansen <dave.hansen@linux.intel.com>
-> .
-> 
-
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
