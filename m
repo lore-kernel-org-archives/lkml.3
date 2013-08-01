@@ -1,71 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756870Ab3HATRj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 15:17:39 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:31930 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754568Ab3HATRi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 15:17:38 -0400
-Date: Thu, 1 Aug 2013 22:16:49 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Dave Jones <davej@redhat.com>, Kees Cook <keescook@chromium.org>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: Re: [Ksummit-2013-discuss] [ARM ATTEND] catching up on exploit
- mitigations
-Message-ID: <20130801191649.GB5102@mwanda>
-References: <CAGXu5jKv9Vt+Hu0mFYaxggLLDZ46U3KR9MKegUoHH8StXCkBtQ@mail.gmail.com>
- <20130801091322.GA5302@mwanda>
- <20130801190556.GA1495@redhat.com>
+	id S1757174Ab3HATS2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 15:18:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56189 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756125Ab3HATS1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 15:18:27 -0400
+Date: Thu, 1 Aug 2013 22:19:57 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: John Fastabend <john.r.fastabend@intel.com>
+Cc: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org
+Subject: Re: [PATCH v2] macvlan: validate flags
+Message-ID: <20130801191957.GA19580@redhat.com>
+References: <1375373227-17986-1-git-send-email-mst@redhat.com>
+ <51FA99C3.8020508@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130801190556.GA1495@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+In-Reply-To: <51FA99C3.8020508@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 01, 2013 at 03:05:56PM -0400, Dave Jones wrote:
-> On Thu, Aug 01, 2013 at 12:13:22PM +0300, Dan Carpenter wrote:
->  > I was just reading http://faultlinux.lip6.fr/ which says that in
->  > 2011 the static checker fault rate in arch/ and fs/ was worse than
->  > in drivers/
+On Thu, Aug 01, 2013 at 10:24:19AM -0700, John Fastabend wrote:
+> On 8/1/2013 9:09 AM, Michael S. Tsirkin wrote:
+> >commit df8ef8f3aaa6692970a436204c4429210addb23a
+> >     macvlan: add FDB bridge ops and macvlan flags
+> >added a flags field to macvlan, which can be
+> >controlled from userspace.
+> >The idea is to make the interface future-proof
+> >so we can add flags and not new fields.
+> >
+> >However, flags value isn't validated, as a result,
+> >userspace can't detect which flags are supported.
+> >
+> >Cc: "David S. Miller" <davem@davemloft.net>
+> >Cc: John Fastabend <john.r.fastabend@intel.com>
+> >Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> >---
+> >
+> >Changes from v1:
+> >	tweaked commit message
+> >	no code changes
+> >
+> >Please consider this patch for -stable.
+> >
+> >The idea is by the time we add more flags,
+> >everyone has updated to a kernel that
+> >detects errors, so userspace will be able
+> >to detect supported flags cleanly.
+> >
 > 
-> I've been working on getting more regular builds in coverity, so we can
-> get more meaningful statistics on things like "what area is getting worse".
+> Agreed and because we haven't added more flags yet this shouldn't
+> break uapi. Thanks for catching this.
 > 
-> Of the current bugs I've categorised so far, here's the breakdown for 3.11-rc3
-> in terms of highest bug counts.
+> >
+> >  drivers/net/macvlan.c | 7 +++++++
+> >  1 file changed, 7 insertions(+)
+> >
 > 
-> Drivers/net/wireless: 659 
-> Drivers/ [1] : 600
-> Drivers/staging: 449
-> Drivers/scsi: 409
-> Drivers/net: 350
-> Net/[2] : 297
-> Drivers/media: 286
-> Sound: 220
-> Drivers/GPU: 217
-> 
-> That's the top categories for the whole kernel.
-> 
-> That wireless was top of the list was the least shocking thing to me,
-> based on what we get reported to Fedora bugzilla.  That it found more
-> bugs there than in staging was amusing though. The good news is that
-> wireless also takes the top slot for 'resolved' issues.
-> 
-> The paper above talks about 'arch' but doesn't indicate if it's counting
-> all arches, or just the one they run the tests on. (Coverity only covers x86,
-> so arch/ shows up in 10th place there).
+> By the same logic should we also add the check to macvlan_changelink()?
 
-It's Coccinelle, so my guess is they ran it on all the .c files.
+I'm not sure what do you mean "By the same logic" -
+macvlan_changelink is static unlike macvlan_common_newlink
+which is exported to modules.
+So why isn't macvlan_validate sufficient for macvlan_changelink?
 
-regards,
-dan carpenter
+> >diff --git a/drivers/net/macvlan.c b/drivers/net/macvlan.c
+> >index 18373b6..8445a94 100644
+> >--- a/drivers/net/macvlan.c
+> >+++ b/drivers/net/macvlan.c
+> >@@ -736,6 +736,10 @@ static int macvlan_validate(struct nlattr *tb[], struct nlattr *data[])
+> >  			return -EADDRNOTAVAIL;
+> >  	}
+> >
+> >+	if (data && data[IFLA_MACVLAN_FLAGS] &&
+> >+	    nla_get_u16(data[IFLA_MACVLAN_FLAGS]) & ~MACVLAN_FLAG_NOPROMISC)
+> >+		return -EINVAL;
+> >+
+> >  	if (data && data[IFLA_MACVLAN_MODE]) {
+> >  		switch (nla_get_u32(data[IFLA_MACVLAN_MODE])) {
+> >  		case MACVLAN_MODE_PRIVATE:
+> >@@ -809,6 +813,9 @@ int macvlan_common_newlink(struct net *src_net, struct net_device *dev,
+> >  	if (data && data[IFLA_MACVLAN_FLAGS])
+> >  		vlan->flags = nla_get_u16(data[IFLA_MACVLAN_FLAGS]);
+> >
+> >+	if (vlan->flags & ~MACVLAN_FLAG_NOPROMISC)
+> >+		return -EINVAL;
+> >+
+> 
+> Is there really a case where newlink is called without first calling
+> validate? I don't think there is so the snippet here in newlink could
+> be dropped.
+> 
+> Thanks,
+> John
+
+It seems so - macvtap_newlink calls macvlan_common_newlink.
+macvtap does not seem to have .validate.
 
