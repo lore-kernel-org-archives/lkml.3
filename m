@@ -1,38 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751477Ab3HAAG7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 20:06:59 -0400
-Received: from zmta0.zcs.dip-badajoz.es ([195.57.11.101]:60191 "EHLO
-	zmta0.zcs.dip-badajoz.es" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750748Ab3HAAG6 convert rfc822-to-8bit (ORCPT
+	id S1751459Ab3HAAKW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 20:10:22 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:35920 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750748Ab3HAAKV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 20:06:58 -0400
-X-Greylist: delayed 1428 seconds by postgrey-1.27 at vger.kernel.org; Wed, 31 Jul 2013 20:06:58 EDT
-X-Spam-Flag: NO
-X-Spam-Score: -2.9
-Content-Type: text/plain; charset=US-ASCII
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Description: Mail message body
-Subject: Dear user
-To: Recipients <info@web.net>
-From: ADMIN <info@web.net>
-Date: Thu, 01 Aug 2013 00:23:19 +0100
-Reply-To: upgrade1@dgoh.org
-Message-Id: <20130801002328.525B72943D7@zmta0.zcs.dip-badajoz.es>
+	Wed, 31 Jul 2013 20:10:21 -0400
+Date: Wed, 31 Jul 2013 17:10:19 -0700 (PDT)
+Message-Id: <20130731.171019.1991802407661623893.davem@davemloft.net>
+To: klamm@yandex-team.ru
+Cc: eric.dumazet@gmail.com, raise.sail@gmail.com, ebiederm@xmission.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net: check net.core.somaxconn sysctl values
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <51F917CF.7010905@yandex-team.ru>
+References: <51F917CF.7010905@yandex-team.ru>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Wed, 31 Jul 2013 17:10:20 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear user
-your e-mail has exceeds 2 GB, which is created by our webmaster, you are currently running at 2.30GB, you can not send or receive new messages until you confirm your account. Complete the form to verify your account.
+From: Roman Gushchin <klamm@yandex-team.ru>
+Date: Wed, 31 Jul 2013 17:57:35 +0400
 
-Complete the form below to confirm your e-mail address:
+> ---
+>  net/core/sysctl_net_core.c | 6 +++++-
+>  1 file changed, 5 insertions(+), 1 deletion(-)
+> 
+> diff --git a/net/core/sysctl_net_core.c b/net/core/sysctl_net_core.c
+> index cfdb46a..2ff093b 100644
+> --- a/net/core/sysctl_net_core.c
+> +++ b/net/core/sysctl_net_core.c
+> @@ -20,7 +20,9 @@
 
-(1) E-mail:
-(2) Name:
-(3) Password:
-(4) Confirm Password:
+This patch is against old sources, please respin it against the current
+tree.
 
-thanks
-system administrator
+Thanks.
