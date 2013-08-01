@@ -1,19 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753465Ab3HAAcl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 20:32:41 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:50380 "EHLO
+	id S1753241Ab3HAAcZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 20:32:25 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:54825 "EHLO
 	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752190Ab3HAAcj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 20:32:39 -0400
+	id S1753038Ab3HAAcV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Jul 2013 20:32:21 -0400
 From: Joe Perches <joe@perches.com>
 To: netdev@vger.kernel.org
-Cc: Johannes Berg <johannes@sipsolutions.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 6/8] cfg80211.h/mac80211.h: Remove extern from function prototypes
-Date: Wed, 31 Jul 2013 17:31:37 -0700
-Message-Id: <a0250b4b3803cd27e4b6ff7aa82db9fc148ce372.1375316912.git.joe@perches.com>
+Cc: "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
+Subject: [PATCH 4/8] arp/neighbour.h: Remove extern from function prototypes
+Date: Wed, 31 Jul 2013 17:31:35 -0700
+Message-Id: <1547933442787a524aeb83c21c456ca67a4a4a31.1375316912.git.joe@perches.com>
 X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
 In-Reply-To: <cover.1375316912.git.joe@perches.com>
 References: <cover.1375316912.git.joe@perches.com>
@@ -33,137 +31,189 @@ Reflow modified prototypes to 80 columns.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- include/net/cfg80211.h | 34 +++++++++++++++++-----------------
- include/net/mac80211.h | 16 ++++++++--------
- 2 files changed, 25 insertions(+), 25 deletions(-)
+ include/net/arp.h       | 30 +++++++--------
+ include/net/neighbour.h | 98 ++++++++++++++++++++++++-------------------------
+ 2 files changed, 63 insertions(+), 65 deletions(-)
 
-diff --git a/include/net/cfg80211.h b/include/net/cfg80211.h
-index 7b0730a..f49de28 100644
---- a/include/net/cfg80211.h
-+++ b/include/net/cfg80211.h
-@@ -2841,7 +2841,7 @@ struct wiphy *wiphy_new(const struct cfg80211_ops *ops, int sizeof_priv);
-  *
-  * Return: A non-negative wiphy index or a negative error code.
-  */
--extern int wiphy_register(struct wiphy *wiphy);
-+int wiphy_register(struct wiphy *wiphy);
+diff --git a/include/net/arp.h b/include/net/arp.h
+index b630dae..7509d9d 100644
+--- a/include/net/arp.h
++++ b/include/net/arp.h
+@@ -46,22 +46,22 @@ static inline struct neighbour *__ipv4_neigh_lookup(struct net_device *dev, u32
+ 	return n;
+ }
  
- /**
-  * wiphy_unregister - deregister a wiphy from cfg80211
-@@ -2852,14 +2852,14 @@ extern int wiphy_register(struct wiphy *wiphy);
-  * pointer, but the call may sleep to wait for an outstanding
-  * request that is being handled.
-  */
--extern void wiphy_unregister(struct wiphy *wiphy);
-+void wiphy_unregister(struct wiphy *wiphy);
+-extern void	arp_init(void);
+-extern int	arp_find(unsigned char *haddr, struct sk_buff *skb);
+-extern int	arp_ioctl(struct net *net, unsigned int cmd, void __user *arg);
+-extern void     arp_send(int type, int ptype, __be32 dest_ip,
+-			 struct net_device *dev, __be32 src_ip,
+-			 const unsigned char *dest_hw,
+-			 const unsigned char *src_hw, const unsigned char *th);
+-extern int	arp_mc_map(__be32 addr, u8 *haddr, struct net_device *dev, int dir);
+-extern void	arp_ifdown(struct net_device *dev);
++void arp_init(void);
++int arp_find(unsigned char *haddr, struct sk_buff *skb);
++int arp_ioctl(struct net *net, unsigned int cmd, void __user *arg);
++void arp_send(int type, int ptype, __be32 dest_ip,
++	      struct net_device *dev, __be32 src_ip,
++	      const unsigned char *dest_hw,
++	      const unsigned char *src_hw, const unsigned char *th);
++int arp_mc_map(__be32 addr, u8 *haddr, struct net_device *dev, int dir);
++void arp_ifdown(struct net_device *dev);
  
- /**
-  * wiphy_free - free wiphy
-  *
-  * @wiphy: The wiphy to free
-  */
--extern void wiphy_free(struct wiphy *wiphy);
-+void wiphy_free(struct wiphy *wiphy);
+-extern struct sk_buff *arp_create(int type, int ptype, __be32 dest_ip,
+-				  struct net_device *dev, __be32 src_ip,
+-				  const unsigned char *dest_hw,
+-				  const unsigned char *src_hw,
+-				  const unsigned char *target_hw);
+-extern void arp_xmit(struct sk_buff *skb);
++struct sk_buff *arp_create(int type, int ptype, __be32 dest_ip,
++			   struct net_device *dev, __be32 src_ip,
++			   const unsigned char *dest_hw,
++			   const unsigned char *src_hw,
++			   const unsigned char *target_hw);
++void arp_xmit(struct sk_buff *skb);
+ int arp_invalidate(struct net_device *dev, __be32 ip);
  
- /* internal structs */
- struct cfg80211_conn;
-@@ -3014,14 +3014,14 @@ static inline void *wdev_priv(struct wireless_dev *wdev)
-  * @band: band, necessary due to channel number overlap
-  * Return: The corresponding frequency (in MHz), or 0 if the conversion failed.
-  */
--extern int ieee80211_channel_to_frequency(int chan, enum ieee80211_band band);
-+int ieee80211_channel_to_frequency(int chan, enum ieee80211_band band);
+ #endif	/* _ARP_H */
+diff --git a/include/net/neighbour.h b/include/net/neighbour.h
+index 7e748ad..536501a 100644
+--- a/include/net/neighbour.h
++++ b/include/net/neighbour.h
+@@ -195,68 +195,67 @@ static inline void *neighbour_priv(const struct neighbour *n)
+ #define NEIGH_UPDATE_F_ISROUTER			0x40000000
+ #define NEIGH_UPDATE_F_ADMIN			0x80000000
  
- /**
-  * ieee80211_frequency_to_channel - convert frequency to channel number
-  * @freq: center frequency
-  * Return: The corresponding channel, or 0 if the conversion failed.
-  */
--extern int ieee80211_frequency_to_channel(int freq);
-+int ieee80211_frequency_to_channel(int freq);
+-extern void			neigh_table_init(struct neigh_table *tbl);
+-extern int			neigh_table_clear(struct neigh_table *tbl);
+-extern struct neighbour *	neigh_lookup(struct neigh_table *tbl,
+-					     const void *pkey,
+-					     struct net_device *dev);
+-extern struct neighbour *	neigh_lookup_nodev(struct neigh_table *tbl,
+-						   struct net *net,
+-						   const void *pkey);
+-extern struct neighbour *	__neigh_create(struct neigh_table *tbl,
+-					       const void *pkey,
+-					       struct net_device *dev,
+-					       bool want_ref);
++void neigh_table_init(struct neigh_table *tbl);
++int neigh_table_clear(struct neigh_table *tbl);
++struct neighbour *neigh_lookup(struct neigh_table *tbl, const void *pkey,
++			       struct net_device *dev);
++struct neighbour *neigh_lookup_nodev(struct neigh_table *tbl, struct net *net,
++				     const void *pkey);
++struct neighbour *__neigh_create(struct neigh_table *tbl, const void *pkey,
++				 struct net_device *dev, bool want_ref);
+ static inline struct neighbour *neigh_create(struct neigh_table *tbl,
+ 					     const void *pkey,
+ 					     struct net_device *dev)
+ {
+ 	return __neigh_create(tbl, pkey, dev, true);
+ }
+-extern void			neigh_destroy(struct neighbour *neigh);
+-extern int			__neigh_event_send(struct neighbour *neigh, struct sk_buff *skb);
+-extern int			neigh_update(struct neighbour *neigh, const u8 *lladdr, u8 new, 
+-					     u32 flags);
+-extern void			neigh_changeaddr(struct neigh_table *tbl, struct net_device *dev);
+-extern int			neigh_ifdown(struct neigh_table *tbl, struct net_device *dev);
+-extern int			neigh_resolve_output(struct neighbour *neigh, struct sk_buff *skb);
+-extern int			neigh_connected_output(struct neighbour *neigh, struct sk_buff *skb);
+-extern int			neigh_compat_output(struct neighbour *neigh, struct sk_buff *skb);
+-extern int			neigh_direct_output(struct neighbour *neigh, struct sk_buff *skb);
+-extern struct neighbour 	*neigh_event_ns(struct neigh_table *tbl,
++void neigh_destroy(struct neighbour *neigh);
++int __neigh_event_send(struct neighbour *neigh, struct sk_buff *skb);
++int neigh_update(struct neighbour *neigh, const u8 *lladdr, u8 new, u32 flags);
++void neigh_changeaddr(struct neigh_table *tbl, struct net_device *dev);
++int neigh_ifdown(struct neigh_table *tbl, struct net_device *dev);
++int neigh_resolve_output(struct neighbour *neigh, struct sk_buff *skb);
++int neigh_connected_output(struct neighbour *neigh, struct sk_buff *skb);
++int neigh_compat_output(struct neighbour *neigh, struct sk_buff *skb);
++int neigh_direct_output(struct neighbour *neigh, struct sk_buff *skb);
++struct neighbour *neigh_event_ns(struct neigh_table *tbl,
+ 						u8 *lladdr, void *saddr,
+ 						struct net_device *dev);
  
- /*
-  * Name indirection necessary because the ieee80211 code also has
-@@ -3030,8 +3030,8 @@ extern int ieee80211_frequency_to_channel(int freq);
-  * to include both header files you'll (rightfully!) get a symbol
-  * clash.
-  */
--extern struct ieee80211_channel *__ieee80211_get_channel(struct wiphy *wiphy,
--							 int freq);
-+struct ieee80211_channel *__ieee80211_get_channel(struct wiphy *wiphy,
-+						  int freq);
- /**
-  * ieee80211_get_channel - get channel struct from wiphy for specified frequency
-  * @wiphy: the struct wiphy to get the channel for
-@@ -3141,13 +3141,14 @@ struct ieee80211_radiotap_iterator {
- 	int _reset_on_ext;
+-extern struct neigh_parms	*neigh_parms_alloc(struct net_device *dev, struct neigh_table *tbl);
+-extern void			neigh_parms_release(struct neigh_table *tbl, struct neigh_parms *parms);
++struct neigh_parms *neigh_parms_alloc(struct net_device *dev,
++				      struct neigh_table *tbl);
++void neigh_parms_release(struct neigh_table *tbl, struct neigh_parms *parms);
+ 
+ static inline
+-struct net			*neigh_parms_net(const struct neigh_parms *parms)
++struct net *neigh_parms_net(const struct neigh_parms *parms)
+ {
+ 	return read_pnet(&parms->net);
+ }
+ 
+-extern unsigned long		neigh_rand_reach_time(unsigned long base);
++unsigned long neigh_rand_reach_time(unsigned long base);
+ 
+-extern void			pneigh_enqueue(struct neigh_table *tbl, struct neigh_parms *p,
+-					       struct sk_buff *skb);
+-extern struct pneigh_entry	*pneigh_lookup(struct neigh_table *tbl, struct net *net, const void *key, struct net_device *dev, int creat);
+-extern struct pneigh_entry	*__pneigh_lookup(struct neigh_table *tbl,
+-						 struct net *net,
+-						 const void *key,
+-						 struct net_device *dev);
+-extern int			pneigh_delete(struct neigh_table *tbl, struct net *net, const void *key, struct net_device *dev);
++void pneigh_enqueue(struct neigh_table *tbl, struct neigh_parms *p,
++		    struct sk_buff *skb);
++struct pneigh_entry *pneigh_lookup(struct neigh_table *tbl, struct net *net,
++				   const void *key, struct net_device *dev,
++				   int creat);
++struct pneigh_entry *__pneigh_lookup(struct neigh_table *tbl, struct net *net,
++				     const void *key, struct net_device *dev);
++int pneigh_delete(struct neigh_table *tbl, struct net *net, const void *key,
++		  struct net_device *dev);
+ 
+-static inline
+-struct net			*pneigh_net(const struct pneigh_entry *pneigh)
++static inline struct net *pneigh_net(const struct pneigh_entry *pneigh)
+ {
+ 	return read_pnet(&pneigh->net);
+ }
+ 
+-extern void neigh_app_ns(struct neighbour *n);
+-extern void neigh_for_each(struct neigh_table *tbl, void (*cb)(struct neighbour *, void *), void *cookie);
+-extern void __neigh_for_each_release(struct neigh_table *tbl, int (*cb)(struct neighbour *));
+-extern void pneigh_for_each(struct neigh_table *tbl, void (*cb)(struct pneigh_entry *));
++void neigh_app_ns(struct neighbour *n);
++void neigh_for_each(struct neigh_table *tbl,
++		    void (*cb)(struct neighbour *, void *), void *cookie);
++void __neigh_for_each_release(struct neigh_table *tbl,
++			      int (*cb)(struct neighbour *));
++void pneigh_for_each(struct neigh_table *tbl,
++		     void (*cb)(struct pneigh_entry *));
+ 
+ struct neigh_seq_state {
+ 	struct seq_net_private p;
+@@ -270,15 +269,14 @@ struct neigh_seq_state {
+ #define NEIGH_SEQ_IS_PNEIGH	0x00000002
+ #define NEIGH_SEQ_SKIP_NOARP	0x00000004
  };
+-extern void *neigh_seq_start(struct seq_file *, loff_t *, struct neigh_table *, unsigned int);
+-extern void *neigh_seq_next(struct seq_file *, void *, loff_t *);
+-extern void neigh_seq_stop(struct seq_file *, void *);
+-
+-extern int			neigh_sysctl_register(struct net_device *dev, 
+-						      struct neigh_parms *p,
+-						      char *p_name,
+-						      proc_handler *proc_handler);
+-extern void			neigh_sysctl_unregister(struct neigh_parms *p);
++void *neigh_seq_start(struct seq_file *, loff_t *, struct neigh_table *,
++		      unsigned int);
++void *neigh_seq_next(struct seq_file *, void *, loff_t *);
++void neigh_seq_stop(struct seq_file *, void *);
++
++int neigh_sysctl_register(struct net_device *dev, struct neigh_parms *p,
++			  char *p_name, proc_handler *proc_handler);
++void neigh_sysctl_unregister(struct neigh_parms *p);
  
--extern int ieee80211_radiotap_iterator_init(
--	struct ieee80211_radiotap_iterator *iterator,
--	struct ieee80211_radiotap_header *radiotap_header,
--	int max_length, const struct ieee80211_radiotap_vendor_namespaces *vns);
-+int
-+ieee80211_radiotap_iterator_init(struct ieee80211_radiotap_iterator *iterator,
-+				 struct ieee80211_radiotap_header *radiotap_header,
-+				 int max_length,
-+				 const struct ieee80211_radiotap_vendor_namespaces *vns);
- 
--extern int ieee80211_radiotap_iterator_next(
--	struct ieee80211_radiotap_iterator *iterator);
-+int
-+ieee80211_radiotap_iterator_next(struct ieee80211_radiotap_iterator *iterator);
- 
- 
- extern const unsigned char rfc1042_header[6];
-@@ -3307,7 +3308,7 @@ const u8 *cfg80211_find_vendor_ie(unsigned int oui, u8 oui_type,
-  *
-  * Return: 0 on success. -ENOMEM.
-  */
--extern int regulatory_hint(struct wiphy *wiphy, const char *alpha2);
-+int regulatory_hint(struct wiphy *wiphy, const char *alpha2);
- 
- /**
-  * wiphy_apply_custom_regulatory - apply a custom driver regulatory domain
-@@ -3321,9 +3322,8 @@ extern int regulatory_hint(struct wiphy *wiphy, const char *alpha2);
-  * default channel settings will be disregarded. If no rule is found for a
-  * channel on the regulatory domain the channel will be disabled.
-  */
--extern void wiphy_apply_custom_regulatory(
--	struct wiphy *wiphy,
--	const struct ieee80211_regdomain *regd);
-+void wiphy_apply_custom_regulatory(struct wiphy *wiphy,
-+				   const struct ieee80211_regdomain *regd);
- 
- /**
-  * freq_reg_info - get regulatory information for the given frequency
-diff --git a/include/net/mac80211.h b/include/net/mac80211.h
-index 5b7a3da..e5f0290 100644
---- a/include/net/mac80211.h
-+++ b/include/net/mac80211.h
-@@ -2877,14 +2877,14 @@ enum ieee80211_tpt_led_trigger_flags {
- };
- 
- #ifdef CONFIG_MAC80211_LEDS
--extern char *__ieee80211_get_tx_led_name(struct ieee80211_hw *hw);
--extern char *__ieee80211_get_rx_led_name(struct ieee80211_hw *hw);
--extern char *__ieee80211_get_assoc_led_name(struct ieee80211_hw *hw);
--extern char *__ieee80211_get_radio_led_name(struct ieee80211_hw *hw);
--extern char *__ieee80211_create_tpt_led_trigger(
--				struct ieee80211_hw *hw, unsigned int flags,
--				const struct ieee80211_tpt_blink *blink_table,
--				unsigned int blink_table_len);
-+char *__ieee80211_get_tx_led_name(struct ieee80211_hw *hw);
-+char *__ieee80211_get_rx_led_name(struct ieee80211_hw *hw);
-+char *__ieee80211_get_assoc_led_name(struct ieee80211_hw *hw);
-+char *__ieee80211_get_radio_led_name(struct ieee80211_hw *hw);
-+char *__ieee80211_create_tpt_led_trigger(struct ieee80211_hw *hw,
-+					 unsigned int flags,
-+					 const struct ieee80211_tpt_blink *blink_table,
-+					 unsigned int blink_table_len);
- #endif
- /**
-  * ieee80211_get_tx_led_name - get name of TX LED
+ static inline void __neigh_parms_put(struct neigh_parms *parms)
+ {
 -- 
 1.8.1.2.459.gbcd45b4.dirty
 
