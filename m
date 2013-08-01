@@ -1,48 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757572Ab3HAXkt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 19:40:49 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:53793 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756759Ab3HAXks (ORCPT
+	id S1757498Ab3HAXnA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 19:43:00 -0400
+Received: from mga09.intel.com ([134.134.136.24]:6223 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753892Ab3HAXm7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 19:40:48 -0400
+	Thu, 1 Aug 2013 19:42:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,797,1367996400"; 
+   d="scan'208";a="355805608"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>,
+        "linuxppc-dev@ozlabs.org" <linuxppc-dev@ozlabs.org>,
+        "paulus@samba.org" <paulus@samba.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
+        "keescook@chromium.org" <keescook@chromium.org>
+CC: "jkenisto@linux.vnet.ibm.com" <jkenisto@linux.vnet.ibm.com>,
+        "mahesh@linux.vnet.ibm.com" <mahesh@linux.vnet.ibm.com>,
+        "cbouatmailru@gmail.com" <cbouatmailru@gmail.com>,
+        "anton@samba.org" <anton@samba.org>,
+        "ccross@android.com" <ccross@android.com>
+Subject: RE: [PATCH 00/11] Add compression support to pstore
+Thread-Topic: [PATCH 00/11] Add compression support to pstore
+Thread-Index: AQHOgXwu4GtCbRIYRUui47zYtBK3EJmAuVQAgABk2SA=
+Date: Thu, 1 Aug 2013 23:42:56 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F31CAA167@ORSMSX106.amr.corp.intel.com>
+References: <20130715164844.1520.27771.stgit@aruna-ThinkPad-T420>
+ <51FA3B02.7060004@linux.vnet.ibm.com>
+In-Reply-To: <51FA3B02.7060004@linux.vnet.ibm.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <CAMP44s2LqiEGtS72FuTjsHUa1MH2kfaYHmcpNKMmAm2LnbFCCQ@mail.gmail.com>
-References: <1375125658-1223-1-git-send-email-felipe.contreras@gmail.com>
-	<3453253.oZLO1ChPbL@vostro.rjw.lan>
-	<CAMP44s02V_FO1BPJZqo6MB9RMknXYdV7AXDqbJzYHpgK1GUuJw@mail.gmail.com>
-	<37178266.QXgbv9rq0i@vostro.rjw.lan>
-	<CAMP44s2LqiEGtS72FuTjsHUa1MH2kfaYHmcpNKMmAm2LnbFCCQ@mail.gmail.com>
-Date: Thu, 1 Aug 2013 18:40:46 -0500
-Message-ID: <CAMP44s1zDvUoVZ0NTgank3eXaUJ49vNJtiHdqtt3S39hmbSPUw@mail.gmail.com>
-Subject: Re: [REGRESSION/PATCH] acpi: blacklist win8 OSI for ASUS Zenbok Prime UX31A
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Aaron Lu <aaron.lwe@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 30, 2013 at 7:11 PM, Felipe Contreras
-<felipe.contreras@gmail.com> wrote:
+>     Could you please review and let me know your comments!!
 
-> It is already broken in v3.11-rc3, in fact I just booted that to try
-> it out and it booted with the screen completely black (fortunately I
-> knew exactly what to type to change that).
->
-> Also, each time I change the
-> backlight level from X, the screen blinks as if going 100%, 0%, and
-> then the desired level.
+Skimmed through it today and didn't notice anything I hated.  It built fine - but doesn't seem to be working on top of ERST.  This doesn't seem to be your fault though, when I rebuilt a plain 3.11-rc3 it didn't log anything via pstore either :-(
 
-This one is a bug in the ACPI driver. Here's the fix:
+Will dig some more at it tomorrow.
 
-http://article.gmane.org/gmane.linux.kernel/1536959
-
-Now instead of booting with 0% (off), it boots with 100%, which is
-still not ideal, but way better.
-
--- 
-Felipe Contreras
+-Tony
