@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752750Ab3HAAcL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 20:32:11 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:60849 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752437Ab3HAAcH (ORCPT
+	id S1753523Ab3HAAgn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 20:36:43 -0400
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:40049 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752734Ab3HAAcL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 20:32:07 -0400
+	Wed, 31 Jul 2013 20:32:11 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -15,10 +15,11 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
         Peter Zijlstra <peterz@infradead.org>, Borislav Petkov <bp@alien8.de>,
         Li Zhong <zhong@linux.vnet.ibm.com>, Mike Galbraith <efault@gmx.de>,
-        Kevin Hilman <khilman@linaro.org>
-Subject: [PATCH 13/23] vtime: Fix racy cputime delta update
-Date: Thu,  1 Aug 2013 02:31:30 +0200
-Message-Id: <1375317100-20651-14-git-send-email-fweisbec@gmail.com>
+        Kevin Hilman <khilman@linaro.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH 16/23] m68k: hardirq_count() only need preempt_mask.h
+Date: Thu,  1 Aug 2013 02:31:33 +0200
+Message-Id: <1375317100-20651-17-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1375317100-20651-1-git-send-email-fweisbec@gmail.com>
 References: <1375317100-20651-1-git-send-email-fweisbec@gmail.com>
@@ -26,15 +27,14 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-get_vtime_delta() must be called under the task vtime_seqlock
-with the code that does the cputime accounting flush.
+The m68k irqflags implementation needs to check hardirq
+context in some cases.
 
-Otherwise the cputime reader can be fooled and run into
-a race where it sees the snapshot update but misses the
-cputime flush. As a result it can report a cputime that is
-way too short.
-
-Fix vtime_account_user() that wasn't complying to that rule.
+As it is a very low level header file, it's better to
+include preempt_mask.h rather than hardirq.h when the
+only purpose is to use irq context APIs. This way we
+can avoid future header circular dependencies when
+vtime.h will expand to use static keys.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Steven Rostedt <rostedt@goodmis.org>
@@ -46,26 +46,24 @@ Cc: Borislav Petkov <bp@alien8.de>
 Cc: Li Zhong <zhong@linux.vnet.ibm.com>
 Cc: Mike Galbraith <efault@gmx.de>
 Cc: Kevin Hilman <khilman@linaro.org>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>
 ---
- kernel/sched/cputime.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+ arch/m68k/include/asm/irqflags.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
-index 5f273b47..b62d5c0 100644
---- a/kernel/sched/cputime.c
-+++ b/kernel/sched/cputime.c
-@@ -683,9 +683,10 @@ void vtime_account_irq_exit(struct task_struct *tsk)
+diff --git a/arch/m68k/include/asm/irqflags.h b/arch/m68k/include/asm/irqflags.h
+index 7ef4115..4c62755 100644
+--- a/arch/m68k/include/asm/irqflags.h
++++ b/arch/m68k/include/asm/irqflags.h
+@@ -3,7 +3,7 @@
  
- void vtime_account_user(struct task_struct *tsk)
- {
--	cputime_t delta_cpu = get_vtime_delta(tsk);
-+	cputime_t delta_cpu;
- 
- 	write_seqlock(&tsk->vtime_seqlock);
-+	delta_cpu = get_vtime_delta(tsk);
- 	tsk->vtime_snap_whence = VTIME_SYS;
- 	account_user_time(tsk, delta_cpu, cputime_to_scaled(delta_cpu));
- 	write_sequnlock(&tsk->vtime_seqlock);
+ #include <linux/types.h>
+ #ifdef CONFIG_MMU
+-#include <linux/hardirq.h>
++#include <linux/preempt_mask.h>
+ #endif
+ #include <linux/preempt.h>
+ #include <asm/thread_info.h>
 -- 
 1.7.5.4
 
