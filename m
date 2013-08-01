@@ -1,54 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754568Ab3HAUOW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 16:14:22 -0400
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:13014 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752214Ab3HAUOU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 16:14:20 -0400
-Message-ID: <1375388059.2097.10.camel@buesod1.americas.hpqcorp.net>
-Subject: WARNING: CPU: 26 PID: 93793 at fs/ext4/inode.c:230
- ext4_evict_inode+0x4c9/0x500 [ext4]() still in 3.11-rc3
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Jan Kara <jack@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>,
-        Guenter Roeck <linux@roeck-us.net>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org
-Date: Thu, 01 Aug 2013 13:14:19 -0700
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755786Ab3HAUOt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 16:14:49 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:60932 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754256Ab3HAUOr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 16:14:47 -0400
+From: Joe Perches <joe@perches.com>
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linuxppc-dev@lists.ozlabs.org, linux-usb@vger.kernel.org,
+        linux-media@vger.kernel.org, netfilter-devel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, wimax@linuxwimax.org
+Subject: [PATCH V2 0/3] networking: Use ETH_ALEN where appropriate
+Date: Thu,  1 Aug 2013 13:14:34 -0700
+Message-Id: <cover.1375387593.git.joe@perches.com>
+X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Convert the uses mac addresses to ETH_ALEN so
+it's easier to find and verify where mac addresses
+need to be __aligned(2)
 
-FYI I'm seeing loads of the following messages with Linus' latest
-3.11-rc3 (which includes 822dbba33458cd6ad)
+Change from initial submission:
+- Remove include/acpi/actbl2.h conversion
+  It's a file copied from outside ACPI sources
 
-------------[ cut here ]------------
-WARNING: CPU: 26 PID: 93793 at fs/ext4/inode.c:230 ext4_evict_inode+0x4c9/0x500 [ext4]()
-Modules linked in: autofs4 cpufreq_ondemand freq_table sunrpc 8021q garp stp llc pcc_cpufreq ipt_REJECT nf_conntrack_ipv4 nf_defrag_ipv4 iptable_filter ip_tables ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables ipv6 dm_mirror dm_region_hash dm_log dm_mod uinput iTCO_wdt iTCO_vendor_support coretemp kvm_intel kvm crc32c_intel ghash_clmulni_intel microcode pcspkr sg lpc_ich mfd_core hpilo hpwdt i7core_edac edac_core netxen_nic mperf ext4 jbd2 mbcache sd_mod crc_t10dif aesni_intel ablk_helper cryptd lrw gf128mul glue_helper aes_x86_64 hpsa radeon ttm drm_kms_helper drm i2c_algo_bit i2c_core [last unloaded: freq_table]
-CPU: 26 PID: 93793 Comm: reaim Tainted: G        W    3.11.0-rc3+ #1
-Hardware name: HP ProLiant DL980 G7, BIOS P66 06/24/2011
- 00000000000000e6 ffff8985db603d78 ffffffff8153ce4d 00000000000000e6
- 0000000000000000 ffff8985db603db8 ffffffff8104cf1c ffff8985db603dc8
- ffff8b05c485b8b0 ffff8b05c485b9b8 ffff8b05c485b800 00000000ffffff9c
-Call Trace:
- [<ffffffff8153ce4d>] dump_stack+0x49/0x5c
- [<ffffffff8104cf1c>] warn_slowpath_common+0x8c/0xc0
- [<ffffffff8104cf6a>] warn_slowpath_null+0x1a/0x20
- [<ffffffffa02a0179>] ext4_evict_inode+0x4c9/0x500 [ext4]
- [<ffffffff811915e7>] evict+0xa7/0x1c0
- [<ffffffff811917e3>] iput_final+0xe3/0x170
- [<ffffffff811918ae>] iput+0x3e/0x50
- [<ffffffff81187aa6>] do_unlinkat+0x1c6/0x280
- [<ffffffff8106f3e4>] ? task_work_run+0x94/0xf0
- [<ffffffff81003a44>] ? do_notify_resume+0x84/0x90
- [<ffffffff81187b76>] SyS_unlink+0x16/0x20
- [<ffffffff81549a02>] system_call_fastpath+0x16/0x1b
----[ end trace 15e812809616488b ]---
+Joe Perches (3):
+  uapi: Convert some uses of 6 to ETH_ALEN
+  include: Convert ethernet mac address declarations to use ETH_ALEN
+  ethernet: Convert mac address uses of 6 to ETH_ALEN
 
+ drivers/net/ethernet/8390/ax88796.c                |  4 +-
+ drivers/net/ethernet/amd/pcnet32.c                 |  6 +--
+ drivers/net/ethernet/broadcom/cnic_if.h            |  6 +--
+ drivers/net/ethernet/dec/tulip/tulip_core.c        |  8 +--
+ drivers/net/ethernet/i825xx/sun3_82586.h           |  4 +-
+ drivers/net/ethernet/myricom/myri10ge/myri10ge.c   |  2 +-
+ drivers/net/ethernet/nuvoton/w90p910_ether.c       |  4 +-
+ drivers/net/ethernet/pasemi/pasemi_mac.c           | 13 ++---
+ drivers/net/ethernet/pasemi/pasemi_mac.h           |  4 +-
+ drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c |  4 +-
+ drivers/net/ethernet/qlogic/qlge/qlge.h            |  2 +-
+ include/linux/dm9000.h                             |  4 +-
+ include/linux/fs_enet_pd.h                         |  3 +-
+ include/linux/ieee80211.h                          | 59 +++++++++++-----------
+ include/linux/mlx4/device.h                        | 11 ++--
+ include/linux/mlx4/qp.h                            |  5 +-
+ include/linux/mv643xx_eth.h                        |  3 +-
+ include/linux/sh_eth.h                             |  3 +-
+ include/linux/smsc911x.h                           |  3 +-
+ include/linux/uwb/spec.h                           |  5 +-
+ include/media/tveeprom.h                           |  4 +-
+ include/net/irda/irlan_common.h                    |  3 +-
+ include/uapi/linux/dn.h                            |  3 +-
+ include/uapi/linux/if_bridge.h                     |  3 +-
+ include/uapi/linux/netfilter_bridge/ebt_802_3.h    |  5 +-
+ include/uapi/linux/netfilter_ipv4/ipt_CLUSTERIP.h  |  3 +-
+ include/uapi/linux/virtio_net.h                    |  2 +-
+ include/uapi/linux/wimax/i2400m.h                  |  4 +-
+ 28 files changed, 100 insertions(+), 80 deletions(-)
+
+-- 
+1.8.1.2.459.gbcd45b4.dirty
 
