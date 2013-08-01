@@ -1,79 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756961Ab3HARFe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 13:05:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59920 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756038Ab3HARFN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 13:05:13 -0400
-Date: Thu, 1 Aug 2013 18:59:41 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: ahecox@redhat.com, Christopher Williams <cww@redhat.com>,
-        dwysocha@redhat.com, gavin@redhat.com, Ingo Molnar <mingo@elte.hu>,
-        Mandeep Singh Baines <msb@chromium.org>, nshi@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] hung_task: print more info when reporting the problem
-Message-ID: <20130801165941.GA17544@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1757099Ab3HARFz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 13:05:55 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:59272 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752667Ab3HARFx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 13:05:53 -0400
+Message-ID: <1375376752.2034.60.camel@joe-AO722>
+Subject: Re: [PATCH 0/8] include/net: next set of extern removals
+From: Joe Perches <joe@perches.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: David Howells <dhowells@redhat.com>, netdev@vger.kernel.org,
+        linux-hams@vger.kernel.org, linux-wireless@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-afs@lists.infradead.org
+Date: Thu, 01 Aug 2013 10:05:52 -0700
+In-Reply-To: <1375375486.10515.170.camel@edumazet-glaptop>
+References: <cover.1375316912.git.joe@perches.com>
+	 <24958.1375358650@warthog.procyon.org.uk>
+	 <1375374560.2034.52.camel@joe-AO722>
+	 <1375375486.10515.170.camel@edumazet-glaptop>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-printk(KERN_ERR) from check_hung_task() likely means the bug,
-but unlike BUG_ON/WARN_ON it doesn't show the kernel version,
-this complicates the bug-reports investigation.
+On Thu, 2013-08-01 at 09:44 -0700, Eric Dumazet wrote:
+> 'extern' in include files are an easy way to have a grep friendly
+> marker, and otherwise are harmless.
+> 
+> _You_ believe they are useless, other people think otherwise.
 
-Add the additional pr_err() to print tainted/release/version
-like dump_stack_print_info() does, the output becomes:
+I believe I wrote superfluous.
 
-        INFO: task perl:504 blocked for more than 2 seconds.
-	      Not tainted 3.11.0-rc1-10367-g136bb46-dirty #1763
-        "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-        ...
+> I learned C 30 years ago, and using 'extern' is quite natural for me.
 
-While at it, turn the old printk's into pr_err().
+I think I've got a few years headstart on you.
+All that means is we're both relatively old...
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- kernel/hung_task.c |   13 +++++++++----
- 1 files changed, 9 insertions(+), 4 deletions(-)
-
-diff --git a/kernel/hung_task.c b/kernel/hung_task.c
-index 6df6149..3e97fb1 100644
---- a/kernel/hung_task.c
-+++ b/kernel/hung_task.c
-@@ -15,6 +15,7 @@
- #include <linux/lockdep.h>
- #include <linux/export.h>
- #include <linux/sysctl.h>
-+#include <linux/utsname.h>
- 
- /*
-  * The number of tasks checked:
-@@ -99,10 +100,14 @@ static void check_hung_task(struct task_struct *t, unsigned long timeout)
- 	 * Ok, the task did not get scheduled for more than 2 minutes,
- 	 * complain:
- 	 */
--	printk(KERN_ERR "INFO: task %s:%d blocked for more than "
--			"%ld seconds.\n", t->comm, t->pid, timeout);
--	printk(KERN_ERR "\"echo 0 > /proc/sys/kernel/hung_task_timeout_secs\""
--			" disables this message.\n");
-+	pr_err("INFO: task %s:%d blocked for more than %ld seconds.\n",
-+		t->comm, t->pid, timeout);
-+	pr_err("      %s %s %.*s\n",
-+		print_tainted(), init_utsname()->release,
-+		(int)strcspn(init_utsname()->version, " "),
-+		init_utsname()->version);
-+	pr_err("\"echo 0 > /proc/sys/kernel/hung_task_timeout_secs\""
-+		" disables this message.\n");
- 	sched_show_task(t);
- 	debug_show_held_locks(t);
- 
--- 
-1.5.5.1
-
+cheers, Joe
 
