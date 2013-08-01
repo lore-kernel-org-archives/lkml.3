@@ -1,219 +1,501 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755731Ab3HAUXD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 16:23:03 -0400
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:64511 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753290Ab3HAUWr (ORCPT
+	id S1757112Ab3HAUZD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 16:25:03 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:12036 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753236Ab3HAUZA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 16:22:47 -0400
-From: David Daney <ddaney.cavm@gmail.com>
-To: linux-mips@linux-mips.org, ralf@linux-mips.org, kvm@vger.kernel.org,
-        Sanjay Lal <sanjayl@kymasys.com>, Gleb Natapov <gleb@redhat.com>
-Cc: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
-Subject: [PATCH 3/3] mips/kvm: Make kvm_locore.S 64-bit buildable/safe.
-Date: Thu,  1 Aug 2013 13:22:35 -0700
-Message-Id: <1375388555-4045-4-git-send-email-ddaney.cavm@gmail.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1375388555-4045-1-git-send-email-ddaney.cavm@gmail.com>
-References: <1375388555-4045-1-git-send-email-ddaney.cavm@gmail.com>
+	Thu, 1 Aug 2013 16:25:00 -0400
+Message-ID: <201308012024.r71KOwQN029953@farm-0021.internal.tilera.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
+Date: Thu, 1 Aug 2013 15:52:17 -0400
+Subject: [PATCH] tile: optimize and clean up string functions
+To: <linux-kernel@vger.kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Daney <david.daney@cavium.com>
+This change cleans up the string code in a number of ways:
 
-We need to use more of the Macros in asm.h to allow kvm_locore.S to
-build in a 64-bit kernel.
+- For memcpy(), fix bug in prefetch and increase distance to 3 lines;
+  optimize for unaligned data; do all loads before wh64 to make memcpy
+  safe for forward-overlapping calls; etc.  Performance is improved.
 
-For 32-bit there is no change in the generated object code.
+- Use new copy_byte() function on tilegx to spread a single byte value
+  out into a full word using the shufflebytes instruction.
 
-Signed-off-by: David Daney <david.daney@cavium.com>
-Acked-by: Ralf Baechle <ralf@linux-mips.org>
+- Clean up header include ordering to be more canonical, and remove
+  spurious #undefs of function names.
+
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 ---
- arch/mips/kvm/kvm_locore.S | 54 +++++++++++++++++++++++-----------------------
- 1 file changed, 27 insertions(+), 27 deletions(-)
+ arch/tile/lib/memchr_64.c     |   2 +-
+ arch/tile/lib/memcpy_64.c     | 261 +++++++++++++++++++++++++++++++-----------
+ arch/tile/lib/memset_32.c     |   5 +-
+ arch/tile/lib/memset_64.c     |   9 +-
+ arch/tile/lib/strchr_32.c     |   2 -
+ arch/tile/lib/strchr_64.c     |   2 +-
+ arch/tile/lib/string-endian.h |  13 ++-
+ arch/tile/lib/strlen_32.c     |   2 -
+ 8 files changed, 212 insertions(+), 84 deletions(-)
 
-diff --git a/arch/mips/kvm/kvm_locore.S b/arch/mips/kvm/kvm_locore.S
-index fdc169d..bce2247 100644
---- a/arch/mips/kvm/kvm_locore.S
-+++ b/arch/mips/kvm/kvm_locore.S
-@@ -60,7 +60,7 @@
+diff --git a/arch/tile/lib/memchr_64.c b/arch/tile/lib/memchr_64.c
+index 6f867db..f8196b3 100644
+--- a/arch/tile/lib/memchr_64.c
++++ b/arch/tile/lib/memchr_64.c
+@@ -36,7 +36,7 @@ void *memchr(const void *s, int c, size_t n)
+ 	p = (const uint64_t *)(s_int & -8);
  
- FEXPORT(__kvm_mips_vcpu_run)
- 	/* k0/k1 not being used in host kernel context */
--	addiu	k1, sp, -PT_SIZE
-+	INT_ADDIU k1, sp, -PT_SIZE
- 	LONG_S	$0, PT_R0(k1)
- 	LONG_S	$1, PT_R1(k1)
- 	LONG_S	$2, PT_R2(k1)
-@@ -121,7 +121,7 @@ FEXPORT(__kvm_mips_vcpu_run)
- 	mtc0	a1, CP0_DDATA_LO
+ 	/* Create eight copies of the byte for which we are looking. */
+-	goal = 0x0101010101010101ULL * (uint8_t) c;
++	goal = copy_byte(c);
  
- 	/* Offset into vcpu->arch */
--	addiu	k1, a1, VCPU_HOST_ARCH
-+	INT_ADDIU k1, a1, VCPU_HOST_ARCH
+ 	/* Read the first word, but munge it so that bytes before the array
+ 	 * will not match goal.
+diff --git a/arch/tile/lib/memcpy_64.c b/arch/tile/lib/memcpy_64.c
+index c79b8e7..46fc160 100644
+--- a/arch/tile/lib/memcpy_64.c
++++ b/arch/tile/lib/memcpy_64.c
+@@ -18,14 +18,17 @@
+ /* EXPORT_SYMBOL() is in arch/tile/lib/exports.c since this should be asm. */
  
- 	/*
- 	 * Save the host stack to VCPU, used for exception processing
-@@ -159,16 +159,16 @@ FEXPORT(__kvm_mips_vcpu_run)
+ /* Must be 8 bytes in size. */
+-#define word_t uint64_t
++#define op_t uint64_t
  
- FEXPORT(__kvm_mips_load_asid)
- 	/* Set the ASID for the Guest Kernel */
--	sll	t0, t0, 1	/* with kseg0 @ 0x40000000, kernel */
-+	INT_SLL	t0, t0, 1	/* with kseg0 @ 0x40000000, kernel */
- 			        /* addresses shift to 0x80000000 */
- 	bltz	t0, 1f		/* If kernel */
--	 addiu	t1, k1, VCPU_GUEST_KERNEL_ASID  /* (BD)  */
--	addiu	t1, k1, VCPU_GUEST_USER_ASID    /* else user */
-+	 INT_ADDIU t1, k1, VCPU_GUEST_KERNEL_ASID  /* (BD)  */
-+	INT_ADDIU t1, k1, VCPU_GUEST_USER_ASID    /* else user */
- 1:
- 	     /* t1: contains the base of the ASID array, need to get the cpu id  */
- 	LONG_L	t2, TI_CPU($28)             /* smp_processor_id */
--	sll	t2, t2, 2                   /* x4 */
--	addu	t3, t1, t2
-+	INT_SLL	t2, t2, 2                   /* x4 */
-+	REG_ADDU t3, t1, t2
- 	LONG_L	k0, (t3)
- 	andi	k0, k0, 0xff
- 	mtc0	k0, CP0_ENTRYHI
-@@ -236,10 +236,10 @@ VECTOR(MIPSX(exception), unknown)
- 	ehb				#02:
+-#if CHIP_L2_LINE_SIZE() != 64 && CHIP_L2_LINE_SIZE() != 128
+-#error "Assumes 64 or 128 byte line size"
++/* Threshold value for when to enter the unrolled loops. */
++#define	OP_T_THRES	16
++
++#if CHIP_L2_LINE_SIZE() != 64
++#error "Assumes 64 byte line size"
+ #endif
  
- 	mfc0	k0, CP0_EBASE		#02: Get EBASE
--	srl	k0, k0, 10		#03: Get rid of CPUNum
--	sll	k0, k0, 10		#04
-+	INT_SRL	k0, k0, 10		#03: Get rid of CPUNum
-+	INT_SLL	k0, k0, 10		#04
- 	LONG_S	k1, 0x3000(k0)		#05: Save k1 @ offset 0x3000
--	addiu	k0, k0, 0x2000		#06: Exception handler is installed @ offset 0x2000
-+	INT_ADDIU k0, k0, 0x2000		#06: Exception handler is installed @ offset 0x2000
- 	j	k0			#07: jump to the function
- 	 nop				#08: branch delay slot
- VECTOR_END(MIPSX(exceptionEnd))
-@@ -253,7 +253,7 @@ VECTOR_END(MIPSX(exceptionEnd))
- NESTED (MIPSX(GuestException), CALLFRAME_SIZ, ra)
- 	/* Get the VCPU pointer from DDTATA_LO */
- 	mfc0	k1, CP0_DDATA_LO
--	addiu	k1, k1, VCPU_HOST_ARCH
-+	INT_ADDIU k1, k1, VCPU_HOST_ARCH
+ /* How many cache lines ahead should we prefetch? */
+-#define PREFETCH_LINES_AHEAD 3
++#define PREFETCH_LINES_AHEAD 4
  
- 	/* Start saving Guest context to VCPU */
- 	LONG_S	$0, VCPU_R0(k1)
-@@ -304,7 +304,7 @@ NESTED (MIPSX(GuestException), CALLFRAME_SIZ, ra)
- 	LONG_S	t0, VCPU_R26(k1)
+ /*
+  * Provide "base versions" of load and store for the normal code path.
+@@ -58,8 +61,8 @@ int USERCOPY_FUNC(void *__restrict dstv, const void *__restrict srcv, size_t n)
+ 	const char *__restrict src1 = (const char *)srcv;
+ 	const char *__restrict src1_end;
+ 	const char *__restrict prefetch;
+-	word_t *__restrict dst8;    /* 8-byte pointer to destination memory. */
+-	word_t final; /* Final bytes to write to trailing word, if any */
++	op_t *__restrict dst8;    /* 8-byte pointer to destination memory. */
++	op_t final; /* Final bytes to write to trailing word, if any */
+ 	long i;
  
- 	/* Get GUEST k1 and save it in VCPU */
--	la	t1, ~0x2ff
-+	PTR_LI	t1, ~0x2ff
- 	mfc0	t0, CP0_EBASE
- 	and	t0, t0, t1
- 	LONG_L	t0, 0x3000(t0)
-@@ -367,7 +367,7 @@ NESTED (MIPSX(GuestException), CALLFRAME_SIZ, ra)
- 	LONG_L	sp, VCPU_HOST_STACK(k1)
+ 	if (n < 16) {
+@@ -79,104 +82,228 @@ int USERCOPY_FUNC(void *__restrict dstv, const void *__restrict srcv, size_t n)
+ 	for (i = 0; i < PREFETCH_LINES_AHEAD; i++) {
+ 		__insn_prefetch(prefetch);
+ 		prefetch += CHIP_L2_LINE_SIZE();
+-		prefetch = (prefetch > src1_end) ? prefetch : src1;
++		prefetch = (prefetch < src1_end) ? prefetch : src1;
+ 	}
  
- 	/* Saved host state */
--	addiu	sp, sp, -PT_SIZE
-+	INT_ADDIU sp, sp, -PT_SIZE
+ 	/* Copy bytes until dst is word-aligned. */
+-	for (; (uintptr_t)dst1 & (sizeof(word_t) - 1); n--)
++	for (; (uintptr_t)dst1 & (sizeof(op_t) - 1); n--)
+ 		ST1(dst1++, LD1(src1++));
  
- 	/* XXXKYMA do we need to load the host ASID, maybe not because the
- 	 * kernel entries are marked GLOBAL, need to verify
-@@ -378,7 +378,7 @@ NESTED (MIPSX(GuestException), CALLFRAME_SIZ, ra)
- 	mtc0	k0, CP0_DDATA_LO
+ 	/* 8-byte pointer to destination memory. */
+-	dst8 = (word_t *)dst1;
+-
+-	if (__builtin_expect((uintptr_t)src1 & (sizeof(word_t) - 1), 0)) {
+-		/*
+-		 * Misaligned copy.  Copy 8 bytes at a time, but don't
+-		 * bother with other fanciness.
+-		 *
+-		 * TODO: Consider prefetching and using wh64 as well.
+-		 */
+-
+-		/* Create an aligned src8. */
+-		const word_t *__restrict src8 =
+-			(const word_t *)((uintptr_t)src1 & -sizeof(word_t));
+-		word_t b;
+-
+-		word_t a = LD8(src8++);
+-		for (; n >= sizeof(word_t); n -= sizeof(word_t)) {
+-			b = LD8(src8++);
+-			a = __insn_dblalign(a, b, src1);
+-			ST8(dst8++, a);
+-			a = b;
++	dst8 = (op_t *)dst1;
++
++	if (__builtin_expect((uintptr_t)src1 & (sizeof(op_t) - 1), 0)) {
++		/* Unaligned copy. */
++
++		op_t  tmp0 = 0, tmp1 = 0, tmp2, tmp3;
++		const op_t *src8 = (const op_t *) ((uintptr_t)src1 &
++						   -sizeof(op_t));
++		const void *srci = (void *)src1;
++		int m;
++
++		m = (CHIP_L2_LINE_SIZE() << 2) -
++			(((uintptr_t)dst8) & ((CHIP_L2_LINE_SIZE() << 2) - 1));
++		m = (n < m) ? n : m;
++		m /= sizeof(op_t);
++
++		/* Copy until 'dst' is cache-line-aligned. */
++		n -= (sizeof(op_t) * m);
++
++		switch (m % 4) {
++		case 0:
++			if (__builtin_expect(!m, 0))
++				goto _M0;
++			tmp1 = LD8(src8++);
++			tmp2 = LD8(src8++);
++			goto _8B3;
++		case 2:
++			m += 2;
++			tmp3 = LD8(src8++);
++			tmp0 = LD8(src8++);
++			goto _8B1;
++		case 3:
++			m += 1;
++			tmp2 = LD8(src8++);
++			tmp3 = LD8(src8++);
++			goto _8B2;
++		case 1:
++			m--;
++			tmp0 = LD8(src8++);
++			tmp1 = LD8(src8++);
++			if (__builtin_expect(!m, 0))
++				goto _8B0;
++		}
++
++		do {
++			tmp2 = LD8(src8++);
++			tmp0 =  __insn_dblalign(tmp0, tmp1, srci);
++			ST8(dst8++, tmp0);
++_8B3:
++			tmp3 = LD8(src8++);
++			tmp1 = __insn_dblalign(tmp1, tmp2, srci);
++			ST8(dst8++, tmp1);
++_8B2:
++			tmp0 = LD8(src8++);
++			tmp2 = __insn_dblalign(tmp2, tmp3, srci);
++			ST8(dst8++, tmp2);
++_8B1:
++			tmp1 = LD8(src8++);
++			tmp3 = __insn_dblalign(tmp3, tmp0, srci);
++			ST8(dst8++, tmp3);
++			m -= 4;
++		} while (m);
++
++_8B0:
++		tmp0 = __insn_dblalign(tmp0, tmp1, srci);
++		ST8(dst8++, tmp0);
++		src8--;
++
++_M0:
++		if (__builtin_expect(n >= CHIP_L2_LINE_SIZE(), 0)) {
++			op_t tmp4, tmp5, tmp6, tmp7, tmp8;
++
++			prefetch = ((const char *)src8) +
++				CHIP_L2_LINE_SIZE() * PREFETCH_LINES_AHEAD;
++
++			for (tmp0 = LD8(src8++); n >= CHIP_L2_LINE_SIZE();
++			     n -= CHIP_L2_LINE_SIZE()) {
++				/* Prefetch and advance to next line to
++				   prefetch, but don't go past the end.  */
++				__insn_prefetch(prefetch);
++
++				/* Make sure prefetch got scheduled
++				   earlier.  */
++				__asm__ ("" : : : "memory");
++
++				prefetch += CHIP_L2_LINE_SIZE();
++				prefetch = (prefetch < src1_end) ? prefetch :
++					(const char *) src8;
++
++				tmp1 = LD8(src8++);
++				tmp2 = LD8(src8++);
++				tmp3 = LD8(src8++);
++				tmp4 = LD8(src8++);
++				tmp5 = LD8(src8++);
++				tmp6 = LD8(src8++);
++				tmp7 = LD8(src8++);
++				tmp8 = LD8(src8++);
++
++				tmp0 = __insn_dblalign(tmp0, tmp1, srci);
++				tmp1 = __insn_dblalign(tmp1, tmp2, srci);
++				tmp2 = __insn_dblalign(tmp2, tmp3, srci);
++				tmp3 = __insn_dblalign(tmp3, tmp4, srci);
++				tmp4 = __insn_dblalign(tmp4, tmp5, srci);
++				tmp5 = __insn_dblalign(tmp5, tmp6, srci);
++				tmp6 = __insn_dblalign(tmp6, tmp7, srci);
++				tmp7 = __insn_dblalign(tmp7, tmp8, srci);
++
++				__insn_wh64(dst8);
++
++				ST8(dst8++, tmp0);
++				ST8(dst8++, tmp1);
++				ST8(dst8++, tmp2);
++				ST8(dst8++, tmp3);
++				ST8(dst8++, tmp4);
++				ST8(dst8++, tmp5);
++				ST8(dst8++, tmp6);
++				ST8(dst8++, tmp7);
++
++				tmp0 = tmp8;
++			}
++			src8--;
++		}
++
++		/* Copy the rest 8-byte chunks. */
++		if (n >= sizeof(op_t)) {
++			tmp0 = LD8(src8++);
++			for (; n >= sizeof(op_t); n -= sizeof(op_t)) {
++				tmp1 = LD8(src8++);
++				tmp0 = __insn_dblalign(tmp0, tmp1, srci);
++				ST8(dst8++, tmp0);
++				tmp0 = tmp1;
++			}
++			src8--;
+ 		}
  
- 	/* Restore RDHWR access */
--	la	k0, 0x2000000F
-+	PTR_LI	k0, 0x2000000F
- 	mtc0	k0, CP0_HWRENA
+ 		if (n == 0)
+ 			return RETVAL;
  
- 	/* Jump to handler */
-@@ -386,9 +386,9 @@ FEXPORT(__kvm_mips_jump_to_handler)
- 	/* XXXKYMA: not sure if this is safe, how large is the stack??
- 	 * Now jump to the kvm_mips_handle_exit() to see if we can deal
- 	 * with this in the kernel */
--	la	t9, kvm_mips_handle_exit
-+	PTR_LA	t9, kvm_mips_handle_exit
- 	jalr.hb	t9
--	 addiu	sp, sp, -CALLFRAME_SIZ           /* BD Slot */
-+	 INT_ADDIU sp, sp, -CALLFRAME_SIZ           /* BD Slot */
+-		b = ((const char *)src8 <= src1_end) ? *src8 : 0;
++		tmp0 = LD8(src8++);
++		tmp1 = ((const char *)src8 <= src1_end)
++			? LD8((op_t *)src8) : 0;
++		final = __insn_dblalign(tmp0, tmp1, srci);
  
- 	/* Return from handler Make sure interrupts are disabled */
- 	di
-@@ -400,7 +400,7 @@ FEXPORT(__kvm_mips_jump_to_handler)
- 	 */
+-		/*
+-		 * Final source bytes to write to trailing partial
+-		 * word, if any.
+-		 */
+-		final = __insn_dblalign(a, b, src1);
+ 	} else {
+ 		/* Aligned copy. */
  
- 	move	k1, s1
--	addiu	k1, k1, VCPU_HOST_ARCH
-+	INT_ADDIU k1, k1, VCPU_HOST_ARCH
+-		const word_t* __restrict src8 = (const word_t *)src1;
++		const op_t *__restrict src8 = (const op_t *)src1;
  
- 	/* Check return value, should tell us if we are returning to the
- 	 * host (handle I/O etc)or resuming the guest
-@@ -438,16 +438,16 @@ __kvm_mips_return_to_guest:
- 	mtc0	t0, CP0_EPC
+ 		/* src8 and dst8 are both word-aligned. */
+ 		if (n >= CHIP_L2_LINE_SIZE()) {
+ 			/* Copy until 'dst' is cache-line-aligned. */
+ 			for (; (uintptr_t)dst8 & (CHIP_L2_LINE_SIZE() - 1);
+-			     n -= sizeof(word_t))
++			     n -= sizeof(op_t))
+ 				ST8(dst8++, LD8(src8++));
  
- 	/* Set the ASID for the Guest Kernel */
--	sll	t0, t0, 1	/* with kseg0 @ 0x40000000, kernel */
-+	INT_SLL	t0, t0, 1	/* with kseg0 @ 0x40000000, kernel */
- 				/* addresses shift to 0x80000000 */
- 	bltz	t0, 1f		/* If kernel */
--	 addiu	t1, k1, VCPU_GUEST_KERNEL_ASID  /* (BD)  */
--	addiu	t1, k1, VCPU_GUEST_USER_ASID    /* else user */
-+	 INT_ADDIU t1, k1, VCPU_GUEST_KERNEL_ASID  /* (BD)  */
-+	INT_ADDIU t1, k1, VCPU_GUEST_USER_ASID    /* else user */
- 1:
- 	/* t1: contains the base of the ASID array, need to get the cpu id  */
- 	LONG_L	t2, TI_CPU($28)		/* smp_processor_id */
--	sll	t2, t2, 2		/* x4 */
--	addu	t3, t1, t2
-+	INT_SLL	t2, t2, 2		/* x4 */
-+	REG_ADDU t3, t1, t2
- 	LONG_L	k0, (t3)
- 	andi	k0, k0, 0xff
- 	mtc0	k0,CP0_ENTRYHI
-@@ -505,7 +505,7 @@ FEXPORT(__kvm_mips_skip_guest_restore)
- __kvm_mips_return_to_host:
- 	/* EBASE is already pointing to Linux */
- 	LONG_L	k1, VCPU_HOST_STACK(k1)
--	addiu	k1,k1, -PT_SIZE
-+	INT_ADDIU k1,k1, -PT_SIZE
+ 			for (; n >= CHIP_L2_LINE_SIZE(); ) {
+-				__insn_wh64(dst8);
++				op_t tmp0, tmp1, tmp2, tmp3;
++				op_t tmp4, tmp5, tmp6, tmp7;
  
- 	/* Restore host DDATA_LO */
- 	LONG_L	k0, PT_HOST_USERLOCAL(k1)
-@@ -523,7 +523,7 @@ __kvm_mips_return_to_host:
+ 				/*
+ 				 * Prefetch and advance to next line
+-				 * to prefetch, but don't go past the end
++				 * to prefetch, but don't go past the
++				 * end.
+ 				 */
+ 				__insn_prefetch(prefetch);
++
++				/* Make sure prefetch got scheduled
++				   earlier.  */
++				__asm__ ("" : : : "memory");
++
+ 				prefetch += CHIP_L2_LINE_SIZE();
+-				prefetch = (prefetch > src1_end) ? prefetch :
++				prefetch = (prefetch < src1_end) ? prefetch :
+ 					(const char *)src8;
  
- 	/* r2/v0 is the return code, shift it down by 2 (arithmetic)
- 	 * to recover the err code  */
--	sra	k0, v0, 2
-+	INT_SRA	k0, v0, 2
- 	move	$2, k0
+ 				/*
+-				 * Copy an entire cache line.  Manually
+-				 * unrolled to avoid idiosyncracies of
+-				 * compiler unrolling.
++				 * Do all the loads before wh64.  This
++				 * is necessary if [src8, src8+7] and
++				 * [dst8, dst8+7] share the same cache
++				 * line and dst8 <= src8, as can be
++				 * the case when called from memmove,
++				 * or with code tested on x86 whose
++				 * memcpy always works with forward
++				 * copies.
+ 				 */
+-#define COPY_WORD(offset) ({ ST8(dst8+offset, LD8(src8+offset)); n -= 8; })
+-				COPY_WORD(0);
+-				COPY_WORD(1);
+-				COPY_WORD(2);
+-				COPY_WORD(3);
+-				COPY_WORD(4);
+-				COPY_WORD(5);
+-				COPY_WORD(6);
+-				COPY_WORD(7);
+-#if CHIP_L2_LINE_SIZE() == 128
+-				COPY_WORD(8);
+-				COPY_WORD(9);
+-				COPY_WORD(10);
+-				COPY_WORD(11);
+-				COPY_WORD(12);
+-				COPY_WORD(13);
+-				COPY_WORD(14);
+-				COPY_WORD(15);
+-#elif CHIP_L2_LINE_SIZE() != 64
+-# error Fix code that assumes particular L2 cache line sizes
+-#endif
++				tmp0 = LD8(src8++);
++				tmp1 = LD8(src8++);
++				tmp2 = LD8(src8++);
++				tmp3 = LD8(src8++);
++				tmp4 = LD8(src8++);
++				tmp5 = LD8(src8++);
++				tmp6 = LD8(src8++);
++				tmp7 = LD8(src8++);
++
++				/* wh64 and wait for tmp7 load completion. */
++				__asm__ ("move %0, %0; wh64 %1\n"
++					 : : "r"(tmp7), "r"(dst8));
  
- 	LONG_L	$3, PT_R3(k1)
-@@ -563,7 +563,7 @@ __kvm_mips_return_to_host:
- 	mtlo	k0
+-				dst8 += CHIP_L2_LINE_SIZE() / sizeof(word_t);
+-				src8 += CHIP_L2_LINE_SIZE() / sizeof(word_t);
++				ST8(dst8++, tmp0);
++				ST8(dst8++, tmp1);
++				ST8(dst8++, tmp2);
++				ST8(dst8++, tmp3);
++				ST8(dst8++, tmp4);
++				ST8(dst8++, tmp5);
++				ST8(dst8++, tmp6);
++				ST8(dst8++, tmp7);
++
++				n -= CHIP_L2_LINE_SIZE();
+ 			}
++#if CHIP_L2_LINE_SIZE() != 64
++# error "Fix code that assumes particular L2 cache line size."
++#endif
+ 		}
  
- 	/* Restore RDHWR access */
--	la	k0, 0x2000000F
-+	PTR_LI	k0, 0x2000000F
- 	mtc0	k0,  CP0_HWRENA
+-		for (; n >= sizeof(word_t); n -= sizeof(word_t))
++		for (; n >= sizeof(op_t); n -= sizeof(op_t))
+ 			ST8(dst8++, LD8(src8++));
  
+ 		if (__builtin_expect(n == 0, 1))
+diff --git a/arch/tile/lib/memset_32.c b/arch/tile/lib/memset_32.c
+index 57dbb3a..9a7837d 100644
+--- a/arch/tile/lib/memset_32.c
++++ b/arch/tile/lib/memset_32.c
+@@ -12,13 +12,10 @@
+  *   more details.
+  */
  
-@@ -627,13 +627,13 @@ LEAF(MIPSX(SyncICache))
- 	.set	mips32r2
- 	beq	a1, zero, 20f
- 	 nop
--	addu	a1, a0, a1
-+	REG_ADDU a1, a0, a1
- 	rdhwr	v0, HW_SYNCI_Step
- 	beq	v0, zero, 20f
- 	 nop
- 10:
- 	synci	0(a0)
--	addu	a0, a0, v0
-+	REG_ADDU a0, a0, v0
- 	sltu	v1, a0, a1
- 	bne	v1, zero, 10b
- 	 nop
+-#include <arch/chip.h>
+-
+ #include <linux/types.h>
+ #include <linux/string.h>
+ #include <linux/module.h>
+-
+-#undef memset
++#include <arch/chip.h>
+ 
+ void *memset(void *s, int c, size_t n)
+ {
+diff --git a/arch/tile/lib/memset_64.c b/arch/tile/lib/memset_64.c
+index 3873085..03ef69c 100644
+--- a/arch/tile/lib/memset_64.c
++++ b/arch/tile/lib/memset_64.c
+@@ -12,13 +12,11 @@
+  *   more details.
+  */
+ 
+-#include <arch/chip.h>
+-
+ #include <linux/types.h>
+ #include <linux/string.h>
+ #include <linux/module.h>
+-
+-#undef memset
++#include <arch/chip.h>
++#include "string-endian.h"
+ 
+ void *memset(void *s, int c, size_t n)
+ {
+@@ -70,8 +68,7 @@ void *memset(void *s, int c, size_t n)
+ 	n64 = n >> 3;
+ 
+ 	/* Tile input byte out to 64 bits. */
+-	/* KLUDGE */
+-	v64 = 0x0101010101010101ULL * (uint8_t)c;
++	v64 = copy_byte(c);
+ 
+ 	/* This must be at least 8 or the following loop doesn't work. */
+ #define CACHE_LINE_SIZE_IN_DOUBLEWORDS (CHIP_L2_LINE_SIZE() / 8)
+diff --git a/arch/tile/lib/strchr_32.c b/arch/tile/lib/strchr_32.c
+index c94e6f7..841fe69 100644
+--- a/arch/tile/lib/strchr_32.c
++++ b/arch/tile/lib/strchr_32.c
+@@ -16,8 +16,6 @@
+ #include <linux/string.h>
+ #include <linux/module.h>
+ 
+-#undef strchr
+-
+ char *strchr(const char *s, int c)
+ {
+ 	int z, g;
+diff --git a/arch/tile/lib/strchr_64.c b/arch/tile/lib/strchr_64.c
+index f39f9dc..fe6e31c 100644
+--- a/arch/tile/lib/strchr_64.c
++++ b/arch/tile/lib/strchr_64.c
+@@ -26,7 +26,7 @@ char *strchr(const char *s, int c)
+ 	const uint64_t *p = (const uint64_t *)(s_int & -8);
+ 
+ 	/* Create eight copies of the byte for which we are looking. */
+-	const uint64_t goal = 0x0101010101010101ULL * (uint8_t) c;
++	const uint64_t goal = copy_byte(c);
+ 
+ 	/* Read the first aligned word, but force bytes before the string to
+ 	 * match neither zero nor goal (we make sure the high bit of each
+diff --git a/arch/tile/lib/string-endian.h b/arch/tile/lib/string-endian.h
+index c0eed7c..2e49cbf 100644
+--- a/arch/tile/lib/string-endian.h
++++ b/arch/tile/lib/string-endian.h
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright 2011 Tilera Corporation. All Rights Reserved.
++ * Copyright 2013 Tilera Corporation. All Rights Reserved.
+  *
+  *   This program is free software; you can redistribute it and/or
+  *   modify it under the terms of the GNU General Public License
+@@ -31,3 +31,14 @@
+ #define CFZ(x) __insn_clz(x)
+ #define REVCZ(x) __insn_ctz(x)
+ #endif
++
++/*
++ * Create eight copies of the byte in a uint64_t.  Byte Shuffle uses
++ * the bytes of srcB as the index into the dest vector to select a
++ * byte.  With all indices of zero, the first byte is copied into all
++ * the other bytes.
++ */
++static inline uint64_t copy_byte(uint8_t byte)
++{
++	return __insn_shufflebytes(byte, 0, 0);
++}
+diff --git a/arch/tile/lib/strlen_32.c b/arch/tile/lib/strlen_32.c
+index 4974292..f26f88e 100644
+--- a/arch/tile/lib/strlen_32.c
++++ b/arch/tile/lib/strlen_32.c
+@@ -16,8 +16,6 @@
+ #include <linux/string.h>
+ #include <linux/module.h>
+ 
+-#undef strlen
+-
+ size_t strlen(const char *s)
+ {
+ 	/* Get an aligned pointer. */
 -- 
-1.7.11.7
+1.8.3.1
 
