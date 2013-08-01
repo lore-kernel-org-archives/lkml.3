@@ -1,215 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754134Ab3HADsx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 23:48:53 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:53715 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754089Ab3HADsl (ORCPT
+	id S1754114Ab3HADtb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 23:49:31 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:49474 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753634Ab3HADta (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 23:48:41 -0400
-Message-ID: <51F9DA94.20503@hitachi.com>
-Date: Thu, 01 Aug 2013 12:48:36 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Wed, 31 Jul 2013 23:49:30 -0400
+Message-ID: <51F9DAC5.2000106@felipetonello.com>
+Date: Wed, 31 Jul 2013 20:49:25 -0700
+From: Felipe Ferreri Tonello <eu@felipetonello.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: Re: [RFC][PATCH 3/4] tracing/kprobes: Fail to unregister if
- probe event files are open
-References: <20130704033347.807661713@goodmis.org>  <20130704034038.819592356@goodmis.org>  <1375300192.5418.17.camel@gandalf.local.home>  <20130731204003.GA30188@redhat.com>  <1375310548.5418.21.camel@gandalf.local.home>  <1375322866.5418.46.camel@gandalf.local.home> <1375325414.5418.50.camel@gandalf.local.home>
-In-Reply-To: <1375325414.5418.50.camel@gandalf.local.home>
-Content-Type: text/plain; charset=UTF-8
+To: Takashi Iwai <tiwai@suse.de>
+CC: Mark Brown <broonie@kernel.org>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org,
+        David Henningsson <david.henningsson@canonical.com>,
+        Wang Xingchao <xingchao.wang@linux.intel.com>,
+        Jaroslav Kysela <perex@perex.cz>
+Subject: Re: [PATCH 1/4] ALSA: Added jack detection kcontrol support
+References: <1374863133-6745-1-git-send-email-eu@felipetonello.com> <1374863133-6745-2-git-send-email-eu@felipetonello.com> <20130726185458.GX9858@sirena.org.uk> <CAGrhNMy7qZ8CbAjFX5Gv8OqYkit+Eqzr2zZTYXeQ-cNO22+pTQ@mail.gmail.com> <20130726224813.GB9858@sirena.org.uk> <CAGrhNMwGdMwhd5L2gGxQ=N=8nFk4L5txYmhEtLBVcFj-Etphnw@mail.gmail.com> <20130727122524.GH9858@sirena.org.uk> <s5hfvuxfu5b.wl%tiwai@suse.de>
+In-Reply-To: <s5hfvuxfu5b.wl%tiwai@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/08/01 11:50), Steven Rostedt wrote:
-> Here's the new change log, but the same patch. Does this sound ok to you
-> guys?
+Hi Takashi,
 
-Great! This looks good for me. ;)
+On 07/29/2013 05:05 AM, Takashi Iwai wrote:
+> At Sat, 27 Jul 2013 13:25:24 +0100,
+> Mark Brown wrote:
+>>
+>> On Fri, Jul 26, 2013 at 04:13:40PM -0700, Felipe Tonello wrote:
+>>> On Fri, Jul 26, 2013 at 3:48 PM, Mark Brown <broonie@kernel.org> wrote:
+>>
+>>>>>> What I'd expect to happen here is that for multi function jacks we
+>>>>>> create a control per function if the controls are valid.
+>>
+>>> Ok, so the idea is just to change the control to type integer instead
+>>> of boolean, right?
+>>> Because as you say, the user will be able to check the type of jack
+>>> based on the status value, right?
+>>
+>> It might be more idiomatic and more compatible with userspace to create
+>> multiple controls for the jack, there was some discussion of this in the
+>> past I think but I can't remember the result.
+>
+> I also forget the end result :)
+>
+> Another option would be to make an enum control, but multiple boolean
+> controls are easier in the end.  The headset controls of HD-audio are
+> represented in that way, too (because HD-audio specification can't
+> tell better).
 
-Thank you very much!
+Yes. Thanks for the comment.
 
-> 
-> -- Steve
-> 
->>From 40c32592668b727cbfcf7b1c0567f581bd62a5e4 Mon Sep 17 00:00:00 2001
-> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
-> Date: Wed, 3 Jul 2013 23:33:50 -0400
-> Subject: [PATCH] tracing/kprobes: Fail to unregister if probe event files are
->  in use
-> 
-> When a probe is being removed, it cleans up the event files that correspond
-> to the probe. But there is a race between writing to one of these files
-> and deleting the probe. This is especially true for the "enable" file.
-> 
-> 	CPU 0				CPU 1
-> 	-----				-----
-> 
-> 				  fd = open("enable",O_WRONLY);
-> 
->   probes_open()
->   release_all_trace_probes()
->   unregister_trace_probe()
->   if (trace_probe_is_enabled(tp))
-> 	return -EBUSY
-> 
-> 				   write(fd, "1", 1)
-> 				   __ftrace_set_clr_event()
-> 				   call->class->reg()
-> 				    (kprobe_register)
-> 				     enable_trace_probe(tp)
-> 
->   __unregister_trace_probe(tp);
->   list_del(&tp->list)
->   unregister_probe_event(tp) <-- fails!
->   free_trace_probe(tp)
-> 
-> 				   write(fd, "0", 1)
-> 				   __ftrace_set_clr_event()
-> 				   call->class->unreg
-> 				    (kprobe_register)
-> 				    disable_trace_probe(tp) <-- BOOM!
-> 
-> A test program was written that used two threads to simulate the
-> above scenario adding a nanosleep() interval to change the timings
-> and after several thousand runs, it was able to trigger this bug
-> and crash:
-> 
-> BUG: unable to handle kernel paging request at 00000005000000f9
-> IP: [<ffffffff810dee70>] probes_open+0x3b/0xa7
-> PGD 7808a067 PUD 0
-> Oops: 0000 [#1] PREEMPT SMP
-> Dumping ftrace buffer:
-> ---------------------------------
-> Modules linked in: ipt_MASQUERADE sunrpc ip6t_REJECT nf_conntrack_ipv6
-> CPU: 1 PID: 2070 Comm: test-kprobe-rem Not tainted 3.11.0-rc3-test+ #47
-> Hardware name: To Be Filled By O.E.M. To Be Filled By O.E.M./To be filled by O.E.M., BIOS SDBLI944.86P 05/08/2007
-> task: ffff880077756440 ti: ffff880076e52000 task.ti: ffff880076e52000
-> RIP: 0010:[<ffffffff810dee70>]  [<ffffffff810dee70>] probes_open+0x3b/0xa7
-> RSP: 0018:ffff880076e53c38  EFLAGS: 00010203
-> RAX: 0000000500000001 RBX: ffff88007844f440 RCX: 0000000000000003
-> RDX: 0000000000000003 RSI: 0000000000000003 RDI: ffff880076e52000
-> RBP: ffff880076e53c58 R08: ffff880076e53bd8 R09: 0000000000000000
-> R10: ffff880077756440 R11: 0000000000000006 R12: ffffffff810dee35
-> R13: ffff880079250418 R14: 0000000000000000 R15: ffff88007844f450
-> FS:  00007f87a276f700(0000) GS:ffff88007d480000(0000) knlGS:0000000000000000
-> CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> CR2: 00000005000000f9 CR3: 0000000077262000 CR4: 00000000000007e0
-> Stack:
->  ffff880076e53c58 ffffffff81219ea0 ffff88007844f440 ffffffff810dee35
->  ffff880076e53ca8 ffffffff81130f78 ffff8800772986c0 ffff8800796f93a0
->  ffffffff81d1b5d8 ffff880076e53e04 0000000000000000 ffff88007844f440
-> Call Trace:
->  [<ffffffff81219ea0>] ? security_file_open+0x2c/0x30
->  [<ffffffff810dee35>] ? unregister_trace_probe+0x4b/0x4b
->  [<ffffffff81130f78>] do_dentry_open+0x162/0x226
->  [<ffffffff81131186>] finish_open+0x46/0x54
->  [<ffffffff8113f30b>] do_last+0x7f6/0x996
->  [<ffffffff8113cc6f>] ? inode_permission+0x42/0x44
->  [<ffffffff8113f6dd>] path_openat+0x232/0x496
->  [<ffffffff8113fc30>] do_filp_open+0x3a/0x8a
->  [<ffffffff8114ab32>] ? __alloc_fd+0x168/0x17a
->  [<ffffffff81131f4e>] do_sys_open+0x70/0x102
->  [<ffffffff8108f06e>] ? trace_hardirqs_on_caller+0x160/0x197
->  [<ffffffff81131ffe>] SyS_open+0x1e/0x20
->  [<ffffffff81522742>] system_call_fastpath+0x16/0x1b
-> Code: e5 41 54 53 48 89 f3 48 83 ec 10 48 23 56 78 48 39 c2 75 6c 31 f6 48 c7
-> RIP  [<ffffffff810dee70>] probes_open+0x3b/0xa7
->  RSP <ffff880076e53c38>
-> CR2: 00000005000000f9
-> ---[ end trace 35f17d68fc569897 ]---
-> 
-> The unregister_trace_probe() must be done first, and if it fails it must
-> fail the removal of the kprobe.
-> 
-> Several changes have already been made by Oleg Nesterov and Masami Hiramatsu
-> to allow moving the unregister_probe_event() before the removal of
-> the probe and exit the function if it fails. This prevents the tp
-> structure from being used after it is freed.
-> 
-> Link: http://lkml.kernel.org/r/20130704034038.819592356@goodmis.org
-> 
-> Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> ---
->  kernel/trace/trace_kprobe.c | 21 +++++++++++++++------
->  1 file changed, 15 insertions(+), 6 deletions(-)
-> 
-> diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-> index 3811487..243f683 100644
-> --- a/kernel/trace/trace_kprobe.c
-> +++ b/kernel/trace/trace_kprobe.c
-> @@ -95,7 +95,7 @@ static __kprobes bool trace_probe_is_on_module(struct trace_probe *tp)
->  }
->  
->  static int register_probe_event(struct trace_probe *tp);
-> -static void unregister_probe_event(struct trace_probe *tp);
-> +static int unregister_probe_event(struct trace_probe *tp);
->  
->  static DEFINE_MUTEX(probe_lock);
->  static LIST_HEAD(probe_list);
-> @@ -351,9 +351,12 @@ static int unregister_trace_probe(struct trace_probe *tp)
->  	if (trace_probe_is_enabled(tp))
->  		return -EBUSY;
->  
-> +	/* Will fail if probe is being used by ftrace or perf */
-> +	if (unregister_probe_event(tp))
-> +		return -EBUSY;
-> +
->  	__unregister_trace_probe(tp);
->  	list_del(&tp->list);
-> -	unregister_probe_event(tp);
->  
->  	return 0;
->  }
-> @@ -632,7 +635,9 @@ static int release_all_trace_probes(void)
->  	/* TODO: Use batch unregistration */
->  	while (!list_empty(&probe_list)) {
->  		tp = list_entry(probe_list.next, struct trace_probe, list);
-> -		unregister_trace_probe(tp);
-> +		ret = unregister_trace_probe(tp);
-> +		if (ret)
-> +			goto end;
->  		free_trace_probe(tp);
->  	}
->  
-> @@ -1247,11 +1252,15 @@ static int register_probe_event(struct trace_probe *tp)
->  	return ret;
->  }
->  
-> -static void unregister_probe_event(struct trace_probe *tp)
-> +static int unregister_probe_event(struct trace_probe *tp)
->  {
-> +	int ret;
-> +
->  	/* tp->event is unregistered in trace_remove_event_call() */
-> -	trace_remove_event_call(&tp->call);
-> -	kfree(tp->call.print_fmt);
-> +	ret = trace_remove_event_call(&tp->call);
-> +	if (!ret)
-> +		kfree(tp->call.print_fmt);
-> +	return ret;
->  }
->  
->  /* Make a debugfs interface for controlling probe points */
-> 
-
-
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+Felipe Tonello
