@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757792Ab3HATfv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 15:35:51 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:21420 "EHLO
+	id S1757570Ab3HATfb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 15:35:31 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:21416 "EHLO
 	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757635Ab3HATfl (ORCPT
+	with ESMTP id S1754478Ab3HATf3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 15:35:41 -0400
-Message-ID: <b7ed5023c15e0044201d95921fef1f909d35dd32.1375385120.git.cmetcalf@tilera.com>
+	Thu, 1 Aug 2013 15:35:29 -0400
+Message-ID: <d23deb61e02777735600b34e6583dab8c3436c00.1375385120.git.cmetcalf@tilera.com>
 In-Reply-To: <cover.1375385119.git.cmetcalf@tilera.com>
 References: <20130801.113100.2059303096028571906.davem@davemloft.net>
 	<cover.1375385119.git.cmetcalf@tilera.com>
 From: Chris Metcalf <cmetcalf@tilera.com>
 Date: Thu, 1 Aug 2013 11:36:42 -0400
-Subject: [PATCH v3 08/13] tile: enable GRO in the tilegx network driver
+Subject: [PATCH v3 04/13] tile: remove dead is_dup_ack() function from tilepro net driver
 To: <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -23,22 +23,103 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 ---
- drivers/net/ethernet/tile/tilegx.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/ethernet/tile/tilepro.c | 76 -------------------------------------
+ 1 file changed, 76 deletions(-)
 
-diff --git a/drivers/net/ethernet/tile/tilegx.c b/drivers/net/ethernet/tile/tilegx.c
-index 17bcf33..2b1c31f 100644
---- a/drivers/net/ethernet/tile/tilegx.c
-+++ b/drivers/net/ethernet/tile/tilegx.c
-@@ -422,7 +422,7 @@ static void tile_net_receive_skb(struct net_device *dev, struct sk_buff *skb,
- 	if (idesc->cs && idesc->csum_seed_val == 0xFFFF)
- 		skb->ip_summed = CHECKSUM_UNNECESSARY;
+diff --git a/drivers/net/ethernet/tile/tilepro.c b/drivers/net/ethernet/tile/tilepro.c
+index 2f4b7b9..fd17af5 100644
+--- a/drivers/net/ethernet/tile/tilepro.c
++++ b/drivers/net/ethernet/tile/tilepro.c
+@@ -89,9 +89,6 @@
+ /* ISSUE: This has not been thoroughly tested (except at 1500). */
+ #define TILE_NET_MTU 1500
  
--	netif_receive_skb(skb);
-+	napi_gro_receive(&info->napi, skb);
+-/* Define this to collapse "duplicate" acks. */
+-/* #define IGNORE_DUP_ACKS */
+-
+ /* HACK: Define this to verify incoming packets. */
+ /* #define TILE_NET_VERIFY_INGRESS */
  
- 	/* Update stats. */
- 	tile_net_stats_add(1, &dev->stats.rx_packets);
+@@ -625,79 +622,6 @@ static void tile_net_handle_egress_timer(unsigned long arg)
+ }
+ 
+ 
+-#ifdef IGNORE_DUP_ACKS
+-
+-/*
+- * Help detect "duplicate" ACKs.  These are sequential packets (for a
+- * given flow) which are exactly 66 bytes long, sharing everything but
+- * ID=2@0x12, Hsum=2@0x18, Ack=4@0x2a, WinSize=2@0x30, Csum=2@0x32,
+- * Tstamps=10@0x38.  The ID's are +1, the Hsum's are -1, the Ack's are
+- * +N, and the Tstamps are usually identical.
+- *
+- * NOTE: Apparently truly duplicate acks (with identical "ack" values),
+- * should not be collapsed, as they are used for some kind of flow control.
+- */
+-static bool is_dup_ack(char *s1, char *s2, unsigned int len)
+-{
+-	int i;
+-
+-	unsigned long long ignorable = 0;
+-
+-	/* Identification. */
+-	ignorable |= (1ULL << 0x12);
+-	ignorable |= (1ULL << 0x13);
+-
+-	/* Header checksum. */
+-	ignorable |= (1ULL << 0x18);
+-	ignorable |= (1ULL << 0x19);
+-
+-	/* ACK. */
+-	ignorable |= (1ULL << 0x2a);
+-	ignorable |= (1ULL << 0x2b);
+-	ignorable |= (1ULL << 0x2c);
+-	ignorable |= (1ULL << 0x2d);
+-
+-	/* WinSize. */
+-	ignorable |= (1ULL << 0x30);
+-	ignorable |= (1ULL << 0x31);
+-
+-	/* Checksum. */
+-	ignorable |= (1ULL << 0x32);
+-	ignorable |= (1ULL << 0x33);
+-
+-	for (i = 0; i < len; i++, ignorable >>= 1) {
+-
+-		if ((ignorable & 1) || (s1[i] == s2[i]))
+-			continue;
+-
+-#ifdef TILE_NET_DEBUG
+-		/* HACK: Mention non-timestamp diffs. */
+-		if (i < 0x38 && i != 0x2f &&
+-		    net_ratelimit())
+-			pr_info("Diff at 0x%x\n", i);
+-#endif
+-
+-		return false;
+-	}
+-
+-#ifdef TILE_NET_NO_SUPPRESS_DUP_ACKS
+-	/* HACK: Do not suppress truly duplicate ACKs. */
+-	/* ISSUE: Is this actually necessary or helpful? */
+-	if (s1[0x2a] == s2[0x2a] &&
+-	    s1[0x2b] == s2[0x2b] &&
+-	    s1[0x2c] == s2[0x2c] &&
+-	    s1[0x2d] == s2[0x2d]) {
+-		return false;
+-	}
+-#endif
+-
+-	return true;
+-}
+-
+-#endif
+-
+-
+-
+ static void tile_net_discard_aux(struct tile_net_cpu *info, int index)
+ {
+ 	struct tile_netio_queue *queue = &info->queue;
 -- 
 1.8.3.1
 
