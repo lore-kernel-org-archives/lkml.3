@@ -1,119 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756689Ab3HAOHG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 10:07:06 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:56926 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756346Ab3HAOFd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 10:05:33 -0400
-From: Roger Quadros <rogerq@ti.com>
-To: <balbi@ti.com>
-CC: <tony@atomide.com>, <kishon@ti.com>, <george.cherian@ti.com>,
-        <dmurphy@ti.com>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Roger Quadros <rogerq@ti.com>
-Subject: [PATCH 5/7] usb: phy: omap: get rid of omap_get_control_dev()
-Date: Thu, 1 Aug 2013 17:05:13 +0300
-Message-ID: <1375365915-21380-6-git-send-email-rogerq@ti.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1375365915-21380-1-git-send-email-rogerq@ti.com>
-References: <1375365915-21380-1-git-send-email-rogerq@ti.com>
+	id S1756298Ab3HAOHi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 10:07:38 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:48893 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752452Ab3HAOHd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 10:07:33 -0400
+Date: Thu, 1 Aug 2013 17:07:06 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Sourav Poddar <sourav.poddar@ti.com>
+CC: <broonie@kernel.org>, <spi-devel-general@lists.sourceforge.net>,
+        <grant.likely@linaro.org>, <balbi@ti.com>, <rnayak@ti.com>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv8 1/2] drivers: spi: Add qspi flash controller
+Message-ID: <20130801140706.GT7918@radagast>
+Reply-To: <balbi@ti.com>
+References: <1375365602-31321-1-git-send-email-sourav.poddar@ti.com>
+ <1375365602-31321-2-git-send-email-sourav.poddar@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Zd8I2GZVcdxtyaG/"
+Content-Disposition: inline
+In-Reply-To: <1375365602-31321-2-git-send-email-sourav.poddar@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This function was preventing us from supporting multiple
-instances. Get rid of it. Since we support DT boots only,
-users can get the control device phandle from the DT node.
+--Zd8I2GZVcdxtyaG/
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Roger Quadros <rogerq@ti.com>
----
- drivers/usb/phy/phy-omap-control.c   |   31 ++++++++++---------------------
- include/linux/usb/omap_control_usb.h |    5 -----
- 2 files changed, 10 insertions(+), 26 deletions(-)
+Hi,
 
-diff --git a/drivers/usb/phy/phy-omap-control.c b/drivers/usb/phy/phy-omap-control.c
-index cf93c5a..015eeef 100644
---- a/drivers/usb/phy/phy-omap-control.c
-+++ b/drivers/usb/phy/phy-omap-control.c
-@@ -25,26 +25,6 @@
- #include <linux/clk.h>
- #include <linux/usb/omap_control_usb.h>
- 
--static struct omap_control_usb *control_usb;
--
--/**
-- * omap_get_control_dev - returns the device pointer for this control device
-- *
-- * This API should be called to get the device pointer for this control
-- * module device. This device pointer should be used for called other
-- * exported API's in this driver.
-- *
-- * To be used by PHY driver and glue driver.
-- */
--struct device *omap_get_control_dev(void)
--{
--	if (!control_usb)
--		return ERR_PTR(-ENODEV);
--
--	return control_usb->dev;
--}
--EXPORT_SYMBOL_GPL(omap_get_control_dev);
--
- /**
-  * omap_control_usb_phy_power - power on/off the phy using control module reg
-  * @dev: the control module device
-@@ -187,11 +167,19 @@ void omap_control_usb_set_mode(struct device *dev,
- {
- 	struct omap_control_usb	*ctrl_usb;
- 
--	if (IS_ERR(dev) || control_usb->type != OMAP_CTRL_DEV_TYPE1)
-+	if (IS_ERR(dev) || !dev)
- 		return;
- 
- 	ctrl_usb = dev_get_drvdata(dev);
- 
-+	if (!ctrl_usb) {
-+		dev_err(dev, "Invalid control usb device\n");
-+		return;
-+	}
-+
-+	if (ctrl_usb->type != OMAP_CTRL_DEV_TYPE1)
-+		return;
-+
- 	switch (mode) {
- 	case USB_MODE_HOST:
- 		omap_control_usb_host_mode(ctrl_usb);
-@@ -214,6 +202,7 @@ static int omap_control_usb_probe(struct platform_device *pdev)
- 	struct device_node *np = pdev->dev.of_node;
- 	struct omap_control_usb_platform_data *pdata =
- 			dev_get_platdata(&pdev->dev);
-+	struct omap_control_usb *control_usb;
- 
- 	control_usb = devm_kzalloc(&pdev->dev, sizeof(*control_usb),
- 		GFP_KERNEL);
-diff --git a/include/linux/usb/omap_control_usb.h b/include/linux/usb/omap_control_usb.h
-index 7f027d3..8b48584 100644
---- a/include/linux/usb/omap_control_usb.h
-+++ b/include/linux/usb/omap_control_usb.h
-@@ -67,15 +67,10 @@ enum omap_control_usb_mode {
- #define OMAP_CTRL_USB2_PHY_PD		BIT(28)
- 
- #if IS_ENABLED(CONFIG_OMAP_CONTROL_USB)
--extern struct device *omap_get_control_dev(void);
- extern void omap_control_usb_phy_power(struct device *dev, int on);
- extern void omap_control_usb_set_mode(struct device *dev,
- 	enum omap_control_usb_mode mode);
- #else
--static inline struct device *omap_get_control_dev(void)
--{
--	return ERR_PTR(-ENODEV);
--}
- 
- static inline void omap_control_usb_phy_power(struct device *dev, int on)
- {
--- 
-1.7.4.1
+On Thu, Aug 01, 2013 at 07:30:01PM +0530, Sourav Poddar wrote:
+> +static int ti_qspi_setup(struct spi_device *spi)
+> +{
 
+[snip]
+
+> +	pm_runtime_mark_last_busy(qspi->dev);
+> +	ret =3D pm_runtime_put_autosuspend(qspi->dev);
+> +	if (ret < 0) {
+> +		dev_err(qspi->dev, "pm_runtime_get_sync() failed\n");
+
+wrong error message.
+
+> +static int qspi_transfer_msg(struct ti_qspi *qspi, struct spi_transfer *=
+t)
+> +{
+> +	int ret;
+> +
+> +	if (t->tx_buf) {
+> +		ret =3D qspi_write_msg(qspi, t);
+> +		if (ret) {
+> +			dev_dbg(qspi->dev, "Error while writing\n");
+> +			return -ETIMEDOUT;
+
+return ret;
+
+> +		}
+> +	}
+> +
+> +	if (t->rx_buf) {
+> +		ret =3D qspi_read_msg(qspi, t);
+> +		if (ret) {
+> +			dev_dbg(qspi->dev, "Error while writing\n");
+> +			return -ETIMEDOUT;
+
+return ret;
+
+--=20
+balbi
+
+--Zd8I2GZVcdxtyaG/
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR+muKAAoJEIaOsuA1yqREbksP/2eGxzCF6eL9Pp7mrV+lmLUo
+QlUUwHecFFkRK+eN/OvEq0PJtWTDoNUtKOj+au3PhIWFndj11vwSY8CYotsMvBoj
+S9XLjV8gD7tMqun74dqZ8GAV+tvX+0iI9hHrX++KcuQlqnMcSqYfL4fDMiZc0fNy
+mAq/LHN4iaHISxOYiqEmKhK5mFvaYT1Muc8W0uD2Eqqyck6d3hAWN9xJmCMbXIFo
+1FqCsLwL9XRDLHYexDPZVYGUqo0igwlRcrBANozpR8NtqTDX22hXfPsrdzXJ73UL
+9LP1yP638w7UB4UE++E5pMj+yp4W1CgM9RVeJMgPV7Y9W2ZFo5ayLhfSqbpB52ft
+waluXiO8QphOczIdhKvsPwYEAgqQzFaCKdNrScWpO0zgNtQPgEMTWzdOKtt73Zrx
+twjoLPhUjc7QaSyuoW5TqlJskp1iXhkgeBEQTWL+huFrxJbLC++K2pZX3xaay/Xe
+vRqDsL5tNjxhafT09kKVSo7Y2ytsVPFJAyY6CiW9NqIX0uDThf2uBlOk86q8C4uZ
+9poODj8mF1H8WqP+Iy4WpYPi2nxTvq9wn2e+wZc5s7GA1pdUsQvOiFcUXUzY0eSv
+p+3/v6czY3Zu7yauYMrizPFEAQRRnT6mF/Wo9MoiyBCFDQU2pKSt6UW/sUZqojjr
+XA8yp6k6SZFKxLFIHl2H
+=NR8W
+-----END PGP SIGNATURE-----
+
+--Zd8I2GZVcdxtyaG/--
