@@ -1,88 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753924Ab3HAHbV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 03:31:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42239 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753778Ab3HAHbS (ORCPT
+	id S1753915Ab3HAHbk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 03:31:40 -0400
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:54096 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753734Ab3HAHbf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 03:31:18 -0400
-Date: Thu, 1 Aug 2013 11:12:01 +0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Kees Cook <keescook@chromium.org>
-Cc: PaX Team <pageexec@gmail.com>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: x86: Make sure IDT is page aligned
-Message-ID: <20130801031201.GA2324@kroah.com>
-References: <20130719011526.15FA46608B1@gitolite.kernel.org>
- <20130719013011.GA2446@kroah.com>
- <CAGXu5jKF9Ds6Mjs2knPqh2V5KH0Ahr97geip8xosp_5m=3hB4A@mail.gmail.com>
- <20130719015055.GA16577@kroah.com>
+	Thu, 1 Aug 2013 03:31:35 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130719015055.GA16577@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CACRpkdYwNoqQieinZ0Vyji-hsY0UqTHMDSgCL6Y-7M0bxQHPwQ@mail.gmail.com>
+References: <1373972146-12133-1-git-send-email-sonic.adi@gmail.com>
+	<CAJxxZ0OXC46Xcgb+_g00D0NJ_NiHE0eQm+Dg6ze1_93mZqkQPw@mail.gmail.com>
+	<CACRpkdYwNoqQieinZ0Vyji-hsY0UqTHMDSgCL6Y-7M0bxQHPwQ@mail.gmail.com>
+Date: Thu, 1 Aug 2013 15:31:34 +0800
+Message-ID: <CAJxxZ0NHVRzHcFqy6V5_MzbRS9Dz8R5eLp6Oz+DF6SYLWB8r8w@mail.gmail.com>
+Subject: Re: [PATCH 1/3] pinctrl: ADI PIN control driver for the GPIO
+ controller on bf54x and bf60x.
+From: Sonic Zhang <sonic.adi@gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Grant Likely <grant.likely@linaro.org>, Steven Miao <realmz6@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        adi-buildroot-devel@lists.sourceforge.net,
+        Sonic Zhang <sonic.zhang@analog.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 18, 2013 at 06:50:55PM -0700, Greg KH wrote:
-> On Thu, Jul 18, 2013 at 06:36:07PM -0700, Kees Cook wrote:
-> > On Thu, Jul 18, 2013 at 6:30 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > > On Fri, Jul 19, 2013 at 01:15:26AM +0000, Linux Kernel Mailing List wrote:
-> > >> Gitweb:     http://git.kernel.org/linus/;a=commit;h=4df05f361937ee86e5a8c9ead8aeb6a19ea9b7d7
-> > >> Commit:     4df05f361937ee86e5a8c9ead8aeb6a19ea9b7d7
-> > >> Parent:     5ff560fd48d5b3d82fa0c3aff625c9da1a301911
-> > >> Author:     Kees Cook <keescook@chromium.org>
-> > >> AuthorDate: Tue Jul 16 11:34:41 2013 -0700
-> > >> Committer:  H. Peter Anvin <hpa@linux.intel.com>
-> > >> CommitDate: Tue Jul 16 15:14:48 2013 -0700
-> > >>
-> > >>     x86: Make sure IDT is page aligned
-> > >>
-> > >>     Since the IDT is referenced from a fixmap, make sure it is page aligned.
-> > >>     Merge with 32-bit one, since it was already aligned to deal with F00F
-> > >>     bug. Since bss is cleared before IDT setup, it can live there. This also
-> > >>     moves the other *_idt_table variables into common locations.
-> > >>
-> > >>     This avoids the risk of the IDT ever being moved in the bss and having
-> > >>     the mapping be offset, resulting in calling incorrect handlers. In the
-> > >>     current upstream kernel this is not a manifested bug, but heavily patched
-> > >>     kernels (such as those using the PaX patch series) did encounter this bug.
-> > >>
-> > >>     The tables other than idt_table technically do not need to be page
-> > >>     aligned, at least not at the current time, but using a common
-> > >>     declaration avoids mistakes.  On 64 bits the table is exactly one page
-> > >>     long, anyway.
-> > >>
-> > >>     Signed-off-by: Kees Cook <keescook@chromium.org>
-> > >>     Link: http://lkml.kernel.org/r/20130716183441.GA14232@www.outflux.net
-> > >>     Reported-by: PaX Team <pageexec@gmail.com>
-> > >>     Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-> > >> ---
-> > >>  arch/x86/kernel/head_64.S    |   15 ---------------
-> > >>  arch/x86/kernel/tracepoint.c |    6 ++----
-> > >>  arch/x86/kernel/traps.c      |   12 ++++++------
-> > >>  3 files changed, 8 insertions(+), 25 deletions(-)
-> > >
-> > > This patch is now in Linus's tree.  Kees, did you also want this in the
-> > > -stable tree(s)?
-> > 
-> > The potential problem was introduced with
-> > 4eefbe792baedb474e256d35370849992fcf1c79, so 3.10 needs it, yes. I had
-> > also sent a much smaller version here:
-> > http://git.kernel.org/cgit/linux/kernel/git/kees/linux.git/commit/?h=idt-stable&id=794c1e0df641e13050cfc4af340fc3c85bed4ea3
-> > 
-> > Either will address the problem. If there is no problem with taking
-> > the larger clean-up for stable, then that's probably easiest.
-> 
-> I'd prefer to stick with what ended up in Linus's tree, so I'll just
-> queue this one up in a future stable 3.10 release, thanks.
+Hi Linus,
 
-I ended up taking the smaller version, as this one doesn't apply to
-3.10, you were right in the beginning :)
+On Tue, Jul 30, 2013 at 12:47 AM, Linus Walleij
+<linus.walleij@linaro.org> wrote:
+> On Fri, Jul 26, 2013 at 6:57 AM, Sonic Zhang <sonic.adi@gmail.com> wrote:
+>
+>> Could you please comment on this patch set? It is based on your former comments.
+>
+> I'll get to it. I'm pretty choked right now and actually trying to have
+> some vacation at the same time.
+>
+> In the meantime, after glancing over and noting prolific use of the
+> unlikely() macro, please read the following articles:
+> http://lwn.net/Articles/70473/
+> http://lwn.net/Articles/420019/
+>
 
-thanks,
+These articles say the directives should be rarely used. Do you
+suggest to remove them from the patch?
 
-greg k-h
+Regards,
+
+Sonic
