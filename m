@@ -1,153 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753268Ab3HAAl0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 20:41:26 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:50505 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752151Ab3HAAbx (ORCPT
+	id S1753445Ab3HAAlm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Jul 2013 20:41:42 -0400
+Received: from mail-ve0-f176.google.com ([209.85.128.176]:43209 "EHLO
+	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752178Ab3HAAlk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 20:31:53 -0400
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>, Borislav Petkov <bp@alien8.de>,
-        Li Zhong <zhong@linux.vnet.ibm.com>, Mike Galbraith <efault@gmx.de>,
-        Kevin Hilman <khilman@linaro.org>
-Subject: [PATCH 04/23] context_tracking: Fix runtime CPU off-case
-Date: Thu,  1 Aug 2013 02:31:21 +0200
-Message-Id: <1375317100-20651-5-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1375317100-20651-1-git-send-email-fweisbec@gmail.com>
-References: <1375317100-20651-1-git-send-email-fweisbec@gmail.com>
+	Wed, 31 Jul 2013 20:41:40 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAPM31R+BiTiLbNrD+33q31z8Ww7dpm7t1vcLak-hZ-z5L2PY-g@mail.gmail.com>
+References: <20130731174335.006a58f9@annuminas.surriel.com>
+	<CA+55aFx3ZHZrgP3yQwb=ttYUeH1zFVQtUA5dFW1h8FPhjfKgUA@mail.gmail.com>
+	<51F98CAB.80100@redhat.com>
+	<CA+55aFwj+6P4y8MgGTGbiK_EtfY7LJ_bL_7k9zFYLx4S8F0rJQ@mail.gmail.com>
+	<51F99218.4060104@redhat.com>
+	<CA+55aFxKSEHSkdsCkTvjwwo4MnEpN0TwJrek2jd1QJCyUTb-=Q@mail.gmail.com>
+	<51F999DE.7080200@redhat.com>
+	<CAPM31R+BiTiLbNrD+33q31z8Ww7dpm7t1vcLak-hZ-z5L2PY-g@mail.gmail.com>
+Date: Wed, 31 Jul 2013 17:41:39 -0700
+X-Google-Sender-Auth: CLfA9D5wO04Im8RTly_d_2dh5hE
+Message-ID: <CA+55aFwTNQFFJbeP4bYuMBREq=n6GU2vV71ftr_7OnE6SK5OSw@mail.gmail.com>
+Subject: Re: [PATCH] sched,x86: optimize switch_mm for multi-threaded workloads
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Paul Turner <pjt@google.com>
+Cc: Rik van Riel <riel@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        jmario@redhat.com, Peter Anvin <hpa@zytor.com>, dzickus@redhat.com,
+        Ingo Molnar <mingo@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As long as the context tracking is enabled on any CPU, even
-a single one, all other CPUs need to keep track of their
-user <-> kernel boundaries cross as well.
+On Wed, Jul 31, 2013 at 4:14 PM, Paul Turner <pjt@google.com> wrote:
+> We attached the following explanatory comment to our version of the patch:
+>
+> /*
+> * In the common case (two user threads sharing mm
+> * switching) the bit will be set; avoid doing a write
+> * (via atomic test & set) unless we have to.  This is
+> * safe, because no other CPU ever writes to our bit
+> * in the mask, and interrupts are off (so we can't
+> * take a TLB IPI here.)  If we don't do this, then
+> * switching threads will pingpong the cpumask
+> * cacheline.
+> */
 
-This is because a task can sleep while servicing an exception
-that happened in the kernel or in userspace. Then when the task
-eventually wakes up and return from the exception, the CPU needs
-to know if we resume in userspace or in the kernel. exception_exit()
-get this information from exception_enter() that saved the previous
-state.
+So as mentioned, the "interrupts will be off" is actually dubious.
+It's true for the context switch case, but not for the activate_mm().
 
-If the CPU where the exception happened didn't keep track of
-these informations, exception_exit() doesn't know which state
-tracking to restore on the CPU where the task got migrated
-and we may return to userspace with the context tracking
-subsystem thinking that we are in kernel mode.
+However, as Rik points out, activate_mm() is different in that we
+shouldn't have any preexisting MMU state anyway. And besides, that
+should never trigger the "prev == next" case.
 
-This can be fixed in the long term if we move our context tracking
-probes on very low level arch fast path user <-> kernel boundary,
-although even that is worrisome as an exception can still happen
-in the few instructions between the probe and the actual iret.
+But it does look a bit messy, and even your comment is a bit
+misleading (it might make somebody think that all of switch_mm() is
+protected from interrupts)
+.
+Anyway, I'm perfectly ok with the patch itself, but I just wanted to
+make sure people had thought about these things.
 
-Also we are not yet ready to set these probes in the fast path given
-the potential overhead problem it induces.
-
-So let's fix this by always enable context tracking even on CPUs
-that are not in the full dynticks range. OTOH we can spare the
-rcu_user_*() and vtime_user_*() calls there because the tick runs
-on these CPUs and we can handle RCU state machine and cputime
-accounting through it.
-
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Borislav Petkov <bp@alien8.de>
-Cc: Li Zhong <zhong@linux.vnet.ibm.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Kevin Hilman <khilman@linaro.org>
----
- kernel/context_tracking.c |   52 ++++++++++++++++++++++++++++----------------
- 1 files changed, 33 insertions(+), 19 deletions(-)
-
-diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
-index 1f47119..7b095de 100644
---- a/kernel/context_tracking.c
-+++ b/kernel/context_tracking.c
-@@ -54,17 +54,31 @@ void user_enter(void)
- 	WARN_ON_ONCE(!current->mm);
- 
- 	local_irq_save(flags);
--	if (__this_cpu_read(context_tracking.active) &&
--	    __this_cpu_read(context_tracking.state) != IN_USER) {
-+	if ( __this_cpu_read(context_tracking.state) != IN_USER) {
-+		if (__this_cpu_read(context_tracking.active)) {
-+			/*
-+			 * At this stage, only low level arch entry code remains and
-+			 * then we'll run in userspace. We can assume there won't be
-+			 * any RCU read-side critical section until the next call to
-+			 * user_exit() or rcu_irq_enter(). Let's remove RCU's dependency
-+			 * on the tick.
-+			 */
-+			vtime_user_enter(current);
-+			rcu_user_enter();
-+		}
- 		/*
--		 * At this stage, only low level arch entry code remains and
--		 * then we'll run in userspace. We can assume there won't be
--		 * any RCU read-side critical section until the next call to
--		 * user_exit() or rcu_irq_enter(). Let's remove RCU's dependency
--		 * on the tick.
-+		 * Even if context tracking is disabled on this CPU, because it's outside
-+		 * the full dynticks mask for example, we still have to keep track of the
-+		 * context transitions and states to prevent inconsistency on those of
-+		 * other CPUs.
-+		 * If a task triggers an exception in userspace, sleep on the exception
-+		 * handler and then migrate to another CPU, that new CPU must know where
-+		 * the exception returns by the time we call exception_exit().
-+		 * This information can only be provided by the previous CPU when it called
-+		 * exception_enter().
-+		 * OTOH we can spare the calls to vtime and RCU when context_tracking.active
-+		 * is false because we know that CPU is not tickless.
- 		 */
--		vtime_user_enter(current);
--		rcu_user_enter();
- 		__this_cpu_write(context_tracking.state, IN_USER);
- 	}
- 	local_irq_restore(flags);
-@@ -130,12 +144,14 @@ void user_exit(void)
- 
- 	local_irq_save(flags);
- 	if (__this_cpu_read(context_tracking.state) == IN_USER) {
--		/*
--		 * We are going to run code that may use RCU. Inform
--		 * RCU core about that (ie: we may need the tick again).
--		 */
--		rcu_user_exit();
--		vtime_user_exit(current);
-+		if (__this_cpu_read(context_tracking.active)) {
-+			/*
-+			 * We are going to run code that may use RCU. Inform
-+			 * RCU core about that (ie: we may need the tick again).
-+			 */
-+			rcu_user_exit();
-+			vtime_user_exit(current);
-+		}
- 		__this_cpu_write(context_tracking.state, IN_KERNEL);
- 	}
- 	local_irq_restore(flags);
-@@ -178,8 +194,6 @@ EXPORT_SYMBOL_GPL(guest_exit);
- void context_tracking_task_switch(struct task_struct *prev,
- 			     struct task_struct *next)
- {
--	if (__this_cpu_read(context_tracking.active)) {
--		clear_tsk_thread_flag(prev, TIF_NOHZ);
--		set_tsk_thread_flag(next, TIF_NOHZ);
--	}
-+	clear_tsk_thread_flag(prev, TIF_NOHZ);
-+	set_tsk_thread_flag(next, TIF_NOHZ);
- }
--- 
-1.7.5.4
-
+                Linus
