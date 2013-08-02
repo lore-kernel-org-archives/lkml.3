@@ -1,111 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758516Ab3HBJUc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 05:20:32 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:37145 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758269Ab3HBJQN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 05:16:13 -0400
-Message-ID: <51FB78D1.6060802@oracle.com>
-Date: Fri, 02 Aug 2013 17:16:01 +0800
-From: Zhenzhong Duan <zhenzhong.duan@oracle.com>
-Reply-To: zhenzhong.duan@oracle.com
-Organization: oracle
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        xen-devel <xen-devel@lists.xen.org>, Feng Jin <joe.jin@oracle.com>,
-        Sucheta Chakraborty <sucheta.chakraborty@qlogic.com>
-Subject: Re: [PATCH 2/3] Refactor msi/msix restore code Part2
-References: <51EF451A.8050003@oracle.com> <CAErSpo5phkLpdR35eaMnYthVXiAAAr-JLD44QkntOZi2-NppOg@mail.gmail.com> <20130801151616.GE21528@konrad-lan.dumpdata.com>
-In-Reply-To: <20130801151616.GE21528@konrad-lan.dumpdata.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	id S1758609Ab3HBJVL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 05:21:11 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:62165 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1758209Ab3HBJQM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 05:16:12 -0400
+X-IronPort-AV: E=Sophos;i="4.89,800,1367942400"; 
+   d="scan'208";a="8098119"
+From: Tang Chen <tangchen@cn.fujitsu.com>
+To: robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl, lenb@kernel.org,
+        tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
+        mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
+        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com
+Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-acpi@vger.kernel.org
+Subject: [PATCH v2 RESEND 06/18] x86, acpi, ACPICA: Initialize ACPI root table list earlier.
+Date: Fri, 2 Aug 2013 17:14:25 +0800
+Message-Id: <1375434877-20704-7-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.10.1
+In-Reply-To: <1375434877-20704-1-git-send-email-tangchen@cn.fujitsu.com>
+References: <1375434877-20704-1-git-send-email-tangchen@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/02 17:14:47,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/02 17:14:52,
+	Serialize complete at 2013/08/02 17:14:52
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+We have split acpi_table_init() into two steps:
+1. Pares RSDT or XSDT, and initialize acpi_gbl_root_table_list.
+   This step will record all tables' physical address in memory.
+2. Check acpi initrd table override and install all tables into
+   acpi_gbl_root_table_list.
 
-On 2013-08-01 23:16, Konrad Rzeszutek Wilk wrote:
-> On Wed, Jul 31, 2013 at 04:41:32PM -0600, Bjorn Helgaas wrote:
->> On Tue, Jul 23, 2013 at 9:08 PM, Zhenzhong Duan
->> <zhenzhong.duan@oracle.com> wrote:
->>> xen_initdom_restore_msi_irqs trigger a hypercall to restore addr/data/mask
->>> in dom0. It's better to do the same for default_restore_msi_irqs in baremetal.
->>>
->>> Move restore of mask in default_restore_msi_irqs, this could avoid mask
->>> restored twice in dom0, once in hypercall, the other in kernel.
->>>
->>> Without that, qlcnic driver calling pci_reset_function will lost interrupt
->>> in dom0.
->>>
->>> Tested-by: Sucheta Chakraborty <sucheta.chakraborty@qlogic.com>
->>> Signed-off-by: Zhenzhong Duan <zhenzhong.duan@oracle.com>
->>> ---
->>>   drivers/pci/msi.c |   17 ++++++++++++++---
->>>   1 files changed, 14 insertions(+), 3 deletions(-)
->>>
->>> diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
->>> index 87223ae..922fb49 100644
->>> --- a/drivers/pci/msi.c
->>> +++ b/drivers/pci/msi.c
->>> @@ -216,6 +216,8 @@ void unmask_msi_irq(struct irq_data *data)
->>>   #ifdef HAVE_DEFAULT_MSI_RESTORE_IRQS
->>>   void default_restore_msi_irqs(struct pci_dev *dev, int irq)
->>>   {
->>> +       int pos;
->>> +       u16 control;
->>>          struct msi_desc *entry;
->>>
->>>          entry = NULL;
->>> @@ -228,8 +230,19 @@ void default_restore_msi_irqs(struct pci_dev *dev, int irq)
->>>                  entry = irq_get_msi_desc(irq);
->>>          }
->>>
->>> -       if (entry)
->>> +       if (entry) {
->>>                  write_msi_msg(irq, &entry->msg);
->>> +               if (dev->msix_enabled) {
->>> +                       msix_mask_irq(entry, entry->masked);
->>> +                       readl(entry->mask_base);
->>> +               } else {
->>> +                       pos = entry->msi_attrib.pos;
->>> +                       pci_read_config_word(dev, pos + PCI_MSI_FLAGS,
->>> +                                            &control);
->>> +                       msi_mask_irq(entry, msi_capable_mask(control),
->>> +                                    entry->masked);
->>> +               }
->>> +       }
->>>   }
->>>   #endif
->>>
->>> @@ -406,7 +419,6 @@ static void __pci_restore_msi_state(struct pci_dev *dev)
->>>          arch_restore_msi_irqs(dev, dev->irq);
->>>
->>>          pci_read_config_word(dev, dev->msi_cap + PCI_MSI_FLAGS, &control);
->>> -       msi_mask_irq(entry, msi_capable_mask(control), entry->masked);
->>>          control &= ~PCI_MSI_FLAGS_QSIZE;
->>>          control |= (entry->msi_attrib.multiple << 4) | PCI_MSI_FLAGS_ENABLE;
->>>          pci_write_config_word(dev, dev->msi_cap + PCI_MSI_FLAGS, control);
->>> @@ -430,7 +442,6 @@ static void __pci_restore_msix_state(struct pci_dev *dev)
->>>
->>>          list_for_each_entry(entry, &dev->msi_list, list) {
->>>                  arch_restore_msi_irqs(dev, entry->irq);
->>> -               msix_mask_irq(entry, entry->masked);
->>>          }
->>>
->>>          control &= ~PCI_MSIX_FLAGS_MASKALL;
->> Konrad, are you OK with this patch now?
-> Yes, I wanted to make sure that the existing behavior under baremetal
-> was not altered.
->
-> And Duan had confirmed it was not  - thought to be on a safe side it
-> would be good to confirm this via testing just in case.
-I had ever let our customer test on baremetal and it passed.
+This patch does step 1 earlier, right after memblock is ready.
 
-zduan
+When memblock_x86_fill() is called to fulfill memblock.memory[],
+memblock is able to allocate memory.
+
+This patch introduces a new function acpi_root_table_init() to
+do step 1, and call this function right after memblock_x86_fill()
+is called.
+
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+---
+ arch/x86/kernel/acpi/boot.c |   45 +++++++++++++++++++++++++++---------------
+ arch/x86/kernel/setup.c     |    3 ++
+ drivers/acpi/tables.c       |    7 ++++-
+ include/linux/acpi.h        |    2 +
+ 4 files changed, 39 insertions(+), 18 deletions(-)
+
+diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+index 2627a81..dcdf3e3 100644
+--- a/arch/x86/kernel/acpi/boot.c
++++ b/arch/x86/kernel/acpi/boot.c
+@@ -1497,6 +1497,32 @@ static struct dmi_system_id __initdata acpi_dmi_table_late[] = {
+ 	{}
+ };
+ 
++/**
++ * early_acpi_boot_table_init - Initialize acpi_gbl_root_table_list.
++ *
++ * This function will parse RSDT or XSDT, find all tables' phys addr,
++ * initialize acpi_gbl_root_table_list, and record all tables' phys addr
++ * in acpi_gbl_root_table_list.
++ *
++ * acpi_table_init() is separate to allow reading SRAT without
++ * other side effects.
++ *
++ */
++void __init early_acpi_boot_table_init(void)
++{
++	dmi_check_system(acpi_dmi_table);
++
++	/* If acpi_disabled, bail out */
++	if (acpi_disabled)
++		return;
++
++	/* Initialize the ACPI boot-time table parser */
++	if (acpi_table_init()) {
++		disable_acpi();
++		return;
++	}
++}
++
+ /*
+  * acpi_boot_table_init() and acpi_boot_init()
+  *  called from setup_arch(), always.
+@@ -1504,9 +1530,6 @@ static struct dmi_system_id __initdata acpi_dmi_table_late[] = {
+  *	2. enumerates lapics
+  *	3. enumerates io-apics
+  *
+- * acpi_table_init() is separate to allow reading SRAT without
+- * other side effects.
+- *
+  * side effects of acpi_boot_init:
+  *	acpi_lapic = 1 if LAPIC found
+  *	acpi_ioapic = 1 if IOAPIC found
+@@ -1518,21 +1541,11 @@ static struct dmi_system_id __initdata acpi_dmi_table_late[] = {
+ 
+ void __init acpi_boot_table_init(void)
+ {
+-	dmi_check_system(acpi_dmi_table);
+-
+-	/*
+-	 * If acpi_disabled, bail out
+-	 */
++	/* If acpi_disabled, bail out */
+ 	if (acpi_disabled)
+-		return; 
+-
+-	/*
+-	 * Initialize the ACPI boot-time table parser.
+-	 */
+-	if (acpi_table_init()) {
+-		disable_acpi();
+ 		return;
+-	}
++
++	acpi_install_root_table();
+ 
+ 	acpi_table_parse(ACPI_SIG_BOOT, acpi_parse_sbf);
+ 
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index f8ec578..53d4ac7 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -1073,6 +1073,9 @@ void __init setup_arch(char **cmdline_p)
+ 	memblock.current_limit = ISA_END_ADDRESS;
+ 	memblock_x86_fill();
+ 
++	/* Initialize ACPI global root table list. */
++	early_acpi_boot_table_init();
++
+ 	/*
+ 	 * The EFI specification says that boot service code won't be called
+ 	 * after ExitBootServices(). This is, in fact, a lie.
+diff --git a/drivers/acpi/tables.c b/drivers/acpi/tables.c
+index 8860e79..60ecbb8 100644
+--- a/drivers/acpi/tables.c
++++ b/drivers/acpi/tables.c
+@@ -353,10 +353,13 @@ int __init acpi_table_init(void)
+ 	if (ACPI_FAILURE(status))
+ 		return 1;
+ 
+-	acpi_tb_install_root_table();
++	return 0;
++}
+ 
++void __init acpi_install_root_table(void)
++{
++	acpi_tb_install_root_table();
+ 	check_multiple_madt();
+-	return 0;
+ }
+ 
+ static int __init acpi_parse_apic_instance(char *str)
+diff --git a/include/linux/acpi.h b/include/linux/acpi.h
+index 353ba25..b722183 100644
+--- a/include/linux/acpi.h
++++ b/include/linux/acpi.h
+@@ -92,10 +92,12 @@ void __acpi_unmap_table(char *map, unsigned long size);
+ int early_acpi_boot_init(void);
+ int acpi_boot_init (void);
+ void acpi_boot_table_init (void);
++void early_acpi_boot_table_init(void);
+ int acpi_mps_check (void);
+ int acpi_numa_init (void);
+ 
+ int acpi_table_init (void);
++void acpi_install_root_table(void);
+ int acpi_table_parse(char *id, acpi_tbl_table_handler handler);
+ int __init acpi_table_parse_entries(char *id, unsigned long table_size,
+ 				    int entry_id,
+-- 
+1.7.1
+
