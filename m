@@ -1,186 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753494Ab3HBQZs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 12:25:48 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:43355 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753230Ab3HBQZr (ORCPT
+	id S1753755Ab3HBQ0A (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 12:26:00 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:35590 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753030Ab3HBQZ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 12:25:47 -0400
-X-IronPort-AV: E=Sophos;i="4.89,802,1367971200"; 
-   d="scan'208";a="39081950"
-Date: Fri, 2 Aug 2013 17:25:32 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <Ian.Campbell@citrix.com>
-Subject: Re: [PATCH RFC 8/8] xen/arm,arm64: enable SWIOTLB_XEN
-In-Reply-To: <20130802124000.GJ24540@konrad-lan.dumpdata.com>
-Message-ID: <alpine.DEB.2.02.1308021717330.4893@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1307311833040.4893@kaball.uk.xensource.com> <1375292732-7627-8-git-send-email-stefano.stabellini@eu.citrix.com> <20130802124000.GJ24540@konrad-lan.dumpdata.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 2 Aug 2013 12:25:58 -0400
+Date: Fri, 2 Aug 2013 18:25:54 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Jiri Olsa <jolsa@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung@kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 6/8] perf: Account freq events per cpu
+Message-ID: <20130802162552.GE13170@somewhere>
+References: <1374539466-4799-1-git-send-email-fweisbec@gmail.com>
+ <1374539466-4799-7-git-send-email-fweisbec@gmail.com>
+ <20130801124658.GC1032@krava.brq.redhat.com>
+ <20130801133155.GB27162@twins.programming.kicks-ass.net>
+ <20130801135525.GE431@somewhere>
+ <20130801140352.GE27162@twins.programming.kicks-ass.net>
+ <20130801140615.GF27162@twins.programming.kicks-ass.net>
+ <20130801142109.GH431@somewhere>
+ <20130801144005.GG27162@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130801144005.GG27162@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2 Aug 2013, Konrad Rzeszutek Wilk wrote:
-> On Wed, Jul 31, 2013 at 06:45:32PM +0100, Stefano Stabellini wrote:
-> > Xen on arm and arm64 needs SWIOTLB_XEN: when running on Xen we need to
-> > program the hardware with mfns rather than pfns for dma addresses.
-> > Remove SWIOTLB_XEN dependency on X86 and PCI and make XEN select
-> > SWIOTLB_XEN on arm and arm64.
+On Thu, Aug 01, 2013 at 04:40:05PM +0200, Peter Zijlstra wrote:
+> On Thu, Aug 01, 2013 at 04:21:11PM +0200, Frederic Weisbecker wrote:
+> > > > Yeah, just go with a single global state for now..
+> > > 
+> > > The perf default is to create inherited counter, which are per cpu
+> > > anyway. So we'll not loose much.
 > > 
-> > Implement xen_create_contiguous_region on arm and arm64 by using
-> > XENMEM_get_dma_buf.
-> > 
-> > Initialize the xen-swiotlb from xen_early_init (before the native
-> > dma_ops are initialized), set dma_ops to &xen_swiotlb_dma_ops if we are
-> > running on Xen.
-> > 
-> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > ---
-> >  arch/arm/Kconfig                |    1 +
-> >  arch/arm/include/asm/xen/page.h |    2 +
-> >  arch/arm/xen/Makefile           |    2 +-
-> >  arch/arm/xen/enlighten.c        |    3 +
-> >  arch/arm/xen/mm.c               |  118 +++++++++++++++++++++++++++++++++++++++
-> >  arch/arm64/Kconfig              |    1 +
-> >  arch/arm64/xen/Makefile         |    2 +-
-> >  drivers/xen/Kconfig             |    1 -
-> >  drivers/xen/swiotlb-xen.c       |   18 ++++++
-> >  9 files changed, 145 insertions(+), 3 deletions(-)
-> >  create mode 100644 arch/arm/xen/mm.c
-> > 
-> > diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> > index 05125ab..72b53b9 100644
-> > --- a/arch/arm/Kconfig
-> > +++ b/arch/arm/Kconfig
-> > @@ -1849,6 +1849,7 @@ config XEN
-> >  	depends on CPU_V7 && !CPU_V6
-> >  	depends on !GENERIC_ATOMIC64
-> >  	select ARM_PSCI
-> > +	select SWIOTLB_XEN
-> >  	help
-> >  	  Say Y if you want to run Linux in a Virtual Machine on Xen on ARM.
-> >  
-> > diff --git a/arch/arm/include/asm/xen/page.h b/arch/arm/include/asm/xen/page.h
-> > index 359a7b5..b0f7150 100644
-> > --- a/arch/arm/include/asm/xen/page.h
-> > +++ b/arch/arm/include/asm/xen/page.h
-> > @@ -6,12 +6,14 @@
-> >  
-> >  #include <linux/pfn.h>
-> >  #include <linux/types.h>
-> > +#include <linux/dma-mapping.h>
-> >  
-> >  #include <xen/interface/grant_table.h>
-> >  
-> >  #define pfn_to_mfn(pfn)			(pfn)
-> >  #define phys_to_machine_mapping_valid(pfn) (1)
-> >  #define mfn_to_pfn(mfn)			(mfn)
-> > +#define mfn_to_local_pfn(m)             (mfn_to_pfn(m))
-> >  #define mfn_to_virt(m)			(__va(mfn_to_pfn(m) << PAGE_SHIFT))
-> >  
-> >  #define pte_mfn	    pte_pfn
-> > diff --git a/arch/arm/xen/Makefile b/arch/arm/xen/Makefile
-> > index 4384103..66fc35d 100644
-> > --- a/arch/arm/xen/Makefile
-> > +++ b/arch/arm/xen/Makefile
-> > @@ -1 +1 @@
-> > -obj-y		:= enlighten.o hypercall.o grant-table.o
-> > +obj-y		:= enlighten.o hypercall.o grant-table.o mm.o
-> > diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
-> > index 14d17ab..06a6953 100644
-> > --- a/arch/arm/xen/enlighten.c
-> > +++ b/arch/arm/xen/enlighten.c
-> > @@ -195,6 +195,7 @@ static void xen_power_off(void)
-> >   * documentation of the Xen Device Tree format.
-> >   */
-> >  #define GRANT_TABLE_PHYSADDR 0
-> > +extern int xen_mm_init(void);
-> >  void __init xen_early_init(void)
-> >  {
-> >  	struct resource res;
-> > @@ -230,6 +231,8 @@ void __init xen_early_init(void)
-> >  		xen_start_info->flags |= SIF_INITDOMAIN|SIF_PRIVILEGED;
-> >  	else
-> >  		xen_start_info->flags &= ~(SIF_INITDOMAIN|SIF_PRIVILEGED);
-> > +
-> > +	xen_mm_init();
-> >  }
-> >  
-> >  static int __init xen_guest_init(void)
-> > diff --git a/arch/arm/xen/mm.c b/arch/arm/xen/mm.c
-> > new file mode 100644
-> > index 0000000..4ba1add
-> > --- /dev/null
-> > +++ b/arch/arm/xen/mm.c
-> > @@ -0,0 +1,118 @@
-> > +#include <linux/bootmem.h>
-> > +#include <linux/gfp.h>
-> > +#include <linux/export.h>
-> > +#include <linux/slab.h>
-> > +#include <linux/types.h>
-> > +#include <linux/dma-mapping.h>
-> > +#include <linux/vmalloc.h>
-> > +#include <linux/swiotlb.h>
-> > +
-> > +#include <xen/xen.h>
-> > +#include <xen/interface/memory.h>
-> > +#include <xen/swiotlb-xen.h>
-> > +
-> > +#include <asm/cacheflush.h>
-> > +#include <asm/xen/page.h>
-> > +#include <asm/xen/hypercall.h>
-> > +#include <asm/xen/interface.h>
-> > +
-> > +static int xen_exchange_memory(xen_ulong_t extents_in,
-> > +			       unsigned int order_in,
-> > +			       xen_pfn_t *pfns_in,
-> > +			       xen_ulong_t extents_out,
-> > +			       unsigned int order_out,
-> > +			       xen_pfn_t *mfns_out,
-> > +			       unsigned int address_bits)
-> > +{
-> > +	long rc;
-> > +	int success;
-> > +
-> > +	struct xen_memory_exchange exchange = {
-> > +		.in = {
-> > +			.nr_extents   = extents_in,
-> > +			.extent_order = order_in,
-> > +			.domid        = DOMID_SELF
-> > +		},
-> > +		.out = {
-> > +			.nr_extents   = extents_out,
-> > +			.extent_order = order_out,
-> > +			.address_bits = address_bits,
-> > +			.domid        = DOMID_SELF
-> > +		}
-> > +	};
-> > +	set_xen_guest_handle(exchange.in.extent_start, pfns_in);
-> > +	set_xen_guest_handle(exchange.out.extent_start, mfns_out);
-> > +
-> > +	BUG_ON(extents_in << order_in != extents_out << order_out);
-> > +
-> > +
-> > +	rc = HYPERVISOR_memory_op(XENMEM_get_dma_buf, &exchange);
-> > +	success = (exchange.nr_exchanged == extents_in);
-> > +
-> > +	BUG_ON(!success && ((exchange.nr_exchanged != 0) || (rc == 0)));
-> > +	BUG_ON(success && (rc != 0));
-> > +
-> > +	return success;
-> > +}
+> > So you mean that I keep the per cpu state when event->cpu != -1 and also have
+> > a global counter for the others. Right?
 > 
-> Could this code be made out to be more generic? It is almost the same on
-> x86 - it just a different hypercall.
+> No, only a single global counter. The fact that perf, by default,
+> creates a counter per cpu, means that there's little effective
+> difference between a single global counter and per-cpu counters.
 
-Maybe, but I wasn't planning on implementing XENMEM_get_dma_buf on x86
-(guest_physmap_pin_range and guest_physmap_unpin_range in particular),
-mostly because I admit I don't quite understand the x86 page_type system
-in Xen.
+Good point! I just included that in the changelog.
+
+Thanks.
