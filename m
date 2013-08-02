@@ -1,104 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754081Ab3HBQ6v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 12:58:51 -0400
-Received: from g5t0007.atlanta.hp.com ([15.192.0.44]:43184 "EHLO
-	g5t0007.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752937Ab3HBQ6t (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 12:58:49 -0400
-Message-ID: <1375462662.10300.91.camel@misato.fc.hp.com>
-Subject: Re: [PATCH v2 06/18] x86, acpi: Initialize ACPI root table list
- earlier.
-From: Toshi Kani <toshi.kani@hp.com>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu,
-        hpa@zytor.com, akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
-        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
-        mina86@mina86.com, gong.chen@linux.intel.com,
-        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
-        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
-        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com, x86@kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Date: Fri, 02 Aug 2013 10:57:42 -0600
-In-Reply-To: <51FB646F.30604@cn.fujitsu.com>
-References: <1375340800-19332-1-git-send-email-tangchen@cn.fujitsu.com>
-	  <1375340800-19332-7-git-send-email-tangchen@cn.fujitsu.com>
-	 <1375401251.10300.53.camel@misato.fc.hp.com>
-	 <51FB646F.30604@cn.fujitsu.com>
+	id S1754254Ab3HBRAg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 13:00:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15314 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752999Ab3HBRAf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 13:00:35 -0400
+Subject: Re: [PATCH 2/2] KEYS: Add per-user_namespace registers for
+ persistent per-UID kerberos caches
+From: Simo Sorce <simo@redhat.com>
+To: David Howells <dhowells@redhat.com>
+Cc: Jeff Layton <jlayton@redhat.com>, keyrings@linux-nfs.org,
+        linux-nfs@vger.kernel.org, krbdev@mit.edu,
+        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
+        linux-kernel@vger.kernel.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+In-Reply-To: <7136.1375462405@warthog.procyon.org.uk>
+References: <20130802095555.07a2cda3@tlielax.poochiereds.net>
+	 <20130801173846.28023.19009.stgit@warthog.procyon.org.uk>
+	 <20130801173902.28023.68819.stgit@warthog.procyon.org.uk>
+	 <7136.1375462405@warthog.procyon.org.uk>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Organization: Red Hat, Inc.
+Date: Fri, 02 Aug 2013 13:00:21 -0400
+Message-ID: <1375462821.15733.262.camel@willson.li.ssimo.org>
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-08-02 at 15:49 +0800, Tang Chen wrote:
-> On 08/02/2013 07:54 AM, Toshi Kani wrote:
-> ......
-> >>   /*
-> >> + * acpi_root_table_init - Initialize acpi_gbl_root_table_list.
-> >> + *
-> >> + * This function will parse RSDT or XSDT, find all tables' phys addr,
-> >> + * initialize acpi_gbl_root_table_list, and record all tables' phys addr
-> >> + * in acpi_gbl_root_table_list.
-> >> + */
-> >> +void __init acpi_root_table_init(void)
-> >
-> > I think acpi_root_table_init() is a bit confusing with
-> > acpi_boot_table_init().  Perhaps, something like
-> > acpi_boot_table_pre_init() or early_acpi_boot_table_init() is better to
-> > indicate that this new function is called before acpi_boot_table_init().
-> >
+On Fri, 2013-08-02 at 17:53 +0100, David Howells wrote:
+> Jeff Layton <jlayton@redhat.com> wrote:
 > 
-> OK, will change it to early_acpi_boot_table_init().
-> 
-> >> +{
-> >> +	dmi_check_system(acpi_dmi_table);
-> >> +
-> >> +	/* If acpi_disabled, bail out */
-> >> +	if (acpi_disabled)
-> >> +		return;
-> >> +
-> >> +	/* Initialize the ACPI boot-time table parser */
-> >> +	if (acpi_table_init()) {
-> >> +		disable_acpi();
-> >> +		return;
-> >> +	}
-> >> +}
-> >> +
-> >> +/*
-> >>    * acpi_boot_table_init() and acpi_boot_init()
-> >>    *  called from setup_arch(), always.
-> >>    *	1. checksums all tables
-> >> @@ -1511,21 +1533,7 @@ static struct dmi_system_id __initdata acpi_dmi_table_late[] = {
-> >>
-> >>   void __init acpi_boot_table_init(void)
+> > > +	/* -1 indicates the current user */
+> > > +	if (_uid == (uid_t)-1) {
+> > > +		uid = current_uid();
 > >
-> > The comment of this function needs to be updated.  For instance, it
-> > describes acpi_table_init(), which you just relocated.
-> >
-> >   * acpi_table_init() is separate to allow reading SRAT without
-> >   * other side effects.
-> >   *
+> > Isn't it possible to have a valid uid of (unsigned int)-1? I know that
+> > at least some sites use that for "nobody". Why not just require passing
+> > in the correct UID?
 > 
-> Sure. But I don't quite understand this comment. It seems that
-> acpi_table_init() has nothing to do with SRAT.
+> See setresuid() and co. - there -1 is "don't change".
 > 
-> Do you know anything about this ?
+> > Looks good overall, but I share Daniel's concerns about making
+> > krb5-specific infrastructure like this. Essentially this is just a
+> > persistent keyring that's associated with a kuid, right? Perhaps this
+> > could be done in such a way that it could be usable for other
+> > applications in the future?
+> 
+> It's not too hard, I suppose:
+> 
+> 	keyctl_get_persistent(uid, prefix, destring)
+> 
+> eg:
+> 
+> 	keyctl_get_persistent(-1, "_krb.", KEYCTL_SPEC_PROCESS_KEYRING)
+> 
+> giving:
+> 
+> 	struct user_namespace
+> 	  \___ .krb_cache keyring
+> 		\___ _krb.0 keyring
+> 		\___ _krb.5000 keyring
+> 		\___ _krb.5001 keyring
+> 		|	\___ tkt785 big_key
+> 		|	\___ tkt12345 big_key
+> 		\___ _afs.5000 keyring
+> 			\___ afs.redhat.com rxrpc
+> 
+> The other way to do it is create one keyring per user and let userspace create
+> subkeyrings under that:
+> 
+> 	struct user_namespace
+> 	  \___ .krb_cache keyring
+> 		\___ _uid_p.0 keyring
+> 		\___ _uid_p.5000 keyring
+> 		\___ _uid_p.5001 keyring
+> 			\___ krb keyring
+> 			|	\___ tkt785 big_key
+> 			|	\___ tkt12345 big_key
+> 			\___ afs keyring
+> 				\___ afs.redhat.com rxrpc
+> 
+> In the above scheme, it might be worth just making these the same as the user
+> keyring - which means KEYCTL_SPEC_USER_KEYRING will automatically target it.
+> 
+> Simo:  I believe the problem you have with the user keyring is that it's not
+> persistent beyond the life of the processes of that UID, right?
 
-Well, I do not know, either.  But if I have to guess, it might mean that
-"acpi_table_init() is separated from acpi_boot_init() to allow reading
-SRAT without the conditional flags, ex. acpi_lapic and acpi_ioapic, in
-acpi_boot_init()."
+Correct.
 
-I'd suggest you simply rephrase it to match with your change, instead of
-trying to keep such old history.
+Simo.
 
-Thanks,
--Toshi
+-- 
+Simo Sorce * Red Hat, Inc * New York
 
