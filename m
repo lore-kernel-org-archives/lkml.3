@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030635Ab3HBKMb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:12:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37514 "EHLO
+	id S1030664Ab3HBKMk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:12:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37530 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030606Ab3HBKM0 (ORCPT
+	with ESMTP id S1030606Ab3HBKMe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:12:26 -0400
+	Fri, 2 Aug 2013 06:12:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Jones <davej@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [ 83/99] drm/i915: fix missed hunk after GT access breakage
-Date: Fri,  2 Aug 2013 18:08:36 +0800
-Message-Id: <20130802100237.484864942@linuxfoundation.org>
+        Xiong Zhang <xiong.y.zhang@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, Zhouping Liu <zliu@redhat.com>
+Subject: [ 98/99] drm/i915: Correct obj->mm_list link to dev_priv->dev_priv->mm.inactive_list
+Date: Fri,  2 Aug 2013 18:08:51 +0800
+Message-Id: <20130802100239.592262663@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802100225.478715166@linuxfoundation.org>
 References: <20130802100225.478715166@linuxfoundation.org>
@@ -27,71 +27,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Widawsky <ben@bwidawsk.net>
+From: Xiong Zhang <xiong.y.zhang@intel.com>
 
-commit e1b4d3036c07ff137955fb1c0197ab62534f46ec upstream.
+commit 067556084a0e412013af6b0250a3143ae5afde6d upstream.
 
-Upon some code refactoring, a hunk was missed. This was fixed for
-next, but missed the current trees, and hasn't yet been merged by Dave
-Airlie. It is fixed in:
-commit 907b28c56ea40629aa6595ddfa414ec2fc7da41c
-Author: Chris Wilson <chris@chris-wilson.co.uk>
-Date:   Fri Jul 19 20:36:52 2013 +0100
+obj->mm_list link to dev_priv->mm.inactive_list/active_list
+obj->global_list link to dev_priv->mm.unbound_list/bound_list
 
-    drm/i915: Colocate all GT access routines in the same file
+This regression has been introduced in
 
-It is introduced by:
-commit 181d1b9e31c668259d3798c521672afb8edd355c
+commit 93927ca52a55c23e0a6a305e7e9082e8411ac9fa
 Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-Date:   Sun Jul 21 13:16:24 2013 +0200
+Date:   Thu Jan 10 18:03:00 2013 +0100
 
-    drm/i915: fix up gt init sequence fallout
+    drm/i915: Revert shrinker changes from "Track unbound pages"
 
-Reported-by: Dave Jones <davej@redhat.com>
-Signed-off-by: Ben Widawsky <ben@bwidawsk.net>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Cc: stable@vger.kernel.org
+Signed-off-by: Xiong Zhang <xiong.y.zhang@intel.com>
+[danvet: Add regression notice.]
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Zhouping Liu <zliu@redhat.com>
+
 
 ---
- drivers/gpu/drm/i915/i915_dma.c |    1 +
- drivers/gpu/drm/i915/i915_drv.h |    1 +
- drivers/gpu/drm/i915/intel_pm.c |    6 ++++++
- 3 files changed, 8 insertions(+)
+ drivers/gpu/drm/i915/i915_gem.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/i915_dma.c
-+++ b/drivers/gpu/drm/i915/i915_dma.c
-@@ -1608,6 +1608,7 @@ int i915_driver_load(struct drm_device *
- 	intel_detect_pch(dev);
+--- a/drivers/gpu/drm/i915/i915_gem.c
++++ b/drivers/gpu/drm/i915/i915_gem.c
+@@ -4493,7 +4493,7 @@ i915_gem_inactive_shrink(struct shrinker
+ 	list_for_each_entry(obj, &dev_priv->mm.unbound_list, gtt_list)
+ 		if (obj->pages_pin_count == 0)
+ 			cnt += obj->base.size >> PAGE_SHIFT;
+-	list_for_each_entry(obj, &dev_priv->mm.inactive_list, gtt_list)
++	list_for_each_entry(obj, &dev_priv->mm.inactive_list, mm_list)
+ 		if (obj->pin_count == 0 && obj->pages_pin_count == 0)
+ 			cnt += obj->base.size >> PAGE_SHIFT;
  
- 	intel_irq_init(dev);
-+	intel_pm_init(dev);
- 	intel_gt_sanitize(dev);
- 	intel_gt_init(dev);
- 
---- a/drivers/gpu/drm/i915/i915_drv.h
-+++ b/drivers/gpu/drm/i915/i915_drv.h
-@@ -1475,6 +1475,7 @@ void i915_hangcheck_elapsed(unsigned lon
- void i915_handle_error(struct drm_device *dev, bool wedged);
- 
- extern void intel_irq_init(struct drm_device *dev);
-+extern void intel_pm_init(struct drm_device *dev);
- extern void intel_hpd_init(struct drm_device *dev);
- extern void intel_gt_init(struct drm_device *dev);
- extern void intel_gt_sanitize(struct drm_device *dev);
---- a/drivers/gpu/drm/i915/intel_pm.c
-+++ b/drivers/gpu/drm/i915/intel_pm.c
-@@ -4548,6 +4548,12 @@ void intel_gt_init(struct drm_device *de
- 		dev_priv->gt.force_wake_get = __gen6_gt_force_wake_get;
- 		dev_priv->gt.force_wake_put = __gen6_gt_force_wake_put;
- 	}
-+}
-+
-+void intel_pm_init(struct drm_device *dev)
-+{
-+	struct drm_i915_private *dev_priv = dev->dev_private;
-+
- 	INIT_DELAYED_WORK(&dev_priv->rps.delayed_resume_work,
- 			  intel_gen6_powersave_work);
- }
 
 
