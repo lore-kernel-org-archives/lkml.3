@@ -1,58 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754920Ab3HBINg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 04:13:36 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:39096 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753698Ab3HBINX (ORCPT
+	id S1756232Ab3HBIOS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 04:14:18 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:44791 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754082Ab3HBIOG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 04:13:23 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/m18tX8qg3ByssrC5nQibL
-Date: Fri, 2 Aug 2013 01:13:15 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: ksummit-2013-discuss@lists.linuxfoundation.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [Ksummit-2013-discuss] [ATTEND] [ARM ATTEND] kernel data bloat
- and how to avoid it
-Message-ID: <20130802081315.GA7656@atomide.com>
-References: <20130731073802.GT7656@atomide.com>
- <20130731152131.GW2296@suse.de>
+	Fri, 2 Aug 2013 04:14:06 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130731152131.GW2296@suse.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <51FB689F.30100@intel.com>
+References: <1375400042-989-1-git-send-email-felipe.contreras@gmail.com>
+	<51FB137D.7070000@gmail.com>
+	<CAMP44s1A+z4=DGJLK1qf5LPc1vbYvtJwjFiMt17vzyZFRU0qmg@mail.gmail.com>
+	<51FB35CD.7040709@intel.com>
+	<CAMP44s1honSdnoMnmpEcsXtdkJuPYgQgnLwcN+oxs5f=a+3Stg@mail.gmail.com>
+	<51FB3C9C.6070002@intel.com>
+	<CAMP44s1RkwTfxdoiARHgREy-fwLuRu2tKbM-4kB3+Xf3Sme5Uw@mail.gmail.com>
+	<51FB5826.80305@intel.com>
+	<CAMP44s3+L8ZY9tcUbNhia8sRx+KJ1w44Jn7n=RMdPfeQqvPaqw@mail.gmail.com>
+	<51FB689F.30100@intel.com>
+Date: Fri, 2 Aug 2013 03:14:02 -0500
+Message-ID: <CAMP44s3mgbis8BO-kmwwQk+GKG60HMN1q1u6x67pD7Vj3OKU=Q@mail.gmail.com>
+Subject: Re: [PATCH] acpi: video: fix reversed indexed BQC
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: Aaron Lu <aaron.lu@intel.com>
+Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <lenb@kernel.org>,
+        Zhang Rui <rui.zhang@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Mel Gorman <mgorman@suse.de> [130731 08:28]:
-> On Wed, Jul 31, 2013 at 12:38:03AM -0700, Tony Lindgren wrote:
-> > Hi all,
-> > 
-> > Probably the biggest kernel data bloat issue is in the ARM land, but
-> > it also seems that it's becoming a Linux generic issue too, so I
-> > guess it could be discussed in either context.
-> > 
-> 
-> Would scripts/bloat-o-meter highlight where the growth problems are?
+On Fri, Aug 2, 2013 at 3:06 AM, Aaron Lu <aaron.lu@intel.com> wrote:
+> On 08/02/2013 03:59 PM, Felipe Contreras wrote:
+>> On Fri, Aug 2, 2013 at 1:56 AM, Aaron Lu <aaron.lu@intel.com> wrote:
+>>> On 08/02/2013 02:44 PM, Felipe Contreras wrote:
+>>
+>>>> The initial _BCM commands don't work, so the level remains at 100%.
+>>>> Since the level is max_level, acpi_video_bqc_quirk() tries with the
+>>>> first level, which is 0, and 0 happens to be the index of 100.
+>>>>
+>>>> So _BQC is returning 100, which is not the index of 0 (what we tested
+>>>> for), but actually 100.
+>>>>
+>>>> I think the current code is correct, but acpi_video_bqc_quirk() should
+>>>> be testing br->levels[3], or anything other than 0/100 which can be
+>>>> easily confused.
+>>>>
+>>>> If so, the code would find that _BQC doesn't work on this machine (in
+>>>> win8 mode)... at least initially. My guess is that it only starts to
+>>>> work after acpi_video_bus_start_devices() is called.
+>>>>
+>>>> Forcing br->flags._BQC_use_index = 0 seems to work.
+>>>
+>>> Seems ASUS machines tend to have this issue:
+>>> https://bugzilla.kernel.org/show_bug.cgi?id=52951
+>>> https://bugzilla.kernel.org/show_bug.cgi?id=56711
+>>
+>> I don't see any real solution for the ACPI driver.
+>>
+>>> I have a patch to enhance the quirk some time ago:
+>>> https://github.com/aaronlu/linux/commit/0a3d2c5b59caf80ae5bb1ca1fda0f7bf448b38c9
+>>
+>> I think this is unnecessarily complicated; the comment makes it clear
+>
+> For your system, yes it is unnecessarily complicated. But since this is
+> a quirk, it better solves as many potential problems as possible, or we
+> would simply use a DMI entry to do the quirk.
 
-Well to some extent yes, the board/SoC/driver specific options are
-often behind Kconfig options. So if you want to limit the set of
-supported SoCs and drivers for the kernel you can optimize it out.
+The only difference between my patch and yours is that your patch
+checks that br->level[i] is not the current level, but that check is
+not necessary. If _BQC always returns the max level, all we need to do
+is pick another value, any other value, and br->level[3] works just
+fine.
 
-The bloat-o-meter won't help for things like checking that a device
-tree binding really describes the hardware, and is not just pointing
-to a table of defined registers in the device driver.
-
-A lot of the board specific, SoC specific, driver specific, debug
-specifc and so on "data" should not be in the kernel to start with
-and we can provide the same level of supported features in the kernel.
-
-Regards,
-
-Tony
+-- 
+Felipe Contreras
