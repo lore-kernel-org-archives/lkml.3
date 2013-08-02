@@ -1,102 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757618Ab3HBADf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 20:03:35 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:36778 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753779Ab3HBADd (ORCPT
+	id S1756728Ab3HBAMB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 20:12:01 -0400
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:34519 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751466Ab3HBAL7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 20:03:33 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1308011215160.4089@ionos.tec.linutronix.de>
-References: <alpine.DEB.2.02.1308011215160.4089@ionos.tec.linutronix.de>
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-Date: Thu, 1 Aug 2013 20:03:01 -0400
-X-Google-Sender-Auth: apQYzIeb1eIpJe7Ok3CaoMc-n0M
-Message-ID: <CAP=VYLp1ERhS4cFtgXGHL2DfCGoJ9VbPvShH5ZOWCpPuSzQY6w@mail.gmail.com>
-Subject: Re: [ANNOUNCE] 3.10.4-rt1
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Sebastian Sewior <bigeasy@linutronix.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 1 Aug 2013 20:11:59 -0400
+Message-ID: <1375402250.10300.57.camel@misato.fc.hp.com>
+Subject: Re: [PATCH v2 07/18] x86, acpi: Also initialize signature and
+ length when parsing root table.
+From: Toshi Kani <toshi.kani@hp.com>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu,
+        hpa@zytor.com, akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
+        mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
+        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com, x86@kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-acpi@vger.kernel.org, robert.moore@intel.com
+Date: Thu, 01 Aug 2013 18:10:50 -0600
+In-Reply-To: <1375340800-19332-8-git-send-email-tangchen@cn.fujitsu.com>
+References: <1375340800-19332-1-git-send-email-tangchen@cn.fujitsu.com>
+	 <1375340800-19332-8-git-send-email-tangchen@cn.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 1, 2013 at 7:24 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> Dear RT folks!
->
-> I'm pleased to announce the 3.10.4-rt1 patch set.
->
-> This is a mostly straight forward port of the 3.8 set. I had
-> experimented with a new implementation detail, but I did not get it
-> into a shape which would have made it applicable to RT.
->
-> Known issues:
->
->       - SLAB support not working
->
->       - Untested on ARM and PPC (hapless victims^W^Wtesters are
->         welcome)
+On Thu, 2013-08-01 at 15:06 +0800, Tang Chen wrote:
+> Besides the phys addr of the acpi tables, it will be very convenient if
+> we also have the signature of each table in acpi_gbl_root_table_list at
+> early time. We can find SRAT easily by comparing the signature.
+> 
+> This patch alse record signature and some other info in
+> acpi_gbl_root_table_list at early time.
+> 
+> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+> Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+> ---
+>  drivers/acpi/acpica/tbutils.c |   22 ++++++++++++++++++++++
+>  1 files changed, 22 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/acpi/acpica/tbutils.c b/drivers/acpi/acpica/tbutils.c
 
-We break at compile on powerpc with the below.  It happens because
-in earlier RT,  we had TIF_NEED_RESCHED_LAZY as bit 14.  But
-now, in 3.10 it is 18, and in breaking the 16 barrier, we get this:
+Same as patch 5/18.  Please change the title to "x86, ACPICA:".  Added
+Bob.
 
-arch/powerpc/kernel/entry_32.S: Assembler messages:
-arch/powerpc/kernel/entry_32.S:367: Error: operand out of range
-(0x000000000004ff87 is not between 0x0000000000000000 and
-0x000000000000ffff)
-arch/powerpc/kernel/entry_32.S:833: Error: operand out of range
-(0x0000000000046006 is not between 0x0000000000000000 and
-0x000000000000ffff)
-arch/powerpc/kernel/entry_32.S:898: Error: operand out of range
-(0x0000000000040000 is not between 0x0000000000000000 and
-0x000000000000ffff)
-arch/powerpc/kernel/entry_32.S:914: Error: operand out of range
-(0x0000000000040004 is not between 0x0000000000000000 and
-0x000000000000ffff)
-arch/powerpc/kernel/entry_32.S:1236: Error: operand out of range
-(0x0000000000040004 is not between 0x0000000000000000 and
-0x000000000000ffff)
-arch/powerpc/kernel/entry_32.S:1257: Error: operand out of range
-(0x0000000000040004 is not between 0x0000000000000000 and
-0x000000000000ffff)
-arch/powerpc/kernel/entry_32.S:1259: Error: operand out of range
-(0x0000000000046006 is not between 0x0000000000000000 and
-0x000000000000ffff)
-make[1]: *** [arch/powerpc/kernel/entry_32.o] Error 1
+Thanks,
+-Toshi
 
-I've added Ben to the CC in case he has a suggestion on
-how best to fix this, even though it is not yet mainline.
 
-Paul.
---
+> index 9d68ffc..5d31887 100644
+> --- a/drivers/acpi/acpica/tbutils.c
+> +++ b/drivers/acpi/acpica/tbutils.c
+> @@ -627,6 +627,7 @@ acpi_tb_parse_root_table(acpi_physical_address rsdp_address)
+>  	u32 i;
+>  	u32 table_count;
+>  	struct acpi_table_header *table;
+> +	struct acpi_table_desc *table_desc;
+>  	acpi_physical_address address;
+>  	acpi_physical_address uninitialized_var(rsdt_address);
+>  	u32 length;
+> @@ -766,6 +767,27 @@ acpi_tb_parse_root_table(acpi_physical_address rsdp_address)
+>  	 */
+>  	acpi_os_unmap_memory(table, length);
+>  
+> +	/*
+> +	 * Also initialize the table entries here, so that later we can use them
+> +	 * to find SRAT at very eraly time to reserve hotpluggable memory.
+> +	 */
+> +	for (i = 2; i < acpi_gbl_root_table_list.current_table_count; i++) {
+> +		table = acpi_os_map_memory(
+> +				acpi_gbl_root_table_list.tables[i].address,
+> +				sizeof(struct acpi_table_header));
+> +		if (!table)
+> +			return_ACPI_STATUS(AE_NO_MEMORY);
+> +
+> +		table_desc = &acpi_gbl_root_table_list.tables[i];
+> +
+> +		table_desc->pointer = NULL;
+> +		table_desc->length = table->length;
+> +		table_desc->flags = ACPI_TABLE_ORIGIN_MAPPED;
+> +		ACPI_MOVE_32_TO_32(table_desc->signature.ascii, table->signature);
+> +
+> +		acpi_os_unmap_memory(table, sizeof(struct acpi_table_header));
+> +	}
+> +
+>  	return_ACPI_STATUS(AE_OK);
+>  }
+>  
 
->
-> I'm about to leave for my annual kids summer camp kitchen duty, so I
-> let you fool around with the current pile.
->
-> Sebastian will help out while I'm away, so please send tons of patches
-> in the next couple of days and get this thing fixed before I
-> return. All I'm going to look for in my mail backlog is a mail with
-> the subject: 3.10.x-rty is perfect :)
->
-> The RT patch against 3.10.4 can be found here:
->
->   http://www.kernel.org/pub/linux/kernel/projects/rt/3.8/patch-3.10.4-rt1.patch.xz
->
-> The split quilt queue is available at:
->
->   http://www.kernel.org/pub/linux/kernel/projects/rt/3.8/patches-3.10.4-rt1.tar.xz
->
-> Enjoy,
->
->         tglx
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-rt-users" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
