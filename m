@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759160Ab3HBKIt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:08:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37100 "EHLO
+	id S1759229Ab3HBKI5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:08:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37115 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759003Ab3HBKIq (ORCPT
+	with ESMTP id S1759154Ab3HBKIy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:08:46 -0400
+	Fri, 2 Aug 2013 06:08:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nicolin Chen <b42378@freescale.com>, Mark Brown <broonie@linaro.org>
-Subject: [ 13/99] ASoC: wm8962: Remove remaining direct register cache accesses
-Date: Fri,  2 Aug 2013 18:07:26 +0800
-Message-Id: <20130802100227.442170077@linuxfoundation.org>
+        "Ewan D. Milne" <emilne@redhat.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 16/99] SCSI: sd: fix crash when UA received on DIF enabled device
+Date: Fri,  2 Aug 2013 18:07:29 +0800
+Message-Id: <20130802100228.293711875@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802100225.478715166@linuxfoundation.org>
 References: <20130802100225.478715166@linuxfoundation.org>
@@ -26,76 +28,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicolin Chen <b42378@freescale.com>
+From: "Ewan D. Milne" <emilne@redhat.com>
 
-commit 2e7ee15ced914e109a1a5b6dfcd463d846a13bd5 upstream.
+commit 085b513f97d8d799d28491239be4b451bcd8c2c5 upstream.
 
-Also fix return values for headphone switch updates.
+sd_prep_fn will allocate a larger CDB for the command via mempool_alloc
+for devices using DIF type 2 protection.  This CDB was being freed
+in sd_done, which results in a kernel crash if the command is retried
+due to a UNIT ATTENTION.  This change moves the code to free the larger
+CDB into sd_unprep_fn instead, which is invoked after the request is
+complete.
 
-Signed-off-by: Nicolin Chen <b42378@freescale.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+It is no longer necessary to call scsi_print_command separately for
+this case as the ->cmnd will no longer be NULL in the normal code path.
+
+Also removed conditional test for DIF type 2 when freeing the larger
+CDB because the protection_type could have been changed via sysfs while
+the command was executing.
+
+Signed-off-by: Ewan D. Milne <emilne@redhat.com>
+Acked-by: Martin K. Petersen <martin.petersen@oracle.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/wm8962.c |   24 +++++++++++++-----------
- 1 file changed, 13 insertions(+), 11 deletions(-)
+ drivers/scsi/sd.c |   22 +++++++---------------
+ 1 file changed, 7 insertions(+), 15 deletions(-)
 
---- a/sound/soc/codecs/wm8962.c
-+++ b/sound/soc/codecs/wm8962.c
-@@ -1600,7 +1600,6 @@ static int wm8962_put_hp_sw(struct snd_k
- 			    struct snd_ctl_elem_value *ucontrol)
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -828,10 +828,17 @@ static int scsi_setup_flush_cmnd(struct
+ 
+ static void sd_unprep_fn(struct request_queue *q, struct request *rq)
  {
- 	struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
--	u16 *reg_cache = codec->reg_cache;
- 	int ret;
- 
- 	/* Apply the update (if any) */
-@@ -1609,16 +1608,19 @@ static int wm8962_put_hp_sw(struct snd_k
- 		return 0;
- 
- 	/* If the left PGA is enabled hit that VU bit... */
--	if (snd_soc_read(codec, WM8962_PWR_MGMT_2) & WM8962_HPOUTL_PGA_ENA)
--		return snd_soc_write(codec, WM8962_HPOUTL_VOLUME,
--				     reg_cache[WM8962_HPOUTL_VOLUME]);
-+	ret = snd_soc_read(codec, WM8962_PWR_MGMT_2);
-+	if (ret & WM8962_HPOUTL_PGA_ENA) {
-+		snd_soc_write(codec, WM8962_HPOUTL_VOLUME,
-+			      snd_soc_read(codec, WM8962_HPOUTL_VOLUME));
-+		return 1;
++	struct scsi_cmnd *SCpnt = rq->special;
++
+ 	if (rq->cmd_flags & REQ_DISCARD) {
+ 		free_page((unsigned long)rq->buffer);
+ 		rq->buffer = NULL;
+ 	}
++	if (SCpnt->cmnd != rq->cmd) {
++		mempool_free(SCpnt->cmnd, sd_cdb_pool);
++		SCpnt->cmnd = NULL;
++		SCpnt->cmd_len = 0;
 +	}
- 
- 	/* ...otherwise the right.  The VU is stereo. */
--	if (snd_soc_read(codec, WM8962_PWR_MGMT_2) & WM8962_HPOUTR_PGA_ENA)
--		return snd_soc_write(codec, WM8962_HPOUTR_VOLUME,
--				     reg_cache[WM8962_HPOUTR_VOLUME]);
-+	if (ret & WM8962_HPOUTR_PGA_ENA)
-+		snd_soc_write(codec, WM8962_HPOUTR_VOLUME,
-+			      snd_soc_read(codec, WM8962_HPOUTR_VOLUME));
- 
--	return 0;
-+	return 1;
  }
  
- /* The VU bits for the speakers are in a different register to the mute
-@@ -3374,7 +3376,6 @@ static int wm8962_probe(struct snd_soc_c
- 	int ret;
- 	struct wm8962_priv *wm8962 = snd_soc_codec_get_drvdata(codec);
- 	struct wm8962_pdata *pdata = dev_get_platdata(codec->dev);
--	u16 *reg_cache = codec->reg_cache;
- 	int i, trigger, irq_pol;
- 	bool dmicclk, dmicdat;
+ /**
+@@ -1710,21 +1717,6 @@ static int sd_done(struct scsi_cmnd *SCp
+ 	if (rq_data_dir(SCpnt->request) == READ && scsi_prot_sg_count(SCpnt))
+ 		sd_dif_complete(SCpnt, good_bytes);
  
-@@ -3432,8 +3433,9 @@ static int wm8962_probe(struct snd_soc_c
+-	if (scsi_host_dif_capable(sdkp->device->host, sdkp->protection_type)
+-	    == SD_DIF_TYPE2_PROTECTION && SCpnt->cmnd != SCpnt->request->cmd) {
+-
+-		/* We have to print a failed command here as the
+-		 * extended CDB gets freed before scsi_io_completion()
+-		 * is called.
+-		 */
+-		if (result)
+-			scsi_print_command(SCpnt);
+-
+-		mempool_free(SCpnt->cmnd, sd_cdb_pool);
+-		SCpnt->cmnd = NULL;
+-		SCpnt->cmd_len = 0;
+-	}
+-
+ 	return good_bytes;
+ }
  
- 		/* Put the speakers into mono mode? */
- 		if (pdata->spk_mono)
--			reg_cache[WM8962_CLASS_D_CONTROL_2]
--				|= WM8962_SPK_MONO;
-+			snd_soc_update_bits(codec, WM8962_CLASS_D_CONTROL_2,
-+				WM8962_SPK_MONO_MASK, WM8962_SPK_MONO);
-+
- 
- 		/* Micbias setup, detection enable and detection
- 		 * threasholds. */
 
 
