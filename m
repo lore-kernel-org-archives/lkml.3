@@ -1,82 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754120Ab3HBKc6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:32:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37628 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752903Ab3HBKSg (ORCPT
+	id S1754635Ab3HBKdH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:33:07 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:44038 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752925Ab3HBKdF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:18:36 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Beulich <JBeulich@suse.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [ 19/39] xen/blkback: Check device permissions before allowing OP_DISCARD
-Date: Fri,  2 Aug 2013 18:18:29 +0800
-Message-Id: <20130802101459.535910270@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
-In-Reply-To: <20130802101456.800497005@linuxfoundation.org>
-References: <20130802101456.800497005@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Fri, 2 Aug 2013 06:33:05 -0400
+Date: Fri, 2 Aug 2013 12:32:47 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Cc: =?utf-8?B?6rmA7KSA7IiY?= <iamjoonsoo.kim@lge.com>,
+        "'Ingo Molnar'" <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        "'Mike Galbraith'" <efault@gmx.de>, "'Paul Turner'" <pjt@google.com>,
+        "'Alex Shi'" <alex.shi@intel.com>,
+        "'Vincent Guittot'" <vincent.guittot@linaro.org>,
+        "'Morten Rasmussen'" <morten.rasmussen@arm.com>,
+        "'Namhyung Kim'" <namhyung@kernel.org>,
+        "'Joonsoo Kim'" <js1304@gmail.com>
+Subject: Re: [PATCH v2 2/3] sched: factor out code to should_we_balance()
+Message-ID: <20130802103247.GL27162@twins.programming.kicks-ass.net>
+References: <1375408223-10934-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1375408223-10934-3-git-send-email-iamjoonsoo.kim@lge.com>
+ <51FB341B.7060104@linux.vnet.ibm.com>
+ <001601ce8f5f$7cbe1460$763a3d20$@lge.com>
+ <51FB7B36.8030909@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51FB7B36.8030909@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Fri, Aug 02, 2013 at 02:56:14PM +0530, Preeti U Murthy wrote:
+> >> You need to iterate over all the groups of the sched domain env->sd and
+> >> not just the first group of env->sd like you are doing above. This is to
+> > 
+> > I don't think so.
+> > IIRC, env->sd->groups always means local group,
+> > so we don't need to find our group by iterating over all the groups.
+> 
+> Take a look at update_sd_lb_stats(). That should clarify this. There is
+> an exclusive
+> local_group check there.
+> 
+> sd->groups points to the first group in the list of groups under this sd.
 
-------------------
-
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-
-commit 604c499cbbcc3d5fe5fb8d53306aa0fae1990109 upstream.
-
-We need to make sure that the device is not RO or that
-the request is not past the number of sectors we want to
-issue the DISCARD operation for.
-
-This fixes CVE-2013-2140.
-
-Acked-by: Jan Beulich <JBeulich@suse.com>
-Acked-by: Ian Campbell <Ian.Campbell@citrix.com>
-[v1: Made it pr_warn instead of pr_debug]
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/block/xen-blkback/blkback.c |   13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
-
---- a/drivers/block/xen-blkback/blkback.c
-+++ b/drivers/block/xen-blkback/blkback.c
-@@ -399,7 +399,18 @@ static int dispatch_discard_io(struct xe
- 	int status = BLKIF_RSP_OKAY;
- 	struct block_device *bdev = blkif->vbd.bdev;
- 	unsigned long secure;
-+	struct phys_req preq;
- 
-+	preq.sector_number = req->u.discard.sector_number;
-+	preq.nr_sects      = req->u.discard.nr_sectors;
-+
-+	err = xen_vbd_translate(&preq, blkif, WRITE);
-+	if (err) {
-+		pr_warn(DRV_PFX "access denied: DISCARD [%llu->%llu] on dev=%04x\n",
-+			preq.sector_number,
-+			preq.sector_number + preq.nr_sects, blkif->vbd.pdevice);
-+		goto fail_response;
-+	}
- 	blkif->st_ds_req++;
- 
- 	xen_blkif_get(blkif);
-@@ -410,7 +421,7 @@ static int dispatch_discard_io(struct xe
- 	err = blkdev_issue_discard(bdev, req->u.discard.sector_number,
- 				   req->u.discard.nr_sectors,
- 				   GFP_KERNEL, secure);
--
-+fail_response:
- 	if (err == -EOPNOTSUPP) {
- 		pr_debug(DRV_PFX "discard op failed, not supported\n");
- 		status = BLKIF_RSP_EOPNOTSUPP;
-
-
+Take a look at: 88b8dac0a
