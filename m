@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758355Ab3HBJQ0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 05:16:26 -0400
+	id S1758449Ab3HBJRt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 05:17:49 -0400
 Received: from cn.fujitsu.com ([222.73.24.84]:62165 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1758304Ab3HBJQV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 05:16:21 -0400
+	id S1758339Ab3HBJQ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 05:16:26 -0400
 X-IronPort-AV: E=Sophos;i="4.89,800,1367942400"; 
-   d="scan'208";a="8098123"
+   d="scan'208";a="8098129"
 From: Tang Chen <tangchen@cn.fujitsu.com>
 To: robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl, lenb@kernel.org,
         tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
@@ -21,171 +21,69 @@ To: robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl, lenb@kernel.org,
         zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com
 Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Subject: [PATCH v2 RESEND 11/18] x86, acpi: Try to find SRAT in firmware earlier.
-Date: Fri, 2 Aug 2013 17:14:30 +0800
-Message-Id: <1375434877-20704-12-git-send-email-tangchen@cn.fujitsu.com>
+Subject: [PATCH v2 RESEND 01/18] acpi: Print Hot-Pluggable Field in SRAT.
+Date: Fri, 2 Aug 2013 17:14:20 +0800
+Message-Id: <1375434877-20704-2-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.10.1
 In-Reply-To: <1375434877-20704-1-git-send-email-tangchen@cn.fujitsu.com>
 References: <1375434877-20704-1-git-send-email-tangchen@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
  2013/08/02 17:14:47,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/02 17:14:53,
-	Serialize complete at 2013/08/02 17:14:53
+ 2013/08/02 17:14:52,
+	Serialize complete at 2013/08/02 17:14:52
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduce early_acpi_firmware_srat() to find the
-phys addr of SRAT provided by firmware. And call it in
-find_hotpluggable_memory().
-
-Since we have initialized acpi_gbl_root_table_list earlier,
-and store all the tables' phys addrs and signatures in it,
-it is easy to find the SRAT.
+The Hot-Pluggable field in SRAT suggests if the memory could be
+hotplugged while the system is running. Print it as well when
+parsing SRAT will help users to know which memory is hotpluggable.
 
 Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Acked-by: Tejun Heo <tj@kernel.org>
 ---
- drivers/acpi/acpica/tbxface.c |   32 ++++++++++++++++++++++++++++++++
- drivers/acpi/osl.c            |   22 ++++++++++++++++++++++
- include/acpi/acpixf.h         |    4 ++++
- include/linux/acpi.h          |    4 ++++
- mm/memory_hotplug.c           |    8 ++++++--
- 5 files changed, 68 insertions(+), 2 deletions(-)
+ arch/x86/mm/srat.c |   11 +++++++----
+ 1 files changed, 7 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/acpi/acpica/tbxface.c b/drivers/acpi/acpica/tbxface.c
-index ad11162..6a92f12 100644
---- a/drivers/acpi/acpica/tbxface.c
-+++ b/drivers/acpi/acpica/tbxface.c
-@@ -181,6 +181,38 @@ acpi_status acpi_reallocate_root_table(void)
- 	return_ACPI_STATUS(status);
- }
- 
-+/**
-+ * acpi_get_table_desc - Get the acpi table descriptor of a specific table.
-+ * @signature: The signature of the table to be found.
-+ * @out_desc: The out returned descriptor.
-+ *
-+ * Iterate over acpi_gbl_root_table_list to find a specific table and then
-+ * return its phys addr.
-+ *
-+ * NOTE: The caller has the responsibility to allocate memory for @out_desc.
-+ *
-+ * Return AE_OK on success, AE_NOT_FOUND if the table is not found.
-+ */
-+acpi_status acpi_get_table_desc(char *signature,
-+				struct acpi_table_desc *out_desc)
-+{
-+	struct acpi_table_desc *desc;
-+	int pos, count = acpi_gbl_root_table_list.current_table_count;
-+
-+	for (pos = 0; pos < count; pos++) {
-+		desc = &acpi_gbl_root_table_list.tables[pos];
-+
-+		if (!ACPI_COMPARE_NAME(&desc->signature, signature))
-+			continue;
-+
-+		memcpy(out_desc, desc, sizeof(struct acpi_table_desc));
-+
-+		return_ACPI_STATUS(AE_OK);
-+	}
-+
-+	return_ACPI_STATUS(AE_NOT_FOUND);
-+}
-+
- /*******************************************************************************
-  *
-  * FUNCTION:    acpi_get_table_header
-diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-index dcbca3e..ec490fe 100644
---- a/drivers/acpi/osl.c
-+++ b/drivers/acpi/osl.c
-@@ -53,6 +53,7 @@
- #include <acpi/acpi.h>
- #include <acpi/acpi_bus.h>
- #include <acpi/processor.h>
-+#include <acpi/acpixf.h>
- 
- #define _COMPONENT		ACPI_OS_SERVICES
- ACPI_MODULE_NAME("osl");
-@@ -760,6 +761,27 @@ void __init acpi_initrd_override(void *data, size_t size)
- }
- #endif /* CONFIG_ACPI_INITRD_TABLE_OVERRIDE */
- 
-+#ifdef CONFIG_ACPI_NUMA
-+/*******************************************************************************
-+ *
-+ * FUNCTION:    early_acpi_firmware_srat
-+ *
-+ * RETURN:      Phys addr of SRAT on success, 0 on error.
-+ *
-+ * DESCRIPTION: Get the phys addr of SRAT provided by firmware.
-+ *
-+ ******************************************************************************/
-+phys_addr_t __init early_acpi_firmware_srat(void)
-+{
-+	struct acpi_table_desc table_desc;
-+
-+	if (acpi_get_table_desc(ACPI_SIG_SRAT, &table_desc))
-+		return 0;
-+
-+	return table_desc.address;
-+}
-+#endif	/* CONFIG_ACPI_NUMA */
-+
- static void acpi_table_taint(struct acpi_table_header *table)
+diff --git a/arch/x86/mm/srat.c b/arch/x86/mm/srat.c
+index cdd0da9..d44c8a4 100644
+--- a/arch/x86/mm/srat.c
++++ b/arch/x86/mm/srat.c
+@@ -146,6 +146,7 @@ int __init
+ acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
  {
- 	pr_warn(PREFIX
-diff --git a/include/acpi/acpixf.h b/include/acpi/acpixf.h
-index e9c9b88..e45be94 100644
---- a/include/acpi/acpixf.h
-+++ b/include/acpi/acpixf.h
-@@ -186,6 +186,10 @@ acpi_status acpi_find_root_pointer(acpi_size *rsdp_address);
- acpi_status acpi_unload_table_id(acpi_owner_id id);
+ 	u64 start, end;
++	u32 hotpluggable;
+ 	int node, pxm;
  
- acpi_status
-+acpi_get_table_desc(char *signature,
-+		    struct acpi_table_desc *out_desc);
-+
-+acpi_status
- acpi_get_table_header(acpi_string signature,
- 		      u32 instance, struct acpi_table_header *out_table_header);
+ 	if (srat_disabled())
+@@ -154,7 +155,8 @@ acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
+ 		goto out_err_bad_srat;
+ 	if ((ma->flags & ACPI_SRAT_MEM_ENABLED) == 0)
+ 		goto out_err;
+-	if ((ma->flags & ACPI_SRAT_MEM_HOT_PLUGGABLE) && !save_add_info())
++	hotpluggable = ma->flags & ACPI_SRAT_MEM_HOT_PLUGGABLE;
++	if (hotpluggable && !save_add_info())
+ 		goto out_err;
  
-diff --git a/include/linux/acpi.h b/include/linux/acpi.h
-index d86455a..10dfda7 100644
---- a/include/linux/acpi.h
-+++ b/include/linux/acpi.h
-@@ -97,6 +97,10 @@ static inline phys_addr_t early_acpi_override_srat(void)
- }
- #endif	/* CONFIG_ACPI_INITRD_TABLE_OVERRIDE */
+ 	start = ma->base_address;
+@@ -174,9 +176,10 @@ acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
  
-+#ifdef CONFIG_ACPI_NUMA
-+phys_addr_t early_acpi_firmware_srat(void);
-+#endif  /* CONFIG_ACPI_NUMA */
-+
- char * __acpi_map_table (unsigned long phys_addr, unsigned long size);
- void __acpi_unmap_table(char *map, unsigned long size);
- int early_acpi_boot_init(void);
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index 2a57888..2dfb06f 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -107,8 +107,12 @@ void __init find_hotpluggable_memory(void)
+ 	node_set(node, numa_nodes_parsed);
  
- 	/* Try to find if SRAT is overridden */
- 	srat_paddr = early_acpi_override_srat();
--	if (!srat_paddr)
--		return;
-+	if (!srat_paddr) {
-+		/* Try to find SRAT from firmware if it wasn't overridden */
-+		srat_paddr = early_acpi_firmware_srat();
-+		if (!srat_paddr)
-+			return;
-+	}
+-	printk(KERN_INFO "SRAT: Node %u PXM %u [mem %#010Lx-%#010Lx]\n",
+-	       node, pxm,
+-	       (unsigned long long) start, (unsigned long long) end - 1);
++	pr_info("SRAT: Node %u PXM %u [mem %#010Lx-%#010Lx]%s\n",
++		node, pxm,
++		(unsigned long long) start, (unsigned long long) end - 1,
++		hotpluggable ? " Hot Pluggable" : "");
  
- 	/* Will parse SRAT and find out hotpluggable memory here */
- }
+ 	return 0;
+ out_err_bad_srat:
 -- 
 1.7.1
 
