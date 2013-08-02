@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030389Ab3HBKLJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:11:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37373 "EHLO
+	id S1030421Ab3HBKLT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:11:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37381 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030228Ab3HBKLD (ORCPT
+	with ESMTP id S1030386Ab3HBKLJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:11:03 -0400
+	Fri, 2 Aug 2013 06:11:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lan Tianyu <tianyu.lan@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [ 62/99] ACPI / video: ignore BIOS initial backlight value for Fujitsu E753
-Date: Fri,  2 Aug 2013 18:08:15 +0800
-Message-Id: <20130802100234.666093038@linuxfoundation.org>
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Alasdair G Kergon <agk@redhat.com>
+Subject: [ 64/99] dm ioctl: set noio flag to avoid __vmalloc deadlock
+Date: Fri,  2 Aug 2013 18:08:17 +0800
+Message-Id: <20130802100234.946549211@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802100225.478715166@linuxfoundation.org>
 References: <20130802100225.478715166@linuxfoundation.org>
@@ -27,40 +27,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lan Tianyu <tianyu.lan@intel.com>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit 9657a565a476d517451c10b0bcc106e300785aff upstream.
+commit 1c0e883e86ece31880fac2f84b260545d66a39e0 upstream.
 
-The BIOS of FUjitsu E753 reports an incorrect initial backlight value
-for WIN8 compatible OS, causing backlight to be dark during startup.
-This change causes the incorrect initial value from BIOS to be ignored.
+Set noio flag while calling __vmalloc() because it doesn't fully respect
+gfp flags to avoid a possible deadlock (see commit
+502624bdad3dba45dfaacaf36b7d83e39e74b2d2).
 
-References: https://bugzilla.kernel.org/show_bug.cgi?id=60161
-Reported-and-tested-by: Jan Hinnerk Stosch <janhinnerk.stosch@gmail.com>
-Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+This should be backported to stable kernels 3.8 and newer. The kernel 3.8
+doesn't have memalloc_noio_save(), so we should set and restore process
+flag PF_MEMALLOC instead.
+
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Alasdair G Kergon <agk@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/video.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/md/dm-ioctl.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/acpi/video.c
-+++ b/drivers/acpi/video.c
-@@ -450,6 +450,14 @@ static struct dmi_system_id video_dmi_ta
- 	},
- 	{
- 	 .callback = video_ignore_initial_backlight,
-+	 .ident = "Fujitsu E753",
-+	 .matches = {
-+		DMI_MATCH(DMI_BOARD_VENDOR, "FUJITSU"),
-+		DMI_MATCH(DMI_PRODUCT_NAME, "LIFEBOOK E753"),
-+		},
-+	},
-+	{
-+	 .callback = video_ignore_initial_backlight,
- 	 .ident = "HP Pavilion dm4",
- 	 .matches = {
- 		DMI_MATCH(DMI_BOARD_VENDOR, "Hewlett-Packard"),
+--- a/drivers/md/dm-ioctl.c
++++ b/drivers/md/dm-ioctl.c
+@@ -1644,7 +1644,10 @@ static int copy_params(struct dm_ioctl _
+ 	}
+ 
+ 	if (!dmi) {
++		unsigned noio_flag;
++		noio_flag = memalloc_noio_save();
+ 		dmi = __vmalloc(param_kernel->data_size, GFP_NOIO | __GFP_REPEAT | __GFP_HIGH, PAGE_KERNEL);
++		memalloc_noio_restore(noio_flag);
+ 		if (dmi)
+ 			*param_flags |= DM_PARAMS_VMALLOC;
+ 	}
 
 
