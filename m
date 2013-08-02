@@ -1,86 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754579Ab3HBChO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 22:37:14 -0400
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:55018 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751400Ab3HBChM (ORCPT
+	id S1754535Ab3HBCm0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 22:42:26 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:21733 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751400Ab3HBCmY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 22:37:12 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AgEFAGsa+1F5LPxHgWdsb2JhbABbhjK2dYUwgRsXDgEBFiYogiQBAQIDOhwjEAgDDgcDCSUPBSUDIROID7k/Fo9xB4MZcwOXXoojilUq
-Date: Fri, 2 Aug 2013 12:37:07 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: tytso@mit.edu, adilger.kernel@dilger.ca, bpm@sgi.com, elder@kernel.org,
-        hch@infradead.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        xfs@oss.sgi.com, a.sangwan@samsung.com,
-        Namjae Jeon <namjae.jeon@samsung.com>
-Subject: Re: [PATCH 1/3] fs: Introduce new flag FALLOC_FL_COLLAPSE_RANGE
-Message-ID: <20130802023707.GA7118@dastard>
-References: <1375281721-15840-1-git-send-email-linkinjeon@gmail.com>
- <20130801002241.GH7118@dastard>
- <CAKYAXd_VvGQL6KW3+FmfPogxzkXq7yF-4WPM9iebXcTn7tiN9A@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKYAXd_VvGQL6KW3+FmfPogxzkXq7yF-4WPM9iebXcTn7tiN9A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 1 Aug 2013 22:42:24 -0400
+X-Authority-Analysis: v=2.0 cv=P6i4d18u c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=pejE-yLFeWcA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=D9deyScab2UA:10 a=VwQbUJbxAAAA:8 a=ornm1ghUKSdw4W3e3bAA:9 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-Id: <20130802023933.677590002@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Thu, 01 Aug 2013 22:39:33 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCH 0/4 v2] [GIT PULL][RCU][3.12] tracing/rcu: Export strings to userspace
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 01, 2013 at 02:07:39PM +0900, Namjae Jeon wrote:
-> 2013/8/1, Dave Chinner <david@fromorbit.com>:
-> > On Wed, Jul 31, 2013 at 11:42:00PM +0900, Namjae Jeon wrote:
-> >> From: Namjae Jeon <namjae.jeon@samsung.com>
-> >>
-> >> Fallocate now supports new FALLOC_FL_COLLAPSE_RANGE flag.
-> >> The semantics of this flag are following:
-> >> 1) It collapses the range lying between offset and length by removing any
-> >> data
-> >>    blocks which are present in this range and than updates all the
-> >> logical
-> >>    offsets of extents beyond "offset + len" to nullify the hole created
-> >> by
-> >>    removing blocks. In short, it does not leave a hole.
-> >> 1) It should be used exclusively. No other fallocate flag in combination.
-> >> 2) Offset and length supplied to fallocate should be fs block size
-> >> aligned.
-> >
-> Hi Dave.
-> 
-> > Given that the rest of fallocate() interfaces are byte based, this
-> > is going to cause some confusion if it's not well documented. i.e.
-> > this restriction needs to be documented in the header file that is
-> > exposed to userspace, as well as in the fallocate(2) man page.
-> Agree.
-> 
-> >
-> >> 3) It wokrs beyond "EOF", so the extents which are pre-allocated beyond
-> >> "EOF"
-> >>    are also updated.
-> >
-> > I don't think that's valid for this operation. If the range is
-> > beyond EOF, you are not modifying anything visible to userspace, and
-> > that makes it the same as a hole punch operation. So, I'd get rid of
-> > thisnasty implementation complexity altogether.
-> The basic idea behind collapse range is that it does'nt leaves a hole.
+Paul,
 
-I know what collapse range is and what it's supposed to do. read
-again what I said - collapsing a range beyond EOF simply removes
-extents that the user can't otherwise see. That makes it the same as
-a hole punch operation. i.e. you don't need to use collapse range
-for this, because you can simply punch the same number of extents of
-the end of the preallocated range and get exactly the same result.
+As we talked about earlier, I set up a branch based off of v3.11-rc2 which
+the first patch has my tracing patch I need for other updates, and
+the other three are RCU specific patches that you should take.
 
-i.e. we already have functionality to manipulate extents beyond EOF
-and so we don't need another.
+You can either just pull this branch from my tree, or you can pull
+just the first patch (to keep the same SHA1) and apply the other three
+patches any way you want.
 
-Cheers,
+I tested all these patches through my standard tests, but I did not run
+the RCU ones through any specific RCU tests (like rcutorture). They
+shouldn't affect the process of RCU in anyway and only should touch
+the way trace points export their strings. You may want to run them through
+other tests just to make sure there isn't some strange side effect I
+caused. :-)
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Note the "-2" on the branch name.
+
+-- Steve
+
+v2 changes:
+
+  Remove const from char * in rcu_nocb_setup(), parse_rcu_nocb_poll(), and
+  print_cpu_stall_fast_no_hz(). I got a little to carried away with my
+  consts!
+
+Please pull the latest ftrace/rcu-2 tree, which can be found at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+ftrace/rcu-2
+
+Head SHA1: f7f7bac9cb1c50783f15937a11743655a5756a36
+
+
+Steven Rostedt (Red Hat) (4):
+      tracing: Add __tracepoint_string() to export string pointers
+      rcu: Add const annotation to char * for RCU tracepoints and functions
+      rcu: Simplify RCU_STATE_INITIALIZER() macro
+      rcu: Have the RCU tracepoints use the tracepoint_string infrastructure
+
+----
+ include/asm-generic/vmlinux.lds.h |    7 ++-
+ include/linux/ftrace_event.h      |   34 ++++++++++++
+ include/linux/rcupdate.h          |    4 +-
+ include/trace/events/rcu.h        |   82 ++++++++++++++---------------
+ kernel/rcu.h                      |    2 +-
+ kernel/rcupdate.c                 |    2 +-
+ kernel/rcutiny.c                  |    2 +-
+ kernel/rcutiny_plugin.h           |    2 +-
+ kernel/rcutorture.c               |    8 +--
+ kernel/rcutree.c                  |  105 +++++++++++++++++++++----------------
+ kernel/rcutree.h                  |    2 +-
+ kernel/rcutree_plugin.h           |   36 ++++++-------
+ kernel/trace/trace.h              |    3 ++
+ kernel/trace/trace_printk.c       |   19 +++++++
+ 14 files changed, 192 insertions(+), 116 deletions(-)
