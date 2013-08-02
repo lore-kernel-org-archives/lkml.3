@@ -1,57 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754853Ab3HBUKN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 16:10:13 -0400
-Received: from mga01.intel.com ([192.55.52.88]:32712 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753031Ab3HBUKL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 16:10:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,803,1367996400"; 
-   d="scan'208";a="380367677"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Alex Thorlton <athorlton@sgi.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Sedat Dilek <sedat.dilek@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Dave Jones <davej@redhat.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Al Viro <viro@zeniv.linux.org.uk>, Oleg Nesterov <oleg@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Kees Cook <keescook@chromium.org>, Robin Holt <holt@sgi.com>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20130802194659.GP26476@sgi.com>
-References: <20130802194659.GP26476@sgi.com>
-Subject: RE: [PATCH] Add per-process flag to control thp
+	id S1754990Ab3HBUK5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 16:10:57 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:48775 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752896Ab3HBUKz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 16:10:55 -0400
+Message-ID: <1375474254.2034.134.camel@joe-AO722>
+Subject: [PATCH] pktcdvd: Fix defective misuses of pkt_<level>
+From: Joe Perches <joe@perches.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: kernel-janitors@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Fri, 02 Aug 2013 13:10:54 -0700
+In-Reply-To: <20130801154452.GB5198@elgon.mountain>
+References: <20130801154452.GB5198@elgon.mountain>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Message-Id: <20130802201301.A872BE0090@blue.fi.intel.com>
-Date: Fri,  2 Aug 2013 23:13:01 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alex Thorlton wrote:
-> This patch implements functionality to allow processes to disable the use of
-> transparent hugepages through the prctl syscall.
-> 
-> We've determined that some jobs perform significantly better with thp disabled,
-> and we need a way to control thp on a per-process basis, without relying on
-> madvise.
+Fix thinkos where pkt_<level> needs a valid
+pktcdvd_device * and the pointer is known to
+be NULL.
 
-What kind of workloads are you talking about?
+Reported-by: Dan Carpenter <dan.carpenter@oracle.com> (go smatch!)
+Signed-off-by: Joe Perches <joe@perches.com>
+---
 
-What's wrong with madvise? Could you elaborate?
+Andrew, I believe Jiri picked up this series and
+you can drop them from mm.  Thanks.
 
-And I think thp_disabled should be reset to 0 on exec.
+ drivers/block/pktcdvd.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
--- 
- Kirill A. Shutemov
+diff --git a/drivers/block/pktcdvd.c b/drivers/block/pktcdvd.c
+index 29a5194..5618847 100644
+--- a/drivers/block/pktcdvd.c
++++ b/drivers/block/pktcdvd.c
+@@ -2360,8 +2360,8 @@ static void pkt_make_request(struct request_queue *q, struct bio *bio)
+ 
+ 	pd = q->queuedata;
+ 	if (!pd) {
+-		pkt_err(pd, "%s incorrect request queue\n",
+-			bdevname(bio->bi_bdev, b));
++		pr_err("%s incorrect request queue\n",
++		       bdevname(bio->bi_bdev, b));
+ 		goto end_io;
+ 	}
+ 
+@@ -2841,7 +2841,7 @@ static int pkt_remove_dev(dev_t pkt_dev)
+ 			break;
+ 	}
+ 	if (idx == MAX_WRITERS) {
+-		pkt_dbg(1, pd, "dev not setup\n");
++		pr_debug("dev not setup\n");
+ 		ret = -ENXIO;
+ 		goto out;
+ 	}
+
+
