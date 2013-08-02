@@ -1,53 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753268Ab3HBN7g (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 09:59:36 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:52135 "EHLO hydra.sisk.pl"
+	id S1753288Ab3HBOCR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 10:02:17 -0400
+Received: from mga09.intel.com ([134.134.136.24]:22817 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753106Ab3HBN7e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 09:59:34 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Felipe Contreras <felipe.contreras@gmail.com>
-Cc: Aaron Lu <aaron.lwe@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, Len Brown <lenb@kernel.org>,
-        Zhang Rui <rui.zhang@intel.com>, Jiri Kosina <trivial@kernel.org>
-Subject: Re: [PATCH 2/3] acpi: video: trivial style cleanups
-Date: Fri, 02 Aug 2013 16:09:48 +0200
-Message-ID: <2112254.EC1eeAtOxW@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAMP44s2KijzXcYyU_fOD2YB4rU5wuFCfte4fR3HXoriTKE2wuA@mail.gmail.com>
-References: <1375400641-1694-1-git-send-email-felipe.contreras@gmail.com> <51FB118D.8040205@gmail.com> <CAMP44s2KijzXcYyU_fOD2YB4rU5wuFCfte4fR3HXoriTKE2wuA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1751461Ab3HBOCQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 10:02:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,801,1367996400"; 
+   d="scan'208";a="356261071"
+Message-ID: <1375452445.14869.324.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH] mtd: nand: omap2: Fix compilation warning
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Reply-To: artem.bityutskiy@linux.intel.com
+To: "Gupta, Pekon" <pekon@ti.com>
+Cc: Olof Johansson <olof@lixom.net>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        David Woodhouse <dwmw2@infradead.org>
+Date: Fri, 02 Aug 2013 17:07:25 +0300
+In-Reply-To: <20980858CB6D3A4BAE95CA194937D5E73E9ED5F3@DBDE04.ent.ti.com>
+References: <1374681392-6183-1-git-send-email-olof@lixom.net>
+	 <20980858CB6D3A4BAE95CA194937D5E73E9ED5F3@DBDE04.ent.ti.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, August 01, 2013 11:18:34 PM Felipe Contreras wrote:
-> On Thu, Aug 1, 2013 at 8:55 PM, Aaron Lu <aaron.lwe@gmail.com> wrote:
-> > On 08/02/2013 07:44 AM, Felipe Contreras wrote:
-> >> Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
-> >
-> > Change log please.
+On Wed, 2013-07-24 at 17:48 +0000, Gupta, Pekon wrote:
+> Hi Olof,
 > 
-> You mean a commit message?
-
-No.  He meant the part that goes between the subject and the signoff.
-This is called a change log (or changelog).
-
-> That's what it's called in Git lingo, and
-> it's right there:
+> > 
+> > fb1585bc13b (mtd: nand: omap2: clean-up BCHx_HW and BCHx_SW ECC
+> > configurations in device_probe) introduced a warning when the new option
+> > is disabled, i.e. with omap2plus_defconfig:
+> > 
+> > drivers/mtd/nand/omap2.c:1075:13: warning: 'omap3_enable_hwecc_bch'
+> > defined but not used [-Wunused-function]
+> > 
+> > Fix this by rescoping the ifdef. Also remove a redudant #endif/#ifdef
+> > pair.
+> > 
+> > Signed-off-by: Olof Johansson <olof@lixom.net>
+> > ---
 > 
-> acpi: video: trivial style cleanups
+> Thanks much..
+> But just to remind, this commit fb1585b in linux-next needs to be reverted.
+> This patch is leftover by mistake because other dependent patches of 
+> this series were dropped. This will not only break omap2-nand driver,
+> but might also break the build.
 
-And that's not sufficient, because it doesn't explain *what* cleanups are
-being made.
-
-Thanks,
-Rafael
-
+Just dropped it, thanks!
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Best Regards,
+Artem Bityutskiy
+
