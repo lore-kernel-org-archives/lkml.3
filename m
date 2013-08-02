@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754380Ab3HBKWh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:22:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37812 "EHLO
+	id S1754184Ab3HBKWc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:22:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37800 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754193Ab3HBKWf (ORCPT
+	with ESMTP id S1754120Ab3HBKWa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:22:35 -0400
+	Fri, 2 Aug 2013 06:22:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jack Hill <jackhill@jackhill.us>,
-        Saurav Kashyap <saurav.kashyap@qlogic.com>,
-        Giridhar Malavali <giridhar.malavali@qlogic.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 04/23] SCSI: qla2xxx: Properly set the tagging for commands.
-Date: Fri,  2 Aug 2013 18:23:17 +0800
-Message-Id: <20130802102036.810716252@linuxfoundation.org>
+        Chih-Chung Chang <chihchung@chromium.org>,
+        Dylan Reid <dgreid@chromium.org>, Mark Brown <broonie@linaro.org>
+Subject: [ 02/23] ASoC: max98088 - fix element type of the register cache.
+Date: Fri,  2 Aug 2013 18:23:15 +0800
+Message-Id: <20130802102036.544933493@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802102036.180660415@linuxfoundation.org>
 References: <20130802102036.180660415@linuxfoundation.org>
@@ -29,62 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Saurav Kashyap <saurav.kashyap@qlogic.com>
+From: Chih-Chung Chang <chihchung@chromium.org>
 
-commit c3ccb1d7cf4c4549151876dd37c0944a682fd9e1 upstream.
+commit cb6f66a2d278e57a6c9d8fb59bd9ebd8ab3965c2 upstream.
 
-This fixes a regression where Xyratex controllers and disks were lost by the
-driver:
+The registers of max98088 are 8 bits, not 16 bits. This bug causes the
+contents of registers to be overwritten with bad values when the codec
+is suspended and then resumed.
 
-https://bugzilla.kernel.org/show_bug.cgi?id=59601
-
-Reported-by: Jack Hill <jackhill@jackhill.us>
-Signed-off-by: Saurav Kashyap <saurav.kashyap@qlogic.com>
-Signed-off-by: Giridhar Malavali <giridhar.malavali@qlogic.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Chih-Chung Chang <chihchung@chromium.org>
+Signed-off-by: Dylan Reid <dgreid@chromium.org>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/qla2xxx/qla_iocb.c |   11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
+ sound/soc/codecs/max98088.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/scsi/qla2xxx/qla_iocb.c
-+++ b/drivers/scsi/qla2xxx/qla_iocb.c
-@@ -422,6 +422,8 @@ qla2x00_start_scsi(srb_t *sp)
- 			    __constant_cpu_to_le16(CF_SIMPLE_TAG);
- 			break;
- 		}
-+	} else {
-+		cmd_pkt->control_flags = __constant_cpu_to_le16(CF_SIMPLE_TAG);
- 	}
+--- a/sound/soc/codecs/max98088.c
++++ b/sound/soc/codecs/max98088.c
+@@ -1598,7 +1598,7 @@ static int max98088_dai2_digital_mute(st
  
- 	/* Load SCSI command packet. */
-@@ -1099,11 +1101,11 @@ qla24xx_build_scsi_crc_2_iocbs(srb_t *sp
- 		    fcp_cmnd->task_attribute = TSK_ORDERED;
- 		    break;
- 		default:
--		    fcp_cmnd->task_attribute = 0;
-+		    fcp_cmnd->task_attribute = TSK_SIMPLE;
- 		    break;
- 		}
- 	} else {
--		fcp_cmnd->task_attribute = 0;
-+		fcp_cmnd->task_attribute = TSK_SIMPLE;
- 	}
+ static void max98088_sync_cache(struct snd_soc_codec *codec)
+ {
+-       u16 *reg_cache = codec->reg_cache;
++       u8 *reg_cache = codec->reg_cache;
+        int i;
  
- 	cmd_pkt->fcp_rsp_dseg_len = 0; /* Let response come in status iocb */
-@@ -1305,7 +1307,12 @@ qla24xx_start_scsi(srb_t *sp)
- 		case ORDERED_QUEUE_TAG:
- 			cmd_pkt->task = TSK_ORDERED;
- 			break;
-+		default:
-+		    cmd_pkt->task = TSK_SIMPLE;
-+		    break;
- 		}
-+	} else {
-+		cmd_pkt->task = TSK_SIMPLE;
- 	}
- 
- 	/* Load SCSI command packet. */
+        if (!codec->cache_sync)
 
 
