@@ -1,72 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755288Ab3HBXmJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 19:42:09 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54521 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755094Ab3HBXkk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 19:40:40 -0400
-Date: Fri, 2 Aug 2013 16:40:29 -0700
-From: tip-bot for David Herrmann <tipbot@zytor.com>
-Message-ID: <tip-9a6a36d19c9d24479300511e23933876a4a9cf82@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        tglx@linutronix.de, hpa@linux.intel.com, dh.herrmann@gmail.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, dh.herrmann@gmail.com, hpa@linux.intel.com
-In-Reply-To: <1375445127-15480-6-git-send-email-dh.herrmann@gmail.com>
-References: <1375445127-15480-6-git-send-email-dh.herrmann@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/fb] fbdev: simplefb: add common x86 RGB formats
-Git-Commit-ID: 9a6a36d19c9d24479300511e23933876a4a9cf82
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1754897Ab3HBXpK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 19:45:10 -0400
+Received: from mga09.intel.com ([134.134.136.24]:32622 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754733Ab3HBXpI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 19:45:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,804,1367996400"; 
+   d="scan'208";a="381045620"
+Message-ID: <51FC4635.1040909@linux.intel.com>
+Date: Fri, 02 Aug 2013 16:52:21 -0700
+From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 02 Aug 2013 16:40:35 -0700 (PDT)
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: linux-kernel@vger.kernel.org, "Brown, Len" <len.brown@intel.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Arjan van de Ven <arjan@linux.intel.com>
+Subject: Re: [RFC v01 0/3] Power Capping Framework
+References: <1375466932-11842-1-git-send-email-srinivas.pandruvada@linux.intel.com> <20130802222909.GA28831@kroah.com>
+In-Reply-To: <20130802222909.GA28831@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  9a6a36d19c9d24479300511e23933876a4a9cf82
-Gitweb:     http://git.kernel.org/tip/9a6a36d19c9d24479300511e23933876a4a9cf82
-Author:     David Herrmann <dh.herrmann@gmail.com>
-AuthorDate: Fri, 2 Aug 2013 14:05:24 +0200
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Fri, 2 Aug 2013 16:17:48 -0700
+On 08/02/2013 03:29 PM, Greg KH wrote:
+> On Fri, Aug 02, 2013 at 11:08:49AM -0700, Srinivas Pandruvada wrote:
+>> - A uniform sys-fs interface for all devices which can offer power capping
+> There is no "-" in sysfs please.
+OK.
+>> - A common API for drivers, which will avoid code duplication and easy
+>> implementation of client drivers.
+>>
+>> Once this framework is approved, we will submit a RAPL client driver using this
+>> framework.
+> No, you need users of a framework in order for it to be approved, we
+> don't add infrastructure without users.
+>
+> Especially as what usually happens is, when you add actual users, the
+> framework changes to fix the bugs found in it :)
+I will post the one client driver, which is already using this framework 
+as this series.
+> Ideally you will have more than one client driver submitted, as a
+> "framework" for just one driver seems a bit odd, don't you think?
+There are other groups and vendors interested in using this framework. 
+But they want to make sure that this
+framework can go to upstream Linux. We will provide one client using 
+this framework at this time.
+Do you think this is a problem?
+> Also, you add lots of new sysfs files, those need to be documented in
+> Documentation/ABI/ with this series.
+I have a Documentation patch, which describes ABI and framework. It is 
+under Documentation/powercap.
+Do I need to move this to Documentation/ABI?
+> thanks,
+>
+> greg k-h
+Thanks,
+Srinivas
 
-fbdev: simplefb: add common x86 RGB formats
-
-32bit XRGB and ARGB are used by modern x86 systems for EFI and VESA
-framebuffers. The other formats were reported by hpa to be most common.
-Add these so simplefb works on most common x86 systems.
-
-Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
-Link: http://lkml.kernel.org/r/1375445127-15480-6-git-send-email-dh.herrmann@gmail.com
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- include/linux/platform_data/simplefb.h | 7 +++++++
- 1 file changed, 7 insertions(+)
-
-diff --git a/include/linux/platform_data/simplefb.h b/include/linux/platform_data/simplefb.h
-index 5fa2c5e..53774b0 100644
---- a/include/linux/platform_data/simplefb.h
-+++ b/include/linux/platform_data/simplefb.h
-@@ -20,6 +20,13 @@
- #define SIMPLEFB_FORMATS \
- { \
- 	{ "r5g6b5", 16, {11, 5}, {5, 6}, {0, 5}, {0, 0}, DRM_FORMAT_RGB565 }, \
-+	{ "x1r5g5b5", 16, {10, 5}, {5, 5}, {0, 5}, {0, 0}, DRM_FORMAT_XRGB1555 }, \
-+	{ "a1r5g5b5", 16, {10, 5}, {5, 5}, {0, 5}, {15, 1}, DRM_FORMAT_ARGB1555 }, \
-+	{ "r8g8b8", 24, {16, 8}, {8, 8}, {0, 8}, {0, 0}, DRM_FORMAT_RGB888 }, \
-+	{ "x8r8g8b8", 32, {16, 8}, {8, 8}, {0, 8}, {0, 0}, DRM_FORMAT_XRGB8888 }, \
-+	{ "a8r8g8b8", 32, {16, 8}, {8, 8}, {0, 8}, {24, 8}, DRM_FORMAT_ARGB8888 }, \
-+	{ "x2r10g10b10", 32, {20, 10}, {10, 10}, {0, 10}, {0, 0}, DRM_FORMAT_XRGB2101010 }, \
-+	{ "a2r10g10b10", 32, {20, 10}, {10, 10}, {0, 10}, {30, 2}, DRM_FORMAT_ARGB2101010 }, \
- }
- 
- /*
