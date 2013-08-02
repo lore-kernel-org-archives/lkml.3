@@ -1,100 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758509Ab3HBJTY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 05:19:24 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:62165 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755010Ab3HBJQQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 05:16:16 -0400
-X-IronPort-AV: E=Sophos;i="4.89,800,1367942400"; 
-   d="scan'208";a="8098120"
-From: Tang Chen <tangchen@cn.fujitsu.com>
-To: robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl, lenb@kernel.org,
-        tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
-        akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
-        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
-        mina86@mina86.com, gong.chen@linux.intel.com,
-        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
-        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
-        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com
-Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Subject: [PATCH v2 RESEND 08/18] x86: get pg_data_t's memory from other node
-Date: Fri, 2 Aug 2013 17:14:27 +0800
-Message-Id: <1375434877-20704-9-git-send-email-tangchen@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.10.1
-In-Reply-To: <1375434877-20704-1-git-send-email-tangchen@cn.fujitsu.com>
-References: <1375434877-20704-1-git-send-email-tangchen@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/02 17:14:47,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/02 17:14:52,
-	Serialize complete at 2013/08/02 17:14:52
+	id S1758529Ab3HBJTf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 05:19:35 -0400
+Received: from up.free-electrons.com ([94.23.35.102]:58512 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758253Ab3HBJTb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 05:19:31 -0400
+Date: Fri, 2 Aug 2013 11:19:26 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: plagnioj@jcrosoft.com,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        hector.palacios@digi.com, Thomas Petazzoni <thomas@free-electrons.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-fbdev@vger.kernel.org
+Subject: Re: [PATCHv3 1/3] video: mxsfb: fix color settings for 18bit data
+ bus and 32bpp
+Message-ID: <20130802091926.GR2911@lukather>
+References: <1375346437-18991-1-git-send-email-maxime.ripard@free-electrons.com>
+ <1375346437-18991-2-git-send-email-maxime.ripard@free-electrons.com>
+ <51FB6F51.7090500@ti.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="AonAANj1daC6QcQu"
+Content-Disposition: inline
+In-Reply-To: <51FB6F51.7090500@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
-If system can create movable node which all memory of the node is allocated
-as ZONE_MOVABLE, setup_node_data() cannot allocate memory for the node's
-pg_data_t. So, use memblock_alloc_try_nid() instead of memblock_alloc_nid()
-to retry when the first allocation fails. Otherwise, the system could failed
-to boot.
+--AonAANj1daC6QcQu
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The node_data could be on hotpluggable node. And so could pagetable and
-vmemmap. But for now, doing so will break memory hot-remove path.
+On Fri, Aug 02, 2013 at 11:35:29AM +0300, Tomi Valkeinen wrote:
+> On 01/08/13 11:40, Maxime Ripard wrote:
+> > From: Hector Palacios <hector.palacios@digi.com>
+> >=20
+> > For a combination of 18bit LCD data bus width and a color
+> > mode of 32bpp, the driver was setting the color mapping to
+> > rgb666, which is wrong, as the color in memory realy has an
+> > rgb888 layout.
+> >=20
+> > This patch also removes the setting of flag CTRL_DF24 that
+> > makes the driver dimiss the upper 2 bits when handling 32/24bpp
+> > colors in a diplay with 18bit data bus width. This flag made
+> > true color images display wrong in such configurations.
+> >=20
+> > Finally, the color mapping rgb666 has also been removed as nobody
+> > is using it and high level applications like Qt5 cannot work
+> > with it either.
+> >=20
+> > Reference: https://lkml.org/lkml/2013/5/23/220
+> > Signed-off-by: Hector Palacios <hector.palacios@digi.com>
+> > Acked-by: Juergen Beisert <jbe@pengutronix.de>
+> > Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+> > Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+> > ---
+> >  drivers/video/mxsfb.c | 26 --------------------------
+> >  1 file changed, 26 deletions(-)
+>=20
+> This one is labeled as "fix". Should it got to v3.11?
 
-A node could have several memory devices. And the device who holds node
-data should be hot-removed in the last place. But in NUMA level, we don't
-know which memory_block (/sys/devices/system/node/nodeX/memoryXXX) belongs
-to which memory device. We only have node. So we can only do node hotplug.
+It would be better yes. Otherwise, 3.12 will do.
 
-But in virtualization, developers are now developing memory hotplug in qemu,
-which support a single memory device hotplug. So a whole node hotplug will
-not satisfy virtualization users.
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
 
-So at last, we concluded that we'd better do memory hotplug and local node
-things (local node node data, pagetable, vmemmap, ...) in two steps.
-Please refer to https://lkml.org/lkml/2013/6/19/73
+--AonAANj1daC6QcQu
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-For now, we put node_data of movable node to another node, and then improve
-it in the future.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-In the later patches, a boot option will be introduced to enable/disable this
-functionality. If users disable it, the node_data will still be put on the
-local node.
+iQIcBAEBAgAGBQJR+3mdAAoJEBx+YmzsjxAg8TgP/RFm7buWsIYEep+d2LCo8wok
+oJGE5ibDdMr8zzJP1ekUE12WBF7vYsuZfR1h7LTYJcnVBSa3oc8QYIbWwlkvzJeR
+K5wojui/WjJMecJyQ5D3ZqUGx7KXLbZjva0HNDceIpW5RDWNaJgQPBCmES4VcrSd
+mY81nD+0+i86HB2kdSX7OXQYyEcVbMaUbyrfVSyRSed7zpJd48x9xpWdh+L9gclf
+ktAXAXZqcy5xPWYMgygQbrrh5dkJwmHrRU8Xy4bmmVfobKM41dFXScIHFdJGukaU
+Tl/ow3CyEy50ScsQM0OOBSED4sQB8kxwzjd+s4tWowmyNkcoDibKiIYmp7Nn4c5O
+eaIg5m40bSxN6pX+/woYh/N4hWTaG/0vF5S6gP9MSiOxgjjGGd8YrtI1tj1AOavX
+PKV24bunYd3GPfMId4Uh/vqUH+6TMjBrpS0oj+h6udk+I/kehMtEOLvfk8RGtP9O
+yZfjlSGvZjD5dj+EEZ2jU36GeSnDoPgYKsK30j9XVuaThVw4UoXQd1N4LUP7D1nk
+vC2Tuk3VfgrzHwIvSThcI14Li0p8gKS0zrUNDsS8XlQ+D7m5wBWgIefsN2aXmYpi
+SKnjXoeRrBisqLlDyhY7KH0o89sr7ZFr+rOeAb3O2utZFY+1o23nxt6lWcIfZYlT
+uBQ2oQtyUgEV59NenDlu
+=2ROJ
+-----END PGP SIGNATURE-----
 
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Acked-by: Toshi Kani <toshi.kani@hp.com>
----
- arch/x86/mm/numa.c |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
-
-diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-index 8bf93ba..d532b6d 100644
---- a/arch/x86/mm/numa.c
-+++ b/arch/x86/mm/numa.c
-@@ -209,10 +209,9 @@ static void __init setup_node_data(int nid, u64 start, u64 end)
- 	 * Allocate node data.  Try node-local memory and then any node.
- 	 * Never allocate in DMA zone.
- 	 */
--	nd_pa = memblock_alloc_nid(nd_size, SMP_CACHE_BYTES, nid);
-+	nd_pa = memblock_alloc_try_nid(nd_size, SMP_CACHE_BYTES, nid);
- 	if (!nd_pa) {
--		pr_err("Cannot find %zu bytes in node %d\n",
--		       nd_size, nid);
-+		pr_err("Cannot find %zu bytes in any node\n", nd_size);
- 		return;
- 	}
- 	nd = __va(nd_pa);
--- 
-1.7.1
-
+--AonAANj1daC6QcQu--
