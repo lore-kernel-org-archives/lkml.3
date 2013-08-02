@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030679Ab3HBKMq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:12:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37536 "EHLO
+	id S1030693Ab3HBKM4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:12:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37539 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030606Ab3HBKMm (ORCPT
+	with ESMTP id S1030541Ab3HBKMu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:12:42 -0400
+	Fri, 2 Aug 2013 06:12:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
+To: linux-kernel@vger.kernel.org, target-devel <target-devel@vger.kernel.org>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [ 99/99] x86: Fix /proc/mtrr with base/size more than 44bits
-Date: Fri,  2 Aug 2013 18:08:52 +0800
-Message-Id: <20130802100239.731433285@linuxfoundation.org>
+        Nicholas Bellinger <nab@linux-iscsi.org>,
+        Or Gerlitz <ogerlitz@mellanox.com>,
+        Mike Christie <michaelc@cs.wisc.edu>
+Subject: [ 95/99] iscsi-target: Fix iscsit_add_reject* usage for iser
+Date: Fri,  2 Aug 2013 18:08:48 +0800
+Message-Id: <20130802100239.175079253@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802100225.478715166@linuxfoundation.org>
 References: <20130802100225.478715166@linuxfoundation.org>
@@ -27,207 +28,803 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yinghai Lu <yinghai@kernel.org>
 
-commit d5c78673b1b28467354c2c30c3d4f003666ff385 upstream.
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-On one sytem that mtrr range is more then 44bits, in dmesg we have
-[    0.000000] MTRR default type: write-back
-[    0.000000] MTRR fixed ranges enabled:
-[    0.000000]   00000-9FFFF write-back
-[    0.000000]   A0000-BFFFF uncachable
-[    0.000000]   C0000-DFFFF write-through
-[    0.000000]   E0000-FFFFF write-protect
-[    0.000000] MTRR variable ranges enabled:
-[    0.000000]   0 [000080000000-0000FFFFFFFF] mask 3FFF80000000 uncachable
-[    0.000000]   1 [380000000000-38FFFFFFFFFF] mask 3F0000000000 uncachable
-[    0.000000]   2 [000099000000-000099FFFFFF] mask 3FFFFF000000 write-through
-[    0.000000]   3 [00009A000000-00009AFFFFFF] mask 3FFFFF000000 write-through
-[    0.000000]   4 [381FFA000000-381FFBFFFFFF] mask 3FFFFE000000 write-through
-[    0.000000]   5 [381FFC000000-381FFC0FFFFF] mask 3FFFFFF00000 write-through
-[    0.000000]   6 [0000AD000000-0000ADFFFFFF] mask 3FFFFF000000 write-through
-[    0.000000]   7 [0000BD000000-0000BDFFFFFF] mask 3FFFFF000000 write-through
-[    0.000000]   8 disabled
-[    0.000000]   9 disabled
+commit ba159914086f06532079fc15141f46ffe7e04a41 upstream
 
-but /proc/mtrr report wrong:
-reg00: base=0x080000000 ( 2048MB), size= 2048MB, count=1: uncachable
-reg01: base=0x80000000000 (8388608MB), size=1048576MB, count=1: uncachable
-reg02: base=0x099000000 ( 2448MB), size=   16MB, count=1: write-through
-reg03: base=0x09a000000 ( 2464MB), size=   16MB, count=1: write-through
-reg04: base=0x81ffa000000 (8519584MB), size=   32MB, count=1: write-through
-reg05: base=0x81ffc000000 (8519616MB), size=    1MB, count=1: write-through
-reg06: base=0x0ad000000 ( 2768MB), size=   16MB, count=1: write-through
-reg07: base=0x0bd000000 ( 3024MB), size=   16MB, count=1: write-through
-reg08: base=0x09b000000 ( 2480MB), size=   16MB, count=1: write-combining
+This patch changes iscsit_add_reject() + iscsit_add_reject_from_cmd()
+usage to not sleep on iscsi_cmd->reject_comp to address a free-after-use
+usage bug in v3.10 with iser-target code.
 
-so bit 44 and bit 45 get cut off.
+It saves ->reject_reason for use within iscsit_build_reject() so the
+correct value for both transport cases.  It also drops the legacy
+fail_conn parameter usage throughput iscsi-target code and adds
+two iscsit_add_reject_cmd() and iscsit_reject_cmd helper functions,
+along with various small cleanups.
 
-We have problems in arch/x86/kernel/cpu/mtrr/generic.c::generic_get_mtrr().
-1. for base, we miss cast base_lo to 64bit before shifting.
-Fix that by adding u64 casting.
+(v2: Re-enable target_put_sess_cmd() to be called from
+     iscsit_add_reject_from_cmd() for rejects invoked after
+     target_get_sess_cmd() has been called)
 
-2. for size, it only can handle 44 bits aka 32bits + page_shift
-Fix that with 64bit mask instead of 32bit mask_lo, then range could be
-more than 44bits.
-At the same time, we need to update size_or_mask for old cpus that does
-support cpuid 0x80000008 to get phys_addr. Need to set high 32bits
-to all 1s, otherwise will not get correct size for them.
-
-Also fix mtrr_add_page: it should check base and (base + size - 1)
-instead of base and size, as base and size could be small but
-base + size could bigger enough to be out of boundary. We can
-use boot_cpu_data.x86_phys_bits directly to avoid size_or_mask.
-
-So When are we going to have size more than 44bits? that is 16TiB.
-
-after patch we have right ouput:
-reg00: base=0x080000000 ( 2048MB), size= 2048MB, count=1: uncachable
-reg01: base=0x380000000000 (58720256MB), size=1048576MB, count=1: uncachable
-reg02: base=0x099000000 ( 2448MB), size=   16MB, count=1: write-through
-reg03: base=0x09a000000 ( 2464MB), size=   16MB, count=1: write-through
-reg04: base=0x381ffa000000 (58851232MB), size=   32MB, count=1: write-through
-reg05: base=0x381ffc000000 (58851264MB), size=    1MB, count=1: write-through
-reg06: base=0x0ad000000 ( 2768MB), size=   16MB, count=1: write-through
-reg07: base=0x0bd000000 ( 3024MB), size=   16MB, count=1: write-through
-reg08: base=0x09b000000 ( 2480MB), size=   16MB, count=1: write-combining
-
--v2: simply checking in mtrr_add_page according to hpa.
-
-[ hpa: This probably wants to go into -stable only after having sat in
-  mainline for a bit.  It is not a regression. ]
-
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Link: http://lkml.kernel.org/r/1371162815-29931-1-git-send-email-yinghai@kernel.org
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Cc: Or Gerlitz <ogerlitz@mellanox.com>
+Cc: Mike Christie <michaelc@cs.wisc.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- arch/x86/kernel/cpu/mtrr/generic.c |   21 +++++++++++----------
- arch/x86/kernel/cpu/mtrr/main.c    |   16 +++++++++-------
- 2 files changed, 20 insertions(+), 17 deletions(-)
+ drivers/infiniband/ulp/isert/ib_isert.c  |    5 
+ drivers/target/iscsi/iscsi_target.c      |  251 ++++++++++++-------------------
+ drivers/target/iscsi/iscsi_target.h      |    2 
+ drivers/target/iscsi/iscsi_target_core.h |    4 
+ drivers/target/iscsi/iscsi_target_erl0.c |    7 
+ drivers/target/iscsi/iscsi_target_erl1.c |   20 +-
+ drivers/target/iscsi/iscsi_target_util.c |    1 
+ include/target/iscsi/iscsi_transport.h   |    2 
+ 8 files changed, 116 insertions(+), 176 deletions(-)
 
---- a/arch/x86/kernel/cpu/mtrr/generic.c
-+++ b/arch/x86/kernel/cpu/mtrr/generic.c
-@@ -510,8 +510,9 @@ generic_get_free_region(unsigned long ba
- static void generic_get_mtrr(unsigned int reg, unsigned long *base,
- 			     unsigned long *size, mtrr_type *type)
+--- a/drivers/infiniband/ulp/isert/ib_isert.c
++++ b/drivers/infiniband/ulp/isert/ib_isert.c
+@@ -957,11 +957,6 @@ sequence_cmd:
+ 	if (!rc && dump_payload == false && unsol_data)
+ 		iscsit_set_unsoliticed_dataout(cmd);
+ 
+-	if (rc == CMDSN_ERROR_CANNOT_RECOVER)
+-		return iscsit_add_reject_from_cmd(
+-			   ISCSI_REASON_PROTOCOL_ERROR,
+-			   1, 0, (unsigned char *)hdr, cmd);
+-
+ 	return 0;
+ }
+ 
+--- a/drivers/target/iscsi/iscsi_target.c
++++ b/drivers/target/iscsi/iscsi_target.c
+@@ -628,25 +628,18 @@ static void __exit iscsi_target_cleanup_
+ }
+ 
+ static int iscsit_add_reject(
++	struct iscsi_conn *conn,
+ 	u8 reason,
+-	int fail_conn,
+-	unsigned char *buf,
+-	struct iscsi_conn *conn)
++	unsigned char *buf)
  {
--	unsigned int mask_lo, mask_hi, base_lo, base_hi;
--	unsigned int tmp, hi;
-+	u32 mask_lo, mask_hi, base_lo, base_hi;
-+	unsigned int hi;
-+	u64 tmp, mask;
+ 	struct iscsi_cmd *cmd;
+-	struct iscsi_reject *hdr;
+-	int ret;
+ 
+ 	cmd = iscsit_allocate_cmd(conn, GFP_KERNEL);
+ 	if (!cmd)
+ 		return -1;
+ 
+ 	cmd->iscsi_opcode = ISCSI_OP_REJECT;
+-	if (fail_conn)
+-		cmd->cmd_flags |= ICF_REJECT_FAIL_CONN;
+-
+-	hdr	= (struct iscsi_reject *) cmd->pdu;
+-	hdr->reason = reason;
++	cmd->reject_reason = reason;
+ 
+ 	cmd->buf_ptr = kmemdup(buf, ISCSI_HDR_LEN, GFP_KERNEL);
+ 	if (!cmd->buf_ptr) {
+@@ -662,23 +655,16 @@ static int iscsit_add_reject(
+ 	cmd->i_state = ISTATE_SEND_REJECT;
+ 	iscsit_add_cmd_to_response_queue(cmd, conn, cmd->i_state);
+ 
+-	ret = wait_for_completion_interruptible(&cmd->reject_comp);
+-	if (ret != 0)
+-		return -1;
+-
+-	return (!fail_conn) ? 0 : -1;
++	return -1;
+ }
+ 
+-int iscsit_add_reject_from_cmd(
++static int iscsit_add_reject_from_cmd(
++	struct iscsi_cmd *cmd,
+ 	u8 reason,
+-	int fail_conn,
+-	int add_to_conn,
+-	unsigned char *buf,
+-	struct iscsi_cmd *cmd)
++	bool add_to_conn,
++	unsigned char *buf)
+ {
+ 	struct iscsi_conn *conn;
+-	struct iscsi_reject *hdr;
+-	int ret;
+ 
+ 	if (!cmd->conn) {
+ 		pr_err("cmd->conn is NULL for ITT: 0x%08x\n",
+@@ -688,11 +674,7 @@ int iscsit_add_reject_from_cmd(
+ 	conn = cmd->conn;
+ 
+ 	cmd->iscsi_opcode = ISCSI_OP_REJECT;
+-	if (fail_conn)
+-		cmd->cmd_flags |= ICF_REJECT_FAIL_CONN;
+-
+-	hdr	= (struct iscsi_reject *) cmd->pdu;
+-	hdr->reason = reason;
++	cmd->reject_reason = reason;
+ 
+ 	cmd->buf_ptr = kmemdup(buf, ISCSI_HDR_LEN, GFP_KERNEL);
+ 	if (!cmd->buf_ptr) {
+@@ -709,8 +691,6 @@ int iscsit_add_reject_from_cmd(
+ 
+ 	cmd->i_state = ISTATE_SEND_REJECT;
+ 	iscsit_add_cmd_to_response_queue(cmd, conn, cmd->i_state);
+-
+-	ret = wait_for_completion_interruptible(&cmd->reject_comp);
+ 	/*
+ 	 * Perform the kref_put now if se_cmd has already been setup by
+ 	 * scsit_setup_scsi_cmd()
+@@ -719,12 +699,19 @@ int iscsit_add_reject_from_cmd(
+ 		pr_debug("iscsi reject: calling target_put_sess_cmd >>>>>>\n");
+ 		target_put_sess_cmd(conn->sess->se_sess, &cmd->se_cmd);
+ 	}
+-	if (ret != 0)
+-		return -1;
++	return -1;
++}
++
++static int iscsit_add_reject_cmd(struct iscsi_cmd *cmd, u8 reason,
++				 unsigned char *buf)
++{
++	return iscsit_add_reject_from_cmd(cmd, reason, true, buf);
++}
+ 
+-	return (!fail_conn) ? 0 : -1;
++int iscsit_reject_cmd(struct iscsi_cmd *cmd, u8 reason, unsigned char *buf)
++{
++	return iscsit_add_reject_from_cmd(cmd, reason, false, buf);
+ }
+-EXPORT_SYMBOL(iscsit_add_reject_from_cmd);
+ 
+ /*
+  * Map some portion of the allocated scatterlist to an iovec, suitable for
+@@ -844,8 +831,8 @@ int iscsit_setup_scsi_cmd(struct iscsi_c
+ 	    !(hdr->flags & ISCSI_FLAG_CMD_FINAL)) {
+ 		pr_err("ISCSI_FLAG_CMD_WRITE & ISCSI_FLAG_CMD_FINAL"
+ 				" not set. Bad iSCSI Initiator.\n");
+-		return iscsit_add_reject_from_cmd(ISCSI_REASON_BOOKMARK_INVALID,
+-				1, 1, buf, cmd);
++		return iscsit_add_reject_cmd(cmd,
++					     ISCSI_REASON_BOOKMARK_INVALID, buf);
+ 	}
+ 
+ 	if (((hdr->flags & ISCSI_FLAG_CMD_READ) ||
+@@ -865,8 +852,8 @@ int iscsit_setup_scsi_cmd(struct iscsi_c
+ 		pr_err("ISCSI_FLAG_CMD_READ or ISCSI_FLAG_CMD_WRITE"
+ 			" set when Expected Data Transfer Length is 0 for"
+ 			" CDB: 0x%02x. Bad iSCSI Initiator.\n", hdr->cdb[0]);
+-		return iscsit_add_reject_from_cmd(ISCSI_REASON_BOOKMARK_INVALID,
+-				1, 1, buf, cmd);
++		return iscsit_add_reject_cmd(cmd,
++					     ISCSI_REASON_BOOKMARK_INVALID, buf);
+ 	}
+ done:
+ 
+@@ -875,62 +862,62 @@ done:
+ 		pr_err("ISCSI_FLAG_CMD_READ and/or ISCSI_FLAG_CMD_WRITE"
+ 			" MUST be set if Expected Data Transfer Length is not 0."
+ 			" Bad iSCSI Initiator\n");
+-		return iscsit_add_reject_from_cmd(ISCSI_REASON_BOOKMARK_INVALID,
+-				1, 1, buf, cmd);
++		return iscsit_add_reject_cmd(cmd,
++					     ISCSI_REASON_BOOKMARK_INVALID, buf);
+ 	}
+ 
+ 	if ((hdr->flags & ISCSI_FLAG_CMD_READ) &&
+ 	    (hdr->flags & ISCSI_FLAG_CMD_WRITE)) {
+ 		pr_err("Bidirectional operations not supported!\n");
+-		return iscsit_add_reject_from_cmd(ISCSI_REASON_BOOKMARK_INVALID,
+-				1, 1, buf, cmd);
++		return iscsit_add_reject_cmd(cmd,
++					     ISCSI_REASON_BOOKMARK_INVALID, buf);
+ 	}
+ 
+ 	if (hdr->opcode & ISCSI_OP_IMMEDIATE) {
+ 		pr_err("Illegally set Immediate Bit in iSCSI Initiator"
+ 				" Scsi Command PDU.\n");
+-		return iscsit_add_reject_from_cmd(ISCSI_REASON_BOOKMARK_INVALID,
+-				1, 1, buf, cmd);
++		return iscsit_add_reject_cmd(cmd,
++					     ISCSI_REASON_BOOKMARK_INVALID, buf);
+ 	}
+ 
+ 	if (payload_length && !conn->sess->sess_ops->ImmediateData) {
+ 		pr_err("ImmediateData=No but DataSegmentLength=%u,"
+ 			" protocol error.\n", payload_length);
+-		return iscsit_add_reject_from_cmd(ISCSI_REASON_PROTOCOL_ERROR,
+-				1, 1, buf, cmd);
++		return iscsit_add_reject_cmd(cmd,
++					     ISCSI_REASON_PROTOCOL_ERROR, buf);
+ 	}
+ 
+-	if ((be32_to_cpu(hdr->data_length )== payload_length) &&
++	if ((be32_to_cpu(hdr->data_length) == payload_length) &&
+ 	    (!(hdr->flags & ISCSI_FLAG_CMD_FINAL))) {
+ 		pr_err("Expected Data Transfer Length and Length of"
+ 			" Immediate Data are the same, but ISCSI_FLAG_CMD_FINAL"
+ 			" bit is not set protocol error\n");
+-		return iscsit_add_reject_from_cmd(ISCSI_REASON_PROTOCOL_ERROR,
+-				1, 1, buf, cmd);
++		return iscsit_add_reject_cmd(cmd,
++					     ISCSI_REASON_PROTOCOL_ERROR, buf);
+ 	}
+ 
+ 	if (payload_length > be32_to_cpu(hdr->data_length)) {
+ 		pr_err("DataSegmentLength: %u is greater than"
+ 			" EDTL: %u, protocol error.\n", payload_length,
+ 				hdr->data_length);
+-		return iscsit_add_reject_from_cmd(ISCSI_REASON_PROTOCOL_ERROR,
+-				1, 1, buf, cmd);
++		return iscsit_add_reject_cmd(cmd,
++					     ISCSI_REASON_PROTOCOL_ERROR, buf);
+ 	}
+ 
+ 	if (payload_length > conn->conn_ops->MaxXmitDataSegmentLength) {
+ 		pr_err("DataSegmentLength: %u is greater than"
+ 			" MaxXmitDataSegmentLength: %u, protocol error.\n",
+ 			payload_length, conn->conn_ops->MaxXmitDataSegmentLength);
+-		return iscsit_add_reject_from_cmd(ISCSI_REASON_PROTOCOL_ERROR,
+-				1, 1, buf, cmd);
++		return iscsit_add_reject_cmd(cmd,
++					     ISCSI_REASON_PROTOCOL_ERROR, buf);
+ 	}
+ 
+ 	if (payload_length > conn->sess->sess_ops->FirstBurstLength) {
+ 		pr_err("DataSegmentLength: %u is greater than"
+ 			" FirstBurstLength: %u, protocol error.\n",
+ 			payload_length, conn->sess->sess_ops->FirstBurstLength);
+-		return iscsit_add_reject_from_cmd(ISCSI_REASON_BOOKMARK_INVALID,
+-				1, 1, buf, cmd);
++		return iscsit_add_reject_cmd(cmd,
++					     ISCSI_REASON_BOOKMARK_INVALID, buf);
+ 	}
+ 
+ 	data_direction = (hdr->flags & ISCSI_FLAG_CMD_WRITE) ? DMA_TO_DEVICE :
+@@ -985,9 +972,8 @@ done:
+ 
+ 		dr = iscsit_allocate_datain_req();
+ 		if (!dr)
+-			return iscsit_add_reject_from_cmd(
+-					ISCSI_REASON_BOOKMARK_NO_RESOURCES,
+-					1, 1, buf, cmd);
++			return iscsit_add_reject_cmd(cmd,
++					ISCSI_REASON_BOOKMARK_NO_RESOURCES, buf);
+ 
+ 		iscsit_attach_datain_req(cmd, dr);
+ 	}
+@@ -1015,18 +1001,16 @@ done:
+ 	cmd->sense_reason = target_setup_cmd_from_cdb(&cmd->se_cmd, hdr->cdb);
+ 	if (cmd->sense_reason) {
+ 		if (cmd->sense_reason == TCM_OUT_OF_RESOURCES) {
+-			return iscsit_add_reject_from_cmd(
+-					ISCSI_REASON_BOOKMARK_NO_RESOURCES,
+-					1, 1, buf, cmd);
++			return iscsit_add_reject_cmd(cmd,
++					ISCSI_REASON_BOOKMARK_NO_RESOURCES, buf);
+ 		}
+ 
+ 		goto attach_cmd;
+ 	}
+ 
+ 	if (iscsit_build_pdu_and_seq_lists(cmd, payload_length) < 0) {
+-		return iscsit_add_reject_from_cmd(
+-			ISCSI_REASON_BOOKMARK_NO_RESOURCES,
+-			1, 1, buf, cmd);
++		return iscsit_add_reject_cmd(cmd,
++				ISCSI_REASON_BOOKMARK_NO_RESOURCES, buf);
+ 	}
+ 
+ attach_cmd:
+@@ -1075,10 +1059,6 @@ int iscsit_process_scsi_cmd(struct iscsi
+ 
+ 			target_put_sess_cmd(conn->sess->se_sess, &cmd->se_cmd);
+ 			return 0;
+-		} else if (cmdsn_ret == CMDSN_ERROR_CANNOT_RECOVER) {
+-			return iscsit_add_reject_from_cmd(
+-				ISCSI_REASON_PROTOCOL_ERROR,
+-				1, 0, (unsigned char *)hdr, cmd);
+ 		}
+ 	}
+ 
+@@ -1149,11 +1129,6 @@ after_immediate_data:
+ 		} else if (cmd->unsolicited_data)
+ 			iscsit_set_unsoliticed_dataout(cmd);
+ 
+-		if (cmdsn_ret == CMDSN_ERROR_CANNOT_RECOVER)
+-			return iscsit_add_reject_from_cmd(
+-				ISCSI_REASON_PROTOCOL_ERROR,
+-				1, 0, (unsigned char *)hdr, cmd);
+-
+ 	} else if (immed_ret == IMMEDIATE_DATA_ERL1_CRC_FAILURE) {
+ 		/*
+ 		 * Immediate Data failed DataCRC and ERL>=1,
+@@ -1190,9 +1165,8 @@ iscsit_handle_scsi_cmd(struct iscsi_conn
+ 	 * traditional iSCSI block I/O.
+ 	 */
+ 	if (iscsit_allocate_iovecs(cmd) < 0) {
+-		return iscsit_add_reject_from_cmd(
+-				ISCSI_REASON_BOOKMARK_NO_RESOURCES,
+-				1, 0, buf, cmd);
++		return iscsit_add_reject_cmd(cmd,
++				ISCSI_REASON_BOOKMARK_NO_RESOURCES, buf);
+ 	}
+ 	immed_data = cmd->immediate_data;
+ 
+@@ -1283,8 +1257,8 @@ iscsit_check_dataout_hdr(struct iscsi_co
+ 
+ 	if (!payload_length) {
+ 		pr_err("DataOUT payload is ZERO, protocol error.\n");
+-		return iscsit_add_reject(ISCSI_REASON_PROTOCOL_ERROR, 1,
+-					buf, conn);
++		return iscsit_add_reject(conn, ISCSI_REASON_PROTOCOL_ERROR,
++					 buf);
+ 	}
+ 
+ 	/* iSCSI write */
+@@ -1301,8 +1275,8 @@ iscsit_check_dataout_hdr(struct iscsi_co
+ 		pr_err("DataSegmentLength: %u is greater than"
+ 			" MaxXmitDataSegmentLength: %u\n", payload_length,
+ 			conn->conn_ops->MaxXmitDataSegmentLength);
+-		return iscsit_add_reject(ISCSI_REASON_PROTOCOL_ERROR, 1,
+-					buf, conn);
++		return iscsit_add_reject(conn, ISCSI_REASON_PROTOCOL_ERROR,
++					 buf);
+ 	}
+ 
+ 	cmd = iscsit_find_cmd_from_itt_or_dump(conn, hdr->itt,
+@@ -1325,8 +1299,7 @@ iscsit_check_dataout_hdr(struct iscsi_co
+ 	if (cmd->data_direction != DMA_TO_DEVICE) {
+ 		pr_err("Command ITT: 0x%08x received DataOUT for a"
+ 			" NON-WRITE command.\n", cmd->init_task_tag);
+-		return iscsit_add_reject_from_cmd(ISCSI_REASON_PROTOCOL_ERROR,
+-				1, 0, buf, cmd);
++		return iscsit_reject_cmd(cmd, ISCSI_REASON_PROTOCOL_ERROR, buf);
+ 	}
+ 	se_cmd = &cmd->se_cmd;
+ 	iscsit_mod_dataout_timer(cmd);
+@@ -1335,8 +1308,7 @@ iscsit_check_dataout_hdr(struct iscsi_co
+ 		pr_err("DataOut Offset: %u, Length %u greater than"
+ 			" iSCSI Command EDTL %u, protocol error.\n",
+ 			hdr->offset, payload_length, cmd->se_cmd.data_length);
+-		return iscsit_add_reject_from_cmd(ISCSI_REASON_BOOKMARK_INVALID,
+-				1, 0, buf, cmd);
++		return iscsit_reject_cmd(cmd, ISCSI_REASON_BOOKMARK_INVALID, buf);
+ 	}
+ 
+ 	if (cmd->unsolicited_data) {
+@@ -1557,8 +1529,8 @@ int iscsit_handle_nop_out(struct iscsi_c
+ 	if (hdr->itt == RESERVED_ITT && !(hdr->opcode & ISCSI_OP_IMMEDIATE)) {
+ 		pr_err("NOPOUT ITT is reserved, but Immediate Bit is"
+ 			" not set, protocol error.\n");
+-		return iscsit_add_reject(ISCSI_REASON_PROTOCOL_ERROR, 1,
+-					buf, conn);
++		return iscsit_reject_cmd(cmd, ISCSI_REASON_PROTOCOL_ERROR,
++					 (unsigned char *)hdr);
+ 	}
+ 
+ 	if (payload_length > conn->conn_ops->MaxXmitDataSegmentLength) {
+@@ -1566,8 +1538,8 @@ int iscsit_handle_nop_out(struct iscsi_c
+ 			" greater than MaxXmitDataSegmentLength: %u, protocol"
+ 			" error.\n", payload_length,
+ 			conn->conn_ops->MaxXmitDataSegmentLength);
+-		return iscsit_add_reject(ISCSI_REASON_PROTOCOL_ERROR, 1,
+-					buf, conn);
++		return iscsit_reject_cmd(cmd, ISCSI_REASON_PROTOCOL_ERROR,
++					 (unsigned char *)hdr);
+ 	}
+ 
+ 	pr_debug("Got NOPOUT Ping %s ITT: 0x%08x, TTT: 0x%08x,"
+@@ -1584,9 +1556,9 @@ int iscsit_handle_nop_out(struct iscsi_c
+ 	 */
+ 	if (hdr->ttt == cpu_to_be32(0xFFFFFFFF)) {
+ 		if (!cmd)
+-			return iscsit_add_reject(
++			return iscsit_reject_cmd(cmd,
+ 					ISCSI_REASON_BOOKMARK_NO_RESOURCES,
+-					1, buf, conn);
++					(unsigned char *)hdr);
+ 
+ 		cmd->iscsi_opcode	= ISCSI_OP_NOOP_OUT;
+ 		cmd->i_state		= ISTATE_SEND_NOPIN;
+@@ -1706,9 +1678,7 @@ int iscsit_handle_nop_out(struct iscsi_c
+ 			goto ping_out;
+ 		}
+ 		if (cmdsn_ret == CMDSN_ERROR_CANNOT_RECOVER)
+-			return iscsit_add_reject_from_cmd(
+-					ISCSI_REASON_PROTOCOL_ERROR,
+-					1, 0, buf, cmd);
++			return -1;
+ 
+ 		return 0;
+ 	}
+@@ -1782,8 +1752,8 @@ iscsit_handle_task_mgt_cmd(struct iscsi_
+ 		pr_err("Task Management Request TASK_REASSIGN not"
+ 			" issued as immediate command, bad iSCSI Initiator"
+ 				"implementation\n");
+-		return iscsit_add_reject_from_cmd(ISCSI_REASON_PROTOCOL_ERROR,
+-					1, 1, buf, cmd);
++		return iscsit_add_reject_cmd(cmd,
++					     ISCSI_REASON_PROTOCOL_ERROR, buf);
+ 	}
+ 	if ((function != ISCSI_TM_FUNC_ABORT_TASK) &&
+ 	    be32_to_cpu(hdr->refcmdsn) != ISCSI_RESERVED_TAG)
+@@ -1795,9 +1765,9 @@ iscsit_handle_task_mgt_cmd(struct iscsi_
+ 	if (!cmd->tmr_req) {
+ 		pr_err("Unable to allocate memory for"
+ 			" Task Management command!\n");
+-		return iscsit_add_reject_from_cmd(
+-			ISCSI_REASON_BOOKMARK_NO_RESOURCES,
+-			1, 1, buf, cmd);
++		return iscsit_add_reject_cmd(cmd,
++					     ISCSI_REASON_BOOKMARK_NO_RESOURCES,
++					     buf);
+ 	}
  
  	/*
- 	 * get_mtrr doesn't need to update mtrr_state, also it could be called
-@@ -532,18 +533,18 @@ static void generic_get_mtrr(unsigned in
- 	rdmsr(MTRRphysBase_MSR(reg), base_lo, base_hi);
- 
- 	/* Work out the shifted address mask: */
--	tmp = mask_hi << (32 - PAGE_SHIFT) | mask_lo >> PAGE_SHIFT;
--	mask_lo = size_or_mask | tmp;
-+	tmp = (u64)mask_hi << (32 - PAGE_SHIFT) | mask_lo >> PAGE_SHIFT;
-+	mask = size_or_mask | tmp;
- 
- 	/* Expand tmp with high bits to all 1s: */
--	hi = fls(tmp);
-+	hi = fls64(tmp);
- 	if (hi > 0) {
--		tmp |= ~((1<<(hi - 1)) - 1);
-+		tmp |= ~((1ULL<<(hi - 1)) - 1);
- 
--		if (tmp != mask_lo) {
-+		if (tmp != mask) {
- 			printk(KERN_WARNING "mtrr: your BIOS has configured an incorrect mask, fixing it.\n");
- 			add_taint(TAINT_FIRMWARE_WORKAROUND, LOCKDEP_STILL_OK);
--			mask_lo = tmp;
-+			mask = tmp;
+@@ -1842,17 +1812,15 @@ iscsit_handle_task_mgt_cmd(struct iscsi_
+ 		default:
+ 			pr_err("Unknown iSCSI TMR Function:"
+ 			       " 0x%02x\n", function);
+-			return iscsit_add_reject_from_cmd(
+-				ISCSI_REASON_BOOKMARK_NO_RESOURCES,
+-				1, 1, buf, cmd);
++			return iscsit_add_reject_cmd(cmd,
++				ISCSI_REASON_BOOKMARK_NO_RESOURCES, buf);
  		}
+ 
+ 		ret = core_tmr_alloc_req(&cmd->se_cmd, cmd->tmr_req,
+ 					 tcm_function, GFP_KERNEL);
+ 		if (ret < 0)
+-			return iscsit_add_reject_from_cmd(
+-				ISCSI_REASON_BOOKMARK_NO_RESOURCES,
+-				1, 1, buf, cmd);
++			return iscsit_add_reject_cmd(cmd,
++				ISCSI_REASON_BOOKMARK_NO_RESOURCES, buf);
+ 
+ 		cmd->tmr_req->se_tmr_req = cmd->se_cmd.se_tmr_req;
+ 	}
+@@ -1911,9 +1879,8 @@ iscsit_handle_task_mgt_cmd(struct iscsi_
+ 			break;
+ 
+ 		if (iscsit_check_task_reassign_expdatasn(tmr_req, conn) < 0)
+-			return iscsit_add_reject_from_cmd(
+-					ISCSI_REASON_BOOKMARK_INVALID, 1, 1,
+-					buf, cmd);
++			return iscsit_add_reject_cmd(cmd,
++					ISCSI_REASON_BOOKMARK_INVALID, buf);
+ 		break;
+ 	default:
+ 		pr_err("Unknown TMR function: 0x%02x, protocol"
+@@ -1937,9 +1904,7 @@ attach:
+ 		else if (cmdsn_ret == CMDSN_LOWER_THAN_EXP)
+ 			return 0;
+ 		else if (cmdsn_ret == CMDSN_ERROR_CANNOT_RECOVER)
+-			return iscsit_add_reject_from_cmd(
+-					ISCSI_REASON_PROTOCOL_ERROR,
+-					1, 0, buf, cmd);
++			return -1;
+ 	}
+ 	iscsit_ack_from_expstatsn(conn, be32_to_cpu(hdr->exp_statsn));
+ 
+@@ -1989,8 +1954,7 @@ static int iscsit_handle_text_cmd(
+ 		pr_err("Unable to accept text parameter length: %u"
+ 			"greater than MaxXmitDataSegmentLength %u.\n",
+ 		       payload_length, conn->conn_ops->MaxXmitDataSegmentLength);
+-		return iscsit_add_reject(ISCSI_REASON_PROTOCOL_ERROR, 1,
+-					buf, conn);
++		return iscsit_add_reject(conn, ISCSI_REASON_PROTOCOL_ERROR, buf);
  	}
  
-@@ -551,8 +552,8 @@ static void generic_get_mtrr(unsigned in
- 	 * This works correctly if size is a power of two, i.e. a
- 	 * contiguous range:
- 	 */
--	*size = -mask_lo;
--	*base = base_hi << (32 - PAGE_SHIFT) | base_lo >> PAGE_SHIFT;
-+	*size = -mask;
-+	*base = (u64)base_hi << (32 - PAGE_SHIFT) | base_lo >> PAGE_SHIFT;
- 	*type = base_lo & 0xff;
+ 	pr_debug("Got Text Request: ITT: 0x%08x, CmdSN: 0x%08x,"
+@@ -2092,8 +2056,8 @@ static int iscsit_handle_text_cmd(
  
- out_put_cpu:
---- a/arch/x86/kernel/cpu/mtrr/main.c
-+++ b/arch/x86/kernel/cpu/mtrr/main.c
-@@ -305,7 +305,8 @@ int mtrr_add_page(unsigned long base, un
- 		return -EINVAL;
+ 	cmd = iscsit_allocate_cmd(conn, GFP_KERNEL);
+ 	if (!cmd)
+-		return iscsit_add_reject(ISCSI_REASON_BOOKMARK_NO_RESOURCES,
+-					1, buf, conn);
++		return iscsit_add_reject(conn,
++					 ISCSI_REASON_BOOKMARK_NO_RESOURCES, buf);
+ 
+ 	cmd->iscsi_opcode	= ISCSI_OP_TEXT;
+ 	cmd->i_state		= ISTATE_SEND_TEXTRSP;
+@@ -2113,9 +2077,7 @@ static int iscsit_handle_text_cmd(
+ 	if (!(hdr->opcode & ISCSI_OP_IMMEDIATE)) {
+ 		cmdsn_ret = iscsit_sequence_cmd(conn, cmd, hdr->cmdsn);
+ 		if (cmdsn_ret == CMDSN_ERROR_CANNOT_RECOVER)
+-			return iscsit_add_reject_from_cmd(
+-					ISCSI_REASON_PROTOCOL_ERROR,
+-					1, 0, buf, cmd);
++			return -1;
+ 
+ 		return 0;
+ 	}
+@@ -2301,13 +2263,10 @@ iscsit_handle_logout_cmd(struct iscsi_co
+ 			return ret;
+ 	} else {
+ 		cmdsn_ret = iscsit_sequence_cmd(conn, cmd, hdr->cmdsn);
+-		if (cmdsn_ret == CMDSN_LOWER_THAN_EXP) {
++		if (cmdsn_ret == CMDSN_LOWER_THAN_EXP)
+ 			logout_remove = 0;
+-		} else if (cmdsn_ret == CMDSN_ERROR_CANNOT_RECOVER) {
+-			return iscsit_add_reject_from_cmd(
+-				ISCSI_REASON_PROTOCOL_ERROR,
+-				1, 0, buf, cmd);
+-		}
++		else if (cmdsn_ret == CMDSN_ERROR_CANNOT_RECOVER)
++			return -1;
  	}
  
--	if (base & size_or_mask || size & size_or_mask) {
-+	if ((base | (base + size - 1)) >>
-+	    (boot_cpu_data.x86_phys_bits - PAGE_SHIFT)) {
- 		pr_warning("mtrr: base or size exceeds the MTRR width\n");
- 		return -EINVAL;
+ 	return logout_remove;
+@@ -2331,8 +2290,8 @@ static int iscsit_handle_snack(
+ 	if (!conn->sess->sess_ops->ErrorRecoveryLevel) {
+ 		pr_err("Initiator sent SNACK request while in"
+ 			" ErrorRecoveryLevel=0.\n");
+-		return iscsit_add_reject(ISCSI_REASON_PROTOCOL_ERROR, 1,
+-					buf, conn);
++		return iscsit_add_reject(conn, ISCSI_REASON_PROTOCOL_ERROR,
++					 buf);
  	}
-@@ -583,6 +584,7 @@ static struct syscore_ops mtrr_syscore_o
+ 	/*
+ 	 * SNACK_DATA and SNACK_R2T are both 0,  so check which function to
+@@ -2356,13 +2315,13 @@ static int iscsit_handle_snack(
+ 	case ISCSI_FLAG_SNACK_TYPE_RDATA:
+ 		/* FIXME: Support R-Data SNACK */
+ 		pr_err("R-Data SNACK Not Supported.\n");
+-		return iscsit_add_reject(ISCSI_REASON_PROTOCOL_ERROR, 1,
+-					buf, conn);
++		return iscsit_add_reject(conn, ISCSI_REASON_PROTOCOL_ERROR,
++					 buf);
+ 	default:
+ 		pr_err("Unknown SNACK type 0x%02x, protocol"
+ 			" error.\n", hdr->flags & 0x0f);
+-		return iscsit_add_reject(ISCSI_REASON_PROTOCOL_ERROR, 1,
+-					buf, conn);
++		return iscsit_add_reject(conn, ISCSI_REASON_PROTOCOL_ERROR,
++					 buf);
+ 	}
  
- int __initdata changed_by_mtrr_cleanup;
+ 	return 0;
+@@ -2434,14 +2393,14 @@ static int iscsit_handle_immediate_data(
+ 				pr_err("Unable to recover from"
+ 					" Immediate Data digest failure while"
+ 					" in ERL=0.\n");
+-				iscsit_add_reject_from_cmd(
++				iscsit_reject_cmd(cmd,
+ 						ISCSI_REASON_DATA_DIGEST_ERROR,
+-						1, 0, (unsigned char *)hdr, cmd);
++						(unsigned char *)hdr);
+ 				return IMMEDIATE_DATA_CANNOT_RECOVER;
+ 			} else {
+-				iscsit_add_reject_from_cmd(
++				iscsit_reject_cmd(cmd,
+ 						ISCSI_REASON_DATA_DIGEST_ERROR,
+-						0, 0, (unsigned char *)hdr, cmd);
++						(unsigned char *)hdr);
+ 				return IMMEDIATE_DATA_ERL1_CRC_FAILURE;
+ 			}
+ 		} else {
+@@ -3541,6 +3500,7 @@ iscsit_build_reject(struct iscsi_cmd *cm
+ 		    struct iscsi_reject *hdr)
+ {
+ 	hdr->opcode		= ISCSI_OP_REJECT;
++	hdr->reason		= cmd->reject_reason;
+ 	hdr->flags		|= ISCSI_FLAG_CMD_FINAL;
+ 	hton24(hdr->dlength, ISCSI_HDR_LEN);
+ 	hdr->ffffffff		= cpu_to_be32(0xffffffff);
+@@ -3814,18 +3774,11 @@ check_rsp_state:
+ 	case ISTATE_SEND_STATUS_RECOVERY:
+ 	case ISTATE_SEND_TEXTRSP:
+ 	case ISTATE_SEND_TASKMGTRSP:
++	case ISTATE_SEND_REJECT:
+ 		spin_lock_bh(&cmd->istate_lock);
+ 		cmd->i_state = ISTATE_SENT_STATUS;
+ 		spin_unlock_bh(&cmd->istate_lock);
+ 		break;
+-	case ISTATE_SEND_REJECT:
+-		if (cmd->cmd_flags & ICF_REJECT_FAIL_CONN) {
+-			cmd->cmd_flags &= ~ICF_REJECT_FAIL_CONN;
+-			complete(&cmd->reject_comp);
+-			goto err;
+-		}
+-		complete(&cmd->reject_comp);
+-		break;
+ 	default:
+ 		pr_err("Unknown Opcode: 0x%02x ITT:"
+ 		       " 0x%08x, i_state: %d on CID: %hu\n",
+@@ -3930,8 +3883,7 @@ static int iscsi_target_rx_opcode(struct
+ 	case ISCSI_OP_SCSI_CMD:
+ 		cmd = iscsit_allocate_cmd(conn, GFP_KERNEL);
+ 		if (!cmd)
+-			return iscsit_add_reject(ISCSI_REASON_BOOKMARK_NO_RESOURCES,
+-						1, buf, conn);
++			goto reject;
  
-+#define SIZE_OR_MASK_BITS(n)  (~((1ULL << ((n) - PAGE_SHIFT)) - 1))
- /**
-  * mtrr_bp_init - initialize mtrrs on the boot CPU
-  *
-@@ -600,7 +602,7 @@ void __init mtrr_bp_init(void)
- 
- 	if (cpu_has_mtrr) {
- 		mtrr_if = &generic_mtrr_ops;
--		size_or_mask = 0xff000000;			/* 36 bits */
-+		size_or_mask = SIZE_OR_MASK_BITS(36);
- 		size_and_mask = 0x00f00000;
- 		phys_addr = 36;
- 
-@@ -619,7 +621,7 @@ void __init mtrr_bp_init(void)
- 			     boot_cpu_data.x86_mask == 0x4))
- 				phys_addr = 36;
- 
--			size_or_mask = ~((1ULL << (phys_addr - PAGE_SHIFT)) - 1);
-+			size_or_mask = SIZE_OR_MASK_BITS(phys_addr);
- 			size_and_mask = ~size_or_mask & 0xfffff00000ULL;
- 		} else if (boot_cpu_data.x86_vendor == X86_VENDOR_CENTAUR &&
- 			   boot_cpu_data.x86 == 6) {
-@@ -627,7 +629,7 @@ void __init mtrr_bp_init(void)
- 			 * VIA C* family have Intel style MTRRs,
- 			 * but don't support PAE
- 			 */
--			size_or_mask = 0xfff00000;		/* 32 bits */
-+			size_or_mask = SIZE_OR_MASK_BITS(32);
- 			size_and_mask = 0;
- 			phys_addr = 32;
+ 		ret = iscsit_handle_scsi_cmd(conn, cmd, buf);
+ 		break;
+@@ -3943,16 +3895,14 @@ static int iscsi_target_rx_opcode(struct
+ 		if (hdr->ttt == cpu_to_be32(0xFFFFFFFF)) {
+ 			cmd = iscsit_allocate_cmd(conn, GFP_KERNEL);
+ 			if (!cmd)
+-				return iscsit_add_reject(ISCSI_REASON_BOOKMARK_NO_RESOURCES,
+-						1, buf, conn);
++				goto reject;
  		}
-@@ -637,21 +639,21 @@ void __init mtrr_bp_init(void)
- 			if (cpu_has_k6_mtrr) {
- 				/* Pre-Athlon (K6) AMD CPU MTRRs */
- 				mtrr_if = mtrr_ops[X86_VENDOR_AMD];
--				size_or_mask = 0xfff00000;	/* 32 bits */
-+				size_or_mask = SIZE_OR_MASK_BITS(32);
- 				size_and_mask = 0;
- 			}
- 			break;
- 		case X86_VENDOR_CENTAUR:
- 			if (cpu_has_centaur_mcr) {
- 				mtrr_if = mtrr_ops[X86_VENDOR_CENTAUR];
--				size_or_mask = 0xfff00000;	/* 32 bits */
-+				size_or_mask = SIZE_OR_MASK_BITS(32);
- 				size_and_mask = 0;
- 			}
- 			break;
- 		case X86_VENDOR_CYRIX:
- 			if (cpu_has_cyrix_arr) {
- 				mtrr_if = mtrr_ops[X86_VENDOR_CYRIX];
--				size_or_mask = 0xfff00000;	/* 32 bits */
-+				size_or_mask = SIZE_OR_MASK_BITS(32);
- 				size_and_mask = 0;
- 			}
- 			break;
+ 		ret = iscsit_handle_nop_out(conn, cmd, buf);
+ 		break;
+ 	case ISCSI_OP_SCSI_TMFUNC:
+ 		cmd = iscsit_allocate_cmd(conn, GFP_KERNEL);
+ 		if (!cmd)
+-			return iscsit_add_reject(ISCSI_REASON_BOOKMARK_NO_RESOURCES,
+-						1, buf, conn);
++			goto reject;
+ 
+ 		ret = iscsit_handle_task_mgt_cmd(conn, cmd, buf);
+ 		break;
+@@ -3962,8 +3912,7 @@ static int iscsi_target_rx_opcode(struct
+ 	case ISCSI_OP_LOGOUT:
+ 		cmd = iscsit_allocate_cmd(conn, GFP_KERNEL);
+ 		if (!cmd)
+-			return iscsit_add_reject(ISCSI_REASON_BOOKMARK_NO_RESOURCES,
+-						1, buf, conn);
++			goto reject;
+ 
+ 		ret = iscsit_handle_logout_cmd(conn, cmd, buf);
+ 		if (ret > 0)
+@@ -3995,6 +3944,8 @@ static int iscsi_target_rx_opcode(struct
+ 	}
+ 
+ 	return ret;
++reject:
++	return iscsit_add_reject(conn, ISCSI_REASON_BOOKMARK_NO_RESOURCES, buf);
+ }
+ 
+ int iscsi_target_rx_thread(void *arg)
+@@ -4094,8 +4045,8 @@ restart:
+ 		    (!(opcode & ISCSI_OP_LOGOUT)))) {
+ 			pr_err("Received illegal iSCSI Opcode: 0x%02x"
+ 			" while in Discovery Session, rejecting.\n", opcode);
+-			iscsit_add_reject(ISCSI_REASON_PROTOCOL_ERROR, 1,
+-					buffer, conn);
++			iscsit_add_reject(conn, ISCSI_REASON_PROTOCOL_ERROR,
++					  buffer);
+ 			goto transport_err;
+ 		}
+ 
+--- a/drivers/target/iscsi/iscsi_target.h
++++ b/drivers/target/iscsi/iscsi_target.h
+@@ -15,7 +15,7 @@ extern struct iscsi_np *iscsit_add_np(st
+ extern int iscsit_reset_np_thread(struct iscsi_np *, struct iscsi_tpg_np *,
+ 				struct iscsi_portal_group *);
+ extern int iscsit_del_np(struct iscsi_np *);
+-extern int iscsit_add_reject_from_cmd(u8, int, int, unsigned char *, struct iscsi_cmd *);
++extern int iscsit_reject_cmd(struct iscsi_cmd *cmd, u8, unsigned char *);
+ extern void iscsit_set_unsoliticed_dataout(struct iscsi_cmd *);
+ extern int iscsit_logout_closesession(struct iscsi_cmd *, struct iscsi_conn *);
+ extern int iscsit_logout_closeconnection(struct iscsi_cmd *, struct iscsi_conn *);
+--- a/drivers/target/iscsi/iscsi_target_core.h
++++ b/drivers/target/iscsi/iscsi_target_core.h
+@@ -132,7 +132,6 @@ enum cmd_flags_table {
+ 	ICF_CONTIG_MEMORY			= 0x00000020,
+ 	ICF_ATTACHED_TO_RQUEUE			= 0x00000040,
+ 	ICF_OOO_CMDSN				= 0x00000080,
+-	ICF_REJECT_FAIL_CONN			= 0x00000100,
+ };
+ 
+ /* struct iscsi_cmd->i_state */
+@@ -366,6 +365,8 @@ struct iscsi_cmd {
+ 	u8			maxcmdsn_inc;
+ 	/* Immediate Unsolicited Dataout */
+ 	u8			unsolicited_data;
++	/* Reject reason code */
++	u8			reject_reason;
+ 	/* CID contained in logout PDU when opcode == ISCSI_INIT_LOGOUT_CMND */
+ 	u16			logout_cid;
+ 	/* Command flags */
+@@ -446,7 +447,6 @@ struct iscsi_cmd {
+ 	struct list_head	datain_list;
+ 	/* R2T List */
+ 	struct list_head	cmd_r2t_list;
+-	struct completion	reject_comp;
+ 	/* Timer for DataOUT */
+ 	struct timer_list	dataout_timer;
+ 	/* Iovecs for SCSI data payload RX/TX w/ kernel level sockets */
+--- a/drivers/target/iscsi/iscsi_target_erl0.c
++++ b/drivers/target/iscsi/iscsi_target_erl0.c
+@@ -746,13 +746,12 @@ int iscsit_check_post_dataout(
+ 		if (!conn->sess->sess_ops->ErrorRecoveryLevel) {
+ 			pr_err("Unable to recover from DataOUT CRC"
+ 				" failure while ERL=0, closing session.\n");
+-			iscsit_add_reject_from_cmd(ISCSI_REASON_DATA_DIGEST_ERROR,
+-					1, 0, buf, cmd);
++			iscsit_reject_cmd(cmd, ISCSI_REASON_DATA_DIGEST_ERROR,
++					  buf);
+ 			return DATAOUT_CANNOT_RECOVER;
+ 		}
+ 
+-		iscsit_add_reject_from_cmd(ISCSI_REASON_DATA_DIGEST_ERROR,
+-				0, 0, buf, cmd);
++		iscsit_reject_cmd(cmd, ISCSI_REASON_DATA_DIGEST_ERROR, buf);
+ 		return iscsit_dataout_post_crc_failed(cmd, buf);
+ 	}
+ }
+--- a/drivers/target/iscsi/iscsi_target_erl1.c
++++ b/drivers/target/iscsi/iscsi_target_erl1.c
+@@ -162,9 +162,8 @@ static int iscsit_handle_r2t_snack(
+ 			" protocol error.\n", cmd->init_task_tag, begrun,
+ 			(begrun + runlength), cmd->acked_data_sn);
+ 
+-			return iscsit_add_reject_from_cmd(
+-					ISCSI_REASON_PROTOCOL_ERROR,
+-					1, 0, buf, cmd);
++			return iscsit_reject_cmd(cmd,
++					ISCSI_REASON_PROTOCOL_ERROR, buf);
+ 	}
+ 
+ 	if (runlength) {
+@@ -173,8 +172,8 @@ static int iscsit_handle_r2t_snack(
+ 			" with BegRun: 0x%08x, RunLength: 0x%08x, exceeds"
+ 			" current R2TSN: 0x%08x, protocol error.\n",
+ 			cmd->init_task_tag, begrun, runlength, cmd->r2t_sn);
+-			return iscsit_add_reject_from_cmd(
+-				ISCSI_REASON_BOOKMARK_INVALID, 1, 0, buf, cmd);
++			return iscsit_reject_cmd(cmd,
++					ISCSI_REASON_BOOKMARK_INVALID, buf);
+ 		}
+ 		last_r2tsn = (begrun + runlength);
+ 	} else
+@@ -433,8 +432,7 @@ static int iscsit_handle_recovery_datain
+ 			" protocol error.\n", cmd->init_task_tag, begrun,
+ 			(begrun + runlength), cmd->acked_data_sn);
+ 
+-		return iscsit_add_reject_from_cmd(ISCSI_REASON_PROTOCOL_ERROR,
+-				1, 0, buf, cmd);
++		return iscsit_reject_cmd(cmd, ISCSI_REASON_PROTOCOL_ERROR, buf);
+ 	}
+ 
+ 	/*
+@@ -445,14 +443,14 @@ static int iscsit_handle_recovery_datain
+ 		pr_err("Initiator requesting BegRun: 0x%08x, RunLength"
+ 			": 0x%08x greater than maximum DataSN: 0x%08x.\n",
+ 				begrun, runlength, (cmd->data_sn - 1));
+-		return iscsit_add_reject_from_cmd(ISCSI_REASON_BOOKMARK_INVALID,
+-				1, 0, buf, cmd);
++		return iscsit_reject_cmd(cmd, ISCSI_REASON_BOOKMARK_INVALID,
++					 buf);
+ 	}
+ 
+ 	dr = iscsit_allocate_datain_req();
+ 	if (!dr)
+-		return iscsit_add_reject_from_cmd(ISCSI_REASON_BOOKMARK_NO_RESOURCES,
+-				1, 0, buf, cmd);
++		return iscsit_reject_cmd(cmd, ISCSI_REASON_BOOKMARK_NO_RESOURCES,
++					 buf);
+ 
+ 	dr->data_sn = dr->begrun = begrun;
+ 	dr->runlength = runlength;
+--- a/drivers/target/iscsi/iscsi_target_util.c
++++ b/drivers/target/iscsi/iscsi_target_util.c
+@@ -178,7 +178,6 @@ struct iscsi_cmd *iscsit_allocate_cmd(st
+ 	INIT_LIST_HEAD(&cmd->i_conn_node);
+ 	INIT_LIST_HEAD(&cmd->datain_list);
+ 	INIT_LIST_HEAD(&cmd->cmd_r2t_list);
+-	init_completion(&cmd->reject_comp);
+ 	spin_lock_init(&cmd->datain_lock);
+ 	spin_lock_init(&cmd->dataout_timeout_lock);
+ 	spin_lock_init(&cmd->istate_lock);
+--- a/include/target/iscsi/iscsi_transport.h
++++ b/include/target/iscsi/iscsi_transport.h
+@@ -34,8 +34,6 @@ extern void iscsit_put_transport(struct
+ /*
+  * From iscsi_target.c
+  */
+-extern int iscsit_add_reject_from_cmd(u8, int, int, unsigned char *,
+-				struct iscsi_cmd *);
+ extern int iscsit_setup_scsi_cmd(struct iscsi_conn *, struct iscsi_cmd *,
+ 				unsigned char *);
+ extern void iscsit_set_unsoliticed_dataout(struct iscsi_cmd *);
 
 
