@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755530Ab3HBKqU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:46:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37281 "EHLO
+	id S1755552Ab3HBKqi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:46:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37273 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030227Ab3HBKKU (ORCPT
+	with ESMTP id S1030218Ab3HBKKS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:10:20 -0400
+	Fri, 2 Aug 2013 06:10:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        qindehua <13691222965@163.com>, qindehua <qindehua@163.com>,
-        NeilBrown <neilb@suse.de>
-Subject: [ 47/99] md/raid5: fix interaction of replace and recovery.
-Date: Fri,  2 Aug 2013 18:08:00 +0800
-Message-Id: <20130802100232.649474883@linuxfoundation.org>
+        "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [ 57/99] Drivers: hv: balloon: Do not post pressure status if interrupted
+Date: Fri,  2 Aug 2013 18:08:10 +0800
+Message-Id: <20130802100233.980637755@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802100225.478715166@linuxfoundation.org>
 References: <20130802100225.478715166@linuxfoundation.org>
@@ -27,106 +26,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: "K. Y. Srinivasan" <kys@microsoft.com>
 
-commit f94c0b6658c7edea8bc19d13be321e3860a3fa54 upstream.
+commit c5e2254f8d63a6654149aa32ac5f2b7dd66a976d upstream.
 
-If a device in a RAID4/5/6 is being replaced while another is being
-recovered, then the writes to the replacement device currently don't
-happen, resulting in corruption when the replacement completes and the
-new drive takes over.
+When we are posting pressure status, we may get interrupted and handle
+the un-balloon operation. In this case just don't post the status as we
+know the pressure status is stale.
 
-This is because the replacement writes are only triggered when
-'s.replacing' is set and not when the similar 's.sync' is set (which
-is the case during resync and recovery - it means all devices need to
-be read).
-
-So schedule those writes when s.replacing is set as well.
-
-In this case we cannot use "STRIPE_INSYNC" to record that the
-replacement has happened as that is needed for recording that any
-parity calculation is complete.  So introduce STRIPE_REPLACED to
-record if the replacement has happened.
-
-For safety we should also check that STRIPE_COMPUTE_RUN is not set.
-This has a similar effect to the "s.locked == 0" test.  The latter
-ensure that now IO has been flagged but not started.  The former
-checks if any parity calculation has been flagged by not started.
-We must wait for both of these to complete before triggering the
-'replace'.
-
-Add a similar test to the subsequent check for "are we finished yet".
-This possibly isn't needed (is subsumed in the STRIPE_INSYNC test),
-but it makes it more obvious that the REPLACE will happen before we
-think we are finished.
-
-Finally if a NeedReplace device is not UPTODATE then that is an
-error.  We really must trigger a warning.
-
-This bug was introduced in commit 9a3e1101b827a59ac9036a672f5fa8d5279d0fe2
-(md/raid5:  detect and handle replacements during recovery.)
-which introduced replacement for raid5.
-That was in 3.3-rc3, so any stable kernel since then would benefit
-from this fix.
-
-Reported-by: qindehua <13691222965@163.com>
-Tested-by: qindehua <qindehua@163.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/raid5.c |   15 ++++++++++-----
- drivers/md/raid5.h |    1 +
- 2 files changed, 11 insertions(+), 5 deletions(-)
+ drivers/hv/hv_balloon.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/md/raid5.c
-+++ b/drivers/md/raid5.c
-@@ -3462,6 +3462,7 @@ static void handle_stripe(struct stripe_
- 		    test_and_clear_bit(STRIPE_SYNC_REQUESTED, &sh->state)) {
- 			set_bit(STRIPE_SYNCING, &sh->state);
- 			clear_bit(STRIPE_INSYNC, &sh->state);
-+			clear_bit(STRIPE_REPLACED, &sh->state);
- 		}
- 		spin_unlock(&sh->stripe_lock);
- 	}
-@@ -3607,19 +3608,23 @@ static void handle_stripe(struct stripe_
- 			handle_parity_checks5(conf, sh, &s, disks);
- 	}
+--- a/drivers/hv/hv_balloon.c
++++ b/drivers/hv/hv_balloon.c
+@@ -975,6 +975,14 @@ static void post_status(struct hv_dynmem
+ 				dm->num_pages_ballooned +
+ 				compute_balloon_floor();
  
--	if (s.replacing && s.locked == 0
--	    && !test_bit(STRIPE_INSYNC, &sh->state)) {
-+	if ((s.replacing || s.syncing) && s.locked == 0
-+	    && !test_bit(STRIPE_COMPUTE_RUN, &sh->state)
-+	    && !test_bit(STRIPE_REPLACED, &sh->state)) {
- 		/* Write out to replacement devices where possible */
- 		for (i = 0; i < conf->raid_disks; i++)
--			if (test_bit(R5_UPTODATE, &sh->dev[i].flags) &&
--			    test_bit(R5_NeedReplace, &sh->dev[i].flags)) {
-+			if (test_bit(R5_NeedReplace, &sh->dev[i].flags)) {
-+				WARN_ON(!test_bit(R5_UPTODATE, &sh->dev[i].flags));
- 				set_bit(R5_WantReplace, &sh->dev[i].flags);
- 				set_bit(R5_LOCKED, &sh->dev[i].flags);
- 				s.locked++;
- 			}
--		set_bit(STRIPE_INSYNC, &sh->state);
-+		if (s.replacing)
-+			set_bit(STRIPE_INSYNC, &sh->state);
-+		set_bit(STRIPE_REPLACED, &sh->state);
- 	}
- 	if ((s.syncing || s.replacing) && s.locked == 0 &&
-+	    !test_bit(STRIPE_COMPUTE_RUN, &sh->state) &&
- 	    test_bit(STRIPE_INSYNC, &sh->state)) {
- 		md_done_sync(conf->mddev, STRIPE_SECTORS, 1);
- 		clear_bit(STRIPE_SYNCING, &sh->state);
---- a/drivers/md/raid5.h
-+++ b/drivers/md/raid5.h
-@@ -306,6 +306,7 @@ enum {
- 	STRIPE_SYNC_REQUESTED,
- 	STRIPE_SYNCING,
- 	STRIPE_INSYNC,
-+	STRIPE_REPLACED,
- 	STRIPE_PREREAD_ACTIVE,
- 	STRIPE_DELAYED,
- 	STRIPE_DEGRADED,
++	/*
++	 * If our transaction ID is no longer current, just don't
++	 * send the status. This can happen if we were interrupted
++	 * after we picked our transaction ID.
++	 */
++	if (status.hdr.trans_id != atomic_read(&trans_id))
++		return;
++
+ 	vmbus_sendpacket(dm->dev->channel, &status,
+ 				sizeof(struct dm_status),
+ 				(unsigned long)NULL,
 
 
