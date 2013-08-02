@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753380Ab3HBKSw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:18:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37647 "EHLO
+	id S1754393Ab3HBKbm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:31:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37650 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753176Ab3HBKSt (ORCPT
+	with ESMTP id S1753343Ab3HBKSv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:18:49 -0400
+	Fri, 2 Aug 2013 06:18:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ian Abbott <abbotti@mev.co.uk>
-Subject: [ 16/39] staging: comedi: COMEDI_CANCEL ioctl should wake up read/write
-Date: Fri,  2 Aug 2013 18:18:26 +0800
-Message-Id: <20130802101459.123100241@linuxfoundation.org>
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Milan Broz <gmazyland@gmail.com>, Alasdair G Kergon <agk@redhat.com>
+Subject: [ 24/39] dm verity: fix inability to use a few specific devices sizes
+Date: Fri,  2 Aug 2013 18:18:34 +0800
+Message-Id: <20130802101500.225439068@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802101456.800497005@linuxfoundation.org>
 References: <20130802101456.800497005@linuxfoundation.org>
@@ -26,57 +27,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Abbott <abbotti@mev.co.uk>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit 69acbaac303e8cb948801a9ddd0ac24e86cc4a1b upstream.
+commit b1bf2de07271932326af847a3c6a01fdfd29d4be upstream.
 
-Comedi devices can do blocking read() or write() (or poll()) if an
-asynchronous command has been set up, blocking for data (for read()) or
-buffer space (for write()).  Various events associated with the
-asynchronous command will wake up the blocked reader or writer (or
-poller).  It is also possible to force the asynchronous command to
-terminate by issuing a `COMEDI_CANCEL` ioctl.  That shuts down the
-asynchronous command, but does not currently wake up the blocked reader
-or writer (or poller).  If the blocked task could be woken up, it would
-see that the command is no longer active and return.  The caller of the
-`COMEDI_CANCEL` ioctl could attempt to wake up the blocked task by
-sending a signal, but that's a nasty workaround.
+Fix a boundary condition that caused failure for certain device sizes.
 
-Change `do_cancel_ioctl()` to wake up the wait queue after it returns
-from `do_cancel()`.  `do_cancel()` can propagate an error return value
-from the low-level comedi driver's cancel routine, but it always shuts
-the command down regardless, so `do_cancel_ioctl()` can wake up he wait
-queue regardless of the return value from `do_cancel()`.
+The problem is reported at
+  http://code.google.com/p/cryptsetup/issues/detail?id=160
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+For certain device sizes the number of hashes at a specific level was
+calculated incorrectly.
+
+It happens for example for a device with data and metadata block size 4096
+that has 16385 blocks and algorithm sha256.
+
+The user can test if he is affected by this bug by running the
+"veritysetup verify" command and also by activating the dm-verity kernel
+driver and reading the whole block device. If it passes without an error,
+then the user is not affected.
+
+The condition for the bug is:
+
+Split the total number of data blocks (data_block_bits) into bit strings,
+each string has hash_per_block_bits bits. hash_per_block_bits is
+rounddown(log2(metadata_block_size/hash_digest_size)). Equivalently, you
+can say that you convert data_blocks_bits to 2^hash_per_block_bits base.
+
+If there some zero bit string below the most significant bit string and at
+least one bit below this zero bit string is set, then the bug happens.
+
+The same bug exists in the userspace veritysetup tool, so you must use
+fixed veritysetup too if you want to use devices that are affected by
+this boundary condition.
+
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Cc: Milan Broz <gmazyland@gmail.com>
+Signed-off-by: Alasdair G Kergon <agk@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/comedi/comedi_fops.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ drivers/md/dm-verity.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
---- a/drivers/staging/comedi/comedi_fops.c
-+++ b/drivers/staging/comedi/comedi_fops.c
-@@ -1370,6 +1370,7 @@ static int do_cancel_ioctl(struct comedi
- 			   void *file)
- {
- 	struct comedi_subdevice *s;
-+	int ret;
- 
- 	if (arg >= dev->n_subdevices)
- 		return -EINVAL;
-@@ -1386,7 +1387,11 @@ static int do_cancel_ioctl(struct comedi
- 	if (s->busy != file)
- 		return -EBUSY;
- 
--	return do_cancel(dev, s);
-+	ret = do_cancel(dev, s);
-+	if (comedi_get_subdevice_runflags(s) & SRF_USER)
-+		wake_up_interruptible(&s->async->wait_head);
-+
-+	return ret;
- }
- 
- /*
+--- a/drivers/md/dm-verity.c
++++ b/drivers/md/dm-verity.c
+@@ -813,9 +813,8 @@ static int verity_ctr(struct dm_target *
+ 	for (i = v->levels - 1; i >= 0; i--) {
+ 		sector_t s;
+ 		v->hash_level_block[i] = hash_position;
+-		s = verity_position_at_level(v, v->data_blocks, i);
+-		s = (s >> v->hash_per_block_bits) +
+-		    !!(s & ((1 << v->hash_per_block_bits) - 1));
++		s = (v->data_blocks + ((sector_t)1 << ((i + 1) * v->hash_per_block_bits)) - 1)
++					>> ((i + 1) * v->hash_per_block_bits);
+ 		if (hash_position + s < hash_position) {
+ 			ti->error = "Hash device offset overflow";
+ 			r = -E2BIG;
 
 
