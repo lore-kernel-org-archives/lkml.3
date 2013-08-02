@@ -1,31 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754075Ab3HBRrj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 13:47:39 -0400
-Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:39569 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752358Ab3HBRri convert rfc822-to-8bit
+	id S1753893Ab3HBRtz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 13:49:55 -0400
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:34171 "EHLO
+	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751627Ab3HBRty convert rfc822-to-8bit
 	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 13:47:38 -0400
+	Fri, 2 Aug 2013 13:49:54 -0400
 From: Dan Williams <djbw@fb.com>
-To: Brice Goglin <Brice.Goglin@inria.fr>
-CC: "Jiang, Dave" <dave.jiang@intel.com>, "Mason, Jon" <jon.mason@intel.com>,
-        "Koul, Vinod" <vinod.koul@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: ioatdma: add ioat_raid_enabled module parameter
-Thread-Topic: ioatdma: add ioat_raid_enabled module parameter
-Thread-Index: AQHOjjoiBtjPT49UUk+OZVCSt3LB2pl/z3CAgAE92oCAAAEvgIAA7+UAgAAn/gCAAH1CgP//kKSA
-Date: Fri, 2 Aug 2013 17:47:29 +0000
-Message-ID: <CE213A73.1D265%djbw@fb.com>
-In-Reply-To: <51FBEBAB.9080300@inria.fr>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+CC: Vinod Koul <vinod.koul@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Dave Jiang <dave.jiang@intel.com>,
+        "Blin, Jerome" <jerome.blin@intel.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "rostedt@goodmis.org" <rostedt@goodmis.org>
+Subject: Re: [PATCH 1/3] dmatest: make module parameters writable
+Thread-Topic: [PATCH 1/3] dmatest: make module parameters writable
+Thread-Index: AQHOh7p6sYhbiZEqiE253lzrXOCaM5l/WkAAgALnlYA=
+Date: Fri, 2 Aug 2013 17:49:32 +0000
+Message-ID: <CE2134A4.1D1FD%djbw@fb.com>
+In-Reply-To: <1375280890.31118.69.camel@smile>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
 user-agent: Microsoft-MacOutlook/14.3.5.130515
 x-originating-ip: [192.168.16.4]
-Content-Type: text/plain; charset="windows-1254"
-Content-ID: <14E6E6A5B7C71E44A96A2E27D8DDF348@fb.com>
+Content-Type: text/plain; charset="Windows-1252"
+Content-ID: <C8EE06080085EE499B5111842C790C71@fb.com>
 Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
 X-Proofpoint-Spam-Reason: safe
@@ -38,23 +41,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 
 
-On 8/2/13 10:26 AM, "Brice Goglin" <Brice.Goglin@inria.fr> wrote:
+On 7/31/13 7:28 AM, "Andy Shevchenko" <andriy.shevchenko@linux.intel.com>
+wrote:
 
->Le 02/08/2013 18:57, Dan Williams a écrit :
->> I like Jon¹s suggestion.  Just make raid disabled by default on non-atom
->> platforms.  When if a non-atom platform comes along without the previous
->> restrictions it can add itself to this list.
->>
->> So let¹s drop the module parameter and just cleanup the 3.2 support to
->> reflect the current reality of raid being disabled.
+>On Tue, 2013-07-23 at 18:36 +0300, Andy Shevchenko wrote:
+>> The debugfs interface brought a copy of the test case parameters. This
+>>makes
+>> different set of values under /sys/module/dmatest/parameters/ and
+>> /sys/kernel/debug/dmatest/. The user might be confused by the
+>>divergence of
+>> values.
+>> 
+>> The proposed solution in this patch is to make module parameters
+>>writable and
+>> remove them from the debugfs. Though we're still using debugfs to
+>>control test
+>> runner and getting results.
+>> 
+>> Documentation part is updated accordingly.
+>> 
+>> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+>> Suggested-by: Dan Williams <djbw@fb.com>
 >
->So you want this instead ?
+>Dan, do you have any comments against this series?
+>I'd like to have this incorporated into v3.12.
 
-Yup, but should also fold in the deletions of the other is_xeon_cb32()
-alignment fixups further below.
+I like this direction, and these can go in as is.  But I think with a bit
+more work we can eventually trim the Œresults' file and the
+thread_{add|get}_result infrastructure.  Ideally we could move all result
+reporting to ftrace and let a module parameter control which errors are
+reported.
 
-Actually all the alignment settings can be removed now.
+However, unless I missed it, I don¹t see this support[1] upstream yet.
 
-...and the PQ_VAL/XOR_VAL fixup for is_xeon_cb32() can go.
 
+--
+Dan
+
+[1]: https://lwn.net/Articles/432186/
 
