@@ -1,45 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754311Ab3HBKVB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:21:01 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:43617 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754119Ab3HBKU6 (ORCPT
+	id S1754021Ab3HBKTf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:19:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37741 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753927Ab3HBKTa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:20:58 -0400
-Date: Fri, 2 Aug 2013 12:20:40 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: =?utf-8?B?77+977+977+92Lzvv70=?= <iamjoonsoo.kim@lge.com>
-Cc: "'Preeti U Murthy'" <preeti@linux.vnet.ibm.com>,
-        "'Ingo Molnar'" <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        "'Mike Galbraith'" <efault@gmx.de>, "'Paul Turner'" <pjt@google.com>,
-        "'Alex Shi'" <alex.shi@intel.com>,
-        "'Vincent Guittot'" <vincent.guittot@linaro.org>,
-        "'Morten Rasmussen'" <morten.rasmussen@arm.com>,
-        "'Namhyung Kim'" <namhyung@kernel.org>,
-        "'Joonsoo Kim'" <js1304@gmail.com>
-Subject: Re: [PATCH v2 2/3] sched: factor out code to should_we_balance()
-Message-ID: <20130802102040.GK27162@twins.programming.kicks-ass.net>
-References: <1375408223-10934-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1375408223-10934-3-git-send-email-iamjoonsoo.kim@lge.com>
- <51FB341B.7060104@linux.vnet.ibm.com>
- <001601ce8f5f$7cbe1460$763a3d20$@lge.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <001601ce8f5f$7cbe1460$763a3d20$@lge.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Fri, 2 Aug 2013 06:19:30 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Stepan Salenikovich <stepan.salenikovich@gmail.com>,
+        Josep Bosch <jep250@gmail.com>, Clemens Ladisch <clemens@ladisch.de>,
+        Stefan Richter <stefanr@s5r6.in-berlin.de>
+Subject: [ 34/39] firewire: fix libdc1394/FlyCap2 iso event regression
+Date: Fri,  2 Aug 2013 18:18:44 +0800
+Message-Id: <20130802101501.547621232@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
+In-Reply-To: <20130802101456.800497005@linuxfoundation.org>
+References: <20130802101456.800497005@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 02, 2013 at 06:05:51PM +0900, ���ؼ� wrote:
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-What is with you people; have you never learned to trim emails?
+------------------
 
-Seriously, I'm going to write a script which tests to too many quoted
-lines, too many nested quotes and other such nonsense and drop your
-emails into /dev/null.
+From: Clemens Ladisch <clemens@ladisch.de>
 
-*shees*
+commit 0699a73af3811b66b1ab5650575acee5eea841ab upstream.
+
+Commit 18d627113b83 (firewire: prevent dropping of completed iso packet
+header data) was intended to be an obvious bug fix, but libdc1394 and
+FlyCap2 depend on the old behaviour by ignoring all returned information
+and thus not noticing that not all packets have been received yet.  The
+result was that the video frame buffers would be saved before they
+contained the correct data.
+
+Reintroduce the old behaviour for old clients.
+
+Tested-by: Stepan Salenikovich <stepan.salenikovich@gmail.com>
+Tested-by: Josep Bosch <jep250@gmail.com>
+Cc: <stable@vger.kernel.org> # 3.4+
+Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/firewire/core-cdev.c  |    3 +++
+ drivers/firewire/ohci.c       |   10 ++++++++--
+ include/linux/firewire-cdev.h |    4 ++--
+ include/linux/firewire.h      |    1 +
+ 4 files changed, 14 insertions(+), 4 deletions(-)
+
+--- a/drivers/firewire/core-cdev.c
++++ b/drivers/firewire/core-cdev.c
+@@ -53,6 +53,7 @@
+ #define FW_CDEV_KERNEL_VERSION			5
+ #define FW_CDEV_VERSION_EVENT_REQUEST2		4
+ #define FW_CDEV_VERSION_ALLOCATE_REGION_END	4
++#define FW_CDEV_VERSION_AUTO_FLUSH_ISO_OVERFLOW	5
+ 
+ struct client {
+ 	u32 version;
+@@ -998,6 +999,8 @@ static int ioctl_create_iso_context(stru
+ 			a->channel, a->speed, a->header_size, cb, client);
+ 	if (IS_ERR(context))
+ 		return PTR_ERR(context);
++	if (client->version < FW_CDEV_VERSION_AUTO_FLUSH_ISO_OVERFLOW)
++		context->drop_overflow_headers = true;
+ 
+ 	/* We only support one context at this time. */
+ 	spin_lock_irq(&client->lock);
+--- a/drivers/firewire/ohci.c
++++ b/drivers/firewire/ohci.c
+@@ -2694,8 +2694,11 @@ static void copy_iso_headers(struct iso_
+ {
+ 	u32 *ctx_hdr;
+ 
+-	if (ctx->header_length + ctx->base.header_size > PAGE_SIZE)
++	if (ctx->header_length + ctx->base.header_size > PAGE_SIZE) {
++		if (ctx->base.drop_overflow_headers)
++			return;
+ 		flush_iso_completions(ctx);
++	}
+ 
+ 	ctx_hdr = ctx->header + ctx->header_length;
+ 	ctx->last_timestamp = (u16)le32_to_cpu((__force __le32)dma_hdr[0]);
+@@ -2855,8 +2858,11 @@ static int handle_it_packet(struct conte
+ 
+ 	sync_it_packet_for_cpu(context, d);
+ 
+-	if (ctx->header_length + 4 > PAGE_SIZE)
++	if (ctx->header_length + 4 > PAGE_SIZE) {
++		if (ctx->base.drop_overflow_headers)
++			return 1;
+ 		flush_iso_completions(ctx);
++	}
+ 
+ 	ctx_hdr = ctx->header + ctx->header_length;
+ 	ctx->last_timestamp = le16_to_cpu(last->res_count);
+--- a/include/linux/firewire-cdev.h
++++ b/include/linux/firewire-cdev.h
+@@ -215,8 +215,8 @@ struct fw_cdev_event_request2 {
+  * with the %FW_CDEV_ISO_INTERRUPT bit set, when explicitly requested with
+  * %FW_CDEV_IOC_FLUSH_ISO, or when there have been so many completed packets
+  * without the interrupt bit set that the kernel's internal buffer for @header
+- * is about to overflow.  (In the last case, kernels with ABI version < 5 drop
+- * header data up to the next interrupt packet.)
++ * is about to overflow.  (In the last case, ABI versions < 5 drop header data
++ * up to the next interrupt packet.)
+  *
+  * Isochronous transmit events (context type %FW_CDEV_ISO_CONTEXT_TRANSMIT):
+  *
+--- a/include/linux/firewire.h
++++ b/include/linux/firewire.h
+@@ -409,6 +409,7 @@ struct fw_iso_context {
+ 	int type;
+ 	int channel;
+ 	int speed;
++	bool drop_overflow_headers;
+ 	size_t header_size;
+ 	union {
+ 		fw_iso_callback_t sc;
+
+
