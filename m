@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030558Ab3HBKMH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:12:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37470 "EHLO
+	id S1752310Ab3HBKiQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:38:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37464 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030385Ab3HBKL7 (ORCPT
+	with ESMTP id S1030538Ab3HBKL5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:11:59 -0400
+	Fri, 2 Aug 2013 06:11:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 94/99] radeon kms: do not flush uninitialized hotplug work
-Date: Fri,  2 Aug 2013 18:08:47 +0800
-Message-Id: <20130802100239.028695714@linuxfoundation.org>
+        David Vrabel <david.vrabel@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jonghwan Choi <jhbird.choi@samsung.com>
+Subject: [ 93/99] xen/evtchn: avoid a deadlock when unbinding an event channel
+Date: Fri,  2 Aug 2013 18:08:46 +0800
+Message-Id: <20130802100238.881218219@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802100225.478715166@linuxfoundation.org>
 References: <20130802100225.478715166@linuxfoundation.org>
@@ -27,112 +28,103 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+From: David Vrabel <david.vrabel@citrix.com>
 
-commit a01c34f72e7cd2624570818f579b5ab464f93de2 upstream.
+commit 179fbd5a45f0d4034cc6fd37b8d367a3b79663c4 upstream.
 
-Fix a warning from lockdep caused by calling flush_work() for
-uninitialized hotplug work. Initialize hotplug_work, audio_work
-and reset_work upon successful radeon_irq_kms_init() completion
-and thus perform hotplug flush_work only when rdev->irq.installed
-is true.
+Unbinding an event channel (either with the ioctl or when the evtchn
+device is closed) may deadlock because disable_irq() is called with
+port_user_lock held which is also locked by the interrupt handler.
 
-[    4.790019] [drm] Loading CEDAR Microcode
-[    4.790943] r600_cp: Failed to load firmware "radeon/CEDAR_smc.bin"
-[    4.791152] [drm:evergreen_startup] *ERROR* Failed to load firmware!
-[    4.791330] radeon 0000:01:00.0: disabling GPU acceleration
+Think of the IOCTL_EVTCHN_UNBIND is being serviced, the routine has
+just taken the lock, and an interrupt happens. The evtchn_interrupt
+is invoked, tries to take the lock and spins forever.
 
-[    4.792633] INFO: trying to register non-static key.
-[    4.792792] the code is fine but needs lockdep annotation.
-[    4.792953] turning off the locking correctness validator.
+A quick glance at the code shows that the spinlock is a local IRQ
+variant. Unfortunately that does not help as "disable_irq() waits for
+the interrupt handler on all CPUs to stop running.  If the irq occurs
+on another VCPU, it tries to take port_user_lock and can't because
+the unbind ioctl is holding it." (from David). Hence we cannot
+depend on the said spinlock to protect us. We could make it a system
+wide IRQ disable spinlock but there is a better way.
 
-[    4.793114] CPU: 2 PID: 1 Comm: swapper/0 Not tainted 3.11.0-rc0-dbg-10676-gfe56456-dirty #1816
-[    4.793314] Hardware name: Acer             Aspire 5741G    /Aspire 5741G    , BIOS V1.20 02/08/2011
-[    4.793507]  ffffffff821fd810 ffff8801530b9a18 ffffffff8160434e 0000000000000002
-[    4.794155]  ffff8801530b9ad8 ffffffff810b8404 ffff8801530b0798 ffff8801530b0000
-[    4.794789]  ffff8801530b9b00 0000000000000046 00000000000004c0 ffffffff00000000
-[    4.795418] Call Trace:
-[    4.795573]  [<ffffffff8160434e>] dump_stack+0x4e/0x82
-[    4.795731]  [<ffffffff810b8404>] __lock_acquire+0x1a64/0x1d30
-[    4.795893]  [<ffffffff814a87f0>] ? dev_vprintk_emit+0x50/0x60
-[    4.796034]  [<ffffffff810b8fb4>] lock_acquire+0xa4/0x200
-[    4.796216]  [<ffffffff8106cd75>] ? flush_work+0x5/0x280
-[    4.796375]  [<ffffffff8106cdad>] flush_work+0x3d/0x280
-[    4.796520]  [<ffffffff8106cd75>] ? flush_work+0x5/0x280
-[    4.796682]  [<ffffffff810b659d>] ? trace_hardirqs_on_caller+0xfd/0x1c0
-[    4.796862]  [<ffffffff8131d775>] ? delay_tsc+0x95/0xf0
-[    4.797024]  [<ffffffff8141bb8b>] radeon_irq_kms_fini+0x2b/0x70
-[    4.797186]  [<ffffffff814557c9>] evergreen_init+0x2a9/0x2e0
-[    4.797347]  [<ffffffff813ebb1f>] radeon_device_init+0x5ef/0x700
-[    4.797511]  [<ffffffff81335bc7>] ? pci_find_capability+0x47/0x50
-[    4.797672]  [<ffffffff813edaed>] radeon_driver_load_kms+0x8d/0x150
-[    4.797843]  [<ffffffff813ce426>] drm_get_pci_dev+0x166/0x280
-[    4.798007]  [<ffffffff8116cff5>] ? kfree+0xf5/0x2e0
-[    4.798168]  [<ffffffff813ea298>] ? radeon_pci_probe+0x98/0xd0
-[    4.798329]  [<ffffffff813ea2aa>] radeon_pci_probe+0xaa/0xd0
-[    4.798489]  [<ffffffff81339404>] pci_device_probe+0x84/0xe0
-[    4.798644]  [<ffffffff814ac7d6>] driver_probe_device+0x76/0x240
-[    4.798805]  [<ffffffff814aca73>] __driver_attach+0x93/0xa0
-[    4.798948]  [<ffffffff814ac9e0>] ? __device_attach+0x40/0x40
-[    4.799126]  [<ffffffff814aa82b>] bus_for_each_dev+0x6b/0xb0
-[    4.799272]  [<ffffffff814ac2be>] driver_attach+0x1e/0x20
-[    4.799434]  [<ffffffff814abec0>] bus_add_driver+0x1f0/0x280
-[    4.799596]  [<ffffffff814ad0e4>] driver_register+0x74/0x150
-[    4.799758]  [<ffffffff8133923d>] __pci_register_driver+0x5d/0x60
-[    4.799936]  [<ffffffff81d16efc>] ? ttm_init+0x67/0x67
-[    4.800081]  [<ffffffff813ce655>] drm_pci_init+0x115/0x130
-[    4.800243]  [<ffffffff81d16efc>] ? ttm_init+0x67/0x67
-[    4.800405]  [<ffffffff81d16f98>] radeon_init+0x9c/0xba
-[    4.800586]  [<ffffffff810002ca>] do_one_initcall+0xfa/0x150
-[    4.800746]  [<ffffffff81073f60>] ? parse_args+0x120/0x330
-[    4.800909]  [<ffffffff81cdafae>] kernel_init_freeable+0x111/0x191
-[    4.801052]  [<ffffffff81cda87a>] ? do_early_param+0x88/0x88
-[    4.801233]  [<ffffffff815fb670>] ? rest_init+0x140/0x140
-[    4.801393]  [<ffffffff815fb67e>] kernel_init+0xe/0x180
-[    4.801556]  [<ffffffff8160dcac>] ret_from_fork+0x7c/0xb0
-[    4.801718]  [<ffffffff815fb670>] ? rest_init+0x140/0x140
+We can piggyback on the fact that the existence of the spinlock is
+to make get_port_user() checks be up-to-date. And we can alter those
+checks to not depend on the spin lock (as it's protected by u->bind_mutex
+in the ioctl) and can remove the unnecessary locking (this is
+IOCTL_EVTCHN_UNBIND) path.
 
-Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+In the interrupt handler we cannot use the mutex, but we do not
+need it.
+
+"The unbind disables the irq before making the port user stale, so when
+you clear it you are guaranteed that the interrupt handler that might
+use that port cannot be running." (from David).
+
+Hence this patch removes the spinlock usage on the teardown path
+and piggybacks on disable_irq happening before we muck with the
+get_port_user() data. This ensures that the interrupt handler will
+never run on stale data.
+
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+[v1: Expanded the commit description a bit]
+Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
+ drivers/xen/evtchn.c |   21 ++-------------------
+ 1 file changed, 2 insertions(+), 19 deletions(-)
 
- drivers/gpu/drm/radeon/radeon_irq_kms.c |    9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
-
---- a/drivers/gpu/drm/radeon/radeon_irq_kms.c
-+++ b/drivers/gpu/drm/radeon/radeon_irq_kms.c
-@@ -241,9 +241,6 @@ int radeon_irq_kms_init(struct radeon_de
- {
- 	int r = 0;
+--- a/drivers/xen/evtchn.c
++++ b/drivers/xen/evtchn.c
+@@ -377,18 +377,12 @@ static long evtchn_ioctl(struct file *fi
+ 		if (unbind.port >= NR_EVENT_CHANNELS)
+ 			break;
  
--	INIT_WORK(&rdev->hotplug_work, radeon_hotplug_work_func);
--	INIT_WORK(&rdev->audio_work, r600_audio_update_hdmi);
+-		spin_lock_irq(&port_user_lock);
 -
- 	spin_lock_init(&rdev->irq.lock);
- 	r = drm_vblank_init(rdev->ddev, rdev->num_crtc);
- 	if (r) {
-@@ -265,6 +262,10 @@ int radeon_irq_kms_init(struct radeon_de
- 		rdev->irq.installed = false;
- 		return r;
- 	}
-+
-+	INIT_WORK(&rdev->hotplug_work, radeon_hotplug_work_func);
-+	INIT_WORK(&rdev->audio_work, r600_audio_update_hdmi);
-+
- 	DRM_INFO("radeon: irq initialized.\n");
- 	return 0;
- }
-@@ -284,8 +285,8 @@ void radeon_irq_kms_fini(struct radeon_d
- 		rdev->irq.installed = false;
- 		if (rdev->msi_enabled)
- 			pci_disable_msi(rdev->pdev);
-+		flush_work(&rdev->hotplug_work);
- 	}
--	flush_work(&rdev->hotplug_work);
- }
+ 		rc = -ENOTCONN;
+-		if (get_port_user(unbind.port) != u) {
+-			spin_unlock_irq(&port_user_lock);
++		if (get_port_user(unbind.port) != u)
+ 			break;
+-		}
  
- /**
+ 		disable_irq(irq_from_evtchn(unbind.port));
+ 
+-		spin_unlock_irq(&port_user_lock);
+-
+ 		evtchn_unbind_from_user(u, unbind.port);
+ 
+ 		rc = 0;
+@@ -488,26 +482,15 @@ static int evtchn_release(struct inode *
+ 	int i;
+ 	struct per_user_data *u = filp->private_data;
+ 
+-	spin_lock_irq(&port_user_lock);
+-
+-	free_page((unsigned long)u->ring);
+-
+ 	for (i = 0; i < NR_EVENT_CHANNELS; i++) {
+ 		if (get_port_user(i) != u)
+ 			continue;
+ 
+ 		disable_irq(irq_from_evtchn(i));
+-	}
+-
+-	spin_unlock_irq(&port_user_lock);
+-
+-	for (i = 0; i < NR_EVENT_CHANNELS; i++) {
+-		if (get_port_user(i) != u)
+-			continue;
+-
+ 		evtchn_unbind_from_user(get_port_user(i), i);
+ 	}
+ 
++	free_page((unsigned long)u->ring);
+ 	kfree(u->name);
+ 	kfree(u);
+ 
 
 
