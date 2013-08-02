@@ -1,26 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755207Ab3HBKlT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:41:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37399 "EHLO
+	id S1755316Ab3HBKls (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:41:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37392 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030431Ab3HBKLW (ORCPT
+	with ESMTP id S1030408Ab3HBKLR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:11:22 -0400
+	Fri, 2 Aug 2013 06:11:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Griffith <EGriffith92@gmail.com>,
-        Kent Baxley <kent.baxley@canonical.com>,
-        Kamal Mostafa <kamal@canonical.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 80/99] drm/i915: quirk no PCH_PWM_ENABLE for Dell XPS13 backlight
-Date: Fri,  2 Aug 2013 18:08:33 +0800
-Message-Id: <20130802100237.114833955@linuxfoundation.org>
+        Frank Huang <FrankR.Huang@amd.com>,
+        =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>,
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 67/99] drm/radeon: fix UVD fence emit
+Date: Fri,  2 Aug 2013 18:08:20 +0800
+Message-Id: <20130802100235.373047601@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802100225.478715166@linuxfoundation.org>
 References: <20130802100225.478715166@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,83 +31,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kamal Mostafa <kamal@canonical.com>
+From: Christian König <christian.koenig@amd.com>
 
-commit e85843bec6c2ea7c10ec61238396891cc2b753a9 upstream.
+commit c9a6ca4abd5f1978ef15b3ece3474f4372ae5fe7 upstream.
 
-BugLink: https://bugzilla.kernel.org/show_bug.cgi?id=47941
-BugLink: https://bugs.launchpad.net/bugs/1163720
-BugLink: https://bugs.launchpad.net/bugs/1162026
+Currently doesn't matter cause we allocate the fence in the
+lower 265MB anyway.
 
-Some machines suffer from non-functional backlight controls if
-BLM_PCH_PWM_ENABLE is set, so provide a quirk to avoid doing so.
-Apply this quirk to Dell XPS 13 models.
-
-Tested-by: Eric Griffith <EGriffith92@gmail.com>
-Tested-by: Kent Baxley <kent.baxley@canonical.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Reported-by: Frank Huang <FrankR.Huang@amd.com>
+Signed-off-by: Christian König <christian.koenig@amd.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_drv.h      |    1 +
- drivers/gpu/drm/i915/intel_display.c |   16 ++++++++++++++++
- drivers/gpu/drm/i915/intel_panel.c   |    3 ++-
- 3 files changed, 19 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/r600.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/i915_drv.h
-+++ b/drivers/gpu/drm/i915/i915_drv.h
-@@ -491,6 +491,7 @@ enum intel_sbi_destination {
- #define QUIRK_PIPEA_FORCE (1<<0)
- #define QUIRK_LVDS_SSC_DISABLE (1<<1)
- #define QUIRK_INVERT_BRIGHTNESS (1<<2)
-+#define QUIRK_NO_PCH_PWM_ENABLE (1<<3)
+--- a/drivers/gpu/drm/radeon/r600.c
++++ b/drivers/gpu/drm/radeon/r600.c
+@@ -2986,7 +2986,7 @@ void r600_uvd_fence_emit(struct radeon_d
+ 			 struct radeon_fence *fence)
+ {
+ 	struct radeon_ring *ring = &rdev->ring[fence->ring];
+-	uint32_t addr = rdev->fence_drv[fence->ring].gpu_addr;
++	uint64_t addr = rdev->fence_drv[fence->ring].gpu_addr;
  
- struct intel_fbdev;
- struct intel_fbc_work;
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -8917,6 +8917,17 @@ static void quirk_invert_brightness(stru
- 	DRM_INFO("applying inverted panel brightness quirk\n");
- }
- 
-+/*
-+ * Some machines (Dell XPS13) suffer broken backlight controls if
-+ * BLM_PCH_PWM_ENABLE is set.
-+ */
-+static void quirk_no_pcm_pwm_enable(struct drm_device *dev)
-+{
-+	struct drm_i915_private *dev_priv = dev->dev_private;
-+	dev_priv->quirks |= QUIRK_NO_PCH_PWM_ENABLE;
-+	DRM_INFO("applying no-PCH_PWM_ENABLE quirk\n");
-+}
-+
- struct intel_quirk {
- 	int device;
- 	int subsystem_vendor;
-@@ -8986,6 +8997,11 @@ static struct intel_quirk intel_quirks[]
- 
- 	/* Acer Aspire 4736Z */
- 	{ 0x2a42, 0x1025, 0x0260, quirk_invert_brightness },
-+
-+	/* Dell XPS13 HD Sandy Bridge */
-+	{ 0x0116, 0x1028, 0x052e, quirk_no_pcm_pwm_enable },
-+	/* Dell XPS13 HD and XPS13 FHD Ivy Bridge */
-+	{ 0x0166, 0x1028, 0x058b, quirk_no_pcm_pwm_enable },
- };
- 
- static void intel_init_quirks(struct drm_device *dev)
---- a/drivers/gpu/drm/i915/intel_panel.c
-+++ b/drivers/gpu/drm/i915/intel_panel.c
-@@ -354,7 +354,8 @@ void intel_panel_enable_backlight(struct
- 		POSTING_READ(reg);
- 		I915_WRITE(reg, tmp | BLM_PWM_ENABLE);
- 
--		if (HAS_PCH_SPLIT(dev)) {
-+		if (HAS_PCH_SPLIT(dev) &&
-+		    !(dev_priv->quirks & QUIRK_NO_PCH_PWM_ENABLE)) {
- 			tmp = I915_READ(BLC_PWM_PCH_CTL1);
- 			tmp |= BLM_PCH_PWM_ENABLE;
- 			tmp &= ~BLM_PCH_OVERRIDE_ENABLE;
+ 	radeon_ring_write(ring, PACKET0(UVD_CONTEXT_ID, 0));
+ 	radeon_ring_write(ring, fence->seq);
 
 
