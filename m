@@ -1,65 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755240Ab3HBX5R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 19:57:17 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:52805 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753950Ab3HBX5P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 19:57:15 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Felipe Contreras <felipe.contreras@gmail.com>
-Cc: Aaron Lu <aaron.lwe@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, Len Brown <lenb@kernel.org>,
-        Zhang Rui <rui.zhang@intel.com>, Jiri Kosina <trivial@kernel.org>
-Subject: Re: [PATCH 1/3] acpi: video: trivial costmetic cleanups
-Date: Sat, 03 Aug 2013 02:07:28 +0200
-Message-ID: <2947185.O65YUjZvxL@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAMP44s0Qk7GyKFtfe3f19ruafsfu7u3bN-_O-EBhZMBvcUyCNg@mail.gmail.com>
-References: <1375400641-1694-1-git-send-email-felipe.contreras@gmail.com> <2368382.8sxrvVTxSB@vostro.rjw.lan> <CAMP44s0Qk7GyKFtfe3f19ruafsfu7u3bN-_O-EBhZMBvcUyCNg@mail.gmail.com>
+	id S1755117Ab3HBX6s (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 19:58:48 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:59228 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752386Ab3HBX6r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 19:58:47 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <51FC47B5.5050103@roeck-us.net>
+Date: Fri, 02 Aug 2013 16:58:45 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Jonas Jensen <jonas.jensen@gmail.com>
+CC: linux-watchdog@vger.kernel.org, wim@iguana.be,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arm@kernel.org, arnd@arndb.de
+Subject: Re: [PATCH v8] watchdog: Add MOXA ART watchdog driver
+References: <1375101228-10930-1-git-send-email-jonas.jensen@gmail.com> <1375454445-15589-1-git-send-email-jonas.jensen@gmail.com>
+In-Reply-To: <1375454445-15589-1-git-send-email-jonas.jensen@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, August 02, 2013 12:52:18 PM Felipe Contreras wrote:
-> On Fri, Aug 2, 2013 at 9:05 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > On Thursday, August 01, 2013 11:15:38 PM Felipe Contreras wrote:
-> >> On Thu, Aug 1, 2013 at 8:50 PM, Aaron Lu <aaron.lwe@gmail.com> wrote:
-> >> > On 08/02/2013 07:43 AM, Felipe Contreras wrote:
-> >> >> Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
-> >> >
-> >> > Please add change log explaining what you have changed.
-> >> > It seems that the patch modify comment style only, some add a space and
-> >> > some change spaces to tab, is it the case?
-> >>
-> >> The commit message already explains what the change is; trivial
-> >> cosmetic cleanups. Cosmetic means it's completely superficial.
-> >
-> > And I have a rule not to apply patches without changelogs.  So either I'll
-> > need to write it for you, or can you add one pretty please?
-> 
-> The commit message is right there. Maybe Jiri can apply it then, if
-> not, then stay happy with your untidy code.
+On 08/02/2013 07:40 AM, Jonas Jensen wrote:
+> This patch adds a watchdog driver for the main hardware watchdog timer
+> found on MOXA ART SoCs.
+>
+> The MOXA ART SoC provides one writable timer register, restarting
+> the hardware once it reaches zero. The register is auto decremented
+> every APB clock cycle.
+>
+> Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
 
-First of all, I didn't say I wouldn't apply the patch, did I?
+Still wondering where the requirement comes from not to use unlikely()
+in probe functions. Must be one of those tribal knowledge things people
+have been talking about.
 
-Second, I asked you *nicely* to add a changelog so that I don't need to write
-it for you.
+Nevertheless, still
 
-I don't know what made it difficult to understand.
+Reviewed-by: Guenter Roeck <linux@roeck-us.net>
 
-Anyway, I ask everyone to write changelogs and nobody has had any problems with
-that so far.  I don't see why I should avoid asking you to follow the rules
-that everybody else is asked to follow.  If those rules are too difficult for
-you to follow, I'm sorry.
+Guenter
 
-Thanks,
-Rafael
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
