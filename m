@@ -1,69 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755377Ab3HBG5o (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 02:57:44 -0400
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:35341 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753923Ab3HBG5m (ORCPT
+	id S1755601Ab3HBG73 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 02:59:29 -0400
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:36103 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754669Ab3HBG71 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 02:57:42 -0400
-Message-ID: <51FB5789.6030401@linux.vnet.ibm.com>
-Date: Fri, 02 Aug 2013 12:24:01 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Fri, 2 Aug 2013 02:59:27 -0400
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Linux PM list <linux-pm@vger.kernel.org>, cpufreq@vger.kernel.org,
+In-Reply-To: <51FB568B.1040902@linux.vnet.ibm.com>
+References: <2362640.pUofnXyzOi@vostro.rjw.lan>
+	<51FAC46D.1000703@linux.vnet.ibm.com>
+	<1757496.qSuJuAun9Z@vostro.rjw.lan>
+	<2298639.F0Qv2QqRnZ@vostro.rjw.lan>
+	<CAKohponru8Z1fod43dVtAODmYuMTGX70+73b8wk4wuGN=Vuh-w@mail.gmail.com>
+	<51FB568B.1040902@linux.vnet.ibm.com>
+Date: Fri, 2 Aug 2013 12:29:27 +0530
+Message-ID: <CAKohpon85sFMz=2e=gdJ43JtVW9StW44CgKmJSuDtOZyq5cb+g@mail.gmail.com>
+Subject: Re: [Update][PATCH] cpufreq: Do not hold driver module references for
+ additional policy CPUs
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux PM list <linux-pm@vger.kernel.org>, cpufreq@vger.kernel.org,
         LKML <linux-kernel@vger.kernel.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: Re: [PATCH] cpufreq: Avoid double kobject_put() for the same kobject
- in error code path
-References: <2204970.DYsqYi7YjZ@vostro.rjw.lan>
-In-Reply-To: <2204970.DYsqYi7YjZ@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13080206-2674-0000-0000-00000A110DD9
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02/2013 03:01 AM, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> 
-> The only case triggering a jump to the err_out_unregister label in
-> __cpufreq_add_dev() is when cpufreq_add_dev_interface() fails.
-> However, if cpufreq_add_dev_interface() fails, it calls kobject_put()
-> for the policy kobject in its error code path and since that causes
-> the kobject's refcount to become 0, the additional kobject_put() for
-> the same kobject under err_out_unregister and the
-> wait_for_completion() following it are pointless, so drop them.
-> 
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On 2 August 2013 12:19, Srivatsa S. Bhat
+<srivatsa.bhat@linux.vnet.ibm.com> wrote:
+> But lsmod shows 0 for the cpufreq driver right? (Note, your related_cpus
+> should have only 1 CPU each, for you to see 0. Else, you'll see a non-zero
+> value due to the very bug/inconsistency that Rafael is fixing in this
+> patch).
 
-Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+I have hacked the driver this way:
 
-Regards,
-Srivatsa S. Bhat
+@@ -2114,10 +2114,16 @@ int cpufreq_register_driver(struct
+cpufreq_driver *driver_data)
+        cpufreq_driver = driver_data;
+        write_unlock_irqrestore(&cpufreq_driver_lock, flags);
 
-> ---
->  drivers/cpufreq/cpufreq.c |    3 ---
->  1 file changed, 3 deletions(-)
-> 
-> Index: linux-pm/drivers/cpufreq/cpufreq.c
-> ===================================================================
-> --- linux-pm.orig/drivers/cpufreq/cpufreq.c
-> +++ linux-pm/drivers/cpufreq/cpufreq.c
-> @@ -1109,9 +1109,6 @@ err_out_unregister:
->  	}
->  	write_unlock_irqrestore(&cpufreq_driver_lock, flags);
-> 
-> -	kobject_put(&policy->kobj);
-> -	wait_for_completion(&policy->kobj_unregister);
-> -
->  err_set_policy_cpu:
->  	per_cpu(cpufreq_policy_cpu, cpu) = -1;
->  	cpufreq_policy_free(policy);
-> 
++       printk(KERN_INFO "%s: Module refcount: %lu\n", __func__,
++                       module_refcount(cpufreq_driver->owner));
++
+        ret = subsys_interface_register(&cpufreq_interface);
+        if (ret)
+                goto err_null_driver;
 
+
+And this gave me 1..
