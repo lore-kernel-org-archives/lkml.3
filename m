@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030421Ab3HBKLT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:11:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37381 "EHLO
+	id S1030438Ab3HBKLY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:11:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37394 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030386Ab3HBKLJ (ORCPT
+	with ESMTP id S1030386Ab3HBKLU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:11:09 -0400
+	Fri, 2 Aug 2013 06:11:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Alasdair G Kergon <agk@redhat.com>
-Subject: [ 64/99] dm ioctl: set noio flag to avoid __vmalloc deadlock
-Date: Fri,  2 Aug 2013 18:08:17 +0800
-Message-Id: <20130802100234.946549211@linuxfoundation.org>
+        Daniel Mack <zonque@gmail.com>, Mark Brown <broonie@linaro.org>
+Subject: [ 58/99] regmap: cache: bail in regmap_async_complete() for bus-less maps
+Date: Fri,  2 Aug 2013 18:08:11 +0800
+Message-Id: <20130802100234.108671389@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802100225.478715166@linuxfoundation.org>
 References: <20130802100225.478715166@linuxfoundation.org>
@@ -27,38 +26,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Daniel Mack <zonque@gmail.com>
 
-commit 1c0e883e86ece31880fac2f84b260545d66a39e0 upstream.
+commit f2e055e7c9c6084bfbaa68701e52562acf96419e upstream.
 
-Set noio flag while calling __vmalloc() because it doesn't fully respect
-gfp flags to avoid a possible deadlock (see commit
-502624bdad3dba45dfaacaf36b7d83e39e74b2d2).
+Commit f8bd822cb ("regmap: cache: Factor out block sync") made
+regcache_rbtree_sync() call regmap_async_complete(), which in turn does
+not check for map->bus before dereferencing it.
 
-This should be backported to stable kernels 3.8 and newer. The kernel 3.8
-doesn't have memalloc_noio_save(), so we should set and restore process
-flag PF_MEMALLOC instead.
+This causes a NULL pointer dereference on bus-less maps.
 
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Alasdair G Kergon <agk@redhat.com>
+Signed-off-by: Daniel Mack <zonque@gmail.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-ioctl.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/base/regmap/regmap.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/md/dm-ioctl.c
-+++ b/drivers/md/dm-ioctl.c
-@@ -1644,7 +1644,10 @@ static int copy_params(struct dm_ioctl _
- 	}
+--- a/drivers/base/regmap/regmap.c
++++ b/drivers/base/regmap/regmap.c
+@@ -1717,7 +1717,7 @@ int regmap_async_complete(struct regmap
+ 	int ret;
  
- 	if (!dmi) {
-+		unsigned noio_flag;
-+		noio_flag = memalloc_noio_save();
- 		dmi = __vmalloc(param_kernel->data_size, GFP_NOIO | __GFP_REPEAT | __GFP_HIGH, PAGE_KERNEL);
-+		memalloc_noio_restore(noio_flag);
- 		if (dmi)
- 			*param_flags |= DM_PARAMS_VMALLOC;
- 	}
+ 	/* Nothing to do with no async support */
+-	if (!map->bus->async_write)
++	if (!map->bus || !map->bus->async_write)
+ 		return 0;
+ 
+ 	trace_regmap_async_complete_start(map->dev);
 
 
