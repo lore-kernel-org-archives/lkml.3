@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753058Ab3HBKeJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:34:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37605 "EHLO
+	id S1752557Ab3HBKSH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:18:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37598 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752580Ab3HBKSI (ORCPT
+	with ESMTP id S1751616Ab3HBKSD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:18:08 -0400
+	Fri, 2 Aug 2013 06:18:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anders Hammarquist <iko@iko.pp.se>, Johan Hovold <jhovold@gmail.com>
-Subject: [ 13/39] USB: ti_usb_3410_5052: fix dynamic-id matching
-Date: Fri,  2 Aug 2013 18:18:23 +0800
-Message-Id: <20130802101458.706260410@linuxfoundation.org>
+        Huang Rui <ray.huang@amd.com>, Felipe Balbi <balbi@ti.com>
+Subject: [ 11/39] usb: dwc3: fix wrong bit mask in dwc3_event_type
+Date: Fri,  2 Aug 2013 18:18:21 +0800
+Message-Id: <20130802101458.420613943@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802101456.800497005@linuxfoundation.org>
 References: <20130802101456.800497005@linuxfoundation.org>
@@ -26,35 +26,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Huang Rui <ray.huang@amd.com>
 
-commit 1fad56424f5ad3ce4973505a357212b2e2282b3f upstream.
+commit 1974d494dea05ea227cb42f5e918828801e237aa upstream.
 
-The driver failed to take the dynamic ids into account when determining
-the device type and therefore all devices were detected as 2-port
-devices when using the dynamic-id interface.
+Per dwc3 2.50a spec, the is_devspec bit is used to distinguish the
+Device Endpoint-Specific Event or Device-Specific Event (DEVT). If the
+bit is 1, the event is represented Device-Specific Event, then use
+[7:1] bits as Device Specific Event to marked the type. It has 7 bits,
+and we can see the reserved8_31 variable name which means from 8 to 31
+bits marked reserved, actually there are 24 bits not 25 bits between
+that. And 1 + 7 + 24 = 32, the event size is 4 byes.
 
-Match on the usb-serial-driver field instead of doing redundant id-table
-searches.
+So in dwc3_event_type, the bit mask should be:
+is_devspec	[0]		1  bit
+type		[7:1]		7  bits
+reserved8_31	[31:8]		24 bits
 
-Reported-by: Anders Hammarquist <iko@iko.pp.se>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+This patch should be backported to kernels as old as 3.2, that contain
+the commit 72246da40f3719af3bfd104a2365b32537c27d83 "usb: Introduce
+DesignWare USB3 DRD Driver".
+
+Signed-off-by: Huang Rui <ray.huang@amd.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ti_usb_3410_5052.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/dwc3/core.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/serial/ti_usb_3410_5052.c
-+++ b/drivers/usb/serial/ti_usb_3410_5052.c
-@@ -390,7 +390,7 @@ static int ti_startup(struct usb_serial
- 	usb_set_serial_data(serial, tdev);
+--- a/drivers/usb/dwc3/core.h
++++ b/drivers/usb/dwc3/core.h
+@@ -641,8 +641,8 @@ struct dwc3 {
  
- 	/* determine device type */
--	if (usb_match_id(serial->interface, ti_id_table_3410))
-+	if (serial->type == &ti_1port_device)
- 		tdev->td_is_3410 = 1;
- 	dbg("%s - device type is %s", __func__,
- 				tdev->td_is_3410 ? "3410" : "5052");
+ struct dwc3_event_type {
+ 	u32	is_devspec:1;
+-	u32	type:6;
+-	u32	reserved8_31:25;
++	u32	type:7;
++	u32	reserved8_31:24;
+ } __packed;
+ 
+ #define DWC3_DEPEVT_XFERCOMPLETE	0x01
 
 
