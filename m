@@ -1,183 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753762Ab3HBBUY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 21:20:24 -0400
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:18885 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753318Ab3HBBUW (ORCPT
+	id S1753583Ab3HBBXy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 21:23:54 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:59633 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751544Ab3HBBXw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 21:20:22 -0400
-Message-ID: <1375406353.10300.73.camel@misato.fc.hp.com>
-Subject: Re: [PATCH v2 10/18] x86, acpi: Try to find if SRAT is overrided
- earlier.
-From: Toshi Kani <toshi.kani@hp.com>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu,
-        hpa@zytor.com, akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
-        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
-        mina86@mina86.com, gong.chen@linux.intel.com,
-        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
-        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
-        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com, x86@kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Date: Thu, 01 Aug 2013 19:19:13 -0600
-In-Reply-To: <1375340800-19332-11-git-send-email-tangchen@cn.fujitsu.com>
-References: <1375340800-19332-1-git-send-email-tangchen@cn.fujitsu.com>
-	 <1375340800-19332-11-git-send-email-tangchen@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 1 Aug 2013 21:23:52 -0400
+From: Rohit Vaswani <rvaswani@codeaurora.org>
+To: David Brown <davidb@codeaurora.org>
+Cc: Rohit Vaswani <rvaswani@codeaurora.org>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org
+Subject: [RESEND PATCH 1/2] ARM: msm: Add support for MSM8974
+Date: Thu,  1 Aug 2013 18:23:38 -0700
+Message-Id: <1375406619-14618-1-git-send-email-rvaswani@codeaurora.org>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-08-01 at 15:06 +0800, Tang Chen wrote:
-> Linux cannot migrate pages used by the kernel due to the direct mapping
-> (va = pa + PAGE_OFFSET), any memory used by the kernel cannot be hot-removed.
-> So when using memory hotplug, we have to prevent the kernel from using
-> hotpluggable memory.
-> 
-> The ACPI table SRAT (System Resource Affinity Table) contains info to specify
-> which memory is hotpluggble. After SRAT is parsed, we are aware of which
-> memory is hotpluggable.
-> 
-> At the early time when system is booting, SRAT has not been parsed. The boot
-> memory allocator memblock will allocate any memory to the kernel. So we need
-> SRAT parsed before memblock starts to work.
-> 
-> In this patch, we are going to parse SRAT earlier, right after memblock is ready.
-> 
-> Generally speaking, tables such as SRAT are provided by firmware. But
-> ACPI_INITRD_TABLE_OVERRIDE functionality allows users to customize their own
-> tables in initrd, and override the ones from firmware. So if we want to parse
-> SRAT earlier, we also need to do SRAT override earlier.
-> 
-> First, we introduce early_acpi_override_srat() to check if SRAT will be overridden
-> from initrd.
-> 
-> Second, we introduce find_hotpluggable_memory() to reserve hotpluggable memory,
-> which will firstly call early_acpi_override_srat() to find out which memory is
-> hotpluggable in the override SRAT.
-> 
-> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-> Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-> ---
->  arch/x86/kernel/setup.c        |   10 +++++++
->  drivers/acpi/osl.c             |   58 ++++++++++++++++++++++++++++++++++++++++
->  include/linux/acpi.h           |   14 ++++++++-
->  include/linux/memory_hotplug.h |    2 +
->  mm/memory_hotplug.c            |   25 ++++++++++++++++-
->  5 files changed, 106 insertions(+), 3 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-> index c8f5d1a..8b1bddd 100644
-> --- a/arch/x86/kernel/setup.c
-> +++ b/arch/x86/kernel/setup.c
-> @@ -1060,6 +1060,16 @@ void __init setup_arch(char **cmdline_p)
->  	/* Initialize ACPI root table */
->  	acpi_root_table_init();
->  
-> +#ifdef CONFIG_ACPI_NUMA
-> +	/*
-> +	 * Linux kernel cannot migrate kernel pages, as a result, memory used
-> +	 * by the kernel cannot be hot-removed. Find and mark hotpluggable
-> +	 * memory in memblock to prevent memblock from allocating hotpluggable
-> +	 * memory for the kernel.
-> +	 */
-> +	find_hotpluggable_memory();
-> +#endif
-> +
->  	/*
->  	 * The EFI specification says that boot service code won't be called
->  	 * after ExitBootServices(). This is, in fact, a lie.
-> diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-> index 8df8a93..d0b687c 100644
-> --- a/drivers/acpi/osl.c
-> +++ b/drivers/acpi/osl.c
-> @@ -48,6 +48,7 @@
->  
->  #include <asm/io.h>
->  #include <asm/uaccess.h>
-> +#include <asm/setup.h>
->  
->  #include <acpi/acpi.h>
->  #include <acpi/acpi_bus.h>
-> @@ -631,6 +632,63 @@ int __init acpi_invalid_table(struct cpio_data *file,
->  	return 0;
->  }
->  
-> +#ifdef CONFIG_ACPI_NUMA
-> +/*******************************************************************************
-> + *
-> + * FUNCTION:    early_acpi_override_srat
-> + *
-> + * RETURN:      Phys addr of SRAT on success, 0 on error.
-> + *
-> + * DESCRIPTION: Try to get the phys addr of SRAT in initrd.
-> + *              The ACPI_INITRD_TABLE_OVERRIDE procedure is able to use tables
-> + *              in initrd file to override the ones provided by firmware. This
-> + *              function checks if there is a SRAT in initrd at early time. If
-> + *              so, return the phys addr of the SRAT.
-> + *
-> + ******************************************************************************/
-> +phys_addr_t __init early_acpi_override_srat(void)
-> +{
-> +	int i;
-> +	u32 length;
-> +	long offset;
-> +	void *ramdisk_vaddr;
-> +	struct acpi_table_header *table;
-> +	struct cpio_data file;
-> +	unsigned long map_step = NR_FIX_BTMAPS << PAGE_SHIFT;
-> +	phys_addr_t ramdisk_image = get_ramdisk_image();
-> +	char cpio_path[32] = "kernel/firmware/acpi/";
+This patch adds basic board support for MSM8974 which
+belongs to the Snapdragon 800 family.
+For now, just support a basic machine with device tree.
 
-Don't you need to check if ramdisk is present before parsing the table?
-You may need something like:
+Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
+---
+ arch/arm/boot/dts/Makefile        |  3 ++-
+ arch/arm/boot/dts/msm8974.dts     | 26 ++++++++++++++++++++++++++
+ arch/arm/mach-msm/Kconfig         | 21 ++++++++++++++++++---
+ arch/arm/mach-msm/Makefile        |  1 +
+ arch/arm/mach-msm/board-dt-8974.c | 23 +++++++++++++++++++++++
+ 5 files changed, 70 insertions(+), 4 deletions(-)
+ create mode 100644 arch/arm/boot/dts/msm8974.dts
+ create mode 100644 arch/arm/mach-msm/board-dt-8974.c
 
-  if (!ramdisk_image || !get_ramdisk_size())
-        return 0;
-
-> +
-> +	/* Try to find if SRAT is overrided */
-
-overrided -> overridden
-
-> +	for (i = 0; i < ACPI_OVERRIDE_TABLES; i++) {
-> +		ramdisk_vaddr = early_ioremap(ramdisk_image, map_step);
-> +
-> +		file = find_cpio_data(cpio_path, ramdisk_vaddr,
-> +				      map_step, &offset);
-> +		if (!file.data) {
-> +			early_iounmap(ramdisk_vaddr, map_step);
-> +			return 0;
-> +		}
-> +
-> +		table = file.data;
-> +		length = table->length;
-> +
-> +		if (acpi_invalid_table(&file, cpio_path, ACPI_SIG_SRAT)) {
-> +			ramdisk_image += offset;
-> +			early_iounmap(ramdisk_vaddr, map_step);
-> +			continue;
-> +		}
-> +
-> +		/* Found SRAT */
-> +		early_iounmap(ramdisk_vaddr, map_step);
-> +		ramdisk_image = ramdisk_image + offset - length;
-> +
-> +		break;
-> +	}
-> +
-> +	return ramdisk_image;
-
-Doesn't this function return a physical address regardless of SRAT if a
-ramdisk is present?
-
-Thanks,
--Toshi
+diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+index 641b3c9a..916827c 100644
+--- a/arch/arm/boot/dts/Makefile
++++ b/arch/arm/boot/dts/Makefile
+@@ -97,7 +97,8 @@ dtb-$(CONFIG_ARCH_KIRKWOOD) += kirkwood-cloudbox.dtb \
+ 	kirkwood-openblocks_a6.dtb
+ dtb-$(CONFIG_ARCH_MARCO) += marco-evb.dtb
+ dtb-$(CONFIG_ARCH_MSM) += msm8660-surf.dtb \
+-	msm8960-cdp.dtb
++	msm8960-cdp.dtb \
++	msm8974.dtb
+ dtb-$(CONFIG_ARCH_MVEBU) += armada-370-db.dtb \
+ 	armada-370-mirabox.dtb \
+ 	armada-370-rd.dtb \
+diff --git a/arch/arm/boot/dts/msm8974.dts b/arch/arm/boot/dts/msm8974.dts
+new file mode 100644
+index 0000000..c31c097
+--- /dev/null
++++ b/arch/arm/boot/dts/msm8974.dts
+@@ -0,0 +1,26 @@
++/dts-v1/;
++
++/include/ "skeleton.dtsi"
++
++/ {
++	model = "Qualcomm MSM8974";
++	compatible = "qcom,msm8974";
++	interrupt-parent = <&intc>;
++
++	intc: interrupt-controller@f9000000 {
++		compatible = "qcom,msm-qgic2";
++		interrupt-controller;
++		#interrupt-cells = <3>;
++		reg = < 0xf9000000 0x1000 >,
++		      < 0xf9002000 0x1000 >;
++	};
++
++	timer {
++		compatible = "arm,armv7-timer";
++		interrupts = <1 2 0xf08>,
++			     <1 3 0xf08>,
++			     <1 4 0xf08>,
++			     <1 1 0xf08>;
++		clock-frequency = <19200000>;
++	};
++};
+diff --git a/arch/arm/mach-msm/Kconfig b/arch/arm/mach-msm/Kconfig
+index 614e41e..343675b 100644
+--- a/arch/arm/mach-msm/Kconfig
++++ b/arch/arm/mach-msm/Kconfig
+@@ -1,12 +1,12 @@
+ if ARCH_MSM
+ 
+ comment "Qualcomm MSM SoC Type"
+-	depends on (ARCH_MSM8X60 || ARCH_MSM8960)
++	depends on ARCH_MSM_DT
+ 
+ choice
+ 	prompt "Qualcomm MSM SoC Type"
+ 	default ARCH_MSM7X00A
+-	depends on !(ARCH_MSM8X60 || ARCH_MSM8960)
++	depends on !ARCH_MSM_DT
+ 
+ config ARCH_MSM7X00A
+ 	bool "MSM7x00A / MSM7x01A"
+@@ -60,6 +60,19 @@ config ARCH_MSM8960
+ 	select MSM_SCM if SMP
+ 	select USE_OF
+ 
++config ARCH_MSM8974
++	bool "MSM8974"
++	select ARM_GIC
++	select CPU_V7
++	select HAVE_ARM_ARCH_TIMER
++	select HAVE_SMP
++	select MSM_SCM if SMP
++	select USE_OF
++
++config ARCH_MSM_DT
++	def_bool y
++	depends on (ARCH_MSM8X60 || ARCH_MSM8960 || ARCH_MSM8974)
++
+ config MSM_HAS_DEBUG_UART_HS
+ 	bool
+ 
+@@ -68,6 +81,7 @@ config MSM_SOC_REV_A
+ 
+ config  ARCH_MSM_ARM11
+ 	bool
++
+ config  ARCH_MSM_SCORPION
+ 	bool
+ 
+@@ -75,6 +89,7 @@ config  MSM_VIC
+ 	bool
+ 
+ menu "Qualcomm MSM Board Type"
++	depends on !ARCH_MSM_DT
+ 
+ config MACH_HALIBUT
+ 	depends on ARCH_MSM
+@@ -121,7 +136,7 @@ config MSM_SMD
+ 	bool
+ 
+ config MSM_GPIOMUX
+-	depends on !(ARCH_MSM8X60 || ARCH_MSM8960)
++	depends on !ARCH_MSM_DT
+ 	bool "MSM V1 TLMM GPIOMUX architecture"
+ 	help
+ 	  Support for MSM V1 TLMM GPIOMUX architecture.
+diff --git a/arch/arm/mach-msm/Makefile b/arch/arm/mach-msm/Makefile
+index d257ff4..80e3b15 100644
+--- a/arch/arm/mach-msm/Makefile
++++ b/arch/arm/mach-msm/Makefile
+@@ -29,5 +29,6 @@ obj-$(CONFIG_ARCH_MSM7X30) += board-msm7x30.o devices-msm7x30.o
+ obj-$(CONFIG_ARCH_QSD8X50) += board-qsd8x50.o devices-qsd8x50.o
+ obj-$(CONFIG_ARCH_MSM8X60) += board-dt-8660.o
+ obj-$(CONFIG_ARCH_MSM8960) += board-dt-8960.o
++obj-$(CONFIG_ARCH_MSM8974) += board-dt-8974.o
+ obj-$(CONFIG_MSM_GPIOMUX) += gpiomux.o
+ obj-$(CONFIG_ARCH_QSD8X50) += gpiomux-8x50.o
+diff --git a/arch/arm/mach-msm/board-dt-8974.c b/arch/arm/mach-msm/board-dt-8974.c
+new file mode 100644
+index 0000000..d7f84f2
+--- /dev/null
++++ b/arch/arm/mach-msm/board-dt-8974.c
+@@ -0,0 +1,23 @@
++/* Copyright (c) 2013, The Linux Foundation. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#include <linux/of_platform.h>
++#include <asm/mach/arch.h>
++
++static const char * const msm8974_dt_match[] __initconst = {
++	"qcom,msm8974",
++	NULL
++};
++
++DT_MACHINE_START(MSM8974_DT, "Qualcomm MSM (Flattened Device Tree)")
++	.dt_compat = msm8974_dt_match,
++MACHINE_END
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
