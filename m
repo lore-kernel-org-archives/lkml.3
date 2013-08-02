@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755150Ab3HBKkx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:40:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37409 "EHLO
+	id S1755207Ab3HBKlT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:41:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37399 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030443Ab3HBKL2 (ORCPT
+	with ESMTP id S1030431Ab3HBKLW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:11:28 -0400
+	Fri, 2 Aug 2013 06:11:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Eric Griffith <EGriffith92@gmail.com>,
+        Kent Baxley <kent.baxley@canonical.com>,
+        Kamal Mostafa <kamal@canonical.com>,
         Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 82/99] drm/i915: fix up gt init sequence fallout
-Date: Fri,  2 Aug 2013 18:08:35 +0800
-Message-Id: <20130802100237.367582611@linuxfoundation.org>
+Subject: [ 80/99] drm/i915: quirk no PCH_PWM_ENABLE for Dell XPS13 backlight
+Date: Fri,  2 Aug 2013 18:08:33 +0800
+Message-Id: <20130802100237.114833955@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802100225.478715166@linuxfoundation.org>
 References: <20130802100225.478715166@linuxfoundation.org>
@@ -29,113 +29,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Kamal Mostafa <kamal@canonical.com>
 
-commit 181d1b9e31c668259d3798c521672afb8edd355c upstream.
+commit e85843bec6c2ea7c10ec61238396891cc2b753a9 upstream.
 
-The regression fix for gen6+ rps fallout
+BugLink: https://bugzilla.kernel.org/show_bug.cgi?id=47941
+BugLink: https://bugs.launchpad.net/bugs/1163720
+BugLink: https://bugs.launchpad.net/bugs/1162026
 
-commit 7dcd2677ea912573d9ed4bcd629b0023b2d11505
-Author: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Date:   Wed Jul 17 10:22:58 2013 +0400
+Some machines suffer from non-functional backlight controls if
+BLM_PCH_PWM_ENABLE is set, so provide a quirk to avoid doing so.
+Apply this quirk to Dell XPS 13 models.
 
-    drm/i915: fix long-standing SNB regression in power consumption after resume
-
-unintentionally also changed the init sequence ordering between
-gt_init and gt_reset - we need to reset BIOS damage like leftover
-forcewake references before we run our own code. Otherwise we can get
-nasty dmesg noise like
-
-[drm:__gen6_gt_force_wake_mt_get] *ERROR* Timed out waiting for forcewake old ack to clear.
-
-again. Since _reset suggests that we first need to have stuff
-initialized (which isn't the case here) call it sanitze instead.
-
-While at it also block out the rps disable introduced by the above
-commit on ilk: We don't have any knowledge of ilk rps being broken in
-similar ways. And the disable functions uses the default hw state
-which is only read out when we're enabling rps. So essentially we've
-been writing random grabage into that register.
-
-Reported-by: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
-Tested-by: Chris Wilson <chris@chris-wilson.co.uk>
-Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
+Tested-by: Eric Griffith <EGriffith92@gmail.com>
+Tested-by: Kent Baxley <kent.baxley@canonical.com>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_dma.c |    2 +-
- drivers/gpu/drm/i915/i915_drv.c |    4 ++--
- drivers/gpu/drm/i915/i915_drv.h |    2 +-
- drivers/gpu/drm/i915/intel_pm.c |    5 +++--
- 4 files changed, 7 insertions(+), 6 deletions(-)
+ drivers/gpu/drm/i915/i915_drv.h      |    1 +
+ drivers/gpu/drm/i915/intel_display.c |   16 ++++++++++++++++
+ drivers/gpu/drm/i915/intel_panel.c   |    3 ++-
+ 3 files changed, 19 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/i915_dma.c
-+++ b/drivers/gpu/drm/i915/i915_dma.c
-@@ -1608,8 +1608,8 @@ int i915_driver_load(struct drm_device *
- 	intel_detect_pch(dev);
- 
- 	intel_irq_init(dev);
-+	intel_gt_sanitize(dev);
- 	intel_gt_init(dev);
--	intel_gt_reset(dev);
- 
- 	/* Try to make sure MCHBAR is enabled before poking at it */
- 	intel_setup_mchbar(dev);
---- a/drivers/gpu/drm/i915/i915_drv.c
-+++ b/drivers/gpu/drm/i915/i915_drv.c
-@@ -685,7 +685,7 @@ static int i915_drm_thaw(struct drm_devi
- {
- 	int error = 0;
- 
--	intel_gt_reset(dev);
-+	intel_gt_sanitize(dev);
- 
- 	if (drm_core_check_feature(dev, DRIVER_MODESET)) {
- 		mutex_lock(&dev->struct_mutex);
-@@ -711,7 +711,7 @@ int i915_resume(struct drm_device *dev)
- 
- 	pci_set_master(dev->pdev);
- 
--	intel_gt_reset(dev);
-+	intel_gt_sanitize(dev);
- 
- 	/*
- 	 * Platforms with opregion should have sane BIOS, older ones (gen3 and
 --- a/drivers/gpu/drm/i915/i915_drv.h
 +++ b/drivers/gpu/drm/i915/i915_drv.h
-@@ -1477,7 +1477,7 @@ void i915_handle_error(struct drm_device
- extern void intel_irq_init(struct drm_device *dev);
- extern void intel_hpd_init(struct drm_device *dev);
- extern void intel_gt_init(struct drm_device *dev);
--extern void intel_gt_reset(struct drm_device *dev);
-+extern void intel_gt_sanitize(struct drm_device *dev);
+@@ -491,6 +491,7 @@ enum intel_sbi_destination {
+ #define QUIRK_PIPEA_FORCE (1<<0)
+ #define QUIRK_LVDS_SSC_DISABLE (1<<1)
+ #define QUIRK_INVERT_BRIGHTNESS (1<<2)
++#define QUIRK_NO_PCH_PWM_ENABLE (1<<3)
  
- void i915_error_state_free(struct kref *error_ref);
- 
---- a/drivers/gpu/drm/i915/intel_pm.c
-+++ b/drivers/gpu/drm/i915/intel_pm.c
-@@ -4486,7 +4486,7 @@ static void vlv_force_wake_put(struct dr
- 	gen6_gt_check_fifodbg(dev_priv);
+ struct intel_fbdev;
+ struct intel_fbc_work;
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -8917,6 +8917,17 @@ static void quirk_invert_brightness(stru
+ 	DRM_INFO("applying inverted panel brightness quirk\n");
  }
  
--void intel_gt_reset(struct drm_device *dev)
-+void intel_gt_sanitize(struct drm_device *dev)
- {
- 	struct drm_i915_private *dev_priv = dev->dev_private;
++/*
++ * Some machines (Dell XPS13) suffer broken backlight controls if
++ * BLM_PCH_PWM_ENABLE is set.
++ */
++static void quirk_no_pcm_pwm_enable(struct drm_device *dev)
++{
++	struct drm_i915_private *dev_priv = dev->dev_private;
++	dev_priv->quirks |= QUIRK_NO_PCH_PWM_ENABLE;
++	DRM_INFO("applying no-PCH_PWM_ENABLE quirk\n");
++}
++
+ struct intel_quirk {
+ 	int device;
+ 	int subsystem_vendor;
+@@ -8986,6 +8997,11 @@ static struct intel_quirk intel_quirks[]
  
-@@ -4499,7 +4499,8 @@ void intel_gt_reset(struct drm_device *d
- 	}
+ 	/* Acer Aspire 4736Z */
+ 	{ 0x2a42, 0x1025, 0x0260, quirk_invert_brightness },
++
++	/* Dell XPS13 HD Sandy Bridge */
++	{ 0x0116, 0x1028, 0x052e, quirk_no_pcm_pwm_enable },
++	/* Dell XPS13 HD and XPS13 FHD Ivy Bridge */
++	{ 0x0166, 0x1028, 0x058b, quirk_no_pcm_pwm_enable },
+ };
  
- 	/* BIOS often leaves RC6 enabled, but disable it for hw init */
--	intel_disable_gt_powersave(dev);
-+	if (INTEL_INFO(dev)->gen >= 6)
-+		intel_disable_gt_powersave(dev);
- }
+ static void intel_init_quirks(struct drm_device *dev)
+--- a/drivers/gpu/drm/i915/intel_panel.c
++++ b/drivers/gpu/drm/i915/intel_panel.c
+@@ -354,7 +354,8 @@ void intel_panel_enable_backlight(struct
+ 		POSTING_READ(reg);
+ 		I915_WRITE(reg, tmp | BLM_PWM_ENABLE);
  
- void intel_gt_init(struct drm_device *dev)
+-		if (HAS_PCH_SPLIT(dev)) {
++		if (HAS_PCH_SPLIT(dev) &&
++		    !(dev_priv->quirks & QUIRK_NO_PCH_PWM_ENABLE)) {
+ 			tmp = I915_READ(BLC_PWM_PCH_CTL1);
+ 			tmp |= BLM_PCH_PWM_ENABLE;
+ 			tmp &= ~BLM_PCH_OVERRIDE_ENABLE;
 
 
