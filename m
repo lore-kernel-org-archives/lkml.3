@@ -1,53 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757889Ab3HBD7r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 23:59:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33006 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754355Ab3HBD7p (ORCPT
+	id S1751689Ab3HBECU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 00:02:20 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:20250 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750777Ab3HBECS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 23:59:45 -0400
-Date: Fri, 2 Aug 2013 12:01:02 +0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Joe Perches <joe@perches.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-usb <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH] MAINTAINERS: Add separate section for USB NETWORKING
- DRIVERS
-Message-ID: <20130802040102.GA16363@kroah.com>
-References: <1375316960686@kroah.org>
- <1375343328.2034.34.camel@joe-AO722>
- <20130801075656.GA8074@kroah.com>
- <1375344595.2034.38.camel@joe-AO722>
- <20130802033033.GA2658@kroah.com>
- <1375415410.2034.100.camel@joe-AO722>
+	Fri, 2 Aug 2013 00:02:18 -0400
+X-Spam-Score: -100.8
+Message-ID: <51FB2F08.5010600@asianux.com>
+Date: Fri, 02 Aug 2013 12:01:12 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1375415410.2034.100.camel@joe-AO722>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Rusty Russell <rusty@rustcorp.com.au>
+CC: James Hogan <james.hogan@imgtec.com>, mmarek@suse.cz,
+        Sam Ravnborg <sam@ravnborg.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>
+Subject: Re: [PATCH] scripts/mod/modpost.c: permit '.cranges' secton for sh64
+ architecture.
+References: <51F9F5AB.6030002@asianux.com> <871u6c4yjq.fsf@rustcorp.com.au>
+In-Reply-To: <871u6c4yjq.fsf@rustcorp.com.au>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 01, 2013 at 08:50:10PM -0700, Joe Perches wrote:
-> On Fri, 2013-08-02 at 11:30 +0800, Greg KH wrote:
-> > On Thu, Aug 01, 2013 at 01:09:55AM -0700, Joe Perches wrote:
-> > > Lots of "maintainers" don't apply patches.
-> > I have no idea what you are meaning here.
+On 08/02/2013 10:27 AM, Rusty Russell wrote:
+> Chen Gang <gang.chen@asianux.com> writes:
+>> Need permit '.cranges' section for sh64 architecture, or modpost will
+>> report warning:
+>>
+>>     LD      init/built-in.o
+>>   WARNING: init/built-in.o (.cranges): unexpected non-allocatable section.
+>>   Did you forget to use "ax"/"aw" in a .S file?
+>>   Note that for example <linux/init.h> contains
+>>   section definitions for use in .S files.
+>>
+>>
+>> Signed-off-by: Chen Gang <gang.chen@asianux.com>
 > 
-> Just that maintainers aren't necessarily appliers.
-> In fact, most aren't.
+> Applied.
 > 
-> > Add netdev to the L: list as well.
+
+Thank you too.
+
+> Thanks,
+> Rusty.
 > 
-> I don't think it's necessary.
-> get_maintainers already shows that via the
-> NETWORKING DRIVERS section F: drivers/net/
+>> ---
+>>  scripts/mod/modpost.c |    1 +
+>>  1 files changed, 1 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/scripts/mod/modpost.c b/scripts/mod/modpost.c
+>> index 6216434..8247979 100644
+>> --- a/scripts/mod/modpost.c
+>> +++ b/scripts/mod/modpost.c
+>> @@ -821,6 +821,7 @@ static const char *section_white_list[] =
+>>  {
+>>  	".comment*",
+>>  	".debug*",
+>> +	".cranges",		/* sh64 */
+>>  	".zdebug*",		/* Compressed debug sections. */
+>>  	".GCC-command-line",	/* mn10300 */
+>>  	".GCC.command.line",	/* record-gcc-switches, non mn10300 */
+>> -- 
+>> 1.7.7.6
+> 
+> 
 
-Ah, I thought this entry would have overridden it, sorry about that.
 
-Can you resend this so that I can apply it?
-
-thanks,
-
-greg k-h
+-- 
+Chen Gang
