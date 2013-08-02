@@ -1,85 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754454Ab3HBQGh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 12:06:37 -0400
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:40650 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754320Ab3HBQGf (ORCPT
+	id S1754491Ab3HBQMP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 12:12:15 -0400
+Received: from na3sys010aog102.obsmtp.com ([74.125.245.72]:35757 "HELO
+	na3sys010aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754386Ab3HBQMM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 12:06:35 -0400
-Message-ID: <1375459527.10300.77.camel@misato.fc.hp.com>
-Subject: Re: [PATCH v2 10/18] x86, acpi: Try to find if SRAT is overrided
- earlier.
-From: Toshi Kani <toshi.kani@hp.com>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu,
-        hpa@zytor.com, akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
-        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
-        mina86@mina86.com, gong.chen@linux.intel.com,
-        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
-        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
-        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com, x86@kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Date: Fri, 02 Aug 2013 10:05:27 -0600
-In-Reply-To: <51FB485A.9070801@cn.fujitsu.com>
-References: <1375340800-19332-1-git-send-email-tangchen@cn.fujitsu.com>
-	  <1375340800-19332-11-git-send-email-tangchen@cn.fujitsu.com>
-	 <1375406353.10300.73.camel@misato.fc.hp.com>
-	 <51FB485A.9070801@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 2 Aug 2013 12:12:12 -0400
+From: Roland Dreier <roland@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] please pull infiniband.git
+Date: Fri,  2 Aug 2013 09:12:05 -0700
+Message-Id: <1375459925-585-1-git-send-email-roland@kernel.org>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-08-02 at 13:49 +0800, Tang Chen wrote:
-> On 08/02/2013 09:19 AM, Toshi Kani wrote:
-> ......
-> >> +phys_addr_t __init early_acpi_override_srat(void)
-> >> +{
-> >> +	int i;
-> >> +	u32 length;
-> >> +	long offset;
-> >> +	void *ramdisk_vaddr;
-> >> +	struct acpi_table_header *table;
-> >> +	struct cpio_data file;
-> >> +	unsigned long map_step = NR_FIX_BTMAPS<<  PAGE_SHIFT;
-> >> +	phys_addr_t ramdisk_image = get_ramdisk_image();
-> >> +	char cpio_path[32] = "kernel/firmware/acpi/";
-> >
-> > Don't you need to check if ramdisk is present before parsing the table?
-> > You may need something like:
-> >
-> >    if (!ramdisk_image || !get_ramdisk_size())
-> >          return 0;
-> 
-> Yes, it is better to do such a check here. But is there a possibility that
-> no ramdisk is present and we come to setup_arch() ?
+Hi Linus,
 
-Without a ramdisk, the boot procedure will likely fail in mounting the
-root disk due to missing drivers.  But it should come to setup_arch()
-without it.
+Please pull from
 
-Thanks,
--Toshi
+    git://git.kernel.org/pub/scm/linux/kernel/git/roland/infiniband.git tags/rdma-for-linus
 
+----------------------------------------------------------------
 
-> 
-> ......
-> >> +
-> >> +	return ramdisk_image;
-> >
-> > Doesn't this function return a physical address regardless of SRAT if a
-> > ramdisk is present?
-> 
-> Yes, and it is not good. I'll add the check above so that this won't happen.
-> 
-> Thanks.
-> 
+InfiniBand/RDMA fixes for 3.11-rc:
+ - Fixes for the newly merged mlx5 hardware driver
+ - Stack info leak fixes from Dan Carpenter
+ - Fixes for pkey table handling with SR-IOV
+ - A few other small things
 
+----------------------------------------------------------------
+Andi Shyti (1):
+      mlx5_core: Variable may be used uninitialized
 
+Dan Carpenter (6):
+      RDMA/cxgb4: Fix stack info leak in c4iw_create_qp()
+      RDMA/ocrdma: Fix several stack info leaks
+      RDMA/nes: Fix info leaks in nes_create_qp() and nes_create_cq()
+      RDMA/cxgb3: Fix stack info leak in iwch_create_cq()
+      IB/mlx5: Fix stack info leak in mlx5_ib_alloc_ucontext()
+      mlx5_core: Fix use after free in mlx5_cmd_comp_handler()
+
+Eli Cohen (1):
+      mlx5_core: Implement new initialization sequence
+
+Erez Shitrit (1):
+      IPoIB: Fix pkey change flow for virtualization environments
+
+Jack Morgenstein (2):
+      IB/mlx4: Use default pkey when creating tunnel QPs
+      IB/core: Create QP1 using the pkey index which contains the default pkey
+
+Mike Marciniszyn (1):
+      IB/qib: Add err_decode() call for ring dump
+
+Or Gerlitz (1):
+      IPoIB: Make sure child devices use valid/proper pkeys
+
+Paul Bolle (1):
+      RDMA/cma: Fix gcc warning
+
+Roland Dreier (3):
+      RDMA/ocrdma: Remove unused include
+      Revert "RDMA/nes: Fix compilation error when nes_debug is enabled"
+      Merge branches 'cma', 'cxgb3', 'cxgb4', 'ipoib', 'misc', 'mlx4', 'mlx5', 'nes', 'ocrdma' and 'qib' into for-next
+
+Sean Hefty (2):
+      RDMA/cma: Fix accessing invalid private data for UD
+      RDMA/cma: Only call cma_save_ib_info() for CM REQs
+
+Wei Yongjun (1):
+      IB/mlx5: Fix error return code in init_one()
+
+ drivers/infiniband/core/cma.c                      | 29 +++++----
+ drivers/infiniband/core/mad.c                      |  8 ++-
+ drivers/infiniband/hw/cxgb3/iwch_provider.c        |  1 +
+ drivers/infiniband/hw/cxgb4/qp.c                   |  2 +
+ drivers/infiniband/hw/mlx4/mad.c                   | 10 ++-
+ drivers/infiniband/hw/mlx5/main.c                  | 11 ++--
+ drivers/infiniband/hw/mlx5/qp.c                    |  2 +-
+ drivers/infiniband/hw/nes/nes_hw.c                 |  4 +-
+ drivers/infiniband/hw/nes/nes_verbs.c              |  3 +-
+ drivers/infiniband/hw/ocrdma/ocrdma_ah.c           |  1 -
+ drivers/infiniband/hw/ocrdma/ocrdma_verbs.c        |  5 +-
+ drivers/infiniband/hw/qib/qib_iba7322.c            |  2 +
+ drivers/infiniband/hw/qib/qib_sdma.c               |  2 +-
+ drivers/infiniband/ulp/ipoib/ipoib_ib.c            | 76 ++++++++++++++++++----
+ drivers/infiniband/ulp/ipoib/ipoib_main.c          |  2 +-
+ drivers/infiniband/ulp/ipoib/ipoib_netlink.c       |  9 +++
+ drivers/net/ethernet/mellanox/mlx5/core/cmd.c      | 19 ++++--
+ drivers/net/ethernet/mellanox/mlx5/core/main.c     | 69 ++++++++++++++++++--
+ .../net/ethernet/mellanox/mlx5/core/pagealloc.c    | 20 ++++--
+ include/linux/mlx5/device.h                        | 20 ++++++
+ include/linux/mlx5/driver.h                        |  4 +-
+ 21 files changed, 239 insertions(+), 60 deletions(-)
