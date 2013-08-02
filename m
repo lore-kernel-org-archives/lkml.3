@@ -1,116 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753542Ab3HBOSN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 10:18:13 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:59170 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750948Ab3HBOSM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 10:18:12 -0400
-Date: Fri, 2 Aug 2013 16:18:09 +0200 (CEST)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: linux-sh@vger.kernel.org
-cc: Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
-        "Koul, Vinod" <vinod.koul@intel.com>
-Subject: [PATCH v2] DMA: shdma: make a pointer const
-Message-ID: <Pine.LNX.4.64.1308021610240.28012@axis700.grange>
+	id S1753617Ab3HBOTW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 10:19:22 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:52157 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753452Ab3HBOTU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 10:19:20 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: [GIT PULL] ACPI and power management fixes for v3.11-rc4
+Date: Fri, 02 Aug 2013 16:29:31 +0200
+Message-ID: <2052880.bHfzt6NKt5@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:OT/p50nw85axdfVqHCtsBxRxRa0qtZsYs8pf7+Y5l7e
- AbDgp6uVJ1YwSkXFaXTstzvvMdNzy3h9gQSP5Xq+DaEYbwwkYZ
- IrGSbcbv3PT23INL62YrKQh36jnQR5SeLHOxeMYr4EpY0AZ+ZL
- Lr9aF/EQEQ/DIDBc6yVlygEov+y1sgq/VEk3fIgP3dcUxWQkXL
- Lvhk+zyG9EHkCMEnZ412GajohsKhFhHtWL9eWOFlCDtdofO2mu
- H1tYeB8tShhufvSop2QbZJHI8DH8JrRcpWeJ1LM9neFEvbOWn2
- jxGD78Zoqa1SLzLvVDXLFaELYEHHcs3keyNDJ89uwi2zqNw9Pc
- 2jj3n/5a/Qoff6yAUnrhkRSQNJpvRYapoPIYEshgH1G5nM92q7
- b0wP3YNlfnv1g==
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Platform data shouldn't be changed at run-time, so, pointers to it should
-be const.
+Hi Linus,
 
-Signed-off-by: Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
----
+Please pull from the git repository at
 
-This is a re-send of a patch, previously submitted as a part of a 
-patch-series, although it isn't really related to its topic:
+  git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git pm+acpi-3.11-rc4
 
-https://lkml.org/lkml/2013/7/19/605
+to receive ACPI and power management fixes for v3.11-rc4 with
+top-most commit 2b44c4db2e2f1765d35163a861d301038e0c8a75
 
-Should go on top of my other patch series "DMA: shdma: several stylistic 
-improvements and support for new SoCs"
-http://thread.gmane.org/gmane.linux.ports.sh.devel/24826
+  freezer: set PF_SUSPEND_TASK flag on tasks that call freeze_processes
 
- drivers/dma/sh/shdma.c |   10 +++++-----
- drivers/dma/sh/shdma.h |    2 +-
- 2 files changed, 6 insertions(+), 6 deletions(-)
+on top of commit 5ae90d8e467e625e447000cb4335c4db973b1095
 
-diff --git a/drivers/dma/sh/shdma.c b/drivers/dma/sh/shdma.c
-index b3f959c..7af64b9 100644
---- a/drivers/dma/sh/shdma.c
-+++ b/drivers/dma/sh/shdma.c
-@@ -177,7 +177,7 @@ static bool dmae_is_busy(struct sh_dmae_chan *sh_chan)
- static unsigned int calc_xmit_shift(struct sh_dmae_chan *sh_chan, u32 chcr)
- {
- 	struct sh_dmae_device *shdev = to_sh_dev(sh_chan);
--	struct sh_dmae_pdata *pdata = shdev->pdata;
-+	const struct sh_dmae_pdata *pdata = shdev->pdata;
- 	int cnt = ((chcr & pdata->ts_low_mask) >> pdata->ts_low_shift) |
- 		((chcr & pdata->ts_high_mask) >> pdata->ts_high_shift);
- 
-@@ -190,7 +190,7 @@ static unsigned int calc_xmit_shift(struct sh_dmae_chan *sh_chan, u32 chcr)
- static u32 log2size_to_chcr(struct sh_dmae_chan *sh_chan, int l2size)
- {
- 	struct sh_dmae_device *shdev = to_sh_dev(sh_chan);
--	struct sh_dmae_pdata *pdata = shdev->pdata;
-+	const struct sh_dmae_pdata *pdata = shdev->pdata;
- 	int i;
- 
- 	for (i = 0; i < pdata->ts_shift_num; i++)
-@@ -250,7 +250,7 @@ static int dmae_set_chcr(struct sh_dmae_chan *sh_chan, u32 val)
- static int dmae_set_dmars(struct sh_dmae_chan *sh_chan, u16 val)
- {
- 	struct sh_dmae_device *shdev = to_sh_dev(sh_chan);
--	struct sh_dmae_pdata *pdata = shdev->pdata;
-+	const struct sh_dmae_pdata *pdata = shdev->pdata;
- 	const struct sh_dmae_channel *chan_pdata = &pdata->channel[sh_chan->shdma_chan.id];
- 	void __iomem *addr = shdev->dmars;
- 	unsigned int shift = chan_pdata->dmars_bit;
-@@ -319,7 +319,7 @@ static const struct sh_dmae_slave_config *dmae_find_slave(
- 	struct sh_dmae_chan *sh_chan, int match)
- {
- 	struct sh_dmae_device *shdev = to_sh_dev(sh_chan);
--	struct sh_dmae_pdata *pdata = shdev->pdata;
-+	const struct sh_dmae_pdata *pdata = shdev->pdata;
- 	const struct sh_dmae_slave_config *cfg;
- 	int i;
- 
-@@ -665,7 +665,7 @@ static const struct shdma_ops sh_dmae_shdma_ops = {
- 
- static int sh_dmae_probe(struct platform_device *pdev)
- {
--	struct sh_dmae_pdata *pdata = pdev->dev.platform_data;
-+	const struct sh_dmae_pdata *pdata = pdev->dev.platform_data;
- 	unsigned long irqflags = IRQF_DISABLED,
- 		chan_flag[SH_DMAE_MAX_CHANNELS] = {};
- 	int errirq, chan_irq[SH_DMAE_MAX_CHANNELS];
-diff --git a/drivers/dma/sh/shdma.h b/drivers/dma/sh/shdma.h
-index 06aae6e..3d9dca1 100644
---- a/drivers/dma/sh/shdma.h
-+++ b/drivers/dma/sh/shdma.h
-@@ -36,7 +36,7 @@ struct sh_dmae_chan {
- struct sh_dmae_device {
- 	struct shdma_dev shdma_dev;
- 	struct sh_dmae_chan *chan[SH_DMAE_MAX_CHANNELS];
--	struct sh_dmae_pdata *pdata;
-+	const struct sh_dmae_pdata *pdata;
- 	struct list_head node;
- 	void __iomem *chan_reg;
- 	void __iomem *dmars;
--- 
-1.7.2.5
+  Linux 3.11-rc3
+
+These revert two cpuidle commits from 3.8 that turn out to hurt performance,
+fix a recent s2disk regression related to the freezer, fix cpufreq reference
+couting problem uncovered by one of the recent reverts and fix a particularly
+embarrassing bug in the ACPI battery driver.
+
+Specifics:
+
+- Revert two cpuidle commits added during the 3.8 development cycle that
+  turn out to have introduced a significant performance regression as
+  requested by Jeremy Eder.
+
+- The recent patches that made the freezer less heavy-weight introduced
+  a regression causing user-space-driven hibernation using the ioctl()
+  interface to block indefinitely when the hibernate process executes
+  try_to_freeze().  Fix from Colin Cross addresses this by adding a
+  process flag to mark the hibernate/suspend process to inform the
+  freezer that that process should be ignored.
+
+- One of the recent cpufreq reverts uncovered a problem in the core
+  causing the cpufreq driver module refcount to become negative after
+  a system suspend-resume cycle.  Fix from yours truly.
+
+- The evaluation of the ACPI battery _BIX method has never worked
+  correctly, because the commit that added support for it forgot to
+  take the "Revision" field in the return package into account.  As
+  a result, the reading of battery info doesn't work at all on some
+  systems, which is addressed by a fix from Lan Tianyu.
+
+Thanks!
+
+
+---------------
+
+Colin Cross (1):
+      freezer: set PF_SUSPEND_TASK flag on tasks that call freeze_processes
+
+Lan Tianyu (1):
+      ACPI / battery: Fix parsing _BIX return value
+
+Rafael J. Wysocki (3):
+      Revert "cpuidle: Quickly notice prediction failure in general case"
+      Revert "cpuidle: Quickly notice prediction failure for repeat mode"
+      cpufreq: Fix cpufreq driver module refcount balance after suspend/resume
+
+---------------
+
+ drivers/acpi/battery.c           |    2 +
+ drivers/cpufreq/cpufreq.c        |   19 +++++----
+ drivers/cpuidle/governors/menu.c |  106 ++--------------------------------------------
+ include/linux/sched.h            |    1 +
+ include/linux/tick.h             |    6 ---
+ kernel/freezer.c                 |    2 +-
+ kernel/power/process.c           |   11 +++++
+ kernel/time/tick-sched.c         |    9 +---
+ 8 files changed, 31 insertions(+), 125 deletions(-)
 
