@@ -1,42 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758652Ab3HBJjL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 05:39:11 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:48043 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758134Ab3HBJjI (ORCPT
+	id S1758607Ab3HBJmZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 05:42:25 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:51126 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758248Ab3HBJmX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 05:39:08 -0400
-Message-ID: <51FB7DF5.8030600@huawei.com>
-Date: Fri, 2 Aug 2013 17:37:57 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Fri, 2 Aug 2013 05:42:23 -0400
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>
-CC: <gaoyang.zyh@taobao.com>, LKML <linux-kernel@vger.kernel.org>,
-        stable <stable@vger.kernel.org>
-Subject: stable: a59f4e079d19464eebb9b06513a1d4f55fdae5ba needs backport ?
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+In-Reply-To: <CAKohpokTPBv5Z7uGffRJqKB-V=pMi8WAeWUuxNvt+3QV3YcRKg@mail.gmail.com>
+References: <cover.1375279948.git.viresh.kumar@linaro.org>
+	<CAK9yfHwZCBk5boyiak1FJ7WVJ+FxLjPk1Wa5eYbuZw8BaOV5jw@mail.gmail.com>
+	<CAKohpokTPBv5Z7uGffRJqKB-V=pMi8WAeWUuxNvt+3QV3YcRKg@mail.gmail.com>
+Date: Fri, 2 Aug 2013 15:12:22 +0530
+Message-ID: <CAK9yfHy_qUysGHNqcyJWQiW4eBAFs-U-FAZa952FBnqNdB-=Bw@mail.gmail.com>
+Subject: Re: [PATCH 00/15] cpufreq: initialize drivers .owner field with THIS_MODULE
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: rjw@sisk.pl, linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, arnd.bergmann@linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit a59f4e079d19464eebb9b06513a1d4f55fdae5ba
-Author: Zhu Yanhai <gaoyang.zyh@taobao.com>
-Date:   Tue Jan 8 12:56:52 2013 +0800
+On 31 July 2013 22:09, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> On 31 July 2013 22:06, Sachin Kamat <sachin.kamat@linaro.org> wrote:
+>> Hi Viresh,
+>>
+>> On 31 July 2013 19:49, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+>>> CPUFreq core does following at multiple places:
+>>> module_{get|put}(cpufreq_driver->owner)).
+>>>
+>>> This is done to make sure module doesn't get unloaded if it is currently in use.
+>>> This will work only if the .owner field of cpufreq driver is initialized with a
+>>> valid pointer.
+>>>
+>>> This field wasn't initialized for many cpufreq driver, lets initialize it with
+>>> THIS_MODULE.
+>>
+>>
+>> Isn't it possible to do this inside cpufreq_register_driver function
+>> in a similar way as done for platform_driver_register [1].
+>>
+>> [1] https://lkml.org/lkml/2013/5/25/5
+>
+> Don't know if its possible to set it to something other than THIS_MODULE.
+> In which case we want something else to be done.
 
-    sched: Fix the broken sched_rr_get_interval()
+Even I am curious to know if it is possible to set the owner to
+something other than THIS_MODULE.
 
-Without this patch, syscall sched_rr_get_interval() can return wrong
-value, and the bug was introduced in 2.6.24, so this looks like a
-candidate for stable kernel.
-
-The concern for backporting is that this might break some userspace
-programs? As the changelog says:
-
-    [ Since this is an ABI and an old bug, we'll test this via a
-      slow upstream route, to hopefully discover any app breakage. ]
+-- 
+With warm regards,
+Sachin
