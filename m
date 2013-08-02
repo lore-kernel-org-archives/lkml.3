@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759477Ab3HBKJg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:09:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37169 "EHLO
+	id S1030234Ab3HBKKX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:10:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37248 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759404Ab3HBKJc (ORCPT
+	with ESMTP id S1030214Ab3HBKKQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:09:32 -0400
+	Fri, 2 Aug 2013 06:10:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anders Hammarquist <iko@iko.pp.se>, Johan Hovold <jhovold@gmail.com>
-Subject: [ 30/99] USB: ti_usb_3410_5052: fix dynamic-id matching
-Date: Fri,  2 Aug 2013 18:07:43 +0800
-Message-Id: <20130802100230.260814681@linuxfoundation.org>
+        "K. Y. Srinivasan" <kys@microsoft.com>,
+        Jason Wang <jasowang@redhat.com>
+Subject: [ 56/99] Drivers: hv: balloon: Fix a bug in the hot-add code
+Date: Fri,  2 Aug 2013 18:08:09 +0800
+Message-Id: <20130802100233.848765575@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802100225.478715166@linuxfoundation.org>
 References: <20130802100225.478715166@linuxfoundation.org>
@@ -26,35 +27,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: "K. Y. Srinivasan" <kys@microsoft.com>
 
-commit 1fad56424f5ad3ce4973505a357212b2e2282b3f upstream.
+commit ed07ec93e83ec471d365ce084e43ad90fd205903 upstream.
 
-The driver failed to take the dynamic ids into account when determining
-the device type and therefore all devices were detected as 2-port
-devices when using the dynamic-id interface.
+As we hot-add 128 MB chunks of memory, we wait to ensure that the memory
+is onlined before attempting to hot-add the next chunk. If the udev rule for
+memory hot-add is not executed within the allowed time, we would rollback the
+state and abort further hot-add. Since the hot-add has succeeded and the only
+failure is that the memory is not onlined within the allowed time, we should not
+be rolling back the state. Fix this bug.
 
-Match on the usb-serial-driver field instead of doing redundant id-table
-searches.
-
-Reported-by: Anders Hammarquist <iko@iko.pp.se>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Acked-by: Jason Wang <jasowang@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ti_usb_3410_5052.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/hv/hv_balloon.c |   13 +++++--------
+ 1 file changed, 5 insertions(+), 8 deletions(-)
 
---- a/drivers/usb/serial/ti_usb_3410_5052.c
-+++ b/drivers/usb/serial/ti_usb_3410_5052.c
-@@ -371,7 +371,7 @@ static int ti_startup(struct usb_serial
- 	usb_set_serial_data(serial, tdev);
+--- a/drivers/hv/hv_balloon.c
++++ b/drivers/hv/hv_balloon.c
+@@ -562,7 +562,7 @@ static void hv_mem_hot_add(unsigned long
+ 				struct hv_hotadd_state *has)
+ {
+ 	int ret = 0;
+-	int i, nid, t;
++	int i, nid;
+ 	unsigned long start_pfn;
+ 	unsigned long processed_pfn;
+ 	unsigned long total_pfn = pfn_count;
+@@ -607,14 +607,11 @@ static void hv_mem_hot_add(unsigned long
  
- 	/* determine device type */
--	if (usb_match_id(serial->interface, ti_id_table_3410))
-+	if (serial->type == &ti_1port_device)
- 		tdev->td_is_3410 = 1;
- 	dev_dbg(&dev->dev, "%s - device type is %s\n", __func__,
- 		tdev->td_is_3410 ? "3410" : "5052");
+ 		/*
+ 		 * Wait for the memory block to be onlined.
++		 * Since the hot add has succeeded, it is ok to
++		 * proceed even if the pages in the hot added region
++		 * have not been "onlined" within the allowed time.
+ 		 */
+-		t = wait_for_completion_timeout(&dm_device.ol_waitevent, 5*HZ);
+-		if (t == 0) {
+-			pr_info("hot_add memory timedout\n");
+-			has->ha_end_pfn -= HA_CHUNK;
+-			has->covered_end_pfn -=  processed_pfn;
+-			break;
+-		}
++		wait_for_completion_timeout(&dm_device.ol_waitevent, 5*HZ);
+ 
+ 	}
+ 
 
 
