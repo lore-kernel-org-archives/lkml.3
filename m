@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754651Ab3HBKXE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:23:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37835 "EHLO
+	id S1754451Ab3HBKXJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:23:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37841 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753765Ab3HBKXA (ORCPT
+	with ESMTP id S1753765Ab3HBKXF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:23:00 -0400
+	Fri, 2 Aug 2013 06:23:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Vrabel <david.vrabel@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jonghwan Choi <jhbird.choi@samsung.com>
-Subject: [ 20/23] xen/evtchn: avoid a deadlock when unbinding an event channel
-Date: Fri,  2 Aug 2013 18:23:33 +0800
-Message-Id: <20130802102039.035367550@linuxfoundation.org>
+        Ian Abbott <abbotti@mev.co.uk>
+Subject: [ 11/23] staging: comedi: COMEDI_CANCEL ioctl should wake up read/write
+Date: Fri,  2 Aug 2013 18:23:24 +0800
+Message-Id: <20130802102037.787706122@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802102036.180660415@linuxfoundation.org>
 References: <20130802102036.180660415@linuxfoundation.org>
@@ -28,103 +26,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Vrabel <david.vrabel@citrix.com>
+From: Ian Abbott <abbotti@mev.co.uk>
 
-commit 179fbd5a45f0d4034cc6fd37b8d367a3b79663c4 upstream.
+commit 69acbaac303e8cb948801a9ddd0ac24e86cc4a1b upstream.
 
-Unbinding an event channel (either with the ioctl or when the evtchn
-device is closed) may deadlock because disable_irq() is called with
-port_user_lock held which is also locked by the interrupt handler.
+Comedi devices can do blocking read() or write() (or poll()) if an
+asynchronous command has been set up, blocking for data (for read()) or
+buffer space (for write()).  Various events associated with the
+asynchronous command will wake up the blocked reader or writer (or
+poller).  It is also possible to force the asynchronous command to
+terminate by issuing a `COMEDI_CANCEL` ioctl.  That shuts down the
+asynchronous command, but does not currently wake up the blocked reader
+or writer (or poller).  If the blocked task could be woken up, it would
+see that the command is no longer active and return.  The caller of the
+`COMEDI_CANCEL` ioctl could attempt to wake up the blocked task by
+sending a signal, but that's a nasty workaround.
 
-Think of the IOCTL_EVTCHN_UNBIND is being serviced, the routine has
-just taken the lock, and an interrupt happens. The evtchn_interrupt
-is invoked, tries to take the lock and spins forever.
+Change `do_cancel_ioctl()` to wake up the wait queue after it returns
+from `do_cancel()`.  `do_cancel()` can propagate an error return value
+from the low-level comedi driver's cancel routine, but it always shuts
+the command down regardless, so `do_cancel_ioctl()` can wake up he wait
+queue regardless of the return value from `do_cancel()`.
 
-A quick glance at the code shows that the spinlock is a local IRQ
-variant. Unfortunately that does not help as "disable_irq() waits for
-the interrupt handler on all CPUs to stop running.  If the irq occurs
-on another VCPU, it tries to take port_user_lock and can't because
-the unbind ioctl is holding it." (from David). Hence we cannot
-depend on the said spinlock to protect us. We could make it a system
-wide IRQ disable spinlock but there is a better way.
-
-We can piggyback on the fact that the existence of the spinlock is
-to make get_port_user() checks be up-to-date. And we can alter those
-checks to not depend on the spin lock (as it's protected by u->bind_mutex
-in the ioctl) and can remove the unnecessary locking (this is
-IOCTL_EVTCHN_UNBIND) path.
-
-In the interrupt handler we cannot use the mutex, but we do not
-need it.
-
-"The unbind disables the irq before making the port user stale, so when
-you clear it you are guaranteed that the interrupt handler that might
-use that port cannot be running." (from David).
-
-Hence this patch removes the spinlock usage on the teardown path
-and piggybacks on disable_irq happening before we muck with the
-get_port_user() data. This ensures that the interrupt handler will
-never run on stale data.
-
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-[v1: Expanded the commit description a bit]
-Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/xen/evtchn.c |   21 ++-------------------
- 1 file changed, 2 insertions(+), 19 deletions(-)
+ drivers/staging/comedi/comedi_fops.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/drivers/xen/evtchn.c
-+++ b/drivers/xen/evtchn.c
-@@ -367,18 +367,12 @@ static long evtchn_ioctl(struct file *fi
- 		if (unbind.port >= NR_EVENT_CHANNELS)
- 			break;
+--- a/drivers/staging/comedi/comedi_fops.c
++++ b/drivers/staging/comedi/comedi_fops.c
+@@ -1370,6 +1370,7 @@ static int do_cancel_ioctl(struct comedi
+ 			   void *file)
+ {
+ 	struct comedi_subdevice *s;
++	int ret;
  
--		spin_lock_irq(&port_user_lock);
--
- 		rc = -ENOTCONN;
--		if (get_port_user(unbind.port) != u) {
--			spin_unlock_irq(&port_user_lock);
-+		if (get_port_user(unbind.port) != u)
- 			break;
--		}
+ 	if (arg >= dev->n_subdevices)
+ 		return -EINVAL;
+@@ -1386,7 +1387,11 @@ static int do_cancel_ioctl(struct comedi
+ 	if (s->busy != file)
+ 		return -EBUSY;
  
- 		disable_irq(irq_from_evtchn(unbind.port));
+-	return do_cancel(dev, s);
++	ret = do_cancel(dev, s);
++	if (comedi_get_subdevice_runflags(s) & SRF_USER)
++		wake_up_interruptible(&s->async->wait_head);
++
++	return ret;
+ }
  
--		spin_unlock_irq(&port_user_lock);
--
- 		evtchn_unbind_from_user(u, unbind.port);
- 
- 		rc = 0;
-@@ -478,26 +472,15 @@ static int evtchn_release(struct inode *
- 	int i;
- 	struct per_user_data *u = filp->private_data;
- 
--	spin_lock_irq(&port_user_lock);
--
--	free_page((unsigned long)u->ring);
--
- 	for (i = 0; i < NR_EVENT_CHANNELS; i++) {
- 		if (get_port_user(i) != u)
- 			continue;
- 
- 		disable_irq(irq_from_evtchn(i));
--	}
--
--	spin_unlock_irq(&port_user_lock);
--
--	for (i = 0; i < NR_EVENT_CHANNELS; i++) {
--		if (get_port_user(i) != u)
--			continue;
--
- 		evtchn_unbind_from_user(get_port_user(i), i);
- 	}
- 
-+	free_page((unsigned long)u->ring);
- 	kfree(u->name);
- 	kfree(u);
- 
+ /*
 
 
