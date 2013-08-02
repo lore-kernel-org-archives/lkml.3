@@ -1,97 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754157Ab3HBRu5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 13:50:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48547 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751850Ab3HBRuz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 13:50:55 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <51FAAF3D.3010806@fifthhorseman.net>
-References: <51FAAF3D.3010806@fifthhorseman.net> <20130801173846.28023.19009.stgit@warthog.procyon.org.uk> <20130801173902.28023.68819.stgit@warthog.procyon.org.uk> <51FAA0CC.7010106@fifthhorseman.net> <1375381798.15733.207.camel@willson.li.ssimo.org>
-To: Daniel Kahn Gillmor <dkg@fifthhorseman.net>
-Cc: dhowells@redhat.com, Simo Sorce <simo@redhat.com>, keyrings@linux-nfs.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>, linux-nfs@vger.kernel.org,
-        krbdev@mit.edu, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] KEYS: Add per-user_namespace registers for persistent per-UID kerberos caches
-Date: Fri, 02 Aug 2013 18:50:44 +0100
-Message-ID: <7664.1375465844@warthog.procyon.org.uk>
+	id S1754395Ab3HBRwV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 13:52:21 -0400
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:55036 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752459Ab3HBRwT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 13:52:19 -0400
+MIME-Version: 1.0
+In-Reply-To: <2368382.8sxrvVTxSB@vostro.rjw.lan>
+References: <1375400641-1694-1-git-send-email-felipe.contreras@gmail.com>
+	<51FB107D.8020804@gmail.com>
+	<CAMP44s0cGyv+2xM1m+qp0oZxjmPGv1-0Me7Afeqmbb6ms=rFHQ@mail.gmail.com>
+	<2368382.8sxrvVTxSB@vostro.rjw.lan>
+Date: Fri, 2 Aug 2013 12:52:18 -0500
+Message-ID: <CAMP44s0Qk7GyKFtfe3f19ruafsfu7u3bN-_O-EBhZMBvcUyCNg@mail.gmail.com>
+Subject: Re: [PATCH 1/3] acpi: video: trivial costmetic cleanups
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Aaron Lu <aaron.lwe@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, Len Brown <lenb@kernel.org>,
+        Zhang Rui <rui.zhang@intel.com>, Jiri Kosina <trivial@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Daniel Kahn Gillmor <dkg@fifthhorseman.net> wrote:
+On Fri, Aug 2, 2013 at 9:05 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Thursday, August 01, 2013 11:15:38 PM Felipe Contreras wrote:
+>> On Thu, Aug 1, 2013 at 8:50 PM, Aaron Lu <aaron.lwe@gmail.com> wrote:
+>> > On 08/02/2013 07:43 AM, Felipe Contreras wrote:
+>> >> Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
+>> >
+>> > Please add change log explaining what you have changed.
+>> > It seems that the patch modify comment style only, some add a space and
+>> > some change spaces to tab, is it the case?
+>>
+>> The commit message already explains what the change is; trivial
+>> cosmetic cleanups. Cosmetic means it's completely superficial.
+>
+> And I have a rule not to apply patches without changelogs.  So either I'll
+> need to write it for you, or can you add one pretty please?
 
-> I guess this raises the question from a different perspective: if the
-> kernel already supports arbitrary shm segments, filesystem locations,
-> etc, which can be used for storing/passing opaque bytestrings between
-> different parts of userspace, what advantages do we gain from having
-> this new specific mechanism in the kernel?  Why couldn't those parts of
-> userspace just rely on already-existing mechanisms instead of
-> introducing this new interface?
+The commit message is right there. Maybe Jiri can apply it then, if
+not, then stay happy with your untidy code.
 
-Kernel services can use keys directly by calling request_key() without
-necessarily having to upcall.
-
-
-The keys service in the kernel was created initially for use by the kAFS
-filesystem in the kernel which uses it for passing authentication tokens
-around.  Let me describe how I originally envisioned this working as it may
-help the discussion.
-
-
-Every time a non-fd-based operation[*] is called, kAFS calls request_key() to
-get a key containing an authentication token for the cell.
-
- [*] That is things like lookup, open(), rmdir() and stat() but not read() and
-     write() which use a key cached in the file struct.
-
-Keys can be preemptively added for kAFS by calling a klog or an aklog program
-talk to the authentication server and then use add_key() to add a key into the
-kernel.  The filesystem subsequently finds this and uses it without the need to
-upcall.
-
-Currently, that's all you can do with kAFS.
-
-However, on my todo list is to make it able to upcall when it doesn't have a
-key available.  This is provided for by the request_key() mechanism.
-request_key() searches for the key and if one if is available, it returns it
-otherwise it can[*] partially construct a key and then upcall to ask userspace
-to instantiate it.
-
- [*] If the caller permits it to.
-
-request_key() can upcall to a program it execs itself or it can upcall to a
-running program (though the exact mechanism of the latter is to be worked out).
-
-Say userspace then decides to do a Kerberos ticket request.  It could call
-request_key() itself to search the original process's keyrings for a TGT which
-it can then use to request a ticket.
-
-Once it has the ticket, it can place the ticket data into the partially
-constructed key and link the key into the kerberos ccache keyring to retain it.
-
-
-Now, one of the problems I've got is that the name in the partially constructed
-key is from the filesystem's view of the world - and this doesn't necessarily
-coincide with that of the authentication server.  For example, the kAFS
-filesystem wants a key named for the cell, eg.:
-
-	afs.redhat.com
-
-but the Kerberos ticket might look like:
-
-	AFS/afs.redhat.com@REDHAT.COM
-
-Now, I do permit partial matching, so I could ignore the "@REDHAT.COM" and just
-slap "AFS/" on the front of what I'm looking for.
-
-A further problem is the fact that keys have types and search only finds the
-type asked for - though that can be dealt with in the keyring search algorithm.
-
-David
+-- 
+Felipe Contreras
