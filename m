@@ -1,137 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753431Ab3HBAxl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 20:53:41 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:54605 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753102Ab3HBAxG (ORCPT
+	id S1753455Ab3HBBDF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 21:03:05 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:34010 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753297Ab3HBBDC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 20:53:06 -0400
-From: Julius Werner <jwerner@chromium.org>
-To: Felipe Balbi <balbi@ti.com>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, Tomasz Figa <t.figa@samsung.com>,
-        Vivek Gautam <gautam.vivek@samsung.com>, devicetree@vger.kernel.org,
-        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
-        Julius Werner <jwerner@chromium.org>
-Subject: [PATCH 2/3] usb: phy-samsung-usb: trivial: rename pmuregs variable
-Date: Thu,  1 Aug 2013 17:52:05 -0700
-Message-Id: <1375404726-26264-3-git-send-email-jwerner@chromium.org>
-X-Mailer: git-send-email 1.8.3
-In-Reply-To: <1375404726-26264-1-git-send-email-jwerner@chromium.org>
-References: <1375404726-26264-1-git-send-email-jwerner@chromium.org>
+	Thu, 1 Aug 2013 21:03:02 -0400
+Date: Fri, 2 Aug 2013 03:02:59 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Greg KH <greg@kroah.com>, kernel list <linux-kernel@vger.kernel.org>,
+        Joe Lawrence <joe.lawrence@stratus.com>,
+        Myron Stowe <myron.stowe@redhat.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Carolyn Wyborny <carolyn.wyborny@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        Greg Rose <gregory.v.rose@intel.com>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
+        Alex Duyck <alexander.h.duyck@intel.com>,
+        John Ronciak <john.ronciak@intel.com>,
+        Tushar Dave <tushar.n.dave@intel.com>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>
+Subject: Re: /sys/module/pcie_aspm/parameters/policy not writable?
+Message-ID: <20130802010259.GA4779@amd.pavel.ucw.cz>
+References: <20130709094906.GA3870@amd.pavel.ucw.cz>
+ <20130709101039.GA4479@amd.pavel.ucw.cz>
+ <CAErSpo57qjTkGbNK5qLzJcKuqBGK5=R=raEdyL6M1d5O=FkK_Q@mail.gmail.com>
+ <20130710132950.GA3684@amd.pavel.ucw.cz>
+ <CAErSpo5ig3bxZ3hBUUrzTdc=YqHy7cBGBxOLru4NYdyOOR+W5w@mail.gmail.com>
+ <20130712111121.GB3515@amd.pavel.ucw.cz>
+ <CAErSpo6NYZNHyV9xh2wRSQp72-dxg+FrFW4XrjE5Ps=bW6AGCw@mail.gmail.com>
+ <CAErSpo4XrJL48boVNiEb-7Y=52Bx_79hqP909ayLOdm7we_m3Q@mail.gmail.com>
+ <20130801200008.GA5495@amd.pavel.ucw.cz>
+ <CAErSpo4Dw9Bg059scx-YzR=5rpkc65f0hjQnM7STtoprOLXJqw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAErSpo4Dw9Bg059scx-YzR=5rpkc65f0hjQnM7STtoprOLXJqw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that the sphy->pmuregs variable always points to only a single
-register, let's rename it to make that more clear.
+Hi!
 
-Signed-off-by: Julius Werner <jwerner@chromium.org>
----
- drivers/usb/phy/phy-samsung-usb.c  | 14 +++++++-------
- drivers/usb/phy/phy-samsung-usb.h  |  4 ++--
- drivers/usb/phy/phy-samsung-usb2.c |  4 ++--
- drivers/usb/phy/phy-samsung-usb3.c |  4 ++--
- 4 files changed, 13 insertions(+), 13 deletions(-)
+> >> > But since the problem also occurs with Windows, it's pretty likely
+> >> > that there's a BIOS update to fix it.  I notice on the X60 support
+> >> > page that there are several versions newer than what you're running.
+> >>
+> >> Do you have any interest in trying a newer BIOS to see if it's fixed
+> >> there?  If not, I understand; BIOS updates are a hassle at best.
+> >> You're running BIOS 2.14, and it looks like the current BIOS for an
+> >> X60 1709 7HU is 2.19 (from http://support.lenovo.com).
+> >
+> > I'm lost at the lenovo pages :-(. And frankly I'd prefer not to touch
+> > the BIOS.
+> 
+> I tried to provide a complete link, but the web site isn't amenable to
+> that.  I found it by selecting the "Drivers & Software" section,
+> entering "X60" as the machine type, selecting "ThinkPad X60 (1709)"
+> and going to the "BIOS" section.  I was surprised how easy it was :)
 
-diff --git a/drivers/usb/phy/phy-samsung-usb.c b/drivers/usb/phy/phy-samsung-usb.c
-index 51cad19..fa382c9 100644
---- a/drivers/usb/phy/phy-samsung-usb.c
-+++ b/drivers/usb/phy/phy-samsung-usb.c
-@@ -42,9 +42,9 @@ int samsung_usbphy_parse_dt(struct samsung_usbphy *sphy)
- 		return -ENODEV;
- 	}
- 
--	sphy->pmuregs = of_iomap(usbphy_sys, 0);
-+	sphy->pmureg = of_iomap(usbphy_sys, 0);
- 
--	if (sphy->pmuregs == NULL) {
-+	if (sphy->pmureg == NULL) {
- 		dev_err(sphy->dev, "Can't get usb-phy pmu control register\n");
- 		goto err0;
- 	}
-@@ -77,23 +77,23 @@ void samsung_usbphy_set_isolation_4210(struct samsung_usbphy *sphy, bool on)
- {
- 	u32 reg_val;
- 
--	if (!sphy->pmuregs) {
-+	if (!sphy->pmureg) {
- 		dev_warn(sphy->dev, "Can't set pmu isolation\n");
- 		return;
- 	}
- 
--	reg_val = readl(sphy->pmuregs);
-+	reg_val = readl(sphy->pmureg);
- 
- 	if (on)
- 		reg_val &= ~sphy->drv_data->phy_en_mask;
- 	else
- 		reg_val |= sphy->drv_data->phy_en_mask;
- 
--	writel(reg_val, sphy->pmuregs);
-+	writel(reg_val, sphy->pmureg);
- 
- 	if (sphy->drv_data->cpu_type == TYPE_EXYNOS4X12) {
--		writel(reg_val, sphy->pmuregs + EXYNOS4X12_PHY_HSIC_CTRL0);
--		writel(reg_val, sphy->pmuregs + EXYNOS4X12_PHY_HSIC_CTRL1);
-+		writel(reg_val, sphy->pmureg + EXYNOS4X12_PHY_HSIC_CTRL0);
-+		writel(reg_val, sphy->pmureg + EXYNOS4X12_PHY_HSIC_CTRL1);
- 	}
- }
- EXPORT_SYMBOL_GPL(samsung_usbphy_set_isolation_4210);
-diff --git a/drivers/usb/phy/phy-samsung-usb.h b/drivers/usb/phy/phy-samsung-usb.h
-index a817af5..f2e9c4a 100644
---- a/drivers/usb/phy/phy-samsung-usb.h
-+++ b/drivers/usb/phy/phy-samsung-usb.h
-@@ -281,7 +281,7 @@ struct samsung_usbphy_drvdata {
-  * @dev: The parent device supplied to the probe function
-  * @clk: usb phy clock
-  * @regs: usb phy controller registers memory base
-- * @pmuregs: USB device PHY_CONTROL register memory base
-+ * @pmureg: USB device PHY_CONTROL register address
-  * @sysreg: USB2.0 PHY_CFG register memory base
-  * @ref_clk_freq: reference clock frequency selection
-  * @drv_data: driver data available for different SoCs
-@@ -296,7 +296,7 @@ struct samsung_usbphy {
- 	struct device	*dev;
- 	struct clk	*clk;
- 	void __iomem	*regs;
--	void __iomem	*pmuregs;
-+	void __iomem	*pmureg;
- 	void __iomem	*sysreg;
- 	int		ref_clk_freq;
- 	const struct samsung_usbphy_drvdata *drv_data;
-diff --git a/drivers/usb/phy/phy-samsung-usb2.c b/drivers/usb/phy/phy-samsung-usb2.c
-index adbaa8c..c2c83d4 100644
---- a/drivers/usb/phy/phy-samsung-usb2.c
-+++ b/drivers/usb/phy/phy-samsung-usb2.c
-@@ -435,8 +435,8 @@ static int samsung_usb2phy_remove(struct platform_device *pdev)
- 
- 	usb_remove_phy(&sphy->phy);
- 
--	if (sphy->pmuregs)
--		iounmap(sphy->pmuregs);
-+	if (sphy->pmureg)
-+		iounmap(sphy->pmureg);
- 	if (sphy->sysreg)
- 		iounmap(sphy->sysreg);
- 
-diff --git a/drivers/usb/phy/phy-samsung-usb3.c b/drivers/usb/phy/phy-samsung-usb3.c
-index 3ad9579..6259a35 100644
---- a/drivers/usb/phy/phy-samsung-usb3.c
-+++ b/drivers/usb/phy/phy-samsung-usb3.c
-@@ -292,8 +292,8 @@ static int samsung_usb3phy_remove(struct platform_device *pdev)
- 
- 	usb_remove_phy(&sphy->phy);
- 
--	if (sphy->pmuregs)
--		iounmap(sphy->pmuregs);
-+	if (sphy->pmureg)
-+		iounmap(sphy->pmureg);
- 	if (sphy->sysreg)
- 		iounmap(sphy->sysreg);
- 
+Ok, got it, the web pages are horible.
+
+> >> Carolyn's patch will likely work, at least most of the time, but I
+> >> think there's a small possibility that it could cause a conflict
+> >> between the BIOS and the OS over ASPM control, so I'm not 100% in
+> >> support of that approach.  A conflict may not happen on your
+> >> machine,
+> >
+> > Can we base it on DMI  whitelist?
+> 
+> I don't think we can know a priori whether a machine (even your
+> machine) is susceptible to a conflict.  But if Carolyn forcibly
+> disables it in the driver, she can structure that with a whitelist or
+> whatever she thinks is best.
+
+Well, there's only one way to find out: try it. I was running with the
+"enable ASPM so we can disable it" one-liner for a while, and seen no
+ill effects.
+
+Anyway, if you don't hear from me again, it means that I have a brick
+(and not a notebook) and am desperately trying to get replacement
+X60. Will try to flash it in few minutes.
+     	   	     	    		       	      		       Pavel
 -- 
-1.7.12.4
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
