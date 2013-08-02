@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753942Ab3HBKTa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:19:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37730 "EHLO
+	id S1754058Ab3HBKTg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:19:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37748 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753806Ab3HBKTW (ORCPT
+	with ESMTP id S1752837Ab3HBKTd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:19:22 -0400
+	Fri, 2 Aug 2013 06:19:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        qindehua <13691222965@163.com>, qindehua <qindehua@163.com>,
-        NeilBrown <neilb@suse.de>
-Subject: [ 31/39] md/raid5: fix interaction of replace and recovery.
-Date: Fri,  2 Aug 2013 18:18:41 +0800
-Message-Id: <20130802101501.180201088@linuxfoundation.org>
+        Steffen Maier <maier@linux.vnet.ibm.com>,
+        James Bottomley <JBottomley@Parallels.com>,
+        Zhouping Liu <zliu@redhat.com>
+Subject: [ 35/39] [SCSI] zfcp: status read buffers on first adapter open with link down
+Date: Fri,  2 Aug 2013 18:18:45 +0800
+Message-Id: <20130802101501.713629244@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802101456.800497005@linuxfoundation.org>
 References: <20130802101456.800497005@linuxfoundation.org>
@@ -27,106 +28,141 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Steffen Maier <maier@linux.vnet.ibm.com>
 
-commit f94c0b6658c7edea8bc19d13be321e3860a3fa54 upstream.
+commit 9edf7d75ee5f21663a0183d21f702682d0ef132f upstream.
 
-If a device in a RAID4/5/6 is being replaced while another is being
-recovered, then the writes to the replacement device currently don't
-happen, resulting in corruption when the replacement completes and the
-new drive takes over.
+Commit 64deb6efdc5504ce97b5c1c6f281fffbc150bd93
+"[SCSI] zfcp: Use status_read_buf_num provided by FCP channel"
+started using a value returned by the channel but only evaluated the value
+if the fabric link is up.
+Commit 8d88cf3f3b9af4713642caeb221b6d6a42019001
+"[SCSI] zfcp: Update status read mempool"
+introduced mempool resizings based on the above value.
+On setting an FCP device online for the very first time since boot, a new
+zeroed adapter object is allocated. If the link is down, the number of
+status read requests remains zero. Since just the config data exchange is
+incomplete, we proceed with adapter open recovery. However, we
+unconditionally call mempool_resize with adapter->stat_read_buf_num == 0 in
+this case.
 
-This is because the replacement writes are only triggered when
-'s.replacing' is set and not when the similar 's.sync' is set (which
-is the case during resync and recovery - it means all devices need to
-be read).
+This causes a kernel message "kernel BUG at mm/mempool.c:131!" in process
+"zfcperp<FCP-device-bus-ID>" with last function mempool_resize in Krnl PSW
+and zfcp_erp_thread in the Call Trace.
 
-So schedule those writes when s.replacing is set as well.
+Don't evaluate channel values which are invalid on link down. The number of
+status read requests is always valid, evaluated, and set to a positive
+minimum greater than zero. The adapter open recovery can proceed and the
+channel has status read buffers to inform us on a future link up event.
+While we are not aware of any other code path that could result in mempool
+resize attempts of size zero, we still also initialize the number of status
+read buffers to be posted to a static minimum number on adapter object
+allocation.
 
-In this case we cannot use "STRIPE_INSYNC" to record that the
-replacement has happened as that is needed for recording that any
-parity calculation is complete.  So introduce STRIPE_REPLACED to
-record if the replacement has happened.
+Backported for 3.4-stable. commit a53c8fa since v3.6-rc1 unified
+copyright messages, e.g: revise such messages 'Copyright IBM Corporation'
+as 'Copyright IBM Corp', so updated the messages as a53c8fa did.
 
-For safety we should also check that STRIPE_COMPUTE_RUN is not set.
-This has a similar effect to the "s.locked == 0" test.  The latter
-ensure that now IO has been flagged but not started.  The former
-checks if any parity calculation has been flagged by not started.
-We must wait for both of these to complete before triggering the
-'replace'.
-
-Add a similar test to the subsequent check for "are we finished yet".
-This possibly isn't needed (is subsumed in the STRIPE_INSYNC test),
-but it makes it more obvious that the REPLACE will happen before we
-think we are finished.
-
-Finally if a NeedReplace device is not UPTODATE then that is an
-error.  We really must trigger a warning.
-
-This bug was introduced in commit 9a3e1101b827a59ac9036a672f5fa8d5279d0fe2
-(md/raid5:  detect and handle replacements during recovery.)
-which introduced replacement for raid5.
-That was in 3.3-rc3, so any stable kernel since then would benefit
-from this fix.
-
-Reported-by: qindehua <13691222965@163.com>
-Tested-by: qindehua <qindehua@163.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Steffen Maier <maier@linux.vnet.ibm.com>
+Cc: <stable@vger.kernel.org> #2.6.35+
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Zhouping Liu <zliu@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/raid5.c |   15 ++++++++++-----
- drivers/md/raid5.h |    1 +
- 2 files changed, 11 insertions(+), 5 deletions(-)
+ drivers/s390/scsi/zfcp_aux.c |    5 ++++-
+ drivers/s390/scsi/zfcp_fsf.c |   23 ++++++++++++++++-------
+ 2 files changed, 20 insertions(+), 8 deletions(-)
 
---- a/drivers/md/raid5.c
-+++ b/drivers/md/raid5.c
-@@ -3326,6 +3326,7 @@ static void handle_stripe(struct stripe_
- 	if (test_and_clear_bit(STRIPE_SYNC_REQUESTED, &sh->state)) {
- 		set_bit(STRIPE_SYNCING, &sh->state);
- 		clear_bit(STRIPE_INSYNC, &sh->state);
-+		clear_bit(STRIPE_REPLACED, &sh->state);
- 	}
- 	clear_bit(STRIPE_DELAYED, &sh->state);
+--- a/drivers/s390/scsi/zfcp_aux.c
++++ b/drivers/s390/scsi/zfcp_aux.c
+@@ -3,7 +3,7 @@
+  *
+  * Module interface and handling of zfcp data structures.
+  *
+- * Copyright IBM Corporation 2002, 2010
++ * Copyright IBM Corp. 2002, 2013
+  */
  
-@@ -3465,19 +3466,23 @@ static void handle_stripe(struct stripe_
- 			handle_parity_checks5(conf, sh, &s, disks);
+ /*
+@@ -23,6 +23,7 @@
+  *            Christof Schmitt
+  *            Martin Petermann
+  *            Sven Schuetz
++ *            Steffen Maier
+  */
+ 
+ #define KMSG_COMPONENT "zfcp"
+@@ -415,6 +416,8 @@ struct zfcp_adapter *zfcp_adapter_enqueu
+ 	adapter->dma_parms.max_segment_size = ZFCP_QDIO_SBALE_LEN;
+ 	adapter->ccw_device->dev.dma_parms = &adapter->dma_parms;
+ 
++	adapter->stat_read_buf_num = FSF_STATUS_READS_RECOM;
++
+ 	if (!zfcp_scsi_adapter_register(adapter))
+ 		return adapter;
+ 
+--- a/drivers/s390/scsi/zfcp_fsf.c
++++ b/drivers/s390/scsi/zfcp_fsf.c
+@@ -3,7 +3,7 @@
+  *
+  * Implementation of FSF commands.
+  *
+- * Copyright IBM Corporation 2002, 2010
++ * Copyright IBM Corp. 2002, 2013
+  */
+ 
+ #define KMSG_COMPONENT "zfcp"
+@@ -483,12 +483,8 @@ static int zfcp_fsf_exchange_config_eval
+ 
+ 	fc_host_port_name(shost) = nsp->fl_wwpn;
+ 	fc_host_node_name(shost) = nsp->fl_wwnn;
+-	fc_host_port_id(shost) = ntoh24(bottom->s_id);
+-	fc_host_speed(shost) =
+-		zfcp_fsf_convert_portspeed(bottom->fc_link_speed);
+ 	fc_host_supported_classes(shost) = FC_COS_CLASS2 | FC_COS_CLASS3;
+ 
+-	adapter->hydra_version = bottom->adapter_type;
+ 	adapter->timer_ticks = bottom->timer_interval & ZFCP_FSF_TIMER_INT_MASK;
+ 	adapter->stat_read_buf_num = max(bottom->status_read_buf_num,
+ 					 (u16)FSF_STATUS_READS_RECOM);
+@@ -496,6 +492,19 @@ static int zfcp_fsf_exchange_config_eval
+ 	if (fc_host_permanent_port_name(shost) == -1)
+ 		fc_host_permanent_port_name(shost) = fc_host_port_name(shost);
+ 
++	zfcp_scsi_set_prot(adapter);
++
++	/* no error return above here, otherwise must fix call chains */
++	/* do not evaluate invalid fields */
++	if (req->qtcb->header.fsf_status == FSF_EXCHANGE_CONFIG_DATA_INCOMPLETE)
++		return 0;
++
++	fc_host_port_id(shost) = ntoh24(bottom->s_id);
++	fc_host_speed(shost) =
++		zfcp_fsf_convert_portspeed(bottom->fc_link_speed);
++
++	adapter->hydra_version = bottom->adapter_type;
++
+ 	switch (bottom->fc_topology) {
+ 	case FSF_TOPO_P2P:
+ 		adapter->peer_d_id = ntoh24(bottom->peer_d_id);
+@@ -517,8 +526,6 @@ static int zfcp_fsf_exchange_config_eval
+ 		return -EIO;
  	}
  
--	if (s.replacing && s.locked == 0
--	    && !test_bit(STRIPE_INSYNC, &sh->state)) {
-+	if ((s.replacing || s.syncing) && s.locked == 0
-+	    && !test_bit(STRIPE_COMPUTE_RUN, &sh->state)
-+	    && !test_bit(STRIPE_REPLACED, &sh->state)) {
- 		/* Write out to replacement devices where possible */
- 		for (i = 0; i < conf->raid_disks; i++)
--			if (test_bit(R5_UPTODATE, &sh->dev[i].flags) &&
--			    test_bit(R5_NeedReplace, &sh->dev[i].flags)) {
-+			if (test_bit(R5_NeedReplace, &sh->dev[i].flags)) {
-+				WARN_ON(!test_bit(R5_UPTODATE, &sh->dev[i].flags));
- 				set_bit(R5_WantReplace, &sh->dev[i].flags);
- 				set_bit(R5_LOCKED, &sh->dev[i].flags);
- 				s.locked++;
- 			}
--		set_bit(STRIPE_INSYNC, &sh->state);
-+		if (s.replacing)
-+			set_bit(STRIPE_INSYNC, &sh->state);
-+		set_bit(STRIPE_REPLACED, &sh->state);
- 	}
- 	if ((s.syncing || s.replacing) && s.locked == 0 &&
-+	    !test_bit(STRIPE_COMPUTE_RUN, &sh->state) &&
- 	    test_bit(STRIPE_INSYNC, &sh->state)) {
- 		md_done_sync(conf->mddev, STRIPE_SECTORS, 1);
- 		clear_bit(STRIPE_SYNCING, &sh->state);
---- a/drivers/md/raid5.h
-+++ b/drivers/md/raid5.h
-@@ -306,6 +306,7 @@ enum {
- 	STRIPE_SYNC_REQUESTED,
- 	STRIPE_SYNCING,
- 	STRIPE_INSYNC,
-+	STRIPE_REPLACED,
- 	STRIPE_PREREAD_ACTIVE,
- 	STRIPE_DELAYED,
- 	STRIPE_DEGRADED,
+-	zfcp_scsi_set_prot(adapter);
+-
+ 	return 0;
+ }
+ 
+@@ -569,6 +576,8 @@ static void zfcp_fsf_exchange_config_dat
+ 				&adapter->status);
+ 		zfcp_fsf_link_down_info_eval(req,
+ 			&qtcb->header.fsf_status_qual.link_down_info);
++		if (zfcp_fsf_exchange_config_evaluate(req))
++			return;
+ 		break;
+ 	default:
+ 		zfcp_erp_adapter_shutdown(adapter, 0, "fsecdh3");
 
 
