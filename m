@@ -1,25 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030660Ab3HBKOv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:14:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37500 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030589Ab3HBKMS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1030591Ab3HBKMS (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 2 Aug 2013 06:12:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37490 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030524Ab3HBKMN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 06:12:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Steven T Hampson <steven.t.hampson@intel.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 90/99] mm: mempolicy: fix mbind_range() && vma_adjust() interaction
-Date: Fri,  2 Aug 2013 18:08:43 +0800
-Message-Id: <20130802100238.484949456@linuxfoundation.org>
+        "Rick Farina (Zero_Chaos)" <zerochaos@gentoo.org>
+Subject: [ 88/99] USB: serial: ftdi_sio: add more RT Systems ftdi devices
+Date: Fri,  2 Aug 2013 18:08:41 +0800
+Message-Id: <20130802100238.204970149@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802100225.478715166@linuxfoundation.org>
 References: <20130802100225.478715166@linuxfoundation.org>
@@ -32,76 +26,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: "Rick Farina (Zero_Chaos)" <zerochaos@gentoo.org>
 
-commit 3964acd0dbec123aa0a621973a2a0580034b4788 upstream.
+commit fed1f1ed90bce42ea010e2904cbc04e7b8304940 upstream.
 
-vma_adjust() does vma_set_policy(vma, vma_policy(next)) and this
-is doubly wrong:
+RT Systems makes many usb serial cables based on the ftdi_sio driver for
+programming various amateur radios.  This patch is a full listing of
+their current product offerings and should allow these cables to all
+be recognized.
 
-1. This leaks vma->vm_policy if it is not NULL and not equal to
-   next->vm_policy.
-
-   This can happen if vma_merge() expands "area", not prev (case 8).
-
-2. This sets the wrong policy if vma_merge() joins prev and area,
-   area is the vma the caller needs to update and it still has the
-   old policy.
-
-Revert commit 1444f92c8498 ("mm: merging memory blocks resets
-mempolicy") which introduced these problems.
-
-Change mbind_range() to recheck mpol_equal() after vma_merge() to fix
-the problem that commit tried to address.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Steven T Hampson <steven.t.hampson@intel.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Rick Farina (Zero_Chaos) <zerochaos@gentoo.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/mempolicy.c |    6 +++++-
- mm/mmap.c      |    2 +-
- 2 files changed, 6 insertions(+), 2 deletions(-)
+ drivers/usb/serial/ftdi_sio.c     |   31 ++++++++++++++++++++++++++++---
+ drivers/usb/serial/ftdi_sio_ids.h |   34 +++++++++++++++++++++++++++++-----
+ 2 files changed, 57 insertions(+), 8 deletions(-)
 
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -732,7 +732,10 @@ static int mbind_range(struct mm_struct
- 		if (prev) {
- 			vma = prev;
- 			next = vma->vm_next;
--			continue;
-+			if (mpol_equal(vma_policy(vma), new_pol))
-+				continue;
-+			/* vma_merge() joined vma && vma->next, case 8 */
-+			goto replace;
- 		}
- 		if (vma->vm_start != vmstart) {
- 			err = split_vma(vma->vm_mm, vma, vmstart, 1);
-@@ -744,6 +747,7 @@ static int mbind_range(struct mm_struct
- 			if (err)
- 				goto out;
- 		}
-+ replace:
- 		err = vma_replace_policy(vma, new_pol);
- 		if (err)
- 			goto out;
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -865,7 +865,7 @@ again:			remove_next = 1 + (end > next->
- 		if (next->anon_vma)
- 			anon_vma_merge(vma, next);
- 		mm->map_count--;
--		vma_set_policy(vma, vma_policy(next));
-+		mpol_put(vma_policy(next));
- 		kmem_cache_free(vm_area_cachep, next);
- 		/*
- 		 * In mprotect's case 6 (see comments on vma_merge),
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -735,9 +735,34 @@ static struct usb_device_id id_table_com
+ 	{ USB_DEVICE(FTDI_VID, FTDI_NDI_AURORA_SCU_PID),
+ 		.driver_info = (kernel_ulong_t)&ftdi_NDI_device_quirk },
+ 	{ USB_DEVICE(TELLDUS_VID, TELLDUS_TELLSTICK_PID) },
+-	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_SERIAL_VX7_PID) },
+-	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_CT29B_PID) },
+-	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_RTS01_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_S03_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_59_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_57A_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_57B_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_29A_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_29B_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_29F_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_62B_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_S01_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_63_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_29C_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_81B_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_82B_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_K5D_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_K4Y_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_K5G_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_S05_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_60_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_61_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_62_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_63B_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_64_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_65_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_92_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_92D_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_W5R_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_A5R_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_PW1_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_MAXSTREAM_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_PHI_FISCO_PID) },
+ 	{ USB_DEVICE(TML_VID, TML_USB_SERIAL_PID) },
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -815,11 +815,35 @@
+ /*
+  * RT Systems programming cables for various ham radios
+  */
+-#define RTSYSTEMS_VID			0x2100	/* Vendor ID */
+-#define RTSYSTEMS_SERIAL_VX7_PID	0x9e52	/* Serial converter for VX-7 Radios using FT232RL */
+-#define RTSYSTEMS_CT29B_PID		0x9e54	/* CT29B Radio Cable */
+-#define RTSYSTEMS_RTS01_PID		0x9e57	/* USB-RTS01 Radio Cable */
+-
++#define RTSYSTEMS_VID		0x2100	/* Vendor ID */
++#define RTSYSTEMS_USB_S03_PID	0x9001	/* RTS-03 USB to Serial Adapter */
++#define RTSYSTEMS_USB_59_PID	0x9e50	/* USB-59 USB to 8 pin plug */
++#define RTSYSTEMS_USB_57A_PID	0x9e51	/* USB-57A USB to 4pin 3.5mm plug */
++#define RTSYSTEMS_USB_57B_PID	0x9e52	/* USB-57B USB to extended 4pin 3.5mm plug */
++#define RTSYSTEMS_USB_29A_PID	0x9e53	/* USB-29A USB to 3.5mm stereo plug */
++#define RTSYSTEMS_USB_29B_PID	0x9e54	/* USB-29B USB to 6 pin mini din */
++#define RTSYSTEMS_USB_29F_PID	0x9e55	/* USB-29F USB to 6 pin modular plug */
++#define RTSYSTEMS_USB_62B_PID	0x9e56	/* USB-62B USB to 8 pin mini din plug*/
++#define RTSYSTEMS_USB_S01_PID	0x9e57	/* USB-RTS01 USB to 3.5 mm stereo plug*/
++#define RTSYSTEMS_USB_63_PID	0x9e58	/* USB-63 USB to 9 pin female*/
++#define RTSYSTEMS_USB_29C_PID	0x9e59	/* USB-29C USB to 4 pin modular plug*/
++#define RTSYSTEMS_USB_81B_PID	0x9e5A	/* USB-81 USB to 8 pin mini din plug*/
++#define RTSYSTEMS_USB_82B_PID	0x9e5B	/* USB-82 USB to 2.5 mm stereo plug*/
++#define RTSYSTEMS_USB_K5D_PID	0x9e5C	/* USB-K5D USB to 8 pin modular plug*/
++#define RTSYSTEMS_USB_K4Y_PID	0x9e5D	/* USB-K4Y USB to 2.5/3.5 mm plugs*/
++#define RTSYSTEMS_USB_K5G_PID	0x9e5E	/* USB-K5G USB to 8 pin modular plug*/
++#define RTSYSTEMS_USB_S05_PID	0x9e5F	/* USB-RTS05 USB to 2.5 mm stereo plug*/
++#define RTSYSTEMS_USB_60_PID	0x9e60	/* USB-60 USB to 6 pin din*/
++#define RTSYSTEMS_USB_61_PID	0x9e61	/* USB-61 USB to 6 pin mini din*/
++#define RTSYSTEMS_USB_62_PID	0x9e62	/* USB-62 USB to 8 pin mini din*/
++#define RTSYSTEMS_USB_63B_PID	0x9e63	/* USB-63 USB to 9 pin female*/
++#define RTSYSTEMS_USB_64_PID	0x9e64	/* USB-64 USB to 9 pin male*/
++#define RTSYSTEMS_USB_65_PID	0x9e65	/* USB-65 USB to 9 pin female null modem*/
++#define RTSYSTEMS_USB_92_PID	0x9e66	/* USB-92 USB to 12 pin plug*/
++#define RTSYSTEMS_USB_92D_PID	0x9e67	/* USB-92D USB to 12 pin plug data*/
++#define RTSYSTEMS_USB_W5R_PID	0x9e68	/* USB-W5R USB to 8 pin modular plug*/
++#define RTSYSTEMS_USB_A5R_PID	0x9e69	/* USB-A5R USB to 8 pin modular plug*/
++#define RTSYSTEMS_USB_PW1_PID	0x9e6A	/* USB-PW1 USB to 8 pin modular plug*/
+ 
+ /*
+  * Physik Instrumente
 
 
