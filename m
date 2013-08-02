@@ -1,30 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752715Ab3HBKiw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:38:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37455 "EHLO
+	id S1753003Ab3HBKjU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:39:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37441 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030522Ab3HBKLv (ORCPT
+	with ESMTP id S1030507Ab3HBKLq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:11:51 -0400
+	Fri, 2 Aug 2013 06:11:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        =?UTF-8?q?St=C3=A9phane=20Marchesin?= <marcheu@chromium.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        =?UTF-8?q?Bj=C3=B6rn=20Bidar?= <theodorstormgrade@gmail.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
         Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 79/99] drm/i915: correctly restore fences with objects attached
-Date: Fri,  2 Aug 2013 18:08:32 +0800
-Message-Id: <20130802100236.971733989@linuxfoundation.org>
+Subject: [ 77/99] drm/i915: fix long-standing SNB regression in power consumption after resume v2
+Date: Fri,  2 Aug 2013 18:08:30 +0800
+Message-Id: <20130802100236.681675273@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802100225.478715166@linuxfoundation.org>
 References: <20130802100225.478715166@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -33,110 +27,115 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
 
-commit 94a335dba34ff47cad3d6d0c29b452d43a1be3c8 upstream.
+commit 7dcd2677ea912573d9ed4bcd629b0023b2d11505 upstream.
 
-To avoid stalls we delay tiling changes and especially hold of
-committing the new fence state for as long as possible.
-Synchronization points are in the execbuf code and in our gtt fault
-handler.
+This patch fixes regression in power consumtion of sandy bridge gpu, which
+exists since v3.6 Sometimes after resuming from s2ram gpu starts thinking that
+it's extremely busy. After that it never reaches rc6 state.
 
-Unfortunately we've missed that tricky detail when adding proper fence
-restore code in
+Bug exists since kernel v3.6:
 
-commit 19b2dbde5732170a03bd82cc8bd442cf88d856f7
-Author: Chris Wilson <chris@chris-wilson.co.uk>
-Date:   Wed Jun 12 10:15:12 2013 +0100
+commit b4ae3f22d238617ca11610b29fde16cf8c0bc6e0
+Author: Jesse Barnes <jbarnes@virtuousgeek.org>
+Date:   Thu Jun 14 11:04:48 2012 -0700
 
-    drm/i915: Restore fences after resume and GPU resets
+    drm/i915: load boot context at driver init time
 
-The result was that we've restored fences for objects with no tiling,
-since the object<->fence link still existed after resume. Now that
-wouldn't have been too bad since any subsequent access would have
-fixed things up, but if we've changed from tiled to untiled real havoc
-happened:
+For some reason RC6 is already enabled at the beginning of resuming process.
+Following initliaztion breaks some internal state and confuses RPS engine.
+This patch disables RC6 at the beginnig of resume and initialization.
 
-The tiling stride is stored -1 in the fence register, so a stride of 0
-resulted in all 1s in the top 32bits, and so a completely bogus fence
-spanning everything from the start of the object to the top of the
-GTT. The tell-tale in the register dumps looks like:
+I've rearranged initialization sequence, because intel_disable_gt_powersave()
+needs initialized force_wake_get/put and some locks from the dev_priv.
 
-                 FENCE START 2: 0x0214d001
-                 FENCE END 2: 0xfffff3ff
+Note: The culprit in the initialization sequence seems to be the write
+to MBCTL added in the above mentioned commit. The first version of
+this patch just held a forcewake reference across the clock gating
+init functions, which seems to have been enought to gather quite a few
+positive test reports. But since that smelled a bit like ad-hoc
+duct-tape v2 now just disables rps/rc6 across the entire hw setup.
 
-Bit 11 isn't set since the hw doesn't store it, even when writing all
-1s (at least on my snb here).
+[danvet: Add note about v1 vs. v2 of this patch and use standard
+layout for the commit citation. Also add the tested-bys from v1 and a cc:
+stable.]
 
-To prevent such a gaffle in the future add a sanity check for fences
-with an untiled object attached in i915_gem_write_fence.
+References https://bugs.freedesktop.org/show_bug.cgi?id=54089
+References https://bugzilla.kernel.org/show_bug.cgi?id=58971
+References https://patchwork.kernel.org/patch/2827634/ (patch v1)
 
-v2: Fix the WARN, spotted by Chris.
-
-v3: Trying to reuse get_fences looked ugly and obfuscated the code.
-Instead reuse update_fence and to make it really dtrt also move the
-fence dirty state clearing into update_fence.
-
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=60530
-Cc: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Stéphane Marchesin <marcheu@chromium.org>
-Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
-Tested-by: Matthew Garrett <matthew.garrett@nebula.com>
-Tested-by: Björn Bidar <theodorstormgrade@gmail.com>
+Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Tested-by: Alexander Kaltsas <alexkaltsas@gmail.com> (v1)
+Tested-by: rocko <rockorequin@hotmail.com> (v1)
+Tested-by: JohnMB <johnmbryant@sky.com> (v1)
 Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_gem.c |   18 ++++++++++++++++--
- 1 file changed, 16 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/i915/i915_dma.c |   16 ++++++++--------
+ drivers/gpu/drm/i915/intel_pm.c |    5 +++--
+ 2 files changed, 11 insertions(+), 10 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_gem.c
-+++ b/drivers/gpu/drm/i915/i915_gem.c
-@@ -2138,7 +2138,17 @@ void i915_gem_restore_fences(struct drm_
+--- a/drivers/gpu/drm/i915/i915_dma.c
++++ b/drivers/gpu/drm/i915/i915_dma.c
+@@ -1511,6 +1511,13 @@ int i915_driver_load(struct drm_device *
+ 	dev_priv->dev = dev;
+ 	dev_priv->info = info;
  
- 	for (i = 0; i < dev_priv->num_fence_regs; i++) {
- 		struct drm_i915_fence_reg *reg = &dev_priv->fence_regs[i];
--		i915_gem_write_fence(dev, i, reg->obj);
++	spin_lock_init(&dev_priv->irq_lock);
++	spin_lock_init(&dev_priv->gpu_error.lock);
++	spin_lock_init(&dev_priv->rps.lock);
++	mutex_init(&dev_priv->dpio_lock);
++	mutex_init(&dev_priv->rps.hw_lock);
++	mutex_init(&dev_priv->modeset_restore_lock);
 +
-+		/*
-+		 * Commit delayed tiling changes if we have an object still
-+		 * attached to the fence, otherwise just clear the fence.
-+		 */
-+		if (reg->obj) {
-+			i915_gem_object_update_fence(reg->obj, reg,
-+						     reg->obj->tiling_mode);
-+		} else {
-+			i915_gem_write_fence(dev, i, NULL);
-+		}
+ 	i915_dump_device_info(dev_priv);
+ 
+ 	if (i915_get_bridge_dev(dev)) {
+@@ -1602,6 +1609,7 @@ int i915_driver_load(struct drm_device *
+ 
+ 	intel_irq_init(dev);
+ 	intel_gt_init(dev);
++	intel_gt_reset(dev);
+ 
+ 	/* Try to make sure MCHBAR is enabled before poking at it */
+ 	intel_setup_mchbar(dev);
+@@ -1626,14 +1634,6 @@ int i915_driver_load(struct drm_device *
+ 	if (!IS_I945G(dev) && !IS_I945GM(dev))
+ 		pci_enable_msi(dev->pdev);
+ 
+-	spin_lock_init(&dev_priv->irq_lock);
+-	spin_lock_init(&dev_priv->gpu_error.lock);
+-	spin_lock_init(&dev_priv->rps.lock);
+-	mutex_init(&dev_priv->dpio_lock);
+-
+-	mutex_init(&dev_priv->rps.hw_lock);
+-	mutex_init(&dev_priv->modeset_restore_lock);
+-
+ 	dev_priv->num_plane = 1;
+ 	if (IS_VALLEYVIEW(dev))
+ 		dev_priv->num_plane = 2;
+--- a/drivers/gpu/drm/i915/intel_pm.c
++++ b/drivers/gpu/drm/i915/intel_pm.c
+@@ -4497,6 +4497,9 @@ void intel_gt_reset(struct drm_device *d
+ 		if (IS_IVYBRIDGE(dev) || IS_HASWELL(dev))
+ 			__gen6_gt_force_wake_mt_reset(dev_priv);
  	}
- }
- 
-@@ -2676,6 +2686,10 @@ static void i915_gem_write_fence(struct
- 	if (i915_gem_object_needs_mb(dev_priv->fence_regs[reg].obj))
- 		mb();
- 
-+	WARN(obj && (!obj->stride || !obj->tiling_mode),
-+	     "bogus fence setup with stride: 0x%x, tiling mode: %i\n",
-+	     obj->stride, obj->tiling_mode);
 +
- 	switch (INTEL_INFO(dev)->gen) {
- 	case 7:
- 	case 6:
-@@ -2735,6 +2749,7 @@ static void i915_gem_object_update_fence
- 		fence->obj = NULL;
- 		list_del_init(&fence->lru_list);
- 	}
-+	obj->fence_dirty = false;
++	/* BIOS often leaves RC6 enabled, but disable it for hw init */
++	intel_disable_gt_powersave(dev);
  }
  
- static int
-@@ -2864,7 +2879,6 @@ i915_gem_object_get_fence(struct drm_i91
- 		return 0;
+ void intel_gt_init(struct drm_device *dev)
+@@ -4505,8 +4508,6 @@ void intel_gt_init(struct drm_device *de
  
- 	i915_gem_object_update_fence(obj, reg, enable);
--	obj->fence_dirty = false;
+ 	spin_lock_init(&dev_priv->gt_lock);
  
- 	return 0;
- }
+-	intel_gt_reset(dev);
+-
+ 	if (IS_VALLEYVIEW(dev)) {
+ 		dev_priv->gt.force_wake_get = vlv_force_wake_get;
+ 		dev_priv->gt.force_wake_put = vlv_force_wake_put;
 
 
