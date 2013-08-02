@@ -1,159 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753596Ab3HBBTq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 21:19:46 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:57873 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752621Ab3HBBTo (ORCPT
+	id S1753762Ab3HBBUY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 21:20:24 -0400
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:18885 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753318Ab3HBBUW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 21:19:44 -0400
-MIME-Version: 1.0
-In-Reply-To: <51F9D288.5040905@cn.fujitsu.com>
-References: <1375281181-15526-1-git-send-email-linkinjeon@gmail.com>
-	<51F9D288.5040905@cn.fujitsu.com>
-Date: Fri, 2 Aug 2013 10:19:43 +0900
-Message-ID: <CAKYAXd-P+XDAOrXPSXH2fCePgMnCY8Hoj1_tN8QFxP7MKLSq1A@mail.gmail.com>
-Subject: Re: [PATCH 1/2] f2fs: add sysfs support for controlling the gc_thread
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: Gu Zheng <guz.fnst@cn.fujitsu.com>
-Cc: jaegeuk.kim@samsung.com, linux-f2fs-devel@lists.sourceforge.net,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Pankaj Kumar <pankaj.km@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 1 Aug 2013 21:20:22 -0400
+Message-ID: <1375406353.10300.73.camel@misato.fc.hp.com>
+Subject: Re: [PATCH v2 10/18] x86, acpi: Try to find if SRAT is overrided
+ earlier.
+From: Toshi Kani <toshi.kani@hp.com>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu,
+        hpa@zytor.com, akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
+        mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
+        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com, x86@kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-acpi@vger.kernel.org
+Date: Thu, 01 Aug 2013 19:19:13 -0600
+In-Reply-To: <1375340800-19332-11-git-send-email-tangchen@cn.fujitsu.com>
+References: <1375340800-19332-1-git-send-email-tangchen@cn.fujitsu.com>
+	 <1375340800-19332-11-git-send-email-tangchen@cn.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>
->> diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
->> index 78777cd..63813be 100644
->> --- a/fs/f2fs/f2fs.h
->> +++ b/fs/f2fs/f2fs.h
->> @@ -430,6 +430,10 @@ struct f2fs_sb_info {
->>  #endif
->>  	unsigned int last_victim[2];		/* last victim segment # */
->>  	spinlock_t stat_lock;			/* lock for stat operations */
->> +
->> +	/* For sysfs suppport */
->> +	struct kobject s_kobj;
->> +	struct completion s_kobj_unregister;
->
-Hi. Gu.
-> What is this completion used for? Or it's an ahead design? I do not find
-> synchronization
-> routines use it. Am I missing something?
-You're right. it is my mistake. I will update it on next version patch.
+On Thu, 2013-08-01 at 15:06 +0800, Tang Chen wrote:
+> Linux cannot migrate pages used by the kernel due to the direct mapping
+> (va = pa + PAGE_OFFSET), any memory used by the kernel cannot be hot-removed.
+> So when using memory hotplug, we have to prevent the kernel from using
+> hotpluggable memory.
+> 
+> The ACPI table SRAT (System Resource Affinity Table) contains info to specify
+> which memory is hotpluggble. After SRAT is parsed, we are aware of which
+> memory is hotpluggable.
+> 
+> At the early time when system is booting, SRAT has not been parsed. The boot
+> memory allocator memblock will allocate any memory to the kernel. So we need
+> SRAT parsed before memblock starts to work.
+> 
+> In this patch, we are going to parse SRAT earlier, right after memblock is ready.
+> 
+> Generally speaking, tables such as SRAT are provided by firmware. But
+> ACPI_INITRD_TABLE_OVERRIDE functionality allows users to customize their own
+> tables in initrd, and override the ones from firmware. So if we want to parse
+> SRAT earlier, we also need to do SRAT override earlier.
+> 
+> First, we introduce early_acpi_override_srat() to check if SRAT will be overridden
+> from initrd.
+> 
+> Second, we introduce find_hotpluggable_memory() to reserve hotpluggable memory,
+> which will firstly call early_acpi_override_srat() to find out which memory is
+> hotpluggable in the override SRAT.
+> 
+> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+> Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+> ---
+>  arch/x86/kernel/setup.c        |   10 +++++++
+>  drivers/acpi/osl.c             |   58 ++++++++++++++++++++++++++++++++++++++++
+>  include/linux/acpi.h           |   14 ++++++++-
+>  include/linux/memory_hotplug.h |    2 +
+>  mm/memory_hotplug.c            |   25 ++++++++++++++++-
+>  5 files changed, 106 insertions(+), 3 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+> index c8f5d1a..8b1bddd 100644
+> --- a/arch/x86/kernel/setup.c
+> +++ b/arch/x86/kernel/setup.c
+> @@ -1060,6 +1060,16 @@ void __init setup_arch(char **cmdline_p)
+>  	/* Initialize ACPI root table */
+>  	acpi_root_table_init();
+>  
+> +#ifdef CONFIG_ACPI_NUMA
+> +	/*
+> +	 * Linux kernel cannot migrate kernel pages, as a result, memory used
+> +	 * by the kernel cannot be hot-removed. Find and mark hotpluggable
+> +	 * memory in memblock to prevent memblock from allocating hotpluggable
+> +	 * memory for the kernel.
+> +	 */
+> +	find_hotpluggable_memory();
+> +#endif
+> +
+>  	/*
+>  	 * The EFI specification says that boot service code won't be called
+>  	 * after ExitBootServices(). This is, in fact, a lie.
+> diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
+> index 8df8a93..d0b687c 100644
+> --- a/drivers/acpi/osl.c
+> +++ b/drivers/acpi/osl.c
+> @@ -48,6 +48,7 @@
+>  
+>  #include <asm/io.h>
+>  #include <asm/uaccess.h>
+> +#include <asm/setup.h>
+>  
+>  #include <acpi/acpi.h>
+>  #include <acpi/acpi_bus.h>
+> @@ -631,6 +632,63 @@ int __init acpi_invalid_table(struct cpio_data *file,
+>  	return 0;
+>  }
+>  
+> +#ifdef CONFIG_ACPI_NUMA
+> +/*******************************************************************************
+> + *
+> + * FUNCTION:    early_acpi_override_srat
+> + *
+> + * RETURN:      Phys addr of SRAT on success, 0 on error.
+> + *
+> + * DESCRIPTION: Try to get the phys addr of SRAT in initrd.
+> + *              The ACPI_INITRD_TABLE_OVERRIDE procedure is able to use tables
+> + *              in initrd file to override the ones provided by firmware. This
+> + *              function checks if there is a SRAT in initrd at early time. If
+> + *              so, return the phys addr of the SRAT.
+> + *
+> + ******************************************************************************/
+> +phys_addr_t __init early_acpi_override_srat(void)
+> +{
+> +	int i;
+> +	u32 length;
+> +	long offset;
+> +	void *ramdisk_vaddr;
+> +	struct acpi_table_header *table;
+> +	struct cpio_data file;
+> +	unsigned long map_step = NR_FIX_BTMAPS << PAGE_SHIFT;
+> +	phys_addr_t ramdisk_image = get_ramdisk_image();
+> +	char cpio_path[32] = "kernel/firmware/acpi/";
 
->
->
->>  };
->>
->>  /*
->> diff --git a/fs/f2fs/gc.c b/fs/f2fs/gc.c
->> index 35f9b1a..60d4f67 100644
->> --- a/fs/f2fs/gc.c
->> +++ b/fs/f2fs/gc.c
->> @@ -29,10 +29,11 @@ static struct kmem_cache *winode_slab;
->>  static int gc_thread_func(void *data)
->>  {
->>  	struct f2fs_sb_info *sbi = data;
->> +	struct f2fs_gc_kthread *gc_th = sbi->gc_thread;
->>  	wait_queue_head_t *wq = &sbi->gc_thread->gc_wait_queue_head;
->>  	long wait_ms;
->>
->> -	wait_ms = GC_THREAD_MIN_SLEEP_TIME;
->> +	wait_ms = gc_th->min_sleep_time;
->>
->>  	do {
->>  		if (try_to_freeze())
->> @@ -45,7 +46,7 @@ static int gc_thread_func(void *data)
->>  			break;
->>
->>  		if (sbi->sb->s_writers.frozen >= SB_FREEZE_WRITE) {
->> -			wait_ms = GC_THREAD_MAX_SLEEP_TIME;
->> +			wait_ms = increase_sleep_time(gc_th, wait_ms);
->>  			continue;
->>  		}
->>
->> @@ -66,15 +67,15 @@ static int gc_thread_func(void *data)
->>  			continue;
->>
->>  		if (!is_idle(sbi)) {
->> -			wait_ms = increase_sleep_time(wait_ms);
->> +			wait_ms = increase_sleep_time(gc_th, wait_ms);
->>  			mutex_unlock(&sbi->gc_mutex);
->>  			continue;
->>  		}
->>
->>  		if (has_enough_invalid_blocks(sbi))
->> -			wait_ms = decrease_sleep_time(wait_ms);
->> +			wait_ms = decrease_sleep_time(gc_th, wait_ms);
->>  		else
->> -			wait_ms = increase_sleep_time(wait_ms);
->> +			wait_ms = increase_sleep_time(gc_th, wait_ms);
->>
->>  #ifdef CONFIG_F2FS_STAT_FS
->>  		sbi->bg_gc++;
->> @@ -82,7 +83,7 @@ static int gc_thread_func(void *data)
->>
->>  		/* if return value is not zero, no victim was selected */
->>  		if (f2fs_gc(sbi))
->> -			wait_ms = GC_THREAD_NOGC_SLEEP_TIME;
->> +			wait_ms = gc_th->no_gc_sleep_time;
->>  	} while (!kthread_should_stop());
->>  	return 0;
->>  }
->> @@ -101,6 +102,10 @@ int start_gc_thread(struct f2fs_sb_info *sbi)
->>  		goto out;
->>  	}
->>
->> +	gc_th->min_sleep_time = DEF_GC_THREAD_MIN_SLEEP_TIME;
->> +	gc_th->max_sleep_time = DEF_GC_THREAD_MAX_SLEEP_TIME;
->> +	gc_th->no_gc_sleep_time = DEF_GC_THREAD_NOGC_SLEEP_TIME;
->> +
->>  	sbi->gc_thread = gc_th;
->>  	init_waitqueue_head(&sbi->gc_thread->gc_wait_queue_head);
->>  	sbi->gc_thread->f2fs_gc_task = kthread_run(gc_thread_func, sbi,
->> diff --git a/fs/f2fs/gc.h b/fs/f2fs/gc.h
->> index 2c6a6bd..f4bf44c 100644
->> --- a/fs/f2fs/gc.h
->> +++ b/fs/f2fs/gc.h
->> @@ -13,9 +13,9 @@
->>  						 * whether IO subsystem is idle
->>  						 * or not
->>  						 */
->> -#define GC_THREAD_MIN_SLEEP_TIME	30000	/* milliseconds */
->> -#define GC_THREAD_MAX_SLEEP_TIME	60000
->> -#define GC_THREAD_NOGC_SLEEP_TIME	300000	/* wait 5 min */
->> +#define DEF_GC_THREAD_MIN_SLEEP_TIME	30000	/* milliseconds */
->> +#define DEF_GC_THREAD_MAX_SLEEP_TIME	60000
->> +#define DEF_GC_THREAD_NOGC_SLEEP_TIME	300000	/* wait 5 min */
->>  #define LIMIT_INVALID_BLOCK	40 /* percentage over total user space */
->>  #define LIMIT_FREE_BLOCK	40 /* percentage over invalid + free space */
->>
->> @@ -25,6 +25,11 @@
->>  struct f2fs_gc_kthread {
->>  	struct task_struct *f2fs_gc_task;
->>  	wait_queue_head_t gc_wait_queue_head;
->> +
->> +	/* for gc sleep time */
->> +	unsigned int min_sleep_time;
->> +	unsigned int max_sleep_time;
->> +	unsigned int no_gc_sleep_time;
->
-> Though these attributes are used for gc thread, and in current design
-> gc_thread is always
-> singleton per f2fs_sb, but thare're in fact f2fs sb infos. So I think it's
-> to attach
-> these to f2fs_sb_info. What's your opinion?
-It does not matter wherever it is. but I think that these gc time are
-for gc thread.
-So I put gc time to gc thread.
+Don't you need to check if ramdisk is present before parsing the table?
+You may need something like:
 
-Thanks for review :)
->
-> Thanks,
-> Gu
->
->>  };
+  if (!ramdisk_image || !get_ramdisk_size())
+        return 0;
+
+> +
+> +	/* Try to find if SRAT is overrided */
+
+overrided -> overridden
+
+> +	for (i = 0; i < ACPI_OVERRIDE_TABLES; i++) {
+> +		ramdisk_vaddr = early_ioremap(ramdisk_image, map_step);
+> +
+> +		file = find_cpio_data(cpio_path, ramdisk_vaddr,
+> +				      map_step, &offset);
+> +		if (!file.data) {
+> +			early_iounmap(ramdisk_vaddr, map_step);
+> +			return 0;
+> +		}
+> +
+> +		table = file.data;
+> +		length = table->length;
+> +
+> +		if (acpi_invalid_table(&file, cpio_path, ACPI_SIG_SRAT)) {
+> +			ramdisk_image += offset;
+> +			early_iounmap(ramdisk_vaddr, map_step);
+> +			continue;
+> +		}
+> +
+> +		/* Found SRAT */
+> +		early_iounmap(ramdisk_vaddr, map_step);
+> +		ramdisk_image = ramdisk_image + offset - length;
+> +
+> +		break;
+> +	}
+> +
+> +	return ramdisk_image;
+
+Doesn't this function return a physical address regardless of SRAT if a
+ramdisk is present?
+
+Thanks,
+-Toshi
+
