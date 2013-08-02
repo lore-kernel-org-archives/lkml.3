@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964848Ab3HBKKF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:10:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37203 "EHLO
+	id S1759477Ab3HBKJg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:09:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37169 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964827Ab3HBKJ7 (ORCPT
+	with ESMTP id S1759404Ab3HBKJc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:09:59 -0400
+	Fri, 2 Aug 2013 06:09:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kees Cook <keescook@chromium.org>, PaX Team <pageexec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>,
-        Seiji Aguchi <seiji.aguchi@hds.com>, Fenghua Yu <fenghua.yu@intel.com>
-Subject: [ 44/99] x86: make sure IDT is page aligned
-Date: Fri,  2 Aug 2013 18:07:57 +0800
-Message-Id: <20130802100232.233216002@linuxfoundation.org>
+        Anders Hammarquist <iko@iko.pp.se>, Johan Hovold <jhovold@gmail.com>
+Subject: [ 30/99] USB: ti_usb_3410_5052: fix dynamic-id matching
+Date: Fri,  2 Aug 2013 18:07:43 +0800
+Message-Id: <20130802100230.260814681@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802100225.478715166@linuxfoundation.org>
 References: <20130802100225.478715166@linuxfoundation.org>
@@ -29,40 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Johan Hovold <jhovold@gmail.com>
 
-based on 4df05f361937ee86e5a8c9ead8aeb6a19ea9b7d7 upstream.
+commit 1fad56424f5ad3ce4973505a357212b2e2282b3f upstream.
 
-Since the IDT is referenced from a fixmap, make sure it is page aligned.
-This avoids the risk of the IDT ever being moved in the bss and having
-the mapping be offset, resulting in calling incorrect handlers. In the
-current upstream kernel this is not a manifested bug, but heavily patched
-kernels (such as those using the PaX patch series) did encounter this bug.
+The driver failed to take the dynamic ids into account when determining
+the device type and therefore all devices were detected as 2-port
+devices when using the dynamic-id interface.
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Reported-by: PaX Team <pageexec@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Seiji Aguchi <seiji.aguchi@hds.com>
-Cc: Fenghua Yu <fenghua.yu@intel.com>
+Match on the usb-serial-driver field instead of doing redundant id-table
+searches.
+
+Reported-by: Anders Hammarquist <iko@iko.pp.se>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/head_64.S |    2 +-
+ drivers/usb/serial/ti_usb_3410_5052.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/kernel/head_64.S
-+++ b/arch/x86/kernel/head_64.S
-@@ -513,7 +513,7 @@ ENTRY(phys_base)
- #include "../../x86/xen/xen-head.S"
- 	
- 	.section .bss, "aw", @nobits
--	.align L1_CACHE_BYTES
-+	.align PAGE_SIZE
- ENTRY(idt_table)
- 	.skip IDT_ENTRIES * 16
+--- a/drivers/usb/serial/ti_usb_3410_5052.c
++++ b/drivers/usb/serial/ti_usb_3410_5052.c
+@@ -371,7 +371,7 @@ static int ti_startup(struct usb_serial
+ 	usb_set_serial_data(serial, tdev);
  
+ 	/* determine device type */
+-	if (usb_match_id(serial->interface, ti_id_table_3410))
++	if (serial->type == &ti_1port_device)
+ 		tdev->td_is_3410 = 1;
+ 	dev_dbg(&dev->dev, "%s - device type is %s\n", __func__,
+ 		tdev->td_is_3410 ? "3410" : "5052");
 
 
