@@ -1,104 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759336Ab3HBKJP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:09:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37137 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759294Ab3HBKJL (ORCPT
+	id S1759437Ab3HBKJZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:09:25 -0400
+Received: from up.free-electrons.com ([94.23.35.102]:58924 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1759379Ab3HBKJU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:09:11 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        George Cherian <george.cherian@ti.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [ 22/99] usb: host: xhci: Enable XHCI_SPURIOUS_SUCCESS for all controllers with xhci 1.0
-Date: Fri,  2 Aug 2013 18:07:35 +0800
-Message-Id: <20130802100229.136319127@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
-In-Reply-To: <20130802100225.478715166@linuxfoundation.org>
-References: <20130802100225.478715166@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Fri, 2 Aug 2013 06:09:20 -0400
+Date: Fri, 2 Aug 2013 12:09:16 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] i2c: mv64xxx: Document the newly introduced allwinner
+ compatible
+Message-ID: <20130802100916.GT2911@lukather>
+References: <1374650075-26190-1-git-send-email-maxime.ripard@free-electrons.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="cbsCxbAnPLQXdgdB"
+Content-Disposition: inline
+In-Reply-To: <1374650075-26190-1-git-send-email-maxime.ripard@free-electrons.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+--cbsCxbAnPLQXdgdB
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-From: George Cherian <george.cherian@ti.com>
+Hi Wolfram,
 
-commit 07f3cb7c28bf3f4dd80bfb136cf45810c46ac474 upstream.
+On Wed, Jul 24, 2013 at 09:14:35AM +0200, Maxime Ripard wrote:
+> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+> ---
+>  Documentation/devicetree/bindings/i2c/i2c-mv64xxx.txt | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 
-Xhci controllers with hci_version > 0.96 gives spurious success
-events on short packet completion. During webcam capture the
-"ERROR Transfer event TRB DMA ptr not part of current TD" was observed.
-The same application works fine with synopsis controllers hci_version 0.96.
-The same issue is seen with Intel Pantherpoint xhci controller. So enabling
-this quirk in xhci_gen_setup if controller verion is greater than 0.96.
-For xhci-pci move the quirk to much generic place xhci_gen_setup.
+I'm not exactly sure wether it should go through your tree or not, but
+since you're the one that merged the patch that added this compatible to
+the driver, could you merge it?
 
-Note from Sarah:
+Thanks,
+Maxime
 
-The xHCI 1.0 spec changed how hardware handles short packets.  The HW
-will notify SW of the TRB where the short packet occurred, and it will
-also give a successful status for the last TRB in a TD (the one with the
-IOC flag set).  On the second successful status, that warning will be
-triggered in the driver.
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
 
-Software is now supposed to not assume the TD is not completed until it
-gets that last successful status.  That means we have a slight race
-condition, although it should have little practical impact.  This patch
-papers over that issue.
+--cbsCxbAnPLQXdgdB
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-It's on my long-term to-do list to fix this race condition, but it is a
-much more involved patch that will probably be too big for stable.  This
-patch is needed for stable to avoid serious log spam.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-This patch should be backported to kernels as old as 3.0, that
-contain the commit ad808333d8201d53075a11bc8dd83b81f3d68f0b "Intel xhci:
-Ignore spurious successful event."
+iQIcBAEBAgAGBQJR+4VLAAoJEBx+YmzsjxAgDk8QAJqoFxXIasTdGPLBHJVapDn4
+0icP/Cvnmgw/a5hg7s3gibv52vhgJ43KV+OY3dAWU+xKTO/4fxzz86lCWIctLABM
+ahhzXRIJbxuvsCvNQYH193klIrJqs+JzvKSUzwXc2vewFq2ZcGF5f6iVUpADAhA7
+XQ8agrHRgDl/q1mU9lIktQyLbp3aGfAgxwMyuQhpZFI9Hwa1UjOqmy01ld9WMpL1
+Ou+EdW2psEZNMM0jkwvx75reCPEM3kRo06PP2K6mOJfwK8hxQoBJpJ0AlK5mHprA
+TZsrTnUkxFsXUJe5QX9tFP5ZV788ssc5cWyr8t8o5lJ00Cjrj0AWAY/0zbE7rLe7
+DnCu8Pt4fumT1R++k2AQN0pKp4weAu+6lCnf+MwavxPWGsK4NpNhR1yOy7TnRrxq
+sq4dPVLXuIbfevkh6Eey50XpdwefSFhF8d4ro1zC4jmzOaVvm+7C2brcwwiTqXNI
+uvuQm7RhEB9JMLh4fsZovd4rRgYEfNm0NXMABCFYLL5yWjEOQQvS2Q4NbDVHlOO4
+X3JKaePzvlSAXbLVNauO5kq2OmzpsjM6pafzkhd3ez3r8EPItYDUR+GHgvPuvyyy
+rvWzReAEMaX5aQVYgOGjis4Ntq0lW4Shmh8MfODm8XQs+mrL5MZzL2jG46c5xccL
+Y+NWFFeZMIjHEmx54tmq
+=+0Wm
+-----END PGP SIGNATURE-----
 
-The patch will have to be modified for kernels older than 3.2, since
-that kernel added the xhci_gen_setup function for xhci platform devices.
-The correct conflict resolution for kernels older than 3.2 is to set
-XHCI_SPURIOUS_SUCCESS in xhci_pci_quirks for all xHCI 1.0 hosts.
-
-Signed-off-by: George Cherian <george.cherian@ti.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/usb/host/xhci-pci.c |    1 -
- drivers/usb/host/xhci.c     |    7 +++++++
- 2 files changed, 7 insertions(+), 1 deletion(-)
-
---- a/drivers/usb/host/xhci-pci.c
-+++ b/drivers/usb/host/xhci-pci.c
-@@ -93,7 +93,6 @@ static void xhci_pci_quirks(struct devic
- 	}
- 	if (pdev->vendor == PCI_VENDOR_ID_INTEL &&
- 			pdev->device == PCI_DEVICE_ID_INTEL_PANTHERPOINT_XHCI) {
--		xhci->quirks |= XHCI_SPURIOUS_SUCCESS;
- 		xhci->quirks |= XHCI_EP_LIMIT_QUIRK;
- 		xhci->limit_active_eps = 64;
- 		xhci->quirks |= XHCI_SW_BW_CHECKING;
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -4697,6 +4697,13 @@ int xhci_gen_setup(struct usb_hcd *hcd,
- 
- 	get_quirks(dev, xhci);
- 
-+	/* In xhci controllers which follow xhci 1.0 spec gives a spurious
-+	 * success event after a short transfer. This quirk will ignore such
-+	 * spurious event.
-+	 */
-+	if (xhci->hci_version > 0x96)
-+		xhci->quirks |= XHCI_SPURIOUS_SUCCESS;
-+
- 	/* Make sure the HC is halted. */
- 	retval = xhci_halt(xhci);
- 	if (retval)
-
-
+--cbsCxbAnPLQXdgdB--
