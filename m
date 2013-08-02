@@ -1,103 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758203Ab3HBJM5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 05:12:57 -0400
-Received: from mail-ea0-f171.google.com ([209.85.215.171]:53437 "EHLO
-	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755010Ab3HBJMz (ORCPT
+	id S1758236Ab3HBJPf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 05:15:35 -0400
+Received: from mga02.intel.com ([134.134.136.20]:54456 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755010Ab3HBJPe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 05:12:55 -0400
-Date: Fri, 2 Aug 2013 11:12:47 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: hpa@zytor.com, linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        pjt@google.com, jmario@redhat.com, riel@redhat.com, tglx@linutronix.de,
-        dzickus@redhat.com
-Cc: linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:sched/core] sched/x86: Optimize switch_mm() for
- multi-threaded workloads
-Message-ID: <20130802091247.GA26693@gmail.com>
-References: <20130731221421.616d3d20@annuminas.surriel.com>
- <tip-8f898fbbe5ee5e20a77c4074472a1fd088dc47d1@git.kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <tip-8f898fbbe5ee5e20a77c4074472a1fd088dc47d1@git.kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 2 Aug 2013 05:15:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,800,1367996400"; 
+   d="scan'208";a="380574989"
+Message-ID: <1375434911.31118.74.camel@smile>
+Subject: Re: [PATCH 2/2] aoe: use min() to simplify the code
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Ed Cashin <ecashin@coraid.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
+Date: Fri, 02 Aug 2013 12:15:11 +0300
+In-Reply-To: <5B6F37C8-CB08-4BA6-9AC9-D328711385F9@coraid.com>
+References: <1375360134-20860-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	 <1375360134-20860-2-git-send-email-andriy.shevchenko@linux.intel.com>
+	 <5B6F37C8-CB08-4BA6-9AC9-D328711385F9@coraid.com>
+Organization: Intel Finland Oy
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* tip-bot for Rik van Riel <tipbot@zytor.com> wrote:
+On Thu, 2013-08-01 at 21:13 -0400, Ed Cashin wrote: 
+> Thanks.
+> 
+> I agree that we could do that.  I'm not sure it increases readability to put this much stuff on one line, though.  What is the motivation?
 
-> Commit-ID:  8f898fbbe5ee5e20a77c4074472a1fd088dc47d1
-> Gitweb:     http://git.kernel.org/tip/8f898fbbe5ee5e20a77c4074472a1fd088dc47d1
-> Author:     Rik van Riel <riel@redhat.com>
-> AuthorDate: Wed, 31 Jul 2013 22:14:21 -0400
-> Committer:  Ingo Molnar <mingo@kernel.org>
-> CommitDate: Thu, 1 Aug 2013 09:10:26 +0200
-> 
-> sched/x86: Optimize switch_mm() for multi-threaded workloads
-> 
-> Dick Fowles, Don Zickus and Joe Mario have been working on
-> improvements to perf, and noticed heavy cache line contention
-> on the mm_cpumask, running linpack on a 60 core / 120 thread
-> system.
-> 
-> The cause turned out to be unnecessary atomic accesses to the
-> mm_cpumask. When in lazy TLB mode, the CPU is only removed from
-> the mm_cpumask if there is a TLB flush event.
-> 
-> Most of the time, no such TLB flush happens, and the kernel
-> skips the TLB reload. It can also skip the atomic memory
-> set & test.
-> 
-> Here is a summary of Joe's test results:
-> 
->  * The __schedule function dropped from 24% of all program cycles down
->    to 5.5%.
-> 
->  * The cacheline contention/hotness for accesses to that bitmask went
->    from being the 1st/2nd hottest - down to the 84th hottest (0.3% of
->    all shared misses which is now quite cold)
-> 
->  * The average load latency for the bit-test-n-set instruction in
->    __schedule dropped from 10k-15k cycles down to an average of 600 cycles.
-> 
->  * The linpack program results improved from 133 GFlops to 144 GFlops.
->    Peak GFlops rose from 133 to 153.
-> 
-> Reported-by: Don Zickus <dzickus@redhat.com>
-> Reported-by: Joe Mario <jmario@redhat.com>
-> Tested-by: Joe Mario <jmario@redhat.com>
-> Signed-off-by: Rik van Riel <riel@redhat.com>
-> Reviewed-by: Paul Turner <pjt@google.com>
-> Acked-by: Linus Torvalds <torvalds@linux-foundation.org>
-> Link: http://lkml.kernel.org/r/20130731221421.616d3d20@annuminas.surriel.com
-> [ Made the comments consistent around the modified code. ]
-> Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Motivation is to explicitly show that that operation is to calculate a
+minimum of two the slen parameter and the length of last part of the
+disk_name.
 
-> +	  else {
->  		this_cpu_write(cpu_tlbstate.state, TLBSTATE_OK);
->  		BUG_ON(this_cpu_read(cpu_tlbstate.active_mm) != next);
->  
-> -		if (!cpumask_test_and_set_cpu(cpu, mm_cpumask(next))) {
-> +		if (!cpumask_test_cpu(cpu, mm_cpumask(next))) {
-> +			/*
-> +			 * On established mms, the mm_cpumask is only changed
-> +			 * from irq context, from ptep_clear_flush() while in
-> +			 * lazy tlb mode, and here. Irqs are blocked during
-> +			 * schedule, protecting us from simultaneous changes.
-> +			 */
-> +			cpumask_set_cpu(cpu, mm_cpumask(next));
+It seems matter of taste, so, I'm okay with current piece of code.
 
-Note, I marked this for v3.12 with no -stable backport tag as it's not a 
-regression fix.
+> > min() incorporates condition in it. In our case we could do assignment and
+> > make a choice at once.
+> > 
+> > Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> > ---
+> > drivers/block/aoe/aoedev.c | 6 ++----
+> > 1 file changed, 2 insertions(+), 4 deletions(-)
+> > 
+> > diff --git a/drivers/block/aoe/aoedev.c b/drivers/block/aoe/aoedev.c
+> > index db35ef6..92fadfa 100644
+> > --- a/drivers/block/aoe/aoedev.c
+> > +++ b/drivers/block/aoe/aoedev.c
+> > @@ -13,6 +13,7 @@
+> > #include <linux/kdev_t.h>
+> > #include <linux/moduleparam.h>
+> > #include <linux/string.h>
+> > +#include <linux/kernel.h>
+> > #include "aoe.h"
+> > 
+> > static void dummy_timer(ulong);
+> > @@ -248,10 +249,7 @@ user_req(char *s, size_t slen, struct aoedev *d)
+> > 	if (!d->gd)
+> > 		return 0;
+> > 	p = kbasename(d->gd->disk_name);
+> > -	lim = sizeof(d->gd->disk_name);
+> > -	lim -= p - d->gd->disk_name;
+> > -	if (slen < lim)
+> > -		lim = slen;
+> > +	lim = min(sizeof(d->gd->disk_name) - (p - d->gd->disk_name), slen);
+> > 
+> > 	return !strncmp(s, p, lim);
+> > }
+> > -- 
+> > 1.8.3.2
+> > 
+> 
 
-Nevertheless if it's a real issue in production (and +20% of linpack 
-performance is certainly significant) feel free to forward it to -stable 
-once this hits Linus's tree in the v3.12 merge window - by that time the 
-patch will be reasonably well tested and it's a relatively simple change.
-
-Thanks,
-
-	Ingo
+-- 
+Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Intel Finland Oy
