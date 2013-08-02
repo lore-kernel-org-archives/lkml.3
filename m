@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752385Ab3HBKR4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:17:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37583 "EHLO
+	id S1752479Ab3HBKSA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:18:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37591 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752295Ab3HBKRx (ORCPT
+	with ESMTP id S1752387Ab3HBKR6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:17:53 -0400
+	Fri, 2 Aug 2013 06:17:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-Subject: [ 07/39] tracing: Fix irqs-off tag display in syscall tracing
-Date: Fri,  2 Aug 2013 18:18:17 +0800
-Message-Id: <20130802101457.809517963@linuxfoundation.org>
+        Oleksij Rempel <linux@rempel-privat.de>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [ 09/39] xhci: fix null pointer dereference on ring_doorbell_for_active_rings
+Date: Fri,  2 Aug 2013 18:18:19 +0800
+Message-Id: <20130802101458.106944990@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802101456.800497005@linuxfoundation.org>
 References: <20130802101456.800497005@linuxfoundation.org>
@@ -26,30 +27,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+From: Oleksij Rempel <linux@rempel-privat.de>
 
-commit 11034ae9c20f4057a6127fc965906417978e69b2 upstream
+commit d66eaf9f89502971fddcb0de550b01fa6f409d83 upstream.
 
-Initialization of variable irq_flags and pc was missed when backport
-11034ae9c to linux-3.0.y and linux-3.4.y, my fault.
+in some cases where device is attched to xhci port and do not responding,
+for example ath9k_htc with stalled firmware, kernel will
+crash on ring_doorbell_for_active_rings.
+This patch check if pointer exist before it is used.
 
-Signed-off-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
+This patch should be backported to kernels as old as 2.6.35, that
+contain the commit e9df17eb1408cfafa3d1844bfc7f22c7237b31b8 "USB: xhci:
+Correct assumptions about number of rings per endpoint"
+
+Signed-off-by: Oleksij Rempel <linux@rempel-privat.de>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- kernel/trace/trace_syscalls.c |    3 +++
- 1 file changed, 3 insertions(+)
 
---- a/kernel/trace/trace_syscalls.c
-+++ b/kernel/trace/trace_syscalls.c
-@@ -358,6 +358,9 @@ void ftrace_syscall_exit(void *ignore, s
- 	if (!sys_data)
- 		return;
+---
+ drivers/usb/host/xhci-ring.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -434,7 +434,7 @@ static void ring_doorbell_for_active_rin
  
-+	local_save_flags(irq_flags);
-+	pc = preempt_count();
-+
- 	event = trace_current_buffer_lock_reserve(&buffer,
- 			sys_data->exit_event->event.type, sizeof(*entry),
- 			irq_flags, pc);
+ 	/* A ring has pending URBs if its TD list is not empty */
+ 	if (!(ep->ep_state & EP_HAS_STREAMS)) {
+-		if (!(list_empty(&ep->ring->td_list)))
++		if (ep->ring && !(list_empty(&ep->ring->td_list)))
+ 			xhci_ring_ep_doorbell(xhci, slot_id, ep_index, 0);
+ 		return;
+ 	}
 
 
