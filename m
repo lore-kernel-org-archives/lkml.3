@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755418Ab3HBKoR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:44:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37350 "EHLO
+	id S1030292Ab3HBKKp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:10:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37343 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030294Ab3HBKKr (ORCPT
+	with ESMTP id S1030260Ab3HBKKj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:10:47 -0400
+	Fri, 2 Aug 2013 06:10:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joe Lawrence <joe.lawrence@stratus.com>, NeilBrown <neilb@suse.de>
-Subject: [ 46/99] md/raid1: fix bio handling problems in process_checks()
-Date: Fri,  2 Aug 2013 18:07:59 +0800
-Message-Id: <20130802100232.513222218@linuxfoundation.org>
+        Harshula Jayasuriya <harshula@redhat.com>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [ 54/99] nfsd: nfsd_open: when dentry_open returns an error do not propagate as struct file
+Date: Fri,  2 Aug 2013 18:08:07 +0800
+Message-Id: <20130802100233.573049076@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802100225.478715166@linuxfoundation.org>
 References: <20130802100225.478715166@linuxfoundation.org>
@@ -26,113 +27,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Harshula Jayasuriya <harshula@redhat.com>
 
-commit 30bc9b53878a9921b02e3b5bc4283ac1c6de102a upstream.
+commit e4daf1ffbe6cc3b12aab4d604e627829e93e9914 upstream.
 
-Recent change to use bio_copy_data() in raid1 when repairing
-an array is faulty.
+The following call chain:
+------------------------------------------------------------
+nfs4_get_vfs_file
+- nfsd_open
+  - dentry_open
+    - do_dentry_open
+      - __get_file_write_access
+        - get_write_access
+          - return atomic_inc_unless_negative(&inode->i_writecount) ? 0 : -ETXTBSY;
+------------------------------------------------------------
 
-The underlying may have changed the bio in various ways using
-bio_advance and these need to be undone not just for the 'sbio' which
-is being copied to, but also the 'pbio' (primary) which is being
-copied from.
+can result in the following state:
+------------------------------------------------------------
+struct nfs4_file {
+...
+  fi_fds = {0xffff880c1fa65c80, 0xffffffffffffffe6, 0x0},
+  fi_access = {{
+      counter = 0x1
+    }, {
+      counter = 0x0
+    }},
+...
+------------------------------------------------------------
 
-So perform the reset on all bios that were read from and do it early.
+1) First time around, in nfs4_get_vfs_file() fp->fi_fds[O_WRONLY] is
+NULL, hence nfsd_open() is called where we get status set to an error
+and fp->fi_fds[O_WRONLY] to -ETXTBSY. Thus we do not reach
+nfs4_file_get_access() and fi_access[O_WRONLY] is not incremented.
 
-This also ensure that the sbio->bi_io_vec[j].bv_len passed to
-memcmp is correct.
+2) Second time around, in nfs4_get_vfs_file() fp->fi_fds[O_WRONLY] is
+NOT NULL (-ETXTBSY), so nfsd_open() is NOT called, but
+nfs4_file_get_access() IS called and fi_access[O_WRONLY] is incremented.
+Thus we leave a landmine in the form of the nfs4_file data structure in
+an incorrect state.
 
-This fixes a crash during a 'check' of a RAID1 array.  The crash was
-introduced in 3.10 so this is suitable for 3.10-stable.
+3) Eventually, when __nfs4_file_put_access() is called it finds
+fi_access[O_WRONLY] being non-zero, it decrements it and calls
+nfs4_file_put_fd() which tries to fput -ETXTBSY.
+------------------------------------------------------------
+...
+     [exception RIP: fput+0x9]
+     RIP: ffffffff81177fa9  RSP: ffff88062e365c90  RFLAGS: 00010282
+     RAX: ffff880c2b3d99cc  RBX: ffff880c2b3d9978  RCX: 0000000000000002
+     RDX: dead000000100101  RSI: 0000000000000001  RDI: ffffffffffffffe6
+     RBP: ffff88062e365c90   R8: ffff88041fe797d8   R9: ffff88062e365d58
+     R10: 0000000000000008  R11: 0000000000000000  R12: 0000000000000001
+     R13: 0000000000000007  R14: 0000000000000000  R15: 0000000000000000
+     ORIG_RAX: ffffffffffffffff  CS: 0010  SS: 0018
+  #9 [ffff88062e365c98] __nfs4_file_put_access at ffffffffa0562334 [nfsd]
+ #10 [ffff88062e365cc8] nfs4_file_put_access at ffffffffa05623ab [nfsd]
+ #11 [ffff88062e365ce8] free_generic_stateid at ffffffffa056634d [nfsd]
+ #12 [ffff88062e365d18] release_open_stateid at ffffffffa0566e4b [nfsd]
+ #13 [ffff88062e365d38] nfsd4_close at ffffffffa0567401 [nfsd]
+ #14 [ffff88062e365d88] nfsd4_proc_compound at ffffffffa0557f28 [nfsd]
+ #15 [ffff88062e365dd8] nfsd_dispatch at ffffffffa054543e [nfsd]
+ #16 [ffff88062e365e18] svc_process_common at ffffffffa04ba5a4 [sunrpc]
+ #17 [ffff88062e365e98] svc_process at ffffffffa04babe0 [sunrpc]
+ #18 [ffff88062e365eb8] nfsd at ffffffffa0545b62 [nfsd]
+ #19 [ffff88062e365ee8] kthread at ffffffff81090886
+ #20 [ffff88062e365f48] kernel_thread at ffffffff8100c14a
+------------------------------------------------------------
 
-Reported-by: Joe Lawrence <joe.lawrence@stratus.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Harshula Jayasuriya <harshula@redhat.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/raid1.c |   53 ++++++++++++++++++++++++++++++-----------------------
- 1 file changed, 30 insertions(+), 23 deletions(-)
+ fs/nfsd/vfs.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/md/raid1.c
-+++ b/drivers/md/raid1.c
-@@ -1848,6 +1848,36 @@ static int process_checks(struct r1bio *
- 	int i;
- 	int vcnt;
- 
-+	/* Fix variable parts of all bios */
-+	vcnt = (r1_bio->sectors + PAGE_SIZE / 512 - 1) >> (PAGE_SHIFT - 9);
-+	for (i = 0; i < conf->raid_disks * 2; i++) {
-+		int j;
-+		int size;
-+		struct bio *b = r1_bio->bios[i];
-+		if (b->bi_end_io != end_sync_read)
-+			continue;
-+		/* fixup the bio for reuse */
-+		bio_reset(b);
-+		b->bi_vcnt = vcnt;
-+		b->bi_size = r1_bio->sectors << 9;
-+		b->bi_sector = r1_bio->sector +
-+			conf->mirrors[i].rdev->data_offset;
-+		b->bi_bdev = conf->mirrors[i].rdev->bdev;
-+		b->bi_end_io = end_sync_read;
-+		b->bi_private = r1_bio;
-+
-+		size = b->bi_size;
-+		for (j = 0; j < vcnt ; j++) {
-+			struct bio_vec *bi;
-+			bi = &b->bi_io_vec[j];
-+			bi->bv_offset = 0;
-+			if (size > PAGE_SIZE)
-+				bi->bv_len = PAGE_SIZE;
-+			else
-+				bi->bv_len = size;
-+			size -= PAGE_SIZE;
-+		}
-+	}
- 	for (primary = 0; primary < conf->raid_disks * 2; primary++)
- 		if (r1_bio->bios[primary]->bi_end_io == end_sync_read &&
- 		    test_bit(BIO_UPTODATE, &r1_bio->bios[primary]->bi_flags)) {
-@@ -1856,12 +1886,10 @@ static int process_checks(struct r1bio *
- 			break;
- 		}
- 	r1_bio->read_disk = primary;
--	vcnt = (r1_bio->sectors + PAGE_SIZE / 512 - 1) >> (PAGE_SHIFT - 9);
- 	for (i = 0; i < conf->raid_disks * 2; i++) {
- 		int j;
- 		struct bio *pbio = r1_bio->bios[primary];
- 		struct bio *sbio = r1_bio->bios[i];
--		int size;
- 
- 		if (sbio->bi_end_io != end_sync_read)
- 			continue;
-@@ -1887,27 +1915,6 @@ static int process_checks(struct r1bio *
- 			rdev_dec_pending(conf->mirrors[i].rdev, mddev);
- 			continue;
- 		}
--		/* fixup the bio for reuse */
--		bio_reset(sbio);
--		sbio->bi_vcnt = vcnt;
--		sbio->bi_size = r1_bio->sectors << 9;
--		sbio->bi_sector = r1_bio->sector +
--			conf->mirrors[i].rdev->data_offset;
--		sbio->bi_bdev = conf->mirrors[i].rdev->bdev;
--		sbio->bi_end_io = end_sync_read;
--		sbio->bi_private = r1_bio;
--
--		size = sbio->bi_size;
--		for (j = 0; j < vcnt ; j++) {
--			struct bio_vec *bi;
--			bi = &sbio->bi_io_vec[j];
--			bi->bv_offset = 0;
--			if (size > PAGE_SIZE)
--				bi->bv_len = PAGE_SIZE;
--			else
--				bi->bv_len = size;
--			size -= PAGE_SIZE;
--		}
- 
- 		bio_copy_data(sbio, pbio);
+--- a/fs/nfsd/vfs.c
++++ b/fs/nfsd/vfs.c
+@@ -802,9 +802,10 @@ nfsd_open(struct svc_rqst *rqstp, struct
+ 			flags = O_WRONLY|O_LARGEFILE;
  	}
+ 	*filp = dentry_open(&path, flags, current_cred());
+-	if (IS_ERR(*filp))
++	if (IS_ERR(*filp)) {
+ 		host_err = PTR_ERR(*filp);
+-	else {
++		*filp = NULL;
++	} else {
+ 		host_err = ima_file_check(*filp, may_flags);
+ 
+ 		if (may_flags & NFSD_MAY_64BIT_COOKIE)
 
 
