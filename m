@@ -1,70 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754746Ab3HBKcA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:32:00 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:47101 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754081Ab3HBKb6 (ORCPT
+	id S1754120Ab3HBKc6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:32:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37628 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752903Ab3HBKSg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:31:58 -0400
-Date: Fri, 2 Aug 2013 11:31:54 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>
-Message-ID: <20130802103154.GN9858@sirena.org.uk>
-References: <1375394937-8785-1-git-send-email-swarren@wwwdotorg.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="gmV4GtKPOP/GPF6K"
-Content-Disposition: inline
-In-Reply-To: <1375394937-8785-1-git-send-email-swarren@wwwdotorg.org>
-X-Cookie: You will be awarded some great honor.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] spi: fix SPI_BIT_MASK so it always fits into 32-bits
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	Fri, 2 Aug 2013 06:18:36 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Jan Beulich <JBeulich@suse.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [ 19/39] xen/blkback: Check device permissions before allowing OP_DISCARD
+Date: Fri,  2 Aug 2013 18:18:29 +0800
+Message-Id: <20130802101459.535910270@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
+In-Reply-To: <20130802101456.800497005@linuxfoundation.org>
+References: <20130802101456.800497005@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
---gmV4GtKPOP/GPF6K
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+------------------
 
-On Thu, Aug 01, 2013 at 04:08:57PM -0600, Stephen Warren wrote:
-> From: Stephen Warren <swarren@nvidia.com>
->=20
-> On a 64-bit platform, ~0UL fills 64-bits, which causes SPI_BIT_MASK(32)
-> not to fit into 32 bits. This causes a warning when the result is assigned
-> to a 32-bit variable. Use ~0U instead to prevent this. This fixes:
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-Applied, thanks.
+commit 604c499cbbcc3d5fe5fb8d53306aa0fae1990109 upstream.
 
---gmV4GtKPOP/GPF6K
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+We need to make sure that the device is not RO or that
+the request is not past the number of sectors we want to
+issue the DISCARD operation for.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+This fixes CVE-2013-2140.
 
-iQIcBAEBAgAGBQJR+4qXAAoJELSic+t+oim9464P/jfYhA0Y6chhTj+6tB9h8/Fh
-5vLBdnz6g5AMb9/D/OeVXcsqQoJ4a1W+C+WMsMO9a93XuHw/7CiLryrNrBbm/R/J
-Iy5Ul1jb9Ais6nG/gu7b1alyE/5wLZoKkgynFq9nJxKgLdbDJhE1+vNOpZf3j0Uq
-uOtQ2POzIH12C2wYMD0dri9O030CRYH6geUyT0bOZj8ETALYHWSSoHslqPQj/iWr
-Ph18Yc2PqXDuaM2nZeOPyqAx1+1JREEqxKVsoCxQ1sy4PiWyT1KtRPhQ9BMwfhoj
-Val+xfWXiMIzj+6+9BREATaon/3fl5GvM4E5DNYTIGWtuN0/FdvK/Cdmv6rXoAtn
-PqWUNvZq7GDmVeE3XFS7cB0ZCyJQZd4kef6mJtbszHYFdg1VsTjP2pMiSB0xYLx0
-usFZ3v/CxUkkjCVBg5J7RwAeVeyYg52BqBk6kTR5SJsVaoKXr2kPI2uK7DwNwNao
-6aKkfNd3T25Q2nxkxNpu1VKrI7auwjmIy2xCqyIvm8mv6UMNAoGHhtuVkWwRVVq5
-UyoaMBUbCOTgfVud3hLlX2cmb6hBUZlCmOwFFPgpFLFodcv9TFguYCZDHgs+n3Gz
-OC4uCioUu2/OJdWQYrbiqRDRh41yfca8kZXRAdpaQftqs4lPqrqBZkGOOpjApx5k
-Y+BcSkJmkq6w5AXd8zd/
-=XDw4
------END PGP SIGNATURE-----
+Acked-by: Jan Beulich <JBeulich@suse.com>
+Acked-by: Ian Campbell <Ian.Campbell@citrix.com>
+[v1: Made it pr_warn instead of pr_debug]
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
---gmV4GtKPOP/GPF6K--
+---
+ drivers/block/xen-blkback/blkback.c |   13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
+
+--- a/drivers/block/xen-blkback/blkback.c
++++ b/drivers/block/xen-blkback/blkback.c
+@@ -399,7 +399,18 @@ static int dispatch_discard_io(struct xe
+ 	int status = BLKIF_RSP_OKAY;
+ 	struct block_device *bdev = blkif->vbd.bdev;
+ 	unsigned long secure;
++	struct phys_req preq;
+ 
++	preq.sector_number = req->u.discard.sector_number;
++	preq.nr_sects      = req->u.discard.nr_sectors;
++
++	err = xen_vbd_translate(&preq, blkif, WRITE);
++	if (err) {
++		pr_warn(DRV_PFX "access denied: DISCARD [%llu->%llu] on dev=%04x\n",
++			preq.sector_number,
++			preq.sector_number + preq.nr_sects, blkif->vbd.pdevice);
++		goto fail_response;
++	}
+ 	blkif->st_ds_req++;
+ 
+ 	xen_blkif_get(blkif);
+@@ -410,7 +421,7 @@ static int dispatch_discard_io(struct xe
+ 	err = blkdev_issue_discard(bdev, req->u.discard.sector_number,
+ 				   req->u.discard.nr_sectors,
+ 				   GFP_KERNEL, secure);
+-
++fail_response:
+ 	if (err == -EOPNOTSUPP) {
+ 		pr_debug(DRV_PFX "discard op failed, not supported\n");
+ 		status = BLKIF_RSP_EOPNOTSUPP;
+
+
