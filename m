@@ -1,65 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758462Ab3HBKBN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:01:13 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48521 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758179Ab3HBKBM (ORCPT
+	id S964779Ab3HBKEO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:04:14 -0400
+Received: from up.free-electrons.com ([94.23.35.102]:58772 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758282Ab3HBKEM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:01:12 -0400
-Date: Fri, 2 Aug 2013 11:01:08 +0100
-From: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
-To: broonie@kernel.org, lgirdwood@gmail.com
-Cc: tiwai@suse.de, alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2] ASoC: core: init delayed_work for codec-codec links
-Message-ID: <20130802100108.GA17936@opensource.wolfsonmicro.com>
-References: <20130731131627.GA32631@opensource.wolfsonmicro.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130731131627.GA32631@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	Fri, 2 Aug 2013 06:04:12 -0400
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Emilio Lopez <emilio@elopez.com.ar>, kevin.z.m.zh@gmail.com,
+        sunny@allwinnertech.com, shuge@allwinnertech.com,
+        linux-kernel@vger.kernel.org, linux-sunxi@googlegroups.com,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: [PATCHv2 1/9] ARM: sunxi: Introduce Allwinner A20 support
+Date: Fri,  2 Aug 2013 12:02:45 +0200
+Message-Id: <1375437773-3211-2-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.4
+In-Reply-To: <1375437773-3211-1-git-send-email-maxime.ripard@free-electrons.com>
+References: <1375437773-3211-1-git-send-email-maxime.ripard@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We must init the delayed_work for codec-codec links
-otherwise shutting down the DAI chain will fault when
-calling flush_delayed_work_sync() on the linked DAI.
+The Allwinner A20 is a dual-core Cortex-A7-based SoC. It is
+pin-compatible with the A10, and re-uses most of the IPs found in it,
+plus some additional ones like a Gigabit Ethernet controller.
 
-Signed-off-by: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- sound/soc/soc-core.c |   11 +++++++++++
- 1 files changed, 11 insertions(+), 0 deletions(-)
+ arch/arm/mach-sunxi/sunxi.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/sound/soc/soc-core.c b/sound/soc/soc-core.c
-index 4489c5b..e649efe 100644
---- a/sound/soc/soc-core.c
-+++ b/sound/soc/soc-core.c
-@@ -199,6 +199,14 @@ static ssize_t pmdown_time_set(struct device *dev,
- 	return count;
- }
+diff --git a/arch/arm/mach-sunxi/sunxi.c b/arch/arm/mach-sunxi/sunxi.c
+index 19bcc96..b9b2db6 100644
+--- a/arch/arm/mach-sunxi/sunxi.c
++++ b/arch/arm/mach-sunxi/sunxi.c
+@@ -134,6 +134,7 @@ static const char * const sunxi_board_dt_compat[] = {
+ 	"allwinner,sun5i-a10s",
+ 	"allwinner,sun5i-a13",
+ 	"allwinner,sun6i-a31",
++	"allwinner,sun7i-a20",
+ 	NULL,
+ };
  
-+static void codec2codec_close_delayed_work(struct work_struct *work)
-+{
-+	/* No action required.
-+	 * C2C links only represent a hardware connection and currently
-+	 * we assume that we don't have to explicitly start or stop them
-+	 */
-+}
-+
- static DEVICE_ATTR(pmdown_time, 0644, pmdown_time_show, pmdown_time_set);
- 
- #ifdef CONFIG_DEBUG_FS
-@@ -1428,6 +1436,9 @@ static int soc_probe_link_dais(struct snd_soc_card *card, int num, int order)
- 				return ret;
- 			}
- 		} else {
-+			INIT_DELAYED_WORK(&rtd->delayed_work,
-+						codec2codec_close_delayed_work);
-+
- 			/* link the DAI widgets */
- 			play_w = codec_dai->playback_widget;
- 			capture_w = cpu_dai->capture_widget;
 -- 
-1.7.2.5
+1.8.3.4
+
