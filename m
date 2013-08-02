@@ -1,48 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753892Ab3HBELQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 00:11:16 -0400
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:59583 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750777Ab3HBELO (ORCPT
+	id S1752994Ab3HBEPl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 00:15:41 -0400
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:43165 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750978Ab3HBEPk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 00:11:14 -0400
+	Fri, 2 Aug 2013 00:15:40 -0400
 MIME-Version: 1.0
-In-Reply-To: <51FB137D.7070000@gmail.com>
-References: <1375400042-989-1-git-send-email-felipe.contreras@gmail.com>
-	<51FB137D.7070000@gmail.com>
-Date: Thu, 1 Aug 2013 23:11:12 -0500
-Message-ID: <CAMP44s1A+z4=DGJLK1qf5LPc1vbYvtJwjFiMt17vzyZFRU0qmg@mail.gmail.com>
-Subject: Re: [PATCH] acpi: video: fix reversed indexed BQC
+In-Reply-To: <51FB107D.8020804@gmail.com>
+References: <1375400641-1694-1-git-send-email-felipe.contreras@gmail.com>
+	<1375400641-1694-2-git-send-email-felipe.contreras@gmail.com>
+	<51FB107D.8020804@gmail.com>
+Date: Thu, 1 Aug 2013 23:15:38 -0500
+Message-ID: <CAMP44s0cGyv+2xM1m+qp0oZxjmPGv1-0Me7Afeqmbb6ms=rFHQ@mail.gmail.com>
+Subject: Re: [PATCH 1/3] acpi: video: trivial costmetic cleanups
 From: Felipe Contreras <felipe.contreras@gmail.com>
 To: Aaron Lu <aaron.lwe@gmail.com>
 Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
         "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <lenb@kernel.org>,
-        Zhang Rui <rui.zhang@intel.com>
+        Zhang Rui <rui.zhang@intel.com>, Jiri Kosina <trivial@kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 1, 2013 at 9:03 PM, Aaron Lu <aaron.lwe@gmail.com> wrote:
-> On 08/02/2013 07:34 AM, Felipe Contreras wrote:
->> Commit 1a7c618 (ACPI video: support _BQC/_BCL/_BCM methods that use
->> index values) assumed that bl->levels were not reverted, but at this
->> point they already are, so there's no need to revert them yet again.
+On Thu, Aug 1, 2013 at 8:50 PM, Aaron Lu <aaron.lwe@gmail.com> wrote:
+> On 08/02/2013 07:43 AM, Felipe Contreras wrote:
+>> Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
 >
-> When acpi_video_bqc_value_to_level is called, bl->levels is not
-> reverted.
+> Please add change log explaining what you have changed.
+> It seems that the patch modify comment style only, some add a space and
+> some change spaces to tab, is it the case?
 
-This is the code that turns br->flags._BCL_reversed on:
-
-	if (max_level == br->levels[2]) {
-		br->flags._BCL_reversed = 1;
-		sort(&br->levels[2], count - 2, sizeof(br->levels[2]),
-			acpi_video_cmp_level, NULL);
-	}
-
-Now tell me how br->flags._BCL_reversed can be on, and the br->levels
-*not* reverted.
+The commit message already explains what the change is; trivial
+cosmetic cleanups. Cosmetic means it's completely superficial.
 
 -- 
 Felipe Contreras
