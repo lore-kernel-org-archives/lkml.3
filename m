@@ -1,104 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752651Ab3HBMxp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 08:53:45 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:52058 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751662Ab3HBMxn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 08:53:43 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: robert.moore@intel.com, lv.zheng@intel.com, lenb@kernel.org,
-        tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
-        akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
-        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
-        mina86@mina86.com, gong.chen@linux.intel.com,
-        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
-        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
-        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com, x86@kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH v2 RESEND 07/18] x86, ACPI: Also initialize signature and length when parsing root table.
-Date: Fri, 02 Aug 2013 15:03:56 +0200
-Message-ID: <3299662.WAS8YLIUlv@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1375434877-20704-8-git-send-email-tangchen@cn.fujitsu.com>
-References: <1375434877-20704-1-git-send-email-tangchen@cn.fujitsu.com> <1375434877-20704-8-git-send-email-tangchen@cn.fujitsu.com>
+	id S1751712Ab3HBNJr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 09:09:47 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:58000 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751051Ab3HBNJp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 09:09:45 -0400
+Date: Fri, 2 Aug 2013 15:09:38 +0200
+From: Heinz Diehl <htd@fritha.org>
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: Frantisek Hrbata <fhrbata@redhat.com>, linux-usb@vger.kernel.org,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        dzickus@redhat.com, kernel-team@fedoraproject.org
+Subject: Re: NULL pointer dereference in xhci_free_dev
+Message-ID: <20130802130938.GA4495@fritha.org>
+References: <20130507140333.GB3380@dhcp-26-164.brq.redhat.com>
+ <20130509221559.GD10305@xanatos>
+ <20130510065644.GA3320@dhcp-26-164.brq.redhat.com>
+ <20130511140925.GA9240@fritha.org>
+ <20130726192609.GC15302@xanatos>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130726192609.GC15302@xanatos>
+Organization: private site
+OpenPGP: id=60F4A92C; url=http://www.fritha.org/htd.asc
+X-Mailer: Mew version 6.5 on Emacs 24.2.1 / Mule 6.0 (HANACHIRUSATO)
+X-Provags-ID: V02:K0:QNzpfMcodLMCuwIcy7WhNXjMBcDXsmP8UJOdpGsTsor
+ yWPoLaGSenBrcRcsmocCKsJdfItKGZPhmP6wu6QvDuskeDEpaq
+ aRfhQ0/UdmyfNuPKg5+lJzVFYE7rpw84aYQ2UXIhy+Es0G59NK
+ iGaFMK2ozTyJZfd3K+ayh2gr7ufWr6QTL1n7tk08PAnw/XPDAs
+ 9Ep/4WZuZdk4YqFautlnoquxKZYHaK1HinxAY7l50Tf0nVNpum
+ 0KmooF/18t3Z3wBTef5bK5trDDTLMLNTV3cjT6n+hlmLG4+Lqw
+ axRpOjOzooz5t83cO7ep09s4wAI4mu+/6deHij4guxBOr5SXw+
+ HYjDH/mGnzgNG9araz5o=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, August 02, 2013 05:14:26 PM Tang Chen wrote:
-> Besides the phys addr of the acpi tables, it will be very convenient if
-> we also have the signature of each table in acpi_gbl_root_table_list at
-> early time. We can find SRAT easily by comparing the signature.
+On 26.07.2013, Sarah Sharp wrote: 
+
+> Heinz and Frantisek,
+> I believe your issue should be fixed by this patch:
 > 
-> This patch alse record signature and some other info in
-> acpi_gbl_root_table_list at early time.
+> http://marc.info/?l=linux-usb&m=137476546506888&w=2
 > 
-> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-> Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+> Please let me know if it doesn't.
 
-The subject is misleading, as the change is in ACPICA and therefore affects not
-only x86.
+Thanks a lot, it does fix it for me.
 
-Also I think the same comments as for the other ACPICA patch is this series
-applies: You shouldn't modify acpi_tbl_parse_root_table() in ways that would
-require the other OSes using ACPICA to be modified.
-
-> ---
->  drivers/acpi/acpica/tbutils.c |   22 ++++++++++++++++++++++
->  1 files changed, 22 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/acpi/acpica/tbutils.c b/drivers/acpi/acpica/tbutils.c
-> index e3621cf..af942fe 100644
-> --- a/drivers/acpi/acpica/tbutils.c
-> +++ b/drivers/acpi/acpica/tbutils.c
-> @@ -438,6 +438,7 @@ acpi_tb_parse_root_table(acpi_physical_address rsdp_address)
->  	u32 i;
->  	u32 table_count;
->  	struct acpi_table_header *table;
-> +	struct acpi_table_desc *table_desc;
->  	acpi_physical_address address;
->  	acpi_physical_address uninitialized_var(rsdt_address);
->  	u32 length;
-> @@ -577,6 +578,27 @@ acpi_tb_parse_root_table(acpi_physical_address rsdp_address)
->  	 */
->  	acpi_os_unmap_memory(table, length);
->  
-> +	/*
-> +	 * Also initialize the table entries here, so that later we can use them
-> +	 * to find SRAT at very eraly time to reserve hotpluggable memory.
-> +	 */
-> +	for (i = 2; i < acpi_gbl_root_table_list.current_table_count; i++) {
-> +		table = acpi_os_map_memory(
-> +				acpi_gbl_root_table_list.tables[i].address,
-> +				sizeof(struct acpi_table_header));
-> +		if (!table)
-> +			return_ACPI_STATUS(AE_NO_MEMORY);
-> +
-> +		table_desc = &acpi_gbl_root_table_list.tables[i];
-> +
-> +		table_desc->pointer = NULL;
-> +		table_desc->length = table->length;
-> +		table_desc->flags = ACPI_TABLE_ORIGIN_MAPPED;
-> +		ACPI_MOVE_32_TO_32(table_desc->signature.ascii, table->signature);
-> +
-> +		acpi_os_unmap_memory(table, sizeof(struct acpi_table_header));
-> +	}
-> +
->  	return_ACPI_STATUS(AE_OK);
->  }
-
-Thanks,
-Rafael
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Heinz
