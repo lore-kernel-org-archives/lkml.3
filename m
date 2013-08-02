@@ -1,62 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755280Ab3HBRMu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 13:12:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5664 "EHLO mx1.redhat.com"
+	id S1755331Ab3HBRNu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 13:13:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27455 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754681Ab3HBRMt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 13:12:49 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <51FAA0CC.7010106@fifthhorseman.net>
-References: <51FAA0CC.7010106@fifthhorseman.net> <20130801173846.28023.19009.stgit@warthog.procyon.org.uk> <20130801173902.28023.68819.stgit@warthog.procyon.org.uk>
-To: Daniel Kahn Gillmor <dkg@fifthhorseman.net>
-Cc: dhowells@redhat.com, keyrings@linux-nfs.org, linux-nfs@vger.kernel.org,
+	id S1753152Ab3HBRNt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 13:13:49 -0400
+Date: Fri, 2 Aug 2013 13:13:44 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: David Howells <dhowells@redhat.com>
+Cc: simo@redhat.com, keyrings@linux-nfs.org, linux-nfs@vger.kernel.org,
         krbdev@mit.edu, "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
-        linux-kernel@vger.kernel.org, simo@redhat.com,
+        linux-kernel@vger.kernel.org,
         "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [PATCH 2/2] KEYS: Add per-user_namespace registers for persistent per-UID kerberos caches
-Date: Fri, 02 Aug 2013 18:12:40 +0100
-Message-ID: <7370.1375463560@warthog.procyon.org.uk>
+Subject: Re: [PATCH 2/2] KEYS: Add per-user_namespace registers for
+ persistent per-UID kerberos caches
+Message-ID: <20130802131344.19e14521@tlielax.poochiereds.net>
+In-Reply-To: <7136.1375462405@warthog.procyon.org.uk>
+References: <20130802095555.07a2cda3@tlielax.poochiereds.net>
+	<20130801173846.28023.19009.stgit@warthog.procyon.org.uk>
+	<20130801173902.28023.68819.stgit@warthog.procyon.org.uk>
+	<7136.1375462405@warthog.procyon.org.uk>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Daniel Kahn Gillmor <dkg@fifthhorseman.net> wrote:
+On Fri, 02 Aug 2013 17:53:25 +0100
+David Howells <dhowells@redhat.com> wrote:
 
-> > The uid is -1 or the user's own UID for the user's own cache or the uid of
-> > some other user's cache (requires CAP_SETUID).  This permits rpc.gssd or
-> > whatever to mess with the cache.
+> Jeff Layton <jlayton@redhat.com> wrote:
 > 
-> Is the goal here eventually to be able to avoid the upcall to rpc.gssd
-> entirely?  It seems a little bit roundabout to have the kernel call up
-> into userspace for the credentials, only to talk to a process which then
-> calls back into the kernel for something that the kernel has already
-> well-defined internally.
+> > > +	/* -1 indicates the current user */
+> > > +	if (_uid == (uid_t)-1) {
+> > > +		uid = current_uid();
+> >
+> > Isn't it possible to have a valid uid of (unsigned int)-1? I know that
+> > at least some sites use that for "nobody". Why not just require passing
+> > in the correct UID?
+> 
+> See setresuid() and co. - there -1 is "don't change".
+> 
 
-I would like to see use of request_key() eventually so that the kernel can
-fish a key directly out of the keyring if it needs one.  My kAFS filesystem
-could pretty much use that immediately.
+<facepalm>
 
-However, I don't really want to put all the Kerberos communications into the
-kernel.  The keys obtained by request_key() on behalf of a filesystem might be
-kerberos tickets or they might be something else.
+Good point. I got confused between -1 and -2. I think Solaris uses
+(uid_t)-2 for nobody. Using -1 in this case should be fine.
 
-> It seems like a non-privileged user could use this to store arbitrary data
-> in this keyring as a way of hiding what would otherwise be filesystem
-> activity or using it for some sort of odd/sneaky IPC mechanism.  Is this an
-> intentional side effect?
+> > Looks good overall, but I share Daniel's concerns about making
+> > krb5-specific infrastructure like this. Essentially this is just a
+> > persistent keyring that's associated with a kuid, right? Perhaps this
+> > could be done in such a way that it could be usable for other
+> > applications in the future?
+> 
+> It's not too hard, I suppose:
+> 
+> 	keyctl_get_persistent(uid, prefix, destring)
+> 
+> eg:
+> 
+> 	keyctl_get_persistent(-1, "_krb.", KEYCTL_SPEC_PROCESS_KEYRING)
+> 
+> giving:
+> 
+> 	struct user_namespace
+> 	  \___ .krb_cache keyring
+> 		\___ _krb.0 keyring
+> 		\___ _krb.5000 keyring
+> 		\___ _krb.5001 keyring
+> 		|	\___ tkt785 big_key
+> 		|	\___ tkt12345 big_key
+> 		\___ _afs.5000 keyring
+> 			\___ afs.redhat.com rxrpc
+> 
+> The other way to do it is create one keyring per user and let userspace create
+> subkeyrings under that:
+> 
+> 	struct user_namespace
+> 	  \___ .krb_cache keyring
+> 		\___ _uid_p.0 keyring
+> 		\___ _uid_p.5000 keyring
+> 		\___ _uid_p.5001 keyring
+> 			\___ krb keyring
+> 			|	\___ tkt785 big_key
+> 			|	\___ tkt12345 big_key
+> 			\___ afs keyring
+> 				\___ afs.redhat.com rxrpc
+> 
 
-It is true that a non-privileged user can store arbitrary keys in their
-keyring and they could use it as an IPC mechanism if they really wanted to -
-but if they could do that, they could use socketpairs, pipes or shm instead so
-I'm not sure they can do anything that they couldn't do by some other
-mechanism anyway.
 
-Note that key accesses are regulated by the active LSM and I think can appear
-in the audit log.
+That's probably what I'd suggest. Allow one persistent keyring per
+user, and expect userland to organize things sanely under it.
 
-David
+nit: I probably wouldn't call the top-level keyring "krb_cache"
+though ;)
+
+> In the above scheme, it might be worth just making these the same as the user
+> keyring - which means KEYCTL_SPEC_USER_KEYRING will automatically target it.
+> 
+> Simo:  I believe the problem you have with the user keyring is that it's not
+> persistent beyond the life of the processes of that UID, right?
+> 
+
+Possibly. It really comes down to what sort of lifecycle you expect here.
+
+Some applications might be caught by surprise if the per-user keyring
+was already populated in certain situations. OTOH, they have the same
+problem if there's even one running process with that uid so maybe it's
+not a big deal.
+
+If you do this, it might make sense to allow the admin to tune the
+expiry sysctl in such a way that user keyrings go away as soon as
+the last reference is gone (maybe by setting it to 0?).
+
+-- 
+Jeff Layton <jlayton@redhat.com>
