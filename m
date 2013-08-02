@@ -1,262 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756068Ab3HBIAA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 04:00:00 -0400
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:34996 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753698Ab3HBH7m (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 03:59:42 -0400
-From: "Felipe F. Tonello" <eu@felipetonello.com>
-To: alsa-devel@alsa-project.org
-Cc: "Felipe F. Tonello" <eu@felipetonello.com>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 2/2] ALSA: SoC: Fix jack names according new API
-Date: Fri,  2 Aug 2013 00:59:25 -0700
-Message-Id: <1375430365-13232-3-git-send-email-eu@felipetonello.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1375430365-13232-1-git-send-email-eu@felipetonello.com>
-References: <1375430365-13232-1-git-send-email-eu@felipetonello.com>
+	id S1753683Ab3HBIEb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 04:04:31 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:33132 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751595Ab3HBIEY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 04:04:24 -0400
+Date: Fri, 2 Aug 2013 11:03:35 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Tony Lindgren <tony@atomide.com>
+CC: Greg KH <greg@kroah.com>, <ksummit-2013-discuss@lists.linuxfoundation.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [Ksummit-2013-discuss] [ATTEND] [ARM ATTEND] kernel data bloat
+ and how to avoid it
+Message-ID: <20130802080335.GM24465@radagast>
+Reply-To: <balbi@ti.com>
+References: <20130731073802.GT7656@atomide.com>
+ <20130731123351.GA30474@kroah.com>
+ <20130802075352.GY7656@atomide.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="fDP66DSfTvWAYVew"
+Content-Disposition: inline
+In-Reply-To: <20130802075352.GY7656@atomide.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Felipe F. Tonello" <eu@felipetonello.com>
+--fDP66DSfTvWAYVew
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The new ALSA jack API ensures that " Jack" is appended by default.
+Hi,
 
-It's also good practice that all codecs name jacks based on its type.
+On Fri, Aug 02, 2013 at 12:53:53AM -0700, Tony Lindgren wrote:
+> > > Basically the data bloat issue is there for the arch code and drivers
+> > > and may not show up initially until things have headed the wrong way =
+for
+> > > too long.
+> >=20
+> > What do you mean by this?  You seem to be very vague here.
+>=20
+> People are unnecessarily defining registers in kernel for similar devices
+> over and over again for each new SoC at the arch level and now more and
+> more at the driver level.
+>
+> One example of that are device tree based drivers that don't describe
+> the actual hardware, but instead have a binding that points to an index
+> of defined registers in the driver.
 
-Signed-off-by: Felipe F. Tonello <eu@felipetonello.com>
----
- sound/soc/mid-x86/mfld_machine.c   | 2 +-
- sound/soc/omap/omap-abe-twl6040.c  | 2 +-
- sound/soc/omap/omap-twl4030.c      | 2 +-
- sound/soc/omap/rx51.c              | 2 +-
- sound/soc/pxa/hx4700.c             | 2 +-
- sound/soc/pxa/palm27x.c            | 2 +-
- sound/soc/pxa/ttc-dkb.c            | 4 ++--
- sound/soc/pxa/z2.c                 | 2 +-
- sound/soc/samsung/goni_wm8994.c    | 2 +-
- sound/soc/samsung/h1940_uda1380.c  | 2 +-
- sound/soc/samsung/rx1950_uda1380.c | 2 +-
- sound/soc/samsung/smartq_wm8987.c  | 2 +-
- sound/soc/tegra/tegra_alc5632.c    | 2 +-
- sound/soc/tegra/tegra_rt5640.c     | 2 +-
- sound/soc/tegra/tegra_wm8903.c     | 4 ++--
- 15 files changed, 17 insertions(+), 17 deletions(-)
+-ECONFUSED... DT passes only the base address and the size of the
+address space. If some versions of the IP have slightly different
+register layout, that needs to be treated at the driver, right ?
 
-diff --git a/sound/soc/mid-x86/mfld_machine.c b/sound/soc/mid-x86/mfld_machine.c
-index e52c836..e2c7978 100644
---- a/sound/soc/mid-x86/mfld_machine.c
-+++ b/sound/soc/mid-x86/mfld_machine.c
-@@ -253,7 +253,7 @@ static int mfld_init(struct snd_soc_pcm_runtime *runtime)
- 	snd_soc_dapm_disable_pin(dapm, "LINEINR");
- 
- 	/* Headset and button jack detection */
--	ret_val = snd_soc_jack_new(codec, "Intel(R) MID Audio Jack",
-+	ret_val = snd_soc_jack_new(codec, "Intel(R) MID Audio",
- 	                           SND_JACK_HEADSET | SND_JACK_BTN_0 |
- 	                           SND_JACK_BTN_1, 0, &mfld_jack);
- 	if (ret_val) {
-diff --git a/sound/soc/omap/omap-abe-twl6040.c b/sound/soc/omap/omap-abe-twl6040.c
-index a63038b..45ff3bc 100644
---- a/sound/soc/omap/omap-abe-twl6040.c
-+++ b/sound/soc/omap/omap-abe-twl6040.c
-@@ -193,7 +193,7 @@ static int omap_abe_twl6040_init(struct snd_soc_pcm_runtime *rtd)
- 
- 	/* Headset jack detection only if it is supported */
- 	if (priv->jack_detection) {
--		ret = snd_soc_jack_new(codec, "Headset Jack",
-+		ret = snd_soc_jack_new(codec, "Headset",
- 		                       SND_JACK_HEADSET, 0, &hs_jack);
- 		if (ret)
- 			return ret;
-diff --git a/sound/soc/omap/omap-twl4030.c b/sound/soc/omap/omap-twl4030.c
-index 07ba4d3..0619ecb 100644
---- a/sound/soc/omap/omap-twl4030.c
-+++ b/sound/soc/omap/omap-twl4030.c
-@@ -189,7 +189,7 @@ static int omap_twl4030_init(struct snd_soc_pcm_runtime *rtd)
- 	if (priv->jack_detect > 0) {
- 		hs_jack_gpios[0].gpio = priv->jack_detect;
- 
--		ret = snd_soc_jack_new(codec, "Headset Jack", SND_JACK_HEADSET,
-+		ret = snd_soc_jack_new(codec, "Headset", SND_JACK_HEADSET,
- 		                       0, &priv->hs_jack);
- 		if (ret)
- 			return ret;
-diff --git a/sound/soc/omap/rx51.c b/sound/soc/omap/rx51.c
-index 2cec19a..46fe697 100644
---- a/sound/soc/omap/rx51.c
-+++ b/sound/soc/omap/rx51.c
-@@ -317,7 +317,7 @@ static int rx51_aic34_init(struct snd_soc_pcm_runtime *rtd)
- 		return err;
- 
- 	/* AV jack detection */
--	err = snd_soc_jack_new(codec, "AV Jack",
-+	err = snd_soc_jack_new(codec, "AV",
- 	                       SND_JACK_HEADSET | SND_JACK_VIDEOOUT,
- 	                       0, &rx51_av_jack);
- 	if (err)
-diff --git a/sound/soc/pxa/hx4700.c b/sound/soc/pxa/hx4700.c
-index 82fd557..3ffe48b 100644
---- a/sound/soc/pxa/hx4700.c
-+++ b/sound/soc/pxa/hx4700.c
-@@ -137,7 +137,7 @@ static int hx4700_ak4641_init(struct snd_soc_pcm_runtime *rtd)
- 	snd_soc_dapm_nc_pin(dapm, "AUX");
- 
- 	/* Jack detection API stuff */
--	err = snd_soc_jack_new(codec, "Headphone Jack",
-+	err = snd_soc_jack_new(codec, "Headphone",
- 	                       SND_JACK_HEADPHONE, 0, &hs_jack);
- 	if (err)
- 		return err;
-diff --git a/sound/soc/pxa/palm27x.c b/sound/soc/pxa/palm27x.c
-index 264be5e..7caba46 100644
---- a/sound/soc/pxa/palm27x.c
-+++ b/sound/soc/pxa/palm27x.c
-@@ -97,7 +97,7 @@ static int palm27x_ac97_init(struct snd_soc_pcm_runtime *rtd)
- 	snd_soc_dapm_nc_pin(dapm, "MIC2");
- 
- 	/* Jack detection API stuff */
--	err = snd_soc_jack_new(codec, "Headphone Jack",
-+	err = snd_soc_jack_new(codec, "Headphone",
- 	                       SND_JACK_HEADPHONE, 0, &hs_jack);
- 	if (err)
- 		return err;
-diff --git a/sound/soc/pxa/ttc-dkb.c b/sound/soc/pxa/ttc-dkb.c
-index 1a462cb..880c01f 100644
---- a/sound/soc/pxa/ttc-dkb.c
-+++ b/sound/soc/pxa/ttc-dkb.c
-@@ -86,12 +86,12 @@ static int ttc_pm860x_init(struct snd_soc_pcm_runtime *rtd)
- 	snd_soc_dapm_disable_pin(dapm, "Headset Stereophone");
- 
- 	/* Headset jack detection */
--	snd_soc_jack_new(codec, "Headphone Jack", SND_JACK_HEADPHONE
-+	snd_soc_jack_new(codec, "Headphone", SND_JACK_HEADPHONE
- 	                 | SND_JACK_BTN_0 | SND_JACK_BTN_1 | SND_JACK_BTN_2,
- 	                 0, &hs_jack);
- 	snd_soc_jack_add_pins(&hs_jack, ARRAY_SIZE(hs_jack_pins),
- 			      hs_jack_pins);
--	snd_soc_jack_new(codec, "Microphone Jack", SND_JACK_MICROPHONE,
-+	snd_soc_jack_new(codec, "Microphone", SND_JACK_MICROPHONE,
- 	                 0, &mic_jack);
- 	snd_soc_jack_add_pins(&mic_jack, ARRAY_SIZE(mic_jack_pins),
- 			      mic_jack_pins);
-diff --git a/sound/soc/pxa/z2.c b/sound/soc/pxa/z2.c
-index 082fd24..2bbb2de 100644
---- a/sound/soc/pxa/z2.c
-+++ b/sound/soc/pxa/z2.c
-@@ -143,7 +143,7 @@ static int z2_wm8750_init(struct snd_soc_pcm_runtime *rtd)
- 	snd_soc_dapm_disable_pin(dapm, "MONO1");
- 
- 	/* Jack detection API stuff */
--	ret = snd_soc_jack_new(codec, "Headset Jack", SND_JACK_HEADSET,
-+	ret = snd_soc_jack_new(codec, "Headset", SND_JACK_HEADSET,
- 	                       0, &hs_jack);
- 	if (ret)
- 		goto err;
-diff --git a/sound/soc/samsung/goni_wm8994.c b/sound/soc/samsung/goni_wm8994.c
-index bdd70a9..2bfa4c9 100644
---- a/sound/soc/samsung/goni_wm8994.c
-+++ b/sound/soc/samsung/goni_wm8994.c
-@@ -114,7 +114,7 @@ static int goni_wm8994_init(struct snd_soc_pcm_runtime *rtd)
- 	}
- 
- 	/* Headset jack detection */
--	ret = snd_soc_jack_new(codec, "Headset Jack",
-+	ret = snd_soc_jack_new(codec, "Headset",
- 	                       SND_JACK_HEADSET | SND_JACK_MECHANICAL |
- 	                       SND_JACK_AVOUT,
- 	                       0, &jack);
-diff --git a/sound/soc/samsung/h1940_uda1380.c b/sound/soc/samsung/h1940_uda1380.c
-index 66b5a33..f8cf0cf 100644
---- a/sound/soc/samsung/h1940_uda1380.c
-+++ b/sound/soc/samsung/h1940_uda1380.c
-@@ -186,7 +186,7 @@ static int h1940_uda1380_init(struct snd_soc_pcm_runtime *rtd)
- 	snd_soc_dapm_enable_pin(dapm, "Speaker");
- 	snd_soc_dapm_enable_pin(dapm, "Mic Jack");
- 
--	snd_soc_jack_new(codec, "Headphone Jack", SND_JACK_HEADPHONE,
-+	snd_soc_jack_new(codec, "Headphone", SND_JACK_HEADPHONE,
- 	                 0, &hp_jack);
- 
- 	snd_soc_jack_add_pins(&hp_jack, ARRAY_SIZE(hp_jack_pins),
-diff --git a/sound/soc/samsung/rx1950_uda1380.c b/sound/soc/samsung/rx1950_uda1380.c
-index 588ad72..f62b845 100644
---- a/sound/soc/samsung/rx1950_uda1380.c
-+++ b/sound/soc/samsung/rx1950_uda1380.c
-@@ -231,7 +231,7 @@ static int rx1950_uda1380_init(struct snd_soc_pcm_runtime *rtd)
- 	snd_soc_dapm_enable_pin(dapm, "Speaker");
- 	snd_soc_dapm_enable_pin(dapm, "Mic Jack");
- 
--	snd_soc_jack_new(codec, "Headphone Jack", SND_JACK_HEADPHONE,
-+	snd_soc_jack_new(codec, "Headphone", SND_JACK_HEADPHONE,
- 	                 0, &hp_jack);
- 
- 	snd_soc_jack_add_pins(&hp_jack, ARRAY_SIZE(hp_jack_pins),
-diff --git a/sound/soc/samsung/smartq_wm8987.c b/sound/soc/samsung/smartq_wm8987.c
-index 71a17a5..053ceea 100644
---- a/sound/soc/samsung/smartq_wm8987.c
-+++ b/sound/soc/samsung/smartq_wm8987.c
-@@ -166,7 +166,7 @@ static int smartq_wm8987_init(struct snd_soc_pcm_runtime *rtd)
- 	snd_soc_dapm_disable_pin(dapm, "Headphone Jack");
- 
- 	/* Headphone jack detection */
--	err = snd_soc_jack_new(codec, "Headphone Jack",
-+	err = snd_soc_jack_new(codec, "Headphone",
- 	                       SND_JACK_HEADPHONE, 0, &smartq_jack);
- 	if (err)
- 		return err;
-diff --git a/sound/soc/tegra/tegra_alc5632.c b/sound/soc/tegra/tegra_alc5632.c
-index 1a44af9..cfacc27 100644
---- a/sound/soc/tegra/tegra_alc5632.c
-+++ b/sound/soc/tegra/tegra_alc5632.c
-@@ -109,7 +109,7 @@ static int tegra_alc5632_asoc_init(struct snd_soc_pcm_runtime *rtd)
- 	struct snd_soc_dapm_context *dapm = &codec->dapm;
- 	struct tegra_alc5632 *machine = snd_soc_card_get_drvdata(codec->card);
- 
--	snd_soc_jack_new(codec, "Headset Jack", SND_JACK_HEADSET,
-+	snd_soc_jack_new(codec, "Headset", SND_JACK_HEADSET,
- 	                 0, &tegra_alc5632_hs_jack);
- 	snd_soc_jack_add_pins(&tegra_alc5632_hs_jack,
- 			ARRAY_SIZE(tegra_alc5632_hs_jack_pins),
-diff --git a/sound/soc/tegra/tegra_rt5640.c b/sound/soc/tegra/tegra_rt5640.c
-index aad20f2..149b12c 100644
---- a/sound/soc/tegra/tegra_rt5640.c
-+++ b/sound/soc/tegra/tegra_rt5640.c
-@@ -111,7 +111,7 @@ static int tegra_rt5640_asoc_init(struct snd_soc_pcm_runtime *rtd)
- 	struct snd_soc_codec *codec = codec_dai->codec;
- 	struct tegra_rt5640 *machine = snd_soc_card_get_drvdata(codec->card);
- 
--	snd_soc_jack_new(codec, "Headphones", SND_JACK_HEADPHONE,
-+	snd_soc_jack_new(codec, "Headphone", SND_JACK_HEADPHONE,
- 	                 0, &tegra_rt5640_hp_jack);
- 	snd_soc_jack_add_pins(&tegra_rt5640_hp_jack,
- 			ARRAY_SIZE(tegra_rt5640_hp_jack_pins),
-diff --git a/sound/soc/tegra/tegra_wm8903.c b/sound/soc/tegra/tegra_wm8903.c
-index 3f38d31..cd297f5 100644
---- a/sound/soc/tegra/tegra_wm8903.c
-+++ b/sound/soc/tegra/tegra_wm8903.c
-@@ -178,7 +178,7 @@ static int tegra_wm8903_init(struct snd_soc_pcm_runtime *rtd)
- 
- 	if (gpio_is_valid(machine->gpio_hp_det)) {
- 		tegra_wm8903_hp_jack_gpio.gpio = machine->gpio_hp_det;
--		snd_soc_jack_new(codec, "Headphone Jack", SND_JACK_HEADPHONE,
-+		snd_soc_jack_new(codec, "Headphone", SND_JACK_HEADPHONE,
- 		                 0, &tegra_wm8903_hp_jack);
- 		snd_soc_jack_add_pins(&tegra_wm8903_hp_jack,
- 					ARRAY_SIZE(tegra_wm8903_hp_jack_pins),
-@@ -188,7 +188,7 @@ static int tegra_wm8903_init(struct snd_soc_pcm_runtime *rtd)
- 					&tegra_wm8903_hp_jack_gpio);
- 	}
- 
--	snd_soc_jack_new(codec, "Mic Jack", SND_JACK_MICROPHONE,
-+	snd_soc_jack_new(codec, "Mic", SND_JACK_MICROPHONE,
- 	                 0, &tegra_wm8903_mic_jack);
- 	snd_soc_jack_add_pins(&tegra_wm8903_mic_jack,
- 			      ARRAY_SIZE(tegra_wm8903_mic_jack_pins),
--- 
-1.8.3.1
+> One way to avoid these kind of bloat issues is to allow drivers to load
+> data at multiple points: Only abtolutely minimal set of data should be
+> static, some should only come from the bootloader as a device tree or
+> ACPI tables, and some is best to be loaded after booting from /lib/firmwa=
+re.
 
+why would we put data blobs in /lib/firmware ? I know we have discussed
+this at some length before, but I still don't get the idea that, just
+because data shouldn't be in the kernel, we would bloat /lib/firmware
+with blobs which aren't really firmwares.
+
+It would be like adding ACPI tables to /lib/firmware :-p
+
+--=20
+balbi
+
+--fDP66DSfTvWAYVew
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR+2fXAAoJEIaOsuA1yqREsYoQAKAPQ0K7FMedYpr2tACCH8Rt
+H96b//k9FGxLWG+e6S400d80HeR1KaXadb4ptTMljIMIm3jc98DJFxvRnWJAtiUp
+LSqu+Xrw5UFSIj9a0TliS00pdV4Hsh3glQFWV6l6R5uBEby1iKQS06wsUy8kZ1cz
+azIia7wZBPSPa2uDf3U7m523YmA5lCxKg7H45FimVPrCu4m53Ta504JVZBGlipKT
+/4ulata68keF29Mq5KJCJKg86dSIRpI35g8O1QuT0PviCsDD2mCWNMJDlKkVRiaE
+39Hv6tvR/P7yT02UNM3D88uI8nqUs79vXc7kePIzjpsUb12ItYvf/+X9I9YVP5eP
+FRL2IQuAPaYUheyLWi/sglBwJW0DOOoHU1EAMLsNyLz8aPChgO6KLTzkdH9wVJ7Y
+/uCtgcSKTWX81m7V0+jmBiGvZ1aCEcXYxa3xT8pssUkc2A9T1u8wF0xCaEJ6AKfF
+DbGy/vO4Q/O9qsNNj+f+9ahQNEsgOfnK6yiQF3pZO+XuBN25mWz0ijyUhg8josdN
+oounGZ3SVtKVHFZqtQGbs/KT4ectOG6rnGrYkz7HWKh2eSvUnASKBwFUfiD2Pt/n
+JH+HnfpdFE3GUSxGqhoILWRwtkmTJiG2YZoKxzw+azb+6HpN1UEEusLdt2rMDHlx
+kJzfARNeZhB/GnJYKRLK
+=jBsM
+-----END PGP SIGNATURE-----
+
+--fDP66DSfTvWAYVew--
