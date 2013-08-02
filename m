@@ -1,59 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754407Ab3HBCsY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 22:48:24 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:39167 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751400Ab3HBCsV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 22:48:21 -0400
-Message-ID: <51FB1F5D.1020005@linux.vnet.ibm.com>
-Date: Fri, 02 Aug 2013 08:24:21 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Waiman Long <Waiman.Long@hp.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Richard Weinberger <richard@nod.at>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Akinobu Mita <akinobu.mita@gmail.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Michel Lespinasse <walken@google.com>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        George Spelvin <linux@horizon.com>,
-        Harvey Harrison <harvey.harrison@gmail.com>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Subject: Re: [PATCH RFC 1/2] qspinlock: Introducing a 4-byte queue spinlock
- implementation
-References: <1375324631-32868-1-git-send-email-Waiman.Long@hp.com> <1375324631-32868-2-git-send-email-Waiman.Long@hp.com> <51FAC3BA.9050705@linux.vnet.ibm.com> <20130801204710.GH27162@twins.programming.kicks-ass.net>
-In-Reply-To: <20130801204710.GH27162@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1755297Ab3HBCsl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 22:48:41 -0400
+Received: from plane.gmane.org ([80.91.229.3]:44616 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754176Ab3HBCsj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 22:48:39 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Cong Wang <xiyou.wangcong@gmail.com>
+Subject: Re: PROBLEM: 3.11.0-rc2+ lost of connectivity
+Date: Fri, 2 Aug 2013 02:47:50 +0000 (UTC)
+Message-ID: <ktf6km$rsu$1@ger.gmane.org>
+References: <CAOSRKdTOcYOZ4fD5gXe_57dA028rGmR30T32FQ6MeruAq2p04g@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13080202-7014-0000-0000-000003699EBF
+X-Complaints-To: usenet@ger.gmane.org
+X-Gmane-NNTP-Posting-Host: 60.160.69.36
+User-Agent: slrn/0.9.9p1 (Linux)
+Cc: netdev@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02/2013 02:17 AM, Peter Zijlstra wrote:
-> On Fri, Aug 02, 2013 at 01:53:22AM +0530, Raghavendra K T wrote:
+On Thu, 01 Aug 2013 at 14:34 GMT, Sebastiano Spicuglia <spicuglia.sebastiano@gmail.com> wrote:
 >
-> You need to learn to trim your replies.. I already stopped reading that
-> paravirt thread because of it. Soon I'll introduce you to my /dev/null
-> mail reader.
+> The machine suddenly stops to be connected to the network.
+> Running "ifdown eth0" "ifup eth0" the network starts to work
+> again for few minutes and then the failure happens again.
+> It is not even possible to ping the machine.
+> /var/log/messages does not report anything wrong.
+>
+> I instrumented the kernel with SystemTap to see what happens when the
+> machine is in the failure state.
+>
+> the function ip_rcv is invoked.
+> the function ip_rcv_finish is invoked.
+> the function ip_local_deliver is invoked
+> the function ip_local_deliver_finish is invoked
+> the function tcp_v4_rcv is NOT invoked
+>
+> When the network works the function tcp_v4_rcv is invoked.
 >
 
-will be more careful next time.
+Please turn off your firewall and run dropwatch to see where the
+packets are dropped.
 
