@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755011Ab3HBQ3I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 12:29:08 -0400
-Received: from smtp65.ord1c.emailsrvr.com ([108.166.43.65]:54782 "EHLO
+	id S1755022Ab3HBQ3e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 12:29:34 -0400
+Received: from smtp65.ord1c.emailsrvr.com ([108.166.43.65]:39140 "EHLO
 	smtp65.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754811Ab3HBQ2f (ORCPT
+	by vger.kernel.org with ESMTP id S1754638Ab3HBQ2e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 12:28:35 -0400
+	Fri, 2 Aug 2013 12:28:34 -0400
 From: Mark Langsdorf <mark.langsdorf@calxeda.com>
 To: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org, tj@kernel.org,
         devicetree@vger.kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
         swarren@wwwdotorg.org, ian.campbell@citrix.com,
         rob.herring@calxeda.com
 Cc: Mark Langsdorf <mark.langsdorf@calxeda.com>
-Subject: [PATCH v2 4/5] sata, highbank: set tx_atten override bits
-Date: Fri,  2 Aug 2013 11:28:37 -0500
-Message-Id: <1375460918-4661-4-git-send-email-mark.langsdorf@calxeda.com>
+Subject: [PATCH v2 3/5] devicetree: create a separate binding description for sata_highbank
+Date: Fri,  2 Aug 2013 11:28:36 -0500
+Message-Id: <1375460918-4661-3-git-send-email-mark.langsdorf@calxeda.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1375460918-4661-1-git-send-email-mark.langsdorf@calxeda.com>
 References: <1375460918-4661-1-git-send-email-mark.langsdorf@calxeda.com>
@@ -23,176 +23,92 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some board designs do not drive the SATA transmit lines within the
-specification. The ECME can provide override settings, on a per board
-basis, to bring the transmit lines within spec. Read those settings
-from the DTB and program them in.
+The Calxeda sata_highbank driver has been adding its descriptions to the
+ahci driver. Separate them properly.
 
 Signed-off-by: Mark Langsdorf <mark.langsdorf@calxeda.com>
+Acked-by: Rob Herring <rob.herring@calxeda.com>
 ---
 Changes from v1
-	Clarified that the array is a u32 array.
-	Added an example in the bindings.
+	None.
 
- .../devicetree/bindings/ata/sata_highbank.txt      |  5 +-
- drivers/ata/sata_highbank.c                        | 58 +++++++++++++++++-----
- 2 files changed, 49 insertions(+), 14 deletions(-)
+ .../devicetree/bindings/ata/ahci-platform.txt      | 14 ++--------
+ .../devicetree/bindings/ata/sata_highbank.txt      | 32 ++++++++++++++++++++++
+ 2 files changed, 34 insertions(+), 12 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/ata/sata_highbank.txt
 
-diff --git a/Documentation/devicetree/bindings/ata/sata_highbank.txt b/Documentation/devicetree/bindings/ata/sata_highbank.txt
-index aa1b798..b6f04a2 100644
---- a/Documentation/devicetree/bindings/ata/sata_highbank.txt
-+++ b/Documentation/devicetree/bindings/ata/sata_highbank.txt
-@@ -20,6 +20,9 @@ Optional properties:
- 			indicator lights using the indicated GPIOs
- - calxeda,led-order : a u32 array that map port numbers to offsets within the
- 			SGPIO bitstream.
-+- calxeda,tx-atten  : a u32 array that contains TX attenuation override
-+			codes, one per port. The upper 3 bytes are always
-+			0 and thus ignored.
+diff --git a/Documentation/devicetree/bindings/ata/ahci-platform.txt b/Documentation/devicetree/bindings/ata/ahci-platform.txt
+index 3ec0c5c..14d7b22 100644
+--- a/Documentation/devicetree/bindings/ata/ahci-platform.txt
++++ b/Documentation/devicetree/bindings/ata/ahci-platform.txt
+@@ -4,27 +4,17 @@ SATA nodes are defined to describe on-chip Serial ATA controllers.
+ Each SATA controller should have its own node.
+ 
+ Required properties:
+-- compatible        : compatible list, contains "calxeda,hb-ahci" or "snps,spear-ahci"
++- compatible        : compatible list, contains "snps,spear-ahci"
+ - interrupts        : <interrupt mapping for SATA IRQ>
+ - reg               : <registers mapping>
+ 
+ Optional properties:
+-- calxeda,port-phys: phandle-combophy and lane assignment, which maps each
+-			SATA port to a combophy and a lane within that
+-			combophy
+-- calxeda,sgpio-gpio: phandle-gpio bank, bit offset, and default on or off,
+-			which indicates that the driver supports SGPIO
+-			indicator lights using the indicated GPIOs
+-- calxeda,led-order : a u32 array that map port numbers to offsets within the
+-			SGPIO bitstream.
+ - dma-coherent      : Present if dma operations are coherent
  
  Example:
          sata@ffe08000 {
-@@ -28,5 +31,5 @@ Example:
+-		compatible = "calxeda,hb-ahci";
++		compatible = "snps,spear-ahci";
+                 reg = <0xffe08000 0x1000>;
                  interrupts = <115>;
- 		calxeda,port-phys = <&combophy5 0 &combophy0 0 &combophy0 1
- 					&combophy0 2 &combophy0 3>;
--
-+		calxeda,tx-atten = <0xff 22 0xff 0xff 23>;
+-		calxeda,port-phys = <&combophy5 0 &combophy0 0 &combophy0 1
+-					&combophy0 2 &combophy0 3>;
+ 
          };
-diff --git a/drivers/ata/sata_highbank.c b/drivers/ata/sata_highbank.c
-index 8b40025..a7c8038 100644
---- a/drivers/ata/sata_highbank.c
-+++ b/drivers/ata/sata_highbank.c
-@@ -46,14 +46,19 @@
- #define CR_BUSY				0x0001
- #define CR_START			0x0001
- #define CR_WR_RDN			0x0002
-+#define CPHY_TX_INPUT_STS		0x2001
- #define CPHY_RX_INPUT_STS		0x2002
--#define CPHY_SATA_OVERRIDE	 	0x4000
--#define CPHY_OVERRIDE			0x2005
-+#define CPHY_SATA_TX_OVERRIDE		0x8000
-+#define CPHY_SATA_RX_OVERRIDE	 	0x4000
-+#define CPHY_TX_OVERRIDE		0x2004
-+#define CPHY_RX_OVERRIDE		0x2005
- #define SPHY_LANE			0x100
- #define SPHY_HALF_RATE			0x0001
- #define CPHY_SATA_DPLL_MODE		0x0700
- #define CPHY_SATA_DPLL_SHIFT		8
- #define CPHY_SATA_DPLL_RESET		(1 << 11)
-+#define CPHY_SATA_TX_ATTEN		0x1c00
-+#define CPHY_SATA_TX_ATTEN_SHIFT	10
- #define CPHY_PHY_COUNT			6
- #define CPHY_LANE_COUNT			4
- #define CPHY_PORT_COUNT			(CPHY_PHY_COUNT * CPHY_LANE_COUNT)
-@@ -66,6 +71,7 @@ struct phy_lane_info {
- 	void __iomem *phy_base;
- 	u8 lane_mapping;
- 	u8 phy_devs;
-+	u8 tx_atten;
- };
- static struct phy_lane_info port_data[CPHY_PORT_COUNT];
- 
-@@ -76,7 +82,6 @@ static DEFINE_SPINLOCK(sgpio_lock);
- #define SGPIO_PINS			3
- #define SGPIO_PORTS			8
- 
--/* can be cast as an ahci_host_priv for compatibility with most functions */
- struct ecx_plat_data {
- 	u32		n_ports;
- 	unsigned	sgpio_gpio[SGPIO_PINS];
-@@ -259,8 +264,27 @@ static void highbank_cphy_disable_overrides(u8 sata_port)
- 	if (unlikely(port_data[sata_port].phy_base == NULL))
- 		return;
- 	tmp = combo_phy_read(sata_port, CPHY_RX_INPUT_STS + lane * SPHY_LANE);
--	tmp &= ~CPHY_SATA_OVERRIDE;
--	combo_phy_write(sata_port, CPHY_OVERRIDE + lane * SPHY_LANE, tmp);
-+	tmp &= ~CPHY_SATA_RX_OVERRIDE;
-+	combo_phy_write(sata_port, CPHY_RX_OVERRIDE + lane * SPHY_LANE, tmp);
-+}
+diff --git a/Documentation/devicetree/bindings/ata/sata_highbank.txt b/Documentation/devicetree/bindings/ata/sata_highbank.txt
+new file mode 100644
+index 0000000..aa1b798
+--- /dev/null
++++ b/Documentation/devicetree/bindings/ata/sata_highbank.txt
+@@ -0,0 +1,32 @@
++* Calxeda AHCI SATA Controller
 +
-+static void cphy_override_tx_attenuation(u8 sata_port, u32 val)
-+{
-+	u8 lane = port_data[sata_port].lane_mapping;
-+	u32 tmp;
++SATA nodes are defined to describe on-chip Serial ATA controllers.
++The Calxeda SATA controller mostly conforms to the AHCI interface
++with some special extensions to add functionality.
++Each SATA controller should have its own node.
 +
-+	if (val & 0x8)
-+		return;
++Required properties:
++- compatible        : compatible list, contains "calxeda,hb-ahci"
++- interrupts        : <interrupt mapping for SATA IRQ>
++- reg               : <registers mapping>
 +
-+	tmp = combo_phy_read(sata_port, CPHY_TX_INPUT_STS + lane * SPHY_LANE);
-+	tmp &= ~CPHY_SATA_TX_OVERRIDE;
-+	combo_phy_write(sata_port, CPHY_TX_OVERRIDE + lane * SPHY_LANE, tmp);
++Optional properties:
++- dma-coherent      : Present if dma operations are coherent
++- calxeda,port-phys: phandle-combophy and lane assignment, which maps each
++			SATA port to a combophy and a lane within that
++			combophy
++- calxeda,sgpio-gpio: phandle-gpio bank, bit offset, and default on or off,
++			which indicates that the driver supports SGPIO
++			indicator lights using the indicated GPIOs
++- calxeda,led-order : a u32 array that map port numbers to offsets within the
++			SGPIO bitstream.
 +
-+	tmp |= CPHY_SATA_TX_OVERRIDE;
-+	combo_phy_write(sata_port, CPHY_TX_OVERRIDE + lane * SPHY_LANE, tmp);
++Example:
++        sata@ffe08000 {
++		compatible = "calxeda,hb-ahci";
++                reg = <0xffe08000 0x1000>;
++                interrupts = <115>;
++		calxeda,port-phys = <&combophy5 0 &combophy0 0 &combophy0 1
++					&combophy0 2 &combophy0 3>;
 +
-+	tmp |= (val << CPHY_SATA_TX_ATTEN_SHIFT) & CPHY_SATA_TX_ATTEN;
-+	combo_phy_write(sata_port, CPHY_TX_OVERRIDE + lane * SPHY_LANE, tmp);
- }
- 
- static void cphy_override_rx_mode(u8 sata_port, u32 val)
-@@ -268,21 +292,21 @@ static void cphy_override_rx_mode(u8 sata_port, u32 val)
- 	u8 lane = port_data[sata_port].lane_mapping;
- 	u32 tmp;
- 	tmp = combo_phy_read(sata_port, CPHY_RX_INPUT_STS + lane * SPHY_LANE);
--	tmp &= ~CPHY_SATA_OVERRIDE;
--	combo_phy_write(sata_port, CPHY_OVERRIDE + lane * SPHY_LANE, tmp);
-+	tmp &= ~CPHY_SATA_RX_OVERRIDE;
-+	combo_phy_write(sata_port, CPHY_RX_OVERRIDE + lane * SPHY_LANE, tmp);
- 
--	tmp |= CPHY_SATA_OVERRIDE;
--	combo_phy_write(sata_port, CPHY_OVERRIDE + lane * SPHY_LANE, tmp);
-+	tmp |= CPHY_SATA_RX_OVERRIDE;
-+	combo_phy_write(sata_port, CPHY_RX_OVERRIDE + lane * SPHY_LANE, tmp);
- 
- 	tmp &= ~CPHY_SATA_DPLL_MODE;
- 	tmp |= val << CPHY_SATA_DPLL_SHIFT;
--	combo_phy_write(sata_port, CPHY_OVERRIDE + lane * SPHY_LANE, tmp);
-+	combo_phy_write(sata_port, CPHY_RX_OVERRIDE + lane * SPHY_LANE, tmp);
- 
- 	tmp |= CPHY_SATA_DPLL_RESET;
--	combo_phy_write(sata_port, CPHY_OVERRIDE + lane * SPHY_LANE, tmp);
-+	combo_phy_write(sata_port, CPHY_RX_OVERRIDE + lane * SPHY_LANE, tmp);
- 
- 	tmp &= ~CPHY_SATA_DPLL_RESET;
--	combo_phy_write(sata_port, CPHY_OVERRIDE + lane * SPHY_LANE, tmp);
-+	combo_phy_write(sata_port, CPHY_RX_OVERRIDE + lane * SPHY_LANE, tmp);
- 
- 	msleep(15);
- }
-@@ -299,16 +323,20 @@ static void highbank_cphy_override_lane(u8 sata_port)
- 						lane * SPHY_LANE);
- 	} while ((tmp & SPHY_HALF_RATE) && (k++ < 1000));
- 	cphy_override_rx_mode(sata_port, 3);
-+	cphy_override_tx_attenuation(sata_port, port_data[sata_port].tx_atten);
- }
- 
- static int highbank_initialize_phys(struct device *dev, void __iomem *addr)
- {
- 	struct device_node *sata_node = dev->of_node;
--	int phy_count = 0, phy, port = 0;
-+	int phy_count = 0, phy, port = 0, i;
- 	void __iomem *cphy_base[CPHY_PHY_COUNT];
- 	struct device_node *phy_nodes[CPHY_PHY_COUNT];
-+	u32 tx_atten[CPHY_PORT_COUNT];
-+
- 	memset(port_data, 0, sizeof(struct phy_lane_info) * CPHY_PORT_COUNT);
- 	memset(phy_nodes, 0, sizeof(struct device_node*) * CPHY_PHY_COUNT);
-+	memset(tx_atten, 0xff, CPHY_PORT_COUNT);
- 
- 	do {
- 		u32 tmp;
-@@ -336,6 +364,10 @@ static int highbank_initialize_phys(struct device *dev, void __iomem *addr)
- 		of_node_put(phy_data.np);
- 		port += 1;
- 	} while (port < CPHY_PORT_COUNT);
-+	of_property_read_u32_array(sata_node, "calxeda,tx-atten",
-+				tx_atten, port);
-+	for (i = 0; i < port; i++)
-+		port_data[i].tx_atten = (u8) tx_atten[i];
- 	return 0;
- }
- 
++        };
 -- 
 1.8.1.2
 
