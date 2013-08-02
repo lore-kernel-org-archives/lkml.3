@@ -1,113 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755446Ab3HBIGU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 04:06:20 -0400
-Received: from mga03.intel.com ([143.182.124.21]:3313 "EHLO mga03.intel.com"
+	id S1756372Ab3HBIGk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 04:06:40 -0400
+Received: from sauhun.de ([89.238.76.85]:51742 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751595Ab3HBIGN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 04:06:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,799,1367996400"; 
-   d="scan'208";a="276681459"
-Message-ID: <51FB689F.30100@intel.com>
-Date: Fri, 02 Aug 2013 16:06:55 +0800
-From: Aaron Lu <aaron.lu@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1751595Ab3HBIG2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 04:06:28 -0400
+Date: Fri, 2 Aug 2013 10:06:07 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Lothar =?iso-8859-15?Q?Wa=DFmann?= <LW@KARO-electronics.de>
+Cc: Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] rtc: rtc-stmp3xxx: provide timeout for potentially
+ endless loop polling a HW bit
+Message-ID: <20130802080607.GA2992@katana>
+References: <1375280941-22657-1-git-send-email-LW@KARO-electronics.de>
 MIME-Version: 1.0
-To: Felipe Contreras <felipe.contreras@gmail.com>
-CC: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <lenb@kernel.org>,
-        Zhang Rui <rui.zhang@intel.com>
-Subject: Re: [PATCH] acpi: video: fix reversed indexed BQC
-References: <1375400042-989-1-git-send-email-felipe.contreras@gmail.com> <51FB137D.7070000@gmail.com> <CAMP44s1A+z4=DGJLK1qf5LPc1vbYvtJwjFiMt17vzyZFRU0qmg@mail.gmail.com> <51FB35CD.7040709@intel.com> <CAMP44s1honSdnoMnmpEcsXtdkJuPYgQgnLwcN+oxs5f=a+3Stg@mail.gmail.com> <51FB3C9C.6070002@intel.com> <CAMP44s1RkwTfxdoiARHgREy-fwLuRu2tKbM-4kB3+Xf3Sme5Uw@mail.gmail.com> <51FB5826.80305@intel.com> <CAMP44s3+L8ZY9tcUbNhia8sRx+KJ1w44Jn7n=RMdPfeQqvPaqw@mail.gmail.com>
-In-Reply-To: <CAMP44s3+L8ZY9tcUbNhia8sRx+KJ1w44Jn7n=RMdPfeQqvPaqw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="opJtzjQTFsWo+cga"
+Content-Disposition: inline
+In-Reply-To: <1375280941-22657-1-git-send-email-LW@KARO-electronics.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02/2013 03:59 PM, Felipe Contreras wrote:
-> On Fri, Aug 2, 2013 at 1:56 AM, Aaron Lu <aaron.lu@intel.com> wrote:
->> On 08/02/2013 02:44 PM, Felipe Contreras wrote:
-> 
->>> The initial _BCM commands don't work, so the level remains at 100%.
->>> Since the level is max_level, acpi_video_bqc_quirk() tries with the
->>> first level, which is 0, and 0 happens to be the index of 100.
->>>
->>> So _BQC is returning 100, which is not the index of 0 (what we tested
->>> for), but actually 100.
->>>
->>> I think the current code is correct, but acpi_video_bqc_quirk() should
->>> be testing br->levels[3], or anything other than 0/100 which can be
->>> easily confused.
->>>
->>> If so, the code would find that _BQC doesn't work on this machine (in
->>> win8 mode)... at least initially. My guess is that it only starts to
->>> work after acpi_video_bus_start_devices() is called.
->>>
->>> Forcing br->flags._BQC_use_index = 0 seems to work.
->>
->> Seems ASUS machines tend to have this issue:
->> https://bugzilla.kernel.org/show_bug.cgi?id=52951
->> https://bugzilla.kernel.org/show_bug.cgi?id=56711
-> 
-> I don't see any real solution for the ACPI driver.
-> 
->> I have a patch to enhance the quirk some time ago:
->> https://github.com/aaronlu/linux/commit/0a3d2c5b59caf80ae5bb1ca1fda0f7bf448b38c9
-> 
-> I think this is unnecessarily complicated; the comment makes it clear
 
-For your system, yes it is unnecessarily complicated. But since this is
-a quirk, it better solves as many potential problems as possible, or we
-would simply use a DMI entry to do the quirk.
+--opJtzjQTFsWo+cga
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
--Aaron
+On Wed, Jul 31, 2013 at 04:29:01PM +0200, Lothar Wa=DFmann wrote:
+> It's always a bad idea to poll on HW bits without a timeout.
+>=20
+> The i.MX28 RTC can be easily brought into a state in which the RTC is
+> not running (until after a power-on-reset) and thus the status bits
+> which are polled in the driver won't ever change.
+>=20
+> This patch prevents the kernel from getting stuck in this case.
+>=20
+> Signed-off-by: Lothar Wa=DFmann <LW@KARO-electronics.de>
 
-> that the purpose is to find out if _BQC is working, and this does the
-> trick:
-> 
-> From 2bfa401b0a50fcde292ac0eb60cb6f857caf2fc6 Mon Sep 17 00:00:00 2001
-> From: Felipe Contreras <felipe.contreras@gmail.com>
-> Date: Fri, 2 Aug 2013 02:27:44 -0500
-> Subject: [PATCH] acpi: video: improve quirk check
-> 
-> If the _BCL package is descending, the first level (br->levels[2]) will
-> be 0, and if the number of levels matches the number of steps, we might
-> confuse a returned level to mean the index.
-> 
-> For example:
-> 
->   current_level = max_level = 100
->   test_level = 0
->   returned level = 100
-> 
-> In this case 100 means the level, not the index, and _BCM failed. But if
-> the _BCL package is descending, the index of level 0 is also 100, so we
-> assume _BQC is indexed, when it's not.
-> 
-> The solution is simple; test anything other than the first level (e.g.
-> 1).
-> 
-> Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
-> ---
->  drivers/acpi/video.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
-> index 0ec434d..e1284b8 100644
-> --- a/drivers/acpi/video.c
-> +++ b/drivers/acpi/video.c
-> @@ -689,7 +689,7 @@ static int acpi_video_bqc_quirk(struct
-> acpi_video_device *device,
->  	 * Some systems always report current brightness level as maximum
->  	 * through _BQC, we need to test another value for them.
->  	 */
-> -	test_level = current_level == max_level ? br->levels[2] : max_level;
-> +	test_level = current_level == max_level ? br->levels[3] : max_level;
-> 
->  	result = acpi_video_device_lcd_set_level(device, test_level);
->  	if (result)
-> 
+Acked-by: Wolfram Sang <wsa@the-dreams.de>
 
+
+--opJtzjQTFsWo+cga
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR+2hvAAoJEBQN5MwUoCm2adoP/A/r+7cJHDfcl9SwUEp3Z6cO
+nDW0waRNf2FA/6wJLF6LeAIuDY3VCGIGgcA9P4s0AWnTX64qN60J2bTR56Vgw59e
+XdQU2/QZ7ulVjBZ1wA312kVjft1K/QsUZEVUC2d0HKyqzR7SAI4a0IwcBxXgQnC7
+rmQkf/+eVBmoeysP0HyId1m/ZxcdDj75R7HUXzClz7aJCap1By8NQf0ihlMgi5nH
+qTHvKmMpH79muUttrt2D4Glc7Sfh5hsHwyJ5yFBf2kojkRrPZbWiNtA51NLFCvtc
+5f2AtDsMdEJnC8E+OLC0v+Ocd93vbQtgRUbxXiwxRQHS0bE+xLqy0AJiHY/Hn+9f
+q5/Oabp2pofXolSlPJGSCGwCww1BVmVqXdZXb83qIjmQisPDFaKeMFYrlONzb5rq
+nuMVJd+RH9rZO8ESlyKxVUMj7EiwTrO6nsTKppPAeGOMCJpb+6XkcweR5AfuGmEp
+M36ysavXj8ShNptJ1dBDb0ShumLtBQCeGDxSX235P7ynZ4Xggd/nDZ+7oK5Lpr3O
+BEoV17epMSkqiWn7h7JGnMIi97k8UDJw0gZGHUpYfyScwdqePDENFYB5Rla2wLYR
+Z7wqf+buXu5WQbIYeNnhgpAHXiLZNhyMcPEDX4oBxc1Fd0KvwrX7FEqA7buz0uTN
+5W5+FHOcbJezy5WrqetN
+=dDAp
+-----END PGP SIGNATURE-----
+
+--opJtzjQTFsWo+cga--
