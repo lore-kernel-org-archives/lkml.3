@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754451Ab3HBKXJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:23:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37841 "EHLO
+	id S1754842Ab3HBKXW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:23:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37864 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753765Ab3HBKXF (ORCPT
+	with ESMTP id S1754695Ab3HBKXU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:23:05 -0400
+	Fri, 2 Aug 2013 06:23:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ian Abbott <abbotti@mev.co.uk>
-Subject: [ 11/23] staging: comedi: COMEDI_CANCEL ioctl should wake up read/write
-Date: Fri,  2 Aug 2013 18:23:24 +0800
-Message-Id: <20130802102037.787706122@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 16/23] drm/radeon: improve dac adjust heuristics for legacy pdac
+Date: Fri,  2 Aug 2013 18:23:29 +0800
+Message-Id: <20130802102038.473993495@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802102036.180660415@linuxfoundation.org>
 References: <20130802102036.180660415@linuxfoundation.org>
@@ -26,57 +26,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Abbott <abbotti@mev.co.uk>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 69acbaac303e8cb948801a9ddd0ac24e86cc4a1b upstream.
+commit 03ed8cf9b28d886c64c7e705c7bb1a365fd8fb95 upstream.
 
-Comedi devices can do blocking read() or write() (or poll()) if an
-asynchronous command has been set up, blocking for data (for read()) or
-buffer space (for write()).  Various events associated with the
-asynchronous command will wake up the blocked reader or writer (or
-poller).  It is also possible to force the asynchronous command to
-terminate by issuing a `COMEDI_CANCEL` ioctl.  That shuts down the
-asynchronous command, but does not currently wake up the blocked reader
-or writer (or poller).  If the blocked task could be woken up, it would
-see that the command is no longer active and return.  The caller of the
-`COMEDI_CANCEL` ioctl could attempt to wake up the blocked task by
-sending a signal, but that's a nasty workaround.
+Hopefully avoid more quirks in the future due to bogus
+vbios dac data.
 
-Change `do_cancel_ioctl()` to wake up the wait queue after it returns
-from `do_cancel()`.  `do_cancel()` can propagate an error return value
-from the low-level comedi driver's cancel routine, but it always shuts
-the command down regardless, so `do_cancel_ioctl()` can wake up he wait
-queue regardless of the return value from `do_cancel()`.
-
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/comedi/comedi_fops.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/radeon_combios.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/staging/comedi/comedi_fops.c
-+++ b/drivers/staging/comedi/comedi_fops.c
-@@ -1370,6 +1370,7 @@ static int do_cancel_ioctl(struct comedi
- 			   void *file)
- {
- 	struct comedi_subdevice *s;
-+	int ret;
+--- a/drivers/gpu/drm/radeon/radeon_combios.c
++++ b/drivers/gpu/drm/radeon/radeon_combios.c
+@@ -890,8 +890,10 @@ struct radeon_encoder_primary_dac *radeo
+ 			dac = RBIOS8(dac_info + 0x3) & 0xf;
+ 			p_dac->ps2_pdac_adj = (bg << 8) | (dac);
+ 		}
+-		/* if the values are all zeros, use the table */
+-		if (p_dac->ps2_pdac_adj)
++		/* if the values are zeros, use the table */
++		if ((dac == 0) || (bg == 0))
++			found = 0;
++		else
+ 			found = 1;
+ 	}
  
- 	if (arg >= dev->n_subdevices)
- 		return -EINVAL;
-@@ -1386,7 +1387,11 @@ static int do_cancel_ioctl(struct comedi
- 	if (s->busy != file)
- 		return -EBUSY;
- 
--	return do_cancel(dev, s);
-+	ret = do_cancel(dev, s);
-+	if (comedi_get_subdevice_runflags(s) & SRF_USER)
-+		wake_up_interruptible(&s->async->wait_head);
-+
-+	return ret;
- }
- 
- /*
 
 
