@@ -1,65 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754396Ab3HBQFI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 12:05:08 -0400
-Received: from mail-ve0-f169.google.com ([209.85.128.169]:42827 "EHLO
-	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754316Ab3HBQFG (ORCPT
+	id S1754454Ab3HBQGh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 12:06:37 -0400
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:40650 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754320Ab3HBQGf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 12:05:06 -0400
-MIME-Version: 1.0
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 2 Aug 2013 09:04:44 -0700
-Message-ID: <CALCETrU+C+sO8tJ0X5G4RDVLV=kHQQHurOnEQCoqbAouh60dng@mail.gmail.com>
-Subject: Slow firmware timeouts again (Re: [3.11 regression?] iwlwifi firmware
- takes two minutes to load)
-To: Johannes Berg <johannes@sipsolutions.net>
-Cc: Linux Wireless List <linux-wireless@vger.kernel.org>,
-        Intel Linux Wireless <ilw@linux.intel.com>,
-        linux-hotplug@vger.kernel.org, linux-kernel@vger.kernel.org,
-        systemd-devel@lists.freedesktop.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 2 Aug 2013 12:06:35 -0400
+Message-ID: <1375459527.10300.77.camel@misato.fc.hp.com>
+Subject: Re: [PATCH v2 10/18] x86, acpi: Try to find if SRAT is overrided
+ earlier.
+From: Toshi Kani <toshi.kani@hp.com>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu,
+        hpa@zytor.com, akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
+        mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
+        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com, x86@kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-acpi@vger.kernel.org
+Date: Fri, 02 Aug 2013 10:05:27 -0600
+In-Reply-To: <51FB485A.9070801@cn.fujitsu.com>
+References: <1375340800-19332-1-git-send-email-tangchen@cn.fujitsu.com>
+	  <1375340800-19332-11-git-send-email-tangchen@cn.fujitsu.com>
+	 <1375406353.10300.73.camel@misato.fc.hp.com>
+	 <51FB485A.9070801@cn.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[cc: linux-kernel, linux-hotplug, and systemd-devel.  This is 3.11-rc3+]
+On Fri, 2013-08-02 at 13:49 +0800, Tang Chen wrote:
+> On 08/02/2013 09:19 AM, Toshi Kani wrote:
+> ......
+> >> +phys_addr_t __init early_acpi_override_srat(void)
+> >> +{
+> >> +	int i;
+> >> +	u32 length;
+> >> +	long offset;
+> >> +	void *ramdisk_vaddr;
+> >> +	struct acpi_table_header *table;
+> >> +	struct cpio_data file;
+> >> +	unsigned long map_step = NR_FIX_BTMAPS<<  PAGE_SHIFT;
+> >> +	phys_addr_t ramdisk_image = get_ramdisk_image();
+> >> +	char cpio_path[32] = "kernel/firmware/acpi/";
+> >
+> > Don't you need to check if ramdisk is present before parsing the table?
+> > You may need something like:
+> >
+> >    if (!ramdisk_image || !get_ramdisk_size())
+> >          return 0;
+> 
+> Yes, it is better to do such a check here. But is there a possibility that
+> no ramdisk is present and we come to setup_arch() ?
 
-On Fri, Aug 2, 2013 at 12:38 AM, Johannes Berg
-<johannes@sipsolutions.net> wrote:
-> On Thu, 2013-08-01 at 21:38 -0700, Andy Lutomirski wrote:
->> At boot, I get:
->> [   12.537108] iwlwifi 0000:03:00.0: irq 51 for MSI/MSI-X
->> ...
->> [  132.676781] iwlwifi 0000:03:00.0: loaded firmware version 9.221.4.1
->> build 25532 op_mode iwldvm
->>
->> This sounds familiar, but wasn't it fixed awhile ago?
->
-> It wasn't exactly fixed and it's really more of a userspace problem - we
-> probably request firmware version 8, and then it takes 30 seconds to
-> time out for each of 8,7,6,5, after which the next request for 4 is
-> successful.
+Without a ramdisk, the boot procedure will likely fail in mounting the
+root disk due to missing drivers.  But it should come to setup_arch()
+without it.
 
-Why's it requesting those firmwares?  They don't seem to exist on
-intellinuxwireless.org.
-
-I have:
-
-CONFIG_FW_LOADER=y
-# CONFIG_FIRMWARE_IN_KERNEL is not set
-CONFIG_EXTRA_FIRMWARE=""
-CONFIG_FW_LOADER_USER_HELPER=y
-
-
->
-> I don't know why your userspace isn't behaving differently though.
->
-> johannes
->
+Thanks,
+-Toshi
 
 
+> 
+> ......
+> >> +
+> >> +	return ramdisk_image;
+> >
+> > Doesn't this function return a physical address regardless of SRAT if a
+> > ramdisk is present?
+> 
+> Yes, and it is not good. I'll add the check above so that this won't happen.
+> 
+> Thanks.
+> 
 
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+
