@@ -1,65 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753163Ab3HBESh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 00:18:37 -0400
-Received: from mail-la0-f50.google.com ([209.85.215.50]:65154 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750853Ab3HBESg (ORCPT
+	id S1753453Ab3HBEVJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 00:21:09 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:36464 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750853Ab3HBEVF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 00:18:36 -0400
+	Fri, 2 Aug 2013 00:21:05 -0400
+Date: Thu, 1 Aug 2013 21:21:03 -0700
+From: David Brown <davidb@codeaurora.org>
+To: Rohit Vaswani <rvaswani@codeaurora.org>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org
+Subject: Re: [RESEND PATCH 1/2] ARM: msm: Add support for MSM8974
+Message-ID: <20130802042103.GA28826@codeaurora.org>
+References: <1375406619-14618-1-git-send-email-rvaswani@codeaurora.org>
+ <51FB1987.3060806@wwwdotorg.org>
+ <51FB2946.2050503@codeaurora.org>
 MIME-Version: 1.0
-In-Reply-To: <51FB118D.8040205@gmail.com>
-References: <1375400641-1694-1-git-send-email-felipe.contreras@gmail.com>
-	<1375400641-1694-3-git-send-email-felipe.contreras@gmail.com>
-	<51FB118D.8040205@gmail.com>
-Date: Thu, 1 Aug 2013 23:18:34 -0500
-Message-ID: <CAMP44s2KijzXcYyU_fOD2YB4rU5wuFCfte4fR3HXoriTKE2wuA@mail.gmail.com>
-Subject: Re: [PATCH 2/3] acpi: video: trivial style cleanups
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: Aaron Lu <aaron.lwe@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <lenb@kernel.org>,
-        Zhang Rui <rui.zhang@intel.com>, Jiri Kosina <trivial@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Disposition: inline
+In-Reply-To: <51FB2946.2050503@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 1, 2013 at 8:55 PM, Aaron Lu <aaron.lwe@gmail.com> wrote:
-> On 08/02/2013 07:44 AM, Felipe Contreras wrote:
->> Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
+On Thu, Aug 01, 2013 at 08:36:38PM -0700, Rohit Vaswani wrote:
+>On 8/1/2013 7:29 PM, Stephen Warren wrote:
+>> On 08/01/2013 07:23 PM, Rohit Vaswani wrote:
+>>> This patch adds basic board support for MSM8974 which
+>>> belongs to the Snapdragon 800 family.
+>>> For now, just support a basic machine with device tree.
+>>>   arch/arm/boot/dts/msm8974.dts     | 26 ++++++++++++++++++++++++++
+>> That's odd. If this is support for an SoC, why not a *.dtsi file rather
+>> than *.dts?
 >
-> Change log please.
+>I am not sure why I would need a dtsi if I am just adding the 1 file for
+>the SoC support ?
 
-You mean a commit message? That's what it's called in Git lingo, and
-it's right there:
+The .dts file should be for a specific board, not a general SoC.  Note
+the names of the other board .dts files for MSM.  We'll probably want
+a msm8974.dtsi at some point, though.
 
-acpi: video: trivial style cleanups
-
->> ---
->>  drivers/acpi/video.c | 90 +++++++++++++++++++++++-----------------------------
->>  1 file changed, 40 insertions(+), 50 deletions(-)
->>
->> diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
->> index f021bf4..b07573f 100644
->> --- a/drivers/acpi/video.c
->> +++ b/drivers/acpi/video.c
->> @@ -88,7 +88,7 @@ module_param(allow_duplicates, bool, 0644);
->>  static bool use_bios_initial_backlight = 1;
->>  module_param(use_bios_initial_backlight, bool, 0644);
->>
->> -static int register_count = 0;
->> +static int register_count;
->
-> This isn't a style clean up.
-
-It is.
-
-There's no difference before and after, the only difference is the style.
-
-ERROR: do not initialise statics to 0 or NULL
-#91: FILE: acpi/video.c:91:
-+static int register_count = 0;
+David
 
 -- 
-Felipe Contreras
+sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
