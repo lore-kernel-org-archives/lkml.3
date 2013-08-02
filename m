@@ -1,82 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758236Ab3HBJPf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 05:15:35 -0400
-Received: from mga02.intel.com ([134.134.136.20]:54456 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755010Ab3HBJPe convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 05:15:34 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,800,1367996400"; 
-   d="scan'208";a="380574989"
-Message-ID: <1375434911.31118.74.camel@smile>
-Subject: Re: [PATCH 2/2] aoe: use min() to simplify the code
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Ed Cashin <ecashin@coraid.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Date: Fri, 02 Aug 2013 12:15:11 +0300
-In-Reply-To: <5B6F37C8-CB08-4BA6-9AC9-D328711385F9@coraid.com>
-References: <1375360134-20860-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <1375360134-20860-2-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <5B6F37C8-CB08-4BA6-9AC9-D328711385F9@coraid.com>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
+	id S1758271Ab3HBJQN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 05:16:13 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:20795 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755010Ab3HBJQJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 05:16:09 -0400
+X-IronPort-AV: E=Sophos;i="4.89,800,1367942400"; 
+   d="scan'208";a="8098113"
+From: Tang Chen <tangchen@cn.fujitsu.com>
+To: robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl, lenb@kernel.org,
+        tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
+        mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
+        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com
+Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-acpi@vger.kernel.org
+Subject: [PATCH v2 RESEND 02/18] earlycpio.c: Fix the confusing comment of find_cpio_data().
+Date: Fri, 2 Aug 2013 17:14:21 +0800
+Message-Id: <1375434877-20704-3-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.10.1
+In-Reply-To: <1375434877-20704-1-git-send-email-tangchen@cn.fujitsu.com>
+References: <1375434877-20704-1-git-send-email-tangchen@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/02 17:14:47,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/02 17:14:52,
+	Serialize complete at 2013/08/02 17:14:52
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-08-01 at 21:13 -0400, Ed Cashin wrote: 
-> Thanks.
-> 
-> I agree that we could do that.  I'm not sure it increases readability to put this much stuff on one line, though.  What is the motivation?
+The comments of find_cpio_data() says:
 
-Motivation is to explicitly show that that operation is to calculate a
-minimum of two the slen parameter and the length of last part of the
-disk_name.
+  * @offset: When a matching file is found, this is the offset to the
+  *          beginning of the cpio. ......
 
-It seems matter of taste, so, I'm okay with current piece of code.
+But according to the code,
 
-> > min() incorporates condition in it. In our case we could do assignment and
-> > make a choice at once.
-> > 
-> > Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> > ---
-> > drivers/block/aoe/aoedev.c | 6 ++----
-> > 1 file changed, 2 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/drivers/block/aoe/aoedev.c b/drivers/block/aoe/aoedev.c
-> > index db35ef6..92fadfa 100644
-> > --- a/drivers/block/aoe/aoedev.c
-> > +++ b/drivers/block/aoe/aoedev.c
-> > @@ -13,6 +13,7 @@
-> > #include <linux/kdev_t.h>
-> > #include <linux/moduleparam.h>
-> > #include <linux/string.h>
-> > +#include <linux/kernel.h>
-> > #include "aoe.h"
-> > 
-> > static void dummy_timer(ulong);
-> > @@ -248,10 +249,7 @@ user_req(char *s, size_t slen, struct aoedev *d)
-> > 	if (!d->gd)
-> > 		return 0;
-> > 	p = kbasename(d->gd->disk_name);
-> > -	lim = sizeof(d->gd->disk_name);
-> > -	lim -= p - d->gd->disk_name;
-> > -	if (slen < lim)
-> > -		lim = slen;
-> > +	lim = min(sizeof(d->gd->disk_name) - (p - d->gd->disk_name), slen);
-> > 
-> > 	return !strncmp(s, p, lim);
-> > }
-> > -- 
-> > 1.8.3.2
-> > 
-> 
+  dptr = PTR_ALIGN(p + ch[C_NAMESIZE], 4);
+  nptr = PTR_ALIGN(dptr + ch[C_FILESIZE], 4);
+  ....
+  *offset = (long)nptr - (long)data;	/* data is the cpio file */
 
+@offset is the offset of the next file, not the matching file itself.
+This is confused and may cause unnecessary waste of time to debug.
+So fix it.
+
+v1 -> v2:
+As tj suggested, rename @offset to @nextoff which is more clear to
+users. And also adjust the new comments.
+
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+---
+ lib/earlycpio.c |   27 ++++++++++++++-------------
+ 1 files changed, 14 insertions(+), 13 deletions(-)
+
+diff --git a/lib/earlycpio.c b/lib/earlycpio.c
+index 7aa7ce2..c7ae5ed 100644
+--- a/lib/earlycpio.c
++++ b/lib/earlycpio.c
+@@ -49,22 +49,23 @@ enum cpio_fields {
+ 
+ /**
+  * cpio_data find_cpio_data - Search for files in an uncompressed cpio
+- * @path:   The directory to search for, including a slash at the end
+- * @data:   Pointer to the the cpio archive or a header inside
+- * @len:    Remaining length of the cpio based on data pointer
+- * @offset: When a matching file is found, this is the offset to the
+- *          beginning of the cpio. It can be used to iterate through
+- *          the cpio to find all files inside of a directory path
++ * @path:       The directory to search for, including a slash at the end
++ * @data:       Pointer to the the cpio archive or a header inside
++ * @len:        Remaining length of the cpio based on data pointer
++ * @nextoff:    When a matching file is found, this is the offset from the
++ *              beginning of the cpio to the beginning of the next file, not the
++ *              matching file itself. It can be used to iterate through the cpio
++ *              to find all files inside of a directory path 
+  *
+- * @return: struct cpio_data containing the address, length and
+- *          filename (with the directory path cut off) of the found file.
+- *          If you search for a filename and not for files in a directory,
+- *          pass the absolute path of the filename in the cpio and make sure
+- *          the match returned an empty filename string.
++ * @return:     struct cpio_data containing the address, length and
++ *              filename (with the directory path cut off) of the found file.
++ *              If you search for a filename and not for files in a directory,
++ *              pass the absolute path of the filename in the cpio and make sure
++ *              the match returned an empty filename string.
+  */
+ 
+ struct cpio_data find_cpio_data(const char *path, void *data,
+-					  size_t len,  long *offset)
++				size_t len,  long *nextoff)
+ {
+ 	const size_t cpio_header_len = 8*C_NFIELDS - 2;
+ 	struct cpio_data cd = { NULL, 0, "" };
+@@ -124,7 +125,7 @@ struct cpio_data find_cpio_data(const char *path, void *data,
+ 		if ((ch[C_MODE] & 0170000) == 0100000 &&
+ 		    ch[C_NAMESIZE] >= mypathsize &&
+ 		    !memcmp(p, path, mypathsize)) {
+-			*offset = (long)nptr - (long)data;
++			*nextoff = (long)nptr - (long)data;
+ 			if (ch[C_NAMESIZE] - mypathsize >= MAX_CPIO_FILE_NAME) {
+ 				pr_warn(
+ 				"File %s exceeding MAX_CPIO_FILE_NAME [%d]\n",
 -- 
-Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Intel Finland Oy
+1.7.1
+
