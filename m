@@ -1,67 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756357Ab3HBLA4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 07:00:56 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:43943 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756171Ab3HBLAy (ORCPT
+	id S932129Ab3HBKEN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:04:13 -0400
+Received: from up.free-electrons.com ([94.23.35.102]:58766 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758179Ab3HBKEM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 07:00:54 -0400
-Message-ID: <51FB915C.1050003@atmel.com>
-Date: Fri, 2 Aug 2013 12:00:44 +0100
-From: Rupesh Gujare <rupesh.gujare@atmel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: <devel@linuxdriverproject.org>, <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/6] staging: ozwpan: Increase farewell report size.
-References: <1375379102-18217-1-git-send-email-rupesh.gujare@atmel.com> <20130802102735.GB5051@mwanda>
-In-Reply-To: <20130802102735.GB5051@mwanda>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+	Fri, 2 Aug 2013 06:04:12 -0400
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Emilio Lopez <emilio@elopez.com.ar>, kevin.z.m.zh@gmail.com,
+        sunny@allwinnertech.com, shuge@allwinnertech.com,
+        linux-kernel@vger.kernel.org, linux-sunxi@googlegroups.com,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: [PATCHv2 0/9] 
+Date: Fri,  2 Aug 2013 12:02:44 +0200
+Message-Id: <1375437773-3211-1-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/08/13 11:27, Dan Carpenter wrote:
-> On Thu, Aug 01, 2013 at 06:45:01PM +0100, Rupesh Gujare wrote:
->> Farewell report size can be bigger than one byte, increase array
->> size to accomodate maximum 32 bytes of farewell report.
->>
-> Gar...  No.  This is not right.
->
-> 1) There is no check limiting the size to 32 and it could be up to
->     253 bytes.
->
-> 2) Use defines instead of magic numbers.
->
-> 3) The oz_farewell struct is supposed to be a variable length struct
->     but the variable part is put in the middle.  It doesn't make any
->     sense to put the length of the variable size array after then end
->     of the array because we can never find it again!  Put the
->     variable size array at the end.  Make it a zero length array.
->     u8 len;
->     u8 report[0];
->
-> 4) In oz_add_farewell() we do this:
->
-> 	f = kmalloc(sizeof(struct oz_farewell) + len - 1, GFP_ATOMIC);
->
->      The "- 1" refers to sizeof(f->report) but because it was a magic
->      number then it was missed when the sizeof(f->report) changed.
->
-> 5) In [patch 6/6] we set the ->len member.  But because it is at the
->     end of a variable length array with no limit check the remote
->     attacker can just rewrite it using the memcpy() on the next line.
->
->
-Thanks Dan.
+Hi everyone,
 
-A patch follows to fix above issues.
+This patchset brings in support for the Allwinner A20 SoC.
+
+This SoC is pretty much the heir of the Allwinner A10. They both have a lot of
+IP in common, the A20 is pin-compatible with the A10, the only major difference
+being that the A20 has 2 Cortex-A7 instead of the single Cortex-A8 found in the
+A10.
+
+Just like the A31, the SMP support isn't there yet, nor do we have clock
+support or any storage device.
+
+We also have the same SMP bit issue that makes Linux run without the caches
+enabled for the time being when CONFIG_SMP isn't set.
+
+This serie comes on top of the serie "ARM: sunxi: Add support for the Allwinner
+A31 SoC" I sent previously.
+
+Thanks,
+Maxime
+
+Changes from v1:
+  - Removed the patch that wrapped the compatibles in the clock driver
+
+Maxime Ripard (9):
+  ARM: sunxi: Introduce Allwinner A20 support
+  ARM: sun7i: Add Allwinner A20 DTSI
+  ARM: sun7i: Add Olimex A20-Olinuxino-Micro support
+  pinctrl: sunxi: Add Allwinner A20 pins set
+  pinctrl: sunxi: Fix inconsistent indentation
+  ARM: sun7i: Add the PIO controller node to the DTSI
+  ARM: sun7i: DT: Add UART muxing options to the DTSI
+  ARM: sun7i: a20-olinuxino: Enable UARTs muxing
+  ARM: sun7i: a20-olinuxino: Enable the user LED
+
+ arch/arm/boot/dts/Makefile                      |    3 +-
+ arch/arm/boot/dts/sun7i-a20-olinuxino-micro.dts |   61 ++
+ arch/arm/boot/dts/sun7i-a20.dtsi                |  205 +++++
+ arch/arm/mach-sunxi/sunxi.c                     |    1 +
+ drivers/pinctrl/pinctrl-sunxi-pins.h            | 1028 ++++++++++++++++++++++-
+ drivers/pinctrl/pinctrl-sunxi.c                 |    1 +
+ 6 files changed, 1293 insertions(+), 6 deletions(-)
+ create mode 100644 arch/arm/boot/dts/sun7i-a20-olinuxino-micro.dts
+ create mode 100644 arch/arm/boot/dts/sun7i-a20.dtsi
 
 -- 
-Regards,
-Rupesh Gujare
+1.8.3.4
 
