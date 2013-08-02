@@ -1,73 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754766Ab3HBCIr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 22:08:47 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:62998 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752966Ab3HBCIE (ORCPT
+	id S1753748Ab3HBCNN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 22:13:13 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:35265 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751400Ab3HBCNL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 22:08:04 -0400
-X-AuditID: 9c93016f-b7b05ae000002bbd-50-51fb1481721a
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Joonsoo Kim <js1304@gmail.com>, Minchan Kim <minchan@kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH 2/4] mm, migrate: allocation new page lazyily in unmap_and_move()
-Date: Fri,  2 Aug 2013 11:07:57 +0900
-Message-Id: <1375409279-16919-2-git-send-email-iamjoonsoo.kim@lge.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1375409279-16919-1-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1375409279-16919-1-git-send-email-iamjoonsoo.kim@lge.com>
-X-Brightmail-Tracker: AAAAAA==
+	Thu, 1 Aug 2013 22:13:11 -0400
+Date: Fri, 2 Aug 2013 04:13:09 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Greg KH <greg@kroah.com>, kernel list <linux-kernel@vger.kernel.org>,
+        Joe Lawrence <joe.lawrence@stratus.com>,
+        Myron Stowe <myron.stowe@redhat.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Carolyn Wyborny <carolyn.wyborny@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        Greg Rose <gregory.v.rose@intel.com>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
+        Alex Duyck <alexander.h.duyck@intel.com>,
+        John Ronciak <john.ronciak@intel.com>,
+        Tushar Dave <tushar.n.dave@intel.com>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>
+Subject: Re: /sys/module/pcie_aspm/parameters/policy not writable?
+Message-ID: <20130802021259.GA3715@amd.pavel.ucw.cz>
+References: <20130709094906.GA3870@amd.pavel.ucw.cz>
+ <20130709101039.GA4479@amd.pavel.ucw.cz>
+ <CAErSpo57qjTkGbNK5qLzJcKuqBGK5=R=raEdyL6M1d5O=FkK_Q@mail.gmail.com>
+ <20130710132950.GA3684@amd.pavel.ucw.cz>
+ <CAErSpo5ig3bxZ3hBUUrzTdc=YqHy7cBGBxOLru4NYdyOOR+W5w@mail.gmail.com>
+ <20130712111121.GB3515@amd.pavel.ucw.cz>
+ <CAErSpo6NYZNHyV9xh2wRSQp72-dxg+FrFW4XrjE5Ps=bW6AGCw@mail.gmail.com>
+ <CAErSpo4XrJL48boVNiEb-7Y=52Bx_79hqP909ayLOdm7we_m3Q@mail.gmail.com>
+ <20130801200008.GA5495@amd.pavel.ucw.cz>
+ <CAErSpo4Dw9Bg059scx-YzR=5rpkc65f0hjQnM7STtoprOLXJqw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAErSpo4Dw9Bg059scx-YzR=5rpkc65f0hjQnM7STtoprOLXJqw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We don't need a new page and then go out immediately if some condition
-is met. Allocation has overhead in comparison with some condition check,
-so allocating lazyily is preferable solution.
+Hi!
 
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> >> > But since the problem also occurs with Windows, it's pretty likely
+> >> > that there's a BIOS update to fix it.  I notice on the X60 support
+> >> > page that there are several versions newer than what you're running.
+> >>
+> >> Do you have any interest in trying a newer BIOS to see if it's fixed
+> >> there?  If not, I understand; BIOS updates are a hassle at best.
+> >> You're running BIOS 2.14, and it looks like the current BIOS for an
+> >> X60 1709 7HU is 2.19 (from http://support.lenovo.com).
+> >
+> > I'm lost at the lenovo pages :-(. And frankly I'd prefer not to touch
+> > the BIOS.
+> 
+> I tried to provide a complete link, but the web site isn't amenable to
+> that.  I found it by selecting the "Drivers & Software" section,
+> entering "X60" as the machine type, selecting "ThinkPad X60 (1709)"
+> and going to the "BIOS" section.  I was surprised how easy it was :)
 
-diff --git a/mm/migrate.c b/mm/migrate.c
-index 6f0c244..86db87e 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -864,10 +864,7 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
- {
- 	int rc = 0;
- 	int *result = NULL;
--	struct page *newpage = get_new_page(page, private, &result);
--
--	if (!newpage)
--		return -ENOMEM;
-+	struct page *newpage = NULL;
- 
- 	if (page_count(page) == 1) {
- 		/* page was freed from under us. So we are done. */
-@@ -878,6 +875,10 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
- 		if (unlikely(split_huge_page(page)))
- 			goto out;
- 
-+	newpage = get_new_page(page, private, &result);
-+	if (!newpage)
-+		return -ENOMEM;
-+
- 	rc = __unmap_and_move(page, newpage, force, mode);
- 
- 	if (unlikely(rc == MIGRATEPAGE_BALLOON_SUCCESS)) {
-@@ -908,7 +909,8 @@ out:
- 	 * Move the new page to the LRU. If migration was not successful
- 	 * then this will free the page.
- 	 */
--	putback_lru_page(newpage);
-+	if (newpage)
-+		putback_lru_page(newpage);
- 	if (result) {
- 		if (rc)
- 			*result = rc;
+Hmm. So I've update bios using 7buj28uc.iso . Reverted the patches and
+yes, ping latencies are still bad:
+
+pavel@amd:~$ ping 10.0.0.250
+PING 10.0.0.250 (10.0.0.250) 56(84) bytes of data.
+64 bytes from 10.0.0.250: icmp_req=1 ttl=127 time=1.05 ms
+64 bytes from 10.0.0.250: icmp_req=2 ttl=127 time=0.820 ms
+64 bytes from 10.0.0.250: icmp_req=3 ttl=127 time=73.5 ms
+64 bytes from 10.0.0.250: icmp_req=4 ttl=127 time=7.41 ms
+64 bytes from 10.0.0.250: icmp_req=5 ttl=127 time=5.25 ms
+64 bytes from 10.0.0.250: icmp_req=6 ttl=127 time=1.16 ms
+64 bytes from 10.0.0.250: icmp_req=7 ttl=127 time=36.3 ms
+64 bytes from 10.0.0.250: icmp_req=8 ttl=127 time=1.64 ms
+
+> >> Carolyn's patch will likely work, at least most of the time, but I
+> >> think there's a small possibility that it could cause a conflict
+> >> between the BIOS and the OS over ASPM control, so I'm not 100% in
+> >> support of that approach.  A conflict may not happen on your
+> >> machine,
+> >
+> > Can we base it on DMI  whitelist?
+> 
+> I don't think we can know a priori whether a machine (even your
+> machine) is susceptible to a conflict.  But if Carolyn forcibly
+
+We don't apriori now how broken machines are, true. There are 1000
+ways BIOS can break things. And yes, it will be us breaking the specs
+here. But "useful machine with OS breaking specs" is better than
+"machine useless for ssh".
+
+_If_ there's a conflict, we can try something else.
+
+(Has someone really seen a conflict, or is it just theoretical thing?)
+
+									Pavel
 -- 
-1.7.9.5
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
