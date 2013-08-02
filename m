@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755399Ab3HBKnx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:43:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37357 "EHLO
+	id S1755418Ab3HBKoR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:44:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37350 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030313Ab3HBKKx (ORCPT
+	with ESMTP id S1030294Ab3HBKKr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:10:53 -0400
+	Fri, 2 Aug 2013 06:10:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Dong He <hedonghust@gmail.com>
-Subject: [ 69/99] drm/radeon: fix endian issues with DP handling (v3)
-Date: Fri,  2 Aug 2013 18:08:22 +0800
-Message-Id: <20130802100235.625422588@linuxfoundation.org>
+        Joe Lawrence <joe.lawrence@stratus.com>, NeilBrown <neilb@suse.de>
+Subject: [ 46/99] md/raid1: fix bio handling problems in process_checks()
+Date: Fri,  2 Aug 2013 18:07:59 +0800
+Message-Id: <20130802100232.513222218@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802100225.478715166@linuxfoundation.org>
 References: <20130802100225.478715166@linuxfoundation.org>
@@ -27,90 +26,113 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: NeilBrown <neilb@suse.de>
 
-commit 34be8c9af7b8728465963740fc11136ae90dfc36 upstream.
+commit 30bc9b53878a9921b02e3b5bc4283ac1c6de102a upstream.
 
-The atom interpreter expects data in LE format, so
-swap the message buffer as apprioriate.
+Recent change to use bio_copy_data() in raid1 when repairing
+an array is faulty.
 
-v2: properly handle non-dw aligned byte counts.
-v3: properly handle remainder
+The underlying may have changed the bio in various ways using
+bio_advance and these need to be undone not just for the 'sbio' which
+is being copied to, but also the 'pbio' (primary) which is being
+copied from.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Cc: Dong He <hedonghust@gmail.com>
+So perform the reset on all bios that were read from and do it early.
+
+This also ensure that the sbio->bi_io_vec[j].bv_len passed to
+memcmp is correct.
+
+This fixes a crash during a 'check' of a RAID1 array.  The crash was
+introduced in 3.10 so this is suitable for 3.10-stable.
+
+Reported-by: Joe Lawrence <joe.lawrence@stratus.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/atombios_dp.c |   43 +++++++++++++++++++++++++++++++----
- 1 file changed, 39 insertions(+), 4 deletions(-)
+ drivers/md/raid1.c |   53 ++++++++++++++++++++++++++++++-----------------------
+ 1 file changed, 30 insertions(+), 23 deletions(-)
 
---- a/drivers/gpu/drm/radeon/atombios_dp.c
-+++ b/drivers/gpu/drm/radeon/atombios_dp.c
-@@ -44,6 +44,41 @@ static char *pre_emph_names[] = {
- };
+--- a/drivers/md/raid1.c
++++ b/drivers/md/raid1.c
+@@ -1848,6 +1848,36 @@ static int process_checks(struct r1bio *
+ 	int i;
+ 	int vcnt;
  
- /***** radeon AUX functions *****/
++	/* Fix variable parts of all bios */
++	vcnt = (r1_bio->sectors + PAGE_SIZE / 512 - 1) >> (PAGE_SHIFT - 9);
++	for (i = 0; i < conf->raid_disks * 2; i++) {
++		int j;
++		int size;
++		struct bio *b = r1_bio->bios[i];
++		if (b->bi_end_io != end_sync_read)
++			continue;
++		/* fixup the bio for reuse */
++		bio_reset(b);
++		b->bi_vcnt = vcnt;
++		b->bi_size = r1_bio->sectors << 9;
++		b->bi_sector = r1_bio->sector +
++			conf->mirrors[i].rdev->data_offset;
++		b->bi_bdev = conf->mirrors[i].rdev->bdev;
++		b->bi_end_io = end_sync_read;
++		b->bi_private = r1_bio;
 +
-+/* Atom needs data in little endian format
-+ * so swap as appropriate when copying data to
-+ * or from atom. Note that atom operates on
-+ * dw units.
-+ */
-+static void radeon_copy_swap(u8 *dst, u8 *src, u8 num_bytes, bool to_le)
-+{
-+#ifdef __BIG_ENDIAN
-+	u8 src_tmp[20], dst_tmp[20]; /* used for byteswapping */
-+	u32 *dst32, *src32;
-+	int i;
-+
-+	memcpy(src_tmp, src, num_bytes);
-+	src32 = (u32 *)src_tmp;
-+	dst32 = (u32 *)dst_tmp;
-+	if (to_le) {
-+		for (i = 0; i < ((num_bytes + 3) / 4); i++)
-+			dst32[i] = cpu_to_le32(src32[i]);
-+		memcpy(dst, dst_tmp, num_bytes);
-+	} else {
-+		u8 dws = num_bytes & ~3;
-+		for (i = 0; i < ((num_bytes + 3) / 4); i++)
-+			dst32[i] = le32_to_cpu(src32[i]);
-+		memcpy(dst, dst_tmp, dws);
-+		if (num_bytes % 4) {
-+			for (i = 0; i < (num_bytes % 4); i++)
-+				dst[dws+i] = dst_tmp[dws+i];
++		size = b->bi_size;
++		for (j = 0; j < vcnt ; j++) {
++			struct bio_vec *bi;
++			bi = &b->bi_io_vec[j];
++			bi->bv_offset = 0;
++			if (size > PAGE_SIZE)
++				bi->bv_len = PAGE_SIZE;
++			else
++				bi->bv_len = size;
++			size -= PAGE_SIZE;
 +		}
 +	}
-+#else
-+	memcpy(dst, src, num_bytes);
-+#endif
-+}
-+
- union aux_channel_transaction {
- 	PROCESS_AUX_CHANNEL_TRANSACTION_PS_ALLOCATION v1;
- 	PROCESS_AUX_CHANNEL_TRANSACTION_PARAMETERS_V2 v2;
-@@ -65,10 +100,10 @@ static int radeon_process_aux_ch(struct
+ 	for (primary = 0; primary < conf->raid_disks * 2; primary++)
+ 		if (r1_bio->bios[primary]->bi_end_io == end_sync_read &&
+ 		    test_bit(BIO_UPTODATE, &r1_bio->bios[primary]->bi_flags)) {
+@@ -1856,12 +1886,10 @@ static int process_checks(struct r1bio *
+ 			break;
+ 		}
+ 	r1_bio->read_disk = primary;
+-	vcnt = (r1_bio->sectors + PAGE_SIZE / 512 - 1) >> (PAGE_SHIFT - 9);
+ 	for (i = 0; i < conf->raid_disks * 2; i++) {
+ 		int j;
+ 		struct bio *pbio = r1_bio->bios[primary];
+ 		struct bio *sbio = r1_bio->bios[i];
+-		int size;
  
- 	base = (unsigned char *)(rdev->mode_info.atom_context->scratch + 1);
+ 		if (sbio->bi_end_io != end_sync_read)
+ 			continue;
+@@ -1887,27 +1915,6 @@ static int process_checks(struct r1bio *
+ 			rdev_dec_pending(conf->mirrors[i].rdev, mddev);
+ 			continue;
+ 		}
+-		/* fixup the bio for reuse */
+-		bio_reset(sbio);
+-		sbio->bi_vcnt = vcnt;
+-		sbio->bi_size = r1_bio->sectors << 9;
+-		sbio->bi_sector = r1_bio->sector +
+-			conf->mirrors[i].rdev->data_offset;
+-		sbio->bi_bdev = conf->mirrors[i].rdev->bdev;
+-		sbio->bi_end_io = end_sync_read;
+-		sbio->bi_private = r1_bio;
+-
+-		size = sbio->bi_size;
+-		for (j = 0; j < vcnt ; j++) {
+-			struct bio_vec *bi;
+-			bi = &sbio->bi_io_vec[j];
+-			bi->bv_offset = 0;
+-			if (size > PAGE_SIZE)
+-				bi->bv_len = PAGE_SIZE;
+-			else
+-				bi->bv_len = size;
+-			size -= PAGE_SIZE;
+-		}
  
--	memcpy(base, send, send_bytes);
-+	radeon_copy_swap(base, send, send_bytes, true);
- 
--	args.v1.lpAuxRequest = 0 + 4;
--	args.v1.lpDataOut = 16 + 4;
-+	args.v1.lpAuxRequest = cpu_to_le16((u16)(0 + 4));
-+	args.v1.lpDataOut = cpu_to_le16((u16)(16 + 4));
- 	args.v1.ucDataOutLen = 0;
- 	args.v1.ucChannelID = chan->rec.i2c_id;
- 	args.v1.ucDelay = delay / 10;
-@@ -102,7 +137,7 @@ static int radeon_process_aux_ch(struct
- 		recv_bytes = recv_size;
- 
- 	if (recv && recv_size)
--		memcpy(recv, base + 16, recv_bytes);
-+		radeon_copy_swap(recv, base + 16, recv_bytes, false);
- 
- 	return recv_bytes;
- }
+ 		bio_copy_data(sbio, pbio);
+ 	}
 
 
