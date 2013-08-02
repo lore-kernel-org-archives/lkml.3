@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754490Ab3HBKk3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:40:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37416 "EHLO
+	id S1755150Ab3HBKkx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:40:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37409 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030462Ab3HBKLd (ORCPT
+	with ESMTP id S1030443Ab3HBKL2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:11:33 -0400
+	Fri, 2 Aug 2013 06:11:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 72/99] drm/radeon: improve dac adjust heuristics for legacy pdac
-Date: Fri,  2 Aug 2013 18:08:25 +0800
-Message-Id: <20130802100236.038871901@linuxfoundation.org>
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 82/99] drm/i915: fix up gt init sequence fallout
+Date: Fri,  2 Aug 2013 18:08:35 +0800
+Message-Id: <20130802100237.367582611@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802100225.478715166@linuxfoundation.org>
 References: <20130802100225.478715166@linuxfoundation.org>
@@ -26,34 +29,113 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit 03ed8cf9b28d886c64c7e705c7bb1a365fd8fb95 upstream.
+commit 181d1b9e31c668259d3798c521672afb8edd355c upstream.
 
-Hopefully avoid more quirks in the future due to bogus
-vbios dac data.
+The regression fix for gen6+ rps fallout
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+commit 7dcd2677ea912573d9ed4bcd629b0023b2d11505
+Author: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Date:   Wed Jul 17 10:22:58 2013 +0400
+
+    drm/i915: fix long-standing SNB regression in power consumption after resume
+
+unintentionally also changed the init sequence ordering between
+gt_init and gt_reset - we need to reset BIOS damage like leftover
+forcewake references before we run our own code. Otherwise we can get
+nasty dmesg noise like
+
+[drm:__gen6_gt_force_wake_mt_get] *ERROR* Timed out waiting for forcewake old ack to clear.
+
+again. Since _reset suggests that we first need to have stuff
+initialized (which isn't the case here) call it sanitze instead.
+
+While at it also block out the rps disable introduced by the above
+commit on ilk: We don't have any knowledge of ilk rps being broken in
+similar ways. And the disable functions uses the default hw state
+which is only read out when we're enabling rps. So essentially we've
+been writing random grabage into that register.
+
+Reported-by: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
+Tested-by: Chris Wilson <chris@chris-wilson.co.uk>
+Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_combios.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/i915/i915_dma.c |    2 +-
+ drivers/gpu/drm/i915/i915_drv.c |    4 ++--
+ drivers/gpu/drm/i915/i915_drv.h |    2 +-
+ drivers/gpu/drm/i915/intel_pm.c |    5 +++--
+ 4 files changed, 7 insertions(+), 6 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_combios.c
-+++ b/drivers/gpu/drm/radeon/radeon_combios.c
-@@ -902,8 +902,10 @@ struct radeon_encoder_primary_dac *radeo
- 			dac = RBIOS8(dac_info + 0x3) & 0xf;
- 			p_dac->ps2_pdac_adj = (bg << 8) | (dac);
- 		}
--		/* if the values are all zeros, use the table */
--		if (p_dac->ps2_pdac_adj)
-+		/* if the values are zeros, use the table */
-+		if ((dac == 0) || (bg == 0))
-+			found = 0;
-+		else
- 			found = 1;
+--- a/drivers/gpu/drm/i915/i915_dma.c
++++ b/drivers/gpu/drm/i915/i915_dma.c
+@@ -1608,8 +1608,8 @@ int i915_driver_load(struct drm_device *
+ 	intel_detect_pch(dev);
+ 
+ 	intel_irq_init(dev);
++	intel_gt_sanitize(dev);
+ 	intel_gt_init(dev);
+-	intel_gt_reset(dev);
+ 
+ 	/* Try to make sure MCHBAR is enabled before poking at it */
+ 	intel_setup_mchbar(dev);
+--- a/drivers/gpu/drm/i915/i915_drv.c
++++ b/drivers/gpu/drm/i915/i915_drv.c
+@@ -685,7 +685,7 @@ static int i915_drm_thaw(struct drm_devi
+ {
+ 	int error = 0;
+ 
+-	intel_gt_reset(dev);
++	intel_gt_sanitize(dev);
+ 
+ 	if (drm_core_check_feature(dev, DRIVER_MODESET)) {
+ 		mutex_lock(&dev->struct_mutex);
+@@ -711,7 +711,7 @@ int i915_resume(struct drm_device *dev)
+ 
+ 	pci_set_master(dev->pdev);
+ 
+-	intel_gt_reset(dev);
++	intel_gt_sanitize(dev);
+ 
+ 	/*
+ 	 * Platforms with opregion should have sane BIOS, older ones (gen3 and
+--- a/drivers/gpu/drm/i915/i915_drv.h
++++ b/drivers/gpu/drm/i915/i915_drv.h
+@@ -1477,7 +1477,7 @@ void i915_handle_error(struct drm_device
+ extern void intel_irq_init(struct drm_device *dev);
+ extern void intel_hpd_init(struct drm_device *dev);
+ extern void intel_gt_init(struct drm_device *dev);
+-extern void intel_gt_reset(struct drm_device *dev);
++extern void intel_gt_sanitize(struct drm_device *dev);
+ 
+ void i915_error_state_free(struct kref *error_ref);
+ 
+--- a/drivers/gpu/drm/i915/intel_pm.c
++++ b/drivers/gpu/drm/i915/intel_pm.c
+@@ -4486,7 +4486,7 @@ static void vlv_force_wake_put(struct dr
+ 	gen6_gt_check_fifodbg(dev_priv);
+ }
+ 
+-void intel_gt_reset(struct drm_device *dev)
++void intel_gt_sanitize(struct drm_device *dev)
+ {
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+ 
+@@ -4499,7 +4499,8 @@ void intel_gt_reset(struct drm_device *d
  	}
  
+ 	/* BIOS often leaves RC6 enabled, but disable it for hw init */
+-	intel_disable_gt_powersave(dev);
++	if (INTEL_INFO(dev)->gen >= 6)
++		intel_disable_gt_powersave(dev);
+ }
+ 
+ void intel_gt_init(struct drm_device *dev)
 
 
