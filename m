@@ -1,66 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751599Ab3HBKQm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:16:42 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:34886 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751215Ab3HBKQ1 (ORCPT
+	id S1751664Ab3HBKQx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:16:53 -0400
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:43300 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751498Ab3HBKQv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:16:27 -0400
-Date: Fri, 2 Aug 2013 11:16:02 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Daniel Mack <zonque@gmail.com>
-Cc: linux-kernel@vger.kernel.org, lgirdwood@gmail.com
-Message-ID: <20130802101602.GJ9858@sirena.org.uk>
-References: <1375431557-3096-1-git-send-email-zonque@gmail.com>
+	Fri, 2 Aug 2013 06:16:51 -0400
+Date: Fri, 2 Aug 2013 11:16:44 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: "'Samuel Ortiz'" <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        linus.walleij@linaro.org
+Subject: Re: [PATCH 2/2] mfd: ab8500-gpadc: add CONFIG_PM_SLEEP to
+ suspend/resume
+Message-ID: <20130802101644.GC17368@lee--X1>
+References: <000201ce8f40$2322df90$69689eb0$@samsung.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="SUYVwCrjRUF3yxCY"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1375431557-3096-1-git-send-email-zonque@gmail.com>
-X-Cookie: You will be awarded some great honor.
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <000201ce8f40$2322df90$69689eb0$@samsung.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/3] regulators: max8660: use i2c_id->driver_data rather
- than ->name
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 02 Aug 2013, Jingoo Han wrote:
 
---SUYVwCrjRUF3yxCY
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> Add CONFIG_PM_SLEEP to suspend/resume functions to fix the build
+> warnings when CONFIG_PM_SLEEP is not selected. This is because
+> sleep PM callbacks defined by SET_SYSTEM_SLEEP_PM_OPS are only used
+> when the CONFIG_PM_SLEEP is enabled.
+> 
+> drivers/mfd/ab8500-gpadc.c:891:12: warning: 'ab8500_gpadc_suspend' defined but not used [-Wunused-function]
+> drivers/mfd/ab8500-gpadc.c:903:12: warning: 'ab8500_gpadc_resume' defined but not used [-Wunused-function]
+> 
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+> ---
+>  drivers/mfd/ab8500-gpadc.c |    2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/drivers/mfd/ab8500-gpadc.c b/drivers/mfd/ab8500-gpadc.c
+> index 77c616f..36000f9 100644
+> --- a/drivers/mfd/ab8500-gpadc.c
+> +++ b/drivers/mfd/ab8500-gpadc.c
+> @@ -888,6 +888,7 @@ static int ab8500_gpadc_runtime_resume(struct device *dev)
+>  }
+>  #endif
+>  
+> +#ifdef CONFIG_PM_SLEEP
+>  static int ab8500_gpadc_suspend(struct device *dev)
+>  {
+>  	struct ab8500_gpadc *gpadc = dev_get_drvdata(dev);
+> @@ -915,6 +916,7 @@ static int ab8500_gpadc_resume(struct device *dev)
+>  	mutex_unlock(&gpadc->ab8500_gpadc_lock);
+>  	return ret;
+>  }
+> +#endif
+>  
+>  static int ab8500_gpadc_probe(struct platform_device *pdev)
+>  {
 
-On Fri, Aug 02, 2013 at 10:19:15AM +0200, Daniel Mack wrote:
-> Introduce an enum and denote the device type via struct i2c_id's
-> driver_data field rather than comparing strings.
+Looks sensible. I wonder why we haven't caught these before.
 
-Applied, thanks.
+I guess we always enable PM_SLEEP.
 
---SUYVwCrjRUF3yxCY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Applied until Linus tells me otherwise.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR+4beAAoJELSic+t+oim9pCAP/0Xe9HfJ5lOaSM2h+UtWrkz6
-Vx/UpOdlbXgIYJOGhNXsjx8mZzIm/9zw2Yn18aDzQYS4clHjq+KO5vajcAJVnl8E
-fm86XVp5i4T+OnpxqH9sJwuEjzDaW3ZsiTcFUFCfcXGhuVXWGZUyOM9wcbjsjdFG
-WTOPfgzoPGGhrS8LQLjr5Y6Z4ePnPs+RssOH36Yg3gm0YtT9hwF9Fx7YHJ32K2U+
-Uz8FWd8t9Lw+PmgvzDDPyLkQQshv6bOWZ+cK8iNmoNIubrwqbejFUfzlDxEM7Ux+
-7ldfZeqBjHS2FahRbJO7vpH6OtyEf1SvxmF2pFHW4J7LS9G6QGeMFa2lRCo8mCO/
-xRGYCodkPey7eVC6tIx4CMF3voM/TE3DZsIOaO6dUNb8CKEDGZusJjzeh2TsgnD7
-HGptALuVavM048gLq4P4yig6qKg8ilXBj6LM7yl5an7wIRJ7zIQl8hR6BAD267yL
-sOFjPL7AYGV8AvUg3Xb8XcvbA16szUV2apjLevyZ6B5LOkpxfUyUM+MpTmo/ghAj
-g7n/A5QmduRi1rZTkOviwazwv/KFDBP4uM4h46wUjbzYHglLm4WF7hcvD6sLoUdZ
-Vch7EA4SAmcpfuW3SjO12hR6rlaDWkyEysOjxv11IdTUycBvL0GkBqvnJW3ZeVx7
-JKc32BaTe7LvNCHc78W1
-=wxpX
------END PGP SIGNATURE-----
-
---SUYVwCrjRUF3yxCY--
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
