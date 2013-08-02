@@ -1,48 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753976Ab3HBEIT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 00:08:19 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:54820 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753613Ab3HBEIQ (ORCPT
+	id S1753825Ab3HBEKq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 00:10:46 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:2889 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750853Ab3HBEKp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 00:08:16 -0400
-X-Spam-Score: -100.8
-Message-ID: <51FB3072.4070406@asianux.com>
-Date: Fri, 02 Aug 2013 12:07:14 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Fri, 2 Aug 2013 00:10:45 -0400
+Message-ID: <51FB30D3.9030900@huawei.com>
+Date: Fri, 2 Aug 2013 12:08:51 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Yoshinori Sato <ysato@users.sourceforge.jp>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] h8300: Makefile: remove the hard code CROSS_COMPILE
-Content-Type: text/plain; charset=ISO-8859-1
+To: Tejun Heo <tj@kernel.org>
+CC: <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Johannes Weiner <hannes@cmpxchg.org>,
+        Michal Hocko <mhocko@suse.cz>, Balbir Singh <bsingharora@gmail.com>
+Subject: Re: [PATCH 21/23] cgroup: make cftype->[un]register_event() deal
+ with cgroup_subsys_state instead of cgroup
+References: <1375393801-4817-1-git-send-email-tj@kernel.org> <1375393801-4817-22-git-send-email-tj@kernel.org>
+In-Reply-To: <1375393801-4817-22-git-send-email-tj@kernel.org>
+Content-Type: text/plain; charset="GB2312"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current Linux can set CROSS_CMPILE from command line or config file, so
-need remove the hard code CROSS_COMPILE from Makefile, or can not work
-with cross-compiler with additional prefix (e.g. "h8300-gchen-elf-").
+> @@ -506,15 +506,17 @@ struct cftype {
+>  	 * you want to provide this functionality. Use eventfd_signal()
+>  	 * on eventfd to send notification to userspace.
+>  	 */
+> -	int (*register_event)(struct cgroup *cgrp, struct cftype *cft,
+> -			struct eventfd_ctx *eventfd, const char *args);
+> +	int (*register_event)(struct cgroup_subsys_state *css,
+> +			      struct cftype *cft, struct eventfd_ctx *eventfd,
+> +			      const char *args);
+>  	/*
+>  	 * unregister_event() callback will be called when userspace
+>  	 * closes the eventfd or on cgroup removing.
+>  	 * This callback must be implemented, if you want provide
+>  	 * notification functionality.
+>  	 */
+> -	void (*unregister_event)(struct cgroup *cgrp, struct cftype *cft,
+> +	void (*unregister_event)(struct cgroup_subsys_state *css,
+> +				 struct cftype *cft,
+>  			struct eventfd_ctx *eventfd);
 
+align this line?
 
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
----
- arch/h8300/Makefile |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+>  };
 
-diff --git a/arch/h8300/Makefile b/arch/h8300/Makefile
-index a556447..f333385 100644
---- a/arch/h8300/Makefile
-+++ b/arch/h8300/Makefile
-@@ -38,7 +38,6 @@ KBUILD_CFLAGS += -DUTS_SYSNAME=\"uClinux\"
- KBUILD_AFLAGS += -DPLATFORM=$(PLATFORM) -DMODEL=$(MODEL) $(cflags-y)
- LDFLAGS += $(ldflags-y)
- 
--CROSS_COMPILE = h8300-elf-
- LIBGCC := $(shell $(CROSS-COMPILE)$(CC) $(KBUILD_CFLAGS) -print-libgcc-file-name)
- 
- head-y := arch/$(ARCH)/platform/$(PLATFORM)/$(BOARD)/crt0_$(MODEL).o
--- 
-1.7.7.6
