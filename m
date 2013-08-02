@@ -1,176 +1,292 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752631Ab3HBNg4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 09:36:56 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:19075 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752102Ab3HBNgz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 09:36:55 -0400
-Message-ID: <201308021336.r72Dar3g012486@farm-0021.internal.tilera.com>
-From: Ken Steele <ken@tilera.com>
-Date: Thu, 1 Aug 2013 15:55:07 -0400
-Subject: [PATCH v2] tile: optimize strnlen using SIMD instructions
-To: <linux-kernel@vger.kernel.org>
-In-Reply-To: <CAMo8BfJEG1L125+pTq3Ke0mD__gm8u7mqJxUf9UkPXLpjBgrUg@mail.gmail.com>
+	id S1752744Ab3HBNig (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 09:38:36 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47580 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752661Ab3HBNie (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 09:38:34 -0400
+Date: Fri, 2 Aug 2013 15:38:32 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: lizefan@huawei.com, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Matt Helsley <matthltc@us.ibm.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Balbir Singh <bsingharora@gmail.com>
+Subject: Re: [PATCH 18/23] cgroup: make cgroup_task_iter remember the cgroup
+ being iterated
+Message-ID: <20130802133832.GF25432@dhcp22.suse.cz>
+References: <1375393801-4817-1-git-send-email-tj@kernel.org>
+ <1375393801-4817-19-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1375393801-4817-19-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using strlen as a model, add length checking to create strnlen.
+On Thu 01-08-13 17:49:56, Tejun Heo wrote:
+> Currently all cgroup_task_iter functions require @cgrp to be passed
+> in, which is superflous and increases chance of usage error.  Make
+> cgroup_task_iter remember the cgroup being iterated and drop @cgrp
+> argument from next and end functions.
+> 
+> This patch doesn't introduce any behavior differences.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Matt Helsley <matthltc@us.ibm.com>
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: Michal Hocko <mhocko@suse.cz>
+> Cc: Balbir Singh <bsingharora@gmail.com>
 
-Signed-off-by: Ken Steele <ken@tilera.com>
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
----
-v2 of the patch adds an "& 31" to the shift count for 32-bit strnlen.
-It turns out this doesn't affect the generated code at all, and it's
-technically more correct, as pointed out by Max Filippov <jcmvbkbc@gmail.com>.
+For memcg part
+Acked-by: Michal Hocko <mhocko@suse.cz>
 
- arch/tile/include/asm/string.h |  2 ++
- arch/tile/lib/Makefile         |  2 +-
- arch/tile/lib/strnlen_32.c     | 47 +++++++++++++++++++++++++++++++++++++++++
- arch/tile/lib/strnlen_64.c     | 48 ++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 98 insertions(+), 1 deletion(-)
- create mode 100644 arch/tile/lib/strnlen_32.c
- create mode 100644 arch/tile/lib/strnlen_64.c
+> ---
+>  include/linux/cgroup.h  |  6 +++---
+>  kernel/cgroup.c         | 32 +++++++++++++++-----------------
+>  kernel/cgroup_freezer.c | 12 ++++++------
+>  mm/memcontrol.c         |  6 +++---
+>  4 files changed, 27 insertions(+), 29 deletions(-)
+> 
+> diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+> index 4478336..2b10152 100644
+> --- a/include/linux/cgroup.h
+> +++ b/include/linux/cgroup.h
+> @@ -892,14 +892,14 @@ css_next_descendant_post(struct cgroup_subsys_state *pos,
+>  
+>  /* A cgroup_task_iter should be treated as an opaque object */
+>  struct cgroup_task_iter {
+> +	struct cgroup			*origin_cgrp;
+>  	struct list_head		*cset_link;
+>  	struct list_head		*task;
+>  };
+>  
+>  void cgroup_task_iter_start(struct cgroup *cgrp, struct cgroup_task_iter *it);
+> -struct task_struct *cgroup_task_iter_next(struct cgroup *cgrp,
+> -					  struct cgroup_task_iter *it);
+> -void cgroup_task_iter_end(struct cgroup *cgrp, struct cgroup_task_iter *it);
+> +struct task_struct *cgroup_task_iter_next(struct cgroup_task_iter *it);
+> +void cgroup_task_iter_end(struct cgroup_task_iter *it);
+>  int cgroup_scan_tasks(struct cgroup_scanner *scan);
+>  int cgroup_attach_task_all(struct task_struct *from, struct task_struct *);
+>  int cgroup_transfer_tasks(struct cgroup *to, struct cgroup *from);
+> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+> index 7a4f89b..7adaaa6 100644
+> --- a/kernel/cgroup.c
+> +++ b/kernel/cgroup.c
+> @@ -3198,13 +3198,11 @@ EXPORT_SYMBOL_GPL(css_next_descendant_post);
+>  
+>  /**
+>   * cgroup_advance_task_iter - advance a task itererator to the next css_set
+> - * @cgrp: the cgroup to walk tasks of
+>   * @it: the iterator to advance
+>   *
+>   * Advance @it to the next css_set to walk.
+>   */
+> -static void cgroup_advance_task_iter(struct cgroup *cgrp,
+> -				     struct cgroup_task_iter *it)
+> +static void cgroup_advance_task_iter(struct cgroup_task_iter *it)
+>  {
+>  	struct list_head *l = it->cset_link;
+>  	struct cgrp_cset_link *link;
+> @@ -3213,7 +3211,7 @@ static void cgroup_advance_task_iter(struct cgroup *cgrp,
+>  	/* Advance to the next non-empty css_set */
+>  	do {
+>  		l = l->next;
+> -		if (l == &cgrp->cset_links) {
+> +		if (l == &it->origin_cgrp->cset_links) {
+>  			it->cset_link = NULL;
+>  			return;
+>  		}
+> @@ -3250,21 +3248,22 @@ void cgroup_task_iter_start(struct cgroup *cgrp, struct cgroup_task_iter *it)
+>  		cgroup_enable_task_cg_lists();
+>  
+>  	read_lock(&css_set_lock);
+> +
+> +	it->origin_cgrp = cgrp;
+>  	it->cset_link = &cgrp->cset_links;
+> -	cgroup_advance_task_iter(cgrp, it);
+> +
+> +	cgroup_advance_task_iter(it);
+>  }
+>  
+>  /**
+>   * cgroup_task_iter_next - return the next task for the iterator
+> - * @cgrp: the cgroup to walk tasks of
+>   * @it: the task iterator being iterated
+>   *
+>   * The "next" function for task iteration.  @it should have been
+>   * initialized via cgroup_task_iter_start().  Returns NULL when the
+>   * iteration reaches the end.
+>   */
+> -struct task_struct *cgroup_task_iter_next(struct cgroup *cgrp,
+> -					  struct cgroup_task_iter *it)
+> +struct task_struct *cgroup_task_iter_next(struct cgroup_task_iter *it)
+>  {
+>  	struct task_struct *res;
+>  	struct list_head *l = it->task;
+> @@ -3282,7 +3281,7 @@ struct task_struct *cgroup_task_iter_next(struct cgroup *cgrp,
+>  		 * We reached the end of this task list - move on to the
+>  		 * next cgrp_cset_link.
+>  		 */
+> -		cgroup_advance_task_iter(cgrp, it);
+> +		cgroup_advance_task_iter(it);
+>  	} else {
+>  		it->task = l;
+>  	}
+> @@ -3291,12 +3290,11 @@ struct task_struct *cgroup_task_iter_next(struct cgroup *cgrp,
+>  
+>  /**
+>   * cgroup_task_iter_end - finish task iteration
+> - * @cgrp: the cgroup to walk tasks of
+>   * @it: the task iterator to finish
+>   *
+>   * Finish task iteration started by cgroup_task_iter_start().
+>   */
+> -void cgroup_task_iter_end(struct cgroup *cgrp, struct cgroup_task_iter *it)
+> +void cgroup_task_iter_end(struct cgroup_task_iter *it)
+>  	__releases(css_set_lock)
+>  {
+>  	read_unlock(&css_set_lock);
+> @@ -3402,7 +3400,7 @@ int cgroup_scan_tasks(struct cgroup_scanner *scan)
+>  	 */
+>  	heap->size = 0;
+>  	cgroup_task_iter_start(scan->cgrp, &it);
+> -	while ((p = cgroup_task_iter_next(scan->cgrp, &it))) {
+> +	while ((p = cgroup_task_iter_next(&it))) {
+>  		/*
+>  		 * Only affect tasks that qualify per the caller's callback,
+>  		 * if he provided one
+> @@ -3435,7 +3433,7 @@ int cgroup_scan_tasks(struct cgroup_scanner *scan)
+>  		 * the heap and wasn't inserted
+>  		 */
+>  	}
+> -	cgroup_task_iter_end(scan->cgrp, &it);
+> +	cgroup_task_iter_end(&it);
+>  
+>  	if (heap->size) {
+>  		for (i = 0; i < heap->size; i++) {
+> @@ -3657,7 +3655,7 @@ static int pidlist_array_load(struct cgroup *cgrp, enum cgroup_filetype type,
+>  		return -ENOMEM;
+>  	/* now, populate the array */
+>  	cgroup_task_iter_start(cgrp, &it);
+> -	while ((tsk = cgroup_task_iter_next(cgrp, &it))) {
+> +	while ((tsk = cgroup_task_iter_next(&it))) {
+>  		if (unlikely(n == length))
+>  			break;
+>  		/* get tgid or pid for procs or tasks file respectively */
+> @@ -3668,7 +3666,7 @@ static int pidlist_array_load(struct cgroup *cgrp, enum cgroup_filetype type,
+>  		if (pid > 0) /* make sure to only use valid results */
+>  			array[n++] = pid;
+>  	}
+> -	cgroup_task_iter_end(cgrp, &it);
+> +	cgroup_task_iter_end(&it);
+>  	length = n;
+>  	/* now sort & (if procs) strip out duplicates */
+>  	sort(array, length, sizeof(pid_t), cmppid, NULL);
+> @@ -3717,7 +3715,7 @@ int cgroupstats_build(struct cgroupstats *stats, struct dentry *dentry)
+>  	cgrp = dentry->d_fsdata;
+>  
+>  	cgroup_task_iter_start(cgrp, &it);
+> -	while ((tsk = cgroup_task_iter_next(cgrp, &it))) {
+> +	while ((tsk = cgroup_task_iter_next(&it))) {
+>  		switch (tsk->state) {
+>  		case TASK_RUNNING:
+>  			stats->nr_running++;
+> @@ -3737,7 +3735,7 @@ int cgroupstats_build(struct cgroupstats *stats, struct dentry *dentry)
+>  			break;
+>  		}
+>  	}
+> -	cgroup_task_iter_end(cgrp, &it);
+> +	cgroup_task_iter_end(&it);
+>  
+>  err:
+>  	return ret;
+> diff --git a/kernel/cgroup_freezer.c b/kernel/cgroup_freezer.c
+> index c9177f8..e0ab9bf 100644
+> --- a/kernel/cgroup_freezer.c
+> +++ b/kernel/cgroup_freezer.c
+> @@ -281,7 +281,7 @@ static void update_if_frozen(struct cgroup_subsys_state *css)
+>  	/* are all tasks frozen? */
+>  	cgroup_task_iter_start(css->cgroup, &it);
+>  
+> -	while ((task = cgroup_task_iter_next(css->cgroup, &it))) {
+> +	while ((task = cgroup_task_iter_next(&it))) {
+>  		if (freezing(task)) {
+>  			/*
+>  			 * freezer_should_skip() indicates that the task
+> @@ -296,7 +296,7 @@ static void update_if_frozen(struct cgroup_subsys_state *css)
+>  
+>  	freezer->state |= CGROUP_FROZEN;
+>  out_iter_end:
+> -	cgroup_task_iter_end(css->cgroup, &it);
+> +	cgroup_task_iter_end(&it);
+>  out_unlock:
+>  	spin_unlock_irq(&freezer->lock);
+>  }
+> @@ -327,9 +327,9 @@ static void freeze_cgroup(struct freezer *freezer)
+>  	struct task_struct *task;
+>  
+>  	cgroup_task_iter_start(cgroup, &it);
+> -	while ((task = cgroup_task_iter_next(cgroup, &it)))
+> +	while ((task = cgroup_task_iter_next(&it)))
+>  		freeze_task(task);
+> -	cgroup_task_iter_end(cgroup, &it);
+> +	cgroup_task_iter_end(&it);
+>  }
+>  
+>  static void unfreeze_cgroup(struct freezer *freezer)
+> @@ -339,9 +339,9 @@ static void unfreeze_cgroup(struct freezer *freezer)
+>  	struct task_struct *task;
+>  
+>  	cgroup_task_iter_start(cgroup, &it);
+> -	while ((task = cgroup_task_iter_next(cgroup, &it)))
+> +	while ((task = cgroup_task_iter_next(&it)))
+>  		__thaw_task(task);
+> -	cgroup_task_iter_end(cgroup, &it);
+> +	cgroup_task_iter_end(&it);
+>  }
+>  
+>  /**
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 00b055d..5a5f4dc 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -1804,7 +1804,7 @@ static void mem_cgroup_out_of_memory(struct mem_cgroup *memcg, gfp_t gfp_mask,
+>  		struct task_struct *task;
+>  
+>  		cgroup_task_iter_start(cgroup, &it);
+> -		while ((task = cgroup_task_iter_next(cgroup, &it))) {
+> +		while ((task = cgroup_task_iter_next(&it))) {
+>  			switch (oom_scan_process_thread(task, totalpages, NULL,
+>  							false)) {
+>  			case OOM_SCAN_SELECT:
+> @@ -1817,7 +1817,7 @@ static void mem_cgroup_out_of_memory(struct mem_cgroup *memcg, gfp_t gfp_mask,
+>  			case OOM_SCAN_CONTINUE:
+>  				continue;
+>  			case OOM_SCAN_ABORT:
+> -				cgroup_task_iter_end(cgroup, &it);
+> +				cgroup_task_iter_end(&it);
+>  				mem_cgroup_iter_break(memcg, iter);
+>  				if (chosen)
+>  					put_task_struct(chosen);
+> @@ -1834,7 +1834,7 @@ static void mem_cgroup_out_of_memory(struct mem_cgroup *memcg, gfp_t gfp_mask,
+>  				get_task_struct(chosen);
+>  			}
+>  		}
+> -		cgroup_task_iter_end(cgroup, &it);
+> +		cgroup_task_iter_end(&it);
+>  	}
+>  
+>  	if (!chosen)
+> -- 
+> 1.8.3.1
+> 
 
-diff --git a/arch/tile/include/asm/string.h b/arch/tile/include/asm/string.h
-index 7535cf1..92b271b 100644
---- a/arch/tile/include/asm/string.h
-+++ b/arch/tile/include/asm/string.h
-@@ -21,8 +21,10 @@
- #define __HAVE_ARCH_MEMMOVE
- #define __HAVE_ARCH_STRCHR
- #define __HAVE_ARCH_STRLEN
-+#define __HAVE_ARCH_STRNLEN
- 
- extern __kernel_size_t strlen(const char *);
-+extern __kernel_size_t strnlen(const char *, __kernel_size_t);
- extern char *strchr(const char *s, int c);
- extern void *memchr(const void *s, int c, size_t n);
- extern void *memset(void *, int, __kernel_size_t);
-diff --git a/arch/tile/lib/Makefile b/arch/tile/lib/Makefile
-index 985f598..5d84437 100644
---- a/arch/tile/lib/Makefile
-+++ b/arch/tile/lib/Makefile
-@@ -4,7 +4,7 @@
- 
- lib-y = cacheflush.o checksum.o cpumask.o delay.o uaccess.o \
- 	memmove.o memcpy_$(BITS).o memchr_$(BITS).o memset_$(BITS).o \
--	strchr_$(BITS).o strlen_$(BITS).o
-+	strchr_$(BITS).o strlen_$(BITS).o strnlen_$(BITS).o
- 
- ifeq ($(CONFIG_TILEGX),y)
- CFLAGS_REMOVE_memcpy_user_64.o = -fno-omit-frame-pointer
-diff --git a/arch/tile/lib/strnlen_32.c b/arch/tile/lib/strnlen_32.c
-new file mode 100644
-index 0000000..1434141
---- /dev/null
-+++ b/arch/tile/lib/strnlen_32.c
-@@ -0,0 +1,47 @@
-+/*
-+ * Copyright 2013 Tilera Corporation. All Rights Reserved.
-+ *
-+ *   This program is free software; you can redistribute it and/or
-+ *   modify it under the terms of the GNU General Public License
-+ *   as published by the Free Software Foundation, version 2.
-+ *
-+ *   This program is distributed in the hope that it will be useful, but
-+ *   WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
-+ *   NON INFRINGEMENT.  See the GNU General Public License for
-+ *   more details.
-+ */
-+
-+#include <linux/types.h>
-+#include <linux/string.h>
-+#include <linux/module.h>
-+
-+size_t strnlen(const char *s, size_t count)
-+{
-+	/* Get an aligned pointer. */
-+	const uintptr_t s_int = (uintptr_t) s;
-+	const uint32_t *p = (const uint32_t *)(s_int & -4);
-+	size_t bytes_read = sizeof(*p) - (s_int & (sizeof(*p) - 1));
-+	size_t len;
-+	uint32_t v, bits;
-+
-+	/* Avoid page fault risk by not reading any bytes when count is 0. */
-+	if (count == 0)
-+		return 0;
-+
-+	/* Read first word, but force bytes before the string to be nonzero. */
-+	v = *p | ((1 << ((s_int << 3) & 31)) - 1);
-+
-+	while ((bits = __insn_seqb(v, 0)) == 0) {
-+		if (bytes_read >= count) {
-+			/* Read COUNT bytes and didn't find the terminator. */
-+			return count;
-+		}
-+		v = *++p;
-+		bytes_read += sizeof(v);
-+	}
-+
-+	len = ((const char *) p) + (__insn_ctz(bits) >> 3) - s;
-+	return (len < count ? len : count);
-+}
-+EXPORT_SYMBOL(strnlen);
-diff --git a/arch/tile/lib/strnlen_64.c b/arch/tile/lib/strnlen_64.c
-new file mode 100644
-index 0000000..2e8de6a
---- /dev/null
-+++ b/arch/tile/lib/strnlen_64.c
-@@ -0,0 +1,48 @@
-+/*
-+ * Copyright 2013 Tilera Corporation. All Rights Reserved.
-+ *
-+ *   This program is free software; you can redistribute it and/or
-+ *   modify it under the terms of the GNU General Public License
-+ *   as published by the Free Software Foundation, version 2.
-+ *
-+ *   This program is distributed in the hope that it will be useful, but
-+ *   WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
-+ *   NON INFRINGEMENT.  See the GNU General Public License for
-+ *   more details.
-+ */
-+
-+#include <linux/types.h>
-+#include <linux/string.h>
-+#include <linux/module.h>
-+#include "string-endian.h"
-+
-+size_t strnlen(const char *s, size_t count)
-+{
-+	/* Get an aligned pointer. */
-+	const uintptr_t s_int = (uintptr_t) s;
-+	const uint64_t *p = (const uint64_t *)(s_int & -8);
-+	size_t bytes_read = sizeof(*p) - (s_int & (sizeof(*p) - 1));
-+	size_t len;
-+	uint64_t v, bits;
-+
-+	/* Avoid page fault risk by not reading any bytes when count is 0. */
-+	if (count == 0)
-+		return 0;
-+
-+	/* Read and MASK the first word. */
-+	v = *p | MASK(s_int);
-+
-+	while ((bits = __insn_v1cmpeqi(v, 0)) == 0) {
-+		if (bytes_read >= count) {
-+			/* Read COUNT bytes and didn't find the terminator. */
-+			return count;
-+		}
-+		v = *++p;
-+		bytes_read += sizeof(v);
-+	}
-+
-+	len = ((const char *) p) + (CFZ(bits) >> 3) - s;
-+	return (len < count ? len : count);
-+}
-+EXPORT_SYMBOL(strnlen);
 -- 
-1.8.3.1
-
+Michal Hocko
+SUSE Labs
