@@ -1,99 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754491Ab3HBQMP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 12:12:15 -0400
-Received: from na3sys010aog102.obsmtp.com ([74.125.245.72]:35757 "HELO
-	na3sys010aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754386Ab3HBQMM (ORCPT
+	id S1754548Ab3HBQNE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 12:13:04 -0400
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:61630 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754426Ab3HBQNB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 12:12:12 -0400
-From: Roland Dreier <roland@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] please pull infiniband.git
-Date: Fri,  2 Aug 2013 09:12:05 -0700
-Message-Id: <1375459925-585-1-git-send-email-roland@kernel.org>
-X-Mailer: git-send-email 1.8.3.2
+	Fri, 2 Aug 2013 12:13:01 -0400
+Date: Fri, 02 Aug 2013 09:13:00 -0700 (PDT)
+Cc: linux-kernel@vger.kernel.org
+To: Andrew Morton <akpm@linux-foundation.org>
+Message-Id: <1375459978.687125@landley.net>
+From: Rob Landley <rob@landley.net>
+Subject: [PATCH] Tweak Documentation MAINTAINERS entry.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+The device tree bindings are well-maintained by the device tree guys and
+tend to swamp linux-doc with traffic we can't really say much about (it's
+all domain-specific knowledge), so add an X: entry for it.
 
-Please pull from
+Similarly, non-english documentation can't be maintained by people who
+don't speak those languages. (I argued that translations belonged on the
+web when they were proposed, but Greg KH overruled me.)
 
-    git://git.kernel.org/pub/scm/linux/kernel/git/roland/infiniband.git tags/rdma-for-linus
+I habitually ignore these, and cutting down on kernel-doc traffic should
+make the rest of the list easier to follow.
 
-----------------------------------------------------------------
+Signed-off-by: Rob Landley <rob@landley.net>
+---
 
-InfiniBand/RDMA fixes for 3.11-rc:
- - Fixes for the newly merged mlx5 hardware driver
- - Stack info leak fixes from Dan Carpenter
- - Fixes for pkey table handling with SR-IOV
- - A few other small things
+ MAINTAINERS |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-----------------------------------------------------------------
-Andi Shyti (1):
-      mlx5_core: Variable may be used uninitialized
-
-Dan Carpenter (6):
-      RDMA/cxgb4: Fix stack info leak in c4iw_create_qp()
-      RDMA/ocrdma: Fix several stack info leaks
-      RDMA/nes: Fix info leaks in nes_create_qp() and nes_create_cq()
-      RDMA/cxgb3: Fix stack info leak in iwch_create_cq()
-      IB/mlx5: Fix stack info leak in mlx5_ib_alloc_ucontext()
-      mlx5_core: Fix use after free in mlx5_cmd_comp_handler()
-
-Eli Cohen (1):
-      mlx5_core: Implement new initialization sequence
-
-Erez Shitrit (1):
-      IPoIB: Fix pkey change flow for virtualization environments
-
-Jack Morgenstein (2):
-      IB/mlx4: Use default pkey when creating tunnel QPs
-      IB/core: Create QP1 using the pkey index which contains the default pkey
-
-Mike Marciniszyn (1):
-      IB/qib: Add err_decode() call for ring dump
-
-Or Gerlitz (1):
-      IPoIB: Make sure child devices use valid/proper pkeys
-
-Paul Bolle (1):
-      RDMA/cma: Fix gcc warning
-
-Roland Dreier (3):
-      RDMA/ocrdma: Remove unused include
-      Revert "RDMA/nes: Fix compilation error when nes_debug is enabled"
-      Merge branches 'cma', 'cxgb3', 'cxgb4', 'ipoib', 'misc', 'mlx4', 'mlx5', 'nes', 'ocrdma' and 'qib' into for-next
-
-Sean Hefty (2):
-      RDMA/cma: Fix accessing invalid private data for UD
-      RDMA/cma: Only call cma_save_ib_info() for CM REQs
-
-Wei Yongjun (1):
-      IB/mlx5: Fix error return code in init_one()
-
- drivers/infiniband/core/cma.c                      | 29 +++++----
- drivers/infiniband/core/mad.c                      |  8 ++-
- drivers/infiniband/hw/cxgb3/iwch_provider.c        |  1 +
- drivers/infiniband/hw/cxgb4/qp.c                   |  2 +
- drivers/infiniband/hw/mlx4/mad.c                   | 10 ++-
- drivers/infiniband/hw/mlx5/main.c                  | 11 ++--
- drivers/infiniband/hw/mlx5/qp.c                    |  2 +-
- drivers/infiniband/hw/nes/nes_hw.c                 |  4 +-
- drivers/infiniband/hw/nes/nes_verbs.c              |  3 +-
- drivers/infiniband/hw/ocrdma/ocrdma_ah.c           |  1 -
- drivers/infiniband/hw/ocrdma/ocrdma_verbs.c        |  5 +-
- drivers/infiniband/hw/qib/qib_iba7322.c            |  2 +
- drivers/infiniband/hw/qib/qib_sdma.c               |  2 +-
- drivers/infiniband/ulp/ipoib/ipoib_ib.c            | 76 ++++++++++++++++++----
- drivers/infiniband/ulp/ipoib/ipoib_main.c          |  2 +-
- drivers/infiniband/ulp/ipoib/ipoib_netlink.c       |  9 +++
- drivers/net/ethernet/mellanox/mlx5/core/cmd.c      | 19 ++++--
- drivers/net/ethernet/mellanox/mlx5/core/main.c     | 69 ++++++++++++++++++--
- .../net/ethernet/mellanox/mlx5/core/pagealloc.c    | 20 ++++--
- include/linux/mlx5/device.h                        | 20 ++++++
- include/linux/mlx5/driver.h                        |  4 +-
- 21 files changed, 239 insertions(+), 60 deletions(-)
+diff --git a/MAINTAINERS b/MAINTAINERS
+index d83f70f..6b752df 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -2664,6 +2664,10 @@ L:	linux-doc@vger.kernel.org
+ T:	TBD
+ S:	Maintained
+ F:	Documentation/
++X:	Documentation/zh_CN
++X:	Documentation/ko_KR
++X:	Documentation/ja_JP
++X:	Documentation/devicetree/bindings
+ 
+ DOUBLETALK DRIVER
+ M:	"James R. Van Zandt" <jrv@vanzandt.mv.com>
