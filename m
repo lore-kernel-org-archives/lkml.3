@@ -1,47 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754655Ab3HBQPM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 12:15:12 -0400
-Received: from fieldses.org ([174.143.236.118]:39263 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754431Ab3HBQPJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 12:15:09 -0400
-Date: Fri, 2 Aug 2013 12:15:08 -0400
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: nfsd bugfixes for 3.11
-Message-ID: <20130802161508.GM17581@fieldses.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-From: "J. Bruce Fields" <bfields@fieldses.org>
+	id S1754587Ab3HBQVg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 12:21:36 -0400
+Received: from s3.sipsolutions.net ([144.76.43.152]:59519 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754269Ab3HBQVf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 12:21:35 -0400
+Message-ID: <1375460484.18144.11.camel@jlt4.sipsolutions.net>
+Subject: Re: Slow firmware timeouts again (Re: [3.11 regression?] iwlwifi
+ firmware takes two minutes to load)
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Linux Wireless List <linux-wireless@vger.kernel.org>,
+        Intel Linux Wireless <ilw@linux.intel.com>,
+        linux-hotplug@vger.kernel.org, linux-kernel@vger.kernel.org,
+        systemd-devel@lists.freedesktop.org
+Date: Fri, 02 Aug 2013 18:21:24 +0200
+In-Reply-To: <CALCETrU+C+sO8tJ0X5G4RDVLV=kHQQHurOnEQCoqbAouh60dng@mail.gmail.com> (sfid-20130802_180506_433399_849260E2)
+References: <CALCETrU+C+sO8tJ0X5G4RDVLV=kHQQHurOnEQCoqbAouh60dng@mail.gmail.com>
+	 (sfid-20130802_180506_433399_849260E2)
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please pull some more nfsd bugfixes for 3.11 from
+On Fri, 2013-08-02 at 09:04 -0700, Andy Lutomirski wrote:
 
-  git://linux-nfs.org/~bfields/linux.git for-3.11
+> > It wasn't exactly fixed and it's really more of a userspace problem - we
+> > probably request firmware version 8, and then it takes 30 seconds to
+> > time out for each of 8,7,6,5, after which the next request for 4 is
+> > successful.
+> 
+> Why's it requesting those firmwares?  They don't seem to exist on
+> intellinuxwireless.org.
 
-Most of this is due to a screwup on my part--some gss-proxy crashes got
-fixed before the merge window but somehow never made it out of a
-temporary git repo on my laptop....
+Well for one you've never even mentioned what device you have, and then
+also it's not requesting 8/7 only 6,5,4 -- I guess the timeout was
+increased to 60 seconds (or I'm remembering wrong and it always was? I
+thought it was 30s)
 
---b.
+johannes
 
-----------------------------------------------------------------
-J. Bruce Fields (4):
-      svcrpc: fix gss_rpc_upcall create error
-      svcrpc: fix gss-proxy xdr decoding oops
-      svcrpc: fix kfree oops in gss-proxy code
-      svcrpc: set cr_gss_mech from gss-proxy as well as legacy upcall
-
-NeilBrown (1):
-      NFSD/sunrpc: avoid deadlock on TCP connection due to memory pressure.
-
- net/sunrpc/auth_gss/gss_rpc_upcall.c |    3 +--
- net/sunrpc/auth_gss/gss_rpc_xdr.c    |    9 +++++----
- net/sunrpc/auth_gss/svcauth_gss.c    |    2 +-
- net/sunrpc/svcsock.c                 |    4 +++-
- 4 files changed, 10 insertions(+), 8 deletions(-)
