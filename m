@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755962Ab3HBTdH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 15:33:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38948 "EHLO mx1.redhat.com"
+	id S1756050Ab3HBTdM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 15:33:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1350 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755891Ab3HBTdD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 15:33:03 -0400
-Date: Fri, 2 Aug 2013 21:27:36 +0200
+	id S1755891Ab3HBTdH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 15:33:07 -0400
+Date: Fri, 2 Aug 2013 21:27:41 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Andrew Morton <akpm@linux-foundation.org>,
         Zach Levis <zml@linux.vnet.ibm.com>
 Cc: Al Viro <viro@ZenIV.linux.org.uk>, Evgeniy Polyakov <zbr@ioremap.net>,
         Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/5] exec: kill ->load_binary != NULL check in
-	search_binary_handler()
-Message-ID: <20130802192736.GA9568@redhat.com>
+Subject: [PATCH 4/5] exec: don't retry if request_module() fails
+Message-ID: <20130802192741.GA9579@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -24,49 +23,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-search_binary_handler() checks ->load_binary != NULL for no reason,
-this method should be always defined. Turn this check into WARN_ON()
-and move it into __register_binfmt().
+A separate one-liner for better documentation.
 
-Also, kill the function pointer. The current code looks confusing,
-as if ->load_binary can go away after read_unlock(&binfmt_lock).
-But we rely on module_get(fmt->module), this fmt can't be changed
-or unregistered, otherwise this code is buggy anyway.
+It doesn't make sense to retry if request_module() fails to exec
+/sbin/modprobe, add the addition "request_module() < 0" check.
+
+However, this logic still doesn't look exactly right:
+
+1. It would be better to check "request_module() != 0", the user
+   space modprobe process should report the correct exit code.
+   But I didn't dare to add the user-visible change.
+
+2. The whole ENOEXEC logic looks suboptimal. Suppose that we try
+   to exec a "#!path-to-unsupported-binary" script. In this case
+   request_module() + "retry" will be done twice: first by the
+   "depth == 1" code, and then again by the "depth == 0" caller
+   which doesn't make sense.
+
+3. And note that in the case above bprm->buf was already changed
+   by load_script()->prepare_binprm(), so this looks even more
+   ugly.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- fs/exec.c |    7 +++----
- 1 files changed, 3 insertions(+), 4 deletions(-)
+ fs/exec.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
 diff --git a/fs/exec.c b/fs/exec.c
-index ef70320..9f41e7d 100644
+index 48344a2..d9fd32c 100644
 --- a/fs/exec.c
 +++ b/fs/exec.c
-@@ -74,6 +74,8 @@ static DEFINE_RWLOCK(binfmt_lock);
- void __register_binfmt(struct linux_binfmt * fmt, int insert)
- {
- 	BUG_ON(!fmt);
-+	if (WARN_ON(!fmt->load_binary))
-+		return;
- 	write_lock(&binfmt_lock);
- 	insert ? list_add(&fmt->lh, &formats) :
- 		 list_add_tail(&fmt->lh, &formats);
-@@ -1389,14 +1391,11 @@ int search_binary_handler(struct linux_binprm *bprm)
- 	for (try=0; try<2; try++) {
- 		read_lock(&binfmt_lock);
- 		list_for_each_entry(fmt, &formats, lh) {
--			int (*fn)(struct linux_binprm *) = fmt->load_binary;
--			if (!fn)
--				continue;
- 			if (!try_module_get(fmt->module))
- 				continue;
- 			read_unlock(&binfmt_lock);
- 			bprm->recursion_depth++;
--			retval = fn(bprm);
-+			retval = fmt->load_binary(bprm);
- 			bprm->recursion_depth--;
- 			if (retval >= 0) {
- 				put_binfmt(fmt);
+@@ -1418,7 +1418,8 @@ int search_binary_handler(struct linux_binprm *bprm)
+ 		if (printable(bprm->buf[0]) && printable(bprm->buf[1]) &&
+ 		    printable(bprm->buf[2]) && printable(bprm->buf[3]))
+ 			return retval;
+-		request_module("binfmt-%04x", *(ushort *)(bprm->buf + 2));
++		if (request_module("binfmt-%04x", *(ushort *)(bprm->buf + 2)) < 0)
++			return retval;
+ 		need_retry = false;
+ 		goto retry;
+ 	}
 -- 
 1.5.5.1
 
