@@ -1,54 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753317Ab3HBEQT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 00:16:19 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:30218 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751881Ab3HBEQS (ORCPT
+	id S1753163Ab3HBESh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 00:18:37 -0400
+Received: from mail-la0-f50.google.com ([209.85.215.50]:65154 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750853Ab3HBESg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 00:16:18 -0400
-X-Spam-Score: -100.8
-Message-ID: <51FB3251.5090603@asianux.com>
-Date: Fri, 02 Aug 2013 12:15:13 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Fri, 2 Aug 2013 00:18:36 -0400
 MIME-Version: 1.0
-To: Yoshinori Sato <ysato@users.sourceforge.jp>
-CC: Arnd Bergmann <arnd@arndb.de>, "dhowells@redhat.com" <dhowells@redhat.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>, davej@redhat.com,
-        David Sharp <dhsharp@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] h8300: include: asm: add "vga.h" in Kbuild
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <51FB118D.8040205@gmail.com>
+References: <1375400641-1694-1-git-send-email-felipe.contreras@gmail.com>
+	<1375400641-1694-3-git-send-email-felipe.contreras@gmail.com>
+	<51FB118D.8040205@gmail.com>
+Date: Thu, 1 Aug 2013 23:18:34 -0500
+Message-ID: <CAMP44s2KijzXcYyU_fOD2YB4rU5wuFCfte4fR3HXoriTKE2wuA@mail.gmail.com>
+Subject: Re: [PATCH 2/3] acpi: video: trivial style cleanups
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: Aaron Lu <aaron.lwe@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <lenb@kernel.org>,
+        Zhang Rui <rui.zhang@intel.com>, Jiri Kosina <trivial@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Need add "vga.h" in Kbuild, or can not pass compiling, the related
-error is:
+On Thu, Aug 1, 2013 at 8:55 PM, Aaron Lu <aaron.lwe@gmail.com> wrote:
+> On 08/02/2013 07:44 AM, Felipe Contreras wrote:
+>> Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
+>
+> Change log please.
 
-    CC      drivers/tty/tty_io.o
-  In file included from include/linux/selection.h:11:0,
-                   from drivers/tty/tty_io.c:103:
-  include/linux/vt_buffer.h:18:21: fatal error: asm/vga.h: No such file or directory
-   #include <asm/vga.h>
-                       ^
+You mean a commit message? That's what it's called in Git lingo, and
+it's right there:
 
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
----
- arch/h8300/include/asm/Kbuild |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+acpi: video: trivial style cleanups
 
-diff --git a/arch/h8300/include/asm/Kbuild b/arch/h8300/include/asm/Kbuild
-index 8ada3cf..f10523e 100644
---- a/arch/h8300/include/asm/Kbuild
-+++ b/arch/h8300/include/asm/Kbuild
-@@ -5,4 +5,5 @@ generic-y += linkage.h
- generic-y += mmu.h
- generic-y += module.h
- generic-y += trace_clock.h
-+generic-y += vga.h
- generic-y += xor.h
+>> ---
+>>  drivers/acpi/video.c | 90 +++++++++++++++++++++++-----------------------------
+>>  1 file changed, 40 insertions(+), 50 deletions(-)
+>>
+>> diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
+>> index f021bf4..b07573f 100644
+>> --- a/drivers/acpi/video.c
+>> +++ b/drivers/acpi/video.c
+>> @@ -88,7 +88,7 @@ module_param(allow_duplicates, bool, 0644);
+>>  static bool use_bios_initial_backlight = 1;
+>>  module_param(use_bios_initial_backlight, bool, 0644);
+>>
+>> -static int register_count = 0;
+>> +static int register_count;
+>
+> This isn't a style clean up.
+
+It is.
+
+There's no difference before and after, the only difference is the style.
+
+ERROR: do not initialise statics to 0 or NULL
+#91: FILE: acpi/video.c:91:
++static int register_count = 0;
+
 -- 
-1.7.7.6
+Felipe Contreras
