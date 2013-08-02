@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753004Ab3HBKen (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:34:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37603 "EHLO
+	id S1753136Ab3HBKfH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:35:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37588 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751644Ab3HBKSG (ORCPT
+	with ESMTP id S1752370Ab3HBKRz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:18:06 -0400
+	Fri, 2 Aug 2013 06:17:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Felipe Balbi <balbi@ti.com>
-Subject: [ 12/39] usb: dwc3: gadget: dont prevent gadget from being probed if we fail
-Date: Fri,  2 Aug 2013 18:18:22 +0800
-Message-Id: <20130802101458.558398951@linuxfoundation.org>
+        George Cherian <george.cherian@ti.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [ 08/39] usb: host: xhci: Enable XHCI_SPURIOUS_SUCCESS for all controllers with xhci 1.0
+Date: Fri,  2 Aug 2013 18:18:18 +0800
+Message-Id: <20130802101457.958875213@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802101456.800497005@linuxfoundation.org>
 References: <20130802101456.800497005@linuxfoundation.org>
@@ -26,34 +27,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felipe Balbi <balbi@ti.com>
+From: George Cherian <george.cherian@ti.com>
 
-commit cdcedd6981194e511cc206887db661d016069d68 upstream.
+commit 07f3cb7c28bf3f4dd80bfb136cf45810c46ac474 upstream.
 
-In case we fail our ->udc_start() callback, we
-should be ready to accept another modprobe following
-the failed one.
+Xhci controllers with hci_version > 0.96 gives spurious success
+events on short packet completion. During webcam capture the
+"ERROR Transfer event TRB DMA ptr not part of current TD" was observed.
+The same application works fine with synopsis controllers hci_version 0.96.
+The same issue is seen with Intel Pantherpoint xhci controller. So enabling
+this quirk in xhci_gen_setup if controller verion is greater than 0.96.
+For xhci-pci move the quirk to much generic place xhci_gen_setup.
 
-We had forgotten to clear dwc->gadget_driver back
-to NULL and, because of that, we were preventing
-gadget driver modprobe from being retried.
+Note from Sarah:
 
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+The xHCI 1.0 spec changed how hardware handles short packets.  The HW
+will notify SW of the TRB where the short packet occurred, and it will
+also give a successful status for the last TRB in a TD (the one with the
+IOC flag set).  On the second successful status, that warning will be
+triggered in the driver.
+
+Software is now supposed to not assume the TD is not completed until it
+gets that last successful status.  That means we have a slight race
+condition, although it should have little practical impact.  This patch
+papers over that issue.
+
+It's on my long-term to-do list to fix this race condition, but it is a
+much more involved patch that will probably be too big for stable.  This
+patch is needed for stable to avoid serious log spam.
+
+This patch should be backported to kernels as old as 3.0, that
+contain the commit ad808333d8201d53075a11bc8dd83b81f3d68f0b "Intel xhci:
+Ignore spurious successful event."
+
+The patch will have to be modified for kernels older than 3.2, since
+that kernel added the xhci_gen_setup function for xhci platform devices.
+The correct conflict resolution for kernels older than 3.2 is to set
+XHCI_SPURIOUS_SUCCESS in xhci_pci_quirks for all xHCI 1.0 hosts.
+
+Signed-off-by: George Cherian <george.cherian@ti.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/dwc3/gadget.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/host/xhci-pci.c |    1 -
+ drivers/usb/host/xhci.c     |    7 +++++++
+ 2 files changed, 7 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/dwc3/gadget.c
-+++ b/drivers/usb/dwc3/gadget.c
-@@ -1393,6 +1393,7 @@ err1:
- 	__dwc3_gadget_ep_disable(dwc->eps[0]);
+--- a/drivers/usb/host/xhci-pci.c
++++ b/drivers/usb/host/xhci-pci.c
+@@ -89,7 +89,6 @@ static void xhci_pci_quirks(struct devic
+ 		xhci->quirks |= XHCI_AMD_PLL_FIX;
+ 	if (pdev->vendor == PCI_VENDOR_ID_INTEL &&
+ 			pdev->device == PCI_DEVICE_ID_INTEL_PANTHERPOINT_XHCI) {
+-		xhci->quirks |= XHCI_SPURIOUS_SUCCESS;
+ 		xhci->quirks |= XHCI_EP_LIMIT_QUIRK;
+ 		xhci->limit_active_eps = 64;
+ 		xhci->quirks |= XHCI_SW_BW_CHECKING;
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -4194,6 +4194,13 @@ int xhci_gen_setup(struct usb_hcd *hcd,
  
- err0:
-+	dwc->gadget_driver = NULL;
- 	spin_unlock_irqrestore(&dwc->lock, flags);
+ 	get_quirks(dev, xhci);
  
- 	return ret;
++	/* In xhci controllers which follow xhci 1.0 spec gives a spurious
++	 * success event after a short transfer. This quirk will ignore such
++	 * spurious event.
++	 */
++	if (xhci->hci_version > 0x96)
++		xhci->quirks |= XHCI_SPURIOUS_SUCCESS;
++
+ 	/* Make sure the HC is halted. */
+ 	retval = xhci_halt(xhci);
+ 	if (retval)
 
 
