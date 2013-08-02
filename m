@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030546Ab3HBKL6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:11:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37461 "EHLO
+	id S1030517Ab3HBKLr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:11:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37429 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030385Ab3HBKLy (ORCPT
+	with ESMTP id S1030385Ab3HBKLl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:11:54 -0400
+	Fri, 2 Aug 2013 06:11:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ondrej Zary <linux@rainbow-software.org>,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 70/99] drm/radeon: Another card with wrong primary dac adj
-Date: Fri,  2 Aug 2013 18:08:23 +0800
-Message-Id: <20130802100235.769272392@linuxfoundation.org>
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Mika Kuoppala <mika.kuoppala@intel.com>,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: [ 75/99] Partially revert "drm/i915: unconditionally use mt forcewake on hsw/ivb"
+Date: Fri,  2 Aug 2013 18:08:28 +0800
+Message-Id: <20130802100236.428324993@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802100225.478715166@linuxfoundation.org>
 References: <20130802100225.478715166@linuxfoundation.org>
@@ -27,57 +29,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ondrej Zary <linux@rainbow-software.org>
+From: Guenter Roeck <linux@roeck-us.net>
 
-commit f7929f34fa0e0bb6736a2484fdc07d77a1653081 upstream.
+commit c11e5f35ab490bd30591563816fbc83526521777 upstream.
 
-Hello,
-got another card with "too bright" problem:
-Sapphire Radeon VE 7000 DDR (VGA+S-Video)
+This patch partially reverts commit 36ec8f877481449bdfa072e6adf2060869e2b970 for
+IvyBridge CPUs.
 
-lspci -vnn:
-01:00.0 VGA compatible controller [0300]: Advanced Micro Devices [AMD] nee ATI RV100 QY [Radeon 7000/VE] [1002:5159] (prog-if 00 [VGA controller])
-        Subsystem: PC Partner Limited Sapphire Radeon VE 7000 DDR [174b:7c28]
+The original commit results in repeated 'Timed out waiting for forcewake old
+ack to clear' messages on a Supermicro C7H61 board (BIOS version 2.00 and 2.00b)
+with i7-3770K CPU. It ultimately results in a hangup if the system is highly
+loaded. Reverting the commit for IvyBridge CPUs fixes the issue.
 
-The patch below fixes the problem for this card.
-But I don't like the blacklist, couldn't some heuristic be used instead?
-The interesting thing is that the manufacturer is the same as the other card
-needing the same quirk. I wonder how many different types are broken this way.
+Issue a warning if the CPU is IvyBridge and mt forcewake is disabled, since
+this condition can result in secondary issues.
 
-The "wrong" ps2_pdac_adj value that comes from BIOS on this card is 0x300.
+v2: Only revert patch for Ivybridge CPUs
+    Issue info message if mt forcewake is disabled on Ivybridge
 
-====================
-drm/radeon: Add primary dac adj quirk for Sapphire Radeon VE 7000 DDR
-
-Values from BIOS are wrong, causing too bright colors.
-Use default values instead.
-
-Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=60541
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Mika Kuoppala <mika.kuoppala@intel.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=66139
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_combios.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/i915/intel_pm.c |   31 ++++++++++++++++++++++++++++++-
+ 1 file changed, 30 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/radeon_combios.c
-+++ b/drivers/gpu/drm/radeon/radeon_combios.c
-@@ -971,10 +971,14 @@ struct radeon_encoder_primary_dac *radeo
- 	}
- 
- 	/* quirks */
-+	/* Radeon 7000 (RV100) */
-+	if (((dev->pdev->device == 0x5159) &&
-+	    (dev->pdev->subsystem_vendor == 0x174B) &&
-+	    (dev->pdev->subsystem_device == 0x7c28)) ||
- 	/* Radeon 9100 (R200) */
--	if ((dev->pdev->device == 0x514D) &&
-+	   ((dev->pdev->device == 0x514D) &&
- 	    (dev->pdev->subsystem_vendor == 0x174B) &&
--	    (dev->pdev->subsystem_device == 0x7149)) {
-+	    (dev->pdev->subsystem_device == 0x7149))) {
- 		/* vbios value is bad, use the default */
- 		found = 0;
- 	}
+--- a/drivers/gpu/drm/i915/intel_pm.c
++++ b/drivers/gpu/drm/i915/intel_pm.c
+@@ -4510,9 +4510,38 @@ void intel_gt_init(struct drm_device *de
+ 	if (IS_VALLEYVIEW(dev)) {
+ 		dev_priv->gt.force_wake_get = vlv_force_wake_get;
+ 		dev_priv->gt.force_wake_put = vlv_force_wake_put;
+-	} else if (IS_IVYBRIDGE(dev) || IS_HASWELL(dev)) {
++	} else if (IS_HASWELL(dev)) {
+ 		dev_priv->gt.force_wake_get = __gen6_gt_force_wake_mt_get;
+ 		dev_priv->gt.force_wake_put = __gen6_gt_force_wake_mt_put;
++	} else if (IS_IVYBRIDGE(dev)) {
++		u32 ecobus;
++
++		/* IVB configs may use multi-threaded forcewake */
++
++		/* A small trick here - if the bios hasn't configured
++		 * MT forcewake, and if the device is in RC6, then
++		 * force_wake_mt_get will not wake the device and the
++		 * ECOBUS read will return zero. Which will be
++		 * (correctly) interpreted by the test below as MT
++		 * forcewake being disabled.
++		 */
++		mutex_lock(&dev->struct_mutex);
++		__gen6_gt_force_wake_mt_get(dev_priv);
++		ecobus = I915_READ_NOTRACE(ECOBUS);
++		__gen6_gt_force_wake_mt_put(dev_priv);
++		mutex_unlock(&dev->struct_mutex);
++
++		if (ecobus & FORCEWAKE_MT_ENABLE) {
++			dev_priv->gt.force_wake_get =
++						__gen6_gt_force_wake_mt_get;
++			dev_priv->gt.force_wake_put =
++						__gen6_gt_force_wake_mt_put;
++		} else {
++			DRM_INFO("No MT forcewake available on Ivybridge, this can result in issues\n");
++			DRM_INFO("when using vblank-synced partial screen updates.\n");
++			dev_priv->gt.force_wake_get = __gen6_gt_force_wake_get;
++			dev_priv->gt.force_wake_put = __gen6_gt_force_wake_put;
++		}
+ 	} else if (IS_GEN6(dev)) {
+ 		dev_priv->gt.force_wake_get = __gen6_gt_force_wake_get;
+ 		dev_priv->gt.force_wake_put = __gen6_gt_force_wake_put;
 
 
