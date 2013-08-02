@@ -1,69 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754474Ab3HBWXE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 18:23:04 -0400
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:42657 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753431Ab3HBWXC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 18:23:02 -0400
+	id S1754419Ab3HBW1A (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 18:27:00 -0400
+Received: from [207.46.163.210] ([207.46.163.210]:58088 "EHLO
+	na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753554Ab3HBW07 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 18:26:59 -0400
+Message-ID: <51FC31AF.1070802@caviumnetworks.com>
+Date: Fri, 2 Aug 2013 15:24:47 -0700
+From: David Daney <ddaney@caviumnetworks.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <CAMP44s3VyEPK-veHD5kUUPQcDeAKP82tN_px+A6k+BgxXJ270A@mail.gmail.com>
-References: <20130731162252.GC4724@pd.tnic>
-	<CAPBO7TaPxa_13FBDE5Z=Aoa+ePPfLRH0+oWSQyEmO00xSfGqYg@mail.gmail.com>
-	<CAMP44s1WMMXcGfF6Ta0CFthY3-7tkpqXEPx1iZhVU-XpS6KUWw@mail.gmail.com>
-	<1544218.2BR9ul04Pj@vostro.rjw.lan>
-	<CAMP44s16-_KA+3JPSzD1CrzcNCuCk4xjOvU6E=gVRxkKiAGr0Q@mail.gmail.com>
-	<CAPBO7TZT3hX67aX-2aG5f2mcVqOyka2xbTPvMWvHzTG-x+UBLA@mail.gmail.com>
-	<CAMP44s3018jWPywQixcgD2UuM58oKYgs+D=aADTQvTyZqJsULA@mail.gmail.com>
-	<CAPBO7TYOe3EAoWhhzwMH5o5qmDPw0dp0upWH=h62ruHR4m3A0g@mail.gmail.com>
-	<CAMP44s3VyEPK-veHD5kUUPQcDeAKP82tN_px+A6k+BgxXJ270A@mail.gmail.com>
-Date: Sat, 3 Aug 2013 00:23:00 +0200
-Message-ID: <CAPBO7TZsGPMtLgwGz7WvpdQdb2KXdRbR1Xqu8aCWYjb71faBGA@mail.gmail.com>
-Subject: Re: i915 backlight
-From: Josep Lladonosa <jlladono@gmail.com>
-To: Felipe Contreras <felipe.contreras@gmail.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Borislav Petkov <bp@alien8.de>,
-        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Andrew Morton <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>
+CC: David Daney <david.daney@cavium.com>
+Subject: Re: [PATCH 3/3] smp.h: Move !SMP version of on_each_cpu() out-of-line
+References: <1375477776-13302-1-git-send-email-ddaney.cavm@gmail.com> <1375477776-13302-4-git-send-email-ddaney.cavm@gmail.com>
+In-Reply-To: <1375477776-13302-4-git-send-email-ddaney.cavm@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [64.2.3.195]
+X-Forefront-PRVS: 0926B0E013
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(479174003)(189002)(199002)(377454003)(51704005)(24454002)(65956001)(63696002)(19580395003)(77982001)(16406001)(54356001)(50986001)(46102001)(56776001)(36756003)(81342001)(59766001)(59896001)(47776003)(74366001)(47446002)(66066001)(19580405001)(74502001)(83322001)(74662001)(65806001)(51856001)(80022001)(80316001)(31966008)(47976001)(23756003)(54316002)(76796001)(76786001)(79102001)(53806001)(4396001)(74876001)(50466002)(80976001)(56816003)(81542001)(69226001)(74706001)(77096001)(53416003)(64126003)(49866001)(83072001)(47736001)(76482001)(33656001);DIR:OUT;SFP:;SCL:1;SRVR:BLUPR07MB132;H:BL2PRD0712HT004.namprd07.prod.outlook.com;CLIP:64.2.3.195;RD:InfoNoRecords;MX:1;A:1;LANG:en;
+X-OriginatorOrg: DuplicateDomain-a3ec847f-e37f-4d9a-9900-9d9d96f75f58.caviumnetworks.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2 August 2013 23:25, Felipe Contreras <felipe.contreras@gmail.com> wrote:
-> On Fri, Aug 2, 2013 at 3:11 PM, Josep Lladonosa <jlladono@gmail.com> wrote:
->> "Before" means with previous kernels that worked with
->>
->> GRUB_CMDLINE_LINUX="acpi_osi=Linux acpi_backlight=vendor"
+On 08/02/2013 02:09 PM, David Daney wrote:
+> From: David Daney <david.daney@cavium.com>
 >
-> That's probably a different issue. You would need to bisect the problem.
+> All of the other non-trivial !SMP versions of functions in smp.h are
+>  out-of-line in up.c.  Move on_each_cpu() there as well.
 >
->> I have not checked this issue with acpi_osi="!Windows 2012".
->
-> Please do.
+> This allows us to get rid of the #include <linux/irqflags.h>.  The
+> drawback is that this makes both the x86_64 and i386 defconfig !SMP
+> kernels about 200 bytes larger each.
 
-Hello, checking with acpi_osi="!Windows 2012" in the cmdline for
-kernel 3.11.0-rc3 (and without the section you gave for the xorg.conf)
-i get:
+I looked at the cause of the size difference and there are several main
+parts to it.
 
-- brightness can be set among 16 levels.
-- brightness recovers fine after a standby.
-- brightness can be managed before entering xorg (during lightdm
-screen, in my case. With the configuration of xorg.conf and
-video.brightness_switch_enabled=0 it is not possible, only until xorg
-has started).
+1) kallsym data (28 bytes).
 
-Josep
+2) with the patch generating a function pointer to pass to on_each_cpu 
+vs. direct call (7 bytes * 22 call sites) and generating the the ignored 
+third parameter (5 bytes * 22 call sites); without the patch 
+local_irq_save/local_irq_restore(5 bytes * 22 call sites)  for a total 
+of 7 * 22 == 154 bytes.
+
+3) Other (21 bytes).
 
 >
-> --
-> Felipe Contreras
+> Signed-off-by: David Daney <david.daney@cavium.com> ---
+> include/linux/smp.h | 21 +++++---------------- kernel/up.c         |
+> 11 +++++++++++ 2 files changed, 16 insertions(+), 16 deletions(-)
+>
 
-
-
--- 
---
-Salutacions...Josep
---
