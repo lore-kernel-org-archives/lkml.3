@@ -1,82 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758016Ab3HBIZJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 04:25:09 -0400
-Received: from mga01.intel.com ([192.55.52.88]:8706 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754911Ab3HBIZD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 04:25:03 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,799,1367996400"; 
-   d="scan'208";a="379983255"
-Message-ID: <51FB6D0D.4060407@intel.com>
-Date: Fri, 02 Aug 2013 16:25:49 +0800
-From: Aaron Lu <aaron.lu@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1758030Ab3HBI0b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 04:26:31 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:63037 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754911Ab3HBI02 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 04:26:28 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+F7fdONZkIZOylTutgQncb
+Date: Fri, 2 Aug 2013 01:26:23 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Greg KH <greg@kroah.com>, ksummit-2013-discuss@lists.linuxfoundation.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [Ksummit-2013-discuss] [ATTEND] [ARM ATTEND] kernel data bloat
+ and how to avoid it
+Message-ID: <20130802082622.GB7656@atomide.com>
+References: <20130731073802.GT7656@atomide.com>
+ <20130731123351.GA30474@kroah.com>
+ <20130802075352.GY7656@atomide.com>
+ <20130802080335.GM24465@radagast>
 MIME-Version: 1.0
-To: Felipe Contreras <felipe.contreras@gmail.com>
-CC: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <lenb@kernel.org>,
-        Zhang Rui <rui.zhang@intel.com>
-Subject: Re: [PATCH] acpi: video: fix reversed indexed BQC
-References: <1375400042-989-1-git-send-email-felipe.contreras@gmail.com> <51FB137D.7070000@gmail.com> <CAMP44s1A+z4=DGJLK1qf5LPc1vbYvtJwjFiMt17vzyZFRU0qmg@mail.gmail.com> <51FB35CD.7040709@intel.com> <CAMP44s1honSdnoMnmpEcsXtdkJuPYgQgnLwcN+oxs5f=a+3Stg@mail.gmail.com> <51FB3C9C.6070002@intel.com> <CAMP44s1RkwTfxdoiARHgREy-fwLuRu2tKbM-4kB3+Xf3Sme5Uw@mail.gmail.com> <51FB5826.80305@intel.com> <CAMP44s3+L8ZY9tcUbNhia8sRx+KJ1w44Jn7n=RMdPfeQqvPaqw@mail.gmail.com> <51FB689F.30100@intel.com> <CAMP44s3mgbis8BO-kmwwQk+GKG60HMN1q1u6x67pD7Vj3OKU=Q@mail.gmail.com>
-In-Reply-To: <CAMP44s3mgbis8BO-kmwwQk+GKG60HMN1q1u6x67pD7Vj3OKU=Q@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130802080335.GM24465@radagast>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02/2013 04:14 PM, Felipe Contreras wrote:
-> On Fri, Aug 2, 2013 at 3:06 AM, Aaron Lu <aaron.lu@intel.com> wrote:
->> On 08/02/2013 03:59 PM, Felipe Contreras wrote:
->>> On Fri, Aug 2, 2013 at 1:56 AM, Aaron Lu <aaron.lu@intel.com> wrote:
->>>> On 08/02/2013 02:44 PM, Felipe Contreras wrote:
->>>
->>>>> The initial _BCM commands don't work, so the level remains at 100%.
->>>>> Since the level is max_level, acpi_video_bqc_quirk() tries with the
->>>>> first level, which is 0, and 0 happens to be the index of 100.
->>>>>
->>>>> So _BQC is returning 100, which is not the index of 0 (what we tested
->>>>> for), but actually 100.
->>>>>
->>>>> I think the current code is correct, but acpi_video_bqc_quirk() should
->>>>> be testing br->levels[3], or anything other than 0/100 which can be
->>>>> easily confused.
->>>>>
->>>>> If so, the code would find that _BQC doesn't work on this machine (in
->>>>> win8 mode)... at least initially. My guess is that it only starts to
->>>>> work after acpi_video_bus_start_devices() is called.
->>>>>
->>>>> Forcing br->flags._BQC_use_index = 0 seems to work.
->>>>
->>>> Seems ASUS machines tend to have this issue:
->>>> https://bugzilla.kernel.org/show_bug.cgi?id=52951
->>>> https://bugzilla.kernel.org/show_bug.cgi?id=56711
->>>
->>> I don't see any real solution for the ACPI driver.
->>>
->>>> I have a patch to enhance the quirk some time ago:
->>>> https://github.com/aaronlu/linux/commit/0a3d2c5b59caf80ae5bb1ca1fda0f7bf448b38c9
->>>
->>> I think this is unnecessarily complicated; the comment makes it clear
->>
->> For your system, yes it is unnecessarily complicated. But since this is
->> a quirk, it better solves as many potential problems as possible, or we
->> would simply use a DMI entry to do the quirk.
+* Felipe Balbi <balbi@ti.com> [130802 01:11]:
+> Hi,
 > 
-> The only difference between my patch and yours is that your patch
-> checks that br->level[i] is not the current level, but that check is
-> not necessary. If _BQC always returns the max level, all we need to do
+> On Fri, Aug 02, 2013 at 12:53:53AM -0700, Tony Lindgren wrote:
+> > > > Basically the data bloat issue is there for the arch code and drivers
+> > > > and may not show up initially until things have headed the wrong way for
+> > > > too long.
+> > > 
+> > > What do you mean by this?  You seem to be very vague here.
+> > 
+> > People are unnecessarily defining registers in kernel for similar devices
+> > over and over again for each new SoC at the arch level and now more and
+> > more at the driver level.
+> >
+> > One example of that are device tree based drivers that don't describe
+> > the actual hardware, but instead have a binding that points to an index
+> > of defined registers in the driver.
+> 
+> -ECONFUSED... DT passes only the base address and the size of the
+> address space. If some versions of the IP have slightly different
+> register layout, that needs to be treated at the driver, right ?
 
-_BQC does not always returns the max level.
+The driver shoud know how to handle various _types_ of registers rather
+than contain a data what these registers are. Then the DT should define
+the _types_ of registers that the hardware has. Any register names etc
+are just debug data that can be handled with userspace tools using debugfs.
+ 
+> > One way to avoid these kind of bloat issues is to allow drivers to load
+> > data at multiple points: Only abtolutely minimal set of data should be
+> > static, some should only come from the bootloader as a device tree or
+> > ACPI tables, and some is best to be loaded after booting from /lib/firmware.
+> 
+> why would we put data blobs in /lib/firmware ? I know we have discussed
+> this at some length before, but I still don't get the idea that, just
+> because data shouldn't be in the kernel, we would bloat /lib/firmware
+> with blobs which aren't really firmwares.
 
-> is pick another value, any other value, and br->level[3] works just
-> fine.
+Because the amount of data coming from the bootloader should be pretty
+minimal. And it is for ACPI, and device tree will run into performance
+issues trying stuff all the data there.
 
-For a _BCL only having 4 elements { 100, 40, 40, 100 }, the br->levels[3]
-will be the max level. The example here may be too crazy to be true, but
-since we are dealing with firmware, I tend to believe anything could
-happen.
+And a huge amount of the data we have in platform_data, defined registers,
+device tree etc is only needed by the kernel for debugging, or is only
+needed later on for things like PM.
+ 
+> It would be like adding ACPI tables to /lib/firmware :-p
 
--Aaron
+I don't think ACPI has this issue, the set of data coming from ACPI
+is pretty minimal. But I bet a lot of the ACPI drivers could also load
+the debug related data as additional kernel modules or from /lib/firmware
+especially if it's somehow SoC or board specific.
+
+Regards,
+
+Tony
