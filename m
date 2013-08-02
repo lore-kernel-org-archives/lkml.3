@@ -1,100 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753287Ab3HBOjx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 10:39:53 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:59332 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752478Ab3HBOjv (ORCPT
+	id S1753407Ab3HBOk0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 10:40:26 -0400
+Received: from zetta.elopez.com.ar ([199.30.59.35]:57278 "EHLO
+	zetta.elopez.com.ar" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752556Ab3HBOkY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 10:39:51 -0400
-Message-ID: <51FBC49F.3060201@ti.com>
-Date: Fri, 2 Aug 2013 09:39:27 -0500
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Fri, 2 Aug 2013 10:40:24 -0400
+Message-ID: <51FBC4CE.8090009@elopez.com.ar>
+Date: Fri, 02 Aug 2013 11:40:14 -0300
+From: =?ISO-8859-1?Q?Emilio_L=F3pez?= <emilio@elopez.com.ar>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Bill Huang <bilhuang@nvidia.com>
-CC: "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "lee.jones@linaro.org" <lee.jones@linaro.org>,
-        "broonie@linaro.org" <broonie@linaro.org>,
-        "j-keerthy@ti.com" <j-keerthy@ti.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "ian@slimlogic.co.uk" <ian@slimlogic.co.uk>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mallikarjun Kasoju <mkasoju@nvidia.com>
-Subject: Re: [PATCH v2 1/1] mfd: palmas: Add power off control
-References: <1375255037-10024-1-git-send-email-bilhuang@nvidia.com>  <51F8FBC4.1040009@ti.com> <1375355332.32701.13.camel@bilhuang-vm1>  <20130801130857.GA3413@kahuna> <1375422317.32701.19.camel@bilhuang-vm1>
-In-Reply-To: <1375422317.32701.19.camel@bilhuang-vm1>
-Content-Type: text/plain; charset="ISO-8859-9"; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+CC: Mike Turquette <mturquette@linaro.org>, kevin.z.m.zh@gmail.com,
+        sunny@allwinnertech.com, shuge@allwinnertech.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] ARM: sun5i: dt: Use the A10s gates in the DTSI
+References: <1374618504-19391-1-git-send-email-maxime.ripard@free-electrons.com> <1374618504-19391-3-git-send-email-maxime.ripard@free-electrons.com>
+In-Reply-To: <1374618504-19391-3-git-send-email-maxime.ripard@free-electrons.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02/2013 12:45 AM, Bill Huang wrote:
-> On Thu, 2013-08-01 at 21:08 +0800, Nishanth Menon wrote:
->> On 04:08-20130801, Bill Huang wrote:
->>> On Wed, 2013-07-31 at 19:57 +0800, Nishanth Menon wrote:
->>>>
->>>> If you notice the reference code I send, atleast on TWL6035/37 variants
->>>> of Palmas, USB IRQ unmask is mandatory for power on with USB cable -
->>>> example usage scenario: extremely low battery, device powered off, plug
->>>> in usb cable to restart charging - you'd like to initiate charging logic
->>>> in bootloader, but that wont work if the device does not do OFF-ON
->>>> transition with usb cable plugged in for vbus.
->>>>
->>> Why do we need to add Palmas USB_IRQ unmask logic in shutdown? Does that
->>> mean for all platform using Palmas has to unmask USB IRQ (including
->>> those do not power vbus through Palmas)? Can't we just have a simple
->>> shutdown function but have the VBus programming been done in USB driver
->>> or maybe platform driver since it is platform specific control?
->> we dont have a irq cleanup, irq handling is done in palmas-mfd. Further,
->>
->> Why would USB driver care about vbus supply needs in complete power off
->> - it is the job of palmas driver? Further, palmas-mfd shutdown
->> handler(currently missing) if probably cleansup things:
->>
->>   mfd_remove_devices(palmas->dev);
->>    palmas_irq_exit(palmas);
->>
->> shutdown sequence becomes complicated further esp if things are
->> cleanedup in shutdown (Dummy patch[1]).
->>
->>
->> All I am saying is this: shutdown should allow powerup functionality to
->> work as well, how we do that is upto us - I personally found it a little
->> easier to keep the IRQ unmask in shutdown easier to deal with, but other
->> options might be possible as well.
->
-> I'm not sure if I understand your comments completely (maybe due to I'm
-> not familiar with the mechanism of unmasking USB IRQ in Palmas driver)
+Hi Maxime,
 
-This is IMHO an weird configuration I saw on TWL6035/6037 Palmas device 
-- so I suspect should be the case in probably other palmas devices as 
-well. I hit power off, and I can start up the device again by supplying 
-vbus -(usecase was, at that point in time, battery charging)
+El 23/07/13 19:28, Maxime Ripard escribió:
+> The A10s has only a subset of the A10 gates. Now that the clock driver
+> has support for this gates set, switch to it in the DTSI.
+> 
+> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 
-anyways, I was working with busybox and no usb driver even enabled, but 
-I am told by the twl6035/7 support folks that due to design USB IRQ 
-needs to be unmasked at shutdown/poweroff to allow OFF->ON transition 
-sequence to start inside Palmas when vbus is supplied.
+As I mentioned on the other patch, my board boots, so
 
+Tested-by: Emilio López <emilio@elopez.com.ar>
 
-> but doing cleanup in each driver shutdown handler makes sense to me, if
-> those clean up can be done in shutdown then we can make power off
-> function as simple as possible and being part of Palmas mfd driver?
+> ---
+>  arch/arm/boot/dts/sun5i-a10s.dtsi | 36 ++++++++++++++----------------------
+>  1 file changed, 14 insertions(+), 22 deletions(-)
+> 
+> diff --git a/arch/arm/boot/dts/sun5i-a10s.dtsi b/arch/arm/boot/dts/sun5i-a10s.dtsi
+> index 0f0881a..b8fc1c2 100644
+> --- a/arch/arm/boot/dts/sun5i-a10s.dtsi
+> +++ b/arch/arm/boot/dts/sun5i-a10s.dtsi
+> @@ -95,20 +95,16 @@
+>  
+>  		ahb_gates: ahb_gates@01c20060 {
+>  			#clock-cells = <1>;
+> -			compatible = "allwinner,sun4i-ahb-gates-clk";
+> +			compatible = "allwinner,sun5i-a10s-ahb-gates-clk";
+>  			reg = <0x01c20060 0x8>;
+>  			clocks = <&ahb>;
+> -			clock-output-names = "ahb_usb0", "ahb_ehci0",
+> -				"ahb_ohci0", "ahb_ehci1", "ahb_ohci1", "ahb_ss",
+> -				"ahb_dma", "ahb_bist", "ahb_mmc0", "ahb_mmc1",
+> -				"ahb_mmc2", "ahb_mmc3", "ahb_ms", "ahb_nand",
+> -				"ahb_sdram", "ahb_ace",	"ahb_emac", "ahb_ts",
+> -				"ahb_spi0", "ahb_spi1", "ahb_spi2", "ahb_spi3",
+> -				"ahb_pata", "ahb_sata", "ahb_gps", "ahb_ve",
+> -				"ahb_tvd", "ahb_tve0", "ahb_tve1", "ahb_lcd0",
+> -				"ahb_lcd1", "ahb_csi0", "ahb_csi1", "ahb_hdmi",
+> -				"ahb_de_be0", "ahb_de_be1", "ahb_de_fe0",
+> -				"ahb_de_fe1", "ahb_mp", "ahb_mali400";
+> +			clock-output-names = "ahb_usbotg", "ahb_ehci", "ahb_ohci",
+> +				"ahb_ss", "ahb_dma", "ahb_bist", "ahb_mmc0",
+> +				"ahb_mmc1", "ahb_mmc2",
 
-not really, mfd shutdown does not guarantee rest of the drivers' 
-shutdown functions are safely called, pm_power_off unfortunately is the 
-only "official point" where we can safely and cleanly shutdown the system.
+I noticed the vendor code also has "ahb_ms" here, it might be worth
+keeping it in mind.
 
--- 
-Regards,
-Nishanth Menon
+> "ahb_nand", "ahb_sdram",
+> +				"ahb_emac", "ahb_ts", "ahb_spi0", "ahb_spi1",
+> +				"ahb_spi2", "ahb_gps", "ahb_stimer", "ahb_ve",
+> +				"ahb_tve", "ahb_lcd", "ahb_csi", "ahb_hdmi",
+> +				"ahb_de_be", "ahb_de_fe", "ahb_iep", "ahb_mali400";
+>  		};
+>  
+>  		apb0: apb0@01c20054 {
+> @@ -120,12 +116,11 @@
+>  
+>  		apb0_gates: apb0_gates@01c20068 {
+>  			#clock-cells = <1>;
+> -			compatible = "allwinner,sun4i-apb0-gates-clk";
+> +			compatible = "allwinner,sun5i-a10s-apb0-gates-clk";
+>  			reg = <0x01c20068 0x4>;
+>  			clocks = <&apb0>;
+> -			clock-output-names = "apb0_codec", "apb0_spdif",
+> -				"apb0_ac97", "apb0_iis", "apb0_pio", "apb0_ir0",
+> -				"apb0_ir1", "apb0_keypad";
+> +			clock-output-names = "apb0_codec", "apb0_iis", "apb0_pio",
+> +				"apb0_ir", "apb0_keypad";
+>  		};
+>  
+>  		/* dummy is pll62 */
+> @@ -145,15 +140,12 @@
+>  
+>  		apb1_gates: apb1_gates@01c2006c {
+>  			#clock-cells = <1>;
+> -			compatible = "allwinner,sun4i-apb1-gates-clk";
+> +			compatible = "allwinner,sun5i-a10s-apb1-gates-clk";
+>  			reg = <0x01c2006c 0x4>;
+>  			clocks = <&apb1>;
+>  			clock-output-names = "apb1_i2c0", "apb1_i2c1",
+> -				"apb1_i2c2", "apb1_can", "apb1_scr",
+> -				"apb1_ps20", "apb1_ps21", "apb1_uart0",
+> -				"apb1_uart1", "apb1_uart2", "apb1_uart3",
+> -				"apb1_uart4", "apb1_uart5", "apb1_uart6",
+> -				"apb1_uart7";
+> +				"apb1_i2c2", "apb1_uart0", "apb1_uart1",
+> +				"apb1_uart2", "apb1_uart3";
+>  		};
+>  	};
+>  
+> 
+
+An update to the documentation mentioning these compatibles[1] and
+gates[2] would be great :)
+
+[1] Documentation/devicetree/bindings/clock/sunxi.txt
+[2] Documentation/devicetree/bindings/clock/sunxi/sun5i-a10s-gates.txt
+
+Thanks for working on this!
+
+Emilio
