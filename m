@@ -1,51 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756259Ab3HBLC3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 07:02:29 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:27999 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756071Ab3HBLC2 (ORCPT
+	id S1752448Ab3HBLE2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 07:04:28 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:18945 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750904Ab3HBLE0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 07:02:28 -0400
-X-Authority-Analysis: v=2.0 cv=aqMw+FlV c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=_6S4gJz81GoA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=UirpL7NoV14A:10 a=mwMkYO5XIq_0_x-oQ7cA:9 a=QEXdDO2ut3YA:10 a=GV1duZIgHnkA:10 a=0p_QRJGIAhIA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-ID: <1375441345.22073.0.camel@gandalf.local.home>
-Subject: Re: __ftrace_hash_rec_update FTRACE_WARN_ON.
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Steve Hodgson <steve@purestorage.com>
-Cc: =?ISO-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>,
-        Dave Jones <davej@redhat.com>, linux-kernel@vger.kernel.org
-Date: Fri, 02 Aug 2013 07:02:25 -0400
-In-Reply-To: <CADHUQJ5L54YihGsB-WgOggN257FRetoFy4zsqK2GGtaXzMrxKQ@mail.gmail.com>
-References: <20130705142629.GA325@redhat.com>
-	 <1373036034.22688.155.camel@gandalf.local.home>
-	 <20130724160422.GA3641@logfs.org>
-	 <1374715444.3356.163.camel@gandalf.local.home>
-	 <CADHUQJ4yweA4zNKqtsq=iQkX+o6UmA-dwWV1d-0SdJbpGtZR5A@mail.gmail.com>
-	 <1374778741.3356.181.camel@gandalf.local.home>
-	 <1374808998.6580.12.camel@gandalf.local.home>
-	 <CADHUQJ5=cgWsAvUb29EVnnP2gKeeoNnp=4gLuJqq+wQh+iBYzw@mail.gmail.com>
-	 <1375231885.25784.2.camel@gandalf.local.home>
-	 <CADHUQJ5L54YihGsB-WgOggN257FRetoFy4zsqK2GGtaXzMrxKQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 2 Aug 2013 07:04:26 -0400
+From: Rupesh Gujare <rupesh.gujare@atmel.com>
+To: <devel@linuxdriverproject.org>
+CC: <dan.carpenter@oracle.com>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <gregkh@linuxfoundation.org>
+Subject: [PATCH] staging: ozwpan: Fix farewell report.
+Date: Fri, 2 Aug 2013 12:04:16 +0100
+Message-ID: <1375441456-20415-1-git-send-email-rupesh.gujare@atmel.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <51FB915C.1050003@atmel.com>
+References: <51FB915C.1050003@atmel.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-08-01 at 21:51 -0700, Steve Hodgson wrote:
+This patch fixes issues reported by Dan here:-
+http://driverdev.linuxdriverproject.org/pipermail/driverdev-devel/2013-August/040052.html
 
-> This patch also fixes the issue for me: ftrace works fine across module removal.
-> 
-> Sorry for being a little slow in testing this.
-> 
+Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Rupesh Gujare <rupesh.gujare@atmel.com>
+---
+ drivers/staging/ozwpan/ozpd.h    |    2 +-
+ drivers/staging/ozwpan/ozproto.c |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-No problem. Thanks for testing :-)
-
--- Steve
-
+diff --git a/drivers/staging/ozwpan/ozpd.h b/drivers/staging/ozwpan/ozpd.h
+index 57e98c8..996ef65 100644
+--- a/drivers/staging/ozwpan/ozpd.h
++++ b/drivers/staging/ozwpan/ozpd.h
+@@ -48,8 +48,8 @@ struct oz_farewell {
+ 	struct list_head link;
+ 	u8 ep_num;
+ 	u8 index;
+-	u8 report[32];
+ 	u8 len;
++	u8 report[0];
+ };
+ 
+ /* Data structure that holds information on a specific peripheral device (PD).
+diff --git a/drivers/staging/ozwpan/ozproto.c b/drivers/staging/ozwpan/ozproto.c
+index 084307a..3d1a89f 100644
+--- a/drivers/staging/ozwpan/ozproto.c
++++ b/drivers/staging/ozwpan/ozproto.c
+@@ -291,7 +291,7 @@ static void oz_add_farewell(struct oz_pd *pd, u8 ep_num, u8 index,
+ 	struct oz_farewell *f;
+ 	struct oz_farewell *f2;
+ 	int found = 0;
+-	f = kmalloc(sizeof(struct oz_farewell) + len - 1, GFP_ATOMIC);
++	f = kmalloc(sizeof(struct oz_farewell) + len, GFP_ATOMIC);
+ 	if (!f)
+ 		return;
+ 	f->ep_num = ep_num;
+-- 
+1.7.9.5
 
