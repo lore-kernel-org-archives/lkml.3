@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754746Ab3HBXZD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 19:25:03 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:52772 "EHLO hydra.sisk.pl"
+	id S1754774Ab3HBXdV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 19:33:21 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:52782 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752124Ab3HBXZB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 19:25:01 -0400
+	id S1752553Ab3HBXdT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 19:33:19 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Felipe Contreras <felipe.contreras@gmail.com>,
-        Aaron Lu <aaron.lu@intel.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        Zhang Rui <rui.zhang@intel.com>
-Cc: Josep Lladonosa <jlladono@gmail.com>, Borislav Petkov <bp@alien8.de>,
-        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Subject: Re: i915 backlight
-Date: Sat, 03 Aug 2013 01:35:13 +0200
-Message-ID: <1542692.FHVXYzeOeb@vostro.rjw.lan>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        rafael.j.wysocki@intel.com, vasilis.liaskovitis@profitbricks.com,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        tangchen@cn.fujitsu.com, wency@cn.fujitsu.com
+Subject: Re: Cannot hot remove a memory device
+Date: Sat, 03 Aug 2013 01:43:31 +0200
+Message-ID: <2124016.41i4c3lbD4@vostro.rjw.lan>
 User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAMP44s16-_KA+3JPSzD1CrzcNCuCk4xjOvU6E=gVRxkKiAGr0Q@mail.gmail.com>
-References: <20130731162252.GC4724@pd.tnic> <1544218.2BR9ul04Pj@vostro.rjw.lan> <CAMP44s16-_KA+3JPSzD1CrzcNCuCk4xjOvU6E=gVRxkKiAGr0Q@mail.gmail.com>
+In-Reply-To: <1375479975.10300.105.camel@misato.fc.hp.com>
+References: <51FA1E41.20304@jp.fujitsu.com> <2995879.KDC1gYpzij@vostro.rjw.lan> <1375479975.10300.105.camel@misato.fc.hp.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -27,92 +25,75 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, August 02, 2013 01:58:55 PM Felipe Contreras wrote:
-> On Fri, Aug 2, 2013 at 9:03 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > On Friday, August 02, 2013 01:48:37 AM Felipe Contreras wrote:
-> >> On Fri, Aug 2, 2013 at 1:25 AM, Josep Lladonosa <jlladono@gmail.com> wrote:
-> >> > Hello,
-> >> >
-> >> > I am using a Lenovo Edge E530 and, with kernel 3.11.0-rc3, I had to
-> >> > change to this parameter to the kernel boot:
-> >> >
-> >> >
-> >> > GRUB_CMDLINE_LINUX="acpi_osi=\"!Windows 2012\""
-> >>
-> >> I think it's pretty obvious that for the time being we need to
-> >> blacklist a ton of machines so they boot without this OSI. In fact, in
-> >> might make sense to simply remove the OSI completely for all machines
-> >> (for now).
-> >
-> > That would have made sense 6 months ago, but not today.
+On Friday, August 02, 2013 03:46:15 PM Toshi Kani wrote:
+> On Thu, 2013-08-01 at 23:43 +0200, Rafael J. Wysocki wrote:
+> > Hi,
+> > 
+> > Thanks for your report.
+> > 
+> > On Thursday, August 01, 2013 05:37:21 PM Yasuaki Ishimatsu wrote:
+> > > By following commit, I cannot hot remove a memory device.
+> > > 
+> > > ACPI / memhotplug: Bind removable memory blocks to ACPI device nodes
+> > > commit e2ff39400d81233374e780b133496a2296643d7d
+> > > 
+> > > Details are follows:
+> > > When I add a memory device, acpi_memory_enable_device() always fails
+> > > as follows:
+> > > 
+> > > ...
+> > > [ 1271.114116]  [ffffea121c400000-ffffea121c7fffff] PMD -> [ffff880813c00000-ffff880813ffffff] on node 3
+> > > [ 1271.128682]  [ffffea121c800000-ffffea121cbfffff] PMD -> [ffff880813800000-ffff880813bfffff] on node 3
+> > > [ 1271.143298]  [ffffea121cc00000-ffffea121cffffff] PMD -> [ffff880813000000-ffff8808133fffff] on node 3
+> > > [ 1271.157799]  [ffffea121d000000-ffffea121d3fffff] PMD -> [ffff880812c00000-ffff880812ffffff] on node 3
+> > > [ 1271.172341]  [ffffea121d400000-ffffea121d7fffff] PMD -> [ffff880812800000-ffff880812bfffff] on node 3
+> > > [ 1271.186872]  [ffffea121d800000-ffffea121dbfffff] PMD -> [ffff880812400000-ffff8808127fffff] on node 3
+> > > [ 1271.201481]  [ffffea121dc00000-ffffea121dffffff] PMD -> [ffff880812000000-ffff8808123fffff] on node 3
+> > > [ 1271.216041]  [ffffea121e000000-ffffea121e3fffff] PMD -> [ffff880811c00000-ffff880811ffffff] on node 3
+> > > [ 1271.230623]  [ffffea121e400000-ffffea121e7fffff] PMD -> [ffff880811800000-ffff880811bfffff] on node 3
+> > > [ 1271.245148]  [ffffea121e800000-ffffea121ebfffff] PMD -> [ffff880811400000-ffff8808117fffff] on node 3
+> > > [ 1271.259683]  [ffffea121ec00000-ffffea121effffff] PMD -> [ffff880811000000-ffff8808113fffff] on node 3
+> > > [ 1271.274194]  [ffffea121f000000-ffffea121f3fffff] PMD -> [ffff880810c00000-ffff880810ffffff] on node 3
+> > > [ 1271.288764]  [ffffea121f400000-ffffea121f7fffff] PMD -> [ffff880810800000-ffff880810bfffff] on node 3
 > 
-> Today, like 6 months ago these machines remain broken, and it will be
-> the same tomorrow, presumably on v3.11, and at least v3.12 as well.
+> It appears that each memory object only has 64MB of memory.  This is
+> less than the memory block size, which is 128MB.  This means that a
+> single memory block associates with two ACPI memory device objects.
 
-Can you possibly look at things from a bit broader perspective than just the
-broken backlight?
+That'd be bad.
 
-[I'm talking about "simply removing the OSI completely for all machines" if
-that's not clear.]
+How did that work before if that indeed is the case?
 
-The problem is that for the last 6 months the kernel has responded to
-OSI(Windows 2012) with a "yes" and now, after that time, you want it to
-make a U turn and start saying "no" even though that may cause problems to
-happen on other people's machines.  That's simply irresponsible.
-
-> > The reason is that you don't really know what's affected by that and I'm
-> > pretty sure it's not only backlight.
+> > > ...	
+> > > [ 1271.325841] acpi PNP0C80:03: acpi_memory_enable_device() error
+> > 
+> > Well, the only new way acpi_memory_enable_device() can fail after that commit
+> > is a failure in acpi_bind_memory_blocks().
 > 
-> I haven't heard a single comment that says acpi_osi="!Windows 2012"
-> breaks other things. OTOH everybody is saying it fixes the backlight
-> problem (if indeed it's the same problem).
+> Agreed.
 > 
-> Are you claiming that those users are wrong?
-
-No, they are saying what they see and they are the people having the backlight
-problem in the first place.  You have no data from people for whom things work
-now.
-
-> > So no, we won't do that.
+> > This means that either handle is NULL, which I think we can exclude, because
+> > acpi_memory_enable_device() wouldn't be called at all if that were the case, or
+> > there's a more subtle error in acpi_bind_one().
+> > 
+> > One that comes to mind is that we may be calling acpi_bind_one() twice for the
+> > same memory region, in which it will trigger -EINVAL from the sanity check in
+> > there.
 > 
-> Yeah, because that would fix the backlight problems, not tomorrow, or
-> several months from now, *today*. Geez, who would want that?
-> 
-> Here is the patch to fix the problem, *today*.
+> I think it fails with -EINVAL at the place with dev_warn(dev, "ACPI
+> handle is already set\n").  When two ACPI memory objects associate with
+> a same memory block, the bind procedure of the 2nd ACPI memory object
+> sees that ACPI_HANDLE(dev) is already set to the 1st ACPI memory object.
 
-It doesn't "fix" anything.  It just creates a blacklist of systems where
-acpi_osi="!Windows 2012" happens to help with the backlight control problem.
+That sound's plausible, but I wonder how we can fix that?
 
-You don't even know why exactly it happens to work on those machines in the
-first place and you don't know what is affected by that apart from backlight
-(you can't be sure that nothing is affected in particular).
+There's no way for a single physical device to have two different ACPI
+"companions".  It looks like the memory blocks should be 64 M each in that
+case.  Or we need to create two child devices for each memory block and
+associate each of them with an ACPI object.  That would lead to complications
+in the user space interface, though.
 
-> https://bugzilla.kernel.org/show_bug.cgi?id=60682
-> 
-> This is what we should do:
-> 
-> 1) Improve that blacklist list
-> 2) Fix the Intel driver issues
-> 3) Enable your patch that uses the Intel driver instead
-> 4) Remove that patch
-> 
-> Anything else is not be good for the users.
-
-Actually, the users can easily put the acpi_osi="!Windows 2012" into the
-kernel command line (which is what they have been doing already for some
-time I suppose).  However, if we add the blacklist to the kernel, that will
-mean we kind of give up fixing the backlight control for them (because they
-won't have any incentive to test anything else then).
-
-That said this is a controverisal matter and we evidently don't agree with
-each other.  I have my reasons, you have your arguments and it doesn't look
-like any of us is likely to change his mind, so why don't we do what's
-normally done in such cases: Why don't we ask others?
-
-Matthew, Aaron, Rui, what do you think about this?  Should we create an
-acpi_osi="!Windows 2012" blacklist of systems where this workaround is known
-to help with backlight control issues?  Is this a good idea in your opinion?
-
+Thanks,
 Rafael
 
 
