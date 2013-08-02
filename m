@@ -1,58 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757826Ab3HBDuO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 23:50:14 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:44472 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754853Ab3HBDuM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 23:50:12 -0400
-Message-ID: <1375415410.2034.100.camel@joe-AO722>
-Subject: Re: [PATCH] MAINTAINERS: Add separate section for USB NETWORKING
- DRIVERS
-From: Joe Perches <joe@perches.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-usb <linux-usb@vger.kernel.org>
-Date: Thu, 01 Aug 2013 20:50:10 -0700
-In-Reply-To: <20130802033033.GA2658@kroah.com>
-References: <1375316960686@kroah.org> <1375343328.2034.34.camel@joe-AO722>
-	 <20130801075656.GA8074@kroah.com> <1375344595.2034.38.camel@joe-AO722>
-	 <20130802033033.GA2658@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1757219Ab3HBDwj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 23:52:39 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:44775 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753019Ab3HBDwh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 23:52:37 -0400
+From: David Ahern <dsahern@gmail.com>
+To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
+Cc: David Ahern <dsahern@gmail.com>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Adrian Hunter <adrian.hunter@intel.com>
+Subject: [PATCH] perf: sample after exit loses thread correlation - v3
+Date: Thu,  1 Aug 2013 21:52:31 -0600
+Message-Id: <1375415551-62625-1-git-send-email-dsahern@gmail.com>
+X-Mailer: git-send-email 1.7.10.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-08-02 at 11:30 +0800, Greg KH wrote:
-> On Thu, Aug 01, 2013 at 01:09:55AM -0700, Joe Perches wrote:
-> > Lots of "maintainers" don't apply patches.
-> I have no idea what you are meaning here.
+Occassionally events (e.g., context-switch, sched tracepoints) are losing
+the conversion of sample data associated with a thread. For example:
 
-Just that maintainers aren't necessarily appliers.
-In fact, most aren't.
+$ perf record -e sched:sched_switch -c 1 -a -- sleep 5
+$ perf script
+<selected events shown>
+    ls 30482 [000] 1379727.583037: sched:sched_switch: prev_comm=ls prev_pid=30482 ...
+    ls 30482 [000] 1379727.586339: sched:sched_switch: prev_comm=ls prev_pid=30482 ...
+:30482 30482 [000] 1379727.589462: sched:sched_switch: prev_comm=ls prev_pid=30482 ...
 
-> Add netdev to the L: list as well.
+The last line lost the conversion from tid to comm. If you look at the events
+(perf script -D) you see why - SAMPLE event is generated after the EXIT:
 
-I don't think it's necessary.
-get_maintainers already shows that via the
-NETWORKING DRIVERS section F: drivers/net/
+0 1379727589449774 0x1540b0 [0x38]: PERF_RECORD_EXIT(30482:30482):(30482:30482)
+0 1379727589462497 0x1540e8 [0x80]: PERF_RECORD_SAMPLE(IP, 1): 30482/30482: 0xffffffff816416f1 period: 1 addr: 0
+... thread: :30482:30482
 
-Maybe adding
-	W:	http://www.linux-usb.org/usbnet
-might be useful, but it seems pretty out of date.
+When perf processes the EXIT event the thread is moved to the dead_threads
+list. When the SAMPLE event is processed no thread exists for the pid so a new
+one is created by machine__findnew_thread.
 
-btw: This is a similar section to what I suggested.
-     No named "maintainer"
+This patch address the problem by delaying the move to the dead_threads list
+until the tid is re-used (per Adrian's suggestion).
 
-NETWORKING DRIVERS
-L:	netdev@vger.kernel.org
-W:	http://www.linuxfoundation.org/en/Net
-Q:	http://patchwork.ozlabs.org/project/netdev/list/
-T:	git git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git
-T:	git git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next.git
-S:	Odd Fixes
-F:	drivers/net/
+With this patch we get the previous example shows:
 
+  ls 30482 [000] 1379727.583037: sched:sched_switch: prev_comm=ls prev_pid=30482 ...
+  ls 30482 [000] 1379727.586339: sched:sched_switch: prev_comm=ls prev_pid=30482 ...
+  ls 30482 [000] 1379727.589462: sched:sched_switch: prev_comm=ls prev_pid=30482 ...
+
+and
+
+  0 1379727589449774 0x1540b0 [0x38]: PERF_RECORD_EXIT(30482:30482):(30482:30482)
+  0 1379727589462497 0x1540e8 [0x80]: PERF_RECORD_SAMPLE(IP, 1): 30482/30482: 0xffffffff816416f1 period: 1 addr: 0
+  ... thread: ls:30482
+
+v3: re-do from a time based check to a delayed move to dead_threads list
+
+v2: Rebased to latest perf/core branch. Changed time comparison to use
+    a macro which explicitly shows the time basis
+
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+---
+ tools/perf/util/machine.c |   37 +++++++++++++++++++------------------
+ 1 file changed, 19 insertions(+), 18 deletions(-)
+
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index f9f9d63..0d29b1b 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -994,11 +994,27 @@ out_problem:
+ 	return 0;
+ }
+ 
++static void machine__remove_thread(struct machine *machine, struct thread *th)
++{
++	machine->last_match = NULL;
++	rb_erase(&th->rb_node, &machine->threads);
++	/*
++	 * We may have references to this thread, for instance in some hist_entry
++	 * instances, so just move them to a separate list.
++	 */
++	list_add_tail(&th->node, &machine->dead_threads);
++}
++
+ int machine__process_fork_event(struct machine *machine, union perf_event *event)
+ {
+-	struct thread *thread = machine__findnew_thread(machine, event->fork.tid);
++	struct thread *thread = machine__find_thread(machine, event->fork.tid);
+ 	struct thread *parent = machine__findnew_thread(machine, event->fork.ptid);
+ 
++	/* if a thread currently exists for the thread id remove it */
++	if (thread != NULL)
++		machine__remove_thread(machine, thread);
++
++	thread = machine__findnew_thread(machine, event->fork.tid);
+ 	if (dump_trace)
+ 		perf_event__fprintf_task(event, stdout);
+ 
+@@ -1011,27 +1027,12 @@ int machine__process_fork_event(struct machine *machine, union perf_event *event
+ 	return 0;
+ }
+ 
+-static void machine__remove_thread(struct machine *machine, struct thread *th)
+-{
+-	machine->last_match = NULL;
+-	rb_erase(&th->rb_node, &machine->threads);
+-	/*
+-	 * We may have references to this thread, for instance in some hist_entry
+-	 * instances, so just move them to a separate list.
+-	 */
+-	list_add_tail(&th->node, &machine->dead_threads);
+-}
+-
+-int machine__process_exit_event(struct machine *machine, union perf_event *event)
++int machine__process_exit_event(struct machine *machine __maybe_unused,
++				union perf_event *event)
+ {
+-	struct thread *thread = machine__find_thread(machine, event->fork.tid);
+-
+ 	if (dump_trace)
+ 		perf_event__fprintf_task(event, stdout);
+ 
+-	if (thread != NULL)
+-		machine__remove_thread(machine, thread);
+-
+ 	return 0;
+ }
+ 
+-- 
+1.7.10.1
 
