@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759317Ab3HBKJM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:09:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37135 "EHLO
+	id S1755921Ab3HBKxd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:53:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37130 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759101Ab3HBKJI (ORCPT
+	with ESMTP id S1759267Ab3HBKJG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:09:08 -0400
+	Fri, 2 Aug 2013 06:09:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        William Gulland <wgulland@google.com>,
         Alan Stern <stern@rowland.harvard.edu>
-Subject: [ 33/99] USB: global suspend and remote wakeup dont mix
-Date: Fri,  2 Aug 2013 18:07:46 +0800
-Message-Id: <20130802100230.695179042@linuxfoundation.org>
+Subject: [ 32/99] usb: Clear both buffers when clearing a control transfer TT buffer.
+Date: Fri,  2 Aug 2013 18:07:45 +0800
+Message-Id: <20130802100230.567514598@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802100225.478715166@linuxfoundation.org>
 References: <20130802100225.478715166@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,154 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: William Gulland <wgulland@google.com>
 
-commit e583d9db9960cf40e0bc8afee4946baa9d71596e upstream.
+commit 2c7b871b9102c497ba8f972aa5d38532f05b654d upstream.
 
-The hub driver was recently changed to use "global" suspend for system
-suspend transitions on non-SuperSpeed buses.  This means that we don't
-suspend devices individually by setting the suspend feature on the
-upstream hub port; instead devices all go into suspend automatically
-when the root hub stops transmitting packets.  The idea was to save
-time and to avoid certain kinds of wakeup races.
+Control transfers have both IN and OUT (or SETUP) packets, so when
+clearing TT buffers for a control transfer it's necessary to send
+two HUB_CLEAR_TT_BUFFER requests to the hub.
 
-Now it turns out that many hubs are buggy; they don't relay wakeup
-requests from a downstream port to their upstream port if the
-downstream port's suspend feature is not set (depending on the speed
-of the downstream port, whether or not the hub is enabled for remote
-wakeup, and possibly other factors).
-
-We can't have hubs dropping wakeup requests.  Therefore this patch
-goes partway back to the old policy: It sets the suspend feature for a
-port if the device attached to that port or any of its descendants is
-enabled for wakeup.  People will still be able to benefit from the
-time savings if they don't care about wakeup and leave it disabled on
-all their devices.
-
-In order to accomplish this, the patch adds a new field to the usb_hub
-structure: wakeup_enabled_descendants is a count of how many devices
-below a suspended hub are enabled for remote wakeup.  A corresponding
-new subroutine determines the number of wakeup-enabled devices at or
-below an arbitrary suspended USB device.
-
-This should be applied to the 3.10 stable kernel.
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-and-tested-by: Toralf Förster <toralf.foerster@gmx.de>
+Signed-off-by: William Gulland <wgulland@google.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/hub.c |   39 +++++++++++++++++++++++++++++++--------
- drivers/usb/core/hub.h |    3 +++
- 2 files changed, 34 insertions(+), 8 deletions(-)
+ drivers/usb/core/hub.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
 --- a/drivers/usb/core/hub.c
 +++ b/drivers/usb/core/hub.c
-@@ -2855,6 +2855,15 @@ static int usb_disable_function_remotewa
- 				USB_CTRL_SET_TIMEOUT);
- }
- 
-+/* Count of wakeup-enabled devices at or below udev */
-+static unsigned wakeup_enabled_descendants(struct usb_device *udev)
-+{
-+	struct usb_hub *hub = usb_hub_to_struct_hub(udev);
-+
-+	return udev->do_remote_wakeup +
-+			(hub ? hub->wakeup_enabled_descendants : 0);
-+}
-+
- /*
-  * usb_port_suspend - suspend a usb device's upstream port
-  * @udev: device that's no longer in active use, not a root hub
-@@ -2895,8 +2904,8 @@ static int usb_disable_function_remotewa
-  * Linux (2.6) currently has NO mechanisms to initiate that:  no khubd
-  * timer, no SRP, no requests through sysfs.
-  *
-- * If Runtime PM isn't enabled or used, non-SuperSpeed devices really get
-- * suspended only when their bus goes into global suspend (i.e., the root
-+ * If Runtime PM isn't enabled or used, non-SuperSpeed devices may not get
-+ * suspended until their bus goes into global suspend (i.e., the root
-  * hub is suspended).  Nevertheless, we change @udev->state to
-  * USB_STATE_SUSPENDED as this is the device's "logical" state.  The actual
-  * upstream port setting is stored in @udev->port_is_suspended.
-@@ -2967,15 +2976,21 @@ int usb_port_suspend(struct usb_device *
- 	/* see 7.1.7.6 */
- 	if (hub_is_superspeed(hub->hdev))
- 		status = hub_set_port_link_state(hub, port1, USB_SS_PORT_LS_U3);
--	else if (PMSG_IS_AUTO(msg))
--		status = set_port_feature(hub->hdev, port1,
--						USB_PORT_FEAT_SUSPEND);
-+
- 	/*
- 	 * For system suspend, we do not need to enable the suspend feature
- 	 * on individual USB-2 ports.  The devices will automatically go
- 	 * into suspend a few ms after the root hub stops sending packets.
- 	 * The USB 2.0 spec calls this "global suspend".
-+	 *
-+	 * However, many USB hubs have a bug: They don't relay wakeup requests
-+	 * from a downstream port if the port's suspend feature isn't on.
-+	 * Therefore we will turn on the suspend feature if udev or any of its
-+	 * descendants is enabled for remote wakeup.
- 	 */
-+	else if (PMSG_IS_AUTO(msg) || wakeup_enabled_descendants(udev) > 0)
-+		status = set_port_feature(hub->hdev, port1,
-+				USB_PORT_FEAT_SUSPEND);
- 	else {
- 		really_suspend = false;
- 		status = 0;
-@@ -3010,15 +3025,16 @@ int usb_port_suspend(struct usb_device *
- 		if (!PMSG_IS_AUTO(msg))
- 			status = 0;
- 	} else {
--		/* device has up to 10 msec to fully suspend */
- 		dev_dbg(&udev->dev, "usb %ssuspend, wakeup %d\n",
- 				(PMSG_IS_AUTO(msg) ? "auto-" : ""),
- 				udev->do_remote_wakeup);
--		usb_set_device_state(udev, USB_STATE_SUSPENDED);
- 		if (really_suspend) {
- 			udev->port_is_suspended = 1;
-+
-+			/* device has up to 10 msec to fully suspend */
- 			msleep(10);
- 		}
-+		usb_set_device_state(udev, USB_STATE_SUSPENDED);
- 	}
- 
- 	/*
-@@ -3300,7 +3316,11 @@ static int hub_suspend(struct usb_interf
- 	unsigned		port1;
- 	int			status;
- 
--	/* Warn if children aren't already suspended */
-+	/*
-+	 * Warn if children aren't already suspended.
-+	 * Also, add up the number of wakeup-enabled descendants.
-+	 */
-+	hub->wakeup_enabled_descendants = 0;
- 	for (port1 = 1; port1 <= hdev->maxchild; port1++) {
- 		struct usb_device	*udev;
- 
-@@ -3310,6 +3330,9 @@ static int hub_suspend(struct usb_interf
- 			if (PMSG_IS_AUTO(msg))
- 				return -EBUSY;
- 		}
-+		if (udev)
-+			hub->wakeup_enabled_descendants +=
-+					wakeup_enabled_descendants(udev);
- 	}
- 
- 	if (hdev->do_remote_wakeup && hub->quirk_check_port_auto_suspend) {
---- a/drivers/usb/core/hub.h
-+++ b/drivers/usb/core/hub.h
-@@ -59,6 +59,9 @@ struct usb_hub {
- 	struct usb_tt		tt;		/* Transaction Translator */
- 
- 	unsigned		mA_per_port;	/* current for each child */
-+#ifdef	CONFIG_PM
-+	unsigned		wakeup_enabled_descendants;
-+#endif
- 
- 	unsigned		limited_power:1;
- 	unsigned		quiescing:1;
+@@ -668,6 +668,15 @@ resubmit:
+ static inline int
+ hub_clear_tt_buffer (struct usb_device *hdev, u16 devinfo, u16 tt)
+ {
++	/* Need to clear both directions for control ep */
++	if (((devinfo >> 11) & USB_ENDPOINT_XFERTYPE_MASK) ==
++			USB_ENDPOINT_XFER_CONTROL) {
++		int status = usb_control_msg(hdev, usb_sndctrlpipe(hdev, 0),
++				HUB_CLEAR_TT_BUFFER, USB_RT_PORT,
++				devinfo ^ 0x8000, tt, NULL, 0, 1000);
++		if (status)
++			return status;
++	}
+ 	return usb_control_msg(hdev, usb_sndctrlpipe(hdev, 0),
+ 			       HUB_CLEAR_TT_BUFFER, USB_RT_PORT, devinfo,
+ 			       tt, NULL, 0, 1000);
 
 
