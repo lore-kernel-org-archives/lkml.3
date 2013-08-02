@@ -1,159 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753545Ab3HBFvC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 01:51:02 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:62546 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750960Ab3HBFu7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 01:50:59 -0400
-Date: Fri, 2 Aug 2013 13:50:48 +0800 (CST)
-From: Xiong Zhou <jencce.kernel@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-cc: Andreas Dilger <andreas.dilger@intel.com>, Paul Bolle <pebolle@tiscali.nl>,
-        Jiri Kosina <trivial@kernel.org>, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org, jencce.kernel@gmail.com
-Subject: [PATCH] staging/lustre: lloop depends on BLOCK
-Message-ID: <alpine.DEB.2.02.1308021340590.10354@M2420>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1753973Ab3HBFvR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 01:51:17 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:6947 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751541Ab3HBFvA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 01:51:00 -0400
+X-IronPort-AV: E=Sophos;i="4.89,799,1367942400"; 
+   d="scan'208";a="8095878"
+Message-ID: <51FB485A.9070801@cn.fujitsu.com>
+Date: Fri, 02 Aug 2013 13:49:14 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1770351825-1375422657=:10354"
+To: Toshi Kani <toshi.kani@hp.com>
+CC: rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu,
+        hpa@zytor.com, akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
+        mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
+        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com, x86@kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH v2 10/18] x86, acpi: Try to find if SRAT is overrided
+ earlier.
+References: <1375340800-19332-1-git-send-email-tangchen@cn.fujitsu.com>  <1375340800-19332-11-git-send-email-tangchen@cn.fujitsu.com> <1375406353.10300.73.camel@misato.fc.hp.com>
+In-Reply-To: <1375406353.10300.73.camel@misato.fc.hp.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/02 13:49:24,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/02 13:49:34,
+	Serialize complete at 2013/08/02 13:49:34
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On 08/02/2013 09:19 AM, Toshi Kani wrote:
+......
+>> +phys_addr_t __init early_acpi_override_srat(void)
+>> +{
+>> +	int i;
+>> +	u32 length;
+>> +	long offset;
+>> +	void *ramdisk_vaddr;
+>> +	struct acpi_table_header *table;
+>> +	struct cpio_data file;
+>> +	unsigned long map_step = NR_FIX_BTMAPS<<  PAGE_SHIFT;
+>> +	phys_addr_t ramdisk_image = get_ramdisk_image();
+>> +	char cpio_path[32] = "kernel/firmware/acpi/";
+>
+> Don't you need to check if ramdisk is present before parsing the table?
+> You may need something like:
+>
+>    if (!ramdisk_image || !get_ramdisk_size())
+>          return 0;
 
---8323328-1770351825-1375422657=:10354
-Content-Type: TEXT/PLAIN; charset=ISO-8859-7
-Content-Transfer-Encoding: 8BIT
+Yes, it is better to do such a check here. But is there a possibility that
+no ramdisk is present and we come to setup_arch() ?
 
-From: Xiong Zhou <jencce.kernel@gmail.com>
+......
+>> +
+>> +	return ramdisk_image;
+>
+> Doesn't this function return a physical address regardless of SRAT if a
+> ramdisk is present?
 
-Add a config option for llite/lloop in lustre driver, making it depends
-on BLOCK to fix this better:
-drivers/staging/lustre/lustre/fid/../include/linux/lustre_compat25.h:117:2:
-error: implicit declaration of function ¡unregister_blkdev'
+Yes, and it is not good. I'll add the check above so that this won't happen.
 
-Also, remove the wrapper ll_unregister_blkdev which depends on BLOCK in
-the header and just call unregister_blkdev in lloop.c based on Peng Tao's
-comment. Drop the redundant dependency on STAGING for LUSTRE_FS, remove
-some unnecessary jdb header files which depends on BLOCK btw.
+Thanks.
 
-Signed-off-by: Xiong Zhou <jencce.kernel@gmail.com>
-Reviewed-by: Peng Tao <tao.peng@emc.com>
----
- drivers/staging/lustre/lustre/Kconfig              |    7 ++++++-
- drivers/staging/lustre/lustre/fld/fld_cache.c      |    1 -
- drivers/staging/lustre/lustre/fld/fld_request.c    |    1 -
- .../lustre/lustre/include/linux/lustre_compat25.h  |    7 -------
- drivers/staging/lustre/lustre/llite/Makefile       |    2 +-
- drivers/staging/lustre/lustre/llite/lloop.c        |    6 ++----
- drivers/staging/lustre/lustre/lvfs/fsfilt.c        |    1 -
- 7 files changed, 9 insertions(+), 16 deletions(-)
-
-diff --git a/drivers/staging/lustre/lustre/Kconfig b/drivers/staging/lustre/lustre/Kconfig
-index 0b45de0..4e898e4 100644
---- a/drivers/staging/lustre/lustre/Kconfig
-+++ b/drivers/staging/lustre/lustre/Kconfig
-@@ -1,6 +1,6 @@
- config LUSTRE_FS
- 	tristate "Lustre file system client support"
--	depends on STAGING && INET && BLOCK && m
-+	depends on INET && m
- 	select LNET
- 	select CRYPTO
- 	select CRYPTO_CRC32
-@@ -53,3 +53,8 @@ config LUSTRE_TRANSLATE_ERRNOS
- 	bool
- 	depends on LUSTRE_FS && !X86
- 	default true
-+
-+config LUSTRE_LLITE_LLOOP
-+	bool "Lustre virtual block device"
-+	depends on LUSTRE_FS && BLOCK
-+	default m
-diff --git a/drivers/staging/lustre/lustre/fld/fld_cache.c b/drivers/staging/lustre/lustre/fld/fld_cache.c
-index 347f2ae..8410107 100644
---- a/drivers/staging/lustre/lustre/fld/fld_cache.c
-+++ b/drivers/staging/lustre/lustre/fld/fld_cache.c
-@@ -45,7 +45,6 @@
- 
- # include <linux/libcfs/libcfs.h>
- # include <linux/module.h>
--# include <linux/jbd.h>
- # include <asm/div64.h>
- 
- #include <obd.h>
-diff --git a/drivers/staging/lustre/lustre/fld/fld_request.c b/drivers/staging/lustre/lustre/fld/fld_request.c
-index c99b945..049322a 100644
---- a/drivers/staging/lustre/lustre/fld/fld_request.c
-+++ b/drivers/staging/lustre/lustre/fld/fld_request.c
-@@ -44,7 +44,6 @@
- 
- # include <linux/libcfs/libcfs.h>
- # include <linux/module.h>
--# include <linux/jbd.h>
- # include <asm/div64.h>
- 
- #include <obd.h>
-diff --git a/drivers/staging/lustre/lustre/include/linux/lustre_compat25.h b/drivers/staging/lustre/lustre/include/linux/lustre_compat25.h
-index 426533b..018e604 100644
---- a/drivers/staging/lustre/lustre/include/linux/lustre_compat25.h
-+++ b/drivers/staging/lustre/lustre/include/linux/lustre_compat25.h
-@@ -111,13 +111,6 @@ static inline void ll_set_fs_pwd(struct fs_struct *fs, struct vfsmount *mnt,
- #define TREE_READ_LOCK_IRQ(mapping)	spin_lock_irq(&(mapping)->tree_lock)
- #define TREE_READ_UNLOCK_IRQ(mapping)	spin_unlock_irq(&(mapping)->tree_lock)
- 
--static inline
--int ll_unregister_blkdev(unsigned int dev, const char *name)
--{
--	unregister_blkdev(dev, name);
--	return 0;
--}
--
- #define ll_invalidate_bdev(a,b)	 invalidate_bdev((a))
- 
- #ifndef FS_HAS_FIEMAP
-diff --git a/drivers/staging/lustre/lustre/llite/Makefile b/drivers/staging/lustre/lustre/llite/Makefile
-index dff0c04..f493e07 100644
---- a/drivers/staging/lustre/lustre/llite/Makefile
-+++ b/drivers/staging/lustre/lustre/llite/Makefile
-@@ -1,5 +1,5 @@
- obj-$(CONFIG_LUSTRE_FS) += lustre.o
--obj-$(CONFIG_LUSTRE_FS) += llite_lloop.o
-+obj-$(CONFIG_LUSTRE_LLITE_LLOOP) += llite_lloop.o
- lustre-y := dcache.o dir.o file.o llite_close.o llite_lib.o llite_nfs.o \
- 	    rw.o lproc_llite.o namei.o symlink.o llite_mmap.o \
- 	    xattr.o remote_perm.o llite_rmtacl.o llite_capa.o \
-diff --git a/drivers/staging/lustre/lustre/llite/lloop.c b/drivers/staging/lustre/lustre/llite/lloop.c
-index e063efc..ae3dc9d 100644
---- a/drivers/staging/lustre/lustre/llite/lloop.c
-+++ b/drivers/staging/lustre/lustre/llite/lloop.c
-@@ -848,10 +848,8 @@ static void lloop_exit(void)
- 		blk_cleanup_queue(loop_dev[i].lo_queue);
- 		put_disk(disks[i]);
- 	}
--	if (ll_unregister_blkdev(lloop_major, "lloop"))
--		CWARN("lloop: cannot unregister blkdev\n");
--	else
--		CDEBUG(D_CONFIG, "unregistered lloop major %d\n", lloop_major);
-+
-+	unregister_blkdev(lloop_major, "lloop");
- 
- 	OBD_FREE(disks, max_loop * sizeof(*disks));
- 	OBD_FREE(loop_dev, max_loop * sizeof(*loop_dev));
-diff --git a/drivers/staging/lustre/lustre/lvfs/fsfilt.c b/drivers/staging/lustre/lustre/lvfs/fsfilt.c
-index 064445c..ce71f80 100644
---- a/drivers/staging/lustre/lustre/lvfs/fsfilt.c
-+++ b/drivers/staging/lustre/lustre/lvfs/fsfilt.c
-@@ -35,7 +35,6 @@
- #define DEBUG_SUBSYSTEM S_FILTER
- 
- #include <linux/fs.h>
--#include <linux/jbd.h>
- #include <linux/module.h>
- #include <linux/kmod.h>
- #include <linux/slab.h>
---8323328-1770351825-1375422657=:10354--
