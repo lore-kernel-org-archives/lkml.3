@@ -1,66 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753896Ab3HBKaN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:30:13 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:47015 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753568Ab3HBKaJ (ORCPT
+	id S1754586Ab3HBKau (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:30:50 -0400
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:40615 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754120Ab3HBKas (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:30:09 -0400
-Date: Fri, 2 Aug 2013 11:29:45 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Robin Gong <b38343@freescale.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        linux-kernel@vger.kernel.org
-Message-ID: <20130802102945.GM9858@sirena.org.uk>
-References: <1375358396.15804.1.camel@phoenix>
+	Fri, 2 Aug 2013 06:30:48 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ZrTMdTG7MEja30I6"
-Content-Disposition: inline
-In-Reply-To: <1375358396.15804.1.camel@phoenix>
-X-Cookie: You will be awarded some great honor.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: pfuze100: Fix off-by-one for max_register
- setting
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+In-Reply-To: <2298639.F0Qv2QqRnZ@vostro.rjw.lan>
+References: <2362640.pUofnXyzOi@vostro.rjw.lan>
+	<51FAC46D.1000703@linux.vnet.ibm.com>
+	<1757496.qSuJuAun9Z@vostro.rjw.lan>
+	<2298639.F0Qv2QqRnZ@vostro.rjw.lan>
+Date: Fri, 2 Aug 2013 16:00:47 +0530
+Message-ID: <CAKohpokbd=xX-DqVeEZOnGftZuE-54RDShpMJgFPskRc3CkZ5w@mail.gmail.com>
+Subject: Re: [Update][PATCH] cpufreq: Do not hold driver module references for
+ additional policy CPUs
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux PM list <linux-pm@vger.kernel.org>, cpufreq@vger.kernel.org,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 2 August 2013 02:23, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> To remove that inconsistency make cpufreq_add_policy_cpu() execute
+> cpufreq_cpu_put() for the given policy before returning, which
+> decrements the driver module refcount so that it will be 0 after
+> __cpufreq_add_dev() returns.  Moreover, remove the cpufreq_cpu_get()
+> call from cpufreq_add_dev_symlink(), since both the policy refcount
+> and the driver module refcount are nonzero when it is called and they
+> don't need to be bumped up by it.
 
---ZrTMdTG7MEja30I6
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Sorry for creating so many problems but my concerns with this patch
+aren't yet over :(
 
-On Thu, Aug 01, 2013 at 07:59:56PM +0800, Axel Lin wrote:
-> max_register should be register count - 1.
+Should we increment policy refcount or kobj refcount for every cpu it
+is used on? I think yes, that's probably the right way of doing it.
 
-Applied, thanks.
-
---ZrTMdTG7MEja30I6
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR+4oVAAoJELSic+t+oim9k3MP/34tj/5Q1xcEJqRH31ITNOok
-2UZJ75PlMV65SObJdG8u8N+48Nm/45Fm83JxTknbdnYeiLWoPcVNJWvuVtzmco31
-4RQtudy7ktrQIC8/+nafM+0aE70fHuYhXwlRAnl3S7yt2yKjQX07T1wF1Jjs3pCH
-H/p+nPvxqWFIM1syRZFblL0oR59LRG62NVGD+g/OKrKL+OsAl8Wyp8w/khFe0s7O
-twVPAWfwzCuVA86BNqYCQ/mJisJtF7XfkF0LtYo0ljRG96+PsSfGiAReyv27Je/j
-jQwhkDDaJw4ie5PrMO9AzcTFAEfXvmmtKHTwG5hq8dAW7FREPqN8kpZToyYOc93+
-wn49BGRr+zgjkrWR7+XFUIyy315zanf5+3TFF1d2wX8Rfr1+lPhw5kSYi7ddQMbV
-dAjRJXVtAfcKojIgP5MIXaNhy87xMJqL81ICw6DHEVPgG1HSws+/wnHBvvHaaYZq
-1/QJ/gBpMfXcYJE2XH2ssL3r7uJjxVtgToyPOrNVzEkW9t/LdGbXKKT4nONMhoBH
-s07Wpqdl5gsL5Zol9JmoMpoWrTsY4zmKKEs9ib/plc8+xI2dBdnCS4Qd+ceA4gb+
-8fwgSjutU4p4lpv89ngR49CbRpzTHL9stKR4iA/NdWTtPUavYA48H/4Tx5kEZEWb
-HORAglyI9eCphPzpNcCn
-=Rr0l
------END PGP SIGNATURE-----
-
---ZrTMdTG7MEja30I6--
+And so we simply can't remove calls to cpufreq_cpu_get() from
+cpufreq_add_dev_symlink() routine and also from
+cpufreq_add_policy_cpu()..
