@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752594Ab3HBOvj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 10:51:39 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:54575 "EHLO
+	id S1753952Ab3HBOvi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 10:51:38 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:55891 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753281Ab3HBOuv (ORCPT
+	with ESMTP id S1753354Ab3HBOuv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 2 Aug 2013 10:50:51 -0400
 From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
@@ -15,105 +15,128 @@ Cc: linux-kernel@vger.kernel.org, Magnus Damm <magnus.damm@gmail.com>,
         Vinod Koul <vinod.koul@intel.com>,
         Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
         Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
-Subject: [PATCH v5 4/7] DMA: shdma: add r8a73a4 DMAC data to the device ID table
-Date: Fri,  2 Aug 2013 16:50:39 +0200
-Message-Id: <1375455042-24093-5-git-send-email-g.liakhovetski@gmx.de>
+Subject: [PATCH v5 5/7] ARM: shmobile: r8a73a4: add a DMAC platform device and clock for it
+Date: Fri,  2 Aug 2013 16:50:40 +0200
+Message-Id: <1375455042-24093-6-git-send-email-g.liakhovetski@gmx.de>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1375455042-24093-1-git-send-email-g.liakhovetski@gmx.de>
 References: <1375455042-24093-1-git-send-email-g.liakhovetski@gmx.de>
-X-Provags-ID: V02:K0:hLSJvavAwUI+RdQWgipt3K34vg1pTyHPObMFH4JFbme
- Pbxqf5eCLVkmEtbeR89doMtv7qkvMMjw4tM8RogXpjoSGBS+FD
- kSX7VEu10atV7S8Q0v1RY+hoNYaFrB/EoIQdNDjuzF1qck+EYb
- qGeoG51wZgDx5QyV5ZqcvAKmSFhwXHNeaVNSAfdVw7OYPGI6zL
- HzFA/vUytRsTQBccdoULGiir7EYUF/9H4w4oJQ309bHJEWGxLs
- yQU4a+n886X+80AMYAZGS6/SLlGd+W95Jj7IL+iio/Qlb+3q6v
- Y7R+1eiQSDAM/RR0Pt8a0xXxZ0RbQJnX4i5XMB3Z4qDLBstlyD
- vf8o19kM60dRlJOByNRnSn+zUvqlsAjmh6CqbymikVTxo2D8p8
- SSMFQoCkUqzRg==
+X-Provags-ID: V02:K0:rMqEbxqWV2Tm4P6SOZZ97BUmbG60jFeN2slZkzBCDxg
+ UC7O6XBHIZq6gAXAFx9PR99lHDx0n7zRAK7xo9VmLtkW1kyCRg
+ xuImbghzYAKFKJ9Wat6Akpebj/1tXVZAo2uLB4y/nrpm0uWdFM
+ zK+MAwS7AddYbfAQJ20UBIQT1q+3Ad3EH5vwKQbYpQzqWwkdlv
+ CSql9LtOPXxEx+sZFaN4mB65JjFrVFI/xdWeXYBdQvVs+G+Vir
+ LLORqno/myCYrMEGV+gcOvHMqDh9kf/yVNyKwxM0MhaWigUmZZ
+ BlSPH1m0VA+VrxWXiCbUFXPSx7XtI9y3nYO1P3jU5idSCv4R/L
+ aPpreNocmB9EhZf/qSPXF9HAJ8BQj/fnOgtrtYO9qyQPlEZfzs
+ t+HfYwll+t9Qg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This configuration data will be used, when DMAC DT support is added to
-r8a73a4.
+Add a DMAC platform device and clock definitions for it on r8a73a4.
 
 Signed-off-by: Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
 ---
 
-v5:
-1. don't include mach/*.h headers
-2. don't change the C-case
-3. don't include unrelated patches
-4. include only one architecture
-5. don't use slave addresses and IDs in slave lists
+Depends on "DMA: shdma: support the new CHCLR register layout"
+https://lkml.org/lkml/2013/7/10/146
 
- drivers/dma/sh/Kconfig         |    4 ++
- drivers/dma/sh/Makefile        |    3 ++
- drivers/dma/sh/shdma-r8a73a4.c |   77 ++++++++++++++++++++++++++++++++++++++++
- drivers/dma/sh/shdma.h         |    7 ++++
- drivers/dma/sh/shdmac.c        |    1 +
- 5 files changed, 92 insertions(+), 0 deletions(-)
- create mode 100644 drivers/dma/sh/shdma-r8a73a4.c
+ arch/arm/mach-shmobile/clock-r8a73a4.c        |    4 +-
+ arch/arm/mach-shmobile/include/mach/r8a73a4.h |    9 +++
+ arch/arm/mach-shmobile/setup-r8a73a4.c        |   91 +++++++++++++++++++++++++
+ 3 files changed, 103 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/dma/sh/Kconfig b/drivers/dma/sh/Kconfig
-index 5c1dee2..d0924b6 100644
---- a/drivers/dma/sh/Kconfig
-+++ b/drivers/dma/sh/Kconfig
-@@ -22,3 +22,7 @@ config SUDMAC
- 	depends on SH_DMAE_BASE
- 	help
- 	  Enable support for the Renesas SUDMAC controllers.
+diff --git a/arch/arm/mach-shmobile/clock-r8a73a4.c b/arch/arm/mach-shmobile/clock-r8a73a4.c
+index 8ea5ef6..357b9bc 100644
+--- a/arch/arm/mach-shmobile/clock-r8a73a4.c
++++ b/arch/arm/mach-shmobile/clock-r8a73a4.c
+@@ -504,7 +504,7 @@ static struct clk div6_clks[DIV6_NR] = {
+ 
+ /* MSTP */
+ enum {
+-	MSTP217, MSTP216, MSTP207, MSTP206, MSTP204, MSTP203,
++	MSTP218, MSTP217, MSTP216, MSTP207, MSTP206, MSTP204, MSTP203,
+ 	MSTP329, MSTP323, MSTP318, MSTP317, MSTP316,
+ 	MSTP315, MSTP314, MSTP313, MSTP312, MSTP305, MSTP300,
+ 	MSTP411, MSTP410, MSTP409,
+@@ -519,6 +519,7 @@ static struct clk mstp_clks[MSTP_NR] = {
+ 	[MSTP207] = SH_CLK_MSTP32(&div6_clks[DIV6_MP],	SMSTPCR2, 7, 0), /* SCIFB1 */
+ 	[MSTP216] = SH_CLK_MSTP32(&div6_clks[DIV6_MP],	SMSTPCR2, 16, 0), /* SCIFB2 */
+ 	[MSTP217] = SH_CLK_MSTP32(&div6_clks[DIV6_MP],	SMSTPCR2, 17, 0), /* SCIFB3 */
++	[MSTP218] = SH_CLK_MSTP32(&div4_clks[DIV4_HP],	SMSTPCR2, 18, 0), /* DMAC */
+ 	[MSTP300] = SH_CLK_MSTP32(&div4_clks[DIV4_HP],	SMSTPCR3, 0, 0), /* IIC2 */
+ 	[MSTP305] = SH_CLK_MSTP32(&div6_clks[DIV6_MMC1],SMSTPCR3, 5, 0), /* MMCIF1 */
+ 	[MSTP312] = SH_CLK_MSTP32(&div6_clks[DIV6_SDHI2],SMSTPCR3, 12, 0), /* SDHI2 */
+@@ -578,6 +579,7 @@ static struct clk_lookup lookups[] = {
+ 	CLKDEV_DEV_ID("sh-sci.3", &mstp_clks[MSTP207]),
+ 	CLKDEV_DEV_ID("sh-sci.4", &mstp_clks[MSTP216]),
+ 	CLKDEV_DEV_ID("sh-sci.5", &mstp_clks[MSTP217]),
++	CLKDEV_DEV_ID("sh-dma-engine.0", &mstp_clks[MSTP218]),
+ 	CLKDEV_DEV_ID("rcar_thermal", &mstp_clks[MSTP522]),
+ 	CLKDEV_DEV_ID("e6520000.i2c", &mstp_clks[MSTP300]),
+ 	CLKDEV_DEV_ID("sh_mmcif.1", &mstp_clks[MSTP305]),
+diff --git a/arch/arm/mach-shmobile/include/mach/r8a73a4.h b/arch/arm/mach-shmobile/include/mach/r8a73a4.h
+index f3a9b70..3a0ea48 100644
+--- a/arch/arm/mach-shmobile/include/mach/r8a73a4.h
++++ b/arch/arm/mach-shmobile/include/mach/r8a73a4.h
+@@ -1,6 +1,15 @@
+ #ifndef __ASM_R8A73A4_H__
+ #define __ASM_R8A73A4_H__
+ 
++/* DMA slave IDs */
++enum {
++	SHDMA_SLAVE_INVALID,
++	SHDMA_SLAVE_MMCIF0_TX,
++	SHDMA_SLAVE_MMCIF0_RX,
++	SHDMA_SLAVE_MMCIF1_TX,
++	SHDMA_SLAVE_MMCIF1_RX,
++};
 +
-+config SHDMA_R8A73A4
-+	def_bool y
-+	depends on ARCH_R8A73A4 && SH_DMAE != n
-diff --git a/drivers/dma/sh/Makefile b/drivers/dma/sh/Makefile
-index 893ee09..05a31d4 100644
---- a/drivers/dma/sh/Makefile
-+++ b/drivers/dma/sh/Makefile
-@@ -1,5 +1,8 @@
- obj-$(CONFIG_SH_DMAE_BASE) += shdma-base.o shdma-of.o
- obj-$(CONFIG_SH_DMAE) += shdma.o
- shdma-y := shdmac.o
-+ifeq ($(CONFIG_OF),y)
-+shdma-$(CONFIG_SHDMA_R8A73A4) += shdma-r8a73a4.o
-+endif
- shdma-objs := $(shdma-y)
- obj-$(CONFIG_SUDMAC) += sudmac.o
-diff --git a/drivers/dma/sh/shdma-r8a73a4.c b/drivers/dma/sh/shdma-r8a73a4.c
-new file mode 100644
-index 0000000..7cad656
---- /dev/null
-+++ b/drivers/dma/sh/shdma-r8a73a4.c
-@@ -0,0 +1,77 @@
-+/*
-+ * Renesas SuperH DMA Engine support for r8a73a4 (APE6) SoCs
-+ *
-+ * Copyright (C) 2013 Renesas Electronics, Inc.
-+ *
-+ * This is free software; you can redistribute it and/or modify it under the
-+ * terms of version 2 the GNU General Public License as published by the Free
-+ * Software Foundation.
-+ */
+ void r8a73a4_add_standard_devices(void);
+ void r8a73a4_add_dt_devices(void);
+ void r8a73a4_clock_init(void);
+diff --git a/arch/arm/mach-shmobile/setup-r8a73a4.c b/arch/arm/mach-shmobile/setup-r8a73a4.c
+index 2ee45d5..ec77059 100644
+--- a/arch/arm/mach-shmobile/setup-r8a73a4.c
++++ b/arch/arm/mach-shmobile/setup-r8a73a4.c
+@@ -22,8 +22,10 @@
+ #include <linux/of_platform.h>
+ #include <linux/platform_data/irq-renesas-irqc.h>
+ #include <linux/serial_sci.h>
 +#include <linux/sh_dma.h>
-+
-+#include "shdma-arm.h"
-+
-+const unsigned int dma_ts_shift[] = SH_DMAE_TS_SHIFT;
-+
+ #include <linux/sh_timer.h>
+ #include <mach/common.h>
++#include <mach/dma-register.h>
+ #include <mach/irqs.h>
+ #include <mach/r8a73a4.h>
+ #include <asm/mach/arch.h>
+@@ -199,12 +201,101 @@ void __init r8a73a4_add_dt_devices(void)
+ 	r8a7790_register_cmt(10);
+ }
+ 
++/* DMA */
 +static const struct sh_dmae_slave_config dma_slaves[] = {
 +	{
++		.slave_id	= SHDMA_SLAVE_MMCIF0_TX,
++		.addr		= 0xee200034,
 +		.chcr		= CHCR_TX(XMIT_SZ_32BIT),
-+		.mid_rid	= 0xd1,		/* MMC0 Tx */
++		.mid_rid	= 0xd1,
 +	}, {
++		.slave_id	= SHDMA_SLAVE_MMCIF0_RX,
++		.addr		= 0xee200034,
 +		.chcr		= CHCR_RX(XMIT_SZ_32BIT),
-+		.mid_rid	= 0xd2,		/* MMC0 Rx */
++		.mid_rid	= 0xd2,
 +	}, {
++		.slave_id	= SHDMA_SLAVE_MMCIF1_TX,
++		.addr		= 0xee220034,
 +		.chcr		= CHCR_TX(XMIT_SZ_32BIT),
-+		.mid_rid	= 0xe1,		/* MMC1 Tx */
++		.mid_rid	= 0xe1,
 +	}, {
++		.slave_id	= SHDMA_SLAVE_MMCIF1_RX,
++		.addr		= 0xee220034,
 +		.chcr		= CHCR_RX(XMIT_SZ_32BIT),
-+		.mid_rid	= 0xe2,		/* MMC1 Rx */
++		.mid_rid	= 0xe2,
 +	},
 +};
 +
@@ -148,7 +171,7 @@ index 0000000..7cad656
 +	DMAE_CHANNEL(0x8980, 19),
 +};
 +
-+const struct sh_dmae_pdata r8a73a4_dma_pdata = {
++static const struct sh_dmae_pdata dma_pdata = {
 +	.slave		= dma_slaves,
 +	.slave_num	= ARRAY_SIZE(dma_slaves),
 +	.channel	= dma_channels,
@@ -163,34 +186,33 @@ index 0000000..7cad656
 +	.chclr_present	= 1,
 +	.chclr_bitwise	= 1,
 +};
-diff --git a/drivers/dma/sh/shdma.h b/drivers/dma/sh/shdma.h
-index ff2f93b..5210900 100644
---- a/drivers/dma/sh/shdma.h
-+++ b/drivers/dma/sh/shdma.h
-@@ -62,4 +62,11 @@ struct sh_dmae_desc {
- #define to_sh_dev(chan) container_of(chan->shdma_chan.dma_chan.device,\
- 				     struct sh_dmae_device, shdma_dev.dma_dev)
- 
-+#ifdef CONFIG_SHDMA_R8A73A4
-+extern const struct sh_dmae_pdata r8a73a4_dma_pdata;
-+#define r8a73a4_shdma_devid &r8a73a4_dma_pdata
-+#else
-+#define r8a73a4_shdma_devid NULL
-+#endif
 +
- #endif	/* __DMA_SHDMA_H */
-diff --git a/drivers/dma/sh/shdmac.c b/drivers/dma/sh/shdmac.c
-index 4412cad..bf16b3d 100644
---- a/drivers/dma/sh/shdmac.c
-+++ b/drivers/dma/sh/shdmac.c
-@@ -677,6 +677,7 @@ static const struct shdma_ops sh_dmae_shdma_ops = {
- };
++static struct resource dma_resources[] = {
++	DEFINE_RES_MEM(0xe6700020, 0x89e0),
++	DEFINE_RES_IRQ_NAMED(gic_spi(220), "error_irq"),
++	{
++		/* IRQ for channels 0-19 */
++		.start  = gic_spi(200),
++		.end    = gic_spi(219),
++		.flags  = IORESOURCE_IRQ,
++	},
++};
++
++#define r8a73a4_register_dmac()							\
++	platform_device_register_resndata(&platform_bus, "sh-dma-engine", 0,	\
++				dma_resources, ARRAY_SIZE(dma_resources),	\
++				&dma_pdata, sizeof(dma_pdata))
++
+ void __init r8a73a4_add_standard_devices(void)
+ {
+ 	r8a73a4_add_dt_devices();
+ 	r8a73a4_register_irqc(0);
+ 	r8a73a4_register_irqc(1);
+ 	r8a73a4_register_thermal();
++	r8a73a4_register_dmac();
+ }
  
- static const struct of_device_id sh_dmae_of_match[] = {
-+	{.compatible = "renesas,shdma-r8a73a4", .data = r8a73a4_shdma_devid,},
- 	{}
- };
- MODULE_DEVICE_TABLE(of, sh_dmae_of_match);
+ void __init r8a73a4_init_delay(void)
 -- 
 1.7.2.5
 
