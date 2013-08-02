@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758840Ab3HBKHs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:07:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37038 "EHLO
+	id S1758912Ab3HBKH7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:07:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37053 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758719Ab3HBKHo (ORCPT
+	with ESMTP id S1758896Ab3HBKH5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:07:44 -0400
+	Fri, 2 Aug 2013 06:07:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
-        Or Gerlitz <ogerlitz@mellanox.com>,
-        Mike Christie <michaelc@cs.wisc.edu>
-Subject: [ 02/99] iser-target: Fix isert_put_reject payload buffer post
-Date: Fri,  2 Aug 2013 18:07:15 +0800
-Message-Id: <20130802100225.829303813@linuxfoundation.org>
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [ 05/99] iscsi-target: Fix ISCSI_OP_SCSI_TMFUNC handling for iser
+Date: Fri,  2 Aug 2013 18:07:18 +0800
+Message-Id: <20130802100226.266463896@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802100225.478715166@linuxfoundation.org>
 References: <20130802100225.478715166@linuxfoundation.org>
@@ -30,84 +28,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit 3df8f68aaf7ebe3d136a22262b41b350b0a1858b upstream.
+commit 186a9647019587b3784694894c4d136fd00cfd7b upstream.
 
-This patch adds the missing isert_put_reject() logic to post
-a outgoing payload buffer to hold the 48 bytes of original PDU
-header request payload for the rejected cmd.
+This patch adds target_get_sess_cmd reference counting for
+iscsit_handle_task_mgt_cmd(), and adds a target_put_sess_cmd()
+for the failure case.
 
-It also fixes ISTATE_SEND_REJECT handling in isert_response_completion()
--> isert_do_control_comp() code, and drops incorrect iscsi_cmd_t->reject_comp
-usage.
+It also fixes a bug where ISCSI_OP_SCSI_TMFUNC type commands
+where leaking iscsi_cmd->i_conn_node and eventually triggering
+an OOPs during struct isert_conn shutdown.
 
 Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-Cc: Or Gerlitz <ogerlitz@mellanox.com>
-Cc: Mike Christie <michaelc@cs.wisc.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/ulp/isert/ib_isert.c |   26 ++++++++++++++++++++++----
- 1 file changed, 22 insertions(+), 4 deletions(-)
+ drivers/infiniband/ulp/isert/ib_isert.c |   16 ++++++++--------
+ drivers/target/iscsi/iscsi_target.c     |   12 ++++++++++--
+ 2 files changed, 18 insertions(+), 10 deletions(-)
 
 --- a/drivers/infiniband/ulp/isert/ib_isert.c
 +++ b/drivers/infiniband/ulp/isert/ib_isert.c
-@@ -1222,6 +1222,9 @@ isert_put_cmd(struct isert_cmd *isert_cm
- 		 * associated cmd->se_cmd needs to be released.
- 		 */
- 		if (cmd->se_cmd.se_tfo != NULL) {
-+			pr_debug("Calling transport_generic_free_cmd from"
-+				 " isert_put_cmd for 0x%02x\n",
-+				 cmd->iscsi_opcode);
- 			transport_generic_free_cmd(&cmd->se_cmd, 0);
- 			break;
- 		}
-@@ -1318,8 +1321,8 @@ isert_do_control_comp(struct work_struct
- 		atomic_dec(&isert_conn->post_send_buf_count);
- 
- 		cmd->i_state = ISTATE_SENT_STATUS;
--		complete(&cmd->reject_comp);
- 		isert_completion_put(&isert_cmd->tx_desc, isert_cmd, ib_dev);
-+		break;
- 	case ISTATE_SEND_LOGOUTRSP:
- 		pr_debug("Calling iscsit_logout_post_handler >>>>>>>>>>>>>>\n");
- 		/*
-@@ -1345,7 +1348,8 @@ isert_response_completion(struct iser_tx
+@@ -1202,14 +1202,12 @@ isert_put_cmd(struct isert_cmd *isert_cm
+ {
  	struct iscsi_cmd *cmd = &isert_cmd->iscsi_cmd;
+ 	struct isert_conn *isert_conn = isert_cmd->conn;
+-	struct iscsi_conn *conn;
++	struct iscsi_conn *conn = isert_conn->conn;
  
- 	if (cmd->i_state == ISTATE_SEND_TASKMGTRSP ||
--	    cmd->i_state == ISTATE_SEND_LOGOUTRSP) {
-+	    cmd->i_state == ISTATE_SEND_LOGOUTRSP ||
-+	    cmd->i_state == ISTATE_SEND_REJECT) {
- 		isert_unmap_tx_desc(tx_desc, ib_dev);
+ 	pr_debug("Entering isert_put_cmd: %p\n", isert_cmd);
  
- 		INIT_WORK(&isert_cmd->comp_work, isert_do_control_comp);
-@@ -1637,11 +1641,25 @@ isert_put_reject(struct iscsi_cmd *cmd,
- 				struct isert_cmd, iscsi_cmd);
- 	struct isert_conn *isert_conn = (struct isert_conn *)conn->context;
- 	struct ib_send_wr *send_wr = &isert_cmd->tx_desc.send_wr;
-+	struct ib_device *ib_dev = isert_conn->conn_cm_id->device;
-+	struct ib_sge *tx_dsg = &isert_cmd->tx_desc.tx_sg[1];
-+	struct iscsi_reject *hdr =
-+		(struct iscsi_reject *)&isert_cmd->tx_desc.iscsi_header;
+ 	switch (cmd->iscsi_opcode) {
+ 	case ISCSI_OP_SCSI_CMD:
+-		conn = isert_conn->conn;
+-
+ 		spin_lock_bh(&conn->cmd_lock);
+ 		if (!list_empty(&cmd->i_conn_node))
+ 			list_del(&cmd->i_conn_node);
+@@ -1219,16 +1217,18 @@ isert_put_cmd(struct isert_cmd *isert_cm
+ 			iscsit_stop_dataout_timer(cmd);
  
- 	isert_create_send_desc(isert_conn, isert_cmd, &isert_cmd->tx_desc);
--	iscsit_build_reject(cmd, conn, (struct iscsi_reject *)
--				&isert_cmd->tx_desc.iscsi_header);
-+	iscsit_build_reject(cmd, conn, hdr);
- 	isert_init_tx_hdrs(isert_conn, &isert_cmd->tx_desc);
+ 		isert_unmap_cmd(isert_cmd, isert_conn);
+-		/*
+-		 * Fall-through
+-		 */
++		transport_generic_free_cmd(&cmd->se_cmd, 0);
++		break;
+ 	case ISCSI_OP_SCSI_TMFUNC:
++		spin_lock_bh(&conn->cmd_lock);
++		if (!list_empty(&cmd->i_conn_node))
++			list_del(&cmd->i_conn_node);
++		spin_unlock_bh(&conn->cmd_lock);
 +
-+	hton24(hdr->dlength, ISCSI_HDR_LEN);
-+	isert_cmd->sense_buf_dma = ib_dma_map_single(ib_dev,
-+			(void *)cmd->buf_ptr, ISCSI_HDR_LEN,
-+			DMA_TO_DEVICE);
-+	isert_cmd->sense_buf_len = ISCSI_HDR_LEN;
-+	tx_dsg->addr	= isert_cmd->sense_buf_dma;
-+	tx_dsg->length	= ISCSI_HDR_LEN;
-+	tx_dsg->lkey	= isert_conn->conn_mr->lkey;
-+	isert_cmd->tx_desc.num_sge = 2;
-+
- 	isert_init_send_wr(isert_cmd, send_wr);
+ 		transport_generic_free_cmd(&cmd->se_cmd, 0);
+ 		break;
+ 	case ISCSI_OP_REJECT:
+ 	case ISCSI_OP_NOOP_OUT:
+-		conn = isert_conn->conn;
+-
+ 		spin_lock_bh(&conn->cmd_lock);
+ 		if (!list_empty(&cmd->i_conn_node))
+ 			list_del(&cmd->i_conn_node);
+--- a/drivers/target/iscsi/iscsi_target.c
++++ b/drivers/target/iscsi/iscsi_target.c
+@@ -1757,8 +1757,8 @@ iscsit_handle_task_mgt_cmd(struct iscsi_
+ 	struct se_tmr_req *se_tmr;
+ 	struct iscsi_tmr_req *tmr_req;
+ 	struct iscsi_tm *hdr;
+-	int out_of_order_cmdsn = 0;
+-	int ret;
++	int out_of_order_cmdsn = 0, ret;
++	bool sess_ref = false;
+ 	u8 function;
  
- 	pr_debug("Posting Reject IB_WR_SEND >>>>>>>>>>>>>>>>>>>>>>\n");
+ 	hdr			= (struct iscsi_tm *) buf;
+@@ -1814,6 +1814,9 @@ iscsit_handle_task_mgt_cmd(struct iscsi_
+ 				      conn->sess->se_sess, 0, DMA_NONE,
+ 				      MSG_SIMPLE_TAG, cmd->sense_buffer + 2);
+ 
++		target_get_sess_cmd(conn->sess->se_sess, &cmd->se_cmd, true);
++		sess_ref = true;
++
+ 		switch (function) {
+ 		case ISCSI_TM_FUNC_ABORT_TASK:
+ 			tcm_function = TMR_ABORT_TASK;
+@@ -1956,6 +1959,11 @@ attach:
+ 	 * For connection recovery, this is also the default action for
+ 	 * TMR TASK_REASSIGN.
+ 	 */
++	if (sess_ref) {
++		pr_debug("Handle TMR, using sess_ref=true check\n");
++		target_put_sess_cmd(conn->sess->se_sess, &cmd->se_cmd);
++	}
++
+ 	iscsit_add_cmd_to_response_queue(cmd, conn, cmd->i_state);
+ 	return 0;
+ }
 
 
