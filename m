@@ -1,62 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754958Ab3HBRSS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 13:18:18 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:22963 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754670Ab3HBRSP (ORCPT
+	id S1753924Ab3HBR0H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 13:26:07 -0400
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:16764 "EHLO
+	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753002Ab3HBR0G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 13:18:15 -0400
-X-IronPort-AV: E=Sophos;i="4.89,802,1367971200"; 
-   d="scan'208";a="39093382"
-Date: Fri, 2 Aug 2013 18:18:00 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Julien Grall <julien.grall@linaro.org>
-CC: <stefano.stabellini@eu.citrix.com>, <ian.campbell@citrix.com>,
-        <patches@linaro.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xen.org>
-Subject: Re: [PATCH] xen/arm: missing put_cpu in xen_percpu_init
-In-Reply-To: <1375113966-2859-1-git-send-email-julien.grall@linaro.org>
-Message-ID: <alpine.DEB.2.02.1308021817030.4893@kaball.uk.xensource.com>
-References: <1375113966-2859-1-git-send-email-julien.grall@linaro.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 2 Aug 2013 13:26:06 -0400
+X-IronPort-AV: E=Sophos;i="4.89,802,1367964000"; 
+   d="scan'208";a="28326206"
+Message-ID: <51FBEBAB.9080300@inria.fr>
+Date: Fri, 02 Aug 2013 19:26:03 +0200
+From: Brice Goglin <Brice.Goglin@inria.fr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130630 Icedove/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+To: Dan Williams <djbw@fb.com>
+CC: "Jiang, Dave" <dave.jiang@intel.com>, "Mason, Jon" <jon.mason@intel.com>,
+        "Koul, Vinod" <vinod.koul@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: ioatdma: add ioat_raid_enabled module parameter
+References: <CE21305B.1D1BD%djbw@fb.com>
+In-Reply-To: <CE21305B.1D1BD%djbw@fb.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 29 Jul 2013, Julien Grall wrote:
-> When CONFIG_PREEMPT is enabled, Linux will not be able to boot and warn:
-> [    4.127825] ------------[ cut here ]------------
-> [    4.133376] WARNING: at init/main.c:699 do_one_initcall+0x150/0x158()
-> [    4.140738] initcall xen_init_events+0x0/0x10c returned with preemption imbalance
-> 
-> This is because xen_percpu_init uses get_cpu but doesn't have the corresponding
-> put_cpu.
-> 
-> Signed-off-by: Julien Grall <julien.grall@linaro.org>
+Le 02/08/2013 18:57, Dan Williams a écrit :
+> I like Jon¹s suggestion.  Just make raid disabled by default on non-atom
+> platforms.  When if a non-atom platform comes along without the previous
+> restrictions it can add itself to this list.
+>
+> So let¹s drop the module parameter and just cleanup the 3.2 support to
+> reflect the current reality of raid being disabled.
 
-Ops. Thanks for catching the bug.
-I'll add this to my queue.
+So you want this instead ?
+
+Brice
 
 
->  arch/arm/xen/enlighten.c |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
-> index f71c37e..dc9f284 100644
-> --- a/arch/arm/xen/enlighten.c
-> +++ b/arch/arm/xen/enlighten.c
-> @@ -170,6 +170,7 @@ static void __init xen_percpu_init(void *unused)
->  	per_cpu(xen_vcpu, cpu) = vcpup;
->  
->  	enable_percpu_irq(xen_events_irq, 0);
-> +	put_cpu();
->  }
->  
->  static void xen_restart(char str, const char *cmd)
-> -- 
-> 1.7.10.4
-> 
+ioatdma: disable RAID on non-Atom platforms and reenable unaligned copies
+
+Disable RAID on non-Atom platform and remove the 64-byte alignement
+restriction on legacy DMA operations (introduced in commit f26df1a1
+as a workaround for silicon errata).
+
+Signed-off-by: Brice Goglin <Brice.Goglin@inria.fr>
+---
+ drivers/dma/ioat/dma_v3.c |    5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
+
+Index: b/drivers/dma/ioat/dma_v3.c
+===================================================================
+--- a/drivers/dma/ioat/dma_v3.c	2013-07-31 23:06:24.163810000 +0200
++++ b/drivers/dma/ioat/dma_v3.c	2013-08-02 19:17:26.075745688 +0200
+@@ -1775,15 +1775,12 @@ int ioat3_dma_probe(struct ioatdma_devic
+ 	dma->device_alloc_chan_resources = ioat2_alloc_chan_resources;
+ 	dma->device_free_chan_resources = ioat2_free_chan_resources;
+ 
+-	if (is_xeon_cb32(pdev))
+-		dma->copy_align = 6;
+-
+ 	dma_cap_set(DMA_INTERRUPT, dma->cap_mask);
+ 	dma->device_prep_dma_interrupt = ioat3_prep_interrupt_lock;
+ 
+ 	device->cap = readl(device->reg_base + IOAT_DMA_CAP_OFFSET);
+ 
+-	if (is_bwd_noraid(pdev))
++	if (is_xeon_cb32(pdev) || is_bwd_noraid(pdev))
+ 		device->cap &= ~(IOAT_CAP_XOR | IOAT_CAP_PQ | IOAT_CAP_RAID16SS);
+ 
+ 	/* dca is incompatible with raid operations */
+
