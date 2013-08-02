@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754364Ab3HBUGQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 16:06:16 -0400
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:57989 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753783Ab3HBUGM (ORCPT
+	id S1754535Ab3HBUGo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 16:06:44 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:48185 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753716Ab3HBUGK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 16:06:12 -0400
+	Fri, 2 Aug 2013 16:06:10 -0400
 From: David Ahern <dsahern@gmail.com>
 To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
 Cc: David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>,
@@ -15,9 +15,9 @@ Cc: David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>,
         Namhyung Kim <namhyung@kernel.org>,
         Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
         Runzhen Wang <runzhen@linux.vnet.ibm.com>
-Subject: [PATCH 9/9] perf kvm stat report: Add option to analyze specific VM
-Date: Fri,  2 Aug 2013 14:05:47 -0600
-Message-Id: <1375473947-64285-10-git-send-email-dsahern@gmail.com>
+Subject: [PATCH 8/9] perf kvm: debug for missing vmexit/vmentry event
+Date: Fri,  2 Aug 2013 14:05:46 -0600
+Message-Id: <1375473947-64285-9-git-send-email-dsahern@gmail.com>
 X-Mailer: git-send-email 1.7.10.1
 In-Reply-To: <1375473947-64285-1-git-send-email-dsahern@gmail.com>
 References: <1375473947-64285-1-git-send-email-dsahern@gmail.com>
@@ -25,9 +25,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add an option to analyze a specific VM within a data file. This
-allows the collection of kvm events for all VMs and then analyze
-data for each VM (or set of VMs) individually.
+Expected to have missing events for each vcpu when perf is
+started. After that should not have missing events.
 
 Signed-off-by: David Ahern <dsahern@gmail.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
@@ -39,100 +38,38 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 Cc: Runzhen Wang <runzhen@linux.vnet.ibm.com>
 ---
- tools/perf/builtin-kvm.c |   38 ++++++++++++++++++++++++++++++++++++--
- 1 file changed, 36 insertions(+), 2 deletions(-)
+ tools/perf/builtin-kvm.c |   15 +++++++++++++--
+ 1 file changed, 13 insertions(+), 2 deletions(-)
 
 diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
-index 41dd25a..54f9852 100644
+index 28afc05d..41dd25a 100644
 --- a/tools/perf/builtin-kvm.c
 +++ b/tools/perf/builtin-kvm.c
-@@ -9,7 +9,7 @@
- #include "util/thread.h"
- #include "util/header.h"
- #include "util/session.h"
--
-+#include "util/intlist.h"
- #include "util/parse-options.h"
- #include "util/trace-event.h"
- #include "util/debug.h"
-@@ -108,6 +108,9 @@ struct perf_kvm_stat {
- 	u64 lost_events;
- 	u64 threshold;
+@@ -568,11 +568,22 @@ static bool handle_kvm_event(struct perf_kvm_stat *kvm,
+ 	    (kvm->trace_vcpu != vcpu_record->vcpu_id))
+ 		return true;
  
-+	const char *pid_str;
-+	struct intlist *pid_list;
-+
- 	struct rb_root result;
- 
- 	int timerfd;
-@@ -807,16 +810,29 @@ static int process_lost_event(struct perf_tool *tool,
- 	return 0;
- }
- 
-+static bool skip_sample(struct perf_kvm_stat *kvm,
-+			struct perf_sample *sample)
-+{
-+	if (kvm->pid_list && intlist__find(kvm->pid_list, sample->pid) == NULL)
-+		return true;
-+
-+	return false;
-+}
-+
- static int process_sample_event(struct perf_tool *tool,
- 				union perf_event *event,
- 				struct perf_sample *sample,
- 				struct perf_evsel *evsel,
- 				struct machine *machine)
- {
--	struct thread *thread = machine__findnew_thread(machine, sample->tid);
-+	struct thread *thread;
- 	struct perf_kvm_stat *kvm = container_of(tool, struct perf_kvm_stat,
- 						 tool);
- 
-+	if (skip_sample(kvm, sample))
-+		return 0;
-+
-+	thread = machine__findnew_thread(machine, sample->tid);
- 	if (thread == NULL) {
- 		pr_debug("problem processing %d event, skipping it.\n",
- 			event->header.type);
-@@ -1216,11 +1232,27 @@ static int read_events(struct perf_kvm_stat *kvm)
- 	return perf_session__process_events(kvm->session, &kvm->tool);
- }
- 
-+static int parse_target_str(struct perf_kvm_stat *kvm)
-+{
-+	if (kvm->pid_str) {
-+		kvm->pid_list = intlist__new(kvm->pid_str);
-+		if (kvm->pid_list == NULL) {
-+			pr_err("Error parsing process id string\n");
-+			return -EINVAL;
+-	if (kvm->events_ops->is_begin_event(evsel, sample, &key))
++	if (kvm->events_ops->is_begin_event(evsel, sample, &key)) {
++		if (vcpu_record->start_time) {
++			pr_debug("consecutive begin events (%s) for pid %d, vcpu %d\n",
++				 evsel->name, sample->pid, vcpu_record->vcpu_id);
 +		}
+ 		return handle_begin_event(kvm, vcpu_record, &key, sample->time);
 +	}
 +
-+	return 0;
-+}
-+
- static int kvm_events_report_vcpu(struct perf_kvm_stat *kvm)
- {
- 	int ret = -EINVAL;
- 	int vcpu = kvm->trace_vcpu;
  
-+	if (parse_target_str(kvm) != 0)
-+		goto exit;
-+
- 	if (!verify_vcpu(vcpu))
- 		goto exit;
+-	if (kvm->events_ops->is_end_event(evsel, sample, &key))
++	if (kvm->events_ops->is_end_event(evsel, sample, &key)) {
++		if (vcpu_record->start_time == 0) {
++			pr_debug("consecutive end events (%s) for pid %d, vcpu %d\n",
++				 evsel->name, sample->pid, vcpu_record->vcpu_id);
++		}
+ 		return handle_end_event(kvm, vcpu_record, &key, sample);
++	}
  
-@@ -1307,6 +1339,8 @@ kvm_events_report(struct perf_kvm_stat *kvm, int argc, const char **argv)
- 		OPT_STRING('k', "key", &kvm->sort_key, "sort-key",
- 			    "key for sorting: sample(sort by samples number)"
- 			    " time (sort by avg time)"),
-+		OPT_STRING('p', "pid", &kvm->pid_str, "pid",
-+			   "analyze events only for given process id(s)"),
- 		OPT_END()
- 	};
- 
+ 	return true;
+ }
 -- 
 1.7.10.1
 
