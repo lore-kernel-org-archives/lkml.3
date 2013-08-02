@@ -1,46 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753150Ab3HBVV2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 17:21:28 -0400
-Received: from gate.crashing.org ([63.228.1.57]:51848 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751923Ab3HBVV1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 17:21:27 -0400
-Message-ID: <1375478457.15999.25.camel@pasglop>
-Subject: Re: [ANNOUNCE] 3.10.4-rt1
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Date: Sat, 03 Aug 2013 07:20:57 +1000
-In-Reply-To: <20130802141936.GA8267@windriver.com>
-References: <alpine.DEB.2.02.1308011215160.4089@ionos.tec.linutronix.de>
-	 <CAP=VYLp1ERhS4cFtgXGHL2DfCGoJ9VbPvShH5ZOWCpPuSzQY6w@mail.gmail.com>
-	 <1375419917.3743.93.camel@pasglop> <51FBA9CC.2090206@linutronix.de>
-	 <20130802141936.GA8267@windriver.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753463Ab3HBVXc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 17:23:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45974 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752469Ab3HBVXa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 17:23:30 -0400
+Date: Sat, 3 Aug 2013 05:24:45 +0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Shuah Khan <shuah.kh@samsung.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
+Subject: Re: [ 00/99] 3.10.5-stable review
+Message-ID: <20130802212444.GB11550@kroah.com>
+References: <20130802100225.478715166@linuxfoundation.org>
+ <B8EFE96D1287C24090BAD9D858E15E6175660F@sisaex02sj>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <B8EFE96D1287C24090BAD9D858E15E6175660F@sisaex02sj>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-08-02 at 10:19 -0400, Paul Gortmaker wrote:
+On Fri, Aug 02, 2013 at 07:57:31PM +0000, Shuah Khan wrote:
+> On 08/02/2013 09:12 AM, Greg Kroah-Hartman wrote:
+> > This is the start of the stable review cycle for the 3.10.5 release.
+> > There are 99 patches in this series, all will be posted as a response
+> > to this one.  If anyone has any issues with these being applied, please
+> > let me know.
+> >
+> > Responses should be made by Sun Aug  4 10:00:45 UTC 2013.
+> > Anything received after that time might be too late.
+> >
+> > The whole patch series can be found in one patch at:
+> > 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.5-rc1.gz
+> > and the diffstat can be found below.
+> >
+> > thanks,
+> >
+> > greg k-h
+> >
 > 
-> Yep, 3.8 shuffled TIF_MEMDIE to the end of the queue, but
-> in 3.10, mainline commit 22ecbe8dcef has already done that trick.
+> Patches applied cleanly to 3.0.88, 3.4.55 and 3.10.4
 > 
-> The list of donor victims that aren't used in asm is getting
-> smaller, but TIF_POLLING_NRFLAG seems OK and it puts RESCHED
-> and RESCHED_LAZY right beside each other.
+> Compiled and booted on the following systems:
 
-Worst case we can turn it into a 32-bit and but I'd rather avoid it
-as long as we can :-)
+Wonderful, thanks for testing and letting me know.
 
-Cheers,
-Ben.
-
-
+greg k-h
