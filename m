@@ -1,52 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754471Ab3HBWtW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 18:49:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46449 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753199Ab3HBWtT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753947Ab3HBWtV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 18:49:21 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:34378 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752353Ab3HBWtT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 2 Aug 2013 18:49:19 -0400
-Date: Sat, 3 Aug 2013 06:50:36 +0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Joe Perches <joe@perches.com>
-Cc: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC v01 0/3] Power Capping Framework
-Message-ID: <20130802225036.GA29458@kroah.com>
-References: <1375466932-11842-1-git-send-email-srinivas.pandruvada@linux.intel.com>
- <20130802223020.GB28831@kroah.com>
- <1375482806.2034.140.camel@joe-AO722>
+Message-ID: <51FC3769.2030302@linux.vnet.ibm.com>
+Date: Fri, 02 Aug 2013 15:49:13 -0700
+From: Zach Levis <zml@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130307 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1375482806.2034.140.camel@joe-AO722>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Zach Levis <zml@linux.vnet.ibm.com>
+CC: akpm@linux-foundation.org, oleg@redhat.com, viro@zeniv.linux.org.uk,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        dan.carpenter@oracle.com, Zach Levis <zach@zachsthings.com>
+Subject: Re: [PATCH v2 2/3] fs/binfmts: Better handling of binfmt loops
+References: <1374766845-13565-1-git-send-email-zml@linux.vnet.ibm.com> <1375481535-20034-3-git-send-email-zml@linux.vnet.ibm.com>
+In-Reply-To: <1375481535-20034-3-git-send-email-zml@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13080222-0320-0000-0000-00000088C7FC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 02, 2013 at 03:33:26PM -0700, Joe Perches wrote:
-> On Sat, 2013-08-03 at 06:30 +0800, Greg KH wrote:
-> > On Fri, Aug 02, 2013 at 11:08:49AM -0700, Srinivas Pandruvada wrote:
-> > > Once this framework is approved, we will submit a RAPL client driver using this
-> > > framework.
-> > 
-> > Also, given that you work with a lot of kernel developers, I would like
-> > to see their review and signed-off-by: on these patches before you
-> > resend them, please.  That way I know that they agree with this
-> > framework as a way for their future changes in this area.
-> 
-> Before is a bit hard on public mailing lists isn't it?
+On 08/02/2013 03:12 PM, Zach Levis wrote:
 
-That's implying that Intel doesn't have internal mailing lists where
-kernel patches are reviewed and proposed before being made public...
+> +		if (retval == -ELOOP && bprm->recursion_depth == 0) { /* cur, previous */
+> +			pr_err("Too much recursion with binfmts (0:%s, -1:%s) in file %s, skipping (base %s).\n",
+> +					bprm->previous_binfmts[0]->name,
+> +					bprm->previous_binfmts[1]->name,
+> +					bprm->filename,
+> +					fmt->name);
+> +
+> +			/* Put argv back in its place */
+> +			bprm->p = bprm->p_no_argv;
+> +
+> +			bprm->argc = count(*(bprm->argv_orig), MAX_ARG_STRINGS);
+> +			retval = copy_strings(bprm->argc, *(bprm->argv_orig), bprm);
+> +			if (retval < 0)
+> +				return retval;
+> +
+> +			retval = -ENOEXEC;
+> +			continue;
+> +		}
+>   	}
+>   	read_unlock(&binfmt_lock);
+>
 
-> Shouldn't the reviewed-by/acked-by/signed-off-by's be
-> done after a real patch is submitted?
+NEVERMIND, I messed up the order here so this doesn't work! v3 coming up 
+without the stupid.
 
-That's fine too, but then the needed people need to be cc:ed.
-
-thanks,
-
-greg k-h
