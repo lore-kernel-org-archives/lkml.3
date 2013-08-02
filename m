@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753339Ab3HBKdn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:33:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37613 "EHLO
+	id S1753058Ab3HBKeJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:34:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37605 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752693Ab3HBKSO (ORCPT
+	with ESMTP id S1752580Ab3HBKSI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:18:14 -0400
+	Fri, 2 Aug 2013 06:18:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        William Gulland <wgulland@google.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [ 15/39] usb: Clear both buffers when clearing a control transfer TT buffer.
-Date: Fri,  2 Aug 2013 18:18:25 +0800
-Message-Id: <20130802101458.995768793@linuxfoundation.org>
+        Anders Hammarquist <iko@iko.pp.se>, Johan Hovold <jhovold@gmail.com>
+Subject: [ 13/39] USB: ti_usb_3410_5052: fix dynamic-id matching
+Date: Fri,  2 Aug 2013 18:18:23 +0800
+Message-Id: <20130802101458.706260410@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802101456.800497005@linuxfoundation.org>
 References: <20130802101456.800497005@linuxfoundation.org>
@@ -27,39 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: William Gulland <wgulland@google.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 2c7b871b9102c497ba8f972aa5d38532f05b654d upstream.
+commit 1fad56424f5ad3ce4973505a357212b2e2282b3f upstream.
 
-Control transfers have both IN and OUT (or SETUP) packets, so when
-clearing TT buffers for a control transfer it's necessary to send
-two HUB_CLEAR_TT_BUFFER requests to the hub.
+The driver failed to take the dynamic ids into account when determining
+the device type and therefore all devices were detected as 2-port
+devices when using the dynamic-id interface.
 
-Signed-off-by: William Gulland <wgulland@google.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Match on the usb-serial-driver field instead of doing redundant id-table
+searches.
+
+Reported-by: Anders Hammarquist <iko@iko.pp.se>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/hub.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ drivers/usb/serial/ti_usb_3410_5052.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -488,6 +488,15 @@ resubmit:
- static inline int
- hub_clear_tt_buffer (struct usb_device *hdev, u16 devinfo, u16 tt)
- {
-+	/* Need to clear both directions for control ep */
-+	if (((devinfo >> 11) & USB_ENDPOINT_XFERTYPE_MASK) ==
-+			USB_ENDPOINT_XFER_CONTROL) {
-+		int status = usb_control_msg(hdev, usb_sndctrlpipe(hdev, 0),
-+				HUB_CLEAR_TT_BUFFER, USB_RT_PORT,
-+				devinfo ^ 0x8000, tt, NULL, 0, 1000);
-+		if (status)
-+			return status;
-+	}
- 	return usb_control_msg(hdev, usb_sndctrlpipe(hdev, 0),
- 			       HUB_CLEAR_TT_BUFFER, USB_RT_PORT, devinfo,
- 			       tt, NULL, 0, 1000);
+--- a/drivers/usb/serial/ti_usb_3410_5052.c
++++ b/drivers/usb/serial/ti_usb_3410_5052.c
+@@ -390,7 +390,7 @@ static int ti_startup(struct usb_serial
+ 	usb_set_serial_data(serial, tdev);
+ 
+ 	/* determine device type */
+-	if (usb_match_id(serial->interface, ti_id_table_3410))
++	if (serial->type == &ti_1port_device)
+ 		tdev->td_is_3410 = 1;
+ 	dbg("%s - device type is %s", __func__,
+ 				tdev->td_is_3410 ? "3410" : "5052");
 
 
