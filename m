@@ -1,99 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755453Ab3HBRpT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 13:45:19 -0400
-Received: from out03.mta.xmission.com ([166.70.13.233]:56136 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755423Ab3HBRpC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 13:45:02 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: David Howells <dhowells@redhat.com>
-Cc: keyrings@linux-nfs.org, linux-nfs@vger.kernel.org, krbdev@mit.edu,
-        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
-        linux-kernel@vger.kernel.org, simo@redhat.com
-References: <87ob9hovop.fsf@xmission.com>
-	<20130801173846.28023.19009.stgit@warthog.procyon.org.uk>
-	<20130801173902.28023.68819.stgit@warthog.procyon.org.uk>
-	<7289.1375463126@warthog.procyon.org.uk>
-Date: Fri, 02 Aug 2013 10:44:46 -0700
-In-Reply-To: <7289.1375463126@warthog.procyon.org.uk> (David Howells's message
-	of "Fri, 02 Aug 2013 18:05:26 +0100")
-Message-ID: <871u6coult.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX196lMgf6RPr8jMInB5fS8btF6TSrCpSEbo=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.7 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
-	*      [score: 0.0114]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.5 XM_Body_Dirty_Words Contains a dirty word
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.1 XMSolicitRefs_0 Weightloss drug
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: *;David Howells <dhowells@redhat.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH 2/2] KEYS: Add per-user_namespace registers for persistent per-UID kerberos caches
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+	id S1754572Ab3HBRom (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 13:44:42 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:33497 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752979Ab3HBRol (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 13:44:41 -0400
+From: Nathan Zimmer <nzimmer@sgi.com>
+To: hpa@zytor.com, mingo@kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, holt@sgi.com,
+        nzimmer@sgi.com, rob@landley.net, travis@sgi.com,
+        daniel@numascale-asia.com, akpm@linux-foundation.org,
+        gregkh@linuxfoundation.org, yinghai@kernel.org, mgorman@suse.de
+Subject: [RFC v2 4/5] Only set page reserved in the memblock region
+Date: Fri,  2 Aug 2013 12:44:26 -0500
+Message-Id: <1375465467-40488-5-git-send-email-nzimmer@sgi.com>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <1375465467-40488-1-git-send-email-nzimmer@sgi.com>
+References: <1373594635-131067-1-git-send-email-holt@sgi.com>
+ <1375465467-40488-1-git-send-email-nzimmer@sgi.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Howells <dhowells@redhat.com> writes:
+Currently we when we initialze each page struct is set as reserved upon
+initialization.  This changes to starting with the reserved bit clear and
+then only setting the bit in the reserved region.
 
-> Eric W. Biederman <ebiederm@xmission.com> wrote:
->
->> > The cache returned is a keyring named "_krb.<uid>" that the possessor can
->> > read, search, clear, invalidate, unlink from and add links to.  SELinux
->> > and co. get a say as to whether this call will succeed as the caller must
->> > have LINK permission on the cache keyring.
->> 
->> I think it would be more accurate to say you use the existing LSM
->> security hooks for security keys.
->
-> Yes.
->
->> Calling out SELinux in particular just seems odd as there is absolutely
->> nothing SELinux specific in this patch.
->
-> Sorry, I normally think of SELinux as that's what I usually deal with.  Yes,
-> any and all LSMs.
->
->> > +		    !nsown_capable(CAP_SETUID))
->>
->> You you make this ns_capable(ns, CAP_SETUID);
->> 
->> nsown_capable is the right thing here but I am trying to remove the
->> function because it makes it too easy to not think about which
->> user namespace you are in.
->
-> Okay.
->
->> > +	index_key.desc_len = sprintf(buf, "_krb.%u", __kuid_val(uid));
->> 
->> Please don't use the implementation detail __kuid_val.  Please use
->> from_kuid(&init_user_ns, uid) instead so it is explicitly documented
->> which user namespace you are using.
->
-> Actually, I don't want that either.  I want the user-visible UID from the
-> namespace.
+I could restruture a bit to eliminate the perform hit.  But I wanted to make
+sure I am on track first.
 
-Which is a definite reason to use from_kuid().  So you think about which
-user namespace you want this to be seen in.
+Signed-off-by: Robin Holt <holt@sgi.com>
+Signed-off-by: Nathan Zimmer <nzimmer@sgi.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: Linux MM <linux-mm@kvack.org>
+Cc: Rob Landley <rob@landley.net>
+Cc: Mike Travis <travis@sgi.com>
+Cc: Daniel J Blueman <daniel@numascale-asia.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Mel Gorman <mgorman@suse.de>
+---
+ include/linux/mm.h |  2 ++
+ mm/nobootmem.c     |  3 +++
+ mm/page_alloc.c    | 16 ++++++++++++----
+ 3 files changed, 17 insertions(+), 4 deletions(-)
 
-I guess if this is all in the user namespace from_kuid(ns, uid) is what
-you are after.  I was thinking this was heading to the upcall which only
-runs in the initial user namespace.  When passing things to the upcall
-it makes sense to use values in the initial user namespace.
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index e0c8528..b264a26 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1322,6 +1322,8 @@ static inline void adjust_managed_page_count(struct page *page, long count)
+ 	totalram_pages += count;
+ }
+ 
++extern void reserve_bootmem_region(unsigned long start, unsigned long end);
++
+ /* Free the reserved page into the buddy system, so it gets managed. */
+ static inline void __free_reserved_page(struct page *page)
+ {
+diff --git a/mm/nobootmem.c b/mm/nobootmem.c
+index 2159e68..0840af2 100644
+--- a/mm/nobootmem.c
++++ b/mm/nobootmem.c
+@@ -117,6 +117,9 @@ static unsigned long __init free_low_memory_core_early(void)
+ 	phys_addr_t start, end, size;
+ 	u64 i;
+ 
++	for_each_reserved_mem_region(i, &start, &end)
++		reserve_bootmem_region(start, end);
++
+ 	for_each_free_mem_range(i, MAX_NUMNODES, &start, &end, NULL)
+ 		count += __free_memory_core(start, end);
+ 
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index df3ec13..382223e 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -697,17 +697,18 @@ static void free_one_page(struct zone *zone, struct page *page, int order,
+ 	spin_unlock(&zone->lock);
+ }
+ 
+-static void __init_single_page(unsigned long pfn, unsigned long zone, int nid)
++static void __init_single_page(unsigned long pfn, unsigned long zone,
++			       int nid, int page_count)
+ {
+ 	struct page *page = pfn_to_page(pfn);
+ 	struct zone *z = &NODE_DATA(nid)->node_zones[zone];
+ 
+ 	set_page_links(page, zone, nid, pfn);
+ 	mminit_verify_page_links(page, zone, nid, pfn);
+-	init_page_count(page);
+ 	page_mapcount_reset(page);
+ 	page_nid_reset_last(page);
+-	SetPageReserved(page);
++	set_page_count(page, page_count);
++	ClearPageReserved(page);
+ 
+ 	/*
+ 	 * Mark the block movable so that blocks are reserved for
+@@ -736,6 +737,13 @@ static void __init_single_page(unsigned long pfn, unsigned long zone, int nid)
+ #endif
+ }
+ 
++void reserve_bootmem_region(unsigned long start, unsigned long end)
++{
++	for (; start < end; start++)
++		if (pfn_valid(start))
++			SetPageReserved(pfn_to_page(start));
++}
++
+ static bool free_pages_prepare(struct page *page, unsigned int order)
+ {
+ 	int i;
+@@ -4010,7 +4018,7 @@ void __meminit memmap_init_zone(unsigned long size, int nid, unsigned long zone,
+ 			if (!early_pfn_in_nid(pfn, nid))
+ 				continue;
+ 		}
+-		__init_single_page(pfn, zone, nid);
++		__init_single_page(pfn, zone, nid, 1);
+ 	}
+ }
+ 
+-- 
+1.8.2.1
 
-Eric
