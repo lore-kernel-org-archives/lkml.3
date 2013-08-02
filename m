@@ -1,77 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754419Ab3HBK2v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:28:51 -0400
-Received: from cyclops.biessmann.org ([134.0.25.77]:46321 "EHLO
-	cyclops.biessmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754149Ab3HBK2s (ORCPT
+	id S1754406Ab3HBK33 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:29:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37710 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753663Ab3HBKTQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:28:48 -0400
-X-Greylist: delayed 436 seconds by postgrey-1.27 at vger.kernel.org; Fri, 02 Aug 2013 06:28:48 EDT
-From: =?UTF-8?q?Andreas=20Bie=C3=9Fmann?= <andreas@biessmann.de>
+	Fri, 2 Aug 2013 06:19:16 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: =?UTF-8?q?Andreas=20Bie=C3=9Fmann?= <andreas@biessmann.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kay Sievers <kay@vrfy.org>, Ben Hutchings <ben@decadent.org.uk>,
-        stable@vger.kernel.org
-Subject: [RESEND][PATCH v2] register_console: prevent adding the same console twice
-Date: Fri,  2 Aug 2013 12:23:34 +0200
-Message-Id: <1375439014-13679-1-git-send-email-andreas@biessmann.de>
-X-Mailer: git-send-email 1.7.10.4
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1364201964-2990-1-git-send-email-andreas@biessmann.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 28/39] drm/radeon/atom: initialize more atom interpretor elements to 0
+Date: Fri,  2 Aug 2013 18:18:38 +0800
+Message-Id: <20130802101500.800052451@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
+In-Reply-To: <20130802101456.800497005@linuxfoundation.org>
+References: <20130802101456.800497005@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch guards the console_drivers list to be corrupted. The
-for_each_console() macro insist on a strictly forward list ended by NULL:
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
- con0->next->con1->next->NULL
+------------------
 
-Without this patch it may happen easily to destroy this list for example by
-adding 'earlyprintk' twice, especially on embedded devices where the early
-console is often a single static instance.  This will result in the following
-list:
+From: Alex Deucher <alexander.deucher@amd.com>
 
- con0->next->con0
+commit 42a21826dc54583cdb79cc8477732e911ac9c376 upstream.
 
-This in turn will result in an endless loop in console_unlock() later on by
-printing the first __log_buf line endlessly.
+The ProcessAuxChannel table on some rv635 boards assumes
+the divmul members are initialized to 0 otherwise we get
+an invalid fb offset since it has a bad mask set when
+setting the fb base.  While here initialize all the
+atom interpretor elements to 0.
 
-Signed-off-by: Andreas Bießmann <andreas@biessmann.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Kay Sievers <kay@vrfy.org>
-Cc: Ben Hutchings <ben@decadent.org.uk>
-Cc: stable@vger.kernel.org
+Fixes:
+https://bugzilla.kernel.org/show_bug.cgi?id=60639
+
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
-since v1:
- * use WARN() as Ben suggested
- * print 'already registered' instead of 'prevent registering'
+ drivers/gpu/drm/radeon/atom.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
- kernel/printk/printk.c |    7 +++++++
- 1 file changed, 7 insertions(+)
-
-diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index 5b5a708..b4e8500 100644
---- a/kernel/printk/printk.c
-+++ b/kernel/printk/printk.c
-@@ -2226,6 +2226,13 @@ void register_console(struct console *newcon)
- 	struct console *bcon = NULL;
- 	struct console_cmdline *c;
+--- a/drivers/gpu/drm/radeon/atom.c
++++ b/drivers/gpu/drm/radeon/atom.c
+@@ -1222,12 +1222,17 @@ int atom_execute_table(struct atom_conte
+ 	int r;
  
-+	if (console_drivers)
-+		for_each_console(bcon)
-+			if (WARN(bcon == newcon,
-+					"console '%s%d' already registered\n",
-+					bcon->name, bcon->index))
-+				return;
-+
- 	/*
- 	 * before we register a new CON_BOOT console, make sure we don't
- 	 * already have a valid console
--- 
-1.7.10.4
+ 	mutex_lock(&ctx->mutex);
++	/* reset data block */
++	ctx->data_block = 0;
+ 	/* reset reg block */
+ 	ctx->reg_block = 0;
+ 	/* reset fb window */
+ 	ctx->fb_base = 0;
+ 	/* reset io mode */
+ 	ctx->io_mode = ATOM_IO_MM;
++	/* reset divmul */
++	ctx->divmul[0] = 0;
++	ctx->divmul[1] = 0;
+ 	r = atom_execute_table_locked(ctx, index, params);
+ 	mutex_unlock(&ctx->mutex);
+ 	return r;
+
 
