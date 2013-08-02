@@ -1,60 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754102Ab3HBUek (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 16:34:40 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:46357 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752621Ab3HBUej (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 16:34:39 -0400
-Date: Fri, 2 Aug 2013 15:34:57 -0500
-From: Alex Thorlton <athorlton@sgi.com>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Sedat Dilek <sedat.dilek@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Dave Jones <davej@redhat.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Al Viro <viro@zeniv.linux.org.uk>, Oleg Nesterov <oleg@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Kees Cook <keescook@chromium.org>, Robin Holt <holt@sgi.com>
-Subject: Re: [PATCH] Add per-process flag to control thp
-Message-ID: <20130802203457.GR26476@sgi.com>
-References: <20130802194659.GP26476@sgi.com>
- <20130802201301.A872BE0090@blue.fi.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130802201301.A872BE0090@blue.fi.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752448Ab3HBUiz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 16:38:55 -0400
+Received: from mail-ea0-f173.google.com ([209.85.215.173]:62343 "EHLO
+	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751390Ab3HBUix (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 16:38:53 -0400
+From: Zoran Markovic <zoran.markovic@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: Zoran Markovic <zoran.markovic@linaro.org>,
+        Anton Vorontsov <anton@enomsg.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Arve Hjonnevag <arve@android.com>, Todd Poynor <toddpoynor@google.com>,
+        John Stultz <john.stultz@linaro.org>
+Subject: [RFC PATCH] pm: prevent suspend until power supply events are processed
+Date: Fri,  2 Aug 2013 13:38:02 -0700
+Message-Id: <1375475882-3660-1-git-send-email-zoran.markovic@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> What kind of workloads are you talking about?
+This patch, originally authored by Arve Hjonnevag and Todd Poynor,
+prevents the system from entering suspend mode until the power
+supply plug, unplug, or any other change of state event is fully
+processed. This guarantees that the screen lights up and displays
+the battery charging state. The implementation uses the power
+supply wakeup_source object.
 
-Our benchmarking team has a list of several of the SPEC OMP benchmarks
-that perform significantly better when THP is disabled. I tried to get
-the list but one of our servers is acting up and I can't get to it
-right now :/
+Cc: Anton Vorontsov <anton@enomsg.org>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: Arve Hjonnevag <arve@android.com>
+Cc: Todd Poynor <toddpoynor@google.com>
+Cc: John Stultz <john.stultz@linaro.org>
+Signed-off-by: Zoran Markovic <zoran.markovic@linaro.org>
+---
+ drivers/power/power_supply_core.c |   37 +++++++++++++++++++++++++++++++------
+ include/linux/power_supply.h      |    2 ++
+ 2 files changed, 33 insertions(+), 6 deletions(-)
 
-> What's wrong with madvise? Could you elaborate?
+diff --git a/drivers/power/power_supply_core.c b/drivers/power/power_supply_core.c
+index 3b2d5df..e68d598 100644
+--- a/drivers/power/power_supply_core.c
++++ b/drivers/power/power_supply_core.c
+@@ -67,23 +67,41 @@ static int __power_supply_changed_work(struct device *dev, void *data)
+ 
+ static void power_supply_changed_work(struct work_struct *work)
+ {
++	unsigned long flags;
+ 	struct power_supply *psy = container_of(work, struct power_supply,
+ 						changed_work);
+ 
+ 	dev_dbg(psy->dev, "%s\n", __func__);
+ 
+-	class_for_each_device(power_supply_class, NULL, psy,
+-			      __power_supply_changed_work);
+-
+-	power_supply_update_leds(psy);
+-
+-	kobject_uevent(&psy->dev->kobj, KOBJ_CHANGE);
++	spin_lock_irqsave(&psy->changed_lock, flags);
++	if (psy->changed) {
++		psy->changed = false;
++		spin_unlock_irqrestore(&psy->changed_lock, flags);
++		class_for_each_device(power_supply_class, NULL, psy,
++				      __power_supply_changed_work);
++		power_supply_update_leds(psy);
++		kobject_uevent(&psy->dev->kobj, KOBJ_CHANGE);
++		spin_lock_irqsave(&psy->changed_lock, flags);
++	}
++	/* dependent power supplies (e.g. battery) may have changed
++	 * state as a result of this event, so poll again and hold
++	 * the wakeup_source until all events are processed.
++	 */
++	if (!psy->changed)
++		pm_relax(psy->dev);
++	spin_unlock_irqrestore(&psy->changed_lock, flags);
+ }
+ 
+ void power_supply_changed(struct power_supply *psy)
+ {
++	unsigned long flags;
++
+ 	dev_dbg(psy->dev, "%s\n", __func__);
+ 
++	spin_lock_irqsave(&psy->changed_lock, flags);
++	psy->changed = true;
++	pm_stay_awake(psy->dev);
++	spin_unlock_irqrestore(&psy->changed_lock, flags);
+ 	schedule_work(&psy->changed_work);
+ }
+ EXPORT_SYMBOL_GPL(power_supply_changed);
+@@ -500,6 +518,11 @@ int power_supply_register(struct device *parent, struct power_supply *psy)
+ 		goto check_supplies_failed;
+ 	}
+ 
++	spin_lock_init(&psy->changed_lock);
++	rc = device_init_wakeup(dev, true);
++	if (rc)
++		goto wakeup_init_failed;
++
+ 	rc = kobject_set_name(&dev->kobj, "%s", psy->name);
+ 	if (rc)
+ 		goto kobject_set_name_failed;
+@@ -529,6 +552,7 @@ create_triggers_failed:
+ register_cooler_failed:
+ 	psy_unregister_thermal(psy);
+ register_thermal_failed:
++wakeup_init_failed:
+ 	device_del(dev);
+ kobject_set_name_failed:
+ device_add_failed:
+@@ -546,6 +570,7 @@ void power_supply_unregister(struct power_supply *psy)
+ 	power_supply_remove_triggers(psy);
+ 	psy_unregister_cooler(psy);
+ 	psy_unregister_thermal(psy);
++	device_init_wakeup(psy->dev, false);
+ 	device_unregister(psy->dev);
+ }
+ EXPORT_SYMBOL_GPL(power_supply_unregister);
+diff --git a/include/linux/power_supply.h b/include/linux/power_supply.h
+index 804b906..253d412 100644
+--- a/include/linux/power_supply.h
++++ b/include/linux/power_supply.h
+@@ -194,6 +194,8 @@ struct power_supply {
+ 	/* private */
+ 	struct device *dev;
+ 	struct work_struct changed_work;
++	spinlock_t changed_lock;
++	bool changed;
+ #ifdef CONFIG_THERMAL
+ 	struct thermal_zone_device *tzd;
+ 	struct thermal_cooling_device *tcd;
+-- 
+1.7.9.5
 
-The main issue with using madvise is that it's not an option with static
-binaries, but there are also some users who have legacy Fortran code
-that they're not willing/able to change.
-
-> And I think thp_disabled should be reset to 0 on exec.
-
-The main purpose for this getting carried down from the parent process
-is that we'd like to be able to have a userland program set this flag on
-itself, and then spawn off children who will also carry the flag.
-This allows us to set the flag for programs where we're unable to modify
-the code, thus resolving the issues detailed above.
