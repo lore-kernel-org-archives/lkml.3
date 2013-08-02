@@ -1,67 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754056Ab3HBPkQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 11:40:16 -0400
-Received: from relay.parallels.com ([195.214.232.42]:45024 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753695Ab3HBPkO (ORCPT
+	id S1754074Ab3HBPm2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 11:42:28 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:43194 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753957Ab3HBPm0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 11:40:14 -0400
-Message-ID: <51FBD2DF.50506@parallels.com>
-Date: Fri, 2 Aug 2013 19:40:15 +0400
-From: Maxim Patlasov <mpatlasov@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Miklos Szeredi <miklos@szeredi.hu>
-CC: <riel@redhat.com>, <dev@parallels.com>, <xemul@parallels.com>,
-        <fuse-devel@lists.sourceforge.net>, <bfoster@redhat.com>,
-        <linux-kernel@vger.kernel.org>, <jbottomley@parallels.com>,
-        <linux-mm@kvack.org>, <viro@zeniv.linux.org.uk>,
-        <linux-fsdevel@vger.kernel.org>, <akpm@linux-foundation.org>,
-        <fengguang.wu@intel.com>, <devel@openvz.org>, <mgorman@suse.de>
-Subject: Re: [PATCH 10/16] fuse: Implement writepages callback
-References: <20130629172211.20175.70154.stgit@maximpc.sw.ru> <20130629174525.20175.18987.stgit@maximpc.sw.ru> <20130719165037.GA18358@tucsk.piliscsaba.szeredi.hu>
-In-Reply-To: <20130719165037.GA18358@tucsk.piliscsaba.szeredi.hu>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.30.17.2]
+	Fri, 2 Aug 2013 11:42:26 -0400
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 6.5 \(1508\))
+Subject: Re: [PATCH 03/12] KVM: MMU: lazily drop large spte
+From: Xiao Guangrong <xiaoguangrong.eric@gmail.com>
+In-Reply-To: <20130802145524.GA3501@amt.cnet>
+Date: Fri, 2 Aug 2013 23:42:19 +0800
+Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>, gleb@redhat.com,
+        avi.kivity@gmail.com, pbonzini@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <CEA85F58-33B6-469B-AF14-A40860DEAC05@gmail.com>
+References: <1375189330-24066-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <1375189330-24066-4-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20130802145524.GA3501@amt.cnet>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+X-Mailer: Apple Mail (2.1508)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-07/19/2013 08:50 PM, Miklos Szeredi пишет:
-> On Sat, Jun 29, 2013 at 09:45:29PM +0400, Maxim Patlasov wrote:
->> From: Pavel Emelyanov <xemul@openvz.org>
->>
->> The .writepages one is required to make each writeback request carry more than
->> one page on it. The patch enables optimized behaviour unconditionally,
->> i.e. mmap-ed writes will benefit from the patch even if fc->writeback_cache=0.
-> I rewrote this a bit, so we won't have to do the thing in two passes, which
-> makes it simpler and more robust.  Waiting for page writeback here is wrong
-> anyway, see comment above fuse_page_mkwrite().  BTW we had a race there because
-> fuse_page_mkwrite() didn't take the page lock.  I've also fixed that up and
-> pushed a series containing these patches up to implementing ->writepages() to
->
->    git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/fuse.git writepages
->
-> Passed some trivial testing but more is needed.
 
-Thanks a lot for efforts. The approach you implemented looks promising, 
-but it introduces the following assumption: a page cannot become dirty 
-before we have a chance to wait on fuse writeback holding the page 
-locked. This is already true for mmap-ed writes (due to your fixes) and 
-it seems doable for cached writes as well (like we do in 
-fuse_perform_write). But the assumption seems to be broken in case of 
-direct read from local fs (e.g. ext4) to a memory region mmap-ed to a 
-file on fuse fs. See how dio_bio_submit() marks pages dirty by 
-bio_set_pages_dirty(). I can't see any solution for this use-case. Do you?
+On Aug 2, 2013, at 10:55 PM, Marcelo Tosatti <mtosatti@redhat.com> wrote:
 
-Thanks,
-Maxim
+> On Tue, Jul 30, 2013 at 09:02:01PM +0800, Xiao Guangrong wrote:
+>> Currently, kvm zaps the large spte if write-protected is needed, the later
+>> read can fault on that spte. Actually, we can make the large spte readonly
+>> instead of making them un-present, the page fault caused by read access can
+>> be avoided
+>> 
+>> The idea is from Avi:
+>> | As I mentioned before, write-protecting a large spte is a good idea,
+>> | since it moves some work from protect-time to fault-time, so it reduces
+>> | jitter.  This removes the need for the return value.
+>> 
+>> [
+>>  It has fixed the issue reported in 6b73a9606 by stopping fast page fault
+>>  marking the large spte to writable
+>> ]
+> 
+> Xiao,
+> 
+> Can you please write a comment explaining why are the problems 
+> with shadow vs large read-only sptes (can't recall anymore),
+> and then why it is now safe to do it.
 
->
-> I'll get to the rest of the patches next week.
->
-> Thanks,
-> Miklos
->
+Hi Marcelo,
+
+Thanks for your review.  Yes. The bug reported in  6b73a9606 is, in this patch,
+we mark the large spte as readonly when the pages are dirt logged and the
+readonly spte can be set to writable by fast page fault, but on that path, it failed
+to check dirty logging, so it will set the large spte to writable but only set the first
+page to the dirty bitmap.
+
+For example:
+
+1): KVM maps 0 ~ 2M memory to guest which is pointed by SPTE and SPTE
+     is writable.
+
+2): KVM dirty log 0 ~ 2M,  then set SPTE to readonly
+
+3): fast page fault set SPTE to writable and set page 0 to the dirty bitmap.
+
+Then 4K ~ 2M memory is not dirty logged.
+
+In this version, we let fast page fault do not mark large spte to writable if
+its page are dirty logged.  But it is still not safe as you pointed out.
+
+>> 
+>> 
+>> 	/*
+>> +	 * Can not map the large spte to writable if the page is dirty
+>> +	 * logged.
+>> +	 */
+>> +	if (sp->role.level > PT_PAGE_TABLE_LEVEL && force_pt_level)
+>> +		goto exit;
+>> +
+> 
+> It is not safe to derive slot->dirty_bitmap like this: 
+> since dirty log is enabled via RCU update, "is dirty bitmap enabled"
+> info could be stale by the time you check it here via the parameter,
+> so you can instantiate a large spte (because force_pt_level == false),
+> while you should not.
+
+Good catch! This is true even if we enable dirty log under the protection
+of mmu lock.
+
+How about let the fault page fault only fix the small spte, that is changing
+the code to:
+	if (sp->role.level > PT_PAGE_TABLE_LEVEL)
+		goto exit;
+?
+
+
