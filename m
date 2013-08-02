@@ -1,63 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755888Ab3HBKvF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:51:05 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:46844 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755650Ab3HBKu7 (ORCPT
+	id S1759409Ab3HBKJX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:09:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37150 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759353Ab3HBKJT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:50:59 -0400
-Message-ID: <51FB9088.8010302@linux.vnet.ibm.com>
-Date: Fri, 02 Aug 2013 16:27:12 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        peterz@infradead.org
-CC: mingo@redhat.com, x86@kernel.org, tglx@linutronix.de, jeremy@goop.org,
-        konrad.wilk@oracle.com, hpa@zytor.com, pbonzini@redhat.com,
-        linux-doc@vger.kernel.org, habanero@linux.vnet.ibm.com,
-        xen-devel@lists.xensource.com, mtosatti@redhat.com,
-        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
-        attilio.rao@citrix.com, ouyang@cs.pitt.edu, gregkh@suse.de,
-        agraf@suse.de, chegu_vinod@hp.com, torvalds@linux-foundation.org,
-        avi.kivity@gmail.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, riel@redhat.com, drjones@redhat.com,
-        virtualization@lists.linux-foundation.org,
-        srivatsa.vaddagiri@gmail.com
-Subject: Re: [PATCH RFC V11 15/18] kvm : Paravirtual ticketlocks support for
- linux guests running on KVM hypervisor
-References: <51EFC1D4.9060800@linux.vnet.ibm.com> <20130724120647.GG16400@redhat.com> <51EFCA42.5020009@linux.vnet.ibm.com> <51F0ED31.3040200@linux.vnet.ibm.com> <20130725091509.GA22735@redhat.com> <51F0F202.5090001@linux.vnet.ibm.com> <51F7ED20.80202@linux.vnet.ibm.com> <20130731062440.GK28372@redhat.com> <51FA1087.9080908@linux.vnet.ibm.com> <20130802092539.GB28327@gmail.com> <20130802095406.GB30072@redhat.com>
-In-Reply-To: <20130802095406.GB30072@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13080210-9264-0000-0000-00000440B9B3
+	Fri, 2 Aug 2013 06:09:19 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Roger Quadros <rogerq@ti.com>, Alan Stern <stern@rowland.harvard.edu>
+Subject: [ 25/99] USB: EHCI: Fix resume signalling on remote wakeup
+Date: Fri,  2 Aug 2013 18:07:38 +0800
+Message-Id: <20130802100229.556752502@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
+In-Reply-To: <20130802100225.478715166@linuxfoundation.org>
+References: <20130802100225.478715166@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02/2013 03:24 PM, Gleb Natapov wrote:
-> On Fri, Aug 02, 2013 at 11:25:39AM +0200, Ingo Molnar wrote:
->>> Ingo,
->>>
->>> Do you have any concerns reg this series? please let me know if this
->>> looks good now to you.
->>
->> I'm inclined to NAK it for excessive quotation - who knows how many people
->> left the discussion in disgust? Was it done to drive away as many
->> reviewers as possible?
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-Ingo, Peter,
-Sorry for the confusion caused because of nesting. I should have trimmed 
-it as Peter also pointed in other thread.
-will ensure that is future mails.
+------------------
 
+From: Roger Quadros <rogerq@ti.com>
 
->> Anyway, see my other reply, the measurement results seem hard to interpret
->> and inconclusive at the moment.
+commit 47a64a13d54f6c669b00542848d5550be3d3310e upstream.
 
-As Gleb already pointed, patch1-17 as a whole giving good performance 
-improvement. It was only the patch 18, Gleb had concerns.
+Set the ehci->resuming flag for the port we receive a remote
+wakeup on so that resume signalling can be completed.
+
+Without this, the root hub timer will not fire again to check
+if the resume was completed and there will be a never-ending wait on
+on the port.
+
+This effect is only observed if the HUB IRQ IN does not come after we
+have initiated the port resume.
+
+Signed-off-by: Roger Quadros <rogerq@ti.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/usb/host/ehci-hub.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/drivers/usb/host/ehci-hub.c
++++ b/drivers/usb/host/ehci-hub.c
+@@ -858,6 +858,7 @@ static int ehci_hub_control (
+ 				ehci->reset_done[wIndex] = jiffies
+ 						+ msecs_to_jiffies(20);
+ 				usb_hcd_start_port_resume(&hcd->self, wIndex);
++				set_bit(wIndex, &ehci->resuming_ports);
+ 				/* check the port again */
+ 				mod_timer(&ehci_to_hcd(ehci)->rh_timer,
+ 						ehci->reset_done[wIndex]);
+
 
