@@ -1,102 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754989Ab3HBGfu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 02:35:50 -0400
-Received: from mga09.intel.com ([134.134.136.24]:37704 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754448Ab3HBGfs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 02:35:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,799,1367996400"; 
-   d="scan'208";a="380504943"
-Message-ID: <51FB5373.9040307@intel.com>
-Date: Fri, 02 Aug 2013 14:36:35 +0800
-From: Aaron Lu <aaron.lu@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Josep Lladonosa <jlladono@gmail.com>
-CC: Borislav Petkov <bp@alien8.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Subject: Re: i915 backlight
-References: <20130731162252.GC4724@pd.tnic> <20130731163623.GD4724@pd.tnic> <1419236.138PcnXVBh@vostro.rjw.lan> <20130801080724.GA3448@nazgul.tnic> <51FB4B0A.7060706@intel.com> <CAPBO7TaPxa_13FBDE5Z=Aoa+ePPfLRH0+oWSQyEmO00xSfGqYg@mail.gmail.com>
-In-Reply-To: <CAPBO7TaPxa_13FBDE5Z=Aoa+ePPfLRH0+oWSQyEmO00xSfGqYg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1755106Ab3HBGib (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 02:38:31 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:44038 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754669Ab3HBGi3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 02:38:29 -0400
+Date: Fri, 2 Aug 2013 16:38:18 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Felipe Balbi <balbi@ti.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jingoo Han <jg1.han@samsung.com>, Greg KH <greg@kroah.com>,
+        Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+Subject: linux-next: manual merge of the usb-gadget tree with the usb tree
+Message-Id: <20130802163818.e29c7e6d3472cf161703ae60@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__2_Aug_2013_16_38_18_+1000_ESqjQViPTQjRM5HA"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02/2013 02:25 PM, Josep Lladonosa wrote:
-> Hello,
-> 
-> I am using a Lenovo Edge E530 and, with kernel 3.11.0-rc3, I had to
-> change to this parameter to the kernel boot:
-> 
-> 
-> GRUB_CMDLINE_LINUX="acpi_osi=\"!Windows 2012\""
+--Signature=_Fri__2_Aug_2013_16_38_18_+1000_ESqjQViPTQjRM5HA
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-What if you remove the above from kernel command line, and add
-video.brightness_switch_enabled=0 to kernel command line, then set the
-following in xorg.conf:
-$ cat /etc/X11/xorg.conf
-Section "Device"
-        Option     "Backlight"	"intel_backlight"
-	Identifier  "Card0"
-	Driver      "intel"
-	BusID       "PCI:0:2:0"
-EndSection
+Hi Felipe,
 
-Does everything work?
+Today's linux-next merge of the usb-gadget tree got a conflict in
+drivers/usb/host/ehci-tegra.c between commit d4f09e28d7bc ("USB: host:
+use dev_get_platdata()") from the usb tree and commit d50642794508 ("usb:
+tegra: host: Remove references to plat data") from the usb-gadget tree.
 
-If not, please test if manually change brightness level through sysfs
-works:
-# cd /sys/calss/backlight/intel_backlight
-# echo xxx > brightness
+I fixed it up (the latter just removed the code updated by the former, so
+I did that) and can carry the fix as necessary (no action is required).
 
-And also test if hotkey event is sent out or not by running acpi_listen
-and then press the hotkey.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Thanks,
-Aaron
+--Signature=_Fri__2_Aug_2013_16_38_18_+1000_ESqjQViPTQjRM5HA
+Content-Type: application/pgp-signature
 
-> 
-> 
-> instead of previous
-> 
-> GRUB_CMDLINE_LINUX="acpi_osi=Linux acpi_backlight=vendor"
-> 
-> to be able to change brightness. In some kernel versions before, it
-> worked, but with 15 levels, but in graphical system brightness bar was
-> not moving.
-> 
-> 
-> Now I have, though, 8 possible values for brightness and brightness
-> bar shows its correct position.
-> 
-> Josep
-> 
-> On 2 August 2013 08:00, Aaron Lu <aaron.lu@intel.com> wrote:
->> On 08/01/2013 04:07 PM, Borislav Petkov wrote:
->>> On Wed, Jul 31, 2013 at 11:16:52PM +0200, Rafael J. Wysocki wrote:
->>>> Does reverting efaa14c help?
->>>
->>> Nope.
->>>
->>> But see my other reply to Aaron.
->>
->> Assume you have specified to use intel_backlight in xorg.conf, does
->> booting with video.brightness_switch_enabled=0 help?
->>
->> Thanks,
->> Aaron
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> 
-> 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
+iQIcBAEBCAAGBQJR+1PeAAoJEECxmPOUX5FEitQQAKT6pTekK1yxxxJduHtjklXm
+wWG1pX6eOj5DlHFUKuWnRaQYVxSsw9AbAUwwp7W6lZrTYXCy1u/A+xliow1iC2Xv
+07o1MNE/5riLFYLWn34SDXK57f5fiFYBXETvXcQB1aCFCseWX8kJxbQprHZcUz3q
+BbU9vaOz93dY1aKvSxaITy2HF0y82hP3/pRg/802hBfWrSO6047qrlAOh5lxjv+P
+G6qJqwKIVE7asZY3tQmWrz5rWnykPTCj8Lq52Vpe5BAZZM1EXwLfMbp8NN82e9f3
+mMfZQSSq/XS1eLdxDl/7s/24SrYNBSS+Q2+Xb8JJO1V6h4G57H1z0nfKbR9oISk4
+WRlcE3WgpTlqv0nRWWfRCP3iHlYamrbMciBTxlItAcTt6WWldGPMI1U0nnF0EATN
+/Miw2mN75D2LmBk1I2BFLsEChLaohuQlm5fyAMSWTcx0LBi+dkXMWADZ/vzXEhf/
+wUMQO48xAFBgp1nHWLPhmxa3L9YEb3QTfp4uWcF+oBvydFl3OWQfxswtadHzivuN
+1Bw0wboSRFDgnnu9lFp8uTcEOqcehpUD85uS0r2iV3L+OZafc7CeLRBTeV8d84q/
+bvEcMyD00MYoA3puTn4Nctd1tR+dN1mvaLFDYwjgh7X45uhSU8AgmLiggwBznSM1
+78s8Qv2arNF8RJCUUlDJ
+=ztAT
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__2_Aug_2013_16_38_18_+1000_ESqjQViPTQjRM5HA--
