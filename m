@@ -1,49 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754711Ab3HBGc3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 02:32:29 -0400
-Received: from tundra.namei.org ([65.99.196.166]:57885 "EHLO tundra.namei.org"
+	id S1754989Ab3HBGfu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 02:35:50 -0400
+Received: from mga09.intel.com ([134.134.136.24]:37704 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753169Ab3HBGc2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 02:32:28 -0400
-Date: Fri, 2 Aug 2013 16:32:39 +1000 (EST)
-From: James Morris <jmorris@namei.org>
-To: linux-security-module@vger.kernel.org
-cc: linux-kernel@vger.kernel.org
-Subject: Linux Security Summit 2013 - schedule published
-Message-ID: <alpine.LRH.2.02.1308021628130.12469@tundra.namei.org>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S1754448Ab3HBGfs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 02:35:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,799,1367996400"; 
+   d="scan'208";a="380504943"
+Message-ID: <51FB5373.9040307@intel.com>
+Date: Fri, 02 Aug 2013 14:36:35 +0800
+From: Aaron Lu <aaron.lu@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Josep Lladonosa <jlladono@gmail.com>
+CC: Borislav Petkov <bp@alien8.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Subject: Re: i915 backlight
+References: <20130731162252.GC4724@pd.tnic> <20130731163623.GD4724@pd.tnic> <1419236.138PcnXVBh@vostro.rjw.lan> <20130801080724.GA3448@nazgul.tnic> <51FB4B0A.7060706@intel.com> <CAPBO7TaPxa_13FBDE5Z=Aoa+ePPfLRH0+oWSQyEmO00xSfGqYg@mail.gmail.com>
+In-Reply-To: <CAPBO7TaPxa_13FBDE5Z=Aoa+ePPfLRH0+oWSQyEmO00xSfGqYg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The schedule for this year's Linux Security Summit in New Orleans is now 
-published: 
-http://kernsec.org/wiki/index.php/Linux_Security_Summit_2013#Schedule
+On 08/02/2013 02:25 PM, Josep Lladonosa wrote:
+> Hello,
+> 
+> I am using a Lenovo Edge E530 and, with kernel 3.11.0-rc3, I had to
+> change to this parameter to the kernel boot:
+> 
+> 
+> GRUB_CMDLINE_LINUX="acpi_osi=\"!Windows 2012\""
 
-The keynote will be presented by Ted Ts'o.  Refereed talks include:
+What if you remove the above from kernel command line, and add
+video.brightness_switch_enabled=0 to kernel command line, then set the
+following in xorg.conf:
+$ cat /etc/X11/xorg.conf
+Section "Device"
+        Option     "Backlight"	"intel_backlight"
+	Identifier  "Card0"
+	Driver      "intel"
+	BusID       "PCI:0:2:0"
+EndSection
 
-o Embedded Linux Security (David Safford, IBM)
-o Extending AppArmor Mediation into the Userspace (John Johansen, Canonical)
-o Multiple Concurrent Security Models? Really? (Casey Schaufler, Intel)
-o Linux Kernel ASLR (Kees Cook, Google)
-o The AppArmor Labeling Model (John Johansen, Canonical)
+Does everything work?
 
-It looks like there's been quite a lot happening in AppArmor.  There'll 
-also be general project updates for SELinux, Smack, AppArmor and the 
-Integrity subsystem, as well as a discussion on kernel coding 
-anti-patterns led by Kees Cook.
+If not, please test if manually change brightness level through sysfs
+works:
+# cd /sys/calss/backlight/intel_backlight
+# echo xxx > brightness
 
-There'll be break-out sessions on the second day, details of which will be 
-posted on the schedule as they're known.  If youll be at LSS (or 
-LinuxCon/Plumbers generally) and would like to schedule a break-out 
-session, contact the program committee per the details at the wiki page.
+And also test if hotkey event is sent out or not by running acpi_listen
+and then press the hotkey.
 
-See everyone on the 19th and 20th of September in New Orleans!
+Thanks,
+Aaron
 
-
-- James
-(on behalf of the program committee)
+> 
+> 
+> instead of previous
+> 
+> GRUB_CMDLINE_LINUX="acpi_osi=Linux acpi_backlight=vendor"
+> 
+> to be able to change brightness. In some kernel versions before, it
+> worked, but with 15 levels, but in graphical system brightness bar was
+> not moving.
+> 
+> 
+> Now I have, though, 8 possible values for brightness and brightness
+> bar shows its correct position.
+> 
+> Josep
+> 
+> On 2 August 2013 08:00, Aaron Lu <aaron.lu@intel.com> wrote:
+>> On 08/01/2013 04:07 PM, Borislav Petkov wrote:
+>>> On Wed, Jul 31, 2013 at 11:16:52PM +0200, Rafael J. Wysocki wrote:
+>>>> Does reverting efaa14c help?
+>>>
+>>> Nope.
+>>>
+>>> But see my other reply to Aaron.
+>>
+>> Assume you have specified to use intel_backlight in xorg.conf, does
+>> booting with video.brightness_switch_enabled=0 help?
+>>
+>> Thanks,
+>> Aaron
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> 
+> 
 
