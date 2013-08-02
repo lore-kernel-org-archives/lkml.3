@@ -1,155 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754698Ab3HBXW0 (ORCPT <rfc822;w@1wt.eu>);
+	id S1754756Ab3HBXW3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 19:22:29 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:46632 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754450Ab3HBXW0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 2 Aug 2013 19:22:26 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:59921 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753737Ab3HBXWY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 19:22:24 -0400
 From: Zach Levis <zml@linux.vnet.ibm.com>
 To: akpm@linux-foundation.org, oleg@redhat.com
 Cc: viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org,
         linux-fsdevel@vger.kernel.org, dan.carpenter@oracle.com,
         Zach Levis <zml@linux.vnet.ibm.com>, Zach Levis <zach@zachsthings.com>
-Subject: [PATCH v3 1/3] fs/binfmts: Add a name field to the binfmt struct
-Date: Fri,  2 Aug 2013 16:21:41 -0700
-Message-Id: <1375485703-4077-2-git-send-email-zml@linux.vnet.ibm.com>
+Subject: [PATCH v3 2/3] fs/binfmts: Better handling of binfmt loops
+Date: Fri,  2 Aug 2013 16:21:42 -0700
+Message-Id: <1375485703-4077-3-git-send-email-zml@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1374766845-13565-1-git-send-email-zml@linux.vnet.ibm.com>
 References: <1374766845-13565-1-git-send-email-zml@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13080223-3620-0000-0000-000003CC0B5E
+x-cbid: 13080223-7182-0000-0000-000007F478BD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding the name field helps when printing error messages referring to
-specific binfmts
+With these changes, when a binfmt loop is encountered,
+the ELOOP will propogate back to the 0 depth. At this point the
+argv and argc values will be reset to what they were originally and an
+attempt is made to continue with the following binfmt handlers.
+
+Example: a qemu is configured to run 64-bit ELFs on an otherwise 32-bit
+system. The system's owner switches to running with 64-bit executables,
+but forgets to disable the binfmt_misc option that redirects 64bit ELFs
+to qemu. Since the qemu executable is a 64-bit ELF now, binfmt_misc
+keeps on matching it with the qemu rule, preventing the execution of any
+64-bit binary.
+
+With these changes, an error is printed and search_binary_handler()
+continues on to the next handler, allowing the original executable to
+run normally so the user can (hopefully) fix their misconfiguration more
+easily.
+
+Caveats:
+- binfmt_misc is skipped as a whole. To allow for a more generic
+  solution that works for any binfmt without a lot of duplicated code
+  and added complexity, the error detection code is applied on the
+  binfmt level.
+- This is a fallback solution. It attempts to restore the state to allow
+  executing most binaries without side effects, but it may not work for
+  everything and should not be depended on for regular usage.
+
+My (rough, but functional) test scripts for this issue are available at:
+    https://gist.github.com/zml2008/6075418
 
 Signed-off-by: Zach Levis <zach@zachsthings.com>
 Signed-off-by: Zach Levis <zml@linux.vnet.ibm.com>
 ---
- fs/binfmt_aout.c        |    1 +
- fs/binfmt_elf.c         |    1 +
- fs/binfmt_elf_fdpic.c   |    1 +
- fs/binfmt_em86.c        |    1 +
- fs/binfmt_flat.c        |    1 +
- fs/binfmt_misc.c        |    1 +
- fs/binfmt_script.c      |    1 +
- fs/binfmt_som.c         |    1 +
- include/linux/binfmts.h |    1 +
- 9 files changed, 9 insertions(+), 0 deletions(-)
+ fs/exec.c               |   28 +++++++++++++++++++++++++++-
+ include/linux/binfmts.h |    7 ++++++-
+ 2 files changed, 33 insertions(+), 2 deletions(-)
 
-diff --git a/fs/binfmt_aout.c b/fs/binfmt_aout.c
-index bce8769..f6bed04 100644
---- a/fs/binfmt_aout.c
-+++ b/fs/binfmt_aout.c
-@@ -115,6 +115,7 @@ end_coredump:
- #endif
+diff --git a/fs/exec.c b/fs/exec.c
+index eb229e1..779361d 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -1394,14 +1394,34 @@ int search_binary_handler(struct linux_binprm *bprm)
+ 		if (!try_module_get(fmt->module))
+ 			continue;
+ 		read_unlock(&binfmt_lock);
++		bprm->previous_binfmts[1] = bprm->previous_binfmts[0];
++		bprm->previous_binfmts[0] = fmt;
++
+ 		bprm->recursion_depth++;
+ 		retval = fmt->load_binary(bprm);
+ 		bprm->recursion_depth--;
+-		if (retval >= 0 || retval != -ENOEXEC ||
++		if (retval == -ELOOP && bprm->recursion_depth == 0) { /* cur, previous */
++			pr_err("Too much recursion with binfmts (0:%s, -1:%s) in file %s, skipping (base %s).\n",
++					bprm->previous_binfmts[0]->name,
++					bprm->previous_binfmts[1]->name,
++					bprm->filename,
++					fmt->name);
++
++			/* Put argv back in its place */
++			bprm->p = bprm->p_no_argv;
++
++			bprm->argc = count(*(bprm->argv_orig), MAX_ARG_STRINGS);
++			retval = copy_strings(bprm->argc, *(bprm->argv_orig), bprm);
++			if (retval < 0)
++				return retval;
++
++			retval = -ENOEXEC;
++		} else if (retval >= 0 || retval != -ENOEXEC ||
+ 		    bprm->mm == NULL || bprm->file == NULL) {
+ 			put_binfmt(fmt);
+ 			return retval;
+ 		}
++
+ 		read_lock(&binfmt_lock);
+ 		put_binfmt(fmt);
+ 	}
+@@ -1436,6 +1456,10 @@ static int exec_binprm(struct linux_binprm *bprm)
+ 	if (ret >= 0) {
+ 		trace_sched_process_exec(current, old_pid, bprm);
+ 		ptrace_event(PTRACE_EVENT_EXEC, old_vpid);
++		/* Successful execution, now null out the cached argv
++		 * (we don't want to access it later)
++		 * */
++		bprm->argv_orig = NULL;
+ 		current->did_exec = 1;
+ 		proc_exec_connector(current);
  
- static struct linux_binfmt aout_format = {
-+	.name		= "a.out",
- 	.module		= THIS_MODULE,
- 	.load_binary	= load_aout_binary,
- 	.load_shlib	= load_aout_library,
-diff --git a/fs/binfmt_elf.c b/fs/binfmt_elf.c
-index f8a0b0e..cd7d546 100644
---- a/fs/binfmt_elf.c
-+++ b/fs/binfmt_elf.c
-@@ -75,6 +75,7 @@ static int elf_core_dump(struct coredump_params *cprm);
- #define ELF_PAGEALIGN(_v) (((_v) + ELF_MIN_ALIGN - 1) & ~(ELF_MIN_ALIGN - 1))
+@@ -1533,9 +1557,11 @@ static int do_execve_common(const char *filename,
+ 	if (retval < 0)
+ 		goto out;
  
- static struct linux_binfmt elf_format = {
-+	.name		= "ELF",
- 	.module		= THIS_MODULE,
- 	.load_binary	= load_elf_binary,
- 	.load_shlib	= load_elf_library,
-diff --git a/fs/binfmt_elf_fdpic.c b/fs/binfmt_elf_fdpic.c
-index c166f32..6be4448 100644
---- a/fs/binfmt_elf_fdpic.c
-+++ b/fs/binfmt_elf_fdpic.c
-@@ -81,6 +81,7 @@ static int elf_fdpic_core_dump(struct coredump_params *cprm);
- #endif
++	bprm->p_no_argv = bprm->p;
+ 	retval = copy_strings(bprm->argc, argv, bprm);
+ 	if (retval < 0)
+ 		goto out;
++	bprm->argv_orig = &argv;
  
- static struct linux_binfmt elf_fdpic_format = {
-+	.name		= "FDPIC ELF",
- 	.module		= THIS_MODULE,
- 	.load_binary	= load_elf_fdpic_binary,
- #ifdef CONFIG_ELF_CORE
-diff --git a/fs/binfmt_em86.c b/fs/binfmt_em86.c
-index 037a3e2..8404cdd 100644
---- a/fs/binfmt_em86.c
-+++ b/fs/binfmt_em86.c
-@@ -93,6 +93,7 @@ static int load_em86(struct linux_binprm *bprm)
- }
- 
- static struct linux_binfmt em86_format = {
-+	.name		= "em86",
- 	.module		= THIS_MODULE,
- 	.load_binary	= load_em86,
- };
-diff --git a/fs/binfmt_flat.c b/fs/binfmt_flat.c
-index d50bbe5..a7641e1 100644
---- a/fs/binfmt_flat.c
-+++ b/fs/binfmt_flat.c
-@@ -92,6 +92,7 @@ static int load_flat_binary(struct linux_binprm *);
- static int flat_core_dump(struct coredump_params *cprm);
- 
- static struct linux_binfmt flat_format = {
-+	.name		= "flat",
- 	.module		= THIS_MODULE,
- 	.load_binary	= load_flat_binary,
- 	.core_dump	= flat_core_dump,
-diff --git a/fs/binfmt_misc.c b/fs/binfmt_misc.c
-index 1c740e1..d74afc0 100644
---- a/fs/binfmt_misc.c
-+++ b/fs/binfmt_misc.c
-@@ -694,6 +694,7 @@ static struct dentry *bm_mount(struct file_system_type *fs_type,
- }
- 
- static struct linux_binfmt misc_format = {
-+	.name	= "misc",
- 	.module = THIS_MODULE,
- 	.load_binary = load_misc_binary,
- };
-diff --git a/fs/binfmt_script.c b/fs/binfmt_script.c
-index 5027a3e..53f3c17 100644
---- a/fs/binfmt_script.c
-+++ b/fs/binfmt_script.c
-@@ -99,6 +99,7 @@ static int load_script(struct linux_binprm *bprm)
- }
- 
- static struct linux_binfmt script_format = {
-+	.name		= "script",
- 	.module		= THIS_MODULE,
- 	.load_binary	= load_script,
- };
-diff --git a/fs/binfmt_som.c b/fs/binfmt_som.c
-index 4e00ed6..1c3ccc5 100644
---- a/fs/binfmt_som.c
-+++ b/fs/binfmt_som.c
-@@ -53,6 +53,7 @@ static int som_core_dump(struct coredump_params *cprm);
- #define SOM_PAGEALIGN(_v) (((_v) + SOM_PAGESIZE - 1) & ~(SOM_PAGESIZE - 1))
- 
- static struct linux_binfmt som_format = {
-+	.name		= "SOM",
- 	.module		= THIS_MODULE,
- 	.load_binary	= load_som_binary,
- 	.load_shlib	= load_som_library,
+ 	retval = exec_binprm(bprm);
+ 	if (retval < 0)
 diff --git a/include/linux/binfmts.h b/include/linux/binfmts.h
-index 70cf138..402a74a 100644
+index 402a74a..42c1656 100644
 --- a/include/linux/binfmts.h
 +++ b/include/linux/binfmts.h
-@@ -70,6 +70,7 @@ struct coredump_params {
- struct linux_binfmt {
- 	struct list_head lh;
- 	struct module *module;
-+	const char *name;
- 	int (*load_binary)(struct linux_binprm *);
- 	int (*load_shlib)(struct file *);
- 	int (*core_dump)(struct coredump_params *cprm);
+@@ -8,6 +8,8 @@
+ 
+ #define CORENAME_MAX_SIZE 128
+ 
++struct user_arg_ptr; /* Struct from fs/exec.c, for linux_binprm->argv_orig */
++
+ /*
+  * This structure is used to hold the arguments that are used when loading binaries.
+  */
+@@ -21,7 +23,7 @@ struct linux_binprm {
+ 	struct page *page[MAX_ARG_PAGES];
+ #endif
+ 	struct mm_struct *mm;
+-	unsigned long p; /* current top of mem */
++	unsigned long p, p_no_argv; /* current top of mem */
+ 	unsigned int
+ 		cred_prepared:1,/* true if creds already prepared (multiple
+ 				 * preps happen for interpreters) */
+@@ -32,11 +34,14 @@ struct linux_binprm {
+ 	unsigned int taso:1;
+ #endif
+ 	unsigned int recursion_depth;
++	/* current binfmt at 0 and previous binfmt at 1 */
++	struct linux_binfmt *previous_binfmts[2];
+ 	struct file * file;
+ 	struct cred *cred;	/* new credentials */
+ 	int unsafe;		/* how unsafe this exec is (mask of LSM_UNSAFE_*) */
+ 	unsigned int per_clear;	/* bits to clear in current->personality */
+ 	int argc, envc;
++	struct user_arg_ptr *argv_orig;
+ 	const char * filename;	/* Name of binary as seen by procps */
+ 	const char * interp;	/* Name of the binary really executed. Most
+ 				   of the time same as filename, but could be
 -- 
 1.7.1
 
