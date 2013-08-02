@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754306Ab3HBKWe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:22:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37808 "EHLO
+	id S1754380Ab3HBKWh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:22:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37812 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754193Ab3HBKWc (ORCPT
+	with ESMTP id S1754193Ab3HBKWf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:22:32 -0400
+	Fri, 2 Aug 2013 06:22:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Ewan D. Milne" <emilne@redhat.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Jack Hill <jackhill@jackhill.us>,
+        Saurav Kashyap <saurav.kashyap@qlogic.com>,
+        Giridhar Malavali <giridhar.malavali@qlogic.com>,
         James Bottomley <JBottomley@Parallels.com>
-Subject: [ 03/23] SCSI: sd: fix crash when UA received on DIF enabled device
-Date: Fri,  2 Aug 2013 18:23:16 +0800
-Message-Id: <20130802102036.682866908@linuxfoundation.org>
+Subject: [ 04/23] SCSI: qla2xxx: Properly set the tagging for commands.
+Date: Fri,  2 Aug 2013 18:23:17 +0800
+Message-Id: <20130802102036.810716252@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802102036.180660415@linuxfoundation.org>
 References: <20130802102036.180660415@linuxfoundation.org>
@@ -28,74 +29,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Ewan D. Milne" <emilne@redhat.com>
+From: Saurav Kashyap <saurav.kashyap@qlogic.com>
 
-commit 085b513f97d8d799d28491239be4b451bcd8c2c5 upstream.
+commit c3ccb1d7cf4c4549151876dd37c0944a682fd9e1 upstream.
 
-sd_prep_fn will allocate a larger CDB for the command via mempool_alloc
-for devices using DIF type 2 protection.  This CDB was being freed
-in sd_done, which results in a kernel crash if the command is retried
-due to a UNIT ATTENTION.  This change moves the code to free the larger
-CDB into sd_unprep_fn instead, which is invoked after the request is
-complete.
+This fixes a regression where Xyratex controllers and disks were lost by the
+driver:
 
-It is no longer necessary to call scsi_print_command separately for
-this case as the ->cmnd will no longer be NULL in the normal code path.
+https://bugzilla.kernel.org/show_bug.cgi?id=59601
 
-Also removed conditional test for DIF type 2 when freeing the larger
-CDB because the protection_type could have been changed via sysfs while
-the command was executing.
-
-Signed-off-by: Ewan D. Milne <emilne@redhat.com>
-Acked-by: Martin K. Petersen <martin.petersen@oracle.com>
+Reported-by: Jack Hill <jackhill@jackhill.us>
+Signed-off-by: Saurav Kashyap <saurav.kashyap@qlogic.com>
+Signed-off-by: Giridhar Malavali <giridhar.malavali@qlogic.com>
 Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/sd.c |   22 +++++++---------------
- 1 file changed, 7 insertions(+), 15 deletions(-)
+ drivers/scsi/qla2xxx/qla_iocb.c |   11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
 
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -641,10 +641,17 @@ static int scsi_setup_flush_cmnd(struct
- 
- static void sd_unprep_fn(struct request_queue *q, struct request *rq)
- {
-+	struct scsi_cmnd *SCpnt = rq->special;
-+
- 	if (rq->cmd_flags & REQ_DISCARD) {
- 		free_page((unsigned long)rq->buffer);
- 		rq->buffer = NULL;
+--- a/drivers/scsi/qla2xxx/qla_iocb.c
++++ b/drivers/scsi/qla2xxx/qla_iocb.c
+@@ -422,6 +422,8 @@ qla2x00_start_scsi(srb_t *sp)
+ 			    __constant_cpu_to_le16(CF_SIMPLE_TAG);
+ 			break;
+ 		}
++	} else {
++		cmd_pkt->control_flags = __constant_cpu_to_le16(CF_SIMPLE_TAG);
  	}
-+	if (SCpnt->cmnd != rq->cmd) {
-+		mempool_free(SCpnt->cmnd, sd_cdb_pool);
-+		SCpnt->cmnd = NULL;
-+		SCpnt->cmd_len = 0;
-+	}
- }
  
- /**
-@@ -1451,21 +1458,6 @@ static int sd_done(struct scsi_cmnd *SCp
- 	if (rq_data_dir(SCpnt->request) == READ && scsi_prot_sg_count(SCpnt))
- 		sd_dif_complete(SCpnt, good_bytes);
+ 	/* Load SCSI command packet. */
+@@ -1099,11 +1101,11 @@ qla24xx_build_scsi_crc_2_iocbs(srb_t *sp
+ 		    fcp_cmnd->task_attribute = TSK_ORDERED;
+ 		    break;
+ 		default:
+-		    fcp_cmnd->task_attribute = 0;
++		    fcp_cmnd->task_attribute = TSK_SIMPLE;
+ 		    break;
+ 		}
+ 	} else {
+-		fcp_cmnd->task_attribute = 0;
++		fcp_cmnd->task_attribute = TSK_SIMPLE;
+ 	}
  
--	if (scsi_host_dif_capable(sdkp->device->host, sdkp->protection_type)
--	    == SD_DIF_TYPE2_PROTECTION && SCpnt->cmnd != SCpnt->request->cmd) {
--
--		/* We have to print a failed command here as the
--		 * extended CDB gets freed before scsi_io_completion()
--		 * is called.
--		 */
--		if (result)
--			scsi_print_command(SCpnt);
--
--		mempool_free(SCpnt->cmnd, sd_cdb_pool);
--		SCpnt->cmnd = NULL;
--		SCpnt->cmd_len = 0;
--	}
--
- 	return good_bytes;
- }
+ 	cmd_pkt->fcp_rsp_dseg_len = 0; /* Let response come in status iocb */
+@@ -1305,7 +1307,12 @@ qla24xx_start_scsi(srb_t *sp)
+ 		case ORDERED_QUEUE_TAG:
+ 			cmd_pkt->task = TSK_ORDERED;
+ 			break;
++		default:
++		    cmd_pkt->task = TSK_SIMPLE;
++		    break;
+ 		}
++	} else {
++		cmd_pkt->task = TSK_SIMPLE;
+ 	}
  
+ 	/* Load SCSI command packet. */
 
 
