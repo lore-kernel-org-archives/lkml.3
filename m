@@ -1,77 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759437Ab3HBKJZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:09:25 -0400
-Received: from up.free-electrons.com ([94.23.35.102]:58924 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1759379Ab3HBKJU (ORCPT
+	id S1759505Ab3HBKJk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:09:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37176 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758929Ab3HBKJh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:09:20 -0400
-Date: Fri, 2 Aug 2013 12:09:16 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] i2c: mv64xxx: Document the newly introduced allwinner
- compatible
-Message-ID: <20130802100916.GT2911@lukather>
-References: <1374650075-26190-1-git-send-email-maxime.ripard@free-electrons.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="cbsCxbAnPLQXdgdB"
-Content-Disposition: inline
-In-Reply-To: <1374650075-26190-1-git-send-email-maxime.ripard@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 2 Aug 2013 06:09:37 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Ian Abbott <abbotti@mev.co.uk>
+Subject: [ 35/99] staging: comedi: COMEDI_CANCEL ioctl should wake up read/write
+Date: Fri,  2 Aug 2013 18:07:48 +0800
+Message-Id: <20130802100230.968674712@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
+In-Reply-To: <20130802100225.478715166@linuxfoundation.org>
+References: <20130802100225.478715166@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
---cbsCxbAnPLQXdgdB
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+------------------
 
-Hi Wolfram,
+From: Ian Abbott <abbotti@mev.co.uk>
 
-On Wed, Jul 24, 2013 at 09:14:35AM +0200, Maxime Ripard wrote:
-> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> ---
->  Documentation/devicetree/bindings/i2c/i2c-mv64xxx.txt | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+commit 69acbaac303e8cb948801a9ddd0ac24e86cc4a1b upstream.
 
-I'm not exactly sure wether it should go through your tree or not, but
-since you're the one that merged the patch that added this compatible to
-the driver, could you merge it?
+Comedi devices can do blocking read() or write() (or poll()) if an
+asynchronous command has been set up, blocking for data (for read()) or
+buffer space (for write()).  Various events associated with the
+asynchronous command will wake up the blocked reader or writer (or
+poller).  It is also possible to force the asynchronous command to
+terminate by issuing a `COMEDI_CANCEL` ioctl.  That shuts down the
+asynchronous command, but does not currently wake up the blocked reader
+or writer (or poller).  If the blocked task could be woken up, it would
+see that the command is no longer active and return.  The caller of the
+`COMEDI_CANCEL` ioctl could attempt to wake up the blocked task by
+sending a signal, but that's a nasty workaround.
 
-Thanks,
-Maxime
+Change `do_cancel_ioctl()` to wake up the wait queue after it returns
+from `do_cancel()`.  `do_cancel()` can propagate an error return value
+from the low-level comedi driver's cancel routine, but it always shuts
+the command down regardless, so `do_cancel_ioctl()` can wake up he wait
+queue regardless of the return value from `do_cancel()`.
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
---cbsCxbAnPLQXdgdB
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+---
+ drivers/staging/comedi/comedi_fops.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+--- a/drivers/staging/comedi/comedi_fops.c
++++ b/drivers/staging/comedi/comedi_fops.c
+@@ -1692,6 +1692,7 @@ static int do_cancel_ioctl(struct comedi
+ 			   void *file)
+ {
+ 	struct comedi_subdevice *s;
++	int ret;
+ 
+ 	if (arg >= dev->n_subdevices)
+ 		return -EINVAL;
+@@ -1708,7 +1709,11 @@ static int do_cancel_ioctl(struct comedi
+ 	if (s->busy != file)
+ 		return -EBUSY;
+ 
+-	return do_cancel(dev, s);
++	ret = do_cancel(dev, s);
++	if (comedi_get_subdevice_runflags(s) & SRF_USER)
++		wake_up_interruptible(&s->async->wait_head);
++
++	return ret;
+ }
+ 
+ /*
 
-iQIcBAEBAgAGBQJR+4VLAAoJEBx+YmzsjxAgDk8QAJqoFxXIasTdGPLBHJVapDn4
-0icP/Cvnmgw/a5hg7s3gibv52vhgJ43KV+OY3dAWU+xKTO/4fxzz86lCWIctLABM
-ahhzXRIJbxuvsCvNQYH193klIrJqs+JzvKSUzwXc2vewFq2ZcGF5f6iVUpADAhA7
-XQ8agrHRgDl/q1mU9lIktQyLbp3aGfAgxwMyuQhpZFI9Hwa1UjOqmy01ld9WMpL1
-Ou+EdW2psEZNMM0jkwvx75reCPEM3kRo06PP2K6mOJfwK8hxQoBJpJ0AlK5mHprA
-TZsrTnUkxFsXUJe5QX9tFP5ZV788ssc5cWyr8t8o5lJ00Cjrj0AWAY/0zbE7rLe7
-DnCu8Pt4fumT1R++k2AQN0pKp4weAu+6lCnf+MwavxPWGsK4NpNhR1yOy7TnRrxq
-sq4dPVLXuIbfevkh6Eey50XpdwefSFhF8d4ro1zC4jmzOaVvm+7C2brcwwiTqXNI
-uvuQm7RhEB9JMLh4fsZovd4rRgYEfNm0NXMABCFYLL5yWjEOQQvS2Q4NbDVHlOO4
-X3JKaePzvlSAXbLVNauO5kq2OmzpsjM6pafzkhd3ez3r8EPItYDUR+GHgvPuvyyy
-rvWzReAEMaX5aQVYgOGjis4Ntq0lW4Shmh8MfODm8XQs+mrL5MZzL2jG46c5xccL
-Y+NWFFeZMIjHEmx54tmq
-=+0Wm
------END PGP SIGNATURE-----
 
---cbsCxbAnPLQXdgdB--
