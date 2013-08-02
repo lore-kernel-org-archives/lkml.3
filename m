@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752975Ab3HBKSh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:18:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37624 "EHLO
+	id S1753150Ab3HBKSo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:18:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37638 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752588Ab3HBKSd (ORCPT
+	with ESMTP id S1753070Ab3HBKSl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:18:33 -0400
+	Fri, 2 Aug 2013 06:18:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Lyakas <alex.btrfs@zadarastorage.com>,
-        Josef Bacik <jbacik@fusionio.com>
-Subject: [ 18/39] Btrfs: re-add root to dead root list if we stop dropping it
-Date: Fri,  2 Aug 2013 18:18:28 +0800
-Message-Id: <20130802101459.396882547@linuxfoundation.org>
+        Tejun Heo <tj@kernel.org>,
+        Martin Braure de Calignon <braurede@free.fr>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [ 21/39] libata: make it clear that sata_inic162x is experimental
+Date: Fri,  2 Aug 2013 18:18:31 +0800
+Message-Id: <20130802101459.815532442@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802101456.800497005@linuxfoundation.org>
 References: <20130802101456.800497005@linuxfoundation.org>
@@ -27,57 +28,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josef Bacik <jbacik@fusionio.com>
+From: Tejun Heo <tj@kernel.org>
 
-commit d29a9f629e009c9b90e5859bce581070fd6247fc upstream.
+commit bb9696192826a7d9279caf872e95b41bc26c7eff upstream.
 
-If we stop dropping a root for whatever reason we need to add it back to the
-dead root list so that we will re-start the dropping next transaction commit.
-The other case this happens is if we recover a drop because we will add a root
-without adding it to the fs radix tree, so we can leak it's root and commit root
-extent buffer, adding this to the dead root list makes this cleanup happen.
-Thanks,
+sata_inic162x never reached a state where it's reliable enough for
+production use and data corruption is a relatively common occurrence.
+Make the driver generate warning about the issues and mark the Kconfig
+option as experimental.
 
-Reported-by: Alex Lyakas <alex.btrfs@zadarastorage.com>
-Signed-off-by: Josef Bacik <jbacik@fusionio.com>
+If the situation doesn't improve, we'd be better off making it depend
+on CONFIG_BROKEN.  Let's wait for several cycles and see if the kernel
+message draws any attention.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Martin Braure de Calignon <braurede@free.fr>
+Reported-by: Ben Hutchings <ben@decadent.org.uk>
+Reported-by: risc4all@yahoo.com
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/extent-tree.c |   11 +++++++++++
- 1 file changed, 11 insertions(+)
+ drivers/ata/Kconfig         |    2 +-
+ drivers/ata/sata_inic162x.c |   14 ++++++++++++++
+ 2 files changed, 15 insertions(+), 1 deletion(-)
 
---- a/fs/btrfs/extent-tree.c
-+++ b/fs/btrfs/extent-tree.c
-@@ -6846,6 +6846,7 @@ int btrfs_drop_snapshot(struct btrfs_roo
- 	int err = 0;
- 	int ret;
- 	int level;
-+	bool root_dropped = false;
+--- a/drivers/ata/Kconfig
++++ b/drivers/ata/Kconfig
+@@ -93,7 +93,7 @@ config SATA_FSL
+ 	  If unsure, say N.
  
- 	path = btrfs_alloc_path();
- 	if (!path) {
-@@ -7016,12 +7017,22 @@ int btrfs_drop_snapshot(struct btrfs_roo
- 		free_extent_buffer(root->commit_root);
- 		kfree(root);
- 	}
-+	root_dropped = true;
- out_end_trans:
- 	btrfs_end_transaction_throttle(trans, tree_root);
- out_free:
- 	kfree(wc);
- 	btrfs_free_path(path);
- out:
-+	/*
-+	 * So if we need to stop dropping the snapshot for whatever reason we
-+	 * need to make sure to add it back to the dead root list so that we
-+	 * keep trying to do the work later.  This also cleans up roots if we
-+	 * don't have it in the radix (like when we recover after a power fail
-+	 * or unmount) so we don't leak memory.
-+	 */
-+	if (root_dropped == false)
-+		btrfs_add_dead_root(root);
- 	if (err)
- 		btrfs_std_error(root->fs_info, err);
- 	return err;
+ config SATA_INIC162X
+-	tristate "Initio 162x SATA support"
++	tristate "Initio 162x SATA support (Very Experimental)"
+ 	depends on PCI
+ 	help
+ 	  This option enables support for Initio 162x Serial ATA.
+--- a/drivers/ata/sata_inic162x.c
++++ b/drivers/ata/sata_inic162x.c
+@@ -6,6 +6,18 @@
+  *
+  * This file is released under GPL v2.
+  *
++ * **** WARNING ****
++ *
++ * This driver never worked properly and unfortunately data corruption is
++ * relatively common.  There isn't anyone working on the driver and there's
++ * no support from the vendor.  Do not use this driver in any production
++ * environment.
++ *
++ * http://thread.gmane.org/gmane.linux.debian.devel.bugs.rc/378525/focus=54491
++ * https://bugzilla.kernel.org/show_bug.cgi?id=60565
++ *
++ * *****************
++ *
+  * This controller is eccentric and easily locks up if something isn't
+  * right.  Documentation is available at initio's website but it only
+  * documents registers (not programming model).
+@@ -809,6 +821,8 @@ static int inic_init_one(struct pci_dev
+ 
+ 	ata_print_version_once(&pdev->dev, DRV_VERSION);
+ 
++	dev_alert(&pdev->dev, "inic162x support is broken with common data corruption issues and will be disabled by default, contact linux-ide@vger.kernel.org if in production use\n");
++
+ 	/* alloc host */
+ 	host = ata_host_alloc_pinfo(&pdev->dev, ppi, NR_PORTS);
+ 	hpriv = devm_kzalloc(&pdev->dev, sizeof(*hpriv), GFP_KERNEL);
 
 
