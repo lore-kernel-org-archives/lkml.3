@@ -1,56 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753583Ab3HBWnQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 18:43:16 -0400
-Received: from mail-db9lp0249.outbound.messaging.microsoft.com ([213.199.154.249]:28152
-	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751670Ab3HBWnN (ORCPT
+	id S1754471Ab3HBWtW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 18:49:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46449 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753199Ab3HBWtT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 18:43:13 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: 4
-X-BigFish: VPS4(zzzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hz70kd2iz1de098h8275bh1de097hz2dh668h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h14ddh1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1e23h1155h)
-X-WSS-ID: 0MQXDRS-02-3R7-02
-X-M-MSG: 
-From: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
-To: <tglx@linutronix.de>, <mingo@redhat.com>, <hpa@zytor.com>,
-        <dougthompson@xmission.com>, <bp@alien8.de>, <bhelgaas@google.com>,
-        <jbeulich@suse.com>, <linux-kernel@vger.kernel.org>,
-        <linux-edac@vger.kernel.org>, <linux-pci@vger.kernel.org>
-CC: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
-Subject: [PATCH 1/3 V2] EDAC, AMD64_EDAC: Add PCI Device ID Functions 3 and 4 for newer F15h models.
-Date: Fri, 2 Aug 2013 17:43:02 -0500
-Message-ID: <1375483384-2302-2-git-send-email-Aravind.Gopalakrishnan@amd.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1375483384-2302-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
-References: <1375483384-2302-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
+	Fri, 2 Aug 2013 18:49:19 -0400
+Date: Sat, 3 Aug 2013 06:50:36 +0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Joe Perches <joe@perches.com>
+Cc: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC v01 0/3] Power Capping Framework
+Message-ID: <20130802225036.GA29458@kroah.com>
+References: <1375466932-11842-1-git-send-email-srinivas.pandruvada@linux.intel.com>
+ <20130802223020.GB28831@kroah.com>
+ <1375482806.2034.140.camel@joe-AO722>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1375482806.2034.140.camel@joe-AO722>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding PCI_DEVICE_ID_AMD_15H_NB_M30H_F3 and PCI_DEVICE_ID_AMD_15H_NB_M30H_F4
-for F15h model 30h. This is required for the file amd_nb.c
+On Fri, Aug 02, 2013 at 03:33:26PM -0700, Joe Perches wrote:
+> On Sat, 2013-08-03 at 06:30 +0800, Greg KH wrote:
+> > On Fri, Aug 02, 2013 at 11:08:49AM -0700, Srinivas Pandruvada wrote:
+> > > Once this framework is approved, we will submit a RAPL client driver using this
+> > > framework.
+> > 
+> > Also, given that you work with a lot of kernel developers, I would like
+> > to see their review and signed-off-by: on these patches before you
+> > resend them, please.  That way I know that they agree with this
+> > framework as a way for their future changes in this area.
+> 
+> Before is a bit hard on public mailing lists isn't it?
 
-Signed-off-by: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
+That's implying that Intel doesn't have internal mailing lists where
+kernel patches are reviewed and proposed before being made public...
 
-diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
-index 3bed2e8..d1fe5d0 100644
---- a/include/linux/pci_ids.h
-+++ b/include/linux/pci_ids.h
-@@ -518,6 +518,8 @@
- #define PCI_DEVICE_ID_AMD_11H_NB_MISC	0x1303
- #define PCI_DEVICE_ID_AMD_11H_NB_LINK	0x1304
- #define PCI_DEVICE_ID_AMD_15H_M10H_F3	0x1403
-+#define PCI_DEVICE_ID_AMD_15H_M30H_NB_F3 0x141d
-+#define PCI_DEVICE_ID_AMD_15H_M30H_NB_F4 0x141e
- #define PCI_DEVICE_ID_AMD_15H_NB_F0	0x1600
- #define PCI_DEVICE_ID_AMD_15H_NB_F1	0x1601
- #define PCI_DEVICE_ID_AMD_15H_NB_F2	0x1602
--- 
-1.7.10.4
+> Shouldn't the reviewed-by/acked-by/signed-off-by's be
+> done after a real patch is submitted?
 
+That's fine too, but then the needed people need to be cc:ed.
 
+thanks,
+
+greg k-h
