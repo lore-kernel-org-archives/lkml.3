@@ -1,48 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752747Ab3HBT46 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 15:56:58 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:58119 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751090Ab3HBT45 (ORCPT
+	id S1752926Ab3HBT5f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 15:57:35 -0400
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:38756 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752112Ab3HBT5e convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 15:56:57 -0400
-Date: Fri, 2 Aug 2013 21:56:39 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Don Morris <don.morris@hp.com>
-Cc: Mel Gorman <mgorman@suse.de>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, riel@redhat.com
-Subject: Re: [PATCH] mm, numa: Do not group on RO pages
-Message-ID: <20130802195639.GU27162@twins.programming.kicks-ass.net>
-References: <1373901620-2021-1-git-send-email-mgorman@suse.de>
- <20130730113857.GR3008@twins.programming.kicks-ass.net>
- <20130731150751.GA15144@twins.programming.kicks-ass.net>
- <51F93105.8020503@hp.com>
- <20130802164715.GP27162@twins.programming.kicks-ass.net>
- <20130802165032.GQ27162@twins.programming.kicks-ass.net>
+	Fri, 2 Aug 2013 15:57:34 -0400
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130802165032.GQ27162@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 8BIT
+To: Tony Lindgren <tony@atomide.com>, Greg KH <greg@kroah.com>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <20130802075352.GY7656@atomide.com>
+Cc: ksummit-2013-discuss@lists.linuxfoundation.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+References: <20130731073802.GT7656@atomide.com> <20130731123351.GA30474@kroah.com>
+ <20130802075352.GY7656@atomide.com>
+Message-ID: <20130802195730.6450.84988@quantum>
+User-Agent: alot/0.3.4
+Subject: Re: [Ksummit-2013-discuss] [ATTEND] [ARM ATTEND] kernel data bloat and how
+ to avoid it
+Date: Fri, 02 Aug 2013 12:57:30 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +	/*
-> +	 * Avoid grouping on DSO/COW pages in specific and RO pages
-> +	 * in general, RO pages shouldn't hurt as much anyway since
-> +	 * they can be in shared cache state.
-> +	 */
+Quoting Tony Lindgren (2013-08-02 00:53:53)
+> People are unnecessarily defining registers in kernel for similar devices
+> over and over again for each new SoC at the arch level and now more and
+> more at the driver level.
+> 
+> One example of that are device tree based drivers that don't describe
+> the actual hardware, but instead have a binding that points to an index
+> of defined registers in the driver.
 
-OK, so that comment is crap. Its that you cannot work into RO pages and
-this RO pages don't establish a collaboration.
+Apologies for possibly hijacking this thread, but this issue keeps me up
+at night. People use DT for different things and have different ideas
+about its Purpose In The World.
 
-> +	if (page_mapcount(page) != 1 && !pmd_write(pmd))
-> +		flags |= TNF_NO_GROUP;
+Tony wants to move data out of the kernel, which was the impetus behind
+the OMAP DT clock patches that describes every single clock in a DT node
+(around 250 clocks). This create very large dts, but reduces the clock
+drivers to pure logic, no data.
 
-Rik also noted that mapcount == 1 will trivially not form groups. This
-should indeed be so but I didn't test it without that clause.
+Other folks are motivated only to get rid of board files and platform
+data hacks. They keep all of the clock data in the clock driver and
+instead use DT only as a way to hook up clocks to devices via a simple
+mapping, thus describing how individual boards or SoC variants are set
+up outside of the kernel source. dts remains small, essentially just an
+array to map bindings but all of the clock data remains in the kernel.
+
+Both approaches have their merits and drawbacks. Is it possible to
+gather consensus on selecting a single approach? For the clock subsystem
+I've accepted drivers and DT bindings which do either. I simply do not
+have the DT experience or sensibilities to draw a line in the sand...
+and maybe I should not draw a line in the sand and just let people pick
+whichever approach they prefer (which maintains the status quo).
+
+If the ARM Summit figures out all the answers then please let me know
+what they are :-)
+
+Thanks,
+Mike
