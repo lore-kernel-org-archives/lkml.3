@@ -1,163 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756135Ab3HBK4E (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:56:04 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:36092 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756101Ab3HBKz7 (ORCPT
+	id S1756157Ab3HBK43 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:56:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37070 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758896Ab3HBKIQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:55:59 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAKohponru8Z1fod43dVtAODmYuMTGX70+73b8wk4wuGN=Vuh-w@mail.gmail.com>
-References: <2362640.pUofnXyzOi@vostro.rjw.lan>
-	<51FAC46D.1000703@linux.vnet.ibm.com>
-	<1757496.qSuJuAun9Z@vostro.rjw.lan>
-	<2298639.F0Qv2QqRnZ@vostro.rjw.lan>
-	<CAKohponru8Z1fod43dVtAODmYuMTGX70+73b8wk4wuGN=Vuh-w@mail.gmail.com>
-Date: Fri, 2 Aug 2013 16:25:58 +0530
-Message-ID: <CAKohpon7jyJWhf+j-M6Nuqy-AaY73YUpBpt-1uh12e_SYRv2bQ@mail.gmail.com>
-Subject: Re: [Update][PATCH] cpufreq: Do not hold driver module references for
- additional policy CPUs
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux PM list <linux-pm@vger.kernel.org>, cpufreq@vger.kernel.org,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
-Content-Type: multipart/mixed; boundary=089e0153688ec3226504e2f4cd37
+	Fri, 2 Aug 2013 06:08:16 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Alexander Z Lam <azl@google.com>,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        David Sharp <dhsharp@google.com>,
+        Alexander Z Lam <lambchop468@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [ 19/99] tracing: Miscellaneous fixes for trace_array ref counting
+Date: Fri,  2 Aug 2013 18:07:32 +0800
+Message-Id: <20130802100228.729946852@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
+In-Reply-To: <20130802100225.478715166@linuxfoundation.org>
+References: <20130802100225.478715166@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---089e0153688ec3226504e2f4cd37
-Content-Type: text/plain; charset=ISO-8859-1
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-On 2 August 2013 10:07, Viresh Kumar <viresh.kumar@linaro.org> wrote:
->> @@ -908,7 +905,8 @@ static int cpufreq_add_policy_cpu(unsign
->>         unsigned long flags;
->>
->>         policy = cpufreq_cpu_get(sibling);
->
-> This can be skipped completely at this place. Caller of
-> cpufreq_add_policy_cpu() has got the policy pointer with it and so
-> can be passed. I haven't done it earlier as the impression was we need
-> to call cpufreq_cpu_get()..
+------------------
 
-And here is the fixup to do this (attached too):
+From: Alexander Z Lam <azl@google.com>
+
+commit f77d09a384676bde6445413949d9d2c508ff3e62 upstream.
+
+Some error paths did not handle ref counting properly, and some trace files need
+ref counting.
+
+Link: http://lkml.kernel.org/r/1374171524-11948-1-git-send-email-azl@google.com
+
+Signed-off-by: Alexander Z Lam <azl@google.com>
+Cc: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Cc: David Sharp <dhsharp@google.com>
+Cc: Alexander Z Lam <lambchop468@gmail.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/cpufreq/cpufreq.c | 18 ++++++------------
- 1 file changed, 6 insertions(+), 12 deletions(-)
+ kernel/trace/trace.c        |   24 ++++++++++++++++++------
+ kernel/trace/trace_events.c |   21 +++++++++++++++++++--
+ 2 files changed, 37 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index 46e70ae..47f2a6e 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -889,21 +889,17 @@ static void cpufreq_init_policy(struct
-cpufreq_policy *policy)
- }
-
- #ifdef CONFIG_HOTPLUG_CPU
--static int cpufreq_add_policy_cpu(unsigned int cpu, unsigned int sibling,
--				  struct device *dev, bool frozen)
-+static int cpufreq_add_policy_cpu(struct cpufreq_policy *policy,
-+				  unsigned int cpu, struct device *dev,
-+				  bool frozen)
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -2956,7 +2956,6 @@ static int tracing_release(struct inode
+ 
+ 	iter = m->private;
+ 	tr = iter->tr;
+-	trace_array_put(tr);
+ 
+ 	mutex_lock(&trace_types_lock);
+ 
+@@ -2971,6 +2970,9 @@ static int tracing_release(struct inode
+ 	if (!iter->snapshot)
+ 		/* reenable tracing if it was previously enabled */
+ 		tracing_start_tr(tr);
++
++	__trace_array_put(tr);
++
+ 	mutex_unlock(&trace_types_lock);
+ 
+ 	mutex_destroy(&iter->mutex);
+@@ -3395,6 +3397,7 @@ tracing_trace_options_write(struct file
+ static int tracing_trace_options_open(struct inode *inode, struct file *file)
  {
--	struct cpufreq_policy *policy;
- 	int ret = 0, has_target = !!cpufreq_driver->target;
- 	unsigned long flags;
-
--	policy = cpufreq_cpu_get(sibling);
--	if (WARN_ON_ONCE(!policy))
--		return -ENODATA;
+ 	struct trace_array *tr = inode->i_private;
++	int ret;
+ 
+ 	if (tracing_disabled)
+ 		return -ENODEV;
+@@ -3402,7 +3405,11 @@ static int tracing_trace_options_open(st
+ 	if (trace_array_get(tr) < 0)
+ 		return -ENODEV;
+ 
+-	return single_open(file, tracing_trace_options_show, inode->i_private);
++	ret = single_open(file, tracing_trace_options_show, inode->i_private);
++	if (ret < 0)
++		trace_array_put(tr);
++
++	return ret;
+ }
+ 
+ static const struct file_operations tracing_iter_fops = {
+@@ -3906,6 +3913,7 @@ static int tracing_open_pipe(struct inod
+ 	iter = kzalloc(sizeof(*iter), GFP_KERNEL);
+ 	if (!iter) {
+ 		ret = -ENOMEM;
++		__trace_array_put(tr);
+ 		goto out;
+ 	}
+ 
+@@ -4652,21 +4660,24 @@ static int tracing_snapshot_open(struct
+ 			ret = PTR_ERR(iter);
+ 	} else {
+ 		/* Writes still need the seq_file to hold the private data */
++		ret = -ENOMEM;
+ 		m = kzalloc(sizeof(*m), GFP_KERNEL);
+ 		if (!m)
+-			return -ENOMEM;
++			goto out;
+ 		iter = kzalloc(sizeof(*iter), GFP_KERNEL);
+ 		if (!iter) {
+ 			kfree(m);
+-			return -ENOMEM;
++			goto out;
+ 		}
++		ret = 0;
++
+ 		iter->tr = tr;
+ 		iter->trace_buffer = &tc->tr->max_buffer;
+ 		iter->cpu_file = tc->cpu;
+ 		m->private = iter;
+ 		file->private_data = m;
+ 	}
 -
- 	if (has_target)
- 		__cpufreq_governor(policy, CPUFREQ_GOV_STOP);
-
--	lock_policy_rwsem_write(sibling);
-+	lock_policy_rwsem_write(policy->cpu);
-
- 	write_lock_irqsave(&cpufreq_driver_lock, flags);
-
-@@ -912,7 +908,7 @@ static int cpufreq_add_policy_cpu(unsigned int
-cpu, unsigned int sibling,
- 	per_cpu(cpufreq_cpu_data, cpu) = policy;
- 	write_unlock_irqrestore(&cpufreq_driver_lock, flags);
-
--	unlock_policy_rwsem_write(sibling);
-+	unlock_policy_rwsem_write(policy->cpu);
-
- 	if (has_target) {
- 		__cpufreq_governor(policy, CPUFREQ_GOV_START);
-@@ -923,7 +919,6 @@ static int cpufreq_add_policy_cpu(unsigned int
-cpu, unsigned int sibling,
- 	if (!frozen)
- 		ret = sysfs_create_link(&dev->kobj, &policy->kobj, "cpufreq");
-
--	cpufreq_cpu_put(policy);
++out:
+ 	if (ret < 0)
+ 		trace_array_put(tr);
+ 
+@@ -5276,9 +5287,10 @@ tracing_stats_read(struct file *filp, ch
+ }
+ 
+ static const struct file_operations tracing_stats_fops = {
+-	.open		= tracing_open_generic,
++	.open		= tracing_open_generic_tc,
+ 	.read		= tracing_stats_read,
+ 	.llseek		= generic_file_llseek,
++	.release	= tracing_release_generic_tc,
+ };
+ 
+ #ifdef CONFIG_DYNAMIC_FTRACE
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -1221,6 +1221,7 @@ show_header(struct file *filp, char __us
+ 
+ static int ftrace_event_avail_open(struct inode *inode, struct file *file);
+ static int ftrace_event_set_open(struct inode *inode, struct file *file);
++static int ftrace_event_release(struct inode *inode, struct file *file);
+ 
+ static const struct seq_operations show_event_seq_ops = {
+ 	.start = t_start,
+@@ -1248,7 +1249,7 @@ static const struct file_operations ftra
+ 	.read = seq_read,
+ 	.write = ftrace_event_write,
+ 	.llseek = seq_lseek,
+-	.release = seq_release,
++	.release = ftrace_event_release,
+ };
+ 
+ static const struct file_operations ftrace_enable_fops = {
+@@ -1326,6 +1327,15 @@ ftrace_event_open(struct inode *inode, s
  	return ret;
  }
- #endif
-@@ -1006,8 +1001,7 @@ static int __cpufreq_add_dev(struct device *dev,
-struct subsys_interface *sif,
- 		struct cpufreq_policy *cp = per_cpu(cpufreq_cpu_data, sibling);
- 		if (cp && cpumask_test_cpu(cpu, cp->related_cpus)) {
- 			read_unlock_irqrestore(&cpufreq_driver_lock, flags);
--			return cpufreq_add_policy_cpu(cpu, sibling, dev,
--						      frozen);
-+			return cpufreq_add_policy_cpu(cp, cpu, dev, frozen);
- 		}
- 	}
- 	read_unlock_irqrestore(&cpufreq_driver_lock, flags);
+ 
++static int ftrace_event_release(struct inode *inode, struct file *file)
++{
++	struct trace_array *tr = inode->i_private;
++
++	trace_array_put(tr);
++
++	return seq_release(inode, file);
++}
++
+ static int
+ ftrace_event_avail_open(struct inode *inode, struct file *file)
+ {
+@@ -1339,12 +1349,19 @@ ftrace_event_set_open(struct inode *inod
+ {
+ 	const struct seq_operations *seq_ops = &show_set_event_seq_ops;
+ 	struct trace_array *tr = inode->i_private;
++	int ret;
++
++	if (trace_array_get(tr) < 0)
++		return -ENODEV;
+ 
+ 	if ((file->f_mode & FMODE_WRITE) &&
+ 	    (file->f_flags & O_TRUNC))
+ 		ftrace_clear_events(tr);
+ 
+-	return ftrace_event_open(inode, file, seq_ops);
++	ret = ftrace_event_open(inode, file, seq_ops);
++	if (ret < 0)
++		trace_array_put(tr);
++	return ret;
+ }
+ 
+ static struct event_subsystem *
 
---089e0153688ec3226504e2f4cd37
-Content-Type: application/octet-stream; name="0001-Fix.patch"
-Content-Disposition: attachment; filename="0001-Fix.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hjva0xya1
 
-RnJvbSA3Nzk2M2NiY2VhMmUxNDhhMmZlMWI4ODY1MjY2Y2M0ZTJmMTg3MjYyIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpNZXNzYWdlLUlkOiA8Nzc5NjNjYmNlYTJlMTQ4YTJmZTFiODg2NTI2NmNj
-NGUyZjE4NzI2Mi4xMzc1NDQwOTA4LmdpdC52aXJlc2gua3VtYXJAbGluYXJvLm9yZz4KRnJvbTog
-VmlyZXNoIEt1bWFyIDx2aXJlc2gua3VtYXJAbGluYXJvLm9yZz4KRGF0ZTogRnJpLCAyIEF1ZyAy
-MDEzIDE2OjE3OjMzICswNTMwClN1YmplY3Q6IFtQQVRDSF0gRml4CgpTaWduZWQtb2ZmLWJ5OiBW
-aXJlc2ggS3VtYXIgPHZpcmVzaC5rdW1hckBsaW5hcm8ub3JnPgotLS0KIGRyaXZlcnMvY3B1ZnJl
-cS9jcHVmcmVxLmMgfCAxOCArKysrKystLS0tLS0tLS0tLS0KIDEgZmlsZSBjaGFuZ2VkLCA2IGlu
-c2VydGlvbnMoKyksIDEyIGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL2RyaXZlcnMvY3B1ZnJl
-cS9jcHVmcmVxLmMgYi9kcml2ZXJzL2NwdWZyZXEvY3B1ZnJlcS5jCmluZGV4IDQ2ZTcwYWUuLjQ3
-ZjJhNmUgMTAwNjQ0Ci0tLSBhL2RyaXZlcnMvY3B1ZnJlcS9jcHVmcmVxLmMKKysrIGIvZHJpdmVy
-cy9jcHVmcmVxL2NwdWZyZXEuYwpAQCAtODg5LDIxICs4ODksMTcgQEAgc3RhdGljIHZvaWQgY3B1
-ZnJlcV9pbml0X3BvbGljeShzdHJ1Y3QgY3B1ZnJlcV9wb2xpY3kgKnBvbGljeSkKIH0KIAogI2lm
-ZGVmIENPTkZJR19IT1RQTFVHX0NQVQotc3RhdGljIGludCBjcHVmcmVxX2FkZF9wb2xpY3lfY3B1
-KHVuc2lnbmVkIGludCBjcHUsIHVuc2lnbmVkIGludCBzaWJsaW5nLAotCQkJCSAgc3RydWN0IGRl
-dmljZSAqZGV2LCBib29sIGZyb3plbikKK3N0YXRpYyBpbnQgY3B1ZnJlcV9hZGRfcG9saWN5X2Nw
-dShzdHJ1Y3QgY3B1ZnJlcV9wb2xpY3kgKnBvbGljeSwKKwkJCQkgIHVuc2lnbmVkIGludCBjcHUs
-IHN0cnVjdCBkZXZpY2UgKmRldiwKKwkJCQkgIGJvb2wgZnJvemVuKQogewotCXN0cnVjdCBjcHVm
-cmVxX3BvbGljeSAqcG9saWN5OwogCWludCByZXQgPSAwLCBoYXNfdGFyZ2V0ID0gISFjcHVmcmVx
-X2RyaXZlci0+dGFyZ2V0OwogCXVuc2lnbmVkIGxvbmcgZmxhZ3M7CiAKLQlwb2xpY3kgPSBjcHVm
-cmVxX2NwdV9nZXQoc2libGluZyk7Ci0JaWYgKFdBUk5fT05fT05DRSghcG9saWN5KSkKLQkJcmV0
-dXJuIC1FTk9EQVRBOwotCiAJaWYgKGhhc190YXJnZXQpCiAJCV9fY3B1ZnJlcV9nb3Zlcm5vcihw
-b2xpY3ksIENQVUZSRVFfR09WX1NUT1ApOwogCi0JbG9ja19wb2xpY3lfcndzZW1fd3JpdGUoc2li
-bGluZyk7CisJbG9ja19wb2xpY3lfcndzZW1fd3JpdGUocG9saWN5LT5jcHUpOwogCiAJd3JpdGVf
-bG9ja19pcnFzYXZlKCZjcHVmcmVxX2RyaXZlcl9sb2NrLCBmbGFncyk7CiAKQEAgLTkxMiw3ICs5
-MDgsNyBAQCBzdGF0aWMgaW50IGNwdWZyZXFfYWRkX3BvbGljeV9jcHUodW5zaWduZWQgaW50IGNw
-dSwgdW5zaWduZWQgaW50IHNpYmxpbmcsCiAJcGVyX2NwdShjcHVmcmVxX2NwdV9kYXRhLCBjcHUp
-ID0gcG9saWN5OwogCXdyaXRlX3VubG9ja19pcnFyZXN0b3JlKCZjcHVmcmVxX2RyaXZlcl9sb2Nr
-LCBmbGFncyk7CiAKLQl1bmxvY2tfcG9saWN5X3J3c2VtX3dyaXRlKHNpYmxpbmcpOworCXVubG9j
-a19wb2xpY3lfcndzZW1fd3JpdGUocG9saWN5LT5jcHUpOwogCiAJaWYgKGhhc190YXJnZXQpIHsK
-IAkJX19jcHVmcmVxX2dvdmVybm9yKHBvbGljeSwgQ1BVRlJFUV9HT1ZfU1RBUlQpOwpAQCAtOTIz
-LDcgKzkxOSw2IEBAIHN0YXRpYyBpbnQgY3B1ZnJlcV9hZGRfcG9saWN5X2NwdSh1bnNpZ25lZCBp
-bnQgY3B1LCB1bnNpZ25lZCBpbnQgc2libGluZywKIAlpZiAoIWZyb3plbikKIAkJcmV0ID0gc3lz
-ZnNfY3JlYXRlX2xpbmsoJmRldi0+a29iaiwgJnBvbGljeS0+a29iaiwgImNwdWZyZXEiKTsKIAot
-CWNwdWZyZXFfY3B1X3B1dChwb2xpY3kpOwogCXJldHVybiByZXQ7CiB9CiAjZW5kaWYKQEAgLTEw
-MDYsOCArMTAwMSw3IEBAIHN0YXRpYyBpbnQgX19jcHVmcmVxX2FkZF9kZXYoc3RydWN0IGRldmlj
-ZSAqZGV2LCBzdHJ1Y3Qgc3Vic3lzX2ludGVyZmFjZSAqc2lmLAogCQlzdHJ1Y3QgY3B1ZnJlcV9w
-b2xpY3kgKmNwID0gcGVyX2NwdShjcHVmcmVxX2NwdV9kYXRhLCBzaWJsaW5nKTsKIAkJaWYgKGNw
-ICYmIGNwdW1hc2tfdGVzdF9jcHUoY3B1LCBjcC0+cmVsYXRlZF9jcHVzKSkgewogCQkJcmVhZF91
-bmxvY2tfaXJxcmVzdG9yZSgmY3B1ZnJlcV9kcml2ZXJfbG9jaywgZmxhZ3MpOwotCQkJcmV0dXJu
-IGNwdWZyZXFfYWRkX3BvbGljeV9jcHUoY3B1LCBzaWJsaW5nLCBkZXYsCi0JCQkJCQkgICAgICBm
-cm96ZW4pOworCQkJcmV0dXJuIGNwdWZyZXFfYWRkX3BvbGljeV9jcHUoY3AsIGNwdSwgZGV2LCBm
-cm96ZW4pOwogCQl9CiAJfQogCXJlYWRfdW5sb2NrX2lycXJlc3RvcmUoJmNwdWZyZXFfZHJpdmVy
-X2xvY2ssIGZsYWdzKTsKLS0gCjEuNy4xMi5yYzIuMTguZzYxYjQ3MmUKCg==
---089e0153688ec3226504e2f4cd37--
