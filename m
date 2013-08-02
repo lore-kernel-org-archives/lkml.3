@@ -1,70 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754444Ab3HBE5t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 00:57:49 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:53071 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753697Ab3HBE5s (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 00:57:48 -0400
-Message-ID: <51FB3C48.4060500@hitachi.com>
-Date: Fri, 02 Aug 2013 13:57:44 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1754501Ab3HBE6W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 00:58:22 -0400
+Received: from mga03.intel.com ([143.182.124.21]:37402 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753982Ab3HBE6V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 00:58:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,798,1367996400"; 
+   d="scan'208";a="340500998"
+Message-ID: <51FB3C9C.6070002@intel.com>
+Date: Fri, 02 Aug 2013 12:59:08 +0800
+From: Aaron Lu <aaron.lu@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: Re: [RFC][PATCH 3/4] tracing/kprobes: Fail to unregister if
- probe event files are open
-References: <20130704033347.807661713@goodmis.org> <20130704034038.819592356@goodmis.org> <1375300192.5418.17.camel@gandalf.local.home> <20130731204003.GA30188@redhat.com> <1375310548.5418.21.camel@gandalf.local.home> <1375322866.5418.46.camel@gandalf.local.home> <1375325414.5418.50.camel@gandalf.local.home> <20130801133455.GB8703@redhat.com>
-In-Reply-To: <20130801133455.GB8703@redhat.com>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+CC: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <lenb@kernel.org>,
+        Zhang Rui <rui.zhang@intel.com>
+Subject: Re: [PATCH] acpi: video: fix reversed indexed BQC
+References: <1375400042-989-1-git-send-email-felipe.contreras@gmail.com> <51FB137D.7070000@gmail.com> <CAMP44s1A+z4=DGJLK1qf5LPc1vbYvtJwjFiMt17vzyZFRU0qmg@mail.gmail.com> <51FB35CD.7040709@intel.com> <CAMP44s1honSdnoMnmpEcsXtdkJuPYgQgnLwcN+oxs5f=a+3Stg@mail.gmail.com>
+In-Reply-To: <CAMP44s1honSdnoMnmpEcsXtdkJuPYgQgnLwcN+oxs5f=a+3Stg@mail.gmail.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/08/01 22:34), Oleg Nesterov wrote:
-> Just one off-topic note,
+On 08/02/2013 12:50 PM, Felipe Contreras wrote:
+> On Thu, Aug 1, 2013 at 11:30 PM, Aaron Lu <aaron.lu@intel.com> wrote:
+>> On 08/02/2013 12:11 PM, Felipe Contreras wrote:
+>>> On Thu, Aug 1, 2013 at 9:03 PM, Aaron Lu <aaron.lwe@gmail.com> wrote:
+>>>> On 08/02/2013 07:34 AM, Felipe Contreras wrote:
+>>>>> Commit 1a7c618 (ACPI video: support _BQC/_BCL/_BCM methods that use
+>>>>> index values) assumed that bl->levels were not reverted, but at this
+>>>>> point they already are, so there's no need to revert them yet again.
+>>>>
+>>>> When acpi_video_bqc_value_to_level is called, bl->levels is not
+>>>> reverted.
+>>>
+>>> This is the code that turns br->flags._BCL_reversed on:
+>>>
+>>>       if (max_level == br->levels[2]) {
+>>>               br->flags._BCL_reversed = 1;
+>>>               sort(&br->levels[2], count - 2, sizeof(br->levels[2]),
+>>>                       acpi_video_cmp_level, NULL);
+>>>       }
+>>>
+>>> Now tell me how br->flags._BCL_reversed can be on, and the br->levels
+>>> *not* reverted.
+>>
+>> Oh yes, it is reverted to be in increase order, so it is not in reverse
+>> order. I'm a little confused by these words.
 > 
->> > @@ -632,7 +635,9 @@ static int release_all_trace_probes(void)
->> >  	/* TODO: Use batch unregistration */
->> >  	while (!list_empty(&probe_list)) {
->> >  		tp = list_entry(probe_list.next, struct trace_probe, list);
->> > -		unregister_trace_probe(tp);
->> > +		ret = unregister_trace_probe(tp);
->> > +		if (ret)
->> > +			goto end;
->> >  		free_trace_probe(tp);
->> >  	}
-> This obviously breaks all-or-nothing semantics (I mean, this breaks
-> the intent, the current code is buggy).
+> br->levels is always ascending, but that doesn't mean _BCL is.
 
-I see, since we can't lock all operations, we have to change the
-semantics. I think it's OK.
+Right.
 
-> I think we can't avoid this, and I hope this is fine. But then perhaps
-> we should simply remove the "list_for_each_entry" check above?
+> 
+>> Please see acpi_video_bqc_quirk, we set _BQC_use_index by revert the
+>> level on a reversed _BCL, so we will need to revert level here too.
+> 
+> I cannot parse that sentence, but nothing needs to change there; to
+> find out if _BQC is using an index, we need to see if the returned
+> value is the index of the level we are looking for, and to find that
+> out we need the original list of levels, which can be found by
+> reverting the already reverted list. If this wasn't the case there
 
-Yes, it should be done. And in that case, I'd like to remove
-all removable probes, as much as possible.
+Yes, but instead of reverting the already reverted list, we revert the
+returned value to get the correct index in the reverted list. But your
+patch removes the revert, is it correct?
 
-BTW, I'd like to replace this "remove all" behavior with
-writing "-:*", instead of writing without append flag.
-
-Thank you,
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+> would not be any need for the _BCL_reversed flag.
+> 
+-Aaron
