@@ -1,51 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753101Ab3HBUFy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 16:05:54 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:60682 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752345Ab3HBUFx (ORCPT
+	id S1753662Ab3HBUF7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 16:05:59 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:62179 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752345Ab3HBUFz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 16:05:53 -0400
+	Fri, 2 Aug 2013 16:05:55 -0400
 From: David Ahern <dsahern@gmail.com>
 To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
-Cc: David Ahern <dsahern@gmail.com>
-Subject: [PATCH 0/9] perf: kvm live mode
-Date: Fri,  2 Aug 2013 14:05:38 -0600
-Message-Id: <1375473947-64285-1-git-send-email-dsahern@gmail.com>
+Cc: David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Runzhen Wang <runzhen@linux.vnet.ibm.com>
+Subject: [PATCH 1/9] perf top: move CONSOLE_CLEAR to header file
+Date: Fri,  2 Aug 2013 14:05:39 -0600
+Message-Id: <1375473947-64285-2-git-send-email-dsahern@gmail.com>
 X-Mailer: git-send-email 1.7.10.1
+In-Reply-To: <1375473947-64285-1-git-send-email-dsahern@gmail.com>
+References: <1375473947-64285-1-git-send-email-dsahern@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnaldo:
+For use with kvm-live mode.
 
-Update to the kvm-live series. Per your comment on IRC I removed
-then need to refactor or restore an tracepoint parsing code.
-Hopefully this is sufficient to make into your core branch and
-be ready for 3.12.
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Runzhen Wang <runzhen@linux.vnet.ibm.com>
+---
+ tools/perf/builtin-top.c |    2 --
+ tools/perf/util/top.h    |    2 ++
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-David Ahern (9):
-  perf top: move CONSOLE_CLEAR to header file
-  perf stats: add max and min stats
-  perf session: export a few functions for event processing
-  perf kvm: split out tracepoints from record args
-  perf kvm: add live mode - v3
-  perf kvm: add min and max stats to display
-  perf kvm: option to print events that exceed a threshold
-  perf kvm: debug for missing vmexit/vmentry event
-  perf kvm stat report: Add option to analyze specific VM
-
- tools/perf/builtin-kvm.c  |  755 ++++++++++++++++++++++++++++++++++++++++++---
- tools/perf/builtin-top.c  |    2 -
- tools/perf/perf.h         |    3 +
- tools/perf/util/session.c |   12 +-
- tools/perf/util/session.h |    7 +
- tools/perf/util/stat.c    |    6 +
- tools/perf/util/stat.h    |    9 +
- tools/perf/util/top.h     |    2 +
- 8 files changed, 749 insertions(+), 47 deletions(-)
-
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index bbf4635..9101f7c 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -238,8 +238,6 @@ out_unlock:
+ 	pthread_mutex_unlock(&notes->lock);
+ }
+ 
+-static const char		CONSOLE_CLEAR[] = "[H[2J";
+-
+ static struct hist_entry *perf_evsel__add_hist_entry(struct perf_evsel *evsel,
+ 						     struct addr_location *al,
+ 						     struct perf_sample *sample)
+diff --git a/tools/perf/util/top.h b/tools/perf/util/top.h
+index df46be9..b554ffc 100644
+--- a/tools/perf/util/top.h
++++ b/tools/perf/util/top.h
+@@ -39,6 +39,8 @@ struct perf_top {
+ 	float		   min_percent;
+ };
+ 
++#define CONSOLE_CLEAR "[H[2J"
++
+ size_t perf_top__header_snprintf(struct perf_top *top, char *bf, size_t size);
+ void perf_top__reset_sample_counters(struct perf_top *top);
+ #endif /* __PERF_TOP_H */
 -- 
 1.7.10.1
 
