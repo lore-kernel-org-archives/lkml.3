@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030455Ab3HBKL3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:11:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37403 "EHLO
+	id S1030546Ab3HBKL6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:11:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37461 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030386Ab3HBKLZ (ORCPT
+	with ESMTP id S1030385Ab3HBKLy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:11:25 -0400
+	Fri, 2 Aug 2013 06:11:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 81/99] drm/i915: Serialize almost all register access
-Date: Fri,  2 Aug 2013 18:08:34 +0800
-Message-Id: <20130802100237.240253498@linuxfoundation.org>
+        Ondrej Zary <linux@rainbow-software.org>,
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 70/99] drm/radeon: Another card with wrong primary dac adj
+Date: Fri,  2 Aug 2013 18:08:23 +0800
+Message-Id: <20130802100235.769272392@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802100225.478715166@linuxfoundation.org>
 References: <20130802100225.478715166@linuxfoundation.org>
@@ -27,87 +27,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: Ondrej Zary <linux@rainbow-software.org>
 
-commit a7cd1b8fea2f341b626b255d9898a5ca5fabbf0a upstream.
+commit f7929f34fa0e0bb6736a2484fdc07d77a1653081 upstream.
 
-In theory, the different register blocks were meant to be only ever
-touched when holding either the struct_mutex, mode_config.lock or even a
-specific localised lock. This does not seem to be the case, and the
-hardware reacts extremely badly if we attempt to concurrently access two
-registers within the same cacheline.
+Hello,
+got another card with "too bright" problem:
+Sapphire Radeon VE 7000 DDR (VGA+S-Video)
 
-The HSD suggests that we only need to do this workaround for display
-range registers. However, upon review we need to serialize the multiple
-stages in our register write functions - if only for preemption
-protection.
+lspci -vnn:
+01:00.0 VGA compatible controller [0300]: Advanced Micro Devices [AMD] nee ATI RV100 QY [Radeon 7000/VE] [1002:5159] (prog-if 00 [VGA controller])
+        Subsystem: PC Partner Limited Sapphire Radeon VE 7000 DDR [174b:7c28]
 
-Irrespective of the hardware requirements, the current io functions are
-a little too loose with respect to the combination of pre- and
-post-condition testing that we do in conjunction with the actual io. As
-a result, we may be pre-empted and generate both false-postive and
-false-negative errors.
+The patch below fixes the problem for this card.
+But I don't like the blacklist, couldn't some heuristic be used instead?
+The interesting thing is that the manufacturer is the same as the other card
+needing the same quirk. I wonder how many different types are broken this way.
 
-Note well that this is a "90%" solution, there remains a few direct
-users of ioread/iowrite which will be fixed up in the next few patches.
-Since they are more invasive and that this simple change will prevent
-almost all lockups on Haswell, we kept this patch simple to facilitate
-backporting to stable.
+The "wrong" ps2_pdac_adj value that comes from BIOS on this card is 0x300.
 
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=63914
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+====================
+drm/radeon: Add primary dac adj quirk for Sapphire Radeon VE 7000 DDR
+
+Values from BIOS are wrong, causing too bright colors.
+Use default values instead.
+
+Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_drv.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/radeon/radeon_combios.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_drv.c
-+++ b/drivers/gpu/drm/i915/i915_drv.c
-@@ -1247,21 +1247,21 @@ hsw_unclaimed_reg_check(struct drm_i915_
+--- a/drivers/gpu/drm/radeon/radeon_combios.c
++++ b/drivers/gpu/drm/radeon/radeon_combios.c
+@@ -971,10 +971,14 @@ struct radeon_encoder_primary_dac *radeo
+ 	}
  
- #define __i915_read(x, y) \
- u##x i915_read##x(struct drm_i915_private *dev_priv, u32 reg) { \
-+	unsigned long irqflags; \
- 	u##x val = 0; \
-+	spin_lock_irqsave(&dev_priv->gt_lock, irqflags); \
- 	if (IS_GEN5(dev_priv->dev)) \
- 		ilk_dummy_write(dev_priv); \
- 	if (NEEDS_FORCE_WAKE((dev_priv), (reg))) { \
--		unsigned long irqflags; \
--		spin_lock_irqsave(&dev_priv->gt_lock, irqflags); \
- 		if (dev_priv->forcewake_count == 0) \
- 			dev_priv->gt.force_wake_get(dev_priv); \
- 		val = read##y(dev_priv->regs + reg); \
- 		if (dev_priv->forcewake_count == 0) \
- 			dev_priv->gt.force_wake_put(dev_priv); \
--		spin_unlock_irqrestore(&dev_priv->gt_lock, irqflags); \
- 	} else { \
- 		val = read##y(dev_priv->regs + reg); \
- 	} \
-+	spin_unlock_irqrestore(&dev_priv->gt_lock, irqflags); \
- 	trace_i915_reg_rw(false, reg, val, sizeof(val)); \
- 	return val; \
- }
-@@ -1274,8 +1274,10 @@ __i915_read(64, q)
- 
- #define __i915_write(x, y) \
- void i915_write##x(struct drm_i915_private *dev_priv, u32 reg, u##x val) { \
-+	unsigned long irqflags; \
- 	u32 __fifo_ret = 0; \
- 	trace_i915_reg_rw(true, reg, val, sizeof(val)); \
-+	spin_lock_irqsave(&dev_priv->gt_lock, irqflags); \
- 	if (NEEDS_FORCE_WAKE((dev_priv), (reg))) { \
- 		__fifo_ret = __gen6_gt_wait_for_fifo(dev_priv); \
- 	} \
-@@ -1287,6 +1289,7 @@ void i915_write##x(struct drm_i915_priva
- 		gen6_gt_check_fifodbg(dev_priv); \
- 	} \
- 	hsw_unclaimed_reg_check(dev_priv, reg); \
-+	spin_unlock_irqrestore(&dev_priv->gt_lock, irqflags); \
- }
- __i915_write(8, b)
- __i915_write(16, w)
+ 	/* quirks */
++	/* Radeon 7000 (RV100) */
++	if (((dev->pdev->device == 0x5159) &&
++	    (dev->pdev->subsystem_vendor == 0x174B) &&
++	    (dev->pdev->subsystem_device == 0x7c28)) ||
+ 	/* Radeon 9100 (R200) */
+-	if ((dev->pdev->device == 0x514D) &&
++	   ((dev->pdev->device == 0x514D) &&
+ 	    (dev->pdev->subsystem_vendor == 0x174B) &&
+-	    (dev->pdev->subsystem_device == 0x7149)) {
++	    (dev->pdev->subsystem_device == 0x7149))) {
+ 		/* vbios value is bad, use the default */
+ 		found = 0;
+ 	}
 
 
