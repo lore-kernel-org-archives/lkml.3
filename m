@@ -1,78 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754665Ab3HBW2s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 18:28:48 -0400
-Received: from gate.crashing.org ([63.228.1.57]:47957 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754236Ab3HBW2r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 18:28:47 -0400
-Message-ID: <1375482516.15999.51.camel@pasglop>
-Subject: [git pull] Please pull powerpc.git merge branch
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Date: Sat, 03 Aug 2013 08:28:36 +1000
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754731Ab3HBW3F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 18:29:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46272 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754459Ab3HBW3D (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 18:29:03 -0400
+Date: Sat, 3 Aug 2013 06:30:20 +0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [RFC v01 0/3] Power Capping Framework
+Message-ID: <20130802223020.GB28831@kroah.com>
+References: <1375466932-11842-1-git-send-email-srinivas.pandruvada@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1375466932-11842-1-git-send-email-srinivas.pandruvada@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ resent in case you missed it ]
+On Fri, Aug 02, 2013 at 11:08:49AM -0700, Srinivas Pandruvada wrote:
+> Once this framework is approved, we will submit a RAPL client driver using this
+> framework.
 
-Hi Linus !
+Also, given that you work with a lot of kernel developers, I would like
+to see their review and signed-off-by: on these patches before you
+resend them, please.  That way I know that they agree with this
+framework as a way for their future changes in this area.
 
-Here is not quite a handful of powerpc fixes for rc3. The windfarm fix is
-a regression fix (though not a new one), the PMU interrupt rename is not
-a fix per-se but has been submitted a long time ago and I kept forgetting
-to put it in (it puts us back in sync with x86), the other perf bit is
-just about putting an API/ABI bit definition in the right place for
-userspace to consume, and finally, we have a fix for the VPHN (Virtual
-Partition Home Node) feature (notification that the hypervisor is moving
-nodes around) which could cause lockups so we may as well fix it now.
+thanks,
 
-Thanks !
-
-Cheers,
-Ben.
-
-The following changes since commit ff3d79dc12c2ed38483f6c1e0f26fde430f27c9d:
-
-  powerpc/perf: BHRB filter configuration should follow the task (2013-07-24 14:42:34 +1000)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git merge
-
-for you to fetch changes up to fe956a1d4081ce1a959f87df397a15e252201f10:
-
-  powerpc/windfarm: Fix noisy slots-fan on Xserve (rm31) (2013-08-01 13:11:47 +1000)
-
-----------------------------------------------------------------
-Aaro Koskinen (1):
-      powerpc/windfarm: Fix noisy slots-fan on Xserve (rm31)
-
-Michael Ellerman (2):
-      powerpc: Rename PMU interrupts from CNT to PMI
-      powerpc/perf: Export PERF_EVENT_CONFIG_EBB_SHIFT to userspace
-
-Robert Jennings (1):
-      powerpc: VPHN topology change updates all siblings
-
- arch/powerpc/include/asm/perf_event_server.h |  6 +--
- arch/powerpc/include/asm/smp.h               |  4 ++
- arch/powerpc/include/uapi/asm/Kbuild         |  1 +
- arch/powerpc/include/uapi/asm/perf_event.h   | 18 +++++++++
- arch/powerpc/kernel/irq.c                    |  2 +-
- arch/powerpc/mm/numa.c                       | 59 +++++++++++++++++++++-------
- arch/powerpc/perf/core-book3s.c              |  2 +-
- arch/powerpc/perf/power8-pmu.c               |  6 +--
- drivers/macintosh/windfarm_rm31.c            | 18 ++++-----
- 9 files changed, 82 insertions(+), 34 deletions(-)
- create mode 100644 arch/powerpc/include/uapi/asm/perf_event.h
-
-
-
+greg k-h
