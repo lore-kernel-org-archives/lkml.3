@@ -1,136 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758754Ab3HBKHk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:07:40 -0400
-Received: from mga01.intel.com ([192.55.52.88]:52042 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758712Ab3HBKFS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:05:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,800,1367996400"; 
-   d="scan'208";a="380030282"
-From: Adrian Hunter <adrian.hunter@intel.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH V3 04/10] perf tools: adjust the vmlinux symtab matches kallsyms test
-Date: Fri,  2 Aug 2013 13:10:46 +0300
-Message-Id: <1375438252-24776-5-git-send-email-adrian.hunter@intel.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1375438252-24776-1-git-send-email-adrian.hunter@intel.com>
-References: <1375438252-24776-1-git-send-email-adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
+	id S1758890Ab3HBKHx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:07:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37049 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758719Ab3HBKHt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 06:07:49 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Or Gerlitz <ogerlitz@mellanox.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [ 04/99] iser-target: Fix session reset bug with RDMA_CM_EVENT_DISCONNECTED
+Date: Fri,  2 Aug 2013 18:07:17 +0800
+Message-Id: <20130802100226.122807725@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
+In-Reply-To: <20130802100225.478715166@linuxfoundation.org>
+References: <20130802100225.478715166@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-vmlinux maps now map to the dso and the symbol values
-are now file offsets.  For comparison with kallsyms
-the virtual memory address is needed which is obtained
-by unmapping the symbol value.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-The "vmlinux symtab matches kallsyms" is adjusted
-accordingly.
+------------------
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
+
+commit b2cb96494d83b894a43ba8b9023eead8ff50684b upstream.
+
+This patch addresses a bug where RDMA_CM_EVENT_DISCONNECTED may occur
+before the connection shutdown has been completed by rx/tx threads,
+that causes isert_free_conn() to wait indefinately on ->conn_wait.
+
+This patch allows isert_disconnect_work code to invoke rdma_disconnect
+when isert_disconnect_work() process context is started by client
+session reset before isert_free_conn() code has been reached.
+
+It also adds isert_conn->conn_mutex protection for ->state within
+isert_disconnect_work(), isert_cq_comp_err() and isert_free_conn()
+code, along with isert_check_state() for wait_event usage.
+
+(v2: Add explicit iscsit_cause_connection_reinstatement call
+     during isert_disconnect_work() to force conn reset)
+
+Cc: Or Gerlitz <ogerlitz@mellanox.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- tools/perf/tests/vmlinux-kallsyms.c | 32 +++++++++++++++++++++-----------
- 1 file changed, 21 insertions(+), 11 deletions(-)
+ drivers/infiniband/ulp/isert/ib_isert.c  |   70 ++++++++++++++++++++++++++-----
+ drivers/infiniband/ulp/isert/ib_isert.h  |    1 
+ drivers/target/iscsi/iscsi_target_erl0.c |    1 
+ include/target/iscsi/iscsi_transport.h   |    4 +
+ 4 files changed, 66 insertions(+), 10 deletions(-)
 
-diff --git a/tools/perf/tests/vmlinux-kallsyms.c b/tools/perf/tests/vmlinux-kallsyms.c
-index add1539..e2e1498 100644
---- a/tools/perf/tests/vmlinux-kallsyms.c
-+++ b/tools/perf/tests/vmlinux-kallsyms.c
-@@ -25,6 +25,7 @@ int test__vmlinux_matches_kallsyms(void)
- 	struct machine kallsyms, vmlinux;
- 	enum map_type type = MAP__FUNCTION;
- 	struct ref_reloc_sym ref_reloc_sym = { .name = "_stext", };
-+	u64 mem_start, mem_end;
+--- a/drivers/infiniband/ulp/isert/ib_isert.c
++++ b/drivers/infiniband/ulp/isert/ib_isert.c
+@@ -388,6 +388,7 @@ isert_connect_request(struct rdma_cm_id
+ 	init_waitqueue_head(&isert_conn->conn_wait_comp_err);
+ 	kref_init(&isert_conn->conn_kref);
+ 	kref_get(&isert_conn->conn_kref);
++	mutex_init(&isert_conn->conn_mutex);
  
- 	/*
- 	 * Step 1:
-@@ -123,10 +124,14 @@ int test__vmlinux_matches_kallsyms(void)
- 		if (sym->start == sym->end)
- 			continue;
+ 	cma_id->context = isert_conn;
+ 	isert_conn->conn_cm_id = cma_id;
+@@ -540,15 +541,32 @@ isert_disconnect_work(struct work_struct
+ 				struct isert_conn, conn_logout_work);
  
--		first_pair = machine__find_kernel_symbol(&kallsyms, type, sym->start, NULL, NULL);
-+		mem_start = vmlinux_map->unmap_ip(vmlinux_map, sym->start);
-+		mem_end = vmlinux_map->unmap_ip(vmlinux_map, sym->end);
-+
-+		first_pair = machine__find_kernel_symbol(&kallsyms, type,
-+							 mem_start, NULL, NULL);
- 		pair = first_pair;
+ 	pr_debug("isert_disconnect_work(): >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
+-
++	mutex_lock(&isert_conn->conn_mutex);
+ 	isert_conn->state = ISER_CONN_DOWN;
  
--		if (pair && pair->start == sym->start) {
-+		if (pair && pair->start == mem_start) {
- next_pair:
- 			if (strcmp(sym->name, pair->name) == 0) {
- 				/*
-@@ -138,10 +143,11 @@ next_pair:
- 				 * off the real size. More than that and we
- 				 * _really_ have a problem.
- 				 */
--				s64 skew = sym->end - pair->end;
-+				s64 skew = mem_end - pair->end;
- 				if (llabs(skew) >= page_size)
- 					pr_debug("%#" PRIx64 ": diff end addr for %s v: %#" PRIx64 " k: %#" PRIx64 "\n",
--						 sym->start, sym->name, sym->end, pair->end);
-+						 mem_start, sym->name, mem_end,
-+						 pair->end);
- 
- 				/*
- 				 * Do not count this as a failure, because we
-@@ -159,7 +165,7 @@ detour:
- 				if (nnd) {
- 					struct symbol *next = rb_entry(nnd, struct symbol, rb_node);
- 
--					if (next->start == sym->start) {
-+					if (next->start == mem_start) {
- 						pair = next;
- 						goto next_pair;
- 					}
-@@ -172,10 +178,11 @@ detour:
- 				}
- 
- 				pr_debug("%#" PRIx64 ": diff name v: %s k: %s\n",
--					 sym->start, sym->name, pair->name);
-+					 mem_start, sym->name, pair->name);
- 			}
- 		} else
--			pr_debug("%#" PRIx64 ": %s not on kallsyms\n", sym->start, sym->name);
-+			pr_debug("%#" PRIx64 ": %s not on kallsyms\n",
-+				 mem_start, sym->name);
- 
- 		err = -1;
+ 	if (isert_conn->post_recv_buf_count == 0 &&
+ 	    atomic_read(&isert_conn->post_send_buf_count) == 0) {
+ 		pr_debug("Calling wake_up(&isert_conn->conn_wait);\n");
+-		wake_up(&isert_conn->conn_wait);
++		mutex_unlock(&isert_conn->conn_mutex);
++		goto wake_up;
++	}
++	if (!isert_conn->conn_cm_id) {
++		mutex_unlock(&isert_conn->conn_mutex);
++		isert_put_conn(isert_conn);
++		return;
++	}
++	if (!isert_conn->logout_posted) {
++		pr_debug("Calling rdma_disconnect for !logout_posted from"
++			 " isert_disconnect_work\n");
++		rdma_disconnect(isert_conn->conn_cm_id);
++		mutex_unlock(&isert_conn->conn_mutex);
++		iscsit_cause_connection_reinstatement(isert_conn->conn, 0);
++		goto wake_up;
  	}
-@@ -208,16 +215,19 @@ detour:
- 	for (nd = rb_first(&vmlinux.kmaps.maps[type]); nd; nd = rb_next(nd)) {
- 		struct map *pos = rb_entry(nd, struct map, rb_node), *pair;
++	mutex_unlock(&isert_conn->conn_mutex);
  
--		pair = map_groups__find(&kallsyms.kmaps, type, pos->start);
-+		mem_start = vmlinux_map->unmap_ip(vmlinux_map, pos->start);
-+		mem_end = vmlinux_map->unmap_ip(vmlinux_map, pos->end);
++wake_up:
++	wake_up(&isert_conn->conn_wait);
+ 	isert_put_conn(isert_conn);
+ }
+ 
+@@ -1423,7 +1441,11 @@ isert_cq_comp_err(struct iser_tx_desc *t
+ 		pr_debug("isert_cq_comp_err >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
+ 		pr_debug("Calling wake_up from isert_cq_comp_err\n");
+ 
+-		isert_conn->state = ISER_CONN_TERMINATING;
++		mutex_lock(&isert_conn->conn_mutex);
++		if (isert_conn->state != ISER_CONN_DOWN)
++			isert_conn->state = ISER_CONN_TERMINATING;
++		mutex_unlock(&isert_conn->conn_mutex);
 +
-+		pair = map_groups__find(&kallsyms.kmaps, type, mem_start);
- 		if (pair == NULL || pair->priv)
- 			continue;
+ 		wake_up(&isert_conn->conn_wait_comp_err);
+ 	}
+ }
+@@ -2193,6 +2215,17 @@ isert_free_np(struct iscsi_np *np)
+ 	kfree(isert_np);
+ }
  
--		if (pair->start == pos->start) {
-+		if (pair->start == mem_start) {
- 			pair->priv = 1;
- 			pr_info(" %" PRIx64 "-%" PRIx64 " %" PRIx64 " %s in kallsyms as",
- 				pos->start, pos->end, pos->pgoff, pos->dso->name);
--			if (pos->pgoff != pair->pgoff || pos->end != pair->end)
--				pr_info(": \n*%" PRIx64 "-%" PRIx64 " %" PRIx64 "",
-+			if (mem_end != pair->end)
-+				pr_info(":\n*%" PRIx64 "-%" PRIx64 " %" PRIx64,
- 					pair->start, pair->end, pair->pgoff);
- 			pr_info(" %s\n", pair->dso->name);
- 			pair->priv = 1;
--- 
-1.7.11.7
++static int isert_check_state(struct isert_conn *isert_conn, int state)
++{
++	int ret;
++
++	mutex_lock(&isert_conn->conn_mutex);
++	ret = (isert_conn->state == state);
++	mutex_unlock(&isert_conn->conn_mutex);
++
++	return ret;
++}
++
+ static void isert_free_conn(struct iscsi_conn *conn)
+ {
+ 	struct isert_conn *isert_conn = conn->context;
+@@ -2202,26 +2235,43 @@ static void isert_free_conn(struct iscsi
+ 	 * Decrement post_send_buf_count for special case when called
+ 	 * from isert_do_control_comp() -> iscsit_logout_post_handler()
+ 	 */
++	mutex_lock(&isert_conn->conn_mutex);
+ 	if (isert_conn->logout_posted)
+ 		atomic_dec(&isert_conn->post_send_buf_count);
+ 
+-	if (isert_conn->conn_cm_id)
++	if (isert_conn->conn_cm_id && isert_conn->state != ISER_CONN_DOWN) {
++		pr_debug("Calling rdma_disconnect from isert_free_conn\n");
+ 		rdma_disconnect(isert_conn->conn_cm_id);
++	}
+ 	/*
+ 	 * Only wait for conn_wait_comp_err if the isert_conn made it
+ 	 * into full feature phase..
+ 	 */
+-	if (isert_conn->state > ISER_CONN_INIT) {
++	if (isert_conn->state == ISER_CONN_UP) {
+ 		pr_debug("isert_free_conn: Before wait_event comp_err %d\n",
+ 			 isert_conn->state);
++		mutex_unlock(&isert_conn->conn_mutex);
++
+ 		wait_event(isert_conn->conn_wait_comp_err,
+-			   isert_conn->state == ISER_CONN_TERMINATING);
+-		pr_debug("isert_free_conn: After wait_event #1 >>>>>>>>>>>>\n");
++			  (isert_check_state(isert_conn, ISER_CONN_TERMINATING)));
++
++		wait_event(isert_conn->conn_wait,
++			  (isert_check_state(isert_conn, ISER_CONN_DOWN)));
++
++		isert_put_conn(isert_conn);
++		return;
++	}
++	if (isert_conn->state == ISER_CONN_INIT) {
++		mutex_unlock(&isert_conn->conn_mutex);
++		isert_put_conn(isert_conn);
++		return;
+ 	}
++	pr_debug("isert_free_conn: wait_event conn_wait %d\n",
++		 isert_conn->state);
++	mutex_unlock(&isert_conn->conn_mutex);
+ 
+-	pr_debug("isert_free_conn: wait_event conn_wait %d\n", isert_conn->state);
+-	wait_event(isert_conn->conn_wait, isert_conn->state == ISER_CONN_DOWN);
+-	pr_debug("isert_free_conn: After wait_event #2 >>>>>>>>>>>>>>>>>>>>\n");
++	wait_event(isert_conn->conn_wait,
++		  (isert_check_state(isert_conn, ISER_CONN_DOWN)));
+ 
+ 	isert_put_conn(isert_conn);
+ }
+--- a/drivers/infiniband/ulp/isert/ib_isert.h
++++ b/drivers/infiniband/ulp/isert/ib_isert.h
+@@ -102,6 +102,7 @@ struct isert_conn {
+ 	struct ib_qp		*conn_qp;
+ 	struct isert_device	*conn_device;
+ 	struct work_struct	conn_logout_work;
++	struct mutex		conn_mutex;
+ 	wait_queue_head_t	conn_wait;
+ 	wait_queue_head_t	conn_wait_comp_err;
+ 	struct kref		conn_kref;
+--- a/drivers/target/iscsi/iscsi_target_erl0.c
++++ b/drivers/target/iscsi/iscsi_target_erl0.c
+@@ -909,6 +909,7 @@ void iscsit_cause_connection_reinstateme
+ 	wait_for_completion(&conn->conn_wait_comp);
+ 	complete(&conn->conn_post_wait_comp);
+ }
++EXPORT_SYMBOL(iscsit_cause_connection_reinstatement);
+ 
+ void iscsit_fall_back_to_erl0(struct iscsi_session *sess)
+ {
+--- a/include/target/iscsi/iscsi_transport.h
++++ b/include/target/iscsi/iscsi_transport.h
+@@ -67,6 +67,10 @@ extern int iscsit_logout_post_handler(st
+  */
+ extern void iscsit_increment_maxcmdsn(struct iscsi_cmd *, struct iscsi_session *);
+ /*
++ * From iscsi_target_erl0.c
++ */
++extern void iscsit_cause_connection_reinstatement(struct iscsi_conn *, int);
++/*
+  * From iscsi_target_erl1.c
+  */
+ extern void iscsit_stop_dataout_timer(struct iscsi_cmd *);
+
 
