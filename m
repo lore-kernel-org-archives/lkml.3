@@ -1,711 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753053Ab3HBQZc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 12:25:32 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:39343 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752845Ab3HBQZ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 12:25:29 -0400
-Date: Fri, 2 Aug 2013 18:25:26 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
-Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        dougthompson@xmission.com, bhelgaas@google.com, jbeulich@suse.com,
-        linux-kernel@vger.kernel.org, linux-edac@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: Re: [PATCH 1/1] EDAC, AMD64_EDAC: Add ECC decoding support for newer
- F15h models.
-Message-ID: <20130802162525.GA15392@pd.tnic>
-References: <1375457592-2194-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
- <1375457592-2194-2-git-send-email-Aravind.Gopalakrishnan@amd.com>
+	id S1753494Ab3HBQZs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 12:25:48 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:43355 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753230Ab3HBQZr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 12:25:47 -0400
+X-IronPort-AV: E=Sophos;i="4.89,802,1367971200"; 
+   d="scan'208";a="39081950"
+Date: Fri, 2 Aug 2013 17:25:32 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <Ian.Campbell@citrix.com>
+Subject: Re: [PATCH RFC 8/8] xen/arm,arm64: enable SWIOTLB_XEN
+In-Reply-To: <20130802124000.GJ24540@konrad-lan.dumpdata.com>
+Message-ID: <alpine.DEB.2.02.1308021717330.4893@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1307311833040.4893@kaball.uk.xensource.com> <1375292732-7627-8-git-send-email-stefano.stabellini@eu.citrix.com> <20130802124000.GJ24540@konrad-lan.dumpdata.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1375457592-2194-2-git-send-email-Aravind.Gopalakrishnan@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 02, 2013 at 10:33:12AM -0500, Aravind Gopalakrishnan wrote:
-> Adding support for handling ECC error decoding for new F15 models.
-> On newer models, support has been included for upto 4 DCT's,
-> however, only DCT0 and DCT3 are currently configured. (Refer BKDG Section 2.10)
-> There is also a new "Routing DRAM Requests" algorithm for this model.
+On Fri, 2 Aug 2013, Konrad Rzeszutek Wilk wrote:
+> On Wed, Jul 31, 2013 at 06:45:32PM +0100, Stefano Stabellini wrote:
+> > Xen on arm and arm64 needs SWIOTLB_XEN: when running on Xen we need to
+> > program the hardware with mfns rather than pfns for dma addresses.
+> > Remove SWIOTLB_XEN dependency on X86 and PCI and make XEN select
+> > SWIOTLB_XEN on arm and arm64.
+> > 
+> > Implement xen_create_contiguous_region on arm and arm64 by using
+> > XENMEM_get_dma_buf.
+> > 
+> > Initialize the xen-swiotlb from xen_early_init (before the native
+> > dma_ops are initialized), set dma_ops to &xen_swiotlb_dma_ops if we are
+> > running on Xen.
+> > 
+> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> > ---
+> >  arch/arm/Kconfig                |    1 +
+> >  arch/arm/include/asm/xen/page.h |    2 +
+> >  arch/arm/xen/Makefile           |    2 +-
+> >  arch/arm/xen/enlighten.c        |    3 +
+> >  arch/arm/xen/mm.c               |  118 +++++++++++++++++++++++++++++++++++++++
+> >  arch/arm64/Kconfig              |    1 +
+> >  arch/arm64/xen/Makefile         |    2 +-
+> >  drivers/xen/Kconfig             |    1 -
+> >  drivers/xen/swiotlb-xen.c       |   18 ++++++
+> >  9 files changed, 145 insertions(+), 3 deletions(-)
+> >  create mode 100644 arch/arm/xen/mm.c
+> > 
+> > diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+> > index 05125ab..72b53b9 100644
+> > --- a/arch/arm/Kconfig
+> > +++ b/arch/arm/Kconfig
+> > @@ -1849,6 +1849,7 @@ config XEN
+> >  	depends on CPU_V7 && !CPU_V6
+> >  	depends on !GENERIC_ATOMIC64
+> >  	select ARM_PSCI
+> > +	select SWIOTLB_XEN
+> >  	help
+> >  	  Say Y if you want to run Linux in a Virtual Machine on Xen on ARM.
+> >  
+> > diff --git a/arch/arm/include/asm/xen/page.h b/arch/arm/include/asm/xen/page.h
+> > index 359a7b5..b0f7150 100644
+> > --- a/arch/arm/include/asm/xen/page.h
+> > +++ b/arch/arm/include/asm/xen/page.h
+> > @@ -6,12 +6,14 @@
+> >  
+> >  #include <linux/pfn.h>
+> >  #include <linux/types.h>
+> > +#include <linux/dma-mapping.h>
+> >  
+> >  #include <xen/interface/grant_table.h>
+> >  
+> >  #define pfn_to_mfn(pfn)			(pfn)
+> >  #define phys_to_machine_mapping_valid(pfn) (1)
+> >  #define mfn_to_pfn(mfn)			(mfn)
+> > +#define mfn_to_local_pfn(m)             (mfn_to_pfn(m))
+> >  #define mfn_to_virt(m)			(__va(mfn_to_pfn(m) << PAGE_SHIFT))
+> >  
+> >  #define pte_mfn	    pte_pfn
+> > diff --git a/arch/arm/xen/Makefile b/arch/arm/xen/Makefile
+> > index 4384103..66fc35d 100644
+> > --- a/arch/arm/xen/Makefile
+> > +++ b/arch/arm/xen/Makefile
+> > @@ -1 +1 @@
+> > -obj-y		:= enlighten.o hypercall.o grant-table.o
+> > +obj-y		:= enlighten.o hypercall.o grant-table.o mm.o
+> > diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
+> > index 14d17ab..06a6953 100644
+> > --- a/arch/arm/xen/enlighten.c
+> > +++ b/arch/arm/xen/enlighten.c
+> > @@ -195,6 +195,7 @@ static void xen_power_off(void)
+> >   * documentation of the Xen Device Tree format.
+> >   */
+> >  #define GRANT_TABLE_PHYSADDR 0
+> > +extern int xen_mm_init(void);
+> >  void __init xen_early_init(void)
+> >  {
+> >  	struct resource res;
+> > @@ -230,6 +231,8 @@ void __init xen_early_init(void)
+> >  		xen_start_info->flags |= SIF_INITDOMAIN|SIF_PRIVILEGED;
+> >  	else
+> >  		xen_start_info->flags &= ~(SIF_INITDOMAIN|SIF_PRIVILEGED);
+> > +
+> > +	xen_mm_init();
+> >  }
+> >  
+> >  static int __init xen_guest_init(void)
+> > diff --git a/arch/arm/xen/mm.c b/arch/arm/xen/mm.c
+> > new file mode 100644
+> > index 0000000..4ba1add
+> > --- /dev/null
+> > +++ b/arch/arm/xen/mm.c
+> > @@ -0,0 +1,118 @@
+> > +#include <linux/bootmem.h>
+> > +#include <linux/gfp.h>
+> > +#include <linux/export.h>
+> > +#include <linux/slab.h>
+> > +#include <linux/types.h>
+> > +#include <linux/dma-mapping.h>
+> > +#include <linux/vmalloc.h>
+> > +#include <linux/swiotlb.h>
+> > +
+> > +#include <xen/xen.h>
+> > +#include <xen/interface/memory.h>
+> > +#include <xen/swiotlb-xen.h>
+> > +
+> > +#include <asm/cacheflush.h>
+> > +#include <asm/xen/page.h>
+> > +#include <asm/xen/hypercall.h>
+> > +#include <asm/xen/interface.h>
+> > +
+> > +static int xen_exchange_memory(xen_ulong_t extents_in,
+> > +			       unsigned int order_in,
+> > +			       xen_pfn_t *pfns_in,
+> > +			       xen_ulong_t extents_out,
+> > +			       unsigned int order_out,
+> > +			       xen_pfn_t *mfns_out,
+> > +			       unsigned int address_bits)
+> > +{
+> > +	long rc;
+> > +	int success;
+> > +
+> > +	struct xen_memory_exchange exchange = {
+> > +		.in = {
+> > +			.nr_extents   = extents_in,
+> > +			.extent_order = order_in,
+> > +			.domid        = DOMID_SELF
+> > +		},
+> > +		.out = {
+> > +			.nr_extents   = extents_out,
+> > +			.extent_order = order_out,
+> > +			.address_bits = address_bits,
+> > +			.domid        = DOMID_SELF
+> > +		}
+> > +	};
+> > +	set_xen_guest_handle(exchange.in.extent_start, pfns_in);
+> > +	set_xen_guest_handle(exchange.out.extent_start, mfns_out);
+> > +
+> > +	BUG_ON(extents_in << order_in != extents_out << order_out);
+> > +
+> > +
+> > +	rc = HYPERVISOR_memory_op(XENMEM_get_dma_buf, &exchange);
+> > +	success = (exchange.nr_exchanged == extents_in);
+> > +
+> > +	BUG_ON(!success && ((exchange.nr_exchanged != 0) || (rc == 0)));
+> > +	BUG_ON(success && (rc != 0));
+> > +
+> > +	return success;
+> > +}
 > 
-> Tested on Fam15h M30h with ECC turned on using mce_amd_inj facility and
-> verified to be functionally correct.
+> Could this code be made out to be more generic? It is almost the same on
+> x86 - it just a different hypercall.
 
-This patch is huge and before we do any serious reviewing, it needs
-splitting.
-
-So I'm gonna go over it and give you only rough points what needs
-changing.
-
-> 
-> Signed-off-by: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
-> 
-> diff --git a/arch/x86/kernel/amd_nb.c b/arch/x86/kernel/amd_nb.c
-> index 3048ded..3ee7a4d 100644
-> --- a/arch/x86/kernel/amd_nb.c
-> +++ b/arch/x86/kernel/amd_nb.c
-> @@ -20,6 +20,7 @@ const struct pci_device_id amd_nb_misc_ids[] = {
->  	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_10H_NB_MISC) },
->  	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_15H_NB_F3) },
->  	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_15H_M10H_F3) },
-> +	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_15H_M30H_NB_F3) },
->  	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_16H_NB_F3) },
->  	{}
->  };
-> @@ -27,6 +28,7 @@ EXPORT_SYMBOL(amd_nb_misc_ids);
->  
->  static const struct pci_device_id amd_nb_link_ids[] = {
->  	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_15H_NB_F4) },
-> +	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_15H_M30H_NB_F4) },
->  	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_16H_NB_F4) },
->  	{}
->  };
-> @@ -81,13 +83,21 @@ int amd_cache_northbridges(void)
->  			next_northbridge(misc, amd_nb_misc_ids);
->  		node_to_amd_nb(i)->link = link =
->  			next_northbridge(link, amd_nb_link_ids);
-> -        }
-> +	}
->  
-> +	/* GART present only on Fam15h upto model 0fh */
->  	if (boot_cpu_data.x86 == 0xf || boot_cpu_data.x86 == 0x10 ||
-> -	    boot_cpu_data.x86 == 0x15)
-> +	    (boot_cpu_data.x86 == 0x15 && boot_cpu_data.x86_model < 0x10))
->  		amd_northbridges.flags |= AMD_NB_GART;
->  
->  	/*
-> +	 * Check CPUID Fn8000_0006_EDX: L3 Cache Identifiers.
-> +	 * If == 0, then no need to proceed as there is no L3.
-> +	 */
-> +	if (cpuid_edx(0x80000006) == 0)
-> +		return 0;
-
-Is this for real? Model 0x30 can have no L3 cache?!
-
-> +
-> +	/*
->  	 * Some CPU families support L3 Cache Index Disable. There are some
->  	 * limitations because of E382 and E388 on family 0x10.
->  	 */
-
-Whatever it is, the amd_nb.c stuff needs to be a separate patch.
-
-> diff --git a/drivers/edac/amd64_edac.c b/drivers/edac/amd64_edac.c
-> index 8b6a034..365beda 100644
-> --- a/drivers/edac/amd64_edac.c
-> +++ b/drivers/edac/amd64_edac.c
-> @@ -123,7 +123,11 @@ static void f15h_select_dct(struct amd64_pvt *pvt, u8 dct)
->  	u32 reg = 0;
->  
->  	amd64_read_pci_cfg(pvt->F1, DCT_CFG_SEL, &reg);
-> -	reg &= 0xfffffffe;
-> +	/*
-> +	 * If Fam15h M30h, mask out last two bits for programming dct.
-> +	 * Else, only mask out the last bit.
-> +	 */
-> +	reg &= is_f15h_m30h ? 0xfffffffc : 0xfffffff8;
->  	reg |= dct;
->  	amd64_write_pci_cfg(pvt->F1, DCT_CFG_SEL, reg);
->  }
-> @@ -133,8 +137,12 @@ static int f15_read_dct_pci_cfg(struct amd64_pvt *pvt, int addr, u32 *val,
->  {
->  	u8 dct  = 0;
->  
-> +	/*
-> +	 * For F15 M30h, the second dct is DCT 3.
-> +	 * Refer BKDG Section 2.10
-> +	 */
->  	if (addr >= 0x140 && addr <= 0x1a0) {
-> -		dct   = 1;
-> +		dct = is_f15h_m30h ? 3 : 1;
->  		addr -= 0x100;
->  	}
->  
-> @@ -205,8 +213,9 @@ static int amd64_set_scrub_rate(struct mem_ctl_info *mci, u32 bw)
->  	if (boot_cpu_data.x86 == 0xf)
->  		min_scrubrate = 0x0;
->  
-> -	/* F15h Erratum #505 */
-> -	if (boot_cpu_data.x86 == 0x15)
-> +	/* F15h Models 0x00 - 0x0f Erratum #505 */
-> +	if (boot_cpu_data.x86 == 0x15 &&
-> +		boot_cpu_data.x86_model != 0x30)
->  		f15h_select_dct(pvt, 0);
->  
->  	return __amd64_set_scrub_rate(pvt->F3, bw, min_scrubrate);
-> @@ -218,8 +227,9 @@ static int amd64_get_scrub_rate(struct mem_ctl_info *mci)
->  	u32 scrubval = 0;
->  	int i, retval = -EINVAL;
->  
-> -	/* F15h Erratum #505 */
-> -	if (boot_cpu_data.x86 == 0x15)
-> +	/* F15h Models 0x00 - 0x0f Erratum #505 */
-> +	if (boot_cpu_data.x86 == 0x15 &&
-> +		boot_cpu_data.x86_model != 0x30)
->  		f15h_select_dct(pvt, 0);
->  
->  	amd64_read_pci_cfg(pvt->F3, SCRCTRL, &scrubval);
-> @@ -343,10 +353,10 @@ static void get_cs_base_and_mask(struct amd64_pvt *pvt, int csrow, u8 dct,
->  		addr_shift	= 4;
->  
->  	/*
-> -	* F16h needs two addr_shift values: 8 for high and 6 for low
-> -	* (cf. F16h BKDG).
-> +	* F16h and F15h(model 30h) needs two addr_shift values:
-> +	* 8 for high and 6 for low (cf. F16h BKDG).
->  	*/
-> -	} else if (boot_cpu_data.x86 == 0x16) {
-> +	} else if (boot_cpu_data.x86 == 0x16 || is_f15h_m30h) {
->  		csbase          = pvt->csels[dct].csbases[csrow];
->  		csmask          = pvt->csels[dct].csmasks[csrow >> 1];
->  
-> @@ -743,6 +753,9 @@ static void prep_chip_selects(struct amd64_pvt *pvt)
->  	if (boot_cpu_data.x86 == 0xf && pvt->ext_model < K8_REV_F) {
->  		pvt->csels[0].b_cnt = pvt->csels[1].b_cnt = 8;
->  		pvt->csels[0].m_cnt = pvt->csels[1].m_cnt = 8;
-> +	} else if (is_f15h_m30h) {
-> +		pvt->csels[0].b_cnt = pvt->csels[1].b_cnt = 4;
-> +		pvt->csels[0].m_cnt = pvt->csels[1].m_cnt = 2;
->  	} else {
->  		pvt->csels[0].b_cnt = pvt->csels[1].b_cnt = 8;
->  		pvt->csels[0].m_cnt = pvt->csels[1].m_cnt = 4;
-> @@ -850,9 +863,9 @@ static u64 get_error_address(struct mce *m)
->  	addr = m->addr & GENMASK(start_bit, end_bit);
->  
->  	/*
-> -	 * Erratum 637 workaround
-> +	 * Erratum 637 workaround for F15h Models 0x00 - 0x0f
->  	 */
-> -	if (c->x86 == 0x15) {
-> +	if (c->x86 == 0x15 && boot_cpu_data.x86_model != 0x30) {
-
-Huh,
-
-	c->x86_model is there too, you know.
-
->  		struct amd64_pvt *pvt;
->  		u64 cc6_base, tmp_addr;
->  		u32 tmp;
-> @@ -942,7 +955,15 @@ static void read_dram_base_limit_regs(struct amd64_pvt *pvt, unsigned range)
->  		return;
->  
->  	misc = nb->misc;
-> -	f1 = pci_get_related_function(misc->vendor, PCI_DEVICE_ID_AMD_15H_NB_F1, misc);
-> +
-> +	if (c->x86_model == 0x30)
-> +		f1 = pci_get_related_function(misc->vendor,
-> +					PCI_DEVICE_ID_AMD_15H_M30H_NB_F1,
-> +					misc);
-
-Indentation.
-
-> +	else
-> +		f1 = pci_get_related_function(misc->vendor,
-> +				      PCI_DEVICE_ID_AMD_15H_NB_F1,
-> +				      misc);
-
-Simpler:
-
-	pci_func = (pvt->x86_model == 0x30 ? PCI_DEVICE_ID_AMD_15H_M30H_NB_F1
-					   : PCI_DEVICE_ID_AMD_15H_NB_F1);
-
-	f1 = pci_get_related_function(misc->vendor, pci_func, misc);
-
->  	if (WARN_ON(!f1))
->  		return;
->  
-> @@ -1173,7 +1194,8 @@ static int f15_dbam_to_chip_select(struct amd64_pvt *pvt, u8 dct,
->  }
->  
->  /*
-> - * F16h has only limited cs_modes
-> + * F16h has only limited cs_modes.
-> + * F15 M30h follows the same pattern.
->   */
->  static int f16_dbam_to_chip_select(struct amd64_pvt *pvt, u8 dct,
->  				unsigned cs_mode)
-> @@ -1218,6 +1240,65 @@ static void read_dram_ctl_register(struct amd64_pvt *pvt)
->  }
->  
->  /*
-> + * Determine channel (DCT) based on the interleaving mode:
-> + * F15h M30h BKDG, 2.10.12 Memory Interleaving Modes.
-> + */
-> +static u8 f15_m30h_determine_channel(struct amd64_pvt *pvt, u64 sys_addr,
-> +				u8 intlv_en, int num_dcts_intlv, u32 dct_sel)
-> +{
-> +	u8 channel = 0;
-> +	u8 select;
-> +	u8 intlv_addr = dct_sel_interleave_addr(pvt);
-> +
-> +	if (!(intlv_en))
-> +		return (u8)(dct_sel);
-> +	/*
-> +	* If num_dcts_intlv == 2, them consider addr bit 8 or addr bit 9
-> +	* depending on intlv_addr, then return either channel = 0/1/2/3.
-> +	* If num_dcts_intlv == 4, consider either bits[8:9] or bits[9:10]
-> +	* depending on intlv_addr, then return the value obtained.
-> +	*/
-> +
-> +	if (num_dcts_intlv == 2) {
-> +		if (intlv_addr == 0x4)
-> +			select = (sys_addr >> 8) & BIT(0);
-> +		else if (intlv_addr == 0x5)
-> +			select = (sys_addr >> 9) & BIT(0);
-> +		else
-> +			return -EINVAL;
-> +
-> +		/* Upper DCT selected */
-> +		if (select > 0) {
-> +			if (intlv_en & 0x8)
-> +				channel =  0x3;
-> +			else if (intlv_en & 0x4)
-> +				channel =  0x2;
-> +			else
-> +				channel =  0x1;
-
-Can intlv_en be a three-bit field with only one bit set? If so, we have
-these functions like fls() for example which should give you what you
-want. IOW:
-
-		if (select)
-			channel = fls(intlv_en);
-
-> +		} else {
-> +			/* Lower DCT selected */
-> +			if (intlv_en & BIT(0))
-> +				channel = 0;
-> +			else if (intlv_en & 0x2)
-> +				channel = 0x1;
-> +			else
-> +				channel = 0x2;
-
-I'm sure you can come up with a similar thing here :)
-
-> +		}
-> +	} else if (num_dcts_intlv == 4) {
-> +		if (intlv_addr == 0x4)
-> +			select =  (sys_addr >> 8) & 0x3;
-> +		else if (intlv_addr == 0x5)
-> +			select = (sys_addr >> 9) & 0x3;
-> +		else
-> +			return -EINVAL;
-
-You know that this function cannot return an error, right? Look at
-f1x_lookup_addr_in_dct() for example.
-
-I can see that you handle this but is there any possibility not to be
-able to determine the channel?
-
-> +
-> +		channel = select;
-> +	}
-> +
-> +	return channel;
-> +}
-> +
-> +/*
->   * Determine channel (DCT) based on the interleaving mode: F10h BKDG, 2.8.9 Memory
->   * Interleaving Modes.
->   */
-> @@ -1366,6 +1447,10 @@ static int f1x_lookup_addr_in_dct(u64 in_addr, u8 nid, u8 dct)
->  			 (in_addr & cs_mask), (cs_base & cs_mask));
->  
->  		if ((in_addr & cs_mask) == (cs_base & cs_mask)) {
-> +			if (is_f15h_m30h) {
-> +				cs_found =  csrow;
-> +				break;
-> +			}
->  			cs_found = f10_process_possible_spare(pvt, dct, csrow);
->  
->  			edac_dbg(1, " MATCH csrow=%d\n", cs_found);
-> @@ -1492,20 +1577,147 @@ static int f1x_match_to_this_node(struct amd64_pvt *pvt, unsigned range,
->  	return cs_found;
->  }
->  
-> -static int f1x_translate_sysaddr_to_cs(struct amd64_pvt *pvt, u64 sys_addr,
-> -				       int *chan_sel)
-> +/*
-> + * Routing DRAM Requests algorithm is different for F15h M30h.
-> + * It is cleaner to use a brand new function rather than
-> + * adding quirks in the more generic 'f1x_match_to_this_node'.
-> + * Refer "2.10.5 DRAM Routing Requests" in BKDG for info.
-> + */
-> +static int f15_m30h_match_to_this_node(struct amd64_pvt *pvt, unsigned range,
-> +				  u64 sys_addr, int *chan_sel)
-> +{
-> +	int cs_found = -EINVAL;
-> +	int num_dcts_intlv = 0;
-> +	u8 leg_mmio_hole;
-> +	u64 chan_addr, chan_offset, high_addr_offset;
-> +	u64 dct_base, dct_limit;
-> +	u8 channel, alias_channel;
-> +
-> +	/*
-> +	 * Read DRAM Control registers specific to F15 M30h.
-> +	 */
-> +	u64 dhar_offset		= f10_dhar_offset(pvt);
-> +	u8 dct_offset_en	= f15_m30h_dct_offset_en(pvt);
-> +	u8 dct_sel		= f15_m30h_dct_sel(pvt);
-> +	u8 intlv_addr		= dct_sel_interleave_addr(pvt);
-> +	u8 node_id		= dram_dst_node(pvt, range);
-> +	u8 intlv_en		= dram_intlv_en(pvt, range);
-> +
-> +	edac_dbg(1, "(range %d) SystemAddr= 0x%llx Limit=0x%llx\n",
-> +		 range, sys_addr, get_dram_limit(pvt, range));
-> +
-> +	if (!(get_dram_base(pvt, range)  <= sys_addr) &&
-> +	    !(get_dram_limit(pvt, range) >= sys_addr))
-> +		return -EINVAL;
-> +
-> +	if (dhar_valid(pvt) &&
-> +	    dhar_base(pvt) <= sys_addr &&
-> +	    sys_addr < BIT_64(32)) {
-> +		amd64_warn("Huh? Address is in the MMIO hole: 0x%016llx\n",
-> +			    sys_addr);
-> +		return -EINVAL;
-> +	}
-> +
-> +	/* Verify sys_addr is within DCT Range. */
-> +	dct_base = (dct_sel_baseaddr(pvt) << 27);
-> +	dct_limit = (f15_m30h_dct_limit_addr(pvt) << 27) | 0x7FFFFFF;
-> +	if (!(f15_m30h_dct_addr_val(pvt)) &&
-> +			!(dct_base <= sys_addr && dct_limit >= sys_addr)) {
-> +		return -EINVAL;
-> +	}
-> +
-> +	/* Verify number of dct's that participate in channel interleaving. */
-> +	num_dcts_intlv = (int) hweight8(intlv_en);
-> +
-> +	if (!(num_dcts_intlv % 2 == 0) || (num_dcts_intlv > 4))
-> +		return -EINVAL;
-> +
-> +	channel = f15_m30h_determine_channel(pvt, sys_addr,
-> +						 intlv_en,
-> +						 num_dcts_intlv,
-> +						 dct_sel);
-> +
-> +	/* Verify if we stay within the MAX number of channels allowed */
-> +	if (channel > 4 || channel < 0)
-> +		return -EINVAL;
-> +
-> +	leg_mmio_hole = f15_m30h_leg_mmio_en(pvt);
-> +
-> +	/* Get normalized DCT addr */
-> +	if (leg_mmio_hole && (sys_addr >= BIT_64(32)))
-> +		chan_offset = dhar_offset;
-> +	else
-> +		chan_offset = dct_base;
-> +
-> +	chan_addr = sys_addr - chan_offset;
-> +
-> +	/* remove channel interleave */
-> +	if (num_dcts_intlv == 2) {
-> +		if (intlv_addr == 0x4)
-> +			chan_addr = ((chan_addr >> 9) << 8) |
-> +						(chan_addr & 0xff);
-> +		else if (intlv_addr == 0x5)
-> +			chan_addr = ((chan_addr >> 10) << 9) |
-> +						(chan_addr & 0x1ff);
-> +		else
-> +			return -EINVAL;
-> +
-> +	} else if (num_dcts_intlv == 4) {
-> +		if (intlv_addr == 0x4)
-> +			chan_addr = ((chan_addr >> 10) << 8) |
-> +							(chan_addr & 0xff);
-> +		else if (intlv_addr == 0x5)
-> +			chan_addr = ((chan_addr >> 11) << 9) |
-> +							(chan_addr & 0x1ff);
-> +		else
-> +			return -EINVAL;
-> +	}
-> +
-> +	if (dct_offset_en) {
-> +		high_addr_offset = f15_m30h_dct_high_offset(pvt, channel);
-> +		chan_addr += high_addr_offset;
-> +	}
-> +
-> +	/* Set DCTCFGSEL = ChannelSelect */
-> +	f15h_select_dct(pvt, channel);
-> +
-> +	edac_dbg(1, "   Normalized DCT addr: 0x%llx\n", chan_addr);
-> +	/* Find the Chip select.. */
-> +	/*
-> +	 * NOTE: if channel = 3, then alias it to 1.
-> +	 * This is because, in F15 M30h, there is support for
-> +	 * 4 DCT's, but only 2 are currently included in the architecture.
-> +	 * They are DCT0 and DCT3. But we have read all registers of DCT3
-> +	 * into pvt->csels[1]. So we need to use '1' here to get correct
-> +	 * info. Refer F15 M30h BKDG Section 2.10 and 2.10.3 for clarifications
-> +	 */
-> +
-> +	alias_channel =  (channel == 3) ? 1 : channel;
-> +
-> +	cs_found = f1x_lookup_addr_in_dct(chan_addr, node_id, alias_channel);
-> +
-> +	if (cs_found >= 0)
-> +		*chan_sel = alias_channel;
-> +
-> +	return cs_found;
-> +}
-> +
-> +static int
-> +f1x_translate_sysaddr_to_cs(struct amd64_pvt *pvt,
-> +			    u64 sys_addr,
-> +			    int *chan_sel)
->  {
->  	int cs_found = -EINVAL;
->  	unsigned range;
->  
->  	for (range = 0; range < DRAM_RANGES; range++) {
-> -
->  		if (!dram_rw(pvt, range))
->  			continue;
-> -
-> -		if ((get_dram_base(pvt, range)  <= sys_addr) &&
-> -		    (get_dram_limit(pvt, range) >= sys_addr)) {
-> -
-> +		if (is_f15h_m30h)
-> +			cs_found = f15_m30h_match_to_this_node(pvt, range,
-> +							  sys_addr, chan_sel);
-> +		else if ((get_dram_base(pvt, range)  <= sys_addr) &&
-> +			 (get_dram_limit(pvt, range) >= sys_addr)) {
->  			cs_found = f1x_match_to_this_node(pvt, range,
->  							  sys_addr, chan_sel);
->  			if (cs_found >= 0)
-> @@ -1624,6 +1836,17 @@ static struct amd64_family_type amd64_family_types[] = {
->  			.read_dct_pci_cfg	= f15_read_dct_pci_cfg,
->  		}
->  	},
-> +	[F15_M30H_CPUS] = {
-> +		.ctl_name = "F15h_M30h",
-> +		.f1_id = PCI_DEVICE_ID_AMD_15H_M30H_NB_F1,
-> +		.f3_id = PCI_DEVICE_ID_AMD_15H_M30H_NB_F3,
-> +		.ops = {
-> +			.early_channel_count	= f1x_early_channel_count,
-> +			.map_sysaddr_to_csrow	= f1x_map_sysaddr_to_csrow,
-> +			.dbam_to_cs		= f16_dbam_to_chip_select,
-> +			.read_dct_pci_cfg	= f15_read_dct_pci_cfg,
-> +		}
-> +	},
->  	[F16_CPUS] = {
->  		.ctl_name = "F16h",
->  		.f1_id = PCI_DEVICE_ID_AMD_16H_NB_F1,
-> @@ -2402,6 +2625,12 @@ static struct amd64_family_type *amd64_per_family_init(struct amd64_pvt *pvt)
->  		break;
->  
->  	case 0x15:
-> +		if (boot_cpu_data.x86_model == 0x30) {
-> +			fam_type	= &amd64_family_types[F15_M30H_CPUS];
-> +			pvt->ops	= &amd64_family_types[F15_M30H_CPUS].ops;
-> +			break;
-> +		}
-> +
->  		fam_type		= &amd64_family_types[F15_CPUS];
->  		pvt->ops		= &amd64_family_types[F15_CPUS].ops;
->  		break;
-> @@ -2638,6 +2867,14 @@ static DEFINE_PCI_DEVICE_TABLE(amd64_pci_table) = {
->  	},
->  	{
->  		.vendor		= PCI_VENDOR_ID_AMD,
-> +		.device		= PCI_DEVICE_ID_AMD_15H_M30H_NB_F2,
-> +		.subvendor	= PCI_ANY_ID,
-> +		.subdevice	= PCI_ANY_ID,
-> +		.class		= 0,
-> +		.class_mask	= 0,
-> +	},
-> +	{
-> +		.vendor		= PCI_VENDOR_ID_AMD,
->  		.device		= PCI_DEVICE_ID_AMD_16H_NB_F2,
->  		.subvendor	= PCI_ANY_ID,
->  		.subdevice	= PCI_ANY_ID,
-> diff --git a/drivers/edac/amd64_edac.h b/drivers/edac/amd64_edac.h
-> index 2c6f113..8ef5ad3 100644
-> --- a/drivers/edac/amd64_edac.h
-> +++ b/drivers/edac/amd64_edac.h
-> @@ -170,6 +170,8 @@
->  /*
->   * PCI-defined configuration space registers
->   */
-> +#define PCI_DEVICE_ID_AMD_15H_M30H_NB_F1 0x141b
-> +#define PCI_DEVICE_ID_AMD_15H_M30H_NB_F2 0x141c
->  #define PCI_DEVICE_ID_AMD_15H_NB_F1	0x1601
->  #define PCI_DEVICE_ID_AMD_15H_NB_F2	0x1602
->  #define PCI_DEVICE_ID_AMD_16H_NB_F1	0x1531
-> @@ -181,13 +183,24 @@
->  #define DRAM_BASE_LO			0x40
->  #define DRAM_LIMIT_LO			0x44
->  
-> -#define dram_intlv_en(pvt, i)		((u8)((pvt->ranges[i].base.lo >> 8) & 0x7))
-> +/*
-> + * F15 M30h DRAM Controller Base/Limit
-> + * D18F1x2[1C:00]
-> + */
-> +#define DRAM_CONT_BASE			0x200
-> +#define DRAM_CONT_LIMIT			0x204
-> +
-> +/*
-> + * F15 M30h DRAM Controller High Addre Offset
-> + * D18F1x2[4C:40]
-> + */
-> +#define DRAM_CONT_HIGH_OFF      0x240
-> +
->  #define dram_rw(pvt, i)			((u8)(pvt->ranges[i].base.lo & 0x3))
->  #define dram_intlv_sel(pvt, i)		((u8)((pvt->ranges[i].lim.lo >> 8) & 0x7))
->  #define dram_dst_node(pvt, i)		((u8)(pvt->ranges[i].lim.lo & 0x7))
->  
->  #define DHAR				0xf0
-> -#define dhar_valid(pvt)			((pvt)->dhar & BIT(0))
->  #define dhar_mem_hoist_valid(pvt)	((pvt)->dhar & BIT(1))
->  #define dhar_base(pvt)			((pvt)->dhar & 0xff000000)
->  #define k8_dhar_offset(pvt)		(((pvt)->dhar & 0x0000ff00) << 16)
-> @@ -234,8 +247,6 @@
->  #define DDR3_MODE			BIT(8)
->  
->  #define DCT_SEL_LO			0x110
-> -#define dct_sel_baseaddr(pvt)		((pvt)->dct_sel_lo & 0xFFFFF800)
-> -#define dct_sel_interleave_addr(pvt)	(((pvt)->dct_sel_lo >> 6) & 0x3)
->  #define dct_high_range_enabled(pvt)	((pvt)->dct_sel_lo & BIT(0))
->  #define dct_interleave_enabled(pvt)	((pvt)->dct_sel_lo & BIT(2))
->  
-> @@ -293,10 +304,14 @@
->  /* MSRs */
->  #define MSR_MCGCTL_NBE			BIT(4)
->  
-> +/* Helper Macro for F15h M30h */
-> +#define is_f15h_m30h			((boot_cpu_data.x86 == 0x15) && \
-> +					  (boot_cpu_data.x86_model == 0x30))
-
-This is ugly.
-
-Since most functions have struct amd64_pvt as an argument, you could put
-the family in there in a nice format, which is easy to check. Off the
-top of my head, you can copy c->x86 and c->x86_model u8s and that should
-work.
-
->  enum amd_families {
->  	K8_CPUS = 0,
->  	F10_CPUS,
->  	F15_CPUS,
-> +	F15_M30H_CPUS,
->  	F16_CPUS,
->  	NUM_FAMILIES,
->  };
-> @@ -414,6 +429,14 @@ static inline u16 extract_syndrome(u64 status)
->  	return ((status >> 47) & 0xff) | ((status >> 16) & 0xff00);
->  }
->  
-> +static inline u8 dct_sel_interleave_addr(struct amd64_pvt *pvt)
-> +{
-> +	if (is_f15h_m30h)
-> +		return (((pvt->dct_sel_hi >> 9) & 0x1) << 2) |
-> +			((pvt->dct_sel_lo >> 6) & 0x3);
-> +
-> +	return	((pvt)->dct_sel_lo >> 6) & 0x3;
-> +}
->  /*
->   * per-node ECC settings descriptor
->   */
-> @@ -504,3 +527,80 @@ static inline void enable_caches(void *dummy)
->  {
->  	write_cr0(read_cr0() & ~X86_CR0_CD);
->  }
-> +
-> +/*
-> + * Introduce helper functions for F15 M30h
-> + */
-> +static inline u8 f15_m30h_dct_offset_en(struct amd64_pvt *pvt)
-> +{
-> +	u32 tmp;
-> +	amd64_read_pci_cfg(pvt->F1, DRAM_CONT_BASE, &tmp);
-> +	return (u8) ((tmp >> 3) & BIT(0));
-> +}
-> +
-> +static inline u8 f15_m30h_dct_sel(struct amd64_pvt *pvt)
-> +{
-> +	u32 tmp;
-> +	amd64_read_pci_cfg(pvt->F1, DRAM_CONT_BASE, &tmp);
-> +	return (u8) ((tmp >> 4) & 0x7);
-> +}
-> +
-> +static inline u32 f15_m30h_dct_limit_addr(struct amd64_pvt *pvt)
-> +{
-> +	u32 tmp;
-> +	amd64_read_pci_cfg(pvt->F1, DRAM_CONT_LIMIT, &tmp);
-> +	return (tmp >> 11) & 0x1FFF;
-> +}
-> +
-> +static inline u8 f15_m30h_leg_mmio_en(struct amd64_pvt *pvt)
-> +{
-> +	u32 tmp;
-> +	amd64_read_pci_cfg(pvt->F1, DRAM_CONT_BASE, &tmp);
-> +	return (u8) ((tmp >> 1) & BIT(0));
-> +}
-> +
-> +static inline u64 f15_m30h_dct_high_offset(struct amd64_pvt *pvt, u8 channel)
-> +{
-> +	u32 tmp;
-> +	amd64_read_pci_cfg(pvt->F1,
-> +			DRAM_CONT_HIGH_OFF + (int) channel * 4,
-> +			&tmp);
-> +	return ((tmp >> 11) & 0xfff) << 27;
-> +}
-> +
-> +static inline int f15_m30h_dct_addr_val(struct amd64_pvt *pvt)
-> +{
-> +	u32 tmp;
-> +	amd64_read_pci_cfg(pvt->F1, DRAM_CONT_BASE, &tmp);
-> +	return tmp & BIT(0);
-> +}
-> +
-> +static inline u8 dram_intlv_en(struct amd64_pvt *pvt, unsigned int i)
-> +{
-> +	u32 tmp;
-> +	if (is_f15h_m30h) {
-> +		amd64_read_pci_cfg(pvt->F1, DRAM_CONT_LIMIT, &tmp);
-> +		return (u8) tmp & 0xF;
-> +	}
-> +	return (u8) (pvt->ranges[i].base.lo >> 8) & 0x7;
-> +}
-> +
-> +static inline u8 dhar_valid(struct amd64_pvt *pvt)
-> +{
-> +	u32 tmp;
-> +	if (is_f15h_m30h) {
-> +		amd64_read_pci_cfg(pvt->F1, DRAM_CONT_BASE, &tmp);
-> +		return (tmp >> 1) & BIT(0);
-> +	}
-> +	return (pvt)->dhar & BIT(0);
-> +}
-> +
-> +static inline u32 dct_sel_baseaddr(struct amd64_pvt *pvt)
-> +{
-> +	u32 tmp;
-> +	if (is_f15h_m30h) {
-> +		amd64_read_pci_cfg(pvt->F1, DRAM_CONT_BASE, &tmp);
-> +		return (tmp >> 11) & 0x1FFF;
-> +	}
-> +	return (pvt)->dct_sel_lo & 0xFFFFF800;
-> +}
-
-Now this looks like unneeded. Some of those functions are called only
-once so why do you even have those functions?
-
-Whatever it is, the amd64_edac.[ch] stuff needs to be a separate patch.
-
-So please split this thing into smaller pieces first.
-
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Maybe, but I wasn't planning on implementing XENMEM_get_dma_buf on x86
+(guest_physmap_pin_range and guest_physmap_unpin_range in particular),
+mostly because I admit I don't quite understand the x86 page_type system
+in Xen.
