@@ -1,68 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753785Ab3HBO16 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 10:27:58 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:49056 "EHLO mail.zytor.com"
+	id S1752576Ab3HBOae (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 10:30:34 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49345 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753284Ab3HBO15 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 10:27:57 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <8761vq40s2.fsf@rustcorp.com.au>
-References: <CALkWK0n7zedKD4tnxKh-qMuDnMJ5RXjnPJ9EUWT=cCgiokX11A@mail.gmail.com> <51E97779.3020103@zytor.com> <87zjte9iah.fsf@rustcorp.com.au> <CABpLfohrweJd0=0eFJDO7dv2HHxx_mbP0uySMDrsZZZXExdXug@mail.gmail.com> <51F9005F.30501@zytor.com> <CABpLfoiKnbkHq9oT3yk72583yYKz_AMotLVV-Cu1sw1B1GH0xw@mail.gmail.com> <8761vq40s2.fsf@rustcorp.com.au>
+	id S1751710Ab3HBOad (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 10:30:33 -0400
+Date: Fri, 2 Aug 2013 16:30:32 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Fabio Estevam <festevam@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: "watchdog: update watchdog_tresh properly" breaks non-SMP
+Message-ID: <20130802143032.GJ25432@dhcp22.suse.cz>
+References: <CAOMZO5BFmsLqj5iRKbmTEvLa3J3CwtN3s7P0qiE_x9aQ6tEJbQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-Subject: Re: [QUERY] lguest64
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Fri, 02 Aug 2013 07:27:40 -0700
-To: Rusty Russell <rusty@rustcorp.com.au>,
-        Mike Rapoport <mike.rapoport@gmail.com>
-CC: Ramkumar Ramachandra <artagnon@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Message-ID: <8f931f05-e8e3-4d1e-a1f1-23fbd315fa32@email.android.com>
+In-Reply-To: <CAOMZO5BFmsLqj5iRKbmTEvLa3J3CwtN3s7P0qiE_x9aQ6tEJbQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We'll look at them and consider to what degree they are likely to cause issues, but as Rusty says, it is the red shirt.
+On Fri 02-08-13 11:19:50, Fabio Estevam wrote:
+> Hi Michal,
+> 
+> Commit 0ce6966b5 (watchdog: update watchdog_tresh properly) breaks the
+> build for uniprocessor systems:
+> 
+> kernel/watchdog.c: In function ‘update_timers’:
+> kernel/watchdog.c:523:2: error: implicit declaration of function
+> ‘__smp_call_function_single’ [-Werror=implicit-function-declaration]
+> cc1: some warnings being treated as errors
+> make[1]: *** [kernel/watchdog.o] Error 1
 
-UML is also PV of course, but sits in its own corner and we x86 maintainers very rarely have to do something special to accommodate it.
+I have already sent a patch to fix this here:
+https://lkml.org/lkml/2013/8/1/104
 
-Rusty Russell <rusty@rustcorp.com.au> wrote:
->Mike Rapoport <mike.rapoport@gmail.com> writes:
->> On Wed, Jul 31, 2013 at 3:17 PM, H. Peter Anvin <hpa@zytor.com>
->wrote:
->>> On 07/31/2013 02:39 AM, Mike Rapoport wrote:
->>>>
->>>> The use case I had in mind is to use lguest as a nested hypervisor
->in
->>>> public clouds. As of today, major public clouds do not support
->nested
->>>> virtualization and it's not clear at all if they will expose this
->>>> ability in their deployments. Addition of 64-bit support for lguest
->>>> won't require changes to pvops and, as far as I can tell, won't
->change
->>>> the number of pvops users...
->>>>
->>>
->>> "We can add a pvops user and that won't change the number of pvops
->>> users" What?!
->>
->> We modify existing pvops user, IMHO. lguest is existing pvops user
->and
->> my idea was to extend it, rather than add lguest64 alongside
->lguest32.
->
->Well, lguest is particularly expendable.  It's the red shirt of the
->virtualization away team.
->
->Unlike HPA, I would advocate for applying the patches if you produced
->them.  But I'd be aware that they're likely to be ripped out as soon as
->pvops has no other users.
->
->Cheers,
->Rusty.
+Sorry about inconvenience.
 
 -- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+Michal Hocko
+SUSE Labs
