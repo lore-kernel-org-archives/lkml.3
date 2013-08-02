@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030517Ab3HBKLr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:11:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37429 "EHLO
+	id S1030573Ab3HBKMK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:12:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37480 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030385Ab3HBKLl (ORCPT
+	with ESMTP id S1030524Ab3HBKMF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:11:41 -0400
+	Fri, 2 Aug 2013 06:12:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Mika Kuoppala <mika.kuoppala@intel.com>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [ 75/99] Partially revert "drm/i915: unconditionally use mt forcewake on hsw/ivb"
-Date: Fri,  2 Aug 2013 18:08:28 +0800
-Message-Id: <20130802100236.428324993@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>,
+        =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>
+Subject: [ 85/99] drm/radeon: fix audio dto programming on DCE4+
+Date: Fri,  2 Aug 2013 18:08:38 +0800
+Message-Id: <20130802100237.761122634@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802100225.478715166@linuxfoundation.org>
 References: <20130802100225.478715166@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,78 +30,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guenter Roeck <linux@roeck-us.net>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit c11e5f35ab490bd30591563816fbc83526521777 upstream.
+commit 7d61d835824f73dc4097b51f800382467c8049c5 upstream.
 
-This patch partially reverts commit 36ec8f877481449bdfa072e6adf2060869e2b970 for
-IvyBridge CPUs.
+We need to set the dto source before setting the
+dividers otherwise we may get stability problems
+with the dto leading to audio playback problems.
 
-The original commit results in repeated 'Timed out waiting for forcewake old
-ack to clear' messages on a Supermicro C7H61 board (BIOS version 2.00 and 2.00b)
-with i7-3770K CPU. It ultimately results in a hangup if the system is highly
-loaded. Reverting the commit for IvyBridge CPUs fixes the issue.
-
-Issue a warning if the CPU is IvyBridge and mt forcewake is disabled, since
-this condition can result in secondary issues.
-
-v2: Only revert patch for Ivybridge CPUs
-    Issue info message if mt forcewake is disabled on Ivybridge
-
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=60541
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Mika Kuoppala <mika.kuoppala@intel.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=66139
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Reviewed-by: Christian König <christian.koenig@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_pm.c |   31 ++++++++++++++++++++++++++++++-
- 1 file changed, 30 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/evergreen_hdmi.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/intel_pm.c
-+++ b/drivers/gpu/drm/i915/intel_pm.c
-@@ -4510,9 +4510,38 @@ void intel_gt_init(struct drm_device *de
- 	if (IS_VALLEYVIEW(dev)) {
- 		dev_priv->gt.force_wake_get = vlv_force_wake_get;
- 		dev_priv->gt.force_wake_put = vlv_force_wake_put;
--	} else if (IS_IVYBRIDGE(dev) || IS_HASWELL(dev)) {
-+	} else if (IS_HASWELL(dev)) {
- 		dev_priv->gt.force_wake_get = __gen6_gt_force_wake_mt_get;
- 		dev_priv->gt.force_wake_put = __gen6_gt_force_wake_mt_put;
-+	} else if (IS_IVYBRIDGE(dev)) {
-+		u32 ecobus;
-+
-+		/* IVB configs may use multi-threaded forcewake */
-+
-+		/* A small trick here - if the bios hasn't configured
-+		 * MT forcewake, and if the device is in RC6, then
-+		 * force_wake_mt_get will not wake the device and the
-+		 * ECOBUS read will return zero. Which will be
-+		 * (correctly) interpreted by the test below as MT
-+		 * forcewake being disabled.
-+		 */
-+		mutex_lock(&dev->struct_mutex);
-+		__gen6_gt_force_wake_mt_get(dev_priv);
-+		ecobus = I915_READ_NOTRACE(ECOBUS);
-+		__gen6_gt_force_wake_mt_put(dev_priv);
-+		mutex_unlock(&dev->struct_mutex);
-+
-+		if (ecobus & FORCEWAKE_MT_ENABLE) {
-+			dev_priv->gt.force_wake_get =
-+						__gen6_gt_force_wake_mt_get;
-+			dev_priv->gt.force_wake_put =
-+						__gen6_gt_force_wake_mt_put;
-+		} else {
-+			DRM_INFO("No MT forcewake available on Ivybridge, this can result in issues\n");
-+			DRM_INFO("when using vblank-synced partial screen updates.\n");
-+			dev_priv->gt.force_wake_get = __gen6_gt_force_wake_get;
-+			dev_priv->gt.force_wake_put = __gen6_gt_force_wake_put;
-+		}
- 	} else if (IS_GEN6(dev)) {
- 		dev_priv->gt.force_wake_get = __gen6_gt_force_wake_get;
- 		dev_priv->gt.force_wake_put = __gen6_gt_force_wake_put;
+--- a/drivers/gpu/drm/radeon/evergreen_hdmi.c
++++ b/drivers/gpu/drm/radeon/evergreen_hdmi.c
+@@ -157,9 +157,9 @@ static void evergreen_audio_set_dto(stru
+ 	 * number (coefficient of two integer numbers.  DCCG_AUDIO_DTOx_PHASE
+ 	 * is the numerator, DCCG_AUDIO_DTOx_MODULE is the denominator
+ 	 */
++	WREG32(DCCG_AUDIO_DTO_SOURCE, DCCG_AUDIO_DTO0_SOURCE_SEL(radeon_crtc->crtc_id));
+ 	WREG32(DCCG_AUDIO_DTO0_PHASE, base_rate * 100);
+ 	WREG32(DCCG_AUDIO_DTO0_MODULE, clock * 100);
+-	WREG32(DCCG_AUDIO_DTO_SOURCE, DCCG_AUDIO_DTO0_SOURCE_SEL(radeon_crtc->crtc_id));
+ }
+ 
+ 
 
 
