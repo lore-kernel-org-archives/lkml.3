@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754267Ab3HBKTy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:19:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37775 "EHLO
+	id S1754203Ab3HBKTv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:19:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37770 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752837Ab3HBKTw (ORCPT
+	with ESMTP id S1752837Ab3HBKTt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:19:52 -0400
+	Fri, 2 Aug 2013 06:19:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>, Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [ 36/39] s390: move dummy io_remap_pfn_range() to asm/pgtable.h
-Date: Fri,  2 Aug 2013 18:18:46 +0800
-Message-Id: <20130802101501.894472966@linuxfoundation.org>
+        Zhouping Liu <zliu@redhat.com>
+Subject: [ 39/39] mm/memory-hotplug: fix lowmem count overflow when offline pages
+Date: Fri,  2 Aug 2013 18:18:49 +0800
+Message-Id: <20130802101502.310137211@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802101456.800497005@linuxfoundation.org>
 References: <20130802101456.800497005@linuxfoundation.org>
@@ -29,47 +31,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 
-commit 4f2e29031e6c67802e7370292dd050fd62f337ee upstream.
+commit cea27eb2a202959783f81254c48c250ddd80e129 upstream.
 
-Commit b4cbb197c7e7 ("vm: add vm_iomap_memory() helper function") added
-a helper function wrapper around io_remap_pfn_range(), and every other
-architecture defined it in <asm/pgtable.h>.
+The logic for the memory-remove code fails to correctly account the
+Total High Memory when a memory block which contains High Memory is
+offlined as shown in the example below.  The following patch fixes it.
 
-The s390 choice of <asm/io.h> may make sense, but is not very convenient
-for this case, and gratuitous differences like that cause unexpected errors like this:
+Before logic memory remove:
 
-   mm/memory.c: In function 'vm_iomap_memory':
-   mm/memory.c:2439:2: error: implicit declaration of function 'io_remap_pfn_range' [-Werror=implicit-function-declaration]
+MemTotal:        7603740 kB
+MemFree:         6329612 kB
+Buffers:           94352 kB
+Cached:           872008 kB
+SwapCached:            0 kB
+Active:           626932 kB
+Inactive:         519216 kB
+Active(anon):     180776 kB
+Inactive(anon):   222944 kB
+Active(file):     446156 kB
+Inactive(file):   296272 kB
+Unevictable:           0 kB
+Mlocked:               0 kB
+HighTotal:       7294672 kB
+HighFree:        5704696 kB
+LowTotal:         309068 kB
+LowFree:          624916 kB
 
-Glory be the kbuild test robot who noticed this, bisected it, and
-reported it to the guilty parties (ie me).
+After logic memory remove:
 
+MemTotal:        7079452 kB
+MemFree:         5805976 kB
+Buffers:           94372 kB
+Cached:           872000 kB
+SwapCached:            0 kB
+Active:           626936 kB
+Inactive:         519236 kB
+Active(anon):     180780 kB
+Inactive(anon):   222944 kB
+Active(file):     446156 kB
+Inactive(file):   296292 kB
+Unevictable:           0 kB
+Mlocked:               0 kB
+HighTotal:       7294672 kB
+HighFree:        5181024 kB
+LowTotal:       4294752076 kB
+LowFree:          624952 kB
+
+[mhocko@suse.cz: fix CONFIG_HIGHMEM=n build]
+Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: David Rientjes <rientjes@google.com>
+Cc: <stable@vger.kernel.org>	[2.6.24+]
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-[bwh: Backported to 3.2: the macro was not defined, so this is an addition
- and not a move]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Zhouping Liu <zliu@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/s390/include/asm/pgtable.h |    4 ++++
+ mm/page_alloc.c |    4 ++++
  1 file changed, 4 insertions(+)
 
---- a/arch/s390/include/asm/pgtable.h
-+++ b/arch/s390/include/asm/pgtable.h
-@@ -67,6 +67,10 @@ static inline int is_zero_pfn(unsigned l
- 
- #define my_zero_pfn(addr)	page_to_pfn(ZERO_PAGE(addr))
- 
-+/* TODO: s390 cannot support io_remap_pfn_range... */
-+#define io_remap_pfn_range(vma, vaddr, pfn, size, prot) 	       \
-+	remap_pfn_range(vma, vaddr, pfn, size, prot)
-+
- #endif /* !__ASSEMBLY__ */
- 
- /*
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -5592,6 +5592,10 @@ __offline_isolated_pages(unsigned long s
+ 		zone->free_area[order].nr_free--;
+ 		__mod_zone_page_state(zone, NR_FREE_PAGES,
+ 				      - (1UL << order));
++#ifdef CONFIG_HIGHMEM
++		if (PageHighMem(page))
++			totalhigh_pages -= 1 << order;
++#endif
+ 		for (i = 0; i < (1 << order); i++)
+ 			SetPageReserved((page+i));
+ 		pfn += (1 << order);
 
 
