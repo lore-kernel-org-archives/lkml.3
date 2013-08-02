@@ -1,81 +1,320 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758019Ab3HBHvm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 03:51:42 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:52333 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757858Ab3HBHvk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 03:51:40 -0400
-Date: Fri, 2 Aug 2013 10:51:22 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Julius Werner <jwerner@chromium.org>
-CC: Felipe Balbi <balbi@ti.com>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-samsung-soc@vger.kernel.org>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Vivek Gautam <gautam.vivek@samsung.com>, <devicetree@vger.kernel.org>,
-        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
-Subject: Re: [PATCH 1/3] usb: phy-samsung-usb: Simplify PMU register handling
-Message-ID: <20130802075122.GK24465@radagast>
-Reply-To: <balbi@ti.com>
-References: <1375404726-26264-1-git-send-email-jwerner@chromium.org>
- <1375404726-26264-2-git-send-email-jwerner@chromium.org>
+	id S1758050Ab3HBHvt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 03:51:49 -0400
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:43420 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757858Ab3HBHvq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 03:51:46 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="EVcIhgQsEzAXu06J"
-Content-Disposition: inline
-In-Reply-To: <1375404726-26264-2-git-send-email-jwerner@chromium.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1375408223-10934-3-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1375408223-10934-1-git-send-email-iamjoonsoo.kim@lge.com>
+	<1375408223-10934-3-git-send-email-iamjoonsoo.kim@lge.com>
+Date: Fri, 2 Aug 2013 09:51:45 +0200
+Message-ID: <CAKfTPtDa4eDZP58YaBeT31VWRBQ-44Wen34aKsxSseOxUYD6NQ@mail.gmail.com>
+Subject: Re: [PATCH v2 2/3] sched: factor out code to should_we_balance()
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Mike Galbraith <efault@gmx.de>, Paul Turner <pjt@google.com>,
+        Alex Shi <alex.shi@intel.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Namhyung Kim <namhyung@kernel.org>, Joonsoo Kim <js1304@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---EVcIhgQsEzAXu06J
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 2 August 2013 03:50, Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
+> Now checking whether this cpu is appropriate to balance or not
+> is embedded into update_sg_lb_stats() and this checking has no direct
+> relationship to this function. There is not enough reason to place
+> this checking at update_sg_lb_stats(), except saving one iteration
+> for sched_group_cpus.
+>
+> In this patch, I factor out this checking to should_we_balance() function.
+> And before doing actual work for load_balancing, check whether this cpu is
+> appropriate to balance via should_we_balance(). If this cpu is not
+> a candidate for balancing, it quit the work immediately.
+>
+> With this change, we can save two memset cost and can expect better
+> compiler optimization.
+>
+> Below is result of this patch.
+>
+> * Vanilla *
+>    text    data     bss     dec     hex filename
+>   34499    1136     116   35751    8ba7 kernel/sched/fair.o
+>
+> * Patched *
+>    text    data     bss     dec     hex filename
+>   34243    1136     116   35495    8aa7 kernel/sched/fair.o
+>
+> In addition, rename @balance to @should_balance in order to represent
+> its purpose more clearly.
+>
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+>
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index eaae77e..7f51b8c 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -4426,22 +4426,17 @@ fix_small_capacity(struct sched_domain *sd, struct sched_group *group)
+>   * @group: sched_group whose statistics are to be updated.
+>   * @load_idx: Load index of sched_domain of this_cpu for load calc.
+>   * @local_group: Does group contain this_cpu.
+> - * @balance: Should we balance.
+>   * @sgs: variable to hold the statistics for this group.
+>   */
+>  static inline void update_sg_lb_stats(struct lb_env *env,
+>                         struct sched_group *group, int load_idx,
+> -                       int local_group, int *balance, struct sg_lb_stats *sgs)
+> +                       int local_group, struct sg_lb_stats *sgs)
+>  {
+>         unsigned long nr_running, max_nr_running, min_nr_running;
+>         unsigned long load, max_cpu_load, min_cpu_load;
+> -       unsigned int balance_cpu = -1, first_idle_cpu = 0;
+>         unsigned long avg_load_per_task = 0;
+>         int i;
+>
+> -       if (local_group)
+> -               balance_cpu = group_balance_cpu(group);
+> -
+>         /* Tally up the load of all CPUs in the group */
+>         max_cpu_load = 0;
+>         min_cpu_load = ~0UL;
+> @@ -4454,15 +4449,9 @@ static inline void update_sg_lb_stats(struct lb_env *env,
+>                 nr_running = rq->nr_running;
+>
+>                 /* Bias balancing toward cpus of our domain */
+> -               if (local_group) {
+> -                       if (idle_cpu(i) && !first_idle_cpu &&
+> -                                       cpumask_test_cpu(i, sched_group_mask(group))) {
+> -                               first_idle_cpu = 1;
+> -                               balance_cpu = i;
+> -                       }
+> -
+> +               if (local_group)
+>                         load = target_load(i, load_idx);
+> -               } else {
+> +               else {
+>                         load = source_load(i, load_idx);
+>                         if (load > max_cpu_load)
+>                                 max_cpu_load = load;
+> @@ -4482,22 +4471,9 @@ static inline void update_sg_lb_stats(struct lb_env *env,
+>                         sgs->idle_cpus++;
+>         }
+>
+> -       /*
+> -        * First idle cpu or the first cpu(busiest) in this sched group
+> -        * is eligible for doing load balancing at this and above
+> -        * domains. In the newly idle case, we will allow all the cpu's
+> -        * to do the newly idle load balance.
+> -        */
+> -       if (local_group) {
+> -               if (env->idle != CPU_NEWLY_IDLE) {
+> -                       if (balance_cpu != env->dst_cpu) {
+> -                               *balance = 0;
+> -                               return;
+> -                       }
+> -                       update_group_power(env->sd, env->dst_cpu);
+> -               } else if (time_after_eq(jiffies, group->sgp->next_update))
+> -                       update_group_power(env->sd, env->dst_cpu);
+> -       }
+> +       if (local_group && (env->idle != CPU_NEWLY_IDLE ||
+> +                       time_after_eq(jiffies, group->sgp->next_update)))
+> +               update_group_power(env->sd, env->dst_cpu);
+>
+>         /* Adjust by relative CPU power of the group */
+>         sgs->avg_load = (sgs->group_load*SCHED_POWER_SCALE) / group->sgp->power;
+> @@ -4576,7 +4552,7 @@ static bool update_sd_pick_busiest(struct lb_env *env,
+>   * @sds: variable to hold the statistics for this sched_domain.
+>   */
+>  static inline void update_sd_lb_stats(struct lb_env *env,
+> -                                       int *balance, struct sd_lb_stats *sds)
+> +                                       struct sd_lb_stats *sds)
+>  {
+>         struct sched_domain *child = env->sd->child;
+>         struct sched_group *sg = env->sd->groups;
+> @@ -4593,10 +4569,7 @@ static inline void update_sd_lb_stats(struct lb_env *env,
+>
+>                 local_group = cpumask_test_cpu(env->dst_cpu, sched_group_cpus(sg));
+>                 memset(&sgs, 0, sizeof(sgs));
+> -               update_sg_lb_stats(env, sg, load_idx, local_group, balance, &sgs);
+> -
+> -               if (local_group && !(*balance))
+> -                       return;
+> +               update_sg_lb_stats(env, sg, load_idx, local_group, &sgs);
+>
+>                 sds->total_load += sgs.group_load;
+>                 sds->total_pwr += sg->sgp->power;
+> @@ -4829,8 +4802,6 @@ static inline void calculate_imbalance(struct lb_env *env, struct sd_lb_stats *s
+>   * to restore balance.
+>   *
+>   * @env: The load balancing environment.
+> - * @balance: Pointer to a variable indicating if this_cpu
+> - *     is the appropriate cpu to perform load balancing at this_level.
+>   *
+>   * Returns:    - the busiest group if imbalance exists.
+>   *             - If no imbalance and user has opted for power-savings balance,
+> @@ -4838,7 +4809,7 @@ static inline void calculate_imbalance(struct lb_env *env, struct sd_lb_stats *s
+>   *                put to idle by rebalancing its tasks onto our group.
+>   */
+>  static struct sched_group *
+> -find_busiest_group(struct lb_env *env, int *balance)
+> +find_busiest_group(struct lb_env *env)
+>  {
+>         struct sd_lb_stats sds;
+>
+> @@ -4848,14 +4819,7 @@ find_busiest_group(struct lb_env *env, int *balance)
+>          * Compute the various statistics relavent for load balancing at
+>          * this level.
+>          */
+> -       update_sd_lb_stats(env, balance, &sds);
+> -
+> -       /*
+> -        * this_cpu is not the appropriate cpu to perform load balancing at
+> -        * this level.
+> -        */
+> -       if (!(*balance))
+> -               goto ret;
+> +       update_sd_lb_stats(env, &sds);
+>
+>         if ((env->idle == CPU_IDLE || env->idle == CPU_NEWLY_IDLE) &&
+>             check_asym_packing(env, &sds))
+> @@ -4919,7 +4883,6 @@ force_balance:
+>         return sds.busiest;
+>
+>  out_balanced:
+> -ret:
+>         env->imbalance = 0;
+>         return NULL;
+>  }
+> @@ -5001,13 +4964,47 @@ static int need_active_balance(struct lb_env *env)
+>
+>  static int active_load_balance_cpu_stop(void *data);
+>
+> +static int should_we_balance(struct lb_env *env)
+> +{
+> +       struct sched_group *sg = env->sd->groups;
+> +       struct cpumask *sg_cpus, *sg_mask;
+> +       int cpu, balance_cpu = -1;
+> +
+> +       /*
+> +        * In the newly idle case, we will allow all the cpu's
+> +        * to do the newly idle load balance.
+> +        */
+> +       if (env->idle == CPU_NEWLY_IDLE)
+> +               return 1;
+> +
+> +       sg_cpus = sched_group_cpus(sg);
+> +       sg_mask = sched_group_mask(sg);
+> +       /* Try to find first idle cpu */
+> +       for_each_cpu_and(cpu, sg_cpus, env->cpus) {
+> +               if (!cpumask_test_cpu(cpu, sg_mask) || idle_cpu(cpu))
+> +                       continue;
+> +
+> +               balance_cpu = cpu;
+> +               break;
+> +       }
+> +
+> +       if (balance_cpu == -1)
+> +               balance_cpu = group_balance_cpu(sg);
+> +
+> +       /*
+> +        * First idle cpu or the first cpu(busiest) in this sched group
+> +        * is eligible for doing load balancing at this and above domains.
+> +        */
+> +       return balance_cpu != env->dst_cpu;
+> +}
+> +
+>  /*
+>   * Check this_cpu to ensure it is balanced within domain. Attempt to move
+>   * tasks if there is an imbalance.
+>   */
+>  static int load_balance(int this_cpu, struct rq *this_rq,
+>                         struct sched_domain *sd, enum cpu_idle_type idle,
+> -                       int *balance)
+> +                       int *should_balance)
+>  {
+>         int ld_moved, cur_ld_moved, active_balance = 0;
+>         struct sched_group *group;
+> @@ -5036,12 +5033,14 @@ static int load_balance(int this_cpu, struct rq *this_rq,
+>
+>         schedstat_inc(sd, lb_count[idle]);
+>
+> -redo:
+> -       group = find_busiest_group(&env, balance);
+> -
+> -       if (*balance == 0)
+> +       if (!should_we_balance(&env)) {
+> +               *should_balance = 0;
+>                 goto out_balanced;
+> +       } else
+> +               *should_balance = 1;
+>
+> +redo:
+> +       group = find_busiest_group(&env);
+>         if (!group) {
+>                 schedstat_inc(sd, lb_nobusyg[idle]);
+>                 goto out_balanced;
+> @@ -5254,7 +5253,7 @@ void idle_balance(int this_cpu, struct rq *this_rq)
+>         rcu_read_lock();
+>         for_each_domain(this_cpu, sd) {
+>                 unsigned long interval;
+> -               int balance = 1;
+> +               int should_balance;
+>
+>                 if (!(sd->flags & SD_LOAD_BALANCE))
+>                         continue;
+> @@ -5262,7 +5261,8 @@ void idle_balance(int this_cpu, struct rq *this_rq)
+>                 if (sd->flags & SD_BALANCE_NEWIDLE) {
+>                         /* If we've pulled tasks over stop searching: */
+>                         pulled_task = load_balance(this_cpu, this_rq,
+> -                                                  sd, CPU_NEWLY_IDLE, &balance);
+> +                                                  sd, CPU_NEWLY_IDLE,
+> +                                                  &should_balance);
+>                 }
+>
+>                 interval = msecs_to_jiffies(sd->balance_interval);
+> @@ -5502,7 +5502,7 @@ void update_max_interval(void)
+>   */
+>  static void rebalance_domains(int cpu, enum cpu_idle_type idle)
+>  {
+> -       int balance = 1;
+> +       int should_balance;
 
-Hi,
+int should_balance = 1;
+because if (time_after_eq(jiffies, sd->last_balance + interval)) can
+skip the 1st load_balance and you will test should_balance with its
+initial value.
 
-On Thu, Aug 01, 2013 at 05:52:04PM -0700, Julius Werner wrote:
-> This patch simplifies the way the phy-samsung-usb code finds the correct
-> power management register to enable PHY clock gating. Previously, the
-> code would calculate the register address from a device tree supplied
-> base address and add an offset based on the PHY type.
->=20
-> Since every PHY has its own device tree entry and needs only one
-> register, we can just encode the address itself in the device tree and
-> remove the diffentiation in the code. The bitmask needed to specify the
-> bit within that register stays in place, allowing support for platforms
-> like s3c64xx that use different bits within the same register.
->=20
-> Signed-off-by: Julius Werner <jwerner@chromium.org>
+Vincent
 
-I need an Acked-by for the dtsi part. Ideally from Exynos 5 maintainer
-and at least one of the DT maintainers.
-
---=20
-balbi
-
---EVcIhgQsEzAXu06J
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR+2T6AAoJEIaOsuA1yqREKGYQAI2EWPYDjwuIC6wWFnWbpYW4
-p+J0+zepF36v5zK1T8iEuYO91Fi/ByyD2s1cQHj7E90spg3hHtXOjs1ml7KzL6gL
-ftmXNJp2T4VD1YHvHSF8y0JP9D6nc8/aVViHTxmZZoVE4PzfgD5/fAz7EhGXtiK/
-5mXZdPI7TuRlhrxPfQL/juPpQY9bIQWI6Qp2aWLGqY5uydQD7e4PhfO9ZHTF0cfE
-SrQmiR1b3JOhHXd41hfYvQRtONoQ5MRKPwCb94zmeE1pdNiRDIBdKPES2En+eRS6
-AKLeB0wdDlMIvtfi1zjtVooz4fM0sf69oEmKSTh4iNVkKYx8IsqMTd/0wX+PRYZ3
-fYGStuDM12NfFdxrbGVF1nnitFd0pvmxKx/IiRdV6XUxwlukcItrsoRallJ4Mcqd
-MwbVSDu5TWgz3drxZQA2dWw5wYS8/S+LKEVwAkWC9qtPUJhCRpXxGHFKdTOoizmd
-v12vPXsyncpUuWWg20a9UnQbADbeFwuGT0sbVdJZoR9DuAafZUh/H018aU2xRaM/
-TwqM7XGsztuXTECwGl1xvJWB7VOmwlrXoGpjPwJtXrHwYOwINKLyAhG/iWH01uxI
-c/MkkodIHYmEJqg4ZBCqmUL32yFGYwZMhyvuiOeH1zuRhOEf4rbv2ViSsRYLzCuK
-S3zM1GHQxnYKR7ZV2bU1
-=ARgF
------END PGP SIGNATURE-----
-
---EVcIhgQsEzAXu06J--
+>         struct rq *rq = cpu_rq(cpu);
+>         unsigned long interval;
+>         struct sched_domain *sd;
+> @@ -5534,7 +5534,7 @@ static void rebalance_domains(int cpu, enum cpu_idle_type idle)
+>                 }
+>
+>                 if (time_after_eq(jiffies, sd->last_balance + interval)) {
+> -                       if (load_balance(cpu, rq, sd, idle, &balance)) {
+> +                       if (load_balance(cpu, rq, sd, idle, &should_balance)) {
+>                                 /*
+>                                  * The LBF_SOME_PINNED logic could have changed
+>                                  * env->dst_cpu, so we can't know our idle
+> @@ -5557,7 +5557,7 @@ out:
+>                  * CPU in our sched group which is doing load balancing more
+>                  * actively.
+>                  */
+> -               if (!balance)
+> +               if (!should_balance)
+>                         break;
+>         }
+>         rcu_read_unlock();
+> --
+> 1.7.9.5
+>
