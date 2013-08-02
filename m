@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755004Ab3HBK0O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:26:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37854 "EHLO
+	id S1754833Ab3HBK0s (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:26:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37838 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754717Ab3HBKXO (ORCPT
+	with ESMTP id S1753919Ab3HBKXD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:23:14 -0400
+	Fri, 2 Aug 2013 06:23:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Toshi Kani <toshi.kani@hp.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [ 14/23] ACPI / memhotplug: Fix a stale pointer in error path
-Date: Fri,  2 Aug 2013 18:23:27 +0800
-Message-Id: <20130802102038.202630483@linuxfoundation.org>
+        William Gulland <wgulland@google.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [ 10/23] usb: Clear both buffers when clearing a control transfer TT buffer.
+Date: Fri,  2 Aug 2013 18:23:23 +0800
+Message-Id: <20130802102037.658840405@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802102036.180660415@linuxfoundation.org>
 References: <20130802102036.180660415@linuxfoundation.org>
@@ -28,36 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Toshi Kani <toshi.kani@hp.com>
+From: William Gulland <wgulland@google.com>
 
-commit d19f503e22316a84c39bc19445e0e4fdd49b3532 upstream.
+commit 2c7b871b9102c497ba8f972aa5d38532f05b654d upstream.
 
-device->driver_data needs to be cleared when releasing its data,
-mem_device, in an error path of acpi_memory_device_add().
+Control transfers have both IN and OUT (or SETUP) packets, so when
+clearing TT buffers for a control transfer it's necessary to send
+two HUB_CLEAR_TT_BUFFER requests to the hub.
 
-The function evaluates the _CRS of memory device objects, and fails
-when it gets an unexpected resource or cannot allocate memory.  A
-kernel crash or data corruption may occur when the kernel accesses
-the stale pointer.
-
-Signed-off-by: Toshi Kani <toshi.kani@hp.com>
-Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: William Gulland <wgulland@google.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/acpi_memhotplug.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/core/hub.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/drivers/acpi/acpi_memhotplug.c
-+++ b/drivers/acpi/acpi_memhotplug.c
-@@ -421,6 +421,7 @@ static int acpi_memory_device_add(struct
- 	/* Get the range from the _CRS */
- 	result = acpi_memory_get_device_resources(mem_device);
- 	if (result) {
-+		device->driver_data = NULL;
- 		kfree(mem_device);
- 		return result;
- 	}
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -463,6 +463,15 @@ resubmit:
+ static inline int
+ hub_clear_tt_buffer (struct usb_device *hdev, u16 devinfo, u16 tt)
+ {
++	/* Need to clear both directions for control ep */
++	if (((devinfo >> 11) & USB_ENDPOINT_XFERTYPE_MASK) ==
++			USB_ENDPOINT_XFER_CONTROL) {
++		int status = usb_control_msg(hdev, usb_sndctrlpipe(hdev, 0),
++				HUB_CLEAR_TT_BUFFER, USB_RT_PORT,
++				devinfo ^ 0x8000, tt, NULL, 0, 1000);
++		if (status)
++			return status;
++	}
+ 	return usb_control_msg(hdev, usb_sndctrlpipe(hdev, 0),
+ 			       HUB_CLEAR_TT_BUFFER, USB_RT_PORT, devinfo,
+ 			       tt, NULL, 0, 1000);
 
 
