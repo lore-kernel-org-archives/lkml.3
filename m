@@ -1,157 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758574Ab3HBJUe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 05:20:34 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:20795 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1758254Ab3HBJQN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758516Ab3HBJUc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 05:20:32 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:37145 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758269Ab3HBJQN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 2 Aug 2013 05:16:13 -0400
-X-IronPort-AV: E=Sophos;i="4.89,800,1367942400"; 
-   d="scan'208";a="8098118"
-From: Tang Chen <tangchen@cn.fujitsu.com>
-To: robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl, lenb@kernel.org,
-        tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
-        akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
-        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
-        mina86@mina86.com, gong.chen@linux.intel.com,
-        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
-        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
-        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com
-Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Subject: [PATCH v2 RESEND 05/18] x86, ACPICA: Split acpi_boot_table_init() into two parts.
-Date: Fri, 2 Aug 2013 17:14:24 +0800
-Message-Id: <1375434877-20704-6-git-send-email-tangchen@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.10.1
-In-Reply-To: <1375434877-20704-1-git-send-email-tangchen@cn.fujitsu.com>
-References: <1375434877-20704-1-git-send-email-tangchen@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/02 17:14:47,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/02 17:14:52,
-	Serialize complete at 2013/08/02 17:14:52
+Message-ID: <51FB78D1.6060802@oracle.com>
+Date: Fri, 02 Aug 2013 17:16:01 +0800
+From: Zhenzhong Duan <zhenzhong.duan@oracle.com>
+Reply-To: zhenzhong.duan@oracle.com
+Organization: oracle
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        xen-devel <xen-devel@lists.xen.org>, Feng Jin <joe.jin@oracle.com>,
+        Sucheta Chakraborty <sucheta.chakraborty@qlogic.com>
+Subject: Re: [PATCH 2/3] Refactor msi/msix restore code Part2
+References: <51EF451A.8050003@oracle.com> <CAErSpo5phkLpdR35eaMnYthVXiAAAr-JLD44QkntOZi2-NppOg@mail.gmail.com> <20130801151616.GE21528@konrad-lan.dumpdata.com>
+In-Reply-To: <20130801151616.GE21528@konrad-lan.dumpdata.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In ACPI, SRAT(System Resource Affinity Table) contains NUMA info.
-The memory affinities in SRAT record every memory range in the
-system, and also, flags specifying if the memory range is
-hotpluggable.
-(Please refer to ACPI spec 5.0 5.2.16)
 
-memblock starts to work at very early time, and SRAT has not been
-parsed. So we don't know which memory is hotpluggable. In order
-to use memblock to reserve hotpluggable memory, we need to obtain
-SRAT memory affinity info earlier.
+On 2013-08-01 23:16, Konrad Rzeszutek Wilk wrote:
+> On Wed, Jul 31, 2013 at 04:41:32PM -0600, Bjorn Helgaas wrote:
+>> On Tue, Jul 23, 2013 at 9:08 PM, Zhenzhong Duan
+>> <zhenzhong.duan@oracle.com> wrote:
+>>> xen_initdom_restore_msi_irqs trigger a hypercall to restore addr/data/mask
+>>> in dom0. It's better to do the same for default_restore_msi_irqs in baremetal.
+>>>
+>>> Move restore of mask in default_restore_msi_irqs, this could avoid mask
+>>> restored twice in dom0, once in hypercall, the other in kernel.
+>>>
+>>> Without that, qlcnic driver calling pci_reset_function will lost interrupt
+>>> in dom0.
+>>>
+>>> Tested-by: Sucheta Chakraborty <sucheta.chakraborty@qlogic.com>
+>>> Signed-off-by: Zhenzhong Duan <zhenzhong.duan@oracle.com>
+>>> ---
+>>>   drivers/pci/msi.c |   17 ++++++++++++++---
+>>>   1 files changed, 14 insertions(+), 3 deletions(-)
+>>>
+>>> diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
+>>> index 87223ae..922fb49 100644
+>>> --- a/drivers/pci/msi.c
+>>> +++ b/drivers/pci/msi.c
+>>> @@ -216,6 +216,8 @@ void unmask_msi_irq(struct irq_data *data)
+>>>   #ifdef HAVE_DEFAULT_MSI_RESTORE_IRQS
+>>>   void default_restore_msi_irqs(struct pci_dev *dev, int irq)
+>>>   {
+>>> +       int pos;
+>>> +       u16 control;
+>>>          struct msi_desc *entry;
+>>>
+>>>          entry = NULL;
+>>> @@ -228,8 +230,19 @@ void default_restore_msi_irqs(struct pci_dev *dev, int irq)
+>>>                  entry = irq_get_msi_desc(irq);
+>>>          }
+>>>
+>>> -       if (entry)
+>>> +       if (entry) {
+>>>                  write_msi_msg(irq, &entry->msg);
+>>> +               if (dev->msix_enabled) {
+>>> +                       msix_mask_irq(entry, entry->masked);
+>>> +                       readl(entry->mask_base);
+>>> +               } else {
+>>> +                       pos = entry->msi_attrib.pos;
+>>> +                       pci_read_config_word(dev, pos + PCI_MSI_FLAGS,
+>>> +                                            &control);
+>>> +                       msi_mask_irq(entry, msi_capable_mask(control),
+>>> +                                    entry->masked);
+>>> +               }
+>>> +       }
+>>>   }
+>>>   #endif
+>>>
+>>> @@ -406,7 +419,6 @@ static void __pci_restore_msi_state(struct pci_dev *dev)
+>>>          arch_restore_msi_irqs(dev, dev->irq);
+>>>
+>>>          pci_read_config_word(dev, dev->msi_cap + PCI_MSI_FLAGS, &control);
+>>> -       msi_mask_irq(entry, msi_capable_mask(control), entry->masked);
+>>>          control &= ~PCI_MSI_FLAGS_QSIZE;
+>>>          control |= (entry->msi_attrib.multiple << 4) | PCI_MSI_FLAGS_ENABLE;
+>>>          pci_write_config_word(dev, dev->msi_cap + PCI_MSI_FLAGS, control);
+>>> @@ -430,7 +442,6 @@ static void __pci_restore_msix_state(struct pci_dev *dev)
+>>>
+>>>          list_for_each_entry(entry, &dev->msi_list, list) {
+>>>                  arch_restore_msi_irqs(dev, entry->irq);
+>>> -               msix_mask_irq(entry, entry->masked);
+>>>          }
+>>>
+>>>          control &= ~PCI_MSIX_FLAGS_MASKALL;
+>> Konrad, are you OK with this patch now?
+> Yes, I wanted to make sure that the existing behavior under baremetal
+> was not altered.
+>
+> And Duan had confirmed it was not  - thought to be on a safe side it
+> would be good to confirm this via testing just in case.
+I had ever let our customer test on baremetal and it passed.
 
-In the current acpi_boot_table_init(), it does the following:
-1. Parse RSDT, so that we can find all the tables.
-2. Initialize acpi_gbl_root_table_list, an array of acpi table
-   descriptors used to store each table's address, length, signature,
-   and so on.
-3. Check if there is any table in initrd intending to override
-   tables from firmware. If so, override the firmware tables.
-4. Initialize all the data in acpi_gbl_root_table_list.
-
-In order to parse SRAT at early time, we need to do similar job as
-step 1 and 2 above earlier to obtain SRAT. It will be very convenient
-if we have acpi_gbl_root_table_list initialized. We can use address
-and signature to find SRAT.
-
-Since step 1 and 2 allocates no memory, it is OK to do these two
-steps earlier.
-
-But step 3 will check acpi initrd table override, not just SRAT,
-but also all the other tables. So it is better to keep it untouched.
-
-This patch splits acpi_boot_table_init() into two steps:
-1. Parse RSDT, which cannot be overrided, and initialize
-   acpi_gbl_root_table_list. (step 1 + 2 above)
-2. Install all ACPI tables into acpi_gbl_root_table_list.
-   (step 3 + 4 above)
-
-In later patches, we will do step 1 + 2 earlier.
-
-Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
----
- drivers/acpi/acpica/tbutils.c |   25 ++++++++++++++++++++++---
- drivers/acpi/tables.c         |    2 ++
- include/acpi/acpixf.h         |    2 ++
- 3 files changed, 26 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/acpi/acpica/tbutils.c b/drivers/acpi/acpica/tbutils.c
-index bffdfc7..e3621cf 100644
---- a/drivers/acpi/acpica/tbutils.c
-+++ b/drivers/acpi/acpica/tbutils.c
-@@ -577,9 +577,30 @@ acpi_tb_parse_root_table(acpi_physical_address rsdp_address)
- 	 */
- 	acpi_os_unmap_memory(table, length);
- 
-+	return_ACPI_STATUS(AE_OK);
-+}
-+
-+/*******************************************************************************
-+ *
-+ * FUNCTION:    acpi_tb_install_root_table
-+ *
-+ * DESCRIPTION: This function installs all the ACPI tables in RSDT into
-+ *              acpi_gbl_root_table_list.
-+ *
-+ ******************************************************************************/
-+
-+void __init
-+acpi_tb_install_root_table()
-+{
-+	int i;
-+
- 	/*
- 	 * Complete the initialization of the root table array by examining
--	 * the header of each table
-+	 * the header of each table.
-+	 *
-+	 * First two entries in the table array are reserved for the DSDT
-+	 * and FACS, which are not actually present in the RSDT/XSDT - they
-+	 * come from the FADT.
- 	 */
- 	for (i = 2; i < acpi_gbl_root_table_list.current_table_count; i++) {
- 		acpi_tb_install_table(acpi_gbl_root_table_list.tables[i].
-@@ -593,6 +614,4 @@ acpi_tb_parse_root_table(acpi_physical_address rsdp_address)
- 			acpi_tb_parse_fadt(i);
- 		}
- 	}
--
--	return_ACPI_STATUS(AE_OK);
- }
-diff --git a/drivers/acpi/tables.c b/drivers/acpi/tables.c
-index d67a1fe..8860e79 100644
---- a/drivers/acpi/tables.c
-+++ b/drivers/acpi/tables.c
-@@ -353,6 +353,8 @@ int __init acpi_table_init(void)
- 	if (ACPI_FAILURE(status))
- 		return 1;
- 
-+	acpi_tb_install_root_table();
-+
- 	check_multiple_madt();
- 	return 0;
- }
-diff --git a/include/acpi/acpixf.h b/include/acpi/acpixf.h
-index 22d497e..e9c9b88 100644
---- a/include/acpi/acpixf.h
-+++ b/include/acpi/acpixf.h
-@@ -118,6 +118,8 @@ acpi_status
- acpi_initialize_tables(struct acpi_table_desc *initial_storage,
- 		       u32 initial_table_count, u8 allow_resize);
- 
-+void acpi_tb_install_root_table(void);
-+
- acpi_status __init acpi_initialize_subsystem(void);
- 
- acpi_status acpi_enable_subsystem(u32 flags);
--- 
-1.7.1
-
+zduan
