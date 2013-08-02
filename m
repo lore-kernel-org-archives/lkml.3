@@ -1,75 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753552Ab3HBOrz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 10:47:55 -0400
-Received: from mail-gh0-f172.google.com ([209.85.160.172]:36843 "EHLO
-	mail-gh0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752630Ab3HBOry (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 10:47:54 -0400
-Date: Fri, 2 Aug 2013 10:47:34 -0400 (EDT)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: linux-kernel@vger.kernel.org
-cc: zheng.z.yan@intel.com, mccalpin@tacc.utexas.edu,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Paul Mackerras <paulus@samba.org>
-Subject: [PATCH] perf: fix intel QPI uncore event definitions
-Message-ID: <alpine.DEB.2.10.1308021037280.26119@vincent-weaver-1.um.maine.edu>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	id S1753778Ab3HBOtm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 10:49:42 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:51720 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752675Ab3HBOtl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 10:49:41 -0400
+Message-ID: <51FBC6F7.7050509@ti.com>
+Date: Fri, 2 Aug 2013 20:19:27 +0530
+From: George Cherian <george.cherian@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+CC: <linux-usb@vger.kernel.org>, <balbi@ti.com>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/5] usb: musb: dsps: use proper child nodes
+References: <1375215401-19729-1-git-send-email-bigeasy@linutronix.de> <1375215401-19729-6-git-send-email-bigeasy@linutronix.de> <51F9F10A.4000908@ti.com> <51FA3DD9.9080207@linutronix.de> <51FA46C3.9000101@linutronix.de> <51FB8A14.8040008@linutronix.de>
+In-Reply-To: <51FB8A14.8040008@linutronix.de>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 8/2/2013 3:59 PM, Sebastian Andrzej Siewior wrote:
+> On 08/01/2013 01:30 PM, Sebastian Andrzej Siewior wrote:
+>> On 08/01/2013 12:52 PM, Sebastian Andrzej Siewior wrote:
+>>> On 08/01/2013 07:24 AM, George Cherian wrote:
+>>>>> b/arch/arm/boot/dts/am33xx.dtsi
+>>>>> index 38b446b..0f756ca 100644
+>>>>> --- a/arch/arm/boot/dts/am33xx.dtsi
+>>>>> +++ b/arch/arm/boot/dts/am33xx.dtsi
+>>>>> @@ -333,21 +337,85 @@
+>>>>>                status = "disabled";
+>>>>>            };
+>>>>>    -        usb@47400000 {
+>>>>> -            compatible = "ti,musb-am33xx";
+>>>>> -            reg = <0x47400000 0x1000    /* usbss */
+>>>>> -                   0x47401000 0x800        /* musb instance 0 */
+>>>>> -                   0x47401800 0x800>;    /* musb instance 1 */
+>>>>> -            interrupts = <17        /* usbss */
+>>>>> -                      18        /* musb instance 0 */
+>>>>> -                      19>;        /* musb instance 1 */
+>>>>> -            multipoint = <1>;
+>>>>> -            num-eps = <16>;
+>>>>> -            ram-bits = <12>;
+>>>>> -            port0-mode = <3>;
+>>>>> -            port1-mode = <3>;
+>>>>> -            power = <250>;
+>>>>> +        usb: usb@47400000 {
+>>>>> +            compatible = "ti,am33xx-usb";
+>>>>> +            reg = <0x47400000 0x1000>;
+>>>>> +            ranges;
+>>>>> +            #address-cells = <1>;
+>>>>> +            #size-cells = <1>;
+>>>>>                ti,hwmods = "usb_otg_hs";
+>>>>> +            status = "disabled";
+>>>>> +
+>>>>> +            ctrl_mod: control@44e10000 {
+>>>>> +                compatible = "ti,am335x-ctrl-module";
+>>>>> +                reg = <0x44e10000 0x650>;
+>>>> Do you really need to map Control Module base to 0x650? If some other
+>>>> driver does this mapping
+>>> This is what I cam currently not sure about. Either we minimize the
+>>> register window and introduce two (the other wakeup) or we keep using
+>>> the same reset driver for other devices.
+>> I mean drivers/reset or something like that.
+> If there are no further comments / preferences on this I'm going to
+> shrink to registers and make usb only.
 
-John McCalpin reports that the "drs_data" and "ncb_data" QPI uncore
-events are missing the "extra bit" and always return zero values unless
-the bit is properly set.
+Yes, USB only makes sense for now.
+>
+> Sebastian
+>
 
-More details from him:
 
- According to the Xeon E5-2600 Product Family Uncore Performance 
- Monitoring Guide, Table 2-94, about 1/2 of the QPI Link Layer events 
- (including the ones that "perf" calls "drs_data" and "ncb_data") require 
- that the "extra bit" be set.
+-- 
+-George
 
- This was confusing for a while -- a note at the bottom of page 94 says
- that the "extra bit" is bit 16 of the control register.
- Unfortunately, Table 2-86 clearly says that bit 16 is reserved and must 
- be zero.  Looking around a bit, I found that bit 21 appears to be the 
- correct "extra bit", and further investigation shows that "perf" actually 
- agrees with me:
-	[root@c560-003.stampede]# cat /sys/bus/event_source/devices/uncore_qpi_0/format/event
-	config:0-7,21
-
- So the command
-	# perf -e "uncore_qpi_0/event=drs_data/"
- Is the same as
-	# perf -e "uncore_qpi_0/event=0x02,umask=0x08/"
- While it should be
-	# perf -e "uncore_qpi_0/event=0x102,umask=0x08/"
-
- I confirmed that this last version gives results that agree with the
- amount of data that I expected the STREAM benchmark to move across the QPI
- link in the second (cross-chip) test of the original script.
- 
-Reported-by: John McCalpin <mccalpin@tacc.utexas.edu>
-Signed-off-by: Vince Weaver <vincent.weaver@maine.edu>
-
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-index cad791d..1fb6c72 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-@@ -314,8 +314,8 @@ static struct uncore_event_desc snbep_uncore_imc_events[] = {
- static struct uncore_event_desc snbep_uncore_qpi_events[] = {
- 	INTEL_UNCORE_EVENT_DESC(clockticks,       "event=0x14"),
- 	INTEL_UNCORE_EVENT_DESC(txl_flits_active, "event=0x00,umask=0x06"),
--	INTEL_UNCORE_EVENT_DESC(drs_data,         "event=0x02,umask=0x08"),
--	INTEL_UNCORE_EVENT_DESC(ncb_data,         "event=0x03,umask=0x04"),
-+	INTEL_UNCORE_EVENT_DESC(drs_data,         "event=0x102,umask=0x08"),
-+	INTEL_UNCORE_EVENT_DESC(ncb_data,         "event=0x103,umask=0x04"),
- 	{ /* end: all zeroes */ },
- };
- 
