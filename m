@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753167Ab3HBT5s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 15:57:48 -0400
-Received: from mailout4.w2.samsung.com ([211.189.100.14]:38967 "EHLO
-	usmailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752528Ab3HBT5e convert rfc822-to-8bit (ORCPT
+	id S1753300Ab3HBT6p (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 15:58:45 -0400
+Received: from mailout1.w2.samsung.com ([211.189.100.11]:61248 "EHLO
+	usmailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752112Ab3HBT6n convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 15:57:34 -0400
-X-AuditID: cbfec37c-b7f166d000004b4e-33-51fc0f2da442
+	Fri, 2 Aug 2013 15:58:43 -0400
+X-AuditID: cbfec37c-b7f166d000004b4e-78-51fc0f713080
 From: Shuah Khan <shuah.kh@samsung.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
@@ -16,12 +16,12 @@ Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "stable@vger.kernel.org" <stable@vger.kernel.org>,
         Shuah Khan <shuah.kh@samsung.com>,
         "shuahkhan@gmail.com" <shuahkhan@gmail.com>
-Subject: Re: [ 00/99] 3.10.5-stable review
-Thread-topic: [ 00/99] 3.10.5-stable review
-Thread-index: AQHOj5LAi9lxWX2kykWzlixXBIF8kw==
-Date: Fri, 02 Aug 2013 19:57:31 +0000
-Message-id: <B8EFE96D1287C24090BAD9D858E15E6175660F@sisaex02sj>
-References: <20130802100225.478715166@linuxfoundation.org>
+Subject: Re: [ 00/39] 3.4.56-stable review
+Thread-topic: [ 00/39] 3.4.56-stable review
+Thread-index: AQHOj5KVqMP9WUEiC0C2nvzLn9ipTg==
+Date: Fri, 02 Aug 2013 19:58:40 +0000
+Message-id: <B8EFE96D1287C24090BAD9D858E15E6175662B@sisaex02sj>
+References: <20130802101456.800497005@linuxfoundation.org>
 Accept-Language: en-US
 Content-language: en-US
 X-MS-Has-Attach: 
@@ -30,32 +30,32 @@ X-Originating-IP: [105.144.21.63]
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 8BIT
 MIME-version: 1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupgkeLIzCtJLcpLzFFi42I5/e+wn64u/59Ag0W3ZSzmrF/DZtG8eD2b
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpnkeLIzCtJLcpLzFFi42I5/e+wn24R/59Ag3WnWC3mrF/DZtG8eD2b
 	xeVdc9gsvv50sFiw8RGjxaO+t+wObB47Z91l9zgx4zeLx/65a9g9Pm+SC2CJ4rJJSc3JLEst
-	0rdL4Mp4vKOHveAMf8X6DVOZGhhf8XQxcnJICJhIrHxxgxHCFpO4cG89WxcjF4eQwDJGifu/
-	+xkhnF4mifnvZkNl5jNKTL97lB2khU1AXeLz6x1gtoiAsUT/2VlgNrPAMSaJjs4yEFtYQEvi
-	4/p7UDXaEhO73zFC2HoSk47NYwaxWQRUJVadfM8KYvMK2Eus3POUBcQWErCSONjTBGYzAp33
-	/dQaJoj54hLNrTdZIM4WkFiy5zwzhC0q8fLxP6A5HEC2osT21VYQ5VoS63ceh2rVlnjy7gLU
-	KkGJH5PvsUxgFJuFZOosJC2zkLTMQtKygJFlFaNYaXFyQXFSemqFsV5xYm5xaV66XnJ+7iZG
-	SOzV7GC899XmEKMAB6MSD++DzF+BQqyJZcWVuYcYJTiYlUR4Fz77HSjEm5JYWZValB9fVJqT
-	WnyIkYmDU6qBccHks8fOTk86KM/H8uzb/WN776797Rn4ZOe6R7y9YaqT9BPmZk1Z+jA+Q/Tv
-	oeePPhQIuZ1htXf69+3At0d8rpnOXT+65wsbaievqr7f7X4viLUkYZIpo621l+OCyEmHb+9v
-	F2Zca1jd2Bs4gSFrV2Ucw9rpSWEeBZxtMz92XDX+/dow07bjoxJLcUaioRZzUXEiAP8oYN2b	AgAA
+	0rdL4MpY9+YdY8El/oq921gaGN/xdDFyckgImEjsnfOOHcIWk7hwbz1bFyMXh5DAMkaJjZNe
+	Qzm9TBJTVp1ihHDmM0q0dsxhAmlhE1CX+Px6B1i7iICxRP/ZWWA2s8AxJomOzjIQW1hAS+L7
+	/+ksEDXaErM37mODsPUkfv68CRZnEVCVuHC+F2wmr4C9xLonu5lBbCEBK4ndh/+CzWQEOu/7
+	qTVMEPPFJZpbIXolBAQkluw5zwxhi0q8fPyPtYuRA8hWlNi+2gqiXEti/c7jUK3aEk/eXWCF
+	WCUo8WPyPZYJjGKzkEydhaRlFpKWWUhaFjCyrGIUKy1OLihOSk+tMNYrTswtLs1L10vOz93E
+	CIm8mh2M977aHGIU4GBU4uF9kPkrUIg1say4MvcQowQHs5II78JnvwOFeFMSK6tSi/Lji0pz
+	UosPMTJxcEo1MMaZGrMdzVDoncqa1Rd+rYiVQWBJ4xNh6VlvDq6vWvIjJG/J1pN+BvOWfyxn
+	DYrcLP06K0RsuSu355QTljWvNJxYxMsDd9heivFwVJhZJqVtphB9W2GJpfsCa/dVBYqyXzlr
+	9UzY444232FR8Fb6O3lNV07EklcXONS33dN4u3eaRvrGkjkNSizFGYmGWsxFxYkAMU5K1ZoC	AAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02/2013 09:12 AM, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.10.5 release.
-> There are 99 patches in this series, all will be posted as a response
+On 08/02/2013 09:11 AM, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.4.56 release.
+> There are 39 patches in this series, all will be posted as a response
 > to this one.  If anyone has any issues with these being applied, please
 > let me know.
 >
-> Responses should be made by Sun Aug  4 10:00:45 UTC 2013.
+> Responses should be made by Sun Aug  4 10:13:49 UTC 2013.
 > Anything received after that time might be too late.
 >
 > The whole patch series can be found in one patch at:
-> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.5-rc1.gz
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.56-rc1.gz
 > and the diffstat can be found below.
 >
 > thanks,
@@ -94,5 +94,6 @@ sparc: defconfig passed on all
 tile: tilegx_defconfig passed on all
 
 -- Shuah
+
 Shuah Khan, Linux Kernel Developer - Open Source Group Samsung Research 
 America (Silicon Valley) shuah.kh@samsung.com | (970) 672-0658
