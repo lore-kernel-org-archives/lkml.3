@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758890Ab3HBKHx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:07:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37049 "EHLO
+	id S1758840Ab3HBKHs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:07:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37038 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758719Ab3HBKHt (ORCPT
+	with ESMTP id S1758719Ab3HBKHo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:07:49 -0400
+	Fri, 2 Aug 2013 06:07:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
         Or Gerlitz <ogerlitz@mellanox.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 04/99] iser-target: Fix session reset bug with RDMA_CM_EVENT_DISCONNECTED
-Date: Fri,  2 Aug 2013 18:07:17 +0800
-Message-Id: <20130802100226.122807725@linuxfoundation.org>
+        Mike Christie <michaelc@cs.wisc.edu>
+Subject: [ 02/99] iser-target: Fix isert_put_reject payload buffer post
+Date: Fri,  2 Aug 2013 18:07:15 +0800
+Message-Id: <20130802100225.829303813@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802100225.478715166@linuxfoundation.org>
 References: <20130802100225.478715166@linuxfoundation.org>
@@ -29,193 +30,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit b2cb96494d83b894a43ba8b9023eead8ff50684b upstream.
+commit 3df8f68aaf7ebe3d136a22262b41b350b0a1858b upstream.
 
-This patch addresses a bug where RDMA_CM_EVENT_DISCONNECTED may occur
-before the connection shutdown has been completed by rx/tx threads,
-that causes isert_free_conn() to wait indefinately on ->conn_wait.
+This patch adds the missing isert_put_reject() logic to post
+a outgoing payload buffer to hold the 48 bytes of original PDU
+header request payload for the rejected cmd.
 
-This patch allows isert_disconnect_work code to invoke rdma_disconnect
-when isert_disconnect_work() process context is started by client
-session reset before isert_free_conn() code has been reached.
+It also fixes ISTATE_SEND_REJECT handling in isert_response_completion()
+-> isert_do_control_comp() code, and drops incorrect iscsi_cmd_t->reject_comp
+usage.
 
-It also adds isert_conn->conn_mutex protection for ->state within
-isert_disconnect_work(), isert_cq_comp_err() and isert_free_conn()
-code, along with isert_check_state() for wait_event usage.
-
-(v2: Add explicit iscsit_cause_connection_reinstatement call
-     during isert_disconnect_work() to force conn reset)
-
-Cc: Or Gerlitz <ogerlitz@mellanox.com>
 Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Cc: Or Gerlitz <ogerlitz@mellanox.com>
+Cc: Mike Christie <michaelc@cs.wisc.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/ulp/isert/ib_isert.c  |   70 ++++++++++++++++++++++++++-----
- drivers/infiniband/ulp/isert/ib_isert.h  |    1 
- drivers/target/iscsi/iscsi_target_erl0.c |    1 
- include/target/iscsi/iscsi_transport.h   |    4 +
- 4 files changed, 66 insertions(+), 10 deletions(-)
+ drivers/infiniband/ulp/isert/ib_isert.c |   26 ++++++++++++++++++++++----
+ 1 file changed, 22 insertions(+), 4 deletions(-)
 
 --- a/drivers/infiniband/ulp/isert/ib_isert.c
 +++ b/drivers/infiniband/ulp/isert/ib_isert.c
-@@ -388,6 +388,7 @@ isert_connect_request(struct rdma_cm_id
- 	init_waitqueue_head(&isert_conn->conn_wait_comp_err);
- 	kref_init(&isert_conn->conn_kref);
- 	kref_get(&isert_conn->conn_kref);
-+	mutex_init(&isert_conn->conn_mutex);
- 
- 	cma_id->context = isert_conn;
- 	isert_conn->conn_cm_id = cma_id;
-@@ -540,15 +541,32 @@ isert_disconnect_work(struct work_struct
- 				struct isert_conn, conn_logout_work);
- 
- 	pr_debug("isert_disconnect_work(): >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
--
-+	mutex_lock(&isert_conn->conn_mutex);
- 	isert_conn->state = ISER_CONN_DOWN;
- 
- 	if (isert_conn->post_recv_buf_count == 0 &&
- 	    atomic_read(&isert_conn->post_send_buf_count) == 0) {
- 		pr_debug("Calling wake_up(&isert_conn->conn_wait);\n");
--		wake_up(&isert_conn->conn_wait);
-+		mutex_unlock(&isert_conn->conn_mutex);
-+		goto wake_up;
-+	}
-+	if (!isert_conn->conn_cm_id) {
-+		mutex_unlock(&isert_conn->conn_mutex);
-+		isert_put_conn(isert_conn);
-+		return;
-+	}
-+	if (!isert_conn->logout_posted) {
-+		pr_debug("Calling rdma_disconnect for !logout_posted from"
-+			 " isert_disconnect_work\n");
-+		rdma_disconnect(isert_conn->conn_cm_id);
-+		mutex_unlock(&isert_conn->conn_mutex);
-+		iscsit_cause_connection_reinstatement(isert_conn->conn, 0);
-+		goto wake_up;
- 	}
-+	mutex_unlock(&isert_conn->conn_mutex);
- 
-+wake_up:
-+	wake_up(&isert_conn->conn_wait);
- 	isert_put_conn(isert_conn);
- }
- 
-@@ -1423,7 +1441,11 @@ isert_cq_comp_err(struct iser_tx_desc *t
- 		pr_debug("isert_cq_comp_err >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
- 		pr_debug("Calling wake_up from isert_cq_comp_err\n");
- 
--		isert_conn->state = ISER_CONN_TERMINATING;
-+		mutex_lock(&isert_conn->conn_mutex);
-+		if (isert_conn->state != ISER_CONN_DOWN)
-+			isert_conn->state = ISER_CONN_TERMINATING;
-+		mutex_unlock(&isert_conn->conn_mutex);
-+
- 		wake_up(&isert_conn->conn_wait_comp_err);
- 	}
- }
-@@ -2193,6 +2215,17 @@ isert_free_np(struct iscsi_np *np)
- 	kfree(isert_np);
- }
- 
-+static int isert_check_state(struct isert_conn *isert_conn, int state)
-+{
-+	int ret;
-+
-+	mutex_lock(&isert_conn->conn_mutex);
-+	ret = (isert_conn->state == state);
-+	mutex_unlock(&isert_conn->conn_mutex);
-+
-+	return ret;
-+}
-+
- static void isert_free_conn(struct iscsi_conn *conn)
- {
- 	struct isert_conn *isert_conn = conn->context;
-@@ -2202,26 +2235,43 @@ static void isert_free_conn(struct iscsi
- 	 * Decrement post_send_buf_count for special case when called
- 	 * from isert_do_control_comp() -> iscsit_logout_post_handler()
- 	 */
-+	mutex_lock(&isert_conn->conn_mutex);
- 	if (isert_conn->logout_posted)
+@@ -1222,6 +1222,9 @@ isert_put_cmd(struct isert_cmd *isert_cm
+ 		 * associated cmd->se_cmd needs to be released.
+ 		 */
+ 		if (cmd->se_cmd.se_tfo != NULL) {
++			pr_debug("Calling transport_generic_free_cmd from"
++				 " isert_put_cmd for 0x%02x\n",
++				 cmd->iscsi_opcode);
+ 			transport_generic_free_cmd(&cmd->se_cmd, 0);
+ 			break;
+ 		}
+@@ -1318,8 +1321,8 @@ isert_do_control_comp(struct work_struct
  		atomic_dec(&isert_conn->post_send_buf_count);
  
--	if (isert_conn->conn_cm_id)
-+	if (isert_conn->conn_cm_id && isert_conn->state != ISER_CONN_DOWN) {
-+		pr_debug("Calling rdma_disconnect from isert_free_conn\n");
- 		rdma_disconnect(isert_conn->conn_cm_id);
-+	}
- 	/*
- 	 * Only wait for conn_wait_comp_err if the isert_conn made it
- 	 * into full feature phase..
- 	 */
--	if (isert_conn->state > ISER_CONN_INIT) {
-+	if (isert_conn->state == ISER_CONN_UP) {
- 		pr_debug("isert_free_conn: Before wait_event comp_err %d\n",
- 			 isert_conn->state);
-+		mutex_unlock(&isert_conn->conn_mutex);
-+
- 		wait_event(isert_conn->conn_wait_comp_err,
--			   isert_conn->state == ISER_CONN_TERMINATING);
--		pr_debug("isert_free_conn: After wait_event #1 >>>>>>>>>>>>\n");
-+			  (isert_check_state(isert_conn, ISER_CONN_TERMINATING)));
-+
-+		wait_event(isert_conn->conn_wait,
-+			  (isert_check_state(isert_conn, ISER_CONN_DOWN)));
-+
-+		isert_put_conn(isert_conn);
-+		return;
-+	}
-+	if (isert_conn->state == ISER_CONN_INIT) {
-+		mutex_unlock(&isert_conn->conn_mutex);
-+		isert_put_conn(isert_conn);
-+		return;
- 	}
-+	pr_debug("isert_free_conn: wait_event conn_wait %d\n",
-+		 isert_conn->state);
-+	mutex_unlock(&isert_conn->conn_mutex);
+ 		cmd->i_state = ISTATE_SENT_STATUS;
+-		complete(&cmd->reject_comp);
+ 		isert_completion_put(&isert_cmd->tx_desc, isert_cmd, ib_dev);
++		break;
+ 	case ISTATE_SEND_LOGOUTRSP:
+ 		pr_debug("Calling iscsit_logout_post_handler >>>>>>>>>>>>>>\n");
+ 		/*
+@@ -1345,7 +1348,8 @@ isert_response_completion(struct iser_tx
+ 	struct iscsi_cmd *cmd = &isert_cmd->iscsi_cmd;
  
--	pr_debug("isert_free_conn: wait_event conn_wait %d\n", isert_conn->state);
--	wait_event(isert_conn->conn_wait, isert_conn->state == ISER_CONN_DOWN);
--	pr_debug("isert_free_conn: After wait_event #2 >>>>>>>>>>>>>>>>>>>>\n");
-+	wait_event(isert_conn->conn_wait,
-+		  (isert_check_state(isert_conn, ISER_CONN_DOWN)));
+ 	if (cmd->i_state == ISTATE_SEND_TASKMGTRSP ||
+-	    cmd->i_state == ISTATE_SEND_LOGOUTRSP) {
++	    cmd->i_state == ISTATE_SEND_LOGOUTRSP ||
++	    cmd->i_state == ISTATE_SEND_REJECT) {
+ 		isert_unmap_tx_desc(tx_desc, ib_dev);
  
- 	isert_put_conn(isert_conn);
- }
---- a/drivers/infiniband/ulp/isert/ib_isert.h
-+++ b/drivers/infiniband/ulp/isert/ib_isert.h
-@@ -102,6 +102,7 @@ struct isert_conn {
- 	struct ib_qp		*conn_qp;
- 	struct isert_device	*conn_device;
- 	struct work_struct	conn_logout_work;
-+	struct mutex		conn_mutex;
- 	wait_queue_head_t	conn_wait;
- 	wait_queue_head_t	conn_wait_comp_err;
- 	struct kref		conn_kref;
---- a/drivers/target/iscsi/iscsi_target_erl0.c
-+++ b/drivers/target/iscsi/iscsi_target_erl0.c
-@@ -909,6 +909,7 @@ void iscsit_cause_connection_reinstateme
- 	wait_for_completion(&conn->conn_wait_comp);
- 	complete(&conn->conn_post_wait_comp);
- }
-+EXPORT_SYMBOL(iscsit_cause_connection_reinstatement);
+ 		INIT_WORK(&isert_cmd->comp_work, isert_do_control_comp);
+@@ -1637,11 +1641,25 @@ isert_put_reject(struct iscsi_cmd *cmd,
+ 				struct isert_cmd, iscsi_cmd);
+ 	struct isert_conn *isert_conn = (struct isert_conn *)conn->context;
+ 	struct ib_send_wr *send_wr = &isert_cmd->tx_desc.send_wr;
++	struct ib_device *ib_dev = isert_conn->conn_cm_id->device;
++	struct ib_sge *tx_dsg = &isert_cmd->tx_desc.tx_sg[1];
++	struct iscsi_reject *hdr =
++		(struct iscsi_reject *)&isert_cmd->tx_desc.iscsi_header;
  
- void iscsit_fall_back_to_erl0(struct iscsi_session *sess)
- {
---- a/include/target/iscsi/iscsi_transport.h
-+++ b/include/target/iscsi/iscsi_transport.h
-@@ -67,6 +67,10 @@ extern int iscsit_logout_post_handler(st
-  */
- extern void iscsit_increment_maxcmdsn(struct iscsi_cmd *, struct iscsi_session *);
- /*
-+ * From iscsi_target_erl0.c
-+ */
-+extern void iscsit_cause_connection_reinstatement(struct iscsi_conn *, int);
-+/*
-  * From iscsi_target_erl1.c
-  */
- extern void iscsit_stop_dataout_timer(struct iscsi_cmd *);
+ 	isert_create_send_desc(isert_conn, isert_cmd, &isert_cmd->tx_desc);
+-	iscsit_build_reject(cmd, conn, (struct iscsi_reject *)
+-				&isert_cmd->tx_desc.iscsi_header);
++	iscsit_build_reject(cmd, conn, hdr);
+ 	isert_init_tx_hdrs(isert_conn, &isert_cmd->tx_desc);
++
++	hton24(hdr->dlength, ISCSI_HDR_LEN);
++	isert_cmd->sense_buf_dma = ib_dma_map_single(ib_dev,
++			(void *)cmd->buf_ptr, ISCSI_HDR_LEN,
++			DMA_TO_DEVICE);
++	isert_cmd->sense_buf_len = ISCSI_HDR_LEN;
++	tx_dsg->addr	= isert_cmd->sense_buf_dma;
++	tx_dsg->length	= ISCSI_HDR_LEN;
++	tx_dsg->lkey	= isert_conn->conn_mr->lkey;
++	isert_cmd->tx_desc.num_sge = 2;
++
+ 	isert_init_send_wr(isert_cmd, send_wr);
+ 
+ 	pr_debug("Posting Reject IB_WR_SEND >>>>>>>>>>>>>>>>>>>>>>\n");
 
 
