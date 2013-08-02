@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030325Ab3HBKKz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:10:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37354 "EHLO
+	id S1030339Ab3HBKK6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:10:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37360 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030228Ab3HBKKu (ORCPT
+	with ESMTP id S1030228Ab3HBKK4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:10:50 -0400
+	Fri, 2 Aug 2013 06:10:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 68/99] drm/radeon: allow selection of alignment in the sub-allocator
-Date: Fri,  2 Aug 2013 18:08:21 +0800
-Message-Id: <20130802100235.501753258@linuxfoundation.org>
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Toshi Kani <toshi.kani@hp.com>
+Subject: [ 59/99] ACPI / scan: Always call acpi_bus_scan() for bus check notifications
+Date: Fri,  2 Aug 2013 18:08:12 +0800
+Message-Id: <20130802100234.256989759@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802100225.478715166@linuxfoundation.org>
 References: <20130802100225.478715166@linuxfoundation.org>
@@ -26,100 +27,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
 
-commit 6c4f978b357bc779c703fda1f200e9179623d3e9 upstream.
+commit 8832f7e43fa7f0f19bd54e13766a825dd1ed4d6f upstream.
 
-There are cases where we need more than 4k alignment.  No
-functional change with this commit.
+An ACPI_NOTIFY_BUS_CHECK notification means that we should scan the
+entire namespace starting from the given handle even if the device
+represented by that handle is present (other devices below it may
+just have appeared).
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+For this reason, modify acpi_scan_bus_device_check() to always run
+acpi_bus_scan() if the notification being handled is of type
+ACPI_NOTIFY_BUS_CHECK.
+
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Acked-by: Toshi Kani <toshi.kani@hp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon.h        |    1 +
- drivers/gpu/drm/radeon/radeon_gart.c   |    1 +
- drivers/gpu/drm/radeon/radeon_object.h |    2 +-
- drivers/gpu/drm/radeon/radeon_ring.c   |    1 +
- drivers/gpu/drm/radeon/radeon_sa.c     |    7 ++++---
- 5 files changed, 8 insertions(+), 4 deletions(-)
+ drivers/acpi/scan.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon.h
-+++ b/drivers/gpu/drm/radeon/radeon.h
-@@ -408,6 +408,7 @@ struct radeon_sa_manager {
- 	uint64_t		gpu_addr;
- 	void			*cpu_ptr;
- 	uint32_t		domain;
-+	uint32_t		align;
- };
+--- a/drivers/acpi/scan.c
++++ b/drivers/acpi/scan.c
+@@ -237,10 +237,12 @@ static void acpi_scan_bus_device_check(a
  
- struct radeon_sa_bo;
---- a/drivers/gpu/drm/radeon/radeon_gart.c
-+++ b/drivers/gpu/drm/radeon/radeon_gart.c
-@@ -467,6 +467,7 @@ int radeon_vm_manager_init(struct radeon
- 		size *= 2;
- 		r = radeon_sa_bo_manager_init(rdev, &rdev->vm_manager.sa_manager,
- 					      RADEON_GPU_PAGE_ALIGN(size),
-+					      RADEON_GPU_PAGE_SIZE,
- 					      RADEON_GEM_DOMAIN_VRAM);
- 		if (r) {
- 			dev_err(rdev->dev, "failed to allocate vm bo (%dKB)\n",
---- a/drivers/gpu/drm/radeon/radeon_object.h
-+++ b/drivers/gpu/drm/radeon/radeon_object.h
-@@ -158,7 +158,7 @@ static inline void * radeon_sa_bo_cpu_ad
+ 	mutex_lock(&acpi_scan_lock);
  
- extern int radeon_sa_bo_manager_init(struct radeon_device *rdev,
- 				     struct radeon_sa_manager *sa_manager,
--				     unsigned size, u32 domain);
-+				     unsigned size, u32 align, u32 domain);
- extern void radeon_sa_bo_manager_fini(struct radeon_device *rdev,
- 				      struct radeon_sa_manager *sa_manager);
- extern int radeon_sa_bo_manager_start(struct radeon_device *rdev,
---- a/drivers/gpu/drm/radeon/radeon_ring.c
-+++ b/drivers/gpu/drm/radeon/radeon_ring.c
-@@ -224,6 +224,7 @@ int radeon_ib_pool_init(struct radeon_de
+-	acpi_bus_get_device(handle, &device);
+-	if (device) {
+-		dev_warn(&device->dev, "Attempt to re-insert\n");
+-		goto out;
++	if (ost_source != ACPI_NOTIFY_BUS_CHECK) {
++		acpi_bus_get_device(handle, &device);
++		if (device) {
++			dev_warn(&device->dev, "Attempt to re-insert\n");
++			goto out;
++		}
  	}
- 	r = radeon_sa_bo_manager_init(rdev, &rdev->ring_tmp_bo,
- 				      RADEON_IB_POOL_SIZE*64*1024,
-+				      RADEON_GPU_PAGE_SIZE,
- 				      RADEON_GEM_DOMAIN_GTT);
- 	if (r) {
- 		return r;
---- a/drivers/gpu/drm/radeon/radeon_sa.c
-+++ b/drivers/gpu/drm/radeon/radeon_sa.c
-@@ -49,7 +49,7 @@ static void radeon_sa_bo_try_free(struct
- 
- int radeon_sa_bo_manager_init(struct radeon_device *rdev,
- 			      struct radeon_sa_manager *sa_manager,
--			      unsigned size, u32 domain)
-+			      unsigned size, u32 align, u32 domain)
- {
- 	int i, r;
- 
-@@ -57,13 +57,14 @@ int radeon_sa_bo_manager_init(struct rad
- 	sa_manager->bo = NULL;
- 	sa_manager->size = size;
- 	sa_manager->domain = domain;
-+	sa_manager->align = align;
- 	sa_manager->hole = &sa_manager->olist;
- 	INIT_LIST_HEAD(&sa_manager->olist);
- 	for (i = 0; i < RADEON_NUM_RINGS; ++i) {
- 		INIT_LIST_HEAD(&sa_manager->flist[i]);
- 	}
- 
--	r = radeon_bo_create(rdev, size, RADEON_GPU_PAGE_SIZE, true,
-+	r = radeon_bo_create(rdev, size, align, true,
- 			     domain, NULL, &sa_manager->bo);
- 	if (r) {
- 		dev_err(rdev->dev, "(%d) failed to allocate bo for manager\n", r);
-@@ -317,7 +318,7 @@ int radeon_sa_bo_new(struct radeon_devic
- 	unsigned tries[RADEON_NUM_RINGS];
- 	int i, r;
- 
--	BUG_ON(align > RADEON_GPU_PAGE_SIZE);
-+	BUG_ON(align > sa_manager->align);
- 	BUG_ON(size > sa_manager->size);
- 
- 	*sa_bo = kmalloc(sizeof(struct radeon_sa_bo), GFP_KERNEL);
+ 	acpi_evaluate_hotplug_ost(handle, ost_source,
+ 				  ACPI_OST_SC_INSERT_IN_PROGRESS, NULL);
 
 
