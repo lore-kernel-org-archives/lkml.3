@@ -1,82 +1,251 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754137Ab3HBPmx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 11:42:53 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:8373 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754046Ab3HBPmv convert rfc822-to-8bit (ORCPT
+	id S1754145Ab3HBPny (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 11:43:54 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:49735 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753871Ab3HBPnv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 11:42:51 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Fri, 02 Aug 2013 08:41:20 -0700
-Message-ID: <51FBD377.8060705@nvidia.com>
-Date: Fri, 2 Aug 2013 18:42:47 +0300
-From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Matthieu CASTET <matthieu.castet@parrot.com>
-CC: "balbi@ti.com" <balbi@ti.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Subject: Re: [PATCH 1/6] usb: host: add has_tdi_phy_lpm capability bit
-References: <1375292522-7855-1-git-send-email-ttynkkynen@nvidia.com> <1375292522-7855-2-git-send-email-ttynkkynen@nvidia.com> <20130801100544.76233b42@parrot.com>
-In-Reply-To: <20130801100544.76233b42@parrot.com>
-Content-Type: text/plain; charset="ISO-8859-15"
+	Fri, 2 Aug 2013 11:43:51 -0400
+Subject: Re: [PATCH 3/4] ARM: msm: Add SMP support for 8960
+Mime-Version: 1.0 (Apple Message framework v1283)
+Content-Type: text/plain; charset=us-ascii
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <1375409725-22004-4-git-send-email-rvaswani@codeaurora.org>
+Date: Fri, 2 Aug 2013 10:43:48 -0500
+Cc: David Brown <davidb@codeaurora.org>, Rob Herring <rob.herring@calxeda.com>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Nicolas Pitre <nico@linaro.org>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org
 Content-Transfer-Encoding: 8BIT
+Message-Id: <44303FA4-18A4-4DD3-A3BE-27741B7460C4@codeaurora.org>
+References: <1375409725-22004-1-git-send-email-rvaswani@codeaurora.org> <1375409725-22004-4-git-send-email-rvaswani@codeaurora.org>
+To: Rohit Vaswani <rvaswani@codeaurora.org>
+X-Mailer: Apple Mail (2.1283)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/01/2013 11:05 AM, Matthieu CASTET wrote:
-> Hi,
-> 
-> Le Wed, 31 Jul 2013 18:41:57 +0100,
-> Tuomas Tynkkynen <ttynkkynen@nvidia.com> a écrit :
-> 
->> The has_hostpc capability bit indicates that the host controller has
->> the HOSTPC register extensions, but at the same time enables clock
->> disabling power saving features with the PHY Low Power Clock Disable
->> (PHCD) bit.
->>
->> However, some host controllers have the HOSTPC extensions but don't
->> support the low-power feature, so the PHCD bit must not be set on
->> those controllers. Add a separate capability bit for the low-power
->> feature instead, and change all existing users of has_hostpc to use
->> this new capability bit.
->>
->> The idea for this commit is taken from an old 2012 commit that never
->> got merged ("disociate chipidea PHY low power suspend control from
->> hostpc")
-> Note that because of the different register layout (see "add phy low
-> power suspend for older chipidea core" commit in the same series), we
-> should not set has_tdi_phy_lpm if has_hostpc == 0 with the current code.
-> 
-> May be you should have change the ehci->has_hostpc to (ehci->has_hostpc
-> && ehci->has_tdi_phy_lpm).
 
-Hmm, I see. Do you think there could be a case where that could get accidentally
-get triggered via autodetection? That patch series seems to set either both or neither.
-And I figure no one will be explicitly setting that flag (if has_hostpc == 0) without
-implementing the non-has_hostpc case first.
+On Aug 1, 2013, at 9:15 PM, Rohit Vaswani wrote:
 
+> Add the cpus bindings and the Krait release sequence
+> to make SMP work for MSM8960
 > 
-> BTW Alan make some comment on the commit :
-> http://marc.info/?l=linux-usb&m=133701342028213&w=2
+> Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
+> ---
+> Documentation/devicetree/bindings/arm/cpus.txt     |  2 +
+> Documentation/devicetree/bindings/arm/msm/kpss.txt | 16 ++++++
+> arch/arm/boot/dts/msm8960-cdp.dts                  | 22 +++++++++
+> arch/arm/mach-msm/platsmp.c                        | 57 ++++++++++++++++++++++
+> arch/arm/mach-msm/scm-boot.h                       |  8 +--
+> 5 files changed, 102 insertions(+), 3 deletions(-)
+> create mode 100644 Documentation/devicetree/bindings/arm/msm/kpss.txt
 > 
-> They may apply to your commit.
+> diff --git a/Documentation/devicetree/bindings/arm/cpus.txt b/Documentation/devicetree/bindings/arm/cpus.txt
+> index 327aad2..1132eac 100644
+> --- a/Documentation/devicetree/bindings/arm/cpus.txt
+> +++ b/Documentation/devicetree/bindings/arm/cpus.txt
+> @@ -45,11 +45,13 @@ For the ARM architecture every CPU node must contain the following properties:
+> 		"marvell,xsc3"
+> 		"marvell,xscale"
+> 		"qcom,scorpion"
+> +		"qcom,krait"
+> - enable-method: Specifies the method used to enable or take the secondary cores
+> 		 out of reset. This allows different reset sequence for
+> 		 different types of cpus.
+> 		 This should be one of:
+> 		 "qcom,scss"
+> +		 "qcom,kpssv1"
 > 
->>
->> Inspired-by: Matthieu CASTET <matthieu.castet@parrot.com>
->> Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
->> ---
->>  drivers/usb/chipidea/host.c |  1 +
->>  drivers/usb/host/ehci-hub.c | 14 +++++++-------
->>  drivers/usb/host/ehci.h     |  1 +
->>  3 files changed, 9 insertions(+), 7 deletions(-)
->>
+> Example:
+> 
+> diff --git a/Documentation/devicetree/bindings/arm/msm/kpss.txt b/Documentation/devicetree/bindings/arm/msm/kpss.txt
+> new file mode 100644
+> index 0000000..7272340
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/arm/msm/kpss.txt
+> @@ -0,0 +1,16 @@
+> +* KPSS - Krait Processor Sub-system
+> +
+> +Properties
+> +
+> +- compatible : Should contain "qcom,kpss".
+> +
+> +- reg: Specifies the base address for the KPSS registers used for
+> +       booting up secondary cores.
+> +
+> +Example:
+> +
+> +	kpss@2088000 {
+> +		compatible = "qcom,kpss";
+> +		reg = <0x02088000 0x1000
+> +			0x02098000 0x2000>;
+> +	};
+> diff --git a/arch/arm/boot/dts/msm8960-cdp.dts b/arch/arm/boot/dts/msm8960-cdp.dts
+> index db2060c..8c82d5e 100644
+> --- a/arch/arm/boot/dts/msm8960-cdp.dts
+> +++ b/arch/arm/boot/dts/msm8960-cdp.dts
+> @@ -7,6 +7,22 @@
+> 	compatible = "qcom,msm8960-cdp", "qcom,msm8960";
+> 	interrupt-parent = <&intc>;
+> 
+> +	cpus {
+> +		#address-cells = <1>;
+> +		#size-cells = <0>;
+> +		compatible = "qcom,krait";
+> +		device_type = "cpu";
+> +		enable-method = "qcom,kpssv1";
+> +
+> +		cpu@0 {
+> +			reg = <0>;
+> +		};
+> +
+> +		cpu@1 {
+> +			reg = <1>;
+> +		};
+> +	};
+> +
+> 	intc: interrupt-controller@2000000 {
+> 		compatible = "qcom,msm-qgic2";
+> 		interrupt-controller;
+> @@ -37,6 +53,12 @@
+> 		reg = <0xfd510000 0x4000>;
+> 	};
+> 
+> +	kpss@2088000 {
+> +		compatible = "qcom,kpss";
+> +		reg = <0x02088000 0x1000
+> +			0x02098000 0x2000>;
+> +	};
+> +
+> 	serial@16440000 {
+> 		compatible = "qcom,msm-hsuart", "qcom,msm-uart";
+> 		reg = <0x16440000 0x1000>,
+> diff --git a/arch/arm/mach-msm/platsmp.c b/arch/arm/mach-msm/platsmp.c
+> index 17022e0..82eb079 100644
+> --- a/arch/arm/mach-msm/platsmp.c
+> +++ b/arch/arm/mach-msm/platsmp.c
+> @@ -74,6 +74,56 @@ static int scorpion_release_secondary(void)
+> 	return 0;
+> }
+> 
+> +static int msm8960_release_secondary(unsigned int cpu)
+> +{
+> +	void __iomem *reg;
+> +	struct device_node *dn = NULL;
+> +
+> +	if (cpu == 0 || cpu >= num_possible_cpus())
+> +		return -EINVAL;
+> +
+> +	dn = of_find_compatible_node(dn, NULL, "qcom,kpss");
+> +	if (!dn) {
+> +		pr_err("%s : Missing kpss node from device tree\n", __func__);
+> +		return -ENXIO;
+> +	}
+> +
+> +	reg = of_iomap(dn, cpu);
+> +	if (!reg)
+> +		return -ENOMEM;
+> +
+> +	pr_debug("Starting secondary CPU %d\n", cpu);
+> +
+> +	/* Turn on CPU Rail */
+> +	writel_relaxed(0xA4, reg+0x1014);
+
+Is there some reason we are using magic numbers for both values and offsets?
+
+> +	mb();
+> +	udelay(512);
+> +
+> +	/* Krait bring-up sequence */
+> +	writel_relaxed(0x109, reg+0x04);
+> +	writel_relaxed(0x101, reg+0x04);
+> +	mb();
+> +	ndelay(300);
+> +
+> +	writel_relaxed(0x121, reg+0x04);
+> +	mb();
+> +	udelay(2);
+> +
+> +	writel_relaxed(0x120, reg+0x04);
+> +	mb();
+> +	udelay(2);
+> +
+> +	writel_relaxed(0x100, reg+0x04);
+> +	mb();
+> +	udelay(100);
+> +
+> +	writel_relaxed(0x180, reg+0x04);
+> +	mb();
+> +
+> +	iounmap(reg);
+> +	return 0;
+> +}
+> +
+> static DEFINE_PER_CPU(int, cold_boot_done);
+> 
+> static void boot_cold_cpu(unsigned int cpu)
+> @@ -96,6 +146,11 @@ static void boot_cold_cpu(unsigned int cpu)
+> 			scorpion_release_secondary();
+> 			per_cpu(cold_boot_done, cpu) = true;
+> 		}
+> +	} else if (!strcmp(enable_method, "qcom,kpssv1")) {
+> +		if (per_cpu(cold_boot_done, cpu) == false) {
+> +			msm8960_release_secondary(cpu);
+
+Is this really msm8960 specific, if so than we should be doing something other than comparing against "qcom,kpssv1" or we should change the function to kpssv1_release_secondary()
+
+> +			per_cpu(cold_boot_done, cpu) = true;
+> +		}
+> 	} else {
+> 		pr_err("%s: Invalid enable-method property: %s\n",
+> 				__func__, enable_method);
+> @@ -151,6 +206,8 @@ static void __init msm_smp_init_cpus(void)
+> static const int cold_boot_flags[] __initconst = {
+> 	0,
+> 	SCM_FLAG_COLDBOOT_CPU1,
+> +	SCM_FLAG_COLDBOOT_CPU2,
+> +	SCM_FLAG_COLDBOOT_CPU3,
+> };
+> 
+> static void __init msm_smp_prepare_cpus(unsigned int max_cpus)
+> diff --git a/arch/arm/mach-msm/scm-boot.h b/arch/arm/mach-msm/scm-boot.h
+> index 7be32ff..6aabb24 100644
+> --- a/arch/arm/mach-msm/scm-boot.h
+> +++ b/arch/arm/mach-msm/scm-boot.h
+> @@ -13,9 +13,11 @@
+> #define __MACH_SCM_BOOT_H
+> 
+> #define SCM_BOOT_ADDR			0x1
+> -#define SCM_FLAG_COLDBOOT_CPU1		0x1
+> -#define SCM_FLAG_WARMBOOT_CPU1		0x2
+> -#define SCM_FLAG_WARMBOOT_CPU0		0x4
+> +#define SCM_FLAG_COLDBOOT_CPU1		0x01
+> +#define SCM_FLAG_COLDBOOT_CPU2		0x08
+> +#define SCM_FLAG_COLDBOOT_CPU3		0x20
+> +#define SCM_FLAG_WARMBOOT_CPU0		0x04
+> +#define SCM_FLAG_WARMBOOT_CPU1		0x02
+> 
+> int scm_set_boot_addr(phys_addr_t addr, int flags);
+> 
+> -- 
+> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+> hosted by The Linux Foundation
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-arm-msm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+--
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
 
