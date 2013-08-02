@@ -1,76 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754013Ab3HBEoj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 00:44:39 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:54271 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751613Ab3HBEoh (ORCPT
+	id S1754034Ab3HBEuI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 00:50:08 -0400
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:63755 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751613Ab3HBEuG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 00:44:37 -0400
-From: Andy Lutomirski <luto@amacapital.net>
-To: linux-kernel@vger.kernel.org,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Cc: Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH] fs: Allow unprivileged linkat(..., AT_EMPTY_PATH) aka flink
-Date: Thu,  1 Aug 2013 21:44:31 -0700
-Message-Id: <eb984f61d768986377aa407fc24dd403572da772.1375418617.git.luto@amacapital.net>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <CALCETrUTyLO4BKX0SrmRd=nb2jvvZEhD9iTyFpSM23OUdQLhsA@mail.gmail.com>
-References: <CALCETrUTyLO4BKX0SrmRd=nb2jvvZEhD9iTyFpSM23OUdQLhsA@mail.gmail.com>
+	Fri, 2 Aug 2013 00:50:06 -0400
+MIME-Version: 1.0
+In-Reply-To: <51FB35CD.7040709@intel.com>
+References: <1375400042-989-1-git-send-email-felipe.contreras@gmail.com>
+	<51FB137D.7070000@gmail.com>
+	<CAMP44s1A+z4=DGJLK1qf5LPc1vbYvtJwjFiMt17vzyZFRU0qmg@mail.gmail.com>
+	<51FB35CD.7040709@intel.com>
+Date: Thu, 1 Aug 2013 23:50:04 -0500
+Message-ID: <CAMP44s1honSdnoMnmpEcsXtdkJuPYgQgnLwcN+oxs5f=a+3Stg@mail.gmail.com>
+Subject: Re: [PATCH] acpi: video: fix reversed indexed BQC
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: Aaron Lu <aaron.lu@intel.com>
+Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <lenb@kernel.org>,
+        Zhang Rui <rui.zhang@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Every now and then someone proposes a new flink syscall, and this spawns
-a long discussion of whether it would be a security problem.  I think
-that this is missing the point: flink is *already* allowed without
-privilege as long as /proc is mounted -- it's called AT_SYMLINK_FOLLOW.
+On Thu, Aug 1, 2013 at 11:30 PM, Aaron Lu <aaron.lu@intel.com> wrote:
+> On 08/02/2013 12:11 PM, Felipe Contreras wrote:
+>> On Thu, Aug 1, 2013 at 9:03 PM, Aaron Lu <aaron.lwe@gmail.com> wrote:
+>>> On 08/02/2013 07:34 AM, Felipe Contreras wrote:
+>>>> Commit 1a7c618 (ACPI video: support _BQC/_BCL/_BCM methods that use
+>>>> index values) assumed that bl->levels were not reverted, but at this
+>>>> point they already are, so there's no need to revert them yet again.
+>>>
+>>> When acpi_video_bqc_value_to_level is called, bl->levels is not
+>>> reverted.
+>>
+>> This is the code that turns br->flags._BCL_reversed on:
+>>
+>>       if (max_level == br->levels[2]) {
+>>               br->flags._BCL_reversed = 1;
+>>               sort(&br->levels[2], count - 2, sizeof(br->levels[2]),
+>>                       acpi_video_cmp_level, NULL);
+>>       }
+>>
+>> Now tell me how br->flags._BCL_reversed can be on, and the br->levels
+>> *not* reverted.
+>
+> Oh yes, it is reverted to be in increase order, so it is not in reverse
+> order. I'm a little confused by these words.
 
-Now that O_TMPFILE is here, the ability to create a file with O_TMPFILE,
-write it, and link it in is very convenient.  The only problem is that
-it requires that /proc be mounted so that you can do:
+br->levels is always ascending, but that doesn't mean _BCL is.
 
-linkat(AT_FDCWD, "/proc/self/fd/<tmpfd>", dfd, path, AT_SYMLINK_NOFOLLOW)
+> Please see acpi_video_bqc_quirk, we set _BQC_use_index by revert the
+> level on a reversed _BCL, so we will need to revert level here too.
 
-This sucks -- it's much nicer to do:
+I cannot parse that sentence, but nothing needs to change there; to
+find out if _BQC is using an index, we need to see if the returned
+value is the index of the level we are looking for, and to find that
+out we need the original list of levels, which can be found by
+reverting the already reverted list. If this wasn't the case there
+would not be any need for the _BCL_reversed flag.
 
-linkat(tmpfd, "", dfd, path, AT_EMPTY_PATH)
-
-Let's allow it.
-
-If this turns out to be excessively scary, it we could instead require
-that the inode in question be I_LINKABLE, but this seems pointless given
-the /proc situation
-
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
----
- fs/namei.c | 10 +++-------
- 1 file changed, 3 insertions(+), 7 deletions(-)
-
-diff --git a/fs/namei.c b/fs/namei.c
-index 8b61d10..89a612e 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -3671,15 +3671,11 @@ SYSCALL_DEFINE5(linkat, int, olddfd, const char __user *, oldname,
- 	if ((flags & ~(AT_SYMLINK_FOLLOW | AT_EMPTY_PATH)) != 0)
- 		return -EINVAL;
- 	/*
--	 * To use null names we require CAP_DAC_READ_SEARCH
--	 * This ensures that not everyone will be able to create
--	 * handlink using the passed filedescriptor.
-+	 * Using empty names is equivalent to using AT_SYMLINK_FOLLOW
-+	 * on /proc/self/fd/<fd>.
- 	 */
--	if (flags & AT_EMPTY_PATH) {
--		if (!capable(CAP_DAC_READ_SEARCH))
--			return -ENOENT;
-+	if (flags & AT_EMPTY_PATH)
- 		how = LOOKUP_EMPTY;
--	}
- 
- 	if (flags & AT_SYMLINK_FOLLOW)
- 		how |= LOOKUP_FOLLOW;
 -- 
-1.8.3.1
-
+Felipe Contreras
