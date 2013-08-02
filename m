@@ -1,115 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755118Ab3HBCmy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 22:42:54 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:7541 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751620Ab3HBCmY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 22:42:24 -0400
-X-Authority-Analysis: v=2.0 cv=aqMw+FlV c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=KIyhJweOQ84A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=n0SajkOWB3IA:10 a=0vGzujyhlAE0wRuDPhsA:9 a=jeBq3FmKZ4MA:10 a=-qnxwe8RVnLnafE0:21 a=L8FKgO0VSFNiMI1X:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-Id: <20130802024222.816371346@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Thu, 01 Aug 2013 22:39:36 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 3/4 v2] rcu: Simplify RCU_STATE_INITIALIZER() macro
-References: <20130802023933.677590002@goodmis.org>
-Content-Disposition: inline; filename=0003-rcu-Simplify-RCU_STATE_INITIALIZER-macro.patch
+	id S1755259Ab3HBCnx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 22:43:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7393 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754296Ab3HBCnu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 22:43:50 -0400
+Date: Thu, 01 Aug 2013 22:43:16 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, Hillf Danton <dhillf@gmail.com>,
+        Michal Hocko <mhocko@suse.cz>, Rik van Riel <riel@redhat.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        Naoya Horiguchi <nao.horiguchi@gmail.com>
+Message-ID: <1375411396-bw4cbhso-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <87vc3qvtmc.fsf@linux.vnet.ibm.com>
+References: <1374728103-17468-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1374728103-17468-9-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <87k3k7q4ox.fsf@linux.vnet.ibm.com>
+ <1375302249-scfvftrh-mutt-n-horiguchi@ah.jp.nec.com>
+ <87vc3qvtmc.fsf@linux.vnet.ibm.com>
+Subject: Re: [PATCH 8/8] prepare to remove
+ /proc/sys/vm/hugepages_treat_as_movable
+Mime-Version: 1.0
+Content-Type: text/plain;
+ charset=iso-2022-jp
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+X-Mutt-Fcc: ~/Maildir/sent/
+User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+On Thu, Aug 01, 2013 at 11:29:39AM +0530, Aneesh Kumar K.V wrote:
+> Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> writes:
+> 
+> > On Wed, Jul 31, 2013 at 12:02:30AM +0530, Aneesh Kumar K.V wrote:
+> >> Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> writes:
+> >> 
+> >> > Now hugepages are definitely movable. So allocating hugepages from
+> >> > ZONE_MOVABLE is natural and we have no reason to keep this parameter.
+> >> > In order to allow userspace to prepare for the removal, let's leave
+> >> > this sysctl handler as noop for a while.
+> >> 
+> >> I guess you still need to handle architectures for which pmd_huge is
+> >> 
+> >> int pmd_huge(pmd_t pmd)
+> >> {
+> >> 	return 0;
+> >> }
+> >> 
+> >> embedded powerpc is one. They don't store pte information at the PMD
+> >> level. Instead pmd contains a pointer to hugepage directory which
+> >> contain huge pte.
+> >
+> > It seems that this comment is for the whole series, not just for this
+> > patch, right?
+> >
+> > Some users of hugepage migration (mbind, move_pages, migrate_pages)
+> > walk over page tables to collect hugepages to be migrated, where
+> > hugepages are just ignored in such architectures due to pmd_huge.
+> > So no problem for these users.
+> >
+> > But the other users (softoffline, memory hotremove) choose hugepages
+> > to be migrated based on pfn, where they don't check pmd_huge.
+> > As you wrote, this can be problematic for such architectures.
+> > So I think of adding pmd_huge() check somewhere (in unmap_and_move_huge_page
+> > for example) to make it fail for such architectures.
+> 
+> Considering that we have architectures that won't support migrating
+> explicit hugepages with this patch series, is it ok to use
+> GFP_HIGHUSER_MOVABLE for hugepage allocation ?
 
-The RCU_STATE_INITIALIZER() macro is used only in the rcutree.c file
-as well as the rcutree_plugin.h file. It is passed as a rvalue to
-a variable of a similar name. A per_cpu variable is also created
-with a similar name as well.
+Originally this parameter was introduced to make hugepage pool on ZONE_MOVABLE.
+The benefit is that we can extend the hugepage pool more easily,
+because external fragmentation less likely happens than other zone type
+by rearranging fragmented pages with page migration/reclaim.
 
-The uses of RCU_STATE_INITIALIZER() can be simplified to remove some
-of the duplicate code that is done. Currently the three users of this
-macro has this format:
+So I think using ZONE_MOVABLE for hugepage allocation by default makes sense
+even on the architectures which don't support hugepage migration.
 
-struct rcu_state rcu_sched_state =
-	RCU_STATE_INITIALIZER(rcu_sched, call_rcu_sched);
-DEFINE_PER_CPU(struct rcu_data, rcu_sched_data);
-
-Notice that "rcu_sched" is called three times. This is the same with
-the other two users. This can be condensed to just:
-
-RCU_STATE_INITIALIZER(rcu_sched, call_rcu_sched);
-
-by moving the rest into the macro itself.
-
-This also opens the door to allow the RCU tracepoint strings and
-their addresses to be exported so that userspace tracing tools can
-translate the contents of the pointers of the RCU tracepoints.
-The change will allow for helper code to be placed in the
-RCU_STATE_INITIALIZER() macro to export the name that is used.
-
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/rcutree.c        |   14 ++++++--------
- kernel/rcutree_plugin.h |    4 +---
- 2 files changed, 7 insertions(+), 11 deletions(-)
-
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 3020149..97994a3 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -64,7 +64,8 @@
- static struct lock_class_key rcu_node_class[RCU_NUM_LVLS];
- static struct lock_class_key rcu_fqs_class[RCU_NUM_LVLS];
- 
--#define RCU_STATE_INITIALIZER(sname, sabbr, cr) { \
-+#define RCU_STATE_INITIALIZER(sname, sabbr, cr) \
-+struct rcu_state sname##_state = { \
- 	.level = { &sname##_state.node[0] }, \
- 	.call = cr, \
- 	.fqs_state = RCU_GP_IDLE, \
-@@ -77,14 +78,11 @@ static struct lock_class_key rcu_fqs_class[RCU_NUM_LVLS];
- 	.onoff_mutex = __MUTEX_INITIALIZER(sname##_state.onoff_mutex), \
- 	.name = #sname, \
- 	.abbr = sabbr, \
--}
--
--struct rcu_state rcu_sched_state =
--	RCU_STATE_INITIALIZER(rcu_sched, 's', call_rcu_sched);
--DEFINE_PER_CPU(struct rcu_data, rcu_sched_data);
-+}; \
-+DEFINE_PER_CPU(struct rcu_data, sname##_data)
- 
--struct rcu_state rcu_bh_state = RCU_STATE_INITIALIZER(rcu_bh, 'b', call_rcu_bh);
--DEFINE_PER_CPU(struct rcu_data, rcu_bh_data);
-+RCU_STATE_INITIALIZER(rcu_sched, 's', call_rcu_sched);
-+RCU_STATE_INITIALIZER(rcu_bh, 'b', call_rcu_bh);
- 
- static struct rcu_state *rcu_state;
- LIST_HEAD(rcu_struct_flavors);
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index 769e12e..6976a7d 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -110,9 +110,7 @@ static void __init rcu_bootup_announce_oddness(void)
- 
- #ifdef CONFIG_TREE_PREEMPT_RCU
- 
--struct rcu_state rcu_preempt_state =
--	RCU_STATE_INITIALIZER(rcu_preempt, 'p', call_rcu);
--DEFINE_PER_CPU(struct rcu_data, rcu_preempt_data);
-+RCU_STATE_INITIALIZER(rcu_preempt, 'p', call_rcu);
- static struct rcu_state *rcu_state = &rcu_preempt_state;
- 
- static int rcu_preempted_readers_exp(struct rcu_node *rnp);
--- 
-1.7.10.4
-
-
+Thanks,
+Naoya Horiguchi
