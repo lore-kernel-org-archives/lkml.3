@@ -1,101 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758551Ab3HBJge (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 05:36:34 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:61236 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758261Ab3HBJgc (ORCPT
+	id S1758646Ab3HBJgr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 05:36:47 -0400
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:51899 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758584Ab3HBJgo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 05:36:32 -0400
-Date: Fri, 2 Aug 2013 10:35:59 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Jonas Jensen <jonas.jensen@gmail.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "arm@kernel.org" <arm@kernel.org>
-Subject: Re: [PATCH] Documentation: Add device tree binding file for MOXA
- ART SoCs interrupt controller
-Message-ID: <20130802093559.GB2884@e106331-lin.cambridge.arm.com>
-References: <1374137426-6763-1-git-send-email-jonas.jensen@gmail.com>
+	Fri, 2 Aug 2013 05:36:44 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1374137426-6763-1-git-send-email-jonas.jensen@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <51FB568B.1040902@linux.vnet.ibm.com>
+References: <2362640.pUofnXyzOi@vostro.rjw.lan>
+	<51FAC46D.1000703@linux.vnet.ibm.com>
+	<1757496.qSuJuAun9Z@vostro.rjw.lan>
+	<2298639.F0Qv2QqRnZ@vostro.rjw.lan>
+	<CAKohponru8Z1fod43dVtAODmYuMTGX70+73b8wk4wuGN=Vuh-w@mail.gmail.com>
+	<51FB568B.1040902@linux.vnet.ibm.com>
+Date: Fri, 2 Aug 2013 15:06:41 +0530
+Message-ID: <CAKohpomGi0FzL-3FwsP=zzmbNMNUc6CN0S9Lyba+vx8m7MS4uQ@mail.gmail.com>
+Subject: Re: [Update][PATCH] cpufreq: Do not hold driver module references for
+ additional policy CPUs
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux PM list <linux-pm@vger.kernel.org>, cpufreq@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 18, 2013 at 09:50:26AM +0100, Jonas Jensen wrote:
-> Add binding document for MOXA ART SoCs interrupt controller.
-> 
-> Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
-> ---
-> 
-> Notes:
->     The MOXA ART irqchip driver was added without accompanying devicetree document.
->     ( in next-20130716   drivers/irqchip/irq-moxart.c )
+On 2 August 2013 12:19, Srivatsa S. Bhat
+<srivatsa.bhat@linux.vnet.ibm.com> wrote:
+> On 08/02/2013 10:07 AM, Viresh Kumar wrote:
+>> So, we can't rmmod the module as soon as it is inserted and so the
+>> problem stays as is. :(
+>>
+>
+> No, we get one step closer to the solution, since we fix the inconsistency
+> between refcounts. Next step would be to get rid of refcounts and use
+> locking like you suggested. Then we can rmmod it easily. I'm assuming
+> Rafael has the same plan.
 
-Aaargh. That should not have happened >:(
+Not really. We are putting the reference at the end of add_dev() and
+so refcount would be zero when we aren't running any critical sections.
+And so, we can rmmod the module now and that problem is gone.
 
->     
->     Applies to next-20130716
-> 
->  .../interrupt-controller/moxa,moxart-ic.txt        | 28 ++++++++++++++++++++++
->  1 file changed, 28 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/interrupt-controller/moxa,moxart-ic.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/interrupt-controller/moxa,moxart-ic.txt b/Documentation/devicetree/bindings/interrupt-controller/moxa,moxart-ic.txt
-> new file mode 100644
-> index 0000000..58f1fe1
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/interrupt-controller/moxa,moxart-ic.txt
-> @@ -0,0 +1,28 @@
-> +* MOXA ART Interrupt Controller
-> +
-> +MOXA ART Interrupt Controller (moxart-ic) is used on MOXA ART SoCs
-> +and supports 32 non-configurable number of interrupts
-> +
-> +Main node required properties:
-> +
-> +- compatible : "moxa,moxart-ic"
-> +- interrupt-controller : Identifies the node as an interrupt controller
-> +- #interrupt-cells : Specifies the number of cells needed to encode an
-> +  interrupt source. The type shall be a <u32> and the value shall be 2.
-> +
-> +  The first cell contains the interrupt number in the range [0-31].
-> +  The second cell contains the interrupt type
-> +
-> +- reg: physical base address and size of the intc registers map.
-> +- interrupt-mask: Specifies if the interrupt is edge or level-triggered
-> +  each bit represent an interrupt 0-31 where 1 signify edge
+@Rafael: I will try to do generic cleanups in cpufreq in coming time
+and will take care to remove .owner field completely in that. Until that
+point your patches look fine:
 
-For the GIC, this gets descrbied in the interrupt sepcifier rather than
-on the interrupt controller's root node. Is there a reason to do this
-differently here?
-
-Thanks,
-Mark.
-
-> +
-> +Example:
-> +
-> +	intc: interrupt-controller@98800000 {
-> +		compatible = "moxa,moxart-ic";
-> +		reg = <0x98800000 0x38>;
-> +		interrupt-controller;
-> +		#interrupt-cells = <2>;
-> +		interrupt-mask = <0x00080000>;
-> +	};
-> -- 
-> 1.8.2.1
-> 
-> _______________________________________________
-> devicetree-discuss mailing list
-> devicetree-discuss@lists.ozlabs.org
-> https://lists.ozlabs.org/listinfo/devicetree-discuss
-> 
+For both of your patches:
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
