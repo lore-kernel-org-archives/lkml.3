@@ -1,230 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756254Ab3HBK7w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:59:52 -0400
-Received: from svenfoo.org ([82.94.215.22]:45197 "EHLO mail.zonque.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755995Ab3HBK7v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:59:51 -0400
-From: Daniel Mack <zonque@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: lgirdwood@gmail.com, broonie@kernel.org, Daniel Mack <zonque@gmail.com>
-Subject: [PATCH v3] regulators: max8660: add DT bindings
-Date: Fri,  2 Aug 2013 12:59:44 +0200
-Message-Id: <1375441184-1977-1-git-send-email-zonque@gmail.com>
-X-Mailer: git-send-email 1.8.3.1
+	id S1756283Ab3HBLAK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 07:00:10 -0400
+Received: from up.free-electrons.com ([94.23.35.102]:58808 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S964798Ab3HBKET (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 06:04:19 -0400
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Emilio Lopez <emilio@elopez.com.ar>, kevin.z.m.zh@gmail.com,
+        sunny@allwinnertech.com, shuge@allwinnertech.com,
+        linux-kernel@vger.kernel.org, linux-sunxi@googlegroups.com,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCHv2 5/9] pinctrl: sunxi: Fix inconsistent indentation
+Date: Fri,  2 Aug 2013 12:02:49 +0200
+Message-Id: <1375437773-3211-6-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.4
+In-Reply-To: <1375437773-3211-1-git-send-email-maxime.ripard@free-electrons.com>
+References: <1375437773-3211-1-git-send-email-maxime.ripard@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds devicetree bindings for max8660, along with some
-documentation.
+Some pin functions in the array were not indented like the other
+functions in this array. Fix this.
 
-Signed-off-by: Daniel Mack <zonque@gmail.com>
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>
 ---
-v3:
-	- fix non-dt function stub
+ drivers/pinctrl/pinctrl-sunxi-pins.h | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-v2:
-	- fixed documentation
-	- use of_match_ptr
-	- only pass the of_nodes internally
-
- .../devicetree/bindings/regulator/max8660.txt      | 47 +++++++++++++
- drivers/regulator/max8660.c                        | 82 +++++++++++++++++++++-
- include/linux/regulator/max8660.h                  |  2 +-
- 3 files changed, 129 insertions(+), 2 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/regulator/max8660.txt
-
-diff --git a/Documentation/devicetree/bindings/regulator/max8660.txt b/Documentation/devicetree/bindings/regulator/max8660.txt
-new file mode 100644
-index 0000000..8ba994d
---- /dev/null
-+++ b/Documentation/devicetree/bindings/regulator/max8660.txt
-@@ -0,0 +1,47 @@
-+Maxim MAX8660 voltage regulator
-+
-+Required properties:
-+- compatible: must be one of "maxim,max8660", "maxim,max8661"
-+- reg: I2C slave address, usually 0x34
-+- any required generic properties defined in regulator.txt
-+
-+Example:
-+
-+	i2c_master {
-+		max8660@34 {
-+			compatible = "maxim,max8660";
-+			reg = <0x34>;
-+
-+			regulators {
-+				regulator@0 {
-+					regulator-compatible= "V3(DCDC)";
-+					regulator-min-microvolt = <725000>;
-+					regulator-max-microvolt = <1800000>;
-+				};
-+
-+				regulator@1 {
-+					regulator-compatible= "V4(DCDC)";
-+					regulator-min-microvolt = <725000>;
-+					regulator-max-microvolt = <1800000>;
-+				};
-+
-+				regulator@2 {
-+					regulator-compatible= "V5(LDO)";
-+					regulator-min-microvolt = <1700000>;
-+					regulator-max-microvolt = <2000000>;
-+				};
-+
-+				regulator@3 {
-+					regulator-compatible= "V6(LDO)";
-+					regulator-min-microvolt = <1800000>;
-+					regulator-max-microvolt = <3300000>;
-+				};
-+
-+				regulator@4 {
-+					regulator-compatible= "V7(LDO)";
-+					regulator-min-microvolt = <1800000>;
-+					regulator-max-microvolt = <3300000>;
-+				};
-+			};
-+		};
-+	};
-diff --git a/drivers/regulator/max8660.c b/drivers/regulator/max8660.c
-index a5caaa0..7e6177e 100644
---- a/drivers/regulator/max8660.c
-+++ b/drivers/regulator/max8660.c
-@@ -44,6 +44,9 @@
- #include <linux/regulator/driver.h>
- #include <linux/slab.h>
- #include <linux/regulator/max8660.h>
-+#include <linux/of.h>
-+#include <linux/of_device.h>
-+#include <linux/regulator/of_regulator.h>
- 
- #define MAX8660_DCDC_MIN_UV	 725000
- #define MAX8660_DCDC_MAX_UV	1800000
-@@ -310,6 +313,63 @@ enum {
- 	MAX8661 = 1,
- };
- 
-+#ifdef CONFIG_OF
-+static const struct of_device_id max8660_dt_ids[] = {
-+	{ .compatible = "maxim,max8660", .data = (void *) MAX8660 },
-+	{ .compatible = "maxim,max8661", .data = (void *) MAX8661 },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(of, max8660_dt_ids);
-+
-+static int max8660_pdata_from_dt(struct device *dev,
-+				 struct device_node **of_node,
-+				 struct max8660_platform_data *pdata)
-+{
-+	int matched, i;
-+	struct device_node *np;
-+	struct max8660_subdev_data *sub;
-+	struct of_regulator_match rmatch[ARRAY_SIZE(max8660_reg)];
-+
-+	np = of_find_node_by_name(dev->of_node, "regulators");
-+	if (!np) {
-+		dev_err(dev, "missing 'regulators' subnode in DT\n");
-+		return -EINVAL;
-+	}
-+
-+	for (i = 0; i < ARRAY_SIZE(rmatch); i++)
-+		rmatch[i].name = max8660_reg[i].name;
-+
-+	matched = of_regulator_match(dev, np, rmatch, ARRAY_SIZE(rmatch));
-+	if (matched <= 0)
-+		return matched;
-+
-+	pdata->subdevs = devm_kzalloc(dev, sizeof(struct max8660_subdev_data) *
-+						matched, GFP_KERNEL);
-+	if (!pdata->subdevs)
-+		return -ENOMEM;
-+
-+	pdata->num_subdevs = matched;
-+	sub = pdata->subdevs;
-+
-+	for (i = 0; i < matched; i++) {
-+		sub->id = i;
-+		sub->name = rmatch[i].name;
-+		sub->platform_data = rmatch[i].init_data;
-+		of_node[i] = rmatch[i].of_node;
-+		sub++;
-+	}
-+
-+	return 0;
-+}
-+#else
-+static inline int max8660_pdata_from_dt(struct device *dev,
-+					struct device_node **of_node,
-+					struct max8660_platform_data **pdata)
-+{
-+	return 0;
-+}
-+#endif
-+
- static int max8660_probe(struct i2c_client *client,
- 				   const struct i2c_device_id *i2c_id)
- {
-@@ -319,8 +379,28 @@ static int max8660_probe(struct i2c_client *client,
- 	struct regulator_config config = { };
- 	struct max8660 *max8660;
- 	int boot_on, i, id, ret = -EINVAL;
-+	struct device_node *of_node[MAX8660_V_END];
- 	unsigned int type;
- 
-+	if (dev->of_node && !pdata) {
-+		const struct of_device_id *id;
-+		struct max8660_platform_data pdata_of;
-+
-+		id = of_match_device(of_match_ptr(max8660_dt_ids), dev);
-+		if (!id)
-+			return -ENODEV;
-+
-+		ret = max8660_pdata_from_dt(dev, of_node, &pdata_of);
-+		if (ret < 0)
-+			return ret;
-+
-+		pdata = &pdata_of;
-+		type = (unsigned int) id->data;
-+	} else {
-+		type = i2c_id->driver_data;
-+		memset(of_node, 0, sizeof(of_node));
-+	}
-+
- 	if (pdata->num_subdevs > MAX8660_V_END) {
- 		dev_err(dev, "Too many regulators found!\n");
- 		return -EINVAL;
-@@ -334,7 +414,6 @@ static int max8660_probe(struct i2c_client *client,
- 
- 	max8660->client = client;
- 	rdev = max8660->rdev;
--	type = i2c_id->driver_data;
- 
- 	if (pdata->en34_is_high) {
- 		/* Simulate always on */
-@@ -407,6 +486,7 @@ static int max8660_probe(struct i2c_client *client,
- 
- 		config.dev = dev;
- 		config.init_data = pdata->subdevs[i].platform_data;
-+		config.of_node = of_node[i];
- 		config.driver_data = max8660;
- 
- 		rdev[i] = regulator_register(&max8660_reg[id], &config);
-diff --git a/include/linux/regulator/max8660.h b/include/linux/regulator/max8660.h
-index 9936763..f8a6a48 100644
---- a/include/linux/regulator/max8660.h
-+++ b/include/linux/regulator/max8660.h
-@@ -39,7 +39,7 @@ enum {
-  */
- struct max8660_subdev_data {
- 	int				id;
--	char				*name;
-+	const char			*name;
- 	struct regulator_init_data	*platform_data;
- };
- 
+diff --git a/drivers/pinctrl/pinctrl-sunxi-pins.h b/drivers/pinctrl/pinctrl-sunxi-pins.h
+index 3368965..2c7446a 100644
+--- a/drivers/pinctrl/pinctrl-sunxi-pins.h
++++ b/drivers/pinctrl/pinctrl-sunxi-pins.h
+@@ -806,7 +806,7 @@ static const struct sunxi_desc_pin sun4i_a10_pins[] = {
+ 		  SUNXI_FUNCTION(0x3, "pata"),		/* ATAD13 */
+ 		  SUNXI_FUNCTION(0x4, "keypad"),	/* IN7 */
+ 		  SUNXI_FUNCTION(0x5, "sim"),		/* VCCEN */
+-		SUNXI_FUNCTION_IRQ(0x6, 17),		/* EINT17 */
++		  SUNXI_FUNCTION_IRQ(0x6, 17),		/* EINT17 */
+ 		  SUNXI_FUNCTION(0x7, "csi1")),		/* D17 */
+ 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PH18,
+ 		  SUNXI_FUNCTION(0x0, "gpio_in"),
+@@ -815,7 +815,7 @@ static const struct sunxi_desc_pin sun4i_a10_pins[] = {
+ 		  SUNXI_FUNCTION(0x3, "pata"),		/* ATAD14 */
+ 		  SUNXI_FUNCTION(0x4, "keypad"),	/* OUT0 */
+ 		  SUNXI_FUNCTION(0x5, "sim"),		/* SCK */
+-		SUNXI_FUNCTION_IRQ(0x6, 18),		/* EINT18 */
++		  SUNXI_FUNCTION_IRQ(0x6, 18),		/* EINT18 */
+ 		  SUNXI_FUNCTION(0x7, "csi1")),		/* D18 */
+ 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PH19,
+ 		  SUNXI_FUNCTION(0x0, "gpio_in"),
+@@ -824,7 +824,7 @@ static const struct sunxi_desc_pin sun4i_a10_pins[] = {
+ 		  SUNXI_FUNCTION(0x3, "pata"),		/* ATAD15 */
+ 		  SUNXI_FUNCTION(0x4, "keypad"),	/* OUT1 */
+ 		  SUNXI_FUNCTION(0x5, "sim"),		/* SDA */
+-		SUNXI_FUNCTION_IRQ(0x6, 19),		/* EINT19 */
++		  SUNXI_FUNCTION_IRQ(0x6, 19),		/* EINT19 */
+ 		  SUNXI_FUNCTION(0x7, "csi1")),		/* D19 */
+ 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PH20,
+ 		  SUNXI_FUNCTION(0x0, "gpio_in"),
+@@ -832,7 +832,7 @@ static const struct sunxi_desc_pin sun4i_a10_pins[] = {
+ 		  SUNXI_FUNCTION(0x2, "lcd1"),		/* D20 */
+ 		  SUNXI_FUNCTION(0x3, "pata"),		/* ATAOE */
+ 		  SUNXI_FUNCTION(0x4, "can"),		/* TX */
+-		SUNXI_FUNCTION_IRQ(0x6, 20),		/* EINT20 */
++		  SUNXI_FUNCTION_IRQ(0x6, 20),		/* EINT20 */
+ 		  SUNXI_FUNCTION(0x7, "csi1")),		/* D20 */
+ 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PH21,
+ 		  SUNXI_FUNCTION(0x0, "gpio_in"),
+@@ -840,7 +840,7 @@ static const struct sunxi_desc_pin sun4i_a10_pins[] = {
+ 		  SUNXI_FUNCTION(0x2, "lcd1"),		/* D21 */
+ 		  SUNXI_FUNCTION(0x3, "pata"),		/* ATADREQ */
+ 		  SUNXI_FUNCTION(0x4, "can"),		/* RX */
+-		SUNXI_FUNCTION_IRQ(0x6, 21),		/* EINT21 */
++		  SUNXI_FUNCTION_IRQ(0x6, 21),		/* EINT21 */
+ 		  SUNXI_FUNCTION(0x7, "csi1")),		/* D21 */
+ 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PH22,
+ 		  SUNXI_FUNCTION(0x0, "gpio_in"),
 -- 
-1.8.3.1
+1.8.3.4
 
