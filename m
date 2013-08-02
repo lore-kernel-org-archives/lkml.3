@@ -1,96 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752006Ab3HBMFc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 08:05:32 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:44036 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751821Ab3HBMFT (ORCPT
+	id S1752062Ab3HBMGY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 08:06:24 -0400
+Received: from mail-ea0-f181.google.com ([209.85.215.181]:41649 "EHLO
+	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751821Ab3HBMGW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 08:05:19 -0400
-X-AuditID: cbfee61a-b7f196d000007dfa-4f-51fba03e0b5e
-From: Piotr Sarna <p.sarna@partner.samsung.com>
-To: tytso@mit.edu
-Cc: adilger.kernel@dilger.ca, linux-kernel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, b.zolnierkie@samsung.com,
-        Piotr Sarna <p.sarna@partner.samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: [PATCH 2/2] ext4: improve mount/remount error handling
-Date: Fri, 02 Aug 2013 14:03:47 +0200
-Message-id: <1375445027-25024-2-git-send-email-p.sarna@partner.samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1375445027-25024-1-git-send-email-p.sarna@partner.samsung.com>
-References: <1375445027-25024-1-git-send-email-p.sarna@partner.samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprELMWRmVeSWpSXmKPExsVy+t9jAV27Bb8DDU7u57D4+qWDxWLjjPWs
-	Fmeb3rBbzJx3h83i8q45bBarFkVZtPb8ZHdg92jZXO7RdOYos8fBd3uYPPq2rGL0+LxJLoA1
-	issmJTUnsyy1SN8ugStjW9dj1oIdAhX/bu9ka2DcwtvFyMkhIWAicaShgw3CFpO4cG89kM3F
-	ISSwiFFi3/HDzBBOO5PEgg/PGEGq2AT0Jb5cX8MCYosICEpcvvMArIhZ4AyjxMslX9hBEsIC
-	9hILum+C2SwCqhJnL08Ea+AV8JaYt/wuaxcjB9A6BYk5k2xAwpwCPhJXlx5lArGFgEranh1k
-	nsDIu4CRYRWjaGpBckFxUnquoV5xYm5xaV66XnJ+7iZGcEg9k9rBuLLB4hCjAAejEg/vg8xf
-	gUKsiWXFlbmHGCU4mJVEeP/MBgrxpiRWVqUW5ccXleakFh9ilOZgURLnPdBqHSgkkJ5Ykpqd
-	mlqQWgSTZeLglGpgnGSS8lxl7an2Cy5falXuyL6LP3s8PfBeF7sak9/GD+0X6q+e8P5X1jd3
-	9Z2QC4pPLc99vcpw5YpsfbRk08b59tni+38emPEsgtvgD0Ox6bZJJ+x8Vp5ZOeHniSLl5VlT
-	PXdX7FT71r8kx5nnWA3bAevoL6lxvovnGu1QPzT5u5qUrWGKWJUxrxJLcUaioRZzUXEiAHv5
-	1bklAgAA
+	Fri, 2 Aug 2013 08:06:22 -0400
+From: David Herrmann <dh.herrmann@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: David Airlie <airlied@linux.ie>, Geert Uytterhoeven <geert@linux-m68k.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Peter Jones <pjones@redhat.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
+        linux-fbdev@vger.kernel.org, akpm@linux-foundation.org,
+        David Herrmann <dh.herrmann@gmail.com>
+Subject: [PATCH RESEND 0/8] x86 platform framebuffers
+Date: Fri,  2 Aug 2013 14:05:19 +0200
+Message-Id: <1375445127-15480-1-git-send-email-dh.herrmann@gmail.com>
+X-Mailer: git-send-email 1.8.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 5688978 ("ext4: improve handling of conflicting mount options")
-introduced incorrect messages shown while choosing wrong mount options.
+Hi
 
-Firstly, both cases of incorrect mount options, "data=journal,delalloc"
-and "data=journal,dioread_nolock" result in the same error message.
+I cut down my previous series to no longer include the SimpleDRM driver. If
+anyone is interested, you can find it here:
+  http://lwn.net/Articles/558104/
+I will resend it once these preparation patches are in.
 
-Secondly, the problem above isn't solved for remount option: the mismatched
-parameter is simply ignored. Moreover, ext4_msg states that remount
-with options "data=journal,delalloc" succeeded, which is not true.
+Changes since v2:
+ - added common x86 formats (reported by hpa) (patch #5)
 
-To fix it up, I added a simple check after parse_options() call to ensure
-that data=journal and delalloc/dioread_nolock parameters are not present
-at the same time.
+This whole series (including simpledrm) is tested by Stephen and me. I would be
+glad if maintainers could ack/nack this so I can continue my work.
 
-Signed-off-by: Piotr Sarna <p.sarna@partner.samsung.com>
-Acked-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- fs/ext4/super.c |   17 ++++++++++++++++-
- 1 file changed, 16 insertions(+), 1 deletion(-)
+This series is pretty small and just converts x86 to use platform-devices
+instead of global objects to pass framebuffer data to drivers. The commit
+messages explain everything in detail.
+The idea is to create a "platform-framebuffer" device which drivers can bind to.
+If x86 boot code detectes efi or vesa framebuffers, it creates efi-framebuffer
+or vesa-framebuffer devices instead.
 
-diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index 10f9bb0..ab0b23b 100644
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -3452,7 +3452,7 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
- 		}
- 		if (test_opt(sb, DIOREAD_NOLOCK)) {
- 			ext4_msg(sb, KERN_ERR, "can't mount with "
--				 "both data=journal and delalloc");
-+				 "both data=journal and dioread_nolock");
- 			goto failed_mount;
- 		}
- 		if (test_opt(sb, DELALLOC))
-@@ -4653,6 +4653,21 @@ static int ext4_remount(struct super_block *sb, int *flags, char *data)
- 		goto restore_opts;
- 	}
- 
-+	if (test_opt(sb, DATA_FLAGS) == EXT4_MOUNT_JOURNAL_DATA) {
-+		if (test_opt2(sb, EXPLICIT_DELALLOC)) {
-+			ext4_msg(sb, KERN_ERR, "can't mount with "
-+				 "both data=journal and delalloc");
-+			err = -EINVAL;
-+			goto restore_opts;
-+		}
-+		if (test_opt(sb, DIOREAD_NOLOCK)) {
-+			ext4_msg(sb, KERN_ERR, "can't mount with "
-+				 "both data=journal and dioread_nolock");
-+			err = -EINVAL;
-+			goto restore_opts;
-+		}
-+	}
-+
- 	if (sbi->s_mount_flags & EXT4_MF_FS_ABORTED)
- 		ext4_abort(sb, "Abort forced by user");
- 
+Additionally, if the modes are compatible, "simple-framebuffer" devices are
+created so simplefb can be used on x86. This feature is only enabled if
+CONFIG_X86_SYSFB is selected (off by default) so users without simplefb still
+get boot logs.
+
+ @Stephen: I wasn't sure whether you tested the efi/vesa framebuffer changes,
+too, so I didn't add your tested-by there. And I changed patch #5 so I dropped
+it there, too. Thanks for testing!
+
+Thanks
+David
+
+David Herrmann (8):
+  fbdev: simplefb: add init through platform_data
+  fbdev: simplefb: mark as fw and allocate apertures
+  x86: provide platform-devices for boot-framebuffers
+  x86: sysfb: move EFI quirks from efifb to sysfb
+  fbdev: simplefb: add common x86 RGB formats
+  fbdev: vesafb: bind to platform-framebuffer device
+  fbdev: efifb: bind to efi-framebuffer
+  fbdev: fbcon: select VT_HW_CONSOLE_BINDING
+
+ arch/x86/Kconfig                       |  26 +++
+ arch/x86/include/asm/sysfb.h           |  98 +++++++++++
+ arch/x86/kernel/Makefile               |   3 +
+ arch/x86/kernel/sysfb.c                |  74 ++++++++
+ arch/x86/kernel/sysfb_efi.c            | 214 +++++++++++++++++++++++
+ arch/x86/kernel/sysfb_simplefb.c       |  95 +++++++++++
+ drivers/video/Kconfig                  |   5 +-
+ drivers/video/console/Kconfig          |   3 +-
+ drivers/video/efifb.c                  | 302 ++++-----------------------------
+ drivers/video/simplefb.c               |  58 +++++--
+ drivers/video/vesafb.c                 |  55 ++----
+ include/linux/platform_data/simplefb.h |  63 +++++++
+ 12 files changed, 666 insertions(+), 330 deletions(-)
+ create mode 100644 arch/x86/include/asm/sysfb.h
+ create mode 100644 arch/x86/kernel/sysfb.c
+ create mode 100644 arch/x86/kernel/sysfb_efi.c
+ create mode 100644 arch/x86/kernel/sysfb_simplefb.c
+ create mode 100644 include/linux/platform_data/simplefb.h
+
 -- 
-1.7.9.5
+1.8.3.4
 
