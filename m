@@ -1,100 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754074Ab3HBPm2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 11:42:28 -0400
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:43194 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753957Ab3HBPm0 convert rfc822-to-8bit (ORCPT
+	id S1754137Ab3HBPmx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 11:42:53 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:8373 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754046Ab3HBPmv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 11:42:26 -0400
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 6.5 \(1508\))
-Subject: Re: [PATCH 03/12] KVM: MMU: lazily drop large spte
-From: Xiao Guangrong <xiaoguangrong.eric@gmail.com>
-In-Reply-To: <20130802145524.GA3501@amt.cnet>
-Date: Fri, 2 Aug 2013 23:42:19 +0800
-Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>, gleb@redhat.com,
-        avi.kivity@gmail.com, pbonzini@redhat.com,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+	Fri, 2 Aug 2013 11:42:51 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Fri, 02 Aug 2013 08:41:20 -0700
+Message-ID: <51FBD377.8060705@nvidia.com>
+Date: Fri, 2 Aug 2013 18:42:47 +0300
+From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Matthieu CASTET <matthieu.castet@parrot.com>
+CC: "balbi@ti.com" <balbi@ti.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Subject: Re: [PATCH 1/6] usb: host: add has_tdi_phy_lpm capability bit
+References: <1375292522-7855-1-git-send-email-ttynkkynen@nvidia.com> <1375292522-7855-2-git-send-email-ttynkkynen@nvidia.com> <20130801100544.76233b42@parrot.com>
+In-Reply-To: <20130801100544.76233b42@parrot.com>
+Content-Type: text/plain; charset="ISO-8859-15"
 Content-Transfer-Encoding: 8BIT
-Message-Id: <CEA85F58-33B6-469B-AF14-A40860DEAC05@gmail.com>
-References: <1375189330-24066-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <1375189330-24066-4-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20130802145524.GA3501@amt.cnet>
-To: Marcelo Tosatti <mtosatti@redhat.com>
-X-Mailer: Apple Mail (2.1508)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Aug 2, 2013, at 10:55 PM, Marcelo Tosatti <mtosatti@redhat.com> wrote:
-
-> On Tue, Jul 30, 2013 at 09:02:01PM +0800, Xiao Guangrong wrote:
->> Currently, kvm zaps the large spte if write-protected is needed, the later
->> read can fault on that spte. Actually, we can make the large spte readonly
->> instead of making them un-present, the page fault caused by read access can
->> be avoided
->> 
->> The idea is from Avi:
->> | As I mentioned before, write-protecting a large spte is a good idea,
->> | since it moves some work from protect-time to fault-time, so it reduces
->> | jitter.  This removes the need for the return value.
->> 
->> [
->>  It has fixed the issue reported in 6b73a9606 by stopping fast page fault
->>  marking the large spte to writable
->> ]
+On 08/01/2013 11:05 AM, Matthieu CASTET wrote:
+> Hi,
 > 
-> Xiao,
+> Le Wed, 31 Jul 2013 18:41:57 +0100,
+> Tuomas Tynkkynen <ttynkkynen@nvidia.com> a écrit :
 > 
-> Can you please write a comment explaining why are the problems 
-> with shadow vs large read-only sptes (can't recall anymore),
-> and then why it is now safe to do it.
-
-Hi Marcelo,
-
-Thanks for your review.  Yes. The bug reported in  6b73a9606 is, in this patch,
-we mark the large spte as readonly when the pages are dirt logged and the
-readonly spte can be set to writable by fast page fault, but on that path, it failed
-to check dirty logging, so it will set the large spte to writable but only set the first
-page to the dirty bitmap.
-
-For example:
-
-1): KVM maps 0 ~ 2M memory to guest which is pointed by SPTE and SPTE
-     is writable.
-
-2): KVM dirty log 0 ~ 2M,  then set SPTE to readonly
-
-3): fast page fault set SPTE to writable and set page 0 to the dirty bitmap.
-
-Then 4K ~ 2M memory is not dirty logged.
-
-In this version, we let fast page fault do not mark large spte to writable if
-its page are dirty logged.  But it is still not safe as you pointed out.
-
->> 
->> 
->> 	/*
->> +	 * Can not map the large spte to writable if the page is dirty
->> +	 * logged.
->> +	 */
->> +	if (sp->role.level > PT_PAGE_TABLE_LEVEL && force_pt_level)
->> +		goto exit;
->> +
+>> The has_hostpc capability bit indicates that the host controller has
+>> the HOSTPC register extensions, but at the same time enables clock
+>> disabling power saving features with the PHY Low Power Clock Disable
+>> (PHCD) bit.
+>>
+>> However, some host controllers have the HOSTPC extensions but don't
+>> support the low-power feature, so the PHCD bit must not be set on
+>> those controllers. Add a separate capability bit for the low-power
+>> feature instead, and change all existing users of has_hostpc to use
+>> this new capability bit.
+>>
+>> The idea for this commit is taken from an old 2012 commit that never
+>> got merged ("disociate chipidea PHY low power suspend control from
+>> hostpc")
+> Note that because of the different register layout (see "add phy low
+> power suspend for older chipidea core" commit in the same series), we
+> should not set has_tdi_phy_lpm if has_hostpc == 0 with the current code.
 > 
-> It is not safe to derive slot->dirty_bitmap like this: 
-> since dirty log is enabled via RCU update, "is dirty bitmap enabled"
-> info could be stale by the time you check it here via the parameter,
-> so you can instantiate a large spte (because force_pt_level == false),
-> while you should not.
+> May be you should have change the ehci->has_hostpc to (ehci->has_hostpc
+> && ehci->has_tdi_phy_lpm).
 
-Good catch! This is true even if we enable dirty log under the protection
-of mmu lock.
+Hmm, I see. Do you think there could be a case where that could get accidentally
+get triggered via autodetection? That patch series seems to set either both or neither.
+And I figure no one will be explicitly setting that flag (if has_hostpc == 0) without
+implementing the non-has_hostpc case first.
 
-How about let the fault page fault only fix the small spte, that is changing
-the code to:
-	if (sp->role.level > PT_PAGE_TABLE_LEVEL)
-		goto exit;
-?
-
+> 
+> BTW Alan make some comment on the commit :
+> http://marc.info/?l=linux-usb&m=133701342028213&w=2
+> 
+> They may apply to your commit.
+> 
+>>
+>> Inspired-by: Matthieu CASTET <matthieu.castet@parrot.com>
+>> Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+>> ---
+>>  drivers/usb/chipidea/host.c |  1 +
+>>  drivers/usb/host/ehci-hub.c | 14 +++++++-------
+>>  drivers/usb/host/ehci.h     |  1 +
+>>  3 files changed, 9 insertions(+), 7 deletions(-)
+>>
 
