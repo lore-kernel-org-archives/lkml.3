@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759132Ab3HBKIo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:08:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37095 "EHLO
+	id S1759160Ab3HBKIt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:08:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37100 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759003Ab3HBKIm (ORCPT
+	with ESMTP id S1759003Ab3HBKIq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:08:42 -0400
+	Fri, 2 Aug 2013 06:08:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Richard Zhao <rizhao@nvidia.com>, Stephen Warren <swarren@nvidia.com>,
-        Lucas Stach <dev@lynxeye.de>, Mark Brown <broonie@linaro.org>
-Subject: [ 12/99] ASoC: tegra: correct playback_dma_data setup
-Date: Fri,  2 Aug 2013 18:07:25 +0800
-Message-Id: <20130802100227.307930136@linuxfoundation.org>
+        Nicolin Chen <b42378@freescale.com>, Mark Brown <broonie@linaro.org>
+Subject: [ 13/99] ASoC: wm8962: Remove remaining direct register cache accesses
+Date: Fri,  2 Aug 2013 18:07:26 +0800
+Message-Id: <20130802100227.442170077@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802100225.478715166@linuxfoundation.org>
 References: <20130802100225.478715166@linuxfoundation.org>
@@ -27,54 +26,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Richard Zhao <rizhao@nvidia.com>
+From: Nicolin Chen <b42378@freescale.com>
 
-commit 647ab784c507763bfda79155f125b6edd1244806 upstream.
+commit 2e7ee15ced914e109a1a5b6dfcd463d846a13bd5 upstream.
 
-The errors were caused by copy/paste mistake in below commit
-since v3.10:
-3489d50 ASoC: tegra: Use common DAI DMA data struct
+Also fix return values for headphone switch updates.
 
-It also corrects slave_id initialization in tegra20_ac97 driver.
-
-Signed-off-by: Richard Zhao <rizhao@nvidia.com>
-Acked-by: Stephen Warren <swarren@nvidia.com>
-Acked-by: Lucas Stach <dev@lynxeye.de>
+Signed-off-by: Nicolin Chen <b42378@freescale.com>
 Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/tegra/tegra20_ac97.c  |    6 +++---
- sound/soc/tegra/tegra20_spdif.c |    4 ++--
- 2 files changed, 5 insertions(+), 5 deletions(-)
+ sound/soc/codecs/wm8962.c |   24 +++++++++++++-----------
+ 1 file changed, 13 insertions(+), 11 deletions(-)
 
---- a/sound/soc/tegra/tegra20_ac97.c
-+++ b/sound/soc/tegra/tegra20_ac97.c
-@@ -399,9 +399,9 @@ static int tegra20_ac97_platform_probe(s
- 	ac97->capture_dma_data.slave_id = of_dma[1];
+--- a/sound/soc/codecs/wm8962.c
++++ b/sound/soc/codecs/wm8962.c
+@@ -1600,7 +1600,6 @@ static int wm8962_put_hp_sw(struct snd_k
+ 			    struct snd_ctl_elem_value *ucontrol)
+ {
+ 	struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
+-	u16 *reg_cache = codec->reg_cache;
+ 	int ret;
  
- 	ac97->playback_dma_data.addr = mem->start + TEGRA20_AC97_FIFO_TX1;
--	ac97->capture_dma_data.addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
--	ac97->capture_dma_data.maxburst = 4;
--	ac97->capture_dma_data.slave_id = of_dma[0];
-+	ac97->playback_dma_data.addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
-+	ac97->playback_dma_data.maxburst = 4;
-+	ac97->playback_dma_data.slave_id = of_dma[1];
+ 	/* Apply the update (if any) */
+@@ -1609,16 +1608,19 @@ static int wm8962_put_hp_sw(struct snd_k
+ 		return 0;
  
- 	ret = snd_soc_register_component(&pdev->dev, &tegra20_ac97_component,
- 					 &tegra20_ac97_dai, 1);
---- a/sound/soc/tegra/tegra20_spdif.c
-+++ b/sound/soc/tegra/tegra20_spdif.c
-@@ -323,8 +323,8 @@ static int tegra20_spdif_platform_probe(
- 	}
+ 	/* If the left PGA is enabled hit that VU bit... */
+-	if (snd_soc_read(codec, WM8962_PWR_MGMT_2) & WM8962_HPOUTL_PGA_ENA)
+-		return snd_soc_write(codec, WM8962_HPOUTL_VOLUME,
+-				     reg_cache[WM8962_HPOUTL_VOLUME]);
++	ret = snd_soc_read(codec, WM8962_PWR_MGMT_2);
++	if (ret & WM8962_HPOUTL_PGA_ENA) {
++		snd_soc_write(codec, WM8962_HPOUTL_VOLUME,
++			      snd_soc_read(codec, WM8962_HPOUTL_VOLUME));
++		return 1;
++	}
  
- 	spdif->playback_dma_data.addr = mem->start + TEGRA20_SPDIF_DATA_OUT;
--	spdif->capture_dma_data.addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
--	spdif->capture_dma_data.maxburst = 4;
-+	spdif->playback_dma_data.addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
-+	spdif->playback_dma_data.maxburst = 4;
- 	spdif->playback_dma_data.slave_id = dmareq->start;
+ 	/* ...otherwise the right.  The VU is stereo. */
+-	if (snd_soc_read(codec, WM8962_PWR_MGMT_2) & WM8962_HPOUTR_PGA_ENA)
+-		return snd_soc_write(codec, WM8962_HPOUTR_VOLUME,
+-				     reg_cache[WM8962_HPOUTR_VOLUME]);
++	if (ret & WM8962_HPOUTR_PGA_ENA)
++		snd_soc_write(codec, WM8962_HPOUTR_VOLUME,
++			      snd_soc_read(codec, WM8962_HPOUTR_VOLUME));
  
- 	pm_runtime_enable(&pdev->dev);
+-	return 0;
++	return 1;
+ }
+ 
+ /* The VU bits for the speakers are in a different register to the mute
+@@ -3374,7 +3376,6 @@ static int wm8962_probe(struct snd_soc_c
+ 	int ret;
+ 	struct wm8962_priv *wm8962 = snd_soc_codec_get_drvdata(codec);
+ 	struct wm8962_pdata *pdata = dev_get_platdata(codec->dev);
+-	u16 *reg_cache = codec->reg_cache;
+ 	int i, trigger, irq_pol;
+ 	bool dmicclk, dmicdat;
+ 
+@@ -3432,8 +3433,9 @@ static int wm8962_probe(struct snd_soc_c
+ 
+ 		/* Put the speakers into mono mode? */
+ 		if (pdata->spk_mono)
+-			reg_cache[WM8962_CLASS_D_CONTROL_2]
+-				|= WM8962_SPK_MONO;
++			snd_soc_update_bits(codec, WM8962_CLASS_D_CONTROL_2,
++				WM8962_SPK_MONO_MASK, WM8962_SPK_MONO);
++
+ 
+ 		/* Micbias setup, detection enable and detection
+ 		 * threasholds. */
 
 
