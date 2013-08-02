@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755555Ab3HBKrB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:47:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37234 "EHLO
+	id S1030198Ab3HBKKL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:10:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37219 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030201Ab3HBKKM (ORCPT
+	with ESMTP id S964827Ab3HBKKH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:10:12 -0400
+	Fri, 2 Aug 2013 06:10:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: [ 43/99] x86, suspend: Handle CPUs which fail to #GP on RDMSR
-Date: Fri,  2 Aug 2013 18:07:56 +0800
-Message-Id: <20130802100232.081494915@linuxfoundation.org>
+        Jan Beulich <jbeulich@suse.com>, Wei Liu <wei.liu2@citrix.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 41/99] xen-netfront: pull on receive skb may need to happen earlier
+Date: Fri,  2 Aug 2013 18:07:54 +0800
+Message-Id: <20130802100231.825646744@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802100225.478715166@linuxfoundation.org>
 References: <20130802100225.478715166@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,67 +28,117 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "H. Peter Anvin" <hpa@linux.intel.com>
+From: Jan Beulich <JBeulich@suse.com>
 
-commit 5ff560fd48d5b3d82fa0c3aff625c9da1a301911 upstream.
+commit 093b9c71b6e450e375f4646ba86faed0195ec7df upstream.
 
-There are CPUs which have errata causing RDMSR of a nonexistent MSR to
-not fault.  We would then try to WRMSR to restore the value of that
-MSR, causing a crash.  Specifically, some Pentium M variants would
-have this problem trying to save and restore the non-existent EFER,
-causing a crash on resume.
+Due to commit 3683243b ("xen-netfront: use __pskb_pull_tail to ensure
+linear area is big enough on RX") xennet_fill_frags() may end up
+filling MAX_SKB_FRAGS + 1 fragments in a receive skb, and only reduce
+the fragment count subsequently via __pskb_pull_tail(). That's a
+result of xennet_get_responses() allowing a maximum of one more slot to
+be consumed (and intermediately transformed into a fragment) if the
+head slot has a size less than or equal to RX_COPY_THRESHOLD.
 
-Work around this by making sure we can write back the result at
-suspend time.
+Hence we need to adjust xennet_fill_frags() to pull earlier if we
+reached the maximum fragment count - due to the described behavior of
+xennet_get_responses() this guarantees that at least the first fragment
+will get completely consumed, and hence the fragment count reduced.
 
-Huge thanks to Christian Sünkenberg for finding the offending erratum
-that finally deciphered the mystery.
+In order to not needlessly call __pskb_pull_tail() twice, make the
+original call conditional upon the pull target not having been reached
+yet, and defer the newly added one as much as possible (an alternative
+would have been to always call the function right before the call to
+xennet_fill_frags(), but that would imply more frequent cases of
+needing to call it twice).
 
-Reported-and-tested-by: Johan Heinrich <onny@project-insanity.org>
-Debugged-by: Christian Sünkenberg <christian.suenkenberg@student.kit.edu>
-Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
-Link: http://lkml.kernel.org/r/51DDC972.3010005@student.kit.edu
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Acked-by: Wei Liu <wei.liu2@citrix.com>
+Cc: Ian Campbell <ian.campbell@citrix.com>
+Acked-by: Ian Campbell <ian.campbell@citrix.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/acpi/sleep.c |   18 ++++++++++++++++--
- 1 file changed, 16 insertions(+), 2 deletions(-)
+ drivers/net/xen-netfront.c |   31 +++++++++++++------------------
+ 1 file changed, 13 insertions(+), 18 deletions(-)
 
---- a/arch/x86/kernel/acpi/sleep.c
-+++ b/arch/x86/kernel/acpi/sleep.c
-@@ -48,9 +48,20 @@ int acpi_suspend_lowlevel(void)
- #ifndef CONFIG_64BIT
- 	native_store_gdt((struct desc_ptr *)&header->pmode_gdt);
+--- a/drivers/net/xen-netfront.c
++++ b/drivers/net/xen-netfront.c
+@@ -276,8 +276,7 @@ no_skb:
+ 			break;
+ 		}
  
-+	/*
-+	 * We have to check that we can write back the value, and not
-+	 * just read it.  At least on 90 nm Pentium M (Family 6, Model
-+	 * 13), reading an invalid MSR is not guaranteed to trap, see
-+	 * Erratum X4 in "Intel Pentium M Processor on 90 nm Process
-+	 * with 2-MB L2 Cache and Intel® Processor A100 and A110 on 90
-+	 * nm process with 512-KB L2 Cache Specification Update".
-+	 */
- 	if (!rdmsr_safe(MSR_EFER,
- 			&header->pmode_efer_low,
--			&header->pmode_efer_high))
-+			&header->pmode_efer_high) &&
-+	    !wrmsr_safe(MSR_EFER,
-+			header->pmode_efer_low,
-+			header->pmode_efer_high))
- 		header->pmode_behavior |= (1 << WAKEUP_BEHAVIOR_RESTORE_EFER);
- #endif /* !CONFIG_64BIT */
- 
-@@ -61,7 +72,10 @@ int acpi_suspend_lowlevel(void)
+-		__skb_fill_page_desc(skb, 0, page, 0, 0);
+-		skb_shinfo(skb)->nr_frags = 1;
++		skb_add_rx_frag(skb, 0, page, 0, 0, PAGE_SIZE);
+ 		__skb_queue_tail(&np->rx_batch, skb);
  	}
- 	if (!rdmsr_safe(MSR_IA32_MISC_ENABLE,
- 			&header->pmode_misc_en_low,
--			&header->pmode_misc_en_high))
-+			&header->pmode_misc_en_high) &&
-+	    !wrmsr_safe(MSR_IA32_MISC_ENABLE,
-+			header->pmode_misc_en_low,
-+			header->pmode_misc_en_high))
- 		header->pmode_behavior |=
- 			(1 << WAKEUP_BEHAVIOR_RESTORE_MISC_ENABLE);
- 	header->realmode_flags = acpi_realmode_flags;
+ 
+@@ -822,7 +821,6 @@ static RING_IDX xennet_fill_frags(struct
+ 				  struct sk_buff_head *list)
+ {
+ 	struct skb_shared_info *shinfo = skb_shinfo(skb);
+-	int nr_frags = shinfo->nr_frags;
+ 	RING_IDX cons = np->rx.rsp_cons;
+ 	struct sk_buff *nskb;
+ 
+@@ -831,19 +829,21 @@ static RING_IDX xennet_fill_frags(struct
+ 			RING_GET_RESPONSE(&np->rx, ++cons);
+ 		skb_frag_t *nfrag = &skb_shinfo(nskb)->frags[0];
+ 
+-		__skb_fill_page_desc(skb, nr_frags,
+-				     skb_frag_page(nfrag),
+-				     rx->offset, rx->status);
++		if (shinfo->nr_frags == MAX_SKB_FRAGS) {
++			unsigned int pull_to = NETFRONT_SKB_CB(skb)->pull_to;
+ 
+-		skb->data_len += rx->status;
++			BUG_ON(pull_to <= skb_headlen(skb));
++			__pskb_pull_tail(skb, pull_to - skb_headlen(skb));
++		}
++		BUG_ON(shinfo->nr_frags >= MAX_SKB_FRAGS);
++
++		skb_add_rx_frag(skb, shinfo->nr_frags, skb_frag_page(nfrag),
++				rx->offset, rx->status, PAGE_SIZE);
+ 
+ 		skb_shinfo(nskb)->nr_frags = 0;
+ 		kfree_skb(nskb);
+-
+-		nr_frags++;
+ 	}
+ 
+-	shinfo->nr_frags = nr_frags;
+ 	return cons;
+ }
+ 
+@@ -929,7 +929,8 @@ static int handle_incoming_queue(struct
+ 	while ((skb = __skb_dequeue(rxq)) != NULL) {
+ 		int pull_to = NETFRONT_SKB_CB(skb)->pull_to;
+ 
+-		__pskb_pull_tail(skb, pull_to - skb_headlen(skb));
++		if (pull_to > skb_headlen(skb))
++			__pskb_pull_tail(skb, pull_to - skb_headlen(skb));
+ 
+ 		/* Ethernet work: Delayed to here as it peeks the header. */
+ 		skb->protocol = eth_type_trans(skb, dev);
+@@ -1015,16 +1016,10 @@ err:
+ 		skb_shinfo(skb)->frags[0].page_offset = rx->offset;
+ 		skb_frag_size_set(&skb_shinfo(skb)->frags[0], rx->status);
+ 		skb->data_len = rx->status;
++		skb->len += rx->status;
+ 
+ 		i = xennet_fill_frags(np, skb, &tmpq);
+ 
+-		/*
+-                 * Truesize is the actual allocation size, even if the
+-                 * allocation is only partially used.
+-                 */
+-		skb->truesize += PAGE_SIZE * skb_shinfo(skb)->nr_frags;
+-		skb->len += skb->data_len;
+-
+ 		if (rx->flags & XEN_NETRXF_csum_blank)
+ 			skb->ip_summed = CHECKSUM_PARTIAL;
+ 		else if (rx->flags & XEN_NETRXF_data_validated)
 
 
