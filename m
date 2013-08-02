@@ -1,115 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754062Ab3HBGEY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 02:04:24 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:10349 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752283Ab3HBGEX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 02:04:23 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 01 Aug 2013 23:04:22 -0700
-From: Richard Zhao <rizhao@nvidia.com>
-To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-CC: <vinod.koul@intel.com>, <djbw@fb.com>, <grant.likely@linaro.org>,
-        <rob.herring@calxeda.com>, <swarren@wwwdotorg.org>,
-        Richard Zhao <rizhao@nvidia.com>
-Subject: [PATCH] DMA: add help function to check whether dma controller registered
-Date: Fri, 2 Aug 2013 14:04:18 +0800
-Message-ID: <1375423458-6868-1-git-send-email-rizhao@nvidia.com>
-X-Mailer: git-send-email 1.8.1.5
+	id S1754418Ab3HBGWY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 02:22:24 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:51533 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754014Ab3HBGWX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 02:22:23 -0400
+Date: Fri, 2 Aug 2013 02:22:08 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 3/3] mm: page_alloc: fair zone allocator policy
+Message-ID: <20130802062208.GP715@cmpxchg.org>
+References: <1374267325-22865-1-git-send-email-hannes@cmpxchg.org>
+ <1374267325-22865-4-git-send-email-hannes@cmpxchg.org>
+ <20130801025636.GC19540@bbox>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130801025636.GC19540@bbox>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-DMA client device driver usually needs to know at probe time whether
-dma controller has been registered to deffer probe. So add a help
-function of_dma_check_controller.
+On Thu, Aug 01, 2013 at 11:56:36AM +0900, Minchan Kim wrote:
+> Hi Hannes,
+> 
+> On Fri, Jul 19, 2013 at 04:55:25PM -0400, Johannes Weiner wrote:
+> > Each zone that holds userspace pages of one workload must be aged at a
+> > speed proportional to the zone size.  Otherwise, the time an
+> > individual page gets to stay in memory depends on the zone it happened
+> > to be allocated in.  Asymmetry in the zone aging creates rather
+> > unpredictable aging behavior and results in the wrong pages being
+> > reclaimed, activated etc.
+> > 
+> > But exactly this happens right now because of the way the page
+> > allocator and kswapd interact.  The page allocator uses per-node lists
+> > of all zones in the system, ordered by preference, when allocating a
+> > new page.  When the first iteration does not yield any results, kswapd
+> > is woken up and the allocator retries.  Due to the way kswapd reclaims
+> > zones below the high watermark while a zone can be allocated from when
+> > it is above the low watermark, the allocator may keep kswapd running
+> > while kswapd reclaim ensures that the page allocator can keep
+> > allocating from the first zone in the zonelist for extended periods of
+> > time.  Meanwhile the other zones rarely see new allocations and thus
+> > get aged much slower in comparison.
+> > 
+> > The result is that the occasional page placed in lower zones gets
+> > relatively more time in memory, even get promoted to the active list
+> > after its peers have long been evicted.  Meanwhile, the bulk of the
+> > working set may be thrashing on the preferred zone even though there
+> > may be significant amounts of memory available in the lower zones.
+> > 
+> > Even the most basic test -- repeatedly reading a file slightly bigger
+> > than memory -- shows how broken the zone aging is.  In this scenario,
+> > no single page should be able stay in memory long enough to get
+> > referenced twice and activated, but activation happens in spades:
+> > 
+> >   $ grep active_file /proc/zoneinfo
+> >       nr_inactive_file 0
+> >       nr_active_file 0
+> >       nr_inactive_file 0
+> >       nr_active_file 8
+> >       nr_inactive_file 1582
+> >       nr_active_file 11994
+> >   $ cat data data data data >/dev/null
+> >   $ grep active_file /proc/zoneinfo
+> >       nr_inactive_file 0
+> >       nr_active_file 70
+> >       nr_inactive_file 258753
+> >       nr_active_file 443214
+> >       nr_inactive_file 149793
+> >       nr_active_file 12021
+> > 
+> > Fix this with a very simple round robin allocator.  Each zone is
+> > allowed a batch of allocations that is proportional to the zone's
+> > size, after which it is treated as full.  The batch counters are reset
+> > when all zones have been tried and the allocator enters the slowpath
+> > and kicks off kswapd reclaim:
+> > 
+> >   $ grep active_file /proc/zoneinfo
+> >       nr_inactive_file 0
+> >       nr_active_file 0
+> >       nr_inactive_file 174
+> >       nr_active_file 4865
+> >       nr_inactive_file 53
+> >       nr_active_file 860
+> >   $ cat data data data data >/dev/null
+> >   $ grep active_file /proc/zoneinfo
+> >       nr_inactive_file 0
+> >       nr_active_file 0
+> >       nr_inactive_file 666622
+> >       nr_active_file 4988
+> >       nr_inactive_file 190969
+> >       nr_active_file 937
+> 
+> First of all, I should appreciate your great work!
+> It's amazing and I saw Zlatko proved it enhances real works.
+> Thanks Zlatko, too!
+> 
+> So, I don't want to prevent merging but I think at least, we should
+> discuss some issues.
+> 
+> The concern I have is that it could accelerate low memory pinning
+> problems like mlock. Actually, I don't have such workload that makes
+> pin lots of pages but that's why we introduced lowmem_reserve_ratio,
+> as you know well so we should cover this issue, at least.
 
-DMA request channel functions can also used to check it, but they
-are usually called at open() time.
+We are not actually using the lower zones more in terms of number of
+pages at any given time, we are just using them more in terms of
+allocation and reclaim rate.
 
-Signed-off-by: Richard Zhao <rizhao@nvidia.com>
----
- drivers/dma/of-dma.c   | 38 ++++++++++++++++++++++++++++++++++++++
- include/linux/of_dma.h |  6 ++++++
- 2 files changed, 44 insertions(+)
+Consider how the page allocator works: it will first fill up the
+preferred zone, then the next best zone, etc. and then when all of
+them are full, it will wake up kswapd, which will only reclaim them
+back to the high watermark + balance gap.
 
-diff --git a/drivers/dma/of-dma.c b/drivers/dma/of-dma.c
-index e1c4d3b..b6828c1 100644
---- a/drivers/dma/of-dma.c
-+++ b/drivers/dma/of-dma.c
-@@ -188,6 +188,44 @@ struct dma_chan *of_dma_request_slave_channel(struct device_node *np,
- }
- 
- /**
-+ * of_dma_check_controller - Check whether dma controller registered
-+ * @dev:	pointer to client device structure
-+ * @name:	slave channel name
-+ */
-+int of_dma_check_controller(struct device *dev, const char *name)
-+{
-+	struct device_node *np = dev->of_node;
-+	struct of_phandle_args dma_spec;
-+	struct of_dma *ofdma = NULL;
-+	int count, i;
-+
-+	if (!np || !name)
-+		return -EINVAL;
-+
-+	count = of_property_count_strings(np, "dma-names");
-+	if (count < 0) {
-+		dev_err(dev, "dma-names property missing or empty\n");
-+		return -EINVAL;
-+	}
-+
-+	for (i = 0; i < count; i++) {
-+		if (of_dma_match_channel(np, name, i, &dma_spec))
-+			continue;
-+
-+		mutex_lock(&of_dma_lock);
-+		ofdma = of_dma_find_controller(&dma_spec);
-+		mutex_unlock(&of_dma_lock);
-+		of_node_put(dma_spec.np);
-+	}
-+
-+	if (ofdma)
-+		return 0;
-+	else
-+		return -ENODEV;
-+}
-+EXPORT_SYMBOL_GPL(of_dma_check_controller);
-+
-+/**
-  * of_dma_simple_xlate - Simple DMA engine translation function
-  * @dma_spec:	pointer to DMA specifier as found in the device tree
-  * @of_dma:	pointer to DMA controller data
-diff --git a/include/linux/of_dma.h b/include/linux/of_dma.h
-index ae36298..bc7195f 100644
---- a/include/linux/of_dma.h
-+++ b/include/linux/of_dma.h
-@@ -39,6 +39,7 @@ extern int of_dma_controller_register(struct device_node *np,
- extern void of_dma_controller_free(struct device_node *np);
- extern struct dma_chan *of_dma_request_slave_channel(struct device_node *np,
- 						     const char *name);
-+extern int of_dma_check_controller(struct device *dev, const char *name);
- extern struct dma_chan *of_dma_simple_xlate(struct of_phandle_args *dma_spec,
- 		struct of_dma *ofdma);
- #else
-@@ -60,6 +61,11 @@ static inline struct dma_chan *of_dma_request_slave_channel(struct device_node *
- 	return NULL;
- }
- 
-+static inline int of_dma_check_controller(struct device *dev, const char *name)
-+{
-+	return 0;
-+}
-+
- static inline struct dma_chan *of_dma_simple_xlate(struct of_phandle_args *dma_spec,
- 		struct of_dma *ofdma)
- {
--- 
-1.8.1.5
+After my change, all zones will be at the high watermarks + balance
+gap during idle and between the low and high marks under load.  The
+change is marginal.
 
+The lowmem reserve makes sure, before and after, that a sizable
+portion of low memory is reserved for non-user allocations.
+
+> Other thing of my concerns is to add overhead in fast path.
+> Sometime, we are really reluctant to add simple even "if" condition
+> in fastpath but you are adding atomic op whenever page is allocated and
+> enter slowpath whenever all of given zones's batchcount is zero.
+> Yes, it's not really slow path because it could return to normal status
+> without calling significant slow functions by reset batchcount of
+> prepare_slowpath.
+
+Yes, no direct reclaim should occur.  I know that it comes of a cost,
+but the alternative is broken page reclaim, page cache thrashing etc.
+I don't see a way around it...
+
+Thanks for your input, Minchan!
