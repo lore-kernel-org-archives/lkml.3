@@ -1,83 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752750Ab3HBMlh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 08:41:37 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:65269 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752677Ab3HBMlf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 08:41:35 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX198fo/0DNZo5lRIawXFRAR6
-Date: Fri, 2 Aug 2013 05:41:31 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Greg KH <greg@kroah.com>
-Cc: ksummit-2013-discuss@lists.linuxfoundation.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [Ksummit-2013-discuss] [ATTEND] [ARM ATTEND] kernel data bloat
- and how to avoid it
-Message-ID: <20130802124130.GI7656@atomide.com>
-References: <20130731073802.GT7656@atomide.com>
- <20130731123351.GA30474@kroah.com>
- <20130802075352.GY7656@atomide.com>
+	id S1751947Ab3HBMoX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 08:44:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4130 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750848Ab3HBMoW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 08:44:22 -0400
+Message-ID: <51FBA99B.9090405@redhat.com>
+Date: Fri, 02 Aug 2013 08:44:11 -0400
+From: Joe Mario <jmario@redhat.com>
+Reply-To: jmario@redhat.com
+Organization: Red Hat
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130117 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130802075352.GY7656@atomide.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Ingo Molnar <mingo@kernel.org>
+CC: hpa@zytor.com, linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        pjt@google.com, riel@redhat.com, tglx@linutronix.de,
+        dzickus@redhat.com, linux-tip-commits@vger.kernel.org,
+        Richard Fowles <rfowles@redhat.com>
+Subject: Re: [tip:sched/core] sched/x86: Optimize switch_mm() for multi-threaded
+ workloads
+References: <20130731221421.616d3d20@annuminas.surriel.com> <tip-8f898fbbe5ee5e20a77c4074472a1fd088dc47d1@git.kernel.org> <20130802091247.GA26693@gmail.com>
+In-Reply-To: <20130802091247.GA26693@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Tony Lindgren <tony@atomide.com> [130802 01:00]:
-> * Greg KH <greg@kroah.com> [130731 05:39]:
-> > On Wed, Jul 31, 2013 at 12:38:03AM -0700, Tony Lindgren wrote:
-> > > Hi all,
-> > > 
-> > > Probably the biggest kernel data bloat issue is in the ARM land, but
-> > > it also seems that it's becoming a Linux generic issue too, so I
-> > > guess it could be discussed in either context.
-> > 
-> > Why is it specific to ARM?  What is so unique to ARM that causes it to
-> > "bloat"?
-> 
-> I think it has so far showed up on ARM because of no discoverable busses,
-> but chances are it will be more of a generic problem.
-> 
-> > And what exactly do you mean by "bloat"?
-> 
-> Stuffing data to kernel that should not be in the kernel at all. Or
-> if the data is needed by kernel, there should be only one set of the
-> data defined rather than multiple copies of the data built into the
-> kernel for each SoC or driver variant.
-> 
-> > > Basically the data bloat issue is there for the arch code and drivers
-> > > and may not show up initially until things have headed the wrong way for
-> > > too long.
-> > 
-> > What do you mean by this?  You seem to be very vague here.
-> 
-> People are unnecessarily defining registers in kernel for similar devices
-> over and over again for each new SoC at the arch level and now more and
-> more at the driver level.
-> 
-> One example of that are device tree based drivers that don't describe
-> the actual hardware, but instead have a binding that points to an index
-> of defined registers in the driver.
-> 
-> One way to avoid these kind of bloat issues is to allow drivers to load
-> data at multiple points: Only abtolutely minimal set of data should be
-> static, some should only come from the bootloader as a device tree or
-> ACPI tables, and some is best to be loaded after booting from /lib/firmware.
+On 08/02/2013 05:12 AM, Ingo Molnar wrote:
+> * tip-bot for Rik van Riel <tipbot@zytor.com> wrote:
+>
+>> Commit-ID:  8f898fbbe5ee5e20a77c4074472a1fd088dc47d1
+>> Gitweb:     http://git.kernel.org/tip/8f898fbbe5ee5e20a77c4074472a1fd088dc47d1
+>> Author:     Rik van Riel <riel@redhat.com>
+>> AuthorDate: Wed, 31 Jul 2013 22:14:21 -0400
+>> Committer:  Ingo Molnar <mingo@kernel.org>
+>> CommitDate: Thu, 1 Aug 2013 09:10:26 +0200
+>>
+>> sched/x86: Optimize switch_mm() for multi-threaded workloads
+>>
+>> Dick Fowles, Don Zickus and Joe Mario have been working on
+>> improvements to perf, and noticed heavy cache line contention
+>> on the mm_cpumask, running linpack on a 60 core / 120 thread
+>> system.
+>>
+>> The cause turned out to be unnecessary atomic accesses to the
+>> mm_cpumask. When in lazy TLB mode, the CPU is only removed from
+>> the mm_cpumask if there is a TLB flush event.
+>>
+>> Most of the time, no such TLB flush happens, and the kernel
+>> skips the TLB reload. It can also skip the atomic memory
+>> set & test.
+>>
+>> Here is a summary of Joe's test results:
+>>
+>>   * The __schedule function dropped from 24% of all program cycles down
+>>     to 5.5%.
+>>
+>>   * The cacheline contention/hotness for accesses to that bitmask went
+>>     from being the 1st/2nd hottest - down to the 84th hottest (0.3% of
+>>     all shared misses which is now quite cold)
+>>
+>>   * The average load latency for the bit-test-n-set instruction in
+>>     __schedule dropped from 10k-15k cycles down to an average of 600 cycles.
+>>
+>>   * The linpack program results improved from 133 GFlops to 144 GFlops.
+>>     Peak GFlops rose from 133 to 153.
+>>
+>> Reported-by: Don Zickus <dzickus@redhat.com>
+>> Reported-by: Joe Mario <jmario@redhat.com>
+>> Tested-by: Joe Mario <jmario@redhat.com>
+>> Signed-off-by: Rik van Riel <riel@redhat.com>
+>> Reviewed-by: Paul Turner <pjt@google.com>
+>> Acked-by: Linus Torvalds <torvalds@linux-foundation.org>
+>> Link: http://lkml.kernel.org/r/20130731221421.616d3d20@annuminas.surriel.com
+>> [ Made the comments consistent around the modified code. ]
+>> Signed-off-by: Ingo Molnar <mingo@kernel.org>
+>> +	  else {
+>>   		this_cpu_write(cpu_tlbstate.state, TLBSTATE_OK);
+>>   		BUG_ON(this_cpu_read(cpu_tlbstate.active_mm) != next);
+>>   
+>> -		if (!cpumask_test_and_set_cpu(cpu, mm_cpumask(next))) {
+>> +		if (!cpumask_test_cpu(cpu, mm_cpumask(next))) {
+>> +			/*
+>> +			 * On established mms, the mm_cpumask is only changed
+>> +			 * from irq context, from ptep_clear_flush() while in
+>> +			 * lazy tlb mode, and here. Irqs are blocked during
+>> +			 * schedule, protecting us from simultaneous changes.
+>> +			 */
+>> +			cpumask_set_cpu(cpu, mm_cpumask(next));
+> Note, I marked this for v3.12 with no -stable backport tag as it's not a
+> regression fix.
+>
+> Nevertheless if it's a real issue in production (and +20% of linpack
+> performance is certainly significant)
 
-Oh and thinking about it a bit more, this issue is mostly with the
-device drivers implementing frameworks, not the device drivers
-using the frameworks. Things like clocks, regulators, muxes etc where
-an almost similar instance is repeated tens or hundreds of times for
-each SoC.
+The cacheline contention on the mm->cpu_vm_mask_va cpulist bitmask 
+skyrockets on numa systems as soon as the number of threads exceeds the 
+available cpus - and it's all from the locked bts instruction in 
+cpumask_test_and_set_cpu().
+The OMP version of Linpack uses clone() with the CLONE_VM flag set, so 
+all the clones are tugging at the same mm->cpu_vm_mask_va.
+With Rik's patch, the number of accesses tomm->cpu_vm_mask_va plummets.
 
-Regards,
+> feel free to forward it to -stable
+> once this hits Linus's tree in the v3.12 merge window - by that time the
+> patch will be reasonably well tested and it's a relatively simple change.
+>
+> Thanks,
+>
+> 	Ingo
 
-Tony
