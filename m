@@ -1,137 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751464Ab3HBLU5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 07:20:57 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:63086 "EHLO
+	id S1751297Ab3HBLfQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 07:35:16 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:63368 "EHLO
 	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750936Ab3HBLU4 (ORCPT
+	by vger.kernel.org with ESMTP id S1750740Ab3HBLfO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 07:20:56 -0400
-Date: Fri, 2 Aug 2013 12:20:18 +0100
+	Fri, 2 Aug 2013 07:35:14 -0400
+Date: Fri, 2 Aug 2013 12:34:40 +0100
 From: Mark Rutland <mark.rutland@arm.com>
-To: Gururaja Hebbar <gururaja.hebbar@ti.com>
-Cc: "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "benoit.cousson@gmail.com" <benoit.cousson@gmail.com>,
-        Sekhar Nori <nsekhar@ti.com>,
+To: Jonas Jensen <jonas.jensen@gmail.com>
+Cc: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "vaibhav.bedia@ti.com" <vaibhav.bedia@ti.com>,
-        "benoit.cousson@linaro.org" <benoit.cousson@linaro.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
+        "arm@kernel.org" <arm@kernel.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [Patch V2 4/4] ARM: dts: AM33XX: update rtc node compatibility
-Message-ID: <20130802112018.GI2884@e106331-lin.cambridge.arm.com>
-References: <1372841225-18813-1-git-send-email-gururaja.hebbar@ti.com>
- <1372841225-18813-5-git-send-email-gururaja.hebbar@ti.com>
- <51F749B0.7020802@ti.com>
- <20130730145501.GA29859@e106331-lin.cambridge.arm.com>
- <51F7E7FA.3080702@ti.com>
- <20130801170537.GF8095@e106331-lin.cambridge.arm.com>
- <51FB92F8.9020801@ti.com>
+Subject: Re: [PATCH v4] gpio: Add MOXA ART GPIO driver
+Message-ID: <20130802113440.GJ2884@e106331-lin.cambridge.arm.com>
+References: <1374053693-6166-1-git-send-email-jonas.jensen@gmail.com>
+ <1375103161-12460-1-git-send-email-jonas.jensen@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51FB92F8.9020801@ti.com>
+In-Reply-To: <1375103161-12460-1-git-send-email-jonas.jensen@gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 02, 2013 at 12:07:36PM +0100, Gururaja Hebbar wrote:
-> On 8/1/2013 10:35 PM, Mark Rutland wrote:
-> > On Tue, Jul 30, 2013 at 05:21:14PM +0100, Sekhar Nori wrote:
-> >> On 7/30/2013 8:25 PM, Mark Rutland wrote:
-> >>> On Tue, Jul 30, 2013 at 06:05:52AM +0100, Gururaja Hebbar wrote:
-> >>>> Hi,
-> >>>>
-> >>>> On 7/3/2013 2:17 PM, Hebbar Gururaja wrote:
-> >>>>> Since AM33xx  RTC IP has RTC_IRQWAKEEN to support Alarm Wake-up.
-> >>>>>
-> >>>>> Update the rtc compatible property to "ti,am3352-rtc" to enable handling
-> >>>>> of this feature inside rtc-omap driver.
-> >>>>
-> >>>> The other 2 rtc driver related patches have been pulled up. If you have
-> >>>> no comments, can you please pull this up.
-> >>>>
-> >>>> Regards
-> >>>> Gururaja
-> >>>>
-> >>>>>
-> >>>>> Signed-off-by: Hebbar Gururaja <gururaja.hebbar@ti.com>
-> >>>>> ---
-> >>>>> :100644 100644 77aa1b0... dde180a... M	arch/arm/boot/dts/am33xx.dtsi
-> >>>>>    arch/arm/boot/dts/am33xx.dtsi |    2 +-
-> >>>>>    1 file changed, 1 insertion(+), 1 deletion(-)
-> >>>>>
-> >>>>> diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
-> >>>>> index 77aa1b0..dde180a 100644
-> >>>>> --- a/arch/arm/boot/dts/am33xx.dtsi
-> >>>>> +++ b/arch/arm/boot/dts/am33xx.dtsi
-> >>>>> @@ -297,7 +297,7 @@
-> >>>>>    		};
-> >>>>>
-> >>>>>    		rtc@44e3e000 {
-> >>>>> -			compatible = "ti,da830-rtc";
-> >>>>> +			compatible = "ti,am3352-rtc";
-> >>>
-> >>> Given that this is backwards compatible with the old binding, it would
-> >>> be nicer to have this as:
-> >>>
-> >>> 	compatible = "ti,am3352-rtc", "ti,da830-rtc";
-> >>>
-> >>> We must get into the habit of changing dts files in a
-> >>> backwards-compatible fashion.
-> >>
-> >> Right, I suggested this when v1 was posted. It turns out the current
-> >> kernel does not handle the compatilble list correctly and the string
-> >> selected actually depends on the order in which it appears in match
-> >> table in driver instead.
-> >>
-> >> I saw there were patches being discussed to fix this issue, but until
-> >> that is fixed, we cannot really use what you (and I before) suggested.
-> >
-> > A temporary solution would be to list the "ti,am3352-rtc" first in the
-> > of_match_table kernel-side.
+On Mon, Jul 29, 2013 at 02:06:01PM +0100, Jonas Jensen wrote:
+> Add GPIO driver for MOXA ART SoCs.
 > 
-> If above method is followed, then it would cause trouble on davinci 
-> platform because this rtc-omap driver is also used by Davinci platform.
-> On davinci Plaform the driver would match with "ti,am3352-rtc" for 
-> compatible.
-
-Sorry, I don't follow. Does the davinci dt have "ti,am3352-rtc" in it's
-compatible string list?
-
-If so, and it's not compatible, the dts is wrong.
-
-If not, then we won't use the behaviour specific to "ti,am3352-rtc", and
-there's no problem.
-
-What trouble would this cause?
-
-Thanks,
-Mark.
-
+> Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
+> ---
 > 
-> Regards
-> Gururaja
+> Notes:
+>     Changes since v3:
 > 
-> > That way you can keep the old compatible
-> > string in the dts compatible list, and maintain backwards compatibilty
-> > with older kernels.
-> >
-> > Later if the way Linux matches compatible strings is changed, this
-> > shouldn't break the probe order, and the of_match_table order could be
-> > changed.
-> >
-> > Have I missed something?
-> >
-> > Thanks,
-> > Mark.
-> >
+>     1. use local struct device *dev pointer, replace "&pdev->dev" with "dev"
+> 
+>     device tree bindings document:
+>     2. describe compatible variable "Must be" instead of "Should be".
+> 
+>     Applies to next-20130729
+> 
+>  .../devicetree/bindings/gpio/moxa,moxart-gpio.txt  |  23 +++
+>  drivers/gpio/Kconfig                               |   7 +
+>  drivers/gpio/Makefile                              |   1 +
+>  drivers/gpio/gpio-moxart.c                         | 189 +++++++++++++++++++++
+>  4 files changed, 220 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/gpio/moxa,moxart-gpio.txt
+>  create mode 100644 drivers/gpio/gpio-moxart.c
+> 
+> diff --git a/Documentation/devicetree/bindings/gpio/moxa,moxart-gpio.txt b/Documentation/devicetree/bindings/gpio/moxa,moxart-gpio.txt
+> new file mode 100644
+> index 0000000..795afab
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/gpio/moxa,moxart-gpio.txt
+> @@ -0,0 +1,23 @@
+> +MOXA ART GPIO Controller
+> +
+> +Required properties:
+> +
+> +- #gpio-cells : Should be 2
+
+Could you elaborate on what those cells represent?
+
+> +- compatible : Must be "moxa,moxart-gpio"
+> +- reg : Should contain registers location and length
+> +       index 0 : input, output, and direction control
+> +       index 1 : enable/disable individual pins, pin 0-31
+
+These seem rather fine-grained. Are they not part of a larger bank of
+registers? The example seems to indicate otherwise, but I don't trust
+examples :)
+
+> +- gpio-ready-led : ready LED gpio, with zero flags
+> +- gpio-reset-switch : reset switch gpio, with zero flags
+
+I'm not sure about these. It feels odd for the gpio node to refer to
+itself in this way. Why is the use of these gpios a concern of the gpio
+controller. Surely an external user described elsewhere in dt will be
+assigned these (even if it's general platform code rather than a
+specific hardware driver)?
+
+I thought there were some conventions for gpio-driven LEDs...
+
+Also, I believe the convention is to have ${NAME}-gpios, or just gpios.
+
+[...]
+
+> +static int moxart_gpio_probe(struct platform_device *pdev)
+> +{
+> +       struct device *dev = &pdev->dev;
+> +       struct resource *res;
+> +       int ret, gpio_ready_led, gpio_reset_switch;
+> +
+> +       res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +       moxart_gpio_base = devm_ioremap_resource(dev, res);
+> +       if (IS_ERR(moxart_gpio_base)) {
+> +               dev_err(dev, "%s: devm_ioremap_resource res_gpio failed\n",
+> +                       dev->of_node->full_name);
+> +               return PTR_ERR(moxart_gpio_base);
+> +       }
+> +
+> +       res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
+> +       moxart_pincontrol_base = devm_ioremap_resource(dev, res);
+> +       if (IS_ERR(moxart_pincontrol_base)) {
+> +               dev_err(dev, "%s: devm_ioremap_resource res_pmu failed\n",
+> +                       dev->of_node->full_name);
+> +               return PTR_ERR(moxart_pincontrol_base);
+> +       }
+> +
+> +       moxart_gpio_chip.dev = dev;
+> +
+> +       ret = gpiochip_add(&moxart_gpio_chip);
+> +       if (ret)
+> +               dev_err(dev, "%s: gpiochip_add failed\n",
+> +                       dev->of_node->full_name);
+> +
+> +
+> +       gpio_ready_led = of_get_named_gpio(dev->of_node,
+> +                                          "gpio-ready-led", 0);
+> +       if (!gpio_is_valid(gpio_ready_led)) {
+> +               dev_err(dev, "invalid gpio (gpio-ready-led): %d\n",
+> +                       gpio_ready_led);
+> +               return gpio_ready_led;
+> +       }
+> +
+> +       gpio_reset_switch = of_get_named_gpio(dev->of_node,
+> +                                             "gpio-reset-switch", 0);
+> +       if (!gpio_is_valid(gpio_reset_switch)) {
+> +               dev_err(dev, "invalid gpio (gpio-reset-switch): %d\n",
+> +                       gpio_reset_switch);
+> +               return gpio_reset_switch;
+> +       }
+> +
+> +       moxart_gpio_enable(gpio_ready_led | gpio_reset_switch);
+> +
+> +       moxart_gpio_direction_input(&moxart_gpio_chip, gpio_reset_switch);
+
+We never seem to do anything else with the reset switch. Is it used
+elsewhere? Surely the "real" user should call in to initialise this.
+
+> +
+> +       /*
+> +        * gpio_ready_led=0 ready LED on
+> +        * gpio_ready_led=1 ready LED off
+> +        */
+> +       moxart_gpio_direction_output(&moxart_gpio_chip, gpio_ready_led, 0);
+> +       moxart_gpio_set(&moxart_gpio_chip, gpio_ready_led, 0);
+> +
+> +       return 0;
+> +}
+> +
+> +static const struct of_device_id moxart_gpio_match[] = {
+> +       { .compatible = "moxa,moxart-gpio" },
+> +       { }
+> +};
+> +
+> +static struct platform_driver moxart_gpio_driver = {
+> +       .driver = {
+> +               .name           = "moxart-gpio",
+> +               .owner          = THIS_MODULE,
+> +               .of_match_table = moxart_gpio_match,
+> +       },
+> +       .probe  = moxart_gpio_probe,
+> +};
+> +
+> +static int __init moxart_gpio_init(void)
+> +{
+> +       return platform_driver_register(&moxart_gpio_driver);
+> +}
+> +
+> +postcore_initcall(moxart_gpio_init);
+> +
+> +MODULE_DESCRIPTION("MOXART GPIO chip driver");
+> +MODULE_LICENSE("GPL");
+> +MODULE_AUTHOR("Jonas Jensen <jonas.jensen@gmail.com>");
+> --
+> 1.8.2.1
 > 
 > 
 > _______________________________________________
