@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752728Ab3HBUtL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 16:49:11 -0400
-Received: from caiajhbdcaid.dreamhost.com ([208.97.132.83]:55275 "EHLO
-	homiemail-a85.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751670Ab3HBUtJ (ORCPT
+	id S1753013Ab3HBUuw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 16:50:52 -0400
+Received: from caiajhbdccah.dreamhost.com ([208.97.132.207]:54133 "EHLO
+	homiemail-a32.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751909Ab3HBUuv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 16:49:09 -0400
-X-Greylist: delayed 1740 seconds by postgrey-1.27 at vger.kernel.org; Fri, 02 Aug 2013 16:49:09 EDT
+	Fri, 2 Aug 2013 16:50:51 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130801173854.28023.82045.stgit@warthog.procyon.org.uk>
+In-Reply-To: <CAK3OfOj6E_thwgwdZUDXrr_7XW4xJkzwxdGU6gKcEJ3twOsm=A@mail.gmail.com>
 References: <20130801173846.28023.19009.stgit@warthog.procyon.org.uk>
 	<20130801173854.28023.82045.stgit@warthog.procyon.org.uk>
-Date: Fri, 2 Aug 2013 15:49:06 -0500
-Message-ID: <CAK3OfOj6E_thwgwdZUDXrr_7XW4xJkzwxdGU6gKcEJ3twOsm=A@mail.gmail.com>
+	<CAK3OfOj6E_thwgwdZUDXrr_7XW4xJkzwxdGU6gKcEJ3twOsm=A@mail.gmail.com>
+Date: Fri, 2 Aug 2013 15:50:48 -0500
+Message-ID: <CAK3OfOj2HV32=zE+hD8vrHHAj94cPVw-HtPKZCdRoYepE7O8Mg@mail.gmail.com>
 Subject: Re: [PATCH 1/2] KEYS: Implement a big key type that can save to tmpfs
 From: Nico Williams <nico@cryptonector.com>
 To: David Howells <dhowells@redhat.com>
@@ -24,36 +24,19 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I think this is the wrong design.
+On Fri, Aug 2, 2013 at 3:49 PM, Nico Williams <nico@cryptonector.com> wrote:
+> Solving (b) in a way that does not add a new ccache type (though
+> having a KEYRING: ccache type that means "find the ccache URI in my
+> keyring" is fine) is important because many of us run multiple
+> implementations of Kerberos on any given host, and we do it because:
+>
+>  - vendors are always behind the curve
+>  - legacy software linked with old versions of libkrb5 and friends
+>  - third party software
 
-There are two problems you're trying to solve:
+I forgot to add:
 
-a) how rpc.gssd finds credentials for processes on behalf of which it's acting
-
-b) how to create tmpfs locations in which to store credentials (which
-can be unbounded in size, so storing them in the kernel is silly; also
-the apps that use them are all user-land apps, so that too means
-there's no point in storing them in the kernel).
-
-Keyrings for the forst problem (or PAGs, or anything similar) is fine:
-on upcall to gssd the kernel tells it what it needs to know to find
-those credentials.
-
-(b) can be solved in many ways, and the simplest is to have a
-filesystem where top-level directories named after UIDs "exist" as
-soon as they are referenced and as long as they are non-empty.  You
-can use autofs + tmpfs, or a variant of tmpfs for this.
-
-Solving (b) in a way that does not add a new ccache type (though
-having a KEYRING: ccache type that means "find the ccache URI in my
-keyring" is fine) is important because many of us run multiple
-implementations of Kerberos on any given host, and we do it because:
-
- - vendors are always behind the curve
- - legacy software linked with old versions of libkrb5 and friends
- - third party software
-
-Please review the above.  Thanks,
+ - special needs
 
 Nico
 --
