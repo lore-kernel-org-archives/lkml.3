@@ -1,221 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758051Ab3HBIUK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 04:20:10 -0400
-Received: from svenfoo.org ([82.94.215.22]:44938 "EHLO mail.zonque.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755681Ab3HBIT3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 04:19:29 -0400
-From: Daniel Mack <zonque@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: lgirdwood@gmail.com, broonie@kernel.org, Daniel Mack <zonque@gmail.com>
-Subject: [PATCH 3/3] regulators: max8660: add DT bindings
-Date: Fri,  2 Aug 2013 10:19:17 +0200
-Message-Id: <1375431557-3096-3-git-send-email-zonque@gmail.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1375431557-3096-1-git-send-email-zonque@gmail.com>
-References: <1375431557-3096-1-git-send-email-zonque@gmail.com>
+	id S1758075Ab3HBIUf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 04:20:35 -0400
+Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:31935 "EHLO
+	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756131Ab3HBIUb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 04:20:31 -0400
+Message-ID: <1375431605.8749.34.camel@j-VirtualBox>
+Subject: Re: [RFC PATCH] sched: Reduce overestimating avg_idle
+From: Jason Low <jason.low2@hp.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@redhat.com>, KML <linux-kernel@vger.kernel.org>,
+        Mike Galbraith <efault@gmx.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Paul Turner <pjt@google.com>, Alex Shi <alex.shi@intel.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, aswin@hp.com, scott.norton@hp.com,
+        chegu_vinod@hp.com, Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Date: Fri, 02 Aug 2013 01:20:05 -0700
+In-Reply-To: <20130731095306.GY3008@twins.programming.kicks-ass.net>
+References: <1375263472.3922.26.camel@j-VirtualBox>
+	 <20130731095306.GY3008@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds devicetree bindings for max8660, along with some
-documentation.
+On Wed, 2013-07-31 at 11:53 +0200, Peter Zijlstra wrote:
 
-Signed-off-by: Daniel Mack <zonque@gmail.com>
----
- .../devicetree/bindings/regulator/max8660.txt      | 47 +++++++++++++
- drivers/regulator/max8660.c                        | 79 +++++++++++++++++++++-
- include/linux/regulator/max8660.h                  |  3 +-
- 3 files changed, 127 insertions(+), 2 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/regulator/max8660.txt
+> No they're quite unrelated. I think you can measure the max time we've
+> ever spend in newidle balance and use that to clip the values.
 
-diff --git a/Documentation/devicetree/bindings/regulator/max8660.txt b/Documentation/devicetree/bindings/regulator/max8660.txt
-new file mode 100644
-index 0000000..03dd839
---- /dev/null
-+++ b/Documentation/devicetree/bindings/regulator/max8660.txt
-@@ -0,0 +1,47 @@
-+Maxim MAX8660 voltage regulator
-+
-+Required properties:
-+- compatible: must be equal to "maxim,max8660"
-+- reg: I2C slave address, usually 0x34
-+- any required generic properties defined in regulator.txt
-+
-+Example:
-+
-+	i2c_master {
-+		max8660@34 {
-+			compatible = "maxim,max8660";
-+			reg = <0x34>;
-+
-+			regulators {
-+				regulator@0 {
-+					regulator-compatible= "V3(DCDC)";
-+					regulator-min-microvolt = <725000>;
-+					regulator-max-microvolt = <1800000>;
-+				};
-+
-+				regulator@1 {
-+					regulator-compatible= "V4(DCDC)";
-+					regulator-min-microvolt = <725000>;
-+					regulator-max-microvolt = <1800000>;
-+				};
-+
-+				regulator@2 {
-+					regulator-compatible= "V5(LDO)";
-+					regulator-min-microvolt = <1700000>;
-+					regulator-max-microvolt = <2000000>;
-+				};
-+
-+				regulator@3 {
-+					regulator-compatible= "V6(LDO)";
-+					regulator-min-microvolt = <1800000>;
-+					regulator-max-microvolt = <3300000>;
-+				};
-+
-+				regulator@4 {
-+					regulator-compatible= "V7(LDO)";
-+					regulator-min-microvolt = <1800000>;
-+					regulator-max-microvolt = <3300000>;
-+				};
-+			};
-+		};
-+	};
-diff --git a/drivers/regulator/max8660.c b/drivers/regulator/max8660.c
-index a5caaa0..597d311 100644
---- a/drivers/regulator/max8660.c
-+++ b/drivers/regulator/max8660.c
-@@ -44,6 +44,9 @@
- #include <linux/regulator/driver.h>
- #include <linux/slab.h>
- #include <linux/regulator/max8660.h>
-+#include <linux/of.h>
-+#include <linux/of_device.h>
-+#include <linux/regulator/of_regulator.h>
- 
- #define MAX8660_DCDC_MIN_UV	 725000
- #define MAX8660_DCDC_MAX_UV	1800000
-@@ -310,6 +313,62 @@ enum {
- 	MAX8661 = 1,
- };
- 
-+#ifdef CONFIG_OF
-+static const struct of_device_id max8660_dt_ids[] = {
-+	{ .compatible = "maxim,max8660", .data = (void *) MAX8660 },
-+	{ .compatible = "maxim,max8661", .data = (void *) MAX8661 },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(of, max8660_dt_ids);
-+
-+static int max8660_pdata_from_dt(struct device *dev,
-+				 struct max8660_platform_data *pdata)
-+{
-+	int matched, i;
-+	struct device_node *np;
-+	struct max8660_subdev_data *sub;
-+	struct of_regulator_match rmatch[ARRAY_SIZE(max8660_reg)];
-+
-+	np = of_find_node_by_name(dev->of_node, "regulators");
-+	if (!np) {
-+		dev_err(dev, "missing 'regulators' subnode in DT\n");
-+		return -EINVAL;
-+	}
-+
-+	for (i = 0; i < ARRAY_SIZE(rmatch); i++)
-+		rmatch[i].name = max8660_reg[i].name;
-+
-+	matched = of_regulator_match(dev, np, rmatch, ARRAY_SIZE(rmatch));
-+	if (matched <= 0)
-+		return matched;
-+
-+	pdata->subdevs = devm_kzalloc(dev, sizeof(struct max8660_subdev_data) *
-+						matched, GFP_KERNEL);
-+	if (!pdata->subdevs)
-+		return -ENOMEM;
-+
-+	pdata->num_subdevs = matched;
-+
-+	sub = pdata->subdevs;
-+
-+	for (i = 0; i < matched; i++) {
-+		sub->id = i;
-+		sub->name = rmatch[i].name;
-+		sub->platform_data = rmatch[i].init_data;
-+		sub->of_node = rmatch[i].of_node;
-+		sub++;
-+	}
-+
-+	return 0;
-+}
-+#else
-+static inline int max8660_pdata_from_dt(struct device *dev,
-+					struct max8660_platform_data **pdata)
-+{
-+	return 0;
-+}
-+#endif
-+
- static int max8660_probe(struct i2c_client *client,
- 				   const struct i2c_device_id *i2c_id)
- {
-@@ -321,6 +380,24 @@ static int max8660_probe(struct i2c_client *client,
- 	int boot_on, i, id, ret = -EINVAL;
- 	unsigned int type;
- 
-+	if (dev->of_node && !pdata) {
-+		const struct of_device_id *id;
-+		struct max8660_platform_data pdata_of;
-+
-+		id = of_match_device(max8660_dt_ids, dev);
-+		if (!id)
-+			return -ENODEV;
-+
-+		ret = max8660_pdata_from_dt(dev, &pdata_of);
-+		if (ret < 0)
-+			return ret;
-+
-+		pdata = &pdata_of;
-+		type = (unsigned int) id->data;
-+	} else {
-+		type = i2c_id->driver_data;
-+	}
-+
- 	if (pdata->num_subdevs > MAX8660_V_END) {
- 		dev_err(dev, "Too many regulators found!\n");
- 		return -EINVAL;
-@@ -334,7 +411,6 @@ static int max8660_probe(struct i2c_client *client,
- 
- 	max8660->client = client;
- 	rdev = max8660->rdev;
--	type = i2c_id->driver_data;
- 
- 	if (pdata->en34_is_high) {
- 		/* Simulate always on */
-@@ -407,6 +483,7 @@ static int max8660_probe(struct i2c_client *client,
- 
- 		config.dev = dev;
- 		config.init_data = pdata->subdevs[i].platform_data;
-+		config.of_node = pdata->subdevs[i].of_node;
- 		config.driver_data = max8660;
- 
- 		rdev[i] = regulator_register(&max8660_reg[id], &config);
-diff --git a/include/linux/regulator/max8660.h b/include/linux/regulator/max8660.h
-index 9936763..58e1296 100644
---- a/include/linux/regulator/max8660.h
-+++ b/include/linux/regulator/max8660.h
-@@ -39,8 +39,9 @@ enum {
-  */
- struct max8660_subdev_data {
- 	int				id;
--	char				*name;
-+	const char			*name;
- 	struct regulator_init_data	*platform_data;
-+	struct device_node		*of_node;
- };
- 
- /**
--- 
-1.8.3.1
+So I tried using the rq's max newidle balance cost to compare with the
+average and used sysctl_migration_cost as the initial/default max. One
+thing I noticed when running this on 8 socket machine was that the max
+idle balance cost was a lot higher during around boot time compared to
+after boot time. Not sure if IRQ/NMI/SMI was the cause of this. A
+temporary "fix" I made was to reset the max idle balance costs every 2
+minutes.
+
+> Similarly, I've thought about how we updated the sd->avg_cost in the
+> previous patches and wondered if we should not track max_cost.
+> 
+> The 'only' down-side I could come up with is that its all ran from
+> SoftIRQ context which means IRQ/NMI/SMI can all stretch/warp the time it
+> takes to actually do the idle balance.
+
+Another thing that I thought of was that max idle balance cost may also
+vary based on the workload that is running. So running a workload in
+which there are shorter idle balances after running a workload that has
+longer idle balances may sometimes cause it to make use of a higher idle
+balance cost. But I guess it is okay if we're trying to reduce
+overrunning the average.
+
+Jason
 
