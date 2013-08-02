@@ -1,82 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753893Ab3HBRtz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 13:49:55 -0400
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:34171 "EHLO
-	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751627Ab3HBRty convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 13:49:54 -0400
-From: Dan Williams <djbw@fb.com>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-CC: Vinod Koul <vinod.koul@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dave Jiang <dave.jiang@intel.com>,
-        "Blin, Jerome" <jerome.blin@intel.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>
-Subject: Re: [PATCH 1/3] dmatest: make module parameters writable
-Thread-Topic: [PATCH 1/3] dmatest: make module parameters writable
-Thread-Index: AQHOh7p6sYhbiZEqiE253lzrXOCaM5l/WkAAgALnlYA=
-Date: Fri, 2 Aug 2013 17:49:32 +0000
-Message-ID: <CE2134A4.1D1FD%djbw@fb.com>
-In-Reply-To: <1375280890.31118.69.camel@smile>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-user-agent: Microsoft-MacOutlook/14.3.5.130515
-x-originating-ip: [192.168.16.4]
-Content-Type: text/plain; charset="Windows-1252"
-Content-ID: <C8EE06080085EE499B5111842C790C71@fb.com>
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-Proofpoint-Spam-Reason: safe
-X-FB-Internal: Safe
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
- definitions=2013-08-02_06:2013-08-02,2013-08-02,1970-01-01 signatures=0
+	id S1754157Ab3HBRu5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 13:50:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48547 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751850Ab3HBRuz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 13:50:55 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <51FAAF3D.3010806@fifthhorseman.net>
+References: <51FAAF3D.3010806@fifthhorseman.net> <20130801173846.28023.19009.stgit@warthog.procyon.org.uk> <20130801173902.28023.68819.stgit@warthog.procyon.org.uk> <51FAA0CC.7010106@fifthhorseman.net> <1375381798.15733.207.camel@willson.li.ssimo.org>
+To: Daniel Kahn Gillmor <dkg@fifthhorseman.net>
+Cc: dhowells@redhat.com, Simo Sorce <simo@redhat.com>, keyrings@linux-nfs.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>, linux-nfs@vger.kernel.org,
+        krbdev@mit.edu, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] KEYS: Add per-user_namespace registers for persistent per-UID kerberos caches
+Date: Fri, 02 Aug 2013 18:50:44 +0100
+Message-ID: <7664.1375465844@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Daniel Kahn Gillmor <dkg@fifthhorseman.net> wrote:
+
+> I guess this raises the question from a different perspective: if the
+> kernel already supports arbitrary shm segments, filesystem locations,
+> etc, which can be used for storing/passing opaque bytestrings between
+> different parts of userspace, what advantages do we gain from having
+> this new specific mechanism in the kernel?  Why couldn't those parts of
+> userspace just rely on already-existing mechanisms instead of
+> introducing this new interface?
+
+Kernel services can use keys directly by calling request_key() without
+necessarily having to upcall.
 
 
-On 7/31/13 7:28 AM, "Andy Shevchenko" <andriy.shevchenko@linux.intel.com>
-wrote:
-
->On Tue, 2013-07-23 at 18:36 +0300, Andy Shevchenko wrote:
->> The debugfs interface brought a copy of the test case parameters. This
->>makes
->> different set of values under /sys/module/dmatest/parameters/ and
->> /sys/kernel/debug/dmatest/. The user might be confused by the
->>divergence of
->> values.
->> 
->> The proposed solution in this patch is to make module parameters
->>writable and
->> remove them from the debugfs. Though we're still using debugfs to
->>control test
->> runner and getting results.
->> 
->> Documentation part is updated accordingly.
->> 
->> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
->> Suggested-by: Dan Williams <djbw@fb.com>
->
->Dan, do you have any comments against this series?
->I'd like to have this incorporated into v3.12.
-
-I like this direction, and these can go in as is.  But I think with a bit
-more work we can eventually trim the Œresults' file and the
-thread_{add|get}_result infrastructure.  Ideally we could move all result
-reporting to ftrace and let a module parameter control which errors are
-reported.
-
-However, unless I missed it, I don¹t see this support[1] upstream yet.
+The keys service in the kernel was created initially for use by the kAFS
+filesystem in the kernel which uses it for passing authentication tokens
+around.  Let me describe how I originally envisioned this working as it may
+help the discussion.
 
 
---
-Dan
+Every time a non-fd-based operation[*] is called, kAFS calls request_key() to
+get a key containing an authentication token for the cell.
 
-[1]: https://lwn.net/Articles/432186/
+ [*] That is things like lookup, open(), rmdir() and stat() but not read() and
+     write() which use a key cached in the file struct.
 
+Keys can be preemptively added for kAFS by calling a klog or an aklog program
+talk to the authentication server and then use add_key() to add a key into the
+kernel.  The filesystem subsequently finds this and uses it without the need to
+upcall.
+
+Currently, that's all you can do with kAFS.
+
+However, on my todo list is to make it able to upcall when it doesn't have a
+key available.  This is provided for by the request_key() mechanism.
+request_key() searches for the key and if one if is available, it returns it
+otherwise it can[*] partially construct a key and then upcall to ask userspace
+to instantiate it.
+
+ [*] If the caller permits it to.
+
+request_key() can upcall to a program it execs itself or it can upcall to a
+running program (though the exact mechanism of the latter is to be worked out).
+
+Say userspace then decides to do a Kerberos ticket request.  It could call
+request_key() itself to search the original process's keyrings for a TGT which
+it can then use to request a ticket.
+
+Once it has the ticket, it can place the ticket data into the partially
+constructed key and link the key into the kerberos ccache keyring to retain it.
+
+
+Now, one of the problems I've got is that the name in the partially constructed
+key is from the filesystem's view of the world - and this doesn't necessarily
+coincide with that of the authentication server.  For example, the kAFS
+filesystem wants a key named for the cell, eg.:
+
+	afs.redhat.com
+
+but the Kerberos ticket might look like:
+
+	AFS/afs.redhat.com@REDHAT.COM
+
+Now, I do permit partial matching, so I could ignore the "@REDHAT.COM" and just
+slap "AFS/" on the front of what I'm looking for.
+
+A further problem is the fact that keys have types and search only finds the
+type asked for - though that can be dealt with in the keyring search algorithm.
+
+David
