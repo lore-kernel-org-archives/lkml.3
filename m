@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754754Ab3HBKXP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:23:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37852 "EHLO
+	id S1755004Ab3HBK0O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:26:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37854 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754614Ab3HBKXM (ORCPT
+	with ESMTP id S1754717Ab3HBKXO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:23:12 -0400
+	Fri, 2 Aug 2013 06:23:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anton Blanchard <anton@samba.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 13/23] powerpc/modules: Module CRC relocation fix causes perf issues
-Date: Fri,  2 Aug 2013 18:23:26 +0800
-Message-Id: <20130802102038.063996747@linuxfoundation.org>
+        Toshi Kani <toshi.kani@hp.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [ 14/23] ACPI / memhotplug: Fix a stale pointer in error path
+Date: Fri,  2 Aug 2013 18:23:27 +0800
+Message-Id: <20130802102038.202630483@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802102036.180660415@linuxfoundation.org>
 References: <20130802102036.180660415@linuxfoundation.org>
@@ -28,75 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: Toshi Kani <toshi.kani@hp.com>
 
-commit 0e0ed6406e61434d3f38fb58aa8464ec4722b77e upstream.
+commit d19f503e22316a84c39bc19445e0e4fdd49b3532 upstream.
 
-Module CRCs are implemented as absolute symbols that get resolved by
-a linker script. We build an intermediate .o that contains an
-unresolved symbol for each CRC. genksysms parses this .o, calculates
-the CRCs and writes a linker script that "resolves" the symbols to
-the calculated CRC.
+device->driver_data needs to be cleared when releasing its data,
+mem_device, in an error path of acpi_memory_device_add().
 
-Unfortunately the ppc64 relocatable kernel sees these CRCs as symbols
-that need relocating and relocates them at boot. Commit d4703aef
-(module: handle ppc64 relocating kcrctabs when CONFIG_RELOCATABLE=y)
-added a hook to reverse the bogus relocations. Part of this patch
-created a symbol at 0x0:
+The function evaluates the _CRS of memory device objects, and fails
+when it gets an unexpected resource or cannot allocate memory.  A
+kernel crash or data corruption may occur when the kernel accesses
+the stale pointer.
 
-# head -2 /proc/kallsyms
-0000000000000000 T reloc_start
-c000000000000000 T .__start
-
-This reloc_start symbol is causing lots of confusion to perf. It
-thinks reloc_start is a massive function that stretches from 0x0 to
-0xc000000000000000 and we get various cryptic errors out of perf,
-including:
-
-problem incrementing symbol count, skipping event
-
-This patch removes the  reloc_start linker script label and instead
-defines it as PHYSICAL_START. We also need to wrap it with
-CONFIG_PPC64 because the ppc32 kernel can set a non zero
-PHYSICAL_START at compile time and we wouldn't want to subtract
-it from the CRCs in that case.
-
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Acked-by: Rusty Russell <rusty@rustcorp.com.au>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/include/asm/module.h |    5 ++---
- arch/powerpc/kernel/vmlinux.lds.S |    3 ---
- 2 files changed, 2 insertions(+), 6 deletions(-)
+ drivers/acpi/acpi_memhotplug.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/powerpc/include/asm/module.h
-+++ b/arch/powerpc/include/asm/module.h
-@@ -87,10 +87,9 @@ struct exception_table_entry;
- void sort_ex_table(struct exception_table_entry *start,
- 		   struct exception_table_entry *finish);
- 
--#ifdef CONFIG_MODVERSIONS
-+#if defined(CONFIG_MODVERSIONS) && defined(CONFIG_PPC64)
- #define ARCH_RELOCATES_KCRCTAB
--
--extern const unsigned long reloc_start[];
-+#define reloc_start PHYSICAL_START
- #endif
- #endif /* __KERNEL__ */
- #endif	/* _ASM_POWERPC_MODULE_H */
---- a/arch/powerpc/kernel/vmlinux.lds.S
-+++ b/arch/powerpc/kernel/vmlinux.lds.S
-@@ -38,9 +38,6 @@ jiffies = jiffies_64 + 4;
- #endif
- SECTIONS
- {
--	. = 0;
--	reloc_start = .;
--
- 	. = KERNELBASE;
- 
- /*
+--- a/drivers/acpi/acpi_memhotplug.c
++++ b/drivers/acpi/acpi_memhotplug.c
+@@ -421,6 +421,7 @@ static int acpi_memory_device_add(struct
+ 	/* Get the range from the _CRS */
+ 	result = acpi_memory_get_device_resources(mem_device);
+ 	if (result) {
++		device->driver_data = NULL;
+ 		kfree(mem_device);
+ 		return result;
+ 	}
 
 
