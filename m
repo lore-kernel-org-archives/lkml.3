@@ -1,97 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759380Ab3HBKJU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:09:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37146 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759294Ab3HBKJQ (ORCPT
+	id S1755864Ab3HBKw3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:52:29 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:54317 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759348Ab3HBKJT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:09:16 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Vincent Thiele <vincentthiele@gmail.com>
-Subject: [ 24/99] xhci: Avoid NULL pointer deref when host dies.
-Date: Fri,  2 Aug 2013 18:07:37 +0800
-Message-Id: <20130802100229.411254909@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
-In-Reply-To: <20130802100225.478715166@linuxfoundation.org>
-References: <20130802100225.478715166@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Fri, 2 Aug 2013 06:09:19 -0400
+Date: Fri, 2 Aug 2013 11:09:13 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        "'Sachin Kamat'" <sachin.kamat@linaro.org>
+Subject: Re: [PATCH V2] mfd: menelaus: use NULL instead of 0
+Message-ID: <20130802100913.GA17368@lee--X1>
+References: <000801ce8f45$aa4dbda0$fee938e0$@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <000801ce8f45$aa4dbda0$fee938e0$@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On Fri, 02 Aug 2013, Jingoo Han wrote:
 
-------------------
+> 'mmc_callback_data' and 'vtg' are pointers.
+> Fix the following sparse warning:
+> 
+> drivers/mfd/menelaus.c:445:43: warning: Using plain integer as NULL pointer
+> drivers/mfd/menelaus.c:469:20: warning: Using plain integer as NULL pointer
+> 
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+> ---
+>  drivers/mfd/menelaus.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/mfd/menelaus.c b/drivers/mfd/menelaus.c
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Applied, thanks.
 
-commit 203a86613fb3bf2767335659513fa98563a3eb71 upstream.
-
-When the host controller fails to respond to an Enable Slot command, and
-the host fails to respond to the register write to abort the command
-ring, the xHCI driver will assume the host is dead, and call
-usb_hc_died().
-
-The USB device's slot_id is still set to zero, and the pointer stored at
-xhci->devs[0] will always be NULL.  The call to xhci_check_args in
-xhci_free_dev should have caught the NULL virt_dev pointer.
-
-However, xhci_free_dev is designed to free the xhci_virt_device
-structures, even if the host is dead, so that we don't leak kernel
-memory.  xhci_free_dev checks the return value from the generic
-xhci_check_args function.  If the return value is -ENODEV, it carries on
-trying to free the virtual device.
-
-The issue is that xhci_check_args looks at the host controller state
-before it looks at the xhci_virt_device pointer.  It will return -ENIVAL
-because the host is dead, and xhci_free_dev will ignore the return
-value, and happily dereference the NULL xhci_virt_device pointer.
-
-The fix is to make sure that xhci_check_args checks the xhci_virt_device
-pointer before it checks the host state.
-
-See https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1203453 for
-further details.  This patch doesn't solve the underlying issue, but
-will ensure we don't see any more NULL pointer dereferences because of
-the issue.
-
-This patch should be backported to kernels as old as 3.1, that
-contain the commit 7bd89b4017f46a9b92853940fd9771319acb578a "xhci: Don't
-submit commands or URBs to halted hosts."
-
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Reported-by: Vincent Thiele <vincentthiele@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/usb/host/xhci.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -1171,9 +1171,6 @@ static int xhci_check_args(struct usb_hc
- 	}
- 
- 	xhci = hcd_to_xhci(hcd);
--	if (xhci->xhc_state & XHCI_STATE_HALTED)
--		return -ENODEV;
--
- 	if (check_virt_dev) {
- 		if (!udev->slot_id || !xhci->devs[udev->slot_id]) {
- 			printk(KERN_DEBUG "xHCI %s called with unaddressed "
-@@ -1189,6 +1186,9 @@ static int xhci_check_args(struct usb_hc
- 		}
- 	}
- 
-+	if (xhci->xhc_state & XHCI_STATE_HALTED)
-+		return -ENODEV;
-+
- 	return 1;
- }
- 
-
-
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
