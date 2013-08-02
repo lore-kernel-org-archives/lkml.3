@@ -1,24 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751945Ab3HBKiO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:38:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37477 "EHLO
+	id S1752715Ab3HBKiw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:38:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37455 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030498Ab3HBKMC (ORCPT
+	with ESMTP id S1030522Ab3HBKLv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:12:02 -0400
+	Fri, 2 Aug 2013 06:11:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        Ben Skeggs <bskeggs@redhat.com>
-Subject: [ 84/99] drm/nouveau: fix semaphore dmabuf obj
-Date: Fri,  2 Aug 2013 18:08:37 +0800
-Message-Id: <20130802100237.613209901@linuxfoundation.org>
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        =?UTF-8?q?St=C3=A9phane=20Marchesin?= <marcheu@chromium.org>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        =?UTF-8?q?Bj=C3=B6rn=20Bidar?= <theodorstormgrade@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 79/99] drm/i915: correctly restore fences with objects attached
+Date: Fri,  2 Aug 2013 18:08:32 +0800
+Message-Id: <20130802100236.971733989@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802100225.478715166@linuxfoundation.org>
 References: <20130802100225.478715166@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -27,76 +33,110 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit 7a7da592cbb22a1d360638dbecc393470c5effe3 upstream.
+commit 94a335dba34ff47cad3d6d0c29b452d43a1be3c8 upstream.
 
-Fixes some dmabuf object errors on nv50 chipset and below.
+To avoid stalls we delay tiling changes and especially hold of
+committing the new fence state for as long as possible.
+Synchronization points are in the execbuf code and in our gtt fault
+handler.
 
-Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+Unfortunately we've missed that tricky detail when adding proper fence
+restore code in
+
+commit 19b2dbde5732170a03bd82cc8bd442cf88d856f7
+Author: Chris Wilson <chris@chris-wilson.co.uk>
+Date:   Wed Jun 12 10:15:12 2013 +0100
+
+    drm/i915: Restore fences after resume and GPU resets
+
+The result was that we've restored fences for objects with no tiling,
+since the object<->fence link still existed after resume. Now that
+wouldn't have been too bad since any subsequent access would have
+fixed things up, but if we've changed from tiled to untiled real havoc
+happened:
+
+The tiling stride is stored -1 in the fence register, so a stride of 0
+resulted in all 1s in the top 32bits, and so a completely bogus fence
+spanning everything from the start of the object to the top of the
+GTT. The tell-tale in the register dumps looks like:
+
+                 FENCE START 2: 0x0214d001
+                 FENCE END 2: 0xfffff3ff
+
+Bit 11 isn't set since the hw doesn't store it, even when writing all
+1s (at least on my snb here).
+
+To prevent such a gaffle in the future add a sanity check for fences
+with an untiled object attached in i915_gem_write_fence.
+
+v2: Fix the WARN, spotted by Chris.
+
+v3: Trying to reuse get_fences looked ugly and obfuscated the code.
+Instead reuse update_fence and to make it really dtrt also move the
+fence dirty state clearing into update_fence.
+
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=60530
+Cc: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Stéphane Marchesin <marcheu@chromium.org>
+Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
+Tested-by: Matthew Garrett <matthew.garrett@nebula.com>
+Tested-by: Björn Bidar <theodorstormgrade@gmail.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/nouveau/nv17_fence.c |    2 +-
- drivers/gpu/drm/nouveau/nv50_fence.c |   14 +++++++++-----
- 2 files changed, 10 insertions(+), 6 deletions(-)
+ drivers/gpu/drm/i915/i915_gem.c |   18 ++++++++++++++++--
+ 1 file changed, 16 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/nouveau/nv17_fence.c
-+++ b/drivers/gpu/drm/nouveau/nv17_fence.c
-@@ -76,7 +76,7 @@ nv17_fence_context_new(struct nouveau_ch
- 	struct ttm_mem_reg *mem = &priv->bo->bo.mem;
- 	struct nouveau_object *object;
- 	u32 start = mem->start * PAGE_SIZE;
--	u32 limit = mem->start + mem->size - 1;
-+	u32 limit = start + mem->size - 1;
- 	int ret = 0;
+--- a/drivers/gpu/drm/i915/i915_gem.c
++++ b/drivers/gpu/drm/i915/i915_gem.c
+@@ -2138,7 +2138,17 @@ void i915_gem_restore_fences(struct drm_
  
- 	fctx = chan->fence = kzalloc(sizeof(*fctx), GFP_KERNEL);
---- a/drivers/gpu/drm/nouveau/nv50_fence.c
-+++ b/drivers/gpu/drm/nouveau/nv50_fence.c
-@@ -39,6 +39,8 @@ nv50_fence_context_new(struct nouveau_ch
- 	struct nv10_fence_chan *fctx;
- 	struct ttm_mem_reg *mem = &priv->bo->bo.mem;
- 	struct nouveau_object *object;
-+	u32 start = mem->start * PAGE_SIZE;
-+	u32 limit = start + mem->size - 1;
- 	int ret, i;
- 
- 	fctx = chan->fence = kzalloc(sizeof(*fctx), GFP_KERNEL);
-@@ -51,26 +53,28 @@ nv50_fence_context_new(struct nouveau_ch
- 	fctx->base.sync = nv17_fence_sync;
- 
- 	ret = nouveau_object_new(nv_object(chan->cli), chan->handle,
--				 NvSema, 0x0002,
-+				 NvSema, 0x003d,
- 				 &(struct nv_dma_class) {
- 					.flags = NV_DMA_TARGET_VRAM |
- 						 NV_DMA_ACCESS_RDWR,
--					.start = mem->start * PAGE_SIZE,
--					.limit = mem->size - 1,
-+					.start = start,
-+					.limit = limit,
- 				 }, sizeof(struct nv_dma_class),
- 				 &object);
- 
- 	/* dma objects for display sync channel semaphore blocks */
- 	for (i = 0; !ret && i < dev->mode_config.num_crtc; i++) {
- 		struct nouveau_bo *bo = nv50_display_crtc_sema(dev, i);
-+		u32 start = bo->bo.mem.start * PAGE_SIZE;
-+		u32 limit = start + bo->bo.mem.size - 1;
- 
- 		ret = nouveau_object_new(nv_object(chan->cli), chan->handle,
- 					 NvEvoSema0 + i, 0x003d,
- 					 &(struct nv_dma_class) {
- 						.flags = NV_DMA_TARGET_VRAM |
- 							 NV_DMA_ACCESS_RDWR,
--						.start = bo->bo.offset,
--						.limit = bo->bo.offset + 0xfff,
-+						.start = start,
-+						.limit = limit,
- 					 }, sizeof(struct nv_dma_class),
- 					 &object);
+ 	for (i = 0; i < dev_priv->num_fence_regs; i++) {
+ 		struct drm_i915_fence_reg *reg = &dev_priv->fence_regs[i];
+-		i915_gem_write_fence(dev, i, reg->obj);
++
++		/*
++		 * Commit delayed tiling changes if we have an object still
++		 * attached to the fence, otherwise just clear the fence.
++		 */
++		if (reg->obj) {
++			i915_gem_object_update_fence(reg->obj, reg,
++						     reg->obj->tiling_mode);
++		} else {
++			i915_gem_write_fence(dev, i, NULL);
++		}
  	}
+ }
+ 
+@@ -2676,6 +2686,10 @@ static void i915_gem_write_fence(struct
+ 	if (i915_gem_object_needs_mb(dev_priv->fence_regs[reg].obj))
+ 		mb();
+ 
++	WARN(obj && (!obj->stride || !obj->tiling_mode),
++	     "bogus fence setup with stride: 0x%x, tiling mode: %i\n",
++	     obj->stride, obj->tiling_mode);
++
+ 	switch (INTEL_INFO(dev)->gen) {
+ 	case 7:
+ 	case 6:
+@@ -2735,6 +2749,7 @@ static void i915_gem_object_update_fence
+ 		fence->obj = NULL;
+ 		list_del_init(&fence->lru_list);
+ 	}
++	obj->fence_dirty = false;
+ }
+ 
+ static int
+@@ -2864,7 +2879,6 @@ i915_gem_object_get_fence(struct drm_i91
+ 		return 0;
+ 
+ 	i915_gem_object_update_fence(obj, reg, enable);
+-	obj->fence_dirty = false;
+ 
+ 	return 0;
+ }
 
 
