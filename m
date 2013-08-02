@@ -1,97 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754428Ab3HBWna (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 18:43:30 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:48100 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754269Ab3HBWn2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 18:43:28 -0400
-Message-ID: <1375483407.2034.146.camel@joe-AO722>
-Subject: Re: [RFC v01 2/3] PowerCap: Add class driver
-From: Joe Perches <joe@perches.com>
-To: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org
-Date: Fri, 02 Aug 2013 15:43:27 -0700
-In-Reply-To: <1375466932-11842-3-git-send-email-srinivas.pandruvada@linux.intel.com>
-References: <1375466932-11842-1-git-send-email-srinivas.pandruvada@linux.intel.com>
-	 <1375466932-11842-3-git-send-email-srinivas.pandruvada@linux.intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753964Ab3HBWnT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 18:43:19 -0400
+Received: from mail-db8lp0187.outbound.messaging.microsoft.com ([213.199.154.187]:59592
+	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751931Ab3HBWnO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 18:43:14 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: 4
+X-BigFish: VPS4(zzzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hz70kd2izz2dh668h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h14ddh1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e1dh1e23h1155h)
+X-WSS-ID: 0MQXDRR-02-3R6-02
+X-M-MSG: 
+From: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
+To: <tglx@linutronix.de>, <mingo@redhat.com>, <hpa@zytor.com>,
+        <dougthompson@xmission.com>, <bp@alien8.de>, <bhelgaas@google.com>,
+        <jbeulich@suse.com>, <linux-kernel@vger.kernel.org>,
+        <linux-edac@vger.kernel.org>, <linux-pci@vger.kernel.org>
+CC: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
+Subject: [PATCH 0/3 V2] EDAC, AMD64_EDAC: Add ECC error decoding for newer Fam15h models.
+Date: Fri, 2 Aug 2013 17:43:01 -0500
+Message-ID: <1375483384-2302-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
+X-Mailer: git-send-email 1.7.10.4
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-08-02 at 11:08 -0700, Srinivas Pandruvada wrote:
-> Added power cap class driver, which provides an API for client drivers
-> to use and provide a consistant sys-fs interface to user mode.
+Changes from V1:
+	- Splitting up the patch
+	- Remove unnecessary helper functions
+	- Add family/model to amd64_pvt
+	- Cleanup indent issues
 
-Just some stylistic notes.
+Aravind Gopalakrishnan (3):
+  EDAC, AMD64_EDAC: Add PCI Device ID Functions 3 and 4 for newer F15h
+    models.
+  EDAC, AMD64_EDAC: Add relevant condition checks as F15h M30h does not
+    support GART or L3.
+  EDAC, AMD64_EDAC: Add ECC decoding support for newer F15h models.
 
-> diff --git a/drivers/powercap/powercap_sys.c b/drivers/powercap/powercap_sys.c
-[]
-> +/* Power zone show function */
-> +#define define_device_show(_attr)		\
-> +static ssize_t show_##_attr(struct device *dev, struct device_attribute *attr,\
-> +			char *buf) \
+ arch/x86/kernel/amd_nb.c  |   14 ++-
+ drivers/edac/amd64_edac.c |  276 +++++++++++++++++++++++++++++++++++++++++----
+ drivers/edac/amd64_edac.h |   65 ++++++++++-
+ include/linux/pci_ids.h   |    2 +
+ 4 files changed, 330 insertions(+), 27 deletions(-)
 
-Using _attr and another variable named attr is at least
-visually confusing.
-
-Maybe use name or type instead of _attr?
-
-> +{ \
-> +	u64 value; \
-> +	ssize_t len = -EINVAL; \
-> +	struct powercap_zone_device *pcd_dev = dev_get_drvdata(dev); \
-> +	\
-> +	if (pcd_dev && pcd_dev->ops && pcd_dev->ops->get_##_attr) { \
-> +		mutex_lock(&pcd_dev->lock); \
-> +		if (!pcd_dev->ops->get_##_attr(pcd_dev, &value)) \
-> +			len = sprintf(buf, "%lld\n", value); \
-> +		mutex_unlock(&pcd_dev->lock); \
-> +	} \
-> +	\
-> +	return len; \
-> +}
-> +
-> +/* Power zone store function; only reset is possible */
-> +#define define_device_store(_attr)		\
-> +static ssize_t store_##_attr(struct device *dev,\
-> +				struct device_attribute *attr, \
-> +				const char *buf, size_t count) \
-
-here too
-
-[]
-
-> +/* Power zone constraint show function */
-> +#define define_device_constraint_show(_attr) \
-> +static ssize_t show_constraint_##_attr(struct device *dev, \
-> +				struct device_attribute *attr,\
-> +				char *buf) \
-
-and here
-
-[]
-
-> +/* Power zone constraint store function */
-> +#define define_device_constraint_store(_attr) \
-> +static ssize_t store_constraint_##_attr(struct device *dev,\
-> +				struct device_attribute *attr, \
-> +				const char *buf, size_t count) \
-
-etc...
-
-> +struct powercap_zone_constraint *powercap_zone_add_constraint(
-> +				struct powercap_zone_device *pcd_dev,
-> +				struct powercap_zone_constraint_ops *ops)
-> +{
-[]
-> +	dev_dbg(&pcd_dev->device, "powercap_zone_add_constraint\n");
-
-These logging messages aren't useful.
-function tracing works very well.
+-- 
+1.7.10.4
 
 
