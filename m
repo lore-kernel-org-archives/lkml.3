@@ -1,24 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754203Ab3HBKTv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:19:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37770 "EHLO
+	id S1754212Ab3HBKUy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:20:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37752 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752837Ab3HBKTt (ORCPT
+	with ESMTP id S1753927Ab3HBKTf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:19:49 -0400
+	Fri, 2 Aug 2013 06:19:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>, Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Zhouping Liu <zliu@redhat.com>
-Subject: [ 39/39] mm/memory-hotplug: fix lowmem count overflow when offline pages
-Date: Fri,  2 Aug 2013 18:18:49 +0800
-Message-Id: <20130802101502.310137211@linuxfoundation.org>
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [ 30/39] livelock avoidance in sget()
+Date: Fri,  2 Aug 2013 18:18:40 +0800
+Message-Id: <20130802101501.054885345@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802101456.800497005@linuxfoundation.org>
 References: <20130802101456.800497005@linuxfoundation.org>
@@ -31,81 +26,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+From: Al Viro <viro@zeniv.linux.org.uk>
 
-commit cea27eb2a202959783f81254c48c250ddd80e129 upstream.
+commit acfec9a5a892f98461f52ed5770de99a3e571ae2 upstream.
 
-The logic for the memory-remove code fails to correctly account the
-Total High Memory when a memory block which contains High Memory is
-offlined as shown in the example below.  The following patch fixes it.
+Eric Sandeen has found a nasty livelock in sget() - take a mount(2) about
+to fail.  The superblock is on ->fs_supers, ->s_umount is held exclusive,
+->s_active is 1.  Along comes two more processes, trying to mount the same
+thing; sget() in each is picking that superblock, bumping ->s_count and
+trying to grab ->s_umount.  ->s_active is 3 now.  Original mount(2)
+finally gets to deactivate_locked_super() on failure; ->s_active is 2,
+superblock is still ->fs_supers because shutdown will *not* happen until
+->s_active hits 0.  ->s_umount is dropped and now we have two processes
+chasing each other:
+s_active = 2, A acquired ->s_umount, B blocked
+A sees that the damn thing is stillborn, does deactivate_locked_super()
+s_active = 1, A drops ->s_umount, B gets it
+A restarts the search and finds the same superblock.  And bumps it ->s_active.
+s_active = 2, B holds ->s_umount, A blocked on trying to get it
+... and we are in the earlier situation with A and B switched places.
 
-Before logic memory remove:
+The root cause, of course, is that ->s_active should not grow until we'd
+got MS_BORN.  Then failing ->mount() will have deactivate_locked_super()
+shut the damn thing down.  Fortunately, it's easy to do - the key point
+is that grab_super() is called only for superblocks currently on ->fs_supers,
+so it can bump ->s_count and grab ->s_umount first, then check MS_BORN and
+bump ->s_active; we must never increment ->s_count for superblocks past
+->kill_sb(), but grab_super() is never called for those.
 
-MemTotal:        7603740 kB
-MemFree:         6329612 kB
-Buffers:           94352 kB
-Cached:           872008 kB
-SwapCached:            0 kB
-Active:           626932 kB
-Inactive:         519216 kB
-Active(anon):     180776 kB
-Inactive(anon):   222944 kB
-Active(file):     446156 kB
-Inactive(file):   296272 kB
-Unevictable:           0 kB
-Mlocked:               0 kB
-HighTotal:       7294672 kB
-HighFree:        5704696 kB
-LowTotal:         309068 kB
-LowFree:          624916 kB
+The bug is pretty old; we would've caught it by now, if not for accidental
+exclusion between sget() for block filesystems; the things like cgroup or
+e.g. mtd-based filesystems don't have anything of that sort, so they get
+bitten.  The right way to deal with that is obviously to fix sget()...
 
-After logic memory remove:
-
-MemTotal:        7079452 kB
-MemFree:         5805976 kB
-Buffers:           94372 kB
-Cached:           872000 kB
-SwapCached:            0 kB
-Active:           626936 kB
-Inactive:         519236 kB
-Active(anon):     180780 kB
-Inactive(anon):   222944 kB
-Active(file):     446156 kB
-Inactive(file):   296292 kB
-Unevictable:           0 kB
-Mlocked:               0 kB
-HighTotal:       7294672 kB
-HighFree:        5181024 kB
-LowTotal:       4294752076 kB
-LowFree:          624952 kB
-
-[mhocko@suse.cz: fix CONFIG_HIGHMEM=n build]
-Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: David Rientjes <rientjes@google.com>
-Cc: <stable@vger.kernel.org>	[2.6.24+]
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Zhouping Liu <zliu@redhat.com>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/page_alloc.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ fs/super.c |   25 ++++++++++---------------
+ 1 file changed, 10 insertions(+), 15 deletions(-)
 
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -5592,6 +5592,10 @@ __offline_isolated_pages(unsigned long s
- 		zone->free_area[order].nr_free--;
- 		__mod_zone_page_state(zone, NR_FREE_PAGES,
- 				      - (1UL << order));
-+#ifdef CONFIG_HIGHMEM
-+		if (PageHighMem(page))
-+			totalhigh_pages -= 1 << order;
-+#endif
- 		for (i = 0; i < (1 << order); i++)
- 			SetPageReserved((page+i));
- 		pfn += (1 << order);
+--- a/fs/super.c
++++ b/fs/super.c
+@@ -298,19 +298,19 @@ EXPORT_SYMBOL(deactivate_super);
+  *	and want to turn it into a full-blown active reference.  grab_super()
+  *	is called with sb_lock held and drops it.  Returns 1 in case of
+  *	success, 0 if we had failed (superblock contents was already dead or
+- *	dying when grab_super() had been called).
++ *	dying when grab_super() had been called).  Note that this is only
++ *	called for superblocks not in rundown mode (== ones still on ->fs_supers
++ *	of their type), so increment of ->s_count is OK here.
+  */
+ static int grab_super(struct super_block *s) __releases(sb_lock)
+ {
+-	if (atomic_inc_not_zero(&s->s_active)) {
+-		spin_unlock(&sb_lock);
+-		return 1;
+-	}
+-	/* it's going away */
+ 	s->s_count++;
+ 	spin_unlock(&sb_lock);
+-	/* wait for it to die */
+ 	down_write(&s->s_umount);
++	if ((s->s_flags & MS_BORN) && atomic_inc_not_zero(&s->s_active)) {
++		put_super(s);
++		return 1;
++	}
+ 	up_write(&s->s_umount);
+ 	put_super(s);
+ 	return 0;
+@@ -440,11 +440,6 @@ retry:
+ 				destroy_super(s);
+ 				s = NULL;
+ 			}
+-			down_write(&old->s_umount);
+-			if (unlikely(!(old->s_flags & MS_BORN))) {
+-				deactivate_locked_super(old);
+-				goto retry;
+-			}
+ 			return old;
+ 		}
+ 	}
+@@ -677,10 +672,10 @@ restart:
+ 		if (hlist_unhashed(&sb->s_instances))
+ 			continue;
+ 		if (sb->s_bdev == bdev) {
+-			if (grab_super(sb)) /* drops sb_lock */
+-				return sb;
+-			else
++			if (!grab_super(sb))
+ 				goto restart;
++			up_write(&sb->s_umount);
++			return sb;
+ 		}
+ 	}
+ 	spin_unlock(&sb_lock);
 
 
