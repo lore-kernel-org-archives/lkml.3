@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030650Ab3HBKMi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:12:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37524 "EHLO
+	id S1030623Ab3HBKM3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:12:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37510 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030633Ab3HBKMb (ORCPT
+	with ESMTP id S1030570Ab3HBKMX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:12:31 -0400
+	Fri, 2 Aug 2013 06:12:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Pekka Enberg <penberg@kernel.org>, Michael Witten <mfwitten@gmail.com>,
-        Mark Brown <broonie@sirena.org.uk>
-Subject: [ 97/99] perf tools: Revert regression in configuration of Python support
-Date: Fri,  2 Aug 2013 18:08:50 +0800
-Message-Id: <20130802100239.448050092@linuxfoundation.org>
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [ 92/99] livelock avoidance in sget()
+Date: Fri,  2 Aug 2013 18:08:45 +0800
+Message-Id: <20130802100238.754528419@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802100225.478715166@linuxfoundation.org>
 References: <20130802100225.478715166@linuxfoundation.org>
@@ -27,71 +26,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Witten <mfwitten@gmail.com>
+From: Al Viro <viro@zeniv.linux.org.uk>
 
-commit a363a9da65d253fa7354ce5fd630f4f94df934cc upstream.
+commit acfec9a5a892f98461f52ed5770de99a3e571ae2 upstream.
 
-Among other things, the following:
+Eric Sandeen has found a nasty livelock in sget() - take a mount(2) about
+to fail.  The superblock is on ->fs_supers, ->s_umount is held exclusive,
+->s_active is 1.  Along comes two more processes, trying to mount the same
+thing; sget() in each is picking that superblock, bumping ->s_count and
+trying to grab ->s_umount.  ->s_active is 3 now.  Original mount(2)
+finally gets to deactivate_locked_super() on failure; ->s_active is 2,
+superblock is still ->fs_supers because shutdown will *not* happen until
+->s_active hits 0.  ->s_umount is dropped and now we have two processes
+chasing each other:
+s_active = 2, A acquired ->s_umount, B blocked
+A sees that the damn thing is stillborn, does deactivate_locked_super()
+s_active = 1, A drops ->s_umount, B gets it
+A restarts the search and finds the same superblock.  And bumps it ->s_active.
+s_active = 2, B holds ->s_umount, A blocked on trying to get it
+... and we are in the earlier situation with A and B switched places.
 
-  commit 31160d7feab786c991780d7f0ce2755a469e0e5e
-  Date:   Tue Jan 8 16:22:36 2013 -0500
-  perf tools: Fix GNU make v3.80 compatibility issue
+The root cause, of course, is that ->s_active should not grow until we'd
+got MS_BORN.  Then failing ->mount() will have deactivate_locked_super()
+shut the damn thing down.  Fortunately, it's easy to do - the key point
+is that grab_super() is called only for superblocks currently on ->fs_supers,
+so it can bump ->s_count and grab ->s_umount first, then check MS_BORN and
+bump ->s_active; we must never increment ->s_count for superblocks past
+->kill_sb(), but grab_super() is never called for those.
 
-attempts to aid the user by tapping into an existing error message,
-as described in the commit message:
+The bug is pretty old; we would've caught it by now, if not for accidental
+exclusion between sget() for block filesystems; the things like cgroup or
+e.g. mtd-based filesystems don't have anything of that sort, so they get
+bitten.  The right way to deal with that is obviously to fix sget()...
 
-  ... Also fix an issue where _get_attempt was called with only
-  one argument. This prevented the error message from printing
-  the name of the variable that can be used to fix the problem.
-
-or more precisely:
-
-  -$(if $($(1)),$(call _ge_attempt,$($(1)),$(1)),$(call _ge_attempt,$(2)))
-  +$(if $($(1)),$(call _ge_attempt,$($(1)),$(1)),$(call _ge_attempt,$(2),$(1)))
-
-However, The "missing" argument was in fact missing on purpose; it's
-absence is a signal that the error message should be skipped, because
-the failure would be due to the default value, not any user-supplied
-value.  This can be seen in how `_ge_attempt' uses `gea_err' (in the
-config/utilities.mak file):
-
-  _ge_attempt = $(if $(get-executable),$(get-executable),$(_gea_warn)$(call _gea_err,$(2)))
-  _gea_warn = $(warning The path '$(1)' is not executable.)
-  _gea_err  = $(if $(1),$(error Please set '$(1)' appropriately))
-
-That is, because the argument is no longer missing, the value `$(1)'
-(associated with `_gea_err') always evaluates to true, thus always
-triggering the error condition that is meant to be reserved for
-only the case when a user explicitly supplies an invalid value.
-
-Concretely, the result is a regression in the Makefile's configuration
-of python support; rather than gracefully disable support when the
-relevant executables cannot be found according to default values, the
-build process halts in error as though the user explicitly supplied
-the values.
-
-This new commit simply reverts the offending one-line change.
-
-Reported-by: Pekka Enberg <penberg@kernel.org>
-Link: http://lkml.kernel.org/r/CAOJsxLHv17Ys3M7P5q25imkUxQW6LE_vABxh1N3Tt7Mv6Ho4iw@mail.gmail.com
-Signed-off-by: Michael Witten <mfwitten@gmail.com>
-Cc: Mark Brown <broonie@sirena.org.uk>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- tools/perf/config/utilities.mak |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/super.c |   25 ++++++++++---------------
+ 1 file changed, 10 insertions(+), 15 deletions(-)
 
---- a/tools/perf/config/utilities.mak
-+++ b/tools/perf/config/utilities.mak
-@@ -173,7 +173,7 @@ _ge-abspath = $(if $(is-executable),$(1)
- # Usage: absolute-executable-path-or-empty = $(call get-executable-or-default,variable,default)
- #
- define get-executable-or-default
--$(if $($(1)),$(call _ge_attempt,$($(1)),$(1)),$(call _ge_attempt,$(2),$(1)))
-+$(if $($(1)),$(call _ge_attempt,$($(1)),$(1)),$(call _ge_attempt,$(2)))
- endef
- _ge_attempt = $(if $(get-executable),$(get-executable),$(_gea_warn)$(call _gea_err,$(2)))
- _gea_warn = $(warning The path '$(1)' is not executable.)
+--- a/fs/super.c
++++ b/fs/super.c
+@@ -336,19 +336,19 @@ EXPORT_SYMBOL(deactivate_super);
+  *	and want to turn it into a full-blown active reference.  grab_super()
+  *	is called with sb_lock held and drops it.  Returns 1 in case of
+  *	success, 0 if we had failed (superblock contents was already dead or
+- *	dying when grab_super() had been called).
++ *	dying when grab_super() had been called).  Note that this is only
++ *	called for superblocks not in rundown mode (== ones still on ->fs_supers
++ *	of their type), so increment of ->s_count is OK here.
+  */
+ static int grab_super(struct super_block *s) __releases(sb_lock)
+ {
+-	if (atomic_inc_not_zero(&s->s_active)) {
+-		spin_unlock(&sb_lock);
+-		return 1;
+-	}
+-	/* it's going away */
+ 	s->s_count++;
+ 	spin_unlock(&sb_lock);
+-	/* wait for it to die */
+ 	down_write(&s->s_umount);
++	if ((s->s_flags & MS_BORN) && atomic_inc_not_zero(&s->s_active)) {
++		put_super(s);
++		return 1;
++	}
+ 	up_write(&s->s_umount);
+ 	put_super(s);
+ 	return 0;
+@@ -463,11 +463,6 @@ retry:
+ 				destroy_super(s);
+ 				s = NULL;
+ 			}
+-			down_write(&old->s_umount);
+-			if (unlikely(!(old->s_flags & MS_BORN))) {
+-				deactivate_locked_super(old);
+-				goto retry;
+-			}
+ 			return old;
+ 		}
+ 	}
+@@ -660,10 +655,10 @@ restart:
+ 		if (hlist_unhashed(&sb->s_instances))
+ 			continue;
+ 		if (sb->s_bdev == bdev) {
+-			if (grab_super(sb)) /* drops sb_lock */
+-				return sb;
+-			else
++			if (!grab_super(sb))
+ 				goto restart;
++			up_write(&sb->s_umount);
++			return sb;
+ 		}
+ 	}
+ 	spin_unlock(&sb_lock);
 
 
