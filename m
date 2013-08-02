@@ -1,138 +1,232 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754915Ab3HBQus (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 12:50:48 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:51139 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754594Ab3HBQum (ORCPT
+	id S1754752Ab3HBQuq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 12:50:46 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:54106 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754616Ab3HBQun (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 12:50:42 -0400
-From: Leif Lindholm <leif.lindholm@linaro.org>
-To: linux-efi@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-ia64@vger.kernel.org,
-        matt.fleming@intel.com, tony.luck@gmail.com, patches@linaro.org,
-        Leif Lindholm <leif.lindholm@linaro.org>
-Subject: [PATCH v2 4/5] efi: ia64: use common code for (U)EFI configuration scanning
-Date: Fri,  2 Aug 2013 17:56:21 +0100
-Message-Id: <1375462582-16423-5-git-send-email-leif.lindholm@linaro.org>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1375462582-16423-1-git-send-email-leif.lindholm@linaro.org>
-References: <1375462582-16423-1-git-send-email-leif.lindholm@linaro.org>
+	Fri, 2 Aug 2013 12:50:43 -0400
+Date: Fri, 2 Aug 2013 18:50:32 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Don Morris <don.morris@hp.com>
+Cc: Mel Gorman <mgorman@suse.de>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, riel@redhat.com
+Subject: [PATCH] mm, numa: Do not group on RO pages
+Message-ID: <20130802165032.GQ27162@twins.programming.kicks-ass.net>
+References: <1373901620-2021-1-git-send-email-mgorman@suse.de>
+ <20130730113857.GR3008@twins.programming.kicks-ass.net>
+ <20130731150751.GA15144@twins.programming.kicks-ass.net>
+ <51F93105.8020503@hp.com>
+ <20130802164715.GP27162@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130802164715.GP27162@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch makes ia64 use the new common code for configuration table
-scanning. It also removes the local definition of the global "efi"
-data structure.
 
-Signed-off-by: Leif Lindholm <leif.lindholm@linaro.org>
+Subject: mm, numa: Do not group on RO pages
+From: Peter Zijlstra <peterz@infradead.org>
+Date: Fri Aug 2 18:38:34 CEST 2013
+
+And here's a little something to make sure not the whole world ends up
+in a single group.
+
+As while we don't migrate shared executable pages, we do scan/fault on
+them. And since everybody links to libc, everybody ends up in the same
+group.
+
+Sugested-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 ---
- arch/ia64/kernel/efi.c |   54 ++++++++++--------------------------------------
- 1 file changed, 11 insertions(+), 43 deletions(-)
+ include/linux/sched.h |    7 +++++--
+ kernel/sched/fair.c   |    5 +++--
+ mm/huge_memory.c      |   15 +++++++++++++--
+ mm/memory.c           |   31 ++++++++++++++++++++++++++-----
+ 4 files changed, 47 insertions(+), 11 deletions(-)
 
-diff --git a/arch/ia64/kernel/efi.c b/arch/ia64/kernel/efi.c
-index 51bce59..da5b462 100644
---- a/arch/ia64/kernel/efi.c
-+++ b/arch/ia64/kernel/efi.c
-@@ -44,10 +44,15 @@
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1438,12 +1438,15 @@ struct task_struct {
+ /* Future-safe accessor for struct task_struct's cpus_allowed. */
+ #define tsk_cpus_allowed(tsk) (&(tsk)->cpus_allowed)
  
- #define EFI_DEBUG	0
- 
-+static __initdata unsigned long palo_phys;
++#define TNF_MIGRATED	0x01
++#define TNF_NO_GROUP	0x02
 +
-+static __initdata efi_config_table_type_t arch_tables[] = {
-+	{PROCESSOR_ABSTRACTION_LAYER_OVERWRITE_GUID, "PALO", &palo_phys},
-+	{NULL_GUID, NULL, 0},
-+};
-+
- extern efi_status_t efi_call_phys (void *, ...);
- 
--struct efi efi;
--EXPORT_SYMBOL(efi);
- static efi_runtime_services_t *runtime;
- static u64 mem_limit = ~0UL, max_addr = ~0UL, min_addr = 0UL;
- 
-@@ -423,9 +428,9 @@ static u8 __init palo_checksum(u8 *buffer, u32 length)
-  * Parse and handle PALO table which is published at:
-  * http://www.dig64.org/home/DIG64_PALO_R1_0.pdf
+ #ifdef CONFIG_NUMA_BALANCING
+-extern void task_numa_fault(int last_node, int node, int pages, bool migrated);
++extern void task_numa_fault(int last_node, int node, int pages, int flags);
+ extern void set_numabalancing_state(bool enabled);
+ #else
+ static inline void task_numa_fault(int last_node, int node, int pages,
+-				   bool migrated)
++				   int flags)
+ {
+ }
+ static inline void set_numabalancing_state(bool enabled)
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -1371,9 +1371,10 @@ void task_numa_free(struct task_struct *
+ /*
+  * Got a PROT_NONE fault for a page on @node.
   */
--static void __init handle_palo(unsigned long palo_phys)
-+static void __init handle_palo(unsigned long phys_addr)
+-void task_numa_fault(int last_cpupid, int node, int pages, bool migrated)
++void task_numa_fault(int last_cpupid, int node, int pages, int flags)
  {
--	struct palo_table *palo = __va(palo_phys);
-+	struct palo_table *palo = __va(phys_addr);
- 	u8  checksum;
+ 	struct task_struct *p = current;
++	bool migrated = flags & TNF_MIGRATED;
+ 	int priv;
  
- 	if (strncmp(palo->signature, PALO_SIG, sizeof(PALO_SIG) - 1)) {
-@@ -467,12 +472,10 @@ void __init
- efi_init (void)
- {
- 	void *efi_map_start, *efi_map_end;
--	efi_config_table_t *config_tables;
- 	efi_char16_t *c16;
- 	u64 efi_desc_size;
- 	char *cp, vendor[100] = "unknown";
- 	int i;
--	unsigned long palo_phys;
+ 	if (!numabalancing_enabled)
+@@ -1409,7 +1410,7 @@ void task_numa_fault(int last_cpupid, in
+ 		pid = cpupid_to_pid(last_cpupid);
+ 
+ 		priv = (pid == (p->pid & LAST__PID_MASK));
+-		if (!priv)
++		if (!priv && !(flags & TNF_NO_GROUP))
+ 			task_numa_group(p, cpu, pid);
+ 	}
+ 
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1295,6 +1295,7 @@ int do_huge_pmd_numa_page(struct mm_stru
+ 	int page_nid = -1, account_nid = -1, this_nid = numa_node_id();
+ 	int target_nid, last_cpupid;
+ 	bool migrated = false;
++	int flags = 0;
+ 
+ 	spin_lock(&mm->page_table_lock);
+ 	if (unlikely(!pmd_same(pmd, *pmdp)))
+@@ -1333,6 +1334,15 @@ int do_huge_pmd_numa_page(struct mm_stru
+ 		account_nid = page_nid = -1; /* someone else took our fault */
+ 		goto out_unlock;
+ 	}
++
++	/*
++	 * Avoid grouping on DSO/COW pages in specific and RO pages
++	 * in general, RO pages shouldn't hurt as much anyway since
++	 * they can be in shared cache state.
++	 */
++	if (page_mapcount(page) != 1 && !pmd_write(pmd))
++		flags |= TNF_NO_GROUP;
++
+ 	spin_unlock(&mm->page_table_lock);
+ 
+ 	/* Migrate the THP to the requested node */
+@@ -1341,7 +1351,8 @@ int do_huge_pmd_numa_page(struct mm_stru
+ 	if (!migrated) {
+ 		account_nid = -1; /* account against the old page */
+ 		goto check_same;
+-	}
++	} else
++		flags |= TNF_MIGRATED;
+ 
+ 	page_nid = target_nid;
+ 	goto out;
+@@ -1364,7 +1375,7 @@ int do_huge_pmd_numa_page(struct mm_stru
+ 	if (account_nid == -1)
+ 		account_nid = page_nid;
+ 	if (account_nid != -1)
+-		task_numa_fault(last_cpupid, account_nid, HPAGE_PMD_NR, migrated);
++		task_numa_fault(last_cpupid, account_nid, HPAGE_PMD_NR, flags);
+ 
+ 	return 0;
+ }
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -3537,6 +3537,7 @@ int do_numa_page(struct mm_struct *mm, s
+ 	int page_nid = -1, account_nid = -1;
+ 	int target_nid, last_cpupid;
+ 	bool migrated = false;
++	int flags = 0;
  
  	/*
- 	 * It's too early to be able to use the standard kernel command line
-@@ -514,8 +517,6 @@ efi_init (void)
- 		       efi.systab->hdr.revision >> 16,
- 		       efi.systab->hdr.revision & 0xffff);
+ 	* The "pte" at this point cannot be used safely without
+@@ -3569,6 +3570,14 @@ int do_numa_page(struct mm_struct *mm, s
+ 		return 0;
+ 	}
  
--	config_tables = __va(efi.systab->tables);
--
- 	/* Show what we know for posterity */
- 	c16 = __va(efi.systab->fw_vendor);
- 	if (c16) {
-@@ -528,43 +529,10 @@ efi_init (void)
- 	       efi.systab->hdr.revision >> 16,
- 	       efi.systab->hdr.revision & 0xffff, vendor);
++	/*
++	 * Avoid grouping on DSO/COW pages in specific and RO pages
++	 * in general, RO pages shouldn't hurt as much anyway since
++	 * they can be in shared cache state.
++	 */
++	if (page_mapcount(page) != 1 && !pte_write(pte))
++		flags |= TNF_NO_GROUP;
++
+ 	last_cpupid = page_cpupid_last(page);
+ 	page_nid = page_to_nid(page);
+ 	target_nid = numa_migrate_prep(page, vma, addr, page_nid, &account_nid);
+@@ -3580,14 +3589,16 @@ int do_numa_page(struct mm_struct *mm, s
  
--	efi.mps        = EFI_INVALID_TABLE_ADDR;
--	efi.acpi       = EFI_INVALID_TABLE_ADDR;
--	efi.acpi20     = EFI_INVALID_TABLE_ADDR;
--	efi.smbios     = EFI_INVALID_TABLE_ADDR;
--	efi.sal_systab = EFI_INVALID_TABLE_ADDR;
--	efi.boot_info  = EFI_INVALID_TABLE_ADDR;
--	efi.hcdp       = EFI_INVALID_TABLE_ADDR;
--	efi.uga        = EFI_INVALID_TABLE_ADDR;
--
- 	palo_phys      = EFI_INVALID_TABLE_ADDR;
+ 	/* Migrate to the requested node */
+ 	migrated = migrate_misplaced_page(page, vma, target_nid);
+-	if (migrated)
++	if (migrated) {
+ 		page_nid = target_nid;
++		flags |= TNF_MIGRATED;
++	}
  
--	for (i = 0; i < (int) efi.systab->nr_tables; i++) {
--		if (efi_guidcmp(config_tables[i].guid, MPS_TABLE_GUID) == 0) {
--			efi.mps = config_tables[i].table;
--			printk(" MPS=0x%lx", config_tables[i].table);
--		} else if (efi_guidcmp(config_tables[i].guid, ACPI_20_TABLE_GUID) == 0) {
--			efi.acpi20 = config_tables[i].table;
--			printk(" ACPI 2.0=0x%lx", config_tables[i].table);
--		} else if (efi_guidcmp(config_tables[i].guid, ACPI_TABLE_GUID) == 0) {
--			efi.acpi = config_tables[i].table;
--			printk(" ACPI=0x%lx", config_tables[i].table);
--		} else if (efi_guidcmp(config_tables[i].guid, SMBIOS_TABLE_GUID) == 0) {
--			efi.smbios = config_tables[i].table;
--			printk(" SMBIOS=0x%lx", config_tables[i].table);
--		} else if (efi_guidcmp(config_tables[i].guid, SAL_SYSTEM_TABLE_GUID) == 0) {
--			efi.sal_systab = config_tables[i].table;
--			printk(" SALsystab=0x%lx", config_tables[i].table);
--		} else if (efi_guidcmp(config_tables[i].guid, HCDP_TABLE_GUID) == 0) {
--			efi.hcdp = config_tables[i].table;
--			printk(" HCDP=0x%lx", config_tables[i].table);
--		} else if (efi_guidcmp(config_tables[i].guid,
--			 PROCESSOR_ABSTRACTION_LAYER_OVERWRITE_GUID) == 0) {
--			palo_phys = config_tables[i].table;
--			printk(" PALO=0x%lx", config_tables[i].table);
--		}
--	}
--	printk("\n");
-+	if (efi_config_init(arch_tables) != 0)
-+		return;
+ out:
+ 	if (account_nid == -1)
+ 		account_nid = page_nid;
+ 	if (account_nid != -1)
+-		task_numa_fault(last_cpupid, account_nid, 1, migrated);
++		task_numa_fault(last_cpupid, account_nid, 1, flags);
  
- 	if (palo_phys != EFI_INVALID_TABLE_ADDR)
- 		handle_palo(palo_phys);
--- 
-1.7.10.4
+ 	return 0;
+ }
+@@ -3632,6 +3643,7 @@ static int do_pmd_numa_page(struct mm_st
+ 		int page_nid = -1, account_nid = -1;
+ 		int target_nid;
+ 		bool migrated = false;
++		int flags = 0;
+ 
+ 		if (!pte_present(pteval))
+ 			continue;
+@@ -3651,6 +3663,14 @@ static int do_pmd_numa_page(struct mm_st
+ 		if (unlikely(!page))
+ 			continue;
+ 
++		/*
++		 * Avoid grouping on DSO/COW pages in specific and RO pages
++		 * in general, RO pages shouldn't hurt as much anyway since
++		 * they can be in shared cache state.
++		 */
++		if (page_mapcount(page) != 1 && !pte_write(pteval))
++			flags |= TNF_NO_GROUP;
++
+ 		last_cpupid = page_cpupid_last(page);
+ 		page_nid = page_to_nid(page);
+ 		target_nid = numa_migrate_prep(page, vma, addr,
+@@ -3659,9 +3679,10 @@ static int do_pmd_numa_page(struct mm_st
+ 
+ 		if (target_nid != -1) {
+ 			migrated = migrate_misplaced_page(page, vma, target_nid);
+-			if (migrated)
++			if (migrated) {
+ 				page_nid = target_nid;
+-			else
++				flags |= TNF_MIGRATED;
++			} else
+ 				account_nid = -1;
+ 		} else {
+ 			put_page(page);
+@@ -3670,7 +3691,7 @@ static int do_pmd_numa_page(struct mm_st
+ 		if (account_nid == -1)
+ 			account_nid = page_nid;
+ 		if (account_nid != -1)
+-			task_numa_fault(last_cpupid, account_nid, 1, migrated);
++			task_numa_fault(last_cpupid, account_nid, 1, flags);
+ 
+ 		cond_resched();
+ 
 
