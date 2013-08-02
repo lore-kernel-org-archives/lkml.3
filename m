@@ -1,89 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757604Ab3HBDXL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 23:23:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60686 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755671Ab3HBDXJ (ORCPT
+	id S1757674Ab3HBDYV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 23:24:21 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:62509 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756181Ab3HBDYT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 23:23:09 -0400
-Date: Fri, 2 Aug 2013 11:24:25 +0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Srikanth Thokala <srikanth.thokala@xilinx.com>
-Cc: arnd@arndb.de, rob.herring@calxeda.com, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, grant.likely@linaro.org,
-        Michal Simek <michal.simek@xilinx.com>,
-        Srikanth Thokala <sthokal@xilinx.com>
-Subject: Re: [LINUX PATCH RFC v2] trafgen: xilinx: add axi traffic generator
- driver
-Message-ID: <20130802032425.GC2553@kroah.com>
-References: <477a2d56-a6f9-455f-b5c7-740ae9e9ba8e@CO1EHSMHS024.ehs.local>
+	Thu, 1 Aug 2013 23:24:19 -0400
+Message-ID: <51FB2651.206@huawei.com>
+Date: Fri, 2 Aug 2013 11:24:01 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <477a2d56-a6f9-455f-b5c7-740ae9e9ba8e@CO1EHSMHS024.ehs.local>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tejun Heo <tj@kernel.org>
+CC: <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHSET cgroup/for-3.12] cgroup: use cgroup_subsys_state as
+ the primary subsystem interface handle
+References: <1375393801-4817-1-git-send-email-tj@kernel.org>
+In-Reply-To: <1375393801-4817-1-git-send-email-tj@kernel.org>
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 20, 2013 at 08:31:14PM +0530, Srikanth Thokala wrote:
-> This is the driver for AXI Traffic Generator IP. The AXI
-> Traffic Generator IP is a core that stresses the AXI4
-> interconnect and other AXI4 peripherals in the system.
-> It generates a wide variety of AXI4 transactions based on
-> the core programming.
+On 2013/8/2 5:49, Tejun Heo wrote:
+> Hello,
 > 
-> Architecture of the core is broadly separated into a master
-> and slave block, each of which contains the write block and
-> read block. Other support functions are provided by the
-> control registers and three internal RAMs - Master RAM,
-> Command RAM, Parameter RAM. The initialisation sequence
-> includes programming Command RAM with commands, data into
-> Master RAM (optional Parameter RAM programming) and then
-> enable master logic using control register interface.
-> This sequence generates traffic to cores connected in the
-> h/w design.
+> Currently, struct cgroup * is used as the main interface handle
+> between cgroup core and its subsystems, which works but is a bit
+> clunky because subsystems usually care much more about css's
+> (cgroup_subsys_state) a lot more than cgroups, which is natural as a
+> css is the intersection between a cgroup and a subsystem.
 > 
-> The driver for this IP is designed to be a module with
-> sysfs interface.  All the control registers and internal
-> RAMs can be accessed through sysfs interface.
+> In addition to being a bit clunky, dealing with cgroups directly pose
+> a bit of trouble for the planned unified hierarchy support on two
+> fronts.  First, most iterations become subsystem dependent as task
+> membership is affected by which subtree has the specific subsystem
+> enabled and thus require specifying which subsystem the iteration is
+> for, which is automatically achieved if the interfaces deal with css's
+> instead of cgroups.
+> 
+> Second, as css's may be created, attached, detached and destroyed
+> dynamically multiple times across the lifetime of a given cgroup as
+> they're enabled and disabled, which makes cgroup -> css mapping much
+> more difficult to synchronize.  Giving out cgroup to subsystems and
+> then requiring them to take the extra steps to deal with their css's
+> coming and going dynamically is a lot more fragile than cgroup core
+> proper handling it internally and giving out the resulting css's to
+> subsystems.
+> 
+> So, this patchset converts all cgroup subsystem APIs to deal with
+> css's instead of cgroups.  The patchset is fairly large but most of
+> the conversions, while being tedious, aren't complex.  At the end of
+> series, subsystems no longer make cgroup -> css mapping themselves and
+> cgroup_css() - formerly cgroup_subsys_state() - is made internal to
+> cgroup core proper.
+> 
+> This is a rather large update to the interface and likely to play as a
+> barrier when porting commits, which is inconvenient but also provides
+> an opportunity to clean up the API where we can as doing so won't
+> significantly raise the level of inconvenience.  As such, this
+> patchset contains some API cleanups and I'll probably follow up with
+> further API updates that I've been meaning to do and, if you have some
+> good idea to clean up cgroup internal API, this probably is a good
+> time to submit it.
+> 
+> This patchset contains the following 23 patches.
+> 
+>  0001-cgroup-s-cgroup_subsys_state-cgroup_css-s-task_subsy.patch
+>  0002-cpuset-drop-const-qualifiers-from-struct-cpuset-inst.patch
+>  0003-netprio_cgroup-pass-around-css-instead-of-cgroup-and.patch
+>  0004-hugetlb_cgroup-pass-around-hugetlb_cgroup-instead-of.patch
+>  0005-cgroup-add-subsystem-pointer-to-cgroup_subsys_state.patch
+>  0006-cgroup-add-update-accessors-which-obtain-subsys-spec.patch
+>  0007-cgroup-add-css_parent.patch
+>  0008-cgroup-pass-around-cgroup_subsys_state-instead-of-cg.patch
+>  0009-cgroup-add-subsys-backlink-pointer-to-cftype.patch
+>  0010-cgroup-pin-cgroup_subsys_state-when-opening-a-cgroup.patch
+>  0011-cgroup-add-cgroup-dummy_css.patch
+>  0012-cgroup-pass-around-cgroup_subsys_state-instead-of-cg.patch
+>  0013-cgroup-convert-cgroup_next_sibling-to-cgroup_next_ch.patch
+>  0014-cgroup-always-use-cgroup_next_child-to-walk-the-chil.patch
+>  0015-cgroup-make-hierarchy-iterators-deal-with-cgroup_sub.patch
+>  0016-cgroup-relocate-cgroup_advance_iter.patch
+>  0017-cgroup-rename-cgroup_iter-to-cgroup_task_iter.patch
+>  0018-cgroup-make-cgroup_task_iter-remember-the-cgroup-bei.patch
+>  0019-cgroup-remove-struct-cgroup_scanner.patch
+>  0020-cgroup-make-task-iterators-deal-with-cgroup_subsys_s.patch
+>  0021-cgroup-make-cftype-un-register_event-deal-with-cgrou.patch
+>  0022-cgroup-make-cgroup_taskset-deal-with-cgroup_subsys_s.patch
+>  0023-cgroup-unexport-cgroup_css.patch
+> 
 
-As you are adding sysfs files, you also need to add Documentation/ABI/
-entries as well.
+Looks good to me!
 
-One other comment:
+Acked-by: Li Zefan <lizefan@huawei.com>
 
-> +	/*
-> +	 * Create sysfs file entries for the device
-> +	 *
-> +	 * NOTE: We can create sysfs entries by adding attribute groups
-> +	 * and then populate into device_driver structure. We see issue
-> +	 * here, as this process doesn't allow to add sysfs entries with
-> +	 * BIN attributes (SYSFS_KOBJ_BIN_ATTR). Also, this would create
-> +	 * sysfs entries under driver/ which will be a bit confusing for
-> +	 * users as bin files and normal files will be populated at diff
-> +	 * erent places. So to avoid this, we created this function to
-> +	 * add sysfs entries at a common place.
-> +	 *
-> +	 * This issue is being addressed in mainline by
-> +	 * 'sysfs: add support for binary attributes in groups'. It
-> +	 * removes this overhead of creating/removing sysfs file entries.
-> +	 */
-> +	err = xtg_create_sysfs_dev_files(tg);
-> +	if (err < 0) {
-> +		dev_err(tg->dev, "unable to create sysfs entries\n");
-> +		return err;
-> +	}
-
-This patch is now in place, so you don't have to create the sysfs binary
-files separately, just add them to the same attribute group as your
-"normal" sysfs files.
-
-Now the idea of doing all of the api to this device from sysfs is
-another story, but as I don't know what these files are really doing
-(i.e. no documentation), I'll hold off on that until you fix that up.
-
-thanks,
-
-greg k-h
