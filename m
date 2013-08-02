@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755079Ab3HBXkZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 19:40:25 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54504 "EHLO
+	id S1755160Ab3HBXkm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 19:40:42 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54518 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755004Ab3HBXkV (ORCPT
+	with ESMTP id S1754950Ab3HBXki (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 19:40:21 -0400
-Date: Fri, 2 Aug 2013 16:40:08 -0700
+	Fri, 2 Aug 2013 19:40:38 -0400
+Date: Fri, 2 Aug 2013 16:40:20 -0700
 From: tip-bot for David Herrmann <tipbot@zytor.com>
-Message-ID: <tip-e3263ab389a7bc9398c3d366819d6f39b9cfd677@git.kernel.org>
+Message-ID: <tip-2995e506276bfdc7311eb02db8b2aa1a61a4b849@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        swarren@nvidia.com, tglx@linutronix.de, hpa@linux.intel.com,
-        dh.herrmann@gmail.com
+        tglx@linutronix.de, hpa@linux.intel.com, dh.herrmann@gmail.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, swarren@nvidia.com, dh.herrmann@gmail.com,
-        hpa@linux.intel.com
-In-Reply-To: <1375445127-15480-4-git-send-email-dh.herrmann@gmail.com>
-References: <1375445127-15480-4-git-send-email-dh.herrmann@gmail.com>
+        tglx@linutronix.de, dh.herrmann@gmail.com, hpa@linux.intel.com
+In-Reply-To: <1375445127-15480-5-git-send-email-dh.herrmann@gmail.com>
+References: <1375445127-15480-5-git-send-email-dh.herrmann@gmail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/fb] x86: provide platform-devices for boot-framebuffers
-Git-Commit-ID: e3263ab389a7bc9398c3d366819d6f39b9cfd677
+Subject: [tip:x86/fb] x86: sysfb: move EFI quirks from efifb to sysfb
+Git-Commit-ID: 2995e506276bfdc7311eb02db8b2aa1a61a4b849
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,253 +27,145 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 02 Aug 2013 16:40:15 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 02 Aug 2013 16:40:28 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e3263ab389a7bc9398c3d366819d6f39b9cfd677
-Gitweb:     http://git.kernel.org/tip/e3263ab389a7bc9398c3d366819d6f39b9cfd677
+Commit-ID:  2995e506276bfdc7311eb02db8b2aa1a61a4b849
+Gitweb:     http://git.kernel.org/tip/2995e506276bfdc7311eb02db8b2aa1a61a4b849
 Author:     David Herrmann <dh.herrmann@gmail.com>
-AuthorDate: Fri, 2 Aug 2013 14:05:22 +0200
+AuthorDate: Fri, 2 Aug 2013 14:05:23 +0200
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Fri, 2 Aug 2013 16:17:46 -0700
+CommitDate: Fri, 2 Aug 2013 16:17:47 -0700
 
-x86: provide platform-devices for boot-framebuffers
+x86: sysfb: move EFI quirks from efifb to sysfb
 
-The current situation regarding boot-framebuffers (VGA, VESA/VBE, EFI) on
-x86 causes troubles when loading multiple fbdev drivers. The global
-"struct screen_info" does not provide any state-tracking about which
-drivers use the FBs. request_mem_region() theoretically works, but
-unfortunately vesafb/efifb ignore it due to quirks for broken boards.
-
-Avoid this by creating a platform framebuffer devices with a pointer
-to the "struct screen_info" as platform-data. Drivers can now create
-platform-drivers and the driver-core will refuse multiple drivers being
-active simultaneously.
-
-We keep the screen_info available for backwards-compatibility. Drivers
-can be converted in follow-up patches.
-
-Different devices are created for VGA/VESA/EFI FBs to allow multiple
-drivers to be loaded on distro kernels. We create:
- - "vesa-framebuffer" for VBE/VESA graphics FBs
- - "efi-framebuffer" for EFI FBs
- - "platform-framebuffer" for everything else
-This allows to load vesafb, efifb and others simultaneously and each
-picks up only the supported FB types.
-
-Apart from platform-framebuffer devices, this also introduces a
-compatibility option for "simple-framebuffer" drivers which recently got
-introduced for OF based systems. If CONFIG_X86_SYSFB is selected, we
-try to match the screen_info against a simple-framebuffer supported
-format. If we succeed, we create a "simple-framebuffer" device instead
-of a platform-framebuffer.
-This allows to reuse the simplefb.c driver across architectures and also
-to introduce a SimpleDRM driver. There is no need to have vesafb.c,
-efifb.c, simplefb.c and more just to have architecture specific quirks
-in their setup-routines.
-
-Instead, we now move the architecture specific quirks into x86-setup and
-provide a generic simple-framebuffer. For backwards-compatibility (if
-strange formats are used), we still allow vesafb/efifb to be loaded
-simultaneously and pick up all remaining devices.
+The EFI FB quirks from efifb.c are useful for simple-framebuffer devices
+as well. Apply them by default so we can convert efifb.c to use
+efi-framebuffer platform devices.
 
 Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
-Link: http://lkml.kernel.org/r/1375445127-15480-4-git-send-email-dh.herrmann@gmail.com
-Tested-by: Stephen Warren <swarren@nvidia.com>
+Link: http://lkml.kernel.org/r/1375445127-15480-5-git-send-email-dh.herrmann@gmail.com
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/Kconfig                 | 26 +++++++++++
- arch/x86/include/asm/sysfb.h     | 41 +++++++++++++++++
- arch/x86/kernel/Makefile         |  2 +
- arch/x86/kernel/sysfb.c          | 71 ++++++++++++++++++++++++++++++
- arch/x86/kernel/sysfb_simplefb.c | 95 ++++++++++++++++++++++++++++++++++++++++
- 5 files changed, 235 insertions(+)
+ arch/x86/include/asm/sysfb.h |  57 +++++++++++
+ arch/x86/kernel/Makefile     |   1 +
+ arch/x86/kernel/sysfb.c      |   3 +
+ arch/x86/kernel/sysfb_efi.c  | 214 +++++++++++++++++++++++++++++++++++++++
+ drivers/video/efifb.c        | 234 ++-----------------------------------------
+ 5 files changed, 282 insertions(+), 227 deletions(-)
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index b32ebf9..5c56559 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -2270,6 +2270,32 @@ config RAPIDIO
- 
- source "drivers/rapidio/Kconfig"
- 
-+config X86_SYSFB
-+	bool "Mark VGA/VBE/EFI FB as generic system framebuffer"
-+	help
-+	  Firmwares often provide initial graphics framebuffers so the BIOS,
-+	  bootloader or kernel can show basic video-output during boot for
-+	  user-guidance and debugging. Historically, x86 used the VESA BIOS
-+	  Extensions and EFI-framebuffers for this, which are mostly limited
-+	  to x86.
-+	  This option, if enabled, marks VGA/VBE/EFI framebuffers as generic
-+	  framebuffers so the new generic system-framebuffer drivers can be
-+	  used on x86. If the framebuffer is not compatible with the generic
-+	  modes, it is adverticed as fallback platform framebuffer so legacy
-+	  drivers like efifb, vesafb and uvesafb can pick it up.
-+	  If this option is not selected, all system framebuffers are always
-+	  marked as fallback platform framebuffers as usual.
-+
-+	  Note: Legacy fbdev drivers, including vesafb, efifb, uvesafb, will
-+	  not be able to pick up generic system framebuffers if this option
-+	  is selected. You are highly encouraged to enable simplefb as
-+	  replacement if you select this option. simplefb can correctly deal
-+	  with generic system framebuffers. But you should still keep vesafb
-+	  and others enabled as fallback if a system framebuffer is
-+	  incompatible with simplefb.
-+
-+	  If unsure, say Y.
-+
- endmenu
- 
- 
 diff --git a/arch/x86/include/asm/sysfb.h b/arch/x86/include/asm/sysfb.h
-new file mode 100644
-index 0000000..2395fe0
---- /dev/null
+index 2395fe0..2aeb3e2 100644
+--- a/arch/x86/include/asm/sysfb.h
 +++ b/arch/x86/include/asm/sysfb.h
-@@ -0,0 +1,41 @@
-+#ifndef _ARCH_X86_KERNEL_SYSFB_H
-+#define _ARCH_X86_KERNEL_SYSFB_H
+@@ -15,6 +15,63 @@
+ #include <linux/platform_data/simplefb.h>
+ #include <linux/screen_info.h>
+ 
++enum {
++	M_I17,		/* 17-Inch iMac */
++	M_I20,		/* 20-Inch iMac */
++	M_I20_SR,	/* 20-Inch iMac (Santa Rosa) */
++	M_I24,		/* 24-Inch iMac */
++	M_I24_8_1,	/* 24-Inch iMac, 8,1th gen */
++	M_I24_10_1,	/* 24-Inch iMac, 10,1th gen */
++	M_I27_11_1,	/* 27-Inch iMac, 11,1th gen */
++	M_MINI,		/* Mac Mini */
++	M_MINI_3_1,	/* Mac Mini, 3,1th gen */
++	M_MINI_4_1,	/* Mac Mini, 4,1th gen */
++	M_MB,		/* MacBook */
++	M_MB_2,		/* MacBook, 2nd rev. */
++	M_MB_3,		/* MacBook, 3rd rev. */
++	M_MB_5_1,	/* MacBook, 5th rev. */
++	M_MB_6_1,	/* MacBook, 6th rev. */
++	M_MB_7_1,	/* MacBook, 7th rev. */
++	M_MB_SR,	/* MacBook, 2nd gen, (Santa Rosa) */
++	M_MBA,		/* MacBook Air */
++	M_MBA_3,	/* Macbook Air, 3rd rev */
++	M_MBP,		/* MacBook Pro */
++	M_MBP_2,	/* MacBook Pro 2nd gen */
++	M_MBP_2_2,	/* MacBook Pro 2,2nd gen */
++	M_MBP_SR,	/* MacBook Pro (Santa Rosa) */
++	M_MBP_4,	/* MacBook Pro, 4th gen */
++	M_MBP_5_1,	/* MacBook Pro, 5,1th gen */
++	M_MBP_5_2,	/* MacBook Pro, 5,2th gen */
++	M_MBP_5_3,	/* MacBook Pro, 5,3rd gen */
++	M_MBP_6_1,	/* MacBook Pro, 6,1th gen */
++	M_MBP_6_2,	/* MacBook Pro, 6,2th gen */
++	M_MBP_7_1,	/* MacBook Pro, 7,1th gen */
++	M_MBP_8_2,	/* MacBook Pro, 8,2nd gen */
++	M_UNKNOWN	/* placeholder */
++};
 +
-+/*
-+ * Generic System Framebuffers on x86
-+ * Copyright (c) 2012-2013 David Herrmann <dh.herrmann@gmail.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License as published by the Free
-+ * Software Foundation; either version 2 of the License, or (at your option)
-+ * any later version.
-+ */
++struct efifb_dmi_info {
++	char *optname;
++	unsigned long base;
++	int stride;
++	int width;
++	int height;
++	int flags;
++};
 +
-+#include <linux/kernel.h>
-+#include <linux/platform_data/simplefb.h>
-+#include <linux/screen_info.h>
++#ifdef CONFIG_EFI
 +
-+#ifdef CONFIG_X86_SYSFB
++extern struct efifb_dmi_info efifb_dmi_list[];
++void sysfb_apply_efi_quirks(void);
 +
-+bool parse_mode(const struct screen_info *si,
-+		struct simplefb_platform_data *mode);
-+int create_simplefb(const struct screen_info *si,
-+		    const struct simplefb_platform_data *mode);
++#else /* CONFIG_EFI */
 +
-+#else /* CONFIG_X86_SYSFB */
-+
-+static inline bool parse_mode(const struct screen_info *si,
-+			      struct simplefb_platform_data *mode)
++static inline void sysfb_apply_efi_quirks(void)
 +{
-+	return false;
 +}
 +
-+static inline int create_simplefb(const struct screen_info *si,
-+				  const struct simplefb_platform_data *mode)
-+{
-+	return -EINVAL;
-+}
++#endif /* CONFIG_EFI */
 +
-+#endif /* CONFIG_X86_SYSFB */
-+
-+#endif /* _ARCH_X86_KERNEL_SYSFB_H */
+ #ifdef CONFIG_X86_SYSFB
+ 
+ bool parse_mode(const struct screen_info *si,
 diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
-index 88d99ea..90ecdc5 100644
+index 90ecdc5..a5408b9 100644
 --- a/arch/x86/kernel/Makefile
 +++ b/arch/x86/kernel/Makefile
-@@ -103,6 +103,8 @@ obj-$(CONFIG_X86_CHECK_BIOS_CORRUPTION) += check.o
- obj-$(CONFIG_SWIOTLB)			+= pci-swiotlb.o
- obj-$(CONFIG_OF)			+= devicetree.o
+@@ -105,6 +105,7 @@ obj-$(CONFIG_OF)			+= devicetree.o
  obj-$(CONFIG_UPROBES)			+= uprobes.o
-+obj-y					+= sysfb.o
-+obj-$(CONFIG_X86_SYSFB)			+= sysfb_simplefb.o
+ obj-y					+= sysfb.o
+ obj-$(CONFIG_X86_SYSFB)			+= sysfb_simplefb.o
++obj-$(CONFIG_EFI)			+= sysfb_efi.o
  
  obj-$(CONFIG_PERF_EVENTS)		+= perf_regs.o
  obj-$(CONFIG_TRACING)			+= tracepoint.o
 diff --git a/arch/x86/kernel/sysfb.c b/arch/x86/kernel/sysfb.c
-new file mode 100644
-index 0000000..7f30e19
---- /dev/null
+index 7f30e19..193ec2c 100644
+--- a/arch/x86/kernel/sysfb.c
 +++ b/arch/x86/kernel/sysfb.c
-@@ -0,0 +1,71 @@
-+/*
-+ * Generic System Framebuffers on x86
-+ * Copyright (c) 2012-2013 David Herrmann <dh.herrmann@gmail.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License as published by the Free
-+ * Software Foundation; either version 2 of the License, or (at your option)
-+ * any later version.
-+ */
+@@ -47,6 +47,8 @@ static __init int sysfb_init(void)
+ 	bool compatible;
+ 	int ret;
+ 
++	sysfb_apply_efi_quirks();
 +
-+/*
-+ * Simple-Framebuffer support for x86 systems
-+ * Create a platform-device for any available boot framebuffer. The
-+ * simple-framebuffer platform device is already available on DT systems, so
-+ * this module parses the global "screen_info" object and creates a suitable
-+ * platform device compatible with the "simple-framebuffer" DT object. If
-+ * the framebuffer is incompatible, we instead create a legacy
-+ * "vesa-framebuffer", "efi-framebuffer" or "platform-framebuffer" device and
-+ * pass the screen_info as platform_data. This allows legacy drivers
-+ * to pick these devices up without messing with simple-framebuffer drivers.
-+ * The global "screen_info" is still valid at all times.
-+ *
-+ * If CONFIG_X86_SYSFB is not selected, we never register "simple-framebuffer"
-+ * platform devices, but only use legacy framebuffer devices for
-+ * backwards compatibility.
-+ *
-+ * TODO: We set the dev_id field of all platform-devices to 0. This allows
-+ * other x86 OF/DT parsers to create such devices, too. However, they must
-+ * start at offset 1 for this to work.
-+ */
-+
-+#include <linux/err.h>
-+#include <linux/init.h>
-+#include <linux/kernel.h>
-+#include <linux/mm.h>
-+#include <linux/platform_data/simplefb.h>
-+#include <linux/platform_device.h>
-+#include <linux/screen_info.h>
-+#include <asm/sysfb.h>
-+
-+static __init int sysfb_init(void)
-+{
-+	struct screen_info *si = &screen_info;
-+	struct simplefb_platform_data mode;
-+	struct platform_device *pd;
-+	const char *name;
-+	bool compatible;
-+	int ret;
-+
-+	/* try to create a simple-framebuffer device */
-+	compatible = parse_mode(si, &mode);
-+	if (compatible) {
-+		ret = create_simplefb(si, &mode);
-+		if (!ret)
-+			return 0;
-+	}
-+
-+	/* if the FB is incompatible, create a legacy framebuffer device */
-+	if (si->orig_video_isVGA == VIDEO_TYPE_EFI)
-+		name = "efi-framebuffer";
-+	else if (si->orig_video_isVGA == VIDEO_TYPE_VLFB)
-+		name = "vesa-framebuffer";
-+	else
-+		name = "platform-framebuffer";
-+
-+	pd = platform_device_register_resndata(NULL, name, 0,
-+					       NULL, 0, si, sizeof(*si));
-+	return IS_ERR(pd) ? PTR_ERR(pd) : 0;
-+}
-+
-+device_initcall(sysfb_init);
-diff --git a/arch/x86/kernel/sysfb_simplefb.c b/arch/x86/kernel/sysfb_simplefb.c
+ 	/* try to create a simple-framebuffer device */
+ 	compatible = parse_mode(si, &mode);
+ 	if (compatible) {
+@@ -68,4 +70,5 @@ static __init int sysfb_init(void)
+ 	return IS_ERR(pd) ? PTR_ERR(pd) : 0;
+ }
+ 
++/* must execute after PCI subsystem for EFI quirks */
+ device_initcall(sysfb_init);
+diff --git a/arch/x86/kernel/sysfb_efi.c b/arch/x86/kernel/sysfb_efi.c
 new file mode 100644
-index 0000000..22513e9
+index 0000000..b285d4e
 --- /dev/null
-+++ b/arch/x86/kernel/sysfb_simplefb.c
-@@ -0,0 +1,95 @@
++++ b/arch/x86/kernel/sysfb_efi.c
+@@ -0,0 +1,214 @@
 +/*
 + * Generic System Framebuffers on x86
 + * Copyright (c) 2012-2013 David Herrmann <dh.herrmann@gmail.com>
++ *
++ * EFI Quirks Copyright (c) 2006 Edgar Hucek <gimli@dark-green.com>
 + *
 + * This program is free software; you can redistribute it and/or modify it
 + * under the terms of the GNU General Public License as published by the Free
@@ -284,87 +174,470 @@ index 0000000..22513e9
 + */
 +
 +/*
-+ * simple-framebuffer probing
-+ * Try to convert "screen_info" into a "simple-framebuffer" compatible mode.
-+ * If the mode is incompatible, we return "false" and let the caller create
-+ * legacy nodes instead.
++ * EFI Quirks
++ * Several EFI systems do not correctly advertise their boot framebuffers.
++ * Hence, we use this static table of known broken machines and fix up the
++ * information so framebuffer drivers can load corectly.
 + */
 +
++#include <linux/dmi.h>
 +#include <linux/err.h>
 +#include <linux/init.h>
 +#include <linux/kernel.h>
 +#include <linux/mm.h>
-+#include <linux/platform_data/simplefb.h>
-+#include <linux/platform_device.h>
++#include <linux/pci.h>
 +#include <linux/screen_info.h>
++#include <video/vga.h>
 +#include <asm/sysfb.h>
 +
-+static const char simplefb_resname[] = "BOOTFB";
-+static const struct simplefb_format formats[] = SIMPLEFB_FORMATS;
++enum {
++	OVERRIDE_NONE = 0x0,
++	OVERRIDE_BASE = 0x1,
++	OVERRIDE_STRIDE = 0x2,
++	OVERRIDE_HEIGHT = 0x4,
++	OVERRIDE_WIDTH = 0x8,
++};
 +
-+/* try parsing x86 screen_info into a simple-framebuffer mode struct */
-+__init bool parse_mode(const struct screen_info *si,
-+		       struct simplefb_platform_data *mode)
++struct efifb_dmi_info efifb_dmi_list[] = {
++	[M_I17] = { "i17", 0x80010000, 1472 * 4, 1440, 900, OVERRIDE_NONE },
++	[M_I20] = { "i20", 0x80010000, 1728 * 4, 1680, 1050, OVERRIDE_NONE }, /* guess */
++	[M_I20_SR] = { "imac7", 0x40010000, 1728 * 4, 1680, 1050, OVERRIDE_NONE },
++	[M_I24] = { "i24", 0x80010000, 2048 * 4, 1920, 1200, OVERRIDE_NONE }, /* guess */
++	[M_I24_8_1] = { "imac8", 0xc0060000, 2048 * 4, 1920, 1200, OVERRIDE_NONE },
++	[M_I24_10_1] = { "imac10", 0xc0010000, 2048 * 4, 1920, 1080, OVERRIDE_NONE },
++	[M_I27_11_1] = { "imac11", 0xc0010000, 2560 * 4, 2560, 1440, OVERRIDE_NONE },
++	[M_MINI]= { "mini", 0x80000000, 2048 * 4, 1024, 768, OVERRIDE_NONE },
++	[M_MINI_3_1] = { "mini31", 0x40010000, 1024 * 4, 1024, 768, OVERRIDE_NONE },
++	[M_MINI_4_1] = { "mini41", 0xc0010000, 2048 * 4, 1920, 1200, OVERRIDE_NONE },
++	[M_MB] = { "macbook", 0x80000000, 2048 * 4, 1280, 800, OVERRIDE_NONE },
++	[M_MB_5_1] = { "macbook51", 0x80010000, 2048 * 4, 1280, 800, OVERRIDE_NONE },
++	[M_MB_6_1] = { "macbook61", 0x80010000, 2048 * 4, 1280, 800, OVERRIDE_NONE },
++	[M_MB_7_1] = { "macbook71", 0x80010000, 2048 * 4, 1280, 800, OVERRIDE_NONE },
++	[M_MBA] = { "mba", 0x80000000, 2048 * 4, 1280, 800, OVERRIDE_NONE },
++	/* 11" Macbook Air 3,1 passes the wrong stride */
++	[M_MBA_3] = { "mba3", 0, 2048 * 4, 0, 0, OVERRIDE_STRIDE },
++	[M_MBP] = { "mbp", 0x80010000, 1472 * 4, 1440, 900, OVERRIDE_NONE },
++	[M_MBP_2] = { "mbp2", 0, 0, 0, 0, OVERRIDE_NONE }, /* placeholder */
++	[M_MBP_2_2] = { "mbp22", 0x80010000, 1472 * 4, 1440, 900, OVERRIDE_NONE },
++	[M_MBP_SR] = { "mbp3", 0x80030000, 2048 * 4, 1440, 900, OVERRIDE_NONE },
++	[M_MBP_4] = { "mbp4", 0xc0060000, 2048 * 4, 1920, 1200, OVERRIDE_NONE },
++	[M_MBP_5_1] = { "mbp51", 0xc0010000, 2048 * 4, 1440, 900, OVERRIDE_NONE },
++	[M_MBP_5_2] = { "mbp52", 0xc0010000, 2048 * 4, 1920, 1200, OVERRIDE_NONE },
++	[M_MBP_5_3] = { "mbp53", 0xd0010000, 2048 * 4, 1440, 900, OVERRIDE_NONE },
++	[M_MBP_6_1] = { "mbp61", 0x90030000, 2048 * 4, 1920, 1200, OVERRIDE_NONE },
++	[M_MBP_6_2] = { "mbp62", 0x90030000, 2048 * 4, 1680, 1050, OVERRIDE_NONE },
++	[M_MBP_7_1] = { "mbp71", 0xc0010000, 2048 * 4, 1280, 800, OVERRIDE_NONE },
++	[M_MBP_8_2] = { "mbp82", 0x90010000, 1472 * 4, 1440, 900, OVERRIDE_NONE },
++	[M_UNKNOWN] = { NULL, 0, 0, 0, 0, OVERRIDE_NONE }
++};
++
++#define choose_value(dmivalue, fwvalue, field, flags) ({	\
++		typeof(fwvalue) _ret_ = fwvalue;		\
++		if ((flags) & (field))				\
++			_ret_ = dmivalue;			\
++		else if ((fwvalue) == 0)			\
++			_ret_ = dmivalue;			\
++		_ret_;						\
++	})
++
++static int __init efifb_set_system(const struct dmi_system_id *id)
 +{
-+	const struct simplefb_format *f;
-+	__u8 type;
-+	unsigned int i;
++	struct efifb_dmi_info *info = id->driver_data;
 +
-+	type = si->orig_video_isVGA;
-+	if (type != VIDEO_TYPE_VLFB && type != VIDEO_TYPE_EFI)
-+		return false;
++	if (info->base == 0 && info->height == 0 && info->width == 0 &&
++	    info->stride == 0)
++		return 0;
 +
-+	for (i = 0; i < ARRAY_SIZE(formats); ++i) {
-+		f = &formats[i];
-+		if (si->lfb_depth == f->bits_per_pixel &&
-+		    si->red_size == f->red.length &&
-+		    si->red_pos == f->red.offset &&
-+		    si->green_size == f->green.length &&
-+		    si->green_pos == f->green.offset &&
-+		    si->blue_size == f->blue.length &&
-+		    si->blue_pos == f->blue.offset &&
-+		    si->rsvd_size == f->transp.length &&
-+		    si->rsvd_pos == f->transp.offset) {
-+			mode->format = f->name;
-+			mode->width = si->lfb_width;
-+			mode->height = si->lfb_height;
-+			mode->stride = si->lfb_linelength;
-+			return true;
++	/* Trust the bootloader over the DMI tables */
++	if (screen_info.lfb_base == 0) {
++#if defined(CONFIG_PCI)
++		struct pci_dev *dev = NULL;
++		int found_bar = 0;
++#endif
++		if (info->base) {
++			screen_info.lfb_base = choose_value(info->base,
++				screen_info.lfb_base, OVERRIDE_BASE,
++				info->flags);
++
++#if defined(CONFIG_PCI)
++			/* make sure that the address in the table is actually
++			 * on a VGA device's PCI BAR */
++
++			for_each_pci_dev(dev) {
++				int i;
++				if ((dev->class >> 8) != PCI_CLASS_DISPLAY_VGA)
++					continue;
++				for (i = 0; i < DEVICE_COUNT_RESOURCE; i++) {
++					resource_size_t start, end;
++
++					start = pci_resource_start(dev, i);
++					if (start == 0)
++						break;
++					end = pci_resource_end(dev, i);
++					if (screen_info.lfb_base >= start &&
++					    screen_info.lfb_base < end) {
++						found_bar = 1;
++					}
++				}
++			}
++			if (!found_bar)
++				screen_info.lfb_base = 0;
++#endif
 +		}
 +	}
-+
-+	return false;
-+}
-+
-+__init int create_simplefb(const struct screen_info *si,
-+			   const struct simplefb_platform_data *mode)
-+{
-+	struct platform_device *pd;
-+	struct resource res;
-+	unsigned long len;
-+
-+	/* don't use lfb_size as it may contain the whole VMEM instead of only
-+	 * the part that is occupied by the framebuffer */
-+	len = mode->height * mode->stride;
-+	len = PAGE_ALIGN(len);
-+	if (len > si->lfb_size << 16) {
-+		printk(KERN_WARNING "sysfb: VRAM smaller than advertised\n");
-+		return -EINVAL;
++	if (screen_info.lfb_base) {
++		screen_info.lfb_linelength = choose_value(info->stride,
++			screen_info.lfb_linelength, OVERRIDE_STRIDE,
++			info->flags);
++		screen_info.lfb_width = choose_value(info->width,
++			screen_info.lfb_width, OVERRIDE_WIDTH,
++			info->flags);
++		screen_info.lfb_height = choose_value(info->height,
++			screen_info.lfb_height, OVERRIDE_HEIGHT,
++			info->flags);
++		if (screen_info.orig_video_isVGA == 0)
++			screen_info.orig_video_isVGA = VIDEO_TYPE_EFI;
++	} else {
++		screen_info.lfb_linelength = 0;
++		screen_info.lfb_width = 0;
++		screen_info.lfb_height = 0;
++		screen_info.orig_video_isVGA = 0;
++		return 0;
 +	}
 +
-+	/* setup IORESOURCE_MEM as framebuffer memory */
-+	memset(&res, 0, sizeof(res));
-+	res.flags = IORESOURCE_MEM;
-+	res.name = simplefb_resname;
-+	res.start = si->lfb_base;
-+	res.end = si->lfb_base + len - 1;
-+	if (res.end <= res.start)
-+		return -EINVAL;
++	printk(KERN_INFO "efifb: dmi detected %s - framebuffer at 0x%08x "
++			 "(%dx%d, stride %d)\n", id->ident,
++			 screen_info.lfb_base, screen_info.lfb_width,
++			 screen_info.lfb_height, screen_info.lfb_linelength);
 +
-+	pd = platform_device_register_resndata(NULL, "simple-framebuffer", 0,
-+					       &res, 1, mode, sizeof(*mode));
-+	if (IS_ERR(pd))
-+		return PTR_ERR(pd);
-+
-+	return 0;
++	return 1;
 +}
++
++#define EFIFB_DMI_SYSTEM_ID(vendor, name, enumid)		\
++	{							\
++		efifb_set_system,				\
++		name,						\
++		{						\
++			DMI_MATCH(DMI_BIOS_VENDOR, vendor),	\
++			DMI_MATCH(DMI_PRODUCT_NAME, name)	\
++		},						\
++		&efifb_dmi_list[enumid]				\
++	}
++
++static const struct dmi_system_id efifb_dmi_system_table[] __initconst = {
++	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "iMac4,1", M_I17),
++	/* At least one of these two will be right; maybe both? */
++	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "iMac5,1", M_I20),
++	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "iMac5,1", M_I20),
++	/* At least one of these two will be right; maybe both? */
++	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "iMac6,1", M_I24),
++	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "iMac6,1", M_I24),
++	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "iMac7,1", M_I20_SR),
++	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "iMac8,1", M_I24_8_1),
++	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "iMac10,1", M_I24_10_1),
++	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "iMac11,1", M_I27_11_1),
++	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "Macmini1,1", M_MINI),
++	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "Macmini3,1", M_MINI_3_1),
++	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "Macmini4,1", M_MINI_4_1),
++	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBook1,1", M_MB),
++	/* At least one of these two will be right; maybe both? */
++	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBook2,1", M_MB),
++	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBook2,1", M_MB),
++	/* At least one of these two will be right; maybe both? */
++	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBook3,1", M_MB),
++	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBook3,1", M_MB),
++	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBook4,1", M_MB),
++	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBook5,1", M_MB_5_1),
++	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBook6,1", M_MB_6_1),
++	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBook7,1", M_MB_7_1),
++	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookAir1,1", M_MBA),
++	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookAir3,1", M_MBA_3),
++	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBookPro1,1", M_MBP),
++	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBookPro2,1", M_MBP_2),
++	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBookPro2,2", M_MBP_2_2),
++	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro2,1", M_MBP_2),
++	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBookPro3,1", M_MBP_SR),
++	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro3,1", M_MBP_SR),
++	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro4,1", M_MBP_4),
++	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro5,1", M_MBP_5_1),
++	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro5,2", M_MBP_5_2),
++	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro5,3", M_MBP_5_3),
++	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro6,1", M_MBP_6_1),
++	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro6,2", M_MBP_6_2),
++	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro7,1", M_MBP_7_1),
++	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro8,2", M_MBP_8_2),
++	{},
++};
++
++__init void sysfb_apply_efi_quirks(void)
++{
++	if (screen_info.orig_video_isVGA != VIDEO_TYPE_EFI ||
++	    !(screen_info.capabilities & VIDEO_CAPABILITY_SKIP_QUIRKS))
++		dmi_check_system(efifb_dmi_system_table);
++}
+diff --git a/drivers/video/efifb.c b/drivers/video/efifb.c
+index 50fe668..e493bcb 100644
+--- a/drivers/video/efifb.c
++++ b/drivers/video/efifb.c
+@@ -15,6 +15,7 @@
+ #include <linux/dmi.h>
+ #include <linux/pci.h>
+ #include <video/vga.h>
++#include <asm/sysfb.h>
+ 
+ static bool request_mem_succeeded = false;
+ 
+@@ -38,223 +39,6 @@ static struct fb_fix_screeninfo efifb_fix = {
+ 	.visual			= FB_VISUAL_TRUECOLOR,
+ };
+ 
+-enum {
+-	M_I17,		/* 17-Inch iMac */
+-	M_I20,		/* 20-Inch iMac */
+-	M_I20_SR,	/* 20-Inch iMac (Santa Rosa) */
+-	M_I24,		/* 24-Inch iMac */
+-	M_I24_8_1,	/* 24-Inch iMac, 8,1th gen */
+-	M_I24_10_1,	/* 24-Inch iMac, 10,1th gen */
+-	M_I27_11_1,	/* 27-Inch iMac, 11,1th gen */
+-	M_MINI,		/* Mac Mini */
+-	M_MINI_3_1,	/* Mac Mini, 3,1th gen */
+-	M_MINI_4_1,	/* Mac Mini, 4,1th gen */
+-	M_MB,		/* MacBook */
+-	M_MB_2,		/* MacBook, 2nd rev. */
+-	M_MB_3,		/* MacBook, 3rd rev. */
+-	M_MB_5_1,	/* MacBook, 5th rev. */
+-	M_MB_6_1,	/* MacBook, 6th rev. */
+-	M_MB_7_1,	/* MacBook, 7th rev. */
+-	M_MB_SR,	/* MacBook, 2nd gen, (Santa Rosa) */
+-	M_MBA,		/* MacBook Air */
+-	M_MBA_3,	/* Macbook Air, 3rd rev */
+-	M_MBP,		/* MacBook Pro */
+-	M_MBP_2,	/* MacBook Pro 2nd gen */
+-	M_MBP_2_2,	/* MacBook Pro 2,2nd gen */
+-	M_MBP_SR,	/* MacBook Pro (Santa Rosa) */
+-	M_MBP_4,	/* MacBook Pro, 4th gen */
+-	M_MBP_5_1,    /* MacBook Pro, 5,1th gen */
+-	M_MBP_5_2,	/* MacBook Pro, 5,2th gen */
+-	M_MBP_5_3,	/* MacBook Pro, 5,3rd gen */
+-	M_MBP_6_1,	/* MacBook Pro, 6,1th gen */
+-	M_MBP_6_2,	/* MacBook Pro, 6,2th gen */
+-	M_MBP_7_1,	/* MacBook Pro, 7,1th gen */
+-	M_MBP_8_2,	/* MacBook Pro, 8,2nd gen */
+-	M_UNKNOWN	/* placeholder */
+-};
+-
+-#define OVERRIDE_NONE	0x0
+-#define OVERRIDE_BASE	0x1
+-#define OVERRIDE_STRIDE	0x2
+-#define OVERRIDE_HEIGHT	0x4
+-#define OVERRIDE_WIDTH	0x8
+-
+-static struct efifb_dmi_info {
+-	char *optname;
+-	unsigned long base;
+-	int stride;
+-	int width;
+-	int height;
+-	int flags;
+-} dmi_list[] __initdata = {
+-	[M_I17] = { "i17", 0x80010000, 1472 * 4, 1440, 900, OVERRIDE_NONE },
+-	[M_I20] = { "i20", 0x80010000, 1728 * 4, 1680, 1050, OVERRIDE_NONE }, /* guess */
+-	[M_I20_SR] = { "imac7", 0x40010000, 1728 * 4, 1680, 1050, OVERRIDE_NONE },
+-	[M_I24] = { "i24", 0x80010000, 2048 * 4, 1920, 1200, OVERRIDE_NONE }, /* guess */
+-	[M_I24_8_1] = { "imac8", 0xc0060000, 2048 * 4, 1920, 1200, OVERRIDE_NONE },
+-	[M_I24_10_1] = { "imac10", 0xc0010000, 2048 * 4, 1920, 1080, OVERRIDE_NONE },
+-	[M_I27_11_1] = { "imac11", 0xc0010000, 2560 * 4, 2560, 1440, OVERRIDE_NONE },
+-	[M_MINI]= { "mini", 0x80000000, 2048 * 4, 1024, 768, OVERRIDE_NONE },
+-	[M_MINI_3_1] = { "mini31", 0x40010000, 1024 * 4, 1024, 768, OVERRIDE_NONE },
+-	[M_MINI_4_1] = { "mini41", 0xc0010000, 2048 * 4, 1920, 1200, OVERRIDE_NONE },
+-	[M_MB] = { "macbook", 0x80000000, 2048 * 4, 1280, 800, OVERRIDE_NONE },
+-	[M_MB_5_1] = { "macbook51", 0x80010000, 2048 * 4, 1280, 800, OVERRIDE_NONE },
+-	[M_MB_6_1] = { "macbook61", 0x80010000, 2048 * 4, 1280, 800, OVERRIDE_NONE },
+-	[M_MB_7_1] = { "macbook71", 0x80010000, 2048 * 4, 1280, 800, OVERRIDE_NONE },
+-	[M_MBA] = { "mba", 0x80000000, 2048 * 4, 1280, 800, OVERRIDE_NONE },
+-	/* 11" Macbook Air 3,1 passes the wrong stride */
+-	[M_MBA_3] = { "mba3", 0, 2048 * 4, 0, 0, OVERRIDE_STRIDE },
+-	[M_MBP] = { "mbp", 0x80010000, 1472 * 4, 1440, 900, OVERRIDE_NONE },
+-	[M_MBP_2] = { "mbp2", 0, 0, 0, 0, OVERRIDE_NONE }, /* placeholder */
+-	[M_MBP_2_2] = { "mbp22", 0x80010000, 1472 * 4, 1440, 900, OVERRIDE_NONE },
+-	[M_MBP_SR] = { "mbp3", 0x80030000, 2048 * 4, 1440, 900, OVERRIDE_NONE },
+-	[M_MBP_4] = { "mbp4", 0xc0060000, 2048 * 4, 1920, 1200, OVERRIDE_NONE },
+-	[M_MBP_5_1] = { "mbp51", 0xc0010000, 2048 * 4, 1440, 900, OVERRIDE_NONE },
+-	[M_MBP_5_2] = { "mbp52", 0xc0010000, 2048 * 4, 1920, 1200, OVERRIDE_NONE },
+-	[M_MBP_5_3] = { "mbp53", 0xd0010000, 2048 * 4, 1440, 900, OVERRIDE_NONE },
+-	[M_MBP_6_1] = { "mbp61", 0x90030000, 2048 * 4, 1920, 1200, OVERRIDE_NONE },
+-	[M_MBP_6_2] = { "mbp62", 0x90030000, 2048 * 4, 1680, 1050, OVERRIDE_NONE },
+-	[M_MBP_7_1] = { "mbp71", 0xc0010000, 2048 * 4, 1280, 800, OVERRIDE_NONE },
+-	[M_MBP_8_2] = { "mbp82", 0x90010000, 1472 * 4, 1440, 900, OVERRIDE_NONE },
+-	[M_UNKNOWN] = { NULL, 0, 0, 0, 0, OVERRIDE_NONE }
+-};
+-
+-static int set_system(const struct dmi_system_id *id);
+-
+-#define EFIFB_DMI_SYSTEM_ID(vendor, name, enumid)		\
+-	{ set_system, name, {					\
+-		DMI_MATCH(DMI_BIOS_VENDOR, vendor),		\
+-		DMI_MATCH(DMI_PRODUCT_NAME, name) },		\
+-	  &dmi_list[enumid] }
+-
+-static const struct dmi_system_id dmi_system_table[] __initconst = {
+-	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "iMac4,1", M_I17),
+-	/* At least one of these two will be right; maybe both? */
+-	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "iMac5,1", M_I20),
+-	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "iMac5,1", M_I20),
+-	/* At least one of these two will be right; maybe both? */
+-	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "iMac6,1", M_I24),
+-	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "iMac6,1", M_I24),
+-	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "iMac7,1", M_I20_SR),
+-	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "iMac8,1", M_I24_8_1),
+-	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "iMac10,1", M_I24_10_1),
+-	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "iMac11,1", M_I27_11_1),
+-	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "Macmini1,1", M_MINI),
+-	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "Macmini3,1", M_MINI_3_1),
+-	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "Macmini4,1", M_MINI_4_1),
+-	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBook1,1", M_MB),
+-	/* At least one of these two will be right; maybe both? */
+-	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBook2,1", M_MB),
+-	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBook2,1", M_MB),
+-	/* At least one of these two will be right; maybe both? */
+-	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBook3,1", M_MB),
+-	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBook3,1", M_MB),
+-	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBook4,1", M_MB),
+-	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBook5,1", M_MB_5_1),
+-	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBook6,1", M_MB_6_1),
+-	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBook7,1", M_MB_7_1),
+-	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookAir1,1", M_MBA),
+-	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookAir3,1", M_MBA_3),
+-	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBookPro1,1", M_MBP),
+-	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBookPro2,1", M_MBP_2),
+-	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBookPro2,2", M_MBP_2_2),
+-	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro2,1", M_MBP_2),
+-	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBookPro3,1", M_MBP_SR),
+-	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro3,1", M_MBP_SR),
+-	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro4,1", M_MBP_4),
+-	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro5,1", M_MBP_5_1),
+-	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro5,2", M_MBP_5_2),
+-	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro5,3", M_MBP_5_3),
+-	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro6,1", M_MBP_6_1),
+-	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro6,2", M_MBP_6_2),
+-	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro7,1", M_MBP_7_1),
+-	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro8,2", M_MBP_8_2),
+-	{},
+-};
+-
+-#define choose_value(dmivalue, fwvalue, field, flags) ({	\
+-		typeof(fwvalue) _ret_ = fwvalue;		\
+-		if ((flags) & (field))				\
+-			_ret_ = dmivalue;			\
+-		else if ((fwvalue) == 0)			\
+-			_ret_ = dmivalue;			\
+-		_ret_;						\
+-	})
+-
+-static int set_system(const struct dmi_system_id *id)
+-{
+-	struct efifb_dmi_info *info = id->driver_data;
+-
+-	if (info->base == 0 && info->height == 0 && info->width == 0
+-			&& info->stride == 0)
+-		return 0;
+-
+-	/* Trust the bootloader over the DMI tables */
+-	if (screen_info.lfb_base == 0) {
+-#if defined(CONFIG_PCI)
+-		struct pci_dev *dev = NULL;
+-		int found_bar = 0;
+-#endif
+-		if (info->base) {
+-			screen_info.lfb_base = choose_value(info->base,
+-				screen_info.lfb_base, OVERRIDE_BASE,
+-				info->flags);
+-
+-#if defined(CONFIG_PCI)
+-			/* make sure that the address in the table is actually
+-			 * on a VGA device's PCI BAR */
+-
+-			for_each_pci_dev(dev) {
+-				int i;
+-				if ((dev->class >> 8) != PCI_CLASS_DISPLAY_VGA)
+-					continue;
+-				for (i = 0; i < DEVICE_COUNT_RESOURCE; i++) {
+-					resource_size_t start, end;
+-
+-					start = pci_resource_start(dev, i);
+-					if (start == 0)
+-						break;
+-					end = pci_resource_end(dev, i);
+-					if (screen_info.lfb_base >= start &&
+-					    screen_info.lfb_base < end) {
+-						found_bar = 1;
+-					}
+-				}
+-			}
+-			if (!found_bar)
+-				screen_info.lfb_base = 0;
+-#endif
+-		}
+-	}
+-	if (screen_info.lfb_base) {
+-		screen_info.lfb_linelength = choose_value(info->stride,
+-			screen_info.lfb_linelength, OVERRIDE_STRIDE,
+-			info->flags);
+-		screen_info.lfb_width = choose_value(info->width,
+-			screen_info.lfb_width, OVERRIDE_WIDTH,
+-			info->flags);
+-		screen_info.lfb_height = choose_value(info->height,
+-			screen_info.lfb_height, OVERRIDE_HEIGHT,
+-			info->flags);
+-		if (screen_info.orig_video_isVGA == 0)
+-			screen_info.orig_video_isVGA = VIDEO_TYPE_EFI;
+-	} else {
+-		screen_info.lfb_linelength = 0;
+-		screen_info.lfb_width = 0;
+-		screen_info.lfb_height = 0;
+-		screen_info.orig_video_isVGA = 0;
+-		return 0;
+-	}
+-
+-	printk(KERN_INFO "efifb: dmi detected %s - framebuffer at 0x%08x "
+-			 "(%dx%d, stride %d)\n", id->ident,
+-			 screen_info.lfb_base, screen_info.lfb_width,
+-			 screen_info.lfb_height, screen_info.lfb_linelength);
+-
+-
+-	return 1;
+-}
+-
+ static int efifb_setcolreg(unsigned regno, unsigned red, unsigned green,
+ 			   unsigned blue, unsigned transp,
+ 			   struct fb_info *info)
+@@ -323,12 +107,12 @@ static int __init efifb_setup(char *options)
+ 			if (!*this_opt) continue;
+ 
+ 			for (i = 0; i < M_UNKNOWN; i++) {
+-				if (!strcmp(this_opt, dmi_list[i].optname) &&
+-				    dmi_list[i].base != 0) {
+-					screen_info.lfb_base = dmi_list[i].base;
+-					screen_info.lfb_linelength = dmi_list[i].stride;
+-					screen_info.lfb_width = dmi_list[i].width;
+-					screen_info.lfb_height = dmi_list[i].height;
++				if (!strcmp(this_opt, efifb_dmi_list[i].optname) &&
++				    efifb_dmi_list[i].base != 0) {
++					screen_info.lfb_base = efifb_dmi_list[i].base;
++					screen_info.lfb_linelength = efifb_dmi_list[i].stride;
++					screen_info.lfb_width = efifb_dmi_list[i].width;
++					screen_info.lfb_height = efifb_dmi_list[i].height;
+ 				}
+ 			}
+ 			if (!strncmp(this_opt, "base:", 5))
+@@ -553,10 +337,6 @@ static int __init efifb_init(void)
+ 	int ret;
+ 	char *option = NULL;
+ 
+-	if (screen_info.orig_video_isVGA != VIDEO_TYPE_EFI ||
+-	    !(screen_info.capabilities & VIDEO_CAPABILITY_SKIP_QUIRKS))
+-		dmi_check_system(dmi_system_table);
+-
+ 	if (screen_info.orig_video_isVGA != VIDEO_TYPE_EFI)
+ 		return -ENODEV;
+ 
