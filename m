@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030672Ab3HBKN4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:13:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37518 "EHLO
+	id S1030638Ab3HBKOa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:14:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37505 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030619Ab3HBKM3 (ORCPT
+	with ESMTP id S1030600Ab3HBKMU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:12:29 -0400
+	Fri, 2 Aug 2013 06:12:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, target-devel <target-devel@vger.kernel.org>
+To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
-        Or Gerlitz <ogerlitz@mellanox.com>,
-        Mike Christie <michaelc@cs.wisc.edu>
-Subject: [ 96/99] iscsi-target: Fix iscsit_sequence_cmd reject handling for iser
-Date: Fri,  2 Aug 2013 18:08:49 +0800
-Message-Id: <20130802100239.314266868@linuxfoundation.org>
+        Gustavo Padovan <gustavo.padovan@collabora.co.uk>,
+        Gianluca Anzolin <gianluca@sottospazio.it>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [ 91/99] tty_port: Fix refcounting leak in tty_port_tty_hangup()
+Date: Fri,  2 Aug 2013 18:08:44 +0800
+Message-Id: <20130802100238.625266809@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802100225.478715166@linuxfoundation.org>
 References: <20130802100225.478715166@linuxfoundation.org>
@@ -28,280 +28,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Gianluca Anzolin <gianluca@sottospazio.it>
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+commit 1d9e689c934bd5ecb0f273c6c65e0655c5cfee5f upstream.
 
-commit 561bf15892375597ee59d473a704a3e634c4f311 upstream
+The function tty_port_tty_hangup() could leak a reference to the tty_struct:
 
-This patch moves ISCSI_OP_REJECT failures into iscsit_sequence_cmd()
-in order to avoid external iscsit_reject_cmd() reject usage for all
-PDU types.
+        struct tty_struct *tty = tty_port_tty_get(port);
 
-It also updates PDU specific handlers for traditional iscsi-target
-code to not reset the session after posting a ISCSI_OP_REJECT during
-setup.
+        if (tty && (!check_clocal || !C_CLOCAL(tty))) {
+                tty_hangup(tty);
+                tty_kref_put(tty);
+        }
 
-(v2: Fix CMDSN_LOWER_THAN_EXP for ISCSI_OP_SCSI to call
-     target_put_sess_cmd() after iscsit_sequence_cmd() failure)
+If tty != NULL and the second condition is false we never call tty_kref_put and
+the reference is leaked.
 
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-Cc: Or Gerlitz <ogerlitz@mellanox.com>
-Cc: Mike Christie <michaelc@cs.wisc.edu>
+Fix by always calling tty_kref_put() which accepts a NULL argument.
+
+The patch fixes a regression introduced by commit aa27a094.
+
+Acked-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Signed-off-by: Gianluca Anzolin <gianluca@sottospazio.it>
+Acked-by: Jiri Slaby <jslaby@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/infiniband/ulp/isert/ib_isert.c  |    2 -
- drivers/target/iscsi/iscsi_target.c      |   50 +++++++++++++++++++------------
- drivers/target/iscsi/iscsi_target_erl1.c |    6 +--
- drivers/target/iscsi/iscsi_target_util.c |   26 ++++++++++++----
- drivers/target/iscsi/iscsi_target_util.h |    3 +
- include/target/iscsi/iscsi_transport.h   |    3 +
- 6 files changed, 60 insertions(+), 30 deletions(-)
 
---- a/drivers/infiniband/ulp/isert/ib_isert.c
-+++ b/drivers/infiniband/ulp/isert/ib_isert.c
-@@ -952,7 +952,7 @@ isert_handle_scsi_cmd(struct isert_conn
- 	}
+---
+ drivers/tty/tty_port.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+--- a/drivers/tty/tty_port.c
++++ b/drivers/tty/tty_port.c
+@@ -256,10 +256,9 @@ void tty_port_tty_hangup(struct tty_port
+ {
+ 	struct tty_struct *tty = tty_port_tty_get(port);
  
- sequence_cmd:
--	rc = iscsit_sequence_cmd(conn, cmd, hdr->cmdsn);
-+	rc = iscsit_sequence_cmd(conn, cmd, buf, hdr->cmdsn);
- 
- 	if (!rc && dump_payload == false && unsol_data)
- 		iscsit_set_unsoliticed_dataout(cmd);
---- a/drivers/target/iscsi/iscsi_target.c
-+++ b/drivers/target/iscsi/iscsi_target.c
-@@ -1052,11 +1052,11 @@ int iscsit_process_scsi_cmd(struct iscsi
- 	 * be acknowledged. (See below)
- 	 */
- 	if (!cmd->immediate_data) {
--		cmdsn_ret = iscsit_sequence_cmd(conn, cmd, hdr->cmdsn);
--		if (cmdsn_ret == CMDSN_LOWER_THAN_EXP) {
--			if (!cmd->sense_reason)
--				return 0;
--
-+		cmdsn_ret = iscsit_sequence_cmd(conn, cmd,
-+					(unsigned char *)hdr, hdr->cmdsn);
-+		if (cmdsn_ret == CMDSN_ERROR_CANNOT_RECOVER)
-+			return -1;
-+		else if (cmdsn_ret == CMDSN_LOWER_THAN_EXP) {
- 			target_put_sess_cmd(conn->sess->se_sess, &cmd->se_cmd);
- 			return 0;
- 		}
-@@ -1083,6 +1083,9 @@ int iscsit_process_scsi_cmd(struct iscsi
- 	 * iscsit_check_received_cmdsn() in iscsit_get_immediate_data() below.
- 	 */
- 	if (cmd->sense_reason) {
-+		if (cmd->reject_reason)
-+			return 0;
-+
- 		target_put_sess_cmd(conn->sess->se_sess, &cmd->se_cmd);
- 		return 1;
- 	}
-@@ -1091,10 +1094,8 @@ int iscsit_process_scsi_cmd(struct iscsi
- 	 * the backend memory allocation.
- 	 */
- 	cmd->sense_reason = transport_generic_new_cmd(&cmd->se_cmd);
--	if (cmd->sense_reason) {
--		target_put_sess_cmd(conn->sess->se_sess, &cmd->se_cmd);
-+	if (cmd->sense_reason)
- 		return 1;
+-	if (tty && (!check_clocal || !C_CLOCAL(tty))) {
++	if (tty && (!check_clocal || !C_CLOCAL(tty)))
+ 		tty_hangup(tty);
+-		tty_kref_put(tty);
 -	}
- 
- 	return 0;
++	tty_kref_put(tty);
  }
-@@ -1104,6 +1105,7 @@ static int
- iscsit_get_immediate_data(struct iscsi_cmd *cmd, struct iscsi_scsi_req *hdr,
- 			  bool dump_payload)
- {
-+	struct iscsi_conn *conn = cmd->conn;
- 	int cmdsn_ret = 0, immed_ret = IMMEDIATE_DATA_NORMAL_OPERATION;
- 	/*
- 	 * Special case for Unsupported SAM WRITE Opcodes and ImmediateData=Yes.
-@@ -1120,12 +1122,22 @@ after_immediate_data:
- 		 * DataCRC, check against ExpCmdSN/MaxCmdSN if
- 		 * Immediate Bit is not set.
- 		 */
--		cmdsn_ret = iscsit_sequence_cmd(cmd->conn, cmd, hdr->cmdsn);
-+		cmdsn_ret = iscsit_sequence_cmd(cmd->conn, cmd,
-+					(unsigned char *)hdr, hdr->cmdsn);
-+		if (cmdsn_ret == CMDSN_ERROR_CANNOT_RECOVER) {
-+			return -1;
-+		} else if (cmdsn_ret == CMDSN_LOWER_THAN_EXP) {
-+			target_put_sess_cmd(conn->sess->se_sess, &cmd->se_cmd);
-+			return 0;
-+		}
+ EXPORT_SYMBOL_GPL(tty_port_tty_hangup);
  
- 		if (cmd->sense_reason) {
--			if (iscsit_dump_data_payload(cmd->conn,
--					cmd->first_burst_len, 1) < 0)
--				return -1;
-+			int rc;
-+
-+			rc = iscsit_dump_data_payload(cmd->conn,
-+						      cmd->first_burst_len, 1);
-+			target_put_sess_cmd(conn->sess->se_sess, &cmd->se_cmd);
-+			return rc;
- 		} else if (cmd->unsolicited_data)
- 			iscsit_set_unsoliticed_dataout(cmd);
- 
-@@ -1159,7 +1171,7 @@ iscsit_handle_scsi_cmd(struct iscsi_conn
- 
- 	rc = iscsit_setup_scsi_cmd(conn, cmd, buf);
- 	if (rc < 0)
--		return rc;
-+		return 0;
- 	/*
- 	 * Allocation iovecs needed for struct socket operations for
- 	 * traditional iSCSI block I/O.
-@@ -1500,7 +1512,7 @@ static int iscsit_handle_data_out(struct
- 
- 	rc = iscsit_check_dataout_hdr(conn, buf, &cmd);
- 	if (rc < 0)
--		return rc;
-+		return 0;
- 	else if (!cmd)
- 		return 0;
- 
-@@ -1672,7 +1684,8 @@ int iscsit_handle_nop_out(struct iscsi_c
- 			return 0;
- 		}
- 
--		cmdsn_ret = iscsit_sequence_cmd(conn, cmd, hdr->cmdsn);
-+		cmdsn_ret = iscsit_sequence_cmd(conn, cmd,
-+				(unsigned char *)hdr, hdr->cmdsn);
- 		if (cmdsn_ret == CMDSN_LOWER_THAN_EXP) {
- 			ret = 0;
- 			goto ping_out;
-@@ -1898,7 +1911,7 @@ attach:
- 	spin_unlock_bh(&conn->cmd_lock);
- 
- 	if (!(hdr->opcode & ISCSI_OP_IMMEDIATE)) {
--		int cmdsn_ret = iscsit_sequence_cmd(conn, cmd, hdr->cmdsn);
-+		int cmdsn_ret = iscsit_sequence_cmd(conn, cmd, buf, hdr->cmdsn);
- 		if (cmdsn_ret == CMDSN_HIGHER_THAN_EXP)
- 			out_of_order_cmdsn = 1;
- 		else if (cmdsn_ret == CMDSN_LOWER_THAN_EXP)
-@@ -2075,7 +2088,8 @@ static int iscsit_handle_text_cmd(
- 	iscsit_ack_from_expstatsn(conn, be32_to_cpu(hdr->exp_statsn));
- 
- 	if (!(hdr->opcode & ISCSI_OP_IMMEDIATE)) {
--		cmdsn_ret = iscsit_sequence_cmd(conn, cmd, hdr->cmdsn);
-+		cmdsn_ret = iscsit_sequence_cmd(conn, cmd,
-+				(unsigned char *)hdr, hdr->cmdsn);
- 		if (cmdsn_ret == CMDSN_ERROR_CANNOT_RECOVER)
- 			return -1;
- 
-@@ -2262,7 +2276,7 @@ iscsit_handle_logout_cmd(struct iscsi_co
- 		if (ret < 0)
- 			return ret;
- 	} else {
--		cmdsn_ret = iscsit_sequence_cmd(conn, cmd, hdr->cmdsn);
-+		cmdsn_ret = iscsit_sequence_cmd(conn, cmd, buf, hdr->cmdsn);
- 		if (cmdsn_ret == CMDSN_LOWER_THAN_EXP)
- 			logout_remove = 0;
- 		else if (cmdsn_ret == CMDSN_ERROR_CANNOT_RECOVER)
---- a/drivers/target/iscsi/iscsi_target_erl1.c
-+++ b/drivers/target/iscsi/iscsi_target_erl1.c
-@@ -1088,7 +1088,7 @@ int iscsit_handle_ooo_cmdsn(
- 
- 	ooo_cmdsn = iscsit_allocate_ooo_cmdsn();
- 	if (!ooo_cmdsn)
--		return CMDSN_ERROR_CANNOT_RECOVER;
-+		return -ENOMEM;
- 
- 	ooo_cmdsn->cmd			= cmd;
- 	ooo_cmdsn->batch_count		= (batch) ?
-@@ -1099,10 +1099,10 @@ int iscsit_handle_ooo_cmdsn(
- 
- 	if (iscsit_attach_ooo_cmdsn(sess, ooo_cmdsn) < 0) {
- 		kmem_cache_free(lio_ooo_cache, ooo_cmdsn);
--		return CMDSN_ERROR_CANNOT_RECOVER;
-+		return -ENOMEM;
- 	}
- 
--	return CMDSN_HIGHER_THAN_EXP;
-+	return 0;
- }
- 
- static int iscsit_set_dataout_timeout_values(
---- a/drivers/target/iscsi/iscsi_target_util.c
-+++ b/drivers/target/iscsi/iscsi_target_util.c
-@@ -283,13 +283,12 @@ static inline int iscsit_check_received_
-  * Commands may be received out of order if MC/S is in use.
-  * Ensure they are executed in CmdSN order.
-  */
--int iscsit_sequence_cmd(
--	struct iscsi_conn *conn,
--	struct iscsi_cmd *cmd,
--	__be32 cmdsn)
-+int iscsit_sequence_cmd(struct iscsi_conn *conn, struct iscsi_cmd *cmd,
-+			unsigned char *buf, __be32 cmdsn)
- {
--	int ret;
--	int cmdsn_ret;
-+	int ret, cmdsn_ret;
-+	bool reject = false;
-+	u8 reason = ISCSI_REASON_BOOKMARK_NO_RESOURCES;
- 
- 	mutex_lock(&conn->sess->cmdsn_mutex);
- 
-@@ -299,9 +298,19 @@ int iscsit_sequence_cmd(
- 		ret = iscsit_execute_cmd(cmd, 0);
- 		if ((ret >= 0) && !list_empty(&conn->sess->sess_ooo_cmdsn_list))
- 			iscsit_execute_ooo_cmdsns(conn->sess);
-+		else if (ret < 0) {
-+			reject = true;
-+			ret = CMDSN_ERROR_CANNOT_RECOVER;
-+		}
- 		break;
- 	case CMDSN_HIGHER_THAN_EXP:
- 		ret = iscsit_handle_ooo_cmdsn(conn->sess, cmd, be32_to_cpu(cmdsn));
-+		if (ret < 0) {
-+			reject = true;
-+			ret = CMDSN_ERROR_CANNOT_RECOVER;
-+			break;
-+		}
-+		ret = CMDSN_HIGHER_THAN_EXP;
- 		break;
- 	case CMDSN_LOWER_THAN_EXP:
- 		cmd->i_state = ISTATE_REMOVE;
-@@ -309,11 +318,16 @@ int iscsit_sequence_cmd(
- 		ret = cmdsn_ret;
- 		break;
- 	default:
-+		reason = ISCSI_REASON_PROTOCOL_ERROR;
-+		reject = true;
- 		ret = cmdsn_ret;
- 		break;
- 	}
- 	mutex_unlock(&conn->sess->cmdsn_mutex);
- 
-+	if (reject)
-+		iscsit_reject_cmd(cmd, reason, buf);
-+
- 	return ret;
- }
- EXPORT_SYMBOL(iscsit_sequence_cmd);
---- a/drivers/target/iscsi/iscsi_target_util.h
-+++ b/drivers/target/iscsi/iscsi_target_util.h
-@@ -13,7 +13,8 @@ extern struct iscsi_cmd *iscsit_allocate
- extern struct iscsi_seq *iscsit_get_seq_holder_for_datain(struct iscsi_cmd *, u32);
- extern struct iscsi_seq *iscsit_get_seq_holder_for_r2t(struct iscsi_cmd *);
- extern struct iscsi_r2t *iscsit_get_holder_for_r2tsn(struct iscsi_cmd *, u32);
--int iscsit_sequence_cmd(struct iscsi_conn *conn, struct iscsi_cmd *cmd, __be32 cmdsn);
-+extern int iscsit_sequence_cmd(struct iscsi_conn *conn, struct iscsi_cmd *cmd,
-+			       unsigned char * ,__be32 cmdsn);
- extern int iscsit_check_unsolicited_dataout(struct iscsi_cmd *, unsigned char *);
- extern struct iscsi_cmd *iscsit_find_cmd_from_itt(struct iscsi_conn *, itt_t);
- extern struct iscsi_cmd *iscsit_find_cmd_from_itt_or_dump(struct iscsi_conn *,
---- a/include/target/iscsi/iscsi_transport.h
-+++ b/include/target/iscsi/iscsi_transport.h
-@@ -82,4 +82,5 @@ extern int iscsit_tmr_post_handler(struc
-  * From iscsi_target_util.c
-  */
- extern struct iscsi_cmd *iscsit_allocate_cmd(struct iscsi_conn *, gfp_t);
--extern int iscsit_sequence_cmd(struct iscsi_conn *, struct iscsi_cmd *, __be32);
-+extern int iscsit_sequence_cmd(struct iscsi_conn *, struct iscsi_cmd *,
-+			       unsigned char *, __be32);
 
 
