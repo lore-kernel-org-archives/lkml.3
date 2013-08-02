@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755599Ab3HBKrn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:47:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37225 "EHLO
+	id S1755663Ab3HBKsK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:48:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37211 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030187Ab3HBKKK (ORCPT
+	with ESMTP id S964830Ab3HBKKC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:10:10 -0400
+	Fri, 2 Aug 2013 06:10:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Beulich <JBeulich@suse.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [ 42/99] xen/blkback: Check device permissions before allowing OP_DISCARD
-Date: Fri,  2 Aug 2013 18:07:55 +0800
-Message-Id: <20130802100231.954461213@linuxfoundation.org>
+        Joe Lawrence <joe.lawrence@stratus.com>, NeilBrown <neilb@suse.de>
+Subject: [ 45/99] md: Remove recent change which allows devices to skip recovery.
+Date: Fri,  2 Aug 2013 18:07:58 +0800
+Message-Id: <20130802100232.361687043@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802100225.478715166@linuxfoundation.org>
 References: <20130802100225.478715166@linuxfoundation.org>
@@ -28,55 +26,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+From: NeilBrown <neilb@suse.de>
 
-commit 604c499cbbcc3d5fe5fb8d53306aa0fae1990109 upstream.
+commit 5024c298311f3b97c85cb034f9edaa333fdb9338 upstream.
 
-We need to make sure that the device is not RO or that
-the request is not past the number of sectors we want to
-issue the DISCARD operation for.
+commit 7ceb17e87bde79d285a8b988cfed9eaeebe60b86
+    md: Allow devices to be re-added to a read-only array.
 
-This fixes CVE-2013-2140.
+allowed a bit more than just that.  It also allows devices to be added
+to a read-write array and to end up skipping recovery.
 
-Acked-by: Jan Beulich <JBeulich@suse.com>
-Acked-by: Ian Campbell <Ian.Campbell@citrix.com>
-[v1: Made it pr_warn instead of pr_debug]
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+This patch removes the offending piece of code pending a rewrite for a
+subsequent release.
+
+More specifically:
+ If the array has a bitmap, then the device will still need a bitmap
+ based resync ('saved_raid_disk' is set under different conditions
+ is a bitmap is present).
+ If the array doesn't have a bitmap, then this is correct as long as
+ nothing has been written to the array since the metadata was checked
+ by ->validate_super.  However there is no locking to ensure that there
+ was no write.
+
+Bug was introduced in 3.10 and causes data corruption so
+patch is suitable for 3.10-stable.
+
+Reported-by: Joe Lawrence <joe.lawrence@stratus.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/block/xen-blkback/blkback.c |   13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
+ drivers/md/md.c |   14 --------------
+ 1 file changed, 14 deletions(-)
 
---- a/drivers/block/xen-blkback/blkback.c
-+++ b/drivers/block/xen-blkback/blkback.c
-@@ -647,7 +647,18 @@ static int dispatch_discard_io(struct xe
- 	int status = BLKIF_RSP_OKAY;
- 	struct block_device *bdev = blkif->vbd.bdev;
- 	unsigned long secure;
-+	struct phys_req preq;
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -7697,20 +7697,6 @@ static int remove_and_add_spares(struct
+ 			continue;
  
-+	preq.sector_number = req->u.discard.sector_number;
-+	preq.nr_sects      = req->u.discard.nr_sectors;
-+
-+	err = xen_vbd_translate(&preq, blkif, WRITE);
-+	if (err) {
-+		pr_warn(DRV_PFX "access denied: DISCARD [%llu->%llu] on dev=%04x\n",
-+			preq.sector_number,
-+			preq.sector_number + preq.nr_sects, blkif->vbd.pdevice);
-+		goto fail_response;
-+	}
- 	blkif->st_ds_req++;
- 
- 	xen_blkif_get(blkif);
-@@ -658,7 +669,7 @@ static int dispatch_discard_io(struct xe
- 	err = blkdev_issue_discard(bdev, req->u.discard.sector_number,
- 				   req->u.discard.nr_sectors,
- 				   GFP_KERNEL, secure);
--
-+fail_response:
- 	if (err == -EOPNOTSUPP) {
- 		pr_debug(DRV_PFX "discard op failed, not supported\n");
- 		status = BLKIF_RSP_EOPNOTSUPP;
+ 		rdev->recovery_offset = 0;
+-		if (rdev->saved_raid_disk >= 0 && mddev->in_sync) {
+-			spin_lock_irq(&mddev->write_lock);
+-			if (mddev->in_sync)
+-				/* OK, this device, which is in_sync,
+-				 * will definitely be noticed before
+-				 * the next write, so recovery isn't
+-				 * needed.
+-				 */
+-				rdev->recovery_offset = mddev->recovery_cp;
+-			spin_unlock_irq(&mddev->write_lock);
+-		}
+-		if (mddev->ro && rdev->recovery_offset != MaxSector)
+-			/* not safe to add this disk now */
+-			continue;
+ 		if (mddev->pers->
+ 		    hot_add_disk(mddev, rdev) == 0) {
+ 			if (sysfs_link_rdev(mddev, rdev))
 
 
