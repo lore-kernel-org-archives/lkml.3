@@ -1,173 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752695Ab3HBMlO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 08:41:14 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:64594 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752476Ab3HBMlM (ORCPT
+	id S1752750Ab3HBMlh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 08:41:37 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:65269 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752677Ab3HBMlf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 08:41:12 -0400
-Date: Fri, 2 Aug 2013 13:40:33 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Gururaja Hebbar <gururaja.hebbar@ti.com>
-Cc: "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "benoit.cousson@gmail.com" <benoit.cousson@gmail.com>,
-        Sekhar Nori <nsekhar@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "vaibhav.bedia@ti.com" <vaibhav.bedia@ti.com>,
-        "benoit.cousson@linaro.org" <benoit.cousson@linaro.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [Patch V2 4/4] ARM: dts: AM33XX: update rtc node compatibility
-Message-ID: <20130802124033.GL2884@e106331-lin.cambridge.arm.com>
-References: <1372841225-18813-1-git-send-email-gururaja.hebbar@ti.com>
- <1372841225-18813-5-git-send-email-gururaja.hebbar@ti.com>
- <51F749B0.7020802@ti.com>
- <20130730145501.GA29859@e106331-lin.cambridge.arm.com>
- <51F7E7FA.3080702@ti.com>
- <20130801170537.GF8095@e106331-lin.cambridge.arm.com>
- <51FB92F8.9020801@ti.com>
- <20130802112018.GI2884@e106331-lin.cambridge.arm.com>
- <51FB9C77.3090202@ti.com>
+	Fri, 2 Aug 2013 08:41:35 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX198fo/0DNZo5lRIawXFRAR6
+Date: Fri, 2 Aug 2013 05:41:31 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Greg KH <greg@kroah.com>
+Cc: ksummit-2013-discuss@lists.linuxfoundation.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [Ksummit-2013-discuss] [ATTEND] [ARM ATTEND] kernel data bloat
+ and how to avoid it
+Message-ID: <20130802124130.GI7656@atomide.com>
+References: <20130731073802.GT7656@atomide.com>
+ <20130731123351.GA30474@kroah.com>
+ <20130802075352.GY7656@atomide.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51FB9C77.3090202@ti.com>
+In-Reply-To: <20130802075352.GY7656@atomide.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 02, 2013 at 12:48:07PM +0100, Gururaja Hebbar wrote:
-> On 8/2/2013 4:50 PM, Mark Rutland wrote:
-> > On Fri, Aug 02, 2013 at 12:07:36PM +0100, Gururaja Hebbar wrote:
-> >> On 8/1/2013 10:35 PM, Mark Rutland wrote:
-> >>> On Tue, Jul 30, 2013 at 05:21:14PM +0100, Sekhar Nori wrote:
-> >>>> On 7/30/2013 8:25 PM, Mark Rutland wrote:
-> >>>>> On Tue, Jul 30, 2013 at 06:05:52AM +0100, Gururaja Hebbar wrote:
-> >>>>>> Hi,
-> >>>>>>
-> >>>>>> On 7/3/2013 2:17 PM, Hebbar Gururaja wrote:
-> >>>>>>> Since AM33xx  RTC IP has RTC_IRQWAKEEN to support Alarm Wake-up.
-> >>>>>>>
-> >>>>>>> Update the rtc compatible property to "ti,am3352-rtc" to enable handling
-> >>>>>>> of this feature inside rtc-omap driver.
-> >>>>>>
-> >>>>>> The other 2 rtc driver related patches have been pulled up. If you have
-> >>>>>> no comments, can you please pull this up.
-> >>>>>>
-> >>>>>> Regards
-> >>>>>> Gururaja
-> >>>>>>
-> >>>>>>>
-> >>>>>>> Signed-off-by: Hebbar Gururaja <gururaja.hebbar@ti.com>
-> >>>>>>> ---
-> >>>>>>> :100644 100644 77aa1b0... dde180a... M	arch/arm/boot/dts/am33xx.dtsi
-> >>>>>>>     arch/arm/boot/dts/am33xx.dtsi |    2 +-
-> >>>>>>>     1 file changed, 1 insertion(+), 1 deletion(-)
-> >>>>>>>
-> >>>>>>> diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
-> >>>>>>> index 77aa1b0..dde180a 100644
-> >>>>>>> --- a/arch/arm/boot/dts/am33xx.dtsi
-> >>>>>>> +++ b/arch/arm/boot/dts/am33xx.dtsi
-> >>>>>>> @@ -297,7 +297,7 @@
-> >>>>>>>     		};
-> >>>>>>>
-> >>>>>>>     		rtc@44e3e000 {
-> >>>>>>> -			compatible = "ti,da830-rtc";
-> >>>>>>> +			compatible = "ti,am3352-rtc";
-> >>>>>
-> >>>>> Given that this is backwards compatible with the old binding, it would
-> >>>>> be nicer to have this as:
-> >>>>>
-> >>>>> 	compatible = "ti,am3352-rtc", "ti,da830-rtc";
-> >>>>>
-> >>>>> We must get into the habit of changing dts files in a
-> >>>>> backwards-compatible fashion.
-> >>>>
-> >>>> Right, I suggested this when v1 was posted. It turns out the current
-> >>>> kernel does not handle the compatilble list correctly and the string
-> >>>> selected actually depends on the order in which it appears in match
-> >>>> table in driver instead.
-> >>>>
-> >>>> I saw there were patches being discussed to fix this issue, but until
-> >>>> that is fixed, we cannot really use what you (and I before) suggested.
-> >>>
-> >>> A temporary solution would be to list the "ti,am3352-rtc" first in the
-> >>> of_match_table kernel-side.
-> >>
-> >> If above method is followed, then it would cause trouble on davinci
-> >> platform because this rtc-omap driver is also used by Davinci platform.
-> >> On davinci Plaform the driver would match with "ti,am3352-rtc" for
-> >> compatible.
-> >
-> > Sorry, I don't follow. Does the davinci dt have "ti,am3352-rtc" in it's
-> > compatible string list?
+* Tony Lindgren <tony@atomide.com> [130802 01:00]:
+> * Greg KH <greg@kroah.com> [130731 05:39]:
+> > On Wed, Jul 31, 2013 at 12:38:03AM -0700, Tony Lindgren wrote:
+> > > Hi all,
+> > > 
+> > > Probably the biggest kernel data bloat issue is in the ARM land, but
+> > > it also seems that it's becoming a Linux generic issue too, so I
+> > > guess it could be discussed in either context.
+> > 
+> > Why is it specific to ARM?  What is so unique to ARM that causes it to
+> > "bloat"?
 > 
-> no no. Davinci .dts uses "ti,da830-rtc".
-
-Ok.
-
+> I think it has so far showed up on ARM because of no discoverable busses,
+> but chances are it will be more of a generic problem.
 > 
-> I was saying if we reverse the order of "of_device_id" structure in 
-> rtc-omap driver, then it would work nicely for am335x but will cause 
-> trouble on davinci platform.
-
-I don't understand. If we place "ti,am3352-rtc" first in the list, it
-won't be match the davinci dts compatible string, and the code will go
-over the of_device_id entires until it finds the "ti,da830-rtc" entry
-used by davinci.
-
-What problem would this cause, and why?
-
-Thanks,
-Mark.
-
+> > And what exactly do you mean by "bloat"?
 > 
-> >
-> > If so, and it's not compatible, the dts is wrong.
-> >
-> > If not, then we won't use the behaviour specific to "ti,am3352-rtc", and
-> > there's no problem.
-> >
-> > What trouble would this cause?
-> >
-> > Thanks,
-> > Mark.
-> >
-> >>
-> >> Regards
-> >> Gururaja
-> >>
-> >>> That way you can keep the old compatible
-> >>> string in the dts compatible list, and maintain backwards compatibilty
-> >>> with older kernels.
-> >>>
-> >>> Later if the way Linux matches compatible strings is changed, this
-> >>> shouldn't break the probe order, and the of_match_table order could be
-> >>> changed.
-> >>>
-> >>> Have I missed something?
-> >>>
-> >>> Thanks,
-> >>> Mark.
-> >>>
-> >>
-> >>
-> >> _______________________________________________
-> >> linux-arm-kernel mailing list
-> >> linux-arm-kernel@lists.infradead.org
-> >> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-> >>
+> Stuffing data to kernel that should not be in the kernel at all. Or
+> if the data is needed by kernel, there should be only one set of the
+> data defined rather than multiple copies of the data built into the
+> kernel for each SoC or driver variant.
 > 
+> > > Basically the data bloat issue is there for the arch code and drivers
+> > > and may not show up initially until things have headed the wrong way for
+> > > too long.
+> > 
+> > What do you mean by this?  You seem to be very vague here.
 > 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> People are unnecessarily defining registers in kernel for similar devices
+> over and over again for each new SoC at the arch level and now more and
+> more at the driver level.
 > 
+> One example of that are device tree based drivers that don't describe
+> the actual hardware, but instead have a binding that points to an index
+> of defined registers in the driver.
+> 
+> One way to avoid these kind of bloat issues is to allow drivers to load
+> data at multiple points: Only abtolutely minimal set of data should be
+> static, some should only come from the bootloader as a device tree or
+> ACPI tables, and some is best to be loaded after booting from /lib/firmware.
+
+Oh and thinking about it a bit more, this issue is mostly with the
+device drivers implementing frameworks, not the device drivers
+using the frameworks. Things like clocks, regulators, muxes etc where
+an almost similar instance is repeated tens or hundreds of times for
+each SoC.
+
+Regards,
+
+Tony
