@@ -1,57 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754323Ab3HBE4d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 00:56:33 -0400
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:57274 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753471Ab3HBE4b (ORCPT
+	id S1754444Ab3HBE5t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 00:57:49 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:53071 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753697Ab3HBE5s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 00:56:31 -0400
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <lenb@kernel.org>,
-        Zhang Rui <rui.zhang@intel.com>, Aaron Lu <aaron.lwe@gmail.com>,
-        Felipe Contreras <felipe.contreras@gmail.com>
-Subject: [PATCH] acpi: video: remove unused code
-Date: Thu,  1 Aug 2013 23:52:57 -0500
-Message-Id: <1375419177-10431-1-git-send-email-felipe.contreras@gmail.com>
-X-Mailer: git-send-email 1.8.3.4
+	Fri, 2 Aug 2013 00:57:48 -0400
+Message-ID: <51FB3C48.4060500@hitachi.com>
+Date: Fri, 02 Aug 2013 13:57:44 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: Re: [RFC][PATCH 3/4] tracing/kprobes: Fail to unregister if
+ probe event files are open
+References: <20130704033347.807661713@goodmis.org> <20130704034038.819592356@goodmis.org> <1375300192.5418.17.camel@gandalf.local.home> <20130731204003.GA30188@redhat.com> <1375310548.5418.21.camel@gandalf.local.home> <1375322866.5418.46.camel@gandalf.local.home> <1375325414.5418.50.camel@gandalf.local.home> <20130801133455.GB8703@redhat.com>
+In-Reply-To: <20130801133455.GB8703@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-_BCM_use_index is never used and probably never will.
+(2013/08/01 22:34), Oleg Nesterov wrote:
+> Just one off-topic note,
+> 
+>> > @@ -632,7 +635,9 @@ static int release_all_trace_probes(void)
+>> >  	/* TODO: Use batch unregistration */
+>> >  	while (!list_empty(&probe_list)) {
+>> >  		tp = list_entry(probe_list.next, struct trace_probe, list);
+>> > -		unregister_trace_probe(tp);
+>> > +		ret = unregister_trace_probe(tp);
+>> > +		if (ret)
+>> > +			goto end;
+>> >  		free_trace_probe(tp);
+>> >  	}
+> This obviously breaks all-or-nothing semantics (I mean, this breaks
+> the intent, the current code is buggy).
 
-Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
----
- drivers/acpi/video.c | 7 -------
- 1 file changed, 7 deletions(-)
+I see, since we can't lock all operations, we have to change the
+semantics. I think it's OK.
 
-diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
-index 0ec434d..54e2d4d 100644
---- a/drivers/acpi/video.c
-+++ b/drivers/acpi/video.c
-@@ -186,7 +186,6 @@ struct acpi_video_brightness_flags {
- 	u8 _BCL_no_ac_battery_levels:1;	/* no AC/Battery levels in _BCL */
- 	u8 _BCL_reversed:1;		/* _BCL package is in a reversed order*/
- 	u8 _BCL_use_index:1;		/* levels in _BCL are index values */
--	u8 _BCM_use_index:1;		/* input of _BCM is an index value */
- 	u8 _BQC_use_index:1;		/* _BQC returns an index value */
- };
- 
-@@ -810,12 +809,6 @@ acpi_video_init_brightness(struct acpi_video_device *device)
- 	if ((max_level < 100) && (max_level <= (count - 2)))
- 		br->flags._BCL_use_index = 1;
- 
--	/*
--	 * _BCM is always consistent with _BCL,
--	 * at least for all the laptops we have ever seen.
--	 */
--	br->flags._BCM_use_index = br->flags._BCL_use_index;
--
- 	/* _BQC uses INDEX while _BCL uses VALUE in some laptops */
- 	br->curr = level = max_level;
- 
+> I think we can't avoid this, and I hope this is fine. But then perhaps
+> we should simply remove the "list_for_each_entry" check above?
+
+Yes, it should be done. And in that case, I'd like to remove
+all removable probes, as much as possible.
+
+BTW, I'd like to replace this "remove all" behavior with
+writing "-:*", instead of writing without append flag.
+
+Thank you,
 -- 
-1.8.3.4
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
