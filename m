@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755855Ab3HBKuh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:50:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37164 "EHLO
+	id S1755838Ab3HBKu7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:50:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37158 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759442Ab3HBKJ3 (ORCPT
+	with ESMTP id S1759415Ab3HBKJY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:09:29 -0400
+	Fri, 2 Aug 2013 06:09:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Felipe Balbi <balbi@ti.com>
-Subject: [ 29/99] usb: dwc3: gadget: dont prevent gadget from being probed if we fail
-Date: Fri,  2 Aug 2013 18:07:42 +0800
-Message-Id: <20130802100230.123769593@linuxfoundation.org>
+        Ruchika Kharwar <ruchika@ti.com>, Felipe Balbi <balbi@ti.com>
+Subject: [ 27/99] usb: dwc3: fix the error returned with usb3_phy failure
+Date: Fri,  2 Aug 2013 18:07:40 +0800
+Message-Id: <20130802100229.841086435@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802100225.478715166@linuxfoundation.org>
 References: <20130802100225.478715166@linuxfoundation.org>
@@ -26,34 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felipe Balbi <balbi@ti.com>
+From: Ruchika Kharwar <ruchika@ti.com>
 
-commit cdcedd6981194e511cc206887db661d016069d68 upstream.
+commit 315955d707b50c8aad20a32ec0dd4c9fe243cabe upstream.
 
-In case we fail our ->udc_start() callback, we
-should be ready to accept another modprobe following
-the failed one.
+When there is an error with the usb3_phy probe or absence, the error returned
+is erroneously for usb2_phy.
 
-We had forgotten to clear dwc->gadget_driver back
-to NULL and, because of that, we were preventing
-gadget driver modprobe from being retried.
-
+Signed-off-by: Ruchika Kharwar <ruchika@ti.com>
 Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/dwc3/gadget.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/dwc3/core.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/dwc3/gadget.c
-+++ b/drivers/usb/dwc3/gadget.c
-@@ -1584,6 +1584,7 @@ err1:
- 	__dwc3_gadget_ep_disable(dwc->eps[0]);
+--- a/drivers/usb/dwc3/core.c
++++ b/drivers/usb/dwc3/core.c
+@@ -450,7 +450,7 @@ static int dwc3_probe(struct platform_de
+ 	}
  
- err0:
-+	dwc->gadget_driver = NULL;
- 	spin_unlock_irqrestore(&dwc->lock, flags);
+ 	if (IS_ERR(dwc->usb3_phy)) {
+-		ret = PTR_ERR(dwc->usb2_phy);
++		ret = PTR_ERR(dwc->usb3_phy);
  
- 	return ret;
+ 		/*
+ 		 * if -ENXIO is returned, it means PHY layer wasn't
 
 
