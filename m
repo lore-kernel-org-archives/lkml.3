@@ -1,128 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759033Ab3HBKIf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:08:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37080 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759003Ab3HBKIc (ORCPT
+	id S1756135Ab3HBK4E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:56:04 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:36092 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756101Ab3HBKz7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:08:32 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stepan Salenikovich <stepan.salenikovich@gmail.com>,
-        Josep Bosch <jep250@gmail.com>, Clemens Ladisch <clemens@ladisch.de>,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>
-Subject: [ 09/99] firewire: fix libdc1394/FlyCap2 iso event regression
-Date: Fri,  2 Aug 2013 18:07:22 +0800
-Message-Id: <20130802100226.849915946@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
-In-Reply-To: <20130802100225.478715166@linuxfoundation.org>
-References: <20130802100225.478715166@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Fri, 2 Aug 2013 06:55:59 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAKohponru8Z1fod43dVtAODmYuMTGX70+73b8wk4wuGN=Vuh-w@mail.gmail.com>
+References: <2362640.pUofnXyzOi@vostro.rjw.lan>
+	<51FAC46D.1000703@linux.vnet.ibm.com>
+	<1757496.qSuJuAun9Z@vostro.rjw.lan>
+	<2298639.F0Qv2QqRnZ@vostro.rjw.lan>
+	<CAKohponru8Z1fod43dVtAODmYuMTGX70+73b8wk4wuGN=Vuh-w@mail.gmail.com>
+Date: Fri, 2 Aug 2013 16:25:58 +0530
+Message-ID: <CAKohpon7jyJWhf+j-M6Nuqy-AaY73YUpBpt-1uh12e_SYRv2bQ@mail.gmail.com>
+Subject: Re: [Update][PATCH] cpufreq: Do not hold driver module references for
+ additional policy CPUs
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux PM list <linux-pm@vger.kernel.org>, cpufreq@vger.kernel.org,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
+Content-Type: multipart/mixed; boundary=089e0153688ec3226504e2f4cd37
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+--089e0153688ec3226504e2f4cd37
+Content-Type: text/plain; charset=ISO-8859-1
 
-------------------
+On 2 August 2013 10:07, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+>> @@ -908,7 +905,8 @@ static int cpufreq_add_policy_cpu(unsign
+>>         unsigned long flags;
+>>
+>>         policy = cpufreq_cpu_get(sibling);
+>
+> This can be skipped completely at this place. Caller of
+> cpufreq_add_policy_cpu() has got the policy pointer with it and so
+> can be passed. I haven't done it earlier as the impression was we need
+> to call cpufreq_cpu_get()..
 
-From: Clemens Ladisch <clemens@ladisch.de>
-
-commit 0699a73af3811b66b1ab5650575acee5eea841ab upstream.
-
-Commit 18d627113b83 (firewire: prevent dropping of completed iso packet
-header data) was intended to be an obvious bug fix, but libdc1394 and
-FlyCap2 depend on the old behaviour by ignoring all returned information
-and thus not noticing that not all packets have been received yet.  The
-result was that the video frame buffers would be saved before they
-contained the correct data.
-
-Reintroduce the old behaviour for old clients.
-
-Tested-by: Stepan Salenikovich <stepan.salenikovich@gmail.com>
-Tested-by: Josep Bosch <jep250@gmail.com>
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
-Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+And here is the fixup to do this (attached too):
 
 ---
- drivers/firewire/core-cdev.c       |    3 +++
- drivers/firewire/ohci.c            |   10 ++++++++--
- include/linux/firewire.h           |    1 +
- include/uapi/linux/firewire-cdev.h |    4 ++--
- 4 files changed, 14 insertions(+), 4 deletions(-)
+ drivers/cpufreq/cpufreq.c | 18 ++++++------------
+ 1 file changed, 6 insertions(+), 12 deletions(-)
 
---- a/drivers/firewire/core-cdev.c
-+++ b/drivers/firewire/core-cdev.c
-@@ -54,6 +54,7 @@
- #define FW_CDEV_KERNEL_VERSION			5
- #define FW_CDEV_VERSION_EVENT_REQUEST2		4
- #define FW_CDEV_VERSION_ALLOCATE_REGION_END	4
-+#define FW_CDEV_VERSION_AUTO_FLUSH_ISO_OVERFLOW	5
- 
- struct client {
- 	u32 version;
-@@ -1005,6 +1006,8 @@ static int ioctl_create_iso_context(stru
- 			a->channel, a->speed, a->header_size, cb, client);
- 	if (IS_ERR(context))
- 		return PTR_ERR(context);
-+	if (client->version < FW_CDEV_VERSION_AUTO_FLUSH_ISO_OVERFLOW)
-+		context->drop_overflow_headers = true;
- 
- 	/* We only support one context at this time. */
- 	spin_lock_irq(&client->lock);
---- a/drivers/firewire/ohci.c
-+++ b/drivers/firewire/ohci.c
-@@ -2749,8 +2749,11 @@ static void copy_iso_headers(struct iso_
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index 46e70ae..47f2a6e 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -889,21 +889,17 @@ static void cpufreq_init_policy(struct
+cpufreq_policy *policy)
+ }
+
+ #ifdef CONFIG_HOTPLUG_CPU
+-static int cpufreq_add_policy_cpu(unsigned int cpu, unsigned int sibling,
+-				  struct device *dev, bool frozen)
++static int cpufreq_add_policy_cpu(struct cpufreq_policy *policy,
++				  unsigned int cpu, struct device *dev,
++				  bool frozen)
  {
- 	u32 *ctx_hdr;
- 
--	if (ctx->header_length + ctx->base.header_size > PAGE_SIZE)
-+	if (ctx->header_length + ctx->base.header_size > PAGE_SIZE) {
-+		if (ctx->base.drop_overflow_headers)
-+			return;
- 		flush_iso_completions(ctx);
-+	}
- 
- 	ctx_hdr = ctx->header + ctx->header_length;
- 	ctx->last_timestamp = (u16)le32_to_cpu((__force __le32)dma_hdr[0]);
-@@ -2910,8 +2913,11 @@ static int handle_it_packet(struct conte
- 
- 	sync_it_packet_for_cpu(context, d);
- 
--	if (ctx->header_length + 4 > PAGE_SIZE)
-+	if (ctx->header_length + 4 > PAGE_SIZE) {
-+		if (ctx->base.drop_overflow_headers)
-+			return 1;
- 		flush_iso_completions(ctx);
-+	}
- 
- 	ctx_hdr = ctx->header + ctx->header_length;
- 	ctx->last_timestamp = le16_to_cpu(last->res_count);
---- a/include/linux/firewire.h
-+++ b/include/linux/firewire.h
-@@ -434,6 +434,7 @@ struct fw_iso_context {
- 	int type;
- 	int channel;
- 	int speed;
-+	bool drop_overflow_headers;
- 	size_t header_size;
- 	union {
- 		fw_iso_callback_t sc;
---- a/include/uapi/linux/firewire-cdev.h
-+++ b/include/uapi/linux/firewire-cdev.h
-@@ -215,8 +215,8 @@ struct fw_cdev_event_request2 {
-  * with the %FW_CDEV_ISO_INTERRUPT bit set, when explicitly requested with
-  * %FW_CDEV_IOC_FLUSH_ISO, or when there have been so many completed packets
-  * without the interrupt bit set that the kernel's internal buffer for @header
-- * is about to overflow.  (In the last case, kernels with ABI version < 5 drop
-- * header data up to the next interrupt packet.)
-+ * is about to overflow.  (In the last case, ABI versions < 5 drop header data
-+ * up to the next interrupt packet.)
-  *
-  * Isochronous transmit events (context type %FW_CDEV_ISO_CONTEXT_TRANSMIT):
-  *
+-	struct cpufreq_policy *policy;
+ 	int ret = 0, has_target = !!cpufreq_driver->target;
+ 	unsigned long flags;
 
+-	policy = cpufreq_cpu_get(sibling);
+-	if (WARN_ON_ONCE(!policy))
+-		return -ENODATA;
+-
+ 	if (has_target)
+ 		__cpufreq_governor(policy, CPUFREQ_GOV_STOP);
 
+-	lock_policy_rwsem_write(sibling);
++	lock_policy_rwsem_write(policy->cpu);
+
+ 	write_lock_irqsave(&cpufreq_driver_lock, flags);
+
+@@ -912,7 +908,7 @@ static int cpufreq_add_policy_cpu(unsigned int
+cpu, unsigned int sibling,
+ 	per_cpu(cpufreq_cpu_data, cpu) = policy;
+ 	write_unlock_irqrestore(&cpufreq_driver_lock, flags);
+
+-	unlock_policy_rwsem_write(sibling);
++	unlock_policy_rwsem_write(policy->cpu);
+
+ 	if (has_target) {
+ 		__cpufreq_governor(policy, CPUFREQ_GOV_START);
+@@ -923,7 +919,6 @@ static int cpufreq_add_policy_cpu(unsigned int
+cpu, unsigned int sibling,
+ 	if (!frozen)
+ 		ret = sysfs_create_link(&dev->kobj, &policy->kobj, "cpufreq");
+
+-	cpufreq_cpu_put(policy);
+ 	return ret;
+ }
+ #endif
+@@ -1006,8 +1001,7 @@ static int __cpufreq_add_dev(struct device *dev,
+struct subsys_interface *sif,
+ 		struct cpufreq_policy *cp = per_cpu(cpufreq_cpu_data, sibling);
+ 		if (cp && cpumask_test_cpu(cpu, cp->related_cpus)) {
+ 			read_unlock_irqrestore(&cpufreq_driver_lock, flags);
+-			return cpufreq_add_policy_cpu(cpu, sibling, dev,
+-						      frozen);
++			return cpufreq_add_policy_cpu(cp, cpu, dev, frozen);
+ 		}
+ 	}
+ 	read_unlock_irqrestore(&cpufreq_driver_lock, flags);
+
+--089e0153688ec3226504e2f4cd37
+Content-Type: application/octet-stream; name="0001-Fix.patch"
+Content-Disposition: attachment; filename="0001-Fix.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hjva0xya1
+
+RnJvbSA3Nzk2M2NiY2VhMmUxNDhhMmZlMWI4ODY1MjY2Y2M0ZTJmMTg3MjYyIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpNZXNzYWdlLUlkOiA8Nzc5NjNjYmNlYTJlMTQ4YTJmZTFiODg2NTI2NmNj
+NGUyZjE4NzI2Mi4xMzc1NDQwOTA4LmdpdC52aXJlc2gua3VtYXJAbGluYXJvLm9yZz4KRnJvbTog
+VmlyZXNoIEt1bWFyIDx2aXJlc2gua3VtYXJAbGluYXJvLm9yZz4KRGF0ZTogRnJpLCAyIEF1ZyAy
+MDEzIDE2OjE3OjMzICswNTMwClN1YmplY3Q6IFtQQVRDSF0gRml4CgpTaWduZWQtb2ZmLWJ5OiBW
+aXJlc2ggS3VtYXIgPHZpcmVzaC5rdW1hckBsaW5hcm8ub3JnPgotLS0KIGRyaXZlcnMvY3B1ZnJl
+cS9jcHVmcmVxLmMgfCAxOCArKysrKystLS0tLS0tLS0tLS0KIDEgZmlsZSBjaGFuZ2VkLCA2IGlu
+c2VydGlvbnMoKyksIDEyIGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL2RyaXZlcnMvY3B1ZnJl
+cS9jcHVmcmVxLmMgYi9kcml2ZXJzL2NwdWZyZXEvY3B1ZnJlcS5jCmluZGV4IDQ2ZTcwYWUuLjQ3
+ZjJhNmUgMTAwNjQ0Ci0tLSBhL2RyaXZlcnMvY3B1ZnJlcS9jcHVmcmVxLmMKKysrIGIvZHJpdmVy
+cy9jcHVmcmVxL2NwdWZyZXEuYwpAQCAtODg5LDIxICs4ODksMTcgQEAgc3RhdGljIHZvaWQgY3B1
+ZnJlcV9pbml0X3BvbGljeShzdHJ1Y3QgY3B1ZnJlcV9wb2xpY3kgKnBvbGljeSkKIH0KIAogI2lm
+ZGVmIENPTkZJR19IT1RQTFVHX0NQVQotc3RhdGljIGludCBjcHVmcmVxX2FkZF9wb2xpY3lfY3B1
+KHVuc2lnbmVkIGludCBjcHUsIHVuc2lnbmVkIGludCBzaWJsaW5nLAotCQkJCSAgc3RydWN0IGRl
+dmljZSAqZGV2LCBib29sIGZyb3plbikKK3N0YXRpYyBpbnQgY3B1ZnJlcV9hZGRfcG9saWN5X2Nw
+dShzdHJ1Y3QgY3B1ZnJlcV9wb2xpY3kgKnBvbGljeSwKKwkJCQkgIHVuc2lnbmVkIGludCBjcHUs
+IHN0cnVjdCBkZXZpY2UgKmRldiwKKwkJCQkgIGJvb2wgZnJvemVuKQogewotCXN0cnVjdCBjcHVm
+cmVxX3BvbGljeSAqcG9saWN5OwogCWludCByZXQgPSAwLCBoYXNfdGFyZ2V0ID0gISFjcHVmcmVx
+X2RyaXZlci0+dGFyZ2V0OwogCXVuc2lnbmVkIGxvbmcgZmxhZ3M7CiAKLQlwb2xpY3kgPSBjcHVm
+cmVxX2NwdV9nZXQoc2libGluZyk7Ci0JaWYgKFdBUk5fT05fT05DRSghcG9saWN5KSkKLQkJcmV0
+dXJuIC1FTk9EQVRBOwotCiAJaWYgKGhhc190YXJnZXQpCiAJCV9fY3B1ZnJlcV9nb3Zlcm5vcihw
+b2xpY3ksIENQVUZSRVFfR09WX1NUT1ApOwogCi0JbG9ja19wb2xpY3lfcndzZW1fd3JpdGUoc2li
+bGluZyk7CisJbG9ja19wb2xpY3lfcndzZW1fd3JpdGUocG9saWN5LT5jcHUpOwogCiAJd3JpdGVf
+bG9ja19pcnFzYXZlKCZjcHVmcmVxX2RyaXZlcl9sb2NrLCBmbGFncyk7CiAKQEAgLTkxMiw3ICs5
+MDgsNyBAQCBzdGF0aWMgaW50IGNwdWZyZXFfYWRkX3BvbGljeV9jcHUodW5zaWduZWQgaW50IGNw
+dSwgdW5zaWduZWQgaW50IHNpYmxpbmcsCiAJcGVyX2NwdShjcHVmcmVxX2NwdV9kYXRhLCBjcHUp
+ID0gcG9saWN5OwogCXdyaXRlX3VubG9ja19pcnFyZXN0b3JlKCZjcHVmcmVxX2RyaXZlcl9sb2Nr
+LCBmbGFncyk7CiAKLQl1bmxvY2tfcG9saWN5X3J3c2VtX3dyaXRlKHNpYmxpbmcpOworCXVubG9j
+a19wb2xpY3lfcndzZW1fd3JpdGUocG9saWN5LT5jcHUpOwogCiAJaWYgKGhhc190YXJnZXQpIHsK
+IAkJX19jcHVmcmVxX2dvdmVybm9yKHBvbGljeSwgQ1BVRlJFUV9HT1ZfU1RBUlQpOwpAQCAtOTIz
+LDcgKzkxOSw2IEBAIHN0YXRpYyBpbnQgY3B1ZnJlcV9hZGRfcG9saWN5X2NwdSh1bnNpZ25lZCBp
+bnQgY3B1LCB1bnNpZ25lZCBpbnQgc2libGluZywKIAlpZiAoIWZyb3plbikKIAkJcmV0ID0gc3lz
+ZnNfY3JlYXRlX2xpbmsoJmRldi0+a29iaiwgJnBvbGljeS0+a29iaiwgImNwdWZyZXEiKTsKIAot
+CWNwdWZyZXFfY3B1X3B1dChwb2xpY3kpOwogCXJldHVybiByZXQ7CiB9CiAjZW5kaWYKQEAgLTEw
+MDYsOCArMTAwMSw3IEBAIHN0YXRpYyBpbnQgX19jcHVmcmVxX2FkZF9kZXYoc3RydWN0IGRldmlj
+ZSAqZGV2LCBzdHJ1Y3Qgc3Vic3lzX2ludGVyZmFjZSAqc2lmLAogCQlzdHJ1Y3QgY3B1ZnJlcV9w
+b2xpY3kgKmNwID0gcGVyX2NwdShjcHVmcmVxX2NwdV9kYXRhLCBzaWJsaW5nKTsKIAkJaWYgKGNw
+ICYmIGNwdW1hc2tfdGVzdF9jcHUoY3B1LCBjcC0+cmVsYXRlZF9jcHVzKSkgewogCQkJcmVhZF91
+bmxvY2tfaXJxcmVzdG9yZSgmY3B1ZnJlcV9kcml2ZXJfbG9jaywgZmxhZ3MpOwotCQkJcmV0dXJu
+IGNwdWZyZXFfYWRkX3BvbGljeV9jcHUoY3B1LCBzaWJsaW5nLCBkZXYsCi0JCQkJCQkgICAgICBm
+cm96ZW4pOworCQkJcmV0dXJuIGNwdWZyZXFfYWRkX3BvbGljeV9jcHUoY3AsIGNwdSwgZGV2LCBm
+cm96ZW4pOwogCQl9CiAJfQogCXJlYWRfdW5sb2NrX2lycXJlc3RvcmUoJmNwdWZyZXFfZHJpdmVy
+X2xvY2ssIGZsYWdzKTsKLS0gCjEuNy4xMi5yYzIuMTguZzYxYjQ3MmUKCg==
+--089e0153688ec3226504e2f4cd37--
