@@ -1,120 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752534Ab3HBMG6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 08:06:58 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:36518 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752482Ab3HBMGz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 08:06:55 -0400
-Message-ID: <51FBA0BB.6080408@ti.com>
-Date: Fri, 2 Aug 2013 08:06:19 -0400
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Richard Zhao <rizhao@nvidia.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <vinod.koul@intel.com>,
-        <djbw@fb.com>, <swarren@wwwdotorg.org>
-Subject: Re: [PATCH] DMA: let filter functions of of_dma_simple_xlate possible
- check of_node
-References: <1375408800-11789-1-git-send-email-rizhao@nvidia.com>
-In-Reply-To: <1375408800-11789-1-git-send-email-rizhao@nvidia.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1752447Ab3HBMGn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 08:06:43 -0400
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:36207 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751981Ab3HBMGh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 08:06:37 -0400
+From: David Herrmann <dh.herrmann@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: David Airlie <airlied@linux.ie>, Geert Uytterhoeven <geert@linux-m68k.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Peter Jones <pjones@redhat.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
+        linux-fbdev@vger.kernel.org, akpm@linux-foundation.org,
+        David Herrmann <dh.herrmann@gmail.com>
+Subject: [PATCH RESEND 6/8] fbdev: vesafb: bind to platform-framebuffer device
+Date: Fri,  2 Aug 2013 14:05:25 +0200
+Message-Id: <1375445127-15480-7-git-send-email-dh.herrmann@gmail.com>
+X-Mailer: git-send-email 1.8.3.4
+In-Reply-To: <1375445127-15480-1-git-send-email-dh.herrmann@gmail.com>
+References: <1375445127-15480-1-git-send-email-dh.herrmann@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 01 August 2013 10:00 PM, Richard Zhao wrote:
-> pass of_phandle_args dma_spec to dma_request_channel in of_dma_simple_xlate,
-> so the filter function could access of_node in of_phandle_args.
->
-Am just curious the reasoning behind doing so. Can you please expand
-above bit more with why you need to change it.
+x86 creates platform-framebuffer platform devices for every system
+framebuffer. Use these instead of creating a dummy device.
+
+This requires us to remove the __init annotations as hotplugging may occur
+during runtime.
+
+Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
+---
+ drivers/video/vesafb.c | 55 +++++++++++++++-----------------------------------
+ 1 file changed, 16 insertions(+), 39 deletions(-)
+
+diff --git a/drivers/video/vesafb.c b/drivers/video/vesafb.c
+index 501b340..bd83233 100644
+--- a/drivers/video/vesafb.c
++++ b/drivers/video/vesafb.c
+@@ -29,7 +29,7 @@
  
-> It also remove restriction of #dma-cells has to be one.
-> 
-> Signed-off-by: Richard Zhao <rizhao@nvidia.com>
-> ---
->  drivers/dma/edma.c     |  7 +++++--
->  drivers/dma/of-dma.c   | 10 ++++------
->  drivers/dma/omap-dma.c |  6 ++++--
->  3 files changed, 13 insertions(+), 10 deletions(-)
-> 
-> diff --git a/drivers/dma/edma.c b/drivers/dma/edma.c
-> index 4f6d87b..54582fd 100644
-> --- a/drivers/dma/edma.c
-> +++ b/drivers/dma/edma.c
-> @@ -23,6 +23,7 @@
->  #include <linux/platform_device.h>
->  #include <linux/slab.h>
->  #include <linux/spinlock.h>
-> +#include <linux/of_dma.h>
->  
->  #include <linux/platform_data/edma.h>
->  
-> @@ -604,9 +605,11 @@ static struct platform_driver edma_driver = {
->  
->  bool edma_filter_fn(struct dma_chan *chan, void *param)
->  {
-> -	if (chan->device->dev->driver == &edma_driver.driver) {
-> +	struct of_phandle_args *dma_spec = param;
-> +	if (chan->device->dev->driver == &edma_driver.driver &&
-> +			dma_spec->np == chan->device->dev->of_node) {
->  		struct edma_chan *echan = to_edma_chan(chan);
-> -		unsigned ch_req = *(unsigned *)param;
-> +		unsigned ch_req = dma_spec->args[0];
->  		return ch_req == echan->ch_num;
->  	}
->  	return false;
-> diff --git a/drivers/dma/of-dma.c b/drivers/dma/of-dma.c
-> index 75334bd..e1c4d3b 100644
-> --- a/drivers/dma/of-dma.c
-> +++ b/drivers/dma/of-dma.c
-> @@ -192,11 +192,9 @@ struct dma_chan *of_dma_request_slave_channel(struct device_node *np,
->   * @dma_spec:	pointer to DMA specifier as found in the device tree
->   * @of_dma:	pointer to DMA controller data
->   *
-> - * A simple translation function for devices that use a 32-bit value for the
-> + * A simple translation function for devices that use dma_spec for the
->   * filter_param when calling the DMA engine dma_request_channel() function.
-> - * Note that this translation function requires that #dma-cells is equal to 1
-> - * and the argument of the dma specifier is the 32-bit filter_param. Returns
-> - * pointer to appropriate dma channel on success or NULL on error.
-> + * Returns pointer to appropriate dma channel on success or NULL on error.
->   */
->  struct dma_chan *of_dma_simple_xlate(struct of_phandle_args *dma_spec,
->  						struct of_dma *ofdma)
-> @@ -207,10 +205,10 @@ struct dma_chan *of_dma_simple_xlate(struct of_phandle_args *dma_spec,
->  	if (!info || !info->filter_fn)
->  		return NULL;
->  
-> -	if (count != 1)
-> +	if (count < 1)
->  		return NULL;
->  
->  	return dma_request_channel(info->dma_cap, info->filter_fn,
-> -			&dma_spec->args[0]);
-> +			dma_spec);
->  }
->  EXPORT_SYMBOL_GPL(of_dma_simple_xlate);
-> diff --git a/drivers/dma/omap-dma.c b/drivers/dma/omap-dma.c
-> index ec3fc4f..32547ec 100644
-> --- a/drivers/dma/omap-dma.c
-> +++ b/drivers/dma/omap-dma.c
-> @@ -693,9 +693,11 @@ static struct platform_driver omap_dma_driver = {
->  
->  bool omap_dma_filter_fn(struct dma_chan *chan, void *param)
->  {
-> -	if (chan->device->dev->driver == &omap_dma_driver.driver) {
-> +	struct of_phandle_args *dma_spec = param;
-> +	if (chan->device->dev->driver == &omap_dma_driver.driver &&
-> +			dma_spec->np == chan->device->dev->of_node) {
->  		struct omap_chan *c = to_omap_dma_chan(chan);
-> -		unsigned req = *(unsigned *)param;
-> +		unsigned req = dma_spec->args[0];
->  
->  		return req == c->dma_sig;
->  	}
-> 
+ /* --------------------------------------------------------------------- */
+ 
+-static struct fb_var_screeninfo vesafb_defined __initdata = {
++static struct fb_var_screeninfo vesafb_defined = {
+ 	.activate	= FB_ACTIVATE_NOW,
+ 	.height		= -1,
+ 	.width		= -1,
+@@ -40,7 +40,7 @@ static struct fb_var_screeninfo vesafb_defined __initdata = {
+ 	.vmode		= FB_VMODE_NONINTERLACED,
+ };
+ 
+-static struct fb_fix_screeninfo vesafb_fix __initdata = {
++static struct fb_fix_screeninfo vesafb_fix = {
+ 	.id	= "VESA VGA",
+ 	.type	= FB_TYPE_PACKED_PIXELS,
+ 	.accel	= FB_ACCEL_NONE,
+@@ -48,8 +48,8 @@ static struct fb_fix_screeninfo vesafb_fix __initdata = {
+ 
+ static int   inverse    __read_mostly;
+ static int   mtrr       __read_mostly;		/* disable mtrr */
+-static int   vram_remap __initdata;		/* Set amount of memory to be used */
+-static int   vram_total __initdata;		/* Set total amount of memory */
++static int   vram_remap;			/* Set amount of memory to be used */
++static int   vram_total;			/* Set total amount of memory */
+ static int   pmi_setpal __read_mostly = 1;	/* pmi for palette changes ??? */
+ static int   ypan       __read_mostly;		/* 0..nothing, 1..ypan, 2..ywrap */
+ static void  (*pmi_start)(void) __read_mostly;
+@@ -192,7 +192,7 @@ static struct fb_ops vesafb_ops = {
+ 	.fb_imageblit	= cfb_imageblit,
+ };
+ 
+-static int __init vesafb_setup(char *options)
++static int vesafb_setup(char *options)
+ {
+ 	char *this_opt;
+ 	
+@@ -226,13 +226,18 @@ static int __init vesafb_setup(char *options)
+ 	return 0;
+ }
+ 
+-static int __init vesafb_probe(struct platform_device *dev)
++static int vesafb_probe(struct platform_device *dev)
+ {
+ 	struct fb_info *info;
+ 	int i, err;
+ 	unsigned int size_vmode;
+ 	unsigned int size_remap;
+ 	unsigned int size_total;
++	char *option = NULL;
++
++	/* ignore error return of fb_get_options */
++	fb_get_options("vesafb", &option);
++	vesafb_setup(option);
+ 
+ 	if (screen_info.orig_video_isVGA != VIDEO_TYPE_VLFB)
+ 		return -ENODEV;
+@@ -496,40 +501,12 @@ err:
+ }
+ 
+ static struct platform_driver vesafb_driver = {
+-	.driver	= {
+-		.name	= "vesafb",
++	.driver = {
++		.name = "vesa-framebuffer",
++		.owner = THIS_MODULE,
+ 	},
++	.probe = vesafb_probe,
+ };
+ 
+-static struct platform_device *vesafb_device;
+-
+-static int __init vesafb_init(void)
+-{
+-	int ret;
+-	char *option = NULL;
+-
+-	/* ignore error return of fb_get_options */
+-	fb_get_options("vesafb", &option);
+-	vesafb_setup(option);
+-
+-	vesafb_device = platform_device_alloc("vesafb", 0);
+-	if (!vesafb_device)
+-		return -ENOMEM;
+-
+-	ret = platform_device_add(vesafb_device);
+-	if (!ret) {
+-		ret = platform_driver_probe(&vesafb_driver, vesafb_probe);
+-		if (ret)
+-			platform_device_del(vesafb_device);
+-	}
+-
+-	if (ret) {
+-		platform_device_put(vesafb_device);
+-		vesafb_device = NULL;
+-	}
+-
+-	return ret;
+-}
+-module_init(vesafb_init);
+-
++module_platform_driver(vesafb_driver);
+ MODULE_LICENSE("GPL");
+-- 
+1.8.3.4
 
