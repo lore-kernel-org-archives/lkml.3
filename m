@@ -1,232 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754752Ab3HBQuq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 12:50:46 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:54106 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754616Ab3HBQun (ORCPT
+	id S1755034Ab3HBQvL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 12:51:11 -0400
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:33018 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754634Ab3HBQup (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 12:50:43 -0400
-Date: Fri, 2 Aug 2013 18:50:32 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Don Morris <don.morris@hp.com>
-Cc: Mel Gorman <mgorman@suse.de>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, riel@redhat.com
-Subject: [PATCH] mm, numa: Do not group on RO pages
-Message-ID: <20130802165032.GQ27162@twins.programming.kicks-ass.net>
-References: <1373901620-2021-1-git-send-email-mgorman@suse.de>
- <20130730113857.GR3008@twins.programming.kicks-ass.net>
- <20130731150751.GA15144@twins.programming.kicks-ass.net>
- <51F93105.8020503@hp.com>
- <20130802164715.GP27162@twins.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130802164715.GP27162@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Fri, 2 Aug 2013 12:50:45 -0400
+From: Leif Lindholm <leif.lindholm@linaro.org>
+To: linux-efi@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-ia64@vger.kernel.org,
+        matt.fleming@intel.com, tony.luck@gmail.com, patches@linaro.org,
+        Leif Lindholm <leif.lindholm@linaro.org>
+Subject: [PATCH v2 5/5] efi: x86: make efi_lookup_mapped_addr() a common function
+Date: Fri,  2 Aug 2013 17:56:22 +0100
+Message-Id: <1375462582-16423-6-git-send-email-leif.lindholm@linaro.org>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1375462582-16423-1-git-send-email-leif.lindholm@linaro.org>
+References: <1375462582-16423-1-git-send-email-leif.lindholm@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+efi_lookup_mapped_addr() is a handy utility for other platforms than
+x86. Move it from arch/x86 to drivers/firmware. Add memmap pointer
+to global efi structure, and initialise it on x86.
 
-Subject: mm, numa: Do not group on RO pages
-From: Peter Zijlstra <peterz@infradead.org>
-Date: Fri Aug 2 18:38:34 CEST 2013
-
-And here's a little something to make sure not the whole world ends up
-in a single group.
-
-As while we don't migrate shared executable pages, we do scan/fault on
-them. And since everybody links to libc, everybody ends up in the same
-group.
-
-Sugested-by: Rik van Riel <riel@redhat.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Leif Lindholm <leif.lindholm@linaro.org>
 ---
- include/linux/sched.h |    7 +++++--
- kernel/sched/fair.c   |    5 +++--
- mm/huge_memory.c      |   15 +++++++++++++--
- mm/memory.c           |   31 ++++++++++++++++++++++++++-----
- 4 files changed, 47 insertions(+), 11 deletions(-)
+ arch/x86/platform/efi/efi.c |   30 ++----------------------------
+ drivers/firmware/efi/efi.c  |   32 ++++++++++++++++++++++++++++++++
+ include/linux/efi.h         |    1 +
+ 3 files changed, 35 insertions(+), 28 deletions(-)
 
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1438,12 +1438,15 @@ struct task_struct {
- /* Future-safe accessor for struct task_struct's cpus_allowed. */
- #define tsk_cpus_allowed(tsk) (&(tsk)->cpus_allowed)
+diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+index ed2be58..fbc1d70 100644
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -393,6 +393,8 @@ int __init efi_memblock_x86_reserve_range(void)
  
-+#define TNF_MIGRATED	0x01
-+#define TNF_NO_GROUP	0x02
+ 	memblock_reserve(pmap, memmap.nr_map * memmap.desc_size);
+ 
++	efi.memmap = &memmap;
 +
- #ifdef CONFIG_NUMA_BALANCING
--extern void task_numa_fault(int last_node, int node, int pages, bool migrated);
-+extern void task_numa_fault(int last_node, int node, int pages, int flags);
- extern void set_numabalancing_state(bool enabled);
- #else
- static inline void task_numa_fault(int last_node, int node, int pages,
--				   bool migrated)
-+				   int flags)
- {
+ 	return 0;
  }
- static inline void set_numabalancing_state(bool enabled)
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -1371,9 +1371,10 @@ void task_numa_free(struct task_struct *
- /*
-  * Got a PROT_NONE fault for a page on @node.
-  */
--void task_numa_fault(int last_cpupid, int node, int pages, bool migrated)
-+void task_numa_fault(int last_cpupid, int node, int pages, int flags)
- {
- 	struct task_struct *p = current;
-+	bool migrated = flags & TNF_MIGRATED;
- 	int priv;
  
- 	if (!numabalancing_enabled)
-@@ -1409,7 +1410,7 @@ void task_numa_fault(int last_cpupid, in
- 		pid = cpupid_to_pid(last_cpupid);
- 
- 		priv = (pid == (p->pid & LAST__PID_MASK));
--		if (!priv)
-+		if (!priv && !(flags & TNF_NO_GROUP))
- 			task_numa_group(p, cpu, pid);
+@@ -736,34 +738,6 @@ static void __init runtime_code_page_mkexec(void)
  	}
+ }
  
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1295,6 +1295,7 @@ int do_huge_pmd_numa_page(struct mm_stru
- 	int page_nid = -1, account_nid = -1, this_nid = numa_node_id();
- 	int target_nid, last_cpupid;
- 	bool migrated = false;
-+	int flags = 0;
- 
- 	spin_lock(&mm->page_table_lock);
- 	if (unlikely(!pmd_same(pmd, *pmdp)))
-@@ -1333,6 +1334,15 @@ int do_huge_pmd_numa_page(struct mm_stru
- 		account_nid = page_nid = -1; /* someone else took our fault */
- 		goto out_unlock;
- 	}
-+
-+	/*
-+	 * Avoid grouping on DSO/COW pages in specific and RO pages
-+	 * in general, RO pages shouldn't hurt as much anyway since
-+	 * they can be in shared cache state.
-+	 */
-+	if (page_mapcount(page) != 1 && !pmd_write(pmd))
-+		flags |= TNF_NO_GROUP;
-+
- 	spin_unlock(&mm->page_table_lock);
- 
- 	/* Migrate the THP to the requested node */
-@@ -1341,7 +1351,8 @@ int do_huge_pmd_numa_page(struct mm_stru
- 	if (!migrated) {
- 		account_nid = -1; /* account against the old page */
- 		goto check_same;
+-/*
+- * We can't ioremap data in EFI boot services RAM, because we've already mapped
+- * it as RAM.  So, look it up in the existing EFI memory map instead.  Only
+- * callable after efi_enter_virtual_mode and before efi_free_boot_services.
+- */
+-void __iomem *efi_lookup_mapped_addr(u64 phys_addr)
+-{
+-	void *p;
+-	if (WARN_ON(!memmap.map))
+-		return NULL;
+-	for (p = memmap.map; p < memmap.map_end; p += memmap.desc_size) {
+-		efi_memory_desc_t *md = p;
+-		u64 size = md->num_pages << EFI_PAGE_SHIFT;
+-		u64 end = md->phys_addr + size;
+-		if (!(md->attribute & EFI_MEMORY_RUNTIME) &&
+-		    md->type != EFI_BOOT_SERVICES_CODE &&
+-		    md->type != EFI_BOOT_SERVICES_DATA)
+-			continue;
+-		if (!md->virt_addr)
+-			continue;
+-		if (phys_addr >= md->phys_addr && phys_addr < end) {
+-			phys_addr += md->virt_addr - md->phys_addr;
+-			return (__force void __iomem *)(unsigned long)phys_addr;
+-		}
 -	}
-+	} else
-+		flags |= TNF_MIGRATED;
+-	return NULL;
+-}
+-
+ void efi_memory_uc(u64 addr, unsigned long size)
+ {
+ 	unsigned long page_shift = 1UL << EFI_PAGE_SHIFT;
+diff --git a/drivers/firmware/efi/efi.c b/drivers/firmware/efi/efi.c
+index 4fa944a..afdd1c0 100644
+--- a/drivers/firmware/efi/efi.c
++++ b/drivers/firmware/efi/efi.c
+@@ -148,6 +148,38 @@ err_put:
+ subsys_initcall(efisubsys_init);
  
- 	page_nid = target_nid;
- 	goto out;
-@@ -1364,7 +1375,7 @@ int do_huge_pmd_numa_page(struct mm_stru
- 	if (account_nid == -1)
- 		account_nid = page_nid;
- 	if (account_nid != -1)
--		task_numa_fault(last_cpupid, account_nid, HPAGE_PMD_NR, migrated);
-+		task_numa_fault(last_cpupid, account_nid, HPAGE_PMD_NR, flags);
  
- 	return 0;
- }
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3537,6 +3537,7 @@ int do_numa_page(struct mm_struct *mm, s
- 	int page_nid = -1, account_nid = -1;
- 	int target_nid, last_cpupid;
- 	bool migrated = false;
-+	int flags = 0;
- 
- 	/*
- 	* The "pte" at this point cannot be used safely without
-@@ -3569,6 +3570,14 @@ int do_numa_page(struct mm_struct *mm, s
- 		return 0;
- 	}
- 
-+	/*
-+	 * Avoid grouping on DSO/COW pages in specific and RO pages
-+	 * in general, RO pages shouldn't hurt as much anyway since
-+	 * they can be in shared cache state.
-+	 */
-+	if (page_mapcount(page) != 1 && !pte_write(pte))
-+		flags |= TNF_NO_GROUP;
-+
- 	last_cpupid = page_cpupid_last(page);
- 	page_nid = page_to_nid(page);
- 	target_nid = numa_migrate_prep(page, vma, addr, page_nid, &account_nid);
-@@ -3580,14 +3589,16 @@ int do_numa_page(struct mm_struct *mm, s
- 
- 	/* Migrate to the requested node */
- 	migrated = migrate_misplaced_page(page, vma, target_nid);
--	if (migrated)
-+	if (migrated) {
- 		page_nid = target_nid;
-+		flags |= TNF_MIGRATED;
++/*
++ * We can't ioremap data in EFI boot services RAM, because we've already mapped
++ * it as RAM.  So, look it up in the existing EFI memory map instead.  Only
++ * callable after efi_enter_virtual_mode and before efi_free_boot_services.
++ */
++void __iomem *efi_lookup_mapped_addr(u64 phys_addr)
++{
++	struct efi_memory_map *map;
++	void *p;
++	map = efi.memmap;
++	if (!map)
++		return NULL;
++	if (WARN_ON(!map->map))
++		return NULL;
++	for (p = map->map; p < map->map_end; p += map->desc_size) {
++		efi_memory_desc_t *md = p;
++		u64 size = md->num_pages << EFI_PAGE_SHIFT;
++		u64 end = md->phys_addr + size;
++		if (!(md->attribute & EFI_MEMORY_RUNTIME) &&
++		    md->type != EFI_BOOT_SERVICES_CODE &&
++		    md->type != EFI_BOOT_SERVICES_DATA)
++			continue;
++		if (!md->virt_addr)
++			continue;
++		if (phys_addr >= md->phys_addr && phys_addr < end) {
++			phys_addr += md->virt_addr - md->phys_addr;
++			return (__force void __iomem *)(unsigned long)phys_addr;
++		}
 +	}
- 
- out:
- 	if (account_nid == -1)
- 		account_nid = page_nid;
- 	if (account_nid != -1)
--		task_numa_fault(last_cpupid, account_nid, 1, migrated);
-+		task_numa_fault(last_cpupid, account_nid, 1, flags);
- 
- 	return 0;
- }
-@@ -3632,6 +3643,7 @@ static int do_pmd_numa_page(struct mm_st
- 		int page_nid = -1, account_nid = -1;
- 		int target_nid;
- 		bool migrated = false;
-+		int flags = 0;
- 
- 		if (!pte_present(pteval))
- 			continue;
-@@ -3651,6 +3663,14 @@ static int do_pmd_numa_page(struct mm_st
- 		if (unlikely(!page))
- 			continue;
- 
-+		/*
-+		 * Avoid grouping on DSO/COW pages in specific and RO pages
-+		 * in general, RO pages shouldn't hurt as much anyway since
-+		 * they can be in shared cache state.
-+		 */
-+		if (page_mapcount(page) != 1 && !pte_write(pteval))
-+			flags |= TNF_NO_GROUP;
++	return NULL;
++}
 +
- 		last_cpupid = page_cpupid_last(page);
- 		page_nid = page_to_nid(page);
- 		target_nid = numa_migrate_prep(page, vma, addr,
-@@ -3659,9 +3679,10 @@ static int do_pmd_numa_page(struct mm_st
+ static __initdata efi_config_table_type_t common_tables[] = {
+ 	{ACPI_20_TABLE_GUID, "ACPI 2.0", &efi.acpi20},
+ 	{ACPI_TABLE_GUID, "ACPI", &efi.acpi},
+diff --git a/include/linux/efi.h b/include/linux/efi.h
+index 09d9e42..c084b6d 100644
+--- a/include/linux/efi.h
++++ b/include/linux/efi.h
+@@ -558,6 +558,7 @@ extern struct efi {
+ 	efi_get_next_high_mono_count_t *get_next_high_mono_count;
+ 	efi_reset_system_t *reset_system;
+ 	efi_set_virtual_address_map_t *set_virtual_address_map;
++	struct efi_memory_map *memmap;
+ } efi;
  
- 		if (target_nid != -1) {
- 			migrated = migrate_misplaced_page(page, vma, target_nid);
--			if (migrated)
-+			if (migrated) {
- 				page_nid = target_nid;
--			else
-+				flags |= TNF_MIGRATED;
-+			} else
- 				account_nid = -1;
- 		} else {
- 			put_page(page);
-@@ -3670,7 +3691,7 @@ static int do_pmd_numa_page(struct mm_st
- 		if (account_nid == -1)
- 			account_nid = page_nid;
- 		if (account_nid != -1)
--			task_numa_fault(last_cpupid, account_nid, 1, migrated);
-+			task_numa_fault(last_cpupid, account_nid, 1, flags);
- 
- 		cond_resched();
- 
+ static inline int
+-- 
+1.7.10.4
 
