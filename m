@@ -1,49 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755864Ab3HBKw3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:52:29 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:54317 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759348Ab3HBKJT (ORCPT
+	id S1755939Ab3HBKwy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:52:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37142 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759320Ab3HBKJN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:09:19 -0400
-Date: Fri, 2 Aug 2013 11:09:13 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        "'Sachin Kamat'" <sachin.kamat@linaro.org>
-Subject: Re: [PATCH V2] mfd: menelaus: use NULL instead of 0
-Message-ID: <20130802100913.GA17368@lee--X1>
-References: <000801ce8f45$aa4dbda0$fee938e0$@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <000801ce8f45$aa4dbda0$fee938e0$@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 2 Aug 2013 06:09:13 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Oleksij Rempel <linux@rempel-privat.de>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [ 23/99] xhci: fix null pointer dereference on ring_doorbell_for_active_rings
+Date: Fri,  2 Aug 2013 18:07:36 +0800
+Message-Id: <20130802100229.262916119@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
+In-Reply-To: <20130802100225.478715166@linuxfoundation.org>
+References: <20130802100225.478715166@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 02 Aug 2013, Jingoo Han wrote:
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-> 'mmc_callback_data' and 'vtg' are pointers.
-> Fix the following sparse warning:
-> 
-> drivers/mfd/menelaus.c:445:43: warning: Using plain integer as NULL pointer
-> drivers/mfd/menelaus.c:469:20: warning: Using plain integer as NULL pointer
-> 
-> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-> ---
->  drivers/mfd/menelaus.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/mfd/menelaus.c b/drivers/mfd/menelaus.c
+------------------
 
-Applied, thanks.
+From: Oleksij Rempel <linux@rempel-privat.de>
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+commit d66eaf9f89502971fddcb0de550b01fa6f409d83 upstream.
+
+in some cases where device is attched to xhci port and do not responding,
+for example ath9k_htc with stalled firmware, kernel will
+crash on ring_doorbell_for_active_rings.
+This patch check if pointer exist before it is used.
+
+This patch should be backported to kernels as old as 2.6.35, that
+contain the commit e9df17eb1408cfafa3d1844bfc7f22c7237b31b8 "USB: xhci:
+Correct assumptions about number of rings per endpoint"
+
+Signed-off-by: Oleksij Rempel <linux@rempel-privat.de>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/usb/host/xhci-ring.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -434,7 +434,7 @@ static void ring_doorbell_for_active_rin
+ 
+ 	/* A ring has pending URBs if its TD list is not empty */
+ 	if (!(ep->ep_state & EP_HAS_STREAMS)) {
+-		if (!(list_empty(&ep->ring->td_list)))
++		if (ep->ring && !(list_empty(&ep->ring->td_list)))
+ 			xhci_ring_ep_doorbell(xhci, slot_id, ep_index, 0);
+ 		return;
+ 	}
+
+
