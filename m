@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030471Ab3HBKLe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:11:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37413 "EHLO
+	id S1030455Ab3HBKL3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:11:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37403 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030385Ab3HBKLa (ORCPT
+	with ESMTP id S1030386Ab3HBKLZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:11:30 -0400
+	Fri, 2 Aug 2013 06:11:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mark Kettenis <kettenis@openbsd.org>,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 71/99] drm/radeon: fix combios tables on older cards
-Date: Fri,  2 Aug 2013 18:08:24 +0800
-Message-Id: <20130802100235.913918425@linuxfoundation.org>
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 81/99] drm/i915: Serialize almost all register access
+Date: Fri,  2 Aug 2013 18:08:34 +0800
+Message-Id: <20130802100237.240253498@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802100225.478715166@linuxfoundation.org>
 References: <20130802100225.478715166@linuxfoundation.org>
@@ -27,291 +27,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Kettenis <kettenis@openbsd.org>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit cef1d00cd56f600121ad121875655ad410a001b8 upstream.
+commit a7cd1b8fea2f341b626b255d9898a5ca5fabbf0a upstream.
 
-Noticed that my old Radeon 7500 hung after printing
+In theory, the different register blocks were meant to be only ever
+touched when holding either the struct_mutex, mode_config.lock or even a
+specific localised lock. This does not seem to be the case, and the
+hardware reacts extremely badly if we attempt to concurrently access two
+registers within the same cacheline.
 
-   drm: GPU not posted. posting now...
+The HSD suggests that we only need to do this workaround for display
+range registers. However, upon review we need to serialize the multiple
+stages in our register write functions - if only for preemption
+protection.
 
-when it wasn't selected as the primary card the BIOS.  Some digging
-revealed that it was hanging in combios_parse_mmio_table() while
-parsing the ASIC INIT 3 table.  Looking at the BIOS ROM for the card,
-it becomes obvious that there is no ASIC INIT 3 table in the BIOS.
-The code is just processing random garbage.  No surprise it hangs!
+Irrespective of the hardware requirements, the current io functions are
+a little too loose with respect to the combination of pre- and
+post-condition testing that we do in conjunction with the actual io. As
+a result, we may be pre-empted and generate both false-postive and
+false-negative errors.
 
-Why do I say that there is no ASIC INIT 3 table is the BIOS?  This
-table is found through the MISC INFO table.  The MISC INFO table can
-be found at offset 0x5e in the COMBIOS header.  But the header is
-smaller than that.  The COMBIOS header starts at offset 0x126.  The
-standard PCI Data Structure (the bit that starts with 'PCIR') lives at
-offset 0x180.  That means that the COMBIOS header can not be larger
-than 0x5a bytes and therefore cannot contain a MISC INFO table.
+Note well that this is a "90%" solution, there remains a few direct
+users of ioread/iowrite which will be fixed up in the next few patches.
+Since they are more invasive and that this simple change will prevent
+almost all lockups on Haswell, we kept this patch simple to facilitate
+backporting to stable.
 
-I looked at a dozen or so BIOS images, some my own, some downloaded from:
-
-    <http://www.techpowerup.com/vgabios/index.php?manufacturer=ATI&page=1>
-
-It is fairly obvious that the size of the COMBIOS header can be found
-at offset 0x6 of the header.  Not sure if it is a 16-bit number or
-just an 8-bit number, but that doesn't really matter since the tables
-seems to be always smaller than 256 bytes.
-
-So I think combios_get_table_offset() should check if the requested
-table is present.  This can be done by checking the offset against the
-size of the header.  See the diff below.  The diff is against the WIP
-OpenBSD codebase that roughly corresponds to Linux 3.8.13 at this
-point.  But I don't think this bit of the code changed much since
-then.
-
-For what it is worth:
-
-Signed-off-by: Mark Kettenis <kettenis@openbsd.org>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=63914
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_combios.c |  145 +++++++++-----------------------
- 1 file changed, 41 insertions(+), 104 deletions(-)
+ drivers/gpu/drm/i915/i915_drv.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_combios.c
-+++ b/drivers/gpu/drm/radeon/radeon_combios.c
-@@ -147,7 +147,7 @@ static uint16_t combios_get_table_offset
- 					 enum radeon_combios_table_offset table)
- {
- 	struct radeon_device *rdev = dev->dev_private;
--	int rev;
-+	int rev, size;
- 	uint16_t offset = 0, check_offset;
+--- a/drivers/gpu/drm/i915/i915_drv.c
++++ b/drivers/gpu/drm/i915/i915_drv.c
+@@ -1247,21 +1247,21 @@ hsw_unclaimed_reg_check(struct drm_i915_
  
- 	if (!rdev->bios)
-@@ -156,174 +156,106 @@ static uint16_t combios_get_table_offset
- 	switch (table) {
- 		/* absolute offset tables */
- 	case COMBIOS_ASIC_INIT_1_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0xc);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0xc;
- 		break;
- 	case COMBIOS_BIOS_SUPPORT_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x14);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x14;
- 		break;
- 	case COMBIOS_DAC_PROGRAMMING_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x2a);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x2a;
- 		break;
- 	case COMBIOS_MAX_COLOR_DEPTH_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x2c);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x2c;
- 		break;
- 	case COMBIOS_CRTC_INFO_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x2e);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x2e;
- 		break;
- 	case COMBIOS_PLL_INFO_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x30);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x30;
- 		break;
- 	case COMBIOS_TV_INFO_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x32);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x32;
- 		break;
- 	case COMBIOS_DFP_INFO_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x34);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x34;
- 		break;
- 	case COMBIOS_HW_CONFIG_INFO_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x36);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x36;
- 		break;
- 	case COMBIOS_MULTIMEDIA_INFO_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x38);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x38;
- 		break;
- 	case COMBIOS_TV_STD_PATCH_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x3e);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x3e;
- 		break;
- 	case COMBIOS_LCD_INFO_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x40);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x40;
- 		break;
- 	case COMBIOS_MOBILE_INFO_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x42);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x42;
- 		break;
- 	case COMBIOS_PLL_INIT_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x46);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x46;
- 		break;
- 	case COMBIOS_MEM_CONFIG_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x48);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x48;
- 		break;
- 	case COMBIOS_SAVE_MASK_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x4a);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x4a;
- 		break;
- 	case COMBIOS_HARDCODED_EDID_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x4c);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x4c;
- 		break;
- 	case COMBIOS_ASIC_INIT_2_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x4e);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x4e;
- 		break;
- 	case COMBIOS_CONNECTOR_INFO_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x50);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x50;
- 		break;
- 	case COMBIOS_DYN_CLK_1_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x52);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x52;
- 		break;
- 	case COMBIOS_RESERVED_MEM_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x54);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x54;
- 		break;
- 	case COMBIOS_EXT_TMDS_INFO_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x58);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x58;
- 		break;
- 	case COMBIOS_MEM_CLK_INFO_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x5a);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x5a;
- 		break;
- 	case COMBIOS_EXT_DAC_INFO_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x5c);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x5c;
- 		break;
- 	case COMBIOS_MISC_INFO_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x5e);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x5e;
- 		break;
- 	case COMBIOS_CRT_INFO_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x60);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x60;
- 		break;
- 	case COMBIOS_INTEGRATED_SYSTEM_INFO_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x62);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x62;
- 		break;
- 	case COMBIOS_COMPONENT_VIDEO_INFO_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x64);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x64;
- 		break;
- 	case COMBIOS_FAN_SPEED_INFO_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x66);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x66;
- 		break;
- 	case COMBIOS_OVERDRIVE_INFO_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x68);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x68;
- 		break;
- 	case COMBIOS_OEM_INFO_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x6a);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x6a;
- 		break;
- 	case COMBIOS_DYN_CLK_2_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x6c);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x6c;
- 		break;
- 	case COMBIOS_POWER_CONNECTOR_INFO_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x6e);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x6e;
- 		break;
- 	case COMBIOS_I2C_INFO_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x70);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x70;
- 		break;
- 		/* relative offset tables */
- 	case COMBIOS_ASIC_INIT_3_TABLE:	/* offset from misc info */
-@@ -439,11 +371,16 @@ static uint16_t combios_get_table_offset
- 		}
- 		break;
- 	default:
-+		check_offset = 0;
- 		break;
- 	}
- 
--	return offset;
-+	size = RBIOS8(rdev->bios_header_start + 0x6);
-+	/* check absolute offset tables */
-+	if (table < COMBIOS_ASIC_INIT_3_TABLE && check_offset && check_offset < size)
-+		offset = RBIOS16(rdev->bios_header_start + check_offset);
- 
-+	return offset;
+ #define __i915_read(x, y) \
+ u##x i915_read##x(struct drm_i915_private *dev_priv, u32 reg) { \
++	unsigned long irqflags; \
+ 	u##x val = 0; \
++	spin_lock_irqsave(&dev_priv->gt_lock, irqflags); \
+ 	if (IS_GEN5(dev_priv->dev)) \
+ 		ilk_dummy_write(dev_priv); \
+ 	if (NEEDS_FORCE_WAKE((dev_priv), (reg))) { \
+-		unsigned long irqflags; \
+-		spin_lock_irqsave(&dev_priv->gt_lock, irqflags); \
+ 		if (dev_priv->forcewake_count == 0) \
+ 			dev_priv->gt.force_wake_get(dev_priv); \
+ 		val = read##y(dev_priv->regs + reg); \
+ 		if (dev_priv->forcewake_count == 0) \
+ 			dev_priv->gt.force_wake_put(dev_priv); \
+-		spin_unlock_irqrestore(&dev_priv->gt_lock, irqflags); \
+ 	} else { \
+ 		val = read##y(dev_priv->regs + reg); \
+ 	} \
++	spin_unlock_irqrestore(&dev_priv->gt_lock, irqflags); \
+ 	trace_i915_reg_rw(false, reg, val, sizeof(val)); \
+ 	return val; \
  }
+@@ -1274,8 +1274,10 @@ __i915_read(64, q)
  
- bool radeon_combios_check_hardcoded_edid(struct radeon_device *rdev)
+ #define __i915_write(x, y) \
+ void i915_write##x(struct drm_i915_private *dev_priv, u32 reg, u##x val) { \
++	unsigned long irqflags; \
+ 	u32 __fifo_ret = 0; \
+ 	trace_i915_reg_rw(true, reg, val, sizeof(val)); \
++	spin_lock_irqsave(&dev_priv->gt_lock, irqflags); \
+ 	if (NEEDS_FORCE_WAKE((dev_priv), (reg))) { \
+ 		__fifo_ret = __gen6_gt_wait_for_fifo(dev_priv); \
+ 	} \
+@@ -1287,6 +1289,7 @@ void i915_write##x(struct drm_i915_priva
+ 		gen6_gt_check_fifodbg(dev_priv); \
+ 	} \
+ 	hsw_unclaimed_reg_check(dev_priv, reg); \
++	spin_unlock_irqrestore(&dev_priv->gt_lock, irqflags); \
+ }
+ __i915_write(8, b)
+ __i915_write(16, w)
 
 
