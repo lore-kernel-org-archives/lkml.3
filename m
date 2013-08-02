@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753003Ab3HBKjU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:39:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37441 "EHLO
+	id S1030502Ab3HBKLp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:11:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37424 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030507Ab3HBKLq (ORCPT
+	with ESMTP id S1030482Ab3HBKLi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:11:46 -0400
+	Fri, 2 Aug 2013 06:11:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
         Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 77/99] drm/i915: fix long-standing SNB regression in power consumption after resume v2
-Date: Fri,  2 Aug 2013 18:08:30 +0800
-Message-Id: <20130802100236.681675273@linuxfoundation.org>
+Subject: [ 74/99] drm/i915: Fix write-read race with multiple rings
+Date: Fri,  2 Aug 2013 18:08:27 +0800
+Message-Id: <20130802100236.305753308@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802100225.478715166@linuxfoundation.org>
 References: <20130802100225.478715166@linuxfoundation.org>
@@ -27,115 +27,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit 7dcd2677ea912573d9ed4bcd629b0023b2d11505 upstream.
+commit 02978ff57a5bdfbf703d2bc5a4d933a53ede3144 upstream.
 
-This patch fixes regression in power consumtion of sandy bridge gpu, which
-exists since v3.6 Sometimes after resuming from s2ram gpu starts thinking that
-it's extremely busy. After that it never reaches rc6 state.
+Daniel noticed a problem where is we wrote to an object with ring A in
+the middle of a very long running batch, then executed a quick batch on
+ring B before a batch that reads from the same object, its obj->ring would
+now point to ring B, but its last_write_seqno would be still relative to
+ring A. This would allow for the user to read from the object before the
+GPU had completed the write, as set_domain would only check that ring B
+had passed the last_write_seqno.
 
-Bug exists since kernel v3.6:
+To fix this simply (and inelegantly), we bump the last_write_seqno when
+switching rings so that the last_write_seqno is always relative to the
+current obj->ring.
 
-commit b4ae3f22d238617ca11610b29fde16cf8c0bc6e0
-Author: Jesse Barnes <jbarnes@virtuousgeek.org>
-Date:   Thu Jun 14 11:04:48 2012 -0700
+This fixes igt/tests/gem_write_read_ring_switch.
 
-    drm/i915: load boot context at driver init time
-
-For some reason RC6 is already enabled at the beginning of resuming process.
-Following initliaztion breaks some internal state and confuses RPS engine.
-This patch disables RC6 at the beginnig of resume and initialization.
-
-I've rearranged initialization sequence, because intel_disable_gt_powersave()
-needs initialized force_wake_get/put and some locks from the dev_priv.
-
-Note: The culprit in the initialization sequence seems to be the write
-to MBCTL added in the above mentioned commit. The first version of
-this patch just held a forcewake reference across the clock gating
-init functions, which seems to have been enought to gather quite a few
-positive test reports. But since that smelled a bit like ad-hoc
-duct-tape v2 now just disables rps/rc6 across the entire hw setup.
-
-[danvet: Add note about v1 vs. v2 of this patch and use standard
-layout for the commit citation. Also add the tested-bys from v1 and a cc:
-stable.]
-
-References https://bugs.freedesktop.org/show_bug.cgi?id=54089
-References https://bugzilla.kernel.org/show_bug.cgi?id=58971
-References https://patchwork.kernel.org/patch/2827634/ (patch v1)
-
-Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Tested-by: Alexander Kaltsas <alexkaltsas@gmail.com> (v1)
-Tested-by: rocko <rockorequin@hotmail.com> (v1)
-Tested-by: JohnMB <johnmbryant@sky.com> (v1)
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+[danvet: Add note about the newly created igt which exercises this bug.]
 Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_dma.c |   16 ++++++++--------
- drivers/gpu/drm/i915/intel_pm.c |    5 +++--
- 2 files changed, 11 insertions(+), 10 deletions(-)
+ drivers/gpu/drm/i915/i915_gem.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/gpu/drm/i915/i915_dma.c
-+++ b/drivers/gpu/drm/i915/i915_dma.c
-@@ -1511,6 +1511,13 @@ int i915_driver_load(struct drm_device *
- 	dev_priv->dev = dev;
- 	dev_priv->info = info;
+--- a/drivers/gpu/drm/i915/i915_gem.c
++++ b/drivers/gpu/drm/i915/i915_gem.c
+@@ -1881,6 +1881,10 @@ i915_gem_object_move_to_active(struct dr
+ 	u32 seqno = intel_ring_get_seqno(ring);
  
-+	spin_lock_init(&dev_priv->irq_lock);
-+	spin_lock_init(&dev_priv->gpu_error.lock);
-+	spin_lock_init(&dev_priv->rps.lock);
-+	mutex_init(&dev_priv->dpio_lock);
-+	mutex_init(&dev_priv->rps.hw_lock);
-+	mutex_init(&dev_priv->modeset_restore_lock);
-+
- 	i915_dump_device_info(dev_priv);
+ 	BUG_ON(ring == NULL);
++	if (obj->ring != ring && obj->last_write_seqno) {
++		/* Keep the seqno relative to the current ring */
++		obj->last_write_seqno = seqno;
++	}
+ 	obj->ring = ring;
  
- 	if (i915_get_bridge_dev(dev)) {
-@@ -1602,6 +1609,7 @@ int i915_driver_load(struct drm_device *
- 
- 	intel_irq_init(dev);
- 	intel_gt_init(dev);
-+	intel_gt_reset(dev);
- 
- 	/* Try to make sure MCHBAR is enabled before poking at it */
- 	intel_setup_mchbar(dev);
-@@ -1626,14 +1634,6 @@ int i915_driver_load(struct drm_device *
- 	if (!IS_I945G(dev) && !IS_I945GM(dev))
- 		pci_enable_msi(dev->pdev);
- 
--	spin_lock_init(&dev_priv->irq_lock);
--	spin_lock_init(&dev_priv->gpu_error.lock);
--	spin_lock_init(&dev_priv->rps.lock);
--	mutex_init(&dev_priv->dpio_lock);
--
--	mutex_init(&dev_priv->rps.hw_lock);
--	mutex_init(&dev_priv->modeset_restore_lock);
--
- 	dev_priv->num_plane = 1;
- 	if (IS_VALLEYVIEW(dev))
- 		dev_priv->num_plane = 2;
---- a/drivers/gpu/drm/i915/intel_pm.c
-+++ b/drivers/gpu/drm/i915/intel_pm.c
-@@ -4497,6 +4497,9 @@ void intel_gt_reset(struct drm_device *d
- 		if (IS_IVYBRIDGE(dev) || IS_HASWELL(dev))
- 			__gen6_gt_force_wake_mt_reset(dev_priv);
- 	}
-+
-+	/* BIOS often leaves RC6 enabled, but disable it for hw init */
-+	intel_disable_gt_powersave(dev);
- }
- 
- void intel_gt_init(struct drm_device *dev)
-@@ -4505,8 +4508,6 @@ void intel_gt_init(struct drm_device *de
- 
- 	spin_lock_init(&dev_priv->gt_lock);
- 
--	intel_gt_reset(dev);
--
- 	if (IS_VALLEYVIEW(dev)) {
- 		dev_priv->gt.force_wake_get = vlv_force_wake_get;
- 		dev_priv->gt.force_wake_put = vlv_force_wake_put;
+ 	/* Add a reference if we're newly entering the active list. */
 
 
