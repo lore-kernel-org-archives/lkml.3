@@ -1,57 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756112Ab3HBK4p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:56:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37060 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758916Ab3HBKIH (ORCPT
+	id S1758871Ab3HBKHv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:07:51 -0400
+Received: from up.free-electrons.com ([94.23.35.102]:58894 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758841Ab3HBKHt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:08:07 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Henningsson <david.henningsson@canonical.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 07/99] ALSA: hda - Yet another Dell headset mic quirk
-Date: Fri,  2 Aug 2013 18:07:20 +0800
-Message-Id: <20130802100226.562291086@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
-In-Reply-To: <20130802100225.478715166@linuxfoundation.org>
-References: <20130802100225.478715166@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Fri, 2 Aug 2013 06:07:49 -0400
+Date: Fri, 2 Aug 2013 12:07:44 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: Emilio Lopez <emilio@elopez.com.ar>, kevin.z.m.zh@gmail.com,
+        sunny@allwinnertech.com, shuge@allwinnertech.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-sunxi@googlegroups.com
+Subject: Re: [PATCH 0/2] clk: sunxi: Add clock support for the A10s
+Message-ID: <20130802100744.GS2911@lukather>
+References: <1374618504-19391-1-git-send-email-maxime.ripard@free-electrons.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="w3FC1ngOohd+pYSp"
+Content-Disposition: inline
+In-Reply-To: <1374618504-19391-1-git-send-email-maxime.ripard@free-electrons.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+--w3FC1ngOohd+pYSp
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-From: David Henningsson <david.henningsson@canonical.com>
+Hi Mike, Emilio,
 
-commit 6c29d68a82ec68db18241b818d03e7864c052be9 upstream.
+On Wed, Jul 24, 2013 at 12:28:22AM +0200, Maxime Ripard wrote:
+> Hi,
+>=20
+> This small patchset adds support for the gates found in the Allwinner A10=
+s SoC.
+> Since the gates are the only clock that differ from the other supported
+> Allwinner SoCs so far, the two patches are quite trivial.
 
-This quirk is needed for the headset mic to work on this Dell
-machine.
+Could you take a look at this?
 
-BugLink: https://bugs.launchpad.net/bugs/1195597
-Signed-off-by: David Henningsson <david.henningsson@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Thanks,
+Maxime
 
----
- sound/pci/hda/patch_realtek.c |    1 +
- 1 file changed, 1 insertion(+)
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -3498,6 +3498,7 @@ static const struct snd_pci_quirk alc269
- 	SND_PCI_QUIRK(0x1028, 0x0606, "Dell", ALC269_FIXUP_DELL1_MIC_NO_PRESENCE),
- 	SND_PCI_QUIRK(0x1028, 0x0608, "Dell", ALC269_FIXUP_DELL1_MIC_NO_PRESENCE),
- 	SND_PCI_QUIRK(0x1028, 0x0609, "Dell", ALC269_FIXUP_DELL1_MIC_NO_PRESENCE),
-+	SND_PCI_QUIRK(0x1028, 0x0613, "Dell", ALC269_FIXUP_DELL1_MIC_NO_PRESENCE),
- 	SND_PCI_QUIRK(0x103c, 0x1586, "HP", ALC269_FIXUP_HP_MUTE_LED_MIC2),
- 	SND_PCI_QUIRK(0x103c, 0x18e6, "HP", ALC269_FIXUP_HP_GPIO_LED),
- 	SND_PCI_QUIRK(0x103c, 0x1973, "HP Pavilion", ALC269_FIXUP_HP_MUTE_LED_MIC1),
+--w3FC1ngOohd+pYSp
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBAgAGBQJR+4TwAAoJEBx+YmzsjxAgKvYQAIk3ar+fdHQtJHAj8F4oObDH
+uNpAO5cuP4EvSWrrYmw/icTQFilb4DUkIjRWeJLwnzSpXHxxiT+yI2OYFwhlP/7b
+ukmhyUsyCQRI13lzVGpUSvQvkbzg6HhVx5AkfurjdOwxpVdywDbI2Mr1taz+8siT
+fPMi/OZ7EjQFGE+nTtV3V5M7MLeo6UB6h9fgL4G2L+uctpl6u0Czu64DLiIl5vOv
+kJrCyoAAqy3zI6a+PTA2BhP824ZUx7Xt5BhdBcW7rtI/pcIsHYmRMyX84KPdgXfN
+a5VK9EeJ39eD+dPP5tB/wRVWxd2mkQIwmPV93/3U2toDpiEN4NgCm+18THzRw+YO
+XgaLpz3BGUq9b7FRStHNK2HoNmaqbmL2YzpRJt/FuAics2D/XUykVUl2JII8AbCq
+YE6JFjb0sHYtc+q34e3rsQCLgvcYi+s1O5Fc4UffWEba5AweA2GVUAjru1roph6D
+dCaIJXKtqp85F9+f1Y4Hd6h33SseJuETA5cbIZemf+/P2ybytLpsNKGBGg0Q0DLn
+uANJOiwhgGsB4qPqVLI+cBU8IwIPdmoAjFGcXKacC6TSO+Cx2rwKSjFv8+dUFcQj
+AxhUxK7/XN54WxiEn2ODF2xrsqpLRh1t7/BGfZWpIatiYAcl0WvriiZO1QRG4kC0
+5OLKgNQEdQ7i091jiCWe
+=86VJ
+-----END PGP SIGNATURE-----
+
+--w3FC1ngOohd+pYSp--
