@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755065Ab3HBKZA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:25:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37870 "EHLO
+	id S1755117Ab3HBKZo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:25:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37860 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754695Ab3HBKXZ (ORCPT
+	with ESMTP id S1754774Ab3HBKXR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:23:25 -0400
+	Fri, 2 Aug 2013 06:23:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Rick Farina (Zero_Chaos)" <zerochaos@gentoo.org>
-Subject: [ 18/23] USB: serial: ftdi_sio: add more RT Systems ftdi devices
-Date: Fri,  2 Aug 2013 18:23:31 +0800
-Message-Id: <20130802102038.742653677@linuxfoundation.org>
+        Mark Kettenis <kettenis@openbsd.org>,
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 15/23] drm/radeon: fix combios tables on older cards
+Date: Fri,  2 Aug 2013 18:23:28 +0800
+Message-Id: <20130802102038.335379555@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802102036.180660415@linuxfoundation.org>
 References: <20130802102036.180660415@linuxfoundation.org>
@@ -26,105 +27,291 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Rick Farina (Zero_Chaos)" <zerochaos@gentoo.org>
+From: Mark Kettenis <kettenis@openbsd.org>
 
-commit fed1f1ed90bce42ea010e2904cbc04e7b8304940 upstream.
+commit cef1d00cd56f600121ad121875655ad410a001b8 upstream.
 
-RT Systems makes many usb serial cables based on the ftdi_sio driver for
-programming various amateur radios.  This patch is a full listing of
-their current product offerings and should allow these cables to all
-be recognized.
+Noticed that my old Radeon 7500 hung after printing
 
-Signed-off-by: Rick Farina (Zero_Chaos) <zerochaos@gentoo.org>
+   drm: GPU not posted. posting now...
+
+when it wasn't selected as the primary card the BIOS.  Some digging
+revealed that it was hanging in combios_parse_mmio_table() while
+parsing the ASIC INIT 3 table.  Looking at the BIOS ROM for the card,
+it becomes obvious that there is no ASIC INIT 3 table in the BIOS.
+The code is just processing random garbage.  No surprise it hangs!
+
+Why do I say that there is no ASIC INIT 3 table is the BIOS?  This
+table is found through the MISC INFO table.  The MISC INFO table can
+be found at offset 0x5e in the COMBIOS header.  But the header is
+smaller than that.  The COMBIOS header starts at offset 0x126.  The
+standard PCI Data Structure (the bit that starts with 'PCIR') lives at
+offset 0x180.  That means that the COMBIOS header can not be larger
+than 0x5a bytes and therefore cannot contain a MISC INFO table.
+
+I looked at a dozen or so BIOS images, some my own, some downloaded from:
+
+    <http://www.techpowerup.com/vgabios/index.php?manufacturer=ATI&page=1>
+
+It is fairly obvious that the size of the COMBIOS header can be found
+at offset 0x6 of the header.  Not sure if it is a 16-bit number or
+just an 8-bit number, but that doesn't really matter since the tables
+seems to be always smaller than 256 bytes.
+
+So I think combios_get_table_offset() should check if the requested
+table is present.  This can be done by checking the offset against the
+size of the header.  See the diff below.  The diff is against the WIP
+OpenBSD codebase that roughly corresponds to Linux 3.8.13 at this
+point.  But I don't think this bit of the code changed much since
+then.
+
+For what it is worth:
+
+Signed-off-by: Mark Kettenis <kettenis@openbsd.org>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |   31 ++++++++++++++++++++++++++++---
- drivers/usb/serial/ftdi_sio_ids.h |   34 +++++++++++++++++++++++++++++-----
- 2 files changed, 57 insertions(+), 8 deletions(-)
+ drivers/gpu/drm/radeon/radeon_combios.c |  145 +++++++++-----------------------
+ 1 file changed, 41 insertions(+), 104 deletions(-)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -743,9 +743,34 @@ static struct usb_device_id id_table_com
- 	{ USB_DEVICE(FTDI_VID, FTDI_NDI_AURORA_SCU_PID),
- 		.driver_info = (kernel_ulong_t)&ftdi_NDI_device_quirk },
- 	{ USB_DEVICE(TELLDUS_VID, TELLDUS_TELLSTICK_PID) },
--	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_SERIAL_VX7_PID) },
--	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_CT29B_PID) },
--	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_RTS01_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_S03_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_59_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_57A_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_57B_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_29A_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_29B_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_29F_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_62B_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_S01_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_63_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_29C_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_81B_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_82B_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_K5D_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_K4Y_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_K5G_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_S05_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_60_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_61_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_62_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_63B_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_64_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_65_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_92_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_92D_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_W5R_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_A5R_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_PW1_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_MAXSTREAM_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_PHI_FISCO_PID) },
- 	{ USB_DEVICE(TML_VID, TML_USB_SERIAL_PID) },
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -815,11 +815,35 @@
- /*
-  * RT Systems programming cables for various ham radios
-  */
--#define RTSYSTEMS_VID			0x2100	/* Vendor ID */
--#define RTSYSTEMS_SERIAL_VX7_PID	0x9e52	/* Serial converter for VX-7 Radios using FT232RL */
--#define RTSYSTEMS_CT29B_PID		0x9e54	/* CT29B Radio Cable */
--#define RTSYSTEMS_RTS01_PID		0x9e57	/* USB-RTS01 Radio Cable */
--
-+#define RTSYSTEMS_VID		0x2100	/* Vendor ID */
-+#define RTSYSTEMS_USB_S03_PID	0x9001	/* RTS-03 USB to Serial Adapter */
-+#define RTSYSTEMS_USB_59_PID	0x9e50	/* USB-59 USB to 8 pin plug */
-+#define RTSYSTEMS_USB_57A_PID	0x9e51	/* USB-57A USB to 4pin 3.5mm plug */
-+#define RTSYSTEMS_USB_57B_PID	0x9e52	/* USB-57B USB to extended 4pin 3.5mm plug */
-+#define RTSYSTEMS_USB_29A_PID	0x9e53	/* USB-29A USB to 3.5mm stereo plug */
-+#define RTSYSTEMS_USB_29B_PID	0x9e54	/* USB-29B USB to 6 pin mini din */
-+#define RTSYSTEMS_USB_29F_PID	0x9e55	/* USB-29F USB to 6 pin modular plug */
-+#define RTSYSTEMS_USB_62B_PID	0x9e56	/* USB-62B USB to 8 pin mini din plug*/
-+#define RTSYSTEMS_USB_S01_PID	0x9e57	/* USB-RTS01 USB to 3.5 mm stereo plug*/
-+#define RTSYSTEMS_USB_63_PID	0x9e58	/* USB-63 USB to 9 pin female*/
-+#define RTSYSTEMS_USB_29C_PID	0x9e59	/* USB-29C USB to 4 pin modular plug*/
-+#define RTSYSTEMS_USB_81B_PID	0x9e5A	/* USB-81 USB to 8 pin mini din plug*/
-+#define RTSYSTEMS_USB_82B_PID	0x9e5B	/* USB-82 USB to 2.5 mm stereo plug*/
-+#define RTSYSTEMS_USB_K5D_PID	0x9e5C	/* USB-K5D USB to 8 pin modular plug*/
-+#define RTSYSTEMS_USB_K4Y_PID	0x9e5D	/* USB-K4Y USB to 2.5/3.5 mm plugs*/
-+#define RTSYSTEMS_USB_K5G_PID	0x9e5E	/* USB-K5G USB to 8 pin modular plug*/
-+#define RTSYSTEMS_USB_S05_PID	0x9e5F	/* USB-RTS05 USB to 2.5 mm stereo plug*/
-+#define RTSYSTEMS_USB_60_PID	0x9e60	/* USB-60 USB to 6 pin din*/
-+#define RTSYSTEMS_USB_61_PID	0x9e61	/* USB-61 USB to 6 pin mini din*/
-+#define RTSYSTEMS_USB_62_PID	0x9e62	/* USB-62 USB to 8 pin mini din*/
-+#define RTSYSTEMS_USB_63B_PID	0x9e63	/* USB-63 USB to 9 pin female*/
-+#define RTSYSTEMS_USB_64_PID	0x9e64	/* USB-64 USB to 9 pin male*/
-+#define RTSYSTEMS_USB_65_PID	0x9e65	/* USB-65 USB to 9 pin female null modem*/
-+#define RTSYSTEMS_USB_92_PID	0x9e66	/* USB-92 USB to 12 pin plug*/
-+#define RTSYSTEMS_USB_92D_PID	0x9e67	/* USB-92D USB to 12 pin plug data*/
-+#define RTSYSTEMS_USB_W5R_PID	0x9e68	/* USB-W5R USB to 8 pin modular plug*/
-+#define RTSYSTEMS_USB_A5R_PID	0x9e69	/* USB-A5R USB to 8 pin modular plug*/
-+#define RTSYSTEMS_USB_PW1_PID	0x9e6A	/* USB-PW1 USB to 8 pin modular plug*/
+--- a/drivers/gpu/drm/radeon/radeon_combios.c
++++ b/drivers/gpu/drm/radeon/radeon_combios.c
+@@ -147,7 +147,7 @@ static uint16_t combios_get_table_offset
+ 					 enum radeon_combios_table_offset table)
+ {
+ 	struct radeon_device *rdev = dev->dev_private;
+-	int rev;
++	int rev, size;
+ 	uint16_t offset = 0, check_offset;
  
- /*
-  * Physik Instrumente
+ 	if (!rdev->bios)
+@@ -156,174 +156,106 @@ static uint16_t combios_get_table_offset
+ 	switch (table) {
+ 		/* absolute offset tables */
+ 	case COMBIOS_ASIC_INIT_1_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0xc);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0xc;
+ 		break;
+ 	case COMBIOS_BIOS_SUPPORT_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x14);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x14;
+ 		break;
+ 	case COMBIOS_DAC_PROGRAMMING_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x2a);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x2a;
+ 		break;
+ 	case COMBIOS_MAX_COLOR_DEPTH_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x2c);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x2c;
+ 		break;
+ 	case COMBIOS_CRTC_INFO_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x2e);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x2e;
+ 		break;
+ 	case COMBIOS_PLL_INFO_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x30);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x30;
+ 		break;
+ 	case COMBIOS_TV_INFO_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x32);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x32;
+ 		break;
+ 	case COMBIOS_DFP_INFO_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x34);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x34;
+ 		break;
+ 	case COMBIOS_HW_CONFIG_INFO_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x36);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x36;
+ 		break;
+ 	case COMBIOS_MULTIMEDIA_INFO_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x38);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x38;
+ 		break;
+ 	case COMBIOS_TV_STD_PATCH_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x3e);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x3e;
+ 		break;
+ 	case COMBIOS_LCD_INFO_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x40);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x40;
+ 		break;
+ 	case COMBIOS_MOBILE_INFO_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x42);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x42;
+ 		break;
+ 	case COMBIOS_PLL_INIT_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x46);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x46;
+ 		break;
+ 	case COMBIOS_MEM_CONFIG_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x48);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x48;
+ 		break;
+ 	case COMBIOS_SAVE_MASK_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x4a);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x4a;
+ 		break;
+ 	case COMBIOS_HARDCODED_EDID_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x4c);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x4c;
+ 		break;
+ 	case COMBIOS_ASIC_INIT_2_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x4e);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x4e;
+ 		break;
+ 	case COMBIOS_CONNECTOR_INFO_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x50);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x50;
+ 		break;
+ 	case COMBIOS_DYN_CLK_1_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x52);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x52;
+ 		break;
+ 	case COMBIOS_RESERVED_MEM_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x54);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x54;
+ 		break;
+ 	case COMBIOS_EXT_TMDS_INFO_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x58);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x58;
+ 		break;
+ 	case COMBIOS_MEM_CLK_INFO_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x5a);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x5a;
+ 		break;
+ 	case COMBIOS_EXT_DAC_INFO_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x5c);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x5c;
+ 		break;
+ 	case COMBIOS_MISC_INFO_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x5e);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x5e;
+ 		break;
+ 	case COMBIOS_CRT_INFO_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x60);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x60;
+ 		break;
+ 	case COMBIOS_INTEGRATED_SYSTEM_INFO_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x62);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x62;
+ 		break;
+ 	case COMBIOS_COMPONENT_VIDEO_INFO_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x64);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x64;
+ 		break;
+ 	case COMBIOS_FAN_SPEED_INFO_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x66);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x66;
+ 		break;
+ 	case COMBIOS_OVERDRIVE_INFO_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x68);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x68;
+ 		break;
+ 	case COMBIOS_OEM_INFO_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x6a);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x6a;
+ 		break;
+ 	case COMBIOS_DYN_CLK_2_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x6c);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x6c;
+ 		break;
+ 	case COMBIOS_POWER_CONNECTOR_INFO_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x6e);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x6e;
+ 		break;
+ 	case COMBIOS_I2C_INFO_TABLE:
+-		check_offset = RBIOS16(rdev->bios_header_start + 0x70);
+-		if (check_offset)
+-			offset = check_offset;
++		check_offset = 0x70;
+ 		break;
+ 		/* relative offset tables */
+ 	case COMBIOS_ASIC_INIT_3_TABLE:	/* offset from misc info */
+@@ -439,11 +371,16 @@ static uint16_t combios_get_table_offset
+ 		}
+ 		break;
+ 	default:
++		check_offset = 0;
+ 		break;
+ 	}
+ 
+-	return offset;
++	size = RBIOS8(rdev->bios_header_start + 0x6);
++	/* check absolute offset tables */
++	if (table < COMBIOS_ASIC_INIT_3_TABLE && check_offset && check_offset < size)
++		offset = RBIOS16(rdev->bios_header_start + check_offset);
+ 
++	return offset;
+ }
+ 
+ bool radeon_combios_check_hardcoded_edid(struct radeon_device *rdev)
 
 
