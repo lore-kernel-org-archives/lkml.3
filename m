@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755091Ab3HBKXk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:23:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37890 "EHLO
+	id S1754806Ab3HBKXS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:23:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37845 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755032Ab3HBKXf (ORCPT
+	with ESMTP id S1754706Ab3HBKXJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:23:35 -0400
+	Fri, 2 Aug 2013 06:23:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Wolfram Gloger <wmglo@dent.med.uni-muenchen.de>
-Subject: [ 21/23] virtio: support unlocked queue poll
-Date: Fri,  2 Aug 2013 18:23:34 +0800
-Message-Id: <20130802102039.179726643@linuxfoundation.org>
+        Tejun Heo <tj@kernel.org>,
+        Martin Braure de Calignon <braurede@free.fr>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [ 12/23] libata: make it clear that sata_inic162x is experimental
+Date: Fri,  2 Aug 2013 18:23:25 +0800
+Message-Id: <20130802102037.918785380@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802102036.180660415@linuxfoundation.org>
 References: <20130802102036.180660415@linuxfoundation.org>
@@ -28,120 +28,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael S. Tsirkin <mst@redhat.com>
+From: Tejun Heo <tj@kernel.org>
 
-commit cc229884d3f77ec3b1240e467e0236c3e0647c0c upstream.
+commit bb9696192826a7d9279caf872e95b41bc26c7eff upstream.
 
-This adds a way to check ring empty state after enable_cb outside any
-locks. Will be used by virtio_net.
+sata_inic162x never reached a state where it's reliable enough for
+production use and data corruption is a relatively common occurrence.
+Make the driver generate warning about the issues and mark the Kconfig
+option as experimental.
 
-Note: there's room for more optimization: caller is likely to have a
-memory barrier already, which means we might be able to get rid of a
-barrier here.  Deferring this optimization until we do some
-benchmarking.
+If the situation doesn't improve, we'd be better off making it depend
+on CONFIG_BROKEN.  Let's wait for several cycles and see if the kernel
+message draws any attention.
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-[wg: Backported to 3.2]
-Signed-off-by: Wolfram Gloger <wmglo@dent.med.uni-muenchen.de>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Martin Braure de Calignon <braurede@free.fr>
+Reported-by: Ben Hutchings <ben@decadent.org.uk>
+Reported-by: risc4all@yahoo.com
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
----
- drivers/virtio/virtio_ring.c |   59 +++++++++++++++++++++++++++++++++++++------
- include/linux/virtio.h       |    4 ++
- 2 files changed, 55 insertions(+), 8 deletions(-)
 
---- a/drivers/virtio/virtio_ring.c
-+++ b/drivers/virtio/virtio_ring.c
-@@ -359,9 +359,22 @@ void virtqueue_disable_cb(struct virtque
- }
- EXPORT_SYMBOL_GPL(virtqueue_disable_cb);
+---
+ drivers/ata/Kconfig         |    2 +-
+ drivers/ata/sata_inic162x.c |   14 ++++++++++++++
+ 2 files changed, 15 insertions(+), 1 deletion(-)
+
+--- a/drivers/ata/Kconfig
++++ b/drivers/ata/Kconfig
+@@ -93,7 +93,7 @@ config SATA_FSL
+ 	  If unsure, say N.
  
--bool virtqueue_enable_cb(struct virtqueue *_vq)
-+/**
-+ * virtqueue_enable_cb_prepare - restart callbacks after disable_cb
-+ * @vq: the struct virtqueue we're talking about.
+ config SATA_INIC162X
+-	tristate "Initio 162x SATA support"
++	tristate "Initio 162x SATA support (Very Experimental)"
+ 	depends on PCI
+ 	help
+ 	  This option enables support for Initio 162x Serial ATA.
+--- a/drivers/ata/sata_inic162x.c
++++ b/drivers/ata/sata_inic162x.c
+@@ -6,6 +6,18 @@
+  *
+  * This file is released under GPL v2.
+  *
++ * **** WARNING ****
 + *
-+ * This re-enables callbacks; it returns current queue state
-+ * in an opaque unsigned value. This value should be later tested by
-+ * virtqueue_poll, to detect a possible race between the driver checking for
-+ * more work, and enabling callbacks.
++ * This driver never worked properly and unfortunately data corruption is
++ * relatively common.  There isn't anyone working on the driver and there's
++ * no support from the vendor.  Do not use this driver in any production
++ * environment.
 + *
-+ * Caller must ensure we don't call this with other virtqueue
-+ * operations at the same time (except where noted).
-+ */
-+unsigned virtqueue_enable_cb_prepare(struct virtqueue *_vq)
- {
- 	struct vring_virtqueue *vq = to_vvq(_vq);
-+	u16 last_used_idx;
++ * http://thread.gmane.org/gmane.linux.debian.devel.bugs.rc/378525/focus=54491
++ * https://bugzilla.kernel.org/show_bug.cgi?id=60565
++ *
++ * *****************
++ *
+  * This controller is eccentric and easily locks up if something isn't
+  * right.  Documentation is available at initio's website but it only
+  * documents registers (not programming model).
+@@ -810,6 +822,8 @@ static int inic_init_one(struct pci_dev
+ 	if (!printed_version++)
+ 		dev_printk(KERN_DEBUG, &pdev->dev, "version " DRV_VERSION "\n");
  
- 	START_USE(vq);
- 
-@@ -371,15 +384,45 @@ bool virtqueue_enable_cb(struct virtqueu
- 	 * either clear the flags bit or point the event index at the next
- 	 * entry. Always do both to keep code simple. */
- 	vq->vring.avail->flags &= ~VRING_AVAIL_F_NO_INTERRUPT;
--	vring_used_event(&vq->vring) = vq->last_used_idx;
-+	vring_used_event(&vq->vring) = last_used_idx = vq->last_used_idx;
-+	END_USE(vq);
-+	return last_used_idx;
-+}
-+EXPORT_SYMBOL_GPL(virtqueue_enable_cb_prepare);
++	dev_alert(&pdev->dev, "inic162x support is broken with common data corruption issues and will be disabled by default, contact linux-ide@vger.kernel.org if in production use\n");
 +
-+/**
-+ * virtqueue_poll - query pending used buffers
-+ * @vq: the struct virtqueue we're talking about.
-+ * @last_used_idx: virtqueue state (from call to virtqueue_enable_cb_prepare).
-+ *
-+ * Returns "true" if there are pending used buffers in the queue.
-+ *
-+ * This does not need to be serialized.
-+ */
-+bool virtqueue_poll(struct virtqueue *_vq, unsigned last_used_idx)
-+{
-+	struct vring_virtqueue *vq = to_vvq(_vq);
-+
- 	virtio_mb();
--	if (unlikely(more_used(vq))) {
--		END_USE(vq);
--		return false;
--	}
-+	return (u16)last_used_idx != vq->vring.used->idx;
-+}
-+EXPORT_SYMBOL_GPL(virtqueue_poll);
- 
--	END_USE(vq);
--	return true;
-+/**
-+ * virtqueue_enable_cb - restart callbacks after disable_cb.
-+ * @vq: the struct virtqueue we're talking about.
-+ *
-+ * This re-enables callbacks; it returns "false" if there are pending
-+ * buffers in the queue, to detect a possible race between the driver
-+ * checking for more work, and enabling callbacks.
-+ *
-+ * Caller must ensure we don't call this with other virtqueue
-+ * operations at the same time (except where noted).
-+ */
-+bool virtqueue_enable_cb(struct virtqueue *_vq)
-+{
-+	unsigned last_used_idx = virtqueue_enable_cb_prepare(_vq);
-+	return !virtqueue_poll(_vq, last_used_idx);
- }
- EXPORT_SYMBOL_GPL(virtqueue_enable_cb);
- 
---- a/include/linux/virtio.h
-+++ b/include/linux/virtio.h
-@@ -93,6 +93,10 @@ void virtqueue_disable_cb(struct virtque
- 
- bool virtqueue_enable_cb(struct virtqueue *vq);
- 
-+unsigned virtqueue_enable_cb_prepare(struct virtqueue *vq);
-+
-+bool virtqueue_poll(struct virtqueue *vq, unsigned);
-+
- bool virtqueue_enable_cb_delayed(struct virtqueue *vq);
- 
- void *virtqueue_detach_unused_buf(struct virtqueue *vq);
+ 	/* alloc host */
+ 	host = ata_host_alloc_pinfo(&pdev->dev, ppi, NR_PORTS);
+ 	hpriv = devm_kzalloc(&pdev->dev, sizeof(*hpriv), GFP_KERNEL);
 
 
