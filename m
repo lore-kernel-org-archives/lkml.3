@@ -1,208 +1,511 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757295Ab3HBCm7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 22:42:59 -0400
+	id S1756857Ab3HBCm5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 22:42:57 -0400
 Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:29433 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752649Ab3HBCmY (ORCPT
+	with ESMTP id S1753358Ab3HBCmZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 22:42:24 -0400
-X-Authority-Analysis: v=2.0 cv=e9yEuNV/ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=vU5EZ5g1tJ8A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=vBFTvXhAEP0A:10 a=VnNF1IyMAAAA:8 a=JG-vPKiU-p_K2tTHVwwA:9 a=jeBq3FmKZ4MA:10 a=e6_gvfEN6gK5-DEc:21 a=GkYd0_EiIGKMx5tU:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
+	Thu, 1 Aug 2013 22:42:25 -0400
+X-Authority-Analysis: v=2.0 cv=e9yEuNV/ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=uirLT_jyoMAA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=zSfVoZNyYCsA:10 a=tv1XglaBDssJtDyGf_EA:9 a=jeBq3FmKZ4MA:10 a=SNx1s9eGWaCTHt2d:21 a=UevgBjfGP0zK4V8Y:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130802024222.489512981@goodmis.org>
+Message-Id: <20130802024222.658005723@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Thu, 01 Aug 2013 22:39:34 -0400
+Date: Thu, 01 Aug 2013 22:39:35 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Ingo Molnar <mingo@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 1/4 v2] tracing: Add __tracepoint_string() to export string pointers
+Subject: [PATCH 2/4 v2] rcu: Add const annotation to char * for RCU tracepoints and
+ functions
 References: <20130802023933.677590002@goodmis.org>
-Content-Disposition: inline; filename=0001-tracing-Add-__tracepoint_string-to-export-string-poi.patch
+Content-Disposition: inline; filename=0002-rcu-Add-const-annotation-to-char-for-RCU-tracepoints.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-There are several tracepoints (mostly in RCU), that reference a string
-pointer and uses the print format of "%s" to display the string that
-exists in the kernel, instead of copying the actual string to the
-ring buffer (saves time and ring buffer space).
+All the RCU tracepoints and functions that reference char pointers do
+so with just 'char *' even though they do not modify the contents of
+the string itself. This will cause warnings if a const char * is used
+in one of these functions.
 
-But this has an issue with userspace tools that read the binary buffers
-that has the address of the string but has no access to what the string
-itself is. The end result is just output that looks like:
+The RCU tracepoints store the pointer to the string to refer back to them
+when the trace output is displayed. As this can be minutes, hours or
+even days later, those strings had better be constant.
 
- rcu_dyntick:          ffffffff818adeaa 1 0
- rcu_dyntick:          ffffffff818adeb5 0 140000000000000
- rcu_dyntick:          ffffffff818adeb5 0 140000000000000
- rcu_utilization:      ffffffff8184333b
- rcu_utilization:      ffffffff8184333b
+This change also opens the door to allow the RCU tracepoint strings and
+their addresses to be exported so that userspace tracing tools can
+translate the contents of the pointers of the RCU tracepoints.
 
-The above is pretty useless when read by the userspace tools. Ideally
-we would want something that looks like this:
-
- rcu_dyntick:          Start 1 0
- rcu_dyntick:          End 0 140000000000000
- rcu_dyntick:          Start 140000000000000 0
- rcu_callback:         rcu_preempt rhp=0xffff880037aff710 func=put_cred_rcu 0/4
- rcu_callback:         rcu_preempt rhp=0xffff880078961980 func=file_free_rcu 0/5
- rcu_dyntick:          End 0 1
-
-The trace_printk() which also only stores the address of the string
-format instead of recording the string into the buffer itself, exports
-the mapping of kernel addresses to format strings via the printk_format
-file in the debugfs tracing directory.
-
-The tracepoint strings can use this same method and output the format
-to the same file and the userspace tools will be able to decipher
-the address without any modification.
-
-The tracepoint strings need its own section to save the strings because
-the trace_printk section will cause the trace_printk() buffers to be
-allocated if anything exists within the section. trace_printk() is only
-used for debugging and should never exist in the kernel, we can not use
-the trace_printk sections.
-
-Add a new tracepoint_str section that will also be examined by the output
-of the printk_format file.
-
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- include/asm-generic/vmlinux.lds.h |    7 ++++++-
- include/linux/ftrace_event.h      |   34 ++++++++++++++++++++++++++++++++++
- kernel/trace/trace.h              |    3 +++
- kernel/trace/trace_printk.c       |   19 +++++++++++++++++++
- 4 files changed, 62 insertions(+), 1 deletion(-)
+ include/linux/rcupdate.h   |    4 +--
+ include/trace/events/rcu.h |   82 ++++++++++++++++++++++----------------------
+ kernel/rcu.h               |    2 +-
+ kernel/rcupdate.c          |    2 +-
+ kernel/rcutiny.c           |    2 +-
+ kernel/rcutiny_plugin.h    |    2 +-
+ kernel/rcutorture.c        |    8 ++---
+ kernel/rcutree.c           |    4 +--
+ kernel/rcutree.h           |    2 +-
+ 9 files changed, 54 insertions(+), 54 deletions(-)
 
-diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
-index 69732d2..83e2c31 100644
---- a/include/asm-generic/vmlinux.lds.h
-+++ b/include/asm-generic/vmlinux.lds.h
-@@ -122,8 +122,12 @@
- #define TRACE_PRINTKS() VMLINUX_SYMBOL(__start___trace_bprintk_fmt) = .;      \
- 			 *(__trace_printk_fmt) /* Trace_printk fmt' pointer */ \
- 			 VMLINUX_SYMBOL(__stop___trace_bprintk_fmt) = .;
-+#define TRACEPOINT_STR() VMLINUX_SYMBOL(__start___tracepoint_str) = .;	\
-+			 *(__tracepoint_str) /* Trace_printk fmt' pointer */ \
-+			 VMLINUX_SYMBOL(__stop___tracepoint_str) = .;
- #else
- #define TRACE_PRINTKS()
-+#define TRACEPOINT_STR()
- #endif
- 
- #ifdef CONFIG_FTRACE_SYSCALLS
-@@ -190,7 +194,8 @@
- 	VMLINUX_SYMBOL(__stop___verbose) = .;				\
- 	LIKELY_PROFILE()		       				\
- 	BRANCH_PROFILE()						\
--	TRACE_PRINTKS()
-+	TRACE_PRINTKS()							\
-+	TRACEPOINT_STR()
- 
- /*
-  * Data section helpers
-diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-index 4372658..81af18a 100644
---- a/include/linux/ftrace_event.h
-+++ b/include/linux/ftrace_event.h
-@@ -357,6 +357,40 @@ do {									\
- 		__trace_printk(ip, fmt, ##args);			\
- } while (0)
- 
-+/**
-+ * tracepoint_string - register constant persistent string to trace system
-+ * @str - a constant persistent string that will be referenced in tracepoints
-+ *
-+ * If constant strings are being used in tracepoints, it is faster and
-+ * more efficient to just save the pointer to the string and reference
-+ * that with a printf "%s" instead of saving the string in the ring buffer
-+ * and wasting space and time.
-+ *
-+ * The problem with the above approach is that userspace tools that read
-+ * the binary output of the trace buffers do not have access to the string.
-+ * Instead they just show the address of the string which is not very
-+ * useful to users.
-+ *
-+ * With tracepoint_string(), the string will be registered to the tracing
-+ * system and exported to userspace via the debugfs/tracing/printk_formats
-+ * file that maps the string address to the string text. This way userspace
-+ * tools that read the binary buffers have a way to map the pointers to
-+ * the ASCII strings they represent.
-+ *
-+ * The @str used must be a constant string and persistent as it would not
-+ * make sense to show a string that no longer exists. But it is still fine
-+ * to be used with modules, because when modules are unloaded, if they
-+ * had tracepoints, the ring buffers are cleared too. As long as the string
-+ * does not change during the life of the module, it is fine to use
-+ * tracepoint_string() within a module.
-+ */
-+#define tracepoint_string(str)						\
-+	({								\
-+		static const char *___tp_str __tracepoint_string = str; \
-+		___tp_str;						\
-+	})
-+#define __tracepoint_string	__attribute__((section("__tracepoint_str")))
-+
- #ifdef CONFIG_PERF_EVENTS
- struct perf_event;
- 
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index 4a4f6e1..ba321f1 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -1022,6 +1022,9 @@ extern struct list_head ftrace_events;
- extern const char *__start___trace_bprintk_fmt[];
- extern const char *__stop___trace_bprintk_fmt[];
- 
-+extern const char *__start___tracepoint_str[];
-+extern const char *__stop___tracepoint_str[];
-+
- void trace_printk_init_buffers(void);
- void trace_printk_start_comm(void);
- int trace_keep_overwrite(struct tracer *tracer, u32 mask, int set);
-diff --git a/kernel/trace/trace_printk.c b/kernel/trace/trace_printk.c
-index a9077c1..2900817 100644
---- a/kernel/trace/trace_printk.c
-+++ b/kernel/trace/trace_printk.c
-@@ -244,12 +244,31 @@ static const char **find_next(void *v, loff_t *pos)
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index 4b14bdc..0c38abb 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -52,7 +52,7 @@ extern int rcutorture_runnable; /* for sysctl */
+ #if defined(CONFIG_TREE_RCU) || defined(CONFIG_TREE_PREEMPT_RCU)
+ extern void rcutorture_record_test_transition(void);
+ extern void rcutorture_record_progress(unsigned long vernum);
+-extern void do_trace_rcu_torture_read(char *rcutorturename,
++extern void do_trace_rcu_torture_read(const char *rcutorturename,
+ 				      struct rcu_head *rhp,
+ 				      unsigned long secs,
+ 				      unsigned long c_old,
+@@ -65,7 +65,7 @@ static inline void rcutorture_record_progress(unsigned long vernum)
  {
- 	const char **fmt = v;
- 	int start_index;
-+	int last_index;
+ }
+ #ifdef CONFIG_RCU_TRACE
+-extern void do_trace_rcu_torture_read(char *rcutorturename,
++extern void do_trace_rcu_torture_read(const char *rcutorturename,
+ 				      struct rcu_head *rhp,
+ 				      unsigned long secs,
+ 				      unsigned long c_old,
+diff --git a/include/trace/events/rcu.h b/include/trace/events/rcu.h
+index 59ebcc8..ee2376c 100644
+--- a/include/trace/events/rcu.h
++++ b/include/trace/events/rcu.h
+@@ -19,12 +19,12 @@
+  */
+ TRACE_EVENT(rcu_utilization,
  
- 	start_index = __stop___trace_bprintk_fmt - __start___trace_bprintk_fmt;
+-	TP_PROTO(char *s),
++	TP_PROTO(const char *s),
  
- 	if (*pos < start_index)
- 		return __start___trace_bprintk_fmt + *pos;
+ 	TP_ARGS(s),
  
-+	/*
-+	 * The __tracepoint_str section is treated the same as the
-+	 * __trace_printk_fmt section. The difference is that the
-+	 * __trace_printk_fmt section should only be used by trace_printk()
-+	 * in a debugging environment, as if anything exists in that section
-+	 * the trace_prink() helper buffers are allocated, which would just
-+	 * waste space in a production environment.
-+	 *
-+	 * The __tracepoint_str sections on the other hand are used by
-+	 * tracepoints which need to map pointers to their strings to
-+	 * the ASCII text for userspace.
-+	 */
-+	last_index = start_index;
-+	start_index = __stop___tracepoint_str - __start___tracepoint_str;
-+
-+	if (*pos < last_index + start_index)
-+		return __start___tracepoint_str + (*pos - last_index);
-+
- 	return find_next_mod_format(start_index, v, fmt, pos);
+ 	TP_STRUCT__entry(
+-		__field(char *, s)
++		__field(const char *, s)
+ 	),
+ 
+ 	TP_fast_assign(
+@@ -51,14 +51,14 @@ TRACE_EVENT(rcu_utilization,
+  */
+ TRACE_EVENT(rcu_grace_period,
+ 
+-	TP_PROTO(char *rcuname, unsigned long gpnum, char *gpevent),
++	TP_PROTO(const char *rcuname, unsigned long gpnum, const char *gpevent),
+ 
+ 	TP_ARGS(rcuname, gpnum, gpevent),
+ 
+ 	TP_STRUCT__entry(
+-		__field(char *, rcuname)
++		__field(const char *, rcuname)
+ 		__field(unsigned long, gpnum)
+-		__field(char *, gpevent)
++		__field(const char *, gpevent)
+ 	),
+ 
+ 	TP_fast_assign(
+@@ -89,21 +89,21 @@ TRACE_EVENT(rcu_grace_period,
+  */
+ TRACE_EVENT(rcu_future_grace_period,
+ 
+-	TP_PROTO(char *rcuname, unsigned long gpnum, unsigned long completed,
++	TP_PROTO(const char *rcuname, unsigned long gpnum, unsigned long completed,
+ 		 unsigned long c, u8 level, int grplo, int grphi,
+-		 char *gpevent),
++		 const char *gpevent),
+ 
+ 	TP_ARGS(rcuname, gpnum, completed, c, level, grplo, grphi, gpevent),
+ 
+ 	TP_STRUCT__entry(
+-		__field(char *, rcuname)
++		__field(const char *, rcuname)
+ 		__field(unsigned long, gpnum)
+ 		__field(unsigned long, completed)
+ 		__field(unsigned long, c)
+ 		__field(u8, level)
+ 		__field(int, grplo)
+ 		__field(int, grphi)
+-		__field(char *, gpevent)
++		__field(const char *, gpevent)
+ 	),
+ 
+ 	TP_fast_assign(
+@@ -132,13 +132,13 @@ TRACE_EVENT(rcu_future_grace_period,
+  */
+ TRACE_EVENT(rcu_grace_period_init,
+ 
+-	TP_PROTO(char *rcuname, unsigned long gpnum, u8 level,
++	TP_PROTO(const char *rcuname, unsigned long gpnum, u8 level,
+ 		 int grplo, int grphi, unsigned long qsmask),
+ 
+ 	TP_ARGS(rcuname, gpnum, level, grplo, grphi, qsmask),
+ 
+ 	TP_STRUCT__entry(
+-		__field(char *, rcuname)
++		__field(const char *, rcuname)
+ 		__field(unsigned long, gpnum)
+ 		__field(u8, level)
+ 		__field(int, grplo)
+@@ -168,12 +168,12 @@ TRACE_EVENT(rcu_grace_period_init,
+  */
+ TRACE_EVENT(rcu_preempt_task,
+ 
+-	TP_PROTO(char *rcuname, int pid, unsigned long gpnum),
++	TP_PROTO(const char *rcuname, int pid, unsigned long gpnum),
+ 
+ 	TP_ARGS(rcuname, pid, gpnum),
+ 
+ 	TP_STRUCT__entry(
+-		__field(char *, rcuname)
++		__field(const char *, rcuname)
+ 		__field(unsigned long, gpnum)
+ 		__field(int, pid)
+ 	),
+@@ -195,12 +195,12 @@ TRACE_EVENT(rcu_preempt_task,
+  */
+ TRACE_EVENT(rcu_unlock_preempted_task,
+ 
+-	TP_PROTO(char *rcuname, unsigned long gpnum, int pid),
++	TP_PROTO(const char *rcuname, unsigned long gpnum, int pid),
+ 
+ 	TP_ARGS(rcuname, gpnum, pid),
+ 
+ 	TP_STRUCT__entry(
+-		__field(char *, rcuname)
++		__field(const char *, rcuname)
+ 		__field(unsigned long, gpnum)
+ 		__field(int, pid)
+ 	),
+@@ -224,14 +224,14 @@ TRACE_EVENT(rcu_unlock_preempted_task,
+  */
+ TRACE_EVENT(rcu_quiescent_state_report,
+ 
+-	TP_PROTO(char *rcuname, unsigned long gpnum,
++	TP_PROTO(const char *rcuname, unsigned long gpnum,
+ 		 unsigned long mask, unsigned long qsmask,
+ 		 u8 level, int grplo, int grphi, int gp_tasks),
+ 
+ 	TP_ARGS(rcuname, gpnum, mask, qsmask, level, grplo, grphi, gp_tasks),
+ 
+ 	TP_STRUCT__entry(
+-		__field(char *, rcuname)
++		__field(const char *, rcuname)
+ 		__field(unsigned long, gpnum)
+ 		__field(unsigned long, mask)
+ 		__field(unsigned long, qsmask)
+@@ -268,15 +268,15 @@ TRACE_EVENT(rcu_quiescent_state_report,
+  */
+ TRACE_EVENT(rcu_fqs,
+ 
+-	TP_PROTO(char *rcuname, unsigned long gpnum, int cpu, char *qsevent),
++	TP_PROTO(const char *rcuname, unsigned long gpnum, int cpu, const char *qsevent),
+ 
+ 	TP_ARGS(rcuname, gpnum, cpu, qsevent),
+ 
+ 	TP_STRUCT__entry(
+-		__field(char *, rcuname)
++		__field(const char *, rcuname)
+ 		__field(unsigned long, gpnum)
+ 		__field(int, cpu)
+-		__field(char *, qsevent)
++		__field(const char *, qsevent)
+ 	),
+ 
+ 	TP_fast_assign(
+@@ -308,12 +308,12 @@ TRACE_EVENT(rcu_fqs,
+  */
+ TRACE_EVENT(rcu_dyntick,
+ 
+-	TP_PROTO(char *polarity, long long oldnesting, long long newnesting),
++	TP_PROTO(const char *polarity, long long oldnesting, long long newnesting),
+ 
+ 	TP_ARGS(polarity, oldnesting, newnesting),
+ 
+ 	TP_STRUCT__entry(
+-		__field(char *, polarity)
++		__field(const char *, polarity)
+ 		__field(long long, oldnesting)
+ 		__field(long long, newnesting)
+ 	),
+@@ -352,12 +352,12 @@ TRACE_EVENT(rcu_dyntick,
+  */
+ TRACE_EVENT(rcu_prep_idle,
+ 
+-	TP_PROTO(char *reason),
++	TP_PROTO(const char *reason),
+ 
+ 	TP_ARGS(reason),
+ 
+ 	TP_STRUCT__entry(
+-		__field(char *, reason)
++		__field(const char *, reason)
+ 	),
+ 
+ 	TP_fast_assign(
+@@ -376,13 +376,13 @@ TRACE_EVENT(rcu_prep_idle,
+  */
+ TRACE_EVENT(rcu_callback,
+ 
+-	TP_PROTO(char *rcuname, struct rcu_head *rhp, long qlen_lazy,
++	TP_PROTO(const char *rcuname, struct rcu_head *rhp, long qlen_lazy,
+ 		 long qlen),
+ 
+ 	TP_ARGS(rcuname, rhp, qlen_lazy, qlen),
+ 
+ 	TP_STRUCT__entry(
+-		__field(char *, rcuname)
++		__field(const char *, rcuname)
+ 		__field(void *, rhp)
+ 		__field(void *, func)
+ 		__field(long, qlen_lazy)
+@@ -412,13 +412,13 @@ TRACE_EVENT(rcu_callback,
+  */
+ TRACE_EVENT(rcu_kfree_callback,
+ 
+-	TP_PROTO(char *rcuname, struct rcu_head *rhp, unsigned long offset,
++	TP_PROTO(const char *rcuname, struct rcu_head *rhp, unsigned long offset,
+ 		 long qlen_lazy, long qlen),
+ 
+ 	TP_ARGS(rcuname, rhp, offset, qlen_lazy, qlen),
+ 
+ 	TP_STRUCT__entry(
+-		__field(char *, rcuname)
++		__field(const char *, rcuname)
+ 		__field(void *, rhp)
+ 		__field(unsigned long, offset)
+ 		__field(long, qlen_lazy)
+@@ -447,12 +447,12 @@ TRACE_EVENT(rcu_kfree_callback,
+  */
+ TRACE_EVENT(rcu_batch_start,
+ 
+-	TP_PROTO(char *rcuname, long qlen_lazy, long qlen, long blimit),
++	TP_PROTO(const char *rcuname, long qlen_lazy, long qlen, long blimit),
+ 
+ 	TP_ARGS(rcuname, qlen_lazy, qlen, blimit),
+ 
+ 	TP_STRUCT__entry(
+-		__field(char *, rcuname)
++		__field(const char *, rcuname)
+ 		__field(long, qlen_lazy)
+ 		__field(long, qlen)
+ 		__field(long, blimit)
+@@ -477,12 +477,12 @@ TRACE_EVENT(rcu_batch_start,
+  */
+ TRACE_EVENT(rcu_invoke_callback,
+ 
+-	TP_PROTO(char *rcuname, struct rcu_head *rhp),
++	TP_PROTO(const char *rcuname, struct rcu_head *rhp),
+ 
+ 	TP_ARGS(rcuname, rhp),
+ 
+ 	TP_STRUCT__entry(
+-		__field(char *, rcuname)
++		__field(const char *, rcuname)
+ 		__field(void *, rhp)
+ 		__field(void *, func)
+ 	),
+@@ -506,12 +506,12 @@ TRACE_EVENT(rcu_invoke_callback,
+  */
+ TRACE_EVENT(rcu_invoke_kfree_callback,
+ 
+-	TP_PROTO(char *rcuname, struct rcu_head *rhp, unsigned long offset),
++	TP_PROTO(const char *rcuname, struct rcu_head *rhp, unsigned long offset),
+ 
+ 	TP_ARGS(rcuname, rhp, offset),
+ 
+ 	TP_STRUCT__entry(
+-		__field(char *, rcuname)
++		__field(const char *, rcuname)
+ 		__field(void *, rhp)
+ 		__field(unsigned long, offset)
+ 	),
+@@ -539,13 +539,13 @@ TRACE_EVENT(rcu_invoke_kfree_callback,
+  */
+ TRACE_EVENT(rcu_batch_end,
+ 
+-	TP_PROTO(char *rcuname, int callbacks_invoked,
++	TP_PROTO(const char *rcuname, int callbacks_invoked,
+ 		 bool cb, bool nr, bool iit, bool risk),
+ 
+ 	TP_ARGS(rcuname, callbacks_invoked, cb, nr, iit, risk),
+ 
+ 	TP_STRUCT__entry(
+-		__field(char *, rcuname)
++		__field(const char *, rcuname)
+ 		__field(int, callbacks_invoked)
+ 		__field(bool, cb)
+ 		__field(bool, nr)
+@@ -577,13 +577,13 @@ TRACE_EVENT(rcu_batch_end,
+  */
+ TRACE_EVENT(rcu_torture_read,
+ 
+-	TP_PROTO(char *rcutorturename, struct rcu_head *rhp,
++	TP_PROTO(const char *rcutorturename, struct rcu_head *rhp,
+ 		 unsigned long secs, unsigned long c_old, unsigned long c),
+ 
+ 	TP_ARGS(rcutorturename, rhp, secs, c_old, c),
+ 
+ 	TP_STRUCT__entry(
+-		__field(char *, rcutorturename)
++		__field(const char *, rcutorturename)
+ 		__field(struct rcu_head *, rhp)
+ 		__field(unsigned long, secs)
+ 		__field(unsigned long, c_old)
+@@ -623,13 +623,13 @@ TRACE_EVENT(rcu_torture_read,
+  */
+ TRACE_EVENT(rcu_barrier,
+ 
+-	TP_PROTO(char *rcuname, char *s, int cpu, int cnt, unsigned long done),
++	TP_PROTO(const char *rcuname, const char *s, int cpu, int cnt, unsigned long done),
+ 
+ 	TP_ARGS(rcuname, s, cpu, cnt, done),
+ 
+ 	TP_STRUCT__entry(
+-		__field(char *, rcuname)
+-		__field(char *, s)
++		__field(const char *, rcuname)
++		__field(const char *, s)
+ 		__field(int, cpu)
+ 		__field(int, cnt)
+ 		__field(unsigned long, done)
+diff --git a/kernel/rcu.h b/kernel/rcu.h
+index 7f8e759..0a90ccc 100644
+--- a/kernel/rcu.h
++++ b/kernel/rcu.h
+@@ -94,7 +94,7 @@ static inline void debug_rcu_head_unqueue(struct rcu_head *head)
+ 
+ extern void kfree(const void *);
+ 
+-static inline bool __rcu_reclaim(char *rn, struct rcu_head *head)
++static inline bool __rcu_reclaim(const char *rn, struct rcu_head *head)
+ {
+ 	unsigned long offset = (unsigned long)head->func;
+ 
+diff --git a/kernel/rcupdate.c b/kernel/rcupdate.c
+index cce6ba8..14994d4 100644
+--- a/kernel/rcupdate.c
++++ b/kernel/rcupdate.c
+@@ -377,7 +377,7 @@ EXPORT_SYMBOL_GPL(rcuhead_debug_descr);
+ #endif /* #ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD */
+ 
+ #if defined(CONFIG_TREE_RCU) || defined(CONFIG_TREE_PREEMPT_RCU) || defined(CONFIG_RCU_TRACE)
+-void do_trace_rcu_torture_read(char *rcutorturename, struct rcu_head *rhp,
++void do_trace_rcu_torture_read(const char *rcutorturename, struct rcu_head *rhp,
+ 			       unsigned long secs,
+ 			       unsigned long c_old, unsigned long c)
+ {
+diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
+index aa34411..9ed6075 100644
+--- a/kernel/rcutiny.c
++++ b/kernel/rcutiny.c
+@@ -264,7 +264,7 @@ void rcu_check_callbacks(int cpu, int user)
+  */
+ static void __rcu_process_callbacks(struct rcu_ctrlblk *rcp)
+ {
+-	char *rn = NULL;
++	const char *rn = NULL;
+ 	struct rcu_head *next, *list;
+ 	unsigned long flags;
+ 	RCU_TRACE(int cb_count = 0);
+diff --git a/kernel/rcutiny_plugin.h b/kernel/rcutiny_plugin.h
+index 0cd385a..280d06c 100644
+--- a/kernel/rcutiny_plugin.h
++++ b/kernel/rcutiny_plugin.h
+@@ -36,7 +36,7 @@ struct rcu_ctrlblk {
+ 	RCU_TRACE(unsigned long gp_start); /* Start time for stalls. */
+ 	RCU_TRACE(unsigned long ticks_this_gp); /* Statistic for stalls. */
+ 	RCU_TRACE(unsigned long jiffies_stall); /* Jiffies at next stall. */
+-	RCU_TRACE(char *name);		/* Name of RCU type. */
++	RCU_TRACE(const char *name);	/* Name of RCU type. */
+ };
+ 
+ /* Definition for rcupdate control block. */
+diff --git a/kernel/rcutorture.c b/kernel/rcutorture.c
+index f4871e5..3d936f0f 100644
+--- a/kernel/rcutorture.c
++++ b/kernel/rcutorture.c
+@@ -267,7 +267,7 @@ rcutorture_shutdown_notify(struct notifier_block *unused1,
+  * Absorb kthreads into a kernel function that won't return, so that
+  * they won't ever access module text or data again.
+  */
+-static void rcutorture_shutdown_absorb(char *title)
++static void rcutorture_shutdown_absorb(const char *title)
+ {
+ 	if (ACCESS_ONCE(fullstop) == FULLSTOP_SHUTDOWN) {
+ 		pr_notice(
+@@ -337,7 +337,7 @@ rcu_random(struct rcu_random_state *rrsp)
  }
  
+ static void
+-rcu_stutter_wait(char *title)
++rcu_stutter_wait(const char *title)
+ {
+ 	while (stutter_pause_test || !rcutorture_runnable) {
+ 		if (rcutorture_runnable)
+@@ -366,7 +366,7 @@ struct rcu_torture_ops {
+ 	int (*stats)(char *page);
+ 	int irq_capable;
+ 	int can_boost;
+-	char *name;
++	const char *name;
+ };
+ 
+ static struct rcu_torture_ops *cur_ops;
+@@ -1364,7 +1364,7 @@ rcu_torture_stutter(void *arg)
+ }
+ 
+ static inline void
+-rcu_torture_print_module_parms(struct rcu_torture_ops *cur_ops, char *tag)
++rcu_torture_print_module_parms(struct rcu_torture_ops *cur_ops, const char *tag)
+ {
+ 	pr_alert("%s" TORTURE_FLAG
+ 		 "--- %s: nreaders=%d nfakewriters=%d "
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index 068de3a..3020149 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -1032,7 +1032,7 @@ static unsigned long rcu_cbs_completed(struct rcu_state *rsp,
+  * rcu_nocb_wait_gp().
+  */
+ static void trace_rcu_future_gp(struct rcu_node *rnp, struct rcu_data *rdp,
+-				unsigned long c, char *s)
++				unsigned long c, const char *s)
+ {
+ 	trace_rcu_future_grace_period(rdp->rsp->name, rnp->gpnum,
+ 				      rnp->completed, c, rnp->level,
+@@ -2720,7 +2720,7 @@ static int rcu_cpu_has_callbacks(int cpu, bool *all_lazy)
+  * Helper function for _rcu_barrier() tracing.  If tracing is disabled,
+  * the compiler is expected to optimize this away.
+  */
+-static void _rcu_barrier_trace(struct rcu_state *rsp, char *s,
++static void _rcu_barrier_trace(struct rcu_state *rsp, const char *s,
+ 			       int cpu, unsigned long done)
+ {
+ 	trace_rcu_barrier(rsp->name, s, cpu,
+diff --git a/kernel/rcutree.h b/kernel/rcutree.h
+index b383258..cbdeac6 100644
+--- a/kernel/rcutree.h
++++ b/kernel/rcutree.h
+@@ -445,7 +445,7 @@ struct rcu_state {
+ 						/*  for CPU stalls. */
+ 	unsigned long gp_max;			/* Maximum GP duration in */
+ 						/*  jiffies. */
+-	char *name;				/* Name of structure. */
++	const char *name;			/* Name of structure. */
+ 	char abbr;				/* Abbreviated name. */
+ 	struct list_head flavors;		/* List of RCU flavors. */
+ 	struct irq_work wakeup_work;		/* Postponed wakeups */
 -- 
 1.7.10.4
 
