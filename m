@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964795Ab3HBKEQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:04:16 -0400
-Received: from up.free-electrons.com ([94.23.35.102]:58791 "EHLO
+	id S932205Ab3HBKE2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:04:28 -0400
+Received: from up.free-electrons.com ([94.23.35.102]:58837 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S964781Ab3HBKEO (ORCPT
+	with ESMTP id S964830Ab3HBKEY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:04:14 -0400
+	Fri, 2 Aug 2013 06:04:24 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: linux-arm-kernel@lists.infradead.org
 Cc: Emilio Lopez <emilio@elopez.com.ar>, kevin.z.m.zh@gmail.com,
         sunny@allwinnertech.com, shuge@allwinnertech.com,
         linux-kernel@vger.kernel.org, linux-sunxi@googlegroups.com,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCHv2 3/9] ARM: sun7i: Add Olimex A20-Olinuxino-Micro support
-Date: Fri,  2 Aug 2013 12:02:47 +0200
-Message-Id: <1375437773-3211-4-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCHv2 9/9] ARM: sun7i: a20-olinuxino: Enable the user LED
+Date: Fri,  2 Aug 2013 12:02:53 +0200
+Message-Id: <1375437773-3211-10-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 1.8.3.4
 In-Reply-To: <1375437773-3211-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1375437773-3211-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -23,71 +23,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Olimex A20-Olinuxino is an open-hardware board based on the
-Allwinner A20 SoC, with most of the pins exported on headers, a 10/100M
-ethernet port, SATA, SD and uSD slots, etc.
+The A20-olinuxino Micro has a LED connected to the PH2 pin. Use the
+gpio-led driver to enable the control over this LED.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- arch/arm/boot/dts/Makefile                      |  3 ++-
- arch/arm/boot/dts/sun7i-a20-olinuxino-micro.dts | 34 +++++++++++++++++++++++++
- 2 files changed, 36 insertions(+), 1 deletion(-)
- create mode 100644 arch/arm/boot/dts/sun7i-a20-olinuxino-micro.dts
+ arch/arm/boot/dts/sun7i-a20-olinuxino-micro.dts | 21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
 
-diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-index 1482533..18a7374 100644
---- a/arch/arm/boot/dts/Makefile
-+++ b/arch/arm/boot/dts/Makefile
-@@ -211,7 +211,8 @@ dtb-$(CONFIG_ARCH_SUNXI) += \
- 	sun4i-a10-hackberry.dtb \
- 	sun5i-a10s-olinuxino-micro.dtb \
- 	sun5i-a13-olinuxino.dtb \
--	sun6i-a31-colombus.dtb
-+	sun6i-a31-colombus.dtb \
-+	sun7i-a20-olinuxino-micro.dtb
- dtb-$(CONFIG_ARCH_TEGRA) += tegra20-harmony.dtb \
- 	tegra20-iris-512.dtb \
- 	tegra20-medcom-wide.dtb \
 diff --git a/arch/arm/boot/dts/sun7i-a20-olinuxino-micro.dts b/arch/arm/boot/dts/sun7i-a20-olinuxino-micro.dts
-new file mode 100644
-index 0000000..29edf8b
---- /dev/null
+index 96e8c56..70affa7 100644
+--- a/arch/arm/boot/dts/sun7i-a20-olinuxino-micro.dts
 +++ b/arch/arm/boot/dts/sun7i-a20-olinuxino-micro.dts
-@@ -0,0 +1,34 @@
-+/*
-+ * Copyright 2013 Maxime Ripard
-+ *
-+ * Maxime Ripard <maxime.ripard@free-electrons.com>
-+ *
-+ * The code contained herein is licensed under the GNU General Public
-+ * License. You may obtain a copy of the GNU General Public License
-+ * Version 2 or later at the following locations:
-+ *
-+ * http://www.opensource.org/licenses/gpl-license.html
-+ * http://www.gnu.org/copyleft/gpl.html
-+ */
-+
-+/dts-v1/;
-+/include/ "sun7i-a20.dtsi"
-+
-+/ {
-+	model = "Olimex A20-Olinuxino Micro";
-+	compatible = "olimex,a20-olinuxino-micro", "allwinner,sun7i-a20";
-+
-+	soc@01c20000 {
-+		uart0: serial@01c28000 {
-+			status = "okay";
+@@ -19,6 +19,15 @@
+ 	compatible = "olimex,a20-olinuxino-micro", "allwinner,sun7i-a20";
+ 
+ 	soc@01c20000 {
++		pinctrl@01c20800 {
++			led_pins_olinuxino: led_pins@0 {
++				allwinner,pins = "PH2";
++				allwinner,function = "gpio_out";
++				allwinner,drive = <1>;
++				allwinner,pull = <0>;
++			};
 +		};
 +
-+		uart6: serial@01c29800 {
-+			status = "okay";
-+		};
+ 		uart0: serial@01c28000 {
+ 			pinctrl-names = "default";
+ 			pinctrl-0 = <&uart0_pins_a>;
+@@ -37,4 +46,16 @@
+ 			status = "okay";
+ 		};
+ 	};
 +
-+		uart7: serial@01c29c00 {
-+			status = "okay";
++	leds {
++		compatible = "gpio-leds";
++		pinctrl-names = "default";
++		pinctrl-0 = <&led_pins_olinuxino>;
++
++		green {
++			label = "a20s-olinuxino-micro:green:usr";
++			gpios = <&pio 7 2 0>;
++			default-state = "on";
 +		};
 +	};
-+};
+ };
 -- 
 1.8.3.4
 
