@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030531Ab3HBKLx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:11:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37448 "EHLO
+	id S1030604Ab3HBKMV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:12:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37485 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030385Ab3HBKLt (ORCPT
+	with ESMTP id S1030570Ab3HBKMK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:11:49 -0400
+	Fri, 2 Aug 2013 06:12:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Timo Aaltonen <tjaalton@ubuntu.com>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Imre Deak <imre.deak@intel.com>, Egbert Eich <eich@suse.de>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 78/99] drm/i915: Fix dereferencing invalid connectors in is_crtc_connector_off()
-Date: Fri,  2 Aug 2013 18:08:31 +0800
-Message-Id: <20130802100236.823464420@linuxfoundation.org>
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Richard Genoud <richard.genoud@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 87/99] rtlwifi: Initialize power-setting callback for USB devices
+Date: Fri,  2 Aug 2013 18:08:40 +0800
+Message-Id: <20130802100238.053650687@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802100225.478715166@linuxfoundation.org>
 References: <20130802100225.478715166@linuxfoundation.org>
@@ -30,79 +28,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 2e57f47d317dd035b18634b0c602272529368fcc upstream.
+commit bcfb879432094c267c35a7ff75d953d3a66c193a upstream.
 
-In commit e3de42b68478a8c95dd27520e9adead2af9477a5
-Author: Imre Deak <imre.deak@intel.com>
-Date:   Fri May 3 19:44:07 2013 +0200
+Commit a269913c5 entitled "rtlwifi: Rework rtl_lps_leave() and
+rtl_lps_enter() to use work queue" has two bugs for USB drivers.
+Firstly, the work queue in question was not initialized. Secondly,
+the callback routine used by this queue is contained within the
+file used for PCI devices. As a result, it is not available for
+architectures without PCI hardware.
 
-    drm/i915: force full modeset if the connector is in DPMS OFF mode
-
-a new function was added that walked over the set of connectors to see
-if any of the currently associated CRTC was switched off. This function
-walked an array of connectors, rather than the array of pointers to
-connectors contained in the drm_mode_set - i.e. it was dereferencing far
-past the end of the first connector. This only becomes an issue if we
-attempt to use a clone mode (i.e. more than one connector per CRTC) such
-that set->num_connectors > 1.
-
-Reported-by: Timo Aaltonen <tjaalton@ubuntu.com>
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=65927
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Imre Deak <imre.deak@intel.com>
-Cc: Egbert Eich <eich@suse.de>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Reported-by: Richard Genoud <richard.genoud@gmail.com>
+Tested-by: Richard Genoud <richard.genoud@gmail.com>
+Cc: Richard Genoud <richard.genoud@gmail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_display.c |   23 +++++++++++++----------
- 1 file changed, 13 insertions(+), 10 deletions(-)
+ drivers/net/wireless/rtlwifi/pci.c |   13 -------------
+ drivers/net/wireless/rtlwifi/ps.c  |   12 ++++++++++++
+ drivers/net/wireless/rtlwifi/ps.h  |    1 +
+ drivers/net/wireless/rtlwifi/usb.c |    2 ++
+ 4 files changed, 15 insertions(+), 13 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -8146,15 +8146,20 @@ static void intel_set_config_restore_sta
+--- a/drivers/net/wireless/rtlwifi/pci.c
++++ b/drivers/net/wireless/rtlwifi/pci.c
+@@ -1008,19 +1008,6 @@ static void _rtl_pci_prepare_bcn_tasklet
+ 	return;
  }
  
- static bool
--is_crtc_connector_off(struct drm_crtc *crtc, struct drm_connector *connectors,
--		      int num_connectors)
-+is_crtc_connector_off(struct drm_mode_set *set)
+-static void rtl_lps_change_work_callback(struct work_struct *work)
+-{
+-	struct rtl_works *rtlworks =
+-	    container_of(work, struct rtl_works, lps_change_work);
+-	struct ieee80211_hw *hw = rtlworks->hw;
+-	struct rtl_priv *rtlpriv = rtl_priv(hw);
+-
+-	if (rtlpriv->enter_ps)
+-		rtl_lps_enter(hw);
+-	else
+-		rtl_lps_leave(hw);
+-}
+-
+ static void _rtl_pci_init_trx_var(struct ieee80211_hw *hw)
  {
- 	int i;
+ 	struct rtl_pci *rtlpci = rtl_pcidev(rtl_pcipriv(hw));
+--- a/drivers/net/wireless/rtlwifi/ps.c
++++ b/drivers/net/wireless/rtlwifi/ps.c
+@@ -611,6 +611,18 @@ void rtl_swlps_rf_sleep(struct ieee80211
+ 			MSECS(sleep_intv * mac->vif->bss_conf.beacon_int - 40));
+ }
  
--	for (i = 0; i < num_connectors; i++)
--		if (connectors[i].encoder &&
--		    connectors[i].encoder->crtc == crtc &&
--		    connectors[i].dpms != DRM_MODE_DPMS_ON)
-+	if (set->num_connectors == 0)
-+		return false;
++void rtl_lps_change_work_callback(struct work_struct *work)
++{
++	struct rtl_works *rtlworks =
++	    container_of(work, struct rtl_works, lps_change_work);
++	struct ieee80211_hw *hw = rtlworks->hw;
++	struct rtl_priv *rtlpriv = rtl_priv(hw);
 +
-+	if (WARN_ON(set->connectors == NULL))
-+		return false;
-+
-+	for (i = 0; i < set->num_connectors; i++)
-+		if (set->connectors[i]->encoder &&
-+		    set->connectors[i]->encoder->crtc == set->crtc &&
-+		    set->connectors[i]->dpms != DRM_MODE_DPMS_ON)
- 			return true;
++	if (rtlpriv->enter_ps)
++		rtl_lps_enter(hw);
++	else
++		rtl_lps_leave(hw);
++}
  
- 	return false;
-@@ -8167,10 +8172,8 @@ intel_set_config_compute_mode_changes(st
+ void rtl_swlps_wq_callback(void *data)
+ {
+--- a/drivers/net/wireless/rtlwifi/ps.h
++++ b/drivers/net/wireless/rtlwifi/ps.h
+@@ -49,5 +49,6 @@ void rtl_swlps_rf_awake(struct ieee80211
+ void rtl_swlps_rf_sleep(struct ieee80211_hw *hw);
+ void rtl_p2p_ps_cmd(struct ieee80211_hw *hw, u8 p2p_ps_state);
+ void rtl_p2p_info(struct ieee80211_hw *hw, void *data, unsigned int len);
++void rtl_lps_change_work_callback(struct work_struct *work);
  
- 	/* We should be able to check here if the fb has the same properties
- 	 * and then just flip_or_move it */
--	if (set->connectors != NULL &&
--	    is_crtc_connector_off(set->crtc, *set->connectors,
--				  set->num_connectors)) {
--			config->mode_changed = true;
-+	if (is_crtc_connector_off(set)) {
-+		config->mode_changed = true;
- 	} else if (set->crtc->fb != set->fb) {
- 		/* If we have no fb then treat it as a full mode set */
- 		if (set->crtc->fb == NULL) {
+ #endif
+--- a/drivers/net/wireless/rtlwifi/usb.c
++++ b/drivers/net/wireless/rtlwifi/usb.c
+@@ -1070,6 +1070,8 @@ int rtl_usb_probe(struct usb_interface *
+ 	spin_lock_init(&rtlpriv->locks.usb_lock);
+ 	INIT_WORK(&rtlpriv->works.fill_h2c_cmd,
+ 		  rtl_fill_h2c_cmd_work_callback);
++	INIT_WORK(&rtlpriv->works.lps_change_work,
++		  rtl_lps_change_work_callback);
+ 
+ 	rtlpriv->usb_data_index = 0;
+ 	init_completion(&rtlpriv->firmware_loading_complete);
 
 
