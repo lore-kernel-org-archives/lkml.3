@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754102Ab3HBKTk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:19:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37756 "EHLO
+	id S1754163Ab3HBKTq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:19:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37760 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752837Ab3HBKTi (ORCPT
+	with ESMTP id S1752837Ab3HBKTn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:19:38 -0400
+	Fri, 2 Aug 2013 06:19:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Jason Wang <jasowang@redhat.com>,
         "Michael S. Tsirkin" <mst@redhat.com>,
         "David S. Miller" <davem@davemloft.net>,
-        Wolfram Gloger <wmglo@dent.med.uni-muenchen.de>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [ 37/39] virtio: support unlocked queue poll
-Date: Fri,  2 Aug 2013 18:18:47 +0800
-Message-Id: <20130802101502.037923320@linuxfoundation.org>
+        Wolfram Gloger <wmglo@dent.med.uni-muenchen.de>
+Subject: [ 38/39] virtio_net: fix race in RX VQ processing
+Date: Fri,  2 Aug 2013 18:18:48 +0800
+Message-Id: <20130802101502.180137197@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802101456.800497005@linuxfoundation.org>
 References: <20130802101456.800497005@linuxfoundation.org>
@@ -31,119 +31,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Michael S. Tsirkin <mst@redhat.com>
 
-commit cc229884d3f77ec3b1240e467e0236c3e0647c0c upstream.
+commit cbdadbbf0c790f79350a8f36029208944c5487d0 upstream
 
-This adds a way to check ring empty state after enable_cb outside any
-locks. Will be used by virtio_net.
+virtio net called virtqueue_enable_cq on RX path after napi_complete, so
+with NAPI_STATE_SCHED clear - outside the implicit napi lock.
+This violates the requirement to synchronize virtqueue_enable_cq wrt
+virtqueue_add_buf.  In particular, used event can move backwards,
+causing us to lose interrupts.
+In a debug build, this can trigger panic within START_USE.
 
-Note: there's room for more optimization: caller is likely to have a
-memory barrier already, which means we might be able to get rid of a
-barrier here.  Deferring this optimization until we do some
-benchmarking.
+Jason Wang reports that he can trigger the races artificially,
+by adding udelay() in virtqueue_enable_cb() after virtio_mb().
 
+However, we must call napi_complete to clear NAPI_STATE_SCHED before
+polling the virtqueue for used buffers, otherwise napi_schedule_prep in
+a callback will fail, causing us to lose RX events.
+
+To fix, call virtqueue_enable_cb_prepare with NAPI_STATE_SCHED
+set (under napi lock), later call virtqueue_poll with
+NAPI_STATE_SCHED clear (outside the lock).
+
+Reported-by: Jason Wang <jasowang@redhat.com>
+Tested-by: Jason Wang <jasowang@redhat.com>
+Acked-by: Jason Wang <jasowang@redhat.com>
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 [wg: Backported to 3.2]
 Signed-off-by: Wolfram Gloger <wmglo@dent.med.uni-muenchen.de>
-[bwh: Backported to 3.4: adjust context]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
 ---
- drivers/virtio/virtio_ring.c |   54 ++++++++++++++++++++++++++++++++++---------
- include/linux/virtio.h       |    4 +++
- 2 files changed, 47 insertions(+), 11 deletions(-)
+ drivers/net/virtio_net.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/virtio/virtio_ring.c
-+++ b/drivers/virtio/virtio_ring.c
-@@ -498,16 +498,18 @@ EXPORT_SYMBOL_GPL(virtqueue_disable_cb);
-  * virtqueue_enable_cb - restart callbacks after disable_cb.
-  * @vq: the struct virtqueue we're talking about.
-  *
-- * This re-enables callbacks; it returns "false" if there are pending
-- * buffers in the queue, to detect a possible race between the driver
-- * checking for more work, and enabling callbacks.
-+ * This re-enables callbacks; it returns current queue state
-+ * in an opaque unsigned value. This value should be later tested by
-+ * virtqueue_poll, to detect a possible race between the driver checking for
-+ * more work, and enabling callbacks.
-  *
-  * Caller must ensure we don't call this with other virtqueue
-  * operations at the same time (except where noted).
-  */
--bool virtqueue_enable_cb(struct virtqueue *_vq)
-+unsigned virtqueue_enable_cb_prepare(struct virtqueue *_vq)
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -518,7 +518,7 @@ static int virtnet_poll(struct napi_stru
  {
- 	struct vring_virtqueue *vq = to_vvq(_vq);
-+	u16 last_used_idx;
+ 	struct virtnet_info *vi = container_of(napi, struct virtnet_info, napi);
+ 	void *buf;
+-	unsigned int len, received = 0;
++	unsigned int r, len, received = 0;
  
- 	START_USE(vq);
+ again:
+ 	while (received < budget &&
+@@ -535,8 +535,9 @@ again:
  
-@@ -517,15 +519,45 @@ bool virtqueue_enable_cb(struct virtqueu
- 	 * either clear the flags bit or point the event index at the next
- 	 * entry. Always do both to keep code simple. */
- 	vq->vring.avail->flags &= ~VRING_AVAIL_F_NO_INTERRUPT;
--	vring_used_event(&vq->vring) = vq->last_used_idx;
-+	vring_used_event(&vq->vring) = last_used_idx = vq->last_used_idx;
-+	END_USE(vq);
-+	return last_used_idx;
-+}
-+EXPORT_SYMBOL_GPL(virtqueue_enable_cb_prepare);
-+
-+/**
-+ * virtqueue_poll - query pending used buffers
-+ * @vq: the struct virtqueue we're talking about.
-+ * @last_used_idx: virtqueue state (from call to virtqueue_enable_cb_prepare).
-+ *
-+ * Returns "true" if there are pending used buffers in the queue.
-+ *
-+ * This does not need to be serialized.
-+ */
-+bool virtqueue_poll(struct virtqueue *_vq, unsigned last_used_idx)
-+{
-+	struct vring_virtqueue *vq = to_vvq(_vq);
-+
- 	virtio_mb(vq);
--	if (unlikely(more_used(vq))) {
--		END_USE(vq);
--		return false;
--	}
-+	return (u16)last_used_idx != vq->vring.used->idx;
-+}
-+EXPORT_SYMBOL_GPL(virtqueue_poll);
- 
--	END_USE(vq);
--	return true;
-+/**
-+ * virtqueue_enable_cb - restart callbacks after disable_cb.
-+ * @vq: the struct virtqueue we're talking about.
-+ *
-+ * This re-enables callbacks; it returns "false" if there are pending
-+ * buffers in the queue, to detect a possible race between the driver
-+ * checking for more work, and enabling callbacks.
-+ *
-+ * Caller must ensure we don't call this with other virtqueue
-+ * operations at the same time (except where noted).
-+ */
-+bool virtqueue_enable_cb(struct virtqueue *_vq)
-+{
-+	unsigned last_used_idx = virtqueue_enable_cb_prepare(_vq);
-+	return !virtqueue_poll(_vq, last_used_idx);
- }
- EXPORT_SYMBOL_GPL(virtqueue_enable_cb);
- 
---- a/include/linux/virtio.h
-+++ b/include/linux/virtio.h
-@@ -44,6 +44,10 @@ void virtqueue_disable_cb(struct virtque
- 
- bool virtqueue_enable_cb(struct virtqueue *vq);
- 
-+unsigned virtqueue_enable_cb_prepare(struct virtqueue *vq);
-+
-+bool virtqueue_poll(struct virtqueue *vq, unsigned);
-+
- bool virtqueue_enable_cb_delayed(struct virtqueue *vq);
- 
- void *virtqueue_detach_unused_buf(struct virtqueue *vq);
+ 	/* Out of packets? */
+ 	if (received < budget) {
++		r = virtqueue_enable_cb_prepare(vi->rvq);
+ 		napi_complete(napi);
+-		if (unlikely(!virtqueue_enable_cb(vi->rvq)) &&
++		if (unlikely(virtqueue_poll(vi->rvq, r)) &&
+ 		    napi_schedule_prep(napi)) {
+ 			virtqueue_disable_cb(vi->rvq);
+ 			__napi_schedule(napi);
 
 
