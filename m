@@ -1,89 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752603Ab3HBOh1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 10:37:27 -0400
-Received: from forward-corp1f.mail.yandex.net ([95.108.130.40]:52463 "EHLO
-	forward-corp1f.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751138Ab3HBOh0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 10:37:26 -0400
-Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
-From: Roman Gushchin <klamm@yandex-team.ru>
-To: davem@davemloft.net
-Cc: eric.dumazet@gmail.com, raise.sail@gmail.com, ebiederm@xmission.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Roman Gushchin <klamm@yandex-team.ru>
-Subject: [PATCH] net: check net.core.somaxconn sysctl values
-Date: Fri,  2 Aug 2013 18:36:40 +0400
-Message-Id: <1375454200-21303-1-git-send-email-klamm@yandex-team.ru>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <20130801.141836.1104130035137318887.davem@davemloft.net>
-References: <20130801.141836.1104130035137318887.davem@davemloft.net>
+	id S1752723Ab3HBOic (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 10:38:32 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:51123 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751842Ab3HBOib (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 10:38:31 -0400
+Message-ID: <51FBC463.7040409@linux.vnet.ibm.com>
+Date: Fri, 02 Aug 2013 07:38:27 -0700
+From: Zach Levis <zml@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130307 Thunderbird/17.0.3
+MIME-Version: 1.0
+To: Oleg Nesterov <oleg@redhat.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@ZenIV.linux.org.uk>, Evgeniy Polyakov <zbr@ioremap.net>,
+        Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] exec: minor cleanups + minor fix
+References: <20130801190455.GA3194@redhat.com> <20130802140916.GA25401@redhat.com>
+In-Reply-To: <20130802140916.GA25401@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13080214-5806-0000-0000-00002248E2CA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's possible to assign an invalid value to the net.core.somaxconn
-sysctl variable, because there is no checks at all.
+On 08/02/2013 07:09 AM, Oleg Nesterov wrote:
+> On 08/01, Oleg Nesterov wrote:
+>>
+>> Andrew,
+>>
+>> By discussion with Zach, please drop
+>>
+>> 	fs-binfmts-add-a-name-field-to-the-binfmt-struct.patch
+>> 	fs-binfmts-better-handling-of-binfmt-loops.patch
+>> 	fs-binfmts-whitespace-fixes-with-scripts-cleanfile.patch
+>>
+>> Zach is working on v2.
+>>
+>> Meanwhile, can't we cleanup search_binary_handler() a bit? It
+>> doesn't look nice imho. And we can certainly cleanup it more
+>> (perhaps I'll try tomorrow). The error handling, request_module()
+>> logic and even "for (try=0; try<2; try++)" looks horrible imho.
+>
+> Seriously, I think this should be cleanuped too.
+>
+> Zach, I am sorry if you already rebased your changes, I'll send
+> a couple more patches today.
+>
+Don't worry -- I've been holding off on sending v2 for your changes 
+today. It's not much git wrangling to apply your additional patches anyway.
 
-The sk_max_ack_backlog field of the sock structure is defined as
-unsigned short. Therefore, the backlog argument in inet_listen()
-shouldn't exceed USHRT_MAX. The backlog argument in the listen() syscall
-is truncated to the somaxconn value. So, the somaxconn value shouldn't
-exceed 65535 (USHRT_MAX).
-Also, negative values of somaxconn are meaningless.
-
-before:
-$ sysctl -w net.core.somaxconn=256
-net.core.somaxconn = 256
-$ sysctl -w net.core.somaxconn=65536
-net.core.somaxconn = 65536
-$ sysctl -w net.core.somaxconn=-100
-net.core.somaxconn = -100
-
-after:
-$ sysctl -w net.core.somaxconn=256
-net.core.somaxconn = 256
-$ sysctl -w net.core.somaxconn=65536
-error: "Invalid argument" setting key "net.core.somaxconn"
-$ sysctl -w net.core.somaxconn=-100
-error: "Invalid argument" setting key "net.core.somaxconn"
-
-Based on a prior patch from Changli Gao.
-
-Signed-off-by: Roman Gushchin <klamm@yandex-team.ru>
-Reported-by: Changli Gao <xiaosuo@gmail.com>
-Suggested-by: Eric Dumazet <edumazet@google.com>
-Acked-by: Eric Dumazet <edumazet@google.com>
----
- net/core/sysctl_net_core.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
-
-diff --git a/net/core/sysctl_net_core.c b/net/core/sysctl_net_core.c
-index 6609686..7c37dcd 100644
---- a/net/core/sysctl_net_core.c
-+++ b/net/core/sysctl_net_core.c
-@@ -21,7 +21,9 @@
- #include <net/net_ratelimit.h>
- #include <net/busy_poll.h>
- 
-+static int zero = 0;
- static int one = 1;
-+static int ushort_max = USHRT_MAX;
- 
- #ifdef CONFIG_RPS
- static int rps_sock_flow_sysctl(struct ctl_table *table, int write,
-@@ -339,7 +341,9 @@ static struct ctl_table netns_core_table[] = {
- 		.data		= &init_net.core.sysctl_somaxconn,
- 		.maxlen		= sizeof(int),
- 		.mode		= 0644,
--		.proc_handler	= proc_dointvec
-+		.extra1		= &zero,
-+		.extra2		= &ushort_max,
-+		.proc_handler	= proc_dointvec_minmax
- 	},
- 	{ }
- };
--- 
-1.8.1.2
+> Oleg.
+>
 
