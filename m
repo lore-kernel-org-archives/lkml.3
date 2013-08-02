@@ -1,80 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753444Ab3HBTzI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 15:55:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8338 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751627Ab3HBTzE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 15:55:04 -0400
-Date: Fri, 2 Aug 2013 15:53:35 -0400
-From: Dave Jones <davej@redhat.com>
-To: Alex Thorlton <athorlton@sgi.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Sedat Dilek <sedat.dilek@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Al Viro <viro@zeniv.linux.org.uk>, Oleg Nesterov <oleg@redhat.com>,
+	id S1752747Ab3HBT46 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 15:56:58 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:58119 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751090Ab3HBT45 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 15:56:57 -0400
+Date: Fri, 2 Aug 2013 21:56:39 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Don Morris <don.morris@hp.com>
+Cc: Mel Gorman <mgorman@suse.de>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Kees Cook <keescook@chromium.org>, Robin Holt <holt@sgi.com>
-Subject: Re: [PATCH] Add per-process flag to control thp
-Message-ID: <20130802195335.GA23255@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Alex Thorlton <athorlton@sgi.com>, linux-kernel@vger.kernel.org,
-	Ingo Molnar <mingo@redhat.com>,
-	Peter Zijlstra <peterz@infradead.org>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Mel Gorman <mgorman@suse.de>,
-	"Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-	Rik van Riel <riel@redhat.com>,
-	Johannes Weiner <hannes@cmpxchg.org>,
-	"Eric W. Biederman" <ebiederm@xmission.com>,
-	Sedat Dilek <sedat.dilek@gmail.com>,
-	Frederic Weisbecker <fweisbec@gmail.com>,
-	Michael Kerrisk <mtk.manpages@gmail.com>,
-	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-	David Howells <dhowells@redhat.com>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Al Viro <viro@zeniv.linux.org.uk>, Oleg Nesterov <oleg@redhat.com>,
-	Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-	Kees Cook <keescook@chromium.org>, Robin Holt <holt@sgi.com>
-References: <20130802194659.GP26476@sgi.com>
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, riel@redhat.com
+Subject: Re: [PATCH] mm, numa: Do not group on RO pages
+Message-ID: <20130802195639.GU27162@twins.programming.kicks-ass.net>
+References: <1373901620-2021-1-git-send-email-mgorman@suse.de>
+ <20130730113857.GR3008@twins.programming.kicks-ass.net>
+ <20130731150751.GA15144@twins.programming.kicks-ass.net>
+ <51F93105.8020503@hp.com>
+ <20130802164715.GP27162@twins.programming.kicks-ass.net>
+ <20130802165032.GQ27162@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130802194659.GP26476@sgi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130802165032.GQ27162@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 02, 2013 at 02:46:59PM -0500, Alex Thorlton wrote:
+> +	/*
+> +	 * Avoid grouping on DSO/COW pages in specific and RO pages
+> +	 * in general, RO pages shouldn't hurt as much anyway since
+> +	 * they can be in shared cache state.
+> +	 */
 
- > diff --git a/include/linux/sched.h b/include/linux/sched.h
- > index 50d04b9..f084c76 100644
- > --- a/include/linux/sched.h
- > +++ b/include/linux/sched.h
- > @@ -1406,6 +1406,9 @@ struct task_struct {
- >  	unsigned int	sequential_io;
- >  	unsigned int	sequential_io_avg;
- >  #endif
- > +#ifdef CONFIG_TRANSPARENT_HUGEPAGE
- > +	int thp_disabled;
- > +#endif
- >  };
+OK, so that comment is crap. Its that you cannot work into RO pages and
+this RO pages don't establish a collaboration.
 
-Instead of blowing a whole int on this bool, we could add it
-to the bitfield a few pages up where we have other prctl things like..
+> +	if (page_mapcount(page) != 1 && !pmd_write(pmd))
+> +		flags |= TNF_NO_GROUP;
 
-	unsigned no_new_privs:1;
-
-	Dave
-
+Rik also noted that mapcount == 1 will trivially not form groups. This
+should indeed be so but I didn't test it without that clause.
