@@ -1,100 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758027Ab3HBHxQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 03:53:16 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:46260 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757858Ab3HBHxO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 03:53:14 -0400
-Date: Fri, 2 Aug 2013 10:52:57 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Tuomas Tynkkynen <ttynkkynen@nvidia.com>, "balbi@ti.com" <balbi@ti.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>
-Subject: Re: [PATCH 0/6] USB tree changes for Tegra30 and Tegra114 USB Host
- support
-Message-ID: <20130802075257.GL24465@radagast>
-Reply-To: <balbi@ti.com>
-References: <1375292522-7855-1-git-send-email-ttynkkynen@nvidia.com>
- <51F99C4C.6050508@wwwdotorg.org>
- <51FA5C5A.2080900@nvidia.com>
- <51FA8B3B.8070504@wwwdotorg.org>
+	id S1758038Ab3HBHx7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 03:53:59 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:36034 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757858Ab3HBHx6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 03:53:58 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18kjoQIUlTNFLJgo3leS9EX
+Date: Fri, 2 Aug 2013 00:53:53 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Greg KH <greg@kroah.com>
+Cc: ksummit-2013-discuss@lists.linuxfoundation.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [Ksummit-2013-discuss] [ATTEND] [ARM ATTEND] kernel data bloat
+ and how to avoid it
+Message-ID: <20130802075352.GY7656@atomide.com>
+References: <20130731073802.GT7656@atomide.com>
+ <20130731123351.GA30474@kroah.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="QWRRbczYj8mXuejp"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51FA8B3B.8070504@wwwdotorg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130731123351.GA30474@kroah.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---QWRRbczYj8mXuejp
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+* Greg KH <greg@kroah.com> [130731 05:39]:
+> On Wed, Jul 31, 2013 at 12:38:03AM -0700, Tony Lindgren wrote:
+> > Hi all,
+> > 
+> > Probably the biggest kernel data bloat issue is in the ARM land, but
+> > it also seems that it's becoming a Linux generic issue too, so I
+> > guess it could be discussed in either context.
+> 
+> Why is it specific to ARM?  What is so unique to ARM that causes it to
+> "bloat"?
 
-On Thu, Aug 01, 2013 at 10:22:19AM -0600, Stephen Warren wrote:
-> On 08/01/2013 07:02 AM, Tuomas Tynkkynen wrote:
-> > On 08/01/2013 02:22 AM, Stephen Warren wrote:
-> >> On 07/31/2013 11:41 AM, Tuomas Tynkkynen wrote:
-> >>> Hi all,
-> >>>
-> >>> Here are the patches for the USB tree to enable USB Host support on T=
-egra30 and
-> >>> Tegra114. These are based on my and Mikko's cleanup patches that just=
- got
-> >>> merged to Felipe's tree.
-> >>
-> >> This series works fine for me on Dalmore. However, on Beaver, I see the
-> >> following:
-> >>
-> >> [    2.428480] platform 7d008000.usb: Driver tegra-ehci requests probe
-> >> deferral
-> >>
-> >> ... which never seems to be resolved. You can take a look at my
-> >> linux-next_common branch to repro this. Does Beaver work for you?
-> >>
-> >=20
-> > The clock driver patch is missing from your branch. Applying it should =
-fix that.
->=20
-> Oh so it does. Sorry for forgetting about that patch. Given that, the
-> series,
->=20
-> Tested-by: Stephen Warren <swarren@nvidia.com>
->=20
-> I'll also try to review/ack the patches ASAP.
+I think it has so far showed up on ARM because of no discoverable busses,
+but chances are it will be more of a generic problem.
 
-I see you requested one minor change, so I'll wait for a new version.
+> And what exactly do you mean by "bloat"?
 
---=20
-balbi
+Stuffing data to kernel that should not be in the kernel at all. Or
+if the data is needed by kernel, there should be only one set of the
+data defined rather than multiple copies of the data built into the
+kernel for each SoC or driver variant.
 
---QWRRbczYj8mXuejp
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> > Basically the data bloat issue is there for the arch code and drivers
+> > and may not show up initially until things have headed the wrong way for
+> > too long.
+> 
+> What do you mean by this?  You seem to be very vague here.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+People are unnecessarily defining registers in kernel for similar devices
+over and over again for each new SoC at the arch level and now more and
+more at the driver level.
 
-iQIcBAEBAgAGBQJR+2VZAAoJEIaOsuA1yqREW0MP/Rb4UbrpHNUYX2104av5kBDy
-biTE8EoEBcyDixkUWCnDshVWdCuKjNcxnPgiy6rtlNsA6zUK4PxU4Oibm84qdj1a
-OI0PVnB4labjT1HvbS0iETt4+m64Zg4yDcT8SYpU6kCFARk++gQSq0ClfPv3t2pS
-yKRf9T3dbP3HAWC1cuRjk1k/xqF9u+jDp4U+KeG9ZNbELvkRXuuXPRefWy4uztHw
-X2Ktp9z3ASqrKM2Qed6vqpLldRGomnyI9PppfYqHEpS/VVvg497MKHwBc9DgS+k3
-C9lxLN/A8YoCsc/TneBVljmU2uCleI4/JJiASuJ+HZaaS8y6Bj/DDpS+HP2Rxx8f
-y4HTwXUvkeXb9JB2hdkLA2dOTxesHPveAj6pq8kwGIJq+g4AVXxl047IsDAn+8Fb
-sLIaSCqh5JWKIocSgPg4ZjScoc0V1rDV/q9mAdm7M1kjas9CqqOkZjAsFi9SovdW
-bj741ZkgfvW+HekFs3zCZTnLYd6+oIKebjW7cmJ7YIU7vRVlxBrDZAsmj3Y/lkmH
-6QkP8JxYtooUb1ODwPCSO/TGmqkGS17eUAzB7/sq5qpA7FGWq1dDAZ3GI6ql+I7O
-VDUS0U/HWtOI+OAJBUwjONv3Nmnleao6UinytlKjVrN85Ze0b2mKNT/R9uLgcDLz
-qr81gBBySntvZu+h37CS
-=SrsH
------END PGP SIGNATURE-----
+One example of that are device tree based drivers that don't describe
+the actual hardware, but instead have a binding that points to an index
+of defined registers in the driver.
 
---QWRRbczYj8mXuejp--
+One way to avoid these kind of bloat issues is to allow drivers to load
+data at multiple points: Only abtolutely minimal set of data should be
+static, some should only come from the bootloader as a device tree or
+ACPI tables, and some is best to be loaded after booting from /lib/firmware.
+
+Regards,
+
+Tony
