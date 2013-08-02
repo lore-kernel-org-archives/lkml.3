@@ -1,48 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754814Ab3HBX40 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 19:56:26 -0400
-Received: from mga02.intel.com ([134.134.136.20]:54876 "EHLO mga02.intel.com"
+	id S1755021Ab3HBX4i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 19:56:38 -0400
+Received: from mga01.intel.com ([192.55.52.88]:38600 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752298Ab3HBX4Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 19:56:25 -0400
+	id S1752298Ab3HBX4g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 19:56:36 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.89,805,1367996400"; 
-   d="scan'208";a="356541206"
-Message-ID: <51FC48DE.2040000@linux.intel.com>
-Date: Fri, 02 Aug 2013 17:03:42 -0700
-From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "Brown, Len" <len.brown@intel.com>,
-        Arjan van de Ven <arjan@linux.intel.com>
-Subject: Re: [RFC v01 0/3] Power Capping Framework
-References: <1375466932-11842-1-git-send-email-srinivas.pandruvada@linux.intel.com> <20130802223020.GB28831@kroah.com>
-In-Reply-To: <20130802223020.GB28831@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+   d="scan'208";a="375418591"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Alex Thorlton <athorlton@sgi.com>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Sedat Dilek <sedat.dilek@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Dave Jones <davej@redhat.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Al Viro <viro@zeniv.linux.org.uk>, Oleg Nesterov <oleg@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Kees Cook <keescook@chromium.org>, Robin Holt <holt@sgi.com>
+In-Reply-To: <20130802203457.GR26476@sgi.com>
+References: <20130802194659.GP26476@sgi.com>
+ <20130802201301.A872BE0090@blue.fi.intel.com>
+ <20130802203457.GR26476@sgi.com>
+Subject: Re: [PATCH] Add per-process flag to control thp
 Content-Transfer-Encoding: 7bit
+Message-Id: <20130802235941.8392AE0090@blue.fi.intel.com>
+Date: Sat,  3 Aug 2013 02:59:41 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02/2013 03:30 PM, Greg KH wrote:
-> On Fri, Aug 02, 2013 at 11:08:49AM -0700, Srinivas Pandruvada wrote:
->> Once this framework is approved, we will submit a RAPL client driver using this
->> framework.
-> Also, given that you work with a lot of kernel developers, I would like
-> to see their review and signed-off-by: on these patches before you
-> resend them, please.  That way I know that they agree with this
-> framework as a way for their future changes in this area.
-The framework was presented internally number of times to Intel Linux 
-Architects (including Rafael, Len Brown  and Arjan (copied in this email)).
-Actual implementation, was reviewed by few developers. But I am 
-expecting lots of positive/negative feedback on implementation
-from community.
-> thanks,
->
-> greg k-h
->
-Thanks,
-Srinivas
+Alex Thorlton wrote:
+> > What kind of workloads are you talking about?
+> 
+> Our benchmarking team has a list of several of the SPEC OMP benchmarks
+> that perform significantly better when THP is disabled. I tried to get
+> the list but one of our servers is acting up and I can't get to it
+> right now :/
+
+Have you track down the reason why it's slow tih THP?
+
+-- 
+ Kirill A. Shutemov
