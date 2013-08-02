@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753817Ab3HBKTW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:19:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37727 "EHLO
+	id S1753942Ab3HBKTa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:19:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37730 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753743Ab3HBKTT (ORCPT
+	with ESMTP id S1753806Ab3HBKTW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:19:19 -0400
+	Fri, 2 Aug 2013 06:19:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Rick Farina (Zero_Chaos)" <zerochaos@gentoo.org>
-Subject: [ 29/39] USB: serial: ftdi_sio: add more RT Systems ftdi devices
-Date: Fri,  2 Aug 2013 18:18:39 +0800
-Message-Id: <20130802101500.926744602@linuxfoundation.org>
+        qindehua <13691222965@163.com>, qindehua <qindehua@163.com>,
+        NeilBrown <neilb@suse.de>
+Subject: [ 31/39] md/raid5: fix interaction of replace and recovery.
+Date: Fri,  2 Aug 2013 18:18:41 +0800
+Message-Id: <20130802101501.180201088@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802101456.800497005@linuxfoundation.org>
 References: <20130802101456.800497005@linuxfoundation.org>
@@ -26,105 +27,106 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Rick Farina (Zero_Chaos)" <zerochaos@gentoo.org>
+From: NeilBrown <neilb@suse.de>
 
-commit fed1f1ed90bce42ea010e2904cbc04e7b8304940 upstream.
+commit f94c0b6658c7edea8bc19d13be321e3860a3fa54 upstream.
 
-RT Systems makes many usb serial cables based on the ftdi_sio driver for
-programming various amateur radios.  This patch is a full listing of
-their current product offerings and should allow these cables to all
-be recognized.
+If a device in a RAID4/5/6 is being replaced while another is being
+recovered, then the writes to the replacement device currently don't
+happen, resulting in corruption when the replacement completes and the
+new drive takes over.
 
-Signed-off-by: Rick Farina (Zero_Chaos) <zerochaos@gentoo.org>
+This is because the replacement writes are only triggered when
+'s.replacing' is set and not when the similar 's.sync' is set (which
+is the case during resync and recovery - it means all devices need to
+be read).
+
+So schedule those writes when s.replacing is set as well.
+
+In this case we cannot use "STRIPE_INSYNC" to record that the
+replacement has happened as that is needed for recording that any
+parity calculation is complete.  So introduce STRIPE_REPLACED to
+record if the replacement has happened.
+
+For safety we should also check that STRIPE_COMPUTE_RUN is not set.
+This has a similar effect to the "s.locked == 0" test.  The latter
+ensure that now IO has been flagged but not started.  The former
+checks if any parity calculation has been flagged by not started.
+We must wait for both of these to complete before triggering the
+'replace'.
+
+Add a similar test to the subsequent check for "are we finished yet".
+This possibly isn't needed (is subsumed in the STRIPE_INSYNC test),
+but it makes it more obvious that the REPLACE will happen before we
+think we are finished.
+
+Finally if a NeedReplace device is not UPTODATE then that is an
+error.  We really must trigger a warning.
+
+This bug was introduced in commit 9a3e1101b827a59ac9036a672f5fa8d5279d0fe2
+(md/raid5:  detect and handle replacements during recovery.)
+which introduced replacement for raid5.
+That was in 3.3-rc3, so any stable kernel since then would benefit
+from this fix.
+
+Reported-by: qindehua <13691222965@163.com>
+Tested-by: qindehua <qindehua@163.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |   31 ++++++++++++++++++++++++++++---
- drivers/usb/serial/ftdi_sio_ids.h |   34 +++++++++++++++++++++++++++++-----
- 2 files changed, 57 insertions(+), 8 deletions(-)
+ drivers/md/raid5.c |   15 ++++++++++-----
+ drivers/md/raid5.h |    1 +
+ 2 files changed, 11 insertions(+), 5 deletions(-)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -745,9 +745,34 @@ static struct usb_device_id id_table_com
- 	{ USB_DEVICE(FTDI_VID, FTDI_NDI_AURORA_SCU_PID),
- 		.driver_info = (kernel_ulong_t)&ftdi_NDI_device_quirk },
- 	{ USB_DEVICE(TELLDUS_VID, TELLDUS_TELLSTICK_PID) },
--	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_SERIAL_VX7_PID) },
--	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_CT29B_PID) },
--	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_RTS01_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_S03_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_59_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_57A_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_57B_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_29A_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_29B_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_29F_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_62B_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_S01_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_63_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_29C_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_81B_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_82B_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_K5D_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_K4Y_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_K5G_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_S05_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_60_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_61_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_62_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_63B_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_64_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_65_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_92_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_92D_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_W5R_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_A5R_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_PW1_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_MAXSTREAM_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_PHI_FISCO_PID) },
- 	{ USB_DEVICE(TML_VID, TML_USB_SERIAL_PID) },
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -815,11 +815,35 @@
- /*
-  * RT Systems programming cables for various ham radios
-  */
--#define RTSYSTEMS_VID			0x2100	/* Vendor ID */
--#define RTSYSTEMS_SERIAL_VX7_PID	0x9e52	/* Serial converter for VX-7 Radios using FT232RL */
--#define RTSYSTEMS_CT29B_PID		0x9e54	/* CT29B Radio Cable */
--#define RTSYSTEMS_RTS01_PID		0x9e57	/* USB-RTS01 Radio Cable */
--
-+#define RTSYSTEMS_VID		0x2100	/* Vendor ID */
-+#define RTSYSTEMS_USB_S03_PID	0x9001	/* RTS-03 USB to Serial Adapter */
-+#define RTSYSTEMS_USB_59_PID	0x9e50	/* USB-59 USB to 8 pin plug */
-+#define RTSYSTEMS_USB_57A_PID	0x9e51	/* USB-57A USB to 4pin 3.5mm plug */
-+#define RTSYSTEMS_USB_57B_PID	0x9e52	/* USB-57B USB to extended 4pin 3.5mm plug */
-+#define RTSYSTEMS_USB_29A_PID	0x9e53	/* USB-29A USB to 3.5mm stereo plug */
-+#define RTSYSTEMS_USB_29B_PID	0x9e54	/* USB-29B USB to 6 pin mini din */
-+#define RTSYSTEMS_USB_29F_PID	0x9e55	/* USB-29F USB to 6 pin modular plug */
-+#define RTSYSTEMS_USB_62B_PID	0x9e56	/* USB-62B USB to 8 pin mini din plug*/
-+#define RTSYSTEMS_USB_S01_PID	0x9e57	/* USB-RTS01 USB to 3.5 mm stereo plug*/
-+#define RTSYSTEMS_USB_63_PID	0x9e58	/* USB-63 USB to 9 pin female*/
-+#define RTSYSTEMS_USB_29C_PID	0x9e59	/* USB-29C USB to 4 pin modular plug*/
-+#define RTSYSTEMS_USB_81B_PID	0x9e5A	/* USB-81 USB to 8 pin mini din plug*/
-+#define RTSYSTEMS_USB_82B_PID	0x9e5B	/* USB-82 USB to 2.5 mm stereo plug*/
-+#define RTSYSTEMS_USB_K5D_PID	0x9e5C	/* USB-K5D USB to 8 pin modular plug*/
-+#define RTSYSTEMS_USB_K4Y_PID	0x9e5D	/* USB-K4Y USB to 2.5/3.5 mm plugs*/
-+#define RTSYSTEMS_USB_K5G_PID	0x9e5E	/* USB-K5G USB to 8 pin modular plug*/
-+#define RTSYSTEMS_USB_S05_PID	0x9e5F	/* USB-RTS05 USB to 2.5 mm stereo plug*/
-+#define RTSYSTEMS_USB_60_PID	0x9e60	/* USB-60 USB to 6 pin din*/
-+#define RTSYSTEMS_USB_61_PID	0x9e61	/* USB-61 USB to 6 pin mini din*/
-+#define RTSYSTEMS_USB_62_PID	0x9e62	/* USB-62 USB to 8 pin mini din*/
-+#define RTSYSTEMS_USB_63B_PID	0x9e63	/* USB-63 USB to 9 pin female*/
-+#define RTSYSTEMS_USB_64_PID	0x9e64	/* USB-64 USB to 9 pin male*/
-+#define RTSYSTEMS_USB_65_PID	0x9e65	/* USB-65 USB to 9 pin female null modem*/
-+#define RTSYSTEMS_USB_92_PID	0x9e66	/* USB-92 USB to 12 pin plug*/
-+#define RTSYSTEMS_USB_92D_PID	0x9e67	/* USB-92D USB to 12 pin plug data*/
-+#define RTSYSTEMS_USB_W5R_PID	0x9e68	/* USB-W5R USB to 8 pin modular plug*/
-+#define RTSYSTEMS_USB_A5R_PID	0x9e69	/* USB-A5R USB to 8 pin modular plug*/
-+#define RTSYSTEMS_USB_PW1_PID	0x9e6A	/* USB-PW1 USB to 8 pin modular plug*/
+--- a/drivers/md/raid5.c
++++ b/drivers/md/raid5.c
+@@ -3326,6 +3326,7 @@ static void handle_stripe(struct stripe_
+ 	if (test_and_clear_bit(STRIPE_SYNC_REQUESTED, &sh->state)) {
+ 		set_bit(STRIPE_SYNCING, &sh->state);
+ 		clear_bit(STRIPE_INSYNC, &sh->state);
++		clear_bit(STRIPE_REPLACED, &sh->state);
+ 	}
+ 	clear_bit(STRIPE_DELAYED, &sh->state);
  
- /*
-  * Physik Instrumente
+@@ -3465,19 +3466,23 @@ static void handle_stripe(struct stripe_
+ 			handle_parity_checks5(conf, sh, &s, disks);
+ 	}
+ 
+-	if (s.replacing && s.locked == 0
+-	    && !test_bit(STRIPE_INSYNC, &sh->state)) {
++	if ((s.replacing || s.syncing) && s.locked == 0
++	    && !test_bit(STRIPE_COMPUTE_RUN, &sh->state)
++	    && !test_bit(STRIPE_REPLACED, &sh->state)) {
+ 		/* Write out to replacement devices where possible */
+ 		for (i = 0; i < conf->raid_disks; i++)
+-			if (test_bit(R5_UPTODATE, &sh->dev[i].flags) &&
+-			    test_bit(R5_NeedReplace, &sh->dev[i].flags)) {
++			if (test_bit(R5_NeedReplace, &sh->dev[i].flags)) {
++				WARN_ON(!test_bit(R5_UPTODATE, &sh->dev[i].flags));
+ 				set_bit(R5_WantReplace, &sh->dev[i].flags);
+ 				set_bit(R5_LOCKED, &sh->dev[i].flags);
+ 				s.locked++;
+ 			}
+-		set_bit(STRIPE_INSYNC, &sh->state);
++		if (s.replacing)
++			set_bit(STRIPE_INSYNC, &sh->state);
++		set_bit(STRIPE_REPLACED, &sh->state);
+ 	}
+ 	if ((s.syncing || s.replacing) && s.locked == 0 &&
++	    !test_bit(STRIPE_COMPUTE_RUN, &sh->state) &&
+ 	    test_bit(STRIPE_INSYNC, &sh->state)) {
+ 		md_done_sync(conf->mddev, STRIPE_SECTORS, 1);
+ 		clear_bit(STRIPE_SYNCING, &sh->state);
+--- a/drivers/md/raid5.h
++++ b/drivers/md/raid5.h
+@@ -306,6 +306,7 @@ enum {
+ 	STRIPE_SYNC_REQUESTED,
+ 	STRIPE_SYNCING,
+ 	STRIPE_INSYNC,
++	STRIPE_REPLACED,
+ 	STRIPE_PREREAD_ACTIVE,
+ 	STRIPE_DELAYED,
+ 	STRIPE_DEGRADED,
 
 
