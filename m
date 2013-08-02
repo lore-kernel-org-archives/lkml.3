@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754184Ab3HBKWc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:22:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37800 "EHLO
+	id S1754424Ab3HBKWp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:22:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37814 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754120Ab3HBKWa (ORCPT
+	with ESMTP id S1754386Ab3HBKWm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:22:30 -0400
+	Fri, 2 Aug 2013 06:22:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chih-Chung Chang <chihchung@chromium.org>,
-        Dylan Reid <dgreid@chromium.org>, Mark Brown <broonie@linaro.org>
-Subject: [ 02/23] ASoC: max98088 - fix element type of the register cache.
-Date: Fri,  2 Aug 2013 18:23:15 +0800
-Message-Id: <20130802102036.544933493@linuxfoundation.org>
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+Subject: [ 05/23] tracing: Fix irqs-off tag display in syscall tracing
+Date: Fri,  2 Aug 2013 18:23:18 +0800
+Message-Id: <20130802102036.957370130@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802102036.180660415@linuxfoundation.org>
 References: <20130802102036.180660415@linuxfoundation.org>
@@ -27,33 +26,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chih-Chung Chang <chihchung@chromium.org>
+From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
 
-commit cb6f66a2d278e57a6c9d8fb59bd9ebd8ab3965c2 upstream.
+commit 11034ae9c20f4057a6127fc965906417978e69b2 upstream
 
-The registers of max98088 are 8 bits, not 16 bits. This bug causes the
-contents of registers to be overwritten with bad values when the codec
-is suspended and then resumed.
+Initialization of variable irq_flags and pc was missed when backport
+11034ae9c to linux-3.0.y and linux-3.4.y, my fault.
 
-Signed-off-by: Chih-Chung Chang <chihchung@chromium.org>
-Signed-off-by: Dylan Reid <dgreid@chromium.org>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- sound/soc/codecs/max98088.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/trace/trace_syscalls.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/sound/soc/codecs/max98088.c
-+++ b/sound/soc/codecs/max98088.c
-@@ -1598,7 +1598,7 @@ static int max98088_dai2_digital_mute(st
+--- a/kernel/trace/trace_syscalls.c
++++ b/kernel/trace/trace_syscalls.c
+@@ -357,6 +357,9 @@ void ftrace_syscall_exit(void *ignore, s
+ 	if (!sys_data)
+ 		return;
  
- static void max98088_sync_cache(struct snd_soc_codec *codec)
- {
--       u16 *reg_cache = codec->reg_cache;
-+       u8 *reg_cache = codec->reg_cache;
-        int i;
- 
-        if (!codec->cache_sync)
++	local_save_flags(irq_flags);
++	pc = preempt_count();
++
+ 	event = trace_current_buffer_lock_reserve(&buffer,
+ 			sys_data->exit_event->event.type, sizeof(*entry),
+ 			irq_flags, pc);
 
 
