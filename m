@@ -1,51 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754308Ab3HBUbc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 16:31:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30997 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753701Ab3HBUbb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 16:31:31 -0400
-Date: Fri, 2 Aug 2013 21:59:59 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@surriel.com>, Zlatko Calusic <zcalusic@bitsync.net>,
-        Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch v2 0/3] mm: improve page aging fairness between
- zones/nodes
-Message-ID: <20130802195959.GF26919@redhat.com>
-References: <1375457846-21521-1-git-send-email-hannes@cmpxchg.org>
+	id S1754102Ab3HBUek (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 16:34:40 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:46357 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752621Ab3HBUej (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 16:34:39 -0400
+Date: Fri, 2 Aug 2013 15:34:57 -0500
+From: Alex Thorlton <athorlton@sgi.com>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Sedat Dilek <sedat.dilek@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Dave Jones <davej@redhat.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Al Viro <viro@zeniv.linux.org.uk>, Oleg Nesterov <oleg@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Kees Cook <keescook@chromium.org>, Robin Holt <holt@sgi.com>
+Subject: Re: [PATCH] Add per-process flag to control thp
+Message-ID: <20130802203457.GR26476@sgi.com>
+References: <20130802194659.GP26476@sgi.com>
+ <20130802201301.A872BE0090@blue.fi.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1375457846-21521-1-git-send-email-hannes@cmpxchg.org>
+In-Reply-To: <20130802201301.A872BE0090@blue.fi.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 02, 2013 at 11:37:23AM -0400, Johannes Weiner wrote:
-> Changes in version 2:
+> What kind of workloads are you talking about?
 
-v2 looks great to me.
+Our benchmarking team has a list of several of the SPEC OMP benchmarks
+that perform significantly better when THP is disabled. I tried to get
+the list but one of our servers is acting up and I can't get to it
+right now :/
 
-                zone->alloc_batch -= 1U << order;
-    3147:       d3 e0                   shl    %cl,%eax
-    3149:       29 42 54                sub    %eax,0x54(%rdx)
+> What's wrong with madvise? Could you elaborate?
 
-gcc builds it as one asm insn too.
+The main issue with using madvise is that it's not an option with static
+binaries, but there are also some users who have legacy Fortran code
+that they're not willing/able to change.
 
-Considering we depend on gcc to be optimal and to update ptes in a
-single insn (and if it doesn't we'll corrupt memory), keeping it in C
-should always provide the update in a single insn.
+> And I think thp_disabled should be reset to 0 on exec.
 
-I believe the error introduced when mulptiple CPUs of the same NUMA
-node step on each other is going to be unmeasurable.
-
-ACK the whole series.
-
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-
-Thanks,
-Andrea
+The main purpose for this getting carried down from the parent process
+is that we'd like to be able to have a userland program set this flag on
+itself, and then spawn off children who will also carry the flag.
+This allows us to set the flag for programs where we're unable to modify
+the code, thus resolving the issues detailed above.
