@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759072Ab3HBKIi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:08:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37085 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759003Ab3HBKIf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1759033Ab3HBKIf (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 2 Aug 2013 06:08:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37080 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759003Ab3HBKIc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 06:08:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oskar Schirmer <oskar@scara.com>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Mark Brown <broonie@linaro.org>
-Subject: [ 10/99] ASoC: sglt5000: Fix the default value of CHIP_SSS_CTRL
-Date: Fri,  2 Aug 2013 18:07:23 +0800
-Message-Id: <20130802100226.996339444@linuxfoundation.org>
+        Stepan Salenikovich <stepan.salenikovich@gmail.com>,
+        Josep Bosch <jep250@gmail.com>, Clemens Ladisch <clemens@ladisch.de>,
+        Stefan Richter <stefanr@s5r6.in-berlin.de>
+Subject: [ 09/99] firewire: fix libdc1394/FlyCap2 iso event regression
+Date: Fri,  2 Aug 2013 18:07:22 +0800
+Message-Id: <20130802100226.849915946@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802100225.478715166@linuxfoundation.org>
 References: <20130802100225.478715166@linuxfoundation.org>
@@ -28,32 +28,101 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Fabio Estevam <fabio.estevam@freescale.com>
+From: Clemens Ladisch <clemens@ladisch.de>
 
-commit 016fcab8ff46fca29375d484226ec91932aa4a07 upstream.
+commit 0699a73af3811b66b1ab5650575acee5eea841ab upstream.
 
-According to the sgtl5000 reference manual, the default value of CHIP_SSS_CTRL
-is 0x10.
+Commit 18d627113b83 (firewire: prevent dropping of completed iso packet
+header data) was intended to be an obvious bug fix, but libdc1394 and
+FlyCap2 depend on the old behaviour by ignoring all returned information
+and thus not noticing that not all packets have been received yet.  The
+result was that the video frame buffers would be saved before they
+contained the correct data.
 
-Reported-by: Oskar Schirmer <oskar@scara.com>
-Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Reintroduce the old behaviour for old clients.
+
+Tested-by: Stepan Salenikovich <stepan.salenikovich@gmail.com>
+Tested-by: Josep Bosch <jep250@gmail.com>
+Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/sgtl5000.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/firewire/core-cdev.c       |    3 +++
+ drivers/firewire/ohci.c            |   10 ++++++++--
+ include/linux/firewire.h           |    1 +
+ include/uapi/linux/firewire-cdev.h |    4 ++--
+ 4 files changed, 14 insertions(+), 4 deletions(-)
 
---- a/sound/soc/codecs/sgtl5000.c
-+++ b/sound/soc/codecs/sgtl5000.c
-@@ -37,7 +37,7 @@
- static const u16 sgtl5000_regs[SGTL5000_MAX_REG_OFFSET] =  {
- 	[SGTL5000_CHIP_CLK_CTRL] = 0x0008,
- 	[SGTL5000_CHIP_I2S_CTRL] = 0x0010,
--	[SGTL5000_CHIP_SSS_CTRL] = 0x0008,
-+	[SGTL5000_CHIP_SSS_CTRL] = 0x0010,
- 	[SGTL5000_CHIP_DAC_VOL] = 0x3c3c,
- 	[SGTL5000_CHIP_PAD_STRENGTH] = 0x015f,
- 	[SGTL5000_CHIP_ANA_HP_CTRL] = 0x1818,
+--- a/drivers/firewire/core-cdev.c
++++ b/drivers/firewire/core-cdev.c
+@@ -54,6 +54,7 @@
+ #define FW_CDEV_KERNEL_VERSION			5
+ #define FW_CDEV_VERSION_EVENT_REQUEST2		4
+ #define FW_CDEV_VERSION_ALLOCATE_REGION_END	4
++#define FW_CDEV_VERSION_AUTO_FLUSH_ISO_OVERFLOW	5
+ 
+ struct client {
+ 	u32 version;
+@@ -1005,6 +1006,8 @@ static int ioctl_create_iso_context(stru
+ 			a->channel, a->speed, a->header_size, cb, client);
+ 	if (IS_ERR(context))
+ 		return PTR_ERR(context);
++	if (client->version < FW_CDEV_VERSION_AUTO_FLUSH_ISO_OVERFLOW)
++		context->drop_overflow_headers = true;
+ 
+ 	/* We only support one context at this time. */
+ 	spin_lock_irq(&client->lock);
+--- a/drivers/firewire/ohci.c
++++ b/drivers/firewire/ohci.c
+@@ -2749,8 +2749,11 @@ static void copy_iso_headers(struct iso_
+ {
+ 	u32 *ctx_hdr;
+ 
+-	if (ctx->header_length + ctx->base.header_size > PAGE_SIZE)
++	if (ctx->header_length + ctx->base.header_size > PAGE_SIZE) {
++		if (ctx->base.drop_overflow_headers)
++			return;
+ 		flush_iso_completions(ctx);
++	}
+ 
+ 	ctx_hdr = ctx->header + ctx->header_length;
+ 	ctx->last_timestamp = (u16)le32_to_cpu((__force __le32)dma_hdr[0]);
+@@ -2910,8 +2913,11 @@ static int handle_it_packet(struct conte
+ 
+ 	sync_it_packet_for_cpu(context, d);
+ 
+-	if (ctx->header_length + 4 > PAGE_SIZE)
++	if (ctx->header_length + 4 > PAGE_SIZE) {
++		if (ctx->base.drop_overflow_headers)
++			return 1;
+ 		flush_iso_completions(ctx);
++	}
+ 
+ 	ctx_hdr = ctx->header + ctx->header_length;
+ 	ctx->last_timestamp = le16_to_cpu(last->res_count);
+--- a/include/linux/firewire.h
++++ b/include/linux/firewire.h
+@@ -434,6 +434,7 @@ struct fw_iso_context {
+ 	int type;
+ 	int channel;
+ 	int speed;
++	bool drop_overflow_headers;
+ 	size_t header_size;
+ 	union {
+ 		fw_iso_callback_t sc;
+--- a/include/uapi/linux/firewire-cdev.h
++++ b/include/uapi/linux/firewire-cdev.h
+@@ -215,8 +215,8 @@ struct fw_cdev_event_request2 {
+  * with the %FW_CDEV_ISO_INTERRUPT bit set, when explicitly requested with
+  * %FW_CDEV_IOC_FLUSH_ISO, or when there have been so many completed packets
+  * without the interrupt bit set that the kernel's internal buffer for @header
+- * is about to overflow.  (In the last case, kernels with ABI version < 5 drop
+- * header data up to the next interrupt packet.)
++ * is about to overflow.  (In the last case, ABI versions < 5 drop header data
++ * up to the next interrupt packet.)
+  *
+  * Isochronous transmit events (context type %FW_CDEV_ISO_CONTEXT_TRANSMIT):
+  *
 
 
