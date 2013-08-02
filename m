@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030623Ab3HBKM3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:12:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37510 "EHLO
+	id S1030672Ab3HBKN4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:13:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37518 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030570Ab3HBKMX (ORCPT
+	with ESMTP id S1030619Ab3HBKM3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:12:23 -0400
+	Fri, 2 Aug 2013 06:12:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
+To: linux-kernel@vger.kernel.org, target-devel <target-devel@vger.kernel.org>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [ 92/99] livelock avoidance in sget()
-Date: Fri,  2 Aug 2013 18:08:45 +0800
-Message-Id: <20130802100238.754528419@linuxfoundation.org>
+        Nicholas Bellinger <nab@linux-iscsi.org>,
+        Or Gerlitz <ogerlitz@mellanox.com>,
+        Mike Christie <michaelc@cs.wisc.edu>
+Subject: [ 96/99] iscsi-target: Fix iscsit_sequence_cmd reject handling for iser
+Date: Fri,  2 Aug 2013 18:08:49 +0800
+Message-Id: <20130802100239.314266868@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802100225.478715166@linuxfoundation.org>
 References: <20130802100225.478715166@linuxfoundation.org>
@@ -26,100 +28,280 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Viro <viro@zeniv.linux.org.uk>
 
-commit acfec9a5a892f98461f52ed5770de99a3e571ae2 upstream.
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-Eric Sandeen has found a nasty livelock in sget() - take a mount(2) about
-to fail.  The superblock is on ->fs_supers, ->s_umount is held exclusive,
-->s_active is 1.  Along comes two more processes, trying to mount the same
-thing; sget() in each is picking that superblock, bumping ->s_count and
-trying to grab ->s_umount.  ->s_active is 3 now.  Original mount(2)
-finally gets to deactivate_locked_super() on failure; ->s_active is 2,
-superblock is still ->fs_supers because shutdown will *not* happen until
-->s_active hits 0.  ->s_umount is dropped and now we have two processes
-chasing each other:
-s_active = 2, A acquired ->s_umount, B blocked
-A sees that the damn thing is stillborn, does deactivate_locked_super()
-s_active = 1, A drops ->s_umount, B gets it
-A restarts the search and finds the same superblock.  And bumps it ->s_active.
-s_active = 2, B holds ->s_umount, A blocked on trying to get it
-... and we are in the earlier situation with A and B switched places.
+commit 561bf15892375597ee59d473a704a3e634c4f311 upstream
 
-The root cause, of course, is that ->s_active should not grow until we'd
-got MS_BORN.  Then failing ->mount() will have deactivate_locked_super()
-shut the damn thing down.  Fortunately, it's easy to do - the key point
-is that grab_super() is called only for superblocks currently on ->fs_supers,
-so it can bump ->s_count and grab ->s_umount first, then check MS_BORN and
-bump ->s_active; we must never increment ->s_count for superblocks past
-->kill_sb(), but grab_super() is never called for those.
+This patch moves ISCSI_OP_REJECT failures into iscsit_sequence_cmd()
+in order to avoid external iscsit_reject_cmd() reject usage for all
+PDU types.
 
-The bug is pretty old; we would've caught it by now, if not for accidental
-exclusion between sget() for block filesystems; the things like cgroup or
-e.g. mtd-based filesystems don't have anything of that sort, so they get
-bitten.  The right way to deal with that is obviously to fix sget()...
+It also updates PDU specific handlers for traditional iscsi-target
+code to not reset the session after posting a ISCSI_OP_REJECT during
+setup.
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+(v2: Fix CMDSN_LOWER_THAN_EXP for ISCSI_OP_SCSI to call
+     target_put_sess_cmd() after iscsit_sequence_cmd() failure)
+
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Cc: Or Gerlitz <ogerlitz@mellanox.com>
+Cc: Mike Christie <michaelc@cs.wisc.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- fs/super.c |   25 ++++++++++---------------
- 1 file changed, 10 insertions(+), 15 deletions(-)
+ drivers/infiniband/ulp/isert/ib_isert.c  |    2 -
+ drivers/target/iscsi/iscsi_target.c      |   50 +++++++++++++++++++------------
+ drivers/target/iscsi/iscsi_target_erl1.c |    6 +--
+ drivers/target/iscsi/iscsi_target_util.c |   26 ++++++++++++----
+ drivers/target/iscsi/iscsi_target_util.h |    3 +
+ include/target/iscsi/iscsi_transport.h   |    3 +
+ 6 files changed, 60 insertions(+), 30 deletions(-)
 
---- a/fs/super.c
-+++ b/fs/super.c
-@@ -336,19 +336,19 @@ EXPORT_SYMBOL(deactivate_super);
-  *	and want to turn it into a full-blown active reference.  grab_super()
-  *	is called with sb_lock held and drops it.  Returns 1 in case of
-  *	success, 0 if we had failed (superblock contents was already dead or
-- *	dying when grab_super() had been called).
-+ *	dying when grab_super() had been called).  Note that this is only
-+ *	called for superblocks not in rundown mode (== ones still on ->fs_supers
-+ *	of their type), so increment of ->s_count is OK here.
-  */
- static int grab_super(struct super_block *s) __releases(sb_lock)
- {
--	if (atomic_inc_not_zero(&s->s_active)) {
--		spin_unlock(&sb_lock);
--		return 1;
+--- a/drivers/infiniband/ulp/isert/ib_isert.c
++++ b/drivers/infiniband/ulp/isert/ib_isert.c
+@@ -952,7 +952,7 @@ isert_handle_scsi_cmd(struct isert_conn
+ 	}
+ 
+ sequence_cmd:
+-	rc = iscsit_sequence_cmd(conn, cmd, hdr->cmdsn);
++	rc = iscsit_sequence_cmd(conn, cmd, buf, hdr->cmdsn);
+ 
+ 	if (!rc && dump_payload == false && unsol_data)
+ 		iscsit_set_unsoliticed_dataout(cmd);
+--- a/drivers/target/iscsi/iscsi_target.c
++++ b/drivers/target/iscsi/iscsi_target.c
+@@ -1052,11 +1052,11 @@ int iscsit_process_scsi_cmd(struct iscsi
+ 	 * be acknowledged. (See below)
+ 	 */
+ 	if (!cmd->immediate_data) {
+-		cmdsn_ret = iscsit_sequence_cmd(conn, cmd, hdr->cmdsn);
+-		if (cmdsn_ret == CMDSN_LOWER_THAN_EXP) {
+-			if (!cmd->sense_reason)
+-				return 0;
+-
++		cmdsn_ret = iscsit_sequence_cmd(conn, cmd,
++					(unsigned char *)hdr, hdr->cmdsn);
++		if (cmdsn_ret == CMDSN_ERROR_CANNOT_RECOVER)
++			return -1;
++		else if (cmdsn_ret == CMDSN_LOWER_THAN_EXP) {
+ 			target_put_sess_cmd(conn->sess->se_sess, &cmd->se_cmd);
+ 			return 0;
+ 		}
+@@ -1083,6 +1083,9 @@ int iscsit_process_scsi_cmd(struct iscsi
+ 	 * iscsit_check_received_cmdsn() in iscsit_get_immediate_data() below.
+ 	 */
+ 	if (cmd->sense_reason) {
++		if (cmd->reject_reason)
++			return 0;
++
+ 		target_put_sess_cmd(conn->sess->se_sess, &cmd->se_cmd);
+ 		return 1;
+ 	}
+@@ -1091,10 +1094,8 @@ int iscsit_process_scsi_cmd(struct iscsi
+ 	 * the backend memory allocation.
+ 	 */
+ 	cmd->sense_reason = transport_generic_new_cmd(&cmd->se_cmd);
+-	if (cmd->sense_reason) {
+-		target_put_sess_cmd(conn->sess->se_sess, &cmd->se_cmd);
++	if (cmd->sense_reason)
+ 		return 1;
 -	}
--	/* it's going away */
- 	s->s_count++;
- 	spin_unlock(&sb_lock);
--	/* wait for it to die */
- 	down_write(&s->s_umount);
-+	if ((s->s_flags & MS_BORN) && atomic_inc_not_zero(&s->s_active)) {
-+		put_super(s);
-+		return 1;
-+	}
- 	up_write(&s->s_umount);
- 	put_super(s);
+ 
  	return 0;
-@@ -463,11 +463,6 @@ retry:
- 				destroy_super(s);
- 				s = NULL;
- 			}
--			down_write(&old->s_umount);
--			if (unlikely(!(old->s_flags & MS_BORN))) {
--				deactivate_locked_super(old);
--				goto retry;
--			}
- 			return old;
+ }
+@@ -1104,6 +1105,7 @@ static int
+ iscsit_get_immediate_data(struct iscsi_cmd *cmd, struct iscsi_scsi_req *hdr,
+ 			  bool dump_payload)
+ {
++	struct iscsi_conn *conn = cmd->conn;
+ 	int cmdsn_ret = 0, immed_ret = IMMEDIATE_DATA_NORMAL_OPERATION;
+ 	/*
+ 	 * Special case for Unsupported SAM WRITE Opcodes and ImmediateData=Yes.
+@@ -1120,12 +1122,22 @@ after_immediate_data:
+ 		 * DataCRC, check against ExpCmdSN/MaxCmdSN if
+ 		 * Immediate Bit is not set.
+ 		 */
+-		cmdsn_ret = iscsit_sequence_cmd(cmd->conn, cmd, hdr->cmdsn);
++		cmdsn_ret = iscsit_sequence_cmd(cmd->conn, cmd,
++					(unsigned char *)hdr, hdr->cmdsn);
++		if (cmdsn_ret == CMDSN_ERROR_CANNOT_RECOVER) {
++			return -1;
++		} else if (cmdsn_ret == CMDSN_LOWER_THAN_EXP) {
++			target_put_sess_cmd(conn->sess->se_sess, &cmd->se_cmd);
++			return 0;
++		}
+ 
+ 		if (cmd->sense_reason) {
+-			if (iscsit_dump_data_payload(cmd->conn,
+-					cmd->first_burst_len, 1) < 0)
+-				return -1;
++			int rc;
++
++			rc = iscsit_dump_data_payload(cmd->conn,
++						      cmd->first_burst_len, 1);
++			target_put_sess_cmd(conn->sess->se_sess, &cmd->se_cmd);
++			return rc;
+ 		} else if (cmd->unsolicited_data)
+ 			iscsit_set_unsoliticed_dataout(cmd);
+ 
+@@ -1159,7 +1171,7 @@ iscsit_handle_scsi_cmd(struct iscsi_conn
+ 
+ 	rc = iscsit_setup_scsi_cmd(conn, cmd, buf);
+ 	if (rc < 0)
+-		return rc;
++		return 0;
+ 	/*
+ 	 * Allocation iovecs needed for struct socket operations for
+ 	 * traditional iSCSI block I/O.
+@@ -1500,7 +1512,7 @@ static int iscsit_handle_data_out(struct
+ 
+ 	rc = iscsit_check_dataout_hdr(conn, buf, &cmd);
+ 	if (rc < 0)
+-		return rc;
++		return 0;
+ 	else if (!cmd)
+ 		return 0;
+ 
+@@ -1672,7 +1684,8 @@ int iscsit_handle_nop_out(struct iscsi_c
+ 			return 0;
  		}
+ 
+-		cmdsn_ret = iscsit_sequence_cmd(conn, cmd, hdr->cmdsn);
++		cmdsn_ret = iscsit_sequence_cmd(conn, cmd,
++				(unsigned char *)hdr, hdr->cmdsn);
+ 		if (cmdsn_ret == CMDSN_LOWER_THAN_EXP) {
+ 			ret = 0;
+ 			goto ping_out;
+@@ -1898,7 +1911,7 @@ attach:
+ 	spin_unlock_bh(&conn->cmd_lock);
+ 
+ 	if (!(hdr->opcode & ISCSI_OP_IMMEDIATE)) {
+-		int cmdsn_ret = iscsit_sequence_cmd(conn, cmd, hdr->cmdsn);
++		int cmdsn_ret = iscsit_sequence_cmd(conn, cmd, buf, hdr->cmdsn);
+ 		if (cmdsn_ret == CMDSN_HIGHER_THAN_EXP)
+ 			out_of_order_cmdsn = 1;
+ 		else if (cmdsn_ret == CMDSN_LOWER_THAN_EXP)
+@@ -2075,7 +2088,8 @@ static int iscsit_handle_text_cmd(
+ 	iscsit_ack_from_expstatsn(conn, be32_to_cpu(hdr->exp_statsn));
+ 
+ 	if (!(hdr->opcode & ISCSI_OP_IMMEDIATE)) {
+-		cmdsn_ret = iscsit_sequence_cmd(conn, cmd, hdr->cmdsn);
++		cmdsn_ret = iscsit_sequence_cmd(conn, cmd,
++				(unsigned char *)hdr, hdr->cmdsn);
+ 		if (cmdsn_ret == CMDSN_ERROR_CANNOT_RECOVER)
+ 			return -1;
+ 
+@@ -2262,7 +2276,7 @@ iscsit_handle_logout_cmd(struct iscsi_co
+ 		if (ret < 0)
+ 			return ret;
+ 	} else {
+-		cmdsn_ret = iscsit_sequence_cmd(conn, cmd, hdr->cmdsn);
++		cmdsn_ret = iscsit_sequence_cmd(conn, cmd, buf, hdr->cmdsn);
+ 		if (cmdsn_ret == CMDSN_LOWER_THAN_EXP)
+ 			logout_remove = 0;
+ 		else if (cmdsn_ret == CMDSN_ERROR_CANNOT_RECOVER)
+--- a/drivers/target/iscsi/iscsi_target_erl1.c
++++ b/drivers/target/iscsi/iscsi_target_erl1.c
+@@ -1088,7 +1088,7 @@ int iscsit_handle_ooo_cmdsn(
+ 
+ 	ooo_cmdsn = iscsit_allocate_ooo_cmdsn();
+ 	if (!ooo_cmdsn)
+-		return CMDSN_ERROR_CANNOT_RECOVER;
++		return -ENOMEM;
+ 
+ 	ooo_cmdsn->cmd			= cmd;
+ 	ooo_cmdsn->batch_count		= (batch) ?
+@@ -1099,10 +1099,10 @@ int iscsit_handle_ooo_cmdsn(
+ 
+ 	if (iscsit_attach_ooo_cmdsn(sess, ooo_cmdsn) < 0) {
+ 		kmem_cache_free(lio_ooo_cache, ooo_cmdsn);
+-		return CMDSN_ERROR_CANNOT_RECOVER;
++		return -ENOMEM;
  	}
-@@ -660,10 +655,10 @@ restart:
- 		if (hlist_unhashed(&sb->s_instances))
- 			continue;
- 		if (sb->s_bdev == bdev) {
--			if (grab_super(sb)) /* drops sb_lock */
--				return sb;
--			else
-+			if (!grab_super(sb))
- 				goto restart;
-+			up_write(&sb->s_umount);
-+			return sb;
- 		}
+ 
+-	return CMDSN_HIGHER_THAN_EXP;
++	return 0;
+ }
+ 
+ static int iscsit_set_dataout_timeout_values(
+--- a/drivers/target/iscsi/iscsi_target_util.c
++++ b/drivers/target/iscsi/iscsi_target_util.c
+@@ -283,13 +283,12 @@ static inline int iscsit_check_received_
+  * Commands may be received out of order if MC/S is in use.
+  * Ensure they are executed in CmdSN order.
+  */
+-int iscsit_sequence_cmd(
+-	struct iscsi_conn *conn,
+-	struct iscsi_cmd *cmd,
+-	__be32 cmdsn)
++int iscsit_sequence_cmd(struct iscsi_conn *conn, struct iscsi_cmd *cmd,
++			unsigned char *buf, __be32 cmdsn)
+ {
+-	int ret;
+-	int cmdsn_ret;
++	int ret, cmdsn_ret;
++	bool reject = false;
++	u8 reason = ISCSI_REASON_BOOKMARK_NO_RESOURCES;
+ 
+ 	mutex_lock(&conn->sess->cmdsn_mutex);
+ 
+@@ -299,9 +298,19 @@ int iscsit_sequence_cmd(
+ 		ret = iscsit_execute_cmd(cmd, 0);
+ 		if ((ret >= 0) && !list_empty(&conn->sess->sess_ooo_cmdsn_list))
+ 			iscsit_execute_ooo_cmdsns(conn->sess);
++		else if (ret < 0) {
++			reject = true;
++			ret = CMDSN_ERROR_CANNOT_RECOVER;
++		}
+ 		break;
+ 	case CMDSN_HIGHER_THAN_EXP:
+ 		ret = iscsit_handle_ooo_cmdsn(conn->sess, cmd, be32_to_cpu(cmdsn));
++		if (ret < 0) {
++			reject = true;
++			ret = CMDSN_ERROR_CANNOT_RECOVER;
++			break;
++		}
++		ret = CMDSN_HIGHER_THAN_EXP;
+ 		break;
+ 	case CMDSN_LOWER_THAN_EXP:
+ 		cmd->i_state = ISTATE_REMOVE;
+@@ -309,11 +318,16 @@ int iscsit_sequence_cmd(
+ 		ret = cmdsn_ret;
+ 		break;
+ 	default:
++		reason = ISCSI_REASON_PROTOCOL_ERROR;
++		reject = true;
+ 		ret = cmdsn_ret;
+ 		break;
  	}
- 	spin_unlock(&sb_lock);
+ 	mutex_unlock(&conn->sess->cmdsn_mutex);
+ 
++	if (reject)
++		iscsit_reject_cmd(cmd, reason, buf);
++
+ 	return ret;
+ }
+ EXPORT_SYMBOL(iscsit_sequence_cmd);
+--- a/drivers/target/iscsi/iscsi_target_util.h
++++ b/drivers/target/iscsi/iscsi_target_util.h
+@@ -13,7 +13,8 @@ extern struct iscsi_cmd *iscsit_allocate
+ extern struct iscsi_seq *iscsit_get_seq_holder_for_datain(struct iscsi_cmd *, u32);
+ extern struct iscsi_seq *iscsit_get_seq_holder_for_r2t(struct iscsi_cmd *);
+ extern struct iscsi_r2t *iscsit_get_holder_for_r2tsn(struct iscsi_cmd *, u32);
+-int iscsit_sequence_cmd(struct iscsi_conn *conn, struct iscsi_cmd *cmd, __be32 cmdsn);
++extern int iscsit_sequence_cmd(struct iscsi_conn *conn, struct iscsi_cmd *cmd,
++			       unsigned char * ,__be32 cmdsn);
+ extern int iscsit_check_unsolicited_dataout(struct iscsi_cmd *, unsigned char *);
+ extern struct iscsi_cmd *iscsit_find_cmd_from_itt(struct iscsi_conn *, itt_t);
+ extern struct iscsi_cmd *iscsit_find_cmd_from_itt_or_dump(struct iscsi_conn *,
+--- a/include/target/iscsi/iscsi_transport.h
++++ b/include/target/iscsi/iscsi_transport.h
+@@ -82,4 +82,5 @@ extern int iscsit_tmr_post_handler(struc
+  * From iscsi_target_util.c
+  */
+ extern struct iscsi_cmd *iscsit_allocate_cmd(struct iscsi_conn *, gfp_t);
+-extern int iscsit_sequence_cmd(struct iscsi_conn *, struct iscsi_cmd *, __be32);
++extern int iscsit_sequence_cmd(struct iscsi_conn *, struct iscsi_cmd *,
++			       unsigned char *, __be32);
 
 
