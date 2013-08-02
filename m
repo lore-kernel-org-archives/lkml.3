@@ -1,109 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755553Ab3HBSTn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 14:19:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51943 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753793Ab3HBSTm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 14:19:42 -0400
-Date: Fri, 2 Aug 2013 14:19:35 -0400
-From: Jeremy Eder <jeder@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: rafael.j.wysocki@intel.com, riel@redhat.com, youquan.song@intel.com,
-        paulmck@linux.vnet.ibm.com, daniel.lezcano@linaro.org,
-        arjan@linux.intel.com, len.brown@intel.com
-Subject: Re: RFC:  revert request for cpuidle patches e11538d1 and 69a37bea
-Message-ID: <20130802181935.GC31525@jeder.rdu.redhat.com>
-References: <20130726173306.GB17985@jeder.rdu.redhat.com>
- <20130730035731.GA701@linux-youquan.bj.intel.com>
- <20130729165947.GB31525@jeder.rdu.redhat.com>
+	id S1755258Ab3HBScE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 14:32:04 -0400
+Received: from mail-la0-f49.google.com ([209.85.215.49]:32863 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753523Ab3HBScB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 14:32:01 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130729165947.GB31525@jeder.rdu.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.LNX.2.00.1308020309340.24017@pobox.suse.cz>
+References: <1374153691-25100-1-git-send-email-nlopezcasad@logitech.com>
+	<1374153691-25100-2-git-send-email-nlopezcasad@logitech.com>
+	<CAN+gG=GcS7pfK9K5FuW9TyX+PJWNkXZWLk8UX9PzLXom2PSpgQ@mail.gmail.com>
+	<alpine.LNX.2.00.1308020309340.24017@pobox.suse.cz>
+Date: Fri, 2 Aug 2013 20:31:59 +0200
+Message-ID: <CAN+gG=FV=OjnktkET-_KM_iTPStsWCKdj8fpyktnJczusFz0=w@mail.gmail.com>
+Subject: Re: [PATCH 2/2] HID: hid-logitech-dj, querying_devices was never set
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Nestor Lopez Casado <nlopezcasad@logitech.com>,
+        Andrew de los Reyes <adlr@chromium.org>,
+        joseph.salisbury@canonical.com,
+        linux-input <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 130729 12:59:47, Jeremy Eder wrote:
-> On 130729 23:57:31, Youquan Song wrote:
-> > Hi Jeremy,
-> > 
-> > I try reproduce your result and then fix the issue, but I do not reproduce it
-> >  yet.
-> > 
-> > I run at netperf-2.6.0 at one machine as server: netserver, other
-> > machine: netperf -t TCP_RR -H $SERVER_IP -l 60. The target machine is
-> > used in both client and server. I do not reproduce the performance drop
-> > issue. I also notice the result is not stable, sometime it is high,
-> > sometime is low. In sumarry, it is hard to make a definite result.
-> > 
-> > Can you try tell me how to reproduce the issue? how do you get the C0
-> > data?
-> > 
-> > What's your config for kernel?  Do you enable CONFIG_NO_HZ_FULL=y or
-> > only CONFIG_NO_HZ=y?
-> > 
-> > 
-> > Thanks
-> > -Youquan 
-> 
-> Hi,
-> 
-> To answer both your and Daniel's question, those results used only
-> CONFIG_NO_HZ=y.
-> 
-> These network latency benchmarks are fickle creatures, and need careful
-> tuning to become reproducible.  Plus there are BIOS implications and tuning
-> varies by vendor.
-> 
-> Anyway for the most part it's probably not stable because in order to get
-> any sort
-> of reproducibility between runs you need to do at least these steps:
-> 
-> - ensure as little is running in userspace as possible
-> - determine PCI affinity for the NIC
-> - on both machines, isolate the socket connected to the NIC from userspace
->   tasks
-> - Turn off irqbalance and bind all IRQs for that NIC to a single core on
->   the same socket as the NIC
-> - run netperf with -TX,Y where X,Y are core numbers that you wish
->   netperf/netserver to run on, respectively.
-> 
-> For example, if your NIC is attached to socket 0 and socket 0 cores are
-> enumerated 0-7, then:
-> 
-> - set /proc/irq/NNN/smp_affinity_list to, say, 6 for all vectors on that
->   NIC.
-> - nice -20 netperf -t TCP_RR - $SERVER_IP -l 60 -T4,4 -s 2
-> 
-> That should get you most of the way there.  The -s 2 connects and waits 2
-> seconds, I found this to help with the first few second's worth of data.
-> Or
-> you could just toss the first 2 seconds worth, it seems to take that long
-> to stabilize.  What I mean is, if you're not using -D1,1 option to netperf,
-> you might not have seen that netperf tests seem to take a few seconds to
-> stabilize even
-> when properly tuned.
-> 
-> I got the C0 data by running turbostat in parallel with each benchmark run,
-> then grabbing the C-state data for the cores relevant to the test.  In my
-> case that was cores 4 and 6, where core 4 was where I put netperf/netserver
-> and core 6 was where I put the NIC IRQs.  Then I parsed that output into a
-> format that this could interpret:
-> 
-> https://github.com/bitly/data_hacks/blob/master/data_hacks/histogram.py
-> 
-> I'm building a kernel from Rafael's tree and will try to confirm what Len
-> already sent.  Thanks everyone for looking into it.
+On Fri, Aug 2, 2013 at 3:11 AM, Jiri Kosina <jkosina@suse.cz> wrote:
+> On Thu, 1 Aug 2013, Benjamin Tissoires wrote:
+>
+>> > Set querying_devices flag to true when we start the enumeration
+>> > process.
+>> >
+>> > This was missing from the original patch. It never produced
+>> > undesirable effects as it is highly improbable to have a second
+>> > enumeration triggered while a first one was still in progress.
+>> >
+>> > Signed-off-by: Nestor Lopez Casado <nlopezcasad@logitech.com>
+>> > ---
+>> >  drivers/hid/hid-logitech-dj.c |    2 ++
+>> >  1 file changed, 2 insertions(+)
+>> >
+>> > diff --git a/drivers/hid/hid-logitech-dj.c b/drivers/hid/hid-logitech-dj.c
+>> > index 0d13389..d4657a5 100644
+>> > --- a/drivers/hid/hid-logitech-dj.c
+>> > +++ b/drivers/hid/hid-logitech-dj.c
+>> > @@ -488,6 +488,8 @@ static int logi_dj_recv_query_paired_devices(struct dj_receiver_dev *djrcv_dev)
+>> >         if (djrcv_dev->querying_devices)
+>> >                 return 0;
+>> >
+>> > +       djrcv_dev->querying_devices = true;
+>> > +
+>>
+>> Unfortunately, this breaks the fallback mechanism :(
+>> We tried to add the two patches in Fedora [1], but this doesn't fix
+>> the bug because the driver actually things that it already asked for
+>> the enumeration, but as we get the -EPIPE error, the request was never
+>> sent.
+>>
+>> So, Jiri, if you were to submit that series to Linus (or Greg) for
+>> fixing the bug, please just drop this second patch.
+>
+> It's already on its way to Linus (he hasn't pulled yet though) ... which
+> is not a big deal per se, I can always push a revert, but I have to admit
+> I don't understand the breakage it is causing at all.
+>
+> Could you please elaborate? (and put an elaborate description to revert
+> commit log perhaps?)
 
+Sure, so here is the revert commit log:
 
-Hi, sorry for the delay.  In addition to the results I initially posted,
-the below results confirm my initial data, plus what Len sent:
+--
 
-3.11-rc2 w/reverts
-TCP_RR trans/s 54454.13
+Commit "HID: hid-logitech-dj, querying_devices was never set" activate
+a flag which guarantees that we do not ask the receiver for too many
+enumeration. When the flag is set, each following enumeration call is
+discarded (the usb request is not forwarded to the receiver). The flag
+is then released when the driver receive a pairing information event,
+which normally follows the enumeration request.
+However, the USB3 bug makes the driver think the enumeration request
+has been forwarded to the receiver. However, it is actually not the
+case because the USB stack returns -EPIPE. So, when a new unknown
+device appears, the workaround consisting in asking for a new
+enumeration is not working anymore: this new enumeration is discarded
+because of the flag, which is never reset.
 
-3.11-rc2 w/reverts + c0 lock
-TCP_RR trans/s 55088.11
+A solution could be to trigger a timeout before releasing it, but for
+now, let's just revert the patch.
+
+--
+
+Does that makes it more understandable? I'm sorry I was not clear last
+time, I was trying to catch this up between two sessions at GUADEC.
+
+Cheers,
+Benjamin
