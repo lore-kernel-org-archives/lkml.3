@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758912Ab3HBKH7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:07:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37053 "EHLO
+	id S1758939Ab3HBKII (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:08:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37055 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758896Ab3HBKH5 (ORCPT
+	with ESMTP id S1758896Ab3HBKIC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:07:57 -0400
+	Fri, 2 Aug 2013 06:08:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 05/99] iscsi-target: Fix ISCSI_OP_SCSI_TMFUNC handling for iser
-Date: Fri,  2 Aug 2013 18:07:18 +0800
-Message-Id: <20130802100226.266463896@linuxfoundation.org>
+        Ren Bigcren <bigcren.ren@sonymobile.com>,
+        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
+        Oskar Andero <oskar.andero@sonymobile.com>
+Subject: [ 06/99] USB: storage: Add MicroVault Flash Drive to unusual_devs
+Date: Fri,  2 Aug 2013 18:07:19 +0800
+Message-Id: <20130802100226.416604660@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802100225.478715166@linuxfoundation.org>
 References: <20130802100225.478715166@linuxfoundation.org>
@@ -26,102 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Ren Bigcren <bigcren.ren@sonymobile.com>
 
-commit 186a9647019587b3784694894c4d136fd00cfd7b upstream.
+commit e7a6121f4929c17215f0cdca3726f4bf3e4e9529 upstream.
 
-This patch adds target_get_sess_cmd reference counting for
-iscsit_handle_task_mgt_cmd(), and adds a target_put_sess_cmd()
-for the failure case.
+The device report an error capacity when read_capacity_16().
+Using read_capacity_10() can get the correct capacity.
 
-It also fixes a bug where ISCSI_OP_SCSI_TMFUNC type commands
-where leaking iscsi_cmd->i_conn_node and eventually triggering
-an OOPs during struct isert_conn shutdown.
-
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Ren Bigcren <bigcren.ren@sonymobile.com>
+Cc: Matthew Dharm <mdharm-usb@one-eyed-alien.net>
+Signed-off-by: Oskar Andero <oskar.andero@sonymobile.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/ulp/isert/ib_isert.c |   16 ++++++++--------
- drivers/target/iscsi/iscsi_target.c     |   12 ++++++++++--
- 2 files changed, 18 insertions(+), 10 deletions(-)
+ drivers/usb/storage/unusual_devs.h |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/drivers/infiniband/ulp/isert/ib_isert.c
-+++ b/drivers/infiniband/ulp/isert/ib_isert.c
-@@ -1202,14 +1202,12 @@ isert_put_cmd(struct isert_cmd *isert_cm
- {
- 	struct iscsi_cmd *cmd = &isert_cmd->iscsi_cmd;
- 	struct isert_conn *isert_conn = isert_cmd->conn;
--	struct iscsi_conn *conn;
-+	struct iscsi_conn *conn = isert_conn->conn;
+--- a/drivers/usb/storage/unusual_devs.h
++++ b/drivers/usb/storage/unusual_devs.h
+@@ -665,6 +665,13 @@ UNUSUAL_DEV(  0x054c, 0x016a, 0x0000, 0x
+ 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
+ 		US_FL_FIX_INQUIRY ),
  
- 	pr_debug("Entering isert_put_cmd: %p\n", isert_cmd);
- 
- 	switch (cmd->iscsi_opcode) {
- 	case ISCSI_OP_SCSI_CMD:
--		conn = isert_conn->conn;
--
- 		spin_lock_bh(&conn->cmd_lock);
- 		if (!list_empty(&cmd->i_conn_node))
- 			list_del(&cmd->i_conn_node);
-@@ -1219,16 +1217,18 @@ isert_put_cmd(struct isert_cmd *isert_cm
- 			iscsit_stop_dataout_timer(cmd);
- 
- 		isert_unmap_cmd(isert_cmd, isert_conn);
--		/*
--		 * Fall-through
--		 */
-+		transport_generic_free_cmd(&cmd->se_cmd, 0);
-+		break;
- 	case ISCSI_OP_SCSI_TMFUNC:
-+		spin_lock_bh(&conn->cmd_lock);
-+		if (!list_empty(&cmd->i_conn_node))
-+			list_del(&cmd->i_conn_node);
-+		spin_unlock_bh(&conn->cmd_lock);
++/* Submitted by Ren Bigcren <bigcren.ren@sonymobile.com> */
++UNUSUAL_DEV(  0x054c, 0x02a5, 0x0100, 0x0100,
++		"Sony Corp.",
++		"MicroVault Flash Drive",
++		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
++		US_FL_NO_READ_CAPACITY_16 ),
 +
- 		transport_generic_free_cmd(&cmd->se_cmd, 0);
- 		break;
- 	case ISCSI_OP_REJECT:
- 	case ISCSI_OP_NOOP_OUT:
--		conn = isert_conn->conn;
--
- 		spin_lock_bh(&conn->cmd_lock);
- 		if (!list_empty(&cmd->i_conn_node))
- 			list_del(&cmd->i_conn_node);
---- a/drivers/target/iscsi/iscsi_target.c
-+++ b/drivers/target/iscsi/iscsi_target.c
-@@ -1757,8 +1757,8 @@ iscsit_handle_task_mgt_cmd(struct iscsi_
- 	struct se_tmr_req *se_tmr;
- 	struct iscsi_tmr_req *tmr_req;
- 	struct iscsi_tm *hdr;
--	int out_of_order_cmdsn = 0;
--	int ret;
-+	int out_of_order_cmdsn = 0, ret;
-+	bool sess_ref = false;
- 	u8 function;
- 
- 	hdr			= (struct iscsi_tm *) buf;
-@@ -1814,6 +1814,9 @@ iscsit_handle_task_mgt_cmd(struct iscsi_
- 				      conn->sess->se_sess, 0, DMA_NONE,
- 				      MSG_SIMPLE_TAG, cmd->sense_buffer + 2);
- 
-+		target_get_sess_cmd(conn->sess->se_sess, &cmd->se_cmd, true);
-+		sess_ref = true;
-+
- 		switch (function) {
- 		case ISCSI_TM_FUNC_ABORT_TASK:
- 			tcm_function = TMR_ABORT_TASK;
-@@ -1956,6 +1959,11 @@ attach:
- 	 * For connection recovery, this is also the default action for
- 	 * TMR TASK_REASSIGN.
- 	 */
-+	if (sess_ref) {
-+		pr_debug("Handle TMR, using sess_ref=true check\n");
-+		target_put_sess_cmd(conn->sess->se_sess, &cmd->se_cmd);
-+	}
-+
- 	iscsit_add_cmd_to_response_queue(cmd, conn, cmd->i_state);
- 	return 0;
- }
+ /* floppy reports multiple luns */
+ UNUSUAL_DEV(  0x055d, 0x2020, 0x0000, 0x0210,
+ 		"SAMSUNG",
 
 
