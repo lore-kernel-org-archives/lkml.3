@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756050Ab3HBTdM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 15:33:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1350 "EHLO mx1.redhat.com"
+	id S1755709Ab3HBTdK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 15:33:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6907 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755891Ab3HBTdH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755992Ab3HBTdH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 2 Aug 2013 15:33:07 -0400
-Date: Fri, 2 Aug 2013 21:27:41 +0200
+Date: Fri, 2 Aug 2013 21:27:44 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Andrew Morton <akpm@linux-foundation.org>,
         Zach Levis <zml@linux.vnet.ibm.com>
 Cc: Al Viro <viro@ZenIV.linux.org.uk>, Evgeniy Polyakov <zbr@ioremap.net>,
         Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH 4/5] exec: don't retry if request_module() fails
-Message-ID: <20130802192741.GA9579@redhat.com>
+Subject: [PATCH 5/5] exec: cleanup the error handling in
+	search_binary_handler()
+Message-ID: <20130802192744.GA9582@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -23,46 +24,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A separate one-liner for better documentation.
+The error hanling and ret-from-loop look confusing and inconsistent.
 
-It doesn't make sense to retry if request_module() fails to exec
-/sbin/modprobe, add the addition "request_module() < 0" check.
+- "retval >= 0" simply returns
 
-However, this logic still doesn't look exactly right:
+- "!bprm->file" returns too but with read_unlock() because
+   binfmt_lock was already re-acquired
 
-1. It would be better to check "request_module() != 0", the user
-   space modprobe process should report the correct exit code.
-   But I didn't dare to add the user-visible change.
+- "retval != -ENOEXEC || bprm->mm == NULL" does "break" and
+  relies on the same check after the main loop
 
-2. The whole ENOEXEC logic looks suboptimal. Suppose that we try
-   to exec a "#!path-to-unsupported-binary" script. In this case
-   request_module() + "retry" will be done twice: first by the
-   "depth == 1" code, and then again by the "depth == 0" caller
-   which doesn't make sense.
+Consolidate these checks into a single if/return statement.
 
-3. And note that in the case above bprm->buf was already changed
-   by load_script()->prepare_binprm(), so this looks even more
-   ugly.
+need_retry still checks "retval == -ENOEXEC", but this and -ENOENT
+before the main loop are not needed. This is only for pathological
+and impossible list_empty(&formats) case.
+
+It is not clear why do we check "bprm->mm == NULL", probably this
+should be removed.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- fs/exec.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+ fs/exec.c |   11 +++--------
+ 1 files changed, 3 insertions(+), 8 deletions(-)
 
 diff --git a/fs/exec.c b/fs/exec.c
-index 48344a2..d9fd32c 100644
+index d9fd32c..7ab2120 100644
 --- a/fs/exec.c
 +++ b/fs/exec.c
-@@ -1418,7 +1418,8 @@ int search_binary_handler(struct linux_binprm *bprm)
+@@ -1399,22 +1399,17 @@ int search_binary_handler(struct linux_binprm *bprm)
+ 		bprm->recursion_depth++;
+ 		retval = fmt->load_binary(bprm);
+ 		bprm->recursion_depth--;
+-		if (retval >= 0) {
++		if (retval >= 0 || retval != -ENOEXEC ||
++		    bprm->mm == NULL || bprm->file == NULL) {
+ 			put_binfmt(fmt);
+ 			return retval;
+ 		}
+ 		read_lock(&binfmt_lock);
+ 		put_binfmt(fmt);
+-		if (retval != -ENOEXEC || bprm->mm == NULL)
+-			break;
+-		if (!bprm->file) {
+-			read_unlock(&binfmt_lock);
+-			return retval;
+-		}
+ 	}
+ 	read_unlock(&binfmt_lock);
+ 
+-	if (need_retry && retval == -ENOEXEC && bprm->mm) {
++	if (need_retry && retval == -ENOEXEC) {
  		if (printable(bprm->buf[0]) && printable(bprm->buf[1]) &&
  		    printable(bprm->buf[2]) && printable(bprm->buf[3]))
  			return retval;
--		request_module("binfmt-%04x", *(ushort *)(bprm->buf + 2));
-+		if (request_module("binfmt-%04x", *(ushort *)(bprm->buf + 2)) < 0)
-+			return retval;
- 		need_retry = false;
- 		goto retry;
- 	}
 -- 
 1.5.5.1
 
