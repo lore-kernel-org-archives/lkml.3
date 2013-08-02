@@ -1,57 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753501Ab3HBE3T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 00:29:19 -0400
-Received: from mga03.intel.com ([143.182.124.21]:33420 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750853Ab3HBE3S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 00:29:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,798,1367996400"; 
-   d="scan'208";a="276615526"
-Message-ID: <51FB35CD.7040709@intel.com>
-Date: Fri, 02 Aug 2013 12:30:05 +0800
-From: Aaron Lu <aaron.lu@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1753659Ab3HBEf7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 00:35:59 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:38933 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751796Ab3HBEf6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 00:35:58 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Tejun Heo <tj@kernel.org>, lizefan@huawei.com
+Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH 04/23] hugetlb_cgroup: pass around @hugetlb_cgroup instead of @cgroup
+In-Reply-To: <1375393801-4817-5-git-send-email-tj@kernel.org>
+References: <1375393801-4817-1-git-send-email-tj@kernel.org> <1375393801-4817-5-git-send-email-tj@kernel.org>
+User-Agent: Notmuch/0.15.2+167~g5306b2b (http://notmuchmail.org) Emacs/24.3.50.1 (x86_64-unknown-linux-gnu)
+Date: Fri, 02 Aug 2013 10:05:40 +0530
+Message-ID: <87pptwwvz7.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Felipe Contreras <felipe.contreras@gmail.com>
-CC: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <lenb@kernel.org>,
-        Zhang Rui <rui.zhang@intel.com>
-Subject: Re: [PATCH] acpi: video: fix reversed indexed BQC
-References: <1375400042-989-1-git-send-email-felipe.contreras@gmail.com> <51FB137D.7070000@gmail.com> <CAMP44s1A+z4=DGJLK1qf5LPc1vbYvtJwjFiMt17vzyZFRU0qmg@mail.gmail.com>
-In-Reply-To: <CAMP44s1A+z4=DGJLK1qf5LPc1vbYvtJwjFiMt17vzyZFRU0qmg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13080204-9264-0000-0000-00000440345F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02/2013 12:11 PM, Felipe Contreras wrote:
-> On Thu, Aug 1, 2013 at 9:03 PM, Aaron Lu <aaron.lwe@gmail.com> wrote:
->> On 08/02/2013 07:34 AM, Felipe Contreras wrote:
->>> Commit 1a7c618 (ACPI video: support _BQC/_BCL/_BCM methods that use
->>> index values) assumed that bl->levels were not reverted, but at this
->>> point they already are, so there's no need to revert them yet again.
->>
->> When acpi_video_bqc_value_to_level is called, bl->levels is not
->> reverted.
-> 
-> This is the code that turns br->flags._BCL_reversed on:
-> 
-> 	if (max_level == br->levels[2]) {
-> 		br->flags._BCL_reversed = 1;
-> 		sort(&br->levels[2], count - 2, sizeof(br->levels[2]),
-> 			acpi_video_cmp_level, NULL);
-> 	}
-> 
-> Now tell me how br->flags._BCL_reversed can be on, and the br->levels
-> *not* reverted.
+Tejun Heo <tj@kernel.org> writes:
 
-Oh yes, it is reverted to be in increase order, so it is not in reverse
-order. I'm a little confused by these words.
+> cgroup controller API will be converted to primarily use struct
+> cgroup_subsys_state instead of struct cgroup.  In preparation, make
+> hugetlb_cgroup functions pass around struct hugetlb_cgroup instead of
+> struct cgroup.
+>
+> This patch shouldn't cause any behavior differences.
+>
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Cc: Michal Hocko <mhocko@suse.cz>
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
 
-Please see acpi_video_bqc_quirk, we set _BQC_use_index by revert the
-level on a reversed _BCL, so we will need to revert level here too.
+Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 
--Aaron
+
+> ---
+>  mm/hugetlb_cgroup.c | 22 ++++++++++++----------
+>  1 file changed, 12 insertions(+), 10 deletions(-)
+>
+> diff --git a/mm/hugetlb_cgroup.c b/mm/hugetlb_cgroup.c
+> index 50f213f..d2f9fc0 100644
+> --- a/mm/hugetlb_cgroup.c
+> +++ b/mm/hugetlb_cgroup.c
+> @@ -56,17 +56,19 @@ static inline bool hugetlb_cgroup_is_root(struct hugetlb_cgroup *h_cg)
+>  	return (h_cg == root_h_cgroup);
+>  }
+>
+> -static inline struct hugetlb_cgroup *parent_hugetlb_cgroup(struct cgroup *cg)
+> +static inline struct hugetlb_cgroup *
+> +parent_hugetlb_cgroup(struct hugetlb_cgroup *h_cg)
+>  {
+> -	if (!cg->parent)
+> +	struct cgroup *parent = h_cg->css.cgroup->parent;
+> +
+> +	if (!parent)
+>  		return NULL;
+> -	return hugetlb_cgroup_from_cgroup(cg->parent);
+> +	return hugetlb_cgroup_from_cgroup(parent);
+>  }
+>
+> -static inline bool hugetlb_cgroup_have_usage(struct cgroup *cg)
+> +static inline bool hugetlb_cgroup_have_usage(struct hugetlb_cgroup *h_cg)
+>  {
+>  	int idx;
+> -	struct hugetlb_cgroup *h_cg = hugetlb_cgroup_from_cgroup(cg);
+>
+>  	for (idx = 0; idx < hugetlb_max_hstate; idx++) {
+>  		if ((res_counter_read_u64(&h_cg->hugepage[idx], RES_USAGE)) > 0)
+> @@ -115,15 +117,14 @@ static void hugetlb_cgroup_css_free(struct cgroup *cgroup)
+>   * page reference and test for page active here. This function
+>   * cannot fail.
+>   */
+> -static void hugetlb_cgroup_move_parent(int idx, struct cgroup *cgroup,
+> +static void hugetlb_cgroup_move_parent(int idx, struct hugetlb_cgroup *h_cg,
+>  				       struct page *page)
+>  {
+>  	int csize;
+>  	struct res_counter *counter;
+>  	struct res_counter *fail_res;
+>  	struct hugetlb_cgroup *page_hcg;
+> -	struct hugetlb_cgroup *h_cg   = hugetlb_cgroup_from_cgroup(cgroup);
+> -	struct hugetlb_cgroup *parent = parent_hugetlb_cgroup(cgroup);
+> +	struct hugetlb_cgroup *parent = parent_hugetlb_cgroup(h_cg);
+>
+>  	page_hcg = hugetlb_cgroup_from_page(page);
+>  	/*
+> @@ -155,6 +156,7 @@ out:
+>   */
+>  static void hugetlb_cgroup_css_offline(struct cgroup *cgroup)
+>  {
+> +	struct hugetlb_cgroup *h_cg = hugetlb_cgroup_from_cgroup(cgroup);
+>  	struct hstate *h;
+>  	struct page *page;
+>  	int idx = 0;
+> @@ -163,13 +165,13 @@ static void hugetlb_cgroup_css_offline(struct cgroup *cgroup)
+>  		for_each_hstate(h) {
+>  			spin_lock(&hugetlb_lock);
+>  			list_for_each_entry(page, &h->hugepage_activelist, lru)
+> -				hugetlb_cgroup_move_parent(idx, cgroup, page);
+> +				hugetlb_cgroup_move_parent(idx, h_cg, page);
+>
+>  			spin_unlock(&hugetlb_lock);
+>  			idx++;
+>  		}
+>  		cond_resched();
+> -	} while (hugetlb_cgroup_have_usage(cgroup));
+> +	} while (hugetlb_cgroup_have_usage(h_cg));
+>  }
+>
+>  int hugetlb_cgroup_charge_cgroup(int idx, unsigned long nr_pages,
+> -- 
+> 1.8.3.1
+
