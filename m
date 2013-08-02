@@ -1,111 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752345Ab3HBFgq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 01:36:46 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:9508 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750828Ab3HBFgo (ORCPT
+	id S1752215Ab3HBFp3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 01:45:29 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:22804 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750828Ab3HBFp1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 01:36:44 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 01 Aug 2013 22:36:43 -0700
-Message-ID: <1375422317.32701.19.camel@bilhuang-vm1>
-Subject: Re: [PATCH v2 1/1] mfd: palmas: Add power off control
-From: Bill Huang <bilhuang@nvidia.com>
-To: Nishanth Menon <nm@ti.com>
-CC: "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "lee.jones@linaro.org" <lee.jones@linaro.org>,
-        "broonie@linaro.org" <broonie@linaro.org>,
-        "j-keerthy@ti.com" <j-keerthy@ti.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "ian@slimlogic.co.uk" <ian@slimlogic.co.uk>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mallikarjun Kasoju <mkasoju@nvidia.com>
-Date: Thu, 1 Aug 2013 22:45:17 -0700
-In-Reply-To: <20130801130857.GA3413@kahuna>
-References: <1375255037-10024-1-git-send-email-bilhuang@nvidia.com>
-	 <51F8FBC4.1040009@ti.com> <1375355332.32701.13.camel@bilhuang-vm1>
-	 <20130801130857.GA3413@kahuna>
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-MIME-Version: 1.0
-Content-Type: text/plain; charset="ISO-8859-9"
-Content-Transfer-Encoding: 7bit
+	Fri, 2 Aug 2013 01:45:27 -0400
+X-AuditID: cbfee691-b7fef6d000002d62-54-51fb47764dda
+From: Jingoo Han <jg1.han@samsung.com>
+To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
+Cc: linux-kernel@vger.kernel.org, Russell King <rmk+kernel@arm.linux.org.uk>,
+        Jingoo Han <jg1.han@samsung.com>
+Subject: [PATCH] MFD: ucb1x00-core: add CONFIG_PM_SLEEP to suspend/resume
+Date: Fri, 02 Aug 2013 14:45:25 +0900
+Message-id: <000501ce8f43$7cc948b0$765bda10$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: Ac6PQ3bMKMCG/b+nSVqu8o9wIUzTfg==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrDIsWRmVeSWpSXmKPExsVy+t8zA90y99+BBu9+c1hcXniJ1eL+16OM
+	Fpd3zWGz2PzhJZvF6W5WB1aPluYeNo871/awecw7GejRt2UVo8fnTXIBrFFcNimpOZllqUX6
+	dglcGSfPL2cseMtZcerDTuYGxo0cXYwcHBICJhLXv7l0MXICmWISF+6tZ+ti5OIQEljGKHF2
+	UScTRMJE4mNPLwtEYjqjxPXm3YwQzi9GiT//3jKDVLEJqEl8+XKYHWSqiICXxK07QSBhZoEC
+	ib+Hd7CC2MICnhJHFv9gAilhEVCVuPMlESTMK2Ap8XDZVRYIW1Dix+R7LBCtWhLrdx5ngrDl
+	JTavgdgkIaAgsePsa0YQW0RAT+Lb+1OsEDUiEvtevAM7TULgELvElWt7wAaxCAhIfJt8iAXi
+	YVmJTQeg5khKHFxxg2UCo9gsJKtnIVk9C8nqWUhWLGBkWcUomlqQXFCclF5kqlecmFtcmpeu
+	l5yfu4kREnMTdzDeP2B9iDEZaP1EZinR5HxgzOaVxBsamxlZmJqYGhuZW5qRJqwkzqveYh0o
+	JJCeWJKanZpakFoUX1Sak1p8iJGJg1OqgfG83l//e0xlUx5OfnbxCIt/uFfxj88SAvn7BERk
+	y490p/XohFhrFByt2Lvtr69LBeORj1WF86s/H72z4tuxaWbt7T0Xqm59+n6Ya09pddX5hdeY
+	ljoYiFzR2C0pO/nul/Vnrd5pHptY/+CNyaGZ+1bYnAwLvZHF03Moae/2gEbtqVtLHwtwb49W
+	YinOSDTUYi4qTgQA98RwN88CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprFKsWRmVeSWpSXmKPExsVy+t9jQd0y99+BBhe7WC0uL7zEanH/61FG
+	i8u75rBZbP7wks3idDerA6tHS3MPm8eda3vYPOadDPTo27KK0ePzJrkA1qgGRpuM1MSU1CKF
+	1Lzk/JTMvHRbJe/geOd4UzMDQ11DSwtzJYW8xNxUWyUXnwBdt8wcoN1KCmWJOaVAoYDE4mIl
+	fTtME0JD3HQtYBojdH1DguB6jAzQQMI6xoyT55czFrzlrDj1YSdzA+NGji5GTg4JAROJjz29
+	LBC2mMSFe+vZuhi5OIQEpjNKXG/ezQjh/GKU+PPvLTNIFZuAmsSXL4fZuxg5OEQEvCRu3QkC
+	CTMLFEj8PbyDFcQWFvCUOLL4BxNICYuAqsSdL4kgYV4BS4mHy66yQNiCEj8m32OBaNWSWL/z
+	OBOELS+xeQ3EJgkBBYkdZ18zgtgiAnoS396fYoWoEZHY9+Id4wRGgVlIRs1CMmoWklGzkLQs
+	YGRZxSiaWpBcUJyUnmukV5yYW1yal66XnJ+7iREc08+kdzCuarA4xCjAwajEw/sg81egEGti
+	WXFl7iFGCQ5mJRHeP7OBQrwpiZVVqUX58UWlOanFhxiTgR6dyCwlmpwPTDd5JfGGxiZmRpZG
+	ZhZGJubmpAkrifMebLUOFBJITyxJzU5NLUgtgtnCxMEp1cCo7zpbZdqJwtZrt2dO3pC5KPYT
+	c0xXyzXhjlcqGu+Ytd/Nm3uO7ce1sFsH60PPsC8pDKpXDo3etv3c0hNNp2WWZ3+Jtf6z6w3L
+	4w+7CuofPn5xctWdnHkvl4v8tO1q2dy70nvp9x9Tl3jGTZvEdLfQL/3eoxVR6Tesrgods3mz
+	apqYnmNk5j82TSWW4oxEQy3mouJEABV4s4wtAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-08-01 at 21:08 +0800, Nishanth Menon wrote:
-> On 04:08-20130801, Bill Huang wrote:
-> > On Wed, 2013-07-31 at 19:57 +0800, Nishanth Menon wrote:
-> > > 
-> > > If you notice the reference code I send, atleast on TWL6035/37 variants 
-> > > of Palmas, USB IRQ unmask is mandatory for power on with USB cable - 
-> > > example usage scenario: extremely low battery, device powered off, plug 
-> > > in usb cable to restart charging - you'd like to initiate charging logic 
-> > > in bootloader, but that wont work if the device does not do OFF-ON 
-> > > transition with usb cable plugged in for vbus.
-> > > 
-> > Why do we need to add Palmas USB_IRQ unmask logic in shutdown? Does that
-> > mean for all platform using Palmas has to unmask USB IRQ (including
-> > those do not power vbus through Palmas)? Can't we just have a simple
-> > shutdown function but have the VBus programming been done in USB driver
-> > or maybe platform driver since it is platform specific control?
-> we dont have a irq cleanup, irq handling is done in palmas-mfd. Further,
-> 
-> Why would USB driver care about vbus supply needs in complete power off
-> - it is the job of palmas driver? Further, palmas-mfd shutdown
-> handler(currently missing) if probably cleansup things:
-> 
->  mfd_remove_devices(palmas->dev);
->   palmas_irq_exit(palmas);
-> 
-> shutdown sequence becomes complicated further esp if things are
-> cleanedup in shutdown (Dummy patch[1]).
-> 
->  
-> All I am saying is this: shutdown should allow powerup functionality to
-> work as well, how we do that is upto us - I personally found it a little
-> easier to keep the IRQ unmask in shutdown easier to deal with, but other
-> options might be possible as well.
+Add CONFIG_PM_SLEEP to suspend/resume functions to fix the build
+warnings when CONFIG_PM_SLEEP is not selected. This is because
+sleep PM callbacks defined by SET_SYSTEM_SLEEP_PM_OPS are only used
+when the CONFIG_PM_SLEEP is enabled.
 
-I'm not sure if I understand your comments completely (maybe due to I'm
-not familiar with the mechanism of unmasking USB IRQ in Palmas driver)
-but doing cleanup in each driver shutdown handler makes sense to me, if
-those clean up can be done in shutdown then we can make power off
-function as simple as possible and being part of Palmas mfd driver?
-> 
-> [1]
-> diff --git a/drivers/mfd/palmas.c b/drivers/mfd/palmas.c
-> index e4d1c70..6998863 100644
-> --- a/drivers/mfd/palmas.c
-> +++ b/drivers/mfd/palmas.c
-> @@ -447,6 +447,11 @@ static int palmas_i2c_remove(struct i2c_client *i2c)
->  	return 0;
->  }
->  
-> +static void palmas_i2c_shutdown(struct i2c_client *i2c)
-> +{
-> +	palmas_i2c_remove(i2c);
-> +}
-> +
->  static const struct i2c_device_id palmas_i2c_id[] = {
->  	{ "palmas", },
->  	{ "twl6035", },
-> @@ -464,6 +469,7 @@ static struct i2c_driver palmas_i2c_driver = {
->  	},
->  	.probe = palmas_i2c_probe,
->  	.remove = palmas_i2c_remove,
-> +	.shutdown = palmas_i2c_shutdown,
->  	.id_table = palmas_i2c_id,
->  };
->  
+drivers/mfd/ucb1x00-core.c:672:12: warning: 'ucb1x00_suspend' defined but not used [-Wunused-function]
+drivers/mfd/ucb1x00-core.c:704:12: warning: 'ucb1x00_resume' defined but not used [-Wunused-function]
+
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+---
+ drivers/mfd/ucb1x00-core.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/mfd/ucb1x00-core.c b/drivers/mfd/ucb1x00-core.c
+index 70f02da..daec8c8 100644
+--- a/drivers/mfd/ucb1x00-core.c
++++ b/drivers/mfd/ucb1x00-core.c
+@@ -669,6 +669,7 @@ void ucb1x00_unregister_driver(struct ucb1x00_driver *drv)
+ 	mutex_unlock(&ucb1x00_mutex);
+ }
+ 
++#ifdef CONFIG_PM_SLEEP
+ static int ucb1x00_suspend(struct device *dev)
+ {
+ 	struct ucb1x00_plat_data *pdata = dev->platform_data;
+@@ -736,6 +737,7 @@ static int ucb1x00_resume(struct device *dev)
+ 	mutex_unlock(&ucb1x00_mutex);
+ 	return 0;
+ }
++#endif
+ 
+ static const struct dev_pm_ops ucb1x00_pm_ops = {
+ 	SET_SYSTEM_SLEEP_PM_OPS(ucb1x00_suspend, ucb1x00_resume)
+-- 
+1.7.10.4
 
 
