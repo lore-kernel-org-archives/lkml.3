@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030234Ab3HBKKX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:10:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37248 "EHLO
+	id S1030261Ab3HBKKb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:10:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37298 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030214Ab3HBKKQ (ORCPT
+	with ESMTP id S964815Ab3HBKK0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:10:16 -0400
+	Fri, 2 Aug 2013 06:10:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "K. Y. Srinivasan" <kys@microsoft.com>,
-        Jason Wang <jasowang@redhat.com>
-Subject: [ 56/99] Drivers: hv: balloon: Fix a bug in the hot-add code
-Date: Fri,  2 Aug 2013 18:08:09 +0800
-Message-Id: <20130802100233.848765575@linuxfoundation.org>
+        Youquan Song <youquan.song@intel.com>, Tejun Heo <tj@kernel.org>
+Subject: [ 49/99] ata: Fix DVD not dectected at some platform with Wellsburg PCH
+Date: Fri,  2 Aug 2013 18:08:02 +0800
+Message-Id: <20130802100232.904262487@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802100225.478715166@linuxfoundation.org>
 References: <20130802100225.478715166@linuxfoundation.org>
@@ -27,54 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "K. Y. Srinivasan" <kys@microsoft.com>
+From: Youquan Song <youquan.song@intel.com>
 
-commit ed07ec93e83ec471d365ce084e43ad90fd205903 upstream.
+commit eac27f04a71e1f39f196f7e520d16dcefc955d77 upstream.
 
-As we hot-add 128 MB chunks of memory, we wait to ensure that the memory
-is onlined before attempting to hot-add the next chunk. If the udev rule for
-memory hot-add is not executed within the allowed time, we would rollback the
-state and abort further hot-add. Since the hot-add has succeeded and the only
-failure is that the memory is not onlined within the allowed time, we should not
-be rolling back the state. Fix this bug.
+There is a patch b55f84e2d527182e7c611d466cd0bb6ddce201de "ata_piix: Fix DVD
+ not dectected at some Haswell platforms" to fix an issue of DVD not
+recognized on Haswell Desktop platform with Lynx Point.
+Recently, it is also found the same issue at some platformas with Wellsburg PCH.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Acked-by: Jason Wang <jasowang@redhat.com>
+So deliver a similar patch to fix it by disables 32bit PIO in IDE mode.
+
+Signed-off-by: Youquan Song <youquan.song@intel.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hv/hv_balloon.c |   13 +++++--------
- 1 file changed, 5 insertions(+), 8 deletions(-)
+ drivers/ata/ata_piix.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/hv/hv_balloon.c
-+++ b/drivers/hv/hv_balloon.c
-@@ -562,7 +562,7 @@ static void hv_mem_hot_add(unsigned long
- 				struct hv_hotadd_state *has)
- {
- 	int ret = 0;
--	int i, nid, t;
-+	int i, nid;
- 	unsigned long start_pfn;
- 	unsigned long processed_pfn;
- 	unsigned long total_pfn = pfn_count;
-@@ -607,14 +607,11 @@ static void hv_mem_hot_add(unsigned long
- 
- 		/*
- 		 * Wait for the memory block to be onlined.
-+		 * Since the hot add has succeeded, it is ok to
-+		 * proceed even if the pages in the hot added region
-+		 * have not been "onlined" within the allowed time.
- 		 */
--		t = wait_for_completion_timeout(&dm_device.ol_waitevent, 5*HZ);
--		if (t == 0) {
--			pr_info("hot_add memory timedout\n");
--			has->ha_end_pfn -= HA_CHUNK;
--			has->covered_end_pfn -=  processed_pfn;
--			break;
--		}
-+		wait_for_completion_timeout(&dm_device.ol_waitevent, 5*HZ);
- 
- 	}
- 
+--- a/drivers/ata/ata_piix.c
++++ b/drivers/ata/ata_piix.c
+@@ -330,7 +330,7 @@ static const struct pci_device_id piix_p
+ 	/* SATA Controller IDE (Wellsburg) */
+ 	{ 0x8086, 0x8d00, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
+ 	/* SATA Controller IDE (Wellsburg) */
+-	{ 0x8086, 0x8d08, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
++	{ 0x8086, 0x8d08, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata_snb },
+ 	/* SATA Controller IDE (Wellsburg) */
+ 	{ 0x8086, 0x8d60, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
+ 	/* SATA Controller IDE (Wellsburg) */
 
 
