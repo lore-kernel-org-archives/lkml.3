@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759255Ab3HBKJC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:09:02 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37119 "EHLO
+	id S1759282Ab3HBKJH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:09:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37127 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758929Ab3HBKI6 (ORCPT
+	with ESMTP id S1758929Ab3HBKJD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:08:58 -0400
+	Fri, 2 Aug 2013 06:09:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jack Hill <jackhill@jackhill.us>,
-        Saurav Kashyap <saurav.kashyap@qlogic.com>,
-        Giridhar Malavali <giridhar.malavali@qlogic.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 17/99] SCSI: qla2xxx: Properly set the tagging for commands.
-Date: Fri,  2 Aug 2013 18:07:30 +0800
-Message-Id: <20130802100228.445986941@linuxfoundation.org>
+        "=?UTF-8?q?J=C3=B3hann=20B . =20Gu=C3=B0mundsson?=" 
+	<johannbg@fedoraproject.org>
+Subject: [ 31/99] USB: misc: Add Manhattan Hi-Speed USB DVI Converter to sisusbvga
+Date: Fri,  2 Aug 2013 18:07:44 +0800
+Message-Id: <20130802100230.434015620@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802100225.478715166@linuxfoundation.org>
 References: <20130802100225.478715166@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,62 +30,26 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Saurav Kashyap <saurav.kashyap@qlogic.com>
+From: Jóhann B. Guðmundsson <johannbg@fedoraproject.org>
 
-commit c3ccb1d7cf4c4549151876dd37c0944a682fd9e1 upstream.
+commit 58fc90db8261b571c026bb8bf23aad48a7233118 upstream.
 
-This fixes a regression where Xyratex controllers and disks were lost by the
-driver:
-
-https://bugzilla.kernel.org/show_bug.cgi?id=59601
-
-Reported-by: Jack Hill <jackhill@jackhill.us>
-Signed-off-by: Saurav Kashyap <saurav.kashyap@qlogic.com>
-Signed-off-by: Giridhar Malavali <giridhar.malavali@qlogic.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Jóhann B. Guðmundsson <johannbg@fedoraproject.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/qla2xxx/qla_iocb.c |   11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
+ drivers/usb/misc/sisusbvga/sisusb.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/scsi/qla2xxx/qla_iocb.c
-+++ b/drivers/scsi/qla2xxx/qla_iocb.c
-@@ -419,6 +419,8 @@ qla2x00_start_scsi(srb_t *sp)
- 			    __constant_cpu_to_le16(CF_SIMPLE_TAG);
- 			break;
- 		}
-+	} else {
-+		cmd_pkt->control_flags = __constant_cpu_to_le16(CF_SIMPLE_TAG);
- 	}
- 
- 	/* Load SCSI command packet. */
-@@ -1308,11 +1310,11 @@ qla24xx_build_scsi_crc_2_iocbs(srb_t *sp
- 		    fcp_cmnd->task_attribute = TSK_ORDERED;
- 		    break;
- 		default:
--		    fcp_cmnd->task_attribute = 0;
-+		    fcp_cmnd->task_attribute = TSK_SIMPLE;
- 		    break;
- 		}
- 	} else {
--		fcp_cmnd->task_attribute = 0;
-+		fcp_cmnd->task_attribute = TSK_SIMPLE;
- 	}
- 
- 	cmd_pkt->fcp_rsp_dseg_len = 0; /* Let response come in status iocb */
-@@ -1527,7 +1529,12 @@ qla24xx_start_scsi(srb_t *sp)
- 		case ORDERED_QUEUE_TAG:
- 			cmd_pkt->task = TSK_ORDERED;
- 			break;
-+		default:
-+		    cmd_pkt->task = TSK_SIMPLE;
-+		    break;
- 		}
-+	} else {
-+		cmd_pkt->task = TSK_SIMPLE;
- 	}
- 
- 	/* Load SCSI command packet. */
+--- a/drivers/usb/misc/sisusbvga/sisusb.c
++++ b/drivers/usb/misc/sisusbvga/sisusb.c
+@@ -3247,6 +3247,7 @@ static const struct usb_device_id sisusb
+ 	{ USB_DEVICE(0x0711, 0x0903) },
+ 	{ USB_DEVICE(0x0711, 0x0918) },
+ 	{ USB_DEVICE(0x0711, 0x0920) },
++	{ USB_DEVICE(0x0711, 0x0950) },
+ 	{ USB_DEVICE(0x182d, 0x021c) },
+ 	{ USB_DEVICE(0x182d, 0x0269) },
+ 	{ }
 
 
