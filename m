@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754994Ab3HBRoo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 13:44:44 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:33493 "EHLO relay.sgi.com"
+	id S1755410Ab3HBRop (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 13:44:45 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:33494 "EHLO relay.sgi.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753743Ab3HBRol (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753893Ab3HBRol (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 2 Aug 2013 13:44:41 -0400
 From: Nathan Zimmer <nzimmer@sgi.com>
 To: hpa@zytor.com, mingo@kernel.org
@@ -12,9 +12,9 @@ Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, holt@sgi.com,
         nzimmer@sgi.com, rob@landley.net, travis@sgi.com,
         daniel@numascale-asia.com, akpm@linux-foundation.org,
         gregkh@linuxfoundation.org, yinghai@kernel.org, mgorman@suse.de
-Subject: [RFC v2 1/5] memblock: Introduce a for_each_reserved_mem_region iterator.
-Date: Fri,  2 Aug 2013 12:44:23 -0500
-Message-Id: <1375465467-40488-2-git-send-email-nzimmer@sgi.com>
+Subject: [RFC v2 2/5] Have __free_pages_memory() free in larger chunks.
+Date: Fri,  2 Aug 2013 12:44:24 -0500
+Message-Id: <1375465467-40488-3-git-send-email-nzimmer@sgi.com>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <1375465467-40488-1-git-send-email-nzimmer@sgi.com>
 References: <1373594635-131067-1-git-send-email-holt@sgi.com>
@@ -25,11 +25,11 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Robin Holt <holt@sgi.com>
 
-As part of initializing struct page's in 2MiB chunks, we noticed that
-at the end of free_all_bootmem(), there was nothing which had forced
-the reserved/allocated 4KiB pages to be initialized.
-
-This helper function will be used for that expansion.
+Currently, when free_all_bootmem() calls __free_pages_memory(), the
+number of contiguous pages that __free_pages_memory() passes to the
+buddy allocator is limited to BITS_PER_LONG.  In order to be able to
+free only the first page of a 2MiB chunk, we need that to be increased.
+We are increasing to the maximum size available.
 
 Signed-off-by: Robin Holt <holt@sgi.com>
 Signed-off-by: Nathan Zimmer <nzimmer@sgi.com>
@@ -45,82 +45,49 @@ Cc: Greg KH <gregkh@linuxfoundation.org>
 Cc: Yinghai Lu <yinghai@kernel.org>
 Cc: Mel Gorman <mgorman@suse.de>
 ---
- include/linux/memblock.h | 18 ++++++++++++++++++
- mm/memblock.c            | 32 ++++++++++++++++++++++++++++++++
- 2 files changed, 50 insertions(+)
+ mm/nobootmem.c | 25 ++++++++-----------------
+ 1 file changed, 8 insertions(+), 17 deletions(-)
 
-diff --git a/include/linux/memblock.h b/include/linux/memblock.h
-index f388203..e99bbd1 100644
---- a/include/linux/memblock.h
-+++ b/include/linux/memblock.h
-@@ -118,6 +118,24 @@ void __next_free_mem_range_rev(u64 *idx, int nid, phys_addr_t *out_start,
- 	     i != (u64)ULLONG_MAX;					\
- 	     __next_free_mem_range_rev(&i, nid, p_start, p_end, p_nid))
+diff --git a/mm/nobootmem.c b/mm/nobootmem.c
+index bdd3fa2..2159e68 100644
+--- a/mm/nobootmem.c
++++ b/mm/nobootmem.c
+@@ -82,27 +82,18 @@ void __init free_bootmem_late(unsigned long addr, unsigned long size)
  
-+void __next_reserved_mem_region(u64 *idx, phys_addr_t *out_start,
-+			       phys_addr_t *out_end);
-+
-+/**
-+ * for_earch_reserved_mem_region - iterate over all reserved memblock areas
-+ * @i: u64 used as loop variable
-+ * @p_start: ptr to phys_addr_t for start address of the range, can be %NULL
-+ * @p_end: ptr to phys_addr_t for end address of the range, can be %NULL
-+ *
-+ * Walks over reserved areas of memblock in. Available as soon as memblock
-+ * is initialized.
-+ */
-+#define for_each_reserved_mem_region(i, p_start, p_end)			\
-+	for (i = 0UL,							\
-+	     __next_reserved_mem_region(&i, p_start, p_end);		\
-+	     i != (u64)ULLONG_MAX;					\
-+	     __next_reserved_mem_region(&i, p_start, p_end))
-+
- #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
- int memblock_set_node(phys_addr_t base, phys_addr_t size, int nid);
+ static void __init __free_pages_memory(unsigned long start, unsigned long end)
+ {
+-	unsigned long i, start_aligned, end_aligned;
+-	int order = ilog2(BITS_PER_LONG);
++	int order;
  
-diff --git a/mm/memblock.c b/mm/memblock.c
-index c5fad93..0d7d6e7 100644
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -564,6 +564,38 @@ int __init_memblock memblock_reserve(phys_addr_t base, phys_addr_t size)
+-	start_aligned = (start + (BITS_PER_LONG - 1)) & ~(BITS_PER_LONG - 1);
+-	end_aligned = end & ~(BITS_PER_LONG - 1);
++	while (start < end) {
++		order = min(MAX_ORDER - 1, __ffs(start));
+ 
+-	if (end_aligned <= start_aligned) {
+-		for (i = start; i < end; i++)
+-			__free_pages_bootmem(pfn_to_page(i), 0);
++		while (start + (1UL << order) > end)
++			order--;
+ 
+-		return;
+-	}
+-
+-	for (i = start; i < start_aligned; i++)
+-		__free_pages_bootmem(pfn_to_page(i), 0);
++		__free_pages_bootmem(pfn_to_page(start), order);
+ 
+-	for (i = start_aligned; i < end_aligned; i += BITS_PER_LONG)
+-		__free_pages_bootmem(pfn_to_page(i), order);
+-
+-	for (i = end_aligned; i < end; i++)
+-		__free_pages_bootmem(pfn_to_page(i), 0);
++		start += (1UL << order);
++	}
  }
  
- /**
-+ * __next_reserved_mem_region - next function for for_each_reserved_region()
-+ * @idx: pointer to u64 loop variable
-+ * @out_start: ptr to phys_addr_t for start address of the region, can be %NULL
-+ * @out_end: ptr to phys_addr_t for end address of the region, can be %NULL
-+ *
-+ * Iterate over all reserved memory regions.
-+ */
-+void __init_memblock __next_reserved_mem_region(u64 *idx,
-+					   phys_addr_t *out_start,
-+					   phys_addr_t *out_end)
-+{
-+	struct memblock_type *rsv = &memblock.reserved;
-+
-+	if (*idx >= 0 && *idx < rsv->cnt) {
-+		struct memblock_region *r = &rsv->regions[*idx];
-+		phys_addr_t base = r->base;
-+		phys_addr_t size = r->size;
-+
-+		if (out_start)
-+			*out_start = base;
-+		if (out_end)
-+			*out_end = base + size - 1;
-+
-+		*idx += 1;
-+		return;
-+	}
-+
-+	/* signal end of iteration */
-+	*idx = ULLONG_MAX;
-+}
-+
-+/**
-  * __next_free_mem_range - next function for for_each_free_mem_range()
-  * @idx: pointer to u64 loop variable
-  * @nid: nid: node selector, %MAX_NUMNODES for all nodes
+ static unsigned long __init __free_memory_core(phys_addr_t start,
 -- 
 1.8.2.1
 
