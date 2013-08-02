@@ -1,78 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758392Ab3HBJ7S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 05:59:18 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:51795 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758160Ab3HBJ7Q (ORCPT
+	id S1758462Ab3HBKBN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:01:13 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48521 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758179Ab3HBKBM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 05:59:16 -0400
-Message-ID: <51FB8292.9090000@ahsoftware.de>
-Date: Fri, 02 Aug 2013 11:57:38 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Fri, 2 Aug 2013 06:01:12 -0400
+Date: Fri, 2 Aug 2013 11:01:08 +0100
+From: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
+To: broonie@kernel.org, lgirdwood@gmail.com
+Cc: tiwai@suse.de, alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] ASoC: core: init delayed_work for codec-codec links
+Message-ID: <20130802100108.GA17936@opensource.wolfsonmicro.com>
+References: <20130731131627.GA32631@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux-OMAP <linux-omap@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Enric Balletbo i Serra <eballetbo@gmail.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Kevin Hilman <khilman@linaro.org>, Balaji T K <balajitk@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Jon Hunter <jgchunter@gmail.com>
-Subject: Re: [PATCH] RFC: interrupt consistency check for OF GPIO IRQs
-References: <1375101368-17645-1-git-send-email-linus.walleij@linaro.org> <CACxGe6uNJNMdZ1HYGgCtLM2t2TWGCR6btjOHVmP=vDXXvvFfRg@mail.gmail.com> <CACRpkdYjJL6FZwEbB7XLnb9QtjB=3LeE9Ny6KQ4PkM3zpdNqqg@mail.gmail.com> <51F8CC35.1070704@collabora.co.uk>
-In-Reply-To: <51F8CC35.1070704@collabora.co.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130731131627.GA32631@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 31.07.2013 10:35, schrieb Javier Martinez Canillas:
+We must init the delayed_work for codec-codec links
+otherwise shutting down the DAI chain will fault when
+calling flush_delayed_work_sync() on the linked DAI.
 
->
-> The problem is that board files and drivers that has not not been completed
-> migrated to DT assumes (at least for OMAP) that *every* GPIO line is mapped as
-> an IRQ and they just do:
->
-> gpio_request(gpio,...);
-> gpio_direction_input()
-> request[_threaded]_irq(gpio_to_irq(gpio), ...);
->
-> My patch-set changed the gpio-omap driver to not map all GPIO lines but only the
-> ones that were really used as an IRQ and let the DT core to do the mapping from
-> irq_create_of_mapping(). The first problem reported with the OMAP patch was that
-> a driver was using the above sequence and that the GPIO had not been mapped.
-> This user was booting with DT and so this showed a bug in the driver and a DT
-> that did not conform with the standard schema used in mainline but this shows a
-> potential issue.
+Signed-off-by: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
+---
+ sound/soc/soc-core.c |   11 +++++++++++
+ 1 files changed, 11 insertions(+), 0 deletions(-)
 
-There must have been a bug in the patch too. I've also added that 
-iinterrupt-parent stuff (with the same flags as used by the driver) and 
-just have let the driver call
-
-request_threaded_irq(gpio_to_irq(gpio), flags);
-
-without the gpio_request()/input() before. And request_threaded_irq() 
-returned -EBUSY. I'm pretty sure nothing else did use that gpio, but I 
-haven't looked at why request_threaded_irq() returned -EBUSY. I assume 
-the new mapping stuff did reserve the irq in such a way, that the driver 
-couldn't request the IRQ.
-
-Otherwise I wouldn't have had a problem by just adding the necessary 
-entries to the DT.
-
-But I have to say I didn't like the syntax too, and it wasn't obvious 
-how the syntax is and how to conclude from a gpio number to an 
-irq-number and the patch didn't really include some documentation or 
-useful example.
-
-Regards,
-
-Alexander Holler
+diff --git a/sound/soc/soc-core.c b/sound/soc/soc-core.c
+index 4489c5b..e649efe 100644
+--- a/sound/soc/soc-core.c
++++ b/sound/soc/soc-core.c
+@@ -199,6 +199,14 @@ static ssize_t pmdown_time_set(struct device *dev,
+ 	return count;
+ }
+ 
++static void codec2codec_close_delayed_work(struct work_struct *work)
++{
++	/* No action required.
++	 * C2C links only represent a hardware connection and currently
++	 * we assume that we don't have to explicitly start or stop them
++	 */
++}
++
+ static DEVICE_ATTR(pmdown_time, 0644, pmdown_time_show, pmdown_time_set);
+ 
+ #ifdef CONFIG_DEBUG_FS
+@@ -1428,6 +1436,9 @@ static int soc_probe_link_dais(struct snd_soc_card *card, int num, int order)
+ 				return ret;
+ 			}
+ 		} else {
++			INIT_DELAYED_WORK(&rtd->delayed_work,
++						codec2codec_close_delayed_work);
++
+ 			/* link the DAI widgets */
+ 			play_w = codec_dai->playback_widget;
+ 			capture_w = cpu_dai->capture_widget;
+-- 
+1.7.2.5
