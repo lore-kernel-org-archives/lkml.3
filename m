@@ -1,110 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758000Ab3HBHul (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 03:50:41 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:64469 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1757858Ab3HBHui (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 03:50:38 -0400
-X-IronPort-AV: E=Sophos;i="4.89,799,1367942400"; 
-   d="scan'208";a="8097089"
-Message-ID: <51FB646F.30604@cn.fujitsu.com>
-Date: Fri, 02 Aug 2013 15:49:03 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1758019Ab3HBHvm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 03:51:42 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:52333 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757858Ab3HBHvk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 03:51:40 -0400
+Date: Fri, 2 Aug 2013 10:51:22 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Julius Werner <jwerner@chromium.org>
+CC: Felipe Balbi <balbi@ti.com>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <linux-samsung-soc@vger.kernel.org>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Vivek Gautam <gautam.vivek@samsung.com>, <devicetree@vger.kernel.org>,
+        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
+Subject: Re: [PATCH 1/3] usb: phy-samsung-usb: Simplify PMU register handling
+Message-ID: <20130802075122.GK24465@radagast>
+Reply-To: <balbi@ti.com>
+References: <1375404726-26264-1-git-send-email-jwerner@chromium.org>
+ <1375404726-26264-2-git-send-email-jwerner@chromium.org>
 MIME-Version: 1.0
-To: Toshi Kani <toshi.kani@hp.com>
-CC: rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu,
-        hpa@zytor.com, akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
-        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
-        mina86@mina86.com, gong.chen@linux.intel.com,
-        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
-        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
-        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com, x86@kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH v2 06/18] x86, acpi: Initialize ACPI root table list earlier.
-References: <1375340800-19332-1-git-send-email-tangchen@cn.fujitsu.com>  <1375340800-19332-7-git-send-email-tangchen@cn.fujitsu.com> <1375401251.10300.53.camel@misato.fc.hp.com>
-In-Reply-To: <1375401251.10300.53.camel@misato.fc.hp.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/02 15:49:13,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/02 15:49:20,
-	Serialize complete at 2013/08/02 15:49:20
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="EVcIhgQsEzAXu06J"
+Content-Disposition: inline
+In-Reply-To: <1375404726-26264-2-git-send-email-jwerner@chromium.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02/2013 07:54 AM, Toshi Kani wrote:
-......
->>   /*
->> + * acpi_root_table_init - Initialize acpi_gbl_root_table_list.
->> + *
->> + * This function will parse RSDT or XSDT, find all tables' phys addr,
->> + * initialize acpi_gbl_root_table_list, and record all tables' phys addr
->> + * in acpi_gbl_root_table_list.
->> + */
->> +void __init acpi_root_table_init(void)
->
-> I think acpi_root_table_init() is a bit confusing with
-> acpi_boot_table_init().  Perhaps, something like
-> acpi_boot_table_pre_init() or early_acpi_boot_table_init() is better to
-> indicate that this new function is called before acpi_boot_table_init().
->
+--EVcIhgQsEzAXu06J
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-OK, will change it to early_acpi_boot_table_init().
+Hi,
 
->> +{
->> +	dmi_check_system(acpi_dmi_table);
->> +
->> +	/* If acpi_disabled, bail out */
->> +	if (acpi_disabled)
->> +		return;
->> +
->> +	/* Initialize the ACPI boot-time table parser */
->> +	if (acpi_table_init()) {
->> +		disable_acpi();
->> +		return;
->> +	}
->> +}
->> +
->> +/*
->>    * acpi_boot_table_init() and acpi_boot_init()
->>    *  called from setup_arch(), always.
->>    *	1. checksums all tables
->> @@ -1511,21 +1533,7 @@ static struct dmi_system_id __initdata acpi_dmi_table_late[] = {
->>
->>   void __init acpi_boot_table_init(void)
->
-> The comment of this function needs to be updated.  For instance, it
-> describes acpi_table_init(), which you just relocated.
->
->   * acpi_table_init() is separate to allow reading SRAT without
->   * other side effects.
->   *
+On Thu, Aug 01, 2013 at 05:52:04PM -0700, Julius Werner wrote:
+> This patch simplifies the way the phy-samsung-usb code finds the correct
+> power management register to enable PHY clock gating. Previously, the
+> code would calculate the register address from a device tree supplied
+> base address and add an offset based on the PHY type.
+>=20
+> Since every PHY has its own device tree entry and needs only one
+> register, we can just encode the address itself in the device tree and
+> remove the diffentiation in the code. The bitmask needed to specify the
+> bit within that register stays in place, allowing support for platforms
+> like s3c64xx that use different bits within the same register.
+>=20
+> Signed-off-by: Julius Werner <jwerner@chromium.org>
 
-Sure. But I don't quite understand this comment. It seems that
-acpi_table_init() has nothing to do with SRAT.
+I need an Acked-by for the dtsi part. Ideally from Exynos 5 maintainer
+and at least one of the DT maintainers.
 
-Do you know anything about this ?
+--=20
+balbi
 
->
->>   {
->> -	dmi_check_system(acpi_dmi_table);
->> -
->> -	/*
->> -	 * If acpi_disabled, bail out
->> -	 */
->> -	if (acpi_disabled)
->> -		return;
->
-> I think this check is still necessary.
->
+--EVcIhgQsEzAXu06J
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Yes. Will add it.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Thanks.
+iQIcBAEBAgAGBQJR+2T6AAoJEIaOsuA1yqREKGYQAI2EWPYDjwuIC6wWFnWbpYW4
+p+J0+zepF36v5zK1T8iEuYO91Fi/ByyD2s1cQHj7E90spg3hHtXOjs1ml7KzL6gL
+ftmXNJp2T4VD1YHvHSF8y0JP9D6nc8/aVViHTxmZZoVE4PzfgD5/fAz7EhGXtiK/
+5mXZdPI7TuRlhrxPfQL/juPpQY9bIQWI6Qp2aWLGqY5uydQD7e4PhfO9ZHTF0cfE
+SrQmiR1b3JOhHXd41hfYvQRtONoQ5MRKPwCb94zmeE1pdNiRDIBdKPES2En+eRS6
+AKLeB0wdDlMIvtfi1zjtVooz4fM0sf69oEmKSTh4iNVkKYx8IsqMTd/0wX+PRYZ3
+fYGStuDM12NfFdxrbGVF1nnitFd0pvmxKx/IiRdV6XUxwlukcItrsoRallJ4Mcqd
+MwbVSDu5TWgz3drxZQA2dWw5wYS8/S+LKEVwAkWC9qtPUJhCRpXxGHFKdTOoizmd
+v12vPXsyncpUuWWg20a9UnQbADbeFwuGT0sbVdJZoR9DuAafZUh/H018aU2xRaM/
+TwqM7XGsztuXTECwGl1xvJWB7VOmwlrXoGpjPwJtXrHwYOwINKLyAhG/iWH01uxI
+c/MkkodIHYmEJqg4ZBCqmUL32yFGYwZMhyvuiOeH1zuRhOEf4rbv2ViSsRYLzCuK
+S3zM1GHQxnYKR7ZV2bU1
+=ARgF
+-----END PGP SIGNATURE-----
+
+--EVcIhgQsEzAXu06J--
