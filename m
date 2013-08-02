@@ -1,45 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754802Ab3HBUIe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 16:08:34 -0400
-Received: from mail-la0-f49.google.com ([209.85.215.49]:55225 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753801Ab3HBUId (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 16:08:33 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAPBO7TZT3hX67aX-2aG5f2mcVqOyka2xbTPvMWvHzTG-x+UBLA@mail.gmail.com>
-References: <20130731162252.GC4724@pd.tnic>
-	<CAPBO7TaPxa_13FBDE5Z=Aoa+ePPfLRH0+oWSQyEmO00xSfGqYg@mail.gmail.com>
-	<CAMP44s1WMMXcGfF6Ta0CFthY3-7tkpqXEPx1iZhVU-XpS6KUWw@mail.gmail.com>
-	<1544218.2BR9ul04Pj@vostro.rjw.lan>
-	<CAMP44s16-_KA+3JPSzD1CrzcNCuCk4xjOvU6E=gVRxkKiAGr0Q@mail.gmail.com>
-	<CAPBO7TZT3hX67aX-2aG5f2mcVqOyka2xbTPvMWvHzTG-x+UBLA@mail.gmail.com>
-Date: Fri, 2 Aug 2013 15:08:31 -0500
-Message-ID: <CAMP44s3018jWPywQixcgD2UuM58oKYgs+D=aADTQvTyZqJsULA@mail.gmail.com>
-Subject: Re: i915 backlight
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: Josep Lladonosa <jlladono@gmail.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Borislav Petkov <bp@alien8.de>,
-        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1754853Ab3HBUKN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 16:10:13 -0400
+Received: from mga01.intel.com ([192.55.52.88]:32712 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753031Ab3HBUKL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 16:10:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,803,1367996400"; 
+   d="scan'208";a="380367677"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Alex Thorlton <athorlton@sgi.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Sedat Dilek <sedat.dilek@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Dave Jones <davej@redhat.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Al Viro <viro@zeniv.linux.org.uk>, Oleg Nesterov <oleg@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Kees Cook <keescook@chromium.org>, Robin Holt <holt@sgi.com>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20130802194659.GP26476@sgi.com>
+References: <20130802194659.GP26476@sgi.com>
+Subject: RE: [PATCH] Add per-process flag to control thp
+Content-Transfer-Encoding: 7bit
+Message-Id: <20130802201301.A872BE0090@blue.fi.intel.com>
+Date: Fri,  2 Aug 2013 23:13:01 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 2, 2013 at 3:03 PM, Josep Lladonosa <jlladono@gmail.com> wrote:
-> With this setup, something has happened: in xorg, when screen goes to
-> screensaver and after, enters into Standby mode, when I press a key,
-> it keeps black and, to recover screen, I have to adjust brightness
-> manually (by increasing), as if it didn't remember previous value to
-> standby mode.
->
-> This was something that before didn't happen.
+Alex Thorlton wrote:
+> This patch implements functionality to allow processes to disable the use of
+> transparent hugepages through the prctl syscall.
+> 
+> We've determined that some jobs perform significantly better with thp disabled,
+> and we need a way to control thp on a per-process basis, without relying on
+> madvise.
 
-You mean with acpi_osi="!Windows 2012"? And when you say "before",
-what do you mean?
+What kind of workloads are you talking about?
+
+What's wrong with madvise? Could you elaborate?
+
+And I think thp_disabled should be reset to 0 on exec.
 
 -- 
-Felipe Contreras
+ Kirill A. Shutemov
