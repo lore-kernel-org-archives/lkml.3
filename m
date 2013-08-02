@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752728Ab3HBKSO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:18:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37609 "EHLO
+	id S1752975Ab3HBKSh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:18:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37624 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752259Ab3HBKSL (ORCPT
+	with ESMTP id S1752588Ab3HBKSd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:18:11 -0400
+	Fri, 2 Aug 2013 06:18:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "=?UTF-8?q?J=C3=B3hann=20B . =20Gu=C3=B0mundsson?=" 
-	<johannbg@fedoraproject.org>
-Subject: [ 14/39] USB: misc: Add Manhattan Hi-Speed USB DVI Converter to sisusbvga
-Date: Fri,  2 Aug 2013 18:18:24 +0800
-Message-Id: <20130802101458.862396733@linuxfoundation.org>
+        Alex Lyakas <alex.btrfs@zadarastorage.com>,
+        Josef Bacik <jbacik@fusionio.com>
+Subject: [ 18/39] Btrfs: re-add root to dead root list if we stop dropping it
+Date: Fri,  2 Aug 2013 18:18:28 +0800
+Message-Id: <20130802101459.396882547@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802101456.800497005@linuxfoundation.org>
 References: <20130802101456.800497005@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,26 +27,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jóhann B. Guðmundsson <johannbg@fedoraproject.org>
+From: Josef Bacik <jbacik@fusionio.com>
 
-commit 58fc90db8261b571c026bb8bf23aad48a7233118 upstream.
+commit d29a9f629e009c9b90e5859bce581070fd6247fc upstream.
 
-Signed-off-by: Jóhann B. Guðmundsson <johannbg@fedoraproject.org>
+If we stop dropping a root for whatever reason we need to add it back to the
+dead root list so that we will re-start the dropping next transaction commit.
+The other case this happens is if we recover a drop because we will add a root
+without adding it to the fs radix tree, so we can leak it's root and commit root
+extent buffer, adding this to the dead root list makes this cleanup happen.
+Thanks,
+
+Reported-by: Alex Lyakas <alex.btrfs@zadarastorage.com>
+Signed-off-by: Josef Bacik <jbacik@fusionio.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/misc/sisusbvga/sisusb.c |    1 +
- 1 file changed, 1 insertion(+)
+ fs/btrfs/extent-tree.c |   11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
---- a/drivers/usb/misc/sisusbvga/sisusb.c
-+++ b/drivers/usb/misc/sisusbvga/sisusb.c
-@@ -3247,6 +3247,7 @@ static const struct usb_device_id sisusb
- 	{ USB_DEVICE(0x0711, 0x0903) },
- 	{ USB_DEVICE(0x0711, 0x0918) },
- 	{ USB_DEVICE(0x0711, 0x0920) },
-+	{ USB_DEVICE(0x0711, 0x0950) },
- 	{ USB_DEVICE(0x182d, 0x021c) },
- 	{ USB_DEVICE(0x182d, 0x0269) },
- 	{ }
+--- a/fs/btrfs/extent-tree.c
++++ b/fs/btrfs/extent-tree.c
+@@ -6846,6 +6846,7 @@ int btrfs_drop_snapshot(struct btrfs_roo
+ 	int err = 0;
+ 	int ret;
+ 	int level;
++	bool root_dropped = false;
+ 
+ 	path = btrfs_alloc_path();
+ 	if (!path) {
+@@ -7016,12 +7017,22 @@ int btrfs_drop_snapshot(struct btrfs_roo
+ 		free_extent_buffer(root->commit_root);
+ 		kfree(root);
+ 	}
++	root_dropped = true;
+ out_end_trans:
+ 	btrfs_end_transaction_throttle(trans, tree_root);
+ out_free:
+ 	kfree(wc);
+ 	btrfs_free_path(path);
+ out:
++	/*
++	 * So if we need to stop dropping the snapshot for whatever reason we
++	 * need to make sure to add it back to the dead root list so that we
++	 * keep trying to do the work later.  This also cleans up roots if we
++	 * don't have it in the radix (like when we recover after a power fail
++	 * or unmount) so we don't leak memory.
++	 */
++	if (root_dropped == false)
++		btrfs_add_dead_root(root);
+ 	if (err)
+ 		btrfs_std_error(root->fs_info, err);
+ 	return err;
 
 
