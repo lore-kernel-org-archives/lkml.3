@@ -1,138 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752448Ab3HBUiz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 16:38:55 -0400
-Received: from mail-ea0-f173.google.com ([209.85.215.173]:62343 "EHLO
-	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751390Ab3HBUix (ORCPT
+	id S1752844Ab3HBUqP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 16:46:15 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:49211 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751670Ab3HBUqN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 16:38:53 -0400
-From: Zoran Markovic <zoran.markovic@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: Zoran Markovic <zoran.markovic@linaro.org>,
-        Anton Vorontsov <anton@enomsg.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Arve Hjonnevag <arve@android.com>, Todd Poynor <toddpoynor@google.com>,
-        John Stultz <john.stultz@linaro.org>
-Subject: [RFC PATCH] pm: prevent suspend until power supply events are processed
-Date: Fri,  2 Aug 2013 13:38:02 -0700
-Message-Id: <1375475882-3660-1-git-send-email-zoran.markovic@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 2 Aug 2013 16:46:13 -0400
+Message-ID: <51FC1A91.3080401@wwwdotorg.org>
+Date: Fri, 02 Aug 2013 14:46:09 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: David Herrmann <dh.herrmann@gmail.com>
+CC: linux-kernel@vger.kernel.org, David Airlie <airlied@linux.ie>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Peter Jones <pjones@redhat.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
+        linux-fbdev@vger.kernel.org, akpm@linux-foundation.org
+Subject: Re: [PATCH RESEND 0/8] x86 platform framebuffers
+References: <1375445127-15480-1-git-send-email-dh.herrmann@gmail.com>
+In-Reply-To: <1375445127-15480-1-git-send-email-dh.herrmann@gmail.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch, originally authored by Arve Hjonnevag and Todd Poynor,
-prevents the system from entering suspend mode until the power
-supply plug, unplug, or any other change of state event is fully
-processed. This guarantees that the screen lights up and displays
-the battery charging state. The implementation uses the power
-supply wakeup_source object.
+On 08/02/2013 06:05 AM, David Herrmann wrote:
+> Hi
+> 
+> I cut down my previous series to no longer include the SimpleDRM driver. If
+> anyone is interested, you can find it here:
+>   http://lwn.net/Articles/558104/
+> I will resend it once these preparation patches are in.
+> 
+> Changes since v2:
+>  - added common x86 formats (reported by hpa) (patch #5)
 
-Cc: Anton Vorontsov <anton@enomsg.org>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: Arve Hjonnevag <arve@android.com>
-Cc: Todd Poynor <toddpoynor@google.com>
-Cc: John Stultz <john.stultz@linaro.org>
-Signed-off-by: Zoran Markovic <zoran.markovic@linaro.org>
----
- drivers/power/power_supply_core.c |   37 +++++++++++++++++++++++++++++++------
- include/linux/power_supply.h      |    2 ++
- 2 files changed, 33 insertions(+), 6 deletions(-)
+So I assume this is V3; patch subject doesn't say so:-)
 
-diff --git a/drivers/power/power_supply_core.c b/drivers/power/power_supply_core.c
-index 3b2d5df..e68d598 100644
---- a/drivers/power/power_supply_core.c
-+++ b/drivers/power/power_supply_core.c
-@@ -67,23 +67,41 @@ static int __power_supply_changed_work(struct device *dev, void *data)
- 
- static void power_supply_changed_work(struct work_struct *work)
- {
-+	unsigned long flags;
- 	struct power_supply *psy = container_of(work, struct power_supply,
- 						changed_work);
- 
- 	dev_dbg(psy->dev, "%s\n", __func__);
- 
--	class_for_each_device(power_supply_class, NULL, psy,
--			      __power_supply_changed_work);
--
--	power_supply_update_leds(psy);
--
--	kobject_uevent(&psy->dev->kobj, KOBJ_CHANGE);
-+	spin_lock_irqsave(&psy->changed_lock, flags);
-+	if (psy->changed) {
-+		psy->changed = false;
-+		spin_unlock_irqrestore(&psy->changed_lock, flags);
-+		class_for_each_device(power_supply_class, NULL, psy,
-+				      __power_supply_changed_work);
-+		power_supply_update_leds(psy);
-+		kobject_uevent(&psy->dev->kobj, KOBJ_CHANGE);
-+		spin_lock_irqsave(&psy->changed_lock, flags);
-+	}
-+	/* dependent power supplies (e.g. battery) may have changed
-+	 * state as a result of this event, so poll again and hold
-+	 * the wakeup_source until all events are processed.
-+	 */
-+	if (!psy->changed)
-+		pm_relax(psy->dev);
-+	spin_unlock_irqrestore(&psy->changed_lock, flags);
- }
- 
- void power_supply_changed(struct power_supply *psy)
- {
-+	unsigned long flags;
-+
- 	dev_dbg(psy->dev, "%s\n", __func__);
- 
-+	spin_lock_irqsave(&psy->changed_lock, flags);
-+	psy->changed = true;
-+	pm_stay_awake(psy->dev);
-+	spin_unlock_irqrestore(&psy->changed_lock, flags);
- 	schedule_work(&psy->changed_work);
- }
- EXPORT_SYMBOL_GPL(power_supply_changed);
-@@ -500,6 +518,11 @@ int power_supply_register(struct device *parent, struct power_supply *psy)
- 		goto check_supplies_failed;
- 	}
- 
-+	spin_lock_init(&psy->changed_lock);
-+	rc = device_init_wakeup(dev, true);
-+	if (rc)
-+		goto wakeup_init_failed;
-+
- 	rc = kobject_set_name(&dev->kobj, "%s", psy->name);
- 	if (rc)
- 		goto kobject_set_name_failed;
-@@ -529,6 +552,7 @@ create_triggers_failed:
- register_cooler_failed:
- 	psy_unregister_thermal(psy);
- register_thermal_failed:
-+wakeup_init_failed:
- 	device_del(dev);
- kobject_set_name_failed:
- device_add_failed:
-@@ -546,6 +570,7 @@ void power_supply_unregister(struct power_supply *psy)
- 	power_supply_remove_triggers(psy);
- 	psy_unregister_cooler(psy);
- 	psy_unregister_thermal(psy);
-+	device_init_wakeup(psy->dev, false);
- 	device_unregister(psy->dev);
- }
- EXPORT_SYMBOL_GPL(power_supply_unregister);
-diff --git a/include/linux/power_supply.h b/include/linux/power_supply.h
-index 804b906..253d412 100644
---- a/include/linux/power_supply.h
-+++ b/include/linux/power_supply.h
-@@ -194,6 +194,8 @@ struct power_supply {
- 	/* private */
- 	struct device *dev;
- 	struct work_struct changed_work;
-+	spinlock_t changed_lock;
-+	bool changed;
- #ifdef CONFIG_THERMAL
- 	struct thermal_zone_device *tzd;
- 	struct thermal_cooling_device *tcd;
--- 
-1.7.9.5
+...
+> @Stephen: I wasn't sure whether you tested the efi/vesa framebuffer changes,
+> too, so I didn't add your tested-by there. And I changed patch #5 so I dropped
+> it there, too. Thanks for testing!
 
+Yes, I'm only testing on ARM platforms using simplefb, not any x86
+platforms. This latest version seems to work fine, so feel free to
+re-apply by tested-by where appropriate.
