@@ -1,56 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754267Ab3HBVvt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 17:51:49 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:42173 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753182Ab3HBVvr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 17:51:47 -0400
-Date: Fri, 02 Aug 2013 14:51:46 -0700 (PDT)
-Message-Id: <20130802.145146.215059840395396296.davem@davemloft.net>
-To: pmoore@redhat.com
-Cc: amwang@redhat.com, netdev@vger.kernel.org, james.l.morris@oracle.com,
-        sds@tycho.nsa.gov, eparis@parisplace.org, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org
-Subject: Re: [Patch net-next v2 8/8] selinux: use generic union inet_addr
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4528870.px4VD3WrY3@sifl>
-References: <1375427674-21735-1-git-send-email-amwang@redhat.com>
-	<1375427674-21735-9-git-send-email-amwang@redhat.com>
-	<4528870.px4VD3WrY3@sifl>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+	id S1754311Ab3HBV5Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 17:57:25 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:53565 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752314Ab3HBV5Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 17:57:24 -0400
+Message-ID: <1375480643.2034.137.camel@joe-AO722>
+Subject: Re: [PATCH] Tweak Documentation MAINTAINERS entry.
+From: Joe Perches <joe@perches.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Rob Landley <rob@landley.net>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Date: Fri, 02 Aug 2013 14:57:23 -0700
+In-Reply-To: <CAMuHMdUqq1q1jeARpzHBVXTvPb2j8RvMxFBnQtTF4E85=D1opA@mail.gmail.com>
+References: <1375459978.687125@landley.net>
+	 <CAMuHMdUqq1q1jeARpzHBVXTvPb2j8RvMxFBnQtTF4E85=D1opA@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Fri, 02 Aug 2013 14:51:47 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Paul Moore <pmoore@redhat.com>
-Date: Fri, 02 Aug 2013 10:34:07 -0400
-
-> On Friday, August 02, 2013 03:14:34 PM Cong Wang wrote:
->> From: Cong Wang <amwang@redhat.com>
->> 
->> selinux has some similar definition like union inet_addr,
->> it can re-use the generic union inet_addr too.
->> 
->> Cc: James Morris <james.l.morris@oracle.com>
->> Cc: Stephen Smalley <sds@tycho.nsa.gov>
->> Cc: Eric Paris <eparis@parisplace.org>
->> Cc: Paul Moore <pmoore@redhat.com>
->> Cc: linux-kernel@vger.kernel.org
->> Cc: linux-security-module@vger.kernel.org
->> Signed-off-by: Cong Wang <amwang@redhat.com>
+On Fri, 2013-08-02 at 23:39 +0200, Geert Uytterhoeven wrote:
+> On Fri, Aug 2, 2013 at 6:13 PM, Rob Landley <rob@landley.net> wrote:
+> > diff --git a/MAINTAINERS b/MAINTAINERS
+> > index d83f70f..6b752df 100644
+> > --- a/MAINTAINERS
+> > +++ b/MAINTAINERS
+> > @@ -2664,6 +2664,10 @@ L:       linux-doc@vger.kernel.org
+> >  T:     TBD
+> >  S:     Maintained
+> >  F:     Documentation/
+> > +X:     Documentation/zh_CN
+> > +X:     Documentation/ko_KR
+> > +X:     Documentation/ja_JP
 > 
-> Perhaps I'm confusing this with another patch but I though DaveM said he 
-> wasn't going to merge these patches?
+> Does "Documentation/??_??" work, to catch future translations?
+> Or do we have to use "Documentation/[a-z][a-z]_[A-Z][A-Z]"?
 
-I didn't like how he added completely unused bloat to various
-datastructures because he unconditionally put a port field into
-there.
+? works.
 
-He removed that problem this time, but there are still a lot of
-things I don't like about this patch series.
+The script uses:
+scripts/get_maintainer.pl:                      $line =~ s/([^\\])\.([^\*])/$1\?$2/g;
+
+These could be converted to a single
+
+X:	Documentation/??_??/
+
+
