@@ -1,61 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752438Ab3HBM2a (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 08:28:30 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:57094 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752018Ab3HBM23 (ORCPT
+	id S1752553Ab3HBMbD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 08:31:03 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:13401 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752278Ab3HBMbB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 08:28:29 -0400
+	Fri, 2 Aug 2013 08:31:01 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Fri, 02 Aug 2013 05:31:00 -0700
+Date: Fri, 2 Aug 2013 14:30:57 +0200
+From: Thierry Reding <treding@nvidia.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Tuomas Tynkkynen <ttynkkynen@nvidia.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH v2 1/2] ARM: DTS: tegra: Add USB entries for Tegra30
+Message-ID: <20130802123057.GA10282@manwe>
+References: <1375369218-11288-1-git-send-email-ttynkkynen@nvidia.com>
+ <1375369218-11288-2-git-send-email-ttynkkynen@nvidia.com>
+ <51FA8F2E.8080105@wwwdotorg.org>
 MIME-Version: 1.0
-In-Reply-To: <201307291835.21151.arnd@arndb.de>
-References: <1374055584-15746-1-git-send-email-jonas.jensen@gmail.com>
-	<1375105442-14827-1-git-send-email-jonas.jensen@gmail.com>
-	<201307291835.21151.arnd@arndb.de>
-Date: Fri, 2 Aug 2013 14:28:28 +0200
-Message-ID: <CACmBeS1vT6HyhN=Q4Y9izR0F1Es818iU0fQ5-U8LxijRKe=+8w@mail.gmail.com>
-Subject: Re: [PATCH v4] dmaengine: Add MOXA ART DMA engine driver
-From: Jonas Jensen <jonas.jensen@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arm@kernel.org, vinod.koul@intel.com, djbw@fb.com,
-        linux@arm.linux.org.uk
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <51FA8F2E.8080105@wwwdotorg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="OgqxwSJOaUobr8KG"
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+--OgqxwSJOaUobr8KG
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks for the replies. I think what you mention should now be fixed.
+On Thu, Aug 01, 2013 at 06:39:10PM +0200, Stephen Warren wrote:
+> On 08/01/2013 09:00 AM, Tuomas Tynkkynen wrote:
+> > Add device tree entries for the 3 USB controllers and PHYs and
+> > enable the third controller on Cardhu and Beaver boards.
+> >=20
+> > Fix VBUS regulator entries on Beaver. The GPIO pins were wrong.
+> > Also, internal pullups need to be enabled on those pins.
+> >=20
+> > Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+> > ---
+> > v2: Use internal pullups on the VBUS regulator GPIOs.
+>=20
+> Thanks, this version looks good.
+>=20
+> Thierry, can you please validate that the gpv group pull strength change
+> doesn't have any negative affect on your PCIe patches. Thanks.
 
-Except one thing where I still have questions:
+PCIe on Beaver seems to behave the same way whether that patch is
+applied or not, so:
 
-On 29 July 2013 18:35, Arnd Bergmann <arnd@arndb.de> wrote:
-> You must not override the "dest_req_no" and "dest_req_no" in moxart_slave_config
-> since they are already set by the ->xlate() function and the driver calling
-> slave_config generally has no knowledge of what the slave id is.
+Tested-by: Thierry Reding <treding@nvidia.com>
 
-MMC now has a device tree node:
+I wonder if perhaps a similar change can be made to Cardhu to see if
+that helps with the PCIe link disappearing. I'll see if I can find out
+what the implications are and what the correct values would be for
+Cardhu.
 
-mmc: mmc@98e00000 {
-compatible = "moxa,moxart-mmc";
-reg = <0x98e00000 0x5C>;
-interrupts = <5 0>;
-clocks = <&coreclk>;
-dmas = <&dma 0>,
-            <&dma 1>;
-dma-names = "tx", "rx";
-};
+Thierry
 
-.. where the driver requests channel 0-1 and sets cfg.slave_id =
-APB_DMA_SD_REQ_NO for both.
+--OgqxwSJOaUobr8KG
+Content-Type: application/pgp-signature
 
-Perhaps this is not how slave_id is intended to be used?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
-Maybe it would be more appropriate to have two DMA cells?
+iQIcBAEBAgAGBQJR+6aBAAoJEN0jrNd/PrOh6g0P/ivjQRqyPahZ+7nRc4cwQ+GS
+dMWcD1Ua11AaLSSRJbhzG0JJiavdQY7gjU+9CpPeYaakCBCYDTTzpLw+OvphhkKZ
+7clFvwrbfFXP/k8OG+uF/CeFawZEfga+xEMSorzCyzquiS4C2WPm9iJPRKx/g4s9
+Xfc5qiTJ0gVjn+aS9oo/eSrcUIbEJzVGxnjlXk8WY9YbnV/ni/SBPTBiNhWxj5Y/
+JZrzkphMGaxatMqfy53nyVbl+dtrCKGx+WwVOMIC1X5Z7QpOgEvCmwetX88YuW6k
+V8z1JOv25hPvVzPjYnR6BFWYkHrbbsSKcnYwohtAX/kF9ZOTUaQXI9jKMT5tL+5c
+fBXIQYkak/M4aSORU/TeHjtiSDnFNpx4R/oIMqel51dfcWHrANNnpMMI1Ri5Mkcw
+8tTtGQM7CfV1aAL9JhnSpmjAiNz9gN2W4YT+cEu+7TEaCALzr4cj3D0A64is1D0D
+4ZrFM/m2AOEKkD418hdXhxXHMxFxiMcgBoyCm2TQY1eGC0k9C6V3/M6EHUvgzHGd
+FPc9xqLAQtK4PMiEGfqGvNLldPVXvgBQ3o4/fI7Y6tMD8WkJ4BVKo2j1YQD/tCTB
+v+lLvGdwmrIAutc8MfYArotjSes7KvLc+hlkonqmAmJB2h2aIHjfbixIlBnHp23R
+XPn+ho5ldtP14xUIrBoE
+=1OcS
+-----END PGP SIGNATURE-----
 
-APB_DMA_SD_REQ_NO can then be moved from driver code to DT.
-
-Best regards,
-Jonas
+--OgqxwSJOaUobr8KG--
