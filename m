@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756283Ab3HBLAK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 07:00:10 -0400
-Received: from up.free-electrons.com ([94.23.35.102]:58808 "EHLO
+	id S1756316Ab3HBLAx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 07:00:53 -0400
+Received: from up.free-electrons.com ([94.23.35.102]:58778 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S964798Ab3HBKET (ORCPT
+	with ESMTP id S1758179Ab3HBKEN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:04:19 -0400
+	Fri, 2 Aug 2013 06:04:13 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: linux-arm-kernel@lists.infradead.org
 Cc: Emilio Lopez <emilio@elopez.com.ar>, kevin.z.m.zh@gmail.com,
         sunny@allwinnertech.com, shuge@allwinnertech.com,
         linux-kernel@vger.kernel.org, linux-sunxi@googlegroups.com,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCHv2 5/9] pinctrl: sunxi: Fix inconsistent indentation
-Date: Fri,  2 Aug 2013 12:02:49 +0200
-Message-Id: <1375437773-3211-6-git-send-email-maxime.ripard@free-electrons.com>
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: [PATCHv2 2/9] ARM: sun7i: Add Allwinner A20 DTSI
+Date: Fri,  2 Aug 2013 12:02:46 +0200
+Message-Id: <1375437773-3211-3-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 1.8.3.4
 In-Reply-To: <1375437773-3211-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1375437773-3211-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -24,64 +23,193 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some pin functions in the array were not indented like the other
-functions in this array. Fix this.
+The Allwinner A20 SoC is based on 2 Cortex A7, an ARM Mali GPU, and is
+built to be pin-compatible with the older Allwinner A10.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>
 ---
- drivers/pinctrl/pinctrl-sunxi-pins.h | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ arch/arm/boot/dts/sun7i-a20.dtsi | 172 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 172 insertions(+)
+ create mode 100644 arch/arm/boot/dts/sun7i-a20.dtsi
 
-diff --git a/drivers/pinctrl/pinctrl-sunxi-pins.h b/drivers/pinctrl/pinctrl-sunxi-pins.h
-index 3368965..2c7446a 100644
---- a/drivers/pinctrl/pinctrl-sunxi-pins.h
-+++ b/drivers/pinctrl/pinctrl-sunxi-pins.h
-@@ -806,7 +806,7 @@ static const struct sunxi_desc_pin sun4i_a10_pins[] = {
- 		  SUNXI_FUNCTION(0x3, "pata"),		/* ATAD13 */
- 		  SUNXI_FUNCTION(0x4, "keypad"),	/* IN7 */
- 		  SUNXI_FUNCTION(0x5, "sim"),		/* VCCEN */
--		SUNXI_FUNCTION_IRQ(0x6, 17),		/* EINT17 */
-+		  SUNXI_FUNCTION_IRQ(0x6, 17),		/* EINT17 */
- 		  SUNXI_FUNCTION(0x7, "csi1")),		/* D17 */
- 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PH18,
- 		  SUNXI_FUNCTION(0x0, "gpio_in"),
-@@ -815,7 +815,7 @@ static const struct sunxi_desc_pin sun4i_a10_pins[] = {
- 		  SUNXI_FUNCTION(0x3, "pata"),		/* ATAD14 */
- 		  SUNXI_FUNCTION(0x4, "keypad"),	/* OUT0 */
- 		  SUNXI_FUNCTION(0x5, "sim"),		/* SCK */
--		SUNXI_FUNCTION_IRQ(0x6, 18),		/* EINT18 */
-+		  SUNXI_FUNCTION_IRQ(0x6, 18),		/* EINT18 */
- 		  SUNXI_FUNCTION(0x7, "csi1")),		/* D18 */
- 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PH19,
- 		  SUNXI_FUNCTION(0x0, "gpio_in"),
-@@ -824,7 +824,7 @@ static const struct sunxi_desc_pin sun4i_a10_pins[] = {
- 		  SUNXI_FUNCTION(0x3, "pata"),		/* ATAD15 */
- 		  SUNXI_FUNCTION(0x4, "keypad"),	/* OUT1 */
- 		  SUNXI_FUNCTION(0x5, "sim"),		/* SDA */
--		SUNXI_FUNCTION_IRQ(0x6, 19),		/* EINT19 */
-+		  SUNXI_FUNCTION_IRQ(0x6, 19),		/* EINT19 */
- 		  SUNXI_FUNCTION(0x7, "csi1")),		/* D19 */
- 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PH20,
- 		  SUNXI_FUNCTION(0x0, "gpio_in"),
-@@ -832,7 +832,7 @@ static const struct sunxi_desc_pin sun4i_a10_pins[] = {
- 		  SUNXI_FUNCTION(0x2, "lcd1"),		/* D20 */
- 		  SUNXI_FUNCTION(0x3, "pata"),		/* ATAOE */
- 		  SUNXI_FUNCTION(0x4, "can"),		/* TX */
--		SUNXI_FUNCTION_IRQ(0x6, 20),		/* EINT20 */
-+		  SUNXI_FUNCTION_IRQ(0x6, 20),		/* EINT20 */
- 		  SUNXI_FUNCTION(0x7, "csi1")),		/* D20 */
- 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PH21,
- 		  SUNXI_FUNCTION(0x0, "gpio_in"),
-@@ -840,7 +840,7 @@ static const struct sunxi_desc_pin sun4i_a10_pins[] = {
- 		  SUNXI_FUNCTION(0x2, "lcd1"),		/* D21 */
- 		  SUNXI_FUNCTION(0x3, "pata"),		/* ATADREQ */
- 		  SUNXI_FUNCTION(0x4, "can"),		/* RX */
--		SUNXI_FUNCTION_IRQ(0x6, 21),		/* EINT21 */
-+		  SUNXI_FUNCTION_IRQ(0x6, 21),		/* EINT21 */
- 		  SUNXI_FUNCTION(0x7, "csi1")),		/* D21 */
- 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PH22,
- 		  SUNXI_FUNCTION(0x0, "gpio_in"),
+diff --git a/arch/arm/boot/dts/sun7i-a20.dtsi b/arch/arm/boot/dts/sun7i-a20.dtsi
+new file mode 100644
+index 0000000..373ad58
+--- /dev/null
++++ b/arch/arm/boot/dts/sun7i-a20.dtsi
+@@ -0,0 +1,172 @@
++/*
++ * Copyright 2013 Maxime Ripard
++ *
++ * Maxime Ripard <maxime.ripard@free-electrons.com>
++ *
++ * The code contained herein is licensed under the GNU General Public
++ * License. You may obtain a copy of the GNU General Public License
++ * Version 2 or later at the following locations:
++ *
++ * http://www.opensource.org/licenses/gpl-license.html
++ * http://www.gnu.org/copyleft/gpl.html
++ */
++
++/include/ "skeleton.dtsi"
++
++/ {
++	interrupt-parent = <&gic>;
++
++	cpus {
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		cpu@0 {
++			compatible = "arm,cortex-a7";
++			device_type = "cpu";
++			reg = <0>;
++		};
++
++		cpu@1 {
++			compatible = "arm,cortex-a7";
++			device_type = "cpu";
++			reg = <1>;
++		};
++	};
++
++	memory {
++		reg = <0x40000000 0x80000000>;
++	};
++
++	clocks {
++		#address-cells = <1>;
++		#size-cells = <1>;
++		ranges;
++
++		osc24M: osc24M@01c20050 {
++			#clock-cells = <0>;
++			compatible = "fixed-clock";
++			clock-frequency = <24000000>;
++		};
++
++		osc32k: osc32k {
++			#clock-cells = <0>;
++			compatible = "fixed-clock";
++			clock-frequency = <32768>;
++		};
++	};
++
++	soc@01c20000 {
++		compatible = "simple-bus";
++		#address-cells = <1>;
++		#size-cells = <1>;
++		ranges;
++
++		timer@01c20c00 {
++			compatible = "allwinner,sun4i-timer";
++			reg = <0x01c20c00 0x90>;
++			interrupts = <0 22 1>,
++				     <0 23 1>,
++				     <0 24 1>,
++				     <0 25 1>,
++				     <0 67 1>,
++				     <0 68 1>;
++			clocks = <&osc24M>;
++		};
++
++		wdt: watchdog@01c20c90 {
++			compatible = "allwinner,sun4i-wdt";
++			reg = <0x01c20c90 0x10>;
++		};
++
++		uart0: serial@01c28000 {
++			compatible = "snps,dw-apb-uart";
++			reg = <0x01c28000 0x400>;
++			interrupts = <0 1 1>;
++			reg-shift = <2>;
++			reg-io-width = <4>;
++			clocks = <&osc24M>;
++			status = "disabled";
++		};
++
++		uart1: serial@01c28400 {
++			compatible = "snps,dw-apb-uart";
++			reg = <0x01c28400 0x400>;
++			interrupts = <0 2 1>;
++			reg-shift = <2>;
++			reg-io-width = <4>;
++			clocks = <&osc24M>;
++			status = "disabled";
++		};
++
++		uart2: serial@01c28800 {
++			compatible = "snps,dw-apb-uart";
++			reg = <0x01c28800 0x400>;
++			interrupts = <0 3 1>;
++			reg-shift = <2>;
++			reg-io-width = <4>;
++			clocks = <&osc24M>;
++			status = "disabled";
++		};
++
++		uart3: serial@01c28c00 {
++			compatible = "snps,dw-apb-uart";
++			reg = <0x01c28c00 0x400>;
++			interrupts = <0 4 1>;
++			reg-shift = <2>;
++			reg-io-width = <4>;
++			clocks = <&osc24M>;
++			status = "disabled";
++		};
++
++		uart4: serial@01c29000 {
++			compatible = "snps,dw-apb-uart";
++			reg = <0x01c29000 0x400>;
++			interrupts = <0 17 1>;
++			reg-shift = <2>;
++			reg-io-width = <4>;
++			clocks = <&osc24M>;
++			status = "disabled";
++		};
++
++		uart5: serial@01c29400 {
++			compatible = "snps,dw-apb-uart";
++			reg = <0x01c29400 0x400>;
++			interrupts = <0 18 1>;
++			reg-shift = <2>;
++			reg-io-width = <4>;
++			clocks = <&osc24M>;
++			status = "disabled";
++		};
++
++		uart6: serial@01c29800 {
++			compatible = "snps,dw-apb-uart";
++			reg = <0x01c29800 0x400>;
++			interrupts = <0 19 1>;
++			reg-shift = <2>;
++			reg-io-width = <4>;
++			clocks = <&osc24M>;
++			status = "disabled";
++		};
++
++		uart7: serial@01c29c00 {
++			compatible = "snps,dw-apb-uart";
++			reg = <0x01c29c00 0x400>;
++			interrupts = <0 20 1>;
++			reg-shift = <2>;
++			reg-io-width = <4>;
++			clocks = <&osc24M>;
++			status = "disabled";
++		};
++
++		gic: interrupt-controller@01c81000 {
++			compatible = "arm,cortex-a7-gic";
++			reg = <0x01c81000 0x1000>,
++			      <0x01c82000 0x1000>,
++			      <0x01c84000 0x2000>,
++			      <0x01c86000 0x2000>;
++			interrupt-controller;
++			#interrupt-cells = <3>;
++			interrupts = <1 9 0xf04>;
++		};
++	};
++};
 -- 
 1.8.3.4
 
