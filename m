@@ -1,98 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754254Ab3HBRAg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 13:00:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15314 "EHLO mx1.redhat.com"
+	id S1754650Ab3HBRAo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 13:00:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19606 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752999Ab3HBRAf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 13:00:35 -0400
-Subject: Re: [PATCH 2/2] KEYS: Add per-user_namespace registers for
- persistent per-UID kerberos caches
-From: Simo Sorce <simo@redhat.com>
-To: David Howells <dhowells@redhat.com>
-Cc: Jeff Layton <jlayton@redhat.com>, keyrings@linux-nfs.org,
-        linux-nfs@vger.kernel.org, krbdev@mit.edu,
-        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
-        linux-kernel@vger.kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-In-Reply-To: <7136.1375462405@warthog.procyon.org.uk>
-References: <20130802095555.07a2cda3@tlielax.poochiereds.net>
-	 <20130801173846.28023.19009.stgit@warthog.procyon.org.uk>
-	 <20130801173902.28023.68819.stgit@warthog.procyon.org.uk>
-	 <7136.1375462405@warthog.procyon.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat, Inc.
-Date: Fri, 02 Aug 2013 13:00:21 -0400
-Message-ID: <1375462821.15733.262.camel@willson.li.ssimo.org>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754331Ab3HBRAm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 13:00:42 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <87ob9hovop.fsf@xmission.com>
+References: <87ob9hovop.fsf@xmission.com> <20130801173846.28023.19009.stgit@warthog.procyon.org.uk> <20130801173902.28023.68819.stgit@warthog.procyon.org.uk>
+To: ebiederm@xmission.com (Eric W. Biederman)
+Cc: dhowells@redhat.com, keyrings@linux-nfs.org, linux-nfs@vger.kernel.org,
+        krbdev@mit.edu, "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
+        linux-kernel@vger.kernel.org, simo@redhat.com
+Subject: Re: [PATCH 2/2] KEYS: Add per-user_namespace registers for persistent per-UID kerberos caches
+Date: Fri, 02 Aug 2013 18:00:30 +0100
+Message-ID: <7202.1375462830@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-08-02 at 17:53 +0100, David Howells wrote:
-> Jeff Layton <jlayton@redhat.com> wrote:
-> 
-> > > +	/* -1 indicates the current user */
-> > > +	if (_uid == (uid_t)-1) {
-> > > +		uid = current_uid();
-> >
-> > Isn't it possible to have a valid uid of (unsigned int)-1? I know that
-> > at least some sites use that for "nobody". Why not just require passing
-> > in the correct UID?
-> 
-> See setresuid() and co. - there -1 is "don't change".
-> 
-> > Looks good overall, but I share Daniel's concerns about making
-> > krb5-specific infrastructure like this. Essentially this is just a
-> > persistent keyring that's associated with a kuid, right? Perhaps this
-> > could be done in such a way that it could be usable for other
-> > applications in the future?
-> 
-> It's not too hard, I suppose:
-> 
-> 	keyctl_get_persistent(uid, prefix, destring)
-> 
-> eg:
-> 
-> 	keyctl_get_persistent(-1, "_krb.", KEYCTL_SPEC_PROCESS_KEYRING)
-> 
-> giving:
-> 
-> 	struct user_namespace
-> 	  \___ .krb_cache keyring
-> 		\___ _krb.0 keyring
-> 		\___ _krb.5000 keyring
-> 		\___ _krb.5001 keyring
-> 		|	\___ tkt785 big_key
-> 		|	\___ tkt12345 big_key
-> 		\___ _afs.5000 keyring
-> 			\___ afs.redhat.com rxrpc
-> 
-> The other way to do it is create one keyring per user and let userspace create
-> subkeyrings under that:
-> 
-> 	struct user_namespace
-> 	  \___ .krb_cache keyring
-> 		\___ _uid_p.0 keyring
-> 		\___ _uid_p.5000 keyring
-> 		\___ _uid_p.5001 keyring
-> 			\___ krb keyring
-> 			|	\___ tkt785 big_key
-> 			|	\___ tkt12345 big_key
-> 			\___ afs keyring
-> 				\___ afs.redhat.com rxrpc
-> 
-> In the above scheme, it might be worth just making these the same as the user
-> keyring - which means KEYCTL_SPEC_USER_KEYRING will automatically target it.
-> 
-> Simo:  I believe the problem you have with the user keyring is that it's not
-> persistent beyond the life of the processes of that UID, right?
+Eric W. Biederman <ebiederm@xmission.com> wrote:
 
-Correct.
+> > Add support for per-user_namespace registers of persistent per-UID kerberos
+> > caches held within the kernel.
+> 
+> Out of curiosity is this cache per user namspace because the key lookup
+> is per user namespace?
 
-Simo.
+Yes.  You can't see keys in another namespace.  I occasionally wonder if I
+should make the key serial number tree per namespace so that you don't search
+keys outside your namespace and can't try looking them up by ID - but it
+complicates the garbage collector which iterates over the entire tree (though
+it could maintain a list of per-ns trees).
 
--- 
-Simo Sorce * Red Hat, Inc * New York
+> Some minor nits below. But I don't see anything particulary scary about
+> this patch.  Other than seeming to make it easy for root to get my
+> kerbose tickets.
+
+Root can do that anyway with file-based ccaches, I believe.  However, you can
+change the key permissions to prevent root even seeing that your keys/keyrings
+exist, let alone stealing them.
 
