@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754842Ab3HBKXW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:23:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37864 "EHLO
+	id S1755091Ab3HBKXk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:23:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37890 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754695Ab3HBKXU (ORCPT
+	with ESMTP id S1755032Ab3HBKXf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:23:20 -0400
+	Fri, 2 Aug 2013 06:23:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 16/23] drm/radeon: improve dac adjust heuristics for legacy pdac
-Date: Fri,  2 Aug 2013 18:23:29 +0800
-Message-Id: <20130802102038.473993495@linuxfoundation.org>
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Wolfram Gloger <wmglo@dent.med.uni-muenchen.de>
+Subject: [ 21/23] virtio: support unlocked queue poll
+Date: Fri,  2 Aug 2013 18:23:34 +0800
+Message-Id: <20130802102039.179726643@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802102036.180660415@linuxfoundation.org>
 References: <20130802102036.180660415@linuxfoundation.org>
@@ -26,34 +28,120 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Michael S. Tsirkin <mst@redhat.com>
 
-commit 03ed8cf9b28d886c64c7e705c7bb1a365fd8fb95 upstream.
+commit cc229884d3f77ec3b1240e467e0236c3e0647c0c upstream.
 
-Hopefully avoid more quirks in the future due to bogus
-vbios dac data.
+This adds a way to check ring empty state after enable_cb outside any
+locks. Will be used by virtio_net.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Note: there's room for more optimization: caller is likely to have a
+memory barrier already, which means we might be able to get rid of a
+barrier here.  Deferring this optimization until we do some
+benchmarking.
+
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+[wg: Backported to 3.2]
+Signed-off-by: Wolfram Gloger <wmglo@dent.med.uni-muenchen.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/gpu/drm/radeon/radeon_combios.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+---
+ drivers/virtio/virtio_ring.c |   59 +++++++++++++++++++++++++++++++++++++------
+ include/linux/virtio.h       |    4 ++
+ 2 files changed, 55 insertions(+), 8 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_combios.c
-+++ b/drivers/gpu/drm/radeon/radeon_combios.c
-@@ -890,8 +890,10 @@ struct radeon_encoder_primary_dac *radeo
- 			dac = RBIOS8(dac_info + 0x3) & 0xf;
- 			p_dac->ps2_pdac_adj = (bg << 8) | (dac);
- 		}
--		/* if the values are all zeros, use the table */
--		if (p_dac->ps2_pdac_adj)
-+		/* if the values are zeros, use the table */
-+		if ((dac == 0) || (bg == 0))
-+			found = 0;
-+		else
- 			found = 1;
- 	}
+--- a/drivers/virtio/virtio_ring.c
++++ b/drivers/virtio/virtio_ring.c
+@@ -359,9 +359,22 @@ void virtqueue_disable_cb(struct virtque
+ }
+ EXPORT_SYMBOL_GPL(virtqueue_disable_cb);
  
+-bool virtqueue_enable_cb(struct virtqueue *_vq)
++/**
++ * virtqueue_enable_cb_prepare - restart callbacks after disable_cb
++ * @vq: the struct virtqueue we're talking about.
++ *
++ * This re-enables callbacks; it returns current queue state
++ * in an opaque unsigned value. This value should be later tested by
++ * virtqueue_poll, to detect a possible race between the driver checking for
++ * more work, and enabling callbacks.
++ *
++ * Caller must ensure we don't call this with other virtqueue
++ * operations at the same time (except where noted).
++ */
++unsigned virtqueue_enable_cb_prepare(struct virtqueue *_vq)
+ {
+ 	struct vring_virtqueue *vq = to_vvq(_vq);
++	u16 last_used_idx;
+ 
+ 	START_USE(vq);
+ 
+@@ -371,15 +384,45 @@ bool virtqueue_enable_cb(struct virtqueu
+ 	 * either clear the flags bit or point the event index at the next
+ 	 * entry. Always do both to keep code simple. */
+ 	vq->vring.avail->flags &= ~VRING_AVAIL_F_NO_INTERRUPT;
+-	vring_used_event(&vq->vring) = vq->last_used_idx;
++	vring_used_event(&vq->vring) = last_used_idx = vq->last_used_idx;
++	END_USE(vq);
++	return last_used_idx;
++}
++EXPORT_SYMBOL_GPL(virtqueue_enable_cb_prepare);
++
++/**
++ * virtqueue_poll - query pending used buffers
++ * @vq: the struct virtqueue we're talking about.
++ * @last_used_idx: virtqueue state (from call to virtqueue_enable_cb_prepare).
++ *
++ * Returns "true" if there are pending used buffers in the queue.
++ *
++ * This does not need to be serialized.
++ */
++bool virtqueue_poll(struct virtqueue *_vq, unsigned last_used_idx)
++{
++	struct vring_virtqueue *vq = to_vvq(_vq);
++
+ 	virtio_mb();
+-	if (unlikely(more_used(vq))) {
+-		END_USE(vq);
+-		return false;
+-	}
++	return (u16)last_used_idx != vq->vring.used->idx;
++}
++EXPORT_SYMBOL_GPL(virtqueue_poll);
+ 
+-	END_USE(vq);
+-	return true;
++/**
++ * virtqueue_enable_cb - restart callbacks after disable_cb.
++ * @vq: the struct virtqueue we're talking about.
++ *
++ * This re-enables callbacks; it returns "false" if there are pending
++ * buffers in the queue, to detect a possible race between the driver
++ * checking for more work, and enabling callbacks.
++ *
++ * Caller must ensure we don't call this with other virtqueue
++ * operations at the same time (except where noted).
++ */
++bool virtqueue_enable_cb(struct virtqueue *_vq)
++{
++	unsigned last_used_idx = virtqueue_enable_cb_prepare(_vq);
++	return !virtqueue_poll(_vq, last_used_idx);
+ }
+ EXPORT_SYMBOL_GPL(virtqueue_enable_cb);
+ 
+--- a/include/linux/virtio.h
++++ b/include/linux/virtio.h
+@@ -93,6 +93,10 @@ void virtqueue_disable_cb(struct virtque
+ 
+ bool virtqueue_enable_cb(struct virtqueue *vq);
+ 
++unsigned virtqueue_enable_cb_prepare(struct virtqueue *vq);
++
++bool virtqueue_poll(struct virtqueue *vq, unsigned);
++
+ bool virtqueue_enable_cb_delayed(struct virtqueue *vq);
+ 
+ void *virtqueue_detach_unused_buf(struct virtqueue *vq);
 
 
