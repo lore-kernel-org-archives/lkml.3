@@ -1,63 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753502Ab3HBVps (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 17:45:48 -0400
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:41650 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751870Ab3HBVpr (ORCPT
+	id S1753798Ab3HBVrY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 17:47:24 -0400
+Received: from g1t0028.austin.hp.com ([15.216.28.35]:47390 "EHLO
+	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751870Ab3HBVrW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 17:45:47 -0400
-From: Andreas Platschek <andi.platschek@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, Andreas Platschek <andi.platschek@gmail.com>
-Subject: [PATCH] driver-core: only call kfree() if memory was allocated
-Date: Fri,  2 Aug 2013 23:43:50 +0200
-Message-Id: <1375479830-8698-1-git-send-email-andi.platschek@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Fri, 2 Aug 2013 17:47:22 -0400
+Message-ID: <1375479975.10300.105.camel@misato.fc.hp.com>
+Subject: Re: Cannot hot remove a memory device
+From: Toshi Kani <toshi.kani@hp.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        rafael.j.wysocki@intel.com, vasilis.liaskovitis@profitbricks.com,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        tangchen@cn.fujitsu.com, wency@cn.fujitsu.com
+Date: Fri, 02 Aug 2013 15:46:15 -0600
+In-Reply-To: <2995879.KDC1gYpzij@vostro.rjw.lan>
+References: <51FA1E41.20304@jp.fujitsu.com>
+	 <2995879.KDC1gYpzij@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are several cases where we could bail out of show_uevent()
-before kzalloc() is even called. In those cases we don't want to
-call kfree().
+On Thu, 2013-08-01 at 23:43 +0200, Rafael J. Wysocki wrote:
+> Hi,
+> 
+> Thanks for your report.
+> 
+> On Thursday, August 01, 2013 05:37:21 PM Yasuaki Ishimatsu wrote:
+> > By following commit, I cannot hot remove a memory device.
+> > 
+> > ACPI / memhotplug: Bind removable memory blocks to ACPI device nodes
+> > commit e2ff39400d81233374e780b133496a2296643d7d
+> > 
+> > Details are follows:
+> > When I add a memory device, acpi_memory_enable_device() always fails
+> > as follows:
+> > 
+> > ...
+> > [ 1271.114116]  [ffffea121c400000-ffffea121c7fffff] PMD -> [ffff880813c00000-ffff880813ffffff] on node 3
+> > [ 1271.128682]  [ffffea121c800000-ffffea121cbfffff] PMD -> [ffff880813800000-ffff880813bfffff] on node 3
+> > [ 1271.143298]  [ffffea121cc00000-ffffea121cffffff] PMD -> [ffff880813000000-ffff8808133fffff] on node 3
+> > [ 1271.157799]  [ffffea121d000000-ffffea121d3fffff] PMD -> [ffff880812c00000-ffff880812ffffff] on node 3
+> > [ 1271.172341]  [ffffea121d400000-ffffea121d7fffff] PMD -> [ffff880812800000-ffff880812bfffff] on node 3
+> > [ 1271.186872]  [ffffea121d800000-ffffea121dbfffff] PMD -> [ffff880812400000-ffff8808127fffff] on node 3
+> > [ 1271.201481]  [ffffea121dc00000-ffffea121dffffff] PMD -> [ffff880812000000-ffff8808123fffff] on node 3
+> > [ 1271.216041]  [ffffea121e000000-ffffea121e3fffff] PMD -> [ffff880811c00000-ffff880811ffffff] on node 3
+> > [ 1271.230623]  [ffffea121e400000-ffffea121e7fffff] PMD -> [ffff880811800000-ffff880811bfffff] on node 3
+> > [ 1271.245148]  [ffffea121e800000-ffffea121ebfffff] PMD -> [ffff880811400000-ffff8808117fffff] on node 3
+> > [ 1271.259683]  [ffffea121ec00000-ffffea121effffff] PMD -> [ffff880811000000-ffff8808113fffff] on node 3
+> > [ 1271.274194]  [ffffea121f000000-ffffea121f3fffff] PMD -> [ffff880810c00000-ffff880810ffffff] on node 3
+> > [ 1271.288764]  [ffffea121f400000-ffffea121f7fffff] PMD -> [ffff880810800000-ffff880810bfffff] on node 3
 
-In addition the error handling of kzalloc() is now using the
-single point of exit as well.
+It appears that each memory object only has 64MB of memory.  This is
+less than the memory block size, which is 128MB.  This means that a
+single memory block associates with two ACPI memory device objects.
 
-Signed-off-by: Andreas Platschek <andi.platschek@gmail.com>
----
- drivers/base/core.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+> > ...	
+> > [ 1271.325841] acpi PNP0C80:03: acpi_memory_enable_device() error
+> 
+> Well, the only new way acpi_memory_enable_device() can fail after that commit
+> is a failure in acpi_bind_memory_blocks().
 
-diff --git a/drivers/base/core.c b/drivers/base/core.c
-index 8856d74..bf4effb 100644
---- a/drivers/base/core.c
-+++ b/drivers/base/core.c
-@@ -372,8 +372,10 @@ static ssize_t show_uevent(struct device *dev, struct device_attribute *attr,
- 			goto out;
- 
- 	env = kzalloc(sizeof(struct kobj_uevent_env), GFP_KERNEL);
--	if (!env)
--		return -ENOMEM;
-+	if (!env) {
-+		count = -ENOMEM;
-+		goto out;
-+	}
- 
- 	/* let the kset specific function add its keys */
- 	retval = kset->uevent_ops->uevent(kset, &dev->kobj, env);
-@@ -383,8 +385,9 @@ static ssize_t show_uevent(struct device *dev, struct device_attribute *attr,
- 	/* copy keys to file */
- 	for (i = 0; i < env->envp_idx; i++)
- 		count += sprintf(&buf[count], "%s\n", env->envp[i]);
--out:
-+out_free:
- 	kfree(env);
-+out:
- 	return count;
- }
- 
--- 
-1.7.10.4
+Agreed.
+
+> This means that either handle is NULL, which I think we can exclude, because
+> acpi_memory_enable_device() wouldn't be called at all if that were the case, or
+> there's a more subtle error in acpi_bind_one().
+> 
+> One that comes to mind is that we may be calling acpi_bind_one() twice for the
+> same memory region, in which it will trigger -EINVAL from the sanity check in
+> there.
+
+I think it fails with -EINVAL at the place with dev_warn(dev, "ACPI
+handle is already set\n").  When two ACPI memory objects associate with
+a same memory block, the bind procedure of the 2nd ACPI memory object
+sees that ACPI_HANDLE(dev) is already set to the 1st ACPI memory object.
+
+Thanks,
+-Toshi
 
