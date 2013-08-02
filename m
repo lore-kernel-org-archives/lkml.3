@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753883Ab3HBUGD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 16:06:03 -0400
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:64578 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752345Ab3HBUF7 (ORCPT
+	id S1754256Ab3HBUGM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 16:06:12 -0400
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:63964 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753783Ab3HBUGI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 16:05:59 -0400
+	Fri, 2 Aug 2013 16:06:08 -0400
 From: David Ahern <dsahern@gmail.com>
 To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
 Cc: David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>,
@@ -15,9 +15,9 @@ Cc: David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>,
         Namhyung Kim <namhyung@kernel.org>,
         Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
         Runzhen Wang <runzhen@linux.vnet.ibm.com>
-Subject: [PATCH 3/9] perf session: export a few functions for event processing
-Date: Fri,  2 Aug 2013 14:05:41 -0600
-Message-Id: <1375473947-64285-4-git-send-email-dsahern@gmail.com>
+Subject: [PATCH 7/9] perf kvm: option to print events that exceed a threshold
+Date: Fri,  2 Aug 2013 14:05:45 -0600
+Message-Id: <1375473947-64285-8-git-send-email-dsahern@gmail.com>
 X-Mailer: git-send-email 1.7.10.1
 In-Reply-To: <1375473947-64285-1-git-send-email-dsahern@gmail.com>
 References: <1375473947-64285-1-git-send-email-dsahern@gmail.com>
@@ -25,10 +25,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allows kvm live mode to reuse the event processing and ordered samples
-processing used by the perf-report path.
-
-v2: removed flush_sample_queue as noticed by Jiri
+This is useful to spot high latency blips.
 
 Signed-off-by: David Ahern <dsahern@gmail.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
@@ -40,65 +37,99 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 Cc: Runzhen Wang <runzhen@linux.vnet.ibm.com>
 ---
- tools/perf/util/session.c |   12 ++++++------
- tools/perf/util/session.h |    7 +++++++
- 2 files changed, 13 insertions(+), 6 deletions(-)
+ tools/perf/builtin-kvm.c |   25 +++++++++++++++++++++----
+ tools/perf/perf.h        |    3 +++
+ 2 files changed, 24 insertions(+), 4 deletions(-)
 
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index a0ce5a4..b5ebd47 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -250,7 +250,7 @@ static int process_finished_round(struct perf_tool *tool,
- 				  union perf_event *event,
- 				  struct perf_session *session);
+diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
+index 5c6e3cd..28afc05d 100644
+--- a/tools/perf/builtin-kvm.c
++++ b/tools/perf/builtin-kvm.c
+@@ -106,6 +106,7 @@ struct perf_kvm_stat {
+ 	u64 total_time;
+ 	u64 total_count;
+ 	u64 lost_events;
++	u64 threshold;
  
--static void perf_tool__fill_defaults(struct perf_tool *tool)
-+void perf_tool__fill_defaults(struct perf_tool *tool)
- {
- 	if (tool->sample == NULL)
- 		tool->sample = process_event_sample_stub;
-@@ -495,7 +495,7 @@ static int perf_session_deliver_event(struct perf_session *session,
- 				      u64 file_offset);
+ 	struct rb_root result;
  
- static int flush_sample_queue(struct perf_session *s,
--			       struct perf_tool *tool)
-+		       struct perf_tool *tool)
+@@ -470,7 +471,7 @@ static bool update_kvm_event(struct kvm_event *event, int vcpu_id,
+ static bool handle_end_event(struct perf_kvm_stat *kvm,
+ 			     struct vcpu_event_record *vcpu_record,
+ 			     struct event_key *key,
+-			     u64 timestamp)
++			     struct perf_sample *sample)
  {
- 	struct ordered_samples *os = &s->ordered_samples;
- 	struct list_head *head = &os->samples;
-@@ -1049,10 +1049,10 @@ static void event_swap(union perf_event *event, bool sample_id_all)
- 		swap(event, sample_id_all);
+ 	struct kvm_event *event;
+ 	u64 time_begin, time_diff;
+@@ -507,12 +508,24 @@ static bool handle_end_event(struct perf_kvm_stat *kvm,
+ 	vcpu_record->start_time = 0;
+ 
+ 	/* seems to happen once in a while during live mode */
+-	if (timestamp < time_begin) {
++	if (sample->time < time_begin) {
+ 		pr_debug("End time before begin time; skipping event.\n");
+ 		return true;
+ 	}
+ 
+-	time_diff = timestamp - time_begin;
++	time_diff = sample->time - time_begin;
++
++	if (kvm->threshold && time_diff > kvm->threshold) {
++		char decode[32];
++
++		kvm->events_ops->decode_key(kvm, &event->key, decode);
++		if (strcmp(decode, "HLT")) {
++			pr_info("%" PRIu64 " VM %d, vcpu %d: %s event took %" PRIu64 "usec\n",
++				 sample->time, sample->pid, vcpu_record->vcpu_id,
++				 decode, time_diff/1000);
++		}
++	}
++
+ 	return update_kvm_event(event, vcpu, time_diff);
  }
  
--static int perf_session__process_event(struct perf_session *session,
--				       union perf_event *event,
--				       struct perf_tool *tool,
--				       u64 file_offset)
-+int perf_session__process_event(struct perf_session *session,
-+				union perf_event *event,
-+				struct perf_tool *tool,
-+				u64 file_offset)
- {
- 	struct perf_sample sample;
- 	int ret;
-diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
-index ad8d3d4..9818fc2 100644
---- a/tools/perf/util/session.h
-+++ b/tools/perf/util/session.h
-@@ -56,6 +56,13 @@ int __perf_session__process_events(struct perf_session *self,
- int perf_session__process_events(struct perf_session *self,
- 				 struct perf_tool *tool);
+@@ -559,7 +572,7 @@ static bool handle_kvm_event(struct perf_kvm_stat *kvm,
+ 		return handle_begin_event(kvm, vcpu_record, &key, sample->time);
  
-+int perf_session__process_event(struct perf_session *session,
-+				union perf_event *event,
-+				struct perf_tool *tool,
-+				u64 file_offset);
+ 	if (kvm->events_ops->is_end_event(evsel, sample, &key))
+-		return handle_end_event(kvm, vcpu_record, &key, sample->time);
++		return handle_end_event(kvm, vcpu_record, &key, sample);
+ 
+ 	return true;
+ }
+@@ -1382,6 +1395,8 @@ static int kvm_events_live(struct perf_kvm_stat *kvm,
+ 		OPT_STRING('k', "key", &kvm->sort_key, "sort-key",
+ 			"key for sorting: sample(sort by samples number)"
+ 			" time (sort by avg time)"),
++		OPT_U64('T', "threshold", &kvm->threshold,
++		    "show events that take longer than threshold usecs"),
+ 		OPT_END()
+ 	};
+ 	const char * const live_usage[] = {
+@@ -1420,6 +1435,8 @@ static int kvm_events_live(struct perf_kvm_stat *kvm,
+ 			usage_with_options(live_usage, live_options);
+ 	}
+ 
++	kvm->threshold *= NSEC_PER_USEC;   /* convert usec to nsec */
 +
-+void perf_tool__fill_defaults(struct perf_tool *tool);
-+
- int perf_session__resolve_callchain(struct perf_session *self, struct perf_evsel *evsel,
- 				    struct thread *thread,
- 				    struct ip_callchain *chain,
+ 	/*
+ 	 * target related setups
+ 	 */
+diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+index 32bd102..cf20187 100644
+--- a/tools/perf/perf.h
++++ b/tools/perf/perf.h
+@@ -125,6 +125,9 @@
+ #ifndef NSEC_PER_SEC
+ # define NSEC_PER_SEC			1000000000ULL
+ #endif
++#ifndef NSEC_PER_USEC
++# define NSEC_PER_USEC			1000ULL
++#endif
+ 
+ static inline unsigned long long rdclock(void)
+ {
 -- 
 1.7.10.1
 
