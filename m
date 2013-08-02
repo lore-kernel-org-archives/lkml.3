@@ -1,61 +1,283 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753798Ab3HBBfo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 21:35:44 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:53960 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752890Ab3HBBfm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 21:35:42 -0400
-X-IronPort-AV: E=Sophos;i="4.89,797,1367942400"; 
-   d="scan'208";a="8093323"
-Message-ID: <51FB0C95.8040207@cn.fujitsu.com>
-Date: Fri, 02 Aug 2013 09:34:13 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Toshi Kani <toshi.kani@hp.com>
-CC: rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu,
-        hpa@zytor.com, akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
-        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
-        mina86@mina86.com, gong.chen@linux.intel.com,
-        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
-        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
-        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com, x86@kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH v2 04/18] acpi: Introduce acpi_invalid_table() to check
- if a table is invalid.
-References: <1375340800-19332-1-git-send-email-tangchen@cn.fujitsu.com>  <1375340800-19332-5-git-send-email-tangchen@cn.fujitsu.com> <1375396019.10300.32.camel@misato.fc.hp.com>
-In-Reply-To: <1375396019.10300.32.camel@misato.fc.hp.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/02 09:34:23,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/02 09:34:25,
-	Serialize complete at 2013/08/02 09:34:25
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1753938Ab3HBBgJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 21:36:09 -0400
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:41603 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753169Ab3HBBgH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 21:36:07 -0400
+From: behanw@converseincode.com
+To: balbi@ti.com, gregkh@linuxfoundation.org
+Cc: behanw@converseincode.com, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Mark Charlebois <charlebm@gmail.com>
+Subject: [PATCH] USB: Removing the use of VLAIS from the gadget driver
+Date: Thu,  1 Aug 2013 21:35:44 -0400
+Message-Id: <1375407344-30120-1-git-send-email-behanw@converseincode.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02/2013 06:26 AM, Toshi Kani wrote:
-......
->> +int __init acpi_invalid_table(struct cpio_data *file,
->> +			      const char *path, const char *signature)
->
-> Since this function verifies a given acpi table in initrd (not that the
-> table is invalid), I'd suggest to rename it something like
-> acpi_verify_initrd().  Otherwise, it looks good to me.
->
+From: Behan Webster <behanw@converseincode.com>
 
-Hi Toshi-san,
+The use of variable length arrays in structs (VLAIS) in the Linux Kernel code
+precludes the use of compilers which don't implement VLAIS (for instance the
+Clang compiler). This patch removes the use of VLAIS in the gadget driver.
 
-Thanks, will change the name.
+Signed-off-by: Mark Charlebois <charlebm@gmail.com>
+Signed-off-by: Behan Webster <behanw@converseincode.com>
+---
+ drivers/usb/gadget/f_fs.c | 128 +++++++++++++++++++++++++++-------------------
+ 1 file changed, 76 insertions(+), 52 deletions(-)
 
-Thanks.
-
-> Acked-by: Toshi Kani<toshi.kani@hp.com>
->
+diff --git a/drivers/usb/gadget/f_fs.c b/drivers/usb/gadget/f_fs.c
+index f394f29..4b872c4 100644
+--- a/drivers/usb/gadget/f_fs.c
++++ b/drivers/usb/gadget/f_fs.c
+@@ -30,7 +30,6 @@
+ 
+ #define FUNCTIONFS_MAGIC	0xa647361 /* Chosen by a honest dice roll ;) */
+ 
+-
+ /* Debugging ****************************************************************/
+ 
+ #ifdef VERBOSE_DEBUG
+@@ -214,6 +213,8 @@ struct ffs_data {
+ 	/* ids in stringtabs are set in functionfs_bind() */
+ 	const void			*raw_strings;
+ 	struct usb_gadget_strings	**stringtabs;
++	struct usb_gadget_strings	*stringtab;
++	struct usb_string		*strings;
+ 
+ 	/*
+ 	 * File system's super block, write once when file system is
+@@ -263,7 +264,10 @@ struct ffs_function {
+ 
+ 	struct ffs_ep			*eps;
+ 	u8				eps_revmap[16];
++	struct usb_descriptor_header	**fs_descs;
++	struct usb_descriptor_header	**hs_descs;
+ 	short				*interfaces_nums;
++	char				*raw_descs;
+ 
+ 	struct usb_function		function;
+ };
+@@ -1345,6 +1349,8 @@ static void ffs_data_clear(struct ffs_data *ffs)
+ 	kfree(ffs->raw_descs);
+ 	kfree(ffs->raw_strings);
+ 	kfree(ffs->stringtabs);
++	kfree(ffs->stringtab);
++	kfree(ffs->strings);
+ }
+ 
+ static void ffs_data_reset(struct ffs_data *ffs)
+@@ -1357,6 +1363,8 @@ static void ffs_data_reset(struct ffs_data *ffs)
+ 	ffs->raw_descs = NULL;
+ 	ffs->raw_strings = NULL;
+ 	ffs->stringtabs = NULL;
++	ffs->stringtab = NULL;
++	ffs->strings = NULL;
+ 
+ 	ffs->raw_descs_length = 0;
+ 	ffs->raw_fs_descs_length = 0;
+@@ -1528,12 +1536,10 @@ static void ffs_func_free(struct ffs_function *func)
+ 	ffs_data_put(func->ffs);
+ 
+ 	kfree(func->eps);
+-	/*
+-	 * eps and interfaces_nums are allocated in the same chunk so
+-	 * only one free is required.  Descriptors are also allocated
+-	 * in the same chunk.
+-	 */
+-
++	kfree(func->fs_descs);
++	kfree(func->hs_descs);
++	kfree(func->interfaces_nums);
++	kfree(func->raw_descs);
+ 	kfree(func);
+ }
+ 
+@@ -1907,33 +1913,35 @@ static int __ffs_data_got_strings(struct ffs_data *ffs,
+ 		return 0;
+ 	}
+ 
+-	/* Allocate everything in one chunk so there's less maintenance. */
+ 	{
+-		struct {
+-			struct usb_gadget_strings *stringtabs[lang_count + 1];
+-			struct usb_gadget_strings stringtab[lang_count];
+-			struct usb_string strings[lang_count*(needed_count+1)];
+-		} *d;
+ 		unsigned i = 0;
+-
+-		d = kmalloc(sizeof *d, GFP_KERNEL);
+-		if (unlikely(!d)) {
++		usb_gadget_strings **stringtabs = NULL;
++		usb_gadget_strings *stringtab = NULL;
++		usb_string *strings = NULL;
++
++		stringtabs = kmalloc(sizeof(*stringtabs)*(lang_count + 1),
++			GFP_KERNEL);
++		stringtab = kmalloc(sizeof(*stringtab)*(lang_count),
++			GFP_KERNEL);
++		strings = kmalloc(sizeof(*strings)
++			* (lang_count * (needed_count + 1)), GFP_KERNEL);
++		if (unlikely(!stringtabs || !stringtab || !strings)) {
++			kfree(stringtabs);
++			kfree(stringtab);
++			kfree(strings);
+ 			kfree(_data);
+ 			return -ENOMEM;
+ 		}
+-
+-		stringtabs = d->stringtabs;
+-		t = d->stringtab;
++		b = stringtabs;
++		t = stringtab;
+ 		i = lang_count;
+ 		do {
+-			*stringtabs++ = t++;
++			*b++ = t++;
+ 		} while (--i);
+-		*stringtabs = NULL;
++		*b = NULL;
+ 
+-		stringtabs = d->stringtabs;
+-		t = d->stringtab;
+-		s = d->strings;
+-		strings = s;
++		t = stringtab;
++		s = strings;
+ 	}
+ 
+ 	/* For each language */
+@@ -1991,12 +1999,16 @@ static int __ffs_data_got_strings(struct ffs_data *ffs,
+ 
+ 	/* Done! */
+ 	ffs->stringtabs = stringtabs;
++	ffs->stringtab = stringtab;
++	ffs->strings = strings;
+ 	ffs->raw_strings = _data;
+ 
+ 	return 0;
+ 
+ error_free:
+ 	kfree(stringtabs);
++	kfree(stringtab);
++	kfree(strings);
+ error:
+ 	kfree(_data);
+ 	return -EINVAL;
+@@ -2207,17 +2219,12 @@ static int ffs_func_bind(struct usb_configuration *c,
+ 
+ 	int ret;
+ 
+-	/* Make it a single chunk, less management later on */
+-	struct {
+-		struct ffs_ep eps[ffs->eps_count];
+-		struct usb_descriptor_header
+-			*fs_descs[full ? ffs->fs_descs_count + 1 : 0];
+-		struct usb_descriptor_header
+-			*hs_descs[high ? ffs->hs_descs_count + 1 : 0];
+-		short inums[ffs->interfaces_count];
+-		char raw_descs[high ? ffs->raw_descs_length
+-				    : ffs->raw_fs_descs_length];
+-	} *data;
++	struct ffs_ep *eps = NULL;
++	struct usb_descriptor_header **fs_descs = NULL;
++	struct usb_descriptor_header **hs_descs = NULL;
++	short *inums = NULL;
++	char *raw_descs = NULL;
++
+ 
+ 	ENTER();
+ 
+@@ -2225,21 +2232,40 @@ static int ffs_func_bind(struct usb_configuration *c,
+ 	if (unlikely(!(full | high)))
+ 		return -ENOTSUPP;
+ 
+-	/* Allocate */
+-	data = kmalloc(sizeof *data, GFP_KERNEL);
+-	if (unlikely(!data))
++	size_t eps_sz = sizeof(*eps)*ffs->eps_count;
++	eps = kmalloc(eps_sz, GFP_KERNEL);
++	fs_descs = kmalloc(sizeof(*fs_descs)*
++			   (full ? ffs->fs_descs_count + 1 : 0), GFP_KERNEL);
++	hs_descs = kmalloc(sizeof(*hs_descs)*
++			   (high ? ffs->hs_descs_count + 1 : 0), GFP_KERNEL);
++	size_t inums_sz = sizeof(*inums)*ffs->interfaces_count;
++	inums = kmalloc(inums_sz, GFP_KERNEL);
++	size_t raw_descs_sz = sizeof(*raw_descs)*(high ? ffs->raw_descs_length :
++					ffs->raw_fs_descs_length);
++	raw_descs = kmalloc(raw_descs_sz, , GFP_KERNEL);
++
++	if (unlikely(!eps || !fs_descs || !hs_descs || !inums || !raw_descs)) {
++		kfree(eps);
++		kfree(fs_descs);
++		kfree(hs_descs);
++		kfree(inums);
++		kfree(raw_descs);
+ 		return -ENOMEM;
++	}
+ 
+ 	/* Zero */
+-	memset(data->eps, 0, sizeof data->eps);
+-	memcpy(data->raw_descs, ffs->raw_descs + 16, sizeof data->raw_descs);
+-	memset(data->inums, 0xff, sizeof data->inums);
++	memset(eps, 0, eps_sz);
++	memcpy(raw_descs, ffs->raw_descs + 16, raw_descs_sz);
++	memset(inums, 0xff, inums_sz);
+ 	for (ret = ffs->eps_count; ret; --ret)
+-		data->eps[ret].num = -1;
++		eps[ret].num = -1;
+ 
+ 	/* Save pointers */
+-	func->eps             = data->eps;
+-	func->interfaces_nums = data->inums;
++	func->eps             = eps;
++	func->fs_descs        = fs_descs;
++	func->hs_descs        = hs_descs;
++	func->interfaces_nums = inums;
++	func->raw_descs       = raw_descs;
+ 
+ 	/*
+ 	 * Go through all the endpoint descriptors and allocate
+@@ -2247,10 +2273,9 @@ static int ffs_func_bind(struct usb_configuration *c,
+ 	 * numbers without worrying that it may be described later on.
+ 	 */
+ 	if (likely(full)) {
+-		func->function.fs_descriptors = data->fs_descs;
++		func->function.fs_descriptors = fs_descs;
+ 		ret = ffs_do_descs(ffs->fs_descs_count,
+-				   data->raw_descs,
+-				   sizeof data->raw_descs,
++				   raw_descs, raw_descs_sz,
+ 				   __ffs_func_bind_do_descs, func);
+ 		if (unlikely(ret < 0))
+ 			goto error;
+@@ -2259,10 +2284,9 @@ static int ffs_func_bind(struct usb_configuration *c,
+ 	}
+ 
+ 	if (likely(high)) {
+-		func->function.hs_descriptors = data->hs_descs;
++		func->function.hs_descriptors = hs_descs;
+ 		ret = ffs_do_descs(ffs->hs_descs_count,
+-				   data->raw_descs + ret,
+-				   (sizeof data->raw_descs) - ret,
++				   raw_descs + ret, raw_descs_sz - ret,
+ 				   __ffs_func_bind_do_descs, func);
+ 	}
+ 
+@@ -2273,7 +2297,7 @@ static int ffs_func_bind(struct usb_configuration *c,
+ 	 */
+ 	ret = ffs_do_descs(ffs->fs_descs_count +
+ 			   (high ? ffs->hs_descs_count : 0),
+-			   data->raw_descs, sizeof data->raw_descs,
++			   raw_descs, raw_descs_sz,
+ 			   __ffs_func_bind_do_nums, func);
+ 	if (unlikely(ret < 0))
+ 		goto error;
+-- 
+1.8.1.2
 
