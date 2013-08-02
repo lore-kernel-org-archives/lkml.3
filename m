@@ -1,86 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755663Ab3HBKsK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:48:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37211 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964830Ab3HBKKC (ORCPT
+	id S1755747Ab3HBKsg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:48:36 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:48743 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755693Ab3HBKse (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:10:02 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joe Lawrence <joe.lawrence@stratus.com>, NeilBrown <neilb@suse.de>
-Subject: [ 45/99] md: Remove recent change which allows devices to skip recovery.
-Date: Fri,  2 Aug 2013 18:07:58 +0800
-Message-Id: <20130802100232.361687043@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
-In-Reply-To: <20130802100225.478715166@linuxfoundation.org>
-References: <20130802100225.478715166@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Fri, 2 Aug 2013 06:48:34 -0400
+Date: Fri, 2 Aug 2013 03:48:32 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Dave Kleikamp <dave.kleikamp@oracle.com>
+Cc: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
+        Zach Brown <zab@zabbo.net>
+Subject: Re: [PATCH V8 00/33] loop: Issue O_DIRECT aio using bio_vec
+Message-ID: <20130802104832.GA1718@infradead.org>
+References: <1374774659-13121-1-git-send-email-dave.kleikamp@oracle.com>
+ <20130801085831.GA21552@infradead.org>
+ <51FA5CD8.2090807@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51FA5CD8.2090807@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On Thu, Aug 01, 2013 at 08:04:24AM -0500, Dave Kleikamp wrote:
+> On 08/01/2013 03:58 AM, Christoph Hellwig wrote:
+> > What should be added to this support is to move the swap over nfs code
+> > over to this interface instead of the utterly bogus
+> > KERNEL_READ/KERNEL_WRITE hacks that were added for it.
+> 
+> That's patch 24/33 nfs: simplify swap
 
-------------------
+Sorry, missed it somehow.  Thanks for doing this work, and removing that
+wart alone is absolutely worth merging this patchset.
 
-From: NeilBrown <neilb@suse.de>
+For the future we should look into enabling this for swap in general
+and removing the slightly less cludge currently used for swapfiles.
 
-commit 5024c298311f3b97c85cb034f9edaa333fdb9338 upstream.
-
-commit 7ceb17e87bde79d285a8b988cfed9eaeebe60b86
-    md: Allow devices to be re-added to a read-only array.
-
-allowed a bit more than just that.  It also allows devices to be added
-to a read-write array and to end up skipping recovery.
-
-This patch removes the offending piece of code pending a rewrite for a
-subsequent release.
-
-More specifically:
- If the array has a bitmap, then the device will still need a bitmap
- based resync ('saved_raid_disk' is set under different conditions
- is a bitmap is present).
- If the array doesn't have a bitmap, then this is correct as long as
- nothing has been written to the array since the metadata was checked
- by ->validate_super.  However there is no locking to ensure that there
- was no write.
-
-Bug was introduced in 3.10 and causes data corruption so
-patch is suitable for 3.10-stable.
-
-Reported-by: Joe Lawrence <joe.lawrence@stratus.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/md/md.c |   14 --------------
- 1 file changed, 14 deletions(-)
-
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -7697,20 +7697,6 @@ static int remove_and_add_spares(struct
- 			continue;
- 
- 		rdev->recovery_offset = 0;
--		if (rdev->saved_raid_disk >= 0 && mddev->in_sync) {
--			spin_lock_irq(&mddev->write_lock);
--			if (mddev->in_sync)
--				/* OK, this device, which is in_sync,
--				 * will definitely be noticed before
--				 * the next write, so recovery isn't
--				 * needed.
--				 */
--				rdev->recovery_offset = mddev->recovery_cp;
--			spin_unlock_irq(&mddev->write_lock);
--		}
--		if (mddev->ro && rdev->recovery_offset != MaxSector)
--			/* not safe to add this disk now */
--			continue;
- 		if (mddev->pers->
- 		    hot_add_disk(mddev, rdev) == 0) {
- 			if (sysfs_link_rdev(mddev, rdev))
-
-
+Especially btrfs should benefit greatly from that.
