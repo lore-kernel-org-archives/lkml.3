@@ -1,43 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753782Ab3HBOZY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 10:25:24 -0400
-Received: from zetta.elopez.com.ar ([199.30.59.35]:57272 "EHLO
-	zetta.elopez.com.ar" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753647Ab3HBOZW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 10:25:22 -0400
-Message-ID: <51FBC13E.9060805@elopez.com.ar>
-Date: Fri, 02 Aug 2013 11:25:02 -0300
-From: =?ISO-8859-1?Q?Emilio_L=F3pez?= <emilio@elopez.com.ar>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1753785Ab3HBO16 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 10:27:58 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:49056 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753284Ab3HBO15 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 10:27:57 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <8761vq40s2.fsf@rustcorp.com.au>
+References: <CALkWK0n7zedKD4tnxKh-qMuDnMJ5RXjnPJ9EUWT=cCgiokX11A@mail.gmail.com> <51E97779.3020103@zytor.com> <87zjte9iah.fsf@rustcorp.com.au> <CABpLfohrweJd0=0eFJDO7dv2HHxx_mbP0uySMDrsZZZXExdXug@mail.gmail.com> <51F9005F.30501@zytor.com> <CABpLfoiKnbkHq9oT3yk72583yYKz_AMotLVV-Cu1sw1B1GH0xw@mail.gmail.com> <8761vq40s2.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-CC: Mike Turquette <mturquette@linaro.org>, kevin.z.m.zh@gmail.com,
-        sunny@allwinnertech.com, shuge@allwinnertech.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] clk: sunxi: Add A10s gates
-References: <1374618504-19391-1-git-send-email-maxime.ripard@free-electrons.com> <1374618504-19391-2-git-send-email-maxime.ripard@free-electrons.com>
-In-Reply-To: <1374618504-19391-2-git-send-email-maxime.ripard@free-electrons.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+ charset=UTF-8
 Content-Transfer-Encoding: 8bit
+Subject: Re: [QUERY] lguest64
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Fri, 02 Aug 2013 07:27:40 -0700
+To: Rusty Russell <rusty@rustcorp.com.au>,
+        Mike Rapoport <mike.rapoport@gmail.com>
+CC: Ramkumar Ramachandra <artagnon@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Message-ID: <8f931f05-e8e3-4d1e-a1f1-23fbd315fa32@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Maxime,
+We'll look at them and consider to what degree they are likely to cause issues, but as Rusty says, it is the red shirt.
 
-El 23/07/13 19:28, Maxime Ripard escribió:
-> The Allwinner A10s has a slightly different gates set than the A10 and
-> A13, so add these gates to the clk driver.
-> 
-> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+UML is also PV of course, but sits in its own corner and we x86 maintainers very rarely have to do something special to accommodate it.
 
-Looks good to me, and my A10S board still boots, so
+Rusty Russell <rusty@rustcorp.com.au> wrote:
+>Mike Rapoport <mike.rapoport@gmail.com> writes:
+>> On Wed, Jul 31, 2013 at 3:17 PM, H. Peter Anvin <hpa@zytor.com>
+>wrote:
+>>> On 07/31/2013 02:39 AM, Mike Rapoport wrote:
+>>>>
+>>>> The use case I had in mind is to use lguest as a nested hypervisor
+>in
+>>>> public clouds. As of today, major public clouds do not support
+>nested
+>>>> virtualization and it's not clear at all if they will expose this
+>>>> ability in their deployments. Addition of 64-bit support for lguest
+>>>> won't require changes to pvops and, as far as I can tell, won't
+>change
+>>>> the number of pvops users...
+>>>>
+>>>
+>>> "We can add a pvops user and that won't change the number of pvops
+>>> users" What?!
+>>
+>> We modify existing pvops user, IMHO. lguest is existing pvops user
+>and
+>> my idea was to extend it, rather than add lguest64 alongside
+>lguest32.
+>
+>Well, lguest is particularly expendable.  It's the red shirt of the
+>virtualization away team.
+>
+>Unlike HPA, I would advocate for applying the patches if you produced
+>them.  But I'd be aware that they're likely to be ripped out as soon as
+>pvops has no other users.
+>
+>Cheers,
+>Rusty.
 
-Tested-by: Emilio López <emilio@elopez.com.ar>
-Reviewed-by: Emilio López <emilio@elopez.com.ar>
-
-Thanks!
-
-Emilio
+-- 
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
