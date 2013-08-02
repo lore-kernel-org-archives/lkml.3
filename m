@@ -1,511 +1,530 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756857Ab3HBCm5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 22:42:57 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:29433 "EHLO
+	id S1755851Ab3HBCm4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 22:42:56 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:21733 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753358Ab3HBCmZ (ORCPT
+	with ESMTP id S1752739Ab3HBCmZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 1 Aug 2013 22:42:25 -0400
-X-Authority-Analysis: v=2.0 cv=e9yEuNV/ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=uirLT_jyoMAA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=zSfVoZNyYCsA:10 a=tv1XglaBDssJtDyGf_EA:9 a=jeBq3FmKZ4MA:10 a=SNx1s9eGWaCTHt2d:21 a=UevgBjfGP0zK4V8Y:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Authority-Analysis: v=2.0 cv=P6i4d18u c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=NgMqH8nWnpIA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=bNzAMP9WSR4A:10 a=bJtgqGfVx11zdrPTRX4A:9 a=jeBq3FmKZ4MA:10 a=57W8ao7iMNVAU52F:21 a=cO1DqvIwtsdEwKdH:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130802024222.658005723@goodmis.org>
+Message-Id: <20130802024222.969067017@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Thu, 01 Aug 2013 22:39:35 -0400
+Date: Thu, 01 Aug 2013 22:39:37 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Ingo Molnar <mingo@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 2/4 v2] rcu: Add const annotation to char * for RCU tracepoints and
- functions
+Subject: [PATCH 4/4 v2] rcu: Have the RCU tracepoints use the tracepoint_string
+ infrastructure
 References: <20130802023933.677590002@goodmis.org>
-Content-Disposition: inline; filename=0002-rcu-Add-const-annotation-to-char-for-RCU-tracepoints.patch
+Content-Disposition: inline; filename=0004-rcu-Have-the-RCU-tracepoints-use-the-tracepoint_stri.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-All the RCU tracepoints and functions that reference char pointers do
-so with just 'char *' even though they do not modify the contents of
-the string itself. This will cause warnings if a const char * is used
-in one of these functions.
+Currently, RCU tracepoints save only a pointer to strings in the
+ring buffer. When displayed via the /sys/kernel/debug/tracing/trace file
+they are referenced like the printf "%s" that looks at the address
+in the ring buffer and prints out the string it points too. This requires
+that the strings are constant and persistent in the kernel.
 
-The RCU tracepoints store the pointer to the string to refer back to them
-when the trace output is displayed. As this can be minutes, hours or
-even days later, those strings had better be constant.
+The problem with this is for tools like trace-cmd and perf that read the
+binary data from the buffers but have no access to the kernel memory to
+find out what string is represented by the address in the buffer.
 
-This change also opens the door to allow the RCU tracepoint strings and
-their addresses to be exported so that userspace tracing tools can
-translate the contents of the pointers of the RCU tracepoints.
+By using the tracepoint_string infrastructure, the RCU tracepoint strings
+can be exported such that userspace tools can map the addresses to
+the strings.
+
+ # cat /sys/kernel/debug/tracing/printk_formats
+0xffffffff81a4a0e8 : "rcu_preempt"
+0xffffffff81a4a0f4 : "rcu_bh"
+0xffffffff81a4a100 : "rcu_sched"
+0xffffffff818437a0 : "cpuqs"
+0xffffffff818437a6 : "rcu_sched"
+0xffffffff818437a0 : "cpuqs"
+0xffffffff818437b0 : "rcu_bh"
+0xffffffff818437b7 : "Start context switch"
+0xffffffff818437cc : "End context switch"
+0xffffffff818437a0 : "cpuqs"
+[...]
+
+Now userspaces tools can display:
+
+ rcu_utilization:      Start context switch
+ rcu_dyntick:          Start 1 0
+ rcu_utilization:      End context switch
+ rcu_batch_start:      rcu_preempt CBs=0/5 bl=10
+ rcu_dyntick:          End 0 140000000000000
+ rcu_invoke_callback:  rcu_preempt rhp=0xffff880071c0d600 func=proc_i_callback
+ rcu_invoke_callback:  rcu_preempt rhp=0xffff880077b5b230 func=__d_free
+ rcu_dyntick:          Start 140000000000000 0
+ rcu_invoke_callback:  rcu_preempt rhp=0xffff880077563980 func=file_free_rcu
+ rcu_batch_end:        rcu_preempt CBs-invoked=3 idle=>c<>c<>c<>c<
+ rcu_utilization:      End RCU core
+ rcu_grace_period:     rcu_preempt 9741 start
+ rcu_dyntick:          Start 1 0
+ rcu_dyntick:          End 0 140000000000000
+ rcu_dyntick:          Start 140000000000000 0
+
+Instead of:
+
+ rcu_utilization:      ffffffff81843110
+ rcu_future_grace_period: ffffffff81842f1d 9939 9939 9940 0 0 3 ffffffff81842f32
+ rcu_batch_start:      ffffffff81842f1d CBs=0/4 bl=10
+ rcu_future_grace_period: ffffffff81842f1d 9939 9939 9940 0 0 3 ffffffff81842f3c
+ rcu_grace_period:     ffffffff81842f1d 9939 ffffffff81842f80
+ rcu_invoke_callback:  ffffffff81842f1d rhp=0xffff88007888aac0 func=file_free_rcu
+ rcu_grace_period:     ffffffff81842f1d 9939 ffffffff81842f95
+ rcu_invoke_callback:  ffffffff81842f1d rhp=0xffff88006aeb4600 func=proc_i_callback
+ rcu_future_grace_period: ffffffff81842f1d 9939 9939 9940 0 0 3 ffffffff81842f32
+ rcu_future_grace_period: ffffffff81842f1d 9939 9939 9940 0 0 3 ffffffff81842f3c
+ rcu_invoke_callback:  ffffffff81842f1d rhp=0xffff880071cb9fc0 func=__d_free
+ rcu_grace_period:     ffffffff81842f1d 9939 ffffffff81842f80
+ rcu_invoke_callback:  ffffffff81842f1d rhp=0xffff88007888ae80 func=file_free_rcu
+ rcu_batch_end:        ffffffff81842f1d CBs-invoked=4 idle=>c<>c<>c<>c<
+ rcu_utilization:      ffffffff8184311f
 
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- include/linux/rcupdate.h   |    4 +--
- include/trace/events/rcu.h |   82 ++++++++++++++++++++++----------------------
- kernel/rcu.h               |    2 +-
- kernel/rcupdate.c          |    2 +-
- kernel/rcutiny.c           |    2 +-
- kernel/rcutiny_plugin.h    |    2 +-
- kernel/rcutorture.c        |    8 ++---
- kernel/rcutree.c           |    4 +--
- kernel/rcutree.h           |    2 +-
- 9 files changed, 54 insertions(+), 54 deletions(-)
+ kernel/rcutree.c        |   87 +++++++++++++++++++++++++++++------------------
+ kernel/rcutree_plugin.h |   32 ++++++++---------
+ 2 files changed, 69 insertions(+), 50 deletions(-)
 
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index 4b14bdc..0c38abb 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -52,7 +52,7 @@ extern int rcutorture_runnable; /* for sysctl */
- #if defined(CONFIG_TREE_RCU) || defined(CONFIG_TREE_PREEMPT_RCU)
- extern void rcutorture_record_test_transition(void);
- extern void rcutorture_record_progress(unsigned long vernum);
--extern void do_trace_rcu_torture_read(char *rcutorturename,
-+extern void do_trace_rcu_torture_read(const char *rcutorturename,
- 				      struct rcu_head *rhp,
- 				      unsigned long secs,
- 				      unsigned long c_old,
-@@ -65,7 +65,7 @@ static inline void rcutorture_record_progress(unsigned long vernum)
- {
- }
- #ifdef CONFIG_RCU_TRACE
--extern void do_trace_rcu_torture_read(char *rcutorturename,
-+extern void do_trace_rcu_torture_read(const char *rcutorturename,
- 				      struct rcu_head *rhp,
- 				      unsigned long secs,
- 				      unsigned long c_old,
-diff --git a/include/trace/events/rcu.h b/include/trace/events/rcu.h
-index 59ebcc8..ee2376c 100644
---- a/include/trace/events/rcu.h
-+++ b/include/trace/events/rcu.h
-@@ -19,12 +19,12 @@
-  */
- TRACE_EVENT(rcu_utilization,
- 
--	TP_PROTO(char *s),
-+	TP_PROTO(const char *s),
- 
- 	TP_ARGS(s),
- 
- 	TP_STRUCT__entry(
--		__field(char *, s)
-+		__field(const char *, s)
- 	),
- 
- 	TP_fast_assign(
-@@ -51,14 +51,14 @@ TRACE_EVENT(rcu_utilization,
-  */
- TRACE_EVENT(rcu_grace_period,
- 
--	TP_PROTO(char *rcuname, unsigned long gpnum, char *gpevent),
-+	TP_PROTO(const char *rcuname, unsigned long gpnum, const char *gpevent),
- 
- 	TP_ARGS(rcuname, gpnum, gpevent),
- 
- 	TP_STRUCT__entry(
--		__field(char *, rcuname)
-+		__field(const char *, rcuname)
- 		__field(unsigned long, gpnum)
--		__field(char *, gpevent)
-+		__field(const char *, gpevent)
- 	),
- 
- 	TP_fast_assign(
-@@ -89,21 +89,21 @@ TRACE_EVENT(rcu_grace_period,
-  */
- TRACE_EVENT(rcu_future_grace_period,
- 
--	TP_PROTO(char *rcuname, unsigned long gpnum, unsigned long completed,
-+	TP_PROTO(const char *rcuname, unsigned long gpnum, unsigned long completed,
- 		 unsigned long c, u8 level, int grplo, int grphi,
--		 char *gpevent),
-+		 const char *gpevent),
- 
- 	TP_ARGS(rcuname, gpnum, completed, c, level, grplo, grphi, gpevent),
- 
- 	TP_STRUCT__entry(
--		__field(char *, rcuname)
-+		__field(const char *, rcuname)
- 		__field(unsigned long, gpnum)
- 		__field(unsigned long, completed)
- 		__field(unsigned long, c)
- 		__field(u8, level)
- 		__field(int, grplo)
- 		__field(int, grphi)
--		__field(char *, gpevent)
-+		__field(const char *, gpevent)
- 	),
- 
- 	TP_fast_assign(
-@@ -132,13 +132,13 @@ TRACE_EVENT(rcu_future_grace_period,
-  */
- TRACE_EVENT(rcu_grace_period_init,
- 
--	TP_PROTO(char *rcuname, unsigned long gpnum, u8 level,
-+	TP_PROTO(const char *rcuname, unsigned long gpnum, u8 level,
- 		 int grplo, int grphi, unsigned long qsmask),
- 
- 	TP_ARGS(rcuname, gpnum, level, grplo, grphi, qsmask),
- 
- 	TP_STRUCT__entry(
--		__field(char *, rcuname)
-+		__field(const char *, rcuname)
- 		__field(unsigned long, gpnum)
- 		__field(u8, level)
- 		__field(int, grplo)
-@@ -168,12 +168,12 @@ TRACE_EVENT(rcu_grace_period_init,
-  */
- TRACE_EVENT(rcu_preempt_task,
- 
--	TP_PROTO(char *rcuname, int pid, unsigned long gpnum),
-+	TP_PROTO(const char *rcuname, int pid, unsigned long gpnum),
- 
- 	TP_ARGS(rcuname, pid, gpnum),
- 
- 	TP_STRUCT__entry(
--		__field(char *, rcuname)
-+		__field(const char *, rcuname)
- 		__field(unsigned long, gpnum)
- 		__field(int, pid)
- 	),
-@@ -195,12 +195,12 @@ TRACE_EVENT(rcu_preempt_task,
-  */
- TRACE_EVENT(rcu_unlock_preempted_task,
- 
--	TP_PROTO(char *rcuname, unsigned long gpnum, int pid),
-+	TP_PROTO(const char *rcuname, unsigned long gpnum, int pid),
- 
- 	TP_ARGS(rcuname, gpnum, pid),
- 
- 	TP_STRUCT__entry(
--		__field(char *, rcuname)
-+		__field(const char *, rcuname)
- 		__field(unsigned long, gpnum)
- 		__field(int, pid)
- 	),
-@@ -224,14 +224,14 @@ TRACE_EVENT(rcu_unlock_preempted_task,
-  */
- TRACE_EVENT(rcu_quiescent_state_report,
- 
--	TP_PROTO(char *rcuname, unsigned long gpnum,
-+	TP_PROTO(const char *rcuname, unsigned long gpnum,
- 		 unsigned long mask, unsigned long qsmask,
- 		 u8 level, int grplo, int grphi, int gp_tasks),
- 
- 	TP_ARGS(rcuname, gpnum, mask, qsmask, level, grplo, grphi, gp_tasks),
- 
- 	TP_STRUCT__entry(
--		__field(char *, rcuname)
-+		__field(const char *, rcuname)
- 		__field(unsigned long, gpnum)
- 		__field(unsigned long, mask)
- 		__field(unsigned long, qsmask)
-@@ -268,15 +268,15 @@ TRACE_EVENT(rcu_quiescent_state_report,
-  */
- TRACE_EVENT(rcu_fqs,
- 
--	TP_PROTO(char *rcuname, unsigned long gpnum, int cpu, char *qsevent),
-+	TP_PROTO(const char *rcuname, unsigned long gpnum, int cpu, const char *qsevent),
- 
- 	TP_ARGS(rcuname, gpnum, cpu, qsevent),
- 
- 	TP_STRUCT__entry(
--		__field(char *, rcuname)
-+		__field(const char *, rcuname)
- 		__field(unsigned long, gpnum)
- 		__field(int, cpu)
--		__field(char *, qsevent)
-+		__field(const char *, qsevent)
- 	),
- 
- 	TP_fast_assign(
-@@ -308,12 +308,12 @@ TRACE_EVENT(rcu_fqs,
-  */
- TRACE_EVENT(rcu_dyntick,
- 
--	TP_PROTO(char *polarity, long long oldnesting, long long newnesting),
-+	TP_PROTO(const char *polarity, long long oldnesting, long long newnesting),
- 
- 	TP_ARGS(polarity, oldnesting, newnesting),
- 
- 	TP_STRUCT__entry(
--		__field(char *, polarity)
-+		__field(const char *, polarity)
- 		__field(long long, oldnesting)
- 		__field(long long, newnesting)
- 	),
-@@ -352,12 +352,12 @@ TRACE_EVENT(rcu_dyntick,
-  */
- TRACE_EVENT(rcu_prep_idle,
- 
--	TP_PROTO(char *reason),
-+	TP_PROTO(const char *reason),
- 
- 	TP_ARGS(reason),
- 
- 	TP_STRUCT__entry(
--		__field(char *, reason)
-+		__field(const char *, reason)
- 	),
- 
- 	TP_fast_assign(
-@@ -376,13 +376,13 @@ TRACE_EVENT(rcu_prep_idle,
-  */
- TRACE_EVENT(rcu_callback,
- 
--	TP_PROTO(char *rcuname, struct rcu_head *rhp, long qlen_lazy,
-+	TP_PROTO(const char *rcuname, struct rcu_head *rhp, long qlen_lazy,
- 		 long qlen),
- 
- 	TP_ARGS(rcuname, rhp, qlen_lazy, qlen),
- 
- 	TP_STRUCT__entry(
--		__field(char *, rcuname)
-+		__field(const char *, rcuname)
- 		__field(void *, rhp)
- 		__field(void *, func)
- 		__field(long, qlen_lazy)
-@@ -412,13 +412,13 @@ TRACE_EVENT(rcu_callback,
-  */
- TRACE_EVENT(rcu_kfree_callback,
- 
--	TP_PROTO(char *rcuname, struct rcu_head *rhp, unsigned long offset,
-+	TP_PROTO(const char *rcuname, struct rcu_head *rhp, unsigned long offset,
- 		 long qlen_lazy, long qlen),
- 
- 	TP_ARGS(rcuname, rhp, offset, qlen_lazy, qlen),
- 
- 	TP_STRUCT__entry(
--		__field(char *, rcuname)
-+		__field(const char *, rcuname)
- 		__field(void *, rhp)
- 		__field(unsigned long, offset)
- 		__field(long, qlen_lazy)
-@@ -447,12 +447,12 @@ TRACE_EVENT(rcu_kfree_callback,
-  */
- TRACE_EVENT(rcu_batch_start,
- 
--	TP_PROTO(char *rcuname, long qlen_lazy, long qlen, long blimit),
-+	TP_PROTO(const char *rcuname, long qlen_lazy, long qlen, long blimit),
- 
- 	TP_ARGS(rcuname, qlen_lazy, qlen, blimit),
- 
- 	TP_STRUCT__entry(
--		__field(char *, rcuname)
-+		__field(const char *, rcuname)
- 		__field(long, qlen_lazy)
- 		__field(long, qlen)
- 		__field(long, blimit)
-@@ -477,12 +477,12 @@ TRACE_EVENT(rcu_batch_start,
-  */
- TRACE_EVENT(rcu_invoke_callback,
- 
--	TP_PROTO(char *rcuname, struct rcu_head *rhp),
-+	TP_PROTO(const char *rcuname, struct rcu_head *rhp),
- 
- 	TP_ARGS(rcuname, rhp),
- 
- 	TP_STRUCT__entry(
--		__field(char *, rcuname)
-+		__field(const char *, rcuname)
- 		__field(void *, rhp)
- 		__field(void *, func)
- 	),
-@@ -506,12 +506,12 @@ TRACE_EVENT(rcu_invoke_callback,
-  */
- TRACE_EVENT(rcu_invoke_kfree_callback,
- 
--	TP_PROTO(char *rcuname, struct rcu_head *rhp, unsigned long offset),
-+	TP_PROTO(const char *rcuname, struct rcu_head *rhp, unsigned long offset),
- 
- 	TP_ARGS(rcuname, rhp, offset),
- 
- 	TP_STRUCT__entry(
--		__field(char *, rcuname)
-+		__field(const char *, rcuname)
- 		__field(void *, rhp)
- 		__field(unsigned long, offset)
- 	),
-@@ -539,13 +539,13 @@ TRACE_EVENT(rcu_invoke_kfree_callback,
-  */
- TRACE_EVENT(rcu_batch_end,
- 
--	TP_PROTO(char *rcuname, int callbacks_invoked,
-+	TP_PROTO(const char *rcuname, int callbacks_invoked,
- 		 bool cb, bool nr, bool iit, bool risk),
- 
- 	TP_ARGS(rcuname, callbacks_invoked, cb, nr, iit, risk),
- 
- 	TP_STRUCT__entry(
--		__field(char *, rcuname)
-+		__field(const char *, rcuname)
- 		__field(int, callbacks_invoked)
- 		__field(bool, cb)
- 		__field(bool, nr)
-@@ -577,13 +577,13 @@ TRACE_EVENT(rcu_batch_end,
-  */
- TRACE_EVENT(rcu_torture_read,
- 
--	TP_PROTO(char *rcutorturename, struct rcu_head *rhp,
-+	TP_PROTO(const char *rcutorturename, struct rcu_head *rhp,
- 		 unsigned long secs, unsigned long c_old, unsigned long c),
- 
- 	TP_ARGS(rcutorturename, rhp, secs, c_old, c),
- 
- 	TP_STRUCT__entry(
--		__field(char *, rcutorturename)
-+		__field(const char *, rcutorturename)
- 		__field(struct rcu_head *, rhp)
- 		__field(unsigned long, secs)
- 		__field(unsigned long, c_old)
-@@ -623,13 +623,13 @@ TRACE_EVENT(rcu_torture_read,
-  */
- TRACE_EVENT(rcu_barrier,
- 
--	TP_PROTO(char *rcuname, char *s, int cpu, int cnt, unsigned long done),
-+	TP_PROTO(const char *rcuname, const char *s, int cpu, int cnt, unsigned long done),
- 
- 	TP_ARGS(rcuname, s, cpu, cnt, done),
- 
- 	TP_STRUCT__entry(
--		__field(char *, rcuname)
--		__field(char *, s)
-+		__field(const char *, rcuname)
-+		__field(const char *, s)
- 		__field(int, cpu)
- 		__field(int, cnt)
- 		__field(unsigned long, done)
-diff --git a/kernel/rcu.h b/kernel/rcu.h
-index 7f8e759..0a90ccc 100644
---- a/kernel/rcu.h
-+++ b/kernel/rcu.h
-@@ -94,7 +94,7 @@ static inline void debug_rcu_head_unqueue(struct rcu_head *head)
- 
- extern void kfree(const void *);
- 
--static inline bool __rcu_reclaim(char *rn, struct rcu_head *head)
-+static inline bool __rcu_reclaim(const char *rn, struct rcu_head *head)
- {
- 	unsigned long offset = (unsigned long)head->func;
- 
-diff --git a/kernel/rcupdate.c b/kernel/rcupdate.c
-index cce6ba8..14994d4 100644
---- a/kernel/rcupdate.c
-+++ b/kernel/rcupdate.c
-@@ -377,7 +377,7 @@ EXPORT_SYMBOL_GPL(rcuhead_debug_descr);
- #endif /* #ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD */
- 
- #if defined(CONFIG_TREE_RCU) || defined(CONFIG_TREE_PREEMPT_RCU) || defined(CONFIG_RCU_TRACE)
--void do_trace_rcu_torture_read(char *rcutorturename, struct rcu_head *rhp,
-+void do_trace_rcu_torture_read(const char *rcutorturename, struct rcu_head *rhp,
- 			       unsigned long secs,
- 			       unsigned long c_old, unsigned long c)
- {
-diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
-index aa34411..9ed6075 100644
---- a/kernel/rcutiny.c
-+++ b/kernel/rcutiny.c
-@@ -264,7 +264,7 @@ void rcu_check_callbacks(int cpu, int user)
-  */
- static void __rcu_process_callbacks(struct rcu_ctrlblk *rcp)
- {
--	char *rn = NULL;
-+	const char *rn = NULL;
- 	struct rcu_head *next, *list;
- 	unsigned long flags;
- 	RCU_TRACE(int cb_count = 0);
-diff --git a/kernel/rcutiny_plugin.h b/kernel/rcutiny_plugin.h
-index 0cd385a..280d06c 100644
---- a/kernel/rcutiny_plugin.h
-+++ b/kernel/rcutiny_plugin.h
-@@ -36,7 +36,7 @@ struct rcu_ctrlblk {
- 	RCU_TRACE(unsigned long gp_start); /* Start time for stalls. */
- 	RCU_TRACE(unsigned long ticks_this_gp); /* Statistic for stalls. */
- 	RCU_TRACE(unsigned long jiffies_stall); /* Jiffies at next stall. */
--	RCU_TRACE(char *name);		/* Name of RCU type. */
-+	RCU_TRACE(const char *name);	/* Name of RCU type. */
- };
- 
- /* Definition for rcupdate control block. */
-diff --git a/kernel/rcutorture.c b/kernel/rcutorture.c
-index f4871e5..3d936f0f 100644
---- a/kernel/rcutorture.c
-+++ b/kernel/rcutorture.c
-@@ -267,7 +267,7 @@ rcutorture_shutdown_notify(struct notifier_block *unused1,
-  * Absorb kthreads into a kernel function that won't return, so that
-  * they won't ever access module text or data again.
-  */
--static void rcutorture_shutdown_absorb(char *title)
-+static void rcutorture_shutdown_absorb(const char *title)
- {
- 	if (ACCESS_ONCE(fullstop) == FULLSTOP_SHUTDOWN) {
- 		pr_notice(
-@@ -337,7 +337,7 @@ rcu_random(struct rcu_random_state *rrsp)
- }
- 
- static void
--rcu_stutter_wait(char *title)
-+rcu_stutter_wait(const char *title)
- {
- 	while (stutter_pause_test || !rcutorture_runnable) {
- 		if (rcutorture_runnable)
-@@ -366,7 +366,7 @@ struct rcu_torture_ops {
- 	int (*stats)(char *page);
- 	int irq_capable;
- 	int can_boost;
--	char *name;
-+	const char *name;
- };
- 
- static struct rcu_torture_ops *cur_ops;
-@@ -1364,7 +1364,7 @@ rcu_torture_stutter(void *arg)
- }
- 
- static inline void
--rcu_torture_print_module_parms(struct rcu_torture_ops *cur_ops, char *tag)
-+rcu_torture_print_module_parms(struct rcu_torture_ops *cur_ops, const char *tag)
- {
- 	pr_alert("%s" TORTURE_FLAG
- 		 "--- %s: nreaders=%d nfakewriters=%d "
 diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 068de3a..3020149 100644
+index 97994a3..338f1d1 100644
 --- a/kernel/rcutree.c
 +++ b/kernel/rcutree.c
-@@ -1032,7 +1032,7 @@ static unsigned long rcu_cbs_completed(struct rcu_state *rsp,
-  * rcu_nocb_wait_gp().
+@@ -53,18 +53,36 @@
+ #include <linux/delay.h>
+ #include <linux/stop_machine.h>
+ #include <linux/random.h>
++#include <linux/ftrace_event.h>
+ 
+ #include "rcutree.h"
+ #include <trace/events/rcu.h>
+ 
+ #include "rcu.h"
+ 
++/*
++ * Strings used in tracepoints need to be exported via the
++ * tracing system such that tools like perf and trace-cmd can
++ * translate the string address pointers to actual text.
++ */
++#define TPS(x)	tracepoint_string(x)
++
+ /* Data structures. */
+ 
+ static struct lock_class_key rcu_node_class[RCU_NUM_LVLS];
+ static struct lock_class_key rcu_fqs_class[RCU_NUM_LVLS];
+ 
++/*
++ * In order to export the rcu_state name to the tracing tools, it
++ * needs to be added in the __tracepoint_string section.
++ * This requires defining a separate variable tp_<sname>_varname
++ * that points to the string being used, and this will allow
++ * the tracing userspace tools to be able to decipher the string
++ * address to the matching string.
++ */
+ #define RCU_STATE_INITIALIZER(sname, sabbr, cr) \
++static char sname##_varname[] = #sname; \
++static const char *tp_##sname##_varname __used __tracepoint_string = sname##_varname; \
+ struct rcu_state sname##_state = { \
+ 	.level = { &sname##_state.node[0] }, \
+ 	.call = cr, \
+@@ -76,7 +94,7 @@ struct rcu_state sname##_state = { \
+ 	.orphan_donetail = &sname##_state.orphan_donelist, \
+ 	.barrier_mutex = __MUTEX_INITIALIZER(sname##_state.barrier_mutex), \
+ 	.onoff_mutex = __MUTEX_INITIALIZER(sname##_state.onoff_mutex), \
+-	.name = #sname, \
++	.name = sname##_varname, \
+ 	.abbr = sabbr, \
+ }; \
+ DEFINE_PER_CPU(struct rcu_data, sname##_data)
+@@ -176,7 +194,7 @@ void rcu_sched_qs(int cpu)
+ 	struct rcu_data *rdp = &per_cpu(rcu_sched_data, cpu);
+ 
+ 	if (rdp->passed_quiesce == 0)
+-		trace_rcu_grace_period("rcu_sched", rdp->gpnum, "cpuqs");
++		trace_rcu_grace_period(TPS("rcu_sched"), rdp->gpnum, TPS("cpuqs"));
+ 	rdp->passed_quiesce = 1;
+ }
+ 
+@@ -185,7 +203,7 @@ void rcu_bh_qs(int cpu)
+ 	struct rcu_data *rdp = &per_cpu(rcu_bh_data, cpu);
+ 
+ 	if (rdp->passed_quiesce == 0)
+-		trace_rcu_grace_period("rcu_bh", rdp->gpnum, "cpuqs");
++		trace_rcu_grace_period(TPS("rcu_bh"), rdp->gpnum, TPS("cpuqs"));
+ 	rdp->passed_quiesce = 1;
+ }
+ 
+@@ -196,10 +214,10 @@ void rcu_bh_qs(int cpu)
   */
- static void trace_rcu_future_gp(struct rcu_node *rnp, struct rcu_data *rdp,
--				unsigned long c, char *s)
-+				unsigned long c, const char *s)
+ void rcu_note_context_switch(int cpu)
  {
- 	trace_rcu_future_grace_period(rdp->rsp->name, rnp->gpnum,
- 				      rnp->completed, c, rnp->level,
-@@ -2720,7 +2720,7 @@ static int rcu_cpu_has_callbacks(int cpu, bool *all_lazy)
-  * Helper function for _rcu_barrier() tracing.  If tracing is disabled,
-  * the compiler is expected to optimize this away.
+-	trace_rcu_utilization("Start context switch");
++	trace_rcu_utilization(TPS("Start context switch"));
+ 	rcu_sched_qs(cpu);
+ 	rcu_preempt_note_context_switch(cpu);
+-	trace_rcu_utilization("End context switch");
++	trace_rcu_utilization(TPS("End context switch"));
+ }
+ EXPORT_SYMBOL_GPL(rcu_note_context_switch);
+ 
+@@ -343,11 +361,11 @@ static struct rcu_node *rcu_get_root(struct rcu_state *rsp)
+ static void rcu_eqs_enter_common(struct rcu_dynticks *rdtp, long long oldval,
+ 				bool user)
+ {
+-	trace_rcu_dyntick("Start", oldval, rdtp->dynticks_nesting);
++	trace_rcu_dyntick(TPS("Start"), oldval, rdtp->dynticks_nesting);
+ 	if (!user && !is_idle_task(current)) {
+ 		struct task_struct *idle = idle_task(smp_processor_id());
+ 
+-		trace_rcu_dyntick("Error on entry: not idle task", oldval, 0);
++		trace_rcu_dyntick(TPS("Error on entry: not idle task"), oldval, 0);
+ 		ftrace_dump(DUMP_ORIG);
+ 		WARN_ONCE(1, "Current pid: %d comm: %s / Idle pid: %d comm: %s",
+ 			  current->pid, current->comm,
+@@ -477,7 +495,7 @@ void rcu_irq_exit(void)
+ 	rdtp->dynticks_nesting--;
+ 	WARN_ON_ONCE(rdtp->dynticks_nesting < 0);
+ 	if (rdtp->dynticks_nesting)
+-		trace_rcu_dyntick("--=", oldval, rdtp->dynticks_nesting);
++		trace_rcu_dyntick(TPS("--="), oldval, rdtp->dynticks_nesting);
+ 	else
+ 		rcu_eqs_enter_common(rdtp, oldval, true);
+ 	local_irq_restore(flags);
+@@ -499,11 +517,11 @@ static void rcu_eqs_exit_common(struct rcu_dynticks *rdtp, long long oldval,
+ 	smp_mb__after_atomic_inc();  /* See above. */
+ 	WARN_ON_ONCE(!(atomic_read(&rdtp->dynticks) & 0x1));
+ 	rcu_cleanup_after_idle(smp_processor_id());
+-	trace_rcu_dyntick("End", oldval, rdtp->dynticks_nesting);
++	trace_rcu_dyntick(TPS("End"), oldval, rdtp->dynticks_nesting);
+ 	if (!user && !is_idle_task(current)) {
+ 		struct task_struct *idle = idle_task(smp_processor_id());
+ 
+-		trace_rcu_dyntick("Error on exit: not idle task",
++		trace_rcu_dyntick(TPS("Error on exit: not idle task"),
+ 				  oldval, rdtp->dynticks_nesting);
+ 		ftrace_dump(DUMP_ORIG);
+ 		WARN_ONCE(1, "Current pid: %d comm: %s / Idle pid: %d comm: %s",
+@@ -618,7 +636,7 @@ void rcu_irq_enter(void)
+ 	rdtp->dynticks_nesting++;
+ 	WARN_ON_ONCE(rdtp->dynticks_nesting == 0);
+ 	if (oldval)
+-		trace_rcu_dyntick("++=", oldval, rdtp->dynticks_nesting);
++		trace_rcu_dyntick(TPS("++="), oldval, rdtp->dynticks_nesting);
+ 	else
+ 		rcu_eqs_exit_common(rdtp, oldval, true);
+ 	local_irq_restore(flags);
+@@ -773,7 +791,7 @@ static int rcu_implicit_dynticks_qs(struct rcu_data *rdp)
+ 	 * of the current RCU grace period.
+ 	 */
+ 	if ((curr & 0x1) == 0 || UINT_CMP_GE(curr, snap + 2)) {
+-		trace_rcu_fqs(rdp->rsp->name, rdp->gpnum, rdp->cpu, "dti");
++		trace_rcu_fqs(rdp->rsp->name, rdp->gpnum, rdp->cpu, TPS("dti"));
+ 		rdp->dynticks_fqs++;
+ 		return 1;
+ 	}
+@@ -793,7 +811,7 @@ static int rcu_implicit_dynticks_qs(struct rcu_data *rdp)
+ 		return 0;  /* Grace period is not old enough. */
+ 	barrier();
+ 	if (cpu_is_offline(rdp->cpu)) {
+-		trace_rcu_fqs(rdp->rsp->name, rdp->gpnum, rdp->cpu, "ofl");
++		trace_rcu_fqs(rdp->rsp->name, rdp->gpnum, rdp->cpu, TPS("ofl"));
+ 		rdp->offline_fqs++;
+ 		return 1;
+ 	}
+@@ -1056,9 +1074,9 @@ rcu_start_future_gp(struct rcu_node *rnp, struct rcu_data *rdp)
+ 	 * grace period is already marked as needed, return to the caller.
+ 	 */
+ 	c = rcu_cbs_completed(rdp->rsp, rnp);
+-	trace_rcu_future_gp(rnp, rdp, c, "Startleaf");
++	trace_rcu_future_gp(rnp, rdp, c, TPS("Startleaf"));
+ 	if (rnp->need_future_gp[c & 0x1]) {
+-		trace_rcu_future_gp(rnp, rdp, c, "Prestartleaf");
++		trace_rcu_future_gp(rnp, rdp, c, TPS("Prestartleaf"));
+ 		return c;
+ 	}
+ 
+@@ -1072,7 +1090,7 @@ rcu_start_future_gp(struct rcu_node *rnp, struct rcu_data *rdp)
+ 	if (rnp->gpnum != rnp->completed ||
+ 	    ACCESS_ONCE(rnp->gpnum) != ACCESS_ONCE(rnp->completed)) {
+ 		rnp->need_future_gp[c & 0x1]++;
+-		trace_rcu_future_gp(rnp, rdp, c, "Startedleaf");
++		trace_rcu_future_gp(rnp, rdp, c, TPS("Startedleaf"));
+ 		return c;
+ 	}
+ 
+@@ -1100,7 +1118,7 @@ rcu_start_future_gp(struct rcu_node *rnp, struct rcu_data *rdp)
+ 	 * recorded, trace and leave.
+ 	 */
+ 	if (rnp_root->need_future_gp[c & 0x1]) {
+-		trace_rcu_future_gp(rnp, rdp, c, "Prestartedroot");
++		trace_rcu_future_gp(rnp, rdp, c, TPS("Prestartedroot"));
+ 		goto unlock_out;
+ 	}
+ 
+@@ -1109,9 +1127,9 @@ rcu_start_future_gp(struct rcu_node *rnp, struct rcu_data *rdp)
+ 
+ 	/* If a grace period is not already in progress, start one. */
+ 	if (rnp_root->gpnum != rnp_root->completed) {
+-		trace_rcu_future_gp(rnp, rdp, c, "Startedleafroot");
++		trace_rcu_future_gp(rnp, rdp, c, TPS("Startedleafroot"));
+ 	} else {
+-		trace_rcu_future_gp(rnp, rdp, c, "Startedroot");
++		trace_rcu_future_gp(rnp, rdp, c, TPS("Startedroot"));
+ 		rcu_start_gp_advanced(rdp->rsp, rnp_root, rdp);
+ 	}
+ unlock_out:
+@@ -1135,7 +1153,8 @@ static int rcu_future_gp_cleanup(struct rcu_state *rsp, struct rcu_node *rnp)
+ 	rcu_nocb_gp_cleanup(rsp, rnp);
+ 	rnp->need_future_gp[c & 0x1] = 0;
+ 	needmore = rnp->need_future_gp[(c + 1) & 0x1];
+-	trace_rcu_future_gp(rnp, rdp, c, needmore ? "CleanupMore" : "Cleanup");
++	trace_rcu_future_gp(rnp, rdp, c,
++			    needmore ? TPS("CleanupMore") : TPS("Cleanup"));
+ 	return needmore;
+ }
+ 
+@@ -1203,9 +1222,9 @@ static void rcu_accelerate_cbs(struct rcu_state *rsp, struct rcu_node *rnp,
+ 
+ 	/* Trace depending on how much we were able to accelerate. */
+ 	if (!*rdp->nxttail[RCU_WAIT_TAIL])
+-		trace_rcu_grace_period(rsp->name, rdp->gpnum, "AccWaitCB");
++		trace_rcu_grace_period(rsp->name, rdp->gpnum, TPS("AccWaitCB"));
+ 	else
+-		trace_rcu_grace_period(rsp->name, rdp->gpnum, "AccReadyCB");
++		trace_rcu_grace_period(rsp->name, rdp->gpnum, TPS("AccReadyCB"));
+ }
+ 
+ /*
+@@ -1271,7 +1290,7 @@ static void __note_gp_changes(struct rcu_state *rsp, struct rcu_node *rnp, struc
+ 
+ 		/* Remember that we saw this grace-period completion. */
+ 		rdp->completed = rnp->completed;
+-		trace_rcu_grace_period(rsp->name, rdp->gpnum, "cpuend");
++		trace_rcu_grace_period(rsp->name, rdp->gpnum, TPS("cpuend"));
+ 	}
+ 
+ 	if (rdp->gpnum != rnp->gpnum) {
+@@ -1281,7 +1300,7 @@ static void __note_gp_changes(struct rcu_state *rsp, struct rcu_node *rnp, struc
+ 		 * go looking for one.
+ 		 */
+ 		rdp->gpnum = rnp->gpnum;
+-		trace_rcu_grace_period(rsp->name, rdp->gpnum, "cpustart");
++		trace_rcu_grace_period(rsp->name, rdp->gpnum, TPS("cpustart"));
+ 		rdp->passed_quiesce = 0;
+ 		rdp->qs_pending = !!(rnp->qsmask & rdp->grpmask);
+ 		zero_cpu_stall_ticks(rdp);
+@@ -1324,7 +1343,7 @@ static int rcu_gp_init(struct rcu_state *rsp)
+ 
+ 	/* Advance to a new grace period and initialize state. */
+ 	rsp->gpnum++;
+-	trace_rcu_grace_period(rsp->name, rsp->gpnum, "start");
++	trace_rcu_grace_period(rsp->name, rsp->gpnum, TPS("start"));
+ 	record_gp_stall_check_time(rsp);
+ 	raw_spin_unlock_irq(&rnp->lock);
+ 
+@@ -1446,7 +1465,7 @@ static void rcu_gp_cleanup(struct rcu_state *rsp)
+ 	rcu_nocb_gp_set(rnp, nocb);
+ 
+ 	rsp->completed = rsp->gpnum; /* Declare grace period done. */
+-	trace_rcu_grace_period(rsp->name, rsp->completed, "end");
++	trace_rcu_grace_period(rsp->name, rsp->completed, TPS("end"));
+ 	rsp->fqs_state = RCU_GP_IDLE;
+ 	rdp = this_cpu_ptr(rsp->rda);
+ 	rcu_advance_cbs(rsp, rnp, rdp);  /* Reduce false positives below. */
+@@ -1855,7 +1874,7 @@ static void rcu_cleanup_dying_cpu(struct rcu_state *rsp)
+ 	RCU_TRACE(mask = rdp->grpmask);
+ 	trace_rcu_grace_period(rsp->name,
+ 			       rnp->gpnum + 1 - !!(rnp->qsmask & mask),
+-			       "cpuofl");
++			       TPS("cpuofl"));
+ }
+ 
+ /*
+@@ -2042,7 +2061,7 @@ static void rcu_do_batch(struct rcu_state *rsp, struct rcu_data *rdp)
   */
--static void _rcu_barrier_trace(struct rcu_state *rsp, char *s,
-+static void _rcu_barrier_trace(struct rcu_state *rsp, const char *s,
- 			       int cpu, unsigned long done)
+ void rcu_check_callbacks(int cpu, int user)
  {
- 	trace_rcu_barrier(rsp->name, s, cpu,
-diff --git a/kernel/rcutree.h b/kernel/rcutree.h
-index b383258..cbdeac6 100644
---- a/kernel/rcutree.h
-+++ b/kernel/rcutree.h
-@@ -445,7 +445,7 @@ struct rcu_state {
- 						/*  for CPU stalls. */
- 	unsigned long gp_max;			/* Maximum GP duration in */
- 						/*  jiffies. */
--	char *name;				/* Name of structure. */
-+	const char *name;			/* Name of structure. */
- 	char abbr;				/* Abbreviated name. */
- 	struct list_head flavors;		/* List of RCU flavors. */
- 	struct irq_work wakeup_work;		/* Postponed wakeups */
+-	trace_rcu_utilization("Start scheduler-tick");
++	trace_rcu_utilization(TPS("Start scheduler-tick"));
+ 	increment_cpu_stall_ticks();
+ 	if (user || rcu_is_cpu_rrupt_from_idle()) {
+ 
+@@ -2075,7 +2094,7 @@ void rcu_check_callbacks(int cpu, int user)
+ 	rcu_preempt_check_callbacks(cpu);
+ 	if (rcu_pending(cpu))
+ 		invoke_rcu_core();
+-	trace_rcu_utilization("End scheduler-tick");
++	trace_rcu_utilization(TPS("End scheduler-tick"));
+ }
+ 
+ /*
+@@ -2206,10 +2225,10 @@ static void rcu_process_callbacks(struct softirq_action *unused)
+ 
+ 	if (cpu_is_offline(smp_processor_id()))
+ 		return;
+-	trace_rcu_utilization("Start RCU core");
++	trace_rcu_utilization(TPS("Start RCU core"));
+ 	for_each_rcu_flavor(rsp)
+ 		__rcu_process_callbacks(rsp);
+-	trace_rcu_utilization("End RCU core");
++	trace_rcu_utilization(TPS("End RCU core"));
+ }
+ 
+ /*
+@@ -2950,7 +2969,7 @@ rcu_init_percpu_data(int cpu, struct rcu_state *rsp, int preemptible)
+ 			rdp->completed = rnp->completed;
+ 			rdp->passed_quiesce = 0;
+ 			rdp->qs_pending = 0;
+-			trace_rcu_grace_period(rsp->name, rdp->gpnum, "cpuonl");
++			trace_rcu_grace_period(rsp->name, rdp->gpnum, TPS("cpuonl"));
+ 		}
+ 		raw_spin_unlock(&rnp->lock); /* irqs already disabled. */
+ 		rnp = rnp->parent;
+@@ -2980,7 +2999,7 @@ static int rcu_cpu_notify(struct notifier_block *self,
+ 	struct rcu_node *rnp = rdp->mynode;
+ 	struct rcu_state *rsp;
+ 
+-	trace_rcu_utilization("Start CPU hotplug");
++	trace_rcu_utilization(TPS("Start CPU hotplug"));
+ 	switch (action) {
+ 	case CPU_UP_PREPARE:
+ 	case CPU_UP_PREPARE_FROZEN:
+@@ -3009,7 +3028,7 @@ static int rcu_cpu_notify(struct notifier_block *self,
+ 	default:
+ 		break;
+ 	}
+-	trace_rcu_utilization("End CPU hotplug");
++	trace_rcu_utilization(TPS("End CPU hotplug"));
+ 	return NOTIFY_OK;
+ }
+ 
+diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+index 6976a7d..dff86f5 100644
+--- a/kernel/rcutree_plugin.h
++++ b/kernel/rcutree_plugin.h
+@@ -167,7 +167,7 @@ static void rcu_preempt_qs(int cpu)
+ 	struct rcu_data *rdp = &per_cpu(rcu_preempt_data, cpu);
+ 
+ 	if (rdp->passed_quiesce == 0)
+-		trace_rcu_grace_period("rcu_preempt", rdp->gpnum, "cpuqs");
++		trace_rcu_grace_period(TPS("rcu_preempt"), rdp->gpnum, TPS("cpuqs"));
+ 	rdp->passed_quiesce = 1;
+ 	current->rcu_read_unlock_special &= ~RCU_READ_UNLOCK_NEED_QS;
+ }
+@@ -386,7 +386,7 @@ void rcu_read_unlock_special(struct task_struct *t)
+ 		np = rcu_next_node_entry(t, rnp);
+ 		list_del_init(&t->rcu_node_entry);
+ 		t->rcu_blocked_node = NULL;
+-		trace_rcu_unlock_preempted_task("rcu_preempt",
++		trace_rcu_unlock_preempted_task(TPS("rcu_preempt"),
+ 						rnp->gpnum, t->pid);
+ 		if (&t->rcu_node_entry == rnp->gp_tasks)
+ 			rnp->gp_tasks = np;
+@@ -410,7 +410,7 @@ void rcu_read_unlock_special(struct task_struct *t)
+ 		 */
+ 		empty_exp_now = !rcu_preempted_readers_exp(rnp);
+ 		if (!empty && !rcu_preempt_blocked_readers_cgp(rnp)) {
+-			trace_rcu_quiescent_state_report("preempt_rcu",
++			trace_rcu_quiescent_state_report(TPS("preempt_rcu"),
+ 							 rnp->gpnum,
+ 							 0, rnp->qsmask,
+ 							 rnp->level,
+@@ -1248,12 +1248,12 @@ static int rcu_boost_kthread(void *arg)
+ 	int spincnt = 0;
+ 	int more2boost;
+ 
+-	trace_rcu_utilization("Start boost kthread@init");
++	trace_rcu_utilization(TPS("Start boost kthread@init"));
+ 	for (;;) {
+ 		rnp->boost_kthread_status = RCU_KTHREAD_WAITING;
+-		trace_rcu_utilization("End boost kthread@rcu_wait");
++		trace_rcu_utilization(TPS("End boost kthread@rcu_wait"));
+ 		rcu_wait(rnp->boost_tasks || rnp->exp_tasks);
+-		trace_rcu_utilization("Start boost kthread@rcu_wait");
++		trace_rcu_utilization(TPS("Start boost kthread@rcu_wait"));
+ 		rnp->boost_kthread_status = RCU_KTHREAD_RUNNING;
+ 		more2boost = rcu_boost(rnp);
+ 		if (more2boost)
+@@ -1262,14 +1262,14 @@ static int rcu_boost_kthread(void *arg)
+ 			spincnt = 0;
+ 		if (spincnt > 10) {
+ 			rnp->boost_kthread_status = RCU_KTHREAD_YIELDING;
+-			trace_rcu_utilization("End boost kthread@rcu_yield");
++			trace_rcu_utilization(TPS("End boost kthread@rcu_yield"));
+ 			schedule_timeout_interruptible(2);
+-			trace_rcu_utilization("Start boost kthread@rcu_yield");
++			trace_rcu_utilization(TPS("Start boost kthread@rcu_yield"));
+ 			spincnt = 0;
+ 		}
+ 	}
+ 	/* NOTREACHED */
+-	trace_rcu_utilization("End boost kthread@notreached");
++	trace_rcu_utilization(TPS("End boost kthread@notreached"));
+ 	return 0;
+ }
+ 
+@@ -1417,7 +1417,7 @@ static void rcu_cpu_kthread(unsigned int cpu)
+ 	int spincnt;
+ 
+ 	for (spincnt = 0; spincnt < 10; spincnt++) {
+-		trace_rcu_utilization("Start CPU kthread@rcu_wait");
++		trace_rcu_utilization(TPS("Start CPU kthread@rcu_wait"));
+ 		local_bh_disable();
+ 		*statusp = RCU_KTHREAD_RUNNING;
+ 		this_cpu_inc(rcu_cpu_kthread_loops);
+@@ -1429,15 +1429,15 @@ static void rcu_cpu_kthread(unsigned int cpu)
+ 			rcu_kthread_do_work();
+ 		local_bh_enable();
+ 		if (*workp == 0) {
+-			trace_rcu_utilization("End CPU kthread@rcu_wait");
++			trace_rcu_utilization(TPS("End CPU kthread@rcu_wait"));
+ 			*statusp = RCU_KTHREAD_WAITING;
+ 			return;
+ 		}
+ 	}
+ 	*statusp = RCU_KTHREAD_YIELDING;
+-	trace_rcu_utilization("Start CPU kthread@rcu_yield");
++	trace_rcu_utilization(TPS("Start CPU kthread@rcu_yield"));
+ 	schedule_timeout_interruptible(2);
+-	trace_rcu_utilization("End CPU kthread@rcu_yield");
++	trace_rcu_utilization(TPS("End CPU kthread@rcu_yield"));
+ 	*statusp = RCU_KTHREAD_WAITING;
+ }
+ 
+@@ -2200,7 +2200,7 @@ static void rcu_nocb_wait_gp(struct rcu_data *rdp)
+ 	 * Wait for the grace period.  Do so interruptibly to avoid messing
+ 	 * up the load average.
+ 	 */
+-	trace_rcu_future_gp(rnp, rdp, c, "StartWait");
++	trace_rcu_future_gp(rnp, rdp, c, TPS("StartWait"));
+ 	for (;;) {
+ 		wait_event_interruptible(
+ 			rnp->nocb_gp_wq[c & 0x1],
+@@ -2208,9 +2208,9 @@ static void rcu_nocb_wait_gp(struct rcu_data *rdp)
+ 		if (likely(d))
+ 			break;
+ 		flush_signals(current);
+-		trace_rcu_future_gp(rnp, rdp, c, "ResumeWait");
++		trace_rcu_future_gp(rnp, rdp, c, TPS("ResumeWait"));
+ 	}
+-	trace_rcu_future_gp(rnp, rdp, c, "EndWait");
++	trace_rcu_future_gp(rnp, rdp, c, TPS("EndWait"));
+ 	smp_mb(); /* Ensure that CB invocation happens after GP end. */
+ }
+ 
 -- 
 1.7.10.4
 
