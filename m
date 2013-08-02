@@ -1,46 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752810Ab3HBNnJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 09:43:09 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47782 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751407Ab3HBNnH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 09:43:07 -0400
-Date: Fri, 2 Aug 2013 15:43:05 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: lizefan@huawei.com, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Balbir Singh <bsingharora@gmail.com>,
-        Aristeu Rozanski <aris@redhat.com>, Matt Helsley <matthltc@us.ibm.com>,
-        Daniel Wagner <daniel.wagner@bmw-carit.de>,
-        Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH 08/23] cgroup: pass around cgroup_subsys_state instead of
- cgroup in subsystem methods
-Message-ID: <20130802134305.GI25432@dhcp22.suse.cz>
-References: <1375393801-4817-1-git-send-email-tj@kernel.org>
- <1375393801-4817-9-git-send-email-tj@kernel.org>
- <20130802131901.GB25432@dhcp22.suse.cz>
+	id S1752865Ab3HBNqe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 09:46:34 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47406 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752067Ab3HBNqd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 09:46:33 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        akpm@linux-foundation.org,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        "Lan Tianyu" <tianyu.lan@intel.com>
+Subject: Re: [53/84] ACPI / video: ignore BIOS initial backlight value for Fujitsu E753
+References: <lsq.1375276989.822158812@decadent.org.uk>
+Date: Fri, 02 Aug 2013 14:46:29 +0100
+In-Reply-To: <lsq.1375276989.822158812@decadent.org.uk> (Ben Hutchings's
+	message of "Wed, 31 Jul 2013 15:23:09 +0200")
+Message-ID: <87ehac2oju.fsf@canonical.com>
+User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130802131901.GB25432@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 02-08-13 15:19:01, Michal Hocko wrote:
-[...]
-> mem_cgroup_from_cont can go away now as well. Do you plan to remove it
-> in the series or later on?
+Ben Hutchings <ben@decadent.org.uk> writes:
 
-Ohh, it goes in 21/23. Good
+> 3.2.50-rc1 review patch.  If anyone has any objections, please let me know.
+>
+> ------------------
+>
+> From: Lan Tianyu <tianyu.lan@intel.com>
+>
+> commit 9657a565a476d517451c10b0bcc106e300785aff upstream.
 
-Thanks!
+For some reason, this commit has been tagged for stable 3.7+ (and this
+is why I haven't queued for 3.5).  Is there any reason for this?
+
+Cheers,
 -- 
-Michal Hocko
-SUSE Labs
+Luis
+
+
+>
+> The BIOS of FUjitsu E753 reports an incorrect initial backlight
+>value
+> for WIN8 compatible OS, causing backlight to be dark during startup.
+> This change causes the incorrect initial value from BIOS to be ignored.
+>
+> References: https://bugzilla.kernel.org/show_bug.cgi?id=60161
+> Reported-and-tested-by: Jan Hinnerk Stosch <janhinnerk.stosch@gmail.com>
+> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+> ---
+>  drivers/acpi/video.c | 8 ++++++++
+>  1 file changed, 8 insertions(+)
+>
+> --- a/drivers/acpi/video.c
+> +++ b/drivers/acpi/video.c
+> @@ -449,6 +449,14 @@ static struct dmi_system_id video_dmi_ta
+>  	},
+>  	{
+>  	 .callback = video_ignore_initial_backlight,
+> +	 .ident = "Fujitsu E753",
+> +	 .matches = {
+> +		DMI_MATCH(DMI_BOARD_VENDOR, "FUJITSU"),
+> +		DMI_MATCH(DMI_PRODUCT_NAME, "LIFEBOOK E753"),
+> +		},
+> +	},
+> +	{
+> +	 .callback = video_ignore_initial_backlight,
+>  	 .ident = "HP Pavilion dm4",
+>  	 .matches = {
+>  		DMI_MATCH(DMI_BOARD_VENDOR, "Hewlett-Packard"),
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe stable" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
