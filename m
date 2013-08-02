@@ -1,103 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753476Ab3HBBEm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 21:04:42 -0400
-Received: from server506c.appriver.com ([50.56.144.127]:55083 "EHLO
-	server506.appriver.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753037Ab3HBBEk (ORCPT
+	id S1753548Ab3HBBGX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 21:06:23 -0400
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:21016 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753037Ab3HBBGV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 21:04:40 -0400
-X-Note-AR-ScanTimeLocal: 8/1/2013 8:04:39 PM
-X-Policy: GLOBAL - coraid.com
-X-Policy: GLOBAL - coraid.com
-X-Policy: GLOBAL - coraid.com
-X-Primary: ecashin@coraid.com
-X-Note: This Email was scanned by AppRiver SecureTide
-X-Virus-Scan: V-
-X-Note-SnifferID: 0
-X-Note: TCH-CT/SI:0-104/SG:2 8/1/2013 8:04:32 PM
-X-GBUdb-Analysis: 0, 10.242.229.139, Ugly c=1 p=-0.985679 Source White
-X-Signature-Violations: 0-0-0-3550-c
-X-Note-419: 15.6001 ms. Fail:0 Chk:1343 of 1343 total
-X-Note: SCH-CT/SI:0-1343/SG:1 8/1/2013 8:04:21 PM
-X-Note: Spam Tests Failed: 
-X-Country-Path: PRIVATE->PRIVATE->UNITED STATES
-X-Note-Sending-IP: 10.242.229.139
-X-Note-Reverse-DNS: 
-X-Note-Return-Path: ecashin@coraid.com
-X-Note: User Rule Hits: 
-X-Note: Global Rule Hits: G319 G320 G321 G322 G326 G327 G434 
-X-Note: Encrypt Rule Hits: 
-X-Note: Mail Class: VALID
-X-Note: Headers Injected
-Subject: Re: [PATCH 1/2] aoe: remove custom implementation of kbasename()
-MIME-Version: 1.0 (Apple Message framework v1085)
-Content-Type: text/plain; charset="us-ascii"
-From: Ed Cashin <ecashin@coraid.com>
-In-Reply-To: <1375360134-20860-1-git-send-email-andriy.shevchenko@linux.intel.com>
-Date: Thu, 1 Aug 2013 21:04:36 -0400
-CC: <linux-kernel@vger.kernel.org>, Andrew Morton <akpm@linux-foundation.org>
-Content-Transfer-Encoding: 7bit
-Message-ID: <E4974451-025B-4694-89FE-20B310D6DFBF@coraid.com>
-References: <1375360134-20860-1-git-send-email-andriy.shevchenko@linux.intel.com>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-X-Mailer: Apple Mail (2.1085)
-X-Rerouted-By-Exchange: 
-X-Rerouted-By-Exchange: 
-X-Rerouted-By-Exchange: 
+	Thu, 1 Aug 2013 21:06:21 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AgEFANkE+1F5LPxHgWdsb2JhbABbhjK2d4UwgRsXDgEBFiYogiQBAQIDOhwjEAgDDgQGCSUPBSUDDRQTiA+6OhaPcQeEDAOXXoojilUq
+Date: Fri, 2 Aug 2013 11:06:16 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, davej@redhat.com, viro@zeniv.linux.org.uk,
+        jack@suse.cz, glommer@parallels.com
+Subject: Re: [PATCH 08/11] inode: convert per-sb inode list to a list_lru
+Message-ID: <20130802010616.GS7118@dastard>
+References: <1375244150-27296-1-git-send-email-david@fromorbit.com>
+ <1375244150-27296-9-git-send-email-david@fromorbit.com>
+ <20130801081950.GA18828@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130801081950.GA18828@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Looks OK.  Thanks.
+On Thu, Aug 01, 2013 at 01:19:50AM -0700, Christoph Hellwig wrote:
+> At this point the list_lru name really becomes confusing.  Given that
+> it's not really LRU specific maybe just rename it to pernode_list
+> or similar?
 
-On Aug 1, 2013, at 8:28 AM, Andy Shevchenko wrote:
+Well, such things were suggested when the list_lru was first
+proposed. Indeed, it even lived in lib/ because I saw it as widely
+useful. But akpm didn't like it because of the "structure with
+internal locking" architecture and thought it was too purpose
+specific for generic use and so it got moved uot of lib/ into mm/
+and here we are.
 
-> In the kernel we have a nice helper that may be used here. This patch
-> substitutes the custom implementation by the native function call.
-> 
-> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> ---
-> drivers/block/aoe/aoedev.c | 9 +++------
-> 1 file changed, 3 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/block/aoe/aoedev.c b/drivers/block/aoe/aoedev.c
-> index 784c92e..db35ef6 100644
-> --- a/drivers/block/aoe/aoedev.c
-> +++ b/drivers/block/aoe/aoedev.c
-> @@ -12,6 +12,7 @@
-> #include <linux/bitmap.h>
-> #include <linux/kdev_t.h>
-> #include <linux/moduleparam.h>
-> +#include <linux/string.h>
-> #include "aoe.h"
-> 
-> static void dummy_timer(ulong);
-> @@ -241,16 +242,12 @@ aoedev_downdev(struct aoedev *d)
-> static int
-> user_req(char *s, size_t slen, struct aoedev *d)
-> {
-> -	char *p;
-> +	const char *p;
-> 	size_t lim;
-> 
-> 	if (!d->gd)
-> 		return 0;
-> -	p = strrchr(d->gd->disk_name, '/');
-> -	if (!p)
-> -		p = d->gd->disk_name;
-> -	else
-> -		p += 1;
-> +	p = kbasename(d->gd->disk_name);
-> 	lim = sizeof(d->gd->disk_name);
-> 	lim -= p - d->gd->disk_name;
-> 	if (slen < lim)
-> -- 
-> 1.8.3.2
-> 
+I don't care for how it's named, located or used - I just want to be
+able to use the infrastructure it provides. As such renaming and
+relocating it is not something I'm about to do in this specific
+patchset....
 
+Cheers,
+
+Dave.
 -- 
-  Ed Cashin
-  ecashin@coraid.com
-
-
+Dave Chinner
+david@fromorbit.com
