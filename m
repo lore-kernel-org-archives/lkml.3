@@ -1,125 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754212Ab3HBKUy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:20:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37752 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753927Ab3HBKTf (ORCPT
+	id S1754311Ab3HBKVB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:21:01 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:43617 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754119Ab3HBKU6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:19:35 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [ 30/39] livelock avoidance in sget()
-Date: Fri,  2 Aug 2013 18:18:40 +0800
-Message-Id: <20130802101501.054885345@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
-In-Reply-To: <20130802101456.800497005@linuxfoundation.org>
-References: <20130802101456.800497005@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Fri, 2 Aug 2013 06:20:58 -0400
+Date: Fri, 2 Aug 2013 12:20:40 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: =?utf-8?B?77+977+977+92Lzvv70=?= <iamjoonsoo.kim@lge.com>
+Cc: "'Preeti U Murthy'" <preeti@linux.vnet.ibm.com>,
+        "'Ingo Molnar'" <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        "'Mike Galbraith'" <efault@gmx.de>, "'Paul Turner'" <pjt@google.com>,
+        "'Alex Shi'" <alex.shi@intel.com>,
+        "'Vincent Guittot'" <vincent.guittot@linaro.org>,
+        "'Morten Rasmussen'" <morten.rasmussen@arm.com>,
+        "'Namhyung Kim'" <namhyung@kernel.org>,
+        "'Joonsoo Kim'" <js1304@gmail.com>
+Subject: Re: [PATCH v2 2/3] sched: factor out code to should_we_balance()
+Message-ID: <20130802102040.GK27162@twins.programming.kicks-ass.net>
+References: <1375408223-10934-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1375408223-10934-3-git-send-email-iamjoonsoo.kim@lge.com>
+ <51FB341B.7060104@linux.vnet.ibm.com>
+ <001601ce8f5f$7cbe1460$763a3d20$@lge.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <001601ce8f5f$7cbe1460$763a3d20$@lge.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Fri, Aug 02, 2013 at 06:05:51PM +0900, ���ؼ� wrote:
 
-------------------
+What is with you people; have you never learned to trim emails?
 
-From: Al Viro <viro@zeniv.linux.org.uk>
+Seriously, I'm going to write a script which tests to too many quoted
+lines, too many nested quotes and other such nonsense and drop your
+emails into /dev/null.
 
-commit acfec9a5a892f98461f52ed5770de99a3e571ae2 upstream.
-
-Eric Sandeen has found a nasty livelock in sget() - take a mount(2) about
-to fail.  The superblock is on ->fs_supers, ->s_umount is held exclusive,
-->s_active is 1.  Along comes two more processes, trying to mount the same
-thing; sget() in each is picking that superblock, bumping ->s_count and
-trying to grab ->s_umount.  ->s_active is 3 now.  Original mount(2)
-finally gets to deactivate_locked_super() on failure; ->s_active is 2,
-superblock is still ->fs_supers because shutdown will *not* happen until
-->s_active hits 0.  ->s_umount is dropped and now we have two processes
-chasing each other:
-s_active = 2, A acquired ->s_umount, B blocked
-A sees that the damn thing is stillborn, does deactivate_locked_super()
-s_active = 1, A drops ->s_umount, B gets it
-A restarts the search and finds the same superblock.  And bumps it ->s_active.
-s_active = 2, B holds ->s_umount, A blocked on trying to get it
-... and we are in the earlier situation with A and B switched places.
-
-The root cause, of course, is that ->s_active should not grow until we'd
-got MS_BORN.  Then failing ->mount() will have deactivate_locked_super()
-shut the damn thing down.  Fortunately, it's easy to do - the key point
-is that grab_super() is called only for superblocks currently on ->fs_supers,
-so it can bump ->s_count and grab ->s_umount first, then check MS_BORN and
-bump ->s_active; we must never increment ->s_count for superblocks past
-->kill_sb(), but grab_super() is never called for those.
-
-The bug is pretty old; we would've caught it by now, if not for accidental
-exclusion between sget() for block filesystems; the things like cgroup or
-e.g. mtd-based filesystems don't have anything of that sort, so they get
-bitten.  The right way to deal with that is obviously to fix sget()...
-
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- fs/super.c |   25 ++++++++++---------------
- 1 file changed, 10 insertions(+), 15 deletions(-)
-
---- a/fs/super.c
-+++ b/fs/super.c
-@@ -298,19 +298,19 @@ EXPORT_SYMBOL(deactivate_super);
-  *	and want to turn it into a full-blown active reference.  grab_super()
-  *	is called with sb_lock held and drops it.  Returns 1 in case of
-  *	success, 0 if we had failed (superblock contents was already dead or
-- *	dying when grab_super() had been called).
-+ *	dying when grab_super() had been called).  Note that this is only
-+ *	called for superblocks not in rundown mode (== ones still on ->fs_supers
-+ *	of their type), so increment of ->s_count is OK here.
-  */
- static int grab_super(struct super_block *s) __releases(sb_lock)
- {
--	if (atomic_inc_not_zero(&s->s_active)) {
--		spin_unlock(&sb_lock);
--		return 1;
--	}
--	/* it's going away */
- 	s->s_count++;
- 	spin_unlock(&sb_lock);
--	/* wait for it to die */
- 	down_write(&s->s_umount);
-+	if ((s->s_flags & MS_BORN) && atomic_inc_not_zero(&s->s_active)) {
-+		put_super(s);
-+		return 1;
-+	}
- 	up_write(&s->s_umount);
- 	put_super(s);
- 	return 0;
-@@ -440,11 +440,6 @@ retry:
- 				destroy_super(s);
- 				s = NULL;
- 			}
--			down_write(&old->s_umount);
--			if (unlikely(!(old->s_flags & MS_BORN))) {
--				deactivate_locked_super(old);
--				goto retry;
--			}
- 			return old;
- 		}
- 	}
-@@ -677,10 +672,10 @@ restart:
- 		if (hlist_unhashed(&sb->s_instances))
- 			continue;
- 		if (sb->s_bdev == bdev) {
--			if (grab_super(sb)) /* drops sb_lock */
--				return sb;
--			else
-+			if (!grab_super(sb))
- 				goto restart;
-+			up_write(&sb->s_umount);
-+			return sb;
- 		}
- 	}
- 	spin_unlock(&sb_lock);
-
-
+*shees*
