@@ -1,78 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758871Ab3HBKHv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:07:51 -0400
-Received: from up.free-electrons.com ([94.23.35.102]:58894 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758841Ab3HBKHt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:07:49 -0400
-Date: Fri, 2 Aug 2013 12:07:44 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: Emilio Lopez <emilio@elopez.com.ar>, kevin.z.m.zh@gmail.com,
-        sunny@allwinnertech.com, shuge@allwinnertech.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-sunxi@googlegroups.com
-Subject: Re: [PATCH 0/2] clk: sunxi: Add clock support for the A10s
-Message-ID: <20130802100744.GS2911@lukather>
-References: <1374618504-19391-1-git-send-email-maxime.ripard@free-electrons.com>
+	id S1756096Ab3HBK5d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:57:33 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:33281 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755985Ab3HBK5a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 06:57:30 -0400
+Message-ID: <51FB9095.8030200@ti.com>
+Date: Fri, 2 Aug 2013 13:57:25 +0300
+From: Tero Kristo <t-kristo@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="w3FC1ngOohd+pYSp"
-Content-Disposition: inline
-In-Reply-To: <1374618504-19391-1-git-send-email-maxime.ripard@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Roger Quadros <rogerq@ti.com>
+CC: Nishanth Menon <nm@ti.com>, <tony@atomide.com>, <rnayak@ti.com>,
+        <benoit.cousson@linaro.org>, <balbi@ti.com>, <george.cherian@ti.com>,
+        <kishon@ti.com>, <dmurphy@ti.com>, <linux-omap@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/4] CLK: ti: dra7: Initialize USB_DPLL
+References: <1375369134-26398-1-git-send-email-rogerq@ti.com> <1375369134-26398-2-git-send-email-rogerq@ti.com> <51FA7976.8020707@ti.com> <51FB6027.6080808@ti.com>
+In-Reply-To: <51FB6027.6080808@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 08/02/2013 10:30 AM, Roger Quadros wrote:
+> Hi Nishant,
+>
+> On 08/01/2013 06:06 PM, Nishanth Menon wrote:
+>> On 08/01/2013 09:58 AM, Roger Quadros wrote:
+>>> USB_DPLL must be initialized and locked at boot so that
+>>> USB modules can work.
+>>>
+>>> Also program USB_DLL_M2 output to half rate.
+>>>
+>>> Signed-off-by: Roger Quadros <rogerq@ti.com>
+>>> ---
+>>>    drivers/clk/omap/clk-7xx.c |   11 +++++++++++
+>>>    1 files changed, 11 insertions(+), 0 deletions(-)
+>>>
+>>> diff --git a/drivers/clk/omap/clk-7xx.c b/drivers/clk/omap/clk-7xx.c
+>>> index ddb39dd..f444513 100644
+>>> --- a/drivers/clk/omap/clk-7xx.c
+>>> +++ b/drivers/clk/omap/clk-7xx.c
+>>> @@ -19,6 +19,7 @@
+>>>
+>>>    #define DRA7_DPLL_ABE_DEFFREQ                361267200
+>>>    #define DRA7_DPLL_GMAC_DEFFREQ                1000000000
+>>> +#define DRA7_DPLL_USB_DEFFREQ                960000000
+>>>
+>>>
+>>>    static struct omap_dt_clk dra7xx_clks[] = {
+>>> @@ -63,5 +64,15 @@ int __init dra7xx_clk_init(void)
+>>>        if (rc)
+>>>            pr_err("%s: failed to configure GMAC DPLL!\n", __func__);
+>>>
+>>> +    dpll_ck = clk_get_sys(NULL, "dpll_usb_ck");
+>>> +    rc = clk_set_rate(dpll_ck, DRA7_DPLL_USB_DEFFREQ);
+>>> +    if (rc)
+>>> +        pr_err("%s: failed to configure USB DPLL!\n", __func__);
+>>> +
+>>> +    dpll_ck = clk_get_sys(NULL, "dpll_usb_m2_ck");
+>>> +    rc = clk_set_rate(dpll_ck, DRA7_DPLL_USB_DEFFREQ/2);
+>>> +    if (rc)
+>>> +        pr_err("%s: failed to set USB_DPLL M2 OUT\n", __func__);
+>>> +
+>>>        return rc;
+>>>    }
+>>>
+>> As I had mentioned on [1] - we are going to see similar needs keep popping up. there is no need to hack this up for even more peripherals :(
+>>
+>> http://marc.info/?l=linux-omap&m=137536803106017&w=2
+>>
+> The DPLLs need to be initialized irrespective of whether peripheral drivers are present or not.
+> We have seen cases where the SoC fails to enter RETention if the DPLLS are not correctly
+> configured.
+>
+> But I agree with you that we should be able to initialize it by specifying the initial rate via Clock Data.
+>
+> This patch can be removed when the appropriate feature is added in OMAP clock core.
 
---w3FC1ngOohd+pYSp
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+... not OMAP clock core, I would say clock core. This is again a feature 
+we can work with once we have initial support in place.
 
-Hi Mike, Emilio,
-
-On Wed, Jul 24, 2013 at 12:28:22AM +0200, Maxime Ripard wrote:
-> Hi,
->=20
-> This small patchset adds support for the gates found in the Allwinner A10=
-s SoC.
-> Since the gates are the only clock that differ from the other supported
-> Allwinner SoCs so far, the two patches are quite trivial.
-
-Could you take a look at this?
-
-Thanks,
-Maxime
-
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---w3FC1ngOohd+pYSp
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR+4TwAAoJEBx+YmzsjxAgKvYQAIk3ar+fdHQtJHAj8F4oObDH
-uNpAO5cuP4EvSWrrYmw/icTQFilb4DUkIjRWeJLwnzSpXHxxiT+yI2OYFwhlP/7b
-ukmhyUsyCQRI13lzVGpUSvQvkbzg6HhVx5AkfurjdOwxpVdywDbI2Mr1taz+8siT
-fPMi/OZ7EjQFGE+nTtV3V5M7MLeo6UB6h9fgL4G2L+uctpl6u0Czu64DLiIl5vOv
-kJrCyoAAqy3zI6a+PTA2BhP824ZUx7Xt5BhdBcW7rtI/pcIsHYmRMyX84KPdgXfN
-a5VK9EeJ39eD+dPP5tB/wRVWxd2mkQIwmPV93/3U2toDpiEN4NgCm+18THzRw+YO
-XgaLpz3BGUq9b7FRStHNK2HoNmaqbmL2YzpRJt/FuAics2D/XUykVUl2JII8AbCq
-YE6JFjb0sHYtc+q34e3rsQCLgvcYi+s1O5Fc4UffWEba5AweA2GVUAjru1roph6D
-dCaIJXKtqp85F9+f1Y4Hd6h33SseJuETA5cbIZemf+/P2ybytLpsNKGBGg0Q0DLn
-uANJOiwhgGsB4qPqVLI+cBU8IwIPdmoAjFGcXKacC6TSO+Cx2rwKSjFv8+dUFcQj
-AxhUxK7/XN54WxiEn2ODF2xrsqpLRh1t7/BGfZWpIatiYAcl0WvriiZO1QRG4kC0
-5OLKgNQEdQ7i091jiCWe
-=86VJ
------END PGP SIGNATURE-----
-
---w3FC1ngOohd+pYSp--
+-Tero
