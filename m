@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752171Ab3HBKRt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:17:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37573 "EHLO
+	id S1752385Ab3HBKR4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:17:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37583 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751415Ab3HBKRr (ORCPT
+	with ESMTP id S1752295Ab3HBKRx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:17:47 -0400
+	Fri, 2 Aug 2013 06:17:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Ewan D. Milne" <emilne@redhat.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 05/39] SCSI: sd: fix crash when UA received on DIF enabled device
-Date: Fri,  2 Aug 2013 18:18:15 +0800
-Message-Id: <20130802101457.548358340@linuxfoundation.org>
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+Subject: [ 07/39] tracing: Fix irqs-off tag display in syscall tracing
+Date: Fri,  2 Aug 2013 18:18:17 +0800
+Message-Id: <20130802101457.809517963@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802101456.800497005@linuxfoundation.org>
 References: <20130802101456.800497005@linuxfoundation.org>
@@ -28,74 +26,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Ewan D. Milne" <emilne@redhat.com>
+From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
 
-commit 085b513f97d8d799d28491239be4b451bcd8c2c5 upstream.
+commit 11034ae9c20f4057a6127fc965906417978e69b2 upstream
 
-sd_prep_fn will allocate a larger CDB for the command via mempool_alloc
-for devices using DIF type 2 protection.  This CDB was being freed
-in sd_done, which results in a kernel crash if the command is retried
-due to a UNIT ATTENTION.  This change moves the code to free the larger
-CDB into sd_unprep_fn instead, which is invoked after the request is
-complete.
+Initialization of variable irq_flags and pc was missed when backport
+11034ae9c to linux-3.0.y and linux-3.4.y, my fault.
 
-It is no longer necessary to call scsi_print_command separately for
-this case as the ->cmnd will no longer be NULL in the normal code path.
-
-Also removed conditional test for DIF type 2 when freeing the larger
-CDB because the protection_type could have been changed via sysfs while
-the command was executing.
-
-Signed-off-by: Ewan D. Milne <emilne@redhat.com>
-Acked-by: Martin K. Petersen <martin.petersen@oracle.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/scsi/sd.c |   22 +++++++---------------
- 1 file changed, 7 insertions(+), 15 deletions(-)
+ kernel/trace/trace_syscalls.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -672,10 +672,17 @@ static int scsi_setup_flush_cmnd(struct
+--- a/kernel/trace/trace_syscalls.c
++++ b/kernel/trace/trace_syscalls.c
+@@ -358,6 +358,9 @@ void ftrace_syscall_exit(void *ignore, s
+ 	if (!sys_data)
+ 		return;
  
- static void sd_unprep_fn(struct request_queue *q, struct request *rq)
- {
-+	struct scsi_cmnd *SCpnt = rq->special;
++	local_save_flags(irq_flags);
++	pc = preempt_count();
 +
- 	if (rq->cmd_flags & REQ_DISCARD) {
- 		free_page((unsigned long)rq->buffer);
- 		rq->buffer = NULL;
- 	}
-+	if (SCpnt->cmnd != rq->cmd) {
-+		mempool_free(SCpnt->cmnd, sd_cdb_pool);
-+		SCpnt->cmnd = NULL;
-+		SCpnt->cmd_len = 0;
-+	}
- }
- 
- /**
-@@ -1539,21 +1546,6 @@ static int sd_done(struct scsi_cmnd *SCp
- 	if (rq_data_dir(SCpnt->request) == READ && scsi_prot_sg_count(SCpnt))
- 		sd_dif_complete(SCpnt, good_bytes);
- 
--	if (scsi_host_dif_capable(sdkp->device->host, sdkp->protection_type)
--	    == SD_DIF_TYPE2_PROTECTION && SCpnt->cmnd != SCpnt->request->cmd) {
--
--		/* We have to print a failed command here as the
--		 * extended CDB gets freed before scsi_io_completion()
--		 * is called.
--		 */
--		if (result)
--			scsi_print_command(SCpnt);
--
--		mempool_free(SCpnt->cmnd, sd_cdb_pool);
--		SCpnt->cmnd = NULL;
--		SCpnt->cmd_len = 0;
--	}
--
- 	return good_bytes;
- }
- 
+ 	event = trace_current_buffer_lock_reserve(&buffer,
+ 			sys_data->exit_event->event.type, sizeof(*entry),
+ 			irq_flags, pc);
 
 
