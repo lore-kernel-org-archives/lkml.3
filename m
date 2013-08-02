@@ -1,53 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754237Ab3HBEuc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 00:50:32 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:13960 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753563Ab3HBEu2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 00:50:28 -0400
-X-IronPort-AV: E=Sophos;i="4.89,798,1367942400"; 
-   d="scan'208";a="8095320"
-Message-ID: <51FB3A36.2080209@cn.fujitsu.com>
-Date: Fri, 02 Aug 2013 12:48:54 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1754402Ab3HBEuo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 00:50:44 -0400
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:61800 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754053Ab3HBEuj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 00:50:39 -0400
 MIME-Version: 1.0
-To: Toshi Kani <toshi.kani@hp.com>
-CC: rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu,
-        hpa@zytor.com, akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
-        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
-        mina86@mina86.com, gong.chen@linux.intel.com,
-        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
-        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
-        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com, x86@kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH v2 02/18] earlycpio.c: Fix the confusing comment of find_cpio_data().
-References: <1375340800-19332-1-git-send-email-tangchen@cn.fujitsu.com>  <1375340800-19332-3-git-send-email-tangchen@cn.fujitsu.com> <1375394271.10300.18.camel@misato.fc.hp.com>
-In-Reply-To: <1375394271.10300.18.camel@misato.fc.hp.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/02 12:49:03,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/02 12:49:10,
-	Serialize complete at 2013/08/02 12:49:10
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8; format=flowed
+In-Reply-To: <1375349321-18646-1-git-send-email-ch.naveen@samsung.com>
+References: <1375349321-18646-1-git-send-email-ch.naveen@samsung.com>
+Date: Fri, 2 Aug 2013 10:20:38 +0530
+Message-ID: <CANruHrQXh=aE5-DkaNzdd=PpByTqyszyh2G0cvcW2iBGH8VH4A@mail.gmail.com>
+Subject: Re: [PATCH] ARM: dts: exynos5420: add ADC device tree node
+From: sunil joshi <sjoshi.open@gmail.com>
+To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kgene.kim@samsung.com, dianders@chromium.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02/2013 05:57 AM, Toshi Kani wrote:
-......
->>   struct cpio_data __cpuinit find_cpio_data(const char *path, void *data,
+Hi Naveen,
+exynos5250.dtsi also needs this entry.
+Pls consider adding adc node in exynos5250.dtsi as well, and move the
+common content of adc node to exynos5.dtsi.
+
+Regards
+Sunil
+
+
+On Thu, Aug 1, 2013 at 2:58 PM, Naveen Krishna Chatradhi
+<ch.naveen@samsung.com> wrote:
+> From: Jaehoon Kim <jh228.kim@samsung.com>
 >
-> This patch does not apply cleanly.  It seems that your branch does not
-> have 0db0628d90125193280eabb501c94feaf48fa9ab.
+> Add device tree node for ADC in exynos5420.dtsi
 >
-
-I have rebased the patch-set to linux 3.11-rc3. And will resend it later.
-
-Thanks.
-
+> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> ---
+>  arch/arm/boot/dts/exynos5420.dtsi |   11 +++++++++++
+>  1 file changed, 11 insertions(+)
+>
+> diff --git a/arch/arm/boot/dts/exynos5420.dtsi b/arch/arm/boot/dts/exynos5420.dtsi
+> index 8c54c4b..074e1bc 100644
+> --- a/arch/arm/boot/dts/exynos5420.dtsi
+> +++ b/arch/arm/boot/dts/exynos5420.dtsi
+> @@ -145,4 +145,15 @@
+>                 clocks = <&clock 260>, <&clock 131>;
+>                 clock-names = "uart", "clk_uart_baud0";
+>         };
+> +
+> +       adc: adc@12D10000 {
+> +               compatible = "samsung,exynos-adc-v2";
+> +               reg = <0x12D10000 0x100>, <0x10040720 0x4>;
+> +               interrupts = <0 106 0>;
+> +               #io-channel-cells = <1>;
+> +               io-channel-ranges;
+> +               clocks = <&clock 270>;
+> +               clock-names = "adc";
+> +               status = "disabled";
+> +       };
+>  };
+> --
+> 1.7.9.5
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
