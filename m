@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753067Ab3HBKSl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:18:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37633 "EHLO
+	id S1753289Ab3HBKSr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:18:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37645 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752857Ab3HBKSi (ORCPT
+	with ESMTP id S1753176Ab3HBKSo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:18:38 -0400
+	Fri, 2 Aug 2013 06:18:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Youquan Song <youquan.song@intel.com>, Tejun Heo <tj@kernel.org>
-Subject: [ 20/39] ata: Fix DVD not dectected at some platform with Wellsburg PCH
-Date: Fri,  2 Aug 2013 18:18:30 +0800
-Message-Id: <20130802101459.682144332@linuxfoundation.org>
+        Anton Blanchard <anton@samba.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 22/39] powerpc/modules: Module CRC relocation fix causes perf issues
+Date: Fri,  2 Aug 2013 18:18:32 +0800
+Message-Id: <20130802101459.963149705@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802101456.800497005@linuxfoundation.org>
 References: <20130802101456.800497005@linuxfoundation.org>
@@ -26,35 +28,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Youquan Song <youquan.song@intel.com>
+From: Anton Blanchard <anton@samba.org>
 
-commit eac27f04a71e1f39f196f7e520d16dcefc955d77 upstream.
+commit 0e0ed6406e61434d3f38fb58aa8464ec4722b77e upstream.
 
-There is a patch b55f84e2d527182e7c611d466cd0bb6ddce201de "ata_piix: Fix DVD
- not dectected at some Haswell platforms" to fix an issue of DVD not
-recognized on Haswell Desktop platform with Lynx Point.
-Recently, it is also found the same issue at some platformas with Wellsburg PCH.
+Module CRCs are implemented as absolute symbols that get resolved by
+a linker script. We build an intermediate .o that contains an
+unresolved symbol for each CRC. genksysms parses this .o, calculates
+the CRCs and writes a linker script that "resolves" the symbols to
+the calculated CRC.
 
-So deliver a similar patch to fix it by disables 32bit PIO in IDE mode.
+Unfortunately the ppc64 relocatable kernel sees these CRCs as symbols
+that need relocating and relocates them at boot. Commit d4703aef
+(module: handle ppc64 relocating kcrctabs when CONFIG_RELOCATABLE=y)
+added a hook to reverse the bogus relocations. Part of this patch
+created a symbol at 0x0:
 
-Signed-off-by: Youquan Song <youquan.song@intel.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+# head -2 /proc/kallsyms
+0000000000000000 T reloc_start
+c000000000000000 T .__start
+
+This reloc_start symbol is causing lots of confusion to perf. It
+thinks reloc_start is a massive function that stretches from 0x0 to
+0xc000000000000000 and we get various cryptic errors out of perf,
+including:
+
+problem incrementing symbol count, skipping event
+
+This patch removes the  reloc_start linker script label and instead
+defines it as PHYSICAL_START. We also need to wrap it with
+CONFIG_PPC64 because the ppc32 kernel can set a non zero
+PHYSICAL_START at compile time and we wouldn't want to subtract
+it from the CRCs in that case.
+
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Acked-by: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/ata_piix.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/powerpc/include/asm/module.h |    5 ++---
+ arch/powerpc/kernel/vmlinux.lds.S |    3 ---
+ 2 files changed, 2 insertions(+), 6 deletions(-)
 
---- a/drivers/ata/ata_piix.c
-+++ b/drivers/ata/ata_piix.c
-@@ -344,7 +344,7 @@ static const struct pci_device_id piix_p
- 	/* SATA Controller IDE (Wellsburg) */
- 	{ 0x8086, 0x8d00, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
- 	/* SATA Controller IDE (Wellsburg) */
--	{ 0x8086, 0x8d08, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
-+	{ 0x8086, 0x8d08, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata_snb },
- 	/* SATA Controller IDE (Wellsburg) */
- 	{ 0x8086, 0x8d60, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
- 	/* SATA Controller IDE (Wellsburg) */
+--- a/arch/powerpc/include/asm/module.h
++++ b/arch/powerpc/include/asm/module.h
+@@ -87,10 +87,9 @@ struct exception_table_entry;
+ void sort_ex_table(struct exception_table_entry *start,
+ 		   struct exception_table_entry *finish);
+ 
+-#ifdef CONFIG_MODVERSIONS
++#if defined(CONFIG_MODVERSIONS) && defined(CONFIG_PPC64)
+ #define ARCH_RELOCATES_KCRCTAB
+-
+-extern const unsigned long reloc_start[];
++#define reloc_start PHYSICAL_START
+ #endif
+ #endif /* __KERNEL__ */
+ #endif	/* _ASM_POWERPC_MODULE_H */
+--- a/arch/powerpc/kernel/vmlinux.lds.S
++++ b/arch/powerpc/kernel/vmlinux.lds.S
+@@ -38,9 +38,6 @@ jiffies = jiffies_64 + 4;
+ #endif
+ SECTIONS
+ {
+-	. = 0;
+-	reloc_start = .;
+-
+ 	. = KERNELBASE;
+ 
+ /*
 
 
