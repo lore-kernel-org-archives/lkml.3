@@ -1,89 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753019Ab3HBE1k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 00:27:40 -0400
-Received: from ozlabs.org ([203.10.76.45]:56204 "EHLO ozlabs.org"
+	id S1753501Ab3HBE3T (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 00:29:19 -0400
+Received: from mga03.intel.com ([143.182.124.21]:33420 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750853Ab3HBE1i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 00:27:38 -0400
-Date: Fri, 2 Aug 2013 13:50:27 +1000
-From: David Gibson <david@gibson.dropbear.id.au>
-To: "jonsmirl@gmail.com" <jonsmirl@gmail.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "ksummit-2013-discuss@lists.linuxfoundation.org" 
-	<ksummit-2013-discuss@lists.linuxfoundation.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Domenico Andreoli <cavokz@gmail.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Arend van Spriel <arend@broadcom.com>, Mark Brown <broonie@kernel.org>,
-        Olof Johansson <olof@lixom.net>, mbizon@freebox.fr,
-        Dave P Martin <Dave.Martin@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [Ksummit-2013-discuss] DT bindings as ABI [was: Do we have
- people interested in device tree janitoring / cleanup?]
-Message-ID: <20130802035027.GA19115@voom.redhat.com>
-References: <20130725175702.GC22291@e106331-lin.cambridge.arm.com>
- <1999586.84BnWE5EUh@thinkpad>
- <20130731191209.GA8027@netboy>
- <1409617.9untvfnOTJ@flatron>
- <20130731200017.GC8027@netboy>
- <20130731201457.GA24642@n2100.arm.linux.org.uk>
- <CAKON4Ow7rE9cDj_tS7kmYN4incM+ay=BK96q-ph2JxYH3xiQzg@mail.gmail.com>
- <20130731204817.GC24642@n2100.arm.linux.org.uk>
- <CAKON4Ozfe=endqnXWkcWR2HuJ489Otpcu2QsjB0DNg6jpRgG+Q@mail.gmail.com>
+	id S1750853Ab3HBE3S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 00:29:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,798,1367996400"; 
+   d="scan'208";a="276615526"
+Message-ID: <51FB35CD.7040709@intel.com>
+Date: Fri, 02 Aug 2013 12:30:05 +0800
+From: Aaron Lu <aaron.lu@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="VbJkn9YxBvnuCH5J"
-Content-Disposition: inline
-In-Reply-To: <CAKON4Ozfe=endqnXWkcWR2HuJ489Otpcu2QsjB0DNg6jpRgG+Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Felipe Contreras <felipe.contreras@gmail.com>
+CC: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <lenb@kernel.org>,
+        Zhang Rui <rui.zhang@intel.com>
+Subject: Re: [PATCH] acpi: video: fix reversed indexed BQC
+References: <1375400042-989-1-git-send-email-felipe.contreras@gmail.com> <51FB137D.7070000@gmail.com> <CAMP44s1A+z4=DGJLK1qf5LPc1vbYvtJwjFiMt17vzyZFRU0qmg@mail.gmail.com>
+In-Reply-To: <CAMP44s1A+z4=DGJLK1qf5LPc1vbYvtJwjFiMt17vzyZFRU0qmg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 08/02/2013 12:11 PM, Felipe Contreras wrote:
+> On Thu, Aug 1, 2013 at 9:03 PM, Aaron Lu <aaron.lwe@gmail.com> wrote:
+>> On 08/02/2013 07:34 AM, Felipe Contreras wrote:
+>>> Commit 1a7c618 (ACPI video: support _BQC/_BCL/_BCM methods that use
+>>> index values) assumed that bl->levels were not reverted, but at this
+>>> point they already are, so there's no need to revert them yet again.
+>>
+>> When acpi_video_bqc_value_to_level is called, bl->levels is not
+>> reverted.
+> 
+> This is the code that turns br->flags._BCL_reversed on:
+> 
+> 	if (max_level == br->levels[2]) {
+> 		br->flags._BCL_reversed = 1;
+> 		sort(&br->levels[2], count - 2, sizeof(br->levels[2]),
+> 			acpi_video_cmp_level, NULL);
+> 	}
+> 
+> Now tell me how br->flags._BCL_reversed can be on, and the br->levels
+> *not* reverted.
 
---VbJkn9YxBvnuCH5J
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Oh yes, it is reverted to be in increase order, so it is not in reverse
+order. I'm a little confused by these words.
 
-On Wed, Jul 31, 2013 at 05:26:47PM -0400, jonsmirl@gmail.com wrote:
-> On Wed, Jul 31, 2013 at 4:48 PM, Russell King - ARM Linux
-> <linux@arm.linux.org.uk> wrote:
-> > On Wed, Jul 31, 2013 at 04:37:36PM -0400, jonsmirl@gmail.com
-> wrote:
-[snip]
-> Alternatively you may be of the belief that it is impossible to get
-> rid of the board specific code. But x86 doesn't have any of it, why
-> should ARM?
+Please see acpi_video_bqc_quirk, we set _BQC_use_index by revert the
+level on a reversed _BCL, so we will need to revert level here too.
 
-Sure x86 has board specific code.  It's just that x86 basically only
-has one board - PC.
-
---=20
-David Gibson			| I'll have my music baroque, and my code
-david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
-				| _way_ _around_!
-http://www.ozlabs.org/~dgibson
-
---VbJkn9YxBvnuCH5J
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.13 (GNU/Linux)
-
-iEYEARECAAYFAlH7LIMACgkQaILKxv3ab8aT3QCfZx5sxlhYiAf32+bRfDWGeNZK
-tiUAn2Xo/QTNCgRW0/LPk+bWYWBQpsPU
-=8Uwi
------END PGP SIGNATURE-----
-
---VbJkn9YxBvnuCH5J--
+-Aaron
