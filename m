@@ -1,283 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753938Ab3HBBgJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 21:36:09 -0400
-Received: from mail-qc0-f169.google.com ([209.85.216.169]:41603 "EHLO
-	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753169Ab3HBBgH (ORCPT
+	id S1753451Ab3HBBkL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 21:40:11 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:48180 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751448Ab3HBBkJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 21:36:07 -0400
-From: behanw@converseincode.com
-To: balbi@ti.com, gregkh@linuxfoundation.org
-Cc: behanw@converseincode.com, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Mark Charlebois <charlebm@gmail.com>
-Subject: [PATCH] USB: Removing the use of VLAIS from the gadget driver
-Date: Thu,  1 Aug 2013 21:35:44 -0400
-Message-Id: <1375407344-30120-1-git-send-email-behanw@converseincode.com>
-X-Mailer: git-send-email 1.8.1.2
+	Thu, 1 Aug 2013 21:40:09 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130731201708.efa5ae87.akpm@linux-foundation.org>
+References: <1374842669-22844-1-git-send-email-mhocko@suse.cz>
+ <20130729135743.c04224fb5d8e64b2730d8263@linux-foundation.org>
+ <51F9D1F6.4080001@jp.fujitsu.com> <20130731201708.efa5ae87.akpm@linux-foundation.org>
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Date: Thu, 1 Aug 2013 21:39:48 -0400
+X-Google-Sender-Auth: pwSdKodC2whHbpRlq7G9sgIa054
+Message-ID: <CAHGf_=r7mek+ueJWfu_6giMOueDTnMs8dY1jJrKyX+gfPys6uA@mail.gmail.com>
+Subject: Re: [PATCH resend] drop_caches: add some documentation and info message
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Michal Hocko <mhocko@suse.cz>, "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, dave.hansen@intel.com,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, bp@suse.de,
+        Dave Hansen <dave@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Behan Webster <behanw@converseincode.com>
+On Wed, Jul 31, 2013 at 11:17 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Wed, 31 Jul 2013 23:11:50 -0400 KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
+>
+>> >> --- a/fs/drop_caches.c
+>> >> +++ b/fs/drop_caches.c
+>> >> @@ -59,6 +59,8 @@ int drop_caches_sysctl_handler(ctl_table *table, int write,
+>> >>    if (ret)
+>> >>            return ret;
+>> >>    if (write) {
+>> >> +          printk(KERN_INFO "%s (%d): dropped kernel caches: %d\n",
+>> >> +                 current->comm, task_pid_nr(current), sysctl_drop_caches);
+>> >>            if (sysctl_drop_caches & 1)
+>> >>                    iterate_supers(drop_pagecache_sb, NULL);
+>> >>            if (sysctl_drop_caches & 2)
+>> >
+>> > How about we do
+>> >
+>> >     if (!(sysctl_drop_caches & 4))
+>> >             printk(....)
+>> >
+>> > so people can turn it off if it's causing problems?
+>>
+>> The best interface depends on the purpose. If you want to detect crazy application,
+>> we can't assume an application co-operate us. So, I doubt this works.
+>
+> You missed the "!".  I'm proposing that setting the new bit 2 will
+> permit people to prevent the new printk if it is causing them problems.
 
-The use of variable length arrays in structs (VLAIS) in the Linux Kernel code
-precludes the use of compilers which don't implement VLAIS (for instance the
-Clang compiler). This patch removes the use of VLAIS in the gadget driver.
-
-Signed-off-by: Mark Charlebois <charlebm@gmail.com>
-Signed-off-by: Behan Webster <behanw@converseincode.com>
----
- drivers/usb/gadget/f_fs.c | 128 +++++++++++++++++++++++++++-------------------
- 1 file changed, 76 insertions(+), 52 deletions(-)
-
-diff --git a/drivers/usb/gadget/f_fs.c b/drivers/usb/gadget/f_fs.c
-index f394f29..4b872c4 100644
---- a/drivers/usb/gadget/f_fs.c
-+++ b/drivers/usb/gadget/f_fs.c
-@@ -30,7 +30,6 @@
- 
- #define FUNCTIONFS_MAGIC	0xa647361 /* Chosen by a honest dice roll ;) */
- 
--
- /* Debugging ****************************************************************/
- 
- #ifdef VERBOSE_DEBUG
-@@ -214,6 +213,8 @@ struct ffs_data {
- 	/* ids in stringtabs are set in functionfs_bind() */
- 	const void			*raw_strings;
- 	struct usb_gadget_strings	**stringtabs;
-+	struct usb_gadget_strings	*stringtab;
-+	struct usb_string		*strings;
- 
- 	/*
- 	 * File system's super block, write once when file system is
-@@ -263,7 +264,10 @@ struct ffs_function {
- 
- 	struct ffs_ep			*eps;
- 	u8				eps_revmap[16];
-+	struct usb_descriptor_header	**fs_descs;
-+	struct usb_descriptor_header	**hs_descs;
- 	short				*interfaces_nums;
-+	char				*raw_descs;
- 
- 	struct usb_function		function;
- };
-@@ -1345,6 +1349,8 @@ static void ffs_data_clear(struct ffs_data *ffs)
- 	kfree(ffs->raw_descs);
- 	kfree(ffs->raw_strings);
- 	kfree(ffs->stringtabs);
-+	kfree(ffs->stringtab);
-+	kfree(ffs->strings);
- }
- 
- static void ffs_data_reset(struct ffs_data *ffs)
-@@ -1357,6 +1363,8 @@ static void ffs_data_reset(struct ffs_data *ffs)
- 	ffs->raw_descs = NULL;
- 	ffs->raw_strings = NULL;
- 	ffs->stringtabs = NULL;
-+	ffs->stringtab = NULL;
-+	ffs->strings = NULL;
- 
- 	ffs->raw_descs_length = 0;
- 	ffs->raw_fs_descs_length = 0;
-@@ -1528,12 +1536,10 @@ static void ffs_func_free(struct ffs_function *func)
- 	ffs_data_put(func->ffs);
- 
- 	kfree(func->eps);
--	/*
--	 * eps and interfaces_nums are allocated in the same chunk so
--	 * only one free is required.  Descriptors are also allocated
--	 * in the same chunk.
--	 */
--
-+	kfree(func->fs_descs);
-+	kfree(func->hs_descs);
-+	kfree(func->interfaces_nums);
-+	kfree(func->raw_descs);
- 	kfree(func);
- }
- 
-@@ -1907,33 +1913,35 @@ static int __ffs_data_got_strings(struct ffs_data *ffs,
- 		return 0;
- 	}
- 
--	/* Allocate everything in one chunk so there's less maintenance. */
- 	{
--		struct {
--			struct usb_gadget_strings *stringtabs[lang_count + 1];
--			struct usb_gadget_strings stringtab[lang_count];
--			struct usb_string strings[lang_count*(needed_count+1)];
--		} *d;
- 		unsigned i = 0;
--
--		d = kmalloc(sizeof *d, GFP_KERNEL);
--		if (unlikely(!d)) {
-+		usb_gadget_strings **stringtabs = NULL;
-+		usb_gadget_strings *stringtab = NULL;
-+		usb_string *strings = NULL;
-+
-+		stringtabs = kmalloc(sizeof(*stringtabs)*(lang_count + 1),
-+			GFP_KERNEL);
-+		stringtab = kmalloc(sizeof(*stringtab)*(lang_count),
-+			GFP_KERNEL);
-+		strings = kmalloc(sizeof(*strings)
-+			* (lang_count * (needed_count + 1)), GFP_KERNEL);
-+		if (unlikely(!stringtabs || !stringtab || !strings)) {
-+			kfree(stringtabs);
-+			kfree(stringtab);
-+			kfree(strings);
- 			kfree(_data);
- 			return -ENOMEM;
- 		}
--
--		stringtabs = d->stringtabs;
--		t = d->stringtab;
-+		b = stringtabs;
-+		t = stringtab;
- 		i = lang_count;
- 		do {
--			*stringtabs++ = t++;
-+			*b++ = t++;
- 		} while (--i);
--		*stringtabs = NULL;
-+		*b = NULL;
- 
--		stringtabs = d->stringtabs;
--		t = d->stringtab;
--		s = d->strings;
--		strings = s;
-+		t = stringtab;
-+		s = strings;
- 	}
- 
- 	/* For each language */
-@@ -1991,12 +1999,16 @@ static int __ffs_data_got_strings(struct ffs_data *ffs,
- 
- 	/* Done! */
- 	ffs->stringtabs = stringtabs;
-+	ffs->stringtab = stringtab;
-+	ffs->strings = strings;
- 	ffs->raw_strings = _data;
- 
- 	return 0;
- 
- error_free:
- 	kfree(stringtabs);
-+	kfree(stringtab);
-+	kfree(strings);
- error:
- 	kfree(_data);
- 	return -EINVAL;
-@@ -2207,17 +2219,12 @@ static int ffs_func_bind(struct usb_configuration *c,
- 
- 	int ret;
- 
--	/* Make it a single chunk, less management later on */
--	struct {
--		struct ffs_ep eps[ffs->eps_count];
--		struct usb_descriptor_header
--			*fs_descs[full ? ffs->fs_descs_count + 1 : 0];
--		struct usb_descriptor_header
--			*hs_descs[high ? ffs->hs_descs_count + 1 : 0];
--		short inums[ffs->interfaces_count];
--		char raw_descs[high ? ffs->raw_descs_length
--				    : ffs->raw_fs_descs_length];
--	} *data;
-+	struct ffs_ep *eps = NULL;
-+	struct usb_descriptor_header **fs_descs = NULL;
-+	struct usb_descriptor_header **hs_descs = NULL;
-+	short *inums = NULL;
-+	char *raw_descs = NULL;
-+
- 
- 	ENTER();
- 
-@@ -2225,21 +2232,40 @@ static int ffs_func_bind(struct usb_configuration *c,
- 	if (unlikely(!(full | high)))
- 		return -ENOTSUPP;
- 
--	/* Allocate */
--	data = kmalloc(sizeof *data, GFP_KERNEL);
--	if (unlikely(!data))
-+	size_t eps_sz = sizeof(*eps)*ffs->eps_count;
-+	eps = kmalloc(eps_sz, GFP_KERNEL);
-+	fs_descs = kmalloc(sizeof(*fs_descs)*
-+			   (full ? ffs->fs_descs_count + 1 : 0), GFP_KERNEL);
-+	hs_descs = kmalloc(sizeof(*hs_descs)*
-+			   (high ? ffs->hs_descs_count + 1 : 0), GFP_KERNEL);
-+	size_t inums_sz = sizeof(*inums)*ffs->interfaces_count;
-+	inums = kmalloc(inums_sz, GFP_KERNEL);
-+	size_t raw_descs_sz = sizeof(*raw_descs)*(high ? ffs->raw_descs_length :
-+					ffs->raw_fs_descs_length);
-+	raw_descs = kmalloc(raw_descs_sz, , GFP_KERNEL);
-+
-+	if (unlikely(!eps || !fs_descs || !hs_descs || !inums || !raw_descs)) {
-+		kfree(eps);
-+		kfree(fs_descs);
-+		kfree(hs_descs);
-+		kfree(inums);
-+		kfree(raw_descs);
- 		return -ENOMEM;
-+	}
- 
- 	/* Zero */
--	memset(data->eps, 0, sizeof data->eps);
--	memcpy(data->raw_descs, ffs->raw_descs + 16, sizeof data->raw_descs);
--	memset(data->inums, 0xff, sizeof data->inums);
-+	memset(eps, 0, eps_sz);
-+	memcpy(raw_descs, ffs->raw_descs + 16, raw_descs_sz);
-+	memset(inums, 0xff, inums_sz);
- 	for (ret = ffs->eps_count; ret; --ret)
--		data->eps[ret].num = -1;
-+		eps[ret].num = -1;
- 
- 	/* Save pointers */
--	func->eps             = data->eps;
--	func->interfaces_nums = data->inums;
-+	func->eps             = eps;
-+	func->fs_descs        = fs_descs;
-+	func->hs_descs        = hs_descs;
-+	func->interfaces_nums = inums;
-+	func->raw_descs       = raw_descs;
- 
- 	/*
- 	 * Go through all the endpoint descriptors and allocate
-@@ -2247,10 +2273,9 @@ static int ffs_func_bind(struct usb_configuration *c,
- 	 * numbers without worrying that it may be described later on.
- 	 */
- 	if (likely(full)) {
--		func->function.fs_descriptors = data->fs_descs;
-+		func->function.fs_descriptors = fs_descs;
- 		ret = ffs_do_descs(ffs->fs_descs_count,
--				   data->raw_descs,
--				   sizeof data->raw_descs,
-+				   raw_descs, raw_descs_sz,
- 				   __ffs_func_bind_do_descs, func);
- 		if (unlikely(ret < 0))
- 			goto error;
-@@ -2259,10 +2284,9 @@ static int ffs_func_bind(struct usb_configuration *c,
- 	}
- 
- 	if (likely(high)) {
--		func->function.hs_descriptors = data->hs_descs;
-+		func->function.hs_descriptors = hs_descs;
- 		ret = ffs_do_descs(ffs->hs_descs_count,
--				   data->raw_descs + ret,
--				   (sizeof data->raw_descs) - ret,
-+				   raw_descs + ret, raw_descs_sz - ret,
- 				   __ffs_func_bind_do_descs, func);
- 	}
- 
-@@ -2273,7 +2297,7 @@ static int ffs_func_bind(struct usb_configuration *c,
- 	 */
- 	ret = ffs_do_descs(ffs->fs_descs_count +
- 			   (high ? ffs->hs_descs_count : 0),
--			   data->raw_descs, sizeof data->raw_descs,
-+			   raw_descs, raw_descs_sz,
- 			   __ffs_func_bind_do_nums, func);
- 	if (unlikely(ret < 0))
- 		goto error;
--- 
-1.8.1.2
-
+No I don't. I'm sure almost all abuse users think our usage is correct. Then,
+I can imagine all crazy applications start to use this flag eventually.
