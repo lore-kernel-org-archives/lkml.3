@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755509Ab3HBKps (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:45:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37314 "EHLO
+	id S1755530Ab3HBKqU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:46:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37281 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030243Ab3HBKK2 (ORCPT
+	with ESMTP id S1030227Ab3HBKKU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:10:28 -0400
+	Fri, 2 Aug 2013 06:10:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>,
-        Martin Braure de Calignon <braurede@free.fr>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [ 50/99] libata: make it clear that sata_inic162x is experimental
-Date: Fri,  2 Aug 2013 18:08:03 +0800
-Message-Id: <20130802100233.015532390@linuxfoundation.org>
+        qindehua <13691222965@163.com>, qindehua <qindehua@163.com>,
+        NeilBrown <neilb@suse.de>
+Subject: [ 47/99] md/raid5: fix interaction of replace and recovery.
+Date: Fri,  2 Aug 2013 18:08:00 +0800
+Message-Id: <20130802100232.649474883@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802100225.478715166@linuxfoundation.org>
 References: <20130802100225.478715166@linuxfoundation.org>
@@ -28,70 +27,106 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: NeilBrown <neilb@suse.de>
 
-commit bb9696192826a7d9279caf872e95b41bc26c7eff upstream.
+commit f94c0b6658c7edea8bc19d13be321e3860a3fa54 upstream.
 
-sata_inic162x never reached a state where it's reliable enough for
-production use and data corruption is a relatively common occurrence.
-Make the driver generate warning about the issues and mark the Kconfig
-option as experimental.
+If a device in a RAID4/5/6 is being replaced while another is being
+recovered, then the writes to the replacement device currently don't
+happen, resulting in corruption when the replacement completes and the
+new drive takes over.
 
-If the situation doesn't improve, we'd be better off making it depend
-on CONFIG_BROKEN.  Let's wait for several cycles and see if the kernel
-message draws any attention.
+This is because the replacement writes are only triggered when
+'s.replacing' is set and not when the similar 's.sync' is set (which
+is the case during resync and recovery - it means all devices need to
+be read).
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Martin Braure de Calignon <braurede@free.fr>
-Reported-by: Ben Hutchings <ben@decadent.org.uk>
-Reported-by: risc4all@yahoo.com
+So schedule those writes when s.replacing is set as well.
+
+In this case we cannot use "STRIPE_INSYNC" to record that the
+replacement has happened as that is needed for recording that any
+parity calculation is complete.  So introduce STRIPE_REPLACED to
+record if the replacement has happened.
+
+For safety we should also check that STRIPE_COMPUTE_RUN is not set.
+This has a similar effect to the "s.locked == 0" test.  The latter
+ensure that now IO has been flagged but not started.  The former
+checks if any parity calculation has been flagged by not started.
+We must wait for both of these to complete before triggering the
+'replace'.
+
+Add a similar test to the subsequent check for "are we finished yet".
+This possibly isn't needed (is subsumed in the STRIPE_INSYNC test),
+but it makes it more obvious that the REPLACE will happen before we
+think we are finished.
+
+Finally if a NeedReplace device is not UPTODATE then that is an
+error.  We really must trigger a warning.
+
+This bug was introduced in commit 9a3e1101b827a59ac9036a672f5fa8d5279d0fe2
+(md/raid5:  detect and handle replacements during recovery.)
+which introduced replacement for raid5.
+That was in 3.3-rc3, so any stable kernel since then would benefit
+from this fix.
+
+Reported-by: qindehua <13691222965@163.com>
+Tested-by: qindehua <qindehua@163.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/Kconfig         |    2 +-
- drivers/ata/sata_inic162x.c |   14 ++++++++++++++
- 2 files changed, 15 insertions(+), 1 deletion(-)
+ drivers/md/raid5.c |   15 ++++++++++-----
+ drivers/md/raid5.h |    1 +
+ 2 files changed, 11 insertions(+), 5 deletions(-)
 
---- a/drivers/ata/Kconfig
-+++ b/drivers/ata/Kconfig
-@@ -107,7 +107,7 @@ config SATA_FSL
- 	  If unsure, say N.
+--- a/drivers/md/raid5.c
++++ b/drivers/md/raid5.c
+@@ -3462,6 +3462,7 @@ static void handle_stripe(struct stripe_
+ 		    test_and_clear_bit(STRIPE_SYNC_REQUESTED, &sh->state)) {
+ 			set_bit(STRIPE_SYNCING, &sh->state);
+ 			clear_bit(STRIPE_INSYNC, &sh->state);
++			clear_bit(STRIPE_REPLACED, &sh->state);
+ 		}
+ 		spin_unlock(&sh->stripe_lock);
+ 	}
+@@ -3607,19 +3608,23 @@ static void handle_stripe(struct stripe_
+ 			handle_parity_checks5(conf, sh, &s, disks);
+ 	}
  
- config SATA_INIC162X
--	tristate "Initio 162x SATA support"
-+	tristate "Initio 162x SATA support (Very Experimental)"
- 	depends on PCI
- 	help
- 	  This option enables support for Initio 162x Serial ATA.
---- a/drivers/ata/sata_inic162x.c
-+++ b/drivers/ata/sata_inic162x.c
-@@ -6,6 +6,18 @@
-  *
-  * This file is released under GPL v2.
-  *
-+ * **** WARNING ****
-+ *
-+ * This driver never worked properly and unfortunately data corruption is
-+ * relatively common.  There isn't anyone working on the driver and there's
-+ * no support from the vendor.  Do not use this driver in any production
-+ * environment.
-+ *
-+ * http://thread.gmane.org/gmane.linux.debian.devel.bugs.rc/378525/focus=54491
-+ * https://bugzilla.kernel.org/show_bug.cgi?id=60565
-+ *
-+ * *****************
-+ *
-  * This controller is eccentric and easily locks up if something isn't
-  * right.  Documentation is available at initio's website but it only
-  * documents registers (not programming model).
-@@ -807,6 +819,8 @@ static int inic_init_one(struct pci_dev
- 
- 	ata_print_version_once(&pdev->dev, DRV_VERSION);
- 
-+	dev_alert(&pdev->dev, "inic162x support is broken with common data corruption issues and will be disabled by default, contact linux-ide@vger.kernel.org if in production use\n");
-+
- 	/* alloc host */
- 	host = ata_host_alloc_pinfo(&pdev->dev, ppi, NR_PORTS);
- 	hpriv = devm_kzalloc(&pdev->dev, sizeof(*hpriv), GFP_KERNEL);
+-	if (s.replacing && s.locked == 0
+-	    && !test_bit(STRIPE_INSYNC, &sh->state)) {
++	if ((s.replacing || s.syncing) && s.locked == 0
++	    && !test_bit(STRIPE_COMPUTE_RUN, &sh->state)
++	    && !test_bit(STRIPE_REPLACED, &sh->state)) {
+ 		/* Write out to replacement devices where possible */
+ 		for (i = 0; i < conf->raid_disks; i++)
+-			if (test_bit(R5_UPTODATE, &sh->dev[i].flags) &&
+-			    test_bit(R5_NeedReplace, &sh->dev[i].flags)) {
++			if (test_bit(R5_NeedReplace, &sh->dev[i].flags)) {
++				WARN_ON(!test_bit(R5_UPTODATE, &sh->dev[i].flags));
+ 				set_bit(R5_WantReplace, &sh->dev[i].flags);
+ 				set_bit(R5_LOCKED, &sh->dev[i].flags);
+ 				s.locked++;
+ 			}
+-		set_bit(STRIPE_INSYNC, &sh->state);
++		if (s.replacing)
++			set_bit(STRIPE_INSYNC, &sh->state);
++		set_bit(STRIPE_REPLACED, &sh->state);
+ 	}
+ 	if ((s.syncing || s.replacing) && s.locked == 0 &&
++	    !test_bit(STRIPE_COMPUTE_RUN, &sh->state) &&
+ 	    test_bit(STRIPE_INSYNC, &sh->state)) {
+ 		md_done_sync(conf->mddev, STRIPE_SECTORS, 1);
+ 		clear_bit(STRIPE_SYNCING, &sh->state);
+--- a/drivers/md/raid5.h
++++ b/drivers/md/raid5.h
+@@ -306,6 +306,7 @@ enum {
+ 	STRIPE_SYNC_REQUESTED,
+ 	STRIPE_SYNCING,
+ 	STRIPE_INSYNC,
++	STRIPE_REPLACED,
+ 	STRIPE_PREREAD_ACTIVE,
+ 	STRIPE_DELAYED,
+ 	STRIPE_DEGRADED,
 
 
