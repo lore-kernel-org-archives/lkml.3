@@ -1,77 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757624Ab3HBHdJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 03:33:09 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34545 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755170Ab3HBHdG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 03:33:06 -0400
-Date: Fri, 2 Aug 2013 09:33:04 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, dave.hansen@intel.com,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, bp@suse.de,
-        Dave Hansen <dave@linux.vnet.ibm.com>
-Subject: Re: [PATCH resend] drop_caches: add some documentation and info
- message
-Message-ID: <20130802073304.GA17746@dhcp22.suse.cz>
-References: <1374842669-22844-1-git-send-email-mhocko@suse.cz>
- <20130729135743.c04224fb5d8e64b2730d8263@linux-foundation.org>
- <51F9D1F6.4080001@jp.fujitsu.com>
- <20130731201708.efa5ae87.akpm@linux-foundation.org>
- <CAHGf_=r7mek+ueJWfu_6giMOueDTnMs8dY1jJrKyX+gfPys6uA@mail.gmail.com>
+	id S1757828Ab3HBHej (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 03:34:39 -0400
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:26880 "EHLO
+	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755016Ab3HBHei (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 03:34:38 -0400
+X-IronPort-AV: E=Sophos;i="4.89,799,1367964000"; 
+   d="scan'208";a="28261390"
+Message-ID: <51FB610C.2090201@inria.fr>
+Date: Fri, 02 Aug 2013 09:34:36 +0200
+From: Brice Goglin <Brice.Goglin@inria.fr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130630 Icedove/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAHGf_=r7mek+ueJWfu_6giMOueDTnMs8dY1jJrKyX+gfPys6uA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Jiang, Dave" <dave.jiang@intel.com>
+CC: "Mason, Jon" <jon.mason@intel.com>, Dan Williams <djbw@fb.com>,
+        "Koul, Vinod" <vinod.koul@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: ioatdma: add ioat_raid_enabled module parameter
+References: <51F98A3F.3000102@inria.fr>  <1375308847.6448.6.camel@djiang5-linux2.ch.intel.com>  <20130801171144.GB13747@jonmason-lab> <1375377359.40527.2.camel@djiang5-linux2.ch.intel.com>
+In-Reply-To: <1375377359.40527.2.camel@djiang5-linux2.ch.intel.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 01-08-13 21:39:48, KOSAKI Motohiro wrote:
-> On Wed, Jul 31, 2013 at 11:17 PM, Andrew Morton
-> <akpm@linux-foundation.org> wrote:
-> > On Wed, 31 Jul 2013 23:11:50 -0400 KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
-> >
-> >> >> --- a/fs/drop_caches.c
-> >> >> +++ b/fs/drop_caches.c
-> >> >> @@ -59,6 +59,8 @@ int drop_caches_sysctl_handler(ctl_table *table, int write,
-> >> >>    if (ret)
-> >> >>            return ret;
-> >> >>    if (write) {
-> >> >> +          printk(KERN_INFO "%s (%d): dropped kernel caches: %d\n",
-> >> >> +                 current->comm, task_pid_nr(current), sysctl_drop_caches);
-> >> >>            if (sysctl_drop_caches & 1)
-> >> >>                    iterate_supers(drop_pagecache_sb, NULL);
-> >> >>            if (sysctl_drop_caches & 2)
-> >> >
-> >> > How about we do
-> >> >
-> >> >     if (!(sysctl_drop_caches & 4))
-> >> >             printk(....)
-> >> >
-> >> > so people can turn it off if it's causing problems?
-> >>
-> >> The best interface depends on the purpose. If you want to detect crazy application,
-> >> we can't assume an application co-operate us. So, I doubt this works.
-> >
-> > You missed the "!".  I'm proposing that setting the new bit 2 will
-> > permit people to prevent the new printk if it is causing them problems.
-> 
-> No I don't. I'm sure almost all abuse users think our usage is correct. Then,
-> I can imagine all crazy applications start to use this flag eventually.
+Le 01/08/2013 19:15, Jiang, Dave a écrit :
+> On Thu, 2013-08-01 at 10:11 -0700, Jon Mason wrote:
+>> On Wed, Jul 31, 2013 at 03:14:07PM -0700, Jiang, Dave wrote:
+>>> I'm ok with enabling this for people that just want to use DMA and not
+>>> RAID. 
+>> I might be crazy, but I'd be in favor of disabling the RAID offload by
+>> default on non-Atom platforms.
+>>
+> I suppose. Technically it is disabled starting with 3.10 because of the
+> channel switch issue. I'm ok with this disabled by default for the 3.2
+> platforms that has broken pq-val. 
+>
 
-I guess we do not care about those. If somebody wants to shoot his feet
-then we cannot do much about it. The primary motivation was to find out
-those that think this is right and they are willing to change the setup
-once they know this is not the right way to do things.
+Here's a patch that may do what you guys are saying.
 
-I think that giving a way to suppress the warning is a good step. Log
-level might be to coarse and sysctl would be an overkill.
+Brice
 
--- 
-Michal Hocko
-SUSE Labs
+
+
+ioatdma: disable RAID by default when buggy and add module param
+
+Commit f26df1a1 added a 64-byte alignment requirement for legacy
+operations to work around a silicon errata when mixing legacy and
+RAID descriptors.
+
+RAID offload is now disabled by default on buggy 3.2 platforms.
+Passing ioat_raid_enabled=1 force-enables it on all platforms
+(previous behavior).
+Passing ioat_raid_enabled=0 force-disables it everywhere.
+
+When RAID offload is disabled, legacy operations (memcpy, etc.)
+can work again without alignment restrictions.
+
+Signed-off-by: Brice Goglin <Brice.Goglin@inria.fr>
+---
+ drivers/dma/ioat/dma_v3.c |   16 ++++++++++++++--
+ 1 file changed, 14 insertions(+), 2 deletions(-)
+
+Index: b/drivers/dma/ioat/dma_v3.c
+===================================================================
+--- a/drivers/dma/ioat/dma_v3.c	2013-07-31 23:06:24.163810000 +0200
++++ b/drivers/dma/ioat/dma_v3.c	2013-08-02 09:28:51.817037742 +0200
+@@ -67,6 +67,11 @@
+ #include "dma.h"
+ #include "dma_v2.h"
+ 
++static int ioat_raid_enabled = -1;
++module_param(ioat_raid_enabled, int, 0444);
++MODULE_PARM_DESC(ioat_raid_enabled,
++		 "control support of RAID offload (-1=enabled unless broken [default], 0=disabled, 1=enabled)");
++
+ /* ioat hardware assumes at least two sources for raid operations */
+ #define src_cnt_to_sw(x) ((x) + 2)
+ #define src_cnt_to_hw(x) ((x) - 2)
+@@ -1775,7 +1780,7 @@ int ioat3_dma_probe(struct ioatdma_devic
+ 	dma->device_alloc_chan_resources = ioat2_alloc_chan_resources;
+ 	dma->device_free_chan_resources = ioat2_free_chan_resources;
+ 
+-	if (is_xeon_cb32(pdev))
++	if (ioat_raid_enabled == 1 && is_xeon_cb32(pdev))
+ 		dma->copy_align = 6;
+ 
+ 	dma_cap_set(DMA_INTERRUPT, dma->cap_mask);
+@@ -1783,7 +1788,14 @@ int ioat3_dma_probe(struct ioatdma_devic
+ 
+ 	device->cap = readl(device->reg_base + IOAT_DMA_CAP_OFFSET);
+ 
+-	if (is_bwd_noraid(pdev))
++	/* disable RAID if:
++	 *    force-disabled by module param,
++	 * or not force-enabled on buggy 3.2 platforms,
++	 * or not actually supported.
++	 */
++	if (ioat_raid_enabled == 0
++	    || (ioat_raid_enabled != 1 && is_xeon_cb32(pdev))
++	    || is_bwd_noraid(pdev))
+ 		device->cap &= ~(IOAT_CAP_XOR | IOAT_CAP_PQ | IOAT_CAP_RAID16SS);
+ 
+ 	/* dca is incompatible with raid operations */
+
+
