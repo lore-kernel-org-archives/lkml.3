@@ -1,178 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752482Ab3HBNdr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 09:33:47 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:52098 "EHLO hydra.sisk.pl"
+	id S1752599Ab3HBNeI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 09:34:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3553 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751729Ab3HBNdq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 09:33:46 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Lan Tianyu <lantianyu1986@gmail.com>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Toshi Kani <toshi.kani@hp.com>
-Subject: Re: [PATCH] ACPI: Do not fail acpi_bind_one() if device is already bound correctly
-Date: Fri, 02 Aug 2013 15:43:58 +0200
-Message-ID: <2560973.EJVuxm6PHt@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAOLK0pxJM6ip-dzcEfswULnJR-qb=X_EXnBbdeSNMRKExPxq3Q@mail.gmail.com>
-References: <1888947.F5IBMfDKlY@vostro.rjw.lan> <CAOLK0pxJM6ip-dzcEfswULnJR-qb=X_EXnBbdeSNMRKExPxq3Q@mail.gmail.com>
+	id S1751729Ab3HBNeH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 09:34:07 -0400
+Date: Fri, 2 Aug 2013 15:33:46 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>,
+        Adrian Hunter <adrian.hunter@intel.com>
+Subject: [PATCH] perf tools: Renaming 'time' variable in perf_time_to_tsc due
+ to name shadowing error
+Message-ID: <20130802133346.GD1711@krava.brq.redhat.com>
+References: <1375175954-798-1-git-send-email-namhyung@kernel.org>
+ <20130801120251.GB1032@krava.brq.redhat.com>
+ <51FB2B90.6090602@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <51FB2B90.6090602@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, August 02, 2013 10:48:49 AM Lan Tianyu wrote:
-> 2013/8/2 Rafael J. Wysocki <rjw@sisk.pl>:
-> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> >
-> > Modify acpi_bind_one() so that it doesn't fail if the device
-> > represented by its first argument has already been bound to the
-> > given ACPI handle (second argument), because that is not a good
-> > enough reason for returning an error code.
-> >
-> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > ---
-> >  drivers/acpi/glue.c |   15 +++++++++++----
-> >  1 file changed, 11 insertions(+), 4 deletions(-)
-> >
-> > Index: linux-pm/drivers/acpi/glue.c
-> > ===================================================================
-> > --- linux-pm.orig/drivers/acpi/glue.c
-> > +++ linux-pm/drivers/acpi/glue.c
-> > @@ -143,7 +143,10 @@ int acpi_bind_one(struct device *dev, ac
-> >         list_for_each_entry(pn, &acpi_dev->physical_node_list, node)
-> >                 if (pn->dev == dev) {
-> >                         dev_warn(dev, "Already associated with ACPI node\n");
-> > -                       goto err_free;
-> > +                       if (ACPI_HANDLE(dev) == handle)
-> > +                               retval = 0;
-> > +
-> > +                       goto out_free;
-> >                 }
-> >
-> >         /* allocate physical node id according to physical_node_id_bitmap */
-> > @@ -152,7 +155,7 @@ int acpi_bind_one(struct device *dev, ac
-> >                 ACPI_MAX_PHYSICAL_NODE);
-> >         if (physical_node->node_id >= ACPI_MAX_PHYSICAL_NODE) {
-> >                 retval = -ENOSPC;
-> > -               goto err_free;
-> > +               goto out_free;
-> >         }
-> >
-> >         set_bit(physical_node->node_id, acpi_dev->physical_node_id_bitmap);
-> > @@ -185,10 +188,14 @@ int acpi_bind_one(struct device *dev, ac
-> >         put_device(dev);
-> >         return retval;
-> >
-> > - err_free:
-> > + out_free:
-> >         mutex_unlock(&acpi_dev->physical_node_lock);
-> >         kfree(physical_node);
-> > -       goto err;
-> > +       if (retval)
-> > +               goto err;
-> > +
-> > +       put_device(dev);
-> > +       return 0;
-> >  }
-> >  EXPORT_SYMBOL_GPL(acpi_bind_one);
-> 
-> Hi Rafael:
->             How about the following change?
+The perf compilation fails with following error:
+      ...
+      CC arch/x86/util/tsc.o
+  arch/x86/util/tsc.c: In function ‘perf_time_to_tsc’:
+  arch/x86/util/tsc.c:13:6: error: declaration of ‘time’ shadows a global declaration [-Werror=shadow]
+  cc1: all warnings being treated as errors
 
-It is incorrect, because the "problem" it attempts to "fix" is actually
-intentional behavior.  [And you could ask if it was intentional in the first
-place instead of assuming that it was a mistake.  It wasn't.]
+Renaming the 'time' variable to prevent this.
 
-Do you have any problems with my $subject patch?
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+---
+ tools/perf/arch/x86/util/tsc.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-Rafael
-
-
-> 
-> diff --git a/drivers/acpi/glue.c b/drivers/acpi/glue.c
-> index f70cc45..35f375e 100644
-> --- a/drivers/acpi/glue.c
-> +++ b/drivers/acpi/glue.c
-> @@ -183,19 +183,15 @@ int acpi_bind_one(struct device *dev, acpi_handle handle)
-> 
->         return 0;
-> 
-> - err:
-> -       ACPI_HANDLE_SET(dev, NULL);
-> -       put_device(dev);
-> -       return retval;
-> -
->   out_free:
->         mutex_unlock(&acpi_dev->physical_node_lock);
->         kfree(physical_node);
-> -       if (retval)
-> -               goto err;
-> 
-> + err:
-> +       if (retval)
-> +               ACPI_HANDLE_SET(dev, NULL);
->         put_device(dev);
-> -       return 0;
-> +       return retval;
->  }
->  EXPORT_SYMBOL_GPL(acpi_bind_one);
-> ---------------
-> 
-> When I reviewed this patch, found the dev's acpi handle always
-> is set  to NULL if there is error. This seems make no sense for
-> the case that the handle has been set to dev before binding.
-> 
-> For this case, the acpi handle has been found before binding.
-> Actually, the device driver could control any resources under ACPI
-> node even if the binding failed. So adding one flag to differentiate
-> it.
-> 
-> diff --git a/drivers/acpi/glue.c b/drivers/acpi/glue.c
-> index 35f375e..c868e51 100644
-> --- a/drivers/acpi/glue.c
-> +++ b/drivers/acpi/glue.c
-> @@ -113,6 +113,7 @@ int acpi_bind_one(struct device *dev, acpi_handle handle)
->         acpi_status status;
->         struct acpi_device_physical_node *physical_node, *pn;
->         char physical_node_name[sizeof(PHYSICAL_NODE_STRING) + 2];
-> +       bool has_handle = false;
->         int retval = -EINVAL;
-> 
->         if (ACPI_HANDLE(dev)) {
-> @@ -121,6 +122,7 @@ int acpi_bind_one(struct device *dev, acpi_handle handle)
->                         return -EINVAL;
->                 } else {
->                         handle = ACPI_HANDLE(dev);
-> +                       has_handle = true;
->                 }
->         }
->         if (!handle)
-> @@ -188,7 +190,7 @@ int acpi_bind_one(struct device *dev, acpi_handle handle)
->         kfree(physical_node);
-> 
->   err:
-> -       if (retval)
-> +       if (retval && !has_handle)
->                 ACPI_HANDLE_SET(dev, NULL);
->         put_device(dev);
->         return retval;
-> 
-> 
-> 
-> >
-> >
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> 
-> 
-> 
+diff --git a/tools/perf/arch/x86/util/tsc.c b/tools/perf/arch/x86/util/tsc.c
+index f111744..9570c2b 100644
+--- a/tools/perf/arch/x86/util/tsc.c
++++ b/tools/perf/arch/x86/util/tsc.c
+@@ -10,11 +10,11 @@
+ 
+ u64 perf_time_to_tsc(u64 ns, struct perf_tsc_conversion *tc)
+ {
+-	u64 time, quot, rem;
++	u64 t, quot, rem;
+ 
+-	time = ns - tc->time_zero;
+-	quot = time / tc->time_mult;
+-	rem  = time % tc->time_mult;
++	t = ns - tc->time_zero;
++	quot = t / tc->time_mult;
++	rem  = t % tc->time_mult;
+ 	return (quot << tc->time_shift) +
+ 	       (rem << tc->time_shift) / tc->time_mult;
+ }
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.7.7.6
+
