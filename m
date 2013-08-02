@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754604Ab3HBKW6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:22:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37826 "EHLO
+	id S1754510Ab3HBKWt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:22:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37818 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753765Ab3HBKWz (ORCPT
+	with ESMTP id S1754429Ab3HBKWq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:22:55 -0400
+	Fri, 2 Aug 2013 06:22:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anders Hammarquist <iko@iko.pp.se>, Johan Hovold <jhovold@gmail.com>
-Subject: [ 08/23] USB: ti_usb_3410_5052: fix dynamic-id matching
-Date: Fri,  2 Aug 2013 18:23:21 +0800
-Message-Id: <20130802102037.346177854@linuxfoundation.org>
+        Oleksij Rempel <linux@rempel-privat.de>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [ 06/23] xhci: fix null pointer dereference on ring_doorbell_for_active_rings
+Date: Fri,  2 Aug 2013 18:23:19 +0800
+Message-Id: <20130802102037.082023723@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802102036.180660415@linuxfoundation.org>
 References: <20130802102036.180660415@linuxfoundation.org>
@@ -26,35 +27,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Oleksij Rempel <linux@rempel-privat.de>
 
-commit 1fad56424f5ad3ce4973505a357212b2e2282b3f upstream.
+commit d66eaf9f89502971fddcb0de550b01fa6f409d83 upstream.
 
-The driver failed to take the dynamic ids into account when determining
-the device type and therefore all devices were detected as 2-port
-devices when using the dynamic-id interface.
+in some cases where device is attched to xhci port and do not responding,
+for example ath9k_htc with stalled firmware, kernel will
+crash on ring_doorbell_for_active_rings.
+This patch check if pointer exist before it is used.
 
-Match on the usb-serial-driver field instead of doing redundant id-table
-searches.
+This patch should be backported to kernels as old as 2.6.35, that
+contain the commit e9df17eb1408cfafa3d1844bfc7f22c7237b31b8 "USB: xhci:
+Correct assumptions about number of rings per endpoint"
 
-Reported-by: Anders Hammarquist <iko@iko.pp.se>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Oleksij Rempel <linux@rempel-privat.de>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ti_usb_3410_5052.c |    2 +-
+ drivers/usb/host/xhci-ring.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/serial/ti_usb_3410_5052.c
-+++ b/drivers/usb/serial/ti_usb_3410_5052.c
-@@ -409,7 +409,7 @@ static int ti_startup(struct usb_serial
- 	usb_set_serial_data(serial, tdev);
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -465,7 +465,7 @@ static void ring_doorbell_for_active_rin
  
- 	/* determine device type */
--	if (usb_match_id(serial->interface, ti_id_table_3410))
-+	if (serial->type == &ti_1port_device)
- 		tdev->td_is_3410 = 1;
- 	dbg("%s - device type is %s", __func__,
- 				tdev->td_is_3410 ? "3410" : "5052");
+ 	/* A ring has pending URBs if its TD list is not empty */
+ 	if (!(ep->ep_state & EP_HAS_STREAMS)) {
+-		if (!(list_empty(&ep->ring->td_list)))
++		if (ep->ring && !(list_empty(&ep->ring->td_list)))
+ 			xhci_ring_ep_doorbell(xhci, slot_id, ep_index, 0);
+ 		return;
+ 	}
 
 
