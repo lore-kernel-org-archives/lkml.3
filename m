@@ -1,99 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755249Ab3HBX7p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 19:59:45 -0400
-Received: from mga02.intel.com ([134.134.136.20]:57525 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754833Ab3HBX7o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 19:59:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,805,1367996400"; 
-   d="scan'208";a="356542667"
-Message-ID: <51FC49A2.5010901@linux.intel.com>
-Date: Fri, 02 Aug 2013 17:06:58 -0700
-From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	id S1755309Ab3HCAC3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 20:02:29 -0400
+Received: from mail1.centrum-group.com ([194.12.254.133]:44424 "EHLO
+	mail1.centrum-group.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754839Ab3HCAC0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 20:02:26 -0400
+X-Antivirus-centrum-group.com-Mail-From: drug@centrum-group.com via mail1
+X-Antivirus-centrum-group.com: 1.25-st-qms (Clear:RC:0(127.0.0.1):SA:0(?/?):. Processed in 246.121202 secs Process 7121)
+Message-ID: <54410.95.17.103.91.1375470861.squirrel@mail1.centrum-group.com>
+Date: Fri, 2 Aug 2013 22:14:21 +0300 (EEST)
+Subject: MESSAGE FROM YONG WONG!
+From: "YONG" <drug@centrum-group.com>
+Reply-To: wongyong780@yahoo.com.hk
+User-Agent: SquirrelMail/1.4.5
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org
-Subject: Re: [RFC v01 2/3] PowerCap: Add class driver
-References: <1375466932-11842-1-git-send-email-srinivas.pandruvada@linux.intel.com>  <1375466932-11842-3-git-send-email-srinivas.pandruvada@linux.intel.com> <1375483407.2034.146.camel@joe-AO722>
-In-Reply-To: <1375483407.2034.146.camel@joe-AO722>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;charset=WINDOWS-1251
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02/2013 03:43 PM, Joe Perches wrote:
-> On Fri, 2013-08-02 at 11:08 -0700, Srinivas Pandruvada wrote:
->> Added power cap class driver, which provides an API for client drivers
->> to use and provide a consistant sys-fs interface to user mode.
-> Just some stylistic notes.
->
->> diff --git a/drivers/powercap/powercap_sys.c b/drivers/powercap/powercap_sys.c
-> []
->> +/* Power zone show function */
->> +#define define_device_show(_attr)		\
->> +static ssize_t show_##_attr(struct device *dev, struct device_attribute *attr,\
->> +			char *buf) \
-> Using _attr and another variable named attr is at least
-> visually confusing.
->
-> Maybe use name or type instead of _attr?
->
->> +{ \
->> +	u64 value; \
->> +	ssize_t len = -EINVAL; \
->> +	struct powercap_zone_device *pcd_dev = dev_get_drvdata(dev); \
->> +	\
->> +	if (pcd_dev && pcd_dev->ops && pcd_dev->ops->get_##_attr) { \
->> +		mutex_lock(&pcd_dev->lock); \
->> +		if (!pcd_dev->ops->get_##_attr(pcd_dev, &value)) \
->> +			len = sprintf(buf, "%lld\n", value); \
->> +		mutex_unlock(&pcd_dev->lock); \
->> +	} \
->> +	\
->> +	return len; \
->> +}
->> +
->> +/* Power zone store function; only reset is possible */
->> +#define define_device_store(_attr)		\
->> +static ssize_t store_##_attr(struct device *dev,\
->> +				struct device_attribute *attr, \
->> +				const char *buf, size_t count) \
-> here too
->
-> []
->
->> +/* Power zone constraint show function */
->> +#define define_device_constraint_show(_attr) \
->> +static ssize_t show_constraint_##_attr(struct device *dev, \
->> +				struct device_attribute *attr,\
->> +				char *buf) \
-> and here
->
-> []
->
->> +/* Power zone constraint store function */
->> +#define define_device_constraint_store(_attr) \
->> +static ssize_t store_constraint_##_attr(struct device *dev,\
->> +				struct device_attribute *attr, \
->> +				const char *buf, size_t count) \
-> etc...
->
->> +struct powercap_zone_constraint *powercap_zone_add_constraint(
->> +				struct powercap_zone_device *pcd_dev,
->> +				struct powercap_zone_constraint_ops *ops)
->> +{
-> []
->> +	dev_dbg(&pcd_dev->device, "powercap_zone_add_constraint\n");
-> These logging messages aren't useful.
-> function tracing works very well.
->
->
->
-Thanks. Will change in the next patchset.
+Good Day,
 
-Thanks,
-Srinivas
+I appologize for using this medium of internet to
+reach you, though it has been greatly abused, but I
+chose to reach you because it is still the fastest means
+of communication in the world, however this correspondent
+is unofficial and private.
+
+My name is Yong Wong, I work with the hang seng Bank Hong Kong,
+I have a business proposition for you involving the sum of
+$24.500.000.00 Million Dollars in my bank which I know we will
+be of mutual benefit to both of us,There is no risk involved.
+If interested please reply back to my private email: wongyong780@yahoo.com.hk
+
+Regards,
+Yong Wong.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
