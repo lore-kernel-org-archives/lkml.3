@@ -1,90 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752291Ab3HBKRw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:17:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37581 "EHLO
+	id S1752436Ab3HBKgg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:36:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37929 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751415Ab3HBKRu (ORCPT
+	with ESMTP id S1751570Ab3HBKge (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:17:50 -0400
+	Fri, 2 Aug 2013 06:36:34 -0400
+Date: Fri, 2 Aug 2013 18:37:44 +0800
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jack Hill <jackhill@jackhill.us>,
-        Saurav Kashyap <saurav.kashyap@qlogic.com>,
-        Giridhar Malavali <giridhar.malavali@qlogic.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 06/39] SCSI: qla2xxx: Properly set the tagging for commands.
-Date: Fri,  2 Aug 2013 18:18:16 +0800
-Message-Id: <20130802101457.676693498@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
-In-Reply-To: <20130802101456.800497005@linuxfoundation.org>
-References: <20130802101456.800497005@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+To: Andreas =?iso-8859-1?Q?Bie=DFmann?= <andreas@biessmann.de>
+Cc: linux-kernel@vger.kernel.org, Kay Sievers <kay@vrfy.org>,
+        Ben Hutchings <ben@decadent.org.uk>, stable@vger.kernel.org
+Subject: Re: [RESEND][PATCH v2] register_console: prevent adding the same
+ console twice
+Message-ID: <20130802103744.GA6356@kroah.com>
+References: <1364201964-2990-1-git-send-email-andreas@biessmann.de>
+ <1375439014-13679-1-git-send-email-andreas@biessmann.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1375439014-13679-1-git-send-email-andreas@biessmann.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Fri, Aug 02, 2013 at 12:23:34PM +0200, Andreas Bieﬂmann wrote:
+> This patch guards the console_drivers list to be corrupted. The
+> for_each_console() macro insist on a strictly forward list ended by NULL:
+> 
+>  con0->next->con1->next->NULL
+> 
+> Without this patch it may happen easily to destroy this list for example by
+> adding 'earlyprintk' twice, especially on embedded devices where the early
+> console is often a single static instance.  This will result in the following
+> list:
+> 
+>  con0->next->con0
+> 
+> This in turn will result in an endless loop in console_unlock() later on by
+> printing the first __log_buf line endlessly.
+> 
+> Signed-off-by: Andreas Bieﬂmann <andreas@biessmann.de>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: Kay Sievers <kay@vrfy.org>
+> Cc: Ben Hutchings <ben@decadent.org.uk>
+> Cc: stable@vger.kernel.org
 
-------------------
+It's a nice "feature", but I fail to see how this is worthy of going
+into the stable tree, as it's not fixing a kernel error, only a typo by
+a user.
 
-From: Saurav Kashyap <saurav.kashyap@qlogic.com>
+thanks,
 
-commit c3ccb1d7cf4c4549151876dd37c0944a682fd9e1 upstream.
-
-This fixes a regression where Xyratex controllers and disks were lost by the
-driver:
-
-https://bugzilla.kernel.org/show_bug.cgi?id=59601
-
-Reported-by: Jack Hill <jackhill@jackhill.us>
-Signed-off-by: Saurav Kashyap <saurav.kashyap@qlogic.com>
-Signed-off-by: Giridhar Malavali <giridhar.malavali@qlogic.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/scsi/qla2xxx/qla_iocb.c |   11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
-
---- a/drivers/scsi/qla2xxx/qla_iocb.c
-+++ b/drivers/scsi/qla2xxx/qla_iocb.c
-@@ -423,6 +423,8 @@ qla2x00_start_scsi(srb_t *sp)
- 			    __constant_cpu_to_le16(CF_SIMPLE_TAG);
- 			break;
- 		}
-+	} else {
-+		cmd_pkt->control_flags = __constant_cpu_to_le16(CF_SIMPLE_TAG);
- 	}
- 
- 	/* Load SCSI command packet. */
-@@ -1331,11 +1333,11 @@ qla24xx_build_scsi_crc_2_iocbs(srb_t *sp
- 		    fcp_cmnd->task_attribute = TSK_ORDERED;
- 		    break;
- 		default:
--		    fcp_cmnd->task_attribute = 0;
-+		    fcp_cmnd->task_attribute = TSK_SIMPLE;
- 		    break;
- 		}
- 	} else {
--		fcp_cmnd->task_attribute = 0;
-+		fcp_cmnd->task_attribute = TSK_SIMPLE;
- 	}
- 
- 	cmd_pkt->fcp_rsp_dseg_len = 0; /* Let response come in status iocb */
-@@ -1541,7 +1543,12 @@ qla24xx_start_scsi(srb_t *sp)
- 		case ORDERED_QUEUE_TAG:
- 			cmd_pkt->task = TSK_ORDERED;
- 			break;
-+		default:
-+		    cmd_pkt->task = TSK_SIMPLE;
-+		    break;
- 		}
-+	} else {
-+		cmd_pkt->task = TSK_SIMPLE;
- 	}
- 
- 	/* Load SCSI command packet. */
-
-
+greg k-h
