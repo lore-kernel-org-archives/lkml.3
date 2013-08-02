@@ -1,144 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030198Ab3HBKKL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:10:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37219 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964827Ab3HBKKH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:10:07 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+	id S1755568Ab3HBKr3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:47:29 -0400
+Received: from svenfoo.org ([82.94.215.22]:45178 "EHLO mail.zonque.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755367Ab3HBKr0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 06:47:26 -0400
+From: Daniel Mack <zonque@gmail.com>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Beulich <jbeulich@suse.com>, Wei Liu <wei.liu2@citrix.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 41/99] xen-netfront: pull on receive skb may need to happen earlier
-Date: Fri,  2 Aug 2013 18:07:54 +0800
-Message-Id: <20130802100231.825646744@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
-In-Reply-To: <20130802100225.478715166@linuxfoundation.org>
-References: <20130802100225.478715166@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+Cc: lgirdwood@gmail.com, broonie@kernel.org, Daniel Mack <zonque@gmail.com>
+Subject: [PATCH v2] regulators: max8660: add DT bindings
+Date: Fri,  2 Aug 2013 12:47:19 +0200
+Message-Id: <1375440439-31902-1-git-send-email-zonque@gmail.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+This patch adds devicetree bindings for max8660, along with some
+documentation.
 
-------------------
-
-From: Jan Beulich <JBeulich@suse.com>
-
-commit 093b9c71b6e450e375f4646ba86faed0195ec7df upstream.
-
-Due to commit 3683243b ("xen-netfront: use __pskb_pull_tail to ensure
-linear area is big enough on RX") xennet_fill_frags() may end up
-filling MAX_SKB_FRAGS + 1 fragments in a receive skb, and only reduce
-the fragment count subsequently via __pskb_pull_tail(). That's a
-result of xennet_get_responses() allowing a maximum of one more slot to
-be consumed (and intermediately transformed into a fragment) if the
-head slot has a size less than or equal to RX_COPY_THRESHOLD.
-
-Hence we need to adjust xennet_fill_frags() to pull earlier if we
-reached the maximum fragment count - due to the described behavior of
-xennet_get_responses() this guarantees that at least the first fragment
-will get completely consumed, and hence the fragment count reduced.
-
-In order to not needlessly call __pskb_pull_tail() twice, make the
-original call conditional upon the pull target not having been reached
-yet, and defer the newly added one as much as possible (an alternative
-would have been to always call the function right before the call to
-xennet_fill_frags(), but that would imply more frequent cases of
-needing to call it twice).
-
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
-Acked-by: Wei Liu <wei.liu2@citrix.com>
-Cc: Ian Campbell <ian.campbell@citrix.com>
-Acked-by: Ian Campbell <ian.campbell@citrix.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Daniel Mack <zonque@gmail.com>
 ---
- drivers/net/xen-netfront.c |   31 +++++++++++++------------------
- 1 file changed, 13 insertions(+), 18 deletions(-)
 
---- a/drivers/net/xen-netfront.c
-+++ b/drivers/net/xen-netfront.c
-@@ -276,8 +276,7 @@ no_skb:
- 			break;
- 		}
- 
--		__skb_fill_page_desc(skb, 0, page, 0, 0);
--		skb_shinfo(skb)->nr_frags = 1;
-+		skb_add_rx_frag(skb, 0, page, 0, 0, PAGE_SIZE);
- 		__skb_queue_tail(&np->rx_batch, skb);
- 	}
- 
-@@ -822,7 +821,6 @@ static RING_IDX xennet_fill_frags(struct
- 				  struct sk_buff_head *list)
- {
- 	struct skb_shared_info *shinfo = skb_shinfo(skb);
--	int nr_frags = shinfo->nr_frags;
- 	RING_IDX cons = np->rx.rsp_cons;
- 	struct sk_buff *nskb;
- 
-@@ -831,19 +829,21 @@ static RING_IDX xennet_fill_frags(struct
- 			RING_GET_RESPONSE(&np->rx, ++cons);
- 		skb_frag_t *nfrag = &skb_shinfo(nskb)->frags[0];
- 
--		__skb_fill_page_desc(skb, nr_frags,
--				     skb_frag_page(nfrag),
--				     rx->offset, rx->status);
-+		if (shinfo->nr_frags == MAX_SKB_FRAGS) {
-+			unsigned int pull_to = NETFRONT_SKB_CB(skb)->pull_to;
- 
--		skb->data_len += rx->status;
-+			BUG_ON(pull_to <= skb_headlen(skb));
-+			__pskb_pull_tail(skb, pull_to - skb_headlen(skb));
-+		}
-+		BUG_ON(shinfo->nr_frags >= MAX_SKB_FRAGS);
+v2:
+	- fixed documentation
+	- use of_match_ptr
+	- only pass the of_nodes internally
+
+ .../devicetree/bindings/regulator/max8660.txt      | 47 +++++++++++++
+ drivers/regulator/max8660.c                        | 81 +++++++++++++++++++++-
+ include/linux/regulator/max8660.h                  |  2 +-
+ 3 files changed, 128 insertions(+), 2 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/regulator/max8660.txt
+
+diff --git a/Documentation/devicetree/bindings/regulator/max8660.txt b/Documentation/devicetree/bindings/regulator/max8660.txt
+new file mode 100644
+index 0000000..8ba994d
+--- /dev/null
++++ b/Documentation/devicetree/bindings/regulator/max8660.txt
+@@ -0,0 +1,47 @@
++Maxim MAX8660 voltage regulator
 +
-+		skb_add_rx_frag(skb, shinfo->nr_frags, skb_frag_page(nfrag),
-+				rx->offset, rx->status, PAGE_SIZE);
++Required properties:
++- compatible: must be one of "maxim,max8660", "maxim,max8661"
++- reg: I2C slave address, usually 0x34
++- any required generic properties defined in regulator.txt
++
++Example:
++
++	i2c_master {
++		max8660@34 {
++			compatible = "maxim,max8660";
++			reg = <0x34>;
++
++			regulators {
++				regulator@0 {
++					regulator-compatible= "V3(DCDC)";
++					regulator-min-microvolt = <725000>;
++					regulator-max-microvolt = <1800000>;
++				};
++
++				regulator@1 {
++					regulator-compatible= "V4(DCDC)";
++					regulator-min-microvolt = <725000>;
++					regulator-max-microvolt = <1800000>;
++				};
++
++				regulator@2 {
++					regulator-compatible= "V5(LDO)";
++					regulator-min-microvolt = <1700000>;
++					regulator-max-microvolt = <2000000>;
++				};
++
++				regulator@3 {
++					regulator-compatible= "V6(LDO)";
++					regulator-min-microvolt = <1800000>;
++					regulator-max-microvolt = <3300000>;
++				};
++
++				regulator@4 {
++					regulator-compatible= "V7(LDO)";
++					regulator-min-microvolt = <1800000>;
++					regulator-max-microvolt = <3300000>;
++				};
++			};
++		};
++	};
+diff --git a/drivers/regulator/max8660.c b/drivers/regulator/max8660.c
+index a5caaa0..e67a863 100644
+--- a/drivers/regulator/max8660.c
++++ b/drivers/regulator/max8660.c
+@@ -44,6 +44,9 @@
+ #include <linux/regulator/driver.h>
+ #include <linux/slab.h>
+ #include <linux/regulator/max8660.h>
++#include <linux/of.h>
++#include <linux/of_device.h>
++#include <linux/regulator/of_regulator.h>
  
- 		skb_shinfo(nskb)->nr_frags = 0;
- 		kfree_skb(nskb);
--
--		nr_frags++;
- 	}
+ #define MAX8660_DCDC_MIN_UV	 725000
+ #define MAX8660_DCDC_MAX_UV	1800000
+@@ -310,6 +313,62 @@ enum {
+ 	MAX8661 = 1,
+ };
  
--	shinfo->nr_frags = nr_frags;
- 	return cons;
- }
++#ifdef CONFIG_OF
++static const struct of_device_id max8660_dt_ids[] = {
++	{ .compatible = "maxim,max8660", .data = (void *) MAX8660 },
++	{ .compatible = "maxim,max8661", .data = (void *) MAX8661 },
++	{ }
++};
++MODULE_DEVICE_TABLE(of, max8660_dt_ids);
++
++static int max8660_pdata_from_dt(struct device *dev,
++				 struct device_node **of_node,
++				 struct max8660_platform_data *pdata)
++{
++	int matched, i;
++	struct device_node *np;
++	struct max8660_subdev_data *sub;
++	struct of_regulator_match rmatch[ARRAY_SIZE(max8660_reg)];
++
++	np = of_find_node_by_name(dev->of_node, "regulators");
++	if (!np) {
++		dev_err(dev, "missing 'regulators' subnode in DT\n");
++		return -EINVAL;
++	}
++
++	for (i = 0; i < ARRAY_SIZE(rmatch); i++)
++		rmatch[i].name = max8660_reg[i].name;
++
++	matched = of_regulator_match(dev, np, rmatch, ARRAY_SIZE(rmatch));
++	if (matched <= 0)
++		return matched;
++
++	pdata->subdevs = devm_kzalloc(dev, sizeof(struct max8660_subdev_data) *
++						matched, GFP_KERNEL);
++	if (!pdata->subdevs)
++		return -ENOMEM;
++
++	pdata->num_subdevs = matched;
++	sub = pdata->subdevs;
++
++	for (i = 0; i < matched; i++) {
++		sub->id = i;
++		sub->name = rmatch[i].name;
++		sub->platform_data = rmatch[i].init_data;
++		of_node[i] = rmatch[i].of_node;
++		sub++;
++	}
++
++	return 0;
++}
++#else
++static inline int max8660_pdata_from_dt(struct device *dev,
++					struct max8660_platform_data **pdata)
++{
++	return 0;
++}
++#endif
++
+ static int max8660_probe(struct i2c_client *client,
+ 				   const struct i2c_device_id *i2c_id)
+ {
+@@ -319,8 +378,28 @@ static int max8660_probe(struct i2c_client *client,
+ 	struct regulator_config config = { };
+ 	struct max8660 *max8660;
+ 	int boot_on, i, id, ret = -EINVAL;
++	struct device_node *of_node[MAX8660_V_END];
+ 	unsigned int type;
  
-@@ -929,7 +929,8 @@ static int handle_incoming_queue(struct
- 	while ((skb = __skb_dequeue(rxq)) != NULL) {
- 		int pull_to = NETFRONT_SKB_CB(skb)->pull_to;
++	if (dev->of_node && !pdata) {
++		const struct of_device_id *id;
++		struct max8660_platform_data pdata_of;
++
++		id = of_match_device(of_match_ptr(max8660_dt_ids), dev);
++		if (!id)
++			return -ENODEV;
++
++		ret = max8660_pdata_from_dt(dev, of_node, &pdata_of);
++		if (ret < 0)
++			return ret;
++
++		pdata = &pdata_of;
++		type = (unsigned int) id->data;
++	} else {
++		type = i2c_id->driver_data;
++		memset(of_node, 0, sizeof(of_node));
++	}
++
+ 	if (pdata->num_subdevs > MAX8660_V_END) {
+ 		dev_err(dev, "Too many regulators found!\n");
+ 		return -EINVAL;
+@@ -334,7 +413,6 @@ static int max8660_probe(struct i2c_client *client,
  
--		__pskb_pull_tail(skb, pull_to - skb_headlen(skb));
-+		if (pull_to > skb_headlen(skb))
-+			__pskb_pull_tail(skb, pull_to - skb_headlen(skb));
+ 	max8660->client = client;
+ 	rdev = max8660->rdev;
+-	type = i2c_id->driver_data;
  
- 		/* Ethernet work: Delayed to here as it peeks the header. */
- 		skb->protocol = eth_type_trans(skb, dev);
-@@ -1015,16 +1016,10 @@ err:
- 		skb_shinfo(skb)->frags[0].page_offset = rx->offset;
- 		skb_frag_size_set(&skb_shinfo(skb)->frags[0], rx->status);
- 		skb->data_len = rx->status;
-+		skb->len += rx->status;
+ 	if (pdata->en34_is_high) {
+ 		/* Simulate always on */
+@@ -407,6 +485,7 @@ static int max8660_probe(struct i2c_client *client,
  
- 		i = xennet_fill_frags(np, skb, &tmpq);
+ 		config.dev = dev;
+ 		config.init_data = pdata->subdevs[i].platform_data;
++		config.of_node = of_node[i];
+ 		config.driver_data = max8660;
  
--		/*
--                 * Truesize is the actual allocation size, even if the
--                 * allocation is only partially used.
--                 */
--		skb->truesize += PAGE_SIZE * skb_shinfo(skb)->nr_frags;
--		skb->len += skb->data_len;
--
- 		if (rx->flags & XEN_NETRXF_csum_blank)
- 			skb->ip_summed = CHECKSUM_PARTIAL;
- 		else if (rx->flags & XEN_NETRXF_data_validated)
-
+ 		rdev[i] = regulator_register(&max8660_reg[id], &config);
+diff --git a/include/linux/regulator/max8660.h b/include/linux/regulator/max8660.h
+index 9936763..f8a6a48 100644
+--- a/include/linux/regulator/max8660.h
++++ b/include/linux/regulator/max8660.h
+@@ -39,7 +39,7 @@ enum {
+  */
+ struct max8660_subdev_data {
+ 	int				id;
+-	char				*name;
++	const char			*name;
+ 	struct regulator_init_data	*platform_data;
+ };
+ 
+-- 
+1.8.3.1
 
