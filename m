@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755398Ab3HBRiF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 13:38:05 -0400
-Received: from mga03.intel.com ([143.182.124.21]:4521 "EHLO mga03.intel.com"
+	id S1755474Ab3HBRij (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 13:38:39 -0400
+Received: from mga09.intel.com ([134.134.136.24]:2503 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754986Ab3HBRg6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 13:36:58 -0400
+	id S1753743Ab3HBRgi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 13:36:38 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.89,802,1367996400"; 
-   d="scan'208";a="276900570"
+   d="scan'208";a="356385711"
 From: Jon Mason <jon.mason@intel.com>
 To: linux-kernel@vger.kernel.org
-Cc: Dan Williams <djbw@fb.com>, Vinod Koul <vinod.koul@intel.com>,
-        Dave Jiang <dave.jiang@intel.com>
-Subject: [PATCH 09/15] NTB: Use DMA Engine to Transmit and Receive
-Date: Fri,  2 Aug 2013 10:35:38 -0700
-Message-Id: <1375464944-27914-10-git-send-email-jon.mason@intel.com>
+Subject: [PATCH 11/15] NTB: NTB-RP support
+Date: Fri,  2 Aug 2013 10:35:40 -0700
+Message-Id: <1375464944-27914-12-git-send-email-jon.mason@intel.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1375464944-27914-1-git-send-email-jon.mason@intel.com>
 References: <1375464944-27914-1-git-send-email-jon.mason@intel.com>
@@ -23,567 +21,354 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allocate and use a DMA engine channel to transmit and receive data over
-NTB.  If none is allocated, fall back to using the CPU to transfer data.
+Add support for Non-Transparent Bridge connected to a PCI-E Root Port on
+the remote system (also known as NTB-RP mode).  This allows for a NTB
+enabled system to be connected to a non-NTB enabled system/slot.
 
-Cc: Dan Williams <djbw@fb.com>
-Cc: Vinod Koul <vinod.koul@intel.com>
-Cc: Dave Jiang <dave.jiang@intel.com>
+Modifications to the registers and BARs/MWs on the Secondary side by the
+remote system are reflected into registers on the Primary side for the
+local system.  Similarly, modifications of registers and BARs/MWs on
+Primary side by the local system are reflected into registers on the
+Secondary side for the Remote System.  This allows communication between
+the 2 sides via these registers and BARs/MWs.
+
+Note: there is not a fix for the Xeon Errata (that was already worked
+around in NTB-B2B mode) for NTB-RP mode.  Due to this limitation, NTB-RP
+will not work on the Secondary side with the Xeon Errata workaround
+enabled.  To get around this, disable the workaround via the
+xeon_errata_workaround=0 modparm.  However, this can cause the hang
+described in the errata.
+
 Signed-off-by: Jon Mason <jon.mason@intel.com>
 ---
- drivers/ntb/ntb_hw.c        |   17 +++
- drivers/ntb/ntb_hw.h        |    1 +
- drivers/ntb/ntb_transport.c |  285 ++++++++++++++++++++++++++++++++++++-------
- 3 files changed, 258 insertions(+), 45 deletions(-)
+ drivers/ntb/ntb_hw.c   |  239 +++++++++++++++++++++++++++++-------------------
+ drivers/ntb/ntb_regs.h |    5 +-
+ 2 files changed, 150 insertions(+), 94 deletions(-)
 
 diff --git a/drivers/ntb/ntb_hw.c b/drivers/ntb/ntb_hw.c
-index 1d8e551..014222c 100644
+index e7cbb44..371b65e 100644
 --- a/drivers/ntb/ntb_hw.c
 +++ b/drivers/ntb/ntb_hw.c
-@@ -350,6 +350,23 @@ int ntb_read_remote_spad(struct ntb_device *ndev, unsigned int idx, u32 *val)
- }
+@@ -69,7 +69,7 @@ module_param(xeon_errata_workaround, bool, 0644);
+ MODULE_PARM_DESC(xeon_errata_workaround, "Workaround for the Xeon Errata");
  
- /**
-+ * ntb_get_mw_base() - get addr for the NTB memory window
-+ * @ndev: pointer to ntb_device instance
-+ * @mw: memory window number
-+ *
-+ * This function provides the base address of the memory window specified.
-+ *
-+ * RETURNS: address, or NULL on error.
-+ */
-+resource_size_t ntb_get_mw_base(struct ntb_device *ndev, unsigned int mw)
-+{
-+	if (mw >= ntb_max_mw(ndev))
-+		return 0;
-+
-+	return pci_resource_start(ndev->pdev, MW_TO_BAR(mw));
-+}
-+
-+/**
-  * ntb_get_mw_vbase() - get virtual addr for the NTB memory window
-  * @ndev: pointer to ntb_device instance
-  * @mw: memory window number
-diff --git a/drivers/ntb/ntb_hw.h b/drivers/ntb/ntb_hw.h
-index b03de80..ab5f768 100644
---- a/drivers/ntb/ntb_hw.h
-+++ b/drivers/ntb/ntb_hw.h
-@@ -240,6 +240,7 @@ int ntb_write_local_spad(struct ntb_device *ndev, unsigned int idx, u32 val);
- int ntb_read_local_spad(struct ntb_device *ndev, unsigned int idx, u32 *val);
- int ntb_write_remote_spad(struct ntb_device *ndev, unsigned int idx, u32 val);
- int ntb_read_remote_spad(struct ntb_device *ndev, unsigned int idx, u32 *val);
-+resource_size_t ntb_get_mw_base(struct ntb_device *ndev, unsigned int mw);
- void __iomem *ntb_get_mw_vbase(struct ntb_device *ndev, unsigned int mw);
- u64 ntb_get_mw_size(struct ntb_device *ndev, unsigned int mw);
- void ntb_ring_sdb(struct ntb_device *ndev, unsigned int idx);
-diff --git a/drivers/ntb/ntb_transport.c b/drivers/ntb/ntb_transport.c
-index f7380e9..73a35e4 100644
---- a/drivers/ntb/ntb_transport.c
-+++ b/drivers/ntb/ntb_transport.c
-@@ -47,6 +47,7 @@
-  */
- #include <linux/debugfs.h>
- #include <linux/delay.h>
-+#include <linux/dmaengine.h>
- #include <linux/dma-mapping.h>
- #include <linux/errno.h>
- #include <linux/export.h>
-@@ -68,6 +69,10 @@ static unsigned char max_num_clients;
- module_param(max_num_clients, byte, 0644);
- MODULE_PARM_DESC(max_num_clients, "Maximum number of NTB transport clients");
- 
-+static unsigned int copy_bytes = 1024;
-+module_param(copy_bytes, uint, 0644);
-+MODULE_PARM_DESC(copy_bytes, "Threshold under which NTB will use the CPU to copy instead of DMA");
-+
- struct ntb_queue_entry {
- 	/* ntb_queue list reference */
- 	struct list_head entry;
-@@ -76,6 +81,13 @@ struct ntb_queue_entry {
- 	void *buf;
- 	unsigned int len;
- 	unsigned int flags;
-+
-+	struct ntb_transport_qp *qp;
-+	union {
-+		struct ntb_payload_header __iomem *tx_hdr;
-+		struct ntb_payload_header *rx_hdr;
-+	};
-+	unsigned int index;
+ enum {
+-	NTB_CONN_CLASSIC = 0,
++	NTB_CONN_TRANSPARENT = 0,
+ 	NTB_CONN_B2B,
+ 	NTB_CONN_RP,
  };
+@@ -509,7 +509,8 @@ static void ntb_link_event(struct ntb_device *ndev, int link_state)
+ 		ndev->link_status = NTB_LINK_UP;
+ 		event = NTB_EVENT_HW_LINK_UP;
  
- struct ntb_rx_info {
-@@ -86,6 +98,7 @@ struct ntb_transport_qp {
- 	struct ntb_transport *transport;
- 	struct ntb_device *ndev;
- 	void *cb_data;
-+	struct dma_chan *dma_chan;
+-		if (ndev->hw_type == BWD_HW)
++		if (ndev->hw_type == BWD_HW ||
++		    ndev->conn_type == NTB_CONN_TRANSPARENT)
+ 			status = readw(ndev->reg_ofs.lnk_stat);
+ 		else {
+ 			int rc = pci_read_config_word(ndev->pdev,
+@@ -649,109 +650,161 @@ static int ntb_xeon_setup(struct ntb_device *ndev)
+ 	if (rc)
+ 		return rc;
  
- 	bool client_ready;
- 	bool qp_link;
-@@ -99,6 +112,7 @@ struct ntb_transport_qp {
- 	struct list_head tx_free_q;
- 	spinlock_t ntb_tx_free_q_lock;
- 	void __iomem *tx_mw;
-+	dma_addr_t tx_mw_raw;
- 	unsigned int tx_index;
- 	unsigned int tx_max_entry;
- 	unsigned int tx_max_frame;
-@@ -114,6 +128,7 @@ struct ntb_transport_qp {
- 	unsigned int rx_index;
- 	unsigned int rx_max_entry;
- 	unsigned int rx_max_frame;
-+	dma_cookie_t last_cookie;
+-	switch (val & SNB_PPD_CONN_TYPE) {
+-	case NTB_CONN_B2B:
+-		ndev->conn_type = NTB_CONN_B2B;
+-		break;
+-	case NTB_CONN_CLASSIC:
+-	case NTB_CONN_RP:
+-	default:
+-		dev_err(&ndev->pdev->dev, "Only B2B supported at this time\n");
+-		return -EINVAL;
+-	}
+-
+ 	if (val & SNB_PPD_DEV_TYPE)
+ 		ndev->dev_type = NTB_DEV_USD;
+ 	else
+ 		ndev->dev_type = NTB_DEV_DSD;
  
- 	void (*event_handler) (void *data, int status);
- 	struct delayed_work link_work;
-@@ -129,9 +144,14 @@ struct ntb_transport_qp {
- 	u64 rx_err_no_buf;
- 	u64 rx_err_oflow;
- 	u64 rx_err_ver;
-+	u64 rx_memcpy;
-+	u64 rx_async;
- 	u64 tx_bytes;
- 	u64 tx_pkts;
- 	u64 tx_ring_full;
-+	u64 tx_err_no_buf;
-+	u64 tx_memcpy;
-+	u64 tx_async;
- };
- 
- struct ntb_transport_mw {
-@@ -381,7 +401,7 @@ static ssize_t debugfs_read(struct file *filp, char __user *ubuf, size_t count,
- 	char *buf;
- 	ssize_t ret, out_offset, out_count;
- 
--	out_count = 600;
-+	out_count = 1000;
- 
- 	buf = kmalloc(out_count, GFP_KERNEL);
- 	if (!buf)
-@@ -396,6 +416,10 @@ static ssize_t debugfs_read(struct file *filp, char __user *ubuf, size_t count,
- 	out_offset += snprintf(buf + out_offset, out_count - out_offset,
- 			       "rx_pkts - \t%llu\n", qp->rx_pkts);
- 	out_offset += snprintf(buf + out_offset, out_count - out_offset,
-+			       "rx_memcpy - \t%llu\n", qp->rx_memcpy);
-+	out_offset += snprintf(buf + out_offset, out_count - out_offset,
-+			       "rx_async - \t%llu\n", qp->rx_async);
-+	out_offset += snprintf(buf + out_offset, out_count - out_offset,
- 			       "rx_ring_empty - %llu\n", qp->rx_ring_empty);
- 	out_offset += snprintf(buf + out_offset, out_count - out_offset,
- 			       "rx_err_no_buf - %llu\n", qp->rx_err_no_buf);
-@@ -415,8 +439,14 @@ static ssize_t debugfs_read(struct file *filp, char __user *ubuf, size_t count,
- 	out_offset += snprintf(buf + out_offset, out_count - out_offset,
- 			       "tx_pkts - \t%llu\n", qp->tx_pkts);
- 	out_offset += snprintf(buf + out_offset, out_count - out_offset,
-+			       "tx_memcpy - \t%llu\n", qp->tx_memcpy);
-+	out_offset += snprintf(buf + out_offset, out_count - out_offset,
-+			       "tx_async - \t%llu\n", qp->tx_async);
-+	out_offset += snprintf(buf + out_offset, out_count - out_offset,
- 			       "tx_ring_full - \t%llu\n", qp->tx_ring_full);
- 	out_offset += snprintf(buf + out_offset, out_count - out_offset,
-+			       "tx_err_no_buf - %llu\n", qp->tx_err_no_buf);
-+	out_offset += snprintf(buf + out_offset, out_count - out_offset,
- 			       "tx_mw - \t%p\n", qp->tx_mw);
- 	out_offset += snprintf(buf + out_offset, out_count - out_offset,
- 			       "tx_index - \t%u\n", qp->tx_index);
-@@ -488,11 +518,11 @@ static void ntb_transport_setup_qp_mw(struct ntb_transport *nt,
- 		num_qps_mw = nt->max_qps / mw_max;
- 
- 	rx_size = (unsigned int) nt->mw[mw_num].size / num_qps_mw;
--	qp->remote_rx_info = nt->mw[mw_num].virt_addr +
--			     (qp_num / mw_max * rx_size);
-+	qp->rx_buff = nt->mw[mw_num].virt_addr + qp_num / mw_max * rx_size;
- 	rx_size -= sizeof(struct ntb_rx_info);
- 
--	qp->rx_buff = qp->remote_rx_info + 1;
-+	qp->remote_rx_info = qp->rx_buff + rx_size;
+-	ndev->reg_ofs.ldb = ndev->reg_base + SNB_PDOORBELL_OFFSET;
+-	ndev->reg_ofs.ldb_mask = ndev->reg_base + SNB_PDBMSK_OFFSET;
+-	ndev->reg_ofs.bar2_xlat = ndev->reg_base + SNB_SBAR2XLAT_OFFSET;
+-	ndev->reg_ofs.bar4_xlat = ndev->reg_base + SNB_SBAR4XLAT_OFFSET;
+-	ndev->reg_ofs.lnk_cntl = ndev->reg_base + SNB_NTBCNTL_OFFSET;
+-	ndev->reg_ofs.lnk_stat = ndev->reg_base + SNB_LINK_STATUS_OFFSET;
+-	ndev->reg_ofs.spad_read = ndev->reg_base + SNB_SPAD_OFFSET;
+-	ndev->reg_ofs.spci_cmd = ndev->reg_base + SNB_PCICMD_OFFSET;
+-
+-	/* There is a Xeon hardware errata related to writes to
+-	 * SDOORBELL or B2BDOORBELL in conjunction with inbound access
+-	 * to NTB MMIO Space, which may hang the system.  To workaround
+-	 * this use the second memory window to access the interrupt and
+-	 * scratch pad registers on the remote system.
+-	 */
+-	if (xeon_errata_workaround) {
+-		if (!ndev->mw[1].bar_sz)
+-			return -EINVAL;
+-
+-		ndev->limits.max_mw = SNB_ERRATA_MAX_MW;
+-		ndev->reg_ofs.spad_write = ndev->mw[1].vbase +
+-					   SNB_SPAD_OFFSET;
+-		ndev->reg_ofs.rdb = ndev->mw[1].vbase +
+-				    SNB_PDOORBELL_OFFSET;
+-
+-		/* Set the Limit register to 4k, the minimum size, to
+-		 * prevent an illegal access
++	switch (val & SNB_PPD_CONN_TYPE) {
++	case NTB_CONN_B2B:
++		dev_info(&ndev->pdev->dev, "Conn Type = B2B\n");
++		ndev->conn_type = NTB_CONN_B2B;
++		ndev->reg_ofs.ldb = ndev->reg_base + SNB_PDOORBELL_OFFSET;
++		ndev->reg_ofs.ldb_mask = ndev->reg_base + SNB_PDBMSK_OFFSET;
++		ndev->reg_ofs.spad_read = ndev->reg_base + SNB_SPAD_OFFSET;
++		ndev->reg_ofs.bar2_xlat = ndev->reg_base + SNB_SBAR2XLAT_OFFSET;
++		ndev->reg_ofs.bar4_xlat = ndev->reg_base + SNB_SBAR4XLAT_OFFSET;
++		ndev->limits.max_spads = SNB_MAX_B2B_SPADS;
 +
- 	/* Due to housekeeping, there must be atleast 2 buffs */
- 	qp->rx_max_frame = min(transport_mtu, rx_size / 2);
- 	qp->rx_max_entry = rx_size / qp->rx_max_frame;
-@@ -802,6 +832,7 @@ static void ntb_transport_init_queue(struct ntb_transport *nt,
- 	struct ntb_transport_qp *qp;
- 	unsigned int num_qps_mw, tx_size;
- 	u8 mw_num, mw_max;
-+	u64 qp_offset;
- 
- 	mw_max = ntb_max_mw(nt->ndev);
- 	mw_num = QP_TO_MW(nt->ndev, qp_num);
-@@ -820,11 +851,12 @@ static void ntb_transport_init_queue(struct ntb_transport *nt,
- 		num_qps_mw = nt->max_qps / mw_max;
- 
- 	tx_size = (unsigned int) ntb_get_mw_size(qp->ndev, mw_num) / num_qps_mw;
--	qp->rx_info = ntb_get_mw_vbase(nt->ndev, mw_num) +
--		      (qp_num / mw_max * tx_size);
-+	qp_offset = qp_num / mw_max * tx_size;
-+	qp->tx_mw = ntb_get_mw_vbase(nt->ndev, mw_num) + qp_offset;
-+	qp->tx_mw_raw = ntb_get_mw_base(qp->ndev, mw_num) + qp_offset;
- 	tx_size -= sizeof(struct ntb_rx_info);
-+	qp->rx_info = qp->tx_mw + tx_size;
- 
--	qp->tx_mw = qp->rx_info + 1;
- 	/* Due to housekeeping, there must be atleast 2 buffs */
- 	qp->tx_max_frame = min(transport_mtu, tx_size / 2);
- 	qp->tx_max_entry = tx_size / qp->tx_max_frame;
-@@ -956,13 +988,22 @@ void ntb_transport_free(void *transport)
- 	kfree(nt);
- }
- 
--static void ntb_rx_copy_task(struct ntb_transport_qp *qp,
--			     struct ntb_queue_entry *entry, void *offset)
-+static void ntb_rx_copy_callback(void *data)
- {
-+	struct ntb_queue_entry *entry = data;
-+	struct ntb_transport_qp *qp = entry->qp;
- 	void *cb_data = entry->cb_data;
- 	unsigned int len = entry->len;
-+	struct ntb_payload_header *hdr = entry->rx_hdr;
-+
-+	wmb();
-+	hdr->flags = 0;
- 
--	memcpy(entry->buf, offset, entry->len);
-+	/* If the callbacks come out of order, the writing of the index to the
-+	 * last completed will be out of order.  This may result in the the
-+	 * receive stalling forever.
-+	 */
-+	iowrite32(entry->index, &qp->rx_info->entry);
- 
- 	ntb_list_add(&qp->ntb_rx_free_q_lock, &entry->entry, &qp->rx_free_q);
- 
-@@ -970,6 +1011,80 @@ static void ntb_rx_copy_task(struct ntb_transport_qp *qp,
- 		qp->rx_handler(qp, qp->cb_data, cb_data, len);
- }
- 
-+static void ntb_memcpy_rx(struct ntb_queue_entry *entry, void *offset)
-+{
-+	void *buf = entry->buf;
-+	size_t len = entry->len;
-+
-+	memcpy(buf, offset, len);
-+
-+	ntb_rx_copy_callback(entry);
-+}
-+
-+static void ntb_async_rx(struct ntb_queue_entry *entry, void *offset,
-+			 size_t len)
-+{
-+	struct dma_async_tx_descriptor *txd;
-+	struct ntb_transport_qp *qp = entry->qp;
-+	struct dma_chan *chan = qp->dma_chan;
-+	struct dma_device *device;
-+	dma_addr_t src, dest;
-+	dma_cookie_t cookie;
-+	void *buf = entry->buf;
-+	unsigned long flags;
-+
-+	entry->len = len;
-+
-+	if (!chan)
-+		goto err;
-+
-+	device = chan->device;
-+
-+	if (len < copy_bytes ||
-+	    !is_dma_copy_aligned(device, __pa(offset), __pa(buf), len))
-+		goto err1;
-+
-+	dest = dma_map_single(device->dev, buf, len, DMA_FROM_DEVICE);
-+	if (dma_mapping_error(device->dev, dest))
-+		goto err1;
-+
-+	src = dma_map_single(device->dev, offset, len, DMA_TO_DEVICE);
-+	if (dma_mapping_error(device->dev, src))
-+		goto err2;
-+
-+	flags = DMA_COMPL_DEST_UNMAP_SINGLE | DMA_COMPL_SRC_UNMAP_SINGLE |
-+		DMA_PREP_INTERRUPT;
-+	txd = device->device_prep_dma_memcpy(chan, dest, src, len, flags);
-+	if (!txd)
-+		goto err3;
-+
-+	txd_clear_parent(txd);
-+	txd_clear_next(txd);
-+	txd->callback = ntb_rx_copy_callback;
-+	txd->callback_param = entry;
-+
-+	cookie = dmaengine_submit(txd);
-+	if (dma_submit_error(cookie))
-+		goto err3;
-+
-+	qp->last_cookie = cookie;
-+
-+	dma_async_issue_pending(chan);
-+	qp->rx_async++;
-+
-+	return;
-+
-+err3:
-+	dma_unmap_single(device->dev, src, len, DMA_TO_DEVICE);
-+err2:
-+	dma_unmap_single(device->dev, dest, len, DMA_FROM_DEVICE);
-+err1:
-+	dma_sync_wait(chan, qp->last_cookie);
-+err:
-+	ntb_memcpy_rx(entry, offset);
-+	qp->rx_memcpy++;
-+}
-+
- static int ntb_process_rxc(struct ntb_transport_qp *qp)
- {
- 	struct ntb_payload_header *hdr;
-@@ -1008,41 +1123,44 @@ static int ntb_process_rxc(struct ntb_transport_qp *qp)
- 	if (hdr->flags & LINK_DOWN_FLAG) {
- 		ntb_qp_link_down(qp);
- 
--		ntb_list_add(&qp->ntb_rx_pend_q_lock, &entry->entry,
--			     &qp->rx_pend_q);
--		goto out;
-+		goto err;
- 	}
- 
- 	dev_dbg(&ntb_query_pdev(qp->ndev)->dev,
- 		"rx offset %u, ver %u - %d payload received, buf size %d\n",
- 		qp->rx_index, hdr->ver, hdr->len, entry->len);
- 
--	if (hdr->len <= entry->len) {
--		entry->len = hdr->len;
--		ntb_rx_copy_task(qp, entry, offset);
++		/* There is a Xeon hardware errata related to writes to
++		 * SDOORBELL or B2BDOORBELL in conjunction with inbound access
++		 * to NTB MMIO Space, which may hang the system.  To workaround
++		 * this use the second memory window to access the interrupt and
++		 * scratch pad registers on the remote system.
+ 		 */
+-		writeq(ndev->mw[1].bar_sz + 0x1000, ndev->reg_base +
+-		       SNB_PBAR4LMT_OFFSET);
 -	} else {
--		ntb_list_add(&qp->ntb_rx_pend_q_lock, &entry->entry,
--			     &qp->rx_pend_q);
-+	qp->rx_bytes += hdr->len;
-+	qp->rx_pkts++;
- 
-+	if (hdr->len > entry->len) {
- 		qp->rx_err_oflow++;
- 		dev_dbg(&ntb_query_pdev(qp->ndev)->dev,
- 			"RX overflow! Wanted %d got %d\n",
- 			hdr->len, entry->len);
+-		ndev->limits.max_mw = SNB_MAX_MW;
+-		ndev->reg_ofs.spad_write = ndev->reg_base +
+-					   SNB_B2B_SPAD_OFFSET;
+-		ndev->reg_ofs.rdb = ndev->reg_base +
+-				    SNB_B2B_DOORBELL_OFFSET;
++		if (xeon_errata_workaround) {
++			if (!ndev->mw[1].bar_sz)
++				return -EINVAL;
 +
-+		goto err;
++			ndev->limits.max_mw = SNB_ERRATA_MAX_MW;
++			ndev->reg_ofs.spad_write = ndev->mw[1].vbase +
++						   SNB_SPAD_OFFSET;
++			ndev->reg_ofs.rdb = ndev->mw[1].vbase +
++					    SNB_PDOORBELL_OFFSET;
++
++			/* Set the Limit register to 4k, the minimum size, to
++			 * prevent an illegal access
++			 */
++			writeq(ndev->mw[1].bar_sz + 0x1000, ndev->reg_base +
++			       SNB_PBAR4LMT_OFFSET);
++		} else {
++			ndev->limits.max_mw = SNB_MAX_MW;
++			ndev->reg_ofs.spad_write = ndev->reg_base +
++						   SNB_B2B_SPAD_OFFSET;
++			ndev->reg_ofs.rdb = ndev->reg_base +
++					    SNB_B2B_DOORBELL_OFFSET;
++
++			/* Disable the Limit register, just incase it is set to
++			 * something silly
++			 */
++			writeq(0, ndev->reg_base + SNB_PBAR4LMT_OFFSET);
++		}
+ 
+-		/* Disable the Limit register, just incase it is set to
+-		 * something silly
++		/* The Xeon errata workaround requires setting SBAR Base
++		 * addresses to known values, so that the PBAR XLAT can be
++		 * pointed at SBAR0 of the remote system.
+ 		 */
+-		writeq(0, ndev->reg_base + SNB_PBAR4LMT_OFFSET);
+-	}
++		if (ndev->dev_type == NTB_DEV_USD) {
++			writeq(SNB_MBAR23_DSD_ADDR, ndev->reg_base +
++			       SNB_PBAR2XLAT_OFFSET);
++			if (xeon_errata_workaround)
++				writeq(SNB_MBAR01_DSD_ADDR, ndev->reg_base +
++				       SNB_PBAR4XLAT_OFFSET);
++			else {
++				writeq(SNB_MBAR45_DSD_ADDR, ndev->reg_base +
++				       SNB_PBAR4XLAT_OFFSET);
++				writeq(SNB_MBAR01_DSD_ADDR, ndev->reg_base +
++				       SNB_B2B_XLAT_OFFSET);
++			}
+ 
+-	/* The Xeon errata workaround requires setting SBAR Base
+-	 * addresses to known values, so that the PBAR XLAT can be
+-	 * pointed at SBAR0 of the remote system.
+-	 */
+-	if (ndev->dev_type == NTB_DEV_USD) {
+-		writeq(SNB_MBAR23_DSD_ADDR, ndev->reg_base +
+-		       SNB_PBAR2XLAT_OFFSET);
+-		if (xeon_errata_workaround)
++			writeq(SNB_MBAR01_USD_ADDR, ndev->reg_base +
++			       SNB_SBAR0BASE_OFFSET);
++			writeq(SNB_MBAR23_USD_ADDR, ndev->reg_base +
++			       SNB_SBAR2BASE_OFFSET);
++			writeq(SNB_MBAR45_USD_ADDR, ndev->reg_base +
++			       SNB_SBAR4BASE_OFFSET);
++		} else {
++			writeq(SNB_MBAR23_USD_ADDR, ndev->reg_base +
++			       SNB_PBAR2XLAT_OFFSET);
++			if (xeon_errata_workaround)
++				writeq(SNB_MBAR01_USD_ADDR, ndev->reg_base +
++				       SNB_PBAR4XLAT_OFFSET);
++			else {
++				writeq(SNB_MBAR45_USD_ADDR, ndev->reg_base +
++				       SNB_PBAR4XLAT_OFFSET);
++				writeq(SNB_MBAR01_USD_ADDR, ndev->reg_base +
++				       SNB_B2B_XLAT_OFFSET);
++			}
+ 			writeq(SNB_MBAR01_DSD_ADDR, ndev->reg_base +
+-			       SNB_PBAR4XLAT_OFFSET);
+-		else {
++			       SNB_SBAR0BASE_OFFSET);
++			writeq(SNB_MBAR23_DSD_ADDR, ndev->reg_base +
++			       SNB_SBAR2BASE_OFFSET);
+ 			writeq(SNB_MBAR45_DSD_ADDR, ndev->reg_base +
+-			       SNB_PBAR4XLAT_OFFSET);
+-			writeq(SNB_MBAR01_DSD_ADDR, ndev->reg_base +
+-			       SNB_B2B_XLAT_OFFSET);
++			       SNB_SBAR4BASE_OFFSET);
+ 		}
++		break;
++	case NTB_CONN_RP:
++		dev_info(&ndev->pdev->dev, "Conn Type = RP\n");
++		ndev->conn_type = NTB_CONN_RP;
+ 
+-		writeq(SNB_MBAR01_USD_ADDR, ndev->reg_base +
+-		       SNB_SBAR0BASE_OFFSET);
+-		writeq(SNB_MBAR23_USD_ADDR, ndev->reg_base +
+-		       SNB_SBAR2BASE_OFFSET);
+-		writeq(SNB_MBAR45_USD_ADDR, ndev->reg_base +
+-		       SNB_SBAR4BASE_OFFSET);
+-	} else {
+-		writeq(SNB_MBAR23_USD_ADDR, ndev->reg_base +
+-		       SNB_PBAR2XLAT_OFFSET);
+ 		if (xeon_errata_workaround)
+-			writeq(SNB_MBAR01_USD_ADDR, ndev->reg_base +
+-			       SNB_PBAR4XLAT_OFFSET);
+-		else {
+-			writeq(SNB_MBAR45_USD_ADDR, ndev->reg_base +
+-			       SNB_PBAR4XLAT_OFFSET);
+-			writeq(SNB_MBAR01_USD_ADDR, ndev->reg_base +
+-			       SNB_B2B_XLAT_OFFSET);
+-		}
+-		writeq(SNB_MBAR01_DSD_ADDR, ndev->reg_base +
+-		       SNB_SBAR0BASE_OFFSET);
+-		writeq(SNB_MBAR23_DSD_ADDR, ndev->reg_base +
+-		       SNB_SBAR2BASE_OFFSET);
+-		writeq(SNB_MBAR45_DSD_ADDR, ndev->reg_base +
+-		       SNB_SBAR4BASE_OFFSET);
++			return -EINVAL;
++
++		/* Scratch pads need to have exclusive access from the primary
++		 * or secondary side.  Halve the num spads so that each side can
++		 * have an equal amount.
++		 */
++		ndev->limits.max_spads = SNB_MAX_COMPAT_SPADS / 2;
++		/* Note: The SDOORBELL is the cause of the errata.  You REALLY
++		 * don't want to touch it.
++		 */
++		ndev->reg_ofs.rdb = ndev->reg_base + SNB_SDOORBELL_OFFSET;
++		ndev->reg_ofs.ldb = ndev->reg_base + SNB_PDOORBELL_OFFSET;
++		ndev->reg_ofs.ldb_mask = ndev->reg_base + SNB_PDBMSK_OFFSET;
++		/* Offset the start of the spads to correspond to whether it is
++		 * primary or secondary
++		 */
++		ndev->reg_ofs.spad_write = ndev->reg_base + SNB_SPAD_OFFSET +
++					   ndev->limits.max_spads * 4;
++		ndev->reg_ofs.spad_read = ndev->reg_base + SNB_SPAD_OFFSET;
++		ndev->reg_ofs.bar2_xlat = ndev->reg_base + SNB_SBAR2XLAT_OFFSET;
++		ndev->reg_ofs.bar4_xlat = ndev->reg_base + SNB_SBAR4XLAT_OFFSET;
++		ndev->limits.max_mw = SNB_MAX_MW;
++		break;
++	case NTB_CONN_TRANSPARENT:
++		dev_info(&ndev->pdev->dev, "Conn Type = TRANSPARENT\n");
++		ndev->conn_type = NTB_CONN_TRANSPARENT;
++		/* Scratch pads need to have exclusive access from the primary
++		 * or secondary side.  Halve the num spads so that each side can
++		 * have an equal amount.
++		 */
++		ndev->limits.max_spads = SNB_MAX_COMPAT_SPADS / 2;
++		ndev->reg_ofs.rdb = ndev->reg_base + SNB_PDOORBELL_OFFSET;
++		ndev->reg_ofs.ldb = ndev->reg_base + SNB_SDOORBELL_OFFSET;
++		ndev->reg_ofs.ldb_mask = ndev->reg_base + SNB_SDBMSK_OFFSET;
++		ndev->reg_ofs.spad_write = ndev->reg_base + SNB_SPAD_OFFSET;
++		/* Offset the start of the spads to correspond to whether it is
++		 * primary or secondary
++		 */
++		ndev->reg_ofs.spad_read = ndev->reg_base + SNB_SPAD_OFFSET +
++					  ndev->limits.max_spads * 4;
++		ndev->reg_ofs.bar2_xlat = ndev->reg_base + SNB_PBAR2XLAT_OFFSET;
++		ndev->reg_ofs.bar4_xlat = ndev->reg_base + SNB_PBAR4XLAT_OFFSET;
++
++		ndev->limits.max_mw = SNB_MAX_MW;
++		break;
++	default:
++		/* Most likely caused by the remote NTB-RP device not being
++		 * configured
++		 */
++		dev_err(&ndev->pdev->dev, "Unknown PPD %x\n", val);
++		return -EINVAL;
  	}
  
--	qp->rx_bytes += hdr->len;
--	qp->rx_pkts++;
-+	entry->index = qp->rx_index;
-+	entry->rx_hdr = hdr;
+-	ndev->limits.max_spads = SNB_MAX_B2B_SPADS;
++	ndev->reg_ofs.lnk_cntl = ndev->reg_base + SNB_NTBCNTL_OFFSET;
++	ndev->reg_ofs.lnk_stat = ndev->reg_base + SNB_SLINK_STATUS_OFFSET;
++	ndev->reg_ofs.spci_cmd = ndev->reg_base + SNB_PCICMD_OFFSET;
++
+ 	ndev->limits.max_db_bits = SNB_MAX_DB_BITS;
+ 	ndev->limits.msix_cnt = SNB_MSIX_CNT;
+ 	ndev->bits_per_vector = SNB_DB_BITS_PER_VEC;
+@@ -855,8 +908,10 @@ static int ntb_device_setup(struct ntb_device *ndev)
+ 	dev_info(&ndev->pdev->dev, "Device Type = %s\n",
+ 		 ndev->dev_type == NTB_DEV_USD ? "USD/DSP" : "DSD/USP");
  
--out:
--	/* Ensure that the data is fully copied out before clearing the flag */
--	wmb();
--	hdr->flags = 0;
--	iowrite32(qp->rx_index, &qp->rx_info->entry);
-+	ntb_async_rx(entry, offset, hdr->len);
- 
-+out:
- 	qp->rx_index++;
- 	qp->rx_index %= qp->rx_max_entry;
+-	/* Enable Bus Master and Memory Space on the secondary side */
+-	writew(PCI_COMMAND_MEMORY | PCI_COMMAND_MASTER, ndev->reg_ofs.spci_cmd);
++	if (ndev->conn_type == NTB_CONN_B2B)
++		/* Enable Bus Master and Memory Space on the secondary side */
++		writew(PCI_COMMAND_MEMORY | PCI_COMMAND_MASTER,
++		       ndev->reg_ofs.spci_cmd);
  
  	return 0;
-+
-+err:
-+	ntb_list_add(&qp->ntb_rx_pend_q_lock, &entry->entry,
-+		     &qp->rx_pend_q);
-+	wmb();
-+	hdr->flags = 0;
-+	iowrite32(qp->rx_index, &qp->rx_info->entry);
-+
-+	goto out;
  }
+@@ -1350,7 +1405,7 @@ static void ntb_pci_remove(struct pci_dev *pdev)
  
- static void ntb_transport_rx(unsigned long data)
-@@ -1070,19 +1188,12 @@ static void ntb_transport_rxc_db(void *data, int db_num)
- 	tasklet_schedule(&qp->rx_work);
- }
+ 	/* Bring NTB link down */
+ 	ntb_cntl = readl(ndev->reg_ofs.lnk_cntl);
+-	ntb_cntl |= NTB_LINK_DISABLE;
++	ntb_cntl |= NTB_CNTL_LINK_DISABLE;
+ 	writel(ntb_cntl, ndev->reg_ofs.lnk_cntl);
  
--static void ntb_tx_copy_task(struct ntb_transport_qp *qp,
--			     struct ntb_queue_entry *entry,
--			     void __iomem *offset)
-+static void ntb_tx_copy_callback(void *data)
- {
--	struct ntb_payload_header __iomem *hdr;
--
--	memcpy_toio(offset, entry->buf, entry->len);
--
--	hdr = offset + qp->tx_max_frame - sizeof(struct ntb_payload_header);
--	iowrite32(entry->len, &hdr->len);
--	iowrite32((u32) qp->tx_pkts, &hdr->ver);
-+	struct ntb_queue_entry *entry = data;
-+	struct ntb_transport_qp *qp = entry->qp;
-+	struct ntb_payload_header __iomem *hdr = entry->tx_hdr;
- 
--	/* Ensure that the data is fully copied out before setting the flag */
- 	wmb();
- 	iowrite32(entry->flags | DESC_DONE_FLAG, &hdr->flags);
- 
-@@ -1103,15 +1214,79 @@ static void ntb_tx_copy_task(struct ntb_transport_qp *qp,
- 	ntb_list_add(&qp->ntb_tx_free_q_lock, &entry->entry, &qp->tx_free_q);
- }
- 
--static int ntb_process_tx(struct ntb_transport_qp *qp,
--			  struct ntb_queue_entry *entry)
-+static void ntb_memcpy_tx(struct ntb_queue_entry *entry, void __iomem *offset)
-+{
-+	memcpy_toio(offset, entry->buf, entry->len);
-+
-+	ntb_tx_copy_callback(entry);
-+}
-+
-+static void ntb_async_tx(struct ntb_transport_qp *qp,
-+			 struct ntb_queue_entry *entry)
- {
-+	struct dma_async_tx_descriptor *txd;
-+	struct dma_chan *chan = qp->dma_chan;
-+	struct dma_device *device;
-+	dma_addr_t src, dest;
-+	dma_cookie_t cookie;
-+	struct ntb_payload_header __iomem *hdr;
- 	void __iomem *offset;
-+	size_t len = entry->len;
-+	void *buf = entry->buf;
-+	unsigned long flags;
- 
- 	offset = qp->tx_mw + qp->tx_max_frame * qp->tx_index;
-+	hdr = offset + qp->tx_max_frame - sizeof(struct ntb_payload_header);
-+	entry->tx_hdr = hdr;
-+
-+	iowrite32(entry->len, &hdr->len);
-+	iowrite32((u32) qp->tx_pkts, &hdr->ver);
-+
-+	if (!chan)
-+		goto err;
- 
--	dev_dbg(&ntb_query_pdev(qp->ndev)->dev, "%lld - offset %p, tx %u, entry len %d flags %x buff %p\n",
--		qp->tx_pkts, offset, qp->tx_index, entry->len, entry->flags,
-+	device = chan->device;
-+
-+	dest = qp->tx_mw_raw + qp->tx_max_frame * qp->tx_index;
-+
-+	if (len < copy_bytes ||
-+	    !is_dma_copy_aligned(device, __pa(buf), dest, len))
-+		goto err;
-+
-+	src = dma_map_single(device->dev, buf, len, DMA_TO_DEVICE);
-+	if (dma_mapping_error(device->dev, src))
-+		goto err;
-+
-+	flags = DMA_COMPL_SRC_UNMAP_SINGLE | DMA_PREP_INTERRUPT;
-+	txd = device->device_prep_dma_memcpy(chan, dest, src, len, flags);
-+	if (!txd)
-+		goto err1;
-+
-+	txd_clear_parent(txd);
-+	txd_clear_next(txd);
-+	txd->callback = ntb_tx_copy_callback;
-+	txd->callback_param = entry;
-+
-+	cookie = dmaengine_submit(txd);
-+	if (dma_submit_error(cookie))
-+		goto err1;
-+
-+	dma_async_issue_pending(chan);
-+	qp->tx_async++;
-+
-+	return;
-+err1:
-+	dma_unmap_single(device->dev, src, len, DMA_TO_DEVICE);
-+err:
-+	ntb_memcpy_tx(entry, offset);
-+	qp->tx_memcpy++;
-+}
-+
-+static int ntb_process_tx(struct ntb_transport_qp *qp,
-+			  struct ntb_queue_entry *entry)
-+{
-+	dev_dbg(&ntb_query_pdev(qp->ndev)->dev, "%lld - tx %u, entry len %d flags %x buff %p\n",
-+		qp->tx_pkts, qp->tx_index, entry->len, entry->flags,
- 		entry->buf);
- 	if (qp->tx_index == qp->remote_rx_info->entry) {
- 		qp->tx_ring_full++;
-@@ -1127,7 +1302,7 @@ static int ntb_process_tx(struct ntb_transport_qp *qp,
- 		return 0;
- 	}
- 
--	ntb_tx_copy_task(qp, entry, offset);
-+	ntb_async_tx(qp, entry);
- 
- 	qp->tx_index++;
- 	qp->tx_index %= qp->tx_max_entry;
-@@ -1213,11 +1388,16 @@ ntb_transport_create_queue(void *data, struct pci_dev *pdev,
- 	qp->tx_handler = handlers->tx_handler;
- 	qp->event_handler = handlers->event_handler;
- 
-+	qp->dma_chan = dma_find_channel(DMA_MEMCPY);
-+	if (!qp->dma_chan)
-+		dev_info(&pdev->dev, "Unable to allocate private DMA channel, using CPU instead\n");
-+
- 	for (i = 0; i < NTB_QP_DEF_NUM_ENTRIES; i++) {
- 		entry = kzalloc(sizeof(struct ntb_queue_entry), GFP_ATOMIC);
- 		if (!entry)
- 			goto err1;
- 
-+		entry->qp = qp;
- 		ntb_list_add(&qp->ntb_rx_free_q_lock, &entry->entry,
- 			     &qp->rx_free_q);
- 	}
-@@ -1227,6 +1407,7 @@ ntb_transport_create_queue(void *data, struct pci_dev *pdev,
- 		if (!entry)
- 			goto err2;
- 
-+		entry->qp = qp;
- 		ntb_list_add(&qp->ntb_tx_free_q_lock, &entry->entry,
- 			     &qp->tx_free_q);
- 	}
-@@ -1272,11 +1453,14 @@ void ntb_transport_free_queue(struct ntb_transport_qp *qp)
- 
- 	pdev = ntb_query_pdev(qp->ndev);
- 
--	cancel_delayed_work_sync(&qp->link_work);
-+	if (qp->dma_chan)
-+		dmaengine_terminate_all(qp->dma_chan);
- 
- 	ntb_unregister_db_callback(qp->ndev, qp->qp_num);
- 	tasklet_disable(&qp->rx_work);
- 
-+	cancel_delayed_work_sync(&qp->link_work);
-+
- 	while ((entry = ntb_list_rm(&qp->ntb_rx_free_q_lock, &qp->rx_free_q)))
- 		kfree(entry);
- 
-@@ -1382,8 +1566,10 @@ int ntb_transport_tx_enqueue(struct ntb_transport_qp *qp, void *cb, void *data,
- 		return -EINVAL;
- 
- 	entry = ntb_list_rm(&qp->ntb_tx_free_q_lock, &qp->tx_free_q);
--	if (!entry)
-+	if (!entry) {
-+		qp->tx_err_no_buf++;
- 		return -ENOMEM;
-+	}
- 
- 	entry->cb_data = cb;
- 	entry->buf = data;
-@@ -1499,9 +1685,18 @@ EXPORT_SYMBOL_GPL(ntb_transport_qp_num);
+ 	ntb_transport_free(ndev->ntb_transport);
+diff --git a/drivers/ntb/ntb_regs.h b/drivers/ntb/ntb_regs.h
+index 8f3f903..910d5e9 100644
+--- a/drivers/ntb/ntb_regs.h
++++ b/drivers/ntb/ntb_regs.h
+@@ -46,8 +46,6 @@
+  * Jon Mason <jon.mason@intel.com>
   */
- unsigned int ntb_transport_max_size(struct ntb_transport_qp *qp)
- {
-+	unsigned int max;
-+
- 	if (!qp)
- 		return 0;
  
--	return qp->tx_max_frame - sizeof(struct ntb_payload_header);
-+	if (!qp->dma_chan)
-+		return qp->tx_max_frame - sizeof(struct ntb_payload_header);
-+
-+	/* If DMA engine usage is possible, try to find the max size for that */
-+	max = qp->tx_max_frame - sizeof(struct ntb_payload_header);
-+	max -= max % (1 << qp->dma_chan->device->copy_align);
-+
-+	return max;
- }
- EXPORT_SYMBOL_GPL(ntb_transport_max_size);
+-#define NTB_LINK_ENABLE		0x0000
+-#define NTB_LINK_DISABLE	0x0002
+ #define NTB_LINK_STATUS_ACTIVE	0x2000
+ #define NTB_LINK_SPEED_MASK	0x000f
+ #define NTB_LINK_WIDTH_MASK	0x03f0
+@@ -65,6 +63,7 @@
+ 
+ #define SNB_PCICMD_OFFSET	0x0504
+ #define SNB_DEVCTRL_OFFSET	0x0598
++#define SNB_SLINK_STATUS_OFFSET	0x05A2
+ #define SNB_LINK_STATUS_OFFSET	0x01A2
+ 
+ #define SNB_PBAR2LMT_OFFSET	0x0000
+@@ -146,6 +145,8 @@
+ #define BWD_LTSSMSTATEJMP_FORCEDETECT	(1 << 2)
+ #define BWD_IBIST_ERR_OFLOW	0x7FFF7FFF
+ 
++#define NTB_CNTL_CFG_LOCK	(1 << 0)
++#define NTB_CNTL_LINK_DISABLE	(1 << 1)
+ #define NTB_CNTL_BAR23_SNOOP	(1 << 2)
+ #define NTB_CNTL_BAR45_SNOOP	(1 << 6)
+ #define BWD_CNTL_LINK_DOWN	(1 << 16)
 -- 
 1.7.9.5
 
