@@ -1,62 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753621Ab3HBVL3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 17:11:29 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:52652 "EHLO hydra.sisk.pl"
+	id S1753150Ab3HBVV2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 17:21:28 -0400
+Received: from gate.crashing.org ([63.228.1.57]:51848 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751665Ab3HBVL1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 17:11:27 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Felipe Contreras <felipe.contreras@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+	id S1751923Ab3HBVV1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 17:21:27 -0400
+Message-ID: <1375478457.15999.25.camel@pasglop>
+Subject: Re: [ANNOUNCE] 3.10.4-rt1
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Thomas Gleixner <tglx@linutronix.de>,
         LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: Re: [GIT PULL] ACPI and power management fixes for v3.11-rc4
-Date: Fri, 02 Aug 2013 23:21:37 +0200
-Message-ID: <1820071.Lqgn6ZcLbB@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAMP44s2a2HqohWL9d+i3cpifJiUfidTw_ZfO3PttvhMn_hGE1A@mail.gmail.com>
-References: <2052880.bHfzt6NKt5@vostro.rjw.lan> <CAMP44s2a2HqohWL9d+i3cpifJiUfidTw_ZfO3PttvhMn_hGE1A@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Date: Sat, 03 Aug 2013 07:20:57 +1000
+In-Reply-To: <20130802141936.GA8267@windriver.com>
+References: <alpine.DEB.2.02.1308011215160.4089@ionos.tec.linutronix.de>
+	 <CAP=VYLp1ERhS4cFtgXGHL2DfCGoJ9VbPvShH5ZOWCpPuSzQY6w@mail.gmail.com>
+	 <1375419917.3743.93.camel@pasglop> <51FBA9CC.2090206@linutronix.de>
+	 <20130802141936.GA8267@windriver.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, August 02, 2013 02:12:49 PM Felipe Contreras wrote:
-> On Fri, Aug 2, 2013 at 9:29 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+On Fri, 2013-08-02 at 10:19 -0400, Paul Gortmaker wrote:
 > 
-> > ---------------
-> >
-> > Colin Cross (1):
-> >       freezer: set PF_SUSPEND_TASK flag on tasks that call freeze_processes
-> >
-> > Lan Tianyu (1):
-> >       ACPI / battery: Fix parsing _BIX return value
-> >
-> > Rafael J. Wysocki (3):
-> >       Revert "cpuidle: Quickly notice prediction failure in general case"
-> >       Revert "cpuidle: Quickly notice prediction failure for repeat mode"
-> >       cpufreq: Fix cpufreq driver module refcount balance after suspend/resume
-> >
-> > ---------------
+> Yep, 3.8 shuffled TIF_MEMDIE to the end of the queue, but
+> in 3.10, mainline commit 22ecbe8dcef has already done that trick.
 > 
-> You forgot this patch:
-> 
-> https://git.kernel.org/cgit/linux/kernel/git/rafael/linux-pm.git/commit/?h=linux-next&id=3706231332d57072e0e2c0e59975443f3f18e673
-> 
-> Or do you think it's fine to boot these machines into a black screen?
+> The list of donor victims that aren't used in asm is getting
+> smaller, but TIF_POLLING_NRFLAG seems OK and it puts RESCHED
+> and RESCHED_LAZY right beside each other.
 
-Seriously, what's wrong with you?!
+Worst case we can turn it into a 32-bit and but I'd rather avoid it
+as long as we can :-)
 
-I didn't forget about it, I just didn't include it into this particular
-pull request.
+Cheers,
+Ben.
 
-And I'm not even sure I will push it for 3.11, because I prefer to revert
-efaa14c for 3.11 if that's necessary to make your broken box work as before.
-
-Well, perhaps I just won't push it at all so that you actually can go and
-complain to Linus about that ...
 
