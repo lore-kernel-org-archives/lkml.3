@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030208Ab3HBKKh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:10:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37327 "EHLO
+	id S1030325Ab3HBKKz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:10:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37354 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030260Ab3HBKKb (ORCPT
+	with ESMTP id S1030228Ab3HBKKu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:10:31 -0400
+	Fri, 2 Aug 2013 06:10:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [ 51/99] svcrdma: underflow issue in decode_write_list()
-Date: Fri,  2 Aug 2013 18:08:04 +0800
-Message-Id: <20130802100233.160005466@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 68/99] drm/radeon: allow selection of alignment in the sub-allocator
+Date: Fri,  2 Aug 2013 18:08:21 +0800
+Message-Id: <20130802100235.501753258@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802100225.478715166@linuxfoundation.org>
 References: <20130802100225.478715166@linuxfoundation.org>
@@ -27,74 +26,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit b2781e1021525649c0b33fffd005ef219da33926 upstream.
+commit 6c4f978b357bc779c703fda1f200e9179623d3e9 upstream.
 
-My static checker marks everything from ntohl() as untrusted and it
-complains we could have an underflow problem doing:
+There are cases where we need more than 4k alignment.  No
+functional change with this commit.
 
-	return (u32 *)&ary->wc_array[nchunks];
-
-Also on 32 bit systems the upper bound check could overflow.
-
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/sunrpc/xprtrdma/svc_rdma_marshal.c |   20 ++++++++++++++------
- 1 file changed, 14 insertions(+), 6 deletions(-)
+ drivers/gpu/drm/radeon/radeon.h        |    1 +
+ drivers/gpu/drm/radeon/radeon_gart.c   |    1 +
+ drivers/gpu/drm/radeon/radeon_object.h |    2 +-
+ drivers/gpu/drm/radeon/radeon_ring.c   |    1 +
+ drivers/gpu/drm/radeon/radeon_sa.c     |    7 ++++---
+ 5 files changed, 8 insertions(+), 4 deletions(-)
 
---- a/net/sunrpc/xprtrdma/svc_rdma_marshal.c
-+++ b/net/sunrpc/xprtrdma/svc_rdma_marshal.c
-@@ -98,6 +98,7 @@ void svc_rdma_rcl_chunk_counts(struct rp
-  */
- static u32 *decode_write_list(u32 *va, u32 *vaend)
- {
-+	unsigned long start, end;
- 	int nchunks;
+--- a/drivers/gpu/drm/radeon/radeon.h
++++ b/drivers/gpu/drm/radeon/radeon.h
+@@ -408,6 +408,7 @@ struct radeon_sa_manager {
+ 	uint64_t		gpu_addr;
+ 	void			*cpu_ptr;
+ 	uint32_t		domain;
++	uint32_t		align;
+ };
  
- 	struct rpcrdma_write_array *ary =
-@@ -113,9 +114,12 @@ static u32 *decode_write_list(u32 *va, u
- 		return NULL;
- 	}
- 	nchunks = ntohl(ary->wc_nchunks);
--	if (((unsigned long)&ary->wc_array[0] +
--	     (sizeof(struct rpcrdma_write_chunk) * nchunks)) >
--	    (unsigned long)vaend) {
-+
-+	start = (unsigned long)&ary->wc_array[0];
-+	end = (unsigned long)vaend;
-+	if (nchunks < 0 ||
-+	    nchunks > (SIZE_MAX - start) / sizeof(struct rpcrdma_write_chunk) ||
-+	    (start + (sizeof(struct rpcrdma_write_chunk) * nchunks)) > end) {
- 		dprintk("svcrdma: ary=%p, wc_nchunks=%d, vaend=%p\n",
- 			ary, nchunks, vaend);
- 		return NULL;
-@@ -129,6 +133,7 @@ static u32 *decode_write_list(u32 *va, u
+ struct radeon_sa_bo;
+--- a/drivers/gpu/drm/radeon/radeon_gart.c
++++ b/drivers/gpu/drm/radeon/radeon_gart.c
+@@ -467,6 +467,7 @@ int radeon_vm_manager_init(struct radeon
+ 		size *= 2;
+ 		r = radeon_sa_bo_manager_init(rdev, &rdev->vm_manager.sa_manager,
+ 					      RADEON_GPU_PAGE_ALIGN(size),
++					      RADEON_GPU_PAGE_SIZE,
+ 					      RADEON_GEM_DOMAIN_VRAM);
+ 		if (r) {
+ 			dev_err(rdev->dev, "failed to allocate vm bo (%dKB)\n",
+--- a/drivers/gpu/drm/radeon/radeon_object.h
++++ b/drivers/gpu/drm/radeon/radeon_object.h
+@@ -158,7 +158,7 @@ static inline void * radeon_sa_bo_cpu_ad
  
- static u32 *decode_reply_array(u32 *va, u32 *vaend)
- {
-+	unsigned long start, end;
- 	int nchunks;
- 	struct rpcrdma_write_array *ary =
- 		(struct rpcrdma_write_array *)va;
-@@ -143,9 +148,12 @@ static u32 *decode_reply_array(u32 *va,
- 		return NULL;
+ extern int radeon_sa_bo_manager_init(struct radeon_device *rdev,
+ 				     struct radeon_sa_manager *sa_manager,
+-				     unsigned size, u32 domain);
++				     unsigned size, u32 align, u32 domain);
+ extern void radeon_sa_bo_manager_fini(struct radeon_device *rdev,
+ 				      struct radeon_sa_manager *sa_manager);
+ extern int radeon_sa_bo_manager_start(struct radeon_device *rdev,
+--- a/drivers/gpu/drm/radeon/radeon_ring.c
++++ b/drivers/gpu/drm/radeon/radeon_ring.c
+@@ -224,6 +224,7 @@ int radeon_ib_pool_init(struct radeon_de
  	}
- 	nchunks = ntohl(ary->wc_nchunks);
--	if (((unsigned long)&ary->wc_array[0] +
--	     (sizeof(struct rpcrdma_write_chunk) * nchunks)) >
--	    (unsigned long)vaend) {
-+
-+	start = (unsigned long)&ary->wc_array[0];
-+	end = (unsigned long)vaend;
-+	if (nchunks < 0 ||
-+	    nchunks > (SIZE_MAX - start) / sizeof(struct rpcrdma_write_chunk) ||
-+	    (start + (sizeof(struct rpcrdma_write_chunk) * nchunks)) > end) {
- 		dprintk("svcrdma: ary=%p, wc_nchunks=%d, vaend=%p\n",
- 			ary, nchunks, vaend);
- 		return NULL;
+ 	r = radeon_sa_bo_manager_init(rdev, &rdev->ring_tmp_bo,
+ 				      RADEON_IB_POOL_SIZE*64*1024,
++				      RADEON_GPU_PAGE_SIZE,
+ 				      RADEON_GEM_DOMAIN_GTT);
+ 	if (r) {
+ 		return r;
+--- a/drivers/gpu/drm/radeon/radeon_sa.c
++++ b/drivers/gpu/drm/radeon/radeon_sa.c
+@@ -49,7 +49,7 @@ static void radeon_sa_bo_try_free(struct
+ 
+ int radeon_sa_bo_manager_init(struct radeon_device *rdev,
+ 			      struct radeon_sa_manager *sa_manager,
+-			      unsigned size, u32 domain)
++			      unsigned size, u32 align, u32 domain)
+ {
+ 	int i, r;
+ 
+@@ -57,13 +57,14 @@ int radeon_sa_bo_manager_init(struct rad
+ 	sa_manager->bo = NULL;
+ 	sa_manager->size = size;
+ 	sa_manager->domain = domain;
++	sa_manager->align = align;
+ 	sa_manager->hole = &sa_manager->olist;
+ 	INIT_LIST_HEAD(&sa_manager->olist);
+ 	for (i = 0; i < RADEON_NUM_RINGS; ++i) {
+ 		INIT_LIST_HEAD(&sa_manager->flist[i]);
+ 	}
+ 
+-	r = radeon_bo_create(rdev, size, RADEON_GPU_PAGE_SIZE, true,
++	r = radeon_bo_create(rdev, size, align, true,
+ 			     domain, NULL, &sa_manager->bo);
+ 	if (r) {
+ 		dev_err(rdev->dev, "(%d) failed to allocate bo for manager\n", r);
+@@ -317,7 +318,7 @@ int radeon_sa_bo_new(struct radeon_devic
+ 	unsigned tries[RADEON_NUM_RINGS];
+ 	int i, r;
+ 
+-	BUG_ON(align > RADEON_GPU_PAGE_SIZE);
++	BUG_ON(align > sa_manager->align);
+ 	BUG_ON(size > sa_manager->size);
+ 
+ 	*sa_bo = kmalloc(sizeof(struct radeon_sa_bo), GFP_KERNEL);
 
 
