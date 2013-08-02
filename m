@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759102Ab3HBKIl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:08:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37090 "EHLO
+	id S1759132Ab3HBKIo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:08:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37095 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759003Ab3HBKIi (ORCPT
+	with ESMTP id S1759003Ab3HBKIm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:08:38 -0400
+	Fri, 2 Aug 2013 06:08:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chih-Chung Chang <chihchung@chromium.org>,
-        Dylan Reid <dgreid@chromium.org>, Mark Brown <broonie@linaro.org>
-Subject: [ 11/99] ASoC: max98088 - fix element type of the register cache.
-Date: Fri,  2 Aug 2013 18:07:24 +0800
-Message-Id: <20130802100227.143671316@linuxfoundation.org>
+        Richard Zhao <rizhao@nvidia.com>, Stephen Warren <swarren@nvidia.com>,
+        Lucas Stach <dev@lynxeye.de>, Mark Brown <broonie@linaro.org>
+Subject: [ 12/99] ASoC: tegra: correct playback_dma_data setup
+Date: Fri,  2 Aug 2013 18:07:25 +0800
+Message-Id: <20130802100227.307930136@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802100225.478715166@linuxfoundation.org>
 References: <20130802100225.478715166@linuxfoundation.org>
@@ -27,33 +27,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chih-Chung Chang <chihchung@chromium.org>
+From: Richard Zhao <rizhao@nvidia.com>
 
-commit cb6f66a2d278e57a6c9d8fb59bd9ebd8ab3965c2 upstream.
+commit 647ab784c507763bfda79155f125b6edd1244806 upstream.
 
-The registers of max98088 are 8 bits, not 16 bits. This bug causes the
-contents of registers to be overwritten with bad values when the codec
-is suspended and then resumed.
+The errors were caused by copy/paste mistake in below commit
+since v3.10:
+3489d50 ASoC: tegra: Use common DAI DMA data struct
 
-Signed-off-by: Chih-Chung Chang <chihchung@chromium.org>
-Signed-off-by: Dylan Reid <dgreid@chromium.org>
+It also corrects slave_id initialization in tegra20_ac97 driver.
+
+Signed-off-by: Richard Zhao <rizhao@nvidia.com>
+Acked-by: Stephen Warren <swarren@nvidia.com>
+Acked-by: Lucas Stach <dev@lynxeye.de>
 Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/max98088.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/soc/tegra/tegra20_ac97.c  |    6 +++---
+ sound/soc/tegra/tegra20_spdif.c |    4 ++--
+ 2 files changed, 5 insertions(+), 5 deletions(-)
 
---- a/sound/soc/codecs/max98088.c
-+++ b/sound/soc/codecs/max98088.c
-@@ -1612,7 +1612,7 @@ static int max98088_dai2_digital_mute(st
+--- a/sound/soc/tegra/tegra20_ac97.c
++++ b/sound/soc/tegra/tegra20_ac97.c
+@@ -399,9 +399,9 @@ static int tegra20_ac97_platform_probe(s
+ 	ac97->capture_dma_data.slave_id = of_dma[1];
  
- static void max98088_sync_cache(struct snd_soc_codec *codec)
- {
--       u16 *reg_cache = codec->reg_cache;
-+       u8 *reg_cache = codec->reg_cache;
-        int i;
+ 	ac97->playback_dma_data.addr = mem->start + TEGRA20_AC97_FIFO_TX1;
+-	ac97->capture_dma_data.addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
+-	ac97->capture_dma_data.maxburst = 4;
+-	ac97->capture_dma_data.slave_id = of_dma[0];
++	ac97->playback_dma_data.addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
++	ac97->playback_dma_data.maxburst = 4;
++	ac97->playback_dma_data.slave_id = of_dma[1];
  
-        if (!codec->cache_sync)
+ 	ret = snd_soc_register_component(&pdev->dev, &tegra20_ac97_component,
+ 					 &tegra20_ac97_dai, 1);
+--- a/sound/soc/tegra/tegra20_spdif.c
++++ b/sound/soc/tegra/tegra20_spdif.c
+@@ -323,8 +323,8 @@ static int tegra20_spdif_platform_probe(
+ 	}
+ 
+ 	spdif->playback_dma_data.addr = mem->start + TEGRA20_SPDIF_DATA_OUT;
+-	spdif->capture_dma_data.addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
+-	spdif->capture_dma_data.maxburst = 4;
++	spdif->playback_dma_data.addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
++	spdif->playback_dma_data.maxburst = 4;
+ 	spdif->playback_dma_data.slave_id = dmareq->start;
+ 
+ 	pm_runtime_enable(&pdev->dev);
 
 
