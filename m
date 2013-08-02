@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758993Ab3HBKI0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:08:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37077 "EHLO
+	id S1759102Ab3HBKIl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:08:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37090 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758874Ab3HBKIX (ORCPT
+	with ESMTP id S1759003Ab3HBKIi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:08:23 -0400
+	Fri, 2 Aug 2013 06:08:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [ 20/99] tracing: Kill the unbalanced tr->ref++ in tracing_buffers_open()
-Date: Fri,  2 Aug 2013 18:07:33 +0800
-Message-Id: <20130802100228.858921044@linuxfoundation.org>
+        Chih-Chung Chang <chihchung@chromium.org>,
+        Dylan Reid <dgreid@chromium.org>, Mark Brown <broonie@linaro.org>
+Subject: [ 11/99] ASoC: max98088 - fix element type of the register cache.
+Date: Fri,  2 Aug 2013 18:07:24 +0800
+Message-Id: <20130802100227.143671316@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802100225.478715166@linuxfoundation.org>
 References: <20130802100225.478715166@linuxfoundation.org>
@@ -29,43 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Chih-Chung Chang <chihchung@chromium.org>
 
-commit e70e78e3c83b536730e31231dd9b979768d8df3c upstream.
+commit cb6f66a2d278e57a6c9d8fb59bd9ebd8ab3965c2 upstream.
 
-tracing_buffers_open() does trace_array_get() and then it wrongly
-inrcements tr->ref again under trace_types_lock. This means that
-every caller leaks trace_array:
+The registers of max98088 are 8 bits, not 16 bits. This bug causes the
+contents of registers to be overwritten with bad values when the codec
+is suspended and then resumed.
 
-	# cd /sys/kernel/debug/tracing/
-	# mkdir instances/X
-	# true < instances/X/per_cpu/cpu0/trace_pipe_raw
-	# rmdir instances/X
-	rmdir: failed to remove `instances/X': Device or resource busy
-
-Link: http://lkml.kernel.org/r/20130719153644.GA18899@redhat.com
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Chih-Chung Chang <chihchung@chromium.org>
+Signed-off-by: Dylan Reid <dgreid@chromium.org>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/trace/trace.c |    2 --
- 1 file changed, 2 deletions(-)
+ sound/soc/codecs/max98088.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -4907,8 +4907,6 @@ static int tracing_buffers_open(struct i
+--- a/sound/soc/codecs/max98088.c
++++ b/sound/soc/codecs/max98088.c
+@@ -1612,7 +1612,7 @@ static int max98088_dai2_digital_mute(st
  
- 	mutex_lock(&trace_types_lock);
+ static void max98088_sync_cache(struct snd_soc_codec *codec)
+ {
+-       u16 *reg_cache = codec->reg_cache;
++       u8 *reg_cache = codec->reg_cache;
+        int i;
  
--	tr->ref++;
--
- 	info->iter.tr		= tr;
- 	info->iter.cpu_file	= tc->cpu;
- 	info->iter.trace	= tr->current_trace;
+        if (!codec->cache_sync)
 
 
