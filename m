@@ -1,64 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751832Ab3HBL7W (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 07:59:22 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:51059 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751598Ab3HBL7O (ORCPT
+	id S1751862Ab3HBMBO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 08:01:14 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:29132 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751760Ab3HBMBN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 07:59:14 -0400
-X-IronPort-AV: E=Sophos;i="4.89,800,1367971200"; 
-   d="scan'208";a="39021726"
-Date: Fri, 2 Aug 2013 12:59:00 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <Ian.Campbell@citrix.com>,
-        <will.deacon@arm.com>, <linux@arm.linux.org.uk>
-Subject: Re: [PATCH RFC 1/8] arm: make SWIOTLB available
-In-Reply-To: <334c4fe7-e40c-489c-84db-9bb58c705d44@email.android.com>
-Message-ID: <alpine.DEB.2.02.1308021250050.4893@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1307311833040.4893@kaball.uk.xensource.com> <1375292732-7627-1-git-send-email-stefano.stabellini@eu.citrix.com> <334c4fe7-e40c-489c-84db-9bb58c705d44@email.android.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 2 Aug 2013 08:01:13 -0400
+Date: Fri, 2 Aug 2013 08:01:02 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Zhenzhong Duan <zhenzhong.duan@oracle.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        xen-devel <xen-devel@lists.xen.org>, Feng Jin <joe.jin@oracle.com>,
+        Sucheta Chakraborty <sucheta.chakraborty@qlogic.com>
+Subject: Re: [PATCH 2/3] Refactor msi/msix restore code Part2
+Message-ID: <20130802120101.GE24540@konrad-lan.dumpdata.com>
+References: <51EF451A.8050003@oracle.com>
+ <CAErSpo5phkLpdR35eaMnYthVXiAAAr-JLD44QkntOZi2-NppOg@mail.gmail.com>
+ <20130801151616.GE21528@konrad-lan.dumpdata.com>
+ <51FB78D1.6060802@oracle.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51FB78D1.6060802@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 31 Jul 2013, Konrad Rzeszutek Wilk wrote:
-> Stefano Stabellini <stefano.stabellini@eu.citrix.com> wrote:
-> >Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> >CC: will.deacon@arm.com
-> >CC: linux@arm.linux.org.uk
-> >---
-> > arch/arm/Kconfig                   |    7 +++++++
-> > arch/arm/include/asm/dma-mapping.h |   24 ++++++++++++++++++++++++
-> > 2 files changed, 31 insertions(+), 0 deletions(-)
+> >>Konrad, are you OK with this patch now?
+> >Yes, I wanted to make sure that the existing behavior under baremetal
+> >was not altered.
 > >
-> >diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> >index ba412e0..05125ab 100644
-> >--- a/arch/arm/Kconfig
-> >+++ b/arch/arm/Kconfig
-> >@@ -1832,6 +1832,13 @@ config CC_STACKPROTECTOR
-> > 	  neutralized via a kernel panic.
-> > 	  This feature requires gcc version 4.2 or above.
-> > 
-> >+config SWIOTLB
-> >+	def_bool y
-> >+	select NEED_SG_DMA_LENGTH
-> >+
-> >+config IOMMU_HELPER
-> >+	def_bool SWIOTLB
-> >+
+> >And Duan had confirmed it was not  - thought to be on a safe side it
+> >would be good to confirm this via testing just in case.
+> I had ever let our customer test on baremetal and it passed.
+
+Are they OK with being credited for this in the patch? Meaning are they
+OK with Reported-by-and-Tested-by: flag?
+
+Either way, I think the only remaining issue is to expand the git commit
+a bit to include the discussion about the flow of the pci_read/pci_write
+and point out that the logic remains the same.
+
+
 > 
-> Could you explain the purpose of these two a bit more please? 
-
-SWIOTLB is not available on arm at the moment.
-We need to make it available, otherwise SWIOTLB_XEN won't be able to
-select it.
-
-Similarly, IOMMU_HELPER is another lib Kconfig symbol needed by SWIOTLB
-to compile.
+> zduan
