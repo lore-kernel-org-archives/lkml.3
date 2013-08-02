@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759196Ab3HBKIw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:08:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37104 "EHLO
+	id S1759450Ab3HBKJc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:09:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37161 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759154Ab3HBKIt (ORCPT
+	with ESMTP id S1758982Ab3HBKJ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:08:49 -0400
+	Fri, 2 Aug 2013 06:09:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Nicolas Pitre <nico@linaro.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>, Willy Tarreau <w@1wt.eu>
-Subject: [ 14/99] ARM: 7722/1: zImage: Convert 32bits memory size and address from ATAG to 64bits DTB
-Date: Fri,  2 Aug 2013 18:07:27 +0800
-Message-Id: <20130802100228.008530928@linuxfoundation.org>
+        Huang Rui <ray.huang@amd.com>, Felipe Balbi <balbi@ti.com>
+Subject: [ 28/99] usb: dwc3: fix wrong bit mask in dwc3_event_type
+Date: Fri,  2 Aug 2013 18:07:41 +0800
+Message-Id: <20130802100229.976570223@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802100225.478715166@linuxfoundation.org>
 References: <20130802100225.478715166@linuxfoundation.org>
@@ -28,113 +26,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+From: Huang Rui <ray.huang@amd.com>
 
-commit faefd550c45d8d314e8f260f21565320355c947f upstream.
+commit 1974d494dea05ea227cb42f5e918828801e237aa upstream.
 
-When CONFIG_ARM_APPENDED_DTB is selected, if the bootloader provides
-an ATAG_MEM it replaces the memory size and the memory address in the
-memory node of the device tree. In the case of a system which can
-handle more than 4GB, the memory node cell size is 4: each data
-(memory size and memory address) are 64 bits and then use 2 cells.
+Per dwc3 2.50a spec, the is_devspec bit is used to distinguish the
+Device Endpoint-Specific Event or Device-Specific Event (DEVT). If the
+bit is 1, the event is represented Device-Specific Event, then use
+[7:1] bits as Device Specific Event to marked the type. It has 7 bits,
+and we can see the reserved8_31 variable name which means from 8 to 31
+bits marked reserved, actually there are 24 bits not 25 bits between
+that. And 1 + 7 + 24 = 32, the event size is 4 byes.
 
-The current code in atags_to_fdt.c made the assumption of a cell size
-of 2 (one cell for the memory size and one cell for the memory
-address), this leads to an improper write of the data and ends with a
-boot hang.
+So in dwc3_event_type, the bit mask should be:
+is_devspec	[0]		1  bit
+type		[7:1]		7  bits
+reserved8_31	[31:8]		24 bits
 
-This patch writes the memory size and the memory address on the memory
-node in the device tree depending of the size of the memory node (32
-bits or 64 bits).
+This patch should be backported to kernels as old as 3.2, that contain
+the commit 72246da40f3719af3bfd104a2365b32537c27d83 "usb: Introduce
+DesignWare USB3 DRD Driver".
 
-It has been tested in the 2 cases:
-- with a dtb using skeleton.dtsi
-- and with a dtb using skeleton64.dtsi
-
-Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Acked-by: Nicolas Pitre <nico@linaro.org>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Cc: Willy Tarreau <w@1wt.eu>
+Signed-off-by: Huang Rui <ray.huang@amd.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/boot/compressed/atags_to_fdt.c |   44 +++++++++++++++++++++++++++-----
- 1 file changed, 38 insertions(+), 6 deletions(-)
+ drivers/usb/dwc3/core.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/arm/boot/compressed/atags_to_fdt.c
-+++ b/arch/arm/boot/compressed/atags_to_fdt.c
-@@ -53,6 +53,17 @@ static const void *getprop(const void *f
- 	return fdt_getprop(fdt, offset, property, len);
- }
+--- a/drivers/usb/dwc3/core.h
++++ b/drivers/usb/dwc3/core.h
+@@ -759,8 +759,8 @@ struct dwc3 {
  
-+static uint32_t get_cell_size(const void *fdt)
-+{
-+	int len;
-+	uint32_t cell_size = 1;
-+	const uint32_t *size_len =  getprop(fdt, "/", "#size-cells", &len);
-+
-+	if (size_len)
-+		cell_size = fdt32_to_cpu(*size_len);
-+	return cell_size;
-+}
-+
- static void merge_fdt_bootargs(void *fdt, const char *fdt_cmdline)
- {
- 	char cmdline[COMMAND_LINE_SIZE];
-@@ -95,9 +106,11 @@ static void merge_fdt_bootargs(void *fdt
- int atags_to_fdt(void *atag_list, void *fdt, int total_space)
- {
- 	struct tag *atag = atag_list;
--	uint32_t mem_reg_property[2 * NR_BANKS];
-+	/* In the case of 64 bits memory size, need to reserve 2 cells for
-+	 * address and size for each bank */
-+	uint32_t mem_reg_property[2 * 2 * NR_BANKS];
- 	int memcount = 0;
--	int ret;
-+	int ret, memsize;
+ struct dwc3_event_type {
+ 	u32	is_devspec:1;
+-	u32	type:6;
+-	u32	reserved8_31:25;
++	u32	type:7;
++	u32	reserved8_31:24;
+ } __packed;
  
- 	/* make sure we've got an aligned pointer */
- 	if ((u32)atag_list & 0x3)
-@@ -137,8 +150,25 @@ int atags_to_fdt(void *atag_list, void *
- 				continue;
- 			if (!atag->u.mem.size)
- 				continue;
--			mem_reg_property[memcount++] = cpu_to_fdt32(atag->u.mem.start);
--			mem_reg_property[memcount++] = cpu_to_fdt32(atag->u.mem.size);
-+			memsize = get_cell_size(fdt);
-+
-+			if (memsize == 2) {
-+				/* if memsize is 2, that means that
-+				 * each data needs 2 cells of 32 bits,
-+				 * so the data are 64 bits */
-+				uint64_t *mem_reg_prop64 =
-+					(uint64_t *)mem_reg_property;
-+				mem_reg_prop64[memcount++] =
-+					cpu_to_fdt64(atag->u.mem.start);
-+				mem_reg_prop64[memcount++] =
-+					cpu_to_fdt64(atag->u.mem.size);
-+			} else {
-+				mem_reg_property[memcount++] =
-+					cpu_to_fdt32(atag->u.mem.start);
-+				mem_reg_property[memcount++] =
-+					cpu_to_fdt32(atag->u.mem.size);
-+			}
-+
- 		} else if (atag->hdr.tag == ATAG_INITRD2) {
- 			uint32_t initrd_start, initrd_size;
- 			initrd_start = atag->u.initrd.start;
-@@ -150,8 +180,10 @@ int atags_to_fdt(void *atag_list, void *
- 		}
- 	}
- 
--	if (memcount)
--		setprop(fdt, "/memory", "reg", mem_reg_property, 4*memcount);
-+	if (memcount) {
-+		setprop(fdt, "/memory", "reg", mem_reg_property,
-+			4 * memcount * memsize);
-+	}
- 
- 	return fdt_pack(fdt);
- }
+ #define DWC3_DEPEVT_XFERCOMPLETE	0x01
 
 
