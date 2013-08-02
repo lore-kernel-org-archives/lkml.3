@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752479Ab3HBKSA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:18:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37591 "EHLO
+	id S1752071Ab3HBKRr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:17:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37569 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752387Ab3HBKR6 (ORCPT
+	with ESMTP id S1751415Ab3HBKRp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:17:58 -0400
+	Fri, 2 Aug 2013 06:17:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oleksij Rempel <linux@rempel-privat.de>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [ 09/39] xhci: fix null pointer dereference on ring_doorbell_for_active_rings
-Date: Fri,  2 Aug 2013 18:18:19 +0800
-Message-Id: <20130802101458.106944990@linuxfoundation.org>
+        Chih-Chung Chang <chihchung@chromium.org>,
+        Dylan Reid <dgreid@chromium.org>, Mark Brown <broonie@linaro.org>
+Subject: [ 03/39] ASoC: max98088 - fix element type of the register cache.
+Date: Fri,  2 Aug 2013 18:18:13 +0800
+Message-Id: <20130802101457.253864990@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802101456.800497005@linuxfoundation.org>
 References: <20130802101456.800497005@linuxfoundation.org>
@@ -27,37 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleksij Rempel <linux@rempel-privat.de>
+From: Chih-Chung Chang <chihchung@chromium.org>
 
-commit d66eaf9f89502971fddcb0de550b01fa6f409d83 upstream.
+commit cb6f66a2d278e57a6c9d8fb59bd9ebd8ab3965c2 upstream.
 
-in some cases where device is attched to xhci port and do not responding,
-for example ath9k_htc with stalled firmware, kernel will
-crash on ring_doorbell_for_active_rings.
-This patch check if pointer exist before it is used.
+The registers of max98088 are 8 bits, not 16 bits. This bug causes the
+contents of registers to be overwritten with bad values when the codec
+is suspended and then resumed.
 
-This patch should be backported to kernels as old as 2.6.35, that
-contain the commit e9df17eb1408cfafa3d1844bfc7f22c7237b31b8 "USB: xhci:
-Correct assumptions about number of rings per endpoint"
-
-Signed-off-by: Oleksij Rempel <linux@rempel-privat.de>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Chih-Chung Chang <chihchung@chromium.org>
+Signed-off-by: Dylan Reid <dgreid@chromium.org>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci-ring.c |    2 +-
+ sound/soc/codecs/max98088.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -434,7 +434,7 @@ static void ring_doorbell_for_active_rin
+--- a/sound/soc/codecs/max98088.c
++++ b/sound/soc/codecs/max98088.c
+@@ -1594,7 +1594,7 @@ static int max98088_dai2_digital_mute(st
  
- 	/* A ring has pending URBs if its TD list is not empty */
- 	if (!(ep->ep_state & EP_HAS_STREAMS)) {
--		if (!(list_empty(&ep->ring->td_list)))
-+		if (ep->ring && !(list_empty(&ep->ring->td_list)))
- 			xhci_ring_ep_doorbell(xhci, slot_id, ep_index, 0);
- 		return;
- 	}
+ static void max98088_sync_cache(struct snd_soc_codec *codec)
+ {
+-       u16 *reg_cache = codec->reg_cache;
++       u8 *reg_cache = codec->reg_cache;
+        int i;
+ 
+        if (!codec->cache_sync)
 
 
