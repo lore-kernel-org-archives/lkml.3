@@ -1,88 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754393Ab3HBKbm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:31:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37650 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753343Ab3HBKSv (ORCPT
+	id S1754746Ab3HBKcA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:32:00 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:47101 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754081Ab3HBKb6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:18:51 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Milan Broz <gmazyland@gmail.com>, Alasdair G Kergon <agk@redhat.com>
-Subject: [ 24/39] dm verity: fix inability to use a few specific devices sizes
-Date: Fri,  2 Aug 2013 18:18:34 +0800
-Message-Id: <20130802101500.225439068@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
-In-Reply-To: <20130802101456.800497005@linuxfoundation.org>
-References: <20130802101456.800497005@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Fri, 2 Aug 2013 06:31:58 -0400
+Date: Fri, 2 Aug 2013 11:31:54 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Stephen Warren <swarren@nvidia.com>
+Message-ID: <20130802103154.GN9858@sirena.org.uk>
+References: <1375394937-8785-1-git-send-email-swarren@wwwdotorg.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="gmV4GtKPOP/GPF6K"
+Content-Disposition: inline
+In-Reply-To: <1375394937-8785-1-git-send-email-swarren@wwwdotorg.org>
+X-Cookie: You will be awarded some great honor.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] spi: fix SPI_BIT_MASK so it always fits into 32-bits
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+--gmV4GtKPOP/GPF6K
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+On Thu, Aug 01, 2013 at 04:08:57PM -0600, Stephen Warren wrote:
+> From: Stephen Warren <swarren@nvidia.com>
+>=20
+> On a 64-bit platform, ~0UL fills 64-bits, which causes SPI_BIT_MASK(32)
+> not to fit into 32 bits. This causes a warning when the result is assigned
+> to a 32-bit variable. Use ~0U instead to prevent this. This fixes:
 
-commit b1bf2de07271932326af847a3c6a01fdfd29d4be upstream.
+Applied, thanks.
 
-Fix a boundary condition that caused failure for certain device sizes.
+--gmV4GtKPOP/GPF6K
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-The problem is reported at
-  http://code.google.com/p/cryptsetup/issues/detail?id=160
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
-For certain device sizes the number of hashes at a specific level was
-calculated incorrectly.
+iQIcBAEBAgAGBQJR+4qXAAoJELSic+t+oim9464P/jfYhA0Y6chhTj+6tB9h8/Fh
+5vLBdnz6g5AMb9/D/OeVXcsqQoJ4a1W+C+WMsMO9a93XuHw/7CiLryrNrBbm/R/J
+Iy5Ul1jb9Ais6nG/gu7b1alyE/5wLZoKkgynFq9nJxKgLdbDJhE1+vNOpZf3j0Uq
+uOtQ2POzIH12C2wYMD0dri9O030CRYH6geUyT0bOZj8ETALYHWSSoHslqPQj/iWr
+Ph18Yc2PqXDuaM2nZeOPyqAx1+1JREEqxKVsoCxQ1sy4PiWyT1KtRPhQ9BMwfhoj
+Val+xfWXiMIzj+6+9BREATaon/3fl5GvM4E5DNYTIGWtuN0/FdvK/Cdmv6rXoAtn
+PqWUNvZq7GDmVeE3XFS7cB0ZCyJQZd4kef6mJtbszHYFdg1VsTjP2pMiSB0xYLx0
+usFZ3v/CxUkkjCVBg5J7RwAeVeyYg52BqBk6kTR5SJsVaoKXr2kPI2uK7DwNwNao
+6aKkfNd3T25Q2nxkxNpu1VKrI7auwjmIy2xCqyIvm8mv6UMNAoGHhtuVkWwRVVq5
+UyoaMBUbCOTgfVud3hLlX2cmb6hBUZlCmOwFFPgpFLFodcv9TFguYCZDHgs+n3Gz
+OC4uCioUu2/OJdWQYrbiqRDRh41yfca8kZXRAdpaQftqs4lPqrqBZkGOOpjApx5k
+Y+BcSkJmkq6w5AXd8zd/
+=XDw4
+-----END PGP SIGNATURE-----
 
-It happens for example for a device with data and metadata block size 4096
-that has 16385 blocks and algorithm sha256.
-
-The user can test if he is affected by this bug by running the
-"veritysetup verify" command and also by activating the dm-verity kernel
-driver and reading the whole block device. If it passes without an error,
-then the user is not affected.
-
-The condition for the bug is:
-
-Split the total number of data blocks (data_block_bits) into bit strings,
-each string has hash_per_block_bits bits. hash_per_block_bits is
-rounddown(log2(metadata_block_size/hash_digest_size)). Equivalently, you
-can say that you convert data_blocks_bits to 2^hash_per_block_bits base.
-
-If there some zero bit string below the most significant bit string and at
-least one bit below this zero bit string is set, then the bug happens.
-
-The same bug exists in the userspace veritysetup tool, so you must use
-fixed veritysetup too if you want to use devices that are affected by
-this boundary condition.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Cc: Milan Broz <gmazyland@gmail.com>
-Signed-off-by: Alasdair G Kergon <agk@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/md/dm-verity.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
-
---- a/drivers/md/dm-verity.c
-+++ b/drivers/md/dm-verity.c
-@@ -813,9 +813,8 @@ static int verity_ctr(struct dm_target *
- 	for (i = v->levels - 1; i >= 0; i--) {
- 		sector_t s;
- 		v->hash_level_block[i] = hash_position;
--		s = verity_position_at_level(v, v->data_blocks, i);
--		s = (s >> v->hash_per_block_bits) +
--		    !!(s & ((1 << v->hash_per_block_bits) - 1));
-+		s = (v->data_blocks + ((sector_t)1 << ((i + 1) * v->hash_per_block_bits)) - 1)
-+					>> ((i + 1) * v->hash_per_block_bits);
- 		if (hash_position + s < hash_position) {
- 			ti->error = "Hash device offset overflow";
- 			r = -E2BIG;
-
-
+--gmV4GtKPOP/GPF6K--
