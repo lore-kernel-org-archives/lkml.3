@@ -1,67 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754231Ab3HBPuo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 11:50:44 -0400
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:59764 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754003Ab3HBPum (ORCPT
+	id S1754257Ab3HBPvS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 11:51:18 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:51017 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754022Ab3HBPvR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 11:50:42 -0400
-Date: Fri, 2 Aug 2013 10:50:26 -0500
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-To: Dave Hansen <dave.hansen@linux.intel.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nathan Fontenot <nfont@linux.vnet.ibm.com>,
+	Fri, 2 Aug 2013 11:51:17 -0400
+Date: Fri, 2 Aug 2013 08:51:11 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Nivedita Singhvi <niv@us.ibm.com>, Michael J Wolf <mjwolf@us.ibm.com>,
-        linux-kernel@vger.kernel.org, Linux-MM <linux-mm@kvack.org>
-Subject: Re: [PATCH] drivers: base: new memory config sysfs driver for large
- memory systems
-Message-ID: <20130802155026.GA4550@variantweb.net>
-References: <1374786680-26197-1-git-send-email-sjenning@linux.vnet.ibm.com>
- <20130725234007.GB18349@kroah.com>
- <20130726144251.GB4379@variantweb.net>
- <20130801205724.GA13585@kroah.com>
- <51FADD6F.3040804@linux.intel.com>
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 0/4 v2] [GIT PULL][RCU][3.12] tracing/rcu: Export strings
+ to userspace
+Message-ID: <20130802155111.GA3836@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130802023933.677590002@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51FADD6F.3040804@linux.intel.com>
+In-Reply-To: <20130802023933.677590002@goodmis.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13080215-1618-0000-0000-00000463E5EE
+x-cbid: 13080215-7606-0000-0000-00000DEB722F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 01, 2013 at 03:13:03PM -0700, Dave Hansen wrote:
-> On 08/01/2013 01:57 PM, Greg Kroah-Hartman wrote:
-> >> > "memory" is the name used by the current sysfs memory layout code in
-> >> > drivers/base/memory.c. So it can't be the same unless we are going to
-> >> > create a toggle a boot time to select between the models, which is
-> >> > something I am looking to add if this code/design is acceptable to
-> >> > people.
-> > I know it can't be the same, but this is like "memory_v2" or something,
-> > right?  I suggest you make it an either/or option, given that you feel
-> > the existing layout just will not work properly for you.
+On Thu, Aug 01, 2013 at 10:39:33PM -0400, Steven Rostedt wrote:
+> Paul,
 > 
-> If there are existing tools or applications that look for memory hotplug
-> events, how does this interact with those?  I know you guys have control
-> over the ppc software that actually performs the probe/online
-> operations, but what about other apps?
-
-After taking a closer look, I've decided to rework this to preserve more
-of the existing layout.  Should be posting it next Monday.
-
+> As we talked about earlier, I set up a branch based off of v3.11-rc2 which
+> the first patch has my tracing patch I need for other updates, and
+> the other three are RCU specific patches that you should take.
 > 
-> I also don't seem to see the original post to LKML.  Did you send
-> privately to Greg, then he cc'd LKML on his reply?
+> You can either just pull this branch from my tree, or you can pull
+> just the first patch (to keep the same SHA1) and apply the other three
+> patches any way you want.
+> 
+> I tested all these patches through my standard tests, but I did not run
+> the RCU ones through any specific RCU tests (like rcutorture). They
+> shouldn't affect the process of RCU in anyway and only should touch
+> the way trace points export their strings. You may want to run them through
+> other tests just to make sure there isn't some strange side effect I
+> caused. :-)
+> 
+> Note the "-2" on the branch name.
 
-Yeah :-/  My mail relay settings were messed up and my system tried to
-deliver the mail directly to recipients; some of which worked and some
-failed (spam/firewall filters, etc).  Sigh...
+I have merged these into v3.11-rc3 in my local tree like this:
 
-Seth
+# git log --pretty=oneline v3.11-rc3..
+a6f8eb9e4c18ba0e9a2ed4d2dec888440da12549 Merge branch 'ftrace/rcu-2' of git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace into rostedt.2013.08.02a
+f7f7bac9cb1c50783f15937a11743655a5756a36 rcu: Have the RCU tracepoints use the tracepoint_string infrastructure
+a41bfeb2f8ed59410be7ca0f8fbc6138a758b746 rcu: Simplify RCU_STATE_INITIALIZER() macro
+e66c33d579ea566d10e8c8695a7168aae3e02992 rcu: Add const annotation to char * for RCU tracepoints and functions
+102c9323c35a83789ad5ebd3c45fa8fb389add88 tracing: Add __tracepoint_string() to export string pointers
+
+Amazingly enough, there is only one trivial conflict with the current
+3.12 RCU commits, so my plan is to treat these commits as a separate
+topic branch for RCU.
+
+							Thanx, Paul
+
+> -- Steve
+> 
+> v2 changes:
+> 
+>   Remove const from char * in rcu_nocb_setup(), parse_rcu_nocb_poll(), and
+>   print_cpu_stall_fast_no_hz(). I got a little to carried away with my
+>   consts!
+> 
+> Please pull the latest ftrace/rcu-2 tree, which can be found at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+> ftrace/rcu-2
+> 
+> Head SHA1: f7f7bac9cb1c50783f15937a11743655a5756a36
+> 
+> 
+> Steven Rostedt (Red Hat) (4):
+>       tracing: Add __tracepoint_string() to export string pointers
+>       rcu: Add const annotation to char * for RCU tracepoints and functions
+>       rcu: Simplify RCU_STATE_INITIALIZER() macro
+>       rcu: Have the RCU tracepoints use the tracepoint_string infrastructure
+> 
+> ----
+>  include/asm-generic/vmlinux.lds.h |    7 ++-
+>  include/linux/ftrace_event.h      |   34 ++++++++++++
+>  include/linux/rcupdate.h          |    4 +-
+>  include/trace/events/rcu.h        |   82 ++++++++++++++---------------
+>  kernel/rcu.h                      |    2 +-
+>  kernel/rcupdate.c                 |    2 +-
+>  kernel/rcutiny.c                  |    2 +-
+>  kernel/rcutiny_plugin.h           |    2 +-
+>  kernel/rcutorture.c               |    8 +--
+>  kernel/rcutree.c                  |  105 +++++++++++++++++++++----------------
+>  kernel/rcutree.h                  |    2 +-
+>  kernel/rcutree_plugin.h           |   36 ++++++-------
+>  kernel/trace/trace.h              |    3 ++
+>  kernel/trace/trace_printk.c       |   19 +++++++
+>  14 files changed, 192 insertions(+), 116 deletions(-)
+> 
 
