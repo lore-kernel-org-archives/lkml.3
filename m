@@ -1,130 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030591Ab3HBKMS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:12:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37490 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030524Ab3HBKMN (ORCPT
+	id S1751307Ab3HBKPX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:15:23 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:34836 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750740Ab3HBKPS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:12:13 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Rick Farina (Zero_Chaos)" <zerochaos@gentoo.org>
-Subject: [ 88/99] USB: serial: ftdi_sio: add more RT Systems ftdi devices
-Date: Fri,  2 Aug 2013 18:08:41 +0800
-Message-Id: <20130802100238.204970149@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
-In-Reply-To: <20130802100225.478715166@linuxfoundation.org>
-References: <20130802100225.478715166@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Fri, 2 Aug 2013 06:15:18 -0400
+Date: Fri, 2 Aug 2013 11:14:54 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
+Cc: lgirdwood@gmail.com, tiwai@suse.de, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <20130802101454.GI9858@sirena.org.uk>
+References: <20130731131627.GA32631@opensource.wolfsonmicro.com>
+ <20130802100108.GA17936@opensource.wolfsonmicro.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="VcQ2MTg63lIaL1+E"
+Content-Disposition: inline
+In-Reply-To: <20130802100108.GA17936@opensource.wolfsonmicro.com>
+X-Cookie: You will be awarded some great honor.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2] ASoC: core: init delayed_work for codec-codec links
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+--VcQ2MTg63lIaL1+E
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-From: "Rick Farina (Zero_Chaos)" <zerochaos@gentoo.org>
+On Fri, Aug 02, 2013 at 11:01:08AM +0100, Richard Fitzgerald wrote:
 
-commit fed1f1ed90bce42ea010e2904cbc04e7b8304940 upstream.
+> +static void codec2codec_close_delayed_work(struct work_struct *work)
+> +{
+> +	/* No action required.
+> +	 * C2C links only represent a hardware connection and currently
+> +	 * we assume that we don't have to explicitly start or stop them
+> +	 */
+> +}
 
-RT Systems makes many usb serial cables based on the ftdi_sio driver for
-programming various amateur radios.  This patch is a full listing of
-their current product offerings and should allow these cables to all
-be recognized.
+That's not the reason - what's happening with the stream events is that
+since these links are not on the edge of the DAPM graph we don't need to
+interface with the outside world.  Further since we're not dealing with
+the application layer there is no need to delay the power down, the
+reason that's there is to stop us powering the link down if there's just
+a small gap between tracks so we don't get pops, clicks and extra gaps
+if the application layer is closing the device at the end of every track
+(which is quite a common pattern).
 
-Signed-off-by: Rick Farina (Zero_Chaos) <zerochaos@gentoo.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+--VcQ2MTg63lIaL1+E
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
----
- drivers/usb/serial/ftdi_sio.c     |   31 ++++++++++++++++++++++++++++---
- drivers/usb/serial/ftdi_sio_ids.h |   34 +++++++++++++++++++++++++++++-----
- 2 files changed, 57 insertions(+), 8 deletions(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -735,9 +735,34 @@ static struct usb_device_id id_table_com
- 	{ USB_DEVICE(FTDI_VID, FTDI_NDI_AURORA_SCU_PID),
- 		.driver_info = (kernel_ulong_t)&ftdi_NDI_device_quirk },
- 	{ USB_DEVICE(TELLDUS_VID, TELLDUS_TELLSTICK_PID) },
--	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_SERIAL_VX7_PID) },
--	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_CT29B_PID) },
--	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_RTS01_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_S03_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_59_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_57A_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_57B_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_29A_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_29B_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_29F_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_62B_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_S01_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_63_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_29C_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_81B_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_82B_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_K5D_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_K4Y_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_K5G_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_S05_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_60_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_61_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_62_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_63B_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_64_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_65_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_92_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_92D_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_W5R_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_A5R_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_PW1_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_MAXSTREAM_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_PHI_FISCO_PID) },
- 	{ USB_DEVICE(TML_VID, TML_USB_SERIAL_PID) },
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -815,11 +815,35 @@
- /*
-  * RT Systems programming cables for various ham radios
-  */
--#define RTSYSTEMS_VID			0x2100	/* Vendor ID */
--#define RTSYSTEMS_SERIAL_VX7_PID	0x9e52	/* Serial converter for VX-7 Radios using FT232RL */
--#define RTSYSTEMS_CT29B_PID		0x9e54	/* CT29B Radio Cable */
--#define RTSYSTEMS_RTS01_PID		0x9e57	/* USB-RTS01 Radio Cable */
--
-+#define RTSYSTEMS_VID		0x2100	/* Vendor ID */
-+#define RTSYSTEMS_USB_S03_PID	0x9001	/* RTS-03 USB to Serial Adapter */
-+#define RTSYSTEMS_USB_59_PID	0x9e50	/* USB-59 USB to 8 pin plug */
-+#define RTSYSTEMS_USB_57A_PID	0x9e51	/* USB-57A USB to 4pin 3.5mm plug */
-+#define RTSYSTEMS_USB_57B_PID	0x9e52	/* USB-57B USB to extended 4pin 3.5mm plug */
-+#define RTSYSTEMS_USB_29A_PID	0x9e53	/* USB-29A USB to 3.5mm stereo plug */
-+#define RTSYSTEMS_USB_29B_PID	0x9e54	/* USB-29B USB to 6 pin mini din */
-+#define RTSYSTEMS_USB_29F_PID	0x9e55	/* USB-29F USB to 6 pin modular plug */
-+#define RTSYSTEMS_USB_62B_PID	0x9e56	/* USB-62B USB to 8 pin mini din plug*/
-+#define RTSYSTEMS_USB_S01_PID	0x9e57	/* USB-RTS01 USB to 3.5 mm stereo plug*/
-+#define RTSYSTEMS_USB_63_PID	0x9e58	/* USB-63 USB to 9 pin female*/
-+#define RTSYSTEMS_USB_29C_PID	0x9e59	/* USB-29C USB to 4 pin modular plug*/
-+#define RTSYSTEMS_USB_81B_PID	0x9e5A	/* USB-81 USB to 8 pin mini din plug*/
-+#define RTSYSTEMS_USB_82B_PID	0x9e5B	/* USB-82 USB to 2.5 mm stereo plug*/
-+#define RTSYSTEMS_USB_K5D_PID	0x9e5C	/* USB-K5D USB to 8 pin modular plug*/
-+#define RTSYSTEMS_USB_K4Y_PID	0x9e5D	/* USB-K4Y USB to 2.5/3.5 mm plugs*/
-+#define RTSYSTEMS_USB_K5G_PID	0x9e5E	/* USB-K5G USB to 8 pin modular plug*/
-+#define RTSYSTEMS_USB_S05_PID	0x9e5F	/* USB-RTS05 USB to 2.5 mm stereo plug*/
-+#define RTSYSTEMS_USB_60_PID	0x9e60	/* USB-60 USB to 6 pin din*/
-+#define RTSYSTEMS_USB_61_PID	0x9e61	/* USB-61 USB to 6 pin mini din*/
-+#define RTSYSTEMS_USB_62_PID	0x9e62	/* USB-62 USB to 8 pin mini din*/
-+#define RTSYSTEMS_USB_63B_PID	0x9e63	/* USB-63 USB to 9 pin female*/
-+#define RTSYSTEMS_USB_64_PID	0x9e64	/* USB-64 USB to 9 pin male*/
-+#define RTSYSTEMS_USB_65_PID	0x9e65	/* USB-65 USB to 9 pin female null modem*/
-+#define RTSYSTEMS_USB_92_PID	0x9e66	/* USB-92 USB to 12 pin plug*/
-+#define RTSYSTEMS_USB_92D_PID	0x9e67	/* USB-92D USB to 12 pin plug data*/
-+#define RTSYSTEMS_USB_W5R_PID	0x9e68	/* USB-W5R USB to 8 pin modular plug*/
-+#define RTSYSTEMS_USB_A5R_PID	0x9e69	/* USB-A5R USB to 8 pin modular plug*/
-+#define RTSYSTEMS_USB_PW1_PID	0x9e6A	/* USB-PW1 USB to 8 pin modular plug*/
- 
- /*
-  * Physik Instrumente
+iQIcBAEBAgAGBQJR+4aaAAoJELSic+t+oim9vcoP/05uOUSkkRVN7l50GoGKgDUz
+p/h1s6J/I+EpSYp+5f3wFgrJkriY0BTt+fdQjCUJlNO/x3EscvbcFCJBO5YAHH3R
+xWCZ+otMRRX8K2pi7gXpC0obKyvR9ODsgjpNYmmfg9yhk2YUM+47vbtDU5Ms8zqs
+3aoZbpIPATX8XMNrzwAJSYEM9Zyg5CwC/crR6O9HO3slQy/KRtrdYJQjVBVtfajC
+gZDGXemJlGazIT++L01qU8ul/nHhPYuxD5kQ6/0F/JD1OznOkHqFUhGzKr8bWWip
+eti313mEDDvcs7s6bzB6TloMyYYVFKhdJhltK6kI6xxZnGgBjHLxC7mOLTnWkBW+
+ydTQBg4Ch3tvBEouWaT3sBexG5eBM9+W1P5fL1ZVa+qdJsHhehsfnUFHVJI4U4cQ
+S9Fcy9wrClvgtmymKJhBwkN/iidKRA+E2YAYikgkBOnzo+cy5LAQ9ADCUysTDCEj
+idjDg9k2Y8UACsQbisIl/GnXS9HN53CojlcXqeGG1KVbJScHZowNK8X70h02EJ6+
+72Jdk1knCVmswrSqR6JWrUTjg79b35NwzaXnCy5NZbz1fRigQg95ciEWD+5wEeQ/
+ZOtxs+bsPj/dPS/ZuY2VFDo5Cgl4UEBgkosPJqh9i3EHRDYItHTMPO/ehf09161f
+ji9vrqA3ow8K4eA/eanV
+=CyIX
+-----END PGP SIGNATURE-----
 
-
+--VcQ2MTg63lIaL1+E--
