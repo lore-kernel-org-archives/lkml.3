@@ -1,59 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754628Ab3HBG3B (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 02:29:01 -0400
-Received: from mailgate.slhs.org ([199.99.194.71]:59192 "EHLO mg.slrmc.org"
+	id S1754711Ab3HBGc3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 02:32:29 -0400
+Received: from tundra.namei.org ([65.99.196.166]:57885 "EHLO tundra.namei.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752890Ab3HBG3A convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 02:29:00 -0400
-X-Greylist: delayed 1026 seconds by postgrey-1.27 at vger.kernel.org; Fri, 02 Aug 2013 02:29:00 EDT
-X-M-MSG: 
-X-TMWD-Spam-Summary: TS=20130802061041; ID=1; SEV=2.4.5; DFV=B2013080208; IFV=NA; AIF=B2013080208;
- RPD=NA; ENG=NA; RPDID=NA; CAT=NONE; CON=NONE; SIG=AAABAMQFAAAAAAAAAAAAAMdjwiIAAH0=
-X-WSS-ID: 0MQW3TT-03-2MY-02
-X-Server-Uuid: 1FADE060-C641-441D-A598-706D1E0C0FC2
-From: "Dunn, Andrea" <dunna@slhs.org>
-Date: Fri, 2 Aug 2013 00:11:35 -0600
-Subject: 
-Thread-Index: AQHOj0cjNLL6iOlaVUOpjaNFcaXeDA==
-Message-ID: <025EEB35B547C4439045B65CCB2DCA670E802A4F@EXMBX2VS.SL1.STLUKES-INT.ORG>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
+	id S1753169Ab3HBGc2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 02:32:28 -0400
+Date: Fri, 2 Aug 2013 16:32:39 +1000 (EST)
+From: James Morris <jmorris@namei.org>
+To: linux-security-module@vger.kernel.org
+cc: linux-kernel@vger.kernel.org
+Subject: Linux Security Summit 2013 - schedule published
+Message-ID: <alpine.LRH.2.02.1308021628130.12469@tundra.namei.org>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-X-bounces: passed
-X-WSS-ID: 7DE5921B4885908946-01-01
-Content-Type: text/plain;
- charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Your email was among the CBN VisaCard beneficiaries,contact(monicaty1982@sbcglobal.net)
+The schedule for this year's Linux Security Summit in New Orleans is now 
+published: 
+http://kernsec.org/wiki/index.php/Linux_Security_Summit_2013#Schedule
 
-mg.slrmc.org made the following annotations
----------------------------------------------------------------------
-"This message is intended for the use of the person or entity to which it is 
+The keynote will be presented by Ted Ts'o.  Refereed talks include:
 
- addressed and may contain information that is confidential or privileged, the 
+o Embedded Linux Security (David Safford, IBM)
+o Extending AppArmor Mediation into the Userspace (John Johansen, Canonical)
+o Multiple Concurrent Security Models? Really? (Casey Schaufler, Intel)
+o Linux Kernel ASLR (Kees Cook, Google)
+o The AppArmor Labeling Model (John Johansen, Canonical)
 
-disclosure of which is governed by applicable law. If the reader of this message 
+It looks like there's been quite a lot happening in AppArmor.  There'll 
+also be general project updates for SELinux, Smack, AppArmor and the 
+Integrity subsystem, as well as a discussion on kernel coding 
+anti-patterns led by Kees Cook.
 
-is not the intended recipient, you are hereby notified that any dissemination, 
+There'll be break-out sessions on the second day, details of which will be 
+posted on the schedule as they're known.  If youll be at LSS (or 
+LinuxCon/Plumbers generally) and would like to schedule a break-out 
+session, contact the program committee per the details at the wiki page.
 
-distribution, or copying of this information is strictly prohibited. If you have 
-
-received this message by error, please notify us immediately and destroy 
-
-the related message." 
-
+See everyone on the 19th and 20th of September in New Orleans!
 
 
-
----------------------------------------------------------------------
+- James
+(on behalf of the program committee)
 
