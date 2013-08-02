@@ -1,68 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754193Ab3HBPiy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 11:38:54 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:51581 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753871Ab3HBPhy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 11:37:54 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@surriel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Zlatko Calusic <zcalusic@bitsync.net>,
-        Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: [patch v2 1/3] mm: vmscan: fix numa reclaim balance problem in kswapd
-Date: Fri,  2 Aug 2013 11:37:24 -0400
-Message-Id: <1375457846-21521-2-git-send-email-hannes@cmpxchg.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1375457846-21521-1-git-send-email-hannes@cmpxchg.org>
-References: <1375457846-21521-1-git-send-email-hannes@cmpxchg.org>
+	id S1754056Ab3HBPkQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 11:40:16 -0400
+Received: from relay.parallels.com ([195.214.232.42]:45024 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753695Ab3HBPkO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 11:40:14 -0400
+Message-ID: <51FBD2DF.50506@parallels.com>
+Date: Fri, 2 Aug 2013 19:40:15 +0400
+From: Maxim Patlasov <mpatlasov@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Miklos Szeredi <miklos@szeredi.hu>
+CC: <riel@redhat.com>, <dev@parallels.com>, <xemul@parallels.com>,
+        <fuse-devel@lists.sourceforge.net>, <bfoster@redhat.com>,
+        <linux-kernel@vger.kernel.org>, <jbottomley@parallels.com>,
+        <linux-mm@kvack.org>, <viro@zeniv.linux.org.uk>,
+        <linux-fsdevel@vger.kernel.org>, <akpm@linux-foundation.org>,
+        <fengguang.wu@intel.com>, <devel@openvz.org>, <mgorman@suse.de>
+Subject: Re: [PATCH 10/16] fuse: Implement writepages callback
+References: <20130629172211.20175.70154.stgit@maximpc.sw.ru> <20130629174525.20175.18987.stgit@maximpc.sw.ru> <20130719165037.GA18358@tucsk.piliscsaba.szeredi.hu>
+In-Reply-To: <20130719165037.GA18358@tucsk.piliscsaba.szeredi.hu>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.30.17.2]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the page allocator fails to get a page from all zones in its
-given zonelist, it wakes up the per-node kswapds for all zones that
-are at their low watermark.
+07/19/2013 08:50 PM, Miklos Szeredi пишет:
+> On Sat, Jun 29, 2013 at 09:45:29PM +0400, Maxim Patlasov wrote:
+>> From: Pavel Emelyanov <xemul@openvz.org>
+>>
+>> The .writepages one is required to make each writeback request carry more than
+>> one page on it. The patch enables optimized behaviour unconditionally,
+>> i.e. mmap-ed writes will benefit from the patch even if fc->writeback_cache=0.
+> I rewrote this a bit, so we won't have to do the thing in two passes, which
+> makes it simpler and more robust.  Waiting for page writeback here is wrong
+> anyway, see comment above fuse_page_mkwrite().  BTW we had a race there because
+> fuse_page_mkwrite() didn't take the page lock.  I've also fixed that up and
+> pushed a series containing these patches up to implementing ->writepages() to
+>
+>    git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/fuse.git writepages
+>
+> Passed some trivial testing but more is needed.
 
-However, with a system under load the free pages in a zone can
-fluctuate enough that the allocation fails but the kswapd wakeup is
-also skipped while the zone is still really close to the low
-watermark.
+Thanks a lot for efforts. The approach you implemented looks promising, 
+but it introduces the following assumption: a page cannot become dirty 
+before we have a chance to wait on fuse writeback holding the page 
+locked. This is already true for mmap-ed writes (due to your fixes) and 
+it seems doable for cached writes as well (like we do in 
+fuse_perform_write). But the assumption seems to be broken in case of 
+direct read from local fs (e.g. ext4) to a memory region mmap-ed to a 
+file on fuse fs. See how dio_bio_submit() marks pages dirty by 
+bio_set_pages_dirty(). I can't see any solution for this use-case. Do you?
 
-When one node misses a wakeup like this, it won't be aged before all
-the other node's zones are down to their low watermarks again.  And
-skipping a full aging cycle is an obvious fairness problem.
+Thanks,
+Maxim
 
-Kswapd runs until the high watermarks are restored, so it should also
-be woken when the high watermarks are not met.  This ages nodes more
-equally and creates a safety margin for the page counter fluctuation.
-
-By using zone_balanced(), it will now check, in addition to the
-watermark, if compaction requires more order-0 pages to create a
-higher order page.
-
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-Reviewed-by: Rik van Riel <riel@redhat.com>
----
- mm/vmscan.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 2cff0d4..758540d 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -3237,7 +3237,7 @@ void wakeup_kswapd(struct zone *zone, int order, enum zone_type classzone_idx)
- 	}
- 	if (!waitqueue_active(&pgdat->kswapd_wait))
- 		return;
--	if (zone_watermark_ok_safe(zone, order, low_wmark_pages(zone), 0, 0))
-+	if (zone_balanced(zone, order, 0, 0))
- 		return;
- 
- 	trace_mm_vmscan_wakeup_kswapd(pgdat->node_id, zone_idx(zone), order);
--- 
-1.8.3.2
-
+>
+> I'll get to the rest of the patches next week.
+>
+> Thanks,
+> Miklos
+>
