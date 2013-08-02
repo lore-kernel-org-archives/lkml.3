@@ -1,67 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757786Ab3HBIdi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 04:33:38 -0400
-Received: from mo2.mail-out.ovh.net ([178.32.228.2]:38389 "EHLO
-	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754014Ab3HBIdg (ORCPT
+	id S1758079Ab3HBId4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 04:33:56 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:23393 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758017Ab3HBIdx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 04:33:36 -0400
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Boris BREZILLON <b.brezillon@overkiz.com>
-X-Ovh-Mailout: 178.32.228.2 (mo2.mail-out.ovh.net)
-Subject: [PATCH v3 0/2] usb: gadget: at91_udc: add usb_clk for transition to common clk framework
-Date: Fri,  2 Aug 2013 10:33:28 +0200
-Message-Id: <1375432408-28371-1-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Ovh-Tracer-Id: 8060317434766391493
-X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedriedvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedriedvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Fri, 2 Aug 2013 04:33:53 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18u2VnZ/RiNJ/0UPAXexxf7
+Date: Fri, 2 Aug 2013 01:33:46 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Jason Cooper <jason@lakedaemon.net>
+Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        Mark Brown <broonie@kernel.org>, devicetree@vger.kernel.org,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
+        linux-kernel@vger.kernel.org,
+        Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [Ksummit-2013-discuss] [ARM ATTEND] arch/arm SoC organization
+Message-ID: <20130802083346.GC7656@atomide.com>
+References: <20130731141841.GP5882@titan.lakedaemon.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130731141841.GP5882@titan.lakedaemon.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+* Jason Cooper <jason@lakedaemon.net> [130731 07:25]:
+> All,
+> 
+> I'd like to take the opportunity to discuss the layout/config of the arm
+> SoCs.  By the time the KS rolls around, we should have at least two or more
+> use-cases to present and discuss (mvebu, bcm).
+> 
+> Between devicetree and multiplatform the concept of board-specific code
+> is really disappearing in arm-land.  eg mach-kirkwood/ is almost fully
+> converted, within the next window or two, we'll be moving all of the DT
+> capable boards from kirkwood, orion5x, and dove over to mvebu.
+> mach-mvebu will then hold 5 different SoCs (it already has Armada 370
+> and Armada XP).
+> 
+> mach-bcm is in a similar situation (multi-SoC).  I'm sure there are
+> others (nvidia, ti, etc).
 
-This patch series prepare the at91 SoCs transition to common clk framework.
-This is done by adding a new clock (called usb clock or uclk) to at91_udc
-driver. This clock will be used to configure the usb port clock rate.
+Well we've pretty much always kept the omaps we can build together in
+the same directory, otherwise we would be up to an insane number of
+mach-omap related directories by now.. I think getting rid of the
+mach- and plat- directories and making everything into drivers is
+the next phase after device tree conversion is done.
 
-Best Regards,
+> So, I'd like to propose we discuss some lessons learned and maybe arrive
+> at some best practices.  eg, should we just go with mach-$COMPANY/?  How
+> best to handle config symbols for efficient building?  Deprecation path
+> for legacy (unconverted) boards?
 
-Boris
+A lot of that problem goes away by initializing everything as late
+as possible, and making things to live under drivers. Of course it
+may make sense to combine things meanwhile, but renaming things causes
+quite a bit of churn.
+ 
+> Also, to head off the demons, I am *not* proposing reorganizing
+> everything.  Merely to find some consensus and good ideas so that as
+> things merge together, we are mostly on the same page.
+> 
+> I'm sure we all have different ideas and I think it'd be good to hear
+> what everyone else is thinking.
 
-Changes since v2:
-- split the patch in 2 parts:
-    * add missing clk_put for existing clk (fclk and uclk)
-    * add usb clock (uclk) support
+Yes sharing experiences on this stuff would be good de-briefing and
+could help others :)
 
-Changes since v1:
-- use IS_ENABLED(CONFIG_COMMON_CLK) to isolate new at91 clk support  
+Regards,
 
-Boris BREZILLON (2):
-  usb: gadget: at91_udc: add missing clk_put on fclk and iclk
-  usb: gadget: at91_udc: add usb_clk for transition to common clk
-    framework
-
- drivers/usb/gadget/at91_udc.c |   21 +++++++++++++++++++--
- drivers/usb/gadget/at91_udc.h |    2 +-
- 2 files changed, 20 insertions(+), 3 deletions(-)
-
--- 
-1.7.9.5
-
+Tony
