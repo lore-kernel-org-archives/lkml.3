@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754058Ab3HBKTg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:19:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37748 "EHLO
+	id S1754102Ab3HBKTk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:19:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37756 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752837Ab3HBKTd (ORCPT
+	with ESMTP id S1752837Ab3HBKTi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:19:33 -0400
+	Fri, 2 Aug 2013 06:19:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steffen Maier <maier@linux.vnet.ibm.com>,
-        James Bottomley <JBottomley@Parallels.com>,
-        Zhouping Liu <zliu@redhat.com>
-Subject: [ 35/39] [SCSI] zfcp: status read buffers on first adapter open with link down
-Date: Fri,  2 Aug 2013 18:18:45 +0800
-Message-Id: <20130802101501.713629244@linuxfoundation.org>
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Wolfram Gloger <wmglo@dent.med.uni-muenchen.de>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [ 37/39] virtio: support unlocked queue poll
+Date: Fri,  2 Aug 2013 18:18:47 +0800
+Message-Id: <20130802101502.037923320@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802101456.800497005@linuxfoundation.org>
 References: <20130802101456.800497005@linuxfoundation.org>
@@ -28,141 +29,121 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steffen Maier <maier@linux.vnet.ibm.com>
+From: Michael S. Tsirkin <mst@redhat.com>
 
-commit 9edf7d75ee5f21663a0183d21f702682d0ef132f upstream.
+commit cc229884d3f77ec3b1240e467e0236c3e0647c0c upstream.
 
-Commit 64deb6efdc5504ce97b5c1c6f281fffbc150bd93
-"[SCSI] zfcp: Use status_read_buf_num provided by FCP channel"
-started using a value returned by the channel but only evaluated the value
-if the fabric link is up.
-Commit 8d88cf3f3b9af4713642caeb221b6d6a42019001
-"[SCSI] zfcp: Update status read mempool"
-introduced mempool resizings based on the above value.
-On setting an FCP device online for the very first time since boot, a new
-zeroed adapter object is allocated. If the link is down, the number of
-status read requests remains zero. Since just the config data exchange is
-incomplete, we proceed with adapter open recovery. However, we
-unconditionally call mempool_resize with adapter->stat_read_buf_num == 0 in
-this case.
+This adds a way to check ring empty state after enable_cb outside any
+locks. Will be used by virtio_net.
 
-This causes a kernel message "kernel BUG at mm/mempool.c:131!" in process
-"zfcperp<FCP-device-bus-ID>" with last function mempool_resize in Krnl PSW
-and zfcp_erp_thread in the Call Trace.
+Note: there's room for more optimization: caller is likely to have a
+memory barrier already, which means we might be able to get rid of a
+barrier here.  Deferring this optimization until we do some
+benchmarking.
 
-Don't evaluate channel values which are invalid on link down. The number of
-status read requests is always valid, evaluated, and set to a positive
-minimum greater than zero. The adapter open recovery can proceed and the
-channel has status read buffers to inform us on a future link up event.
-While we are not aware of any other code path that could result in mempool
-resize attempts of size zero, we still also initialize the number of status
-read buffers to be posted to a static minimum number on adapter object
-allocation.
-
-Backported for 3.4-stable. commit a53c8fa since v3.6-rc1 unified
-copyright messages, e.g: revise such messages 'Copyright IBM Corporation'
-as 'Copyright IBM Corp', so updated the messages as a53c8fa did.
-
-Signed-off-by: Steffen Maier <maier@linux.vnet.ibm.com>
-Cc: <stable@vger.kernel.org> #2.6.35+
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
-Signed-off-by: Zhouping Liu <zliu@redhat.com>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+[wg: Backported to 3.2]
+Signed-off-by: Wolfram Gloger <wmglo@dent.med.uni-muenchen.de>
+[bwh: Backported to 3.4: adjust context]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/s390/scsi/zfcp_aux.c |    5 ++++-
- drivers/s390/scsi/zfcp_fsf.c |   23 ++++++++++++++++-------
- 2 files changed, 20 insertions(+), 8 deletions(-)
+---
+ drivers/virtio/virtio_ring.c |   54 ++++++++++++++++++++++++++++++++++---------
+ include/linux/virtio.h       |    4 +++
+ 2 files changed, 47 insertions(+), 11 deletions(-)
 
---- a/drivers/s390/scsi/zfcp_aux.c
-+++ b/drivers/s390/scsi/zfcp_aux.c
-@@ -3,7 +3,7 @@
+--- a/drivers/virtio/virtio_ring.c
++++ b/drivers/virtio/virtio_ring.c
+@@ -498,16 +498,18 @@ EXPORT_SYMBOL_GPL(virtqueue_disable_cb);
+  * virtqueue_enable_cb - restart callbacks after disable_cb.
+  * @vq: the struct virtqueue we're talking about.
   *
-  * Module interface and handling of zfcp data structures.
+- * This re-enables callbacks; it returns "false" if there are pending
+- * buffers in the queue, to detect a possible race between the driver
+- * checking for more work, and enabling callbacks.
++ * This re-enables callbacks; it returns current queue state
++ * in an opaque unsigned value. This value should be later tested by
++ * virtqueue_poll, to detect a possible race between the driver checking for
++ * more work, and enabling callbacks.
   *
-- * Copyright IBM Corporation 2002, 2010
-+ * Copyright IBM Corp. 2002, 2013
+  * Caller must ensure we don't call this with other virtqueue
+  * operations at the same time (except where noted).
   */
+-bool virtqueue_enable_cb(struct virtqueue *_vq)
++unsigned virtqueue_enable_cb_prepare(struct virtqueue *_vq)
+ {
+ 	struct vring_virtqueue *vq = to_vvq(_vq);
++	u16 last_used_idx;
  
- /*
-@@ -23,6 +23,7 @@
-  *            Christof Schmitt
-  *            Martin Petermann
-  *            Sven Schuetz
-+ *            Steffen Maier
-  */
+ 	START_USE(vq);
  
- #define KMSG_COMPONENT "zfcp"
-@@ -415,6 +416,8 @@ struct zfcp_adapter *zfcp_adapter_enqueu
- 	adapter->dma_parms.max_segment_size = ZFCP_QDIO_SBALE_LEN;
- 	adapter->ccw_device->dev.dma_parms = &adapter->dma_parms;
- 
-+	adapter->stat_read_buf_num = FSF_STATUS_READS_RECOM;
+@@ -517,15 +519,45 @@ bool virtqueue_enable_cb(struct virtqueu
+ 	 * either clear the flags bit or point the event index at the next
+ 	 * entry. Always do both to keep code simple. */
+ 	vq->vring.avail->flags &= ~VRING_AVAIL_F_NO_INTERRUPT;
+-	vring_used_event(&vq->vring) = vq->last_used_idx;
++	vring_used_event(&vq->vring) = last_used_idx = vq->last_used_idx;
++	END_USE(vq);
++	return last_used_idx;
++}
++EXPORT_SYMBOL_GPL(virtqueue_enable_cb_prepare);
 +
- 	if (!zfcp_scsi_adapter_register(adapter))
- 		return adapter;
- 
---- a/drivers/s390/scsi/zfcp_fsf.c
-+++ b/drivers/s390/scsi/zfcp_fsf.c
-@@ -3,7 +3,7 @@
-  *
-  * Implementation of FSF commands.
-  *
-- * Copyright IBM Corporation 2002, 2010
-+ * Copyright IBM Corp. 2002, 2013
-  */
- 
- #define KMSG_COMPONENT "zfcp"
-@@ -483,12 +483,8 @@ static int zfcp_fsf_exchange_config_eval
- 
- 	fc_host_port_name(shost) = nsp->fl_wwpn;
- 	fc_host_node_name(shost) = nsp->fl_wwnn;
--	fc_host_port_id(shost) = ntoh24(bottom->s_id);
--	fc_host_speed(shost) =
--		zfcp_fsf_convert_portspeed(bottom->fc_link_speed);
- 	fc_host_supported_classes(shost) = FC_COS_CLASS2 | FC_COS_CLASS3;
- 
--	adapter->hydra_version = bottom->adapter_type;
- 	adapter->timer_ticks = bottom->timer_interval & ZFCP_FSF_TIMER_INT_MASK;
- 	adapter->stat_read_buf_num = max(bottom->status_read_buf_num,
- 					 (u16)FSF_STATUS_READS_RECOM);
-@@ -496,6 +492,19 @@ static int zfcp_fsf_exchange_config_eval
- 	if (fc_host_permanent_port_name(shost) == -1)
- 		fc_host_permanent_port_name(shost) = fc_host_port_name(shost);
- 
-+	zfcp_scsi_set_prot(adapter);
++/**
++ * virtqueue_poll - query pending used buffers
++ * @vq: the struct virtqueue we're talking about.
++ * @last_used_idx: virtqueue state (from call to virtqueue_enable_cb_prepare).
++ *
++ * Returns "true" if there are pending used buffers in the queue.
++ *
++ * This does not need to be serialized.
++ */
++bool virtqueue_poll(struct virtqueue *_vq, unsigned last_used_idx)
++{
++	struct vring_virtqueue *vq = to_vvq(_vq);
 +
-+	/* no error return above here, otherwise must fix call chains */
-+	/* do not evaluate invalid fields */
-+	if (req->qtcb->header.fsf_status == FSF_EXCHANGE_CONFIG_DATA_INCOMPLETE)
-+		return 0;
-+
-+	fc_host_port_id(shost) = ntoh24(bottom->s_id);
-+	fc_host_speed(shost) =
-+		zfcp_fsf_convert_portspeed(bottom->fc_link_speed);
-+
-+	adapter->hydra_version = bottom->adapter_type;
-+
- 	switch (bottom->fc_topology) {
- 	case FSF_TOPO_P2P:
- 		adapter->peer_d_id = ntoh24(bottom->peer_d_id);
-@@ -517,8 +526,6 @@ static int zfcp_fsf_exchange_config_eval
- 		return -EIO;
- 	}
+ 	virtio_mb(vq);
+-	if (unlikely(more_used(vq))) {
+-		END_USE(vq);
+-		return false;
+-	}
++	return (u16)last_used_idx != vq->vring.used->idx;
++}
++EXPORT_SYMBOL_GPL(virtqueue_poll);
  
--	zfcp_scsi_set_prot(adapter);
--
- 	return 0;
+-	END_USE(vq);
+-	return true;
++/**
++ * virtqueue_enable_cb - restart callbacks after disable_cb.
++ * @vq: the struct virtqueue we're talking about.
++ *
++ * This re-enables callbacks; it returns "false" if there are pending
++ * buffers in the queue, to detect a possible race between the driver
++ * checking for more work, and enabling callbacks.
++ *
++ * Caller must ensure we don't call this with other virtqueue
++ * operations at the same time (except where noted).
++ */
++bool virtqueue_enable_cb(struct virtqueue *_vq)
++{
++	unsigned last_used_idx = virtqueue_enable_cb_prepare(_vq);
++	return !virtqueue_poll(_vq, last_used_idx);
  }
+ EXPORT_SYMBOL_GPL(virtqueue_enable_cb);
  
-@@ -569,6 +576,8 @@ static void zfcp_fsf_exchange_config_dat
- 				&adapter->status);
- 		zfcp_fsf_link_down_info_eval(req,
- 			&qtcb->header.fsf_status_qual.link_down_info);
-+		if (zfcp_fsf_exchange_config_evaluate(req))
-+			return;
- 		break;
- 	default:
- 		zfcp_erp_adapter_shutdown(adapter, 0, "fsecdh3");
+--- a/include/linux/virtio.h
++++ b/include/linux/virtio.h
+@@ -44,6 +44,10 @@ void virtqueue_disable_cb(struct virtque
+ 
+ bool virtqueue_enable_cb(struct virtqueue *vq);
+ 
++unsigned virtqueue_enable_cb_prepare(struct virtqueue *vq);
++
++bool virtqueue_poll(struct virtqueue *vq, unsigned);
++
+ bool virtqueue_enable_cb_delayed(struct virtqueue *vq);
+ 
+ void *virtqueue_detach_unused_buf(struct virtqueue *vq);
 
 
