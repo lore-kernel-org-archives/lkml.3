@@ -1,72 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757724Ab3HBD3S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 23:29:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60920 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753358Ab3HBD3R (ORCPT
+	id S1757552Ab3HBDgm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 23:36:42 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:35636 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753892Ab3HBDgk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 23:29:17 -0400
-Date: Fri, 2 Aug 2013 11:30:33 +0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Joe Perches <joe@perches.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-usb <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH] MAINTAINERS: Add separate section for USB NETWORKING
- DRIVERS
-Message-ID: <20130802033033.GA2658@kroah.com>
-References: <1375316960686@kroah.org>
- <1375343328.2034.34.camel@joe-AO722>
- <20130801075656.GA8074@kroah.com>
- <1375344595.2034.38.camel@joe-AO722>
+	Thu, 1 Aug 2013 23:36:40 -0400
+Message-ID: <51FB2946.2050503@codeaurora.org>
+Date: Thu, 01 Aug 2013 20:36:38 -0700
+From: Rohit Vaswani <rvaswani@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1375344595.2034.38.camel@joe-AO722>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: David Brown <davidb@codeaurora.org>, Rob Herring <rob.herring@calxeda.com>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org
+Subject: Re: [RESEND PATCH 1/2] ARM: msm: Add support for MSM8974
+References: <1375406619-14618-1-git-send-email-rvaswani@codeaurora.org> <51FB1987.3060806@wwwdotorg.org>
+In-Reply-To: <51FB1987.3060806@wwwdotorg.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 01, 2013 at 01:09:55AM -0700, Joe Perches wrote:
-> On Thu, 2013-08-01 at 15:56 +0800, Greg KH wrote:
-> > On Thu, Aug 01, 2013 at 12:48:48AM -0700, Joe Perches wrote:
-> > > There are several drivers in drivers/net/usb/ that
-> > > do not have specific MAINTAINERS that should have
-> > > emails forwarded to the linux-usb mailing list.
-> 
-> > > diff --git a/MAINTAINERS b/MAINTAINERS
-> []
-> > > +USB NETWORKING DRIVERS
-> > > +L:	linux-usb@vger.kernel.org
-> > > +S:	Odd Fixes
-> > > +F:	drivers/net/usb/
-> > 
-> > But netdev is the one that applies these patches, not linux-usb, so this
-> > isn't correct either.
-> > 
-> > sorry,
-> 
-> Lots of "maintainers" don't apply patches.
+On 8/1/2013 7:29 PM, Stephen Warren wrote:
+> On 08/01/2013 07:23 PM, Rohit Vaswani wrote:
+>> This patch adds basic board support for MSM8974 which
+>> belongs to the Snapdragon 800 family.
+>> For now, just support a basic machine with device tree.
+>>   arch/arm/boot/dts/msm8974.dts     | 26 ++++++++++++++++++++++++++
+> That's odd. If this is support for an SoC, why not a *.dtsi file rather
+> than *.dts?
 
-I have no idea what you are meaning here.
+I am not sure why I would need a dtsi if I am just adding the 1 file for 
+the SoC support ?
 
-> This is simply a means to forward patches to
-> relevant lists that may have reviewers that care
-> about changes to certain files.
-> 
-> You suggested that linux-usb should get copies
-> of these patches.
+Thanks,
+Rohit Vaswani
 
-Yes, they should, for review, but so should netdev.
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum, hosted by The Linux Foundation
 
-> These files are not marked as "Maintained", just
-> "Odd fixes".  I suppose these could be marked
-> "Orphan" instead.
-> 
-> You have a suggestion otherwise?
-
-Add netdev to the L: list as well.
-
-thanks,
-
-greg k-h
