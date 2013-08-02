@@ -1,54 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753259Ab3HBN4Y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 09:56:24 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:47342 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753106Ab3HBN4W (ORCPT
+	id S1753241Ab3HBN5S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 09:57:18 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47472 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753106Ab3HBN5R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 09:56:22 -0400
+	Fri, 2 Aug 2013 09:57:17 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Li Zefan <lizefan@huawei.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, gaoyang.zyh@taobao.com,
+        LKML <linux-kernel@vger.kernel.org>, stable <stable@vger.kernel.org>
+Subject: Re: stable: a59f4e079d19464eebb9b06513a1d4f55fdae5ba needs backport ?
+References: <51FB7DF5.8030600@huawei.com> <20130802111455.GA29304@gmail.com>
+Date: Fri, 02 Aug 2013 14:57:03 +0100
+In-Reply-To: <20130802111455.GA29304@gmail.com> (Ingo Molnar's message of
+	"Fri, 2 Aug 2013 13:14:55 +0200")
+Message-ID: <8761vo2o28.fsf@canonical.com>
+User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3.50 (gnu/linux)
 MIME-Version: 1.0
-Date: Fri, 2 Aug 2013 15:56:21 +0200
-X-Google-Sender-Auth: DZ1JDyB_7fyX0JYfWnVmbEhyZl4
-Message-ID: <CAMuHMdWyhNopvvEMhjY-z2NTBo=CVWLt1Qa3ooJAEFoD0m29kA@mail.gmail.com>
-Subject: Android Gmail app (was: Re: [PATCH] sched,x86: optimize switch_mm for
- multi-threaded workloads)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: =?UTF-8?Q?J=C3=B6rn_Engel?= <joern@logfs.org>,
-        Rik van Riel <riel@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        jmario@redhat.com, Peter Anvin <hpa@zytor.com>, dzickus@redhat.com,
-        Ingo Molnar <mingo@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 1, 2013 at 7:45 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> It's normal. I occasionally write quick replies while on my phone, and
-> the f*cking android gmail app cannot do plain-text mode. There are
-> open bug tickets about it:
+Ingo Molnar <mingo@kernel.org> writes:
+
+> * Li Zefan <lizefan@huawei.com> wrote:
 >
->    https://code.google.com/p/android/issues/detail?id=8712
+>> commit a59f4e079d19464eebb9b06513a1d4f55fdae5ba
+>> Author: Zhu Yanhai <gaoyang.zyh@taobao.com>
+>> Date:   Tue Jan 8 12:56:52 2013 +0800
+>> 
+>>     sched: Fix the broken sched_rr_get_interval()
+>> 
+>> Without this patch, syscall sched_rr_get_interval() can return wrong
+>> value, and the bug was introduced in 2.6.24, so this looks like a
+>> candidate for stable kernel.
+>> 
+>> The concern for backporting is that this might break some userspace
+>> programs? As the changelog says:
+>> 
+>>     [ Since this is an ABI and an old bug, we'll test this via a
+>>       slow upstream route, to hopefully discover any app breakage. ]
 >
-> and I've talked in private to my google contacts too, but some
-> ass-wipe inside the android team thinks that html-only mail is the
-> right thing to do.
+> It appears to have caused no trouble.
+>
+> So I'm fine with backporting it to older -stable kernels:
+>
+> Acked-by: Ingo Molnar <mingo@kernel.org>
+>
+> Thanks,
+>
+> 	Ingo
+> --
+> To unsubscribe from this list: send the line "unsubscribe stable" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-It's no longer open. It was closed as "WrongForum" :-(
+Thanks, I'm queuing it for the 3.5 kernel.
 
-So we'll have to keep on adding stars to conversations on our Android/Linux
-devices, and reply when we get back to our GNU/Linux devices?
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Cheers,
+-- 
+Luis
