@@ -1,65 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754027Ab3HBVgM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 17:36:12 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:47269 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751689Ab3HBVgL (ORCPT
+	id S1754163Ab3HBVgn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 17:36:43 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:46758 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751642Ab3HBVgm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 17:36:11 -0400
-Date: Fri, 2 Aug 2013 23:36:07 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
-        Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH 1/4] mm, page_alloc: add likely macro to help compiler
- optimization
-Message-ID: <20130802213607.GA4742@dhcp22.suse.cz>
-References: <1375409279-16919-1-git-send-email-iamjoonsoo.kim@lge.com>
- <20130802162722.GA29220@dhcp22.suse.cz>
- <20130802204710.GX715@cmpxchg.org>
+	Fri, 2 Aug 2013 17:36:42 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130802204710.GX715@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAErSpo7eHXC-SXFYuAkkoDdhLoHzsRGh7_36wgc8=j2+qz2btA@mail.gmail.com>
+References: <CAErSpo7eHXC-SXFYuAkkoDdhLoHzsRGh7_36wgc8=j2+qz2btA@mail.gmail.com>
+Date: Fri, 2 Aug 2013 15:36:41 -0600
+Message-ID: <CAKocOOMCsuLBsvg3npugW3EK5+UBzvQVvjeVBgTLrGrsp7o9rw@mail.gmail.com>
+Subject: Re: kernel mailing list permalinks
+From: Shuah Khan <shuahkhan@gmail.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 02-08-13 16:47:10, Johannes Weiner wrote:
-> On Fri, Aug 02, 2013 at 06:27:22PM +0200, Michal Hocko wrote:
-> > On Fri 02-08-13 11:07:56, Joonsoo Kim wrote:
-> > > We rarely allocate a page with ALLOC_NO_WATERMARKS and it is used
-> > > in slow path. For making fast path more faster, add likely macro to
-> > > help compiler optimization.
-> > 
-> > The code is different in mmotm tree (see mm: page_alloc: rearrange
-> > watermark checking in get_page_from_freelist)
-> 
-> Yes, please rebase this on top.
-> 
-> > Besides that, make sure you provide numbers which prove your claims
-> > about performance optimizations.
-> 
-> Isn't that a bit overkill?  We know it's a likely path (we would
-> deadlock constantly if a sizable portion of allocations were to ignore
-> the watermarks).  Does he have to justify that likely in general makes
-> sense?
+On Fri, Aug 2, 2013 at 3:04 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> vger already adds a "to unsubscribe from this list" footer to messages
+> to LKML and other lists.  What if it also added the lkml.kernel.org
+> permalink for the message, e.g.,
+> "http://lkml.kernel.org/r/CA+55aFxb3NT3_04ZLKiCFrtTXSdi4bfQFf0HJviRRYPTW4ymXA@mail.gmail.com"?
+>
+> I often use the permalink to cite an email in bugzilla reports,
+> changelogs, other conversations, etc., and I currently dig out the
+> message-ID and construct the link by hand, so having the link directly
+> in the footer would be handy for me.  Would anybody else find this
+> useful?
+>
+> Bjorn
 
-That was more a generic comment. If there is a claim that something
-would be faster it would be nice to back that claim by some numbers
-(e.g. smaller hot path).
++1
+It would be awesome and very useful to me. I often look for lkml link
+for messages.
 
-In this particular case, unlikely(alloc_flags & ALLOC_NO_WATERMARKS)
-doesn't make any change to the generated code with gcc 4.8.1 resp.
-4.3.4 I have here.
-Maybe other versions of gcc would benefit from the hint but changelog
-didn't tell us. I wouldn't add the anotation if it doesn't make any
-difference for the resulting code.
--- 
-Michal Hocko
-SUSE Labs
+-- Shuah
+
+Shuah Khan, Linux Kernel Developer - Open Source Group Samsung Research
+America (Silicon Valley) shuah.kh@samsung.com | (970) 672-0658
