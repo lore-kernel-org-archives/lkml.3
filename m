@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754163Ab3HBKTq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:19:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37760 "EHLO
+	id S1754267Ab3HBKTy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:19:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37775 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752837Ab3HBKTn (ORCPT
+	with ESMTP id S1752837Ab3HBKTw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:19:43 -0400
+	Fri, 2 Aug 2013 06:19:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jason Wang <jasowang@redhat.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Wolfram Gloger <wmglo@dent.med.uni-muenchen.de>
-Subject: [ 38/39] virtio_net: fix race in RX VQ processing
-Date: Fri,  2 Aug 2013 18:18:48 +0800
-Message-Id: <20130802101502.180137197@linuxfoundation.org>
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [ 36/39] s390: move dummy io_remap_pfn_range() to asm/pgtable.h
+Date: Fri,  2 Aug 2013 18:18:46 +0800
+Message-Id: <20130802101501.894472966@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802101456.800497005@linuxfoundation.org>
 References: <20130802101456.800497005@linuxfoundation.org>
@@ -29,62 +29,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael S. Tsirkin <mst@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit cbdadbbf0c790f79350a8f36029208944c5487d0 upstream
+commit 4f2e29031e6c67802e7370292dd050fd62f337ee upstream.
 
-virtio net called virtqueue_enable_cq on RX path after napi_complete, so
-with NAPI_STATE_SCHED clear - outside the implicit napi lock.
-This violates the requirement to synchronize virtqueue_enable_cq wrt
-virtqueue_add_buf.  In particular, used event can move backwards,
-causing us to lose interrupts.
-In a debug build, this can trigger panic within START_USE.
+Commit b4cbb197c7e7 ("vm: add vm_iomap_memory() helper function") added
+a helper function wrapper around io_remap_pfn_range(), and every other
+architecture defined it in <asm/pgtable.h>.
 
-Jason Wang reports that he can trigger the races artificially,
-by adding udelay() in virtqueue_enable_cb() after virtio_mb().
+The s390 choice of <asm/io.h> may make sense, but is not very convenient
+for this case, and gratuitous differences like that cause unexpected errors like this:
 
-However, we must call napi_complete to clear NAPI_STATE_SCHED before
-polling the virtqueue for used buffers, otherwise napi_schedule_prep in
-a callback will fail, causing us to lose RX events.
+   mm/memory.c: In function 'vm_iomap_memory':
+   mm/memory.c:2439:2: error: implicit declaration of function 'io_remap_pfn_range' [-Werror=implicit-function-declaration]
 
-To fix, call virtqueue_enable_cb_prepare with NAPI_STATE_SCHED
-set (under napi lock), later call virtqueue_poll with
-NAPI_STATE_SCHED clear (outside the lock).
+Glory be the kbuild test robot who noticed this, bisected it, and
+reported it to the guilty parties (ie me).
 
-Reported-by: Jason Wang <jasowang@redhat.com>
-Tested-by: Jason Wang <jasowang@redhat.com>
-Acked-by: Jason Wang <jasowang@redhat.com>
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-[wg: Backported to 3.2]
-Signed-off-by: Wolfram Gloger <wmglo@dent.med.uni-muenchen.de>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+[bwh: Backported to 3.2: the macro was not defined, so this is an addition
+ and not a move]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
----
- drivers/net/virtio_net.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -518,7 +518,7 @@ static int virtnet_poll(struct napi_stru
- {
- 	struct virtnet_info *vi = container_of(napi, struct virtnet_info, napi);
- 	void *buf;
--	unsigned int len, received = 0;
-+	unsigned int r, len, received = 0;
+---
+ arch/s390/include/asm/pgtable.h |    4 ++++
+ 1 file changed, 4 insertions(+)
+
+--- a/arch/s390/include/asm/pgtable.h
++++ b/arch/s390/include/asm/pgtable.h
+@@ -67,6 +67,10 @@ static inline int is_zero_pfn(unsigned l
  
- again:
- 	while (received < budget &&
-@@ -535,8 +535,9 @@ again:
+ #define my_zero_pfn(addr)	page_to_pfn(ZERO_PAGE(addr))
  
- 	/* Out of packets? */
- 	if (received < budget) {
-+		r = virtqueue_enable_cb_prepare(vi->rvq);
- 		napi_complete(napi);
--		if (unlikely(!virtqueue_enable_cb(vi->rvq)) &&
-+		if (unlikely(virtqueue_poll(vi->rvq, r)) &&
- 		    napi_schedule_prep(napi)) {
- 			virtqueue_disable_cb(vi->rvq);
- 			__napi_schedule(napi);
++/* TODO: s390 cannot support io_remap_pfn_range... */
++#define io_remap_pfn_range(vma, vaddr, pfn, size, prot) 	       \
++	remap_pfn_range(vma, vaddr, pfn, size, prot)
++
+ #endif /* !__ASSEMBLY__ */
+ 
+ /*
 
 
