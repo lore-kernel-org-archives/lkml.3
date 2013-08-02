@@ -1,87 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753798Ab3HBVrY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 17:47:24 -0400
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:47390 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751870Ab3HBVrW (ORCPT
+	id S1753714Ab3HBVuq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 17:50:46 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:42153 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752761Ab3HBVup (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 17:47:22 -0400
-Message-ID: <1375479975.10300.105.camel@misato.fc.hp.com>
-Subject: Re: Cannot hot remove a memory device
-From: Toshi Kani <toshi.kani@hp.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        rafael.j.wysocki@intel.com, vasilis.liaskovitis@profitbricks.com,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        tangchen@cn.fujitsu.com, wency@cn.fujitsu.com
-Date: Fri, 02 Aug 2013 15:46:15 -0600
-In-Reply-To: <2995879.KDC1gYpzij@vostro.rjw.lan>
-References: <51FA1E41.20304@jp.fujitsu.com>
-	 <2995879.KDC1gYpzij@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+	Fri, 2 Aug 2013 17:50:45 -0400
+Date: Fri, 02 Aug 2013 14:50:41 -0700 (PDT)
+Message-Id: <20130802.145041.845804796107623114.davem@davemloft.net>
+To: amwang@redhat.com
+Cc: netdev@vger.kernel.org, dborkman@redhat.com, joe@perches.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Patch net-next v2 1/8] net: introduce generic union inet_addr
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1375427674-21735-2-git-send-email-amwang@redhat.com>
+References: <1375427674-21735-1-git-send-email-amwang@redhat.com>
+	<1375427674-21735-2-git-send-email-amwang@redhat.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Fri, 02 Aug 2013 14:50:44 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-08-01 at 23:43 +0200, Rafael J. Wysocki wrote:
-> Hi,
+From: Cong Wang <amwang@redhat.com>
+Date: Fri,  2 Aug 2013 15:14:27 +0800
+
+> From: Cong Wang <amwang@redhat.com>
 > 
-> Thanks for your report.
+> Introduce a generic IP address type, union inet_addr, so that
+> subsystems don't have to use their own definitions. Because
+> netpoll already defines union inet_addr, just move it to global.
+> Some of the helper functions will be used by VXLAN IPv6 code too.
 > 
-> On Thursday, August 01, 2013 05:37:21 PM Yasuaki Ishimatsu wrote:
-> > By following commit, I cannot hot remove a memory device.
-> > 
-> > ACPI / memhotplug: Bind removable memory blocks to ACPI device nodes
-> > commit e2ff39400d81233374e780b133496a2296643d7d
-> > 
-> > Details are follows:
-> > When I add a memory device, acpi_memory_enable_device() always fails
-> > as follows:
-> > 
-> > ...
-> > [ 1271.114116]  [ffffea121c400000-ffffea121c7fffff] PMD -> [ffff880813c00000-ffff880813ffffff] on node 3
-> > [ 1271.128682]  [ffffea121c800000-ffffea121cbfffff] PMD -> [ffff880813800000-ffff880813bfffff] on node 3
-> > [ 1271.143298]  [ffffea121cc00000-ffffea121cffffff] PMD -> [ffff880813000000-ffff8808133fffff] on node 3
-> > [ 1271.157799]  [ffffea121d000000-ffffea121d3fffff] PMD -> [ffff880812c00000-ffff880812ffffff] on node 3
-> > [ 1271.172341]  [ffffea121d400000-ffffea121d7fffff] PMD -> [ffff880812800000-ffff880812bfffff] on node 3
-> > [ 1271.186872]  [ffffea121d800000-ffffea121dbfffff] PMD -> [ffff880812400000-ffff8808127fffff] on node 3
-> > [ 1271.201481]  [ffffea121dc00000-ffffea121dffffff] PMD -> [ffff880812000000-ffff8808123fffff] on node 3
-> > [ 1271.216041]  [ffffea121e000000-ffffea121e3fffff] PMD -> [ffff880811c00000-ffff880811ffffff] on node 3
-> > [ 1271.230623]  [ffffea121e400000-ffffea121e7fffff] PMD -> [ffff880811800000-ffff880811bfffff] on node 3
-> > [ 1271.245148]  [ffffea121e800000-ffffea121ebfffff] PMD -> [ffff880811400000-ffff8808117fffff] on node 3
-> > [ 1271.259683]  [ffffea121ec00000-ffffea121effffff] PMD -> [ffff880811000000-ffff8808113fffff] on node 3
-> > [ 1271.274194]  [ffffea121f000000-ffffea121f3fffff] PMD -> [ffff880810c00000-ffff880810ffffff] on node 3
-> > [ 1271.288764]  [ffffea121f400000-ffffea121f7fffff] PMD -> [ffff880810800000-ffff880810bfffff] on node 3
-
-It appears that each memory object only has 64MB of memory.  This is
-less than the memory block size, which is 128MB.  This means that a
-single memory block associates with two ACPI memory device objects.
-
-> > ...	
-> > [ 1271.325841] acpi PNP0C80:03: acpi_memory_enable_device() error
+> This patch also reuses the "%pIS" specifier, to make it accept
+> union inet_addr instead of struct sockaddr.
 > 
-> Well, the only new way acpi_memory_enable_device() can fail after that commit
-> is a failure in acpi_bind_memory_blocks().
+> Cc: Daniel Borkmann <dborkman@redhat.com>
+> Cc: Joe Perches <joe@perches.com>
+> Cc: linux-kernel@vger.kernel.org
+> Signed-off-by: Cong Wang <amwang@redhat.com>
 
-Agreed.
+Changing %pIS to %pIA is pure churn, and of zero value that I can see.
 
-> This means that either handle is NULL, which I think we can exclude, because
-> acpi_memory_enable_device() wouldn't be called at all if that were the case, or
-> there's a more subtle error in acpi_bind_one().
-> 
-> One that comes to mind is that we may be calling acpi_bind_one() twice for the
-> same memory region, in which it will trigger -EINVAL from the sanity check in
-> there.
+Every time I review this patch set I discover some new thing that I'm
+very disappointed with.
 
-I think it fails with -EINVAL at the place with dev_warn(dev, "ACPI
-handle is already set\n").  When two ACPI memory objects associate with
-a same memory block, the bind procedure of the 2nd ACPI memory object
-sees that ACPI_HANDLE(dev) is already set to the 1st ACPI memory object.
+You're going to have to stop being so ambitious, and start very small.
 
-Thanks,
--Toshi
-
+Maybe one tiny patch at a time if needed.
