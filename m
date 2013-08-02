@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752310Ab3HBKiQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:38:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37464 "EHLO
+	id S1751945Ab3HBKiO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:38:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37477 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030538Ab3HBKL5 (ORCPT
+	with ESMTP id S1030498Ab3HBKMC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:11:57 -0400
+	Fri, 2 Aug 2013 06:12:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Vrabel <david.vrabel@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jonghwan Choi <jhbird.choi@samsung.com>
-Subject: [ 93/99] xen/evtchn: avoid a deadlock when unbinding an event channel
-Date: Fri,  2 Aug 2013 18:08:46 +0800
-Message-Id: <20130802100238.881218219@linuxfoundation.org>
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        Ben Skeggs <bskeggs@redhat.com>
+Subject: [ 84/99] drm/nouveau: fix semaphore dmabuf obj
+Date: Fri,  2 Aug 2013 18:08:37 +0800
+Message-Id: <20130802100237.613209901@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802100225.478715166@linuxfoundation.org>
 References: <20130802100225.478715166@linuxfoundation.org>
@@ -28,103 +27,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Vrabel <david.vrabel@citrix.com>
+From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
 
-commit 179fbd5a45f0d4034cc6fd37b8d367a3b79663c4 upstream.
+commit 7a7da592cbb22a1d360638dbecc393470c5effe3 upstream.
 
-Unbinding an event channel (either with the ioctl or when the evtchn
-device is closed) may deadlock because disable_irq() is called with
-port_user_lock held which is also locked by the interrupt handler.
+Fixes some dmabuf object errors on nv50 chipset and below.
 
-Think of the IOCTL_EVTCHN_UNBIND is being serviced, the routine has
-just taken the lock, and an interrupt happens. The evtchn_interrupt
-is invoked, tries to take the lock and spins forever.
-
-A quick glance at the code shows that the spinlock is a local IRQ
-variant. Unfortunately that does not help as "disable_irq() waits for
-the interrupt handler on all CPUs to stop running.  If the irq occurs
-on another VCPU, it tries to take port_user_lock and can't because
-the unbind ioctl is holding it." (from David). Hence we cannot
-depend on the said spinlock to protect us. We could make it a system
-wide IRQ disable spinlock but there is a better way.
-
-We can piggyback on the fact that the existence of the spinlock is
-to make get_port_user() checks be up-to-date. And we can alter those
-checks to not depend on the spin lock (as it's protected by u->bind_mutex
-in the ioctl) and can remove the unnecessary locking (this is
-IOCTL_EVTCHN_UNBIND) path.
-
-In the interrupt handler we cannot use the mutex, but we do not
-need it.
-
-"The unbind disables the irq before making the port user stale, so when
-you clear it you are guaranteed that the interrupt handler that might
-use that port cannot be running." (from David).
-
-Hence this patch removes the spinlock usage on the teardown path
-and piggybacks on disable_irq happening before we muck with the
-get_port_user() data. This ensures that the interrupt handler will
-never run on stale data.
-
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-[v1: Expanded the commit description a bit]
-Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
+Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/xen/evtchn.c |   21 ++-------------------
- 1 file changed, 2 insertions(+), 19 deletions(-)
+ drivers/gpu/drm/nouveau/nv17_fence.c |    2 +-
+ drivers/gpu/drm/nouveau/nv50_fence.c |   14 +++++++++-----
+ 2 files changed, 10 insertions(+), 6 deletions(-)
 
---- a/drivers/xen/evtchn.c
-+++ b/drivers/xen/evtchn.c
-@@ -377,18 +377,12 @@ static long evtchn_ioctl(struct file *fi
- 		if (unbind.port >= NR_EVENT_CHANNELS)
- 			break;
+--- a/drivers/gpu/drm/nouveau/nv17_fence.c
++++ b/drivers/gpu/drm/nouveau/nv17_fence.c
+@@ -76,7 +76,7 @@ nv17_fence_context_new(struct nouveau_ch
+ 	struct ttm_mem_reg *mem = &priv->bo->bo.mem;
+ 	struct nouveau_object *object;
+ 	u32 start = mem->start * PAGE_SIZE;
+-	u32 limit = mem->start + mem->size - 1;
++	u32 limit = start + mem->size - 1;
+ 	int ret = 0;
  
--		spin_lock_irq(&port_user_lock);
--
- 		rc = -ENOTCONN;
--		if (get_port_user(unbind.port) != u) {
--			spin_unlock_irq(&port_user_lock);
-+		if (get_port_user(unbind.port) != u)
- 			break;
--		}
+ 	fctx = chan->fence = kzalloc(sizeof(*fctx), GFP_KERNEL);
+--- a/drivers/gpu/drm/nouveau/nv50_fence.c
++++ b/drivers/gpu/drm/nouveau/nv50_fence.c
+@@ -39,6 +39,8 @@ nv50_fence_context_new(struct nouveau_ch
+ 	struct nv10_fence_chan *fctx;
+ 	struct ttm_mem_reg *mem = &priv->bo->bo.mem;
+ 	struct nouveau_object *object;
++	u32 start = mem->start * PAGE_SIZE;
++	u32 limit = start + mem->size - 1;
+ 	int ret, i;
  
- 		disable_irq(irq_from_evtchn(unbind.port));
+ 	fctx = chan->fence = kzalloc(sizeof(*fctx), GFP_KERNEL);
+@@ -51,26 +53,28 @@ nv50_fence_context_new(struct nouveau_ch
+ 	fctx->base.sync = nv17_fence_sync;
  
--		spin_unlock_irq(&port_user_lock);
--
- 		evtchn_unbind_from_user(u, unbind.port);
+ 	ret = nouveau_object_new(nv_object(chan->cli), chan->handle,
+-				 NvSema, 0x0002,
++				 NvSema, 0x003d,
+ 				 &(struct nv_dma_class) {
+ 					.flags = NV_DMA_TARGET_VRAM |
+ 						 NV_DMA_ACCESS_RDWR,
+-					.start = mem->start * PAGE_SIZE,
+-					.limit = mem->size - 1,
++					.start = start,
++					.limit = limit,
+ 				 }, sizeof(struct nv_dma_class),
+ 				 &object);
  
- 		rc = 0;
-@@ -488,26 +482,15 @@ static int evtchn_release(struct inode *
- 	int i;
- 	struct per_user_data *u = filp->private_data;
+ 	/* dma objects for display sync channel semaphore blocks */
+ 	for (i = 0; !ret && i < dev->mode_config.num_crtc; i++) {
+ 		struct nouveau_bo *bo = nv50_display_crtc_sema(dev, i);
++		u32 start = bo->bo.mem.start * PAGE_SIZE;
++		u32 limit = start + bo->bo.mem.size - 1;
  
--	spin_lock_irq(&port_user_lock);
--
--	free_page((unsigned long)u->ring);
--
- 	for (i = 0; i < NR_EVENT_CHANNELS; i++) {
- 		if (get_port_user(i) != u)
- 			continue;
- 
- 		disable_irq(irq_from_evtchn(i));
--	}
--
--	spin_unlock_irq(&port_user_lock);
--
--	for (i = 0; i < NR_EVENT_CHANNELS; i++) {
--		if (get_port_user(i) != u)
--			continue;
--
- 		evtchn_unbind_from_user(get_port_user(i), i);
+ 		ret = nouveau_object_new(nv_object(chan->cli), chan->handle,
+ 					 NvEvoSema0 + i, 0x003d,
+ 					 &(struct nv_dma_class) {
+ 						.flags = NV_DMA_TARGET_VRAM |
+ 							 NV_DMA_ACCESS_RDWR,
+-						.start = bo->bo.offset,
+-						.limit = bo->bo.offset + 0xfff,
++						.start = start,
++						.limit = limit,
+ 					 }, sizeof(struct nv_dma_class),
+ 					 &object);
  	}
- 
-+	free_page((unsigned long)u->ring);
- 	kfree(u->name);
- 	kfree(u);
- 
 
 
