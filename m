@@ -1,54 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754641Ab3HBWtv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 18:49:51 -0400
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:64885 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754410Ab3HBWts (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 18:49:48 -0400
+	id S1754410Ab3HBWxQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 18:53:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50140 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753199Ab3HBWxP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 18:53:15 -0400
+Date: Fri, 2 Aug 2013 17:27:50 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Xiao Guangrong <xiaoguangrong.eric@gmail.com>
+Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>, gleb@redhat.com,
+        avi.kivity@gmail.com, pbonzini@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH 03/12] KVM: MMU: lazily drop large spte
+Message-ID: <20130802202750.GA12159@amt.cnet>
+References: <1375189330-24066-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+ <1375189330-24066-4-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+ <20130802145524.GA3501@amt.cnet>
+ <CEA85F58-33B6-469B-AF14-A40860DEAC05@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1375478934.15999.33.camel@pasglop>
-References: <1375395497.31262.271.camel@ul30vt.home> <1375420202.3743.97.camel@pasglop>
- <1375461387.31262.314.camel@ul30vt.home> <1375478934.15999.33.camel@pasglop>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 2 Aug 2013 16:49:27 -0600
-Message-ID: <CAErSpo42yK=K55J30V3xd_Ki6KEUOU6q7sUpNrAYe517=CdiDA@mail.gmail.com>
-Subject: Re: RFC: vfio-pci API for PCI bus/slot (hot) resets
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Alex Williamson <alex.williamson@redhat.com>, kvm <kvm@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Alexey Kardashevskiy <aik@ozlabs.ru>,
-        Gavin Shan <shangw@linux.vnet.ibm.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CEA85F58-33B6-469B-AF14-A40860DEAC05@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[+cc linux-pci]
+On Fri, Aug 02, 2013 at 11:42:19PM +0800, Xiao Guangrong wrote:
+> 
+> On Aug 2, 2013, at 10:55 PM, Marcelo Tosatti <mtosatti@redhat.com> wrote:
+> 
+> > On Tue, Jul 30, 2013 at 09:02:01PM +0800, Xiao Guangrong wrote:
+> >> Currently, kvm zaps the large spte if write-protected is needed, the later
+> >> read can fault on that spte. Actually, we can make the large spte readonly
+> >> instead of making them un-present, the page fault caused by read access can
+> >> be avoided
+> >> 
+> >> The idea is from Avi:
+> >> | As I mentioned before, write-protecting a large spte is a good idea,
+> >> | since it moves some work from protect-time to fault-time, so it reduces
+> >> | jitter.  This removes the need for the return value.
+> >> 
+> >> [
+> >>  It has fixed the issue reported in 6b73a9606 by stopping fast page fault
+> >>  marking the large spte to writable
+> >> ]
+> > 
+> > Xiao,
+> > 
+> > Can you please write a comment explaining why are the problems 
+> > with shadow vs large read-only sptes (can't recall anymore),
+> > and then why it is now safe to do it.
+> 
+> Hi Marcelo,
+> 
+> Thanks for your review.  Yes. The bug reported in  6b73a9606 is, in this patch,
+> we mark the large spte as readonly when the pages are dirt logged and the
+> readonly spte can be set to writable by fast page fault, but on that path, it failed
+> to check dirty logging, so it will set the large spte to writable but only set the first
+> page to the dirty bitmap.
+> 
+> For example:
+> 
+> 1): KVM maps 0 ~ 2M memory to guest which is pointed by SPTE and SPTE
+>      is writable.
+> 
+> 2): KVM dirty log 0 ~ 2M,  then set SPTE to readonly
+> 
+> 3): fast page fault set SPTE to writable and set page 0 to the dirty bitmap.
+> 
+> Then 4K ~ 2M memory is not dirty logged.
 
-On Fri, Aug 2, 2013 at 3:28 PM, Benjamin Herrenschmidt
-<benh@kernel.crashing.org> wrote:
+Ok can you write a self contained summary of read-only large sptes (when
+they are created, when destroyed, from which point they can't be created,
+etc), and the interaction with shadow write protection and creation of
+writeable sptes?
+Its easy to get lost.
 
-> Right. Another use case is, I know of devices that need a fundamental
-> reset (PERST) after applying a FW update.
+> In this version, we let fast page fault do not mark large spte to writable if
+> its page are dirty logged.  But it is still not safe as you pointed out.
+> 
+> >> 
+> >> 
+> >> 	/*
+> >> +	 * Can not map the large spte to writable if the page is dirty
+> >> +	 * logged.
+> >> +	 */
+> >> +	if (sp->role.level > PT_PAGE_TABLE_LEVEL && force_pt_level)
+> >> +		goto exit;
+> >> +
+> > 
+> > It is not safe to derive slot->dirty_bitmap like this: 
+> > since dirty log is enabled via RCU update, "is dirty bitmap enabled"
+> > info could be stale by the time you check it here via the parameter,
+> > so you can instantiate a large spte (because force_pt_level == false),
+> > while you should not.
+> 
+> Good catch! This is true even if we enable dirty log under the protection
+> of mmu lock.
+> 
+> How about let the fault page fault only fix the small spte, that is changing
+> the code to:
+> 	if (sp->role.level > PT_PAGE_TABLE_LEVEL)
+> 		goto exit;
+> ?
 
-This is a tangent from the real discussion here, but the question of
-resetting a device after a firmware update concerns me.  Many if not
-all of our current reset interfaces save & restore the architected
-parts of config space around the reset.  But a reset after a firmware
-update may change things like the number and type of BARs or even the
-functionality of the device, so I don't think the restore is safe in
-general.
+Sure.
 
-I doubt this is a big problem in general, but I have found reports of
-people having to do a system reset or reboot after updating, e.g.,
-FPGA images.  I suppose at least some of these could be worked around
-with the right hotplug incantations.
-
-http://forums.xilinx.com/t5/PCI-Express/PC-is-hung-if-run-the-second-program-FPGA-by-JTAG/td-p/20871
-http://www.alteraforum.com/forum/archive/index.php/t-28477.html
-http://www.alteraforum.com/forum/showthread.php?t=35091
-https://github.com/NetFPGA/NetFPGA-public/wiki/Restore-PCIE-Configuration
-http://lkml.indiana.edu/hypermail/linux/kernel/1104.3/02544.html
