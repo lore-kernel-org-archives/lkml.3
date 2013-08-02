@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755117Ab3HBKZo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:25:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37860 "EHLO
+	id S1754754Ab3HBKXP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:23:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37852 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754774Ab3HBKXR (ORCPT
+	with ESMTP id S1754614Ab3HBKXM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:23:17 -0400
+	Fri, 2 Aug 2013 06:23:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mark Kettenis <kettenis@openbsd.org>,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 15/23] drm/radeon: fix combios tables on older cards
-Date: Fri,  2 Aug 2013 18:23:28 +0800
-Message-Id: <20130802102038.335379555@linuxfoundation.org>
+        Anton Blanchard <anton@samba.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 13/23] powerpc/modules: Module CRC relocation fix causes perf issues
+Date: Fri,  2 Aug 2013 18:23:26 +0800
+Message-Id: <20130802102038.063996747@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802102036.180660415@linuxfoundation.org>
 References: <20130802102036.180660415@linuxfoundation.org>
@@ -27,291 +28,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Kettenis <kettenis@openbsd.org>
+From: Anton Blanchard <anton@samba.org>
 
-commit cef1d00cd56f600121ad121875655ad410a001b8 upstream.
+commit 0e0ed6406e61434d3f38fb58aa8464ec4722b77e upstream.
 
-Noticed that my old Radeon 7500 hung after printing
+Module CRCs are implemented as absolute symbols that get resolved by
+a linker script. We build an intermediate .o that contains an
+unresolved symbol for each CRC. genksysms parses this .o, calculates
+the CRCs and writes a linker script that "resolves" the symbols to
+the calculated CRC.
 
-   drm: GPU not posted. posting now...
+Unfortunately the ppc64 relocatable kernel sees these CRCs as symbols
+that need relocating and relocates them at boot. Commit d4703aef
+(module: handle ppc64 relocating kcrctabs when CONFIG_RELOCATABLE=y)
+added a hook to reverse the bogus relocations. Part of this patch
+created a symbol at 0x0:
 
-when it wasn't selected as the primary card the BIOS.  Some digging
-revealed that it was hanging in combios_parse_mmio_table() while
-parsing the ASIC INIT 3 table.  Looking at the BIOS ROM for the card,
-it becomes obvious that there is no ASIC INIT 3 table in the BIOS.
-The code is just processing random garbage.  No surprise it hangs!
+# head -2 /proc/kallsyms
+0000000000000000 T reloc_start
+c000000000000000 T .__start
 
-Why do I say that there is no ASIC INIT 3 table is the BIOS?  This
-table is found through the MISC INFO table.  The MISC INFO table can
-be found at offset 0x5e in the COMBIOS header.  But the header is
-smaller than that.  The COMBIOS header starts at offset 0x126.  The
-standard PCI Data Structure (the bit that starts with 'PCIR') lives at
-offset 0x180.  That means that the COMBIOS header can not be larger
-than 0x5a bytes and therefore cannot contain a MISC INFO table.
+This reloc_start symbol is causing lots of confusion to perf. It
+thinks reloc_start is a massive function that stretches from 0x0 to
+0xc000000000000000 and we get various cryptic errors out of perf,
+including:
 
-I looked at a dozen or so BIOS images, some my own, some downloaded from:
+problem incrementing symbol count, skipping event
 
-    <http://www.techpowerup.com/vgabios/index.php?manufacturer=ATI&page=1>
+This patch removes the  reloc_start linker script label and instead
+defines it as PHYSICAL_START. We also need to wrap it with
+CONFIG_PPC64 because the ppc32 kernel can set a non zero
+PHYSICAL_START at compile time and we wouldn't want to subtract
+it from the CRCs in that case.
 
-It is fairly obvious that the size of the COMBIOS header can be found
-at offset 0x6 of the header.  Not sure if it is a 16-bit number or
-just an 8-bit number, but that doesn't really matter since the tables
-seems to be always smaller than 256 bytes.
-
-So I think combios_get_table_offset() should check if the requested
-table is present.  This can be done by checking the offset against the
-size of the header.  See the diff below.  The diff is against the WIP
-OpenBSD codebase that roughly corresponds to Linux 3.8.13 at this
-point.  But I don't think this bit of the code changed much since
-then.
-
-For what it is worth:
-
-Signed-off-by: Mark Kettenis <kettenis@openbsd.org>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Acked-by: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_combios.c |  145 +++++++++-----------------------
- 1 file changed, 41 insertions(+), 104 deletions(-)
+ arch/powerpc/include/asm/module.h |    5 ++---
+ arch/powerpc/kernel/vmlinux.lds.S |    3 ---
+ 2 files changed, 2 insertions(+), 6 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_combios.c
-+++ b/drivers/gpu/drm/radeon/radeon_combios.c
-@@ -147,7 +147,7 @@ static uint16_t combios_get_table_offset
- 					 enum radeon_combios_table_offset table)
+--- a/arch/powerpc/include/asm/module.h
++++ b/arch/powerpc/include/asm/module.h
+@@ -87,10 +87,9 @@ struct exception_table_entry;
+ void sort_ex_table(struct exception_table_entry *start,
+ 		   struct exception_table_entry *finish);
+ 
+-#ifdef CONFIG_MODVERSIONS
++#if defined(CONFIG_MODVERSIONS) && defined(CONFIG_PPC64)
+ #define ARCH_RELOCATES_KCRCTAB
+-
+-extern const unsigned long reloc_start[];
++#define reloc_start PHYSICAL_START
+ #endif
+ #endif /* __KERNEL__ */
+ #endif	/* _ASM_POWERPC_MODULE_H */
+--- a/arch/powerpc/kernel/vmlinux.lds.S
++++ b/arch/powerpc/kernel/vmlinux.lds.S
+@@ -38,9 +38,6 @@ jiffies = jiffies_64 + 4;
+ #endif
+ SECTIONS
  {
- 	struct radeon_device *rdev = dev->dev_private;
--	int rev;
-+	int rev, size;
- 	uint16_t offset = 0, check_offset;
+-	. = 0;
+-	reloc_start = .;
+-
+ 	. = KERNELBASE;
  
- 	if (!rdev->bios)
-@@ -156,174 +156,106 @@ static uint16_t combios_get_table_offset
- 	switch (table) {
- 		/* absolute offset tables */
- 	case COMBIOS_ASIC_INIT_1_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0xc);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0xc;
- 		break;
- 	case COMBIOS_BIOS_SUPPORT_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x14);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x14;
- 		break;
- 	case COMBIOS_DAC_PROGRAMMING_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x2a);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x2a;
- 		break;
- 	case COMBIOS_MAX_COLOR_DEPTH_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x2c);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x2c;
- 		break;
- 	case COMBIOS_CRTC_INFO_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x2e);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x2e;
- 		break;
- 	case COMBIOS_PLL_INFO_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x30);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x30;
- 		break;
- 	case COMBIOS_TV_INFO_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x32);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x32;
- 		break;
- 	case COMBIOS_DFP_INFO_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x34);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x34;
- 		break;
- 	case COMBIOS_HW_CONFIG_INFO_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x36);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x36;
- 		break;
- 	case COMBIOS_MULTIMEDIA_INFO_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x38);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x38;
- 		break;
- 	case COMBIOS_TV_STD_PATCH_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x3e);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x3e;
- 		break;
- 	case COMBIOS_LCD_INFO_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x40);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x40;
- 		break;
- 	case COMBIOS_MOBILE_INFO_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x42);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x42;
- 		break;
- 	case COMBIOS_PLL_INIT_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x46);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x46;
- 		break;
- 	case COMBIOS_MEM_CONFIG_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x48);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x48;
- 		break;
- 	case COMBIOS_SAVE_MASK_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x4a);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x4a;
- 		break;
- 	case COMBIOS_HARDCODED_EDID_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x4c);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x4c;
- 		break;
- 	case COMBIOS_ASIC_INIT_2_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x4e);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x4e;
- 		break;
- 	case COMBIOS_CONNECTOR_INFO_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x50);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x50;
- 		break;
- 	case COMBIOS_DYN_CLK_1_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x52);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x52;
- 		break;
- 	case COMBIOS_RESERVED_MEM_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x54);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x54;
- 		break;
- 	case COMBIOS_EXT_TMDS_INFO_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x58);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x58;
- 		break;
- 	case COMBIOS_MEM_CLK_INFO_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x5a);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x5a;
- 		break;
- 	case COMBIOS_EXT_DAC_INFO_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x5c);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x5c;
- 		break;
- 	case COMBIOS_MISC_INFO_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x5e);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x5e;
- 		break;
- 	case COMBIOS_CRT_INFO_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x60);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x60;
- 		break;
- 	case COMBIOS_INTEGRATED_SYSTEM_INFO_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x62);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x62;
- 		break;
- 	case COMBIOS_COMPONENT_VIDEO_INFO_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x64);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x64;
- 		break;
- 	case COMBIOS_FAN_SPEED_INFO_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x66);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x66;
- 		break;
- 	case COMBIOS_OVERDRIVE_INFO_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x68);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x68;
- 		break;
- 	case COMBIOS_OEM_INFO_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x6a);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x6a;
- 		break;
- 	case COMBIOS_DYN_CLK_2_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x6c);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x6c;
- 		break;
- 	case COMBIOS_POWER_CONNECTOR_INFO_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x6e);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x6e;
- 		break;
- 	case COMBIOS_I2C_INFO_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x70);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x70;
- 		break;
- 		/* relative offset tables */
- 	case COMBIOS_ASIC_INIT_3_TABLE:	/* offset from misc info */
-@@ -439,11 +371,16 @@ static uint16_t combios_get_table_offset
- 		}
- 		break;
- 	default:
-+		check_offset = 0;
- 		break;
- 	}
- 
--	return offset;
-+	size = RBIOS8(rdev->bios_header_start + 0x6);
-+	/* check absolute offset tables */
-+	if (table < COMBIOS_ASIC_INIT_3_TABLE && check_offset && check_offset < size)
-+		offset = RBIOS16(rdev->bios_header_start + check_offset);
- 
-+	return offset;
- }
- 
- bool radeon_combios_check_hardcoded_edid(struct radeon_device *rdev)
+ /*
 
 
