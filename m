@@ -1,55 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751745Ab3HBLup (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 07:50:45 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:41131 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751336Ab3HBLuo (ORCPT
+	id S1751832Ab3HBL7W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 07:59:22 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:51059 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751598Ab3HBL7O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 07:50:44 -0400
-Message-ID: <1375444203.4098.11.camel@pizza.hi.pengutronix.de>
-Subject: Re: [PATCH v3 6/6] mfd: da9063: add 32 kHz output clock to clock
- tree
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Mark Brown <broonie@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Krystian Garbaciak <krystian.garbaciak@diasemi.com>
-Date: Fri, 02 Aug 2013 13:50:03 +0200
-In-Reply-To: <20130729181554.GB9858@sirena.org.uk>
-References: <1375117247-6376-1-git-send-email-p.zabel@pengutronix.de>
-	 <1375117247-6376-7-git-send-email-p.zabel@pengutronix.de>
-	 <20130729181554.GB9858@sirena.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:ca9c:dcff:febd:f1b5
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Fri, 2 Aug 2013 07:59:14 -0400
+X-IronPort-AV: E=Sophos;i="4.89,800,1367971200"; 
+   d="scan'208";a="39021726"
+Date: Fri, 2 Aug 2013 12:59:00 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <Ian.Campbell@citrix.com>,
+        <will.deacon@arm.com>, <linux@arm.linux.org.uk>
+Subject: Re: [PATCH RFC 1/8] arm: make SWIOTLB available
+In-Reply-To: <334c4fe7-e40c-489c-84db-9bb58c705d44@email.android.com>
+Message-ID: <alpine.DEB.2.02.1308021250050.4893@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1307311833040.4893@kaball.uk.xensource.com> <1375292732-7627-1-git-send-email-stefano.stabellini@eu.citrix.com> <334c4fe7-e40c-489c-84db-9bb58c705d44@email.android.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Montag, den 29.07.2013, 19:15 +0100 schrieb Mark Brown:
-> On Mon, Jul 29, 2013 at 07:00:47PM +0200, Philipp Zabel wrote:
+On Wed, 31 Jul 2013, Konrad Rzeszutek Wilk wrote:
+> Stefano Stabellini <stefano.stabellini@eu.citrix.com> wrote:
+> >Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> >CC: will.deacon@arm.com
+> >CC: linux@arm.linux.org.uk
+> >---
+> > arch/arm/Kconfig                   |    7 +++++++
+> > arch/arm/include/asm/dma-mapping.h |   24 ++++++++++++++++++++++++
+> > 2 files changed, 31 insertions(+), 0 deletions(-)
+> >
+> >diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+> >index ba412e0..05125ab 100644
+> >--- a/arch/arm/Kconfig
+> >+++ b/arch/arm/Kconfig
+> >@@ -1832,6 +1832,13 @@ config CC_STACKPROTECTOR
+> > 	  neutralized via a kernel panic.
+> > 	  This feature requires gcc version 4.2 or above.
+> > 
+> >+config SWIOTLB
+> >+	def_bool y
+> >+	select NEED_SG_DMA_LENGTH
+> >+
+> >+config IOMMU_HELPER
+> >+	def_bool SWIOTLB
+> >+
 > 
-> > +	clk = devm_clk_register(da9063->dev, &out_32k->clk_hw);
-> > +	if (IS_ERR(clk))
-> > +		return PTR_ERR(clk);
-> > +
-> 
-> This introduces a dependency on COMMON_CLK.  It might be best to make
-> this a function device in drivers/clk, and for something like this we
-> really ought to be able to create regmap helpers though that can be done
-> later on.
+> Could you explain the purpose of these two a bit more please? 
 
-If we just add regmap variants of the current basic clocks (think
-clk_gate_regmap etc.) there wouldn't be much code left for this function
-device. I'll drop the clock part for now and reintroduce it after we
-have some helpers.
+SWIOTLB is not available on arm at the moment.
+We need to make it available, otherwise SWIOTLB_XEN won't be able to
+select it.
 
-regards
-Philipp
-
+Similarly, IOMMU_HELPER is another lib Kconfig symbol needed by SWIOTLB
+to compile.
