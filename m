@@ -1,48 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752825Ab3HBEIB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 00:08:01 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:59383 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750777Ab3HBEH7 (ORCPT
+	id S1753976Ab3HBEIT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 00:08:19 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:54820 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753613Ab3HBEIQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 00:07:59 -0400
-From: Andy Lutomirski <luto@amacapital.net>
-To: linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH] fs: Fix file mode for O_TMPFILE
-Date: Thu,  1 Aug 2013 21:07:52 -0700
-Message-Id: <a07af884ef10dc72ac0066ec90cfa174abec85e3.1375416372.git.luto@amacapital.net>
-X-Mailer: git-send-email 1.8.3.1
+	Fri, 2 Aug 2013 00:08:16 -0400
+X-Spam-Score: -100.8
+Message-ID: <51FB3072.4070406@asianux.com>
+Date: Fri, 02 Aug 2013 12:07:14 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Yoshinori Sato <ysato@users.sourceforge.jp>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] h8300: Makefile: remove the hard code CROSS_COMPILE
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-O_TMPFILE, like O_CREAT, should respect the requested mode and should
-create regular files.
+Current Linux can set CROSS_CMPILE from command line or config file, so
+need remove the hard code CROSS_COMPILE from Makefile, or can not work
+with cross-compiler with additional prefix (e.g. "h8300-gchen-elf-").
 
-This fixes two bugs: O_TMPFILE required privilege (because the mode
-ended up as 000) and it produced bogus inodes with no type.
 
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
 ---
- fs/open.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/h8300/Makefile |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-diff --git a/fs/open.c b/fs/open.c
-index d53e298..7931f76 100644
---- a/fs/open.c
-+++ b/fs/open.c
-@@ -823,7 +823,7 @@ static inline int build_open_flags(int flags, umode_t mode, struct open_flags *o
- 	int lookup_flags = 0;
- 	int acc_mode;
+diff --git a/arch/h8300/Makefile b/arch/h8300/Makefile
+index a556447..f333385 100644
+--- a/arch/h8300/Makefile
++++ b/arch/h8300/Makefile
+@@ -38,7 +38,6 @@ KBUILD_CFLAGS += -DUTS_SYSNAME=\"uClinux\"
+ KBUILD_AFLAGS += -DPLATFORM=$(PLATFORM) -DMODEL=$(MODEL) $(cflags-y)
+ LDFLAGS += $(ldflags-y)
  
--	if (flags & O_CREAT)
-+	if (flags & (O_CREAT | __O_TMPFILE))
- 		op->mode = (mode & S_IALLUGO) | S_IFREG;
- 	else
- 		op->mode = 0;
+-CROSS_COMPILE = h8300-elf-
+ LIBGCC := $(shell $(CROSS-COMPILE)$(CC) $(KBUILD_CFLAGS) -print-libgcc-file-name)
+ 
+ head-y := arch/$(ARCH)/platform/$(PLATFORM)/$(BOARD)/crt0_$(MODEL).o
 -- 
-1.8.3.1
-
+1.7.7.6
