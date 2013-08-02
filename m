@@ -1,164 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758491Ab3HBJVc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 05:21:32 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:62184 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1758158Ab3HBJQL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 05:16:11 -0400
-X-IronPort-AV: E=Sophos;i="4.89,800,1367942400"; 
-   d="scan'208";a="8098116"
-From: Tang Chen <tangchen@cn.fujitsu.com>
-To: robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl, lenb@kernel.org,
-        tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
-        akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
-        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
-        mina86@mina86.com, gong.chen@linux.intel.com,
-        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
-        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
-        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com
-Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Subject: [PATCH v2 RESEND 04/18] acpi: Introduce acpi_verify_initrd() to check if a table is invalid.
-Date: Fri, 2 Aug 2013 17:14:23 +0800
-Message-Id: <1375434877-20704-5-git-send-email-tangchen@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.10.1
-In-Reply-To: <1375434877-20704-1-git-send-email-tangchen@cn.fujitsu.com>
-References: <1375434877-20704-1-git-send-email-tangchen@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/02 17:14:47,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/02 17:14:52,
-	Serialize complete at 2013/08/02 17:14:52
+	id S1758256Ab3HBJXg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 05:23:36 -0400
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:50505 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752772Ab3HBJXe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 05:23:34 -0400
+Date: Fri, 2 Aug 2013 11:23:29 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Cc: Gleb Natapov <gleb@redhat.com>, mingo@redhat.com, x86@kernel.org,
+        tglx@linutronix.de, jeremy@goop.org, konrad.wilk@oracle.com,
+        hpa@zytor.com, pbonzini@redhat.com, linux-doc@vger.kernel.org,
+        habanero@linux.vnet.ibm.com, xen-devel@lists.xensource.com,
+        peterz@infradead.org, mtosatti@redhat.com,
+        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
+        attilio.rao@citrix.com, ouyang@cs.pitt.edu, gregkh@suse.de,
+        agraf@suse.de, chegu_vinod@hp.com, torvalds@linux-foundation.org,
+        avi.kivity@gmail.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, riel@redhat.com, drjones@redhat.com,
+        virtualization@lists.linux-foundation.org,
+        srivatsa.vaddagiri@gmail.com
+Subject: Re: [PATCH RFC V11 15/18] kvm : Paravirtual ticketlocks support for
+ linux guests running on KVM hypervisor
+Message-ID: <20130802092329.GA28327@gmail.com>
+References: <51EFCA42.5020009@linux.vnet.ibm.com>
+ <51F0ED31.3040200@linux.vnet.ibm.com>
+ <20130725091509.GA22735@redhat.com>
+ <51F0F202.5090001@linux.vnet.ibm.com>
+ <51F7ED20.80202@linux.vnet.ibm.com>
+ <20130731062440.GK28372@redhat.com>
+ <51FA1087.9080908@linux.vnet.ibm.com>
+ <20130801074529.GO7484@redhat.com>
+ <51FA2486.20507@linux.vnet.ibm.com>
+ <51FB25DF.5000203@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51FB25DF.5000203@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In acpi_initrd_override(), it checks several things to ensure the
-table it found is valid. In later patches, we need to do these check
-somewhere else. So this patch introduces a common function
-acpi_verify_initrd() to do all these checks, and reuse it in different
-places. The function will be used in the subsequent patches.
 
-Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Acked-by: Toshi Kani <toshi.kani@hp.com>
-Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- drivers/acpi/osl.c |   86 +++++++++++++++++++++++++++++++++++++---------------
- 1 files changed, 61 insertions(+), 25 deletions(-)
+* Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com> wrote:
 
-diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-index 3b8bab2..0043e9f 100644
---- a/drivers/acpi/osl.c
-+++ b/drivers/acpi/osl.c
-@@ -572,9 +572,68 @@ static const char * const table_sigs[] = {
- /* Must not increase 10 or needs code modification below */
- #define ACPI_OVERRIDE_TABLES 10
- 
-+/*******************************************************************************
-+ *
-+ * FUNCTION:    acpi_verify_table
-+ *
-+ * PARAMETERS:  File               - The initrd file
-+ *              Path               - Path to acpi overriding tables in cpio file
-+ *              Signature          - Signature of the table
-+ *
-+ * RETURN:      0 if it passes all the checks, -EINVAL if any check fails.
-+ *
-+ * DESCRIPTION: Check if an acpi table found in initrd is invalid.
-+ *              @signature can be NULL. If it is NULL, the function will check
-+ *              if the table signature matches any signature in table_sigs[].
-+ *
-+ ******************************************************************************/
-+int __init acpi_verify_table(struct cpio_data *file,
-+			      const char *path, const char *signature)
-+{
-+	int idx;
-+	struct acpi_table_header *table = file->data;
-+
-+	if (file->size < sizeof(struct acpi_table_header)) {
-+		ACPI_INVALID_TABLE("Table smaller than ACPI header",
-+			      path, file->name);
-+		return -EINVAL;
-+	}
-+
-+	if (signature) {
-+		if (memcmp(table->signature, signature, 4)) {
-+			ACPI_INVALID_TABLE("Table signature does not match",
-+				      path, file->name);
-+			return -EINVAL;
-+		}
-+	} else {
-+		for (idx = 0; table_sigs[idx]; idx++)
-+			if (!memcmp(table->signature, table_sigs[idx], 4))
-+				break;
-+
-+		if (!table_sigs[idx]) {
-+			ACPI_INVALID_TABLE("Unknown signature", path, file->name);
-+			return -EINVAL;
-+		}
-+	}
-+
-+	if (file->size != table->length) {
-+		ACPI_INVALID_TABLE("File length does not match table length",
-+			      path, file->name);
-+		return -EINVAL;
-+	}
-+
-+	if (acpi_table_checksum(file->data, table->length)) {
-+		ACPI_INVALID_TABLE("Bad table checksum",
-+			      path, file->name);
-+		return -EINVAL;
-+	}
-+
-+	return 0;
-+}
-+
- void __init acpi_initrd_override(void *data, size_t size)
- {
--	int sig, no, table_nr = 0, total_offset = 0;
-+	int no, table_nr = 0, total_offset = 0;
- 	long offset = 0;
- 	struct acpi_table_header *table;
- 	char cpio_path[32] = "kernel/firmware/acpi/";
-@@ -593,33 +652,10 @@ void __init acpi_initrd_override(void *data, size_t size)
- 		data += offset;
- 		size -= offset;
- 
--		if (file.size < sizeof(struct acpi_table_header)) {
--			ACPI_INVALID_TABLE("Table smaller than ACPI header",
--				      cpio_path, file.name);
--			continue;
--		}
--
- 		table = file.data;
- 
--		for (sig = 0; table_sigs[sig]; sig++)
--			if (!memcmp(table->signature, table_sigs[sig], 4))
--				break;
--
--		if (!table_sigs[sig]) {
--			ACPI_INVALID_TABLE("Unknown signature",
--				      cpio_path, file.name);
-+		if (acpi_verify_table(&file, cpio_path, NULL))
- 			continue;
--		}
--		if (file.size != table->length) {
--			ACPI_INVALID_TABLE("File length does not match table length",
--				      cpio_path, file.name);
--			continue;
--		}
--		if (acpi_table_checksum(file.data, table->length)) {
--			ACPI_INVALID_TABLE("Bad table checksum",
--				      cpio_path, file.name);
--			continue;
--		}
- 
- 		pr_info("%4.4s ACPI table found in initrd [%s%s][0x%x]\n",
- 			table->signature, cpio_path, file.name, table->length);
--- 
-1.7.1
+> On 08/01/2013 02:34 PM, Raghavendra K T wrote:
+> >On 08/01/2013 01:15 PM, Gleb Natapov wrote:
+> >>>Shall I consider this as an ack for kvm part?
+> >>>
+> >>For everything except 18/18. For that I still want to see numbers. But
+> >>18/18 is pretty independent from the reset of the series so it should
+> >>not stop the reset from going in.
+> >
+> >Yes. agreed.
+> >I am going to evaluate patch 18 separately and come with results for
+> >that. Now we can consider only 1-17 patches.
+> >
+> 
+> Gleb,
+> 
+> 32 core machine with HT off 32 vcpu guests.
+> base = 3.11-rc + patch 1 -17 pvspinlock_v11
+> patched = base + patch 18
+> 
+> +-----------+-----------+-----------+------------+-----------+
+>                   dbench  (Throughput in MB/sec higher is better)
+> +-----------+-----------+-----------+------------+-----------+
+>       base      stdev       patched    stdev       %improvement
+> +-----------+-----------+-----------+------------+-----------+
+> 1x 14584.3800   146.9074   14705.1000   163.1060     0.82773
+> 2x  1713.7300    32.8750    1717.3200    45.5979     0.20948
+> 3x   967.8212    42.0257     971.8855    18.8532     0.41994
+> 4x   685.2764    25.7150     694.5881     8.3907     1.35882
+> +-----------+-----------+-----------+------------+-----------+
 
+Please list stddev in percentage as well ...
+
+a blind stab gave me these figures:
+
+>       base      stdev       patched    stdev       %improvement
+> 3x   967.8212    4.3%     971.8855      1.8%     0.4
+
+That makes the improvement an order of magnitude smaller than the noise of 
+the measurement ... i.e. totally inconclusive.
+
+Also please cut the excessive decimal points: with 2-4% noise what point 
+is there in 5 decimal point results??
+
+Thanks,
+
+	Ingo
