@@ -1,88 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755259Ab3HBCnx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 22:43:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7393 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754296Ab3HBCnu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 22:43:50 -0400
-Date: Thu, 01 Aug 2013 22:43:16 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, Hillf Danton <dhillf@gmail.com>,
-        Michal Hocko <mhocko@suse.cz>, Rik van Riel <riel@redhat.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        Naoya Horiguchi <nao.horiguchi@gmail.com>
-Message-ID: <1375411396-bw4cbhso-mutt-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <87vc3qvtmc.fsf@linux.vnet.ibm.com>
-References: <1374728103-17468-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1374728103-17468-9-git-send-email-n-horiguchi@ah.jp.nec.com>
- <87k3k7q4ox.fsf@linux.vnet.ibm.com>
- <1375302249-scfvftrh-mutt-n-horiguchi@ah.jp.nec.com>
- <87vc3qvtmc.fsf@linux.vnet.ibm.com>
-Subject: Re: [PATCH 8/8] prepare to remove
- /proc/sys/vm/hugepages_treat_as_movable
-Mime-Version: 1.0
-Content-Type: text/plain;
- charset=iso-2022-jp
-Content-Transfer-Encoding: 7bit
+	id S1755282Ab3HBCog (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 22:44:36 -0400
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:20318 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752966Ab3HBCoe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Aug 2013 22:44:34 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AgIFAMQc+1F5LPxHgWdsb2JhbABbgzuCd7Z1hTCBGxcOAQEWJiiCJAEBAgM6HCMQCAMOCgklDwUlAyETiA8NuTIWjRmCWAeEDAOXXoojilUq
+Date: Fri, 2 Aug 2013 12:44:31 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Namjae Jeon <linkinjeon@gmail.com>, tytso@mit.edu,
+        adilger.kernel@dilger.ca, bpm@sgi.com, elder@kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, xfs@oss.sgi.com, a.sangwan@samsung.com,
+        Namjae Jeon <namjae.jeon@samsung.com>
+Subject: Re: [PATCH 2/3] xfs: Implement FALLOC_FL_COLLAPSE_RANGE
+Message-ID: <20130802024431.GT13468@dastard>
+References: <1375281734-15874-1-git-send-email-linkinjeon@gmail.com>
+ <20130801011812.GJ7118@dastard>
+ <20130801082402.GA23414@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Mutt-Fcc: ~/Maildir/sent/
-User-Agent: Mutt 1.5.21 (2010-09-15)
+In-Reply-To: <20130801082402.GA23414@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 01, 2013 at 11:29:39AM +0530, Aneesh Kumar K.V wrote:
-> Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> writes:
+On Thu, Aug 01, 2013 at 01:24:02AM -0700, Christoph Hellwig wrote:
+> Instead of adding more mess to change_file_space it might be a good idea
+> to pull my
 > 
-> > On Wed, Jul 31, 2013 at 12:02:30AM +0530, Aneesh Kumar K.V wrote:
-> >> Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> writes:
-> >> 
-> >> > Now hugepages are definitely movable. So allocating hugepages from
-> >> > ZONE_MOVABLE is natural and we have no reason to keep this parameter.
-> >> > In order to allow userspace to prepare for the removal, let's leave
-> >> > this sysctl handler as noop for a while.
-> >> 
-> >> I guess you still need to handle architectures for which pmd_huge is
-> >> 
-> >> int pmd_huge(pmd_t pmd)
-> >> {
-> >> 	return 0;
-> >> }
-> >> 
-> >> embedded powerpc is one. They don't store pte information at the PMD
-> >> level. Instead pmd contains a pointer to hugepage directory which
-> >> contain huge pte.
-> >
-> > It seems that this comment is for the whole series, not just for this
-> > patch, right?
-> >
-> > Some users of hugepage migration (mbind, move_pages, migrate_pages)
-> > walk over page tables to collect hugepages to be migrated, where
-> > hugepages are just ignored in such architectures due to pmd_huge.
-> > So no problem for these users.
-> >
-> > But the other users (softoffline, memory hotremove) choose hugepages
-> > to be migrated based on pfn, where they don't check pmd_huge.
-> > As you wrote, this can be problematic for such architectures.
-> > So I think of adding pmd_huge() check somewhere (in unmap_and_move_huge_page
-> > for example) to make it fail for such architectures.
+>   "refactor the preallocation and hole punching code"
 > 
-> Considering that we have architectures that won't support migrating
-> explicit hugepages with this patch series, is it ok to use
-> GFP_HIGHUSER_MOVABLE for hugepage allocation ?
+> series from December in first.
 
-Originally this parameter was introduced to make hugepage pool on ZONE_MOVABLE.
-The benefit is that we can extend the hugepage pool more easily,
-because external fragmentation less likely happens than other zone type
-by rearranging fragmented pages with page migration/reclaim.
+You mean this one:
 
-So I think using ZONE_MOVABLE for hugepage allocation by default makes sense
-even on the architectures which don't support hugepage migration.
+http://oss.sgi.com/archives/xfs/2012-12/msg00124.html
 
-Thanks,
-Naoya Horiguchi
+Yeah, probably makes sense to do this. I'll have a look at porting
+it forwards to my current tree as xfs_vnodeops.c has gone away in
+that series...
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
