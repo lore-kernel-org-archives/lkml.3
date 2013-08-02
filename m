@@ -1,64 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754178Ab3HBCPm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 22:15:42 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:33148 "EHLO
+	id S1754423Ab3HBCP6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 22:15:58 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:33168 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751400Ab3HBCPj (ORCPT
+	with ESMTP id S1751400Ab3HBCP5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 22:15:39 -0400
+	Thu, 1 Aug 2013 22:15:57 -0400
 From: Rohit Vaswani <rvaswani@codeaurora.org>
 To: David Brown <davidb@codeaurora.org>
 Cc: Rohit Vaswani <rvaswani@codeaurora.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
         Daniel Walker <dwalker@fifo99.com>,
         Bryan Huntsman <bryanh@codeaurora.org>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Nicolas Pitre <nico@linaro.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org
-Subject: [RESEND PATCH 0/4]Add SMP support for MSM8660, MSM8960 and MSM8974
-Date: Thu,  1 Aug 2013 19:15:21 -0700
-Message-Id: <1375409725-22004-1-git-send-email-rvaswani@codeaurora.org>
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [RESEND PATCH 1/4] ARM: msm: Remove pen_release usage
+Date: Thu,  1 Aug 2013 19:15:22 -0700
+Message-Id: <1375409725-22004-2-git-send-email-rvaswani@codeaurora.org>
 X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <1375409725-22004-1-git-send-email-rvaswani@codeaurora.org>
+References: <1375409725-22004-1-git-send-email-rvaswani@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series re-organizes the platsmp.c and adds SMP support for
-MSM8660, MSM8960 and MSM8974. This is based on 3.11-rc3.
-We convert to using the cpus property in device tree and
-add a "enable-method" property for arm32.
-This helps select the appropriate release sequence for the
-secondary cores based on the cpu.
+pen_release is no longer required as the synchronization
+is now managed by generic arm code.
+This is done as suggested in https://lkml.org/lkml/2013/6/4/184
 
-Rohit Vaswani (4):
-  ARM: msm: Remove pen_release usage
-  ARM: msm: Re-organize platsmp to make it extensible
-  ARM: msm: Add SMP support for 8960
-  ARM: msm: Add support for 8974 SMP
-
- Documentation/devicetree/bindings/arm/cpus.txt     |   9 +
- Documentation/devicetree/bindings/arm/msm/kpss.txt |  16 ++
- Documentation/devicetree/bindings/arm/msm/scss.txt |  15 ++
- arch/arm/boot/dts/msm8660-surf.dts                 |  23 +-
- arch/arm/boot/dts/msm8960-cdp.dts                  |  22 ++
- arch/arm/boot/dts/msm8974.dts                      |  23 ++
- arch/arm/mach-msm/Makefile                         |   2 +-
- arch/arm/mach-msm/board-dt-8974.c                  |   3 +
- arch/arm/mach-msm/headsmp.S                        |  39 ---
- arch/arm/mach-msm/hotplug.c                        |  31 +--
- arch/arm/mach-msm/platsmp.c                        | 263 ++++++++++++++++-----
- arch/arm/mach-msm/scm-boot.h                       |   8 +-
- 12 files changed, 330 insertions(+), 124 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/arm/msm/kpss.txt
- create mode 100644 Documentation/devicetree/bindings/arm/msm/scss.txt
+Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
+---
+ arch/arm/mach-msm/Makefile  |  2 +-
+ arch/arm/mach-msm/headsmp.S | 39 ---------------------------------------
+ arch/arm/mach-msm/hotplug.c | 31 ++++---------------------------
+ arch/arm/mach-msm/platsmp.c | 35 +++--------------------------------
+ 4 files changed, 8 insertions(+), 99 deletions(-)
  delete mode 100644 arch/arm/mach-msm/headsmp.S
 
+diff --git a/arch/arm/mach-msm/Makefile b/arch/arm/mach-msm/Makefile
+index 80e3b15..14e22f9 100644
+--- a/arch/arm/mach-msm/Makefile
++++ b/arch/arm/mach-msm/Makefile
+@@ -20,7 +20,7 @@ obj-$(CONFIG_MSM_SCM) += scm.o scm-boot.o
+ CFLAGS_scm.o :=$(call as-instr,.arch_extension sec,-DREQUIRES_SEC=1)
+ 
+ obj-$(CONFIG_HOTPLUG_CPU) += hotplug.o
+-obj-$(CONFIG_SMP) += headsmp.o platsmp.o
++obj-$(CONFIG_SMP) += platsmp.o
+ 
+ obj-$(CONFIG_MACH_TROUT) += board-trout.o board-trout-gpio.o board-trout-mmc.o devices-msm7x00.o
+ obj-$(CONFIG_MACH_TROUT) += board-trout.o board-trout-gpio.o board-trout-mmc.o board-trout-panel.o devices-msm7x00.o
+diff --git a/arch/arm/mach-msm/headsmp.S b/arch/arm/mach-msm/headsmp.S
+deleted file mode 100644
+index 6c62c3f..0000000
+--- a/arch/arm/mach-msm/headsmp.S
++++ /dev/null
+@@ -1,39 +0,0 @@
+-/*
+- *  linux/arch/arm/mach-realview/headsmp.S
+- *
+- *  Copyright (c) 2003 ARM Limited
+- *  All Rights Reserved
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- */
+-#include <linux/linkage.h>
+-#include <linux/init.h>
+-
+-/*
+- * MSM specific entry point for secondary CPUs.  This provides
+- * a "holding pen" into which all secondary cores are held until we're
+- * ready for them to initialise.
+- */
+-ENTRY(msm_secondary_startup)
+-	mrc	p15, 0, r0, c0, c0, 5
+-	and	r0, r0, #15
+-	adr	r4, 1f
+-	ldmia	r4, {r5, r6}
+-	sub	r4, r4, r5
+-	add	r6, r6, r4
+-pen:	ldr	r7, [r6]
+-	cmp	r7, r0
+-	bne	pen
+-
+-	/*
+-	 * we've been released from the holding pen: secondary_stack
+-	 * should now contain the SVC stack for this core
+-	 */
+-	b	secondary_startup
+-ENDPROC(msm_secondary_startup)
+-
+-	.align
+-1:	.long	.
+-	.long	pen_release
+diff --git a/arch/arm/mach-msm/hotplug.c b/arch/arm/mach-msm/hotplug.c
+index 326a872..cea80fc 100644
+--- a/arch/arm/mach-msm/hotplug.c
++++ b/arch/arm/mach-msm/hotplug.c
+@@ -24,33 +24,10 @@ static inline void cpu_leave_lowpower(void)
+ 
+ static inline void platform_do_lowpower(unsigned int cpu)
+ {
+-	/* Just enter wfi for now. TODO: Properly shut off the cpu. */
+-	for (;;) {
+-		/*
+-		 * here's the WFI
+-		 */
+-		asm("wfi"
+-		    :
+-		    :
+-		    : "memory", "cc");
+-
+-		if (pen_release == cpu_logical_map(cpu)) {
+-			/*
+-			 * OK, proper wakeup, we're done
+-			 */
+-			break;
+-		}
+-
+-		/*
+-		 * getting here, means that we have come out of WFI without
+-		 * having been woken up - this shouldn't happen
+-		 *
+-		 * The trouble is, letting people know about this is not really
+-		 * possible, since we are currently running incoherently, and
+-		 * therefore cannot safely call printk() or anything else
+-		 */
+-		pr_debug("CPU%u: spurious wakeup call\n", cpu);
+-	}
++	asm("wfi"
++	    :
++	    :
++	    : "memory", "cc");
+ }
+ 
+ /*
+diff --git a/arch/arm/mach-msm/platsmp.c b/arch/arm/mach-msm/platsmp.c
+index 3f06edc..5b481db 100644
+--- a/arch/arm/mach-msm/platsmp.c
++++ b/arch/arm/mach-msm/platsmp.c
+@@ -28,7 +28,7 @@
+ #define SCSS_CPU1CORE_RESET 0xD80
+ #define SCSS_DBG_STATUS_CORE_PWRDUP 0xE64
+ 
+-extern void msm_secondary_startup(void);
++extern void secondary_startup(void);
+ 
+ static DEFINE_SPINLOCK(boot_lock);
+ 
+@@ -41,13 +41,6 @@ static inline int get_core_count(void)
+ static void msm_secondary_init(unsigned int cpu)
+ {
+ 	/*
+-	 * let the primary processor know we're out of the
+-	 * pen, then head off into the C entry point
+-	 */
+-	pen_release = -1;
+-	smp_wmb();
+-
+-	/*
+ 	 * Synchronise with the boot thread.
+ 	 */
+ 	spin_lock(&boot_lock);
+@@ -57,7 +50,7 @@ static void msm_secondary_init(unsigned int cpu)
+ static void prepare_cold_cpu(unsigned int cpu)
+ {
+ 	int ret;
+-	ret = scm_set_boot_addr(virt_to_phys(msm_secondary_startup),
++	ret = scm_set_boot_addr(virt_to_phys(secondary_startup),
+ 				SCM_FLAG_COLDBOOT_CPU1);
+ 	if (ret == 0) {
+ 		void __iomem *sc1_base_ptr;
+@@ -75,7 +68,6 @@ static void prepare_cold_cpu(unsigned int cpu)
+ 
+ static int msm_boot_secondary(unsigned int cpu, struct task_struct *idle)
+ {
+-	unsigned long timeout;
+ 	static int cold_boot_done;
+ 
+ 	/* Only need to bring cpu out of reset this way once */
+@@ -91,40 +83,19 @@ static int msm_boot_secondary(unsigned int cpu, struct task_struct *idle)
+ 	spin_lock(&boot_lock);
+ 
+ 	/*
+-	 * The secondary processor is waiting to be released from
+-	 * the holding pen - release it, then wait for it to flag
+-	 * that it has been released by resetting pen_release.
+-	 *
+-	 * Note that "pen_release" is the hardware CPU ID, whereas
+-	 * "cpu" is Linux's internal ID.
+-	 */
+-	pen_release = cpu_logical_map(cpu);
+-	__cpuc_flush_dcache_area((void *)&pen_release, sizeof(pen_release));
+-	outer_clean_range(__pa(&pen_release), __pa(&pen_release + 1));
+-
+-	/*
+ 	 * Send the secondary CPU a soft interrupt, thereby causing
+ 	 * the boot monitor to read the system wide flags register,
+ 	 * and branch to the address found there.
+ 	 */
+ 	arch_send_wakeup_ipi_mask(cpumask_of(cpu));
+ 
+-	timeout = jiffies + (1 * HZ);
+-	while (time_before(jiffies, timeout)) {
+-		smp_rmb();
+-		if (pen_release == -1)
+-			break;
+-
+-		udelay(10);
+-	}
+-
+ 	/*
+ 	 * now the secondary core is starting up let it run its
+ 	 * calibrations, then wait for it to finish
+ 	 */
+ 	spin_unlock(&boot_lock);
+ 
+-	return pen_release != -1 ? -ENOSYS : 0;
++	return 0;
+ }
+ 
+ /*
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
