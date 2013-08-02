@@ -1,78 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751689Ab3HBECU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 00:02:20 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:20250 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750777Ab3HBECS (ORCPT
+	id S1752548Ab3HBECt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 00:02:49 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:25745 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750871Ab3HBECs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 00:02:18 -0400
-X-Spam-Score: -100.8
-Message-ID: <51FB2F08.5010600@asianux.com>
-Date: Fri, 02 Aug 2013 12:01:12 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Fri, 2 Aug 2013 00:02:48 -0400
+Message-ID: <51FB2F3D.5050904@huawei.com>
+Date: Fri, 2 Aug 2013 12:02:05 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Rusty Russell <rusty@rustcorp.com.au>
-CC: James Hogan <james.hogan@imgtec.com>, mmarek@suse.cz,
-        Sam Ravnborg <sam@ravnborg.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>
-Subject: Re: [PATCH] scripts/mod/modpost.c: permit '.cranges' secton for sh64
- architecture.
-References: <51F9F5AB.6030002@asianux.com> <871u6c4yjq.fsf@rustcorp.com.au>
-In-Reply-To: <871u6c4yjq.fsf@rustcorp.com.au>
-Content-Type: text/plain; charset=UTF-8
+To: Tejun Heo <tj@kernel.org>
+CC: <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Michal Hocko <mhocko@suse.cz>, Balbir Singh <bsingharora@gmail.com>,
+        Aristeu Rozanski <aris@redhat.com>, Matt Helsley <matthltc@us.ibm.com>,
+        Daniel Wagner <daniel.wagner@bmw-carit.de>,
+        Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH 08/23] cgroup: pass around cgroup_subsys_state instead
+ of cgroup in subsystem methods
+References: <1375393801-4817-1-git-send-email-tj@kernel.org> <1375393801-4817-9-git-send-email-tj@kernel.org>
+In-Reply-To: <1375393801-4817-9-git-send-email-tj@kernel.org>
+Content-Type: text/plain; charset="GB2312"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02/2013 10:27 AM, Rusty Russell wrote:
-> Chen Gang <gang.chen@asianux.com> writes:
->> Need permit '.cranges' section for sh64 architecture, or modpost will
->> report warning:
->>
->>     LD      init/built-in.o
->>   WARNING: init/built-in.o (.cranges): unexpected non-allocatable section.
->>   Did you forget to use "ax"/"aw" in a .S file?
->>   Note that for example <linux/init.h> contains
->>   section definitions for use in .S files.
->>
->>
->> Signed-off-by: Chen Gang <gang.chen@asianux.com>
-> 
-> Applied.
-> 
+> @@ -4199,12 +4208,13 @@ static void init_cgroup_css(struct cgroup_subsys_state *css,
+>  /* invoke ->css_online() on a new CSS and mark it online if successful */
+>  static int online_css(struct cgroup_subsys *ss, struct cgroup *cgrp)
+>  {
+> +	struct cgroup_subsys_state *css = cgrp->subsys[ss->subsys_id];
+>  	int ret = 0;
+>  
+>  	lockdep_assert_held(&cgroup_mutex);
+>  
+>  	if (ss->css_online)
+> -		ret = ss->css_online(cgrp);
+> +		ret = ss->css_online(css);
+>  	if (!ret)
+>  		cgrp->subsys[ss->subsys_id]->flags |= CSS_ONLINE;
 
-Thank you too.
+Then this can be changed to css->flags |= CSS_ONLINE.
 
-> Thanks,
-> Rusty.
-> 
->> ---
->>  scripts/mod/modpost.c |    1 +
->>  1 files changed, 1 insertions(+), 0 deletions(-)
->>
->> diff --git a/scripts/mod/modpost.c b/scripts/mod/modpost.c
->> index 6216434..8247979 100644
->> --- a/scripts/mod/modpost.c
->> +++ b/scripts/mod/modpost.c
->> @@ -821,6 +821,7 @@ static const char *section_white_list[] =
->>  {
->>  	".comment*",
->>  	".debug*",
->> +	".cranges",		/* sh64 */
->>  	".zdebug*",		/* Compressed debug sections. */
->>  	".GCC-command-line",	/* mn10300 */
->>  	".GCC.command.line",	/* record-gcc-switches, non mn10300 */
->> -- 
->> 1.7.7.6
-> 
-> 
+>  	return ret;
 
-
--- 
-Chen Gang
