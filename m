@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759450Ab3HBKJc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:09:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37161 "EHLO
+	id S1759336Ab3HBKJP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:09:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37137 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758982Ab3HBKJ0 (ORCPT
+	with ESMTP id S1759294Ab3HBKJL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:09:26 -0400
+	Fri, 2 Aug 2013 06:09:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Huang Rui <ray.huang@amd.com>, Felipe Balbi <balbi@ti.com>
-Subject: [ 28/99] usb: dwc3: fix wrong bit mask in dwc3_event_type
-Date: Fri,  2 Aug 2013 18:07:41 +0800
-Message-Id: <20130802100229.976570223@linuxfoundation.org>
+        George Cherian <george.cherian@ti.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [ 22/99] usb: host: xhci: Enable XHCI_SPURIOUS_SUCCESS for all controllers with xhci 1.0
+Date: Fri,  2 Aug 2013 18:07:35 +0800
+Message-Id: <20130802100229.136319127@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802100225.478715166@linuxfoundation.org>
 References: <20130802100225.478715166@linuxfoundation.org>
@@ -26,47 +27,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Huang Rui <ray.huang@amd.com>
+From: George Cherian <george.cherian@ti.com>
 
-commit 1974d494dea05ea227cb42f5e918828801e237aa upstream.
+commit 07f3cb7c28bf3f4dd80bfb136cf45810c46ac474 upstream.
 
-Per dwc3 2.50a spec, the is_devspec bit is used to distinguish the
-Device Endpoint-Specific Event or Device-Specific Event (DEVT). If the
-bit is 1, the event is represented Device-Specific Event, then use
-[7:1] bits as Device Specific Event to marked the type. It has 7 bits,
-and we can see the reserved8_31 variable name which means from 8 to 31
-bits marked reserved, actually there are 24 bits not 25 bits between
-that. And 1 + 7 + 24 = 32, the event size is 4 byes.
+Xhci controllers with hci_version > 0.96 gives spurious success
+events on short packet completion. During webcam capture the
+"ERROR Transfer event TRB DMA ptr not part of current TD" was observed.
+The same application works fine with synopsis controllers hci_version 0.96.
+The same issue is seen with Intel Pantherpoint xhci controller. So enabling
+this quirk in xhci_gen_setup if controller verion is greater than 0.96.
+For xhci-pci move the quirk to much generic place xhci_gen_setup.
 
-So in dwc3_event_type, the bit mask should be:
-is_devspec	[0]		1  bit
-type		[7:1]		7  bits
-reserved8_31	[31:8]		24 bits
+Note from Sarah:
 
-This patch should be backported to kernels as old as 3.2, that contain
-the commit 72246da40f3719af3bfd104a2365b32537c27d83 "usb: Introduce
-DesignWare USB3 DRD Driver".
+The xHCI 1.0 spec changed how hardware handles short packets.  The HW
+will notify SW of the TRB where the short packet occurred, and it will
+also give a successful status for the last TRB in a TD (the one with the
+IOC flag set).  On the second successful status, that warning will be
+triggered in the driver.
 
-Signed-off-by: Huang Rui <ray.huang@amd.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Software is now supposed to not assume the TD is not completed until it
+gets that last successful status.  That means we have a slight race
+condition, although it should have little practical impact.  This patch
+papers over that issue.
+
+It's on my long-term to-do list to fix this race condition, but it is a
+much more involved patch that will probably be too big for stable.  This
+patch is needed for stable to avoid serious log spam.
+
+This patch should be backported to kernels as old as 3.0, that
+contain the commit ad808333d8201d53075a11bc8dd83b81f3d68f0b "Intel xhci:
+Ignore spurious successful event."
+
+The patch will have to be modified for kernels older than 3.2, since
+that kernel added the xhci_gen_setup function for xhci platform devices.
+The correct conflict resolution for kernels older than 3.2 is to set
+XHCI_SPURIOUS_SUCCESS in xhci_pci_quirks for all xHCI 1.0 hosts.
+
+Signed-off-by: George Cherian <george.cherian@ti.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/dwc3/core.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/usb/host/xhci-pci.c |    1 -
+ drivers/usb/host/xhci.c     |    7 +++++++
+ 2 files changed, 7 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/dwc3/core.h
-+++ b/drivers/usb/dwc3/core.h
-@@ -759,8 +759,8 @@ struct dwc3 {
+--- a/drivers/usb/host/xhci-pci.c
++++ b/drivers/usb/host/xhci-pci.c
+@@ -93,7 +93,6 @@ static void xhci_pci_quirks(struct devic
+ 	}
+ 	if (pdev->vendor == PCI_VENDOR_ID_INTEL &&
+ 			pdev->device == PCI_DEVICE_ID_INTEL_PANTHERPOINT_XHCI) {
+-		xhci->quirks |= XHCI_SPURIOUS_SUCCESS;
+ 		xhci->quirks |= XHCI_EP_LIMIT_QUIRK;
+ 		xhci->limit_active_eps = 64;
+ 		xhci->quirks |= XHCI_SW_BW_CHECKING;
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -4697,6 +4697,13 @@ int xhci_gen_setup(struct usb_hcd *hcd,
  
- struct dwc3_event_type {
- 	u32	is_devspec:1;
--	u32	type:6;
--	u32	reserved8_31:25;
-+	u32	type:7;
-+	u32	reserved8_31:24;
- } __packed;
+ 	get_quirks(dev, xhci);
  
- #define DWC3_DEPEVT_XFERCOMPLETE	0x01
++	/* In xhci controllers which follow xhci 1.0 spec gives a spurious
++	 * success event after a short transfer. This quirk will ignore such
++	 * spurious event.
++	 */
++	if (xhci->hci_version > 0x96)
++		xhci->quirks |= XHCI_SPURIOUS_SUCCESS;
++
+ 	/* Make sure the HC is halted. */
+ 	retval = xhci_halt(xhci);
+ 	if (retval)
 
 
