@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755471Ab3HBKpJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:45:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37334 "EHLO
+	id S1030246Ab3HBKK3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:10:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37286 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030263Ab3HBKKe (ORCPT
+	with ESMTP id S1030235Ab3HBKKX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:10:34 -0400
+	Fri, 2 Aug 2013 06:10:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vakul Garg <vakul@freescale.com>,
-        Geanta Neag Horia Ioan-B05471 <horia.geanta@freescale.com>,
-        Fleming Andrew-AFLEMING <AFLEMING@freescale.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: [ 52/99] crypto: caam - Fixed the memory out of bound overwrite issue
-Date: Fri,  2 Aug 2013 18:08:05 +0800
-Message-Id: <20130802100233.306344198@linuxfoundation.org>
+        NeilBrown <neilb@suse.de>
+Subject: [ 48/99] md/raid10: remove use-after-free bug.
+Date: Fri,  2 Aug 2013 18:08:01 +0800
+Message-Id: <20130802100232.776933931@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802100225.478715166@linuxfoundation.org>
 References: <20130802100225.478715166@linuxfoundation.org>
@@ -29,81 +26,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vakul Garg <vakul@freescale.com>
+From: NeilBrown <neilb@suse.de>
 
-commit 9c23b7d3d6bda41e2a27375df705485523a96dc8 upstream.
+commit 0eb25bb027a100f5a9df8991f2f628e7d851bc1e upstream.
 
-When kernel is compiled with CONFIG_SLUB_DEBUG=y and
-CRYPTO_MANAGER_DISABLE_TESTS=n, during kernel bootup, the kernel
-reports error given below. The root cause is that in function
-hash_digest_key(), for allocating descriptor, insufficient memory was
-being allocated. The required number of descriptor words apart from
-input and output pointers are 8 (instead of 6).
+We always need to be careful when calling generic_make_request, as it
+can start a chain of events which might free something that we are
+using.
 
-=============================================================================
-BUG dma-kmalloc-32 (Not tainted): Redzone overwritten
------------------------------------------------------------------------------
+Here is one place I wasn't careful enough.  If the wbio2 is not in
+use, then it might get freed at the first generic_make_request call.
+So perform all necessary tests first.
 
-Disabling lock debugging due to kernel taint
-INFO: 0xdec5dec0-0xdec5dec3. First byte 0x0 instead of 0xcc
-INFO: Allocated in ahash_setkey+0x60/0x594 age=7 cpu=1 pid=1257
-        __kmalloc+0x154/0x1b4
-        ahash_setkey+0x60/0x594
-        test_hash+0x260/0x5a0
-        alg_test_hash+0x48/0xb0
-        alg_test+0x84/0x228
-        cryptomgr_test+0x4c/0x54
-        kthread+0x98/0x9c
-        ret_from_kernel_thread+0x64/0x6c
-INFO: Slab 0xc0bd0ba0 objects=19 used=2 fp=0xdec5d0d0 flags=0x0081
-INFO: Object 0xdec5dea0 @offset=3744 fp=0x5c200014
+This bug was introduced in 3.3-rc3 (24afd80d99) and can cause an
+oops, so fix is suitable for any -stable since then.
 
-Bytes b4 dec5de90: 00 00 00 00 00 00 00 00 5a 5a 5a 5a 5a 5a 5a 5a
-........ZZZZZZZZ
-Object dec5dea0: b0 80 00 0a 84 41 00 0d f0 40 00 00 00 67 3f c0
-.....A...@...g?.
-Object dec5deb0: 00 00 00 50 2c 14 00 50 f8 40 00 00 1e c5 d0 00
-...P,..P.@......
-Redzone dec5dec0: 00 00 00 14                                      ....
-Padding dec5df68: 5a 5a 5a 5a 5a 5a 5a 5a
-ZZZZZZZZ
-Call Trace:
-[dec65b60] [c00071b4] show_stack+0x4c/0x168 (unreliable)
-[dec65ba0] [c00d4ec8] check_bytes_and_report+0xe4/0x11c
-[dec65bd0] [c00d507c] check_object+0x17c/0x23c
-[dec65bf0] [c0550a00] free_debug_processing+0xf4/0x294
-[dec65c20] [c0550bdc] __slab_free+0x3c/0x294
-[dec65c80] [c03f0744] ahash_setkey+0x4e0/0x594
-[dec65cd0] [c01ef138] test_hash+0x260/0x5a0
-[dec65e50] [c01ef4c0] alg_test_hash+0x48/0xb0
-[dec65e70] [c01eecc4] alg_test+0x84/0x228
-[dec65ee0] [c01ec640] cryptomgr_test+0x4c/0x54
-[dec65ef0] [c005adc0] kthread+0x98/0x9c
-[dec65f40] [c000e1ac] ret_from_kernel_thread+0x64/0x6c
-FIX dma-kmalloc-32: Restoring 0xdec5dec0-0xdec5dec3=0xcc
-
-Change-Id: I0c7a1048053e811025d1c3b487940f87345c8f5d
-Signed-off-by: Vakul Garg <vakul@freescale.com>
-Reviewed-by: Geanta Neag Horia Ioan-B05471 <horia.geanta@freescale.com>
-Reviewed-by: Fleming Andrew-AFLEMING <AFLEMING@freescale.com>
-Tested-by: Fleming Andrew-AFLEMING <AFLEMING@freescale.com>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/crypto/caam/caamhash.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/md/raid10.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
---- a/drivers/crypto/caam/caamhash.c
-+++ b/drivers/crypto/caam/caamhash.c
-@@ -429,7 +429,7 @@ static int hash_digest_key(struct caam_h
- 	dma_addr_t src_dma, dst_dma;
- 	int ret = 0;
- 
--	desc = kmalloc(CAAM_CMD_SZ * 6 + CAAM_PTR_SZ * 2, GFP_KERNEL | GFP_DMA);
-+	desc = kmalloc(CAAM_CMD_SZ * 8 + CAAM_PTR_SZ * 2, GFP_KERNEL | GFP_DMA);
- 	if (!desc) {
- 		dev_err(jrdev, "unable to allocate key input memory\n");
- 		return -ENOMEM;
+--- a/drivers/md/raid10.c
++++ b/drivers/md/raid10.c
+@@ -2268,12 +2268,18 @@ static void recovery_request_write(struc
+ 	d = r10_bio->devs[1].devnum;
+ 	wbio = r10_bio->devs[1].bio;
+ 	wbio2 = r10_bio->devs[1].repl_bio;
++	/* Need to test wbio2->bi_end_io before we call
++	 * generic_make_request as if the former is NULL,
++	 * the latter is free to free wbio2.
++	 */
++	if (wbio2 && !wbio2->bi_end_io)
++		wbio2 = NULL;
+ 	if (wbio->bi_end_io) {
+ 		atomic_inc(&conf->mirrors[d].rdev->nr_pending);
+ 		md_sync_acct(conf->mirrors[d].rdev->bdev, bio_sectors(wbio));
+ 		generic_make_request(wbio);
+ 	}
+-	if (wbio2 && wbio2->bi_end_io) {
++	if (wbio2) {
+ 		atomic_inc(&conf->mirrors[d].replacement->nr_pending);
+ 		md_sync_acct(conf->mirrors[d].replacement->bdev,
+ 			     bio_sectors(wbio2));
 
 
