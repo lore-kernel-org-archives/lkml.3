@@ -1,189 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757371Ab3HBC5J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Aug 2013 22:57:09 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:23427 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752739Ab3HBCzy (ORCPT
+	id S1754789Ab3HBDAh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Aug 2013 23:00:37 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:32152 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752649Ab3HBDAe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Aug 2013 22:55:54 -0400
-X-Authority-Analysis: v=2.0 cv=KJ7Y/S5o c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=BQb9dD2DRTkA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=JIp8yWWFw3wA:10 a=VwQbUJbxAAAA:8 a=3nbZYyFuAAAA:8 a=bivS3LTFoMlGwFfbbm4A:9 a=jeBq3FmKZ4MA:10 a=EvKJbDF4Ut8A:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-Id: <20130802025553.620499138@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Thu, 01 Aug 2013 22:49:29 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [for-next-3.11][PATCH 4/5] tracing/kprobes: Fail to unregister if probe event files are in use
-References: <20130802024924.999067099@goodmis.org>
-Content-Disposition: inline; filename=0004-tracing-kprobes-Fail-to-unregister-if-probe-event-fi.patch
+	Thu, 1 Aug 2013 23:00:34 -0400
+To: Bernd Schubert <bernd.schubert@fastmail.fm>
+Cc: "Martin K. Petersen" <martin.petersen@oracle.com>, Nix <nix@esperi.org.uk>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-scsi@vger.kernel.org, nick.cheng@areca.com.tw,
+        stable@vger.kernel.org, Douglas Gilbert <dgilbert@interlog.com>,
+        "James E.J. Bottomley" <James.Bottomley@HansenPartnership.com>
+Subject: Re: [PATCH] scsi disk: Use its own buffer for the vpd request
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
+Organization: Oracle Corporation
+References: <87r4ehfzhf.fsf@spindle.srvr.nix> <51F667C2.4020801@fastmail.fm>
+	<87mwp5frdl.fsf@spindle.srvr.nix> <51F67959.2060803@fastmail.fm>
+	<87fvuxdqes.fsf@spindle.srvr.nix> <yq1txjdhree.fsf@sermon.lab.mkp.net>
+	<51F80167.1080004@fastmail.fm> <yq1zjt3h11y.fsf@sermon.lab.mkp.net>
+	<51F94E8D.5040908@fastmail.fm> <51F95A2E.60805@fastmail.fm>
+	<51FA71E2.6010501@fastmail.fm>
+Date: Thu, 01 Aug 2013 23:00:11 -0400
+In-Reply-To: <51FA71E2.6010501@fastmail.fm> (Bernd Schubert's message of "Thu,
+	01 Aug 2013 16:34:10 +0200")
+Message-ID: <yq1li4ker0k.fsf@sermon.lab.mkp.net>
+User-Agent: Gnus/5.130005 (Ma Gnus v0.5) Emacs/24.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+>>>>> "Bernd" == Bernd Schubert <bernd.schubert@fastmail.fm> writes:
 
-When a probe is being removed, it cleans up the event files that correspond
-to the probe. But there is a race between writing to one of these files
-and deleting the probe. This is especially true for the "enable" file.
+Bernd,
 
-	CPU 0				CPU 1
-	-----				-----
+Bernd> Once I noticed that scsi_get_vpd_page() works fine from other
+Bernd> function calls and that it is not 0x89, but already 0x0 that
+Bernd> fails fixing it became easy.
 
-				  fd = open("enable",O_WRONLY);
+Bernd> Nix, any chance you could verify it also works for you?
 
-  probes_open()
-  release_all_trace_probes()
-  unregister_trace_probe()
-  if (trace_probe_is_enabled(tp))
-	return -EBUSY
+Do we get an appropriate error back when we try to issue WRITE SAME
+10/16? If so, I'm OK with this fix.
 
-				   write(fd, "1", 1)
-				   __ftrace_set_clr_event()
-				   call->class->reg()
-				    (kprobe_register)
-				     enable_trace_probe(tp)
+And thanks for looking into this!
 
-  __unregister_trace_probe(tp);
-  list_del(&tp->list)
-  unregister_probe_event(tp) <-- fails!
-  free_trace_probe(tp)
-
-				   write(fd, "0", 1)
-				   __ftrace_set_clr_event()
-				   call->class->unreg
-				    (kprobe_register)
-				    disable_trace_probe(tp) <-- BOOM!
-
-A test program was written that used two threads to simulate the
-above scenario adding a nanosleep() interval to change the timings
-and after several thousand runs, it was able to trigger this bug
-and crash:
-
-BUG: unable to handle kernel paging request at 00000005000000f9
-IP: [<ffffffff810dee70>] probes_open+0x3b/0xa7
-PGD 7808a067 PUD 0
-Oops: 0000 [#1] PREEMPT SMP
-Dumping ftrace buffer:
----------------------------------
-Modules linked in: ipt_MASQUERADE sunrpc ip6t_REJECT nf_conntrack_ipv6
-CPU: 1 PID: 2070 Comm: test-kprobe-rem Not tainted 3.11.0-rc3-test+ #47
-Hardware name: To Be Filled By O.E.M. To Be Filled By O.E.M./To be filled by O.E.M., BIOS SDBLI944.86P 05/08/2007
-task: ffff880077756440 ti: ffff880076e52000 task.ti: ffff880076e52000
-RIP: 0010:[<ffffffff810dee70>]  [<ffffffff810dee70>] probes_open+0x3b/0xa7
-RSP: 0018:ffff880076e53c38  EFLAGS: 00010203
-RAX: 0000000500000001 RBX: ffff88007844f440 RCX: 0000000000000003
-RDX: 0000000000000003 RSI: 0000000000000003 RDI: ffff880076e52000
-RBP: ffff880076e53c58 R08: ffff880076e53bd8 R09: 0000000000000000
-R10: ffff880077756440 R11: 0000000000000006 R12: ffffffff810dee35
-R13: ffff880079250418 R14: 0000000000000000 R15: ffff88007844f450
-FS:  00007f87a276f700(0000) GS:ffff88007d480000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: 00000005000000f9 CR3: 0000000077262000 CR4: 00000000000007e0
-Stack:
- ffff880076e53c58 ffffffff81219ea0 ffff88007844f440 ffffffff810dee35
- ffff880076e53ca8 ffffffff81130f78 ffff8800772986c0 ffff8800796f93a0
- ffffffff81d1b5d8 ffff880076e53e04 0000000000000000 ffff88007844f440
-Call Trace:
- [<ffffffff81219ea0>] ? security_file_open+0x2c/0x30
- [<ffffffff810dee35>] ? unregister_trace_probe+0x4b/0x4b
- [<ffffffff81130f78>] do_dentry_open+0x162/0x226
- [<ffffffff81131186>] finish_open+0x46/0x54
- [<ffffffff8113f30b>] do_last+0x7f6/0x996
- [<ffffffff8113cc6f>] ? inode_permission+0x42/0x44
- [<ffffffff8113f6dd>] path_openat+0x232/0x496
- [<ffffffff8113fc30>] do_filp_open+0x3a/0x8a
- [<ffffffff8114ab32>] ? __alloc_fd+0x168/0x17a
- [<ffffffff81131f4e>] do_sys_open+0x70/0x102
- [<ffffffff8108f06e>] ? trace_hardirqs_on_caller+0x160/0x197
- [<ffffffff81131ffe>] SyS_open+0x1e/0x20
- [<ffffffff81522742>] system_call_fastpath+0x16/0x1b
-Code: e5 41 54 53 48 89 f3 48 83 ec 10 48 23 56 78 48 39 c2 75 6c 31 f6 48 c7
-RIP  [<ffffffff810dee70>] probes_open+0x3b/0xa7
- RSP <ffff880076e53c38>
-CR2: 00000005000000f9
----[ end trace 35f17d68fc569897 ]---
-
-The unregister_trace_probe() must be done first, and if it fails it must
-fail the removal of the kprobe.
-
-Several changes have already been made by Oleg Nesterov and Masami Hiramatsu
-to allow moving the unregister_probe_event() before the removal of
-the probe and exit the function if it fails. This prevents the tp
-structure from being used after it is freed.
-
-Link: http://lkml.kernel.org/r/20130704034038.819592356@goodmis.org
-
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/trace/trace_kprobe.c |   21 +++++++++++++++------
- 1 file changed, 15 insertions(+), 6 deletions(-)
-
-diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-index 3811487..243f683 100644
---- a/kernel/trace/trace_kprobe.c
-+++ b/kernel/trace/trace_kprobe.c
-@@ -95,7 +95,7 @@ static __kprobes bool trace_probe_is_on_module(struct trace_probe *tp)
- }
- 
- static int register_probe_event(struct trace_probe *tp);
--static void unregister_probe_event(struct trace_probe *tp);
-+static int unregister_probe_event(struct trace_probe *tp);
- 
- static DEFINE_MUTEX(probe_lock);
- static LIST_HEAD(probe_list);
-@@ -351,9 +351,12 @@ static int unregister_trace_probe(struct trace_probe *tp)
- 	if (trace_probe_is_enabled(tp))
- 		return -EBUSY;
- 
-+	/* Will fail if probe is being used by ftrace or perf */
-+	if (unregister_probe_event(tp))
-+		return -EBUSY;
-+
- 	__unregister_trace_probe(tp);
- 	list_del(&tp->list);
--	unregister_probe_event(tp);
- 
- 	return 0;
- }
-@@ -632,7 +635,9 @@ static int release_all_trace_probes(void)
- 	/* TODO: Use batch unregistration */
- 	while (!list_empty(&probe_list)) {
- 		tp = list_entry(probe_list.next, struct trace_probe, list);
--		unregister_trace_probe(tp);
-+		ret = unregister_trace_probe(tp);
-+		if (ret)
-+			goto end;
- 		free_trace_probe(tp);
- 	}
- 
-@@ -1247,11 +1252,15 @@ static int register_probe_event(struct trace_probe *tp)
- 	return ret;
- }
- 
--static void unregister_probe_event(struct trace_probe *tp)
-+static int unregister_probe_event(struct trace_probe *tp)
- {
-+	int ret;
-+
- 	/* tp->event is unregistered in trace_remove_event_call() */
--	trace_remove_event_call(&tp->call);
--	kfree(tp->call.print_fmt);
-+	ret = trace_remove_event_call(&tp->call);
-+	if (!ret)
-+		kfree(tp->call.print_fmt);
-+	return ret;
- }
- 
- /* Make a debugfs interface for controlling probe points */
 -- 
-1.7.10.4
-
-
+Martin K. Petersen	Oracle Linux Engineering
