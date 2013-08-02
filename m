@@ -1,101 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753460Ab3HBUBW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 16:01:22 -0400
-Received: from mail-la0-f53.google.com ([209.85.215.53]:50361 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751689Ab3HBUBU (ORCPT
+	id S1753129Ab3HBUDI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 16:03:08 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:52172 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750960Ab3HBUDG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 16:01:20 -0400
-Message-ID: <51FC1015.7010203@cogentembedded.com>
-Date: Sat, 03 Aug 2013 00:01:25 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Fri, 2 Aug 2013 16:03:06 -0400
 MIME-Version: 1.0
-To: Mark Langsdorf <mark.langsdorf@calxeda.com>
-CC: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org, tj@kernel.org,
-        devicetree@vger.kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        swarren@wwwdotorg.org, ian.campbell@citrix.com,
-        rob.herring@calxeda.com
-Subject: Re: [PATCH v2 3/5] devicetree: create a separate binding description
- for sata_highbank
-References: <1375460918-4661-1-git-send-email-mark.langsdorf@calxeda.com> <1375460918-4661-3-git-send-email-mark.langsdorf@calxeda.com>
-In-Reply-To: <1375460918-4661-3-git-send-email-mark.langsdorf@calxeda.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAMP44s16-_KA+3JPSzD1CrzcNCuCk4xjOvU6E=gVRxkKiAGr0Q@mail.gmail.com>
+References: <20130731162252.GC4724@pd.tnic>
+	<CAPBO7TaPxa_13FBDE5Z=Aoa+ePPfLRH0+oWSQyEmO00xSfGqYg@mail.gmail.com>
+	<CAMP44s1WMMXcGfF6Ta0CFthY3-7tkpqXEPx1iZhVU-XpS6KUWw@mail.gmail.com>
+	<1544218.2BR9ul04Pj@vostro.rjw.lan>
+	<CAMP44s16-_KA+3JPSzD1CrzcNCuCk4xjOvU6E=gVRxkKiAGr0Q@mail.gmail.com>
+Date: Fri, 2 Aug 2013 22:03:04 +0200
+Message-ID: <CAPBO7TZT3hX67aX-2aG5f2mcVqOyka2xbTPvMWvHzTG-x+UBLA@mail.gmail.com>
+Subject: Re: i915 backlight
+From: Josep Lladonosa <jlladono@gmail.com>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Borislav Petkov <bp@alien8.de>,
+        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02/2013 08:28 PM, Mark Langsdorf wrote:
+Hi,
 
-> The Calxeda sata_highbank driver has been adding its descriptions to the
-> ahci driver. Separate them properly.
+With this setup, something has happened: in xorg, when screen goes to
+screensaver and after, enters into Standby mode, when I press a key,
+it keeps black and, to recover screen, I have to adjust brightness
+manually (by increasing), as if it didn't remember previous value to
+standby mode.
 
-> Signed-off-by: Mark Langsdorf <mark.langsdorf@calxeda.com>
-> Acked-by: Rob Herring <rob.herring@calxeda.com>
-[...]
+This was something that before didn't happen.
 
-> diff --git a/Documentation/devicetree/bindings/ata/ahci-platform.txt b/Documentation/devicetree/bindings/ata/ahci-platform.txt
-> index 3ec0c5c..14d7b22 100644
-> --- a/Documentation/devicetree/bindings/ata/ahci-platform.txt
-> +++ b/Documentation/devicetree/bindings/ata/ahci-platform.txt
-> @@ -4,27 +4,17 @@ SATA nodes are defined to describe on-chip Serial ATA controllers.
-[...]
->   Example:
->           sata@ffe08000 {
-> -		compatible = "calxeda,hb-ahci";
-> +		compatible = "snps,spear-ahci";
->                   reg = <0xffe08000 0x1000>;
->                   interrupts = <115>;
+Josep
 
-    Indented these 2 props with spaces, would be good to fix...
-
-> -		calxeda,port-phys = <&combophy5 0 &combophy0 0 &combophy0 1
-> -					&combophy0 2 &combophy0 3>;
+On 2 August 2013 20:58, Felipe Contreras <felipe.contreras@gmail.com> wrote:
+> On Fri, Aug 2, 2013 at 9:03 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> On Friday, August 02, 2013 01:48:37 AM Felipe Contreras wrote:
+>>> On Fri, Aug 2, 2013 at 1:25 AM, Josep Lladonosa <jlladono@gmail.com> wrote:
+>>> > Hello,
+>>> >
+>>> > I am using a Lenovo Edge E530 and, with kernel 3.11.0-rc3, I had to
+>>> > change to this parameter to the kernel boot:
+>>> >
+>>> >
+>>> > GRUB_CMDLINE_LINUX="acpi_osi=\"!Windows 2012\""
+>>>
+>>> I think it's pretty obvious that for the time being we need to
+>>> blacklist a ton of machines so they boot without this OSI. In fact, in
+>>> might make sense to simply remove the OSI completely for all machines
+>>> (for now).
+>>
+>> That would have made sense 6 months ago, but not today.
 >
->           };
-> diff --git a/Documentation/devicetree/bindings/ata/sata_highbank.txt b/Documentation/devicetree/bindings/ata/sata_highbank.txt
-> new file mode 100644
-> index 0000000..aa1b798
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/ata/sata_highbank.txt
+> Today, like 6 months ago these machines remain broken, and it will be
+> the same tomorrow, presumably on v3.11, and at least v3.12 as well.
+>
+>> The reason is that you don't really know what's affected by that and I'm
+>> pretty sure it's not only backlight.
+>
+> I haven't heard a single comment that says acpi_osi="!Windows 2012"
+> breaks other things. OTOH everybody is saying it fixes the backlight
+> problem (if indeed it's the same problem).
+>
+> Are you claiming that those users are wrong?
+>
+>> So no, we won't do that.
+>
+> Yeah, because that would fix the backlight problems, not tomorrow, or
+> several months from now, *today*. Geez, who would want that?
+>
+> Here is the patch to fix the problem, *today*.
+>
+> https://bugzilla.kernel.org/show_bug.cgi?id=60682
+>
+> This is what we should do:
+>
+> 1) Improve that blacklist list
+> 2) Fix the Intel driver issues
+> 3) Enable your patch that uses the Intel driver instead
+> 4) Remove that patch
+>
+> Anything else is not be good for the users.
+>
+> --
+> Felipe Contreras
 
-    Shouldn't the file be called calxeda,hb-ahci.txt?
 
-> @@ -0,0 +1,32 @@
-> +* Calxeda AHCI SATA Controller
-> +
-> +SATA nodes are defined to describe on-chip Serial ATA controllers.
-> +The Calxeda SATA controller mostly conforms to the AHCI interface
-> +with some special extensions to add functionality.
-> +Each SATA controller should have its own node.
-> +
-> +Required properties:
-> +- compatible        : compatible list, contains "calxeda,hb-ahci"
-> +- interrupts        : <interrupt mapping for SATA IRQ>
-> +- reg               : <registers mapping>
-> +
-> +Optional properties:
-> +- dma-coherent      : Present if dma operations are coherent
-> +- calxeda,port-phys: phandle-combophy and lane assignment, which maps each
-> +			SATA port to a combophy and a lane within that
-> +			combophy
-> +- calxeda,sgpio-gpio: phandle-gpio bank, bit offset, and default on or off,
-> +			which indicates that the driver supports SGPIO
-> +			indicator lights using the indicated GPIOs
-> +- calxeda,led-order : a u32 array that map port numbers to offsets within the
-> +			SGPIO bitstream.
-> +
-> +Example:
-> +        sata@ffe08000 {
-> +		compatible = "calxeda,hb-ahci";
-> +                reg = <0xffe08000 0x1000>;
-> +                interrupts = <115>;
-> +		calxeda,port-phys = <&combophy5 0 &combophy0 0 &combophy0 1
 
-    Could you indent props uniformly here, with tabs?
-
-WBR, Sergei
-
+-- 
+--
+Salutacions...Josep
+--
