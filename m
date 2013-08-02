@@ -1,51 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754635Ab3HBKdH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:33:07 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:44038 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752925Ab3HBKdF (ORCPT
+	id S1753339Ab3HBKdn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:33:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37613 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752693Ab3HBKSO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:33:05 -0400
-Date: Fri, 2 Aug 2013 12:32:47 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Cc: =?utf-8?B?6rmA7KSA7IiY?= <iamjoonsoo.kim@lge.com>,
-        "'Ingo Molnar'" <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        "'Mike Galbraith'" <efault@gmx.de>, "'Paul Turner'" <pjt@google.com>,
-        "'Alex Shi'" <alex.shi@intel.com>,
-        "'Vincent Guittot'" <vincent.guittot@linaro.org>,
-        "'Morten Rasmussen'" <morten.rasmussen@arm.com>,
-        "'Namhyung Kim'" <namhyung@kernel.org>,
-        "'Joonsoo Kim'" <js1304@gmail.com>
-Subject: Re: [PATCH v2 2/3] sched: factor out code to should_we_balance()
-Message-ID: <20130802103247.GL27162@twins.programming.kicks-ass.net>
-References: <1375408223-10934-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1375408223-10934-3-git-send-email-iamjoonsoo.kim@lge.com>
- <51FB341B.7060104@linux.vnet.ibm.com>
- <001601ce8f5f$7cbe1460$763a3d20$@lge.com>
- <51FB7B36.8030909@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51FB7B36.8030909@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Fri, 2 Aug 2013 06:18:14 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        William Gulland <wgulland@google.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [ 15/39] usb: Clear both buffers when clearing a control transfer TT buffer.
+Date: Fri,  2 Aug 2013 18:18:25 +0800
+Message-Id: <20130802101458.995768793@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
+In-Reply-To: <20130802101456.800497005@linuxfoundation.org>
+References: <20130802101456.800497005@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 02, 2013 at 02:56:14PM +0530, Preeti U Murthy wrote:
-> >> You need to iterate over all the groups of the sched domain env->sd and
-> >> not just the first group of env->sd like you are doing above. This is to
-> > 
-> > I don't think so.
-> > IIRC, env->sd->groups always means local group,
-> > so we don't need to find our group by iterating over all the groups.
-> 
-> Take a look at update_sd_lb_stats(). That should clarify this. There is
-> an exclusive
-> local_group check there.
-> 
-> sd->groups points to the first group in the list of groups under this sd.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Take a look at: 88b8dac0a
+------------------
+
+From: William Gulland <wgulland@google.com>
+
+commit 2c7b871b9102c497ba8f972aa5d38532f05b654d upstream.
+
+Control transfers have both IN and OUT (or SETUP) packets, so when
+clearing TT buffers for a control transfer it's necessary to send
+two HUB_CLEAR_TT_BUFFER requests to the hub.
+
+Signed-off-by: William Gulland <wgulland@google.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/usb/core/hub.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -488,6 +488,15 @@ resubmit:
+ static inline int
+ hub_clear_tt_buffer (struct usb_device *hdev, u16 devinfo, u16 tt)
+ {
++	/* Need to clear both directions for control ep */
++	if (((devinfo >> 11) & USB_ENDPOINT_XFERTYPE_MASK) ==
++			USB_ENDPOINT_XFER_CONTROL) {
++		int status = usb_control_msg(hdev, usb_sndctrlpipe(hdev, 0),
++				HUB_CLEAR_TT_BUFFER, USB_RT_PORT,
++				devinfo ^ 0x8000, tt, NULL, 0, 1000);
++		if (status)
++			return status;
++	}
+ 	return usb_control_msg(hdev, usb_sndctrlpipe(hdev, 0),
+ 			       HUB_CLEAR_TT_BUFFER, USB_RT_PORT, devinfo,
+ 			       tt, NULL, 0, 1000);
+
+
