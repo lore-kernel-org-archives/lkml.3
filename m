@@ -1,60 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754888Ab3HBQcq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 12:32:46 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:45538 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752575Ab3HBQcp (ORCPT
+	id S1754995Ab3HBQdJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 12:33:09 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:58189 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751867Ab3HBQdG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 12:32:45 -0400
-Date: Fri, 2 Aug 2013 09:32:02 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH 0/4 v2] [GIT PULL][RCU][3.12] tracing/rcu: Export strings
- to userspace
-Message-ID: <20130802163202.GG3836@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130802023933.677590002@goodmis.org>
- <20130802155111.GA3836@linux.vnet.ibm.com>
- <1375460559.22073.4.camel@gandalf.local.home>
+	Fri, 2 Aug 2013 12:33:06 -0400
+X-IronPort-AV: E=Sophos;i="4.89,802,1367971200"; 
+   d="scan'208";a="39083182"
+Date: Fri, 2 Aug 2013 17:32:52 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: EUNBONG SONG <eunb.song@samsung.com>, <xen-devel@lists.xensource.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] swiotlb: Replace dma_length to sg_dma_len()  macro
+In-Reply-To: <20130802162639.GA3690@phenom.dumpdata.com>
+Message-ID: <alpine.DEB.2.02.1308021731250.4893@kaball.uk.xensource.com>
+References: <25826040.283591366090672676.JavaMail.weblogic@epml15> <20130802162639.GA3690@phenom.dumpdata.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1375460559.22073.4.camel@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13080216-2398-0000-0000-00000107FFA7
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 02, 2013 at 12:22:39PM -0400, Steven Rostedt wrote:
-> On Fri, 2013-08-02 at 08:51 -0700, Paul E. McKenney wrote:
-> 
-> > I have merged these into v3.11-rc3 in my local tree like this:
+On Fri, 2 Aug 2013, Konrad Rzeszutek Wilk wrote:
+> On Tue, Apr 16, 2013 at 05:37:52AM +0000, EUNBONG SONG wrote:
 > > 
-> > # git log --pretty=oneline v3.11-rc3..
-> > a6f8eb9e4c18ba0e9a2ed4d2dec888440da12549 Merge branch 'ftrace/rcu-2' of git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace into rostedt.2013.08.02a
-> > f7f7bac9cb1c50783f15937a11743655a5756a36 rcu: Have the RCU tracepoints use the tracepoint_string infrastructure
-> > a41bfeb2f8ed59410be7ca0f8fbc6138a758b746 rcu: Simplify RCU_STATE_INITIALIZER() macro
-> > e66c33d579ea566d10e8c8695a7168aae3e02992 rcu: Add const annotation to char * for RCU tracepoints and functions
-> > 102c9323c35a83789ad5ebd3c45fa8fb389add88 tracing: Add __tracepoint_string() to export string pointers
-> > 
-> > Amazingly enough, there is only one trivial conflict with the current
-> > 3.12 RCU commits, so my plan is to treat these commits as a separate
-> > topic branch for RCU.
+> > This patch replace dma_length in "lib/swiotlb.c" to sg_dma_len() macro, because the build error can occur
+> > if CONFIG_NEED_SG_DMA_LENGTH is not set, and CONFIG_SWIOTLB is set.
+> > I confirmed compile only. 
 > 
-> Sounds good. Thanks!
+> Stefano, This patch should fix the ARM issues,
+  
+Thanks!!
 
-Ah -- unlike my normal approach, I will -not- be rebasing this particular
-topic branch, so we should be able to both send them upstream without
-any problems.
+> but when I tried to apply it
+> would go all wonky.
 
-Famous last words.  ;-)
+no problems, I can rebase it
 
-							Thanx, Paul
-
+> > 
+> > Singed-off-by: EunBong Song <eunb.song@samsung.com>
+> > 
+> > ---
+> >  lib/swiotlb.c |    8 ++++----
+> >  1 files changed, 4 insertions(+), 4 deletions(-)
+> > 
+> > diff --git a/lib/swiotlb.c b/lib/swiotlb.c
+> > index bfe02b8..7b16f4a 100644
+> > --- a/lib/swiotlb.c
+> > +++ b/lib/swiotlb.c
+> > @@ -859,13 +859,13 @@ swiotlb_map_sg_attrs(struct device *hwdev, struct scatterlist *sgl, int nelems,
+> >  				swiotlb_full(hwdev, sg->length, dir, 0);
+> >  				swiotlb_unmap_sg_attrs(hwdev, sgl, i, dir,
+> >  						       attrs);
+> > -				sgl[0].dma_length = 0;
+> > +				sg_dma_len(sgl) = 0;
+> >  				return 0;
+> >  			}
+> >  			sg->dma_address = phys_to_dma(hwdev, map);
+> >  		} else
+> >  			sg->dma_address = dev_addr;
+> > -		sg->dma_length = sg->length;
+> > +		sg_dma_len(sg) = sg->length;
+> >  	}
+> >  	return nelems;
+> >  }
+> > @@ -893,7 +893,7 @@ swiotlb_unmap_sg_attrs(struct device *hwdev, struct scatterlist *sgl,
+> >  	BUG_ON(dir == DMA_NONE);
+> >  
+> >  	for_each_sg(sgl, sg, nelems, i)
+> > -		unmap_single(hwdev, sg->dma_address, sg->dma_length, dir);
+> > +		unmap_single(hwdev, sg->dma_address, sg_dma_len(sg), dir);
+> >  
+> >  }
+> >  EXPORT_SYMBOL(swiotlb_unmap_sg_attrs);
+> > @@ -923,7 +923,7 @@ swiotlb_sync_sg(struct device *hwdev, struct scatterlist *sgl,
+> >  
+> >  	for_each_sg(sgl, sg, nelems, i)
+> >  		swiotlb_sync_single(hwdev, sg->dma_address,
+> > -				    sg->dma_length, dir, target);
+> > +				    sg_dma_len(sg), dir, target);
+> >  }
+> >  
+> >  void
+> > -- 
+> > 1.7.0.4
+> 
