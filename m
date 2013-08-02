@@ -1,104 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758198Ab3HBIt1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 04:49:27 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:53361 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753779Ab3HBItV (ORCPT
+	id S1758202Ab3HBIuy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 04:50:54 -0400
+Received: from [216.32.180.12] ([216.32.180.12]:9213 "EHLO
+	va3outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1753779Ab3HBIuv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 04:49:21 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18znOQ+3QW3MVG1ySEXS04E
-Date: Fri, 2 Aug 2013 01:49:12 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Richard Cochran <richardcochran@gmail.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "ksummit-2013-discuss@lists.linuxfoundation.org" 
-	<ksummit-2013-discuss@lists.linuxfoundation.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Domenico Andreoli <cavokz@gmail.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>, mbizon@freebox.fr,
-        Dave P Martin <Dave.Martin@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [Ksummit-2013-discuss] DT bindings as ABI [was: Do we have
-	people interested in device tree janitoring / cleanup?]
-Message-ID: <20130802084912.GE7656@atomide.com>
-References: <20130725175702.GC22291@e106331-lin.cambridge.arm.com>
- <1999586.84BnWE5EUh@thinkpad>
- <20130731191209.GA8027@netboy>
- <1409617.9untvfnOTJ@flatron>
- <20130731200017.GC8027@netboy>
- <20130731201457.GA24642@n2100.arm.linux.org.uk>
+	Fri, 2 Aug 2013 04:50:51 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 3
+X-BigFish: VS3(zzc8kzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1155h)
+From: Jingchang Lu <b35083@freescale.com>
+To: <vinod.koul@intel.com>
+CC: <djbw@fb.com>, <shawn.guo@linaro.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Jingchang Lu <b35083@freescale.com>
+Subject: [PATCH 2/3] ARM: dts: vf610: Add eDMA node
+Date: Fri, 2 Aug 2013 15:55:47 +0800
+Message-ID: <1375430148-4550-2-git-send-email-b35083@freescale.com>
+X-Mailer: git-send-email 1.8.0
+In-Reply-To: <1375430148-4550-1-git-send-email-b35083@freescale.com>
+References: <1375430148-4550-1-git-send-email-b35083@freescale.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130731201457.GA24642@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Russell King - ARM Linux <linux@arm.linux.org.uk> [130731 13:22]:
-> On Wed, Jul 31, 2013 at 10:00:17PM +0200, Richard Cochran wrote:
-> > On Wed, Jul 31, 2013 at 09:29:35PM +0200, Tomasz Figa wrote:
-> > > 
-> > > I showed you two example solutions that could handle this use case without 
-> > > stable binding ABI, just to prove that b) is not the only option (even if 
-> > > it's the best one, which I continue to agree on, don't get me wrong).
-> > 
-> > You only showed *one* solution (b) that satisfies the use case. The
-> > use case was:
-> > 
-> >    User acquires a machine running ARM Linux version 3.x, with u-boot
-> >    and dtb in a read only flash partition. The board boots and works just
-> >                 ^^^^^^^^^^^^^^^^^^^^^^^^^
-> >    fine. However, for his application, the user requires a new kernel
-> >    feature that appeared in version 3.y where y > x. He compiles the new
-> >    kernel, and it also works.
-> > 
-> > But you suggested:
-> > 
-> >  a) using DT as direct replacement for board files - this means that you
-> >     are free to say that DTSes are strictly coupled with kernel version
-> >     and you are free to modify the bindings - see the analogy to board
-> >     files, where you could modify the platform data structures and could
-> >     not directly copy board file from one kernel version to another,
-> > 
-> > In the use case, the kernel is upgraded, but not the DTB. So this
-> > solution makes no sense.
-> 
-> That's also crap for another reason.  DT on the whole is _supposed_ to
-> describe what the hardware is, and how it is wired up in a WELL DEFINED
-> and STABLE manner.  Unfortunately, there's a *BIG* mistake that was made
-> - having this /chosen node in DT which gets used for "software"
-> configuration - eg, the command line and so forth.
-> 
-> That was a mistake because it means that the DT isn't purely a
-> description of the hardware.  Such stuff should have been left in ATAGs,
-> and DT should have been placed into its own ATAG entry.  There would
-> not have been any conflict between ATAGs and DT, because ATAGs generally
-> don't deal with hardware configuration - the only real bit of hardware
-> configuration conveyed via ATAGs is the location of memory and size of
-> memory.
+Signed-off-by: Jingchang Lu <b35083@freescale.com>
+---
+ arch/arm/boot/dts/vf610.dtsi         |  49 +++++++++++++++++
+ include/dt-bindings/dma/vf610-edma.h | 103 +++++++++++++++++++++++++++++++++++
+ 2 files changed, 152 insertions(+)
+ create mode 100644 include/dt-bindings/dma/vf610-edma.h
 
-This I completely agree with. And I'd go a bit further requiring the DT
-binding should describe the _types_ of registers the hardware has so the
-device driver does not have to contain data for each similar supported
-register instances for things like clocks and muxes and timers.
+diff --git a/arch/arm/boot/dts/vf610.dtsi b/arch/arm/boot/dts/vf610.dtsi
+index 67d929c..b400b33 100644
+--- a/arch/arm/boot/dts/vf610.dtsi
++++ b/arch/arm/boot/dts/vf610.dtsi
+@@ -10,6 +10,7 @@
+ #include "skeleton.dtsi"
+ #include "vf610-pinfunc.h"
+ #include <dt-bindings/clock/vf610-clock.h>
++#include <dt-bindings/dma/vf610-edma.h>
+ 
+ / {
+ 	aliases {
+@@ -87,6 +88,30 @@
+ 				arm,tag-latency = <2 2 2>;
+ 			};
+ 
++			edma0: edma@40018000 {
++				#dma-cells = <2>;
++				compatible = "fsl,vf610-edma";
++				reg = <0x40018000 0x2000>;
++				interrupts = <0 8 0x04>, <0 9 0x04>;
++				interrupt-names = "edma-tx", "edma-err";
++				fsl,dma-channels = <32>;
++				fsl,dma-mux = <&dmamux0>, <&dmamux1>;
++			};
++
++			dmamux0: dmamux@40024000 {
++				reg = <0x40024000 0x1000>;
++				fsl,dmamux-id = <0>;
++				clocks = <&clks VF610_CLK_DMAMUX0>;
++				clock-names = "dmamux";
++			};
++
++			dmamux1: dmamux@40025000 {
++				reg = <0x40025000 0x1000>;
++				fsl,dmamux-id = <1>;
++				clocks = <&clks VF610_CLK_DMAMUX1>;
++				clock-names = "dmamux";
++			};
++
+ 			uart0: serial@40027000 {
+ 				compatible = "fsl,vf610-lpuart";
+ 				reg = <0x40027000 0x1000>;
+@@ -420,6 +445,30 @@
+ 			reg = <0x40080000 0x80000>;
+ 			ranges;
+ 
++			edma1: edma@40098000 {
++				#dma-cells = <2>;
++				compatible = "fsl,vf610-edma";
++				reg = <0x40098000 0x2000>;
++				interrupts = <0 10 0x04>, <0 11 0x04>;
++				interrupt-names = "edma-tx", "edma-err";
++				fsl,dma-channels = <32>;
++				fsl,dma-mux = <&dmamux2>, <&dmamux3>;
++			};
++
++			dmamux2: dmamux@400a1000 {
++				reg = <0x400a1000 0x1000>;
++				fsl,dmamux-id = <1>;
++				clocks = <&clks VF610_CLK_DMAMUX2>;
++				clock-names = "dmamux";
++			};
++
++			dmamux3: dmamux@400a2000 {
++				reg = <0x400a2000 0x1000>;
++				fsl,dmamux-id = <0>;
++				clocks = <&clks VF610_CLK_DMAMUX3>;
++				clock-names = "dmamux";
++			};
++
+ 			uart4: serial@400a9000 {
+ 				compatible = "fsl,vf610-lpuart";
+ 				reg = <0x400a9000 0x1000>;
+diff --git a/include/dt-bindings/dma/vf610-edma.h b/include/dt-bindings/dma/vf610-edma.h
+new file mode 100644
+index 0000000..3ae481c
+--- /dev/null
++++ b/include/dt-bindings/dma/vf610-edma.h
+@@ -0,0 +1,103 @@
++/*
++ * Copyright 2013 Freescale Semiconductor, Inc.
++ *
++ * This program is free software; you can redistribute  it and/or modify it
++ * under  the terms of  the GNU General  Public License as published by the
++ * Free Software Foundation;  either version 2 of the  License, or (at your
++ * option) any later version.
++ *
++ */
++
++#ifndef __DT_BINDINGS_DMA_VF610_H__
++#define __DT_BINDINGS_DMA_VF610_H__
++
++/* DMAMUX0,3 reqeust slot number */
++#define DMA_MUXID0_UART0_RX	2
++#define DMA_MUXID0_UART0_TX	3
++#define DMA_MUXID0_UART1_RX	4
++#define DMA_MUXID0_UART1_TX	5
++#define DMA_MUXID0_UART2_RX	6
++#define DMA_MUXID0_UART2_TX	7
++#define DMA_MUXID0_UART3_RX	8
++#define DMA_MUXID0_UART3_TX	9
++#define DMA_MUXID0_DSPI0_RX	12
++#define DMA_MUXID0_DSPI0_TX	13
++#define DMA_MUXID0_DSPI1_RX	14
++#define DMA_MUXID0_DSPI1_TX	15
++#define DMA_MUXID0_SAI0_RX	16
++#define DMA_MUXID0_SAI0_TX	17
++#define DMA_MUXID0_SAI1_RX	18
++#define DMA_MUXID0_SAI1_TX	19
++#define DMA_MUXID0_SAI2_RX	20
++#define DMA_MUXID0_SAI2_TX	21
++#define DMA_MUXID0_PDB		22
++#define DMA_MUXID0_FTM0_CH0	24
++#define DMA_MUXID0_FTM0_CH1	25
++#define DMA_MUXID0_FTM0_CH2	26
++#define DMA_MUXID0_FTM0_CH3	27
++#define DMA_MUXID0_FTM0_CH4	28
++#define DMA_MUXID0_FTM0_CH5	29
++#define DMA_MUXID0_FTM0_CH6	30
++#define DMA_MUXID0_FTM0_CH7	31
++#define DMA_MUXID0_FTM1_CH0	32
++#define DMA_MUXID0_FTM1_CH1	33
++#define DMA_MUXID0_ADC0		34
++#define DMA_MUXID0_QUADSPI0	36
++#define DMA_MUXID0_GPIOA	38
++#define DMA_MUXID0_GPIOB	39
++#define DMA_MUXID0_GPIOC	40
++#define DMA_MUXID0_GPIOD	41
++#define DMA_MUXID0_GPIOE	42
++#define DMA_MUXID0_RLE_RX	45
++#define DMA_MUXID0_RLE_TX	46
++#define DMA_MUXID0_SPDIF_RX	47
++#define DMA_MUXID0_SPDIF_TX	48
++#define DMA_MUXID0_I2C0_RX	50
++#define DMA_MUXID0_I2C0_TX	51
++#define DMA_MUXID0_I2C1_RX	52
++#define DMA_MUXID0_I2C1_TX	53
++
++/* DMA MUX1,2 request slot number */
++#define DMA_MUXID1_UART4_RX	2
++#define DMA_MUXID1_UART4_TX	3
++#define DMA_MUXID1_UART5_RX	4
++#define DMA_MUXID1_UART5_TX	5
++#define DMA_MUXID1_SAI3_RX	8
++#define DMA_MUXID1_SAI3_TX	9
++#define DMA_MUXID1_DSPI2_RX	10
++#define DMA_MUXID1_DSPI2_TX	11
++#define DMA_MUXID1_DSPI3_RX	12
++#define DMA_MUXID1_DSPI3_TX	13
++#define DMA_MUXID1_FTM2_CH0	16
++#define DMA_MUXID1_FTM2_CH1	17
++#define DMA_MUXID1_FTM3_CH0	18
++#define DMA_MUXID1_FTM3_CH1	19
++#define DMA_MUXID1_FTM3_CH2	20
++#define DMA_MUXID1_FTM3_CH3	21
++#define DMA_MUXID1_FTM3_CH4	22
++#define DMA_MUXID1_FTM3_CH5	24
++#define DMA_MUXID1_FTM3_CH6	25
++#define DMA_MUXID1_FTM3_CH7	26
++#define DMA_MUXID1_QUADSPI1	27
++#define DMA_MUXID1_DAC0		32
++#define DMA_MUXID1_DAC1		33
++#define DMA_MUXID1_ESAI_BIFIFO_TX	34
++#define DMA_MUXID1_ESAI_BIFIFO_RX	35
++#define DMA_MUXID1_I2C2_RX	36
++#define DMA_MUXID1_I2C2_TX	37
++#define DMA_MUXID1_I2C3_RX	38
++#define DMA_MUXID1_I2C3_TX	39
++#define DMA_MUXID1_ASRC0_TX	40
++#define DMA_MUXID1_ASRC0_RX	41
++#define DMA_MUXID1_ASRC1_TX	42
++#define DMA_MUXID1_ASRC1_RX	43
++#define DMA_MUXID1_TIMER0	44
++#define DMA_MUXID1_TIMER1	45
++#define DMA_MUXID1_TIMER2	46
++#define DMA_MUXID1_TIMER3	47
++#define DMA_MUXID1_TIMER4	48
++#define DMA_MUXID1_TIMER5	49
++#define DMA_MUXID1_TIMER6	50
++#define DMA_MUXID1_TIMER7	51
++
++#endif
+-- 
+1.8.0
 
-In the worst case, platform_data is just being replaced by device tree
-and driver hacks in a confusing way that requires constant updating of
-both the .dts files and the device driver.
 
-Regards,
-
-Tony
