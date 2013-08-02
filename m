@@ -1,59 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752058Ab3HBNXI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 09:23:08 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:60093 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751407Ab3HBNXG (ORCPT
+	id S1752199Ab3HBNYi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 09:24:38 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39916 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751407Ab3HBNYh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 09:23:06 -0400
-Date: Fri, 2 Aug 2013 15:23:01 +0200 (CEST)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: linux-sh@vger.kernel.org
-cc: "Koul, Vinod" <vinod.koul@intel.com>, Magnus Damm <magnus.damm@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        "Shimoda, Yoshihiro" <yoshihiro.shimoda.uh@renesas.com>
-Subject: [PATCH] DMA: sudmac: fix compiler warning
-Message-ID: <Pine.LNX.4.64.1308021520150.28012@axis700.grange>
+	Fri, 2 Aug 2013 09:24:37 -0400
+Date: Fri, 2 Aug 2013 14:24:19 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Greg KH <greg@kroah.com>, ksummit-2013-discuss@lists.linuxfoundation.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [Ksummit-2013-discuss] [ATTEND] [ARM ATTEND] kernel data bloat
+	and how to avoid it
+Message-ID: <20130802132419.GO23006@n2100.arm.linux.org.uk>
+References: <20130731073802.GT7656@atomide.com> <20130731123351.GA30474@kroah.com> <20130802075352.GY7656@atomide.com> <20130802124130.GI7656@atomide.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:5rJ7LIJ62YSHwLT+YqsDUzpzy9k7+9iHy8t9B3p4/Mq
- jlGsGfG7Z2JOJzRmtZA56sTgSXkJGG9ijHQl9zb+Hq/IZoZODn
- EgxK0OMHeAkjxYzsICk1pvrrsBNu1Wf0GkWiUDiwMLFr7nf8Ee
- 1l9bKnKLcY7rUSk3coKQsLUOaXJDeKgP6jUbzyA3Oqp1GJXS4B
- FnqK9h/xhDKmAw0gBHRgmFj8yJGiUK0MrfGWI9DN860SM1C9jX
- erw0MrP9zMJBqGw27b2tgFAldc0hihwSncB73l7WR3IrjRdMgT
- uXMgbtFENZCa1cT2Z95Isj3kGJ9rTXanm5Ugdvp8AE4PwzoydG
- yJ1UXb6uF3U7H3Qj/q9qa6Q6Z9XURBMFVnxuo06zIDOzlwR5wR
- 866A11uwFZdZg==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130802124130.GI7656@atomide.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix the following compiler warning:
+On Fri, Aug 02, 2013 at 05:41:31AM -0700, Tony Lindgren wrote:
+> Oh and thinking about it a bit more, this issue is mostly with the
+> device drivers implementing frameworks, not the device drivers
+> using the frameworks. Things like clocks, regulators, muxes etc where
+> an almost similar instance is repeated tens or hundreds of times for
+> each SoC.
 
-drivers/dma/sh/sudmac.c: In function 'sudmac_chan_remove':
-drivers/dma/sh/sudmac.c:302: warning: unused variable 'sc'
+That is where it helps to have a strong maintainer for a subsystem who
+has the guts to refuse to accept stuff which is similar to existing
+implementations and insist that existing implementations are either
+adapted or reused.
 
-Signed-off-by: Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
----
- drivers/dma/sh/sudmac.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+It's all very well someone coming along and writing a "generic" set of
+implementations (like tglx did for the IRQ subsystem) but unless there's
+a motivation for people to use the generic stuff (such as... you won't
+get your code in if you don't use the provided generics unless you can
+provide a very good reasoned argument) then people are just going to
+write their own code time and time again.
 
-diff --git a/drivers/dma/sh/sudmac.c b/drivers/dma/sh/sudmac.c
-index 2a8e3c2..4600b42 100644
---- a/drivers/dma/sh/sudmac.c
-+++ b/drivers/dma/sh/sudmac.c
-@@ -299,8 +299,6 @@ static void sudmac_chan_remove(struct sudmac_device *su_dev)
- 	int i;
- 
- 	shdma_for_each_chan(schan, &su_dev->shdma_dev, i) {
--		struct sudmac_chan *sc = to_chan(schan);
--
- 		BUG_ON(!schan);
- 
- 		shdma_chan_remove(schan);
--- 
-1.7.2.5
+It's just like how the clocksources have gone.  We now have multiple
+implementations of how to read a counter which ticks at a specific
+rate.  You wouldn't think that I wrote drivers/clocksource/mmio.c which
+can handle all of these simple 32-bit/16-bit up/down counter cases.
+Again, the problem is there is no strong reviewer there who looks over
+every addition and says "no, use the generic stuff".
 
+That's the basic problem here: the review, and people saying "no" to
+new stuff doing the same as generic stuff.
