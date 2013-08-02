@@ -1,75 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751950Ab3HBKRo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:17:44 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:43493 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751635Ab3HBKRj (ORCPT
+	id S1752171Ab3HBKRt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:17:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37573 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751415Ab3HBKRr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:17:39 -0400
-Date: Fri, 2 Aug 2013 11:17:33 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        linus.walleij@linaro.org
-Subject: Re: [PATCH 1/2] mfd: ab8500-gpadc: add CONFIG_PM_RUNTIME to
- runtime_suspend/runtime_resume
-Message-ID: <20130802101733.GD17368@lee--X1>
-References: <000101ce8f40$0e118070$2a348150$@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <000101ce8f40$0e118070$2a348150$@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 2 Aug 2013 06:17:47 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        "Ewan D. Milne" <emilne@redhat.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 05/39] SCSI: sd: fix crash when UA received on DIF enabled device
+Date: Fri,  2 Aug 2013 18:18:15 +0800
+Message-Id: <20130802101457.548358340@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
+In-Reply-To: <20130802101456.800497005@linuxfoundation.org>
+References: <20130802101456.800497005@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 02 Aug 2013, Jingoo Han wrote:
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-> Add CONFIG_PM_RUNTIME to runtime_suspend/runtime_resume functions
-> to fix the build warnings when CONFIG_PM_RUNTIME is not selected.
-> This is because runtime PM callbacks defined by SET_RUNTIME_PM_OPS
-> are only used when the CONFIG_PM_RUNTIME is enabled.
-> 
-> drivers/mfd/ab8500-gpadc.c:870:12: warning: 'ab8500_gpadc_runtime_suspend' defined but not used [-Wunused-function]
-> drivers/mfd/ab8500-gpadc.c:878:12: warning: 'ab8500_gpadc_runtime_resume' defined but not used [-Wunused-function]
-> 
-> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-> ---
->  drivers/mfd/ab8500-gpadc.c |    2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/drivers/mfd/ab8500-gpadc.c b/drivers/mfd/ab8500-gpadc.c
-> index 7623e91..77c616f 100644
-> --- a/drivers/mfd/ab8500-gpadc.c
-> +++ b/drivers/mfd/ab8500-gpadc.c
-> @@ -867,6 +867,7 @@ static void ab8500_gpadc_read_calibration_data(struct ab8500_gpadc *gpadc)
->  		gpadc->cal_data[ADC_INPUT_VBAT].offset);
->  }
->  
-> +#ifdef CONFIG_PM_RUNTIME
->  static int ab8500_gpadc_runtime_suspend(struct device *dev)
->  {
->  	struct ab8500_gpadc *gpadc = dev_get_drvdata(dev);
-> @@ -885,6 +886,7 @@ static int ab8500_gpadc_runtime_resume(struct device *dev)
->  		dev_err(dev, "Failed to enable vtvout LDO: %d\n", ret);
->  	return ret;
->  }
-> +#endif
->  
->  static int ab8500_gpadc_suspend(struct device *dev)
->  {
+------------------
 
-Looks sensible. I wonder why we haven't caught these before.
+From: "Ewan D. Milne" <emilne@redhat.com>
 
-I guess we always enable PM_SLEEP.
+commit 085b513f97d8d799d28491239be4b451bcd8c2c5 upstream.
 
-Applied until Linus tells me otherwise.
+sd_prep_fn will allocate a larger CDB for the command via mempool_alloc
+for devices using DIF type 2 protection.  This CDB was being freed
+in sd_done, which results in a kernel crash if the command is retried
+due to a UNIT ATTENTION.  This change moves the code to free the larger
+CDB into sd_unprep_fn instead, which is invoked after the request is
+complete.
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+It is no longer necessary to call scsi_print_command separately for
+this case as the ->cmnd will no longer be NULL in the normal code path.
+
+Also removed conditional test for DIF type 2 when freeing the larger
+CDB because the protection_type could have been changed via sysfs while
+the command was executing.
+
+Signed-off-by: Ewan D. Milne <emilne@redhat.com>
+Acked-by: Martin K. Petersen <martin.petersen@oracle.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/scsi/sd.c |   22 +++++++---------------
+ 1 file changed, 7 insertions(+), 15 deletions(-)
+
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -672,10 +672,17 @@ static int scsi_setup_flush_cmnd(struct
+ 
+ static void sd_unprep_fn(struct request_queue *q, struct request *rq)
+ {
++	struct scsi_cmnd *SCpnt = rq->special;
++
+ 	if (rq->cmd_flags & REQ_DISCARD) {
+ 		free_page((unsigned long)rq->buffer);
+ 		rq->buffer = NULL;
+ 	}
++	if (SCpnt->cmnd != rq->cmd) {
++		mempool_free(SCpnt->cmnd, sd_cdb_pool);
++		SCpnt->cmnd = NULL;
++		SCpnt->cmd_len = 0;
++	}
+ }
+ 
+ /**
+@@ -1539,21 +1546,6 @@ static int sd_done(struct scsi_cmnd *SCp
+ 	if (rq_data_dir(SCpnt->request) == READ && scsi_prot_sg_count(SCpnt))
+ 		sd_dif_complete(SCpnt, good_bytes);
+ 
+-	if (scsi_host_dif_capable(sdkp->device->host, sdkp->protection_type)
+-	    == SD_DIF_TYPE2_PROTECTION && SCpnt->cmnd != SCpnt->request->cmd) {
+-
+-		/* We have to print a failed command here as the
+-		 * extended CDB gets freed before scsi_io_completion()
+-		 * is called.
+-		 */
+-		if (result)
+-			scsi_print_command(SCpnt);
+-
+-		mempool_free(SCpnt->cmnd, sd_cdb_pool);
+-		SCpnt->cmnd = NULL;
+-		SCpnt->cmd_len = 0;
+-	}
+-
+ 	return good_bytes;
+ }
+ 
+
+
