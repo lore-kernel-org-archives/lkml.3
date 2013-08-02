@@ -1,141 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753770Ab3HBEh0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 00:37:26 -0400
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:45064 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752078Ab3HBEhY (ORCPT
+	id S1753935Ab3HBEmt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 00:42:49 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:50128 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750853Ab3HBEms (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 00:37:24 -0400
+	Fri, 2 Aug 2013 00:42:48 -0400
+Message-ID: <51FB382B.80209@linux.vnet.ibm.com>
+Date: Fri, 02 Aug 2013 10:10:11 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-In-Reply-To: <2298639.F0Qv2QqRnZ@vostro.rjw.lan>
-References: <2362640.pUofnXyzOi@vostro.rjw.lan>
-	<51FAC46D.1000703@linux.vnet.ibm.com>
-	<1757496.qSuJuAun9Z@vostro.rjw.lan>
-	<2298639.F0Qv2QqRnZ@vostro.rjw.lan>
-Date: Fri, 2 Aug 2013 10:07:23 +0530
-Message-ID: <CAKohponru8Z1fod43dVtAODmYuMTGX70+73b8wk4wuGN=Vuh-w@mail.gmail.com>
-Subject: Re: [Update][PATCH] cpufreq: Do not hold driver module references for
- additional policy CPUs
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux PM list <linux-pm@vger.kernel.org>, cpufreq@vger.kernel.org,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+CC: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel@vger.kernel.org, Mike Galbraith <efault@gmx.de>,
+        Paul Turner <pjt@google.com>, Alex Shi <alex.shi@intel.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Namhyung Kim <namhyung@kernel.org>, Joonsoo Kim <js1304@gmail.com>
+Subject: Re: [PATCH v2 3/3] sched: clean-up struct sd_lb_stat
+References: <1375408223-10934-1-git-send-email-iamjoonsoo.kim@lge.com> <1375408223-10934-4-git-send-email-iamjoonsoo.kim@lge.com>
+In-Reply-To: <1375408223-10934-4-git-send-email-iamjoonsoo.kim@lge.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13080204-0260-0000-0000-0000036910EA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wow!! Lot of stuff happened while I was asleep..
+Hi Joonsoo,
 
-@Srivatsa: Thanks for answering what I would have answered to Rafael :)
-And you should really get some sleep, I would suggest :)
-
-On 2 August 2013 02:23, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> Subject: cpufreq: Do not hold driver module references for additional policy CPUs
-
-I still have issues with this subject. Why don't we get rid of .owner
-field completely? And stop using a mix of cpufreq_cpu_get() and
-kobject_get()?
-
-> The cpufreq core is a little inconsistent in the way it uses the
-> driver module refcount.
->
-> Namely, if __cpufreq_add_dev() is called for a CPU that doesn't
-> share the policy object with any other CPUs, the driver module
-> refcount it grabs to start with will be dropped by it before
-> returning and will be equal to 0 afterward.
-
-It wouldn't be zero but 1, this is what it is initialized with probably.
-That's what I can see in my tests.
-
-> However, if the given CPU does share the policy object with other
-> CPUs, either cpufreq_add_policy_cpu() is called to link the new CPU
-> to the existing policy, or cpufreq_add_dev_symlink() is used to link
-> the other CPUs sharing the policy with it to the just created policy
-> object.  In that case, because both cpufreq_add_policy_cpu() and
-> cpufreq_add_dev_symlink() call cpufreq_cpu_get() for the given
-> policy (the latter possibly many times) without the balancing
-> cpufreq_cpu_put() (unless there is an error), the driver module
-> refcount will be left by __cpufreq_add_dev() with a nonzero value.
->
-> To remove that inconsistency make cpufreq_add_policy_cpu() execute
-> cpufreq_cpu_put() for the given policy before returning, which
-> decrements the driver module refcount so that it will be 0 after
-> __cpufreq_add_dev() returns.  Moreover, remove the cpufreq_cpu_get()
-> call from cpufreq_add_dev_symlink(), since both the policy refcount
-> and the driver module refcount are nonzero when it is called and they
-> don't need to be bumped up by it.
->
-> Accordingly, drop the cpufreq_cpu_put() from __cpufreq_remove_dev(),
-> since it is only necessary to balance the cpufreq_cpu_get() called
-> by cpufreq_add_policy_cpu() or cpufreq_add_dev_symlink().
->
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> ---
->  drivers/cpufreq/cpufreq.c |   28 +++++++---------------------
->  1 file changed, 7 insertions(+), 21 deletions(-)
-
-So, we can't rmmod the module as soon as it is inserted and so the
-problem stays as is. :(
-
-> Index: linux-pm/drivers/cpufreq/cpufreq.c
-> ===================================================================
-> --- linux-pm.orig/drivers/cpufreq/cpufreq.c
-> +++ linux-pm/drivers/cpufreq/cpufreq.c
-> @@ -818,14 +818,11 @@ static int cpufreq_add_dev_symlink(struc
->                         continue;
->
->                 pr_debug("Adding link for CPU: %u\n", j);
-> -               cpufreq_cpu_get(policy->cpu);
->                 cpu_dev = get_cpu_device(j);
->                 ret = sysfs_create_link(&cpu_dev->kobj, &policy->kobj,
->                                         "cpufreq");
-> -               if (ret) {
-> -                       cpufreq_cpu_put(policy);
-> -                       return ret;
-> -               }
-> +               if (ret)
-> +                       break;
->         }
->         return ret;
->  }
-> @@ -908,7 +905,8 @@ static int cpufreq_add_policy_cpu(unsign
->         unsigned long flags;
->
->         policy = cpufreq_cpu_get(sibling);
-
-This can be skipped completely at this place. Caller of
-cpufreq_add_policy_cpu() has got the policy pointer with it and so
-can be passed. I haven't done it earlier as the impression was we need
-to call cpufreq_cpu_get()..
-
-> -       WARN_ON(!policy);
-> +       if (WARN_ON_ONCE(!policy))
-> +               return -ENODATA;
->
->         if (has_target)
->                 __cpufreq_governor(policy, CPUFREQ_GOV_STOP);
-> @@ -930,16 +928,10 @@ static int cpufreq_add_policy_cpu(unsign
->         }
->
->         /* Don't touch sysfs links during light-weight init */
-> -       if (frozen) {
-> -               /* Drop the extra refcount that we took above */
-> -               cpufreq_cpu_put(policy);
-> -               return 0;
-> -       }
+On 08/02/2013 07:20 AM, Joonsoo Kim wrote:
+> There is no reason to maintain separate variables for this_group
+> and busiest_group in sd_lb_stat, except saving some space.
+> But this structure is always allocated in stack, so this saving
+> isn't really benificial.
+> 
+> This patch unify these variables, so IMO, readability may be improved.
+> 
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> 
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 7f51b8c..f72ee7d 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -4195,36 +4195,6 @@ static unsigned long task_h_load(struct task_struct *p)
+> 
+>  /********** Helpers for find_busiest_group ************************/
+>  /*
+> - * sd_lb_stats - Structure to store the statistics of a sched_domain
+> - * 		during load balancing.
+> - */
+> -struct sd_lb_stats {
+> -	struct sched_group *busiest; /* Busiest group in this sd */
+> -	struct sched_group *this;  /* Local group in this sd */
+> -	unsigned long total_load;  /* Total load of all groups in sd */
+> -	unsigned long total_pwr;   /*	Total power of all groups in sd */
+> -	unsigned long avg_load;	   /* Average load across all groups in sd */
 > -
-> -       ret = sysfs_create_link(&dev->kobj, &policy->kobj, "cpufreq");
-> -       if (ret)
-> -               cpufreq_cpu_put(policy);
-> +       if (!frozen)
-> +               ret = sysfs_create_link(&dev->kobj, &policy->kobj, "cpufreq");
->
-> +       cpufreq_cpu_put(policy);
+> -	/** Statistics of this group */
+> -	unsigned long this_load;
+> -	unsigned long this_load_per_task;
+> -	unsigned long this_nr_running;
+> -	unsigned long this_has_capacity;
+> -	unsigned int  this_idle_cpus;
+> -
+> -	/* Statistics of the busiest group */
+> -	unsigned int  busiest_idle_cpus;
+> -	unsigned long max_load;
+> -	unsigned long busiest_load_per_task;
+> -	unsigned long busiest_nr_running;
+> -	unsigned long busiest_group_capacity;
+> -	unsigned long busiest_has_capacity;
+> -	unsigned int  busiest_group_weight;
+> -
+> -	int group_imb; /* Is there imbalance in this sd */
+> -};
 
-And so this will go away.
+There are a few parameters that you should not be removing.
+busiest_load_per_task and max_load. busiest_load_per_task is a metric
+that is not present for sg_lb_stats. And max_load going by its usage in
+load balancing is best placed under sd_lb_stats. Removing it could cause
+some confusion. See below.
+>  /**
+> @@ -4732,11 +4715,20 @@ void fix_small_imbalance(struct lb_env *env, struct sd_lb_stats *sds)
+>  static inline void calculate_imbalance(struct lb_env *env, struct sd_lb_stats *sds)
+>  {
+>  	unsigned long max_pull, load_above_capacity = ~0UL;
+> -
+> -	sds->busiest_load_per_task /= sds->busiest_nr_running;
+> -	if (sds->group_imb) {
+> -		sds->busiest_load_per_task =
+> -			min(sds->busiest_load_per_task, sds->avg_load);
+> +	struct sg_lb_stats *this, *busiest;
+> +
+> +	/* After below code, we use sum_weighted_load of
+> +	 * this_stat and busiest_stat as load_per_task */
+> +	this = &sds->this_stat;
+> +	if (this->sum_nr_running)
+> +		this->sum_weighted_load /= this->sum_nr_running;
+> +
+> +	busiest = &sds->busiest_stat;
+> +	/* busiest must have some tasks */
+> +	busiest->sum_weighted_load /= busiest->sum_nr_running;
+
+You cannot change sum_weighted_load of this_grp and busiest_grp like
+this. They are meant to carry the total load of the group and not the
+load per task in that group. This is why there is a separate metric
+busiest_load_per_task and this_load_per_task under sd_lb_stats to convey
+exactly what is being done. Doing the above will confuse the readers of
+this code.
+
+> +	if (busiest->group_imb) {
+> +		busiest->sum_weighted_load =
+> +			min(busiest->sum_weighted_load, sds->sd_avg_load);
+
+Right here we get confused as to why the total load is being compared
+against load per task (although you are changing it to load per task above).
+
+>  	}
+> 
+>  	/*
+> @@ -4744,17 +4736,17 @@ static inline void calculate_imbalance(struct lb_env *env, struct sd_lb_stats *s
+>  	 * max load less than avg load(as we skip the groups at or below
+>  	 * its cpu_power, while calculating max_load..)
+>  	 */
+> -	if (sds->max_load < sds->avg_load) {
+> +	if (busiest->avg_load < this->avg_load) {
+>  		env->imbalance = 0;
+>  		return fix_small_imbalance(env, sds);
+>  	}
+> 
+> -	if (!sds->group_imb) {
+> +	if (!busiest->group_imb) {
+>  		/*
+>  		 * Don't want to pull so many tasks that a group would go idle.
+>  		 */
+> -		load_above_capacity = (sds->busiest_nr_running -
+> -						sds->busiest_group_capacity);
+> +		load_above_capacity = (busiest->sum_nr_running -
+> +						busiest->group_capacity);
+> 
+>  		load_above_capacity *= (SCHED_LOAD_SCALE * SCHED_POWER_SCALE);
+> 
+> @@ -4771,12 +4763,13 @@ static inline void calculate_imbalance(struct lb_env *env, struct sd_lb_stats *s
+>  	 * Be careful of negative numbers as they'll appear as very large values
+>  	 * with unsigned longs.
+>  	 */
+> -	max_pull = min(sds->max_load - sds->avg_load, load_above_capacity);
+> +	max_pull = min(busiest->avg_load - sds->sd_avg_load,
+> +						load_above_capacity);
+
+This is ok, but readability wise max_load is much better. max_load
+signifies the maximum load per task on a group in this sd, and avg_load
+signifies the total load per task across the sd. You are checking if
+there is imbalance in the total load in the sd and try to even it out
+across the sd.  Here "busiest" does not convey this immediately.
+
+Regards
+Preeti U Murthy
+
