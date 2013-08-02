@@ -1,62 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932118Ab3HBJzV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 05:55:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51151 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758487Ab3HBJzQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 05:55:16 -0400
-Date: Fri, 2 Aug 2013 12:54:06 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>, mingo@redhat.com,
-        x86@kernel.org, tglx@linutronix.de, jeremy@goop.org,
-        konrad.wilk@oracle.com, hpa@zytor.com, pbonzini@redhat.com,
-        linux-doc@vger.kernel.org, habanero@linux.vnet.ibm.com,
-        xen-devel@lists.xensource.com, peterz@infradead.org,
-        mtosatti@redhat.com, stefano.stabellini@eu.citrix.com,
-        andi@firstfloor.org, attilio.rao@citrix.com, ouyang@cs.pitt.edu,
-        gregkh@suse.de, agraf@suse.de, chegu_vinod@hp.com,
-        torvalds@linux-foundation.org, avi.kivity@gmail.com,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org, riel@redhat.com,
-        drjones@redhat.com, virtualization@lists.linux-foundation.org,
-        srivatsa.vaddagiri@gmail.com
-Subject: Re: [PATCH RFC V11 15/18] kvm : Paravirtual ticketlocks support for
- linux guests running on KVM hypervisor
-Message-ID: <20130802095406.GB30072@redhat.com>
-References: <51EFC1D4.9060800@linux.vnet.ibm.com>
- <20130724120647.GG16400@redhat.com>
- <51EFCA42.5020009@linux.vnet.ibm.com>
- <51F0ED31.3040200@linux.vnet.ibm.com>
- <20130725091509.GA22735@redhat.com>
- <51F0F202.5090001@linux.vnet.ibm.com>
- <51F7ED20.80202@linux.vnet.ibm.com>
- <20130731062440.GK28372@redhat.com>
- <51FA1087.9080908@linux.vnet.ibm.com>
- <20130802092539.GB28327@gmail.com>
+	id S1758392Ab3HBJ7S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 05:59:18 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:51795 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758160Ab3HBJ7Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 05:59:16 -0400
+Message-ID: <51FB8292.9090000@ahsoftware.de>
+Date: Fri, 02 Aug 2013 11:57:38 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130802092539.GB28327@gmail.com>
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux-OMAP <linux-omap@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Enric Balletbo i Serra <eballetbo@gmail.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Kevin Hilman <khilman@linaro.org>, Balaji T K <balajitk@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Jon Hunter <jgchunter@gmail.com>
+Subject: Re: [PATCH] RFC: interrupt consistency check for OF GPIO IRQs
+References: <1375101368-17645-1-git-send-email-linus.walleij@linaro.org> <CACxGe6uNJNMdZ1HYGgCtLM2t2TWGCR6btjOHVmP=vDXXvvFfRg@mail.gmail.com> <CACRpkdYjJL6FZwEbB7XLnb9QtjB=3LeE9Ny6KQ4PkM3zpdNqqg@mail.gmail.com> <51F8CC35.1070704@collabora.co.uk>
+In-Reply-To: <51F8CC35.1070704@collabora.co.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 02, 2013 at 11:25:39AM +0200, Ingo Molnar wrote:
-> > Ingo,
-> > 
-> > Do you have any concerns reg this series? please let me know if this 
-> > looks good now to you.
-> 
-> I'm inclined to NAK it for excessive quotation - who knows how many people 
-> left the discussion in disgust? Was it done to drive away as many 
-> reviewers as possible?
-> 
-> Anyway, see my other reply, the measurement results seem hard to interpret 
-> and inconclusive at the moment.
-> 
-That result was only for patch 18 of the series, not pvspinlock in
-general.
+Am 31.07.2013 10:35, schrieb Javier Martinez Canillas:
 
---
-			Gleb.
+>
+> The problem is that board files and drivers that has not not been completed
+> migrated to DT assumes (at least for OMAP) that *every* GPIO line is mapped as
+> an IRQ and they just do:
+>
+> gpio_request(gpio,...);
+> gpio_direction_input()
+> request[_threaded]_irq(gpio_to_irq(gpio), ...);
+>
+> My patch-set changed the gpio-omap driver to not map all GPIO lines but only the
+> ones that were really used as an IRQ and let the DT core to do the mapping from
+> irq_create_of_mapping(). The first problem reported with the OMAP patch was that
+> a driver was using the above sequence and that the GPIO had not been mapped.
+> This user was booting with DT and so this showed a bug in the driver and a DT
+> that did not conform with the standard schema used in mainline but this shows a
+> potential issue.
+
+There must have been a bug in the patch too. I've also added that 
+iinterrupt-parent stuff (with the same flags as used by the driver) and 
+just have let the driver call
+
+request_threaded_irq(gpio_to_irq(gpio), flags);
+
+without the gpio_request()/input() before. And request_threaded_irq() 
+returned -EBUSY. I'm pretty sure nothing else did use that gpio, but I 
+haven't looked at why request_threaded_irq() returned -EBUSY. I assume 
+the new mapping stuff did reserve the irq in such a way, that the driver 
+couldn't request the IRQ.
+
+Otherwise I wouldn't have had a problem by just adding the necessary 
+entries to the DT.
+
+But I have to say I didn't like the syntax too, and it wasn't obvious 
+how the syntax is and how to conclude from a gpio number to an 
+irq-number and the patch didn't really include some documentation or 
+useful example.
+
+Regards,
+
+Alexander Holler
