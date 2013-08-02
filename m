@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754121Ab3HBKWa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 06:22:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37798 "EHLO
+	id S1754306Ab3HBKWe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 06:22:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37808 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753747Ab3HBKW1 (ORCPT
+	with ESMTP id S1754193Ab3HBKWc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 06:22:27 -0400
+	Fri, 2 Aug 2013 06:22:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ren Bigcren <bigcren.ren@sonymobile.com>,
-        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
-        Oskar Andero <oskar.andero@sonymobile.com>
-Subject: [ 01/23] USB: storage: Add MicroVault Flash Drive to unusual_devs
-Date: Fri,  2 Aug 2013 18:23:14 +0800
-Message-Id: <20130802102036.387714099@linuxfoundation.org>
+        "Ewan D. Milne" <emilne@redhat.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 03/23] SCSI: sd: fix crash when UA received on DIF enabled device
+Date: Fri,  2 Aug 2013 18:23:16 +0800
+Message-Id: <20130802102036.682866908@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.4.841.g1a3f60e
 In-Reply-To: <20130802102036.180660415@linuxfoundation.org>
 References: <20130802102036.180660415@linuxfoundation.org>
@@ -28,37 +28,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ren Bigcren <bigcren.ren@sonymobile.com>
+From: "Ewan D. Milne" <emilne@redhat.com>
 
-commit e7a6121f4929c17215f0cdca3726f4bf3e4e9529 upstream.
+commit 085b513f97d8d799d28491239be4b451bcd8c2c5 upstream.
 
-The device report an error capacity when read_capacity_16().
-Using read_capacity_10() can get the correct capacity.
+sd_prep_fn will allocate a larger CDB for the command via mempool_alloc
+for devices using DIF type 2 protection.  This CDB was being freed
+in sd_done, which results in a kernel crash if the command is retried
+due to a UNIT ATTENTION.  This change moves the code to free the larger
+CDB into sd_unprep_fn instead, which is invoked after the request is
+complete.
 
-Signed-off-by: Ren Bigcren <bigcren.ren@sonymobile.com>
-Cc: Matthew Dharm <mdharm-usb@one-eyed-alien.net>
-Signed-off-by: Oskar Andero <oskar.andero@sonymobile.com>
+It is no longer necessary to call scsi_print_command separately for
+this case as the ->cmnd will no longer be NULL in the normal code path.
+
+Also removed conditional test for DIF type 2 when freeing the larger
+CDB because the protection_type could have been changed via sysfs while
+the command was executing.
+
+Signed-off-by: Ewan D. Milne <emilne@redhat.com>
+Acked-by: Martin K. Petersen <martin.petersen@oracle.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/storage/unusual_devs.h |    7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/scsi/sd.c |   22 +++++++---------------
+ 1 file changed, 7 insertions(+), 15 deletions(-)
 
---- a/drivers/usb/storage/unusual_devs.h
-+++ b/drivers/usb/storage/unusual_devs.h
-@@ -657,6 +657,13 @@ UNUSUAL_DEV(  0x054c, 0x016a, 0x0000, 0x
- 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
- 		US_FL_FIX_INQUIRY ),
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -641,10 +641,17 @@ static int scsi_setup_flush_cmnd(struct
  
-+/* Submitted by Ren Bigcren <bigcren.ren@sonymobile.com> */
-+UNUSUAL_DEV(  0x054c, 0x02a5, 0x0100, 0x0100,
-+		"Sony Corp.",
-+		"MicroVault Flash Drive",
-+		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
-+		US_FL_NO_READ_CAPACITY_16 ),
+ static void sd_unprep_fn(struct request_queue *q, struct request *rq)
+ {
++	struct scsi_cmnd *SCpnt = rq->special;
 +
- /* floppy reports multiple luns */
- UNUSUAL_DEV(  0x055d, 0x2020, 0x0000, 0x0210,
- 		"SAMSUNG",
+ 	if (rq->cmd_flags & REQ_DISCARD) {
+ 		free_page((unsigned long)rq->buffer);
+ 		rq->buffer = NULL;
+ 	}
++	if (SCpnt->cmnd != rq->cmd) {
++		mempool_free(SCpnt->cmnd, sd_cdb_pool);
++		SCpnt->cmnd = NULL;
++		SCpnt->cmd_len = 0;
++	}
+ }
+ 
+ /**
+@@ -1451,21 +1458,6 @@ static int sd_done(struct scsi_cmnd *SCp
+ 	if (rq_data_dir(SCpnt->request) == READ && scsi_prot_sg_count(SCpnt))
+ 		sd_dif_complete(SCpnt, good_bytes);
+ 
+-	if (scsi_host_dif_capable(sdkp->device->host, sdkp->protection_type)
+-	    == SD_DIF_TYPE2_PROTECTION && SCpnt->cmnd != SCpnt->request->cmd) {
+-
+-		/* We have to print a failed command here as the
+-		 * extended CDB gets freed before scsi_io_completion()
+-		 * is called.
+-		 */
+-		if (result)
+-			scsi_print_command(SCpnt);
+-
+-		mempool_free(SCpnt->cmnd, sd_cdb_pool);
+-		SCpnt->cmnd = NULL;
+-		SCpnt->cmd_len = 0;
+-	}
+-
+ 	return good_bytes;
+ }
+ 
 
 
