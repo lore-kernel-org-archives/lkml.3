@@ -1,44 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751349Ab3HCJVR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Aug 2013 05:21:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49326 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751082Ab3HCJVP (ORCPT
+	id S1751415Ab3HCJZ1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Aug 2013 05:25:27 -0400
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:62453 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751152Ab3HCJZZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Aug 2013 05:21:15 -0400
-Date: Sat, 3 Aug 2013 17:22:31 +0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Andreas Platschek <andi.platschek@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] driver-core: only call kfree() if memory was allocated
-Message-ID: <20130803092231.GA1870@kroah.com>
-References: <1375479830-8698-1-git-send-email-andi.platschek@gmail.com>
- <20130802220445.GA22019@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130802220445.GA22019@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 3 Aug 2013 05:25:25 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@sisk.pl, pavel@ucw.cz
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH] OPP: Export opp_add()
+Date: Sat,  3 Aug 2013 14:55:06 +0530
+Message-Id: <58acb4a8a4e98089078de3ed71999730b6d97b4b.1375521724.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 03, 2013 at 06:04:45AM +0800, Greg KH wrote:
-> On Fri, Aug 02, 2013 at 11:43:50PM +0200, Andreas Platschek wrote:
-> > There are several cases where we could bail out of show_uevent()
-> > before kzalloc() is even called. In those cases we don't want to
-> > call kfree().
-> 
-> Why not?  It's totally safe to do that.
-> 
-> > In addition the error handling of kzalloc() is now using the
-> > single point of exit as well.
-> 
-> We had the single point of exit to start with, there's no change made
-> there.
+Export opp_add() so that modules can use it.
 
-Oops, no, you are correct about that one, but it's not really a big deal
-for such a small function.
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ drivers/base/power/opp.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-greg k-h
+diff --git a/drivers/base/power/opp.c b/drivers/base/power/opp.c
+index c8ec186..ef89897 100644
+--- a/drivers/base/power/opp.c
++++ b/drivers/base/power/opp.c
+@@ -460,6 +460,7 @@ int opp_add(struct device *dev, unsigned long freq, unsigned long u_volt)
+ 	srcu_notifier_call_chain(&dev_opp->head, OPP_EVENT_ADD, new_opp);
+ 	return 0;
+ }
++EXPORT_SYMBOL_GPL(opp_add);
+ 
+ /**
+  * opp_set_availability() - helper to set the availability of an opp
+-- 
+1.7.12.rc2.18.g61b472e
+
