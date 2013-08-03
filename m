@@ -1,66 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752223Ab3HCMwS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Aug 2013 08:52:18 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:33677 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751621Ab3HCMvT (ORCPT
+	id S1752290Ab3HCNRJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Aug 2013 09:17:09 -0400
+Received: from cm-84.215.157.11.getinternet.no ([84.215.157.11]:57671 "EHLO
+	server.arpanet.local" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751335Ab3HCNRH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Aug 2013 08:51:19 -0400
-X-Authority-Analysis: v=2.0 cv=aqMw+FlV c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=TPv2m8cUTs4A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=BxbpTROx1iAA:10 a=1XWaLZrsAAAA:8 a=VwQbUJbxAAAA:8 a=pGLkceISAAAA:8 a=NGQO8fUsbffoyszA4oYA:9 a=T_MzRWcqBuIA:10 a=UTB_XpHje0EA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-Id: <20130803125117.549439473@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Sat, 03 Aug 2013 08:49:29 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        David Sharp <dhsharp@google.com>,
-        Alexander Z Lam <lambchop468@gmail.com>, <stable@vger.kernel.org>,
-        Alexander Z Lam <azl@google.com>
-Subject: [for-next-3.11][PATCH 3/4] tracing: Make TRACE_ITER_STOP_ON_FREE stop the correct buffer
-References: <20130803124926.157378122@goodmis.org>
-Content-Disposition: inline; filename=0003-tracing-Make-TRACE_ITER_STOP_ON_FREE-stop-the-correc.patch
+	Sat, 3 Aug 2013 09:17:07 -0400
+From: =?UTF-8?q?Jon=20Arne=20J=C3=B8rgensen?= <jonarne@jonarne.no>
+To: linux-media@vger.kernel.org
+Cc: jonarne@jonarne.no, linux-kernel@vger.kernel.org, m.chehab@samsung.com,
+        hans.verkuil@cisco.com, prabhakar.csengg@gmail.com,
+        laurent.pinchart@ideasonboard.com, andriy.shevchenko@linux.intel.com,
+        ezequiel.garcia@free-electrons.com, timo.teras@iki.fi
+Subject: [RFC v4 0/3] saa7115: Implement i2c_board_info.platform_data
+Date: Sat,  3 Aug 2013 15:19:34 +0200
+Message-Id: <1375535977-28913-1-git-send-email-jonarne@jonarne.no>
+X-Mailer: git-send-email 1.8.3.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alexander Z Lam <azl@google.com>
+This patch set adds handling of the i2c_board_info struct to the saa7115 driver.
+The main goal of this patch is to give the different devices with the gm7113c
+chip an opportunity to configure the chip to their needs.
 
-Releasing the free_buffer file in an instance causes the global buffer
-to be stopped when TRACE_ITER_STOP_ON_FREE is enabled. Operate on the
-correct buffer.
+I've only implemented the overrides I know are necessary to get the stk1160
+and the smi2021 drivers to work.
 
-Link: http://lkml.kernel.org/r/1375493777-17261-1-git-send-email-azl@google.com
+This is the forth version of this patch series.
+There are only minor changes since version 3 of this patch series.
+I've mostly just changed some comments, and removed some debug statements
+in the last patch in the series.
 
-Cc: Vaibhav Nagarnaik <vnagarnaik@google.com>
-Cc: David Sharp <dhsharp@google.com>
-Cc: Alexander Z Lam <lambchop468@gmail.com>
-Cc: stable@vger.kernel.org # 3.10
-Signed-off-by: Alexander Z Lam <azl@google.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/trace/trace.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+The third version of the RFC was posted on 2013/7/4 and can be found here:
+http://lkml.indiana.edu/hypermail/linux/kernel/1307.0/01931.html
 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index f5b35a5..531c9e6 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -4469,7 +4469,7 @@ tracing_free_buffer_release(struct inode *inode, struct file *filp)
- 
- 	/* disable tracing ? */
- 	if (trace_flags & TRACE_ITER_STOP_ON_FREE)
--		tracing_off();
-+		tracer_tracing_off(tr);
- 	/* resize the ring buffer to 0 */
- 	tracing_resize_ring_buffer(tr, 0, RING_BUFFER_ALL_CPUS);
- 
+The second version of the RFC was posted on 2013/5/31 and can be found here:
+http://lkml.indiana.edu/hypermail/linux/kernel/1305.3/03747.html
+
+The first version of the RFC can be found here:
+https://lkml.org/lkml/2013/5/29/558
+
+Jon Arne Jørgensen (3):
+  saa7115: Fix saa711x_set_v4lstd for gm7113c
+  saa7115: Do not load saa7115_init_misc for gm7113c
+  saa7115: Implement i2c_board_info.platform_data
+
+ drivers/media/i2c/saa7115.c      | 167 +++++++++++++++++++++++++++++++--------
+ drivers/media/i2c/saa711x_regs.h |  19 +++++
+ include/media/saa7115.h          |  64 +++++++++++++++
+ 3 files changed, 216 insertions(+), 34 deletions(-)
+
 -- 
-1.7.10.4
-
+1.8.3.1
 
