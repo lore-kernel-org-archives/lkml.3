@@ -1,51 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754139Ab3HCCgP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 22:36:15 -0400
-Received: from smtp.chinaemail.cn ([218.5.74.238]:53633 "EHLO
-	smtp.chinaemail.cn" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752486Ab3HCCgO (ORCPT
+	id S1753804Ab3HCCis (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 22:38:48 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:58135 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752833Ab3HCCir (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 22:36:14 -0400
-Date: Sat, 3 Aug 2013 10:37:17 +0800
-From: "Sxtl" <sales@feitengmetal.com>
-Reply-To: swt@swtindustry.com
-To: "linux-kernel" <linux-kernel@vger.kernel.org>
-Subject: A4 paper supplier from China
-Message-ID: <201308031037170318503@feitengmetal.com>
-X-Mailer: Foxmail 6, 10, 201, 20 [cn]
+	Fri, 2 Aug 2013 22:38:47 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <51FC6D39.4050509@roeck-us.net>
+Date: Fri, 02 Aug 2013 19:38:49 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="GB2312"
-X-MID: 1995754587.4003258043.17.1375497343.225046.17469
-X-Rate: Yes
-X-Real-From: sales@feitengmetal.com
-X-Rcpt: ,linux-kernel@vger.kernel.org,
-X-Mop-Send: ,hzft@feitengmetal.com,
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, stable@vger.kernel.org
+Subject: Re: [ 00/39] 3.4.56-stable review
+References: <20130802101456.800497005@linuxfoundation.org>
+In-Reply-To: <20130802101456.800497005@linuxfoundation.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r732aKW4002157
 
-Dear Purchasing manager:
-Nice time to you
+On 08/02/2013 03:18 AM, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.4.56 release.
+> There are 39 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+>
+> Responses should be made by Sun Aug  4 10:13:49 UTC 2013.
+> Anything received after that time might be too late.
+>
+> The whole patch series can be found in one patch at:
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.56-rc1.gz
+> and the diffstat can be found below.
+>
+Cross build results:
+	Total builds: 58 Total build errors: 8
+Details:
+	http://desktop.roeck-us.net/buildlogs/v3.4/v3.4.55-39-g6aca769.2013-08-02.19:32:01
 
-It is my big pleasure to hear you need A4 paper
-we have A4 paper 102-104% brightness or higher
-If you still need that pls tell me
+Same results as with previous release.
 
-Then i can send you our best price
-Best wishes
-Ida
+Guenter
 
-Ida Chen
 
-SALES MANAGER
-
-East Siweite industry Co., Ltd
-www.dfswtpaper.com
-
-SKYPE: siweite
-
-Email:swt@swtindustry.comÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
