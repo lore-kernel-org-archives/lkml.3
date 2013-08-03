@@ -1,151 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752440Ab3HCQGe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Aug 2013 12:06:34 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:35664 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752242Ab3HCQGc (ORCPT
+	id S1752485Ab3HCQIP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Aug 2013 12:08:15 -0400
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:34998 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752194Ab3HCQIM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Aug 2013 12:06:32 -0400
-X-Auth-Info: nXL5RXoFyxTcQocHISB5NByJuo9A/oUK5PRKDXk1IrM=
-Date: Sat, 3 Aug 2013 18:06:28 +0200
-From: Gerhard Sittig <gsi@denx.de>
-To: Alexander Popov <a13xp0p0v88@gmail.com>
-Cc: Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
-        Lars-Peter Clausen <lars@metafoo.de>, Arnd Bergmann <arnd@arndb.de>,
-        Anatolij Gustschin <agust@denx.de>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC v3 1/5] dma: mpc512x: reorder mpc8308 specific
- instructions
-Message-ID: <20130803160628.GL2580@book.gsilab.sittig.org>
-Mail-Followup-To: Alexander Popov <a13xp0p0v88@gmail.com>,
-	Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
-	Lars-Peter Clausen <lars@metafoo.de>, Arnd Bergmann <arnd@arndb.de>,
-	Anatolij Gustschin <agust@denx.de>, linuxppc-dev@lists.ozlabs.org,
-	linux-kernel@vger.kernel.org
-References: <1375255254-10955-1-git-send-email-a13xp0p0v88@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1375255254-10955-1-git-send-email-a13xp0p0v88@gmail.com>
-Organization: DENX Software Engineering GmbH
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 3 Aug 2013 12:08:12 -0400
+Message-ID: <1375546086.1988.2.camel@ThinkPad-X230.localdomain>
+Subject: Re: [GIT PULL] ACPI and power management fixes for v3.11-rc4
+From: Igor Gnatenko <i.gnatenko.brain@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Felipe Contreras <felipe.contreras@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>
+Date: Sat, 03 Aug 2013 20:08:06 +0400
+In-Reply-To: <1963015.Y2AObmEn2f@vostro.rjw.lan>
+References: <2052880.bHfzt6NKt5@vostro.rjw.lan>
+	 <6100577.WGRZRabKGy@vostro.rjw.lan>
+	 <CAMP44s1Knox3oVt3-ePkDHxa2uNQAFVFRwmVTATNknWA46b_Uw@mail.gmail.com>
+	 <1963015.Y2AObmEn2f@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.4 (3.8.4-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 31, 2013 at 11:20 +0400, Alexander Popov wrote:
+On Sat, 2013-08-03 at 13:54 +0200, Rafael J. Wysocki wrote:
+> On Friday, August 02, 2013 08:48:09 PM Felipe Contreras wrote:
+> > On Fri, Aug 2, 2013 at 5:21 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > > On Friday, August 02, 2013 04:31:37 PM Felipe Contreras wrote:
+> > >> On Fri, Aug 2, 2013 at 4:21 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > >> > On Friday, August 02, 2013 02:12:49 PM Felipe Contreras wrote:
+> > >>
+> > >> >> You forgot this patch:
+> > >> >>
+> > >> >> https://git.kernel.org/cgit/linux/kernel/git/rafael/linux-pm.git/commit/?h=linux-next&id=3706231332d57072e0e2c0e59975443f3f18e673
+> > >> >>
+> > >> >> Or do you think it's fine to boot these machines into a black screen?
+> > >> >
+> > >> > Seriously, what's wrong with you?!
+> > >> >
+> > >> > I didn't forget about it, I just didn't include it into this particular
+> > >> > pull request.
+> > >> >
+> > >> > And I'm not even sure I will push it for 3.11, because I prefer to revert
+> > >> > efaa14c for 3.11 if that's necessary to make your broken box work as before.
+> > >>
+> > >> The issue happens in more than just "my broken box", and yes,
+> > >> reverting that patch would help (in more than just my box), in the
+> > >> sense that at least Linux won't boot into a black screen.
+> > >>
+> > >> But the backlight control still wouldn't work, as it hasn't worked
+> > >> since v3.7, possibly in many ASUS laptops, for that you need more than
+> > >> just reverting efaa14c.
+> > >
+> > > Yes, last time it worked in 3.6 and in particular it doesn't work in 3.10.
+> > > My current goal is bring things back to the 3.10 state first, possibly without
+> > > introducing any new problems, because we're kind of late in the cycle.
+> > > That's better done by reverting stuff known to have introduced problems in
+> > > the first place and not by doing things that may introduce more of them.
+> > >
+> > > And your blacklisting patch has potential to introduce problems.  Your goal is
+> > > to bring backlight control to the 3.6 state on that particular machine, but
+> > > the blacklist is done at the *system* level and very well may affect more
+> > > things than just backlight.  You may not see any problems resulting from it
+> > > and you may not care even if there are some, but other users of it may use
+> > > different user space, for example, and may see problems that you're not seeing.
+> > >
+> > > That's why I'd very much prefer to do the revert at this point.
+> > 
+> > Yes, that's fine, either the revert, or the patch I mentioned, or
+> > something else, but something has to be done, and it was better to do
+> > it in v3.11-rc4 than in v3.11-rc5, because that change itself can
+> > cause further problems.
 > 
-> From: Gerhard Sittig <gsi@denx.de>
+> A revert can be done in -rc5 just fine.  If we don't have a working fix this
+> week, I'll do the revert.
 > 
-> Concentrate the test and the specific code for MPC8308
-> in the 'if' branch and handle MPC512x in the 'else' branch.
+> > >> > Well, perhaps I just won't push it at all so that you actually can go and
+> > >> > complain to Linus about that ...
+> > >>
+> > >> That is very responsible from you. Screw the users, right?
+> > >
+> > > No, that's not my goal, sorry for disappointing you.
+> > >
+> > > The problem is that I'm not really convinced about the validity of the
+> > > blacklisting approach to begin with.  As I said, the blacklisting is done
+> > > on the system level and the goal is to work around backlight control problems.
+> > > That sounds like a sledgehammer approach to me, which I don't really like.
+> > > If the blacklisting was more targeted, done at the video driver level etc.,
+> > > I wouldn't really have any concerns about it, but that's not the case.
+> > >
+> > > And since people evidently could live for over 6 months with the backlight
+> > > control problems, maybe they'll survive some more time still and allow us to
+> > > find a better approach?
+> > 
+> > They probably can survive without Linux at all, that doesn't mean we
+> > are doing our job.
+> > 
+> > Let's do a though experiment, let's say you are right, and they can
+> > survive the 6 months it would take you to find the "perfect" solution,
+> > say in v3.13. What's wrong with having a partial solution in v3.12? If
+> > the blacklisting doesn't work properly (there's absolutely no evidence
+> > for that), then you revert it on v3.12.1.
+> > 
+> > What's wrong with that approach?
 > 
-> This modification only reorders instructions but doesn't change behaviour.
+> If the blacklisting leads to problems, they may not be reported in the 3.12
+> time frame, but much later.  For example because people won't realize that
+> the problems are caused by the blacklisting until much much later.  And then
+> we'll be in a spot where whatever we do will break things for someone.
 > 
-> Signed-off-by: Alexander Popov <a13xp0p0v88@gmail.com>
-> ---
->  drivers/dma/mpc512x_dma.c | 42 +++++++++++++++++++++++++-----------------
->  1 file changed, 25 insertions(+), 17 deletions(-)
+> And we had situations like that in the past, which is the source of my concern.
+> You obviously don't have that experience, or you won't be so eager to inflict
+> the blacklisting on everyone.
 > 
-> diff --git a/drivers/dma/mpc512x_dma.c b/drivers/dma/mpc512x_dma.c
-> index 2d95673..b8881de 100644
-> --- a/drivers/dma/mpc512x_dma.c
-> +++ b/drivers/dma/mpc512x_dma.c
-> @@ -50,9 +50,17 @@
->  #define MPC_DMA_DESCRIPTORS	64
->  
->  /* Macro definitions */
-> -#define MPC_DMA_CHANNELS	64
->  #define MPC_DMA_TCD_OFFSET	0x1000
->  
-> +/*
-> + * Maximum channel counts for individual hardware variants
-> + * and the maximum channel count over all supported controllers,
-> + * used for data structure size
-> + */
-> +#define MPC8308_DMACHAN_MAX	16
-> +#define MPC512x_DMACHAN_MAX	64
-> +#define MPC_DMA_CHANNELS	64
-> +
->  /* Arbitration mode of group and channel */
->  #define MPC_DMA_DMACR_EDCG	(1 << 31)
->  #define MPC_DMA_DMACR_ERGA	(1 << 3)
-
-nit:  That's not what I wrote.  Please make sure to either cite
-properly or to properly mark changes as such.  Don't spread false
-information, please.  You are free to change what I submitted,
-but you should not pretend that I wrote what has become of the
-code after you have modified it.  Please fix the attribution.
-
-Just to clarify:  The defines here appear to be more appropriate
-than the initial enums, after it turned out that we need not
-handle indiviudal channels in special ways, and really only need
-these three numbers (one of them being the maximum of the
-others).  But regardless of what you have changed, you should
-clearly state the fact.
-
-> @@ -716,10 +724,10 @@ static int mpc_dma_probe(struct platform_device *op)
->  
->  	dma = &mdma->dma;
->  	dma->dev = dev;
-> -	if (!mdma->is_mpc8308)
-> -		dma->chancnt = MPC_DMA_CHANNELS;
-> +	if (mdma->is_mpc8308)
-> +		dma->chancnt = MPC8308_DMACHAN_MAX;
->  	else
-> -		dma->chancnt = 16; /* MPC8308 DMA has only 16 channels */
-> +		dma->chancnt = MPC512x_DMACHAN_MAX;
->  	dma->device_alloc_chan_resources = mpc_dma_alloc_chan_resources;
->  	dma->device_free_chan_resources = mpc_dma_free_chan_resources;
->  	dma->device_issue_pending = mpc_dma_issue_pending;
-> @@ -753,7 +761,19 @@ static int mpc_dma_probe(struct platform_device *op)
->  	 * - Round-robin group arbitration,
->  	 * - Round-robin channel arbitration.
->  	 */
-> -	if (!mdma->is_mpc8308) {
-> +	if (mdma->is_mpc8308) {
-> +		/* MPC8308 has 16 channels and lacks some registers */
-> +		out_be32(&mdma->regs->dmacr, MPC_DMA_DMACR_ERCA);
-> +
-> +		/* enable snooping */
-> +		out_be32(&mdma->regs->dmagpor, MPC_DMA_DMAGPOR_SNOOP_ENABLE);
-> +		/* Disable error interrupts */
-> +		out_be32(&mdma->regs->dmaeeil, 0);
-> +
-> +		/* Clear interrupts status */
-> +		out_be32(&mdma->regs->dmaintl, 0xFFFF);
-> +		out_be32(&mdma->regs->dmaerrl, 0xFFFF);
-> +	} else {
->  		out_be32(&mdma->regs->dmacr, MPC_DMA_DMACR_EDCG |
->  					MPC_DMA_DMACR_ERGA | MPC_DMA_DMACR_ERCA);
->  
-> @@ -774,18 +794,6 @@ static int mpc_dma_probe(struct platform_device *op)
->  		/* Route interrupts to IPIC */
->  		out_be32(&mdma->regs->dmaihsa, 0);
->  		out_be32(&mdma->regs->dmailsa, 0);
-> -	} else {
-> -		/* MPC8308 has 16 channels and lacks some registers */
-> -		out_be32(&mdma->regs->dmacr, MPC_DMA_DMACR_ERCA);
-> -
-> -		/* enable snooping */
-> -		out_be32(&mdma->regs->dmagpor, MPC_DMA_DMAGPOR_SNOOP_ENABLE);
-> -		/* Disable error interrupts */
-> -		out_be32(&mdma->regs->dmaeeil, 0);
-> -
-> -		/* Clear interrupts status */
-> -		out_be32(&mdma->regs->dmaintl, 0xFFFF);
-> -		out_be32(&mdma->regs->dmaerrl, 0xFFFF);
->  	}
->  
->  	/* Register DMA engine */
-> -- 
-> 1.7.11.3
-
-
-virtually yours
-Gerhard Sittig
+> Anyway, as you know, but conveniently don't mention, I asked some experienced
+> people for opinions about that.  If they agree with you, we will add the
+> blacklist.  If they don't, we won't add it.
+> 
+> Rafael
+> 
+I am opposed to this patch. On ThinkPad X230 I had problems with it.
+Felipe, come over to dark side. They have cookies.
 -- 
-DENX Software Engineering GmbH,     MD: Wolfgang Denk & Detlev Zundel
-HRB 165235 Munich, Office: Kirchenstr. 5, D-82194 Groebenzell, Germany
-Phone: +49-8142-66989-0 Fax: +49-8142-66989-80  Email: office@denx.de
+Igor Gnatenko
+Fedora release 19 (Schrödinger’s Cat)
+Linux 3.10.4-300.fc19.x86_64
+
