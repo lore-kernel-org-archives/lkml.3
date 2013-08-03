@@ -1,59 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752169Ab3HCN2h (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Aug 2013 09:28:37 -0400
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:48091 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752067Ab3HCN2f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Aug 2013 09:28:35 -0400
+	id S1752134Ab3HCNpM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Aug 2013 09:45:12 -0400
+Received: from mga03.intel.com ([143.182.124.21]:15792 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751970Ab3HCNpK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Aug 2013 09:45:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,807,1367996400"; 
+   d="scan'208";a="277215272"
+Message-ID: <51FD095F.8060208@intel.com>
+Date: Sat, 03 Aug 2013 16:45:03 +0300
+From: Adrian Hunter <adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
+ Business Identity Code: 0357606 - 4, Domiciled in Helsinki
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <1976834.StkbCTGYhN@vostro.rjw.lan>
-References: <cover.1375530162.git.viresh.kumar@linaro.org>
-	<1976834.StkbCTGYhN@vostro.rjw.lan>
-Date: Sat, 3 Aug 2013 18:58:35 +0530
-Message-ID: <CAKohpok_ZYB3J0QUJMPxBbmRZ9RssYOTYm0KSwAqyH53ydZcRg@mail.gmail.com>
-Subject: Re: [PATCH 00/10] CPUFreq: Fixes & Cleanups for 3.12
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com,
-        l.majewski@samsung.com
-Content-Type: text/plain; charset=ISO-8859-1
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH V2 1/9] perf tools: add test for reading object code
+References: <1375218838-31042-1-git-send-email-adrian.hunter@intel.com> <1375218838-31042-2-git-send-email-adrian.hunter@intel.com> <20130731141732.GD3614@ghostprotocols.net>
+In-Reply-To: <20130731141732.GD3614@ghostprotocols.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3 August 2013 17:37, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Saturday, August 03, 2013 05:19:18 PM Viresh Kumar wrote:
->> Hi Rafael,
->>
->> This patchset tries to fix & cleanup many existing cpufreq core issues. First
->> four patches tries to cleanup basic problems in cpufreq core. Its first patch
->> was earlier sent separately but now is part of this series.
->>
->> Fifth patch was also sent earlier as reply to your patches and was reviewed by
->> Srivatsa. Sixth patch was picked from Lukasz's patchset on introducing software
->> "boost" feature in core. It will be used by this patchset.
->>
->> And last four are the most significant part of this set. They try to make many
->> things simple and robust.
->>
->> This is rebased of your bleeding-edge branch + two patches from you:
->> 18a6b03 cpufreq: Avoid double kobject_put() for the same kobject in error code path
->> d0cde63 cpufreq: Do not hold driver module references for additional policy CPUs
->> abe513f Merge branch 'acpi-sleep-next' into linux-next
->>
->> They are also pushed in my cpufreq-next branch
+On 31/07/2013 5:17 p.m., Arnaldo Carvalho de Melo wrote:
+> Em Wed, Jul 31, 2013 at 12:13:50AM +0300, Adrian Hunter escreveu:
+>> Using the information in mmap events, perf tools can read object
+>> code associated with sampled addresses.  A test is added that
+>> compares bytes read by perf with the same bytes read using
+>> objdump.
 >
-> How much testing has that received so far?
+> So this parses objdump output, and we also already have the annotation
+> logic that does that too, have you thought about having common routines
+> for these two cases?
 
-I planned to add this information but forgot at the last moment. It
-was partially
-tested. As it was mostly developed over the weekend I wasn't able to do much
-of testing. I posted it to get early comments, and testing would complete by
-beginning of next week.
+The annotation logic strips out the bytes (--no-show-raw) whereas the 
+test extracts only the bytes, so they are not currently compatible.
 
---
-viresh
+>
+> I mean the disasm_line, ins, ins_ops, ins_operands classes, that now
+> lives in util/annotate.h but could be moved somewhere else,
+> disconnecting it as much as possible from annotation, because probably
+> there are more cool things we could do with that... :-)
+>
+> We could certainly do it incrementally, merging your current patch
+> series and then working on sharing code on these two use cases, but
+> perhaps you can do it now?
+>
+> What do you think?
+
+I expect replacing objdump with library calls will end up being the way 
+forward.
