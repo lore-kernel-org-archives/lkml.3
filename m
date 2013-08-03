@@ -1,78 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751502Ab3HCKO6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Aug 2013 06:14:58 -0400
-Received: from forward-corp1f.mail.yandex.net ([95.108.130.40]:41254 "EHLO
-	forward-corp1f.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751390Ab3HCKO4 (ORCPT
+	id S1751566Ab3HCLRt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Aug 2013 07:17:49 -0400
+Received: from icebox.esperi.org.uk ([81.187.191.129]:54874 "EHLO
+	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751498Ab3HCLRr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Aug 2013 06:14:56 -0400
-Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
-Message-ID: <51FCD818.8040304@yandex-team.ru>
-Date: Sat, 03 Aug 2013 14:14:48 +0400
-From: Roman Gushchin <klamm@yandex-team.ru>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Sat, 3 Aug 2013 07:17:47 -0400
+From: Nick Alcock <nick.alcock@esperi.org.uk>
+To: Bernd Schubert <bernd.schubert@fastmail.fm>
+Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-scsi@vger.kernel.org, nick.cheng@areca.com.tw,
+        stable@vger.kernel.org, Douglas Gilbert <dgilbert@interlog.com>,
+        "James E.J. Bottomley" <James.Bottomley@HansenPartnership.com>
+Subject: Re: [PATCH] scsi disk: Use its own buffer for the vpd request
+References: <87r4ehfzhf.fsf@spindle.srvr.nix> <51F667C2.4020801@fastmail.fm>
+	<87mwp5frdl.fsf@spindle.srvr.nix> <51F67959.2060803@fastmail.fm>
+	<87fvuxdqes.fsf@spindle.srvr.nix> <yq1txjdhree.fsf@sermon.lab.mkp.net>
+	<51F80167.1080004@fastmail.fm> <yq1zjt3h11y.fsf@sermon.lab.mkp.net>
+	<51F94E8D.5040908@fastmail.fm> <51F95A2E.60805@fastmail.fm>
+	<51FA71E2.6010501@fastmail.fm>
+Emacs: the Swiss Army of Editors.
+Date: Sat, 03 Aug 2013 12:17:31 +0100
+In-Reply-To: <51FA71E2.6010501@fastmail.fm> (Bernd Schubert's message of "Thu,
+	01 Aug 2013 16:34:10 +0200")
+Message-ID: <87vc3nuipg.fsf@spindle.srvr.nix>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: eric.dumazet@gmail.com, raise.sail@gmail.com, ebiederm@xmission.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net: check net.core.somaxconn sysctl values
-References: <20130801.141836.1104130035137318887.davem@davemloft.net> <1375454200-21303-1-git-send-email-klamm@yandex-team.ru> <20130802.151915.1964036907997678424.davem@davemloft.net>
-In-Reply-To: <20130802.151915.1964036907997678424.davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-DCC-URT-Metrics: spindle 1060; Body=8 Fuz1=8 Fuz2=8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03.08.2013 02:19, David Miller wrote:
-> From: Roman Gushchin <klamm@yandex-team.ru>
-> Date: Fri,  2 Aug 2013 18:36:40 +0400
+On 1 Aug 2013, Bernd Schubert stated:
+
+> Once I noticed that scsi_get_vpd_page() works fine from other function
+> calls and that it is not 0x89, but already 0x0 that fails fixing it became
+> easy.
 >
->> It's possible to assign an invalid value to the net.core.somaxconn
->> sysctl variable, because there is no checks at all.
->>
->> The sk_max_ack_backlog field of the sock structure is defined as
->> unsigned short. Therefore, the backlog argument in inet_listen()
->> shouldn't exceed USHRT_MAX. The backlog argument in the listen() syscall
->> is truncated to the somaxconn value. So, the somaxconn value shouldn't
->> exceed 65535 (USHRT_MAX).
->> Also, negative values of somaxconn are meaningless.
->>
->> before:
->> $ sysctl -w net.core.somaxconn=256
->> net.core.somaxconn = 256
->> $ sysctl -w net.core.somaxconn=65536
->> net.core.somaxconn = 65536
->> $ sysctl -w net.core.somaxconn=-100
->> net.core.somaxconn = -100
->>
->> after:
->> $ sysctl -w net.core.somaxconn=256
->> net.core.somaxconn = 256
->> $ sysctl -w net.core.somaxconn=65536
->> error: "Invalid argument" setting key "net.core.somaxconn"
->> $ sysctl -w net.core.somaxconn=-100
->> error: "Invalid argument" setting key "net.core.somaxconn"
->>
->> Based on a prior patch from Changli Gao.
->>
->> Signed-off-by: Roman Gushchin <klamm@yandex-team.ru>
->> Reported-by: Changli Gao <xiaosuo@gmail.com>
->> Suggested-by: Eric Dumazet <edumazet@google.com>
->> Acked-by: Eric Dumazet <edumazet@google.com>
->
-> Applied, thanks.
+> Nix, any chance you could verify it also works for you?
 
-Thank you!
+Confirmed, thank you!
 
-Regards,
-Roman
+> Somehow older areca firmware versions have issues with
+> scsi_get_vpd_page() and a large buffer.
 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+I wonder if they're using math modulo SD_BUF_SIZE-1 by mistake, so they
+misinterpret this as zero? (Still, doing math modulo 511 seems very
+odd, even if this firmware *does* only support 512-byte sectors.)
 
+-- 
+NULL && (void)
