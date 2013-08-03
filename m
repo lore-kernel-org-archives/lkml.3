@@ -1,47 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751855Ab3HCMkN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Aug 2013 08:40:13 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:40041 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751548Ab3HCMkM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Aug 2013 08:40:12 -0400
-Date: Sat, 3 Aug 2013 13:39:54 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Jean-Francois Moine <moinejf@free.fr>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Rob Herring <rob.herring@calxeda.com>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Subject: Re: [PATCH v3 1/4] ASoc: kirkwood: simplify probe error
-Message-ID: <20130803123954.GX23006@n2100.arm.linux.org.uk>
-References: <20130731081739.76aae84c@armhf>
+	id S1751860Ab3HCMoe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Aug 2013 08:44:34 -0400
+Received: from smtp2.it.da.ut.ee ([193.40.5.67]:53552 "EHLO smtp2.it.da.ut.ee"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751621Ab3HCMoc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Aug 2013 08:44:32 -0400
+Date: Sat, 3 Aug 2013 15:44:26 +0300 (EEST)
+From: Meelis Roos <mroos@linux.ee>
+To: Linux Kernel list <linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org, linuxppc-dev@lists.ozlabs.org
+Subject: 3.11-rc3+git: __divdi3 undefined on powerpc (from radeon)
+Message-ID: <alpine.SOC.1.00.1308031534390.1352@math.ut.ee>
+User-Agent: Alpine 1.00 (SOC 882 2007-12-20)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130731081739.76aae84c@armhf>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 31, 2013 at 08:17:39AM +0200, Jean-Francois Moine wrote:
-> @@ -519,30 +532,17 @@ static int kirkwood_i2s_dev_probe(struct platform_device *pdev)
->  
->  	err = snd_soc_register_component(&pdev->dev, &kirkwood_i2s_component,
->  					 soc_dai, 1);
-> -	if (!err)
-> -		return 0;
-> -	dev_err(&pdev->dev, "snd_soc_register_component failed\n");
-> -
-> -	if (!IS_ERR(priv->extclk))
-> -		clk_disable_unprepare(priv->extclk);
-> -	clk_disable_unprepare(priv->clk);
-> +	if (err) {
-> +		dev_err(&pdev->dev, "snd_soc_register_component failed\n");
-> +		goto fail;
-> +	}
-> +	return 0;
+While trying to compile v3.11-rc3-288-gabe0308 on powerpc 32-bit, 
+it failed with the following linking error:
 
-This doesn't apply to mainline as there's a clk_put() there.
+ERROR: "__divdi3" [drivers/gpu/drm/radeon/radeon.ko] undefined!
+
+Some new 64-bit division in radeon that is not implemented on 32-bit 
+powerpc?
+
+This is new - 3.11-rc3 worked fine.
+
+-- 
+Meelis Roos (mroos@linux.ee)
