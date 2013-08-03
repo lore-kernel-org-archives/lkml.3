@@ -1,95 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755185Ab3HBX4r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 19:56:47 -0400
-Received: from gate.crashing.org ([63.228.1.57]:36870 "EHLO gate.crashing.org"
+	id S1755240Ab3HBX5R (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 19:57:17 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:52805 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755055Ab3HBX4n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 19:56:43 -0400
-Message-ID: <1375487788.15999.75.camel@pasglop>
-Subject: Re: RFC: vfio-pci API for PCI bus/slot (hot) resets
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, kvm <kvm@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Alexey Kardashevskiy <aik@ozlabs.ru>,
-        Gavin Shan <shangw@linux.vnet.ibm.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Date: Sat, 03 Aug 2013 09:56:28 +1000
-In-Reply-To: <1375486647.31262.351.camel@ul30vt.home>
-References: <1375395497.31262.271.camel@ul30vt.home>
-	 <1375420202.3743.97.camel@pasglop> <1375461387.31262.314.camel@ul30vt.home>
-	 <1375478934.15999.33.camel@pasglop>
-	 <CAErSpo42yK=K55J30V3xd_Ki6KEUOU6q7sUpNrAYe517=CdiDA@mail.gmail.com>
-	 <1375485348.15999.66.camel@pasglop>
-	 <1375486647.31262.351.camel@ul30vt.home>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753950Ab3HBX5P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Aug 2013 19:57:15 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: Aaron Lu <aaron.lwe@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, Len Brown <lenb@kernel.org>,
+        Zhang Rui <rui.zhang@intel.com>, Jiri Kosina <trivial@kernel.org>
+Subject: Re: [PATCH 1/3] acpi: video: trivial costmetic cleanups
+Date: Sat, 03 Aug 2013 02:07:28 +0200
+Message-ID: <2947185.O65YUjZvxL@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CAMP44s0Qk7GyKFtfe3f19ruafsfu7u3bN-_O-EBhZMBvcUyCNg@mail.gmail.com>
+References: <1375400641-1694-1-git-send-email-felipe.contreras@gmail.com> <2368382.8sxrvVTxSB@vostro.rjw.lan> <CAMP44s0Qk7GyKFtfe3f19ruafsfu7u3bN-_O-EBhZMBvcUyCNg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-08-02 at 17:37 -0600, Alex Williamson wrote:
-
-> > Yes.
-> > 
-> > We have that similar issue with error handling, when the driver doesn't
-> > have the right hooks, we simulate an unplug, reset, then replug.
-> > 
-> > Maybe we could provide generic helpers to do that...
+On Friday, August 02, 2013 12:52:18 PM Felipe Contreras wrote:
+> On Fri, Aug 2, 2013 at 9:05 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > On Thursday, August 01, 2013 11:15:38 PM Felipe Contreras wrote:
+> >> On Thu, Aug 1, 2013 at 8:50 PM, Aaron Lu <aaron.lwe@gmail.com> wrote:
+> >> > On 08/02/2013 07:43 AM, Felipe Contreras wrote:
+> >> >> Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
+> >> >
+> >> > Please add change log explaining what you have changed.
+> >> > It seems that the patch modify comment style only, some add a space and
+> >> > some change spaces to tab, is it the case?
+> >>
+> >> The commit message already explains what the change is; trivial
+> >> cosmetic cleanups. Cosmetic means it's completely superficial.
+> >
+> > And I have a rule not to apply patches without changelogs.  So either I'll
+> > need to write it for you, or can you add one pretty please?
 > 
-> Devices going away and coming back is pretty difficult for vfio to
-> handle.  Perhaps helpers to rescan a device in-place would be easier.
+> The commit message is right there. Maybe Jiri can apply it then, if
+> not, then stay happy with your untidy code.
 
-Well, in the error handling case (and *maybe* in the "FW update" case)
-we need to unbind and rebind the driver as well. The whole point is that
-we have to do that because the driver doesn't have the right hooks.
+First of all, I didn't say I wouldn't apply the patch, did I?
 
-In the VFIO case, we will have to implement something here so that the
-VFIO driver stub doesn't get handled that treatment :-) We'll probably
-need some arch specific stuff in vfio_pci unfortunately, so that the
-errors get forwarded to the guest via our EEH interfaces, and let the
-guest handle it's error handling.
+Second, I asked you *nicely* to add a changelog so that I don't need to write
+it for you.
 
-Of course that leaves an interesting problem as to what state the device
-is in when it comes back to the host ...
+I don't know what made it difficult to understand.
 
-This is made a LOT more complicated in the VFIO model than it is in the
-"pHyp" model (our proprietary hypervisor).
+Anyway, I ask everyone to write changelogs and nobody has had any problems with
+that so far.  I don't see why I should avoid asking you to follow the rules
+that everybody else is asked to follow.  If those rules are too difficult for
+you to follow, I'm sorry.
 
-Under pHyp, the PE doesn't have a concept of being used outside of a
-guest, and it always reset before being assigned/unassigned. The guest
-can mess around all it wants (bus numbers, BARs, etc...) it can only
-hurt itself. The hypervisor doesn't keep track of any of that.
-
-> On the QEMU side we'd need to rescan the device after each reset, which
-> would be rather tedious for the typical case where it doesn't change.
-
-This is a direct consequence of your model :-) It makes things more
-complex for us as well, but we have to bite that bullet now. Maybe we
-can consider an alternate/simpler model in the future, more akin to what
-pHyp does, where we "unplug" the device from the host when assigning it
-to a guest (and the whole hierarchy below it if it's a bridge) and let
-the guest do what it wants with it. 
-
-Doing so means we no longer have to emulate/filter config space
-(provided your HW handles MSI virtualization properly), care about bus
-numbers, BARs, etc... nor do we need to keep track of a lot of this in
-qemu. All we need is reset the whole & lot and re-probe the bus leg when
-returning the devices to the host.
- 
-Cheers,
-Ben.
-
-> Thanks,
-> 
-> Alex
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Thanks,
+Rafael
 
 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
