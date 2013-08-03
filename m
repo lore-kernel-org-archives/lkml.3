@@ -1,36 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751126Ab3HCIx1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Aug 2013 04:53:27 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:43837 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750739Ab3HCIxZ (ORCPT
+	id S1751352Ab3HCJKv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Aug 2013 05:10:51 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:44075 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751068Ab3HCJKt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Aug 2013 04:53:25 -0400
-Date: Sat, 3 Aug 2013 10:53:23 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Iker Pedrosa <ikerpedrosam@gmail.com>
-Cc: gregkh@linuxfoundation.org, harsh1kumar@gmail.com, justinmattock@gmail.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: winbond: wb35reg: fixed some line over 80
- characters
-Message-ID: <20130803085323.GA16282@amd.pavel.ucw.cz>
-References: <1375443476-4519-1-git-send-email-ikerpedrosam@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1375443476-4519-1-git-send-email-ikerpedrosam@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sat, 3 Aug 2013 05:10:49 -0400
+Message-ID: <1375521042.3891.1.camel@phoenix>
+Subject: [PATCH] regulator: s2mps11: Fix wrong arguments for
+ regmap_update_bits() call
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Yadwinder Singh Brar <yadi.brar@samsung.com>,
+        Sangbeom Kim <sbkim73@samsung.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Date: Sat, 03 Aug 2013 17:10:42 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 2013-08-02 13:37:56, Iker Pedrosa wrote:
-> Fixed some coding style issues
-> 
-> Signed-off-by: Iker Pedrosa <ikerpedrosam@gmail.com>
+Current code calls regmap_update_bits() with mask and val arguments swapped.
 
-Reviewed-by: Pavel Machek <pavel@ucw.cz>
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+ drivers/regulator/s2mps11.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/regulator/s2mps11.c b/drivers/regulator/s2mps11.c
+index f047d36..89140ae 100644
+--- a/drivers/regulator/s2mps11.c
++++ b/drivers/regulator/s2mps11.c
+@@ -207,8 +207,8 @@ static int s2mps11_set_ramp_delay(struct regulator_dev *rdev, int ramp_delay)
+ 				  ramp_val << ramp_shift, 1 << ramp_shift);
+ 
+ ramp_disable:
+-	return regmap_update_bits(rdev->regmap, S2MPS11_REG_RAMP, 0,
+-				  1 << enable_shift);
++	return regmap_update_bits(rdev->regmap, S2MPS11_REG_RAMP,
++				  1 << enable_shift, 0);
+ }
+ 
+ static struct regulator_ops s2mps11_ldo_ops = {
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+1.8.1.2
+
+
+
