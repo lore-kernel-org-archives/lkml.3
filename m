@@ -1,29 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753268Ab3HCVc1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Aug 2013 17:32:27 -0400
-Received: from mail-vb0-f51.google.com ([209.85.212.51]:48910 "EHLO
-	mail-vb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753110Ab3HCVcZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Aug 2013 17:32:25 -0400
+	id S1753253Ab3HCVdO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Aug 2013 17:33:14 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:54230 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753110Ab3HCVdM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Aug 2013 17:33:12 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com,
+        l.majewski@samsung.com
+Subject: Re: [PATCH 02/10] cpufreq: Re-arrange declarations in cpufreq.h
+Date: Sat, 03 Aug 2013 23:43:27 +0200
+Message-ID: <2642814.MCfbiQte2U@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CAKohpomVKac+1c7rNseUKM_RCVaNiFsaioJuW98oLJP5atSaSg@mail.gmail.com>
+References: <cover.1375530162.git.viresh.kumar@linaro.org> <c685424014a84ad05ee55b669a6cda1c8c66723e.1375530162.git.viresh.kumar@linaro.org> <CAKohpomVKac+1c7rNseUKM_RCVaNiFsaioJuW98oLJP5atSaSg@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20130803141654.0f84baac@dev.queued.net>
-References: <1375562675-7816-1-git-send-email-jfrederich@gmail.com>
-	<20130803141654.0f84baac@dev.queued.net>
-Date: Sat, 3 Aug 2013 23:32:22 +0200
-Message-ID: <CAF92urq68+bsfq9v3gz1HqD3H7xRrqNW0q9rHn-RLxt1J3tdbg@mail.gmail.com>
-Subject: Re: [PATCH] Staging: olpc_dcon: replace some magic numbers
-From: Jens Frederich <jfrederich@gmail.com>
-To: Andres Salomon <dilinger@queued.net>
-Cc: Greg KH <gregkh@linuxfoundation.org>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, cjb@laptop.org, dsd@laptop.org
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 3, 2013 at 11:16 PM, Andres Salomon <dilinger@queued.net> wrote:
-> Please Cc Daniel on these.  Cjb and myself are no longer at olpc.
->
-Sorry, I've forgotten it. I will update the the TODO list.
+On Saturday, August 03, 2013 10:43:45 PM Viresh Kumar wrote:
+> On 3 August 2013 17:19, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> > They are pretty much mixed up. Although generic headers are present but
+> > definitions/declarations are present outside them too..
+> >
+> > This patch just moves stuff up and down to make it look better and consistent.
+> >
+> > Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> > ---
+> >  include/linux/cpufreq.h | 370 +++++++++++++++++++++++-------------------------
+> >  1 file changed, 177 insertions(+), 193 deletions(-)
+> 
+> Fixup due to compilation reported by Fengguang's kbuild system:
+> [Will post the series again once I receive more comments on it]
+
+OK, thanks.  I'm waiting for the update of the whole series, then.
+
+> diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
+> index a6b97e2..d568f39 100644
+> --- a/include/linux/cpufreq.h
+> +++ b/include/linux/cpufreq.h
+> @@ -268,6 +268,19 @@ int cpufreq_unregister_notifier(struct
+> notifier_block *nb, unsigned int list);
+>  void cpufreq_notify_transition(struct cpufreq_policy *policy,
+>                 struct cpufreq_freqs *freqs, unsigned int state);
+> 
+> +#else /* CONFIG_CPU_FREQ */
+> +static inline int cpufreq_register_notifier(struct notifier_block *nb,
+> +                                               unsigned int list)
+> +{
+> +       return 0;
+> +}
+> +static inline int cpufreq_unregister_notifier(struct notifier_block *nb,
+> +                                               unsigned int list)
+> +{
+> +       return 0;
+> +}
+> +#endif /* !CONFIG_CPU_FREQ */
+> +
+>  /**
+>   * cpufreq_scale - "old * mult / div" calculation for large values (32-bit-arch
+>   * safe)
+> @@ -282,32 +295,16 @@ static inline unsigned long
+> cpufreq_scale(unsigned long old, u_int div,
+>                 u_int mult)
+>  {
+>  #if BITS_PER_LONG == 32
+> -
+>         u64 result = ((u64) old) * ((u64) mult);
+>         do_div(result, div);
+>         return (unsigned long) result;
+> 
+>  #elif BITS_PER_LONG == 64
+> -
+>         unsigned long result = old * ((u64) mult);
+>         result /= div;
+>         return result;
+> -
+>  #endif
+> -};
+> -
+> -#else /* CONFIG_CPU_FREQ */
+> -static inline int cpufreq_register_notifier(struct notifier_block *nb,
+> -                                               unsigned int list)
+> -{
+> -       return 0;
+>  }
+> -static inline int cpufreq_unregister_notifier(struct notifier_block *nb,
+> -                                               unsigned int list)
+> -{
+> -       return 0;
+> -}
+> -#endif /* !CONFIG_CPU_FREQ */
+> 
+>  /*********************************************************************
+>   *                          CPUFREQ GOVERNORS                        *
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
