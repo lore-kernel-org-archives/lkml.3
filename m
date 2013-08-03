@@ -1,61 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753248Ab3HCWUh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Aug 2013 18:20:37 -0400
-Received: from mail-la0-f49.google.com ([209.85.215.49]:33275 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752744Ab3HCWUf (ORCPT
+	id S1753182Ab3HCWXy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Aug 2013 18:23:54 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:40168 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752744Ab3HCWXx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Aug 2013 18:20:35 -0400
+	Sat, 3 Aug 2013 18:23:53 -0400
+Date: Sat, 3 Aug 2013 23:23:33 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Jean-Francois Moine <moinejf@free.fr>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Rob Herring <rob.herring@calxeda.com>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Subject: Re: [PATCH v3 2/4] ASoc: kirkwood: merge kirkwood-i2c and
+	kirkwood-dma
+Message-ID: <20130803222332.GE23006@n2100.arm.linux.org.uk>
+References: <20130731081806.244752d4@armhf>
 MIME-Version: 1.0
-In-Reply-To: <2483450.yz2brWbP8X@vostro.rjw.lan>
-References: <1375472229-1563-1-git-send-email-felipe.contreras@gmail.com>
-	<13505759.IqzsRNCUnN@vostro.rjw.lan>
-	<CAMP44s1SobAmSwth+=-pHYN77u-yEumqMfes1w3Bj-8sLTpWng@mail.gmail.com>
-	<2483450.yz2brWbP8X@vostro.rjw.lan>
-Date: Sat, 3 Aug 2013 17:20:33 -0500
-Message-ID: <CAMP44s3kacF57gsJzyL6-4JWfWpdfJbJYW-nWQ92Yn1VimnYug@mail.gmail.com>
-Subject: Re: [PATCH] acpi: video: improve quirk check
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Aaron Lu <aaron.lwe@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, Len Brown <lenb@kernel.org>,
-        Zhang Rui <rui.zhang@intel.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130731081806.244752d4@armhf>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 3, 2013 at 4:40 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Saturday, August 03, 2013 03:24:16 PM Felipe Contreras wrote:
->> On Sat, Aug 3, 2013 at 6:34 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->> > On Saturday, August 03, 2013 04:14:04 PM Aaron Lu wrote:
->>
->> >> Yes, the patch is correct, but I still prefer my own version :-)
->> >> https://github.com/aaronlu/linux/commit/0a3d2c5b59caf80ae5bb1ca1fda0f7bf448b38c9
->> >>
->> >> In case you want to take mine and mine needs refresh, please let me know
->> >> and I can do the re-base, thanks.
->> >
->> > Well, I prefer simpler, unless there's a good reason to use more complicated.
->>
->> Note that these are not exclusionary; his patch can be applied on top
->> of mine. I don't think his patch is needed though.
->
-> OK
->
-> Do we still need to revert commit efaa14c if this patch is applied?
+On Wed, Jul 31, 2013 at 08:18:06AM +0200, Jean-Francois Moine wrote:
+> To avoid the declaration of a 'kirkwood-pcm-audio' device in the DT,
+> this patch merges the kirkwood-i2c and kirkwood-dma drivers into one
+> module associated with 'kirkwood-i2s'. 
 
-I guess not. At least in this machine changing the backlight works
-correctly, whereas in v3.11-rc3 it was all weird, and v3.7-v3.10
-didn't work at all. I cannot see how it would affect negatively other
-machines.
+I suggest holding off on this stuff at the moment.  I think Mark and Liam
+(who now have a whole raft of emails from me today) have some work to do
+to fix ASoC to work how they're saying it should work, because to me
+ASoC seems to contradict what they're telling me.  To put it another way,
+it must be buggy.
 
-That being said, the blacklisting is still needed, because 1. the
-level is not preserved between boots, and 2. level 0 turns off the
-screen, which I personally consider a regression.
+The DAPM stuff seems to be the worst thing since mouldy bread.  I'm
+chasing what seems to be multiple bugs through this stuff, and many of
+them are not particularly nice.
 
-At least it boots to level 100 instead of 0.
+For example - we register multiple copies of DAPM widgets for the same
+set of declarations if both a CPU DAI and a platform share the same
+struct device, and thereby end up overwriting some pointers in the DAI
+structure.  It seems that CPU DAIs themselves aren't supposed to have
+DAPM widgets, but the core creates some... but there's no explicit
+cleanup of them unlike the other DAPMs, and there's no debugfs for them.
 
--- 
-Felipe Contreras
+The bias levels are stuck at off/standby all the time, which makes any
+kind of PM with spdif-dit impossible - or even any routing between
+stream input and output.
+
+Basically, I'm tearing my hair out today looking at this stuff and getting
+nowhere fast - all I'm doing is finding more and more problems.
+
+For example, where a codec has no input/output widgets declared, it used
+to be powered up automatically by ASoC as a matter of course.  Things
+like UDA134x and other things.  Things like spdif-dit.  That "mysteriously"
+stopped happening.
+
+	ASoC: dapm: Treat DAI widgets like AIF widgets for power
+
+seems to be the cause, this results in such setups having zero connected
+inputs/outputs reported, which causes them to remain powered down - because
+what used to happen before was the DAI links would report their powered
+state depending on whether they were active, and they are set active
+in soc_dapm_stream_event().
+
+Now, when playback widget for the Codec and CPU DAIs get marked as active.
+The playback widget is created as a snd_soc_dapm_dai_in.  It's power
+check function is set to dapm_dac_check_power.  Since this widget is
+active, it checks for connected outputs via is_connected_output_ep().
+
+We drop through to the second switch statement (why do we have two there?
+They're both switching on the same damned variable and its not like a
+widget can change its ID.)  This is where the different behaviour has
+appeared - when these were just a simple snd_soc_dapm_dai, we used to
+just do the snd_soc_dapm_suspend_check() here, but we don't anymore.
+This is a snd_soc_dapm_dai_in type of widget, so we fall through this
+switch statement now and start searching the paths.
+
+As these codecs have no paths, this ultimately ends up returning no
+connections.  Hence why these codecs with no DAPM widgets declared but
+have PM support via the bias level stuff have stopped working.
+
+Now, about the spdif-dit, if we're going to have to add "pin" widgets
+to it, what the output of a SPDIF in terms of DAPM widgets?  At a guess,
+it's a "codec pin" despite there being no codec and no "pin" on that
+codec in reality, and that "pin" is always active.
+
+With that "fixed" (rather, altered to a state where it behaves the
+same way as it used to before the above commit) if I set up a DAPM route
+between the CPU DAI playback stream, an AIF (for spdif output) and the
+spdif-dit playback stream, I see the playback streams marked active and
+powered up, but the AIF stream remains powered down:
+
+spdif-dit/dapm/Playback:Playback: On  in 1 out 1
+spdif-dit/dapm/Playback: stream Playback active
+spdif-dit/dapm/Playback: in  "static" "spdif-playback"
+spdif-dit/dapm/bias_level:On
+
+kirkwood-audio.1/dapm/spdif-playback:spdif-playback: Off  in 1 out 0
+kirkwood-audio.1/dapm/spdif-playback: in  "static" "dma-playback"
+kirkwood-audio.1/dapm/spdif-playback: out "static" "Playback"
+
+kirkwood-audio.1/dapm/dma-playback:dma-playback: On  in 1 out 1
+kirkwood-audio.1/dapm/dma-playback: stream dma-playback active
+kirkwood-audio.1/dapm/dma-playback: out "static" "spdif-playback"
+kirkwood-audio.1/dapm/dma-playback: out "static" "i2s-playback"
+
+It looks to me like the DAPM stuff is - in one plain and simple word -
+buggered.
+
+I've no idea what the right fixes are in this area.  It needs someone
+like Mark or Liam who supposedly understand this to spend time checking
+that it actually operates as they _think_ it should operate, because
+at the moment it plainly doesn't.
