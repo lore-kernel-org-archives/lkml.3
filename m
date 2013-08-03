@@ -1,129 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752941Ab3HCTb3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Aug 2013 15:31:29 -0400
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:60942 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752833Ab3HCTb2 (ORCPT
+	id S1752928Ab3HCTf0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Aug 2013 15:35:26 -0400
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:38414 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751970Ab3HCTfY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Aug 2013 15:31:28 -0400
+	Sat, 3 Aug 2013 15:35:24 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130803185534.GA7452@redhat.com>
-References: <20130801190455.GA3194@redhat.com>
-	<20130801190514.GA3216@redhat.com>
-	<CAGXu5j+=-n7S1VNyFR8oZ+bzh3iG8_cirUaNa48CGGh7DX805Q@mail.gmail.com>
-	<20130803185534.GA7452@redhat.com>
-Date: Sat, 3 Aug 2013 12:31:27 -0700
-X-Google-Sender-Auth: ZfvJg2-h9L0Sml0iH5xhI37tQ5M
-Message-ID: <CAGXu5jL-aGqej8p1Ue9ORPnUS7MEa5-igUWkNQw_GM2UAZAEdg@mail.gmail.com>
-Subject: Re: [PATCH v2 2/3] exec: kill "int depth" in search_binary_handler()
+In-Reply-To: <20130802203457.GR26476@sgi.com>
+References: <20130802194659.GP26476@sgi.com>
+	<20130802201301.A872BE0090@blue.fi.intel.com>
+	<20130802203457.GR26476@sgi.com>
+Date: Sat, 3 Aug 2013 12:35:22 -0700
+X-Google-Sender-Auth: 9EjTM6t5U5ir587eCrcuP3KBpPo
+Message-ID: <CAGXu5j+d3fzKWNtmPF9tyMg7PzHsKWQZkhu5tFaThLTZue=3JQ@mail.gmail.com>
+Subject: Re: [PATCH] Add per-process flag to control thp
 From: Kees Cook <keescook@chromium.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Zach Levis <zml@linux.vnet.ibm.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Evgeniy Polyakov <zbr@ioremap.net>,
-        LKML <linux-kernel@vger.kernel.org>
+To: Alex Thorlton <athorlton@sgi.com>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Sedat Dilek <sedat.dilek@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Dave Jones <davej@redhat.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Al Viro <viro@zeniv.linux.org.uk>, Oleg Nesterov <oleg@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Robin Holt <holt@sgi.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 3, 2013 at 11:55 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> On 08/03, Kees Cook wrote:
->>
->> On Thu, Aug 1, 2013 at 12:05 PM, Oleg Nesterov <oleg@redhat.com> wrote:
->> > Nobody except search_binary_handler() should touch ->recursion_depth,
->> > "int depth" buys nothing but complicates the code, kill it.
->>
->> I'd like to see a comment added to binfmts.h's recursion_depth field
->> that reminds people that recursion_depth is for
->> search_binary_handler()'s use only, and a binfmt loader shouldn't
->> touch it.
+On Fri, Aug 2, 2013 at 1:34 PM, Alex Thorlton <athorlton@sgi.com> wrote:
+>> What kind of workloads are you talking about?
 >
-> And this comment probably makes sense even without this change
+> Our benchmarking team has a list of several of the SPEC OMP benchmarks
+> that perform significantly better when THP is disabled. I tried to get
+> the list but one of our servers is acting up and I can't get to it
+> right now :/
+>
+>> What's wrong with madvise? Could you elaborate?
+>
+> The main issue with using madvise is that it's not an option with static
+> binaries, but there are also some users who have legacy Fortran code
+> that they're not willing/able to change.
+>
+>> And I think thp_disabled should be reset to 0 on exec.
+>
+> The main purpose for this getting carried down from the parent process
+> is that we'd like to be able to have a userland program set this flag on
+> itself, and then spawn off children who will also carry the flag.
+> This allows us to set the flag for programs where we're unable to modify
+> the code, thus resolving the issues detailed above.
 
-Yeah totally agreed -- I should have added this when I reorganized the
-depth handling earlier. :)
-
->> Besides that, yeah, sensible clean up.
->
-> OK, thanks, please see v2. The only change is the comment in .h
->
-> ------------------------------------------------------------------------------
-> Subject: [PATCH 1/1] exec: kill "int depth" in search_binary_handler()
->
-> Nobody except search_binary_handler() should touch ->recursion_depth,
-> "int depth" buys nothing but complicates the code, kill it.
->
-> Probably we should also kill "fn" and the !NULL check, ->load_binary
-> should be always defined. And it can not go away after read_unlock()
-> or this code is buggy anyway.
->
-> v2: add the comment about linux_binprm->recursion_depth
->
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-
-Acked-by: Kees Cook <keescook@chromium.org>
-
-Thanks,
+This could be done with LD_PRELOAD for uncontrolled binaries. Though
+it does seem sensible to make it act like most personality flags do
+(i.e. inherited).
 
 -Kees
-
-> ---
->  fs/exec.c               |    9 ++++-----
->  include/linux/binfmts.h |    2 +-
->  2 files changed, 5 insertions(+), 6 deletions(-)
->
-> diff --git a/fs/exec.c b/fs/exec.c
-> index a9ae4f2..f32079c 100644
-> --- a/fs/exec.c
-> +++ b/fs/exec.c
-> @@ -1370,12 +1370,11 @@ EXPORT_SYMBOL(remove_arg_zero);
->   */
->  int search_binary_handler(struct linux_binprm *bprm)
->  {
-> -       unsigned int depth = bprm->recursion_depth;
-> -       int try,retval;
-> +       int try, retval;
->         struct linux_binfmt *fmt;
->
->         /* This allows 4 levels of binfmt rewrites before failing hard. */
-> -       if (depth > 5)
-> +       if (bprm->recursion_depth > 5)
->                 return -ELOOP;
->
->         retval = security_bprm_check(bprm);
-> @@ -1396,9 +1395,9 @@ int search_binary_handler(struct linux_binprm *bprm)
->                         if (!try_module_get(fmt->module))
->                                 continue;
->                         read_unlock(&binfmt_lock);
-> -                       bprm->recursion_depth = depth + 1;
-> +                       bprm->recursion_depth++;
->                         retval = fn(bprm);
-> -                       bprm->recursion_depth = depth;
-> +                       bprm->recursion_depth--;
->                         if (retval >= 0) {
->                                 put_binfmt(fmt);
->                                 allow_write_access(bprm->file);
-> diff --git a/include/linux/binfmts.h b/include/linux/binfmts.h
-> index 70cf138..e8112ae 100644
-> --- a/include/linux/binfmts.h
-> +++ b/include/linux/binfmts.h
-> @@ -31,7 +31,7 @@ struct linux_binprm {
->  #ifdef __alpha__
->         unsigned int taso:1;
->  #endif
-> -       unsigned int recursion_depth;
-> +       unsigned int recursion_depth; /* only for search_binary_handler() */
->         struct file * file;
->         struct cred *cred;      /* new credentials */
->         int unsafe;             /* how unsafe this exec is (mask of LSM_UNSAFE_*) */
-> --
-> 1.5.5.1
->
->
-
-
 
 -- 
 Kees Cook
