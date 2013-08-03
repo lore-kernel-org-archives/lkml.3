@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752000Ab3HCLuM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Aug 2013 07:50:12 -0400
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:48933 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751860Ab3HCLuH (ORCPT
+	id S1752114Ab3HCLuT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Aug 2013 07:50:19 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:44147 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752017Ab3HCLuP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Aug 2013 07:50:07 -0400
+	Sat, 3 Aug 2013 07:50:15 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com,
         l.majewski@samsung.com, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 03/10] cpufreq: Give consistent names for struct cpufreq_policy *
-Date: Sat,  3 Aug 2013 17:19:21 +0530
-Message-Id: <fce918e3511ffbe508dd95d77e943b9e30b711ee.1375530162.git.viresh.kumar@linaro.org>
+Subject: [PATCH 04/10] cpufreq: Use sizeof(*ptr) form for finding size of a struct
+Date: Sat,  3 Aug 2013 17:19:22 +0530
+Message-Id: <4ded853d33412a1659a8f98f1b5c58f91a4d39e2.1375530162.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1375530162.git.viresh.kumar@linaro.org>
 References: <cover.1375530162.git.viresh.kumar@linaro.org>
@@ -25,599 +25,382 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-They are named as policy, cur_policy, new_policy, data, etc.. Just name them
-poicy wherever possible.
+Chapter 14 of Documentation/CodingStyle says:
+
+The preferred form for passing a size of a struct is the following:
+
+	p = kmalloc(sizeof(*p), ...);
+
+The alternative form where struct name is spelled out hurts readability and
+introduces an opportunity for a bug when the pointer variable type is changed
+but the corresponding sizeof that is passed to a memory allocator is not.
+
+This wasn't followed consistently in drivers/cpufreq, lets make it more
+consistent by always following this rule.
 
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/cpufreq/cpufreq.c          | 200 ++++++++++++++++++-------------------
- drivers/cpufreq/cpufreq_governor.h |   2 +-
- drivers/cpufreq/cpufreq_ondemand.c |  10 +-
- drivers/cpufreq/cpufreq_stats.c    |  14 +--
- include/linux/cpufreq.h            |   2 +-
- 5 files changed, 111 insertions(+), 117 deletions(-)
+ drivers/cpufreq/acpi-cpufreq.c         |  4 ++--
+ drivers/cpufreq/cpufreq.c              |  9 ++++-----
+ drivers/cpufreq/cpufreq_conservative.c |  2 +-
+ drivers/cpufreq/cpufreq_ondemand.c     |  2 +-
+ drivers/cpufreq/cpufreq_stats.c        |  2 +-
+ drivers/cpufreq/e_powersaver.c         |  4 ++--
+ drivers/cpufreq/exynos-cpufreq.c       |  2 +-
+ drivers/cpufreq/gx-suspmod.c           |  2 +-
+ drivers/cpufreq/ia64-acpi-cpufreq.c    |  4 ++--
+ drivers/cpufreq/pmac64-cpufreq.c       |  5 ++---
+ drivers/cpufreq/powernow-k7.c          | 13 ++++++-------
+ drivers/cpufreq/powernow-k8.c          |  6 +++---
+ drivers/cpufreq/s3c24xx-cpufreq.c      |  6 +++---
+ drivers/cpufreq/sparc-us2e-cpufreq.c   |  5 ++---
+ drivers/cpufreq/sparc-us3-cpufreq.c    |  5 ++---
+ 15 files changed, 33 insertions(+), 38 deletions(-)
 
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index 46e70ae..fd94923 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -178,7 +178,7 @@ EXPORT_SYMBOL_GPL(get_cpu_idle_time);
- 
- static struct cpufreq_policy *__cpufreq_cpu_get(unsigned int cpu, bool sysfs)
- {
--	struct cpufreq_policy *data;
-+	struct cpufreq_policy *policy;
- 	unsigned long flags;
- 
- 	if (cpu >= nr_cpu_ids)
-@@ -194,16 +194,16 @@ static struct cpufreq_policy *__cpufreq_cpu_get(unsigned int cpu, bool sysfs)
- 		goto err_out_unlock;
- 
- 	/* get the CPU */
--	data = per_cpu(cpufreq_cpu_data, cpu);
-+	policy = per_cpu(cpufreq_cpu_data, cpu);
- 
--	if (!data)
-+	if (!policy)
- 		goto err_out_put_module;
- 
--	if (!sysfs && !kobject_get(&data->kobj))
-+	if (!sysfs && !kobject_get(&policy->kobj))
- 		goto err_out_put_module;
- 
- 	read_unlock_irqrestore(&cpufreq_driver_lock, flags);
--	return data;
-+	return policy;
- 
- err_out_put_module:
- 	module_put(cpufreq_driver->owner);
-@@ -227,25 +227,25 @@ static struct cpufreq_policy *cpufreq_cpu_get_sysfs(unsigned int cpu)
- 	return __cpufreq_cpu_get(cpu, true);
- }
- 
--static void __cpufreq_cpu_put(struct cpufreq_policy *data, bool sysfs)
-+static void __cpufreq_cpu_put(struct cpufreq_policy *policy, bool sysfs)
- {
- 	if (!sysfs)
--		kobject_put(&data->kobj);
-+		kobject_put(&policy->kobj);
- 	module_put(cpufreq_driver->owner);
- }
- 
--void cpufreq_cpu_put(struct cpufreq_policy *data)
-+void cpufreq_cpu_put(struct cpufreq_policy *policy)
- {
- 	if (cpufreq_disabled())
- 		return;
- 
--	__cpufreq_cpu_put(data, false);
-+	__cpufreq_cpu_put(policy, false);
- }
- EXPORT_SYMBOL_GPL(cpufreq_cpu_put);
- 
--static void cpufreq_cpu_put_sysfs(struct cpufreq_policy *data)
-+static void cpufreq_cpu_put_sysfs(struct cpufreq_policy *policy)
- {
--	__cpufreq_cpu_put(data, true);
-+	__cpufreq_cpu_put(policy, true);
- }
- 
- /*********************************************************************
-@@ -452,8 +452,8 @@ show_one(scaling_min_freq, min);
- show_one(scaling_max_freq, max);
- show_one(scaling_cur_freq, cur);
- 
--static int __cpufreq_set_policy(struct cpufreq_policy *data,
--				struct cpufreq_policy *policy);
-+static int __cpufreq_set_policy(struct cpufreq_policy *policy,
-+				struct cpufreq_policy *new_policy);
- 
- /**
-  * cpufreq_per_cpu_attr_write() / store_##file_name() - sysfs write access
-@@ -1141,7 +1141,7 @@ static void update_policy_cpu(struct cpufreq_policy *policy, unsigned int cpu)
- 			CPUFREQ_UPDATE_POLICY_CPU, policy);
- }
- 
--static int cpufreq_nominate_new_policy_cpu(struct cpufreq_policy *data,
-+static int cpufreq_nominate_new_policy_cpu(struct cpufreq_policy *policy,
- 					   unsigned int old_cpu, bool frozen)
- {
- 	struct device *cpu_dev;
-@@ -1149,27 +1149,27 @@ static int cpufreq_nominate_new_policy_cpu(struct cpufreq_policy *data,
- 	int ret;
- 
- 	/* first sibling now owns the new sysfs dir */
--	cpu_dev = get_cpu_device(cpumask_first(data->cpus));
-+	cpu_dev = get_cpu_device(cpumask_first(policy->cpus));
- 
- 	/* Don't touch sysfs files during light-weight tear-down */
- 	if (frozen)
- 		return cpu_dev->id;
- 
- 	sysfs_remove_link(&cpu_dev->kobj, "cpufreq");
--	ret = kobject_move(&data->kobj, &cpu_dev->kobj);
-+	ret = kobject_move(&policy->kobj, &cpu_dev->kobj);
- 	if (ret) {
- 		pr_err("%s: Failed to move kobj: %d", __func__, ret);
- 
- 		WARN_ON(lock_policy_rwsem_write(old_cpu));
--		cpumask_set_cpu(old_cpu, data->cpus);
-+		cpumask_set_cpu(old_cpu, policy->cpus);
- 
- 		write_lock_irqsave(&cpufreq_driver_lock, flags);
--		per_cpu(cpufreq_cpu_data, old_cpu) = data;
-+		per_cpu(cpufreq_cpu_data, old_cpu) = policy;
- 		write_unlock_irqrestore(&cpufreq_driver_lock, flags);
- 
- 		unlock_policy_rwsem_write(old_cpu);
- 
--		ret = sysfs_create_link(&cpu_dev->kobj, &data->kobj,
-+		ret = sysfs_create_link(&cpu_dev->kobj, &policy->kobj,
- 					"cpufreq");
- 
- 		return -EINVAL;
-@@ -1191,7 +1191,7 @@ static int __cpufreq_remove_dev(struct device *dev,
- 	unsigned int cpu = dev->id, cpus;
- 	int new_cpu;
- 	unsigned long flags;
--	struct cpufreq_policy *data;
-+	struct cpufreq_policy *policy;
- 	struct kobject *kobj;
- 	struct completion *cmp;
- 
-@@ -1199,44 +1199,44 @@ static int __cpufreq_remove_dev(struct device *dev,
- 
- 	write_lock_irqsave(&cpufreq_driver_lock, flags);
- 
--	data = per_cpu(cpufreq_cpu_data, cpu);
-+	policy = per_cpu(cpufreq_cpu_data, cpu);
- 	per_cpu(cpufreq_cpu_data, cpu) = NULL;
- 
- 	/* Save the policy somewhere when doing a light-weight tear-down */
- 	if (frozen)
--		per_cpu(cpufreq_cpu_data_fallback, cpu) = data;
-+		per_cpu(cpufreq_cpu_data_fallback, cpu) = policy;
- 
- 	write_unlock_irqrestore(&cpufreq_driver_lock, flags);
- 
--	if (!data) {
-+	if (!policy) {
- 		pr_debug("%s: No cpu_data found\n", __func__);
- 		return -EINVAL;
- 	}
- 
- 	if (cpufreq_driver->target)
--		__cpufreq_governor(data, CPUFREQ_GOV_STOP);
-+		__cpufreq_governor(policy, CPUFREQ_GOV_STOP);
- 
- #ifdef CONFIG_HOTPLUG_CPU
- 	if (!cpufreq_driver->setpolicy)
- 		strncpy(per_cpu(cpufreq_cpu_governor, cpu),
--			data->governor->name, CPUFREQ_NAME_LEN);
-+			policy->governor->name, CPUFREQ_NAME_LEN);
+diff --git a/drivers/cpufreq/acpi-cpufreq.c b/drivers/cpufreq/acpi-cpufreq.c
+index e673670..44758ce 100644
+--- a/drivers/cpufreq/acpi-cpufreq.c
++++ b/drivers/cpufreq/acpi-cpufreq.c
+@@ -709,7 +709,7 @@ static int acpi_cpufreq_cpu_init(struct cpufreq_policy *policy)
+ 		return blacklisted;
  #endif
  
- 	WARN_ON(lock_policy_rwsem_write(cpu));
--	cpus = cpumask_weight(data->cpus);
-+	cpus = cpumask_weight(policy->cpus);
+-	data = kzalloc(sizeof(struct acpi_cpufreq_data), GFP_KERNEL);
++	data = kzalloc(sizeof(*data), GFP_KERNEL);
+ 	if (!data)
+ 		return -ENOMEM;
  
- 	if (cpus > 1)
--		cpumask_clear_cpu(cpu, data->cpus);
-+		cpumask_clear_cpu(cpu, policy->cpus);
- 	unlock_policy_rwsem_write(cpu);
- 
--	if (cpu != data->cpu && !frozen) {
-+	if (cpu != policy->cpu && !frozen) {
- 		sysfs_remove_link(&dev->kobj, "cpufreq");
- 	} else if (cpus > 1) {
- 
--		new_cpu = cpufreq_nominate_new_policy_cpu(data, cpu, frozen);
-+		new_cpu = cpufreq_nominate_new_policy_cpu(policy, cpu, frozen);
- 		if (new_cpu >= 0) {
- 			WARN_ON(lock_policy_rwsem_write(cpu));
--			update_policy_cpu(data, new_cpu);
-+			update_policy_cpu(policy, new_cpu);
- 			unlock_policy_rwsem_write(cpu);
- 
- 			if (!frozen) {
-@@ -1249,12 +1249,12 @@ static int __cpufreq_remove_dev(struct device *dev,
- 	/* If cpu is last user of policy, free policy */
- 	if (cpus == 1) {
- 		if (cpufreq_driver->target)
--			__cpufreq_governor(data, CPUFREQ_GOV_POLICY_EXIT);
-+			__cpufreq_governor(policy, CPUFREQ_GOV_POLICY_EXIT);
- 
- 		if (!frozen) {
- 			lock_policy_rwsem_read(cpu);
--			kobj = &data->kobj;
--			cmp = &data->kobj_unregister;
-+			kobj = &policy->kobj;
-+			cmp = &policy->kobj_unregister;
- 			unlock_policy_rwsem_read(cpu);
- 			kobject_put(kobj);
- 
-@@ -1274,14 +1274,14 @@ static int __cpufreq_remove_dev(struct device *dev,
- 		 * subsequent light-weight ->init() to succeed.
- 		 */
- 		if (cpufreq_driver->exit)
--			cpufreq_driver->exit(data);
-+			cpufreq_driver->exit(policy);
- 
- 		if (!frozen)
--			cpufreq_policy_free(data);
-+			cpufreq_policy_free(policy);
- 	} else {
- 		if (cpufreq_driver->target) {
--			__cpufreq_governor(data, CPUFREQ_GOV_START);
--			__cpufreq_governor(data, CPUFREQ_GOV_LIMITS);
-+			__cpufreq_governor(policy, CPUFREQ_GOV_START);
-+			__cpufreq_governor(policy, CPUFREQ_GOV_LIMITS);
- 		}
+@@ -799,7 +799,7 @@ static int acpi_cpufreq_cpu_init(struct cpufreq_policy *policy)
+ 		goto err_unreg;
  	}
  
-@@ -1455,23 +1455,23 @@ static int cpufreq_bp_suspend(void)
+-	data->freq_table = kmalloc(sizeof(struct cpufreq_frequency_table) *
++	data->freq_table = kmalloc(sizeof(*data->freq_table) *
+ 		    (perf->state_count+1), GFP_KERNEL);
+ 	if (!data->freq_table) {
+ 		result = -ENOMEM;
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index fd94923..47773a9 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -872,7 +872,7 @@ static void cpufreq_init_policy(struct cpufreq_policy *policy)
+ 	struct cpufreq_policy new_policy;
  	int ret = 0;
  
- 	int cpu = smp_processor_id();
--	struct cpufreq_policy *cpu_policy;
-+	struct cpufreq_policy *policy;
+-	memcpy(&new_policy, policy, sizeof(struct cpufreq_policy));
++	memcpy(&new_policy, policy, sizeof(*policy));
+ 	/* assure that the starting sequence is run in __cpufreq_set_policy */
+ 	policy->governor = NULL;
  
- 	pr_debug("suspending cpu %u\n", cpu);
+@@ -1823,7 +1823,7 @@ int cpufreq_get_policy(struct cpufreq_policy *policy, unsigned int cpu)
+ 	if (!cpu_policy)
+ 		return -EINVAL;
  
- 	/* If there's no policy for the boot CPU, we have nothing to do. */
--	cpu_policy = cpufreq_cpu_get(cpu);
--	if (!cpu_policy)
-+	policy = cpufreq_cpu_get(cpu);
-+	if (!policy)
- 		return 0;
+-	memcpy(policy, cpu_policy, sizeof(struct cpufreq_policy));
++	memcpy(policy, cpu_policy, sizeof(*policy));
  
- 	if (cpufreq_driver->suspend) {
--		ret = cpufreq_driver->suspend(cpu_policy);
-+		ret = cpufreq_driver->suspend(policy);
- 		if (ret)
- 			printk(KERN_ERR "cpufreq: suspend failed in ->suspend "
--					"step on CPU %u\n", cpu_policy->cpu);
-+					"step on CPU %u\n", policy->cpu);
- 	}
+ 	cpufreq_cpu_put(cpu_policy);
+ 	return 0;
+@@ -1842,8 +1842,7 @@ static int __cpufreq_set_policy(struct cpufreq_policy *policy,
+ 	pr_debug("setting new policy for CPU %u: %u - %u kHz\n", new_policy->cpu,
+ 		new_policy->min, new_policy->max);
  
--	cpufreq_cpu_put(cpu_policy);
-+	cpufreq_cpu_put(policy);
- 	return ret;
- }
+-	memcpy(&new_policy->cpuinfo, &policy->cpuinfo,
+-				sizeof(struct cpufreq_cpuinfo));
++	memcpy(&new_policy->cpuinfo, &policy->cpuinfo, sizeof(policy->cpuinfo));
  
-@@ -1493,28 +1493,28 @@ static void cpufreq_bp_resume(void)
- 	int ret = 0;
- 
- 	int cpu = smp_processor_id();
--	struct cpufreq_policy *cpu_policy;
-+	struct cpufreq_policy *policy;
- 
- 	pr_debug("resuming cpu %u\n", cpu);
- 
- 	/* If there's no policy for the boot CPU, we have nothing to do. */
--	cpu_policy = cpufreq_cpu_get(cpu);
--	if (!cpu_policy)
-+	policy = cpufreq_cpu_get(cpu);
-+	if (!policy)
- 		return;
- 
- 	if (cpufreq_driver->resume) {
--		ret = cpufreq_driver->resume(cpu_policy);
-+		ret = cpufreq_driver->resume(policy);
- 		if (ret) {
- 			printk(KERN_ERR "cpufreq: resume failed in ->resume "
--					"step on CPU %u\n", cpu_policy->cpu);
-+					"step on CPU %u\n", policy->cpu);
- 			goto fail;
- 		}
- 	}
- 
--	schedule_work(&cpu_policy->update);
-+	schedule_work(&policy->update);
- 
- fail:
--	cpufreq_cpu_put(cpu_policy);
-+	cpufreq_cpu_put(policy);
- }
- 
- static struct syscore_ops cpufreq_syscore_ops = {
-@@ -1834,95 +1834,95 @@ EXPORT_SYMBOL(cpufreq_get_policy);
-  * data   : current policy.
-  * policy : policy to be set.
-  */
--static int __cpufreq_set_policy(struct cpufreq_policy *data,
--				struct cpufreq_policy *policy)
-+static int __cpufreq_set_policy(struct cpufreq_policy *policy,
-+				struct cpufreq_policy *new_policy)
- {
- 	int ret = 0, failed = 1;
- 
--	pr_debug("setting new policy for CPU %u: %u - %u kHz\n", policy->cpu,
--		policy->min, policy->max);
-+	pr_debug("setting new policy for CPU %u: %u - %u kHz\n", new_policy->cpu,
-+		new_policy->min, new_policy->max);
- 
--	memcpy(&policy->cpuinfo, &data->cpuinfo,
-+	memcpy(&new_policy->cpuinfo, &policy->cpuinfo,
- 				sizeof(struct cpufreq_cpuinfo));
- 
--	if (policy->min > data->max || policy->max < data->min) {
-+	if (new_policy->min > policy->max || new_policy->max < policy->min) {
+ 	if (new_policy->min > policy->max || new_policy->max < policy->min) {
  		ret = -EINVAL;
- 		goto error_out;
- 	}
- 
- 	/* verify the cpu speed can be set within this limit */
--	ret = cpufreq_driver->verify(policy);
-+	ret = cpufreq_driver->verify(new_policy);
- 	if (ret)
- 		goto error_out;
- 
- 	/* adjust if necessary - all reasons */
- 	blocking_notifier_call_chain(&cpufreq_policy_notifier_list,
--			CPUFREQ_ADJUST, policy);
-+			CPUFREQ_ADJUST, new_policy);
- 
- 	/* adjust if necessary - hardware incompatibility*/
- 	blocking_notifier_call_chain(&cpufreq_policy_notifier_list,
--			CPUFREQ_INCOMPATIBLE, policy);
-+			CPUFREQ_INCOMPATIBLE, new_policy);
- 
- 	/*
- 	 * verify the cpu speed can be set within this limit, which might be
- 	 * different to the first one
- 	 */
--	ret = cpufreq_driver->verify(policy);
-+	ret = cpufreq_driver->verify(new_policy);
- 	if (ret)
- 		goto error_out;
- 
- 	/* notification of the new policy */
- 	blocking_notifier_call_chain(&cpufreq_policy_notifier_list,
--			CPUFREQ_NOTIFY, policy);
-+			CPUFREQ_NOTIFY, new_policy);
- 
--	data->min = policy->min;
--	data->max = policy->max;
-+	policy->min = new_policy->min;
-+	policy->max = new_policy->max;
- 
- 	pr_debug("new min and max freqs are %u - %u kHz\n",
--					data->min, data->max);
-+					policy->min, policy->max);
- 
- 	if (cpufreq_driver->setpolicy) {
--		data->policy = policy->policy;
-+		policy->policy = new_policy->policy;
- 		pr_debug("setting range\n");
--		ret = cpufreq_driver->setpolicy(policy);
-+		ret = cpufreq_driver->setpolicy(new_policy);
- 	} else {
--		if (policy->governor != data->governor) {
-+		if (new_policy->governor != policy->governor) {
- 			/* save old, working values */
--			struct cpufreq_governor *old_gov = data->governor;
-+			struct cpufreq_governor *old_gov = policy->governor;
- 
- 			pr_debug("governor switch\n");
- 
- 			/* end old governor */
--			if (data->governor) {
--				__cpufreq_governor(data, CPUFREQ_GOV_STOP);
--				unlock_policy_rwsem_write(policy->cpu);
--				__cpufreq_governor(data,
-+			if (policy->governor) {
-+				__cpufreq_governor(policy, CPUFREQ_GOV_STOP);
-+				unlock_policy_rwsem_write(new_policy->cpu);
-+				__cpufreq_governor(policy,
- 						CPUFREQ_GOV_POLICY_EXIT);
--				lock_policy_rwsem_write(policy->cpu);
-+				lock_policy_rwsem_write(new_policy->cpu);
- 			}
- 
- 			/* start new governor */
--			data->governor = policy->governor;
--			if (!__cpufreq_governor(data, CPUFREQ_GOV_POLICY_INIT)) {
--				if (!__cpufreq_governor(data, CPUFREQ_GOV_START)) {
-+			policy->governor = new_policy->governor;
-+			if (!__cpufreq_governor(policy, CPUFREQ_GOV_POLICY_INIT)) {
-+				if (!__cpufreq_governor(policy, CPUFREQ_GOV_START)) {
- 					failed = 0;
- 				} else {
--					unlock_policy_rwsem_write(policy->cpu);
--					__cpufreq_governor(data,
-+					unlock_policy_rwsem_write(new_policy->cpu);
-+					__cpufreq_governor(policy,
- 							CPUFREQ_GOV_POLICY_EXIT);
--					lock_policy_rwsem_write(policy->cpu);
-+					lock_policy_rwsem_write(new_policy->cpu);
- 				}
- 			}
- 
- 			if (failed) {
- 				/* new governor failed, so re-start old one */
- 				pr_debug("starting governor %s failed\n",
--							data->governor->name);
-+							policy->governor->name);
- 				if (old_gov) {
--					data->governor = old_gov;
--					__cpufreq_governor(data,
-+					policy->governor = old_gov;
-+					__cpufreq_governor(policy,
- 							CPUFREQ_GOV_POLICY_INIT);
--					__cpufreq_governor(data,
-+					__cpufreq_governor(policy,
- 							   CPUFREQ_GOV_START);
- 				}
- 				ret = -EINVAL;
-@@ -1931,7 +1931,7 @@ static int __cpufreq_set_policy(struct cpufreq_policy *data,
- 			/* might be a policy change, too, so fall through */
- 		}
- 		pr_debug("governor: change or update limits\n");
--		__cpufreq_governor(data, CPUFREQ_GOV_LIMITS);
-+		__cpufreq_governor(policy, CPUFREQ_GOV_LIMITS);
- 	}
- 
- error_out:
-@@ -1947,11 +1947,11 @@ error_out:
-  */
- int cpufreq_update_policy(unsigned int cpu)
- {
--	struct cpufreq_policy *data = cpufreq_cpu_get(cpu);
--	struct cpufreq_policy policy;
-+	struct cpufreq_policy *policy = cpufreq_cpu_get(cpu);
-+	struct cpufreq_policy new_policy;
- 	int ret;
- 
--	if (!data) {
-+	if (!policy) {
- 		ret = -ENODEV;
- 		goto no_policy;
- 	}
-@@ -1962,34 +1962,34 @@ int cpufreq_update_policy(unsigned int cpu)
+@@ -1962,7 +1961,7 @@ int cpufreq_update_policy(unsigned int cpu)
  	}
  
  	pr_debug("updating policy for CPU %u\n", cpu);
--	memcpy(&policy, data, sizeof(struct cpufreq_policy));
--	policy.min = data->user_policy.min;
--	policy.max = data->user_policy.max;
--	policy.policy = data->user_policy.policy;
--	policy.governor = data->user_policy.governor;
-+	memcpy(&new_policy, policy, sizeof(struct cpufreq_policy));
-+	new_policy.min = policy->user_policy.min;
-+	new_policy.max = policy->user_policy.max;
-+	new_policy.policy = policy->user_policy.policy;
-+	new_policy.governor = policy->user_policy.governor;
+-	memcpy(&new_policy, policy, sizeof(struct cpufreq_policy));
++	memcpy(&new_policy, policy, sizeof(*policy));
+ 	new_policy.min = policy->user_policy.min;
+ 	new_policy.max = policy->user_policy.max;
+ 	new_policy.policy = policy->user_policy.policy;
+diff --git a/drivers/cpufreq/cpufreq_conservative.c b/drivers/cpufreq/cpufreq_conservative.c
+index 841e256..c400924 100644
+--- a/drivers/cpufreq/cpufreq_conservative.c
++++ b/drivers/cpufreq/cpufreq_conservative.c
+@@ -317,7 +317,7 @@ static int cs_init(struct dbs_data *dbs_data)
+ {
+ 	struct cs_dbs_tuners *tuners;
  
- 	/*
- 	 * BIOS might change freq behind our back
- 	 * -> ask driver for current freq and notify governors about a change
- 	 */
- 	if (cpufreq_driver->get) {
--		policy.cur = cpufreq_driver->get(cpu);
--		if (!data->cur) {
-+		new_policy.cur = cpufreq_driver->get(cpu);
-+		if (!policy->cur) {
- 			pr_debug("Driver did not initialize current freq");
--			data->cur = policy.cur;
-+			policy->cur = new_policy.cur;
- 		} else {
--			if (data->cur != policy.cur && cpufreq_driver->target)
--				cpufreq_out_of_sync(cpu, data->cur,
--								policy.cur);
-+			if (policy->cur != new_policy.cur && cpufreq_driver->target)
-+				cpufreq_out_of_sync(cpu, policy->cur,
-+								new_policy.cur);
- 		}
- 	}
- 
--	ret = __cpufreq_set_policy(data, &policy);
-+	ret = __cpufreq_set_policy(policy, &new_policy);
- 
- 	unlock_policy_rwsem_write(cpu);
- 
- fail:
--	cpufreq_cpu_put(data);
-+	cpufreq_cpu_put(policy);
- no_policy:
- 	return ret;
- }
-diff --git a/drivers/cpufreq/cpufreq_governor.h b/drivers/cpufreq/cpufreq_governor.h
-index cf0b7a4..264e509 100644
---- a/drivers/cpufreq/cpufreq_governor.h
-+++ b/drivers/cpufreq/cpufreq_governor.h
-@@ -221,7 +221,7 @@ struct od_ops {
- 	void (*powersave_bias_init_cpu)(int cpu);
- 	unsigned int (*powersave_bias_target)(struct cpufreq_policy *policy,
- 			unsigned int freq_next, unsigned int relation);
--	void (*freq_increase)(struct cpufreq_policy *p, unsigned int freq);
-+	void (*freq_increase)(struct cpufreq_policy *policy, unsigned int freq);
- };
- 
- struct cs_ops {
+-	tuners = kzalloc(sizeof(struct cs_dbs_tuners), GFP_KERNEL);
++	tuners = kzalloc(sizeof(*tuners), GFP_KERNEL);
+ 	if (!tuners) {
+ 		pr_err("%s: kzalloc failed\n", __func__);
+ 		return -ENOMEM;
 diff --git a/drivers/cpufreq/cpufreq_ondemand.c b/drivers/cpufreq/cpufreq_ondemand.c
-index 27c732e..47d4b69b 100644
+index 47d4b69b..117278a 100644
 --- a/drivers/cpufreq/cpufreq_ondemand.c
 +++ b/drivers/cpufreq/cpufreq_ondemand.c
-@@ -132,18 +132,18 @@ static void ondemand_powersave_bias_init(void)
- 	}
- }
+@@ -482,7 +482,7 @@ static int od_init(struct dbs_data *dbs_data)
+ 	u64 idle_time;
+ 	int cpu;
  
--static void dbs_freq_increase(struct cpufreq_policy *p, unsigned int freq)
-+static void dbs_freq_increase(struct cpufreq_policy *policy, unsigned int freq)
- {
--	struct dbs_data *dbs_data = p->governor_data;
-+	struct dbs_data *dbs_data = policy->governor_data;
- 	struct od_dbs_tuners *od_tuners = dbs_data->tuners;
- 
- 	if (od_tuners->powersave_bias)
--		freq = od_ops.powersave_bias_target(p, freq,
-+		freq = od_ops.powersave_bias_target(policy, freq,
- 				CPUFREQ_RELATION_H);
--	else if (p->cur == p->max)
-+	else if (policy->cur == policy->max)
- 		return;
- 
--	__cpufreq_driver_target(p, freq, od_tuners->powersave_bias ?
-+	__cpufreq_driver_target(policy, freq, od_tuners->powersave_bias ?
- 			CPUFREQ_RELATION_L : CPUFREQ_RELATION_H);
- }
- 
+-	tuners = kzalloc(sizeof(struct od_dbs_tuners), GFP_KERNEL);
++	tuners = kzalloc(sizeof(*tuners), GFP_KERNEL);
+ 	if (!tuners) {
+ 		pr_err("%s: kzalloc failed\n", __func__);
+ 		return -ENOMEM;
 diff --git a/drivers/cpufreq/cpufreq_stats.c b/drivers/cpufreq/cpufreq_stats.c
-index a7143b0..b6019b8 100644
+index b6019b8..1fbe721 100644
 --- a/drivers/cpufreq/cpufreq_stats.c
 +++ b/drivers/cpufreq/cpufreq_stats.c
-@@ -193,7 +193,6 @@ static int cpufreq_stats_create_table(struct cpufreq_policy *policy,
- {
- 	unsigned int i, j, count = 0, ret = 0;
- 	struct cpufreq_stats *stat;
--	struct cpufreq_policy *data;
- 	unsigned int alloc_size;
+@@ -197,7 +197,7 @@ static int cpufreq_stats_create_table(struct cpufreq_policy *policy,
  	unsigned int cpu = policy->cpu;
  	if (per_cpu(cpufreq_stats_table, cpu))
-@@ -202,13 +201,9 @@ static int cpufreq_stats_create_table(struct cpufreq_policy *policy,
+ 		return -EBUSY;
+-	stat = kzalloc(sizeof(struct cpufreq_stats), GFP_KERNEL);
++	stat = kzalloc(sizeof(*stat), GFP_KERNEL);
  	if ((stat) == NULL)
  		return -ENOMEM;
  
--	data = cpufreq_cpu_get(cpu);
--	if (data == NULL) {
--		ret = -EINVAL;
--		goto error_get_fail;
--	}
-+	cpufreq_cpu_get(cpu);
- 
--	ret = sysfs_create_group(&data->kobj, &stats_attr_group);
-+	ret = sysfs_create_group(&policy->kobj, &stats_attr_group);
- 	if (ret)
- 		goto error_out;
- 
-@@ -251,11 +246,10 @@ static int cpufreq_stats_create_table(struct cpufreq_policy *policy,
- 	stat->last_time = get_jiffies_64();
- 	stat->last_index = freq_table_get_index(stat, policy->cur);
- 	spin_unlock(&cpufreq_stats_lock);
--	cpufreq_cpu_put(data);
-+	cpufreq_cpu_put(policy);
- 	return 0;
- error_out:
--	cpufreq_cpu_put(data);
--error_get_fail:
-+	cpufreq_cpu_put(policy);
- 	kfree(stat);
- 	per_cpu(cpufreq_stats_table, cpu) = NULL;
- 	return ret;
-diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
-index 611b164..9876712 100644
---- a/include/linux/cpufreq.h
-+++ b/include/linux/cpufreq.h
-@@ -94,7 +94,7 @@ struct cpufreq_policy {
- #define CPUFREQ_SHARED_TYPE_ANY	 (3) /* Freq can be set from any dependent CPU*/
- 
- struct cpufreq_policy *cpufreq_cpu_get(unsigned int cpu);
--void cpufreq_cpu_put(struct cpufreq_policy *data);
-+void cpufreq_cpu_put(struct cpufreq_policy *policy);
- 
- static inline bool policy_is_shared(struct cpufreq_policy *policy)
+diff --git a/drivers/cpufreq/e_powersaver.c b/drivers/cpufreq/e_powersaver.c
+index a60efae..de974be 100644
+--- a/drivers/cpufreq/e_powersaver.c
++++ b/drivers/cpufreq/e_powersaver.c
+@@ -54,7 +54,7 @@ static struct acpi_processor_performance *eps_acpi_cpu_perf;
+ /* Minimum necessary to get acpi_processor_get_bios_limit() working */
+ static int eps_acpi_init(void)
  {
+-	eps_acpi_cpu_perf = kzalloc(sizeof(struct acpi_processor_performance),
++	eps_acpi_cpu_perf = kzalloc(sizeof(*eps_acpi_cpu_perf),
+ 				      GFP_KERNEL);
+ 	if (!eps_acpi_cpu_perf)
+ 		return -ENOMEM;
+@@ -366,7 +366,7 @@ static int eps_cpu_init(struct cpufreq_policy *policy)
+ 		states = 2;
+ 
+ 	/* Allocate private data and frequency table for current cpu */
+-	centaur = kzalloc(sizeof(struct eps_cpu_data)
++	centaur = kzalloc(sizeof(*centaur)
+ 		    + (states + 1) * sizeof(struct cpufreq_frequency_table),
+ 		    GFP_KERNEL);
+ 	if (!centaur)
+diff --git a/drivers/cpufreq/exynos-cpufreq.c b/drivers/cpufreq/exynos-cpufreq.c
+index 0d32f02..3664751 100644
+--- a/drivers/cpufreq/exynos-cpufreq.c
++++ b/drivers/cpufreq/exynos-cpufreq.c
+@@ -289,7 +289,7 @@ static int __init exynos_cpufreq_init(void)
+ {
+ 	int ret = -EINVAL;
+ 
+-	exynos_info = kzalloc(sizeof(struct exynos_dvfs_info), GFP_KERNEL);
++	exynos_info = kzalloc(sizeof(*exynos_info), GFP_KERNEL);
+ 	if (!exynos_info)
+ 		return -ENOMEM;
+ 
+diff --git a/drivers/cpufreq/gx-suspmod.c b/drivers/cpufreq/gx-suspmod.c
+index 3dfc99b..4f25fb6 100644
+--- a/drivers/cpufreq/gx-suspmod.c
++++ b/drivers/cpufreq/gx-suspmod.c
+@@ -466,7 +466,7 @@ static int __init cpufreq_gx_init(void)
+ 
+ 	pr_debug("geode suspend modulation available.\n");
+ 
+-	params = kzalloc(sizeof(struct gxfreq_params), GFP_KERNEL);
++	params = kzalloc(sizeof(*params), GFP_KERNEL);
+ 	if (params == NULL)
+ 		return -ENOMEM;
+ 
+diff --git a/drivers/cpufreq/ia64-acpi-cpufreq.c b/drivers/cpufreq/ia64-acpi-cpufreq.c
+index 573c14e..08792dd 100644
+--- a/drivers/cpufreq/ia64-acpi-cpufreq.c
++++ b/drivers/cpufreq/ia64-acpi-cpufreq.c
+@@ -274,7 +274,7 @@ acpi_cpufreq_cpu_init (
+ 
+ 	pr_debug("acpi_cpufreq_cpu_init\n");
+ 
+-	data = kzalloc(sizeof(struct cpufreq_acpi_io), GFP_KERNEL);
++	data = kzalloc(sizeof(*data), GFP_KERNEL);
+ 	if (!data)
+ 		return (-ENOMEM);
+ 
+@@ -304,7 +304,7 @@ acpi_cpufreq_cpu_init (
+ 	}
+ 
+ 	/* alloc freq_table */
+-	data->freq_table = kmalloc(sizeof(struct cpufreq_frequency_table) *
++	data->freq_table = kmalloc(sizeof(*data->freq_table) *
+ 	                           (data->acpi_data.state_count + 1),
+ 	                           GFP_KERNEL);
+ 	if (!data->freq_table) {
+diff --git a/drivers/cpufreq/pmac64-cpufreq.c b/drivers/cpufreq/pmac64-cpufreq.c
+index 7ba4234..4d7799b 100644
+--- a/drivers/cpufreq/pmac64-cpufreq.c
++++ b/drivers/cpufreq/pmac64-cpufreq.c
+@@ -447,9 +447,8 @@ static int __init g5_neo2_cpufreq_init(struct device_node *cpus)
+ 		if (!shdr)
+ 			goto bail_noprops;
+ 		g5_fvt_table = (struct smu_sdbp_fvt *)&shdr[1];
+-		ssize = (shdr->len * sizeof(u32)) -
+-			sizeof(struct smu_sdbp_header);
+-		g5_fvt_count = ssize / sizeof(struct smu_sdbp_fvt);
++		ssize = (shdr->len * sizeof(u32)) - sizeof(*shdr);
++		g5_fvt_count = ssize / sizeof(*g5_fvt_table);
+ 		g5_fvt_cur = 0;
+ 
+ 		/* Sanity checking */
+diff --git a/drivers/cpufreq/powernow-k7.c b/drivers/cpufreq/powernow-k7.c
+index 9558708..4687d40 100644
+--- a/drivers/cpufreq/powernow-k7.c
++++ b/drivers/cpufreq/powernow-k7.c
+@@ -177,7 +177,7 @@ static int get_ranges(unsigned char *pst)
+ 	unsigned int speed;
+ 	u8 fid, vid;
+ 
+-	powernow_table = kzalloc((sizeof(struct cpufreq_frequency_table) *
++	powernow_table = kzalloc((sizeof(*powernow_table) *
+ 				(number_scales + 1)), GFP_KERNEL);
+ 	if (!powernow_table)
+ 		return -ENOMEM;
+@@ -309,8 +309,7 @@ static int powernow_acpi_init(void)
+ 		goto err0;
+ 	}
+ 
+-	acpi_processor_perf = kzalloc(sizeof(struct acpi_processor_performance),
+-				      GFP_KERNEL);
++	acpi_processor_perf = kzalloc(sizeof(*acpi_processor_perf), GFP_KERNEL);
+ 	if (!acpi_processor_perf) {
+ 		retval = -ENOMEM;
+ 		goto err0;
+@@ -346,7 +345,7 @@ static int powernow_acpi_init(void)
+ 		goto err2;
+ 	}
+ 
+-	powernow_table = kzalloc((sizeof(struct cpufreq_frequency_table) *
++	powernow_table = kzalloc((sizeof(*powernow_table) *
+ 				(number_scales + 1)), GFP_KERNEL);
+ 	if (!powernow_table) {
+ 		retval = -ENOMEM;
+@@ -497,7 +496,7 @@ static int powernow_decode_bios(int maxfid, int startvid)
+ 					"relevant to this CPU).\n",
+ 					psb->numpst);
+ 
+-			p += sizeof(struct psb_s);
++			p += sizeof(*psb);
+ 
+ 			pst = (struct pst_s *) p;
+ 
+@@ -510,12 +509,12 @@ static int powernow_decode_bios(int maxfid, int startvid)
+ 				    (maxfid == pst->maxfid) &&
+ 				    (startvid == pst->startvid)) {
+ 					print_pst_entry(pst, j);
+-					p = (char *)pst + sizeof(struct pst_s);
++					p = (char *)pst + sizeof(*pst);
+ 					ret = get_ranges(p);
+ 					return ret;
+ 				} else {
+ 					unsigned int k;
+-					p = (char *)pst + sizeof(struct pst_s);
++					p = (char *)pst + sizeof(*pst);
+ 					for (k = 0; k < number_scales; k++)
+ 						p += 2;
+ 				}
+diff --git a/drivers/cpufreq/powernow-k8.c b/drivers/cpufreq/powernow-k8.c
+index c39d189..3f3c6ca 100644
+--- a/drivers/cpufreq/powernow-k8.c
++++ b/drivers/cpufreq/powernow-k8.c
+@@ -623,7 +623,7 @@ static int fill_powernow_table(struct powernow_k8_data *data,
+ 	if (check_pst_table(data, pst, maxvid))
+ 		return -EINVAL;
+ 
+-	powernow_table = kmalloc((sizeof(struct cpufreq_frequency_table)
++	powernow_table = kmalloc((sizeof(*powernow_table)
+ 		* (data->numps + 1)), GFP_KERNEL);
+ 	if (!powernow_table) {
+ 		printk(KERN_ERR PFX "powernow_table memory alloc failure\n");
+@@ -793,7 +793,7 @@ static int powernow_k8_cpu_init_acpi(struct powernow_k8_data *data)
+ 	}
+ 
+ 	/* fill in data->powernow_table */
+-	powernow_table = kmalloc((sizeof(struct cpufreq_frequency_table)
++	powernow_table = kmalloc((sizeof(*powernow_table)
+ 		* (data->acpi_data.state_count + 1)), GFP_KERNEL);
+ 	if (!powernow_table) {
+ 		pr_debug("powernow_table memory alloc failure\n");
+@@ -1106,7 +1106,7 @@ static int powernowk8_cpu_init(struct cpufreq_policy *pol)
+ 	if (rc)
+ 		return -ENODEV;
+ 
+-	data = kzalloc(sizeof(struct powernow_k8_data), GFP_KERNEL);
++	data = kzalloc(sizeof(*data), GFP_KERNEL);
+ 	if (!data) {
+ 		printk(KERN_ERR PFX "unable to alloc powernow_k8_data");
+ 		return -ENOMEM;
+diff --git a/drivers/cpufreq/s3c24xx-cpufreq.c b/drivers/cpufreq/s3c24xx-cpufreq.c
+index 87781eb..f169ee5 100644
+--- a/drivers/cpufreq/s3c24xx-cpufreq.c
++++ b/drivers/cpufreq/s3c24xx-cpufreq.c
+@@ -522,7 +522,7 @@ int __init s3c_cpufreq_setboard(struct s3c_cpufreq_board *board)
+ 	/* Copy the board information so that each board can make this
+ 	 * initdata. */
+ 
+-	ours = kzalloc(sizeof(struct s3c_cpufreq_board), GFP_KERNEL);
++	ours = kzalloc(sizeof(*ours), GFP_KERNEL);
+ 	if (ours == NULL) {
+ 		printk(KERN_ERR "%s: no memory\n", __func__);
+ 		return -ENOMEM;
+@@ -615,7 +615,7 @@ static int s3c_cpufreq_build_freq(void)
+ 	size = cpu_cur.info->calc_freqtable(&cpu_cur, NULL, 0);
+ 	size++;
+ 
+-	ftab = kmalloc(sizeof(struct cpufreq_frequency_table) * size, GFP_KERNEL);
++	ftab = kmalloc(sizeof(*ftab) * size, GFP_KERNEL);
+ 	if (!ftab) {
+ 		printk(KERN_ERR "%s: no memory for tables\n", __func__);
+ 		return -ENOMEM;
+@@ -691,7 +691,7 @@ int __init s3c_plltab_register(struct cpufreq_frequency_table *plls,
+ 	struct cpufreq_frequency_table *vals;
+ 	unsigned int size;
+ 
+-	size = sizeof(struct cpufreq_frequency_table) * (plls_no + 1);
++	size = sizeof(*vals) * (plls_no + 1);
+ 
+ 	vals = kmalloc(size, GFP_KERNEL);
+ 	if (vals) {
+diff --git a/drivers/cpufreq/sparc-us2e-cpufreq.c b/drivers/cpufreq/sparc-us2e-cpufreq.c
+index 93061a4..7c43a72 100644
+--- a/drivers/cpufreq/sparc-us2e-cpufreq.c
++++ b/drivers/cpufreq/sparc-us2e-cpufreq.c
+@@ -351,12 +351,11 @@ static int __init us2e_freq_init(void)
+ 		struct cpufreq_driver *driver;
+ 
+ 		ret = -ENOMEM;
+-		driver = kzalloc(sizeof(struct cpufreq_driver), GFP_KERNEL);
++		driver = kzalloc(sizeof(*driver), GFP_KERNEL);
+ 		if (!driver)
+ 			goto err_out;
+ 
+-		us2e_freq_table = kzalloc(
+-			(NR_CPUS * sizeof(struct us2e_freq_percpu_info)),
++		us2e_freq_table = kzalloc((NR_CPUS * sizeof(*us2e_freq_table)),
+ 			GFP_KERNEL);
+ 		if (!us2e_freq_table)
+ 			goto err_out;
+diff --git a/drivers/cpufreq/sparc-us3-cpufreq.c b/drivers/cpufreq/sparc-us3-cpufreq.c
+index 880ee29..7f500c1 100644
+--- a/drivers/cpufreq/sparc-us3-cpufreq.c
++++ b/drivers/cpufreq/sparc-us3-cpufreq.c
+@@ -212,12 +212,11 @@ static int __init us3_freq_init(void)
+ 		struct cpufreq_driver *driver;
+ 
+ 		ret = -ENOMEM;
+-		driver = kzalloc(sizeof(struct cpufreq_driver), GFP_KERNEL);
++		driver = kzalloc(sizeof(*driver), GFP_KERNEL);
+ 		if (!driver)
+ 			goto err_out;
+ 
+-		us3_freq_table = kzalloc(
+-			(NR_CPUS * sizeof(struct us3_freq_percpu_info)),
++		us3_freq_table = kzalloc((NR_CPUS * sizeof(*us3_freq_table)),
+ 			GFP_KERNEL);
+ 		if (!us3_freq_table)
+ 			goto err_out;
 -- 
 1.7.12.rc2.18.g61b472e
 
