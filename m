@@ -1,110 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755622Ab3HCB0V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 21:26:21 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:58475 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753739Ab3HCB0U (ORCPT
+	id S1755653Ab3HCB2b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 21:28:31 -0400
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:41540 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755458Ab3HCB22 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 21:26:20 -0400
-X-Sasl-enc: /V3649IJPneZ5Dln4qyYDNsKroxrxDwVmvjnEaV+ge3q 1375493174
-Date: Sat, 3 Aug 2013 09:18:12 +0800
-From: Greg KH <greg@kroah.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: hpa@zytor.com, linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        pjt@google.com, jmario@redhat.com, riel@redhat.com, tglx@linutronix.de,
-        dzickus@redhat.com, linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:sched/core] sched/x86: Optimize switch_mm() for
- multi-threaded workloads
-Message-ID: <20130803011812.GA32230@kroah.com>
-References: <20130731221421.616d3d20@annuminas.surriel.com>
- <tip-8f898fbbe5ee5e20a77c4074472a1fd088dc47d1@git.kernel.org>
- <20130802091247.GA26693@gmail.com>
+	Fri, 2 Aug 2013 21:28:28 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130802091247.GA26693@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <3692149.CN6y0aXjQ7@vostro.rjw.lan>
+References: <1375400641-1694-1-git-send-email-felipe.contreras@gmail.com>
+	<2112254.EC1eeAtOxW@vostro.rjw.lan>
+	<CAMP44s2oYm+iE-BYu93-bniTRPiu_LZWSAmAd8xEoNSZJbjemQ@mail.gmail.com>
+	<3692149.CN6y0aXjQ7@vostro.rjw.lan>
+Date: Fri, 2 Aug 2013 20:28:25 -0500
+Message-ID: <CAMP44s1n7FfGp+KFivVdiMUgKHiyjD5SDaCZkKmfkwfOpzLzUg@mail.gmail.com>
+Subject: Re: [PATCH 2/3] acpi: video: trivial style cleanups
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Aaron Lu <aaron.lwe@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, Len Brown <lenb@kernel.org>,
+        Zhang Rui <rui.zhang@intel.com>, Jiri Kosina <trivial@kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 02, 2013 at 11:12:47AM +0200, Ingo Molnar wrote:
-> * tip-bot for Rik van Riel <tipbot@zytor.com> wrote:
-> 
-> > Commit-ID:  8f898fbbe5ee5e20a77c4074472a1fd088dc47d1
-> > Gitweb:     http://git.kernel.org/tip/8f898fbbe5ee5e20a77c4074472a1fd088dc47d1
-> > Author:     Rik van Riel <riel@redhat.com>
-> > AuthorDate: Wed, 31 Jul 2013 22:14:21 -0400
-> > Committer:  Ingo Molnar <mingo@kernel.org>
-> > CommitDate: Thu, 1 Aug 2013 09:10:26 +0200
-> > 
-> > sched/x86: Optimize switch_mm() for multi-threaded workloads
-> > 
-> > Dick Fowles, Don Zickus and Joe Mario have been working on
-> > improvements to perf, and noticed heavy cache line contention
-> > on the mm_cpumask, running linpack on a 60 core / 120 thread
-> > system.
-> > 
-> > The cause turned out to be unnecessary atomic accesses to the
-> > mm_cpumask. When in lazy TLB mode, the CPU is only removed from
-> > the mm_cpumask if there is a TLB flush event.
-> > 
-> > Most of the time, no such TLB flush happens, and the kernel
-> > skips the TLB reload. It can also skip the atomic memory
-> > set & test.
-> > 
-> > Here is a summary of Joe's test results:
-> > 
-> >  * The __schedule function dropped from 24% of all program cycles down
-> >    to 5.5%.
-> > 
-> >  * The cacheline contention/hotness for accesses to that bitmask went
-> >    from being the 1st/2nd hottest - down to the 84th hottest (0.3% of
-> >    all shared misses which is now quite cold)
-> > 
-> >  * The average load latency for the bit-test-n-set instruction in
-> >    __schedule dropped from 10k-15k cycles down to an average of 600 cycles.
-> > 
-> >  * The linpack program results improved from 133 GFlops to 144 GFlops.
-> >    Peak GFlops rose from 133 to 153.
-> > 
-> > Reported-by: Don Zickus <dzickus@redhat.com>
-> > Reported-by: Joe Mario <jmario@redhat.com>
-> > Tested-by: Joe Mario <jmario@redhat.com>
-> > Signed-off-by: Rik van Riel <riel@redhat.com>
-> > Reviewed-by: Paul Turner <pjt@google.com>
-> > Acked-by: Linus Torvalds <torvalds@linux-foundation.org>
-> > Link: http://lkml.kernel.org/r/20130731221421.616d3d20@annuminas.surriel.com
-> > [ Made the comments consistent around the modified code. ]
-> > Signed-off-by: Ingo Molnar <mingo@kernel.org>
-> 
-> > +	  else {
-> >  		this_cpu_write(cpu_tlbstate.state, TLBSTATE_OK);
-> >  		BUG_ON(this_cpu_read(cpu_tlbstate.active_mm) != next);
-> >  
-> > -		if (!cpumask_test_and_set_cpu(cpu, mm_cpumask(next))) {
-> > +		if (!cpumask_test_cpu(cpu, mm_cpumask(next))) {
-> > +			/*
-> > +			 * On established mms, the mm_cpumask is only changed
-> > +			 * from irq context, from ptep_clear_flush() while in
-> > +			 * lazy tlb mode, and here. Irqs are blocked during
-> > +			 * schedule, protecting us from simultaneous changes.
-> > +			 */
-> > +			cpumask_set_cpu(cpu, mm_cpumask(next));
-> 
-> Note, I marked this for v3.12 with no -stable backport tag as it's not a 
-> regression fix.
-> 
-> Nevertheless if it's a real issue in production (and +20% of linpack 
-> performance is certainly significant) feel free to forward it to -stable 
-> once this hits Linus's tree in the v3.12 merge window - by that time the 
-> patch will be reasonably well tested and it's a relatively simple change.
+On Fri, Aug 2, 2013 at 7:01 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Friday, August 02, 2013 12:56:09 PM Felipe Contreras wrote:
+>> On Fri, Aug 2, 2013 at 9:09 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> > On Thursday, August 01, 2013 11:18:34 PM Felipe Contreras wrote:
+>> >> On Thu, Aug 1, 2013 at 8:55 PM, Aaron Lu <aaron.lwe@gmail.com> wrote:
+>> >> > On 08/02/2013 07:44 AM, Felipe Contreras wrote:
+>> >> >> Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
+>> >> >
+>> >> > Change log please.
+>> >>
+>> >> You mean a commit message?
+>> >
+>> > No.  He meant the part that goes between the subject and the signoff.
+>> > This is called a change log (or changelog).
+>>
+>> Not in Git lingo.
+>>
+>> % man git commit
+>>
+>> "Though not required, it’s a good idea to begin the commit message
+>> with a single short (less than 50 character) line summarizing the
+>> change, followed by a blank line and then a more thorough
+>> description."
+>
+> Please go and read this: https://lwn.net/Articles/560392/
 
-I'll watch for this as well and try to remember to pick it up for
--stable once it hits Linus's tree, as those type of benchmark
-improvements are good to have in stable releases.
+OK, I've read it, and he doesn't seem to have a problem with trivial patches:
 
-thanks,
+"For the most trivial patches, the one-line summary might suffice"
 
-greg k-h
+This patch falls into that category.
+
+> Now, you may still argue that your patches fall into the "add missing include
+> of foo.h" category, but it does several different things:
+> - fixes some whitespace,
+> - fixes a couple of static variable initializations,
+> - removes some braces,
+> - changes the placement of some lables (some of them unnecessarily).
+
+All of these fall under the category of coding style fixes.
+
+Jonathan Colbert lists the reasons for a detailed commit message description:
+
+* the original motivation for the work is quickly forgotten
+
+The motivation is clear; cleanup the code.
+
+* Andrew Morton also famously pushes developers to document the
+reasons explaining why a patch was written, including the user-visible
+effects of any bugs fixed
+
+It's clear; the reason for the cleanup is that the code is not clean.
+There's no user-visible effects of code cleanups.
+
+* Kernel developers do not like having to reverse engineer the intent
+of a patch years after the fact.
+
+The intent is clear; cleanup.
+
+> It would be simply *nice* to write what it does in the changelog so that
+> people reading the git log don't have to look deeper to see what changes the
+> author meant as "trivial style cleanups".
+
+Each time I've looked into a cleanup patch, I look at the code, never
+the description. Mistakes can be made in the cleanup, the description
+won't change that.
+
+I have landed these one-line-commit-message trivial cleanups in the
+kernel before. Never have I seen questions of; "what did this cleanup
+patch tried to do?", or; "the commit message says you fixed code-style
+A, but you also did whitespace changes, was that intended?"
+
+Be honest; if you apply this patch, nobody is going to see it ever again.
+
+> That's just a matter of making it easier to work with you for other people,
+> but maybe you just want to be difficult to work with in the first place?
+
+I add a proper description to the patches that deserve them. This
+patch is not one of them.
+
+I update the description according to the feedback to the patches that
+deserve that. This patch is not one of them.
+
+No user is ever going to be affected by this patch, I don't care that
+much if you apply it or not, it's not important.
+
+It's not worth my time to add a description that nobody is ever going
+to read, so if you are going to drop it, go ahead.
+
+If every time somebody provides a trivial cleanup patch you are going
+to ask people to describe what each little obvious change it does,
+it's no wonder the code doesn't get cleaned up.
+
+Cheers.
+
+-- 
+Felipe Contreras
