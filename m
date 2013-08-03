@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752197Ab3HCLuZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Aug 2013 07:50:25 -0400
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:50684 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751531Ab3HCLuW (ORCPT
+	id S1752271Ab3HCLue (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Aug 2013 07:50:34 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:53833 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752121Ab3HCLua (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Aug 2013 07:50:22 -0400
+	Sat, 3 Aug 2013 07:50:30 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com,
-        l.majewski@samsung.com, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 05/10] cpufreq: Pass policy to cpufreq_add_policy_cpu()
-Date: Sat,  3 Aug 2013 17:19:23 +0530
-Message-Id: <19511592474bddb0737664c79632b3c1341c9956.1375530162.git.viresh.kumar@linaro.org>
+        l.majewski@samsung.com, Myungjoo Ham <myungjoo.ham@samsung.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH 06/10] cpufreq: Store cpufreq policies in a list
+Date: Sat,  3 Aug 2013 17:19:24 +0530
+Message-Id: <c46357807ec1517cf90e3cece6edba31117a67a9.1375530162.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1375530162.git.viresh.kumar@linaro.org>
 References: <cover.1375530162.git.viresh.kumar@linaro.org>
@@ -25,73 +26,67 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Caller of cpufreq_add_policy_cpu() already has pointer to policy structure and
-so there is no need to find it again in cpufreq_add_policy_cpu(). Lets pass it
-directly.
+From: Lukasz Majewski <l.majewski@samsung.com>
 
-Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Policies available in a cpufreq framework are now linked together. They are
+accessible via cpufreq_policy_list defined at cpufreq core.
+
+Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
+Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/cpufreq/cpufreq.c | 18 ++++++------------
- 1 file changed, 6 insertions(+), 12 deletions(-)
+ drivers/cpufreq/cpufreq.c | 11 +++++++++++
+ include/linux/cpufreq.h   |  1 +
+ 2 files changed, 12 insertions(+)
 
 diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index 47773a9..496e31c 100644
+index 496e31c..4c3aef0 100644
 --- a/drivers/cpufreq/cpufreq.c
 +++ b/drivers/cpufreq/cpufreq.c
-@@ -889,21 +889,17 @@ static void cpufreq_init_policy(struct cpufreq_policy *policy)
- }
+@@ -39,6 +39,7 @@ static DEFINE_PER_CPU(struct cpufreq_policy *, cpufreq_cpu_data);
+ static DEFINE_PER_CPU(struct cpufreq_policy *, cpufreq_cpu_data_fallback);
+ static DEFINE_RWLOCK(cpufreq_driver_lock);
+ static DEFINE_MUTEX(cpufreq_governor_lock);
++static LIST_HEAD(cpufreq_policy_list);
  
  #ifdef CONFIG_HOTPLUG_CPU
--static int cpufreq_add_policy_cpu(unsigned int cpu, unsigned int sibling,
--				  struct device *dev, bool frozen)
-+static int cpufreq_add_policy_cpu(struct cpufreq_policy *policy,
-+				  unsigned int cpu, struct device *dev,
-+				  bool frozen)
+ /* This one keeps track of the previously set governor of a removed CPU */
+@@ -963,6 +964,12 @@ err_free_policy:
+ 
+ static void cpufreq_policy_free(struct cpufreq_policy *policy)
  {
--	struct cpufreq_policy *policy;
- 	int ret = 0, has_target = !!cpufreq_driver->target;
- 	unsigned long flags;
- 
--	policy = cpufreq_cpu_get(sibling);
--	if (WARN_ON_ONCE(!policy))
--		return -ENODATA;
--
- 	if (has_target)
- 		__cpufreq_governor(policy, CPUFREQ_GOV_STOP);
- 
--	lock_policy_rwsem_write(sibling);
-+	lock_policy_rwsem_write(policy->cpu);
- 
- 	write_lock_irqsave(&cpufreq_driver_lock, flags);
- 
-@@ -912,7 +908,7 @@ static int cpufreq_add_policy_cpu(unsigned int cpu, unsigned int sibling,
- 	per_cpu(cpufreq_cpu_data, cpu) = policy;
- 	write_unlock_irqrestore(&cpufreq_driver_lock, flags);
- 
--	unlock_policy_rwsem_write(sibling);
-+	unlock_policy_rwsem_write(policy->cpu);
- 
- 	if (has_target) {
- 		__cpufreq_governor(policy, CPUFREQ_GOV_START);
-@@ -923,7 +919,6 @@ static int cpufreq_add_policy_cpu(unsigned int cpu, unsigned int sibling,
- 	if (!frozen)
- 		ret = sysfs_create_link(&dev->kobj, &policy->kobj, "cpufreq");
- 
--	cpufreq_cpu_put(policy);
- 	return ret;
- }
- #endif
-@@ -1006,8 +1001,7 @@ static int __cpufreq_add_dev(struct device *dev, struct subsys_interface *sif,
- 		struct cpufreq_policy *cp = per_cpu(cpufreq_cpu_data, sibling);
- 		if (cp && cpumask_test_cpu(cpu, cp->related_cpus)) {
- 			read_unlock_irqrestore(&cpufreq_driver_lock, flags);
--			return cpufreq_add_policy_cpu(cpu, sibling, dev,
--						      frozen);
-+			return cpufreq_add_policy_cpu(cp, cpu, dev, frozen);
- 		}
++	unsigned long flags;
++
++	write_lock_irqsave(&cpufreq_driver_lock, flags);
++	list_del(&policy->policy_list);
++	write_unlock_irqrestore(&cpufreq_driver_lock, flags);
++
+ 	free_cpumask_var(policy->related_cpus);
+ 	free_cpumask_var(policy->cpus);
+ 	kfree(policy);
+@@ -1076,6 +1083,10 @@ static int __cpufreq_add_dev(struct device *dev, struct subsys_interface *sif,
+ 		ret = cpufreq_add_dev_interface(policy, dev);
+ 		if (ret)
+ 			goto err_out_unregister;
++
++		write_lock_irqsave(&cpufreq_driver_lock, flags);
++		list_add(&policy->policy_list, &cpufreq_policy_list);
++		write_unlock_irqrestore(&cpufreq_driver_lock, flags);
  	}
- 	read_unlock_irqrestore(&cpufreq_driver_lock, flags);
+ 
+ 	cpufreq_init_policy(policy);
+diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
+index 9876712..d272fa4 100644
+--- a/include/linux/cpufreq.h
++++ b/include/linux/cpufreq.h
+@@ -82,6 +82,7 @@ struct cpufreq_policy {
+ 
+ 	struct cpufreq_real_policy	user_policy;
+ 
++	struct list_head        policy_list;
+ 	struct kobject		kobj;
+ 	struct completion	kobj_unregister;
+ 	int			transition_ongoing; /* Tracks transition status */
 -- 
 1.7.12.rc2.18.g61b472e
 
