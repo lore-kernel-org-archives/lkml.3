@@ -1,491 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751456Ab3HCJ5Q (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Aug 2013 05:57:16 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:60282 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751365Ab3HCJ5O convert rfc822-to-8bit (ORCPT
+	id S1751477Ab3HCKBj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Aug 2013 06:01:39 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59305 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751392Ab3HCKBh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Aug 2013 05:57:14 -0400
-From: Caizhiyong <caizhiyong@huawei.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Karel Zak <kzak@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Wanglin (Albert)" <albert.wanglin@huawei.com>,
-        Quyaxin <quyaxin@huawei.com>
-Subject: [PATCH] block: support embedded device command line partition
-Thread-Topic: [PATCH] block: support embedded device command line partition
-Thread-Index: Ac6QL80+CfVf2IEATPuoaFA0S7oaSQ==
-Date: Sat, 3 Aug 2013 09:57:04 +0000
-Message-ID: <C3050A4DBA34F345975765E43127F10F1C061D75@szxeml512-mbs.china.huawei.com>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.67.223.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-CFilter-Loop: Reflected
+	Sat, 3 Aug 2013 06:01:37 -0400
+Message-ID: <1375524085.32254.26.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: Linux 3.2.50
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Teck Choon Giam <giamteckchoon@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, Jiri Slaby <jslaby@suse.cz>,
+        stable@vger.kernel.org, lwn@lwn.net
+Date: Sat, 03 Aug 2013 12:01:25 +0200
+In-Reply-To: <CAEwRVpPdWLoZHq6Q94zVoPwG65e=TVUR6HyUJ1ZyvL6+8oCpgw@mail.gmail.com>
+References: <1375480258.32254.24.camel@deadeye.wl.decadent.org.uk>
+	 <CAEwRVpPdWLoZHq6Q94zVoPwG65e=TVUR6HyUJ1ZyvL6+8oCpgw@mail.gmail.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-cGcYqIq137Cmyz8Mom6Y"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 151.218.101.46
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Cai Zhiyong <caizhiyong@huawei.com>
 
-Read block device partition table from command line.
-The partition used for fixed block device (eMMC) embedded device.
-It is no MBR, save storage space. Bootloader can be easily accessed by
-absolute address of data on the block device.
-Users can easily change the partition.
+--=-cGcYqIq137Cmyz8Mom6Y
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-This code reference MTD partition, source "drivers/mtd/cmdlinepart.c"
-About the partition verbose reference "Documentation/block/cmdline-partition.txt"
+On Sat, 2013-08-03 at 09:09 +0800, Teck Choon Giam wrote:
+[...]
+> I am getting the following error while trying to compile for 32bit in
+> Scientific Linux 6.4:
+>=20
+> drivers/net/ifb.c: In function 'ifb_init_module':
+> drivers/net/ifb.c:298: error: implicit declaration of function 'cond_resc=
+hed'
+> make[2]: *** [drivers/net/ifb.o] Error 1
+>=20
+> Missing include of linux/sched.h in drivers/net/ifb.c file?
+>=20
+> I tried the following patch and it does compile successfully:
+>=20
+> --- a/drivers/net/ifb.c    2013-08-03 04:15:12.000000000 +0800
+> +++ b/drivers/net/ifb.c 2013-08-03 08:43:29.040492584 +0800
+> @@ -34,6 +34,7 @@
+>  #include <linux/init.h>
+>  #include <linux/interrupt.h>
+>  #include <linux/moduleparam.h>
+> +#include <linux/sched.h>
+>  #include <net/pkt_sched.h>
+>  #include <net/net_namespace.h>
+>=20
+>=20
+> FYI and comment please.
 
-Signed-off-by: Cai Zhiyong <caizhiyong@huawei.com>
----
- Documentation/block/cmdline-partition.txt |  40 ++++
- block/partitions/Kconfig                  |   6 +
- block/partitions/Makefile                 |   1 +
- block/partitions/check.c                  |   4 +
- block/partitions/cmdline.c                | 326 ++++++++++++++++++++++++++++++
- block/partitions/cmdline.h                |   2 +
- 6 files changed, 379 insertions(+)
- create mode 100644 Documentation/block/cmdline-partition.txt
- create mode 100644 block/partitions/cmdline.c
- create mode 100644 block/partitions/cmdline.h
+Yes I think that's the right change.  Linux 3.0.88-rc1 had the same
+problem and I should have remembered this was needed.
 
-diff --git a/Documentation/block/cmdline-partition.txt b/Documentation/block/cmdline-partition.txt
-new file mode 100644
-index 0000000..651863d
---- /dev/null
-+++ b/Documentation/block/cmdline-partition.txt
-@@ -0,0 +1,40 @@
-+Embedded device command line partition
-+=====================================================================
-+
-+Read block device partition table from command line.
-+The partition used for fixed block device (eMMC) embedded device.
-+It is no MBR, save storage space. Bootloader can be easily accessed
-+by absolute address of data on the block device.
-+Users can easily change the partition.
-+
-+The format for the command line is just like mtdparts:
-+
-+blkdevparts=<blkdev-def>[;<blkdev-def>]
-+  <blkdev-def> := <blkdev-id>:<partdef>[,<partdef>]
-+    <partdef> := <size>[@<offset>](part-name)
-+
-+<blkdev-id>
-+    block device disk name, embedded device used fixed block device,
-+    it's disk name also fixed. such as: mmcblk0, mmcblk1, mmcblk0boot0.
-+
-+<size>
-+    partition size, in bytes, such as: 512, 1m, 1G.
-+
-+<offset>
-+    partition start address, in bytes.
-+
-+(part-name)
-+    partition name, kernel send uevent with "PARTNAME". application can create
-+    a link to block device partition with the name "PARTNAME".
-+    user space application can access partition by partition name.
-+
-+Example:
-+    eMMC disk name is "mmcblk0" and "mmcblk0boot0"
-+
-+  bootargs:
-+    'blkdevparts=mmcblk0:1G(data0),1G(data1),-;mmcblk0boot0:1m(boot),-(kernel)'
-+
-+  dmesg:
-+    mmcblk0: p1(data0) p2(data1) p3()
-+    mmcblk0boot0: p1(boot) p2(kernel)
-+
-diff --git a/block/partitions/Kconfig b/block/partitions/Kconfig
-index 4cebb2f..2ebf251 100644
---- a/block/partitions/Kconfig
-+++ b/block/partitions/Kconfig
-@@ -260,3 +260,9 @@ config SYSV68_PARTITION
- 	  partition table format used by Motorola Delta machines (using
- 	  sysv68).
- 	  Otherwise, say N.
-+
-+config CMDLINE_PARTITION
-+	bool "Command line partition support" if PARTITION_ADVANCED
-+	help
-+	  Say Y here if you would read the partitions table from bootargs.
-+	  The format for the command line is just like mtdparts.
-diff --git a/block/partitions/Makefile b/block/partitions/Makefile
-index 2be4d7b..4e9d584 100644
---- a/block/partitions/Makefile
-+++ b/block/partitions/Makefile
-@@ -19,3 +19,4 @@ obj-$(CONFIG_IBM_PARTITION) += ibm.o
- obj-$(CONFIG_EFI_PARTITION) += efi.o
- obj-$(CONFIG_KARMA_PARTITION) += karma.o
- obj-$(CONFIG_SYSV68_PARTITION) += sysv68.o
-+obj-$(CONFIG_CMDLINE_PARTITION) += cmdline.o
-diff --git a/block/partitions/check.c b/block/partitions/check.c
-index 19ba207..9ac1df7 100644
---- a/block/partitions/check.c
-+++ b/block/partitions/check.c
-@@ -34,6 +34,7 @@
- #include "efi.h"
- #include "karma.h"
- #include "sysv68.h"
-+#include "cmdline.h"
- 
- int warn_no_part = 1; /*This is ugly: should make genhd removable media aware*/
- 
-@@ -65,6 +66,9 @@ static int (*check_part[])(struct parsed_partitions *) = {
- 	adfspart_check_ADFS,
- #endif
- 
-+#ifdef CONFIG_CMDLINE_PARTITION
-+	cmdline_partition,
-+#endif
- #ifdef CONFIG_EFI_PARTITION
- 	efi_partition,		/* this must come before msdos */
- #endif
-diff --git a/block/partitions/cmdline.c b/block/partitions/cmdline.c
-new file mode 100644
-index 0000000..dc69483
---- /dev/null
-+++ b/block/partitions/cmdline.c
-@@ -0,0 +1,326 @@
-+/*
-+ * Copyright (C) 2013 HUAWEI
-+ * Author: Cai Zhiyong <caizhiyong@huawei.com>
-+ *
-+ * Read block device partition table from command line.
-+ * The partition used for fixed block device (eMMC) embedded device.
-+ * It is no MBR, save storage space. Bootloader can be easily accessed
-+ * by absolute address of data on the block device.
-+ * Users can easily change the partition.
-+ *
-+ * This code reference MTD partition, source "drivers/mtd/cmdlinepart.c"
-+ * The format for the command line is just like mtdparts.
-+ *
-+ * Verbose config please reference "Documentation/block/cmdline-partition.txt"
-+ *
-+ */
-+
-+#include <linux/buffer_head.h>
-+#include <linux/module.h>
-+#include <linux/ctype.h>
-+
-+#include "check.h"
-+#include "cmdline.h"
-+
-+struct cmdline_subpart {
-+	char name[BDEVNAME_SIZE]; /* partition name, such as 'rootfs' */
-+	sector_t from;
-+	sector_t size;
-+	struct cmdline_subpart *next_subpart;
-+};
-+
-+struct cmdline_parts {
-+	char name[BDEVNAME_SIZE]; /* block device, such as 'mmcblk0' */
-+	struct cmdline_subpart *subpart;
-+	struct cmdline_parts *next_parts;
-+};
-+
-+static char *cmdline_string;
-+static struct cmdline_parts *cmdline_parts;
-+
-+static int parse_subpart(struct cmdline_subpart **subpart, char *cmdline)
-+{
-+	int ret = 0;
-+	struct cmdline_subpart *new_subpart;
-+
-+	*subpart = NULL;
-+
-+	new_subpart = kzalloc(sizeof(struct cmdline_subpart), GFP_KERNEL);
-+	if (!new_subpart)
-+		return -ENOMEM;
-+
-+	if (*cmdline == '-') {
-+		new_subpart->size = (sector_t)(~0ULL);
-+		cmdline++;
-+	} else {
-+		new_subpart->size = (sector_t)memparse(cmdline, &cmdline);
-+		if (new_subpart->size < (sector_t)PAGE_SIZE) {
-+			pr_warn("cmdline partition size is invalid.");
-+			ret = -EINVAL;
-+			goto fail;
-+		}
-+	}
-+
-+	if (*cmdline == '@') {
-+		cmdline++;
-+		new_subpart->from = (sector_t)memparse(cmdline, &cmdline);
-+	} else {
-+		new_subpart->from = (sector_t)(~0ULL);
-+	}
-+
-+	if (*cmdline == '(') {
-+		int length;
-+		char *next = strchr(++cmdline, ')');
-+
-+		if (!next) {
-+			pr_warn("cmdline partition format is invalid.");
-+			ret = -EINVAL;
-+			goto fail;
-+		}
-+
-+		length = min_t(int, next - cmdline,
-+			       sizeof(new_subpart->name) - 1);
-+		strncpy(new_subpart->name, cmdline, length);
-+		new_subpart->name[length] = '\0';
-+
-+		cmdline = ++next;
-+	} else
-+		new_subpart->name[0] = '\0';
-+
-+	*subpart = new_subpart;
-+	return 0;
-+fail:
-+	kfree(new_subpart);
-+	return ret;
-+}
-+
-+static void free_subpart(struct cmdline_parts *parts)
-+{
-+	struct cmdline_subpart *subpart;
-+
-+	while (parts->subpart) {
-+		subpart = parts->subpart;
-+		parts->subpart = subpart->next_subpart;
-+		kfree(subpart);
-+	}
-+}
-+
-+static void free_parts(struct cmdline_parts **parts)
-+{
-+	struct cmdline_parts *next_parts;
-+
-+	while (*parts) {
-+		next_parts = (*parts)->next_parts;
-+		free_subpart(*parts);
-+		kfree(*parts);
-+		*parts = next_parts;
-+	}
-+}
-+
-+static int parse_parts(struct cmdline_parts **parts, const char *cmdline)
-+{
-+	int ret = -EINVAL;
-+	char *next;
-+	int length;
-+	struct cmdline_subpart **next_subpart;
-+	struct cmdline_parts *newparts;
-+	char buf[BDEVNAME_SIZE + 32 + 4];
-+
-+	*parts = NULL;
-+
-+	newparts = kzalloc(sizeof(struct cmdline_parts), GFP_KERNEL);
-+	if (!newparts)
-+		return -ENOMEM;
-+
-+	next = strchr(cmdline, ':');
-+	if (!next) {
-+		pr_warn("cmdline partition has not block device.");
-+		goto fail;
-+	}
-+
-+	length = min_t(int, next - cmdline, sizeof(newparts->name) - 1);
-+	strncpy(newparts->name, cmdline, length);
-+	newparts->name[length] = '\0';
-+
-+	next_subpart = &newparts->subpart;
-+
-+	while (next && *(++next)) {
-+		cmdline = next;
-+		next = strchr(cmdline, ',');
-+
-+		length = (!next) ? (sizeof(buf) - 1) :
-+			min_t(int, next - cmdline, sizeof(buf) - 1);
-+
-+		strncpy(buf, cmdline, length);
-+		buf[length] = '\0';
-+
-+		ret = parse_subpart(next_subpart, buf);
-+		if (ret)
-+			goto fail;
-+
-+		next_subpart = &(*next_subpart)->next_subpart;
-+	}
-+
-+	if (!newparts->subpart) {
-+		pr_warn("cmdline partition has not valid partition.");
-+		goto fail;
-+	}
-+
-+	*parts = newparts;
-+
-+	return 0;
-+fail:
-+	free_subpart(newparts);
-+	kfree(newparts);
-+	return ret;
-+}
-+
-+static int parse_cmdline(struct cmdline_parts **parts, const char *cmdline)
-+{
-+	int ret;
-+	char *buf;
-+	char *pbuf;
-+	char *next;
-+	struct cmdline_parts **next_parts;
-+
-+	*parts = NULL;
-+
-+	next = pbuf = buf = kstrdup(cmdline, GFP_KERNEL);
-+	if (!buf)
-+		return -ENOMEM;
-+
-+	next_parts = parts;
-+
-+	while (next && *pbuf) {
-+		next = strchr(pbuf, ';');
-+		if (next)
-+			*next = '\0';
-+
-+		ret = parse_parts(next_parts, pbuf);
-+		if (ret)
-+			goto fail;
-+
-+		if (next)
-+			pbuf = ++next;
-+
-+		next_parts = &(*next_parts)->next_parts;
-+	}
-+
-+	if (!*parts) {
-+		pr_warn("cmdline partition has not valid partition.");
-+		ret = -EINVAL;
-+		goto fail;
-+	}
-+
-+	ret = 0;
-+done:
-+	kfree(buf);
-+	return ret;
-+
-+fail:
-+	free_parts(parts);
-+	goto done;
-+}
-+
-+/*
-+ * Purpose: allocate cmdline partitions.
-+ * Returns:
-+ * -1 if unable to read the partition table
-+ *  0 if this isn't our partition table
-+ *  1 if successful
-+ */
-+static int parse_partitions(struct parsed_partitions *state,
-+			    struct cmdline_parts *parts)
-+{
-+	int slot;
-+	sector_t from = 0;
-+	sector_t disk_size;
-+	char buf[BDEVNAME_SIZE];
-+	struct cmdline_subpart *subpart;
-+
-+	bdevname(state->bdev, buf);
-+
-+	while (parts && strncmp(buf, parts->name, BDEVNAME_SIZE))
-+		parts = parts->next_parts;
-+
-+	if (!parts)
-+		return 0;
-+
-+	disk_size = get_capacity(state->bdev->bd_disk) << 9;
-+
-+	for (slot = 1, subpart = parts->subpart;
-+	     subpart && slot < state->limit;
-+	     subpart = subpart->next_subpart, slot++) {
-+		int label_min;
-+		struct partition_meta_info *info;
-+		char tmp[sizeof(info->volname) + 4];
-+
-+		if (subpart->from == (sector_t)(~0ULL))
-+			subpart->from = from;
-+		else
-+			from = subpart->from;
-+
-+		if (from >= disk_size)
-+			break;
-+
-+		if (subpart->size > (disk_size - from))
-+			subpart->size = disk_size - from;
-+
-+		from += subpart->size;
-+
-+		put_partition(state, slot, subpart->from >> 9,
-+			      subpart->size >> 9);
-+
-+		info = &state->parts[slot].info;
-+
-+		label_min = min_t(int, sizeof(info->volname) - 1,
-+				  sizeof(subpart->name));
-+		strncpy(info->volname, subpart->name, label_min);
-+		info->volname[label_min] = '\0';
-+
-+		snprintf(tmp, sizeof(tmp), "(%s)", info->volname);
-+		strlcat(state->pp_buf, tmp, PAGE_SIZE);
-+
-+		state->parts[slot].has_info = true;
-+	}
-+
-+	strlcat(state->pp_buf, "\n", PAGE_SIZE);
-+
-+	return 1;
-+}
-+
-+static int __init cmdline_parts_setup(char *s)
-+{
-+	cmdline_string = s;
-+	return 1;
-+}
-+__setup("blkdevparts=", cmdline_parts_setup);
-+
-+/*
-+ * Purpose: allocate cmdline partitions.
-+ * Returns:
-+ * -1 if unable to read the partition table
-+ *  0 if this isn't our partition table
-+ *  1 if successful
-+ */
-+int cmdline_partition(struct parsed_partitions *state)
-+{
-+	if (cmdline_string) {
-+		if (cmdline_parts)
-+			free_parts(&cmdline_parts);
-+
-+		if (parse_cmdline(&cmdline_parts, cmdline_string))
-+			goto fail;
-+
-+		cmdline_string = NULL;
-+	}
-+
-+	if (!cmdline_parts)
-+		return 0;
-+
-+	return parse_partitions(state, cmdline_parts);
-+
-+fail:
-+	cmdline_string = NULL;
-+	return -1;
-+}
-diff --git a/block/partitions/cmdline.h b/block/partitions/cmdline.h
-new file mode 100644
-index 0000000..26e0f8d
---- /dev/null
-+++ b/block/partitions/cmdline.h
-@@ -0,0 +1,2 @@
-+
-+int cmdline_partition(struct parsed_partitions *state);
--- 
-1.8.1.5
+Ben.
 
+--=20
+Ben Hutchings
+Quantity is no substitute for quality, but it's the only one we've got.
+
+--=-cGcYqIq137Cmyz8Mom6Y
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUAUfzU9ee/yOyVhhEJAQpddQ//Qs7f+uHANkcudlH0zVsIxu87AKvsE1XX
+TqYeli/9XTTi1fCljn7/e4zsYMGzX1q/lraP1RxR75BL/+hemvBa0xIVAc2tTRbJ
+2fMAQI+546nzrWw/aQqz6N2rQV9+nsRyHjPoaoI7VoeUr9oI1EKi0Hrq+St6IK2S
+IpubK8D1zW2b4Z9UjRFWthPIH/9J/AzGl28qEjA8BsBHl1imyFFpId5sMDpYWCIO
+8vFqK03k9EG3j3rFuwPfeMX6nzMtb0Em82n1gj+QTzhifYWdh+vT28598bJyIpy9
+NISHeNqARYVGGw+fz9xKNE+QYldMPMLJljgHJt2W5p9Bnh+lKJsH7AJ5C/y+9eSY
+PlWKMNilObAcq1mLzm3BXC9+WkW5FSp0NVWHk5mpRs0V4Nsk9W1hKahgWcbsI+ln
+AI68q3mBJvkOU4zyEYAxhNtfPaj7sRSD5WDnH36izBJjePYUkxg0R+UCiUExVFDi
+FTwb5tMkn+GG2OsIrHqp/xHAqcxM+CNbknfZtiC2fv5eYTYMZ7VpbP04ZjBF+GxX
+AOSczVMKPhsxLbohe1RqDre62KwUNe507eLha4/J/KT1VW90PIiLH+yn3/vOLReT
+poFxArf5SHEt1ySbU2//ypTP1B+Jvo5W7ql5j9AbUWOQ8HBLtNOVQ+4cECRKd1hx
+7u/F7fT1dxE=
+=2U+Y
+-----END PGP SIGNATURE-----
+
+--=-cGcYqIq137Cmyz8Mom6Y--
