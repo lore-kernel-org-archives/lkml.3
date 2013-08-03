@@ -1,56 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752553Ab3HCQwL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Aug 2013 12:52:11 -0400
-Received: from smtp3-g21.free.fr ([212.27.42.3]:41186 "EHLO smtp3-g21.free.fr"
+	id S1752643Ab3HCQ5W (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Aug 2013 12:57:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41286 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751844Ab3HCQwJ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Aug 2013 12:52:09 -0400
-Date: Sat, 3 Aug 2013 18:52:55 +0200
-From: Jean-Francois Moine <moinejf@free.fr>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Rob Herring <rob.herring@calxeda.com>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Subject: Re: [PATCH v3 1/4] ASoc: kirkwood: simplify probe error
-Message-ID: <20130803185255.1b1932c4@armhf>
-In-Reply-To: <20130803124652.GY23006@n2100.arm.linux.org.uk>
-References: <20130731081739.76aae84c@armhf>
-	<20130803124652.GY23006@n2100.arm.linux.org.uk>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; arm-unknown-linux-gnueabihf)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1752457Ab3HCQ5U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Aug 2013 12:57:20 -0400
+Date: Sat, 3 Aug 2013 18:51:55 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Zach Levis <zml@linux.vnet.ibm.com>
+Cc: akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        dan.carpenter@oracle.com, Zach Levis <zach@zachsthings.com>
+Subject: Re: [PATCH v3 3/3] fs/binfmts: Whitespace fixes with
+	scripts/cleanfile
+Message-ID: <20130803165155.GC32568@redhat.com>
+References: <1374766845-13565-1-git-send-email-zml@linux.vnet.ibm.com> <1375485703-4077-4-git-send-email-zml@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1375485703-4077-4-git-send-email-zml@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 3 Aug 2013 13:46:52 +0100
-Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
+On 08/02, Zach Levis wrote:
+>
+> Obligatory first-patchset whitespace commit
 
-> On Wed, Jul 31, 2013 at 08:17:39AM +0200, Jean-Francois Moine wrote:
-> > The function kirkwood_i2s_dev_remove() may be used when probe fails.
-> 
-> Looking at this deeper, I'm not happy with this.
-	[snip]
-> What this means is that if snd_soc_register_component() fails, we end
-> up calling snd_soc_unregister_component().  This may be fine with the
-> way snd_soc_unregister_component() is currently implemented, but you're
-> making the assumption that it's fine to call snd_soc_unregister_component()
-> for a device which hasn't been registered.  Technically, this is a
-> layering violation, which makes this change fragile if the behaviour
-> of snd_soc_unregister_component() changes in the future.
-> 
-> For the sake of two calls in the error path, I don't think the benefits
-> of this patch outweigh the risk.
+Looks good, perhaps you send it as 1/3 or even separately, so you
+won't need to redo it if you need to update 1-2.
 
-You are right, but if snd_soc_unregister_component() could be
-officially used safely with no previous call to
-snd_soc_register_component(), this would simplify error handling in
-other drivers too...
+> @@ -63,11 +63,11 @@ static int load_em86(struct linux_binprm *bprm)
+>  	 */
+>  	remove_arg_zero(bprm);
+>  	retval = copy_strings_kernel(1, &bprm->filename, bprm);
+> -	if (retval < 0) return retval; 
+> +	if (retval < 0) return retval;
 
--- 
-Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
-Jef		|		http://moinejf.free.fr/
+And perhaps you can also fix the coding style when your patch touches
+such a code.
+
+Oleg.
+
