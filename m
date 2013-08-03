@@ -1,86 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753339Ab3HCWhV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Aug 2013 18:37:21 -0400
-Received: from mail-la0-f50.google.com ([209.85.215.50]:34461 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752810Ab3HCWhT (ORCPT
+	id S1753398Ab3HCWh3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Aug 2013 18:37:29 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:39871 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752810Ab3HCWhZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Aug 2013 18:37:19 -0400
+	Sat, 3 Aug 2013 18:37:25 -0400
+Date: Sat, 3 Aug 2013 15:37:11 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Ulrich Windl <Ulrich.Windl@rz.uni-regensburg.de>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: Possible mmap() write() problem in SLES11 SP2 kernel
+In-Reply-To: <51FA6455020000A100012182@gwsmtp1.uni-regensburg.de>
+Message-ID: <alpine.LNX.2.00.1308031516010.11134@eggly.anvils>
+References: <51FA6455020000A100012182@gwsmtp1.uni-regensburg.de>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <5977534.o64DLE8ToP@vostro.rjw.lan>
-References: <1375472229-1563-1-git-send-email-felipe.contreras@gmail.com>
-	<2483450.yz2brWbP8X@vostro.rjw.lan>
-	<CAMP44s3kacF57gsJzyL6-4JWfWpdfJbJYW-nWQ92Yn1VimnYug@mail.gmail.com>
-	<5977534.o64DLE8ToP@vostro.rjw.lan>
-Date: Sat, 3 Aug 2013 17:37:16 -0500
-Message-ID: <CAMP44s3pda+p+Oyo3X3+pazqee5pFx9OhYdKLuK3SkqycLyhrg@mail.gmail.com>
-Subject: Re: [PATCH] acpi: video: improve quirk check
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Aaron Lu <aaron.lwe@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, Len Brown <lenb@kernel.org>,
-        Zhang Rui <rui.zhang@intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Igor Gnatenko <i.gnatenko.brain@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 3, 2013 at 5:38 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Saturday, August 03, 2013 05:20:33 PM Felipe Contreras wrote:
->> On Sat, Aug 3, 2013 at 4:40 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->> > On Saturday, August 03, 2013 03:24:16 PM Felipe Contreras wrote:
->> >> On Sat, Aug 3, 2013 at 6:34 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->> >> > On Saturday, August 03, 2013 04:14:04 PM Aaron Lu wrote:
->> >>
->> >> >> Yes, the patch is correct, but I still prefer my own version :-)
->> >> >> https://github.com/aaronlu/linux/commit/0a3d2c5b59caf80ae5bb1ca1fda0f7bf448b38c9
->> >> >>
->> >> >> In case you want to take mine and mine needs refresh, please let me know
->> >> >> and I can do the re-base, thanks.
->> >> >
->> >> > Well, I prefer simpler, unless there's a good reason to use more complicated.
->> >>
->> >> Note that these are not exclusionary; his patch can be applied on top
->> >> of mine. I don't think his patch is needed though.
->> >
->> > OK
->> >
->> > Do we still need to revert commit efaa14c if this patch is applied?
->>
->> I guess not. At least in this machine changing the backlight works
->> correctly, whereas in v3.11-rc3 it was all weird, and v3.7-v3.10
->> didn't work at all. I cannot see how it would affect negatively other
->> machines.
->>
->> That being said, the blacklisting is still needed, because 1. the
->> level is not preserved between boots, and 2. level 0 turns off the
->> screen, which I personally consider a regression.
->>
->> At least it boots to level 100 instead of 0.
->
-> OK
->
-> I'll push this patch to Linus for -rc5 then without the revert of commit
-> commit efaa14c.  That's all I'm going to do for 3.11 in the ACPI video
-> area at this point.
+On Thu, 1 Aug 2013, Ulrich Windl wrote:
+> Hi folks!
+> 
+> I think I'd let you know (maybe I'm wrong, and the kernel is right):
+> 
+> I write a C-program that maps a file into an private writable map. Then I modify the area a bit and use one write to write that area back to a file.
+> 
+> This worked fine in SLES11 kernel 3.0.74-0.6.10. However with kernel  3.0.80-0.7 the write() fails with EFAULT if the output file is the same as the input file.
 
-That seems fair.
+I wonder if you actually did exactly the same on both kernels.
 
-> As far as the blacklisting is concerned, I still have the blacklist of
-> your Asus machine queued up for 3.12.  Since you're claiming that it
-> doesn't have any side effects on that machine, I think I can apply it.
->
-> However, for other machines to be added to that blacklist I need to see
-> requests from their users with confirmation that there are no visible side
-> effects there.
+> 
+> The strace is amazingly short (I removed the unrelated calls):
 
-Good, that's the purpose of bug 60682.
+Providing that was very helpful.
 
-https://bugzilla.kernel.org/show_bug.cgi?id=60682
+> open("xxx", O_RDONLY)                   = 3
+> fstat(3, {st_mode=S_IFREG|0644, st_size=4416, ...}) = 0
+> mmap(NULL, 4416, PROT_READ|PROT_WRITE, MAP_PRIVATE, 3, 0) = 0x7f85ac045000
+> close(3)                                = 0
+> open("xxx", O_WRONLY|O_CREAT|O_TRUNC, 0666) = 3
 
--- 
-Felipe Contreras
+The crucial point is the above O_TRUNC when you now open the file for
+writing: that truncates the file to 0-length, which unmaps any pages
+mapped from it into userspace.  Even the privately modified COW pages:
+that often seems surprising, but it is how mmap versus truncate is
+specified to work.
+
+> write(3, 0x7f85ac045000, 4414)          = -1 EFAULT (Bad address)
+
+If your program now touched a part of the mapping, it would get
+SIGBUS, there being no pages of underlying object to page in from.
+But since you're accessing the area from within a system call,
+that simply fails with EFAULT.
+
+> close(3)                                = 0
+> munmap(0x7f85ac045000, 4414)            = 0
+> 
+> I want to have your attention if this should work, and you get my attention if this should not work.
+
+It should not work.
+
+> Note that the input file is closed before it's opened for write again. As the output file is typically shorter than the input, I didn't want to use a non-private mapping and a truncate, just in case you wonder...
+
+(I didn't understand your logic there.)
+
+Hugh
