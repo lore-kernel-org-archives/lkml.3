@@ -1,46 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752643Ab3HCQ5W (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Aug 2013 12:57:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41286 "EHLO mx1.redhat.com"
+	id S1752685Ab3HCRAe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Aug 2013 13:00:34 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:51719 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752457Ab3HCQ5U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Aug 2013 12:57:20 -0400
-Date: Sat, 3 Aug 2013 18:51:55 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Zach Levis <zml@linux.vnet.ibm.com>
-Cc: akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        dan.carpenter@oracle.com, Zach Levis <zach@zachsthings.com>
-Subject: Re: [PATCH v3 3/3] fs/binfmts: Whitespace fixes with
-	scripts/cleanfile
-Message-ID: <20130803165155.GC32568@redhat.com>
-References: <1374766845-13565-1-git-send-email-zml@linux.vnet.ibm.com> <1375485703-4077-4-git-send-email-zml@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1375485703-4077-4-git-send-email-zml@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1751803Ab3HCRAc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Aug 2013 13:00:32 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Michal Hocko <mhocko@suse.cz>, David Rientjes <rientjes@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        azurIt <azurit@pobox.sk>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, x86@kernel.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [patch 0/7] improve memcg oom killer robustness v2
+Date: Sat,  3 Aug 2013 12:59:53 -0400
+Message-Id: <1375549200-19110-1-git-send-email-hannes@cmpxchg.org>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02, Zach Levis wrote:
->
-> Obligatory first-patchset whitespace commit
+Changes in version 2:
+o use user_mode() instead of open coding it on s390 (Heiko Carstens)
+o clean up memcg OOM enable/disable toggling (Michal Hocko & KOSAKI
+  Motohiro)
+o add a separate patch to rework and document OOM locking
+o fix a problem with lost wakeups when sleeping on the OOM lock
+o fix OOM unlocking & wakeups with userspace OOM handling
 
-Looks good, perhaps you send it as 1/3 or even separately, so you
-won't need to redo it if you need to update 1-2.
+The memcg code can trap tasks in the context of the failing allocation
+until an OOM situation is resolved.  They can hold all kinds of locks
+(fs, mm) at this point, which makes it prone to deadlocking.
 
-> @@ -63,11 +63,11 @@ static int load_em86(struct linux_binprm *bprm)
->  	 */
->  	remove_arg_zero(bprm);
->  	retval = copy_strings_kernel(1, &bprm->filename, bprm);
-> -	if (retval < 0) return retval; 
-> +	if (retval < 0) return retval;
+This series converts memcg OOM handling into a two step process that
+is started in the charge context, but any waiting is done after the
+fault stack is fully unwound.
 
-And perhaps you can also fix the coding style when your patch touches
-such a code.
+Patches 1-4 prepare architecture handlers to support the new memcg
+requirements, but in doing so they also remove old cruft and unify
+out-of-memory behavior across architectures.
 
-Oleg.
+Patch 5 disables the memcg OOM handling for syscalls, readahead,
+kernel faults, because they can gracefully unwind the stack with
+-ENOMEM.  OOM handling is restricted to user triggered faults that
+have no other option.
+
+Patch 6 reworks memcg's hierarchical OOM locking to make it a little
+more obvious wth is going on in there: reduce locked regions, rename
+locking functions, reorder and document.
+
+Patch 7 implements the two-part OOM handling such that tasks are never
+trapped with the full charge stack in an OOM situation.
+
+ arch/alpha/mm/fault.c      |   7 +-
+ arch/arc/mm/fault.c        |  11 +--
+ arch/arm/mm/fault.c        |  23 +++--
+ arch/arm64/mm/fault.c      |  23 +++--
+ arch/avr32/mm/fault.c      |   4 +-
+ arch/cris/mm/fault.c       |   6 +-
+ arch/frv/mm/fault.c        |  10 +-
+ arch/hexagon/mm/vm_fault.c |   6 +-
+ arch/ia64/mm/fault.c       |   6 +-
+ arch/m32r/mm/fault.c       |  10 +-
+ arch/m68k/mm/fault.c       |   2 +
+ arch/metag/mm/fault.c      |   6 +-
+ arch/microblaze/mm/fault.c |   7 +-
+ arch/mips/mm/fault.c       |   8 +-
+ arch/mn10300/mm/fault.c    |   2 +
+ arch/openrisc/mm/fault.c   |   1 +
+ arch/parisc/mm/fault.c     |   7 +-
+ arch/powerpc/mm/fault.c    |   7 +-
+ arch/s390/mm/fault.c       |   2 +
+ arch/score/mm/fault.c      |  13 ++-
+ arch/sh/mm/fault.c         |   9 +-
+ arch/sparc/mm/fault_32.c   |  12 ++-
+ arch/sparc/mm/fault_64.c   |   8 +-
+ arch/tile/mm/fault.c       |  13 +--
+ arch/um/kernel/trap.c      |  22 +++--
+ arch/unicore32/mm/fault.c  |  22 +++--
+ arch/x86/mm/fault.c        |  43 ++++-----
+ arch/xtensa/mm/fault.c     |   2 +
+ include/linux/memcontrol.h |  65 +++++++++++++
+ include/linux/mm.h         |   1 +
+ include/linux/sched.h      |   7 ++
+ mm/filemap.c               |  11 ++-
+ mm/memcontrol.c            | 229 +++++++++++++++++++++++++++++----------------
+ mm/memory.c                |  43 +++++++--
+ mm/oom_kill.c              |   7 +-
+ 35 files changed, 444 insertions(+), 211 deletions(-)
 
