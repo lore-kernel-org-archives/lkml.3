@@ -1,84 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752217Ab3HCOX1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Aug 2013 10:23:27 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:48742 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751870Ab3HCOXZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Aug 2013 10:23:25 -0400
-Date: Sat, 3 Aug 2013 07:23:26 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
-Subject: [GIT PULL] hwmon fixes for 3.11-rc4
-Message-ID: <20130803142326.GA19561@roeck-us.net>
+	id S1752138Ab3HCPSl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Aug 2013 11:18:41 -0400
+Received: from imap.thunk.org ([74.207.234.97]:38902 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751936Ab3HCPSj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Aug 2013 11:18:39 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [GIT PULL] more ext4 bug fixes (for v3.11-rc4)
+cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Sat, 03 Aug 2013 11:18:36 -0400
+Message-ID: <nsxsiyq950z.fsf@lambda.thunk.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="rwEMma7ioTxnRzrJ"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=us-ascii
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@mit.edu
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---rwEMma7ioTxnRzrJ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+(Possible resend; I was having trouble sending this pull request earlier
+this week, and it apparently hasn't been acted on yet, so I'm
+resending.)
 
-Hi Linus,
+                                        - Ted
 
-Please pull hwmon fixes for Linux 3.11-rc4 from signed tag:
+The following changes since commit 3b2f64d00c46e1e4e9bd0bb9bb12619adac27a4b:
 
-    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus
-
-Thanks,
-Guenter
-------
-
-The following changes since commit 5ae90d8e467e625e447000cb4335c4db973b1095:
-
-  Linux 3.11-rc3 (2013-07-28 20:53:33 -0700)
+  Linux 3.11-rc2 (2013-07-21 12:05:29 -0700)
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git tags/hwmon-for-linus
+  git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git tags/ext4_for_linus
 
-for you to fetch changes up to 5c52add19733eb36d8619713312f5604efef3502:
+for you to fetch changes up to 44fb851dfb2f8e3462617e19a7b3b9025db9d919:
 
-  hwmon: (max6697) fix MAX6581 ideality (2013-08-03 07:04:50 -0700)
-
-----------------------------------------------------------------
-Fix chip initialization/configuration in MAX6697 driver
+  ext4: add WARN_ON to check the length of allocated blocks (2013-07-29 12:51:42 -0400)
 
 ----------------------------------------------------------------
-Vivien Didelot (1):
-      hwmon: (max6697) fix MAX6581 ideality
+ext4 bugfixes for v3.11-rc4
 
- drivers/hwmon/max6697.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+----------------------------------------------------------------
+Eric Sandeen (1):
+      ext4: destroy ext4_es_cachep on module unload
 
---rwEMma7ioTxnRzrJ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Theodore Ts'o (2):
+      ext4: make sure group number is bumped after a inode allocation race
+      ext4: fix retry handling in ext4_ext_truncate()
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Zheng Liu (1):
+      ext4: add WARN_ON to check the length of allocated blocks
 
-iQIcBAEBAgAGBQJR/RJeAAoJEMsfJm/On5mBnesP/Ay9sQW6RnBirfLlcCGkzTVx
-hWXkRafJK0VtESwTRmzXY8VjI3chqgmzn2AWh8NkhxoHVl90cX1NZ2PLGj/YRqk2
-8RW1LAZ4rDYxjwi8PCsYMUscPhKpogYnor6sc+xEiMlKX7P0QN8aUlZxZmu+J6k6
-4kLIw6hpZ0sWAGp2hzFhgmaccLkAALJ/Upn10HBsAjE2cYHaqsx5Zh6VVY3ssURy
-QUeQc2xPaBnjJM5eSpRSBrJwitXfPXpiWc6vbGkwSDkKxpVOHWzRdZthU4o1tau5
-TQTJBj4Tt/VBqNLjk/NLSNQUPJ2KJtH3Qf8ie6Hp1D3tG6ySzm0y0/nU7RKJC3iI
-XFwLO8ZLEFHN1Wc8hBWvjZDphqY27ep/GIV0aW1d0V8AWeXNvgBMmMEdruphZyzq
-LLfWsr9RyXZ/4qnKyOq9muUDEJxHG59GK3229rdORLwszbJxj1qnmvc4q8wMlP0E
-W6yaqAZnqeAfCn+U7yc7d8ZM84U0hYD28HNpfy3sFY8pOi4EllyqYITCAapZpmWU
-ngALVQs42KRxm46/jKrxhBJvxW7nb7IaTjLwnCUEoeISHlr93GW+Ed3pTFzVo+PF
-GjiYgSic/ni2xtMdf1uoMqGkTbKBAfbfFygS0FSLRAts7Cn5eCRpmWSn8ppEp7Nt
-rCcXCyMpRkmPQyjZatPD
-=gYQG
------END PGP SIGNATURE-----
-
---rwEMma7ioTxnRzrJ--
+ fs/ext4/extents.c |  2 +-
+ fs/ext4/ialloc.c  | 10 +++++-----
+ fs/ext4/inode.c   | 39 ++++++++++++++++++---------------------
+ fs/ext4/super.c   |  1 +
+ 4 files changed, 25 insertions(+), 27 deletions(-)
