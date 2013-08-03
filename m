@@ -1,99 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751210Ab3HCFYq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Aug 2013 01:24:46 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:50744 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750944Ab3HCFYo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Aug 2013 01:24:44 -0400
+	id S1751326Ab3HCF0P (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Aug 2013 01:26:15 -0400
+Received: from smtp.infotech.no ([82.134.31.41]:55062 "EHLO smtp.infotech.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750944Ab3HCF0N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Aug 2013 01:26:13 -0400
+Message-ID: <51FC9449.4060906@interlog.com>
+Date: Sat, 03 Aug 2013 01:25:29 -0400
+From: Douglas Gilbert <dgilbert@interlog.com>
+Reply-To: dgilbert@interlog.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-X-Originating-IP: [173.13.129.225]
-In-Reply-To: <CAGFynZ-V6CUFXh+iC8M7spwHn3gma6gYgRFBaoAXRYtw1fbgHA@mail.gmail.com>
-References: <20130731141841.GP5882@titan.lakedaemon.net>
-	<20130802083346.GC7656@atomide.com>
-	<CAGFynZ-V6CUFXh+iC8M7spwHn3gma6gYgRFBaoAXRYtw1fbgHA@mail.gmail.com>
-Date: Fri, 2 Aug 2013 22:24:42 -0700
-Message-ID: <CAOesGMiq4M-8=CUsKf3bxBnxxiBQMEPc11K8pDePZnzHkv9QTA@mail.gmail.com>
-Subject: Re: [Ksummit-2013-discuss] [ARM ATTEND] arch/arm SoC organization
-From: Olof Johansson <olof@lixom.net>
-To: Christian Daudt <csd_b@daudt.org>
-Cc: Tony Lindgren <tony@atomide.com>, Jason Cooper <jason@lakedaemon.net>,
-        devicetree@vger.kernel.org,
-        "ksummit-2013-discuss@lists.linuxfoundation.org" 
-	<ksummit-2013-discuss@lists.linuxfoundation.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mark Brown <broonie@kernel.org>,
-        Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: =?UTF-8?B?SsO2cm4gRW5nZWw=?= <joern@logfs.org>,
+        Vaughan Cao <vaughan.cao@oracle.com>
+CC: JBottomley@parallels.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 0/4] [SCSI] sg: fix race condition in sg_open
+References: <1374075246-22923-1-git-send-email-vaughan.cao@oracle.com> <1374468033-8947-1-git-send-email-vaughan.cao@oracle.com> <20130722170338.GA15824@logfs.org> <51F9EB97.7070305@interlog.com>
+In-Reply-To: <51F9EB97.7070305@interlog.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 2, 2013 at 4:06 PM, Christian Daudt <csd_b@daudt.org> wrote:
-> On Fri, Aug 2, 2013 at 1:33 AM, Tony Lindgren <tony@atomide.com> wrote:
->> * Jason Cooper <jason@lakedaemon.net> [130731 07:25]:
->>> So, I'd like to propose we discuss some lessons learned and maybe arrive
->>> at some best practices.  eg, should we just go with mach-$COMPANY/?  How
->>> best to handle config symbols for efficient building?  Deprecation path
->>> for legacy (unconverted) boards?
+On 13-08-01 01:01 AM, Douglas Gilbert wrote:
+> On 13-07-22 01:03 PM, Jörn Engel wrote:
+>> On Mon, 22 July 2013 12:40:29 +0800, Vaughan Cao wrote:
+>>>
+>>> There is a race when open sg with O_EXCL flag. Also a race may happen between
+>>> sg_open and sg_remove.
+>>>
+>>> Changes from v4:
+>>>   * [3/4] use ERR_PTR series instead of adding another parameter in sg_add_sfp
+>>>   * [4/4] fix conflict for cherry-pick from v3.
+>>>
+>>> Changes from v3:
+>>>   * release o_sem in sg_release(), not in sg_remove_sfp().
+>>>   * not set exclude with sfd_lock held.
+>>>
+>>> Vaughan Cao (4):
+>>>    [SCSI] sg: use rwsem to solve race during exclusive open
+>>>    [SCSI] sg: no need sg_open_exclusive_lock
+>>>    [SCSI] sg: checking sdp->detached isn't protected when open
+>>>    [SCSI] sg: push file descriptor list locking down to per-device
+>>>      locking
+>>>
+>>>   drivers/scsi/sg.c | 178 +++++++++++++++++++++++++-----------------------------
+>>>   1 file changed, 83 insertions(+), 95 deletions(-)
 >>
->> A lot of that problem goes away by initializing everything as late
->> as possible, and making things to live under drivers.
-> One category of items that we haven't found a good place for in this
-> new multiplatform world is where does dt-driven non-driver code reside
-> ? e.g. we have a secure monitor access function that only kicks in if
-> the appropriate dt entry is available . It currently resides in
-> mach-bcm/bcm_kona_smc.c as it seems like the only location for it at
-> the moment, but that doesn't seem like the best place because (a)
-> mach-bcm might end up littered with one-of cases like this and (b)
-> anything in mach-bcm is not visible to arm64 SoCs, and some of those
-> in the future will need to share with their arm32 cousins.
+>> Patchset looks good to me, although I didn't test it on hardware yet.
+>> Signed-off-by: Joern Engel <joern@logfs.org>
+>>
+>> James, care to pick this up?
+>
+> Acked-by: Douglas Gilbert <dgilbert@interlog.com>
+>
+> Tested O_EXCL with multiple processes and threads; passed.
+> sg driver prior to this patch had "leaky" O_EXCL logic
+> according to the same test. Block device passed.
+>
+> James, could you clean this up:
+>    drivers/scsi/sg.c:242:6: warning: unused variable ‘res’ [-Wunused-variable]
 
-ARM is working on standardizing some of these interfaces through
-things like PSCI. It should take care of _some_ of the SMC needs. I
-know you're already shipping some of these platforms though and
-firmware interfaces might be locked in to something that's not
-PSCI-compatible. :(
+Further testing suggests this patch on the sg driver is
+broken, so I'll rescind my ack.
 
->  But putting in drivers (e.g. drivers/smc) seems like the wrong thing
-> to do also because this is not a driver.
+The case it is broken for is when a device is opened
+without O_EXCL. Now if, while it is open, a second
+thread/process tries to open the same device O_EXCL
+then IMO the second open should fail with EBUSY.
 
-I really don't think we need to migrate everything to drivers/*. At
-some point the need of exorcising code out of arch/arm will reach a
-plateu, and there's some code that just simply belongs in that sub
-directory.
+My testing shows that O_EXCL opens properly deflect
+other O_EXCL opens.
 
-The sharing with arm64 is the obvious sticky point, since the base
-directories aren't the same. Luckily not too many vendors have shipped
-arm64 platforms, and nobody is shipping in volume yet, so there's a
-little time to sort out some of this.
+BTW the standard block driver (e.g. /dev/sdc) is broken
+in exactly the same way, according to my tests.
 
->  We have a couple of other smallish pieces of IP that just need a bit
-> of generic init code to keep them happy, which we were discussing
-> internally where to best land them. At present they are also headed to
-> mach-bcm.
-
-I think the 3.12 merge window will see the introduction of
-drivers/platform/arm. It must not become a dumping ground for
-board-file equivalent code though, so I am a little scared to
-introduce it. Mostly it should contain whatever glue code isn't
-possible or practical to describe with device tree (or ACPI) today,
-and in particular for established consumer devices, i.e. for actual
-product needs. Compare to what's in drivers/platform/x86 to get a feel
-for what we're talking about.
-
->  Ultimately the question is 'what is allowed to reside in mach-<misc>
-> ?' And by extension: 'is there a good home for everything else ?''
-
-Right, and see above about some of my opinions on the matter. arm64
-does complicate things quite a bit since it's no longer easy to share
-code between the architectures.
-
-Having a few concise examples of what code you're looking for a home
-for could be useful for the discussion though. Would you mind
-volunteering a few? :)
+Doug Gilbert
 
 
--Olof
