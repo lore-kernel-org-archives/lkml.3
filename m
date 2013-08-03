@@ -1,98 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755665Ab3HCBJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Aug 2013 21:09:26 -0400
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:36600 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755542Ab3HCBJY (ORCPT
+	id S1755558Ab3HCBV2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Aug 2013 21:21:28 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8104 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753739Ab3HCBV1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Aug 2013 21:09:24 -0400
-MIME-Version: 1.0
-In-Reply-To: <1375480258.32254.24.camel@deadeye.wl.decadent.org.uk>
-References: <1375480258.32254.24.camel@deadeye.wl.decadent.org.uk>
-Date: Sat, 3 Aug 2013 09:09:22 +0800
-Message-ID: <CAEwRVpPdWLoZHq6Q94zVoPwG65e=TVUR6HyUJ1ZyvL6+8oCpgw@mail.gmail.com>
-Subject: Re: Linux 3.2.50
-From: Teck Choon Giam <giamteckchoon@gmail.com>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, Jiri Slaby <jslaby@suse.cz>,
-        stable@vger.kernel.org, lwn@lwn.net
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 2 Aug 2013 21:21:27 -0400
+X-Authority-Analysis: v=2.0 cv=aqMw+FlV c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=7p5mhCWNro8A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=xRPFay5u69YA:10 a=pGLkceISAAAA:8 a=20KFwNOVAAAA:8 a=1XWaLZrsAAAA:8 a=3nbZYyFuAAAA:8 a=QyXUC8HyAAAA:8 a=6rqHouBjAAAA:8 a=UsFWTQLR4y7Wx8TtaDQA:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=MSl-tDqOz04A:10 a=jEp0ucaQiEUA:10 a=UTB_XpHje0EA:10 a=EvKJbDF4Ut8A:10 a=TAmEwCHjoHMA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-ID: <1375492884.22073.35.camel@gandalf.local.home>
+Subject: Re: [PATCH] tracing: a few fields of struct trace_iterator are
+ zeroed by mistake
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Andrew Vagin <avagin@openvz.org>
+Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, David Sharp <dhsharp@google.com>,
+        Hiraku Toyooka <hiraku.toyooka.gu@hitachi.com>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Date: Fri, 02 Aug 2013 21:21:24 -0400
+In-Reply-To: <1375463803-3085183-1-git-send-email-avagin@openvz.org>
+References: <1375463803-3085183-1-git-send-email-avagin@openvz.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ben,
+On Fri, 2013-08-02 at 21:16 +0400, Andrew Vagin wrote:
+> tracing_read_pipe zeros all fields bellow "seq". The declaration contains
+> a comment about that, but it doesn't help.
+> 
+> The first field is "snapshot", it's true when current open file is
+> snapshot. Looks obvious, that it should not be zeroed.
+> 
+> The second field is "started". It was converted from cpumask_t to
+> cpumask_var_t (v2.6.28-4983-g4462344) or by another words it was
+> converted from cpumask to pointer on cpumask.
+> 
+> Currently the reference on "started" memory is lost after the first read
+> from tracing_read_pipe and a proper object will never be freed.
+
+This should be marked for stable, namely for the started mask being
+leaked.
+
+> 
+> The "started" is never dereferenced for trace_pipe, because trace_pipe
+> can't have the TRACE_FILE_ANNOTATE options (why?).
+
+I guess it could, but it's not necessary because trace_pipe has the lost
+event counter which basically does the same thing. The annotate was to
+please people like Thomas Gleixner, that was confused by the trace file
+output where it looked like a bunch happened on CPU 1 and nothing on any
+of the other CPUs. But in reality, it was that CPU 1 didn't have many
+events and all the other CPUs overwrote their buffers more recently.
+
+The consuming nature of trace_pipe, I left out most of the annotations,
+like the header and these annotations. trace_pipe was mainly used to see
+events live, no annotation necessary, except for lost events. The lost
+events do take over for this instead. As the trace file is more of a
+"snapshot" in time (tracing stops when reading that file but not the
+trace_pipe file) it shouldn't have lost events. It should see the trace
+as complete. Although, due to the reader page nature, there can be a gap
+between the reader page and the main buffer.
 
 
-On Sat, Aug 3, 2013 at 5:50 AM, Ben Hutchings <ben@decadent.org.uk> wrote:
-> I'm announcing the release of the 3.2.50 kernel.
->
-> All users of the 3.2 kernel series should upgrade.
->
-> The updated 3.2.y git tree can be found at:
->         git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-3.2.y
-> and can be browsed at the normal kernel.org git web browser:
->         http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git
->
-> The diff from 3.2.49 is attached to this message.
->
-> Ben.
->
-> ------------
->
->  Makefile                                        |   2 +-
->  arch/powerpc/include/asm/module.h               |   5 +-
->  arch/powerpc/kernel/vmlinux.lds.S               |   3 -
->  arch/sparc/kernel/asm-offsets.c                 |   2 +
->  arch/sparc/mm/hypersparc.S                      |   8 +-
->  arch/sparc/mm/init_64.c                         |   9 +-
->  arch/sparc/mm/swift.S                           |   8 +-
->  arch/sparc/mm/tlb.c                             |   2 +-
->  arch/sparc/mm/tsunami.S                         |   6 +-
->  arch/sparc/mm/viking.S                          |  10 +-
->  drivers/acpi/acpi_memhotplug.c                  |   1 +
->  drivers/ata/ata_piix.c                          |   2 +-
->  drivers/block/xen-blkback/blkback.c             |  13 +-
->  drivers/block/xen-blkback/common.h              |   2 +
->  drivers/block/xen-blkback/xenbus.c              |   2 +
->  drivers/gpu/drm/radeon/radeon_combios.c         | 159 ++++++++----------------
->  drivers/net/dummy.c                             |   4 +
->  drivers/net/ethernet/atheros/atl1e/atl1e_main.c |  50 +++++++-
->  drivers/net/ethernet/renesas/sh_eth.c           |  17 +--
->  drivers/net/ethernet/renesas/sh_eth.h           |   2 +-
->  drivers/net/ethernet/sun/sunvnet.c              |   2 +
->  drivers/net/ifb.c                               |   8 +-
+> 
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: David Sharp <dhsharp@google.com>
+> Cc: Hiraku Toyooka <hiraku.toyooka.gu@hitachi.com>
+> Cc: Arjan van de Ven <arjan@linux.intel.com>
+> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> 
+> Signed-off-by: Andrew Vagin <avagin@openvz.org>
+> ---
+>  include/linux/ftrace_event.h |   10 ++++++----
+>  kernel/trace/trace.c         |    1 +
+>  2 files changed, 7 insertions(+), 4 deletions(-)
+> 
+> diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
+> index 4372658..44cdc11 100644
+> --- a/include/linux/ftrace_event.h
+> +++ b/include/linux/ftrace_event.h
+> @@ -78,6 +78,11 @@ struct trace_iterator {
+>  	/* trace_seq for __print_flags() and __print_symbolic() etc. */
+>  	struct trace_seq	tmp_seq;
+>  
+> +	cpumask_var_t		started;
+> +
+> +	/* it's true when current open file is snapshot */
+> +	bool			snapshot;
+> +
 
-I am getting the following error while trying to compile for 32bit in
-Scientific Linux 6.4:
+The above two should be swapped. snapshot doesn't change in trace pipe,
+but started does.
 
-drivers/net/ifb.c: In function 'ifb_init_module':
-drivers/net/ifb.c:298: error: implicit declaration of function 'cond_resched'
-make[2]: *** [drivers/net/ifb.o] Error 1
+>  	/* The below is zeroed out in pipe_read */
+>  	struct trace_seq	seq;
+>  	struct trace_entry	*ent;
+> @@ -90,10 +95,7 @@ struct trace_iterator {
+>  	loff_t			pos;
+>  	long			idx;
+>  
+> -	cpumask_var_t		started;
+> -
+> -	/* it's true when current open file is snapshot */
+> -	bool			snapshot;
+> +	/* All new field here will be zeroed out in pipe_read */
+>  };
+>  
+>  enum trace_iter_flags {
+> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+> index 0cd500b..897f553 100644
+> --- a/kernel/trace/trace.c
+> +++ b/kernel/trace/trace.c
+> @@ -4166,6 +4166,7 @@ waitagain:
+>  	memset(&iter->seq, 0,
+>  	       sizeof(struct trace_iterator) -
+>  	       offsetof(struct trace_iterator, seq));
+> +	cpumask_clear(iter->started);
 
-Missing include of linux/sched.h in drivers/net/ifb.c file?
+Hmm, on second thought should it change? it's ignored because we never
+set the TRACE_FILE_ANNOTATE flag in the iterator.
 
-I tried the following patch and it does compile successfully:
+That means that we don't even need the setall in tracing_open_pipe.
+Technically, would shouldn't even allocate it, but for now we should,
+just to be safe.
 
---- a/drivers/net/ifb.c    2013-08-03 04:15:12.000000000 +0800
-+++ b/drivers/net/ifb.c 2013-08-03 08:43:29.040492584 +0800
-@@ -34,6 +34,7 @@
- #include <linux/init.h>
- #include <linux/interrupt.h>
- #include <linux/moduleparam.h>
-+#include <linux/sched.h>
- #include <net/pkt_sched.h>
- #include <net/net_namespace.h>
+-- Steve
 
 
-FYI and comment please.
 
-Thanks.
+>  	iter->pos = -1;
+>  
+>  	trace_event_read_lock();
 
-Kindest regards,
-Giam Teck Choon
-P.S. Resend due to vger.kernel.org is rejecting due to not in plain
-text.  Sorry for this duplicate sending.
+
