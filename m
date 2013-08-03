@@ -1,74 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752102Ab3HCNry (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Aug 2013 09:47:54 -0400
-Received: from mga14.intel.com ([143.182.124.37]:24238 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751801Ab3HCNrx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Aug 2013 09:47:53 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,807,1367996400"; 
-   d="scan'208";a="277215603"
-Message-ID: <51FD0A04.4050209@intel.com>
-Date: Sat, 03 Aug 2013 16:47:48 +0300
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	id S1752178Ab3HCNtQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Aug 2013 09:49:16 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:40063 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751801Ab3HCNtP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Aug 2013 09:49:15 -0400
+Date: Sat, 3 Aug 2013 14:48:55 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Jean-Francois Moine <moinejf@free.fr>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Rob Herring <rob.herring@calxeda.com>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Subject: Re: [PATCH v3 4/4] ASoC: kirkwood: change kirkwood-i2s to
+	mvebu-pcm-audio and DT doc
+Message-ID: <20130803134855.GZ23006@n2100.arm.linux.org.uk>
+References: <20130731081858.53413597@armhf>
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: Namhyung Kim <namhyung@kernel.org>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH 1/9] perf tools: add test for reading object code
-References: <1374760890-30558-1-git-send-email-adrian.hunter@intel.com> <1374760890-30558-2-git-send-email-adrian.hunter@intel.com> <874nbd3mob.fsf@sejong.aot.lge.com> <51F82BF1.7060401@intel.com> <20130731174355.GI3614@ghostprotocols.net>
-In-Reply-To: <20130731174355.GI3614@ghostprotocols.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130731081858.53413597@armhf>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31/07/2013 8:43 p.m., Arnaldo Carvalho de Melo wrote:
-> Em Wed, Jul 31, 2013 at 12:11:13AM +0300, Adrian Hunter escreveu:
->> On 29/07/2013 9:28 a.m., Namhyung Kim wrote:
->>>> +
->>>> +static int do_test_code_reading(void)
->>>> +{
->>>> +	struct machines machines;
->>>> +	struct machine *machine;
->>>> +	struct thread *thread;
->>>> +	struct perf_record_opts opts = {
->>>> +		.mmap_pages	     = UINT_MAX,
->>>> +		.user_freq	     = UINT_MAX,
->>>> +		.user_interval	     = ULLONG_MAX,
->>>> +		.freq		     = 40000,
->>>
->>> Is it intended to use the freq of 40000 instead of 4000 (default)?
->>
->> Yes.  The "workload" is small so a higher sampling rate is preferable.
->
-> But preferably one that is less than:
->
-> [root@zoo ~]# cat /proc/sys/kernel/perf_event_max_sample_rate
-> 25000
-> [root@zoo ~]#
->
-> That is the reason why this test is failing on this Ivy Bridge notebook:
->
-> [root@zoo ~]# dmesg | grep perf_event_max_sample_rate
-> [ 4068.969761] perf samples too long (2552>  2500), lowering kernel.perf_event_max_sample_rate to 50000
-> [ 4069.842176] perf samples too long (5039>  5000), lowering kernel.perf_event_max_sample_rate to 25000
-> [root@zoo ~]#
->
-> Look at kernel/events/core.c.
->
-> So keeping it at 4k may not be a bad idea, or at least have code that reads
-> /proc/sys/kernel/perf_event_max_sample_rate if using the highest freq is
-> desired.
+On Wed, Jul 31, 2013 at 08:18:58AM +0200, Jean-Francois Moine wrote:
+> diff --git a/sound/soc/kirkwood/kirkwood-i2s.c b/sound/soc/kirkwood/kirkwood-i2s.c
+> index 9844010..4f817a2 100644
+> --- a/sound/soc/kirkwood/kirkwood-i2s.c
+> +++ b/sound/soc/kirkwood/kirkwood-i2s.c
+> @@ -25,7 +25,7 @@
+>  
+>  #include "kirkwood.h"
+>  
+> -#define DRV_NAME	"kirkwood-i2s"
+> +#define DRV_NAME	"mvebu-pcm-audio"
 
-I dropped it to 4k in V3.
+This breaks non-DT users of this driver.  The device in arch/arm/mach-kirkwood
+is left as "kirkwood-i2s" but the platform device is now called something
+different.
 
+>  static struct of_device_id kirkwood_i2s_of_match[] = {
+> -	{ .compatible = "marvell,kirkwood-i2s" },
+> +	{ .compatible = "marvell,mvebu-pcm-audio" },
+
+You've only just introduced "marvell,kirkwood-i2s" in the previous patch.
+Why introduce something and then immediately change its name?  This makes
+no sense what so ever.
