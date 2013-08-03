@@ -1,90 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752915Ab3HCTXT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Aug 2013 15:23:19 -0400
-Received: from mga09.intel.com ([134.134.136.24]:3900 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752792Ab3HCTXS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Aug 2013 15:23:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,808,1367996400"; 
-   d="scan'208";a="381404088"
-Message-ID: <51FD5899.6060100@intel.com>
-Date: Sat, 03 Aug 2013 22:23:05 +0300
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	id S1752914Ab3HCT1Y (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Aug 2013 15:27:24 -0400
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:52336 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752800Ab3HCT1W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Aug 2013 15:27:22 -0400
 MIME-Version: 1.0
-To: Jiri Olsa <jolsa@redhat.com>
-CC: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH] perf tools: Renaming 'time' variable in perf_time_to_tsc
- due to name shadowing error
-References: <1375175954-798-1-git-send-email-namhyung@kernel.org> <20130801120251.GB1032@krava.brq.redhat.com> <51FB2B90.6090602@gmail.com> <20130802133346.GD1711@krava.brq.redhat.com>
-In-Reply-To: <20130802133346.GD1711@krava.brq.redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130802192734.GA9565@redhat.com>
+References: <20130802192713.GA9543@redhat.com>
+	<20130802192734.GA9565@redhat.com>
+Date: Sat, 3 Aug 2013 12:27:22 -0700
+X-Google-Sender-Auth: i4yJfb5yCUoouXhGmk0m4u-l57E
+Message-ID: <CAGXu5jKY1S7wxWCv6ZULU=rvp1fQ9KemcFZxY7ccoX06jdvP3w@mail.gmail.com>
+Subject: Re: [PATCH 1/5] exec: move allow_write_access/fput to exec_binprm()
+From: Kees Cook <keescook@chromium.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Zach Levis <zml@linux.vnet.ibm.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Evgeniy Polyakov <zbr@ioremap.net>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2/08/2013 4:33 p.m., Jiri Olsa wrote:
-> The perf compilation fails with following error:
->        ...
->        CC arch/x86/util/tsc.o
->    arch/x86/util/tsc.c: In function ‘perf_time_to_tsc’:
->    arch/x86/util/tsc.c:13:6: error: declaration of ‘time’ shadows a global declaration [-Werror=shadow]
->    cc1: all warnings being treated as errors
+On Fri, Aug 2, 2013 at 12:27 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+> When search_binary_handler() succeeds it does allow_write_access()
+> and fput(), then it clears bprm->file to ensure the caller will not
+> do the same.
 >
-> Renaming the 'time' variable to prevent this.
-
-Did you see David did the same patch.
-
-Although David noted the gcc version.  It doesn't happen for gcc 4.7.3. 
-  The commit message should probably reflect that it depends on the gcc 
-version.
-
-Otherwise:
-
-Acked-by: Adrian Hunter <adrian.hunter@intel.com>
-
-
+> We can simply move this code to exec_binprm() which is called only
+> once. In fact we could move this to free_bprm() and remove the same
+> code in do_execve_common's error path.
 >
-> Signed-off-by: Jiri Olsa<jolsa@redhat.com>
-> Cc: Arnaldo Carvalho de Melo<acme@redhat.com>
-> Cc: Corey Ashford<cjashfor@linux.vnet.ibm.com>
-> Cc: Ingo Molnar<mingo@elte.hu>
-> Cc: Paul Mackerras<paulus@samba.org>
-> Cc: Peter Zijlstra<a.p.zijlstra@chello.nl>
-> Cc: Arnaldo Carvalho de Melo<acme@redhat.com>
-> Cc: David Ahern<dsahern@gmail.com>
-> Cc: Adrian Hunter<adrian.hunter@intel.com>
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 > ---
->   tools/perf/arch/x86/util/tsc.c |    8 ++++----
->   1 files changed, 4 insertions(+), 4 deletions(-)
+>  fs/exec.c |    9 +++++----
+>  1 files changed, 5 insertions(+), 4 deletions(-)
 >
-> diff --git a/tools/perf/arch/x86/util/tsc.c b/tools/perf/arch/x86/util/tsc.c
-> index f111744..9570c2b 100644
-> --- a/tools/perf/arch/x86/util/tsc.c
-> +++ b/tools/perf/arch/x86/util/tsc.c
-> @@ -10,11 +10,11 @@
->
->   u64 perf_time_to_tsc(u64 ns, struct perf_tsc_conversion *tc)
->   {
-> -	u64 time, quot, rem;
-> +	u64 t, quot, rem;
->
-> -	time = ns - tc->time_zero;
-> -	quot = time / tc->time_mult;
-> -	rem  = time % tc->time_mult;
-> +	t = ns - tc->time_zero;
-> +	quot = t / tc->time_mult;
-> +	rem  = t % tc->time_mult;
->   	return (quot<<  tc->time_shift) +
->   	       (rem<<  tc->time_shift) / tc->time_mult;
->   }
+> diff --git a/fs/exec.c b/fs/exec.c
+> index ad7d624..ef70320 100644
+> --- a/fs/exec.c
+> +++ b/fs/exec.c
+> @@ -1400,10 +1400,6 @@ int search_binary_handler(struct linux_binprm *bprm)
+>                         bprm->recursion_depth--;
+>                         if (retval >= 0) {
+>                                 put_binfmt(fmt);
+> -                               allow_write_access(bprm->file);
+> -                               if (bprm->file)
+> -                                       fput(bprm->file);
+> -                               bprm->file = NULL;
+>                                 return retval;
+>                         }
+>                         read_lock(&binfmt_lock);
+> @@ -1455,6 +1451,11 @@ static int exec_binprm(struct linux_binprm *bprm)
+>                 ptrace_event(PTRACE_EVENT_EXEC, old_vpid);
+>                 current->did_exec = 1;
+>                 proc_exec_connector(current);
+> +
+> +               if (bprm->file) {
+> +                       allow_write_access(bprm->file);
+> +                       fput(bprm->file);
+> +               }
 
+Why not keep the bprm->file = NULL assignment? Seems reasonable to
+keep that just to be avoid use-after-free accidents.
+
+-Kees
+
+>         }
+>
+>         return ret;
+> --
+> 1.5.5.1
+>
+
+
+
+-- 
+Kees Cook
+Chrome OS Security
