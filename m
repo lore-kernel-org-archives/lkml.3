@@ -1,43 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753040Ab3HDSJY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Aug 2013 14:09:24 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:24613 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752431Ab3HDSJW (ORCPT
+	id S1753118Ab3HDSRj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Aug 2013 14:17:39 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:44939 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751825Ab3HDSRh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Aug 2013 14:09:22 -0400
-Date: Sun, 4 Aug 2013 21:08:11 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: kumargauravgupta3@gmail.com
-Cc: arnaud.patard@rtp-net.org, gregkh@linuxfoundation.org,
-        aaro.koskinen@iki.fi, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH] Staging:xgifb:Fixed a warning of Space before semicolon
-Message-ID: <20130804180810.GH5051@mwanda>
-References: <1375639102-6337-1-git-send-email-kumargauravgupta3@gmail.com>
+	Sun, 4 Aug 2013 14:17:37 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1375639102-6337-1-git-send-email-kumargauravgupta3@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+In-Reply-To: <1375638206-5916-1-git-send-email-rupesh.gujare@atmel.com>
+References: <1375638206-5916-1-git-send-email-rupesh.gujare@atmel.com>
+Date: Sun, 4 Aug 2013 21:17:37 +0300
+Message-ID: <CAJL_dMvs3-r+cKxNzG=i=TczwXwbcie0B+UbU7ykQ2K6aDu3+Q@mail.gmail.com>
+Subject: Re: [PATCH] staging: ozwpan: Fix build warning.
+From: Anca Emanuel <anca.emanuel@gmail.com>
+To: Rupesh Gujare <rupesh.gujare@atmel.com>
+Cc: devel@linuxdriverproject.org, Wu Fengguang <fengguang.wu@intel.com>,
+        linux-usb@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 04, 2013 at 11:28:21PM +0530, kumargauravgupta3@gmail.com wrote:
-> From: Kumar Gaurav <kumar@AnandLinux.(none)>
+Why do not use div_u64() ?
 
-Gar...  Sorry, when you sent this to kj earlier, I should have
-pointed out that there is no Signed-off-by line and the From line
-is not correct or needed.
+[quote]unsigned 64bit divide with 32bit divisor
 
-Signed-off-by is intended like a signing a legal document, it should
-match the email you are using to send the patch.
+This is the most common 64bit divide and should be used if possible,
+as many 32bit archs can optimize this variant better than a full 64bit
+divide.
+[/quote]
 
-My bad.  Can you resend.
-
-regards,
-dan carpenter
-
+> -               ep->credit += timespec_to_ns(&delta) / NSEC_PER_MSEC;
+> +               ep->credit += div64_u64(timespec_to_ns(&delta), NSEC_PER_MSEC);
