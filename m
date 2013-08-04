@@ -1,138 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752722Ab3HDNsk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Aug 2013 09:48:40 -0400
-Received: from smtp-out-169.synserver.de ([212.40.185.169]:1318 "EHLO
-	smtp-out-165.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751680Ab3HDNsj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Aug 2013 09:48:39 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 7001
-Message-ID: <51FE5B0C.4070206@metafoo.de>
-Date: Sun, 04 Aug 2013 15:45:48 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130704 Icedove/17.0.7
+	id S1752753Ab3HDNxR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Aug 2013 09:53:17 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:55101 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751680Ab3HDNxP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Aug 2013 09:53:15 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: Re: [PATCH] ACPI: Do not fail acpi_bind_one() if device is already bound correctly
+Date: Sun, 04 Aug 2013 16:03:27 +0200
+Message-ID: <1981183.omDzKl0aqK@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1375576322.10300.146.camel@misato.fc.hp.com>
+References: <1888947.F5IBMfDKlY@vostro.rjw.lan> <3596381.TNBAQz9C67@vostro.rjw.lan> <1375576322.10300.146.camel@misato.fc.hp.com>
 MIME-Version: 1.0
-To: Oleksandr Kravchenko <x0199363@ti.com>
-CC: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, grant.likely@linaro.org,
-        rob.herring@calxeda.com, rob@landley.net, jic23@cam.ac.uk,
-        pmeerw@pmeerw.net, holler@ahsoftware.de, srinivas.pandruvada@intel.com,
-        devicetree-discuss@lists.ozlabs.org,
-        Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
-Subject: Re: [PATCH 2/2] iio: add Bosch BMA180 acceleration sensor driver
-References: <1375109893-7917-1-git-send-email-x0199363@ti.com> <1375109893-7917-2-git-send-email-x0199363@ti.com>
-In-Reply-To: <1375109893-7917-2-git-send-email-x0199363@ti.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/29/2013 04:58 PM, Oleksandr Kravchenko wrote:
-> From: Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
+On Saturday, August 03, 2013 06:32:02 PM Toshi Kani wrote:
+> On Sat, 2013-08-03 at 02:47 +0200, Rafael J. Wysocki wrote:
+> > On Friday, August 02, 2013 04:38:38 PM Toshi Kani wrote:
+> > > On Fri, 2013-08-02 at 00:33 +0200, Rafael J. Wysocki wrote:
+> > > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > > > 
+> > > > Modify acpi_bind_one() so that it doesn't fail if the device
+> > > > represented by its first argument has already been bound to the
+> > > > given ACPI handle (second argument), because that is not a good
+> > > > enough reason for returning an error code.
+> > > 
+> > > While it seems reasonable to allow such case, I do not think we will hit
+> > > this case under the normal scenarios.  So, I do not think we need to
+> > > make this change now unless it actually solves Yasuaki's issue (which I
+> > > am guessing not).
+> > 
+> > In theory it should be possible to call acpi_bind_one() twice in a row
+> > for the same dev and the same handle without failure, that simply is
+> > logical.  The patch may not fix any problems visible now, but returning an
+> > error code in such a case is simply incorrect.
 > 
-> This patch adds IIO driver for Bosch BMA180 triaxial
-> acceleration sensor.
-> http://omapworld.com/BMA180_111_1002839.pdf
-> 
-> Signed-off-by: Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
-> ---
->  .../devicetree/bindings/iio/accel/bma180.txt       |   53 +++
->  drivers/iio/accel/Kconfig                          |   10 +
->  drivers/iio/accel/Makefile                         |    2 +
->  drivers/iio/accel/bma180.c                         |  462 ++++++++++++++++++++
->  4 files changed, 527 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/iio/accel/bma180.txt
->  create mode 100644 drivers/iio/accel/bma180.c
-> 
-> diff --git a/Documentation/devicetree/bindings/iio/accel/bma180.txt b/Documentation/devicetree/bindings/iio/accel/bma180.txt
-> new file mode 100644
-> index 0000000..7c13c84
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/iio/accel/bma180.txt
-> @@ -0,0 +1,53 @@
-> +* Bosch BMA180 triaxial acceleration sensor
-> +
-> +http://omapworld.com/BMA180_111_1002839.pdf
-> +
-> +Required properties:
-> +
-> +  - compatible : should be "bosch,bma180"
-> +  - reg : the I2C address of the sensor
-> +
-> +Optional properties:
-> +
-> +  - interrupt-parent : should be the phandle for the interrupt controller
-> +
-> +  - interrupts : interrupt mapping for GPIO IRQ, it shuld by configured with
-> +		flags IRQ_TYPE_LEVEL_HIGH | IRQ_TYPE_EDGE_RISING
-> +
-> +  - range : select the full scale acceleration range
-> +		0 : -1g..+1g
-> +		1 : -1.5g..+1.5g
-> +		2 : -2g..+2g
-> +		3 : -3g..+3g
-> +		4 : -4g..+4g
-> +		5 : -8g..+8g
-> +		6 : -16g..+16g
-> +
-> +  - bw : select bandwidth bandwidth
-> +		0 : 10Hz
-> +		1 : 20Hz
-> +		2 : 40Hz
-> +		3 : 75Hz
-> +		4 : 150Hz
-> +		5 : 300Hz
-> +		Don't use bandwidth frequency more than 300Hz couse it
-> +		influences the frequency of generating new data interrupts
-> +		and i2c reading phase can be longer than pheriod of interrupt
-> +		generation.
-> +
-> +  - mode_config : 0 - select low noise mode, 1 - select low power mode
-> +
-> +  - fuzz : specifies fuzz value that is used to filter noise from the event stream
-> +
+> We changed acpi_bus_device_attach() to not call the handler or driver
+> again if it is already bound.  So, I was under impression that we
+> prevent from attaching a same device twice.  But I may be missing
+> something...
 
-All the four properties above are vendor specific, so they need a vendor
-prefix. Also no underscores in property names and no abbreviations. Also I
-wonder if some of them should rather be runtime configurable, like range and
-bandwidth,
+acpi_bind_one() may be called in code paths that don't start from
+acpi_bus_device_attach(), like acpi_platform_notify(), where the result
+depends on how .find_device() is implemented by the the given bus type,
+for example.
 
-> +Example:
-> +
-> +bma180@40 {
-> +	compatible = "bosch,bma180";
-> +	reg = <0x40>;
-> +	interrupt-parent = <&gpio6>;
-> +	interrupts = <18 (IRQ_TYPE_LEVEL_HIGH | IRQ_TYPE_EDGE_RISING)>;
-> +	range = <2>;
-> +	bw = <0>;
-> +	mode_config = <1>;
-> +	fuzz = <555>;
-> +};
-[...]
-> +static int bma180_read_raw(struct iio_dev *indio_dev,
-> +		struct iio_chan_spec const *chan, int *val, int *val2,
-> +		long mask)
-> +{
-> +	struct bma180_data *data = iio_priv(indio_dev);
-> +	long tmp = ((s16)data->acc_reg[chan->channel] >> 2)
-> +		* bma180_range_table[data->range].ratio;
+Thanks,
+Rafael
 
-> +
-> +	if (data->acc_reg[chan->channel] < 0)
-> +		return data->acc_reg[chan->channel];
-> +
-> +	*val = tmp / 1000000;
-> +	*val2 = (tmp % 1000000);
-> +
 
-This doesn't look as if the device needs a special conversion formula. Just
-expose the raw value and ratio as the scale.
-
-> +	return IIO_VAL_INT_PLUS_MICRO;
-> +}
-[...]
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
