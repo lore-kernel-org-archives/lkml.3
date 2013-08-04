@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753884Ab3HDQIK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Aug 2013 12:08:10 -0400
-Received: from mail-qe0-f45.google.com ([209.85.128.45]:41732 "EHLO
-	mail-qe0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753695Ab3HDQHm (ORCPT
+	id S1753917Ab3HDQIl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Aug 2013 12:08:41 -0400
+Received: from mail-qe0-f48.google.com ([209.85.128.48]:44603 "EHLO
+	mail-qe0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753626Ab3HDQHh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Aug 2013 12:07:42 -0400
+	Sun, 4 Aug 2013 12:07:37 -0400
 From: Tejun Heo <tj@kernel.org>
 To: lizefan@huawei.com, hannes@cmpxchg.org, mhocko@suse.cz,
         bsingharora@gmail.com, kamezawa.hiroyu@jp.fujitsu.com
 Cc: cgroups@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         Tejun Heo <tj@kernel.org>
-Subject: [PATCH 5/5] memcg: rename cgroup_event to mem_cgroup_event
-Date: Sun,  4 Aug 2013 12:07:26 -0400
-Message-Id: <1375632446-2581-6-git-send-email-tj@kernel.org>
+Subject: [PATCH 2/5] cgroup: export __cgroup_from_dentry() and __cgroup_dput()
+Date: Sun,  4 Aug 2013 12:07:23 -0400
+Message-Id: <1375632446-2581-3-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1375632446-2581-1-git-send-email-tj@kernel.org>
 References: <1375632446-2581-1-git-send-email-tj@kernel.org>
@@ -22,187 +22,126 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cgroup_event is only available in memcg now.  Let's brand it that way.
-While at it, add a comment encouraging deprecation of the feature and
-remove the respective section from cgroup documentation.
+cgroup_event will no longer be supported as cgroup generic mechanism
+and be moved to memcg.  To enable the relocation, implement and export
+__cgroup_from_dentry() which combines cgroup file dentry -> croup
+mapping and cft discovery, and prefix cgroup_dput() with __ and export
+it.
 
-This patch is cosmetic.
+These functions exist and are exported only to enable moving
+cgroup_event implementation to memcg and shouldn't grow any new users
+and thus the __ prefix.
+
+This patch is pure reorganization and doesn't introduce any functional
+difference.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- Documentation/cgroups/cgroups.txt | 19 -------------
- mm/memcontrol.c                   | 57 +++++++++++++++++++++++++--------------
- 2 files changed, 37 insertions(+), 39 deletions(-)
+ include/linux/cgroup.h |  4 ++++
+ kernel/cgroup.c        | 31 +++++++++++++++++--------------
+ 2 files changed, 21 insertions(+), 14 deletions(-)
 
-diff --git a/Documentation/cgroups/cgroups.txt b/Documentation/cgroups/cgroups.txt
-index 638bf17..ca5aee9 100644
---- a/Documentation/cgroups/cgroups.txt
-+++ b/Documentation/cgroups/cgroups.txt
-@@ -472,25 +472,6 @@ you give a subsystem a name.
- The name of the subsystem appears as part of the hierarchy description
- in /proc/mounts and /proc/<pid>/cgroups.
+diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+index 30d6ec4..2ac1021 100644
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -923,6 +923,10 @@ bool css_is_ancestor(struct cgroup_subsys_state *cg,
+ unsigned short css_id(struct cgroup_subsys_state *css);
+ struct cgroup_subsys_state *cgroup_css_from_dir(struct file *f, int id);
  
--2.4 Notification API
----------------------
--
--There is mechanism which allows to get notifications about changing
--status of a cgroup.
--
--To register a new notification handler you need to:
-- - create a file descriptor for event notification using eventfd(2);
-- - open a control file to be monitored (e.g. memory.usage_in_bytes);
-- - write "<event_fd> <control_fd> <args>" to cgroup.event_control.
--   Interpretation of args is defined by control file implementation;
--
--eventfd will be woken up by control file implementation or when the
--cgroup is removed.
--
--To unregister a notification handler just close eventfd.
--
--NOTE: Support of notifications should be implemented for the control
--file. See documentation for the subsystem.
- 
- 3. Kernel API
- =============
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index e988bf1..240ae72 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -242,7 +242,7 @@ struct mem_cgroup_eventfd_list {
- /*
-  * cgroup_event represents events which userspace want to receive.
-  */
--struct cgroup_event {
-+struct mem_cgroup_event {
- 	/*
- 	 * css which the event belongs to.
- 	 */
-@@ -5977,14 +5977,27 @@ static void kmem_cgroup_css_offline(struct mem_cgroup *memcg)
- #endif
- 
- /*
-+ * DO NOT USE IN NEW FILES.
-+ *
-+ * "cgroup.event_control" implementation.
-+ *
-+ * This is way over-engineered.  It tries to support fully configureable
-+ * events for each user.  Such level of flexibility is completely
-+ * unnecessary especially in the light of the planned unified hierarchy.
-+ *
-+ * Please deprecate this and replace with something simpler if at all
-+ * possible.
-+ */
++/* do not add new users of the following two functions */
++struct cgroup *__cgroup_from_dentry(struct dentry *dentry, struct cftype **cftp);
++void __cgroup_dput(struct cgroup *cgrp);
 +
-+/*
-  * Unregister event and free resources.
-  *
-  * Gets called from workqueue.
-  */
--static void cgroup_event_remove(struct work_struct *work)
-+static void memcg_event_remove(struct work_struct *work)
- {
--	struct cgroup_event *event = container_of(work, struct cgroup_event,
--			remove);
-+	struct mem_cgroup_event *event = container_of(work,
-+					struct mem_cgroup_event, remove);
- 	struct cgroup_subsys_state *css = event->css;
- 	struct cgroup *cgrp = css->cgroup;
+ #else /* !CONFIG_CGROUPS */
  
-@@ -6005,11 +6018,11 @@ static void cgroup_event_remove(struct work_struct *work)
-  *
-  * Called with wqh->lock held and interrupts disabled.
-  */
--static int cgroup_event_wake(wait_queue_t *wait, unsigned mode,
--		int sync, void *key)
-+static int memcg_event_wake(wait_queue_t *wait, unsigned mode,
-+			    int sync, void *key)
- {
--	struct cgroup_event *event = container_of(wait,
--			struct cgroup_event, wait);
-+	struct mem_cgroup_event *event =
-+		container_of(wait, struct mem_cgroup_event, wait);
- 	struct mem_cgroup *memcg = mem_cgroup_from_css(event->css);
- 	unsigned long flags = (unsigned long)key;
- 
-@@ -6038,28 +6051,30 @@ static int cgroup_event_wake(wait_queue_t *wait, unsigned mode,
- 	return 0;
+ static inline int cgroup_init_early(void) { return 0; }
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 1b87e2b..2583b7b 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -2661,15 +2661,18 @@ static struct dentry *cgroup_lookup(struct inode *dir, struct dentry *dentry, un
+ 	return NULL;
  }
  
--static void cgroup_event_ptable_queue_proc(struct file *file,
-+static void memcg_event_ptable_queue_proc(struct file *file,
- 		wait_queue_head_t *wqh, poll_table *pt)
+-/*
+- * Check if a file is a control file
+- */
+-static inline struct cftype *__file_cft(struct file *file)
++/* do not add new users */
++struct cgroup *__cgroup_from_dentry(struct dentry *dentry, struct cftype **cftp)
  {
--	struct cgroup_event *event = container_of(pt,
--			struct cgroup_event, pt);
-+	struct mem_cgroup_event *event =
-+		container_of(pt, struct mem_cgroup_event, pt);
+-	if (file_inode(file)->i_fop != &cgroup_file_operations)
+-		return ERR_PTR(-EINVAL);
+-	return __d_cft(file->f_dentry);
++	if (!dentry->d_inode ||
++	    dentry->d_inode->i_op != &cgroup_file_inode_operations)
++		return NULL;
++
++	if (cftp)
++		*cftp = __d_cft(dentry);
++	return __d_cgrp(dentry->d_parent);
+ }
++EXPORT_SYMBOL_GPL(__cgroup_from_dentry);
  
- 	event->wqh = wqh;
- 	add_wait_queue(wqh, &event->wait);
+ static int cgroup_create_file(struct dentry *dentry, umode_t mode,
+ 				struct super_block *sb)
+@@ -3953,7 +3956,7 @@ static int cgroup_write_notify_on_release(struct cgroup_subsys_state *css,
+  *
+  * That's why we hold a reference before dput() and drop it right after.
+  */
+-static void cgroup_dput(struct cgroup *cgrp)
++void __cgroup_dput(struct cgroup *cgrp)
+ {
+ 	struct super_block *sb = cgrp->root->sb;
+ 
+@@ -3961,6 +3964,7 @@ static void cgroup_dput(struct cgroup *cgrp)
+ 	dput(cgrp->dentry);
+ 	deactivate_super(sb);
+ }
++EXPORT_SYMBOL_GPL(__cgroup_dput);
+ 
+ /*
+  * Unregister event and free resources.
+@@ -3983,7 +3987,7 @@ static void cgroup_event_remove(struct work_struct *work)
+ 
+ 	eventfd_ctx_put(event->eventfd);
+ 	kfree(event);
+-	cgroup_dput(cgrp);
++	__cgroup_dput(cgrp);
  }
  
  /*
-+ * DO NOT USE IN NEW FILES.
-+ *
-  * Parse input and register new memcg event handler.
-  *
-  * Input must be in format '<event_fd> <control_fd> <args>'.
-  * Interpretation of args is defined by control file implementation.
-  */
--static int cgroup_write_event_control(struct cgroup_subsys_state *css,
--				      struct cftype *cft, const char *buffer)
-+static int memcg_write_event_control(struct cgroup_subsys_state *css,
-+				     struct cftype *cft, const char *buffer)
- {
- 	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
- 	struct cgroup *cgrp = css->cgroup;
--	struct cgroup_event *event;
-+	struct mem_cgroup_event *event;
- 	struct cgroup *cgrp_cfile;
- 	unsigned int efd, cfd;
- 	struct file *efile;
-@@ -6082,9 +6097,9 @@ static int cgroup_write_event_control(struct cgroup_subsys_state *css,
- 		return -ENOMEM;
- 	event->css = css;
- 	INIT_LIST_HEAD(&event->list);
--	init_poll_funcptr(&event->pt, cgroup_event_ptable_queue_proc);
--	init_waitqueue_func_entry(&event->wait, cgroup_event_wake);
--	INIT_WORK(&event->remove, cgroup_event_remove);
-+	init_poll_funcptr(&event->pt, memcg_event_ptable_queue_proc);
-+	init_waitqueue_func_entry(&event->wait, memcg_event_wake);
-+	INIT_WORK(&event->remove, memcg_event_remove);
+@@ -4095,9 +4099,9 @@ static int cgroup_write_event_control(struct cgroup_subsys_state *css,
+ 	if (ret < 0)
+ 		goto out_put_cfile;
  
- 	efile = eventfd_fget(efd);
- 	if (IS_ERR(efile)) {
-@@ -6130,6 +6145,8 @@ static int cgroup_write_event_control(struct cgroup_subsys_state *css,
- 	 * to be done via struct cftype but cgroup core no longer knows
- 	 * about these events.  The following is crude but the whole thing
- 	 * is for compatibility anyway.
-+	 *
-+	 * DO NOT ADD NEW FILES.
+-	event->cft = __file_cft(cfile);
+-	if (IS_ERR(event->cft)) {
+-		ret = PTR_ERR(event->cft);
++	cgrp_cfile = __cgroup_from_dentry(cfile->f_dentry, &event->cft);
++	if (!cgrp_cfile) {
++		ret = -EINVAL;
+ 		goto out_put_cfile;
+ 	}
+ 
+@@ -4105,7 +4109,6 @@ static int cgroup_write_event_control(struct cgroup_subsys_state *css,
+ 	 * The file to be monitored must be in the same cgroup as
+ 	 * cgroup.event_control is.
  	 */
- 	if (!strcmp(event->cft->name, "usage_in_bytes")) {
- 		event->register_event = mem_cgroup_usage_register_event;
-@@ -6227,8 +6244,8 @@ static struct cftype mem_cgroup_files[] = {
- 		.read_u64 = mem_cgroup_hierarchy_read,
- 	},
- 	{
--		.name = "cgroup.event_control",
--		.write_string = cgroup_write_event_control,
-+		.name = "cgroup.event_control",		/* XXX: for compat */
-+		.write_string = memcg_write_event_control,
- 		.flags = CFTYPE_NO_PREFIX,
- 		.mode = S_IWUGO,
- 	},
-@@ -6561,7 +6578,7 @@ static void mem_cgroup_invalidate_reclaim_iterators(struct mem_cgroup *memcg)
- static void mem_cgroup_css_offline(struct cgroup_subsys_state *css)
- {
- 	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
--	struct cgroup_event *event, *tmp;
-+	struct mem_cgroup_event *event, *tmp;
+-	cgrp_cfile = __d_cgrp(cfile->f_dentry->d_parent);
+ 	if (cgrp_cfile != cgrp) {
+ 		ret = -EINVAL;
+ 		goto out_put_cfile;
+@@ -4272,7 +4275,7 @@ static void css_dput_fn(struct work_struct *work)
+ 	struct cgroup_subsys_state *css =
+ 		container_of(work, struct cgroup_subsys_state, dput_work);
  
- 	/*
- 	 * Unregister events and notify userspace.
+-	cgroup_dput(css->cgroup);
++	__cgroup_dput(css->cgroup);
+ }
+ 
+ static void css_release(struct percpu_ref *ref)
 -- 
 1.8.3.1
 
