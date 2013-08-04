@@ -1,50 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753485Ab3HDJry (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Aug 2013 05:47:54 -0400
-Received: from up.free-electrons.com ([94.23.35.102]:36962 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752156Ab3HDJrw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Aug 2013 05:47:52 -0400
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Emilio Lopez <emilio@elopez.com.ar>, kevin.z.m.zh@gmail.com,
-        sunny@allwinnertech.com, shuge@allwinnertech.com,
-        linux-kernel@vger.kernel.org, linux-sunxi@googlegroups.com,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCHv3 01/10] irqchip: GIC: Add Cortex-A7 compatible string
-Date: Sun,  4 Aug 2013 11:47:28 +0200
-Message-Id: <1375609657-15434-2-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.4
-In-Reply-To: <1375609657-15434-1-git-send-email-maxime.ripard@free-electrons.com>
-References: <1375609657-15434-1-git-send-email-maxime.ripard@free-electrons.com>
+	id S1753362Ab3HDJ4B (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Aug 2013 05:56:01 -0400
+Received: from mga09.intel.com ([134.134.136.24]:28923 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751040Ab3HDJ4A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Aug 2013 05:56:00 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,811,1367996400"; 
+   d="scan'208";a="381610164"
+From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+Subject: [PATCH net] busy_poll: cleanup do-nothing placeholders
+To: David Miller <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Eliezer Tamir <eliezer.tamir@linux.intel.com>,
+        Eliezer Tamir <eliezer@tamir.org.il>
+Date: Sun, 04 Aug 2013 12:55:48 +0300
+Message-ID: <20130804095548.30006.8133.stgit@ladj378.jer.intel.com>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The GIC can also be found on Cortex-A7 based SoCs. Register a new
-compatible string for those cases.
+When renaming ll_poll to busy poll, I introduced a typo
+in the name of the do-nothing placeholder for sk_busy_loop
+and called it sk_busy_poll.
+This broke compile when busy poll was not configured.
+Cong Wang submitted a patch to fixed that.
+This patch removes the now redundant, misspelled placeholder.
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Eliezer Tamir <eliezer.tamir@linux.intel.com>
 ---
- drivers/irqchip/irq-gic.c | 1 +
- 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-index 19ceaa6..5b5fe23 100644
---- a/drivers/irqchip/irq-gic.c
-+++ b/drivers/irqchip/irq-gic.c
-@@ -854,6 +854,7 @@ int __init gic_of_init(struct device_node *node, struct device_node *parent)
+ include/net/busy_poll.h |    5 -----
+ 1 files changed, 0 insertions(+), 5 deletions(-)
+
+diff --git a/include/net/busy_poll.h b/include/net/busy_poll.h
+index f18b919..8e2dfc1 100644
+--- a/include/net/busy_poll.h
++++ b/include/net/busy_poll.h
+@@ -162,11 +162,6 @@ static inline bool sk_can_busy_loop(struct sock *sk)
+ 	return false;
  }
- IRQCHIP_DECLARE(cortex_a15_gic, "arm,cortex-a15-gic", gic_of_init);
- IRQCHIP_DECLARE(cortex_a9_gic, "arm,cortex-a9-gic", gic_of_init);
-+IRQCHIP_DECLARE(cortex_a7_gic, "arm,cortex-a7-gic", gic_of_init);
- IRQCHIP_DECLARE(msm_8660_qgic, "qcom,msm-8660-qgic", gic_of_init);
- IRQCHIP_DECLARE(msm_qgic2, "qcom,msm-qgic2", gic_of_init);
  
--- 
-1.8.3.4
+-static inline bool sk_busy_poll(struct sock *sk, int nonblock)
+-{
+-	return false;
+-}
+-
+ static inline void skb_mark_napi_id(struct sk_buff *skb,
+ 				    struct napi_struct *napi)
+ {
 
