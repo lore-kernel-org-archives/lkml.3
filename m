@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754233Ab3HDCQK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Aug 2013 22:16:10 -0400
-Received: from mga01.intel.com ([192.55.52.88]:33183 "EHLO mga01.intel.com"
+	id S1754196Ab3HDCQI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Aug 2013 22:16:08 -0400
+Received: from mga01.intel.com ([192.55.52.88]:20525 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753551Ab3HDCOg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753557Ab3HDCOg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 3 Aug 2013 22:14:36 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.89,810,1367996400"; 
-   d="scan'208";a="380857128"
+   d="scan'208";a="380857130"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Andrea Arcangeli <aarcange@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>
@@ -22,9 +22,9 @@ Cc: Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
         Ning Qu <quning@google.com>, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCH 22/23] thp, mm: split huge page on mmap file page
-Date: Sun,  4 Aug 2013 05:17:24 +0300
-Message-Id: <1375582645-29274-23-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCH 21/23] thp: wait_split_huge_page(): serialize over i_mmap_mutex too
+Date: Sun,  4 Aug 2013 05:17:23 +0300
+Message-Id: <1375582645-29274-22-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1375582645-29274-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1375582645-29274-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -34,30 +34,99 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-We are not ready to mmap file-backed tranparent huge pages. Let's split
-them on fault attempt.
+We're going to have huge pages backed by files, so we need to modify
+wait_split_huge_page() to support that.
 
-Later we'll implement mmap() properly and this code path be used for
-fallback cases.
+We have two options for:
+ - check whether the page anon or not and serialize only over required
+   lock;
+ - always serialize over both locks;
+
+Current implementation, in fact, guarantees that *all* pages on the vma
+is not splitting, not only the pages pmd is pointing on.
+
+For now I prefer the second option since it's the safest: we provide the
+same level of guarantees.
 
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- mm/filemap.c | 2 ++
- 1 file changed, 2 insertions(+)
+ include/linux/huge_mm.h | 15 ++++++++++++---
+ mm/huge_memory.c        |  4 ++--
+ mm/memory.c             |  4 ++--
+ 3 files changed, 16 insertions(+), 7 deletions(-)
 
-diff --git a/mm/filemap.c b/mm/filemap.c
-index ed65af5..f7857ef 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -1743,6 +1743,8 @@ retry_find:
- 			goto no_cached_page;
- 	}
+diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
+index 9a0a114..186f4f2 100644
+--- a/include/linux/huge_mm.h
++++ b/include/linux/huge_mm.h
+@@ -111,11 +111,20 @@ extern void __split_huge_page_pmd(struct vm_area_struct *vma,
+ 			__split_huge_page_pmd(__vma, __address,		\
+ 					____pmd);			\
+ 	}  while (0)
+-#define wait_split_huge_page(__anon_vma, __pmd)				\
++#define wait_split_huge_page(__vma, __pmd)				\
+ 	do {								\
+ 		pmd_t *____pmd = (__pmd);				\
+-		anon_vma_lock_write(__anon_vma);			\
+-		anon_vma_unlock_write(__anon_vma);			\
++		struct address_space *__mapping = (__vma)->vm_file ?	\
++				(__vma)->vm_file->f_mapping : NULL;	\
++		struct anon_vma *__anon_vma = (__vma)->anon_vma;	\
++		if (__mapping)						\
++			mutex_lock(&__mapping->i_mmap_mutex);		\
++		if (__anon_vma) {					\
++			anon_vma_lock_write(__anon_vma);		\
++			anon_vma_unlock_write(__anon_vma);		\
++		}							\
++		if (__mapping)						\
++			mutex_unlock(&__mapping->i_mmap_mutex);		\
+ 		BUG_ON(pmd_trans_splitting(*____pmd) ||			\
+ 		       pmd_trans_huge(*____pmd));			\
+ 	} while (0)
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index d7c6830..9af643d 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -911,7 +911,7 @@ int copy_huge_pmd(struct mm_struct *dst_mm, struct mm_struct *src_mm,
+ 		spin_unlock(&dst_mm->page_table_lock);
+ 		pte_free(dst_mm, pgtable);
  
-+	if (PageTransCompound(page))
-+		split_huge_page(compound_trans_head(page));
- 	if (!lock_page_or_retry(page, vma->vm_mm, vmf->flags)) {
- 		page_cache_release(page);
- 		return ret | VM_FAULT_RETRY;
+-		wait_split_huge_page(vma->anon_vma, src_pmd); /* src_vma */
++		wait_split_huge_page(vma, src_pmd); /* src_vma */
+ 		goto out;
+ 	}
+ 	src_page = pmd_page(pmd);
+@@ -1493,7 +1493,7 @@ int __pmd_trans_huge_lock(pmd_t *pmd, struct vm_area_struct *vma)
+ 	if (likely(pmd_trans_huge(*pmd))) {
+ 		if (unlikely(pmd_trans_splitting(*pmd))) {
+ 			spin_unlock(&vma->vm_mm->page_table_lock);
+-			wait_split_huge_page(vma->anon_vma, pmd);
++			wait_split_huge_page(vma, pmd);
+ 			return -1;
+ 		} else {
+ 			/* Thp mapped by 'pmd' is stable, so we can
+diff --git a/mm/memory.c b/mm/memory.c
+index 7d35f90..ea74ab1 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -609,7 +609,7 @@ int __pte_alloc(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	if (new)
+ 		pte_free(mm, new);
+ 	if (wait_split_huge_page)
+-		wait_split_huge_page(vma->anon_vma, pmd);
++		wait_split_huge_page(vma, pmd);
+ 	return 0;
+ }
+ 
+@@ -1522,7 +1522,7 @@ struct page *follow_page_mask(struct vm_area_struct *vma,
+ 		if (likely(pmd_trans_huge(*pmd))) {
+ 			if (unlikely(pmd_trans_splitting(*pmd))) {
+ 				spin_unlock(&mm->page_table_lock);
+-				wait_split_huge_page(vma->anon_vma, pmd);
++				wait_split_huge_page(vma, pmd);
+ 			} else {
+ 				page = follow_trans_huge_pmd(vma, address,
+ 							     pmd, flags);
 -- 
 1.8.3.2
 
