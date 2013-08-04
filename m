@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753970Ab3HDCPv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Aug 2013 22:15:51 -0400
-Received: from mga03.intel.com ([143.182.124.21]:38715 "EHLO mga03.intel.com"
+	id S1753938Ab3HDCPt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Aug 2013 22:15:49 -0400
+Received: from mga03.intel.com ([143.182.124.21]:24155 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753534Ab3HDCOe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Aug 2013 22:14:34 -0400
+	id S1753533Ab3HDCOc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Aug 2013 22:14:32 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.89,810,1367996400"; 
-   d="scan'208";a="277355848"
+   d="scan'208";a="341280863"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Andrea Arcangeli <aarcange@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>
@@ -22,128 +22,103 @@ Cc: Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
         Ning Qu <quning@google.com>, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCHv5 00/23] Transparent huge page cache: phase 1, everything but mmap()
-Date: Sun,  4 Aug 2013 05:17:02 +0300
-Message-Id: <1375582645-29274-1-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCH 12/23] thp, mm: add event counters for huge page alloc on file write or read
+Date: Sun,  4 Aug 2013 05:17:14 +0300
+Message-Id: <1375582645-29274-13-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1375582645-29274-1-git-send-email-kirill.shutemov@linux.intel.com>
+References: <1375582645-29274-1-git-send-email-kirill.shutemov@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-This is the second part of my transparent huge page cache work.
-It brings thp support for ramfs, but without mmap() -- it will be posted
-separately.
+Existing stats specify source of thp page: fault or collapse. We're
+going allocate a new huge page with write(2) and read(2). It's nither
+fault nor collapse.
 
-Intro
------
+Let's introduce new events for that.
 
-The goal of the project is preparing kernel infrastructure to handle huge
-pages in page cache.
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+---
+ Documentation/vm/transhuge.txt | 7 +++++++
+ include/linux/huge_mm.h        | 5 +++++
+ include/linux/vm_event_item.h  | 4 ++++
+ mm/vmstat.c                    | 4 ++++
+ 4 files changed, 20 insertions(+)
 
-To proof that the proposed changes are functional we enable the feature
-for the most simple file system -- ramfs. ramfs is not that useful by
-itself, but it's good pilot project.
-
-Design overview
----------------
-
-Every huge page is represented in page cache radix-tree by HPAGE_PMD_NR
-(512 on x86-64) entries: one entry for head page and HPAGE_PMD_NR-1 entries
-for tail pages.
-
-Radix tree manipulations are implemented in batched way: we add and remove
-whole huge page at once, under one tree_lock. To make it possible, we
-extended radix-tree interface to be able to pre-allocate memory enough to
-insert a number of *contiguous* elements (kudos to Matthew Wilcox).
-
-Huge pages can be added to page cache three ways:
- - write(2) to file or page;
- - read(2) from sparse file;
- - fault sparse file.
-
-Potentially, one more way is collapsing small page, but it's outside initial
-implementation.
-
-For now we still write/read at most PAGE_CACHE_SIZE bytes a time. There's
-some room for speed up later.
-
-Since mmap() isn't targeted for this patchset, we just split huge page on
-page fault.
-
-To minimize memory overhead for small file we setup fops->release helper
--- simple_thp_release() --  which splits the last page in file, when last
-writer goes away.
-
-truncate_inode_pages_range() drops whole huge page at once if it's fully
-inside the range. If a huge page is only partly in the range we zero out
-the part, exactly like we do for partial small pages.
-
-split_huge_page() for file pages works similar to anon pages, but we
-walk by mapping->i_mmap rather then anon_vma->rb_root. At the end we call
-truncate_inode_pages() to drop small pages beyond i_size, if any.
-
-Locking model around split_huge_page() rather complicated and I still
-don't feel myself confident enough with it. Looks like we need to
-serialize over i_mutex in split_huge_page(), but it breaks locking
-ordering for i_mutex->mmap_sem. I don't see how it can be fixed easily.
-Any ideas are welcome.
-
-Performance indicators will be posted separately.
-
-Please, review.
-
-Kirill A. Shutemov (23):
-  radix-tree: implement preload for multiple contiguous elements
-  memcg, thp: charge huge cache pages
-  thp: compile-time and sysfs knob for thp pagecache
-  thp, mm: introduce mapping_can_have_hugepages() predicate
-  thp: represent file thp pages in meminfo and friends
-  thp, mm: rewrite add_to_page_cache_locked() to support huge pages
-  mm: trace filemap: dump page order
-  block: implement add_bdi_stat()
-  thp, mm: rewrite delete_from_page_cache() to support huge pages
-  thp, mm: warn if we try to use replace_page_cache_page() with THP
-  thp, mm: handle tail pages in page_cache_get_speculative()
-  thp, mm: add event counters for huge page alloc on file write or read
-  thp, mm: allocate huge pages in grab_cache_page_write_begin()
-  thp, mm: naive support of thp in generic_perform_write
-  mm, fs: avoid page allocation beyond i_size on read
-  thp, mm: handle transhuge pages in do_generic_file_read()
-  thp, libfs: initial thp support
-  thp: libfs: introduce simple_thp_release()
-  truncate: support huge pages
-  thp: handle file pages in split_huge_page()
-  thp: wait_split_huge_page(): serialize over i_mmap_mutex too
-  thp, mm: split huge page on mmap file page
-  ramfs: enable transparent huge page cache
-
- Documentation/vm/transhuge.txt |  16 ++++
- drivers/base/node.c            |   4 +
- fs/libfs.c                     |  80 ++++++++++++++++++-
- fs/proc/meminfo.c              |   3 +
- fs/ramfs/file-mmu.c            |   3 +-
- fs/ramfs/inode.c               |   6 +-
- include/linux/backing-dev.h    |  10 +++
- include/linux/fs.h             |  10 +++
- include/linux/huge_mm.h        |  53 ++++++++++++-
- include/linux/mmzone.h         |   1 +
- include/linux/page-flags.h     |  33 ++++++++
- include/linux/pagemap.h        |  48 +++++++++++-
- include/linux/radix-tree.h     |  11 +++
- include/linux/vm_event_item.h  |   4 +
- include/trace/events/filemap.h |   7 +-
- lib/radix-tree.c               |  41 +++++++---
- mm/Kconfig                     |  12 +++
- mm/filemap.c                   | 171 +++++++++++++++++++++++++++++++++++------
- mm/huge_memory.c               | 116 ++++++++++++++++++++++++----
- mm/memcontrol.c                |   2 -
- mm/memory.c                    |   4 +-
- mm/truncate.c                  | 108 ++++++++++++++++++++------
- mm/vmstat.c                    |   5 ++
- 23 files changed, 658 insertions(+), 90 deletions(-)
-
+diff --git a/Documentation/vm/transhuge.txt b/Documentation/vm/transhuge.txt
+index 4cc15c4..a78f738 100644
+--- a/Documentation/vm/transhuge.txt
++++ b/Documentation/vm/transhuge.txt
+@@ -202,6 +202,10 @@ thp_collapse_alloc is incremented by khugepaged when it has found
+ 	a range of pages to collapse into one huge page and has
+ 	successfully allocated a new huge page to store the data.
+ 
++thp_write_alloc and thp_read_alloc are incremented every time a huge
++	page is	successfully allocated to handle write(2) to a file or
++	read(2) from file.
++
+ thp_fault_fallback is incremented if a page fault fails to allocate
+ 	a huge page and instead falls back to using small pages.
+ 
+@@ -209,6 +213,9 @@ thp_collapse_alloc_failed is incremented if khugepaged found a range
+ 	of pages that should be collapsed into one huge page but failed
+ 	the allocation.
+ 
++thp_write_alloc_failed and thp_read_alloc_failed are incremented if
++	huge page allocation failed when tried on write(2) or read(2).
++
+ thp_split is incremented every time a huge page is split into base
+ 	pages. This can happen for a variety of reasons but a common
+ 	reason is that a huge page is old and is being reclaimed.
+diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
+index 4dc66c9..9a0a114 100644
+--- a/include/linux/huge_mm.h
++++ b/include/linux/huge_mm.h
+@@ -183,6 +183,11 @@ extern int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vm
+ #define HPAGE_PMD_MASK ({ BUILD_BUG(); 0; })
+ #define HPAGE_PMD_SIZE ({ BUILD_BUG(); 0; })
+ 
++#define THP_WRITE_ALLOC		({ BUILD_BUG(); 0; })
++#define THP_WRITE_ALLOC_FAILED	({ BUILD_BUG(); 0; })
++#define THP_READ_ALLOC		({ BUILD_BUG(); 0; })
++#define THP_READ_ALLOC_FAILED	({ BUILD_BUG(); 0; })
++
+ #define hpage_nr_pages(x) 1
+ 
+ #define transparent_hugepage_enabled(__vma) 0
+diff --git a/include/linux/vm_event_item.h b/include/linux/vm_event_item.h
+index 1855f0a..8e071bb 100644
+--- a/include/linux/vm_event_item.h
++++ b/include/linux/vm_event_item.h
+@@ -66,6 +66,10 @@ enum vm_event_item { PGPGIN, PGPGOUT, PSWPIN, PSWPOUT,
+ 		THP_FAULT_FALLBACK,
+ 		THP_COLLAPSE_ALLOC,
+ 		THP_COLLAPSE_ALLOC_FAILED,
++		THP_WRITE_ALLOC,
++		THP_WRITE_ALLOC_FAILED,
++		THP_READ_ALLOC,
++		THP_READ_ALLOC_FAILED,
+ 		THP_SPLIT,
+ 		THP_ZERO_PAGE_ALLOC,
+ 		THP_ZERO_PAGE_ALLOC_FAILED,
+diff --git a/mm/vmstat.c b/mm/vmstat.c
+index ffe3fbd..a80ea59 100644
+--- a/mm/vmstat.c
++++ b/mm/vmstat.c
+@@ -815,6 +815,10 @@ const char * const vmstat_text[] = {
+ 	"thp_fault_fallback",
+ 	"thp_collapse_alloc",
+ 	"thp_collapse_alloc_failed",
++	"thp_write_alloc",
++	"thp_write_alloc_failed",
++	"thp_read_alloc",
++	"thp_read_alloc_failed",
+ 	"thp_split",
+ 	"thp_zero_page_alloc",
+ 	"thp_zero_page_alloc_failed",
 -- 
 1.8.3.2
 
