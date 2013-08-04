@@ -1,66 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753615Ab3HDS6H (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Aug 2013 14:58:07 -0400
-Received: from mail-bk0-f41.google.com ([209.85.214.41]:34771 "EHLO
-	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753200Ab3HDS6G (ORCPT
+	id S1753579Ab3HDTBm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Aug 2013 15:01:42 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:40266 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752792Ab3HDTBl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Aug 2013 14:58:06 -0400
-From: Jens Frederich <jfrederich@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: dsd@laptop.org, jon.nettleton@gmail.com, m.chehab@samsung.com,
-        akpm@linux-foundation.org, cesarb@cesarb.net, davem@davemloft.net,
-        hans.verkuil@cisco.com, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org, Jens Frederich <jfrederich@gmail.com>
-Subject: [PATCH] Staging: olpc_dcon: updating MAINTAINERS
-Date: Sun,  4 Aug 2013 20:57:44 +0200
-Message-Id: <1375642664-7260-2-git-send-email-jfrederich@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1375642664-7260-1-git-send-email-jfrederich@gmail.com>
-References: <1375642664-7260-1-git-send-email-jfrederich@gmail.com>
+	Sun, 4 Aug 2013 15:01:41 -0400
+Date: Sun, 4 Aug 2013 20:01:33 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Olof Johansson <olof@lixom.net>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Subject: Re: Build breakage due to latest ARM fixes
+Message-ID: <20130804190132.GJ23006@n2100.arm.linux.org.uk>
+References: <CAOesGMgWeP-CdmOE-S7XZmJ-+1buP9a1cqavUns2gpgKrrhaxQ@mail.gmail.com> <20130803000731.GS23006@n2100.arm.linux.org.uk> <20130804125346.GH23006@n2100.arm.linux.org.uk> <CAOesGMhNr5-6T9s8Y9jr2pWy=baceuZwGFNj2HtnqU9DbwPLvw@mail.gmail.com> <20130804183708.GI23006@n2100.arm.linux.org.uk> <CAOesGMiDBT9NAhCiVe0mMTk4KXJZVynNaBHqk5+T9a6QYaFZvw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOesGMiDBT9NAhCiVe0mMTk4KXJZVynNaBHqk5+T9a6QYaFZvw@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andres Salomon and Chris Ball are not longer at OLPC.
-Daniel Drake is the new OLPC go-to guy. And I wanna
-also be CC'd on DCON and other OLPC patches.
+On Sun, Aug 04, 2013 at 11:47:04AM -0700, Olof Johansson wrote:
+> On Sun, Aug 4, 2013 at 11:37 AM, Russell King - ARM Linux
+> <linux@arm.linux.org.uk> wrote:
+> > On Sun, Aug 04, 2013 at 11:20:21AM -0700, Olof Johansson wrote:
+> >> On Sun, Aug 4, 2013 at 5:53 AM, Russell King - ARM Linux
+> >> <linux@arm.linux.org.uk> wrote:
+> >> > On Sat, Aug 03, 2013 at 01:07:31AM +0100, Russell King - ARM Linux wrote:
+> >> >> I'll look into that.  Obviously, I never build nommu because it isn't
+> >> >> part of the build system and the nommu platform I do have - OKI67001 -
+> >> >> doesn't have mainline kernel support.  (And if it did, it would not be
+> >> >> DT, so I doubt it's submittable.)
+> >> >
+> >> > Okay, what I'm going to do is push the OKI67001 stuff into mainline
+> >> > irrespective of DT or not, so that I can then add noMMU build _and_
+> >> > boot tests to my build system, which should ensure that problems
+> >> > like that get detected before they're pushed upstream.
+> >>
+> >> That seems like a step backwards. How have !MMU changes been handled
+> >> until now? Someone external has been relied on for testing?
+> >
+> > No, they've had no testing as far as I'm aware.  noMMU never got to the
+> > stage when it was merged that it had any platforms before Hiyok went
+> > silent.
+> >
+> > The only real testing I'm aware of is when I recreated the OKI67001
+> > support a while back and got my board to boot.
+> 
+> Uwe has been busy pushing various patches for M3/M4 support, I don't
+> know how far it is from having some real hardware usable though. Uwe?
+> 
+> > As for qemu, software emulations while nice and convenient don't
+> > accurately reflect real hardware.
+> 
+> Oh, agreed, it doesn't beat hardware-based testing but in the absence
+> of hardware it's better than nothing.
 
-Signed-off-by: Jens Frederich <jfrederich@gmail.com>
+Let's summarise this then:
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index d83f70f..2076caa 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -7877,11 +7877,11 @@ S:	Maintained
- F:	drivers/staging/nvec/
- 
- STAGING - OLPC SECONDARY DISPLAY CONTROLLER (DCON)
--M:	Andres Salomon <dilinger@queued.net>
--M:	Chris Ball <cjb@laptop.org>
-+M:	Jens Frederich <jfrederich@gmail.com>
-+M:	Daniel Drake <dsd@laptop.org>
- M:	Jon Nettleton <jon.nettleton@gmail.com>
- W:	http://wiki.laptop.org/go/DCON
--S:	Odd Fixes
-+S:	Maintained
- F:	drivers/staging/olpc_dcon/
- 
- STAGING - OZMO DEVICES USB OVER WIFI DRIVER
-diff --git a/drivers/staging/olpc_dcon/TODO b/drivers/staging/olpc_dcon/TODO
-index 886e46e..8853991 100644
---- a/drivers/staging/olpc_dcon/TODO
-+++ b/drivers/staging/olpc_dcon/TODO
-@@ -9,6 +9,5 @@ TODO:
- 
- Please send patches to Greg Kroah-Hartman <greg@kroah.com> and
- copy:
--	Andres Salomon <dilinger@queued.net>
--	Chris Ball <cjb@laptop.org>
--	Jon Nettleton <jon.nettleton@gmail.com>
-+	Daniel Drake <dsd@laptop.org>
-+	Jens Frederich <jfrederich@gmail.com>
--- 
-1.7.9.5
+"Hardware based testing is better than software testing".
+"I have OKI 67001 hardware".
+"I have OKI 67001 patches".
+"We're going to not merge the patches but you can use software testing
+ instead".
 
+That's utterly idiotic if you ask me - and as long as you hold that view
+I'm damned well totally uninterested in noMMU.
+
+Thanks but no thanks.  If I break noMMU builds in future, so be it - I
+don't give a damn about them.
