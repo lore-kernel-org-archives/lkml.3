@@ -1,59 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753250Ab3HDA15 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Aug 2013 20:27:57 -0400
-Received: from mail-la0-f41.google.com ([209.85.215.41]:42100 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751004Ab3HDA1z (ORCPT
+	id S1753288Ab3HDAdK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Aug 2013 20:33:10 -0400
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:36454 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751004Ab3HDAdJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Aug 2013 20:27:55 -0400
-MIME-Version: 1.0
-In-Reply-To: <1375572464.1988.4.camel@ThinkPad-X230.localdomain>
-References: <2052880.bHfzt6NKt5@vostro.rjw.lan>
-	<6100577.WGRZRabKGy@vostro.rjw.lan>
-	<CAMP44s1Knox3oVt3-ePkDHxa2uNQAFVFRwmVTATNknWA46b_Uw@mail.gmail.com>
-	<1963015.Y2AObmEn2f@vostro.rjw.lan>
-	<1375546086.1988.2.camel@ThinkPad-X230.localdomain>
-	<CAMP44s2HSEnhWfgtvSmu3K-nrWzHnxfj44hpvAVerRQq-dUABg@mail.gmail.com>
-	<1375572464.1988.4.camel@ThinkPad-X230.localdomain>
-Date: Sat, 3 Aug 2013 19:27:53 -0500
-Message-ID: <CAMP44s2=EGcmKPgbdrEJpnyCMStD_JPDOOuYfPtnsTB8k+1UTw@mail.gmail.com>
-Subject: Re: [GIT PULL] ACPI and power management fixes for v3.11-rc4
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: Igor Gnatenko <i.gnatenko.brain@gmail.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+	Sat, 3 Aug 2013 20:33:09 -0400
+Message-ID: <1375576322.10300.146.camel@misato.fc.hp.com>
+Subject: Re: [PATCH] ACPI: Do not fail acpi_bind_one() if device is already
+ bound correctly
+From: Toshi Kani <toshi.kani@hp.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+        Bjorn Helgaas <bhelgaas@google.com>
+Date: Sat, 03 Aug 2013 18:32:02 -0600
+In-Reply-To: <3596381.TNBAQz9C67@vostro.rjw.lan>
+References: <1888947.F5IBMfDKlY@vostro.rjw.lan>
+	 <1375483118.10300.113.camel@misato.fc.hp.com>
+	 <3596381.TNBAQz9C67@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 3, 2013 at 6:27 PM, Igor Gnatenko
-<i.gnatenko.brain@gmail.com> wrote:
-> On Sat, 2013-08-03 at 15:21 -0500, Felipe Contreras wrote:
->> On Sat, Aug 3, 2013 at 11:08 AM, Igor Gnatenko
->> <i.gnatenko.brain@gmail.com> wrote:
->>
->> > I am opposed to this patch. On ThinkPad X230 I had problems with it.
->> > Felipe, come over to dark side. They have cookies.
->>
->> And v3.11-rc3 works's fine out-of-the box?
->>
->
-> rc2 work's fine. Since rc3 Rafael reverted patch and I think backlight
-> broken again (I don't have time to check rc3 yet).
+On Sat, 2013-08-03 at 02:47 +0200, Rafael J. Wysocki wrote:
+> On Friday, August 02, 2013 04:38:38 PM Toshi Kani wrote:
+> > On Fri, 2013-08-02 at 00:33 +0200, Rafael J. Wysocki wrote:
+> > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > > 
+> > > Modify acpi_bind_one() so that it doesn't fail if the device
+> > > represented by its first argument has already been bound to the
+> > > given ACPI handle (second argument), because that is not a good
+> > > enough reason for returning an error code.
+> > 
+> > While it seems reasonable to allow such case, I do not think we will hit
+> > this case under the normal scenarios.  So, I do not think we need to
+> > make this change now unless it actually solves Yasuaki's issue (which I
+> > am guessing not).
+> 
+> In theory it should be possible to call acpi_bind_one() twice in a row
+> for the same dev and the same handle without failure, that simply is
+> logical.  The patch may not fix any problems visible now, but returning an
+> error code in such a case is simply incorrect.
 
-You think?
+We changed acpi_bus_device_attach() to not call the handler or driver
+again if it is already bound.  So, I was under impression that we
+prevent from attaching a same device twice.  But I may be missing
+something...
 
-We are talking about this patch [1]. Did you apply that patch on top
-of rc3 and booted without any arguments?
+Thanks,
+-Toshi
 
-If you did, what problems *exactly* did you have?
 
-[1] https://bugzilla.kernel.org/attachment.cgi?id=107084&action=diff&context=patch&collapsed=&headers=1&format=raw
-
--- 
-Felipe Contreras
