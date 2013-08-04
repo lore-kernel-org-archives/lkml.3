@@ -1,141 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753929Ab3HDVVo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Aug 2013 17:21:44 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:41466 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753879Ab3HDVVm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Aug 2013 17:21:42 -0400
-Message-ID: <1375651302.3133.16.camel@joe-AO722>
-Subject: [PATCH] checkpatch: Add --types option to report only specific
- message types
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andy Whitcroft <apw@canonical.com>, LKML <linux-kernel@vger.kernel.org>
-Date: Sun, 04 Aug 2013 14:21:42 -0700
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753957Ab3HDV2U (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Aug 2013 17:28:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58286 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753906Ab3HDV2S (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Aug 2013 17:28:18 -0400
+Date: Mon, 5 Aug 2013 05:29:19 +0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Yacine Belkadi <yacine.belkadi.1@gmail.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>, Jiri Kosina <jkosina@suse.cz>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Kevin Hilman <khilman@linaro.org>,
+        Alexey Khoroshilov <khoroshilov@ispras.ru>,
+        Thomas Renninger <trenn@suse.de>, Hannes Reinecke <hare@suse.de>,
+        Lan Tianyu <tianyu.lan@intel.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Ming Lei <ming.lei@canonical.com>,
+        =?utf-8?B?VMO8bGluIMSwemVy?= <tulinizer@gmail.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Johan Hovold <jhovold@gmail.com>, Kay Sievers <kay@vrfy.org>,
+        Julius Werner <jwerner@chromium.org>,
+        Yuanhan Liu <yliu.null@gmail.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org
+Subject: Re: [PATCH] usb: fix some scripts/kernel-doc warnings
+Message-ID: <20130804212919.GA10623@kroah.com>
+References: <1375467004-2623-1-git-send-email-yacine.belkadi.1@gmail.com>
+ <20130803032908.GA10902@kroah.com>
+ <51FEB410.6080909@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51FEB410.6080909@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a --types convenience option to show only specific
-message types.  Combined with the --fix option, this can
-produce specific suggested formatting patches to files.
+On Sun, Aug 04, 2013 at 10:05:36PM +0200, Yacine Belkadi wrote:
+> On 08/03/2013 05:29 AM, Greg Kroah-Hartman wrote:
+> > On Fri, Aug 02, 2013 at 08:10:04PM +0200, Yacine Belkadi wrote:
+> >> When building the htmldocs (in verbose mode), scripts/kernel-doc reports the
+> >> following type of warnings:
+> >>
+> >> Warning(drivers/usb/core/usb.c:76): No description found for return value of
+> >> 'usb_find_alt_setting'
+> >>
+> >> Fix them by:
+> >> - adding some missing descriptions of return values
+> >> - using "Return" sections for those descriptions
+> >>
+> >> Signed-off-by: Yacine Belkadi <yacine.belkadi.1@gmail.com>
+> >> ---
+> >>
+> >>  Applied to b3a3a9c441e2c8f6b6760de9331023a7906a4ac6
+> > 
+> > What does this line mean?
+> 
+> It's the commit on which I created and applied the patch:
+> 
+> commit b3a3a9c441e2c8f6b6760de9331023a7906a4ac6
+> Merge: a582e5f e70e78e
+> Author: Linus Torvalds <torvalds@linux-foundation.org>
+> Date:   Mon Jul 22 19:07:24 2013 -0700
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- scripts/checkpatch.pl | 56 ++++++++++++++++++++++++++++++++++-----------------
- 1 file changed, 38 insertions(+), 18 deletions(-)
+Odd, I've never seen anyone use that before.  It's really not needed, so
+you don't have to do that in the future.
 
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 9185883..3ba2db6 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -31,8 +31,10 @@ my $show_types = 0;
- my $fix = 0;
- my $root;
- my %debug;
--my %ignore_type = ();
- my %camelcase = ();
-+my %use_type = ();
-+my @use = ();
-+my %ignore_type = ();
- my @ignore = ();
- my $help = 0;
- my $configuration_file = ".checkpatch.conf";
-@@ -56,6 +58,7 @@ Options:
-   --terse                    one line per report
-   -f, --file                 treat FILE as regular source file
-   --subjective, --strict     enable more subjective tests
-+  --types TYPE(,TYPE2...)    show only these comma separated message types
-   --ignore TYPE(,TYPE2...)   ignore various comma separated message types
-   --max-line-length=n        set the maximum line length, if exceeded, warn
-   --show-types               show the message "types" in the output
-@@ -120,6 +123,7 @@ GetOptions(
- 	'subjective!'	=> \$check,
- 	'strict!'	=> \$check,
- 	'ignore=s'	=> \@ignore,
-+	'types=s'	=> \@use,
- 	'show-types!'	=> \$show_types,
- 	'max-line-length=i' => \$max_line_length,
- 	'root=s'	=> \$root,
-@@ -150,19 +154,38 @@ if ($#ARGV < 0) {
- 	exit(1);
- }
- 
--@ignore = split(/,/, join(',',@ignore));
--foreach my $word (@ignore) {
--	$word =~ s/\s*\n?$//g;
--	$word =~ s/^\s*//g;
--	$word =~ s/\s+/ /g;
--	$word =~ tr/[a-z]/[A-Z]/;
-+sub hash_save_array_words {
-+	my ($hashRef, $arrayRef) = @_;
-+
-+	my @array = split(/,/, join(',', @$arrayRef));
-+	foreach my $word (@array) {
-+		$word =~ s/\s*\n?$//g;
-+		$word =~ s/^\s*//g;
-+		$word =~ s/\s+/ /g;
-+		$word =~ tr/[a-z]/[A-Z]/;
-+
-+		next if ($word =~ m/^\s*#/);
-+		next if ($word =~ m/^\s*$/);
-+
-+		$hashRef->{$word}++;
-+	}
-+}
- 
--	next if ($word =~ m/^\s*#/);
--	next if ($word =~ m/^\s*$/);
-+sub hash_show_words {
-+	my ($hashRef, $prefix) = @_;
- 
--	$ignore_type{$word}++;
-+	if ($quiet == 0 && keys $hashRef) {
-+		print "NOTE: $prefix message types:";
-+		foreach my $word (sort keys $hashRef) {
-+			print " $word";
-+		}
-+		print "\n\n";
-+	}
- }
- 
-+hash_save_array_words(\%ignore_type, \@ignore);
-+hash_save_array_words(\%use_type, \@use);
-+
- my $dbg_values = 0;
- my $dbg_possible = 0;
- my $dbg_type = 0;
-@@ -1367,7 +1390,9 @@ sub possible {
- my $prefix = '';
- 
- sub show_type {
--       return !defined $ignore_type{$_[0]};
-+	return defined $use_type{$_[0]} if (scalar keys %use_type > 0);
-+
-+	return !defined $ignore_type{$_[0]};
- }
- 
- sub report {
-@@ -4190,13 +4215,8 @@ sub process {
- 		}
- 	}
- 
--	if ($quiet == 0 && keys %ignore_type) {
--	    print "NOTE: Ignored message types:";
--	    foreach my $ignore (sort keys %ignore_type) {
--		print " $ignore";
--	    }
--	    print "\n\n";
--	}
-+	hash_show_words(\%use_type, "Used");
-+	hash_show_words(\%ignore_type, "Ignored");
- 
- 	if ($clean == 0 && $fix && "@rawlines" ne "@fixed") {
- 		my $newfile = $filename . ".EXPERIMENTAL-checkpatch-fixes";
+thanks,
 
-
+greg k-h
