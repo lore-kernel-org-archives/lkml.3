@@ -1,144 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752601Ab3HDNLS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Aug 2013 09:11:18 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:49785 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752419Ab3HDNLQ (ORCPT
+	id S1752722Ab3HDNsk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Aug 2013 09:48:40 -0400
+Received: from smtp-out-169.synserver.de ([212.40.185.169]:1318 "EHLO
+	smtp-out-165.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751680Ab3HDNsj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Aug 2013 09:11:16 -0400
-Date: Sun, 4 Aug 2013 14:11:10 +0100
-From: "Zubair Lutfullah :" <zubair.lutfullah@gmail.com>
-To: Jonathan Cameron <jic23@kernel.org>
-Cc: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org, gregkh@linuxfoundation.org,
-        Russ.Dill@ti.com
-Subject: Re: [PATCH 2/2] iio: ti_am335x_adc: Add continuous sampling and
- trigger support
-Message-ID: <20130804131109.GA30541@gmail.com>
-References: <1374882674-18403-1-git-send-email-zubair.lutfullah@gmail.com>
- <1374882674-18403-3-git-send-email-zubair.lutfullah@gmail.com>
- <51FE357C.2040401@kernel.org>
+	Sun, 4 Aug 2013 09:48:39 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 7001
+Message-ID: <51FE5B0C.4070206@metafoo.de>
+Date: Sun, 04 Aug 2013 15:45:48 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130704 Icedove/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51FE357C.2040401@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Oleksandr Kravchenko <x0199363@ti.com>
+CC: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, grant.likely@linaro.org,
+        rob.herring@calxeda.com, rob@landley.net, jic23@cam.ac.uk,
+        pmeerw@pmeerw.net, holler@ahsoftware.de, srinivas.pandruvada@intel.com,
+        devicetree-discuss@lists.ozlabs.org,
+        Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
+Subject: Re: [PATCH 2/2] iio: add Bosch BMA180 acceleration sensor driver
+References: <1375109893-7917-1-git-send-email-x0199363@ti.com> <1375109893-7917-2-git-send-email-x0199363@ti.com>
+In-Reply-To: <1375109893-7917-2-git-send-email-x0199363@ti.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 04, 2013 at 12:05:32PM +0100, Jonathan Cameron wrote:
-> I'm afraid the tree has moved on a bit so this will need rebasing
-> against what is currently in iio.git.
-
-The patches apply on top of fixes-to greg branch because of a recent fix
-in there. Which branch should I rebase them on?
-
-Also, I've squashed a few more bug fixes I have found since then. 
-Will update accordingly next time I send.
-
+On 07/29/2013 04:58 PM, Oleksandr Kravchenko wrote:
+> From: Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
 > 
-> I would like a description in here of what form of buffered sampling the
-> driver/device provides.  Does it run on it's own internal clock?  E.g.
-> are we dealing with a fairly autonomous device with a data ready trigger?
-> Is the driver to always be driven from an external trigger?
-> This looks like there is no explicit trigger at all (which is an unusual
-> case).  I vaguely remember discussing this before and concluding it was
-> probably valid for this device (as it is a hardware fifo pushed into a software
-> one).  If nothing else generic_buffer.c won't cover this case so might need
-> appropriately updating with a 'don't bother with an explicit trigger' option.
+> This patch adds IIO driver for Bosch BMA180 triaxial
+> acceleration sensor.
+> http://omapworld.com/BMA180_111_1002839.pdf
 > 
-> Having this stuff in the git commit log would be good as well as available
-> at time of review.  It's also usually best to assume everyone has forgotten
-> everything about the driver inbetween reviews ;)
+> Signed-off-by: Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
+> ---
+>  .../devicetree/bindings/iio/accel/bma180.txt       |   53 +++
+>  drivers/iio/accel/Kconfig                          |   10 +
+>  drivers/iio/accel/Makefile                         |    2 +
+>  drivers/iio/accel/bma180.c                         |  462 ++++++++++++++++++++
+>  4 files changed, 527 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/iio/accel/bma180.txt
+>  create mode 100644 drivers/iio/accel/bma180.c
 > 
-> Nearly there.
-> 
-> Jonathan
-> 
+> diff --git a/Documentation/devicetree/bindings/iio/accel/bma180.txt b/Documentation/devicetree/bindings/iio/accel/bma180.txt
+> new file mode 100644
+> index 0000000..7c13c84
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/iio/accel/bma180.txt
+> @@ -0,0 +1,53 @@
+> +* Bosch BMA180 triaxial acceleration sensor
+> +
+> +http://omapworld.com/BMA180_111_1002839.pdf
+> +
+> +Required properties:
+> +
+> +  - compatible : should be "bosch,bma180"
+> +  - reg : the I2C address of the sensor
+> +
+> +Optional properties:
+> +
+> +  - interrupt-parent : should be the phandle for the interrupt controller
+> +
+> +  - interrupts : interrupt mapping for GPIO IRQ, it shuld by configured with
+> +		flags IRQ_TYPE_LEVEL_HIGH | IRQ_TYPE_EDGE_RISING
+> +
+> +  - range : select the full scale acceleration range
+> +		0 : -1g..+1g
+> +		1 : -1.5g..+1.5g
+> +		2 : -2g..+2g
+> +		3 : -3g..+3g
+> +		4 : -4g..+4g
+> +		5 : -8g..+8g
+> +		6 : -16g..+16g
+> +
+> +  - bw : select bandwidth bandwidth
+> +		0 : 10Hz
+> +		1 : 20Hz
+> +		2 : 40Hz
+> +		3 : 75Hz
+> +		4 : 150Hz
+> +		5 : 300Hz
+> +		Don't use bandwidth frequency more than 300Hz couse it
+> +		influences the frequency of generating new data interrupts
+> +		and i2c reading phase can be longer than pheriod of interrupt
+> +		generation.
+> +
+> +  - mode_config : 0 - select low noise mode, 1 - select low power mode
+> +
+> +  - fuzz : specifies fuzz value that is used to filter noise from the event stream
+> +
 
-The trigger here is simply to give certain functionality like an oscilloscope 
-trigger. The control is given to the userspace application via IIO triggers 
-(so sysfs/gpio/timer etc can be used)
+All the four properties above are vendor specific, so they need a vendor
+prefix. Also no underscores in property names and no abbreviations. Also I
+wonder if some of them should rather be runtime configurable, like range and
+bandwidth,
 
-A buffer of samples is read on one trigger.
+> +Example:
+> +
+> +bma180@40 {
+> +	compatible = "bosch,bma180";
+> +	reg = <0x40>;
+> +	interrupt-parent = <&gpio6>;
+> +	interrupts = <18 (IRQ_TYPE_LEVEL_HIGH | IRQ_TYPE_EDGE_RISING)>;
+> +	range = <2>;
+> +	bw = <0>;
+> +	mode_config = <1>;
+> +	fuzz = <555>;
+> +};
+[...]
+> +static int bma180_read_raw(struct iio_dev *indio_dev,
+> +		struct iio_chan_spec const *chan, int *val, int *val2,
+> +		long mask)
+> +{
+> +	struct bma180_data *data = iio_priv(indio_dev);
+> +	long tmp = ((s16)data->acc_reg[chan->channel] >> 2)
+> +		* bma180_range_table[data->range].ratio;
 
-An alternative would be the buffer being sampled and read as soon as the 
-buffer is enabled. Which would lead to a buffer enable/disable if another 
-buffer is to be read.
+> +
+> +	if (data->acc_reg[chan->channel] < 0)
+> +		return data->acc_reg[chan->channel];
+> +
+> +	*val = tmp / 1000000;
+> +	*val2 = (tmp % 1000000);
+> +
 
-This is NOT a data ready trigger like in spi adcs.
+This doesn't look as if the device needs a special conversion formula. Just
+expose the raw value and ratio as the scale.
 
-The TSCADC module is inside the processor. Hardware FIFO interrupts and handler
-reads samples from fifo and pushes to software FIFO.
-
-At the moment, I use sysfs triggers to check this.
-I'm still not sure on how to connect the gpio trigger driver by IIO.
-
-generic_buffer.c reads the samples with a simple sysfs trigger.
-
-So.
-Additional description in the git log only?
-
-I'll add following in log message.
-"Any IIO trigger can be used to trigger driver to read a buffer
-of samples from enabled channels."
-
-Responses on comments on actual code is inline below.
-
-Thanks
-Zubair Lutfullah
-
-> > +++ b/drivers/iio/adc/ti_am335x_adc.c
-> > @@ -26,14 +26,25 @@
-> >  #include <linux/of_device.h>
-> >  #include <linux/iio/machine.h>
-> Err, what is the machine header doing in here?
-> (clearly my review of the original driver missed a few
-> things).
-I have no idea. 
-Old stuff. I'll remove and see if it changes anything..
-> 
-
-> >  #include <linux/iio/driver.h>
-> > -
-> Cleaner to group the headers appropriately.
-Ok
-
-> > @@ -251,6 +451,10 @@ static int tiadc_probe(struct platform_device *pdev)
-> >
-> >  	return 0;
-> >
-> The error handling in this function is thoroughly scrambled up. Please review
-> it and fix it.
-Sure.
-> 
-> > +err_unregister:
-> This label is too generic to make for easy review.
-Ok.
-
-
-> > +++ b/include/linux/mfd/ti_am335x_tscadc.h
-> 
-> Clearly you are working in keeping with the current driver
-> but these defines could really do with appropriate prefixes
-> to make them more specific to the driver.  You are almost
-> certain that one of these will turn up in a general header
-> at some point.
->
-I understand your point.
-But this header is common and affects mfd, input and iio.
-Changing all of them now is going to be a massive(impossible) pain..
-
-And adding new defines should conform to the naming of the previous.
-
-What should I do?
-> > @@ -46,17 +46,23 @@
-> >  /* Step Enable */
-> >  #define STEPENB_MASK		(0x1FFFF << 0)
-> >  #define STEPENB(val)		((val) << 0)
-> > +#define ENB(val)			(1 << (val))
-> > +#define STPENB_STEPENB		STEPENB(0x1FFFF)
-> > +#define STPENB_STEPENB_TC	STEPENB(0x1FFF)
-> >
+> +	return IIO_VAL_INT_PLUS_MICRO;
+> +}
+[...]
