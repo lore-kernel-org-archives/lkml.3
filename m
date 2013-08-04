@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753213Ab3HDOj7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Aug 2013 10:39:59 -0400
+	id S1753367Ab3HDOkp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Aug 2013 10:40:45 -0400
 Received: from smtp.citrix.com ([66.165.176.89]:62550 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752999Ab3HDOj6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753052Ab3HDOj6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 4 Aug 2013 10:39:58 -0400
 X-IronPort-AV: E=Sophos;i="4.89,812,1367971200"; 
-   d="scan'208";a="41259541"
+   d="scan'208";a="41259542"
 From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 To: <xen-devel@lists.xensource.com>
 CC: <linux-kernel@vger.kernel.org>, <dcrisan@flexiant.com>, <alex@alex.org.uk>,
         <stefano.stabellini@eu.citrix.com>, <ian.campbell@citrix.com>,
         <konrad.wilk@oracle.com>
-Subject: [PATCH v4 2/2] xen/m2p: use GNTTABOP_unmap_and_replace to reinstate the original mapping
-Date: Sun, 4 Aug 2013 15:39:41 +0100
-Message-ID: <1375627181-14948-2-git-send-email-stefano.stabellini@eu.citrix.com>
+Subject: [PATCH v4 1/2] xen/balloon: set a mapping for ballooned out pages
+Date: Sun, 4 Aug 2013 15:39:40 +0100
+Message-ID: <1375627181-14948-1-git-send-email-stefano.stabellini@eu.citrix.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <alpine.DEB.2.02.1308041531220.4893@kaball.uk.xensource.com>
 References: <alpine.DEB.2.02.1308041531220.4893@kaball.uk.xensource.com>
@@ -25,109 +25,171 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-GNTTABOP_unmap_grant_ref unmaps a grant and replaces it with a 0
-mapping instead of reinstating the original mapping.
-Doing so separately would be racy.
+Currently ballooned out pages are mapped to 0 and have INVALID_P2M_ENTRY
+in the p2m. These ballooned out pages are used to map foreign grants
+by gntdev and blkback (see alloc_xenballooned_pages).
 
-To unmap a grant and reinstate the original mapping atomically we use
-GNTTABOP_unmap_and_replace.
-GNTTABOP_unmap_and_replace doesn't work with GNTMAP_contains_pte, so
-don't use it for kmaps.  GNTTABOP_unmap_and_replace zeroes the mapping
-passed in new_addr so we have to reinstate it, however that is a
-per-cpu mapping only used for balloon scratch pages, so we can be sure that
-it's not going to be accessed while the mapping is not valid.
+Allocate a page per cpu and map all the ballooned out pages to the
+corresponding mfn. Set the p2m accordingly. This way reading from a
+ballooned out page won't cause a kernel crash (see
+http://lists.xen.org/archives/html/xen-devel/2012-12/msg01154.html).
 
 Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 Reviewed-by: David Vrabel <david.vrabel@citrix.com>
 CC: alex@alex.org.uk
 CC: dcrisan@flexiant.com
 ---
- arch/x86/xen/p2m.c   |   22 +++++++++++++++-------
- drivers/xen/gntdev.c |   11 ++---------
- 2 files changed, 17 insertions(+), 16 deletions(-)
+ drivers/xen/balloon.c |   69 ++++++++++++++++++++++++++++++++++++++++++++++--
+ include/xen/balloon.h |    3 ++
+ 2 files changed, 69 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
-index 95fb2aa..0d4ec35 100644
---- a/arch/x86/xen/p2m.c
-+++ b/arch/x86/xen/p2m.c
-@@ -161,6 +161,7 @@
- #include <asm/xen/page.h>
- #include <asm/xen/hypercall.h>
- #include <asm/xen/hypervisor.h>
-+#include <xen/balloon.h>
- #include <xen/grant_table.h>
+diff --git a/drivers/xen/balloon.c b/drivers/xen/balloon.c
+index 930fb68..d5ff74f 100644
+--- a/drivers/xen/balloon.c
++++ b/drivers/xen/balloon.c
+@@ -36,6 +36,7 @@
+  * IN THE SOFTWARE.
+  */
  
- #include "multicalls.h"
-@@ -967,7 +968,10 @@ int m2p_remove_override(struct page *page,
- 	if (kmap_op != NULL) {
- 		if (!PageHighMem(page)) {
- 			struct multicall_space mcs;
--			struct gnttab_unmap_grant_ref *unmap_op;
-+			struct gnttab_unmap_and_replace *unmap_op;
-+			struct page *scratch_page = get_balloon_scratch_page();
-+			unsigned long scratch_page_address = (unsigned long)
-+				__va(page_to_pfn(scratch_page) << PAGE_SHIFT);
++#include <linux/cpu.h>
+ #include <linux/kernel.h>
+ #include <linux/sched.h>
+ #include <linux/errno.h>
+@@ -50,6 +51,7 @@
+ #include <linux/notifier.h>
+ #include <linux/memory.h>
+ #include <linux/memory_hotplug.h>
++#include <linux/percpu-defs.h>
  
- 			/*
- 			 * It might be that we queued all the m2p grant table
-@@ -990,21 +994,25 @@ int m2p_remove_override(struct page *page,
- 			}
+ #include <asm/page.h>
+ #include <asm/pgalloc.h>
+@@ -88,6 +90,8 @@ EXPORT_SYMBOL_GPL(balloon_stats);
  
- 			mcs = xen_mc_entry(
--					sizeof(struct gnttab_unmap_grant_ref));
-+					sizeof(struct gnttab_unmap_and_replace));
- 			unmap_op = mcs.args;
- 			unmap_op->host_addr = kmap_op->host_addr;
-+			unmap_op->new_addr = scratch_page_address;
- 			unmap_op->handle = kmap_op->handle;
--			unmap_op->dev_bus_addr = 0;
- 
- 			MULTI_grant_table_op(mcs.mc,
--					GNTTABOP_unmap_grant_ref, unmap_op, 1);
-+					GNTTABOP_unmap_and_replace, unmap_op, 1);
- 
- 			xen_mc_issue(PARAVIRT_LAZY_MMU);
- 
--			set_pte_at(&init_mm, address, ptep,
--					pfn_pte(pfn, PAGE_KERNEL));
--			__flush_tlb_single(address);
-+			mcs = __xen_mc_entry(0);
-+			MULTI_update_va_mapping(mcs.mc, scratch_page_address,
-+					pfn_pte(page_to_pfn(get_balloon_scratch_page()),
-+					PAGE_KERNEL_RO), 0);
-+			xen_mc_issue(PARAVIRT_LAZY_MMU);
+ /* We increase/decrease in batches which fit in a page */
+ static xen_pfn_t frame_list[PAGE_SIZE / sizeof(unsigned long)];
++static DEFINE_PER_CPU(struct page *, balloon_scratch_page);
 +
- 			kmap_op->host_addr = 0;
-+			put_balloon_scratch_page();
+ 
+ #ifdef CONFIG_HIGHMEM
+ #define inc_totalhigh_pages() (totalhigh_pages++)
+@@ -423,7 +427,8 @@ static enum bp_state decrease_reservation(unsigned long nr_pages, gfp_t gfp)
+ 		if (xen_pv_domain() && !PageHighMem(page)) {
+ 			ret = HYPERVISOR_update_va_mapping(
+ 				(unsigned long)__va(pfn << PAGE_SHIFT),
+-				__pte_ma(0), 0);
++				pfn_pte(page_to_pfn(__get_cpu_var(balloon_scratch_page)),
++					PAGE_KERNEL_RO), 0);
+ 			BUG_ON(ret);
  		}
+ #endif
+@@ -436,7 +441,8 @@ static enum bp_state decrease_reservation(unsigned long nr_pages, gfp_t gfp)
+ 	/* No more mappings: invalidate P2M and add to balloon. */
+ 	for (i = 0; i < nr_pages; i++) {
+ 		pfn = mfn_to_pfn(frame_list[i]);
+-		__set_phys_to_machine(pfn, INVALID_P2M_ENTRY);
++		__set_phys_to_machine(pfn,
++				pfn_to_mfn(page_to_pfn(__get_cpu_var(balloon_scratch_page))));
+ 		balloon_append(pfn_to_page(pfn));
  	}
  
-diff --git a/drivers/xen/gntdev.c b/drivers/xen/gntdev.c
-index 3c8803f..51f4c95 100644
---- a/drivers/xen/gntdev.c
-+++ b/drivers/xen/gntdev.c
-@@ -270,19 +270,12 @@ static int map_grant_pages(struct grant_map *map)
- 		 * with find_grant_ptes.
- 		 */
- 		for (i = 0; i < map->count; i++) {
--			unsigned level;
- 			unsigned long address = (unsigned long)
- 				pfn_to_kaddr(page_to_pfn(map->pages[i]));
--			pte_t *ptep;
--			u64 pte_maddr = 0;
- 			BUG_ON(PageHighMem(map->pages[i]));
+@@ -491,6 +497,18 @@ static void balloon_process(struct work_struct *work)
+ 	mutex_unlock(&balloon_mutex);
+ }
  
--			ptep = lookup_address(address, &level);
--			pte_maddr = arbitrary_virt_to_machine(ptep).maddr;
--			gnttab_set_map_op(&map->kmap_ops[i], pte_maddr,
--				map->flags |
--				GNTMAP_host_map |
--				GNTMAP_contains_pte,
-+			gnttab_set_map_op(&map->kmap_ops[i], address,
-+				map->flags | GNTMAP_host_map,
- 				map->grants[i].ref,
- 				map->grants[i].domid);
- 		}
++struct page *get_balloon_scratch_page(void)
++{
++	struct page *ret = get_cpu_var(balloon_scratch_page);
++	BUG_ON(ret == NULL);
++	return ret;
++}
++
++void put_balloon_scratch_page(void)
++{
++	put_cpu_var(balloon_scratch_page);
++}
++
+ /* Resets the Xen limit, sets new target, and kicks off processing. */
+ void balloon_set_new_target(unsigned long target)
+ {
+@@ -584,13 +602,47 @@ static void __init balloon_add_region(unsigned long start_pfn,
+ 	}
+ }
+ 
++static int __cpuinit balloon_cpu_notify(struct notifier_block *self,
++				    unsigned long action, void *hcpu)
++{
++	int cpu = (long)hcpu;
++	switch (action) {
++	case CPU_UP_PREPARE:
++		if (per_cpu(balloon_scratch_page, cpu) != NULL)
++			break;
++		per_cpu(balloon_scratch_page, cpu) = alloc_page(GFP_KERNEL);
++		if (per_cpu(balloon_scratch_page, cpu) == NULL) {
++			pr_warn("Failed to allocate balloon_scratch_page for cpu %d\n", cpu);
++			return NOTIFY_BAD;
++		}
++		break;
++	default:
++		break;
++	}
++	return NOTIFY_OK;
++}
++
++static struct notifier_block balloon_cpu_notifier __cpuinitdata = {
++	.notifier_call	= balloon_cpu_notify,
++};
++
+ static int __init balloon_init(void)
+ {
+-	int i;
++	int i, cpu;
+ 
+ 	if (!xen_domain())
+ 		return -ENODEV;
+ 
++	for_each_online_cpu(cpu)
++	{
++		per_cpu(balloon_scratch_page, cpu) = alloc_page(GFP_KERNEL);
++		if (per_cpu(balloon_scratch_page, cpu) == NULL) {
++			pr_warn("Failed to allocate balloon_scratch_page for cpu %d\n", cpu);
++			return -ENOMEM;
++		}
++	}
++	register_cpu_notifier(&balloon_cpu_notifier);
++
+ 	pr_info("xen/balloon: Initialising balloon driver.\n");
+ 
+ 	balloon_stats.current_pages = xen_pv_domain()
+@@ -627,4 +679,15 @@ static int __init balloon_init(void)
+ 
+ subsys_initcall(balloon_init);
+ 
++static int __init balloon_clear(void)
++{
++	int cpu;
++
++	for_each_possible_cpu(cpu)
++		per_cpu(balloon_scratch_page, cpu) = NULL;
++
++	return 0;
++}
++early_initcall(balloon_clear);
++
+ MODULE_LICENSE("GPL");
+diff --git a/include/xen/balloon.h b/include/xen/balloon.h
+index cc2e1a7..a4c1c6a 100644
+--- a/include/xen/balloon.h
++++ b/include/xen/balloon.h
+@@ -29,6 +29,9 @@ int alloc_xenballooned_pages(int nr_pages, struct page **pages,
+ 		bool highmem);
+ void free_xenballooned_pages(int nr_pages, struct page **pages);
+ 
++struct page *get_balloon_scratch_page(void);
++void put_balloon_scratch_page(void);
++
+ struct device;
+ #ifdef CONFIG_XEN_SELFBALLOONING
+ extern int register_xen_selfballooning(struct device *dev);
 -- 
 1.7.2.5
 
