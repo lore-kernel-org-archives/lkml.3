@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753632Ab3HDCP2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Aug 2013 22:15:28 -0400
-Received: from mga02.intel.com ([134.134.136.20]:18076 "EHLO mga02.intel.com"
+	id S1753668Ab3HDCVX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Aug 2013 22:21:23 -0400
+Received: from mga09.intel.com ([134.134.136.24]:13113 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753517Ab3HDCOb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Aug 2013 22:14:31 -0400
+	id S1753285Ab3HDCO1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Aug 2013 22:14:27 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.89,810,1367996400"; 
-   d="scan'208";a="381498531"
+   d="scan'208";a="357029390"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Andrea Arcangeli <aarcange@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>
@@ -22,9 +22,9 @@ Cc: Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
         Ning Qu <quning@google.com>, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCH 05/23] thp: represent file thp pages in meminfo and friends
-Date: Sun,  4 Aug 2013 05:17:07 +0300
-Message-Id: <1375582645-29274-6-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCH 03/23] thp: compile-time and sysfs knob for thp pagecache
+Date: Sun,  4 Aug 2013 05:17:05 +0300
+Message-Id: <1375582645-29274-4-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1375582645-29274-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1375582645-29274-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -34,90 +34,139 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-The patch adds new zone stat to count file transparent huge pages and
-adjust related places.
+For now, TRANSPARENT_HUGEPAGE_PAGECACHE is only implemented for x86_64.
 
-For now we don't count mapped or dirty file thp pages separately.
+Radix tree perload overhead can be significant on BASE_SMALL systems, so
+let's add dependency on !BASE_SMALL.
 
-The patch depends on patch
- thp: account anon transparent huge pages into NR_ANON_PAGES
+/sys/kernel/mm/transparent_hugepage/page_cache is runtime knob for the
+feature. It's enabled by default if TRANSPARENT_HUGEPAGE_PAGECACHE is
+enabled.
 
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Acked-by: Dave Hansen <dave.hansen@linux.intel.com>
 ---
- drivers/base/node.c    | 4 ++++
- fs/proc/meminfo.c      | 3 +++
- include/linux/mmzone.h | 1 +
- mm/vmstat.c            | 1 +
- 4 files changed, 9 insertions(+)
+ Documentation/vm/transhuge.txt |  9 +++++++++
+ include/linux/huge_mm.h        |  9 +++++++++
+ mm/Kconfig                     | 12 ++++++++++++
+ mm/huge_memory.c               | 23 +++++++++++++++++++++++
+ 4 files changed, 53 insertions(+)
 
-diff --git a/drivers/base/node.c b/drivers/base/node.c
-index bc9f43b..de261f5 100644
---- a/drivers/base/node.c
-+++ b/drivers/base/node.c
-@@ -119,6 +119,7 @@ static ssize_t node_read_meminfo(struct device *dev,
- 		       "Node %d SUnreclaim:     %8lu kB\n"
- #ifdef CONFIG_TRANSPARENT_HUGEPAGE
- 		       "Node %d AnonHugePages:  %8lu kB\n"
-+		       "Node %d FileHugePages:  %8lu kB\n"
- #endif
- 			,
- 		       nid, K(node_page_state(nid, NR_FILE_DIRTY)),
-@@ -140,6 +141,9 @@ static ssize_t node_read_meminfo(struct device *dev,
- 		       nid, K(node_page_state(nid, NR_SLAB_UNRECLAIMABLE))
- 			, nid,
- 			K(node_page_state(nid, NR_ANON_TRANSPARENT_HUGEPAGES) *
-+			HPAGE_PMD_NR)
-+			, nid,
-+			K(node_page_state(nid, NR_FILE_TRANSPARENT_HUGEPAGES) *
- 			HPAGE_PMD_NR));
- #else
- 		       nid, K(node_page_state(nid, NR_SLAB_UNRECLAIMABLE)));
-diff --git a/fs/proc/meminfo.c b/fs/proc/meminfo.c
-index 59d85d6..a62952c 100644
---- a/fs/proc/meminfo.c
-+++ b/fs/proc/meminfo.c
-@@ -104,6 +104,7 @@ static int meminfo_proc_show(struct seq_file *m, void *v)
- #endif
- #ifdef CONFIG_TRANSPARENT_HUGEPAGE
- 		"AnonHugePages:  %8lu kB\n"
-+		"FileHugePages:  %8lu kB\n"
- #endif
- 		,
- 		K(i.totalram),
-@@ -158,6 +159,8 @@ static int meminfo_proc_show(struct seq_file *m, void *v)
- #ifdef CONFIG_TRANSPARENT_HUGEPAGE
- 		,K(global_page_state(NR_ANON_TRANSPARENT_HUGEPAGES) *
- 		   HPAGE_PMD_NR)
-+		,K(global_page_state(NR_FILE_TRANSPARENT_HUGEPAGES) *
-+		   HPAGE_PMD_NR)
- #endif
- 		);
+diff --git a/Documentation/vm/transhuge.txt b/Documentation/vm/transhuge.txt
+index 4a63953..4cc15c4 100644
+--- a/Documentation/vm/transhuge.txt
++++ b/Documentation/vm/transhuge.txt
+@@ -103,6 +103,15 @@ echo always >/sys/kernel/mm/transparent_hugepage/enabled
+ echo madvise >/sys/kernel/mm/transparent_hugepage/enabled
+ echo never >/sys/kernel/mm/transparent_hugepage/enabled
  
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index 0c41d59..ba81833 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -142,6 +142,7 @@ enum zone_stat_item {
- 	NUMA_OTHER,		/* allocation from other node */
- #endif
- 	NR_ANON_TRANSPARENT_HUGEPAGES,
-+	NR_FILE_TRANSPARENT_HUGEPAGES,
- 	NR_FREE_CMA_PAGES,
- 	NR_VM_ZONE_STAT_ITEMS };
++If TRANSPARENT_HUGEPAGE_PAGECACHE is enabled kernel will use huge pages in
++page cache if possible. It can be disable and re-enabled via sysfs:
++
++echo 0 >/sys/kernel/mm/transparent_hugepage/page_cache
++echo 1 >/sys/kernel/mm/transparent_hugepage/page_cache
++
++If it's disabled kernel will not add new huge pages to page cache and
++split them on mapping, but already mapped pages will stay intakt.
++
+ It's also possible to limit defrag efforts in the VM to generate
+ hugepages in case they're not immediately free to madvise regions or
+ to never try to defrag memory and simply fallback to regular pages
+diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
+index 3935428..1534e1e 100644
+--- a/include/linux/huge_mm.h
++++ b/include/linux/huge_mm.h
+@@ -40,6 +40,7 @@ enum transparent_hugepage_flag {
+ 	TRANSPARENT_HUGEPAGE_DEFRAG_FLAG,
+ 	TRANSPARENT_HUGEPAGE_DEFRAG_REQ_MADV_FLAG,
+ 	TRANSPARENT_HUGEPAGE_DEFRAG_KHUGEPAGED_FLAG,
++	TRANSPARENT_HUGEPAGE_PAGECACHE,
+ 	TRANSPARENT_HUGEPAGE_USE_ZERO_PAGE_FLAG,
+ #ifdef CONFIG_DEBUG_VM
+ 	TRANSPARENT_HUGEPAGE_DEBUG_COW_FLAG,
+@@ -229,4 +230,12 @@ static inline int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_str
  
-diff --git a/mm/vmstat.c b/mm/vmstat.c
-index 87228c5..ffe3fbd 100644
---- a/mm/vmstat.c
-+++ b/mm/vmstat.c
-@@ -739,6 +739,7 @@ const char * const vmstat_text[] = {
- 	"numa_other",
+ #endif /* CONFIG_TRANSPARENT_HUGEPAGE */
+ 
++static inline bool transparent_hugepage_pagecache(void)
++{
++	if (!IS_ENABLED(CONFIG_TRANSPARENT_HUGEPAGE_PAGECACHE))
++		return false;
++	if (!(transparent_hugepage_flags & (1<<TRANSPARENT_HUGEPAGE_FLAG)))
++		return false;
++	return transparent_hugepage_flags & (1<<TRANSPARENT_HUGEPAGE_PAGECACHE);
++}
+ #endif /* _LINUX_HUGE_MM_H */
+diff --git a/mm/Kconfig b/mm/Kconfig
+index 256bfd0..1e30ee8 100644
+--- a/mm/Kconfig
++++ b/mm/Kconfig
+@@ -420,6 +420,18 @@ choice
+ 	  benefit.
+ endchoice
+ 
++config TRANSPARENT_HUGEPAGE_PAGECACHE
++	bool "Transparent Hugepage Support for page cache"
++	depends on X86_64 && TRANSPARENT_HUGEPAGE
++	# avoid radix tree preload overhead
++	depends on !BASE_SMALL
++	default y
++	help
++	  Enabling the option adds support hugepages for file-backed
++	  mappings. It requires transparent hugepage support from
++	  filesystem side. For now, the only filesystem which supports
++	  hugepages is ramfs.
++
+ config CROSS_MEMORY_ATTACH
+ 	bool "Cross Memory Support"
+ 	depends on MMU
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index d96d921..523946c 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -42,6 +42,9 @@ unsigned long transparent_hugepage_flags __read_mostly =
  #endif
- 	"nr_anon_transparent_hugepages",
-+	"nr_file_transparent_hugepages",
- 	"nr_free_cma",
- 	"nr_dirty_threshold",
- 	"nr_dirty_background_threshold",
+ 	(1<<TRANSPARENT_HUGEPAGE_DEFRAG_FLAG)|
+ 	(1<<TRANSPARENT_HUGEPAGE_DEFRAG_KHUGEPAGED_FLAG)|
++#ifdef CONFIG_TRANSPARENT_HUGEPAGE_PAGECACHE
++	(1<<TRANSPARENT_HUGEPAGE_PAGECACHE)|
++#endif
+ 	(1<<TRANSPARENT_HUGEPAGE_USE_ZERO_PAGE_FLAG);
+ 
+ /* default scan 8*512 pte (or vmas) every 30 second */
+@@ -362,6 +365,23 @@ static ssize_t defrag_store(struct kobject *kobj,
+ static struct kobj_attribute defrag_attr =
+ 	__ATTR(defrag, 0644, defrag_show, defrag_store);
+ 
++#ifdef CONFIG_TRANSPARENT_HUGEPAGE_PAGECACHE
++static ssize_t page_cache_show(struct kobject *kobj,
++		struct kobj_attribute *attr, char *buf)
++{
++	return single_flag_show(kobj, attr, buf,
++				TRANSPARENT_HUGEPAGE_PAGECACHE);
++}
++static ssize_t page_cache_store(struct kobject *kobj,
++		struct kobj_attribute *attr, const char *buf, size_t count)
++{
++	return single_flag_store(kobj, attr, buf, count,
++				 TRANSPARENT_HUGEPAGE_PAGECACHE);
++}
++static struct kobj_attribute page_cache_attr =
++	__ATTR(page_cache, 0644, page_cache_show, page_cache_store);
++#endif
++
+ static ssize_t use_zero_page_show(struct kobject *kobj,
+ 		struct kobj_attribute *attr, char *buf)
+ {
+@@ -397,6 +417,9 @@ static struct kobj_attribute debug_cow_attr =
+ static struct attribute *hugepage_attr[] = {
+ 	&enabled_attr.attr,
+ 	&defrag_attr.attr,
++#ifdef CONFIG_TRANSPARENT_HUGEPAGE_PAGECACHE
++	&page_cache_attr.attr,
++#endif
+ 	&use_zero_page_attr.attr,
+ #ifdef CONFIG_DEBUG_VM
+ 	&debug_cow_attr.attr,
 -- 
 1.8.3.2
 
