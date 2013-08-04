@@ -1,69 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753861Ab3HDU1H (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Aug 2013 16:27:07 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:46364 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753645Ab3HDU1F (ORCPT
+	id S1753882Ab3HDUeX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Aug 2013 16:34:23 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:33583 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753771Ab3HDUeW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Aug 2013 16:27:05 -0400
-Date: Sun, 4 Aug 2013 13:27:11 -0700
-From: Olof Johansson <olof@lixom.net>
-To: David Brown <davidb@codeaurora.org>
-Cc: arm@kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <rmk@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>
-Subject: Re: [GIT PULL] msm gpio fixes for 3.11
-Message-ID: <20130804202711.GC15602@quad.lixom.net>
-References: <1374876322-2222-1-git-send-email-davidb@codeaurora.org>
+	Sun, 4 Aug 2013 16:34:22 -0400
+Date: Sun, 4 Aug 2013 13:34:15 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Kevin Easton <kevin@guarana.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        David Miller <davem@davemloft.net>, Arnd Bergmann <arnd@arndb.de>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH jiffies] Avoid undefined behavior from signed overflow
+Message-ID: <20130804203415.GR3836@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130727225828.GA11864@linux.vnet.ibm.com>
+ <20130729153035.18805zox54aoyubf@chicago.guarana.org>
+ <20130729135411.GM26694@linux.vnet.ibm.com>
+ <20130730000103.35524r83mpydvs7z@chicago.guarana.org>
+ <20130729142812.GN26694@linux.vnet.ibm.com>
+ <CA+55aFxOp-uNHQydWfa90H+DCDvZK6d2N0fGgSNkHNrLuYWMLA@mail.gmail.com>
+ <20130804202050.GP3836@linux.vnet.ibm.com>
+ <CA+55aFz2mLabJTjKffYcJfWycseNUS5F=vEzmorL7QZn7SnxLQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1374876322-2222-1-git-send-email-davidb@codeaurora.org>
+In-Reply-To: <CA+55aFz2mLabJTjKffYcJfWycseNUS5F=vEzmorL7QZn7SnxLQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13080420-7408-0000-0000-000012A773D9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 26, 2013 at 03:05:22PM -0700, David Brown wrote:
-> The following changes since commit ad81f0545ef01ea651886dddac4bef6cec930092:
+On Sun, Aug 04, 2013 at 01:23:13PM -0700, Linus Torvalds wrote:
+> On Sun, Aug 4, 2013 at 1:20 PM, Paul E. McKenney
+> <paulmck@linux.vnet.ibm.com> wrote:
+> >
+> > I have it queued up for 3.12, as you say, due to "-fno-strict-overflow".
+> > But if you would rather have it sooner, please let me know and I will send
+> > a pull request.
 > 
->   Linux 3.11-rc1 (2013-07-14 15:18:27 -0700)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/davidb/linux-msm.git tags/msm-3.11-fix1
-> 
-> for you to fetch changes up to 8fd62389a778c902c7e8532594ea924bbaf465e8:
-> 
->   ARM: msm: Consolidate gpiomux for older architectures (2013-07-26 14:55:38 -0700)
-> 
-> ----------------------------------------------------------------
-> Fixes for MSM for 3.11
-> 
-> Two small fixes for MSM.
-> 
-> The first fixes the a gpio controller register address.  I didn't see
-> any acks from the devicetree maintainers, so I've copied them on this
-> pull request.  The change itself is minor, and just to the register
-> address.
-> 
-> The second change removes the gpiomux V1 code from MSM.  This was
-> breaking compilation for some of the targets.
+> No, that's fine. As long as it's somewhere. 3.12 is better, rc4 is
+> already getting too big for my taste.
 
-I'm guessing the second breakage was nothing new, but who am I to turn away
-code removal even during -rc. :)
+3.12 it is, then!
 
-
-Pulled.
-
-
--Olof
-
+							Thanx, Paul
 
