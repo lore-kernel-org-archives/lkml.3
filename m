@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754321Ab3HDCQN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Aug 2013 22:16:13 -0400
-Received: from mga09.intel.com ([134.134.136.24]:54847 "EHLO mga09.intel.com"
+	id S1754283Ab3HDCQM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Aug 2013 22:16:12 -0400
+Received: from mga03.intel.com ([143.182.124.21]:38715 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753550Ab3HDCOg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753549Ab3HDCOg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 3 Aug 2013 22:14:36 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.89,810,1367996400"; 
-   d="scan'208";a="357029461"
+   d="scan'208";a="341280883"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Andrea Arcangeli <aarcange@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>
@@ -22,9 +22,9 @@ Cc: Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
         Ning Qu <quning@google.com>, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCH 16/23] thp, mm: handle transhuge pages in do_generic_file_read()
-Date: Sun,  4 Aug 2013 05:17:18 +0300
-Message-Id: <1375582645-29274-17-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCH 23/23] ramfs: enable transparent huge page cache
+Date: Sun,  4 Aug 2013 05:17:25 +0300
+Message-Id: <1375582645-29274-24-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1375582645-29274-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1375582645-29274-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -34,104 +34,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-If a transhuge page is already in page cache (up to date and not
-readahead) we go usual path: read from relevant subpage (head or tail).
+ramfs is the most simple fs from page cache point of view. Let's start
+transparent huge page cache enabling here.
 
-If page is not cached (sparse file in ramfs case) and the mapping can
-have hugepage we try allocate a new one and read it.
+ramfs pages are not movable[1] and switching to transhuge pages doesn't
+affect that. We need to fix this eventually.
 
-If a page is not up to date or in readahead, we have to move 'page' to
-head page of the compound page, since it represents state of whole
-transhuge page. We will switch back to relevant subpage when page is
-ready to be read ('page_ok' label).
+[1] http://lkml.org/lkml/2013/4/2/720
 
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- mm/filemap.c | 57 +++++++++++++++++++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 55 insertions(+), 2 deletions(-)
+ fs/ramfs/file-mmu.c | 3 ++-
+ fs/ramfs/inode.c    | 6 +++++-
+ 2 files changed, 7 insertions(+), 2 deletions(-)
 
-diff --git a/mm/filemap.c b/mm/filemap.c
-index c31d296..ed65af5 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -1175,8 +1175,28 @@ find_page:
- 					ra, filp,
- 					index, last_index - index);
- 			page = find_get_page(mapping, index);
--			if (unlikely(page == NULL))
--				goto no_cached_page;
-+			if (unlikely(page == NULL)) {
-+				if (mapping_can_have_hugepages(mapping))
-+					goto no_cached_page_thp;
-+				else
-+					goto no_cached_page;
-+			}
-+		}
-+		if (PageTransCompound(page)) {
-+			struct page *head = compound_trans_head(page);
-+
-+			if (!PageReadahead(head) && PageUptodate(page))
-+				goto page_ok;
-+
-+			/*
-+			 * Switch 'page' to head page. That's needed to handle
-+			 * readahead or make page uptodate.
-+			 * It will be switched back to the right tail page at
-+			 * the begining 'page_ok'.
-+			 */
-+			page_cache_get(head);
-+			page_cache_release(page);
-+			page = head;
- 		}
- 		if (PageReadahead(page)) {
- 			page_cache_async_readahead(mapping,
-@@ -1198,6 +1218,18 @@ find_page:
- 			unlock_page(page);
- 		}
- page_ok:
-+		/* Switch back to relevant tail page, if needed */
-+		if (PageTransCompoundCache(page) && !PageTransTail(page)) {
-+			int off = index & HPAGE_CACHE_INDEX_MASK;
-+			if (off){
-+				page_cache_get(page + off);
-+				page_cache_release(page);
-+				page += off;
-+			}
-+		}
-+
-+		VM_BUG_ON(page->index != index);
-+
- 		/*
- 		 * i_size must be checked after we know the page is Uptodate.
- 		 *
-@@ -1329,6 +1361,27 @@ readpage_error:
- 		page_cache_release(page);
- 		goto out;
+diff --git a/fs/ramfs/file-mmu.c b/fs/ramfs/file-mmu.c
+index 4884ac5..3236e41 100644
+--- a/fs/ramfs/file-mmu.c
++++ b/fs/ramfs/file-mmu.c
+@@ -32,7 +32,7 @@
  
-+no_cached_page_thp:
-+		page = alloc_pages(mapping_gfp_mask(mapping) | __GFP_COLD,
-+				HPAGE_PMD_ORDER);
-+		if (!page) {
-+			count_vm_event(THP_READ_ALLOC_FAILED);
-+			goto no_cached_page;
-+		}
-+		count_vm_event(THP_READ_ALLOC);
-+
-+		error = add_to_page_cache_lru(page, mapping,
-+				index & ~HPAGE_CACHE_INDEX_MASK, GFP_KERNEL);
-+		if (!error)
-+			goto readpage;
-+
-+		page_cache_release(page);
-+		if (error != -EEXIST && error != -ENOSPC) {
-+			desc->error = error;
-+			goto out;
-+		}
-+
-+		/* Fallback to small page */
- no_cached_page:
- 		/*
- 		 * Ok, it wasn't cached, so we need to create a new
+ const struct address_space_operations ramfs_aops = {
+ 	.readpage	= simple_readpage,
+-	.write_begin	= simple_write_begin,
++	.write_begin	= simple_thp_write_begin,
+ 	.write_end	= simple_write_end,
+ 	.set_page_dirty = __set_page_dirty_no_writeback,
+ };
+@@ -47,6 +47,7 @@ const struct file_operations ramfs_file_operations = {
+ 	.splice_read	= generic_file_splice_read,
+ 	.splice_write	= generic_file_splice_write,
+ 	.llseek		= generic_file_llseek,
++	.release	= simple_thp_release,
+ };
+ 
+ const struct inode_operations ramfs_file_inode_operations = {
+diff --git a/fs/ramfs/inode.c b/fs/ramfs/inode.c
+index 39d1465..5dafdfc 100644
+--- a/fs/ramfs/inode.c
++++ b/fs/ramfs/inode.c
+@@ -61,7 +61,11 @@ struct inode *ramfs_get_inode(struct super_block *sb,
+ 		inode_init_owner(inode, dir, mode);
+ 		inode->i_mapping->a_ops = &ramfs_aops;
+ 		inode->i_mapping->backing_dev_info = &ramfs_backing_dev_info;
+-		mapping_set_gfp_mask(inode->i_mapping, GFP_HIGHUSER);
++		/*
++		 * TODO: make ramfs pages movable
++		 */
++		mapping_set_gfp_mask(inode->i_mapping,
++				GFP_TRANSHUGE & ~__GFP_MOVABLE);
+ 		mapping_set_unevictable(inode->i_mapping);
+ 		inode->i_atime = inode->i_mtime = inode->i_ctime = CURRENT_TIME;
+ 		switch (mode & S_IFMT) {
 -- 
 1.8.3.2
 
