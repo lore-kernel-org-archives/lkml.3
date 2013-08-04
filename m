@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754196Ab3HDCQI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Aug 2013 22:16:08 -0400
-Received: from mga01.intel.com ([192.55.52.88]:20525 "EHLO mga01.intel.com"
+	id S1753946Ab3HDCQH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Aug 2013 22:16:07 -0400
+Received: from mga02.intel.com ([134.134.136.20]:18076 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753557Ab3HDCOg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753547Ab3HDCOg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 3 Aug 2013 22:14:36 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.89,810,1367996400"; 
-   d="scan'208";a="380857130"
+   d="scan'208";a="381498545"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Andrea Arcangeli <aarcange@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>
@@ -22,9 +22,9 @@ Cc: Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
         Ning Qu <quning@google.com>, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCH 21/23] thp: wait_split_huge_page(): serialize over i_mmap_mutex too
-Date: Sun,  4 Aug 2013 05:17:23 +0300
-Message-Id: <1375582645-29274-22-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCH 17/23] thp, libfs: initial thp support
+Date: Sun,  4 Aug 2013 05:17:19 +0300
+Message-Id: <1375582645-29274-18-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1375582645-29274-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1375582645-29274-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -34,99 +34,131 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-We're going to have huge pages backed by files, so we need to modify
-wait_split_huge_page() to support that.
+simple_readpage() and simple_write_end() are modified to handle huge
+pages.
 
-We have two options for:
- - check whether the page anon or not and serialize only over required
-   lock;
- - always serialize over both locks;
-
-Current implementation, in fact, guarantees that *all* pages on the vma
-is not splitting, not only the pages pmd is pointing on.
-
-For now I prefer the second option since it's the safest: we provide the
-same level of guarantees.
+simple_thp_write_begin() is introduced to allocate huge pages on write.
 
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- include/linux/huge_mm.h | 15 ++++++++++++---
- mm/huge_memory.c        |  4 ++--
- mm/memory.c             |  4 ++--
- 3 files changed, 16 insertions(+), 7 deletions(-)
+ fs/libfs.c              | 53 +++++++++++++++++++++++++++++++++++++++++++++----
+ include/linux/fs.h      |  7 +++++++
+ include/linux/pagemap.h |  8 ++++++++
+ 3 files changed, 64 insertions(+), 4 deletions(-)
 
-diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
-index 9a0a114..186f4f2 100644
---- a/include/linux/huge_mm.h
-+++ b/include/linux/huge_mm.h
-@@ -111,11 +111,20 @@ extern void __split_huge_page_pmd(struct vm_area_struct *vma,
- 			__split_huge_page_pmd(__vma, __address,		\
- 					____pmd);			\
- 	}  while (0)
--#define wait_split_huge_page(__anon_vma, __pmd)				\
-+#define wait_split_huge_page(__vma, __pmd)				\
- 	do {								\
- 		pmd_t *____pmd = (__pmd);				\
--		anon_vma_lock_write(__anon_vma);			\
--		anon_vma_unlock_write(__anon_vma);			\
-+		struct address_space *__mapping = (__vma)->vm_file ?	\
-+				(__vma)->vm_file->f_mapping : NULL;	\
-+		struct anon_vma *__anon_vma = (__vma)->anon_vma;	\
-+		if (__mapping)						\
-+			mutex_lock(&__mapping->i_mmap_mutex);		\
-+		if (__anon_vma) {					\
-+			anon_vma_lock_write(__anon_vma);		\
-+			anon_vma_unlock_write(__anon_vma);		\
-+		}							\
-+		if (__mapping)						\
-+			mutex_unlock(&__mapping->i_mmap_mutex);		\
- 		BUG_ON(pmd_trans_splitting(*____pmd) ||			\
- 		       pmd_trans_huge(*____pmd));			\
- 	} while (0)
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index d7c6830..9af643d 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -911,7 +911,7 @@ int copy_huge_pmd(struct mm_struct *dst_mm, struct mm_struct *src_mm,
- 		spin_unlock(&dst_mm->page_table_lock);
- 		pte_free(dst_mm, pgtable);
+diff --git a/fs/libfs.c b/fs/libfs.c
+index 3a3a9b5..934778b 100644
+--- a/fs/libfs.c
++++ b/fs/libfs.c
+@@ -364,7 +364,7 @@ EXPORT_SYMBOL(simple_setattr);
  
--		wait_split_huge_page(vma->anon_vma, src_pmd); /* src_vma */
-+		wait_split_huge_page(vma, src_pmd); /* src_vma */
- 		goto out;
+ int simple_readpage(struct file *file, struct page *page)
+ {
+-	clear_highpage(page);
++	clear_pagecache_page(page);
+ 	flush_dcache_page(page);
+ 	SetPageUptodate(page);
+ 	unlock_page(page);
+@@ -424,9 +424,14 @@ int simple_write_end(struct file *file, struct address_space *mapping,
+ 
+ 	/* zero the stale part of the page if we did a short copy */
+ 	if (copied < len) {
+-		unsigned from = pos & (PAGE_CACHE_SIZE - 1);
+-
+-		zero_user(page, from + copied, len - copied);
++		unsigned from;
++		if (PageTransHuge(page)) {
++			from = pos & ~HPAGE_PMD_MASK;
++			zero_huge_user(page, from + copied, len - copied);
++		} else {
++			from = pos & ~PAGE_CACHE_MASK;
++			zero_user(page, from + copied, len - copied);
++		}
  	}
- 	src_page = pmd_page(pmd);
-@@ -1493,7 +1493,7 @@ int __pmd_trans_huge_lock(pmd_t *pmd, struct vm_area_struct *vma)
- 	if (likely(pmd_trans_huge(*pmd))) {
- 		if (unlikely(pmd_trans_splitting(*pmd))) {
- 			spin_unlock(&vma->vm_mm->page_table_lock);
--			wait_split_huge_page(vma->anon_vma, pmd);
-+			wait_split_huge_page(vma, pmd);
- 			return -1;
- 		} else {
- 			/* Thp mapped by 'pmd' is stable, so we can
-diff --git a/mm/memory.c b/mm/memory.c
-index 7d35f90..ea74ab1 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -609,7 +609,7 @@ int __pte_alloc(struct mm_struct *mm, struct vm_area_struct *vma,
- 	if (new)
- 		pte_free(mm, new);
- 	if (wait_split_huge_page)
--		wait_split_huge_page(vma->anon_vma, pmd);
-+		wait_split_huge_page(vma, pmd);
- 	return 0;
+ 
+ 	if (!PageUptodate(page))
+@@ -445,6 +450,46 @@ int simple_write_end(struct file *file, struct address_space *mapping,
+ 	return copied;
  }
  
-@@ -1522,7 +1522,7 @@ struct page *follow_page_mask(struct vm_area_struct *vma,
- 		if (likely(pmd_trans_huge(*pmd))) {
- 			if (unlikely(pmd_trans_splitting(*pmd))) {
- 				spin_unlock(&mm->page_table_lock);
--				wait_split_huge_page(vma->anon_vma, pmd);
-+				wait_split_huge_page(vma, pmd);
- 			} else {
- 				page = follow_trans_huge_pmd(vma, address,
- 							     pmd, flags);
++#ifdef CONFIG_TRANSPARENT_HUGEPAGE_PAGECACHE
++int simple_thp_write_begin(struct file *file, struct address_space *mapping,
++		loff_t pos, unsigned len, unsigned flags,
++		struct page **pagep, void **fsdata)
++{
++	struct page *page = NULL;
++	pgoff_t index;
++
++	index = pos >> PAGE_CACHE_SHIFT;
++
++	if (mapping_can_have_hugepages(mapping)) {
++		page = grab_cache_page_write_begin(mapping,
++				index & ~HPAGE_CACHE_INDEX_MASK,
++				flags | AOP_FLAG_TRANSHUGE);
++		/* fallback to small page */
++		if (!page) {
++			unsigned long offset;
++			offset = pos & ~PAGE_CACHE_MASK;
++			/* adjust the len to not cross small page boundary */
++			len = min_t(unsigned long,
++					len, PAGE_CACHE_SIZE - offset);
++		}
++		BUG_ON(page && !PageTransHuge(page));
++	}
++	if (!page)
++		return simple_write_begin(file, mapping, pos, len, flags,
++				pagep, fsdata);
++
++	*pagep = page;
++
++	if (!PageUptodate(page) && len != HPAGE_PMD_SIZE) {
++		unsigned from = pos & ~HPAGE_PMD_MASK;
++
++		zero_huge_user_segment(page, 0, from);
++		zero_huge_user_segment(page, from + len, HPAGE_PMD_SIZE);
++	}
++	return 0;
++}
++#endif
++
+ /*
+  * the inodes created here are not hashed. If you use iunique to generate
+  * unique inode values later for this filesystem, then you must take care
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index d5f58b3..c1dbf43 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -2553,6 +2553,13 @@ extern int simple_write_begin(struct file *file, struct address_space *mapping,
+ extern int simple_write_end(struct file *file, struct address_space *mapping,
+ 			loff_t pos, unsigned len, unsigned copied,
+ 			struct page *page, void *fsdata);
++#ifdef CONFIG_TRANSPARENT_HUGEPAGE_PAGECACHE
++extern int simple_thp_write_begin(struct file *file,
++		struct address_space *mapping, loff_t pos, unsigned len,
++		unsigned flags,	struct page **pagep, void **fsdata);
++#else
++#define simple_thp_write_begin simple_write_begin
++#endif
+ 
+ extern struct dentry *simple_lookup(struct inode *, struct dentry *, unsigned int flags);
+ extern ssize_t generic_read_dir(struct file *, char __user *, size_t, loff_t *);
+diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
+index d459b38..eb484f2 100644
+--- a/include/linux/pagemap.h
++++ b/include/linux/pagemap.h
+@@ -591,4 +591,12 @@ static inline int add_to_page_cache(struct page *page,
+ 	return error;
+ }
+ 
++static inline void clear_pagecache_page(struct page *page)
++{
++	if (PageTransHuge(page))
++		zero_huge_user(page, 0, HPAGE_PMD_SIZE);
++	else
++		clear_highpage(page);
++}
++
+ #endif /* _LINUX_PAGEMAP_H */
 -- 
 1.8.3.2
 
