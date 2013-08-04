@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753728Ab3HDJsK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Aug 2013 05:48:10 -0400
-Received: from up.free-electrons.com ([94.23.35.102]:37017 "EHLO
+	id S1753796Ab3HDJtM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Aug 2013 05:49:12 -0400
+Received: from up.free-electrons.com ([94.23.35.102]:37029 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752688Ab3HDJsG (ORCPT
+	with ESMTP id S1753695Ab3HDJsJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Aug 2013 05:48:06 -0400
+	Sun, 4 Aug 2013 05:48:09 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: linux-arm-kernel@lists.infradead.org
 Cc: Emilio Lopez <emilio@elopez.com.ar>, kevin.z.m.zh@gmail.com,
         sunny@allwinnertech.com, shuge@allwinnertech.com,
         linux-kernel@vger.kernel.org, linux-sunxi@googlegroups.com,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCHv3 08/10] ARM: sunxi: dt: Add PIO controller to A31 DTSI
-Date: Sun,  4 Aug 2013 11:47:35 +0200
-Message-Id: <1375609657-15434-9-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCHv3 10/10] ARM: sun6i: colombus: Add uart0 muxing
+Date: Sun,  4 Aug 2013 11:47:37 +0200
+Message-Id: <1375609657-15434-11-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 1.8.3.4
 In-Reply-To: <1375609657-15434-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1375609657-15434-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -23,38 +23,24 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The A31 has a different set of pins than the one found on the A10 and
-A13. Now that we have support for the A31 pin set in the pinctrl driver,
-we can enable it in the DTSI with its own compatible.
-
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- arch/arm/boot/dts/sun6i-a31.dtsi | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ arch/arm/boot/dts/sun6i-a31-colombus.dts | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/arch/arm/boot/dts/sun6i-a31.dtsi b/arch/arm/boot/dts/sun6i-a31.dtsi
-index 45487e4..2bf6404 100644
---- a/arch/arm/boot/dts/sun6i-a31.dtsi
-+++ b/arch/arm/boot/dts/sun6i-a31.dtsi
-@@ -66,6 +66,18 @@
- 		#size-cells = <1>;
- 		ranges;
+diff --git a/arch/arm/boot/dts/sun6i-a31-colombus.dts b/arch/arm/boot/dts/sun6i-a31-colombus.dts
+index 99c4b18..e5adae3 100644
+--- a/arch/arm/boot/dts/sun6i-a31-colombus.dts
++++ b/arch/arm/boot/dts/sun6i-a31-colombus.dts
+@@ -24,6 +24,8 @@
  
-+		pio: pinctrl@01c20800 {
-+			compatible = "allwinner,sun6i-a31-pinctrl";
-+			reg = <0x01c20800 0x400>;
-+			interrupts = <0 11 1>, <0 15 1>, <0 16 1>, <0 17 1>;
-+			clocks = <&osc>;
-+			gpio-controller;
-+			interrupt-controller;
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+			#gpio-cells = <3>;
-+		};
-+
- 		timer@01c20c00 {
- 			compatible = "allwinner,sun4i-timer";
- 			reg = <0x01c20c00 0xa0>;
+ 	soc@01c00000 {
+ 		uart0: serial@01c28000 {
++			pinctrl-names = "default";
++			pinctrl-0 = <&uart0_pins_a>;
+ 			status = "okay";
+ 		};
+ 	};
 -- 
 1.8.3.4
 
