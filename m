@@ -1,86 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752361Ab3HDIZX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Aug 2013 04:25:23 -0400
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:43763 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752080Ab3HDIZO (ORCPT
+	id S1752421Ab3HDI3O (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Aug 2013 04:29:14 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:61356 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752062Ab3HDI3E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Aug 2013 04:25:14 -0400
-Date: Sun, 4 Aug 2013 10:25:09 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
-        Ning Qu <quning@google.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH 02/23] memcg, thp: charge huge cache pages
-Message-ID: <20130804082509.GC24005@dhcp22.suse.cz>
-References: <1375582645-29274-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1375582645-29274-3-git-send-email-kirill.shutemov@linux.intel.com>
+	Sun, 4 Aug 2013 04:29:04 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1375582645-29274-3-git-send-email-kirill.shutemov@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130802034759.GU13468@dastard>
+References: <1375281734-15874-1-git-send-email-linkinjeon@gmail.com>
+	<20130801011812.GJ7118@dastard>
+	<CAKYAXd-miJBmDs3aArkhoFwGuVYDc9FSnX2gabbmX86Yu78amA@mail.gmail.com>
+	<20130802034759.GU13468@dastard>
+Date: Sun, 4 Aug 2013 17:29:02 +0900
+Message-ID: <CAKYAXd-mQjuCFxWGEw33j_-_a_R2xKHtBZ9X3nx5fa6_xT+P_Q@mail.gmail.com>
+Subject: Re: [PATCH 2/3] xfs: Implement FALLOC_FL_COLLAPSE_RANGE
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: tytso@mit.edu, adilger.kernel@dilger.ca, bpm@sgi.com, elder@kernel.org,
+        hch@infradead.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        xfs@oss.sgi.com, a.sangwan@samsung.com,
+        Namjae Jeon <namjae.jeon@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun 04-08-13 05:17:04, Kirill A. Shutemov wrote:
-> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-> 
-> mem_cgroup_cache_charge() has check for PageCompound(). The check
-> prevents charging huge cache pages.
-> 
-> I don't see a reason why the check is present. Looks like it's just
-> legacy (introduced in 52d4b9a memcg: allocate all page_cgroup at boot).
-> 
-> Let's just drop it.
+>
+>> >> +	if (cur) {
+>> >> +		if (!error)
+>> >> +			cur->bc_private.b.allocated = 0;
+>> >
+>> > Um, why?
+>> Okay, will remove.
+>
+> I'm asking you to explain why you put it there. Don't remove code
+> that might be necessary just because a hard question was asked....
+We copied this code from xfs_bunmapi. And we realize that why it is
+there because xfs_bunmapi may split the extents, which could require
+block allocation for btree, but I think that is not necessary here
+because updating starting offsets of extents would not reqire a btree
+split and allocation.
+>
+>> >> @@ -845,6 +850,21 @@ xfs_file_fallocate(
+>> >>  	if (error)
+>> >>  		goto out_unlock;
+>> >>
+>> >> +	if (mode & FALLOC_FL_COLLAPSE_RANGE) {
+>> >> +		error = -xfs_collapse_file_space(ip, offset + len, len);
+>> >> +		if (error || offset >= i_size_read(inode))
+>> >> +			goto out_unlock;
+>> >> +
+>> >> +		/* Shrink size in case of FALLOC_FL_COLLAPSE_RANGE */
+>> >> +		if ((offset + len) > i_size_read(inode))
+>> >> +			new_size = offset;
+>> >> +		else
+>> >> +			new_size = i_size_read(inode) - len;
+>> >> +		error = -xfs_update_file_size(ip, new_size);
+>> >> +
+>> >> +		goto out_unlock;
+>> >> +	}
+>> >
+>> > This needs to vector through xfs_change_file_space() - it already
+>> > has code for doing offset/range validity checks, attaching
+>> > appropriate dquots for accounting, post-op file size and timestamp
+>> > updates, etc.
+>> It already is going through xfs_change_file_space(). Check this=>
+>
+> No it isn't - this is calling xfs_collapse_file_space from
+> xfs_file_fallocate(). That is not going through
+> xfs_change_file_space().
+>
+> Oh, I see now, this hunk is *after* the xfs_change_file_space()
+> call.  That's nasty - it's a layering violation, pure and simple.
+>
+> No wonder I thought that no hole punching was done, it's triggered
+> by a non-obvious flag set and so hidden three layers away from the
+> xfs_collapse_file_space() call that acts on the hole that was
+> punched.  This code *must* go through the same code paths as the
+> other fallocate operations so it is obvious how it interacts with
+> everything.
+>
+>> >> +
+>> >> +/*
+>> >> + * xfs_update_file_size()
+>> >> + *	Just a simple disk size and time update
+>> >> + */
+>> >> +int
+>> >> +xfs_update_file_size(
+>> >> +	struct xfs_inode        *ip,
+>> >> +	loff_t			newsize)
+>> >
+>> > This function should be nuked from orbit. I stopped looking at it
+>> > when the bug count got past 5. If you use xfs_change_file_space,
+>> > it's not necessary, either.
+>> we are using xfs_change_file_space(). See my comment above. :)
+>
+> Yes, badly. See my comment above. :)
+>
+>> But, xfs_change_file_space does not change logical file size.
+>> Neither can we use xfs_setattr, because it will truncate the
+>> preallocated extents beyond EOF.
+>
+> And the problem with that is?
+>
+> Seriously, if you are chopping chunks out of a file and moving
+> extents around in it, you aren't going to be writing to it while
+> that is happening. For NLE workflows, this manipulation happens
+> after the entire stream is written. If you collapse the range while
+> the video is being written, you are going to end up with big
+> chunks of zeroes in the file as you the write() has a file position
+> way beyond the new EOF....
+>
+>> >> diff --git a/fs/xfs/xfs_vnodeops.c b/fs/xfs/xfs_vnodeops.c
+>> >> index dc730ac..95b46e7 100644
+>> >> --- a/fs/xfs/xfs_vnodeops.c
+>> >> +++ b/fs/xfs/xfs_vnodeops.c
+>> >> @@ -1868,3 +1868,65 @@ xfs_change_file_space(
+>> >>  		xfs_trans_set_sync(tp);
+>> >>  	return xfs_trans_commit(tp, 0);
+>> >>  }
+>> >> +
+>> >> +/*
+>> >> + * xfs_collapse_file_space()
+>> >> + *	This implements the fallocate collapse range functionlaity.
+>> >> + *	It removes the hole from file by shifting all the extents which
+>> >> + *	lies beyond start block.
+>> >> + */
+>> >> +int
+>> >> +xfs_collapse_file_space(
+>> >> +	xfs_inode_t	*ip,
+>> >> +	loff_t		start,
+>> >> +	loff_t		shift)
+>> >> +{
+>> >> +	int		done = 0;
+>> >> +	xfs_mount_t	*mp = ip->i_mount;
+>> >> +	uint		resblks;
+>> >> +	xfs_trans_t	*tp;
+>> >> +	int		error = 0;
+>> >> +	xfs_extnum_t	current_ext = 0;
+>> >> +	xfs_fileoff_t	start_fsb = XFS_B_TO_FSB(mp, start);
+>> >> +	xfs_fileoff_t	shift_fsb = XFS_B_TO_FSB(mp, shift);
+>> >> +	resblks = XFS_DIOSTRAT_SPACE_RES(mp, 0);
+>> >> +
+>> >> +	while (!error && !done) {
+>> >> +		tp = xfs_trans_alloc(mp, XFS_TRANS_DIOSTRAT);
+>> >> +		tp->t_flags |= XFS_TRANS_RESERVE;
+>> >> +		error = xfs_trans_reserve(tp, resblks, XFS_WRITE_LOG_RES(mp),
+>> >> +					  0, XFS_TRANS_PERM_LOG_RES,
+>> >> +					  XFS_WRITE_LOG_COUNT);
+>> >
+>> > Why a permanent log reservation for a single, non-nested transaction?
+>> XFS transaction log reservation code is becoming our major problem.
+>> Could you suggest a proper way?
+>
+> Permanent log transactions are only needed for transactions that
+> commit multiple times between reservations. You are doing:
+>
+> 	tp = alloc()
+> 	reserve(tp, XFS_WRITE_LOG_RES, XFS_TRANS_PERM_LOG_RES,
+> XFS_WRITE_LOG_COUNT)
+> 	commit(tp, XFS_TRANS_RELEASE_LOG_RES)
+>
+> It's a single transaction. Permanent log transactions are used for
+> multi-stage, rolling transactions that can be broken up into
+> multiple atomic operations, so as freeing multiple extents from a
+> file:
+>
+> 	tp = alloc()
+> 	reserve(tp, XFS_WRITE_LOG_RES, XFS_TRANS_PERM_LOG_RES,
+> XFS_WRITE_LOG_COUNT)
+> 	.....
+> 	tp2 = dup(tp)
+> 	commit(tp)
+> 	reserve(tp2, XFS_WRITE_LOG_RES, XFS_TRANS_PERM_LOG_RES,
+> XFS_WRITE_LOG_COUNT)
+> 	....
+> 	commit(tp2, XFS_TRANS_PERM_LOG_RES).
+>
+>
+> The dup/reserve/commit loop keeps the same transaction context
+> across the whole operation and allows them to make continual forward
+> progress.
+>
+> Hmmmm. In looking at this, I notice the update case that uses a
+> btree cursor doesn't have an the flist/firstblock initialised.
+> That'll cause an oops if a block is ever allocated or freed in a
+> record update. That would also indicate that the above does indeed
+> need a permanent log transaction and probably needs to be structured
+> similar to xfs_itruncate_extents with
+> xfs_bmap_init/xfs_bmap_finish() and a rolling transaction just in
+> case we end up modifying the btree.
+Ok, we noted all your points and understand that a lot of work is
+really needed to make it stable. we will try to implement them in next
+version of patch. Really thanks for your time and help.
 
-If the page cache charging path only sees THP as compound pages then OK.
-Can we keep at least VM_BUG_ON(PageCompound(page) && !PageTransHuge(page))
-
-Otherwise mem_cgroup_charge_common would be confused and charge such a
-page as order-0
- 
-> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> Cc: Michal Hocko <mhocko@suse.cz>
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Acked-by: Dave Hansen <dave.hansen@linux.intel.com>
-
-Other than that, looks good to me.
-Acked-by: Michal Hocko <mhocko@suse.cz>
-
-> ---
->  mm/memcontrol.c | 2 --
->  1 file changed, 2 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index b6cd870..dc50c1a 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -3921,8 +3921,6 @@ int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
->  
->  	if (mem_cgroup_disabled())
->  		return 0;
-> -	if (PageCompound(page))
-> -		return 0;
->  
->  	if (!PageSwapCache(page))
->  		ret = mem_cgroup_charge_common(page, mm, gfp_mask, type);
-> -- 
-> 1.8.3.2
-> 
-
--- 
-Michal Hocko
-SUSE Labs
+>
+> Cheers,
+>
+> Dave.
+> --
+> Dave Chinner
+> david@fromorbit.com
+>
