@@ -1,96 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753523Ab3HDCZH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Aug 2013 22:25:07 -0400
-Received: from imap.thunk.org ([74.207.234.97]:39088 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753294Ab3HDCZE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Aug 2013 22:25:04 -0400
-Date: Sat, 3 Aug 2013 20:33:16 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: =?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>
-Cc: Vyacheslav Dubeyko <slava@dubeyko.com>, Dhaval Giani <dgiani@mozilla.com>,
-        Taras Glek <tglek@mozilla.com>, linux-kernel@vger.kernel.org,
-        vdjeric@mozilla.com, glandium@mozilla.com, linux-ext4@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [RFC/PATCH 0/2] ext4: Transparent Decompression Support
-Message-ID: <20130804003316.GA19781@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	=?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>,
-	Vyacheslav Dubeyko <slava@dubeyko.com>,
-	Dhaval Giani <dgiani@mozilla.com>, Taras Glek <tglek@mozilla.com>,
-	linux-kernel@vger.kernel.org, vdjeric@mozilla.com,
-	glandium@mozilla.com, linux-ext4@vger.kernel.org,
-	linux-fsdevel@vger.kernel.org
-References: <1374699833.7083.2.camel@localhost>
- <20130724233628.GD3641@logfs.org>
- <51F14136.30409@mozilla.com>
- <51F1556A.20909@mozilla.com>
- <51FB2C87-854F-4250-9587-B5BBF4E85EE8@dubeyko.com>
- <51F17005.7030309@mozilla.com>
- <1374825683.3671.35.camel@slavad-ubuntu>
- <20130726132034.GB21977@logfs.org>
+	id S1753549Ab3HDDuf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Aug 2013 23:50:35 -0400
+Received: from mail-ve0-f172.google.com ([209.85.128.172]:46585 "EHLO
+	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753484Ab3HDDue (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Aug 2013 23:50:34 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130726132034.GB21977@logfs.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <alpine.DEB.2.00.1308040207490.5329@skynet.skynet.ie>
+References: <alpine.DEB.2.00.1308040207490.5329@skynet.skynet.ie>
+Date: Sat, 3 Aug 2013 20:50:33 -0700
+X-Google-Sender-Auth: m5Z40rx3u7uS9pUXjXL8HoKShCA
+Message-ID: <CA+55aFwZGzy6GJQn_2pJAnFTMe4LLmzLUpHYNxz-YyJOhmhxFg@mail.gmail.com>
+Subject: Re: [git pull] drm build fix
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Dave Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>
+Cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 26, 2013 at 09:20:34AM -0400, Jörn Engel wrote:
-> 
-> I don't think the e2compr patches are strictly necessary.  They are a
-> good option, but not the only one.
+On Sat, Aug 3, 2013 at 6:08 PM, Dave Airlie <airlied@linux.ie> wrote:
+>
+> Alex Deucher (1):
+>       drm/radeon: fix 64 bit divide in SI spm code
 
-Sorry for not chiming in earlier; I've been travelling this past week,
-and between that and a bunch of other things I've fallen a bit earlier
-on my e-mail.
+That code is stupid. You're asking for a 64-by-64 divide, when the
+divisor is clearly an "int" (100 and 1000 respectively).
 
-> One trick to simplify the problem is to make Dhaval's compressed files
-> strictly read-only.  It will require some dance to load the compressed
-> content, flip the switch, then uncompress data on the fly and disallow
-> writes.  Not the most pleasing of interfaces, but yet another option.
+Why is it doing "div64_s64()" instead of the simpler and faster "div_s64()"?
 
-Yeah, this is something that I've wanted for a while.  (In fact a few
-years ago I shopped around this design to some folks who were
-associated with Firefox.)  MacOS has something rather similar to this.
-I haven't had a chance to look at Dhaval's patches yet, but the way
-I've been thinking about this is that the compression and building the
-table mapping compressed clusters to byte offsets in the file would be
-done in userspace.  Once the compressed file plus the table is written
-to the disk, the userspace program would then close the file
-descriptor, and then set the "compressed" bit.
+A full 64-by-64 divide is _expensive_ on 32-bit architecture (up to
+four divide instructions, each potentially expensive in its own
+right), which is the whole reason why we have that "math64.h" to begin
+with - to make people aware of it.
 
-When the bit is set, we flush all of its pages from the page cache,
-and the file becomes immutable.  At that point, the kernel will handle
-the decompression, by implementing readpages() by reading the pages
-into the buffer cache, and then decompressing the compressed cluster
-of pages into the page cache.  This gives us transparent compression,
-with a fraction of the complexity of supporting read/write
-compression.  In addition, since we don't have to worry rewriting a
-cluster (and having the modified compressed cluster taking up more
-space), the on-disk representation can be a lot more efficient, since
-you don't have to use a stacker-style design.
+Now, our lib/div64.c routines do notice that the upper bits of the
+divisor are zero and end up using the simpler 64-by-32 divide
+functions, but why explicitly ask for those more complex functions to
+begin with?
 
-One of the cool things about this design is that the vast majority of
-files on a typical distribution are write-once, and better yet, they
-are written by the package manager.  So once you teach dpkg, rpm, and
-the Android package installer how to write the file in this compressed
-format and set the compressed bit, we can the vast majority of the
-benefits of using compressed file with minimal effort.
+So the code is likely not performance critical, and hey, our library
+routines do the simple optimizations to avoid the trivially excessive
+divide instructions, so this "doesn't matter". Except for the
+annoyance factor of you using a more complicated function for no
+reason.
 
-						- Ted
-
-P.S.  This is interesting not just for systems with slow HDD's, but
-also for cheap, single-channel MMC flash, the kind found in low-end
-handset and embedded systems.
-
-P.P.S.  At least in theory, nothing of what I've described here has to
-be ext4 specific.  We could implement this in the VFS layer, at which
-point not only ext4 would benefit, but also btrfs, xfs, f2fs, etc.
+                   Linus
