@@ -1,77 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752033Ab3HDMhV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Aug 2013 08:37:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9934 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750886Ab3HDMhU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Aug 2013 08:37:20 -0400
-Date: Sun, 4 Aug 2013 15:37:08 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Mukesh Rathor <mukesh.rathor@oracle.com>,
-        Mike Rapoport <mike.rapoport@gmail.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Ramkumar Ramachandra <artagnon@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, xen-devel@lists.xensource.com
-Subject: Re: [QUERY] lguest64
-Message-ID: <20130804123708.GM6042@redhat.com>
-References: <CALkWK0n7zedKD4tnxKh-qMuDnMJ5RXjnPJ9EUWT=cCgiokX11A@mail.gmail.com>
- <51E97779.3020103@zytor.com>
- <87zjte9iah.fsf@rustcorp.com.au>
- <CABpLfohrweJd0=0eFJDO7dv2HHxx_mbP0uySMDrsZZZXExdXug@mail.gmail.com>
- <51F9005F.30501@zytor.com>
- <20130731131757.GB22124@phenom.dumpdata.com>
- <51F91030.9060606@zytor.com>
- <20130802190934.GA4354@phenom.dumpdata.com>
+	id S1752273Ab3HDMx5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Aug 2013 08:53:57 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:40250 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751649Ab3HDMx4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Aug 2013 08:53:56 -0400
+Date: Sun, 4 Aug 2013 13:53:46 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Olof Johansson <olof@lixom.net>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: Build breakage due to latest ARM fixes
+Message-ID: <20130804125346.GH23006@n2100.arm.linux.org.uk>
+References: <CAOesGMgWeP-CdmOE-S7XZmJ-+1buP9a1cqavUns2gpgKrrhaxQ@mail.gmail.com> <20130803000731.GS23006@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130802190934.GA4354@phenom.dumpdata.com>
+In-Reply-To: <20130803000731.GS23006@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 02, 2013 at 03:09:34PM -0400, Konrad Rzeszutek Wilk wrote:
-> On Wed, Jul 31, 2013 at 06:25:04AM -0700, H. Peter Anvin wrote:
-> > On 07/31/2013 06:17 AM, Konrad Rzeszutek Wilk wrote:
-> > >>
-> > >> The big problem with pvops is that they are a permanent tax on future
-> > >> development -- a classic case of "the hooks problem."  As such it is
-> > >> important that there be a real, significant, use case with enough users
-> > >> to make the pain worthwhile.  With Xen looking at sunsetting PV support
-> > >> with a long horizon, it might currently be possible to remove pvops some
-> > > 
-> > > PV MMU parts specifically.
-> > > 
-> > 
-> > Pretty much stuff that is driverized on plain hardware doesn't matter.
-> > What are you looking at with respect to the basic CPU control state?
-> 
-> 
-> CC-ing Mukesh here.
-> 
-> Let me iterate down what the experimental patch uses:
-> 
->          struct pv_init_ops pv_init_ops;                                         
-> 		[still use xen_patch, but I think that is not needed anymore]
-> 
->          struct pv_time_ops pv_time_ops;                                         
-> 		[we need that as we are using the PV clock source]
-> 
->          struct pv_cpu_ops pv_cpu_ops;                                           
-> 		[only end up using cpuid. This one is a tricky one. We could
-> 		 arguable remove it but it does do some filtering - for example
-> 	 	 THERM is turned off, or MWAIT if a certain hypercall tells us to
-> 		 disable that. Since this is now a trapped operation this could be
-> 		 handled in the hypervisor - but then it would be in charge of
-> 		 filtering certain CPUID - and this is at bootup - so there is not
-> 		 user interaction. This needs a bit more of thinking]
-> 
-read_msr/write_msr in this one make all msr accesses safe. IIRC there
-are MSRs that Linux uses without checking cpuid bits.
-IA32_PERF_CAPABILITIES for instance is used without checking PDCM bit.
+On Sat, Aug 03, 2013 at 01:07:31AM +0100, Russell King - ARM Linux wrote:
+> I'll look into that.  Obviously, I never build nommu because it isn't
+> part of the build system and the nommu platform I do have - OKI67001 -
+> doesn't have mainline kernel support.  (And if it did, it would not be
+> DT, so I doubt it's submittable.)
 
+Okay, what I'm going to do is push the OKI67001 stuff into mainline
+irrespective of DT or not, so that I can then add noMMU build _and_
+boot tests to my build system, which should ensure that problems
+like that get detected before they're pushed upstream.
 
---
-			Gleb.
+If people want me to care about noMMU, that's what has to happen
+because I have no other noMMU platform - if not, people can put up with
+noMMU breaking from time to time.
