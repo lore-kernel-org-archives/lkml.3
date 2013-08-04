@@ -1,73 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752063Ab3HDGyZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Aug 2013 02:54:25 -0400
-Received: from mail-la0-f53.google.com ([209.85.215.53]:56998 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751887Ab3HDGyX (ORCPT
+	id S1752200Ab3HDIIB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Aug 2013 04:08:01 -0400
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:42164 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752016Ab3HDIHz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Aug 2013 02:54:23 -0400
+	Sun, 4 Aug 2013 04:07:55 -0400
+Date: Sun, 4 Aug 2013 10:07:51 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, dave.hansen@intel.com,
+        kamezawa.hiroyu@jp.fujitsu.com, bp@suse.de, dave@linux.vnet.ibm.com
+Subject: Re: [PATCH resend] drop_caches: add some documentation and info
+ message
+Message-ID: <20130804080751.GA24005@dhcp22.suse.cz>
+References: <1374842669-22844-1-git-send-email-mhocko@suse.cz>
+ <20130729135743.c04224fb5d8e64b2730d8263@linux-foundation.org>
+ <51F9D1F6.4080001@jp.fujitsu.com>
+ <20130731201708.efa5ae87.akpm@linux-foundation.org>
+ <CAHGf_=r7mek+ueJWfu_6giMOueDTnMs8dY1jJrKyX+gfPys6uA@mail.gmail.com>
+ <20130802073304.GA17746@dhcp22.suse.cz>
+ <51FD653A.3060004@jp.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <CAOzJMDQwte=7VtfQzW9DyQpt+pbe48STDEGhLis62Y0tG78G1w@mail.gmail.com>
-References: <1375472229-1563-1-git-send-email-felipe.contreras@gmail.com>
-	<13505759.IqzsRNCUnN@vostro.rjw.lan>
-	<CAMP44s1SobAmSwth+=-pHYN77u-yEumqMfes1w3Bj-8sLTpWng@mail.gmail.com>
-	<2483450.yz2brWbP8X@vostro.rjw.lan>
-	<CAMP44s3kacF57gsJzyL6-4JWfWpdfJbJYW-nWQ92Yn1VimnYug@mail.gmail.com>
-	<CAOzJMDQwte=7VtfQzW9DyQpt+pbe48STDEGhLis62Y0tG78G1w@mail.gmail.com>
-Date: Sun, 4 Aug 2013 01:54:21 -0500
-Message-ID: <CAMP44s2CnJ5O5wspeG3-hYOTKwBLHbaZ1AbfHQ=rYEQRpeJW2g@mail.gmail.com>
-Subject: Re: [PATCH] acpi: video: improve quirk check
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: Aaron Lu <aaron.lwe@gmail.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        linux-acpi@vger.kernel.org, Len Brown <lenb@kernel.org>,
-        Zhang Rui <rui.zhang@intel.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51FD653A.3060004@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 3, 2013 at 8:47 PM, Aaron Lu <aaron.lwe@gmail.com> wrote:
-> On Sun, Aug 4, 2013 at 6:20 AM, Felipe Contreras
-> <felipe.contreras@gmail.com> wrote:
->> On Sat, Aug 3, 2013 at 4:40 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+On Sat 03-08-13 16:16:58, KOSAKI Motohiro wrote:
+> >>> You missed the "!".  I'm proposing that setting the new bit 2 will
+> >>> permit people to prevent the new printk if it is causing them problems.
+> >>
+> >> No I don't. I'm sure almost all abuse users think our usage is correct. Then,
+> >> I can imagine all crazy applications start to use this flag eventually.
+> > 
+> > I guess we do not care about those. If somebody wants to shoot his feet
+> > then we cannot do much about it. The primary motivation was to find out
+> > those that think this is right and they are willing to change the setup
+> > once they know this is not the right way to do things.
+> > 
+> > I think that giving a way to suppress the warning is a good step. Log
+> > level might be to coarse and sysctl would be an overkill.
+> 
+> When Dave Hansen reported this issue originally, he explained a lot of userland
+> developer misuse /proc/drop_caches because they don't understand what
+> drop_caches do.
+> So, if they never understand the fact, why can we trust them? I have no
+> idea.
 
->>> Do we still need to revert commit efaa14c if this patch is applied?
->>
->> I guess not. At least in this machine changing the backlight works
->> correctly, whereas in v3.11-rc3 it was all weird, and v3.7-v3.10
->> didn't work at all. I cannot see how it would affect negatively other
->> machines.
->
-> That commit makes hotkey emit notifications, and it's not the
-> problem of "booting into a black screen", that problem is due to
-> broken _BQC.
+Well, most of that usage I have come across was legacy scripts which
+happened to work at a certain point in time because we sucked.
+Thinks have changed but such scripts happen to survive a long time.
+We are primarily interested in those.
 
-The broken _BQC has been there for quite some time, hasn't it?
+> Or, if you have different motivation w/ Dave, please let me know it.
 
-Either way, without efaa14c, changing the backlight doesn't work at
-all either way, so there's no black screen, because there cannot be.
+We have seen reports where users complained about performance drop down
+when in fact the real culprit turned out to be such a clever script
+which dropped caches on the background thinking it will help to free
+some memory. Such cases are tedious to reveal.
 
-> BTW, the efaa14c will also make screen off at level 0 according
-> to Felipe, who consider this is a bug. But since it is required to
-> let firmware emit notifications on hotkey press, I think user will
-> want it.
+> While the purpose is to shoot misuse, I don't think we can trust
+> userland app.  If "If somebody wants to shoot his feet then we cannot
+> do much about it." is true, this patch is useless. OK, we still catch
+> the right user.
 
-With or without efaa14c, level 0 makes the screen off, or at least it
-would, if the control worked at all. So efaa14c is one step forward,
-but two back, my patch removes the two steps back, but we are still
-not at the level of what my blacklisting patch does, for that we would
-need to fix two issues:
+I do not think it is useless. It will print a message for all those
+users initially. It is a matter of user how to deal with it.
 
-1. Fix the retrieval of the last level at boot
-2. Fix level 0 (yes, I consider that a regression)
+> But we never want to know who is the right users, right?
 
-But we cannot achieve either of those for v3.11, the only
-possibilities seem to be either a) revert efaa14c, or b) keep it and
-apply my patch. Anything else doesn't seem to be a possible or
-sensible option, and I vote for b).
-
+Well, those that are curious about a new message in the lock and come
+back to us asking what is going on are those we are primarily interested
+in.
 -- 
-Felipe Contreras
+Michal Hocko
+SUSE Labs
