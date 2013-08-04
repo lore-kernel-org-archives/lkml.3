@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753633Ab3HDJr6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Aug 2013 05:47:58 -0400
-Received: from up.free-electrons.com ([94.23.35.102]:36977 "EHLO
+	id S1753674Ab3HDJsD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Aug 2013 05:48:03 -0400
+Received: from up.free-electrons.com ([94.23.35.102]:36994 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753568Ab3HDJr4 (ORCPT
+	with ESMTP id S1753568Ab3HDJr7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Aug 2013 05:47:56 -0400
+	Sun, 4 Aug 2013 05:47:59 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: linux-arm-kernel@lists.infradead.org
 Cc: Emilio Lopez <emilio@elopez.com.ar>, kevin.z.m.zh@gmail.com,
         sunny@allwinnertech.com, shuge@allwinnertech.com,
         linux-kernel@vger.kernel.org, linux-sunxi@googlegroups.com,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCHv3 03/10] ARM: sunxi: Add the Allwinner A31 compatible to the machine definition
-Date: Sun,  4 Aug 2013 11:47:30 +0200
-Message-Id: <1375609657-15434-4-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCHv3 05/10] ARM: sunxi: Add Allwinner A31 DTSI
+Date: Sun,  4 Aug 2013 11:47:32 +0200
+Message-Id: <1375609657-15434-6-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 1.8.3.4
 In-Reply-To: <1375609657-15434-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1375609657-15434-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -23,40 +23,177 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Allwinner A31 is a quad-Cortex-A7 based SoC, which shares a lot of
-IPs with the previous SoCs from Allwinner, like the PIO, I2C, UARTs,
-timers, watchdog IPs, but also differs by dropping the WEMAC ethernet
-controller and most notably dropping the in-house IRQ controller in
-favor of a ARM GIC one.
+The Allwinner A31 SoC is a multimedia SoC powered by 4 Cortex-A7 and a
+PowerVR GPU.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- arch/arm/mach-sunxi/Kconfig | 2 ++
- arch/arm/mach-sunxi/sunxi.c | 1 +
- 2 files changed, 3 insertions(+)
+ arch/arm/boot/dts/sun6i-a31.dtsi | 156 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 156 insertions(+)
+ create mode 100644 arch/arm/boot/dts/sun6i-a31.dtsi
 
-diff --git a/arch/arm/mach-sunxi/Kconfig b/arch/arm/mach-sunxi/Kconfig
-index 5b045e3..3ab2f65 100644
---- a/arch/arm/mach-sunxi/Kconfig
-+++ b/arch/arm/mach-sunxi/Kconfig
-@@ -10,3 +10,5 @@ config ARCH_SUNXI
- 	select SPARSE_IRQ
- 	select SUN4I_TIMER
- 	select PINCTRL_SUNXI
-+	select ARM_GIC
-+	select HAVE_SMP
-diff --git a/arch/arm/mach-sunxi/sunxi.c b/arch/arm/mach-sunxi/sunxi.c
-index 38a3c55..11326d9 100644
---- a/arch/arm/mach-sunxi/sunxi.c
-+++ b/arch/arm/mach-sunxi/sunxi.c
-@@ -96,6 +96,7 @@ static const char * const sunxi_board_dt_compat[] = {
- 	"allwinner,sun4i-a10",
- 	"allwinner,sun5i-a10s",
- 	"allwinner,sun5i-a13",
-+	"allwinner,sun6i-a31",
- 	NULL,
- };
- 
+diff --git a/arch/arm/boot/dts/sun6i-a31.dtsi b/arch/arm/boot/dts/sun6i-a31.dtsi
+new file mode 100644
+index 0000000..45487e4
+--- /dev/null
++++ b/arch/arm/boot/dts/sun6i-a31.dtsi
+@@ -0,0 +1,156 @@
++/*
++ * Copyright 2013 Maxime Ripard
++ *
++ * Maxime Ripard <maxime.ripard@free-electrons.com>
++ *
++ * The code contained herein is licensed under the GNU General Public
++ * License. You may obtain a copy of the GNU General Public License
++ * Version 2 or later at the following locations:
++ *
++ * http://www.opensource.org/licenses/gpl-license.html
++ * http://www.gnu.org/copyleft/gpl.html
++ */
++
++/include/ "skeleton.dtsi"
++
++/ {
++	interrupt-parent = <&gic>;
++
++	cpus {
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		cpu@0 {
++			compatible = "arm,cortex-a7";
++			device_type = "cpu";
++			reg = <0>;
++		};
++
++		cpu@1 {
++			compatible = "arm,cortex-a7";
++			device_type = "cpu";
++			reg = <1>;
++		};
++
++		cpu@2 {
++			compatible = "arm,cortex-a7";
++			device_type = "cpu";
++			reg = <2>;
++		};
++
++		cpu@3 {
++			compatible = "arm,cortex-a7";
++			device_type = "cpu";
++			reg = <3>;
++		};
++	};
++
++	memory {
++		reg = <0x40000000 0x80000000>;
++	};
++
++	clocks {
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		osc: oscillator {
++			#clock-cells = <0>;
++			compatible = "fixed-clock";
++			clock-frequency = <24000000>;
++		};
++	};
++
++	soc@01c00000 {
++		compatible = "simple-bus";
++		#address-cells = <1>;
++		#size-cells = <1>;
++		ranges;
++
++		timer@01c20c00 {
++			compatible = "allwinner,sun4i-timer";
++			reg = <0x01c20c00 0xa0>;
++			interrupts = <0 18 1>,
++				     <0 19 1>,
++				     <0 20 1>,
++				     <0 21 1>,
++				     <0 22 1>;
++			clocks = <&osc>;
++		};
++
++		wdt1: watchdog@01c20ca0 {
++			compatible = "allwinner,sun6i-wdt";
++			reg = <0x01c20ca0 0x20>;
++		};
++
++		uart0: serial@01c28000 {
++			compatible = "snps,dw-apb-uart";
++			reg = <0x01c28000 0x400>;
++			interrupts = <0 0 1>;
++			reg-shift = <2>;
++			reg-io-width = <4>;
++			clocks = <&osc>;
++			status = "disabled";
++		};
++
++		uart1: serial@01c28400 {
++			compatible = "snps,dw-apb-uart";
++			reg = <0x01c28400 0x400>;
++			interrupts = <0 1 1>;
++			reg-shift = <2>;
++			reg-io-width = <4>;
++			clocks = <&osc>;
++			status = "disabled";
++		};
++
++		uart2: serial@01c28800 {
++			compatible = "snps,dw-apb-uart";
++			reg = <0x01c28800 0x400>;
++			interrupts = <0 2 1>;
++			reg-shift = <2>;
++			reg-io-width = <4>;
++			clocks = <&osc>;
++			status = "disabled";
++		};
++
++		uart3: serial@01c28c00 {
++			compatible = "snps,dw-apb-uart";
++			reg = <0x01c28c00 0x400>;
++			interrupts = <0 3 1>;
++			reg-shift = <2>;
++			reg-io-width = <4>;
++			clocks = <&osc>;
++			status = "disabled";
++		};
++
++		uart4: serial@01c29000 {
++			compatible = "snps,dw-apb-uart";
++			reg = <0x01c29000 0x400>;
++			interrupts = <0 4 1>;
++			reg-shift = <2>;
++			reg-io-width = <4>;
++			clocks = <&osc>;
++			status = "disabled";
++		};
++
++		uart5: serial@01c29400 {
++			compatible = "snps,dw-apb-uart";
++			reg = <0x01c29400 0x400>;
++			interrupts = <0 5 1>;
++			reg-shift = <2>;
++			reg-io-width = <4>;
++			clocks = <&osc>;
++			status = "disabled";
++		};
++
++		gic: interrupt-controller@01c81000 {
++			compatible = "arm,cortex-a7-gic";
++			reg = <0x01c81000 0x1000>,
++			      <0x01c82000 0x1000>,
++			      <0x01c84000 0x2000>,
++			      <0x01c86000 0x2000>;
++			interrupt-controller;
++			#interrupt-cells = <3>;
++			interrupts = <1 9 0xf04>;
++		};
++	};
++};
 -- 
 1.8.3.4
 
