@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753734Ab3HDS6J (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Aug 2013 14:58:09 -0400
-Received: from mail-bk0-f53.google.com ([209.85.214.53]:49555 "EHLO
-	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753439Ab3HDS6G (ORCPT
+	id S1753615Ab3HDS6H (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Aug 2013 14:58:07 -0400
+Received: from mail-bk0-f41.google.com ([209.85.214.41]:34771 "EHLO
+	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753200Ab3HDS6G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 4 Aug 2013 14:58:06 -0400
 From: Jens Frederich <jfrederich@gmail.com>
@@ -14,9 +14,11 @@ Cc: dsd@laptop.org, jon.nettleton@gmail.com, m.chehab@samsung.com,
         hans.verkuil@cisco.com, linux-kernel@vger.kernel.org,
         devel@driverdev.osuosl.org, Jens Frederich <jfrederich@gmail.com>
 Subject: [PATCH] Staging: olpc_dcon: updating MAINTAINERS
-Date: Sun,  4 Aug 2013 20:57:43 +0200
-Message-Id: <1375642664-7260-1-git-send-email-jfrederich@gmail.com>
+Date: Sun,  4 Aug 2013 20:57:44 +0200
+Message-Id: <1375642664-7260-2-git-send-email-jfrederich@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1375642664-7260-1-git-send-email-jfrederich@gmail.com>
+References: <1375642664-7260-1-git-send-email-jfrederich@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
