@@ -1,172 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753668Ab3HDCVX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Aug 2013 22:21:23 -0400
-Received: from mga09.intel.com ([134.134.136.24]:13113 "EHLO mga09.intel.com"
+	id S1753523Ab3HDCZH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Aug 2013 22:25:07 -0400
+Received: from imap.thunk.org ([74.207.234.97]:39088 "EHLO imap.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753285Ab3HDCO1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Aug 2013 22:14:27 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,810,1367996400"; 
-   d="scan'208";a="357029390"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
-        Ning Qu <quning@google.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCH 03/23] thp: compile-time and sysfs knob for thp pagecache
-Date: Sun,  4 Aug 2013 05:17:05 +0300
-Message-Id: <1375582645-29274-4-git-send-email-kirill.shutemov@linux.intel.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1375582645-29274-1-git-send-email-kirill.shutemov@linux.intel.com>
-References: <1375582645-29274-1-git-send-email-kirill.shutemov@linux.intel.com>
+	id S1753294Ab3HDCZE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Aug 2013 22:25:04 -0400
+Date: Sat, 3 Aug 2013 20:33:16 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: =?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>
+Cc: Vyacheslav Dubeyko <slava@dubeyko.com>, Dhaval Giani <dgiani@mozilla.com>,
+        Taras Glek <tglek@mozilla.com>, linux-kernel@vger.kernel.org,
+        vdjeric@mozilla.com, glandium@mozilla.com, linux-ext4@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [RFC/PATCH 0/2] ext4: Transparent Decompression Support
+Message-ID: <20130804003316.GA19781@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	=?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>,
+	Vyacheslav Dubeyko <slava@dubeyko.com>,
+	Dhaval Giani <dgiani@mozilla.com>, Taras Glek <tglek@mozilla.com>,
+	linux-kernel@vger.kernel.org, vdjeric@mozilla.com,
+	glandium@mozilla.com, linux-ext4@vger.kernel.org,
+	linux-fsdevel@vger.kernel.org
+References: <1374699833.7083.2.camel@localhost>
+ <20130724233628.GD3641@logfs.org>
+ <51F14136.30409@mozilla.com>
+ <51F1556A.20909@mozilla.com>
+ <51FB2C87-854F-4250-9587-B5BBF4E85EE8@dubeyko.com>
+ <51F17005.7030309@mozilla.com>
+ <1374825683.3671.35.camel@slavad-ubuntu>
+ <20130726132034.GB21977@logfs.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130726132034.GB21977@logfs.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+On Fri, Jul 26, 2013 at 09:20:34AM -0400, Jörn Engel wrote:
+> 
+> I don't think the e2compr patches are strictly necessary.  They are a
+> good option, but not the only one.
 
-For now, TRANSPARENT_HUGEPAGE_PAGECACHE is only implemented for x86_64.
+Sorry for not chiming in earlier; I've been travelling this past week,
+and between that and a bunch of other things I've fallen a bit earlier
+on my e-mail.
 
-Radix tree perload overhead can be significant on BASE_SMALL systems, so
-let's add dependency on !BASE_SMALL.
+> One trick to simplify the problem is to make Dhaval's compressed files
+> strictly read-only.  It will require some dance to load the compressed
+> content, flip the switch, then uncompress data on the fly and disallow
+> writes.  Not the most pleasing of interfaces, but yet another option.
 
-/sys/kernel/mm/transparent_hugepage/page_cache is runtime knob for the
-feature. It's enabled by default if TRANSPARENT_HUGEPAGE_PAGECACHE is
-enabled.
+Yeah, this is something that I've wanted for a while.  (In fact a few
+years ago I shopped around this design to some folks who were
+associated with Firefox.)  MacOS has something rather similar to this.
+I haven't had a chance to look at Dhaval's patches yet, but the way
+I've been thinking about this is that the compression and building the
+table mapping compressed clusters to byte offsets in the file would be
+done in userspace.  Once the compressed file plus the table is written
+to the disk, the userspace program would then close the file
+descriptor, and then set the "compressed" bit.
 
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
----
- Documentation/vm/transhuge.txt |  9 +++++++++
- include/linux/huge_mm.h        |  9 +++++++++
- mm/Kconfig                     | 12 ++++++++++++
- mm/huge_memory.c               | 23 +++++++++++++++++++++++
- 4 files changed, 53 insertions(+)
+When the bit is set, we flush all of its pages from the page cache,
+and the file becomes immutable.  At that point, the kernel will handle
+the decompression, by implementing readpages() by reading the pages
+into the buffer cache, and then decompressing the compressed cluster
+of pages into the page cache.  This gives us transparent compression,
+with a fraction of the complexity of supporting read/write
+compression.  In addition, since we don't have to worry rewriting a
+cluster (and having the modified compressed cluster taking up more
+space), the on-disk representation can be a lot more efficient, since
+you don't have to use a stacker-style design.
 
-diff --git a/Documentation/vm/transhuge.txt b/Documentation/vm/transhuge.txt
-index 4a63953..4cc15c4 100644
---- a/Documentation/vm/transhuge.txt
-+++ b/Documentation/vm/transhuge.txt
-@@ -103,6 +103,15 @@ echo always >/sys/kernel/mm/transparent_hugepage/enabled
- echo madvise >/sys/kernel/mm/transparent_hugepage/enabled
- echo never >/sys/kernel/mm/transparent_hugepage/enabled
- 
-+If TRANSPARENT_HUGEPAGE_PAGECACHE is enabled kernel will use huge pages in
-+page cache if possible. It can be disable and re-enabled via sysfs:
-+
-+echo 0 >/sys/kernel/mm/transparent_hugepage/page_cache
-+echo 1 >/sys/kernel/mm/transparent_hugepage/page_cache
-+
-+If it's disabled kernel will not add new huge pages to page cache and
-+split them on mapping, but already mapped pages will stay intakt.
-+
- It's also possible to limit defrag efforts in the VM to generate
- hugepages in case they're not immediately free to madvise regions or
- to never try to defrag memory and simply fallback to regular pages
-diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
-index 3935428..1534e1e 100644
---- a/include/linux/huge_mm.h
-+++ b/include/linux/huge_mm.h
-@@ -40,6 +40,7 @@ enum transparent_hugepage_flag {
- 	TRANSPARENT_HUGEPAGE_DEFRAG_FLAG,
- 	TRANSPARENT_HUGEPAGE_DEFRAG_REQ_MADV_FLAG,
- 	TRANSPARENT_HUGEPAGE_DEFRAG_KHUGEPAGED_FLAG,
-+	TRANSPARENT_HUGEPAGE_PAGECACHE,
- 	TRANSPARENT_HUGEPAGE_USE_ZERO_PAGE_FLAG,
- #ifdef CONFIG_DEBUG_VM
- 	TRANSPARENT_HUGEPAGE_DEBUG_COW_FLAG,
-@@ -229,4 +230,12 @@ static inline int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_str
- 
- #endif /* CONFIG_TRANSPARENT_HUGEPAGE */
- 
-+static inline bool transparent_hugepage_pagecache(void)
-+{
-+	if (!IS_ENABLED(CONFIG_TRANSPARENT_HUGEPAGE_PAGECACHE))
-+		return false;
-+	if (!(transparent_hugepage_flags & (1<<TRANSPARENT_HUGEPAGE_FLAG)))
-+		return false;
-+	return transparent_hugepage_flags & (1<<TRANSPARENT_HUGEPAGE_PAGECACHE);
-+}
- #endif /* _LINUX_HUGE_MM_H */
-diff --git a/mm/Kconfig b/mm/Kconfig
-index 256bfd0..1e30ee8 100644
---- a/mm/Kconfig
-+++ b/mm/Kconfig
-@@ -420,6 +420,18 @@ choice
- 	  benefit.
- endchoice
- 
-+config TRANSPARENT_HUGEPAGE_PAGECACHE
-+	bool "Transparent Hugepage Support for page cache"
-+	depends on X86_64 && TRANSPARENT_HUGEPAGE
-+	# avoid radix tree preload overhead
-+	depends on !BASE_SMALL
-+	default y
-+	help
-+	  Enabling the option adds support hugepages for file-backed
-+	  mappings. It requires transparent hugepage support from
-+	  filesystem side. For now, the only filesystem which supports
-+	  hugepages is ramfs.
-+
- config CROSS_MEMORY_ATTACH
- 	bool "Cross Memory Support"
- 	depends on MMU
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index d96d921..523946c 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -42,6 +42,9 @@ unsigned long transparent_hugepage_flags __read_mostly =
- #endif
- 	(1<<TRANSPARENT_HUGEPAGE_DEFRAG_FLAG)|
- 	(1<<TRANSPARENT_HUGEPAGE_DEFRAG_KHUGEPAGED_FLAG)|
-+#ifdef CONFIG_TRANSPARENT_HUGEPAGE_PAGECACHE
-+	(1<<TRANSPARENT_HUGEPAGE_PAGECACHE)|
-+#endif
- 	(1<<TRANSPARENT_HUGEPAGE_USE_ZERO_PAGE_FLAG);
- 
- /* default scan 8*512 pte (or vmas) every 30 second */
-@@ -362,6 +365,23 @@ static ssize_t defrag_store(struct kobject *kobj,
- static struct kobj_attribute defrag_attr =
- 	__ATTR(defrag, 0644, defrag_show, defrag_store);
- 
-+#ifdef CONFIG_TRANSPARENT_HUGEPAGE_PAGECACHE
-+static ssize_t page_cache_show(struct kobject *kobj,
-+		struct kobj_attribute *attr, char *buf)
-+{
-+	return single_flag_show(kobj, attr, buf,
-+				TRANSPARENT_HUGEPAGE_PAGECACHE);
-+}
-+static ssize_t page_cache_store(struct kobject *kobj,
-+		struct kobj_attribute *attr, const char *buf, size_t count)
-+{
-+	return single_flag_store(kobj, attr, buf, count,
-+				 TRANSPARENT_HUGEPAGE_PAGECACHE);
-+}
-+static struct kobj_attribute page_cache_attr =
-+	__ATTR(page_cache, 0644, page_cache_show, page_cache_store);
-+#endif
-+
- static ssize_t use_zero_page_show(struct kobject *kobj,
- 		struct kobj_attribute *attr, char *buf)
- {
-@@ -397,6 +417,9 @@ static struct kobj_attribute debug_cow_attr =
- static struct attribute *hugepage_attr[] = {
- 	&enabled_attr.attr,
- 	&defrag_attr.attr,
-+#ifdef CONFIG_TRANSPARENT_HUGEPAGE_PAGECACHE
-+	&page_cache_attr.attr,
-+#endif
- 	&use_zero_page_attr.attr,
- #ifdef CONFIG_DEBUG_VM
- 	&debug_cow_attr.attr,
--- 
-1.8.3.2
+One of the cool things about this design is that the vast majority of
+files on a typical distribution are write-once, and better yet, they
+are written by the package manager.  So once you teach dpkg, rpm, and
+the Android package installer how to write the file in this compressed
+format and set the compressed bit, we can the vast majority of the
+benefits of using compressed file with minimal effort.
 
+						- Ted
+
+P.S.  This is interesting not just for systems with slow HDD's, but
+also for cheap, single-channel MMC flash, the kind found in low-end
+handset and embedded systems.
+
+P.P.S.  At least in theory, nothing of what I've described here has to
+be ext4 specific.  We could implement this in the VFS layer, at which
+point not only ext4 would benefit, but also btrfs, xfs, f2fs, etc.
