@@ -1,100 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753082Ab3HDOax (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Aug 2013 10:30:53 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:28659 "EHLO SMTP.CITRIX.COM"
+	id S1753213Ab3HDOj7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Aug 2013 10:39:59 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:62550 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752293Ab3HDOaw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Aug 2013 10:30:52 -0400
+	id S1752999Ab3HDOj6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Aug 2013 10:39:58 -0400
 X-IronPort-AV: E=Sophos;i="4.89,812,1367971200"; 
-   d="scan'208";a="41259101"
-Date: Sun, 4 Aug 2013 15:30:36 +0100
+   d="scan'208";a="41259541"
 From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Ian Campbell <ian.campbell@citrix.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        <xen-devel@lists.xensource.com>, <alex@alex.org.uk>,
-        <dcrisan@flexiant.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 1/2] xen/balloon: set a mapping for ballooned out
- pages
-In-Reply-To: <20130729141036.GB5848@phenom.dumpdata.com>
-Message-ID: <alpine.DEB.2.02.1308041530000.4893@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1307231820570.4893@kaball.uk.xensource.com> <1374600466-3229-1-git-send-email-stefano.stabellini@eu.citrix.com> <1374602409.6623.138.camel@hastur.hellion.org.uk> <20130723190521.GA7073@phenom.dumpdata.com>
- <alpine.DEB.2.02.1307241203240.4893@kaball.uk.xensource.com> <20130724145838.GM2518@phenom.dumpdata.com> <1374723067.32286.34.camel@hastur.hellion.org.uk> <20130729141036.GB5848@phenom.dumpdata.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+To: <xen-devel@lists.xensource.com>
+CC: <linux-kernel@vger.kernel.org>, <dcrisan@flexiant.com>, <alex@alex.org.uk>,
+        <stefano.stabellini@eu.citrix.com>, <ian.campbell@citrix.com>,
+        <konrad.wilk@oracle.com>
+Subject: [PATCH v4 2/2] xen/m2p: use GNTTABOP_unmap_and_replace to reinstate the original mapping
+Date: Sun, 4 Aug 2013 15:39:41 +0100
+Message-ID: <1375627181-14948-2-git-send-email-stefano.stabellini@eu.citrix.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <alpine.DEB.2.02.1308041531220.4893@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1308041531220.4893@kaball.uk.xensource.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 29 Jul 2013, Konrad Rzeszutek Wilk wrote:
-> On Thu, Jul 25, 2013 at 04:31:07AM +0100, Ian Campbell wrote:
-> > On Wed, 2013-07-24 at 10:58 -0400, Konrad Rzeszutek Wilk wrote:
-> > > On Wed, Jul 24, 2013 at 12:05:05PM +0100, Stefano Stabellini wrote:
-> > > > On Tue, 23 Jul 2013, Konrad Rzeszutek Wilk wrote:
-> > > > > On Tue, Jul 23, 2013 at 07:00:09PM +0100, Ian Campbell wrote:
-> > > > > > On Tue, 2013-07-23 at 18:27 +0100, Stefano Stabellini wrote:
-> > > > > > > +static int __cpuinit balloon_cpu_notify(struct notifier_block *self,
-> > > > > > > +				    unsigned long action, void *hcpu)
-> > > > > > > +{
-> > > > > > > +	int cpu = (long)hcpu;
-> > > > > > > +	switch (action) {
-> > > > > > > +	case CPU_UP_PREPARE:
-> > > > > > > +		if (per_cpu(balloon_scratch_page, cpu) != NULL)
-> > > > > > > +			break;
-> > > > > > 
-> > > > > > Thinking about this a bit more -- do we know what happens to the per-cpu
-> > > > > > area for a CPU which is unplugged and then reintroduced? Is it preserved
-> > > > > > or is it reset?
-> > > > > > 
-> > > > > > If it is reset then this gets more complicated :-( We might be able to
-> > > > > > use the core mm page reference count, so that when the last reference is
-> > > > > > removed the page is automatically reclaimed. We can obviously take a
-> > > > > > reference whenever we add a mapping of the trade page, but I'm not sure
-> > > > > > we are always on the path which removes such mappings... Even then you
-> > > > > > could waste pages for some potentially large amount of time each time
-> > > > > > you replug a VCPU.
-> > > > > > 
-> > > > > > Urg, I really hope the per-cpu area is preserved!
-> > > > > 
-> > > > > It is. During bootup time you see this:
-> > > > > 
-> > > > > [    0.000000] smpboot: Allowing 128 CPUs, 96 hotplug CPU
-> > > > > [    0.000000] setup_percpu: NR_CPUS:512 nr_cpumask_bits:512 nr_cpu_ids:128 nr_node_ids:1
-> > > > > 
-> > > > > which means that all of the per_CPU are shrunk down to 128 (from 
-> > > > > CONFIG_NR_CPUS=512 was built with) and stays for the lifetime of the kernel.
-> > > > > 
-> > > > > You might have to clear it when the vCPU comes back up though - otherwise you
-> > > > > will have garbage.
-> > > > 
-> > > > I don't see anything in the hotplug code that would modify the value of
-> > > > the per_cpu area of offline cpus.
-> > > 
-> > > You might have never onlined the CPUs and the kernel is built with DEBUG options
-> > > which poison the page.
-> > > 
-> > > Anyhow, doing a memset seems like a prudent thing to do? Perhaps when
-> > > built with CONFG_DEBUG_XENFS you add poison values to it?
-> > 
-> > The point is that the patches need for the per-cpu areas to *not* be
-> > reinitialised over a vcpu unplug+plug, otherwise we will leak the
-> > original page when we allocate the new one on plug.
-> 
-> OK.
-> > 
-> > We can't just free the page on vcpu unplug because it might still be in
-> > use.
-> 
-> I am still worried about before-the-cpu-is-up-the-per-cpu-has-garbage case.
-> We could add code in the boot-before-smp (so when there is only one CPU) to
-> do:
-> 
-> for_each_possible(cpu)
-> 	memset(__per_cpu(some_memory),0,sizeof...);
-> 
-> and then I think it satisfies your concerns and mine?
+GNTTABOP_unmap_grant_ref unmaps a grant and replaces it with a 0
+mapping instead of reinstating the original mapping.
+Doing so separately would be racy.
 
-OK, I'll add an early_initcall.
+To unmap a grant and reinstate the original mapping atomically we use
+GNTTABOP_unmap_and_replace.
+GNTTABOP_unmap_and_replace doesn't work with GNTMAP_contains_pte, so
+don't use it for kmaps.  GNTTABOP_unmap_and_replace zeroes the mapping
+passed in new_addr so we have to reinstate it, however that is a
+per-cpu mapping only used for balloon scratch pages, so we can be sure that
+it's not going to be accessed while the mapping is not valid.
+
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Reviewed-by: David Vrabel <david.vrabel@citrix.com>
+CC: alex@alex.org.uk
+CC: dcrisan@flexiant.com
+---
+ arch/x86/xen/p2m.c   |   22 +++++++++++++++-------
+ drivers/xen/gntdev.c |   11 ++---------
+ 2 files changed, 17 insertions(+), 16 deletions(-)
+
+diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
+index 95fb2aa..0d4ec35 100644
+--- a/arch/x86/xen/p2m.c
++++ b/arch/x86/xen/p2m.c
+@@ -161,6 +161,7 @@
+ #include <asm/xen/page.h>
+ #include <asm/xen/hypercall.h>
+ #include <asm/xen/hypervisor.h>
++#include <xen/balloon.h>
+ #include <xen/grant_table.h>
+ 
+ #include "multicalls.h"
+@@ -967,7 +968,10 @@ int m2p_remove_override(struct page *page,
+ 	if (kmap_op != NULL) {
+ 		if (!PageHighMem(page)) {
+ 			struct multicall_space mcs;
+-			struct gnttab_unmap_grant_ref *unmap_op;
++			struct gnttab_unmap_and_replace *unmap_op;
++			struct page *scratch_page = get_balloon_scratch_page();
++			unsigned long scratch_page_address = (unsigned long)
++				__va(page_to_pfn(scratch_page) << PAGE_SHIFT);
+ 
+ 			/*
+ 			 * It might be that we queued all the m2p grant table
+@@ -990,21 +994,25 @@ int m2p_remove_override(struct page *page,
+ 			}
+ 
+ 			mcs = xen_mc_entry(
+-					sizeof(struct gnttab_unmap_grant_ref));
++					sizeof(struct gnttab_unmap_and_replace));
+ 			unmap_op = mcs.args;
+ 			unmap_op->host_addr = kmap_op->host_addr;
++			unmap_op->new_addr = scratch_page_address;
+ 			unmap_op->handle = kmap_op->handle;
+-			unmap_op->dev_bus_addr = 0;
+ 
+ 			MULTI_grant_table_op(mcs.mc,
+-					GNTTABOP_unmap_grant_ref, unmap_op, 1);
++					GNTTABOP_unmap_and_replace, unmap_op, 1);
+ 
+ 			xen_mc_issue(PARAVIRT_LAZY_MMU);
+ 
+-			set_pte_at(&init_mm, address, ptep,
+-					pfn_pte(pfn, PAGE_KERNEL));
+-			__flush_tlb_single(address);
++			mcs = __xen_mc_entry(0);
++			MULTI_update_va_mapping(mcs.mc, scratch_page_address,
++					pfn_pte(page_to_pfn(get_balloon_scratch_page()),
++					PAGE_KERNEL_RO), 0);
++			xen_mc_issue(PARAVIRT_LAZY_MMU);
++
+ 			kmap_op->host_addr = 0;
++			put_balloon_scratch_page();
+ 		}
+ 	}
+ 
+diff --git a/drivers/xen/gntdev.c b/drivers/xen/gntdev.c
+index 3c8803f..51f4c95 100644
+--- a/drivers/xen/gntdev.c
++++ b/drivers/xen/gntdev.c
+@@ -270,19 +270,12 @@ static int map_grant_pages(struct grant_map *map)
+ 		 * with find_grant_ptes.
+ 		 */
+ 		for (i = 0; i < map->count; i++) {
+-			unsigned level;
+ 			unsigned long address = (unsigned long)
+ 				pfn_to_kaddr(page_to_pfn(map->pages[i]));
+-			pte_t *ptep;
+-			u64 pte_maddr = 0;
+ 			BUG_ON(PageHighMem(map->pages[i]));
+ 
+-			ptep = lookup_address(address, &level);
+-			pte_maddr = arbitrary_virt_to_machine(ptep).maddr;
+-			gnttab_set_map_op(&map->kmap_ops[i], pte_maddr,
+-				map->flags |
+-				GNTMAP_host_map |
+-				GNTMAP_contains_pte,
++			gnttab_set_map_op(&map->kmap_ops[i], address,
++				map->flags | GNTMAP_host_map,
+ 				map->grants[i].ref,
+ 				map->grants[i].domid);
+ 		}
+-- 
+1.7.2.5
+
