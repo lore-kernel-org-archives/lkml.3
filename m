@@ -1,53 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753156Ab3HDOsE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Aug 2013 10:48:04 -0400
-Received: from mga14.intel.com ([143.182.124.37]:35268 "EHLO mga14.intel.com"
+	id S1753343Ab3HDOyb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Aug 2013 10:54:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55299 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752845Ab3HDOsC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Aug 2013 10:48:02 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,812,1367996400"; 
-   d="scan'208";a="277491042"
-Date: Sun, 4 Aug 2013 19:37:44 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Dan Williams <djbw@fb.com>,
-        Vinod Koul <vinod.koul@intel.com>
-Subject: [GIT PULL] slave-dmaengine fixes
-Message-ID: <20130804140744.GO29095@intel.com>
+	id S1753105Ab3HDOyP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Aug 2013 10:54:15 -0400
+Date: Sun, 4 Aug 2013 16:48:47 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Zach Levis <zml@linux.vnet.ibm.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Evgeniy Polyakov <zbr@ioremap.net>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/5] exec: move allow_write_access/fput to exec_binprm()
+Message-ID: <20130804144847.GB18906@redhat.com>
+References: <20130802192713.GA9543@redhat.com> <20130802192734.GA9565@redhat.com> <CAGXu5jKY1S7wxWCv6ZULU=rvp1fQ9KemcFZxY7ccoX06jdvP3w@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAGXu5jKY1S7wxWCv6ZULU=rvp1fQ9KemcFZxY7ccoX06jdvP3w@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Linus,
+On 08/03, Kees Cook wrote:
+>
+> On Fri, Aug 2, 2013 at 12:27 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+> > @@ -1455,6 +1451,11 @@ static int exec_binprm(struct linux_binprm *bprm)
+> >                 ptrace_event(PTRACE_EVENT_EXEC, old_vpid);
+> >                 current->did_exec = 1;
+> >                 proc_exec_connector(current);
+> > +
+> > +               if (bprm->file) {
+> > +                       allow_write_access(bprm->file);
+> > +                       fput(bprm->file);
+> > +               }
+>
+> Why not keep the bprm->file = NULL assignment?
 
-Please pull to recieve two fixes for slave dmaengine. First fixes cyclic dma
-transfers for pl330 and second one for returning correct error code on probe
+Because it is no longer needed.
 
-The following changes since commit ad81f0545ef01ea651886dddac4bef6cec930092:
-  Linus Torvalds (1):
-        Linux 3.11-rc1
+And now that we have the non-recursive exec_binprm() called right
+before free_bprm() it is obvious that it won't be used again.
 
-are available in the git repository at:
+> Seems reasonable to
+> keep that just to be avoid use-after-free accidents.
 
-  git://git.infradead.org/users/vkoul/slave-dma.git fixes
+OK. I will add it back. With the comment to explain that this is
+only to catch the possible problems.
 
-Lars-Peter Clausen (1):
-      dma: pl330: Fix cyclic transfers
+I guess it would be better if I resend the whole series to avoid
+the confusion. I am going to add your acks. It seems that you acked
+everything except 1/3 in the previous series, perhaps you can ack
+it too?
 
-Wei Yongjun (1):
-      pch_dma: fix error return code in pch_dma_probe()
+Thanks for review!
 
- drivers/dma/pch_dma.c |    1 +
- drivers/dma/pl330.c   |   93 +++++++++++++++++++++++++++++++++++--------------
- 2 files changed, 68 insertions(+), 26 deletions(-)
+Oleg.
 
-
-Thanks
-~Vinod
--- 
