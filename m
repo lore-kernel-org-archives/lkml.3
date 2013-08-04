@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753946Ab3HDCQH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Aug 2013 22:16:07 -0400
-Received: from mga02.intel.com ([134.134.136.20]:18076 "EHLO mga02.intel.com"
+	id S1754123Ab3HDCQF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Aug 2013 22:16:05 -0400
+Received: from mga01.intel.com ([192.55.52.88]:33183 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753547Ab3HDCOg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753546Ab3HDCOg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 3 Aug 2013 22:14:36 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.89,810,1367996400"; 
-   d="scan'208";a="381498545"
+   d="scan'208";a="375818964"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Andrea Arcangeli <aarcange@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>
@@ -22,9 +22,9 @@ Cc: Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
         Ning Qu <quning@google.com>, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCH 17/23] thp, libfs: initial thp support
-Date: Sun,  4 Aug 2013 05:17:19 +0300
-Message-Id: <1375582645-29274-18-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCH 19/23] truncate: support huge pages
+Date: Sun,  4 Aug 2013 05:17:21 +0300
+Message-Id: <1375582645-29274-20-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1375582645-29274-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1375582645-29274-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -34,131 +34,189 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-simple_readpage() and simple_write_end() are modified to handle huge
-pages.
+truncate_inode_pages_range() drops whole huge page at once if it's fully
+inside the range.
 
-simple_thp_write_begin() is introduced to allocate huge pages on write.
+If a huge page is only partly in the range we zero out the part,
+exactly like we do for partial small pages.
+
+invalidate_mapping_pages() just skips huge pages if they are not fully
+in the range.
 
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- fs/libfs.c              | 53 +++++++++++++++++++++++++++++++++++++++++++++----
- include/linux/fs.h      |  7 +++++++
- include/linux/pagemap.h |  8 ++++++++
- 3 files changed, 64 insertions(+), 4 deletions(-)
+ mm/truncate.c | 108 +++++++++++++++++++++++++++++++++++++++++++++-------------
+ 1 file changed, 84 insertions(+), 24 deletions(-)
 
-diff --git a/fs/libfs.c b/fs/libfs.c
-index 3a3a9b5..934778b 100644
---- a/fs/libfs.c
-+++ b/fs/libfs.c
-@@ -364,7 +364,7 @@ EXPORT_SYMBOL(simple_setattr);
- 
- int simple_readpage(struct file *file, struct page *page)
+diff --git a/mm/truncate.c b/mm/truncate.c
+index 353b683..fcef7cb 100644
+--- a/mm/truncate.c
++++ b/mm/truncate.c
+@@ -205,8 +205,7 @@ void truncate_inode_pages_range(struct address_space *mapping,
  {
--	clear_highpage(page);
-+	clear_pagecache_page(page);
- 	flush_dcache_page(page);
- 	SetPageUptodate(page);
- 	unlock_page(page);
-@@ -424,9 +424,14 @@ int simple_write_end(struct file *file, struct address_space *mapping,
+ 	pgoff_t		start;		/* inclusive */
+ 	pgoff_t		end;		/* exclusive */
+-	unsigned int	partial_start;	/* inclusive */
+-	unsigned int	partial_end;	/* exclusive */
++	bool		partial_thp_start = false, partial_thp_end = false;
+ 	struct pagevec	pvec;
+ 	pgoff_t		index;
+ 	int		i;
+@@ -215,15 +214,9 @@ void truncate_inode_pages_range(struct address_space *mapping,
+ 	if (mapping->nrpages == 0)
+ 		return;
  
- 	/* zero the stale part of the page if we did a short copy */
- 	if (copied < len) {
--		unsigned from = pos & (PAGE_CACHE_SIZE - 1);
+-	/* Offsets within partial pages */
+-	partial_start = lstart & (PAGE_CACHE_SIZE - 1);
+-	partial_end = (lend + 1) & (PAGE_CACHE_SIZE - 1);
 -
--		zero_user(page, from + copied, len - copied);
-+		unsigned from;
-+		if (PageTransHuge(page)) {
-+			from = pos & ~HPAGE_PMD_MASK;
-+			zero_huge_user(page, from + copied, len - copied);
-+		} else {
-+			from = pos & ~PAGE_CACHE_MASK;
-+			zero_user(page, from + copied, len - copied);
-+		}
+ 	/*
+ 	 * 'start' and 'end' always covers the range of pages to be fully
+-	 * truncated. Partial pages are covered with 'partial_start' at the
+-	 * start of the range and 'partial_end' at the end of the range.
+-	 * Note that 'end' is exclusive while 'lend' is inclusive.
++	 * truncated. Note that 'end' is exclusive while 'lend' is inclusive.
+ 	 */
+ 	start = (lstart + PAGE_CACHE_SIZE - 1) >> PAGE_CACHE_SHIFT;
+ 	if (lend == -1)
+@@ -249,6 +242,23 @@ void truncate_inode_pages_range(struct address_space *mapping,
+ 			if (index >= end)
+ 				break;
+ 
++			if (PageTransTailCache(page)) {
++				/* part of already handled huge page */
++				if (!page->mapping)
++					continue;
++				/* the range starts in middle of huge page */
++				partial_thp_start = true;
++				start = index & ~HPAGE_CACHE_INDEX_MASK;
++				continue;
++			}
++			/* the range ends on huge page */
++			if (PageTransHugeCache(page) &&
++				index == (end & ~HPAGE_CACHE_INDEX_MASK)) {
++				partial_thp_end = true;
++				end = index;
++				break;
++			}
++
+ 			if (!trylock_page(page))
+ 				continue;
+ 			WARN_ON(page->index != index);
+@@ -265,34 +275,74 @@ void truncate_inode_pages_range(struct address_space *mapping,
+ 		index++;
  	}
  
- 	if (!PageUptodate(page))
-@@ -445,6 +450,46 @@ int simple_write_end(struct file *file, struct address_space *mapping,
- 	return copied;
- }
- 
-+#ifdef CONFIG_TRANSPARENT_HUGEPAGE_PAGECACHE
-+int simple_thp_write_begin(struct file *file, struct address_space *mapping,
-+		loff_t pos, unsigned len, unsigned flags,
-+		struct page **pagep, void **fsdata)
-+{
-+	struct page *page = NULL;
-+	pgoff_t index;
-+
-+	index = pos >> PAGE_CACHE_SHIFT;
-+
-+	if (mapping_can_have_hugepages(mapping)) {
-+		page = grab_cache_page_write_begin(mapping,
-+				index & ~HPAGE_CACHE_INDEX_MASK,
-+				flags | AOP_FLAG_TRANSHUGE);
-+		/* fallback to small page */
-+		if (!page) {
-+			unsigned long offset;
-+			offset = pos & ~PAGE_CACHE_MASK;
-+			/* adjust the len to not cross small page boundary */
-+			len = min_t(unsigned long,
-+					len, PAGE_CACHE_SIZE - offset);
+-	if (partial_start) {
+-		struct page *page = find_lock_page(mapping, start - 1);
++	if (partial_thp_start || lstart & ~PAGE_CACHE_MASK) {
++		pgoff_t off;
++		struct page *page;
++		unsigned pstart, pend;
++		void (*zero_segment)(struct page *page,
++				unsigned start, unsigned len);
++retry_partial_start:
++		if (partial_thp_start) {
++			zero_segment = zero_huge_user_segment;
++			off = (start - 1) & ~HPAGE_CACHE_INDEX_MASK;
++			pstart = lstart & ~HPAGE_PMD_MASK;
++			if ((end & ~HPAGE_CACHE_INDEX_MASK) == off)
++				pend = (lend - 1) & ~HPAGE_PMD_MASK;
++			else
++				pend = HPAGE_PMD_SIZE;
++		} else {
++			zero_segment = zero_user_segment;
++			off = start - 1;
++			pstart = lstart & ~PAGE_CACHE_MASK;
++			if (start > end)
++				pend = (lend - 1) & ~PAGE_CACHE_MASK;
++			else
++				pend = PAGE_CACHE_SIZE;
 +		}
-+		BUG_ON(page && !PageTransHuge(page));
-+	}
-+	if (!page)
-+		return simple_write_begin(file, mapping, pos, len, flags,
-+				pagep, fsdata);
 +
-+	*pagep = page;
++		page = find_get_page(mapping, off);
+ 		if (page) {
+-			unsigned int top = PAGE_CACHE_SIZE;
+-			if (start > end) {
+-				/* Truncation within a single page */
+-				top = partial_end;
+-				partial_end = 0;
++			/* the last tail page*/
++			if (PageTransTailCache(page)) {
++				partial_thp_start = true;
++				page_cache_release(page);
++				goto retry_partial_start;
+ 			}
 +
-+	if (!PageUptodate(page) && len != HPAGE_PMD_SIZE) {
-+		unsigned from = pos & ~HPAGE_PMD_MASK;
++			lock_page(page);
+ 			wait_on_page_writeback(page);
+-			zero_user_segment(page, partial_start, top);
++			zero_segment(page, pstart, pend);
+ 			cleancache_invalidate_page(mapping, page);
+ 			if (page_has_private(page))
+-				do_invalidatepage(page, partial_start,
+-						  top - partial_start);
++				do_invalidatepage(page, pstart,
++						pend - pstart);
+ 			unlock_page(page);
+ 			page_cache_release(page);
+ 		}
+ 	}
+-	if (partial_end) {
+-		struct page *page = find_lock_page(mapping, end);
++	if (partial_thp_end || (lend + 1) & ~PAGE_CACHE_MASK) {
++		pgoff_t off;
++		struct page *page;
++		unsigned pend;
++		void (*zero_segment)(struct page *page,
++				unsigned start, unsigned len);
++		if (partial_thp_end) {
++			zero_segment = zero_huge_user_segment;
++			off = end & ~HPAGE_CACHE_INDEX_MASK;
++			pend = (lend - 1) & ~HPAGE_PMD_MASK;
++		} else {
++			zero_segment = zero_user_segment;
++			off = end;
++			pend = (lend - 1) & ~PAGE_CACHE_MASK;
++		}
 +
-+		zero_huge_user_segment(page, 0, from);
-+		zero_huge_user_segment(page, from + len, HPAGE_PMD_SIZE);
-+	}
-+	return 0;
-+}
-+#endif
-+
- /*
-  * the inodes created here are not hashed. If you use iunique to generate
-  * unique inode values later for this filesystem, then you must take care
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index d5f58b3..c1dbf43 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -2553,6 +2553,13 @@ extern int simple_write_begin(struct file *file, struct address_space *mapping,
- extern int simple_write_end(struct file *file, struct address_space *mapping,
- 			loff_t pos, unsigned len, unsigned copied,
- 			struct page *page, void *fsdata);
-+#ifdef CONFIG_TRANSPARENT_HUGEPAGE_PAGECACHE
-+extern int simple_thp_write_begin(struct file *file,
-+		struct address_space *mapping, loff_t pos, unsigned len,
-+		unsigned flags,	struct page **pagep, void **fsdata);
-+#else
-+#define simple_thp_write_begin simple_write_begin
-+#endif
++		page = find_lock_page(mapping, end);
+ 		if (page) {
+ 			wait_on_page_writeback(page);
+-			zero_user_segment(page, 0, partial_end);
++			zero_segment(page, 0, pend);
+ 			cleancache_invalidate_page(mapping, page);
+ 			if (page_has_private(page))
+-				do_invalidatepage(page, 0,
+-						  partial_end);
++				do_invalidatepage(page, 0, pend);
+ 			unlock_page(page);
+ 			page_cache_release(page);
+ 		}
+@@ -327,6 +377,9 @@ void truncate_inode_pages_range(struct address_space *mapping,
+ 			if (index >= end)
+ 				break;
  
- extern struct dentry *simple_lookup(struct inode *, struct dentry *, unsigned int flags);
- extern ssize_t generic_read_dir(struct file *, char __user *, size_t, loff_t *);
-diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
-index d459b38..eb484f2 100644
---- a/include/linux/pagemap.h
-+++ b/include/linux/pagemap.h
-@@ -591,4 +591,12 @@ static inline int add_to_page_cache(struct page *page,
- 	return error;
- }
- 
-+static inline void clear_pagecache_page(struct page *page)
-+{
-+	if (PageTransHuge(page))
-+		zero_huge_user(page, 0, HPAGE_PMD_SIZE);
-+	else
-+		clear_highpage(page);
-+}
++			if (PageTransTailCache(page))
++				continue;
 +
- #endif /* _LINUX_PAGEMAP_H */
+ 			lock_page(page);
+ 			WARN_ON(page->index != index);
+ 			wait_on_page_writeback(page);
+@@ -401,6 +454,13 @@ unsigned long invalidate_mapping_pages(struct address_space *mapping,
+ 			if (index > end)
+ 				break;
+ 
++			/* skip huge page if it's not fully in the range */
++			if (PageTransHugeCache(page) &&
++					index + HPAGE_CACHE_NR - 1 > end)
++				continue;
++			if (PageTransTailCache(page))
++				continue;
++
+ 			if (!trylock_page(page))
+ 				continue;
+ 			WARN_ON(page->index != index);
 -- 
 1.8.3.2
 
