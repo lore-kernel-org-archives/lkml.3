@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753654Ab3HDCPb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Aug 2013 22:15:31 -0400
-Received: from mga09.intel.com ([134.134.136.24]:56722 "EHLO mga09.intel.com"
+	id S1753632Ab3HDCP2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Aug 2013 22:15:28 -0400
+Received: from mga02.intel.com ([134.134.136.20]:18076 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753530Ab3HDCOc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Aug 2013 22:14:32 -0400
+	id S1753517Ab3HDCOb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Aug 2013 22:14:31 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.89,810,1367996400"; 
-   d="scan'208";a="357029435"
+   d="scan'208";a="381498531"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Andrea Arcangeli <aarcange@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>
@@ -22,9 +22,9 @@ Cc: Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
         Ning Qu <quning@google.com>, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCH 14/23] thp, mm: naive support of thp in generic_perform_write
-Date: Sun,  4 Aug 2013 05:17:16 +0300
-Message-Id: <1375582645-29274-15-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCH 05/23] thp: represent file thp pages in meminfo and friends
+Date: Sun,  4 Aug 2013 05:17:07 +0300
+Message-Id: <1375582645-29274-6-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1375582645-29274-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1375582645-29274-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -34,43 +34,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-For now we still write/read at most PAGE_CACHE_SIZE bytes a time.
+The patch adds new zone stat to count file transparent huge pages and
+adjust related places.
 
-This implementation doesn't cover address spaces with backing storage.
+For now we don't count mapped or dirty file thp pages separately.
+
+The patch depends on patch
+ thp: account anon transparent huge pages into NR_ANON_PAGES
 
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Acked-by: Dave Hansen <dave.hansen@linux.intel.com>
 ---
- mm/filemap.c | 9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ drivers/base/node.c    | 4 ++++
+ fs/proc/meminfo.c      | 3 +++
+ include/linux/mmzone.h | 1 +
+ mm/vmstat.c            | 1 +
+ 4 files changed, 9 insertions(+)
 
-diff --git a/mm/filemap.c b/mm/filemap.c
-index b17ebb9..066bbff 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -2382,6 +2382,7 @@ static ssize_t generic_perform_write(struct file *file,
- 		unsigned long bytes;	/* Bytes to write to page */
- 		size_t copied;		/* Bytes copied from user */
- 		void *fsdata;
-+		int subpage_nr = 0;
+diff --git a/drivers/base/node.c b/drivers/base/node.c
+index bc9f43b..de261f5 100644
+--- a/drivers/base/node.c
++++ b/drivers/base/node.c
+@@ -119,6 +119,7 @@ static ssize_t node_read_meminfo(struct device *dev,
+ 		       "Node %d SUnreclaim:     %8lu kB\n"
+ #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+ 		       "Node %d AnonHugePages:  %8lu kB\n"
++		       "Node %d FileHugePages:  %8lu kB\n"
+ #endif
+ 			,
+ 		       nid, K(node_page_state(nid, NR_FILE_DIRTY)),
+@@ -140,6 +141,9 @@ static ssize_t node_read_meminfo(struct device *dev,
+ 		       nid, K(node_page_state(nid, NR_SLAB_UNRECLAIMABLE))
+ 			, nid,
+ 			K(node_page_state(nid, NR_ANON_TRANSPARENT_HUGEPAGES) *
++			HPAGE_PMD_NR)
++			, nid,
++			K(node_page_state(nid, NR_FILE_TRANSPARENT_HUGEPAGES) *
+ 			HPAGE_PMD_NR));
+ #else
+ 		       nid, K(node_page_state(nid, NR_SLAB_UNRECLAIMABLE)));
+diff --git a/fs/proc/meminfo.c b/fs/proc/meminfo.c
+index 59d85d6..a62952c 100644
+--- a/fs/proc/meminfo.c
++++ b/fs/proc/meminfo.c
+@@ -104,6 +104,7 @@ static int meminfo_proc_show(struct seq_file *m, void *v)
+ #endif
+ #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+ 		"AnonHugePages:  %8lu kB\n"
++		"FileHugePages:  %8lu kB\n"
+ #endif
+ 		,
+ 		K(i.totalram),
+@@ -158,6 +159,8 @@ static int meminfo_proc_show(struct seq_file *m, void *v)
+ #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+ 		,K(global_page_state(NR_ANON_TRANSPARENT_HUGEPAGES) *
+ 		   HPAGE_PMD_NR)
++		,K(global_page_state(NR_FILE_TRANSPARENT_HUGEPAGES) *
++		   HPAGE_PMD_NR)
+ #endif
+ 		);
  
- 		offset = (pos & (PAGE_CACHE_SIZE - 1));
- 		bytes = min_t(unsigned long, PAGE_CACHE_SIZE - offset,
-@@ -2411,8 +2412,14 @@ again:
- 		if (mapping_writably_mapped(mapping))
- 			flush_dcache_page(page);
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index 0c41d59..ba81833 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -142,6 +142,7 @@ enum zone_stat_item {
+ 	NUMA_OTHER,		/* allocation from other node */
+ #endif
+ 	NR_ANON_TRANSPARENT_HUGEPAGES,
++	NR_FILE_TRANSPARENT_HUGEPAGES,
+ 	NR_FREE_CMA_PAGES,
+ 	NR_VM_ZONE_STAT_ITEMS };
  
-+		if (PageTransHuge(page)) {
-+			off_t huge_offset = pos & ~HPAGE_PMD_MASK;
-+			subpage_nr = huge_offset >> PAGE_CACHE_SHIFT;
-+		}
-+
- 		pagefault_disable();
--		copied = iov_iter_copy_from_user_atomic(page, i, offset, bytes);
-+		copied = iov_iter_copy_from_user_atomic(page + subpage_nr, i,
-+				offset, bytes);
- 		pagefault_enable();
- 		flush_dcache_page(page);
- 
+diff --git a/mm/vmstat.c b/mm/vmstat.c
+index 87228c5..ffe3fbd 100644
+--- a/mm/vmstat.c
++++ b/mm/vmstat.c
+@@ -739,6 +739,7 @@ const char * const vmstat_text[] = {
+ 	"numa_other",
+ #endif
+ 	"nr_anon_transparent_hugepages",
++	"nr_file_transparent_hugepages",
+ 	"nr_free_cma",
+ 	"nr_dirty_threshold",
+ 	"nr_dirty_background_threshold",
 -- 
 1.8.3.2
 
