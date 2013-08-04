@@ -1,49 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753812Ab3HDTg1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Aug 2013 15:36:27 -0400
-Received: from mga02.intel.com ([134.134.136.20]:44714 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753755Ab3HDTg0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Aug 2013 15:36:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,813,1367996400"; 
-   d="scan'208";a="381758354"
-Message-ID: <51FEAD39.2030909@linux.intel.com>
-Date: Sun, 04 Aug 2013 12:36:25 -0700
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S1753874Ab3HDTgw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Aug 2013 15:36:52 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:41537 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753771Ab3HDTgu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Aug 2013 15:36:50 -0400
+Date: Sun, 4 Aug 2013 21:36:47 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Olof Johansson <olof@lixom.net>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Jonathan Austin <jonathan.austin@arm.com>
+Subject: Re: Build breakage due to latest ARM fixes
+Message-ID: <20130804193647.GD6104@pengutronix.de>
+References: <CAOesGMgWeP-CdmOE-S7XZmJ-+1buP9a1cqavUns2gpgKrrhaxQ@mail.gmail.com>
+ <20130803000731.GS23006@n2100.arm.linux.org.uk>
+ <20130804125346.GH23006@n2100.arm.linux.org.uk>
+ <CAOesGMhNr5-6T9s8Y9jr2pWy=baceuZwGFNj2HtnqU9DbwPLvw@mail.gmail.com>
+ <20130804183708.GI23006@n2100.arm.linux.org.uk>
+ <CAOesGMiDBT9NAhCiVe0mMTk4KXJZVynNaBHqk5+T9a6QYaFZvw@mail.gmail.com>
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        linux-kernel@vger.kernel.org, "Brown, Len" <len.brown@intel.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [RFC v01 0/3] Power Capping Framework
-References: <1375466932-11842-1-git-send-email-srinivas.pandruvada@linux.intel.com> <20130802222909.GA28831@kroah.com> <51FC4635.1040909@linux.intel.com> <20130803005336.GB31696@kroah.com>
-In-Reply-To: <20130803005336.GB31696@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAOesGMiDBT9NAhCiVe0mMTk4KXJZVynNaBHqk5+T9a6QYaFZvw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/2/2013 5:53 PM, Greg KH wrote:
->> I will post the one client driver, which is already using this
->> framework as this series.
->>> Ideally you will have more than one client driver submitted, as a
->>> "framework" for just one driver seems a bit odd, don't you think?
->> There are other groups and vendors interested in using this
->> framework. But they want to make sure that this
->> framework can go to upstream Linux. We will provide one client using
->> this framework at this time.
->> Do you think this is a problem?
->
-> I would love to see the feedback from those groups and vendors as well,
-> to ensure that they agree with this.  Ideally, they would sign off on
-> the patches, and provide clients that work with the framework at the
-> same time.  Otherwise, I just have to take your word for it :)
+Hello,
 
-I suspect that in some ways Intel is a year or two ahead in this regard,
-we'll see if others are willing to speak up yet ;-)
+On Sun, Aug 04, 2013 at 11:47:04AM -0700, Olof Johansson wrote:
+> On Sun, Aug 4, 2013 at 11:37 AM, Russell King - ARM Linux
+> > The only real testing I'm aware of is when I recreated the OKI67001
+> > support a while back and got my board to boot.
+> 
+> Uwe has been busy pushing various patches for M3/M4 support, I don't
+> know how far it is from having some real hardware usable though. Uwe?
+On my efm32 devboard I have 3.11-rc running. The missing bits are
+available in my efm32 branch at
 
+	git://git.pengutronix.de/git/ukl/linux.git efm32
+	http://git.pengutronix.de/?p=ukl/linux.git;a=shortlog;h=refs/heads/efm32
 
+. It's not yet in a form ready for mainline but there isn't much
+missing. There is one problem I didn't debug yet (/proc/devicetree
+doesn't appear although I have the respective Kconfig symbol on); other
+than that I didn't notice any no-mmu problems. Also Jonathan Austin does
+some no-MMU work.
+
+Best regards
+Uwe
+
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
