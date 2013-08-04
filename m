@@ -1,92 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753810Ab3HDJtb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Aug 2013 05:49:31 -0400
-Received: from up.free-electrons.com ([94.23.35.102]:36999 "EHLO
+	id S1753578Ab3HDJr4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Aug 2013 05:47:56 -0400
+Received: from up.free-electrons.com ([94.23.35.102]:36970 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753650Ab3HDJsB (ORCPT
+	with ESMTP id S1753360Ab3HDJrx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Aug 2013 05:48:01 -0400
+	Sun, 4 Aug 2013 05:47:53 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: linux-arm-kernel@lists.infradead.org
 Cc: Emilio Lopez <emilio@elopez.com.ar>, kevin.z.m.zh@gmail.com,
         sunny@allwinnertech.com, shuge@allwinnertech.com,
         linux-kernel@vger.kernel.org, linux-sunxi@googlegroups.com,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCHv3 06/10] ARM: sun6i: Add WITS Colombus A31 evaluation kit support
-Date: Sun,  4 Aug 2013 11:47:33 +0200
-Message-Id: <1375609657-15434-7-git-send-email-maxime.ripard@free-electrons.com>
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Mike Turquette <mturquette@linaro.org>
+Subject: [PATCHv3 02/10] clk: sunxi: fix initialization of basic clocks
+Date: Sun,  4 Aug 2013 11:47:29 +0200
+Message-Id: <1375609657-15434-3-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 1.8.3.4
 In-Reply-To: <1375609657-15434-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1375609657-15434-1-git-send-email-maxime.ripard@free-electrons.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This platform from WITS is the evaluation board for the Allwinner A31.
-It features a quad-Cortex A7, 2048MB of RAM, NAND, USB, MMC, several
-UART, HDMI, a 2048 x 1536 10" screen, powered by a PowerVR, etc.
+From: Emilio López <emilio@elopez.com.ar>
 
-Of course, most of these peripherals aren't supported yet, but support
-for those will come eventually.
+With the recent move towards CLK_OF_DECLARE(...), the driver stopped
+initializing osc32k, which is compatible "fixed-clock". This is because
+we never called of_clk_init(NULL). Fix this by moving the only other
+simple clock (osc24M) to use CLK_OF_DECLARE(...) and call of_clk_init(NULL)
+to initialize both of them.
 
+Signed-off-by: Emilio López <emilio@elopez.com.ar>
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Mike Turquette <mturquette@linaro.org>
 ---
- arch/arm/boot/dts/Makefile               |  3 ++-
- arch/arm/boot/dts/sun6i-a31-colombus.dts | 30 ++++++++++++++++++++++++++++++
- 2 files changed, 32 insertions(+), 1 deletion(-)
- create mode 100644 arch/arm/boot/dts/sun6i-a31-colombus.dts
+ drivers/clk/sunxi/clk-sunxi.c | 11 +++--------
+ 1 file changed, 3 insertions(+), 8 deletions(-)
 
-diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-index 641b3c9..1482533 100644
---- a/arch/arm/boot/dts/Makefile
-+++ b/arch/arm/boot/dts/Makefile
-@@ -210,7 +210,8 @@ dtb-$(CONFIG_ARCH_SUNXI) += \
- 	sun4i-a10-mini-xplus.dtb \
- 	sun4i-a10-hackberry.dtb \
- 	sun5i-a10s-olinuxino-micro.dtb \
--	sun5i-a13-olinuxino.dtb
-+	sun5i-a13-olinuxino.dtb \
-+	sun6i-a31-colombus.dtb
- dtb-$(CONFIG_ARCH_TEGRA) += tegra20-harmony.dtb \
- 	tegra20-iris-512.dtb \
- 	tegra20-medcom-wide.dtb \
-diff --git a/arch/arm/boot/dts/sun6i-a31-colombus.dts b/arch/arm/boot/dts/sun6i-a31-colombus.dts
-new file mode 100644
-index 0000000..99c4b18
---- /dev/null
-+++ b/arch/arm/boot/dts/sun6i-a31-colombus.dts
-@@ -0,0 +1,30 @@
-+/*
-+ * Copyright 2013 Maxime Ripard
-+ *
-+ * Maxime Ripard <maxime.ripard@free-electrons.com>
-+ *
-+ * The code contained herein is licensed under the GNU General Public
-+ * License. You may obtain a copy of the GNU General Public License
-+ * Version 2 or later at the following locations:
-+ *
-+ * http://www.opensource.org/licenses/gpl-license.html
-+ * http://www.gnu.org/copyleft/gpl.html
-+ */
-+
-+/dts-v1/;
-+/include/ "sun6i-a31.dtsi"
-+
-+/ {
-+	model = "WITS A31 Colombus Evaluation Board";
-+	compatible = "wits,colombus", "allwinner,sun6i-a31";
-+
-+	chosen {
-+		bootargs = "earlyprintk console=ttyS0,115200";
-+	};
-+
-+	soc@01c00000 {
-+		uart0: serial@01c28000 {
-+			status = "okay";
-+		};
-+	};
-+};
+diff --git a/drivers/clk/sunxi/clk-sunxi.c b/drivers/clk/sunxi/clk-sunxi.c
+index db1c45b..567963f 100644
+--- a/drivers/clk/sunxi/clk-sunxi.c
++++ b/drivers/clk/sunxi/clk-sunxi.c
+@@ -69,6 +69,7 @@ static void __init sunxi_osc_clk_setup(struct device_node *node)
+ 		clk_register_clkdev(clk, clk_name, NULL);
+ 	}
+ }
++CLK_OF_DECLARE(sunxi_osc, "allwinner,sun4i-osc-clk", sunxi_osc_clk_setup);
+ 
+ 
+ 
+@@ -422,12 +423,6 @@ static void __init sunxi_gates_clk_setup(struct device_node *node,
+ 	of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
+ }
+ 
+-/* Matches for of_clk_init */
+-static const __initconst struct of_device_id clk_match[] = {
+-	{.compatible = "allwinner,sun4i-osc-clk", .data = sunxi_osc_clk_setup,},
+-	{}
+-};
+-
+ /* Matches for factors clocks */
+ static const __initconst struct of_device_id clk_factors_match[] = {
+ 	{.compatible = "allwinner,sun4i-pll1-clk", .data = &pll1_data,},
+@@ -482,8 +477,8 @@ static void __init of_sunxi_table_clock_setup(const struct of_device_id *clk_mat
+ 
+ void __init sunxi_init_clocks(void)
+ {
+-	/* Register all the simple sunxi clocks on DT */
+-	of_clk_init(clk_match);
++	/* Register all the simple and basic clocks on DT */
++	of_clk_init(NULL);
+ 
+ 	/* Register factor clocks */
+ 	of_sunxi_table_clock_setup(clk_factors_match, sunxi_factors_clk_setup);
 -- 
 1.8.3.4
 
