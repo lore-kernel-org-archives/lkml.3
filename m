@@ -1,71 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754194Ab3HEQaM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 12:30:12 -0400
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:46707 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752361Ab3HEQaF (ORCPT
+	id S1753883Ab3HEQaJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 12:30:09 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:23077 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752928Ab3HEQaG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 12:30:05 -0400
-Date: Mon, 5 Aug 2013 12:29:58 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: lizefan@huawei.com, hannes@cmpxchg.org, bsingharora@gmail.com,
-        kamezawa.hiroyu@jp.fujitsu.com, cgroups@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHSET cgroup/for-3.12] cgroup: make cgroup_event specific to
- memcg
-Message-ID: <20130805162958.GF19631@mtj.dyndns.org>
-References: <1375632446-2581-1-git-send-email-tj@kernel.org>
- <20130805160107.GM10146@dhcp22.suse.cz>
+	Mon, 5 Aug 2013 12:30:06 -0400
+X-IronPort-AV: E=Sophos;i="4.89,819,1367971200"; 
+   d="scan'208";a="39429212"
+Date: Mon, 5 Aug 2013 17:29:48 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: <xen-devel@lists.xensource.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>
+Subject: [PATCH v3 0/10] enable swiotlb-xen on arm and arm64
+Message-ID: <alpine.DEB.2.02.1308051503190.4893@kaball.uk.xensource.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130805160107.GM10146@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Michal.
+Hi all,
+this patch series enables xen-swiotlb on arm and arm64.
 
-On Mon, Aug 05, 2013 at 06:01:07PM +0200, Michal Hocko wrote:
-> Could you be more specific about what is so "overboard" about this
-> interface? I am not familiar with internals much, so I cannot judge the
-> complexity part, but I thought that eventfd was intended for this kind
-> of kernel->userspace notifications.
+Considering that all guests, including dom0, run on xen on arm with
+second stage translation enabled, it follows that without an IOMMU no
+guests could actually drive the hardware.
 
-It's just way over-engineered like many other things in cgroup, most
-likely misguided by the appearance that cgroup could be delegated and
-accessed by multiple actors concurrently.
+The solution for platforms without an IOMMU is to use swiotlb-xen,
+adapted to autotranslate guests. swiotlb-xen provides a set of dma_ops
+that can be used by Linux to setup a contiguous buffer in stage-2
+addresses and use it for dma operations.
+Basically Linux asks Xen to make a buffer contiguous and gets the
+machine address for it. This buffer is going to be used by lib/swiotlb.c
+to allocate bounce buffers.
 
-The most clear example would be the vmpressure event.  When it could
-have just called fsnotify_modify() unconditionally when the state
-changes, now it involves parsing, dynamic list of events and so on
-without actually adding any benefits.  For the usage ones,
-configurability makes some sense but even then just giving it a single
-array of event points of limited size would be sufficient.
 
-It's just way over-done.
+The first 5 patches lay the groundwork on arm and arm64 to have
+alternative dma_ops and swiotlb.
 
-> So you think that vmpressure, oom notification or thresholds are
-> an abuse of this interface? What would you consider a reasonable
-> replacement for those notifications?  Or do you think that controller
-> shouldn't be signaling any conditions to the userspace at all?
+The sixth patch moves Xen initialization earlier so that we already know
+whether we are running on Xen at the time of initializing dma_ops on the
+platform.
 
-I don't think the ability to generate events are an abuse, just that
-the facility itself is way over-engineered.  Just generate a file
-changed event unconditionally for vmpressure and oom and maybe
-implement configureable cadence or single set of threshold array for
-threshold events.  These are things which can and should be done in a
-a few tens of lines of code with far simpler interface.  There's no
-need for this obsecenely flexible event infrastructure, which of
-course leads to things like shared contiguous threshold table without
-any size limit and allocated with kmalloc().
+The following patches adapt swiotlb-xen to autotranslate guests (guest
+with second stage translation in hardware) and provide an arm
+implementation of xen_create_contiguous_region.
 
-So, let's please move towards something simple.
 
-Thanks.
+Feedback is very welcome.
+Cheers,
 
--- 
-tejun
+Stefano
+
+
+Changes in v3:
+- add a patch to compile SWIOTLB without CONFIG_NEED_SG_DMA_LENGTH;
+- add a patch to compile SWIOTLB_XEN without CONFIG_NEED_SG_DMA_LENGTH;
+- arm/dma_capable: do not treat dma_mask as a limit;
+- arm/dmabounce: keep using arm_dma_ops;
+- add missing __init in xen_early_init declaration;
+- many code style and name changes in swiotlb-xen.c;
+- improve error checks in xen_dma_add_entry;
+- warn on XENMEM_put_dma_buf failures.
+
+Changes in v2:
+- fixed a couple of errors in xen_bus_to_phys, xen_phys_to_bus and
+xen_swiotlb_fixup.
+
+
+
+EUNBONG SONG (1):
+      swiotlb: replace dma_length with sg_dma_len() macro
+
+Stefano Stabellini (9):
+      swiotlb-xen: replace dma_length with sg_dma_len() macro
+      arm: make SWIOTLB available
+      arm: introduce a global dma_ops pointer
+      arm64: do not initialize arm64_swiotlb if dma_ops is already set
+      xen/arm,arm64: move Xen initialization earlier
+      xen: introduce XENMEM_get_dma_buf and xen_put_dma_buf
+      xen: make xen_create_contiguous_region return the dma address
+      swiotlb-xen: support autotranslate guests
+      xen/arm,arm64: enable SWIOTLB_XEN
+
+ arch/arm/Kconfig                      |    7 ++
+ arch/arm/include/asm/dma-mapping.h    |   33 ++++++-
+ arch/arm/include/asm/xen/hypervisor.h |    8 ++
+ arch/arm/include/asm/xen/page.h       |    2 +
+ arch/arm/kernel/setup.c               |    2 +
+ arch/arm/mm/dma-mapping.c             |    3 +
+ arch/arm/xen/Makefile                 |    2 +-
+ arch/arm/xen/enlighten.c              |   24 +++--
+ arch/arm/xen/mm.c                     |  117 ++++++++++++++++++++
+ arch/arm64/Kconfig                    |    1 +
+ arch/arm64/kernel/setup.c             |    2 +
+ arch/arm64/mm/dma-mapping.c           |    2 +
+ arch/arm64/xen/Makefile               |    2 +-
+ arch/x86/xen/mmu.c                    |    4 +-
+ drivers/xen/Kconfig                   |    1 -
+ drivers/xen/swiotlb-xen.c             |  188 +++++++++++++++++++++++++++++----
+ include/xen/interface/memory.h        |   62 +++++++++++
+ include/xen/xen-ops.h                 |    3 +-
+ lib/swiotlb.c                         |    8 +-
+ 19 files changed, 433 insertions(+), 38 deletions(-)
+ create mode 100644 arch/arm/xen/mm.c
+
+git://git.kernel.org/pub/scm/linux/kernel/git/sstabellini/xen.git swiotlb-xen-3
