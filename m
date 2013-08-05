@@ -1,77 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755342Ab3HEWHm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 18:07:42 -0400
-Received: from mga03.intel.com ([143.182.124.21]:37723 "EHLO mga03.intel.com"
+	id S1755547Ab3HEWJl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 18:09:41 -0400
+Received: from mga03.intel.com ([143.182.124.21]:60909 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755094Ab3HEWDA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 18:03:00 -0400
+	id S1755258Ab3HEWJi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 18:09:38 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.89,821,1367996400"; 
-   d="scan'208";a="278100321"
+   d="scan'208";a="342113666"
 From: Andi Kleen <andi@firstfloor.org>
-To: x86@kernel.org
+To: viro@zeniv.linux.org.uk
 Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 01/16] x86: Fix sys_call_table type in asm/syscall.h v2
-Date: Mon,  5 Aug 2013 15:02:35 -0700
-Message-Id: <1375740170-7446-2-git-send-email-andi@firstfloor.org>
+Subject: [PATCH] Use gcc alias instead of assembler aliases for syscalls
+Date: Mon,  5 Aug 2013 15:09:35 -0700
+Message-Id: <1375740575-7640-1-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1375740170-7446-1-git-send-email-andi@firstfloor.org>
-References: <1375740170-7446-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Make the sys_call_table type defined in asm/syscall.h match
-the definition in syscall_64.c
+Use standard gcc __attribute__((alias(foo))) to define
+the syscall aliases instead of custom assembler macros.
 
-v2: include asm/syscall.h in syscall_64.c too. I left uml alone
-because it doesn't have an syscall.h on its own and including
-the native one leads to other errors.
-Cc: x86@kernel.org
+This is far cleaner, and also fixes my LTO kernel build.
+
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/include/asm/syscall.h | 3 ++-
- arch/x86/kernel/syscall_64.c   | 3 +--
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ include/linux/compat.h   | 4 ++--
+ include/linux/syscalls.h | 4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/include/asm/syscall.h b/arch/x86/include/asm/syscall.h
-index 2e188d6..aea284b 100644
---- a/arch/x86/include/asm/syscall.h
-+++ b/arch/x86/include/asm/syscall.h
-@@ -20,7 +20,8 @@
- #include <asm/thread_info.h>	/* for TS_COMPAT */
- #include <asm/unistd.h>
+diff --git a/include/linux/compat.h b/include/linux/compat.h
+index 7f0c1dd..18e4b75 100644
+--- a/include/linux/compat.h
++++ b/include/linux/compat.h
+@@ -41,13 +41,13 @@
+ 	COMPAT_SYSCALL_DEFINEx(6, _##name, __VA_ARGS__)
  
--extern const unsigned long sys_call_table[];
-+typedef void (*sys_call_ptr_t)(void);
-+extern const sys_call_ptr_t sys_call_table[];
+ #define COMPAT_SYSCALL_DEFINEx(x, name, ...)				\
+-	asmlinkage long compat_sys##name(__MAP(x,__SC_DECL,__VA_ARGS__));\
++	asmlinkage long compat_sys##name(__MAP(x,__SC_DECL,__VA_ARGS__))\
++		__attribute__((alias(__stringify(compat_SyS##name))));  \
+ 	static inline long C_SYSC##name(__MAP(x,__SC_DECL,__VA_ARGS__));\
+ 	asmlinkage long compat_SyS##name(__MAP(x,__SC_LONG,__VA_ARGS__))\
+ 	{								\
+ 		return C_SYSC##name(__MAP(x,__SC_DELOUSE,__VA_ARGS__));	\
+ 	}								\
+-	SYSCALL_ALIAS(compat_sys##name, compat_SyS##name);		\
+ 	static inline long C_SYSC##name(__MAP(x,__SC_DECL,__VA_ARGS__))
  
- /*
-  * Only the low 32 bits of orig_ax are meaningful, so we return int.
-diff --git a/arch/x86/kernel/syscall_64.c b/arch/x86/kernel/syscall_64.c
-index 5c7f8c2..ec008f5 100644
---- a/arch/x86/kernel/syscall_64.c
-+++ b/arch/x86/kernel/syscall_64.c
-@@ -4,6 +4,7 @@
- #include <linux/sys.h>
- #include <linux/cache.h>
- #include <asm/asm-offsets.h>
-+#include <asm/syscall.h>
+ #ifndef compat_user_stack_pointer
+diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
+index 4147d70..87039ad 100644
+--- a/include/linux/syscalls.h
++++ b/include/linux/syscalls.h
+@@ -184,7 +184,8 @@ extern struct trace_event_functions exit_syscall_print_funcs;
  
- #define __SYSCALL_COMMON(nr, sym, compat) __SYSCALL_64(nr, sym, compat)
+ #define __PROTECT(...) asmlinkage_protect(__VA_ARGS__)
+ #define __SYSCALL_DEFINEx(x, name, ...)					\
+-	asmlinkage long sys##name(__MAP(x,__SC_DECL,__VA_ARGS__));	\
++	asmlinkage long sys##name(__MAP(x,__SC_DECL,__VA_ARGS__))	\
++		__attribute__((alias(__stringify(SyS##name))));		\
+ 	static inline long SYSC##name(__MAP(x,__SC_DECL,__VA_ARGS__));	\
+ 	asmlinkage long SyS##name(__MAP(x,__SC_LONG,__VA_ARGS__))	\
+ 	{								\
+@@ -193,7 +194,6 @@ extern struct trace_event_functions exit_syscall_print_funcs;
+ 		__PROTECT(x, ret,__MAP(x,__SC_ARGS,__VA_ARGS__));	\
+ 		return ret;						\
+ 	}								\
+-	SYSCALL_ALIAS(sys##name, SyS##name);				\
+ 	static inline long SYSC##name(__MAP(x,__SC_DECL,__VA_ARGS__))
  
-@@ -19,8 +20,6 @@
- 
- #define __SYSCALL_64(nr, sym, compat) [nr] = sym,
- 
--typedef void (*sys_call_ptr_t)(void);
--
- extern void sys_ni_syscall(void);
- 
- const sys_call_ptr_t sys_call_table[__NR_syscall_max+1] = {
+ asmlinkage long sys_time(time_t __user *tloc);
 -- 
 1.8.3.1
 
