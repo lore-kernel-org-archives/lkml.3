@@ -1,79 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753063Ab3HEEFx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 00:05:53 -0400
-Received: from mail-ve0-f180.google.com ([209.85.128.180]:53877 "EHLO
-	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751320Ab3HEEFv (ORCPT
+	id S1752240Ab3HEEJx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 00:09:53 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:47434 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750945Ab3HEEJw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 00:05:51 -0400
+	Mon, 5 Aug 2013 00:09:52 -0400
+Message-ID: <51FF2560.8020206@huawei.com>
+Date: Mon, 5 Aug 2013 12:09:04 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <CAC-DJzKqv7b0fdPOL5+Sx2AF7EG=2+xrq8R+UrK-ev1-sNu=Pw@mail.gmail.com>
-References: <1374106861-3549-1-git-send-email-bleung@chromium.org>
-	<CAC-DJzKqv7b0fdPOL5+Sx2AF7EG=2+xrq8R+UrK-ev1-sNu=Pw@mail.gmail.com>
-Date: Sun, 4 Aug 2013 21:05:50 -0700
-X-Google-Sender-Auth: y-ZFb5E0IFt6RJpaxZaq5KhBPSo
-Message-ID: <CANLzEkvkTaRZXU66zzC4GtO4zyJgwak5QNMZkL_iaUaRqow_mQ@mail.gmail.com>
-Subject: Re: [PATCH 0/2] Platform: x86: chromeos_laptop - Deferred Probing
-From: Benson Leung <bleung@chromium.org>
-To: Martin Nordholts <enselic@gmail.com>
-Cc: Matthew Garrett <matthew.garrett@nebula.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>,
-        adurbin@chromium.org, Olof Johansson <olofj@chromium.org>,
-        Axel Lin <axel.lin@ingics.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Tejun Heo <tj@kernel.org>
+CC: Jens Axboe <axboe@kernel.dk>, Vivek Goyal <vgoyal@redhat.com>,
+        Matt Helsley <matthltc@us.ibm.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Balbir Singh <bsingharora@gmail.com>,
+        Aristeu Rozanski <aris@redhat.com>, <linux-kernel@vger.kernel.org>,
+        <cgroups@vger.kernel.org>, <containers@lists.linux-foundation.org>
+Subject: Re: [PATCH cgroup/for-3.12] cgroup: make css_for_each_descendant()
+ and friends include the origin css in the iteration
+References: <20130804230703.GA12029@htj.dyndns.org>
+In-Reply-To: <20130804230703.GA12029@htj.dyndns.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Martin,
+> Previously, all css descendant iterators didn't include the origin
+> (root of subtree) css in the iteration.  The reasons were maintaining
+> consistency with css_for_each_child() and that at the time of
+> introduction more use cases needed skipping the origin anyway;
+> however, given that css_is_descendant() considers self to be a
+> descendant, omitting the origin css has become more confusing and
+> looking at the accumulated use cases rather clearly indicates that
+> including origin would result in simpler code overall.
+> 
+> While this is a change which can easily lead to subtle bugs, cgroup
+> API including the iterators has recently gone through major
+> restructuring and no out-of-tree changes will be applicable without
+> adjustments making this a relatively acceptable opportunity for this
+> type of change.
+> 
+> The conversions are mostly straight-forward.  If the iteration block
+> had explicit origin handling before or after, it's moved inside the
+> iteration.  If not, if (pos == origin) continue; is added.  Some
+> conversions add extra reference get/put around origin handling by
+> consolidating origin handling and the rest.  While the extra ref
+> operations aren't strictly necessary, this shouldn't cause any
+> noticeable difference.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Li Zefan <lizefan@huawei.com>
+> Cc: Jens Axboe <axboe@kernel.dk>
+> Cc: Vivek Goyal <vgoyal@redhat.com>
+> Cc: Matt Helsley <matthltc@us.ibm.com>
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: Michal Hocko <mhocko@suse.cz>
+> Cc: Balbir Singh <bsingharora@gmail.com>
+> Cc: Aristeu Rozanski <aris@redhat.com>
 
-I commented on your patch, but I want to add a little bit more in response here.
+I was wondering this would be better when I converted cgroup_cfts_commits()
+to use this iterator.
 
-On Thu, Jul 18, 2013 at 9:13 AM, Martin Nordholts <enselic@gmail.com> wrote:
-> One downside with the solution in this set of patches is that more
-> lines are added to the driver.
-> By making use of the i2c_driver.detect() mechanism like in my patch,
-> we can actually reduce the number of lines in the driver.
->
+Acked-by: Li Zefan <lizefan@huawei.com>
 
-It looks like the vast majority of the savings in number of lines of
-code in your patch is from removing the board specific enumeration of
-peripherals.
-
-For example, in my patch, I have a data structure that describes the
-chromebook pixel thusly :
-
-static struct chromeos_laptop chromebook_pixel = {
-        .i2c_peripherals = {
-                /* Touch Screen. */
-                { .add = setup_atmel_1664s_ts, I2C_ADAPTER_PANEL },
-                /* Touchpad. */
-                { .add = setup_atmel_224s_tp, I2C_ADAPTER_VGADDC },
-                /* Light Sensor. */
-                { .add = setup_isl29018_als, I2C_ADAPTER_PANEL },
-        },
-};
-
-And so on for every other board that the driver supports. It
-explicitly describes the small set of devices that are known to exist
-on a particular system, and describes precisely which bus it lives on.
-That way, we can use i2c_new_probed_device.
-
-Your patch removes these, and instead, makes one list of all devices
-that the driver supports across all systems that pass the dmi check.
-Your driver then uses detect in sort of a shotgun approach for all
-supported i2c adapters. The approach may work for Pixel, but as I
-mentioned in my other email, it causes failed probes on other systems.
-
-It would be my preference to continue to use i2c_new_probed_device,
-and explicitly describe each Chromebook system
-
-
-
--- 
-Benson Leung
-Software Engineer, Chrom* OS
-bleung@chromium.org
