@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755182Ab3HEWDE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 18:03:04 -0400
-Received: from mga02.intel.com ([134.134.136.20]:64992 "EHLO mga02.intel.com"
+	id S1755328Ab3HEWD4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 18:03:56 -0400
+Received: from mga02.intel.com ([134.134.136.20]:60114 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754984Ab3HEWC7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 18:02:59 -0400
+	id S1755149Ab3HEWDD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 18:03:03 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.89,821,1367996400"; 
-   d="scan'208";a="382341517"
+   d="scan'208";a="382341522"
 From: Andi Kleen <andi@firstfloor.org>
 To: x86@kernel.org
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        ananth@in.ibm.com
-Subject: [PATCH 07/16] x86, asmlinkage: Make kprobes code visible and fix assembler code
-Date: Mon,  5 Aug 2013 15:02:41 -0700
-Message-Id: <1375740170-7446-8-git-send-email-andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 15/16] x86, asmlinkage, power: Make various symbols used by the suspend asm code visible
+Date: Mon,  5 Aug 2013 15:02:49 -0700
+Message-Id: <1375740170-7446-16-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1375740170-7446-1-git-send-email-andi@firstfloor.org>
 References: <1375740170-7446-1-git-send-email-andi@firstfloor.org>
@@ -25,83 +24,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-- Make all the external assembler template symbols __visible
-- Move the templates inline assembler code into a top level
-assembler statement, not inside a function. This avoids it being
-optimized away or cloned.
-
-Cc: ananth@in.ibm.com
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/include/asm/kprobes.h | 10 +++++-----
- arch/x86/kernel/kprobes/core.c |  2 +-
- arch/x86/kernel/kprobes/opt.c  |  5 +----
- 3 files changed, 7 insertions(+), 10 deletions(-)
+ arch/x86/power/cpu.c          |  8 ++++----
+ arch/x86/power/hibernate_64.c | 12 ++++++------
+ kernel/power/hibernate.c      |  2 +-
+ 3 files changed, 11 insertions(+), 11 deletions(-)
 
-diff --git a/arch/x86/include/asm/kprobes.h b/arch/x86/include/asm/kprobes.h
-index 5a6d287..9454c16 100644
---- a/arch/x86/include/asm/kprobes.h
-+++ b/arch/x86/include/asm/kprobes.h
-@@ -49,10 +49,10 @@ typedef u8 kprobe_opcode_t;
- #define flush_insn_slot(p)	do { } while (0)
+diff --git a/arch/x86/power/cpu.c b/arch/x86/power/cpu.c
+index 1cf5b30..424f4c9 100644
+--- a/arch/x86/power/cpu.c
++++ b/arch/x86/power/cpu.c
+@@ -25,10 +25,10 @@
+ #include <asm/cpu.h>
  
- /* optinsn template addresses */
--extern kprobe_opcode_t optprobe_template_entry;
--extern kprobe_opcode_t optprobe_template_val;
--extern kprobe_opcode_t optprobe_template_call;
--extern kprobe_opcode_t optprobe_template_end;
-+extern __visible kprobe_opcode_t optprobe_template_entry;
-+extern __visible kprobe_opcode_t optprobe_template_val;
-+extern __visible kprobe_opcode_t optprobe_template_call;
-+extern __visible kprobe_opcode_t optprobe_template_end;
- #define MAX_OPTIMIZED_LENGTH (MAX_INSN_SIZE + RELATIVE_ADDR_SIZE)
- #define MAX_OPTINSN_SIZE 				\
- 	(((unsigned long)&optprobe_template_end -	\
-@@ -62,7 +62,7 @@ extern kprobe_opcode_t optprobe_template_end;
- extern const int kretprobe_blacklist_size;
- 
- void arch_remove_kprobe(struct kprobe *p);
--void kretprobe_trampoline(void);
-+asmlinkage void kretprobe_trampoline(void);
- 
- /* Architecture specific copy of original instruction*/
- struct arch_specific_insn {
-diff --git a/arch/x86/kernel/kprobes/core.c b/arch/x86/kernel/kprobes/core.c
-index 211bce4..048852d 100644
---- a/arch/x86/kernel/kprobes/core.c
-+++ b/arch/x86/kernel/kprobes/core.c
-@@ -661,7 +661,7 @@ static void __used __kprobes kretprobe_trampoline_holder(void)
- /*
-  * Called from kretprobe_trampoline
-  */
--static __used __kprobes void *trampoline_handler(struct pt_regs *regs)
-+__visible __used __kprobes void *trampoline_handler(struct pt_regs *regs)
- {
- 	struct kretprobe_instance *ri = NULL;
- 	struct hlist_head *head, empty_rp;
-diff --git a/arch/x86/kernel/kprobes/opt.c b/arch/x86/kernel/kprobes/opt.c
-index 76dc6f0..2c1ac28 100644
---- a/arch/x86/kernel/kprobes/opt.c
-+++ b/arch/x86/kernel/kprobes/opt.c
-@@ -88,9 +88,7 @@ static void __kprobes synthesize_set_arg1(kprobe_opcode_t *addr, unsigned long v
- 	*(unsigned long *)addr = val;
- }
- 
--static void __used __kprobes kprobes_optinsn_template_holder(void)
--{
--	asm volatile (
-+asm (
- 			".global optprobe_template_entry\n"
- 			"optprobe_template_entry:\n"
- #ifdef CONFIG_X86_64
-@@ -129,7 +127,6 @@ static void __used __kprobes kprobes_optinsn_template_holder(void)
+ #ifdef CONFIG_X86_32
+-unsigned long saved_context_ebx;
+-unsigned long saved_context_esp, saved_context_ebp;
+-unsigned long saved_context_esi, saved_context_edi;
+-unsigned long saved_context_eflags;
++__visible unsigned long saved_context_ebx;
++__visible unsigned long saved_context_esp, saved_context_ebp;
++__visible unsigned long saved_context_esi, saved_context_edi;
++__visible unsigned long saved_context_eflags;
  #endif
- 			".global optprobe_template_end\n"
- 			"optprobe_template_end:\n");
--}
+ struct saved_context saved_context;
  
- #define TMPL_MOVE_IDX \
- 	((long)&optprobe_template_val - (long)&optprobe_template_entry)
+diff --git a/arch/x86/power/hibernate_64.c b/arch/x86/power/hibernate_64.c
+index a0fde91..304fca2 100644
+--- a/arch/x86/power/hibernate_64.c
++++ b/arch/x86/power/hibernate_64.c
+@@ -20,26 +20,26 @@
+ #include <asm/suspend.h>
+ 
+ /* References to section boundaries */
+-extern const void __nosave_begin, __nosave_end;
++extern __visible const void __nosave_begin, __nosave_end;
+ 
+ /* Defined in hibernate_asm_64.S */
+-extern int restore_image(void);
++extern asmlinkage int restore_image(void);
+ 
+ /*
+  * Address to jump to in the last phase of restore in order to get to the image
+  * kernel's text (this value is passed in the image header).
+  */
+-unsigned long restore_jump_address;
++unsigned long restore_jump_address __visible;
+ 
+ /*
+  * Value of the cr3 register from before the hibernation (this value is passed
+  * in the image header).
+  */
+-unsigned long restore_cr3;
++unsigned long restore_cr3 __visible;
+ 
+-pgd_t *temp_level4_pgt;
++pgd_t *temp_level4_pgt __visible;
+ 
+-void *relocated_restore_code;
++void *relocated_restore_code __visible;
+ 
+ static void *alloc_pgt_page(void *context)
+ {
+diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
+index b26f5f1..3085e62 100644
+--- a/kernel/power/hibernate.c
++++ b/kernel/power/hibernate.c
+@@ -39,7 +39,7 @@ static int resume_delay;
+ static char resume_file[256] = CONFIG_PM_STD_PARTITION;
+ dev_t swsusp_resume_device;
+ sector_t swsusp_resume_block;
+-int in_suspend __nosavedata;
++__visible int in_suspend __nosavedata;
+ 
+ enum {
+ 	HIBERNATION_INVALID,
 -- 
 1.8.3.1
 
