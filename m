@@ -1,86 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753548Ab3HEOE7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 10:04:59 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:56612 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753213Ab3HEOE4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 10:04:56 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] ACPI / platform: Drop unnecessary label
-Date: Mon, 05 Aug 2013 16:15:13 +0200
-Message-ID: <1419437.ogYYmboGdh@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.11.0-rc4+; KDE/4.9.5; x86_64; ; )
+	id S1753577Ab3HEOHJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 10:07:09 -0400
+Received: from mx3-phx2.redhat.com ([209.132.183.24]:56361 "EHLO
+	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751055Ab3HEOHH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 10:07:07 -0400
+Date: Mon, 5 Aug 2013 10:05:38 -0400 (EDT)
+From: Paolo Bonzini <pbonzini@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Gleb Natapov <gleb@redhat.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>, mingo@redhat.com,
+        x86@kernel.org, tglx@linutronix.de, jeremy@goop.org,
+        konrad wilk <konrad.wilk@oracle.com>, hpa@zytor.com,
+        linux-doc@vger.kernel.org, habanero@linux.vnet.ibm.com,
+        xen-devel@lists.xensource.com, peterz@infradead.org,
+        mtosatti@redhat.com,
+        stefano stabellini <stefano.stabellini@eu.citrix.com>,
+        andi@firstfloor.org, attilio rao <attilio.rao@citrix.com>,
+        ouyang@cs.pitt.edu, gregkh@suse.de, agraf@suse.de,
+        chegu vinod <chegu_vinod@hp.com>, torvalds@linux-foundation.org,
+        avi kivity <avi.kivity@gmail.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, riel@redhat.com, drjones@redhat.com,
+        virtualization@lists.linux-foundation.org,
+        srivatsa vaddagiri <srivatsa.vaddagiri@gmail.com>
+Message-ID: <1952910281.9619371.1375711538505.JavaMail.root@redhat.com>
+In-Reply-To: <20130805135222.GA32429@gmail.com>
+References: <51F0ED31.3040200@linux.vnet.ibm.com> <20130731062440.GK28372@redhat.com> <51FA1087.9080908@linux.vnet.ibm.com> <20130802092539.GB28327@gmail.com> <20130802095406.GB30072@redhat.com> <20130805094603.GA29303@gmail.com> <20130805095901.GL2258@redhat.com> <20130805135222.GA32429@gmail.com>
+Subject: Re: [PATCH RFC V11 15/18] kvm : Paravirtual ticketlocks support for
+ linux guests running on KVM hypervisor
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.5.82.11]
+X-Mailer: Zimbra 8.0.3_GA_5664 (ZimbraWebClient - SAF5 (Mac)/8.0.3_GA_5664)
+Thread-Topic: kvm : Paravirtual ticketlocks support for linux guests running on KVM hypervisor
+Thread-Index: jx6DpRQSa4xLQHdtHrU9Qag3/Sbj0Q==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > On Mon, Aug 05, 2013 at 11:46:03AM +0200, Ingo Molnar wrote:
+> > > Acked-by: Ingo Molnar <mingo@kernel.org>
+> > > 
+> > > I guess you'd want to carry this in the KVM tree or so - maybe in a
+> > > separate branch because it changes Xen as well?
+> > 
+> > It changes KVM host and guest side, XEN and common x86 spinlock code. I
+> > think it would be best to merge common x86 spinlock bits and guest side
+> > KVM/XEN bits through tip tree and host KVM part will go through KVM
+> > tree. If this is OK with you, Ingo, and XEN folks Raghavendra can send
+> > two separate patch series one for the tip and one for KVM host side.
+> 
+> Sure, that's fine - if the initial series works fine in isolation as well
+> (i.e. won't break anything).
 
-The create_dev label in acpi_create_platform_device() is not
-necessary, because the if statement causing the jump to it to
-happen may be rearranged to avoid that jump.
-
-Rework the code accordingly (no functional changes should result
-from that).
-
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
-
-For 3.12, on top of linux-next.
+It would be a big problem if it didn't!  Raghavendra, please send the
+two separate series as Gleb explained above.
 
 Thanks,
-Rafael
 
----
- drivers/acpi/acpi_platform.c |   26 ++++++++++++--------------
- 1 file changed, 12 insertions(+), 14 deletions(-)
-
-Index: linux-pm/drivers/acpi/acpi_platform.c
-===================================================================
---- linux-pm.orig/drivers/acpi/acpi_platform.c
-+++ linux-pm/drivers/acpi/acpi_platform.c
-@@ -61,25 +61,23 @@ int acpi_create_platform_device(struct a
- 
- 	INIT_LIST_HEAD(&resource_list);
- 	count = acpi_dev_get_resources(adev, &resource_list, NULL, NULL);
--	if (count < 0)
-+	if (count < 0) {
- 		return 0;
-+	} else if (count > 0) {
-+		resources = kmalloc(count * sizeof(struct resource),
-+				    GFP_KERNEL);
-+		if (!resources) {
-+			dev_err(&adev->dev, "No memory for resources\n");
-+			acpi_dev_free_resource_list(&resource_list);
-+			return -ENOMEM;
-+		}
-+		count = 0;
-+		list_for_each_entry(rentry, &resource_list, node)
-+			resources[count++] = rentry->res;
- 
--	if (!count)
--		goto create_dev;
--
--	resources = kmalloc(count * sizeof(struct resource), GFP_KERNEL);
--	if (!resources) {
--		dev_err(&adev->dev, "No memory for resources\n");
- 		acpi_dev_free_resource_list(&resource_list);
--		return -ENOMEM;
- 	}
--	count = 0;
--	list_for_each_entry(rentry, &resource_list, node)
--		resources[count++] = rentry->res;
--
--	acpi_dev_free_resource_list(&resource_list);
- 
--create_dev:
- 	memset(&pdevinfo, 0, sizeof(pdevinfo));
- 	/*
- 	 * If the ACPI node has a parent and that parent has a physical device
-
+Paolo
