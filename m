@@ -1,78 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755776Ab3HEWnE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 18:43:04 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:46858 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754946Ab3HEWnB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 18:43:01 -0400
-Message-ID: <52002A6E.6010203@ti.com>
-Date: Mon, 5 Aug 2013 15:42:54 -0700
-From: Russ Dill <Russ.Dill@ti.com>
-Organization: Texas Instruments
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S1755785Ab3HEWnt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 18:43:49 -0400
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:34189 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754946Ab3HEWns (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 18:43:48 -0400
 MIME-Version: 1.0
-To: Zubair Lutfullah: <zubair.lutfullah@gmail.com>, ;
-Illegal-Object: Syntax error in To: address found on vger.kernel.org:
-	To:	;
-			^-missing semicolon to end mail group, extraneous tokens in mailbox, missing end of mailbox
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Jonathan Cameron <jic23@kernel.org>, <jic23@cam.ac.uk>,
-        <linux-iio@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-input@vger.kernel.org>, <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 1/2] input: ti_tsc: Enable shared IRQ for TSC
-References: <1374882674-18403-1-git-send-email-zubair.lutfullah@gmail.com> <1374882674-18403-2-git-send-email-zubair.lutfullah@gmail.com> <51FE361B.5030900@kernel.org> <20130805161256.GA8794@core.coreip.homeip.net> <20130805170201.GA4310@gmail.com>
-In-Reply-To: <20130805170201.GA4310@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <E1V51EE-0006uO-C2@rmk-PC.arm.linux.org.uk>
+References: <20130801213420.GL23006@n2100.arm.linux.org.uk>
+	<E1V51EE-0006uO-C2@rmk-PC.arm.linux.org.uk>
+Date: Mon, 5 Aug 2013 17:43:47 -0500
+Message-ID: <CAL_JsqJH-T3bBNZvQZF2aWS18n5wfSzCMEi20-5e1RmYEfF3Ow@mail.gmail.com>
+Subject: Re: [PATCH RFC 46/51] ARM: DMA-API: better handing of DMA masks for
+ coherent allocations
+From: Rob Herring <robherring2@gmail.com>
+To: Russell King <rmk+kernel@arm.linux.org.uk>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/05/2013 10:02 AM, Zubair Lutfullah : wrote:
-> On Mon, Aug 05, 2013 at 09:12:56AM -0700, Dmitry Torokhov wrote:
->>>> Touchscreen and ADC share the same IRQ line from parent MFD core.
->>>> Previously only Touchscreen was interrupt based.
->>>> With continuous mode support added in ADC driver, driver requires
->>>> interrupt to process the ADC samples, so enable shared IRQ flag bit for
->>>> touchscreen.
->>>>
->>>> @@ -260,8 +260,18 @@ static irqreturn_t titsc_irq(int irq, void *dev)
->>>>  	unsigned int fsm;
->>>>  
->>>> +	/*
->>>> +	 * ADC and touchscreen share the IRQ line.
->>>> +	 * FIFO1 threshold, FIFO1 Overrun and FIFO1 underflow
->>>> +	 * interrupts are used by ADC,
->>>> +	 * hence return from touchscreen IRQ handler if FIFO1
->>>> +	 * related interrupts occurred.
->>>> +	 */
->>>> +	if ((status & IRQENB_FIFO1THRES) ||
->>>> +			(status & IRQENB_FIFO1OVRRUN) ||
->>>> +			(status & IRQENB_FIFO1UNDRFLW))
->>>> +		return IRQ_NONE;
->>>> +	else if (status & IRQENB_FIFO0THRES) {
->>
->> What happens if both parts have data at the same time? Can both
->> IRQENB_FIFO1THRES and IRQENB_FIFO0THRES be signalled? What will happen
->> in this case?
-> 
-> If ADC is sampling and someone is touching the TSC, both interrupts
-> can signal so closely that for the purpose of the kernel,
-> they can be seen as signaled together.
-> 
-> FIFO 1 used only by ADC and FIFO1THRES handler is inside the iio/adc driver
-> FIFO 0 used only by TSC and FIFO0THRES handler is inside the input/touchscreen
-> 
-> Note: These are level interrupts.
-> 
-> I would like some input on how to handle such a situation. 
-> 
-> Thanks
-> Zubair Lutfullah
-> 
+On Thu, Aug 1, 2013 at 5:20 PM, Russell King
+<rmk+kernel@arm.linux.org.uk> wrote:
+> We need to start treating DMA masks as something which is specific to
+> the bus that the device resides on, otherwise we're going to hit all
+> sorts of nasty issues with LPAE and 32-bit DMA controllers in >32-bit
+> systems, where memory is offset from PFN 0.
+>
+> In order to start doing this, we convert the DMA mask to a PFN using
+> the device specific dma_to_pfn() macro.  This is the reverse of the
+> pfn_to_dma() macro which is used to get the DMA address for the device.
+>
+> This gives us a PFN mask, which we can then check against the PFN
+> limit of the DMA zone.
+>
+> Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+> ---
+>  arch/arm/mm/dma-mapping.c |   49 ++++++++++++++++++++++++++++++++++++++++----
+>  arch/arm/mm/init.c        |    2 +
+>  arch/arm/mm/mm.h          |    2 +
+>  3 files changed, 48 insertions(+), 5 deletions(-)
 
-As far as I know, if there are any bits you can handle and ack, do so
-and return IRQ_HANDLED. Otherwise, return IRQ_NONE. If there are still
-pending bits, the interrupt will fire again, your handler will be called
-again, return IRQ_NONE, and the next handler will be called.
+I believe you missed handling __dma_alloc. I have a different fix than
+what Andreas posted. I think DMA zone handling is broken in all cases
+here. Feel free to combine this in to your patch if you agree.
+
+Author: Rob Herring <rob.herring@calxeda.com>
+Date:   Thu Aug 1 15:51:17 2013 -0500
+
+    ARM: fix dma-mapping on LPAE
+
+    With LPAE, the DMA zone size may be 4GB, so the GFP_DMA flag needs to be
+    set when the mask is less than or equal to the arm_dma_limit. This also
+    fixes a bug with DMA zone mask handling. GFP_DMA should be set for any
+    mask less than or equal to arm_dma_limit, not just less than ~0UL.
+
+    Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+
+diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
+index 7f9b179..3d9bdfb 100644
+--- a/arch/arm/mm/dma-mapping.c
++++ b/arch/arm/mm/dma-mapping.c
+@@ -651,7 +651,7 @@ static void *__dma_alloc(struct device *dev,
+size_t size, dma_addr_t *handle,
+        if (!mask)
+                return NULL;
+
+-       if (mask < 0xffffffffULL)
++       if (mask <= (u64)arm_dma_limit)
+                gfp |= GFP_DMA;
+
+        /*
+
+>
+> diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
+> index 7f9b179..ef0efab 100644
+> --- a/arch/arm/mm/dma-mapping.c
+> +++ b/arch/arm/mm/dma-mapping.c
+> @@ -173,10 +173,30 @@ static u64 get_coherent_dma_mask(struct device *dev)
+>                         return 0;
+>                 }
+>
+> -               if ((~mask) & (u64)arm_dma_limit) {
+> -                       dev_warn(dev, "coherent DMA mask %#llx is smaller "
+> -                                "than system GFP_DMA mask %#llx\n",
+> -                                mask, (u64)arm_dma_limit);
+> +               /*
+> +                * If the mask allows for more memory than we can address,
+> +                * and we actually have that much memory, then fail the
+> +                * allocation.
+> +                */
+> +               if (sizeof(mask) != sizeof(dma_addr_t) &&
+> +                   mask > (dma_addr_t)~0 &&
+> +                   dma_to_pfn(dev, ~0) > arm_dma_pfn_limit) {
+> +                       dev_warn(dev, "Coherent DMA mask %#llx is larger than dma_addr_t allows\n",
+> +                                mask);
+> +                       dev_warn(dev, "Driver did not use or check the return value from dma_set_coherent_mask()?\n");
+> +                       return 0;
+> +               }
+> +
+> +               /*
+> +                * Now check that the mask, when translated to a PFN,
+> +                * fits within the allowable addresses which we can
+> +                * allocate.
+> +                */
+> +               if (dma_to_pfn(dev, mask) < arm_dma_pfn_limit) {
+> +                       dev_warn(dev, "Coherent DMA mask %#llx (pfn %#lx-%#lx) covers a smaller range of system memory than the DMA zone pfn 0x0-%#lx\n",
+> +                                mask,
+> +                                dma_to_pfn(dev, 0), dma_to_pfn(dev, mask) + 1,
+> +                                arm_dma_pfn_limit + 1);
+>                         return 0;
+>                 }
+>         }
+> @@ -1008,8 +1028,27 @@ void arm_dma_sync_sg_for_device(struct device *dev, struct scatterlist *sg,
+>   */
+>  int dma_supported(struct device *dev, u64 mask)
+>  {
+> -       if (mask < (u64)arm_dma_limit)
+> +       unsigned long limit;
+> +
+> +       /*
+> +        * If the mask allows for more memory than we can address,
+> +        * and we actually have that much memory, then we must
+> +        * indicate that DMA to this device is not supported.
+> +        */
+> +       if (sizeof(mask) != sizeof(dma_addr_t) &&
+> +           mask > (dma_addr_t)~0 &&
+> +           dma_to_pfn(dev, ~0) > arm_dma_pfn_limit)
+> +               return 0;
+> +
+> +       /*
+> +        * Translate the device's DMA mask to a PFN limit.  This
+> +        * PFN number includes the page which we can DMA to.
+> +        */
+> +       limit = dma_to_pfn(dev, mask);
+> +
+> +       if (limit < arm_dma_pfn_limit)
+>                 return 0;
+> +
+>         return 1;
+>  }
+>  EXPORT_SYMBOL(dma_supported);
+> diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
+> index 15225d8..b5b5836 100644
+> --- a/arch/arm/mm/init.c
+> +++ b/arch/arm/mm/init.c
+> @@ -217,6 +217,7 @@ EXPORT_SYMBOL(arm_dma_zone_size);
+>   * so a successful GFP_DMA allocation will always satisfy this.
+>   */
+>  phys_addr_t arm_dma_limit;
+> +unsigned long arm_dma_pfn_limit;
+>
+>  static void __init arm_adjust_dma_zone(unsigned long *size, unsigned long *hole,
+>         unsigned long dma_size)
+> @@ -239,6 +240,7 @@ void __init setup_dma_zone(struct machine_desc *mdesc)
+>                 arm_dma_limit = PHYS_OFFSET + arm_dma_zone_size - 1;
+>         } else
+>                 arm_dma_limit = 0xffffffff;
+> +       arm_dma_pfn_limit = arm_dma_limit >> PAGE_SHIFT;
+>  #endif
+>  }
+>
+> diff --git a/arch/arm/mm/mm.h b/arch/arm/mm/mm.h
+> index d5a4e9a..d5a982d 100644
+> --- a/arch/arm/mm/mm.h
+> +++ b/arch/arm/mm/mm.h
+> @@ -81,8 +81,10 @@ extern __init void add_static_vm_early(struct static_vm *svm);
+>
+>  #ifdef CONFIG_ZONE_DMA
+>  extern phys_addr_t arm_dma_limit;
+> +extern unsigned long arm_dma_pfn_limit;
+>  #else
+>  #define arm_dma_limit ((phys_addr_t)~0)
+> +#define arm_dma_pfn_limit (~0ul >> PAGE_SHIFT)
+>  #endif
+>
+>  extern phys_addr_t arm_lowmem_limit;
+> --
+> 1.7.4.4
+>
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
