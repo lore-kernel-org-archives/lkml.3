@@ -1,100 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754337Ab3HEGWP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 02:22:15 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:37647 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753670Ab3HEGWO (ORCPT
+	id S1754525Ab3HEGYR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 02:24:17 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:38068 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753923Ab3HEGYP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 02:22:14 -0400
-Message-ID: <51FF4492.8080100@hitachi.com>
-Date: Mon, 05 Aug 2013 15:22:10 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Mon, 5 Aug 2013 02:24:15 -0400
+X-IronPort-AV: E=Sophos;i="4.89,816,1367942400"; 
+   d="scan'208";a="8119328"
+Message-ID: <51FF44B7.8050704@cn.fujitsu.com>
+Date: Mon, 05 Aug 2013 14:22:47 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        Hyeoncheol Lee <cheol.lee@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [PATCH 13/13] tracing/probes: Fix basic print type functions
-References: <1375261410-11219-1-git-send-email-namhyung@kernel.org> <1375261410-11219-14-git-send-email-namhyung@kernel.org>
-In-Reply-To: <1375261410-11219-14-git-send-email-namhyung@kernel.org>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+To: robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl, lenb@kernel.org,
+        tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
+        mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
+        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com
+CC: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH v2 RESEND 13/18] x86, numa, mem_hotplug: Skip all the
+ regions the kernel resides in.
+References: <1375434877-20704-1-git-send-email-tangchen@cn.fujitsu.com> <1375434877-20704-14-git-send-email-tangchen@cn.fujitsu.com>
+In-Reply-To: <1375434877-20704-14-git-send-email-tangchen@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/05 14:22:51,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/05 14:22:53
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/07/31 18:03), Namhyung Kim wrote:
-> From: Namhyung Kim <namhyung.kim@lge.com>
-> 
-> The print format of s32 type was "ld" and it's casted to "long".  So
-> it turned out to print 4294967295 for "-1" on 64-bit systems.  Not
-> sure whether it worked well on 32-bit systems.
-> 
-> Anyway, it'd be better if we have exact format and type cast for each
-> types on both of 32- and 64-bit systems.  In fact, the only difference
-> is on s64/u64 types.
+Hi tj,
 
-Thank you for fixing this :)
-But, again, this should be at the first place on the series,
-so that we can push this to stable tree too.
+I have resent the v2 patch-set. Would you please give some more
+comments about the memblock and x86 booting code modification ?
 
-Thanks,
+And I'm also discussing with the ACPICA guys about the implementation
+on ACPI side. I hope we can catch up with 3.12 this time.
 
-> 
-> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-> Cc: Oleg Nesterov <oleg@redhat.com>
-> Cc: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
-> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Thanks.
+
+On 08/02/2013 05:14 PM, Tang Chen wrote:
+> At early time, memblock will reserve some memory for the kernel,
+> such as the kernel code and data segments, initrd file, and so on，
+> which means the kernel resides in these memory regions.
+>
+> Even if these memory regions are hotpluggable, we should not
+> mark them as hotpluggable. Otherwise the kernel won't have enough
+> memory to boot.
+>
+> This patch finds out which memory regions the kernel resides in,
+> and skip them when finding all hotpluggable memory regions.
+>
+> Signed-off-by: Tang Chen<tangchen@cn.fujitsu.com>
+> Reviewed-by: Zhang Yanfei<zhangyanfei@cn.fujitsu.com>
 > ---
->  kernel/trace/trace_probe.c | 17 +++++++++++------
->  1 file changed, 11 insertions(+), 6 deletions(-)
-> 
-> diff --git a/kernel/trace/trace_probe.c b/kernel/trace/trace_probe.c
-> index 8ad48ca4e344..e84e6134f1fb 100644
-> --- a/kernel/trace/trace_probe.c
-> +++ b/kernel/trace/trace_probe.c
-> @@ -45,14 +45,19 @@ __kprobes int PRINT_TYPE_FUNC_NAME(type)(struct trace_seq *s,		\
->  }									\
->  const char PRINT_TYPE_FMT_NAME(type)[] = fmt;
->  
-> -DEFINE_BASIC_PRINT_TYPE_FUNC(u8, "%x", unsigned int)
-> -DEFINE_BASIC_PRINT_TYPE_FUNC(u16, "%x", unsigned int)
-> -DEFINE_BASIC_PRINT_TYPE_FUNC(u32, "%lx", unsigned long)
-> +DEFINE_BASIC_PRINT_TYPE_FUNC(u8 , "%x", unsigned char)
-> +DEFINE_BASIC_PRINT_TYPE_FUNC(u16, "%x", unsigned short)
-> +DEFINE_BASIC_PRINT_TYPE_FUNC(u32, "%x", unsigned int)
-> +DEFINE_BASIC_PRINT_TYPE_FUNC(s8,  "%d", signed char)
-> +DEFINE_BASIC_PRINT_TYPE_FUNC(s16, "%d", short)
-> +DEFINE_BASIC_PRINT_TYPE_FUNC(s32, "%d", int)
-> +#if BITS_PER_LONG == 32
->  DEFINE_BASIC_PRINT_TYPE_FUNC(u64, "%llx", unsigned long long)
-> -DEFINE_BASIC_PRINT_TYPE_FUNC(s8, "%d", int)
-> -DEFINE_BASIC_PRINT_TYPE_FUNC(s16, "%d", int)
-> -DEFINE_BASIC_PRINT_TYPE_FUNC(s32, "%ld", long)
->  DEFINE_BASIC_PRINT_TYPE_FUNC(s64, "%lld", long long)
-> +#else /* BITS_PER_LONG == 64 */
-> +DEFINE_BASIC_PRINT_TYPE_FUNC(u64, "%lx", unsigned long)
-> +DEFINE_BASIC_PRINT_TYPE_FUNC(s64, "%ld", long)
-> +#endif
->  
->  /* Print type function for string type */
->  __kprobes int PRINT_TYPE_FUNC_NAME(string)(struct trace_seq *s,
-> 
-
-
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+>   mm/memory_hotplug.c |   45 +++++++++++++++++++++++++++++++++++++++++++++
+>   1 files changed, 45 insertions(+), 0 deletions(-)
+>
+> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+> index ef9ccf8..10a30ef 100644
+> --- a/mm/memory_hotplug.c
+> +++ b/mm/memory_hotplug.c
+> @@ -31,6 +31,7 @@
+>   #include<linux/firmware-map.h>
+>   #include<linux/stop_machine.h>
+>   #include<linux/acpi.h>
+> +#include<linux/memblock.h>
+>
+>   #include<asm/tlbflush.h>
+>
+> @@ -93,6 +94,40 @@ static void release_memory_resource(struct resource *res)
+>
+>   #ifdef CONFIG_ACPI_NUMA
+>   /**
+> + * kernel_resides_in_range - Check if kernel resides in a memory region.
+> + * @base: The base address of the memory region.
+> + * @length: The length of the memory region.
+> + *
+> + * This function is used at early time. It iterates memblock.reserved and check
+> + * if the kernel has used any memory in [@base, @base + @length).
+> + *
+> + * Return true if the kernel resides in the memory region, false otherwise.
+> + */
+> +static bool __init kernel_resides_in_region(phys_addr_t base, u64 length)
+> +{
+> +	int i;
+> +	phys_addr_t start, end;
+> +	struct memblock_region *region;
+> +	struct memblock_type *reserved =&memblock.reserved;
+> +
+> +	for (i = 0; i<  reserved->cnt; i++) {
+> +		region =&reserved->regions[i];
+> +
+> +		if (region->flags != MEMBLOCK_HOTPLUG)
+> +			continue;
+> +
+> +		start = region->base;
+> +		end = region->base + region->size;
+> +		if (end<= base || start>= base + length)
+> +			continue;
+> +
+> +		return true;
+> +	}
+> +
+> +	return false;
+> +}
+> +
+> +/**
+>    * find_hotpluggable_memory - Find out hotpluggable memory from ACPI SRAT.
+>    *
+>    * This function did the following:
+> @@ -129,6 +164,16 @@ void __init find_hotpluggable_memory(void)
+>
+>   	while (ACPI_SUCCESS(acpi_hotplug_mem_affinity(srat_vaddr,&base,
+>   						&size,&offset))) {
+> +		/*
+> +		 * At early time, memblock will reserve some memory for the
+> +		 * kernel, such as the kernel code and data segments, initrd
+> +		 * file, and so on，which means the kernel resides in these
+> +		 * memory regions. These regions should not be hotpluggable.
+> +		 * So do not mark them as hotpluggable.
+> +		 */
+> +		if (kernel_resides_in_region(base, size))
+> +			continue;
+> +
+>   		/* Will mark hotpluggable memory regions here */
+>   	}
+>
