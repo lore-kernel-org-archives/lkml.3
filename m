@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754135Ab3HEQ3j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 12:29:39 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:63091 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753042Ab3HEQ3X (ORCPT
+	id S1754188Ab3HEQ3o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 12:29:44 -0400
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:63760 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753030Ab3HEQ3l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 12:29:23 -0400
+	Mon, 5 Aug 2013 12:29:41 -0400
 From: Kevin Hilman <khilman@linaro.org>
-To: Anton Vorontsov <anton@enomsg.org>, linux-pm@vger.kernel.org
+To: Anton Vorontsov <anton@enomsg.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        linux-pm@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Nishanth Menon <nm@ti.com>
+        Nishanth Menon <nm@ti.com>
 Subject: [PATCH] MAINTAINERS: drivers/power: add entry for SmartReflex AVS drivers
-Date: Mon,  5 Aug 2013 09:29:19 -0700
-Message-Id: <1375720159-13684-1-git-send-email-khilman@linaro.org>
+Date: Mon,  5 Aug 2013 09:29:37 -0700
+Message-Id: <1375720177-20063-1-git-send-email-khilman@linaro.org>
 X-Mailer: git-send-email 1.8.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
