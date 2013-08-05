@@ -1,208 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754038Ab3HEQ0R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 12:26:17 -0400
-Received: from mga03.intel.com ([143.182.124.21]:2158 "EHLO mga03.intel.com"
+	id S1754122Ab3HEQ0v (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 12:26:51 -0400
+Received: from mga09.intel.com ([134.134.136.24]:24094 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751821Ab3HEQUr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 12:20:47 -0400
+	id S1752706Ab3HEQ0s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 12:26:48 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.89,819,1367996400"; 
-   d="scan'208";a="277956562"
-From: Adrian Hunter <adrian.hunter@intel.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH V9 00/14] perf tools: some fixes and tweaks
-Date: Mon,  5 Aug 2013 19:26:20 +0300
-Message-Id: <1375719994-26482-1-git-send-email-adrian.hunter@intel.com>
-X-Mailer: git-send-email 1.7.11.7
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
+   d="scan'208";a="357809803"
+Date: Mon, 5 Aug 2013 21:15:51 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Lothar =?iso-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>
+Cc: Jingchang Lu <b35083@freescale.com>, Xiaochun Li <b41219@freescale.com>,
+        Alison Wang <b18965@freescale.com>, linux-kernel@vger.kernel.org,
+        djbw@fb.com, shawn.guo@linaro.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 3/3] dma: Add Freescale eDMA engine driver support
+Message-ID: <20130805154551.GP29095@intel.com>
+References: <1375682824-11443-1-git-send-email-b35083@freescale.com>
+ <1375682824-11443-2-git-send-email-b35083@freescale.com>
+ <20991.23049.78707.457046@ipc1.ka-ro>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20991.23049.78707.457046@ipc1.ka-ro>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Mon, Aug 05, 2013 at 09:53:45AM +0200, Lothar Waßmann wrote:
+> Hi,
+> 
+> Jingchang Lu writes:
+> > Add Freescale enhanced direct memory(eDMA) controller support.
+> > The eDMA controller deploys DMAMUXs routing DMA request sources(slot)
+> > to eDMA channels.
+> > This module can be found on Vybrid and LS-1 SoCs.
+> > 
+> [...]
+> > +static struct fsl_edma_desc *fsl_edma_alloc_desc(struct fsl_edma_chan *fsl_chan,
+> > +		int sg_len)
+> > +{
+> > +	struct fsl_edma_desc *fsl_desc;
+> > +	int size, i;
+> > +
+> > +	size = sizeof(struct fsl_edma_desc);
+> > +	size += sizeof(struct fsl_edma_sw_tcd) * sg_len;
+> > +	fsl_desc = kzalloc(size, GFP_KERNEL);
+> > +	if (!fsl_desc)
+> > +		return NULL;
+> > +
+> > +	fsl_desc->echan = fsl_chan;
+> > +	fsl_desc->n_tcds = sg_len;
+> > +	for (i = 0; i < sg_len; i++) {
+> > +		fsl_desc->tcd[i].vtcd = dma_pool_alloc(fsl_chan->tcd_pool,
+> > +					GFP_ATOMIC, &fsl_desc->tcd[i].ptcd);
+> >
+> Why is this called with GFP_ATOMIC while fsl_desc above is being
+> allocated with GFP_KERNEL?
+Both need to be GFP_ATOMIC, better they need to be GFP_NOWAIT.
 
-Here are some fixes and tweaks to perf tools (version 9).
-
-Changes in V9:
-	perf: Update perf_event_type documentation
-		Dropped since its been applied
-	perf tools: tidy up sample parsing overflow checking
-		Changed to use a single overflow function
-		Updated for PERF_SAMPLE_READ
-	perf: make events stream always parsable
-		Added more about sample parsing to the commit message
-	perf tools: add support for PERF_SAMPLE_IDENTFIER
-		When selecting PERF_SAMPLE_IDENTFIER, ensure PERF_SAMPLE_ID
-		is deselected
-	perf tools: expand perf_event__synthesize_sample()
-		Updated for PERF_SAMPLE_READ
-	perf tools: add a function to calculate sample event size
-		Updated for PERF_SAMPLE_READ
-	perf tools: add a sample parsing test
-		Updated for PERF_SAMPLE_READ
-
-Changes in V8:
-	perf tools: add debug prints
-		Fixed Python link errors
-	perf tools: move perf_evlist__config() to a new source file
-		New Patch to avoid Python link errors
-	perf tools: add support for PERF_SAMPLE_IDENTFIER
-		Adjustments due to patch above
-
-Changes in V7:
-	perf: Update perf_event_type documentation
-		Proposed new patch from Peter Zijlstra
-	perf: make events stream always parsable
-		Adjustments due to patch above
-	perf tools: tidy up sample parsing overflow checking
-		Change to a single overflow function
-		Amend comment
-	perf tools: add a function to calculate sample event size
-		New patch
-	perf tools: add a sample parsing test
-		Amended to use sample event size calculation
-
-Changes in V6:
-	Some checkpatch fixes
-
-	perf: make events stream always parsable
-		Add sample format comments
-
-Changes in V5:
-	Re-based to Arnaldo's tree and dropped already applied patches:
-		perf tools: remove unused parameter
-		perf tools: fix missing tool parameter
-		perf tools: fix missing 'finished_round'
-		perf tools: fix parse_events_terms() segfault on error path
-		perf tools: fix new_term() missing free on error path
-		perf tools: add const specifier to perf_pmu__find name parameter
-		perf tools: tidy duplicated munmap code
-		perf tools: validate perf event header size
-
-	perf tools: add debug prints
-		Changed to perf_event_attr__fprintf()
-	perf tools: add pid to struct thread
-		Always set the pid, even if a pid is already set
-	perf tools: change machine__findnew_thread() to set thread pid
-		Replaces: perf tools: change "machine" functions to set thread pid
-	perf tools: add support for PERF_SAMPLE_IDENTFIER
-		Only use PERF_SAMPLE_IDENTFIER if sample types are different
-	perf tools: expand perf_event__synthesize_sample()
-		New patch in preparation of a sample parsing test
-	perf tools: add a sample parsing test
-		New patch
-
-Changes in V4:
-	I added kernel support for matching sample types via
-	PERF_SAMPLE_IDENTIFIER.  perf tools support for that required
-	first fixing some other things.
-
-	perf tools: fix parse_events_terms() freeing local variable on error path
-		Dropped - covered by David Ahern
-	perf tools: struct thread has a tid not a pid
-		Added ack by David Ahern
-	perf tools: add pid to struct thread
-		Remove unused function
-	perf tools: fix missing increment in sample parsing
-		New patch
-	perf tools: tidy up sample parsing overflow checking
-		New patch
-	perf tools: remove unnecessary callchain validation
-		New patch
-	perf tools: remove references to struct ip_event
-		New patch
-	perf tools: move struct ip_event
-		New patch
-	perf: make events stream always parsable
-		New patch
-	perf tools: add support for PERF_SAMPLE_IDENTFIER
-		New patch
-
-Changes in V3:
-	perf tools: add pid to struct thread
-		Split into 2 patches
-	perf tools: fix ppid in thread__fork()
-		Dropped for now
-
-Changes in V2:
-	perf tools: fix missing tool parameter
-		Fixed one extra occurrence
-	perf tools: fix parse_events_terms() freeing local variable on error path
-		Made "freeing" code into a new function
-	perf tools: validate perf event header size
-		Corrected byte-swapping
-	perf tools: allow non-matching sample types
-		Added comments
-		Fixed id_pos calculation
-		id_pos/is_pos updated whenever sample_type changes
-		Removed perf_evlist__sample_type()
-		Added __perf_evlist__combined_sample_type()
-		Added perf_evlist__combined_sample_type()
-		Added perf_evlist__make_sample_types_compatible()
-	Added ack's to patches acked by Jiri Olsa
-
-
-Adrian Hunter (14):
-      perf tools: add debug prints
-      perf tools: allow non-matching sample types
-      perf tools: add pid to struct thread
-      perf tools: change machine__findnew_thread() to set thread pid
-      perf tools: tidy up sample parsing overflow checking
-      perf tools: remove unnecessary callchain validation
-      perf tools: remove references to struct ip_event
-      perf tools: move struct ip_event
-      perf: make events stream always parsable
-      perf tools: move perf_evlist__config() to a new source file
-      perf tools: add support for PERF_SAMPLE_IDENTFIER
-      perf tools: expand perf_event__synthesize_sample()
-      perf tools: add a function to calculate sample event size
-      perf tools: add a sample parsing test
-
- include/uapi/linux/perf_event.h   |  27 ++-
- kernel/events/core.c              |  11 +-
- tools/perf/Makefile               |   2 +
- tools/perf/builtin-inject.c       |   8 +-
- tools/perf/builtin-kmem.c         |   3 +-
- tools/perf/builtin-kvm.c          |   3 +-
- tools/perf/builtin-lock.c         |   3 +-
- tools/perf/builtin-mem.c          |   2 +-
- tools/perf/builtin-report.c       |   2 +-
- tools/perf/builtin-sched.c        |  17 +-
- tools/perf/builtin-script.c       |   3 +-
- tools/perf/builtin-top.c          |  11 +-
- tools/perf/builtin-trace.c        |  12 +-
- tools/perf/tests/builtin-test.c   |   4 +
- tools/perf/tests/hists_link.c     |  30 ++-
- tools/perf/tests/mmap-basic.c     |   2 +-
- tools/perf/tests/sample-parsing.c | 294 ++++++++++++++++++++++++
- tools/perf/tests/tests.h          |   1 +
- tools/perf/util/build-id.c        |  11 +-
- tools/perf/util/callchain.c       |   8 -
- tools/perf/util/callchain.h       |   5 -
- tools/perf/util/event.c           |   5 +-
- tools/perf/util/event.h           |  33 ++-
- tools/perf/util/evlist.c          | 146 ++++++++++--
- tools/perf/util/evlist.h          |  10 +-
- tools/perf/util/evsel.c           | 461 ++++++++++++++++++++++++++++++++++----
- tools/perf/util/evsel.h           |  13 +-
- tools/perf/util/machine.c         |  37 ++-
- tools/perf/util/machine.h         |   3 +-
- tools/perf/util/python.c          |  20 ++
- tools/perf/util/record.c          | 111 +++++++++
- tools/perf/util/session.c         |  36 +--
- tools/perf/util/thread.c          |   3 +-
- tools/perf/util/thread.h          |   3 +-
- 34 files changed, 1160 insertions(+), 180 deletions(-)
- create mode 100644 tools/perf/tests/sample-parsing.c
- create mode 100644 tools/perf/util/record.c
-
-
-Regards
-Adrian
+~Vinod
