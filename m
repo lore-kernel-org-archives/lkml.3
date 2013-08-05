@@ -1,115 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754188Ab3HERKo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 13:10:44 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:53218 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752709Ab3HERKn (ORCPT
+	id S1754135Ab3HERMI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 13:12:08 -0400
+Received: from mail-ve0-f172.google.com ([209.85.128.172]:50482 "EHLO
+	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752739Ab3HERMG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 13:10:43 -0400
-Message-ID: <51FFDC8B.7010909@linux.vnet.ibm.com>
-Date: Mon, 05 Aug 2013 22:40:35 +0530
-From: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Mon, 5 Aug 2013 13:12:06 -0400
 MIME-Version: 1.0
-To: Tony Luck <tony.luck@gmail.com>
-CC: "linuxppc-dev@ozlabs.org" <linuxppc-dev@ozlabs.org>,
-        "paulus@samba.org" <paulus@samba.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "keescook@chromium.org" <keescook@chromium.org>
-Subject: Re: [PATCH 00/11] Add compression support to pstore
-References: <20130715164844.1520.27771.stgit@aruna-ThinkPad-T420> <51FA3B02.7060004@linux.vnet.ibm.com> <3908561D78D1C84285E8C5FCA982C28F31CAA167@ORSMSX106.amr.corp.intel.com> <CA+8MBbLuhVDCb26ag3AH0vXrP4MXHLxS5aVn8pTi4=qL1NdR5w@mail.gmail.com> <CA+8MBbJ7x46FGC7dPSdNzf8z=fZz20w1kiNgnZr4QQB6SUELhg@mail.gmail.com>
-In-Reply-To: <CA+8MBbJ7x46FGC7dPSdNzf8z=fZz20w1kiNgnZr4QQB6SUELhg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13080517-9574-0000-0000-0000090B8A38
+In-Reply-To: <1375721715.22073.80.camel@gandalf.local.home>
+References: <1375721715.22073.80.camel@gandalf.local.home>
+Date: Mon, 5 Aug 2013 10:12:04 -0700
+X-Google-Sender-Auth: BE7950wLo91XKS7cFPs3hayBmEM
+Message-ID: <CA+55aFw_o=D-j_SRn=Y4LhHm-tEyuP1Je5ZHVTYxbVyLyDcLEg@mail.gmail.com>
+Subject: Re: [RFC] gcc feature request: Moving blocks into sections
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, gcc <gcc@gcc.gnu.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        David Daney <ddaney.cavm@gmail.com>,
+        Behan Webster <behanw@converseincode.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tony,
-
-Thank you very much for testing my patches.
-
-On Saturday 03 August 2013 03:42 AM, Tony Luck wrote:
-> A quick experiment to use your patchset - but with compression
-> disabled by tweaking this line in pstore_dump():
+On Mon, Aug 5, 2013 at 9:55 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
 >
->      zipped_len = -1; //zip_data(dst, hsize + len);
+> Almost a full year ago, Mathieu suggested something like:
 >
-> turned out well. This kernel dumps uncompressed dmesg blobs into pstore
-> and gets them back out again.  So it seems likely that the problems are
-> someplace in the compression/decompression code.
+> if (unlikely(x)) __attribute__((section(".unlikely"))) {
+>         ...
+> } else __attribute__((section(".likely"))) {
+>         ...
+> }
 
-A quick look on my code suggests that problem could be in this part
-of code.
+It's almost certainly a horrible idea.
 
-In pstore_dump:
+First off, we have very few things that are *so* unlikely that they
+never get executed. Putting things in a separate section would
+actually be really bad.
 
-          if (zipped_len < 0) {
-                         dst = psinfo->buf;
-                         hsize = sprintf(dst, "%s#%d Part%d\n",
-                                         why, oopscount, part);
-                         size = psinfo->bufsize - hsize;
-                         dst += hsize;
-                         compressed = false;
+Secondly, you don't want a separate section anyway for any normal
+kernel code, since you want short jumps if possible (pretty much every
+single architecture out there has a concept of shorter jumps that are
+noticeably cheaper than long ones). You want the unlikely code to be
+out-of-line, but still *close*. Which is largely what gcc already does
+(except if you use "-Os", which disables all the basic block movement
+and thus makes "likely/unlikely" pointless to begin with).
 
-                         if (!kmsg_dump_get_buffer(dumper, true, dst,
-size, &len))
-                                 break;
-                 } else {
-                         compressed = true;
-      --->               len = zipped_len;
-                 }
+There are some situations where you'd want extremely unlikely code to
+really be elsewhere, but they are rare as hell, and mostly in user
+code where you might try to avoid demand-loading such code entirely.
 
-I am returning zipped_len as the length of the compressed data (which also
-has hsize compressed). So returning hsize + len in pstore_write callback
-will be wrong. It should just have been zipped_len. This might be adding
-junk characters.
+So give up on sections. They are a bad idea for anything except the
+things we already use them for. Sure, you can try to fix the problems
+with sections with link-time optimization work and a *lot* of small
+individual sections (the way per-function sections work already), but
+that's basically just undoing the stupidity of using sections to begin
+with.
 
-Can you please replace this hunk with:
-
-                 if (zipped_len < 0) {
-                         pr_err("Compression failed\n");
-                         dst = psinfo->buf;
-                         hsize = sprintf(dst, "%s#%d Part%d\n",
-                                         why, oopscount, part);
-                         size = psinfo->bufsize - hsize;
-                         dst += hsize;
-                         compressed = false;
-
-                         if (!kmsg_dump_get_buffer(dumper, true, dst,
-size, &len))
-                                 break;
-                         total_len = hsize + len;
-                 } else {
-                         compressed = true;
-                         total_len = zipped_len;
-                 }
-
-                 ret = psinfo->write(PSTORE_TYPE_DMESG, reason, &id, part,
-                                     oopscount, compressed, total_len, psinfo);
-                 if (ret == 0 && reason == KMSG_DUMP_OOPS && pstore_is_mounted())
-                         pstore_new_entry = 1;
-
-                 total += total_len;
-                 part++;
-
-With the above hunk, atleast I dont see junk characters at the end in power.
-
-I apologise, since I do not have the suitable machine to test this I am
-not able to reproduce the scenarios you are stating. I need your help
-in testing this.
-
-- Aruna
-
-> -Tony
-> _______________________________________________
-> Linuxppc-dev mailing list
-> Linuxppc-dev@lists.ozlabs.org
-> https://lists.ozlabs.org/listinfo/linuxppc-dev
->
-
+                    Linus
