@@ -1,48 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754454Ab3HETKh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 15:10:37 -0400
-Received: from mga14.intel.com ([143.182.124.37]:3635 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753623Ab3HETKg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 15:10:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,820,1367996400"; 
-   d="scan'208";a="376527139"
-From: Andi Kleen <andi@firstfloor.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Christoph Hellwig <hch@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel@vger.kernel.org, acme@infradead.org,
-        Namhyung Kim <namhyung.kim@lge.com>, peterz@infradead.org
-Subject: Re: [PATCH] RFC: perf, tools: Move gtk browser into separate perfgtk executable
-References: <1375669364-13838-1-git-send-email-andi@firstfloor.org>
-	<20130805081641.GA24808@gmail.com>
-	<20130805082320.GA9562@infradead.org>
-	<87fvuozerv.fsf@sejong.aot.lge.com>
-Date: Mon, 05 Aug 2013 12:10:34 -0700
-In-Reply-To: <87fvuozerv.fsf@sejong.aot.lge.com> (Namhyung Kim's message of
-	"Mon, 05 Aug 2013 18:08:04 +0900")
-Message-ID: <87ob9c3qdx.fsf@tassilo.jf.intel.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1754666Ab3HETKv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 15:10:51 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:41086 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754634Ab3HETKt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 15:10:49 -0400
+From: Zubair Lutfullah <zubair.lutfullah@gmail.com>
+To: sameo@linux.intel.com, lee.jones@linaro.org
+Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        bigeasy@linutronix.de, zubair.lutfullah@gmail.com
+Subject: [PATCH] mfd: ti_am335x_tscadc: fix spin lock and reg_cache
+Date: Mon,  5 Aug 2013 20:10:45 +0100
+Message-Id: <1375729845-6992-1-git-send-email-zubair.lutfullah@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Namhyung Kim <namhyung@kernel.org> writes:
->
-> I wrote a patch series [1] separating gtk code to a dso and use it with
-> libdl last year.  But I didn't get much feedback probably due to the
-> mistake of not installing the dso to a proper place.  It'd be great if
-> you guys take a look at it and give some comments.
+Reg_cache variable is used to lock step enable register
+from being accessed and written by both TSC and ADC
+at the same time.
+However, it isn't updated anywhere in the code at all.
 
-It looks good as a replacement of this patch
+If both TSC and ADC are used, eventually 1FFFF is always
+written enabling all 16 steps uselessly causing a mess.
 
-Except for the requirement to build libperf as -fPIC
-In some setups the PIC penalty can be high, and libperf
-has some very hot code (e.g. callstack merging)
+Patch fixes it by correcting the locks and updates the
+variable by reading the step enable register
 
--Andi
+Signed-off-by: Zubair Lutfullah <zubair.lutfullah@gmail.com>
+---
+ drivers/mfd/ti_am335x_tscadc.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/mfd/ti_am335x_tscadc.c b/drivers/mfd/ti_am335x_tscadc.c
+index cd74d59..9f3f07a 100644
+--- a/drivers/mfd/ti_am335x_tscadc.c
++++ b/drivers/mfd/ti_am335x_tscadc.c
+@@ -57,10 +57,10 @@ EXPORT_SYMBOL_GPL(am335x_tsc_se_update);
+ void am335x_tsc_se_set(struct ti_tscadc_dev *tsadc, u32 val)
+ {
+ 	spin_lock(&tsadc->reg_lock);
++	tsadc->reg_se_cache = tscadc_readl(tsadc, REG_SE);
+ 	tsadc->reg_se_cache |= val;
+-	spin_unlock(&tsadc->reg_lock);
+-
+ 	am335x_tsc_se_update(tsadc);
++	spin_unlock(&tsadc->reg_lock);
+ }
+ EXPORT_SYMBOL_GPL(am335x_tsc_se_set);
+ 
 -- 
-ak@linux.intel.com -- Speaking for myself only
+1.7.9.5
+
