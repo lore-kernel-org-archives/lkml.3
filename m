@@ -1,86 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755610Ab3HEWZy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 18:25:54 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:51973 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755088Ab3HEWZw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 18:25:52 -0400
-Date: Mon, 5 Aug 2013 18:25:39 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Michal Hocko <mhocko@suse.cz>, David Rientjes <rientjes@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        azurIt <azurit@pobox.sk>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, x86@kernel.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 3/7] arch: mm: pass userspace fault flag to generic fault
- handler
-Message-ID: <20130805222539.GD715@cmpxchg.org>
-References: <1375549200-19110-1-git-send-email-hannes@cmpxchg.org>
- <1375549200-19110-4-git-send-email-hannes@cmpxchg.org>
- <20130805150618.47d699f5ce9f42242ee2e7c3@linux-foundation.org>
+	id S1755641Ab3HEW1j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 18:27:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43352 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755342Ab3HEW1h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 18:27:37 -0400
+Date: Tue, 6 Aug 2013 06:28:29 +0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Yacine Belkadi <yacine.belkadi.1@gmail.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>, Jiri Kosina <jkosina@suse.cz>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Kevin Hilman <khilman@linaro.org>,
+        Alexey Khoroshilov <khoroshilov@ispras.ru>,
+        Thomas Renninger <trenn@suse.de>, Hannes Reinecke <hare@suse.de>,
+        Lan Tianyu <tianyu.lan@intel.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Ming Lei <ming.lei@canonical.com>,
+        =?utf-8?B?VMO8bGluIMSwemVy?= <tulinizer@gmail.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Johan Hovold <jhovold@gmail.com>, Kay Sievers <kay@vrfy.org>,
+        Julius Werner <jwerner@chromium.org>,
+        Yuanhan Liu <yliu.null@gmail.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org
+Subject: Re: [PATCH] usb: fix some scripts/kernel-doc warnings
+Message-ID: <20130805222829.GH20884@kroah.com>
+References: <1375467004-2623-1-git-send-email-yacine.belkadi.1@gmail.com>
+ <20130803032908.GA10902@kroah.com>
+ <51FEB410.6080909@gmail.com>
+ <20130804212919.GA10623@kroah.com>
+ <51FFF0B7.3080708@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130805150618.47d699f5ce9f42242ee2e7c3@linux-foundation.org>
+In-Reply-To: <51FFF0B7.3080708@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 05, 2013 at 03:06:18PM -0700, Andrew Morton wrote:
-> On Sat,  3 Aug 2013 12:59:56 -0400 Johannes Weiner <hannes@cmpxchg.org> wrote:
-> 
-> > Unlike global OOM handling, memory cgroup code will invoke the OOM
-> > killer in any OOM situation because it has no way of telling faults
-> > occuring in kernel context - which could be handled more gracefully -
-> > from user-triggered faults.
+On Mon, Aug 05, 2013 at 08:36:39PM +0200, Yacine Belkadi wrote:
+> On 08/04/2013 11:29 PM, Greg Kroah-Hartman wrote:
+> > On Sun, Aug 04, 2013 at 10:05:36PM +0200, Yacine Belkadi wrote:
+> >> On 08/03/2013 05:29 AM, Greg Kroah-Hartman wrote:
+> >>> On Fri, Aug 02, 2013 at 08:10:04PM +0200, Yacine Belkadi wrote:
+> >>>> When building the htmldocs (in verbose mode), scripts/kernel-doc reports the
+> >>>> following type of warnings:
+> >>>>
+> >>>> Warning(drivers/usb/core/usb.c:76): No description found for return value of
+> >>>> 'usb_find_alt_setting'
+> >>>>
+> >>>> Fix them by:
+> >>>> - adding some missing descriptions of return values
+> >>>> - using "Return" sections for those descriptions
+> >>>>
+> >>>> Signed-off-by: Yacine Belkadi <yacine.belkadi.1@gmail.com>
+> >>>> ---
+> >>>>
+> >>>>  Applied to b3a3a9c441e2c8f6b6760de9331023a7906a4ac6
+> >>>
+> >>> What does this line mean?
+> >>
+> >> It's the commit on which I created and applied the patch:
+> >>
+> >> commit b3a3a9c441e2c8f6b6760de9331023a7906a4ac6
+> >> Merge: a582e5f e70e78e
+> >> Author: Linus Torvalds <torvalds@linux-foundation.org>
+> >> Date:   Mon Jul 22 19:07:24 2013 -0700
 > > 
-> > Pass a flag that identifies faults originating in user space from the
-> > architecture-specific fault handlers to generic code so that memcg OOM
-> > handling can be improved.
+> > Odd, I've never seen anyone use that before.  It's really not needed, so
+> > you don't have to do that in the future.
+> > 
 > 
-> arch/arm64/mm/fault.c has changed.  Here's what I came up with:
+> In hindsight, I should probably have used something like:
+> "Patch against commit b3a3a9c441e2c8f6b6760de9331023a7906a4ac6".
 > 
-> --- a/arch/arm64/mm/fault.c~arch-mm-pass-userspace-fault-flag-to-generic-fault-handler
-> +++ a/arch/arm64/mm/fault.c
-> @@ -199,13 +199,6 @@ static int __kprobes do_page_fault(unsig
->  	unsigned long vm_flags = VM_READ | VM_WRITE | VM_EXEC;
->  	unsigned int mm_flags = FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE;
->  
-> -	if (esr & ESR_LNX_EXEC) {
-> -		vm_flags = VM_EXEC;
-> -	} else if ((esr & ESR_WRITE) && !(esr & ESR_CM)) {
-> -		vm_flags = VM_WRITE;
-> -		mm_flags |= FAULT_FLAG_WRITE;
-> -	}
-> -
->  	tsk = current;
->  	mm  = tsk->mm;
->  
-> @@ -220,6 +213,16 @@ static int __kprobes do_page_fault(unsig
->  	if (in_atomic() || !mm)
->  		goto no_context;
->  
-> +	if (user_mode(regs))
-> +		mm_flags |= FAULT_FLAG_USER;
-> +
-> +	if (esr & ESR_LNX_EXEC) {
-> +		vm_flags = VM_EXEC;
-> +	} else if ((esr & ESR_WRITE) && !(esr & ESR_CM)) {
-> +		vm_flags = VM_WRITE;
-> +		mm_flags |= FAULT_FLAG_WRITE;
-> +	}
-> +
->  	/*
->  	 * As per x86, we may deadlock here. However, since the kernel only
->  	 * validly references user space from well defined areas of the code,
+> I thought this information may prove useful in some cases, because of the
+> nature of the patch, which only modifies comments and may get out of sync
+> with the code.
 > 
-> But I'm not terribly confident in it.
+> Here is an example:
+> - My local HEAD is at commit c1 when I start creating the patch.
+> - Some function f doesn't have a description for its return value. I look
+> into the code and deduce the description. So the description I add is based
+> on the code at the commit c1.
+> - Someone else submits a patch that changes the code of the function f, but
+> I don't see it.
+> - I send my patch to the maintainer.
+> - My patch may apply cleanly on top of the other patch (mine only touched
+> the comments), but the description now doesn't match the function's code,
+> which is a problem.
+> 
+> I assumed that if I specify the commit on which I worked, it may help the
+> maintainer decide whether my patch got invalidated by some other patch that
+> was applied first. Continuing with the example: The maintainer sees that I
+> worked based on c1, but knows that a patch was applied in the mean time, so
+> he/she asks me to update my patch first.
+> 
+> What do you think?
 
-It looks good to me.  They added the vm_flags but they are not used
-any earlier than the mm_flags (__do_page_fault), which I moved to the
-same location as you did in this fixup.
+It does make sense, but please use terms that we can understand.  If I
+see a sha id, I have to go dig through a kernel tree to see what it
+represents, which takes time (remember, I deal with thousands of
+patches).  If you said "Patch based on 3.11-rc1" then I know exactly
+what that is, and how to handle it if there are merge errors.
 
-Thanks!
+thanks,
+
+greg k-h
