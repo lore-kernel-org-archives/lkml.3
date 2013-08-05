@@ -1,123 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751578Ab3HELvp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 07:51:45 -0400
-Received: from mail.abilis.ch ([195.70.19.74]:18607 "EHLO mail.abilis.ch"
+	id S1752041Ab3HEMBG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 08:01:06 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50416 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751182Ab3HELvn convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 07:51:43 -0400
-Date: Mon, 5 Aug 2013 13:51:19 +0200
-From: Christian Ruppert <christian.ruppert@abilis.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Patrice CHOTARD <patrice.chotard@st.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Sascha Leuenberger <sascha.leuenberger@abilis.com>,
-        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH 2/4] pinmux: Add TB10x pinmux driver
-Message-ID: <20130805115118.GF20936@ab42.lan>
-References: <20130618092516.GC18663@ab42.lan>
- <1371547751-13873-2-git-send-email-christian.ruppert@abilis.com>
- <CACRpkdZvcF3agP=hK6J6hZn-Sx2Mw=P4dR2Mwzo+NoLxtMkbQg@mail.gmail.com>
+	id S1751329Ab3HEMBF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 08:01:05 -0400
+Date: Mon, 5 Aug 2013 14:00:58 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Peter De Wachter <pdewacht@gmail.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Bernhard Seibold <mail@bernhard-seibold.de>
+Subject: Re: [PATCH] hid: add driver for IBM/Lenovo ScrollPoint mice
+In-Reply-To: <1372804951-7135-1-git-send-email-pdewacht@gmail.com>
+Message-ID: <alpine.LNX.2.00.1308051357210.17512@pobox.suse.cz>
+References: <1372804951-7135-1-git-send-email-pdewacht@gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <CACRpkdZvcF3agP=hK6J6hZn-Sx2Mw=P4dR2Mwzo+NoLxtMkbQg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 30, 2013 at 12:35:03AM +0200, Linus Walleij wrote:
-> Sorry for taking eternities to look into this.
+
+[ Bernhard added to CC ]
+
+On Wed, 3 Jul 2013, Peter De Wachter wrote:
+
+> IBM Scrollpoint have a trackpoint-like gizmo instead of a scroll wheel,
+> which allows for two-dimensional scrolling. This driver provides an
+> input mapping to make that work.
 > 
-> On Tue, Jun 18, 2013 at 11:29 AM, Christian Ruppert
-> <christian.ruppert@abilis.com> wrote:
+> The scrollpoint is also much more sensitive than a typical mouse wheel.
+> X can use this to provide smooth scrolling, but the kernel doesn't seem
+> to have a way to communicate this fact. As a result this mouse simply
+> scrolls way too fast. For now I've created an xorg patch to provide a
+> manual setting (fdo #48118).
 > 
-> > The pinmux driver of the Abilis Systems TB10x platform based on ARC700 CPUs.
-> > Used to control the pinmux and is a prerequisite for the GPIO driver.
-> >
-> > Signed-off-by: Christian Ruppert <christian.ruppert@abilis.com>
-> > Signed-off-by: Pierrick Hascoet <pierrick.hascoet@abilis.com>
-> (...)
-> > +The following pin groups are available:
-> > +  - GPIO ports: gpioa_pins, gpiob_pins, gpioc_pins, gpiod_pins, gpioe_pins,
-> > +                gpiof_pins, gpiog_pins, gpioh_pins, gpioi_pins, gpioj_pins,
-> > +                gpiok_pins, gpiol_pins, gpiom_pins, gpion_pins
+> Signed-off-by: Peter De Wachter <pdewacht@gmail.com>
+
+Hi,
+
+thanks for the driver.
+
+I'd like to ask you to put a few more effort into this, unifying this a 
+little bit more with the existing driver for Lenovo devices we aready have 
+in the tree -- hid-lenovo-tpkbd.
+
+As most of the drivers are divided on a per-vendor basis anyway, what I'd 
+probably like to see the most would be:
+
+- drop HID_LENOVO_TPKBD (*)
+- create HID_LENOVO
+- rename your driver to hid-lenovo-scrollpoint
+- build both hid-lenovo-tpkbd and hid-lenovo-scrollpoint when HID_LENOVO 
+  is set
+
+(*) or keep it for compatibility reasons, but make it just an alias for 
+CONFIG_HID_LENOVO.
+
+Sounds feasible?
+
+> ---
+>  drivers/hid/Kconfig           |  8 ++++++
+>  drivers/hid/Makefile          |  1 +
+>  drivers/hid/hid-core.c        |  7 +++++
+>  drivers/hid/hid-ids.h         |  7 +++++
+>  drivers/hid/hid-scrollpoint.c | 67 +++++++++++++++++++++++++++++++++++++++++++
+>  5 files changed, 90 insertions(+)
+>  create mode 100644 drivers/hid/hid-scrollpoint.c
 > 
-> I would not attempt to define groups for all GPIO pins.
+> diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
+> index fb52f3f..fdc49ca 100644
+> --- a/drivers/hid/Kconfig
+> +++ b/drivers/hid/Kconfig
+> @@ -593,6 +593,14 @@ config HID_SAMSUNG
+>  	---help---
+>  	Support for Samsung InfraRed remote control or keyboards.
+>  
+> +config HID_SCROLLPOINT
+> +	tristate "IBM/Lenovo ScrollPoint mice"
+> +	depends on HID
+> +	---help---
+> +	Support for IBM/Lenovo ScrollPoint mice.
+> +	Say Y here if you have a ScrollPoint mouse and want horizontal
+> +	scrolling to work.
+> +
+>  config HID_SONY
+>  	tristate "Sony PS3 controller"
+>  	depends on USB_HID
+> diff --git a/drivers/hid/Makefile b/drivers/hid/Makefile
+> index 2065694..4a4c279 100644
+> --- a/drivers/hid/Makefile
+> +++ b/drivers/hid/Makefile
+> @@ -99,6 +99,7 @@ obj-$(CONFIG_HID_ROCCAT)	+= hid-roccat.o hid-roccat-common.o \
+>  	hid-roccat-lua.o hid-roccat-pyra.o hid-roccat-savu.o
+>  obj-$(CONFIG_HID_SAITEK)	+= hid-saitek.o
+>  obj-$(CONFIG_HID_SAMSUNG)	+= hid-samsung.o
+> +obj-$(CONFIG_HID_SCROLLPOINT)	+= hid-scrollpoint.o
+>  obj-$(CONFIG_HID_SMARTJOYPLUS)	+= hid-sjoy.o
+>  obj-$(CONFIG_HID_SONY)		+= hid-sony.o
+>  obj-$(CONFIG_HID_SPEEDLINK)	+= hid-speedlink.o
+> diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+> index 264f550..003f419 100644
+> --- a/drivers/hid/hid-core.c
+> +++ b/drivers/hid/hid-core.c
+> @@ -1584,6 +1584,13 @@ static const struct hid_device_id hid_have_special_driver[] = {
+>  	{ HID_USB_DEVICE(USB_VENDOR_ID_GYRATION, USB_DEVICE_ID_GYRATION_REMOTE_3) },
+>  	{ HID_USB_DEVICE(USB_VENDOR_ID_HOLTEK, USB_DEVICE_ID_HOLTEK_ON_LINE_GRIP) },
+>  	{ HID_USB_DEVICE(USB_VENDOR_ID_HOLTEK_ALT, USB_DEVICE_ID_HOLTEK_ALT_KEYBOARD) },
+> +#if IS_ENABLED(CONFIG_HID_SCROLLPOINT)
+> +	{ HID_USB_DEVICE(USB_VENDOR_ID_IBM, USB_DEVICE_ID_IBM_SCROLLPOINT_III) },
+> +	{ HID_USB_DEVICE(USB_VENDOR_ID_IBM, USB_DEVICE_ID_IBM_SCROLLPOINT_PRO) },
+> +	{ HID_USB_DEVICE(USB_VENDOR_ID_IBM, USB_DEVICE_ID_IBM_SCROLLPOINT_OPTICAL) },
+> +	{ HID_USB_DEVICE(USB_VENDOR_ID_IBM, USB_DEVICE_ID_IBM_SCROLLPOINT_800DPI_OPTICAL) },
+> +	{ HID_USB_DEVICE(USB_VENDOR_ID_IBM, USB_DEVICE_ID_IBM_SCROLLPOINT_800DPI_OPTICAL_PRO) },
+> +#endif
+>  	{ HID_USB_DEVICE(USB_VENDOR_ID_JESS2, USB_DEVICE_ID_JESS2_COLOR_RUMBLE_PAD) },
+>  	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_ION, USB_DEVICE_ID_ICADE) },
+>  	{ HID_USB_DEVICE(USB_VENDOR_ID_KENSINGTON, USB_DEVICE_ID_KS_SLIMBLADE) },
+> diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+> index 38535c9..f813fab 100644
+> --- a/drivers/hid/hid-ids.h
+> +++ b/drivers/hid/hid-ids.h
+> @@ -441,6 +441,13 @@
+>  #define USB_VENDOR_ID_HOLTEK_ALT		0x04d9
+>  #define USB_DEVICE_ID_HOLTEK_ALT_KEYBOARD	0xa055
+>  
+> +#define USB_VENDOR_ID_IBM					0x04b3
+> +#define USB_DEVICE_ID_IBM_SCROLLPOINT_III			0x3100
+> +#define USB_DEVICE_ID_IBM_SCROLLPOINT_PRO			0x3103
+> +#define USB_DEVICE_ID_IBM_SCROLLPOINT_OPTICAL			0x3105
+> +#define USB_DEVICE_ID_IBM_SCROLLPOINT_800DPI_OPTICAL		0x3108
+> +#define USB_DEVICE_ID_IBM_SCROLLPOINT_800DPI_OPTICAL_PRO	0x3109
+> +
+>  #define USB_VENDOR_ID_IMATION		0x0718
+>  #define USB_DEVICE_ID_DISC_STAKKA	0xd000
+>  
+> diff --git a/drivers/hid/hid-scrollpoint.c b/drivers/hid/hid-scrollpoint.c
+> new file mode 100644
+> index 0000000..48e7696
+> --- /dev/null
+> +++ b/drivers/hid/hid-scrollpoint.c
+> @@ -0,0 +1,67 @@
+> +/*
+> + * HID driver for IBM/Lenovo ScrollPoint mice
+> + *
+> + * Copyright (c) 2012 Peter De Wachter <pdewacht@gmail.com>
+> + */
+> +
+> +/*
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms of the GNU General Public License as published by the Free
+> + * Software Foundation; either version 2 of the License, or (at your option)
+> + * any later version.
+> + */
+> +
+> +#include <linux/device.h>
+> +#include <linux/hid.h>
+> +#include <linux/module.h>
+> +
+> +#include "hid-ids.h"
+> +
+> +static int scrollpoint_input_mapping(struct hid_device *hdev,
+> +		struct hid_input *hi, struct hid_field *field,
+> +		struct hid_usage *usage, unsigned long **bit, int *max)
+> +{
+> +	if (usage->hid == HID_GD_Z) {
+> +		hid_map_usage(hi, usage, bit, max, EV_REL, REL_HWHEEL);
+> +		return 1;
+> +	}
+> +	return 0;
+> +}
+> +
+> +static const struct hid_device_id scrollpoint_devices[] = {
+> +	{ HID_USB_DEVICE(USB_VENDOR_ID_IBM,
+> +		USB_DEVICE_ID_IBM_SCROLLPOINT_III) },
+> +	{ HID_USB_DEVICE(USB_VENDOR_ID_IBM,
+> +		USB_DEVICE_ID_IBM_SCROLLPOINT_PRO) },
+> +	{ HID_USB_DEVICE(USB_VENDOR_ID_IBM,
+> +		USB_DEVICE_ID_IBM_SCROLLPOINT_OPTICAL) },
+> +	{ HID_USB_DEVICE(USB_VENDOR_ID_IBM,
+> +		USB_DEVICE_ID_IBM_SCROLLPOINT_800DPI_OPTICAL) },
+> +	{ HID_USB_DEVICE(USB_VENDOR_ID_IBM,
+> +		USB_DEVICE_ID_IBM_SCROLLPOINT_800DPI_OPTICAL_PRO) },
+> +	{ }
+> +};
+> +MODULE_DEVICE_TABLE(hid, scrollpoint_devices);
+> +
+> +static struct hid_driver scrollpoint_driver = {
+> +	.name = "scrollpoint",
+> +	.id_table = scrollpoint_devices,
+> +	.input_mapping = scrollpoint_input_mapping
+> +};
+> +
+> +static int __init scrollpoint_init(void)
+> +{
+> +	return hid_register_driver(&scrollpoint_driver);
+> +}
+> +
+> +static void __exit scrollpoint_exit(void)
+> +{
+> +	hid_unregister_driver(&scrollpoint_driver);
+> +}
+> +
+> +module_init(scrollpoint_init);
+> +module_exit(scrollpoint_exit);
+> +
+> +MODULE_AUTHOR("Peter De Wachter");
+> +MODULE_DESCRIPTION("IBM/Lenovo ScrollPoint mouse driver");
+> +MODULE_LICENSE("GPL");
+> -- 
+> 1.8.3.2
 > 
-> (...)
-> > +gpioa: gpio@FF140000 {
-> > +       compatible = "abilis,tb10x-gpio";
-> > +       reg = <0xFF140000 0x1000>;
-> > +       gpio-controller;
-> > +       #gpio-cells = <2>;
-> > +       ngpio = <3>;
-> > +       gpio-ranges = <&iomux 0 0>;
-> > +       gpio-ranges-group-names = "gpioa_pins";
-> 
-> This uses that feature to define GPIO ranges from a group does
-> it not? I'm not certain about that feature.
-
-It does. The idea is that the entire pin data base is defined inside the
-pin controller (or the pin controller device tree nodes) and the rest of
-the world just uses symbolic names. The possibility of non-contiguous
-ranges comes for free. What is the argument against this? In my
-understanding it was agreed that this was a desired feature, patch
-c8587eeef8fc219e806e868c6f0c7170c769efab is the first step in this
-direction?
-
-> I don't see any of the port concept creeping into the device tree
-> in this version and that is how I think it should be kept:
-> the "port" particulars is a thing for the driver and not the
-> device tree.
-
-I'm not sure if everybody is aligned here (or if we even understand each
-other): In my terminology, a "port" is a set of pins controlled by the
-same register/bit field. An "interface" is a set of pins which form a
-functional unit, e.g. an SPI interface. One port can contain several
-interfaces which may or may not be mapped at the same time. Inversely
-(especially if every pin can be configured separately), mapping of an
-interface might require the configuration of more than one ports. The
-concept of interfaces is on a higher level of abstraction (in the sense
-"further away from physical pinmux configuration") than the concept of a
-port.
-
-In the driver under discussion, pin groups are defined for every
-"interface" to make sure that interfaces can be requested in an
-orthogonal way by different modules and modules don't have to be "aware"
-of which interfaces are grouped into which port (and which other modules
-request which other interfaces). A request either succeeds or fails.
-Resource management (which interfaces can be mapped simultaneously) is
-done inside the pinctrl driver.
-
-If I understand Stephen correctly, the traditional way of requesting pin
-configurations is at "port" level, e.g. a configuration is defined by a
-port and its mux setting. The TB10x driver works on a higher level of
-abstraction ("interface" level), where interfaces are requested and the
-driver internally decides which configuration(s) to apply to which
-port(s). Ports are not used in the device tree indeed, but interfaces
-are.
-
-Based on this, I don't quite understand your comment: You say you don't
-like ports starting to leak outside of the pinctrl driver but according
-to Stephen that's what is common practice today? Did you mean
-interfaces? The TB10x driver's configuration nodes are currently defined
-based on interfaces.
-
-Greetings,
-  Christian
 
 -- 
-  Christian Ruppert              ,          <christian.ruppert@abilis.com>
-                                /|
-  Tel: +41/(0)22 816 19-42     //|                 3, Chemin du Pré-Fleuri
-                             _// | bilis Systems   CH-1228 Plan-les-Ouates
+Jiri Kosina
+SUSE Labs
