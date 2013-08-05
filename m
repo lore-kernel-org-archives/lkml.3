@@ -1,58 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755332Ab3HEWKs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 18:10:48 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:43195 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755019Ab3HEWKq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 18:10:46 -0400
-Message-ID: <5200230E.9000002@oracle.com>
-Date: Mon, 05 Aug 2013 18:11:26 -0400
-From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
-        David Vrabel <david.vrabel@citrix.com>
-Subject: Re: [PATCH 3/3] MAINTAINERS: Add in two extra co-maintainers of the
- Xen tree.
-References: <1375725937-22930-1-git-send-email-konrad.wilk@oracle.com> <1375725937-22930-4-git-send-email-konrad.wilk@oracle.com>
-In-Reply-To: <1375725937-22930-4-git-send-email-konrad.wilk@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	id S1755437Ab3HEWKz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 18:10:55 -0400
+Received: from mga01.intel.com ([192.55.52.88]:63191 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755055Ab3HEWKx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 18:10:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,821,1367996400"; 
+   d="scan'208";a="381715727"
+From: Andi Kleen <andi@firstfloor.org>
+To: apw@canonical.com
+Cc: joe@perches.com, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH] checkpatch: add a rule to check devinitconst mistakes
+Date: Mon,  5 Aug 2013 15:10:51 -0700
+Message-Id: <1375740651-7716-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/05/2013 02:05 PM, Konrad Rzeszutek Wilk wrote:
-> Both Boris and David have graciously volunteered to help in
-> maintaining the Xen subsystem tree. Cementing this in the
-> MAINTAINERS file so they are copied on Xen related patches.
->
-> CC: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-> CC: David Vrabel <david.vrabel@citrix.com>
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+From: Andi Kleen <ak@linux.intel.com>
 
-Acked-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Check for const __devinitdata and non const __devinitconst
 
+People get this regularly wrong and it breaks the LTO builds,
+as it causes a section attribute conflict.
 
-> ---
->   MAINTAINERS | 2 ++
->   1 file changed, 2 insertions(+)
->
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 785f56a..0161dad 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -9237,6 +9237,8 @@ F:	drivers/media/tuners/tuner-xc2028.*
->   
->   XEN HYPERVISOR INTERFACE
->   M:	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> +M:	Boris Ostrovsky <boris.ostrovsky@oracle.com>
-> +M:	David Vrabel <david.vrabel@citrix.com>
->   L:	xen-devel@lists.xenproject.org (moderated for non-subscribers)
->   S:	Supported
->   F:	arch/x86/xen/
+This doesn't catch all mistakes -- spreading over multiple lines,
+getting const pointers wrong, but hopefully the common ones.
+
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ scripts/checkpatch.pl | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 2ee9eb7..5d68d9c 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -2676,6 +2676,15 @@ sub process {
+ 			}
+ 		}
+ 
++# check for __devinitdata with const or const without __devintconst
++# XXX should scan multiple lines and handle misplaced consts for pointers
++		if ($line =~ /const/ && $line =~ /__(dev)?initdata/) {
++		    ERROR("DEVINITCONST", "const init definition must use __devinitconst");
++		}
++		if ($line =~ /__(dev)?initconst/ && $line !~ /\Wconst\W/) {
++		    ERROR("DEVINITCONST", "__devinitconst must have have const definition");
++		}
++
+ # check for spacing round square brackets; allowed:
+ #  1. with a type on the left -- int [] a;
+ #  2. at the beginning of a line for slice initialisers -- [0...10] = 5,
+-- 
+1.8.3.1
 
