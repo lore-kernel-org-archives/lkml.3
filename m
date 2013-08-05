@@ -1,88 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752295Ab3HEO5n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 10:57:43 -0400
-Received: from mail-qe0-f49.google.com ([209.85.128.49]:47630 "EHLO
-	mail-qe0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751846Ab3HEO5l (ORCPT
+	id S1752818Ab3HEO5x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 10:57:53 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:33857 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752416Ab3HEO5v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 10:57:41 -0400
-Date: Mon, 5 Aug 2013 10:57:36 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, trinity@vger.kernel.org,
-        kent.overstreet@gmail.com
-Subject: Re: percpu: kernel BUG at mm/percpu.c:579!
-Message-ID: <20130805145736.GB19631@mtj.dyndns.org>
-References: <51FFBB7D.70608@oracle.com>
+	Mon, 5 Aug 2013 10:57:51 -0400
+Message-ID: <51FFBD6B.8060201@gmail.com>
+Date: Mon, 05 Aug 2013 10:57:47 -0400
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51FFBB7D.70608@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+CC: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Runzhen Wang <runzhen@linux.vnet.ibm.com>
+Subject: Re: [PATCH 9/9] perf kvm stat report: Add option to analyze specific
+ VM
+References: <1375473947-64285-1-git-send-email-dsahern@gmail.com> <1375473947-64285-10-git-send-email-dsahern@gmail.com> <51FF4CE2.30703@linux.vnet.ibm.com>
+In-Reply-To: <51FF4CE2.30703@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(cc'ing Kent, hi!)
+On 8/5/13 2:57 AM, Xiao Guangrong wrote:
+> On 08/03/2013 04:05 AM, David Ahern wrote:
+>> Add an option to analyze a specific VM within a data file. This
+>> allows the collection of kvm events for all VMs and then analyze
+>> data for each VM (or set of VMs) individually.
+>
+> Interesting.
+>
+> But how can we know which pid is the guest's pid after collecting
+> the info. Even if the .data file is moved to another box to do
+> off-analyze?
+>
 
-On Mon, Aug 05, 2013 at 10:49:33AM -0400, Sasha Levin wrote:
-> Hi all,
-> 
-> While fuzzing with trinity inside a KVM tools guest running latest -next kernel,
-> I've stumbled on the following spew:
-> 
-> [  274.820724] ------------[ cut here ]------------
-> [  274.821320] kernel BUG at mm/percpu.c:579!
+Up to the user to be able to leverage the option by collecting what ever 
+information is needed to correlate a qemu pid with a guest VM.
 
-Looks like double free.
+I have 2 use cases. In one I have a set of shell scripts for managing VMs:
 
-> [  274.821848] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-> [  274.822467] Modules linked in:
-> [  274.823240] CPU: 13 PID: 58 Comm: rcuos/13 Tainted: G        W
-> 3.11.0-rc4-next-20130805-sasha-00002-gf6cc217 #3975
-> [  274.824464] task: ffff880220cb3000 ti: ffff880220cba000 task.ti: ffff880220cba000
-> [  274.825442] RIP: 0010:[<ffffffff812417b8>]  [<ffffffff812417b8>] pcpu_free_area+0xd8/0x1e0
-> [  274.826470] RSP: 0018:ffff880220cbbc58  EFLAGS: 00010002
-> [  274.827316] RAX: ffff8800c9e3abd4 RBX: 00000000000002f5 RCX: 00000000000002f5
-> [  274.828162] RDX: 0000000000000004 RSI: 000000000000ede0 RDI: 000000000000ede0
-> [  274.829270] RBP: ffff880220cbbc78 R08: 0000000000000324 R09: ffff8800c9e3a000
-> [  274.830102] R10: ffff8800c9e3a000 R11: 0000000000000000 R12: ffff88022049ff80
-> [  274.830102] R13: 0000000000000bd4 R14: 0000000000000012 R15: ffffffff86612060
-> [  274.831367] FS:  0000000000000000(0000) GS:ffff880226000000(0000) knlGS:0000000000000000
-> [  274.831367] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> [  274.831367] CR2: 0000000001253028 CR3: 0000000214aff000 CR4: 00000000000006e0
-> [  274.831367] Stack:
-> [  274.831367]  0000000000000282 000000000000ede0 ffff88022049ff80 000060fdd980ede0
-> [  274.831367]  ffff880220cbbca8 ffffffff81241c7e ffff880220cbbca8 ffff8800b80f83e0
-> [  274.831367]  0000000000000000 ffff8800b80f83c0 ffff880220cbbd18 ffffffff81a14ea6
-> [  274.831367] Call Trace:
-> [  274.831367]  [<ffffffff81241c7e>] free_percpu+0x9e/0x160
-> [  274.831367]  [<ffffffff81a14ea6>] percpu_ref_kill_rcu+0xb6/0x1b0
+   Id   Profile            PID     IP Address        Description
+   --   ----------------   -----   ---------------   ----------------
+   01   ubuntu10           -       172.16.128.51     Ubuntu 10.04 LTS
+   02   f12-x86_64         8841    172.16.128.52     Fedora 12, x86_64
+   05   f10-i386           -       172.16.128.55     Fedora 10, i386
+   07   f16-i386           -       172.16.128.57
+   08   f16-x86_64         -       172.16.128.58
+   09   rhel5.5-i386       14716   172.16.128.59     RHEL 5.5, i386
+   10   f10-x86_64         -       172.16.128.60
+   12   rhel47-vm1         -       172.16.128.62     rhel4.7 - 32-bit
+   13   f17                -       172.16.128.63     Fedora 17, x86_64
+   15   f14                -       172.16.128.65     Fedora 14 - x86_64
+   16   f10-ppc            -       172.16.128.66
+   17   f12-ppc            -       172.16.128.67
+   19   f16-ppc            -       172.16.128.69
+   20   f16-i386-2         -       172.16.128.70     clone of f16-i386
+   21   f18-controller     29590   172.16.128.71     cloud controller
+   22   f18                29541   172.16.128.72     Fedora 18 - x86_64
 
->From percpu_ref release path.  Kent?
+Collecting that information allows me to correlate kvm data to a VM pid. 
+I can collect the events for the system and then analyze for a specific VM.
 
-> [  274.831367]  [<ffffffff8114e390>] ? wake_up_bit+0x40/0x40
-> [  274.831367]  [<ffffffff81a14df0>] ? percpu_ref_init+0x50/0x50
-> [  274.831367]  [<ffffffff811d4169>] rcu_nocb_kthread+0x449/0x520
-> [  274.831367]  [<ffffffff8114e390>] ? wake_up_bit+0x40/0x40
-> [  274.831367]  [<ffffffff811d3d20>] ? rcu_adopt_orphan_cbs+0x250/0x250
-> [  274.831367]  [<ffffffff8114dac7>] kthread+0xe7/0xf0
-> [  274.831367]  [<ffffffff81197a2a>] ? __lock_release+0x1da/0x1f0
-> [  274.831367]  [<ffffffff8114d9e0>] ? __init_kthread_worker+0x70/0x70
-> [  274.831367]  [<ffffffff840a132c>] ret_from_fork+0x7c/0xb0
-> [  274.831367]  [<ffffffff8114d9e0>] ? __init_kthread_worker+0x70/0x70
-> [  274.831367] Code: 39 f7 74 0f 0f 0b 0f 1f 44 00 00 eb fe 66 0f 1f
-> 44 00 00 4d 89 ca 48 63 cb 4c 8d 2c 8d 00 00 00 00 4b 8d 04 2a 8b 10
-> 85 d2 7e 10 <0f> 0b 66 0f 1f 44 00 00 eb fe 66 0f 1f 44 00 00 f7 da
-> 89 10 49
-> [  274.850289] RIP  [<ffffffff812417b8>] pcpu_free_area+0xd8/0x1e0
-> [  274.850289]  RSP <ffff880220cbbc58>
-> [  274.850289] ---[ end trace 47f7ab405c6aeff4 ]---
-> 
-> 
-> Thanks,
-> Sasha
+In the second use case (product based) there are 2 VMs and a different 
+qemu binary name (along with command line arguments) for telling them apart.
 
--- 
-tejun
+David
