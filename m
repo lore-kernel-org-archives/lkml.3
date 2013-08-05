@@ -1,74 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753689Ab3HEPYu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 11:24:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51327 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752312Ab3HEPYt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 11:24:49 -0400
-Date: Mon, 5 Aug 2013 18:25:54 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: "David S. Miller" <davem@davemloft.net>,
-        John Fastabend <john.r.fastabend@intel.com>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org
-Subject: [PATCH v3] macvlan: validate flags
-Message-ID: <20130805152554.GA3592@redhat.com>
-MIME-Version: 1.0
+	id S1753812Ab3HEP0k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 11:26:40 -0400
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:56528 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752728Ab3HEP0i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 11:26:38 -0400
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Mime-Version: 1.0 (Mac OS X Mail 6.5 \(1508\))
+Subject: Re: [PATCH] ARM: fix wrong address when loading PRM_FRAC_INCREMENTOR_DENUMERATOR_RELOAD
+From: Chen Baozi <baozich@gmail.com>
+In-Reply-To: <1375356474-24203-1-git-send-email-baozich@gmail.com>
+Date: Mon, 5 Aug 2013 23:26:28 +0800
+Cc: linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 7bit
+Message-Id: <C635EF21-CD18-4633-AA39-16209F8EE231@gmail.com>
+References: <1375356474-24203-1-git-send-email-baozich@gmail.com>
+To: Tony Lindgren <tony@atomide.com>
+X-Mailer: Apple Mail (2.1508)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit df8ef8f3aaa6692970a436204c4429210addb23a
-    macvlan: add FDB bridge ops and macvlan flags
-added a flags field to macvlan, which can be
-controlled from userspace.
-The idea is to make the interface future-proof
-so we can add flags and not new fields.
+ping?
 
-However, flags value isn't validated, as a result,
-userspace can't detect which flags are supported.
+On Aug 1, 2013, at 7:27 PM, Chen Baozi <baozich@gmail.com> wrote:
 
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: John Fastabend <john.r.fastabend@intel.com>
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
+> The denominator should be load from INCREMENTOR_DENUMERATOR_RELOAD_OFFSET
+> rather than INCREMENTER_NUMERATOR_OFFSET.
+> 
+> Signed-off-by: Chen Baozi <baozich@gmail.com>
+> ---
+> arch/arm/mach-omap2/timer.c | 2 +-
+> 1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/arm/mach-omap2/timer.c b/arch/arm/mach-omap2/timer.c
+> index b37e1fc..9265e03 100644
+> --- a/arch/arm/mach-omap2/timer.c
+> +++ b/arch/arm/mach-omap2/timer.c
+> @@ -537,7 +537,7 @@ static void __init realtime_counter_init(void)
+> 	reg |= num;
+> 	__raw_writel(reg, base + INCREMENTER_NUMERATOR_OFFSET);
+> 
+> -	reg = __raw_readl(base + INCREMENTER_NUMERATOR_OFFSET) &
+> +	reg = __raw_readl(base + INCREMENTER_DENUMERATOR_RELOAD_OFFSET) &
+> 			NUMERATOR_DENUMERATOR_MASK;
+> 	reg |= den;
+> 	__raw_writel(reg, base + INCREMENTER_DENUMERATOR_RELOAD_OFFSET);
+> -- 
+> 1.8.1.4
+> 
 
-Changes from v2:
-	drop chunk in macvlan_common_newlink -
-		not necessary since macvlan_validate is always
-		called first
-Changes from v1:
-	tweaked commit message
-	no code changes
-
-Please consider this patch for -stable.
-
-The idea is by the time we add more flags,
-everyone has updated to a kernel that
-detects errors, so userspace will be able
-to detect supported flags cleanly.
-
-
- drivers/net/macvlan.c | 4 ++++
- 1 file changed, 4 insertions(+)
-
-diff --git a/drivers/net/macvlan.c b/drivers/net/macvlan.c
-index 18373b6..8445a94 100644
---- a/drivers/net/macvlan.c
-+++ b/drivers/net/macvlan.c
-@@ -736,6 +736,10 @@ static int macvlan_validate(struct nlattr *tb[], struct nlattr *data[])
- 			return -EADDRNOTAVAIL;
- 	}
- 
-+	if (data && data[IFLA_MACVLAN_FLAGS] &&
-+	    nla_get_u16(data[IFLA_MACVLAN_FLAGS]) & ~MACVLAN_FLAG_NOPROMISC)
-+		return -EINVAL;
-+
- 	if (data && data[IFLA_MACVLAN_MODE]) {
- 		switch (nla_get_u32(data[IFLA_MACVLAN_MODE])) {
- 		case MACVLAN_MODE_PRIVATE:
--- 
-MST
