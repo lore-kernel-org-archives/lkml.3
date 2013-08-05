@@ -1,72 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755081Ab3HEI3B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 04:29:01 -0400
-Received: from mga03.intel.com ([143.182.124.21]:57301 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754621Ab3HEI3A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 04:29:00 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,817,1367996400"; 
-   d="scan'208";a="341748782"
-Message-ID: <51FF63B1.4070808@intel.com>
-Date: Mon, 05 Aug 2013 11:34:57 +0300
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1755130Ab3HEIbL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 04:31:11 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:15226 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754850Ab3HEIbK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 04:31:10 -0400
+Message-ID: <51FF62C0.10105@huawei.com>
+Date: Mon, 5 Aug 2013 16:30:56 +0800
+From: Xishi Qiu <qiuxishi@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: David Ahern <dsahern@gmail.com>
-CC: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [PATCH] perf x86: Fix compile of util/tsc.c
-References: <1374848843-43127-1-git-send-email-dsahern@gmail.com>
-In-Reply-To: <1374848843-43127-1-git-send-email-dsahern@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 0/2] cma: do some clean up
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.74.196]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26/07/13 17:27, David Ahern wrote:
-> On Fedora 18, with gcc 4.6.4 compile fails with:
-> 
-> arch/x86/util/tsc.c: In function ‘perf_time_to_tsc’:
-> arch/x86/util/tsc.c:13:6: error: declaration of ‘time’ shadows a global declaration [-Werror=shadow]
-> cc1: all warnings being treated as errors
-> make: *** [/tmp/junk/arch/x86/util/tsc.o] Error 1
-> make: *** Waiting for unfinished jobs....
-> 
-> Fix by renaming the local variable.
-> 
-> Signed-off-by: David Ahern <dsahern@gmail.com>
-> Cc: Adrian Hunter <adrian.hunter@intel.com>
+1. use "PFN_DOWN(r->size)" instead of "r->size >> PAGE_SHIFT".
+2. adjust the function structure, one for the success path, 
+the other for the failure path.
 
-Acked-by: Adrian Hunter <adrian.hunter@intel.com>
+Xishi Qiu (2):
+  cma: use macro PFN_DOWN when converting size to pages
+  cma: adjust goto branch in function cma_create_area()
 
-> ---
->  tools/perf/arch/x86/util/tsc.c |    8 ++++----
->  1 file changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/tools/perf/arch/x86/util/tsc.c b/tools/perf/arch/x86/util/tsc.c
-> index f111744..9570c2b 100644
-> --- a/tools/perf/arch/x86/util/tsc.c
-> +++ b/tools/perf/arch/x86/util/tsc.c
-> @@ -10,11 +10,11 @@
->  
->  u64 perf_time_to_tsc(u64 ns, struct perf_tsc_conversion *tc)
->  {
-> -	u64 time, quot, rem;
-> +	u64 t, quot, rem;
->  
-> -	time = ns - tc->time_zero;
-> -	quot = time / tc->time_mult;
-> -	rem  = time % tc->time_mult;
-> +	t = ns - tc->time_zero;
-> +	quot = t / tc->time_mult;
-> +	rem  = t % tc->time_mult;
->  	return (quot << tc->time_shift) +
->  	       (rem << tc->time_shift) / tc->time_mult;
->  }
-> 
+ drivers/base/dma-contiguous.c |   21 +++++++++++----------
+ 1 files changed, 11 insertions(+), 10 deletions(-)
 
