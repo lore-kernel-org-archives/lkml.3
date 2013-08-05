@@ -1,67 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754723Ab3HETVX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 15:21:23 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:58440 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754613Ab3HETVV (ORCPT
+	id S1754557Ab3HETZl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 15:25:41 -0400
+Received: from mail-ve0-f179.google.com ([209.85.128.179]:47319 "EHLO
+	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754136Ab3HETZk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 15:21:21 -0400
-Date: Mon, 5 Aug 2013 20:21:14 +0100
-From: "Zubair Lutfullah :" <zubair.lutfullah@gmail.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: "Zubair Lutfullah :" <zubair.lutfullah@gmail.com>,
-        Jonathan Cameron <jic23@kernel.org>, jic23@cam.ac.uk,
-        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org, gregkh@linuxfoundation.org,
-        Russ.Dill@ti.com
-Subject: Re: [PATCH 1/2] input: ti_tsc: Enable shared IRQ for TSC
-Message-ID: <20130805192113.GA7041@gmail.com>
-References: <1374882674-18403-1-git-send-email-zubair.lutfullah@gmail.com>
- <1374882674-18403-2-git-send-email-zubair.lutfullah@gmail.com>
- <51FE361B.5030900@kernel.org>
- <20130805161256.GA8794@core.coreip.homeip.net>
- <20130805170201.GA4310@gmail.com>
- <20130805174031.GA20093@core.coreip.homeip.net>
+	Mon, 5 Aug 2013 15:25:40 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130805174031.GA20093@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <87siyo3qna.fsf@tassilo.jf.intel.com>
+References: <1375721715.22073.80.camel@gandalf.local.home>
+	<87siyo3qna.fsf@tassilo.jf.intel.com>
+Date: Mon, 5 Aug 2013 12:25:39 -0700
+X-Google-Sender-Auth: 5PYzgSrwjf082KL4ek7TsGp6010
+Message-ID: <CA+55aFxBQuj1+4XzuqWpBw8YHfguJ6Y42KO0weS9a9mpXQKq7g@mail.gmail.com>
+Subject: Re: [RFC] gcc feature request: Moving blocks into sections
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+        gcc <gcc@gcc.gnu.org>, Ingo Molnar <mingo@kernel.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        David Daney <ddaney.cavm@gmail.com>,
+        Behan Webster <behanw@converseincode.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 05, 2013 at 10:40:31AM -0700, Dmitry Torokhov wrote:
-> > 
-> > FIFO 1 used only by ADC and FIFO1THRES handler is inside the iio/adc driver
-> > FIFO 0 used only by TSC and FIFO0THRES handler is inside the input/touchscreen
-> > 
-> > Note: These are level interrupts.
-> > 
-> > I would like some input on how to handle such a situation. 
-> 
-> It looks like you need to have smart demultiplexing in MFD core of your
-> driver instead of relying on shared interrupt handler.
-> 
-> Another option would be to check "your" bits, handle the data, clear the
-> status and then check bits again and return IRQ_NONE instead of
-> IRQ_HANDLED if other guys bits are set, but it is way too ugly.
-> 
-> Thanks.
-> 
-> -- 
-> Dmitry
+On Mon, Aug 5, 2013 at 12:04 PM, Andi Kleen <andi@firstfloor.org> wrote:
+> Steven Rostedt <rostedt@goodmis.org> writes:
+>
+> Can't you just use -freorder-blocks-and-partition?
+>
+> This should already partition unlikely blocks into a
+> different section. Just a single one of course.
 
-That is going to make a lot of changes in mfd, input and iio
-And should require a separate patch series.
+That's horrible. Not because of dwarf problems, but exactly because
+unlikely code isn't necessarily *that* unlikely, and normal unlikely
+code is reached with a small branch. Making it a whole different
+section breaks both of those.
 
-Is it possible to accept the current patches to add continuous mode 
-to the ADC side as is before the next merge window?
+Maybe some "really_unlikely()" would make it ok.
 
-This issue doesn't disturb each side individually..
-
-I'll look into fixing the IRQs after settling continuous mode.
-
-Thanks
-Zubair Lutfullah
+                  Linus
