@@ -1,105 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754306Ab3HECig (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Aug 2013 22:38:36 -0400
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:45434 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754141Ab3HECie (ORCPT
+	id S1754369Ab3HECjP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Aug 2013 22:39:15 -0400
+Received: from dmz-mailsec-scanner-5.mit.edu ([18.7.68.34]:64345 "EHLO
+	dmz-mailsec-scanner-5.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754200Ab3HECjO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Aug 2013 22:38:34 -0400
-From: "Lee, Jae-Hong" <pyrasis@gmail.com>
-To: minchan@kernel.org, rob@landley.net
-Cc: linux-kernel@vger.kernel.org, "Lee, Jae-Hong" <pyrasis@gmail.com>
-Subject: =?UTF-8?q?=5BPATCH=20v2=201/3=5D=20Type=20fix=20on=20HOWTO=20in=20ko=5FKR?=
-Date: Mon,  5 Aug 2013 11:38:25 +0900
-Message-Id: <1375670305-1145-1-git-send-email-pyrasis@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Sun, 4 Aug 2013 22:39:14 -0400
+X-Greylist: delayed 300 seconds by postgrey-1.27 at vger.kernel.org; Sun, 04 Aug 2013 22:39:13 EDT
+X-AuditID: 12074422-b7ef78e000000935-0c-51ff0f2479f0
+Message-ID: <51FF0F18.5020705@mit.edu>
+Date: Sun, 04 Aug 2013 19:34:00 -0700
+From: Andy Lutomirski <luto@MIT.EDU>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: O_TMPFILE fs corruption (Re: Linux 3.11-rc4)
+References: <CA+55aFwTX47vLvZckozZub0rUEo-aCBe7weqe=4mfQGfrW7NUA@mail.gmail.com>
+In-Reply-To: <CA+55aFwTX47vLvZckozZub0rUEo-aCBe7weqe=4mfQGfrW7NUA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrOIsWRmVeSWpSXmKPExsUixCmqrKvC/z/QYOIuOYvLu+awWTzqe8vu
+	wORxYsZvFo/Pm+QCmKK4bFJSczLLUov07RK4Mnon72EvuMhV8b11J3sD41SOLkZODgkBE4nD
+	mz6wQNhiEhfurWfrYuTiEBLYxyhx+P4lNpCEkMAGRokVi6ESZ5gkTnbtZQVJ8AqoSbxY/JAJ
+	xGYRUJWY8e4jI4jNJqAi0bH0AVhcVCBMYtmLfmaIekGJkzOfgG0TETCS+PziCtgcZgEbiTPt
+	38DiwgKmEucOf2KEWBwg0bXmADuIzSkQKHHzzzOoejOJrq1djBC2vMT2t3OYJzAKzkKyYhaS
+	sllIyhYwMq9ilE3JrdLNTczMKU5N1i1OTszLSy3SNdXLzSzRS00p3cQICl92F6UdjD8PKh1i
+	FOBgVOLhreD8HyjEmlhWXJl7iFGSg0lJlLeSBSjEl5SfUpmRWJwRX1Sak1p8iFGCg1lJhJe9
+	/2+gEG9KYmVValE+TEqag0VJnPfZ07OBQgLpiSWp2ampBalFMFkZDg4lCd5kPqChgkWp6akV
+	aZk5JQhpJg5OkOE8QMNNQWp4iwsSc4sz0yHypxgVpcR5jUASAiCJjNI8uF5YennFKA70ijAv
+	H0gVDzA1wXW/AhrMBDTY5CfI1cUliQgpqQZG8Rn2/52M7zNvfPt98+JZFdPr+xvPJ0WIaiSo
+	WAYqmHx21tlXq+8V/dmqYoku3wfVU2VvnVZm3ihqOlO9+apvh/rd8xwuf9t/HV1sfj24adKb
+	vHvLBEJZyngr+Ko9Dng2aG3t9zhxfvnfTd0rZni2ZbgUXpta9XZmxPFtl6br83WcyZp6aX2e
+	EktxRqKhFnNRcSIADGtq9QoDAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Lee, Jae-Hong" <pyrasis@gmail.com>
+On 08/04/2013 02:09 PM, Linus Torvalds wrote:
+> It's that time of the week again..
 
-This patch fixes some minor typos in Documentation/ko_KR/HOWTO.
+I still get filesystem corruption with O_TMPFILE.  The program below, 
+run as flinktest foo proc (or flinktest foo linkat if you're root) will 
+produce a bogus inode.  On ext4, once the inode is gone from cache, the 
+inode will be impossible to delete and will require a fsck to fix
 
-Signed-off-by: Lee, Jae-Hong <pyrasis@gmail.com>
-Acked-by: Minchan Kim <minchan@kernel.org>
----
- Documentation/ko_KR/HOWTO |   21 +++++++++++----------
- 1 file changed, 11 insertions(+), 10 deletions(-)
+A patch (not necessarily the appropriate fix) is here:
 
-diff --git a/Documentation/ko_KR/HOWTO b/Documentation/ko_KR/HOWTO
-index ab5189a..4aa79f9 100644
---- a/Documentation/ko_KR/HOWTO
-+++ b/Documentation/ko_KR/HOWTO
-@@ -182,8 +182,8 @@ Documentation/DocBook/ 디렉토리 내에서 만들어지며 PDF, Postscript, H
- 프로젝트를 봐야 한다.
-     http://kernelnewbies.org
- 그곳은 거의 모든 종류의 기본적인 커널 개발 질문들(질문하기 전에 먼저
--아카이브를 찾아봐라. 과거에 이미 답변되었을 수도 있다)을 할수있는 도움이
--될만한 메일링 리스트가 있다. 또한 실시간으로 질문 할수 있는 IRC 채널도
-+아카이브를 찾아봐라. 과거에 이미 답변되었을 수도 있다)을 할 수 있는 도움이
-+될만한 메일링 리스트가 있다. 또한 실시간으로 질문 할 수 있는 IRC 채널도
- 가지고 있으며 리눅스 커널 개발을 배우는 데 유용한 문서들을 보유하고 있다.
- 
- 웹사이트는 코드구성, 서브시스템들, 그리고 현재 프로젝트들
-@@ -245,7 +245,7 @@ Documentation/DocBook/ 디렉토리 내에서 만들어지며 PDF, Postscript, H
-     것을 기억해라. 왜냐하면 변경이 자체내에서만 발생하고 추가된 코드가
-     드라이버 외부의 다른 부분에는 영향을 주지 않으므로 그런 변경은
-     회귀(역자주: 이전에는 존재하지 않았지만 새로운 기능추가나 변경으로 인해
--		생겨난 버그)를 일으킬 만한 위험을 가지고 있지 않기 때문이다. -rc1이
-+    생겨난 버그)를 일으킬 만한 위험을 가지고 있지 않기 때문이다. -rc1이
-     배포된 이후에 git를 사용하여 패치들을 Linus에게 보낼수 있지만 패치들은
-     공식적인 메일링 리스트로 보내서 검토를 받을 필요가 있다.
-   - 새로운 -rc는 Linus가 현재 git tree가 테스트 하기에 충분히 안정된 상태에
-@@ -472,7 +472,7 @@ bugme-janitor 메일링 리스트(bugzilla에 모든 변화들이 여기서 메
- 가능한한 가장 좋은 기술적인 해답을 찾고 있는 커뮤니티에서는 항상
- 어떤 패치가 얼마나 좋은지에 관하여 다른 의견들이 있을 수 있다. 여러분은
- 협조적이어야 하고 기꺼이 여러분의 생각을 커널 내에 맞추어야 한다. 아니면
--적어도 여러분의 것이 가치있다는 것을 중명하여야 한다. 잘못된 것도 여러분이
-+적어도 여러분의 것이 가치있다는 것을 증명하여야 한다. 잘못된 것도 여러분이
- 올바른 방향의 해결책으로 이끌어갈 의지가 있다면 받아들여질 것이라는 점을
- 기억하라.
- 
-@@ -488,21 +488,21 @@ bugme-janitor 메일링 리스트(bugzilla에 모든 변화들이 여기서 메
- 커널 커뮤니티는 가장 전통적인 회사의 개발 환경과는 다르다. 여기에 여러분들의
- 문제를 피하기 위한 목록이 있다.
-   여러분들이 제안한 변경들에 관하여 말할 때 좋은 것들 :
--    - "이것은 여러 문제들을 해겹합니다."
-+    - "이것은 여러 문제들을 해결합니다."
-     - "이것은 2000 라인의 코드를 제거합니다."
-     - "이것은 내가 말하려는 것에 관해 설명하는 패치입니다."
--    - "나는 5개의 다른 아키텍쳐에서 그것을 테스트했슴으로..."
--    - "여기에 일련의 작은 패치들이 있슴음로..."
--    - "이것은 일반적인 머신에서 성능을 향상시킴으로..."
-+    - "나는 5개의 다른 아키텍쳐에서 그것을 테스트 했으므로..."
-+    - "여기에 일련의 작은 패치들이 있으므로..."
-+    - "이것은 일반적인 머신에서 성능을 향상함으로..."
- 
-   여러분들이 말할 때 피해야 할 좋지 않은 것들 :
--    - "우리를 그것을 AIT/ptx/Solaris에서 이러한 방법으로 했다. 그러므로 그것은 좋은 것임에 틀립없다..."
-+    - "우리는 그것을 AIT/ptx/Solaris에서 이러한 방법으로 했다. 그러므로 그것은 좋은 것임에 틀림없다..."
-     - "나는 20년동안 이것을 해왔다. 그러므로..."
-     - "이것은 돈을 벌기위해 나의 회사가 필요로 하는 것이다."
-     - "이것은 우리의 엔터프라이즈 상품 라인을 위한 것이다."
-     - "여기에 나의 생각을 말하고 있는 1000 페이지 설계 문서가 있다."
-     - "나는 6달동안 이것을 했으니..."
--    - "여기에 5000라인 짜리 패치가 있으니..."
-+    - "여기에 5000 라인 짜리 패치가 있으니..."
-     - "나는 현재 뒤죽박죽인 것을 재작성했다. 그리고 여기에..."
-     - "나는 마감시한을 가지고 있으므로 이 패치는 지금 적용될 필요가 있다."
- 
-@@ -574,6 +574,7 @@ Pat이라는 이름을 가진 여자가 있을 수도 있는 것이다. 리눅
- 또한 완성되지 않았고 "나중에 수정될 것이다." 와 같은 것들을 포함하는
- 패치들은 받아들여지지 않을 것이라는 점을 유념하라.
- 
-+
- 변경을 정당화해라
- -----------------
- 
--- 
-1.7.10.4
+http://article.gmane.org/gmane.linux.kernel/1537088
+
+--- cut here ---
+
+#include <stdio.h>
+#include <err.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <string.h>
+
+#define __O_TMPFILE 020000000
+#define O_TMPFILE (__O_TMPFILE | O_DIRECTORY)
+#define AT_EMPTY_PATH 0x1000
+
+int main(int argc, char **argv)
+{
+   char buf[128];
+
+   if (argc != 3)
+     errx(1, "Usage: flinktest PATH linkat|proc");
+
+   int fd = open(".", O_TMPFILE | O_RDWR, 0600);
+   if (fd == -1)
+     err(1, "O_TMPFILE");
+   write(fd, "test", 4);
+
+   if (!strcmp(argv[2], "linkat")) {
+     if (linkat(fd, "", AT_FDCWD, argv[1], AT_EMPTY_PATH) != 0)
+       err(1, "linkat");
+   } else if (!strcmp(argv[2], "proc")) {
+     sprintf(buf, "/proc/self/fd/%d", fd);
+     if (linkat(AT_FDCWD, buf, AT_FDCWD, argv[1], AT_SYMLINK_FOLLOW) != 0)
+       err(1, "linkat");
+   } else {
+     errx(1, "invalid mode");
+   }
+   return 0;
+}
 
