@@ -1,101 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755749Ab3HEXqk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 19:46:40 -0400
-Received: from 70-36-212-23.dsl.static.sonic.net ([70.36.212.23]:57337 "EHLO
-	mail.linuxtoys.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755378Ab3HEXqj (ORCPT
+	id S1755823Ab3HEX4Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 19:56:16 -0400
+Received: from mail-ve0-f172.google.com ([209.85.128.172]:36983 "EHLO
+	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755568Ab3HEX4N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 19:46:39 -0400
-Message-ID: <52003958.7080103@linuxtoys.org>
-Date: Mon, 05 Aug 2013 16:46:32 -0700
-From: Bob Smith <bsmith@linuxtoys.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20100101 Firefox/19.0 SeaMonkey/2.16
+	Mon, 5 Aug 2013 19:56:13 -0400
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 001/001] CHAR DRIVERS: a simple device to give daemons
- a /sys-like interface
-References: <51FC5478.40500@linuxtoys.org> <51FC5A97.1090102@linuxtoys.org> <20130803223828.GA14611@kroah.com> <51FECDA6.5070001@linuxtoys.org> <20130804231958.GA25418@kroah.com>
-In-Reply-To: <20130804231958.GA25418@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130805141221.GC2755@localhost.localdomain>
+References: <1375478948-22562-1-git-send-email-roy.franz@linaro.org>
+	<1375478948-22562-2-git-send-email-roy.franz@linaro.org>
+	<20130805141221.GC2755@localhost.localdomain>
+Date: Mon, 5 Aug 2013 16:56:12 -0700
+Message-ID: <CAFECyb9h7aSzOAHC0t-xT1mNxW_CuMqpU8zGD50ZzZYQ74d0fg@mail.gmail.com>
+Subject: Re: [PATCH 1/7] EFI stub documentation updates
+From: Roy Franz <roy.franz@linaro.org>
+To: Dave Martin <Dave.Martin@arm.com>
+Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        matt.fleming@intel.com,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Leif Lindholm <leif.lindholm@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg
-Thanks for discussing the module with me.  I think I'm now
-closer to distilling it down to its essence.
+On Mon, Aug 5, 2013 at 7:12 AM, Dave Martin <Dave.Martin@arm.com> wrote:
+> On Fri, Aug 02, 2013 at 02:29:02PM -0700, Roy Franz wrote:
+>> The ARM kernel also has an EFI stub which works largely the same way
+>> as the x86 stub, so move the documentation out of x86 directory and
+>> update to reflect that it is generic, and add ARM specific text.
+>>
+>> Signed-off-by: Roy Franz <roy.franz@linaro.org>
+>> ---
+>>  Documentation/efi-stub.txt     |   78 ++++++++++++++++++++++++++++++++++++++++
+>>  Documentation/x86/efi-stub.txt |   65 ---------------------------------
+>>  arch/x86/Kconfig               |    2 +-
+>>  3 files changed, 79 insertions(+), 66 deletions(-)
+>>  create mode 100644 Documentation/efi-stub.txt
+>>  delete mode 100644 Documentation/x86/efi-stub.txt
+>>
+>> diff --git a/Documentation/efi-stub.txt b/Documentation/efi-stub.txt
+>> new file mode 100644
+>> index 0000000..7837df1
+>> --- /dev/null
+>> +++ b/Documentation/efi-stub.txt
+>> @@ -0,0 +1,78 @@
+>> +                       The EFI Boot Stub
+>> +                  ---------------------------
+>> +
+>> +On the x86 and ARM platforms, a bzImage can masquerade as a PE/COFF image,
+>> +thereby convincing EFI firmware loaders to load it as an EFI
+>> +executable. The code that modifies the bzImage header, along with the
+>
+>
+> Minor nit, I don't think there is such a thing as "bzImage" for ARM.
+>
+> Cheers
+> ---Dave
+>
+Yeah, I don't thinks so either...  How about:
+
+On the x86 and ARM platforms, a kernel zImage/bzImage can masquerade....
 
 
-GOAL:
-The goal of this module is to give user space programs an
-interface similar to that enjoyed by the kernel using procfs
-and sysfs.  All of the following should be possible
-	echo 1 > /proc/sys/net/ipv4/ip_forward  # procfs
-	echo 75 > /dev/motors/left/speed        # proxy
-	echo 5 > /dev/wpa_supplicant/use_channel # proxy
-
-IPC:
-To accomplish the above goal a new IPC is required.  This
-new IPC must have the following characteristics:
-	- bidirectional
-	- writer blocks until reader is present
-	- a writer can cause the reader to close
-	- works with 'echo' and 'cat'
-
-No existing IPC in Linux has all of these characteristics
-but proxy, the tiny self-contained module submitted, does.
-(Greg, I'm kind of surprised that a shim of an IPC like this
-wasn't added to Linux a long, long time ago.)
-
-USE CASES:
-Proxy should be added to the kernel because it can greatly
-improve Linux in two significant ways.
-
-USE CASE #1: User space device drivers
-A viable approach to user space device drivers would make
-life easier for both programmers and kernel maintainers.
-The latter because now a maintainer can now reasonably say
-"go use proxy and a user space driver".   Some of the SPI
-and I2C drivers might have been easier to do with proxy.
-   Programmers doing device drivers might have an easier time
-since it will be easier to prototype and debug a system in
-user space.  SPI and I2C driver writers in particular may
-appreciate the ability to build a working system without
-having to go through the sometimes tedious process of a
-kernel submission.
-   Finally, some device drivers that are not possible today
-would become possible.  In my case I have a USB-serial link
-to a robot controller and so need a user space daemon to
-terminate the serial line.  It is only with proxy that I
-can hide the details of this and give users a nice /dev
-view of the robot.
-
-USE CASE #2:  End the madness of language bindings
-Over 10 years ago kernel developers had the sense to escape
-(some) ioctl language bindings with the introduction of
-procfs.   How is it that in all this time we haven't done
-the same thing for all the daemons that populate Linux?
-No, today daemon writers are still being forced to open a
-socket, define and document a protocol over it, and then
-write a library for that protocol for all the popular
-languages.   And we're not talking about just one or two
-languages.  No, now it more like C, Java, Python, PHP, and
-soon node.js.  Next week some new language will wander off
-the street and need a yet another binding.  Eeeech!
-    Let's let daemons use the same kind of interface that the
-kernel has with /sys and /proc.  With proxy, daemon coders
-could define an ASCII interface in exactly the same way the
-kernel has.  The inclusion of 'echo' and 'cat' above is kind
-of a litmus test.  If a daemon interface works with cat and
-echo, it will _NEVER_ need dedicated per-language bindings.
-
-
-
-thanks
-Bob Smith
-
-
-
+Roy
