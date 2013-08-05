@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755156Ab3HEUmg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 16:42:36 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:50968 "EHLO
+	id S1755221Ab3HEUmp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 16:42:45 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:50971 "EHLO
 	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755026Ab3HEUmf (ORCPT
+	with ESMTP id S1755026Ab3HEUml (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 16:42:35 -0400
-Message-ID: <e5779310b2c20b3c927308995e5a99652f33b6d3.1375733180.git.cmetcalf@tilera.com>
+	Mon, 5 Aug 2013 16:42:41 -0400
+Message-ID: <1b0e51235c447fb704b0868902746d74f4c1dcbe.1375733180.git.cmetcalf@tilera.com>
 In-Reply-To: <cover.1375733180.git.cmetcalf@tilera.com>
 References: <cover.1375733180.git.cmetcalf@tilera.com>
 From: Chris Metcalf <cmetcalf@tilera.com>
 Date: Mon, 5 Aug 2013 16:06:20 -0400
-Subject: [PATCH 01/20] tile PCI RC: cleanups for tilepro PCI RC
+Subject: [PATCH 04/20] tile PCI RC: tweak the the pcie_rc_delay support
 To: <linux-kernel@vger.kernel.org>, <linux-pci@vger.kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -20,79 +20,91 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-- remove unneeded <linux/bootmem.h> include in pci.c
-- eliminate unused pci_controller.first_busno field
-- prefer msleep to mdelay
-- remove stale comment about pci_scan_bus_parented()
+Allow longer delays if requested, and print the info messages
+as we are performing the delay, not when parsing the arguments.
 
 Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 ---
- arch/tile/include/asm/pci.h |  1 -
- arch/tile/kernel/pci.c      | 16 +++-------------
- 2 files changed, 3 insertions(+), 14 deletions(-)
+ arch/tile/kernel/pci_gx.c | 35 ++++++++++++++++-------------------
+ 1 file changed, 16 insertions(+), 19 deletions(-)
 
-diff --git a/arch/tile/include/asm/pci.h b/arch/tile/include/asm/pci.h
-index 54a9242..cd10e65 100644
---- a/arch/tile/include/asm/pci.h
-+++ b/arch/tile/include/asm/pci.h
-@@ -29,7 +29,6 @@ struct pci_controller {
- 	int index;		/* PCI domain number */
- 	struct pci_bus *root_bus;
+diff --git a/arch/tile/kernel/pci_gx.c b/arch/tile/kernel/pci_gx.c
+index 1142563..e99809e 100644
+--- a/arch/tile/kernel/pci_gx.c
++++ b/arch/tile/kernel/pci_gx.c
+@@ -69,17 +69,14 @@ static int pcie_rc[TILEGX_NUM_TRIO][TILEGX_TRIO_PCIES];
+  * a HW PCIe link-training bug. The exact delay is specified with
+  * a kernel boot argument in the form of "pcie_rc_delay=T,P,S",
+  * where T is the TRIO instance number, P is the port number and S is
+- * the delay in seconds. If the delay is not provided, the value
+- * will be DEFAULT_RC_DELAY.
++ * the delay in seconds. If the argument is specified, but the delay is
++ * not provided, the value will be DEFAULT_RC_DELAY.
+  */
+ static int rc_delay[TILEGX_NUM_TRIO][TILEGX_TRIO_PCIES];
  
--	int first_busno;
- 	int last_busno;
+ /* Default number of seconds that the PCIe RC port probe can be delayed. */
+ #define DEFAULT_RC_DELAY	10
  
- 	int hv_cfg_fd[2];	/* config{0,1} fds for this PCIe controller */
-diff --git a/arch/tile/kernel/pci.c b/arch/tile/kernel/pci.c
-index 67237d3..1dae3b2 100644
---- a/arch/tile/kernel/pci.c
-+++ b/arch/tile/kernel/pci.c
-@@ -20,7 +20,6 @@
- #include <linux/capability.h>
- #include <linux/sched.h>
- #include <linux/errno.h>
--#include <linux/bootmem.h>
- #include <linux/irq.h>
- #include <linux/io.h>
- #include <linux/uaccess.h>
-@@ -192,7 +191,6 @@ int __init tile_pci_init(void)
- 			controller->hv_cfg_fd[0] = hv_cfg_fd0;
- 			controller->hv_cfg_fd[1] = hv_cfg_fd1;
- 			controller->hv_mem_fd = hv_mem_fd;
--			controller->first_busno = 0;
- 			controller->last_busno = 0xff;
- 			controller->ops = &tile_cfg_ops;
+-/* Max number of seconds that the PCIe RC port probe can be delayed. */
+-#define MAX_RC_DELAY		20
+-
+ /* Array of the PCIe ports configuration info obtained from the BIB. */
+ struct pcie_port_property pcie_ports[TILEGX_NUM_TRIO][TILEGX_TRIO_PCIES];
  
-@@ -283,7 +281,7 @@ int __init pcibios_init(void)
- 	 * known to require at least 20ms here, but we use a more
- 	 * conservative value.
- 	 */
--	mdelay(250);
-+	msleep(250);
+@@ -570,14 +567,9 @@ static int setup_pcie_rc_delay(char *str)
+ 		if (!isdigit(*str))
+ 			return -EINVAL;
+ 		delay = simple_strtoul(str, (char **)&str, 10);
+-		if (delay > MAX_RC_DELAY)
+-			return -EINVAL;
+ 	}
  
- 	/* Scan all of the recorded PCI controllers.  */
- 	for (i = 0; i < TILE_NUM_PCIE; i++) {
-@@ -304,18 +302,10 @@ int __init pcibios_init(void)
- 
- 			pr_info("PCI: initializing controller #%d\n", i);
- 
--			/*
--			 * This comes from the generic Linux PCI driver.
--			 *
--			 * It reads the PCI tree for this bus into the Linux
--			 * data structures.
--			 *
--			 * This is inlined in linux/pci.h and calls into
--			 * pci_scan_bus_parented() in probe.c.
--			 */
- 			pci_add_resource(&resources, &ioport_resource);
- 			pci_add_resource(&resources, &iomem_resource);
--			bus = pci_scan_root_bus(NULL, 0, controller->ops, controller, &resources);
-+			bus = pci_scan_root_bus(NULL, 0, controller->ops,
-+						controller, &resources);
- 			controller->root_bus = bus;
- 			controller->last_busno = bus->busn_res.end;
+ 	rc_delay[trio_index][mac] = delay ? : DEFAULT_RC_DELAY;
+-	pr_info("Delaying PCIe RC link training for %u sec"
+-		" on MAC %lu on TRIO %lu\n", rc_delay[trio_index][mac],
+-		mac, trio_index);
+ 	return 0;
+ }
+ early_param("pcie_rc_delay", setup_pcie_rc_delay);
+@@ -682,12 +674,6 @@ int __init pcibios_init(void)
+ 			continue;
  		}
+ 
+-		/*
+-		 * Delay the RC link training if needed.
+-		 */
+-		if (rc_delay[trio_index][mac])
+-			msleep(rc_delay[trio_index][mac] * 1000);
+-
+ 		ret = gxio_trio_force_rc_link_up(trio_context, mac);
+ 		if (ret < 0)
+ 			pr_err("PCI: PCIE_FORCE_LINK_UP failure, "
+@@ -697,10 +683,21 @@ int __init pcibios_init(void)
+ 			trio_index, controller->mac);
+ 
+ 		/*
+-		 * Wait a bit here because some EP devices take longer
+-		 * to come up.
++		 * Delay the bus probe if needed.
+ 		 */
+-		msleep(1000);
++		if (rc_delay[trio_index][mac]) {
++			pr_info("Delaying PCIe RC bus enumerating %d sec"
++				" on MAC %d on TRIO %d\n",
++				rc_delay[trio_index][mac], mac,
++				trio_index);
++			msleep(rc_delay[trio_index][mac] * 1000);
++		} else {
++			/*
++			 * Wait a bit here because some EP devices
++			 * take longer to come up.
++			 */
++			msleep(1000);
++		}
+ 
+ 		/*
+ 		 * Check for PCIe link-up status.
 -- 
 1.8.3.1
 
