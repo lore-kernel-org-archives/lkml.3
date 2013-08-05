@@ -1,131 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754725Ab3HEQTG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 12:19:06 -0400
-Received: from usindpps06.hds.com ([207.126.252.19]:45636 "EHLO
-	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753842Ab3HEQTE convert rfc822-to-8bit (ORCPT
+	id S1754741Ab3HEQTV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 12:19:21 -0400
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:1484 "EHLO
+	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753817Ab3HEQTT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 12:19:04 -0400
-From: Tomoki Sekiyama <tomoki.sekiyama@hds.com>
-To: Jens Axboe <axboe@kernel.dk>
-CC: Shaohua Li <shli@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "tj@kernel.org" <tj@kernel.org>, Seiji Aguchi <seiji.aguchi@hds.com>
-Subject: Re: [RFC PATCH] cfq-iosched: limit slice_idle when many busy queues
- are in idle window
-Thread-Topic: [RFC PATCH] cfq-iosched: limit slice_idle when many busy
- queues are in idle window
-Thread-Index: AQHOjVtGIPXCyBn/QUeyROYvxWg6AZl+TlAAgALFUYCAAAoPgIAFto4A
-Date: Mon, 5 Aug 2013 16:18:55 +0000
-Message-ID: <CE25409F.5A01%Tomoki.Sekiyama@hds.com>
-In-Reply-To: <51FACD4D.9080300@kernel.dk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.74.73.11]
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <2366133DF5BB9544B62F6B9DA2A5006B@hds.com>
-Content-Transfer-Encoding: 8BIT
+	Mon, 5 Aug 2013 12:19:19 -0400
+X-IronPort-AV: E=Sophos;i="4.89,819,1367964000"; 
+   d="scan'208";a="28556013"
+Date: Mon, 5 Aug 2013 18:19:18 +0200 (CEST)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@hadrien
+To: Dan Carpenter <dan.carpenter@oracle.com>
+cc: trivial@kernel.org, kernel-janitors@vger.kernel.org, corbet@lwn.net,
+        m.chehab@samsung.com, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] trivial: adjust code alignment
+In-Reply-To: <20130805160645.GI5051@mwanda>
+Message-ID: <alpine.DEB.2.02.1308051810360.2134@hadrien>
+References: <1375714059-29567-1-git-send-email-Julia.Lawall@lip6.fr> <1375714059-29567-5-git-send-email-Julia.Lawall@lip6.fr> <20130805160645.GI5051@mwanda>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-X-Proofpoint-SPF-Result: pass
-X-Proofpoint-SPF-Record: v=spf1 mx ip4:207.126.244.0/26 ip4:207.126.252.0/25 include:mktomail.com
- include:cloud.hds.com ~all
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
- definitions=2013-08-05_05:2013-08-05,2013-08-05,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=outbound_policy score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1305240000 definitions=main-1308050138
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/1/13 17:04 , "Jens Axboe" <axboe@kernel.dk> wrote:
+On Mon, 5 Aug 2013, Dan Carpenter wrote:
 
->On 08/01/2013 02:28 PM, Tomoki Sekiyama wrote:
->> On 7/30/13 10:09 PM, Shaohua Li wrote:
->>> On Tue, Jul 30, 2013 at 03:30:33PM -0400, Tomoki Sekiyama wrote:
->>>> Hi,
->>>>
->>>> When some application launches several hundreds of processes that
->>>>issue
->>>> only a few small sync I/O requests, CFQ may cause heavy latencies
->>>> (10+ seconds at the worst case), although the request rate is low
->>>>enough for
->>>> the disk to handle it without waiting. This is because CFQ waits for
->>>> slice_idle (default:8ms) every time before processing each request,
->>>>until
->>>> their thinktimes are evaluated.
->>>>
->>>> This scenario can be reproduced using fio with parameters below:
->>>>   fio -filename=/tmp/test -rw=randread -size=5G -runtime=15
->>>>-name=file1 \
->>>>       -bs=4k -numjobs=500 -thinktime=1000000
->>>> In this case, 500 processes issue a random read request every second.
->>>
->>> For this workload CFQ should perfectly detect it's a seek queue and
->>>disable
->>> idle. I suppose the reason is CFQ hasn't enough data/time to disable
->>>idle yet,
->>> since your thinktime is long and runtime is short.
->> 
->> Right, CFQ will learn the patten, but it takes too long time to reach
->>stable
->> performance when a lot of I/O processes are launched.
->> 
->>> I thought the real problem here is cfq_init_cfqq() shouldn't set
->>>idle_window
->>> when initializing a queue. We should enable idle window after we
->>>detect the
->>> queue is worthy idle.
->> 
->> Do you think the patch below is appropriate? Or should we check whether
->> busy_idle_queues in my original patch is high enough and only then
->> disable default idle_window in cfq_init_cfqq()?
->> 
->>> Thanks,
->>> Shaohua
->> 
->> Thanks,
->> Tomoki Sekiyama
->> 
->> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
->> index d5cd313..abbe28f 100644
->> --- a/block/cfq-iosched.c
->> +++ b/block/cfq-iosched.c
->> @@ -3514,11 +3514,8 @@ static void cfq_init_cfqq(struct cfq_data *cfqd,
->>struct cfq_queue *cfqq,
->>  
->>  	cfq_mark_cfqq_prio_changed(cfqq);
->>  
->> -	if (is_sync) {
->> -		if (!cfq_class_idle(cfqq))
->> -			cfq_mark_cfqq_idle_window(cfqq);
->> +	if (is_sync)
->>  		cfq_mark_cfqq_sync(cfqq);
->> -	}
->>  	cfqq->pid = pid;
->>  }
+> On Mon, Aug 05, 2013 at 04:47:39PM +0200, Julia Lawall wrote:
+>> diff --git a/drivers/media/i2c/ov7670.c b/drivers/media/i2c/ov7670.c
+>> index e8a1ce2..4a5a5dc 100644
+>> --- a/drivers/media/i2c/ov7670.c
+>> +++ b/drivers/media/i2c/ov7670.c
+>> @@ -1369,8 +1369,8 @@ static int ov7670_s_exp(struct v4l2_subdev *sd, int value)
+>>  	unsigned char com1, com8, aech, aechh;
+>>
+>>  	ret = ov7670_read(sd, REG_COM1, &com1) +
+>> -		ov7670_read(sd, REG_COM8, &com8);
+>> -		ov7670_read(sd, REG_AECHH, &aechh);
+>> +	ov7670_read(sd, REG_COM8, &com8);
+>> +	ov7670_read(sd, REG_AECHH, &aechh);
+>>  	if (ret)
+>>  		return ret;
+>>
 >
->I do agree in principle with this, but now you are going to have the
->reverse problem where idling workloads take longer to reach their
->natural steady state. It could probably be argued that they should
->converge quicker, however, in which case it's probably a good change.
+> The new indenting isn't correct here and anyway the intent was to
+> combine all the error codes together and return them as an error
+> code jumble.  I'm not a fan of error code jumbles, probably the
+> right thing is to check each function call or, barring that, to
+> return -EIO.
 
-Even with this change, idling workload looks estimated worth for
-idle_window soon if I/O rate is not so high and think time is low enough.
-When the I/O rate is high, it might be regarded as not worth for idling
-as the thinktimes were overestimated (although I couldn't find out
-patterns which lost performance by that, as far as I tried).
+Oops, thanks for spotting that.  I'm not sure whether it is safe to abort 
+these calls as soon as the first one fails, but perhaps I could introduce 
+some more variables, and test them all afterwards.
 
-How about fairness? Doesn't this make new processes disadvantageous?
-If unfairness by this change was unacceptable, it might be helpful for
-mitigating unfairness to add conditions like
- "the number of busy queues marked idle_window in the group == 0"
-to marking idle_window as default.
+What should I do with the big patch?  Resend it with this cut out?  Or, 
+considering that I might have overlooked something else, send 90 some 
+little ones?
 
-
-Thanks,
-Tomoki Sekiyama
-
+thanks,
+julia
