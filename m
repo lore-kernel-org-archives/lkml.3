@@ -1,72 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754314Ab3HETDj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 15:03:39 -0400
-Received: from mail-gh0-f173.google.com ([209.85.160.173]:56011 "EHLO
-	mail-gh0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753738Ab3HETDh (ORCPT
+	id S1754421Ab3HETEd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 15:04:33 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:26998 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753771Ab3HETEc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 15:03:37 -0400
-Date: Mon, 5 Aug 2013 15:09:52 -0400 (EDT)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: trinity@vger.kernel.org
-cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: trinity hang -- rcu_sched detected stall in __schedule
-Message-ID: <alpine.DEB.2.10.1308051451420.18647@vincent-weaver-1.um.maine.edu>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 5 Aug 2013 15:04:32 -0400
+X-Authority-Analysis: v=2.0 cv=P6i4d18u c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=pFOAptgLnqcA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=pvQ05lsfB1wA:10 a=Z4Rwk6OoAAAA:8 a=6FMxr96NY7dMbMNNUMYA:9 a=QEXdDO2ut3YA:10 a=jbrJJM5MRmoA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-ID: <1375729469.22073.130.camel@gandalf.local.home>
+Subject: Re: [RFC] gcc feature request: Moving blocks into sections
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, gcc <gcc@gcc.gnu.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        David Daney <ddaney.cavm@gmail.com>,
+        Behan Webster <behanw@converseincode.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Herbert Xu <herbert@gondor.hengli.com.au>
+Date: Mon, 05 Aug 2013 15:04:29 -0400
+In-Reply-To: <CA+55aFyzmGzv3C9gy5Xi=pSmAOzpYMNAqrrrZmsvNbt4LdrorQ@mail.gmail.com>
+References: <1375721715.22073.80.camel@gandalf.local.home>
+	 <CA+55aFw_o=D-j_SRn=Y4LhHm-tEyuP1Je5ZHVTYxbVyLyDcLEg@mail.gmail.com>
+	 <1375725328.22073.101.camel@gandalf.local.home>
+	 <CA+55aFwRHpL-3YObZfw6NxxDxMqQbiwp0=NnpotGj2RHDNF3iw@mail.gmail.com>
+	 <CA+55aFw=OX3Zz_PJc7NUGwFLAE1RYUsPe9Dn8qHDN0nZeW2R5A@mail.gmail.com>
+	 <CA+55aFyzmGzv3C9gy5Xi=pSmAOzpYMNAqrrrZmsvNbt4LdrorQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2013-08-05 at 11:34 -0700, Linus Torvalds wrote:
+> On Mon, Aug 5, 2013 at 11:24 AM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+> >
+> > Ugh. I can see the attraction of your section thing for that case, I
+> > just get the feeling that we should be able to do better somehow.
+> 
+> Hmm.. Quite frankly, Steven, for your use case I think you actually
+> want the C goto *labels* associated with a section. Which sounds like
+> it might be a cleaner syntax than making it about the basic block
+> anyway.
 
-I'm running the trinity fuzzer on my ARM Pandaboard, Linux 3.11-rc4
+I would love to. But IIRC, the asm_goto() has some strict constraints.
+We may be able to jump to a different section, but we have no way of
+coming back. Not to mention, you must tell the asm goto() what label you
+may be jumping to.
 
-Trinity got stuck with these messages being logged.  As far as I can
-tell trinity-child1 wasn't doing anything that interesting when it got 
-stuck.
+I don't know how safe something like this may be:
 
-Hopefully I picked the right group to cc: it looks like it is stuck
-in __schedule somewhere?  So I'm not sure if this is ARM related or a 
-general problem.
 
-Vince
+static inline trace_sched_switch(prev, next)
+{
+	asm goto("jmp foo1\n" : : foo2);
+ foo1:
+	return;
 
-[ 5026.161163] INFO: rcu_sched detected stalls on CPUs/tasks: { 1} (detected by 0, t=2102 jiffies, g=250744, c=250743, q=8)
-[ 5026.161163] Task dump for CPU 1:
-[ 5026.161163] trinity-child1  R running      0 27485   2810 0x00000000
-[ 5026.182922] [<c048cef4>] (__schedule+0x4c4/0x748) from [<00000000>] (  (null))
-[ 5089.211090] INFO: rcu_sched detected stalls on CPUs/tasks: { 1} (detected by 0, t=8407 jiffies, g=250744, c=250743, q=658)
-[ 5089.222900] Task dump for CPU 1:
-[ 5089.222900] trinity-child1  R running      0 27485   2810 0x00000000
-[ 5089.233154] [<c048cef4>] (__schedule+0x4c4/0x748) from [<c0012790>] (no_work_pending+0x8/0x2c)
-[ 5152.270843] INFO: rcu_sched detected stalls on CPUs/tasks: { 1} (detected by 0, t=14712 jiffies, g=250744, c=250743, q=842)
-[ 5152.270874] Task dump for CPU 1:
-[ 5152.286193] trinity-child1  R running      0 27485   2810 0x00000000
-[ 5152.286193] [<c048cef4>] (__schedule+0x4c4/0x748) from [<c0012790>] (no_work_pending+0x8/0x2c)
-[ 5215.311096] INFO: rcu_sched detected stalls on CPUs/tasks: { 1} (detected by 0, t=21017 jiffies, g=250744, c=250743, q=857)
-[ 5215.322998] Task dump for CPU 1:
-[ 5215.322998] trinity-child1  R running      0 27485   2810 0x00000000
-[ 5215.333251] [<c048cef4>] (__schedule+0x4c4/0x748) from [<c0012790>] (no_work_pending+0x8/0x2c)
-[ 5278.361083] INFO: rcu_sched detected stalls on CPUs/tasks: { 1} (detected by 0, t=27322 jiffies, g=250744, c=250743, q=857)
-[ 5278.372985] Task dump for CPU 1:
-[ 5278.372985] trinity-child1  R running      0 27485   2810 0x00000000
-[ 5278.372985] [<c048cef4>] (__schedule+0x4c4/0x748) from [<c0012790>] (no_work_pending+0x8/0x2c)
-[ 5341.411102] INFO: rcu_sched detected stalls on CPUs/tasks: { 1} (detected by 0, t=33627 jiffies, g=250744, c=250743, q=959)
-[ 5341.411102] Task dump for CPU 1:
-[ 5341.411102] trinity-child1  R running      0 27485   2810 0x00000000
-[ 5341.433227] [<c048cef4>] (__schedule+0x4c4/0x748) from [<c0012790>] (no_work_pending+0x8/0x2c)
-[ 5404.461090] INFO: rcu_sched detected stalls on CPUs/tasks: { 1} (detected by 0, t=39932 jiffies, g=250744, c=250743, q=1043)
-[ 5404.473083] Task dump for CPU 1:
-[ 5404.473083] trinity-child1  R running      0 27485   2810 0x00000000
-[ 5404.473083] [<c048cef4>] (__schedule+0x4c4/0x748) from [<c0012790>] (no_work_pending+0x8/0x2c)
-[ 5467.530395] INFO: rcu_sched detected stalls on CPUs/tasks: { 1} (detected by 0, t=46238 jiffies, g=250744, c=250743, q=1056)
-[ 5467.530395] Task dump for CPU 1:
-[ 5467.530395] trinity-child1  R running      0 27485   2810 0x00000000
-[ 5467.545806] [<c048cef4>] (__schedule+0x4c4/0x748) from [<c0012790>] (no_work_pending+0x8/0x2c)
-[ 5530.571258] INFO: rcu_sched detected stalls on CPUs/tasks: { 1} (detected by 0, t=52543 jiffies, g=250744, c=250743, q=1056)
-[ 5530.571258] Task dump for CPU 1:
-[ 5530.571258] trinity-child1  R running      0 27485   2810 0x00000000
-[ 5530.571258] [<c048cef4>] (__schedule+0x4c4/0x748) from [<c0012790>] (no_work_pending+0x8/0x2c)
+	asm goto(".pushsection\n"
+		"section \".foo\"\n");
+ foo2:
+	__trace_sched_switch(prev, next);
+	asm goto("jmp foo1"
+		".popsection\n" : : foo1);
+}
+
+
+The above looks too fragile for my taste. I'm afraid gcc will move stuff
+out of those "asm goto" locations, and make things just fail. But I can
+play with this, but I don't like it.
+
+-- Steve
+
+
