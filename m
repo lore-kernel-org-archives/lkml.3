@@ -1,161 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754953Ab3HEIXu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 04:23:50 -0400
-Received: from mga03.intel.com ([143.182.124.21]:12656 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754585Ab3HEIXq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 04:23:46 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,817,1367996400"; 
-   d="scan'208";a="376249926"
-Message-ID: <51FF6276.3050507@intel.com>
-Date: Mon, 05 Aug 2013 11:29:42 +0300
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1754911Ab3HEI0W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 04:26:22 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:45218 "EHLO
+	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754585Ab3HEI0U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 04:26:20 -0400
+X-AuditID: 9c93017e-b7b62ae000000eeb-86-51ff61aa0dcd
+Date: Mon, 5 Aug 2013 17:27:00 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, Jiang Liu <jiang.liu@huawei.com>,
+        Nitin Gupta <ngupta@vflare.org>, stable@vger.kernel.org
+Subject: Re: [PATCH] zram: bug fix: delay lock holding in zram_slot_free_noity
+Message-ID: <20130805082700.GP32486@bbox>
+References: <1375687114-4001-1-git-send-email-minchan@kernel.org>
+ <20130805080422.GB15376@kroah.com>
 MIME-Version: 1.0
-To: David Ahern <dsahern@gmail.com>
-CC: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH] perf: sample after exit loses thread correlation - v3
-References: <1375415551-62625-1-git-send-email-dsahern@gmail.com>
-In-Reply-To: <1375415551-62625-1-git-send-email-dsahern@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130805080422.GB15376@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/08/13 06:52, David Ahern wrote:
-> Occassionally events (e.g., context-switch, sched tracepoints) are losing
-> the conversion of sample data associated with a thread. For example:
-> 
-> $ perf record -e sched:sched_switch -c 1 -a -- sleep 5
-> $ perf script
-> <selected events shown>
->     ls 30482 [000] 1379727.583037: sched:sched_switch: prev_comm=ls prev_pid=30482 ...
->     ls 30482 [000] 1379727.586339: sched:sched_switch: prev_comm=ls prev_pid=30482 ...
-> :30482 30482 [000] 1379727.589462: sched:sched_switch: prev_comm=ls prev_pid=30482 ...
-> 
-> The last line lost the conversion from tid to comm. If you look at the events
-> (perf script -D) you see why - SAMPLE event is generated after the EXIT:
-> 
-> 0 1379727589449774 0x1540b0 [0x38]: PERF_RECORD_EXIT(30482:30482):(30482:30482)
-> 0 1379727589462497 0x1540e8 [0x80]: PERF_RECORD_SAMPLE(IP, 1): 30482/30482: 0xffffffff816416f1 period: 1 addr: 0
-> ... thread: :30482:30482
-> 
-> When perf processes the EXIT event the thread is moved to the dead_threads
-> list. When the SAMPLE event is processed no thread exists for the pid so a new
-> one is created by machine__findnew_thread.
-> 
-> This patch address the problem by delaying the move to the dead_threads list
-> until the tid is re-used (per Adrian's suggestion).
-> 
-> With this patch we get the previous example shows:
-> 
->   ls 30482 [000] 1379727.583037: sched:sched_switch: prev_comm=ls prev_pid=30482 ...
->   ls 30482 [000] 1379727.586339: sched:sched_switch: prev_comm=ls prev_pid=30482 ...
->   ls 30482 [000] 1379727.589462: sched:sched_switch: prev_comm=ls prev_pid=30482 ...
-> 
-> and
-> 
->   0 1379727589449774 0x1540b0 [0x38]: PERF_RECORD_EXIT(30482:30482):(30482:30482)
->   0 1379727589462497 0x1540e8 [0x80]: PERF_RECORD_SAMPLE(IP, 1): 30482/30482: 0xffffffff816416f1 period: 1 addr: 0
->   ... thread: ls:30482
-> 
-> v3: re-do from a time based check to a delayed move to dead_threads list
-> 
-> v2: Rebased to latest perf/core branch. Changed time comparison to use
->     a macro which explicitly shows the time basis
-> 
-> Signed-off-by: David Ahern <dsahern@gmail.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Jiri Olsa <jolsa@redhat.com>
-> Cc: Mike Galbraith <efault@gmx.de>
-> Cc: Namhyung Kim <namhyung@kernel.org>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Stephane Eranian <eranian@google.com>
-> Cc: Adrian Hunter <adrian.hunter@intel.com>
-> ---
+Hello Greg,
 
-This has the side-effect of leaving more threads on machine->threads, which
-seems OK to me.  So:
-
-Acked-by: Adrian Hunter <adrian.hunter@intel.com>
-
-
->  tools/perf/util/machine.c |   37 +++++++++++++++++++------------------
->  1 file changed, 19 insertions(+), 18 deletions(-)
+On Mon, Aug 05, 2013 at 04:04:22PM +0800, Greg Kroah-Hartman wrote:
+> On Mon, Aug 05, 2013 at 04:18:34PM +0900, Minchan Kim wrote:
+> > I was preparing to promote zram and it was almost done.
+> > Before sending patch, I tried to test and eyebrows went up.
+> > 
+> > [1] introduced down_write in zram_slot_free_notify to prevent race
+> > between zram_slot_free_notify and zram_bvec_[read|write]. The race
+> > could happen if somebody who has right permission to open swap device
+> > is reading swap device while it is used by swap in parallel.
+> > 
+> > However, zram_slot_free_notify is called with holding spin_lock of
+> > swap layer so we shouldn't avoid holing mutex. Otherwise, lockdep
+> > warns it.
 > 
-> diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-> index f9f9d63..0d29b1b 100644
-> --- a/tools/perf/util/machine.c
-> +++ b/tools/perf/util/machine.c
-> @@ -994,11 +994,27 @@ out_problem:
->  	return 0;
->  }
->  
-> +static void machine__remove_thread(struct machine *machine, struct thread *th)
-> +{
-> +	machine->last_match = NULL;
-> +	rb_erase(&th->rb_node, &machine->threads);
-> +	/*
-> +	 * We may have references to this thread, for instance in some hist_entry
-> +	 * instances, so just move them to a separate list.
-> +	 */
-> +	list_add_tail(&th->node, &machine->dead_threads);
-> +}
-> +
->  int machine__process_fork_event(struct machine *machine, union perf_event *event)
->  {
-> -	struct thread *thread = machine__findnew_thread(machine, event->fork.tid);
-> +	struct thread *thread = machine__find_thread(machine, event->fork.tid);
->  	struct thread *parent = machine__findnew_thread(machine, event->fork.ptid);
->  
-> +	/* if a thread currently exists for the thread id remove it */
-> +	if (thread != NULL)
-> +		machine__remove_thread(machine, thread);
-> +
-> +	thread = machine__findnew_thread(machine, event->fork.tid);
->  	if (dump_trace)
->  		perf_event__fprintf_task(event, stdout);
->  
-> @@ -1011,27 +1027,12 @@ int machine__process_fork_event(struct machine *machine, union perf_event *event
->  	return 0;
->  }
->  
-> -static void machine__remove_thread(struct machine *machine, struct thread *th)
-> -{
-> -	machine->last_match = NULL;
-> -	rb_erase(&th->rb_node, &machine->threads);
-> -	/*
-> -	 * We may have references to this thread, for instance in some hist_entry
-> -	 * instances, so just move them to a separate list.
-> -	 */
-> -	list_add_tail(&th->node, &machine->dead_threads);
-> -}
-> -
-> -int machine__process_exit_event(struct machine *machine, union perf_event *event)
-> +int machine__process_exit_event(struct machine *machine __maybe_unused,
-> +				union perf_event *event)
->  {
-> -	struct thread *thread = machine__find_thread(machine, event->fork.tid);
-> -
->  	if (dump_trace)
->  		perf_event__fprintf_task(event, stdout);
->  
-> -	if (thread != NULL)
-> -		machine__remove_thread(machine, thread);
-> -
->  	return 0;
->  }
->  
-> 
+> As it should.
 
+It's okay to call down_write_trylock instead of down_write under spinlock.
+Is there any problem? Might need to rewrite description?
+
+> 
+> > I guess, best solution is to redesign zram lock scheme totally but
+> > we are on the verge of promoting so it's not desirable to change a lot
+> > critical code and such big change isn't good shape for backporting to
+> > stable trees so I think the simple patch is best at the moment.
+> 
+> What do you mean by "verge of promoting"?  If it's wrong, it needs to be
+> fixed properly, don't paper over something.
+
+It seems you consider the patch as bandaid due to rather misleading my
+description. I didn't mean it. I guess ideal solution would be to change
+locking scheme totally to enhance concurrency but others might think it's
+rather overkill because we don't see any reports about such parallel workloads
+to make coarse-grained lock trouble. So, I think below simple patch looks
+reasonable to me. Let's wait other zram developers's opinons.
+
+> 
+> Please fix this correctly, I really don't care about staging drivers in
+> stable kernels as lots of distros refuse to enable them (and rightly
+> so.)
+
+It might be a huge so early decision is rather hurry.
+Let's wait others's opition.
+Nitin, could you post your opinion?
+
+> 
+> thanks,
+> 
+> greg k-h
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+-- 
+Kind regards,
+Minchan Kim
