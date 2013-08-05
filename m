@@ -1,171 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754539Ab3HEDFy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Aug 2013 23:05:54 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:24041 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754342Ab3HEDFx (ORCPT
+	id S1754564Ab3HEDGZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Aug 2013 23:06:25 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:57033 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754434Ab3HEDGY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Aug 2013 23:05:53 -0400
-Message-ID: <51FF1649.80108@huawei.com>
-Date: Mon, 5 Aug 2013 11:04:41 +0800
-From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Sun, 4 Aug 2013 23:06:24 -0400
+Date: Mon, 5 Aug 2013 11:01:52 +0800
+From: Woody Wu <narkewoody@gmail.com>
+To: anish kumar <anish198519851985@gmail.com>
+Cc: kernelnewbies@kernelnewbies.org, linux-kernel@vger.kernel.org
+Subject: Re: How kernel handle interrupts[AX88796B network controller]
+Message-ID: <20130805030152.GA23131@zuhnb712>
+References: <20121220142745.GB3578@zuhnb712>
+ <CAK7N6vq07CHhhOJTgC=5H5f3Nsi_od=qGJjzu01iL1_3AvTWHg@mail.gmail.com>
+ <20121221153451.GB5530@zuhnb712>
+ <1356125583.1598.111.camel@anish-Inspiron-N5050>
+ <20121222151117.GA16992@zuhnb712>
+ <1357576590.1637.13.camel@anish-Inspiron-N5050>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] tracing: fix wrong output of the __array field type string
-References: <51F36A27.9030709@huawei.com>
-In-Reply-To: <51F36A27.9030709@huawei.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.66.58.241]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1357576590.1637.13.camel@anish-Inspiron-N5050>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/7/27 14:35, zhangwei(Jovi) wrote:
->  A bug was found in events/sched/sched_switch/format.
-> 
-> 	field:char prev_comm[32];       offset:8;       size:16;        signed:1;
-> 
-> and prev_comm field is defined as:
-> 
-> 	__array(        char,   prev_comm,      TASK_COMM_LEN   )
-> 
-> Note TASK_COMM_LEN is 16, but the arrary len is 32 in there.
-> 
-> The root cause is we use global temp buffer event_storage as
-> constant type string in trace_define_field function when
-> define __array field, this will make old field type string
-> flushed by new string in event_storage.
-> 
-> In this patch, type string is checked by core_kernel_data firstly,
-> if it's not core kernel data, then copy the storage.
-> 
-> This patch also kill the global storage event_storage.
-> 
-> events/sched/sched_switch/format changed after patch:
-> 
-> 	field:char prev_comm[16];       offset:8;       size:16;        signed:1;
+On Mon, Jan 07, 2013 at 10:06:30PM +0530, anish kumar wrote:
+> On Sat, 2012-12-22 at 23:11 +0800, Woody Wu wrote:
+> > On Fri, Dec 21, 2012 at 01:33:03PM -0800, anish kumar wrote:
+> > > On Fri, 2012-12-21 at 23:34 +0800, Woody Wu wrote:
+> > > > On Thu, Dec 20, 2012 at 10:05:05AM -0800, anish singh wrote:
+> > > > > On Dec 20, 2012 6:30 AM, "Woody Wu" <narkewoody@gmail.com> wrote:
+> > > > > >
+> > > > > > Hi, List
+> > > > > >
+> > > > > > Where is the Kernel code that handles external interrupts? I want to
+> > > > > > have a look at it but haven't found out where it is.
+> > > > > >
+> > > > > > Actually, I have some basic questions about interrupt handling in Linux.
+> > > > > > 1. After Kernel's ISR received an interrupt, I believe it will invoke a
+> > > > > >    handler defined in a device driver if any. But it should be the
+> > > > > >    device driver's responsibility or kernel ISR's responsibility to
+> > > > > >    clear (or acknowledge) the interrupt?
+> > > > > If the interrupt in question is currently being handled then in
+> > > > > the case of edge triggered interrupt we just mask the interrupt,set it
+> > > > > pending and bail out.Once the interrupt handler completes then we check for
+> > > > > pending interrupt and handle it.In level triggered we don't do that.
+> > > > > Kerenel ISR -this is mixture of core kernel interrupt handling code + your
+> > > > > device driver interrupt handler(if this is chip driver which is supposed to
+> > > > > get one interrupt and is reponsible for calling other interrupt handlers
+> > > > > based on the chip register status then you do explicit masking unmasking
+> > > > > yourself).
+> > > > > If you device driver is a interrupt controller driver then you register
+> > > > > your driver with kernel interrupt handling code and need to write some
+> > > > > callbacks such as .mask,.unmask and so on.This callbacks are called at
+> > > > > appropiate places whenever the interrupt is raised.This interrupt is then
+> > > > > passed to drivers who has requested for this interrupt by calling
+> > > > > request_irq.
+> > > > > >
+> > > > > > 2. My device, an AX88796B network controller, asserting the interrupt
+> > > > > >    line in a level-triggered manner. Now I met problem with the device
+> > > > > that
+> > > > > >    might caused by the CPU interrupt mode is not set as level-triggered by
+> > > > > >    edge trigger.  My CPU is Samsung S3C2410, an ARM920T powered one.  Does
+> > > > > >    anyone know usually where and how should I do this kind of setting?
+> > > > > Just pass the parameter "level triggered" in request_irq in your device
+> > > > > driver.
+> > > > 
+> > > > Hi Sign,
+> > > > 
+> > > > I searched the interrupt.h for the all the defined flags that I can pass
+> > > > to the request_irq, but there is no a flag looks like "level triggered".
+> > > > Would you tell me what you mean the parameter "level triggered"?
+> > > irq_set_irq_type(info->irq, IRQ_TYPE_LEVEL_LOW)
+> > > 
+> > > include/linux/irq.h
+> > > IRQ_TYPE_LEVEL_HIGH          - high level triggered
+> > > IRQ_TYPE_LEVEL_LOW           - low level triggered
+> > 
+> > Thanks. Now I find the function.
+> > 
+> > I searched some code about irq in ARM architecure.  Some other
+> > people talked about do_IRQ() probabaly is wrong for ARM. There is simply
+> > no that function in ARM. Maybe the do_IRQ in x86 is replaced by
+> > handle_IRQ.
+> arch/arm/kernel/entry-armv.S
+> __irq_svc is called by the arm processor which in turn calls irq_handler
+> macro.I think this is the lowest level handler after which linux
+> interrupt handling takes over.
+Only today, I saw this email you replied. Many thanks!
+
+> > 
+> > For the irq_set_irq_type(), do you think what's the correct place to
+> > call it? Inside my device driver or outside the device driver (probably
+> > in the board definition file)? If that should be called inside a device
+> > driver, should it be the driver probe function or in the open function?
+> > After or before the invocation of request_irq()?
+> irq_set_irq_type() should be called by device driver code not by the
+> board file.It should be called in the probe function AFAIK.
+> > 
+> > Sorry for asking too many question.  I found the kernel + device driver
+> > irq handling part still not clear to me.
+> You are welcome to ask as many question as you want.
+> > 
+> > 
+> > > > 
+> > > > Thanks.
+> > > > 
+> > > > > >
+> > > > > >
+> > > > > > Thanks in advance.
+> > > > > >
+> > > > > > --
+> > > > > > woody
+> > > > > > I can't go back to yesterday - because I was a different person then.
+> > > > > >
+> > > > > > _______________________________________________
+> > > > > > Kernelnewbies mailing list
+> > > > > > Kernelnewbies@kernelnewbies.org
+> > > > > > http://lists.kernelnewbies.org/mailman/listinfo/kernelnewbies
+> > > > 
+> > > 
+> > 
 > 
 
-Ping...
-
-
-> Signed-off-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
-> ---
->  include/linux/ftrace_event.h |    2 --
->  include/trace/ftrace.h       |    4 ++--
->  kernel/trace/trace_events.c  |   20 +++++++++++++-------
->  kernel/trace/trace_export.c  |    4 ++--
->  4 files changed, 17 insertions(+), 13 deletions(-)
-> 
-> diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-> index 4372658..bd91f0e 100644
-> --- a/include/linux/ftrace_event.h
-> +++ b/include/linux/ftrace_event.h
-> @@ -324,8 +324,6 @@ enum {
->  };
-> 
->  #define EVENT_STORAGE_SIZE 128
-> -extern struct mutex event_storage_mutex;
-> -extern char event_storage[EVENT_STORAGE_SIZE];
-> 
->  extern int trace_event_raw_init(struct ftrace_event_call *call);
->  extern int trace_define_field(struct ftrace_event_call *call, const char *type,
-> diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
-> index d615f78..c8bd295 100644
-> --- a/include/trace/ftrace.h
-> +++ b/include/trace/ftrace.h
-> @@ -303,7 +303,8 @@ static struct trace_event_functions ftrace_event_type_funcs_##call = {	\
->  #undef __array
->  #define __array(type, item, len)					\
->  	do {								\
-> -		mutex_lock(&event_storage_mutex);			\
-> +		char event_storage[EVENT_STORAGE_SIZE];			\
-> +									\
->  		BUILD_BUG_ON(len > MAX_FILTER_STR_VAL);			\
->  		snprintf(event_storage, sizeof(event_storage),		\
->  			 "%s[%d]", #type, len);				\
-> @@ -311,7 +312,6 @@ static struct trace_event_functions ftrace_event_type_funcs_##call = {	\
->  				 offsetof(typeof(field), item),		\
->  				 sizeof(field.item),			\
->  				 is_signed_type(type), FILTER_OTHER);	\
-> -		mutex_unlock(&event_storage_mutex);			\
->  		if (ret)						\
->  			return ret;					\
->  	} while (0);
-> diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-> index 5f694ce..5827287 100644
-> --- a/kernel/trace/trace_events.c
-> +++ b/kernel/trace/trace_events.c
-> @@ -27,12 +27,6 @@
-> 
->  DEFINE_MUTEX(event_mutex);
-> 
-> -DEFINE_MUTEX(event_storage_mutex);
-> -EXPORT_SYMBOL_GPL(event_storage_mutex);
-> -
-> -char event_storage[EVENT_STORAGE_SIZE];
-> -EXPORT_SYMBOL_GPL(event_storage);
-> -
->  LIST_HEAD(ftrace_events);
->  static LIST_HEAD(ftrace_common_fields);
-> 
-> @@ -100,7 +94,15 @@ static int __trace_define_field(struct list_head *head, const char *type,
->  		goto err;
-> 
->  	field->name = name;
-> -	field->type = type;
-> +
-> +	/* for __array field, type is not a constant string */
-> +	if (!core_kernel_data((unsigned long)type)) {
-> +		field->type = kstrdup(type, GFP_KERNEL);
-> +		if (!field->type)
-> +			goto err;
-> +	} else {
-> +		field->type = type;
-> +	}
-> 
->  	if (filter_type == FILTER_OTHER)
->  		field->filter_type = filter_assign_type(type);
-> @@ -166,6 +168,10 @@ static void trace_destroy_fields(struct ftrace_event_call *call)
->  	head = trace_get_fields(call);
->  	list_for_each_entry_safe(field, next, head, link) {
->  		list_del(&field->link);
-> +
-> +		if (!core_kernel_data((unsigned long)field->type))
-> +			kfree(field->type);
-> +
->  		kmem_cache_free(field_cachep, field);
->  	}
->  }
-> diff --git a/kernel/trace/trace_export.c b/kernel/trace/trace_export.c
-> index d21a746..490eb32 100644
-> --- a/kernel/trace/trace_export.c
-> +++ b/kernel/trace/trace_export.c
-> @@ -95,15 +95,15 @@ static void __always_unused ____ftrace_check_##name(void)		\
->  #undef __array
->  #define __array(type, item, len)					\
->  	do {								\
-> +		char event_storage[EVENT_STORAGE_SIZE];			\
-> +									\
->  		BUILD_BUG_ON(len > MAX_FILTER_STR_VAL);			\
-> -		mutex_lock(&event_storage_mutex);			\
->  		snprintf(event_storage, sizeof(event_storage),		\
->  			 "%s[%d]", #type, len);				\
->  		ret = trace_define_field(event_call, event_storage, #item, \
->  				 offsetof(typeof(field), item),		\
->  				 sizeof(field.item),			\
->  				 is_signed_type(type), filter_type);	\
-> -		mutex_unlock(&event_storage_mutex);			\
->  		if (ret)						\
->  			return ret;					\
->  	} while (0);
-> 
-
-
+-- 
+I can't go back to yesterday - because I was a different person then
