@@ -1,93 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755777Ab3HEXoi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 19:44:38 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:40517 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755100Ab3HEXoh (ORCPT
+	id S1755749Ab3HEXqk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 19:46:40 -0400
+Received: from 70-36-212-23.dsl.static.sonic.net ([70.36.212.23]:57337 "EHLO
+	mail.linuxtoys.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755378Ab3HEXqj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 19:44:37 -0400
-Date: Tue, 6 Aug 2013 00:44:02 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Rob Herring <robherring2@gmail.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH RFC 46/51] ARM: DMA-API: better handing of DMA masks
-	for coherent allocations
-Message-ID: <20130805234402.GZ23006@n2100.arm.linux.org.uk>
-References: <20130801213420.GL23006@n2100.arm.linux.org.uk> <E1V51EE-0006uO-C2@rmk-PC.arm.linux.org.uk> <CAL_JsqJH-T3bBNZvQZF2aWS18n5wfSzCMEi20-5e1RmYEfF3Ow@mail.gmail.com>
+	Mon, 5 Aug 2013 19:46:39 -0400
+Message-ID: <52003958.7080103@linuxtoys.org>
+Date: Mon, 05 Aug 2013 16:46:32 -0700
+From: Bob Smith <bsmith@linuxtoys.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20100101 Firefox/19.0 SeaMonkey/2.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAL_JsqJH-T3bBNZvQZF2aWS18n5wfSzCMEi20-5e1RmYEfF3Ow@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 001/001] CHAR DRIVERS: a simple device to give daemons
+ a /sys-like interface
+References: <51FC5478.40500@linuxtoys.org> <51FC5A97.1090102@linuxtoys.org> <20130803223828.GA14611@kroah.com> <51FECDA6.5070001@linuxtoys.org> <20130804231958.GA25418@kroah.com>
+In-Reply-To: <20130804231958.GA25418@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 05, 2013 at 05:43:47PM -0500, Rob Herring wrote:
-> On Thu, Aug 1, 2013 at 5:20 PM, Russell King
-> <rmk+kernel@arm.linux.org.uk> wrote:
-> > We need to start treating DMA masks as something which is specific to
-> > the bus that the device resides on, otherwise we're going to hit all
-> > sorts of nasty issues with LPAE and 32-bit DMA controllers in >32-bit
-> > systems, where memory is offset from PFN 0.
-> >
-> > In order to start doing this, we convert the DMA mask to a PFN using
-> > the device specific dma_to_pfn() macro.  This is the reverse of the
-> > pfn_to_dma() macro which is used to get the DMA address for the device.
-> >
-> > This gives us a PFN mask, which we can then check against the PFN
-> > limit of the DMA zone.
-> >
-> > Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-> > ---
-> >  arch/arm/mm/dma-mapping.c |   49 ++++++++++++++++++++++++++++++++++++++++----
-> >  arch/arm/mm/init.c        |    2 +
-> >  arch/arm/mm/mm.h          |    2 +
-> >  3 files changed, 48 insertions(+), 5 deletions(-)
-> 
-> I believe you missed handling __dma_alloc. I have a different fix than
-> what Andreas posted. I think DMA zone handling is broken in all cases
-> here. Feel free to combine this in to your patch if you agree.
+Greg
+Thanks for discussing the module with me.  I think I'm now
+closer to distilling it down to its essence.
 
-I was starting to wonder if whether anyone was going to look at those
-patches...
 
-> diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
-> index 7f9b179..3d9bdfb 100644
-> --- a/arch/arm/mm/dma-mapping.c
-> +++ b/arch/arm/mm/dma-mapping.c
-> @@ -651,7 +651,7 @@ static void *__dma_alloc(struct device *dev,
-> size_t size, dma_addr_t *handle,
->         if (!mask)
->                 return NULL;
-> 
-> -       if (mask < 0xffffffffULL)
-> +       if (mask <= (u64)arm_dma_limit)
->                 gfp |= GFP_DMA;
+GOAL:
+The goal of this module is to give user space programs an
+interface similar to that enjoyed by the kernel using procfs
+and sysfs.  All of the following should be possible
+	echo 1 > /proc/sys/net/ipv4/ip_forward  # procfs
+	echo 75 > /dev/motors/left/speed        # proxy
+	echo 5 > /dev/wpa_supplicant/use_channel # proxy
 
-I'm not convinced on that - I think you've missed the entire point in
-this patch series about what address space the 'mask' is in.  'mask' is
-in the device's address space, which may not be the same as the physical
-address space.
+IPC:
+To accomplish the above goal a new IPC is required.  This
+new IPC must have the following characteristics:
+	- bidirectional
+	- writer blocks until reader is present
+	- a writer can cause the reader to close
+	- works with 'echo' and 'cat'
 
-With LPAE, the two can become quite different address spaces with a
-4GB offset between them.  That's why we must stop the old-school
-thinking that DMA addresses and physical addresses are the same thing.
-We also need to stop doing stuff like passing dma_addr_t variables into
-phys_to_virt().  (All those short-cuts are going to break!)
+No existing IPC in Linux has all of these characteristics
+but proxy, the tiny self-contained module submitted, does.
+(Greg, I'm kind of surprised that a shim of an IPC like this
+wasn't added to Linux a long, long time ago.)
 
-arm_dma_limit is the physical address space.  So, comparing the two
-makes no sense what so ever.
+USE CASES:
+Proxy should be added to the kernel because it can greatly
+improve Linux in two significant ways.
 
-However, the use of arm_dma_limit at the top of get_coherent_dma_mask()
-is a bug, I think that should just become something like a 24-bit
-constant mask, so the NULL device gets GFP_DMA allocations like they
-do on x86 for that case.
+USE CASE #1: User space device drivers
+A viable approach to user space device drivers would make
+life easier for both programmers and kernel maintainers.
+The latter because now a maintainer can now reasonably say
+"go use proxy and a user space driver".   Some of the SPI
+and I2C drivers might have been easier to do with proxy.
+   Programmers doing device drivers might have an easier time
+since it will be easier to prototype and debug a system in
+user space.  SPI and I2C driver writers in particular may
+appreciate the ability to build a working system without
+having to go through the sometimes tedious process of a
+kernel submission.
+   Finally, some device drivers that are not possible today
+would become possible.  In my case I have a USB-serial link
+to a robot controller and so need a user space daemon to
+terminate the serial line.  It is only with proxy that I
+can hide the details of this and give users a nice /dev
+view of the robot.
 
-I also think that 'mask' should be converted to a pfn at the location
-you point out before comparing with the amount of memory in the DMA
-zone.
+USE CASE #2:  End the madness of language bindings
+Over 10 years ago kernel developers had the sense to escape
+(some) ioctl language bindings with the introduction of
+procfs.   How is it that in all this time we haven't done
+the same thing for all the daemons that populate Linux?
+No, today daemon writers are still being forced to open a
+socket, define and document a protocol over it, and then
+write a library for that protocol for all the popular
+languages.   And we're not talking about just one or two
+languages.  No, now it more like C, Java, Python, PHP, and
+soon node.js.  Next week some new language will wander off
+the street and need a yet another binding.  Eeeech!
+    Let's let daemons use the same kind of interface that the
+kernel has with /sys and /proc.  With proxy, daemon coders
+could define an ASCII interface in exactly the same way the
+kernel has.  The inclusion of 'echo' and 'cat' above is kind
+of a litmus test.  If a daemon interface works with cat and
+echo, it will _NEVER_ need dedicated per-language bindings.
+
+
+
+thanks
+Bob Smith
+
+
+
