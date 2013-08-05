@@ -1,53 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754627Ab3HEQRM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 12:17:12 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:52925 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753157Ab3HEQRJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 12:17:09 -0400
-Message-ID: <1375719427.3133.31.camel@joe-AO722>
-Subject: Re: [PATCH] trivial: adjust code alignment
-From: Joe Perches <joe@perches.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Julia Lawall <Julia.Lawall@lip6.fr>, trivial@kernel.org,
-        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Mon, 05 Aug 2013 09:17:07 -0700
-In-Reply-To: <20130805160645.GI5051@mwanda>
-References: <1375714059-29567-1-git-send-email-Julia.Lawall@lip6.fr>
-	 <1375714059-29567-5-git-send-email-Julia.Lawall@lip6.fr>
-	 <20130805160645.GI5051@mwanda>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754663Ab3HEQRW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 12:17:22 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:39709 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753253Ab3HEQRT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 12:17:19 -0400
+From: Joel Fernandes <joelf@ti.com>
+To: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Sricharan R <r.sricharan@ti.com>, Rajendra Nayak <rnayak@ti.com>,
+        Lokesh Vutla <lokeshvutla@ti.com>, Matt Porter <matt@ohporter.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
+        Mark Brown <broonie@linaro.org>,
+        Benoit Cousson <benoit.cousson@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>, Balaji TK <balajitk@ti.com>,
+        Gururaja Hebbar <gururaja.hebbar@ti.com>, Chris Ball <cjb@laptop.org>,
+        Jason Kridner <jkridner@beagleboard.org>
+CC: Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Joel Fernandes <joelf@ti.com>
+Subject: [PATCH v3 12/12] dma: edma: Return if nothing left todo in edma_execute
+Date: Mon, 5 Aug 2013 11:14:57 -0500
+Message-ID: <1375719297-12871-13-git-send-email-joelf@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1375719297-12871-1-git-send-email-joelf@ti.com>
+References: <1375719297-12871-1-git-send-email-joelf@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-08-05 at 19:06 +0300, Dan Carpenter wrote:
-> On Mon, Aug 05, 2013 at 04:47:39PM +0200, Julia Lawall wrote:
-> > diff --git a/drivers/media/i2c/ov7670.c b/drivers/media/i2c/ov7670.c
-[]
-> > @@ -1369,8 +1369,8 @@ static int ov7670_s_exp(struct v4l2_subdev *sd, int value)
-> >  	unsigned char com1, com8, aech, aechh;
-> >  
-> >  	ret = ov7670_read(sd, REG_COM1, &com1) +
-> > -		ov7670_read(sd, REG_COM8, &com8);
-> > -		ov7670_read(sd, REG_AECHH, &aechh);
-> > +	ov7670_read(sd, REG_COM8, &com8);
-> > +	ov7670_read(sd, REG_AECHH, &aechh);
-> >  	if (ret)
-> >  		return ret;
-> >  
-> 
-> The new indenting isn't correct here and anyway the intent was to
-> combine all the error codes together and return them as an error
-> code jumble.  I'm not a fan of error code jumbles, probably the
-> right thing is to check each function call or, barring that, to
-> return -EIO.
+It is possible edma_execute is called even when all the SG
+elements have been submitted for transmission, we add a check
+for the same and avoid executing the rest of the function.
 
-ov7670_read via i2c_transfer can return a positive # too.
-Perhaps all of these should be individually tested for "< 0".
+Signed-off-by: Joel Fernandes <joelf@ti.com>
+---
+ drivers/dma/edma.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
+diff --git a/drivers/dma/edma.c b/drivers/dma/edma.c
+index eca1b47..62987fc 100644
+--- a/drivers/dma/edma.c
++++ b/drivers/dma/edma.c
+@@ -168,6 +168,9 @@ static void edma_execute(struct edma_chan *echan)
+ 	total_left = edesc->pset_nr - edesc->total_processed;
+ 	total_link_set = total_left > MAX_NR_LS ? MAX_NR_LS : total_left;
+ 
++	if (!total_left)
++		return;
++
+ 	/* First time, setup 2 cyclically linked sets, each containing half
+ 	   the slots allocated for this channel */
+ 	if (edesc->total_processed == 0) {
+-- 
+1.7.9.5
 
