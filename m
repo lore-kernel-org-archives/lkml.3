@@ -1,104 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754580Ab3HEGaV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 02:30:21 -0400
-Received: from li226-30.members.linode.com ([173.255.216.30]:59978 "EHLO
-	mail.cooperteam.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752566Ab3HEGaT (ORCPT
+	id S1754709Ab3HEGaf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 02:30:35 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:19056 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754217Ab3HEGaU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 02:30:19 -0400
-X-Greylist: delayed 486 seconds by postgrey-1.27 at vger.kernel.org; Mon, 05 Aug 2013 02:30:19 EDT
-From: Christopher James Halse Rogers 
-	<christopher.halse.rogers@canonical.com>
-To: linux-kernel@vger.kernel.org
-Cc: linaro-mm-sig@lists.linaro.org, dri-devel@lists.freedesktop.org,
-        linux-media@vger.kernel.org, linux-arch@vger.kernel.org,
-        robclark@gmail.com, maarten.lankhorst@canonical.com,
-        sumit.semwal@linaro.org,
-        Christopher James Halse Rogers 
-	<christopher.halse.rogers@canonical.com>
-Subject: [PATCH] dma-buf: Expose buffer size to userspace
-Date: Mon,  5 Aug 2013 16:22:00 +1000
-Message-Id: <1375683720-4748-1-git-send-email-christopher.halse.rogers@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
+	Mon, 5 Aug 2013 02:30:20 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19MuCwOtKbH/s6XdrSQ8UnU
+Date: Sun, 4 Aug 2013 23:30:13 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Greg KH <greg@kroah.com>, ksummit-2013-discuss@lists.linuxfoundation.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [Ksummit-2013-discuss] [ATTEND] [ARM ATTEND] kernel data bloat
+ and how to avoid it
+Message-ID: <20130805063013.GL7656@atomide.com>
+References: <20130731073802.GT7656@atomide.com>
+ <20130731123351.GA30474@kroah.com>
+ <20130802075352.GY7656@atomide.com>
+ <20130802124130.GI7656@atomide.com>
+ <20130802132419.GO23006@n2100.arm.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130802132419.GO23006@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Each dma-buf has an associated size and it's reasonable for userspace
-to want to know what it is.
+* Russell King - ARM Linux <linux@arm.linux.org.uk> [130802 06:31]:
+> On Fri, Aug 02, 2013 at 05:41:31AM -0700, Tony Lindgren wrote:
+> > Oh and thinking about it a bit more, this issue is mostly with the
+> > device drivers implementing frameworks, not the device drivers
+> > using the frameworks. Things like clocks, regulators, muxes etc where
+> > an almost similar instance is repeated tens or hundreds of times for
+> > each SoC.
+> 
+> That is where it helps to have a strong maintainer for a subsystem who
+> has the guts to refuse to accept stuff which is similar to existing
+> implementations and insist that existing implementations are either
+> adapted or reused.
+> 
+> It's all very well someone coming along and writing a "generic" set of
+> implementations (like tglx did for the IRQ subsystem) but unless there's
+> a motivation for people to use the generic stuff (such as... you won't
+> get your code in if you don't use the provided generics unless you can
+> provide a very good reasoned argument) then people are just going to
+> write their own code time and time again.
+> 
+> It's just like how the clocksources have gone.  We now have multiple
+> implementations of how to read a counter which ticks at a specific
+> rate.  You wouldn't think that I wrote drivers/clocksource/mmio.c which
+> can handle all of these simple 32-bit/16-bit up/down counter cases.
+> Again, the problem is there is no strong reviewer there who looks over
+> every addition and says "no, use the generic stuff".
+> 
+> That's the basic problem here: the review, and people saying "no" to
+> new stuff doing the same as generic stuff.
 
-Since userspace already has an fd, expose the size using the
-size = lseek(fd, SEEK_END, 0); lseek(fd, SEEK_CUR, 0);
-idiom.
+Right, but to make all that easier I was thinking that we can possibly
+provide some generic guidelines and tools for maintainers to avoid some
+of these issues.
 
-Signed-off-by: Christopher James Halse Rogers <christopher.halse.rogers@canonical.com>
----
+The data issues should be pretty easy to spot based on the size of the
+driver, or looking at the object file with size command for the data to
+text ratio etc.
 
-I've run into a point in the radeon DRM userspace where I need the
-size of a dma-buf. I could add a radeon-specific mechanism to get that,
-but this seems like something that would be more generally useful.
+Regards,
 
-I'm not entirely sure about supporting both SEEK_END and SEEK_CUR; this
-is somewhat of an abuse of lseek, as seeking obviously doesn't make sense.
-It's the obivous idiom for getting the size of what's on the other end of a
-file descriptor, though.
-
-I didn't notice anywhere to document this; Documentation/dma-buf-api didn't
-seem like the right place. Is there somewhere I've overlooked?
-
- drivers/base/dma-buf.c | 28 ++++++++++++++++++++++++++++
- 1 file changed, 28 insertions(+)
-
-diff --git a/drivers/base/dma-buf.c b/drivers/base/dma-buf.c
-index 6687ba7..c33a857 100644
---- a/drivers/base/dma-buf.c
-+++ b/drivers/base/dma-buf.c
-@@ -77,9 +77,36 @@ static int dma_buf_mmap_internal(struct file *file, struct vm_area_struct *vma)
- 	return dmabuf->ops->mmap(dmabuf, vma);
- }
- 
-+static loff_t dma_buf_llseek(struct file *file, loff_t offset, int whence)
-+{
-+	struct dma_buf *dmabuf;
-+	loff_t base;
-+
-+	if (!is_dma_buf_file(file))
-+		return -EBADF;
-+
-+	dmabuf = file->private_data;
-+
-+	/* only support discovering the end of the buffer,
-+	   but also allow SEEK_SET to maintain the idiomatic
-+	   SEEK_END(0), SEEK_CUR(0) pattern */
-+	if (whence == SEEK_END)
-+		base = dmabuf->size;
-+	else if (whence == SEEK_SET)
-+		base = 0;
-+	else
-+		return -EINVAL;
-+
-+	if (offset != 0)
-+		return -EINVAL;
-+
-+	return base + offset;
-+}
-+
- static const struct file_operations dma_buf_fops = {
- 	.release	= dma_buf_release,
- 	.mmap		= dma_buf_mmap_internal,
-+	.llseek		= dma_buf_llseek,
- };
- 
- /*
-@@ -133,6 +160,7 @@ struct dma_buf *dma_buf_export_named(void *priv, const struct dma_buf_ops *ops,
- 	dmabuf->exp_name = exp_name;
- 
- 	file = anon_inode_getfile("dmabuf", &dma_buf_fops, dmabuf, flags);
-+	file->f_mode |= FMODE_LSEEK;
- 
- 	dmabuf->file = file;
- 
--- 
-1.8.3.2
-
+Tony
