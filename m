@@ -1,139 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754104Ab3HEAtl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Aug 2013 20:49:41 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:59385 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754047Ab3HEAtj (ORCPT
+	id S1754120Ab3HEBCO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Aug 2013 21:02:14 -0400
+Received: from outbound-mail03.westnet.com.au ([203.10.1.244]:2329 "EHLO
+	outbound-mail03.westnet.com.au" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754066Ab3HEBCM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Aug 2013 20:49:39 -0400
-X-AuditID: cbfee690-b7f6f6d00000740c-e4-51fef6a1181c
-Message-id: <51FEF6A0.4050901@samsung.com>
-Date: Mon, 05 Aug 2013 09:49:36 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Felipe Balbi <balbi@ti.com>, linux-kernel <linux-kernel@vger.kernel.org>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>
-Subject: [GIT PULL] extcon next for 3.12
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprFIsWRmVeSWpSXmKPExsWyRsSkRHfht3+BBncOS1gcvF9vcf3Lc1aL
-	5sXr2SzONr1ht7i8aw6bxe3GFWwObB77565h9+jbsorR4/iN7UwenzfJBbBEcdmkpOZklqUW
-	6dslcGX8bXvDXLBCvqL9Cn8D4z/xLkZODgkBE4nJ93ayQdhiEhfurQezhQSWMkrsO+8IU3O9
-	ZzNjFyMXUHw6o8TxNcugnFeMEvd+bmQBqeIV0JKY9OsLUIKDg0VAVWL6jxiQMBtQeP+LG2BD
-	RQXCJFZOvwJVLijxY/I9MFtEQEPi5dFbLCAzmQVOMUrcnv6KCSQhDJS4/H8XM4jNLKAjsb91
-	GhuELS+xec1bZpAGCYFl7BI/LixhB0mwCAhIfJt8iAXkCAkBWYlNB5ghPpCUOLjiBssERpFZ
-	SHbPQjJ2FpKxCxiZVzGKphYkFxQnpReZ6BUn5haX5qXrJefnbmIExsvpf88m7GC8d8D6EGMy
-	0MqJzFKiyfnAeMsriTc0NjOyMDUxNTYytzQjTVhJnFe9xTpQSCA9sSQ1OzW1ILUovqg0J7X4
-	ECMTB6dUA2Owfty2m39l/h456Tav2YXzq4jNxGSpV67lT0IVpplZXdbzvuT2YM8Pgz/i/kJO
-	84s8+BZUJptvzXG89MX6W9rkw1miKhF8auY32qI6boU9EancIbL0cFl/mdf3qw2vIzPmpOaW
-	cDDPaRZYs/boEgefCzKTrB/uYjxbvfrVU97K4OCzk9XOvldiKc5INNRiLipOBABDQCb3rQIA	AA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrBIsWRmVeSWpSXmKPExsVy+t9jQd2F3/4FGky+J2Bx8H69xfUvz1kt
-	mhevZ7M42/SG3eLyrjlsFrcbV7A5sHnsn7uG3aNvyypGj+M3tjN5fN4kF8AS1cBok5GamJJa
-	pJCal5yfkpmXbqvkHRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIToOuWmQO0XEmhLDGnFCgUkFhc
-	rKRvh2lCaIibrgVMY4Sub0gQXI+RARpIWMOY8bftDXPBCvmK9iv8DYz/xLsYOTkkBEwkrvds
-	ZoSwxSQu3FvP1sXIxSEkMJ1R4viaZYwQzitGiXs/N7KAVPEKaElM+vUFKMHBwSKgKjH9RwxI
-	mA0ovP/FDTYQW1QgTGLl9CtQ5YISPybfA7NFBDQkXh69xQIyk1ngFKPE7emvmEASwkCJy/93
-	MYPYzAI6Evtbp7FB2PISm9e8ZZ7AyDcLyaxZSMpmISlbwMi8ilE0tSC5oDgpPddQrzgxt7g0
-	L10vOT93EyM4Hp9J7WBc2WBxiFGAg1GJh3dH/d9AIdbEsuLK3EOMEhzMSiK87P1AId6UxMqq
-	1KL8+KLSnNTiQ4zJQJ9OZJYSTc4Hpoq8knhDYxMzI0sjc0MLI2Nz0oSVxHkPtFoHCgmkJ5ak
-	ZqemFqQWwWxh4uCUamBs+7Vm86eUyYkb+Qx99j3y+XtxMxP7ZLYzZ0us1uasvvH6p+GzM46b
-	lX0au/mznH/Mqq19tn/ivhllN6Ur9dNbTzTckpXt0q07VTcvmmXG05rGludHhP8cnmmowZE5
-	aWvzw+SWTcf9Khujoot/8pkqnS6ONTP9NLGuSe7g7K2HfO/unGpwxmyJEktxRqKhFnNRcSIA
-	rXwAoQsDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Sun, 4 Aug 2013 21:02:12 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApQBAPv2/lGVhxBY/2dsb2JhbAANTYcbvASBM4MYAQEBBCMPAUUBEAsSBgICBRYEBwICCQMCAQIBDygOBg0BBQIBAYd5AQOjcnSHdg2IXoEoi3+BKIFKB4JmgScDlXeMDIIFhwWBS4FW
+X-IronPort-AV: E=Sophos;i="4.89,814,1367942400"; 
+   d="scan'208";a="352142821"
+X-WN-REMOTEIP: 149.135.16.88
+X-WN-ENVELOPESENDER: gregungerer@westnet.com.au
+X-WN-MID: 352142821
+X-WN-SMTPAUTHID: gregungerer
+Message-ID: <51FEF6D2.2090009@westnet.com.au>
+Date: Mon, 05 Aug 2013 10:50:26 +1000
+From: Greg Ungerer <gregungerer@westnet.com.au>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Michael Schmitz <schmitzmic@gmail.com>, Chen Gang <gang.chen@asianux.com>,
+        linux-m68k <linux-m68k@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        uClinux development list <uclinux-dev@uclinux.org>
+Subject: Re: [PATCH] arch: m68k: include: asm: define 'VM_DATA_DEFAULT_FLAGS'
+ no matter whether has 'NOMMU' or not.
+References: <51C548E2.1060104@asianux.com> <51C54A9B.9060009@asianux.com> <51CE9442.2020105@gmail.com> <CAMuHMdVAQJWDem0=uMnH7iVrckxPJ9cPn=8pYOusNov+wW5VeA@mail.gmail.com>
+In-Reply-To: <CAMuHMdVAQJWDem0=uMnH7iVrckxPJ9cPn=8pYOusNov+wW5VeA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+Hi Geert,
 
-This is extcon-next pull request for 3.12. I add detailed description
-of this pull request on below. Please pull extcon with following updates.
+On 29/06/13 18:26, Geert Uytterhoeven wrote:
+> On Sat, Jun 29, 2013 at 10:01 AM, Michael Schmitz <schmitzmic@gmail.com> wrote:
+>>> The same .config file, also report the compiling error below:
+>>>
+>>> drivers/i2c/busses/i2c-ocores.c:81:2: error: implicit declaration of
+>>> function ‘iowrite8’ [-Werror=implicit-function-declaration]
+>>> drivers/i2c/busses/i2c-ocores.c:86:2: error: implicit declaration of
+>>> function ‘iowrite16’ [-Werror=implicit-function-declaration]
+>>> drivers/i2c/busses/i2c-ocores.c:91:2: error: implicit declaration of
+>>> function ‘iowrite32’ [-Werror=implicit-function-declaration]
+>>> drivers/i2c/busses/i2c-ocores.c:96:2: error: implicit declaration of
+>>> function ‘ioread8’ [-Werror=implicit-function-declaration]
+>>> drivers/i2c/busses/i2c-ocores.c:101:2: error: implicit declaration of
+>>> function ‘ioread16’ [-Werror=implicit-function-declaration]
+>>> drivers/i2c/busses/i2c-ocores.c:106:2: error: implicit declaration of
+>>> function ‘ioread32’ [-Werror=implicit-function-declaration]
+>>>
+>>> Excuse me, I am not quite familiar with the related hardware and m68k,
+>>> I guess under m68k architecture, we need not this drivers, is it correct ?
+> 
+> Until someone synthesizes the OpenCores i2c core together with the
+> OpenCores 68000 core (they seem to have one), and tries to run uClinux
+> on it...
+> 
+>> That would be correct, yes. Perhaps add appropriate dependencies in
+>> drivers/i2c/Kconfig to allow building I2C drivers
+>> only on hardware that supports it?
+> 
+> We still want it for compile-coverage.
+> 
+> Now, the issue is that m68knommu doesn't implement ioread8() and
+> friends, so I'm adding the uClinux list.
 
-Best Regards,
-Chanwoo Choi
+I think this is relatively strait forward to fix. And we end up
+making m68knommu targets consistent with the MMU m68k targets in
+the process.
 
-The following changes since commit 5ae90d8e467e625e447000cb4335c4db973b1095:
+Regards
+Greg
 
-  Linux 3.11-rc3 (2013-07-28 20:53:33 -0700)
 
-are available in the git repository at:
 
- git://git.kernel.org/pub/scm/linux/kernel/git/chanwoo/extcon.git tags/extcon-next-for-3.12
+[PATCH] m68knommu: user generic iomap to support ioread*/iowrite*
 
-for you to fetch changes up to 1a82e81e0ede6955684397ffbc0964191ef13cba:
+There is no reason we cannot use the generic iomap support to give us
+the ioread* and iowrite* family of IO access functions. The m68k arch with
+MMU enabled does, so this makes us consistent for all m68k now.
 
-  extcon: adc-jack: Use power efficient workqueue (2013-08-05 08:53:34 +0900)
+Some potentially valid drivers will fail to compile without these,
+for example:
 
-----------------------------------------------------------------
-Update extcon for 3.12
+drivers/i2c/busses/i2c-ocores.c:81:2: error: implicit declaration of
+function ‘iowrite8’ [-Werror=implicit-function-declaration]
+drivers/i2c/busses/i2c-ocores.c:86:2: error: implicit declaration of
+function ‘iowrite16’ [-Werror=implicit-function-declaration]
+drivers/i2c/busses/i2c-ocores.c:91:2: error: implicit declaration of
+function ‘iowrite32’ [-Werror=implicit-function-declaration]
+drivers/i2c/busses/i2c-ocores.c:96:2: error: implicit declaration of
+function ‘ioread8’ [-Werror=implicit-function-declaration]
+drivers/i2c/busses/i2c-ocores.c:101:2: error: implicit declaration of
+function ‘ioread16’ [-Werror=implicit-function-declaration]
+drivers/i2c/busses/i2c-ocores.c:106:2: error: implicit declaration of
+function ‘ioread32’ [-Werror=implicit-function-declaration]
 
-This patchset add new file for OF helper API and modify small fix of extcon-palmas
-driver. Also, extcon core dirver use power_efficient_wq instead of system_wq.
+Signed-off-by: Greg Ungerer <gerg@uclinux.org>
+---
+ arch/m68k/Kconfig             | 2 +-
+ arch/m68k/include/asm/io_no.h | 1 +
+ 2 files changed, 2 insertions(+), 1 deletion(-)
 
-Detailed description for patchset:
-1. Add new file for OF helper API
-- Add OF(OpenFirmware) Helper API which is of_extcon_get_extcon_device().
-  This helper API get the extcon device name on extcon consumer device.
-- Add usage case about OF helper API of extcon in dwc3-omap.c. dwc3-omap driver
-  use extcon subsystem to detect the state of USB/USB-Host cable so dwc3-omap
-  call of_extcon_get_extcon_device() to need extcon device name.
+diff --git a/arch/m68k/Kconfig b/arch/m68k/Kconfig
+index 821170e..c3cda41 100644
+--- a/arch/m68k/Kconfig
++++ b/arch/m68k/Kconfig
+@@ -11,6 +11,7 @@ config M68K
+ 	select VIRT_TO_BUS
+ 	select ARCH_HAVE_NMI_SAFE_CMPXCHG if RMW_INSNS
+ 	select GENERIC_CPU_DEVICES
++	select GENERIC_IOMAP
+ 	select GENERIC_STRNCPY_FROM_USER if MMU
+ 	select GENERIC_STRNLEN_USER if MMU
+ 	select FPU if MMU
+@@ -72,7 +73,6 @@ source "kernel/Kconfig.freezer"
+ config MMU
+ 	bool "MMU-based Paged Memory Management Support"
+ 	default y
+-	select GENERIC_IOMAP
+ 	help
+ 	  Select if you want MMU-based virtualised addressing space
+ 	  support by paged memory management. If unsure, say 'Y'.
+diff --git a/arch/m68k/include/asm/io_no.h b/arch/m68k/include/asm/io_no.h
+index 353bf75..e153478 100644
+--- a/arch/m68k/include/asm/io_no.h
++++ b/arch/m68k/include/asm/io_no.h
+@@ -4,6 +4,7 @@
+ #ifdef __KERNEL__
+ 
+ #include <asm/virtconvert.h>
++#include <asm-generic/iomap.h>
+ 
+ /*
+  * These are for ISA/PCI shared memory _only_ and should never be used
 
-2. Modify extcon-palmas.c driver
-- Provide option to select whether interrupt is used or not
-- Support suspend/resume for palmas driver
-- Update palmas interrupt register to detect ID pin
-- Code clean to remove unused data
-- Rename filename for device tree binding (extcon-twl.txt -> extcon-palmas.txt)
-
-3. Use power_effcient_wq on extcon core driver/extcon-arizona instead of system_wq
-- extcon core driver(extcon-gpio.c/extcon-adc-jack.c) use power_effcient_wq
-instead of system_wq.
-
-----------------------------------------------------------------
-Kishon Vijay Abraham I (3):
-      extcon: Add an API to get extcon device from dt node
-      usb: dwc3: use extcon fwrk to receive connect/disconnect
-      extcon: palmas: remove assigning "edev.name" to palmas
-
-Laxman Dewangan (6):
-      extcon: palmas: rename device tree binding matching with file name
-      extcon: palmas: devicetree: remove non-require property details
-      extcon: palmas: remove unused member from palams_usb structure
-      extcon: palmas: enable ID_GND and ID_FLOAT detection always
-      extcon: palams: add support for suspend/resume
-      extcon: palmas: Option to disable ID/VBUS detection based on platform
-
-Mark Brown (3):
-      extcon: arizona: Use power efficient workqueue
-      extcon: gpio: Use power efficient workqueue for debounce
-      extcon: adc-jack: Use power efficient workqueue
-
- .../extcon/{extcon-twl.txt => extcon-palmas.txt}   |   6 +-
- Documentation/devicetree/bindings/usb/omap-usb.txt |   5 +
- drivers/extcon/Kconfig                             |   4 +
- drivers/extcon/Makefile                            |   2 +
- drivers/extcon/extcon-adc-jack.c                   |   3 +-
- drivers/extcon/extcon-arizona.c                    |  25 ++--
- drivers/extcon/extcon-class.c                      |   3 +-
- drivers/extcon/extcon-gpio.c                       |   2 +-
- drivers/extcon/extcon-palmas.c                     | 134 ++++++++++++++-------
- drivers/extcon/of_extcon.c                         |  64 ++++++++++
- drivers/usb/dwc3/Kconfig                           |   1 +
- drivers/usb/dwc3/dwc3-omap.c                       | 125 ++++++++++++++++---
- include/linux/extcon/of_extcon.h                   |  31 +++++
- include/linux/mfd/palmas.h                         |   8 +-
- include/linux/usb/dwc3-omap.h                      |  30 -----
- 15 files changed, 329 insertions(+), 114 deletions(-)
- rename Documentation/devicetree/bindings/extcon/{extcon-twl.txt => extcon-palmas.txt} (67%)
- create mode 100644 drivers/extcon/of_extcon.c
- create mode 100644 include/linux/extcon/of_extcon.h
- delete mode 100644 include/linux/usb/dwc3-omap.h
