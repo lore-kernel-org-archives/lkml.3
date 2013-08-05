@@ -1,70 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754410Ab3HETBE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 15:01:04 -0400
-Received: from mail-ve0-f180.google.com ([209.85.128.180]:57160 "EHLO
-	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752968Ab3HETBB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 15:01:01 -0400
+	id S1752693Ab3HETCh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 15:02:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22603 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753284Ab3HETCg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 15:02:36 -0400
+Date: Mon, 5 Aug 2013 20:57:12 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Felipe Contreras <felipe.contreras@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 3.11-rc4
+Message-ID: <20130805185712.GA12225@redhat.com>
+References: <CA+55aFwTX47vLvZckozZub0rUEo-aCBe7weqe=4mfQGfrW7NUA@mail.gmail.com> <CAMP44s2bOniz4qx5y9h4ppHRUjiPVGL+igSwO5NUJd4zpObxFw@mail.gmail.com> <20130805184625.GA11633@redhat.com> <CA+55aFzWcOXfiJGzF1sVgZFaM_hRSF25P2kC2Ga_b0177jfjYA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <51FFF430.1060701@linux.intel.com>
-References: <1375721715.22073.80.camel@gandalf.local.home>
-	<CA+55aFw_o=D-j_SRn=Y4LhHm-tEyuP1Je5ZHVTYxbVyLyDcLEg@mail.gmail.com>
-	<1375725328.22073.101.camel@gandalf.local.home>
-	<51FFEC56.6040206@linux.intel.com>
-	<1375727010.22073.110.camel@gandalf.local.home>
-	<51FFEEEC.5060902@linux.intel.com>
-	<1375728583.22073.118.camel@gandalf.local.home>
-	<51FFF430.1060701@linux.intel.com>
-Date: Mon, 5 Aug 2013 12:01:01 -0700
-X-Google-Sender-Auth: qqlx7b2eEBvniYNhlVOV75_MHsE
-Message-ID: <CA+55aFwz6cpsaWZ-19h91_CNGB5C3d1bNOv7woxetXOTyJ_CRw@mail.gmail.com>
-Subject: Re: [RFC] gcc feature request: Moving blocks into sections
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        gcc <gcc@gcc.gnu.org>, Ingo Molnar <mingo@kernel.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        David Daney <ddaney.cavm@gmail.com>,
-        Behan Webster <behanw@converseincode.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Herbert Xu <herbert@gondor.hengli.com.au>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFzWcOXfiJGzF1sVgZFaM_hRSF25P2kC2Ga_b0177jfjYA@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 5, 2013 at 11:51 AM, H. Peter Anvin <hpa@linux.intel.com> wrote:
->>
->> Also, how would you pass the parameters? Every tracepoint has its own
->> parameters to pass to it. How would a trap know what where to get "prev"
->> and "next"?
+On 08/05, Linus Torvalds wrote:
 >
-> How do you do that now?
+> On Mon, Aug 5, 2013 at 11:46 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> >
+> > Heh. I pulled wine-git.
+> >
+> > set_thread_context() does a lot of PTRACE_POKEUSER requests and then
+> > it calls resume_after_ptrace() which simply does PTRACE_DETACH.
+> >
+> > I'll recheck tomorrow, but it really looks as if it _wants_ to leak
+> > the debug registers after detach. And more, it does PTRACE_ATTACH
+> > only to set these regs.
+> >
+> > And this is exactly what fab840f tries to prevent.
 >
-> You have to do an IP lookup to find out what you are doing.
+> Ok, so I guess it's effectively the ABI, and we should just make the
+> rule be that "if you don't want stale breakpoints, then remove the
+> breakpoints when you detach".
 
-No, he just generates the code for the call and then uses a static_key
-to jump to it. So normally it's all out-of-line, and the only thing in
-the hot-path is that 5-byte nop (which gets turned into a 5-byte jump
-when the tracing key is enabled)
+I'm afraid yes.
 
-Works fine, but the normally unused stubs end up mixing in the normal
-code segment. Which I actually think is fine, but right now we don't
-get the short-jump advantage from it (and there is likely some I$
-disadvantage from just fragmentation of the code).
+> And thus reverting it the right thing to do. Agreed?
 
-With two-byte jumps, you'd still get the I$ fragmentation (the
-argument generation and the call and the branch back would all be in
-the same code segment as the hot code), but that would be offset by
-the fact that at least the hot code itself could use a short jump when
-possible (ie a 2-byte nop rather than a 5-byte one).
+Yes, yes, sure. I'll write the changelog and send git-revert tomorrow,
+unless you do it yourself.
 
-Don't know which way it would go performance-wise. But it shouldn't
-need gcc changes, it just needs the static key branch/nop rewriting to
-be able to handle both sizes. I couldn't tell why Steven's series to
-do that was so complex, though - I only glanced through the patches.
+Oleg.
 
-            Linus
