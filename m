@@ -1,44 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754172Ab3HEKFv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 06:05:51 -0400
-Received: from mga11.intel.com ([192.55.52.93]:29362 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751345Ab3HEKFu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 06:05:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,817,1367996400"; 
-   d="scan'208";a="381381818"
-Message-ID: <1375697471.14869.424.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH] mtd: jedec_probe: fix LH28F640BF definition
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Andrea Adami <andrea.adami@gmail.com>
-Cc: linux-mtd@lists.infradead.org, David Woodhouse <dwmw2@infradead.org>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
-Date: Mon, 05 Aug 2013 13:11:11 +0300
-In-Reply-To: <1374361653-3004-1-git-send-email-andrea.adami@gmail.com>
-References: <1374361653-3004-1-git-send-email-andrea.adami@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754299Ab3HEKMw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 06:12:52 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:53759 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751978Ab3HEKMv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 06:12:51 -0400
+Date: Mon, 5 Aug 2013 11:12:14 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Jonas Jensen <jonas.jensen@gmail.com>,
+        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "wim@iguana.be" <wim@iguana.be>, "arm@kernel.org" <arm@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v7] watchdog: Add MOXA ART watchdog driver
+Message-ID: <20130805101214.GB7594@e106331-lin.cambridge.arm.com>
+References: <1375098093-8975-1-git-send-email-jonas.jensen@gmail.com>
+ <1375101228-10930-1-git-send-email-jonas.jensen@gmail.com>
+ <20130802114159.GK2884@e106331-lin.cambridge.arm.com>
+ <51FBE0D5.3070007@roeck-us.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51FBE0D5.3070007@roeck-us.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2013-07-21 at 01:07 +0200, Andrea Adami wrote:
-> Zaurus 5500 contains 2 LH28F640BFHE-PTTL90 (64M 4Mx16) and
-> the LH28F640BFHE-PTTL90.pdf datasheet available on the net shows
-> the exact erasesize and the OTP support.
-> At the moment only jedec_probe can discover the chip and
-> the NOR is mounted read only probably because of wrong vpp.
-> 
-> Signed-off-by: Andrea Adami <andrea.adami@gmail.com>
+On Fri, Aug 02, 2013 at 05:39:49PM +0100, Guenter Roeck wrote:
+> On 08/02/2013 04:41 AM, Mark Rutland wrote:
+> > On Mon, Jul 29, 2013 at 01:33:48PM +0100, Jonas Jensen wrote:
+> >> Add watchdog driver for MOXA ART SoCs.
+> >>
+> [ ... ]
+> >> +
+> >> +	err = watchdog_register_device(&moxart_wdt->dev);
+> >> +	if (unlikely(err))
+> >> +		return err;
+> >
+> > This is a probe path. Is the use of unlikely() really appropriate here?
+> > I suspect it doesn't make any appreciable difference, and should go.
+> >
+> Just wondering, for my education - why ? Is there s rule that unlikely()
+> shall not be used in the probe path ? If so, I would like to know it and
+> its reasoning to be able to apply it to my own reviews.
 
-Pushed to l2-mtd.git, thanks!
+I thought there had been some discussion on LKML about likely and
+unlikely being abused, but in some quick searching I couldn't find the
+thread I remembered. I found a comment from Steve Rostedt [1], but
+that's not necessarily canonical.
 
--- 
-Best Regards,
-Artem Bityutskiy
+As I understand it, likely() and unlikely() should be used to tell the
+compiler to optimise for very specific cases where we know the branch
+likelihood far better than the compiler, and the performance gain is
+significant (i.e. hot paths). Using them elsewhere may lead to
+performance and/or size degradation, as we're asking the compiler to do
+something other than what it believes is optimal.
 
+Probing is far from a hot path, and it seems in this case at least that
+unlikely() is only present as part of some duplicated black magic.
+
+Thanks,
+Mark.
+
+[1] https://lkml.org/lkml/2011/1/3/135
