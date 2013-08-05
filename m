@@ -1,103 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754425Ab3HEUuV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 16:50:21 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:64002 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753662Ab3HEUuT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 16:50:19 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Jonas Jensen <jonas.jensen@gmail.com>
-Subject: Re: [PATCH v7] dmaengine: Add MOXA ART DMA engine driver
-Date: Mon, 5 Aug 2013 22:49:31 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arm@kernel.org, vinod.koul@intel.com, djbw@fb.com,
-        linux@arm.linux.org.uk, mark.rutland@arm.com
-References: <1375450125-29767-1-git-send-email-jonas.jensen@gmail.com> <1375713457-5562-1-git-send-email-jonas.jensen@gmail.com>
-In-Reply-To: <1375713457-5562-1-git-send-email-jonas.jensen@gmail.com>
+	id S1754369Ab3HEUwV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 16:52:21 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:51942 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753317Ab3HEUwT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 16:52:19 -0400
+Date: Mon, 5 Aug 2013 16:52:07 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Michal Hocko <mhocko@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH 1/4] mm, page_alloc: add likely macro to help compiler
+ optimization
+Message-ID: <20130805205207.GB715@cmpxchg.org>
+References: <1375409279-16919-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <20130802162722.GA29220@dhcp22.suse.cz>
+ <20130802204710.GX715@cmpxchg.org>
+ <20130802213607.GA4742@dhcp22.suse.cz>
+ <20130805081008.GF27240@lge.com>
+ <20130805085041.GG27240@lge.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201308052249.32174.arnd@arndb.de>
-X-Provags-ID: V02:K0:nVYIYQx/gQFyYuE7JkfQV5CIL/3x/13l/l2DwB6KCB7
- YavnV1J81eHsIjXmlPHUTOgOZJcZQSmh9q3SkBk8C3akxly7Gs
- y4ntJhXX6fc9JL9KEn9VNv9AFX33kBZDBppxIWNpfR7BKn2JxA
- rWsS+FWHd54emYC+DDQ+fN30tseBc5E8nLzIHA5m356TFoPMfp
- f5Wt/QoZfh0l8m28Tkdyi+Wctkj3IS3vDJls63zrw29rzAXtv7
- 4LbRVIgX1dZtB+f8EaKBpM3hDj+EBLouaE3FDhBHMKUSqNq9c/
- ruMqmesfHCnFA0hOyBiqIQgFJfxkVSNZTUSnzUnB6VSlIFYnk4
- bwnYr0J9rInOWbcAxzD0=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130805085041.GG27240@lge.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 05 August 2013, Jonas Jensen wrote:
+On Mon, Aug 05, 2013 at 05:50:41PM +0900, Joonsoo Kim wrote:
+> On Mon, Aug 05, 2013 at 05:10:08PM +0900, Joonsoo Kim wrote:
+> > Hello, Michal.
+> > 
+> > On Fri, Aug 02, 2013 at 11:36:07PM +0200, Michal Hocko wrote:
+> > > On Fri 02-08-13 16:47:10, Johannes Weiner wrote:
+> > > > On Fri, Aug 02, 2013 at 06:27:22PM +0200, Michal Hocko wrote:
+> > > > > On Fri 02-08-13 11:07:56, Joonsoo Kim wrote:
+> > > > > > We rarely allocate a page with ALLOC_NO_WATERMARKS and it is used
+> > > > > > in slow path. For making fast path more faster, add likely macro to
+> > > > > > help compiler optimization.
+> > > > > 
+> > > > > The code is different in mmotm tree (see mm: page_alloc: rearrange
+> > > > > watermark checking in get_page_from_freelist)
+> > > > 
+> > > > Yes, please rebase this on top.
+> > > > 
+> > > > > Besides that, make sure you provide numbers which prove your claims
+> > > > > about performance optimizations.
+> > > > 
+> > > > Isn't that a bit overkill?  We know it's a likely path (we would
+> > > > deadlock constantly if a sizable portion of allocations were to ignore
+> > > > the watermarks).  Does he have to justify that likely in general makes
+> > > > sense?
+> > > 
+> > > That was more a generic comment. If there is a claim that something
+> > > would be faster it would be nice to back that claim by some numbers
+> > > (e.g. smaller hot path).
+> > > 
+> > > In this particular case, unlikely(alloc_flags & ALLOC_NO_WATERMARKS)
+> > > doesn't make any change to the generated code with gcc 4.8.1 resp.
+> > > 4.3.4 I have here.
+> > > Maybe other versions of gcc would benefit from the hint but changelog
+> > > didn't tell us. I wouldn't add the anotation if it doesn't make any
+> > > difference for the resulting code.
+> > 
+> > Hmm, Is there no change with gcc 4.8.1 and 4.3.4?
+> > 
+> > I found a change with gcc 4.6.3 and v3.10 kernel.
+> 
+> Ah... I did a test on mmotm (Johannes's git) and found that this patch
+> doesn't make any effect. I guess, a change from Johannes ('rearrange
+> watermark checking in get_page_from_freelist') already makes better code
+> for !ALLOC_NO_WATERMARKS case. IMHO, although there is no effect, it is
+> better to add likely macro, because arrangement can be changed from time
+> to time without any consideration of assembly code generation. How about
+> your opinion, Johannes and Michal?
 
-> +bool moxart_dma_filter_fn(struct dma_chan *chan, void *param)
-> +{
-> +	struct moxart_dma_chan *mchan = to_moxart_dma_chan(chan);
-> +	struct moxart_dma_container *mc = to_dma_container(mchan->chan.device);
-> +
-> +	if (chan->device->dev == mc->dma_slave.dev) {
+I'm not against it.  It does not really matter if gcc gets it right by
+accident right now and the annotation does not have an immediate
+effect.  It's a compiler hint and we want gcc to know it so it doesn't
+ever assume otherwise in the future.  Yes, nobody will re-evaluate if
+the conditional still generates the jumps correctly after shifting the
+code around.
 
-This comparison seems rather pointless -- you only check that the
-device owning the channel is the same as the device that belongs
-to channel's "container", which would naturally be the case.
-
-What you don't check here is that it matches the device that was passed
-to of_dma_controller_register().
-
-> +		struct moxart_dma_chan *mchan = to_moxart_dma_chan(chan);
-> +		unsigned int ch_req = *(unsigned int *)param;
-> +		dev_dbg(chan2dev(chan), "%s: mchan=%p ch_req=%d mchan->ch_num=%d\n",
-> +			__func__, mchan, ch_req, mchan->ch_num);
-> +		return ch_req == mchan->ch_num;
-> +	} else {
-> +		dev_dbg(chan2dev(chan), "%s: device not registered to this DMA engine\n",
-> +			__func__);
-> +		return false;
-> +	}
-> +}
-> +
-> +static struct of_dma_filter_info moxart_dma_info = {
-> +	.filter_fn = moxart_dma_filter_fn,
-> +};
-> +
-> +static struct dma_chan *moxart_of_xlate(struct of_phandle_args *dma_spec,
-> +					struct of_dma *ofdma)
-> +{
-> +	struct dma_chan *chan;
-> +	struct of_dma_filter_info *info = ofdma->of_dma_data;
-> +
-> +	if (!info || !info->filter_fn)
-> +		return NULL;
-
-This seems pointless too. Why do you pass a of_dma_filter_info pointer
-as ofdma->of_dma_data? It's constant after all and you can just access
-it a couple of lines higher.
-
-> +	if (dma_spec->args_count != 2)
-> +		return NULL;
-> +
-> +	chan = dma_request_channel(info->dma_cap, info->filter_fn,
-> +				   &dma_spec->args[0]);
-
-The filter function is also constant. However, you need to pass the
-device pointer here so the filter can compare it.
-
-> +	if (chan)
-> +		to_moxart_dma_chan(chan)->line = dma_spec->args[1];
-> +
-> +	return chan;
-> +}
-
-There is still an open question here regarding whether or not the
-channel number is actually required to be fixed or not. In most
-dma engines, the channels are actually interchangeable, so you only
-need to specify the request number, not the channel. Does this still
-work if you just pick the first
-
-	Arnd
+Thanks!
