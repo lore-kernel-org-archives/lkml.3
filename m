@@ -1,50 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752134Ab3HEMVS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 08:21:18 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51231 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751566Ab3HEMVR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 08:21:17 -0400
-Date: Mon, 5 Aug 2013 14:21:13 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] nohz: put proper symbol in the unstable schedclock warning
-Message-ID: <alpine.LNX.2.00.1308051420290.17512@pobox.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1752223Ab3HEM0d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 08:26:33 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:34264 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751352Ab3HEM0c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 08:26:32 -0400
+Date: Mon, 5 Aug 2013 13:26:28 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: Leif Lindholm <leif.lindholm@linaro.org>
+Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-ia64@vger.kernel.org, matt.fleming@intel.com,
+        tony.luck@gmail.com, patches@linaro.org
+Subject: Re: [PATCH v2 5/5] efi: x86: make efi_lookup_mapped_addr() a common
+ function
+Message-ID: <20130805122628.GS2515@console-pimps.org>
+References: <1375462582-16423-1-git-send-email-leif.lindholm@linaro.org>
+ <1375462582-16423-6-git-send-email-leif.lindholm@linaro.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1375462582-16423-6-git-send-email-leif.lindholm@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since e12d0271 ("nohz: Warn if the machine can not perform nohz_full") 
-Kernel triggers a WARN() in case sched clock is marked as unstable.
+On Fri, 02 Aug, at 05:56:22PM, Leif Lindholm wrote:
+> efi_lookup_mapped_addr() is a handy utility for other platforms than
+> x86. Move it from arch/x86 to drivers/firmware. Add memmap pointer
+> to global efi structure, and initialise it on x86.
+> 
+> Signed-off-by: Leif Lindholm <leif.lindholm@linaro.org>
+> ---
+>  arch/x86/platform/efi/efi.c |   30 ++----------------------------
+>  drivers/firmware/efi/efi.c  |   32 ++++++++++++++++++++++++++++++++
+>  include/linux/efi.h         |    1 +
+>  3 files changed, 35 insertions(+), 28 deletions(-)
 
-Make it output a proper Kconfig symbol (NO_HZ_FULL) when informing user 
-about this.
+Looks good.
 
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
----
- kernel/time/tick-sched.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index e77edc9..e0030ed 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -182,7 +182,7 @@ static bool can_stop_full_tick(void)
- 		 * Don't allow the user to think they can get
- 		 * full NO_HZ with this machine.
- 		 */
--		WARN_ONCE(1, "NO_HZ FULL will not work with unstable sched clock");
-+		WARN_ONCE(1, "NO_HZ_FULL will not work with unstable sched clock");
- 		return false;
- 	}
- #endif
+Tony, shout if you have any objection to modifying 'struct efi'.
 
 -- 
-Jiri Kosina
-SUSE Labs
+Matt Fleming, Intel Open Source Technology Center
