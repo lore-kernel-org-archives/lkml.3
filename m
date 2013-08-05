@@ -1,62 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752935Ab3HEEOM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 00:14:12 -0400
-Received: from cobra.newdream.net ([66.33.216.30]:40794 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751320Ab3HEEOL (ORCPT
+	id S1753651Ab3HEEQw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 00:16:52 -0400
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:35738 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751938Ab3HEEQt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 00:14:11 -0400
-Date: Sun, 4 Aug 2013 21:14:10 -0700 (PDT)
-From: Sage Weil <sage@inktank.com>
-X-X-Sender: sage@cobra.newdream.net
-To: Nathaniel Yazdani <n1ght.4nd.d4y@gmail.com>
-cc: ceph-devel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ceph: fix null pointer dereference
-In-Reply-To: <1375675470.19205.2.camel@lizardlounge>
-Message-ID: <alpine.DEB.2.00.1308042113580.5645@cobra.newdream.net>
-References: <1375675470.19205.2.camel@lizardlounge>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Mon, 5 Aug 2013 00:16:49 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20130513151737.GA6297@redhat.com>
+References: <20130513151631.GA6215@redhat.com>
+	<20130513151737.GA6297@redhat.com>
+Date: Sun, 4 Aug 2013 23:16:47 -0500
+Message-ID: <CAMP44s0iX_CRbCWWbrPURqKM+ksjG+8KFS56isSDG2Vs4CLjOQ@mail.gmail.com>
+Subject: Re: [PATCH 11/13] ptrace: PTRACE_DETACH should do flush_ptrace_hw_breakpoint(child)
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Jan Kratochvil <jan.kratochvil@redhat.com>,
+        Michael Neuling <mikey@neuling.org>, Paul Mackerras <paulus@samba.org>,
+        Paul Mundt <lethal@linux-sh.org>, Prasad <prasad@linux.vnet.ibm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Will Deacon <will.deacon@arm.com>, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Looks right, applied to the testing branch.
+On Mon, May 13, 2013 at 10:17 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> Change ptrace_detach() to call flush_ptrace_hw_breakpoint(child).
+> This frees the slots for non-ptrace PERF_TYPE_BREAKPOINT users, and
+> this ensures that the tracee won't be killed by SIGTRAP triggered by
+> the active breakpoints.
 
-Thanks!
-sage
+There is something wrong with this patch. I've bisected an issue I've
+seen in v3.11-rcx kernels while running Starcraft II through wine,
+it's crashes 100% of the time, I revert this patch, and there's no
+crash any more.
 
-
-On Sun, 4 Aug 2013, Nathaniel Yazdani wrote:
-
-> 	When register_session() is given an out-of-range argument for mds,
-> ceph_mdsmap_get_addr() will return a null pointer, which would be given to
-> ceph_con_open() & be dereferenced, causing a kernel oops. This fixes bug #4685
-> in the Ceph bug tracker <http://tracker.ceph.com/issues/4685>.
-> 
-> Signed-off-by: Nathaniel Yazdani <n1ght.4nd.d4y@gmail.com>
-> ---
-> diff --git a/fs/ceph/mds_client.c b/fs/ceph/mds_client.c
-> index 187bf21..ddff072 100644
-> --- a/fs/ceph/mds_client.c
-> +++ b/fs/ceph/mds_client.c
-> @@ -414,6 +414,9 @@ static struct ceph_mds_session *register_session(struct ceph_mds_client *mdsc,
->  {
->  	struct ceph_mds_session *s;
->  
-> +	if (mds >= mdsc->mdsmap->m_max_mds)
-> +		return ERR_PTR(-EINVAL);
-> +
->  	s = kzalloc(sizeof(*s), GFP_NOFS);
->  	if (!s)
->  		return ERR_PTR(-ENOMEM);
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe ceph-devel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> 
+-- 
+Felipe Contreras
