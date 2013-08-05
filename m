@@ -1,375 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755410Ab3HEUpn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 16:45:43 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:50785 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755377Ab3HEUnJ (ORCPT
+	id S1755446Ab3HEUpx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 16:45:53 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:50945 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753451Ab3HEUpt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 16:43:09 -0400
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: Emilio Lopez <emilio@elopez.com.ar>, kevin.z.m.zh@gmail.com,
-        sunny@allwinnertech.com, shuge@allwinnertech.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-sunxi@googlegroups.com,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCHv3 3/4] clk: sunxi: Add A31 clocks support
-Date: Mon,  5 Aug 2013 22:43:00 +0200
-Message-Id: <1375735381-18214-4-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.4
-In-Reply-To: <1375735381-18214-1-git-send-email-maxime.ripard@free-electrons.com>
-References: <1375735381-18214-1-git-send-email-maxime.ripard@free-electrons.com>
+	Mon, 5 Aug 2013 16:45:49 -0400
+Date: Mon, 5 Aug 2013 22:45:54 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Furquan Shaikh <furquan@google.com>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Josh Triplett <josh.triplett@intel.com>,
+        Paulo Zanoni <paulo.r.zanoni@intel.com>,
+        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, Ronald Minnich <rminnich@google.com>,
+        Daniel Vetter <daniel.vetter@intel.com>
+Subject: Re: [Intel-gfx] [PATCH] drm/i915: add fast boot support for Haswell
+Message-ID: <20130805204554.GR22035@phenom.ffwll.local>
+Mail-Followup-To: Furquan Shaikh <furquan@google.com>,
+	Jesse Barnes <jbarnes@virtuousgeek.org>,
+	Josh Triplett <josh.triplett@intel.com>,
+	Paulo Zanoni <paulo.r.zanoni@intel.com>,
+	intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+	dri-devel@lists.freedesktop.org,
+	Ronald Minnich <rminnich@google.com>,
+	Daniel Vetter <daniel.vetter@intel.com>
+References: <1375391542-21936-1-git-send-email-furquan@google.com>
+ <20130805072421.GV22035@phenom.ffwll.local>
+ <CAEGmHFHW2RuUrU9kj_ds8iXNfVLe209qPNifNQ-0TzM0Xa+V+g@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAEGmHFHW2RuUrU9kj_ds8iXNfVLe209qPNifNQ-0TzM0Xa+V+g@mail.gmail.com>
+X-Operating-System: Linux phenom 3.11.0-rc2+
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The A31 has a mostly different clock set compared to the other older
-SoCs currently supported in the Allwinner clock driver.
+[Now without the confidential header which shouldn't have spilled to
+public lists, please reply to this one here.]
 
-Add support for the basic useful clocks. The other ones will come in
-eventually.
+On Mon, Aug 05, 2013 at 01:24:15PM -0700, Furquan Shaikh wrote:
+> We tested the submitted patch on several systems here and it seems to be
+> working fine. So, I'm not sure I understand your comment. Can you please
+> provide more details?
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
----
- Documentation/devicetree/bindings/clock/sunxi.txt  |   6 +
- .../bindings/clock/sunxi/sun6i-a31-gates.txt       |  83 ++++++++++++++
- drivers/clk/sunxi/clk-sunxi.c                      | 124 +++++++++++++++++++++
- 3 files changed, 213 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/clock/sunxi/sun6i-a31-gates.txt
+You check for the bit DP_PLL_FREQ_160MHZ in the register DP_A when
+calculating the reference frequence for port A eDP panels (i.e. the
+assignement of pipe_config->port_clock). This bit is valid on port A
+for ivb, snb & ilk, but not on hsw. Haswell has a complete new way for
+assigning the pll to the port. For solid fastboot support I think we
+need to support them all (i.e. also the hdmi wrpll clocks and while at
+it we might as well write the fdi dotclock readout code, it should be
+almost the same as the DP dotclock computation).
+-Daniel
 
-diff --git a/Documentation/devicetree/bindings/clock/sunxi.txt b/Documentation/devicetree/bindings/clock/sunxi.txt
-index b24de10..c383d12 100644
---- a/Documentation/devicetree/bindings/clock/sunxi.txt
-+++ b/Documentation/devicetree/bindings/clock/sunxi.txt
-@@ -8,6 +8,7 @@ Required properties:
- - compatible : shall be one of the following:
- 	"allwinner,sun4i-osc-clk" - for a gatable oscillator
- 	"allwinner,sun4i-pll1-clk" - for the main PLL clock
-+	"allwinner,sun6i-a31-pll1-clk" - for the main PLL clock on A31
- 	"allwinner,sun4i-cpu-clk" - for the CPU multiplexer clock
- 	"allwinner,sun4i-axi-clk" - for the AXI clock
- 	"allwinner,sun4i-axi-gates-clk" - for the AXI gates
-@@ -15,6 +16,8 @@ Required properties:
- 	"allwinner,sun4i-ahb-gates-clk" - for the AHB gates on A10
- 	"allwinner,sun5i-a13-ahb-gates-clk" - for the AHB gates on A13
- 	"allwinner,sun5i-a10s-ahb-gates-clk" - for the AHB gates on A10s
-+	"allwinner,sun6i-a31-ahb1-mux-clk" - for the AHB1 multiplexer on A31
-+	"allwinner,sun6i-a31-ahb1-gates-clk" - for the AHB1 gates on A31
- 	"allwinner,sun4i-apb0-clk" - for the APB0 clock
- 	"allwinner,sun4i-apb0-gates-clk" - for the APB0 gates on A10
- 	"allwinner,sun5i-a13-apb0-gates-clk" - for the APB0 gates on A13
-@@ -24,6 +27,9 @@ Required properties:
- 	"allwinner,sun4i-apb1-gates-clk" - for the APB1 gates on A10
- 	"allwinner,sun5i-a13-apb1-gates-clk" - for the APB1 gates on A13
- 	"allwinner,sun5i-a10s-apb1-gates-clk" - for the APB1 gates on A10s
-+	"allwinner,sun6i-a31-apb1-gates-clk" - for the APB1 gates on A31
-+	"allwinner,sun6i-a31-apb2-div-clk" - for the APB2 gates on A31
-+	"allwinner,sun6i-a31-apb2-gates-clk" - for the APB2 gates on A31
- 
- Required properties for all clocks:
- - reg : shall be the control register address for the clock.
-diff --git a/Documentation/devicetree/bindings/clock/sunxi/sun6i-a31-gates.txt b/Documentation/devicetree/bindings/clock/sunxi/sun6i-a31-gates.txt
-new file mode 100644
-index 0000000..fe44932
---- /dev/null
-+++ b/Documentation/devicetree/bindings/clock/sunxi/sun6i-a31-gates.txt
-@@ -0,0 +1,83 @@
-+Gate clock outputs
-+------------------
-+
-+  * AHB1 gates ("allwinner,sun6i-a31-ahb1-gates-clk")
-+
-+    MIPI DSI					1
-+
-+    SS						5
-+    DMA						6
-+
-+    MMC0					8
-+    MMC1					9
-+    MMC2					10
-+    MMC3					11
-+
-+    NAND1					12
-+    NAND0					13
-+    SDRAM					14
-+
-+    GMAC					17
-+    TS						18
-+    HSTIMER					19
-+    SPI0					20
-+    SPI1					21
-+    SPI2					22
-+    SPI3					23
-+    USB_OTG					24
-+
-+    EHCI0					26
-+    EHCI1					27
-+
-+    OHCI0					29
-+    OHCI1					30
-+    OHCI2					31
-+    VE						32
-+
-+    LCD0					36
-+    LCD1					37
-+
-+    CSI						40
-+
-+    HDMI					43
-+    DE_BE0					44
-+    DE_BE1					45
-+    DE_FE1					46
-+    DE_FE1					47
-+
-+    MP						50
-+
-+    GPU						52
-+
-+    DEU0					55
-+    DEU1					56
-+    DRC0					57
-+    DRC1					58
-+
-+  * APB1 gates ("allwinner,sun6i-a31-apb1-gates-clk")
-+
-+    CODEC					0
-+
-+    DIGITAL MIC					4
-+    PIO						5
-+
-+    DAUDIO0					12
-+    DAUDIO1					13
-+
-+  * APB2 gates ("allwinner,sun6i-a31-apb2-gates-clk")
-+
-+    I2C0					0
-+    I2C1					1
-+    I2C2					2
-+    I2C3					3
-+
-+    UART0					16
-+    UART1					17
-+    UART2					18
-+    UART3					19
-+    UART4					20
-+    UART5					21
-+
-+Notation:
-+ [*]:  The datasheet didn't mention these, but they are present on AW code
-+ [**]: The datasheet had this marked as "NC" but they are used on AW code
-diff --git a/drivers/clk/sunxi/clk-sunxi.c b/drivers/clk/sunxi/clk-sunxi.c
-index cd07169..bd01a02 100644
---- a/drivers/clk/sunxi/clk-sunxi.c
-+++ b/drivers/clk/sunxi/clk-sunxi.c
-@@ -125,7 +125,89 @@ static void sun4i_get_pll1_factors(u32 *freq, u32 parent_rate,
- 	*n = div / 4;
- }
- 
-+/**
-+ * sun6i_a31_get_pll1_factors() - calculates n, k and m factors for PLL1
-+ * PLL1 rate is calculated as follows
-+ * rate = parent_rate * (n + 1) * (k + 1) / (m + 1);
-+ * parent_rate should always be 24MHz
-+ */
-+static void sun6i_a31_get_pll1_factors(u32 *freq, u32 parent_rate,
-+				       u8 *n, u8 *k, u8 *m, u8 *p)
-+{
-+	/*
-+	 * We can operate only on MHz, this will make our life easier
-+	 * later.
-+	 */
-+	u32 freq_mhz = *freq / 1000000;
-+	u32 parent_freq_mhz = parent_rate / 1000000;
-+
-+	/*
-+	 * Round down the frequency to the closest multiple of either
-+	 * 6 or 16
-+	 */
-+	u32 round_freq_6 = round_down(freq_mhz, 6);
-+	u32 round_freq_16 = round_down(freq_mhz, 16);
-+
-+	if (round_freq_6 > round_freq_16)
-+		freq_mhz = round_freq_6;
-+	else
-+		freq_mhz = round_freq_16;
- 
-+	*freq = freq_mhz * 1000000;
-+
-+	/*
-+	 * If the factors pointer are null, we were just called to
-+	 * round down the frequency.
-+	 * Exit.
-+	 */
-+	if (n == NULL)
-+		return;
-+
-+	/* If the frequency is a multiple of 32 MHz, k is always 3 */
-+	if (!(freq_mhz % 32))
-+		*k = 3;
-+	/* If the frequency is a multiple of 9 MHz, k is always 2 */
-+	else if (!(freq_mhz % 9))
-+		*k = 2;
-+	/* If the frequency is a multiple of 8 MHz, k is always 1 */
-+	else if (!(freq_mhz % 8))
-+		*k = 1;
-+	/* Otherwise, we don't use the k factor */
-+	else
-+		*k = 0;
-+
-+	/*
-+	 * If the frequency is a multiple of 2 but not a multiple of
-+	 * 3, m is 3. This is the first time we use 6 here, yet we
-+	 * will use it on several other places.
-+	 * We use this number because it's the lowest frequency we can
-+	 * generate (with n = 0, k = 0, m = 3), so every other frequency
-+	 * somehow relates to this frequency.
-+	 */
-+	if ((freq_mhz % 6) == 2 || (freq_mhz % 6) == 4)
-+		*m = 2;
-+	/*
-+	 * If the frequency is a multiple of 6MHz, but the factor is
-+	 * odd, m will be 3
-+	 */
-+	else if ((freq_mhz / 6) & 1)
-+		*m = 3;
-+	/* Otherwise, we end up with m = 1 */
-+	else
-+		*m = 1;
-+
-+	/* Calculate n thanks to the above factors we already got */
-+	*n = freq_mhz * (*m + 1) / ((*k + 1) * parent_freq_mhz) - 1;
-+
-+	/*
-+	 * If n end up being outbound, and that we can still decrease
-+	 * m, do it.
-+	 */
-+	if ((*n + 1) > 31 && (*m + 1) > 1) {
-+		*n = (*n + 1) / 2 - 1;
-+		*m = (*m + 1) / 2 - 1;
-+	}
-+}
- 
- /**
-  * sun4i_get_apb1_factors() - calculates m, p factors for APB1
-@@ -190,6 +272,15 @@ static struct clk_factors_config sun4i_pll1_config = {
- 	.pwidth = 2,
- };
- 
-+static struct clk_factors_config sun6i_a31_pll1_config = {
-+	.nshift	= 8,
-+	.nwidth = 5,
-+	.kshift = 4,
-+	.kwidth = 2,
-+	.mshift = 0,
-+	.mwidth = 2,
-+};
-+
- static struct clk_factors_config sun4i_apb1_config = {
- 	.mshift = 0,
- 	.mwidth = 5,
-@@ -202,6 +293,11 @@ static const __initconst struct factors_data sun4i_pll1_data = {
- 	.getter = sun4i_get_pll1_factors,
- };
- 
-+static const __initconst struct factors_data sun6i_a31_pll1_data = {
-+	.table = &sun6i_a31_pll1_config,
-+	.getter = sun6i_a31_get_pll1_factors,
-+};
-+
- static const __initconst struct factors_data sun4i_apb1_data = {
- 	.table = &sun4i_apb1_config,
- 	.getter = sun4i_get_apb1_factors,
-@@ -244,6 +340,10 @@ static const __initconst struct mux_data sun4i_cpu_mux_data = {
- 	.shift = 16,
- };
- 
-+static const __initconst struct mux_data sun6i_a31_ahb1_mux_data = {
-+	.shift = 12,
-+};
-+
- static const __initconst struct mux_data sun4i_apb1_mux_data = {
- 	.shift = 24,
- };
-@@ -302,6 +402,12 @@ static const __initconst struct div_data sun4i_apb0_data = {
- 	.width	= 2,
- };
- 
-+static const __initconst struct div_data sun6i_a31_apb2_div_data = {
-+	.shift	= 0,
-+	.pow	= 0,
-+	.width	= 4,
-+};
-+
- static void __init sunxi_divider_clk_setup(struct device_node *node,
- 					   struct div_data *data)
- {
-@@ -352,6 +458,10 @@ static const __initconst struct gates_data sun5i_a13_ahb_gates_data = {
- 	.mask = {0x107067e7, 0x185111},
- };
- 
-+static const __initconst struct gates_data sun6i_a31_ahb1_gates_data = {
-+	.mask = {0xEDFE7F62, 0x794F931},
-+};
-+
- static const __initconst struct gates_data sun4i_apb0_gates_data = {
- 	.mask = {0x4EF},
- };
-@@ -376,6 +486,14 @@ static const __initconst struct gates_data sun5i_a13_apb1_gates_data = {
- 	.mask = {0xa0007},
- };
- 
-+static const __initconst struct gates_data sun6i_a31_apb1_gates_data = {
-+	.mask = {0x3031},
-+};
-+
-+static const __initconst struct gates_data sun6i_a31_apb2_gates_data = {
-+	.mask = {0x3F000F},
-+};
-+
- static void __init sunxi_gates_clk_setup(struct device_node *node,
- 					 struct gates_data *data)
- {
-@@ -428,6 +546,7 @@ static void __init sunxi_gates_clk_setup(struct device_node *node,
- /* Matches for factors clocks */
- static const __initconst struct of_device_id clk_factors_match[] = {
- 	{.compatible = "allwinner,sun4i-pll1-clk", .data = &sun4i_pll1_data,},
-+	{.compatible = "allwinner,sun6i-a31-pll1-clk", .data = &sun6i_a31_pll1_data,},
- 	{.compatible = "allwinner,sun4i-apb1-clk", .data = &sun4i_apb1_data,},
- 	{}
- };
-@@ -437,6 +556,7 @@ static const __initconst struct of_device_id clk_div_match[] = {
- 	{.compatible = "allwinner,sun4i-axi-clk", .data = &sun4i_axi_data,},
- 	{.compatible = "allwinner,sun4i-ahb-clk", .data = &sun4i_ahb_data,},
- 	{.compatible = "allwinner,sun4i-apb0-clk", .data = &sun4i_apb0_data,},
-+	{.compatible = "allwinner,sun6i-a31-apb2-div-clk", .data = &sun6i_a31_apb2_div_data,},
- 	{}
- };
- 
-@@ -444,6 +564,7 @@ static const __initconst struct of_device_id clk_div_match[] = {
- static const __initconst struct of_device_id clk_mux_match[] = {
- 	{.compatible = "allwinner,sun4i-cpu-clk", .data = &sun4i_cpu_mux_data,},
- 	{.compatible = "allwinner,sun4i-apb1-mux-clk", .data = &sun4i_apb1_mux_data,},
-+	{.compatible = "allwinner,sun6i-a31-ahb1-mux-clk", .data = &sun6i_a31_ahb1_mux_data,},
- 	{}
- };
- 
-@@ -453,12 +574,15 @@ static const __initconst struct of_device_id clk_gates_match[] = {
- 	{.compatible = "allwinner,sun4i-ahb-gates-clk", .data = &sun4i_ahb_gates_data,},
- 	{.compatible = "allwinner,sun5i-a10s-ahb-gates-clk", .data = &sun5i_a10s_ahb_gates_data,},
- 	{.compatible = "allwinner,sun5i-a13-ahb-gates-clk", .data = &sun5i_a13_ahb_gates_data,},
-+	{.compatible = "allwinner,sun6i-a31-ahb1-gates-clk", .data = &sun6i_a31_ahb1_gates_data,},
- 	{.compatible = "allwinner,sun4i-apb0-gates-clk", .data = &sun4i_apb0_gates_data,},
- 	{.compatible = "allwinner,sun5i-a10s-apb0-gates-clk", .data = &sun5i_a10s_apb0_gates_data,},
- 	{.compatible = "allwinner,sun5i-a13-apb0-gates-clk", .data = &sun5i_a13_apb0_gates_data,},
- 	{.compatible = "allwinner,sun4i-apb1-gates-clk", .data = &sun4i_apb1_gates_data,},
- 	{.compatible = "allwinner,sun5i-a10s-apb1-gates-clk", .data = &sun5i_a10s_apb1_gates_data,},
- 	{.compatible = "allwinner,sun5i-a13-apb1-gates-clk", .data = &sun5i_a13_apb1_gates_data,},
-+	{.compatible = "allwinner,sun6i-a31-apb1-gates-clk", .data = &sun6i_a31_apb1_gates_data,},
-+	{.compatible = "allwinner,sun6i-a31-apb2-gates-clk", .data = &sun6i_a31_apb2_gates_data,},
- 	{}
- };
- 
+> 
+> Thanks,
+> Furquan
+> 
+> 
+> On Mon, Aug 5, 2013 at 12:24 AM, Daniel Vetter <daniel@ffwll.ch> wrote:
+> 
+> > On Thu, Aug 01, 2013 at 02:12:22PM -0700, Furquan Shaikh wrote:
+> > > Enables getting correct mode clock when reading pipe config
+> > >
+> > > Signed-off-by: Furquan Shaikh <furquan@google.com>
+> > > ---
+> > >  drivers/gpu/drm/i915/intel_ddi.c     | 8 ++++++++
+> > >  drivers/gpu/drm/i915/intel_display.c | 9 ++++++++-
+> > >  2 files changed, 16 insertions(+), 1 deletion(-)
+> > >
+> > > diff --git a/drivers/gpu/drm/i915/intel_ddi.c
+> > b/drivers/gpu/drm/i915/intel_ddi.c
+> > > index 931b4bb..fa0af9b 100644
+> > > --- a/drivers/gpu/drm/i915/intel_ddi.c
+> > > +++ b/drivers/gpu/drm/i915/intel_ddi.c
+> > > @@ -1269,6 +1269,7 @@ static void intel_ddi_get_config(struct
+> > intel_encoder *encoder,
+> > >       struct drm_i915_private *dev_priv = encoder->base.dev->dev_private;
+> > >       struct intel_crtc *intel_crtc = to_intel_crtc(encoder->base.crtc);
+> > >       enum transcoder cpu_transcoder = intel_crtc->config.cpu_transcoder;
+> > > +     int port = intel_ddi_get_encoder_port(encoder);
+> > >       u32 temp, flags = 0;
+> > >
+> > >       temp = I915_READ(TRANS_DDI_FUNC_CTL(cpu_transcoder));
+> > > @@ -1282,6 +1283,13 @@ static void intel_ddi_get_config(struct
+> > intel_encoder *encoder,
+> > >               flags |= DRM_MODE_FLAG_NVSYNC;
+> > >
+> > >       pipe_config->adjusted_mode.flags |= flags;
+> > > +
+> > > +     if (port == PORT_A) {
+> > > +             if ((I915_READ(DP_A) & DP_PLL_FREQ_MASK) ==
+> > DP_PLL_FREQ_160MHZ)
+> > > +                     pipe_config->port_clock = 162000;
+> > > +             else
+> > > +                     pipe_config->port_clock = 270000;
+> > > +     }
+> >
+> > I don't think this works correctly since for DP we have new clocks on
+> > haswell, see intel_ddi_pll_mode_set. Also I think it'd be good to go right
+> > ahead and implement clock readout support for all hsw clock sources, not
+> > just DP.
+> > -Daniel
+> >
+> > >  }
+> > >
+> > >  static void intel_ddi_destroy(struct drm_encoder *encoder)
+> > > diff --git a/drivers/gpu/drm/i915/intel_display.c
+> > b/drivers/gpu/drm/i915/intel_display.c
+> > > index 3e66f05..681c99a 100644
+> > > --- a/drivers/gpu/drm/i915/intel_display.c
+> > > +++ b/drivers/gpu/drm/i915/intel_display.c
+> > > @@ -7176,6 +7176,8 @@ static void i9xx_crtc_clock_get(struct intel_crtc
+> > *crtc,
+> > >               pipe_config->pixel_multiplier;
+> > >  }
+> > >
+> > > +#define div_ceil(A, B) ((A)/(B) + ((A)%(B) ? 1 : 0))
+> > > +
+> > >  static void ironlake_crtc_clock_get(struct intel_crtc *crtc,
+> > >                                   struct intel_crtc_config *pipe_config)
+> > >  {
+> > > @@ -7218,7 +7220,11 @@ static void ironlake_crtc_clock_get(struct
+> > intel_crtc *crtc,
+> > >               return;
+> > >
+> > >       clock = ((u64)link_m * (u64)link_freq * (u64)repeat);
+> > > -     do_div(clock, link_n);
+> > > +     /* This is required because the value comes out to be in fraction
+> > > +        (eg. 70699.54). Need to round it up since values are compared in
+> > > +        drm_mode_equal
+> > > +     */
+> > > +     clock = div_ceil(clock, link_n);
+> > >
+> > >       pipe_config->adjusted_mode.clock = clock;
+> > >  }
+> > > @@ -9588,6 +9594,7 @@ static void intel_init_display(struct drm_device
+> > *dev)
+> > >
+> > >       if (HAS_DDI(dev)) {
+> > >               dev_priv->display.get_pipe_config =
+> > haswell_get_pipe_config;
+> > > +             dev_priv->display.get_clock = ironlake_crtc_clock_get;
+> > >               dev_priv->display.crtc_mode_set = haswell_crtc_mode_set;
+> > >               dev_priv->display.crtc_enable = haswell_crtc_enable;
+> > >               dev_priv->display.crtc_disable = haswell_crtc_disable;
+> > > --
+> > > 1.8.3
+> > >
+> > > _______________________________________________
+> > > dri-devel mailing list
+> > > dri-devel@lists.freedesktop.org
+> > > http://lists.freedesktop.org/mailman/listinfo/dri-devel
+> >
+> > --
+> > Daniel Vetter
+> > Software Engineer, Intel Corporation
+> > +41 (0) 79 365 57 48 - http://blog.ffwll.ch
+> >
+
+> _______________________________________________
+> Intel-gfx mailing list
+> Intel-gfx@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/intel-gfx
+
+
 -- 
-1.8.3.4
-
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
