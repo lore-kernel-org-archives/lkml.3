@@ -1,80 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755018Ab3HEI2R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 04:28:17 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:54436 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753626Ab3HEI2Q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 04:28:16 -0400
-X-AuditID: 9c93016f-b7b05ae000002bbd-b7-51ff621ec556
-From: Namhyung Kim <namhyung@kernel.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: acme@infradead.org, eranian@google.com, jolsa@redhat.com,
-        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 2/5] tools, perf: Add support to evsel for enabling counters
-References: <1375490473-1503-1-git-send-email-andi@firstfloor.org>
-	<1375490473-1503-3-git-send-email-andi@firstfloor.org>
-Date: Mon, 05 Aug 2013 17:28:14 +0900
-In-Reply-To: <1375490473-1503-3-git-send-email-andi@firstfloor.org> (Andi
-	Kleen's message of "Fri, 2 Aug 2013 17:41:10 -0700")
-Message-ID: <87eha81qzl.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1755081Ab3HEI3B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 04:29:01 -0400
+Received: from mga03.intel.com ([143.182.124.21]:57301 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754621Ab3HEI3A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 04:29:00 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,817,1367996400"; 
+   d="scan'208";a="341748782"
+Message-ID: <51FF63B1.4070808@intel.com>
+Date: Mon, 05 Aug 2013 11:34:57 +0300
+From: Adrian Hunter <adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
+ Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+To: David Ahern <dsahern@gmail.com>
+CC: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [PATCH] perf x86: Fix compile of util/tsc.c
+References: <1374848843-43127-1-git-send-email-dsahern@gmail.com>
+In-Reply-To: <1374848843-43127-1-git-send-email-dsahern@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andi,
+On 26/07/13 17:27, David Ahern wrote:
+> On Fedora 18, with gcc 4.6.4 compile fails with:
+> 
+> arch/x86/util/tsc.c: In function ‘perf_time_to_tsc’:
+> arch/x86/util/tsc.c:13:6: error: declaration of ‘time’ shadows a global declaration [-Werror=shadow]
+> cc1: all warnings being treated as errors
+> make: *** [/tmp/junk/arch/x86/util/tsc.o] Error 1
+> make: *** Waiting for unfinished jobs....
+> 
+> Fix by renaming the local variable.
+> 
+> Signed-off-by: David Ahern <dsahern@gmail.com>
+> Cc: Adrian Hunter <adrian.hunter@intel.com>
 
-On Fri,  2 Aug 2013 17:41:10 -0700, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
->
-> Add support for enabling already set up counters by using an
-> ioctl. I share some code with the filter setup.
->
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Acked-by: Adrian Hunter <adrian.hunter@intel.com>
+
 > ---
->  tools/perf/util/evsel.c | 21 ++++++++++++++++++---
->  tools/perf/util/evsel.h |  1 +
->  2 files changed, 19 insertions(+), 3 deletions(-)
->
-> diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-> index c9c7494..60e0d84 100644
-> --- a/tools/perf/util/evsel.c
-> +++ b/tools/perf/util/evsel.c
-> @@ -605,16 +605,16 @@ int perf_evsel__alloc_fd(struct perf_evsel *evsel, int ncpus, int nthreads)
->  	return evsel->fd != NULL ? 0 : -ENOMEM;
->  }
+>  tools/perf/arch/x86/util/tsc.c |    8 ++++----
+>  1 file changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/tools/perf/arch/x86/util/tsc.c b/tools/perf/arch/x86/util/tsc.c
+> index f111744..9570c2b 100644
+> --- a/tools/perf/arch/x86/util/tsc.c
+> +++ b/tools/perf/arch/x86/util/tsc.c
+> @@ -10,11 +10,11 @@
 >  
-> -int perf_evsel__set_filter(struct perf_evsel *evsel, int ncpus, int nthreads,
-> -			   const char *filter)
-> +static int perf_evsel__run_ioctl(struct perf_evsel *evsel, int ncpus, int nthreads,
-> +			  int ioc,  void *arg)
+>  u64 perf_time_to_tsc(u64 ns, struct perf_tsc_conversion *tc)
 >  {
->  	int cpu, thread;
+> -	u64 time, quot, rem;
+> +	u64 t, quot, rem;
 >  
->  	for (cpu = 0; cpu < ncpus; cpu++) {
->  		for (thread = 0; thread < nthreads; thread++) {
->  			int fd = FD(evsel, cpu, thread),
-> -			    err = ioctl(fd, PERF_EVENT_IOC_SET_FILTER, filter);
->  
-> +			err = ioctl(fd, ioc, arg);
+> -	time = ns - tc->time_zero;
+> -	quot = time / tc->time_mult;
+> -	rem  = time % tc->time_mult;
+> +	t = ns - tc->time_zero;
+> +	quot = t / tc->time_mult;
+> +	rem  = t % tc->time_mult;
+>  	return (quot << tc->time_shift) +
+>  	       (rem << tc->time_shift) / tc->time_mult;
+>  }
+> 
 
-Looks very strange to have a blank line between variable declarations.
-You'd better separating declarations on the other lines like:
-
-			int fd, err;
-
-			fd = FD(evsel, cpu, thread);
-			err = ioctl(fd, ioc, arg);
-
-Thanks,
-Namhyung
-
-
->  			if (err)
->  				return err;
->  		}
