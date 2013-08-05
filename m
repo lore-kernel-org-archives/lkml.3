@@ -1,59 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754045Ab3HESjl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 14:39:41 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:12592 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753400Ab3HESjk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 14:39:40 -0400
-X-Authority-Analysis: v=2.0 cv=KJ7Y/S5o c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=pFOAptgLnqcA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=pvQ05lsfB1wA:10 a=D19gQVrFAAAA:8 a=s02r5OFuDe2dO8pl0q8A:9 a=QEXdDO2ut3YA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-ID: <1375727977.22073.112.camel@gandalf.local.home>
-Subject: Re: [RFC] gcc feature request: Moving blocks into sections
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, gcc <gcc@gcc.gnu.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        David Daney <ddaney.cavm@gmail.com>,
-        Behan Webster <behanw@converseincode.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Herbert Xu <herbert@gondor.hengli.com.au>
-Date: Mon, 05 Aug 2013 14:39:37 -0400
-In-Reply-To: <CA+55aFwRHpL-3YObZfw6NxxDxMqQbiwp0=NnpotGj2RHDNF3iw@mail.gmail.com>
-References: <1375721715.22073.80.camel@gandalf.local.home>
-	 <CA+55aFw_o=D-j_SRn=Y4LhHm-tEyuP1Je5ZHVTYxbVyLyDcLEg@mail.gmail.com>
-	 <1375725328.22073.101.camel@gandalf.local.home>
-	 <CA+55aFwRHpL-3YObZfw6NxxDxMqQbiwp0=NnpotGj2RHDNF3iw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754095Ab3HESlS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 14:41:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64939 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753317Ab3HESlR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 14:41:17 -0400
+Date: Mon, 5 Aug 2013 14:41:08 -0400
+From: Jay Fenlason <fenlason@redhat.com>
+To: Alexey Kardashevskiy <aik@ozlabs.ru>
+Cc: Santosh Rastapur <santosh@chelsio.com>, Divy Le Ray <divy@chelsio.com>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: BUG cxgb3: Check and handle the dma mapping errors
+Message-ID: <20130805184107.GA2998@redhat.com>
+References: <51FF14F8.7000204@ozlabs.ru>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51FF14F8.7000204@ozlabs.ru>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-08-05 at 11:20 -0700, Linus Torvalds wrote:
+On Mon, Aug 05, 2013 at 12:59:04PM +1000, Alexey Kardashevskiy wrote:
+> Hi!
+> 
+> Recently I started getting multiple errors like this:
+> 
+> cxgb3 0006:01:00.0: iommu_alloc failed, tbl c000000003067980 vaddr
+> c000001fbdaaa882 npages 1
+> cxgb3 0006:01:00.0: iommu_alloc failed, tbl c000000003067980 vaddr
+> c000001fbdaaa882 npages 1
+> cxgb3 0006:01:00.0: iommu_alloc failed, tbl c000000003067980 vaddr
+> c000001fbdaaa882 npages 1
+> cxgb3 0006:01:00.0: iommu_alloc failed, tbl c000000003067980 vaddr
+> c000001fbdaaa882 npages 1
+> cxgb3 0006:01:00.0: iommu_alloc failed, tbl c000000003067980 vaddr
+> c000001fbdaaa882 npages 1
+> cxgb3 0006:01:00.0: iommu_alloc failed, tbl c000000003067980 vaddr
+> c000001fbdaaa882 npages 1
+> cxgb3 0006:01:00.0: iommu_alloc failed, tbl c000000003067980 vaddr
+> c000001fbdaaa882 npages 1
+> ... and so on
+> 
+> This is all happening on a PPC64 "powernv" platform machine. To trigger the
+> error state, it is enough to _flood_ ping CXGB3 card from another machine
+> (which has Emulex 10Gb NIC + Cisco switch). Just do "ping -f 172.20.1.2"
+> and wait 10-15 seconds.
+> 
+> 
+> The messages are coming from arch/powerpc/kernel/iommu.c and basically
+> mean that the driver requested more pages than the DMA window has which is
+> normally 1GB (there could be another possible source of errors -
+> ppc_md.tce_build callback - but on powernv platform it always succeeds).
+> 
+> 
+> The patch after which it broke is:
+> commit f83331bab149e29fa2c49cf102c0cd8c3f1ce9f9
+> Author: Santosh Rastapur <santosh@chelsio.com>
+> Date:   Tue May 21 04:21:29 2013 +0000
+> cxgb3: Check and handle the dma mapping errors
+> 
+> Any quick ideas? Thanks!
 
-> Of course, it would be good to optimize static_key_false() itself -
-> right now those static key jumps are always five bytes, and while they
-> get nopped out, it would still be nice if there was some way to have
-> just a two-byte nop (turning into a short branch) *if* we can reach
-> another jump that way..For small functions that would be lovely. Oh
-> well.
+That patch adds error checking to detect failed dma mapping requests.
+Before it, the code always assumed that dma mapping requests succeded,
+whether they actually do or not, so the fact that the older kernel
+does not log errors only means that the failures are being ignored,
+and any appearance of working is through pure luck.  The machine could
+have just crashed at that point.
 
-I had patches that did exactly this:
+What is the observed behavior of the system by the machine initiating
+the ping flood?  Do the older and newer kernels differ in the
+percentage of pings that do not receive replies?  O the newer kernel,
+when the mapping errors are detected, the packet that it is trying to
+transmit is dropped, but I'm not at all sure what happens on the older
+kernel after the dma mapping fails.  As I mentioned earlier, I'm
+surprised it does not crash.  Perhaps the folks from Chelsio have a
+better idea what happens after a dma mapping error is ignored?
 
- https://lkml.org/lkml/2012/3/8/461
-
-But it got dropped for some reason. I don't remember why. Maybe because
-of the complexity?
-
--- Steve
-
-
+		-- JF
