@@ -1,69 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751913Ab3HEMCC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 08:02:02 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:56847 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751303Ab3HEMCA (ORCPT
+	id S1752016Ab3HEMCp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 08:02:45 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:33913 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751303Ab3HEMCo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 08:02:00 -0400
-Date: Mon, 5 Aug 2013 13:01:35 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Yadwinder Singh Brar <yadi.brar@samsung.com>
-Cc: Axel Lin <axel.lin@ingics.com>, Sangbeom Kim <sbkim73@samsung.com>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Message-ID: <20130805120135.GB9858@sirena.org.uk>
-References: <57.FA.25608.C0F3FF15@epcpsbgx1.samsung.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="qiQf2TmL+bN2VTAD"
-Content-Disposition: inline
-In-Reply-To: <57.FA.25608.C0F3FF15@epcpsbgx1.samsung.com>
-X-Cookie: You will be awarded some great honor.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: Re: regulator: s2mps11: Question about the code updating
- ramp_delay setting
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	Mon, 5 Aug 2013 08:02:44 -0400
+From: Jin Xu <jinuxstyle@gmail.com>
+To: jaegeuk.kim@samsung.com
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net, jinuxstyle@gmail.com
+Subject: [PATCH] f2fs: fix a deadlock in fsync
+Date: Mon,  5 Aug 2013 20:02:04 +0800
+Message-Id: <1375704124-22274-1-git-send-email-jinuxstyle@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Jin Xu <jinuxstyle@gmail.com>
 
---qiQf2TmL+bN2VTAD
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+This patch fixes a deadlock bug that occurs quite often when there are
+concurrent write and fsync on a same file.
 
-On Mon, Aug 05, 2013 at 05:58:36AM +0000, Yadwinder Singh Brar wrote:
-> <HTML><HEAD><TITLE>Samsung Enterprise Portal mySingle</TITLE>
-> <META content="text/html; charset=windows-1252" http-equiv=Content-Type>
+Following is the simplified call trace when tasks get hung.
 
-Please fix your mailer to send plain text mails, or at least provide a
-text/plain alternative.
+fsync thread:
+- f2fs_sync_file
+ ...
+ - f2fs_write_data_pages
+ ...
+  - update_extent_cache
+  ...
+   - update_inode
+    - wait_on_page_writeback
 
---qiQf2TmL+bN2VTAD
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+bdi writeback thread
+- __writeback_single_inode
+ - f2fs_write_data_pages
+  - mutex_lock(sbi->writepages)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+The deadlock happens when the fsync thread waits on a inode page that has
+been added to the f2fs' cached bio sbi->bio[NODE], and unfortunately,
+no one else could be able to submit the cached bio to block layer for
+writeback. This is because the fsync thread already hold a sbi->fs_lock and
+the sbi->writepages lock, causing the bdi thread being blocked when attempt
+to write data pages for the same inode. At the same time, f2fs_gc thread
+does not notice the situation and could not help. Even the sync syscall
+gets blocked.
 
-iQIcBAEBAgAGBQJR/5QcAAoJELSic+t+oim9b0gP/RydmJXmZdybrOZYNwPnCXni
-A9H3QaGUgN/k20rZ4VPtsW/+oWo1S4P93kc2wxTTUe5s+Wi88cjuptDE2HMJaeIq
-FU0Fxz8oRBEUo6WtLL1LmzBQawlinA4e759RfYQN5n8AXCrwU1Gix2c8U2d6fVrI
-0aKibOZpVZn0Zr8OW+egeoaGWDI80cJddvCZB8JxQDCiZTzgPPG0jSr2JK19lZm4
-FD9FISM6C5Jqe53PT3b4jD8l/zIa0lGN1y0kFx584f/hc1Bkqb1HzAvqrvL3Z9hY
-gAEndWV93tPWuMG5c+s40ON+JdguHp3BibO8nKF/cymSAuD+3CdUivEsodT0WhQ0
-m4SisQ88vDeOvHMY0BEY4Bq5ieNttp/CkTM3W5MnUZ7oq4h+T36P8X1TcqQKVd6Z
-53UCf3gccX3gtzh1TgadHmvKIXv6L2XY5rZhuatwUjadW2wCIkKO1c5e5XfxmJ/x
-qQBvXN87EEZqk8j2v8n1nSNqIAH9JUFq7YlfABgsZ+2IuxnLylE0rcPFzooJuQOG
-ma+qUbDdzdExzLN5+38oNvmKOrnG+gHd6MjqmKDZWnQcQs5+jQVqNi6K8oD8vt6b
-YYW7gxCivV2RtS61YPQoZh3L3ioDfExxgLVM/PWjgJyZsxUHfF+Ln+zNg0dsfScp
-AvEnglZkDsmQZxI9XtVg
-=LgWF
------END PGP SIGNATURE-----
+To fix it, we could submit the cached bio first before waiting on a inode page
+that is being written back.
 
---qiQf2TmL+bN2VTAD--
+Signed-off-by: Jin Xu <jinuxstyle@gmail.com>
+---
+ fs/f2fs/f2fs.h    |    2 ++
+ fs/f2fs/gc.c      |    5 +----
+ fs/f2fs/inode.c   |    3 ++-
+ fs/f2fs/segment.c |    9 +++++++++
+ 4 files changed, 14 insertions(+), 5 deletions(-)
+
+diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+index 467d42d..064d3f9 100644
+--- a/fs/f2fs/f2fs.h
++++ b/fs/f2fs/f2fs.h
+@@ -1013,6 +1013,8 @@ void allocate_new_segments(struct f2fs_sb_info *);
+ struct page *get_sum_page(struct f2fs_sb_info *, unsigned int);
+ struct bio *f2fs_bio_alloc(struct block_device *, int);
+ void f2fs_submit_bio(struct f2fs_sb_info *, enum page_type, bool sync);
++void f2fs_wait_on_page_writeback(struct f2fs_sb_info *sbi,
++		struct page *page, enum page_type type, bool sync);
+ void write_meta_page(struct f2fs_sb_info *, struct page *);
+ void write_node_page(struct f2fs_sb_info *, struct page *, unsigned int,
+ 					block_t, block_t *);
+diff --git a/fs/f2fs/gc.c b/fs/f2fs/gc.c
+index 35f9b1a..acfa411 100644
+--- a/fs/f2fs/gc.c
++++ b/fs/f2fs/gc.c
+@@ -508,10 +508,7 @@ static void move_data_page(struct inode *inode, struct page *page, int gc_type)
+ 	} else {
+ 		struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
+ 
+-		if (PageWriteback(page)) {
+-			f2fs_submit_bio(sbi, DATA, true);
+-			wait_on_page_writeback(page);
+-		}
++		f2fs_wait_on_page_writeback(sbi, page, DATA, true);
+ 
+ 		if (clear_page_dirty_for_io(page) &&
+ 			S_ISDIR(inode->i_mode)) {
+diff --git a/fs/f2fs/inode.c b/fs/f2fs/inode.c
+index 2b2d45d1..d42b85b 100644
+--- a/fs/f2fs/inode.c
++++ b/fs/f2fs/inode.c
+@@ -148,10 +148,11 @@ bad_inode:
+ 
+ void update_inode(struct inode *inode, struct page *node_page)
+ {
++	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
+ 	struct f2fs_node *rn;
+ 	struct f2fs_inode *ri;
+ 
+-	wait_on_page_writeback(node_page);
++	f2fs_wait_on_page_writeback(sbi, node_page, NODE, false);
+ 
+ 	rn = page_address(node_page);
+ 	ri = &(rn->i);
+diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
+index a86d125..7056cc0 100644
+--- a/fs/f2fs/segment.c
++++ b/fs/f2fs/segment.c
+@@ -702,6 +702,15 @@ alloc_new:
+ 	trace_f2fs_submit_write_page(page, blk_addr, type);
+ }
+ 
++void f2fs_wait_on_page_writeback(struct f2fs_sb_info *sbi,
++		struct page *page, enum page_type type, bool sync)
++{
++	if (PageWriteback(page)) {
++		f2fs_submit_bio(sbi, type, sync);
++		wait_on_page_writeback(page);
++	}
++}
++
+ static bool __has_curseg_space(struct f2fs_sb_info *sbi, int type)
+ {
+ 	struct curseg_info *curseg = CURSEG_I(sbi, type);
+-- 
+1.7.9.5
+
