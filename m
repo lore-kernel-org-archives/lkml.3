@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753271Ab3HENrS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 09:47:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9717 "EHLO mx1.redhat.com"
+	id S1753343Ab3HENrh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 09:47:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36877 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752479Ab3HENrN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 09:47:13 -0400
-Date: Mon, 5 Aug 2013 15:41:43 +0200
+	id S1751853Ab3HENre (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 09:47:34 -0400
+Date: Mon, 5 Aug 2013 15:41:30 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Al Viro <viro@ZenIV.linux.org.uk>, Evgeniy Polyakov <zbr@ioremap.net>,
         Kees Cook <keescook@chromium.org>, Zach Levis <zml@linux.vnet.ibm.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v2 6/8] exec: cleanup the CONFIG_MODULES logic
-Message-ID: <20130805134143.GA15645@redhat.com>
+Subject: [PATCH v2 1/8] exec: introduce exec_binprm() for "depth == 0" code
+Message-ID: <20130805134130.GA15622@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -23,118 +23,105 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-search_binary_handler() uses "for (try=0; try<2; try++)" to avoid
-"goto" but the code looks too complicated and horrible imho. We
-still need to check "try == 0" before request_module() and add the
-additional "break" for !CONFIG_MODULES case.
+task_pid_nr_ns() and trace/ptrace code in the middle of the
+recursive search_binary_handler() looks confusing and imho
+annoying. We only need this code if "depth == 0", lets add
+a simple helper which calls search_binary_handler() and does
+trace_sched_process_exec() + ptrace_event().
 
-Kill this loop and use a simple "bool need_retry" + "goto retry".
-The code looks much simpler and we do not even need ifdef's, gcc
-can optimize out the "if (need_retry)" block if !IS_ENABLED().
+The patch also moves the setting of task->did_exec, we need
+to do this only once.
+
+Note: we can kill either task->did_exec or PF_FORKNOEXEC.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 Acked-by: Kees Cook <keescook@chromium.org>
 ---
- fs/exec.c |   68 +++++++++++++++++++++++++++---------------------------------
- 1 files changed, 31 insertions(+), 37 deletions(-)
+ fs/exec.c |   36 ++++++++++++++++++++++--------------
+ 1 files changed, 22 insertions(+), 14 deletions(-)
 
 diff --git a/fs/exec.c b/fs/exec.c
-index f0112f9..f69cf54 100644
+index 9c73def..a9ae4f2 100644
 --- a/fs/exec.c
 +++ b/fs/exec.c
-@@ -1367,13 +1367,15 @@ out:
- }
- EXPORT_SYMBOL(remove_arg_zero);
- 
-+#define printable(c) (((c)=='\t') || ((c)=='\n') || (0x20<=(c) && (c)<=0x7e))
- /*
-  * cycle the list of binary formats handler, until one recognizes the image
-  */
- int search_binary_handler(struct linux_binprm *bprm)
- {
--	int try, retval;
-+	bool need_retry = IS_ENABLED(CONFIG_MODULES);
+@@ -1373,7 +1373,6 @@ int search_binary_handler(struct linux_binprm *bprm)
+ 	unsigned int depth = bprm->recursion_depth;
+ 	int try,retval;
  	struct linux_binfmt *fmt;
-+	int retval;
+-	pid_t old_pid, old_vpid;
  
  	/* This allows 4 levels of binfmt rewrites before failing hard. */
- 	if (bprm->recursion_depth > 5)
-@@ -1388,47 +1390,39 @@ int search_binary_handler(struct linux_binprm *bprm)
+ 	if (depth > 5)
+@@ -1387,12 +1386,6 @@ int search_binary_handler(struct linux_binprm *bprm)
+ 	if (retval)
  		return retval;
  
+-	/* Need to fetch pid before load_binary changes it */
+-	old_pid = current->pid;
+-	rcu_read_lock();
+-	old_vpid = task_pid_nr_ns(current, task_active_pid_ns(current->parent));
+-	rcu_read_unlock();
+-
  	retval = -ENOENT;
--	for (try=0; try<2; try++) {
--		read_lock(&binfmt_lock);
--		list_for_each_entry(fmt, &formats, lh) {
--			if (!try_module_get(fmt->module))
--				continue;
--			read_unlock(&binfmt_lock);
--			bprm->recursion_depth++;
--			retval = fmt->load_binary(bprm);
--			bprm->recursion_depth--;
--			if (retval >= 0) {
--				put_binfmt(fmt);
--				return retval;
--			}
--			read_lock(&binfmt_lock);
-+ retry:
-+	read_lock(&binfmt_lock);
-+	list_for_each_entry(fmt, &formats, lh) {
-+		if (!try_module_get(fmt->module))
-+			continue;
-+		read_unlock(&binfmt_lock);
-+		bprm->recursion_depth++;
-+		retval = fmt->load_binary(bprm);
-+		bprm->recursion_depth--;
-+		if (retval >= 0) {
- 			put_binfmt(fmt);
--			if (retval != -ENOEXEC || bprm->mm == NULL)
--				break;
--			if (!bprm->file) {
--				read_unlock(&binfmt_lock);
--				return retval;
--			}
-+			return retval;
- 		}
--		read_unlock(&binfmt_lock);
--#ifdef CONFIG_MODULES
--		if (retval != -ENOEXEC || bprm->mm == NULL) {
-+		read_lock(&binfmt_lock);
-+		put_binfmt(fmt);
-+		if (retval != -ENOEXEC || bprm->mm == NULL)
- 			break;
--		} else {
--#define printable(c) (((c)=='\t') || ((c)=='\n') || (0x20<=(c) && (c)<=0x7e))
--			if (printable(bprm->buf[0]) &&
--			    printable(bprm->buf[1]) &&
--			    printable(bprm->buf[2]) &&
--			    printable(bprm->buf[3]))
--				break; /* -ENOEXEC */
--			if (try)
--				break; /* -ENOEXEC */
--			request_module("binfmt-%04x", *(unsigned short *)(&bprm->buf[2]));
-+		if (!bprm->file) {
-+			read_unlock(&binfmt_lock);
-+			return retval;
- 		}
--#else
--		break;
--#endif
+ 	for (try=0; try<2; try++) {
+ 		read_lock(&binfmt_lock);
+@@ -1407,16 +1400,11 @@ int search_binary_handler(struct linux_binprm *bprm)
+ 			retval = fn(bprm);
+ 			bprm->recursion_depth = depth;
+ 			if (retval >= 0) {
+-				if (depth == 0) {
+-					trace_sched_process_exec(current, old_pid, bprm);
+-					ptrace_event(PTRACE_EVENT_EXEC, old_vpid);
+-				}
+ 				put_binfmt(fmt);
+ 				allow_write_access(bprm->file);
+ 				if (bprm->file)
+ 					fput(bprm->file);
+ 				bprm->file = NULL;
+-				current->did_exec = 1;
+ 				proc_exec_connector(current);
+ 				return retval;
+ 			}
+@@ -1450,9 +1438,29 @@ int search_binary_handler(struct linux_binprm *bprm)
  	}
-+	read_unlock(&binfmt_lock);
-+
-+	if (need_retry && retval == -ENOEXEC && bprm->mm) {
-+		if (printable(bprm->buf[0]) && printable(bprm->buf[1]) &&
-+		    printable(bprm->buf[2]) && printable(bprm->buf[3]))
-+			return retval;
-+		request_module("binfmt-%04x", *(ushort *)(bprm->buf + 2));
-+		need_retry = false;
-+		goto retry;
-+	}
-+
  	return retval;
  }
+-
  EXPORT_SYMBOL(search_binary_handler);
+ 
++static int exec_binprm(struct linux_binprm *bprm)
++{
++	pid_t old_pid, old_vpid;
++	int ret;
++
++	/* Need to fetch pid before load_binary changes it */
++	old_pid = current->pid;
++	rcu_read_lock();
++	old_vpid = task_pid_nr_ns(current, task_active_pid_ns(current->parent));
++	rcu_read_unlock();
++
++	ret = search_binary_handler(bprm);
++	if (ret >= 0) {
++		trace_sched_process_exec(current, old_pid, bprm);
++		ptrace_event(PTRACE_EVENT_EXEC, old_vpid);
++		current->did_exec = 1;
++	}
++
++	return ret;
++}
++
+ /*
+  * sys_execve() executes a new program.
+  */
+@@ -1541,7 +1549,7 @@ static int do_execve_common(const char *filename,
+ 	if (retval < 0)
+ 		goto out;
+ 
+-	retval = search_binary_handler(bprm);
++	retval = exec_binprm(bprm);
+ 	if (retval < 0)
+ 		goto out;
+ 
 -- 
 1.5.5.1
 
