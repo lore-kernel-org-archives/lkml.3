@@ -1,70 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754740Ab3HETax (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 15:30:53 -0400
-Received: from mail-we0-f178.google.com ([74.125.82.178]:45619 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754716Ab3HETau (ORCPT
+	id S1754723Ab3HETcW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 15:32:22 -0400
+Received: from filtteri5.pp.htv.fi ([213.243.153.188]:50105 "EHLO
+	filtteri5.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754364Ab3HETcV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 15:30:50 -0400
+	Mon, 5 Aug 2013 15:32:21 -0400
+Date: Mon, 5 Aug 2013 22:32:10 +0300
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>,
+        linux-kernel@vger.kernel.org
+Subject: 2.6.34.x longterm stable status
+Message-ID: <20130805193210.GA1824@blackmetal.musicnaut.iki.fi>
 MIME-Version: 1.0
-In-Reply-To: <1375730199.22073.135.camel@gandalf.local.home>
-References: <1375721715.22073.80.camel@gandalf.local.home>
-	<87siyo3qna.fsf@tassilo.jf.intel.com>
-	<1375730199.22073.135.camel@gandalf.local.home>
-Date: Mon, 5 Aug 2013 12:30:47 -0700
-Message-ID: <CAAkRFZLXLgqn8yE-07K=KM6YyZt3aLrvvjGL=u_=nK9S5HQ9rg@mail.gmail.com>
-Subject: Re: [RFC] gcc feature request: Moving blocks into sections
-From: Xinliang David Li <davidxl@google.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
-        gcc <gcc@gcc.gnu.org>, Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        David Daney <ddaney.cavm@gmail.com>,
-        Behan Webster <behanw@converseincode.com>,
-        Peter Zijlstra <peterz@infradead.org>, Rong Xu <xur@google.com>,
-        Teresa Johnson <tejohnson@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 5, 2013 at 12:16 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Mon, 2013-08-05 at 12:04 -0700, Andi Kleen wrote:
->> Steven Rostedt <rostedt@goodmis.org> writes:
->>
->> Can't you just use -freorder-blocks-and-partition?
->
-> Yeah, I'm familiar with this option.
->
+Hi,
 
-This option works best with FDO.   FDOed linux kernel rocks :)
+There hasn't been 2.6.34.x stable tree releases for a
+while. Also, in some mails you have mentioned EOLing this tree (e.g.
+http://marc.info/?l=linux-doc&m=137393133817894&w=2). I have two questions
+concerning this:
 
->>
->> This should already partition unlikely blocks into a
->> different section. Just a single one of course.
->>
->> FWIW the disadvantage is that multiple code sections tends
->> to break various older dwarf unwinders, as it needs
->> dwarf3 latest'n'greatest.
->
-> If the option was so good, I would expect everyone would be using it ;-)
->
+- Will there be any more releases, or is it assumed that all users have
+already migrated to newer releases and 2.6.34.14 is the final one?
 
-There were lots of problems with this option -- recently cleaned
-up/fixed by Teresa in GCC trunk.
+- Shouldn't the EOL status be mentioned in the www.kernel.org front page?
 
-thanks,
+Thanks,
 
-David
-
->
-> I'm mainly only concerned with the tracepoints. I'm asking to be able to
-> do this with just the tracepoint code, and affect nobody else.
->
-> -- Steve
->
->
+A.
