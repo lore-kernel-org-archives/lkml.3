@@ -1,78 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754314Ab3HEQd4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 12:33:56 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:12995 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753725Ab3HEQbX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 12:31:23 -0400
-X-IronPort-AV: E=Sophos;i="4.89,819,1367971200"; 
-   d="scan'208";a="39429458"
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-To: <xen-devel@lists.xensource.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <konrad.wilk@oracle.com>, <Stefano.Stabellini@eu.citrix.com>,
-        <Ian.Campbell@citrix.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH v3 02/10] swiotlb-xen: replace dma_length with sg_dma_len() macro
-Date: Mon, 5 Aug 2013 17:30:48 +0100
-Message-ID: <1375720256-8014-2-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <alpine.DEB.2.02.1308051503190.4893@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1308051503190.4893@kaball.uk.xensource.com>
+	id S1753292Ab3HEQjg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 12:39:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28803 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752041Ab3HEQje (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 12:39:34 -0400
+Message-ID: <51FFD5B0.9080000@redhat.com>
+Date: Mon, 05 Aug 2013 18:41:20 +0200
+From: Laszlo Ersek <lersek@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130621 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Borislav Petkov <bp@alien8.de>
+CC: edk2-devel@lists.sourceforge.net, David Woodhouse <dwmw2@infradead.org>,
+        linux-efi@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
+        Gleb Natapov <gleb@redhat.com>, Matthew Garrett <mjg59@srcf.ucam.org>
+Subject: Re: [edk2] Corrupted EFI region
+References: <20130731205431.GG4724@pd.tnic> <1375307727.22084.103.camel@shinybook.infradead.org> <20130801164927.GA7445@pd.tnic> <51FF8C14.2070405@redhat.com> <20130805130258.GB31845@pd.tnic> <51FFAB13.4090603@redhat.com> <20130805140306.GD31845@pd.tnic> <51FFB660.4060400@redhat.com> <20130805144010.GE31845@pd.tnic> <51FFC19A.1020204@redhat.com> <20130805161247.GF31845@pd.tnic>
+In-Reply-To: <20130805161247.GF31845@pd.tnic>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-swiotlb-xen has an implicit dependency on CONFIG_NEED_SG_DMA_LENGTH.
-Remove it by replacing dma_length with sg_dma_len.
+On 08/05/13 18:12, Borislav Petkov wrote:
+> On Mon, Aug 05, 2013 at 05:15:38PM +0200, Laszlo Ersek wrote:
+>> The current implementation (how pointers are converted) probably doesn't
+>> accommodate a second call.
+>>
+>> Of course you want to know why SetVirtualAddressMap() was designed like
+>> that... I didn't participate in the design so I don't know :)
+>>
+>> But, as I said, a kernel directly executing another kernel is an
+>> unexpected idea. IMHO the second kernel in question doesn't fit the UEFI
+>> phases at all. The OS booted like that (ie. the OS whose kernel is the
+>> 2nd (=kexec) kernel) never goes through SEC, PEI, DXE, BDS.
+> 
+> Yes, the thing is, imposing unnecessary restrictions is very
+> counterproductive. And kexec is just an example here - if
+> SetVirtualAddressMap was callable an arbitrary number of times, this
+> whole work I'm doing is unnecessary. So I'm jumping through hoops just
+> to accomodate a braindead design.
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
----
- drivers/xen/swiotlb-xen.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+I doubt it was a deliberate restriction. More like, there was no
+incentive (... that the designers were aware of) *not* to design
+something easy (or easier) to implement. Your use case has come later.
 
-diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
-index aadffcf..1b2277c 100644
---- a/drivers/xen/swiotlb-xen.c
-+++ b/drivers/xen/swiotlb-xen.c
-@@ -506,13 +506,13 @@ xen_swiotlb_map_sg_attrs(struct device *hwdev, struct scatterlist *sgl,
- 				   to do proper error handling. */
- 				xen_swiotlb_unmap_sg_attrs(hwdev, sgl, i, dir,
- 							   attrs);
--				sgl[0].dma_length = 0;
-+				sg_dma_len(sgl) = 0;
- 				return DMA_ERROR_CODE;
- 			}
- 			sg->dma_address = xen_phys_to_bus(map);
- 		} else
- 			sg->dma_address = dev_addr;
--		sg->dma_length = sg->length;
-+		sg_dma_len(sg) = sg->length;
- 	}
- 	return nelems;
- }
-@@ -533,7 +533,7 @@ xen_swiotlb_unmap_sg_attrs(struct device *hwdev, struct scatterlist *sgl,
- 	BUG_ON(dir == DMA_NONE);
- 
- 	for_each_sg(sgl, sg, nelems, i)
--		xen_unmap_single(hwdev, sg->dma_address, sg->dma_length, dir);
-+		xen_unmap_single(hwdev, sg->dma_address, sg_dma_len(sg), dir);
- 
- }
- EXPORT_SYMBOL_GPL(xen_swiotlb_unmap_sg_attrs);
-@@ -555,7 +555,7 @@ xen_swiotlb_sync_sg(struct device *hwdev, struct scatterlist *sgl,
- 
- 	for_each_sg(sgl, sg, nelems, i)
- 		xen_swiotlb_sync_single(hwdev, sg->dma_address,
--					sg->dma_length, dir, target);
-+					sg_dma_len(sg), dir, target);
- }
- 
- void
--- 
-1.7.2.5
+> This is what I cannot fathom in the face of people praising UEFI as the
+> solution to all problems.
 
+I agree that such people exist. I'm not one of them.
+
+>> BTW there's another point I'd like to ask about -- you're saying you
+>> see the region corruption during the same boot, from the first (early)
+>> memmap dump to the second one (when just about to enter virtual mode).
+>> But, is this one boot the very first boot, or the kexec one?
+> 
+> No, kexec is not even involved yet. If you look at the timestamps,
+> there's 0.005 seconds between the two dumps during the *same* kernel
+> booting on the machine, baremetal, straight from grub.
+
+I didn't realize the timestamps survive kexec. (As far as I remember the
+kernels I played with kexec on didn't have the automatic timestamps yet
+in dmesg, but I might have messed up just as well...)
+
+Laszlo
