@@ -1,131 +1,304 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754265Ab3HECWe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Aug 2013 22:22:34 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:40238 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754146Ab3HECWb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Aug 2013 22:22:31 -0400
-Message-ID: <51FF0C1A.3020907@gmail.com>
-Date: Mon, 05 Aug 2013 10:21:14 +0800
-From: Chen Gang F T <chen.gang.flying.transformer@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Greg Ungerer <gerg@uclinux.org>
-CC: Chen Gang <gang.chen@asianux.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        "dhowells@redhat.com" <dhowells@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, davej@redhat.com,
-        Arnd Bergmann <arnd@arndb.de>, linux-m68k <linux-m68k@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>
-Subject: Re: [PATCH] arch: m68k: include: asm: define 'VM_DATA_DEFAULT_FLAGS'
- no matter whether has 'NOMMU' or not.
-References: <51C548E2.1060104@asianux.com> <51D0ECC2.3020101@asianux.com> <51FF01E7.5020105@uclinux.org>
-In-Reply-To: <51FF01E7.5020105@uclinux.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1754376Ab3HECWu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Aug 2013 22:22:50 -0400
+Received: from mga11.intel.com ([192.55.52.93]:49425 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754328Ab3HECWs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Aug 2013 22:22:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,815,1367996400"; 
+   d="scan'208";a="376126088"
+From: Andi Kleen <andi@firstfloor.org>
+To: linux-kernel@vger.kernel.org
+Cc: acme@infradead.org, Andi Kleen <ak@linux.intel.com>,
+        Namhyung Kim <namhyung.kim@lge.com>, mingo@kernel.org,
+        peterz@infradead.org
+Subject: [PATCH] RFC: perf, tools: Move gtk browser into separate perfgtk executable
+Date: Sun,  4 Aug 2013 19:22:44 -0700
+Message-Id: <1375669364-13838-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/05/2013 09:37 AM, Greg Ungerer wrote:
-> Hi Chen Gang,
-> 
-> On 01/07/13 12:43, Chen Gang wrote:
->> Hello Maintainers:
->>
->> Please help check the patch whether OK or not, when you have time.
->>
->> Thanks.
->>
->> On 06/22/2013 02:49 PM, Chen Gang wrote:
->>>
->>> Define 'VM_DATA_DEFAULT_FLAGS' when 'NOMMU' to pass compiling.
->>>
->>> So move it from "include/asm/page_mm.h to "include/asm/page.h"
->>>
->>> The related make:
->>>
->>>   make ARCH=m68k randconfig
->>>   make ARCH=m68k menuconfig
->>>     choose cross compiler
->>>     disable MMU support
->>>   make ARCH=m68k V=1 EXTRA_CFLAGS=-W
->>>
->>> The related error:
->>>
->>>   security/selinux/hooks.c: In function ‘selinux_init’:
->>>   security/selinux/hooks.c:5821:21: error: ‘VM_DATA_DEFAULT_FLAGS’ undeclared (first use in this function)
->>>
->>> (the attachment is the related .config file)
->>>
->>>
->>> Signed-off-by: Chen Gang <gang.chen@asianux.com>
-> 
-> I am fine with this:
-> 
-> Acked-by: Greg Ungerer <gerg@uclinux.org>
-> 
+From: Andi Kleen <ak@linux.intel.com>
 
-Thank you very much.
+By default perf currently links with the GTK2 gui. This pulls
+in a lot of external libraries. It also causes dependency
+problems for distribution packages: simply installing perf
+requires pulling in GTK2 with all its dependencies.
 
-> Do you want me to add this to the m68knommu git tree, and push to
-> Linus?
-> 
+I think the UI is valuable, but it shouldn't be everywhere.
 
-Yeah, thank you.
+The interfaces between the main perf and the GTK2 perf are
+already quite clean, so it's very straight forward to just
+add a few weak stubs and then generate two executables:
+perf and perfgtk
 
-:-)
+The only difference is that the gtk version links in the
+GTK code and overrides the weak stubs.
+(so everything is still only compiled once)
 
-> Regards
-> Greg
-> 
-> 
->>> ---
->>>  arch/m68k/include/asm/page.h    |    3 +++
->>>  arch/m68k/include/asm/page_mm.h |    3 ---
->>>  2 files changed, 3 insertions(+), 3 deletions(-)
->>>
->>> diff --git a/arch/m68k/include/asm/page.h b/arch/m68k/include/asm/page.h
->>> index 7c360da..38b024a 100644
->>> --- a/arch/m68k/include/asm/page.h
->>> +++ b/arch/m68k/include/asm/page.h
->>> @@ -48,6 +48,9 @@ extern unsigned long _ramend;
->>>  #include <asm/page_no.h>
->>>  #endif
->>>  
->>> +#define VM_DATA_DEFAULT_FLAGS	(VM_READ | VM_WRITE | VM_EXEC | \
->>> +				 VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC)
->>> +
->>>  #include <asm-generic/getorder.h>
->>>  
->>>  #endif /* _M68K_PAGE_H */
->>> diff --git a/arch/m68k/include/asm/page_mm.h b/arch/m68k/include/asm/page_mm.h
->>> index 89f2014..5029f73 100644
->>> --- a/arch/m68k/include/asm/page_mm.h
->>> +++ b/arch/m68k/include/asm/page_mm.h
->>> @@ -173,7 +173,4 @@ static inline __attribute_const__ int __virt_to_node_shift(void)
->>>  
->>>  #endif /* __ASSEMBLY__ */
->>>  
->>> -#define VM_DATA_DEFAULT_FLAGS	(VM_READ | VM_WRITE | VM_EXEC | \
->>> -				 VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC)
->>> -
->>>  #endif /* _M68K_PAGE_MM_H */
->>>
->>
->>
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+I currently gave it the preliminary name "perfgtk".
 
+This cuts down the library dependencies on the main perf
+dramatically. It also completely eliminates the GTK2_SUPPORT
+ifdef.
 
+% ldd ./perf | wc -l
+18
+% ldd ./perfgtk | wc -l
+53
+
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Cc: mingo@kernel.org
+Cc: peterz@infradead.org
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ tools/perf/Makefile        | 34 +++++++++++++++++++++-------------
+ tools/perf/config/Makefile |  4 ++--
+ tools/perf/ui/gtkstub.c    | 37 +++++++++++++++++++++++++++++++++++++
+ tools/perf/ui/ui.h         |  8 --------
+ tools/perf/util/annotate.h | 11 -----------
+ tools/perf/util/hist.h     | 11 -----------
+ 6 files changed, 60 insertions(+), 45 deletions(-)
+ create mode 100644 tools/perf/ui/gtkstub.c
+
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 641fccd..25116fc 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -113,6 +113,7 @@ SPARSE_FLAGS = -D__BIG_ENDIAN__ -D__powerpc__
+ BUILTIN_OBJS =
+ LIB_H =
+ LIB_OBJS =
++GUI_OBJS =
+ PYRF_OBJS =
+ SCRIPT_SH =
+ 
+@@ -161,11 +162,12 @@ $(OUTPUT)python/perf.so: $(PYTHON_EXT_SRCS) $(PYTHON_EXT_DEPS)
+ 
+ SCRIPTS = $(patsubst %.sh,%,$(SCRIPT_SH))
+ 
+-#
+-# Single 'perf' binary right now:
+-#
+ PROGRAMS += $(OUTPUT)perf
+ 
++ifndef NO_GTK2
++  PROGRAMS += $(OUTPUT)perfgtk
++endif
++
+ # what 'all' will build and 'install' will install, in perfexecdir
+ ALL_PROGRAMS = $(PROGRAMS) $(SCRIPTS)
+ 
+@@ -366,6 +368,7 @@ LIB_OBJS += $(OUTPUT)ui/helpline.o
+ LIB_OBJS += $(OUTPUT)ui/progress.o
+ LIB_OBJS += $(OUTPUT)ui/util.o
+ LIB_OBJS += $(OUTPUT)ui/hist.o
++LIB_OBJS += $(OUTPUT)ui/gtkstub.o
+ LIB_OBJS += $(OUTPUT)ui/stdio/hist.o
+ 
+ LIB_OBJS += $(OUTPUT)arch/common.o
+@@ -481,13 +484,13 @@ ifndef NO_SLANG
+ endif
+ 
+ ifndef NO_GTK2
+-  LIB_OBJS += $(OUTPUT)ui/gtk/browser.o
+-  LIB_OBJS += $(OUTPUT)ui/gtk/hists.o
+-  LIB_OBJS += $(OUTPUT)ui/gtk/setup.o
+-  LIB_OBJS += $(OUTPUT)ui/gtk/util.o
+-  LIB_OBJS += $(OUTPUT)ui/gtk/helpline.o
+-  LIB_OBJS += $(OUTPUT)ui/gtk/progress.o
+-  LIB_OBJS += $(OUTPUT)ui/gtk/annotate.o
++  GUI_OBJS += $(OUTPUT)ui/gtk/browser.o
++  GUI_OBJS += $(OUTPUT)ui/gtk/hists.o
++  GUI_OBJS += $(OUTPUT)ui/gtk/setup.o
++  GUI_OBJS += $(OUTPUT)ui/gtk/util.o
++  GUI_OBJS += $(OUTPUT)ui/gtk/helpline.o
++  GUI_OBJS += $(OUTPUT)ui/gtk/progress.o
++  GUI_OBJS += $(OUTPUT)ui/gtk/annotate.o
+ endif
+ 
+ ifndef NO_LIBPERL
+@@ -541,6 +544,10 @@ $(OUTPUT)perf: $(OUTPUT)perf.o $(BUILTIN_OBJS) $(PERFLIBS)
+ 	$(QUIET_LINK)$(CC) $(CFLAGS) $(LDFLAGS) $(OUTPUT)perf.o \
+                $(BUILTIN_OBJS) $(LIBS) -o $@
+ 
++$(OUTPUT)perfgtk: $(OUTPUT)perf.o $(BUILTIN_OBJS) $(PERFLIBS) $(GUI_OBJS)
++	$(QUIET_LINK)$(CC) $(CFLAGS) $(LDFLAGS) $(OUTPUT)perf.o \
++               $(BUILTIN_OBJS) $(GUI_OBJS) $(LIBS) $(GUI_EXTLIBS) -o $@
++
+ $(OUTPUT)builtin-help.o: builtin-help.c $(OUTPUT)common-cmds.h $(OUTPUT)PERF-CFLAGS
+ 	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) \
+ 		'-DPERF_HTML_PATH="$(htmldir_SQ)"' \
+@@ -645,12 +652,12 @@ $(OUTPUT)scripts/python/Perf-Trace-Util/Context.o: scripts/python/Perf-Trace-Uti
+ $(OUTPUT)perf-%: %.o $(PERFLIBS)
+ 	$(QUIET_LINK)$(CC) $(CFLAGS) -o $@ $(LDFLAGS) $(filter %.o,$^) $(LIBS)
+ 
+-$(LIB_OBJS) $(BUILTIN_OBJS): $(LIB_H)
++$(LIB_OBJS) $(BUILTIN_OBJS) $(GUI_OBJS): $(LIB_H)
+ $(patsubst perf-%,%.o,$(PROGRAMS)): $(LIB_H) $(wildcard */*.h)
+ 
+ # we compile into subdirectories. if the target directory is not the source directory, they might not exists. So
+ # we depend the various files onto their directories.
+-DIRECTORY_DEPS = $(LIB_OBJS) $(BUILTIN_OBJS) $(OUTPUT)PERF-VERSION-FILE $(OUTPUT)common-cmds.h
++DIRECTORY_DEPS = $(LIB_OBJS) $(GUI_OBJS) $(BUILTIN_OBJS) $(OUTPUT)PERF-VERSION-FILE $(OUTPUT)common-cmds.h
+ $(DIRECTORY_DEPS): | $(sort $(dir $(DIRECTORY_DEPS)))
+ # In the second step, we make a rule to actually create these directories
+ $(sort $(dir $(DIRECTORY_DEPS))):
+@@ -792,7 +799,8 @@ $(INSTALL_DOC_TARGETS):
+ ### Cleaning rules
+ 
+ clean: $(LIBTRACEEVENT)-clean $(LIBLK)-clean
+-	$(RM) $(LIB_OBJS) $(BUILTIN_OBJS) $(LIB_FILE) $(OUTPUT)perf-archive $(OUTPUT)perf.o $(LANG_BINDINGS)
++	$(RM) $(LIB_OBJS) $(GUI_OBJS) $(BUILTIN_OBJS) $(LIB_FILE)
++	$(RM) $(OUTPUT)perf-archive $(OUTPUT)perf.o $(LANG_BINDINGS)
+ 	$(RM) $(ALL_PROGRAMS) perf
+ 	$(RM) *.spec *.pyc *.pyo */*.pyc */*.pyo $(OUTPUT)common-cmds.h TAGS tags cscope*
+ 	$(QUIET_SUBDIR0)Documentation $(QUIET_SUBDIR1) clean
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index b5d9238..d718961 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -86,6 +86,7 @@ CFLAGS += -Wextra
+ CFLAGS += -std=gnu99
+ 
+ EXTLIBS = -lelf -lpthread -lrt -lm
++GUI_EXTLIBS =
+ 
+ ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -Werror -fstack-protector-all,-fstack-protector-all),y)
+   CFLAGS += -fstack-protector-all
+@@ -268,9 +269,8 @@ ifndef NO_GTK2
+     ifeq ($(call try-cc,$(SOURCE_GTK2_INFOBAR),$(FLAGS_GTK2),-DHAVE_GTK_INFO_BAR),y)
+       CFLAGS += -DHAVE_GTK_INFO_BAR
+     endif
+-    CFLAGS += -DGTK2_SUPPORT
+     CFLAGS += $(shell pkg-config --cflags gtk+-2.0 2>/dev/null)
+-    EXTLIBS += $(shell pkg-config --libs gtk+-2.0 2>/dev/null)
++    GUI_EXTLIBS += $(shell pkg-config --libs gtk+-2.0 2>/dev/null)
+   endif
+ endif
+ 
+diff --git a/tools/perf/ui/gtkstub.c b/tools/perf/ui/gtkstub.c
+new file mode 100644
+index 0000000..cb58d31
+--- /dev/null
++++ b/tools/perf/ui/gtkstub.c
+@@ -0,0 +1,37 @@
++#include "ui/ui.h"
++#include "util/annotate.h"
++
++/* Stubs used when the gtk2 code is not linked in */
++
++#define __weak __attribute__((weak))
++
++__weak int perf_gtk__init(void)
++{
++	return -1;
++}
++
++__weak void perf_gtk__exit(bool wait_for_ok __maybe_unused)
++{
++}
++
++__weak int perf_evlist__gtk_browse_hists(struct perf_evlist *evlist __maybe_unused,
++					 const char *help __maybe_unused,
++					 struct hist_browser_timer *hbt __maybe_unused,
++					 float min_pcnt __maybe_unused)
++{
++	return 0;
++}
++
++
++__weak void perf_gtk__show_annotations(void)
++{
++}
++
++__weak int symbol__gtk_annotate(struct symbol *sym __maybe_unused,
++				struct map *map __maybe_unused,
++				struct perf_evsel *evsel __maybe_unused,
++				struct hist_browser_timer *hbt __maybe_unused)
++{
++	return 0;
++}
++
+diff --git a/tools/perf/ui/ui.h b/tools/perf/ui/ui.h
+index 70cb0d4..3a6ca86 100644
+--- a/tools/perf/ui/ui.h
++++ b/tools/perf/ui/ui.h
+@@ -23,16 +23,8 @@ static inline int ui__init(void)
+ static inline void ui__exit(bool wait_for_ok __maybe_unused) {}
+ #endif
+ 
+-#ifdef GTK2_SUPPORT
+ int perf_gtk__init(void);
+ void perf_gtk__exit(bool wait_for_ok);
+-#else
+-static inline int perf_gtk__init(void)
+-{
+-	return -1;
+-}
+-static inline void perf_gtk__exit(bool wait_for_ok __maybe_unused) {}
+-#endif
+ 
+ void ui__refresh_dimensions(bool force);
+ 
+diff --git a/tools/perf/util/annotate.h b/tools/perf/util/annotate.h
+index af75515..ac70cc6 100644
+--- a/tools/perf/util/annotate.h
++++ b/tools/perf/util/annotate.h
+@@ -165,7 +165,6 @@ static inline int symbol__tui_annotate(struct symbol *sym __maybe_unused,
+ }
+ #endif
+ 
+-#ifdef GTK2_SUPPORT
+ int symbol__gtk_annotate(struct symbol *sym, struct map *map,
+ 			 struct perf_evsel *evsel,
+ 			 struct hist_browser_timer *hbt);
+@@ -178,16 +177,6 @@ static inline int hist_entry__gtk_annotate(struct hist_entry *he,
+ }
+ 
+ void perf_gtk__show_annotations(void);
+-#else
+-static inline int hist_entry__gtk_annotate(struct hist_entry *he __maybe_unused,
+-				struct perf_evsel *evsel __maybe_unused,
+-				struct hist_browser_timer *hbt __maybe_unused)
+-{
+-	return 0;
+-}
+-
+-static inline void perf_gtk__show_annotations(void) {}
+-#endif
+ 
+ extern const char	*disassembler_style;
+ 
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index 2d3790f..9fa8b2d 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -229,20 +229,9 @@ static inline int script_browse(const char *script_opt __maybe_unused)
+ #define K_SWITCH_INPUT_DATA -3000
+ #endif
+ 
+-#ifdef GTK2_SUPPORT
+ int perf_evlist__gtk_browse_hists(struct perf_evlist *evlist, const char *help,
+ 				  struct hist_browser_timer *hbt __maybe_unused,
+ 				  float min_pcnt);
+-#else
+-static inline
+-int perf_evlist__gtk_browse_hists(struct perf_evlist *evlist __maybe_unused,
+-				  const char *help __maybe_unused,
+-				  struct hist_browser_timer *hbt __maybe_unused,
+-				  float min_pcnt __maybe_unused)
+-{
+-	return 0;
+-}
+-#endif
+ 
+ unsigned int hists__sort_list_width(struct hists *self);
+ 
 -- 
-Chen Gang
+1.8.3.1
+
