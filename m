@@ -1,40 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753190Ab3HENGU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 09:06:20 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:49865 "EHLO mail.zytor.com"
+	id S1753118Ab3HENGO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 09:06:14 -0400
+Received: from velox.its.uu.se ([130.238.7.74]:44201 "EHLO velox.its.uu.se"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752756Ab3HENGQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 09:06:16 -0400
-Message-ID: <51FFA324.1090901@zytor.com>
-Date: Mon, 05 Aug 2013 06:05:40 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1752756Ab3HENGL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 09:06:11 -0400
+X-Greylist: delayed 545 seconds by postgrey-1.27 at vger.kernel.org; Mon, 05 Aug 2013 09:06:11 EDT
+X-DKIM: Sendmail DKIM Filter v2.8.3 velox.its.uu.se B978A36350
+Message-ID: <20130805145631.152764rotldkpf5r@webmail.uu.se>
+Date: Mon, 05 Aug 2013 14:56:31 +0200
+From: Lisbeth Karlsson <lisbeth.karlsson@botan.uu.se>
+Reply-to: halawani.aao@ovi.com
+To: undisclosed-recipients:;
+Subject: Proposal
 MIME-Version: 1.0
-To: Matt Fleming <matt@console-pimps.org>
-CC: Ingo Molnar <mingo@kernel.org>, linux-efi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [GIT PULL] urgent fix
-References: <20130729080836.GD2515@console-pimps.org> <20130730185212.GA21687@gmail.com> <20130805130242.GU2515@console-pimps.org>
-In-Reply-To: <20130805130242.GU2515@console-pimps.org>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+ charset=ISO-8859-1;
+ DelSp="Yes";
+ format="flowed"
+Content-Disposition: inline
 Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.3.9)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/05/2013 06:02 AM, Matt Fleming wrote:
-> On Tue, 30 Jul, at 08:52:12PM, Ingo Molnar wrote:
->> Pulled into tip:x86/urgent, thanks Matt!
-> 
-> Thanks Ingo.
-> 
-> Any chance we can get this to Linus for -rc5? The ARM EFI boot stub
-> patches depend on the bug fix in this pull request.
-> 
+I seek your consent to present you as the next of kin to the account  
+of a deceased client for claims valued at Fourteen million, three  
+hundred thousand Pounds.
 
-Yes, we should push the urgent queue to Linus.
+Contact me through my private email for details: halawani.aao@ovi.com
 
-	-hpa
+Mr. Halawani, Azhar Abdulrahim.
+Solicitors Legal Services Barristers
+United Kingdom
 
