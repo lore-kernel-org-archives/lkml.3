@@ -1,64 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754590Ab3HESLT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 14:11:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59593 "EHLO mx1.redhat.com"
+	id S1754518Ab3HESM2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 14:12:28 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:34785 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754237Ab3HESLG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 14:11:06 -0400
-Date: Mon, 5 Aug 2013 14:10:49 -0400
-From: Aristeu Rozanski <aris@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: lizefan@huawei.com, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Balbir Singh <bsingharora@gmail.com>,
-        Matt Helsley <matthltc@us.ibm.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH 15/23] cgroup: make hierarchy iterators deal with
- cgroup_subsys_state instead of cgroup
-Message-ID: <20130805181049.GC7878@redhat.com>
-References: <1375393801-4817-1-git-send-email-tj@kernel.org>
- <1375393801-4817-16-git-send-email-tj@kernel.org>
+	id S1752927Ab3HESM1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 14:12:27 -0400
+Date: Mon, 5 Aug 2013 20:12:25 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Andrew Fish <afish@apple.com>
+Cc: edk2-devel@lists.sourceforge.net, Laszlo Ersek <lersek@redhat.com>,
+        linux-efi@vger.kernel.org, Gleb Natapov <gleb@redhat.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [edk2] Corrupted EFI region
+Message-ID: <20130805181225.GH31845@pd.tnic>
+References: <20130731205431.GG4724@pd.tnic>
+ <1375307727.22084.103.camel@shinybook.infradead.org>
+ <20130801164927.GA7445@pd.tnic>
+ <51FF8C14.2070405@redhat.com>
+ <20130805130258.GB31845@pd.tnic>
+ <51FFAB13.4090603@redhat.com>
+ <20130805140306.GD31845@pd.tnic>
+ <51FFB660.4060400@redhat.com>
+ <20130805144010.GE31845@pd.tnic>
+ <2DBE3EA4-E321-4A7B-B9AF-EDE55BC2E358@apple.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1375393801-4817-16-git-send-email-tj@kernel.org>
+In-Reply-To: <2DBE3EA4-E321-4A7B-B9AF-EDE55BC2E358@apple.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 01, 2013 at 05:49:53PM -0400, Tejun Heo wrote:
-> cgroup is currently in the process of transitioning to using css
-> (cgroup_subsys_state) as the primary handle instead of cgroup in
-> subsystem API.  For hierarchy iterators, this is beneficial because
-> 
-> * In most cases, css is the only thing subsystems care about anyway.
-> 
-> * On the planned unified hierarchy, iterations for different
->   subsystems will need to skip over different subtrees of the
->   hierarchy depending on which subsystems are enabled on each cgroup.
->   Passing around css makes it unnecessary to explicitly specify the
->   subsystem in question as css is intersection between cgroup and
->   subsystem
-> 
-> * For the planned unified hierarchy, css's would need to be created
->   and destroyed dynamically independent from cgroup hierarchy.  Having
->   cgroup core manage css iteration makes enforcing deref rules a lot
->   easier.
-> 
-> Most subsystem conversions are straight-forward.  Noteworthy changes
-> are
-> 
-> * blkio: cgroup_to_blkcg() is no longer used.  Removed.
-> 
-> * freezer: cgroup_freezer() is no longer used.  Removed.
-> 
-> * devices: cgroup_to_devcgroup() is no longer used.  Removed.
+On Mon, Aug 05, 2013 at 08:50:17AM -0700, Andrew Fish wrote:
+> AFAICT EFI pre-dates kexec merge into mainline by a number of years as
+> SetVirtualaddressMap() was part of EFI 1.0 (previous millennium)
 
-Acked-by: Aristeu Rozanski <aris@redhat.com>
+Ok, fair enough.
+
+> The EFI to UEFI conversion was placing EFI 1.10 into an industry
+> standard, UEFI 2.0. UEFI is an industry standard so some one just
+> needs to make a proposal to update the spec. The edk2 open source
+> project is not part of the standards body so complaining on this
+> mailing list is not going to get anything changed.
+
+Right, I don't think that even changing the spec would help - it would
+actually make things worse because then we'd have to differentiate
+between UEFI versions: those which can do SetVirtualaddressMap() more
+than once and the older ones.
+
+So let's drop the discussion here - it is what it is, it is too late to
+change anything. At least we talked about it. :-)
+
+Thanks.
 
 -- 
-Aristeu
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
