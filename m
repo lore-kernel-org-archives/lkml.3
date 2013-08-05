@@ -1,55 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755187Ab3HEIde (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 04:33:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34800 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754886Ab3HEIdd (ORCPT
+	id S1755224Ab3HEIeo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 04:34:44 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:60135 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754656Ab3HEIen (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 04:33:33 -0400
-Date: Mon, 5 Aug 2013 16:34:45 +0800
-From: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-To: "Du, ChangbinX" <changbinx.du@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "balbi@ti.com" <balbi@ti.com>,
-        "sarah.a.sharp@linuxfoundation.org" 
-	<sarah.a.sharp@linuxfoundation.org>,
-        "Wu, Hao" <hao.wu@intel.com>,
-        "Tang, Jianqiang" <jianqiang.tang@intel.com>,
-        "Zhuang, Jin Can" <jin.can.zhuang@intel.com>,
-        "Huang, Xiaochao" <xiaochao.huang@intel.com>
-Subject: Re: About TRB_TO_EP_INDEX() macro using
-Message-ID: <20130805083445.GA15885@kroah.com>
-References: <0C18FE92A7765D4EB9EE5D38D86A563A019660C8@SHSMSX103.ccr.corp.intel.com>
+	Mon, 5 Aug 2013 04:34:43 -0400
+Date: Mon, 5 Aug 2013 01:34:34 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Christoph Hellwig <hch@infradead.org>, Andi Kleen <andi@firstfloor.org>,
+        linux-kernel@vger.kernel.org, acme@infradead.org,
+        Andi Kleen <ak@linux.intel.com>, Namhyung Kim <namhyung.kim@lge.com>,
+        peterz@infradead.org
+Subject: Re: [PATCH] RFC: perf, tools: Move gtk browser into separate perfgtk
+ executable
+Message-ID: <20130805083434.GA20606@infradead.org>
+References: <1375669364-13838-1-git-send-email-andi@firstfloor.org>
+ <20130805081641.GA24808@gmail.com>
+ <20130805082320.GA9562@infradead.org>
+ <20130805083132.GE26746@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <0C18FE92A7765D4EB9EE5D38D86A563A019660C8@SHSMSX103.ccr.corp.intel.com>
+In-Reply-To: <20130805083132.GE26746@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 05, 2013 at 08:07:25AM +0000, Du, ChangbinX wrote:
-> Recently when I check xHCI code, find that some functions try to get EP index 
-> from a Command Completion Event TRB via TRB_TO_EP_INDEX() macro.
-> 
-> This is totally wrong. The macro definition is:
-> 
-> 	#define TRB_TO_EP_INDEX(p)		((((p) & (0x1f << 16)) >> 16) - 1)
-> 
-> TRB_TO_EP_INDEX only applies to Transfer Event TRB. But for Command 
-> Completion Event TRB, there is no Endpoint ID field. So, we cannot directly 
-> get EP index from these TRBs, but we can find it by the TRB Pointer.
-> 
-> Here list two functions for you to check:
-> 	handle_stopped_endpoint()
-> 	handle_reset_ep_completion()
+On Mon, Aug 05, 2013 at 10:31:32AM +0200, Ingo Molnar wrote:
+> Nonsense, a distro, if it truly worried about this, could create two 
+> packages already, there's no need to expose configuration options in the 
+> binary name itself and burden users with the separation. I sometimes 
+> switch the UI frontend of perf depending on the workflow and the terminal, 
+> it would be highly annoying if the binary name was changed to expose 
+> configuration options.
 
-Care to send a patch showing how you would change this if it is
-incorrect?
+Which means you'd have to use a different tool name or have incompatible
+packages, both of which aren't desirable.
 
-thanks,
+> The thing is, you strongly objected to perf itself when we offered it up 
+> for an upstream merge and I'm not surprised you still don't like it.
 
-greg k-h
+I strongly objected to adding it to the kernel tree, and I still stand
+to that opinion because it makes using perf much more painful than it
+needs to be.  I never disliked perf itself and use it frequently now
+that I can bypass some of the pains by just using an older distro
+package.
+
+But I'd much rather get this back to technical discussions than personal
+attacks..
+
