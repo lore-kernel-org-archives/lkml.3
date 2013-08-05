@@ -1,96 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754334Ab3HEQMv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 12:12:51 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:36614 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751821Ab3HEQMt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 12:12:49 -0400
-Date: Mon, 5 Aug 2013 18:12:47 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Laszlo Ersek <lersek@redhat.com>
-Cc: edk2-devel@lists.sourceforge.net, David Woodhouse <dwmw2@infradead.org>,
-        linux-efi@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
-        Gleb Natapov <gleb@redhat.com>, Matthew Garrett <mjg59@srcf.ucam.org>
-Subject: Re: [edk2] Corrupted EFI region
-Message-ID: <20130805161247.GF31845@pd.tnic>
-References: <20130731205431.GG4724@pd.tnic>
- <1375307727.22084.103.camel@shinybook.infradead.org>
- <20130801164927.GA7445@pd.tnic>
- <51FF8C14.2070405@redhat.com>
- <20130805130258.GB31845@pd.tnic>
- <51FFAB13.4090603@redhat.com>
- <20130805140306.GD31845@pd.tnic>
- <51FFB660.4060400@redhat.com>
- <20130805144010.GE31845@pd.tnic>
- <51FFC19A.1020204@redhat.com>
+	id S1754406Ab3HEQNE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 12:13:04 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:53434 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754374Ab3HEQNA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 12:13:00 -0400
+Date: Mon, 5 Aug 2013 09:12:56 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Jonathan Cameron <jic23@kernel.org>
+Cc: Zubair Lutfullah <zubair.lutfullah@gmail.com>, jic23@cam.ac.uk,
+        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org, gregkh@linuxfoundation.org,
+        Russ.Dill@ti.com
+Subject: Re: [PATCH 1/2] input: ti_tsc: Enable shared IRQ for TSC
+Message-ID: <20130805161256.GA8794@core.coreip.homeip.net>
+References: <1374882674-18403-1-git-send-email-zubair.lutfullah@gmail.com>
+ <1374882674-18403-2-git-send-email-zubair.lutfullah@gmail.com>
+ <51FE361B.5030900@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51FFC19A.1020204@redhat.com>
+In-Reply-To: <51FE361B.5030900@kernel.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 05, 2013 at 05:15:38PM +0200, Laszlo Ersek wrote:
-> The current implementation (how pointers are converted) probably doesn't
-> accommodate a second call.
+On Sun, Aug 04, 2013 at 12:08:11PM +0100, Jonathan Cameron wrote:
+> On 07/27/13 00:51, Zubair Lutfullah wrote:
+> > From: "Patil, Rachna" <rachna@ti.com>
+> > 
+> > Touchscreen and ADC share the same IRQ line from parent MFD core.
+> > Previously only Touchscreen was interrupt based.
+> > With continuous mode support added in ADC driver, driver requires
+> > interrupt to process the ADC samples, so enable shared IRQ flag bit for
+> > touchscreen.
+> > 
+> > Signed-off-by: Patil, Rachna <rachna@ti.com>
+> > Acked-by: Vaibhav Hiremath <hvaibhav@ti.com>
+> > Signed-off-by: Zubair Lutfullah <zubair.lutfullah@gmail.com>
+> > Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> I'd rather this went via input independent of the other patch
+> (if not there all that will happen is one or other driver will
+> fail to probe if both are attempted?)
 > 
-> Of course you want to know why SetVirtualAddressMap() was designed like
-> that... I didn't participate in the design so I don't know :)
+> Can take it through IIO but only with a Dmitry Ack.
 > 
-> But, as I said, a kernel directly executing another kernel is an
-> unexpected idea. IMHO the second kernel in question doesn't fit the UEFI
-> phases at all. The OS booted like that (ie. the OS whose kernel is the
-> 2nd (=kexec) kernel) never goes through SEC, PEI, DXE, BDS.
+> > ---
+> >  drivers/input/touchscreen/ti_am335x_tsc.c |   18 ++++++++++++++----
+> >  1 file changed, 14 insertions(+), 4 deletions(-)
+> > 
+> > diff --git a/drivers/input/touchscreen/ti_am335x_tsc.c b/drivers/input/touchscreen/ti_am335x_tsc.c
+> > index e1c5300..68d1250 100644
+> > --- a/drivers/input/touchscreen/ti_am335x_tsc.c
+> > +++ b/drivers/input/touchscreen/ti_am335x_tsc.c
+> > @@ -260,8 +260,18 @@ static irqreturn_t titsc_irq(int irq, void *dev)
+> >  	unsigned int fsm;
+> >  
+> >  	status = titsc_readl(ts_dev, REG_IRQSTATUS);
+> > -	if (status & IRQENB_FIFO0THRES) {
+> > -
+> > +	/*
+> > +	 * ADC and touchscreen share the IRQ line.
+> > +	 * FIFO1 threshold, FIFO1 Overrun and FIFO1 underflow
+> > +	 * interrupts are used by ADC,
+> > +	 * hence return from touchscreen IRQ handler if FIFO1
+> > +	 * related interrupts occurred.
+> > +	 */
+> > +	if ((status & IRQENB_FIFO1THRES) ||
+> > +			(status & IRQENB_FIFO1OVRRUN) ||
+> > +			(status & IRQENB_FIFO1UNDRFLW))
+> > +		return IRQ_NONE;
+> > +	else if (status & IRQENB_FIFO0THRES) {
 
-Yes, the thing is, imposing unnecessary restrictions is very
-counterproductive. And kexec is just an example here - if
-SetVirtualAddressMap was callable an arbitrary number of times, this
-whole work I'm doing is unnecessary. So I'm jumping through hoops just
-to accomodate a braindead design.
-
-This is what I cannot fathom in the face of people praising UEFI as the
-solution to all problems. Where in fact it causes more, and needlessly
-at that.
-
-> That doesn't matter as long as the UEFI designers aren't aware of it :)
-
-Well, it wouldn't have hurt if they at least looked around what's out
-there...
-
-> (Who should have made whom aware, ie. Linux people approaching UEFI
-> people, or UEFI people exploring Linux, is a separate topic. As always
-> I'm apolitical about UEFI; I'm not arguing for it or against it. My
-> feeble efforts for improving OVMF and interfacing code are motivated by
-> my employer, not my world view, but as a side-effect of working with the
-> code I can't help but notice some nice things in edk2 and appreciate
-> them :))
-
-No, I completely understand. I was simply asking whether you've managed
-to see an aspect which made sense for SetVirtualAddressMap to be
-callable only once and to enlighten me about it because I can't see one
-so far.
-
-> Insult my code or my analysis pls.
-
-I won't and I don't need to insult anybody or anything. :)
-
-> BTW there's another point I'd like to ask about -- you're saying you
-> see the region corruption during the same boot, from the first (early)
-> memmap dump to the second one (when just about to enter virtual mode).
-> But, is this one boot the very first boot, or the kexec one?
-
-No, kexec is not even involved yet. If you look at the timestamps,
-there's 0.005 seconds between the two dumps during the *same* kernel
-booting on the machine, baremetal, straight from grub.
+What happens if both parts have data at the same time? Can both
+IRQENB_FIFO1THRES and IRQENB_FIFO0THRES be signalled? What will happen
+in this case?
 
 Thanks.
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Dmitry
