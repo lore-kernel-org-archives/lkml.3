@@ -1,58 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754480Ab3HECr5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Aug 2013 22:47:57 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:54865 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754451Ab3HECry (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Aug 2013 22:47:54 -0400
-From: "Lee, Jae-Hong" <pyrasis@gmail.com>
-To: minchan@kernel.org, rob@landley.net
-Cc: linux-kernel@vger.kernel.org, "Lee, Jae-Hong" <pyrasis@gmail.com>
-Subject: =?UTF-8?q?=5BPATCH=20v2=203/3=5D=20Correct=20unfaithful=20translation=20on=20HOWTO=20in=20ko=5FKR?=
-Date: Mon,  5 Aug 2013 11:47:45 +0900
-Message-Id: <1375670865-1321-1-git-send-email-pyrasis@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1754357Ab3HECss (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Aug 2013 22:48:48 -0400
+Received: from mga14.intel.com ([143.182.124.37]:22123 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754199Ab3HECsr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Aug 2013 22:48:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,815,1367996400"; 
+   d="scan'208";a="277659536"
+Message-ID: <51FF123C.8010208@intel.com>
+Date: Mon, 05 Aug 2013 10:47:24 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
+To: Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <h.peter.anvin@intel.com>
+CC: Ilari Stenroth <ilari.stenroth@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: arch/x86/kernel/cpu/intel.c needs an update for Haswell?
+References: <kt91u2$jhs$1@ger.gmane.org> <20130730193530.GB23299@pd.tnic> <kt951r$m5m$1@ger.gmane.org> <20130730195402.GD23299@pd.tnic> <51FA220B.5070307@intel.com> <51FA256C.80001@intel.com>
+In-Reply-To: <51FA256C.80001@intel.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Lee, Jae-Hong" <pyrasis@gmail.com>
+On 08/01/2013 05:07 PM, Alex Shi wrote:
+> From 6fb21a9ce475cfc6c7c39bdfd3d9422be24cdb74 Mon Sep 17 00:00:00 2001
+> From: Alex Shi <alex.shi@intel.com>
+> Date: Wed, 31 Jul 2013 16:28:42 +0800
+> Subject: [PATCH 1/2] x86/tlb_flushall_shift: add Ivybridge EP CPU support
+> 
+> Tested with munmap.c on Ivybridge EP 2S machine, the best shift value is
+> 2, that means when the tlb flush entries less than 64, single invlpg has
+> performance benefit on this machine.
+> The testcase come from: https://lkml.org/lkml/2012/5/17/59
+> Results show it has about 5% to 30% performance increase.
+> 
+> Signed-off-by: Alex Shi <alex.shi@intel.com>
+> ---
 
-This patch corrects unfaithful Korean translation in Documentation/ko_KR/HOWTO.
+Any comments are appreciated!
 
-Signed-off-by: Lee, Jae-Hong <pyrasis@gmail.com>
-Acked-by: Minchan Kim <minchan@kernel.org>
----
- Documentation/ko_KR/HOWTO |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/Documentation/ko_KR/HOWTO b/Documentation/ko_KR/HOWTO
-index 4aa79f9..6bf4832 100644
---- a/Documentation/ko_KR/HOWTO
-+++ b/Documentation/ko_KR/HOWTO
-@@ -455,7 +455,7 @@ bugme-janitor 메일링 리스트(bugzilla에 모든 변화들이 여기서 메
-  - 의견
-  - 변경을 위한 요구
-  - 당위성을 위한 요구
-- - 고요
-+ - 침묵
- 
- 기억하라. 이것들은 여러분의 패치가 커널로 들어가기 위한 과정이다. 여러분의
- 패치들은 비판과 다른 의견을 받을 수 있고 그것들을 기술적인 레벨로 평가하고
-@@ -489,7 +489,7 @@ bugme-janitor 메일링 리스트(bugzilla에 모든 변화들이 여기서 메
- 문제를 피하기 위한 목록이 있다.
-   여러분들이 제안한 변경들에 관하여 말할 때 좋은 것들 :
-     - "이것은 여러 문제들을 해결합니다."
--    - "이것은 2000 라인의 코드를 제거합니다."
-+    - "이것은 2000 라인의 코드를 줄입니다."
-     - "이것은 내가 말하려는 것에 관해 설명하는 패치입니다."
-     - "나는 5개의 다른 아키텍쳐에서 그것을 테스트 했으므로..."
-     - "여기에 일련의 작은 패치들이 있으므로..."
 -- 
-1.7.10.4
-
+Thanks
+    Alex
