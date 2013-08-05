@@ -1,95 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753899Ab3HEOm2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 10:42:28 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:57609 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753444Ab3HEOm1 (ORCPT
+	id S1753982Ab3HEOnQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 10:43:16 -0400
+Received: from mail-qe0-f44.google.com ([209.85.128.44]:65480 "EHLO
+	mail-qe0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753665Ab3HEOnP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 10:42:27 -0400
-Date: Mon, 5 Aug 2013 15:42:01 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Ashish Chavan <ashish.chavan@kpitcummins.com>
-Cc: lrg <lrg@ti.com>, alsa-devel <alsa-devel@alsa-project.org>,
-        David Dajun Chen <david.chen@diasemi.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "kiran.padwal" <kiran.padwal@kpitcummins.com>
-Message-ID: <20130805144201.GF9858@sirena.org.uk>
-References: <20130705133752.GX27646@sirena.org.uk>
- <1373270091.11222.12.camel@matrix>
- <20130708112613.GQ27646@sirena.org.uk>
- <1373542576.9286.101.camel@matrix>
- <20130717103651.GP22506@sirena.org.uk>
- <1374482594.13726.11.camel@matrix>
- <20130722100211.GP9858@sirena.org.uk>
- <1375110386.21326.6.camel@matrix>
- <20130729160157.GZ9858@sirena.org.uk>
- <1375689331.28910.5.camel@matrix>
+	Mon, 5 Aug 2013 10:43:15 -0400
+Message-ID: <51FFBA00.4070801@gmail.com>
+Date: Mon, 05 Aug 2013 10:43:12 -0400
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Nx36dz0OaUKPu+g+"
-Content-Disposition: inline
-In-Reply-To: <1375689331.28910.5.camel@matrix>
-X-Cookie: You will be awarded some great honor.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [alsa-devel] [PATCH] ASoC: codecs: da9055: Update driver name to
- fix breakage due to pmic driver with same name
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+CC: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Runzhen Wang <runzhen@linux.vnet.ibm.com>
+Subject: Re: [PATCH 5/9] perf kvm: add live mode - v3
+References: <1375473947-64285-1-git-send-email-dsahern@gmail.com> <1375473947-64285-6-git-send-email-dsahern@gmail.com> <51FF3DDA.6080108@linux.vnet.ibm.com>
+In-Reply-To: <51FF3DDA.6080108@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 8/5/13 1:53 AM, Xiao Guangrong wrote:
+> Hi David,
+>
+> Thanks for your nice job! I got some questions.
+>
+> On 08/03/2013 04:05 AM, David Ahern wrote:
+>
+>>   static int kvm_events_hash_fn(u64 key)
+>>   {
+>>   	return key & (EVENTS_CACHE_SIZE - 1);
+>> @@ -472,7 +501,11 @@ static bool handle_end_event(struct perf_kvm_stat *kvm,
+>>   	vcpu_record->last_event = NULL;
+>>   	vcpu_record->start_time = 0;
+>>
+>> -	BUG_ON(timestamp < time_begin);
+>> +	/* seems to happen once in a while during live mode */
+>> +	if (timestamp < time_begin) {
+>> +		pr_debug("End time before begin time; skipping event.\n");
+>> +		return true;
+>> +	}
+>
+> No idea why it can happen. :(
 
---Nx36dz0OaUKPu+g+
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I saw it triggering quite often early on (last Fall when I started this) 
+and I changed the BUG_ON to keep going and get the command working. It 
+needs to be revisited and figured out why an end event comes before a 
+begin event - might be a start up problem only. But as a start point did 
+not seem to hurt to just ignore the sample.
 
-On Mon, Aug 05, 2013 at 01:25:31PM +0530, Ashish Chavan wrote:
-> On Mon, 2013-07-29 at 17:01 +0100, Mark Brown wrote:
+>
+>> +static bool verify_vcpu(int vcpu)
+>> +{
+>> +	int nr_cpus;
+>> +
+>> +	if (vcpu != -1 && vcpu < 0) {
+>> +		pr_err("Invalid vcpu:%d.\n", vcpu);
+>> +		return false;
+>> +	}
+>> +
+>> +	nr_cpus = sysconf(_SC_NPROCESSORS_ONLN);
+>> +	if ((nr_cpus > 0) && (vcpu > nr_cpus - 1)) {
+>> +		pr_err("Invalid vcpu:%d.\n", vcpu);
+>> +		return false;
+>> +	}
+>
+> Hmm, kvm can use more vcpus than the cpus on host.
 
-> > Well, it's a very unusual hardware design choice to have multiple I2C
-> > endpoints in a single physical chip.
+Good point. I'll fix.
 
-> I hope to see more of such devices in near future.
+>
+>> +static int kvm_events_live(struct perf_kvm_stat *kvm,
+>> +			   int argc, const char **argv)
+>> +{
+>> +	char errbuf[BUFSIZ];
+>> +	int err;
+>> +
+>> +	const struct option live_options[] = {
+>> +		OPT_STRING('p', "pid", &kvm->opts.target.pid, "pid",
+>> +			"record events on existing process id"),
+>> +		OPT_STRING('t', "tid", &kvm->opts.target.tid, "tid",
+>> +			"record events on existing thread id"),
+>> +		OPT_STRING('C', "cpu", &kvm->opts.target.cpu_list, "cpu",
+>> +			"list of host cpus to monitor"),
+>> +		OPT_UINTEGER('m', "mmap-pages", &kvm->opts.mmap_pages,
+>> +			"number of mmap data pages"),
+>> +		OPT_INCR('v', "verbose", &verbose,
+>> +			"be more verbose (show counter open errors, etc)"),
+>> +		OPT_BOOLEAN('a', "all-cpus", &kvm->opts.target.system_wide,
+>> +			"system-wide collection from all CPUs"),
+>> +		OPT_UINTEGER('d', "display", &kvm->display_time,
+>> +			"time in seconds between display updates"),
+>> +		OPT_STRING(0, "event", &kvm->report_event, "report event",
+>> +			"event for reporting: vmexit, mmio, ioport"),
+>> +		OPT_INTEGER(0, "vcpu", &kvm->trace_vcpu,
+>> +			"vcpu id to report"),
+>> +		OPT_STRING('k', "key", &kvm->sort_key, "sort-key",
+>> +			"key for sorting: sample(sort by samples number)"
+>> +			" time (sort by avg time)"),
+>
+> Why we have so many parameters used for tracking. For KVM, we only need to know
+> 1) which guest is tracked and 2) which vcpu in the guest is tracked and 3) what
+> kind of events. no?
 
-There's probably a reason why it's not a common hardware design...
+I should drop the cpu_list argument and tid is the same as vcpu so I can 
+drop it. 'a' is implicit if pid is not given.
 
-> > With regmap it should be very straightforward to reuse the same driver
-> > for both standalone and non-standalone versions, just a small amount of
-> > glue code in the CODEC driver I'd expect.  Usually the bus level code is
-> > tiny.
+mmap-pages is definitely needed: a LOT of tracepoints get generated.
 
-> The glue code that you are talking about is for the same virtual MFD
-> component that you proposed initially, right? I mean the glue code in
-> CODEC will help it to get attached to the MFD. In this case, in addition
-> to the glue code inside CODEC we will also need additional MFD
-> component. Or I am completely misinterpreting you here?
+I'll update.
 
-No, I'm talking about the same thing I was talking about originally.
-
---Nx36dz0OaUKPu+g+
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR/7m2AAoJELSic+t+oim9vToP/0Q3LNX2WgJ1ACaUXleWetNB
-yFvA6uBlDykm3JY+aaSU7w2HEcllhVeN29KoXyEk2Lpeok3anwNiS3udpUfLgq5z
-unsXrsAdJ0rm9nPP2Yc5bxIE3QupfVIIm/XPSWD5T3aEvyUf6AOTTfMcceejz0zi
-oR69Orp9u7opw6XSOLOSb6kuPg+LnckelMJPtBgXcfqypOni015IRLlQjAjeEPjs
-tsNtrna5jXuwwuqqmLo0elRWLw99A7/R8xm15RfRu9iVDvHPcbBqBHDtbVwmCCbb
-DIbkFCHIb1IRhPg/DHCn8u3sDfvWKl/7Gg1/DTdw+JwpDL73McY1N8PzWNe18p+z
-LL7YCk7h1is/wtczreCfjBNFv/z7emBuzPBEYUP7WxisvWPTHfR24TQSi4mKXz/w
-aGF+BV7Ysc1E26GDoQh2kI+6a1I6AKeabWKPC3pCESQOhIqU8N9PJ51Kh9TUFmUo
-kcYpPQE3jPwPuTEOhEm6CA1f2MWcIuuEehv+X22KDpJq/GGF2LCx8GptaEOMguiz
-rYmV/Y9s/E/L6NIqUOEUxjj9XXrNS0HJI2CnQlZJAArViljgQsHx6qdRon57c67U
-JNYJ73Mg/e7HPxcMXMxJZ/Ak9WbzX+52fOQKi/hpSblTvT8znDQrMhXumxRpZRcA
-CLyHMMTWz05H/cjviDCd
-=aPKU
------END PGP SIGNATURE-----
-
---Nx36dz0OaUKPu+g+--
+David
