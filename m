@@ -1,59 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755170Ab3HEIHb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 04:07:31 -0400
-Received: from mga02.intel.com ([134.134.136.20]:57486 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754889Ab3HEIH2 convert rfc822-to-8bit (ORCPT
+	id S1755313Ab3HEIKB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 04:10:01 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:59501 "EHLO
+	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755018Ab3HEIJ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 04:07:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,816,1367996400"; 
-   d="scan'208";a="376243090"
-From: "Du, ChangbinX" <changbinx.du@intel.com>
-To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "balbi@ti.com" <balbi@ti.com>,
-        "sarah.a.sharp@linuxfoundation.org" 
-	<sarah.a.sharp@linuxfoundation.org>,
-        "Wu, Hao" <hao.wu@intel.com>,
-        "Tang, Jianqiang" <jianqiang.tang@intel.com>,
-        "Zhuang, Jin Can" <jin.can.zhuang@intel.com>,
-        "Huang, Xiaochao" <xiaochao.huang@intel.com>
-Subject: About TRB_TO_EP_INDEX() macro using
-Thread-Topic: About TRB_TO_EP_INDEX() macro using
-Thread-Index: Ac6RstFtOlwuIZkPS2GOcAkgTF+4sQ==
-Date: Mon, 5 Aug 2013 08:07:25 +0000
-Message-ID: <0C18FE92A7765D4EB9EE5D38D86A563A019660C8@SHSMSX103.ccr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 5 Aug 2013 04:09:59 -0400
+X-AuditID: 9c93017e-b7b62ae000000eeb-5b-51ff5dd5fdcd
+Date: Mon, 5 Aug 2013 17:10:08 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Minchan Kim <minchan@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH 1/4] mm, page_alloc: add likely macro to help compiler
+ optimization
+Message-ID: <20130805081008.GF27240@lge.com>
+References: <1375409279-16919-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <20130802162722.GA29220@dhcp22.suse.cz>
+ <20130802204710.GX715@cmpxchg.org>
+ <20130802213607.GA4742@dhcp22.suse.cz>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130802213607.GA4742@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Recently when I check xHCI code, find that some functions try to get EP index 
-from a Command Completion Event TRB via TRB_TO_EP_INDEX() macro.
+Hello, Michal.
 
-This is totally wrong. The macro definition is:
+On Fri, Aug 02, 2013 at 11:36:07PM +0200, Michal Hocko wrote:
+> On Fri 02-08-13 16:47:10, Johannes Weiner wrote:
+> > On Fri, Aug 02, 2013 at 06:27:22PM +0200, Michal Hocko wrote:
+> > > On Fri 02-08-13 11:07:56, Joonsoo Kim wrote:
+> > > > We rarely allocate a page with ALLOC_NO_WATERMARKS and it is used
+> > > > in slow path. For making fast path more faster, add likely macro to
+> > > > help compiler optimization.
+> > > 
+> > > The code is different in mmotm tree (see mm: page_alloc: rearrange
+> > > watermark checking in get_page_from_freelist)
+> > 
+> > Yes, please rebase this on top.
+> > 
+> > > Besides that, make sure you provide numbers which prove your claims
+> > > about performance optimizations.
+> > 
+> > Isn't that a bit overkill?  We know it's a likely path (we would
+> > deadlock constantly if a sizable portion of allocations were to ignore
+> > the watermarks).  Does he have to justify that likely in general makes
+> > sense?
+> 
+> That was more a generic comment. If there is a claim that something
+> would be faster it would be nice to back that claim by some numbers
+> (e.g. smaller hot path).
+> 
+> In this particular case, unlikely(alloc_flags & ALLOC_NO_WATERMARKS)
+> doesn't make any change to the generated code with gcc 4.8.1 resp.
+> 4.3.4 I have here.
+> Maybe other versions of gcc would benefit from the hint but changelog
+> didn't tell us. I wouldn't add the anotation if it doesn't make any
+> difference for the resulting code.
 
-	#define TRB_TO_EP_INDEX(p)		((((p) & (0x1f << 16)) >> 16) - 1)
+Hmm, Is there no change with gcc 4.8.1 and 4.3.4?
 
-TRB_TO_EP_INDEX only applies to Transfer Event TRB. But for Command 
-Completion Event TRB, there is no Endpoint ID field. So, we cannot directly 
-get EP index from these TRBs, but we can find it by the TRB Pointer.
+I found a change with gcc 4.6.3 and v3.10 kernel.
 
-Here list two functions for you to check:
-	handle_stopped_endpoint()
-	handle_reset_ep_completion()
+   text	   data	    bss	    dec	    hex	filename
+     35683	   1461	    644	  37788	   939c	page_alloc_base.o
+     35715	   1461	    644	  37820	   93bc	page_alloc_patch.o
 
-Regards & Thanks!
-Changbin
+Slightly larger (32 bytes) than before.
+And assembly code looks different as I expected.
 
+* Original code
+
+ 17126 .LVL1518:
+ 17127         .loc 2 1904 0 is_stmt 1                                                                
+ 17128         testb   $4, -116(%rbp)  #, %sfp
+ 17129         je      .L866   #,
+
+(snip)
+
+ 17974 .L866:
+ 17975 .LBE6053:
+ 17976 .LBE6052:
+ 17977 .LBE6051:
+ 17978 .LBE6073:                                                                                      
+ 17979 .LBE6093:                                                                                      
+ 17980 .LBB6094:
+ 17981         .loc 2 1908 0 
+ 17982         movl    -116(%rbp), %r14d       # %sfp, D.42080
+ 17983         .loc 2 1909 0
+ 17984         movl    -116(%rbp), %r8d        # %sfp,
+ 17985         movq    %rbx, %rdi      # prephitmp.1723,
+ 17986         movl    -212(%rbp), %ecx        # %sfp,
+ 17987         movl    -80(%rbp), %esi # %sfp,
+ 17988         .loc 2 1908 0
+ 17989         andl    $3, %r14d       #, D.42080
+ 17990         movslq  %r14d, %rax     # D.42080, D.42080
+ 17991         movq    (%rbx,%rax,8), %r13     # prephitmp.1723_268->watermark, mark
+ 17992 .LVL1591:
+ 17993         .loc 2 1909 0
+ 17994         movq    %r13, %rdx      # mark,
+ 17995         call    zone_watermark_ok       #
+
+On 17129 line, we check ALLOC_NO_WATERMARKS and if not matched, then jump to L866.
+L866 is on 17981 line.
+
+* Patched code
+
+ 17122 .L807:
+ 17123 .LVL1513:
+ 17124         .loc 2 1904 0 is_stmt 1
+ 17125         testb   $4, -88(%rbp)   #, %sfp
+ 17126         jne     .L811   #,
+ 17127 .LBB6092:
+ 17128         .loc 2 1908 0
+ 17129         movl    -88(%rbp), %r13d        # %sfp, D.42082
+ 17130         .loc 2 1909 0
+ 17131         movl    -88(%rbp), %r8d # %sfp,
+ 17132         movq    %rbx, %rdi      # prephitmp.1723,
+ 17133         movl    -160(%rbp), %ecx        # %sfp,
+ 17134         movl    -80(%rbp), %esi # %sfp,
+ 17135         .loc 2 1908 0
+ 17136         andl    $3, %r13d       #, D.42082
+ 17137         movslq  %r13d, %rax     # D.42082, D.42082
+ 17138         movq    (%rbx,%rax,8), %r12     # prephitmp.1723_270->watermark, mark
+ 17139 .LVL1514:
+ 17140         .loc 2 1909 0
+ 17141         movq    %r12, %rdx      # mark,
+ 17142         call    zone_watermark_ok       #
+
+On 17124 line, we check ALLOC_NO_WATERMARKS (0x4) and if not matched,
+execute following code without jumping. This is effect of 'likely' macro.
+Isn't it reasonable?
+
+Thanks.
 
