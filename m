@@ -1,127 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754868Ab3HEHYR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 03:24:17 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:54662 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754295Ab3HEHYP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 03:24:15 -0400
-Date: Mon, 5 Aug 2013 09:24:21 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Furquan Shaikh <furquan@google.com>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Josh Triplett <josh.triplett@intel.com>,
-        Paulo Zanoni <paulo.r.zanoni@intel.com>,
-        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, Ronald Minnich <rminnich@google.com>,
-        Daniel Vetter <daniel.vetter@intel.com>
-Subject: Re: [PATCH] drm/i915: add fast boot support for Haswell
-Message-ID: <20130805072421.GV22035@phenom.ffwll.local>
-Mail-Followup-To: Furquan Shaikh <furquan@google.com>,
-	Jesse Barnes <jbarnes@virtuousgeek.org>,
-	Josh Triplett <josh.triplett@intel.com>,
-	Paulo Zanoni <paulo.r.zanoni@intel.com>,
-	intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-	dri-devel@lists.freedesktop.org,
-	Ronald Minnich <rminnich@google.com>,
-	Daniel Vetter <daniel.vetter@intel.com>
-References: <1375391542-21936-1-git-send-email-furquan@google.com>
+	id S1754874Ab3HEH1L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 03:27:11 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:56875 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754724Ab3HEH1I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 03:27:08 -0400
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: =?utf-8?B?UGFsaSBSb2jDoXI=?= <pali.rohar@gmail.com>
+CC: Bryan Wu <cooloney@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Pavel Machek <pavel@ucw.cz>, Aaro Koskinen <aaro.koskinen@iki.fi>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: leds-lp5523: Broken commit
+ db6eaf8388a413a5ee1b4547ce78506b9c6456b0
+Thread-Topic: leds-lp5523: Broken commit
+ db6eaf8388a413a5ee1b4547ce78506b9c6456b0
+Thread-Index: AQHOkaizuAGAF+drGEK22yPqYVleuZmGNR2g
+Date: Mon, 5 Aug 2013 07:26:46 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998F82E85CC4@DQHE06.ent.ti.com>
+References: <201308041146.03970@pali>
+In-Reply-To: <201308041146.03970@pali>
+Accept-Language: en-US, ko-KR
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.16.34.32]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1375391542-21936-1-git-send-email-furquan@google.com>
-X-Operating-System: Linux phenom 3.11.0-rc2+
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r757RGD0009660
 
-On Thu, Aug 01, 2013 at 02:12:22PM -0700, Furquan Shaikh wrote:
-> Enables getting correct mode clock when reading pipe config
+> Hello,
 > 
-> Signed-off-by: Furquan Shaikh <furquan@google.com>
-> ---
->  drivers/gpu/drm/i915/intel_ddi.c     | 8 ++++++++
->  drivers/gpu/drm/i915/intel_display.c | 9 ++++++++-
->  2 files changed, 16 insertions(+), 1 deletion(-)
+> git commit "leds-lp5523: use generic firmware interface"
+> db6eaf8388a413a5ee1b4547ce78506b9c6456b0 introduced in kernel
+> 3.10 changed user space API for modifing lp5523 led patterns via /sys.
 > 
-> diff --git a/drivers/gpu/drm/i915/intel_ddi.c b/drivers/gpu/drm/i915/intel_ddi.c
-> index 931b4bb..fa0af9b 100644
-> --- a/drivers/gpu/drm/i915/intel_ddi.c
-> +++ b/drivers/gpu/drm/i915/intel_ddi.c
-> @@ -1269,6 +1269,7 @@ static void intel_ddi_get_config(struct intel_encoder *encoder,
->  	struct drm_i915_private *dev_priv = encoder->base.dev->dev_private;
->  	struct intel_crtc *intel_crtc = to_intel_crtc(encoder->base.crtc);
->  	enum transcoder cpu_transcoder = intel_crtc->config.cpu_transcoder;
-> +	int port = intel_ddi_get_encoder_port(encoder);
->  	u32 temp, flags = 0;
->  
->  	temp = I915_READ(TRANS_DDI_FUNC_CTL(cpu_transcoder));
-> @@ -1282,6 +1283,13 @@ static void intel_ddi_get_config(struct intel_encoder *encoder,
->  		flags |= DRM_MODE_FLAG_NVSYNC;
->  
->  	pipe_config->adjusted_mode.flags |= flags;
-> +
-> +	if (port == PORT_A) {
-> +		if ((I915_READ(DP_A) & DP_PLL_FREQ_MASK) == DP_PLL_FREQ_160MHZ)
-> +			pipe_config->port_clock = 162000;
-> +		else
-> +			pipe_config->port_clock = 270000;
-> +	}
-
-I don't think this works correctly since for DP we have new clocks on
-haswell, see intel_ddi_pll_mode_set. Also I think it'd be good to go right
-ahead and implement clock readout support for all hsw clock sources, not
-just DP.
--Daniel
-
->  }
->  
->  static void intel_ddi_destroy(struct drm_encoder *encoder)
-> diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-> index 3e66f05..681c99a 100644
-> --- a/drivers/gpu/drm/i915/intel_display.c
-> +++ b/drivers/gpu/drm/i915/intel_display.c
-> @@ -7176,6 +7176,8 @@ static void i9xx_crtc_clock_get(struct intel_crtc *crtc,
->  		pipe_config->pixel_multiplier;
->  }
->  
-> +#define div_ceil(A, B) ((A)/(B) + ((A)%(B) ? 1 : 0))
-> +
->  static void ironlake_crtc_clock_get(struct intel_crtc *crtc,
->  				    struct intel_crtc_config *pipe_config)
->  {
-> @@ -7218,7 +7220,11 @@ static void ironlake_crtc_clock_get(struct intel_crtc *crtc,
->  		return;
->  
->  	clock = ((u64)link_m * (u64)link_freq * (u64)repeat);
-> -	do_div(clock, link_n);
-> +	/* This is required because the value comes out to be in fraction
-> +	   (eg. 70699.54). Need to round it up since values are compared in
-> +	   drm_mode_equal
-> +	*/
-> +	clock = div_ceil(clock, link_n);
->  
->  	pipe_config->adjusted_mode.clock = clock;
->  }
-> @@ -9588,6 +9594,7 @@ static void intel_init_display(struct drm_device *dev)
->  
->  	if (HAS_DDI(dev)) {
->  		dev_priv->display.get_pipe_config = haswell_get_pipe_config;
-> +		dev_priv->display.get_clock = ironlake_crtc_clock_get;
->  		dev_priv->display.crtc_mode_set = haswell_crtc_mode_set;
->  		dev_priv->display.crtc_enable = haswell_crtc_enable;
->  		dev_priv->display.crtc_disable = haswell_crtc_disable;
-> -- 
-> 1.8.3
+> Before this commit there were sysfs attributes engineX_mode, engineX_load and
+> engineX_leds (for every engine X).
 > 
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+> Now (after commit) there are sysfs attributes: select_engine, loading and
+> data (see: 10c06d178df11b0b2b746321a80ea14241997127
+> for description). Old sysfs attributes were removed.
+> 
+> So commit db6eaf8388a413a5ee1b4547ce78506b9c6456b0 totally broke all existing
+> userspace applications which use lp5523 leds.
+> 
+> This also broke application MCE which is used on Nokia N900 phone for
+> changing LED patterns in lp5523 led.
 
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+First of all, I'm really sorry for this conflict.
+
+> 
+> I think that kernel api which is used by userspace applications (like
+> attributes in /sys) should not be changed in way that totally broke existing
+> applications.
+> 
+> Can you fix this api problem? (maybe adding old sysfs attributes which would
+> call new api function...)
+
+I'll recover old sysfs attributes and implement them by using new functions.
+Additionally, I'll do same works in LP5521 driver also.
+
+Best Regards,
+Milo
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
