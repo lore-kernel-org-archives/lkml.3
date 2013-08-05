@@ -1,76 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754949Ab3HEUbF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 16:31:05 -0400
-Received: from www17.your-server.de ([213.133.104.17]:38622 "EHLO
-	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754721Ab3HEUbC (ORCPT
+	id S1755012Ab3HEUeG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 16:34:06 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:40339 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754909Ab3HEUeD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 16:31:02 -0400
-Message-ID: <1375734656.2159.1.camel@localhost.localdomain>
-Subject: i915_gem_unmap_dma_buf: BUG: unable to handle kernel NULL pointer
- dereference
-From: Thomas Meyer <thomas@m3y3r.de>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Mon, 05 Aug 2013 22:30:56 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.4 (3.8.4-2.fc19) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Authenticated-Sender: thomas@m3y3r.de
+	Mon, 5 Aug 2013 16:34:03 -0400
+Date: Mon, 5 Aug 2013 23:33:40 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Rupesh Gujare <rupesh.gujare@atmel.com>
+Cc: devel@linuxdriverproject.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org
+Subject: Re: [PATCH 2/4] staging: ozwpan: Increment port number for new
+ device.
+Message-ID: <20130805203340.GP5051@mwanda>
+References: <1375724415-10801-1-git-send-email-rupesh.gujare@atmel.com>
+ <1375724415-10801-3-git-send-email-rupesh.gujare@atmel.com>
+ <20130805175302.GJ5051@mwanda>
+ <51FFF244.9000604@atmel.com>
+ <20130805202338.GO5051@mwanda>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130805202338.GO5051@mwanda>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[165517.046291] [drm] wait for urb interrupted: ffffffc2 available: 4
-[165517.046454] BUG: unable to handle kernel NULL pointer dereference at 0000000000000941
-[165517.047217] IP: [<ffffffffa00ddfbf>] i915_gem_unmap_dma_buf+0x2f/0x60 [i915]
-[165517.047217] PGD 0 
-[165517.047217] Oops: 0000 [#1] SMP 
-[165517.047217] Modules linked in: nf_conntrack_netbios_ns nf_conntrack_broadcast ipt_MASQUERADE ip6table_nat nf_nat_ipv6 ip6table_mangle ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 iptable_nat nf_nat_ipv4 nf_nat iptable_mangle nf_conntrack_ipv4 nf_defrag_ipv4 xt_conntrack nf_conntrack ebtable_filter ebtables ip6table_filter ip6_tables fuse rfcomm bnep acpi_cpufreq mperf iTCO_wdt coretemp iTCO_vendor_support snd_hda_codec_hdmi acer_wmi uvcvideo kvm_intel sparse_keymap snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_usb_audio kvm snd_usbmidi_lib snd_rawmidi arc4 snd_hwdep snd_seq snd_seq_device iwldvm snd_pcm acerhdf microcode serio_raw i2c_i801 btusb snd_page_alloc bluetooth mac80211 videobuf2_vmalloc videobuf2_memops videobuf2_core videodev media asix snd_timer lpc_ich usbnet mfd_core iwlwifi
-[165517.047217]  mii snd soundcore cfg80211 rfkill atl1c wmi nfsd uinput auth_rpcgss nfs_acl lockd sunrpc binfmt_misc dm_crypt udl drm_usb i915 i2c_algo_bit drm_kms_helper usb_storage drm i2c_core video [last unloaded: iptable_mangle]
-[165517.047217] CPU: 0 PID: 710 Comm: Xorg Tainted: G          I  3.10.3-300.fc19.x86_64 #1
-[165517.047217] Hardware name: Acer Aspire 1810T/JM11-MS, BIOS v1.3310 03/25/2010
-[165517.047217] task: ffff8801211c16e0 ti: ffff88011ae8c000 task.ti: ffff88011ae8c000
-[165517.047217] RIP: 0010:[<ffffffffa00ddfbf>]  [<ffffffffa00ddfbf>] i915_gem_unmap_dma_buf+0x2f/0x60 [i915]
-[165517.047217] RSP: 0018:ffff88011ae8dca8  EFLAGS: 00010293
-[165517.047217] RAX: 0000000000000909 RBX: ffff880139755290 RCX: 0000000000000000
-[165517.047217] RDX: 0000000000000300 RSI: ffff88010a074000 RDI: ffff880137bcf030
-[165517.047217] RBP: ffff88011ae8dcb0 R08: 0000000000000000 R09: 0000000000000000
-[165517.047217] R10: ffffffff81ce9e10 R11: ffff88011ae8d90e R12: ffff880139755290
-[165517.047217] R13: 0000000000000000 R14: 0000000000000003 R15: ffff88011ae8dd70
-[165517.047217] FS:  00007fcd480e9980(0000) GS:ffff88013fc00000(0000) knlGS:0000000000000000
-[165517.047217] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[165517.047217] CR2: 0000000000000941 CR3: 0000000001c0c000 CR4: 00000000000407f0
-[165517.047217] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[165517.047217] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[165517.047217] Stack:
-[165517.047217]  ffff880138c8bd40 ffff88011ae8dcd8 ffffffff813e93fe ffff880138c8bd40
-[165517.047217]  ffff880137094020 ffff880137094000 ffff88011ae8dcf8 ffffffffa0036592
-[165517.047217]  ffff88012133ee40 ffff880137094020 ffff88011ae8dd10 ffffffffa013a985
-[165517.047217] Call Trace:
-[165517.047217]  [<ffffffff813e93fe>] dma_buf_unmap_attachment+0x3e/0x60
-[165517.047217]  [<ffffffffa0036592>] drm_prime_gem_destroy+0x22/0x40 [drm]
-[165517.047217]  [<ffffffffa013a985>] udl_gem_free_object+0x35/0x60 [udl]
-[165517.047217]  [<ffffffffa002085a>] drm_gem_object_free+0x2a/0x30 [drm]
-[165517.047217]  [<ffffffffa0020d6e>] drm_gem_object_release_handle+0xae/0xd0 [drm]
-[165517.047217]  [<ffffffff812e5f94>] idr_for_each+0xa4/0xf0
-[165517.047217]  [<ffffffffa0020cc0>] ? drm_gem_handle_delete+0x150/0x150 [drm]
-[165517.047217]  [<ffffffffa0021550>] drm_gem_release+0x20/0x30 [drm]
-[165517.047217]  [<ffffffffa001fc91>] drm_release+0x551/0x5d0 [drm]
-[165517.047217]  [<ffffffff81199101>] __fput+0xe1/0x230
-[165517.047217]  [<ffffffff8119930e>] ____fput+0xe/0x10
-[165517.047217]  [<ffffffff8107d77c>] task_work_run+0xbc/0xe0
-[165517.047217]  [<ffffffff81061bbc>] do_exit+0x2bc/0xa20
-[165517.047217]  [<ffffffff8119930e>] ? ____fput+0xe/0x10
-[165517.047217]  [<ffffffff8107d764>] ? task_work_run+0xa4/0xe0
-[165517.047217]  [<ffffffff8106239f>] do_group_exit+0x3f/0xa0
-[165517.047217]  [<ffffffff81062414>] SyS_exit_group+0x14/0x20
-[165517.047217]  [<ffffffff81651819>] system_call_fastpath+0x16/0x1b
-[165517.047217] Code: 90 55 89 d1 48 89 e5 53 48 8b 7f 08 48 89 f3 8b 56 08 48 8b 36 48 85 ff 74 32 48 8b 87 08 02 00 00 48 85 c0 74 26 83 f9 02 77 2a <48> 8b 40 38 48 85 c0 74 05 45 31 c0 ff d0 48 89 df e8 8b 7b 21 
-[165517.047217] RIP  [<ffffffffa00ddfbf>] i915_gem_unmap_dma_buf+0x2f/0x60 [i915]
-[165517.047217]  RSP <ffff88011ae8dca8>
-[165517.047217] CR2: 0000000000000941
-[165517.272860] ---[ end trace f4c350a8f34ab706 ]---
-[165517.276318] Fixing recursive fault but reboot is needed!
+Here is what oz_hcd_pd_arrived() looks like after my changes:
 
+These lines:
+-       if (ozhcd == NULL)
++       if (!ozhcd)
+were personal preference and not official kernel style guidelines.
+Either way is fine for pointers.
+
+oz_ep_alloc() can return NULL.  There was no check for failure in
+the original code.
+
+diff --git a/drivers/staging/ozwpan/ozhcd.c b/drivers/staging/ozwpan/ozhcd.c
+index f81a0c5..6b9fc02 100644
+--- a/drivers/staging/ozwpan/ozhcd.c
++++ b/drivers/staging/ozwpan/ozhcd.c
+@@ -620,58 +621,59 @@ static inline void oz_hcd_put(struct oz_hcd *ozhcd)
+  * probably very rare indeed.
+  * Context: softirq
+  */
+-void *oz_hcd_pd_arrived(void *hpd)
++struct oz_port *oz_hcd_pd_arrived(void *hpd)
+ {
+-	int i;
+-	void *hport = NULL;
+-	struct oz_hcd *ozhcd = NULL;
++	struct oz_port *hport = NULL;
++	struct oz_hcd *ozhcd;
+ 	struct oz_endpoint *ep;
++	int i;
++
+ 	ozhcd = oz_hcd_claim();
+-	if (ozhcd == NULL)
++	if (!ozhcd)
+ 		return NULL;
+-	/* Allocate an endpoint object in advance (before holding hcd lock) to
+-	 * use for out endpoint 0.
+-	 */
++
++	/* Allocate an endpoint object to use for out endpoint 0. */
+ 	ep = oz_ep_alloc(GFP_ATOMIC, 0);
++	if (!ep)
++		goto err_put;
++
+ 	spin_lock_bh(&ozhcd->hcd_lock);
+-	if (ozhcd->conn_port >= 0) {
+-		spin_unlock_bh(&ozhcd->hcd_lock);
+-		oz_dbg(ON, "conn_port >= 0\n");
+-		goto out;
+-	}
++	if (ozhcd->conn_port >= 0)
++		goto err_unlock;
++
+ 	for (i = 0; i < OZ_NB_PORTS; i++) {
+ 		struct oz_port *port = &ozhcd->ports[i];
++
+ 		spin_lock(&port->port_lock);
+-		if ((port->flags & OZ_PORT_F_PRESENT) == 0) {
++		if (!(port->flags & OZ_PORT_F_PRESENT)) {
+ 			oz_acquire_port(port, hpd);
+ 			spin_unlock(&port->port_lock);
+ 			break;
+ 		}
+ 		spin_unlock(&port->port_lock);
+ 	}
+-	if (i < OZ_NB_PORTS) {
+-		oz_dbg(ON, "Setting conn_port = %d\n", i);
+-		ozhcd->conn_port = i;
+-		/* Attach out endpoint 0.
+-		 */
+-		ozhcd->ports[i].out_ep[0] = ep;
+-		ep = NULL;
+-		hport = &ozhcd->ports[i];
+-		spin_unlock_bh(&ozhcd->hcd_lock);
+-		if (ozhcd->flags & OZ_HDC_F_SUSPENDED) {
+-			oz_dbg(ON, "Resuming root hub\n");
+-			usb_hcd_resume_root_hub(ozhcd->hcd);
+-		}
+-		usb_hcd_poll_rh_status(ozhcd->hcd);
+-	} else {
+-		spin_unlock_bh(&ozhcd->hcd_lock);
+-	}
+-out:
+-	if (ep) /* ep is non-null if not used. */
+-		oz_ep_free(NULL, ep);
++	if (i == OZ_NB_PORTS)
++		goto err_unlock;
++
++	ozhcd->conn_port = i;
++	hport = &ozhcd->ports[i];
++	hport->out_ep[0] = ep;
++	spin_unlock_bh(&ozhcd->hcd_lock);
++	if (ozhcd->flags & OZ_HDC_F_SUSPENDED)
++		usb_hcd_resume_root_hub(ozhcd->hcd);
++	usb_hcd_poll_rh_status(ozhcd->hcd);
+ 	oz_hcd_put(ozhcd);
++
+ 	return hport;
++
++err_unlock:
++	spin_unlock_bh(&ozhcd->hcd_lock);
++	oz_ep_free(NULL, ep);
++err_put:
++	oz_hcd_put(ozhcd);
++	return NULL;
+ }
++
+ /*------------------------------------------------------------------------------
+  * This is called by the protocol handler to notify that the PD has gone away.
+  * We need to deallocate all resources and then request that the root hub is
