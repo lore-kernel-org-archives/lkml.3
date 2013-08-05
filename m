@@ -1,72 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753380Ab3HEN5Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 09:57:25 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:49083 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753117Ab3HEN5X (ORCPT
+	id S1753447Ab3HEN6B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 09:58:01 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51659 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753147Ab3HEN57 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 09:57:23 -0400
-Message-ID: <51FFAF34.20200@oracle.com>
-Date: Mon, 05 Aug 2013 09:57:08 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Mon, 5 Aug 2013 09:57:59 -0400
+Date: Mon, 5 Aug 2013 06:57:41 -0700
+From: tip-bot for Jason Wang <tipbot@zytor.com>
+Message-ID: <tip-96e39ac0e9d18020c8c5a41b64b8fe86c26575ab@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        jasowang@redhat.com, gleb@redhat.com, pbonzini@redhat.com,
+        tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        jasowang@redhat.com, gleb@redhat.com, pbonzini@redhat.com,
+        tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <1374742475-2485-1-git-send-email-jasowang@redhat.com>
+References: <1374742475-2485-1-git-send-email-jasowang@redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/paravirt] x86: Introduce hypervisor_cpuid_base()
+Git-Commit-ID: 96e39ac0e9d18020c8c5a41b64b8fe86c26575ab
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: koverstreet@google.com, axboe@kernel.dk, bcrl@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org
-CC: LKML <linux-kernel@vger.kernel.org>, linux-aio@kvack.org,
-        trinity@vger.kernel.org
-Subject: aio: kernel BUG at fs/aio.c:646!
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 05 Aug 2013 06:57:48 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Commit-ID:  96e39ac0e9d18020c8c5a41b64b8fe86c26575ab
+Gitweb:     http://git.kernel.org/tip/96e39ac0e9d18020c8c5a41b64b8fe86c26575ab
+Author:     Jason Wang <jasowang@redhat.com>
+AuthorDate: Thu, 25 Jul 2013 16:54:32 +0800
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Mon, 5 Aug 2013 06:33:54 -0700
 
-While fuzzing with trinity inside a KVM tools guest running latest -next kernel,
-I've stumbled on the following spew caused by a new BUG() added in "aio: fix
-io_destroy() regression by using call_rcu()".
+x86: Introduce hypervisor_cpuid_base()
 
-[ 9646.599640] kernel BUG at fs/aio.c:646!
-[ 9646.600119] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[ 9646.600119] Modules linked in:
-[ 9646.600119] CPU: 3 PID: 16833 Comm: trinity-child45 Tainted: G        W 
-3.11.0-rc3-next-20130802-sasha-00001-g5e30de1-dirty #3974
-[ 9646.600119] task: ffff8800c4da0000 ti: ffff8800c4d9a000 task.ti: ffff8800c4d9a000
-[ 9646.600119] RIP: 0010:[<ffffffff812ee8e1>]  [<ffffffff812ee8e1>] kill_ioctx+0xb1/0x100
-[ 9646.600119] RSP: 0018:ffff8800c4d9be08  EFLAGS: 00010287
-[ 9646.600119] RAX: ffffffffffffd866 RBX: ffff8800c3628b40 RCX: 0000000000000003
-[ 9646.600119] RDX: 0000000000014cf4 RSI: 0000000000000000 RDI: 0000000000000282
-[ 9646.600119] RBP: ffff8800c4d9be28 R08: 0000000000000000 R09: 0000000000000001
-[ 9646.600119] R10: 0000000000000001 R11: 0000000000000000 R12: ffff8800ca30c8c0
-[ 9646.609819] R13: ffff8800c4c9d438 R14: ffff8800c3628b40 R15: ffff8800ca30c8c0
-[ 9646.609819] FS:  0000000000000000(0000) GS:ffff880224c00000(0000) knlGS:0000000000000000
-[ 9646.609819] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[ 9646.609819] CR2: 0000000000000001 CR3: 00000000c4d6b000 CR4: 00000000000006e0
-[ 9646.609819] Stack:
-[ 9646.609819]  ffff8800c4d9be28 0000000000000001 ffff8800c4c9d000 ffff8800c4c9d480
-[ 9646.609819]  ffff8800c4d9be78 ffffffff812ef2c0 ffffffff812ef202 0000000000000282
-[ 9646.609819]  ffff8800c4c9d040 ffff8800c4c9d000 ffff8800c4da0000 ffff8800c4c9d000
-[ 9646.609819] Call Trace:
-[ 9646.609819]  [<ffffffff812ef2c0>] exit_aio+0xe0/0x100
-[ 9646.609819]  [<ffffffff812ef202>] ? exit_aio+0x22/0x100
-[ 9646.609819]  [<ffffffff81120bc1>] mmput+0x41/0xf0
-[ 9646.609819]  [<ffffffff81124c2d>] exit_mm+0x18d/0x1a0
-[ 9646.609819]  [<ffffffff811a9db5>] ? acct_collect+0x175/0x1b0
-[ 9646.609819]  [<ffffffff811253aa>] do_exit+0x24a/0x4d0
-[ 9646.609819]  [<ffffffff811256d9>] do_group_exit+0xa9/0xe0
-[ 9646.609819]  [<ffffffff81125727>] SyS_exit_group+0x17/0x20
-[ 9646.609819]  [<ffffffff8409d82c>] tracesys+0xdd/0xe2
-[ 9646.609819] Code: 8d bb 68 02 00 00 be 03 00 00 00 e8 3a bf e6 ff 48 c7 c7 20 e8 0a 86 e8 3e 54 
-da 02 48 8b 05 cf 89 19 06 8b 53 4c 48 29 d0 73 0f <0f> 0b 0f 1f 44 00 00 eb fe 66 0f 1f 44 00 00 48 
-89 05 b1 89 19
-[ 9646.609819] RIP  [<ffffffff812ee8e1>] kill_ioctx+0xb1/0x100
-[ 9646.609819]  RSP <ffff8800c4d9be08>
+This patch introduce hypervisor_cpuid_base() which loop test the hypervisor
+existence function until the signature match and check the number of leaves if
+required. This could be used by Xen/KVM guest to detect the existence of
+hypervisor.
 
+Cc: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Gleb Natapov <gleb@redhat.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+Link: http://lkml.kernel.org/r/1374742475-2485-1-git-send-email-jasowang@redhat.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/include/asm/processor.h | 15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
 
-Thanks,
-Sasha
+diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
+index 24cf5ae..7763307 100644
+--- a/arch/x86/include/asm/processor.h
++++ b/arch/x86/include/asm/processor.h
+@@ -971,6 +971,21 @@ unsigned long calc_aperfmperf_ratio(struct aperfmperf *old,
+ 	return ratio;
+ }
+ 
++static inline uint32_t hypervisor_cpuid_base(const char *sig, uint32_t leaves)
++{
++	uint32_t base, eax, signature[3];
++
++	for (base = 0x40000000; base < 0x40010000; base += 0x100) {
++		cpuid(base, &eax, &signature[0], &signature[1], &signature[2]);
++
++		if (!memcmp(sig, signature, 12) &&
++		    (leaves == 0 || ((eax - base) >= leaves)))
++			return base;
++	}
++
++	return 0;
++}
++
+ extern unsigned long arch_align_stack(unsigned long sp);
+ extern void free_init_pages(char *what, unsigned long begin, unsigned long end);
+ 
