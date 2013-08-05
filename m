@@ -1,85 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754687Ab3HEGxo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 02:53:44 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:40615 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752785Ab3HEGxn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 02:53:43 -0400
-Message-ID: <51FF4BEA.7070308@linux.vnet.ibm.com>
-Date: Mon, 05 Aug 2013 14:53:30 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: David Ahern <dsahern@gmail.com>
-CC: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Runzhen Wang <runzhen@linux.vnet.ibm.com>
-Subject: Re: [PATCH 8/9] perf kvm: debug for missing vmexit/vmentry event
-References: <1375473947-64285-1-git-send-email-dsahern@gmail.com> <1375473947-64285-9-git-send-email-dsahern@gmail.com>
-In-Reply-To: <1375473947-64285-9-git-send-email-dsahern@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13080506-8256-0000-0000-000008A791ED
+	id S1754796Ab3HEGy7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 02:54:59 -0400
+Received: from rrzmta2.uni-regensburg.de ([194.94.155.52]:47120 "EHLO
+	rrzmta2.uni-regensburg.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754489Ab3HEGy5 convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:2:1>);
+	Mon, 5 Aug 2013 02:54:57 -0400
+Message-Id: <51FF685C020000A10001222B@gwsmtp1.uni-regensburg.de>
+X-Mailer: Novell GroupWise Internet Agent 12.0.2 
+Date: Mon, 05 Aug 2013 08:54:52 +0200
+From: "Ulrich Windl" <Ulrich.Windl@rz.uni-regensburg.de>
+To: "Hugh Dickins" <hughd@google.com>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: Antw: Re: Possible mmap() write() problem in SLES11 SP2 kernel
+References: <51FA6455020000A100012182@gwsmtp1.uni-regensburg.de>
+ <alpine.LNX.2.00.1308031516010.11134@eggly.anvils>
+In-Reply-To: <alpine.LNX.2.00.1308031516010.11134@eggly.anvils>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/03/2013 04:05 AM, David Ahern wrote:
-> Expected to have missing events for each vcpu when perf is
-> started. After that should not have missing events.
+>>> Hugh Dickins <hughd@google.com> schrieb am 04.08.2013 um 00:37 in Nachricht
+<alpine.LNX.2.00.1308031516010.11134@eggly.anvils>:
+> On Thu, 1 Aug 2013, Ulrich Windl wrote:
+>> Hi folks!
+>> 
+>> I think I'd let you know (maybe I'm wrong, and the kernel is right):
+>> 
+>> I write a C-program that maps a file into an private writable map. Then I 
+> modify the area a bit and use one write to write that area back to a file.
+>> 
+>> This worked fine in SLES11 kernel 3.0.74-0.6.10. However with kernel  
+> 3.0.80-0.7 the write() fails with EFAULT if the output file is the same as 
+> the input file.
+> 
+> I wonder if you actually did exactly the same on both kernels.
 
-Sorry, i can not understand what's this info used for.
+Hi!
+
+thanks for replying! Actually id did the sam a few thousand times (with different files and different lengths) in the previous kernel, weher it never failed, just as with the newer kernel where it always fails (it seems).
 
 > 
-> Signed-off-by: David Ahern <dsahern@gmail.com>
-> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Jiri Olsa <jolsa@redhat.com>
-> Cc: Namhyung Kim <namhyung@kernel.org>
-> Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-> Cc: Runzhen Wang <runzhen@linux.vnet.ibm.com>
-> ---
->  tools/perf/builtin-kvm.c |   15 +++++++++++++--
->  1 file changed, 13 insertions(+), 2 deletions(-)
+>> 
+>> The strace is amazingly short (I removed the unrelated calls):
 > 
-> diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
-> index 28afc05d..41dd25a 100644
-> --- a/tools/perf/builtin-kvm.c
-> +++ b/tools/perf/builtin-kvm.c
-> @@ -568,11 +568,22 @@ static bool handle_kvm_event(struct perf_kvm_stat *kvm,
->  	    (kvm->trace_vcpu != vcpu_record->vcpu_id))
->  		return true;
+> Providing that was very helpful.
 > 
-> -	if (kvm->events_ops->is_begin_event(evsel, sample, &key))
-> +	if (kvm->events_ops->is_begin_event(evsel, sample, &key)) {
-> +		if (vcpu_record->start_time) {
-> +			pr_debug("consecutive begin events (%s) for pid %d, vcpu %d\n",
-> +				 evsel->name, sample->pid, vcpu_record->vcpu_id);
-> +		}
+>> open("xxx", O_RDONLY)                   = 3
+>> fstat(3, {st_mode=S_IFREG|0644, st_size=4416, ...}) = 0
+>> mmap(NULL, 4416, PROT_READ|PROT_WRITE, MAP_PRIVATE, 3, 0) = 0x7f85ac045000
+>> close(3)                                = 0
+>> open("xxx", O_WRONLY|O_CREAT|O_TRUNC, 0666) = 3
+> 
+> The crucial point is the above O_TRUNC when you now open the file for
+> writing: that truncates the file to 0-length, which unmaps any pages
+> mapped from it into userspace.  Even the privately modified COW pages:
 
-This is not true, the ->start_time is set in handle_begin_event() for the new alloced
-vcpu_record.
+Well, but the mapping is PRIVATE, so I guessed once mapped, changes to the map won't affect the file, just as changes to the file won't affect the map. Specifically when re-opening the file for writing with O_TRUNC I did not expect the map to become invalid. Also note that the unmap still returns no error.
+My manual page vaguely says: "It is unspecified whether changes made to the file after the mmap() call are visible in the mapped region."
+> that often seems surprising, but it is how mmap versus truncate is
+> specified to work.
+> 
+>> write(3, 0x7f85ac045000, 4414)          = -1 EFAULT (Bad address)
+> 
+> If your program now touched a part of the mapping, it would get
+> SIGBUS, there being no pages of underlying object to page in from.
+> But since you're accessing the area from within a system call,
+> that simply fails with EFAULT.
 
-If you just want to know the point where is the first event lost, you can track
-it in:
+OK, if things are like this, the older kernel must have been faulty.
 
-static bool handle_end_event(struct perf_kvm_stat *kvm,
-			     struct vcpu_event_record *vcpu_record,
-			     struct event_key *key,
-			     u64 timestamp)
-{
-	......
+> 
+>> close(3)                                = 0
+>> munmap(0x7f85ac045000, 4414)            = 0
+>> 
+>> I want to have your attention if this should work, and you get my attention 
+> if this should not work.
+> 
+> It should not work.
+> 
+>> Note that the input file is closed before it's opened for write again. As 
+> the output file is typically shorter than the input, I didn't want to use a 
+> non-private mapping and a truncate, just in case you wonder...
+> 
+> (I didn't understand your logic there.)
 
-	/* The begin event is not caught. */
-	if (!time_begin)                       <======
-		return true;
+The alternative to write() a part of the PRIVATE area would be to work with a non-PRIVATE area that is truncated after flushing the changes. In principle the same blocks could be written multiple times (when you move data from later parts to earlier parts (i.e.: from the far end closer to the beginning)), so I thought a PRIVATE mapping plus one write() would avoid that. I had the coice of truncate while opening, or to truncate the extra data after write(). I chose the first alternative.
+
+Maybe I'll re-design...
+
+Thanks,
+Ulrich
+
+> 
+> Hugh
+
+
 
