@@ -1,121 +1,303 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754764Ab3HEGqG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 02:46:06 -0400
-Received: from mail-bk0-f54.google.com ([209.85.214.54]:64672 "EHLO
-	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753486Ab3HEGp5 (ORCPT
+	id S1754785Ab3HEGqW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 02:46:22 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:41059 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752785Ab3HEGqU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 02:45:57 -0400
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: tony@atomide.com
-Subject: [PATCH v3 1/2] ARM: OMAP: Add secure function omap_smc3() which calling instruction smc #1
-Date: Sun, 4 Aug 2013 10:45:00 +0200
-User-Agent: KMail/1.13.7 (Linux/3.10.0-rc7+radeon+synaptics-generic; KDE/4.10.5; x86_64; ; )
-Cc: Dave Martin <Dave.Martin@arm.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        =?utf-8?q?=D0=98=D0=B2=D0=B0=D0=B9=D0=BB=D0=BE?=
-	 =?utf-8?q?_=D0=94=D0=B8=D0=BC=D0=B8=D1=82=D1=80=D0=BE=D0=B2?= 
-	<freemangordon@abv.bg>,
-        nm@ti.com, linux@arm.linux.org.uk, aaro.koskinen@iki.fi,
-        pdeschrijver@nvidia.com, linux-kernel@vger.kernel.org, pavel@ucw.cz,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-References: <531356997.66774.1373571839852.JavaMail.apache@mail81.abv.bg> <51DF0D7A.4090008@ti.com> <20130712102430.GA3249@localhost.localdomain>
-In-Reply-To: <20130712102430.GA3249@localhost.localdomain>
+	Mon, 5 Aug 2013 02:46:20 -0400
+Message-ID: <51FF4A34.1000400@hitachi.com>
+Date: Mon, 05 Aug 2013 15:46:12 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart152849368.3vpqrtV2oc";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Hyeoncheol Lee <cheol.lee@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCH 07/13] tracing/kprobes: Remove duplicate set_print_fmt()
+References: <1375261410-11219-1-git-send-email-namhyung@kernel.org> <1375261410-11219-8-git-send-email-namhyung@kernel.org>
+In-Reply-To: <1375261410-11219-8-git-send-email-namhyung@kernel.org>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
-Message-Id: <201308041045.00698@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart152849368.3vpqrtV2oc
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+Remove? or Integrate? :)
 
-Here is new version (v3) of omap secure part patch:
+(2013/07/31 18:03), Namhyung Kim wrote:
+> From: Namhyung Kim <namhyung.kim@lge.com>
+> 
+> The set_print_fmt() functions are implemented almost same for
+> [ku]probes.  Move it to a common place and get rid of the duplication.
 
-Other secure functions omap_smc1() and omap_smc2() calling instruction smc =
-#0
-but Nokia RX-51 board needs to call smc #1 for PPA access.
+Anyway this looks good for me;)
 
-Signed-off-by: Ivaylo Dimitrov <freemangordon@abv.bg>
-Signed-off-by: Pali Roh=C3=A1r <pali.rohar@gmail.com>
-=2D--
-diff --git a/arch/arm/mach-omap2/omap-secure.h b/arch/arm/mach-omap2/omap-s=
-ecure.h
-index 0e72917..c4586f4 100644
-=2D-- a/arch/arm/mach-omap2/omap-secure.h
-+++ b/arch/arm/mach-omap2/omap-secure.h
-@@ -51,6 +51,7 @@
- extern u32 omap_secure_dispatcher(u32 idx, u32 flag, u32 nargs,
- 				u32 arg1, u32 arg2, u32 arg3, u32 arg4);
- extern u32 omap_smc2(u32 id, u32 falg, u32 pargs);
-+extern u32 omap_smc3(u32 id, u32 process, u32 flag, u32 pargs);
- extern phys_addr_t omap_secure_ram_mempool_base(void);
- extern int omap_secure_ram_reserve_memblock(void);
-=20
-diff --git a/arch/arm/mach-omap2/omap-smc.S b/arch/arm/mach-omap2/omap-smc.S
-index f6441c1..7bbc043 100644
-=2D-- a/arch/arm/mach-omap2/omap-smc.S
-+++ b/arch/arm/mach-omap2/omap-smc.S
-@@ -1,9 +1,11 @@
- /*
-=2D * OMAP44xx secure APIs file.
-+ * OMAP34xx and OMAP44xx secure APIs file.
-  *
-  * Copyright (C) 2010 Texas Instruments, Inc.
-  * Written by Santosh Shilimkar <santosh.shilimkar@ti.com>
-  *
-+ * Copyright (C) 2012 Ivaylo Dimitrov <freemangordon@abv.bg>
-+ * Copyright (C) 2013 Pali Roh=C3=A1r <pali.rohar@gmail.com>
-  *
-  * This program is free software,you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License version 2 as
-@@ -54,6 +56,23 @@ ENTRY(omap_smc2)
- 	ldmfd   sp!, {r4-r12, pc}
- ENDPROC(omap_smc2)
-=20
-+/**
-+ * u32 omap_smc3(u32 service_id, u32 process_id, u32 flag, u32 pargs)
-+ * Low level common routine for secure HAL and PPA APIs via smc #1
-+ * r0 - @service_id: Secure Service ID
-+ * r1 - @process_id: Process ID
-+ * r2 - @flag: Flag to indicate the criticality of operation
-+ * r3 - @pargs: Physical address of parameter list
-+ */
-+ENTRY(omap_smc3)
-+	stmfd	sp!, {r4-r11, lr}
-+	mov	r12, r0		@ Copy the secure service ID
-+	mov	r6, #0xff	@ Indicate new Task call
-+	dsb			@ Memory Barrier
-+	smc	#1		@ Call PPA service
-+	ldmfd	sp!, {r4-r11, pc}
-+ENDPROC(omap_smc3)
-+
- ENTRY(omap_modify_auxcoreboot0)
- 	stmfd   sp!, {r1-r12, lr}
- 	ldr	r12, =3D0x104
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
+Thanks!
 
---nextPart152849368.3vpqrtV2oc
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+> 
+> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Cc: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
+> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> ---
+>  kernel/trace/trace_kprobe.c | 63 +--------------------------------------------
+>  kernel/trace/trace_probe.c  | 62 ++++++++++++++++++++++++++++++++++++++++++++
+>  kernel/trace/trace_probe.h  |  1 +
+>  kernel/trace/trace_uprobe.c | 55 +--------------------------------------
+>  4 files changed, 65 insertions(+), 116 deletions(-)
+> 
+> diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+> index d4c10fb8b8f8..40018618cc08 100644
+> --- a/kernel/trace/trace_kprobe.c
+> +++ b/kernel/trace/trace_kprobe.c
+> @@ -1069,67 +1069,6 @@ static int kretprobe_event_define_fields(struct ftrace_event_call *event_call)
+>  	return 0;
+>  }
+>  
+> -static int __set_print_fmt(struct trace_kprobe *tp, char *buf, int len)
+> -{
+> -	int i;
+> -	int pos = 0;
+> -
+> -	const char *fmt, *arg;
+> -
+> -	if (!trace_kprobe_is_return(tp)) {
+> -		fmt = "(%lx)";
+> -		arg = "REC->" FIELD_STRING_IP;
+> -	} else {
+> -		fmt = "(%lx <- %lx)";
+> -		arg = "REC->" FIELD_STRING_FUNC ", REC->" FIELD_STRING_RETIP;
+> -	}
+> -
+> -	/* When len=0, we just calculate the needed length */
+> -#define LEN_OR_ZERO (len ? len - pos : 0)
+> -
+> -	pos += snprintf(buf + pos, LEN_OR_ZERO, "\"%s", fmt);
+> -
+> -	for (i = 0; i < tp->p.nr_args; i++) {
+> -		pos += snprintf(buf + pos, LEN_OR_ZERO, " %s=%s",
+> -				tp->p.args[i].name, tp->p.args[i].type->fmt);
+> -	}
+> -
+> -	pos += snprintf(buf + pos, LEN_OR_ZERO, "\", %s", arg);
+> -
+> -	for (i = 0; i < tp->p.nr_args; i++) {
+> -		if (strcmp(tp->p.args[i].type->name, "string") == 0)
+> -			pos += snprintf(buf + pos, LEN_OR_ZERO,
+> -					", __get_str(%s)",
+> -					tp->p.args[i].name);
+> -		else
+> -			pos += snprintf(buf + pos, LEN_OR_ZERO, ", REC->%s",
+> -					tp->p.args[i].name);
+> -	}
+> -
+> -#undef LEN_OR_ZERO
+> -
+> -	/* return the length of print_fmt */
+> -	return pos;
+> -}
+> -
+> -static int set_print_fmt(struct trace_kprobe *tp)
+> -{
+> -	int len;
+> -	char *print_fmt;
+> -
+> -	/* First: called with 0 length to calculate the needed length */
+> -	len = __set_print_fmt(tp, NULL, 0);
+> -	print_fmt = kmalloc(len + 1, GFP_KERNEL);
+> -	if (!print_fmt)
+> -		return -ENOMEM;
+> -
+> -	/* Second: actually write the @print_fmt */
+> -	__set_print_fmt(tp, print_fmt, len + 1);
+> -	tp->p.call.print_fmt = print_fmt;
+> -
+> -	return 0;
+> -}
+> -
+>  #ifdef CONFIG_PERF_EVENTS
+>  
+>  /* Kprobe profile handler */
+> @@ -1280,7 +1219,7 @@ static int register_probe_event(struct trace_kprobe *tp)
+>  		call->event.funcs = &kprobe_funcs;
+>  		call->class->define_fields = kprobe_event_define_fields;
+>  	}
+> -	if (set_print_fmt(tp) < 0)
+> +	if (set_print_fmt(&tp->p, trace_kprobe_is_return(tp)) < 0)
+>  		return -ENOMEM;
+>  	ret = register_ftrace_event(&call->event);
+>  	if (!ret) {
+> diff --git a/kernel/trace/trace_probe.c b/kernel/trace/trace_probe.c
+> index 5e491d82b6ad..76ab02143b5a 100644
+> --- a/kernel/trace/trace_probe.c
+> +++ b/kernel/trace/trace_probe.c
+> @@ -747,3 +747,65 @@ __kprobes void store_trace_args(int ent_size, struct trace_probe *tp,
+>  				   data + tp->args[i].offset);
+>  	}
+>  }
+> +
+> +static int __set_print_fmt(struct trace_probe *tp, char *buf, int len,
+> +			   bool is_return)
+> +{
+> +	int i;
+> +	int pos = 0;
+> +
+> +	const char *fmt, *arg;
+> +
+> +	if (!is_return) {
+> +		fmt = "(%lx)";
+> +		arg = "REC->" FIELD_STRING_IP;
+> +	} else {
+> +		fmt = "(%lx <- %lx)";
+> +		arg = "REC->" FIELD_STRING_FUNC ", REC->" FIELD_STRING_RETIP;
+> +	}
+> +
+> +	/* When len=0, we just calculate the needed length */
+> +#define LEN_OR_ZERO (len ? len - pos : 0)
+> +
+> +	pos += snprintf(buf + pos, LEN_OR_ZERO, "\"%s", fmt);
+> +
+> +	for (i = 0; i < tp->nr_args; i++) {
+> +		pos += snprintf(buf + pos, LEN_OR_ZERO, " %s=%s",
+> +				tp->args[i].name, tp->args[i].type->fmt);
+> +	}
+> +
+> +	pos += snprintf(buf + pos, LEN_OR_ZERO, "\", %s", arg);
+> +
+> +	for (i = 0; i < tp->nr_args; i++) {
+> +		if (strcmp(tp->args[i].type->name, "string") == 0)
+> +			pos += snprintf(buf + pos, LEN_OR_ZERO,
+> +					", __get_str(%s)",
+> +					tp->args[i].name);
+> +		else
+> +			pos += snprintf(buf + pos, LEN_OR_ZERO, ", REC->%s",
+> +					tp->args[i].name);
+> +	}
+> +
+> +#undef LEN_OR_ZERO
+> +
+> +	/* return the length of print_fmt */
+> +	return pos;
+> +}
+> +
+> +int set_print_fmt(struct trace_probe *tp, bool is_return)
+> +{
+> +	int len;
+> +	char *print_fmt;
+> +
+> +	/* First: called with 0 length to calculate the needed length */
+> +	len = __set_print_fmt(tp, NULL, 0, is_return);
+> +	print_fmt = kmalloc(len + 1, GFP_KERNEL);
+> +	if (!print_fmt)
+> +		return -ENOMEM;
+> +
+> +	/* Second: actually write the @print_fmt */
+> +	__set_print_fmt(tp, print_fmt, len + 1, is_return);
+> +	tp->call.print_fmt = print_fmt;
+> +
+> +	return 0;
+> +}
+> diff --git a/kernel/trace/trace_probe.h b/kernel/trace/trace_probe.h
+> index 888cd7d4cd3c..ec18e1b1487e 100644
+> --- a/kernel/trace/trace_probe.h
+> +++ b/kernel/trace/trace_probe.h
+> @@ -301,3 +301,4 @@ extern int traceprobe_command(const char *buf, int (*createfn)(int, char**));
+>  extern int __get_data_size(struct trace_probe *tp, struct pt_regs *regs);
+>  extern void store_trace_args(int ent_size, struct trace_probe *tp,
+>  			     struct pt_regs *regs, u8 *data, int maxlen);
+> +extern int set_print_fmt(struct trace_probe *tp, bool is_return);
+> diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
+> index cbb2ad76fd8c..bcc7bd300c99 100644
+> --- a/kernel/trace/trace_uprobe.c
+> +++ b/kernel/trace/trace_uprobe.c
+> @@ -661,59 +661,6 @@ static int uprobe_event_define_fields(struct ftrace_event_call *event_call)
+>  	return 0;
+>  }
+>  
+> -#define LEN_OR_ZERO		(len ? len - pos : 0)
+> -static int __set_print_fmt(struct trace_uprobe *tu, char *buf, int len)
+> -{
+> -	const char *fmt, *arg;
+> -	int i;
+> -	int pos = 0;
+> -
+> -	if (is_ret_probe(tu)) {
+> -		fmt = "(%lx <- %lx)";
+> -		arg = "REC->" FIELD_STRING_FUNC ", REC->" FIELD_STRING_RETIP;
+> -	} else {
+> -		fmt = "(%lx)";
+> -		arg = "REC->" FIELD_STRING_IP;
+> -	}
+> -
+> -	/* When len=0, we just calculate the needed length */
+> -
+> -	pos += snprintf(buf + pos, LEN_OR_ZERO, "\"%s", fmt);
+> -
+> -	for (i = 0; i < tu->p.nr_args; i++) {
+> -		pos += snprintf(buf + pos, LEN_OR_ZERO, " %s=%s",
+> -				tu->p.args[i].name, tu->p.args[i].type->fmt);
+> -	}
+> -
+> -	pos += snprintf(buf + pos, LEN_OR_ZERO, "\", %s", arg);
+> -
+> -	for (i = 0; i < tu->p.nr_args; i++) {
+> -		pos += snprintf(buf + pos, LEN_OR_ZERO, ", REC->%s",
+> -				tu->p.args[i].name);
+> -	}
+> -
+> -	return pos;	/* return the length of print_fmt */
+> -}
+> -#undef LEN_OR_ZERO
+> -
+> -static int set_print_fmt(struct trace_uprobe *tu)
+> -{
+> -	char *print_fmt;
+> -	int len;
+> -
+> -	/* First: called with 0 length to calculate the needed length */
+> -	len = __set_print_fmt(tu, NULL, 0);
+> -	print_fmt = kmalloc(len + 1, GFP_KERNEL);
+> -	if (!print_fmt)
+> -		return -ENOMEM;
+> -
+> -	/* Second: actually write the @print_fmt */
+> -	__set_print_fmt(tu, print_fmt, len + 1);
+> -	tu->p.call.print_fmt = print_fmt;
+> -
+> -	return 0;
+> -}
+> -
+>  #ifdef CONFIG_PERF_EVENTS
+>  static bool
+>  __uprobe_perf_filter(struct trace_uprobe_filter *filter, struct mm_struct *mm)
+> @@ -945,7 +892,7 @@ static int register_uprobe_event(struct trace_uprobe *tu)
+>  	call->event.funcs = &uprobe_funcs;
+>  	call->class->define_fields = uprobe_event_define_fields;
+>  
+> -	if (set_print_fmt(tu) < 0)
+> +	if (set_print_fmt(&tu->p, is_ret_probe(tu)) < 0)
+>  		return -ENOMEM;
+>  
+>  	ret = register_ftrace_event(&call->event);
+> 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
 
-iEYEABECAAYFAlH+FIwACgkQi/DJPQPkQ1LddQCfQOtYEB3h1A48robnsLPTZWdr
-gpcAoMaBEyDUB7QaPANQIo0LRWzu+ySU
-=o1MU
------END PGP SIGNATURE-----
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
---nextPart152849368.3vpqrtV2oc--
+
