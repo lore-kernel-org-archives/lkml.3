@@ -1,39 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754415Ab3HESBv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 14:01:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25539 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753662Ab3HESBu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 14:01:50 -0400
-Date: Mon, 5 Aug 2013 19:56:23 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Felipe Contreras <felipe.contreras@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 3.11-rc4
-Message-ID: <20130805175623.GB8461@redhat.com>
-References: <CA+55aFwTX47vLvZckozZub0rUEo-aCBe7weqe=4mfQGfrW7NUA@mail.gmail.com> <CAMP44s2bOniz4qx5y9h4ppHRUjiPVGL+igSwO5NUJd4zpObxFw@mail.gmail.com> <20130805132948.GA14942@redhat.com> <CAMP44s0iXYjNuSqtCCjBHbbmmrYsKcrRBmD_W_nEiWTxPX1+xQ@mail.gmail.com> <20130805143935.GA18100@redhat.com> <CAMP44s0Q5fCcAwjPWaiz8uVE+BAnQ=YOBxtqNXR6XT1KBApFng@mail.gmail.com> <20130805171142.GA6978@redhat.com> <CAMP44s26f-AFWyxgWEyF50N6wntwT-UDHS4ZdSnZbagj+Rai7g@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMP44s26f-AFWyxgWEyF50N6wntwT-UDHS4ZdSnZbagj+Rai7g@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1753916Ab3HESD1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 14:03:27 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:47447 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753269Ab3HESDZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 14:03:25 -0400
+Date: Mon, 05 Aug 2013 11:03:21 -0700 (PDT)
+Message-Id: <20130805.110321.179491711331112454.davem@davemloft.net>
+To: mst@redhat.com
+Cc: linux-kernel@vger.kernel.org, john.r.fastabend@intel.com, kaber@trash.net,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH v3] macvlan: validate flags
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20130805152554.GA3592@redhat.com>
+References: <20130805152554.GA3592@redhat.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Mon, 05 Aug 2013 11:03:25 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/05, Felipe Contreras wrote:
->
-> Would it be possible to just revert that patch for v3.11, and fix it later?
+From: "Michael S. Tsirkin" <mst@redhat.com>
+Date: Mon, 5 Aug 2013 18:25:54 +0300
 
-Sure, but it would be nice to investigate.
+> commit df8ef8f3aaa6692970a436204c4429210addb23a
+>     macvlan: add FDB bridge ops and macvlan flags
+> added a flags field to macvlan, which can be
+> controlled from userspace.
+> The idea is to make the interface future-proof
+> so we can add flags and not new fields.
+> 
+> However, flags value isn't validated, as a result,
+> userspace can't detect which flags are supported.
+> 
+> Cc: "David S. Miller" <davem@davemloft.net>
+> Cc: John Fastabend <john.r.fastabend@intel.com>
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 
-I think we have the time for revert, this patch was added after 3.10
-so I hope we can always revert it before 3.11.
-
-Felipe, I'll try to make a stupid debugging patch tomorrow, perhaps
-you can test it...
-
-Oleg.
-
+Applied and queued up for -stable, thanks.
