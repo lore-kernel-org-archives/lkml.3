@@ -1,114 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755258Ab3HEWEb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 18:04:31 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:57573 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755040Ab3HEWE2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 18:04:28 -0400
-Message-ID: <52002167.2050504@wwwdotorg.org>
-Date: Mon, 05 Aug 2013 16:04:23 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: linus.walleij@linaro.org, ian.campbell@citrix.com, rob.herring@calxeda.com,
-        pawel.moll@arm.com, mark.rutland@arm.com, rob@landley.net,
-        sameo@linux.intel.com, lee.jones@linaro.org, grant.likely@linaro.org,
-        broonie@kernel.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        gg@slimlogic.co.uk, kishon@ti.com
-Subject: Re: [PATCH V2 3/3] pinctrl: palmas: add pincontrol driver
-References: <1375688014-6117-1-git-send-email-ldewangan@nvidia.com> <1375688014-6117-4-git-send-email-ldewangan@nvidia.com>
-In-Reply-To: <1375688014-6117-4-git-send-email-ldewangan@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1755347Ab3HEWFA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 18:05:00 -0400
+Received: from mga14.intel.com ([143.182.124.37]:21922 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755130Ab3HEWDC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 18:03:02 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,821,1367996400"; 
+   d="scan'208";a="342111476"
+From: Andi Kleen <andi@firstfloor.org>
+To: x86@kernel.org
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        jeremy@goop.org
+Subject: [PATCH 12/16] x86, asmlinkage, paravirt: Add __visible/asmlinkage to xen paravirt ops
+Date: Mon,  5 Aug 2013 15:02:46 -0700
+Message-Id: <1375740170-7446-13-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1375740170-7446-1-git-send-email-andi@firstfloor.org>
+References: <1375740170-7446-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/05/2013 01:33 AM, Laxman Dewangan wrote:
-> TI Palmas series Power Management IC have multiple pins which can be
-> configured for different functionality. This pins can be configured
-> for different function. Also their properties like pull up/down,
-> open drain enable/disable are configurable.
-> 
-> Add support for pincontrol driver Palmas series device like TPS65913,
-> TPS80036. The driver supports to be register from DT only.
+From: Andi Kleen <ak@linux.intel.com>
 
-> diff --git a/Documentation/devicetree/bindings/pinctrl/pinctrl-palmas.txt b/Documentation/devicetree/bindings/pinctrl/pinctrl-palmas.txt
+Cc: jeremy@goop.org
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ arch/x86/include/asm/paravirt_types.h |  3 ++-
+ arch/x86/kernel/paravirt.c            |  4 ++--
+ arch/x86/xen/xen-ops.h                | 16 ++++++++--------
+ 3 files changed, 12 insertions(+), 11 deletions(-)
 
-> +Required subnode-properties:
-> +- pinctrl-pins: An array of strings. Each string contains the name of a pin.
-> +  Valid values for these names are listed below.
+diff --git a/arch/x86/include/asm/paravirt_types.h b/arch/x86/include/asm/paravirt_types.h
+index 0db1fca..0617ff2 100644
+--- a/arch/x86/include/asm/paravirt_types.h
++++ b/arch/x86/include/asm/paravirt_types.h
+@@ -387,7 +387,8 @@ extern struct pv_lock_ops pv_lock_ops;
+ 
+ /* Simple instruction patching code. */
+ #define DEF_NATIVE(ops, name, code) 					\
+-	extern const char start_##ops##_##name[], end_##ops##_##name[];	\
++	extern const char start_##ops##_##name[] __visible,		\
++			  end_##ops##_##name[] __visible;		\
+ 	asm("start_" #ops "_" #name ": " code "; end_" #ops "_" #name ":")
+ 
+ unsigned paravirt_patch_nop(void);
+diff --git a/arch/x86/kernel/paravirt.c b/arch/x86/kernel/paravirt.c
+index cd6de64..884aa40 100644
+--- a/arch/x86/kernel/paravirt.c
++++ b/arch/x86/kernel/paravirt.c
+@@ -324,7 +324,7 @@ struct pv_time_ops pv_time_ops = {
+ 	.steal_clock = native_steal_clock,
+ };
+ 
+-struct pv_irq_ops pv_irq_ops = {
++__visible struct pv_irq_ops pv_irq_ops = {
+ 	.save_fl = __PV_IS_CALLEE_SAVE(native_save_fl),
+ 	.restore_fl = __PV_IS_CALLEE_SAVE(native_restore_fl),
+ 	.irq_disable = __PV_IS_CALLEE_SAVE(native_irq_disable),
+@@ -336,7 +336,7 @@ struct pv_irq_ops pv_irq_ops = {
+ #endif
+ };
+ 
+-struct pv_cpu_ops pv_cpu_ops = {
++__visible struct pv_cpu_ops pv_cpu_ops = {
+ 	.cpuid = native_cpuid,
+ 	.get_debugreg = native_get_debugreg,
+ 	.set_debugreg = native_set_debugreg,
+diff --git a/arch/x86/xen/xen-ops.h b/arch/x86/xen/xen-ops.h
+index 86782c5..d380213 100644
+--- a/arch/x86/xen/xen-ops.h
++++ b/arch/x86/xen/xen-ops.h
+@@ -105,9 +105,9 @@ static inline void __init xen_init_apic(void)
+ /* Declare an asm function, along with symbols needed to make it
+    inlineable */
+ #define DECL_ASM(ret, name, ...)		\
+-	ret name(__VA_ARGS__);			\
+-	extern char name##_end[];		\
+-	extern char name##_reloc[]		\
++	asmlinkage ret name(__VA_ARGS__);	\
++	extern char name##_end[] __visible;	\
++	extern char name##_reloc[] __visible
+ 
+ DECL_ASM(void, xen_irq_enable_direct, void);
+ DECL_ASM(void, xen_irq_disable_direct, void);
+@@ -115,11 +115,11 @@ DECL_ASM(unsigned long, xen_save_fl_direct, void);
+ DECL_ASM(void, xen_restore_fl_direct, unsigned long);
+ 
+ /* These are not functions, and cannot be called normally */
+-void xen_iret(void);
+-void xen_sysexit(void);
+-void xen_sysret32(void);
+-void xen_sysret64(void);
+-void xen_adjust_exception_frame(void);
++asmlinkage void xen_iret(void);
++asmlinkage void xen_sysexit(void);
++asmlinkage void xen_sysret32(void);
++asmlinkage void xen_sysret64(void);
++asmlinkage void xen_adjust_exception_frame(void);
+ 
+ extern int xen_panic_handler_init(void);
+ 
+-- 
+1.8.3.1
 
-s/pinctrl-pins/pins/ I think.
-
-> +Optional subnode-properties:
-> +- pinctrl-function:  string containing the name of the function to mux to the
-> +  pin. Valid values for function names are listed below. Please refer the
-> +  datasheet of the device to determine which are valid for each pin.
-
-s/pinctrl-function/function/ I think.
-
-> +The properties "pinctrl-pins" and "pinctrl-function" ara generic pincontrol
-> +properties and described in pinctrl-bindings.txt.
-> +
-> +Following are other valid propeties for Palams pinctrol dt node which are
-> +described in pinctrl-bindings.txt.
-> +bias-disable, bias-pull-up, bias-pull-down, bias-pull-pin-default
-> +drive-open-drain: Value will represent the open drain to be enable/disable
-> + of pins.
-> +    0: Disable, 1: Enable.
-
-I'd be tempted to replace everything I quoted above with something a
-little simpler to avoid any redundancy with pinctrl-bindings.txt:
-
-==========
-This binding uses the following generic properties as defined in
-pinctrl-bindings.txt:
-
-Required: pins
-Options: function, bias-disable, bias-pull-up, bias-pull-down,
-bias-pin-default, drive-open-drain.
-==========
-
-> +Note that many of these properties are only valid for certain specific pins.
-> +See the Palmas device datasheet for complete details regarding which pins
-> +support which functionality.
-> +
-> +Valid values for pin names are:
-> +pins: gpio0, gpio1, gpio2, gpio3, gpio4, gpio5, gpio6, gpio7, gpio8, gpio9,
-
-"pins:" is redundant here.
-
-> +	gpio10, gpio11, gpio12, gpio13, gpio14, gpio15, vac, powergood,
-> +	nreswarm, pwrdown, gpadc_start, reset_in, nsleep, enable1, enable2,
-> +	int.
-> +
-> +function: gpio, led, pwm, regen, sysen, clk32kgaudio, id, vbus_det, chrg_det,
-
-I think you would want to structure this list the same as the pins list,
-so prefix it with "Valid values for function names are:", and delete
-"function:" at the start of the list.
-
-> +There is 4 special function: opt0, opt1, opt2 and opt3. If this functions are
-
-s/this/any of these/
-
-> +selected then directly pins register will be written with 0, 1, 2 and 3
-
-s/and/or/
-
-> +repectively if it is valid for that pins.
-
-s/repectively/respectively/
-
-Hmm. I'm not sure I like mixing those functions with the more "semantic"
-function names above. I'd prefer the driver support either the semantic
-names or the raw names, but not both. It's not really a big deal though
-I suppose.
-
-I didn't review the code, just the binding.
