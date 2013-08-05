@@ -1,68 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754064Ab3HEJps (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 05:45:48 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:60226 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751528Ab3HEJpr convert rfc822-to-8bit (ORCPT
+	id S1754141Ab3HEJqM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 05:46:12 -0400
+Received: from mail-ea0-f170.google.com ([209.85.215.170]:40640 "EHLO
+	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751345Ab3HEJqJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 05:45:47 -0400
-Message-ID: <51FF7445.9080602@arm.com>
-Date: Mon, 05 Aug 2013 10:45:41 +0100
-From: Jonathan Austin <jonathan.austin@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Mon, 5 Aug 2013 05:46:09 -0400
+Date: Mon, 5 Aug 2013 11:46:03 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>, mingo@redhat.com,
+        x86@kernel.org, tglx@linutronix.de, jeremy@goop.org,
+        konrad.wilk@oracle.com, hpa@zytor.com, pbonzini@redhat.com,
+        linux-doc@vger.kernel.org, habanero@linux.vnet.ibm.com,
+        xen-devel@lists.xensource.com, peterz@infradead.org,
+        mtosatti@redhat.com, stefano.stabellini@eu.citrix.com,
+        andi@firstfloor.org, attilio.rao@citrix.com, ouyang@cs.pitt.edu,
+        gregkh@suse.de, agraf@suse.de, chegu_vinod@hp.com,
+        torvalds@linux-foundation.org, avi.kivity@gmail.com,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org, riel@redhat.com,
+        drjones@redhat.com, virtualization@lists.linux-foundation.org,
+        srivatsa.vaddagiri@gmail.com
+Subject: Re: [PATCH RFC V11 15/18] kvm : Paravirtual ticketlocks support for
+ linux guests running on KVM hypervisor
+Message-ID: <20130805094603.GA29303@gmail.com>
+References: <20130724120647.GG16400@redhat.com>
+ <51EFCA42.5020009@linux.vnet.ibm.com>
+ <51F0ED31.3040200@linux.vnet.ibm.com>
+ <20130725091509.GA22735@redhat.com>
+ <51F0F202.5090001@linux.vnet.ibm.com>
+ <51F7ED20.80202@linux.vnet.ibm.com>
+ <20130731062440.GK28372@redhat.com>
+ <51FA1087.9080908@linux.vnet.ibm.com>
+ <20130802092539.GB28327@gmail.com>
+ <20130802095406.GB30072@redhat.com>
 MIME-Version: 1.0
-To: =?UTF-8?B?VXdlIEtsZWluZS1Lw7ZuaWc=?= 
-	<u.kleine-koenig@pengutronix.de>
-CC: Olof Johansson <olof@lixom.net>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: Build breakage due to latest ARM fixes
-References: <CAOesGMgWeP-CdmOE-S7XZmJ-+1buP9a1cqavUns2gpgKrrhaxQ@mail.gmail.com> <20130803000731.GS23006@n2100.arm.linux.org.uk> <20130804125346.GH23006@n2100.arm.linux.org.uk> <CAOesGMhNr5-6T9s8Y9jr2pWy=baceuZwGFNj2HtnqU9DbwPLvw@mail.gmail.com> <20130804183708.GI23006@n2100.arm.linux.org.uk> <CAOesGMiDBT9NAhCiVe0mMTk4KXJZVynNaBHqk5+T9a6QYaFZvw@mail.gmail.com> <20130804193647.GD6104@pengutronix.de>
-In-Reply-To: <20130804193647.GD6104@pengutronix.de>
-X-OriginalArrivalTime: 05 Aug 2013 09:45:43.0713 (UTC) FILETIME=[8DAF0910:01CE91C0]
-X-MC-Unique: 113080510454508601
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130802095406.GB30072@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/08/13 20:36, Uwe Kleine-König wrote:
-> Hello,
+
+* Gleb Natapov <gleb@redhat.com> wrote:
+
+> On Fri, Aug 02, 2013 at 11:25:39AM +0200, Ingo Molnar wrote:
+> > > Ingo,
+> > > 
+> > > Do you have any concerns reg this series? please let me know if this 
+> > > looks good now to you.
+> > 
+> > I'm inclined to NAK it for excessive quotation - who knows how many 
+> > people left the discussion in disgust? Was it done to drive away as 
+> > many reviewers as possible?
+> > 
+> > Anyway, see my other reply, the measurement results seem hard to 
+> > interpret and inconclusive at the moment.
 >
-> On Sun, Aug 04, 2013 at 11:47:04AM -0700, Olof Johansson wrote:
->> On Sun, Aug 4, 2013 at 11:37 AM, Russell King - ARM Linux
->>> The only real testing I'm aware of is when I recreated the OKI67001
->>> support a while back and got my board to boot.
->>
->> Uwe has been busy pushing various patches for M3/M4 support, I don't
->> know how far it is from having some real hardware usable though. Uwe?
-> On my efm32 devboard I have 3.11-rc running. The missing bits are
-> available in my efm32 branch at
->
-> 	git://git.pengutronix.de/git/ukl/linux.git efm32
-> 	http://git.pengutronix.de/?p=ukl/linux.git;a=shortlog;h=refs/heads/efm32
->
-> . It's not yet in a form ready for mainline but there isn't much
-> missing. There is one problem I didn't debug yet (/proc/devicetree
-> doesn't appear although I have the respective Kconfig symbol on); other
-> than that I didn't notice any no-mmu problems. Also Jonathan Austin does
-> some no-MMU work.
->
+> That result was only for patch 18 of the series, not pvspinlock in 
+> general.
 
-We use !MMU internally here for R-class stuff (see the recently added 
-Cortex-R7 support).
+Okay - I've re-read the performance numbers and they are impressive, so no 
+objections from me.
 
-Our CONFIG_MMU=n testing all happens on Versatile Express, and it should 
-even be possible to run !MMU on TC2 (IE with an A-class processor). 
-Perhaps if we feel that it isn't easy enough for people to test these 
-configurations I can submit a vexpress_nommu defconfig or similar? It 
-might need some additional patches to complete the story, but if it 
-makes it easier to catch these breakages early then maybe it is worth it?
+The x86 impact seems to be a straightforward API change, with most of the 
+changes on the virtualization side. So:
 
-Jonny
+Acked-by: Ingo Molnar <mingo@kernel.org>
 
+I guess you'd want to carry this in the KVM tree or so - maybe in a 
+separate branch because it changes Xen as well?
 
+Thanks,
+
+	Ingo
