@@ -1,176 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754244Ab3HECEM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Aug 2013 22:04:12 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:5378 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754100Ab3HECEL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Aug 2013 22:04:11 -0400
-X-IronPort-AV: E=Sophos;i="4.89,815,1367942400"; 
-   d="scan'208";a="8117008"
-Message-ID: <51FF072D.80806@cn.fujitsu.com>
-Date: Mon, 05 Aug 2013 10:00:13 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S1754289Ab3HECNX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Aug 2013 22:13:23 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:5291 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754125Ab3HECNR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Aug 2013 22:13:17 -0400
+X-Spam-Score: -100.8
+Message-ID: <51FF09FF.90002@asianux.com>
+Date: Mon, 05 Aug 2013 10:12:15 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Namjae Jeon <linkinjeon@gmail.com>
-CC: jaegeuk.kim@samsung.com, linux-f2fs-devel@lists.sourceforge.net,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Pankaj Kumar <pankaj.km@samsung.com>
-Subject: Re: [PATCH 2/3] f2fs: add sysfs entries to select the gc policy
-References: <1375625415-2835-1-git-send-email-linkinjeon@gmail.com>
-In-Reply-To: <1375625415-2835-1-git-send-email-linkinjeon@gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/05 10:02:48,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/05 10:02:49,
-	Serialize complete at 2013/08/05 10:02:49
+To: Joe Perches <joe@perches.com>
+CC: Chen Gang F T <chen.gang.flying.transformer@gmail.com>,
+        "'Jiri Kosina'" <trivial@kernel.org>, jaharkes@cs.cmu.edu,
+        coda@cs.cmu.edu, codalist@TELEMANN.coda.cs.cmu.edu,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH trivial] include/linux/coda.h: remove useless '#else'
+References: <51F76B7D.2090602@asianux.com>  <1375187380.2075.111.camel@joe-AO722> <51F86C08.3080805@asianux.com>  <51F86E1A.60404@asianux.com> <51F8818C.7030703@gmail.com>  <51FEF0AC.8040804@asianux.com> <1375665700.3133.19.camel@joe-AO722> <51FF059E.2030101@asianux.com>
+In-Reply-To: <51FF059E.2030101@asianux.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/04/2013 10:10 PM, Namjae Jeon wrote:
-
-> From: Namjae Jeon <namjae.jeon@samsung.com>
+On 08/05/2013 09:53 AM, Chen Gang wrote:
+> On 08/05/2013 09:21 AM, Joe Perches wrote:
+>> On Mon, 2013-08-05 at 08:24 +0800, Chen Gang wrote:
+>>> On 07/31/2013 11:16 AM, Chen Gang F T wrote:
+>>>> On 07/31/2013 09:53 AM, Chen Gang wrote:
+>>>>> On 07/31/2013 09:44 AM, Chen Gang wrote:
+>>>>>> On 07/30/2013 08:29 PM, Joe Perches wrote:
+>>>>>>> On Tue, 2013-07-30 at 15:30 +0800, Chen Gang wrote:
+>>>>>>>> '#else' is useless, need remove.
+>>>>>>>>
+>>>>>>>> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+>>>>>>>> ---
+>>>>>>>>  include/linux/coda.h |    1 -
+>>>>>>>>  1 files changed, 0 insertions(+), 1 deletions(-)
+>>>>>>>>
+>>>>>>>> diff --git a/include/linux/coda.h b/include/linux/coda.h
+>>>>>>>> index cff544f..d30209b 100644
+>>>>>>>> --- a/include/linux/cod
+>>>>>>>> +++ b/include/linux/coda.h
+>>>>>>>> @@ -60,7 +60,6 @@ Mellon the rights to redistribute these changes without encumbrance.
+>>>>>>>>  
+>>>>>>>>  #if defined(__linux__)
+>>>>>>>>  typedef unsigned long long u_quad_t;
+>>>>>>>> -#else
+>>>>>>>>  #endif
+>>>>>>>>  #include <uapi/linux/coda.h>
+>>>>>>>>  #endif 
+>>>>>>>
+>>>>>>> Why have the #if at all?
+>>>>>>>
+>>>
+>>> Hmm... if any members have some questions about the fix, commonly it
+>>> means the related fix need additional improvement.
+>>>
+>>> Is it better to use BUILD_BUG() for the fix ?
+>>
+>> Probably not.  __linux__ is predefined by gcc.
+>>
+>> Using an #ifdef __linux__ might make some sense in
+>> in include/uapi, but not in include/linux.
+>>
+>>
 > 
-> Add sysfs entry gc_idle to control the gc policy. Where
-> gc_idle = 1 corresponds to selecting a cost benefit approach,
-> while gc_idle = 2 corresponds to selecting a greedy approach
-> to garbage collection. The selection is mutually exclusive one
-> approach will work at any point. If gc_idle = 0, then this
-> option is disabled.
+
+In fact, in my opinion "uapi/linux/coda.h" should not content "#ifdef
+__linux__", since it is already in "uapi/linux/" sub-directory.
+
+If it still wants to universal enough to multiple OS, need move it from
+"uapi/linux/coda.h" to "uapi/coda/coda.h".
+
+:-)
+
+
+> Hmm... since "linux/coda.h" will include "uapi/linux/coda.h", it is
+> necessary to check __linux__ whether defined.
 > 
-> Cc: Gu Zheng <guz.fnst@cn.fujitsu.com>
-> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-> Signed-off-by: Pankaj Kumar <pankaj.km@samsung.com>
-
-
-Reviewed-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
-
-> ---
->  Documentation/ABI/testing/sysfs-fs-f2fs |    6 +++++-
->  Documentation/filesystems/f2fs.txt      |    6 ++++++
->  fs/f2fs/gc.c                            |   24 +++++++++++++++++++++---
->  fs/f2fs/gc.h                            |    3 +++
->  fs/f2fs/super.c                         |    2 ++
->  5 files changed, 37 insertions(+), 4 deletions(-)
+> For some old compilers which is still widely used, they really do not
+> define __linux__, when use these compilers, we need give a necessary
+> check, if can not pass, need report BUILD_BUG().
 > 
-> diff --git a/Documentation/ABI/testing/sysfs-fs-f2fs b/Documentation/ABI/testing/sysfs-fs-f2fs
-> index 5f44095..31942ef 100644
-> --- a/Documentation/ABI/testing/sysfs-fs-f2fs
-> +++ b/Documentation/ABI/testing/sysfs-fs-f2fs
-> @@ -19,4 +19,8 @@ Description:
->  		 Controls the default sleep time for gc_thread. Time
->  		 is in milliseconds.
->  
-> -
-> +What:		/sys/fs/f2fs/<disk>/gc_idle
-> +Date:		July 2013
-> +Contact:	"Namjae Jeon" <namjae.jeon@samsung.com>
-> +Description:
-> +		 Controls the victim selection policy for garbage collection.
-> diff --git a/Documentation/filesystems/f2fs.txt b/Documentation/filesystems/f2fs.txt
-> index 5daf3bb..3cd27be 100644
-> --- a/Documentation/filesystems/f2fs.txt
-> +++ b/Documentation/filesystems/f2fs.txt
-> @@ -158,6 +158,12 @@ Files in /sys/fs/f2fs/<devname>
->                                time for the garbage collection thread. Time is
->                                in milliseconds.
->  
-> + gc_idle                      This parameter controls the selection of victim
-> +                              policy for garbage collection. Setting gc_idle = 0
-> +                              (default) will disable this option. Setting
-> +                              gc_idle = 1 will select the Cost Benefit approach
-> +                              & setting gc_idle = 2 will select the greedy aproach.
-> +
->  ================================================================================
->  USAGE
->  ================================================================================
-> diff --git a/fs/f2fs/gc.c b/fs/f2fs/gc.c
-> index 60d4f67..2c0c8ad 100644
-> --- a/fs/f2fs/gc.c
-> +++ b/fs/f2fs/gc.c
-> @@ -106,6 +106,8 @@ int start_gc_thread(struct f2fs_sb_info *sbi)
->  	gc_th->max_sleep_time = DEF_GC_THREAD_MAX_SLEEP_TIME;
->  	gc_th->no_gc_sleep_time = DEF_GC_THREAD_NOGC_SLEEP_TIME;
->  
-> +	gc_th->gc_idle = 0;
-> +
->  	sbi->gc_thread = gc_th;
->  	init_waitqueue_head(&sbi->gc_thread->gc_wait_queue_head);
->  	sbi->gc_thread->f2fs_gc_task = kthread_run(gc_thread_func, sbi,
-> @@ -130,9 +132,25 @@ void stop_gc_thread(struct f2fs_sb_info *sbi)
->  	sbi->gc_thread = NULL;
->  }
->  
-> -static int select_gc_type(int gc_type)
-> +static int select_gc_type(struct f2fs_gc_kthread *gc_th, int gc_type)
->  {
-> -	return (gc_type == BG_GC) ? GC_CB : GC_GREEDY;
-> +	int gc_mode;
-> +
-> +	if (gc_th && gc_th->gc_idle) {
-> +		/* Cost Benefit Policy */
-> +		if (gc_th->gc_idle == 1) {
-> +			gc_mode = GC_CB;
-> +			goto out;
-> +		} else if (gc_th->gc_idle == 2) {
-> +			/* Greedy Policy */
-> +			gc_mode = GC_GREEDY;
-> +			goto out;
-> +		}
-> +	}
-> +
-> +	gc_mode = (gc_type == BG_GC) ? GC_CB : GC_GREEDY;
-> +out:
-> +	return gc_mode;
->  }
->  
->  static void select_policy(struct f2fs_sb_info *sbi, int gc_type,
-> @@ -145,7 +163,7 @@ static void select_policy(struct f2fs_sb_info *sbi, int gc_type,
->  		p->dirty_segmap = dirty_i->dirty_segmap[type];
->  		p->ofs_unit = 1;
->  	} else {
-> -		p->gc_mode = select_gc_type(gc_type);
-> +		p->gc_mode = select_gc_type(sbi->gc_thread, gc_type);
->  		p->dirty_segmap = dirty_i->dirty_segmap[DIRTY];
->  		p->ofs_unit = sbi->segs_per_sec;
->  	}
-> diff --git a/fs/f2fs/gc.h b/fs/f2fs/gc.h
-> index f4bf44c..c22dee9 100644
-> --- a/fs/f2fs/gc.h
-> +++ b/fs/f2fs/gc.h
-> @@ -30,6 +30,9 @@ struct f2fs_gc_kthread {
->  	unsigned int min_sleep_time;
->  	unsigned int max_sleep_time;
->  	unsigned int no_gc_sleep_time;
-> +
-> +	/* for changing gc mode */
-> +	unsigned int gc_idle;
->  };
->  
->  struct inode_entry {
-> diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
-> index 0a3e88f..f9c6c0b 100644
-> --- a/fs/f2fs/super.c
-> +++ b/fs/f2fs/super.c
-> @@ -148,12 +148,14 @@ static struct f2fs_attr f2fs_attr_##_name = {			\
->  F2FS_RW_ATTR(gc_min_sleep_time, min_sleep_time);
->  F2FS_RW_ATTR(gc_max_sleep_time, max_sleep_time);
->  F2FS_RW_ATTR(gc_no_gc_sleep_time, no_gc_sleep_time);
-> +F2FS_RW_ATTR(gc_idle, gc_idle);
->  
->  #define ATTR_LIST(name) (&f2fs_attr_##name.attr)
->  static struct attribute *f2fs_attrs[] = {
->  	ATTR_LIST(gc_min_sleep_time),
->  	ATTR_LIST(gc_max_sleep_time),
->  	ATTR_LIST(gc_no_gc_sleep_time),
-> +	ATTR_LIST(gc_idle),
->  	NULL,
->  };
->  
+> e.g. for some versions of openrisc, please ref:
+> https://lkml.org/lkml/2013/7/30/888. (it is in applying work flow).
+> 
+> 
+> Thanks.
+> 
 
 
+-- 
+Chen Gang
