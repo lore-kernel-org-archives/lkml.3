@@ -1,149 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754366Ab3HECQo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Aug 2013 22:16:44 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:42133 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754135Ab3HECQj (ORCPT
+	id S1754265Ab3HECWe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Aug 2013 22:22:34 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:40238 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754146Ab3HECWb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Aug 2013 22:16:39 -0400
-Message-ID: <51FF0BC0.5020702@oracle.com>
-Date: Mon, 05 Aug 2013 10:19:44 +0800
-From: vaughan <vaughan.cao@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Sun, 4 Aug 2013 22:22:31 -0400
+Message-ID: <51FF0C1A.3020907@gmail.com>
+Date: Mon, 05 Aug 2013 10:21:14 +0800
+From: Chen Gang F T <chen.gang.flying.transformer@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: dgilbert@interlog.com
-CC: =?UTF-8?B?SsO2cm4gRW5nZWw=?= <joern@logfs.org>, JBottomley@parallels.com,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 0/4] [SCSI] sg: fix race condition in sg_open
-References: <1374075246-22923-1-git-send-email-vaughan.cao@oracle.com> <1374468033-8947-1-git-send-email-vaughan.cao@oracle.com> <20130722170338.GA15824@logfs.org> <51F9EB97.7070305@interlog.com> <51FC9449.4060906@interlog.com>
-In-Reply-To: <51FC9449.4060906@interlog.com>
+To: Greg Ungerer <gerg@uclinux.org>
+CC: Chen Gang <gang.chen@asianux.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        "dhowells@redhat.com" <dhowells@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, davej@redhat.com,
+        Arnd Bergmann <arnd@arndb.de>, linux-m68k <linux-m68k@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>
+Subject: Re: [PATCH] arch: m68k: include: asm: define 'VM_DATA_DEFAULT_FLAGS'
+ no matter whether has 'NOMMU' or not.
+References: <51C548E2.1060104@asianux.com> <51D0ECC2.3020101@asianux.com> <51FF01E7.5020105@uclinux.org>
+In-Reply-To: <51FF01E7.5020105@uclinux.org>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/03/2013 01:25 PM, Douglas Gilbert wrote:
-> On 13-08-01 01:01 AM, Douglas Gilbert wrote:
->> On 13-07-22 01:03 PM, Jörn Engel wrote:
->>> On Mon, 22 July 2013 12:40:29 +0800, Vaughan Cao wrote:
->>>>
->>>> There is a race when open sg with O_EXCL flag. Also a race may
->>>> happen between
->>>> sg_open and sg_remove.
->>>>
->>>> Changes from v4:
->>>>   * [3/4] use ERR_PTR series instead of adding another parameter in
->>>> sg_add_sfp
->>>>   * [4/4] fix conflict for cherry-pick from v3.
->>>>
->>>> Changes from v3:
->>>>   * release o_sem in sg_release(), not in sg_remove_sfp().
->>>>   * not set exclude with sfd_lock held.
->>>>
->>>> Vaughan Cao (4):
->>>>    [SCSI] sg: use rwsem to solve race during exclusive open
->>>>    [SCSI] sg: no need sg_open_exclusive_lock
->>>>    [SCSI] sg: checking sdp->detached isn't protected when open
->>>>    [SCSI] sg: push file descriptor list locking down to per-device
->>>>      locking
->>>>
->>>>   drivers/scsi/sg.c | 178
->>>> +++++++++++++++++++++++++-----------------------------
->>>>   1 file changed, 83 insertions(+), 95 deletions(-)
+On 08/05/2013 09:37 AM, Greg Ungerer wrote:
+> Hi Chen Gang,
+> 
+> On 01/07/13 12:43, Chen Gang wrote:
+>> Hello Maintainers:
+>>
+>> Please help check the patch whether OK or not, when you have time.
+>>
+>> Thanks.
+>>
+>> On 06/22/2013 02:49 PM, Chen Gang wrote:
 >>>
->>> Patchset looks good to me, although I didn't test it on hardware yet.
->>> Signed-off-by: Joern Engel <joern@logfs.org>
+>>> Define 'VM_DATA_DEFAULT_FLAGS' when 'NOMMU' to pass compiling.
 >>>
->>> James, care to pick this up?
+>>> So move it from "include/asm/page_mm.h to "include/asm/page.h"
+>>>
+>>> The related make:
+>>>
+>>>   make ARCH=m68k randconfig
+>>>   make ARCH=m68k menuconfig
+>>>     choose cross compiler
+>>>     disable MMU support
+>>>   make ARCH=m68k V=1 EXTRA_CFLAGS=-W
+>>>
+>>> The related error:
+>>>
+>>>   security/selinux/hooks.c: In function ‘selinux_init’:
+>>>   security/selinux/hooks.c:5821:21: error: ‘VM_DATA_DEFAULT_FLAGS’ undeclared (first use in this function)
+>>>
+>>> (the attachment is the related .config file)
+>>>
+>>>
+>>> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+> 
+> I am fine with this:
+> 
+> Acked-by: Greg Ungerer <gerg@uclinux.org>
+> 
+
+Thank you very much.
+
+> Do you want me to add this to the m68knommu git tree, and push to
+> Linus?
+> 
+
+Yeah, thank you.
+
+:-)
+
+> Regards
+> Greg
+> 
+> 
+>>> ---
+>>>  arch/m68k/include/asm/page.h    |    3 +++
+>>>  arch/m68k/include/asm/page_mm.h |    3 ---
+>>>  2 files changed, 3 insertions(+), 3 deletions(-)
+>>>
+>>> diff --git a/arch/m68k/include/asm/page.h b/arch/m68k/include/asm/page.h
+>>> index 7c360da..38b024a 100644
+>>> --- a/arch/m68k/include/asm/page.h
+>>> +++ b/arch/m68k/include/asm/page.h
+>>> @@ -48,6 +48,9 @@ extern unsigned long _ramend;
+>>>  #include <asm/page_no.h>
+>>>  #endif
+>>>  
+>>> +#define VM_DATA_DEFAULT_FLAGS	(VM_READ | VM_WRITE | VM_EXEC | \
+>>> +				 VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC)
+>>> +
+>>>  #include <asm-generic/getorder.h>
+>>>  
+>>>  #endif /* _M68K_PAGE_H */
+>>> diff --git a/arch/m68k/include/asm/page_mm.h b/arch/m68k/include/asm/page_mm.h
+>>> index 89f2014..5029f73 100644
+>>> --- a/arch/m68k/include/asm/page_mm.h
+>>> +++ b/arch/m68k/include/asm/page_mm.h
+>>> @@ -173,7 +173,4 @@ static inline __attribute_const__ int __virt_to_node_shift(void)
+>>>  
+>>>  #endif /* __ASSEMBLY__ */
+>>>  
+>>> -#define VM_DATA_DEFAULT_FLAGS	(VM_READ | VM_WRITE | VM_EXEC | \
+>>> -				 VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC)
+>>> -
+>>>  #endif /* _M68K_PAGE_MM_H */
+>>>
 >>
->> Acked-by: Douglas Gilbert <dgilbert@interlog.com>
 >>
->> Tested O_EXCL with multiple processes and threads; passed.
->> sg driver prior to this patch had "leaky" O_EXCL logic
->> according to the same test. Block device passed.
->>
->> James, could you clean this up:
->>    drivers/scsi/sg.c:242:6: warning: unused variable ‘res’
->> [-Wunused-variable]
->
-> Further testing suggests this patch on the sg driver is
-> broken, so I'll rescind my ack.
->
-> The case it is broken for is when a device is opened
-> without O_EXCL. Now if, while it is open, a second
-> thread/process tries to open the same device O_EXCL
-> then IMO the second open should fail with EBUSY.
->
-> My testing shows that O_EXCL opens properly deflect
-> other O_EXCL opens.
-Hi  Doug,
-
-My test don't have this issue. The routine is something as below:
-
-I start three opens without O_EXCL, wait 30s each, and open with
-O_EXCL|O_NONBLOCK, it failed with EBUSY.
-And I also call myopen with/without O_EXCL many times in background at
-the same time, and the test is passed. I don't know why it failed in
-your test.
-
-Usage: myopen [-e][-n][-d delay] -f file
-      -e: exclude
-      -n: nonblock
-      -d: delay N seconds and then close.
-
-[root@vacaowol5 16835013]# ./myopen  -f /dev/sg5 -d 30 &
-[1] 3417
-[root@vacaowol5 16835013]# ./myopen  -f /dev/sg5 -d 30 &
-[2] 3418
-[root@vacaowol5 16835013]# ./myopen  -f /dev/sg5 -d 30 &
-[3] 3419
-[root@vacaowol5 16835013]# cat /proc/scsi/sg/debug
-max_active_device=6(origin 1)
- def_reserved_size=32768
- >>> device=sg5 scsi5 chan=0 id=1 lun=0   em=0 sg_tablesize=55 excl=0
-   FD(1): timeout=60000ms bufflen=32768 (res)sgat=1 low_dma=0
-   cmd_q=0 f_packid=0 k_orphan=0 closed=0
-     No requests active
-   FD(2): timeout=60000ms bufflen=32768 (res)sgat=1 low_dma=0
-   cmd_q=0 f_packid=0 k_orphan=0 closed=0
-     No requests active
-   FD(3): timeout=60000ms bufflen=32768 (res)sgat=1 low_dma=0
-   cmd_q=0 f_packid=0 k_orphan=0 closed=0
-     No requests active
-
-[root@vacaowol5 16835013]# ./myopen -e -n  -f /dev/sg5 -d 30 &
-[4] 3422
-[3422:3351] /dev/sg5:exclude: Device or resource busy
-
-[4]+  Exit 1                  ./myopen -e -n -f /dev/sg5 -d 30
-
-[root@vacaowol5 16835013]# cat /proc/scsi/sg/debug
-max_active_device=6(origin 1)
- def_reserved_size=32768
- >>> device=sg5 scsi5 chan=0 id=1 lun=0   em=0 sg_tablesize=55 excl=0
-   FD(1): timeout=60000ms bufflen=32768 (res)sgat=1 low_dma=0
-   cmd_q=0 f_packid=0 k_orphan=0 closed=0
-     No requests active
-   FD(2): timeout=60000ms bufflen=32768 (res)sgat=1 low_dma=0
-   cmd_q=0 f_packid=0 k_orphan=0 closed=0
-     No requests active
-   FD(3): timeout=60000ms bufflen=32768 (res)sgat=1 low_dma=0
-   cmd_q=0 f_packid=0 k_orphan=0 closed=0
-     No requests active
-[root@vacaowol5 16835013]# cat /proc/scsi/sg/debug
-[1]   Done                    ./myopen -f /dev/sg5 -d 30
-[2]-  Done                    ./myopen -f /dev/sg5 -d 30
-[3]+  Done                    ./myopen -f /dev/sg5 -d 30
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
 
->
-> BTW the standard block driver (e.g. /dev/sdc) is broken
-> in exactly the same way, according to my tests.
->
-> Doug Gilbert
->
->
-
+-- 
+Chen Gang
