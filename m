@@ -1,85 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754406Ab3HEQNE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 12:13:04 -0400
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:53434 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754374Ab3HEQNA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 12:13:00 -0400
-Date: Mon, 5 Aug 2013 09:12:56 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Jonathan Cameron <jic23@kernel.org>
-Cc: Zubair Lutfullah <zubair.lutfullah@gmail.com>, jic23@cam.ac.uk,
-        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org, gregkh@linuxfoundation.org,
-        Russ.Dill@ti.com
-Subject: Re: [PATCH 1/2] input: ti_tsc: Enable shared IRQ for TSC
-Message-ID: <20130805161256.GA8794@core.coreip.homeip.net>
-References: <1374882674-18403-1-git-send-email-zubair.lutfullah@gmail.com>
- <1374882674-18403-2-git-send-email-zubair.lutfullah@gmail.com>
- <51FE361B.5030900@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51FE361B.5030900@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754443Ab3HEQNX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 12:13:23 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:33765 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754380Ab3HEQNC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 12:13:02 -0400
+From: Andrey Vagin <avagin@openvz.org>
+To: linux-mm@kvack.org
+Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andrey Vagin <avagin@openvz.org>, Glauber Costa <glommer@openvz.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        <stable@vger.kernel.org>
+Subject: [PATCH] memcg: don't initialize kmem-cache destroying work for root caches
+Date: Mon,  5 Aug 2013 20:09:40 +0400
+Message-Id: <1375718980-22154-1-git-send-email-avagin@openvz.org>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 04, 2013 at 12:08:11PM +0100, Jonathan Cameron wrote:
-> On 07/27/13 00:51, Zubair Lutfullah wrote:
-> > From: "Patil, Rachna" <rachna@ti.com>
-> > 
-> > Touchscreen and ADC share the same IRQ line from parent MFD core.
-> > Previously only Touchscreen was interrupt based.
-> > With continuous mode support added in ADC driver, driver requires
-> > interrupt to process the ADC samples, so enable shared IRQ flag bit for
-> > touchscreen.
-> > 
-> > Signed-off-by: Patil, Rachna <rachna@ti.com>
-> > Acked-by: Vaibhav Hiremath <hvaibhav@ti.com>
-> > Signed-off-by: Zubair Lutfullah <zubair.lutfullah@gmail.com>
-> > Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> I'd rather this went via input independent of the other patch
-> (if not there all that will happen is one or other driver will
-> fail to probe if both are attempted?)
-> 
-> Can take it through IIO but only with a Dmitry Ack.
-> 
-> > ---
-> >  drivers/input/touchscreen/ti_am335x_tsc.c |   18 ++++++++++++++----
-> >  1 file changed, 14 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/drivers/input/touchscreen/ti_am335x_tsc.c b/drivers/input/touchscreen/ti_am335x_tsc.c
-> > index e1c5300..68d1250 100644
-> > --- a/drivers/input/touchscreen/ti_am335x_tsc.c
-> > +++ b/drivers/input/touchscreen/ti_am335x_tsc.c
-> > @@ -260,8 +260,18 @@ static irqreturn_t titsc_irq(int irq, void *dev)
-> >  	unsigned int fsm;
-> >  
-> >  	status = titsc_readl(ts_dev, REG_IRQSTATUS);
-> > -	if (status & IRQENB_FIFO0THRES) {
-> > -
-> > +	/*
-> > +	 * ADC and touchscreen share the IRQ line.
-> > +	 * FIFO1 threshold, FIFO1 Overrun and FIFO1 underflow
-> > +	 * interrupts are used by ADC,
-> > +	 * hence return from touchscreen IRQ handler if FIFO1
-> > +	 * related interrupts occurred.
-> > +	 */
-> > +	if ((status & IRQENB_FIFO1THRES) ||
-> > +			(status & IRQENB_FIFO1OVRRUN) ||
-> > +			(status & IRQENB_FIFO1UNDRFLW))
-> > +		return IRQ_NONE;
-> > +	else if (status & IRQENB_FIFO0THRES) {
+struct memcg_cache_params has a union. Different parts of this union
+are used for root and non-root caches. A part with destroying work is
+used only for non-root caches.
 
-What happens if both parts have data at the same time? Can both
-IRQENB_FIFO1THRES and IRQENB_FIFO0THRES be signalled? What will happen
-in this case?
+I fixed the same problem in another place v3.9-rc1-16204-gf101a94, but
+didn't notice this one.
 
-Thanks.
+Cc: Glauber Costa <glommer@openvz.org>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: Balbir Singh <bsingharora@gmail.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: <stable@vger.kernel.org>    [3.9.x]
+Signed-off-by: Andrey Vagin <avagin@openvz.org>
+---
+ mm/memcontrol.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index c290a1c..c5792a5 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -3195,11 +3195,11 @@ int memcg_register_cache(struct mem_cgroup *memcg, struct kmem_cache *s,
+ 	if (!s->memcg_params)
+ 		return -ENOMEM;
+ 
+-	INIT_WORK(&s->memcg_params->destroy,
+-			kmem_cache_destroy_work_func);
+ 	if (memcg) {
+ 		s->memcg_params->memcg = memcg;
+ 		s->memcg_params->root_cache = root_cache;
++		INIT_WORK(&s->memcg_params->destroy,
++				kmem_cache_destroy_work_func);
+ 	} else
+ 		s->memcg_params->is_root_cache = true;
+ 
 -- 
-Dmitry
+1.8.3.1
+
