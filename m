@@ -1,90 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755442Ab3HEJAh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 05:00:37 -0400
-Received: from sauhun.de ([89.238.76.85]:58976 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754836Ab3HEJAg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 05:00:36 -0400
-Date: Mon, 5 Aug 2013 11:00:30 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] i2c: add sanity check to i2c_put_adapter
-Message-ID: <20130805090030.GC2980@katana>
-References: <1375359046-17472-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	id S1755455Ab3HEJB2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 05:01:28 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:9278 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754857Ab3HEJB0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 05:01:26 -0400
+X-Spam-Score: -100.8
+Message-ID: <51FF69A6.3050303@asianux.com>
+Date: Mon, 05 Aug 2013 17:00:22 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="LwW0XdcUbUexiWVK"
-Content-Disposition: inline
-In-Reply-To: <1375359046-17472-1-git-send-email-sebastian.hesselbarth@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Joe Perches <joe@perches.com>
+CC: Chen Gang F T <chen.gang.flying.transformer@gmail.com>,
+        "'Jiri Kosina'" <trivial@kernel.org>, jaharkes@cs.cmu.edu,
+        coda@cs.cmu.edu, codalist@TELEMANN.coda.cs.cmu.edu,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH trivial] include/linux/coda.h: remove useless '#else'
+References: <51F76B7D.2090602@asianux.com>  <1375187380.2075.111.camel@joe-AO722> <51F86C08.3080805@asianux.com>  <51F86E1A.60404@asianux.com> <51F8818C.7030703@gmail.com>  <51FEF0AC.8040804@asianux.com> <1375665700.3133.19.camel@joe-AO722> <51FF059E.2030101@asianux.com> <51FF09FF.90002@asianux.com>
+In-Reply-To: <51FF09FF.90002@asianux.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 08/05/2013 10:12 AM, Chen Gang wrote:
+> On 08/05/2013 09:53 AM, Chen Gang wrote:
+>> On 08/05/2013 09:21 AM, Joe Perches wrote:
+>>> On Mon, 2013-08-05 at 08:24 +0800, Chen Gang wrote:
+>>>> On 07/31/2013 11:16 AM, Chen Gang F T wrote:
+>>>>> On 07/31/2013 09:53 AM, Chen Gang wrote:
+>>>>>> On 07/31/2013 09:44 AM, Chen Gang wrote:
+>>>>>>> On 07/30/2013 08:29 PM, Joe Perches wrote:
+>>>>>>>> On Tue, 2013-07-30 at 15:30 +0800, Chen Gang wrote:
+>>>>>>>>> '#else' is useless, need remove.
+>>>>>>>>>
+>>>>>>>>> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+>>>>>>>>> ---
+>>>>>>>>>  include/linux/coda.h |    1 -
+>>>>>>>>>  1 files changed, 0 insertions(+), 1 deletions(-)
+>>>>>>>>>
+>>>>>>>>> diff --git a/include/linux/coda.h b/include/linux/coda.h
+>>>>>>>>> index cff544f..d30209b 100644
+>>>>>>>>> --- a/include/linux/cod
+>>>>>>>>> +++ b/include/linux/coda.h
+>>>>>>>>> @@ -60,7 +60,6 @@ Mellon the rights to redistribute these changes without encumbrance.
+>>>>>>>>>  
+>>>>>>>>>  #if defined(__linux__)
+>>>>>>>>>  typedef unsigned long long u_quad_t;
+>>>>>>>>> -#else
+>>>>>>>>>  #endif
+>>>>>>>>>  #include <uapi/linux/coda.h>
+>>>>>>>>>  #endif 
+>>>>>>>>
+>>>>>>>> Why have the #if at all?
+>>>>>>>>
+>>>>
+>>>> Hmm... if any members have some questions about the fix, commonly it
+>>>> means the related fix need additional improvement.
+>>>>
+>>>> Is it better to use BUILD_BUG() for the fix ?
+>>>
+>>> Probably not.  __linux__ is predefined by gcc.
+>>>
+>>> Using an #ifdef __linux__ might make some sense in
+>>> in include/uapi, but not in include/linux.
+>>>
+>>>
+>>
 
---LwW0XdcUbUexiWVK
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+In "include/uapi/", only 2 files contant __linux__: (especially latest
+compiler has already defined __linux__)
 
-On Thu, Aug 01, 2013 at 02:10:46PM +0200, Sebastian Hesselbarth wrote:
-> i2c_put_adapter dereferences i2c_adapter pointer passed without check
-> for NULL. This adds a check for non-NULL pointer to allow i2c_put_adapter
-> called with NULL and behave the same way i2c_release_client does already.
+  [root@gchenlinux uapi]# grep -rn __linux__ *
+  drm/drm.h:39:#if defined(__KERNEL__) || defined(__linux__)
+  linux/coda.h:100:#if defined(__linux__)
 
-What about using WARN for the NULL case to point out the ref-counting
-imbalance?
+So now and future, it is not common enough to check __linux__ globally.
 
->=20
-> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> ---
-> Cc: Wolfram Sang <wsa@the-dreams.de>
-> Cc: linux-i2c@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
->  drivers/i2c/i2c-core.c |    3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
->=20
-> diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-> index f32ca29..d075df6 100644
-> --- a/drivers/i2c/i2c-core.c
-> +++ b/drivers/i2c/i2c-core.c
-> @@ -1825,7 +1825,8 @@ EXPORT_SYMBOL(i2c_get_adapter);
-> =20
->  void i2c_put_adapter(struct i2c_adapter *adap)
->  {
-> -	module_put(adap->owner);
-> +	if (adap)
-> +		module_put(adap->owner);
->  }
->  EXPORT_SYMBOL(i2c_put_adapter);
-> =20
-> --=20
-> 1.7.10.4
->=20
+So I still suggest to let the related modules theirselves to check
+__linux__ whether defined.
 
---LwW0XdcUbUexiWVK
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+> 
+> In fact, in my opinion "uapi/linux/coda.h" should not content "#ifdef
+> __linux__", since it is already in "uapi/linux/" sub-directory.
+> 
+> If it still wants to universal enough to multiple OS, need move it from
+> "uapi/linux/coda.h" to "uapi/coda/coda.h".
+> 
+> :-)
+> 
+> 
+>> Hmm... since "linux/coda.h" will include "uapi/linux/coda.h", it is
+>> necessary to check __linux__ whether defined.
+>>
+>> For some old compilers which is still widely used, they really do not
+>> define __linux__, when use these compilers, we need give a necessary
+>> check, if can not pass, need report BUILD_BUG().
+>>
+>> e.g. for some versions of openrisc, please ref:
+>> https://lkml.org/lkml/2013/7/30/888. (it is in applying work flow).
+>>
+>>
+>> Thanks.
+>>
+> 
+> 
 
-iQIcBAEBAgAGBQJR/2muAAoJEBQN5MwUoCm2ExcQAIDORAhVfRYlRkt8MXRMXQjp
-1p6eIyb6Bz+qp6g95kwqBr6I+DFaRiJhB4djUwiw75+sTTModn7OAsVuwAEZ6s+V
-N8IsOGkqoOuFp8cRU0+JnzqvjHCkp4S5RQ3m2btu1+mdsbvxgG1WSIe0rykIUKGq
-E9w6W9OLsVsUco4xp6IID0JKedmdrUMdgEOApKVOMNhmDIU9J98uO+7n6dDk8r02
-X+IIxglodyOf+QTDBEUWoE9GulZOFPrSungzY3IwZxhASQgesV6RDP2S/s+mZEin
-DY057uUkcBKN3ooX8tOxcuSE+P0mugVFpoJFxF9konMpsqdAxrxDeJZZKOBjiegY
-RAxyca2pF7b+Pp3RJL2gufQJQl+LQ9cBLW964ph11qhKQTiwsSU+hOv2c7JKewJ0
-OoMiOxChcfEhy+ePnG7APjqSVWgLsvgjBa7EkhSyHEd2r+4I3KqtYjESKjwzWDfS
-nFu7y8wK5qifXcXzDyfsIzrovtjffRdVA4e8Ogo1wXBhevHpLP5p4YwwD3aLrz9w
-HL4gZ7ImxJ+FZNPvji0fWiFk2616fgeRdzhhxO0d6fqdIADwydy7oPna+KBMfOc0
-2a2C4gUaW94Ncq9AZXwxSs3/klOPkII+Ybfm+N0bA2AgMuza0r1rjQbGtyS2oDYF
-L+uOuLFl4NFUa41Sf3gj
-=0y9K
------END PGP SIGNATURE-----
 
---LwW0XdcUbUexiWVK--
+-- 
+Chen Gang
