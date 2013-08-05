@@ -1,95 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754100Ab3HEFFJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 01:05:09 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:35792 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751273Ab3HEFFI (ORCPT
+	id S1754194Ab3HEFJ7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 01:09:59 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:50193 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750945Ab3HEFJ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 01:05:08 -0400
-Date: Mon, 5 Aug 2013 15:04:56 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Bastian Hecht <hechtb@gmail.com>, Jingoo Han <jg1.han@samsung.com>,
-        Paul Mundt <lethal@linux-sh.org>
-Subject: linux-next: manual merge of the tty tree with the sh tree
-Message-Id: <20130805150456.974461a9896ae4d61f044aab@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__5_Aug_2013_15_04_56_+1000_o3DHzrxeitm9e.lx"
+	Mon, 5 Aug 2013 01:09:58 -0400
+Message-ID: <51FF339B.4050500@linux.vnet.ibm.com>
+Date: Mon, 05 Aug 2013 13:09:47 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: David Ahern <dsahern@gmail.com>
+CC: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Runzhen Wang <runzhen@linux.vnet.ibm.com>
+Subject: Re: [PATCH 4/9] perf kvm: split out tracepoints from record args
+References: <1375473947-64285-1-git-send-email-dsahern@gmail.com> <1375473947-64285-5-git-send-email-dsahern@gmail.com>
+In-Reply-To: <1375473947-64285-5-git-send-email-dsahern@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13080505-4790-0000-0000-000009A220A0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__5_Aug_2013_15_04_56_+1000_o3DHzrxeitm9e.lx
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 08/03/2013 04:05 AM, David Ahern wrote:
+> Needed by kvm live command. Make record_args a local while we are
+> messing with the args.
 
-Hi Greg,
+Reviewed-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 
-Today's linux-next merge of the tty tree got a conflict in
-drivers/tty/serial/sh-sci.c between commit ada80ee7fa60 ("serial: sh-sci:
-Add OF support") from the sh tree and commit 3ba35baa55fa ("serial:
-sh-sci: use dev_get_platdata()") from the tty tree.
-
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/tty/serial/sh-sci.c
-index 5ef9300,5377502..0000000
---- a/drivers/tty/serial/sh-sci.c
-+++ b/drivers/tty/serial/sh-sci.c
-@@@ -2588,20 -2481,9 +2588,20 @@@ static int sci_probe(struct platform_de
-  	if (is_early_platform_device(dev))
-  		return sci_probe_earlyprintk(dev);
- =20
- +	if (dev->dev.of_node)
- +		p =3D sci_parse_dt(dev, &dev_id);
- +	else
-- 		p =3D dev->dev.platform_data;
-++		p =3D dev_get_platdata(&dev->dev);
- +
- +	if (!p) {
- +		dev_err(&dev->dev, "no setup data supplied\n");
- +		return -EINVAL;
- +	}
- +
- +	sp =3D &sci_ports[dev_id];
-  	platform_set_drvdata(dev, sp);
- =20
- -	ret =3D sci_probe_single(dev, dev->id, p, sp);
- +	ret =3D sci_probe_single(dev, dev_id, p, sp);
-  	if (ret)
-  		return ret;
- =20
-
---Signature=_Mon__5_Aug_2013_15_04_56_+1000_o3DHzrxeitm9e.lx
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJR/zJ9AAoJEECxmPOUX5FEI8kP/RbeTlkIP+mq+bpYHo/v/FBN
-JNkNv54K05bNgS0l3CFNAEKrkXGi5msY5b1FwVNHILAMvt8t02KE3LFxMeBU8SMN
-wQHasfsx5kf4fZXp9odc7c3coMG5XVM/biL6ypSZdRXeoFtsBbM25MPIW+4RewE5
-vFM3WZfDOjeHxGiPDiWig1iFXtQCBwetOoA99+U/TEO1vu3S69oW/fk1FohTpPJb
-iHPXhF6WxUKFw2bOBUUzjqFcmN2vvzMc8sdhWESvCP9UNEQBZtaFDbX98fkqk05O
-//3sk4SidNO05ZMnvgnmvWNPXOzNN5Tc/3tIVtA96srEAWBAU4PVDPWvq9CmJVQe
-sUJYCnUJ7RGuks7zzwWMqFCMLPi5PCnA0oMcDWHQ0jwrMWI0wIHa1wpokvxAUSt1
-2SQhUFgFvtFm8CobYvpWDuZqnFZkqQZ7GjdjNCTllSLp31tL8r9hOdc3VlBccO7/
-81OnFvKZSyDIDraigYN9Y4MQ3c7rnI9AiRCBct6AFRtkgwC+Bt/E0IYrGNTdA7pP
-8NslMLx8pvL7JR8UaQCyqzrPE+gs2FQIuCCTFxGiV3Z2fL05sXUiGOlK5gkyHQhz
-ZM0mCi+kjDysspD0wFchHgl7yYb3iROq95RPaT64LWOO8zud34P8Xj1gDdsaxM25
-4kYv10DZ04O2MQ0hl+HT
-=IVgv
------END PGP SIGNATURE-----
-
---Signature=_Mon__5_Aug_2013_15_04_56_+1000_o3DHzrxeitm9e.lx--
