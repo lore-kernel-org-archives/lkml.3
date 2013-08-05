@@ -1,60 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754161Ab3HEE73 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 00:59:29 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:47111 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753695Ab3HEE71 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 00:59:27 -0400
-Message-ID: <51FF3127.5030206@linux.vnet.ibm.com>
-Date: Mon, 05 Aug 2013 12:59:19 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S1754134Ab3HEFBh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 01:01:37 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:51870 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751273Ab3HEFBg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 01:01:36 -0400
+Date: Mon, 5 Aug 2013 01:01:19 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@surriel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Zlatko Calusic <zcalusic@bitsync.net>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch v2 3/3] mm: page_alloc: fair zone allocator policy
+Message-ID: <20130805050119.GA715@cmpxchg.org>
+References: <1375457846-21521-1-git-send-email-hannes@cmpxchg.org>
+ <1375457846-21521-4-git-send-email-hannes@cmpxchg.org>
+ <20130805011546.GI32486@bbox>
+ <20130805034304.GC23319@cmpxchg.org>
+ <20130805044858.GN32486@bbox>
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: Paolo Bonzini <pbonzini@redhat.com>, Jan Kiszka <jan.kiszka@siemens.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: [PATCH] KVM: MMU: fix check the reserved bits on the gpte of L2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13080504-2000-0000-0000-00000D2DB7DE
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130805044858.GN32486@bbox>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current code always uses arch.mmu to check the reserved bits on guest gpte
-which is valid only for L1 guest, we should use arch.nested_mmu instead when
-we translate gva to gpa for the L2 guest
+On Mon, Aug 05, 2013 at 01:48:58PM +0900, Minchan Kim wrote:
+> On Sun, Aug 04, 2013 at 11:43:04PM -0400, Johannes Weiner wrote:
+> > On Mon, Aug 05, 2013 at 10:15:46AM +0900, Minchan Kim wrote:
+> > > I really want to give Reviewed-by but before that, I'd like to clear out
+> > > my concern which didn't handle enoughly in previous iteration.
+> > > 
+> > > Let's assume system has normal zone : 800M High zone : 800M
+> > > and there are two parallel workloads.
+> > > 
+> > > 1. alloc_pages(GFP_KERNEL) : 800M
+> > > 2. alloc_pages(GFP_MOVABLE) + mlocked : 800M
+> > > 
+> > > With old behavior, allocation from both workloads is fulfilled happily
+> > > because most of allocation from GFP_KERNEL would be done in normal zone
+> > > while most of allocation from GFP_MOVABLE would be done in high zone.
+> > > There is no OOM kill in this scenario.
+> > 
+> > If you have used ANY cache before, the movable pages will spill into
+> > lowmem.
+> 
+> Indeed, my example was just depends on luck.
+> I just wanted to discuss such corner case issue to notice cons at least,
+> someone. 
+> 
+> > 
+> > > With you change, normal zone would be fullfilled with GFP_KERNEL:400M
+> > > and GFP_MOVABLE:400M while high zone will have GFP_MOVABLE:400 + free 400M.
+> > > Then, someone would be OOM killed.
+> > >
+> > > Of course, you can argue that if there is such workloads, he should make
+> > > sure it via lowmem_reseve but it's rather overkill if we consider more examples
+> > > because any movable pages couldn't be allocated from normal zone so memory
+> > > efficieny would be very bad.
+> > 
+> > That's exactly what lowmem reserves are for: protect low memory from
+> > data that can sit in high memory, so that you have enough for data
+> > that can only be in low memory.
+> > 
+> > If we find those reserves to be inadequate, we have to increase them.
+> > You can't assume you get more lowmem than the lowmem reserves, period.
+> 
+> Theoretically, true.
+> 
+> > 
+> > And while I don't mean to break highmem machines, I really can't find
+> > it in my heart to care about theoretical performance variations in
+> > highmem cornercases (which is already a redundancy).
+> 
+> Yes. as I said, I don't know such workload, even embedded world.
+> But, recent mobile phone start to use 3G DRAM and maybe 2G would be a high
+> memory in 32bit machine. That's why I had a concern about this patch.
+> I think It's likely to pin lowmem more than old.
+>
+> > > As I said, I like your approach because I have no idea to handle unbalanced
+> > > aging problem better and we can get more benefits rather than lost by above
+> > > corner case but at least, I'd like to confirm what you think about
+> > > above problem before further steps. Maybe we can introduce "mlock with
+> > > newly-allocation or already-mapped page could be migrated to high memory zone"
+> > > when someone reported out? (we thougt mlocked page migration would be problem
+> > > RT latency POV but Peter confirmed it's no problem.)
+> > 
+> > And you think increasing lowmem reserves would be overkill? ;-)
+> 
+> If possible, I would like to avoid. ;-)
+> 
+> Peak workload : 800M average workload : 100M 
+> int foo[800M] vs int *bar = malloc(800M);
+> 
+> > 
+> > These patches fix real page aging problems.  Making trade offs to work
+> 
+> Indeed!
+> 
+> > properly on as many setups as possible is one thing, but a highmem
+> > configuration where you need exactly 100% of lowmem and mlock 100% of
+> > highmem?
+> 
+> Nope. Apprently, I don't know.
+> I just wanted to record that we should already cover such claims
+> in review phase so that if such problem happens in future, we can answer
+> easily "Just rasise your lowmem reserve ratio because you have been
+> depends on the luck until now". And I don't want to argue with other mm
+> guys such solution in future again.
 
-Fix it by using @mmu instead since it is adapted to the current mmu mode
-automatically
+That's fair enough.
 
-The bug can be triggered when nested npt is used and L1 guest and L2 guest
-use different mmu mode
+I would definitely suggest increasing the lowmem reserves in that case
+but I don't expect anybody to actually rely on the exact placement on
+a pristine system.  Not for performance, much less for _correctness_.
 
-Reported-by: Jan Kiszka <jan.kiszka@siemens.com>
-Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
----
- arch/x86/kvm/paging_tmpl.h | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+> I think as reviewer, it's enough as it is.
+> 
+> All three patches,
+> 
+> Reviewed-by: Minchan Kim <minchan@kernel.org>
 
-diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-index 7769699..3a75828 100644
---- a/arch/x86/kvm/paging_tmpl.h
-+++ b/arch/x86/kvm/paging_tmpl.h
-@@ -218,8 +218,7 @@ retry_walk:
- 		if (unlikely(!is_present_gpte(pte)))
- 			goto error;
-
--		if (unlikely(is_rsvd_bits_set(&vcpu->arch.mmu, pte,
--					      walker->level))) {
-+		if (unlikely(is_rsvd_bits_set(mmu, pte, walker->level))) {
- 			errcode |= PFERR_RSVD_MASK | PFERR_PRESENT_MASK;
- 			goto error;
- 		}
--- 
-1.8.1.4
-
+Thank you very much!
