@@ -1,51 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754308Ab3HESSB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 14:18:01 -0400
-Received: from mga14.intel.com ([143.182.124.37]:49428 "EHLO mga14.intel.com"
+	id S1754515Ab3HESSM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 14:18:12 -0400
+Received: from mx1.netapp.com ([216.240.18.38]:26209 "EHLO mx1.netapp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753563Ab3HESSA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 14:18:00 -0400
-X-ExtLoop1: 1
+	id S1754321Ab3HESSG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 14:18:06 -0400
 X-IronPort-AV: E=Sophos;i="4.89,820,1367996400"; 
-   d="scan'208";a="342022630"
-Message-ID: <51FFEC56.6040206@linux.intel.com>
-Date: Mon, 05 Aug 2013 11:17:58 -0700
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+   d="scan'208,223";a="271785407"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: Jeff Layton <jlayton@redhat.com>
+CC: Nix <nix@esperi.org.uk>,
+        =?utf-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>,
+        Oleg Nesterov <oleg@redhat.com>, NFS list <linux-nfs@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "dhowells@redhat.com" <dhowells@redhat.com>
+Subject: Re: [3.10.4] NFS locking panic, plus persisting NFS shutdown panic
+ from 3.9.*
+Thread-Topic: [3.10.4] NFS locking panic, plus persisting NFS shutdown panic
+ from 3.9.*
+Thread-Index: AQHOkfOH4gcyFEImq0mWTcGQZbqon5mHP1GAgAAXFoCAAAtIAA==
+Date: Mon, 5 Aug 2013 18:18:03 +0000
+Message-ID: <1375726682.7337.29.camel@leira.trondhjem.org>
+References: <8761vlv4z9.fsf@spindle.srvr.nix>
+	 <20130805084436.69ee4415@corrin.poochiereds.net>
+	 <87siyotcri.fsf@spindle.srvr.nix>
+	 <20130805110427.509db424@tlielax.poochiereds.net>
+	 <20130805111106.73d6ab90@tlielax.poochiereds.net>
+	 <87zjswrvaq.fsf@spindle.srvr.nix>
+	 <1375719301.7337.14.camel@leira.trondhjem.org>
+	 <20130805133739.21654ecb@tlielax.poochiereds.net>
+In-Reply-To: <20130805133739.21654ecb@tlielax.poochiereds.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: yes
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.106.53.51]
+Content-Type: multipart/mixed;
+	boundary="_002_1375726682733729camelleiratrondhjemorg_"
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, gcc <gcc@gcc.gnu.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        David Daney <ddaney.cavm@gmail.com>,
-        Behan Webster <behanw@converseincode.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: Re: [RFC] gcc feature request: Moving blocks into sections
-References: <1375721715.22073.80.camel@gandalf.local.home>  <CA+55aFw_o=D-j_SRn=Y4LhHm-tEyuP1Je5ZHVTYxbVyLyDcLEg@mail.gmail.com> <1375725328.22073.101.camel@gandalf.local.home>
-In-Reply-To: <1375725328.22073.101.camel@gandalf.local.home>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/05/2013 10:55 AM, Steven Rostedt wrote:
-> 
-> Well, as tracepoints are being added quite a bit in Linux, my concern is
-> with the inlined functions that they bring. With jump labels they are
-> disabled in a very unlikely way (the static_key_false() is a nop to skip
-> the code, and is dynamically enabled to a jump).
-> 
+--_002_1375726682733729camelleiratrondhjemorg_
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <1BD73417AB1D5047B8E8F4F002328E6C@hq.netapp.com>
+Content-Transfer-Encoding: base64
 
-Have you considered using traps for tracepoints?  A trapping instruction
-can be as small as a single byte.  The downside, of course, is that it
-is extremely suppressed -- the trap is always expensive -- and you then
-have to do a lookup to find the target based on the originating IP.
+T24gTW9uLCAyMDEzLTA4LTA1IGF0IDEzOjM3IC0wNDAwLCBKZWZmIExheXRvbiB3cm90ZToNCj4g
+T24gTW9uLCA1IEF1ZyAyMDEzIDE2OjE1OjAxICswMDAwDQo+ICJNeWtsZWJ1c3QsIFRyb25kIiA8
+VHJvbmQuTXlrbGVidXN0QG5ldGFwcC5jb20+IHdyb3RlOg0KPiANCj4gPiBGcm9tIDNjNTBiYTgw
+MTA1NDY0YTI4ZDQ1NmQ5YTFlMGYxZDgxZDRhZjkyYTggTW9uIFNlcCAxNyAwMDowMDowMCAyMDAx
+DQo+ID4gRnJvbTogVHJvbmQgTXlrbGVidXN0IDxUcm9uZC5NeWtsZWJ1c3RAbmV0YXBwLmNvbT4N
+Cj4gPiBEYXRlOiBNb24sIDUgQXVnIDIwMTMgMTI6MDY6MTIgLTA0MDANCj4gPiBTdWJqZWN0OiBb
+UEFUQ0hdIExPQ0tEOiBEb24ndCBjYWxsIHV0c25hbWUoKS0+bm9kZW5hbWUgZnJvbQ0KPiA+ICBu
+bG1jbG50X3NldGxvY2thcmdzDQo+ID4gTUlNRS1WZXJzaW9uOiAxLjANCj4gPiBDb250ZW50LVR5
+cGU6IHRleHQvcGxhaW47IGNoYXJzZXQ9VVRGLTgNCj4gPiBDb250ZW50LVRyYW5zZmVyLUVuY29k
+aW5nOiA4Yml0DQo+ID4gDQo+ID4gRmlyc3RseSwgbmxtY2xudF9zZXRsb2NrYXJncyBjYW4gYmUg
+Y2FsbGVkIGZyb20gYSByZWNsYWltZXIgdGhyZWFkLCBpbg0KPiA+IHdoaWNoIGNhc2Ugd2UncmUg
+aW4gZW50aXJlbHkgdGhlIHdyb25nIG5hbWVzcGFjZS4NCj4gPiBTZWNvbmRseSwgY29tbWl0IDhh
+YWM2MjcwNmFkYWFmMGZhYjAyYzQzMjc3NjE1NjFjOGJkYTk0NDggKG1vdmUNCj4gPiBleGl0X3Rh
+c2tfbmFtZXNwYWNlcygpIG91dHNpZGUgb2YgZXhpdF9ub3RpZnkoKSkgbm93IG1lYW5zIHRoYXQN
+Cj4gPiBleGl0X3Rhc2tfd29yaygpIGlzIGNhbGxlZCBhZnRlciBleGl0X3Rhc2tfbmFtZXNwYWNl
+cygpLCB3aGljaA0KPiA+IHRyaWdnZXJzIGFuIE9vcHMgd2hlbiB3ZSdyZSBmcmVlaW5nIHVwIHRo
+ZSBsb2Nrcy4NCj4gPiANCj4gPiBTaWduZWQtb2ZmLWJ5OiBUcm9uZCBNeWtsZWJ1c3QgPFRyb25k
+Lk15a2xlYnVzdEBuZXRhcHAuY29tPg0KPiA+IENjOiBUb3JhbGYgRsO2cnN0ZXIgPHRvcmFsZi5m
+b2Vyc3RlckBnbXguZGU+DQo+ID4gQ2M6IE9sZWcgTmVzdGVyb3YgPG9sZWdAcmVkaGF0LmNvbT4N
+Cj4gPiBDYzogTml4IDxuaXhAZXNwZXJpLm9yZy51az4NCj4gPiBDYzogSmVmZiBMYXl0b24gPGps
+YXl0b25AcmVkaGF0LmNvbT4NCj4gPiAtLS0NCj4gPiAgZnMvbG9ja2QvY2xudHByb2MuYyB8IDUg
+KysrLS0NCj4gPiAgMSBmaWxlIGNoYW5nZWQsIDMgaW5zZXJ0aW9ucygrKSwgMiBkZWxldGlvbnMo
+LSkNCj4gPiANCj4gPiBkaWZmIC0tZ2l0IGEvZnMvbG9ja2QvY2xudHByb2MuYyBiL2ZzL2xvY2tk
+L2NsbnRwcm9jLmMNCj4gPiBpbmRleCA5NzYwZWNiLi5hY2QzOTQ3IDEwMDY0NA0KPiA+IC0tLSBh
+L2ZzL2xvY2tkL2NsbnRwcm9jLmMNCj4gPiArKysgYi9mcy9sb2NrZC9jbG50cHJvYy5jDQo+ID4g
+QEAgLTEyNSwxNCArMTI1LDE1IEBAIHN0YXRpYyB2b2lkIG5sbWNsbnRfc2V0bG9ja2FyZ3Moc3Ry
+dWN0IG5sbV9ycXN0ICpyZXEsIHN0cnVjdCBmaWxlX2xvY2sgKmZsKQ0KPiA+ICB7DQo+ID4gIAlz
+dHJ1Y3QgbmxtX2FyZ3MJKmFyZ3AgPSAmcmVxLT5hX2FyZ3M7DQo+ID4gIAlzdHJ1Y3QgbmxtX2xv
+Y2sJKmxvY2sgPSAmYXJncC0+bG9jazsNCj4gPiArCWNoYXIgKm5vZGVuYW1lID0gcmVxLT5hX2hv
+c3QtPmhfcnBjY2xudC0+Y2xfbm9kZW5hbWU7DQo+ID4gIA0KPiA+ICAJbmxtY2xudF9uZXh0X2Nv
+b2tpZSgmYXJncC0+Y29va2llKTsNCj4gPiAgCW1lbWNweSgmbG9jay0+ZmgsIE5GU19GSChmaWxl
+X2lub2RlKGZsLT5mbF9maWxlKSksIHNpemVvZihzdHJ1Y3QgbmZzX2ZoKSk7DQo+ID4gLQlsb2Nr
+LT5jYWxsZXIgID0gdXRzbmFtZSgpLT5ub2RlbmFtZTsNCj4gPiArCWxvY2stPmNhbGxlciAgPSBu
+b2RlbmFtZTsNCj4gPiAgCWxvY2stPm9oLmRhdGEgPSByZXEtPmFfb3duZXI7DQo+ID4gIAlsb2Nr
+LT5vaC5sZW4gID0gc25wcmludGYocmVxLT5hX293bmVyLCBzaXplb2YocmVxLT5hX293bmVyKSwg
+IiV1QCVzIiwNCj4gPiAgCQkJCSh1bnNpZ25lZCBpbnQpZmwtPmZsX3UubmZzX2ZsLm93bmVyLT5w
+aWQsDQo+ID4gLQkJCQl1dHNuYW1lKCktPm5vZGVuYW1lKTsNCj4gPiArCQkJCW5vZGVuYW1lKTsN
+Cj4gPiAgCWxvY2stPnN2aWQgPSBmbC0+ZmxfdS5uZnNfZmwub3duZXItPnBpZDsNCj4gPiAgCWxv
+Y2stPmZsLmZsX3N0YXJ0ID0gZmwtPmZsX3N0YXJ0Ow0KPiA+ICAJbG9jay0+ZmwuZmxfZW5kID0g
+ZmwtPmZsX2VuZDsNCj4gDQo+IExvb2tzIGdvb2QgdG8gbWUuLi4NCj4gDQo+IFJldmlld2VkLWJ5
+OiBKZWZmIExheXRvbiA8amxheXRvbkByZWRoYXQuY29tPg0KPiANCj4gVHJvbmQsIGFueSB0aG91
+Z2h0cyBvbiB0aGUgb3RoZXIgb29wcyB0aGF0IE5peCBwb3N0ZWQ/IFRoZSBpc3N1ZSB0aGVyZQ0K
+PiBzZWVtcyB0byBiZSB0aGF0IHdlJ3JlIHRyeWluZyB0byBkbyB0aGUgcGF0aHdhbGsgdG8gdGhl
+IHJwY2JpbmQgdW5peA0KPiBzb2NrZXQgZnJvbSBleGl0X3Rhc2tfd29yaygpLCBidXQgdGhhdCdz
+IGhhcHBlbmluZyBhZnRlciB3ZSd2ZSBhbHJlYWR5DQo+IGNhbGxlZCBleGl0X2ZzKCkuDQo+IA0K
+PiBUaGUgdHJpdmlhbCBhbnN3ZXIgc2VlbXMgdG8gYmUgdG8gc2ltcGx5IGNhbGwgZXhpdF90YXNr
+X3dvcmsoKSBiZWZvcmUNCj4gZXhpdF9mcygpIHRoZXJlLCBidXQgaXQgc2VlbXMgbGlrZSB3ZSBv
+dWdodCB0byBiZSBkb2luZyB0aGUgdXBjYWxsIHRvDQo+IHJwY2JpbmQgaW4gYSBtb3VudCBuYW1l
+c3BhY2UgZnJvbSB3aGljaCB3ZSBrbm93IHdlIGNhbiByZWFjaCB0aGUNCj4gc29ja2V0Li4uDQoN
+Cklzbid0IGl0IGVub3VnaCB0byBqdXN0IGRvIHRoZSBzYW1lIHRoaW5nIGFzIHdlIGRpZCBmb3Ig
+Z3NzIHByb3h5PyBpLmUuDQpzZXQgdGhlIFJQQ19DTE5UX0NSRUFURV9OT19JRExFX1RJTUVPVVQg
+ZmxhZy4NCg0KU2VlIGF0dGFjaG1lbnQuDQotLSANClRyb25kIE15a2xlYnVzdA0KTGludXggTkZT
+IGNsaWVudCBtYWludGFpbmVyDQoNCk5ldEFwcA0KVHJvbmQuTXlrbGVidXN0QG5ldGFwcC5jb20N
+Cnd3dy5uZXRhcHAuY29tDQo=
 
-	-hpa
+--_002_1375726682733729camelleiratrondhjemorg_
+Content-Type: text/x-patch;
+	name="0001-SUNRPC-Don-t-auto-disconnect-from-the-local-rpcbind-.patch"
+Content-Description: 0001-SUNRPC-Don-t-auto-disconnect-from-the-local-rpcbind-.patch
+Content-Disposition: attachment;
+	filename="0001-SUNRPC-Don-t-auto-disconnect-from-the-local-rpcbind-.patch";
+	size=1452; creation-date="Mon, 05 Aug 2013 18:18:03 GMT";
+	modification-date="Mon, 05 Aug 2013 18:18:03 GMT"
+Content-ID: <340B7D041B21E440A16653641ED7DE72@hq.netapp.com>
+Content-Transfer-Encoding: base64
 
+RnJvbSBhYjU2ZDc3ODkzODE1YjFiOWYwYWFhN2E4OWNlZTdjODMyYTMxY2ZmIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQ0KRnJvbTogVHJvbmQgTXlrbGVidXN0IDxUcm9uZC5NeWtsZWJ1c3RAbmV0
+YXBwLmNvbT4NCkRhdGU6IE1vbiwgNSBBdWcgMjAxMyAxNDoxMDo0MyAtMDQwMA0KU3ViamVjdDog
+W1BBVENIXSBTVU5SUEM6IERvbid0IGF1dG8tZGlzY29ubmVjdCBmcm9tIHRoZSBsb2NhbCBycGNi
+aW5kIHNvY2tldA0KDQpUaGVyZSBpcyBubyBuZWVkIGZvciB0aGUga2VybmVsIHRvIHRpbWUgb3V0
+IHRoZSBBRl9MT0NBTCBjb25uZWN0aW9uIHRvDQp0aGUgcnBjYmluZCBzb2NrZXQsIGFuZCBkb2lu
+ZyBzbyBpcyBwcm9ibGVtYXRpYyBiZWNhdXNlIHdoZW4gaXQgaXMNCnRpbWUgdG8gcmVjb25uZWN0
+LCBvdXIgcHJvY2VzcyBtYXkgbm8gbG9uZ2VyIGJlIHVzaW5nIHRoZSBzYW1lIG1vdW50DQpuYW1l
+c3BhY2UuDQoNClJlcG9ydGVkLWJ5OiBOaXggPG5peEBlc3Blcmkub3JnLnVrPg0KU2lnbmVkLW9m
+Zi1ieTogVHJvbmQgTXlrbGVidXN0IDxUcm9uZC5NeWtsZWJ1c3RAbmV0YXBwLmNvbT4NCkNjOiBK
+ZWZmIExheXRvbiA8amxheXRvbkByZWRoYXQuY29tPg0KQ2M6IHN0YWJsZUB2Z2VyLmtlcm5lbC5v
+cmcgIyAzLjkueA0KLS0tDQogbmV0L3N1bnJwYy9ycGNiX2NsbnQuYyB8IDkgKysrKysrKysrDQog
+MSBmaWxlIGNoYW5nZWQsIDkgaW5zZXJ0aW9ucygrKQ0KDQpkaWZmIC0tZ2l0IGEvbmV0L3N1bnJw
+Yy9ycGNiX2NsbnQuYyBiL25ldC9zdW5ycGMvcnBjYl9jbG50LmMNCmluZGV4IDNkZjc2NGQuLjRi
+MDA1NTUgMTAwNjQ0DQotLS0gYS9uZXQvc3VucnBjL3JwY2JfY2xudC5jDQorKysgYi9uZXQvc3Vu
+cnBjL3JwY2JfY2xudC5jDQpAQCAtMjM4LDYgKzIzOCwxNSBAQCBzdGF0aWMgaW50IHJwY2JfY3Jl
+YXRlX2xvY2FsX3VuaXgoc3RydWN0IG5ldCAqbmV0KQ0KIAkJLnByb2dyYW0JPSAmcnBjYl9wcm9n
+cmFtLA0KIAkJLnZlcnNpb24JPSBSUENCVkVSU18yLA0KIAkJLmF1dGhmbGF2b3IJPSBSUENfQVVU
+SF9OVUxMLA0KKwkJLyoNCisJCSAqIFdlIHR1cm4gb2ZmIHRoZSBpZGxlIHRpbWVvdXQgdG8gcHJl
+dmVudCB0aGUga2VybmVsDQorCQkgKiBmcm9tIGF1dG9tYXRpY2FsbHkgZGlzY29ubmVjdGluZyB0
+aGUgc29ja2V0Lg0KKwkJICogT3RoZXJ3aXNlLCB3ZSdkIGhhdmUgdG8gY2FjaGUgdGhlIG1vdW50
+IG5hbWVzcGFjZQ0KKwkJICogb2YgdGhlIGNhbGxlciBhbmQgc29tZWhvdyBwYXNzIHRoYXQgdG8g
+dGhlIHNvY2tldA0KKwkJICogcmVjb25uZWN0IGNvZGUuDQorCQkgKi8NCisJCS5mbGFncwkJPSBS
+UENfQ0xOVF9DUkVBVEVfTk9QSU5HIHwNCisJCQkJICBSUENfQ0xOVF9DUkVBVEVfTk9fSURMRV9U
+SU1FT1VULA0KIAl9Ow0KIAlzdHJ1Y3QgcnBjX2NsbnQgKmNsbnQsICpjbG50NDsNCiAJaW50IHJl
+c3VsdCA9IDA7DQotLSANCjEuOC4zLjENCg0K
 
+--_002_1375726682733729camelleiratrondhjemorg_--
