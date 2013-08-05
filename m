@@ -1,52 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754586Ab3HESNG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 14:13:06 -0400
-Received: from smtp.eu.citrix.com ([46.33.159.39]:23729 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754188Ab3HESNE (ORCPT
+	id S1754184Ab3HESQu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 14:16:50 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:34982 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753238Ab3HESQt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 14:13:04 -0400
-X-IronPort-AV: E=Sophos;i="4.89,820,1367971200"; 
-   d="scan'208";a="7476645"
-Message-ID: <1375726381.10660.219.camel@kazak.uk.xensource.com>
-Subject: Re: [Xen-devel] [PATCH 2/3] MAINTAINERS: Update the Xen subsystem's
- with proper mailing list.
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: <xen-devel@lists.xenproject.org>, <stefano.stabellini@eu.citrix.com>,
-        <linux-kernel@vger.kernel.org>
-Date: Mon, 5 Aug 2013 19:13:01 +0100
-In-Reply-To: <1375725937-22930-3-git-send-email-konrad.wilk@oracle.com>
-References: <1375725937-22930-1-git-send-email-konrad.wilk@oracle.com>
-	 <1375725937-22930-3-git-send-email-konrad.wilk@oracle.com>
-Organization: Citrix Systems, Inc.
+	Mon, 5 Aug 2013 14:16:49 -0400
+Message-ID: <1375726607.4457.43.camel@edumazet-glaptop>
+Subject: Re: [PATCH] net/ipv4: fix the conditions of entering
+ TCP_CA_Disorder state
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Dong Fang <yp.fangdong@gmail.com>
+Cc: davem@davemloft.net, kuznet@ms2.inr.ac.ru, jmorris@namei.org,
+        yoshfuji@linux-ipv6.org, kaber@trash.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 05 Aug 2013 11:16:47 -0700
+In-Reply-To: <1375749951-11230-1-git-send-email-yp.fangdong@gmail.com>
+References: <1375749951-11230-1-git-send-email-yp.fangdong@gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-MIME-Version: 1.0
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.203.1]
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-08-05 at 14:05 -0400, Konrad Rzeszutek Wilk wrote:
-> And also drop the virtualization one since we don't really use it.
+On Mon, 2013-08-05 at 20:45 -0400, Dong Fang wrote:
+> if have some packets loss by network, the kernel can't reach here, we can see
+> the tcp_time_to_recover() function:
 > 
-> CC: stefano.stabellini@eu.citrix.com
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> static bool tcp_time_to_recover(struct sock *sk, int flag)
+> {
+> 	struct tcp_sock *tp = tcp_sk(sk);
+> 	__u32 packets_out;
+> 
+> 	/* Trick#1: The loss is proven. */
+> 	if (tp->lost_out)
+> 		return true;
+> 	//...
+> }
+> 
+> when it return true, the following condition will be failed:
+> 
+> //...
+> if (!tcp_time_to_recover(sk, flag)) {
+> 	tcp_try_to_open(sk, flag, prior_unsacked);
+> 	return;
+> }
+> //...
+> 
 
-Acked-by: Ian Campbell <ian.campbell@citrix.com>
+I honestly do not understand this changelog, and how it is related to
+the patch.
 
-The whole thing but especially:
+Also its not 'net/ipv4:' issue but 'tcp:' one
 
->  XEN NETWORK BACKEND DRIVER
->  M:	Ian Campbell <ian.campbell@citrix.com>
-> -L:	xen-devel@lists.xensource.com (moderated for non-subscribers)
-> +L:	xen-devel@lists.xenproject.org (moderated for non-subscribers)
->  L:	netdev@vger.kernel.org
->  S:	Supported
->  F:	drivers/net/xen-netback/*
 
-Ian.
+Could you please explain the issue again ?
+
+Thanks !
+
 
