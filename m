@@ -1,56 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754783Ab3HEHTS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 03:19:18 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:50210 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752112Ab3HEHTQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 03:19:16 -0400
-Message-ID: <51FF51EB.9070907@oracle.com>
-Date: Mon, 05 Aug 2013 15:19:07 +0800
-From: Zhenzhong Duan <zhenzhong.duan@oracle.com>
-Reply-To: zhenzhong.duan@oracle.com
-Organization: oracle
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S1754820Ab3HEHUT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 03:20:19 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40760 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752112Ab3HEHUR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 03:20:17 -0400
+Date: Mon, 5 Aug 2013 09:20:13 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, dave.hansen@intel.com,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, bp@suse.de,
+        Dave Hansen <dave@linux.vnet.ibm.com>
+Subject: Re: [PATCH resend] drop_caches: add some documentation and info
+ message
+Message-ID: <20130805072013.GA10146@dhcp22.suse.cz>
+References: <1374842669-22844-1-git-send-email-mhocko@suse.cz>
+ <20130729135743.c04224fb5d8e64b2730d8263@linux-foundation.org>
+ <51F9D1F6.4080001@jp.fujitsu.com>
+ <20130731201708.efa5ae87.akpm@linux-foundation.org>
+ <CAHGf_=r7mek+ueJWfu_6giMOueDTnMs8dY1jJrKyX+gfPys6uA@mail.gmail.com>
+ <20130802073304.GA17746@dhcp22.suse.cz>
+ <51FD653A.3060004@jp.fujitsu.com>
+ <20130804080751.GA24005@dhcp22.suse.cz>
+ <CAHGf_=o19rxB=neUPzZAeL9eeLnksKcbqCJjc+vg=EhYtnuwCw@mail.gmail.com>
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        xen-devel <xen-devel@lists.xen.org>, Feng Jin <joe.jin@oracle.com>,
-        Sucheta Chakraborty <sucheta.chakraborty@qlogic.com>
-Subject: Re: [PATCH 2/3] Refactor msi/msix restore code Part2
-References: <51EF451A.8050003@oracle.com> <CAErSpo5phkLpdR35eaMnYthVXiAAAr-JLD44QkntOZi2-NppOg@mail.gmail.com> <20130801151616.GE21528@konrad-lan.dumpdata.com> <51FB78D1.6060802@oracle.com> <20130802120101.GE24540@konrad-lan.dumpdata.com>
-In-Reply-To: <20130802120101.GE24540@konrad-lan.dumpdata.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAHGf_=o19rxB=neUPzZAeL9eeLnksKcbqCJjc+vg=EhYtnuwCw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun 04-08-13 21:13:44, KOSAKI Motohiro wrote:
+> On Sun, Aug 4, 2013 at 4:07 AM, Michal Hocko <mhocko@suse.cz> wrote:
+> > On Sat 03-08-13 16:16:58, KOSAKI Motohiro wrote:
+> >> >>> You missed the "!".  I'm proposing that setting the new bit 2 will
+> >> >>> permit people to prevent the new printk if it is causing them problems.
+> >> >>
+> >> >> No I don't. I'm sure almost all abuse users think our usage is correct. Then,
+> >> >> I can imagine all crazy applications start to use this flag eventually.
+> >> >
+> >> > I guess we do not care about those. If somebody wants to shoot his feet
+> >> > then we cannot do much about it. The primary motivation was to find out
+> >> > those that think this is right and they are willing to change the setup
+> >> > once they know this is not the right way to do things.
+> >> >
+> >> > I think that giving a way to suppress the warning is a good step. Log
+> >> > level might be to coarse and sysctl would be an overkill.
+> >>
+> >> When Dave Hansen reported this issue originally, he explained a lot of userland
+> >> developer misuse /proc/drop_caches because they don't understand what
+> >> drop_caches do.
+> >> So, if they never understand the fact, why can we trust them? I have no
+> >> idea.
+> >
+> > Well, most of that usage I have come across was legacy scripts which
+> > happened to work at a certain point in time because we sucked.
+> > Thinks have changed but such scripts happen to survive a long time.
+> > We are primarily interested in those.
+> 
+> Well, if the main target is shell script, task_comm and pid don't help us
+> a lot. I suggest to add ppid too.
 
-On 2013-08-02 20:01, Konrad Rzeszutek Wilk wrote:
->>>> Konrad, are you OK with this patch now?
->>> Yes, I wanted to make sure that the existing behavior under baremetal
->>> was not altered.
->>>
->>> And Duan had confirmed it was not  - thought to be on a safe side it
->>> would be good to confirm this via testing just in case.
->> I had ever let our customer test on baremetal and it passed.
-> Are they OK with being credited for this in the patch? Meaning are they
-> OK with Reported-by-and-Tested-by: flag?
-sucheta.chakraborty from Qlogic also reproduced the same and I got his 
-confirm patch worked.
-Already add him in tested-by.
+I do not have any objections to add ppid.
+ 
+> >> Or, if you have different motivation w/ Dave, please let me know it.
+> >
+> > We have seen reports where users complained about performance drop down
+> > when in fact the real culprit turned out to be such a clever script
+> > which dropped caches on the background thinking it will help to free
+> > some memory. Such cases are tedious to reveal.
+> 
+> Imagine such script have bit-2 and no logging output. Because
+> the script author think "we are doing the right thing".
+> Why distro guys want such suppress messages?
 
-zduan
->
-> Either way, I think the only remaining issue is to expand the git commit
-> a bit to include the discussion about the flow of the pci_read/pci_write
-> and point out that the logic remains the same.
->
->
->> zduan
-
+I am not really pushing this suppressing functionality. I just
+understand that there might be some legitimate use for supressing and if
+that is a must for merging the printk, I can live with that.
+ 
+[...]
+-- 
+Michal Hocko
+SUSE Labs
