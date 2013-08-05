@@ -1,60 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752298Ab3HEMhI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 08:37:08 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:56460 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751648Ab3HEMhG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 08:37:06 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Nishanth Menon <nm@ti.com>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>, pavel@ucw.cz,
-        linaro-kernel@lists.linaro.org, patches@linaro.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] OPP: Export opp_add()
-Date: Mon, 05 Aug 2013 14:47:11 +0200
-Message-ID: <1449166.3f8s044BNa@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.11.0-rc4+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <51FF9A95.2030307@ti.com>
-References: <58acb4a8a4e98089078de3ed71999730b6d97b4b.1375521724.git.viresh.kumar@linaro.org> <51FF9A95.2030307@ti.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1752362Ab3HEMk5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 08:40:57 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:36623 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751855Ab3HEMk4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 08:40:56 -0400
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: linux-kernel@vger.kernel.org
+Cc: linux-serial@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-arm-kernel@lists.infradead.org, kernel@pengutronix.de,
+        devicetree@vger.kernel.org, grant.likely@linaro.org,
+        rob.herring@calxeda.com
+Subject: [PATCH v6] linux,stdout-path helper
+Date: Mon,  5 Aug 2013 14:40:43 +0200
+Message-Id: <1375706445-15375-1-git-send-email-s.hauer@pengutronix.de>
+X-Mailer: git-send-email 1.8.4.rc0
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, August 05, 2013 07:29:09 AM Nishanth Menon wrote:
-> minor nitpick.
-> $subject: PM / OPP:
+The following adds a helper for matching the linux,stdout-path property
+in the chosen node and makes use of it in the i.MX serial
 
-Those are things I can easily fix up when I'm applying the patch.
+This is a series originally created by me. It was hijacked and then abandoned
+by Jean-Christophe for v5. I reverted the changes by Jean-Christophe since
+they introduced changes to the devicetree binding. Instead I'd like to have
+the existing binding implemented first before changing it.
 
-> On 08/03/2013 04:25 AM, Viresh Kumar wrote:
-> > Export opp_add() so that modules can use it.
-> >
-> > Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> > ---
-> >   drivers/base/power/opp.c | 1 +
-> >   1 file changed, 1 insertion(+)
-> >
-> > diff --git a/drivers/base/power/opp.c b/drivers/base/power/opp.c
-> > index c8ec186..ef89897 100644
-> > --- a/drivers/base/power/opp.c
-> > +++ b/drivers/base/power/opp.c
-> > @@ -460,6 +460,7 @@ int opp_add(struct device *dev, unsigned long freq, unsigned long u_volt)
-> >   	srcu_notifier_call_chain(&dev_opp->head, OPP_EVENT_ADD, new_opp);
-> >   	return 0;
-> >   }
-> > +EXPORT_SYMBOL_GPL(opp_add);
-> >
-> >   /**
-> >    * opp_set_availability() - helper to set the availability of an opp
-> >
-> other than that,
-> Acked-by: Nishanth Menon <nm@ti.com>
-> 
-> 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Sascha
+
+changes since v5:
+- reverted changes from v4
+- parse linux,stdoutpath property in of_alias_scan as suggested by Grant
+changes since v4:
+- add option support and check stdout-path too
+changes since v3:
+- move code from separate files to drivers/of/base.c and include/linux/of.h
+changes since v2:
+- move helper to OF core and make it independent of serial devices
+changes since v1:
+- move it out of the i.MX serial driver and make it generic for serial devices.
+
