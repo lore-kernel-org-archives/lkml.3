@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754663Ab3HEQRW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 12:17:22 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:39709 "EHLO arroyo.ext.ti.com"
+	id S1754690Ab3HEQST (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 12:18:19 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:39298 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753253Ab3HEQRT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 12:17:19 -0400
+	id S1754362Ab3HEQQG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 12:16:06 -0400
 From: Joel Fernandes <joelf@ti.com>
 To: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
         Santosh Shilimkar <santosh.shilimkar@ti.com>,
@@ -27,9 +27,9 @@ CC: Linux OMAP List <linux-omap@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Linux MMC List <linux-mmc@vger.kernel.org>,
         Joel Fernandes <joelf@ti.com>
-Subject: [PATCH v3 12/12] dma: edma: Return if nothing left todo in edma_execute
-Date: Mon, 5 Aug 2013 11:14:57 -0500
-Message-ID: <1375719297-12871-13-git-send-email-joelf@ti.com>
+Subject: [PATCH v3 01/12] dma: edma: Setup parameters to DMA MAX_NR_SG at a time
+Date: Mon, 5 Aug 2013 11:14:46 -0500
+Message-ID: <1375719297-12871-2-git-send-email-joelf@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1375719297-12871-1-git-send-email-joelf@ti.com>
 References: <1375719297-12871-1-git-send-email-joelf@ti.com>
@@ -39,29 +39,67 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is possible edma_execute is called even when all the SG
-elements have been submitted for transmission, we add a check
-for the same and avoid executing the rest of the function.
+Changes are made here for configuring existing parameters to support
+DMA'ing them out in batches as needed.
+
+Also allocate as many as slots as needed by the SG list, but not more
+than MAX_NR_SG. Then these slots will be reused accordingly.
+For ex, if MAX_NR_SG=10, and number of SG entries is 40, still only
+10 slots will be allocated to DMA the entire SG list of size 40.
 
 Signed-off-by: Joel Fernandes <joelf@ti.com>
 ---
- drivers/dma/edma.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/dma/edma.c |   14 +++++++++++---
+ 1 file changed, 11 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/dma/edma.c b/drivers/dma/edma.c
-index eca1b47..62987fc 100644
+index 5f3e532..7b0853c 100644
 --- a/drivers/dma/edma.c
 +++ b/drivers/dma/edma.c
-@@ -168,6 +168,9 @@ static void edma_execute(struct edma_chan *echan)
- 	total_left = edesc->pset_nr - edesc->total_processed;
- 	total_link_set = total_left > MAX_NR_LS ? MAX_NR_LS : total_left;
+@@ -222,9 +222,9 @@ static struct dma_async_tx_descriptor *edma_prep_slave_sg(
+ 	enum dma_slave_buswidth dev_width;
+ 	u32 burst;
+ 	struct scatterlist *sg;
+-	int i;
+ 	int acnt, bcnt, ccnt, src, dst, cidx;
+ 	int src_bidx, dst_bidx, src_cidx, dst_cidx;
++	int i, num_slots_needed;
  
-+	if (!total_left)
-+		return;
+ 	if (unlikely(!echan || !sgl || !sg_len))
+ 		return NULL;
+@@ -262,8 +262,11 @@ static struct dma_async_tx_descriptor *edma_prep_slave_sg(
+ 
+ 	edesc->pset_nr = sg_len;
+ 
+-	for_each_sg(sgl, sg, sg_len, i) {
+-		/* Allocate a PaRAM slot, if needed */
++	/* Allocate a PaRAM slot, if needed */
 +
- 	/* First time, setup 2 cyclically linked sets, each containing half
- 	   the slots allocated for this channel */
- 	if (edesc->total_processed == 0) {
++	num_slots_needed = sg_len > MAX_NR_SG ? MAX_NR_SG : sg_len;
++
++	for (i = 0; i < num_slots_needed; i++) {
+ 		if (echan->slot[i] < 0) {
+ 			echan->slot[i] =
+ 				edma_alloc_slot(EDMA_CTLR(echan->ch_num),
+@@ -273,6 +276,10 @@ static struct dma_async_tx_descriptor *edma_prep_slave_sg(
+ 				return NULL;
+ 			}
+ 		}
++	}
++
++	/* Configure PaRAM sets for each SG */
++	for_each_sg(sgl, sg, sg_len, i) {
+ 
+ 		acnt = dev_width;
+ 
+@@ -330,6 +337,7 @@ static struct dma_async_tx_descriptor *edma_prep_slave_sg(
+ 		/* Configure A or AB synchronized transfers */
+ 		if (edesc->absync)
+ 			edesc->pset[i].opt |= SYNCDIM;
++
+ 		/* If this is the last set, enable completion interrupt flag */
+ 		if (i == sg_len - 1)
+ 			edesc->pset[i].opt |= TCINTEN;
 -- 
 1.7.9.5
 
