@@ -1,71 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754299Ab3HEKMw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 06:12:52 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:53759 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751978Ab3HEKMv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 06:12:51 -0400
-Date: Mon, 5 Aug 2013 11:12:14 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Jonas Jensen <jonas.jensen@gmail.com>,
-        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "wim@iguana.be" <wim@iguana.be>, "arm@kernel.org" <arm@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v7] watchdog: Add MOXA ART watchdog driver
-Message-ID: <20130805101214.GB7594@e106331-lin.cambridge.arm.com>
-References: <1375098093-8975-1-git-send-email-jonas.jensen@gmail.com>
- <1375101228-10930-1-git-send-email-jonas.jensen@gmail.com>
- <20130802114159.GK2884@e106331-lin.cambridge.arm.com>
- <51FBE0D5.3070007@roeck-us.net>
+	id S1754178Ab3HEKXr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 06:23:47 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:58840 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752909Ab3HEKXp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 06:23:45 -0400
+Message-ID: <51FF7D2C.1090107@ti.com>
+Date: Mon, 5 Aug 2013 13:23:40 +0300
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51FBE0D5.3070007@roeck-us.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: George Cherian <george.cherian@ti.com>
+CC: <tony@atomide.com>, <rnayak@ti.com>, <benoit.cousson@linaro.org>,
+        <balbi@ti.com>, <kishon@ti.com>, <dmurphy@ti.com>, <t-kristo@ti.com>,
+        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/4] dts: dra7-evm: add USB support
+References: <1375369134-26398-1-git-send-email-rogerq@ti.com> <1375369134-26398-4-git-send-email-rogerq@ti.com> <51FBCA6F.9030503@ti.com> <51FF5A69.7040604@ti.com> <51FF6A45.3060702@ti.com>
+In-Reply-To: <51FF6A45.3060702@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 02, 2013 at 05:39:49PM +0100, Guenter Roeck wrote:
-> On 08/02/2013 04:41 AM, Mark Rutland wrote:
-> > On Mon, Jul 29, 2013 at 01:33:48PM +0100, Jonas Jensen wrote:
-> >> Add watchdog driver for MOXA ART SoCs.
-> >>
-> [ ... ]
-> >> +
-> >> +	err = watchdog_register_device(&moxart_wdt->dev);
-> >> +	if (unlikely(err))
-> >> +		return err;
-> >
-> > This is a probe path. Is the use of unlikely() really appropriate here?
-> > I suspect it doesn't make any appreciable difference, and should go.
-> >
-> Just wondering, for my education - why ? Is there s rule that unlikely()
-> shall not be used in the probe path ? If so, I would like to know it and
-> its reasoning to be able to apply it to my own reviews.
+On 08/05/2013 12:03 PM, George Cherian wrote:
+> On 8/5/2013 1:25 PM, Roger Quadros wrote:
+>> On 08/02/2013 06:04 PM, George Cherian wrote:
+>>> On 8/1/2013 8:28 PM, Roger Quadros wrote:
+>>>> Add USB drv_vbus pinctrl information and USB mode
+>>>> for the USB controller.
+>>>>
+>>>> Signed-off-by: Roger Quadros <rogerq@ti.com>
+>>>> ---
+>>>>    arch/arm/boot/dts/dra7-evm.dts |   22 ++++++++++++++++++++++
+>>>>    1 files changed, 22 insertions(+), 0 deletions(-)
+>>>>
+>>>> diff --git a/arch/arm/boot/dts/dra7-evm.dts b/arch/arm/boot/dts/dra7-evm.dts
+>>>> index cb0703c..acd3c09 100644
+>>>> --- a/arch/arm/boot/dts/dra7-evm.dts
+>>>> +++ b/arch/arm/boot/dts/dra7-evm.dts
+>>>> @@ -18,3 +18,25 @@
+>>>>            reg = <0x80000000 0x60000000>; /* 1536 MB */
+>>>>        };
+>>>>    };
+>>>> +
+>>>> +&dra7_pmx_core {
+>>>> +        pinctrl-names = "default";
+>>>> +        pinctrl-0 = <
+>>>> +        &usb_pins
+>>>> +    >;
+>>>> +
+>>>> +    usb_pins: pinmux_usb_pins {
+>>>> +                pinctrl-single,pins = <
+>>>> +            0x280    0xc0000    /* usb1_drvvbus, SLOW_SLEW | PULLUPEN | MODE0 */
+>>>> +            0x284    0xc0000 /* usb2_drvvbus, SLOW_SLEW | PULLUPEN | MODE0 */
+>>>> +                >;
+>>>> +        };
+>>>> +};
+>>>> +
+>>>> +&dwc3_1 {
+>>>> +    dr_mode = "otg";
+>>> otg???
+>> What's wrong there?
+>> please see
+>> Documentation/devicetree/bindings/usb/generic.txt
+>>
+>> we want it to operate in dual role mode and hence "otg"
+> 
+> Am sorry for not being clear with my earlier comment.
+> I meant whether we have otg/ DRD working. Till then shouldnt we put either peripheral/host?
 
-I thought there had been some discussion on LKML about likely and
-unlikely being abused, but in some quick searching I couldn't find the
-thread I remembered. I found a comment from Steve Rostedt [1], but
-that's not necessarily canonical.
+Setting it to peripheral did not work and I don't think it is meant to be used as host port at all
+so no point in setting it has host. Users needing host support can always use usb2 port.
+The kit comes supplied with host adapter only for the usb2 (mini) port.
 
-As I understand it, likely() and unlikely() should be used to tell the
-compiler to optimise for very specific cases where we know the branch
-likelihood far better than the compiler, and the performance gain is
-significant (i.e. hot paths). Using them elsewhere may lead to
-performance and/or size degradation, as we're asking the compiler to do
-something other than what it believes is optimal.
+So I think we should just leave usb1 port OTG, and get it to work somehow, at least in peripheral mode
+first.
 
-Probing is far from a hot path, and it seems in this case at least that
-unlikely() is only present as part of some duplicated black magic.
+cheers,
+-roger
 
-Thanks,
-Mark.
-
-[1] https://lkml.org/lkml/2011/1/3/135
