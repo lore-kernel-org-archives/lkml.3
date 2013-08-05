@@ -1,137 +1,321 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754927Ab3HEU11 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 16:27:27 -0400
-Received: from mail-gh0-f175.google.com ([209.85.160.175]:34692 "EHLO
-	mail-gh0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754694Ab3HEU1Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 16:27:25 -0400
-X-Greylist: delayed 376 seconds by postgrey-1.27 at vger.kernel.org; Mon, 05 Aug 2013 16:27:25 EDT
-Date: Mon, 5 Aug 2013 16:27:20 -0400 (EDT)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: linux-kernel@vger.kernel.org
-cc: Will Deacon <will.deacon@arm.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: perf,arm -- oops in validate_event
-Message-ID: <alpine.DEB.2.10.1308051622270.28589@vincent-weaver-1.um.maine.edu>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323329-1286696140-1375734447=:28589"
+	id S1754973Ab3HEU2P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 16:28:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38927 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754721Ab3HEU2N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 16:28:13 -0400
+Date: Mon, 05 Aug 2013 16:27:45 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: linux-mm@kvack.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, Hillf Danton <dhillf@gmail.com>,
+        Michal Hocko <mhocko@suse.cz>, Rik van Riel <riel@redhat.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        Naoya Horiguchi <nao.horiguchi@gmail.com>
+Message-ID: <1375734465-scgr8g4z-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1375302249-scfvftrh-mutt-n-horiguchi@ah.jp.nec.com>
+Subject: [PATCH 9/8] hugetlb: add pmd_huge_support() to migrate only pmd-based
+ hugepage
+Mime-Version: 1.0
+Content-Type: text/plain;
+ charset=iso-2022-jp
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+X-Mutt-Fcc: ~/Maildir/sent/
+User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+This patch is motivated by the discussion with Aneesh about "extend
+hugepage migration" patchset.
+  http://thread.gmane.org/gmane.linux.kernel.mm/103933/focus=104391
+I'll append this to the patchset in the next post, but before that
+I want this patch to be reviewed (I don't want to repeat posting the
+whole set for just minor changes.)
 
---8323329-1286696140-1375734447=:28589
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Any comments?
 
+Thanks,
+Naoya Horiguchi
+---
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Date: Mon, 5 Aug 2013 13:33:02 -0400
+Subject: [PATCH] hugetlb: add pmd_huge_support() to migrate only pmd-based
+ hugepage
 
-My perf_fuzzer quickly triggers this oops on my ARM Cortex A9 pandaboard
-running Linux 3.11-rc4.
+Currently hugepage migration works well only for pmd-based hugepages,
+because core routines of hugepage migration use pmd specific internal
+functions like huge_pte_offset(). So we should not enable the migration
+of other levels of hugepages until we are ready for it.
 
-Below is the oops, I've attached a simple C test case that triggers the 
-bug.
+Some users of hugepage migration (mbind, move_pages, and migrate_pages)
+do page table walk and check pud/pmd_huge() there, so they are safe.
+But the other users (softoffline and memory hotremove) don't do this,
+so they can try to migrate unexpected types of hugepages.
 
-Vince
+To prevent this, we introduce an architecture dependent check of whether
+hugepage are implemented on a pmd basis or not. It returns 0 if pmd_huge()
+returns always 0, and 1 otherwise.
 
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+---
+ arch/arm/mm/hugetlbpage.c     |  5 +++++
+ arch/arm64/mm/hugetlbpage.c   |  5 +++++
+ arch/ia64/mm/hugetlbpage.c    |  5 +++++
+ arch/metag/mm/hugetlbpage.c   |  5 +++++
+ arch/mips/mm/hugetlbpage.c    |  5 +++++
+ arch/powerpc/mm/hugetlbpage.c | 10 ++++++++++
+ arch/s390/mm/hugetlbpage.c    |  5 +++++
+ arch/sh/mm/hugetlbpage.c      |  5 +++++
+ arch/sparc/mm/hugetlbpage.c   |  5 +++++
+ arch/tile/mm/hugetlbpage.c    |  5 +++++
+ arch/x86/mm/hugetlbpage.c     |  8 ++++++++
+ include/linux/hugetlb.h       |  2 ++
+ mm/migrate.c                  | 11 +++++++++++
+ 13 files changed, 76 insertions(+)
 
-[ 8110.698669] Unable to handle kernel paging request at virtual address fffffffe
-[ 8110.706390] pgd = ecd88000
-[ 8110.708251] [fffffffe] *pgd=ae7f6821, *pte=00000000, *ppte=00000000
-[ 8110.715820] Internal error: Oops: 80000007 [#2] SMP ARM
-[ 8110.716033] Modules linked in: bluetooth snd_soc_omap_hdmi omapdss snd_soc_omap_abe_twl6040 snd_soc_twl6040 snd_soc_omap_hdmi_card snd_soc_omap snd_soc_omap_mcpdm snd_soc_omap_mcbsp snd_soc_core snd_compress regmap_spi snd_pcm snd_page_alloc snd_timer snd soundcore
-[ 8110.743133] CPU: 1 PID: 28431 Comm: perf_fuzzer Tainted: G      D      3.11.0-rc4 #4
-[ 8110.743133] task: edab8100 ti: ece5c000 task.ti: ece5c000
-[ 8110.760681] PC is at 0xfffffffe
-[ 8110.760681] LR is at validate_event+0x3c/0x50
-[ 8110.766906] pc : [<fffffffe>]    lr : [<c001bf9c>]    psr: 20000033
-[ 8110.766906] sp : ece5de40  ip : edfbd960  fp : edfbd800
-[ 8110.775238] r10: 00000000  r9 : 00000000  r8 : ed8c3ec0
-[ 8110.781066] r7 : ed8c3f5c  r6 : edfbd800  r5 : ecaed000  r4 : ece5de4c
-[ 8110.791107] r3 : ffffffff  r2 : 000000d9  r1 : ecaed000  r0 : ece5de50
-[ 8110.791107] Flags: nzCv  IRQs on  FIQs on  Mode SVC_32  ISA Thumb  Segment user
-[ 8110.803924] Control: 10c5387d  Table: acd8804a  DAC: 00000015
-[ 8110.814239] Process perf_fuzzer (pid: 28431, stack limit = 0xece5c240)
-[ 8110.821197] Stack: (0xece5de40 to 0xece5e000)
-[ 8110.821197] de40: 00000000 c001c280 00000002 00000000 00000001 ece5de4c 00000000 c00bf058
-[ 8110.831085] de60: 00000000 c008626c 00000000 00000000 00000000 edfbd800 ed8c3ec0 edfbd800
-[ 8110.831085] de80: 00000000 c073ffac ece5df20 c00bf160 00000001 00000000 c00bf058 ece5df20
-[ 8110.851959] dea0: 00000000 ed8c3ec0 00000000 00000000 00000000 c0cb0818 edab8100 c00bf420
-[ 8110.860656] dec0: ece5df20 00000000 edab8100 ecaed000 00000000 00000000 00000000 00000000
-[ 8110.862182] dee0: 00000000 ecad5680 edab8100 c00bfe48 00000000 00000000 00000000 c073e7c0
-[ 8110.862182] df00: 00000000 ece5c000 c15036e8 ece5c030 00000005 c06eb5c0 6b139c44 00000000
-[ 8110.879913] df20: 00000004 00000050 8dfff7d3 00000000 00000000 00000000 00000000 00000000
-[ 8110.895507] df40: 00000000 00000000 001d4a0b 00000000 00000000 00000000 00000000 00000000
-[ 8110.901062] df60: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-[ 8110.911102] df80: 00000000 00000000 00090990 000103a4 0000016c c00128e8 ece5c000 00000000
-[ 8110.921112] dfa0: 000107a0 c0012700 00000000 00090990 00090bd0 00000000 00000000 00000004
-[ 8110.921112] dfc0: 00000000 00090990 000103a4 0000016c 00090bd0 00090bc8 00090998 000107a0
-[ 8110.931060] dfe0: beab7be0 beab7bd0 0000b6c9 b6f016d0 40000010 00090bd0 00000000 00000000
-[ 8110.941009] [<c001bf9c>] (validate_event+0x3c/0x50) from [<c001c280>] (armpmu_event_init+0x16c/0x280)
-[ 8110.953247] [<c001c280>] (armpmu_event_init+0x16c/0x280) from [<c00bf160>] (perf_init_event+0x108/0x180)
-[ 8110.967712] [<c00bf160>] (perf_init_event+0x108/0x180) from [<c00bf420>] (perf_event_alloc+0x248/0x40c)
-[ 8110.971069] [<c00bf420>] (perf_event_alloc+0x248/0x40c) from [<c00bfe48>] (SyS_perf_event_open+0x4f4/0x8fc)
-[ 8110.981048] [<c00bfe48>] (SyS_perf_event_open+0x4f4/0x8fc) from [<c0012700>] (ret_fast_syscall+0x0/0x48)
-[ 8110.998199] Code: bad PC value
-[ 8111.001495] ---[ end trace 0e6c892fae28bee4 ]---
---8323329-1286696140-1375734447=:28589
-Content-Type: TEXT/x-csrc; name=arm_perf_oops.c
-Content-Transfer-Encoding: BASE64
-Content-ID: <alpine.DEB.2.10.1308051627200.28589@vincent-weaver-1.um.maine.edu>
-Content-Description: 
-Content-Disposition: attachment; filename=arm_perf_oops.c
-
-LyogbG9nX3RvX2NvZGUgb3V0cHV0IGZyb20gb3V0NCAqLw0KLyogYnkgVmlu
-Y2UgV2VhdmVyIDx2aW5jZW50LndlYXZlciBfYXRfIG1haW5lLmVkdSAqLw0K
-DQojaW5jbHVkZSA8c3RkaW8uaD4NCiNpbmNsdWRlIDx1bmlzdGQuaD4NCiNp
-bmNsdWRlIDxzdHJpbmcuaD4NCiNpbmNsdWRlIDxzaWduYWwuaD4NCiNpbmNs
-dWRlIDxzeXMvbW1hbi5oPg0KI2luY2x1ZGUgPHN5cy9zeXNjYWxsLmg+DQoj
-aW5jbHVkZSA8c3lzL2lvY3RsLmg+DQojaW5jbHVkZSA8c3lzL3ByY3RsLmg+
-DQojaW5jbHVkZSA8bGludXgvaHdfYnJlYWtwb2ludC5oPg0KI2luY2x1ZGUg
-PGxpbnV4L3BlcmZfZXZlbnQuaD4NCg0KaW50IGZkWzEwMjRdOw0Kc3RydWN0
-IHBlcmZfZXZlbnRfYXR0ciBwZVsxMDI0XTsNCmNoYXIgKm1tYXBfcmVzdWx0
-WzEwMjRdOw0KI2RlZmluZSBNQVhfUkVBRF9TSVpFIDY1NTM2DQpzdGF0aWMg
-bG9uZyBsb25nIGRhdGFbTUFYX1JFQURfU0laRV07DQoNCmludCBmb3JrZWRf
-cGlkOw0KDQppbnQgcGVyZl9ldmVudF9vcGVuKHN0cnVjdCBwZXJmX2V2ZW50
-X2F0dHIgKmh3X2V2ZW50X3VwdHIsDQoJcGlkX3QgcGlkLCBpbnQgY3B1LCBp
-bnQgZ3JvdXBfZmQsIHVuc2lnbmVkIGxvbmcgZmxhZ3MpIHsNCg0KCXJldHVy
-biBzeXNjYWxsKF9fTlJfcGVyZl9ldmVudF9vcGVuLGh3X2V2ZW50X3VwdHIs
-IHBpZCwgY3B1LA0KCQlncm91cF9mZCwgZmxhZ3MpOw0KfQ0KDQppbnQgbWFp
-bihpbnQgYXJnYywgY2hhciAqKmFyZ3YpIHsNCg0KICAgICAgICBtZW1zZXQo
-JnBlWzVdLDAsc2l6ZW9mKHN0cnVjdCBwZXJmX2V2ZW50X2F0dHIpKTsNCiAg
-ICAgICAgcGVbNV0udHlwZT1QRVJGX1RZUEVfU09GVFdBUkU7DQogICAgICAg
-IHBlWzVdLnNpemU9ODA7DQogICAgICAgIHBlWzVdLmNvbmZpZz1QRVJGX0NP
-VU5UX1NXX1RBU0tfQ0xPQ0s7DQogICAgICAgIHBlWzVdLnNhbXBsZV90eXBl
-PTA7IC8qIDAgKi8NCiAgICAgICAgcGVbNV0ucmVhZF9mb3JtYXQ9UEVSRl9G
-T1JNQVRfVE9UQUxfVElNRV9SVU5OSU5HfFBFUkZfRk9STUFUX0dST1VQOyAv
-KiBcDQphICovDQogICAgICAgIHBlWzVdLmRpc2FibGVkPTE7DQoJcGVbNV0u
-ZXhjbHVzaXZlPTE7DQogICAgICAgIHBlWzVdLmV4Y2x1ZGVfdXNlcj0xOw0K
-CXBlWzVdLmV4Y2x1ZGVfa2VybmVsPTE7DQogICAgICAgIHBlWzVdLm1tYXA9
-MTsNCiAgICAgICAgcGVbNV0uaW5oZXJpdF9zdGF0PTE7DQogICAgICAgIHBl
-WzVdLmVuYWJsZV9vbl9leGVjPTE7DQogICAgICAgIHBlWzVdLndhdGVybWFy
-az0xOw0KICAgICAgICBwZVs1XS5wcmVjaXNlX2lwPTE7IC8qIGNvbnN0YW50
-IHNraWQgKi8NCglwZVs1XS5tbWFwX2RhdGE9MTsNCiAgICAgICAgcGVbNV0u
-c2FtcGxlX2lkX2FsbD0xOw0KICAgICAgICBwZVs1XS5leGNsdWRlX2d1ZXN0
-PTE7DQoJcGVbNV0ud2FrZXVwX3dhdGVybWFyaz0wOw0KICAgICAgICBwZVs1
-XS5icF90eXBlPUhXX0JSRUFLUE9JTlRfRU1QVFk7DQoNCiAgICAgICAgZmRb
-NV09cGVyZl9ldmVudF9vcGVuKCZwZVs1XSwwLDAsLTEsMCAvKjAqLyApOw0K
-DQoJbWVtc2V0KCZwZVswXSwwLHNpemVvZihzdHJ1Y3QgcGVyZl9ldmVudF9h
-dHRyKSk7DQoJcGVbMF0udHlwZT1QRVJGX1RZUEVfUkFXOw0KCXBlWzBdLnNp
-emU9ODA7DQoJcGVbMF0uY29uZmlnPTB4OGRmZmY3ZDM7DQoJcGVbMF0uc2Ft
-cGxlX3R5cGU9MDsgLyogMCAqLw0KCXBlWzBdLnJlYWRfZm9ybWF0PTB4MFVM
-TDsgLyogMCAqLw0KCXBlWzBdLmRpc2FibGVkPTE7DQoJcGVbMF0uaW5oZXJp
-dD0xOw0KCXBlWzBdLmV4Y2x1c2l2ZT0xOw0KCXBlWzBdLmNvbW09MTsNCglw
-ZVswXS5pbmhlcml0X3N0YXQ9MTsNCglwZVswXS53YXRlcm1hcms9MTsNCglw
-ZVswXS5wcmVjaXNlX2lwPTI7IC8qIHJlcXVlc3QgemVybyBza2lkICovDQoJ
-cGVbMF0uc2FtcGxlX2lkX2FsbD0xOw0KCXBlWzBdLmV4Y2x1ZGVfaG9zdD0x
-Ow0KCXBlWzBdLmV4Y2x1ZGVfZ3Vlc3Q9MTsNCglwZVswXS53YWtldXBfd2F0
-ZXJtYXJrPTA7DQoJcGVbMF0uYnBfdHlwZT1IV19CUkVBS1BPSU5UX0VNUFRZ
-Ow0KDQoJZmRbMF09cGVyZl9ldmVudF9vcGVuKCZwZVswXSwwLDAsZmRbNV0s
-MCAvKjAqLyApOw0KDQoJLyogUmVwbGF5ZWQgMTAgc3lzY2FsbHMgKi8NCgly
-ZXR1cm4gMDsNCn0NCg==
-
---8323329-1286696140-1375734447=:28589--
+diff --git a/arch/arm/mm/hugetlbpage.c b/arch/arm/mm/hugetlbpage.c
+index 3d1e4a2..3f3b6a7 100644
+--- a/arch/arm/mm/hugetlbpage.c
++++ b/arch/arm/mm/hugetlbpage.c
+@@ -99,3 +99,8 @@ int pmd_huge(pmd_t pmd)
+ {
+ 	return pmd_val(pmd) && !(pmd_val(pmd) & PMD_TABLE_BIT);
+ }
++
++int pmd_huge_support(void)
++{
++	return 1;
++}
+diff --git a/arch/arm64/mm/hugetlbpage.c b/arch/arm64/mm/hugetlbpage.c
+index 2fc8258..5e9aec3 100644
+--- a/arch/arm64/mm/hugetlbpage.c
++++ b/arch/arm64/mm/hugetlbpage.c
+@@ -54,6 +54,11 @@ int pud_huge(pud_t pud)
+ 	return !(pud_val(pud) & PUD_TABLE_BIT);
+ }
+ 
++int pmd_huge_support(void)
++{
++	return 1;
++}
++
+ static __init int setup_hugepagesz(char *opt)
+ {
+ 	unsigned long ps = memparse(opt, &opt);
+diff --git a/arch/ia64/mm/hugetlbpage.c b/arch/ia64/mm/hugetlbpage.c
+index 76069c1..68232db 100644
+--- a/arch/ia64/mm/hugetlbpage.c
++++ b/arch/ia64/mm/hugetlbpage.c
+@@ -114,6 +114,11 @@ int pud_huge(pud_t pud)
+ 	return 0;
+ }
+ 
++int pmd_huge_support(void)
++{
++	return 0;
++}
++
+ struct page *
+ follow_huge_pmd(struct mm_struct *mm, unsigned long address, pmd_t *pmd, int write)
+ {
+diff --git a/arch/metag/mm/hugetlbpage.c b/arch/metag/mm/hugetlbpage.c
+index 3c52fa6..0424315 100644
+--- a/arch/metag/mm/hugetlbpage.c
++++ b/arch/metag/mm/hugetlbpage.c
+@@ -110,6 +110,11 @@ int pud_huge(pud_t pud)
+ 	return 0;
+ }
+ 
++int pmd_huge_support(void)
++{
++	return 1;
++}
++
+ struct page *follow_huge_pmd(struct mm_struct *mm, unsigned long address,
+ 			     pmd_t *pmd, int write)
+ {
+diff --git a/arch/mips/mm/hugetlbpage.c b/arch/mips/mm/hugetlbpage.c
+index a7fee0d..01fda44 100644
+--- a/arch/mips/mm/hugetlbpage.c
++++ b/arch/mips/mm/hugetlbpage.c
+@@ -85,6 +85,11 @@ int pud_huge(pud_t pud)
+ 	return (pud_val(pud) & _PAGE_HUGE) != 0;
+ }
+ 
++int pmd_huge_support(void)
++{
++	return 1;
++}
++
+ struct page *
+ follow_huge_pmd(struct mm_struct *mm, unsigned long address,
+ 		pmd_t *pmd, int write)
+diff --git a/arch/powerpc/mm/hugetlbpage.c b/arch/powerpc/mm/hugetlbpage.c
+index 834ca8e..d67db4b 100644
+--- a/arch/powerpc/mm/hugetlbpage.c
++++ b/arch/powerpc/mm/hugetlbpage.c
+@@ -86,6 +86,11 @@ int pgd_huge(pgd_t pgd)
+ 	 */
+ 	return ((pgd_val(pgd) & 0x3) != 0x0);
+ }
++
++int pmd_huge_support(void)
++{
++	return 1;
++}
+ #else
+ int pmd_huge(pmd_t pmd)
+ {
+@@ -101,6 +106,11 @@ int pgd_huge(pgd_t pgd)
+ {
+ 	return 0;
+ }
++
++int pmd_huge_support(void)
++{
++	return 0;
++}
+ #endif
+ 
+ pte_t *huge_pte_offset(struct mm_struct *mm, unsigned long addr)
+diff --git a/arch/s390/mm/hugetlbpage.c b/arch/s390/mm/hugetlbpage.c
+index 121089d..951ee25 100644
+--- a/arch/s390/mm/hugetlbpage.c
++++ b/arch/s390/mm/hugetlbpage.c
+@@ -117,6 +117,11 @@ int pud_huge(pud_t pud)
+ 	return 0;
+ }
+ 
++int pmd_huge_support(void)
++{
++	return 1;
++}
++
+ struct page *follow_huge_pmd(struct mm_struct *mm, unsigned long address,
+ 			     pmd_t *pmdp, int write)
+ {
+diff --git a/arch/sh/mm/hugetlbpage.c b/arch/sh/mm/hugetlbpage.c
+index d776234..0d676a4 100644
+--- a/arch/sh/mm/hugetlbpage.c
++++ b/arch/sh/mm/hugetlbpage.c
+@@ -83,6 +83,11 @@ int pud_huge(pud_t pud)
+ 	return 0;
+ }
+ 
++int pmd_huge_support(void)
++{
++	return 0;
++}
++
+ struct page *follow_huge_pmd(struct mm_struct *mm, unsigned long address,
+ 			     pmd_t *pmd, int write)
+ {
+diff --git a/arch/sparc/mm/hugetlbpage.c b/arch/sparc/mm/hugetlbpage.c
+index d2b5944..9639964 100644
+--- a/arch/sparc/mm/hugetlbpage.c
++++ b/arch/sparc/mm/hugetlbpage.c
+@@ -234,6 +234,11 @@ int pud_huge(pud_t pud)
+ 	return 0;
+ }
+ 
++int pmd_huge_support(void)
++{
++	return 0;
++}
++
+ struct page *follow_huge_pmd(struct mm_struct *mm, unsigned long address,
+ 			     pmd_t *pmd, int write)
+ {
+diff --git a/arch/tile/mm/hugetlbpage.c b/arch/tile/mm/hugetlbpage.c
+index 650ccff..0ac3599 100644
+--- a/arch/tile/mm/hugetlbpage.c
++++ b/arch/tile/mm/hugetlbpage.c
+@@ -198,6 +198,11 @@ int pud_huge(pud_t pud)
+ 	return !!(pud_val(pud) & _PAGE_HUGE_PAGE);
+ }
+ 
++int pmd_huge_support(void)
++{
++	return 1;
++}
++
+ struct page *follow_huge_pmd(struct mm_struct *mm, unsigned long address,
+ 			     pmd_t *pmd, int write)
+ {
+diff --git a/arch/x86/mm/hugetlbpage.c b/arch/x86/mm/hugetlbpage.c
+index 7e73e8c..9d980d8 100644
+--- a/arch/x86/mm/hugetlbpage.c
++++ b/arch/x86/mm/hugetlbpage.c
+@@ -59,6 +59,10 @@ follow_huge_pmd(struct mm_struct *mm, unsigned long address,
+ 	return NULL;
+ }
+ 
++int pmd_huge_support(void)
++{
++	return 0;
++}
+ #else
+ 
+ struct page *
+@@ -77,6 +81,10 @@ int pud_huge(pud_t pud)
+ 	return !!(pud_val(pud) & _PAGE_PSE);
+ }
+ 
++int pmd_huge_support(void)
++{
++	return 1;
++}
+ #endif
+ 
+ /* x86_64 also uses this file */
+diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
+index 2e02c4e..115b553 100644
+--- a/include/linux/hugetlb.h
++++ b/include/linux/hugetlb.h
+@@ -94,6 +94,7 @@ struct page *follow_huge_pud(struct mm_struct *mm, unsigned long address,
+ 				pud_t *pud, int write);
+ int pmd_huge(pmd_t pmd);
+ int pud_huge(pud_t pmd);
++int pmd_huge_support(void);
+ unsigned long hugetlb_change_protection(struct vm_area_struct *vma,
+ 		unsigned long address, unsigned long end, pgprot_t newprot);
+ 
+@@ -128,6 +129,7 @@ static inline void hugetlb_show_meminfo(void)
+ #define prepare_hugepage_range(file, addr, len)	(-EINVAL)
+ #define pmd_huge(x)	0
+ #define pud_huge(x)	0
++#define pmd_huge_support()	0
+ #define is_hugepage_only_range(mm, addr, len)	0
+ #define hugetlb_free_pgd_range(tlb, addr, end, floor, ceiling) ({BUG(); 0; })
+ #define hugetlb_fault(mm, vma, addr, flags)	({ BUG(); 0; })
+diff --git a/mm/migrate.c b/mm/migrate.c
+index d313737..7082e30 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -949,6 +949,17 @@ static int unmap_and_move_huge_page(new_page_t get_new_page,
+ 	struct page *new_hpage = get_new_page(hpage, private, &result);
+ 	struct anon_vma *anon_vma = NULL;
+ 
++	/*
++	 * This restriction ensures that only pmd-based hugepages can migrate,
++	 * because migration of other types of hugepages are not completely
++	 * implemented nor tested. Some callers of hugepage migration like
++	 * soft offline and memory hotremove don't walk through page tables
++	 * before kicking migration, so we need this check to prevent hugepage
++	 * migration in the architectures with non-pmd-based hugepage.
++	 */
++	if (!pmd_huge_support())
++		return -ENOSYS;
++
+ 	if (!new_hpage)
+ 		return -ENOMEM;
+ 
+-- 
+1.8.3.1
