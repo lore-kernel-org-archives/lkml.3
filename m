@@ -1,52 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754520Ab3HEDN3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Aug 2013 23:13:29 -0400
-Received: from ozlabs.org ([203.10.76.45]:58068 "EHLO ozlabs.org"
+	id S1754591Ab3HEDN5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Aug 2013 23:13:57 -0400
+Received: from mail.eperm.de ([89.247.134.16]:45003 "EHLO mail.eperm.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754433Ab3HEDN2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Aug 2013 23:13:28 -0400
-Date: Mon, 5 Aug 2013 13:13:26 +1000
-From: Michael Ellerman <michael@ellerman.id.au>
-To: Nathan Fontenot <nfont@linux.vnet.ibm.com>
-Cc: linux-mm <linux-mm@kvack.org>, isimatu.yasuaki@jp.fujitsu.com,
-        linuxppc-dev@lists.ozlabs.org, LKML <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 3/8] Add all memory via sysfs probe interface at once
-Message-ID: <20130805031326.GB5347@concordia>
-References: <51F01E06.6090800@linux.vnet.ibm.com>
- <51F01EFB.6070207@linux.vnet.ibm.com>
- <20130802023259.GC1680@concordia>
- <51FC04C2.70100@linux.vnet.ibm.com>
+	id S1754469Ab3HEDN4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Aug 2013 23:13:56 -0400
+X-Greylist: delayed 482 seconds by postgrey-1.27 at vger.kernel.org; Sun, 04 Aug 2013 23:13:55 EDT
+X-AuthUser: sm@eperm.de
+From: Stephan Mueller <smueller@chronox.de>
+To: Sandy Harris <sandyinchina@gmail.com>, "Theodore Ts'o" <tytso@mit.edu>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org
+Subject: Re: [PATCH][RFC] CPU Jitter random number generator (resent)
+Date: Mon, 05 Aug 2013 05:05:40 +0200
+Message-ID: <9385773.xkqW3Pd2B5@tauon>
+User-Agent: KMail/4.10.2 (Linux/3.8.0-23-generic; KDE/4.10.2; x86_64; ; )
+In-Reply-To: <CACXcFmnyDh7kBN3SCLGH3DcHH2gZO2_7weL_pch00g+3Jsjegg@mail.gmail.com>
+References: <20130521084455.5c651991@tauon> <20130521190157.GD22559@thunk.org> <CACXcFmnyDh7kBN3SCLGH3DcHH2gZO2_7weL_pch00g+3Jsjegg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51FC04C2.70100@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 02, 2013 at 02:13:06PM -0500, Nathan Fontenot wrote:
-> On 08/01/2013 09:32 PM, Michael Ellerman wrote:
-> > On Wed, Jul 24, 2013 at 01:37:47PM -0500, Nathan Fontenot wrote:
-> >> When doing memory hot add via the 'probe' interface in sysfs we do not
-> >> need to loop through and add memory one section at a time. I think this
-> >> was originally done for powerpc, but is not needed. This patch removes
-> >> the loop and just calls add_memory for all of the memory to be added.
-> > 
-> > Looks like memory hot add is supported on ia64, x86, sh, powerpc and
-> > s390. Have you tested on any?
-> 
-> I have tested on powerpc. I would love to say I tested on the other
-> platforms... but I haven't.  I should be able to get a x86 box to test
-> on but the other architectures may not be possible.
+Am Dienstag, 21. Mai 2013, 17:39:49 schrieb Sandy Harris:
 
-Is the rest of your series dependent on this patch? Or is it sort of
-incidental?
+Hi Sandy, Ted,
 
-If possible it might be worth pulling this one out and sticking it in
-linux-next for a cycle to give people a chance to test it. Unless
-someone who knows the code well is comfortable with it.
+I prepared a new release of the CPU Jitter RNG available at [1]. The 
+core of the RNG remains unchanged. However, there are the following 
+changes:
 
-cheers
+- addition of a patch to integrate the RNG into /dev/random as explained 
+in appendix B.3 of [2], although the long-term goal of the RNG is rather 
+the integration into the kernel crypto API when considering the Linux 
+kernel as outlined in appendix B.1 of [2]
+
+- ensure that the code is compiled without optimizations based on the 
+reasons outlined in section 5.1 of [2]
+
+- addition of chapter 5.1 to [2] explaining how the entropy is collected
+
+- additional code to execute the CPU Jitter RNG on different OSes 
+(specifically AIX, MacOS and z/OS -- other Unixes are good without 
+additional changes)
+
+>On Tue, May 21, 2013 at 3:01 PM, Theodore Ts'o <tytso@mit.edu> wrote:
+>> I continue to be suspicious about claims that userspace timing
+>> measurements are measuring anything other than OS behaviour.
+>
+>Yes, but they do seem to contain some entropy. See links in the
+>original post of this thread, the havege stuff and especially the
+>McGuire et al paper.
+
+With the initially shown implementation and documentation I did not 
+really show that sufficient entropy is gathered from the CPU execution 
+jitter. With a new test I now closed that hole. The newly added test 
+measures the entropy gathered during execution jitter collection, i.e. 
+heart of the RNG in terms of how much statistical entropy it provides. 
+The description of the test is given in section 5.1 of [2]. To ensure 
+that the statistical entropy measurements are indeed showing the 
+information theoretical entropy, section 4.4 of [2] outlines that 
+patterns are not identified in the output of the RNG which would 
+diminish the information theoretical entropy compared to the statistical 
+entropy.
+
+That test was then executed on about 200 different systems with the 
+results given in appendix F of [2]. The table stated there supported by 
+the many graphs demonstrates that the CPU Jitter random number generator 
+delivers high-quality entropy on:
+
+- a large range of CPUs ranging from embedded systems of MIPS and ARM 
+CPUs, covering desktop systems with AMD and Intel x86 32 bit and 64 bit 
+CPUs up to server CPUs of Intel Itanium, Sparc, POWER and IBM System Z;
+
+- a large range of operating systems: Linux (including Android), 
+OpenBSD, FreeBSD, NetBSD, AIX, OpenIndiana (OpenSolaris), AIX, z/OS;
+
+- a range of different compilers: GCC, Clang and the z/OS C compiler.
+
+The test results show an interesting yet common trend -- i.e. common for 
+the different CPU types: the newer the CPU is, the more CPU execution 
+time jitter is present.
+
+[2] appendix F.37 contains entropy measurements on different operating 
+systems on the very same hardware, indicating that the jitter 
+measurements are present regardless of the OS.
+
+With the test results, Ted's concerns should be removed.
+
+[...]
+
+>> For devices like Linux routers, what we desperately need is hardware
+>> assist;  [or] mix
+>> in additional timing information either at kernel device driver
+>> level,
+>> or from systems such as HAVEGE.
+
+The concern with HAVEGE is that it is very complex. The implementation 
+is far from being straight forward.
+>> 
+>> What I'm against is relying only on solutions such as HAVEGE or
+>> replacing /dev/random with something scheme that only relies on CPU
+>> timing and ignores interrupt timing.
+>
+>My question is how to incorporate some of that into /dev/random.
+>At one point, timing info was used along with other stuff. Some
+>of that got deleted later, What is the current state? Should we
+>add more?
+
+Please see the suggestion for an integration with /dev/random given in 
+appendix B.3 of [2]. The source code for the integration is given in 
+patches/linux-3.9-random.patch which is described in patches/README. The 
+patch only utilizes the CPU Jitter RNG when the entropy in the entropy 
+pool falls below the low threshold, i.e. when no entropy from other 
+sources is present.
+
+[1] http://www.chronox.de/jent/jitterentropy-20130724.tar.bz2
+
+[2] http://www.chronox.de/jent/doc/CPU-Jitter-NPTRNG.pdf
+
+
+Ciao
+Stephan
+-- 
+| Cui bono? |
+
