@@ -1,68 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754491Ab3HESJm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 14:09:42 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:33550 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752915Ab3HESJk (ORCPT
+	id S1754580Ab3HESLG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 14:11:06 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:32060 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752915Ab3HESLE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 14:09:40 -0400
-From: Dongjin Kim <tobetter@gmail.com>
-Cc: Dongjin Kim <tobetter@gmail.com>, Jingoo Han <jg1.han@samsung.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Kukjin Kim <kgene.kim@samsung.com>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH RESEND] ARM: dts: Add USB host node for Exynos4
-Date: Tue,  6 Aug 2013 03:09:19 +0900
-Message-Id: <1375726159-20486-1-git-send-email-tobetter@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-To: unlisted-recipients:; (no To-header on input)
+	Mon, 5 Aug 2013 14:11:04 -0400
+X-Authority-Analysis: v=2.0 cv=aqMw+FlV c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=pFOAptgLnqcA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=pvQ05lsfB1wA:10 a=4srwdQleajRujmBrakoA:9 a=QEXdDO2ut3YA:10 a=7CtWnVKTkzkA:10 a=yi1IfPYOrlEA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-ID: <1375726263.22073.108.camel@gandalf.local.home>
+Subject: Re: [RFC] gcc feature request: Moving blocks into sections
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, gcc <gcc@gcc.gnu.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        David Daney <ddaney.cavm@gmail.com>,
+        Behan Webster <behanw@converseincode.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Herbert Xu <herbert@gondor.hengli.com.au>
+Date: Mon, 05 Aug 2013 14:11:03 -0400
+In-Reply-To: <1375725328.22073.101.camel@gandalf.local.home>
+References: <1375721715.22073.80.camel@gandalf.local.home>
+	 <CA+55aFw_o=D-j_SRn=Y4LhHm-tEyuP1Je5ZHVTYxbVyLyDcLEg@mail.gmail.com>
+	 <1375725328.22073.101.camel@gandalf.local.home>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds EHCI and OHCI host device nodes for Exynos4.
+On Mon, 2013-08-05 at 13:55 -0400, Steven Rostedt wrote:
+>  The difference between this and the
+> "section" hack I suggested, is that this would use a "call"/"ret" when
+> enabled instead of a "jmp"/"jmp".
 
-CC: Jingoo Han <jg1.han@samsung.com>
-Signed-off-by: Dongjin Kim <tobetter@gmail.com>
----
- arch/arm/boot/dts/exynos4.dtsi |   18 ++++++++++++++++++
- 1 file changed, 18 insertions(+)
+I wonder if this is what Kris Kross meant in their song?
 
-diff --git a/arch/arm/boot/dts/exynos4.dtsi b/arch/arm/boot/dts/exynos4.dtsi
-index 3f94fe8..cbe5219 100644
---- a/arch/arm/boot/dts/exynos4.dtsi
-+++ b/arch/arm/boot/dts/exynos4.dtsi
-@@ -155,6 +155,24 @@
- 		status = "disabled";
- 	};
- 
-+	ehci@12580000 {
-+		compatible = "samsung,exynos4210-ehci";
-+		reg = <0x12580000 0x100>;
-+		interrupts = <0 70 0>;
-+		clocks = <&clock 304>;
-+		clock-names = "usbhost";
-+		status = "disabled";
-+	};
-+
-+	ohci@12590000 {
-+		compatible = "samsung,exynos4210-ohci";
-+		reg = <0x12590000 0x100>;
-+		interrupts = <0 70 0>;
-+		clocks = <&clock 304>;
-+		clock-names = "usbhost";
-+		status = "disabled";
-+	};
-+
- 	mfc: codec@13400000 {
- 		compatible = "samsung,mfc-v5";
- 		reg = <0x13400000 0x10000>;
--- 
-1.7.9.5
+/me goes back to work...
+
+-- Steve
+
 
