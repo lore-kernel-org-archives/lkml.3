@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754308Ab3HEQdm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 12:33:42 -0400
+	id S1754314Ab3HEQd4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 12:33:56 -0400
 Received: from smtp02.citrix.com ([66.165.176.63]:12995 "EHLO
 	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753787Ab3HEQbX (ORCPT
+	with ESMTP id S1753725Ab3HEQbX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 5 Aug 2013 12:31:23 -0400
 X-IronPort-AV: E=Sophos;i="4.89,819,1367971200"; 
-   d="scan'208";a="39429459"
+   d="scan'208";a="39429458"
 From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 To: <xen-devel@lists.xensource.com>
 CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <konrad.wilk@oracle.com>, <Stefano.Stabellini@eu.citrix.com>,
         <Ian.Campbell@citrix.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        <will.deacon@arm.com>, <linux@arm.linux.org.uk>
-Subject: [PATCH v3 04/10] arm: introduce a global dma_ops pointer
-Date: Mon, 5 Aug 2013 17:30:50 +0100
-Message-ID: <1375720256-8014-4-git-send-email-stefano.stabellini@eu.citrix.com>
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: [PATCH v3 02/10] swiotlb-xen: replace dma_length with sg_dma_len() macro
+Date: Mon, 5 Aug 2013 17:30:48 +0100
+Message-ID: <1375720256-8014-2-git-send-email-stefano.stabellini@eu.citrix.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <alpine.DEB.2.02.1308051503190.4893@kaball.uk.xensource.com>
 References: <alpine.DEB.2.02.1308051503190.4893@kaball.uk.xensource.com>
@@ -28,56 +27,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Initially set dma_ops to arm_dma_ops.
-
+swiotlb-xen has an implicit dependency on CONFIG_NEED_SG_DMA_LENGTH.
+Remove it by replacing dma_length with sg_dma_len.
 
 Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: will.deacon@arm.com
-CC: linux@arm.linux.org.uk
-
-
-Changes in v3:
--  keep using arm_dma_ops in dmabounce.
 ---
- arch/arm/include/asm/dma-mapping.h |    3 ++-
- arch/arm/mm/dma-mapping.c          |    3 +++
- 2 files changed, 5 insertions(+), 1 deletions(-)
+ drivers/xen/swiotlb-xen.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/arch/arm/include/asm/dma-mapping.h b/arch/arm/include/asm/dma-mapping.h
-index 5b8eef9..5c130bc 100644
---- a/arch/arm/include/asm/dma-mapping.h
-+++ b/arch/arm/include/asm/dma-mapping.h
-@@ -12,6 +12,7 @@
- #include <asm/memory.h>
+diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
+index aadffcf..1b2277c 100644
+--- a/drivers/xen/swiotlb-xen.c
++++ b/drivers/xen/swiotlb-xen.c
+@@ -506,13 +506,13 @@ xen_swiotlb_map_sg_attrs(struct device *hwdev, struct scatterlist *sgl,
+ 				   to do proper error handling. */
+ 				xen_swiotlb_unmap_sg_attrs(hwdev, sgl, i, dir,
+ 							   attrs);
+-				sgl[0].dma_length = 0;
++				sg_dma_len(sgl) = 0;
+ 				return DMA_ERROR_CODE;
+ 			}
+ 			sg->dma_address = xen_phys_to_bus(map);
+ 		} else
+ 			sg->dma_address = dev_addr;
+-		sg->dma_length = sg->length;
++		sg_dma_len(sg) = sg->length;
+ 	}
+ 	return nelems;
+ }
+@@ -533,7 +533,7 @@ xen_swiotlb_unmap_sg_attrs(struct device *hwdev, struct scatterlist *sgl,
+ 	BUG_ON(dir == DMA_NONE);
  
- #define DMA_ERROR_CODE	(~0)
-+extern struct dma_map_ops *dma_ops;
- extern struct dma_map_ops arm_dma_ops;
- extern struct dma_map_ops arm_coherent_dma_ops;
+ 	for_each_sg(sgl, sg, nelems, i)
+-		xen_unmap_single(hwdev, sg->dma_address, sg->dma_length, dir);
++		xen_unmap_single(hwdev, sg->dma_address, sg_dma_len(sg), dir);
  
-@@ -19,7 +20,7 @@ static inline struct dma_map_ops *get_dma_ops(struct device *dev)
- {
- 	if (dev && dev->archdata.dma_ops)
- 		return dev->archdata.dma_ops;
--	return &arm_dma_ops;
-+	return dma_ops;
+ }
+ EXPORT_SYMBOL_GPL(xen_swiotlb_unmap_sg_attrs);
+@@ -555,7 +555,7 @@ xen_swiotlb_sync_sg(struct device *hwdev, struct scatterlist *sgl,
+ 
+ 	for_each_sg(sgl, sg, nelems, i)
+ 		xen_swiotlb_sync_single(hwdev, sg->dma_address,
+-					sg->dma_length, dir, target);
++					sg_dma_len(sg), dir, target);
  }
  
- static inline void set_dma_ops(struct device *dev, struct dma_map_ops *ops)
-diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
-index 7f9b179..870b12c 100644
---- a/arch/arm/mm/dma-mapping.c
-+++ b/arch/arm/mm/dma-mapping.c
-@@ -141,6 +141,9 @@ struct dma_map_ops arm_dma_ops = {
- };
- EXPORT_SYMBOL(arm_dma_ops);
- 
-+struct dma_map_ops *dma_ops = &arm_dma_ops;
-+EXPORT_SYMBOL(dma_ops);
-+
- static void *arm_coherent_dma_alloc(struct device *dev, size_t size,
- 	dma_addr_t *handle, gfp_t gfp, struct dma_attrs *attrs);
- static void arm_coherent_dma_free(struct device *dev, size_t size, void *cpu_addr,
+ void
 -- 
 1.7.2.5
 
