@@ -1,61 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754574Ab3HEDIq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Aug 2013 23:08:46 -0400
-Received: from ozlabs.org ([203.10.76.45]:41191 "EHLO ozlabs.org"
+	id S1754616Ab3HEDKW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Aug 2013 23:10:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13210 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754434Ab3HEDIp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Aug 2013 23:08:45 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "lkml" <linux-kernel@vger.kernel.org>
-Cc: Amit Shah <amit.shah@redhat.com>
-Cc: Asias He <asias@redhat.com>
-Cc: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-Subject: [PULL] fixes
-User-Agent: Notmuch/0.15.2+81~gd2c8818 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Mon, 05 Aug 2013 12:34:54 +0930
-Message-ID: <87wqo0rg6h.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1754434Ab3HEDKU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Aug 2013 23:10:20 -0400
+Message-ID: <1375672192.32485.6.camel@cr0>
+Subject: Re: [Patch net-next v2 1/8] net: introduce generic union inet_addr
+From: Cong Wang <amwang@redhat.com>
+To: David Miller <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, dborkman@redhat.com, joe@perches.com,
+        linux-kernel@vger.kernel.org
+Date: Mon, 05 Aug 2013 11:09:52 +0800
+In-Reply-To: <20130802.145041.845804796107623114.davem@davemloft.net>
+References: <1375427674-21735-1-git-send-email-amwang@redhat.com>
+	 <1375427674-21735-2-git-send-email-amwang@redhat.com>
+	 <20130802.145041.845804796107623114.davem@davemloft.net>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 3b2f64d00c46e1e4e9bd0bb9bb12619adac27a4b:
+On Fri, 2013-08-02 at 14:50 -0700, David Miller wrote:
+> From: Cong Wang <amwang@redhat.com>
+> Date: Fri,  2 Aug 2013 15:14:27 +0800
+> 
+> > From: Cong Wang <amwang@redhat.com>
+> > 
+> > Introduce a generic IP address type, union inet_addr, so that
+> > subsystems don't have to use their own definitions. Because
+> > netpoll already defines union inet_addr, just move it to global.
+> > Some of the helper functions will be used by VXLAN IPv6 code too.
+> > 
+> > This patch also reuses the "%pIS" specifier, to make it accept
+> > union inet_addr instead of struct sockaddr.
+> > 
+> > Cc: Daniel Borkmann <dborkman@redhat.com>
+> > Cc: Joe Perches <joe@perches.com>
+> > Cc: linux-kernel@vger.kernel.org
+> > Signed-off-by: Cong Wang <amwang@redhat.com>
+> 
+> Changing %pIS to %pIA is pure churn, and of zero value that I can see.
 
-  Linux 3.11-rc2 (2013-07-21 12:05:29 -0700)
+'S' in %pIS is for Sockaddr, since this patch makes it accept union
+inet_addr instead of struct sockaddr, I don't think 'S' is meaningful
+any more.
 
-are available in the git repository at:
+> 
+> Every time I review this patch set I discover some new thing that I'm
+> very disappointed with.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rusty/linux.git tags/fixes-for-linus
+The "%pIS" change exists in v1, I don't know why you think it is new in
+v2. Also, if you can point all what you dislike at one time, it would
+save time for both of us, I prefer to fix them all in one update.
 
-for you to fetch changes up to aa52aeea2725839bdd3dcce394486e9a043065e0:
+> 
+> You're going to have to stop being so ambitious, and start very small.
+> 
+> Maybe one tiny patch at a time if needed.
 
-  virtio-scsi: Fix virtqueue affinity setup (2013-08-01 11:37:19 +0930)
+Ok, I will split the %pIS change from this patch.
 
-----------------------------------------------------------------
-More virtio console fixes than I'm happy with.  It means that code needs
-a lot more eyeballs and probably a good rewrite.
+Thanks!
 
-Thanks,
-Rusty.
-
-----------------------------------------------------------------
-Amit Shah (5):
-      virtio: console: fix race with port unplug and open/close
-      virtio: console: fix race in port_fops_open() and port unplug
-      virtio: console: clean up port data immediately at time of unplug
-      virtio: console: fix raising SIGIO after port unplug
-      virtio: console: return -ENODEV on all read operations after unplug
-
-Asias He (1):
-      virtio-scsi: Fix virtqueue affinity setup
-
-Yoshihiro YUNOMAE (2):
-      virtio/console: Quit from splice_write if pipe->nrbufs is 0
-      virtio/console: Add pipe_lock/unlock for splice_write
-
- drivers/char/virtio_console.c | 70 +++++++++++++++++++++++++++++--------------
- drivers/scsi/virtio_scsi.c    |  2 +-
- 2 files changed, 49 insertions(+), 23 deletions(-)
