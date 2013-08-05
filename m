@@ -1,123 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754821Ab3HEVoQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 17:44:16 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:3792 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754738Ab3HEVoO (ORCPT
+	id S1754920Ab3HEVoZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 17:44:25 -0400
+Received: from relay.parallels.com ([195.214.232.42]:46882 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754738Ab3HEVoW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 17:44:14 -0400
-X-Authority-Analysis: v=2.0 cv=KJ7Y/S5o c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=pFOAptgLnqcA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=pvQ05lsfB1wA:10 a=D19gQVrFAAAA:8 a=1yBXjEugSY4mmSu6CksA:9 a=QEXdDO2ut3YA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-ID: <1375739051.22073.158.camel@gandalf.local.home>
-Subject: Re: [RFC] gcc feature request: Moving blocks into sections
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        LKML <linux-kernel@vger.kernel.org>, gcc <gcc@gcc.gnu.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        David Daney <ddaney.cavm@gmail.com>,
-        Behan Webster <behanw@converseincode.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Herbert Xu <herbert@gondor.hengli.com.au>
-Date: Mon, 05 Aug 2013 17:44:11 -0400
-In-Reply-To: <20130805212855.GA23044@Krystal>
-References: <CA+55aFw_o=D-j_SRn=Y4LhHm-tEyuP1Je5ZHVTYxbVyLyDcLEg@mail.gmail.com>
-	 <1375725328.22073.101.camel@gandalf.local.home>
-	 <51FFEC56.6040206@linux.intel.com>
-	 <1375727010.22073.110.camel@gandalf.local.home>
-	 <51FFEEEC.5060902@linux.intel.com>
-	 <1375728583.22073.118.camel@gandalf.local.home>
-	 <51FFF430.1060701@linux.intel.com>
-	 <CA+55aFwz6cpsaWZ-19h91_CNGB5C3d1bNOv7woxetXOTyJ_CRw@mail.gmail.com>
-	 <20130805195446.GA22359@Krystal>
-	 <CA+55aFwrxRr4+kN8t8HCRnnVQyur5EGzQ_bRdYK3T-KW9Zp0aw@mail.gmail.com>
-	 <20130805212855.GA23044@Krystal>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 5 Aug 2013 17:44:22 -0400
+Date: Tue, 6 Aug 2013 01:41:35 +0400
+From: Andrew Vagin <avagin@parallels.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Andrey Vagin <avagin@openvz.org>, <linux-mm@kvack.org>,
+        <cgroups@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Glauber Costa <glommer@openvz.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        <stable@vger.kernel.org>
+Subject: Re: [PATCH] memcg: don't initialize kmem-cache destroying work for
+ root caches
+Message-ID: <20130805214135.GA4958@paralelels.com>
+References: <1375718980-22154-1-git-send-email-avagin@openvz.org>
+ <20130805130530.fd38ec4866ba7f1d9a400218@linux-foundation.org>
+ <20130805210128.GA2772@paralelels.com>
+ <20130805141609.777a0d6dee55091f6981c39b@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="koi8-r"
+Content-Disposition: inline
+In-Reply-To: <20130805141609.777a0d6dee55091f6981c39b@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [10.24.21.226]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-08-05 at 17:28 -0400, Mathieu Desnoyers wrote:
+On Mon, Aug 05, 2013 at 02:16:09PM -0700, Andrew Morton wrote:
+> On Tue, 6 Aug 2013 01:01:28 +0400 Andrew Vagin <avagin@parallels.com> wrote:
+> 
+> > On Mon, Aug 05, 2013 at 01:05:30PM -0700, Andrew Morton wrote:
+> > > On Mon,  5 Aug 2013 20:09:40 +0400 Andrey Vagin <avagin@openvz.org> wrote:
+> > > 
+> > > > struct memcg_cache_params has a union. Different parts of this union
+> > > > are used for root and non-root caches. A part with destroying work is
+> > > > used only for non-root caches.
+> > > > 
+> > > > I fixed the same problem in another place v3.9-rc1-16204-gf101a94, but
+> > > > didn't notice this one.
+> > > > 
+> > > > Cc: <stable@vger.kernel.org>    [3.9.x]
+> > > 
+> > > hm, why the cc:stable?
+> > 
+> > Because this patch fixes the kernel panic:
+> > 
+> > [   46.848187] BUG: unable to handle kernel paging request at 000000fffffffeb8
+> > [   46.849026] IP: [<ffffffff811a484c>] kmem_cache_destroy_memcg_children+0x6c/0xc0
+> > [   46.849092] PGD 0
+> > [   46.849092] Oops: 0000 [#1] SMP
+> 
+> OK, pretty soon we'll have a changelog!
 
-> Another thing that bothers me with Steven's approach is that decoding
-> jumps generated by the compiler seems fragile IMHO.
-
-The encodings wont change. If they do, then old kernels will not run on
-new hardware.
-
-Now if it adds a third option to jmp, then we hit the "die" path and
-know right away that it wont work anymore. Then we fix it properly.
+Sorry, probably I had to write all these in the initial commit message. I
+just thought that this patch is an additional part of v3.9-rc1-16204-gf101a94.
 
 > 
-> x86 decoding proposed by https://lkml.org/lkml/2012/3/8/464 :
-> 
-> +static int make_nop_x86(void *map, size_t const offset)
-> +{
-> +	unsigned char *op;
-> +	unsigned char *nop;
-> +	int size;
-> +
-> +	/* Determine which type of jmp this is 2 byte or 5. */
-> +	op = map + offset;
-> +	switch (*op) {
-> +	case 0xeb: /* 2 byte */
-> +		size = 2;
-> +		nop = ideal_nop2_x86;
-> +		break;
-> +	case 0xe9: /* 5 byte */
-> +		size = 5;
-> +		nop = ideal_nop;
-> +		break;
-> +	default:
-> +		die(NULL, "Bad jump label section (bad op %x)\n", *op);
-> +		__builtin_unreachable();
-> +	}
-> 
-> My though is that the code above does not cover all jump encodings that
-> can be generated by past, current and future x86 assemblers.
-> 
-> Another way around this issue might be to keep the instruction size
-> within a non-allocated section:
-> 
-> static __always_inline bool arch_static_branch(struct static_key *key)
-> {
->         asm goto("1:"
->                 "jmp %l[l_yes]\n\t"
->                 "2:"
-> 
->                 ".pushsection __jump_table,  \"aw\" \n\t"
->                 _ASM_ALIGN "\n\t"
->                 _ASM_PTR "1b, %l[l_yes], %c0 \n\t"
->                 ".popsection \n\t"
-> 
->                 ".pushsection __jump_table_ilen \n\t"
->                 _ASM_PTR "1b \n\t"      /* Address of the jmp */
->                 ".byte 2b - 1b \n\t"    /* Size of the jmp instruction */
->                 ".popsection \n\t"
-> 
->                 : :  "i" (key) : : l_yes);
->         return false;
-> l_yes:
->         return true;
-> }
-> 
-> And use (2b - 1b) to know what size of no-op should be used rather than
-> to rely on instruction decoding.
-> 
-> Thoughts ?
-> 
+> What does one do to trigger this oops?  The bug has been there since
+> 3.9, so the means-of-triggering must be quite special?
 
-Then we need to add yet another table of information to the kernel that
-needs to hang around. This goes with another kernel-discuss request
-talking about kernel data bloat.
+I don't think that so many people use cgroups with limits of the kernel memory.
 
--- Steve
+I use the vzctl utility to operate with containers. vzctl limits the
+kernel memory of containers by default. A container should be started
+and stoped a few times (five or four) to reproduce the bug.
 
+And one more thing is that nf_conntrack should be loaded. It creates
+a new kmem_cache for each network namespace.
 
+Thanks
