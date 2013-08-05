@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754594Ab3HEQQ3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 12:16:29 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:39373 "EHLO arroyo.ext.ti.com"
+	id S1754569Ab3HEQQ1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 12:16:27 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:60874 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752240Ab3HEQQX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751570Ab3HEQQX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 5 Aug 2013 12:16:23 -0400
 From: Joel Fernandes <joelf@ti.com>
 To: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
@@ -27,9 +27,9 @@ CC: Linux OMAP List <linux-omap@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Linux MMC List <linux-mmc@vger.kernel.org>,
         Joel Fernandes <joelf@ti.com>
-Subject: [PATCH v3 11/12] dma: edma: Keep tracking of Pending interrupts (pending_acks)
-Date: Mon, 5 Aug 2013 11:14:56 -0500
-Message-ID: <1375719297-12871-12-git-send-email-joelf@ti.com>
+Subject: [PATCH v3 04/12] dma: edma: Write out and handle MAX_NR_SG at a given time
+Date: Mon, 5 Aug 2013 11:14:49 -0500
+Message-ID: <1375719297-12871-5-git-send-email-joelf@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1375719297-12871-1-git-send-email-joelf@ti.com>
 References: <1375719297-12871-1-git-send-email-joelf@ti.com>
@@ -39,109 +39,147 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The total_processed variable was being used to keep track of when
-DMA is completed for a particular descriptor.
-
-This doesn't work anymore, as the interrupt for completion can come
-in much later than when the total_processed variable is updated to
-reflect that all SG entries have been issues. Introduce another
-variable that reflects the actual value. This will serve a purpose
-different from what total_processed was required to help with.
-
-Also add code that give special treatment for the first linked set
-interrupt as pending_acks is handled a bit differently for that case.
+Process SG-elements in batches of MAX_NR_SG if they are greater
+than MAX_NR_SG. Due to this, at any given time only those many
+slots will be used in the given channel no matter how long the
+scatter list is. We keep track of how much has been written
+inorder to process the next batch of elements in the scatter-list
+and detect completion.
 
 Signed-off-by: Joel Fernandes <joelf@ti.com>
 ---
- drivers/dma/edma.c |   32 +++++++++++++++++++++++++++++---
- 1 file changed, 29 insertions(+), 3 deletions(-)
+ drivers/dma/edma.c |   76 ++++++++++++++++++++++++++++++++++------------------
+ 1 file changed, 50 insertions(+), 26 deletions(-)
 
 diff --git a/drivers/dma/edma.c b/drivers/dma/edma.c
-index 061f0cf..eca1b47 100644
+index b6d609c..080d669 100644
 --- a/drivers/dma/edma.c
 +++ b/drivers/dma/edma.c
-@@ -59,6 +59,10 @@ struct edma_desc {
+@@ -56,6 +56,7 @@ struct edma_desc {
+ 	struct list_head		node;
+ 	int				absync;
  	int				pset_nr;
- 	int				total_processed;
- 	int				next_setup_linkset;
-+
-+	int				no_first_ls_ack;
-+	int				pending_acks;
-+
++	int				total_processed;
  	struct edmacc_param		pset[0];
  };
  
-@@ -147,8 +151,7 @@ static void edma_execute(struct edma_chan *echan)
- 	struct edmacc_param tmp_param;
+@@ -104,22 +105,36 @@ static void edma_desc_free(struct virt_dma_desc *vdesc)
+ /* Dispatch a queued descriptor to the controller (caller holds lock) */
+ static void edma_execute(struct edma_chan *echan)
+ {
+-	struct virt_dma_desc *vdesc = vchan_next_desc(&echan->vchan);
++	struct virt_dma_desc *vdesc;
+ 	struct edma_desc *edesc;
+-	int i;
++	struct device *dev = echan->vchan.chan.device->dev;
  
- 	/* If either we processed all psets or we're still not started */
--	if (!echan->edesc ||
--	    echan->edesc->pset_nr == echan->edesc->total_processed) {
-+	if (!echan->edesc || !echan->edesc->pending_acks) {
- 		/* Get next vdesc */
- 		vdesc = vchan_next_desc(&echan->vchan);
- 		if (!vdesc) {
-@@ -180,6 +183,8 @@ static void edma_execute(struct edma_chan *echan)
- 
- 		edesc->total_processed += total_link_set;
- 
-+		edesc->pending_acks += total_link_set;
+-	if (!vdesc) {
+-		echan->edesc = NULL;
+-		return;
++	int i, j, total_left, total_process;
 +
- 		total_left = edesc->pset_nr - edesc->total_processed;
++	/* If either we processed all psets or we're still not started */
++	if (!echan->edesc ||
++	    echan->edesc->pset_nr == echan->edesc->total_processed) {
++		/* Get next vdesc */
++		vdesc = vchan_next_desc(&echan->vchan);
++		if (!vdesc) {
++			echan->edesc = NULL;
++			return;
++		}
++		list_del(&vdesc->node);
++		echan->edesc = to_edma_desc(&vdesc->tx);
+ 	}
  
- 		total_link_set = total_left > MAX_NR_LS ?
-@@ -190,6 +195,8 @@ static void edma_execute(struct edma_chan *echan)
- 			   where total pset_nr is strictly within MAX_NR size */
- 			if (total_left > total_link_set)
- 				edma_enable_interrupt(echan->slot[i]);
-+			else
-+				edesc->no_first_ls_ack = 1;
+-	list_del(&vdesc->node);
++	edesc = echan->edesc;
++
++	/* Find out how many left */
++	total_left = edesc->pset_nr - edesc->total_processed;
++	total_process = total_left > MAX_NR_SG ? MAX_NR_SG : total_left;
  
- 			/* Setup link between linked set 0 to set 1 */
+-	echan->edesc = edesc = to_edma_desc(&vdesc->tx);
+ 
+ 	/* Write descriptor PaRAM set(s) */
+-	for (i = 0; i < edesc->pset_nr; i++) {
+-		edma_write_slot(echan->slot[i], &edesc->pset[i]);
++	for (i = 0; i < total_process; i++) {
++		j = i + edesc->total_processed;
++		edma_write_slot(echan->slot[i], &edesc->pset[j]);
+ 		dev_dbg(echan->vchan.chan.device->dev,
+ 			"\n pset[%d]:\n"
+ 			"  chnum\t%d\n"
+@@ -132,24 +147,29 @@ static void edma_execute(struct edma_chan *echan)
+ 			"  bidx\t%08x\n"
+ 			"  cidx\t%08x\n"
+ 			"  lkrld\t%08x\n",
+-			i, echan->ch_num, echan->slot[i],
+-			edesc->pset[i].opt,
+-			edesc->pset[i].src,
+-			edesc->pset[i].dst,
+-			edesc->pset[i].a_b_cnt,
+-			edesc->pset[i].ccnt,
+-			edesc->pset[i].src_dst_bidx,
+-			edesc->pset[i].src_dst_cidx,
+-			edesc->pset[i].link_bcntrld);
++			j, echan->ch_num, echan->slot[i],
++			edesc->pset[j].opt,
++			edesc->pset[j].src,
++			edesc->pset[j].dst,
++			edesc->pset[j].a_b_cnt,
++			edesc->pset[j].ccnt,
++			edesc->pset[j].src_dst_bidx,
++			edesc->pset[j].src_dst_cidx,
++			edesc->pset[j].link_bcntrld);
+ 		/* Link to the previous slot if not the last set */
+-		if (i != (edesc->pset_nr - 1))
++		if (i != (total_process - 1))
  			edma_link(echan->slot[i], echan->slot[i+1]);
-@@ -210,6 +217,9 @@ static void edma_execute(struct edma_chan *echan)
- 			}
+ 		/* Final pset links to the dummy pset */
+ 		else
+ 			edma_link(echan->slot[i], echan->ecc->dummy_slot);
+ 	}
  
- 			edesc->total_processed += total_link_set;
+-	edma_start(echan->ch_num);
++	edesc->total_processed += total_process;
 +
-+			edesc->pending_acks += total_link_set;
-+
- 			total_left = edesc->pset_nr - edesc->total_processed;
++	if (edesc->total_processed <= MAX_NR_SG) {
++		dev_dbg(dev, "first transfer starting %d\n", echan->ch_num);
++		edma_start(echan->ch_num);
++	}
+ }
  
- 			if (total_left)
-@@ -267,6 +277,8 @@ static void edma_execute(struct edma_chan *echan)
+ static int edma_terminate_all(struct edma_chan *echan)
+@@ -358,19 +378,23 @@ static void edma_callback(unsigned ch_num, u16 ch_status, void *data)
+ 	struct edma_desc *edesc;
+ 	unsigned long flags;
  
- 	edesc->total_processed += total_link_set;
- 
-+	edesc->pending_acks += total_link_set;
-+
- 	slot_off = total_link_set + ls_cur_off - 1;
- 
- 	if (edesc->total_processed == edesc->pset_nr)
-@@ -498,8 +510,22 @@ static void edma_callback(unsigned ch_num, u16 ch_status, void *data)
+-	/* Stop the channel */
+-	edma_stop(echan->ch_num);
+-
+ 	switch (ch_status) {
+ 	case DMA_COMPLETE:
+-		dev_dbg(dev, "transfer complete on channel %d\n", ch_num);
+-
+ 		spin_lock_irqsave(&echan->vchan.lock, flags);
  
  		edesc = echan->edesc;
- 
-+		if (edesc->pending_acks < MAX_NR_LS)
-+			edesc->pending_acks = 0;
-+		else
-+			edesc->pending_acks -= MAX_NR_LS;
-+
-+		if (edesc->no_first_ls_ack) {
-+			if (edesc->pending_acks < MAX_NR_LS)
-+				edesc->pending_acks = 0;
-+			else
-+				edesc->pending_acks -= MAX_NR_LS;
-+
-+			edesc->no_first_ls_ack = 0;
-+		}
-+
  		if (edesc) {
--			if (edesc->total_processed == edesc->pset_nr) {
-+			if (!edesc->pending_acks) {
- 				dev_dbg(dev, "Transfer complete,"
- 					" stopping channel %d\n", ch_num);
- 				edma_stop(echan->ch_num);
++			if (edesc->total_processed == edesc->pset_nr) {
++				dev_dbg(dev, "transfer complete." \
++					" stopping channel %d\n", ch_num);
++				edma_stop(echan->ch_num);
++				vchan_cookie_complete(&edesc->vdesc);
++			} else {
++				dev_dbg(dev, "Intermediate transfer complete" \
++					" on channel %d\n", ch_num);
++			}
++
+ 			edma_execute(echan);
+-			vchan_cookie_complete(&edesc->vdesc);
+ 		}
+ 
+ 		spin_unlock_irqrestore(&echan->vchan.lock, flags);
 -- 
 1.7.9.5
 
