@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753771Ab3HEQWg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 12:22:36 -0400
-Received: from mga03.intel.com ([143.182.124.21]:23426 "EHLO mga03.intel.com"
+	id S1753623Ab3HEQXP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 12:23:15 -0400
+Received: from mga03.intel.com ([143.182.124.21]:49485 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753721Ab3HEQVd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 12:21:33 -0400
+	id S1753663Ab3HEQVN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 12:21:13 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.89,819,1367996400"; 
-   d="scan'208";a="277957001"
+   d="scan'208";a="277956879"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
@@ -17,9 +17,9 @@ Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH V9 12/14] perf tools: expand perf_event__synthesize_sample()
-Date: Mon,  5 Aug 2013 19:26:32 +0300
-Message-Id: <1375719994-26482-13-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH V9 09/14] perf: make events stream always parsable
+Date: Mon,  5 Aug 2013 19:26:29 +0300
+Message-Id: <1375719994-26482-10-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1375719994-26482-1-git-send-email-adrian.hunter@intel.com>
 References: <1375719994-26482-1-git-send-email-adrian.hunter@intel.com>
@@ -28,158 +28,133 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Expand perf_event__synthesize_sample() to handle all
-sample format bits.
+The event stream is not always parsable because the format of a sample
+is dependent on the sample_type of the selected event.  When there
+is more than one selected event and the sample_types are not the
+same then parsing becomes problematic.  A sample can be matched to its
+selected event using the ID that is allocated when the event is opened.
+Unfortunately, to get the ID from the sample means first parsing it.
+
+This patch adds a new sample format bit PERF_SAMPLE_IDENTIFER that puts
+the ID at a fixed position so that the ID can be retrieved without
+parsing the sample.  For sample events, that is the first position
+immediately after the header.  For non-sample events, that is the last
+position.
+
+In this respect parsing samples requires that the sample_type and ID
+values are recorded.  For example, perf tools records struct perf_event_attr
+and the IDs within the perf.data file.  Those must be read first
+before it is possible to parse samples found later in the perf.data file.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/builtin-inject.c |  4 +-
- tools/perf/util/event.h     |  1 +
- tools/perf/util/evsel.c     | 94 ++++++++++++++++++++++++++++++++++++++++++++-
- 3 files changed, 97 insertions(+), 2 deletions(-)
+ include/uapi/linux/perf_event.h | 27 ++++++++++++++++++++-------
+ kernel/events/core.c            | 11 ++++++++++-
+ 2 files changed, 30 insertions(+), 8 deletions(-)
 
-diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
-index ffacd46..9b336fd 100644
---- a/tools/perf/builtin-inject.c
-+++ b/tools/perf/builtin-inject.c
-@@ -301,7 +301,9 @@ found:
- 	sample_sw.period = sample->period;
- 	sample_sw.time	 = sample->time;
- 	perf_event__synthesize_sample(event_sw, evsel->attr.sample_type,
--				      &sample_sw, false);
-+				      evsel->attr.sample_regs_user,
-+				      evsel->attr.read_format, &sample_sw,
-+				      false);
- 	build_id__mark_dso_hit(tool, event_sw, &sample_sw, evsel, machine);
- 	return perf_event__repipe(tool, event_sw, &sample_sw, machine);
- }
-diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
-index 2983505..f69cad0 100644
---- a/tools/perf/util/event.h
-+++ b/tools/perf/util/event.h
-@@ -246,6 +246,7 @@ int perf_event__preprocess_sample(const union perf_event *self,
- const char *perf_event__name(unsigned int id);
+diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+index 62c25a2..42cb7b6 100644
+--- a/include/uapi/linux/perf_event.h
++++ b/include/uapi/linux/perf_event.h
+@@ -134,8 +134,9 @@ enum perf_event_sample_format {
+ 	PERF_SAMPLE_STACK_USER			= 1U << 13,
+ 	PERF_SAMPLE_WEIGHT			= 1U << 14,
+ 	PERF_SAMPLE_DATA_SRC			= 1U << 15,
++	PERF_SAMPLE_IDENTIFIER			= 1U << 16,
  
- int perf_event__synthesize_sample(union perf_event *event, u64 type,
-+				  u64 sample_regs_user, u64 read_format,
- 				  const struct perf_sample *sample,
- 				  bool swapped);
+-	PERF_SAMPLE_MAX = 1U << 16,		/* non-ABI */
++	PERF_SAMPLE_MAX = 1U << 17,		/* non-ABI */
+ };
  
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 2400af5..28c3d4b 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -1418,11 +1418,12 @@ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
- }
- 
- int perf_event__synthesize_sample(union perf_event *event, u64 type,
-+				  u64 sample_regs_user, u64 read_format,
- 				  const struct perf_sample *sample,
- 				  bool swapped)
- {
- 	u64 *array;
--
-+	size_t sz;
+ /*
+@@ -492,12 +493,12 @@ enum perf_event_type {
  	/*
- 	 * used for cross-endian analysis. See git commit 65014ab3
- 	 * for why this goofiness is needed.
-@@ -1495,6 +1496,97 @@ int perf_event__synthesize_sample(union perf_event *event, u64 type,
- 		array++;
- 	}
+ 	 * If perf_event_attr.sample_id_all is set then all event types will
+ 	 * have the sample_type selected fields related to where/when
+-	 * (identity) an event took place (TID, TIME, ID, CPU, STREAM_ID)
+-	 * described in PERF_RECORD_SAMPLE below, it will be stashed just after
+-	 * the perf_event_header and the fields already present for the existing
+-	 * fields, i.e. at the end of the payload. That way a newer perf.data
+-	 * file will be supported by older perf tools, with these new optional
+-	 * fields being ignored.
++	 * (identity) an event took place (TID, TIME, ID, STREAM_ID, CPU,
++	 * IDENTIFIER) described in PERF_RECORD_SAMPLE below, it will be stashed
++	 * just after the perf_event_header and the fields already present for
++	 * the existing fields, i.e. at the end of the payload. That way a newer
++	 * perf.data file will be supported by older perf tools, with these new
++	 * optional fields being ignored.
+ 	 *
+ 	 * struct sample_id {
+ 	 * 	{ u32			pid, tid; } && PERF_SAMPLE_TID
+@@ -505,7 +506,12 @@ enum perf_event_type {
+ 	 * 	{ u64			id;       } && PERF_SAMPLE_ID
+ 	 * 	{ u64			stream_id;} && PERF_SAMPLE_STREAM_ID
+ 	 * 	{ u32			cpu, res; } && PERF_SAMPLE_CPU
++	 *	{ u64			id;	  } && PERF_SAMPLE_IDENTIFIER
+ 	 * } && perf_event_attr::sample_id_all
++	 *
++	 * Note that PERF_SAMPLE_IDENTIFIER duplicates PERF_SAMPLE_ID.  The
++	 * advantage of PERF_SAMPLE_IDENTIFIER is that its position is fixed
++	 * relative to header.size.
+ 	 */
  
-+	if (type & PERF_SAMPLE_READ) {
-+		if (read_format & PERF_FORMAT_GROUP)
-+			*array = sample->read.group.nr;
-+		else
-+			*array = sample->read.one.value;
-+		array++;
+ 	/*
+@@ -594,6 +600,13 @@ enum perf_event_type {
+ 	 * struct {
+ 	 *	struct perf_event_header	header;
+ 	 *
++	 *	#
++	 *	# Note that PERF_SAMPLE_IDENTIFIER duplicates PERF_SAMPLE_ID.
++	 *	# The advantage of PERF_SAMPLE_IDENTIFIER is that its position
++	 *	# is fixed relative to header.
++	 *	#
++	 *
++	 *	{ u64			id;	  } && PERF_SAMPLE_IDENTIFIER
+ 	 *	{ u64			ip;	  } && PERF_SAMPLE_IP
+ 	 *	{ u32			pid, tid; } && PERF_SAMPLE_TID
+ 	 *	{ u64			time;     } && PERF_SAMPLE_TIME
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index b593719..7268ccb 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -1216,6 +1216,9 @@ static void perf_event__id_header_size(struct perf_event *event)
+ 	if (sample_type & PERF_SAMPLE_TIME)
+ 		size += sizeof(data->time);
+ 
++	if (sample_type & PERF_SAMPLE_IDENTIFIER)
++		size += sizeof(data->id);
 +
-+		if (read_format & PERF_FORMAT_TOTAL_TIME_ENABLED) {
-+			*array = sample->read.time_enabled;
-+			array++;
-+		}
+ 	if (sample_type & PERF_SAMPLE_ID)
+ 		size += sizeof(data->id);
+ 
+@@ -4260,7 +4263,7 @@ static void __perf_event_header__init_id(struct perf_event_header *header,
+ 	if (sample_type & PERF_SAMPLE_TIME)
+ 		data->time = perf_clock();
+ 
+-	if (sample_type & PERF_SAMPLE_ID)
++	if (sample_type & (PERF_SAMPLE_ID | PERF_SAMPLE_IDENTIFIER))
+ 		data->id = primary_event_id(event);
+ 
+ 	if (sample_type & PERF_SAMPLE_STREAM_ID)
+@@ -4299,6 +4302,9 @@ static void __perf_event__output_id_sample(struct perf_output_handle *handle,
+ 
+ 	if (sample_type & PERF_SAMPLE_CPU)
+ 		perf_output_put(handle, data->cpu_entry);
 +
-+		if (read_format & PERF_FORMAT_TOTAL_TIME_RUNNING) {
-+			*array = sample->read.time_running;
-+			array++;
-+		}
-+
-+		/* PERF_FORMAT_ID is forced for PERF_SAMPLE_READ */
-+		if (read_format & PERF_FORMAT_GROUP) {
-+			sz = sample->read.group.nr *
-+			     sizeof(struct sample_read_value);
-+			memcpy(array, sample->read.group.values, sz);
-+			array = (void *)array + sz;
-+		} else {
-+			*array = sample->read.one.id;
-+			array++;
-+		}
-+	}
-+
-+	if (type & PERF_SAMPLE_CALLCHAIN) {
-+		sz = (sample->callchain->nr + 1) * sizeof(u64);
-+		memcpy(array, sample->callchain, sz);
-+		array = (void *)array + sz;
-+	}
-+
-+	if (type & PERF_SAMPLE_RAW) {
-+		u.val32[0] = sample->raw_size;
-+		if (WARN_ONCE(swapped,
-+			      "Endianness of raw data not corrected!\n")) {
-+			/*
-+			 * Inverse of what is done in perf_evsel__parse_sample
-+			 */
-+			u.val32[0] = bswap_32(u.val32[0]);
-+			u.val32[1] = bswap_32(u.val32[1]);
-+			u.val64 = bswap_64(u.val64);
-+		}
-+		*array = u.val64;
-+		array = (void *)array + sizeof(u32);
-+
-+		memcpy(array, sample->raw_data, sample->raw_size);
-+		array = (void *)array + sample->raw_size;
-+	}
-+
-+	if (type & PERF_SAMPLE_BRANCH_STACK) {
-+		sz = sample->branch_stack->nr * sizeof(struct branch_entry);
-+		sz += sizeof(u64);
-+		memcpy(array, sample->branch_stack, sz);
-+		array = (void *)array + sz;
-+	}
-+
-+	if (type & PERF_SAMPLE_REGS_USER) {
-+		if (sample->user_regs.regs && sample_regs_user) {
-+			*array++ = sample_regs_user;
-+			sz = hweight_long(sample_regs_user) * sizeof(u64);
-+			memcpy(array, sample->user_regs.regs, sz);
-+			array = (void *)array + sz;
-+		} else {
-+			*array++ = 0;
-+		}
-+	}
-+
-+	if (type & PERF_SAMPLE_STACK_USER) {
-+		sz = sample->user_stack.size;
-+		*array++ = sz;
-+		if (sz) {
-+			memcpy(array, sample->user_stack.data, sz);
-+			array = (void *)array + sz;
-+			*array++ = sz;
-+		}
-+	}
-+
-+	if (type & PERF_SAMPLE_WEIGHT) {
-+		*array = sample->weight;
-+		array++;
-+	}
-+
-+	if (type & PERF_SAMPLE_DATA_SRC) {
-+		*array = sample->data_src;
-+		array++;
-+	}
-+
- 	return 0;
++	if (sample_type & PERF_SAMPLE_IDENTIFIER)
++		perf_output_put(handle, data->id);
  }
+ 
+ void perf_event__output_id_sample(struct perf_event *event,
+@@ -4412,6 +4418,9 @@ void perf_output_sample(struct perf_output_handle *handle,
+ 
+ 	perf_output_put(handle, *header);
+ 
++	if (sample_type & PERF_SAMPLE_IDENTIFIER)
++		perf_output_put(handle, data->id);
++
+ 	if (sample_type & PERF_SAMPLE_IP)
+ 		perf_output_put(handle, data->ip);
  
 -- 
 1.7.11.7
