@@ -1,59 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754188Ab3HEQ3o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 12:29:44 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:63760 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753030Ab3HEQ3l (ORCPT
+	id S1754194Ab3HEQaM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 12:30:12 -0400
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:46707 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752361Ab3HEQaF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 12:29:41 -0400
-From: Kevin Hilman <khilman@linaro.org>
-To: Anton Vorontsov <anton@enomsg.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        linux-pm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
-        Nishanth Menon <nm@ti.com>
-Subject: [PATCH] MAINTAINERS: drivers/power: add entry for SmartReflex AVS drivers
-Date: Mon,  5 Aug 2013 09:29:37 -0700
-Message-Id: <1375720177-20063-1-git-send-email-khilman@linaro.org>
-X-Mailer: git-send-email 1.8.3
+	Mon, 5 Aug 2013 12:30:05 -0400
+Date: Mon, 5 Aug 2013 12:29:58 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: lizefan@huawei.com, hannes@cmpxchg.org, bsingharora@gmail.com,
+        kamezawa.hiroyu@jp.fujitsu.com, cgroups@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHSET cgroup/for-3.12] cgroup: make cgroup_event specific to
+ memcg
+Message-ID: <20130805162958.GF19631@mtj.dyndns.org>
+References: <1375632446-2581-1-git-send-email-tj@kernel.org>
+ <20130805160107.GM10146@dhcp22.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130805160107.GM10146@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The SmartReflex AVS driver evolved out of the OMAP kernel and now
-lives under drivers/power/avs.
+Hello, Michal.
 
-I've historically been maintainer of this but Nishanth Menon is doing
-most of the heavy lifting now.  Add us both as co-maintainers.
+On Mon, Aug 05, 2013 at 06:01:07PM +0200, Michal Hocko wrote:
+> Could you be more specific about what is so "overboard" about this
+> interface? I am not familiar with internals much, so I cannot judge the
+> complexity part, but I thought that eventfd was intended for this kind
+> of kernel->userspace notifications.
 
-Cc: Anton Vorontsov <anton@enomsg.org>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
-Cc: Nishanth Menon <nm@ti.com>
-Signed-off-by: Kevin Hilman <khilman@linaro.org>
----
- MAINTAINERS | 8 ++++++++
- 1 file changed, 8 insertions(+)
+It's just way over-engineered like many other things in cgroup, most
+likely misguided by the appearance that cgroup could be delegated and
+accessed by multiple actors concurrently.
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index defc053..466ca61 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -6450,6 +6450,14 @@ S:	Maintained
- F:	include/linux/power_supply.h
- F:	drivers/power/
- 
-+SMARTREFLEX DRIVERS FOR ADAPTIVE VOLTAGE SCALING (AVS)
-+M:	Kevin Hilman <khilman@kernel.org>
-+M:	Nishanth Menon <nm@ti.com>
-+S:	Maintained
-+F:	drivers/power/avs/smartreflex.c
-+F:      include/linux/power/smartreflex.h
-+L:	linux-pm@vger.kernel.org
-+
- PNP SUPPORT
- M:	Rafael J. Wysocki <rafael.j.wysocki@intel.com>
- M:	Bjorn Helgaas <bhelgaas@google.com>
+The most clear example would be the vmpressure event.  When it could
+have just called fsnotify_modify() unconditionally when the state
+changes, now it involves parsing, dynamic list of events and so on
+without actually adding any benefits.  For the usage ones,
+configurability makes some sense but even then just giving it a single
+array of event points of limited size would be sufficient.
+
+It's just way over-done.
+
+> So you think that vmpressure, oom notification or thresholds are
+> an abuse of this interface? What would you consider a reasonable
+> replacement for those notifications?  Or do you think that controller
+> shouldn't be signaling any conditions to the userspace at all?
+
+I don't think the ability to generate events are an abuse, just that
+the facility itself is way over-engineered.  Just generate a file
+changed event unconditionally for vmpressure and oom and maybe
+implement configureable cadence or single set of threshold array for
+threshold events.  These are things which can and should be done in a
+a few tens of lines of code with far simpler interface.  There's no
+need for this obsecenely flexible event infrastructure, which of
+course leads to things like shared contiguous threshold table without
+any size limit and allocated with kmalloc().
+
+So, let's please move towards something simple.
+
+Thanks.
+
 -- 
-1.8.3
-
+tejun
