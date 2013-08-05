@@ -1,84 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753745Ab3HERSl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 13:18:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9799 "EHLO mx1.redhat.com"
+	id S1753783Ab3HERUe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 13:20:34 -0400
+Received: from kanga.kvack.org ([205.233.56.17]:33897 "EHLO kanga.kvack.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752127Ab3HERSj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 13:18:39 -0400
-Message-ID: <1375723092.31262.410.camel@ul30vt.home>
-Subject: Re: [PATCH 03/10] vfio: add external user support
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Alexey Kardashevskiy <aik@ozlabs.ru>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linuxppc-dev@lists.ozlabs.org,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Paul Mackerras <paulus@samba.org>, Alexander Graf <agraf@suse.de>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kvm-ppc@vger.kernel.org
-Date: Mon, 05 Aug 2013 11:18:12 -0600
-In-Reply-To: <51EE47DE.5020002@ozlabs.ru>
-References: <1373936045-22653-1-git-send-email-aik@ozlabs.ru>
-	  <1373936045-22653-4-git-send-email-aik@ozlabs.ru>
-	 <1374546224.15429.8.camel@ul30vt.home> <51EE47DE.5020002@ozlabs.ru>
-Content-Type: text/plain; charset="UTF-8"
+	id S1753028Ab3HERUd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 13:20:33 -0400
+Date: Mon, 5 Aug 2013 13:20:32 -0400
+From: Benjamin LaHaise <bcrl@kvack.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Kent Overstreet <kmo@daterainc.com>, axboe@kernel.dk,
+        Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-aio@kvack.org, trinity@vger.kernel.org
+Subject: [PATCH aio-next] aio: fix error handling and rcu usage in "convert the ioctx list to table lookup v3"
+Message-ID: <20130805172032.GI31864@kvack.org>
+References: <51FFAF34.20200@oracle.com> <20130805160828.GH31864@kvack.org>
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130805160828.GH31864@kvack.org>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-07-23 at 19:07 +1000, Alexey Kardashevskiy wrote:
-> On 07/23/2013 12:23 PM, Alex Williamson wrote:
-> > On Tue, 2013-07-16 at 10:53 +1000, Alexey Kardashevskiy wrote:
-> >> VFIO is designed to be used via ioctls on file descriptors
-> >> returned by VFIO.
-> >>
-> >> However in some situations support for an external user is required.
-> >> The first user is KVM on PPC64 (SPAPR TCE protocol) which is going to
-> >> use the existing VFIO groups for exclusive access in real/virtual mode
-> >> on a host to avoid passing map/unmap requests to the user space which
-> >> would made things pretty slow.
-> >>
-> >> The protocol includes:
-> >>
-> >> 1. do normal VFIO init operation:
-> >> 	- opening a new container;
-> >> 	- attaching group(s) to it;
-> >> 	- setting an IOMMU driver for a container.
-> >> When IOMMU is set for a container, all groups in it are
-> >> considered ready to use by an external user.
-> >>
-> >> 2. User space passes a group fd to an external user.
-> >> The external user calls vfio_group_get_external_user()
-> >> to verify that:
-> >> 	- the group is initialized;
-> >> 	- IOMMU is set for it.
-> >> If both checks passed, vfio_group_get_external_user()
-> >> increments the container user counter to prevent
-> >> the VFIO group from disposal before KVM exits.
-> >>
-> >> 3. The external user calls vfio_external_user_iommu_id()
-> >> to know an IOMMU ID. PPC64 KVM uses it to link logical bus
-> >> number (LIOBN) with IOMMU ID.
-> >>
-> >> 4. When the external KVM finishes, it calls
-> >> vfio_group_put_external_user() to release the VFIO group.
-> >> This call decrements the container user counter.
-> >> Everything gets released.
-> >>
-> >> The "vfio: Limit group opens" patch is also required for the consistency.
-> >>
-> >> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+On Mon, Aug 05, 2013 at 12:08:28PM -0400, Benjamin LaHaise wrote:
+> Hi Sasha,
+> 
+> On Mon, Aug 05, 2013 at 09:57:08AM -0400, Sasha Levin wrote:
+> > Hi all,
 > > 
-> > This looks fine to me.  Is the plan to add this through the ppc tree
-> > again?  Thanks,
+> > While fuzzing with trinity inside a KVM tools guest running latest -next 
+> > kernel,
+> > I've stumbled on the following spew caused by a new BUG() added in "aio: fix
+> > io_destroy() regression by using call_rcu()".
 > 
-> 
-> Nope, better to add this through your tree. And faster for sure :) Thanks!
+> I did some investigating, and it looks like there is a problem with 
+> db446a08c23d5475e6b08c87acca79ebb20f283c (aio: convert the ioctx list to 
+> table lookup v3).  Can you confirm if reverting this patch eliminates 
+> the BUG() you're hitting?  In my testing, I wasn't able to trigger the 
+> BUG(), but I was able to trip up slab corruption with debugging on.  
 
-Applied to my next branch for v3.12.  Thanks,
+And here is a patch that should fix the problems introduced in the table 
+lookup patch without reverting.  I will add this to the aio-next.git tree.  
+This bug is not present in Linus' tree.
 
-Alex
+		-ben
 
+ aio.c |   17 +++++++++--------
+ 1 file changed, 9 insertions(+), 8 deletions(-)
 
+diff --git a/fs/aio.c b/fs/aio.c
+index 588aff9..3bc068c 100644
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -475,7 +475,7 @@ static int ioctx_add_table(struct kioctx *ctx, struct mm_struct *mm)
+ 	struct aio_ring *ring;
+ 
+ 	spin_lock(&mm->ioctx_lock);
+-	table = rcu_dereference(mm->ioctx_table);
++	table = mm->ioctx_table;
+ 
+ 	while (1) {
+ 		if (table)
+@@ -503,7 +503,7 @@ static int ioctx_add_table(struct kioctx *ctx, struct mm_struct *mm)
+ 		table->nr = new_nr;
+ 
+ 		spin_lock(&mm->ioctx_lock);
+-		old = rcu_dereference(mm->ioctx_table);
++		old = mm->ioctx_table;
+ 
+ 		if (!old) {
+ 			rcu_assign_pointer(mm->ioctx_table, table);
+@@ -579,10 +579,6 @@ static struct kioctx *ioctx_alloc(unsigned nr_events)
+ 	if (ctx->req_batch < 1)
+ 		ctx->req_batch = 1;
+ 
+-	err = ioctx_add_table(ctx, mm);
+-	if (err)
+-		goto out_cleanup_noerr;
+-
+ 	/* limit the number of system wide aios */
+ 	spin_lock(&aio_nr_lock);
+ 	if (aio_nr + nr_events > (aio_max_nr * 2UL) ||
+@@ -595,13 +591,18 @@ static struct kioctx *ioctx_alloc(unsigned nr_events)
+ 
+ 	percpu_ref_get(&ctx->users); /* io_setup() will drop this ref */
+ 
++	err = ioctx_add_table(ctx, mm);
++	if (err)
++		goto out_cleanup_put;
++
+ 	pr_debug("allocated ioctx %p[%ld]: mm=%p mask=0x%x\n",
+ 		 ctx, ctx->user_id, mm, ctx->nr_events);
+ 	return ctx;
+ 
++out_cleanup_put:
++	percpu_ref_put(&ctx->users);
+ out_cleanup:
+ 	err = -EAGAIN;
+-out_cleanup_noerr:
+ 	aio_free_ring(ctx);
+ out_freepcpu:
+ 	free_percpu(ctx->cpu);
+@@ -626,7 +627,7 @@ static void kill_ioctx(struct mm_struct *mm, struct kioctx *ctx)
+ 		struct kioctx_table *table;
+ 
+ 		spin_lock(&mm->ioctx_lock);
+-		table = rcu_dereference(mm->ioctx_table);
++		table = mm->ioctx_table;
+ 
+ 		WARN_ON(ctx != table->table[ctx->id]);
+ 		table->table[ctx->id] = NULL;
