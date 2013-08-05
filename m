@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755630Ab3HEWVA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 18:21:00 -0400
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:40199 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755317Ab3HEWUb (ORCPT
+	id S1755674Ab3HEWVH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 18:21:07 -0400
+Received: from mail-ea0-f173.google.com ([209.85.215.173]:49849 "EHLO
+	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755262Ab3HEWUb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 5 Aug 2013 18:20:31 -0400
 From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Darren Etheridge <detheridge@ti.com>, David Airlie <airlied@linux.ie>,
+Cc: David Airlie <airlied@linux.ie>, Darren Etheridge <detheridge@ti.com>,
         Rob Clark <robdclark@gmail.com>,
         Russell King <rmk+kernel@arm.linux.org.uk>,
         Daniel Vetter <daniel.vetter@ffwll.ch>,
         dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 8/8] drm/tilcdc fixup mode to workaound sync for tda998x
-Date: Tue,  6 Aug 2013 00:20:18 +0200
-Message-Id: <1375741218-10225-9-git-send-email-sebastian.hesselbarth@gmail.com>
+Subject: [PATCH 6/8] drm/i2c: tda998x: fix sync generation and calculation
+Date: Tue,  6 Aug 2013 00:20:16 +0200
+Message-Id: <1375741218-10225-7-git-send-email-sebastian.hesselbarth@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1375741218-10225-1-git-send-email-sebastian.hesselbarth@gmail.com>
 References: <1375741218-10225-1-git-send-email-sebastian.hesselbarth@gmail.com>
@@ -24,20 +24,11 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Darren Etheridge <detheridge@ti.com>
+This fixes the wrong sync generation and sync calculation of TDA998x
+for HS/VS-based sync detection.
 
-Add a fixup function that will flip the hsync priority and
-add a hskew value that is used to shift the tda998x to the
-right by a variable number of pixels depending on the mode.
-This works around an issue with the sync timings that tilcdc
-is outputing.
-
-Signed-off-by: Darren Etheridge <detheridge@ti.com>
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 ---
-Changelog:
-for v1:
-- reword comment
-
 Cc: David Airlie <airlied@linux.ie>
 Cc: Darren Etheridge <detheridge@ti.com>
 Cc: Rob Clark <robdclark@gmail.com>
@@ -46,72 +37,260 @@ Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
 Cc: dri-devel@lists.freedesktop.org
 Cc: linux-kernel@vger.kernel.org
 ---
- drivers/gpu/drm/tilcdc/tilcdc_crtc.c  |    7 ++++++-
- drivers/gpu/drm/tilcdc/tilcdc_slave.c |   27 ++++++++++++++++++++++++++-
- 2 files changed, 32 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/i2c/tda998x_drv.c |  181 +++++++++++++++++++++++--------------
+ 1 file changed, 115 insertions(+), 66 deletions(-)
 
-diff --git a/drivers/gpu/drm/tilcdc/tilcdc_crtc.c b/drivers/gpu/drm/tilcdc/tilcdc_crtc.c
-index 7418dcd..6d05240 100644
---- a/drivers/gpu/drm/tilcdc/tilcdc_crtc.c
-+++ b/drivers/gpu/drm/tilcdc/tilcdc_crtc.c
-@@ -379,7 +379,12 @@ static int tilcdc_crtc_mode_set(struct drm_crtc *crtc,
- 	else
- 		tilcdc_clear(dev, LCDC_RASTER_TIMING_2_REG, LCDC_SYNC_EDGE);
+diff --git a/drivers/gpu/drm/i2c/tda998x_drv.c b/drivers/gpu/drm/i2c/tda998x_drv.c
+index da04939..7bf227a 100644
+--- a/drivers/gpu/drm/i2c/tda998x_drv.c
++++ b/drivers/gpu/drm/i2c/tda998x_drv.c
+@@ -140,8 +140,12 @@ struct tda998x_priv {
+ #define REG_VS_LINE_END_1_LSB     REG(0x00, 0xae)     /* write */
+ #define REG_VS_PIX_END_1_MSB      REG(0x00, 0xaf)     /* write */
+ #define REG_VS_PIX_END_1_LSB      REG(0x00, 0xb0)     /* write */
++#define REG_VS_LINE_STRT_2_MSB    REG(0x00, 0xb1)     /* write */
++#define REG_VS_LINE_STRT_2_LSB    REG(0x00, 0xb2)     /* write */
+ #define REG_VS_PIX_STRT_2_MSB     REG(0x00, 0xb3)     /* write */
+ #define REG_VS_PIX_STRT_2_LSB     REG(0x00, 0xb4)     /* write */
++#define REG_VS_LINE_END_2_MSB     REG(0x00, 0xb5)     /* write */
++#define REG_VS_LINE_END_2_LSB     REG(0x00, 0xb6)     /* write */
+ #define REG_VS_PIX_END_2_MSB      REG(0x00, 0xb7)     /* write */
+ #define REG_VS_PIX_END_2_LSB      REG(0x00, 0xb8)     /* write */
+ #define REG_HS_PIX_START_MSB      REG(0x00, 0xb9)     /* write */
+@@ -152,21 +156,29 @@ struct tda998x_priv {
+ #define REG_VWIN_START_1_LSB      REG(0x00, 0xbe)     /* write */
+ #define REG_VWIN_END_1_MSB        REG(0x00, 0xbf)     /* write */
+ #define REG_VWIN_END_1_LSB        REG(0x00, 0xc0)     /* write */
++#define REG_VWIN_START_2_MSB      REG(0x00, 0xc1)     /* write */
++#define REG_VWIN_START_2_LSB      REG(0x00, 0xc2)     /* write */
++#define REG_VWIN_END_2_MSB        REG(0x00, 0xc3)     /* write */
++#define REG_VWIN_END_2_LSB        REG(0x00, 0xc4)     /* write */
+ #define REG_DE_START_MSB          REG(0x00, 0xc5)     /* write */
+ #define REG_DE_START_LSB          REG(0x00, 0xc6)     /* write */
+ #define REG_DE_STOP_MSB           REG(0x00, 0xc7)     /* write */
+ #define REG_DE_STOP_LSB           REG(0x00, 0xc8)     /* write */
+ #define REG_TBG_CNTRL_0           REG(0x00, 0xca)     /* write */
++# define TBG_CNTRL_0_TOP_TGL      (1 << 0)
++# define TBG_CNTRL_0_TOP_SEL      (1 << 1)
++# define TBG_CNTRL_0_DE_EXT       (1 << 2)
++# define TBG_CNTRL_0_TOP_EXT      (1 << 3)
+ # define TBG_CNTRL_0_FRAME_DIS    (1 << 5)
+ # define TBG_CNTRL_0_SYNC_MTHD    (1 << 6)
+ # define TBG_CNTRL_0_SYNC_ONCE    (1 << 7)
+ #define REG_TBG_CNTRL_1           REG(0x00, 0xcb)     /* write */
+-# define TBG_CNTRL_1_VH_TGL_0     (1 << 0)
+-# define TBG_CNTRL_1_VH_TGL_1     (1 << 1)
+-# define TBG_CNTRL_1_VH_TGL_2     (1 << 2)
+-# define TBG_CNTRL_1_VHX_EXT_DE   (1 << 3)
+-# define TBG_CNTRL_1_VHX_EXT_HS   (1 << 4)
+-# define TBG_CNTRL_1_VHX_EXT_VS   (1 << 5)
++# define TBG_CNTRL_1_H_TGL        (1 << 0)
++# define TBG_CNTRL_1_V_TGL        (1 << 1)
++# define TBG_CNTRL_1_TGL_EN       (1 << 2)
++# define TBG_CNTRL_1_X_EXT        (1 << 3)
++# define TBG_CNTRL_1_H_EXT        (1 << 4)
++# define TBG_CNTRL_1_V_EXT        (1 << 5)
+ # define TBG_CNTRL_1_DWIN_DIS     (1 << 6)
+ #define REG_ENABLE_SPACE          REG(0x00, 0xd6)     /* write */
+ #define REG_HVF_CNTRL_0           REG(0x00, 0xe4)     /* write */
+@@ -742,43 +754,70 @@ tda998x_encoder_mode_set(struct drm_encoder *encoder,
+ 			struct drm_display_mode *adjusted_mode)
+ {
+ 	struct tda998x_priv *priv = to_tda998x_priv(encoder);
+-	uint16_t hs_start, hs_end, line_start, line_end;
+-	uint16_t vwin_start, vwin_end, de_start, de_end;
+-	uint16_t ref_pix, ref_line, pix_start2;
++	uint16_t ref_pix, ref_line, n_pix, n_line;
++	uint16_t hs_pix_s, hs_pix_e;
++	uint16_t vs1_pix_s, vs1_pix_e, vs1_line_s, vs1_line_e;
++	uint16_t vs2_pix_s, vs2_pix_e, vs2_line_s, vs2_line_e;
++	uint16_t vwin1_line_s, vwin1_line_e;
++	uint16_t vwin2_line_s, vwin2_line_e;
++	uint16_t de_pix_s, de_pix_e;
+ 	uint8_t reg, div, rep;
  
--	if (mode->flags & DRM_MODE_FLAG_NHSYNC)
+-	hs_start   = mode->hsync_start - mode->hdisplay;
+-	hs_end     = mode->hsync_end - mode->hdisplay;
+-	line_start = 1;
+-	line_end   = 1 + mode->vsync_end - mode->vsync_start;
+-	vwin_start = mode->vtotal - mode->vsync_start;
+-	vwin_end   = vwin_start + mode->vdisplay;
+-	de_start   = mode->htotal - mode->hdisplay;
+-	de_end     = mode->htotal;
+-
+-	pix_start2 = 0;
+-	if (mode->flags & DRM_MODE_FLAG_INTERLACE)
+-		pix_start2 = (mode->htotal / 2) + hs_start;
+-
+-	/* TODO how is this value calculated?  It is 2 for all common
+-	 * formats in the tables in out of tree nxp driver (assuming
+-	 * I've properly deciphered their byzantine table system)
 +	/*
-+	 * use value from adjusted_mode here as this might have been
-+	 * changed as part of the fixup for slave encoders to solve the
-+	 * issue where tilcdc timings are not VESA compliant
-+	 */
-+	if (adjusted_mode->flags & DRM_MODE_FLAG_NHSYNC)
- 		tilcdc_set(dev, LCDC_RASTER_TIMING_2_REG, LCDC_INVERT_HSYNC);
- 	else
- 		tilcdc_clear(dev, LCDC_RASTER_TIMING_2_REG, LCDC_INVERT_HSYNC);
-diff --git a/drivers/gpu/drm/tilcdc/tilcdc_slave.c b/drivers/gpu/drm/tilcdc/tilcdc_slave.c
-index 0bf5999..f6e9c26 100644
---- a/drivers/gpu/drm/tilcdc/tilcdc_slave.c
-+++ b/drivers/gpu/drm/tilcdc/tilcdc_slave.c
-@@ -73,13 +73,38 @@ static void slave_encoder_prepare(struct drm_encoder *encoder)
- 	tilcdc_crtc_set_panel_info(encoder->crtc, &slave_info);
- }
- 
-+static bool slave_encoder_fixup(struct drm_encoder *encoder,
-+		const struct drm_display_mode *mode,
-+		struct drm_display_mode *adjusted_mode)
-+{
-+	/*
-+	 * tilcdc does not generate VESA-complient sync but aligns
-+	 * VS on the second edge of HS instead of first edge.
-+	 * We use adjusted_mode, to fixup sync by aligning both rising
-+	 * edges and add HSKEW offset to let the slave encoder fix it up.
-+	 */
-+	adjusted_mode->hskew = mode->hsync_end - mode->hsync_start;
-+	adjusted_mode->flags |= DRM_MODE_FLAG_HSKEW;
++	 * Internally TDA998x is using ITU-R BT.656 style sync but
++	 * we get VESA style sync. TDA998x is using a reference pixel
++	 * relative to ITU to sync to the input frame and for output
++	 * sync generation. Currently, we are using reference detection
++	 * from HS/VS, i.e. REFPIX/REFLINE denote frame start sync point
++	 * which is position of rising VS with coincident rising HS.
++	 *
++	 * Now there is some issues to take care of:
++	 * - HDMI data islands require sync-before-active
++	 * - TDA998x register values must be > 0 to be enabled
++	 * - REFLINE needs an additional offset of +1
++	 * - REFPIX needs an addtional offset of +1 for UYUV and +3 for RGB
++	 *
++	 * So we add +1 to all horizontal and vertical register values,
++	 * plus an additional +3 for REFPIX as we are using RGB input only.
+ 	 */
+-	ref_line = 2;
+-
+-	/* this might changes for other color formats from the CRTC: */
+-	ref_pix = 3 + hs_start;
++	n_pix        = mode->htotal;
++	n_line       = mode->vtotal;
 +
-+	if (mode->flags & DRM_MODE_FLAG_NHSYNC) {
-+		adjusted_mode->flags |= DRM_MODE_FLAG_PHSYNC;
-+		adjusted_mode->flags &= ~DRM_MODE_FLAG_NHSYNC;
++	ref_pix      = 3 + mode->hsync_start - mode->hdisplay;
++	de_pix_s     = mode->htotal - mode->hdisplay;
++	de_pix_e     = de_pix_s + mode->hdisplay;
++	hs_pix_s     = mode->hsync_start - mode->hdisplay;
++	hs_pix_e     = hs_pix_s + mode->hsync_end - mode->hsync_start;
++
++	if ((mode->flags & DRM_MODE_FLAG_INTERLACE) == 0) {
++		ref_line     = 1 + mode->vsync_start - mode->vdisplay;
++		vwin1_line_s = mode->vtotal - mode->vdisplay - 1;
++		vwin1_line_e = vwin1_line_s + mode->vdisplay;
++		vs1_pix_s    = vs1_pix_e = hs_pix_s;
++		vs1_line_s   = mode->vsync_start - mode->vdisplay;
++		vs1_line_e   = vs1_line_s +
++			       mode->vsync_end - mode->vsync_start;
++		vwin2_line_s = vwin2_line_e = 0;
++		vs2_pix_s    = vs2_pix_e  = 0;
++		vs2_line_s   = vs2_line_e = 0;
 +	} else {
-+		adjusted_mode->flags |= DRM_MODE_FLAG_NHSYNC;
-+		adjusted_mode->flags &= ~DRM_MODE_FLAG_PHSYNC;
++		ref_line     = 1 + (mode->vsync_start - mode->vdisplay)/2;
++		vwin1_line_s = (mode->vtotal - mode->vdisplay)/2;
++		vwin1_line_e = vwin1_line_s + mode->vdisplay/2;
++		vs1_pix_s    = vs1_pix_e = hs_pix_s;
++		vs1_line_s   = (mode->vsync_start - mode->vdisplay)/2;
++		vs1_line_e   = vs1_line_s +
++			       (mode->vsync_end - mode->vsync_start)/2;
++		vwin2_line_s = vwin1_line_s + mode->vtotal/2;
++		vwin2_line_e = vwin2_line_s + mode->vdisplay/2;
++		vs2_pix_s    = vs2_pix_e = hs_pix_s + mode->htotal/2;
++		vs2_line_s   = vs1_line_s + mode->vtotal/2 ;
++		vs2_line_e   = vs2_line_s +
++			       (mode->vsync_end - mode->vsync_start)/2;
 +	}
-+
-+	return drm_i2c_encoder_mode_fixup(encoder, mode, adjusted_mode);
-+}
-+
-+
- static const struct drm_encoder_funcs slave_encoder_funcs = {
- 		.destroy        = slave_encoder_destroy,
- };
  
- static const struct drm_encoder_helper_funcs slave_encoder_helper_funcs = {
- 		.dpms           = drm_i2c_encoder_dpms,
--		.mode_fixup     = drm_i2c_encoder_mode_fixup,
-+		.mode_fixup     = slave_encoder_fixup,
- 		.prepare        = slave_encoder_prepare,
- 		.commit         = drm_i2c_encoder_commit,
- 		.mode_set       = drm_i2c_encoder_mode_set,
+ 	div = 148500 / mode->clock;
+ 
+-	DBG("clock=%d, div=%u", mode->clock, div);
+-	DBG("hs_start=%u, hs_end=%u, line_start=%u, line_end=%u",
+-			hs_start, hs_end, line_start, line_end);
+-	DBG("vwin_start=%u, vwin_end=%u, de_start=%u, de_end=%u",
+-			vwin_start, vwin_end, de_start, de_end);
+-	DBG("ref_line=%u, ref_pix=%u, pix_start2=%u",
+-			ref_line, ref_pix, pix_start2);
+-
+ 	/* mute the audio FIFO: */
+ 	reg_set(encoder, REG_AIP_CNTRL_0, AIP_CNTRL_0_RST_FIFO);
+ 
+@@ -809,9 +848,6 @@ tda998x_encoder_mode_set(struct drm_encoder *encoder,
+ 	reg_write(encoder, REG_PLL_SERIAL_2, PLL_SERIAL_2_SRL_NOSC(div) |
+ 			PLL_SERIAL_2_SRL_PR(rep));
+ 
+-	reg_write16(encoder, REG_VS_PIX_STRT_2_MSB, pix_start2);
+-	reg_write16(encoder, REG_VS_PIX_END_2_MSB, pix_start2);
+-
+ 	/* set color matrix bypass flag: */
+ 	reg_set(encoder, REG_MAT_CONTRL, MAT_CONTRL_MAT_BP);
+ 
+@@ -820,46 +856,59 @@ tda998x_encoder_mode_set(struct drm_encoder *encoder,
+ 
+ 	reg_clear(encoder, REG_TBG_CNTRL_0, TBG_CNTRL_0_SYNC_MTHD);
+ 
++	/*
++	 * Sync on rising HSYNC/VSYNC
++	 */
+ 	reg_write(encoder, REG_VIP_CNTRL_3, 0);
+ 	reg_set(encoder, REG_VIP_CNTRL_3, VIP_CNTRL_3_SYNC_HS);
++
++	/*
++	 * TDA19988 requires high-active sync at input stage,
++	 * so invert low-active sync provided by master encoder here
++	 */
++	if (mode->flags & DRM_MODE_FLAG_NHSYNC)
++		reg_set(encoder, REG_VIP_CNTRL_3, VIP_CNTRL_3_H_TGL);
+ 	if (mode->flags & DRM_MODE_FLAG_NVSYNC)
+ 		reg_set(encoder, REG_VIP_CNTRL_3, VIP_CNTRL_3_V_TGL);
+ 
++	/*
++	 * Always generate sync polarity relative to input sync and
++	 * revert input stage toggled sync at output stage
++	 */
++	reg = TBG_CNTRL_1_TGL_EN;
+ 	if (mode->flags & DRM_MODE_FLAG_NHSYNC)
+-		reg_set(encoder, REG_VIP_CNTRL_3, VIP_CNTRL_3_H_TGL);
++		reg |= TBG_CNTRL_1_H_TGL;
++	if (mode->flags & DRM_MODE_FLAG_NVSYNC)
++		reg |= TBG_CNTRL_1_V_TGL;
++	reg_write(encoder, REG_TBG_CNTRL_1, reg);
+ 
+ 	reg_write(encoder, REG_VIDFORMAT, 0x00);
+-	reg_write16(encoder, REG_NPIX_MSB, mode->htotal);
+-	reg_write16(encoder, REG_NLINE_MSB, mode->vtotal);
+-	reg_write16(encoder, REG_VS_LINE_STRT_1_MSB, line_start);
+-	reg_write16(encoder, REG_VS_LINE_END_1_MSB, line_end);
+-	reg_write16(encoder, REG_VS_PIX_STRT_1_MSB, hs_start);
+-	reg_write16(encoder, REG_VS_PIX_END_1_MSB, hs_start);
+-	reg_write16(encoder, REG_HS_PIX_START_MSB, hs_start);
+-	reg_write16(encoder, REG_HS_PIX_STOP_MSB, hs_end);
+-	reg_write16(encoder, REG_VWIN_START_1_MSB, vwin_start);
+-	reg_write16(encoder, REG_VWIN_END_1_MSB, vwin_end);
+-	reg_write16(encoder, REG_DE_START_MSB, de_start);
+-	reg_write16(encoder, REG_DE_STOP_MSB, de_end);
++	reg_write16(encoder, REG_REFPIX_MSB, ref_pix);
++	reg_write16(encoder, REG_REFLINE_MSB, ref_line);
++	reg_write16(encoder, REG_NPIX_MSB, n_pix);
++	reg_write16(encoder, REG_NLINE_MSB, n_line);
++	reg_write16(encoder, REG_VS_LINE_STRT_1_MSB, vs1_line_s);
++	reg_write16(encoder, REG_VS_PIX_STRT_1_MSB, vs1_pix_s);
++	reg_write16(encoder, REG_VS_LINE_END_1_MSB, vs1_line_e);
++	reg_write16(encoder, REG_VS_PIX_END_1_MSB, vs1_pix_e);
++	reg_write16(encoder, REG_VS_LINE_STRT_2_MSB, vs2_line_s);
++	reg_write16(encoder, REG_VS_PIX_STRT_2_MSB, vs2_pix_s);
++	reg_write16(encoder, REG_VS_LINE_END_2_MSB, vs2_line_e);
++	reg_write16(encoder, REG_VS_PIX_END_2_MSB, vs2_pix_e);
++	reg_write16(encoder, REG_HS_PIX_START_MSB, hs_pix_s);
++	reg_write16(encoder, REG_HS_PIX_STOP_MSB, hs_pix_e);
++	reg_write16(encoder, REG_VWIN_START_1_MSB, vwin1_line_s);
++	reg_write16(encoder, REG_VWIN_END_1_MSB, vwin1_line_e);
++	reg_write16(encoder, REG_VWIN_START_2_MSB, vwin2_line_s);
++	reg_write16(encoder, REG_VWIN_END_2_MSB, vwin2_line_e);
++	reg_write16(encoder, REG_DE_START_MSB, de_pix_s);
++	reg_write16(encoder, REG_DE_STOP_MSB, de_pix_e);
+ 
+ 	if (priv->rev == TDA19988) {
+ 		/* let incoming pixels fill the active space (if any) */
+ 		reg_write(encoder, REG_ENABLE_SPACE, 0x01);
+ 	}
+ 
+-	reg_write16(encoder, REG_REFPIX_MSB, ref_pix);
+-	reg_write16(encoder, REG_REFLINE_MSB, ref_line);
+-
+-	reg = TBG_CNTRL_1_DWIN_DIS | /* HDCP off */
+-			TBG_CNTRL_1_VH_TGL_2;
+-	/*
+-	 * It is questionable whether this is correct - the nxp driver
+-	 * does not set VH_TGL_2 and the below for all display modes.
+-	 */
+-	if (mode->flags & (DRM_MODE_FLAG_NVSYNC | DRM_MODE_FLAG_NHSYNC))
+-		reg |= TBG_CNTRL_1_VH_TGL_0;
+-	reg_set(encoder, REG_TBG_CNTRL_1, reg);
+-
+ 	/* must be last register set: */
+ 	reg_clear(encoder, REG_TBG_CNTRL_0, TBG_CNTRL_0_SYNC_ONCE);
+ 
 -- 
 1.7.10.4
 
