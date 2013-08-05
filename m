@@ -1,41 +1,241 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754655Ab3HEDdj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Aug 2013 23:33:39 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:38930 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754439Ab3HEDdi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Aug 2013 23:33:38 -0400
-Message-ID: <1375673616.3133.23.camel@joe-AO722>
-Subject: Re: [PATCH] hostap: do not return positive number on failure path
- in prism2_open()
-From: Joe Perches <joe@perches.com>
-To: Alexey Khoroshilov <khoroshilov@ispras.ru>
-Cc: Jouni Malinen <j@w1.fi>, "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
-Date: Sun, 04 Aug 2013 20:33:36 -0700
-In-Reply-To: <1375672708-3017-1-git-send-email-khoroshilov@ispras.ru>
-References: <1375672708-3017-1-git-send-email-khoroshilov@ispras.ru>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
+	id S1754671Ab3HEDjb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Aug 2013 23:39:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11806 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754582Ab3HEDj3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Aug 2013 23:39:29 -0400
+Message-ID: <51FF1E26.6010707@redhat.com>
+Date: Mon, 05 Aug 2013 11:38:14 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Jason Wang <jasowang@redhat.com>
+CC: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org, pbonzini@redhat.com, kvm@vger.kernel.org,
+        "K. Y. Srinivasan" <kys@microsoft.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Doug Covelli <dcovelli@vmware.com>, Borislav Petkov <bp@suse.de>,
+        Dan Hecht <dhecht@vmware.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, devel@linuxdriverproject.org,
+        xen-devel@lists.xensource.com,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH V2 4/4] x86: correctly detect hypervisor
+References: <1374742475-2485-1-git-send-email-jasowang@redhat.com> <1374742475-2485-4-git-send-email-jasowang@redhat.com>
+In-Reply-To: <1374742475-2485-4-git-send-email-jasowang@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-08-05 at 07:18 +0400, Alexey Khoroshilov wrote:
-> prism2_open() as an .ndo_open handler should not return positive numbers
-> in case of failure, but it does return 1 in a couple of places.
-> 
-> Found by Linux Driver Verification project (linuxtesting.org).
+On 07/25/2013 04:54 PM, Jason Wang wrote:
+> We try to handle the hypervisor compatibility mode by detecting hypervisor
+> through a specific order. This is not robust, since hypervisors may implement
+> each others features.
+>
+> This patch tries to handle this situation by always choosing the last one in the
+> CPUID leaves. This is done by letting .detect() returns a priority instead of
+> true/false and just re-using the CPUID leaf where the signature were found as
+> the priority (or 1 if it was found by DMI). Then we can just pick hypervisor who
+> has the highest priority. Other sophisticated detection method could also be
+> implemented on top.
+>
+> Suggested by H. Peter Anvin and Paolo Bonzini.
+>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: H. Peter Anvin <hpa@zytor.com>
+> Cc: x86@kernel.org
+> Cc: K. Y. Srinivasan <kys@microsoft.com>
+> Cc: Haiyang Zhang <haiyangz@microsoft.com>
+> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Cc: Jeremy Fitzhardinge <jeremy@goop.org>
+> Cc: Doug Covelli <dcovelli@vmware.com>
+> Cc: Borislav Petkov <bp@suse.de>
+> Cc: Dan Hecht <dhecht@vmware.com>
+> Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+> Cc: Marcelo Tosatti <mtosatti@redhat.com>
+> Cc: Gleb Natapov <gleb@redhat.com>
+> Cc: Paolo Bonzini <pbonzini@redhat.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: linux-kernel@vger.kernel.org
+> Cc: devel@linuxdriverproject.org
+> Cc: kvm@vger.kernel.org
+> Cc: xen-devel@lists.xensource.com
+> Cc: virtualization@lists.linux-foundation.org
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> ---
 
-How?
+Ping, any comments and acks for this series?
 
-http://linuxtesting.org/project/ldv
-http://linuxtesting.org/results/ldv
-
-Shows defects and patches to fix them, but not any script
-used to find it.
+Thanks
+>  arch/x86/include/asm/hypervisor.h |    2 +-
+>  arch/x86/kernel/cpu/hypervisor.c  |   15 +++++++--------
+>  arch/x86/kernel/cpu/mshyperv.c    |   13 ++++++++-----
+>  arch/x86/kernel/cpu/vmware.c      |    8 ++++----
+>  arch/x86/kernel/kvm.c             |    6 ++----
+>  arch/x86/xen/enlighten.c          |    9 +++------
+>  6 files changed, 25 insertions(+), 28 deletions(-)
+>
+> diff --git a/arch/x86/include/asm/hypervisor.h b/arch/x86/include/asm/hypervisor.h
+> index 2d4b5e6..e42f758 100644
+> --- a/arch/x86/include/asm/hypervisor.h
+> +++ b/arch/x86/include/asm/hypervisor.h
+> @@ -33,7 +33,7 @@ struct hypervisor_x86 {
+>  	const char	*name;
+>  
+>  	/* Detection routine */
+> -	bool		(*detect)(void);
+> +	uint32_t	(*detect)(void);
+>  
+>  	/* Adjust CPU feature bits (run once per CPU) */
+>  	void		(*set_cpu_features)(struct cpuinfo_x86 *);
+> diff --git a/arch/x86/kernel/cpu/hypervisor.c b/arch/x86/kernel/cpu/hypervisor.c
+> index 8727921..36ce402 100644
+> --- a/arch/x86/kernel/cpu/hypervisor.c
+> +++ b/arch/x86/kernel/cpu/hypervisor.c
+> @@ -25,11 +25,6 @@
+>  #include <asm/processor.h>
+>  #include <asm/hypervisor.h>
+>  
+> -/*
+> - * Hypervisor detect order.  This is specified explicitly here because
+> - * some hypervisors might implement compatibility modes for other
+> - * hypervisors and therefore need to be detected in specific sequence.
+> - */
+>  static const __initconst struct hypervisor_x86 * const hypervisors[] =
+>  {
+>  #ifdef CONFIG_XEN_PVHVM
+> @@ -49,15 +44,19 @@ static inline void __init
+>  detect_hypervisor_vendor(void)
+>  {
+>  	const struct hypervisor_x86 *h, * const *p;
+> +	uint32_t pri, max_pri = 0;
+>  
+>  	for (p = hypervisors; p < hypervisors + ARRAY_SIZE(hypervisors); p++) {
+>  		h = *p;
+> -		if (h->detect()) {
+> +		pri = h->detect();
+> +		if (pri != 0 && pri > max_pri) {
+> +			max_pri = pri;
+>  			x86_hyper = h;
+> -			printk(KERN_INFO "Hypervisor detected: %s\n", h->name);
+> -			break;
+>  		}
+>  	}
+> +
+> +	if (max_pri)
+> +		printk(KERN_INFO "Hypervisor detected: %s\n", x86_hyper->name);
+>  }
+>  
+>  void init_hypervisor(struct cpuinfo_x86 *c)
+> diff --git a/arch/x86/kernel/cpu/mshyperv.c b/arch/x86/kernel/cpu/mshyperv.c
+> index 8f4be53..71a39f3 100644
+> --- a/arch/x86/kernel/cpu/mshyperv.c
+> +++ b/arch/x86/kernel/cpu/mshyperv.c
+> @@ -27,20 +27,23 @@
+>  struct ms_hyperv_info ms_hyperv;
+>  EXPORT_SYMBOL_GPL(ms_hyperv);
+>  
+> -static bool __init ms_hyperv_platform(void)
+> +static uint32_t  __init ms_hyperv_platform(void)
+>  {
+>  	u32 eax;
+>  	u32 hyp_signature[3];
+>  
+>  	if (!boot_cpu_has(X86_FEATURE_HYPERVISOR))
+> -		return false;
+> +		return 0;
+>  
+>  	cpuid(HYPERV_CPUID_VENDOR_AND_MAX_FUNCTIONS,
+>  	      &eax, &hyp_signature[0], &hyp_signature[1], &hyp_signature[2]);
+>  
+> -	return eax >= HYPERV_CPUID_MIN &&
+> -		eax <= HYPERV_CPUID_MAX &&
+> -		!memcmp("Microsoft Hv", hyp_signature, 12);
+> +	if (eax >= HYPERV_CPUID_MIN &&
+> +	    eax <= HYPERV_CPUID_MAX &&
+> +	    !memcmp("Microsoft Hv", hyp_signature, 12))
+> +		return HYPERV_CPUID_VENDOR_AND_MAX_FUNCTIONS;
+> +
+> +	return 0;
+>  }
+>  
+>  static cycle_t read_hv_clock(struct clocksource *arg)
+> diff --git a/arch/x86/kernel/cpu/vmware.c b/arch/x86/kernel/cpu/vmware.c
+> index 7076878..628a059 100644
+> --- a/arch/x86/kernel/cpu/vmware.c
+> +++ b/arch/x86/kernel/cpu/vmware.c
+> @@ -93,7 +93,7 @@ static void __init vmware_platform_setup(void)
+>   * serial key should be enough, as this will always have a VMware
+>   * specific string when running under VMware hypervisor.
+>   */
+> -static bool __init vmware_platform(void)
+> +static uint32_t __init vmware_platform(void)
+>  {
+>  	if (cpu_has_hypervisor) {
+>  		unsigned int eax;
+> @@ -102,12 +102,12 @@ static bool __init vmware_platform(void)
+>  		cpuid(CPUID_VMWARE_INFO_LEAF, &eax, &hyper_vendor_id[0],
+>  		      &hyper_vendor_id[1], &hyper_vendor_id[2]);
+>  		if (!memcmp(hyper_vendor_id, "VMwareVMware", 12))
+> -			return true;
+> +			return CPUID_VMWARE_INFO_LEAF;
+>  	} else if (dmi_available && dmi_name_in_serial("VMware") &&
+>  		   __vmware_platform())
+> -		return true;
+> +		return 1;
+>  
+> -	return false;
+> +	return 0;
+>  }
+>  
+>  /*
+> diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
+> index a96d32c..7817afd 100644
+> --- a/arch/x86/kernel/kvm.c
+> +++ b/arch/x86/kernel/kvm.c
+> @@ -498,11 +498,9 @@ void __init kvm_guest_init(void)
+>  #endif
+>  }
+>  
+> -static bool __init kvm_detect(void)
+> +static uint32_t __init kvm_detect(void)
+>  {
+> -	if (!kvm_para_available())
+> -		return false;
+> -	return true;
+> +	return kvm_cpuid_base();
+>  }
+>  
+>  const struct hypervisor_x86 x86_hyper_kvm __refconst = {
+> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+> index 193097e..2fcaedc 100644
+> --- a/arch/x86/xen/enlighten.c
+> +++ b/arch/x86/xen/enlighten.c
+> @@ -1720,15 +1720,12 @@ static void __init xen_hvm_guest_init(void)
+>  	xen_hvm_init_mmu_ops();
+>  }
+>  
+> -static bool __init xen_hvm_platform(void)
+> +static uint32_t __init xen_hvm_platform(void)
+>  {
+>  	if (xen_pv_domain())
+> -		return false;
+> -
+> -	if (!xen_cpuid_base())
+> -		return false;
+> +		return 0;
+>  
+> -	return true;
+> +	return xen_cpuid_base();
+>  }
+>  
+>  bool xen_hvm_need_lapic(void)
 
