@@ -1,74 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755653Ab3HEWVF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 18:21:05 -0400
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:40241 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755274Ab3HEWUb (ORCPT
+	id S1753632Ab3HEWVc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 18:21:32 -0400
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:25272 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755579Ab3HEWV1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 18:20:31 -0400
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Darren Etheridge <detheridge@ti.com>, David Airlie <airlied@linux.ie>,
-        Rob Clark <robdclark@gmail.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 7/8] drm/i2c: tda998x: prepare for broken sync workaround
-Date: Tue,  6 Aug 2013 00:20:17 +0200
-Message-Id: <1375741218-10225-8-git-send-email-sebastian.hesselbarth@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1375741218-10225-1-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1375741218-10225-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	Mon, 5 Aug 2013 18:21:27 -0400
+Message-ID: <1375741219.10300.172.camel@misato.fc.hp.com>
+Subject: Re: [PATCH] ACPI: Do not fail acpi_bind_one() if device is already
+ bound correctly
+From: Toshi Kani <toshi.kani@hp.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 05 Aug 2013 16:20:19 -0600
+In-Reply-To: <1981183.omDzKl0aqK@vostro.rjw.lan>
+References: <1888947.F5IBMfDKlY@vostro.rjw.lan>
+	 <3596381.TNBAQz9C67@vostro.rjw.lan>
+	 <1375576322.10300.146.camel@misato.fc.hp.com>
+	 <1981183.omDzKl0aqK@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Darren Etheridge <detheridge@ti.com>
+On Sun, 2013-08-04 at 16:03 +0200, Rafael J. Wysocki wrote:
+> On Saturday, August 03, 2013 06:32:02 PM Toshi Kani wrote:
+> > On Sat, 2013-08-03 at 02:47 +0200, Rafael J. Wysocki wrote:
+> > > On Friday, August 02, 2013 04:38:38 PM Toshi Kani wrote:
+> > > > On Fri, 2013-08-02 at 00:33 +0200, Rafael J. Wysocki wrote:
+> > > > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > > > > 
+> > > > > Modify acpi_bind_one() so that it doesn't fail if the device
+> > > > > represented by its first argument has already been bound to the
+> > > > > given ACPI handle (second argument), because that is not a good
+> > > > > enough reason for returning an error code.
+> > > > 
+> > > > While it seems reasonable to allow such case, I do not think we will hit
+> > > > this case under the normal scenarios.  So, I do not think we need to
+> > > > make this change now unless it actually solves Yasuaki's issue (which I
+> > > > am guessing not).
+> > > 
+> > > In theory it should be possible to call acpi_bind_one() twice in a row
+> > > for the same dev and the same handle without failure, that simply is
+> > > logical.  The patch may not fix any problems visible now, but returning an
+> > > error code in such a case is simply incorrect.
+> > 
+> > We changed acpi_bus_device_attach() to not call the handler or driver
+> > again if it is already bound.  So, I was under impression that we
+> > prevent from attaching a same device twice.  But I may be missing
+> > something...
+> 
+> acpi_bind_one() may be called in code paths that don't start from
+> acpi_bus_device_attach(), like acpi_platform_notify(), where the result
+> depends on how .find_device() is implemented by the the given bus type,
+> for example.
 
-Some LCD controller cannot provide valid VESA style sync, i.e. coincident
-HS/VS edges. First, this patch adds hskew passed from the adjusted_mode to
-reference pixel calculation to allow those controllers to add an offset
-relative to the expected reference pixel.
+acpi_bind_one() always returns with 0 when it sets a handle to the
+device.  So, acpi_platform_notify() should not call .find_device() in
+this case.  acpi_bus_check_add() is also protected from adding a same
+device twice.  But I see your point that the callers of acpi_bind_one()
+could be changed / implementation dependent.  So, I agree that it would
+be prudent to have this change. 
 
-Signed-off-by: Darren Etheridge <detheridge@ti.com>
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
----
-Changelog:
-for v1:
-- reword comment
+Acked-by: Toshi Kani <toshi.kani@hp.com>
 
-Cc: David Airlie <airlied@linux.ie>
-Cc: Darren Etheridge <detheridge@ti.com>
-Cc: Rob Clark <robdclark@gmail.com>
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: dri-devel@lists.freedesktop.org
-Cc: linux-kernel@vger.kernel.org
----
- drivers/gpu/drm/i2c/tda998x_drv.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
-
-diff --git a/drivers/gpu/drm/i2c/tda998x_drv.c b/drivers/gpu/drm/i2c/tda998x_drv.c
-index 7bf227a..7dc5650 100644
---- a/drivers/gpu/drm/i2c/tda998x_drv.c
-+++ b/drivers/gpu/drm/i2c/tda998x_drv.c
-@@ -784,6 +784,15 @@ tda998x_encoder_mode_set(struct drm_encoder *encoder,
- 	n_line       = mode->vtotal;
- 
- 	ref_pix      = 3 + mode->hsync_start - mode->hdisplay;
-+
-+	/*
-+	 * Attached LCD controllers may generate broken sync. Allow
-+	 * those to adjust the position of the rising VS edge by adding
-+	 * HSKEW to ref_pix.
-+	 */
-+	if (adjusted_mode->flags & DRM_MODE_FLAG_HSKEW)
-+		ref_pix += adjusted_mode->hskew;
-+
- 	de_pix_s     = mode->htotal - mode->hdisplay;
- 	de_pix_e     = de_pix_s + mode->hdisplay;
- 	hs_pix_s     = mode->hsync_start - mode->hdisplay;
--- 
-1.7.10.4
+Thanks,
+-Toshi
 
