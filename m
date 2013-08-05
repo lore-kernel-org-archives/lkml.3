@@ -1,79 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752927Ab3HENjz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 09:39:55 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:48715 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752386Ab3HENjw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 09:39:52 -0400
-X-IronPort-AV: E=Sophos;i="4.89,818,1367942400"; 
-   d="scan'208";a="8123219"
-Message-ID: <51FFAAD1.9040405@cn.fujitsu.com>
-Date: Mon, 05 Aug 2013 21:38:25 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1752756Ab3HENno (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 09:43:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58371 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751389Ab3HENnn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 09:43:43 -0400
+Date: Mon, 5 Aug 2013 16:43:27 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: James Hogan <james.hogan@imgtec.com>, David Daney <ddaney.cavm@gmail.com>,
+        linux-mips@linux-mips.org, kvm@vger.kernel.org,
+        Sanjay Lal <sanjayl@kymasys.com>, linux-kernel@vger.kernel.org,
+        David Daney <david.daney@cavium.com>
+Subject: Re: [PATCH 1/3] mips/kvm: Improve code formatting in
+ arch/mips/kvm/kvm_locore.S
+Message-ID: <20130805134326.GA15901@redhat.com>
+References: <1375388555-4045-1-git-send-email-ddaney.cavm@gmail.com>
+ <1375388555-4045-2-git-send-email-ddaney.cavm@gmail.com>
+ <51FFA5CD.3010406@imgtec.com>
+ <20130805132157.GB3470@linux-mips.org>
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu,
-        akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
-        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
-        mina86@mina86.com, gong.chen@linux.intel.com,
-        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
-        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
-        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com, x86@kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH v2 00/18] Arrange hotpluggable memory as ZONE_MOVABLE.
-References: <1375340800-19332-1-git-send-email-tangchen@cn.fujitsu.com> <51FFA393.2080301@zytor.com>
-In-Reply-To: <51FFA393.2080301@zytor.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/05 21:38:28,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/05 21:38:30,
-	Serialize complete at 2013/08/05 21:38:30
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130805132157.GB3470@linux-mips.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Aug 05, 2013 at 03:21:57PM +0200, Ralf Baechle wrote:
+> On Mon, Aug 05, 2013 at 02:17:01PM +0100, James Hogan wrote:
+> 
+> > 
+> > On 01/08/13 21:22, David Daney wrote:
+> > > From: David Daney <david.daney@cavium.com>
+> > > 
+> > > No code changes, just reflowing some comments and consistently using
+> > > tabs and spaces.  Object code is verified to be unchanged.
+> > > 
+> > > Signed-off-by: David Daney <david.daney@cavium.com>
+> > > Acked-by: Ralf Baechle <ralf@linux-mips.org>
+> > 
+> > 
+> > > +   	 /* Put the saved pointer to vcpu (s1) back into the DDATA_LO Register */
+> > 
+> > git am detects a whitespace error here ("space before tab in indent").
+> > It's got spaces before and after the tab actually.
+> > 
+> > >      /* load the guest context from VCPU and return */
+> > 
+> > this comment could have it's indentation fixed too
+> > 
+> > Otherwise, for all 3 patches:
+> > 
+> > Reviewed-by: James Hogan <james.hogan@imgtec.com>
+> 
+> I'm happy with the patch series as well and will fix this issue when
+> applying the patch.
+> 
+kvm fixes usually go through kvm.git tree for all arches. Any special
+reasons you want to get those through mips tree?
 
-Hi hpa,
-
-I'm sorry but I don't quite following it.
-
-On 08/05/2013 09:07 PM, H. Peter Anvin wrote:
-> On 08/01/2013 12:06 AM, Tang Chen wrote:
->> This patch-set aims to solve some problems at system boot time
->> to enhance memory hotplug functionality.
->>
->> [Background]
->>
->> The Linux kernel cannot migrate pages used by the kernel because
->> of the kernel direct mapping. Since va = pa + PAGE_OFFSET, if the
->> physical address is changed, we cannot simply update the kernel
->> pagetable. On the contrary, we have to update all the pointers
->> pointing to the virtual address, which is very difficult to do.
->>
->
-> It does beg the question if that "since" statement should be changed ...
-
-Do you mean we are going to do kernel page migration in the future ?
-
-> we already have it handled differently on Xen PV, but that is kind of
-> "special".  There are a whole bunch of other issues with moving kernel
-> memory around: you have to worry what might have a physical address
-> cached somewhere and what might be in active use and so on...
-
-The current solution is to hotplug ZONE_MOVABLE, which the kernel won't
-use. So do you mean if I want to do kernel page migration (which I'm not
-doing), I need to worry about what you said above ?
-
->I am not
-> really suggesting it as anything but food for thought at this time.
-
-Sorry for my poor English, and I really cannot understand this one.
-
-Thanks.
+--
+			Gleb.
