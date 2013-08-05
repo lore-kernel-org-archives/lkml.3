@@ -1,269 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753927Ab3HEQUM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 12:20:12 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:39214 "EHLO arroyo.ext.ti.com"
+	id S1753604Ab3HEQUs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 12:20:48 -0400
+Received: from mga03.intel.com ([143.182.124.21]:2158 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754216Ab3HEQPw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 12:15:52 -0400
-From: Joel Fernandes <joelf@ti.com>
-To: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Sricharan R <r.sricharan@ti.com>, Rajendra Nayak <rnayak@ti.com>,
-        Lokesh Vutla <lokeshvutla@ti.com>, Matt Porter <matt@ohporter.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
-        Mark Brown <broonie@linaro.org>,
-        Benoit Cousson <benoit.cousson@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>, Balaji TK <balajitk@ti.com>,
-        Gururaja Hebbar <gururaja.hebbar@ti.com>, Chris Ball <cjb@laptop.org>,
-        Jason Kridner <jkridner@beagleboard.org>
-CC: Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Joel Fernandes <joelf@ti.com>
-Subject: [PATCH v3 09/12] dma: edma: Implement multiple linked sets for continuity
-Date: Mon, 5 Aug 2013 11:14:54 -0500
-Message-ID: <1375719297-12871-10-git-send-email-joelf@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1375719297-12871-1-git-send-email-joelf@ti.com>
-References: <1375719297-12871-1-git-send-email-joelf@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1751502Ab3HEQUq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 12:20:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,819,1367996400"; 
+   d="scan'208";a="277956589"
+From: Adrian Hunter <adrian.hunter@intel.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH V9 01/14] perf tools: add debug prints
+Date: Mon,  5 Aug 2013 19:26:21 +0300
+Message-Id: <1375719994-26482-2-git-send-email-adrian.hunter@intel.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1375719994-26482-1-git-send-email-adrian.hunter@intel.com>
+References: <1375719994-26482-1-git-send-email-adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here we implement splitting up of the total MAX number of slots
-available for a channel into 2 cyclically linked sets. Transfer
-completion Interrupts are enabled on both linked sets and respective
-handler recycles them on completion to process the next linked set.
-Both linked sets are cyclically linked to each other to ensure
-continuity of DMA operations. Interrupt handlers execute asynchronously
-to the EDMA events and recycles the linked sets at the right time,
-as a result EDMA is not blocked or dependent on interrupts and DMA
-continues till the end of the SG-lists without any interruption.
+It is useful to see the arguments to perf_event_open
+and whether the perf events ring buffer was mmapped
+per-cpu or per-thread.  That information will now be
+displayed when verbose is 2 i.e option -vv
 
-Suggested-by: Sekhar Nori <nsekhar@ti.com>
-Signed-off-by: Joel Fernandes <joelf@ti.com>
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- drivers/dma/edma.c |  157 +++++++++++++++++++++++++++++++++++++++-------------
- 1 file changed, 118 insertions(+), 39 deletions(-)
+ tools/perf/util/evlist.c |  3 +++
+ tools/perf/util/evsel.c  | 58 ++++++++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/python.c | 20 +++++++++++++++++
+ 3 files changed, 81 insertions(+)
 
-diff --git a/drivers/dma/edma.c b/drivers/dma/edma.c
-index df50a04..70923a2 100644
---- a/drivers/dma/edma.c
-+++ b/drivers/dma/edma.c
-@@ -48,6 +48,7 @@
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index da2dd92..ee6f4d1 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -14,6 +14,7 @@
+ #include "target.h"
+ #include "evlist.h"
+ #include "evsel.h"
++#include "debug.h"
+ #include <unistd.h>
  
- /* Max of 16 segments per channel to conserve PaRAM slots */
- #define MAX_NR_SG		16
-+#define MAX_NR_LS		(MAX_NR_SG >> 1)
- #define EDMA_MAX_SLOTS		(MAX_NR_SG+1)
- #define EDMA_DESCRIPTORS	16
+ #include "parse-events.h"
+@@ -486,6 +487,7 @@ static int perf_evlist__mmap_per_cpu(struct perf_evlist *evlist, int prot, int m
+ 	int nr_cpus = cpu_map__nr(evlist->cpus);
+ 	int nr_threads = thread_map__nr(evlist->threads);
  
-@@ -57,6 +58,7 @@ struct edma_desc {
- 	int				absync;
- 	int				pset_nr;
- 	int				total_processed;
-+	int				next_setup_linkset;
- 	struct edmacc_param		pset[0];
- };
++	pr_debug2("perf event ring buffer mmapped per cpu\n");
+ 	for (cpu = 0; cpu < nr_cpus; cpu++) {
+ 		int output = -1;
  
-@@ -140,7 +142,9 @@ static void edma_execute(struct edma_chan *echan)
- 	struct edma_desc *edesc;
- 	struct device *dev = echan->vchan.chan.device->dev;
+@@ -524,6 +526,7 @@ static int perf_evlist__mmap_per_thread(struct perf_evlist *evlist, int prot, in
+ 	int thread;
+ 	int nr_threads = thread_map__nr(evlist->threads);
  
--	int i, j, total_left, total_process;
-+	int i, total_left, total_link_set;
-+	int ls_cur_off, ls_next_off, slot_off;
-+	struct edmacc_param tmp_param;
++	pr_debug2("perf event ring buffer mmapped per thread\n");
+ 	for (thread = 0; thread < nr_threads; thread++) {
+ 		int output = -1;
  
- 	/* If either we processed all psets or we're still not started */
- 	if (!echan->edesc ||
-@@ -159,48 +163,121 @@ static void edma_execute(struct edma_chan *echan)
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 8f10161..eaa7930 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -21,6 +21,7 @@
+ #include "thread_map.h"
+ #include "target.h"
+ #include "perf_regs.h"
++#include "debug.h"
  
- 	/* Find out how many left */
- 	total_left = edesc->pset_nr - edesc->total_processed;
--	total_process = total_left > MAX_NR_SG ? MAX_NR_SG : total_left;
--
--
--	/* Write descriptor PaRAM set(s) */
--	for (i = 0; i < total_process; i++) {
--		j = i + edesc->total_processed;
--		edma_write_slot(echan->slot[i], &edesc->pset[j]);
--		dev_dbg(echan->vchan.chan.device->dev,
--			"\n pset[%d]:\n"
--			"  chnum\t%d\n"
--			"  slot\t%d\n"
--			"  opt\t%08x\n"
--			"  src\t%08x\n"
--			"  dst\t%08x\n"
--			"  abcnt\t%08x\n"
--			"  ccnt\t%08x\n"
--			"  bidx\t%08x\n"
--			"  cidx\t%08x\n"
--			"  lkrld\t%08x\n",
--			j, echan->ch_num, echan->slot[i],
--			edesc->pset[j].opt,
--			edesc->pset[j].src,
--			edesc->pset[j].dst,
--			edesc->pset[j].a_b_cnt,
--			edesc->pset[j].ccnt,
--			edesc->pset[j].src_dst_bidx,
--			edesc->pset[j].src_dst_cidx,
--			edesc->pset[j].link_bcntrld);
--		/* Link to the previous slot if not the last set */
--		if (i != (total_process - 1))
-+	total_link_set = total_left > MAX_NR_LS ? MAX_NR_LS : total_left;
-+
-+	/* First time, setup 2 cyclically linked sets, each containing half
-+	   the slots allocated for this channel */
-+	if (edesc->total_processed == 0) {
-+		for (i = 0; i < total_link_set; i++) {
-+			edma_write_slot(echan->slot[i+1], &edesc->pset[i]);
-+
-+			if (i != total_link_set - 1) {
-+				edma_link(echan->slot[i+1], echan->slot[i+2]);
-+				dump_pset(echan, echan->slot[i+1],
-+					  edesc->pset, i);
-+			}
-+		}
-+
-+		edesc->total_processed += total_link_set;
-+
-+		total_left = edesc->pset_nr - edesc->total_processed;
-+
-+		total_link_set = total_left > MAX_NR_LS ?
-+				 MAX_NR_LS : total_left;
-+
-+		if (total_link_set) {
-+			/* Don't setup interrupt for first linked set for cases
-+			   where total pset_nr is strictly within MAX_NR size */
-+			if (total_left > total_link_set)
-+				edma_enable_interrupt(echan->slot[i]);
-+
-+			/* Setup link between linked set 0 to set 1 */
- 			edma_link(echan->slot[i], echan->slot[i+1]);
--		/* Final pset links to the dummy pset */
--		else
-+
-+			dump_pset(echan, echan->slot[i], edesc->pset, i-1);
-+
-+			/* Write out linked set 1 */
-+			for (; i < total_link_set + MAX_NR_LS; i++) {
-+				edma_write_slot(echan->slot[i+1],
-+						&edesc->pset[i]);
-+
-+				if (i != total_link_set + MAX_NR_LS - 1) {
-+					edma_link(echan->slot[i+1],
-+						  echan->slot[i+2]);
-+					dump_pset(echan, echan->slot[i+1],
-+						  edesc->pset, i);
-+				}
-+			}
-+
-+			edesc->total_processed += total_link_set;
-+			total_left = edesc->pset_nr - edesc->total_processed;
-+
-+			if (total_left)
-+				/* Setup a link from linked set 1 to set 0 */
-+				edma_link(echan->slot[i], echan->slot[1]);
-+			else
-+				/* Setup a link between linked set 1 to dummy */
-+				edma_link(echan->slot[i], echan->ecc->dummy_slot);
-+		} else {
-+			/* First linked set was enough, simply link to dummy */
- 			edma_link(echan->slot[i], echan->ecc->dummy_slot);
--	}
-+		}
-+
-+		edma_enable_interrupt(echan->slot[i]);
-+		dump_pset(echan, echan->slot[i], edesc->pset, i-1);
- 
--	edesc->total_processed += total_process;
-+		edesc->next_setup_linkset = 0;
- 
--	if (edesc->total_processed <= MAX_NR_SG) {
-+		/* Start the ball rolling... */
- 		dev_dbg(dev, "first transfer starting %d\n", echan->ch_num);
-+
-+		edma_read_slot(echan->slot[1], &tmp_param);
-+		edma_write_slot(echan->slot[0], &tmp_param);
- 		edma_start(echan->ch_num);
-+
-+		return;
-+	}
-+
-+	/* We got called in the middle of an SG-list transaction as one of the
-+	   linked sets completed  */
-+
-+	/* Setup offsets into echan_slot, +1 is as slot 0 is for chan */
-+	if (edesc->next_setup_linkset == 1) {
-+		edesc->next_setup_linkset = 0;
-+		ls_cur_off = MAX_NR_LS + 1;
-+		ls_next_off = 1;
-+	} else {
-+		edesc->next_setup_linkset = 1;
-+		ls_cur_off = 1;
-+		ls_next_off = MAX_NR_LS + 1;
-+	}
-+
-+	for (i = 0; i < total_link_set; i++) {
-+		edma_write_slot(echan->slot[i + ls_cur_off],
-+				&edesc->pset[i + edesc->total_processed]);
-+
-+		if (i != total_link_set - 1) {
-+			edma_link(echan->slot[i + ls_cur_off],
-+				  echan->slot[i + ls_cur_off + 1]);
-+
-+			dump_pset(echan, echan->slot[i + ls_cur_off],
-+				  edesc->pset, i + edesc->total_processed);
-+		}
- 	}
-+
-+	edesc->total_processed += total_link_set;
-+
-+	slot_off = total_link_set + ls_cur_off - 1;
-+
-+	if (edesc->total_processed == edesc->pset_nr)
-+		edma_link(echan->slot[slot_off], echan->ecc->dummy_slot);
-+	else
-+		edma_link(echan->slot[slot_off], echan->slot[ls_next_off]);
-+
-+	edma_enable_interrupt(echan->slot[slot_off]);
-+
-+	dump_pset(echan, echan->slot[slot_off],
-+		  edesc->pset, edesc->total_processed-1);
+ static struct {
+ 	bool sample_id_all;
+@@ -846,6 +847,58 @@ static int get_group_fd(struct perf_evsel *evsel, int cpu, int thread)
+ 	return fd;
  }
  
- static int edma_terminate_all(struct edma_chan *echan)
-@@ -417,15 +494,17 @@ static void edma_callback(unsigned ch_num, u16 ch_status, void *data)
- 		spin_lock_irqsave(&echan->vchan.lock, flags);
- 
- 		edesc = echan->edesc;
++static size_t perf_event_attr__fprintf(struct perf_event_attr *attr, FILE *fp)
++{
++	size_t ret;
 +
- 		if (edesc) {
- 			if (edesc->total_processed == edesc->pset_nr) {
--				dev_dbg(dev, "transfer complete." \
-+				dev_dbg(dev, "Transfer complete,"
- 					" stopping channel %d\n", ch_num);
- 				edma_stop(echan->ch_num);
- 				vchan_cookie_complete(&edesc->vdesc);
- 			} else {
--				dev_dbg(dev, "Intermediate transfer complete" \
--					" on channel %d\n", ch_num);
-+				dev_dbg(dev, "Intermediate transfer "
-+					"complete, setup next linked set on "
-+					"%d\n ", ch_num);
- 			}
++	ret = fprintf(fp, "------------------------------------------------------------\n");
++	ret += fprintf(fp, "perf_event_attr:\n");
++	ret += fprintf(fp, "  type                %u\n", attr->type);
++	ret += fprintf(fp, "  size                %u\n", attr->size);
++	ret += fprintf(fp, "  config              %#"PRIx64"\n", (uint64_t)attr->config);
++	ret += fprintf(fp, "  sample_period       %"PRIu64"\n", (uint64_t)attr->sample_period);
++	ret += fprintf(fp, "  sample_freq         %"PRIu64"\n", (uint64_t)attr->sample_freq);
++	ret += fprintf(fp, "  sample_type         %#"PRIx64"\n", (uint64_t)attr->sample_type);
++	ret += fprintf(fp, "  read_format         %#"PRIx64"\n", (uint64_t)attr->read_format);
++
++	ret += fprintf(fp, "  disabled            %u    ", attr->disabled);
++	ret += fprintf(fp, "inherit             %u\n", attr->inherit);
++	ret += fprintf(fp, "  pinned              %u    ", attr->pinned);
++	ret += fprintf(fp, "exclusive           %u\n", attr->exclusive);
++	ret += fprintf(fp, "  exclude_user        %u    ", attr->exclude_user);
++	ret += fprintf(fp, "exclude_kernel      %u\n", attr->exclude_kernel);
++	ret += fprintf(fp, "  exclude_hv          %u    ", attr->exclude_hv);
++	ret += fprintf(fp, "exclude_idle        %u\n", attr->exclude_idle);
++	ret += fprintf(fp, "  mmap                %u    ", attr->mmap);
++	ret += fprintf(fp, "comm                %u\n", attr->comm);
++	ret += fprintf(fp, "  freq                %u    ", attr->freq);
++	ret += fprintf(fp, "inherit_stat        %u\n", attr->inherit_stat);
++	ret += fprintf(fp, "  enable_on_exec      %u    ", attr->enable_on_exec);
++	ret += fprintf(fp, "task                %u\n", attr->task);
++	ret += fprintf(fp, "  watermark           %u    ", attr->watermark);
++	ret += fprintf(fp, "precise_ip          %u\n", attr->precise_ip);
++	ret += fprintf(fp, "  mmap_data           %u    ", attr->mmap_data);
++	ret += fprintf(fp, "sample_id_all       %u\n", attr->sample_id_all);
++	ret += fprintf(fp, "  exclude_host        %u    ", attr->exclude_host);
++	ret += fprintf(fp, "exclude_guest       %u\n", attr->exclude_guest);
++	ret += fprintf(fp, "  excl.callchain.kern %u    ", attr->exclude_callchain_kernel);
++	ret += fprintf(fp, "excl.callchain.user %u\n", attr->exclude_callchain_user);
++
++	ret += fprintf(fp, "  wakeup_events       %u\n", attr->wakeup_events);
++	ret += fprintf(fp, "  wakeup_watermark    %u\n", attr->wakeup_watermark);
++	ret += fprintf(fp, "  bp_type             %#x\n", attr->bp_type);
++	ret += fprintf(fp, "  bp_addr             %#"PRIx64"\n", (uint64_t)attr->bp_addr);
++	ret += fprintf(fp, "  config1             %#"PRIx64"\n", (uint64_t)attr->config1);
++	ret += fprintf(fp, "  bp_len              %"PRIu64"\n", (uint64_t)attr->bp_len);
++	ret += fprintf(fp, "  config2             %#"PRIx64"\n", (uint64_t)attr->config2);
++	ret += fprintf(fp, "  branch_sample_type  %#"PRIx64"\n", (uint64_t)attr->branch_sample_type);
++	ret += fprintf(fp, "  sample_regs_user    %#"PRIx64"\n", (uint64_t)attr->sample_regs_user);
++	ret += fprintf(fp, "  sample_stack_user   %u\n", attr->sample_stack_user);
++	ret += fprintf(fp, "------------------------------------------------------------\n");
++
++	return ret;
++}
++
+ static int __perf_evsel__open(struct perf_evsel *evsel, struct cpu_map *cpus,
+ 			      struct thread_map *threads)
+ {
+@@ -869,6 +922,9 @@ retry_sample_id:
+ 	if (perf_missing_features.sample_id_all)
+ 		evsel->attr.sample_id_all = 0;
  
- 			edma_execute(echan);
++	if (verbose >= 2)
++		perf_event_attr__fprintf(&evsel->attr, stderr);
++
+ 	for (cpu = 0; cpu < cpus->nr; cpu++) {
+ 
+ 		for (thread = 0; thread < threads->nr; thread++) {
+@@ -879,6 +935,8 @@ retry_sample_id:
+ 
+ 			group_fd = get_group_fd(evsel, cpu, thread);
+ 
++			pr_debug2("perf_event_open: pid %d  cpu %d  group_fd %d  flags %#lx\n",
++				  pid, cpus->map[cpu], group_fd, flags);
+ 			FD(evsel, cpu, thread) = sys_perf_event_open(&evsel->attr,
+ 								     pid,
+ 								     cpus->map[cpu],
+diff --git a/tools/perf/util/python.c b/tools/perf/util/python.c
+index 925e0c3..381f4fd 100644
+--- a/tools/perf/util/python.c
++++ b/tools/perf/util/python.c
+@@ -8,6 +8,26 @@
+ #include "cpumap.h"
+ #include "thread_map.h"
+ 
++/*
++ * Support debug printing even though util/debug.c is not linked.  That means
++ * implementing 'verbose' and 'eprintf'.
++ */
++int verbose;
++
++int eprintf(int level, const char *fmt, ...)
++{
++	va_list args;
++	int ret = 0;
++
++	if (verbose >= level) {
++		va_start(args, fmt);
++		ret = vfprintf(stderr, fmt, args);
++		va_end(args);
++	}
++
++	return ret;
++}
++
+ /* Define PyVarObject_HEAD_INIT for python 2.5 */
+ #ifndef PyVarObject_HEAD_INIT
+ # define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
 -- 
-1.7.9.5
+1.7.11.7
 
