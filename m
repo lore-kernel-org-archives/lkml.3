@@ -1,144 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755313Ab3HEIKB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 04:10:01 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:59501 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755018Ab3HEIJ7 (ORCPT
+	id S1754578Ab3HEIQr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 04:16:47 -0400
+Received: from mail-bk0-f47.google.com ([209.85.214.47]:42106 "EHLO
+	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753626Ab3HEIQp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 04:09:59 -0400
-X-AuditID: 9c93017e-b7b62ae000000eeb-5b-51ff5dd5fdcd
-Date: Mon, 5 Aug 2013 17:10:08 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Minchan Kim <minchan@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH 1/4] mm, page_alloc: add likely macro to help compiler
- optimization
-Message-ID: <20130805081008.GF27240@lge.com>
-References: <1375409279-16919-1-git-send-email-iamjoonsoo.kim@lge.com>
- <20130802162722.GA29220@dhcp22.suse.cz>
- <20130802204710.GX715@cmpxchg.org>
- <20130802213607.GA4742@dhcp22.suse.cz>
+	Mon, 5 Aug 2013 04:16:45 -0400
+Date: Mon, 5 Aug 2013 10:16:41 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org, acme@infradead.org,
+        Andi Kleen <ak@linux.intel.com>, Namhyung Kim <namhyung.kim@lge.com>,
+        peterz@infradead.org
+Subject: Re: [PATCH] RFC: perf, tools: Move gtk browser into separate perfgtk
+ executable
+Message-ID: <20130805081641.GA24808@gmail.com>
+References: <1375669364-13838-1-git-send-email-andi@firstfloor.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130802213607.GA4742@dhcp22.suse.cz>
+In-Reply-To: <1375669364-13838-1-git-send-email-andi@firstfloor.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Michal.
 
-On Fri, Aug 02, 2013 at 11:36:07PM +0200, Michal Hocko wrote:
-> On Fri 02-08-13 16:47:10, Johannes Weiner wrote:
-> > On Fri, Aug 02, 2013 at 06:27:22PM +0200, Michal Hocko wrote:
-> > > On Fri 02-08-13 11:07:56, Joonsoo Kim wrote:
-> > > > We rarely allocate a page with ALLOC_NO_WATERMARKS and it is used
-> > > > in slow path. For making fast path more faster, add likely macro to
-> > > > help compiler optimization.
-> > > 
-> > > The code is different in mmotm tree (see mm: page_alloc: rearrange
-> > > watermark checking in get_page_from_freelist)
-> > 
-> > Yes, please rebase this on top.
-> > 
-> > > Besides that, make sure you provide numbers which prove your claims
-> > > about performance optimizations.
-> > 
-> > Isn't that a bit overkill?  We know it's a likely path (we would
-> > deadlock constantly if a sizable portion of allocations were to ignore
-> > the watermarks).  Does he have to justify that likely in general makes
-> > sense?
+* Andi Kleen <andi@firstfloor.org> wrote:
+
+> From: Andi Kleen <ak@linux.intel.com>
 > 
-> That was more a generic comment. If there is a claim that something
-> would be faster it would be nice to back that claim by some numbers
-> (e.g. smaller hot path).
+> By default perf currently links with the GTK2 gui. This pulls
+> in a lot of external libraries. It also causes dependency
+> problems for distribution packages: simply installing perf
+> requires pulling in GTK2 with all its dependencies.
 > 
-> In this particular case, unlikely(alloc_flags & ALLOC_NO_WATERMARKS)
-> doesn't make any change to the generated code with gcc 4.8.1 resp.
-> 4.3.4 I have here.
-> Maybe other versions of gcc would benefit from the hint but changelog
-> didn't tell us. I wouldn't add the anotation if it doesn't make any
-> difference for the resulting code.
+> I think the UI is valuable, but it shouldn't be everywhere.
+> 
+> The interfaces between the main perf and the GTK2 perf are
+> already quite clean, so it's very straight forward to just
+> add a few weak stubs and then generate two executables:
+> perf and perfgtk
+> 
+> The only difference is that the gtk version links in the
+> GTK code and overrides the weak stubs.
+> (so everything is still only compiled once)
+> 
+> I currently gave it the preliminary name "perfgtk".
+> 
+> This cuts down the library dependencies on the main perf
+> dramatically. It also completely eliminates the GTK2_SUPPORT
+> ifdef.
+> 
+> % ldd ./perf | wc -l
+> 18
+> % ldd ./perfgtk | wc -l
+> 53
 
-Hmm, Is there no change with gcc 4.8.1 and 4.3.4?
+If you want fewer dependencies then build with 'make NO_GTK=1'.
 
-I found a change with gcc 4.6.3 and v3.10 kernel.
+Furthermore, what really matters in practice is binary size - and the GKT 
+UI frontend code isn't really big:
 
-   text	   data	    bss	    dec	    hex	filename
-     35683	   1461	    644	  37788	   939c	page_alloc_base.o
-     35715	   1461	    644	  37820	   93bc	page_alloc_patch.o
+ comet:~/tip/tools/perf> ls -l perf.gtk perf.nogtk
+ -rwxrwxr-x 1 mingo mingo 2525416 Aug  5 10:09 perf.gtk.stripped
+ -rwxrwxr-x 1 mingo mingo 2497480 Aug  5 10:09 perf.nogtk.stripped
 
-Slightly larger (32 bytes) than before.
-And assembly code looks different as I expected.
+that's only a 1% difference ...
 
-* Original code
+So this is not a good idea, as it breaks the single binary structure of 
+perf, which is a rather powerful concept that has served us really well in 
+the past.
 
- 17126 .LVL1518:
- 17127         .loc 2 1904 0 is_stmt 1                                                                
- 17128         testb   $4, -116(%rbp)  #, %sfp
- 17129         je      .L866   #,
+Thanks,
 
-(snip)
-
- 17974 .L866:
- 17975 .LBE6053:
- 17976 .LBE6052:
- 17977 .LBE6051:
- 17978 .LBE6073:                                                                                      
- 17979 .LBE6093:                                                                                      
- 17980 .LBB6094:
- 17981         .loc 2 1908 0 
- 17982         movl    -116(%rbp), %r14d       # %sfp, D.42080
- 17983         .loc 2 1909 0
- 17984         movl    -116(%rbp), %r8d        # %sfp,
- 17985         movq    %rbx, %rdi      # prephitmp.1723,
- 17986         movl    -212(%rbp), %ecx        # %sfp,
- 17987         movl    -80(%rbp), %esi # %sfp,
- 17988         .loc 2 1908 0
- 17989         andl    $3, %r14d       #, D.42080
- 17990         movslq  %r14d, %rax     # D.42080, D.42080
- 17991         movq    (%rbx,%rax,8), %r13     # prephitmp.1723_268->watermark, mark
- 17992 .LVL1591:
- 17993         .loc 2 1909 0
- 17994         movq    %r13, %rdx      # mark,
- 17995         call    zone_watermark_ok       #
-
-On 17129 line, we check ALLOC_NO_WATERMARKS and if not matched, then jump to L866.
-L866 is on 17981 line.
-
-* Patched code
-
- 17122 .L807:
- 17123 .LVL1513:
- 17124         .loc 2 1904 0 is_stmt 1
- 17125         testb   $4, -88(%rbp)   #, %sfp
- 17126         jne     .L811   #,
- 17127 .LBB6092:
- 17128         .loc 2 1908 0
- 17129         movl    -88(%rbp), %r13d        # %sfp, D.42082
- 17130         .loc 2 1909 0
- 17131         movl    -88(%rbp), %r8d # %sfp,
- 17132         movq    %rbx, %rdi      # prephitmp.1723,
- 17133         movl    -160(%rbp), %ecx        # %sfp,
- 17134         movl    -80(%rbp), %esi # %sfp,
- 17135         .loc 2 1908 0
- 17136         andl    $3, %r13d       #, D.42082
- 17137         movslq  %r13d, %rax     # D.42082, D.42082
- 17138         movq    (%rbx,%rax,8), %r12     # prephitmp.1723_270->watermark, mark
- 17139 .LVL1514:
- 17140         .loc 2 1909 0
- 17141         movq    %r12, %rdx      # mark,
- 17142         call    zone_watermark_ok       #
-
-On 17124 line, we check ALLOC_NO_WATERMARKS (0x4) and if not matched,
-execute following code without jumping. This is effect of 'likely' macro.
-Isn't it reasonable?
-
-Thanks.
-
+	Ingo
