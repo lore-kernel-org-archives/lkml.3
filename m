@@ -1,94 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755093Ab3HEIjt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 04:39:49 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43344 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754541Ab3HEIjr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 04:39:47 -0400
-Date: Mon, 5 Aug 2013 10:39:43 +0200
-From: Michal Marek <mmarek@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "Yann E. MORIN" <yann.morin.1998@free.fr>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>
-Subject: Warnings from silentoldconfig (Re: [GIT PULL] PCI updates for v3.11)
-Message-ID: <20130805083943.GA14782@sepie.suse.cz>
-References: <20130802181740.GA27100@google.com>
- <CA+55aFzSG8ny=79_MFik5xP99c7eb-LMKh0JzTKpbiEB8Wt=5Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFzSG8ny=79_MFik5xP99c7eb-LMKh0JzTKpbiEB8Wt=5Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755262Ab3HEIlL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 04:41:11 -0400
+Received: from cpsmtpb-ews01.kpnxchange.com ([213.75.39.4]:63678 "EHLO
+	cpsmtpb-ews01.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754813Ab3HEIlJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 04:41:09 -0400
+Message-ID: <1375692066.25148.14.camel@x61.thuisdomein>
+Subject: Re: [PATCHv3] bridge: disable snooping if there is no querier
+From: Paul Bolle <pebolle@tiscali.nl>
+To: David Miller <davem@davemloft.net>
+Cc: linus.luessing@web.de, bridge@lists.linux-foundation.org,
+        stephen@networkplumber.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, herbert@gondor.hengli.com.au,
+        amwang@redhat.com, linux@baker-net.org.uk
+Date: Mon, 05 Aug 2013 10:41:06 +0200
+In-Reply-To: <20130731.174037.1794753574143053874.davem@davemloft.net>
+References: <20130730.161035.1646022729333223847.davem@davemloft.net>
+	 <1375311980-25575-1-git-send-email-linus.luessing@web.de>
+	 <20130731.174037.1794753574143053874.davem@davemloft.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
+X-OriginalArrivalTime: 05 Aug 2013 08:41:07.0259 (UTC) FILETIME=[872318B0:01CE91B7]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 02, 2013 at 01:28:25PM -0700, Linus Torvalds wrote:
-> On Fri, Aug 2, 2013 at 11:17 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> >
-> > Yinghai is still working on another SR-IOV-related fix or two, which
-> > will be simpler if pciehp is non-modular, so I included the Kconfig
-> > changes now to get them in earlier.
+On Wed, 2013-07-31 at 17:40 -0700, David Miller wrote:
+> > If there is no querier on a link then we won't get periodic reports and
+> > therefore won't be able to learn about multicast listeners behind ports,
+> > potentially leading to lost multicast packets, especially for multicast
+> > listeners that joined before the creation of the bridge.
+> > 
+> > These lost multicast packets can appear since c5c23260594
+> > ("bridge: Add multicast_querier toggle and disable queries by default")
+> > in particular.
+> > 
+> > With this patch we are flooding multicast packets if our querier is
+> > disabled and if we didn't detect any other querier.
+> > 
+> > A grace period of the Maximum Response Delay of the querier is added to
+> > give multicast responses enough time to arrive and to be learned from
+> > before disabling the flooding behaviour again.
+> > 
+> > Signed-off-by: Linus Lüssing <linus.luessing@web.de>
 > 
-> Hmm. Doing a trivial "make allmoconfig" for testing, I get
-> 
->   include/config/auto.conf:3014:warning: symbol value 'm' invalid for
-> HOTPLUG_PCI_PCIE
->   include/config/auto.conf:4711:warning: symbol value 'm' invalid for
-> HOTPLUG_PCI
-> 
-> but that may be a build system issue with stale data from the
-> *previous* "make allmodconfig". Regardless, that makes me worried.
-> 
-> Adding Michal Marek to the discussion. I'm currently doing a new "make
-> allmodconfig" after having done a "git clean -dqfx" to see if the
-> error remains. If it does, I will unpull. If it is gone, I'm going to
-> assume the Kconfig changes are ok, but that our build system is
-> missing some dependency.
+> Looks good, applied, thanks Linus.
 
-Added Yann and the linux-kbuild list to CC. Reproducer:
+0) This patch is part of v3.11-rc4 as commit b00589af3b0. It introduced
+a GCC warning:
+    net/bridge/br_multicast.c: In function ‘br_multicast_rcv’:
+    net/bridge/br_multicast.c:1081:36: warning: ‘max_delay’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+    net/bridge/br_multicast.c:1178:16: note: ‘max_delay’ was declared here
 
-  git checkout 1fe0135
-  make mrproper
-  make allmodconfig
-  make silentoldconfig
-  git checkout aa8032b
-  make allmodconfig
-  make silentoldconfig
+1) Summarized, the code reads:
 
-conf_write_autoconf() first calls conf_split_config() to generate the
-include/config/**.h hierarchy, then generates include/config/auto.conf.
-For some reason, conf_split_config() reads include/config/auto.conf,
-which may not exist yet or may be out of date. Yann, can anything break
-if we simply do not read that file from conf_split_config(), like this?
+        unsigned long max_delay;
 
-diff --git a/scripts/kconfig/confdata.c b/scripts/kconfig/confdata.c
-index c55c227..8c90835 100644
---- a/scripts/kconfig/confdata.c
-+++ b/scripts/kconfig/confdata.c
-@@ -829,16 +829,12 @@ next:
+        if (skb->len == sizeof(*mld))
+                max_delay = msecs_to_jiffies(ntohs(mld->mld_maxdelay));
+        else if (skb->len >= sizeof(*mld2q))
+                max_delay = mld2q->mld2q_mrc ? MLDV2_MRC(ntohs(mld2q->mld2q_mrc)) : 1;
+
+        br_multicast_query_received(br, port, !ipv6_addr_any(&ip6h->saddr),
+                                    max_delay);
  
- static int conf_split_config(void)
- {
--	const char *name;
- 	char path[PATH_MAX+1];
- 	char *s, *d, c;
- 	struct symbol *sym;
- 	struct stat sb;
- 	int res, i, fd;
- 
--	name = conf_get_autoconfig_name();
--	conf_read_simple(name, S_DEF_AUTO);
--
- 	if (chdir("include/config"))
- 		return 1;
- 
-Thanks,
-Michal
+So GCC notices that max_delay is still uninitialized if skb->len is
+neither equal to sizeof(*mld) nor equal or bigger than sizeof(*mld2q).
+To me it looks GCC is right here. At least, it is not obvious that
+max_delay will actually not be used in br_multicast_query_received() if
+it still is uninitialized.
+
+2) I'm entirely unfamiliar to this code. So I can't say how this warning
+might be silenced.
+
+
+Paul Bolle
+
