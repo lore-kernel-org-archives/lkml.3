@@ -1,122 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754056Ab3HDXth (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Aug 2013 19:49:37 -0400
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:21638 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754010Ab3HDXtd (ORCPT
+	id S1754065Ab3HEALk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Aug 2013 20:11:40 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:37180 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754024Ab3HEALj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Aug 2013 19:49:33 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AtwGADro/lF5LPxH/2dsb2JhbABagwaDLLc1hTmBHBd0giQBAQQBMgEjIwULCAMYCSUPBSUDIROICgW1KxaQAweDGXQDl1+RUIMpKoEuJA
-Date: Mon, 5 Aug 2013 09:48:24 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: =?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Vyacheslav Dubeyko <slava@dubeyko.com>,
-        Dhaval Giani <dgiani@mozilla.com>, Taras Glek <tglek@mozilla.com>,
-        linux-kernel@vger.kernel.org, vdjeric@mozilla.com,
-        glandium@mozilla.com, linux-ext4@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [RFC/PATCH 0/2] ext4: Transparent Decompression Support
-Message-ID: <20130804234824.GB7118@dastard>
-References: <1374699833.7083.2.camel@localhost>
- <20130724233628.GD3641@logfs.org>
- <51F14136.30409@mozilla.com>
- <51F1556A.20909@mozilla.com>
- <51FB2C87-854F-4250-9587-B5BBF4E85EE8@dubeyko.com>
- <51F17005.7030309@mozilla.com>
- <1374825683.3671.35.camel@slavad-ubuntu>
- <20130726132034.GB21977@logfs.org>
- <20130804003316.GA19781@thunk.org>
- <20130804022114.GA24655@logfs.org>
+	Sun, 4 Aug 2013 20:11:39 -0400
+Date: Sun, 4 Aug 2013 20:11:35 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Shaohua Li <shli@kernel.org>
+Subject: [GIT PULL] workqueue fixes for 3.11-rc4
+Message-ID: <20130805001135.GB12029@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130804022114.GA24655@logfs.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 03, 2013 at 10:21:14PM -0400, Jörn Engel wrote:
-> On Sat, 3 August 2013 20:33:16 -0400, Theodore Ts'o wrote:
-> > 
-> > P.P.S.  At least in theory, nothing of what I've described here has to
-> > be ext4 specific.  We could implement this in the VFS layer, at which
-> > point not only ext4 would benefit, but also btrfs, xfs, f2fs, etc.
-> 
-> Except for an inode bit that needs to be stored in the filesystem,
-> agreed.  The ugliness I see is in detecting how to treat the
-> filesystem at hand.
-> 
-> Filesystems with mandatory compression (jffs2, ubifs,...):
-> - Just write the file, nothing to do.
-> Filesystems with optional compression (logfs, ext2compr,...):
-> - You may or may not want to chattr between file creation and writing
->   the payload.
-> Filesystems without compression (ext[234], xfs,...):
-> - Just write the file, nothing can be done.
-> - Alternatively fall back to a userspace version.
-> Filesystems with optional uncompression (what is being proposed):
-> - Write the file in compressed form, close, chattr.
+Hello, Linus.
 
-There's way more than that on the filesystem specific side. For
-example, if we have to store a special flag to say it's a compressed
-file, then we have to be able to validate that flag is correctly set
-when doing filesystem checks (i.e. e2fsck, xfs_repair, etc), and
-probably also validate that the *data is in a decodable format*.
+A lockdep notation update so that nested work_on_cpu() invocations
+don't lead to spurious lockdep warnings and fix for an unbound attr
+bug which made what's shown in sysfs deviate from the actual ones.
+Both patches have pretty limited scope.
 
-That is, if the data is not in a compressed state and the flag is
-set, then that's a filesystem corruption. It might be metadata
-corruption, it might be data corruption, but either way it is
-something that we need to be able verify as being correctly set.
+The two patches are available in the following branch
 
-So, we need support for this new format in all the filesystem
-userspace tools as well.
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git for-3.11-fixes
 
-> I would like to see the compression side done in the kernel as well.
-> Then we can chattr right after creat() and, if that fails, either
-> proceed anyway or go to a userspace fallback.  All decisions can be
-> made early on and we don't have to share the format with lots of
-> userspace.
->
-> Sure, we still have to share the format with fsck and similar
-> filesystem tools.  But not with installers.
+for you to fetch changes up to 2865a8fb44cc32420407362cbda80c10fa09c6b2:
 
-Yup, you are effectively saying that the compression format becomes
-a fixed on-disk format defined by the VFS and that all filesystems
-have to be able to support in their userspace tools. That's *lots*
-of code that will need to share with, and so now you're talking
-about needing a library to match the kernel implementation. How do
-you propose shipping that so that userspace tools can keep up with
-the kernels that ship?
+  workqueue: copy workqueue_attrs with all fields (2013-08-01 08:36:40 -0400)
 
-Indeed, how are we going to test it? This is absolutely going to
-require xfstests support, which means we'll need an independent
-method of doing compression and decompression so we can validate
-that the kernel code is doing the right thing (e.g. xfs_io support).
-We'll need data validation tests, tests that validate mmap and
-direct IO behaviour, data corruption and fsck tests, seek tests,
-etc.
+Thanks.
 
-Then we'll need man pages, documentation in the kernel code about
-the compression format, etc.
+----------------------------------------------------------------
+Lai Jiangshan (1):
+      workqueue: allow work_on_cpu() to be called recursively
 
-The kernel compression/decompression code is the *easy bit*, and
-only about 10% of the work needed to bring this functionality in
-robust manner to the VFS....
+Shaohua Li (1):
+      workqueue: copy workqueue_attrs with all fields
 
-And, like all compression formats in the kernel, they last about 3
-months before someone comes up with some fancy new one that is 1%
-faster or smaller at something, and we end up with a proliferation
-of different supported compression formats. What's the plan to stop
-this insanity from occurring for such a VFS provided compression
-format?
+ kernel/workqueue.c | 44 ++++++++++++++++++++++++++++++++++----------
+ 1 file changed, 34 insertions(+), 10 deletions(-)
 
-Cheers,
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index f02c4a4..726adc8 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -2817,6 +2817,19 @@ already_gone:
+ 	return false;
+ }
+ 
++static bool __flush_work(struct work_struct *work)
++{
++	struct wq_barrier barr;
++
++	if (start_flush_work(work, &barr)) {
++		wait_for_completion(&barr.done);
++		destroy_work_on_stack(&barr.work);
++		return true;
++	} else {
++		return false;
++	}
++}
++
+ /**
+  * flush_work - wait for a work to finish executing the last queueing instance
+  * @work: the work to flush
+@@ -2830,18 +2843,10 @@ already_gone:
+  */
+ bool flush_work(struct work_struct *work)
+ {
+-	struct wq_barrier barr;
+-
+ 	lock_map_acquire(&work->lockdep_map);
+ 	lock_map_release(&work->lockdep_map);
+ 
+-	if (start_flush_work(work, &barr)) {
+-		wait_for_completion(&barr.done);
+-		destroy_work_on_stack(&barr.work);
+-		return true;
+-	} else {
+-		return false;
+-	}
++	return __flush_work(work);
+ }
+ EXPORT_SYMBOL_GPL(flush_work);
+ 
+@@ -3411,6 +3416,12 @@ static void copy_workqueue_attrs(struct workqueue_attrs *to,
+ {
+ 	to->nice = from->nice;
+ 	cpumask_copy(to->cpumask, from->cpumask);
++	/*
++	 * Unlike hash and equality test, this function doesn't ignore
++	 * ->no_numa as it is used for both pool and wq attrs.  Instead,
++	 * get_unbound_pool() explicitly clears ->no_numa after copying.
++	 */
++	to->no_numa = from->no_numa;
+ }
+ 
+ /* hash value of the content of @attr */
+@@ -3578,6 +3589,12 @@ static struct worker_pool *get_unbound_pool(const struct workqueue_attrs *attrs)
+ 	lockdep_set_subclass(&pool->lock, 1);	/* see put_pwq() */
+ 	copy_workqueue_attrs(pool->attrs, attrs);
+ 
++	/*
++	 * no_numa isn't a worker_pool attribute, always clear it.  See
++	 * 'struct workqueue_attrs' comments for detail.
++	 */
++	pool->attrs->no_numa = false;
++
+ 	/* if cpumask is contained inside a NUMA node, we belong to that node */
+ 	if (wq_numa_enabled) {
+ 		for_each_node(node) {
+@@ -4756,7 +4773,14 @@ long work_on_cpu(int cpu, long (*fn)(void *), void *arg)
+ 
+ 	INIT_WORK_ONSTACK(&wfc.work, work_for_cpu_fn);
+ 	schedule_work_on(cpu, &wfc.work);
+-	flush_work(&wfc.work);
++
++	/*
++	 * The work item is on-stack and can't lead to deadlock through
++	 * flushing.  Use __flush_work() to avoid spurious lockdep warnings
++	 * when work_on_cpu()s are nested.
++	 */
++	__flush_work(&wfc.work);
++
+ 	return wfc.ret;
+ }
+ EXPORT_SYMBOL_GPL(work_on_cpu);
 
-Dave.
 -- 
-Dave Chinner
-david@fromorbit.com
+tejun
