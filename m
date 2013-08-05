@@ -1,86 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755762Ab3HEXnN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 19:43:13 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:59419 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755069Ab3HEXnL (ORCPT
+	id S1755777Ab3HEXoi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 19:44:38 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:40517 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755100Ab3HEXoh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 19:43:11 -0400
-Message-ID: <1375746189.18481.23.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [PATCH] [SCSI] sg: Fix user memory corruption when SG_IO is
- interrupted by a signal
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Roland Dreier <roland@kernel.org>
-Cc: Jens Axboe <axboe@kernel.dk>, Doug Gilbert <dgilbert@interlog.com>,
-        Costa Sapuntzakis <costa@purestorage.com>,
-        =?ISO-8859-1?Q?J=F6rn?= Engel <joern@purestorage.com>,
+	Mon, 5 Aug 2013 19:44:37 -0400
+Date: Tue, 6 Aug 2013 00:44:02 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Rob Herring <robherring2@gmail.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Date: Mon, 05 Aug 2013 16:43:09 -0700
-In-Reply-To: <CAG4TOxP6H9isOHYJN=oKgHPna=wWqfOgg2Zh5cpvNFsgNkh8xA@mail.gmail.com>
-References: <1375740121-23350-1-git-send-email-roland@kernel.org>
-	 <1375745462.18481.22.camel@dabdike.int.hansenpartnership.com>
-	 <CAG4TOxP6H9isOHYJN=oKgHPna=wWqfOgg2Zh5cpvNFsgNkh8xA@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.8.3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH RFC 46/51] ARM: DMA-API: better handing of DMA masks
+	for coherent allocations
+Message-ID: <20130805234402.GZ23006@n2100.arm.linux.org.uk>
+References: <20130801213420.GL23006@n2100.arm.linux.org.uk> <E1V51EE-0006uO-C2@rmk-PC.arm.linux.org.uk> <CAL_JsqJH-T3bBNZvQZF2aWS18n5wfSzCMEi20-5e1RmYEfF3Ow@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAL_JsqJH-T3bBNZvQZF2aWS18n5wfSzCMEi20-5e1RmYEfF3Ow@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-08-05 at 16:38 -0700, Roland Dreier wrote:
-> On Mon, Aug 5, 2013 at 4:31 PM, James Bottomley
-> <James.Bottomley@hansenpartnership.com> wrote:
-> > I agree with the analysis.  The fix is a bit draconian, though.  A
-> > workqueue actually runs in a kernel thread and there's a simple test for
-> > that (!current->mm), so how about this instead (which is much less
-> > intrusive)
-> 
-> > ---
-> 
-> > diff --git a/fs/bio.c b/fs/bio.c
-> > index 94bbc04..e2ab39c 100644
-> > --- a/fs/bio.c
-> > +++ b/fs/bio.c
-> > @@ -1045,12 +1045,22 @@ static int __bio_copy_iov(struct bio *bio, struct bio_vec *iovecs,
-> >  int bio_uncopy_user(struct bio *bio)
-> >  {
-> >         struct bio_map_data *bmd = bio->bi_private;
-> > -       int ret = 0;
-> > +       struct bio_vec *bvec;
-> > +       int ret = 0, i;
+On Mon, Aug 05, 2013 at 05:43:47PM -0500, Rob Herring wrote:
+> On Thu, Aug 1, 2013 at 5:20 PM, Russell King
+> <rmk+kernel@arm.linux.org.uk> wrote:
+> > We need to start treating DMA masks as something which is specific to
+> > the bus that the device resides on, otherwise we're going to hit all
+> > sorts of nasty issues with LPAE and 32-bit DMA controllers in >32-bit
+> > systems, where memory is offset from PFN 0.
 > >
-> > -       if (!bio_flagged(bio, BIO_NULL_MAPPED))
-> > -               ret = __bio_copy_iov(bio, bmd->iovecs, bmd->sgvecs,
-> > -                                    bmd->nr_sgvecs, bio_data_dir(bio) == READ,
-> > -                                    0, bmd->is_our_pages);
-> > +       if (!bio_flagged(bio, BIO_NULL_MAPPED)) {
-> > +               /*
-> > +                * if we're in a workqueue, the request is orphaned, so
-> > +                * don't copy into the kernel address space, just free
-> > +                */
-> > +               if (current->mm)
-> > +                       ret = __bio_copy_iov(bio, bmd->iovecs, bmd->sgvecs,
-> > +                                            bmd->nr_sgvecs, bio_data_dir(bio) == READ,
-> > +                                            0, bmd->is_our_pages);
-> > +               else if (bmd->is_our_pages)
-> > +                       bio_for_each_segment_all(bvec, bio, i)
-> > +                               __free_page(bvec->bv_page);
-> > +       }
-> >         bio_free_map_data(bmd);
-> >         bio_put(bio);
-> >         return ret;
+> > In order to start doing this, we convert the DMA mask to a PFN using
+> > the device specific dma_to_pfn() macro.  This is the reverse of the
+> > pfn_to_dma() macro which is used to get the DMA address for the device.
+> >
+> > This gives us a PFN mask, which we can then check against the PFN
+> > limit of the DMA zone.
+> >
+> > Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+> > ---
+> >  arch/arm/mm/dma-mapping.c |   49 ++++++++++++++++++++++++++++++++++++++++----
+> >  arch/arm/mm/init.c        |    2 +
+> >  arch/arm/mm/mm.h          |    2 +
+> >  3 files changed, 48 insertions(+), 5 deletions(-)
 > 
-> Yes, looks reasonable -- I can't think of any reason why anyone would
-> ever want the bio code to copy to a random userspace address space.
+> I believe you missed handling __dma_alloc. I have a different fix than
+> what Andreas posted. I think DMA zone handling is broken in all cases
+> here. Feel free to combine this in to your patch if you agree.
+
+I was starting to wonder if whether anyone was going to look at those
+patches...
+
+> diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
+> index 7f9b179..3d9bdfb 100644
+> --- a/arch/arm/mm/dma-mapping.c
+> +++ b/arch/arm/mm/dma-mapping.c
+> @@ -651,7 +651,7 @@ static void *__dma_alloc(struct device *dev,
+> size_t size, dma_addr_t *handle,
+>         if (!mask)
+>                 return NULL;
 > 
-> Acked-by: Roland Dreier <roland@purestorage.com>
+> -       if (mask < 0xffffffffULL)
+> +       if (mask <= (u64)arm_dma_limit)
+>                 gfp |= GFP_DMA;
 
-You did all the work ... just replace this patch with your previous one
-and keep the original tags. (test it first, of course ...)
+I'm not convinced on that - I think you've missed the entire point in
+this patch series about what address space the 'mask' is in.  'mask' is
+in the device's address space, which may not be the same as the physical
+address space.
 
-James
+With LPAE, the two can become quite different address spaces with a
+4GB offset between them.  That's why we must stop the old-school
+thinking that DMA addresses and physical addresses are the same thing.
+We also need to stop doing stuff like passing dma_addr_t variables into
+phys_to_virt().  (All those short-cuts are going to break!)
 
+arm_dma_limit is the physical address space.  So, comparing the two
+makes no sense what so ever.
 
+However, the use of arm_dma_limit at the top of get_coherent_dma_mask()
+is a bug, I think that should just become something like a 24-bit
+constant mask, so the NULL device gets GFP_DMA allocations like they
+do on x86 for that case.
+
+I also think that 'mask' should be converted to a pfn at the location
+you point out before comparing with the amount of memory in the DMA
+zone.
