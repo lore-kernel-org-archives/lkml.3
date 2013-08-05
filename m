@@ -1,87 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754566Ab3HEFzX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 01:55:23 -0400
-Received: from mga01.intel.com ([192.55.52.88]:22103 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753695Ab3HEFzW convert rfc822-to-8bit (ORCPT
+	id S1754609Ab3HEF4H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 01:56:07 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:15663 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754220Ab3HEF4G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 01:55:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,816,1367996400"; 
-   d="scan'208";a="381287115"
-From: "Winkler, Tomas" <tomas.winkler@intel.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: "arnd@arndb.de" <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Shuah Khan <shuah.kh@samsung.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>
-Subject: RE: [char-misc 3.11 V2] mei: me: fix hardware reset flow
-Thread-Topic: [char-misc 3.11 V2] mei: me: fix hardware reset flow
-Thread-Index: AQHOjRXXO1QsMPwzCEeJTRhZuUOzTZl9E+OAgAAyL9CACKZbgIAAOXtg
-Date: Mon, 5 Aug 2013 05:55:18 +0000
-Message-ID: <5B8DA87D05A7694D9FA63FD143655C1B1AE7E13C@HASMSX106.ger.corp.intel.com>
-References: <1375182711-10253-1-git-send-email-tomas.winkler@intel.com>
- <20130730142209.GA28956@kroah.com>
- <5B8DA87D05A7694D9FA63FD143655C1B1AE783C8@HASMSX106.ger.corp.intel.com>
- <20130805052715.GC31808@kroah.com>
-In-Reply-To: <20130805052715.GC31808@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.184.70.13]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 5 Aug 2013 01:56:06 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Sun, 04 Aug 2013 22:54:28 -0700
+Date: Mon, 5 Aug 2013 13:56:09 +0800
+From: Richard Zhao <rizhao@nvidia.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "vinod.koul@intel.com" <vinod.koul@intel.com>,
+        "djbw@fb.com" <djbw@fb.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>
+Subject: Re: [PATCH] DMA: add help function to check whether dma controller
+ registered
+Message-ID: <20130805055607.GC31469@rizhao-lap>
+References: <1375423458-6868-1-git-send-email-rizhao@nvidia.com>
+ <51FC0FBF.9010107@wwwdotorg.org>
 MIME-Version: 1.0
+In-Reply-To: <51FC0FBF.9010107@wwwdotorg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
+On Sat, Aug 03, 2013 at 03:59:59AM +0800, Stephen Warren wrote:
+> On 08/02/2013 12:04 AM, Richard Zhao wrote:
+> > DMA client device driver usually needs to know at probe time whether
+> > dma controller has been registered to deffer probe. So add a help
+> > function of_dma_check_controller.
+> > 
+> > DMA request channel functions can also used to check it, but they
+> > are usually called at open() time.
 > 
-> On Tue, Jul 30, 2013 at 02:28:55PM +0000, Winkler, Tomas wrote:
-> >
-> > > Subject: Re: [char-misc 3.11 V2] mei: me: fix hardware reset flow
-> > >
-> > > On Tue, Jul 30, 2013 at 02:11:51PM +0300, Tomas Winkler wrote:
-> > > > Both H_IS and H_IE needs to be set to receive H_RDY interrupt
-> > > >
-> > > > 1. Assert H_IS to clear the interrupts during hw reset and use
-> > > > mei_me_reg_write instead of mei_hcsr_set as the later strips down
-> > > > the H_IS
-> > > >
-> > > > 2. fix interrupt disablement embarrassing typo
-> > > >   hcsr |= ~H_IE -> hcsr &= ~H_IE;
-> > > > this will remove the unwanted interrupt on power down
-> > > >
-> > > > 3. remove useless debug print outs
-> > > >
-> > > > Cc: Shuah Khan <shuah.kh@samsung.com>
-> > > > Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>
-> > > > Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
-> > > > ---
-> > > >
-> > > > V2: Fixed typo in Shuah email
-> > > >
-> > > > Hope this finally resolve the ME reset issue for all
-> > >
-> > > Can I get a "Tested-by:" from someone to ensure that it really does
-> > > solve the problem?
-> >
-> > Yes,  please wait for ack/test results. It works for me but
-> > unfortunately I cannot go over all  9 gens of  PCH and all their
-> > proliferations  where ME resides.
-> > I'm putting some effort to have better legacy HW testing coverage but I'm
-> not there yet.
+> > diff --git a/drivers/dma/of-dma.c b/drivers/dma/of-dma.c
+> > index e1c4d3b..b6828c1 100644
 > 
-> So what happened here with this patch, does it solve the reported
-> problems?
-
-Yes,  it does but apparently there is another resume issue not related to this fix.
+> > +int of_dma_check_controller(struct device *dev, const char *name)
+> 
+> 
+> > +	for (i = 0; i < count; i++) {
+> > +		if (of_dma_match_channel(np, name, i, &dma_spec))
+> > +			continue;
+> > +
+> > +		mutex_lock(&of_dma_lock);
+> > +		ofdma = of_dma_find_controller(&dma_spec);
+> > +		mutex_unlock(&of_dma_lock);
+> > +		of_node_put(dma_spec.np);
+> 
+> Do we need to add the following here:
+> 
+> if (ofdma)
+> 	break
+> 
+> To ensure that as soon as a successful match is found, the loop exits?
+> Otherwise, if there are multiple providers for that name, and the first
+> N are registered but the last isn't, this function will still return
+> failure.
+Right. Thanks.
+> 
+> > +	if (ofdma)
+> > +		return 0;
+> > +	else
+> > +		return -ENODEV;
+> 
+> That probably should be -EPROBE_DEFER?
+> 
+> Although, what about differentiating between "entry not found by
+> of_dma_match_channel" and "controller not yet probed"?
+I thought it might be called in non-probe functions.  If no people
+against it, I'll change it to EPROBE_DEFER.
 
 Thanks
-Tomas
-
-
+Richard
