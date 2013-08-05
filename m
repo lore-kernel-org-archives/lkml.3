@@ -1,63 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754303Ab3HESFs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 14:05:48 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:44277 "EHLO
+	id S1754553Ab3HESGF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 14:06:05 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:44285 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753706Ab3HESFq (ORCPT
+	with ESMTP id S1754233Ab3HESFr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 14:05:46 -0400
+	Mon, 5 Aug 2013 14:05:47 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: xen-devel@lists.xenproject.org
 Cc: linux-kernel@vger.kernel.org,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>
-Subject: [PATCH 1/3] MAINTAINERS: Remove Jeremy from the Xen subsystem.
-Date: Mon,  5 Aug 2013 14:05:35 -0400
-Message-Id: <1375725937-22930-2-git-send-email-konrad.wilk@oracle.com>
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>
+Subject: [PATCH 3/3] MAINTAINERS: Add in two extra co-maintainers of the Xen tree.
+Date: Mon,  5 Aug 2013 14:05:37 -0400
+Message-Id: <1375725937-22930-4-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1375725937-22930-1-git-send-email-konrad.wilk@oracle.com>
 References: <1375725937-22930-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jeremy has been a key person in making Linux work with Xen.
-He has been enjoying the last year working on something
-different so reflect that in the maintainers file.
+Both Boris and David have graciously volunteered to help in
+maintaining the Xen subsystem tree. Cementing this in the
+MAINTAINERS file so they are copied on Xen related patches.
 
-CC: Jeremy Fitzhardinge <jeremy@goop.org>
+CC: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+CC: David Vrabel <david.vrabel@citrix.com>
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- CREDITS     | 1 +
- MAINTAINERS | 1 -
- 2 files changed, 1 insertion(+), 1 deletion(-)
+ MAINTAINERS | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/CREDITS b/CREDITS
-index 206d0fc..646a0a9 100644
---- a/CREDITS
-+++ b/CREDITS
-@@ -1120,6 +1120,7 @@ D: author of userfs filesystem
- D: Improved mmap and munmap handling
- D: General mm minor tidyups
- D: autofs v4 maintainer
-+D: Xen subsystem
- S: 987 Alabama St
- S: San Francisco
- S: CA, 94110
 diff --git a/MAINTAINERS b/MAINTAINERS
-index defc053..440af74 100644
+index 785f56a..0161dad 100644
 --- a/MAINTAINERS
 +++ b/MAINTAINERS
-@@ -9237,7 +9237,6 @@ F:	drivers/media/tuners/tuner-xc2028.*
+@@ -9237,6 +9237,8 @@ F:	drivers/media/tuners/tuner-xc2028.*
  
  XEN HYPERVISOR INTERFACE
  M:	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
--M:	Jeremy Fitzhardinge <jeremy@goop.org>
- L:	xen-devel@lists.xensource.com (moderated for non-subscribers)
- L:	virtualization@lists.linux-foundation.org
++M:	Boris Ostrovsky <boris.ostrovsky@oracle.com>
++M:	David Vrabel <david.vrabel@citrix.com>
+ L:	xen-devel@lists.xenproject.org (moderated for non-subscribers)
  S:	Supported
+ F:	arch/x86/xen/
 -- 
 1.8.3.1
 
