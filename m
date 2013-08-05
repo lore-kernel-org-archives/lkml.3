@@ -1,241 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754671Ab3HEDjb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Aug 2013 23:39:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11806 "EHLO mx1.redhat.com"
+	id S1754680Ab3HEDn2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Aug 2013 23:43:28 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:51850 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754582Ab3HEDj3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Aug 2013 23:39:29 -0400
-Message-ID: <51FF1E26.6010707@redhat.com>
-Date: Mon, 05 Aug 2013 11:38:14 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S1754439Ab3HEDn1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Aug 2013 23:43:27 -0400
+Date: Sun, 4 Aug 2013 23:43:04 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@surriel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Zlatko Calusic <zcalusic@bitsync.net>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch v2 3/3] mm: page_alloc: fair zone allocator policy
+Message-ID: <20130805034304.GC23319@cmpxchg.org>
+References: <1375457846-21521-1-git-send-email-hannes@cmpxchg.org>
+ <1375457846-21521-4-git-send-email-hannes@cmpxchg.org>
+ <20130805011546.GI32486@bbox>
 MIME-Version: 1.0
-To: Jason Wang <jasowang@redhat.com>
-CC: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org, pbonzini@redhat.com, kvm@vger.kernel.org,
-        "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Doug Covelli <dcovelli@vmware.com>, Borislav Petkov <bp@suse.de>,
-        Dan Hecht <dhecht@vmware.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, devel@linuxdriverproject.org,
-        xen-devel@lists.xensource.com,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH V2 4/4] x86: correctly detect hypervisor
-References: <1374742475-2485-1-git-send-email-jasowang@redhat.com> <1374742475-2485-4-git-send-email-jasowang@redhat.com>
-In-Reply-To: <1374742475-2485-4-git-send-email-jasowang@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130805011546.GI32486@bbox>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/25/2013 04:54 PM, Jason Wang wrote:
-> We try to handle the hypervisor compatibility mode by detecting hypervisor
-> through a specific order. This is not robust, since hypervisors may implement
-> each others features.
->
-> This patch tries to handle this situation by always choosing the last one in the
-> CPUID leaves. This is done by letting .detect() returns a priority instead of
-> true/false and just re-using the CPUID leaf where the signature were found as
-> the priority (or 1 if it was found by DMI). Then we can just pick hypervisor who
-> has the highest priority. Other sophisticated detection method could also be
-> implemented on top.
->
-> Suggested by H. Peter Anvin and Paolo Bonzini.
->
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: H. Peter Anvin <hpa@zytor.com>
-> Cc: x86@kernel.org
-> Cc: K. Y. Srinivasan <kys@microsoft.com>
-> Cc: Haiyang Zhang <haiyangz@microsoft.com>
-> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> Cc: Jeremy Fitzhardinge <jeremy@goop.org>
-> Cc: Doug Covelli <dcovelli@vmware.com>
-> Cc: Borislav Petkov <bp@suse.de>
-> Cc: Dan Hecht <dhecht@vmware.com>
-> Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-> Cc: Marcelo Tosatti <mtosatti@redhat.com>
-> Cc: Gleb Natapov <gleb@redhat.com>
-> Cc: Paolo Bonzini <pbonzini@redhat.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: linux-kernel@vger.kernel.org
-> Cc: devel@linuxdriverproject.org
-> Cc: kvm@vger.kernel.org
-> Cc: xen-devel@lists.xensource.com
-> Cc: virtualization@lists.linux-foundation.org
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
-> ---
+On Mon, Aug 05, 2013 at 10:15:46AM +0900, Minchan Kim wrote:
+> Hello Hannes,
+> 
+> On Fri, Aug 02, 2013 at 11:37:26AM -0400, Johannes Weiner wrote:
+> > Each zone that holds userspace pages of one workload must be aged at a
+> > speed proportional to the zone size.  Otherwise, the time an
+> > individual page gets to stay in memory depends on the zone it happened
+> > to be allocated in.  Asymmetry in the zone aging creates rather
+> > unpredictable aging behavior and results in the wrong pages being
+> > reclaimed, activated etc.
+> > 
+> > But exactly this happens right now because of the way the page
+> > allocator and kswapd interact.  The page allocator uses per-node lists
+> > of all zones in the system, ordered by preference, when allocating a
+> > new page.  When the first iteration does not yield any results, kswapd
+> > is woken up and the allocator retries.  Due to the way kswapd reclaims
+> > zones below the high watermark while a zone can be allocated from when
+> > it is above the low watermark, the allocator may keep kswapd running
+> > while kswapd reclaim ensures that the page allocator can keep
+> > allocating from the first zone in the zonelist for extended periods of
+> > time.  Meanwhile the other zones rarely see new allocations and thus
+> > get aged much slower in comparison.
+> > 
+> > The result is that the occasional page placed in lower zones gets
+> > relatively more time in memory, even gets promoted to the active list
+> > after its peers have long been evicted.  Meanwhile, the bulk of the
+> > working set may be thrashing on the preferred zone even though there
+> > may be significant amounts of memory available in the lower zones.
+> > 
+> > Even the most basic test -- repeatedly reading a file slightly bigger
+> > than memory -- shows how broken the zone aging is.  In this scenario,
+> > no single page should be able stay in memory long enough to get
+> > referenced twice and activated, but activation happens in spades:
+> > 
+> >   $ grep active_file /proc/zoneinfo
+> >       nr_inactive_file 0
+> >       nr_active_file 0
+> >       nr_inactive_file 0
+> >       nr_active_file 8
+> >       nr_inactive_file 1582
+> >       nr_active_file 11994
+> >   $ cat data data data data >/dev/null
+> >   $ grep active_file /proc/zoneinfo
+> >       nr_inactive_file 0
+> >       nr_active_file 70
+> >       nr_inactive_file 258753
+> >       nr_active_file 443214
+> >       nr_inactive_file 149793
+> >       nr_active_file 12021
+> > 
+> > Fix this with a very simple round robin allocator.  Each zone is
+> > allowed a batch of allocations that is proportional to the zone's
+> > size, after which it is treated as full.  The batch counters are reset
+> > when all zones have been tried and the allocator enters the slowpath
+> > and kicks off kswapd reclaim.  Allocation and reclaim is now fairly
+> > spread out to all available/allowable zones:
+> > 
+> >   $ grep active_file /proc/zoneinfo
+> >       nr_inactive_file 0
+> >       nr_active_file 0
+> >       nr_inactive_file 174
+> >       nr_active_file 4865
+> >       nr_inactive_file 53
+> >       nr_active_file 860
+> >   $ cat data data data data >/dev/null
+> >   $ grep active_file /proc/zoneinfo
+> >       nr_inactive_file 0
+> >       nr_active_file 0
+> >       nr_inactive_file 666622
+> >       nr_active_file 4988
+> >       nr_inactive_file 190969
+> >       nr_active_file 937
+> > 
+> > When zone_reclaim_mode is enabled, allocations will now spread out to
+> > all zones on the local node, not just the first preferred zone (which
+> > on a 4G node might be a tiny Normal zone).
+> 
+> I really want to give Reviewed-by but before that, I'd like to clear out
+> my concern which didn't handle enoughly in previous iteration.
+> 
+> Let's assume system has normal zone : 800M High zone : 800M
+> and there are two parallel workloads.
+> 
+> 1. alloc_pages(GFP_KERNEL) : 800M
+> 2. alloc_pages(GFP_MOVABLE) + mlocked : 800M
+> 
+> With old behavior, allocation from both workloads is fulfilled happily
+> because most of allocation from GFP_KERNEL would be done in normal zone
+> while most of allocation from GFP_MOVABLE would be done in high zone.
+> There is no OOM kill in this scenario.
 
-Ping, any comments and acks for this series?
+If you have used ANY cache before, the movable pages will spill into
+lowmem.
 
-Thanks
->  arch/x86/include/asm/hypervisor.h |    2 +-
->  arch/x86/kernel/cpu/hypervisor.c  |   15 +++++++--------
->  arch/x86/kernel/cpu/mshyperv.c    |   13 ++++++++-----
->  arch/x86/kernel/cpu/vmware.c      |    8 ++++----
->  arch/x86/kernel/kvm.c             |    6 ++----
->  arch/x86/xen/enlighten.c          |    9 +++------
->  6 files changed, 25 insertions(+), 28 deletions(-)
+> With you change, normal zone would be fullfilled with GFP_KERNEL:400M
+> and GFP_MOVABLE:400M while high zone will have GFP_MOVABLE:400 + free 400M.
+> Then, someone would be OOM killed.
 >
-> diff --git a/arch/x86/include/asm/hypervisor.h b/arch/x86/include/asm/hypervisor.h
-> index 2d4b5e6..e42f758 100644
-> --- a/arch/x86/include/asm/hypervisor.h
-> +++ b/arch/x86/include/asm/hypervisor.h
-> @@ -33,7 +33,7 @@ struct hypervisor_x86 {
->  	const char	*name;
->  
->  	/* Detection routine */
-> -	bool		(*detect)(void);
-> +	uint32_t	(*detect)(void);
->  
->  	/* Adjust CPU feature bits (run once per CPU) */
->  	void		(*set_cpu_features)(struct cpuinfo_x86 *);
-> diff --git a/arch/x86/kernel/cpu/hypervisor.c b/arch/x86/kernel/cpu/hypervisor.c
-> index 8727921..36ce402 100644
-> --- a/arch/x86/kernel/cpu/hypervisor.c
-> +++ b/arch/x86/kernel/cpu/hypervisor.c
-> @@ -25,11 +25,6 @@
->  #include <asm/processor.h>
->  #include <asm/hypervisor.h>
->  
-> -/*
-> - * Hypervisor detect order.  This is specified explicitly here because
-> - * some hypervisors might implement compatibility modes for other
-> - * hypervisors and therefore need to be detected in specific sequence.
-> - */
->  static const __initconst struct hypervisor_x86 * const hypervisors[] =
->  {
->  #ifdef CONFIG_XEN_PVHVM
-> @@ -49,15 +44,19 @@ static inline void __init
->  detect_hypervisor_vendor(void)
->  {
->  	const struct hypervisor_x86 *h, * const *p;
-> +	uint32_t pri, max_pri = 0;
->  
->  	for (p = hypervisors; p < hypervisors + ARRAY_SIZE(hypervisors); p++) {
->  		h = *p;
-> -		if (h->detect()) {
-> +		pri = h->detect();
-> +		if (pri != 0 && pri > max_pri) {
-> +			max_pri = pri;
->  			x86_hyper = h;
-> -			printk(KERN_INFO "Hypervisor detected: %s\n", h->name);
-> -			break;
->  		}
->  	}
-> +
-> +	if (max_pri)
-> +		printk(KERN_INFO "Hypervisor detected: %s\n", x86_hyper->name);
->  }
->  
->  void init_hypervisor(struct cpuinfo_x86 *c)
-> diff --git a/arch/x86/kernel/cpu/mshyperv.c b/arch/x86/kernel/cpu/mshyperv.c
-> index 8f4be53..71a39f3 100644
-> --- a/arch/x86/kernel/cpu/mshyperv.c
-> +++ b/arch/x86/kernel/cpu/mshyperv.c
-> @@ -27,20 +27,23 @@
->  struct ms_hyperv_info ms_hyperv;
->  EXPORT_SYMBOL_GPL(ms_hyperv);
->  
-> -static bool __init ms_hyperv_platform(void)
-> +static uint32_t  __init ms_hyperv_platform(void)
->  {
->  	u32 eax;
->  	u32 hyp_signature[3];
->  
->  	if (!boot_cpu_has(X86_FEATURE_HYPERVISOR))
-> -		return false;
-> +		return 0;
->  
->  	cpuid(HYPERV_CPUID_VENDOR_AND_MAX_FUNCTIONS,
->  	      &eax, &hyp_signature[0], &hyp_signature[1], &hyp_signature[2]);
->  
-> -	return eax >= HYPERV_CPUID_MIN &&
-> -		eax <= HYPERV_CPUID_MAX &&
-> -		!memcmp("Microsoft Hv", hyp_signature, 12);
-> +	if (eax >= HYPERV_CPUID_MIN &&
-> +	    eax <= HYPERV_CPUID_MAX &&
-> +	    !memcmp("Microsoft Hv", hyp_signature, 12))
-> +		return HYPERV_CPUID_VENDOR_AND_MAX_FUNCTIONS;
-> +
-> +	return 0;
->  }
->  
->  static cycle_t read_hv_clock(struct clocksource *arg)
-> diff --git a/arch/x86/kernel/cpu/vmware.c b/arch/x86/kernel/cpu/vmware.c
-> index 7076878..628a059 100644
-> --- a/arch/x86/kernel/cpu/vmware.c
-> +++ b/arch/x86/kernel/cpu/vmware.c
-> @@ -93,7 +93,7 @@ static void __init vmware_platform_setup(void)
->   * serial key should be enough, as this will always have a VMware
->   * specific string when running under VMware hypervisor.
->   */
-> -static bool __init vmware_platform(void)
-> +static uint32_t __init vmware_platform(void)
->  {
->  	if (cpu_has_hypervisor) {
->  		unsigned int eax;
-> @@ -102,12 +102,12 @@ static bool __init vmware_platform(void)
->  		cpuid(CPUID_VMWARE_INFO_LEAF, &eax, &hyper_vendor_id[0],
->  		      &hyper_vendor_id[1], &hyper_vendor_id[2]);
->  		if (!memcmp(hyper_vendor_id, "VMwareVMware", 12))
-> -			return true;
-> +			return CPUID_VMWARE_INFO_LEAF;
->  	} else if (dmi_available && dmi_name_in_serial("VMware") &&
->  		   __vmware_platform())
-> -		return true;
-> +		return 1;
->  
-> -	return false;
-> +	return 0;
->  }
->  
->  /*
-> diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
-> index a96d32c..7817afd 100644
-> --- a/arch/x86/kernel/kvm.c
-> +++ b/arch/x86/kernel/kvm.c
-> @@ -498,11 +498,9 @@ void __init kvm_guest_init(void)
->  #endif
->  }
->  
-> -static bool __init kvm_detect(void)
-> +static uint32_t __init kvm_detect(void)
->  {
-> -	if (!kvm_para_available())
-> -		return false;
-> -	return true;
-> +	return kvm_cpuid_base();
->  }
->  
->  const struct hypervisor_x86 x86_hyper_kvm __refconst = {
-> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-> index 193097e..2fcaedc 100644
-> --- a/arch/x86/xen/enlighten.c
-> +++ b/arch/x86/xen/enlighten.c
-> @@ -1720,15 +1720,12 @@ static void __init xen_hvm_guest_init(void)
->  	xen_hvm_init_mmu_ops();
->  }
->  
-> -static bool __init xen_hvm_platform(void)
-> +static uint32_t __init xen_hvm_platform(void)
->  {
->  	if (xen_pv_domain())
-> -		return false;
-> -
-> -	if (!xen_cpuid_base())
-> -		return false;
-> +		return 0;
->  
-> -	return true;
-> +	return xen_cpuid_base();
->  }
->  
->  bool xen_hvm_need_lapic(void)
+> Of course, you can argue that if there is such workloads, he should make
+> sure it via lowmem_reseve but it's rather overkill if we consider more examples
+> because any movable pages couldn't be allocated from normal zone so memory
+> efficieny would be very bad.
 
+That's exactly what lowmem reserves are for: protect low memory from
+data that can sit in high memory, so that you have enough for data
+that can only be in low memory.
+
+If we find those reserves to be inadequate, we have to increase them.
+You can't assume you get more lowmem than the lowmem reserves, period.
+
+And while I don't mean to break highmem machines, I really can't find
+it in my heart to care about theoretical performance variations in
+highmem cornercases (which is already a redundancy).
+
+> As I said, I like your approach because I have no idea to handle unbalanced
+> aging problem better and we can get more benefits rather than lost by above
+> corner case but at least, I'd like to confirm what you think about
+> above problem before further steps. Maybe we can introduce "mlock with
+> newly-allocation or already-mapped page could be migrated to high memory zone"
+> when someone reported out? (we thougt mlocked page migration would be problem
+> RT latency POV but Peter confirmed it's no problem.)
+
+And you think increasing lowmem reserves would be overkill? ;-)
+
+These patches fix real page aging problems.  Making trade offs to work
+properly on as many setups as possible is one thing, but a highmem
+configuration where you need exactly 100% of lowmem and mlock 100% of
+highmem?
+
+Come on, Minchan...
