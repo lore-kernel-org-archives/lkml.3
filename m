@@ -1,49 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754527Ab3HEDRm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Aug 2013 23:17:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20043 "EHLO mx1.redhat.com"
+	id S1754620Ab3HEDSO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Aug 2013 23:18:14 -0400
+Received: from mail.ispras.ru ([83.149.199.45]:57295 "EHLO mail.ispras.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754229Ab3HEDRk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Aug 2013 23:17:40 -0400
-Message-ID: <1375672614.32485.9.camel@cr0>
-Subject: Re: [Cluster-devel] [Patch net-next v2 6/8] fs: use generic union
- inet_addr and helper functions
-From: Cong Wang <amwang@redhat.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: netdev@vger.kernel.org, linux-cifs@vger.kernel.org,
-        linux-nfs@vger.kernel.org, cluster-devel@redhat.com,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        linux-kernel@vger.kernel.org, Steve French <sfrench@samba.org>,
-        "David S. Miller" <davem@davemloft.net>
-Date: Mon, 05 Aug 2013 11:16:54 +0800
-In-Reply-To: <20130802103107.GA17244@infradead.org>
-References: <1375427674-21735-1-git-send-email-amwang@redhat.com>
-	 <1375427674-21735-7-git-send-email-amwang@redhat.com>
-	 <20130802103107.GA17244@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
+	id S1754347Ab3HEDSM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Aug 2013 23:18:12 -0400
+Message-ID: <51FF1973.7080807@ispras.ru>
+Date: Mon, 05 Aug 2013 07:18:11 +0400
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Jouni Malinen <j@w1.fi>, "John W. Linville" <linville@tuxdriver.com>
+CC: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
+Subject: Re: [PATCH] hostap: do not return positive number on failure path
+ in prism2_open()
+References: <1375671750-2835-1-git-send-email-khoroshilov@ispras.ru>
+In-Reply-To: <1375671750-2835-1-git-send-email-khoroshilov@ispras.ru>
+Content-Type: text/plain; charset=windows-1251
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-08-02 at 03:31 -0700, Christoph Hellwig wrote:
-> On Fri, Aug 02, 2013 at 03:14:32PM +0800, Cong Wang wrote:
-> > From: Cong Wang <amwang@redhat.com>
-> > 
-> > nfs and cifs define some helper functions for sockaddr,
-> > they can use the generic functions for union inet_addr too.
-> > 
-> > Since some dlm code needs to compare ->sin_port, introduce a
-> > generic function inet_addr_equal_strict() for it.
-> 
-> Would sound more useful to have a sockaddr_equal case that can be used
-> on any sockaddr.  For cases that no current user handles just return
-> false.
-> 
+Please ignore this mail, there is a misprint in signed-off line.
+I will resend the patch.
 
-Ok, since you and other people ask for it.
-
-Thanks.
+On 08/05/2013 07:02 AM, Alexey Khoroshilov wrote:
+> prism2_open() as an .ndo_open handler should not return positive numbers
+> in case of failure, but it does return 1 in a couple of places.
+>
+> Found by Linux Driver Verification project (linuxtesting.org).
+>
+> Signed-off-by: Alexey Khoroshilov <khoroshilorv@ispras.ru>
+> ---
+>  drivers/net/wireless/hostap/hostap_main.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/net/wireless/hostap/hostap_main.c b/drivers/net/wireless/hostap/hostap_main.c
+> index 15f0fad..e4f56ad 100644
+> --- a/drivers/net/wireless/hostap/hostap_main.c
+> +++ b/drivers/net/wireless/hostap/hostap_main.c
+> @@ -667,7 +667,7 @@ static int prism2_open(struct net_device *dev)
+>  	if (local->no_pri) {
+>  		printk(KERN_DEBUG "%s: could not set interface UP - no PRI "
+>  		       "f/w\n", dev->name);
+> -		return 1;
+> +		return -ENODEV;
+>  	}
+>  
+>  	if ((local->func->card_present && !local->func->card_present(local)) ||
+> @@ -682,7 +682,7 @@ static int prism2_open(struct net_device *dev)
+>  		printk(KERN_WARNING "%s: could not enable MAC port\n",
+>  		       dev->name);
+>  		prism2_close(dev);
+> -		return 1;
+> +		return -ENODEV;
+>  	}
+>  	if (!local->dev_enabled)
+>  		prism2_callback(local, PRISM2_CALLBACK_ENABLE);
 
