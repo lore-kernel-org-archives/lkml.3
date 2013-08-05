@@ -1,61 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754721Ab3HEGjG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 02:39:06 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:16882 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753923Ab3HEGjD (ORCPT
+	id S1754755Ab3HEGj1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 02:39:27 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:44449 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754704Ab3HEGjY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 02:39:03 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Sun, 04 Aug 2013 23:39:03 -0700
-Message-ID: <51FF487F.6000007@nvidia.com>
-Date: Mon, 5 Aug 2013 12:08:55 +0530
-From: Prashant Gaikwad <pgaikwad@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Mon, 5 Aug 2013 02:39:24 -0400
+Message-ID: <51FF4891.8060900@linux.vnet.ibm.com>
+Date: Mon, 05 Aug 2013 14:39:13 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Tuomas Tynkkynen <ttynkkynen@nvidia.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        "mturquette@linaro.org" <mturquette@linaro.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH] clk: tegra30: Don't wait for PLL_U lock bit
-References: <1375292551-7933-1-git-send-email-ttynkkynen@nvidia.com> <1375292551-7933-2-git-send-email-ttynkkynen@nvidia.com> <51F97BEA.7040006@wwwdotorg.org>
-In-Reply-To: <51F97BEA.7040006@wwwdotorg.org>
-X-NVConfidentiality: public
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: David Ahern <dsahern@gmail.com>
+CC: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Runzhen Wang <runzhen@linux.vnet.ibm.com>
+Subject: Re: [PATCH 7/9] perf kvm: option to print events that exceed a threshold
+References: <1375473947-64285-1-git-send-email-dsahern@gmail.com> <1375473947-64285-8-git-send-email-dsahern@gmail.com>
+In-Reply-To: <1375473947-64285-8-git-send-email-dsahern@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13080506-3864-0000-0000-0000096B12FB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 01 August 2013 02:34 AM, Stephen Warren wrote:
-> On 07/31/2013 11:42 AM, Tuomas Tynkkynen wrote:
->> The lock bit on PLL_U does not seem to be working correctly and
->> sometimes never gets set when waiting for the PLL to come up.
->> Remove the TEGRA_PLL_USE_LOCK flag to use a constant delay.
-> Peter, Prashant,
->
-> I think you said that the lock bits should work on Tegra30 (albeit they
-> don't on Tegra20)? Can you remind me if the do/don't?
->
-> If Peter and Prashant are OK with this patch, feel free to take my ack.
+On 08/03/2013 04:05 AM, David Ahern wrote:
+> This is useful to spot high latency blips.
 
-Hi Tuomas,
+Yes, it is a good idea.
 
-Sorry for the delayed response. Please make sure that avdd_usb_pll 
-regulator is enabled before enabling PLLU and utmip parameters are 
-configured properly.
-If this this regulator is not enabled then you will get this kind of 
-timeout when enabling PLLU.
+> 
+> Signed-off-by: David Ahern <dsahern@gmail.com>
+> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Jiri Olsa <jolsa@redhat.com>
+> Cc: Namhyung Kim <namhyung@kernel.org>
+> Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+> Cc: Runzhen Wang <runzhen@linux.vnet.ibm.com>
+> ---
+>  tools/perf/builtin-kvm.c |   25 +++++++++++++++++++++----
+>  tools/perf/perf.h        |    3 +++
+>  2 files changed, 24 insertions(+), 4 deletions(-)
+> 
+> diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
+> index 5c6e3cd..28afc05d 100644
+> --- a/tools/perf/builtin-kvm.c
+> +++ b/tools/perf/builtin-kvm.c
+> @@ -106,6 +106,7 @@ struct perf_kvm_stat {
+>  	u64 total_time;
+>  	u64 total_count;
+>  	u64 lost_events;
+> +	u64 threshold;
+> 
+>  	struct rb_root result;
+> 
+> @@ -470,7 +471,7 @@ static bool update_kvm_event(struct kvm_event *event, int vcpu_id,
+>  static bool handle_end_event(struct perf_kvm_stat *kvm,
+>  			     struct vcpu_event_record *vcpu_record,
+>  			     struct event_key *key,
+> -			     u64 timestamp)
+> +			     struct perf_sample *sample)
+>  {
+>  	struct kvm_event *event;
+>  	u64 time_begin, time_diff;
+> @@ -507,12 +508,24 @@ static bool handle_end_event(struct perf_kvm_stat *kvm,
+>  	vcpu_record->start_time = 0;
+> 
+>  	/* seems to happen once in a while during live mode */
+> -	if (timestamp < time_begin) {
+> +	if (sample->time < time_begin) {
+>  		pr_debug("End time before begin time; skipping event.\n");
+>  		return true;
+>  	}
+> 
+> -	time_diff = timestamp - time_begin;
+> +	time_diff = sample->time - time_begin;
+> +
+> +	if (kvm->threshold && time_diff > kvm->threshold) {
+> +		char decode[32];
+> +
+> +		kvm->events_ops->decode_key(kvm, &event->key, decode);
+> +		if (strcmp(decode, "HLT")) {
+> +			pr_info("%" PRIu64 " VM %d, vcpu %d: %s event took %" PRIu64 "usec\n",
+> +				 sample->time, sample->pid, vcpu_record->vcpu_id,
+> +				 decode, time_diff/1000);
+> +		}
 
-Thanks,
-Prashant
+Any reason to filter HLT out? it is too frequent? But the info will be missed if
+we're really interested in this event.
 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-tegra" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+It shows the info when the events is parsed which is not very readable and analyzable,
+can we only record and print the events that cost long time (handle-time > threshould)?
 
