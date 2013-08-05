@@ -1,48 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754557Ab3HETZl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 15:25:41 -0400
-Received: from mail-ve0-f179.google.com ([209.85.128.179]:47319 "EHLO
-	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754136Ab3HETZk (ORCPT
+	id S1754647Ab3HET3W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 15:29:22 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:48131 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754482Ab3HET3U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 15:25:40 -0400
+	Mon, 5 Aug 2013 15:29:20 -0400
+Date: Mon, 5 Aug 2013 22:28:55 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Rupesh Gujare <rupesh.gujare@atmel.com>
+Cc: devel@linuxdriverproject.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org
+Subject: Re: [PATCH 4/4] staging: ozwpan: Return correct hub status.
+Message-ID: <20130805192855.GN5051@mwanda>
+References: <1375724415-10801-1-git-send-email-rupesh.gujare@atmel.com>
+ <1375724415-10801-5-git-send-email-rupesh.gujare@atmel.com>
+ <20130805185643.GM5051@mwanda>
+ <51FFF66B.4020203@atmel.com>
 MIME-Version: 1.0
-In-Reply-To: <87siyo3qna.fsf@tassilo.jf.intel.com>
-References: <1375721715.22073.80.camel@gandalf.local.home>
-	<87siyo3qna.fsf@tassilo.jf.intel.com>
-Date: Mon, 5 Aug 2013 12:25:39 -0700
-X-Google-Sender-Auth: 5PYzgSrwjf082KL4ek7TsGp6010
-Message-ID: <CA+55aFxBQuj1+4XzuqWpBw8YHfguJ6Y42KO0weS9a9mpXQKq7g@mail.gmail.com>
-Subject: Re: [RFC] gcc feature request: Moving blocks into sections
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        gcc <gcc@gcc.gnu.org>, Ingo Molnar <mingo@kernel.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        David Daney <ddaney.cavm@gmail.com>,
-        Behan Webster <behanw@converseincode.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51FFF66B.4020203@atmel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 5, 2013 at 12:04 PM, Andi Kleen <andi@firstfloor.org> wrote:
-> Steven Rostedt <rostedt@goodmis.org> writes:
->
-> Can't you just use -freorder-blocks-and-partition?
->
-> This should already partition unlikely blocks into a
-> different section. Just a single one of course.
+On Mon, Aug 05, 2013 at 08:00:59PM +0100, Rupesh Gujare wrote:
+> Ok. I will rework on style nits.
 
-That's horrible. Not because of dwarf problems, but exactly because
-unlikely code isn't necessarily *that* unlikely, and normal unlikely
-code is reached with a small branch. Making it a whole different
-section breaks both of those.
+Do it in a follow on patch.  It's fine.
 
-Maybe some "really_unlikely()" would make it ok.
+regards,
+dan carpenter
 
-                  Linus
