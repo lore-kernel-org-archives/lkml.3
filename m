@@ -1,53 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754553Ab3HESGF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 14:06:05 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:44285 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754233Ab3HESFr (ORCPT
+	id S1754229Ab3HESHx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 14:07:53 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:40791 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753843Ab3HESHv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 14:05:47 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: xen-devel@lists.xenproject.org
-Cc: linux-kernel@vger.kernel.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>
-Subject: [PATCH 3/3] MAINTAINERS: Add in two extra co-maintainers of the Xen tree.
-Date: Mon,  5 Aug 2013 14:05:37 -0400
-Message-Id: <1375725937-22930-4-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1375725937-22930-1-git-send-email-konrad.wilk@oracle.com>
-References: <1375725937-22930-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Mon, 5 Aug 2013 14:07:51 -0400
+Message-ID: <51FFE9F0.1000100@samsung.com>
+Date: Tue, 06 Aug 2013 03:07:44 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
+MIME-Version: 1.0
+To: Lee Jones <lee.jones@linaro.org>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Tomasz Figa <t.figa@samsung.com>, arnd@arndb.de,
+        linus.walleij@stericsson.com, Kukjin Kim <kgene.kim@samsung.com>,
+        linux-samsung-soc@vger.kernel.org
+Subject: Re: [PATCH v3 07/22] ARM: dts: Remove '0x's from Exynos4210 DTSI
+ file
+References: <1374490361-25769-1-git-send-email-lee.jones@linaro.org> <1374490361-25769-7-git-send-email-lee.jones@linaro.org> <20130724150937.GO26801@laptop>
+In-Reply-To: <20130724150937.GO26801@laptop>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Both Boris and David have graciously volunteered to help in
-maintaining the Xen subsystem tree. Cementing this in the
-MAINTAINERS file so they are copied on Xen related patches.
+On 07/25/13 00:09, Lee Jones wrote:
+> ... for the sake of consistency and assumed convention.
+>
+> Cc: Kukjin Kim<kgene.kim@samsung.com>
+> Cc: linux-samsung-soc@vger.kernel.org
+> Signed-off-by: Lee Jones<lee.jones@linaro.org>
+>
+> diff --git a/arch/arm/boot/dts/exynos4210.dtsi b/arch/arm/boot/dts/exynos4210.dtsi
+> index b7f358a..53e2527 100644
+> --- a/arch/arm/boot/dts/exynos4210.dtsi
+> +++ b/arch/arm/boot/dts/exynos4210.dtsi
+> @@ -72,7 +72,7 @@
+>                  };
+    ^^^^^^^^^^^^^^^^
+>          };
+    ^^^^^^^^
+>
+> -       clock: clock-controller@0x10030000 {
+    ^^^^^^^^
+> +       clock: clock-controller@10030000 {
+    ^^^^^^^^
+>                  compatible = "samsung,exynos4210-clock";
+    ^^^^^^^^^^^^^^^^
+>                  reg =<0x10030000 0x20000>;
+    ^^^^^^^^^^^^^^^^
+>                  #clock-cells =<1>;
+    ^^^^^^^^^^^^^^^^
 
-CC: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-CC: David Vrabel <david.vrabel@citrix.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- MAINTAINERS | 2 ++
- 1 file changed, 2 insertions(+)
+BTW, should be tab at the mark '^' not white space :(
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 785f56a..0161dad 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -9237,6 +9237,8 @@ F:	drivers/media/tuners/tuner-xc2028.*
- 
- XEN HYPERVISOR INTERFACE
- M:	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-+M:	Boris Ostrovsky <boris.ostrovsky@oracle.com>
-+M:	David Vrabel <david.vrabel@citrix.com>
- L:	xen-devel@lists.xenproject.org (moderated for non-subscribers)
- S:	Supported
- F:	arch/x86/xen/
--- 
-1.8.3.1
-
+- Kukjin
