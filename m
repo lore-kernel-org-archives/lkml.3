@@ -1,73 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753612Ab3HEQY5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 12:24:57 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:45709 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752362Ab3HEQYz convert rfc822-to-8bit (ORCPT
+	id S1753957Ab3HEQZM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 12:25:12 -0400
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:40320 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752922Ab3HEQZI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 12:24:55 -0400
-Message-ID: <51FFD1DF.9000907@arm.com>
-Date: Mon, 05 Aug 2013 17:25:03 +0100
-From: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Mon, 5 Aug 2013 12:25:08 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: Wei Yongjun <weiyj.lk@gmail.com>
+Cc: nm@ti.com, anton@enomsg.org, dwmw2@infradead.org,
+        andrii.tseglytskyi@ti.com, jean.pihet@newoldbits.com, tony@atomide.com,
+        yongjun_wei@trendmicro.com.cn, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: Re: [PATCH RESEND] PM / AVS: SmartReflex: remove redundant dev_err call in omap_sr_probe()
+References: <CAPgLHd_K37Uf420FRiEkiCZQiL9bAdiE2_qG4dp7WmQRaCnDqQ@mail.gmail.com>
+	<20130626130641.GA26920@kahuna> <877gh8nbpm.fsf@linaro.org>
+	<CAPgLHd-toHh8DcooiVz7222kiE-F+xsj1nai2hNEHo95X-3+Ow@mail.gmail.com>
+Date: Mon, 05 Aug 2013 09:25:04 -0700
+In-Reply-To: <CAPgLHd-toHh8DcooiVz7222kiE-F+xsj1nai2hNEHo95X-3+Ow@mail.gmail.com>
+	(Wei Yongjun's message of "Fri, 12 Jul 2013 12:59:40 +0800")
+Message-ID: <87r4e8gl5r.fsf@linaro.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-CC: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>
-Subject: Re: [PATCH v2 0/3] ARM/ARM64 architected timer updates
-References: <1371575223-21702-1-git-send-email-Sudeep.KarkadaNagesha@arm.com> <1374492082-13686-1-git-send-email-Sudeep.KarkadaNagesha@arm.com> <51FB7CB8.6080103@arm.com> <51FB8081.6040501@linaro.org> <51FB81FB.3060709@arm.com> <51FBA21D.5010308@linaro.org>
-In-Reply-To: <51FBA21D.5010308@linaro.org>
-X-OriginalArrivalTime: 05 Aug 2013 16:24:52.0932 (UTC) FILETIME=[5087D840:01CE91F8]
-X-MC-Unique: 113080517245302501
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
+Wei Yongjun <weiyj.lk@gmail.com> writes:
 
-On 02/08/13 13:12, Daniel Lezcano wrote:
-> On 08/02/2013 11:55 AM, Sudeep KarkadaNagesha wrote:
->> On 02/08/13 10:48, Daniel Lezcano wrote:
->>> On 08/02/2013 11:32 AM, Sudeep KarkadaNagesha wrote:
->>>> Hi Daniel,
->>>>
->>>> On 22/07/13 12:21, Sudeep KarkadaNagesha wrote:
->>>>> From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
->>>>>
->>>>> This patch series adds support to configure the rate and enable the event
->>>>> stream for architected timer. Since the timer control register is reset to
->>>>> zero on warm boot, CPU PM notifier is added to re-initialse it.
->>>>>
->>>> This series is required to support TC2 cpuidle.
->>>> It will be good if you can review and get this in for v3.12
->>>
->>> So do you want me to take the series through my tree ?
->>>
->> Yes I believe it has to go through your(ARM specific clocksource?) tree,
->> but currently there's a conflict with another bug fix(that should come
->> from rmk as -rc fix)
->> (Commit ab8d46c0 "ARM: 7788/1: elf: fix lpae hwcap feature reporting in
->> proc/cpuinfo" in rmk -fixes)
-> 
-> IMO, you should rebase this patch on top of tips/core, I will apply the
-> series and when the rmk fix hits this branch (through tips/urgent), that
-> will be up to the maintainer to resolve this conflict.
-> 
+> There is a error message within devm_ioremap_resource
+> already, so remove the dev_err call to avoid redundant
+> error message.
+>
+> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> Acked-by: Nishanth Menon <nm@ti.com>
+> ---
+> cc to linux-pm with Nishanth Menon's ACK
 
-The fix with which this series was conflicting is already in v3.11-rc4
-So can I send pull request based on v3.11-rc4 or if you prefer any
-particular tree, can you provide details please ?
+Thanks, queued for v3.12.
 
-Regards,
-Sudeep
+Kevin
 
+> ---
+>  drivers/power/avs/smartreflex.c | 4 +---
+>  1 file changed, 1 insertion(+), 3 deletions(-)
+>
+> diff --git a/drivers/power/avs/smartreflex.c b/drivers/power/avs/smartreflex.c
+> index db9973b..c26acfc 100644
+> --- a/drivers/power/avs/smartreflex.c
+> +++ b/drivers/power/avs/smartreflex.c
+> @@ -871,10 +871,8 @@ static int __init omap_sr_probe(struct platform_device *pdev)
+>  
+>  	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>  	sr_info->base = devm_ioremap_resource(&pdev->dev, mem);
+> -	if (IS_ERR(sr_info->base)) {
+> -		dev_err(&pdev->dev, "%s: ioremap fail\n", __func__);
+> +	if (IS_ERR(sr_info->base))
+>  		return PTR_ERR(sr_info->base);
+> -	}
+>  
+>  	irq = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+>  
