@@ -1,68 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753292Ab3HEQjg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 12:39:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28803 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752041Ab3HEQje (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 12:39:34 -0400
-Message-ID: <51FFD5B0.9080000@redhat.com>
-Date: Mon, 05 Aug 2013 18:41:20 +0200
-From: Laszlo Ersek <lersek@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130621 Thunderbird/17.0.7
+	id S1753720Ab3HEQjt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 12:39:49 -0400
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:47386 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753321Ab3HEQjq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 12:39:46 -0400
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: edk2-devel@lists.sourceforge.net, David Woodhouse <dwmw2@infradead.org>,
-        linux-efi@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
-        Gleb Natapov <gleb@redhat.com>, Matthew Garrett <mjg59@srcf.ucam.org>
-Subject: Re: [edk2] Corrupted EFI region
-References: <20130731205431.GG4724@pd.tnic> <1375307727.22084.103.camel@shinybook.infradead.org> <20130801164927.GA7445@pd.tnic> <51FF8C14.2070405@redhat.com> <20130805130258.GB31845@pd.tnic> <51FFAB13.4090603@redhat.com> <20130805140306.GD31845@pd.tnic> <51FFB660.4060400@redhat.com> <20130805144010.GE31845@pd.tnic> <51FFC19A.1020204@redhat.com> <20130805161247.GF31845@pd.tnic>
-In-Reply-To: <20130805161247.GF31845@pd.tnic>
+In-Reply-To: <1372781307-7906-1-git-send-email-grundler@chromium.org>
+References: <1372781307-7906-1-git-send-email-grundler@chromium.org>
+Date: Mon, 5 Aug 2013 09:39:45 -0700
+X-Google-Sender-Auth: _MLt0fTwCkfDRquJVOpmFxmAXDk
+Message-ID: <CANEJEGu2B9FUDLn5EOPm1hOau1Y+s6rFZy3WVFQCO=3T6acgmg@mail.gmail.com>
+Subject: Re: [PATCH] iommu/exynos: remove dead code (set_prefbuf)
+From: Grant Grundler <grundler@chromium.org>
+To: Linux IOMMU <iommu@lists.linux-foundation.org>,
+        KyongHo Cho <pullip.cho@samsung.com>
+Cc: Joerg Roedel <joro@8bytes.org>, Sachin Kamat <sachin.kamat@linaro.org>,
+        Jiri Kosina <jkosina@suse.cz>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/05/13 18:12, Borislav Petkov wrote:
-> On Mon, Aug 05, 2013 at 05:15:38PM +0200, Laszlo Ersek wrote:
->> The current implementation (how pointers are converted) probably doesn't
->> accommodate a second call.
->>
->> Of course you want to know why SetVirtualAddressMap() was designed like
->> that... I didn't participate in the design so I don't know :)
->>
->> But, as I said, a kernel directly executing another kernel is an
->> unexpected idea. IMHO the second kernel in question doesn't fit the UEFI
->> phases at all. The OS booted like that (ie. the OS whose kernel is the
->> 2nd (=kexec) kernel) never goes through SEC, PEI, DXE, BDS.
-> 
-> Yes, the thing is, imposing unnecessary restrictions is very
-> counterproductive. And kexec is just an example here - if
-> SetVirtualAddressMap was callable an arbitrary number of times, this
-> whole work I'm doing is unnecessary. So I'm jumping through hoops just
-> to accomodate a braindead design.
+Ping?
 
-I doubt it was a deliberate restriction. More like, there was no
-incentive (... that the designers were aware of) *not* to design
-something easy (or easier) to implement. Your use case has come later.
+Adding linux-iommu ML.
 
-> This is what I cannot fathom in the face of people praising UEFI as the
-> solution to all problems.
+thanks,
+grant
 
-I agree that such people exist. I'm not one of them.
-
->> BTW there's another point I'd like to ask about -- you're saying you
->> see the region corruption during the same boot, from the first (early)
->> memmap dump to the second one (when just about to enter virtual mode).
->> But, is this one boot the very first boot, or the kexec one?
-> 
-> No, kexec is not even involved yet. If you look at the timestamps,
-> there's 0.005 seconds between the two dumps during the *same* kernel
-> booting on the machine, baremetal, straight from grub.
-
-I didn't realize the timestamps survive kexec. (As far as I remember the
-kernels I played with kexec on didn't have the automatic timestamps yet
-in dmesg, but I might have messed up just as well...)
-
-Laszlo
+On Tue, Jul 2, 2013 at 9:08 AM, Grant Grundler <grundler@chromium.org> wrote:
+> exynos_sysmmu_set_prefbuf() is not called any where.
+>
+> Signed-off-by: Grant Grundler <grundler@chromium.org>
+> ---
+>  drivers/iommu/exynos-iommu.c | 44 --------------------------------------------
+>  1 file changed, 44 deletions(-)
+>
+> diff --git a/drivers/iommu/exynos-iommu.c b/drivers/iommu/exynos-iommu.c
+> index 3f32d64..0740189 100644
+> --- a/drivers/iommu/exynos-iommu.c
+> +++ b/drivers/iommu/exynos-iommu.c
+> @@ -247,50 +247,6 @@ static void __sysmmu_set_prefbuf(void __iomem *sfrbase, unsigned long base,
+>         __raw_writel(size - 1 + base,  sfrbase + REG_PB0_EADDR + idx * 8);
+>  }
+>
+> -void exynos_sysmmu_set_prefbuf(struct device *dev,
+> -                               unsigned long base0, unsigned long size0,
+> -                               unsigned long base1, unsigned long size1)
+> -{
+> -       struct sysmmu_drvdata *data = dev_get_drvdata(dev->archdata.iommu);
+> -       unsigned long flags;
+> -       int i;
+> -
+> -       BUG_ON((base0 + size0) <= base0);
+> -       BUG_ON((size1 > 0) && ((base1 + size1) <= base1));
+> -
+> -       read_lock_irqsave(&data->lock, flags);
+> -       if (!is_sysmmu_active(data))
+> -               goto finish;
+> -
+> -       for (i = 0; i < data->nsfrs; i++) {
+> -               if ((readl(data->sfrbases[i] + REG_MMU_VERSION) >> 28) == 3) {
+> -                       if (!sysmmu_block(data->sfrbases[i]))
+> -                               continue;
+> -
+> -                       if (size1 == 0) {
+> -                               if (size0 <= SZ_128K) {
+> -                                       base1 = base0;
+> -                                       size1 = size0;
+> -                               } else {
+> -                                       size1 = size0 -
+> -                                               ALIGN(size0 / 2, SZ_64K);
+> -                                       size0 = size0 - size1;
+> -                                       base1 = base0 + size0;
+> -                               }
+> -                       }
+> -
+> -                       __sysmmu_set_prefbuf(
+> -                                       data->sfrbases[i], base0, size0, 0);
+> -                       __sysmmu_set_prefbuf(
+> -                                       data->sfrbases[i], base1, size1, 1);
+> -
+> -                       sysmmu_unblock(data->sfrbases[i]);
+> -               }
+> -       }
+> -finish:
+> -       read_unlock_irqrestore(&data->lock, flags);
+> -}
+> -
+>  static void __set_fault_handler(struct sysmmu_drvdata *data,
+>                                         sysmmu_fault_handler_t handler)
+>  {
+> --
+> 1.8.3
+>
