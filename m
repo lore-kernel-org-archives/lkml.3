@@ -1,45 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755048Ab3HEHkw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 03:40:52 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:42697 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754728Ab3HEHku (ORCPT
+	id S1755059Ab3HEHoN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 03:44:13 -0400
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:51825 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754933Ab3HEHoL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 03:40:50 -0400
-X-AuditID: 9c930197-b7bfbae000000e88-a2-51ff5701510f
-Date: Mon, 5 Aug 2013 16:41:00 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Minchan Kim <minchan@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH 2/4] mm, migrate: allocation new page lazyily in
- unmap_and_move()
-Message-ID: <20130805074100.GE27240@lge.com>
-References: <1375409279-16919-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1375409279-16919-2-git-send-email-iamjoonsoo.kim@lge.com>
- <20130802194102.GV715@cmpxchg.org>
+	Mon, 5 Aug 2013 03:44:11 -0400
+Date: Mon, 5 Aug 2013 08:44:05 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: swarren@wwwdotorg.org, linus.walleij@linaro.org, ian.campbell@citrix.com,
+        rob.herring@calxeda.com, pawel.moll@arm.com, mark.rutland@arm.com,
+        rob@landley.net, sameo@linux.intel.com, grant.likely@linaro.org,
+        broonie@kernel.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        gg@slimlogic.co.uk, kishon@ti.com
+Subject: Re: [PATCH V2 3/3] pinctrl: palmas: add pincontrol driver
+Message-ID: <20130805074405.GA29942@lee--X1>
+References: <1375688014-6117-1-git-send-email-ldewangan@nvidia.com>
+ <1375688014-6117-4-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20130802194102.GV715@cmpxchg.org>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1375688014-6117-4-git-send-email-ldewangan@nvidia.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> get_new_page() sets up result to communicate error codes from the
-> following checks.  While the existing ones (page freed and thp split
-> failed) don't change rc, somebody else might add a condition whose
-> error code should be propagated back into *result but miss it.
+On Mon, 05 Aug 2013, Laxman Dewangan wrote:
+
+> TI Palmas series Power Management IC have multiple pins which can be
+> configured for different functionality. This pins can be configured
+> for different function. Also their properties like pull up/down,
+> open drain enable/disable are configurable.
 > 
-> Please leave get_new_page() where it is.  The win from this change is
-> not big enough to risk these problems.
+> Add support for pincontrol driver Palmas series device like TPS65913,
+> TPS80036. The driver supports to be register from DT only.
+> 
+> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+> ---
+> Changes from V1: 
+> - Use pinconf generic properties to define the Palmas pincontrol nodes.
+> - Nit and cleanups, typo fixes, rephrasing the sentences etc.
+> - Use pin specific APIs for setting pin configuration rather than group
+>   specific.
+> 
+>  .../devicetree/bindings/pinctrl/pinctrl-palmas.txt |  107 ++
+>  drivers/pinctrl/Kconfig                            |   10 +
+>  drivers/pinctrl/Makefile                           |    1 +
+>  drivers/pinctrl/pinctrl-palmas.c                   | 1085 ++++++++++++++++++++
+>  include/linux/mfd/palmas.h                         |   35 +-
 
-Hello, Johannes.
+For the MFD stuff:
 
-Okay. You are right. I will omit this patch next time.
+Acked-by: Lee Jones <lee.jones@linaro.org>
 
-Thanks.
+>  5 files changed, 1227 insertions(+), 11 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/pinctrl/pinctrl-palmas.txt
+>  create mode 100644 drivers/pinctrl/pinctrl-palmas.c
+
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
