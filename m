@@ -1,97 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754506Ab3HEVRg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 17:17:36 -0400
-Received: from mail-yh0-f54.google.com ([209.85.213.54]:35962 "EHLO
-	mail-yh0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754111Ab3HEVRf (ORCPT
+	id S1754541Ab3HEVTT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 17:19:19 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57505 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754111Ab3HEVTR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 17:17:35 -0400
-Date: Mon, 5 Aug 2013 17:17:37 -0400 (EDT)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: linux-kernel@vger.kernel.org
-cc: Will Deacon <will.deacon@arm.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        trinity@vger.kernel.org
-Subject: Re: perf,arm -- oops in validate_event
-In-Reply-To: <alpine.DEB.2.10.1308051622270.28589@vincent-weaver-1.um.maine.edu>
-Message-ID: <alpine.DEB.2.10.1308051711080.31327@vincent-weaver-1.um.maine.edu>
-References: <alpine.DEB.2.10.1308051622270.28589@vincent-weaver-1.um.maine.edu>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Mon, 5 Aug 2013 17:19:17 -0400
+Date: Mon, 5 Aug 2013 14:18:21 -0700
+Message-Id: <201308052118.r75LILIt008981@terminus.zytor.com>
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [GIT PULL] x86 fixes for v3.11-rc5
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="UTF-8"
+Cc: andrew.cooper3@citrix.com, bp@suse.de, ddutile@redhat.com,
+        dzickus@redhat.com, hpa@linux.intel.com, hpa@zytor.com,
+        jbeulich@suse.com, joro@8bytes.org, just.for.lkml@googlemail.com,
+        linux-kernel@vger.kernel.org, malcolm.crossley@citrix.com,
+        matt.fleming@intel.com, mingo@kernel.org, nhorman@tuxdriver.com,
+        prarit@redhat.com, roy.franz@linaro.org, stable@vger.kernel.org,
+        tglx@linutronix.de
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 05 Aug 2013 14:18:27 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 5 Aug 2013, Vince Weaver wrote:
+Hi Linus,
 
-> My perf_fuzzer quickly triggers this oops on my ARM Cortex A9 pandaboard
-> running Linux 3.11-rc4.
-> 
-> Below is the oops, I've attached a simple C test case that triggers the 
-> bug.
+The following changes since commit b3a3a9c441e2c8f6b6760de9331023a7906a4ac6:
 
-Also, if it helps, the disassembled code in question.
+  Merge tag 'trace-3.11-rc2' of git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace (2013-07-22 19:07:24 -0700)
 
-It looks like in validate_event() we do
+are available in the git repository at:
 
-        struct arm_pmu *armpmu = to_arm_pmu(event->pmu);
-        ...
-        return armpmu->get_event_idx(hw_events, event) >= 0;
 
-armpmu is read into r3, and somehow the value at the offset of
-armpmu->get_event_idx is either -1 or 0, so when it does a "blx" 
-branch to the address at this offset we get the ooops.
+  git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-urgent-for-linus
 
-  c001bf8c:       e3120010        tst     r2, #16
-  c001bf90:       0a000004        beq     c001bfa8 <validate_event+0x48>
-  c001bf94:       e5933070        ldr     r3, [r3, #112]  ; 0x70
-* c001bf98:       e12fff33        blx     r3
-  c001bf9c:       e1e00000        mvn     r0, r0
+for you to fetch changes up to d982057f631df04f8d78321084a1a71ca51f3364:
 
-I'm having trouble tracing the code back past that, and I don't have time
-to start adding printk's and recompiling right now.
+  x86, amd, microcode: Fix error path in apply_microcode_amd() (2013-07-31 08:37:14 -0700)
 
-Vince
+----------------------------------------------------------------
+H.J. Lu (1):
+      x86, fpu: correct the asm constraints for fxsave, unbreak mxcsr.daz
 
-> [ 8110.698669] Unable to handle kernel paging request at virtual address fffffffe
-> [ 8110.706390] pgd = ecd88000
-> [ 8110.708251] [fffffffe] *pgd=ae7f6821, *pte=00000000, *ppte=00000000
-> [ 8110.715820] Internal error: Oops: 80000007 [#2] SMP ARM
-> [ 8110.716033] Modules linked in: bluetooth snd_soc_omap_hdmi omapdss snd_soc_omap_abe_twl6040 snd_soc_twl6040 snd_soc_omap_hdmi_card snd_soc_omap snd_soc_omap_mcpdm snd_soc_omap_mcbsp snd_soc_core snd_compress regmap_spi snd_pcm snd_page_alloc snd_timer snd soundcore
-> [ 8110.743133] CPU: 1 PID: 28431 Comm: perf_fuzzer Tainted: G      D      3.11.0-rc4 #4
-> [ 8110.743133] task: edab8100 ti: ece5c000 task.ti: ece5c000
-> [ 8110.760681] PC is at 0xfffffffe
-> [ 8110.760681] LR is at validate_event+0x3c/0x50
-> [ 8110.766906] pc : [<fffffffe>]    lr : [<c001bf9c>]    psr: 20000033
-> [ 8110.766906] sp : ece5de40  ip : edfbd960  fp : edfbd800
-> [ 8110.775238] r10: 00000000  r9 : 00000000  r8 : ed8c3ec0
-> [ 8110.781066] r7 : ed8c3f5c  r6 : edfbd800  r5 : ecaed000  r4 : ece5de4c
-> [ 8110.791107] r3 : ffffffff  r2 : 000000d9  r1 : ecaed000  r0 : ece5de50
-> [ 8110.791107] Flags: nzCv  IRQs on  FIQs on  Mode SVC_32  ISA Thumb  Segment user
-> [ 8110.803924] Control: 10c5387d  Table: acd8804a  DAC: 00000015
-> [ 8110.814239] Process perf_fuzzer (pid: 28431, stack limit = 0xece5c240)
-> [ 8110.821197] Stack: (0xece5de40 to 0xece5e000)
-> [ 8110.821197] de40: 00000000 c001c280 00000002 00000000 00000001 ece5de4c 00000000 c00bf058
-> [ 8110.831085] de60: 00000000 c008626c 00000000 00000000 00000000 edfbd800 ed8c3ec0 edfbd800
-> [ 8110.831085] de80: 00000000 c073ffac ece5df20 c00bf160 00000001 00000000 c00bf058 ece5df20
-> [ 8110.851959] dea0: 00000000 ed8c3ec0 00000000 00000000 00000000 c0cb0818 edab8100 c00bf420
-> [ 8110.860656] dec0: ece5df20 00000000 edab8100 ecaed000 00000000 00000000 00000000 00000000
-> [ 8110.862182] dee0: 00000000 ecad5680 edab8100 c00bfe48 00000000 00000000 00000000 c073e7c0
-> [ 8110.862182] df00: 00000000 ece5c000 c15036e8 ece5c030 00000005 c06eb5c0 6b139c44 00000000
-> [ 8110.879913] df20: 00000004 00000050 8dfff7d3 00000000 00000000 00000000 00000000 00000000
-> [ 8110.895507] df40: 00000000 00000000 001d4a0b 00000000 00000000 00000000 00000000 00000000
-> [ 8110.901062] df60: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-> [ 8110.911102] df80: 00000000 00000000 00090990 000103a4 0000016c c00128e8 ece5c000 00000000
-> [ 8110.921112] dfa0: 000107a0 c0012700 00000000 00090990 00090bd0 00000000 00000000 00000004
-> [ 8110.921112] dfc0: 00000000 00090990 000103a4 0000016c 00090bd0 00090bc8 00090998 000107a0
-> [ 8110.931060] dfe0: beab7be0 beab7bd0 0000b6c9 b6f016d0 40000010 00090bd0 00000000 00000000
-> [ 8110.941009] [<c001bf9c>] (validate_event+0x3c/0x50) from [<c001c280>] (armpmu_event_init+0x16c/0x280)
-> [ 8110.953247] [<c001c280>] (armpmu_event_init+0x16c/0x280) from [<c00bf160>] (perf_init_event+0x108/0x180)
-> [ 8110.967712] [<c00bf160>] (perf_init_event+0x108/0x180) from [<c00bf420>] (perf_event_alloc+0x248/0x40c)
-> [ 8110.971069] [<c00bf420>] (perf_event_alloc+0x248/0x40c) from [<c00bfe48>] (SyS_perf_event_open+0x4f4/0x8fc)
-> [ 8110.981048] [<c00bfe48>] (SyS_perf_event_open+0x4f4/0x8fc) from [<c0012700>] (ret_fast_syscall+0x0/0x48)
-> [ 8110.998199] Code: bad PC value
-> [ 8111.001495] ---[ end trace 0e6c892fae28bee4 ]---
+Ingo Molnar (1):
+      Merge tag 'efi-urgent' of git://git.kernel.org/.../mfleming/efi into x86/urgent
+
+Neil Horman (1):
+      x86/iommu/vt-d: Expand interrupt remapping quirk to cover x58 chipset
+
+Roy Franz (1):
+      x86, efi: correct call to free_pages
+
+Torsten Kaiser (1):
+      x86, amd, microcode: Fix error path in apply_microcode_amd()
+
+ arch/x86/boot/compressed/eboot.c |  2 +-
+ arch/x86/kernel/early-quirks.c   | 14 ++++++++++++--
+ arch/x86/kernel/i387.c           |  2 +-
+ arch/x86/kernel/microcode_amd.c  |  9 +++++----
+ 4 files changed, 19 insertions(+), 8 deletions(-)
+
+diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
+index d606463..b7388a4 100644
+--- a/arch/x86/boot/compressed/eboot.c
++++ b/arch/x86/boot/compressed/eboot.c
+@@ -225,7 +225,7 @@ static void low_free(unsigned long size, unsigned long addr)
+ 	unsigned long nr_pages;
+ 
+ 	nr_pages = round_up(size, EFI_PAGE_SIZE) / EFI_PAGE_SIZE;
+-	efi_call_phys2(sys_table->boottime->free_pages, addr, size);
++	efi_call_phys2(sys_table->boottime->free_pages, addr, nr_pages);
+ }
+ 
+ static void find_bits(unsigned long mask, u8 *pos, u8 *size)
+diff --git a/arch/x86/kernel/early-quirks.c b/arch/x86/kernel/early-quirks.c
+index 94ab6b9..63bdb29 100644
+--- a/arch/x86/kernel/early-quirks.c
++++ b/arch/x86/kernel/early-quirks.c
+@@ -196,15 +196,23 @@ static void __init ati_bugs_contd(int num, int slot, int func)
+ static void __init intel_remapping_check(int num, int slot, int func)
+ {
+ 	u8 revision;
++	u16 device;
+ 
++	device = read_pci_config_16(num, slot, func, PCI_DEVICE_ID);
+ 	revision = read_pci_config_byte(num, slot, func, PCI_REVISION_ID);
+ 
+ 	/*
+-	 * Revision 0x13 of this chipset supports irq remapping
+-	 * but has an erratum that breaks its behavior, flag it as such
++ 	 * Revision 13 of all triggering devices id in this quirk have
++	 * a problem draining interrupts when irq remapping is enabled,
++	 * and should be flagged as broken.  Additionally revisions 0x12
++	 * and 0x22 of device id 0x3405 has this problem.
+ 	 */
+ 	if (revision == 0x13)
+ 		set_irq_remapping_broken();
++	else if ((device == 0x3405) &&
++	    ((revision == 0x12) ||
++	     (revision == 0x22)))
++		set_irq_remapping_broken();
+ 
+ }
+ 
+@@ -239,6 +247,8 @@ static struct chipset early_qrk[] __initdata = {
+ 	  PCI_CLASS_SERIAL_SMBUS, PCI_ANY_ID, 0, ati_bugs_contd },
+ 	{ PCI_VENDOR_ID_INTEL, 0x3403, PCI_CLASS_BRIDGE_HOST,
+ 	  PCI_BASE_CLASS_BRIDGE, 0, intel_remapping_check },
++	{ PCI_VENDOR_ID_INTEL, 0x3405, PCI_CLASS_BRIDGE_HOST,
++	  PCI_BASE_CLASS_BRIDGE, 0, intel_remapping_check },
+ 	{ PCI_VENDOR_ID_INTEL, 0x3406, PCI_CLASS_BRIDGE_HOST,
+ 	  PCI_BASE_CLASS_BRIDGE, 0, intel_remapping_check },
+ 	{}
+diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
+index 202d24f..5d576ab 100644
+--- a/arch/x86/kernel/i387.c
++++ b/arch/x86/kernel/i387.c
+@@ -116,7 +116,7 @@ static void mxcsr_feature_mask_init(void)
+ 
+ 	if (cpu_has_fxsr) {
+ 		memset(&fx_scratch, 0, sizeof(struct i387_fxsave_struct));
+-		asm volatile("fxsave %0" : : "m" (fx_scratch));
++		asm volatile("fxsave %0" : "+m" (fx_scratch));
+ 		mask = fx_scratch.mxcsr_mask;
+ 		if (mask == 0)
+ 			mask = 0x0000ffbf;
+diff --git a/arch/x86/kernel/microcode_amd.c b/arch/x86/kernel/microcode_amd.c
+index 47ebb1d..7a0adb7 100644
+--- a/arch/x86/kernel/microcode_amd.c
++++ b/arch/x86/kernel/microcode_amd.c
+@@ -220,12 +220,13 @@ int apply_microcode_amd(int cpu)
+ 		return 0;
+ 	}
+ 
+-	if (__apply_microcode_amd(mc_amd))
++	if (__apply_microcode_amd(mc_amd)) {
+ 		pr_err("CPU%d: update failed for patch_level=0x%08x\n",
+ 			cpu, mc_amd->hdr.patch_id);
+-	else
+-		pr_info("CPU%d: new patch_level=0x%08x\n", cpu,
+-			mc_amd->hdr.patch_id);
++		return -1;
++	}
++	pr_info("CPU%d: new patch_level=0x%08x\n", cpu,
++		mc_amd->hdr.patch_id);
+ 
+ 	uci->cpu_sig.rev = mc_amd->hdr.patch_id;
+ 	c->microcode = mc_amd->hdr.patch_id;
