@@ -1,49 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754706Ab3HEVlo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 17:41:44 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:41297 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754506Ab3HEVlm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 17:41:42 -0400
-Date: Mon, 5 Aug 2013 23:41:40 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andrew Fish <afish@apple.com>, edk2-devel@lists.sourceforge.net,
-        Laszlo Ersek <lersek@redhat.com>, linux-efi@vger.kernel.org,
-        Gleb Natapov <gleb@redhat.com>, lkml <linux-kernel@vger.kernel.org>,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: Re: [edk2] Corrupted EFI region
-Message-ID: <20130805214140.GB14067@pd.tnic>
-References: <20130801164927.GA7445@pd.tnic>
- <51FF8C14.2070405@redhat.com>
- <20130805130258.GB31845@pd.tnic>
- <51FFAB13.4090603@redhat.com>
- <20130805140306.GD31845@pd.tnic>
- <51FFB660.4060400@redhat.com>
- <20130805144010.GE31845@pd.tnic>
- <2DBE3EA4-E321-4A7B-B9AF-EDE55BC2E358@apple.com>
- <20130805181225.GH31845@pd.tnic>
- <52001B04.2050806@zytor.com>
+	id S1754594Ab3HEVmu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 17:42:50 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:40550 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753964Ab3HEVms (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 17:42:48 -0400
+Message-ID: <52001C54.7020908@wwwdotorg.org>
+Date: Mon, 05 Aug 2013 15:42:44 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <52001B04.2050806@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Laxman Dewangan <ldewangan@nvidia.com>
+CC: linus.walleij@linaro.org, ian.campbell@citrix.com, rob.herring@calxeda.com,
+        pawel.moll@arm.com, mark.rutland@arm.com, rob@landley.net,
+        sameo@linux.intel.com, lee.jones@linaro.org, grant.likely@linaro.org,
+        broonie@kernel.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        gg@slimlogic.co.uk, kishon@ti.com
+Subject: Re: [PATCH V2 2/3] pinctrl: pinconf-generic: add generic APIs for
+ mapping pinctrl node
+References: <1375688014-6117-1-git-send-email-ldewangan@nvidia.com> <1375688014-6117-3-git-send-email-ldewangan@nvidia.com>
+In-Reply-To: <1375688014-6117-3-git-send-email-ldewangan@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 05, 2013 at 02:37:08PM -0700, H. Peter Anvin wrote:
-> All of this would be a non-problem if there weren't buggy
-> implementations which can't run *without* SetVirtualAddressMap().
+On 08/05/2013 01:33 AM, Laxman Dewangan wrote:
+> Add generic APIs to map the DT node and its sub node in pinconf generic
+> driver. These APIs can be used from driver to parse the DT node who
 
-Oh, you mean, if we were to call the runtime services through their
-physical addresses?
+> diff --git a/Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt b/Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt
+> index aeb3c99..52fb521 100644
+> --- a/Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt
+> +++ b/Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt
+> @@ -174,3 +174,19 @@ All parameters not listed here, do not take an argument.
+>  
+>  More in-depth documentation on these parameters can be found in
+>  <include/linux/pinctrl/pinconfig-generic.h>
+> +
+> +Generic pinconfig option also support the defining of pins and functions.
+> +The properties are:
+> +pinctrl-pins: This property tells the name of pins or list of pins for which
+> +  configuration is needed. The valid pin names are device/chip specific and
+> +  it can be found from the device/chip specific binding documents.
+> +pinctrl-function: This property tells the configuration of the pins on to the
+> +  given function. The valid functions are device/chip specific and it can be
+> +  found from the device/chip specific binding documents.
 
--- 
-Regards/Gruss,
-    Boris.
+This text feels like it's just been bolted on the end rather than
+integrated into the existing description of generic pinconfig options.
+Also, the existing text for generic pinconfig options doesn't feel at
+all right to me. I'll send a patch to clean that up, and integrate these
+new properties.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+I would name the new properties just pins and functions, given their
+scope is explicitly limited to pinctrl configuration nodes, so
+"pinctrl-" is a little redundant.
+
+With the properties renamed, and this patch rebased on top of the patch
+I'll send out later, this patch,
+Reviewed-by: Stephen Warren <swarren@nvidia.com>
