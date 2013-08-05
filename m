@@ -1,77 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754330Ab3HEQcy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 12:32:54 -0400
-Received: from mail-ye0-f169.google.com ([209.85.213.169]:63438 "EHLO
-	mail-ye0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753983Ab3HEQcw (ORCPT
+	id S1754229Ab3HEQd3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 12:33:29 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:19706 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753949Ab3HEQbX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 12:32:52 -0400
-Date: Mon, 5 Aug 2013 13:32:44 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH V2 1/9] perf tools: add test for reading object code
-Message-ID: <20130805163244.GD3228@ghostprotocols.net>
-References: <1375218838-31042-1-git-send-email-adrian.hunter@intel.com>
- <1375218838-31042-2-git-send-email-adrian.hunter@intel.com>
- <20130731141732.GD3614@ghostprotocols.net>
- <51FD095F.8060208@intel.com>
+	Mon, 5 Aug 2013 12:31:23 -0400
+X-IronPort-AV: E=Sophos;i="4.89,819,1367971200"; 
+   d="scan'208";a="39429460"
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+To: <xen-devel@lists.xensource.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <konrad.wilk@oracle.com>, <Stefano.Stabellini@eu.citrix.com>,
+        <Ian.Campbell@citrix.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: [PATCH v3 08/10] xen: make xen_create_contiguous_region return the dma address
+Date: Mon, 5 Aug 2013 17:30:54 +0100
+Message-ID: <1375720256-8014-8-git-send-email-stefano.stabellini@eu.citrix.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <alpine.DEB.2.02.1308051503190.4893@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1308051503190.4893@kaball.uk.xensource.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51FD095F.8060208@intel.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Sat, Aug 03, 2013 at 04:45:03PM +0300, Adrian Hunter escreveu:
-> On 31/07/2013 5:17 p.m., Arnaldo Carvalho de Melo wrote:
-> >Em Wed, Jul 31, 2013 at 12:13:50AM +0300, Adrian Hunter escreveu:
-> >>Using the information in mmap events, perf tools can read object
-> >>code associated with sampled addresses.  A test is added that
-> >>compares bytes read by perf with the same bytes read using
-> >>objdump.
+Modify xen_create_contiguous_region to return the dma address of the
+newly contiguous buffer.
 
-> >So this parses objdump output, and we also already have the annotation
-> >logic that does that too, have you thought about having common routines
-> >for these two cases?
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Reviewed-by: David Vrabel <david.vrabel@citrix.com>
+---
+ arch/x86/xen/mmu.c        |    4 +++-
+ drivers/xen/swiotlb-xen.c |    6 +++---
+ include/xen/xen-ops.h     |    3 ++-
+ 3 files changed, 8 insertions(+), 5 deletions(-)
+
+diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+index fdc3ba2..df9ab44 100644
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -2329,7 +2329,8 @@ static int xen_exchange_memory(unsigned long extents_in, unsigned int order_in,
+ }
  
-> The annotation logic strips out the bytes (--no-show-raw) whereas
-> the test extracts only the bytes, so they are not currently
-> compatible.
-
-Yeah, they are not, suggestion was to make it so at some point, as there
-are many possible use cases that would use one, the other or both info.
+ int xen_create_contiguous_region(unsigned long vstart, unsigned int order,
+-				 unsigned int address_bits)
++				 unsigned int address_bits,
++				 dma_addr_t *dma_handle)
+ {
+ 	unsigned long *in_frames = discontig_frames, out_frame;
+ 	unsigned long  flags;
+@@ -2368,6 +2369,7 @@ int xen_create_contiguous_region(unsigned long vstart, unsigned int order,
  
-> >I mean the disasm_line, ins, ins_ops, ins_operands classes, that now
-> >lives in util/annotate.h but could be moved somewhere else,
-> >disconnecting it as much as possible from annotation, because probably
-> >there are more cool things we could do with that... :-)
-
-> >We could certainly do it incrementally, merging your current patch
-> >series and then working on sharing code on these two use cases, but
-> >perhaps you can do it now?
-
-> >What do you think?
+ 	spin_unlock_irqrestore(&xen_reservation_lock, flags);
  
-> I expect replacing objdump with library calls will end up being the
-> way forward.
++	*dma_handle = xen_virt_to_bus(vstart);
+ 	return success ? 0 : -ENOMEM;
+ }
+ EXPORT_SYMBOL_GPL(xen_create_contiguous_region);
+diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
+index 1b2277c..b72f31c 100644
+--- a/drivers/xen/swiotlb-xen.c
++++ b/drivers/xen/swiotlb-xen.c
+@@ -126,6 +126,7 @@ xen_swiotlb_fixup(void *buf, size_t size, unsigned long nslabs)
+ {
+ 	int i, rc;
+ 	int dma_bits;
++	dma_addr_t dma_handle;
+ 
+ 	dma_bits = get_order(IO_TLB_SEGSIZE << IO_TLB_SHIFT) + PAGE_SHIFT;
+ 
+@@ -137,7 +138,7 @@ xen_swiotlb_fixup(void *buf, size_t size, unsigned long nslabs)
+ 			rc = xen_create_contiguous_region(
+ 				(unsigned long)buf + (i << IO_TLB_SHIFT),
+ 				get_order(slabs << IO_TLB_SHIFT),
+-				dma_bits);
++				dma_bits, &dma_handle);
+ 		} while (rc && dma_bits++ < max_dma_bits);
+ 		if (rc)
+ 			return rc;
+@@ -294,11 +295,10 @@ xen_swiotlb_alloc_coherent(struct device *hwdev, size_t size,
+ 		*dma_handle = dev_addr;
+ 	else {
+ 		if (xen_create_contiguous_region(vstart, order,
+-						 fls64(dma_mask)) != 0) {
++						 fls64(dma_mask), dma_handle) != 0) {
+ 			free_pages(vstart, order);
+ 			return NULL;
+ 		}
+-		*dma_handle = virt_to_machine(ret).maddr;
+ 	}
+ 	memset(ret, 0, size);
+ 	return ret;
+diff --git a/include/xen/xen-ops.h b/include/xen/xen-ops.h
+index d6fe062..9ef704d 100644
+--- a/include/xen/xen-ops.h
++++ b/include/xen/xen-ops.h
+@@ -20,7 +20,8 @@ int xen_setup_shutdown_event(void);
+ 
+ extern unsigned long *xen_contiguous_bitmap;
+ int xen_create_contiguous_region(unsigned long vstart, unsigned int order,
+-				unsigned int address_bits);
++				unsigned int address_bits,
++				dma_addr_t *dma_handle);
+ 
+ void xen_destroy_contiguous_region(unsigned long vstart, unsigned int order);
+ 
+-- 
+1.7.2.5
 
-Yes, and the recent work from Vitillo/Namhyung shows promise, but then
-making it work with existing structs created from parsing the objdump
-output shuld be ok.
-
-At some point just dropping the parsing would then be transparent to
-users of such structs.
-
-But I should try it myself and see how it goes, to show what I mean :-)
-
-- Arnaldo
