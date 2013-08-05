@@ -1,55 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754443Ab3HEK40 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 06:56:26 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:33216 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754089Ab3HEK4Y (ORCPT
+	id S1754391Ab3HEK5M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 06:57:12 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35551 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754089Ab3HEK5K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 06:56:24 -0400
-Date: Mon, 5 Aug 2013 11:56:20 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Leif Lindholm <leif.lindholm@linaro.org>
-Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-ia64@vger.kernel.org, matt.fleming@intel.com,
-        tony.luck@gmail.com, patches@linaro.org
-Subject: Re: [PATCH v2 1/5] ia64: add early_memremap() alias for
- early_ioremap()
-Message-ID: <20130805105620.GO2515@console-pimps.org>
-References: <1375462582-16423-1-git-send-email-leif.lindholm@linaro.org>
- <1375462582-16423-2-git-send-email-leif.lindholm@linaro.org>
+	Mon, 5 Aug 2013 06:57:10 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: Li Zefan <lizefan@huawei.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, stable <stable@vger.kernel.org>
+Subject: Re: stable: please queue commit 0231bb5 ("perf: Fix event group context move")
+References: <51FF5FC9.8080302@huawei.com>
+Date: Mon, 05 Aug 2013 11:57:01 +0100
+In-Reply-To: <51FF5FC9.8080302@huawei.com> (Li Zefan's message of "Mon, 5 Aug
+	2013 16:18:17 +0800")
+Message-ID: <87fvuojthe.fsf@canonical.com>
+User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1375462582-16423-2-git-send-email-leif.lindholm@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 02 Aug, at 05:56:18PM, Leif Lindholm wrote:
-> early_ioremap() on IA64 chooses its mapping type based on the EFI
-> memory map. This patch adds an alias "early_memremap()" to be used
-> where the targeted location is memory rather than an i/o device.
-> 
-> Signed-off-by: Leif Lindholm <leif.lindholm@linaro.org>
-> ---
->  arch/ia64/include/asm/io.h |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/arch/ia64/include/asm/io.h b/arch/ia64/include/asm/io.h
-> index 74a7cc3..0d2bcb3 100644
-> --- a/arch/ia64/include/asm/io.h
-> +++ b/arch/ia64/include/asm/io.h
-> @@ -424,6 +424,7 @@ extern void __iomem * ioremap(unsigned long offset, unsigned long size);
->  extern void __iomem * ioremap_nocache (unsigned long offset, unsigned long size);
->  extern void iounmap (volatile void __iomem *addr);
->  extern void __iomem * early_ioremap (unsigned long phys_addr, unsigned long size);
-> +#define early_memremap(phys_addr, size)        early_ioremap(phys_addr, size)
->  extern void early_iounmap (volatile void __iomem *addr, unsigned long size);
->  static inline void __iomem * ioremap_cache (unsigned long phys_addr, unsigned long size)
+Li Zefan <lizefan@huawei.com> writes:
 
-Tony, can I get your Acked-by for this?
+> Plese consider adding commit 0231bb5336758426b44ccd798ccd3c5419c95d58
+> to stable tree. It fixes a real bug, which was explained here:
+>
+> 	http://thread.gmane.org/gmane.linux.kernel.perf.user/1144
+>
+> and I've managed to reproduce the bug in 3.4 kernel with the test
+> program attached in the above email, and I've confirmed the bug fix.
+>
+> The effect of the bug is, if we open a group of mixed events(sw/hw)
+> and the "disabled" flag is not set and sw events come first, then
+> some of the perf events won't be started after the call to perf_event_open().
+>
+> The bug fix should be applicable to kernels >= 3.0 && <= 3.7.
+>
+> --
+> Li Zefan
+> --
+> To unsubscribe from this list: send the line "unsubscribe stable" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
+Thanks, I'm queuing it for the 3.5 kernel.
+
+Cheers,
 -- 
-Matt Fleming, Intel Open Source Technology Center
+Luis
