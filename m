@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753343Ab3HENrh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 09:47:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36877 "EHLO mx1.redhat.com"
+	id S1753228Ab3HENrQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 09:47:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61129 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751853Ab3HENre (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 09:47:34 -0400
-Date: Mon, 5 Aug 2013 15:41:30 +0200
+	id S1752703Ab3HENrN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 09:47:13 -0400
+Date: Mon, 5 Aug 2013 15:41:45 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Al Viro <viro@ZenIV.linux.org.uk>, Evgeniy Polyakov <zbr@ioremap.net>,
         Kees Cook <keescook@chromium.org>, Zach Levis <zml@linux.vnet.ibm.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v2 1/8] exec: introduce exec_binprm() for "depth == 0" code
-Message-ID: <20130805134130.GA15622@redhat.com>
+Subject: [PATCH v2 7/8] exec: don't retry if request_module() fails
+Message-ID: <20130805134145.GA15652@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -23,105 +23,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-task_pid_nr_ns() and trace/ptrace code in the middle of the
-recursive search_binary_handler() looks confusing and imho
-annoying. We only need this code if "depth == 0", lets add
-a simple helper which calls search_binary_handler() and does
-trace_sched_process_exec() + ptrace_event().
+A separate one-liner for better documentation.
 
-The patch also moves the setting of task->did_exec, we need
-to do this only once.
+It doesn't make sense to retry if request_module() fails to exec
+/sbin/modprobe, add the additional "request_module() < 0" check.
 
-Note: we can kill either task->did_exec or PF_FORKNOEXEC.
+However, this logic still doesn't look exactly right:
+
+1. It would be better to check "request_module() != 0", the user
+   space modprobe process should report the correct exit code.
+   But I didn't dare to add the user-visible change.
+
+2. The whole ENOEXEC logic looks suboptimal. Suppose that we try
+   to exec a "#!path-to-unsupported-binary" script. In this case
+   request_module() + "retry" will be done twice: first by the
+   "depth == 1" code, and then again by the "depth == 0" caller
+   which doesn't make sense.
+
+3. And note that in the case above bprm->buf was already changed
+   by load_script()->prepare_binprm(), so this looks even more
+   ugly.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 Acked-by: Kees Cook <keescook@chromium.org>
 ---
- fs/exec.c |   36 ++++++++++++++++++++++--------------
- 1 files changed, 22 insertions(+), 14 deletions(-)
+ fs/exec.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
 diff --git a/fs/exec.c b/fs/exec.c
-index 9c73def..a9ae4f2 100644
+index f69cf54..682895d 100644
 --- a/fs/exec.c
 +++ b/fs/exec.c
-@@ -1373,7 +1373,6 @@ int search_binary_handler(struct linux_binprm *bprm)
- 	unsigned int depth = bprm->recursion_depth;
- 	int try,retval;
- 	struct linux_binfmt *fmt;
--	pid_t old_pid, old_vpid;
- 
- 	/* This allows 4 levels of binfmt rewrites before failing hard. */
- 	if (depth > 5)
-@@ -1387,12 +1386,6 @@ int search_binary_handler(struct linux_binprm *bprm)
- 	if (retval)
- 		return retval;
- 
--	/* Need to fetch pid before load_binary changes it */
--	old_pid = current->pid;
--	rcu_read_lock();
--	old_vpid = task_pid_nr_ns(current, task_active_pid_ns(current->parent));
--	rcu_read_unlock();
--
- 	retval = -ENOENT;
- 	for (try=0; try<2; try++) {
- 		read_lock(&binfmt_lock);
-@@ -1407,16 +1400,11 @@ int search_binary_handler(struct linux_binprm *bprm)
- 			retval = fn(bprm);
- 			bprm->recursion_depth = depth;
- 			if (retval >= 0) {
--				if (depth == 0) {
--					trace_sched_process_exec(current, old_pid, bprm);
--					ptrace_event(PTRACE_EVENT_EXEC, old_vpid);
--				}
- 				put_binfmt(fmt);
- 				allow_write_access(bprm->file);
- 				if (bprm->file)
- 					fput(bprm->file);
- 				bprm->file = NULL;
--				current->did_exec = 1;
- 				proc_exec_connector(current);
- 				return retval;
- 			}
-@@ -1450,9 +1438,29 @@ int search_binary_handler(struct linux_binprm *bprm)
+@@ -1418,7 +1418,8 @@ int search_binary_handler(struct linux_binprm *bprm)
+ 		if (printable(bprm->buf[0]) && printable(bprm->buf[1]) &&
+ 		    printable(bprm->buf[2]) && printable(bprm->buf[3]))
+ 			return retval;
+-		request_module("binfmt-%04x", *(ushort *)(bprm->buf + 2));
++		if (request_module("binfmt-%04x", *(ushort *)(bprm->buf + 2)) < 0)
++			return retval;
+ 		need_retry = false;
+ 		goto retry;
  	}
- 	return retval;
- }
--
- EXPORT_SYMBOL(search_binary_handler);
- 
-+static int exec_binprm(struct linux_binprm *bprm)
-+{
-+	pid_t old_pid, old_vpid;
-+	int ret;
-+
-+	/* Need to fetch pid before load_binary changes it */
-+	old_pid = current->pid;
-+	rcu_read_lock();
-+	old_vpid = task_pid_nr_ns(current, task_active_pid_ns(current->parent));
-+	rcu_read_unlock();
-+
-+	ret = search_binary_handler(bprm);
-+	if (ret >= 0) {
-+		trace_sched_process_exec(current, old_pid, bprm);
-+		ptrace_event(PTRACE_EVENT_EXEC, old_vpid);
-+		current->did_exec = 1;
-+	}
-+
-+	return ret;
-+}
-+
- /*
-  * sys_execve() executes a new program.
-  */
-@@ -1541,7 +1549,7 @@ static int do_execve_common(const char *filename,
- 	if (retval < 0)
- 		goto out;
- 
--	retval = search_binary_handler(bprm);
-+	retval = exec_binprm(bprm);
- 	if (retval < 0)
- 		goto out;
- 
 -- 
 1.5.5.1
 
