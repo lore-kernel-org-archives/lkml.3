@@ -1,91 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755148Ab3HEH6B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 03:58:01 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:54284 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754836Ab3HEH57 (ORCPT
+	id S1755191Ab3HEIAh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 04:00:37 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:45739 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755017Ab3HEIAf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 03:57:59 -0400
-Date: Mon, 5 Aug 2013 09:58:05 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] mutex: fix deadlock injection
-Message-ID: <20130805075805.GB22035@phenom.ffwll.local>
-Mail-Followup-To: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-	Ingo Molnar <mingo@kernel.org>,
-	Peter Zijlstra <a.p.zijlstra@chello.nl>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	"dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-	Alex Deucher <alexander.deucher@amd.com>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Andrew Morton <akpm@linux-foundation.org>
-References: <20130701082221.GA14112@gmail.com>
- <CA+55aFwfsz6e5oQAdZw-YyYzwJXCPjKJKiLEXxn7ujU7KWX97Q@mail.gmail.com>
- <51D3C4C8.8060701@canonical.com>
- <20130705062345.GA29487@gmail.com>
- <51F775B5.201@canonical.com>
+	Mon, 5 Aug 2013 04:00:35 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
+Message-ID: <51FF5B58.7050701@jp.fujitsu.com>
+Date: Mon, 5 Aug 2013 16:59:20 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51F775B5.201@canonical.com>
-X-Operating-System: Linux phenom 3.11.0-rc2+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Toshi Kani <toshi.kani@hp.com>, "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: <rafael.j.wysocki@intel.com>, <vasilis.liaskovitis@profitbricks.com>,
+        <linux-kernel@vger.kernel.org>, <linux-acpi@vger.kernel.org>,
+        <tangchen@cn.fujitsu.com>, <wency@cn.fujitsu.com>
+Subject: Re: Cannot hot remove a memory device
+References: <51FA1E41.20304@jp.fujitsu.com>  <2124016.41i4c3lbD4@vostro.rjw.lan>  <1375488280.10300.124.camel@misato.fc.hp.com>  <3856529.sQXzdEem7D@vostro.rjw.lan> <1375576646.10300.150.camel@misato.fc.hp.com> <51FF2368.9060206@jp.fujitsu.com>
+In-Reply-To: <51FF2368.9060206@jp.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 30, 2013 at 10:13:41AM +0200, Maarten Lankhorst wrote:
-> The check needs to be for > 1, because ctx->acquired is already incremented.
-> This will prevent ww_mutex_lock_slow from returning -EDEADLK and not locking
-> the mutex. It caused a lot of false gpu lockups on radeon with
-> CONFIG_DEBUG_WW_MUTEX_SLOWPATH=y because a function that shouldn't be able
-> to return -EDEADLK did.
-> 
-> Cc: Alex Deucher <alexander.deucher@amd.com>
-> Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+(2013/08/05 13:00), Yasuaki Ishimatsu wrote:
+> (2013/08/04 9:37), Toshi Kani wrote:
+>> On Sat, 2013-08-03 at 03:01 +0200, Rafael J. Wysocki wrote:
+>>> On Friday, August 02, 2013 06:04:40 PM Toshi Kani wrote:
+>>>> On Sat, 2013-08-03 at 01:43 +0200, Rafael J. Wysocki wrote:
+>>>>> On Friday, August 02, 2013 03:46:15 PM Toshi Kani wrote:
+>>>>>> On Thu, 2013-08-01 at 23:43 +0200, Rafael J. Wysocki wrote:
+>>>>>>> Hi,
+>>>>>>>
+>>>>>>> Thanks for your report.
+>>>>>>>
+>>>>>>> On Thursday, August 01, 2013 05:37:21 PM Yasuaki Ishimatsu wrote:
+>>>>>>>> By following commit, I cannot hot remove a memory device.
+>>>>>>>>
+>>>>>>>> ACPI / memhotplug: Bind removable memory blocks to ACPI device nodes
+>>>>>>>> commit e2ff39400d81233374e780b133496a2296643d7d
+>>>>>>>>
+>>>>>>>> Details are follows:
+>>>>>>>> When I add a memory device, acpi_memory_enable_device() always fails
+>>>>>>>> as follows:
+>>>>>>>>
+>>>>>>>> ...
+>>>>>>>> [ 1271.114116]  [ffffea121c400000-ffffea121c7fffff] PMD -> [ffff880813c00000-ffff880813ffffff] on node 3
+>>>>>>>> [ 1271.128682]  [ffffea121c800000-ffffea121cbfffff] PMD -> [ffff880813800000-ffff880813bfffff] on node 3
+>>>>>>>> [ 1271.143298]  [ffffea121cc00000-ffffea121cffffff] PMD -> [ffff880813000000-ffff8808133fffff] on node 3
+>>>>>>>> [ 1271.157799]  [ffffea121d000000-ffffea121d3fffff] PMD -> [ffff880812c00000-ffff880812ffffff] on node 3
+>>>>>>>> [ 1271.172341]  [ffffea121d400000-ffffea121d7fffff] PMD -> [ffff880812800000-ffff880812bfffff] on node 3
+>>>>>>>> [ 1271.186872]  [ffffea121d800000-ffffea121dbfffff] PMD -> [ffff880812400000-ffff8808127fffff] on node 3
+>>>>>>>> [ 1271.201481]  [ffffea121dc00000-ffffea121dffffff] PMD -> [ffff880812000000-ffff8808123fffff] on node 3
+>>>>>>>> [ 1271.216041]  [ffffea121e000000-ffffea121e3fffff] PMD -> [ffff880811c00000-ffff880811ffffff] on node 3
+>>>>>>>> [ 1271.230623]  [ffffea121e400000-ffffea121e7fffff] PMD -> [ffff880811800000-ffff880811bfffff] on node 3
+>>>>>>>> [ 1271.245148]  [ffffea121e800000-ffffea121ebfffff] PMD -> [ffff880811400000-ffff8808117fffff] on node 3
+>>>>>>>> [ 1271.259683]  [ffffea121ec00000-ffffea121effffff] PMD -> [ffff880811000000-ffff8808113fffff] on node 3
+>>>>>>>> [ 1271.274194]  [ffffea121f000000-ffffea121f3fffff] PMD -> [ffff880810c00000-ffff880810ffffff] on node 3
+>>>>>>>> [ 1271.288764]  [ffffea121f400000-ffffea121f7fffff] PMD -> [ffff880810800000-ffff880810bfffff] on node 3
+>>>>>>
+>>>>>> It appears that each memory object only has 64MB of memory.  This is
+>>>>>> less than the memory block size, which is 128MB.  This means that a
+>>>>>> single memory block associates with two ACPI memory device objects.
+>>>>>
+>>>>> That'd be bad.
+>>>>>
+>>>>> How did that work before if that indeed is the case?
+>>>>
+>>>> Well, it looks to me that it has never worked before...
+>>>>
+>>>>>>>> ...
+>>>>>>>> [ 1271.325841] acpi PNP0C80:03: acpi_memory_enable_device() error
+>>>>>>>
+>>>>>>> Well, the only new way acpi_memory_enable_device() can fail after that commit
+>>>>>>> is a failure in acpi_bind_memory_blocks().
+>>>>>>
+>>>>>> Agreed.
+>>>>>>
+>>>>>>> This means that either handle is NULL, which I think we can exclude, because
+>>>>>>> acpi_memory_enable_device() wouldn't be called at all if that were the case, or
+>>>>>>> there's a more subtle error in acpi_bind_one().
+>>>>>>>
+>>>>>>> One that comes to mind is that we may be calling acpi_bind_one() twice for the
+>>>>>>> same memory region, in which it will trigger -EINVAL from the sanity check in
+>>>>>>> there.
+>>>>>>
+>>>>>> I think it fails with -EINVAL at the place with dev_warn(dev, "ACPI
+>>>>>> handle is already set\n").  When two ACPI memory objects associate with
+>>>>>> a same memory block, the bind procedure of the 2nd ACPI memory object
+>>>>>> sees that ACPI_HANDLE(dev) is already set to the 1st ACPI memory object.
+>>>>>
+>>>>> That sound's plausible, but I wonder how we can fix that?
+>>>>>
+>>>>> There's no way for a single physical device to have two different ACPI
+>>>>> "companions".  It looks like the memory blocks should be 64 M each in that
+>>>>> case.  Or we need to create two child devices for each memory block and
+>>>>> associate each of them with an ACPI object.  That would lead to complications
+>>>>> in the user space interface, though.
+>>>>
+>>>> Right.  Even bigger issue is that I do not think __add_pages() and
+>>>> __remove_pages() can add / delete a memory chunk that is less than
+>>>> 128MB.  128MB is the granularity of them.  So, we may just have to fail
+>>>> this case gracefully.
+>>>
+>>> Sigh.
+>>>
+>>> BTW, why do you think they are 64 M each (it's late and I'm obviously tired)?
+>>
+>> Oops!  Sorry, I had confused the above messages with the one in
+>> init_memory_mapping(), which shows a memory range being added, i.e. the
+>> size of an ACPI memory device object.  But the above messages actually
+>> came from vmemmap_populate_hugepages(), which was called during boot-up.
+>> So, these messages have nothing to do with ACPI memory device objects.
+>> And even worse, I do not seem to be able to count a number of zeros...
+>> In the above messages, each memory range is 4MB (0x400000), not 64MB
+>> (0x4000000)...  My bad. :-(
+>>
+>> So, while we may still need to do something for the less-than-128MB
+>> issue, Yasuaki may be hitting a different one.  Let's wait for Yasuaki
+>> to give us more info.
+>
+> acpi_bind_memory_blocks() failed with -ENOSPC.
+>
+> int acpi_bind_one(struct device *dev, acpi_handle handle)
+> {
+> ...
+>      /* allocate physical node id according to physical_node_id_bitmap */
+>      physical_node->node_id =
+>          find_first_zero_bit(acpi_dev->physical_node_id_bitmap,
+>          ACPI_MAX_PHYSICAL_NODE);
+>      if (physical_node->node_id >= ACPI_MAX_PHYSICAL_NODE) {
+>          retval = -ENOSPC; => here
+>          goto err_free;
+>      }
+>
+> When adding memory device, acpi_bind_memroy_blocks() calls acpi_bind_one()
+> "memory device size / 128MiB" times. So ACPI_MAX_PHYSICAL_NODE need to
+> be set "memory device size / 128MiB" or more. But ACPI_MAX_PHYSICAL_NODE is 32.
+> So acpi_bind_memory_blocks() always failed with -ENOSPC.
+>
 
-Oops, thanks for catching this.
+> I'll test again after increasing ACPI_MAX_PHYSICAL_NODE to enough size.
 
-Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Additional info:
+When I increased ACPI_MAX_PHYSICAL_NODE to 1024 and change size of
+acpi_device_physical_node->node_it into u32, I could hot remove memory
+device. But even if ACPI_MAX_PHYSICAL_NODE is set to 1024, same problem
+will occurs since it just supports 124GiB memory. So we need a way to change
+ACPI_MAX_PHYSICAL_NODE dynamically.
 
-> ---
-> diff --git a/kernel/mutex.c b/kernel/mutex.c
-> index ff05f4b..a52ee7bb 100644
-> --- a/kernel/mutex.c
-> +++ b/kernel/mutex.c
-> @@ -686,7 +686,7 @@ __ww_mutex_lock(struct ww_mutex *lock, struct ww_acquire_ctx *ctx)
->  	might_sleep();
->  	ret =  __mutex_lock_common(&lock->base, TASK_UNINTERRUPTIBLE,
->  				   0, &ctx->dep_map, _RET_IP_, ctx);
-> -	if (!ret && ctx->acquired > 0)
-> +	if (!ret && ctx->acquired > 1)
->  		return ww_mutex_deadlock_injection(lock, ctx);
->  
->  	return ret;
-> @@ -702,7 +702,7 @@ __ww_mutex_lock_interruptible(struct ww_mutex *lock, struct ww_acquire_ctx *ctx)
->  	ret = __mutex_lock_common(&lock->base, TASK_INTERRUPTIBLE,
->  				  0, &ctx->dep_map, _RET_IP_, ctx);
->  
-> -	if (!ret && ctx->acquired > 0)
-> +	if (!ret && ctx->acquired > 1)
->  		return ww_mutex_deadlock_injection(lock, ctx);
->  
->  	return ret;
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+Thanks,
+Yasuaki Ishimatsu
 
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+>
+> Thanks,
+> Yasuaki Ishimatsu
+>
+>>
+>> Thanks,
+>> -Toshi
+>>
+>>
+>>
+>>
+>>
+>>
+>>
+>>
+>>
+>
+
+
