@@ -1,64 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754608Ab3HEQRA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 12:17:00 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:39381 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754551Ab3HEQQ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 12:16:26 -0400
-From: Joel Fernandes <joelf@ti.com>
-To: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Sricharan R <r.sricharan@ti.com>, Rajendra Nayak <rnayak@ti.com>,
-        Lokesh Vutla <lokeshvutla@ti.com>, Matt Porter <matt@ohporter.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
-        Mark Brown <broonie@linaro.org>,
-        Benoit Cousson <benoit.cousson@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>, Balaji TK <balajitk@ti.com>,
-        Gururaja Hebbar <gururaja.hebbar@ti.com>, Chris Ball <cjb@laptop.org>,
-        Jason Kridner <jkridner@beagleboard.org>
-CC: Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Joel Fernandes <joelf@ti.com>
-Subject: [PATCH v3 06/12] ARM: edma: Add pr_debug in edma_link
-Date: Mon, 5 Aug 2013 11:14:51 -0500
-Message-ID: <1375719297-12871-7-git-send-email-joelf@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1375719297-12871-1-git-send-email-joelf@ti.com>
-References: <1375719297-12871-1-git-send-email-joelf@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1754627Ab3HEQRM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 12:17:12 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:52925 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753157Ab3HEQRJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 12:17:09 -0400
+Message-ID: <1375719427.3133.31.camel@joe-AO722>
+Subject: Re: [PATCH] trivial: adjust code alignment
+From: Joe Perches <joe@perches.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Julia Lawall <Julia.Lawall@lip6.fr>, trivial@kernel.org,
+        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 05 Aug 2013 09:17:07 -0700
+In-Reply-To: <20130805160645.GI5051@mwanda>
+References: <1375714059-29567-1-git-send-email-Julia.Lawall@lip6.fr>
+	 <1375714059-29567-5-git-send-email-Julia.Lawall@lip6.fr>
+	 <20130805160645.GI5051@mwanda>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Useful for visualizing linking of PaRAM slots
+On Mon, 2013-08-05 at 19:06 +0300, Dan Carpenter wrote:
+> On Mon, Aug 05, 2013 at 04:47:39PM +0200, Julia Lawall wrote:
+> > diff --git a/drivers/media/i2c/ov7670.c b/drivers/media/i2c/ov7670.c
+[]
+> > @@ -1369,8 +1369,8 @@ static int ov7670_s_exp(struct v4l2_subdev *sd, int value)
+> >  	unsigned char com1, com8, aech, aechh;
+> >  
+> >  	ret = ov7670_read(sd, REG_COM1, &com1) +
+> > -		ov7670_read(sd, REG_COM8, &com8);
+> > -		ov7670_read(sd, REG_AECHH, &aechh);
+> > +	ov7670_read(sd, REG_COM8, &com8);
+> > +	ov7670_read(sd, REG_AECHH, &aechh);
+> >  	if (ret)
+> >  		return ret;
+> >  
+> 
+> The new indenting isn't correct here and anyway the intent was to
+> combine all the error codes together and return them as an error
+> code jumble.  I'm not a fan of error code jumbles, probably the
+> right thing is to check each function call or, barring that, to
+> return -EIO.
 
-Signed-off-by: Joel Fernandes <joelf@ti.com>
----
- arch/arm/common/edma.c |    2 ++
- 1 file changed, 2 insertions(+)
+ov7670_read via i2c_transfer can return a positive # too.
+Perhaps all of these should be individually tested for "< 0".
 
-diff --git a/arch/arm/common/edma.c b/arch/arm/common/edma.c
-index aa43c49..34d3fc9 100644
---- a/arch/arm/common/edma.c
-+++ b/arch/arm/common/edma.c
-@@ -1125,6 +1125,8 @@ void edma_link(unsigned from, unsigned to)
- 	ctlr_to = EDMA_CTLR(to);
- 	to = EDMA_CHAN_SLOT(to);
- 
-+	pr_debug("Setting up link %d -> %d\n", from, to);
-+
- 	if (from >= edma_cc[ctlr_from]->num_slots)
- 		return;
- 	if (to >= edma_cc[ctlr_to]->num_slots)
--- 
-1.7.9.5
 
