@@ -1,65 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752756Ab3HENno (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 09:43:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58371 "EHLO mx1.redhat.com"
+	id S1752902Ab3HENqn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 09:46:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24488 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751389Ab3HENnn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 09:43:43 -0400
-Date: Mon, 5 Aug 2013 16:43:27 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: James Hogan <james.hogan@imgtec.com>, David Daney <ddaney.cavm@gmail.com>,
-        linux-mips@linux-mips.org, kvm@vger.kernel.org,
-        Sanjay Lal <sanjayl@kymasys.com>, linux-kernel@vger.kernel.org,
-        David Daney <david.daney@cavium.com>
-Subject: Re: [PATCH 1/3] mips/kvm: Improve code formatting in
- arch/mips/kvm/kvm_locore.S
-Message-ID: <20130805134326.GA15901@redhat.com>
-References: <1375388555-4045-1-git-send-email-ddaney.cavm@gmail.com>
- <1375388555-4045-2-git-send-email-ddaney.cavm@gmail.com>
- <51FFA5CD.3010406@imgtec.com>
- <20130805132157.GB3470@linux-mips.org>
+	id S1751543Ab3HENqm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 09:46:42 -0400
+Date: Mon, 5 Aug 2013 15:41:13 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, Evgeniy Polyakov <zbr@ioremap.net>,
+        Kees Cook <keescook@chromium.org>, Zach Levis <zml@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 0/8] exec: cleanup search_binary_handler()
+Message-ID: <20130805134113.GA15603@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130805132157.GB3470@linux-mips.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 05, 2013 at 03:21:57PM +0200, Ralf Baechle wrote:
-> On Mon, Aug 05, 2013 at 02:17:01PM +0100, James Hogan wrote:
-> 
-> > 
-> > On 01/08/13 21:22, David Daney wrote:
-> > > From: David Daney <david.daney@cavium.com>
-> > > 
-> > > No code changes, just reflowing some comments and consistently using
-> > > tabs and spaces.  Object code is verified to be unchanged.
-> > > 
-> > > Signed-off-by: David Daney <david.daney@cavium.com>
-> > > Acked-by: Ralf Baechle <ralf@linux-mips.org>
-> > 
-> > 
-> > > +   	 /* Put the saved pointer to vcpu (s1) back into the DDATA_LO Register */
-> > 
-> > git am detects a whitespace error here ("space before tab in indent").
-> > It's got spaces before and after the tab actually.
-> > 
-> > >      /* load the guest context from VCPU and return */
-> > 
-> > this comment could have it's indentation fixed too
-> > 
-> > Otherwise, for all 3 patches:
-> > 
-> > Reviewed-by: James Hogan <james.hogan@imgtec.com>
-> 
-> I'm happy with the patch series as well and will fix this issue when
-> applying the patch.
-> 
-kvm fixes usually go through kvm.git tree for all arches. Any special
-reasons you want to get those through mips tree?
+To remind, by discussion with Zach
 
---
-			Gleb.
+	fs-binfmts-add-a-name-field-to-the-binfmt-struct.patch
+	fs-binfmts-better-handling-of-binfmt-loops.patch
+	fs-binfmts-whitespace-fixes-with-scripts-cleanfile.patch
+
+should be dropped. Zach is working on the new version on top of these
+changes.
+
+Changes:
+
+	2/8: add the comment about recursion_depth
+
+	4/8: nullify bprm->file to catch the potential use after free
+
+	Add the acks from Kees (thanks!)
+
+Oleg.
+
+ fs/exec.c               |  120 +++++++++++++++++++++++------------------------
+ include/linux/binfmts.h |    2 +-
+ 2 files changed, 60 insertions(+), 62 deletions(-)
+
