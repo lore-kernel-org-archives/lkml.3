@@ -1,62 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754503Ab3HER6M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 13:58:12 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:49087 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753725Ab3HER6K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 13:58:10 -0400
-Message-ID: <51FFE7AC.1020801@samsung.com>
-Date: Tue, 06 Aug 2013 02:58:04 +0900
-From: Kukjin Kim <kgene.kim@samsung.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
+	id S1754533Ab3HER62 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 13:58:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60594 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753728Ab3HER60 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 13:58:26 -0400
+Date: Mon, 5 Aug 2013 13:57:06 -0400
+From: Aristeu Rozanski <aris@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: lizefan@huawei.com, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Balbir Singh <bsingharora@gmail.com>,
+        Matt Helsley <matthltc@us.ibm.com>,
+        Daniel Wagner <daniel.wagner@bmw-carit.de>,
+        Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH 08/23] cgroup: pass around cgroup_subsys_state instead of
+ cgroup in subsystem methods
+Message-ID: <20130805175706.GA7878@redhat.com>
+References: <1375393801-4817-1-git-send-email-tj@kernel.org>
+ <1375393801-4817-9-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>
-CC: Tomasz Figa <t.figa@samsung.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, arnd@arndb.de,
-        linus.walleij@stericsson.com, Kukjin Kim <kgene.kim@samsung.com>,
-        linux-samsung-soc@vger.kernel.org
-Subject: Re: [PATCH v3 07/22] ARM: dts: Remove '0x's from Exynos4210 DTSI
- file
-References: <1374490361-25769-1-git-send-email-lee.jones@linaro.org> <1374490361-25769-7-git-send-email-lee.jones@linaro.org> <20130724150937.GO26801@laptop> <5075798.2aqxtybhC8@amdc1227> <20130725075215.GA3403@laptop>
-In-Reply-To: <20130725075215.GA3403@laptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1375393801-4817-9-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/25/13 16:52, Lee Jones wrote:
-> On Wed, 24 Jul 2013, Tomasz Figa wrote:
->
->> On Wednesday 24 of July 2013 16:09:37 Lee Jones wrote:
->>> ... for the sake of consistency and assumed convention.
->>>
->>> Cc: Kukjin Kim<kgene.kim@samsung.com>
->>> Cc: linux-samsung-soc@vger.kernel.org
->>> Signed-off-by: Lee Jones<lee.jones@linaro.org>
->>>
->>> diff --git a/arch/arm/boot/dts/exynos4210.dtsi
->>> b/arch/arm/boot/dts/exynos4210.dtsi index b7f358a..53e2527 100644
->>> --- a/arch/arm/boot/dts/exynos4210.dtsi
->>> +++ b/arch/arm/boot/dts/exynos4210.dtsi
->>> @@ -72,7 +72,7 @@
->>>                  };
->>>          };
->>>
->>> -       clock: clock-controller@0x10030000 {
->>> +       clock: clock-controller@10030000 {
->>>                  compatible = "samsung,exynos4210-clock";
->>>                  reg =<0x10030000 0x20000>;
->>>                  #clock-cells =<1>;
->>
->> Acked-by: Tomasz Figa<t.figa@samsung.com>
->
-> Thanks Tomasz.
->
-Thanks, Lee Jones and Tomasz.
+On Thu, Aug 01, 2013 at 05:49:46PM -0400, Tejun Heo wrote:
+> cgroup is currently in the process of transitioning to using struct
+> cgroup_subsys_state * as the primary handle instead of struct cgroup *
+> in subsystem implementations for the following reasons.
+> 
+> * With unified hierarchy, subsystems will be dynamically bound and
+>   unbound from cgroups and thus css's (cgroup_subsys_state) may be
+>   created and destroyed dynamically over the lifetime of a cgroup,
+>   which is different from the current state where all css's are
+>   allocated and destroyed together with the associated cgroup.  This
+>   in turn means that cgroup_css() should be synchronized and may
+>   return NULL, making it more cumbersome to use.
+> 
+> * Differing levels of per-subsystem granularity in the unified
+>   hierarchy means that the task and descendant iterators should behave
+>   differently depending on the specific subsystem the iteration is
+>   being performed for.
+> 
+> * In majority of the cases, subsystems only care about its part in the
+>   cgroup hierarchy - ie. the hierarchy of css's.  Subsystem methods
+>   often obtain the matching css pointer from the cgroup and don't
+>   bother with the cgroup pointer itself.  Passing around css fits
+>   much better.
+> 
+> This patch converts all cgroup_subsys methods to take @css instead of
+> @cgroup.  The conversions are mostly straight-forward.  A few
+> noteworthy changes are
+> 
+> * ->css_alloc() now takes css of the parent cgroup rather than the
+>   pointer to the new cgroup as the css for the new cgroup doesn't
+>   exist yet.  Knowing the parent css is enough for all the existing
+>   subsystems.
+> 
+> * In kernel/cgroup.c::offline_css(), unnecessary open coded css
+>   dereference is replaced with local variable access.
+> 
+> This patch shouldn't cause any behavior differences.
 
-Applied #7 ~ #11 into the cleanup of samsung tree.
+looks fine on device_cgroup.c bit
 
-- Kukjin
+Acked-by: Aristeu Rozanski <aris@redhat.com>
+
+-- 
+Aristeu
+
