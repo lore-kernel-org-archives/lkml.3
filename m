@@ -1,49 +1,545 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755713Ab3HEWWL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 18:22:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43313 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755657Ab3HEWWI (ORCPT
+	id S1755710Ab3HEWWb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 18:22:31 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:44260 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754594Ab3HEWUa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 18:22:08 -0400
-Date: Mon, 5 Aug 2013 15:22:06 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Caizhiyong <caizhiyong@huawei.com>
-Cc: Karel Zak <kzak@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Wanglin (Albert)" <albert.wanglin@huawei.com>,
-        Quyaxin <quyaxin@huawei.com>, Jens Axboe <axboe@kernel.dk>,
-        David Woodhouse <dwmw2@infradead.org>, Marius Groeger <mag@sysgo.de>
-Subject: Re: [PATCH] block: support embedded device command line partition
-Message-Id: <20130805152206.76462cc4a42e51b16a0532f1@linux-foundation.org>
-In-Reply-To: <C3050A4DBA34F345975765E43127F10F1C061D75@szxeml512-mbs.china.huawei.com>
-References: <C3050A4DBA34F345975765E43127F10F1C061D75@szxeml512-mbs.china.huawei.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 5 Aug 2013 18:20:30 -0400
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
+        David Airlie <airlied@linux.ie>, Darren Etheridge <detheridge@ti.com>,
+        Rob Clark <robdclark@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 5/8] drm/i2c: tda998x: add video and audio input configuration
+Date: Tue,  6 Aug 2013 00:20:15 +0200
+Message-Id: <1375741218-10225-6-git-send-email-sebastian.hesselbarth@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1375741218-10225-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1375741218-10225-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 3 Aug 2013 09:57:04 +0000 Caizhiyong <caizhiyong@huawei.com> wrote:
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-> From: Cai Zhiyong <caizhiyong@huawei.com>
-> 
-> Read block device partition table from command line.
-> The partition used for fixed block device (eMMC) embedded device.
-> It is no MBR, save storage space. Bootloader can be easily accessed by
-> absolute address of data on the block device.
-> Users can easily change the partition.
-> 
-> This code reference MTD partition, source "drivers/mtd/cmdlinepart.c"
-> About the partition verbose reference "Documentation/block/cmdline-partition.txt"
-> 
+This patch adds tda998x specific parameters to allow it to be configured
+for different boards using it. Also, this implements rudimentary audio
+support for S/PDIF attached controllers.
 
-Seems OK to me.
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+---
+Changelog:
+for v1:
+- set AUDIO_DIV to SERCLK/16 for modes with pixclk >100MHz
+- also calculate CTS
 
-The obvious question is: can we consolidate this with
-drivers/mtd/cmdlinepart.c in some fashion so the kernel doesn't have
-two parsers which do the same thing?
+Cc: David Airlie <airlied@linux.ie>
+Cc: Darren Etheridge <detheridge@ti.com>
+Cc: Rob Clark <robdclark@gmail.com>
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: dri-devel@lists.freedesktop.org
+Cc: linux-kernel@vger.kernel.org
+---
+ drivers/gpu/drm/i2c/tda998x_drv.c |  315 ++++++++++++++++++++++++++++++++++++-
+ include/drm/i2c/tda998x.h         |   23 +++
+ 2 files changed, 330 insertions(+), 8 deletions(-)
+ create mode 100644 include/drm/i2c/tda998x.h
+
+diff --git a/drivers/gpu/drm/i2c/tda998x_drv.c b/drivers/gpu/drm/i2c/tda998x_drv.c
+index d6afd02..da04939 100644
+--- a/drivers/gpu/drm/i2c/tda998x_drv.c
++++ b/drivers/gpu/drm/i2c/tda998x_drv.c
+@@ -23,7 +23,7 @@
+ #include <drm/drm_crtc_helper.h>
+ #include <drm/drm_encoder_slave.h>
+ #include <drm/drm_edid.h>
+-
++#include <drm/i2c/tda998x.h>
+ 
+ #define DBG(fmt, ...) DRM_DEBUG(fmt"\n", ##__VA_ARGS__)
+ 
+@@ -32,9 +32,11 @@ struct tda998x_priv {
+ 	uint16_t rev;
+ 	uint8_t current_page;
+ 	int dpms;
++	bool is_hdmi_sink;
+ 	u8 vip_cntrl_0;
+ 	u8 vip_cntrl_1;
+ 	u8 vip_cntrl_2;
++	struct tda998x_encoder_params params;
+ };
+ 
+ #define to_tda998x_priv(x)  ((struct tda998x_priv *)to_encoder_slave(x)->slave_priv)
+@@ -71,10 +73,13 @@ struct tda998x_priv {
+ # define I2C_MASTER_DIS_MM        (1 << 0)
+ # define I2C_MASTER_DIS_FILT      (1 << 1)
+ # define I2C_MASTER_APP_STRT_LAT  (1 << 2)
++#define REG_FEAT_POWERDOWN        REG(0x00, 0x0e)     /* read/write */
++# define FEAT_POWERDOWN_SPDIF     (1 << 3)
+ #define REG_INT_FLAGS_0           REG(0x00, 0x0f)     /* read/write */
+ #define REG_INT_FLAGS_1           REG(0x00, 0x10)     /* read/write */
+ #define REG_INT_FLAGS_2           REG(0x00, 0x11)     /* read/write */
+ # define INT_FLAGS_2_EDID_BLK_RD  (1 << 1)
++#define REG_ENA_ACLK              REG(0x00, 0x16)     /* read/write */
+ #define REG_ENA_VP_0              REG(0x00, 0x18)     /* read/write */
+ #define REG_ENA_VP_1              REG(0x00, 0x19)     /* read/write */
+ #define REG_ENA_VP_2              REG(0x00, 0x1a)     /* read/write */
+@@ -113,6 +118,7 @@ struct tda998x_priv {
+ #define REG_VIP_CNTRL_5           REG(0x00, 0x25)     /* write */
+ # define VIP_CNTRL_5_CKCASE       (1 << 0)
+ # define VIP_CNTRL_5_SP_CNT(x)    (((x) & 3) << 1)
++#define REG_MUX_AP                REG(0x00, 0x26)     /* read/write */
+ #define REG_MUX_VP_VIP_OUT        REG(0x00, 0x27)     /* read/write */
+ #define REG_MAT_CONTRL            REG(0x00, 0x80)     /* write */
+ # define MAT_CONTRL_MAT_SC(x)     (((x) & 3) << 0)
+@@ -175,6 +181,12 @@ struct tda998x_priv {
+ # define HVF_CNTRL_1_PAD(x)       (((x) & 3) << 4)
+ # define HVF_CNTRL_1_SEMI_PLANAR  (1 << 6)
+ #define REG_RPT_CNTRL             REG(0x00, 0xf0)     /* write */
++#define REG_I2S_FORMAT            REG(0x00, 0xfc)     /* read/write */
++# define I2S_FORMAT(x)            (((x) & 3) << 0)
++#define REG_AIP_CLKSEL            REG(0x00, 0xfd)     /* write */
++# define AIP_CLKSEL_FS(x)         (((x) & 3) << 0)
++# define AIP_CLKSEL_CLK_POL(x)    (((x) & 1) << 2)
++# define AIP_CLKSEL_AIP(x)        (((x) & 7) << 3)
+ 
+ 
+ /* Page 02h: PLL settings */
+@@ -198,6 +210,12 @@ struct tda998x_priv {
+ #define REG_PLL_SCGR1             REG(0x02, 0x09)     /* read/write */
+ #define REG_PLL_SCGR2             REG(0x02, 0x0a)     /* read/write */
+ #define REG_AUDIO_DIV             REG(0x02, 0x0e)     /* read/write */
++# define AUDIO_DIV_SERCLK_1       0
++# define AUDIO_DIV_SERCLK_2       1
++# define AUDIO_DIV_SERCLK_4       2
++# define AUDIO_DIV_SERCLK_8       3
++# define AUDIO_DIV_SERCLK_16      4
++# define AUDIO_DIV_SERCLK_32      5
+ #define REG_SEL_CLK               REG(0x02, 0x11)     /* read/write */
+ # define SEL_CLK_SEL_CLK1         (1 << 0)
+ # define SEL_CLK_SEL_VRF_CLK(x)   (((x) & 3) << 1)
+@@ -216,6 +234,11 @@ struct tda998x_priv {
+ 
+ 
+ /* Page 10h: information frames and packets */
++#define REG_IF1_HB0               REG(0x10, 0x20)     /* read/write */
++#define REG_IF2_HB0               REG(0x10, 0x40)     /* read/write */
++#define REG_IF3_HB0               REG(0x10, 0x60)     /* read/write */
++#define REG_IF4_HB0               REG(0x10, 0x80)     /* read/write */
++#define REG_IF5_HB0               REG(0x10, 0xa0)     /* read/write */
+ 
+ 
+ /* Page 11h: audio settings and content info packets */
+@@ -225,10 +248,33 @@ struct tda998x_priv {
+ # define AIP_CNTRL_0_LAYOUT       (1 << 2)
+ # define AIP_CNTRL_0_ACR_MAN      (1 << 5)
+ # define AIP_CNTRL_0_RST_CTS      (1 << 6)
++#define REG_CA_I2S                REG(0x11, 0x01)     /* read/write */
++# define CA_I2S_CA_I2S(x)         (((x) & 31) << 0)
++# define CA_I2S_HBR_CHSTAT        (1 << 6)
++#define REG_LATENCY_RD            REG(0x11, 0x04)     /* read/write */
++#define REG_ACR_CTS_0             REG(0x11, 0x05)     /* read/write */
++#define REG_ACR_CTS_1             REG(0x11, 0x06)     /* read/write */
++#define REG_ACR_CTS_2             REG(0x11, 0x07)     /* read/write */
++#define REG_ACR_N_0               REG(0x11, 0x08)     /* read/write */
++#define REG_ACR_N_1               REG(0x11, 0x09)     /* read/write */
++#define REG_ACR_N_2               REG(0x11, 0x0a)     /* read/write */
++#define REG_CTS_N                 REG(0x11, 0x0c)     /* read/write */
++# define CTS_N_K(x)               (((x) & 7) << 0)
++# define CTS_N_M(x)               (((x) & 3) << 4)
+ #define REG_ENC_CNTRL             REG(0x11, 0x0d)     /* read/write */
+ # define ENC_CNTRL_RST_ENC        (1 << 0)
+ # define ENC_CNTRL_RST_SEL        (1 << 1)
+ # define ENC_CNTRL_CTL_CODE(x)    (((x) & 3) << 2)
++#define REG_DIP_FLAGS             REG(0x11, 0x0e)     /* read/write */
++# define DIP_FLAGS_ACR            (1 << 0)
++# define DIP_FLAGS_GC             (1 << 1)
++#define REG_DIP_IF_FLAGS          REG(0x11, 0x0f)     /* read/write */
++# define DIP_IF_FLAGS_IF1         (1 << 1)
++# define DIP_IF_FLAGS_IF2         (1 << 2)
++# define DIP_IF_FLAGS_IF3         (1 << 3)
++# define DIP_IF_FLAGS_IF4         (1 << 4)
++# define DIP_IF_FLAGS_IF5         (1 << 5)
++#define REG_CH_STAT_B(x)          REG(0x11, 0x14 + (x)) /* read/write */
+ 
+ 
+ /* Page 12h: HDCP and OTP */
+@@ -344,6 +390,23 @@ fail:
+ 	return ret;
+ }
+ 
++static void
++reg_write_range(struct drm_encoder *encoder, uint16_t reg, uint8_t *p, int cnt)
++{
++	struct i2c_client *client = drm_i2c_encoder_get_client(encoder);
++	uint8_t buf[cnt+1];
++	int ret;
++
++	buf[0] = REG2ADDR(reg);
++	memcpy(&buf[1], p, cnt);
++
++	set_page(encoder, reg);
++
++	ret = i2c_master_send(client, buf, cnt + 1);
++	if (ret < 0)
++		dev_err(&client->dev, "Error %d writing to 0x%x\n", ret, reg);
++}
++
+ static uint8_t
+ reg_read(struct drm_encoder *encoder, uint16_t reg)
+ {
+@@ -412,7 +475,7 @@ tda998x_reset(struct drm_encoder *encoder)
+ 	reg_write(encoder, REG_SERIALIZER,   0x00);
+ 	reg_write(encoder, REG_BUFFER_OUT,   0x00);
+ 	reg_write(encoder, REG_PLL_SCG1,     0x00);
+-	reg_write(encoder, REG_AUDIO_DIV,    0x03);
++	reg_write(encoder, REG_AUDIO_DIV,    AUDIO_DIV_SERCLK_8);
+ 	reg_write(encoder, REG_SEL_CLK,      SEL_CLK_SEL_CLK1 | SEL_CLK_ENA_SC_CLK);
+ 	reg_write(encoder, REG_PLL_SCGN1,    0xfa);
+ 	reg_write(encoder, REG_PLL_SCGN2,    0x00);
+@@ -421,11 +484,192 @@ tda998x_reset(struct drm_encoder *encoder)
+ 	reg_write(encoder, REG_PLL_SCG2,     0x10);
+ }
+ 
++static uint8_t tda998x_cksum(uint8_t *buf, size_t bytes)
++{
++	uint8_t sum = 0;
++
++	while (bytes--)
++		sum += *buf++;
++	return (255 - sum) + 1;
++}
++
++#define HB(x) (x)
++#define PB(x) (HB(2) + 1 + (x))
++
++static void
++tda998x_write_if(struct drm_encoder *encoder, uint8_t bit, uint16_t addr,
++		 uint8_t *buf, size_t size)
++{
++	buf[PB(0)] = tda998x_cksum(buf, size);
++
++	reg_clear(encoder, REG_DIP_IF_FLAGS, bit);
++	reg_write_range(encoder, addr, buf, size);
++	reg_set(encoder, REG_DIP_IF_FLAGS, bit);
++}
++
++static void
++tda998x_write_aif(struct drm_encoder *encoder, struct tda998x_encoder_params *p)
++{
++	uint8_t buf[PB(5) + 1];
++
++	buf[HB(0)] = 0x84;
++	buf[HB(1)] = 0x01;
++	buf[HB(2)] = 10;
++	buf[PB(0)] = 0;
++	buf[PB(1)] = p->audio_frame[1] & 0x07; /* CC */
++	buf[PB(2)] = p->audio_frame[2] & 0x1c; /* SF */
++	buf[PB(4)] = p->audio_frame[4];
++	buf[PB(5)] = p->audio_frame[5] & 0xf8; /* DM_INH + LSV */
++
++	tda998x_write_if(encoder, DIP_IF_FLAGS_IF4, REG_IF4_HB0, buf,
++			 sizeof(buf));
++}
++
++static void
++tda998x_write_avi(struct drm_encoder *encoder, struct drm_display_mode *mode)
++{
++	uint8_t buf[PB(13) + 1];
++
++	memset(buf, 0, sizeof(buf));
++	buf[HB(0)] = 0x82;
++	buf[HB(1)] = 0x02;
++	buf[HB(2)] = 13;
++	buf[PB(4)] = drm_match_cea_mode(mode);
++
++	tda998x_write_if(encoder, DIP_IF_FLAGS_IF2, REG_IF2_HB0, buf,
++			 sizeof(buf));
++}
++
++static void tda998x_audio_mute(struct drm_encoder *encoder, bool on)
++{
++	if (on) {
++		reg_set(encoder, REG_SOFTRESET, SOFTRESET_AUDIO);
++		reg_clear(encoder, REG_SOFTRESET, SOFTRESET_AUDIO);
++		reg_set(encoder, REG_AIP_CNTRL_0, AIP_CNTRL_0_RST_FIFO);
++	} else {
++		reg_clear(encoder, REG_AIP_CNTRL_0, AIP_CNTRL_0_RST_FIFO);
++	}
++}
++
++static void
++tda998x_configure_audio(struct drm_encoder *encoder,
++		struct drm_display_mode *mode, struct tda998x_encoder_params *p)
++{
++	uint8_t buf[6], clksel_aip, clksel_fs, ca_i2s, cts_n, adiv;
++	uint32_t cts, n;
++
++	/* Enable audio ports */
++	reg_write(encoder, REG_ENA_AP, p->audio_cfg);
++	reg_write(encoder, REG_ENA_ACLK, p->audio_clk_cfg);
++
++	/* Set audio input source */
++	switch (p->audio_format) {
++	case AFMT_SPDIF:
++		reg_write(encoder, REG_MUX_AP, 0x40);
++		clksel_aip = AIP_CLKSEL_AIP(0);
++		/* FS64SPDIF */
++		clksel_fs = AIP_CLKSEL_FS(2);
++		cts_n = CTS_N_M(3) | CTS_N_K(3);
++		ca_i2s = 0;
++		break;
++
++	case AFMT_I2S:
++		reg_write(encoder, REG_MUX_AP, 0x64);
++		clksel_aip = AIP_CLKSEL_AIP(1);
++		/* ACLK */
++		clksel_fs = AIP_CLKSEL_FS(0);
++		cts_n = CTS_N_M(3) | CTS_N_K(3);
++		ca_i2s = CA_I2S_CA_I2S(0);
++		break;
++	}
++
++	reg_write(encoder, REG_AIP_CLKSEL, clksel_aip);
++	reg_clear(encoder, REG_AIP_CNTRL_0, AIP_CNTRL_0_LAYOUT);
++
++	/* Enable automatic CTS generation */
++	reg_clear(encoder, REG_AIP_CNTRL_0, AIP_CNTRL_0_ACR_MAN);
++	reg_write(encoder, REG_CTS_N, cts_n);
++
++	/*
++	 * Audio input somehow depends on HDMI line rate which is
++	 * related to pixclk. Testing showed that modes with pixclk
++	 * >100MHz need a larger divider while <40MHz need the default.
++	 * There is no detailed info in the datasheet, so we just
++	 * assume 100MHz requires larger divider.
++	 */
++	if (mode->clock > 100000)
++		adiv = AUDIO_DIV_SERCLK_16;
++	else
++		adiv = AUDIO_DIV_SERCLK_8;
++	reg_write(encoder, REG_AUDIO_DIV, adiv);
++
++	/*
++	 * This is the approximate value of N, which happens to be
++	 * the recommended values for non-coherent clocks.
++	 */
++	n = 128 * p->audio_sample_rate / 1000;
++
++	/*
++	 * HDMI 1.3a, 7.2.2 CTS parameter:
++	 *  (avg cts) = (fTMDS * N) / (128 * fS)
++	 */
++	cts = n * mode->clock / p->audio_sample_rate;
++	cts *= 1000;
++	cts /= 128;
++
++	/* Write the CTS and N values */
++	buf[0] = cts;
++	buf[1] = cts >> 8;
++	buf[2] = cts >> 16;
++	buf[3] = n;
++	buf[4] = n >> 8;
++	buf[5] = n >> 16;
++	reg_write_range(encoder, REG_ACR_CTS_0, buf, 6);
++
++	/* Set CTS clock reference */
++	reg_write(encoder, REG_AIP_CLKSEL, clksel_aip | clksel_fs);
++
++	/* Reset CTS generator */
++	reg_set(encoder, REG_AIP_CNTRL_0, AIP_CNTRL_0_RST_CTS);
++	reg_clear(encoder, REG_AIP_CNTRL_0, AIP_CNTRL_0_RST_CTS);
++
++	/* Write the channel status */
++	buf[0] = 0x04;
++	buf[1] = 0x00;
++	buf[2] = 0x00;
++	buf[3] = 0xf1;
++	reg_write_range(encoder, REG_CH_STAT_B(0), buf, 4);
++
++	tda998x_audio_mute(encoder, true);
++	mdelay(20);
++	tda998x_audio_mute(encoder, false);
++
++	/* Write the audio information packet */
++	tda998x_write_aif(encoder, p);
++}
++
+ /* DRM encoder functions */
+ 
+ static void
+ tda998x_encoder_set_config(struct drm_encoder *encoder, void *params)
+ {
++	struct tda998x_priv *priv = to_tda998x_priv(encoder);
++	struct tda998x_encoder_params *p = params;
++
++	priv->vip_cntrl_0 = VIP_CNTRL_0_SWAP_A(p->swap_a) |
++			    (p->mirr_a ? VIP_CNTRL_0_MIRR_A : 0) |
++			    VIP_CNTRL_0_SWAP_B(p->swap_b) |
++			    (p->mirr_b ? VIP_CNTRL_0_MIRR_B : 0);
++	priv->vip_cntrl_1 = VIP_CNTRL_1_SWAP_C(p->swap_c) |
++			    (p->mirr_c ? VIP_CNTRL_1_MIRR_C : 0) |
++			    VIP_CNTRL_1_SWAP_D(p->swap_d) |
++			    (p->mirr_d ? VIP_CNTRL_1_MIRR_D : 0);
++	priv->vip_cntrl_2 = VIP_CNTRL_2_SWAP_E(p->swap_e) |
++			    (p->mirr_e ? VIP_CNTRL_2_MIRR_E : 0) |
++			    VIP_CNTRL_2_SWAP_F(p->swap_f) |
++			    (p->mirr_f ? VIP_CNTRL_2_MIRR_F : 0);
++
++	priv->params = *p;
+ }
+ 
+ static void
+@@ -444,8 +688,7 @@ tda998x_encoder_dpms(struct drm_encoder *encoder, int mode)
+ 	case DRM_MODE_DPMS_ON:
+ 		/* Write the default value MUX register */
+ 		reg_write(encoder, REG_MUX_VP_VIP_OUT, 0x24);
+-		/* enable audio and video ports */
+-		reg_write(encoder, REG_ENA_AP, 0xff);
++		/* enable video ports, audio will be enabled later */
+ 		reg_write(encoder, REG_ENA_VP_0, 0xff);
+ 		reg_write(encoder, REG_ENA_VP_1, 0xff);
+ 		reg_write(encoder, REG_ENA_VP_2, 0xff);
+@@ -607,17 +850,32 @@ tda998x_encoder_mode_set(struct drm_encoder *encoder,
+ 	reg_write16(encoder, REG_REFPIX_MSB, ref_pix);
+ 	reg_write16(encoder, REG_REFLINE_MSB, ref_line);
+ 
+-	reg = TBG_CNTRL_1_VHX_EXT_DE |
+-			TBG_CNTRL_1_VHX_EXT_HS |
+-			TBG_CNTRL_1_VHX_EXT_VS |
+-			TBG_CNTRL_1_DWIN_DIS | /* HDCP off */
++	reg = TBG_CNTRL_1_DWIN_DIS | /* HDCP off */
+ 			TBG_CNTRL_1_VH_TGL_2;
++	/*
++	 * It is questionable whether this is correct - the nxp driver
++	 * does not set VH_TGL_2 and the below for all display modes.
++	 */
+ 	if (mode->flags & (DRM_MODE_FLAG_NVSYNC | DRM_MODE_FLAG_NHSYNC))
+ 		reg |= TBG_CNTRL_1_VH_TGL_0;
+ 	reg_set(encoder, REG_TBG_CNTRL_1, reg);
+ 
+ 	/* must be last register set: */
+ 	reg_clear(encoder, REG_TBG_CNTRL_0, TBG_CNTRL_0_SYNC_ONCE);
++
++	/* Only setup the info frames if the sink is HDMI */
++	if (priv->is_hdmi_sink) {
++		/* We need to turn HDMI HDCP stuff on to get audio through */
++		reg_clear(encoder, REG_TBG_CNTRL_1, TBG_CNTRL_1_DWIN_DIS);
++		reg_write(encoder, REG_ENC_CNTRL, ENC_CNTRL_CTL_CODE(1));
++		reg_set(encoder, REG_TX33, TX33_HDMI);
++
++		tda998x_write_avi(encoder, adjusted_mode);
++
++		if (priv->params.audio_cfg)
++			tda998x_configure_audio(encoder, adjusted_mode,
++						&priv->params);
++	}
+ }
+ 
+ static enum drm_connector_status
+@@ -743,12 +1001,14 @@ static int
+ tda998x_encoder_get_modes(struct drm_encoder *encoder,
+ 			 struct drm_connector *connector)
+ {
++	struct tda998x_priv *priv = to_tda998x_priv(encoder);
+ 	struct edid *edid = (struct edid *)do_get_edid(encoder);
+ 	int n = 0;
+ 
+ 	if (edid) {
+ 		drm_mode_connector_update_edid_property(connector, edid);
+ 		n = drm_add_edid_modes(connector, edid);
++		priv->is_hdmi_sink = drm_detect_hdmi_monitor(edid);
+ 		kfree(edid);
+ 	}
+ 
+@@ -810,6 +1070,40 @@ tda998x_remove(struct i2c_client *client)
+ 	return 0;
+ }
+ 
++static ssize_t i2c_read_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t size)
++{
++	struct drm_encoder *encoder = dev_get_drvdata(dev);
++	unsigned int page, addr;
++	unsigned char val;
++
++	sscanf(buf, "%x %x", &page, &addr);
++
++	val = reg_read(encoder, REG(page, addr));
++
++	printk("i2c read %02x @ page:%02x address:%02x\n", val, page, addr);
++	return size;
++}
++
++static ssize_t i2c_write_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t size)
++{
++	struct drm_encoder *encoder = dev_get_drvdata(dev);
++	unsigned int page, addr, mask, val;
++	unsigned char rval;
++
++	sscanf(buf, "%x %x %x %x", &page, &addr, &mask, &val);
++
++	rval = reg_read(encoder, REG(page, addr));
++	rval &= ~mask;
++	rval |= val & mask;
++	reg_write(encoder, REG(page, addr), rval);
++
++	printk("i2c write %02x @ page:%02x address:%02x\n", rval, page, addr);
++	return size;
++}
++
++static DEVICE_ATTR(i2c_read, S_IWUSR, NULL, i2c_read_store);
++static DEVICE_ATTR(i2c_write, S_IWUSR, NULL, i2c_write_store);
++
+ static int
+ tda998x_encoder_init(struct i2c_client *client,
+ 		    struct drm_device *dev,
+@@ -817,6 +1111,11 @@ tda998x_encoder_init(struct i2c_client *client,
+ {
+ 	struct drm_encoder *encoder = &encoder_slave->base;
+ 	struct tda998x_priv *priv;
++/* debug */
++	device_create_file(&client->dev, &dev_attr_i2c_read);
++	device_create_file(&client->dev, &dev_attr_i2c_write);
++	dev_set_drvdata(&client->dev, encoder);
++/* debug end */
+ 
+ 	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
+ 	if (!priv)
+diff --git a/include/drm/i2c/tda998x.h b/include/drm/i2c/tda998x.h
+new file mode 100644
+index 0000000..41f799f
+--- /dev/null
++++ b/include/drm/i2c/tda998x.h
+@@ -0,0 +1,23 @@
++#ifndef __TDA998X_H__
++#define __TDA998X_H__
++
++enum tda998x_audio_format {
++	AFMT_I2S,
++	AFMT_SPDIF,
++};
++
++struct tda998x_encoder_params {
++	int audio_cfg;
++	int audio_clk_cfg;
++	enum tda998x_audio_format audio_format;
++	int audio_sample_rate;
++	char audio_frame[6];
++	int swap_a, mirr_a;
++	int swap_b, mirr_b;
++	int swap_c, mirr_c;
++	int swap_d, mirr_d;
++	int swap_e, mirr_e;
++	int swap_f, mirr_f;
++};
++
++#endif
+-- 
+1.7.10.4
 
