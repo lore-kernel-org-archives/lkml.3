@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754102Ab3HEOru (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 10:47:50 -0400
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:26017 "EHLO
+	id S1753269Ab3HEOtg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 10:49:36 -0400
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:26011 "EHLO
 	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752325Ab3HEOrs (ORCPT
+	by vger.kernel.org with ESMTP id S1754022Ab3HEOrt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 10:47:48 -0400
+	Mon, 5 Aug 2013 10:47:49 -0400
 X-IronPort-AV: E=Sophos;i="4.89,819,1367964000"; 
-   d="scan'208";a="28546971"
+   d="scan'208";a="28546972"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: James Smart <james.smart@emulex.com>
-Cc: kernel-janitors@vger.kernel.org,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] drivers/scsi/lpfc/lpfc_init.c: adjust code alignment
-Date: Mon,  5 Aug 2013 16:47:37 +0200
-Message-Id: <1375714059-29567-3-git-send-email-Julia.Lawall@lip6.fr>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: kernel-janitors@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] net/vmw_vsock/af_vsock.c: drop unneeded semicolon
+Date: Mon,  5 Aug 2013 16:47:38 +0200
+Message-Id: <1375714059-29567-4-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1375714059-29567-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1375714059-29567-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -26,40 +25,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-Adjust code alignment so that each statement is lined up with its neighbor.
-
-In the second case, it could be desirable to put the call to
-lpfc_destroy_vport_work_array under the if.  The call, is, however, safe
-in case vports is NULL, so the patch just adjusts the indentation to
-reflect the current semantics.
+Drop the semicolon at the end of the list_for_each_entry loop header.
 
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
+Not tested, but I can't imagine how the current code could work, since vsk
+should end up pointing to a dummy value.
 
- drivers/scsi/lpfc/lpfc_init.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/vmw_vsock/af_vsock.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/scsi/lpfc/lpfc_init.c b/drivers/scsi/lpfc/lpfc_init.c
-index e0b20fa..f870421 100644
---- a/drivers/scsi/lpfc/lpfc_init.c
-+++ b/drivers/scsi/lpfc/lpfc_init.c
-@@ -692,7 +692,7 @@ lpfc_hba_init_link_fc_topology(struct lpfc_hba *phba, uint32_t fc_topology,
- 			"1302 Invalid speed for this board:%d "
- 			"Reset link speed to auto.\n",
- 			phba->cfg_link_speed);
--			phba->cfg_link_speed = LPFC_USER_LINK_SPEED_AUTO;
-+		phba->cfg_link_speed = LPFC_USER_LINK_SPEED_AUTO;
+diff --git a/net/vmw_vsock/af_vsock.c b/net/vmw_vsock/af_vsock.c
+index 593071d..4d93346 100644
+--- a/net/vmw_vsock/af_vsock.c
++++ b/net/vmw_vsock/af_vsock.c
+@@ -347,7 +347,7 @@ void vsock_for_each_connected_socket(void (*fn)(struct sock *sk))
+ 	for (i = 0; i < ARRAY_SIZE(vsock_connected_table); i++) {
+ 		struct vsock_sock *vsk;
+ 		list_for_each_entry(vsk, &vsock_connected_table[i],
+-				    connected_table);
++				    connected_table)
+ 			fn(sk_vsock(vsk));
  	}
- 	lpfc_init_link(phba, pmb, fc_topology, phba->cfg_link_speed);
- 	pmb->mbox_cmpl = lpfc_sli_def_mbox_cmpl;
-@@ -2702,7 +2702,7 @@ lpfc_online(struct lpfc_hba *phba)
- 			}
- 			spin_unlock_irq(shost->host_lock);
- 		}
--		lpfc_destroy_vport_work_array(phba, vports);
-+	lpfc_destroy_vport_work_array(phba, vports);
  
- 	lpfc_unblock_mgmt_io(phba);
- 	return 0;
 
