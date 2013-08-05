@@ -1,82 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754295Ab3HERkj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 13:40:39 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:52663 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754244Ab3HERkg (ORCPT
+	id S1754340Ab3HERku (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 13:40:50 -0400
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:35515 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754312Ab3HERks (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 13:40:36 -0400
-Date: Mon, 5 Aug 2013 10:40:31 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: "Zubair Lutfullah :" <zubair.lutfullah@gmail.com>
-Cc: Jonathan Cameron <jic23@kernel.org>, jic23@cam.ac.uk,
-        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org, gregkh@linuxfoundation.org,
-        Russ.Dill@ti.com
-Subject: Re: [PATCH 1/2] input: ti_tsc: Enable shared IRQ for TSC
-Message-ID: <20130805174031.GA20093@core.coreip.homeip.net>
-References: <1374882674-18403-1-git-send-email-zubair.lutfullah@gmail.com>
- <1374882674-18403-2-git-send-email-zubair.lutfullah@gmail.com>
- <51FE361B.5030900@kernel.org>
- <20130805161256.GA8794@core.coreip.homeip.net>
- <20130805170201.GA4310@gmail.com>
+	Mon, 5 Aug 2013 13:40:48 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130805170201.GA4310@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130805171142.GA6978@redhat.com>
+References: <CA+55aFwTX47vLvZckozZub0rUEo-aCBe7weqe=4mfQGfrW7NUA@mail.gmail.com>
+	<CAMP44s2bOniz4qx5y9h4ppHRUjiPVGL+igSwO5NUJd4zpObxFw@mail.gmail.com>
+	<20130805132948.GA14942@redhat.com>
+	<CAMP44s0iXYjNuSqtCCjBHbbmmrYsKcrRBmD_W_nEiWTxPX1+xQ@mail.gmail.com>
+	<20130805143935.GA18100@redhat.com>
+	<CAMP44s0Q5fCcAwjPWaiz8uVE+BAnQ=YOBxtqNXR6XT1KBApFng@mail.gmail.com>
+	<20130805171142.GA6978@redhat.com>
+Date: Mon, 5 Aug 2013 12:40:46 -0500
+Message-ID: <CAMP44s26f-AFWyxgWEyF50N6wntwT-UDHS4ZdSnZbagj+Rai7g@mail.gmail.com>
+Subject: Re: Linux 3.11-rc4
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 05, 2013 at 06:02:02PM +0100, Zubair Lutfullah : wrote:
-> On Mon, Aug 05, 2013 at 09:12:56AM -0700, Dmitry Torokhov wrote:
-> > > > Touchscreen and ADC share the same IRQ line from parent MFD core.
-> > > > Previously only Touchscreen was interrupt based.
-> > > > With continuous mode support added in ADC driver, driver requires
-> > > > interrupt to process the ADC samples, so enable shared IRQ flag bit for
-> > > > touchscreen.
-> > > > 
-> > > > @@ -260,8 +260,18 @@ static irqreturn_t titsc_irq(int irq, void *dev)
-> > > >  	unsigned int fsm;
-> > > >  
-> > > > +	/*
-> > > > +	 * ADC and touchscreen share the IRQ line.
-> > > > +	 * FIFO1 threshold, FIFO1 Overrun and FIFO1 underflow
-> > > > +	 * interrupts are used by ADC,
-> > > > +	 * hence return from touchscreen IRQ handler if FIFO1
-> > > > +	 * related interrupts occurred.
-> > > > +	 */
-> > > > +	if ((status & IRQENB_FIFO1THRES) ||
-> > > > +			(status & IRQENB_FIFO1OVRRUN) ||
-> > > > +			(status & IRQENB_FIFO1UNDRFLW))
-> > > > +		return IRQ_NONE;
-> > > > +	else if (status & IRQENB_FIFO0THRES) {
-> > 
-> > What happens if both parts have data at the same time? Can both
-> > IRQENB_FIFO1THRES and IRQENB_FIFO0THRES be signalled? What will happen
-> > in this case?
-> 
-> If ADC is sampling and someone is touching the TSC, both interrupts
-> can signal so closely that for the purpose of the kernel,
-> they can be seen as signaled together.
-> 
-> FIFO 1 used only by ADC and FIFO1THRES handler is inside the iio/adc driver
-> FIFO 0 used only by TSC and FIFO0THRES handler is inside the input/touchscreen
-> 
-> Note: These are level interrupts.
-> 
-> I would like some input on how to handle such a situation. 
+On Mon, Aug 5, 2013 at 12:11 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+> On 08/05, Felipe Contreras wrote:
+>>
+>> On Mon, Aug 5, 2013 at 9:39 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+>> >
+>> > Hmm. It should not crash under strace... please see below.
+>> >
+>> >> 953   ptrace(PTRACE_ATTACH, 1035, 0, 0) = -1 EPERM (Operation not permitted)
+>> >
+>> > OK, so it actually uses ptrace ;)
+>> >
+>> > PTRACE_ATTACH fails because this child is already traced by strace, I guess.
+>> >
+>> > So does Starcraft crash this way? Or does it fail in some other way?
+>>
+>> It's crashing just the same.
+>
+> But then it is not clear how fab840f can make any difference.
 
-It looks like you need to have smart demultiplexing in MFD core of your
-driver instead of relying on shared interrupt handler.
+Yeah, it's very strange.
 
-Another option would be to check "your" bits, handle the data, clear the
-status and then check bits again and return IRQ_NONE instead of
-IRQ_HANDLED if other guys bits are set, but it is way too ugly.
+> wine can not use ptrace when it runs after "strace -f". But, to remind,
+> I know nothing about wine. Perhaps wine uses some daemons which actually
+> run/ptrace the workload?
 
-Thanks.
+There's this thing called wineserver, I'm not exactly sure how it would affect.
+
+But I found this:
+
+http://askubuntu.com/questions/146160/what-is-the-ptrace-scope-workaround-for-wine-programs-and-are-there-any-risks
+
+Would it be possible to just revert that patch for v3.11, and fix it later?
 
 -- 
-Dmitry
+Felipe Contreras
