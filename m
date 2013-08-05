@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753447Ab3HEN6B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 09:58:01 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51659 "EHLO
+	id S1753506Ab3HEN6M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 09:58:12 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51675 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753147Ab3HEN57 (ORCPT
+	with ESMTP id S1753147Ab3HEN6I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 09:57:59 -0400
-Date: Mon, 5 Aug 2013 06:57:41 -0700
+	Mon, 5 Aug 2013 09:58:08 -0400
+Date: Mon, 5 Aug 2013 06:57:51 -0700
 From: tip-bot for Jason Wang <tipbot@zytor.com>
-Message-ID: <tip-96e39ac0e9d18020c8c5a41b64b8fe86c26575ab@git.kernel.org>
+Message-ID: <tip-448ac44d561f0aba5baac54bac62fe40d07230b6@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        jasowang@redhat.com, gleb@redhat.com, pbonzini@redhat.com,
-        tglx@linutronix.de, hpa@linux.intel.com
+        konrad.wilk@oracle.com, jasowang@redhat.com, jeremy@goop.org,
+        pbonzini@redhat.com, tglx@linutronix.de, hpa@linux.intel.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        jasowang@redhat.com, gleb@redhat.com, pbonzini@redhat.com,
-        tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1374742475-2485-1-git-send-email-jasowang@redhat.com>
-References: <1374742475-2485-1-git-send-email-jasowang@redhat.com>
+        konrad.wilk@oracle.com, jasowang@redhat.com, jeremy@goop.org,
+        pbonzini@redhat.com, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <1374742475-2485-2-git-send-email-jasowang@redhat.com>
+References: <1374742475-2485-2-git-send-email-jasowang@redhat.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/paravirt] x86: Introduce hypervisor_cpuid_base()
-Git-Commit-ID: 96e39ac0e9d18020c8c5a41b64b8fe86c26575ab
+Subject: [tip:x86/paravirt] xen: Switch to use hypervisor_cpuid_base()
+Git-Commit-ID: 448ac44d561f0aba5baac54bac62fe40d07230b6
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,57 +29,56 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 05 Aug 2013 06:57:48 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 05 Aug 2013 06:57:58 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  96e39ac0e9d18020c8c5a41b64b8fe86c26575ab
-Gitweb:     http://git.kernel.org/tip/96e39ac0e9d18020c8c5a41b64b8fe86c26575ab
+Commit-ID:  448ac44d561f0aba5baac54bac62fe40d07230b6
+Gitweb:     http://git.kernel.org/tip/448ac44d561f0aba5baac54bac62fe40d07230b6
 Author:     Jason Wang <jasowang@redhat.com>
-AuthorDate: Thu, 25 Jul 2013 16:54:32 +0800
+AuthorDate: Thu, 25 Jul 2013 16:54:33 +0800
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Mon, 5 Aug 2013 06:33:54 -0700
+CommitDate: Mon, 5 Aug 2013 06:34:09 -0700
 
-x86: Introduce hypervisor_cpuid_base()
+xen: Switch to use hypervisor_cpuid_base()
 
-This patch introduce hypervisor_cpuid_base() which loop test the hypervisor
-existence function until the signature match and check the number of leaves if
-required. This could be used by Xen/KVM guest to detect the existence of
-hypervisor.
+Switch to use hypervisor_cpuid_base() to detect Xen.
 
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>
 Cc: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Gleb Natapov <gleb@redhat.com>
 Signed-off-by: Jason Wang <jasowang@redhat.com>
-Link: http://lkml.kernel.org/r/1374742475-2485-1-git-send-email-jasowang@redhat.com
+Link: http://lkml.kernel.org/r/1374742475-2485-2-git-send-email-jasowang@redhat.com
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/include/asm/processor.h | 15 +++++++++++++++
- 1 file changed, 15 insertions(+)
+ arch/x86/include/asm/xen/hypervisor.h | 16 +---------------
+ 1 file changed, 1 insertion(+), 15 deletions(-)
 
-diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-index 24cf5ae..7763307 100644
---- a/arch/x86/include/asm/processor.h
-+++ b/arch/x86/include/asm/processor.h
-@@ -971,6 +971,21 @@ unsigned long calc_aperfmperf_ratio(struct aperfmperf *old,
- 	return ratio;
+diff --git a/arch/x86/include/asm/xen/hypervisor.h b/arch/x86/include/asm/xen/hypervisor.h
+index 125f344..d866959 100644
+--- a/arch/x86/include/asm/xen/hypervisor.h
++++ b/arch/x86/include/asm/xen/hypervisor.h
+@@ -40,21 +40,7 @@ extern struct start_info *xen_start_info;
+ 
+ static inline uint32_t xen_cpuid_base(void)
+ {
+-	uint32_t base, eax, ebx, ecx, edx;
+-	char signature[13];
+-
+-	for (base = 0x40000000; base < 0x40010000; base += 0x100) {
+-		cpuid(base, &eax, &ebx, &ecx, &edx);
+-		*(uint32_t *)(signature + 0) = ebx;
+-		*(uint32_t *)(signature + 4) = ecx;
+-		*(uint32_t *)(signature + 8) = edx;
+-		signature[12] = 0;
+-
+-		if (!strcmp("XenVMMXenVMM", signature) && ((eax - base) >= 2))
+-			return base;
+-	}
+-
+-	return 0;
++	return hypervisor_cpuid_base("XenVMMXenVMM", 2);
  }
  
-+static inline uint32_t hypervisor_cpuid_base(const char *sig, uint32_t leaves)
-+{
-+	uint32_t base, eax, signature[3];
-+
-+	for (base = 0x40000000; base < 0x40010000; base += 0x100) {
-+		cpuid(base, &eax, &signature[0], &signature[1], &signature[2]);
-+
-+		if (!memcmp(sig, signature, 12) &&
-+		    (leaves == 0 || ((eax - base) >= leaves)))
-+			return base;
-+	}
-+
-+	return 0;
-+}
-+
- extern unsigned long arch_align_stack(unsigned long sp);
- extern void free_init_pages(char *what, unsigned long begin, unsigned long end);
- 
+ #ifdef CONFIG_XEN
