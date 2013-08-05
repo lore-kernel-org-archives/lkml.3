@@ -1,88 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754342Ab3HEFRS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 01:17:18 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:43918 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754206Ab3HEFRQ (ORCPT
+	id S1754421Ab3HEFYd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 01:24:33 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:35092 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754135Ab3HEFYc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 01:17:16 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Subject: Re: [PATCH 01/18] mm, hugetlb: protect reserved pages when softofflining requests the pages
-In-Reply-To: <CAJd=RBBUVt5GJbjow=Rocqkqjm92MS7Jf9RfzDYPf05sQd2PZA@mail.gmail.com>
-References: <1375075929-6119-1-git-send-email-iamjoonsoo.kim@lge.com> <1375075929-6119-2-git-send-email-iamjoonsoo.kim@lge.com> <CAJd=RBCUJg5GJEQ2_heCt8S9LZzedGLbvYvivFkmvfMChPqaCg@mail.gmail.com> <20130731022751.GA2548@lge.com> <CAJd=RBD=SNm9TG-kxKcd-BiMduOhLUubq=JpRwCy_MmiDtO9Tw@mail.gmail.com> <20130731044101.GE2548@lge.com> <CAJd=RBDr72T+O+aNdb-HyB3U+k5JiVWMoXfPNA0y-Hxw-wDD-g@mail.gmail.com> <20130731063740.GA4212@lge.com> <CAJd=RBCj_wAHjv10FhhX+Fzx8p4ybeGykEfvqF=jZaok3s+j9w@mail.gmail.com> <87siytwfl0.fsf@linux.vnet.ibm.com> <CAJd=RBBUVt5GJbjow=Rocqkqjm92MS7Jf9RfzDYPf05sQd2PZA@mail.gmail.com>
-User-Agent: Notmuch/0.15.2+167~g5306b2b (http://notmuchmail.org) Emacs/24.3.50.1 (x86_64-unknown-linux-gnu)
-Date: Mon, 05 Aug 2013 10:47:01 +0530
-Message-ID: <87r4e8ogxe.fsf@linux.vnet.ibm.com>
+	Mon, 5 Aug 2013 01:24:32 -0400
+X-Sasl-enc: ak3vponKvy0DQz14DgV51/A7szYYc2shZy/UKCP6SRiK 1375680270
+Date: Mon, 5 Aug 2013 13:25:48 +0800
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Bastian Hecht <hechtb@gmail.com>, Jingoo Han <jg1.han@samsung.com>,
+        Paul Mundt <lethal@linux-sh.org>
+Subject: Re: linux-next: manual merge of the tty tree with the sh tree
+Message-ID: <20130805052548.GB31808@kroah.com>
+References: <20130805150456.974461a9896ae4d61f044aab@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13080505-8256-0000-0000-000008A74326
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130805150456.974461a9896ae4d61f044aab@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hillf Danton <dhillf@gmail.com> writes:
+On Mon, Aug 05, 2013 at 03:04:56PM +1000, Stephen Rothwell wrote:
+> Hi Greg,
+> 
+> Today's linux-next merge of the tty tree got a conflict in
+> drivers/tty/serial/sh-sci.c between commit ada80ee7fa60 ("serial: sh-sci:
+> Add OF support") from the sh tree and commit 3ba35baa55fa ("serial:
+> sh-sci: use dev_get_platdata()") from the tty tree.
+> 
+> I fixed it up (see below) and can carry the fix as necessary (no action
+> is required).
 
-> On Fri, Aug 2, 2013 at 12:17 AM, Aneesh Kumar K.V
-> <aneesh.kumar@linux.vnet.ibm.com> wrote:
->> Hillf Danton <dhillf@gmail.com> writes:
->>
-...
+Looks good to me, thanks.
 
->>>>> >> >> Well, why is it illegal to use reserved page here?
->>>>> >> >
->>>>> >> > If we use reserved page here, other processes which are promised to use
->>>>> >> > enough hugepages cannot get enough hugepages and can die. This is
->>>>> >> > unexpected result to them.
->>>>> >> >
->>>>> >> But, how do you determine that a huge page is requested by a process
->>>>> >> that is not allowed to use reserved pages?
->>>>> >
->>>>> > Reserved page is just one for each address or file offset. If we need to
->>>>> > move this page, this means that it already use it's own reserved page, this
->>>>> > page is it. So we should not use other reserved page for moving this page.
->>>>> >
->>>>> Hm, how do you determine "this page" is not buddy?
->>>>
->>>> If this page comes from the buddy, it doesn't matter. It imply that
->>>> this mapping cannot use reserved page pool, because we always allocate
->>>> a page from reserved page pool first.
->>>>
->>> A buddy page also implies, if the mapping can use reserved pages, that no
->>> reserved page was available when requested. Now we can try reserved
->>> page again.
->>
->> I didn't quiet get that. My understanding is, the new page we are
->
-> Neither did I ;)
->
->> allocating here for soft offline should not be allocated from the
->> reserve pool. If we do that we may possibly have allocation failure
->> later for a request that had done page reservation. Now to
->> avoid that we make sure we have enough free pages outside reserve pool
->> so that we can dequeue the huge page. If not we use buddy to allocate
->> the hugepage.
->>
-> What if it is a mapping with HPAGE_RESV_OWNER set?
-> Or can we block owner from using any page available here?
-
-We are allocating a new hugepage to replace the already allocated
-hugepage. We are in soft offline . That means the existing reservation
-if we have any is already consumed. The request for new page should not
-come from the reserve pool.
-
--aneesh
-
+greg k-h
