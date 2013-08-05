@@ -1,101 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753781Ab3HEPaA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 11:30:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24859 "EHLO mx1.redhat.com"
+	id S1753715Ab3HEPap (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 11:30:45 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:57715 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752078Ab3HEP36 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 11:29:58 -0400
-Date: Mon, 5 Aug 2013 11:29:41 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Li Zefan <lizefan@huawei.com>, Jens Axboe <axboe@kernel.dk>,
-        Matt Helsley <matthltc@us.ibm.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Balbir Singh <bsingharora@gmail.com>,
-        Aristeu Rozanski <aris@redhat.com>, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org, containers@lists.linux-foundation.org
-Subject: Re: [PATCH cgroup/for-3.12] cgroup: make css_for_each_descendant()
- and friends include the origin css in the iteration
-Message-ID: <20130805152941.GB6440@redhat.com>
-References: <20130804230703.GA12029@htj.dyndns.org>
+	id S1753102Ab3HEPan (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 11:30:43 -0400
+Message-ID: <51FFC4EA.40908@ti.com>
+Date: Mon, 5 Aug 2013 11:29:46 -0400
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130804230703.GA12029@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tejun Heo <tj@kernel.org>
+CC: Yinghai Lu <yinghai@kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        "sparclinux@vger.kernel.org" <sparclinux@vger.kernel.org>,
+        Sam Ravnborg <sam@ravnborg.org>, <linux-arch@vger.kernel.org>
+Subject: Re: [PATCH] WIP: HACK: LPAE, BOOTMEM and NO_BOOTMEM
+References: <20130629175743.GA382@mtj.dyndns.org> <CAE9FiQXHuP-n0eZ9wN73V4nSvE+XEExDsx1t50_=YaW+V=LGLg@mail.gmail.com> <20130629195549.GE3353@n2100.arm.linux.org.uk> <CAE9FiQUoVNvWmmTV2+ZkU_nMxFToTHw6QLwp_Z_EjwMzqdLwuA@mail.gmail.com> <51D18DBA.6090608@ti.com> <51F1A7AA.8080700@ti.com> <20130725223658.GJ26107@mtj.dyndns.org> <51F1B17F.30902@ti.com> <20130726030812.GB30195@mtj.dyndns.org> <51FC1F3A.8090201@ti.com> <20130805150127.GC19631@mtj.dyndns.org>
+In-Reply-To: <20130805150127.GC19631@mtj.dyndns.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 04, 2013 at 07:07:03PM -0400, Tejun Heo wrote:
+On Monday 05 August 2013 11:01 AM, Tejun Heo wrote:
 > Hello,
 > 
-> I've been wanting to do this for some time and given all the recent
-> API updates now seems like a pretty good opportunity.  Verified
-> freezer and blkcg.  The conversions are mostly straight forward but
-> I'd much appreciate acks from controller maintainers.
+> On Fri, Aug 02, 2013 at 05:06:02PM -0400, Santosh Shilimkar wrote:
+>> Looking at the situation, how about proceeding with patch updating
+>> the bootmem API signatures to use phys_addr_t  which can unblock me
+>> to get my machine working.
 > 
-> The patch is on top of
+> I'm not sure about that.  No matter how you play it, it'll end up
+> duplicating memblock interface.
 > 
->   cgroup/for-3.12 61584e3f4 ("cgroup: Merge branch 'for-3.11-fixes' into for-3.12")
-> + [1] cgroup: use cgroup_subsys_state as the primary subsystem interface handle
-> + [2] cgroup: make cgroup_event specific to memcg
-> 
-> and available in the following git branch.
-> 
->  git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-descendant-update
-> 
-> Thanks.
-> 
-> [1] https://lkml.org/lkml/2013/8/1/722
-> [2] http://thread.gmane.org/gmane.linux.kernel.cgroups/8726
-> 
-> ------- 8< -------
-> 
-> >From 0e84b0865ab8a87f1c1443e4777c20c7f14e13b6 Mon Sep 17 00:00:00 2001
-> From: Tejun Heo <tj@kernel.org>
-> Date: Sun, 4 Aug 2013 19:01:23 -0400
-> 
-> Previously, all css descendant iterators didn't include the origin
-> (root of subtree) css in the iteration.  The reasons were maintaining
-> consistency with css_for_each_child() and that at the time of
-> introduction more use cases needed skipping the origin anyway;
-> however, given that css_is_descendant() considers self to be a
-> descendant, omitting the origin css has become more confusing and
-> looking at the accumulated use cases rather clearly indicates that
-> including origin would result in simpler code overall.
-> 
-> While this is a change which can easily lead to subtle bugs, cgroup
-> API including the iterators has recently gone through major
-> restructuring and no out-of-tree changes will be applicable without
-> adjustments making this a relatively acceptable opportunity for this
-> type of change.
-> 
-> The conversions are mostly straight-forward.  If the iteration block
-> had explicit origin handling before or after, it's moved inside the
-> iteration.  If not, if (pos == origin) continue; is added.  Some
-> conversions add extra reference get/put around origin handling by
-> consolidating origin handling and the rest.  While the extra ref
-> operations aren't strictly necessary, this shouldn't cause any
-> noticeable difference.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Li Zefan <lizefan@huawei.com>
-> Cc: Jens Axboe <axboe@kernel.dk>
-> Cc: Vivek Goyal <vgoyal@redhat.com>
-> Cc: Matt Helsley <matthltc@us.ibm.com>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: Michal Hocko <mhocko@suse.cz>
-> Cc: Balbir Singh <bsingharora@gmail.com>
-> Cc: Aristeu Rozanski <aris@redhat.com>
-> ---
->  block/blk-cgroup.c       |  8 ++------
->  block/blk-cgroup.h       |  4 +++-
->  block/blk-throttle.c     |  3 ---
+fair enough.
 
-block/ bits look good to me.
+>> Introduction of new API, conversions of core kernel code and then
+> 
+> What new API are we talking about?  Wasn't the plan to convert core
+> kernel code to use memblock and let bootmem emulate bootmem API?
+> There's no new API.
+> 
+So looks like I am bit confused here. The current memblock_alloc()
+API just returns the physical address which not mapped memory.
+Most of the bootmem users including core code expects the
+mapped memory pointer which the code can directly operate on.
+So the current memblock_alloc() isn't going to help. The nobootmem.c
+has __alloc_memory_core_early() which is actually used by most of
+the bootmem wrappers to achieve the same. So my assumption was
+that we need an equivalent exported memblock API.
 
-Acked-by: Vivek Goyal <vgoyal@redhat.com>
+What am I missing?
 
-Vivek
+>> arches moving away from bootmem is going to take significant time
+> 
+> And arches moving away from bootmem doesn't have to happen now.
+> 
+I agree. The core code conversion is more of an issue.
+
+Regards,
+Santosh
