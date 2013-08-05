@@ -1,93 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754369Ab3HEQLE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 12:11:04 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:36106 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753176Ab3HEQLC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 12:11:02 -0400
-Date: Mon, 5 Aug 2013 13:10:52 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Andi Kleen <andi@firstfloor.org>, eranian@google.com, jolsa@redhat.com,
-        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 2/5] tools, perf: Add support to evsel for enabling
- counters
-Message-ID: <20130805161052.GB3228@ghostprotocols.net>
-References: <1375490473-1503-1-git-send-email-andi@firstfloor.org>
- <1375490473-1503-3-git-send-email-andi@firstfloor.org>
- <87eha81qzl.fsf@sejong.aot.lge.com>
+	id S1754334Ab3HEQMv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 12:12:51 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:36614 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751821Ab3HEQMt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 12:12:49 -0400
+Date: Mon, 5 Aug 2013 18:12:47 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Laszlo Ersek <lersek@redhat.com>
+Cc: edk2-devel@lists.sourceforge.net, David Woodhouse <dwmw2@infradead.org>,
+        linux-efi@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
+        Gleb Natapov <gleb@redhat.com>, Matthew Garrett <mjg59@srcf.ucam.org>
+Subject: Re: [edk2] Corrupted EFI region
+Message-ID: <20130805161247.GF31845@pd.tnic>
+References: <20130731205431.GG4724@pd.tnic>
+ <1375307727.22084.103.camel@shinybook.infradead.org>
+ <20130801164927.GA7445@pd.tnic>
+ <51FF8C14.2070405@redhat.com>
+ <20130805130258.GB31845@pd.tnic>
+ <51FFAB13.4090603@redhat.com>
+ <20130805140306.GD31845@pd.tnic>
+ <51FFB660.4060400@redhat.com>
+ <20130805144010.GE31845@pd.tnic>
+ <51FFC19A.1020204@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <87eha81qzl.fsf@sejong.aot.lge.com>
-X-Url: http://acmel.wordpress.com
+In-Reply-To: <51FFC19A.1020204@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Aug 05, 2013 at 05:28:14PM +0900, Namhyung Kim escreveu:
-> Hi Andi,
+On Mon, Aug 05, 2013 at 05:15:38PM +0200, Laszlo Ersek wrote:
+> The current implementation (how pointers are converted) probably doesn't
+> accommodate a second call.
 > 
-> On Fri,  2 Aug 2013 17:41:10 -0700, Andi Kleen wrote:
-> > From: Andi Kleen <ak@linux.intel.com>
-> >
-> > Add support for enabling already set up counters by using an
-> > ioctl. I share some code with the filter setup.
-> >
-> > Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> > ---
-> >  tools/perf/util/evsel.c | 21 ++++++++++++++++++---
-> >  tools/perf/util/evsel.h |  1 +
-> >  2 files changed, 19 insertions(+), 3 deletions(-)
-> >
-> > diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-> > index c9c7494..60e0d84 100644
-> > --- a/tools/perf/util/evsel.c
-> > +++ b/tools/perf/util/evsel.c
-> > @@ -605,16 +605,16 @@ int perf_evsel__alloc_fd(struct perf_evsel *evsel, int ncpus, int nthreads)
-> >  	return evsel->fd != NULL ? 0 : -ENOMEM;
-> >  }
-> >  
-> > -int perf_evsel__set_filter(struct perf_evsel *evsel, int ncpus, int nthreads,
-> > -			   const char *filter)
-> > +static int perf_evsel__run_ioctl(struct perf_evsel *evsel, int ncpus, int nthreads,
-> > +			  int ioc,  void *arg)
-> >  {
-> >  	int cpu, thread;
-> >  
-> >  	for (cpu = 0; cpu < ncpus; cpu++) {
-> >  		for (thread = 0; thread < nthreads; thread++) {
-> >  			int fd = FD(evsel, cpu, thread),
-> > -			    err = ioctl(fd, PERF_EVENT_IOC_SET_FILTER, filter);
-> >  
-> > +			err = ioctl(fd, ioc, arg);
+> Of course you want to know why SetVirtualAddressMap() was designed like
+> that... I didn't participate in the design so I don't know :)
 > 
-> Looks very strange to have a blank line between variable declarations.
-> You'd better separating declarations on the other lines like:
-> 
-> 			int fd, err;
-> 
-> 			fd = FD(evsel, cpu, thread);
-> 			err = ioctl(fd, ioc, arg);
+> But, as I said, a kernel directly executing another kernel is an
+> unexpected idea. IMHO the second kernel in question doesn't fit the UEFI
+> phases at all. The OS booted like that (ie. the OS whose kernel is the
+> 2nd (=kexec) kernel) never goes through SEC, PEI, DXE, BDS.
 
-Preferences :-) I think the best way is:
+Yes, the thing is, imposing unnecessary restrictions is very
+counterproductive. And kexec is just an example here - if
+SetVirtualAddressMap was callable an arbitrary number of times, this
+whole work I'm doing is unnecessary. So I'm jumping through hoops just
+to accomodate a braindead design.
 
-			int fd = FD(evsel, cpu, thread),
-			    err = ioctl(fd, ioc, arg);
+This is what I cannot fathom in the face of people praising UEFI as the
+solution to all problems. Where in fact it causes more, and needlessly
+at that.
 
-As its all short and so uses 2 instead of 4 lines. I'll fix up the
-alignment.
+> That doesn't matter as long as the UEFI designers aren't aware of it :)
 
-> 
-> Thanks,
-> Namhyung
-> 
-> 
-> >  			if (err)
-> >  				return err;
-> >  		}
+Well, it wouldn't have hurt if they at least looked around what's out
+there...
+
+> (Who should have made whom aware, ie. Linux people approaching UEFI
+> people, or UEFI people exploring Linux, is a separate topic. As always
+> I'm apolitical about UEFI; I'm not arguing for it or against it. My
+> feeble efforts for improving OVMF and interfacing code are motivated by
+> my employer, not my world view, but as a side-effect of working with the
+> code I can't help but notice some nice things in edk2 and appreciate
+> them :))
+
+No, I completely understand. I was simply asking whether you've managed
+to see an aspect which made sense for SetVirtualAddressMap to be
+callable only once and to enlighten me about it because I can't see one
+so far.
+
+> Insult my code or my analysis pls.
+
+I won't and I don't need to insult anybody or anything. :)
+
+> BTW there's another point I'd like to ask about -- you're saying you
+> see the region corruption during the same boot, from the first (early)
+> memmap dump to the second one (when just about to enter virtual mode).
+> But, is this one boot the very first boot, or the kexec one?
+
+No, kexec is not even involved yet. If you look at the timestamps,
+there's 0.005 seconds between the two dumps during the *same* kernel
+booting on the machine, baremetal, straight from grub.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
