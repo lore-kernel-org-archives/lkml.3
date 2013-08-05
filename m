@@ -1,102 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753720Ab3HEQjt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 12:39:49 -0400
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:47386 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753321Ab3HEQjq (ORCPT
+	id S1753598Ab3HEQlS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 12:41:18 -0400
+Received: from mail-vb0-f43.google.com ([209.85.212.43]:37962 "EHLO
+	mail-vb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752351Ab3HEQlR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 12:39:46 -0400
+	Mon, 5 Aug 2013 12:41:17 -0400
 MIME-Version: 1.0
-In-Reply-To: <1372781307-7906-1-git-send-email-grundler@chromium.org>
-References: <1372781307-7906-1-git-send-email-grundler@chromium.org>
-Date: Mon, 5 Aug 2013 09:39:45 -0700
-X-Google-Sender-Auth: _MLt0fTwCkfDRquJVOpmFxmAXDk
-Message-ID: <CANEJEGu2B9FUDLn5EOPm1hOau1Y+s6rFZy3WVFQCO=3T6acgmg@mail.gmail.com>
-Subject: Re: [PATCH] iommu/exynos: remove dead code (set_prefbuf)
-From: Grant Grundler <grundler@chromium.org>
-To: Linux IOMMU <iommu@lists.linux-foundation.org>,
-        KyongHo Cho <pullip.cho@samsung.com>
-Cc: Joerg Roedel <joro@8bytes.org>, Sachin Kamat <sachin.kamat@linaro.org>,
-        Jiri Kosina <jkosina@suse.cz>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <CA+8MBbJ7x46FGC7dPSdNzf8z=fZz20w1kiNgnZr4QQB6SUELhg@mail.gmail.com>
+References: <20130715164844.1520.27771.stgit@aruna-ThinkPad-T420>
+	<51FA3B02.7060004@linux.vnet.ibm.com>
+	<3908561D78D1C84285E8C5FCA982C28F31CAA167@ORSMSX106.amr.corp.intel.com>
+	<CA+8MBbLuhVDCb26ag3AH0vXrP4MXHLxS5aVn8pTi4=qL1NdR5w@mail.gmail.com>
+	<CA+8MBbJ7x46FGC7dPSdNzf8z=fZz20w1kiNgnZr4QQB6SUELhg@mail.gmail.com>
+Date: Mon, 5 Aug 2013 09:41:16 -0700
+Message-ID: <CA+8MBbJYhSQ455rdC5DuHiNkGBeSgySRLBtuFAKYyNG5CLq7gA@mail.gmail.com>
+Subject: Re: [PATCH 00/11] Add compression support to pstore
+From: Tony Luck <tony.luck@gmail.com>
+To: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>,
+        "linuxppc-dev@ozlabs.org" <linuxppc-dev@ozlabs.org>,
+        "paulus@samba.org" <paulus@samba.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
+        "keescook@chromium.org" <keescook@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping?
+One more experiment - removed previous hack that disabled compression.
+Added a new hack to skip decompression.
 
-Adding linux-iommu ML.
+System died cleanly when I forced a panic.
+On reboot I found 3 files in pstore:
+-r--r--r--   1 root root 3972 Aug  5 09:24 dmesg-erst-5908671953186586625
+-r--r--r--   1 root root 2565 Aug  5 09:24 dmesg-erst-5908671953186586626
+-r--r--r--   1 root root 4067 Aug  5 09:24 dmesg-erst-5908671953186586627
 
-thanks,
-grant
+Using  "openssl zlib -d" to decompress then ends up with some garbage
+at the end of the decompressed file - some text that should be there is
+missing.  E.g. the tail of decompressed version of *625 ends with:
 
-On Tue, Jul 2, 2013 at 9:08 AM, Grant Grundler <grundler@chromium.org> wrote:
-> exynos_sysmmu_set_prefbuf() is not called any where.
->
-> Signed-off-by: Grant Grundler <grundler@chromium.org>
-> ---
->  drivers/iommu/exynos-iommu.c | 44 --------------------------------------------
->  1 file changed, 44 deletions(-)
->
-> diff --git a/drivers/iommu/exynos-iommu.c b/drivers/iommu/exynos-iommu.c
-> index 3f32d64..0740189 100644
-> --- a/drivers/iommu/exynos-iommu.c
-> +++ b/drivers/iommu/exynos-iommu.c
-> @@ -247,50 +247,6 @@ static void __sysmmu_set_prefbuf(void __iomem *sfrbase, unsigned long base,
->         __raw_writel(size - 1 + base,  sfrbase + REG_PB0_EADDR + idx * 8);
->  }
->
-> -void exynos_sysmmu_set_prefbuf(struct device *dev,
-> -                               unsigned long base0, unsigned long size0,
-> -                               unsigned long base1, unsigned long size1)
-> -{
-> -       struct sysmmu_drvdata *data = dev_get_drvdata(dev->archdata.iommu);
-> -       unsigned long flags;
-> -       int i;
-> -
-> -       BUG_ON((base0 + size0) <= base0);
-> -       BUG_ON((size1 > 0) && ((base1 + size1) <= base1));
-> -
-> -       read_lock_irqsave(&data->lock, flags);
-> -       if (!is_sysmmu_active(data))
-> -               goto finish;
-> -
-> -       for (i = 0; i < data->nsfrs; i++) {
-> -               if ((readl(data->sfrbases[i] + REG_MMU_VERSION) >> 28) == 3) {
-> -                       if (!sysmmu_block(data->sfrbases[i]))
-> -                               continue;
-> -
-> -                       if (size1 == 0) {
-> -                               if (size0 <= SZ_128K) {
-> -                                       base1 = base0;
-> -                                       size1 = size0;
-> -                               } else {
-> -                                       size1 = size0 -
-> -                                               ALIGN(size0 / 2, SZ_64K);
-> -                                       size0 = size0 - size1;
-> -                                       base1 = base0 + size0;
-> -                               }
-> -                       }
-> -
-> -                       __sysmmu_set_prefbuf(
-> -                                       data->sfrbases[i], base0, size0, 0);
-> -                       __sysmmu_set_prefbuf(
-> -                                       data->sfrbases[i], base1, size1, 1);
-> -
-> -                       sysmmu_unblock(data->sfrbases[i]);
-> -               }
-> -       }
-> -finish:
-> -       read_unlock_irqrestore(&data->lock, flags);
-> -}
-> -
->  static void __set_fault_handler(struct sysmmu_drvdata *data,
->                                         sysmmu_fault_handler_t handler)
->  {
-> --
-> 1.8.3
->
+<4>Call Trace:
+<4> [<ffffffff815f85f4>] dump_stack+0x45/0x56
+<4> [<ffffffff815f41ca>] panic+0xc2/0x1cb
+<4> [<ffffffff815f4327>] ? printk+0x54/0x56
+<4> [<ffffffff811cfe45>] aegl+0x25/0x30
+<4> [<ffffffff811c719d>] proc_reg_write+0x3d/0x80
+<4> [<ffffffff81165945>] vfs_write+0xc5/0x1e0
+<4> [<ffffffff81165e32>] SyS_write+0x52/0xa0
+<4> [<ffffffff81606882>] system_call_fastpath+0x16/0x1b
+ )c10^@^@^@^@^@^@^@^@^@
+
+But my serial console logged this:
+
+Call Trace:
+ [<ffffffff815f85f4>] dump_stack+0x45/0x56
+ [<ffffffff815f41ca>] panic+0xc2/0x1cb
+ [<ffffffff815f4327>] ? printk+0x54/0x56
+ [<ffffffff811cfe45>] aegl+0x25/0x30
+ [<ffffffff811c719d>] proc_reg_write+0x3d/0x80
+ [<ffffffff81165945>] vfs_write+0xc5/0x1e0
+ [<ffffffff81165e32>] SyS_write+0x52/0xa0
+ [<ffffffff81606882>] system_call_fastpath+0x16/0x1b
+------------[ cut here ]------------
+WARNING: CPU: 18 PID: 381 at arch/x86/kernel/smp.c:124
+native_smp_send_reschedule+0x5b/0x60()
+Modules linked in:
+CPU: 18 PID: 381 Comm: kworker/18:1 Not tainted 3.11.0-rc3-11-ge41db9e #6
+
+-Tony
