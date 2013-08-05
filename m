@@ -1,68 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754585Ab3HES3D (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 14:29:03 -0400
-Received: from mga01.intel.com ([192.55.52.88]:5610 "EHLO mga01.intel.com"
+	id S1754593Ab3HESdW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 14:33:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18461 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753699Ab3HES3C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 14:29:02 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,820,1367996400"; 
-   d="scan'208";a="376507597"
-Message-ID: <51FFEEEC.5060902@linux.intel.com>
-Date: Mon, 05 Aug 2013 11:29:00 -0700
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, gcc <gcc@gcc.gnu.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        David Daney <ddaney.cavm@gmail.com>,
-        Behan Webster <behanw@converseincode.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: Re: [RFC] gcc feature request: Moving blocks into sections
-References: <1375721715.22073.80.camel@gandalf.local.home>   <CA+55aFw_o=D-j_SRn=Y4LhHm-tEyuP1Je5ZHVTYxbVyLyDcLEg@mail.gmail.com>  <1375725328.22073.101.camel@gandalf.local.home>  <51FFEC56.6040206@linux.intel.com> <1375727010.22073.110.camel@gandalf.local.home>
-In-Reply-To: <1375727010.22073.110.camel@gandalf.local.home>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1753970Ab3HESdT convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 14:33:19 -0400
+Date: Mon, 5 Aug 2013 14:33:11 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+Cc: Nix <nix@esperi.org.uk>,
+        Toralf =?ISO-8859-1?B?RvZyc3Rlcg==?= <toralf.foerster@gmx.de>,
+        Oleg Nesterov <oleg@redhat.com>, NFS list <linux-nfs@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "dhowells@redhat.com" <dhowells@redhat.com>
+Subject: Re: [3.10.4] NFS locking panic, plus persisting NFS shutdown panic
+ from 3.9.*
+Message-ID: <20130805143311.4ae59067@tlielax.poochiereds.net>
+In-Reply-To: <1375726682.7337.29.camel@leira.trondhjem.org>
+References: <8761vlv4z9.fsf@spindle.srvr.nix>
+	<20130805084436.69ee4415@corrin.poochiereds.net>
+	<87siyotcri.fsf@spindle.srvr.nix>
+	<20130805110427.509db424@tlielax.poochiereds.net>
+	<20130805111106.73d6ab90@tlielax.poochiereds.net>
+	<87zjswrvaq.fsf@spindle.srvr.nix>
+	<1375719301.7337.14.camel@leira.trondhjem.org>
+	<20130805133739.21654ecb@tlielax.poochiereds.net>
+	<1375726682.7337.29.camel@leira.trondhjem.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/05/2013 11:23 AM, Steven Rostedt wrote:
-> On Mon, 2013-08-05 at 11:17 -0700, H. Peter Anvin wrote:
->> On 08/05/2013 10:55 AM, Steven Rostedt wrote:
->>>
->>> Well, as tracepoints are being added quite a bit in Linux, my concern is
->>> with the inlined functions that they bring. With jump labels they are
->>> disabled in a very unlikely way (the static_key_false() is a nop to skip
->>> the code, and is dynamically enabled to a jump).
->>>
->>
->> Have you considered using traps for tracepoints?  A trapping instruction
->> can be as small as a single byte.  The downside, of course, is that it
->> is extremely suppressed -- the trap is always expensive -- and you then
->> have to do a lookup to find the target based on the originating IP.
+On Mon, 5 Aug 2013 18:18:03 +0000
+"Myklebust, Trond" <Trond.Myklebust@netapp.com> wrote:
+
+> On Mon, 2013-08-05 at 13:37 -0400, Jeff Layton wrote:
+> > On Mon, 5 Aug 2013 16:15:01 +0000
+> > "Myklebust, Trond" <Trond.Myklebust@netapp.com> wrote:
+> > 
+> > > From 3c50ba80105464a28d456d9a1e0f1d81d4af92a8 Mon Sep 17 00:00:00 2001
+> > > From: Trond Myklebust <Trond.Myklebust@netapp.com>
+> > > Date: Mon, 5 Aug 2013 12:06:12 -0400
+> > > Subject: [PATCH] LOCKD: Don't call utsname()->nodename from
+> > >  nlmclnt_setlockargs
+> > > MIME-Version: 1.0
+> > > Content-Type: text/plain; charset=UTF-8
+> > > Content-Transfer-Encoding: 8bit
+> > > 
+> > > Firstly, nlmclnt_setlockargs can be called from a reclaimer thread, in
+> > > which case we're in entirely the wrong namespace.
+> > > Secondly, commit 8aac62706adaaf0fab02c4327761561c8bda9448 (move
+> > > exit_task_namespaces() outside of exit_notify()) now means that
+> > > exit_task_work() is called after exit_task_namespaces(), which
+> > > triggers an Oops when we're freeing up the locks.
+> > > 
+> > > Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+> > > Cc: Toralf Förster <toralf.foerster@gmx.de>
+> > > Cc: Oleg Nesterov <oleg@redhat.com>
+> > > Cc: Nix <nix@esperi.org.uk>
+> > > Cc: Jeff Layton <jlayton@redhat.com>
+> > > ---
+> > >  fs/lockd/clntproc.c | 5 +++--
+> > >  1 file changed, 3 insertions(+), 2 deletions(-)
+> > > 
+> > > diff --git a/fs/lockd/clntproc.c b/fs/lockd/clntproc.c
+> > > index 9760ecb..acd3947 100644
+> > > --- a/fs/lockd/clntproc.c
+> > > +++ b/fs/lockd/clntproc.c
+> > > @@ -125,14 +125,15 @@ static void nlmclnt_setlockargs(struct nlm_rqst *req, struct file_lock *fl)
+> > >  {
+> > >  	struct nlm_args	*argp = &req->a_args;
+> > >  	struct nlm_lock	*lock = &argp->lock;
+> > > +	char *nodename = req->a_host->h_rpcclnt->cl_nodename;
+> > >  
+> > >  	nlmclnt_next_cookie(&argp->cookie);
+> > >  	memcpy(&lock->fh, NFS_FH(file_inode(fl->fl_file)), sizeof(struct nfs_fh));
+> > > -	lock->caller  = utsname()->nodename;
+> > > +	lock->caller  = nodename;
+> > >  	lock->oh.data = req->a_owner;
+> > >  	lock->oh.len  = snprintf(req->a_owner, sizeof(req->a_owner), "%u@%s",
+> > >  				(unsigned int)fl->fl_u.nfs_fl.owner->pid,
+> > > -				utsname()->nodename);
+> > > +				nodename);
+> > >  	lock->svid = fl->fl_u.nfs_fl.owner->pid;
+> > >  	lock->fl.fl_start = fl->fl_start;
+> > >  	lock->fl.fl_end = fl->fl_end;
+> > 
+> > Looks good to me...
+> > 
+> > Reviewed-by: Jeff Layton <jlayton@redhat.com>
+> > 
+> > Trond, any thoughts on the other oops that Nix posted? The issue there
+> > seems to be that we're trying to do the pathwalk to the rpcbind unix
+> > socket from exit_task_work(), but that's happening after we've already
+> > called exit_fs().
+> > 
+> > The trivial answer seems to be to simply call exit_task_work() before
+> > exit_fs() there, but it seems like we ought to be doing the upcall to
+> > rpcbind in a mount namespace from which we know we can reach the
+> > socket...
 > 
-> No, never considered it, nor would I. Those that use tracepoints, do use
-> them extensively, and adding traps like this would probably cause
-> heissenbugs and make tracepoints useless.
+> Isn't it enough to just do the same thing as we did for gss proxy? i.e.
+> set the RPC_CLNT_CREATE_NO_IDLE_TIMEOUT flag.
 > 
-> Not to mention, how would we add a tracepoint to a trap handler?
-> 
+> See attachment.
 
-Traps nest, that's why there is a stack.  (OK, so you don't want to take
-the same trap inside the trap handler, but that code should be very
-limited.)  The trap instruction just becomes very short, but rather
-slow, call-return.
+Yeah, that looks like a reasonable thing to do...
 
-However, when you consider the cost you have to consider that the
-tracepoint is doing other work, so it may very well amortize out.
+OTOH, Is there any other way for a unix socket to end up disconnected
+other than if we were to close it? Maybe if rpcbind stopped, the socket
+unlinked and recreated and then started again?
 
-	-hpa
+If so then you still could potentially end up in this situation even if
+you didn't autoclose it.
 
-
+-- 
+Jeff Layton <jlayton@redhat.com>
