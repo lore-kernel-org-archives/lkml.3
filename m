@@ -1,312 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754132Ab3HEBPM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Aug 2013 21:15:12 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:50585 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754082Ab3HEBPK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Aug 2013 21:15:10 -0400
-X-AuditID: 9c930197-b7bfbae000000e88-0b-51fefc9ad9a5
-Date: Mon, 5 Aug 2013 10:15:46 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@surriel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Zlatko Calusic <zcalusic@bitsync.net>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch v2 3/3] mm: page_alloc: fair zone allocator policy
-Message-ID: <20130805011546.GI32486@bbox>
-References: <1375457846-21521-1-git-send-email-hannes@cmpxchg.org>
- <1375457846-21521-4-git-send-email-hannes@cmpxchg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1375457846-21521-4-git-send-email-hannes@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	id S1754153Ab3HEBVm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Aug 2013 21:21:42 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:60969 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754100Ab3HEBVl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Aug 2013 21:21:41 -0400
+Message-ID: <1375665700.3133.19.camel@joe-AO722>
+Subject: Re: [PATCH trivial] include/linux/coda.h: remove useless '#else'
+From: Joe Perches <joe@perches.com>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: Chen Gang F T <chen.gang.flying.transformer@gmail.com>,
+        "'Jiri Kosina'" <trivial@kernel.org>, jaharkes@cs.cmu.edu,
+        coda@cs.cmu.edu, codalist@TELEMANN.coda.cs.cmu.edu,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Sun, 04 Aug 2013 18:21:40 -0700
+In-Reply-To: <51FEF0AC.8040804@asianux.com>
+References: <51F76B7D.2090602@asianux.com>
+	 <1375187380.2075.111.camel@joe-AO722> <51F86C08.3080805@asianux.com>
+	 <51F86E1A.60404@asianux.com> <51F8818C.7030703@gmail.com>
+	 <51FEF0AC.8040804@asianux.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Hannes,
-
-On Fri, Aug 02, 2013 at 11:37:26AM -0400, Johannes Weiner wrote:
-> Each zone that holds userspace pages of one workload must be aged at a
-> speed proportional to the zone size.  Otherwise, the time an
-> individual page gets to stay in memory depends on the zone it happened
-> to be allocated in.  Asymmetry in the zone aging creates rather
-> unpredictable aging behavior and results in the wrong pages being
-> reclaimed, activated etc.
+On Mon, 2013-08-05 at 08:24 +0800, Chen Gang wrote:
+> On 07/31/2013 11:16 AM, Chen Gang F T wrote:
+> > On 07/31/2013 09:53 AM, Chen Gang wrote:
+> >> On 07/31/2013 09:44 AM, Chen Gang wrote:
+> >>> On 07/30/2013 08:29 PM, Joe Perches wrote:
+> >>>> On Tue, 2013-07-30 at 15:30 +0800, Chen Gang wrote:
+> >>>>> '#else' is useless, need remove.
+> >>>>>
+> >>>>> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+> >>>>> ---
+> >>>>>  include/linux/coda.h |    1 -
+> >>>>>  1 files changed, 0 insertions(+), 1 deletions(-)
+> >>>>>
+> >>>>> diff --git a/include/linux/coda.h b/include/linux/coda.h
+> >>>>> index cff544f..d30209b 100644
+> >>>>> --- a/include/linux/cod
+> >>>>> +++ b/include/linux/coda.h
+> >>>>> @@ -60,7 +60,6 @@ Mellon the rights to redistribute these changes without encumbrance.
+> >>>>>  
+> >>>>>  #if defined(__linux__)
+> >>>>>  typedef unsigned long long u_quad_t;
+> >>>>> -#else
+> >>>>>  #endif
+> >>>>>  #include <uapi/linux/coda.h>
+> >>>>>  #endif 
+> >>>>
+> >>>> Why have the #if at all?
+> >>>>
 > 
-> But exactly this happens right now because of the way the page
-> allocator and kswapd interact.  The page allocator uses per-node lists
-> of all zones in the system, ordered by preference, when allocating a
-> new page.  When the first iteration does not yield any results, kswapd
-> is woken up and the allocator retries.  Due to the way kswapd reclaims
-> zones below the high watermark while a zone can be allocated from when
-> it is above the low watermark, the allocator may keep kswapd running
-> while kswapd reclaim ensures that the page allocator can keep
-> allocating from the first zone in the zonelist for extended periods of
-> time.  Meanwhile the other zones rarely see new allocations and thus
-> get aged much slower in comparison.
+> Hmm... if any members have some questions about the fix, commonly it
+> means the related fix need additional improvement.
 > 
-> The result is that the occasional page placed in lower zones gets
-> relatively more time in memory, even gets promoted to the active list
-> after its peers have long been evicted.  Meanwhile, the bulk of the
-> working set may be thrashing on the preferred zone even though there
-> may be significant amounts of memory available in the lower zones.
-> 
-> Even the most basic test -- repeatedly reading a file slightly bigger
-> than memory -- shows how broken the zone aging is.  In this scenario,
-> no single page should be able stay in memory long enough to get
-> referenced twice and activated, but activation happens in spades:
-> 
->   $ grep active_file /proc/zoneinfo
->       nr_inactive_file 0
->       nr_active_file 0
->       nr_inactive_file 0
->       nr_active_file 8
->       nr_inactive_file 1582
->       nr_active_file 11994
->   $ cat data data data data >/dev/null
->   $ grep active_file /proc/zoneinfo
->       nr_inactive_file 0
->       nr_active_file 70
->       nr_inactive_file 258753
->       nr_active_file 443214
->       nr_inactive_file 149793
->       nr_active_file 12021
-> 
-> Fix this with a very simple round robin allocator.  Each zone is
-> allowed a batch of allocations that is proportional to the zone's
-> size, after which it is treated as full.  The batch counters are reset
-> when all zones have been tried and the allocator enters the slowpath
-> and kicks off kswapd reclaim.  Allocation and reclaim is now fairly
-> spread out to all available/allowable zones:
-> 
->   $ grep active_file /proc/zoneinfo
->       nr_inactive_file 0
->       nr_active_file 0
->       nr_inactive_file 174
->       nr_active_file 4865
->       nr_inactive_file 53
->       nr_active_file 860
->   $ cat data data data data >/dev/null
->   $ grep active_file /proc/zoneinfo
->       nr_inactive_file 0
->       nr_active_file 0
->       nr_inactive_file 666622
->       nr_active_file 4988
->       nr_inactive_file 190969
->       nr_active_file 937
-> 
-> When zone_reclaim_mode is enabled, allocations will now spread out to
-> all zones on the local node, not just the first preferred zone (which
-> on a 4G node might be a tiny Normal zone).
+> Is it better to use BUILD_BUG() for the fix ?
 
-I really want to give Reviewed-by but before that, I'd like to clear out
-my concern which didn't handle enoughly in previous iteration.
+Probably not.  __linux__ is predefined by gcc.
 
-Let's assume system has normal zone : 800M High zone : 800M
-and there are two parallel workloads.
-
-1. alloc_pages(GFP_KERNEL) : 800M
-2. alloc_pages(GFP_MOVABLE) + mlocked : 800M
-
-With old behavior, allocation from both workloads is fulfilled happily
-because most of allocation from GFP_KERNEL would be done in normal zone
-while most of allocation from GFP_MOVABLE would be done in high zone.
-There is no OOM kill in this scenario.
-
-With you change, normal zone would be fullfilled with GFP_KERNEL:400M
-and GFP_MOVABLE:400M while high zone will have GFP_MOVABLE:400 + free 400M.
-Then, someone would be OOM killed.
-
-Of course, you can argue that if there is such workloads, he should make
-sure it via lowmem_reseve but it's rather overkill if we consider more examples
-because any movable pages couldn't be allocated from normal zone so memory
-efficieny would be very bad.
-
-As I said, I like your approach because I have no idea to handle unbalanced
-aging problem better and we can get more benefits rather than lost by above
-corner case but at least, I'd like to confirm what you think about
-above problem before further steps. Maybe we can introduce "mlock with
-newly-allocation or already-mapped page could be migrated to high memory zone"
-when someone reported out? (we thougt mlocked page migration would be problem
-RT latency POV but Peter confirmed it's no problem.)
+Using an #ifdef __linux__ might make some sense in
+in include/uapi, but not in include/linux.
 
 
-> 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> Tested-by: Zlatko Calusic <zcalusic@bitsync.net>
-> ---
->  include/linux/mmzone.h |  1 +
->  mm/page_alloc.c        | 69 ++++++++++++++++++++++++++++++++++++++++++--------
->  2 files changed, 60 insertions(+), 10 deletions(-)
-> 
-> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-> index af4a3b7..dcad2ab 100644
-> --- a/include/linux/mmzone.h
-> +++ b/include/linux/mmzone.h
-> @@ -352,6 +352,7 @@ struct zone {
->  	 * free areas of different sizes
->  	 */
->  	spinlock_t		lock;
-> +	int			alloc_batch;
->  	int                     all_unreclaimable; /* All pages pinned */
->  #if defined CONFIG_COMPACTION || defined CONFIG_CMA
->  	/* Set to true when the PG_migrate_skip bits should be cleared */
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 3b27d3e..b2cdfd0 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -1817,6 +1817,11 @@ static void zlc_clear_zones_full(struct zonelist *zonelist)
->  	bitmap_zero(zlc->fullzones, MAX_ZONES_PER_ZONELIST);
->  }
->  
-> +static bool zone_local(struct zone *local_zone, struct zone *zone)
-> +{
-> +	return node_distance(local_zone->node, zone->node) == LOCAL_DISTANCE;
-> +}
-> +
->  static bool zone_allows_reclaim(struct zone *local_zone, struct zone *zone)
->  {
->  	return node_isset(local_zone->node, zone->zone_pgdat->reclaim_nodes);
-> @@ -1854,6 +1859,11 @@ static void zlc_clear_zones_full(struct zonelist *zonelist)
->  {
->  }
->  
-> +static bool zone_local(struct zone *local_zone, struct zone *zone)
-> +{
-> +	return true;
-> +}
-> +
->  static bool zone_allows_reclaim(struct zone *local_zone, struct zone *zone)
->  {
->  	return true;
-> @@ -1901,6 +1911,26 @@ zonelist_scan:
->  		if (alloc_flags & ALLOC_NO_WATERMARKS)
->  			goto try_this_zone;
->  		/*
-> +		 * Distribute pages in proportion to the individual
-> +		 * zone size to ensure fair page aging.  The zone a
-> +		 * page was allocated in should have no effect on the
-> +		 * time the page has in memory before being reclaimed.
-> +		 *
-> +		 * When zone_reclaim_mode is enabled, try to stay in
-> +		 * local zones in the fastpath.  If that fails, the
-> +		 * slowpath is entered, which will do another pass
-> +		 * starting with the local zones, but ultimately fall
-> +		 * back to remote zones that do not partake in the
-> +		 * fairness round-robin cycle of this zonelist.
-> +		 */
-> +		if (alloc_flags & ALLOC_WMARK_LOW) {
-> +			if (zone->alloc_batch <= 0)
-> +				continue;
-> +			if (zone_reclaim_mode &&
-> +			    !zone_local(preferred_zone, zone))
-> +				continue;
-> +		}
-> +		/*
->  		 * When allocating a page cache page for writing, we
->  		 * want to get it from a zone that is within its dirty
->  		 * limit, such that no single zone holds more than its
-> @@ -2006,7 +2036,8 @@ this_zone_full:
->  		goto zonelist_scan;
->  	}
->  
-> -	if (page)
-> +	if (page) {
-> +		zone->alloc_batch -= 1U << order;
->  		/*
->  		 * page->pfmemalloc is set when ALLOC_NO_WATERMARKS was
->  		 * necessary to allocate the page. The expectation is
-> @@ -2015,6 +2046,7 @@ this_zone_full:
->  		 * for !PFMEMALLOC purposes.
->  		 */
->  		page->pfmemalloc = !!(alloc_flags & ALLOC_NO_WATERMARKS);
-> +	}
->  
->  	return page;
->  }
-> @@ -2346,16 +2378,28 @@ __alloc_pages_high_priority(gfp_t gfp_mask, unsigned int order,
->  	return page;
->  }
->  
-> -static inline
-> -void wake_all_kswapd(unsigned int order, struct zonelist *zonelist,
-> -						enum zone_type high_zoneidx,
-> -						enum zone_type classzone_idx)
-> +static void prepare_slowpath(gfp_t gfp_mask, unsigned int order,
-> +			     struct zonelist *zonelist,
-> +			     enum zone_type high_zoneidx,
-> +			     struct zone *preferred_zone)
->  {
->  	struct zoneref *z;
->  	struct zone *zone;
->  
-> -	for_each_zone_zonelist(zone, z, zonelist, high_zoneidx)
-> -		wakeup_kswapd(zone, order, classzone_idx);
-> +	for_each_zone_zonelist(zone, z, zonelist, high_zoneidx) {
-> +		if (!(gfp_mask & __GFP_NO_KSWAPD))
-> +			wakeup_kswapd(zone, order, zone_idx(preferred_zone));
-> +		/*
-> +		 * Only reset the batches of zones that were actually
-> +		 * considered in the fast path, we don't want to
-> +		 * thrash fairness information for zones that are not
-> +		 * actually part of this zonelist's round-robin cycle.
-> +		 */
-> +		if (zone_reclaim_mode && !zone_local(preferred_zone, zone))
-> +			continue;
-> +		zone->alloc_batch = high_wmark_pages(zone) -
-> +			low_wmark_pages(zone);
-> +	}
->  }
->  
->  static inline int
-> @@ -2451,9 +2495,8 @@ __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
->  		goto nopage;
->  
->  restart:
-> -	if (!(gfp_mask & __GFP_NO_KSWAPD))
-> -		wake_all_kswapd(order, zonelist, high_zoneidx,
-> -						zone_idx(preferred_zone));
-> +	prepare_slowpath(gfp_mask, order, zonelist,
-> +			 high_zoneidx, preferred_zone);
->  
->  	/*
->  	 * OK, we're below the kswapd watermark and have kicked background
-> @@ -4754,6 +4797,9 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
->  		zone_seqlock_init(zone);
->  		zone->zone_pgdat = pgdat;
->  
-> +		/* For bootup, initialized properly in watermark setup */
-> +		zone->alloc_batch = zone->managed_pages;
-> +
->  		zone_pcp_init(zone);
->  		lruvec_init(&zone->lruvec);
->  		if (!size)
-> @@ -5525,6 +5571,9 @@ static void __setup_per_zone_wmarks(void)
->  		zone->watermark[WMARK_LOW]  = min_wmark_pages(zone) + (tmp >> 2);
->  		zone->watermark[WMARK_HIGH] = min_wmark_pages(zone) + (tmp >> 1);
->  
-> +		zone->alloc_batch = high_wmark_pages(zone) -
-> +			low_wmark_pages(zone);
-> +
->  		setup_zone_migrate_reserve(zone);
->  		spin_unlock_irqrestore(&zone->lock, flags);
->  	}
-> -- 
-> 1.8.3.2
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
--- 
-Kind regards,
-Minchan Kim
