@@ -1,121 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754962Ab3HETol (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 15:44:41 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:58608 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754794Ab3HEToO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 15:44:14 -0400
-From: Andy Lutomirski <luto@amacapital.net>
-To: linux-mm@kvack.org, linux-ext4@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>
-Subject: [RFC 2/3] fs: Add block_willwrite
-Date: Mon,  5 Aug 2013 12:44:00 -0700
-Message-Id: <50d921ff5d6fcb1a5da59b4bdb755e886cecab1f.1375729665.git.luto@amacapital.net>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <cover.1375729665.git.luto@amacapital.net>
-References: <cover.1375729665.git.luto@amacapital.net>
-In-Reply-To: <cover.1375729665.git.luto@amacapital.net>
-References: <cover.1375729665.git.luto@amacapital.net>
+	id S1755019Ab3HEToy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 15:44:54 -0400
+Received: from mga09.intel.com ([134.134.136.24]:64233 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754986Ab3HETow (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 15:44:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,820,1367996400"; 
+   d="scan'208";a="382281875"
+Message-ID: <52000268.7050205@linux.intel.com>
+Date: Mon, 05 Aug 2013 12:52:08 -0700
+From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Jonathan Corbet <corbet@lwn.net>
+CC: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org
+Subject: Re: [RFC v01 1/3] PowerCap: Documentation
+References: <1375466932-11842-1-git-send-email-srinivas.pandruvada@linux.intel.com> <1375466932-11842-2-git-send-email-srinivas.pandruvada@linux.intel.com> <20130805130958.33da86c3@lwn.net>
+In-Reply-To: <20130805130958.33da86c3@lwn.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This provides generic support for MADV_WILLWRITE.  It creates and maps
-buffer heads, but it should not result in anything being marked dirty.
-
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
----
-
-As described in the 0/0 summary, this may have issues.
-
- fs/buffer.c                 | 57 +++++++++++++++++++++++++++++++++++++++++++++
- include/linux/buffer_head.h |  3 +++
- 2 files changed, 60 insertions(+)
-
-diff --git a/fs/buffer.c b/fs/buffer.c
-index 4d74335..017e822 100644
---- a/fs/buffer.c
-+++ b/fs/buffer.c
-@@ -2444,6 +2444,63 @@ int block_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf,
- }
- EXPORT_SYMBOL(block_page_mkwrite);
- 
-+long block_willwrite(struct vm_area_struct *vma,
-+		     unsigned long start, unsigned long end,
-+		     get_block_t get_block)
-+{
-+	long ret = 0;
-+	loff_t size;
-+	struct inode *inode = file_inode(vma->vm_file);
-+	struct super_block *sb = inode->i_sb;
-+
-+	for (; start < end; start += PAGE_CACHE_SIZE) {
-+		struct page *p;
-+		int size_in_page;
-+		int tmp = get_user_pages_fast(start, 1, 0, &p);
-+		if (tmp == 0)
-+			tmp = -EFAULT;
-+		if (tmp != 1) {
-+			ret = tmp;
-+			break;
-+		}
-+
-+		sb_start_pagefault(sb);
-+
-+		lock_page(p);
-+		size = i_size_read(inode);
-+		if (WARN_ON_ONCE(p->mapping != inode->i_mapping) ||
-+		    (page_offset(p) > size)) {
-+			ret = -EFAULT;  /* A real write would have failed. */
-+			goto pagedone_unlock;
-+		}
-+
-+		/* page is partially inside EOF? */
-+		if (((p->index + 1) << PAGE_CACHE_SHIFT) > size)
-+			size_in_page = size & ~PAGE_CACHE_MASK;
-+		else
-+			size_in_page = PAGE_CACHE_SIZE;
-+
-+		tmp = __block_write_begin(p, 0, size_in_page, get_block);
-+		if (tmp) {
-+			ret = tmp;
-+			goto pagedone_unlock;
-+		}
-+
-+		ret += PAGE_CACHE_SIZE;
-+
-+		/* No need to commit -- we're not writing anything yet. */
-+
-+	pagedone_unlock:
-+		unlock_page(p);
-+		sb_end_pagefault(sb);
-+		if (ret < 0)
-+			break;
-+	}
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL(block_willwrite);
-+
- /*
-  * nobh_write_begin()'s prereads are special: the buffer_heads are freed
-  * immediately, while under the page lock.  So it needs a special end_io
-diff --git a/include/linux/buffer_head.h b/include/linux/buffer_head.h
-index 91fa9a9..c84639d 100644
---- a/include/linux/buffer_head.h
-+++ b/include/linux/buffer_head.h
-@@ -230,6 +230,9 @@ int __block_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf,
- 				get_block_t get_block);
- int block_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf,
- 				get_block_t get_block);
-+long block_willwrite(struct vm_area_struct *vma,
-+		     unsigned long start, unsigned long end,
-+		     get_block_t get_block);
- /* Convert errno to return value from ->page_mkwrite() call */
- static inline int block_page_mkwrite_return(int err)
- {
--- 
-1.8.3.1
+On 08/05/2013 12:09 PM, Jonathan Corbet wrote:
+> On Fri,  2 Aug 2013 11:08:50 -0700
+> Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com> wrote:
+>
+>> +power_uw (rw): Current power counter in micro-watts. Write to this counter
+>> +resets the counter to zero. If the counter can not be reset, then this attribute
+>> +is read-only.
+> Sorry if I'm slow, but... power is an instantaneous quantity, so why would
+> you use a counter for it?  And why would you want to reset it to zero?
+It is an instantaneous value. When I say counter, either in hardware or 
+in driver somewhere,
+it is reading energy and using a time delta and continuously updating 
+this value.
+Reset to zero will allow user space to reset its internal energy counter 
+used to calculate power.
+Our hardware at this time can only provide energy_uj at this time, added 
+power_uw for some future devices.
+This was suggested in internal reviews. But based on feedback, we can 
+drop this attribute totally,
+till we have a device needing this.
+> Thanks,
+>
+> jon
+>
 
