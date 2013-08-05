@@ -1,122 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753497Ab3HEQck (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 12:32:40 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:19706 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754101Ab3HEQbY (ORCPT
+	id S1754330Ab3HEQcy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 12:32:54 -0400
+Received: from mail-ye0-f169.google.com ([209.85.213.169]:63438 "EHLO
+	mail-ye0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753983Ab3HEQcw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 12:31:24 -0400
-X-IronPort-AV: E=Sophos;i="4.89,819,1367971200"; 
-   d="scan'208";a="39429462"
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-To: <xen-devel@lists.xensource.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <konrad.wilk@oracle.com>, <Stefano.Stabellini@eu.citrix.com>,
-        <Ian.Campbell@citrix.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH v3 07/10] xen: introduce XENMEM_get_dma_buf and xen_put_dma_buf
-Date: Mon, 5 Aug 2013 17:30:53 +0100
-Message-ID: <1375720256-8014-7-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <alpine.DEB.2.02.1308051503190.4893@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1308051503190.4893@kaball.uk.xensource.com>
+	Mon, 5 Aug 2013 12:32:52 -0400
+Date: Mon, 5 Aug 2013 13:32:44 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH V2 1/9] perf tools: add test for reading object code
+Message-ID: <20130805163244.GD3228@ghostprotocols.net>
+References: <1375218838-31042-1-git-send-email-adrian.hunter@intel.com>
+ <1375218838-31042-2-git-send-email-adrian.hunter@intel.com>
+ <20130731141732.GD3614@ghostprotocols.net>
+ <51FD095F.8060208@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51FD095F.8060208@intel.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-XENMEM_exchange can't be used by autotranslate guests because of two
-severe limitations:
+Em Sat, Aug 03, 2013 at 04:45:03PM +0300, Adrian Hunter escreveu:
+> On 31/07/2013 5:17 p.m., Arnaldo Carvalho de Melo wrote:
+> >Em Wed, Jul 31, 2013 at 12:13:50AM +0300, Adrian Hunter escreveu:
+> >>Using the information in mmap events, perf tools can read object
+> >>code associated with sampled addresses.  A test is added that
+> >>compares bytes read by perf with the same bytes read using
+> >>objdump.
 
-- it does not copy back the mfns into the out field for autotranslate
-  guests;
-
-- it does not guarantee that the hypervisor won't change the p2m
-  mappings for the exchanged pages while the guest is using them. Xen
-  never promises to keep the p2m mapping stable for autotranslate guests
-  in general.  In practice it won't happen unless one uses uncommon
-  features like memory sharing or paging.
-
-To overcome these problems I am introducing two new hypercalls.
-
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
----
- include/xen/interface/memory.h |   62 ++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 62 insertions(+), 0 deletions(-)
-
-diff --git a/include/xen/interface/memory.h b/include/xen/interface/memory.h
-index 2ecfe4f..ffd7f4e 100644
---- a/include/xen/interface/memory.h
-+++ b/include/xen/interface/memory.h
-@@ -263,4 +263,66 @@ struct xen_remove_from_physmap {
- };
- DEFINE_GUEST_HANDLE_STRUCT(xen_remove_from_physmap);
+> >So this parses objdump output, and we also already have the annotation
+> >logic that does that too, have you thought about having common routines
+> >for these two cases?
  
-+#define XENMEM_get_dma_buf             26
-+/*
-+ * This hypercall is similar to XENMEM_exchange: it exchanges the pages
-+ * passed in with a new set of pages, contiguous and under 4G if so
-+ * requested. The new pages are going to be "pinned": it's guaranteed
-+ * that their p2m mapping won't be changed until explicitly "unpinned".
-+ * If return code is zero then @out.extent_list provides the MFNs of the
-+ * newly-allocated memory.  Returns zero on complete success, otherwise
-+ * a negative error code.
-+ * On complete success then always @nr_exchanged == @in.nr_extents.  On
-+ * partial success @nr_exchanged indicates how much work was done.
-+ */
-+struct xen_get_dma_buf {
-+    /*
-+     * [IN] Details of memory extents to be exchanged (GMFN bases).
-+     * Note that @in.address_bits is ignored and unused.
-+     */
-+    struct xen_memory_reservation in;
-+
-+    /*
-+     * [IN/OUT] Details of new memory extents.
-+     * We require that:
-+     *  1. @in.domid == @out.domid
-+     *  2. @in.nr_extents  << @in.extent_order == 
-+     *     @out.nr_extents << @out.extent_order
-+     *  3. @in.extent_start and @out.extent_start lists must not overlap
-+     *  4. @out.extent_start lists GPFN bases to be populated
-+     *  5. @out.extent_start is overwritten with allocated GMFN bases
-+     */
-+    struct xen_memory_reservation out;
-+
-+    /*
-+     * [OUT] Number of input extents that were successfully exchanged:
-+     *  1. The first @nr_exchanged input extents were successfully
-+     *     deallocated.
-+     *  2. The corresponding first entries in the output extent list correctly
-+     *     indicate the GMFNs that were successfully exchanged.
-+     *  3. All other input and output extents are untouched.
-+     *  4. If not all input exents are exchanged then the return code of this
-+     *     command will be non-zero.
-+     *  5. THIS FIELD MUST BE INITIALISED TO ZERO BY THE CALLER!
-+     */
-+    xen_ulong_t nr_exchanged;
-+};
-+DEFINE_GUEST_HANDLE_STRUCT(xen_get_dma_buf);
-+
-+#define XENMEM_put_dma_buf             27
-+/*
-+ * XENMEM_put_dma_buf unpins a set of pages, previously pinned by
-+ * XENMEM_get_dma_buf. After this call the p2m mapping of the pages can
-+ * be transparently changed by the hypervisor, as usual. The pages are
-+ * still accessible from the guest.
-+ */
-+struct xen_put_dma_buf {
-+    /*
-+     * [IN] Details of memory extents to be exchanged (GMFN bases).
-+     * Note that @in.address_bits is ignored and unused.
-+     */
-+    struct xen_memory_reservation in;
-+};
-+DEFINE_GUEST_HANDLE_STRUCT(xen_put_dma_buf);
-+
- #endif /* __XEN_PUBLIC_MEMORY_H__ */
--- 
-1.7.2.5
+> The annotation logic strips out the bytes (--no-show-raw) whereas
+> the test extracts only the bytes, so they are not currently
+> compatible.
 
+Yeah, they are not, suggestion was to make it so at some point, as there
+are many possible use cases that would use one, the other or both info.
+ 
+> >I mean the disasm_line, ins, ins_ops, ins_operands classes, that now
+> >lives in util/annotate.h but could be moved somewhere else,
+> >disconnecting it as much as possible from annotation, because probably
+> >there are more cool things we could do with that... :-)
+
+> >We could certainly do it incrementally, merging your current patch
+> >series and then working on sharing code on these two use cases, but
+> >perhaps you can do it now?
+
+> >What do you think?
+ 
+> I expect replacing objdump with library calls will end up being the
+> way forward.
+
+Yes, and the recent work from Vitillo/Namhyung shows promise, but then
+making it work with existing structs created from parsing the objdump
+output shuld be ok.
+
+At some point just dropping the parsing would then be transparent to
+users of such structs.
+
+But I should try it myself and see how it goes, to show what I mean :-)
+
+- Arnaldo
