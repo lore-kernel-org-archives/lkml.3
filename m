@@ -1,68 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754515Ab3HEFcp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 01:32:45 -0400
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:47373 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753869Ab3HEFcn (ORCPT
+	id S1754530Ab3HEFnk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 01:43:40 -0400
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:32782 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754135Ab3HEFnj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 01:32:43 -0400
+	Mon, 5 Aug 2013 01:43:39 -0400
+Date: Mon, 5 Aug 2013 09:43:35 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Cc: Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, luto@amacapital.net, xemul@parallels.com,
+        akpm@linux-foundation.org, mpm@selenic.com,
+        xiaoguangrong@linux.vnet.ibm.com, mtosatti@redhat.com,
+        kosaki.motohiro@gmail.com, sfr@canb.auug.org.au, peterz@infradead.org,
+        aneesh.kumar@linux.vnet.ibm.com
+Subject: Re: [patch 1/2] [PATCH] mm: Save soft-dirty bits on swapped pages
+Message-ID: <20130805054335.GC7999@moon>
+References: <20130730204154.407090410@gmail.com>
+ <20130730204654.844299768@gmail.com>
+ <51ff047d.2768310a.2fc4.340fSMTPIN_ADDED_BROKEN@mx.google.com>
+ <20130805021715.GJ32486@bbox>
+ <51ff1053.ab47310a.5d3f.566cSMTPIN_ADDED_BROKEN@mx.google.com>
+ <20130805025437.GK32486@bbox>
+ <51ff14e9.87ef440a.1424.ffffe470SMTPIN_ADDED_BROKEN@mx.google.com>
 MIME-Version: 1.0
-In-Reply-To: <CANLzEksSsMY2pTYTfGzgntF-i_Kus+WeVPyNzW0U7APcGOv_5g@mail.gmail.com>
-References: <1374163091-4750-1-git-send-email-enselic@gmail.com>
-	<CANLzEksSsMY2pTYTfGzgntF-i_Kus+WeVPyNzW0U7APcGOv_5g@mail.gmail.com>
-Date: Mon, 5 Aug 2013 07:32:43 +0200
-Message-ID: <CAC-DJzL0VzDxCpsdwjugavBhcFUr+kv+iN9D-Yz_tasw=DF75Q@mail.gmail.com>
-Subject: Re: [PATCH 0/1] Platform: x86: chromeos_laptop - convert to
- i2c_driver to handle i915 race
-From: Martin Nordholts <enselic@gmail.com>
-To: Benson Leung <bleung@chromium.org>
-Cc: Matthew Garrett <matthew.garrett@nebula.com>,
-        Olof Johansson <olof@lixom.net>, Yufeng Shen <miletus@chromium.org>,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51ff14e9.87ef440a.1424.ffffe470SMTPIN_ADDED_BROKEN@mx.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/8/5 Benson Leung <bleung@chromium.org>:
-> Hi Martin,
->
-> Thank you for looking into this problem. Obviously, this is a problem
-> Olof and our team has been working on as well.
+On Mon, Aug 05, 2013 at 10:58:35AM +0800, Wanpeng Li wrote:
+> >
+> >pte_to_swp_entry is passed orig_pte by vaule, not a pointer
+> >so although pte_to_swp_entry clear out _PTE_SWP_SOFT_DIRTY, it does it in local-copy.
+> >So orig_pte is never changed.
+> 
+> Ouch! Thanks for pointing out. ;-)
+> 
+> Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 
-Hi Benson,
-
-Thank you for spending time reviewing and testing my patch. I
-understand your team is busy and am honored you took the time to look
-at my code.
-
-> Your driver would result in three failed probes in 2 different drivers
-> on my board.
-
-Yes that is one down-side; sometimes the detect() function will be
-triggered even though the device is not supported (the return -ENODEV
-code paths in my driver). I thought that maybe a simpler driver could
-make up for unnecessary detect() calls. However ...
-
-> "Detect" is method #3, but it comes with a
-> stern warning : Once again, method 3 should be avoided wherever
-> possible. Explicit device instantiation (methods 1 and 2) is much
-> preferred for it is safer and faster.
-
-... I must admit I did not see this. I realize that this makes my
-patch a dead end. I wish I would have seen that earlier, that would
-have saved time for everyone. My apologies.
-
-Regarding the interaction with non-i2c devices in chromeos_laptop, I
-was thinking that could perhaps have been solved by putting the i2c
-stuff in a separate driver, say chromeos_laptop_i2c, but that point is
-irrelevant now that you pointed out that the use of the
-detect()-method is discouraged by the documentation.
-
-Thank you again for reviewing the patch and for providing feedback.
-
-BR,
-Martin
+Yeah, it's a bit tricky. Thanks.
