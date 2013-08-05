@@ -1,47 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754349Ab3HESzC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 14:55:02 -0400
-Received: from mail-ve0-f179.google.com ([209.85.128.179]:42633 "EHLO
-	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754045Ab3HESzA (ORCPT
+	id S1754420Ab3HES5I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 14:57:08 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:33302 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754128Ab3HES5G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 14:55:00 -0400
+	Mon, 5 Aug 2013 14:57:06 -0400
+Date: Mon, 5 Aug 2013 21:56:43 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Rupesh Gujare <rupesh.gujare@atmel.com>
+Cc: devel@linuxdriverproject.org, gregkh@linuxfoundation.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] staging: ozwpan: Return correct hub status.
+Message-ID: <20130805185643.GM5051@mwanda>
+References: <1375724415-10801-1-git-send-email-rupesh.gujare@atmel.com>
+ <1375724415-10801-5-git-send-email-rupesh.gujare@atmel.com>
 MIME-Version: 1.0
-In-Reply-To: <20130805184625.GA11633@redhat.com>
-References: <CA+55aFwTX47vLvZckozZub0rUEo-aCBe7weqe=4mfQGfrW7NUA@mail.gmail.com>
-	<CAMP44s2bOniz4qx5y9h4ppHRUjiPVGL+igSwO5NUJd4zpObxFw@mail.gmail.com>
-	<20130805184625.GA11633@redhat.com>
-Date: Mon, 5 Aug 2013 11:54:59 -0700
-X-Google-Sender-Auth: _65G_nj7CE5grvnUbJvKFj6dkmc
-Message-ID: <CA+55aFzWcOXfiJGzF1sVgZFaM_hRSF25P2kC2Ga_b0177jfjYA@mail.gmail.com>
-Subject: Re: Linux 3.11-rc4
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Felipe Contreras <felipe.contreras@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1375724415-10801-5-git-send-email-rupesh.gujare@atmel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 5, 2013 at 11:46 AM, Oleg Nesterov <oleg@redhat.com> wrote:
->
-> Heh. I pulled wine-git.
->
-> set_thread_context() does a lot of PTRACE_POKEUSER requests and then
-> it calls resume_after_ptrace() which simply does PTRACE_DETACH.
->
-> I'll recheck tomorrow, but it really looks as if it _wants_ to leak
-> the debug registers after detach. And more, it does PTRACE_ATTACH
-> only to set these regs.
->
-> And this is exactly what fab840f tries to prevent.
+On Mon, Aug 05, 2013 at 06:40:15PM +0100, Rupesh Gujare wrote:
+> Fix a bug where we were not returning correct hub status
+> for 8th port.
 
-Ok, so I guess it's effectively the ABI, and we should just make the
-rule be that "if you don't want stale breakpoints, then remove the
-breakpoints when you detach".
+What are the user visible effects of this bug?
 
-And thus reverting it the right thing to do. Agreed?
+Style nits below.
 
-               Linus
+> 
+> Signed-off-by: Rupesh Gujare <rupesh.gujare@atmel.com>
+> ---
+>  drivers/staging/ozwpan/ozhcd.c |   11 +++++++++--
+>  1 file changed, 9 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/staging/ozwpan/ozhcd.c b/drivers/staging/ozwpan/ozhcd.c
+> index b060e43..2f93a00 100644
+> --- a/drivers/staging/ozwpan/ozhcd.c
+> +++ b/drivers/staging/ozwpan/ozhcd.c
+> @@ -1871,17 +1871,24 @@ static int oz_hcd_hub_status_data(struct usb_hcd *hcd, char *buf)
+>  	int i;
+>  
+>  	buf[0] = 0;
+> +	buf[1] = 0;
+>  
+>  	spin_lock_bh(&ozhcd->hcd_lock);
+>  	for (i = 0; i < OZ_NB_PORTS; i++) {
+>  		if (ozhcd->ports[i].flags & OZ_PORT_F_CHANGED) {
+>  			oz_dbg(HUB, "Port %d changed\n", i);
+>  			ozhcd->ports[i].flags &= ~OZ_PORT_F_CHANGED;
+> -			buf[0] |= 1<<(i+1);
+> +			if (i < 7)
+> +				buf[0] |= 1 << (i+1);
+
+Put spaces around math operations:
+				buf[0] |= 1 << (i + 1);
+
+> +			else
+> +				buf[1] |= 1 << (i-7);
+
+				buf[1] |= 1 << (i - 7);
+
+regards,
+dan carpenter
+
