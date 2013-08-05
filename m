@@ -1,79 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753977Ab3HEKCe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 06:02:34 -0400
-Received: from sauhun.de ([89.238.76.85]:49442 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751345Ab3HEKCd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 06:02:33 -0400
-Date: Mon, 5 Aug 2013 12:02:26 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Christian Ruppert <christian.ruppert@abilis.com>
-Cc: Shinya Kuribayashi <skuribay@pobox.com>, mika.westerberg@linux.intel.com,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] i2c-designware: make *CNT values configurable
-Message-ID: <20130805100225.GA9694@katana>
-References: <20130711073600.GG4898@intel.com>
- <20130711101330.GP4898@intel.com>
- <51DFB6C1.4040001@pobox.com>
- <20130712085140.GY4898@intel.com>
- <51E0E76B.1040304@pobox.com>
- <20130716111616.GA25835@ab42.lan>
- <51E6ACBE.7000509@pobox.com>
- <20130722131706.GA24081@ab42.lan>
- <51EFE550.1000507@pobox.com>
- <20130805093126.GE20936@ab42.lan>
+	id S1754243Ab3HEKCt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 06:02:49 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:46875 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754074Ab3HEKCq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 06:02:46 -0400
+Date: Mon, 5 Aug 2013 03:01:23 -0700
+From: tip-bot for Vince Weaver <tipbot@zytor.com>
+Message-ID: <tip-c9601247f8f3fdc18aed7ed7e490e8dfcd07f122@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, paulus@samba.org, hpa@zytor.com,
+        mingo@kernel.org, mccalpin@tacc.utexas.edu, acme@ghostprotocols.net,
+        peterz@infradead.org, vincent.weaver@maine.edu, stable@kernel.org,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, mccalpin@tacc.utexas.edu,
+        peterz@infradead.org, acme@ghostprotocols.net,
+        vincent.weaver@maine.edu, stable@kernel.org, tglx@linutronix.de
+In-Reply-To: <alpine.DEB.2.10.1308021037280.26119@vincent-weaver-1.um.maine.edu>
+References: <alpine.DEB.2.10.1308021037280.26119@vincent-weaver-1.um.maine.edu>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf/x86:
+  Fix intel QPI uncore event definitions
+Git-Commit-ID: c9601247f8f3fdc18aed7ed7e490e8dfcd07f122
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="0F1p//8PRICkK4MW"
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20130805093126.GE20936@ab42.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 05 Aug 2013 03:01:31 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  c9601247f8f3fdc18aed7ed7e490e8dfcd07f122
+Gitweb:     http://git.kernel.org/tip/c9601247f8f3fdc18aed7ed7e490e8dfcd07f122
+Author:     Vince Weaver <vincent.weaver@maine.edu>
+AuthorDate: Fri, 2 Aug 2013 10:47:34 -0400
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Mon, 5 Aug 2013 11:32:08 +0200
 
---0F1p//8PRICkK4MW
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+perf/x86: Fix intel QPI uncore event definitions
 
+John McCalpin reports that the "drs_data" and "ncb_data" QPI
+uncore events are missing the "extra bit" and always return zero
+values unless the bit is properly set.
 
-> > >Would it make sense to add generic I2C device tree properties for those
-> > >parameters? These parameters are independent of the actual bus driver,
-> > >rather a PCB property... And as such the correct place would be device
-> > >tree or ACPI or similar.
-> >=20
-> > If there are other bus drivers that make use of tr/tf transition
-> > times, I think it makes sense.
->=20
-> Wolfram, what's your opinion on this?
+More details from him:
 
-If it is a PCB property, it makes sense to have generic bindings for
-it. Can they have very-safe defaults and thus be optional?
+ According to the Xeon E5-2600 Product Family Uncore Performance
+ Monitoring Guide, Table 2-94, about 1/2 of the QPI Link Layer events
+ (including the ones that "perf" calls "drs_data" and "ncb_data") require
+ that the "extra bit" be set.
 
+ This was confusing for a while -- a note at the bottom of page 94 says
+ that the "extra bit" is bit 16 of the control register.
+ Unfortunately, Table 2-86 clearly says that bit 16 is reserved and must
+ be zero.  Looking around a bit, I found that bit 21 appears to be the
+ correct "extra bit", and further investigation shows that "perf" actually
+ agrees with me:
+	[root@c560-003.stampede]# cat /sys/bus/event_source/devices/uncore_qpi_0/format/event
+	config:0-7,21
 
---0F1p//8PRICkK4MW
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+ So the command
+	# perf -e "uncore_qpi_0/event=drs_data/"
+ Is the same as
+	# perf -e "uncore_qpi_0/event=0x02,umask=0x08/"
+ While it should be
+	# perf -e "uncore_qpi_0/event=0x102,umask=0x08/"
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+ I confirmed that this last version gives results that agree with the
+ amount of data that I expected the STREAM benchmark to move across the QPI
+ link in the second (cross-chip) test of the original script.
 
-iQIcBAEBAgAGBQJR/3gxAAoJEBQN5MwUoCm2kKgP/2DdjnYoBtaKUBiX1V9vl9ht
-kxWfLqQ6/jcP9PAZZFh/sPt1wNzPdmzxVKI3Hsk/+CSvXpp30MYrmdfe2DmSiH0m
-d9ObcAgQ/yGfLvw4NfYBlpWDOaGQ/cGhu0Oli/QEt5Etmi2qxWyVBMgkYntm3L9r
-08DCpLXt1YizeFEUy29jgNYj9wvYVSLit0r8c7QvEDZ12DcqK0IItbbwu9Jv4iif
-Q1byVnwm6hCoBPzehxXS0+crmr9/zsYpJCSk2q7E8lTA+JVmSx6Q4MMQA22EnxFT
-SMTQYZ5TOHXV5LGEgKAO4Grk3HWy49gZ6n2iiZiq+Rn8LkJd2RJSYInHCxWotiHo
-Ee9RNwWMEk+c4Rvg3f3wekaDZyag64K9i/sowy9hmLlL2Fmf06TroVdcG36zMpiU
-OIrnrGFoJ6FNI6bNQKeQ8xJNZFroiGif8TnIyIFPklVTI7onNTur47dP3HVfEyJ9
-Z7qNubR6T9jNjKz6UUqvt0uHkFhbLheKd1AWBPZjTfN17cgWYtGYOT310V3/tVk3
-Dkm46E8g7qbuQ1ThHNNeWXhiYmxBu3KwDmGTBD86bNCUG3j1X/YF0DVrWV4RNw+I
-VdOLHbrElQthcSQBPJkxLXyPldW6FV0JD7l+UO7Cc8gme9fBiOUjJFel5hGvhiWa
-ihNywMA6U8WVcf/s6coE
-=Nyxg
------END PGP SIGNATURE-----
+Reported-by: John McCalpin <mccalpin@tacc.utexas.edu>
+Signed-off-by: Vince Weaver <vincent.weaver@maine.edu>
+Cc: zheng.z.yan@intel.com
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: <stable@kernel.org>
+Link: http://lkml.kernel.org/r/alpine.DEB.2.10.1308021037280.26119@vincent-weaver-1.um.maine.edu
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/kernel/cpu/perf_event_intel_uncore.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---0F1p//8PRICkK4MW--
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+index cad791d..1fb6c72 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+@@ -314,8 +314,8 @@ static struct uncore_event_desc snbep_uncore_imc_events[] = {
+ static struct uncore_event_desc snbep_uncore_qpi_events[] = {
+ 	INTEL_UNCORE_EVENT_DESC(clockticks,       "event=0x14"),
+ 	INTEL_UNCORE_EVENT_DESC(txl_flits_active, "event=0x00,umask=0x06"),
+-	INTEL_UNCORE_EVENT_DESC(drs_data,         "event=0x02,umask=0x08"),
+-	INTEL_UNCORE_EVENT_DESC(ncb_data,         "event=0x03,umask=0x04"),
++	INTEL_UNCORE_EVENT_DESC(drs_data,         "event=0x102,umask=0x08"),
++	INTEL_UNCORE_EVENT_DESC(ncb_data,         "event=0x103,umask=0x04"),
+ 	{ /* end: all zeroes */ },
+ };
+ 
