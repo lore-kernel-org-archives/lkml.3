@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753485Ab3HEQTt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 12:19:49 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:55581 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754424Ab3HEQPx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 12:15:53 -0400
+	id S1754189Ab3HEQUO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 12:20:14 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:39210 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754172Ab3HEQPw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 12:15:52 -0400
 From: Joel Fernandes <joelf@ti.com>
 To: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
         Santosh Shilimkar <santosh.shilimkar@ti.com>,
@@ -26,73 +25,61 @@ CC: Linux OMAP List <linux-omap@vger.kernel.org>,
         Linux DaVinci Kernel List 
 	<davinci-linux-open-source@linux.davincidsp.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Joel Fernandes <joelf@ti.com>
-Subject: [PATCH v3 07/12] dma: edma: Add function to dump a PaRAM set from PaRAM
-Date: Mon, 5 Aug 2013 11:14:52 -0500
-Message-ID: <1375719297-12871-8-git-send-email-joelf@ti.com>
+        Linux MMC List <linux-mmc@vger.kernel.org>
+Subject: [PATCH v3 00/12] edma: Add support for SG lists of any length
+Date: Mon, 5 Aug 2013 11:14:45 -0500
+Message-ID: <1375719297-12871-1-git-send-email-joelf@ti.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1375719297-12871-1-git-send-email-joelf@ti.com>
-References: <1375719297-12871-1-git-send-email-joelf@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Previously, such a dump function was used but it wasn't reading
-from the PaRAM, rather just from a edmacc_param structure, we
-add a helpful function for debugging that directly reads from
-the PaRAM and gives the current state correctly (including links
-and interrupt information).
+Here is a more improved approach for DMA support of SG lists of any length
+in the EDMA DMA Engine driver.
 
-Signed-off-by: Joel Fernandes <joelf@ti.com>
----
- drivers/dma/edma.c |   31 +++++++++++++++++++++++++++++++
- 1 file changed, 31 insertions(+)
+In the previous approach [1] we depended on error interrupts to detect
+missed events and manually retrigger them, however as discussed in [2],
+there are concerns this can be trouble some for high speed peripherals
+which may need a more real-time response from the DMA controller.
 
-diff --git a/drivers/dma/edma.c b/drivers/dma/edma.c
-index 080d669..a242269 100644
---- a/drivers/dma/edma.c
-+++ b/drivers/dma/edma.c
-@@ -102,6 +102,37 @@ static void edma_desc_free(struct virt_dma_desc *vdesc)
- 	kfree(container_of(vdesc, struct edma_desc, vdesc));
- }
- 
-+static inline void dump_pset(struct edma_chan *echan, int slot,
-+		     struct edmacc_param *pset_unused, int pset_idx)
-+{
-+	struct edmacc_param pset_local, *pset;
-+	pset = &pset_local;
-+
-+	edma_read_slot(slot, pset);
-+
-+	dev_dbg(echan->vchan.chan.device->dev,
-+		"\n pset[%d]:\n"
-+		"  chnum\t%d\n"
-+		"  slot\t%d\n"
-+		"  opt\t%08x\n"
-+		"  src\t%08x\n"
-+		"  dst\t%08x\n"
-+		"  abcnt\t%08x\n"
-+		"  ccnt\t%08x\n"
-+		"  bidx\t%08x\n"
-+		"  cidx\t%08x\n"
-+		"  lkrld\t%08x\n",
-+		pset_idx, echan->ch_num, slot,
-+		pset[0].opt,
-+		pset[0].src,
-+		pset[0].dst,
-+		pset[0].a_b_cnt,
-+		pset[0].ccnt,
-+		pset[0].src_dst_bidx,
-+		pset[0].src_dst_cidx,
-+		pset[0].link_bcntrld);
-+}
-+
- /* Dispatch a queued descriptor to the controller (caller holds lock) */
- static void edma_execute(struct edma_chan *echan)
- {
+In this approach, we divide the total no of MAX slots per channel, into
+2 linked sets which are cyclically linked to each other (the cyclic
+link between the 2 sets make sure that the DMA is continuous till the whole
+SG list has exhausted). We then enable completion interrupts on both linked
+sets which results in recyling/preparing respective linked set with the
+next set of SG entries. The interrupt handler executes in parallel while
+the EDMA controller DMA's the next list. This results in no interruption.
+
+Special handling is done for first linked set (as we set up both linked
+sets initially before starting with the DMA), and last one where the cyclic
+link has to be broken and a link to the Dummy slot has to be created.
+Also we keep track of whether all pending DMA operations have completed
+before we can mark it as complete.
+
+[1] https://lkml.org/lkml/2013/7/29/312
+[2] https://lkml.org/lkml/2013/7/30/54
+
+Joel Fernandes (12):
+  dma: edma: Setup parameters to DMA MAX_NR_SG at a time
+  ARM: edma: Don't clear EMR of channel in edma_stop
+  dma: edma: remove limits on number of slots
+  dma: edma: Write out and handle MAX_NR_SG at a given time
+  ARM: edma: Add function to enable interrupt for a PaRAM slot
+  ARM: edma: Add pr_debug in edma_link
+  dma: edma: Add function to dump a PaRAM set from PaRAM
+  dma: edma: Add one more required slot to MAX slots
+  dma: edma: Implement multiple linked sets for continuity
+  dma: edma: Check if MAX_NR_SG is even in prep function
+  dma: edma: Keep tracking of Pending interrupts (pending_acks)
+  dma: edma: Return if nothing left todo in edma_execute
+
+ arch/arm/common/edma.c             |   18 ++-
+ drivers/dma/edma.c                 |  279 +++++++++++++++++++++++++++++-------
+ include/linux/platform_data/edma.h |    1 +
+ 3 files changed, 243 insertions(+), 55 deletions(-)
+
 -- 
 1.7.9.5
 
