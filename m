@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754520Ab3HEQQH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 12:16:07 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:39267 "EHLO arroyo.ext.ti.com"
+	id S1754547Ab3HEQQQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 12:16:16 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:51689 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754462Ab3HEQQB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 12:16:01 -0400
+	id S1751570Ab3HEQQL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 12:16:11 -0400
 From: Joel Fernandes <joelf@ti.com>
 To: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
         Santosh Shilimkar <santosh.shilimkar@ti.com>,
@@ -27,9 +27,9 @@ CC: Linux OMAP List <linux-omap@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Linux MMC List <linux-mmc@vger.kernel.org>,
         Joel Fernandes <joelf@ti.com>
-Subject: [PATCH v3 08/12] dma: edma: Add one more required slot to MAX slots
-Date: Mon, 5 Aug 2013 11:14:53 -0500
-Message-ID: <1375719297-12871-9-git-send-email-joelf@ti.com>
+Subject: [PATCH v3 05/12] ARM: edma: Add function to enable interrupt for a PaRAM slot
+Date: Mon, 5 Aug 2013 11:14:50 -0500
+Message-ID: <1375719297-12871-6-git-send-email-joelf@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1375719297-12871-1-git-send-email-joelf@ti.com>
 References: <1375719297-12871-1-git-send-email-joelf@ti.com>
@@ -39,38 +39,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We'd now need a separate slot just for the channel and separate
-ones for the 2 linked sets, so we make adjustments to allocate
-an extra channel accordingly.
+To prevent common programming errors, add a function to enable
+interrupts correctly. Also keeps calling code more readable.
 
 Signed-off-by: Joel Fernandes <joelf@ti.com>
 ---
- drivers/dma/edma.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ arch/arm/common/edma.c             |   15 +++++++++++++++
+ include/linux/platform_data/edma.h |    1 +
+ 2 files changed, 16 insertions(+)
 
-diff --git a/drivers/dma/edma.c b/drivers/dma/edma.c
-index a242269..df50a04 100644
---- a/drivers/dma/edma.c
-+++ b/drivers/dma/edma.c
-@@ -48,7 +48,7 @@
+diff --git a/arch/arm/common/edma.c b/arch/arm/common/edma.c
+index 6433b6c..aa43c49 100644
+--- a/arch/arm/common/edma.c
++++ b/arch/arm/common/edma.c
+@@ -1095,6 +1095,21 @@ void edma_set_transfer_params(unsigned slot,
+ EXPORT_SYMBOL(edma_set_transfer_params);
  
- /* Max of 16 segments per channel to conserve PaRAM slots */
- #define MAX_NR_SG		16
--#define EDMA_MAX_SLOTS		MAX_NR_SG
-+#define EDMA_MAX_SLOTS		(MAX_NR_SG+1)
- #define EDMA_DESCRIPTORS	16
- 
- struct edma_desc {
-@@ -311,6 +311,9 @@ static struct dma_async_tx_descriptor *edma_prep_slave_sg(
- 
- 	num_slots_needed = sg_len > MAX_NR_SG ? MAX_NR_SG : sg_len;
- 
-+	/* Allocate one extra to account for the channel itself */
-+	num_slots_needed++;
+ /**
++ * edma_enable_interrupt - enable interrupt on parameter RAM slot
++ * @slot: parameter RAM slot which is the link target
++ *
++ * The originating slot should not be part of any active DMA transfer.
++ */
++void edma_enable_interrupt(unsigned slot)
++{
++	pr_debug("Enabling interrupt on slot %d\n", slot);
 +
- 	for (i = 0; i < num_slots_needed; i++) {
- 		if (echan->slot[i] < 0) {
- 			echan->slot[i] =
++	edma_parm_modify(EDMA_CTLR(slot), PARM_OPT, EDMA_CHAN_SLOT(slot),
++			 ~TCINTEN, TCINTEN);
++}
++EXPORT_SYMBOL(edma_enable_interrupt);
++
++/**
+  * edma_link - link one parameter RAM slot to another
+  * @from: parameter RAM slot originating the link
+  * @to: parameter RAM slot which is the link target
+diff --git a/include/linux/platform_data/edma.h b/include/linux/platform_data/edma.h
+index 57300fd..184ff5f 100644
+--- a/include/linux/platform_data/edma.h
++++ b/include/linux/platform_data/edma.h
+@@ -136,6 +136,7 @@ void edma_set_dest_index(unsigned slot, s16 dest_bidx, s16 dest_cidx);
+ void edma_set_transfer_params(unsigned slot, u16 acnt, u16 bcnt, u16 ccnt,
+ 		u16 bcnt_rld, enum sync_dimension sync_mode);
+ void edma_link(unsigned from, unsigned to);
++void edma_enable_interrupt(unsigned slot);
+ void edma_unlink(unsigned from);
+ 
+ /* calls that operate on an entire parameter RAM slot */
 -- 
 1.7.9.5
 
