@@ -1,115 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753783Ab3HERUe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 13:20:34 -0400
-Received: from kanga.kvack.org ([205.233.56.17]:33897 "EHLO kanga.kvack.org"
+	id S1753949Ab3HERW0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 13:22:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5366 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753028Ab3HERUd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 13:20:33 -0400
-Date: Mon, 5 Aug 2013 13:20:32 -0400
-From: Benjamin LaHaise <bcrl@kvack.org>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Kent Overstreet <kmo@daterainc.com>, axboe@kernel.dk,
-        Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, LKML <linux-kernel@vger.kernel.org>,
-        linux-aio@kvack.org, trinity@vger.kernel.org
-Subject: [PATCH aio-next] aio: fix error handling and rcu usage in "convert the ioctx list to table lookup v3"
-Message-ID: <20130805172032.GI31864@kvack.org>
-References: <51FFAF34.20200@oracle.com> <20130805160828.GH31864@kvack.org>
-Mime-Version: 1.0
+	id S1753028Ab3HERWZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 13:22:25 -0400
+Date: Mon, 5 Aug 2013 20:22:15 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: James Hogan <james.hogan@imgtec.com>, David Daney <ddaney.cavm@gmail.com>,
+        linux-mips@linux-mips.org, kvm@vger.kernel.org,
+        Sanjay Lal <sanjayl@kymasys.com>, linux-kernel@vger.kernel.org,
+        David Daney <david.daney@cavium.com>
+Subject: Re: [PATCH 1/3] mips/kvm: Improve code formatting in
+ arch/mips/kvm/kvm_locore.S
+Message-ID: <20130805172215.GC15901@redhat.com>
+References: <1375388555-4045-1-git-send-email-ddaney.cavm@gmail.com>
+ <1375388555-4045-2-git-send-email-ddaney.cavm@gmail.com>
+ <51FFA5CD.3010406@imgtec.com>
+ <20130805132157.GB3470@linux-mips.org>
+ <20130805134326.GA15901@redhat.com>
+ <20130805170610.GA17633@linux-mips.org>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130805160828.GH31864@kvack.org>
-User-Agent: Mutt/1.4.2.2i
+In-Reply-To: <20130805170610.GA17633@linux-mips.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 05, 2013 at 12:08:28PM -0400, Benjamin LaHaise wrote:
-> Hi Sasha,
-> 
-> On Mon, Aug 05, 2013 at 09:57:08AM -0400, Sasha Levin wrote:
-> > Hi all,
+On Mon, Aug 05, 2013 at 07:06:10PM +0200, Ralf Baechle wrote:
+> On Mon, Aug 05, 2013 at 04:43:27PM +0300, Gleb Natapov wrote:
+> > Date:   Mon, 5 Aug 2013 16:43:27 +0300
+> > From: Gleb Natapov <gleb@redhat.com>
+> > To: Ralf Baechle <ralf@linux-mips.org>
+> > Cc: James Hogan <james.hogan@imgtec.com>, David Daney
+> >  <ddaney.cavm@gmail.com>, linux-mips@linux-mips.org, kvm@vger.kernel.org,
+> >  Sanjay Lal <sanjayl@kymasys.com>, linux-kernel@vger.kernel.org, David
+> >  Daney <david.daney@cavium.com>
+> > Subject: Re: [PATCH 1/3] mips/kvm: Improve code formatting in
+> >  arch/mips/kvm/kvm_locore.S
+> > Content-Type: text/plain; charset=us-ascii
 > > 
-> > While fuzzing with trinity inside a KVM tools guest running latest -next 
-> > kernel,
-> > I've stumbled on the following spew caused by a new BUG() added in "aio: fix
-> > io_destroy() regression by using call_rcu()".
+> > On Mon, Aug 05, 2013 at 03:21:57PM +0200, Ralf Baechle wrote:
+> > > On Mon, Aug 05, 2013 at 02:17:01PM +0100, James Hogan wrote:
+> > > 
+> > > > 
+> > > > On 01/08/13 21:22, David Daney wrote:
+> > > > > From: David Daney <david.daney@cavium.com>
+> > > > > 
+> > > > > No code changes, just reflowing some comments and consistently using
+> > > > > tabs and spaces.  Object code is verified to be unchanged.
+> > > > > 
+> > > > > Signed-off-by: David Daney <david.daney@cavium.com>
+> > > > > Acked-by: Ralf Baechle <ralf@linux-mips.org>
+> > > > 
+> > > > 
+> > > > > +   	 /* Put the saved pointer to vcpu (s1) back into the DDATA_LO Register */
+> > > > 
+> > > > git am detects a whitespace error here ("space before tab in indent").
+> > > > It's got spaces before and after the tab actually.
+> > > > 
+> > > > >      /* load the guest context from VCPU and return */
+> > > > 
+> > > > this comment could have it's indentation fixed too
+> > > > 
+> > > > Otherwise, for all 3 patches:
+> > > > 
+> > > > Reviewed-by: James Hogan <james.hogan@imgtec.com>
+> > > 
+> > > I'm happy with the patch series as well and will fix this issue when
+> > > applying the patch.
+> > > 
+> > kvm fixes usually go through kvm.git tree for all arches. Any special
+> > reasons you want to get those through mips tree?
 > 
-> I did some investigating, and it looks like there is a problem with 
-> db446a08c23d5475e6b08c87acca79ebb20f283c (aio: convert the ioctx list to 
-> table lookup v3).  Can you confirm if reverting this patch eliminates 
-> the BUG() you're hitting?  In my testing, I wasn't able to trigger the 
-> BUG(), but I was able to trip up slab corruption with debugging on.  
+> MIPS fixes usually go through the MIPS tree ;-)
+> 
+arch/*/kvm/ fixes usually go through the kvm.git though :) KVM arch
+code, after it is reasonably stable, usually depends more on kvm common
+code then arch code and kvm development suppose to happen against
+kvm.git otherwise APIs can go out of sync. I need to get acks of MIPS
+people before taking patches of course.
 
-And here is a patch that should fix the problems introduced in the table 
-lookup patch without reverting.  I will add this to the aio-next.git tree.  
-This bug is not present in Linus' tree.
+When patch series touches code outside of arch/*/kvm, like David says
+the next one will, it make sense to merge it through MIPS tree, just
+please take KVM maintainers ACK for kvm part.
 
-		-ben
+> I don't care which tree this stuff goes through - but a general experience
+> is that things that affect MIPS systems receive most testing if going
+> through the MIPS tree.
+> 
+>   Ralf
 
- aio.c |   17 +++++++++--------
- 1 file changed, 9 insertions(+), 8 deletions(-)
-
-diff --git a/fs/aio.c b/fs/aio.c
-index 588aff9..3bc068c 100644
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -475,7 +475,7 @@ static int ioctx_add_table(struct kioctx *ctx, struct mm_struct *mm)
- 	struct aio_ring *ring;
- 
- 	spin_lock(&mm->ioctx_lock);
--	table = rcu_dereference(mm->ioctx_table);
-+	table = mm->ioctx_table;
- 
- 	while (1) {
- 		if (table)
-@@ -503,7 +503,7 @@ static int ioctx_add_table(struct kioctx *ctx, struct mm_struct *mm)
- 		table->nr = new_nr;
- 
- 		spin_lock(&mm->ioctx_lock);
--		old = rcu_dereference(mm->ioctx_table);
-+		old = mm->ioctx_table;
- 
- 		if (!old) {
- 			rcu_assign_pointer(mm->ioctx_table, table);
-@@ -579,10 +579,6 @@ static struct kioctx *ioctx_alloc(unsigned nr_events)
- 	if (ctx->req_batch < 1)
- 		ctx->req_batch = 1;
- 
--	err = ioctx_add_table(ctx, mm);
--	if (err)
--		goto out_cleanup_noerr;
--
- 	/* limit the number of system wide aios */
- 	spin_lock(&aio_nr_lock);
- 	if (aio_nr + nr_events > (aio_max_nr * 2UL) ||
-@@ -595,13 +591,18 @@ static struct kioctx *ioctx_alloc(unsigned nr_events)
- 
- 	percpu_ref_get(&ctx->users); /* io_setup() will drop this ref */
- 
-+	err = ioctx_add_table(ctx, mm);
-+	if (err)
-+		goto out_cleanup_put;
-+
- 	pr_debug("allocated ioctx %p[%ld]: mm=%p mask=0x%x\n",
- 		 ctx, ctx->user_id, mm, ctx->nr_events);
- 	return ctx;
- 
-+out_cleanup_put:
-+	percpu_ref_put(&ctx->users);
- out_cleanup:
- 	err = -EAGAIN;
--out_cleanup_noerr:
- 	aio_free_ring(ctx);
- out_freepcpu:
- 	free_percpu(ctx->cpu);
-@@ -626,7 +627,7 @@ static void kill_ioctx(struct mm_struct *mm, struct kioctx *ctx)
- 		struct kioctx_table *table;
- 
- 		spin_lock(&mm->ioctx_lock);
--		table = rcu_dereference(mm->ioctx_table);
-+		table = mm->ioctx_table;
- 
- 		WARN_ON(ctx != table->table[ctx->id]);
- 		table->table[ctx->id] = NULL;
+--
+			Gleb.
