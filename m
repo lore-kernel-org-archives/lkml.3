@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754888Ab3HEToT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 15:44:19 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:58030 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754772Ab3HEToQ (ORCPT
+	id S1754962Ab3HETol (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 15:44:41 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:58608 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754794Ab3HEToO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 15:44:16 -0400
+	Mon, 5 Aug 2013 15:44:14 -0400
 From: Andy Lutomirski <luto@amacapital.net>
 To: linux-mm@kvack.org, linux-ext4@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>
-Subject: [RFC 3/3] ext4: Implement willwrite for the delalloc case
-Date: Mon,  5 Aug 2013 12:44:01 -0700
-Message-Id: <e7408a082b42ce17872eebf8f59f44252ef63abb.1375729665.git.luto@amacapital.net>
+Subject: [RFC 2/3] fs: Add block_willwrite
+Date: Mon,  5 Aug 2013 12:44:00 -0700
+Message-Id: <50d921ff5d6fcb1a5da59b4bdb755e886cecab1f.1375729665.git.luto@amacapital.net>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <cover.1375729665.git.luto@amacapital.net>
 References: <cover.1375729665.git.luto@amacapital.net>
@@ -22,68 +22,100 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This provides generic support for MADV_WILLWRITE.  It creates and maps
+buffer heads, but it should not result in anything being marked dirty.
+
 Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 ---
- fs/ext4/ext4.h  |  2 ++
- fs/ext4/file.c  |  1 +
- fs/ext4/inode.c | 22 ++++++++++++++++++++++
- 3 files changed, 25 insertions(+)
 
-diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-index b577e45..be7308a 100644
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -2103,6 +2103,8 @@ extern int ext4_block_zero_page_range(handle_t *handle,
- extern int ext4_zero_partial_blocks(handle_t *handle, struct inode *inode,
- 			     loff_t lstart, loff_t lend);
- extern int ext4_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf);
-+extern long ext4_willwrite(struct vm_area_struct *vma,
-+			   unsigned long start, unsigned long end);
- extern qsize_t *ext4_get_reserved_space(struct inode *inode);
- extern void ext4_da_update_reserve_space(struct inode *inode,
- 					int used, int quota_claim);
-diff --git a/fs/ext4/file.c b/fs/ext4/file.c
-index 6f4cc56..159226f 100644
---- a/fs/ext4/file.c
-+++ b/fs/ext4/file.c
-@@ -201,6 +201,7 @@ ext4_file_write(struct kiocb *iocb, const struct iovec *iov,
- static const struct vm_operations_struct ext4_file_vm_ops = {
- 	.fault		= filemap_fault,
- 	.page_mkwrite   = ext4_page_mkwrite,
-+	.willwrite	= ext4_willwrite,
- 	.remap_pages	= generic_file_remap_pages,
- };
- 
-diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index ba33c67..c49e36b 100644
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -5101,3 +5101,25 @@ out:
- 	sb_end_pagefault(inode->i_sb);
- 	return ret;
+As described in the 0/0 summary, this may have issues.
+
+ fs/buffer.c                 | 57 +++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/buffer_head.h |  3 +++
+ 2 files changed, 60 insertions(+)
+
+diff --git a/fs/buffer.c b/fs/buffer.c
+index 4d74335..017e822 100644
+--- a/fs/buffer.c
++++ b/fs/buffer.c
+@@ -2444,6 +2444,63 @@ int block_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf,
  }
-+
-+long ext4_willwrite(struct vm_area_struct *vma,
-+		    unsigned long start, unsigned long end)
+ EXPORT_SYMBOL(block_page_mkwrite);
+ 
++long block_willwrite(struct vm_area_struct *vma,
++		     unsigned long start, unsigned long end,
++		     get_block_t get_block)
 +{
-+	int ret = 0;
-+	struct file *file = vma->vm_file;
-+	struct inode *inode = file_inode(file);
-+	int retries = 0;
++	long ret = 0;
++	loff_t size;
++	struct inode *inode = file_inode(vma->vm_file);
++	struct super_block *sb = inode->i_sb;
 +
-+	/* We only support the delalloc case */
-+	if (test_opt(inode->i_sb, DELALLOC) &&
-+	    !ext4_should_journal_data(inode) &&
-+	    !ext4_nonda_switch(inode->i_sb)) {
-+		do {
-+			ret = block_willwrite(vma, start, end,
-+					      ext4_da_get_block_prep);
-+		} while (ret == -ENOSPC &&
-+		       ext4_should_retry_alloc(inode->i_sb, &retries));
++	for (; start < end; start += PAGE_CACHE_SIZE) {
++		struct page *p;
++		int size_in_page;
++		int tmp = get_user_pages_fast(start, 1, 0, &p);
++		if (tmp == 0)
++			tmp = -EFAULT;
++		if (tmp != 1) {
++			ret = tmp;
++			break;
++		}
++
++		sb_start_pagefault(sb);
++
++		lock_page(p);
++		size = i_size_read(inode);
++		if (WARN_ON_ONCE(p->mapping != inode->i_mapping) ||
++		    (page_offset(p) > size)) {
++			ret = -EFAULT;  /* A real write would have failed. */
++			goto pagedone_unlock;
++		}
++
++		/* page is partially inside EOF? */
++		if (((p->index + 1) << PAGE_CACHE_SHIFT) > size)
++			size_in_page = size & ~PAGE_CACHE_MASK;
++		else
++			size_in_page = PAGE_CACHE_SIZE;
++
++		tmp = __block_write_begin(p, 0, size_in_page, get_block);
++		if (tmp) {
++			ret = tmp;
++			goto pagedone_unlock;
++		}
++
++		ret += PAGE_CACHE_SIZE;
++
++		/* No need to commit -- we're not writing anything yet. */
++
++	pagedone_unlock:
++		unlock_page(p);
++		sb_end_pagefault(sb);
++		if (ret < 0)
++			break;
 +	}
 +
 +	return ret;
 +}
++EXPORT_SYMBOL(block_willwrite);
++
+ /*
+  * nobh_write_begin()'s prereads are special: the buffer_heads are freed
+  * immediately, while under the page lock.  So it needs a special end_io
+diff --git a/include/linux/buffer_head.h b/include/linux/buffer_head.h
+index 91fa9a9..c84639d 100644
+--- a/include/linux/buffer_head.h
++++ b/include/linux/buffer_head.h
+@@ -230,6 +230,9 @@ int __block_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf,
+ 				get_block_t get_block);
+ int block_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf,
+ 				get_block_t get_block);
++long block_willwrite(struct vm_area_struct *vma,
++		     unsigned long start, unsigned long end,
++		     get_block_t get_block);
+ /* Convert errno to return value from ->page_mkwrite() call */
+ static inline int block_page_mkwrite_return(int err)
+ {
 -- 
 1.8.3.1
 
