@@ -1,43 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753612Ab3HEPPr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 11:15:47 -0400
-Received: from nschwqsrv01p.mx.bigpond.com ([61.9.189.231]:36535 "EHLO
-	nschwqsrv01p.mx.bigpond.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751296Ab3HEPPq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 11:15:46 -0400
-X-Greylist: delayed 4131 seconds by postgrey-1.27 at vger.kernel.org; Mon, 05 Aug 2013 11:15:45 EDT
-X-Authority-Analysis: v=2.0 cv=bcfpoZzB c=1 sm=1
- a=oJtEONyhys+POxhWUUMuFw==:17 a=Dyoqhi_TatcA:10 a=Y_EhVhxDB8QA:10
- a=O_tL3vHB_NEA:10 a=d3ZwFMNkyaEA:10 a=8EU9Q7FnrCoA:10 a=Cfj4BQAnxiAA:10
- a=l9eSvs5DAAAA:8 a=HV8OPcDDAAAA:8 a=pGLkceISAAAA:8 a=lqFe0EH9hS0A:10
- a=idrd9QrNmqFnmVXyRi4A:9 a=Ft8UYL4EG9YA:10 a=xfXGbfm0XHQA:10
- a=MSl-tDqOz04A:10 a=HEzIByxJD1IA:10 a=IuwfRGKGHngA:10
- a=oJtEONyhys+POxhWUUMuFw==:117
-Reply-To: <bgee3130@gmail.com>
-From: "Lets work together broda" <info@email.org>
-Subject: Lets work together broda
-Date: Mon, 5 Aug 2013 21:03:56 +0800
+	id S1753593Ab3HEPVg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 11:21:36 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:53625 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752379Ab3HEPVe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 11:21:34 -0400
+Message-ID: <51FFC2D5.70105@zytor.com>
+Date: Mon, 05 Aug 2013 08:20:53 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Jason Wang <jasowang@redhat.com>, tglx@linutronix.de, mingo@redhat.com,
+        x86@kernel.org, linux-kernel@vger.kernel.org, pbonzini@redhat.com,
+        kvm@vger.kernel.org, "K. Y. Srinivasan" <kys@microsoft.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Doug Covelli <dcovelli@vmware.com>, Borislav Petkov <bp@suse.de>,
+        Dan Hecht <dhecht@vmware.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, devel@linuxdriverproject.org,
+        xen-devel@lists.xensource.com,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH V2 4/4] x86: correctly detect hypervisor
+References: <1374742475-2485-1-git-send-email-jasowang@redhat.com> <1374742475-2485-4-git-send-email-jasowang@redhat.com> <51FF1E26.6010707@redhat.com> <20130805143426.GH3321@phenom.dumpdata.com>
+In-Reply-To: <20130805143426.GH3321@phenom.dumpdata.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-Message-ID: <RWSBSVR121ePSygqhvy0001d865@mail.raywhitesouthbrisbane.com.au>
-X-OriginalArrivalTime: 05 Aug 2013 13:02:04.0418 (UTC) FILETIME=[FB87F620:01CE91DB]
-To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hello bro..my name is steve and we can work together. I dey get company account for hong kong, china, india, thailand, and malaysia both company and personal account. make we share money na online here good contacts dey come from.
+On 08/05/2013 07:34 AM, Konrad Rzeszutek Wilk wrote:
+> 
+> Could you provide me with a git branch so I can test it overnight please?
+> 
 
-you can contact me through bgee3130@gmail.com
+Pull tip:x86/paravirt.
 
-Steve from China
+	-hpa
 
 
