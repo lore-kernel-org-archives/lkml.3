@@ -1,82 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754157Ab3HEQbZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 12:31:25 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:12995 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751570Ab3HEQbW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 12:31:22 -0400
-X-IronPort-AV: E=Sophos;i="4.89,819,1367971200"; 
-   d="scan'208";a="39429457"
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-To: <xen-devel@lists.xensource.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <konrad.wilk@oracle.com>, <Stefano.Stabellini@eu.citrix.com>,
-        <Ian.Campbell@citrix.com>, EUNBONG SONG <eunb.song@samsung.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH v3 01/10] swiotlb: replace dma_length with sg_dma_len() macro
-Date: Mon, 5 Aug 2013 17:30:47 +0100
-Message-ID: <1375720256-8014-1-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <alpine.DEB.2.02.1308051503190.4893@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1308051503190.4893@kaball.uk.xensource.com>
+	id S1754227Ab3HEQb1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 12:31:27 -0400
+Received: from mx01-sz.bfs.de ([194.94.69.67]:45566 "EHLO mx01-sz.bfs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753626Ab3HEQbX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 12:31:23 -0400
+X-Greylist: delayed 395 seconds by postgrey-1.27 at vger.kernel.org; Mon, 05 Aug 2013 12:31:23 EDT
+Message-ID: <51FFD1CB.4080907@bfs.de>
+Date: Mon, 05 Aug 2013 18:24:43 +0200
+From: walter harms <wharms@bfs.de>
+Reply-To: wharms@bfs.de
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Julia Lawall <julia.lawall@lip6.fr>
+CC: Dan Carpenter <dan.carpenter@oracle.com>, trivial@kernel.org,
+        kernel-janitors@vger.kernel.org, corbet@lwn.net, m.chehab@samsung.com,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] trivial: adjust code alignment
+References: <1375714059-29567-1-git-send-email-Julia.Lawall@lip6.fr> <1375714059-29567-5-git-send-email-Julia.Lawall@lip6.fr> <20130805160645.GI5051@mwanda> <alpine.DEB.2.02.1308051810360.2134@hadrien>
+In-Reply-To: <alpine.DEB.2.02.1308051810360.2134@hadrien>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: EUNBONG SONG <eunb.song@samsung.com>
+Hello Julia,
 
-This patch replace dma_length in "lib/swiotlb.c" to sg_dma_len() macro,
-because the build error can occur if CONFIG_NEED_SG_DMA_LENGTH is not
-set, and CONFIG_SWIOTLB is set.
+IMHO keep the patch as it is.
+It does not change any code that is good.
+Suspicious code that comes up here can be addressed
+in a separate patch.
 
-Singed-off-by: EunBong Song <eunb.song@samsung.com>
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
----
- lib/swiotlb.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+just my 2 cents,
+re,
+ wh
 
-diff --git a/lib/swiotlb.c b/lib/swiotlb.c
-index d23762e..4e8686c 100644
---- a/lib/swiotlb.c
-+++ b/lib/swiotlb.c
-@@ -870,13 +870,13 @@ swiotlb_map_sg_attrs(struct device *hwdev, struct scatterlist *sgl, int nelems,
- 				swiotlb_full(hwdev, sg->length, dir, 0);
- 				swiotlb_unmap_sg_attrs(hwdev, sgl, i, dir,
- 						       attrs);
--				sgl[0].dma_length = 0;
-+				sg_dma_len(sgl) = 0;
- 				return 0;
- 			}
- 			sg->dma_address = phys_to_dma(hwdev, map);
- 		} else
- 			sg->dma_address = dev_addr;
--		sg->dma_length = sg->length;
-+		sg_dma_len(sg) = sg->length;
- 	}
- 	return nelems;
- }
-@@ -904,7 +904,7 @@ swiotlb_unmap_sg_attrs(struct device *hwdev, struct scatterlist *sgl,
- 	BUG_ON(dir == DMA_NONE);
- 
- 	for_each_sg(sgl, sg, nelems, i)
--		unmap_single(hwdev, sg->dma_address, sg->dma_length, dir);
-+		unmap_single(hwdev, sg->dma_address, sg_dma_len(sg), dir);
- 
- }
- EXPORT_SYMBOL(swiotlb_unmap_sg_attrs);
-@@ -934,7 +934,7 @@ swiotlb_sync_sg(struct device *hwdev, struct scatterlist *sgl,
- 
- 	for_each_sg(sgl, sg, nelems, i)
- 		swiotlb_sync_single(hwdev, sg->dma_address,
--				    sg->dma_length, dir, target);
-+				    sg_dma_len(sg), dir, target);
- }
- 
- void
--- 
-1.7.2.5
-
+Am 05.08.2013 18:19, schrieb Julia Lawall:
+> On Mon, 5 Aug 2013, Dan Carpenter wrote:
+> 
+>> On Mon, Aug 05, 2013 at 04:47:39PM +0200, Julia Lawall wrote:
+>>> diff --git a/drivers/media/i2c/ov7670.c b/drivers/media/i2c/ov7670.c
+>>> index e8a1ce2..4a5a5dc 100644
+>>> --- a/drivers/media/i2c/ov7670.c
+>>> +++ b/drivers/media/i2c/ov7670.c
+>>> @@ -1369,8 +1369,8 @@ static int ov7670_s_exp(struct v4l2_subdev *sd,
+>>> int value)
+>>>      unsigned char com1, com8, aech, aechh;
+>>>
+>>>      ret = ov7670_read(sd, REG_COM1, &com1) +
+>>> -        ov7670_read(sd, REG_COM8, &com8);
+>>> -        ov7670_read(sd, REG_AECHH, &aechh);
+>>> +    ov7670_read(sd, REG_COM8, &com8);
+>>> +    ov7670_read(sd, REG_AECHH, &aechh);
+>>>      if (ret)
+>>>          return ret;
+>>>
+>>
+>> The new indenting isn't correct here and anyway the intent was to
+>> combine all the error codes together and return them as an error
+>> code jumble.  I'm not a fan of error code jumbles, probably the
+>> right thing is to check each function call or, barring that, to
+>> return -EIO.
+> 
+> Oops, thanks for spotting that.  I'm not sure whether it is safe to
+> abort these calls as soon as the first one fails, but perhaps I could
+> introduce some more variables, and test them all afterwards.
+> 
+> What should I do with the big patch?  Resend it with this cut out?  Or,
+> considering that I might have overlooked something else, send 90 some
+> little ones?
+> 
+> thanks,
+> julia
+> -- 
+> To unsubscribe from this list: send the line "unsubscribe
+> kernel-janitors" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
