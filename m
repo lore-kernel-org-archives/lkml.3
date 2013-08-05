@@ -1,143 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754539Ab3HEUxO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 16:53:14 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:48944 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753427Ab3HEUxM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 16:53:12 -0400
-Date: Mon, 5 Aug 2013 16:52:35 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Chris Metcalf <cmetcalf@tilera.com>
-Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: Re: [PATCH 06/20] tile: support LSI MEGARAID SAS HBA hybrid dma_ops
-Message-ID: <20130805205235.GB24122@phenom.dumpdata.com>
-References: <cover.1375733180.git.cmetcalf@tilera.com>
- <a8a7d279ad8633c6aa3b5031aa9da4a76f2487c3.1375733180.git.cmetcalf@tilera.com>
+	id S1754711Ab3HEU4S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 16:56:18 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:51952 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753013Ab3HEU4Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 16:56:16 -0400
+Date: Mon, 5 Aug 2013 16:56:04 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        azurIt <azurit@pobox.sk>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, x86@kernel.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 7/7] mm: memcg: do not trap chargers with full callstack
+ on OOM
+Message-ID: <20130805205604.GC715@cmpxchg.org>
+References: <1375549200-19110-1-git-send-email-hannes@cmpxchg.org>
+ <1375549200-19110-8-git-send-email-hannes@cmpxchg.org>
+ <20130805095429.GJ10146@dhcp22.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <a8a7d279ad8633c6aa3b5031aa9da4a76f2487c3.1375733180.git.cmetcalf@tilera.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+In-Reply-To: <20130805095429.GJ10146@dhcp22.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 05, 2013 at 04:06:20PM -0400, Chris Metcalf wrote:
-> The LSI MEGARAID SAS HBA suffers from the problem where it can do
-> 64-bit DMA to streaming buffers but not to consistent buffers.
-> In other words, 64-bit DMA is used for disk data transfers and 32-bit
-> DMA must be used for control message transfers. According to LSI,
-> the firmware is not fully functional yet. This change implements a
-> kind of hybrid dma_ops to support this.
-
-If this is generic to LSI MegaRAID HBA shouldn't this change also be
-done for the other platforms?
-
-Or perhaps some other changes to make it work with other devices?
-
+On Mon, Aug 05, 2013 at 11:54:29AM +0200, Michal Hocko wrote:
+> On Sat 03-08-13 13:00:00, Johannes Weiner wrote:
+> > The memcg OOM handling is incredibly fragile and can deadlock.  When a
+> > task fails to charge memory, it invokes the OOM killer and loops right
+> > there in the charge code until it succeeds.  Comparably, any other
+> > task that enters the charge path at this point will go to a waitqueue
+> > right then and there and sleep until the OOM situation is resolved.
+> > The problem is that these tasks may hold filesystem locks and the
+> > mmap_sem; locks that the selected OOM victim may need to exit.
+> > 
+> > For example, in one reported case, the task invoking the OOM killer
+> > was about to charge a page cache page during a write(), which holds
+> > the i_mutex.  The OOM killer selected a task that was just entering
+> > truncate() and trying to acquire the i_mutex:
+> > 
+> > OOM invoking task:
+> > [<ffffffff8110a9c1>] mem_cgroup_handle_oom+0x241/0x3b0
+> > [<ffffffff8110b5ab>] T.1146+0x5ab/0x5c0
+> > [<ffffffff8110c22e>] mem_cgroup_cache_charge+0xbe/0xe0
+> > [<ffffffff810ca28c>] add_to_page_cache_locked+0x4c/0x140
+> > [<ffffffff810ca3a2>] add_to_page_cache_lru+0x22/0x50
+> > [<ffffffff810ca45b>] grab_cache_page_write_begin+0x8b/0xe0
+> > [<ffffffff81193a18>] ext3_write_begin+0x88/0x270
+> > [<ffffffff810c8fc6>] generic_file_buffered_write+0x116/0x290
+> > [<ffffffff810cb3cc>] __generic_file_aio_write+0x27c/0x480
+> > [<ffffffff810cb646>] generic_file_aio_write+0x76/0xf0           # takes ->i_mutex
+> > [<ffffffff8111156a>] do_sync_write+0xea/0x130
+> > [<ffffffff81112183>] vfs_write+0xf3/0x1f0
+> > [<ffffffff81112381>] sys_write+0x51/0x90
+> > [<ffffffff815b5926>] system_call_fastpath+0x18/0x1d
+> > [<ffffffffffffffff>] 0xffffffffffffffff
+> > 
+> > OOM kill victim:
+> > [<ffffffff811109b8>] do_truncate+0x58/0xa0              # takes i_mutex
+> > [<ffffffff81121c90>] do_last+0x250/0xa30
+> > [<ffffffff81122547>] path_openat+0xd7/0x440
+> > [<ffffffff811229c9>] do_filp_open+0x49/0xa0
+> > [<ffffffff8110f7d6>] do_sys_open+0x106/0x240
+> > [<ffffffff8110f950>] sys_open+0x20/0x30
+> > [<ffffffff815b5926>] system_call_fastpath+0x18/0x1d
+> > [<ffffffffffffffff>] 0xffffffffffffffff
+> > 
+> > The OOM handling task will retry the charge indefinitely while the OOM
+> > killed task is not releasing any resources.
+> > 
+> > A similar scenario can happen when the kernel OOM killer for a memcg
+> > is disabled and a userspace task is in charge of resolving OOM
+> > situations.  In this case, ALL tasks that enter the OOM path will be
+> > made to sleep on the OOM waitqueue and wait for userspace to free
+> > resources or increase the group's limit.  But a userspace OOM handler
+> > is prone to deadlock itself on the locks held by the waiting tasks.
+> > For example one of the sleeping tasks may be stuck in a brk() call
+> > with the mmap_sem held for writing but the userspace handler, in order
+> > to pick an optimal victim, may need to read files from /proc/<pid>,
+> > which tries to acquire the same mmap_sem for reading and deadlocks.
+> > 
+> > This patch changes the way tasks behave after detecting a memcg OOM
+> > and makes sure nobody loops or sleeps with locks held:
+> > 
+> > 1. When OOMing in a user fault, invoke the OOM killer and restart the
+> >    fault instead of looping on the charge attempt.  This way, the OOM
+> >    victim can not get stuck on locks the looping task may hold.
+> > 
+> > 2. When OOMing in a user fault but somebody else is handling it
+> >    (either the kernel OOM killer or a userspace handler), don't go to
+> >    sleep in the charge context.  Instead, remember the OOMing memcg in
+> >    the task struct and then fully unwind the page fault stack with
+> >    -ENOMEM.  pagefault_out_of_memory() will then call back into the
+> >    memcg code to check if the -ENOMEM came from the memcg, and then
+> >    either put the task to sleep on the memcg's OOM waitqueue or just
+> >    restart the fault.  The OOM victim can no longer get stuck on any
+> >    lock a sleeping task may hold.
+> > 
+> > Reported-by: Reported-by: azurIt <azurit@pobox.sk>
+> > Debugged-by: Michal Hocko <mhocko@suse.cz>
+> > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 > 
-> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
-> ---
->  arch/tile/include/asm/dma-mapping.h |  4 ++--
->  arch/tile/kernel/pci-dma.c          | 17 +++++++++++------
->  2 files changed, 13 insertions(+), 8 deletions(-)
-> 
-> diff --git a/arch/tile/include/asm/dma-mapping.h b/arch/tile/include/asm/dma-mapping.h
-> index f2ff191..6da0540 100644
-> --- a/arch/tile/include/asm/dma-mapping.h
-> +++ b/arch/tile/include/asm/dma-mapping.h
-> @@ -44,12 +44,12 @@ static inline void set_dma_offset(struct device *dev, dma_addr_t off)
->  
->  static inline dma_addr_t phys_to_dma(struct device *dev, phys_addr_t paddr)
->  {
-> -	return paddr + get_dma_offset(dev);
-> +	return paddr;
->  }
->  
->  static inline phys_addr_t dma_to_phys(struct device *dev, dma_addr_t daddr)
->  {
-> -	return daddr - get_dma_offset(dev);
-> +	return daddr;
->  }
->  
->  static inline void dma_mark_clean(void *addr, size_t size) {}
-> diff --git a/arch/tile/kernel/pci-dma.c b/arch/tile/kernel/pci-dma.c
-> index b9fe80e..7e98371 100644
-> --- a/arch/tile/kernel/pci-dma.c
-> +++ b/arch/tile/kernel/pci-dma.c
-> @@ -357,7 +357,7 @@ static void *tile_pci_dma_alloc_coherent(struct device *dev, size_t size,
->  
->  	addr = page_to_phys(pg);
->  
-> -	*dma_handle = phys_to_dma(dev, addr);
-> +	*dma_handle = addr + get_dma_offset(dev);
->  
->  	return page_address(pg);
->  }
-> @@ -387,7 +387,7 @@ static int tile_pci_dma_map_sg(struct device *dev, struct scatterlist *sglist,
->  		sg->dma_address = sg_phys(sg);
->  		__dma_prep_pa_range(sg->dma_address, sg->length, direction);
->  
-> -		sg->dma_address = phys_to_dma(dev, sg->dma_address);
-> +		sg->dma_address = sg->dma_address + get_dma_offset(dev);
->  #ifdef CONFIG_NEED_SG_DMA_LENGTH
->  		sg->dma_length = sg->length;
->  #endif
-> @@ -422,7 +422,7 @@ static dma_addr_t tile_pci_dma_map_page(struct device *dev, struct page *page,
->  	BUG_ON(offset + size > PAGE_SIZE);
->  	__dma_prep_page(page, offset, size, direction);
->  
-> -	return phys_to_dma(dev, page_to_pa(page) + offset);
-> +	return page_to_pa(page) + offset + get_dma_offset(dev);
->  }
->  
->  static void tile_pci_dma_unmap_page(struct device *dev, dma_addr_t dma_address,
-> @@ -432,7 +432,7 @@ static void tile_pci_dma_unmap_page(struct device *dev, dma_addr_t dma_address,
->  {
->  	BUG_ON(!valid_dma_direction(direction));
->  
-> -	dma_address = dma_to_phys(dev, dma_address);
-> +	dma_address -= get_dma_offset(dev);
->  
->  	__dma_complete_page(pfn_to_page(PFN_DOWN(dma_address)),
->  			    dma_address & PAGE_OFFSET, size, direction);
-> @@ -445,7 +445,7 @@ static void tile_pci_dma_sync_single_for_cpu(struct device *dev,
->  {
->  	BUG_ON(!valid_dma_direction(direction));
->  
-> -	dma_handle = dma_to_phys(dev, dma_handle);
-> +	dma_handle -= get_dma_offset(dev);
->  
->  	__dma_complete_pa_range(dma_handle, size, direction);
->  }
-> @@ -456,7 +456,7 @@ static void tile_pci_dma_sync_single_for_device(struct device *dev,
->  						enum dma_data_direction
->  						direction)
->  {
-> -	dma_handle = dma_to_phys(dev, dma_handle);
-> +	dma_handle -= get_dma_offset(dev);
->  
->  	__dma_prep_pa_range(dma_handle, size, direction);
->  }
-> @@ -573,6 +573,11 @@ int dma_set_coherent_mask(struct device *dev, u64 mask)
->  	if (((dma_ops == gx_pci_dma_map_ops) ||
->  	    (dma_ops == gx_legacy_pci_dma_map_ops)) &&
->  	    (mask <= DMA_BIT_MASK(32))) {
-> +		if (dma_ops == gx_pci_dma_map_ops) {
-> +			dma_ops->alloc = tile_swiotlb_alloc_coherent;
-> +			dma_ops->free = tile_swiotlb_free_coherent;
-> +		}
-> +
+> I was thinking whether we should add task_in_memcg_oom into return to
+> the userspace path just in case but this should be OK for now and new
+> users of mem_cgroup_enable_oom will be fought against hard.
 
-So.. that would change it for all of the devices on the host, not just
-for this specific one. That is not good is it?
+Absolutely, I would have liked it to be at the lowest possible point
+in the stack as well, but this seemed like a good trade off.  And I
+expect the sites enabling and disabling memcg OOM killing to be fairly
+static.
 
->  		if (mask > dev->archdata.max_direct_dma_addr)
->  			mask = dev->archdata.max_direct_dma_addr;
->  	}
-> -- 
-> 1.8.3.1
-> 
+> Acked-by: Michal Hocko <mhocko@suse.cz>
+
+Thanks!
