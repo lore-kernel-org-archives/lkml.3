@@ -1,87 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752685Ab3HEO77 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 10:59:59 -0400
-Received: from mx12.netapp.com ([216.240.18.77]:7691 "EHLO mx12.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751922Ab3HEO75 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 10:59:57 -0400
-X-IronPort-AV: E=Sophos;i="4.89,819,1367996400"; 
-   d="scan'208";a="78640730"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Julia Lawall <Julia.Lawall@lip6.fr>, Steve Dickson <steved@redhat.com>,
-        David Quigley <dpquigl@davequigley.com>
-CC: "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] fs/nfs/inode.c: adjust code alignment
-Thread-Topic: [PATCH] fs/nfs/inode.c: adjust code alignment
-Thread-Index: AQHOkerHgeen3NIfwkumGqiOgVY35ZmHKmSA
-Date: Mon, 5 Aug 2013 14:59:55 +0000
-Message-ID: <1375714793.7337.12.camel@leira.trondhjem.org>
-References: <1375714059-29567-1-git-send-email-Julia.Lawall@lip6.fr>
-	 <1375714059-29567-2-git-send-email-Julia.Lawall@lip6.fr>
-In-Reply-To: <1375714059-29567-2-git-send-email-Julia.Lawall@lip6.fr>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.106.53.51]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <7BEB8E4A1C38604A8409D63D95EB5994@hq.netapp.com>
+	id S1753042Ab3HEPAr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 11:00:47 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:63158 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752485Ab3HEPAq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 11:00:46 -0400
+Message-ID: <51FFBE17.60409@gmail.com>
+Date: Mon, 05 Aug 2013 11:00:39 -0400
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+CC: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Runzhen Wang <runzhen@linux.vnet.ibm.com>
+Subject: Re: [PATCH 8/9] perf kvm: debug for missing vmexit/vmentry event
+References: <1375473947-64285-1-git-send-email-dsahern@gmail.com> <1375473947-64285-9-git-send-email-dsahern@gmail.com> <51FF4BEA.7070308@linux.vnet.ibm.com>
+In-Reply-To: <51FF4BEA.7070308@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r75F02jp012167
 
-On Mon, 2013-08-05 at 16:47 +0200, Julia Lawall wrote:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
-> ---
-> 
-> This patch adjusts the code so that the alignment matches the current
-> semantics.  I have no idea if it is the intended semantics, though.  Should
-> the call to nfs_setsecurity also be under the else?
-> 
+On 8/5/13 2:53 AM, Xiao Guangrong wrote:
+> On 08/03/2013 04:05 AM, David Ahern wrote:
+>> Expected to have missing events for each vcpu when perf is
+>> started. After that should not have missing events.
+>
+> Sorry, i can not understand what's this info used for.
 
->  fs/nfs/inode.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/fs/nfs/inode.c b/fs/nfs/inode.c
-> index af6e806..d8ad685 100644
-> --- a/fs/nfs/inode.c
-> +++ b/fs/nfs/inode.c
-> @@ -463,7 +463,7 @@ nfs_fhget(struct super_block *sb, struct nfs_fh
-> *fh, struct nfs_fattr *fattr, st
->                 unlock_new_inode(inode);
->         } else
->                 nfs_refresh_inode(inode, fattr);
-> -               nfs_setsecurity(inode, fattr, label);
-> +       nfs_setsecurity(inode, fattr, label);
->         dprintk("NFS: nfs_fhget(%s/%Ld fh_crc=0x%08x ct=%d)\n",
->                 inode->i_sb->s_id,
->                 (long long)NFS_FILEID(inode),
+For debugging. Things that should not happen do seem to happen -- 
+rarely, but it does
 
-Hi Julia,
+>
+>>
+>> Signed-off-by: David Ahern <dsahern@gmail.com>
+>> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+>> Cc: Ingo Molnar <mingo@kernel.org>
+>> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+>> Cc: Peter Zijlstra <peterz@infradead.org>
+>> Cc: Jiri Olsa <jolsa@redhat.com>
+>> Cc: Namhyung Kim <namhyung@kernel.org>
+>> Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+>> Cc: Runzhen Wang <runzhen@linux.vnet.ibm.com>
+>> ---
+>>   tools/perf/builtin-kvm.c |   15 +++++++++++++--
+>>   1 file changed, 13 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
+>> index 28afc05d..41dd25a 100644
+>> --- a/tools/perf/builtin-kvm.c
+>> +++ b/tools/perf/builtin-kvm.c
+>> @@ -568,11 +568,22 @@ static bool handle_kvm_event(struct perf_kvm_stat *kvm,
+>>   	    (kvm->trace_vcpu != vcpu_record->vcpu_id))
+>>   		return true;
+>>
+>> -	if (kvm->events_ops->is_begin_event(evsel, sample, &key))
+>> +	if (kvm->events_ops->is_begin_event(evsel, sample, &key)) {
+>> +		if (vcpu_record->start_time) {
+>> +			pr_debug("consecutive begin events (%s) for pid %d, vcpu %d\n",
+>> +				 evsel->name, sample->pid, vcpu_record->vcpu_id);
+>> +		}
+>
+> This is not true, the ->start_time is set in handle_begin_event() for the new alloced
+> vcpu_record.
+>
+> If you just want to know the point where is the first event lost, you can track
+> it in:
+>
+> static bool handle_end_event(struct perf_kvm_stat *kvm,
+> 			     struct vcpu_event_record *vcpu_record,
+> 			     struct event_key *key,
+> 			     u64 timestamp)
+> {
+> 	......
+>
+> 	/* The begin event is not caught. */
+> 	if (!time_begin)                       <======
+> 		return true;
+>
 
-Thanks for pointing this out! Given that the 'then' clause of the if
-statement already calls nfs_setsecurity before unlocking the inode, I
-suspect that the above _should_ really be part of the 'else' clause. 
+Ok. I'll drop the patch. I added it for a reason, but can't remember why 
+at the moment.
 
-That said, I can't see that calling nfs_setsecurity twice on the inode
-can cause any unintended side-effects, so I suggest that we rather queue
-the patch up for inclusion in 3.12.
-Steve and Dave, any comments?
-
--- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+David
