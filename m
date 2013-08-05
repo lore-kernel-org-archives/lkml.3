@@ -1,128 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754134Ab3HEFBh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 01:01:37 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:51870 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751273Ab3HEFBg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 01:01:36 -0400
-Date: Mon, 5 Aug 2013 01:01:19 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@surriel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Zlatko Calusic <zcalusic@bitsync.net>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch v2 3/3] mm: page_alloc: fair zone allocator policy
-Message-ID: <20130805050119.GA715@cmpxchg.org>
-References: <1375457846-21521-1-git-send-email-hannes@cmpxchg.org>
- <1375457846-21521-4-git-send-email-hannes@cmpxchg.org>
- <20130805011546.GI32486@bbox>
- <20130805034304.GC23319@cmpxchg.org>
- <20130805044858.GN32486@bbox>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130805044858.GN32486@bbox>
+	id S1754100Ab3HEFFJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 01:05:09 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:35792 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751273Ab3HEFFI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 01:05:08 -0400
+Date: Mon, 5 Aug 2013 15:04:56 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Bastian Hecht <hechtb@gmail.com>, Jingoo Han <jg1.han@samsung.com>,
+        Paul Mundt <lethal@linux-sh.org>
+Subject: linux-next: manual merge of the tty tree with the sh tree
+Message-Id: <20130805150456.974461a9896ae4d61f044aab@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__5_Aug_2013_15_04_56_+1000_o3DHzrxeitm9e.lx"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 05, 2013 at 01:48:58PM +0900, Minchan Kim wrote:
-> On Sun, Aug 04, 2013 at 11:43:04PM -0400, Johannes Weiner wrote:
-> > On Mon, Aug 05, 2013 at 10:15:46AM +0900, Minchan Kim wrote:
-> > > I really want to give Reviewed-by but before that, I'd like to clear out
-> > > my concern which didn't handle enoughly in previous iteration.
-> > > 
-> > > Let's assume system has normal zone : 800M High zone : 800M
-> > > and there are two parallel workloads.
-> > > 
-> > > 1. alloc_pages(GFP_KERNEL) : 800M
-> > > 2. alloc_pages(GFP_MOVABLE) + mlocked : 800M
-> > > 
-> > > With old behavior, allocation from both workloads is fulfilled happily
-> > > because most of allocation from GFP_KERNEL would be done in normal zone
-> > > while most of allocation from GFP_MOVABLE would be done in high zone.
-> > > There is no OOM kill in this scenario.
-> > 
-> > If you have used ANY cache before, the movable pages will spill into
-> > lowmem.
-> 
-> Indeed, my example was just depends on luck.
-> I just wanted to discuss such corner case issue to notice cons at least,
-> someone. 
-> 
-> > 
-> > > With you change, normal zone would be fullfilled with GFP_KERNEL:400M
-> > > and GFP_MOVABLE:400M while high zone will have GFP_MOVABLE:400 + free 400M.
-> > > Then, someone would be OOM killed.
-> > >
-> > > Of course, you can argue that if there is such workloads, he should make
-> > > sure it via lowmem_reseve but it's rather overkill if we consider more examples
-> > > because any movable pages couldn't be allocated from normal zone so memory
-> > > efficieny would be very bad.
-> > 
-> > That's exactly what lowmem reserves are for: protect low memory from
-> > data that can sit in high memory, so that you have enough for data
-> > that can only be in low memory.
-> > 
-> > If we find those reserves to be inadequate, we have to increase them.
-> > You can't assume you get more lowmem than the lowmem reserves, period.
-> 
-> Theoretically, true.
-> 
-> > 
-> > And while I don't mean to break highmem machines, I really can't find
-> > it in my heart to care about theoretical performance variations in
-> > highmem cornercases (which is already a redundancy).
-> 
-> Yes. as I said, I don't know such workload, even embedded world.
-> But, recent mobile phone start to use 3G DRAM and maybe 2G would be a high
-> memory in 32bit machine. That's why I had a concern about this patch.
-> I think It's likely to pin lowmem more than old.
->
-> > > As I said, I like your approach because I have no idea to handle unbalanced
-> > > aging problem better and we can get more benefits rather than lost by above
-> > > corner case but at least, I'd like to confirm what you think about
-> > > above problem before further steps. Maybe we can introduce "mlock with
-> > > newly-allocation or already-mapped page could be migrated to high memory zone"
-> > > when someone reported out? (we thougt mlocked page migration would be problem
-> > > RT latency POV but Peter confirmed it's no problem.)
-> > 
-> > And you think increasing lowmem reserves would be overkill? ;-)
-> 
-> If possible, I would like to avoid. ;-)
-> 
-> Peak workload : 800M average workload : 100M 
-> int foo[800M] vs int *bar = malloc(800M);
-> 
-> > 
-> > These patches fix real page aging problems.  Making trade offs to work
-> 
-> Indeed!
-> 
-> > properly on as many setups as possible is one thing, but a highmem
-> > configuration where you need exactly 100% of lowmem and mlock 100% of
-> > highmem?
-> 
-> Nope. Apprently, I don't know.
-> I just wanted to record that we should already cover such claims
-> in review phase so that if such problem happens in future, we can answer
-> easily "Just rasise your lowmem reserve ratio because you have been
-> depends on the luck until now". And I don't want to argue with other mm
-> guys such solution in future again.
+--Signature=_Mon__5_Aug_2013_15_04_56_+1000_o3DHzrxeitm9e.lx
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-That's fair enough.
+Hi Greg,
 
-I would definitely suggest increasing the lowmem reserves in that case
-but I don't expect anybody to actually rely on the exact placement on
-a pristine system.  Not for performance, much less for _correctness_.
+Today's linux-next merge of the tty tree got a conflict in
+drivers/tty/serial/sh-sci.c between commit ada80ee7fa60 ("serial: sh-sci:
+Add OF support") from the sh tree and commit 3ba35baa55fa ("serial:
+sh-sci: use dev_get_platdata()") from the tty tree.
 
-> I think as reviewer, it's enough as it is.
-> 
-> All three patches,
-> 
-> Reviewed-by: Minchan Kim <minchan@kernel.org>
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-Thank you very much!
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc drivers/tty/serial/sh-sci.c
+index 5ef9300,5377502..0000000
+--- a/drivers/tty/serial/sh-sci.c
++++ b/drivers/tty/serial/sh-sci.c
+@@@ -2588,20 -2481,9 +2588,20 @@@ static int sci_probe(struct platform_de
+  	if (is_early_platform_device(dev))
+  		return sci_probe_earlyprintk(dev);
+ =20
+ +	if (dev->dev.of_node)
+ +		p =3D sci_parse_dt(dev, &dev_id);
+ +	else
+- 		p =3D dev->dev.platform_data;
+++		p =3D dev_get_platdata(&dev->dev);
+ +
+ +	if (!p) {
+ +		dev_err(&dev->dev, "no setup data supplied\n");
+ +		return -EINVAL;
+ +	}
+ +
+ +	sp =3D &sci_ports[dev_id];
+  	platform_set_drvdata(dev, sp);
+ =20
+ -	ret =3D sci_probe_single(dev, dev->id, p, sp);
+ +	ret =3D sci_probe_single(dev, dev_id, p, sp);
+  	if (ret)
+  		return ret;
+ =20
+
+--Signature=_Mon__5_Aug_2013_15_04_56_+1000_o3DHzrxeitm9e.lx
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBCAAGBQJR/zJ9AAoJEECxmPOUX5FEI8kP/RbeTlkIP+mq+bpYHo/v/FBN
+JNkNv54K05bNgS0l3CFNAEKrkXGi5msY5b1FwVNHILAMvt8t02KE3LFxMeBU8SMN
+wQHasfsx5kf4fZXp9odc7c3coMG5XVM/biL6ypSZdRXeoFtsBbM25MPIW+4RewE5
+vFM3WZfDOjeHxGiPDiWig1iFXtQCBwetOoA99+U/TEO1vu3S69oW/fk1FohTpPJb
+iHPXhF6WxUKFw2bOBUUzjqFcmN2vvzMc8sdhWESvCP9UNEQBZtaFDbX98fkqk05O
+//3sk4SidNO05ZMnvgnmvWNPXOzNN5Tc/3tIVtA96srEAWBAU4PVDPWvq9CmJVQe
+sUJYCnUJ7RGuks7zzwWMqFCMLPi5PCnA0oMcDWHQ0jwrMWI0wIHa1wpokvxAUSt1
+2SQhUFgFvtFm8CobYvpWDuZqnFZkqQZ7GjdjNCTllSLp31tL8r9hOdc3VlBccO7/
+81OnFvKZSyDIDraigYN9Y4MQ3c7rnI9AiRCBct6AFRtkgwC+Bt/E0IYrGNTdA7pP
+8NslMLx8pvL7JR8UaQCyqzrPE+gs2FQIuCCTFxGiV3Z2fL05sXUiGOlK5gkyHQhz
+ZM0mCi+kjDysspD0wFchHgl7yYb3iROq95RPaT64LWOO8zud34P8Xj1gDdsaxM25
+4kYv10DZ04O2MQ0hl+HT
+=IVgv
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__5_Aug_2013_15_04_56_+1000_o3DHzrxeitm9e.lx--
