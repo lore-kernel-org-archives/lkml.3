@@ -1,112 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753317Ab3HELm4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 07:42:56 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:50768 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751748Ab3HELmz (ORCPT
+	id S1751578Ab3HELvp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 07:51:45 -0400
+Received: from mail.abilis.ch ([195.70.19.74]:18607 "EHLO mail.abilis.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751182Ab3HELvn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 07:42:55 -0400
-Message-ID: <51FF8FBC.2090504@hitachi.com>
-Date: Mon, 05 Aug 2013 20:42:52 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Mon, 5 Aug 2013 07:51:43 -0400
+Date: Mon, 5 Aug 2013 13:51:19 +0200
+From: Christian Ruppert <christian.ruppert@abilis.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Patrice CHOTARD <patrice.chotard@st.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Sascha Leuenberger <sascha.leuenberger@abilis.com>,
+        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 2/4] pinmux: Add TB10x pinmux driver
+Message-ID: <20130805115118.GF20936@ab42.lan>
+References: <20130618092516.GC18663@ab42.lan>
+ <1371547751-13873-2-git-send-email-christian.ruppert@abilis.com>
+ <CACRpkdZvcF3agP=hK6J6hZn-Sx2Mw=P4dR2Mwzo+NoLxtMkbQg@mail.gmail.com>
 MIME-Version: 1.0
-To: Tom Zanussi <tom.zanussi@linux.intel.com>
-Cc: rostedt@goodmis.org, linux-kernel@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [PATCH v4 01/11] tracing: Add support for SOFT_DISABLE to syscall
- events
-References: <cover.1375111640.git.tom.zanussi@linux.intel.com> <86c82034b47fb27e30555aaf6a4a962e49581c1d.1375111640.git.tom.zanussi@linux.intel.com>
-In-Reply-To: <86c82034b47fb27e30555aaf6a4a962e49581c1d.1375111640.git.tom.zanussi@linux.intel.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <CACRpkdZvcF3agP=hK6J6hZn-Sx2Mw=P4dR2Mwzo+NoLxtMkbQg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/07/30 1:40), Tom Zanussi wrote:
-> The original SOFT_DISABLE patches didn't add support for soft disable
-> of syscall events; this adds it and paves the way for future patches
-> allowing triggers to be added to syscall events, since triggers are
-> built on top of SOFT_DISABLE.
+On Tue, Jul 30, 2013 at 12:35:03AM +0200, Linus Walleij wrote:
+> Sorry for taking eternities to look into this.
 > 
-> Add an array of ftrace_event_file pointers indexed by syscall number
-> to the trace array and remove the existing enabled bitmaps, which as a
-> result are now redundant.  The ftrace_event_file structs in turn
-> contain the soft disable flags we need for per-syscall soft disable
-> accounting; later patches add additional 'trigger' flags and
-> per-syscall triggers and filters.
-
-At this point, this looks OK for me.
-
-Note, this could be racy after introducing event-trigger which makes
-some other event soft-disabled. Currently only function tracer makes
-soft-disabled and it works only on the default instance.
-However introducing trigger interface, there can be events in soft-mode,
-and  ftrace_event_enable_disable(file, set = 0) to those events always fail.
-
+> On Tue, Jun 18, 2013 at 11:29 AM, Christian Ruppert
+> <christian.ruppert@abilis.com> wrote:
 > 
-> Signed-off-by: Tom Zanussi <tom.zanussi@linux.intel.com>
-> ---
->  kernel/trace/trace.h          |  4 ++--
->  kernel/trace/trace_syscalls.c | 34 ++++++++++++++++++++++++++++------
->  2 files changed, 30 insertions(+), 8 deletions(-)
+> > The pinmux driver of the Abilis Systems TB10x platform based on ARC700 CPUs.
+> > Used to control the pinmux and is a prerequisite for the GPIO driver.
+> >
+> > Signed-off-by: Christian Ruppert <christian.ruppert@abilis.com>
+> > Signed-off-by: Pierrick Hascoet <pierrick.hascoet@abilis.com>
+> (...)
+> > +The following pin groups are available:
+> > +  - GPIO ports: gpioa_pins, gpiob_pins, gpioc_pins, gpiod_pins, gpioe_pins,
+> > +                gpiof_pins, gpiog_pins, gpioh_pins, gpioi_pins, gpioj_pins,
+> > +                gpiok_pins, gpiol_pins, gpiom_pins, gpion_pins
 > 
-> diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-> index afaae41..3dd994e8 100644
-> --- a/kernel/trace/trace.h
-> +++ b/kernel/trace/trace.h
-> @@ -192,8 +192,8 @@ struct trace_array {
->  #ifdef CONFIG_FTRACE_SYSCALLS
->  	int			sys_refcount_enter;
->  	int			sys_refcount_exit;
-> -	DECLARE_BITMAP(enabled_enter_syscalls, NR_syscalls);
-> -	DECLARE_BITMAP(enabled_exit_syscalls, NR_syscalls);
-> +	struct ftrace_event_file *enter_syscall_files[NR_syscalls];
-> +	struct ftrace_event_file *exit_syscall_files[NR_syscalls];
->  #endif
->  	int			stop_count;
->  	int			clock_id;
-> diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
-> index 8fd0365..294cfe8 100644
-> --- a/kernel/trace/trace_syscalls.c
-> +++ b/kernel/trace/trace_syscalls.c
-> @@ -302,6 +302,7 @@ static int __init syscall_exit_define_fields(struct ftrace_event_call *call)
->  static void ftrace_syscall_enter(void *data, struct pt_regs *regs, long id)
->  {
->  	struct trace_array *tr = data;
-> +	struct ftrace_event_file *ftrace_file;
->  	struct syscall_trace_enter *entry;
->  	struct syscall_metadata *sys_data;
->  	struct ring_buffer_event *event;
-> @@ -314,7 +315,12 @@ static void ftrace_syscall_enter(void *data, struct pt_regs *regs, long id)
->  	syscall_nr = trace_get_syscall_nr(current, regs);
->  	if (syscall_nr < 0)
->  		return;
-> -	if (!test_bit(syscall_nr, tr->enabled_enter_syscalls))
-> +
+> I would not attempt to define groups for all GPIO pins.
+> 
+> (...)
+> > +gpioa: gpio@FF140000 {
+> > +       compatible = "abilis,tb10x-gpio";
+> > +       reg = <0xFF140000 0x1000>;
+> > +       gpio-controller;
+> > +       #gpio-cells = <2>;
+> > +       ngpio = <3>;
+> > +       gpio-ranges = <&iomux 0 0>;
+> > +       gpio-ranges-group-names = "gpioa_pins";
+> 
+> This uses that feature to define GPIO ranges from a group does
+> it not? I'm not certain about that feature.
 
-OK, since all tracepoint handlers run under rcu_read_lock, we can safely
-use rcu_dereference_raw() here. :)
-To avoid misread, I think you'd better add a comment here.
+It does. The idea is that the entire pin data base is defined inside the
+pin controller (or the pin controller device tree nodes) and the rest of
+the world just uses symbolic names. The possibility of non-contiguous
+ranges comes for free. What is the argument against this? In my
+understanding it was agreed that this was a desired feature, patch
+c8587eeef8fc219e806e868c6f0c7170c769efab is the first step in this
+direction?
 
-> +	ftrace_file = rcu_dereference_raw(tr->enter_syscall_files[syscall_nr]);
-> +	if (!ftrace_file)
-> +		return;
-> +
-> +	if (test_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT, &ftrace_file->flags))
->  		return;
->  
+> I don't see any of the port concept creeping into the device tree
+> in this version and that is how I think it should be kept:
+> the "port" particulars is a thing for the driver and not the
+> device tree.
 
-Thank you,
+I'm not sure if everybody is aligned here (or if we even understand each
+other): In my terminology, a "port" is a set of pins controlled by the
+same register/bit field. An "interface" is a set of pins which form a
+functional unit, e.g. an SPI interface. One port can contain several
+interfaces which may or may not be mapped at the same time. Inversely
+(especially if every pin can be configured separately), mapping of an
+interface might require the configuration of more than one ports. The
+concept of interfaces is on a higher level of abstraction (in the sense
+"further away from physical pinmux configuration") than the concept of a
+port.
 
+In the driver under discussion, pin groups are defined for every
+"interface" to make sure that interfaces can be requested in an
+orthogonal way by different modules and modules don't have to be "aware"
+of which interfaces are grouped into which port (and which other modules
+request which other interfaces). A request either succeeds or fails.
+Resource management (which interfaces can be mapped simultaneously) is
+done inside the pinctrl driver.
+
+If I understand Stephen correctly, the traditional way of requesting pin
+configurations is at "port" level, e.g. a configuration is defined by a
+port and its mux setting. The TB10x driver works on a higher level of
+abstraction ("interface" level), where interfaces are requested and the
+driver internally decides which configuration(s) to apply to which
+port(s). Ports are not used in the device tree indeed, but interfaces
+are.
+
+Based on this, I don't quite understand your comment: You say you don't
+like ports starting to leak outside of the pinctrl driver but according
+to Stephen that's what is common practice today? Did you mean
+interfaces? The TB10x driver's configuration nodes are currently defined
+based on interfaces.
+
+Greetings,
+  Christian
 
 -- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+  Christian Ruppert              ,          <christian.ruppert@abilis.com>
+                                /|
+  Tel: +41/(0)22 816 19-42     //|                 3, Chemin du Pré-Fleuri
+                             _// | bilis Systems   CH-1228 Plan-les-Ouates
