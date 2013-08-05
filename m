@@ -1,47 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752902Ab3HENqn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 09:46:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24488 "EHLO mx1.redhat.com"
+	id S1753053Ab3HENrD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 09:47:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3331 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751543Ab3HENqm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 09:46:42 -0400
-Date: Mon, 5 Aug 2013 15:41:13 +0200
+	id S1752014Ab3HENrB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 09:47:01 -0400
+Date: Mon, 5 Aug 2013 15:41:33 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Al Viro <viro@ZenIV.linux.org.uk>, Evgeniy Polyakov <zbr@ioremap.net>,
         Kees Cook <keescook@chromium.org>, Zach Levis <zml@linux.vnet.ibm.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v2 0/8] exec: cleanup search_binary_handler()
-Message-ID: <20130805134113.GA15603@redhat.com>
+Subject: [PATCH v2 2/8] exec: kill "int depth" in search_binary_handler()
+Message-ID: <20130805134133.GA15629@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20130805134113.GA15603@redhat.com>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To remind, by discussion with Zach
+Nobody except search_binary_handler() should touch ->recursion_depth,
+"int depth" buys nothing but complicates the code, kill it.
 
-	fs-binfmts-add-a-name-field-to-the-binfmt-struct.patch
-	fs-binfmts-better-handling-of-binfmt-loops.patch
-	fs-binfmts-whitespace-fixes-with-scripts-cleanfile.patch
+Probably we should also kill "fn" and the !NULL check, ->load_binary
+should be always defined. And it can not go away after read_unlock()
+or this code is buggy anyway.
 
-should be dropped. Zach is working on the new version on top of these
-changes.
-
-Changes:
-
-	2/8: add the comment about recursion_depth
-
-	4/8: nullify bprm->file to catch the potential use after free
-
-	Add the acks from Kees (thanks!)
-
-Oleg.
-
- fs/exec.c               |  120 +++++++++++++++++++++++------------------------
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Acked-by: Kees Cook <keescook@chromium.org>
+---
+ fs/exec.c               |    9 ++++-----
  include/linux/binfmts.h |    2 +-
- 2 files changed, 60 insertions(+), 62 deletions(-)
+ 2 files changed, 5 insertions(+), 6 deletions(-)
+
+diff --git a/fs/exec.c b/fs/exec.c
+index a9ae4f2..f32079c 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -1370,12 +1370,11 @@ EXPORT_SYMBOL(remove_arg_zero);
+  */
+ int search_binary_handler(struct linux_binprm *bprm)
+ {
+-	unsigned int depth = bprm->recursion_depth;
+-	int try,retval;
++	int try, retval;
+ 	struct linux_binfmt *fmt;
+ 
+ 	/* This allows 4 levels of binfmt rewrites before failing hard. */
+-	if (depth > 5)
++	if (bprm->recursion_depth > 5)
+ 		return -ELOOP;
+ 
+ 	retval = security_bprm_check(bprm);
+@@ -1396,9 +1395,9 @@ int search_binary_handler(struct linux_binprm *bprm)
+ 			if (!try_module_get(fmt->module))
+ 				continue;
+ 			read_unlock(&binfmt_lock);
+-			bprm->recursion_depth = depth + 1;
++			bprm->recursion_depth++;
+ 			retval = fn(bprm);
+-			bprm->recursion_depth = depth;
++			bprm->recursion_depth--;
+ 			if (retval >= 0) {
+ 				put_binfmt(fmt);
+ 				allow_write_access(bprm->file);
+diff --git a/include/linux/binfmts.h b/include/linux/binfmts.h
+index 70cf138..e8112ae 100644
+--- a/include/linux/binfmts.h
++++ b/include/linux/binfmts.h
+@@ -31,7 +31,7 @@ struct linux_binprm {
+ #ifdef __alpha__
+ 	unsigned int taso:1;
+ #endif
+-	unsigned int recursion_depth;
++	unsigned int recursion_depth; /* only for search_binary_handler() */
+ 	struct file * file;
+ 	struct cred *cred;	/* new credentials */
+ 	int unsafe;		/* how unsafe this exec is (mask of LSM_UNSAFE_*) */
+-- 
+1.5.5.1
 
