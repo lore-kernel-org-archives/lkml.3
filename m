@@ -1,68 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754782Ab3HEToM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 15:44:12 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:34674 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754672Ab3HEToK (ORCPT
+	id S1754849Ab3HETyD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 15:54:03 -0400
+Received: from mailout2.w2.samsung.com ([211.189.100.12]:33385 "EHLO
+	usmailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754754Ab3HETyA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 15:44:10 -0400
-From: Andy Lutomirski <luto@amacapital.net>
-To: linux-mm@kvack.org, linux-ext4@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>
-Subject: [RFC 0/3] Add madvise(..., MADV_WILLWRITE)
-Date: Mon,  5 Aug 2013 12:43:58 -0700
-Message-Id: <cover.1375729665.git.luto@amacapital.net>
-X-Mailer: git-send-email 1.8.3.1
+	Mon, 5 Aug 2013 15:54:00 -0400
+X-AuditID: cbfec373-b7fca6d0000018b9-92-520002d77d43
+Date: Mon, 05 Aug 2013 16:53:54 -0300
+From: Mauro Carvalho Chehab <m.chehab@samsung.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL for v3.11-rc5] media fixes
+Message-id: <20130805165354.74b01685@samsung.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.19; x86_64-redhat-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpnluLIzCtJLcpLzFFi42I5/e9wsO51JoYgg+nrOS3mrF/DZnF51xw2
+	i54NW1ktHvW9ZXdg8Tgx4zeLx+dNcgFMUVw2Kak5mWWpRfp2CVwZF2bcZiy4z1Qxd8Js1gbG
+	OUxdjJwcEgImEtP27WeGsMUkLtxbz9bFyMUhJLCEUeLlwqfsEE43k8SqyWeAqjg4WARUJZY8
+	8gBpYBMwknjV2MIKYosA2Z9fXGEFqWcWWMwo8fH5enaQhLCArsTcb+fYQGxeAUOJ1zvXMoLM
+	kRBwktg61RciLCjxY/I9FhCbWUBLYvO2JlYIW15i85q3zBMY+WYhKZuFpGwWkrIFjMyrGEVL
+	i5MLipPSc430ihNzi0vz0vWS83M3MUICr3gH44sNVocYBTgYlXh4E67+DxRiTSwrrsw9xCjB
+	wawkwjt/C1CINyWxsiq1KD++qDQntfgQIxMHp1QDY93eVWUhpXc4PvTK/z/UV5T7dunueVIH
+	jfTnXuviSXB7qHnDon+niUnUns8xj9trfmx0ehrceLdE1TMmln2uWcd9938XXje8vMM84djX
+	PWU306tT95Sp9mrOVVk8d+ochx/FB0XY+/JV616dE4rdHMmXNOOFyIkZL33331/3+qaHrqHe
+	qikszkosxRmJhlrMRcWJAAEfUWEaAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My application fallocates and mmaps (shared, writable) a lot (several
-GB) of data at startup.  Those mappings are mlocked, and they live on
-ext4.  The first write to any given page is slow because
-ext4_da_get_block_prep can block.  This means that, to get decent
-performance, I need to write something to all of these pages at
-startup.  This, in turn, causes a giant IO storm as several GB of
-zeros get pointlessly written to disk.
+Hi Linus,
 
-This series is an attempt to add madvise(..., MADV_WILLWRITE) to
-signal to the kernel that I will eventually write to the referenced
-pages.  It should cause any expensive operations that happen on the
-first write to happen immediately, but it should not result in
-dirtying the pages.
+Please pull from:
+  git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media v4l_for_linus
 
-madvice(addr, len, MADV_WILLWRITE) returns the number of bytes that
-the operation succeeded on or a negative error code if there was an
-actual failure.  A return value of zero signifies that the kernel
-doesn't know how to "willwrite" the range and that userspace should
-implement a fallback.
+for some drivers fixes (em28xx, coda, usbtv, s5p, hdpvr and ml86v7667) and 
+at a fix for media DocBook.
 
-For now, it only works on shared writable ext4 mappings.  Eventually
-it should support other filesystems as well as private pages (it
-should COW the pages but not cause swap IO) and anonymous pages (it
-should COW the zero page if applicable).
+Thanks!
+Mauro
 
-The implementation leaves much to be desired.  In particular, it
-generates dirty buffer heads on a clean page, and this scares me.
+-
 
-Thoughts?
-
-Andy Lutomirski (3):
-  mm: Add MADV_WILLWRITE to indicate that a range will be written to
-  fs: Add block_willwrite
-  ext4: Implement willwrite for the delalloc case
-
- fs/buffer.c                            | 57 ++++++++++++++++++++++++++++++++++
- fs/ext4/ext4.h                         |  2 ++
- fs/ext4/file.c                         |  1 +
- fs/ext4/inode.c                        | 22 +++++++++++++
- include/linux/buffer_head.h            |  3 ++
- include/linux/mm.h                     | 12 +++++++
- include/uapi/asm-generic/mman-common.h |  3 ++
- mm/madvise.c                           | 28 +++++++++++++++--
- 8 files changed, 126 insertions(+), 2 deletions(-)
+The following changes since commit 1b2c14b44adcb7836528640bfdc40bf7499d987d:
 
 -- 
-1.8.3.1
 
+Cheers,
+Mauro
