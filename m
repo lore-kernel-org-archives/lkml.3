@@ -1,129 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754591Ab3HEDN5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Aug 2013 23:13:57 -0400
-Received: from mail.eperm.de ([89.247.134.16]:45003 "EHLO mail.eperm.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754469Ab3HEDN4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Aug 2013 23:13:56 -0400
-X-Greylist: delayed 482 seconds by postgrey-1.27 at vger.kernel.org; Sun, 04 Aug 2013 23:13:55 EDT
-X-AuthUser: sm@eperm.de
-From: Stephan Mueller <smueller@chronox.de>
-To: Sandy Harris <sandyinchina@gmail.com>, "Theodore Ts'o" <tytso@mit.edu>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org
-Subject: Re: [PATCH][RFC] CPU Jitter random number generator (resent)
-Date: Mon, 05 Aug 2013 05:05:40 +0200
-Message-ID: <9385773.xkqW3Pd2B5@tauon>
-User-Agent: KMail/4.10.2 (Linux/3.8.0-23-generic; KDE/4.10.2; x86_64; ; )
-In-Reply-To: <CACXcFmnyDh7kBN3SCLGH3DcHH2gZO2_7weL_pch00g+3Jsjegg@mail.gmail.com>
-References: <20130521084455.5c651991@tauon> <20130521190157.GD22559@thunk.org> <CACXcFmnyDh7kBN3SCLGH3DcHH2gZO2_7weL_pch00g+3Jsjegg@mail.gmail.com>
+	id S1754608Ab3HEDOb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Aug 2013 23:14:31 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:31513 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754347Ab3HEDO2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Aug 2013 23:14:28 -0400
+Message-ID: <51FF187C.4070002@huawei.com>
+Date: Mon, 5 Aug 2013 11:14:04 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Tejun Heo <tj@kernel.org>
+CC: <hannes@cmpxchg.org>, <mhocko@suse.cz>, <bsingharora@gmail.com>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, <cgroups@vger.kernel.org>,
+        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/5] cgroup, memcg: move cgroup_event implementation to
+ memcg
+References: <1375632446-2581-1-git-send-email-tj@kernel.org> <1375632446-2581-4-git-send-email-tj@kernel.org>
+In-Reply-To: <1375632446-2581-4-git-send-email-tj@kernel.org>
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag, 21. Mai 2013, 17:39:49 schrieb Sandy Harris:
+ÓÚ 2013/8/5 0:07, Tejun Heo Ð´µÀ:
+> cgroup_event is way over-designed and tries to build a generic
+> flexible event mechanism into cgroup - fully customizable event
+> specification for each user of the interface.  This is utterly
+> unnecessary and overboard especially in the light of the planned
+> unified hierarchy as there's gonna be single agent.  Simply generating
+> events at fixed points, or if that's too restrictive, configureable
+> cadence or single set of configureable points should be enough.
+> 
+> Thankfully, memcg is the only user and gets to keep it.  Replacing it
+> with something simpler on sane_behavior is strongly recommended.
+> 
+> This patch moves cgroup_event and "cgroup.event_control"
+> implementation to mm/memcontrol.c.  Clearing of events on cgroup
+> destruction is moved from cgroup_destroy_locked() to
+> mem_cgroup_css_offline(), which shouldn't make any noticeable
+> difference.
+> 
+> Note that "cgroup.event_control" will now exist only on the hierarchy
+> with memcg attached to it.  While this change is visible to userland,
+> it is unlikely to be noticeable as the file has never been meaningful
+> outside memcg.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: Michal Hocko <mhocko@suse.cz>
+> Cc: Balbir Singh <bsingharora@gmail.com>
+> ---
+>  kernel/cgroup.c | 237 -------------------------------------------------------
+>  mm/memcontrol.c | 238 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 238 insertions(+), 237 deletions(-)
+> 
 
-Hi Sandy, Ted,
+init/Kconfig needs to be updated too:
 
-I prepared a new release of the CPU Jitter RNG available at [1]. The 
-core of the RNG remains unchanged. However, there are the following 
-changes:
+menuconfig CGROUPS
+        boolean "Control Group support"
+        depends on EVENTFD
+...
+config SCHED_AUTOGROUP
+        bool "Automatic process group scheduling"
+        select EVENTFD
+        select CGROUPS
 
-- addition of a patch to integrate the RNG into /dev/random as explained 
-in appendix B.3 of [2], although the long-term goal of the RNG is rather 
-the integration into the kernel crypto API when considering the Linux 
-kernel as outlined in appendix B.1 of [2]
+> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+> index 2583b7b..a0b5e22 100644
+> --- a/kernel/cgroup.c
+> +++ b/kernel/cgroup.c
+> @@ -56,7 +56,6 @@
+>  #include <linux/pid_namespace.h>
+>  #include <linux/idr.h>
+>  #include <linux/vmalloc.h> /* TODO: replace with more sophisticated array */
+> -#include <linux/eventfd.h>
+>  #include <linux/poll.h>
 
-- ensure that the code is compiled without optimizations based on the 
-reasons outlined in section 5.1 of [2]
+poll.h also can be removed.
 
-- addition of chapter 5.1 to [2] explaining how the entropy is collected
-
-- additional code to execute the CPU Jitter RNG on different OSes 
-(specifically AIX, MacOS and z/OS -- other Unixes are good without 
-additional changes)
-
->On Tue, May 21, 2013 at 3:01 PM, Theodore Ts'o <tytso@mit.edu> wrote:
->> I continue to be suspicious about claims that userspace timing
->> measurements are measuring anything other than OS behaviour.
->
->Yes, but they do seem to contain some entropy. See links in the
->original post of this thread, the havege stuff and especially the
->McGuire et al paper.
-
-With the initially shown implementation and documentation I did not 
-really show that sufficient entropy is gathered from the CPU execution 
-jitter. With a new test I now closed that hole. The newly added test 
-measures the entropy gathered during execution jitter collection, i.e. 
-heart of the RNG in terms of how much statistical entropy it provides. 
-The description of the test is given in section 5.1 of [2]. To ensure 
-that the statistical entropy measurements are indeed showing the 
-information theoretical entropy, section 4.4 of [2] outlines that 
-patterns are not identified in the output of the RNG which would 
-diminish the information theoretical entropy compared to the statistical 
-entropy.
-
-That test was then executed on about 200 different systems with the 
-results given in appendix F of [2]. The table stated there supported by 
-the many graphs demonstrates that the CPU Jitter random number generator 
-delivers high-quality entropy on:
-
-- a large range of CPUs ranging from embedded systems of MIPS and ARM 
-CPUs, covering desktop systems with AMD and Intel x86 32 bit and 64 bit 
-CPUs up to server CPUs of Intel Itanium, Sparc, POWER and IBM System Z;
-
-- a large range of operating systems: Linux (including Android), 
-OpenBSD, FreeBSD, NetBSD, AIX, OpenIndiana (OpenSolaris), AIX, z/OS;
-
-- a range of different compilers: GCC, Clang and the z/OS C compiler.
-
-The test results show an interesting yet common trend -- i.e. common for 
-the different CPU types: the newer the CPU is, the more CPU execution 
-time jitter is present.
-
-[2] appendix F.37 contains entropy measurements on different operating 
-systems on the very same hardware, indicating that the jitter 
-measurements are present regardless of the OS.
-
-With the test results, Ted's concerns should be removed.
+>  #include <linux/flex_array.h> /* used in cgroup_attach_task */
+>  #include <linux/kthread.h>
+> @@ -154,36 +153,6 @@ struct css_id {
+>  	unsigned short stack[0]; /* Array of Length (depth+1) */
+>  };
+>  
 
 [...]
 
->> For devices like Linux routers, what we desperately need is hardware
->> assist;  [or] mix
->> in additional timing information either at kernel device driver
->> level,
->> or from systems such as HAVEGE.
+>  
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 2885e3e..3700b65 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
 
-The concern with HAVEGE is that it is very complex. The implementation 
-is far from being straight forward.
->> 
->> What I'm against is relying only on solutions such as HAVEGE or
->> replacing /dev/random with something scheme that only relies on CPU
->> timing and ignores interrupt timing.
->
->My question is how to incorporate some of that into /dev/random.
->At one point, timing info was used along with other stuff. Some
->of that got deleted later, What is the current state? Should we
->add more?
+#include <linux/eventfd.h>
+#include <linux/poll.h>
 
-Please see the suggestion for an integration with /dev/random given in 
-appendix B.3 of [2]. The source code for the integration is given in 
-patches/linux-3.9-random.patch which is described in patches/README. The 
-patch only utilizes the CPU Jitter RNG when the entropy in the entropy 
-pool falls below the low threshold, i.e. when no entropy from other 
-sources is present.
+> @@ -239,6 +239,36 @@ struct mem_cgroup_eventfd_list {
+>  	struct eventfd_ctx *eventfd;
+>  };
 
-[1] http://www.chronox.de/jent/jitterentropy-20130724.tar.bz2
-
-[2] http://www.chronox.de/jent/doc/CPU-Jitter-NPTRNG.pdf
-
-
-Ciao
-Stephan
--- 
-| Cui bono? |
 
