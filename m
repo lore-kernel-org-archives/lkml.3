@@ -1,74 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754067Ab3HEKdP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 06:33:15 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:45760 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752112Ab3HEKdO (ORCPT
+	id S1754228Ab3HEKd4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 06:33:56 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:14015 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753028Ab3HEKdy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 06:33:14 -0400
-Date: Mon, 5 Aug 2013 11:33:07 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
-Cc: lgirdwood@gmail.com, tiwai@suse.de, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <20130805103307.GW9858@sirena.org.uk>
-References: <20130731131627.GA32631@opensource.wolfsonmicro.com>
- <20130802105156.GA20577@opensource.wolfsonmicro.com>
+	Mon, 5 Aug 2013 06:33:54 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 05 Aug 2013 03:32:16 -0700
+Message-ID: <1375698743.20259.9.camel@bilhuang-vm1>
+Subject: Re: [PATCH v2 1/1] mfd: palmas: Add power off control
+From: Bill Huang <bilhuang@nvidia.com>
+To: Nishanth Menon <nm@ti.com>
+CC: "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
+        "rob@landley.net" <rob@landley.net>,
+        "lee.jones@linaro.org" <lee.jones@linaro.org>,
+        "broonie@linaro.org" <broonie@linaro.org>,
+        "j-keerthy@ti.com" <j-keerthy@ti.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "ian@slimlogic.co.uk" <ian@slimlogic.co.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mallikarjun Kasoju <mkasoju@nvidia.com>
+Date: Mon, 5 Aug 2013 03:32:23 -0700
+In-Reply-To: <51FBC49F.3060201@ti.com>
+References: <1375255037-10024-1-git-send-email-bilhuang@nvidia.com>
+	 <51F8FBC4.1040009@ti.com> <1375355332.32701.13.camel@bilhuang-vm1>
+	 <20130801130857.GA3413@kahuna> <1375422317.32701.19.camel@bilhuang-vm1>
+	 <51FBC49F.3060201@ti.com>
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="8l0epyP1oK4ZrwYy"
-Content-Disposition: inline
-In-Reply-To: <20130802105156.GA20577@opensource.wolfsonmicro.com>
-X-Cookie: You will be awarded some great honor.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [alsa-devel] [PATCH v3] ASoC: core: init delayed_work for
- codec-codec links
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Type: text/plain; charset="ISO-8859-9"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2013-08-02 at 22:39 +0800, Nishanth Menon wrote:
+> On 08/02/2013 12:45 AM, Bill Huang wrote:
+> > On Thu, 2013-08-01 at 21:08 +0800, Nishanth Menon wrote:
+> >> On 04:08-20130801, Bill Huang wrote:
+> >>> On Wed, 2013-07-31 at 19:57 +0800, Nishanth Menon wrote:
+> >>>>
+> >>>> If you notice the reference code I send, atleast on TWL6035/37 variants
+> >>>> of Palmas, USB IRQ unmask is mandatory for power on with USB cable -
+> >>>> example usage scenario: extremely low battery, device powered off, plug
+> >>>> in usb cable to restart charging - you'd like to initiate charging logic
+> >>>> in bootloader, but that wont work if the device does not do OFF-ON
+> >>>> transition with usb cable plugged in for vbus.
+> >>>>
+> >>> Why do we need to add Palmas USB_IRQ unmask logic in shutdown? Does that
+> >>> mean for all platform using Palmas has to unmask USB IRQ (including
+> >>> those do not power vbus through Palmas)? Can't we just have a simple
+> >>> shutdown function but have the VBus programming been done in USB driver
+> >>> or maybe platform driver since it is platform specific control?
+> >> we dont have a irq cleanup, irq handling is done in palmas-mfd. Further,
+> >>
+> >> Why would USB driver care about vbus supply needs in complete power off
+> >> - it is the job of palmas driver? Further, palmas-mfd shutdown
+> >> handler(currently missing) if probably cleansup things:
+> >>
+> >>   mfd_remove_devices(palmas->dev);
+> >>    palmas_irq_exit(palmas);
+> >>
+> >> shutdown sequence becomes complicated further esp if things are
+> >> cleanedup in shutdown (Dummy patch[1]).
+> >>
+> >>
+> >> All I am saying is this: shutdown should allow powerup functionality to
+> >> work as well, how we do that is upto us - I personally found it a little
+> >> easier to keep the IRQ unmask in shutdown easier to deal with, but other
+> >> options might be possible as well.
+> >
+> > I'm not sure if I understand your comments completely (maybe due to I'm
+> > not familiar with the mechanism of unmasking USB IRQ in Palmas driver)
+> 
+> This is IMHO an weird configuration I saw on TWL6035/6037 Palmas device 
+> - so I suspect should be the case in probably other palmas devices as 
+> well. I hit power off, and I can start up the device again by supplying 
+> vbus -(usecase was, at that point in time, battery charging)
+> 
+> anyways, I was working with busybox and no usb driver even enabled, but 
+> I am told by the twl6035/7 support folks that due to design USB IRQ 
+> needs to be unmasked at shutdown/poweroff to allow OFF->ON transition 
+> sequence to start inside Palmas when vbus is supplied.
+> 
+> 
+> > but doing cleanup in each driver shutdown handler makes sense to me, if
+> > those clean up can be done in shutdown then we can make power off
+> > function as simple as possible and being part of Palmas mfd driver?
+> 
+> not really, mfd shutdown does not guarantee rest of the drivers' 
+> shutdown functions are safely called, pm_power_off unfortunately is the 
+> only "official point" where we can safely and cleanly shutdown the system.
+> 
+It looks to me whether or not adding those extra control in a generic
+Palmas driver is still in doubt, will you send your patch for this in
+the near future? If not, any objection on making it as a basic and
+simple power off control (that said, any further processing which has to
+be in power off routine can be added on top of that, or can be moved to
+be under drivers/reset if needed) using the existing mechanism?
 
---8l0epyP1oK4ZrwYy
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
 
-On Fri, Aug 02, 2013 at 11:51:56AM +0100, Richard Fitzgerald wrote:
-
-> +static void codec2codec_close_delayed_work(struct work_struct *work)
-> +{
-> +}
-> +
-
-Having a commment here was a really good idea since this is the sort of
-thing I'd expect someone to come along and try to clean up otherwise.
-I'd also expect just passing NULL to INIT_DELAYED_WORK() (with a big
-comment attached) to do the right thing, though perhaps it doesn't.
-
---8l0epyP1oK4ZrwYy
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR/39gAAoJELSic+t+oim9XTYP/iYabC+/qgKHpA4n52P0m7ri
-4HVGeTK3A+6Ecfm5IUUyRwEZplZmsLXyfefXwDX6S1vilM39VmXvLJyDwV0/YMOB
-AWXncqXfijqTtcVtsB6L4I4s9rAHFxlI7Dt6TjRnbwGfeWFJPKxGkYwG/ndSAWXW
-gtNfekQIyLdEPQ/JBndoyZf5hcEm/+Kw1aeAZkoc9XgFrq7VEOs3tsKo5nN8rJaR
-JNBF/tai/BFK14SDFkj2kiGIID1wnSOR1BqBxfrNeU6TLQzNjstfKRY/J3XRGkAF
-SUxWWkacQllYaUsLD1vV8kfIKgA9A7j/4iovBsvMIBiJDNrMCsKZkXlTKeUIDdq2
-VrsHeB+idGeetWUCxd/FUQzhniwB3+MniztN9JJTPkSMF+adQMx8VQZvnPRluRnd
-5cWLZwByUTrwjHrctwV3FWAuXVM/HCcPnr+xytgRU2s5X0ZlCyDKv1Bj50/S4Lpx
-o9RFwf4cyCm19SPprNq5AhQWTWv0zzWj2xW1PdlTofmWhDnzIz0bHjiJyhHaLz0b
-0LV27GXnmGjnt6kPXyJKux1aEkZ/MbN5WLD5b7amIYu/iMIKDk/xFDrm0Z0NTtl1
-Dh4wBC3Wqv7QdkcIeVaijmo0B7hSbj8WrsldgdVJqng/ClwDdGAtoQ82pBXYheKn
-TDmcR8/7YLVYqq2kmuO8
-=AGmS
------END PGP SIGNATURE-----
-
---8l0epyP1oK4ZrwYy--
