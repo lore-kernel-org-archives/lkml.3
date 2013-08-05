@@ -1,69 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752860Ab3HENWU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 09:22:20 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54001 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752485Ab3HENWS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 09:22:18 -0400
-Date: Mon, 5 Aug 2013 15:22:13 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Cc: Nestor Lopez Casado <nlopezcasad@logitech.com>,
-        Andrew de los Reyes <adlr@chromium.org>,
-        joseph.salisbury@canonical.com,
-        linux-input <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] HID: hid-logitech-dj, querying_devices was never
- set
-In-Reply-To: <CAN+gG=FV=OjnktkET-_KM_iTPStsWCKdj8fpyktnJczusFz0=w@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1308051516181.17512@pobox.suse.cz>
-References: <1374153691-25100-1-git-send-email-nlopezcasad@logitech.com> <1374153691-25100-2-git-send-email-nlopezcasad@logitech.com> <CAN+gG=GcS7pfK9K5FuW9TyX+PJWNkXZWLk8UX9PzLXom2PSpgQ@mail.gmail.com> <alpine.LNX.2.00.1308020309340.24017@pobox.suse.cz>
- <CAN+gG=FV=OjnktkET-_KM_iTPStsWCKdj8fpyktnJczusFz0=w@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1752606Ab3HENYu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 09:24:50 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:60852 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751821Ab3HENYs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 09:24:48 -0400
+X-IronPort-AV: E=Sophos;i="4.89,818,1367942400"; 
+   d="scan'208";a="8123116"
+Message-ID: <51FFA748.50800@cn.fujitsu.com>
+Date: Mon, 05 Aug 2013 21:23:20 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: robert.moore@intel.com, lv.zheng@intel.com, lenb@kernel.org,
+        tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
+        mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
+        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com, x86@kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH v2 RESEND 05/18] x86, ACPICA: Split acpi_boot_table_init()
+ into two parts.
+References: <1375434877-20704-1-git-send-email-tangchen@cn.fujitsu.com> <7364455.HW1C4G1skW@vostro.rjw.lan> <51FF1A4F.1050309@cn.fujitsu.com> <2500845.tndtCsERty@vostro.rjw.lan>
+In-Reply-To: <2500845.tndtCsERty@vostro.rjw.lan>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/05 21:23:23,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/05 21:23:24,
+	Serialize complete at 2013/08/05 21:23:24
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2 Aug 2013, Benjamin Tissoires wrote:
+Hi Rafael,
 
-> > Could you please elaborate? (and put an elaborate description to revert
-> > commit log perhaps?)
-> 
-> Sure, so here is the revert commit log:
-> 
-> --
-> 
-> Commit "HID: hid-logitech-dj, querying_devices was never set" activate
-> a flag which guarantees that we do not ask the receiver for too many
-> enumeration. When the flag is set, each following enumeration call is
-> discarded (the usb request is not forwarded to the receiver). The flag
-> is then released when the driver receive a pairing information event,
-> which normally follows the enumeration request.
-> However, the USB3 bug makes the driver think the enumeration request
-> has been forwarded to the receiver. However, it is actually not the
-> case because the USB stack returns -EPIPE. So, when a new unknown
-> device appears, the workaround consisting in asking for a new
-> enumeration is not working anymore: this new enumeration is discarded
-> because of the flag, which is never reset.
-> 
-> A solution could be to trigger a timeout before releasing it, but for
-> now, let's just revert the patch.
-> 
-> --
+On 08/05/2013 09:26 PM, Rafael J. Wysocki wrote:
+......
+>
+> I think I understand what you're trying to achieve and I don't have objections
+> agaist the goal, but the matter is *how* to do that.
+>
+> Why don't you do something like this:
+> (1) Introduce two new functions that will each do part of
+>      acpi_tb_parse_root_table() such that calling them in sequence, one right
+>      after the other, will be exactly equivalent to the current
+>      acpi_tb_parse_root_table().
+> (2) Redefine acpi_tb_parse_root_table() as a wrapper calling those two new
+>      function one right after the other.
+> (3) Make Linux use the two new functions directly instead of calling
+>      acpi_tb_parse_root_table()?
+>
+> Then, Linux will use your new functions and won't call acpi_tb_parse_root_table()
+> at all, but the other existing users of ACPICA may still call it without any
+> modifications.
+>
+> Does this make sense to you?
 
-Thanks Benjamin.
+Thank you for you advice. It does make sense. I'll try your idea.
 
-I'd like to have a bit more clarification about the USB3 bug, as this 
-whole issue is not completely clear to me.
+Thanks.
 
-To be more specific -- when exactly do we receive -EPIPE, why do we 
-receive it and why do we not handle it properly?
 
-Thanks again,
 
--- 
-Jiri Kosina
-SUSE Labs
