@@ -1,78 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754578Ab3HEIQr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 04:16:47 -0400
-Received: from mail-bk0-f47.google.com ([209.85.214.47]:42106 "EHLO
-	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753626Ab3HEIQp (ORCPT
+	id S1754701Ab3HEITb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 04:19:31 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:20406 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754400Ab3HEIT3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 04:16:45 -0400
-Date: Mon, 5 Aug 2013 10:16:41 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, acme@infradead.org,
-        Andi Kleen <ak@linux.intel.com>, Namhyung Kim <namhyung.kim@lge.com>,
-        peterz@infradead.org
-Subject: Re: [PATCH] RFC: perf, tools: Move gtk browser into separate perfgtk
- executable
-Message-ID: <20130805081641.GA24808@gmail.com>
-References: <1375669364-13838-1-git-send-email-andi@firstfloor.org>
+	Mon, 5 Aug 2013 04:19:29 -0400
+Message-ID: <51FF5FC9.8080302@huawei.com>
+Date: Mon, 5 Aug 2013 16:18:17 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1375669364-13838-1-git-send-email-andi@firstfloor.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, stable <stable@vger.kernel.org>
+Subject: stable: please queue commit 0231bb5 ("perf: Fix event group context
+ move")
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Plese consider adding commit 0231bb5336758426b44ccd798ccd3c5419c95d58
+to stable tree. It fixes a real bug, which was explained here:
 
-* Andi Kleen <andi@firstfloor.org> wrote:
+	http://thread.gmane.org/gmane.linux.kernel.perf.user/1144
 
-> From: Andi Kleen <ak@linux.intel.com>
-> 
-> By default perf currently links with the GTK2 gui. This pulls
-> in a lot of external libraries. It also causes dependency
-> problems for distribution packages: simply installing perf
-> requires pulling in GTK2 with all its dependencies.
-> 
-> I think the UI is valuable, but it shouldn't be everywhere.
-> 
-> The interfaces between the main perf and the GTK2 perf are
-> already quite clean, so it's very straight forward to just
-> add a few weak stubs and then generate two executables:
-> perf and perfgtk
-> 
-> The only difference is that the gtk version links in the
-> GTK code and overrides the weak stubs.
-> (so everything is still only compiled once)
-> 
-> I currently gave it the preliminary name "perfgtk".
-> 
-> This cuts down the library dependencies on the main perf
-> dramatically. It also completely eliminates the GTK2_SUPPORT
-> ifdef.
-> 
-> % ldd ./perf | wc -l
-> 18
-> % ldd ./perfgtk | wc -l
-> 53
+and I've managed to reproduce the bug in 3.4 kernel with the test
+program attached in the above email, and I've confirmed the bug fix.
 
-If you want fewer dependencies then build with 'make NO_GTK=1'.
+The effect of the bug is, if we open a group of mixed events(sw/hw)
+and the "disabled" flag is not set and sw events come first, then
+some of the perf events won't be started after the call to perf_event_open().
 
-Furthermore, what really matters in practice is binary size - and the GKT 
-UI frontend code isn't really big:
+The bug fix should be applicable to kernels >= 3.0 && <= 3.7.
 
- comet:~/tip/tools/perf> ls -l perf.gtk perf.nogtk
- -rwxrwxr-x 1 mingo mingo 2525416 Aug  5 10:09 perf.gtk.stripped
- -rwxrwxr-x 1 mingo mingo 2497480 Aug  5 10:09 perf.nogtk.stripped
-
-that's only a 1% difference ...
-
-So this is not a good idea, as it breaks the single binary structure of 
-perf, which is a rather powerful concept that has served us really well in 
-the past.
-
-Thanks,
-
-	Ingo
+--
+Li Zefan
