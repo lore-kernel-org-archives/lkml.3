@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754065Ab3HEALk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Aug 2013 20:11:40 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:37180 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754024Ab3HEALj (ORCPT
+	id S1754076Ab3HEAUA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Aug 2013 20:20:00 -0400
+Received: from mail-qe0-f51.google.com ([209.85.128.51]:59188 "EHLO
+	mail-qe0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753984Ab3HEAT7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Aug 2013 20:11:39 -0400
-Date: Sun, 4 Aug 2013 20:11:35 -0400
+	Sun, 4 Aug 2013 20:19:59 -0400
+Date: Sun, 4 Aug 2013 20:19:55 -0400
 From: Tejun Heo <tj@kernel.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Shaohua Li <shli@kernel.org>
-Subject: [GIT PULL] workqueue fixes for 3.11-rc4
-Message-ID: <20130805001135.GB12029@htj.dyndns.org>
+Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
+Subject: [GIT PULL] libata fixes for 3.11-rc4
+Message-ID: <20130805001955.GD12029@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -22,119 +21,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Linus.
+Hello, again.
 
-A lockdep notation update so that nested work_on_cpu() invocations
-don't lead to spurious lockdep warnings and fix for an unbound attr
-bug which made what's shown in sysfs deviate from the actual ones.
-Both patches have pretty limited scope.
+Just an addition of MODULE_DEVICE_TABLE() for a platform driver.
+Available in the follwing branch
 
-The two patches are available in the following branch
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/libata.git for-3.11-fixes
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git for-3.11-fixes
+for you to fetch changes up to 71ab1d58c26eb7c30711caa95c173d5c39ab8855:
 
-for you to fetch changes up to 2865a8fb44cc32420407362cbda80c10fa09c6b2:
-
-  workqueue: copy workqueue_attrs with all fields (2013-08-01 08:36:40 -0400)
+  pata_imx: expose module alias for loading from device-tree (2013-07-29 12:13:08 -0400)
 
 Thanks.
 
 ----------------------------------------------------------------
-Lai Jiangshan (1):
-      workqueue: allow work_on_cpu() to be called recursively
+Niels de Vos (1):
+      pata_imx: expose module alias for loading from device-tree
 
-Shaohua Li (1):
-      workqueue: copy workqueue_attrs with all fields
+ drivers/ata/pata_imx.c | 1 +
+ 1 file changed, 1 insertion(+)
 
- kernel/workqueue.c | 44 ++++++++++++++++++++++++++++++++++----------
- 1 file changed, 34 insertions(+), 10 deletions(-)
-
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index f02c4a4..726adc8 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -2817,6 +2817,19 @@ already_gone:
- 	return false;
- }
+diff --git a/drivers/ata/pata_imx.c b/drivers/ata/pata_imx.c
+index 4ec7c04..26386f0 100644
+--- a/drivers/ata/pata_imx.c
++++ b/drivers/ata/pata_imx.c
+@@ -237,6 +237,7 @@ static const struct of_device_id imx_pata_dt_ids[] = {
+ 		/* sentinel */
+ 	}
+ };
++MODULE_DEVICE_TABLE(of, imx_pata_dt_ids);
  
-+static bool __flush_work(struct work_struct *work)
-+{
-+	struct wq_barrier barr;
-+
-+	if (start_flush_work(work, &barr)) {
-+		wait_for_completion(&barr.done);
-+		destroy_work_on_stack(&barr.work);
-+		return true;
-+	} else {
-+		return false;
-+	}
-+}
-+
- /**
-  * flush_work - wait for a work to finish executing the last queueing instance
-  * @work: the work to flush
-@@ -2830,18 +2843,10 @@ already_gone:
-  */
- bool flush_work(struct work_struct *work)
- {
--	struct wq_barrier barr;
--
- 	lock_map_acquire(&work->lockdep_map);
- 	lock_map_release(&work->lockdep_map);
- 
--	if (start_flush_work(work, &barr)) {
--		wait_for_completion(&barr.done);
--		destroy_work_on_stack(&barr.work);
--		return true;
--	} else {
--		return false;
--	}
-+	return __flush_work(work);
- }
- EXPORT_SYMBOL_GPL(flush_work);
- 
-@@ -3411,6 +3416,12 @@ static void copy_workqueue_attrs(struct workqueue_attrs *to,
- {
- 	to->nice = from->nice;
- 	cpumask_copy(to->cpumask, from->cpumask);
-+	/*
-+	 * Unlike hash and equality test, this function doesn't ignore
-+	 * ->no_numa as it is used for both pool and wq attrs.  Instead,
-+	 * get_unbound_pool() explicitly clears ->no_numa after copying.
-+	 */
-+	to->no_numa = from->no_numa;
- }
- 
- /* hash value of the content of @attr */
-@@ -3578,6 +3589,12 @@ static struct worker_pool *get_unbound_pool(const struct workqueue_attrs *attrs)
- 	lockdep_set_subclass(&pool->lock, 1);	/* see put_pwq() */
- 	copy_workqueue_attrs(pool->attrs, attrs);
- 
-+	/*
-+	 * no_numa isn't a worker_pool attribute, always clear it.  See
-+	 * 'struct workqueue_attrs' comments for detail.
-+	 */
-+	pool->attrs->no_numa = false;
-+
- 	/* if cpumask is contained inside a NUMA node, we belong to that node */
- 	if (wq_numa_enabled) {
- 		for_each_node(node) {
-@@ -4756,7 +4773,14 @@ long work_on_cpu(int cpu, long (*fn)(void *), void *arg)
- 
- 	INIT_WORK_ONSTACK(&wfc.work, work_for_cpu_fn);
- 	schedule_work_on(cpu, &wfc.work);
--	flush_work(&wfc.work);
-+
-+	/*
-+	 * The work item is on-stack and can't lead to deadlock through
-+	 * flushing.  Use __flush_work() to avoid spurious lockdep warnings
-+	 * when work_on_cpu()s are nested.
-+	 */
-+	__flush_work(&wfc.work);
-+
- 	return wfc.ret;
- }
- EXPORT_SYMBOL_GPL(work_on_cpu);
+ static struct platform_driver pata_imx_driver = {
+ 	.probe		= pata_imx_probe,
 
 -- 
 tejun
