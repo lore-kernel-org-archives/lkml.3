@@ -1,76 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754709Ab3HEGaf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 02:30:35 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:19056 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754217Ab3HEGaU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 02:30:20 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19MuCwOtKbH/s6XdrSQ8UnU
-Date: Sun, 4 Aug 2013 23:30:13 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Greg KH <greg@kroah.com>, ksummit-2013-discuss@lists.linuxfoundation.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [Ksummit-2013-discuss] [ATTEND] [ARM ATTEND] kernel data bloat
- and how to avoid it
-Message-ID: <20130805063013.GL7656@atomide.com>
-References: <20130731073802.GT7656@atomide.com>
- <20130731123351.GA30474@kroah.com>
- <20130802075352.GY7656@atomide.com>
- <20130802124130.GI7656@atomide.com>
- <20130802132419.GO23006@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130802132419.GO23006@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754593Ab3HEGb7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 02:31:59 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:36186 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752566Ab3HEGb6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 02:31:58 -0400
+Message-ID: <1375684317.3133.25.camel@joe-AO722>
+Subject: Re: [PATCH 13/13] tracing/probes: Fix basic print type functions
+From: Joe Perches <joe@perches.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Namhyung Kim <namhyung@kernel.org>, Stev Rostedt <rostedt@goodmis.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Hyeoncheol Lee <cheol.lee@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Date: Sun, 04 Aug 2013 23:31:57 -0700
+In-Reply-To: <51FF4492.8080100@hitachi.com>
+References: <1375261410-11219-1-git-send-email-namhyung@kernel.org>
+	 <1375261410-11219-14-git-send-email-namhyung@kernel.org>
+	 <51FF4492.8080100@hitachi.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Russell King - ARM Linux <linux@arm.linux.org.uk> [130802 06:31]:
-> On Fri, Aug 02, 2013 at 05:41:31AM -0700, Tony Lindgren wrote:
-> > Oh and thinking about it a bit more, this issue is mostly with the
-> > device drivers implementing frameworks, not the device drivers
-> > using the frameworks. Things like clocks, regulators, muxes etc where
-> > an almost similar instance is repeated tens or hundreds of times for
-> > each SoC.
-> 
-> That is where it helps to have a strong maintainer for a subsystem who
-> has the guts to refuse to accept stuff which is similar to existing
-> implementations and insist that existing implementations are either
-> adapted or reused.
-> 
-> It's all very well someone coming along and writing a "generic" set of
-> implementations (like tglx did for the IRQ subsystem) but unless there's
-> a motivation for people to use the generic stuff (such as... you won't
-> get your code in if you don't use the provided generics unless you can
-> provide a very good reasoned argument) then people are just going to
-> write their own code time and time again.
-> 
-> It's just like how the clocksources have gone.  We now have multiple
-> implementations of how to read a counter which ticks at a specific
-> rate.  You wouldn't think that I wrote drivers/clocksource/mmio.c which
-> can handle all of these simple 32-bit/16-bit up/down counter cases.
-> Again, the problem is there is no strong reviewer there who looks over
-> every addition and says "no, use the generic stuff".
-> 
-> That's the basic problem here: the review, and people saying "no" to
-> new stuff doing the same as generic stuff.
+On Mon, 2013-08-05 at 15:22 +0900, Masami Hiramatsu wrote:
+> (2013/07/31 18:03), Namhyung Kim wrote:
+> > From: Namhyung Kim <namhyung.kim@lge.com>
+> > 
+> > The print format of s32 type was "ld" and it's casted to "long".  So
+> > it turned out to print 4294967295 for "-1" on 64-bit systems.  Not
+> > sure whether it worked well on 32-bit systems.
+[]
+> > diff --git a/kernel/trace/trace_probe.c b/kernel/trace/trace_probe.c
+[]
+> > @@ -45,14 +45,19 @@ __kprobes int PRINT_TYPE_FUNC_NAME(type)(struct trace_seq *s,		\
+[]
+> > +DEFINE_BASIC_PRINT_TYPE_FUNC(s8,  "%d", signed char)
 
-Right, but to make all that easier I was thinking that we can possibly
-provide some generic guidelines and tools for maintainers to avoid some
-of these issues.
+If there's a need to identify signed char, why
+not signed short, signed int and signd long too?
 
-The data issues should be pretty easy to spot based on the size of the
-driver, or looking at the object file with size command for the data to
-text ratio etc.
 
-Regards,
-
-Tony
