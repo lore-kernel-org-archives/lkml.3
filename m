@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754497Ab3HEQQA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 12:16:00 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:51611 "EHLO comal.ext.ti.com"
+	id S1754520Ab3HEQQH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 12:16:07 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:39267 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754462Ab3HEQP5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 12:15:57 -0400
+	id S1754462Ab3HEQQB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 12:16:01 -0400
 From: Joel Fernandes <joelf@ti.com>
 To: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
         Santosh Shilimkar <santosh.shilimkar@ti.com>,
@@ -27,9 +27,9 @@ CC: Linux OMAP List <linux-omap@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Linux MMC List <linux-mmc@vger.kernel.org>,
         Joel Fernandes <joelf@ti.com>
-Subject: [PATCH v3 10/12] dma: edma: Check if MAX_NR_SG is even in prep function
-Date: Mon, 5 Aug 2013 11:14:55 -0500
-Message-ID: <1375719297-12871-11-git-send-email-joelf@ti.com>
+Subject: [PATCH v3 08/12] dma: edma: Add one more required slot to MAX slots
+Date: Mon, 5 Aug 2013 11:14:53 -0500
+Message-ID: <1375719297-12871-9-git-send-email-joelf@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1375719297-12871-1-git-send-email-joelf@ti.com>
 References: <1375719297-12871-1-git-send-email-joelf@ti.com>
@@ -39,29 +39,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Splitting of MAX available slots into 2 sets of size MAX_NR_LS
-requires to the MAX_NR_SG function to be even. We ensure the same
-in prep function.
+We'd now need a separate slot just for the channel and separate
+ones for the 2 linked sets, so we make adjustments to allocate
+an extra channel accordingly.
 
 Signed-off-by: Joel Fernandes <joelf@ti.com>
 ---
- drivers/dma/edma.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/dma/edma.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/dma/edma.c b/drivers/dma/edma.c
-index 70923a2..061f0cf 100644
+index a242269..df50a04 100644
 --- a/drivers/dma/edma.c
 +++ b/drivers/dma/edma.c
-@@ -354,6 +354,9 @@ static struct dma_async_tx_descriptor *edma_prep_slave_sg(
- 	int src_bidx, dst_bidx, src_cidx, dst_cidx;
- 	int i, num_slots_needed;
+@@ -48,7 +48,7 @@
  
-+	if (MAX_NR_SG & 1)
-+		dev_err(dev, "%s: MAX_NR_SG must be even\n", __func__);
+ /* Max of 16 segments per channel to conserve PaRAM slots */
+ #define MAX_NR_SG		16
+-#define EDMA_MAX_SLOTS		MAX_NR_SG
++#define EDMA_MAX_SLOTS		(MAX_NR_SG+1)
+ #define EDMA_DESCRIPTORS	16
+ 
+ struct edma_desc {
+@@ -311,6 +311,9 @@ static struct dma_async_tx_descriptor *edma_prep_slave_sg(
+ 
+ 	num_slots_needed = sg_len > MAX_NR_SG ? MAX_NR_SG : sg_len;
+ 
++	/* Allocate one extra to account for the channel itself */
++	num_slots_needed++;
 +
- 	if (unlikely(!echan || !sgl || !sg_len))
- 		return NULL;
- 
+ 	for (i = 0; i < num_slots_needed; i++) {
+ 		if (echan->slot[i] < 0) {
+ 			echan->slot[i] =
 -- 
 1.7.9.5
 
