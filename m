@@ -1,54 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754188Ab3HEQHD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 12:07:03 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:20039 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753699Ab3HEQHB (ORCPT
+	id S1754206Ab3HEQIK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 12:08:10 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:42579 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753699Ab3HEQIJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 12:07:01 -0400
-Date: Mon, 5 Aug 2013 19:06:45 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-Cc: trivial@kernel.org, kernel-janitors@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] trivial: adjust code alignment
-Message-ID: <20130805160645.GI5051@mwanda>
-References: <1375714059-29567-1-git-send-email-Julia.Lawall@lip6.fr>
- <1375714059-29567-5-git-send-email-Julia.Lawall@lip6.fr>
+	Mon, 5 Aug 2013 12:08:09 -0400
+Date: Mon, 5 Aug 2013 17:07:43 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Oskar Schirmer <oskar@scara.com>
+Cc: Fabio Estevam <fabio.estevam@freescale.com>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, Zeng Zhaoming <zengzm.kernel@gmail.com>
+Message-ID: <20130805160743.GN9858@sirena.org.uk>
+References: <1375688163-1935-1-git-send-email-oskar@scara.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="pg9nAr2jDD6ER3CP"
 Content-Disposition: inline
-In-Reply-To: <1375714059-29567-5-git-send-email-Julia.Lawall@lip6.fr>
+In-Reply-To: <1375688163-1935-1-git-send-email-oskar@scara.com>
+X-Cookie: You will be awarded some great honor.
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] sound/sgtl5000: fix codec clock source transition to
+ avoid clockless moment
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 05, 2013 at 04:47:39PM +0200, Julia Lawall wrote:
-> diff --git a/drivers/media/i2c/ov7670.c b/drivers/media/i2c/ov7670.c
-> index e8a1ce2..4a5a5dc 100644
-> --- a/drivers/media/i2c/ov7670.c
-> +++ b/drivers/media/i2c/ov7670.c
-> @@ -1369,8 +1369,8 @@ static int ov7670_s_exp(struct v4l2_subdev *sd, int value)
->  	unsigned char com1, com8, aech, aechh;
->  
->  	ret = ov7670_read(sd, REG_COM1, &com1) +
-> -		ov7670_read(sd, REG_COM8, &com8);
-> -		ov7670_read(sd, REG_AECHH, &aechh);
-> +	ov7670_read(sd, REG_COM8, &com8);
-> +	ov7670_read(sd, REG_AECHH, &aechh);
->  	if (ret)
->  		return ret;
->  
 
-The new indenting isn't correct here and anyway the intent was to
-combine all the error codes together and return them as an error
-code jumble.  I'm not a fan of error code jumbles, probably the
-right thing is to check each function call or, barring that, to
-return -EIO.
+--pg9nAr2jDD6ER3CP
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-regards,
-dan carpenter
+On Mon, Aug 05, 2013 at 07:36:02AM +0000, Oskar Schirmer wrote:
+> Powering down PLL before switching to a mode that does not use it
+> is a bad idea. It would cause the SGTL5000 be without internal
+> clock supply, especially on the I2C interface, which would make
+> subsequent access to it fail.
 
+Applied, thanks.  Please do use subject lines corresponding to the
+subsystem.
+
+--pg9nAr2jDD6ER3CP
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR/83MAAoJELSic+t+oim90gwP/05OSKqmA64Edt7u1o+G5SPN
+VnxcvE1cjDGatdqc/dcAZXiG3IXDAxgpaItnZ2ZkgRlXCL1TktBIOf6bwnLjC1Po
+unSasjx8IIYVXKb86w+39BRx5MbWYP3+nWsbv2WY0u7C25iLwElWpOASrJvTfnUk
+K9kcRmO2aGu5kSz07a2+WXiviWu524gcyIs+3Zt8Z8i6T30E5rx3nc+vWGajAWaM
+486eS2Y+s+ArroHNm1NG8PwND3oOg0EYx3FQ23/IE0aTsYt1YYyFhEQjddgtx0ZP
+8vpZxAFO3FDuDZr40xj+mhdqfFeqk3GJJKAJWX0x0arTLkLS8ulHNXW8wW2sYFrt
+Crrm37MCuNG0FeFlGaMZZx02QuHCbYiruAGu4FGI7Iv8gpQISdUkNBUiv7fUbaSC
+Z5/oNq2crdG5GiOu8VtrTytd8fic7g3Ks6KLEUngSbyepvfgDUi9q5b401d98DmY
+b6aOrYB0vc1X8bZicafqaV+ZEzFo14g3MG+J2KRH0/4mNJrpPrNE/nGOToOrtH4n
+YLU0j16xkVd+07i4xRB5b4T0z1/7xN9hUWMVmn+7nXNpulfpOUelgmuUWfo3dJK9
+ntASXl/S6DzIrD62YdYzQIqMykd9HJaEupuwiedKIWNDWvw33qLiRWJwwbagifmg
+CAcO0VuIJubPA2Y6+i5I
+=vjiF
+-----END PGP SIGNATURE-----
+
+--pg9nAr2jDD6ER3CP--
