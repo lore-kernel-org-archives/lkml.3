@@ -1,238 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752591Ab3HEN3j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 09:29:39 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54492 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751715Ab3HEN3h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 09:29:37 -0400
-Date: Mon, 5 Aug 2013 15:29:34 +0200
-From: Jan Kara <jack@suse.cz>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
-        Ning Qu <quning@google.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 19/23] truncate: support huge pages
-Message-ID: <20130805132934.GC25691@quack.suse.cz>
-References: <1375582645-29274-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1375582645-29274-20-git-send-email-kirill.shutemov@linux.intel.com>
+	id S1752739Ab3HENaw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 09:30:52 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:46227 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751655Ab3HENau (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 09:30:50 -0400
+Date: Mon, 5 Aug 2013 14:29:44 +0100
+From: Dave Martin <Dave.Martin@arm.com>
+To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+Cc: tony@atomide.com, nm@ti.com, linux@arm.linux.org.uk, aaro.koskinen@iki.fi,
+        pdeschrijver@nvidia.com, linux-kernel@vger.kernel.org,
+        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
+	<freemangordon@abv.bg>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>, pavel@ucw.cz,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v3 1/2] ARM: OMAP: Add secure function omap_smc3() which
+ calling instruction smc #1
+Message-ID: <20130805132939.GA2755@localhost.localdomain>
+References: <531356997.66774.1373571839852.JavaMail.apache@mail81.abv.bg>
+ <51DF0D7A.4090008@ti.com>
+ <20130712102430.GA3249@localhost.localdomain>
+ <201308041045.00698@pali>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1375582645-29274-20-git-send-email-kirill.shutemov@linux.intel.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201308041045.00698@pali>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun 04-08-13 05:17:21, Kirill A. Shutemov wrote:
-> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+On Sun, Aug 04, 2013 at 10:45:00AM +0200, Pali Rohár wrote:
+> Here is new version (v3) of omap secure part patch:
 > 
-> truncate_inode_pages_range() drops whole huge page at once if it's fully
-> inside the range.
+> Other secure functions omap_smc1() and omap_smc2() calling instruction smc #0
+> but Nokia RX-51 board needs to call smc #1 for PPA access.
 > 
-> If a huge page is only partly in the range we zero out the part,
-> exactly like we do for partial small pages.
-> 
-> invalidate_mapping_pages() just skips huge pages if they are not fully
-> in the range.
-  Umm, this is not a new problem but with THP pagecache it will become more
-visible: When we punch holes within a file like <0..2MB>, <2MB-4MB>
-(presuming 4 MB hugepages), then we won't free the underlying huge page for
-the range 0..4MB. Maybe for initial implementation is doesn't matter but we
-should at least note it in truncate_inode_pages_range() so that people are
-aware of this.
-
-Otherwise the patch looks OK to me. So you can add:
-Reviewed-by: Jan Kara <jack@suse.cz>
-
-								Honza
-
-> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> Signed-off-by: Ivaylo Dimitrov <freemangordon@abv.bg>
+> Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
 > ---
->  mm/truncate.c | 108 +++++++++++++++++++++++++++++++++++++++++++++-------------
->  1 file changed, 84 insertions(+), 24 deletions(-)
-> 
-> diff --git a/mm/truncate.c b/mm/truncate.c
-> index 353b683..fcef7cb 100644
-> --- a/mm/truncate.c
-> +++ b/mm/truncate.c
-> @@ -205,8 +205,7 @@ void truncate_inode_pages_range(struct address_space *mapping,
->  {
->  	pgoff_t		start;		/* inclusive */
->  	pgoff_t		end;		/* exclusive */
-> -	unsigned int	partial_start;	/* inclusive */
-> -	unsigned int	partial_end;	/* exclusive */
-> +	bool		partial_thp_start = false, partial_thp_end = false;
->  	struct pagevec	pvec;
->  	pgoff_t		index;
->  	int		i;
-> @@ -215,15 +214,9 @@ void truncate_inode_pages_range(struct address_space *mapping,
->  	if (mapping->nrpages == 0)
->  		return;
+> diff --git a/arch/arm/mach-omap2/omap-secure.h b/arch/arm/mach-omap2/omap-secure.h
+> index 0e72917..c4586f4 100644
+> --- a/arch/arm/mach-omap2/omap-secure.h
+> +++ b/arch/arm/mach-omap2/omap-secure.h
+> @@ -51,6 +51,7 @@
+>  extern u32 omap_secure_dispatcher(u32 idx, u32 flag, u32 nargs,
+>  				u32 arg1, u32 arg2, u32 arg3, u32 arg4);
+>  extern u32 omap_smc2(u32 id, u32 falg, u32 pargs);
+> +extern u32 omap_smc3(u32 id, u32 process, u32 flag, u32 pargs);
+>  extern phys_addr_t omap_secure_ram_mempool_base(void);
+>  extern int omap_secure_ram_reserve_memblock(void);
 >  
-> -	/* Offsets within partial pages */
-> -	partial_start = lstart & (PAGE_CACHE_SIZE - 1);
-> -	partial_end = (lend + 1) & (PAGE_CACHE_SIZE - 1);
-> -
->  	/*
->  	 * 'start' and 'end' always covers the range of pages to be fully
-> -	 * truncated. Partial pages are covered with 'partial_start' at the
-> -	 * start of the range and 'partial_end' at the end of the range.
-> -	 * Note that 'end' is exclusive while 'lend' is inclusive.
-> +	 * truncated. Note that 'end' is exclusive while 'lend' is inclusive.
->  	 */
->  	start = (lstart + PAGE_CACHE_SIZE - 1) >> PAGE_CACHE_SHIFT;
->  	if (lend == -1)
-> @@ -249,6 +242,23 @@ void truncate_inode_pages_range(struct address_space *mapping,
->  			if (index >= end)
->  				break;
+> diff --git a/arch/arm/mach-omap2/omap-smc.S b/arch/arm/mach-omap2/omap-smc.S
+> index f6441c1..7bbc043 100644
+> --- a/arch/arm/mach-omap2/omap-smc.S
+> +++ b/arch/arm/mach-omap2/omap-smc.S
+> @@ -1,9 +1,11 @@
+>  /*
+> - * OMAP44xx secure APIs file.
+> + * OMAP34xx and OMAP44xx secure APIs file.
+>   *
+>   * Copyright (C) 2010 Texas Instruments, Inc.
+>   * Written by Santosh Shilimkar <santosh.shilimkar@ti.com>
+>   *
+> + * Copyright (C) 2012 Ivaylo Dimitrov <freemangordon@abv.bg>
+> + * Copyright (C) 2013 Pali Rohár <pali.rohar@gmail.com>
+>   *
+>   * This program is free software,you can redistribute it and/or modify
+>   * it under the terms of the GNU General Public License version 2 as
+> @@ -54,6 +56,23 @@ ENTRY(omap_smc2)
+>  	ldmfd   sp!, {r4-r12, pc}
+>  ENDPROC(omap_smc2)
 >  
-> +			if (PageTransTailCache(page)) {
-> +				/* part of already handled huge page */
-> +				if (!page->mapping)
-> +					continue;
-> +				/* the range starts in middle of huge page */
-> +				partial_thp_start = true;
-> +				start = index & ~HPAGE_CACHE_INDEX_MASK;
-> +				continue;
-> +			}
-> +			/* the range ends on huge page */
-> +			if (PageTransHugeCache(page) &&
-> +				index == (end & ~HPAGE_CACHE_INDEX_MASK)) {
-> +				partial_thp_end = true;
-> +				end = index;
-> +				break;
-> +			}
-> +
->  			if (!trylock_page(page))
->  				continue;
->  			WARN_ON(page->index != index);
-> @@ -265,34 +275,74 @@ void truncate_inode_pages_range(struct address_space *mapping,
->  		index++;
->  	}
->  
-> -	if (partial_start) {
-> -		struct page *page = find_lock_page(mapping, start - 1);
-> +	if (partial_thp_start || lstart & ~PAGE_CACHE_MASK) {
-> +		pgoff_t off;
-> +		struct page *page;
-> +		unsigned pstart, pend;
-> +		void (*zero_segment)(struct page *page,
-> +				unsigned start, unsigned len);
-> +retry_partial_start:
-> +		if (partial_thp_start) {
-> +			zero_segment = zero_huge_user_segment;
-> +			off = (start - 1) & ~HPAGE_CACHE_INDEX_MASK;
-> +			pstart = lstart & ~HPAGE_PMD_MASK;
-> +			if ((end & ~HPAGE_CACHE_INDEX_MASK) == off)
-> +				pend = (lend - 1) & ~HPAGE_PMD_MASK;
-> +			else
-> +				pend = HPAGE_PMD_SIZE;
-> +		} else {
-> +			zero_segment = zero_user_segment;
-> +			off = start - 1;
-> +			pstart = lstart & ~PAGE_CACHE_MASK;
-> +			if (start > end)
-> +				pend = (lend - 1) & ~PAGE_CACHE_MASK;
-> +			else
-> +				pend = PAGE_CACHE_SIZE;
-> +		}
-> +
-> +		page = find_get_page(mapping, off);
->  		if (page) {
-> -			unsigned int top = PAGE_CACHE_SIZE;
-> -			if (start > end) {
-> -				/* Truncation within a single page */
-> -				top = partial_end;
-> -				partial_end = 0;
-> +			/* the last tail page*/
-> +			if (PageTransTailCache(page)) {
-> +				partial_thp_start = true;
-> +				page_cache_release(page);
-> +				goto retry_partial_start;
->  			}
-> +
-> +			lock_page(page);
->  			wait_on_page_writeback(page);
-> -			zero_user_segment(page, partial_start, top);
-> +			zero_segment(page, pstart, pend);
->  			cleancache_invalidate_page(mapping, page);
->  			if (page_has_private(page))
-> -				do_invalidatepage(page, partial_start,
-> -						  top - partial_start);
-> +				do_invalidatepage(page, pstart,
-> +						pend - pstart);
->  			unlock_page(page);
->  			page_cache_release(page);
->  		}
->  	}
-> -	if (partial_end) {
-> -		struct page *page = find_lock_page(mapping, end);
-> +	if (partial_thp_end || (lend + 1) & ~PAGE_CACHE_MASK) {
-> +		pgoff_t off;
-> +		struct page *page;
-> +		unsigned pend;
-> +		void (*zero_segment)(struct page *page,
-> +				unsigned start, unsigned len);
-> +		if (partial_thp_end) {
-> +			zero_segment = zero_huge_user_segment;
-> +			off = end & ~HPAGE_CACHE_INDEX_MASK;
-> +			pend = (lend - 1) & ~HPAGE_PMD_MASK;
-> +		} else {
-> +			zero_segment = zero_user_segment;
-> +			off = end;
-> +			pend = (lend - 1) & ~PAGE_CACHE_MASK;
-> +		}
-> +
-> +		page = find_lock_page(mapping, end);
->  		if (page) {
->  			wait_on_page_writeback(page);
-> -			zero_user_segment(page, 0, partial_end);
-> +			zero_segment(page, 0, pend);
->  			cleancache_invalidate_page(mapping, page);
->  			if (page_has_private(page))
-> -				do_invalidatepage(page, 0,
-> -						  partial_end);
-> +				do_invalidatepage(page, 0, pend);
->  			unlock_page(page);
->  			page_cache_release(page);
->  		}
-> @@ -327,6 +377,9 @@ void truncate_inode_pages_range(struct address_space *mapping,
->  			if (index >= end)
->  				break;
->  
-> +			if (PageTransTailCache(page))
-> +				continue;
-> +
->  			lock_page(page);
->  			WARN_ON(page->index != index);
->  			wait_on_page_writeback(page);
-> @@ -401,6 +454,13 @@ unsigned long invalidate_mapping_pages(struct address_space *mapping,
->  			if (index > end)
->  				break;
->  
-> +			/* skip huge page if it's not fully in the range */
-> +			if (PageTransHugeCache(page) &&
-> +					index + HPAGE_CACHE_NR - 1 > end)
-> +				continue;
-> +			if (PageTransTailCache(page))
-> +				continue;
-> +
->  			if (!trylock_page(page))
->  				continue;
->  			WARN_ON(page->index != index);
-> -- 
-> 1.8.3.2
-> 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+> +/**
+> + * u32 omap_smc3(u32 service_id, u32 process_id, u32 flag, u32 pargs)
+> + * Low level common routine for secure HAL and PPA APIs via smc #1
+> + * r0 - @service_id: Secure Service ID
+> + * r1 - @process_id: Process ID
+> + * r2 - @flag: Flag to indicate the criticality of operation
+> + * r3 - @pargs: Physical address of parameter list
+> + */
+> +ENTRY(omap_smc3)
+> +	stmfd	sp!, {r4-r11, lr}
+> +	mov	r12, r0		@ Copy the secure service ID
+> +	mov	r6, #0xff	@ Indicate new Task call
+> +	dsb			@ Memory Barrier
+
+Can you explain _why_ the barrier is there?  The reader doesn't need to
+be told that a barrier instruction is a barrier instruction.
+
+Cheers
+---Dave
