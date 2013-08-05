@@ -1,39 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754651Ab3HETKB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 15:10:01 -0400
-Received: from tex.lwn.net ([70.33.254.29]:39256 "EHLO vena.lwn.net"
+	id S1754454Ab3HETKh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 15:10:37 -0400
+Received: from mga14.intel.com ([143.182.124.37]:3635 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754595Ab3HETKA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 15:10:00 -0400
-Date: Mon, 5 Aug 2013 13:09:58 -0600
-From: Jonathan Corbet <corbet@lwn.net>
-To: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org
-Subject: Re: [RFC v01 1/3] PowerCap: Documentation
-Message-ID: <20130805130958.33da86c3@lwn.net>
-In-Reply-To: <1375466932-11842-2-git-send-email-srinivas.pandruvada@linux.intel.com>
-References: <1375466932-11842-1-git-send-email-srinivas.pandruvada@linux.intel.com>
-	<1375466932-11842-2-git-send-email-srinivas.pandruvada@linux.intel.com>
-Organization: LWN.net
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8bit
+	id S1753623Ab3HETKg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 15:10:36 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,820,1367996400"; 
+   d="scan'208";a="376527139"
+From: Andi Kleen <andi@firstfloor.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Christoph Hellwig <hch@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org, acme@infradead.org,
+        Namhyung Kim <namhyung.kim@lge.com>, peterz@infradead.org
+Subject: Re: [PATCH] RFC: perf, tools: Move gtk browser into separate perfgtk executable
+References: <1375669364-13838-1-git-send-email-andi@firstfloor.org>
+	<20130805081641.GA24808@gmail.com>
+	<20130805082320.GA9562@infradead.org>
+	<87fvuozerv.fsf@sejong.aot.lge.com>
+Date: Mon, 05 Aug 2013 12:10:34 -0700
+In-Reply-To: <87fvuozerv.fsf@sejong.aot.lge.com> (Namhyung Kim's message of
+	"Mon, 05 Aug 2013 18:08:04 +0900")
+Message-ID: <87ob9c3qdx.fsf@tassilo.jf.intel.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri,  2 Aug 2013 11:08:50 -0700
-Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com> wrote:
+Namhyung Kim <namhyung@kernel.org> writes:
+>
+> I wrote a patch series [1] separating gtk code to a dso and use it with
+> libdl last year.  But I didn't get much feedback probably due to the
+> mistake of not installing the dso to a proper place.  It'd be great if
+> you guys take a look at it and give some comments.
 
-> +power_uw (rw): Current power counter in micro-watts. Write to this counter
-> +resets the counter to zero. If the counter can not be reset, then this attribute
-> +is read-only.
+It looks good as a replacement of this patch
 
-Sorry if I'm slow, but... power is an instantaneous quantity, so why would
-you use a counter for it?  And why would you want to reset it to zero?
+Except for the requirement to build libperf as -fPIC
+In some setups the PIC penalty can be high, and libperf
+has some very hot code (e.g. callstack merging)
 
-Thanks,
-
-jon
+-Andi
+-- 
+ak@linux.intel.com -- Speaking for myself only
