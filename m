@@ -1,79 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754533Ab3HER62 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 13:58:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60594 "EHLO mx1.redhat.com"
+	id S1754415Ab3HESBv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 14:01:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25539 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753728Ab3HER60 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 13:58:26 -0400
-Date: Mon, 5 Aug 2013 13:57:06 -0400
-From: Aristeu Rozanski <aris@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: lizefan@huawei.com, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Balbir Singh <bsingharora@gmail.com>,
-        Matt Helsley <matthltc@us.ibm.com>,
-        Daniel Wagner <daniel.wagner@bmw-carit.de>,
-        Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH 08/23] cgroup: pass around cgroup_subsys_state instead of
- cgroup in subsystem methods
-Message-ID: <20130805175706.GA7878@redhat.com>
-References: <1375393801-4817-1-git-send-email-tj@kernel.org>
- <1375393801-4817-9-git-send-email-tj@kernel.org>
+	id S1753662Ab3HESBu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 14:01:50 -0400
+Date: Mon, 5 Aug 2013 19:56:23 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 3.11-rc4
+Message-ID: <20130805175623.GB8461@redhat.com>
+References: <CA+55aFwTX47vLvZckozZub0rUEo-aCBe7weqe=4mfQGfrW7NUA@mail.gmail.com> <CAMP44s2bOniz4qx5y9h4ppHRUjiPVGL+igSwO5NUJd4zpObxFw@mail.gmail.com> <20130805132948.GA14942@redhat.com> <CAMP44s0iXYjNuSqtCCjBHbbmmrYsKcrRBmD_W_nEiWTxPX1+xQ@mail.gmail.com> <20130805143935.GA18100@redhat.com> <CAMP44s0Q5fCcAwjPWaiz8uVE+BAnQ=YOBxtqNXR6XT1KBApFng@mail.gmail.com> <20130805171142.GA6978@redhat.com> <CAMP44s26f-AFWyxgWEyF50N6wntwT-UDHS4ZdSnZbagj+Rai7g@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1375393801-4817-9-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAMP44s26f-AFWyxgWEyF50N6wntwT-UDHS4ZdSnZbagj+Rai7g@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 01, 2013 at 05:49:46PM -0400, Tejun Heo wrote:
-> cgroup is currently in the process of transitioning to using struct
-> cgroup_subsys_state * as the primary handle instead of struct cgroup *
-> in subsystem implementations for the following reasons.
-> 
-> * With unified hierarchy, subsystems will be dynamically bound and
->   unbound from cgroups and thus css's (cgroup_subsys_state) may be
->   created and destroyed dynamically over the lifetime of a cgroup,
->   which is different from the current state where all css's are
->   allocated and destroyed together with the associated cgroup.  This
->   in turn means that cgroup_css() should be synchronized and may
->   return NULL, making it more cumbersome to use.
-> 
-> * Differing levels of per-subsystem granularity in the unified
->   hierarchy means that the task and descendant iterators should behave
->   differently depending on the specific subsystem the iteration is
->   being performed for.
-> 
-> * In majority of the cases, subsystems only care about its part in the
->   cgroup hierarchy - ie. the hierarchy of css's.  Subsystem methods
->   often obtain the matching css pointer from the cgroup and don't
->   bother with the cgroup pointer itself.  Passing around css fits
->   much better.
-> 
-> This patch converts all cgroup_subsys methods to take @css instead of
-> @cgroup.  The conversions are mostly straight-forward.  A few
-> noteworthy changes are
-> 
-> * ->css_alloc() now takes css of the parent cgroup rather than the
->   pointer to the new cgroup as the css for the new cgroup doesn't
->   exist yet.  Knowing the parent css is enough for all the existing
->   subsystems.
-> 
-> * In kernel/cgroup.c::offline_css(), unnecessary open coded css
->   dereference is replaced with local variable access.
-> 
-> This patch shouldn't cause any behavior differences.
+On 08/05, Felipe Contreras wrote:
+>
+> Would it be possible to just revert that patch for v3.11, and fix it later?
 
-looks fine on device_cgroup.c bit
+Sure, but it would be nice to investigate.
 
-Acked-by: Aristeu Rozanski <aris@redhat.com>
+I think we have the time for revert, this patch was added after 3.10
+so I hope we can always revert it before 3.11.
 
--- 
-Aristeu
+Felipe, I'll try to make a stupid debugging patch tomorrow, perhaps
+you can test it...
+
+Oleg.
 
