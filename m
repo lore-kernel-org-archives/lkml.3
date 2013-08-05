@@ -1,85 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753321Ab3HENyv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 09:54:51 -0400
-Received: from bar.sig21.net ([80.81.252.164]:45880 "EHLO bar.sig21.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752645Ab3HENyu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 09:54:50 -0400
-Date: Mon, 5 Aug 2013 15:23:53 +0200
-From: Johannes Stezenbach <js@sig21.net>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Daniel Vetter <daniel@ffwll.ch>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: i915 INFO: trying to register non-static key.
-Message-ID: <20130805132353.GA4678@sig21.net>
-References: <20130731162252.GC4724@pd.tnic>
- <CAKMK7uFNpvSHxMXu6uzHbTwv4W=k_QZ2-g9X4hAK6wwniisrvQ@mail.gmail.com>
- <20130805092612.GA23560@pd.tnic>
+	id S1753380Ab3HEN5Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 09:57:25 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:49083 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753117Ab3HEN5X (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 09:57:23 -0400
+Message-ID: <51FFAF34.20200@oracle.com>
+Date: Mon, 05 Aug 2013 09:57:08 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130805092612.GA23560@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-21-Score: -2.9 (--)
-X-Spam-21-Report: No, score=-2.9 required=8.0 tests=ALL_TRUSTED=-1,BAYES_00=-1.9 autolearn=ham
+To: koverstreet@google.com, axboe@kernel.dk, bcrl@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org
+CC: LKML <linux-kernel@vger.kernel.org>, linux-aio@kvack.org,
+        trinity@vger.kernel.org
+Subject: aio: kernel BUG at fs/aio.c:646!
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi all,
 
-wrt to $Subject, I get this with 3.10.5:
+While fuzzing with trinity inside a KVM tools guest running latest -next kernel,
+I've stumbled on the following spew caused by a new BUG() added in "aio: fix
+io_destroy() regression by using call_rcu()".
 
-[    4.342638] i915 0000:00:02.0: setting latency timer to 64
-[    4.409045] INFO: trying to register non-static key.
-[    4.409164] the code is fine but needs lockdep annotation.
-[    4.409278] turning off the locking correctness validator.
-[    4.409396] CPU: 2 PID: 1 Comm: swapper/0 Not tainted 3.10.5 #1
-[    4.409514] Hardware name: LENOVO 2320CTO/2320CTO, BIOS G2ET82WW (2.02 ) 09/11/2012
-[    4.409690]  0000000000000001 ffff8802121559e0 ffffffff816b265c ffff880212155a50
-[    4.410050]  ffffffff8109ba03 ffffffff822cd1c0 0000000000000000 0000000100000006
-[    4.410408]  0000000000000000 0000000000000000 0000000000000000 ffff8802121587a8
-[    4.410764] Call Trace:
-[    4.410880]  [<ffffffff816b265c>] dump_stack+0x19/0x1b
-[    4.411000]  [<ffffffff8109ba03>] __lock_acquire.isra.23+0x7f7/0xb9c
-[    4.411120]  [<ffffffff8109be68>] lock_acquire+0xc0/0x142
-[    4.411240]  [<ffffffff813999f4>] ? i915_write32+0x99/0x13a
-[    4.411360]  [<ffffffff816b8c7f>] _raw_spin_lock_irqsave+0x57/0x8e
-[    4.411481]  [<ffffffff813999f4>] ? i915_write32+0x99/0x13a
-[    4.411599]  [<ffffffff813999f4>] i915_write32+0x99/0x13a
-[    4.411718]  [<ffffffff813d9aa8>] intel_disable_gt_powersave+0x264/0x2e5
-[    4.411839]  [<ffffffff813db00c>] intel_gt_sanitize+0x91/0x93
-[    4.411956]  [<ffffffff8139ca1d>] i915_driver_load+0x6e7/0xca5
-[    4.412080]  [<ffffffff81387e8d>] ? drm_get_minor+0x1d4/0x22e
-[    4.412199]  [<ffffffff81389b1f>] drm_get_pci_dev+0x169/0x269
-[    4.412319]  [<ffffffff816b8eac>] ? _raw_spin_unlock_irqrestore+0x5b/0x79
-[    4.412440]  [<ffffffff81398f00>] i915_pci_probe+0x66/0x6f
-[    4.412557]  [<ffffffff812d4597>] pci_device_probe+0x6e/0xb2
-[    4.412679]  [<ffffffff813ef7ac>] driver_probe_device+0x11a/0x2e2
-[    4.412799]  [<ffffffff813efa12>] __driver_attach+0x61/0x83
-[    4.412918]  [<ffffffff813ef9b1>] ? __device_attach+0x3d/0x3d
-[    4.413039]  [<ffffffff813edb2f>] bus_for_each_dev+0x7d/0x87
-[    4.413158]  [<ffffffff813ef1e5>] driver_attach+0x1e/0x20
-[    4.413278]  [<ffffffff813eedb5>] bus_add_driver+0x128/0x233
-[    4.413397]  [<ffffffff813eff30>] driver_register+0x8c/0xfd
-[    4.413515]  [<ffffffff812d4420>] __pci_register_driver+0x5d/0x60
-[    4.413637]  [<ffffffff81f16c96>] ? ftrace_define_fields_drm_vblank_event_delivered+0x9a/0x9a
-[    4.413818]  [<ffffffff81389ca5>] drm_pci_init+0x86/0xea
-[    4.413936]  [<ffffffff81f16c96>] ? ftrace_define_fields_drm_vblank_event_delivered+0x9a/0x9a
-[    4.414117]  [<ffffffff81f16cfc>] i915_init+0x66/0x68
-[    4.414235]  [<ffffffff8100028d>] do_one_initcall+0xa0/0x13f
-[    4.414355]  [<ffffffff81edeeae>] kernel_init_freeable+0x115/0x196
-[    4.414475]  [<ffffffff81ede738>] ? do_early_param+0x88/0x88
-[    4.414594]  [<ffffffff8169e69e>] ? rest_init+0xc2/0xc2
-[    4.414711]  [<ffffffff8169e6ac>] kernel_init+0xe/0xd6
-[    4.414828]  [<ffffffff816ba5ac>] ret_from_fork+0x7c/0xb0
-[    4.414946]  [<ffffffff8169e69e>] ? rest_init+0xc2/0xc2
-[    4.422529] i915 0000:00:02.0: irq 40 for MSI/MSI-X
+[ 9646.599640] kernel BUG at fs/aio.c:646!
+[ 9646.600119] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+[ 9646.600119] Modules linked in:
+[ 9646.600119] CPU: 3 PID: 16833 Comm: trinity-child45 Tainted: G        W 
+3.11.0-rc3-next-20130802-sasha-00001-g5e30de1-dirty #3974
+[ 9646.600119] task: ffff8800c4da0000 ti: ffff8800c4d9a000 task.ti: ffff8800c4d9a000
+[ 9646.600119] RIP: 0010:[<ffffffff812ee8e1>]  [<ffffffff812ee8e1>] kill_ioctx+0xb1/0x100
+[ 9646.600119] RSP: 0018:ffff8800c4d9be08  EFLAGS: 00010287
+[ 9646.600119] RAX: ffffffffffffd866 RBX: ffff8800c3628b40 RCX: 0000000000000003
+[ 9646.600119] RDX: 0000000000014cf4 RSI: 0000000000000000 RDI: 0000000000000282
+[ 9646.600119] RBP: ffff8800c4d9be28 R08: 0000000000000000 R09: 0000000000000001
+[ 9646.600119] R10: 0000000000000001 R11: 0000000000000000 R12: ffff8800ca30c8c0
+[ 9646.609819] R13: ffff8800c4c9d438 R14: ffff8800c3628b40 R15: ffff8800ca30c8c0
+[ 9646.609819] FS:  0000000000000000(0000) GS:ffff880224c00000(0000) knlGS:0000000000000000
+[ 9646.609819] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[ 9646.609819] CR2: 0000000000000001 CR3: 00000000c4d6b000 CR4: 00000000000006e0
+[ 9646.609819] Stack:
+[ 9646.609819]  ffff8800c4d9be28 0000000000000001 ffff8800c4c9d000 ffff8800c4c9d480
+[ 9646.609819]  ffff8800c4d9be78 ffffffff812ef2c0 ffffffff812ef202 0000000000000282
+[ 9646.609819]  ffff8800c4c9d040 ffff8800c4c9d000 ffff8800c4da0000 ffff8800c4c9d000
+[ 9646.609819] Call Trace:
+[ 9646.609819]  [<ffffffff812ef2c0>] exit_aio+0xe0/0x100
+[ 9646.609819]  [<ffffffff812ef202>] ? exit_aio+0x22/0x100
+[ 9646.609819]  [<ffffffff81120bc1>] mmput+0x41/0xf0
+[ 9646.609819]  [<ffffffff81124c2d>] exit_mm+0x18d/0x1a0
+[ 9646.609819]  [<ffffffff811a9db5>] ? acct_collect+0x175/0x1b0
+[ 9646.609819]  [<ffffffff811253aa>] do_exit+0x24a/0x4d0
+[ 9646.609819]  [<ffffffff811256d9>] do_group_exit+0xa9/0xe0
+[ 9646.609819]  [<ffffffff81125727>] SyS_exit_group+0x17/0x20
+[ 9646.609819]  [<ffffffff8409d82c>] tracesys+0xdd/0xe2
+[ 9646.609819] Code: 8d bb 68 02 00 00 be 03 00 00 00 e8 3a bf e6 ff 48 c7 c7 20 e8 0a 86 e8 3e 54 
+da 02 48 8b 05 cf 89 19 06 8b 53 4c 48 29 d0 73 0f <0f> 0b 0f 1f 44 00 00 eb fe 66 0f 1f 44 00 00 48 
+89 05 b1 89 19
+[ 9646.609819] RIP  [<ffffffff812ee8e1>] kill_ioctx+0xb1/0x100
+[ 9646.609819]  RSP <ffff8800c4d9be08>
 
-If you have a fix for it please send it to stable.
 
 Thanks,
-Johannes
+Sasha
