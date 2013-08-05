@@ -1,57 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754772Ab3HEJ1i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 05:27:38 -0400
-Received: from smtp-out-185.synserver.de ([212.40.185.185]:1060 "EHLO
-	smtp-out-185.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752151Ab3HEJ1h (ORCPT
+	id S1754030Ab3HEJbs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 05:31:48 -0400
+Received: from mail-bk0-f52.google.com ([209.85.214.52]:43558 "EHLO
+	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752655Ab3HEJbr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 05:27:37 -0400
-X-Greylist: delayed 395 seconds by postgrey-1.27 at vger.kernel.org; Mon, 05 Aug 2013 05:27:36 EDT
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 15707
-From: Lars-Peter Clausen <lars@metafoo.de>
-To: Mark Brown <broonie@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH] regmap: cache: Make sure to sync the last register in a block
-Date: Mon,  5 Aug 2013 11:21:29 +0200
-Message-Id: <1375694489-12790-1-git-send-email-lars@metafoo.de>
-X-Mailer: git-send-email 1.8.0
+	Mon, 5 Aug 2013 05:31:47 -0400
+Message-ID: <51FF70FE.1090804@gmail.com>
+Date: Mon, 05 Aug 2013 11:31:42 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Wolfram Sang <wsa@the-dreams.de>
+CC: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] i2c: add sanity check to i2c_put_adapter
+References: <1375359046-17472-1-git-send-email-sebastian.hesselbarth@gmail.com> <20130805090030.GC2980@katana>
+In-Reply-To: <20130805090030.GC2980@katana>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-regcache_sync_block_raw_flush() expects the address of the register after last
-register that needs to be synced as its parameter. But the last call to
-regcache_sync_block_raw_flush() in regcache_sync_block_raw() passes the address
-of the last register in the block. This effectively always skips over the last
-register in a block, even if it needs to be synced. In order to fix it increase
-the address by one register.
+On 08/05/13 11:00, Wolfram Sang wrote:
+> On Thu, Aug 01, 2013 at 02:10:46PM +0200, Sebastian Hesselbarth wrote:
+>> i2c_put_adapter dereferences i2c_adapter pointer passed without check
+>> for NULL. This adds a check for non-NULL pointer to allow i2c_put_adapter
+>> called with NULL and behave the same way i2c_release_client does already.
+>
+> What about using WARN for the NULL case to point out the ref-counting
+> imbalance?
 
-The issue was introduced in commit 75a5f89 ("regmap: cache: Write consecutive
-registers in a single block write").
+Wolfram,
 
-Cc: stable@vger.kernel.org # 3.10+
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
----
- drivers/base/regmap/regcache.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+I was just adding this to (a) make it consistent with i2c_release_client
+and (b) it allows to simplify drivers where you need to release the
+adapter during probe failures. But that patch is so small, feel free to
+squash in anything you like.
 
-diff --git a/drivers/base/regmap/regcache.c b/drivers/base/regmap/regcache.c
-index e691026..3455f83 100644
---- a/drivers/base/regmap/regcache.c
-+++ b/drivers/base/regmap/regcache.c
-@@ -719,7 +719,8 @@ static int regcache_sync_block_raw(struct regmap *map, void *block,
- 		}
- 	}
- 
--	return regcache_sync_block_raw_flush(map, &data, base, regtmp);
-+	return regcache_sync_block_raw_flush(map, &data, base, regtmp +
-+			map->reg_stride);
- }
- 
- int regcache_sync_block(struct regmap *map, void *block,
--- 
-1.8.0
+For a more sophisticated (WARN_ON) approach, I suggest to also put one
+into i2c_release_client then.
+
+Sebastian
+
+>>
+>> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+>> ---
+>> Cc: Wolfram Sang <wsa@the-dreams.de>
+>> Cc: linux-i2c@vger.kernel.org
+>> Cc: linux-kernel@vger.kernel.org
+>> ---
+>>   drivers/i2c/i2c-core.c |    3 ++-
+>>   1 file changed, 2 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
+>> index f32ca29..d075df6 100644
+>> --- a/drivers/i2c/i2c-core.c
+>> +++ b/drivers/i2c/i2c-core.c
+>> @@ -1825,7 +1825,8 @@ EXPORT_SYMBOL(i2c_get_adapter);
+>>
+>>   void i2c_put_adapter(struct i2c_adapter *adap)
+>>   {
+>> -	module_put(adap->owner);
+>> +	if (adap)
+>> +		module_put(adap->owner);
+>>   }
+>>   EXPORT_SYMBOL(i2c_put_adapter);
+>>
+>> --
+>> 1.7.10.4
+>>
 
