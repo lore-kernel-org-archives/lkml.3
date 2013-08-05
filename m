@@ -1,66 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754870Ab3HEIVd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 04:21:33 -0400
-Received: from skyrme.org ([193.175.80.135]:54526 "EHLO skyrme.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754626Ab3HEIVY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 04:21:24 -0400
-X-Greylist: delayed 2717 seconds by postgrey-1.27 at vger.kernel.org; Mon, 05 Aug 2013 04:21:24 EDT
-Date: 5 Aug 2013 07:36:02 +0000
-Message-Id: <1375688163-1935-1-git-send-email-oskar@scara.com>
-From: "Oskar Schirmer" <oskar@scara.com>
-To: "Fabio Estevam" <fabio.estevam@freescale.com>
-Cc: alsa-devel@alsa-project.org, "Mark Brown" <broonie@kernel.org>,
-        linux-kernel@vger.kernel.org,
-        "Zeng Zhaoming" <zengzm.kernel@gmail.com>,
-        "Oskar Schirmer" <oskar@scara.com>
-Subject: [PATCH] sound/sgtl5000: fix codec clock source transition to avoid clockless moment
-X-Mailer: git-send-email 1.6.0.3
+	id S1754822Ab3HEIXj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 04:23:39 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:60081 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754585Ab3HEIXi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 04:23:38 -0400
+Date: Mon, 5 Aug 2013 01:23:20 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+        acme@infradead.org, Andi Kleen <ak@linux.intel.com>,
+        Namhyung Kim <namhyung.kim@lge.com>, peterz@infradead.org
+Subject: Re: [PATCH] RFC: perf, tools: Move gtk browser into separate perfgtk
+ executable
+Message-ID: <20130805082320.GA9562@infradead.org>
+References: <1375669364-13838-1-git-send-email-andi@firstfloor.org>
+ <20130805081641.GA24808@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130805081641.GA24808@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Powering down PLL before switching to a mode that does not use it
-is a bad idea. It would cause the SGTL5000 be without internal
-clock supply, especially on the I2C interface, which would make
-subsequent access to it fail.
+On Mon, Aug 05, 2013 at 10:16:41AM +0200, Ingo Molnar wrote:
+> If you want fewer dependencies then build with 'make NO_GTK=1'.
 
-Thus, in case of not using PLL any longer, first set the mode
-control, then power down PLL.
-
-Signed-off-by: Oskar Schirmer <oskar@scara.com>
----
- sound/soc/codecs/sgtl5000.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
-
-diff --git a/sound/soc/codecs/sgtl5000.c b/sound/soc/codecs/sgtl5000.c
-index 6c8a9e7..8ecb201 100644
---- a/sound/soc/codecs/sgtl5000.c
-+++ b/sound/soc/codecs/sgtl5000.c
-@@ -644,16 +644,19 @@ static int sgtl5000_set_clock(struct snd_soc_codec *codec, int frame_rate)
- 		snd_soc_update_bits(codec, SGTL5000_CHIP_ANA_POWER,
- 			SGTL5000_PLL_POWERUP | SGTL5000_VCOAMP_POWERUP,
- 			SGTL5000_PLL_POWERUP | SGTL5000_VCOAMP_POWERUP);
-+
-+		/* if using pll, clk_ctrl must be set after pll power up */
-+		snd_soc_write(codec, SGTL5000_CHIP_CLK_CTRL, clk_ctl);
- 	} else {
-+		/* otherwise, clk_ctrl must be set before pll power down */
-+		snd_soc_write(codec, SGTL5000_CHIP_CLK_CTRL, clk_ctl);
-+
- 		/* power down pll */
- 		snd_soc_update_bits(codec, SGTL5000_CHIP_ANA_POWER,
- 			SGTL5000_PLL_POWERUP | SGTL5000_VCOAMP_POWERUP,
- 			0);
- 	}
- 
--	/* if using pll, clk_ctrl must be set after pll power up */
--	snd_soc_write(codec, SGTL5000_CHIP_CLK_CTRL, clk_ctl);
--
- 	return 0;
- }
- 
--- 
-1.7.9.5
+Doesn't help the distros.  Installing perf and pulling all the graphics
+libraries in is highly annoying, especially in size constrained VM or
+Cloud images.  Having a separate binary or at least an ldopen()able
+plugin that can go into a separate package is highly desirable.
 
