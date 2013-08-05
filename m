@@ -1,46 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754198Ab3HERnc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 13:43:32 -0400
-Received: from mail-la0-f48.google.com ([209.85.215.48]:65129 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753452Ab3HERnb (ORCPT
+	id S1754523Ab3HERxT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 13:53:19 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:38030 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754497Ab3HERxQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 13:43:31 -0400
+	Mon, 5 Aug 2013 13:53:16 -0400
+Date: Mon, 5 Aug 2013 20:53:02 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Rupesh Gujare <rupesh.gujare@atmel.com>
+Cc: devel@linuxdriverproject.org, gregkh@linuxfoundation.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/4] staging: ozwpan: Increment port number for new
+ device.
+Message-ID: <20130805175302.GJ5051@mwanda>
+References: <1375724415-10801-1-git-send-email-rupesh.gujare@atmel.com>
+ <1375724415-10801-3-git-send-email-rupesh.gujare@atmel.com>
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFy61PbNZda8f+42T9e7TioWd+W1s70UA6h+xnARjX3usA@mail.gmail.com>
-References: <CA+55aFwTX47vLvZckozZub0rUEo-aCBe7weqe=4mfQGfrW7NUA@mail.gmail.com>
-	<CAMP44s2bOniz4qx5y9h4ppHRUjiPVGL+igSwO5NUJd4zpObxFw@mail.gmail.com>
-	<20130805132948.GA14942@redhat.com>
-	<CA+55aFy61PbNZda8f+42T9e7TioWd+W1s70UA6h+xnARjX3usA@mail.gmail.com>
-Date: Mon, 5 Aug 2013 12:43:29 -0500
-Message-ID: <CAMP44s3UGH8Aq-L3CsJ6BFFjZPBG18Gob6_avHMsz8rnrse51g@mail.gmail.com>
-Subject: Re: Linux 3.11-rc4
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1375724415-10801-3-git-send-email-rupesh.gujare@atmel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 5, 2013 at 12:39 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
+On Mon, Aug 05, 2013 at 06:40:13PM +0100, Rupesh Gujare wrote:
+> This patch fixes crash issue when there is quick cycle of
+> de-enumeration & enumeration due to loss of wireless link.
+> 
+> It is found that sometimes new device (or coming back device)
+> returns very fast, even before USB core read out hub status,
+> resulting in allocation of same port, which results in unstable
+> system & crash.
+> 
+> Above issue is resolved by making sure that we always assign
+> new port to new device, making sure that USB core reads correct
+> hub status.
+> 
 
-> That said, Felipe, can you double-check that it's not timing-related
-> in some subtle way, and test multiple times with just that commit
-> reverted (and not reverted) to make sure that it's 100% that one
-> single line by that particular commit? Because it does seem very
-> benign..
+This feels like papering over the problem.  Surely the real fix
+would be to improve the reference counting.
 
-I tested perhaps dozens of times with the patch, and every one of them
-failed. I tested at least 6 times with the patch reverted, every one
-of them worked.
+This patch is probably effective but it makes the code more subtle
+and it shows that we don't really understand what we are doing with
+regards to reference counting.
 
-I'm fairly certain that it's 100% reproducible, so it doesn't seem to be a race.
+regards,
+dan carpenter
 
-But I'll double-check.
-
--- 
-Felipe Contreras
