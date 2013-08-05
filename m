@@ -1,47 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754292Ab3HEVN1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 17:13:27 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:22025 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753609Ab3HEVNZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 17:13:25 -0400
-Message-ID: <52001564.1010800@oracle.com>
-Date: Mon, 05 Aug 2013 17:13:08 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S1754378Ab3HEVO0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 17:14:26 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57452 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753980Ab3HEVOZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 17:14:25 -0400
+Message-ID: <5200159D.1010106@zytor.com>
+Date: Mon, 05 Aug 2013 14:14:05 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Kent Overstreet <kent.overstreet@gmail.com>
-CC: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        trinity@vger.kernel.org
-Subject: Re: percpu: kernel BUG at mm/percpu.c:579!
-References: <51FFBB7D.70608@oracle.com> <20130805145736.GB19631@mtj.dyndns.org> <20130805191517.GA9198@kmo-pixel>
-In-Reply-To: <20130805191517.GA9198@kmo-pixel>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Ondrej Zajicek <santiago@crfreenet.org>
+CC: David Miller <davem@davemloft.net>, dh.herrmann@gmail.com,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        plagnioj@jcrosoft.com, tomi.valkeinen@ti.com,
+        Ondrej Zary <linux@rainbow-software.org>
+Subject: Re: [PATCH] fbdev: suppress warning when assigning vga-save/restore
+ base
+References: <1375637141-2878-1-git-send-email-dh.herrmann@gmail.com> <51FE907A.2090201@zytor.com> <20130804.185146.1621476659301936865.davem@davemloft.net> <20130805202955.GH22789@localhost> <520012D4.7020701@zytor.com>
+In-Reply-To: <520012D4.7020701@zytor.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/05/2013 03:15 PM, Kent Overstreet wrote:
->>  From percpu_ref release path.  Kent?
->  From the backtrace I have no idea if this was from the aio code using it
-> or the cgroup code - Sasha, any idea?
->
-> AIO is probably more likely, I'm going to look to see if I can find
-> anything...
+On 08/05/2013 02:02 PM, H. Peter Anvin wrote:
+> On 08/05/2013 01:29 PM, Ondrej Zajicek wrote:
+>>
+>> How this could even work? AFAIK these cards have to be explicitly programmed
+>> to enable MMIO (which was not done in the patches). These patches claim that
+>> it is for multi-domain PCI. I would guess that vgabase is NULL in common
+>> configurations but if it is non-NULL, it probably wouldn't work, unless
+>> there is some hardware magic that transparently converts MMIO (from CPU PoV)
+>> to port IO (from card/PCI PoV).
+>>
+> 
+> They presumably use iowrite/ioread, which use either I/O instructions or
+> memory instructions depending on the address.
+> 
 
-I honestly don't know. It ran under trinity so I'm not sure what the exact
-scenario is.
+So the confusion really is in the iowrite interface, which can take
+either a physical port address or a virtual memory address...
 
-I can't seem to hit it again easily so far, it seems that many people merged their
-work in the -next tree recently so I'm seeing multiple unrelated failures all over
-the place, which makes reproducing this one harder.
-
-
-Thanks,
-Sasha
+	-hpa
 
 
