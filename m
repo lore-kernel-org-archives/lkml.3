@@ -1,61 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755511Ab3HEWQ7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 18:16:59 -0400
-Received: from mga09.intel.com ([134.134.136.24]:21609 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755357Ab3HEWQ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 18:16:57 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,821,1367996400"; 
-   d="scan'208";a="376604381"
-From: Andi Kleen <andi@firstfloor.org>
-To: linux-kernel@vger.kernel.org
-Cc: Andi Kleen <ak@linux.intel.com>, wim@iguana.be
-Subject: [PATCH] lto, watchdog/hpwdt.c: Make assembler label global
-Date: Mon,  5 Aug 2013 15:16:39 -0700
-Message-Id: <1375740999-8097-1-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.8.3.1
+	id S1755604Ab3HEWUf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 18:20:35 -0400
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:47759 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754946Ab3HEWU3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 18:20:29 -0400
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: David Airlie <airlied@linux.ie>, Darren Etheridge <detheridge@ti.com>,
+        Rob Clark <robdclark@gmail.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 0/8] Several NXP TDA998x patches
+Date: Tue,  6 Aug 2013 00:20:10 +0200
+Message-Id: <1375741218-10225-1-git-send-email-sebastian.hesselbarth@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+This patch set picks up several patches sent during the past months
+related with NXP TDA998x HDMI transmitter driver. The patches have
+been tested on Marvell Dove (Armada DRM) on several HDMI modes with
+audio playing on S/PDIF. I have also quickly tested on Beaglebone
+Black (tilcdc) for one DVI mode.
 
-We cannot assume that the inline assembler code always ends up
-in the same file as the original C file. So make any assembler labels
-that are called with "extern" by C global
+As I squashed some patches and fixed some audio issues, it would
+be great to have a formal Tested-by or Acked-by from Russell and
+Darren for the whole patch set.
 
-Cc: wim@iguana.be
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Darren Etheridge (2):
+  drm/i2c: tda998x: prepare for broken sync workaround
+  drm/tilcdc fixup mode to workaound sync for tda998x
+
+Russell King (5):
+  drm/i2c: tda998x: fix EDID reading on TDA19988 devices
+  drm/i2c: tda998x: ensure VIP output mux is properly set
+  drm/i2c: tda998x: fix npix/nline programming
+  drm/i2c: tda998x: prepare for video input configuration
+  drm/i2c: tda998x: add video and audio input configuration
+
+Sebastian Hesselbarth (1):
+  drm/i2c: tda998x: fix sync generation and calculation
+
+ arch/arm/boot/dts/am335x-boneblack.dts |    2 +-
+ drivers/gpu/drm/i2c/tda998x_drv.c      |  526 +++++++++++++++++++++++++++-----
+ drivers/gpu/drm/tilcdc/tilcdc_crtc.c   |    7 +-
+ drivers/gpu/drm/tilcdc/tilcdc_slave.c  |   27 +-
+ include/drm/i2c/tda998x.h              |   23 ++
+ 5 files changed, 507 insertions(+), 78 deletions(-)
+ create mode 100644 include/drm/i2c/tda998x.h
+
 ---
- drivers/watchdog/hpwdt.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/watchdog/hpwdt.c b/drivers/watchdog/hpwdt.c
-index de7e4f4..5be5e3d 100644
---- a/drivers/watchdog/hpwdt.c
-+++ b/drivers/watchdog/hpwdt.c
-@@ -162,7 +162,8 @@ extern asmlinkage void asminline_call(struct cmn_registers *pi86Regs,
- #define HPWDT_ARCH	32
- 
- asm(".text                          \n\t"
--    ".align 4                       \n"
-+    ".align 4                       \n\t"
-+    ".globl asminline_call	    \n"
-     "asminline_call:                \n\t"
-     "pushl       %ebp               \n\t"
-     "movl        %esp, %ebp         \n\t"
-@@ -352,7 +353,8 @@ static int detect_cru_service(void)
- #define HPWDT_ARCH	64
- 
- asm(".text                      \n\t"
--    ".align 4                   \n"
-+    ".align 4                   \n\t"
-+    ".globl asminline_call	\n"
-     "asminline_call:            \n\t"
-     "pushq      %rbp            \n\t"
-     "movq       %rsp, %rbp      \n\t"
+Cc: David Airlie <airlied@linux.ie>
+Cc: Darren Etheridge <detheridge@ti.com>
+Cc: Rob Clark <robdclark@gmail.com>
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: dri-devel@lists.freedesktop.org
+Cc: linux-kernel@vger.kernel.org
 -- 
-1.8.3.1
+1.7.10.4
 
