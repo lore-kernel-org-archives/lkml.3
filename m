@@ -1,80 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754601Ab3HES1w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 14:27:52 -0400
-Received: from filtteri1.pp.htv.fi ([213.243.153.184]:56877 "EHLO
-	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753699Ab3HES1u (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 14:27:50 -0400
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>, Viresh Kumar <viresh.kumar@linaro.org>,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        Ralf Baechle <ralf@linux-mips.org>
-Cc: linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
-        Julia Lawall <Julia.Lawall@lip6.fr>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>, stable@vger.kernel.org
-Subject: [PATCH v2] cpufreq: loongson2: fix broken cpufreq
-Date: Mon,  5 Aug 2013 21:27:12 +0300
-Message-Id: <1375727232-17796-1-git-send-email-aaro.koskinen@iki.fi>
-X-Mailer: git-send-email 1.8.3.2
+	id S1754585Ab3HES3D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 14:29:03 -0400
+Received: from mga01.intel.com ([192.55.52.88]:5610 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753699Ab3HES3C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 14:29:02 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,820,1367996400"; 
+   d="scan'208";a="376507597"
+Message-ID: <51FFEEEC.5060902@linux.intel.com>
+Date: Mon, 05 Aug 2013 11:29:00 -0700
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, gcc <gcc@gcc.gnu.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        David Daney <ddaney.cavm@gmail.com>,
+        Behan Webster <behanw@converseincode.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: Re: [RFC] gcc feature request: Moving blocks into sections
+References: <1375721715.22073.80.camel@gandalf.local.home>   <CA+55aFw_o=D-j_SRn=Y4LhHm-tEyuP1Je5ZHVTYxbVyLyDcLEg@mail.gmail.com>  <1375725328.22073.101.camel@gandalf.local.home>  <51FFEC56.6040206@linux.intel.com> <1375727010.22073.110.camel@gandalf.local.home>
+In-Reply-To: <1375727010.22073.110.camel@gandalf.local.home>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 42913c799 (MIPS: Loongson2: Use clk API instead of direct
-dereferences) broke the cpufreq functionality on Loongson2 boards:
-clk_set_rate() is called before the CPU frequency table is initialized,
-and therefore will always fail.
+On 08/05/2013 11:23 AM, Steven Rostedt wrote:
+> On Mon, 2013-08-05 at 11:17 -0700, H. Peter Anvin wrote:
+>> On 08/05/2013 10:55 AM, Steven Rostedt wrote:
+>>>
+>>> Well, as tracepoints are being added quite a bit in Linux, my concern is
+>>> with the inlined functions that they bring. With jump labels they are
+>>> disabled in a very unlikely way (the static_key_false() is a nop to skip
+>>> the code, and is dynamically enabled to a jump).
+>>>
+>>
+>> Have you considered using traps for tracepoints?  A trapping instruction
+>> can be as small as a single byte.  The downside, of course, is that it
+>> is extremely suppressed -- the trap is always expensive -- and you then
+>> have to do a lookup to find the target based on the originating IP.
+> 
+> No, never considered it, nor would I. Those that use tracepoints, do use
+> them extensively, and adding traps like this would probably cause
+> heissenbugs and make tracepoints useless.
+> 
+> Not to mention, how would we add a tracepoint to a trap handler?
+> 
 
-Fix by moving the clk_set_rate() after the table initialization.
-Tested on Lemote FuLoong mini-PC.
+Traps nest, that's why there is a stack.  (OK, so you don't want to take
+the same trap inside the trap handler, but that code should be very
+limited.)  The trap instruction just becomes very short, but rather
+slow, call-return.
 
-Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: stable@vger.kernel.org
----
+However, when you consider the cost you have to consider that the
+tracepoint is doing other work, so it may very well amortize out.
 
-	Changes since the first version
-	(http://marc.info/?l=linux-kernel&m=137357177225034&w=2):
+	-hpa
 
-	- Changed the subject prefix. I guess this should be merged through
-	  the cpufreq/PM instead of MIPS tree?
-
-	- Added ACK from Viresh Kumar.
-
- drivers/cpufreq/loongson2_cpufreq.c | 11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/cpufreq/loongson2_cpufreq.c b/drivers/cpufreq/loongson2_cpufreq.c
-index bb838b9..9536852 100644
---- a/drivers/cpufreq/loongson2_cpufreq.c
-+++ b/drivers/cpufreq/loongson2_cpufreq.c
-@@ -118,11 +118,6 @@ static int loongson2_cpufreq_cpu_init(struct cpufreq_policy *policy)
- 		clk_put(cpuclk);
- 		return -EINVAL;
- 	}
--	ret = clk_set_rate(cpuclk, rate);
--	if (ret) {
--		clk_put(cpuclk);
--		return ret;
--	}
- 
- 	/* clock table init */
- 	for (i = 2;
-@@ -130,6 +125,12 @@ static int loongson2_cpufreq_cpu_init(struct cpufreq_policy *policy)
- 	     i++)
- 		loongson2_clockmod_table[i].frequency = (rate * i) / 8;
- 
-+	ret = clk_set_rate(cpuclk, rate);
-+	if (ret) {
-+		clk_put(cpuclk);
-+		return ret;
-+	}
-+
- 	policy->cur = loongson2_cpufreq_get(policy->cpu);
- 
- 	cpufreq_frequency_table_get_attr(&loongson2_clockmod_table[0],
--- 
-1.8.3.2
 
