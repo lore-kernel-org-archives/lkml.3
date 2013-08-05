@@ -1,263 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753825Ab3HEQXk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 12:23:40 -0400
-Received: from mga03.intel.com ([143.182.124.21]:49485 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754548Ab3HEQVF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 12:21:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,819,1367996400"; 
-   d="scan'208";a="277956836"
-From: Adrian Hunter <adrian.hunter@intel.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH V9 07/14] perf tools: remove references to struct ip_event
-Date: Mon,  5 Aug 2013 19:26:27 +0300
-Message-Id: <1375719994-26482-8-git-send-email-adrian.hunter@intel.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1375719994-26482-1-git-send-email-adrian.hunter@intel.com>
-References: <1375719994-26482-1-git-send-email-adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
+	id S1754178Ab3HEQXu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 12:23:50 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:50129 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753942Ab3HEQXs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 12:23:48 -0400
+Date: Mon, 5 Aug 2013 17:23:42 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Ashish Chavan <ashish.chavan@kpitcummins.com>
+Cc: lrg <lrg@ti.com>, alsa-devel <alsa-devel@alsa-project.org>,
+        David Dajun Chen <david.chen@diasemi.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "kiran.padwal" <kiran.padwal@kpitcummins.com>
+Message-ID: <20130805162342.GS9858@sirena.org.uk>
+References: <20130708112613.GQ27646@sirena.org.uk>
+ <1373542576.9286.101.camel@matrix>
+ <20130717103651.GP22506@sirena.org.uk>
+ <1374482594.13726.11.camel@matrix>
+ <20130722100211.GP9858@sirena.org.uk>
+ <1375110386.21326.6.camel@matrix>
+ <20130729160157.GZ9858@sirena.org.uk>
+ <1375689331.28910.5.camel@matrix>
+ <20130805144201.GF9858@sirena.org.uk>
+ <1375717898.29528.23.camel@matrix>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="eLzwy7sDwuTm2pX7"
+Content-Disposition: inline
+In-Reply-To: <1375717898.29528.23.camel@matrix>
+X-Cookie: You will be awarded some great honor.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [alsa-devel] [PATCH] ASoC: codecs: da9055: Update driver name to
+ fix breakage due to pmic driver with same name
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-struct ip_event assumes fixeed positions for ip, pid
-and tid.  That is no longer true with the addition of
-PERF_SAMPLE_IDENTIFIER.  The information is anyway in
-struct sample, so use that instead.
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
----
- tools/perf/builtin-inject.c |  4 ++--
- tools/perf/builtin-kmem.c   |  4 ++--
- tools/perf/builtin-mem.c    |  2 +-
- tools/perf/builtin-script.c |  4 ++--
- tools/perf/builtin-top.c    | 11 ++++++-----
- tools/perf/util/build-id.c  |  8 ++++----
- tools/perf/util/event.c     |  6 +++---
- tools/perf/util/evsel.c     |  4 ++--
- tools/perf/util/session.c   |  8 +++++---
- 9 files changed, 27 insertions(+), 24 deletions(-)
+--eLzwy7sDwuTm2pX7
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
-index 0d4ae1d..ffacd46 100644
---- a/tools/perf/builtin-inject.c
-+++ b/tools/perf/builtin-inject.c
-@@ -198,7 +198,7 @@ static int perf_event__inject_buildid(struct perf_tool *tool,
- 
- 	cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
- 
--	thread = machine__findnew_thread(machine, event->ip.pid, event->ip.pid);
-+	thread = machine__findnew_thread(machine, sample->pid, sample->pid);
- 	if (thread == NULL) {
- 		pr_err("problem processing %d event, skipping it.\n",
- 		       event->header.type);
-@@ -206,7 +206,7 @@ static int perf_event__inject_buildid(struct perf_tool *tool,
- 	}
- 
- 	thread__find_addr_map(thread, machine, cpumode, MAP__FUNCTION,
--			      event->ip.ip, &al);
-+			      sample->ip, &al);
- 
- 	if (al.map != NULL) {
- 		if (!al.map->dso->hit) {
-diff --git a/tools/perf/builtin-kmem.c b/tools/perf/builtin-kmem.c
-index c324778..c2dff9c 100644
---- a/tools/perf/builtin-kmem.c
-+++ b/tools/perf/builtin-kmem.c
-@@ -305,8 +305,8 @@ static int process_sample_event(struct perf_tool *tool __maybe_unused,
- 				struct perf_evsel *evsel,
- 				struct machine *machine)
- {
--	struct thread *thread = machine__findnew_thread(machine, event->ip.pid,
--							event->ip.pid);
-+	struct thread *thread = machine__findnew_thread(machine, sample->pid,
-+							sample->pid);
- 
- 	if (thread == NULL) {
- 		pr_debug("problem processing %d event, skipping it.\n",
-diff --git a/tools/perf/builtin-mem.c b/tools/perf/builtin-mem.c
-index a8ff6d2..4274680 100644
---- a/tools/perf/builtin-mem.c
-+++ b/tools/perf/builtin-mem.c
-@@ -96,7 +96,7 @@ dump_raw_samples(struct perf_tool *tool,
- 		symbol_conf.field_sep,
- 		sample->tid,
- 		symbol_conf.field_sep,
--		event->ip.ip,
-+		sample->ip,
- 		symbol_conf.field_sep,
- 		sample->addr,
- 		symbol_conf.field_sep,
-diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index a021e70..8f6e84c 100644
---- a/tools/perf/builtin-script.c
-+++ b/tools/perf/builtin-script.c
-@@ -480,8 +480,8 @@ static int process_sample_event(struct perf_tool *tool __maybe_unused,
- 				struct machine *machine)
- {
- 	struct addr_location al;
--	struct thread *thread = machine__findnew_thread(machine, event->ip.pid,
--							event->ip.tid);
-+	struct thread *thread = machine__findnew_thread(machine, sample->pid,
-+							sample->tid);
- 
- 	if (thread == NULL) {
- 		pr_debug("problem processing %d event, skipping it.\n",
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index bbf4635..0ecec5f 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -690,7 +690,7 @@ static void perf_event__process_sample(struct perf_tool *tool,
- {
- 	struct perf_top *top = container_of(tool, struct perf_top, tool);
- 	struct symbol *parent = NULL;
--	u64 ip = event->ip.ip;
-+	u64 ip = sample->ip;
- 	struct addr_location al;
- 	int err;
- 
-@@ -700,10 +700,10 @@ static void perf_event__process_sample(struct perf_tool *tool,
- 		if (!seen)
- 			seen = intlist__new(NULL);
- 
--		if (!intlist__has_entry(seen, event->ip.pid)) {
-+		if (!intlist__has_entry(seen, sample->pid)) {
- 			pr_err("Can't find guest [%d]'s kernel information\n",
--				event->ip.pid);
--			intlist__add(seen, event->ip.pid);
-+				sample->pid);
-+			intlist__add(seen, sample->pid);
- 		}
- 		return;
- 	}
-@@ -838,7 +838,8 @@ static void perf_top__mmap_read_idx(struct perf_top *top, int idx)
- 			break;
- 		case PERF_RECORD_MISC_GUEST_KERNEL:
- 			++top->guest_kernel_samples;
--			machine = perf_session__find_machine(session, event->ip.pid);
-+			machine = perf_session__find_machine(session,
-+							     sample.pid);
- 			break;
- 		case PERF_RECORD_MISC_GUEST_USER:
- 			++top->guest_us_samples;
-diff --git a/tools/perf/util/build-id.c b/tools/perf/util/build-id.c
-index 0f9d27a..fb58409 100644
---- a/tools/perf/util/build-id.c
-+++ b/tools/perf/util/build-id.c
-@@ -18,14 +18,14 @@
- 
- int build_id__mark_dso_hit(struct perf_tool *tool __maybe_unused,
- 			   union perf_event *event,
--			   struct perf_sample *sample __maybe_unused,
-+			   struct perf_sample *sample,
- 			   struct perf_evsel *evsel __maybe_unused,
- 			   struct machine *machine)
- {
- 	struct addr_location al;
- 	u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
--	struct thread *thread = machine__findnew_thread(machine, event->ip.pid,
--							event->ip.pid);
-+	struct thread *thread = machine__findnew_thread(machine, sample->pid,
-+							sample->pid);
- 
- 	if (thread == NULL) {
- 		pr_err("problem processing %d event, skipping it.\n",
-@@ -34,7 +34,7 @@ int build_id__mark_dso_hit(struct perf_tool *tool __maybe_unused,
- 	}
- 
- 	thread__find_addr_map(thread, machine, cpumode, MAP__FUNCTION,
--			      event->ip.ip, &al);
-+			      sample->ip, &al);
- 
- 	if (al.map != NULL)
- 		al.map->dso->hit = 1;
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index ec494a3..6861d19 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -677,8 +677,8 @@ int perf_event__preprocess_sample(const union perf_event *event,
- 				  symbol_filter_t filter)
- {
- 	u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
--	struct thread *thread = machine__findnew_thread(machine, event->ip.pid,
--							event->ip.pid);
-+	struct thread *thread = machine__findnew_thread(machine, sample->pid,
-+							sample->pid);
- 
- 	if (thread == NULL)
- 		return -1;
-@@ -700,7 +700,7 @@ int perf_event__preprocess_sample(const union perf_event *event,
- 		machine__create_kernel_maps(machine);
- 
- 	thread__find_addr_map(thread, machine, cpumode, MAP__FUNCTION,
--			      event->ip.ip, al);
-+			      sample->ip, al);
- 	dump_printf(" ...... dso: %s\n",
- 		    al->map ? al->map->dso->long_name :
- 			al->level == 'H' ? "[hypervisor]" : "<not found>");
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index c2574dd..5bda6c5 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -1197,7 +1197,7 @@ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
- 		return -EFAULT;
- 
- 	if (type & PERF_SAMPLE_IP) {
--		data->ip = event->ip.ip;
-+		data->ip = *array;
- 		array++;
- 	}
- 
-@@ -1409,7 +1409,7 @@ int perf_event__synthesize_sample(union perf_event *event, u64 type,
- 	array = event->sample.array;
- 
- 	if (type & PERF_SAMPLE_IP) {
--		event->ip.ip = sample->ip;
-+		*array = sample->ip;
- 		array++;
- 	}
- 
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index d53dbfe..7c8d33d 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -840,7 +840,8 @@ static void dump_sample(struct perf_evsel *evsel, union perf_event *event,
- 
- static struct machine *
- 	perf_session__find_machine_for_cpumode(struct perf_session *session,
--					       union perf_event *event)
-+					       union perf_event *event,
-+					       struct perf_sample *sample)
- {
- 	const u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
- 
-@@ -852,7 +853,7 @@ static struct machine *
- 		if (event->header.type == PERF_RECORD_MMAP)
- 			pid = event->mmap.pid;
- 		else
--			pid = event->ip.pid;
-+			pid = sample->pid;
- 
- 		return perf_session__findnew_machine(session, pid);
- 	}
-@@ -958,7 +959,8 @@ static int perf_session_deliver_event(struct perf_session *session,
- 		hists__inc_nr_events(&evsel->hists, event->header.type);
- 	}
- 
--	machine = perf_session__find_machine_for_cpumode(session, event);
-+	machine = perf_session__find_machine_for_cpumode(session, event,
-+							 sample);
- 
- 	switch (event->header.type) {
- 	case PERF_RECORD_SAMPLE:
--- 
-1.7.11.7
+On Mon, Aug 05, 2013 at 09:21:37PM +0530, Ashish Chavan wrote:
+> On Mon, 2013-08-05 at 15:42 +0100, Mark Brown wrote:
 
+> > No, I'm talking about the same thing I was talking about originally.
+
+> Thanks for confirming it. From our view point, we still feel that it's
+> not a good design which requires an additional MFD component even to
+> support a stand alone CODEC chip. The way we look at it is, there are so
+
+What makes you say that a MFD is required for a standalone CODEC?
+
+> many stand alone CODEC drivers in kernel and most of them are fine
+> without the MFD stub. We wish that our DA9055 CODEC driver should also
+> be treated in the same way. Just placing it in a different hardware
+> package (together with PMIC, in this case) shouldn't necessitate any
+> changes in software. e.g. whether any chip is produced as a BGA
+> component or through hole component, has no effect on it's software.
+
+You only need to write the glue once, it'd probably take you less time
+than writing these e-mails...  Once you've handed the regmap to the ASoC
+core the code is identical.
+
+--eLzwy7sDwuTm2pX7
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR/9GLAAoJELSic+t+oim9OSgP/i0wQv6HLLKZ9dS5BeKMOee8
+NKLNTje/vYpHaW1qJATgw95OMDZFl42A/dRdpSY4CxZcQtIOTozwSBVO9lHIJMoL
+LTsfuUIdFUUIlTvlHDWIObquRdqren8ktmkBrTsvVISrj+6Gm9M/MErMMKwiQw3a
+jLAHvh7Q0biugfkCHFiVimvoIpSNVhMmnpce0U03Ry19m3YanFOf5s9qASC6BthO
+oi+Xr77dBDqT22CN/b/GyZ82TqlV4mxEac8PNQ0q55t3igeI5L8eSKaWfx8PrXUH
+XV4ZU+oG0e1S+navzcBItln6nEEsWpXiIrALEOVvVEaZknzfP5VEloyeMAAmZezc
+yWhSnAAVjAgQ9j61OXy8ZzxWg96cqiTkY8MNMGNVrW+MStKnyGzXsm6NQ0RfoOBT
+h2W3tdD0GvYTnlf6gTJ7xOXi2yXPYh0DKNPx3KSDO6YpHieBpjCilMCE+upsTuLf
+UZr7N01V0bsHJYRxyr7qD+Y5HrVH9sujnYOYVxpINuMx9gGlf4E+5fNRwBvW6z7m
+C9fFpoHyA5hQ+pPmP8ozuEWJZ7ciC8Afpw0EcGA9R7f/E74omMMqu8VVDITzywAd
+5UPYMmOdFuZz0JFwPLXVGuWiJf5RiD3XkEEGx8cl3A5KKKs90RW4YWXvE6PXx05E
+4y0WySPVGtWclrcJ0N6q
+=zP8W
+-----END PGP SIGNATURE-----
+
+--eLzwy7sDwuTm2pX7--
