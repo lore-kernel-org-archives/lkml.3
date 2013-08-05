@@ -1,99 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755389Ab3HEWIN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 18:08:13 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:50991 "EHLO mail.skyhub.de"
+	id S1755535Ab3HEWIY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 18:08:24 -0400
+Received: from mga09.intel.com ([134.134.136.24]:44377 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755106Ab3HEWIL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 18:08:11 -0400
-Date: Tue, 6 Aug 2013 00:08:08 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Laszlo Ersek <lersek@redhat.com>
-Cc: edk2-devel@lists.sourceforge.net, David Woodhouse <dwmw2@infradead.org>,
-        linux-efi@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
-        Gleb Natapov <gleb@redhat.com>, Matthew Garrett <mjg59@srcf.ucam.org>
-Subject: Re: [edk2] Corrupted EFI region
-Message-ID: <20130805220808.GC14067@pd.tnic>
-References: <20130805130258.GB31845@pd.tnic>
- <51FFAB13.4090603@redhat.com>
- <20130805140306.GD31845@pd.tnic>
- <51FFB660.4060400@redhat.com>
- <20130805144010.GE31845@pd.tnic>
- <51FFC19A.1020204@redhat.com>
- <20130805161247.GF31845@pd.tnic>
- <51FFD5B0.9080000@redhat.com>
- <20130805164731.GG31845@pd.tnic>
- <52001896.1030509@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <52001896.1030509@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755106Ab3HEWIU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 18:08:20 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,821,1367996400"; 
+   d="scan'208";a="357996933"
+Subject: Re: Performance regression from switching lock to rw-sem for
+ anon-vma tree
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        "Shi, Alex" <alex.shi@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        "Wilcox, Matthew R" <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-mm <linux-mm@kvack.org>
+In-Reply-To: <20130730192455.GA22259@gmail.com>
+References: <20130628093809.GB29205@gmail.com>
+	 <1372453461.22432.216.camel@schen9-DESK> <20130629071245.GA5084@gmail.com>
+	 <1372710497.22432.224.camel@schen9-DESK> <20130702064538.GB3143@gmail.com>
+	 <1373997195.22432.297.camel@schen9-DESK> <20130723094513.GA24522@gmail.com>
+	 <20130723095124.GW27075@twins.programming.kicks-ass.net>
+	 <20130723095306.GA26174@gmail.com> <1375143209.22432.419.camel@schen9-DESK>
+	 <20130730192455.GA22259@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 05 Aug 2013 15:08:23 -0700
+Message-ID: <1375740503.22432.429.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 05, 2013 at 11:26:46PM +0200, Laszlo Ersek wrote:
-> What happens if you pass "memblock=debug" on the kernel command line
-> (see early_memblock() in "mm/memblock.c")?
+On Tue, 2013-07-30 at 21:24 +0200, Ingo Molnar wrote:
+
+> > 
+> > Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
 > 
-> (I just tried it in my Fedora 19 guest, and it in fact produced the message
+> > +config RWSEM_SPIN_ON_WRITE_OWNER
+> > +	bool "Optimistic spin write acquisition for writer owned rw-sem"
+> > +	default n
+> > +	depends on SMP
+> > +	help
+> > +	  Allows a writer to perform optimistic spinning if another writer own
+> > +	  the read write semaphore.  If the lock owner is running, it is likely
+> > +	  to release the lock soon. Spinning gives a greater chance for writer to
+> > +	  acquire a semaphore before putting it to sleep.
 > 
-> [    0.000000] efi: Could not reserve boot range [0x0000800000-0x0000ffffff]
+> The way you've worded this new Kconfig option makes it 
+> sound as if it's not just for testing, and I'm not a big 
+> believer in extra Kconfig degrees of freedom for 
+> scalability features of core locking primitives like 
+> rwsems, in production kernels ...
+> 
+> So the bad news is that such scalability optimizations 
+> really need to work for everyone.
+> 
+> The good news is that I don't think there's anything 
+> particularly controversial about making the rwsem write 
+> side perform just as well as mutexes - it would in fact be 
+> a very nice quality of implementation feature: it gives 
+> people freedom to switch between mutexes and rwsems without 
+> having to worry about scalability differences too much.
+> 
 
-Note to self: Always look for bugs in Linux' UEFI code first, before
-going anywhere else!
+Sorry for replying to your email late as I was pulled to
+some other tasks.
 
-Yes, very good analysis and good job Laszlo!
-
-I'll write what I see now but will doublecheck it tomorrow because I'm
-almost half asleep.
-
-[    0.000000] efi: efi_reserve_boot_services:  -> start: 0x7e0ad000, size: 0x1f000
-[    0.000000] efi: Could not reserve boot range [0x007e0ad000-0x007e0cbfff]
-
-And yes, this fails because memblock_is_region_reserved(start, size)
-returns true.
-
-And why is that:
-
-[    0.000000] memblock_reserve: [0x000000036be000-0x000000036c3000] setup_arch+0x60e/0xa63
-[    0.000000] MEMBLOCK configuration:
-[    0.000000]  memory size = 0x7fef1000 reserved size = 0x1724570
-[    0.000000]  memory.cnt  = 0x4
-[    0.000000]  memory[0x0]     [0x00000000001000-0x0000000009ffff], 0x9f000 bytes
-[    0.000000]  memory[0x1]     [0x00000000100000-0x0000007e667fff], 0x7e568000 bytes
-[    0.000000]  memory[0x2]     [0x0000007e692000-0x0000007fb11fff], 0x1480000 bytes
-[    0.000000]  memory[0x3]     [0x0000007fb76000-0x0000007ffdffff], 0x46a000 bytes
-[    0.000000]  reserved.cnt  = 0x3
-[    0.000000]  reserved[0x0]   [0x0000000009f000-0x000000000fffff], 0x61000 bytes
-[    0.000000]  reserved[0x1]   [0x00000002000000-0x000000036c2fff], 0x16c3000 bytes
-[    0.000000]  reserved[0x2]   [0x0000007e0ad018-0x0000007e0ad587], 0x570 bytes
-					^^^^^^^^^
-
-There are 0x570 bytes right in this region which are memblock-reserved
-and so we truncate it in efi_reserve_boot_services().
-
-This makes me say words which will offend this list so I'll instead go
-out on the balcony and wake up the neighbors. :-)
-
-Ok, thanks again for finding it, I'll go and try to figure out the whole
-mess tomorrow.
-
-Good night!
-
-> BTW, regarding Michael's answer, I think this is just one of several
-> ways in which Linux manipulates the EFI memmap between (b) and (c).
-> For example it seems to merge ranges in the map.
-
-Yes, it does so in efi_enter_virtual_mode(). That was my initial
-suspicion, that's why I dumped the regions before the merging.
+Ingo, any objection if I make the optimistic writer spin the
+default for SMP without an extra config? This will make 
+the rw_semaphore structure grow a bit to accommodate the
+owner and spin_mlock field.
 
 Thanks.
 
--- 
-Regards/Gruss,
-    Boris.
+Tim
+> Once readers are mixed into the workload can we keep the 
+> XFS assumptions, if they are broken in any way?
+> 
+> We are spinning here so we have full awareness about the 
+> state of the lock and we can react to a new reader in very 
+> short order - so at a quick glance I don't see any 
+> fundamental difficulty in being able to resolve it - beyond 
+> the SMOP aspect that is ... :-)
+> 
+> Thanks,
+> 
+> 	Ingo
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+
