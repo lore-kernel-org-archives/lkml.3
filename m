@@ -1,219 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752041Ab3HEMBG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 08:01:06 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50416 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751329Ab3HEMBF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 08:01:05 -0400
-Date: Mon, 5 Aug 2013 14:00:58 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Peter De Wachter <pdewacht@gmail.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Bernhard Seibold <mail@bernhard-seibold.de>
-Subject: Re: [PATCH] hid: add driver for IBM/Lenovo ScrollPoint mice
-In-Reply-To: <1372804951-7135-1-git-send-email-pdewacht@gmail.com>
-Message-ID: <alpine.LNX.2.00.1308051357210.17512@pobox.suse.cz>
-References: <1372804951-7135-1-git-send-email-pdewacht@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1751913Ab3HEMCC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 08:02:02 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:56847 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751303Ab3HEMCA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 08:02:00 -0400
+Date: Mon, 5 Aug 2013 13:01:35 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Yadwinder Singh Brar <yadi.brar@samsung.com>
+Cc: Axel Lin <axel.lin@ingics.com>, Sangbeom Kim <sbkim73@samsung.com>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Message-ID: <20130805120135.GB9858@sirena.org.uk>
+References: <57.FA.25608.C0F3FF15@epcpsbgx1.samsung.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="qiQf2TmL+bN2VTAD"
+Content-Disposition: inline
+In-Reply-To: <57.FA.25608.C0F3FF15@epcpsbgx1.samsung.com>
+X-Cookie: You will be awarded some great honor.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: Re: regulator: s2mps11: Question about the code updating
+ ramp_delay setting
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-[ Bernhard added to CC ]
+--qiQf2TmL+bN2VTAD
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-On Wed, 3 Jul 2013, Peter De Wachter wrote:
+On Mon, Aug 05, 2013 at 05:58:36AM +0000, Yadwinder Singh Brar wrote:
+> <HTML><HEAD><TITLE>Samsung Enterprise Portal mySingle</TITLE>
+> <META content="text/html; charset=windows-1252" http-equiv=Content-Type>
 
-> IBM Scrollpoint have a trackpoint-like gizmo instead of a scroll wheel,
-> which allows for two-dimensional scrolling. This driver provides an
-> input mapping to make that work.
-> 
-> The scrollpoint is also much more sensitive than a typical mouse wheel.
-> X can use this to provide smooth scrolling, but the kernel doesn't seem
-> to have a way to communicate this fact. As a result this mouse simply
-> scrolls way too fast. For now I've created an xorg patch to provide a
-> manual setting (fdo #48118).
-> 
-> Signed-off-by: Peter De Wachter <pdewacht@gmail.com>
+Please fix your mailer to send plain text mails, or at least provide a
+text/plain alternative.
 
-Hi,
+--qiQf2TmL+bN2VTAD
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-thanks for the driver.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
-I'd like to ask you to put a few more effort into this, unifying this a 
-little bit more with the existing driver for Lenovo devices we aready have 
-in the tree -- hid-lenovo-tpkbd.
+iQIcBAEBAgAGBQJR/5QcAAoJELSic+t+oim9b0gP/RydmJXmZdybrOZYNwPnCXni
+A9H3QaGUgN/k20rZ4VPtsW/+oWo1S4P93kc2wxTTUe5s+Wi88cjuptDE2HMJaeIq
+FU0Fxz8oRBEUo6WtLL1LmzBQawlinA4e759RfYQN5n8AXCrwU1Gix2c8U2d6fVrI
+0aKibOZpVZn0Zr8OW+egeoaGWDI80cJddvCZB8JxQDCiZTzgPPG0jSr2JK19lZm4
+FD9FISM6C5Jqe53PT3b4jD8l/zIa0lGN1y0kFx584f/hc1Bkqb1HzAvqrvL3Z9hY
+gAEndWV93tPWuMG5c+s40ON+JdguHp3BibO8nKF/cymSAuD+3CdUivEsodT0WhQ0
+m4SisQ88vDeOvHMY0BEY4Bq5ieNttp/CkTM3W5MnUZ7oq4h+T36P8X1TcqQKVd6Z
+53UCf3gccX3gtzh1TgadHmvKIXv6L2XY5rZhuatwUjadW2wCIkKO1c5e5XfxmJ/x
+qQBvXN87EEZqk8j2v8n1nSNqIAH9JUFq7YlfABgsZ+2IuxnLylE0rcPFzooJuQOG
+ma+qUbDdzdExzLN5+38oNvmKOrnG+gHd6MjqmKDZWnQcQs5+jQVqNi6K8oD8vt6b
+YYW7gxCivV2RtS61YPQoZh3L3ioDfExxgLVM/PWjgJyZsxUHfF+Ln+zNg0dsfScp
+AvEnglZkDsmQZxI9XtVg
+=LgWF
+-----END PGP SIGNATURE-----
 
-As most of the drivers are divided on a per-vendor basis anyway, what I'd 
-probably like to see the most would be:
-
-- drop HID_LENOVO_TPKBD (*)
-- create HID_LENOVO
-- rename your driver to hid-lenovo-scrollpoint
-- build both hid-lenovo-tpkbd and hid-lenovo-scrollpoint when HID_LENOVO 
-  is set
-
-(*) or keep it for compatibility reasons, but make it just an alias for 
-CONFIG_HID_LENOVO.
-
-Sounds feasible?
-
-> ---
->  drivers/hid/Kconfig           |  8 ++++++
->  drivers/hid/Makefile          |  1 +
->  drivers/hid/hid-core.c        |  7 +++++
->  drivers/hid/hid-ids.h         |  7 +++++
->  drivers/hid/hid-scrollpoint.c | 67 +++++++++++++++++++++++++++++++++++++++++++
->  5 files changed, 90 insertions(+)
->  create mode 100644 drivers/hid/hid-scrollpoint.c
-> 
-> diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
-> index fb52f3f..fdc49ca 100644
-> --- a/drivers/hid/Kconfig
-> +++ b/drivers/hid/Kconfig
-> @@ -593,6 +593,14 @@ config HID_SAMSUNG
->  	---help---
->  	Support for Samsung InfraRed remote control or keyboards.
->  
-> +config HID_SCROLLPOINT
-> +	tristate "IBM/Lenovo ScrollPoint mice"
-> +	depends on HID
-> +	---help---
-> +	Support for IBM/Lenovo ScrollPoint mice.
-> +	Say Y here if you have a ScrollPoint mouse and want horizontal
-> +	scrolling to work.
-> +
->  config HID_SONY
->  	tristate "Sony PS3 controller"
->  	depends on USB_HID
-> diff --git a/drivers/hid/Makefile b/drivers/hid/Makefile
-> index 2065694..4a4c279 100644
-> --- a/drivers/hid/Makefile
-> +++ b/drivers/hid/Makefile
-> @@ -99,6 +99,7 @@ obj-$(CONFIG_HID_ROCCAT)	+= hid-roccat.o hid-roccat-common.o \
->  	hid-roccat-lua.o hid-roccat-pyra.o hid-roccat-savu.o
->  obj-$(CONFIG_HID_SAITEK)	+= hid-saitek.o
->  obj-$(CONFIG_HID_SAMSUNG)	+= hid-samsung.o
-> +obj-$(CONFIG_HID_SCROLLPOINT)	+= hid-scrollpoint.o
->  obj-$(CONFIG_HID_SMARTJOYPLUS)	+= hid-sjoy.o
->  obj-$(CONFIG_HID_SONY)		+= hid-sony.o
->  obj-$(CONFIG_HID_SPEEDLINK)	+= hid-speedlink.o
-> diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-> index 264f550..003f419 100644
-> --- a/drivers/hid/hid-core.c
-> +++ b/drivers/hid/hid-core.c
-> @@ -1584,6 +1584,13 @@ static const struct hid_device_id hid_have_special_driver[] = {
->  	{ HID_USB_DEVICE(USB_VENDOR_ID_GYRATION, USB_DEVICE_ID_GYRATION_REMOTE_3) },
->  	{ HID_USB_DEVICE(USB_VENDOR_ID_HOLTEK, USB_DEVICE_ID_HOLTEK_ON_LINE_GRIP) },
->  	{ HID_USB_DEVICE(USB_VENDOR_ID_HOLTEK_ALT, USB_DEVICE_ID_HOLTEK_ALT_KEYBOARD) },
-> +#if IS_ENABLED(CONFIG_HID_SCROLLPOINT)
-> +	{ HID_USB_DEVICE(USB_VENDOR_ID_IBM, USB_DEVICE_ID_IBM_SCROLLPOINT_III) },
-> +	{ HID_USB_DEVICE(USB_VENDOR_ID_IBM, USB_DEVICE_ID_IBM_SCROLLPOINT_PRO) },
-> +	{ HID_USB_DEVICE(USB_VENDOR_ID_IBM, USB_DEVICE_ID_IBM_SCROLLPOINT_OPTICAL) },
-> +	{ HID_USB_DEVICE(USB_VENDOR_ID_IBM, USB_DEVICE_ID_IBM_SCROLLPOINT_800DPI_OPTICAL) },
-> +	{ HID_USB_DEVICE(USB_VENDOR_ID_IBM, USB_DEVICE_ID_IBM_SCROLLPOINT_800DPI_OPTICAL_PRO) },
-> +#endif
->  	{ HID_USB_DEVICE(USB_VENDOR_ID_JESS2, USB_DEVICE_ID_JESS2_COLOR_RUMBLE_PAD) },
->  	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_ION, USB_DEVICE_ID_ICADE) },
->  	{ HID_USB_DEVICE(USB_VENDOR_ID_KENSINGTON, USB_DEVICE_ID_KS_SLIMBLADE) },
-> diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-> index 38535c9..f813fab 100644
-> --- a/drivers/hid/hid-ids.h
-> +++ b/drivers/hid/hid-ids.h
-> @@ -441,6 +441,13 @@
->  #define USB_VENDOR_ID_HOLTEK_ALT		0x04d9
->  #define USB_DEVICE_ID_HOLTEK_ALT_KEYBOARD	0xa055
->  
-> +#define USB_VENDOR_ID_IBM					0x04b3
-> +#define USB_DEVICE_ID_IBM_SCROLLPOINT_III			0x3100
-> +#define USB_DEVICE_ID_IBM_SCROLLPOINT_PRO			0x3103
-> +#define USB_DEVICE_ID_IBM_SCROLLPOINT_OPTICAL			0x3105
-> +#define USB_DEVICE_ID_IBM_SCROLLPOINT_800DPI_OPTICAL		0x3108
-> +#define USB_DEVICE_ID_IBM_SCROLLPOINT_800DPI_OPTICAL_PRO	0x3109
-> +
->  #define USB_VENDOR_ID_IMATION		0x0718
->  #define USB_DEVICE_ID_DISC_STAKKA	0xd000
->  
-> diff --git a/drivers/hid/hid-scrollpoint.c b/drivers/hid/hid-scrollpoint.c
-> new file mode 100644
-> index 0000000..48e7696
-> --- /dev/null
-> +++ b/drivers/hid/hid-scrollpoint.c
-> @@ -0,0 +1,67 @@
-> +/*
-> + * HID driver for IBM/Lenovo ScrollPoint mice
-> + *
-> + * Copyright (c) 2012 Peter De Wachter <pdewacht@gmail.com>
-> + */
-> +
-> +/*
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms of the GNU General Public License as published by the Free
-> + * Software Foundation; either version 2 of the License, or (at your option)
-> + * any later version.
-> + */
-> +
-> +#include <linux/device.h>
-> +#include <linux/hid.h>
-> +#include <linux/module.h>
-> +
-> +#include "hid-ids.h"
-> +
-> +static int scrollpoint_input_mapping(struct hid_device *hdev,
-> +		struct hid_input *hi, struct hid_field *field,
-> +		struct hid_usage *usage, unsigned long **bit, int *max)
-> +{
-> +	if (usage->hid == HID_GD_Z) {
-> +		hid_map_usage(hi, usage, bit, max, EV_REL, REL_HWHEEL);
-> +		return 1;
-> +	}
-> +	return 0;
-> +}
-> +
-> +static const struct hid_device_id scrollpoint_devices[] = {
-> +	{ HID_USB_DEVICE(USB_VENDOR_ID_IBM,
-> +		USB_DEVICE_ID_IBM_SCROLLPOINT_III) },
-> +	{ HID_USB_DEVICE(USB_VENDOR_ID_IBM,
-> +		USB_DEVICE_ID_IBM_SCROLLPOINT_PRO) },
-> +	{ HID_USB_DEVICE(USB_VENDOR_ID_IBM,
-> +		USB_DEVICE_ID_IBM_SCROLLPOINT_OPTICAL) },
-> +	{ HID_USB_DEVICE(USB_VENDOR_ID_IBM,
-> +		USB_DEVICE_ID_IBM_SCROLLPOINT_800DPI_OPTICAL) },
-> +	{ HID_USB_DEVICE(USB_VENDOR_ID_IBM,
-> +		USB_DEVICE_ID_IBM_SCROLLPOINT_800DPI_OPTICAL_PRO) },
-> +	{ }
-> +};
-> +MODULE_DEVICE_TABLE(hid, scrollpoint_devices);
-> +
-> +static struct hid_driver scrollpoint_driver = {
-> +	.name = "scrollpoint",
-> +	.id_table = scrollpoint_devices,
-> +	.input_mapping = scrollpoint_input_mapping
-> +};
-> +
-> +static int __init scrollpoint_init(void)
-> +{
-> +	return hid_register_driver(&scrollpoint_driver);
-> +}
-> +
-> +static void __exit scrollpoint_exit(void)
-> +{
-> +	hid_unregister_driver(&scrollpoint_driver);
-> +}
-> +
-> +module_init(scrollpoint_init);
-> +module_exit(scrollpoint_exit);
-> +
-> +MODULE_AUTHOR("Peter De Wachter");
-> +MODULE_DESCRIPTION("IBM/Lenovo ScrollPoint mouse driver");
-> +MODULE_LICENSE("GPL");
-> -- 
-> 1.8.3.2
-> 
-
--- 
-Jiri Kosina
-SUSE Labs
+--qiQf2TmL+bN2VTAD--
