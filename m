@@ -1,222 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754070Ab3HEAZR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Aug 2013 20:25:17 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:54783 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754010Ab3HEAZP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Aug 2013 20:25:15 -0400
-X-Spam-Score: -100.8
-Message-ID: <51FEF0AC.8040804@asianux.com>
-Date: Mon, 05 Aug 2013 08:24:12 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Chen Gang F T <chen.gang.flying.transformer@gmail.com>
-CC: Joe Perches <joe@perches.com>, "'Jiri Kosina'" <trivial@kernel.org>,
-        jaharkes@cs.cmu.edu, coda@cs.cmu.edu,
-        codalist@TELEMANN.coda.cs.cmu.edu,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH trivial] include/linux/coda.h: remove useless '#else'
-References: <51F76B7D.2090602@asianux.com> <1375187380.2075.111.camel@joe-AO722> <51F86C08.3080805@asianux.com> <51F86E1A.60404@asianux.com> <51F8818C.7030703@gmail.com>
-In-Reply-To: <51F8818C.7030703@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1754090Ab3HEA3p (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Aug 2013 20:29:45 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60787 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754015Ab3HEA3o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Aug 2013 20:29:44 -0400
+Date: Mon, 5 Aug 2013 10:29:17 +1000
+From: NeilBrown <neilb@suse.de>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
+        Ning Qu <quning@google.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 15/23] mm, fs: avoid page allocation beyond i_size on
+ read
+Message-ID: <20130805102917.315976e5@notabene.brown>
+In-Reply-To: <1375582645-29274-16-git-send-email-kirill.shutemov@linux.intel.com>
+References: <1375582645-29274-1-git-send-email-kirill.shutemov@linux.intel.com>
+	<1375582645-29274-16-git-send-email-kirill.shutemov@linux.intel.com>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.18; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/TN0Ce_QHwvPupUYNU45S851"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/31/2013 11:16 AM, Chen Gang F T wrote:
-> On 07/31/2013 09:53 AM, Chen Gang wrote:
->> On 07/31/2013 09:44 AM, Chen Gang wrote:
->>> On 07/30/2013 08:29 PM, Joe Perches wrote:
->>>> On Tue, 2013-07-30 at 15:30 +0800, Chen Gang wrote:
->>>>> '#else' is useless, need remove.
->>>>>
->>>>> Signed-off-by: Chen Gang <gang.chen@asianux.com>
->>>>> ---
->>>>>  include/linux/coda.h |    1 -
->>>>>  1 files changed, 0 insertions(+), 1 deletions(-)
->>>>>
->>>>> diff --git a/include/linux/coda.h b/include/linux/coda.h
->>>>> index cff544f..d30209b 100644
->>>>> --- a/include/linux/coda.h
->>>>> +++ b/include/linux/coda.h
->>>>> @@ -60,7 +60,6 @@ Mellon the rights to redistribute these changes without encumbrance.
->>>>>  
->>>>>  #if defined(__linux__)
->>>>>  typedef unsigned long long u_quad_t;
->>>>> -#else
->>>>>  #endif
->>>>>  #include <uapi/linux/coda.h>
->>>>>  #endif 
->>>>
->>>> Why have the #if at all?
->>>>
+--Sig_/TN0Ce_QHwvPupUYNU45S851
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Hmm... if any members have some questions about the fix, commonly it
-means the related fix need additional improvement.
+On Sun,  4 Aug 2013 05:17:17 +0300 "Kirill A. Shutemov"
+<kirill.shutemov@linux.intel.com> wrote:
 
-Is it better to use BUILD_BUG() for the fix ?  e.g. the diff may like
-below (based on the applied patch):
+> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+>=20
+> I've noticed that we allocated unneeded page for cache on read beyond
+> i_size. Simple test case (I checked it on ramfs):
+>=20
+> $ touch testfile
+> $ cat testfile
+>=20
+> It triggers 'no_cached_page' code path in do_generic_file_read().
+>=20
+> Looks like it's regression since commit a32ea1e. Let's fix it.
+>=20
+> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> Cc: NeilBrown <neilb@suse.de>
+> ---
+>  mm/filemap.c | 4 ++++
+>  1 file changed, 4 insertions(+)
+>=20
+> diff --git a/mm/filemap.c b/mm/filemap.c
+> index 066bbff..c31d296 100644
+> --- a/mm/filemap.c
+> +++ b/mm/filemap.c
+> @@ -1163,6 +1163,10 @@ static void do_generic_file_read(struct file *filp=
+, loff_t *ppos,
+>  		loff_t isize;
+>  		unsigned long nr, ret;
+> =20
+> +		isize =3D i_size_read(inode);
+> +		if (!isize || index > (isize - 1) >> PAGE_CACHE_SHIFT)
+> +			goto out;
+> +
+>  		cond_resched();
+>  find_page:
+>  		page =3D find_get_page(mapping, index);
 
------------------------------diff begin----------------------------
+Looks good to me.
 
-diff --git a/include/linux/coda.h b/include/linux/coda.h
-index d30209b..5f87d5d 100644
---- a/include/linux/coda.h
-+++ b/include/linux/coda.h
-@@ -60,6 +60,11 @@ Mellon the rights to redistribute these changes without encumbrance.
- 
- #if defined(__linux__)
- typedef unsigned long long u_quad_t;
--#endif
-+#else
-+#include <linux/bug.h>
-+BUILD_BUG();
-+#endif /* !__linux__ */
-+
- #include <uapi/linux/coda.h>
-+
- #endif 
+Acked-by: NeilBrown <neilb@suse.de>
 
------------------------------diff end------------------------------
+Thanks,
+NeilBrown
 
+--Sig_/TN0Ce_QHwvPupUYNU45S851
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-Thanks.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
 
+iQIVAwUBUf7x3Tnsnt1WYoG5AQKnxA//Xeu579goDJa3UAOJn8qIIfXGnCI6T24M
+hRmhG+FPLHVm8FwfD6WzoLNXy/Y8VIqKCIP1y36DocTxHcNzlKkJvlvrhJJezt7E
+0Owc6T1shHaxs3wYCr6KwJZWPddJT2piq+PSLe8fV0L3PmTTOsKcNbP+e/tLt0uk
+fW+YL7BoShQiOPs+Bmj9VRntqTLBMZiIBkNmCTJPDluAkSb/dGuWsMiWy+G8jLMi
+vVkEkvDTi1qQ6sv97nMZWQC9Sj4p7+qLg/ZUSnINz5bVno8A6EEx8MVu29khhiKw
+bQwuQCY6uYDIvmu1oHQVI8xK495YkUsiMTA9DOQ+Bua+UXI0TFa+LKHzAoE/g6Ok
+axI56Bimq39xjl5DwzjUhSbfqFds4iLcbccw9w1Jin0Oh7wc1FHQOc0V6PfisESw
+m5iidTB75AtMVjDiTXtXUOppUTA5Z2Lz34sFU0NQAKkozaBfzoY4IhZHNXuBgjOd
+Ya/smkoCwXIKWDqAnZHl1WvG+OKQw/wZcsTx00RYQ87JVOJ99T/Pyg8NuoQ41J3x
+77JuCnY8R3hahGVO3/EgrrVt1CkX2Bm4GhisgbyRMehur/Hm8sQUOq3q3fdjX0vd
+JX5D3O5I8oAjZVasV68NPhT0kMnPglSAZBwJV35Nb7vA0v4babiedViVk8JfQzAk
+y7WLUMDnbT0=
+=h+wg
+-----END PGP SIGNATURE-----
 
->>>>
->>>>
->>>
-> 
-> OH, sorry, what I said about openrisc cross-compiler is not precise.
-> 
-> Need a patch for openrisc (just like another architectures have done):
-> 
-> -------------------------------diff begin-------------------------------
-> 
-> diff --git a/arch/openrisc/Makefile b/arch/openrisc/Makefile
-> index 4739b83..89076a6 100644
-> --- a/arch/openrisc/Makefile
-> +++ b/arch/openrisc/Makefile
-> @@ -24,7 +24,7 @@ OBJCOPYFLAGS    := -O binary -R .note -R .comment -S
->  LDFLAGS_vmlinux :=
->  LIBGCC 		:= $(shell $(CC) $(KBUILD_CFLAGS) -print-libgcc-file-name)
->  
-> -KBUILD_CFLAGS	+= -pipe -ffixed-r10
-> +KBUILD_CFLAGS	+= -pipe -ffixed-r10 -D__linux__
->  
->  ifeq ($(CONFIG_OPENRISC_HAVE_INST_MUL),y)
->  	KBUILD_CFLAGS += $(call cc-option,-mhard-mul)
-> 
-> -------------------------------diff end---------------------------------
-> 
-> But for "include/linux/coda.h", I still suggest to check __linux__
-> whether defined, at least it can find the building issues.
-> 
-> And next, I will send the related patch to openrisc mailing list.
-> 
-> :-)
-> 
-> Thanks.
-> 
->>> Hmm... some old version compilers do not define __linux__ automatically
->>> (e.g. or32-linux-gcc 4.5.1-or32-1.0rc1, which is the latest cross
->>> compiler for openrisc, though).
->>>
->>> If not define __linux__, the compiler will report error (u_quad_t is
->>> not defined).
->>>
->>> When we remove "#if defined(__linux__)" from "include/linux/coda.h",
->>> the compiler will not report error, and 'cdev_t' will be defined as
->>> 'dev_t', not 'u_quad_t' (I guess, it is an implicit bug).
->>>
->>>
->>> In "uapi/include/*", only "coda.h" has "#if defined(__linux__)", maybe
->>> they want multiple OS can share the same "coda.h" file (at least, we
->>> can not say it is a bad idea).
->>>
->>> Neither suitable to define __linux__ in "include/linux/coda.h".
->>>
->>>
->>> All together, I think:
->>>
->>>   the direct cause:
->>>     "uapi/include/coda.h" wants to share itself for multiple OS (so they need check __linux__).
->>>       (in "uapi/include/*", only coda.h need check __linux__)
->>>
->>>   the root cause:
->>>     the compiler for linux should define __linux__ automatically, the latest version of gcc has done, but some of the old version is not.
->>>     most of cross compilers have merged their code into gcc main tree, but still left some (e.g. openrisc).
->>>       (at least, I can not build openrisc from gcc main tree correctly, but most of others can)
->>>     some of latest cross compilers still use old version of gcc, (still not define __linux__ automatically).
->>>
->>
->> Maybe what I said is incorrect (it is just my current understanding).
->>
->> Welcome any other members' suggestions or completions for discussing and
->> checking.
->>
->> Thanks.
->>
->>>
->>> The related code in "uapi/linux/coda.h" is below:
->>>
->>> -------------------------------code begin-------------------------------
->>>
->>>  73 #if defined(DJGPP) || defined(__CYGWIN32__)
->>>  74 #ifdef KERNEL
->>>  75 typedef unsigned long u_long;
->>>  76 typedef unsigned int u_int;
->>>  77 typedef unsigned short u_short;
->>>  78 typedef u_long ino_t;
->>>  79 typedef u_long dev_t;
->>>  80 typedef void * caddr_t;
->>>  81 #ifdef DOS
->>>  82 typedef unsigned __int64 u_quad_t;
->>>  83 #else
->>>  84 typedef unsigned long long u_quad_t;
->>>  85 #endif
->>>  86 
->>>  87 #define inline
->>>  88 
->>>  89 struct timespec {
->>>  90         long       ts_sec;
->>>  91         long       ts_nsec;
->>>  92 };
->>>  93 #else  /* DJGPP but not KERNEL */
->>>  94 #include <sys/time.h>
->>>  95 typedef unsigned long long u_quad_t;
->>>  96 #endif /* !KERNEL */
->>>  97 #endif /* !DJGPP */
->>>  98 
->>>  99 
->>> 100 #if defined(__linux__)
->>> 101 #include <linux/time.h>
->>> 102 #define cdev_t u_quad_t
->>> 103 #ifndef __KERNEL__
->>> 104 #if !defined(_UQUAD_T_) && (!defined(__GLIBC__) || __GLIBC__ < 2)
->>> 105 #define _UQUAD_T_ 1
->>> 106 typedef unsigned long long u_quad_t;
->>> 107 #endif
->>> 108 #endif /* __KERNEL__ */
->>> 109 #else
->>> 110 #define cdev_t dev_t
->>> 111 #endif
->>> 112 
->>>
->>> -------------------------------code end---------------------------------
->>>
->>>
->>> Thanks.
->>>
->>
->>
-> 
-> 
-
-
--- 
-Chen Gang
+--Sig_/TN0Ce_QHwvPupUYNU45S851--
