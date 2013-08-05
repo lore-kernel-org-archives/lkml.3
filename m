@@ -1,104 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751824Ab3HEMPr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 08:15:47 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:56474 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751360Ab3HEMPp (ORCPT
+	id S1751815Ab3HEMRd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 08:17:33 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42464 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750968Ab3HEMRc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 08:15:45 -0400
-Date: Mon, 5 Aug 2013 13:15:40 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Leif Lindholm <leif.lindholm@linaro.org>
-Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-ia64@vger.kernel.org, matt.fleming@intel.com,
-        tony.luck@gmail.com, patches@linaro.org
-Subject: Re: [PATCH v2 2/5] efi: provide a generic efi_config_init()
-Message-ID: <20130805121540.GP2515@console-pimps.org>
-References: <1375462582-16423-1-git-send-email-leif.lindholm@linaro.org>
- <1375462582-16423-3-git-send-email-leif.lindholm@linaro.org>
+	Mon, 5 Aug 2013 08:17:32 -0400
+Date: Mon, 5 Aug 2013 13:17:28 +0100
+From: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
+To: broonie@kernel.org, lgirdwood@gmail.com
+Cc: tiwai@suse.de, alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: Re: [alsa-devel] [PATCH v4] ASoC: core: init delayed_work for
+	codec-codec links
+Message-ID: <20130805121728.GA6022@opensource.wolfsonmicro.com>
+References: <20130731131627.GA32631@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1375462582-16423-3-git-send-email-leif.lindholm@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130731131627.GA32631@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 02 Aug, at 05:56:19PM, Leif Lindholm wrote:
-> Common to (U)EFI support on all platforms is the global "efi" data
-> structure, and the code that parses the System Table to locate
-> addresses to populate that structure with.
-> 
-> This patch adds both of these to the global EFI driver code.
-> 
-> Signed-off-by: Leif Lindholm <leif.lindholm@linaro.org>
-> ---
->  drivers/firmware/efi/efi.c |  106 ++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/efi.h        |    7 +++
->  2 files changed, 113 insertions(+)
+We must init the delayed_work for codec-codec links
+otherwise shutting down the DAI chain will fault when
+calling flush_delayed_work_sync() on the linked DAI.
 
-[...]
+Signed-off-by: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
+---
+ sound/soc/soc-core.c |   12 ++++++++++++
+ 1 files changed, 12 insertions(+), 0 deletions(-)
 
-> +static __init int match_config_table(efi_guid_t *guid,
-> +				     unsigned long table,
-> +				     efi_config_table_type_t *table_types)
-> +{
-> +	u8 str[38];
-
-Shouldn't this be 37? You get 36 bytes for your GUID, plus a trailing
-NUL? Either way, this should be a #define. The closest thing we have in
-include/linux/efi.h is EFI_VARIABLE_GUID_LEN. Perhaps we need a
-EFI_GUID_LEN that includes the trailing NUL?
-
-> +	int i;
-> +
-> +	if (table_types) {
-> +		efi_guid_unparse(guid, str);
-> +
-> +		for (i = 0; efi_guidcmp(table_types[i].guid, NULL_GUID); i++) {
-> +			efi_guid_unparse(&table_types[i].guid, str);
-> +
-> +			if (!efi_guidcmp(*guid, table_types[i].guid)) {
-> +				*(table_types[i].ptr) = table;
-> +				pr_cont(" %s=0x%lx ",
-> +					table_types[i].name, table);
-> +				return 1;
-> +			}
-> +		}
-> +	}
-> +
-> +	return 0;
-> +}
-
-One thing I just noticed that's worth pointing out is that 'pr_fmt'
-isn't defined in drivers/firmware/efi/efi.c. Before your patch series
-you get,
-
-[    0.000000] efi:  SMBIOS=0xbae41a98  ACPI=0xbac6f000  ACPI 2.0=0xbac6f000  MPS=0xfca90 
-
-and after,
-
-[    0.000000]  SMBIOS=0xbae41a98  ACPI=0xbac6f000  ACPI 2.0=0xbac6f000 MPS=0xfca90 
-
-which isn't the end of the world, but it does mean that the error
-messages are now much less informative, e.g.
-
-> +	config_tables = early_memremap(efi.systab->tables,
-> +				       efi.systab->nr_tables * sz);
-> +	if (config_tables == NULL) {
-> +		pr_err("could not map configuration table!\n");
-> +		return -ENOMEM;
-> +	}
-
-Which goes from,
-
-  efi: could not map configuration table!
-
-to become,
-
-  could not map configuration table!
-
+diff --git a/sound/soc/soc-core.c b/sound/soc/soc-core.c
+index 4489c5b..c57d5f1 100644
+--- a/sound/soc/soc-core.c
++++ b/sound/soc/soc-core.c
+@@ -530,6 +530,15 @@ static int soc_ac97_dev_register(struct snd_soc_codec *codec)
+ }
+ #endif
+ 
++static void codec2codec_close_delayed_work(struct work_struct *work)
++{
++	/* Currently nothing to do for c2c links
++	 * Since c2c links are internal nodes in the DAPM graph and
++	 * don't interface with the outside world or application layer
++	 * we don't have to do any special handling on close.
++	 */
++}
++
+ #ifdef CONFIG_PM_SLEEP
+ /* powers down audio subsystem for suspend */
+ int snd_soc_suspend(struct device *dev)
+@@ -1428,6 +1437,9 @@ static int soc_probe_link_dais(struct snd_soc_card *card, int num, int order)
+ 				return ret;
+ 			}
+ 		} else {
++			INIT_DELAYED_WORK(&rtd->delayed_work,
++						codec2codec_close_delayed_work);
++
+ 			/* link the DAI widgets */
+ 			play_w = codec_dai->playback_widget;
+ 			capture_w = cpu_dai->capture_widget;
 -- 
-Matt Fleming, Intel Open Source Technology Center
+1.7.2.5
+
