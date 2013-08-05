@@ -1,49 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754119Ab3HEKEH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 06:04:07 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:44442 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751345Ab3HEKEF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 06:04:05 -0400
-Message-ID: <51FF788B.6060804@atmel.com>
-Date: Mon, 5 Aug 2013 11:03:55 +0100
-From: Rupesh Gujare <rupesh.gujare@atmel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Anca Emanuel <anca.emanuel@gmail.com>
-CC: <devel@linuxdriverproject.org>, Wu Fengguang <fengguang.wu@intel.com>,
-        <linux-usb@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] staging: ozwpan: Fix build warning.
-References: <1375638206-5916-1-git-send-email-rupesh.gujare@atmel.com> <CAJL_dMvs3-r+cKxNzG=i=TczwXwbcie0B+UbU7ykQ2K6aDu3+Q@mail.gmail.com>
-In-Reply-To: <CAJL_dMvs3-r+cKxNzG=i=TczwXwbcie0B+UbU7ykQ2K6aDu3+Q@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	id S1754172Ab3HEKFv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 06:05:51 -0400
+Received: from mga11.intel.com ([192.55.52.93]:29362 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751345Ab3HEKFu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 06:05:50 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,817,1367996400"; 
+   d="scan'208";a="381381818"
+Message-ID: <1375697471.14869.424.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH] mtd: jedec_probe: fix LH28F640BF definition
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Andrea Adami <andrea.adami@gmail.com>
+Cc: linux-mtd@lists.infradead.org, David Woodhouse <dwmw2@infradead.org>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
+Date: Mon, 05 Aug 2013 13:11:11 +0300
+In-Reply-To: <1374361653-3004-1-git-send-email-andrea.adami@gmail.com>
+References: <1374361653-3004-1-git-send-email-andrea.adami@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/08/13 19:17, Anca Emanuel wrote:
-> Why do not use div_u64() ?
->
-> [quote]unsigned 64bit divide with 32bit divisor
->
-> This is the most common 64bit divide and should be used if possible,
-> as many 32bit archs can optimize this variant better than a full 64bit
-> divide.
-> [/quote]
->
->> -               ep->credit += timespec_to_ns(&delta) / NSEC_PER_MSEC;
->> +               ep->credit += div64_u64(timespec_to_ns(&delta), NSEC_PER_MSEC);
+On Sun, 2013-07-21 at 01:07 +0200, Andrea Adami wrote:
+> Zaurus 5500 contains 2 LH28F640BFHE-PTTL90 (64M 4Mx16) and
+> the LH28F640BFHE-PTTL90.pdf datasheet available on the net shows
+> the exact erasesize and the OTP support.
+> At the moment only jedec_probe can discover the chip and
+> the NOR is mounted read only probably because of wrong vpp.
+> 
+> Signed-off-by: Andrea Adami <andrea.adami@gmail.com>
 
-Thank you Anca.
-
-I will resend the patch.
+Pushed to l2-mtd.git, thanks!
 
 -- 
-Regards,
-Rupesh Gujare
+Best Regards,
+Artem Bityutskiy
 
