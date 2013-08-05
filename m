@@ -1,79 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754663Ab3HELVW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 07:21:22 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49329 "EHLO mx2.suse.de"
+	id S1754181Ab3HELZw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 07:25:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42227 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754121Ab3HELVV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 07:21:21 -0400
-Date: Mon, 5 Aug 2013 13:21:19 +0200
-From: Jan Kara <jack@suse.cz>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
-        Ning Qu <quning@google.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 08/23] block: implement add_bdi_stat()
-Message-ID: <20130805112119.GB25691@quack.suse.cz>
-References: <1375582645-29274-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1375582645-29274-9-git-send-email-kirill.shutemov@linux.intel.com>
+	id S1752983Ab3HELZu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 07:25:50 -0400
+Message-ID: <51FF8C14.2070405@redhat.com>
+Date: Mon, 05 Aug 2013 13:27:16 +0200
+From: Laszlo Ersek <lersek@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130621 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1375582645-29274-9-git-send-email-kirill.shutemov@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Borislav Petkov <bp@alien8.de>
+CC: edk2-devel@lists.sourceforge.net, David Woodhouse <dwmw2@infradead.org>,
+        linux-efi@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
+        Gleb Natapov <gleb@redhat.com>, Matthew Garrett <mjg59@srcf.ucam.org>
+Subject: Re: [edk2] Corrupted EFI region
+References: <20130731205431.GG4724@pd.tnic> <1375307727.22084.103.camel@shinybook.infradead.org> <20130801164927.GA7445@pd.tnic>
+In-Reply-To: <20130801164927.GA7445@pd.tnic>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun 04-08-13 05:17:10, Kirill A. Shutemov wrote:
-> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+On 08/01/13 18:49, Borislav Petkov wrote:
+> On Wed, Jul 31, 2013 at 10:55:27PM +0100, David Woodhouse wrote:
+>> On Wed, 2013-07-31 at 22:54 +0200, Borislav Petkov wrote:
+>>> so I'm seeing this funny thing where an EFI region changes when we enter
+>>> efi_enter_virtual_mode when booting with edk2 on kvm. Here's the diff:
+>>
+>> Perhaps the edk2-devel@lists.sourceforge.net list should be in Cc?
 > 
-> We're going to add/remove a number of page cache entries at once. This
-> patch implements add_bdi_stat() which adjusts bdi stats by arbitrary
-> amount. It's required for batched page cache manipulations.
+> Good idea and message repeated below.
 > 
-> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-  Looks good. You can add:
-Reviewed-by: Jan Kara <jack@suse.cz>
-
-								Honza
-
+> One more thing: I'm using a self-built OVMF with top commit from March:
+> 
+> ------------------------------------------------------------------------
+> r14165 | sfu5 | 2013-03-06 02:42:04 +0100 (Wed, 06 Mar 2013) | 4 lines
+> 
+> Fix a bug that IsSignatureFoundInDatabase() incorrectly computes CertCount.
+> 
 > ---
->  include/linux/backing-dev.h | 10 ++++++++++
->  1 file changed, 10 insertions(+)
 > 
-> diff --git a/include/linux/backing-dev.h b/include/linux/backing-dev.h
-> index c388155..7060180 100644
-> --- a/include/linux/backing-dev.h
-> +++ b/include/linux/backing-dev.h
-> @@ -166,6 +166,16 @@ static inline void __dec_bdi_stat(struct backing_dev_info *bdi,
->  	__add_bdi_stat(bdi, item, -1);
->  }
->  
-> +static inline void add_bdi_stat(struct backing_dev_info *bdi,
-> +		enum bdi_stat_item item, s64 amount)
-> +{
-> +	unsigned long flags;
-> +
-> +	local_irq_save(flags);
-> +	__add_bdi_stat(bdi, item, amount);
-> +	local_irq_restore(flags);
-> +}
-> +
->  static inline void dec_bdi_stat(struct backing_dev_info *bdi,
->  		enum bdi_stat_item item)
->  {
-> -- 
-> 1.8.3.2
+> Hi guys,
 > 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+> so I'm seeing this funny thing where an EFI region changes when we enter
+> efi_enter_virtual_mode when booting with edk2 on kvm. Here's the diff:
+> 
+> --- before      2013-07-31 22:20:52.316039492 +0200
+> +++ after       2013-07-31 22:21:30.960731706 +0200
+> @@ -9,7 +9,7 @@ efi: mem07: type=2, attr=0xf, range=[0x0
+>  efi: mem08: type=7, attr=0xf, range=[0x0000000040000000-0x000000007c000000) (960MB)
+>  efi: mem09: type=4, attr=0xf, range=[0x000000007c000000-0x000000007c020000) (0MB)
+>  efi: mem10: type=7, attr=0xf, range=[0x000000007c020000-0x000000007e0ad000) (32MB)
+> -efi: mem11: type=4, attr=0xf, range=[0x000000007e0ad000-0x000000007e0cc000) (0MB)
+> +efi: mem11: type=4, attr=0xf, range=[0x000000007e0ad000-0x000000007e0ad000) (0MB)
+
+(type 4 is EfiBootServicesData)
+
+>  efi: mem12: type=7, attr=0xf, range=[0x000000007e0cc000-0x000000007e0cd000) (0MB)
+>  efi: mem13: type=4, attr=0xf, range=[0x000000007e0cd000-0x000000007e55d000) (4MB)
+>  efi: mem14: type=3, attr=0xf, range=[0x000000007e55d000-0x000000007e59c000) (0MB)
+> 
+> That second boundary of region mem11 suddenly changes *before* we merge
+> the regions. edk2 bug?
+
+I take it you mean this change (ie. appearance of the zero-sized range)
+occurs when you enable KVM acceleration in qemu?
+
+If so, please locate "gEfiMdePkgTokenSpaceGuid.PcdDebugPrintErrorLevel"
+in OvmfPkg/OvmfPkgX64.dsc, and set the following bit in its value:
+
+  # DEBUG_GCD      0x00100000 Global Coherency Database changes
+
+Then please rebuild OVMF, and capture the debug port output of qemu
+("-debugcon file:debug.log -global isa-debugcon.iobase=0x402") both with
+and without KVM.
+
+DEBUG_GCD should produce messages related to CoreAllocateSpace(), and
+might help us find the spot the difference is introduced.
+
+BTW does this have anything to do with the NX bit report of yours, or
+have you noticed this independently?
+
+(I'm not subscribed to lkml so apologies if this email doesn't end up in
+those archives / doesn't reach everyone.)
+
+Thanks
+Laszlo
