@@ -1,1622 +1,1080 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754182Ab3HEOsF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 10:48:05 -0400
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:26017 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754027Ab3HEOrv (ORCPT
+	id S1754205Ab3HEOs0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 10:48:26 -0400
+Received: from icebox.esperi.org.uk ([81.187.191.129]:57745 "EHLO
+	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754184Ab3HEOsK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 10:47:51 -0400
-X-IronPort-AV: E=Sophos;i="4.89,819,1367964000"; 
-   d="scan'208";a="28546973"
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: trivial@kernel.org
-Cc: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] trivial: adjust code alignment
-Date: Mon,  5 Aug 2013 16:47:39 +0200
-Message-Id: <1375714059-29567-5-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: git-send-email 1.7.8.6
-In-Reply-To: <1375714059-29567-1-git-send-email-Julia.Lawall@lip6.fr>
-References: <1375714059-29567-1-git-send-email-Julia.Lawall@lip6.fr>
+	Mon, 5 Aug 2013 10:48:10 -0400
+From: Nix <nix@esperi.org.uk>
+To: Jeff Layton <jlayton@redhat.com>
+Cc: NFS list <linux-nfs@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [3.10.4] NFS locking panic, plus persisting NFS shutdown panic from 3.9.*
+References: <8761vlv4z9.fsf@spindle.srvr.nix>
+	<20130805084436.69ee4415@corrin.poochiereds.net>
+Emacs: ... it's not just a way of life, it's a text editor!
+Date: Mon, 05 Aug 2013 15:48:01 +0100
+In-Reply-To: <20130805084436.69ee4415@corrin.poochiereds.net> (Jeff Layton's
+	message of "Mon, 5 Aug 2013 08:44:36 -0400")
+Message-ID: <87siyotcri.fsf@spindle.srvr.nix>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-DCC-wuwien-Metrics: spindle 1290; Body=3 Fuz1=3 Fuz2=3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+On 5 Aug 2013, Jeff Layton stated:
 
-This patch either adds or removes a tab so that each statement is lined
-up with its neighbors.  One common problem is when a statement is
-lined up with the argument list of its predecessor.  Other cases not
-fitting any particular pattern arise as well.
+> On Sun, 04 Aug 2013 16:40:58 +0100
+> Nix <nix@esperi.org.uk> wrote:
+>
+>> I just got this panic on 3.10.4, in the middle of a large parallel
+>> compilation (of Chromium, as it happens) over NFSv3:
+>> 
+>> [16364.527516] BUG: unable to handle kernel NULL pointer dereference at 0000000000000008
+>> [16364.527571] IP: [<ffffffff81245157>] nlmclnt_setlockargs+0x55/0xcf
+>> [16364.527611] PGD 0 
+>> [16364.527626] Oops: 0000 [#1] PREEMPT SMP 
+>> [16364.527656] Modules linked in: [last unloaded: microcode] 
+>> [16364.527690] CPU: 0 PID: 17034 Comm: flock Not tainted 3.10.4-05315-gf4ce424-dirty #1
+>> [16364.527730] Hardware name: System manufacturer System Product Name/P8H61-MX USB3, BIOS 0506 08/10/2012
+>> [16364.527775] task: ffff88041a97ad60 ti: ffff8803501d4000 task.ti: ffff8803501d4000
+>> [16364.527813] RIP: 0010:[<ffffffff81245157>] [<ffffffff81245157>] nlmclnt_setlockargs+0x55/0xcf
+>> [16364.527860] RSP: 0018:ffff8803501d5c58  EFLAGS: 00010282
+>> [16364.527889] RAX: ffff88041a97ad60 RBX: ffff8803e49c8800 RCX: 0000000000000000
+>> [16364.527926] RDX: 0000000000000000 RSI: 000000000000004a RDI: ffff8803e49c8b54
+>> [16364.527962] RBP: ffff8803501d5c68 R08: 0000000000015720 R09: 0000000000000000
+>> [16364.527998] R10: 00007ffffffff000 R11: ffff8803501d5d58 R12: ffff8803501d5d58
+>> [16364.528034] R13: ffff88041bd2bc00 R14: 0000000000000000 R15: ffff8803fc9e2900
+>> [16364.528070] FS:  0000000000000000(0000) GS:ffff88042fa00000(0000) knlGS:0000000000000000
+>> [16364.528111] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+>> [16364.528142] CR2: 0000000000000008 CR3: 0000000001c0b000 CR4: 00000000001407f0
+>> [16364.528177] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+>> [16364.528214] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+>> [16364.528303] Stack:
+>> [16364.528316]  ffff8803501d5d58 ffff8803e49c8800 ffff8803501d5cd8 ffffffff81245418 
+>> [16364.528369]  0000000000000000 ffff8803516f0bc0 ffff8803d7b7b6c0 ffffffff81215c81 
+>> [16364.528418]  ffff880300000007 ffff88041bd2bdc8 ffff8801aabe9650 ffff8803fc9e2900 
+>> [16364.528467] Call Trace:
+>> [16364.528485]  [<ffffffff81245418>] nlmclnt_proc+0x148/0x5fb
+>> [16364.528516]  [<ffffffff81215c81>] ? nfs_put_lock_context+0x69/0x6e
+>> [16364.528550]  [<ffffffff812209a2>] nfs3_proc_lock+0x21/0x23
+>> [16364.528581]  [<ffffffff812149dd>] do_unlk+0x96/0xb2
+>> [16364.528608]  [<ffffffff81214b41>] nfs_flock+0x5a/0x71
+>> [16364.528637]  [<ffffffff8119a747>] locks_remove_flock+0x9e/0x113
+>> [16364.528668]  [<ffffffff8115cc68>] __fput+0xb6/0x1e6
+>> [16364.528695]  [<ffffffff8115cda6>] ____fput+0xe/0x10
+>> [16364.528724]  [<ffffffff810998da>] task_work_run+0x7e/0x98
+>> [16364.528754]  [<ffffffff81082bc5>] do_exit+0x3cc/0x8fa
+>> [16364.528782]  [<ffffffff81083501>] ? SyS_wait4+0xa5/0xc2
+>> [16364.528811]  [<ffffffff8108328d>] do_group_exit+0x6f/0xa2
+>> [16364.528843]  [<ffffffff810832d7>] SyS_exit_group+0x17/0x17
+>> [16364.528876]  [<ffffffff81613e92>] system_call_fastpath+0x16/0x1b
+>> [16364.528907] Code: 00 00 65 48 8b 04 25 c0 b8 00 00 48 8b 72 20 48 81 ee c0 01 00 00 f3 a4 48 8d bb 54 03 00 00 be 4a 00 00 00 48 8b 90 68 05 00 00 <48> 8b 52 08 48 89 bb d0 00 00 00 48 83 c2 45 48 89 53 38 48 8b 
+>> [16364.529176] RIP [<ffffffff81245157>] nlmclnt_setlockargs+0x55/0xcf
+>> [16364.529264]  RSP <ffff8803501d5c58>
+>> [16364.529283] CR2: 0000000000000008
+>> [16364.539039] ---[ end trace 5a73fddf23441377 ]---
+>
+> What might be most helpful is to figure out exactly where the above
+> panic occurred.
 
-A few checkpatch errors are cleaned up as well.
+OK. My kernel is non-modular and built without debugging information:
+rebuilt with debugging info, and got this:
 
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+0xffffffff81245418 is in nlmclnt_proc (fs/lockd/clntproc.c:172).
+167                     return -ENOMEM;
+168             }
+169             /* Set up the argument struct */
+170             nlmclnt_setlockargs(call, fl);
+171
+172             if (IS_SETLK(cmd) || IS_SETLKW(cmd)) {
+173                     if (fl->fl_type != F_UNLCK) {
+174                             call->a_args.block = IS_SETLKW(cmd) ? 1 : 0;
+175                             status = nlmclnt_lock(call, fl);
+176                     } else
 
----
-I could split this patch up if desired.  It was generated from linux-next.
+That's decimal 328:
 
- arch/arm/mach-omap2/cclock3xxx_data.c                           |    2 -
- arch/arm/mach-omap2/display.c                                   |    2 -
- arch/m68k/sun3/prom/console.c                                   |    4 +-
- arch/parisc/kernel/perf.c                                       |    6 +--
- arch/powerpc/platforms/chrp/pci.c                               |    2 -
- arch/powerpc/platforms/ps3/system-bus.c                         |    4 +-
- arch/powerpc/sysdev/fsl_rio.c                                   |    6 +--
- arch/x86/lib/csum-partial_64.c                                  |    2 -
- arch/xtensa/platforms/iss/network.c                             |    2 -
- drivers/acpi/sbs.c                                              |    6 +--
- drivers/atm/ambassador.c                                        |    2 -
- drivers/atm/he.c                                                |    2 -
- drivers/block/mtip32xx/mtip32xx.c                               |    4 +-
- drivers/dma/iop-adma.c                                          |    2 -
- drivers/gpu/drm/gma500/cdv_intel_dp.c                           |    4 +-
- drivers/gpu/drm/i915/i915_gpu_error.c                           |    2 -
- drivers/gpu/drm/radeon/cik.c                                    |    2 -
- drivers/hid/hid-prodikeys.c                                     |    2 -
- drivers/hid/hid-sensor-hub.c                                    |    8 ++---
- drivers/i2c/algos/i2c-algo-pca.c                                |    2 -
- drivers/iio/gyro/hid-sensor-gyro-3d.c                           |    2 -
- drivers/infiniband/hw/nes/nes_nic.c                             |    2 -
- drivers/infiniband/hw/nes/nes_verbs.c                           |    2 -
- drivers/infiniband/ulp/ipoib/ipoib_cm.c                         |    4 +-
- drivers/media/dvb-frontends/dib0070.c                           |    2 -
- drivers/media/dvb-frontends/stv0900_sw.c                        |    4 +-
- drivers/media/i2c/ov7670.c                                      |    4 +-
- drivers/media/pci/bt8xx/bttv-driver.c                           |    2 -
- drivers/media/pci/saa7134/saa7134-cards.c                       |    3 +
- drivers/media/platform/s5p-mfc/s5p_mfc_opr_v5.c                 |    3 +
- drivers/media/usb/cx231xx/cx231xx-417.c                         |    5 +--
- drivers/media/usb/dvb-usb/af9005-fe.c                           |    2 -
- drivers/media/usb/dvb-usb/dw2102.c                              |    2 -
- drivers/media/usb/gspca/benq.c                                  |    3 -
- drivers/media/usb/pvrusb2/pvrusb2-hdw.c                         |    6 ++-
- drivers/memstick/host/jmb38x_ms.c                               |   12 +++----
- drivers/message/fusion/mptscsih.c                               |    2 -
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c                |    6 +--
- drivers/net/ethernet/brocade/bna/bfa_ioc.c                      |    2 -
- drivers/net/ethernet/chelsio/cxgb/sge.c                         |    4 +-
- drivers/net/ethernet/dec/tulip/interrupt.c                      |    2 -
- drivers/net/ethernet/dec/tulip/uli526x.c                        |    2 -
- drivers/net/ethernet/natsemi/ns83820.c                          |    2 -
- drivers/net/ethernet/neterion/vxge/vxge-main.c                  |    8 ++---
- drivers/net/ethernet/qlogic/qlge/qlge_main.c                    |    4 +-
- drivers/net/ethernet/realtek/atp.c                              |    2 -
- drivers/net/fddi/skfp/smt.c                                     |    2 -
- drivers/net/hamradio/scc.c                                      |    3 +
- drivers/net/irda/w83977af_ir.c                                  |   14 ++++----
- drivers/net/wireless/ath/ath5k/reset.c                          |    4 +-
- drivers/net/wireless/b43legacy/main.c                           |    2 -
- drivers/net/wireless/hostap/hostap_ap.c                         |    2 -
- drivers/net/wireless/hostap/hostap_ioctl.c                      |    2 -
- drivers/net/wireless/libertas_tf/main.c                         |    2 -
- drivers/net/wireless/rtlwifi/rtl8192c/phy_common.c              |    2 -
- drivers/net/wireless/rtlwifi/rtl8723ae/hw.c                     |    4 +-
- drivers/parisc/eisa_enumerator.c                                |    7 +---
- drivers/pci/hotplug/ibmphp_core.c                               |    6 +--
- drivers/s390/block/dasd_eckd.c                                  |    4 +-
- drivers/s390/net/qeth_core_main.c                               |    4 +-
- drivers/scsi/aic7xxx/aicasm/aicasm.c                            |    4 +-
- drivers/scsi/arcmsr/arcmsr_hba.c                                |   10 +++---
- drivers/scsi/atp870u.c                                          |   16 +++++-----
- drivers/scsi/bfa/bfa_ioc.c                                      |    2 -
- drivers/scsi/hpsa.c                                             |    2 -
- drivers/scsi/ipr.c                                              |    4 +-
- drivers/scsi/lpfc/lpfc_bsg.c                                    |    2 -
- drivers/scsi/lpfc/lpfc_els.c                                    |    2 -
- drivers/scsi/lpfc/lpfc_sli.c                                    |    4 +-
- drivers/scsi/pm8001/pm8001_sas.c                                |    2 -
- drivers/scsi/qla2xxx/qla_init.c                                 |    2 -
- drivers/scsi/qla2xxx/qla_mr.c                                   |    2 -
- drivers/scsi/scsi_debug.c                                       |    2 -
- drivers/scsi/scsi_error.c                                       |    2 -
- drivers/staging/cxt1e1/comet.c                                  |   16 +++++-----
- drivers/staging/cxt1e1/musycc.c                                 |    2 -
- drivers/staging/frontier/tranzport.c                            |    6 +--
- drivers/staging/speakup/speakup_keypc.c                         |    2 -
- drivers/usb/gadget/fsl_qe_udc.c                                 |    5 +--
- drivers/usb/host/ohci-ppc-of.c                                  |    2 -
- drivers/usb/host/u132-hcd.c                                     |    3 +
- drivers/usb/misc/ftdi-elan.c                                    |    3 +
- drivers/usb/misc/sisusbvga/sisusb.c                             |    2 -
- drivers/usb/serial/visor.c                                      |    2 -
- drivers/video/mbx/mbxfb.c                                       |    5 +--
- drivers/vlynq/vlynq.c                                           |    2 -
- fs/compat_ioctl.c                                               |    2 -
- mm/migrate.c                                                    |    2 -
- net/bluetooth/rfcomm/core.c                                     |    4 +-
- sound/oss/sb_ess.c                                              |    2 -
- sound/pci/asihpi/asihpi.c                                       |    4 +-
- sound/sparc/dbri.c                                              |    6 +--
- tools/power/x86/x86_energy_perf_policy/x86_energy_perf_policy.c |    2 -
- 93 files changed, 173 insertions(+), 171 deletions(-)
+   0xffffffff81245413 <+323>:   callq  0xffffffff81245102 <nlmclnt_setlockargs>
+   0xffffffff81245418 <+328>:   mov    -0x40(%rbp),%eax
+   0xffffffff8124541b <+331>:   sub    $0x6,%eax
+   0xffffffff8124541e <+334>:   cmp    $0x1,%eax
 
+nlm_alloc_call() cannot fail (we have a NULL check right there), and fl
+also cannot be NULL because it's dereferenced in nfs_flock(), up the
+call chain from where we are.
 
-diff --git a/arch/arm/mach-omap2/cclock3xxx_data.c b/arch/arm/mach-omap2/cclock3xxx_data.c
-index 334b767..c8e90d1 100644
---- a/arch/arm/mach-omap2/cclock3xxx_data.c
-+++ b/arch/arm/mach-omap2/cclock3xxx_data.c
-@@ -3615,7 +3615,7 @@ int __init omap3xxx_clk_init(void)
- 		WARN(1, "clock: could not identify OMAP3 variant\n");
- 	}
- 
--		omap2_clk_disable_autoidle_all();
-+	omap2_clk_disable_autoidle_all();
- 
- 	omap2_clk_enable_init_clocks(enable_init_clks,
- 				     ARRAY_SIZE(enable_init_clks));
-diff --git a/arch/arm/mach-omap2/display.c b/arch/arm/mach-omap2/display.c
-index ff37be1..b6a36af 100644
---- a/arch/arm/mach-omap2/display.c
-+++ b/arch/arm/mach-omap2/display.c
-@@ -127,7 +127,7 @@ static void __init omap4_hdmi_mux_pads(enum omap_hdmi_flags flags)
- 		reg = omap4_ctrl_pad_readl(control_i2c_1);
- 		reg |= (OMAP4_HDMI_DDC_SDA_PULLUPRESX_MASK |
- 			OMAP4_HDMI_DDC_SCL_PULLUPRESX_MASK);
--			omap4_ctrl_pad_writel(reg, control_i2c_1);
-+		omap4_ctrl_pad_writel(reg, control_i2c_1);
- 	}
- }
- 
-diff --git a/arch/m68k/sun3/prom/console.c b/arch/m68k/sun3/prom/console.c
-index e923643..0b2e0be 100644
---- a/arch/m68k/sun3/prom/console.c
-+++ b/arch/m68k/sun3/prom/console.c
-@@ -22,7 +22,7 @@ prom_nbgetchar(void)
- 	unsigned long flags;
- 
- 	local_irq_save(flags);
--		i = (*(romvec->pv_nbgetchar))();
-+	i = (*(romvec->pv_nbgetchar))();
- 	local_irq_restore(flags);
- 	return i; /* Ugh, we could spin forever on unsupported proms ;( */
- }
-@@ -37,7 +37,7 @@ prom_nbputchar(char c)
- 	int i = -1;
- 
- 	local_irq_save(flags);
--		i = (*(romvec->pv_nbputchar))(c);
-+	i = (*(romvec->pv_nbputchar))(c);
- 	local_irq_restore(flags);
- 	return i; /* Ugh, we could spin forever on unsupported proms ;( */
- }
-diff --git a/arch/parisc/kernel/perf.c b/arch/parisc/kernel/perf.c
-index ba0c053..0aa1ebf 100644
---- a/arch/parisc/kernel/perf.c
-+++ b/arch/parisc/kernel/perf.c
-@@ -237,7 +237,7 @@ static int perf_config(uint32_t *image_ptr)
- 		return -EINVAL; 
- 	}
- 
--printk("Preparing to write image\n");
-+	printk("Preparing to write image\n");
- 	/* Write the image to the chip */
- 	error = perf_write_image((uint64_t *)image_ptr);
- 	if (error != 0) {
-@@ -245,7 +245,7 @@ printk("Preparing to write image\n");
- 		return -EINVAL; 
- 	}
- 
--printk("Preparing to start counters\n");
-+	printk("Preparing to start counters\n");
- 
- 	/* Start the counters */
- 	perf_start_counters();
-@@ -833,7 +833,7 @@ static void perf_rdr_write(uint32_t rdr_num, uint64_t *buffer)
- 	const struct rdr_tbl_ent *tentry;
- 	int32_t		i;
- 
--printk("perf_rdr_write\n");
-+	printk("perf_rdr_write\n");
- 	tentry = perf_rdr_get_entry(rdr_num);
- 	if (tentry->width == 0) { return; }
- 
-diff --git a/arch/powerpc/platforms/chrp/pci.c b/arch/powerpc/platforms/chrp/pci.c
-index 1b87e19..4cf466d 100644
---- a/arch/powerpc/platforms/chrp/pci.c
-+++ b/arch/powerpc/platforms/chrp/pci.c
-@@ -293,7 +293,7 @@ chrp_find_bridges(void)
- 					dma = (unsigned int *)
- 						(((unsigned long)dma) +
- 						len - sizeof(*dma));
--						pci_dram_offset = *dma;
-+					pci_dram_offset = *dma;
- 				}
- 			}
- 		} else {
-diff --git a/arch/powerpc/platforms/ps3/system-bus.c b/arch/powerpc/platforms/ps3/system-bus.c
-index 5606fe3..201ecfc 100644
---- a/arch/powerpc/platforms/ps3/system-bus.c
-+++ b/arch/powerpc/platforms/ps3/system-bus.c
-@@ -78,7 +78,7 @@ static int ps3_open_hv_device_sb(struct ps3_system_bus_device *dev)
- 	if (result) {
- 		pr_debug("%s:%d: lv1_open_device failed: %s\n", __func__,
- 			__LINE__, ps3_result(result));
--			result = -EPERM;
-+		result = -EPERM;
- 	}
- 
- done:
-@@ -134,7 +134,7 @@ static int ps3_open_hv_device_gpu(struct ps3_system_bus_device *dev)
- 	if (result) {
- 		pr_debug("%s:%d: lv1_gpu_open failed: %s\n", __func__,
- 			__LINE__, ps3_result(result));
--			result = -EPERM;
-+		result = -EPERM;
- 	}
- 
- done:
-diff --git a/arch/powerpc/sysdev/fsl_rio.c b/arch/powerpc/sysdev/fsl_rio.c
-index e2fb317..16a6af4 100644
---- a/arch/powerpc/sysdev/fsl_rio.c
-+++ b/arch/powerpc/sysdev/fsl_rio.c
-@@ -522,9 +522,9 @@ int fsl_rio_setup(struct platform_device *dev)
- 			dev_err(&dev->dev, "RIO: Error requesting master port region"
- 				" 0x%016llx-0x%016llx\n",
- 				(u64)port->iores.start, (u64)port->iores.end);
--				kfree(priv);
--				kfree(port);
--				continue;
-+			kfree(priv);
-+			kfree(port);
-+			continue;
- 		}
- 		sprintf(port->name, "RIO mport %d", i);
- 
-diff --git a/arch/x86/lib/csum-partial_64.c b/arch/x86/lib/csum-partial_64.c
-index 9845371..3947f76 100644
---- a/arch/x86/lib/csum-partial_64.c
-+++ b/arch/x86/lib/csum-partial_64.c
-@@ -93,7 +93,7 @@ static unsigned do_csum(const unsigned char *buff, unsigned len)
- 				    : "m" (*(unsigned long *)buff), 
- 				    "r" (zero),  "0" (result));
- 				--count; 
--					buff += 8;
-+				buff += 8;
- 			}
- 			result = add32_with_carry(result>>32,
- 						  result&0xffffffff); 
-diff --git a/arch/xtensa/platforms/iss/network.c b/arch/xtensa/platforms/iss/network.c
-index 56f88b7..0b9e430 100644
---- a/arch/xtensa/platforms/iss/network.c
-+++ b/arch/xtensa/platforms/iss/network.c
-@@ -448,7 +448,7 @@ out:
- static int iss_net_close(struct net_device *dev)
- {
- 	struct iss_net_private *lp = netdev_priv(dev);
--printk("iss_net_close!\n");
-+	printk("iss_net_close!\n");
- 	netif_stop_queue(dev);
- 	spin_lock(&lp->lock);
- 
-diff --git a/drivers/acpi/sbs.c b/drivers/acpi/sbs.c
-index aef7e1c..61c8eb0 100644
---- a/drivers/acpi/sbs.c
-+++ b/drivers/acpi/sbs.c
-@@ -426,11 +426,11 @@ static int acpi_battery_set_alarm(struct acpi_battery *battery)
- 		if ((value & 0xf000) != sel) {
- 			value &= 0x0fff;
- 			value |= sel;
--		ret = acpi_smbus_write(sbs->hc, SMBUS_WRITE_WORD,
-+			ret = acpi_smbus_write(sbs->hc, SMBUS_WRITE_WORD,
- 					 ACPI_SBS_MANAGER,
- 					 0x01, (u8 *)&value, 2);
--		if (ret)
--			goto end;
-+			if (ret)
-+				goto end;
- 		}
- 	}
- 	ret = acpi_smbus_write(sbs->hc, SMBUS_WRITE_WORD, ACPI_SBS_BATTERY,
-diff --git a/drivers/atm/ambassador.c b/drivers/atm/ambassador.c
-index 62a7607..154c74c 100644
---- a/drivers/atm/ambassador.c
-+++ b/drivers/atm/ambassador.c
-@@ -2258,7 +2258,7 @@ static int amb_probe(struct pci_dev *pci_dev,
- 
- 	PRINTD (DBG_INFO, "registered Madge ATM adapter (no. %d) (%p) at %p",
- 		dev->atm_dev->number, dev, dev->atm_dev);
--		dev->atm_dev->dev_data = (void *) dev;
-+	dev->atm_dev->dev_data = (void *) dev;
- 
- 	// register our address
- 	amb_esi (dev, dev->atm_dev->esi);
-diff --git a/drivers/atm/he.c b/drivers/atm/he.c
-index 80f9743..ca1bee2 100644
---- a/drivers/atm/he.c
-+++ b/drivers/atm/he.c
-@@ -1698,7 +1698,7 @@ he_service_rbrq(struct he_dev *he_dev, int group)
- 
- 		if (RBRQ_HBUF_ERR(he_dev->rbrq_head)) {
- 			hprintk("HBUF_ERR!  (cid 0x%x)\n", cid);
--				atomic_inc(&vcc->stats->rx_drop);
-+			atomic_inc(&vcc->stats->rx_drop);
- 			goto return_host_buffers;
- 		}
- 
-diff --git a/drivers/block/mtip32xx/mtip32xx.c b/drivers/block/mtip32xx/mtip32xx.c
-index 952dbfe..c246e91 100644
---- a/drivers/block/mtip32xx/mtip32xx.c
-+++ b/drivers/block/mtip32xx/mtip32xx.c
-@@ -2319,8 +2319,8 @@ static int exec_drive_taskfile(struct driver_data *dd,
- 				dev_warn(&dd->pdev->dev,
- 					"data movement but "
- 					"sect_count is 0\n");
--					err = -EINVAL;
--					goto abort;
-+				err = -EINVAL;
-+				goto abort;
- 			}
- 		}
- 	}
-diff --git a/drivers/dma/iop-adma.c b/drivers/dma/iop-adma.c
-index cc727ec..28dce84 100644
---- a/drivers/dma/iop-adma.c
-+++ b/drivers/dma/iop-adma.c
-@@ -267,7 +267,7 @@ static void __iop_adma_slot_cleanup(struct iop_adma_chan *iop_chan)
- 					&iop_chan->chain, chain_node) {
- 					zero_sum_result |=
- 					    iop_desc_get_zero_result(grp_iter);
--					    pr_debug("\titer%d result: %d\n",
-+					pr_debug("\titer%d result: %d\n",
- 					    grp_iter->idx, zero_sum_result);
- 					slot_cnt -= slots_per_op;
- 					if (slot_cnt == 0)
-diff --git a/drivers/gpu/drm/gma500/cdv_intel_dp.c b/drivers/gpu/drm/gma500/cdv_intel_dp.c
-index 88d9ef6..d1a1071 100644
---- a/drivers/gpu/drm/gma500/cdv_intel_dp.c
-+++ b/drivers/gpu/drm/gma500/cdv_intel_dp.c
-@@ -1331,7 +1331,7 @@ cdv_intel_dp_start_link_train(struct psb_intel_encoder *encoder)
- 	clock_recovery = false;
- 
- 	DRM_DEBUG_KMS("Start train\n");
--		reg = DP | DP_LINK_TRAIN_PAT_1;
-+	reg = DP | DP_LINK_TRAIN_PAT_1;
- 
- 
- 	for (;;) {
-@@ -1407,7 +1407,7 @@ cdv_intel_dp_complete_link_train(struct psb_intel_encoder *encoder)
- 	channel_eq = false;
- 
- 	DRM_DEBUG_KMS("\n");
--		reg = DP | DP_LINK_TRAIN_PAT_2;
-+	reg = DP | DP_LINK_TRAIN_PAT_2;
- 
- 	for (;;) {
- 
-diff --git a/drivers/gpu/drm/i915/i915_gpu_error.c b/drivers/gpu/drm/i915/i915_gpu_error.c
-index d970d84..1fb0c23 100644
---- a/drivers/gpu/drm/i915/i915_gpu_error.c
-+++ b/drivers/gpu/drm/i915/i915_gpu_error.c
-@@ -369,7 +369,7 @@ int i915_error_state_to_str(struct drm_i915_error_state_buf *m,
- 					   obj->pages[0][elt+1],
- 					   obj->pages[0][elt+2],
- 					   obj->pages[0][elt+3]);
--					offset += 16;
-+				offset += 16;
- 			}
- 		}
- 	}
-diff --git a/drivers/gpu/drm/radeon/cik.c b/drivers/gpu/drm/radeon/cik.c
-index 6adbc99..d085258 100644
---- a/drivers/gpu/drm/radeon/cik.c
-+++ b/drivers/gpu/drm/radeon/cik.c
-@@ -4849,7 +4849,7 @@ static int cik_rlc_resume(struct radeon_device *rdev)
- 	WREG32(RLC_UCODE_CNTL, 0);
- 
- 	fw_data = (const __be32 *)rdev->rlc_fw->data;
--		WREG32(RLC_GPM_UCODE_ADDR, 0);
-+	WREG32(RLC_GPM_UCODE_ADDR, 0);
- 	for (i = 0; i < size; i++)
- 		WREG32(RLC_GPM_UCODE_DATA, be32_to_cpup(fw_data++));
- 	WREG32(RLC_GPM_UCODE_ADDR, 0);
-diff --git a/drivers/hid/hid-prodikeys.c b/drivers/hid/hid-prodikeys.c
-index 7ed8280..19808ab 100644
---- a/drivers/hid/hid-prodikeys.c
-+++ b/drivers/hid/hid-prodikeys.c
-@@ -399,7 +399,7 @@ static int pcmidi_handle_report4(struct pcmidi_snd *pm, u8 *data)
- 		if (!((0x01 << bit_index) & bit_mask)) {
- 			input_event(pm->input_ep82, EV_KEY,
- 				pm->last_key[bit_index], 0);
--				pm->last_key[bit_index] = 0;
-+			pm->last_key[bit_index] = 0;
- 		}
- 	}
- 
-diff --git a/drivers/hid/hid-sensor-hub.c b/drivers/hid/hid-sensor-hub.c
-index ca74981..5cfa0d3 100644
---- a/drivers/hid/hid-sensor-hub.c
-+++ b/drivers/hid/hid-sensor-hub.c
-@@ -529,8 +529,8 @@ static int sensor_hub_probe(struct hid_device *hdev,
- 						GFP_KERNEL);
- 	if (sd->hid_sensor_hub_client_devs == NULL) {
- 		hid_err(hdev, "Failed to allocate memory for mfd cells\n");
--			ret = -ENOMEM;
--			goto err_close;
-+		ret = -ENOMEM;
-+		goto err_close;
- 	}
- 	list_for_each_entry(report, &report_enum->report_list, list) {
- 		hid_dbg(hdev, "Report id:%x\n", report->id);
-@@ -541,8 +541,8 @@ static int sensor_hub_probe(struct hid_device *hdev,
- 						field->physical);
- 			if (name  == NULL) {
- 				hid_err(hdev, "Failed MFD device name\n");
--					ret = -ENOMEM;
--					goto err_free_names;
-+				ret = -ENOMEM;
-+				goto err_free_names;
- 			}
- 			sd->hid_sensor_hub_client_devs[
- 				sd->hid_sensor_client_cnt].name = name;
-diff --git a/drivers/i2c/algos/i2c-algo-pca.c b/drivers/i2c/algos/i2c-algo-pca.c
-index f892a42..761d027 100644
---- a/drivers/i2c/algos/i2c-algo-pca.c
-+++ b/drivers/i2c/algos/i2c-algo-pca.c
-@@ -431,7 +431,7 @@ static int pca_init(struct i2c_adapter *adap)
- 				printk(KERN_WARNING
- 					"%s: Invalid I2C clock speed selected."
- 					" Using default 59kHz.\n", adap->name);
--			pca_data->i2c_clock = I2C_PCA_CON_59kHz;
-+				pca_data->i2c_clock = I2C_PCA_CON_59kHz;
- 			}
- 		} else {
- 			printk(KERN_WARNING "%s: "
-diff --git a/drivers/iio/gyro/hid-sensor-gyro-3d.c b/drivers/iio/gyro/hid-sensor-gyro-3d.c
-index bc943dd..21a6e61 100644
---- a/drivers/iio/gyro/hid-sensor-gyro-3d.c
-+++ b/drivers/iio/gyro/hid-sensor-gyro-3d.c
-@@ -138,7 +138,7 @@ static int gyro_3d_read_raw(struct iio_dev *indio_dev,
- 	case IIO_CHAN_INFO_SAMP_FREQ:
- 		ret = hid_sensor_read_samp_freq_value(
- 			&gyro_state->common_attributes, val, val2);
--			ret_type = IIO_VAL_INT_PLUS_MICRO;
-+		ret_type = IIO_VAL_INT_PLUS_MICRO;
- 		break;
- 	case IIO_CHAN_INFO_HYSTERESIS:
- 		ret = hid_sensor_read_raw_hyst_value(
-diff --git a/drivers/infiniband/hw/nes/nes_nic.c b/drivers/infiniband/hw/nes/nes_nic.c
-index 49eb511..f0effd7 100644
---- a/drivers/infiniband/hw/nes/nes_nic.c
-+++ b/drivers/infiniband/hw/nes/nes_nic.c
-@@ -928,7 +928,7 @@ static void nes_netdev_set_multicast_list(struct net_device *netdev)
- 				nesadapter->pft_mcast_map[mc_index] !=
- 					nesvnic->nic_index &&
- 					mc_index < max_pft_entries_avaiable) {
--						nes_debug(NES_DBG_NIC_RX,
-+				nes_debug(NES_DBG_NIC_RX,
- 					"mc_index=%d skipping nic_index=%d, "
- 					"used for=%d \n", mc_index,
- 					nesvnic->nic_index,
-diff --git a/drivers/infiniband/hw/nes/nes_verbs.c b/drivers/infiniband/hw/nes/nes_verbs.c
-index 5b53ca5..054a177 100644
---- a/drivers/infiniband/hw/nes/nes_verbs.c
-+++ b/drivers/infiniband/hw/nes/nes_verbs.c
-@@ -3746,7 +3746,7 @@ static int nes_poll_cq(struct ib_cq *ibcq, int num_entries, struct ib_wc *entry)
- 				entry->byte_len = le32_to_cpu(cqe.cqe_words[NES_CQE_PAYLOAD_LENGTH_IDX]);
- 				wrid = ((u64)(le32_to_cpu(nesqp->hwqp.rq_vbase[wqe_index].wqe_words[NES_IWARP_RQ_WQE_COMP_SCRATCH_LOW_IDX]))) |
- 					((u64)(le32_to_cpu(nesqp->hwqp.rq_vbase[wqe_index].wqe_words[NES_IWARP_RQ_WQE_COMP_SCRATCH_HIGH_IDX]))<<32);
--					entry->opcode = IB_WC_RECV;
-+				entry->opcode = IB_WC_RECV;
- 
- 				nesqp->hwqp.rq_tail = (wqe_index+1)&(nesqp->hwqp.rq_size - 1);
- 				if ((entry->status != IB_WC_SUCCESS) && (nesqp->hwqp.rq_tail != nesqp->hwqp.rq_head)) {
-diff --git a/drivers/infiniband/ulp/ipoib/ipoib_cm.c b/drivers/infiniband/ulp/ipoib/ipoib_cm.c
-index 3eceb61..a6636ad 100644
---- a/drivers/infiniband/ulp/ipoib/ipoib_cm.c
-+++ b/drivers/infiniband/ulp/ipoib/ipoib_cm.c
-@@ -384,8 +384,8 @@ static int ipoib_cm_nonsrq_init_rx(struct net_device *dev, struct ib_cm_id *cm_i
- 		if (!ipoib_cm_alloc_rx_skb(dev, rx->rx_ring, i, IPOIB_CM_RX_SG - 1,
- 					   rx->rx_ring[i].mapping)) {
- 			ipoib_warn(priv, "failed to allocate receive buffer %d\n", i);
--				ret = -ENOMEM;
--				goto err_count;
-+			ret = -ENOMEM;
-+			goto err_count;
- 		}
- 		ret = ipoib_cm_post_receive_nonsrq(dev, rx, &t->wr, t->sge, i);
- 		if (ret) {
-diff --git a/drivers/media/dvb-frontends/dib0070.c b/drivers/media/dvb-frontends/dib0070.c
-index 3b024bf..6ab0cb0 100644
---- a/drivers/media/dvb-frontends/dib0070.c
-+++ b/drivers/media/dvb-frontends/dib0070.c
-@@ -195,7 +195,7 @@ static int dib0070_captrim(struct dib0070_state *state, enum frontend_tune_state
- 		state->adc_diff = 3000;
- 		ret = 20;
- 
--	*tune_state = CT_TUNER_STEP_1;
-+		*tune_state = CT_TUNER_STEP_1;
- 	} else if (*tune_state == CT_TUNER_STEP_1) {
- 		state->step /= 2;
- 		dib0070_write_reg(state, 0x14, state->lo4 | state->captrim);
-diff --git a/drivers/media/dvb-frontends/stv0900_sw.c b/drivers/media/dvb-frontends/stv0900_sw.c
-index 0a40edf..f7f7419 100644
---- a/drivers/media/dvb-frontends/stv0900_sw.c
-+++ b/drivers/media/dvb-frontends/stv0900_sw.c
-@@ -1556,7 +1556,7 @@ static u32 stv0900_search_srate_fine(struct dvb_frontend *fe)
- 	}
- 
- 	symbcomp = 13 * (coarse_srate / 10);
--		coarse_freq = (stv0900_read_reg(intp, CFR2) << 8)
-+	coarse_freq = (stv0900_read_reg(intp, CFR2) << 8)
- 					| stv0900_read_reg(intp, CFR1);
- 
- 	if (symbcomp < intp->symbol_rate[demod])
-@@ -2008,7 +2008,7 @@ enum fe_stv0900_signal_type stv0900_algo(struct dvb_frontend *fe)
- 			signal_type = STV0900_NODATA;
- 			no_signal = stv0900_check_signal_presence(intp, demod);
- 
--				intp->result[demod].locked = FALSE;
-+			intp->result[demod].locked = FALSE;
- 		}
- 	}
- 
-diff --git a/drivers/media/i2c/ov7670.c b/drivers/media/i2c/ov7670.c
-index e8a1ce2..4a5a5dc 100644
---- a/drivers/media/i2c/ov7670.c
-+++ b/drivers/media/i2c/ov7670.c
-@@ -1369,8 +1369,8 @@ static int ov7670_s_exp(struct v4l2_subdev *sd, int value)
- 	unsigned char com1, com8, aech, aechh;
- 
- 	ret = ov7670_read(sd, REG_COM1, &com1) +
--		ov7670_read(sd, REG_COM8, &com8);
--		ov7670_read(sd, REG_AECHH, &aechh);
-+	ov7670_read(sd, REG_COM8, &com8);
-+	ov7670_read(sd, REG_AECHH, &aechh);
- 	if (ret)
- 		return ret;
- 
-diff --git a/drivers/media/pci/bt8xx/bttv-driver.c b/drivers/media/pci/bt8xx/bttv-driver.c
-index c6532de..8d2e678 100644
---- a/drivers/media/pci/bt8xx/bttv-driver.c
-+++ b/drivers/media/pci/bt8xx/bttv-driver.c
-@@ -2673,7 +2673,7 @@ static int bttv_s_fbuf(struct file *file, void *f,
- 		fh->ov.w.height = fb->fmt.height;
- 		btv->init.ov.w.width  = fb->fmt.width;
- 		btv->init.ov.w.height = fb->fmt.height;
--			kfree(fh->ov.clips);
-+		kfree(fh->ov.clips);
- 		fh->ov.clips = NULL;
- 		fh->ov.nclips = 0;
- 
-diff --git a/drivers/media/pci/saa7134/saa7134-cards.c b/drivers/media/pci/saa7134/saa7134-cards.c
-index d45e7f6..5210b0e 100644
---- a/drivers/media/pci/saa7134/saa7134-cards.c
-+++ b/drivers/media/pci/saa7134/saa7134-cards.c
-@@ -7813,7 +7813,8 @@ int saa7134_board_init2(struct saa7134_dev *dev)
- 				break;
- 			case 0x001d:
- 				dev->tuner_type = TUNER_PHILIPS_FMD1216ME_MK3;
--					printk(KERN_INFO "%s Board has DVB-T\n", dev->name);
-+				printk(KERN_INFO "%s Board has DVB-T\n",
-+				       dev->name);
- 				break;
- 			default:
- 				printk(KERN_ERR "%s Can't determine tuner type %x from EEPROM\n", dev->name, tuner_t);
-diff --git a/drivers/media/platform/s5p-mfc/s5p_mfc_opr_v5.c b/drivers/media/platform/s5p-mfc/s5p_mfc_opr_v5.c
-index 368582b..1d88e89 100644
---- a/drivers/media/platform/s5p-mfc/s5p_mfc_opr_v5.c
-+++ b/drivers/media/platform/s5p-mfc/s5p_mfc_opr_v5.c
-@@ -184,7 +184,8 @@ static int s5p_mfc_alloc_codec_buffers_v5(struct s5p_mfc_ctx *ctx)
- 		ret = s5p_mfc_alloc_priv_buf(dev->mem_dev_r, &ctx->bank2);
- 		if (ret) {
- 			mfc_err("Failed to allocate Bank2 temporary buffer\n");
--		s5p_mfc_release_priv_buf(ctx->dev->mem_dev_l, &ctx->bank1);
-+			s5p_mfc_release_priv_buf(ctx->dev->mem_dev_l,
-+						 &ctx->bank1);
- 			return ret;
- 		}
- 		BUG_ON(ctx->bank2.dma & ((1 << MFC_BANK2_ALIGN_ORDER) - 1));
-diff --git a/drivers/media/usb/cx231xx/cx231xx-417.c b/drivers/media/usb/cx231xx/cx231xx-417.c
-index 2f63029..1f140af 100644
---- a/drivers/media/usb/cx231xx/cx231xx-417.c
-+++ b/drivers/media/usb/cx231xx/cx231xx-417.c
-@@ -1151,9 +1151,8 @@ static int cx231xx_initialize_codec(struct cx231xx *dev)
- 	}
- 
- 	cx231xx_enable656(dev);
--			/* stop mpeg capture */
--			cx231xx_api_cmd(dev, CX2341X_ENC_STOP_CAPTURE,
--				 3, 0, 1, 3, 4);
-+	/* stop mpeg capture */
-+	cx231xx_api_cmd(dev, CX2341X_ENC_STOP_CAPTURE, 3, 0, 1, 3, 4);
- 
- 	cx231xx_codec_settings(dev);
- 	msleep(60);
-diff --git a/drivers/media/usb/dvb-usb/af9005-fe.c b/drivers/media/usb/dvb-usb/af9005-fe.c
-index 740f3f4..6e84a54 100644
---- a/drivers/media/usb/dvb-usb/af9005-fe.c
-+++ b/drivers/media/usb/dvb-usb/af9005-fe.c
-@@ -481,7 +481,7 @@ static int af9005_fe_read_status(struct dvb_frontend *fe, fe_status_t * stat)
- 		return ret;
- 	if (temp != state->strong) {
- 		deb_info("adjust for strong signal %d\n", temp);
--			state->strong = temp;
-+		state->strong = temp;
- 	}
- 	return 0;
- }
-diff --git a/drivers/media/usb/dvb-usb/dw2102.c b/drivers/media/usb/dvb-usb/dw2102.c
-index 6e237b6..45d26e3 100644
---- a/drivers/media/usb/dvb-usb/dw2102.c
-+++ b/drivers/media/usb/dvb-usb/dw2102.c
-@@ -407,7 +407,7 @@ static int dw2104_i2c_transfer(struct i2c_adapter *adap, struct i2c_msg msg[], i
- 						ibuf, msg[j].len + 2,
- 						DW210X_READ_MSG);
- 				memcpy(msg[j].buf, ibuf + 2, msg[j].len);
--			mdelay(10);
-+				mdelay(10);
- 			} else if (((msg[j].buf[0] == 0xb0) &&
- 						(msg[j].addr == 0x68)) ||
- 						((msg[j].buf[0] == 0xf7) &&
-diff --git a/drivers/media/usb/gspca/benq.c b/drivers/media/usb/gspca/benq.c
-index 05f406d..ec134fa 100644
---- a/drivers/media/usb/gspca/benq.c
-+++ b/drivers/media/usb/gspca/benq.c
-@@ -236,8 +236,7 @@ static void sd_isoc_irq(struct urb *urb)
- 		}
- 		data = (u8 *) urb->transfer_buffer
- 					+ urb->iso_frame_desc[i].offset;
--			gspca_frame_add(gspca_dev, INTER_PACKET,
--					data, SD_PKT_SZ);
-+		gspca_frame_add(gspca_dev, INTER_PACKET, data, SD_PKT_SZ);
- 	}
- 
- 	/* resubmit the URBs */
-diff --git a/drivers/media/usb/pvrusb2/pvrusb2-hdw.c b/drivers/media/usb/pvrusb2/pvrusb2-hdw.c
-index c4d51d7..a95c144 100644
---- a/drivers/media/usb/pvrusb2/pvrusb2-hdw.c
-+++ b/drivers/media/usb/pvrusb2/pvrusb2-hdw.c
-@@ -2613,7 +2613,8 @@ struct pvr2_hdw *pvr2_hdw_create(struct usb_interface *intf,
- 			unit_pointers[idx] = hdw;
- 			break;
- 		}
--	} while (0); mutex_unlock(&pvr2_unit_mtx);
-+	} while (0);
-+	mutex_unlock(&pvr2_unit_mtx);
- 
- 	cnt1 = 0;
- 	cnt2 = scnprintf(hdw->name+cnt1,sizeof(hdw->name)-cnt1,"pvrusb2");
-@@ -2740,7 +2741,8 @@ void pvr2_hdw_destroy(struct pvr2_hdw *hdw)
- 		    (unit_pointers[hdw->unit_number] == hdw)) {
- 			unit_pointers[hdw->unit_number] = NULL;
- 		}
--	} while (0); mutex_unlock(&pvr2_unit_mtx);
-+	} while (0);
-+	mutex_unlock(&pvr2_unit_mtx);
- 	kfree(hdw->controls);
- 	kfree(hdw->mpeg_ctrl_info);
- 	kfree(hdw);
-diff --git a/drivers/memstick/host/jmb38x_ms.c b/drivers/memstick/host/jmb38x_ms.c
-index aeabaa5..5900210 100644
---- a/drivers/memstick/host/jmb38x_ms.c
-+++ b/drivers/memstick/host/jmb38x_ms.c
-@@ -437,13 +437,13 @@ static int jmb38x_ms_issue_cmd(struct memstick_host *msh)
- 		writel(((1 << 16) & BLOCK_COUNT_MASK)
- 		       | (data_len & BLOCK_SIZE_MASK),
- 		       host->addr + BLOCK);
--			t_val = readl(host->addr + INT_STATUS_ENABLE);
--			t_val |= host->req->data_dir == READ
--				 ? INT_STATUS_FIFO_RRDY
--				 : INT_STATUS_FIFO_WRDY;
-+		t_val = readl(host->addr + INT_STATUS_ENABLE);
-+		t_val |= host->req->data_dir == READ
-+			 ? INT_STATUS_FIFO_RRDY
-+			 : INT_STATUS_FIFO_WRDY;
- 
--			writel(t_val, host->addr + INT_STATUS_ENABLE);
--			writel(t_val, host->addr + INT_SIGNAL_ENABLE);
-+		writel(t_val, host->addr + INT_STATUS_ENABLE);
-+		writel(t_val, host->addr + INT_SIGNAL_ENABLE);
- 	} else {
- 		cmd &= ~(TPC_DATA_SEL | 0xf);
- 		host->cmd_flags |= REG_DATA;
-diff --git a/drivers/message/fusion/mptscsih.c b/drivers/message/fusion/mptscsih.c
-index 727819c..133b4ce 100644
---- a/drivers/message/fusion/mptscsih.c
-+++ b/drivers/message/fusion/mptscsih.c
-@@ -1946,7 +1946,7 @@ mptscsih_host_reset(struct scsi_cmnd *SCpnt)
- 	/*  If our attempts to reset the host failed, then return a failed
- 	 *  status.  The host will be taken off line by the SCSI mid-layer.
- 	 */
--    retval = mpt_Soft_Hard_ResetHandler(ioc, CAN_SLEEP);
-+	retval = mpt_Soft_Hard_ResetHandler(ioc, CAN_SLEEP);
- 	if (retval < 0)
- 		status = FAILED;
- 	else
-diff --git a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
-index ab5bd6c..d40f068 100644
---- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
-+++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
-@@ -10716,10 +10716,8 @@ static void bnx2x_link_settings_requested(struct bnx2x *bp)
- 		default:
- 			BNX2X_ERR("NVRAM config error. BAD link speed link_config 0x%x\n",
- 				  link_config);
--				bp->link_params.req_line_speed[idx] =
--							SPEED_AUTO_NEG;
--				bp->port.advertising[idx] =
--						bp->port.supported[idx];
-+			bp->link_params.req_line_speed[idx] = SPEED_AUTO_NEG;
-+			bp->port.advertising[idx] = bp->port.supported[idx];
- 			break;
- 		}
- 
-diff --git a/drivers/net/ethernet/brocade/bna/bfa_ioc.c b/drivers/net/ethernet/brocade/bna/bfa_ioc.c
-index 6f3cac0..039f63c 100644
---- a/drivers/net/ethernet/brocade/bna/bfa_ioc.c
-+++ b/drivers/net/ethernet/brocade/bna/bfa_ioc.c
-@@ -740,7 +740,7 @@ bfa_iocpf_sm_hwinit(struct bfa_iocpf *iocpf, enum iocpf_event event)
- 
- 	case IOCPF_E_TIMEOUT:
- 		bfa_nw_ioc_hw_sem_release(ioc);
--			bfa_ioc_pf_failed(ioc);
-+		bfa_ioc_pf_failed(ioc);
- 		bfa_fsm_set_state(iocpf, bfa_iocpf_sm_initfail_sync);
- 		break;
- 
-diff --git a/drivers/net/ethernet/chelsio/cxgb/sge.c b/drivers/net/ethernet/chelsio/cxgb/sge.c
-index 8061fb0..a6f5f86 100644
---- a/drivers/net/ethernet/chelsio/cxgb/sge.c
-+++ b/drivers/net/ethernet/chelsio/cxgb/sge.c
-@@ -587,8 +587,8 @@ static int alloc_rx_resources(struct sge *sge, struct sge_params *p)
- 		sizeof(struct cpl_rx_data) +
- 		sge->freelQ[!sge->jumbo_fl].dma_offset;
- 
--		size = (16 * 1024) -
--		    SKB_DATA_ALIGN(sizeof(struct skb_shared_info));
-+	size = (16 * 1024) -
-+	    SKB_DATA_ALIGN(sizeof(struct skb_shared_info));
- 
- 	sge->freelQ[sge->jumbo_fl].rx_buffer_size = size;
- 
-diff --git a/drivers/net/ethernet/dec/tulip/interrupt.c b/drivers/net/ethernet/dec/tulip/interrupt.c
-index 92306b3..fd20b47 100644
---- a/drivers/net/ethernet/dec/tulip/interrupt.c
-+++ b/drivers/net/ethernet/dec/tulip/interrupt.c
-@@ -569,7 +569,7 @@ irqreturn_t tulip_interrupt(int irq, void *dev_instance)
- 
- 
- 		if (csr5 & (RxIntr | RxNoBuf)) {
--				rx += tulip_rx(dev);
-+			rx += tulip_rx(dev);
- 			tulip_refill_rx(dev);
- 		}
- 
-diff --git a/drivers/net/ethernet/dec/tulip/uli526x.c b/drivers/net/ethernet/dec/tulip/uli526x.c
-index 93845af..77ce3f5 100644
---- a/drivers/net/ethernet/dec/tulip/uli526x.c
-+++ b/drivers/net/ethernet/dec/tulip/uli526x.c
-@@ -1117,7 +1117,7 @@ static void uli526x_timer(unsigned long data)
- 				netif_carrier_off(dev);
- 			}
- 		}
--		db->init=0;
-+	db->init = 0;
- 
- 	/* Timer active again */
- 	db->timer.expires = ULI526X_TIMER_WUT;
-diff --git a/drivers/net/ethernet/natsemi/ns83820.c b/drivers/net/ethernet/natsemi/ns83820.c
-index d3b4700..a3ebbe1 100644
---- a/drivers/net/ethernet/natsemi/ns83820.c
-+++ b/drivers/net/ethernet/natsemi/ns83820.c
-@@ -1339,7 +1339,7 @@ static int ns83820_set_settings(struct net_device *ndev,
- 			writel(TBICR_MR_AN_ENABLE | TBICR_MR_RESTART_AN,
- 				dev->base + TBICR);
- 			writel(TBICR_MR_AN_ENABLE, dev->base + TBICR);
--				dev->linkstate = LINK_AUTONEGOTIATE;
-+			dev->linkstate = LINK_AUTONEGOTIATE;
- 
- 			printk(KERN_INFO "%s: autoneg enabled via ethtool\n",
- 				ndev->name);
-diff --git a/drivers/net/ethernet/neterion/vxge/vxge-main.c b/drivers/net/ethernet/neterion/vxge/vxge-main.c
-index 5a20eaf..5b82e56 100644
---- a/drivers/net/ethernet/neterion/vxge/vxge-main.c
-+++ b/drivers/net/ethernet/neterion/vxge/vxge-main.c
-@@ -2489,7 +2489,7 @@ static int vxge_add_isr(struct vxgedev *vdev)
- 					vxge_tx_msix_handle, 0,
- 					vdev->desc[intr_cnt],
- 					&vdev->vpaths[vp_idx].fifo);
--					vdev->vxge_entries[intr_cnt].arg =
-+				vdev->vxge_entries[intr_cnt].arg =
- 						&vdev->vpaths[vp_idx].fifo;
- 				irq_req = 1;
- 				break;
-@@ -2505,7 +2505,7 @@ static int vxge_add_isr(struct vxgedev *vdev)
- 					0,
- 					vdev->desc[intr_cnt],
- 					&vdev->vpaths[vp_idx].ring);
--					vdev->vxge_entries[intr_cnt].arg =
-+				vdev->vxge_entries[intr_cnt].arg =
- 						&vdev->vpaths[vp_idx].ring;
- 				irq_req = 1;
- 				break;
-@@ -4504,8 +4504,8 @@ vxge_probe(struct pci_dev *pdev, const struct pci_device_id *pre)
- 	if (status != VXGE_HW_OK) {
- 		vxge_debug_init(VXGE_ERR,
- 			"Failed to initialize device (%d)", status);
--			ret = -EINVAL;
--			goto _exit3;
-+		ret = -EINVAL;
-+		goto _exit3;
- 	}
- 
- 	if (VXGE_FW_VER(ll_config->device_hw_info.fw_version.major,
-diff --git a/drivers/net/ethernet/qlogic/qlge/qlge_main.c b/drivers/net/ethernet/qlogic/qlge/qlge_main.c
-index 2553cf4..2b908b5 100644
---- a/drivers/net/ethernet/qlogic/qlge/qlge_main.c
-+++ b/drivers/net/ethernet/qlogic/qlge/qlge_main.c
-@@ -1159,10 +1159,10 @@ static void ql_update_lbq(struct ql_adapter *qdev, struct rx_ring *rx_ring)
- 
- 			map = lbq_desc->p.pg_chunk.map +
- 				lbq_desc->p.pg_chunk.offset;
--				dma_unmap_addr_set(lbq_desc, mapaddr, map);
-+			dma_unmap_addr_set(lbq_desc, mapaddr, map);
- 			dma_unmap_len_set(lbq_desc, maplen,
- 					rx_ring->lbq_buf_size);
--				*lbq_desc->addr = cpu_to_le64(map);
-+			*lbq_desc->addr = cpu_to_le64(map);
- 
- 			pci_dma_sync_single_for_device(qdev->pdev, map,
- 						rx_ring->lbq_buf_size,
-diff --git a/drivers/net/ethernet/realtek/atp.c b/drivers/net/ethernet/realtek/atp.c
-index d77d60e..619a733 100644
---- a/drivers/net/ethernet/realtek/atp.c
-+++ b/drivers/net/ethernet/realtek/atp.c
-@@ -695,7 +695,7 @@ static irqreturn_t atp_interrupt(int irq, void *dev_instance)
- 	}
- 
- 	/* Tell the adapter that it can go back to using the output line as IRQ. */
--    write_reg(ioaddr, CMR2, CMR2_IRQOUT);
-+	 write_reg(ioaddr, CMR2, CMR2_IRQOUT);
- 	/* Enable the physical interrupt line, which is sure to be low until.. */
- 	outb(Ctrl_SelData + Ctrl_IRQEN, ioaddr + PAR_CONTROL);
- 	/* .. we enable the interrupt sources. */
-diff --git a/drivers/net/fddi/skfp/smt.c b/drivers/net/fddi/skfp/smt.c
-index 08d9432..cc54680 100644
---- a/drivers/net/fddi/skfp/smt.c
-+++ b/drivers/net/fddi/skfp/smt.c
-@@ -726,7 +726,7 @@ void smt_received_pack(struct s_smc *smc, SMbuf *mb, int fs)
- 			smc->mib.priv.fddiPRIVECF_Req_Rx++ ;
- 			{
- 			if (sm->smt_len && !sm_to_para(smc,sm,SMT_P_ECHODATA)) {
--			DB_SMT("SMT: ECF with para problem,sending RDF\n",0,0) ;
-+				DB_SMT("SMT: ECF with para problem,sending RDF\n", 0, 0) ;
- 				smt_send_rdf(smc,mb,m_fc(mb),SMT_RDF_LENGTH,
- 					local) ;
- 				break ;
-diff --git a/drivers/net/hamradio/scc.c b/drivers/net/hamradio/scc.c
-index bc1d521..b5dfd7b 100644
---- a/drivers/net/hamradio/scc.c
-+++ b/drivers/net/hamradio/scc.c
-@@ -2059,7 +2059,8 @@ static int scc_net_seq_show(struct seq_file *seq, void *v)
- 				seq_printf(seq, "%2.2x ", scc->wreg[reg]);
- 			seq_printf(seq, "\n");
- 			
--		seq_printf(seq, "\tR %2.2x %2.2x XX ", InReg(scc->ctrl,R0), InReg(scc->ctrl,R1));
-+			seq_printf(seq, "\tR %2.2x %2.2x XX ",
-+				   InReg(scc->ctrl, R0), InReg(scc->ctrl, R1));
- 			for (reg = 3; reg < 8; reg++)
- 				seq_printf(seq, "%2.2x ", InReg(scc->ctrl, reg));
- 			seq_printf(seq, "XX ");
-diff --git a/drivers/net/irda/w83977af_ir.c b/drivers/net/irda/w83977af_ir.c
-index bb8857a..306acf4 100644
---- a/drivers/net/irda/w83977af_ir.c
-+++ b/drivers/net/irda/w83977af_ir.c
-@@ -529,14 +529,14 @@ static netdev_tx_t w83977af_hard_xmit(struct sk_buff *skb,
- 		self->tx_buff.len = skb->len;
- 		
- 		mtt = irda_get_mtt(skb);
--			IRDA_DEBUG(4, "%s(%ld), mtt=%d\n", __func__ , jiffies, mtt);
--			if (mtt)
--				udelay(mtt);
-+		IRDA_DEBUG(4, "%s(%ld), mtt=%d\n", __func__ , jiffies, mtt);
-+		if (mtt)
-+			udelay(mtt);
- 
--			/* Enable DMA interrupt */
--			switch_bank(iobase, SET0);
--	 		outb(ICR_EDMAI, iobase+ICR);
--	     		w83977af_dma_write(self, iobase);
-+		/* Enable DMA interrupt */
-+		switch_bank(iobase, SET0);
-+		outb(ICR_EDMAI, iobase+ICR);
-+		w83977af_dma_write(self, iobase);
- 	} else {
- 		self->tx_buff.data = self->tx_buff.head;
- 		self->tx_buff.len = async_wrap_skb(skb, self->tx_buff.data, 
-diff --git a/drivers/net/wireless/ath/ath5k/reset.c b/drivers/net/wireless/ath/ath5k/reset.c
-index a3399c4..b1813ea 100644
---- a/drivers/net/wireless/ath/ath5k/reset.c
-+++ b/drivers/net/wireless/ath/ath5k/reset.c
-@@ -634,7 +634,7 @@ ath5k_hw_on_hold(struct ath5k_hw *ah)
- 		ret = ath5k_hw_nic_reset(ah, AR5K_RESET_CTL_PCU |
- 			AR5K_RESET_CTL_MAC | AR5K_RESET_CTL_DMA |
- 			AR5K_RESET_CTL_PHY | AR5K_RESET_CTL_PCI);
--			usleep_range(2000, 2500);
-+		usleep_range(2000, 2500);
- 	} else {
- 		ret = ath5k_hw_nic_reset(ah, AR5K_RESET_CTL_PCU |
- 			AR5K_RESET_CTL_BASEBAND | bus_flags);
-@@ -699,7 +699,7 @@ ath5k_hw_nic_wakeup(struct ath5k_hw *ah, struct ieee80211_channel *channel)
- 		ret = ath5k_hw_nic_reset(ah, AR5K_RESET_CTL_PCU |
- 			AR5K_RESET_CTL_MAC | AR5K_RESET_CTL_DMA |
- 			AR5K_RESET_CTL_PHY | AR5K_RESET_CTL_PCI);
--			usleep_range(2000, 2500);
-+		usleep_range(2000, 2500);
- 	} else {
- 		if (ath5k_get_bus_type(ah) == ATH_AHB)
- 			ret = ath5k_hw_wisoc_reset(ah, AR5K_RESET_CTL_PCU |
-diff --git a/drivers/net/wireless/b43legacy/main.c b/drivers/net/wireless/b43legacy/main.c
-index 5726688..ea5ac1d 100644
---- a/drivers/net/wireless/b43legacy/main.c
-+++ b/drivers/net/wireless/b43legacy/main.c
-@@ -2979,7 +2979,7 @@ static void b43legacy_wireless_core_stop(struct b43legacy_wldev *dev)
- 			dev_kfree_skb(skb_dequeue(&wl->tx_queue[queue_num]));
- 	}
- 
--b43legacy_mac_suspend(dev);
-+	b43legacy_mac_suspend(dev);
- 	free_irq(dev->dev->irq, dev);
- 	b43legacydbg(wl, "Wireless interface stopped\n");
- }
-diff --git a/drivers/net/wireless/hostap/hostap_ap.c b/drivers/net/wireless/hostap/hostap_ap.c
-index d6033a8..585f95b 100644
---- a/drivers/net/wireless/hostap/hostap_ap.c
-+++ b/drivers/net/wireless/hostap/hostap_ap.c
-@@ -941,7 +941,7 @@ void hostap_free_data(struct ap_data *ap)
- 
- #ifndef PRISM2_NO_KERNEL_IEEE80211_MGMT
- 	if (ap->proc != NULL) {
--	  remove_proc_entry("ap", ap->proc);
-+		remove_proc_entry("ap", ap->proc);
- 		remove_proc_entry("ap_control", ap->proc);
- 	}
- 	ap_control_flush_macs(&ap->mac_restrictions);
-diff --git a/drivers/net/wireless/hostap/hostap_ioctl.c b/drivers/net/wireless/hostap/hostap_ioctl.c
-index ac07473..a61b76d 100644
---- a/drivers/net/wireless/hostap/hostap_ioctl.c
-+++ b/drivers/net/wireless/hostap/hostap_ioctl.c
-@@ -1554,7 +1554,7 @@ static int prism2_ioctl_siwtxpow(struct net_device *dev,
- 		val = HFA384X_TEST_CFG_BIT_ALC;
- 		local->func->cmd(dev, HFA384X_CMDCODE_TEST |
- 				 (HFA384X_TEST_CFG_BITS << 8), 0, &val, NULL);
--			local->txpower_type = PRISM2_TXPOWER_FIXED;
-+		local->txpower_type = PRISM2_TXPOWER_FIXED;
- 	}
- 
- 	if (rrq->flags == IW_TXPOW_DBM)
-diff --git a/drivers/net/wireless/libertas_tf/main.c b/drivers/net/wireless/libertas_tf/main.c
-index 088de9d..af8b4ba 100644
---- a/drivers/net/wireless/libertas_tf/main.c
-+++ b/drivers/net/wireless/libertas_tf/main.c
-@@ -685,7 +685,7 @@ int lbtf_remove_card(struct lbtf_private *priv)
- 	ieee80211_unregister_hw(hw);
- 	ieee80211_free_hw(hw);
- 
--    lbtf_deb_leave(LBTF_DEB_MAIN);
-+	lbtf_deb_leave(LBTF_DEB_MAIN);
- 	return 0;
- }
- EXPORT_SYMBOL_GPL(lbtf_remove_card);
-diff --git a/drivers/net/wireless/rtlwifi/rtl8192c/phy_common.c b/drivers/net/wireless/rtlwifi/rtl8192c/phy_common.c
-index 246e535..37c3b60 100644
---- a/drivers/net/wireless/rtlwifi/rtl8192c/phy_common.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192c/phy_common.c
-@@ -836,7 +836,7 @@ bool _rtl92c_phy_sw_chnl_step_by_step(struct ieee80211_hw *hw,
- 					      currentcmd->para1,
- 					      RFREG_OFFSET_MASK,
- 					      rtlphy->rfreg_chnlval[rfpath]);
--			_rtl92c_phy_sw_rf_setting(hw, channel);
-+				_rtl92c_phy_sw_rf_setting(hw, channel);
- 			}
- 			break;
- 		default:
-diff --git a/drivers/net/wireless/rtlwifi/rtl8723ae/hw.c b/drivers/net/wireless/rtlwifi/rtl8723ae/hw.c
-index c333dfd..7f6e056 100644
---- a/drivers/net/wireless/rtlwifi/rtl8723ae/hw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8723ae/hw.c
-@@ -2253,8 +2253,8 @@ static void rtl8723ae_bt_var_init(struct ieee80211_hw *hw)
- 	pcipriv->bt_coexist.bt_coexist_type =
- 					pcipriv->bt_coexist.eeprom_bt_type;
- 
--		pcipriv->bt_coexist.bt_ant_isolation =
--				pcipriv->bt_coexist.eeprom_bt_ant_isol;
-+	pcipriv->bt_coexist.bt_ant_isolation =
-+					pcipriv->bt_coexist.eeprom_bt_ant_isol;
- 
- 	pcipriv->bt_coexist.bt_radio_shared_type =
- 				pcipriv->bt_coexist.eeprom_bt_radio_shared;
-diff --git a/drivers/parisc/eisa_enumerator.c b/drivers/parisc/eisa_enumerator.c
-index caa1531..ceec27c 100644
---- a/drivers/parisc/eisa_enumerator.c
-+++ b/drivers/parisc/eisa_enumerator.c
-@@ -238,10 +238,9 @@ static int configure_port_init(const unsigned char *buf)
- 			s=2;
- 			if (c & HPEE_PORT_INIT_MASK) {
-  				printk(KERN_WARNING "port_init: unverified mask attribute\n");
--				       outw((inw(get_16(buf+len+1)) &
--					     get_16(buf+len+3)) |
--					    get_16(buf+len+5), 
--					    get_16(buf+len+1));
-+				outw((inw(get_16(buf+len+1)) &
-+				     get_16(buf+len+3)) | get_16(buf+len+5),
-+				     get_16(buf+len+1));
- 			} else {
- 				outw(cpu_to_le16(get_16(buf+len+3)), get_16(buf+len+1));
- 			}
-diff --git a/drivers/pci/hotplug/ibmphp_core.c b/drivers/pci/hotplug/ibmphp_core.c
-index cbd72d8..975b368 100644
---- a/drivers/pci/hotplug/ibmphp_core.c
-+++ b/drivers/pci/hotplug/ibmphp_core.c
-@@ -543,9 +543,9 @@ static int __init init_ops(void)
- 		    !(SLOT_PRESENT(slot_cur->status)) && 
- 		    !(SLOT_LATCH(slot_cur->status))) {
- 			debug("BEFORE POWER OFF COMMAND\n");
--				rc = power_off(slot_cur);
--				if (rc)
--					return rc;
-+			rc = power_off(slot_cur);
-+			if (rc)
-+				return rc;
- 
- 	/*		retval = slot_update(&slot_cur);
- 	 *		if (retval)
-diff --git a/drivers/s390/block/dasd_eckd.c b/drivers/s390/block/dasd_eckd.c
-index e61a6de..68a3ef4 100644
---- a/drivers/s390/block/dasd_eckd.c
-+++ b/drivers/s390/block/dasd_eckd.c
-@@ -2255,8 +2255,8 @@ dasd_eckd_build_format(struct dasd_device *base,
- 						DASD_ECKD_CCW_WRITE_CKD_MT;
- 				ccw->flags = CCW_FLAG_SLI;
- 				ccw->count = 8;
--					ccw->cda = (__u32)(addr_t) ect;
--					ccw++;
-+				ccw->cda = (__u32)(addr_t) ect;
-+				ccw++;
- 			}
- 		}
- 	}
-diff --git a/drivers/s390/net/qeth_core_main.c b/drivers/s390/net/qeth_core_main.c
-index 0a328d0..eca2885 100644
---- a/drivers/s390/net/qeth_core_main.c
-+++ b/drivers/s390/net/qeth_core_main.c
-@@ -4436,9 +4436,9 @@ static int qeth_snmp_command_cb(struct qeth_card *card,
- 	}
- 	qinfo->udata_offset += data_len;
- 	/* check if all replies received ... */
--		QETH_CARD_TEXT_(card, 4, "srtot%i",
-+	QETH_CARD_TEXT_(card, 4, "srtot%i",
- 			       cmd->data.setadapterparms.hdr.used_total);
--		QETH_CARD_TEXT_(card, 4, "srseq%i",
-+	QETH_CARD_TEXT_(card, 4, "srseq%i",
- 			       cmd->data.setadapterparms.hdr.seq_no);
- 	if (cmd->data.setadapterparms.hdr.seq_no <
- 	    cmd->data.setadapterparms.hdr.used_total)
-diff --git a/drivers/scsi/aic7xxx/aicasm/aicasm.c b/drivers/scsi/aic7xxx/aicasm/aicasm.c
-index 2e3117a..56a35d9 100644
---- a/drivers/scsi/aic7xxx/aicasm/aicasm.c
-+++ b/drivers/scsi/aic7xxx/aicasm/aicasm.c
-@@ -609,8 +609,8 @@ output_listing(char *ifilename)
- 
- 		while (line < cur_instr->srcline) {
- 			fgets(buf, sizeof(buf), ifile);
--				fprintf(listfile, "             \t%s", buf);
--				line++;
-+			fprintf(listfile, "             \t%s", buf);
-+			line++;
- 		}
- 		fprintf(listfile, "%04x %02x%02x%02x%02x", instrptr,
- #ifdef __LITTLE_ENDIAN
-diff --git a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
-index 33c52bc..8d31545 100644
---- a/drivers/scsi/arcmsr/arcmsr_hba.c
-+++ b/drivers/scsi/arcmsr/arcmsr_hba.c
-@@ -890,9 +890,9 @@ static void arcmsr_report_ccb_state(struct AdapterControlBlock *acb,
- 				, id
- 				, lun
- 				, ccb->arcmsr_cdb.DeviceStatus);
--				acb->devstate[id][lun] = ARECA_RAID_GONE;
--				ccb->pcmd->result = DID_NO_CONNECT << 16;
--				arcmsr_ccb_complete(ccb);
-+			acb->devstate[id][lun] = ARECA_RAID_GONE;
-+			ccb->pcmd->result = DID_NO_CONNECT << 16;
-+			arcmsr_ccb_complete(ccb);
- 			break;
- 		}
- 	}
-@@ -2458,8 +2458,8 @@ polling_hbc_ccb_retry:
- 					, pCCB->pcmd->device->id
- 					, pCCB->pcmd->device->lun
- 					, pCCB);
--					pCCB->pcmd->result = DID_ABORT << 16;
--					arcmsr_ccb_complete(pCCB);
-+				pCCB->pcmd->result = DID_ABORT << 16;
-+				arcmsr_ccb_complete(pCCB);
- 				continue;
- 			}
- 			printk(KERN_NOTICE "arcmsr%d: polling get an illegal ccb"
-diff --git a/drivers/scsi/atp870u.c b/drivers/scsi/atp870u.c
-index 15a629d..9ec9247 100644
---- a/drivers/scsi/atp870u.c
-+++ b/drivers/scsi/atp870u.c
-@@ -148,8 +148,8 @@ stop_dma:
- 				{
- 			   		k = dev->id[c][target_id].last_len;
- 			   		k -= adrcnt;
--			   		dev->id[c][target_id].tran_len = k;			   
--			   	dev->id[c][target_id].last_len = adrcnt;			   
-+					dev->id[c][target_id].tran_len = k;
-+					dev->id[c][target_id].last_len = adrcnt;
- 				}
- #ifdef ED_DBGP
- 				printk("tmport = %x dev->id[c][target_id].last_len = %d dev->id[c][target_id].tran_len = %d\n",tmport,dev->id[c][target_id].last_len,dev->id[c][target_id].tran_len);
-@@ -183,7 +183,7 @@ stop_dma:
- 			 */
- 			dev->in_int[c] = 0;
- #ifdef ED_DBGP
--				printk("Status 0x85 return\n");
-+			printk("Status 0x85 return\n");
- #endif				
- 			goto handled;
- 		}
-@@ -2528,9 +2528,11 @@ static int atp870u_init_tables(struct Scsi_Host *host)
- 	int c,k;
- 	for(c=0;c < 2;c++) {
- 	   	for(k=0;k<16;k++) {
--	   			atp_dev->id[c][k].prd_table = pci_alloc_consistent(atp_dev->pdev, 1024, &(atp_dev->id[c][k].prd_bus));
--	   			if (!atp_dev->id[c][k].prd_table) {
--	   				printk("atp870u_init_tables fail\n");
-+			atp_dev->id[c][k].prd_table =
-+				pci_alloc_consistent(atp_dev->pdev, 1024,
-+						&(atp_dev->id[c][k].prd_bus));
-+			if (!atp_dev->id[c][k].prd_table) {
-+				printk("atp870u_init_tables fail\n");
- 				atp870u_free_tables(host);
- 				return -ENOMEM;
- 			}
-@@ -2741,7 +2743,7 @@ flash_ok_880:
- 		shpnt->n_io_port = 0x60;	/* Number of bytes of I/O space used */
- 		shpnt->irq = pdev->irq;			
- 	} else if (ent->device == ATP885_DEVID) {	
--			printk(KERN_INFO "   ACARD AEC-67162 PCI Ultra3 LVD Host Adapter:  IO:%x, IRQ:%d.\n"
-+		printk(KERN_INFO "   ACARD AEC-67162 PCI Ultra3 LVD Host Adapter:  IO:%x, IRQ:%d.\n"
- 			       , base_io, pdev->irq);
-         	
- 		atpdev->pdev = pdev;
-diff --git a/drivers/scsi/bfa/bfa_ioc.c b/drivers/scsi/bfa/bfa_ioc.c
-index f78bcb6..e23f21c 100644
---- a/drivers/scsi/bfa/bfa_ioc.c
-+++ b/drivers/scsi/bfa/bfa_ioc.c
-@@ -5525,7 +5525,7 @@ bfa_phy_intr(void *phyarg, struct bfi_mbmsg_s *msg)
- 				(struct bfa_phy_stats_s *) phy->ubuf;
- 			bfa_phy_ntoh32((u32 *)stats, (u32 *)phy->dbuf_kva,
- 				sizeof(struct bfa_phy_stats_s));
--				bfa_trc(phy, stats->status);
-+			bfa_trc(phy, stats->status);
- 		}
- 
- 		phy->status = status;
-diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
-index 7f4f790..189b7c1 100644
---- a/drivers/scsi/hpsa.c
-+++ b/drivers/scsi/hpsa.c
-@@ -1894,7 +1894,7 @@ static int hpsa_gather_lun_info(struct ctlr_info *h,
- 			"maximum logical LUNs (%d) exceeded.  "
- 			"%d LUNs ignored.\n", HPSA_MAX_LUN,
- 			*nlogicals - HPSA_MAX_LUN);
--			*nlogicals = HPSA_MAX_LUN;
-+		*nlogicals = HPSA_MAX_LUN;
- 	}
- 	if (*nlogicals + *nphysicals > HPSA_MAX_PHYS_LUN) {
- 		dev_warn(&h->pdev->dev,
-diff --git a/drivers/scsi/ipr.c b/drivers/scsi/ipr.c
-index 6601e03..674a5e4 100644
---- a/drivers/scsi/ipr.c
-+++ b/drivers/scsi/ipr.c
-@@ -8920,8 +8920,8 @@ static int ipr_alloc_cmd_blks(struct ipr_ioa_cfg *ioa_cfg)
- 			if (i == 0) {
- 				entries_each_hrrq = IPR_NUM_INTERNAL_CMD_BLKS;
- 				ioa_cfg->hrrq[i].min_cmd_id = 0;
--					ioa_cfg->hrrq[i].max_cmd_id =
--						(entries_each_hrrq - 1);
-+				ioa_cfg->hrrq[i].max_cmd_id =
-+					(entries_each_hrrq - 1);
- 			} else {
- 				entries_each_hrrq =
- 					IPR_NUM_BASE_CMD_BLKS/
-diff --git a/drivers/scsi/lpfc/lpfc_bsg.c b/drivers/scsi/lpfc/lpfc_bsg.c
-index 6630520..606ce69 100644
---- a/drivers/scsi/lpfc/lpfc_bsg.c
-+++ b/drivers/scsi/lpfc/lpfc_bsg.c
-@@ -2861,7 +2861,7 @@ static int lpfcdiag_loop_post_rxbufs(struct lpfc_hba *phba, uint16_t rxxri,
- 			cmd->un.cont64[i].addrLow = putPaddrLow(mp[i]->phys);
- 			cmd->un.cont64[i].tus.f.bdeSize =
- 				((struct lpfc_dmabufext *)mp[i])->size;
--					cmd->ulpBdeCount = ++i;
-+			cmd->ulpBdeCount = ++i;
- 
- 			if ((--num_bde > 0) && (i < 2))
- 				continue;
-diff --git a/drivers/scsi/lpfc/lpfc_els.c b/drivers/scsi/lpfc/lpfc_els.c
-index 6b8ee74..81935ff 100644
---- a/drivers/scsi/lpfc/lpfc_els.c
-+++ b/drivers/scsi/lpfc/lpfc_els.c
-@@ -5656,7 +5656,7 @@ lpfc_els_rcv_rtv(struct lpfc_vport *vport, struct lpfc_iocbq *cmdiocb,
- 		return 1;
- 
- 	pcmd = (uint8_t *) (((struct lpfc_dmabuf *) elsiocb->context2)->virt);
--		*((uint32_t *) (pcmd)) = ELS_CMD_ACC;
-+	*((uint32_t *) (pcmd)) = ELS_CMD_ACC;
- 	pcmd += sizeof(uint32_t); /* Skip past command */
- 
- 	/* use the command's xri in the response */
-diff --git a/drivers/scsi/lpfc/lpfc_sli.c b/drivers/scsi/lpfc/lpfc_sli.c
-index 43440ca..a2b116f 100644
---- a/drivers/scsi/lpfc/lpfc_sli.c
-+++ b/drivers/scsi/lpfc/lpfc_sli.c
-@@ -15470,8 +15470,8 @@ lpfc_sli4_read_fcf_rec(struct lpfc_hba *phba, uint16_t fcf_index)
- 		lpfc_printf_log(phba, KERN_ERR, LOG_FIP | LOG_INIT,
- 				"2758 Failed to allocate mbox for "
- 				"READ_FCF cmd\n");
--				error = -ENOMEM;
--				goto fail_fcf_read;
-+		error = -ENOMEM;
-+		goto fail_fcf_read;
- 	}
- 	/* Construct the read FCF record mailbox command */
- 	rc = lpfc_sli4_mbx_read_fcf_rec(phba, mboxq, fcf_index);
-diff --git a/drivers/scsi/pm8001/pm8001_sas.c b/drivers/scsi/pm8001/pm8001_sas.c
-index a85d73d..65ec553 100644
---- a/drivers/scsi/pm8001/pm8001_sas.c
-+++ b/drivers/scsi/pm8001/pm8001_sas.c
-@@ -650,7 +650,7 @@ static int pm8001_dev_found_notify(struct domain_device *dev)
- 		if (dev->dev_type == SAS_SATA_DEV) {
- 			pm8001_device->attached_phy =
- 				dev->rphy->identify.phy_identifier;
--				flag = 1; /* directly sata*/
-+			flag = 1; /* directly sata*/
- 		}
- 	} /*register this device to HBA*/
- 	PM8001_DISC_DBG(pm8001_ha, pm8001_printk("Found device\n"));
-diff --git a/drivers/scsi/qla2xxx/qla_init.c b/drivers/scsi/qla2xxx/qla_init.c
-index f2216ed..90617ad 100644
---- a/drivers/scsi/qla2xxx/qla_init.c
-+++ b/drivers/scsi/qla2xxx/qla_init.c
-@@ -605,7 +605,7 @@ qla2x00_initialize_adapter(scsi_qla_host_t *vha)
- 		if (rval != QLA_SUCCESS) {
- 			ql_log(ql_log_warn, vha, 0x00d4,
- 			    "Unable to initialize ISP84XX.\n");
--		qla84xx_put_chip(vha);
-+			qla84xx_put_chip(vha);
- 		}
- 	}
- 
-diff --git a/drivers/scsi/qla2xxx/qla_mr.c b/drivers/scsi/qla2xxx/qla_mr.c
-index d799379..946ac05 100644
---- a/drivers/scsi/qla2xxx/qla_mr.c
-+++ b/drivers/scsi/qla2xxx/qla_mr.c
-@@ -1752,7 +1752,7 @@ qlafx00_fx_disc(scsi_qla_host_t *vha, fc_port_t *fcport, uint16_t fx_type)
- 	fdisc = &sp->u.iocb_cmd;
- 	switch (fx_type) {
- 	case FXDISC_GET_CONFIG_INFO:
--	fdisc->u.fxiocb.flags =
-+		fdisc->u.fxiocb.flags =
- 		    SRB_FXDISC_RESP_DMA_VALID;
- 		fdisc->u.fxiocb.rsp_len = sizeof(struct config_info_data);
- 		break;
-diff --git a/drivers/scsi/scsi_debug.c b/drivers/scsi/scsi_debug.c
-index cb4fefa..79f6065 100644
---- a/drivers/scsi/scsi_debug.c
-+++ b/drivers/scsi/scsi_debug.c
-@@ -1769,7 +1769,7 @@ static int dif_verify(struct sd_dif_tuple *sdt, const void *data,
- 	    be32_to_cpu(sdt->ref_tag) != ei_lba) {
- 		pr_err("%s: REF check failed on sector %lu\n",
- 			__func__, (unsigned long)sector);
--			dif_errors++;
-+		dif_errors++;
- 		return 0x03;
- 	}
- 	return 0;
-diff --git a/drivers/scsi/scsi_error.c b/drivers/scsi/scsi_error.c
-index 2150596..22b118b 100644
---- a/drivers/scsi/scsi_error.c
-+++ b/drivers/scsi/scsi_error.c
-@@ -1768,7 +1768,7 @@ void scsi_eh_flush_done_q(struct list_head *done_q)
- 							  " retry cmd: %p\n",
- 							  current->comm,
- 							  scmd));
--				scsi_queue_insert(scmd, SCSI_MLQUEUE_EH_RETRY);
-+			scsi_queue_insert(scmd, SCSI_MLQUEUE_EH_RETRY);
- 		} else {
- 			/*
- 			 * If just we got sense for the device (called
-diff --git a/drivers/staging/cxt1e1/comet.c b/drivers/staging/cxt1e1/comet.c
-index fabfd77..b71b8e6 100644
---- a/drivers/staging/cxt1e1/comet.c
-+++ b/drivers/staging/cxt1e1/comet.c
-@@ -488,14 +488,14 @@ WrtRcvEqualizerTbl(ci_t *ci, comet_t *comet, u_int32_t *table)
- 
- 	/* Storing RAM address, causes RAM to be updated */
- 
--		/* Set up for a write operation */
--		pci_write_32((u_int32_t *) &comet->rlps_eq_rwsel, 0);
--		/* for write order preservation when optimizing driver */
--		pci_flush_write(ci);
--		/* write the addr, initiate a read */
--		pci_write_32((u_int32_t *) &comet->rlps_eq_iaddr, (u_int8_t) ramaddr);
--		 /* for write order preservation when optimizing driver */
--		pci_flush_write(ci);
-+	/* Set up for a write operation */
-+	pci_write_32((u_int32_t *) &comet->rlps_eq_rwsel, 0);
-+	/* for write order preservation when optimizing driver */
-+	pci_flush_write(ci);
-+	/* write the addr, initiate a read */
-+	pci_write_32((u_int32_t *) &comet->rlps_eq_iaddr, (u_int8_t) ramaddr);
-+	 /* for write order preservation when optimizing driver */
-+	pci_flush_write(ci);
- 
- 	/*
- 	* wait 3 line rate clock cycles to ensure address bits are captured
-diff --git a/drivers/staging/cxt1e1/musycc.c b/drivers/staging/cxt1e1/musycc.c
-index 1037086..e1cc348 100644
---- a/drivers/staging/cxt1e1/musycc.c
-+++ b/drivers/staging/cxt1e1/musycc.c
-@@ -1074,7 +1074,7 @@ musycc_bh_rx_eom(mpi_t *pi, int gchan)
- 	else if (error == ERR_SHT)
- 	    ch->s.rx_length_errors++;
- 	FLUSH_MEM_WRITE();
--	       status = cxt1e1_max_mru;
-+	status = cxt1e1_max_mru;
- 	if (ch->p.chan_mode == CFG_CH_PROTO_TRANS)
- 	    status |= EOBIRQ_ENABLE;
- 	md->status = cpu_to_le32(status);
-diff --git a/drivers/staging/frontier/tranzport.c b/drivers/staging/frontier/tranzport.c
-index 6cbf9c7..5310f9f 100644
---- a/drivers/staging/frontier/tranzport.c
-+++ b/drivers/staging/frontier/tranzport.c
-@@ -273,8 +273,8 @@ static void usb_tranzport_interrupt_in_callback(struct urb *urb)
- 			 dev->interrupt_in_buffer[6],
- 			 dev->interrupt_in_buffer[7]);
- #if SUPPRESS_EXTRA_OFFLINE_EVENTS
--	if (dev->offline == 2 && dev->interrupt_in_buffer[1] == 0xff)
--		goto resubmit;
-+		if (dev->offline == 2 && dev->interrupt_in_buffer[1] == 0xff)
-+			goto resubmit;
- 		if (dev->offline == 1 && dev->interrupt_in_buffer[1] == 0xff) {
- 			dev->offline = 2;
- 			goto resubmit;
-@@ -287,7 +287,7 @@ static void usb_tranzport_interrupt_in_callback(struct urb *urb)
- 			dev->offline = 1;
- 
- #endif	/* SUPPRESS_EXTRA_OFFLINE_EVENTS */
--	   dbg_info(&dev->intf->dev, "%s: head, tail are %x, %x\n",
-+		dbg_info(&dev->intf->dev, "%s: head, tail are %x, %x\n",
- 		__func__, dev->ring_head, dev->ring_tail);
- 
- 		next_ring_head = (dev->ring_head + 1) % ring_buffer_size;
-diff --git a/drivers/staging/speakup/speakup_keypc.c b/drivers/staging/speakup/speakup_keypc.c
-index 2f2fe5e..3e5249a 100644
---- a/drivers/staging/speakup/speakup_keypc.c
-+++ b/drivers/staging/speakup/speakup_keypc.c
-@@ -187,7 +187,7 @@ static void do_catch_up(struct spk_synth *synth)
- 	jiffy_delta = spk_get_var(JIFFY);
- 	delay_time = spk_get_var(DELAY);
- 	full_time = spk_get_var(FULL);
--spin_lock_irqsave(&speakup_info.spinlock, flags);
-+	spin_lock_irqsave(&speakup_info.spinlock, flags);
- 	jiffy_delta_val = jiffy_delta->u.n.value;
- 	spin_unlock_irqrestore(&speakup_info.spinlock, flags);
- 
-diff --git a/drivers/usb/gadget/fsl_qe_udc.c b/drivers/usb/gadget/fsl_qe_udc.c
-index f3bb363..2137927 100644
---- a/drivers/usb/gadget/fsl_qe_udc.c
-+++ b/drivers/usb/gadget/fsl_qe_udc.c
-@@ -2601,10 +2601,9 @@ err5:
- 	irq_dispose_mapping(udc->usb_irq);
- err_noirq:
- 	if (udc->nullmap) {
--		dma_unmap_single(udc->gadget.dev.parent,
--			udc->nullp, 256,
-+		dma_unmap_single(udc->gadget.dev.parent, udc->nullp, 256,
- 				DMA_TO_DEVICE);
--			udc->nullp = DMA_ADDR_INVALID;
-+		udc->nullp = DMA_ADDR_INVALID;
- 	} else {
- 		dma_sync_single_for_cpu(udc->gadget.dev.parent,
- 			udc->nullp, 256,
-diff --git a/drivers/usb/host/ohci-ppc-of.c b/drivers/usb/host/ohci-ppc-of.c
-index 75f5a1e..232eba9 100644
---- a/drivers/usb/host/ohci-ppc-of.c
-+++ b/drivers/usb/host/ohci-ppc-of.c
-@@ -165,7 +165,7 @@ static int ohci_hcd_ppc_of_probe(struct platform_device *op)
- 			if (!request_mem_region(res.start, 0x4, hcd_name)) {
- 				writel_be((readl_be(&ohci->regs->control) |
- 					OHCI_USB_SUSPEND), &ohci->regs->control);
--					(void) readl_be(&ohci->regs->control);
-+				(void) readl_be(&ohci->regs->control);
- 			} else
- 				release_mem_region(res.start, 0x4);
- 		} else
-diff --git a/drivers/usb/host/u132-hcd.c b/drivers/usb/host/u132-hcd.c
-index e402beb..839ca8a 100644
---- a/drivers/usb/host/u132-hcd.c
-+++ b/drivers/usb/host/u132-hcd.c
-@@ -2491,7 +2491,8 @@ static int u132_endp_urb_dequeue(struct u132 *u132, struct u132_endp *endp,
- 				spin_unlock_irqrestore(&endp->queue_lock.slock,
- 					irqs);
- 				kfree(urbq);
--			} urb->error_count = 0;
-+			}
-+			urb->error_count = 0;
- 			usb_hcd_giveback_urb(hcd, urb, status);
- 			return 0;
- 		} else if (list_empty(&endp->urb_more)) {
-diff --git a/drivers/usb/misc/ftdi-elan.c b/drivers/usb/misc/ftdi-elan.c
-index a4a3c7c..e763b40 100644
---- a/drivers/usb/misc/ftdi-elan.c
-+++ b/drivers/usb/misc/ftdi-elan.c
-@@ -2930,7 +2930,8 @@ static void __exit ftdi_elan_exit(void)
-                 ftdi_status_cancel_work(ftdi);
-                 ftdi_command_cancel_work(ftdi);
-                 ftdi_response_cancel_work(ftdi);
--        } flush_workqueue(status_queue);
-+	}
-+	flush_workqueue(status_queue);
-         destroy_workqueue(status_queue);
-         status_queue = NULL;
-         flush_workqueue(command_queue);
-diff --git a/drivers/usb/misc/sisusbvga/sisusb.c b/drivers/usb/misc/sisusbvga/sisusb.c
-index de98906..5ea51ba 100644
---- a/drivers/usb/misc/sisusbvga/sisusb.c
-+++ b/drivers/usb/misc/sisusbvga/sisusb.c
-@@ -922,7 +922,7 @@ static int sisusb_write_mem_bulk(struct sisusb_usb_data *sisusb, u32 addr,
- 							bytes_written, 0, 1);
- 				kernbuffer += (*bytes_written);
- 			   } else {
--			ret |= sisusb_send_bulk_msg(sisusb,
-+				ret |= sisusb_send_bulk_msg(sisusb,
- 							SISUSB_EP_GFX_LBULK_OUT,
- 							(length & ~3),
- 							NULL, NULL, index,
-diff --git a/drivers/usb/serial/visor.c b/drivers/usb/serial/visor.c
-index 9910aa2..ee0b2bd 100644
---- a/drivers/usb/serial/visor.c
-+++ b/drivers/usb/serial/visor.c
-@@ -343,7 +343,7 @@ static int palm_os_3_probe(struct usb_serial *serial,
- 	}
- 
- 	if (retval == sizeof(*connection_info)) {
--			connection_info = (struct visor_connection_info *)
-+		connection_info = (struct visor_connection_info *)
- 							transfer_buffer;
- 
- 		num_ports = le16_to_cpu(connection_info->num_ports);
-diff --git a/drivers/video/mbx/mbxfb.c b/drivers/video/mbx/mbxfb.c
-index 0c1a874..e2bdb11 100644
---- a/drivers/video/mbx/mbxfb.c
-+++ b/drivers/video/mbx/mbxfb.c
-@@ -408,9 +408,8 @@ static int mbxfb_setupOverlay(struct mbxfb_overlaySetup *set)
- 	 * for packed formats.
- 	 */
- 	set->UV_stride = ((set->width/2) + 0x7 ) & ~0x7;
--		set->U_offset = set->height * set->Y_stride;
--		set->V_offset = set->U_offset +
--						set->height * set->UV_stride;
-+	set->U_offset = set->height * set->Y_stride;
-+	set->V_offset = set->U_offset + set->height * set->UV_stride;
- 	vubase |= Vubase_Ubase_Adr(
- 			(0x60000 + set->mem_offset + set->U_offset)>>3);
- 	vvbase |= Vvbase_Vbase_Adr(
-diff --git a/drivers/vlynq/vlynq.c b/drivers/vlynq/vlynq.c
-index 7b07135..f1ed896 100644
---- a/drivers/vlynq/vlynq.c
-+++ b/drivers/vlynq/vlynq.c
-@@ -484,7 +484,7 @@ static int __vlynq_try_external(struct vlynq_device *dev)
- 	if (vlynq_linked(dev)) {
- 		printk(KERN_DEBUG "%s: using external clock\n",
- 			dev_name(&dev->dev));
--			dev->divisor = vlynq_div_external;
-+		dev->divisor = vlynq_div_external;
- 		return 0;
- 	}
- 
-diff --git a/fs/compat_ioctl.c b/fs/compat_ioctl.c
-index 5d19acf..b163c6b 100644
---- a/fs/compat_ioctl.c
-+++ b/fs/compat_ioctl.c
-@@ -628,7 +628,7 @@ static int serial_struct_ioctl(unsigned fd, unsigned cmd,
-                 ss.iomap_base = 0UL;
-         }
-         set_fs(KERNEL_DS);
--                err = sys_ioctl(fd,cmd,(unsigned long)(&ss));
-+	err = sys_ioctl(fd, cmd, (unsigned long)(&ss));
-         set_fs(oldseg);
-         if (cmd == TIOCGSERIAL && err >= 0) {
-                 if (!access_ok(VERIFY_WRITE, ss32, sizeof(SS32)))
-diff --git a/mm/migrate.c b/mm/migrate.c
-index 1da0092..9c46470 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -83,7 +83,7 @@ void putback_lru_pages(struct list_head *l)
- 		list_del(&page->lru);
- 		dec_zone_page_state(page, NR_ISOLATED_ANON +
- 				page_is_file_cache(page));
--			putback_lru_page(page);
-+		putback_lru_page(page);
- 	}
- }
- 
-diff --git a/net/bluetooth/rfcomm/core.c b/net/bluetooth/rfcomm/core.c
-index ca957d3..e6199d1 100644
---- a/net/bluetooth/rfcomm/core.c
-+++ b/net/bluetooth/rfcomm/core.c
-@@ -1626,8 +1626,8 @@ static int rfcomm_recv_data(struct rfcomm_session *s, u8 dlci, int pf, struct sk
- 	}
- 
- 	if (pf && d->cfc) {
--		u8 credits = *(u8 *) skb->data; skb_pull(skb, 1);
--
-+		u8 credits = *(u8 *) skb->data;
-+		skb_pull(skb, 1);
- 		d->tx_credits += credits;
- 		if (d->tx_credits)
- 			clear_bit(RFCOMM_TX_THROTTLED, &d->flags);
-diff --git a/sound/oss/sb_ess.c b/sound/oss/sb_ess.c
-index c0be085..58125ab 100644
---- a/sound/oss/sb_ess.c
-+++ b/sound/oss/sb_ess.c
-@@ -604,7 +604,7 @@ static void ess_audio_output_block_audio2
- 	ess_chgmixer (devc, 0x78, 0x03, 0x03);   /* Go */
- 
- 	devc->irq_mode_16 = IMODE_OUTPUT;
--		devc->intr_active_16 = 1;
-+	devc->intr_active_16 = 1;
- }
- 
- static void ess_audio_output_block
-diff --git a/sound/pci/asihpi/asihpi.c b/sound/pci/asihpi/asihpi.c
-index dc632cd..49a941b 100644
---- a/sound/pci/asihpi/asihpi.c
-+++ b/sound/pci/asihpi/asihpi.c
-@@ -1254,9 +1254,9 @@ static int snd_card_asihpi_pcm_new(struct snd_card_asihpi *asihpi, int device)
- 	if (err < 0)
- 		return err;
- 	/* pointer to ops struct is stored, dont change ops afterwards! */
--		snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_PLAYBACK,
-+	snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_PLAYBACK,
- 				&snd_card_asihpi_playback_mmap_ops);
--		snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_CAPTURE,
-+	snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_CAPTURE,
- 				&snd_card_asihpi_capture_mmap_ops);
- 
- 	pcm->private_data = asihpi;
-diff --git a/sound/sparc/dbri.c b/sound/sparc/dbri.c
-index eee7afc..30ce64f 100644
---- a/sound/sparc/dbri.c
-+++ b/sound/sparc/dbri.c
-@@ -1204,9 +1204,9 @@ static int setup_descs(struct snd_dbri *dbri, int streamno, unsigned int period)
- 			dbri->dma->desc[desc].word1,
- 			dbri->dma->desc[desc].ba,
- 			dbri->dma->desc[desc].nda, dbri->dma->desc[desc].word4);
--			desc = dbri->next_desc[desc];
--			if (desc == first_desc)
--				break;
-+		desc = dbri->next_desc[desc];
-+		if (desc == first_desc)
-+			break;
- 	}
- #endif
- 	return 0;
-diff --git a/tools/power/x86/x86_energy_perf_policy/x86_energy_perf_policy.c b/tools/power/x86/x86_energy_perf_policy/x86_energy_perf_policy.c
-index 40b3e54..e2bf634 100644
---- a/tools/power/x86/x86_energy_perf_policy/x86_energy_perf_policy.c
-+++ b/tools/power/x86/x86_energy_perf_policy/x86_energy_perf_policy.c
-@@ -122,7 +122,7 @@ void cmdline(int argc, char **argv)
- 			new_bias = strtoull(argv[optind], &endptr, 0);
- 			if (endptr == argv[optind] ||
- 				new_bias > BIAS_POWERSAVE) {
--					fprintf(stderr, "invalid value: %s\n",
-+				fprintf(stderr, "invalid value: %s\n",
- 						argv[optind]);
- 				usage();
- 			}
+Time to stick some printk()s in, I susupect. (Not sure how to keep them
+from utterly flooding the log, though.)
+
+>> This is the same machine on which this panic has been occurring on
+>> shutdown since 3.9.x: Al Viro has previously pointed out the problem and
+>> nothing has happened:
+>> 
+>> [50618.993226] BUG: unable to handle kernel NULL pointer dereference at 0000000000000008
+>> [50618.993904] IP: [<ffffffff81165e76>] path_init+0x11c/0x36f
+>> [50618.994609] PGD 0 
+>> [50618.995329] Oops: 0000 [#1] PREEMPT SMP 
+>> [50618.996027] Modules linked in: [last unloaded: microcode] 
+>> [50618.996758] CPU: 3 PID: 1262 Comm: pulseaudio Not tainted 3.10.4-05315-gf4ce424-dirty #1
+>> [50618.997506] Hardware name: System manufacturer System Product Name/P8H61-MX USB3, BIOS 0506 08/10/2012
+>> [50618.998268] task: ffff88041bf1ad60 ti: ffff88041b19e000 task.ti: ffff88041b19e000
+>> [50618.999017] RIP: 0010:[<ffffffff81165e76>] [<ffffffff81165e76>] path_init+0x11c/0x36f
+>> [50618.999804] RSP: 0018:ffff88041b19f508  EFLAGS: 00010246
+>> [50619.000592] RAX: 0000000000000000 RBX: ffff88041b19f658 RCX: 000000000000005c
+>> [50619.001398] RDX: 0000000000005c5c RSI: ffff880419b3781a RDI: ffffffff81c34a10
+>> [50619.002198] RBP: ffff88041b19f558 R08: ffff88041b19f588 R09: ffff88041b19f7c4
+>> [50619.002999] R10: 00000000ffffff9c R11: ffff88041b19f658 R12: 0000000000000041
+>> [50619.003816] R13: 0000000000000040 R14: ffff880419b3781a R15: ffff88041b19f7c4
+>> [50619.004638] FS:  00007fca19bc2740(0000) GS:ffff88042fac0000(0000) knlGS:0000000000000000
+>> [50619.005465] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+>> [50619.006284] CR2: 0000000000000008 CR3: 0000000001c0b000 CR4: 00000000001407e0
+>> [50619.007092] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+>> [50619.007922] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+>> [50619.008750] Stack: [50619.009576]  ffff88041b19f518 00000000ffbfaa5e 0000000000000000 ffffffff8151e735 
+>> [50619.010437]  ffffc900080ae000 ffff88041b19f658 0000000000000041 ffff880419b3781a 
+>> [50619.011292]  ffff88041b19f628 ffff88041b19f7c4 ffff88041b19f5e8 ffffffff811660fc 
+>> [50619.012119] Call Trace:
+>> [50619.012947]  [<ffffffff8151e735>] ? skb_checksum+0x4f/0x25b
+>> [50619.013782]  [<ffffffff811660fc>] path_lookupat+0x33/0x6c5
+>> [50619.014618]  [<ffffffff8152c623>] ? dev_hard_start_xmit+0x2e5/0x50b
+>> [50619.015457]  [<ffffffff811667b4>] filename_lookup.isra.27+0x26/0x5c
+>> [50619.016298]  [<ffffffff8116687e>] do_path_lookup+0x33/0x35
+>> [50619.017123]  [<ffffffff81166aac>] kern_path+0x2a/0x4d
+>> [50619.017973]  [<ffffffff815203d8>] ? __alloc_skb+0x75/0x186
+>> [50619.018832]  [<ffffffff81520324>] ? __kmalloc_reserve.isra.42+0x2d/0x6c
+>> [50619.019702]  [<ffffffff815871a3>] unix_find_other+0x38/0x1b9
+>> [50619.020568]  [<ffffffff81589043>] unix_stream_connect+0x102/0x3ed
+>> [50619.021429]  [<ffffffff81518cbc>] ? __sock_create+0x168/0x1c0
+>> [50619.022301]  [<ffffffff815de7e3>] ? call_refreshresult+0x91/0x91
+>> [50619.023170]  [<ffffffff81516531>] kernel_connect+0x10/0x12
+>> [50619.024047]  [<ffffffff815e1d36>] xs_local_setup_socket+0x122/0x191
+>> [50619.024945]  [<ffffffff815e2f50>] xs_local_connect+0x2c/0x48
+>> [50619.025849]  [<ffffffff815e01f6>] xprt_connect+0x112/0x11b
+>> [50619.026756]  [<ffffffff815de81c>] call_connect+0x39/0x3b
+>> [50619.027662]  [<ffffffff815e4e68>] __rpc_execute+0xe8/0x2ca
+>> [50619.028567]  [<ffffffff815e5109>] rpc_execute+0x76/0x9d
+>> [50619.029473]  [<ffffffff815debd1>] rpc_run_task+0x78/0x80
+>> [50619.030376]  [<ffffffff815ded0f>] rpc_call_sync+0x88/0x9e
+>> [50619.031270]  [<ffffffff815ebd2f>] rpcb_register_call+0x1f/0x2e
+>> [50619.032143]  [<ffffffff815ec216>] rpcb_v4_register+0xb2/0x13c
+>> [50619.033031]  [<ffffffff8108addb>] ? call_timer_fn+0x15e/0x15e
+>> [50619.033918]  [<ffffffff815e7816>] svc_unregister.isra.11+0x5a/0xcb
+>> [50619.034804]  [<ffffffff815e789b>] svc_rpcb_cleanup+0x14/0x21
+>> [50619.035706]  [<ffffffff815e70ef>] svc_shutdown_net+0x2b/0x30
+>> [50619.036586]  [<ffffffff812471c5>] lockd_down_net+0x7f/0xa3
+>> [50619.037465]  [<ffffffff81247413>] lockd_down+0x30/0xb2
+>> [50619.038346]  [<ffffffff8124439f>] nlmclnt_done+0x1f/0x23
+>> [50619.039227]  [<ffffffff8120fd72>] ? nfs_start_lockd+0xc8/0xc8
+>> [50619.040086]  [<ffffffff8120fd89>] nfs_destroy_server+0x17/0x19
+>> [50619.040962]  [<ffffffff8121024b>] nfs_free_server+0xeb/0x15c
+>> [50619.041947]  [<ffffffff812172c3>] nfs_kill_super+0x1f/0x23
+>> [50619.042824]  [<ffffffff8115da33>] deactivate_locked_super+0x26/0x52
+>> [50619.043696]  [<ffffffff8115e73d>] deactivate_super+0x42/0x47
+>> [50619.044562]  [<ffffffff8117453e>] mntput_no_expire+0x135/0x13e
+>> [50619.045424]  [<ffffffff81174574>] mntput+0x2d/0x2f
+>> [50619.046287]  [<ffffffff8115cd78>] __fput+0x1c6/0x1e6
+>> [50619.047111]  [<ffffffff8115cda6>] ____fput+0xe/0x10
+>> [50619.047943]  [<ffffffff810998da>] task_work_run+0x7e/0x98
+>> [50619.048764]  [<ffffffff81082bc5>] do_exit+0x3cc/0x8fa
+>> [50619.049580]  [<ffffffff81174449>] ? mntput_no_expire+0x40/0x13e
+>> [50619.050399]  [<ffffffff8108ca8b>] ? __dequeue_signal+0x1a/0x118
+>> [50619.051215]  [<ffffffff8108328d>] do_group_exit+0x6f/0xa2
+>> [50619.052000]  [<ffffffff8108f0e7>] get_signal_to_deliver+0x4f2/0x530
+>> [50619.052797]  [<ffffffff81036a39>] do_signal+0x4d/0x4a4
+>> [50619.053577]  [<ffffffff810f2810>] ? call_rcu+0x17/0x19
+>> [50619.054344]  [<ffffffff81036ebc>] do_notify_resume+0x2c/0x6b
+>> [50619.055084]  [<ffffffff81614098>] int_signal+0x12/0x17
+>> [50619.055852] Code: c7 c7 10 4a c3 81 e8 79 c4 f3 ff e8 99 3a f3 ff 48 83 7b 20 00 0f 85 8d 00 00 00 65 48 8b 04 25 c0 b8 00 00 48 8b 80 58 05 00 00 <8b> 50 08 f6 c2 01 74 04 f3 90 eb f4 48 8b 48 18 48 89 4b 20 48 
+>> [50619.057735] RIP [<ffffffff81165e76>] path_init+0x11c/0x36f
+>> [50619.058586]  RSP <ffff88041b19f508>
+>> [50619.059429] CR2: 0000000000000008
+[...]
+>> Why is it done in essentially random process context, anyway?  There's such thing
+>> as chroot, after all, which would screw that sucker as hard as NULL ->fs, but in
+>> a less visible way...
+>
+> Having not studied the problem, I can't offer up much of an idea on
+> how to fix it at this point.
+
+What mystifies me is why a v3 server shutdown and unregistration is
+triggering a v4 registration. It's not really that surprising that a
+registration that late in shutdown, after the disconnected fs has been
+destroyed, would cause problems... (I have NFSv4 built in, but am not
+using it yet.)
+
+My .config seems useful at this juncture, if people on this list haven't
+seen it:
+
+CONFIG_64BIT=y
+CONFIG_X86_64=y
+CONFIG_X86=y
+CONFIG_INSTRUCTION_DECODER=y
+CONFIG_OUTPUT_FORMAT="elf64-x86-64"
+CONFIG_ARCH_DEFCONFIG="arch/x86/configs/x86_64_defconfig"
+CONFIG_LOCKDEP_SUPPORT=y
+CONFIG_STACKTRACE_SUPPORT=y
+CONFIG_HAVE_LATENCYTOP_SUPPORT=y
+CONFIG_MMU=y
+CONFIG_NEED_DMA_MAP_STATE=y
+CONFIG_NEED_SG_DMA_LENGTH=y
+CONFIG_GENERIC_ISA_DMA=y
+CONFIG_GENERIC_BUG=y
+CONFIG_GENERIC_BUG_RELATIVE_POINTERS=y
+CONFIG_GENERIC_HWEIGHT=y
+CONFIG_ARCH_MAY_HAVE_PC_FDC=y
+CONFIG_RWSEM_XCHGADD_ALGORITHM=y
+CONFIG_GENERIC_CALIBRATE_DELAY=y
+CONFIG_ARCH_HAS_CPU_RELAX=y
+CONFIG_ARCH_HAS_CACHE_LINE_SIZE=y
+CONFIG_ARCH_HAS_CPU_AUTOPROBE=y
+CONFIG_HAVE_SETUP_PER_CPU_AREA=y
+CONFIG_NEED_PER_CPU_EMBED_FIRST_CHUNK=y
+CONFIG_NEED_PER_CPU_PAGE_FIRST_CHUNK=y
+CONFIG_ARCH_HIBERNATION_POSSIBLE=y
+CONFIG_ARCH_SUSPEND_POSSIBLE=y
+CONFIG_ZONE_DMA32=y
+CONFIG_AUDIT_ARCH=y
+CONFIG_ARCH_SUPPORTS_OPTIMIZED_INLINING=y
+CONFIG_ARCH_SUPPORTS_DEBUG_PAGEALLOC=y
+CONFIG_HAVE_INTEL_TXT=y
+CONFIG_X86_64_SMP=y
+CONFIG_X86_HT=y
+CONFIG_ARCH_HWEIGHT_CFLAGS="-fcall-saved-rdi -fcall-saved-rsi -fcall-saved-rdx -fcall-saved-rcx -fcall-saved-r8 -fcall-saved-r9 -fcall-saved-r10 -fcall-saved-r11"
+CONFIG_ARCH_CPU_PROBE_RELEASE=y
+CONFIG_ARCH_SUPPORTS_UPROBES=y
+CONFIG_DEFCONFIG_LIST="/lib/modules/$UNAME_RELEASE/.config"
+CONFIG_IRQ_WORK=y
+CONFIG_BUILDTIME_EXTABLE_SORT=y
+CONFIG_INIT_ENV_ARG_LIMIT=32
+CONFIG_CROSS_COMPILE=""
+CONFIG_LOCALVERSION=""
+CONFIG_LOCALVERSION_AUTO=y
+CONFIG_HAVE_KERNEL_GZIP=y
+CONFIG_HAVE_KERNEL_BZIP2=y
+CONFIG_HAVE_KERNEL_LZMA=y
+CONFIG_HAVE_KERNEL_XZ=y
+CONFIG_HAVE_KERNEL_LZO=y
+CONFIG_KERNEL_LZMA=y
+CONFIG_DEFAULT_HOSTNAME="mutilate"
+CONFIG_SWAP=y
+CONFIG_SYSVIPC=y
+CONFIG_SYSVIPC_SYSCTL=y
+CONFIG_POSIX_MQUEUE=y
+CONFIG_POSIX_MQUEUE_SYSCTL=y
+CONFIG_FHANDLE=y
+CONFIG_AUDIT=y
+CONFIG_HAVE_GENERIC_HARDIRQS=y
+CONFIG_GENERIC_HARDIRQS=y
+CONFIG_GENERIC_IRQ_PROBE=y
+CONFIG_GENERIC_IRQ_SHOW=y
+CONFIG_GENERIC_PENDING_IRQ=y
+CONFIG_IRQ_DOMAIN=y
+CONFIG_IRQ_FORCED_THREADING=y
+CONFIG_SPARSE_IRQ=y
+CONFIG_CLOCKSOURCE_WATCHDOG=y
+CONFIG_ARCH_CLOCKSOURCE_DATA=y
+CONFIG_GENERIC_TIME_VSYSCALL=y
+CONFIG_GENERIC_CLOCKEVENTS=y
+CONFIG_GENERIC_CLOCKEVENTS_BUILD=y
+CONFIG_GENERIC_CLOCKEVENTS_BROADCAST=y
+CONFIG_GENERIC_CLOCKEVENTS_MIN_ADJUST=y
+CONFIG_GENERIC_CMOS_UPDATE=y
+CONFIG_TICK_ONESHOT=y
+CONFIG_NO_HZ_COMMON=y
+CONFIG_NO_HZ_IDLE=y
+CONFIG_NO_HZ=y
+CONFIG_HIGH_RES_TIMERS=y
+CONFIG_IRQ_TIME_ACCOUNTING=y
+CONFIG_BSD_PROCESS_ACCT=y
+CONFIG_TASKSTATS=y
+CONFIG_TASK_DELAY_ACCT=y
+CONFIG_TASK_XACCT=y
+CONFIG_TASK_IO_ACCOUNTING=y
+CONFIG_TREE_PREEMPT_RCU=y
+CONFIG_PREEMPT_RCU=y
+CONFIG_RCU_STALL_COMMON=y
+CONFIG_RCU_FANOUT=8
+CONFIG_RCU_FANOUT_LEAF=8
+CONFIG_RCU_BOOST=y
+CONFIG_RCU_BOOST_PRIO=1
+CONFIG_RCU_BOOST_DELAY=500
+CONFIG_LOG_BUF_SHIFT=18
+CONFIG_HAVE_UNSTABLE_SCHED_CLOCK=y
+CONFIG_ARCH_SUPPORTS_NUMA_BALANCING=y
+CONFIG_ARCH_WANTS_PROT_NUMA_PROT_NONE=y
+CONFIG_CGROUPS=y
+CONFIG_CGROUP_SCHED=y
+CONFIG_FAIR_GROUP_SCHED=y
+CONFIG_NAMESPACES=y
+CONFIG_PID_NS=y
+CONFIG_NET_NS=y
+CONFIG_UIDGID_CONVERTED=y
+CONFIG_SCHED_AUTOGROUP=y
+CONFIG_RELAY=y
+CONFIG_BLK_DEV_INITRD=y
+CONFIG_INITRAMFS_SOURCE="usr/initramfs.mutilate"
+CONFIG_INITRAMFS_ROOT_UID=99
+CONFIG_INITRAMFS_ROOT_GID=101
+CONFIG_RD_GZIP=y
+CONFIG_RD_BZIP2=y
+CONFIG_RD_LZMA=y
+CONFIG_RD_XZ=y
+CONFIG_RD_LZO=y
+CONFIG_INITRAMFS_COMPRESSION_LZMA=y
+CONFIG_CC_OPTIMIZE_FOR_SIZE=y
+CONFIG_SYSCTL=y
+CONFIG_ANON_INODES=y
+CONFIG_HAVE_UID16=y
+CONFIG_SYSCTL_EXCEPTION_TRACE=y
+CONFIG_HOTPLUG=y
+CONFIG_HAVE_PCSPKR_PLATFORM=y
+CONFIG_UID16=y
+CONFIG_KALLSYMS=y
+CONFIG_KALLSYMS_ALL=y
+CONFIG_PRINTK=y
+CONFIG_BUG=y
+CONFIG_ELF_CORE=y
+CONFIG_PCSPKR_PLATFORM=y
+CONFIG_BASE_FULL=y
+CONFIG_FUTEX=y
+CONFIG_EPOLL=y
+CONFIG_SIGNALFD=y
+CONFIG_TIMERFD=y
+CONFIG_EVENTFD=y
+CONFIG_SHMEM=y
+CONFIG_AIO=y
+CONFIG_PCI_QUIRKS=y
+CONFIG_HAVE_PERF_EVENTS=y
+CONFIG_PERF_EVENTS=y
+CONFIG_VM_EVENT_COUNTERS=y
+CONFIG_SLUB_DEBUG=y
+CONFIG_SLUB=y
+CONFIG_TRACEPOINTS=y
+CONFIG_HAVE_OPROFILE=y
+CONFIG_OPROFILE_NMI_TIMER=y
+CONFIG_JUMP_LABEL=y
+CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS=y
+CONFIG_ARCH_USE_BUILTIN_BSWAP=y
+CONFIG_USER_RETURN_NOTIFIER=y
+CONFIG_HAVE_IOREMAP_PROT=y
+CONFIG_HAVE_KPROBES=y
+CONFIG_HAVE_KRETPROBES=y
+CONFIG_HAVE_OPTPROBES=y
+CONFIG_HAVE_KPROBES_ON_FTRACE=y
+CONFIG_HAVE_ARCH_TRACEHOOK=y
+CONFIG_HAVE_DMA_ATTRS=y
+CONFIG_USE_GENERIC_SMP_HELPERS=y
+CONFIG_GENERIC_SMP_IDLE_THREAD=y
+CONFIG_HAVE_REGS_AND_STACK_ACCESS_API=y
+CONFIG_HAVE_DMA_API_DEBUG=y
+CONFIG_HAVE_HW_BREAKPOINT=y
+CONFIG_HAVE_MIXED_BREAKPOINTS_REGS=y
+CONFIG_HAVE_USER_RETURN_NOTIFIER=y
+CONFIG_HAVE_PERF_EVENTS_NMI=y
+CONFIG_HAVE_PERF_REGS=y
+CONFIG_HAVE_PERF_USER_STACK_DUMP=y
+CONFIG_HAVE_ARCH_JUMP_LABEL=y
+CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG=y
+CONFIG_HAVE_ALIGNED_STRUCT_PAGE=y
+CONFIG_HAVE_CMPXCHG_LOCAL=y
+CONFIG_HAVE_CMPXCHG_DOUBLE=y
+CONFIG_ARCH_WANT_COMPAT_IPC_PARSE_VERSION=y
+CONFIG_ARCH_WANT_OLD_COMPAT_IPC=y
+CONFIG_HAVE_ARCH_SECCOMP_FILTER=y
+CONFIG_SECCOMP_FILTER=y
+CONFIG_HAVE_CONTEXT_TRACKING=y
+CONFIG_HAVE_IRQ_TIME_ACCOUNTING=y
+CONFIG_HAVE_ARCH_TRANSPARENT_HUGEPAGE=y
+CONFIG_MODULES_USE_ELF_RELA=y
+CONFIG_OLD_SIGSUSPEND3=y
+CONFIG_COMPAT_OLD_SIGACTION=y
+CONFIG_SLABINFO=y
+CONFIG_RT_MUTEXES=y
+CONFIG_BASE_SMALL=0
+CONFIG_MODULES=y
+CONFIG_MODULE_UNLOAD=y
+CONFIG_STOP_MACHINE=y
+CONFIG_BLOCK=y
+CONFIG_BLK_DEV_BSG=y
+CONFIG_PARTITION_ADVANCED=y
+CONFIG_MSDOS_PARTITION=y
+CONFIG_EFI_PARTITION=y
+CONFIG_BLOCK_COMPAT=y
+CONFIG_IOSCHED_NOOP=y
+CONFIG_IOSCHED_DEADLINE=m
+CONFIG_IOSCHED_CFQ=y
+CONFIG_DEFAULT_CFQ=y
+CONFIG_DEFAULT_IOSCHED="cfq"
+CONFIG_PREEMPT_NOTIFIERS=y
+CONFIG_UNINLINE_SPIN_UNLOCK=y
+CONFIG_MUTEX_SPIN_ON_OWNER=y
+CONFIG_FREEZER=y
+CONFIG_ZONE_DMA=y
+CONFIG_SMP=y
+CONFIG_X86_SUPPORTS_MEMORY_FAILURE=y
+CONFIG_SCHED_OMIT_FRAME_POINTER=y
+CONFIG_NO_BOOTMEM=y
+CONFIG_MCORE2=y
+CONFIG_X86_INTERNODE_CACHE_SHIFT=6
+CONFIG_X86_L1_CACHE_SHIFT=6
+CONFIG_X86_INTEL_USERCOPY=y
+CONFIG_X86_USE_PPRO_CHECKSUM=y
+CONFIG_X86_P6_NOP=y
+CONFIG_X86_TSC=y
+CONFIG_X86_CMPXCHG64=y
+CONFIG_X86_CMOV=y
+CONFIG_X86_MINIMUM_CPU_FAMILY=64
+CONFIG_X86_DEBUGCTLMSR=y
+CONFIG_CPU_SUP_INTEL=y
+CONFIG_CPU_SUP_AMD=y
+CONFIG_CPU_SUP_CENTAUR=y
+CONFIG_HPET_TIMER=y
+CONFIG_HPET_EMULATE_RTC=y
+CONFIG_DMI=y
+CONFIG_GART_IOMMU=y
+CONFIG_SWIOTLB=y
+CONFIG_IOMMU_HELPER=y
+CONFIG_NR_CPUS=8
+CONFIG_SCHED_SMT=y
+CONFIG_SCHED_MC=y
+CONFIG_PREEMPT=y
+CONFIG_PREEMPT_COUNT=y
+CONFIG_X86_LOCAL_APIC=y
+CONFIG_X86_IO_APIC=y
+CONFIG_X86_MCE=y
+CONFIG_X86_MCE_INTEL=y
+CONFIG_X86_MCE_THRESHOLD=y
+CONFIG_X86_THERMAL_VECTOR=y
+CONFIG_MICROCODE=m
+CONFIG_MICROCODE_INTEL=y
+CONFIG_MICROCODE_OLD_INTERFACE=y
+CONFIG_MICROCODE_INTEL_LIB=y
+CONFIG_X86_MSR=m
+CONFIG_X86_CPUID=y
+CONFIG_ARCH_PHYS_ADDR_T_64BIT=y
+CONFIG_ARCH_DMA_ADDR_T_64BIT=y
+CONFIG_DIRECT_GBPAGES=y
+CONFIG_ARCH_SPARSEMEM_ENABLE=y
+CONFIG_ARCH_SPARSEMEM_DEFAULT=y
+CONFIG_ARCH_SELECT_MEMORY_MODEL=y
+CONFIG_ILLEGAL_POINTER_VALUE=0xdead000000000000
+CONFIG_SELECT_MEMORY_MODEL=y
+CONFIG_SPARSEMEM_MANUAL=y
+CONFIG_SPARSEMEM=y
+CONFIG_HAVE_MEMORY_PRESENT=y
+CONFIG_SPARSEMEM_EXTREME=y
+CONFIG_SPARSEMEM_VMEMMAP_ENABLE=y
+CONFIG_SPARSEMEM_ALLOC_MEM_MAP_TOGETHER=y
+CONFIG_SPARSEMEM_VMEMMAP=y
+CONFIG_HAVE_MEMBLOCK=y
+CONFIG_HAVE_MEMBLOCK_NODE_MAP=y
+CONFIG_ARCH_DISCARD_MEMBLOCK=y
+CONFIG_PAGEFLAGS_EXTENDED=y
+CONFIG_SPLIT_PTLOCK_CPUS=4
+CONFIG_COMPACTION=y
+CONFIG_MIGRATION=y
+CONFIG_PHYS_ADDR_T_64BIT=y
+CONFIG_ZONE_DMA_FLAG=1
+CONFIG_BOUNCE=y
+CONFIG_VIRT_TO_BUS=y
+CONFIG_MMU_NOTIFIER=y
+CONFIG_KSM=y
+CONFIG_DEFAULT_MMAP_MIN_ADDR=4096
+CONFIG_ARCH_SUPPORTS_MEMORY_FAILURE=y
+CONFIG_TRANSPARENT_HUGEPAGE=y
+CONFIG_TRANSPARENT_HUGEPAGE_ALWAYS=y
+CONFIG_CROSS_MEMORY_ATTACH=y
+CONFIG_X86_CHECK_BIOS_CORRUPTION=y
+CONFIG_X86_BOOTPARAM_MEMORY_CORRUPTION_CHECK=y
+CONFIG_X86_RESERVE_LOW=64
+CONFIG_MTRR=y
+CONFIG_X86_PAT=y
+CONFIG_ARCH_USES_PG_UNCACHED=y
+CONFIG_ARCH_RANDOM=y
+CONFIG_X86_SMAP=y
+CONFIG_EFI=y
+CONFIG_SECCOMP=y
+CONFIG_HZ_1000=y
+CONFIG_HZ=1000
+CONFIG_SCHED_HRTICK=y
+CONFIG_PHYSICAL_START=0x1000000
+CONFIG_PHYSICAL_ALIGN=0x1000000
+CONFIG_HOTPLUG_CPU=y
+CONFIG_ARCH_ENABLE_MEMORY_HOTPLUG=y
+CONFIG_ARCH_HIBERNATION_HEADER=y
+CONFIG_HIBERNATE_CALLBACKS=y
+CONFIG_HIBERNATION=y
+CONFIG_PM_STD_PARTITION=""
+CONFIG_TOI_CORE=y
+CONFIG_TOI_SWAP=y
+CONFIG_TOI_CRYPTO=y
+CONFIG_TOI_USERUI=y
+CONFIG_TOI_USERUI_DEFAULT_PATH="/usr/sbin/tuxoniceui_text"
+CONFIG_TOI_DEFAULT_IMAGE_SIZE_LIMIT=-2
+CONFIG_TOI_REPLACE_SWSUSP=y
+CONFIG_TOI_IGNORE_LATE_INITCALL=y
+CONFIG_TOI_DEFAULT_WAIT=-1
+CONFIG_TOI_DEFAULT_EXTRA_PAGES_ALLOWANCE=50000
+CONFIG_TOI_CHECKSUM=y
+CONFIG_TOI=y
+CONFIG_PM_SLEEP=y
+CONFIG_PM_SLEEP_SMP=y
+CONFIG_PM_RUNTIME=y
+CONFIG_PM=y
+CONFIG_ACPI=y
+CONFIG_ACPI_SLEEP=y
+CONFIG_ACPI_PROC_EVENT=y
+CONFIG_ACPI_BUTTON=y
+CONFIG_ACPI_FAN=y
+CONFIG_ACPI_I2C=y
+CONFIG_ACPI_PROCESSOR=y
+CONFIG_ACPI_HOTPLUG_CPU=y
+CONFIG_ACPI_THERMAL=y
+CONFIG_ACPI_CUSTOM_DSDT_FILE=""
+CONFIG_ACPI_BLACKLIST_YEAR=0
+CONFIG_X86_PM_TIMER=y
+CONFIG_ACPI_CONTAINER=y
+CONFIG_ACPI_HED=y
+CONFIG_ACPI_APEI=y
+CONFIG_ACPI_APEI_GHES=y
+CONFIG_ACPI_APEI_PCIEAER=y
+CONFIG_CPU_FREQ=y
+CONFIG_CPU_FREQ_TABLE=y
+CONFIG_CPU_FREQ_GOV_COMMON=y
+CONFIG_CPU_FREQ_STAT=y
+CONFIG_CPU_FREQ_STAT_DETAILS=y
+CONFIG_CPU_FREQ_DEFAULT_GOV_ONDEMAND=y
+CONFIG_CPU_FREQ_GOV_PERFORMANCE=y
+CONFIG_CPU_FREQ_GOV_ONDEMAND=y
+CONFIG_X86_INTEL_PSTATE=y
+CONFIG_X86_ACPI_CPUFREQ=y
+CONFIG_CPU_IDLE=y
+CONFIG_CPU_IDLE_GOV_LADDER=y
+CONFIG_CPU_IDLE_GOV_MENU=y
+CONFIG_INTEL_IDLE=y
+CONFIG_I7300_IDLE_IOAT_CHANNEL=y
+CONFIG_I7300_IDLE=y
+CONFIG_PCI=y
+CONFIG_PCI_DIRECT=y
+CONFIG_PCI_MMCONFIG=y
+CONFIG_PCI_DOMAINS=y
+CONFIG_PCIEPORTBUS=y
+CONFIG_PCIEAER=y
+CONFIG_PCIEASPM=y
+CONFIG_PCIEASPM_DEFAULT=y
+CONFIG_PCIE_PME=y
+CONFIG_ARCH_SUPPORTS_MSI=y
+CONFIG_PCI_MSI=y
+CONFIG_HT_IRQ=y
+CONFIG_PCI_ATS=y
+CONFIG_PCI_IOV=y
+CONFIG_PCI_IOAPIC=y
+CONFIG_PCI_LABEL=y
+CONFIG_ISA_DMA_API=y
+CONFIG_AMD_NB=y
+CONFIG_BINFMT_ELF=y
+CONFIG_COMPAT_BINFMT_ELF=y
+CONFIG_ARCH_BINFMT_ELF_RANDOMIZE_PIE=y
+CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS=y
+CONFIG_BINFMT_SCRIPT=y
+CONFIG_BINFMT_MISC=y
+CONFIG_COREDUMP=y
+CONFIG_IA32_EMULATION=y
+CONFIG_COMPAT=y
+CONFIG_COMPAT_FOR_U64_ALIGNMENT=y
+CONFIG_SYSVIPC_COMPAT=y
+CONFIG_KEYS_COMPAT=y
+CONFIG_HAVE_TEXT_POKE_SMP=y
+CONFIG_X86_DEV_DMA_OPS=y
+CONFIG_NET=y
+CONFIG_PACKET=y
+CONFIG_PACKET_DIAG=y
+CONFIG_UNIX=y
+CONFIG_UNIX_DIAG=y
+CONFIG_INET=y
+CONFIG_IP_MULTICAST=y
+CONFIG_INET_LRO=y
+CONFIG_INET_DIAG=y
+CONFIG_INET_TCP_DIAG=y
+CONFIG_INET_UDP_DIAG=y
+CONFIG_TCP_CONG_CUBIC=y
+CONFIG_DEFAULT_TCP_CONG="cubic"
+CONFIG_IPV6=y
+CONFIG_IPV6_PRIVACY=y
+CONFIG_HAVE_NET_DSA=y
+CONFIG_DNS_RESOLVER=y
+CONFIG_NETLINK_DIAG=y
+CONFIG_RPS=y
+CONFIG_RFS_ACCEL=y
+CONFIG_XPS=y
+CONFIG_BQL=y
+CONFIG_BPF_JIT=y
+CONFIG_BT=y
+CONFIG_BT_RFCOMM=y
+CONFIG_BT_HCIBTUSB=y
+CONFIG_HAVE_BPF_JIT=y
+CONFIG_UEVENT_HELPER_PATH=""
+CONFIG_PREVENT_FIRMWARE_BUILD=y
+CONFIG_FW_LOADER=y
+CONFIG_FIRMWARE_IN_KERNEL=y
+CONFIG_EXTRA_FIRMWARE="radeon/BARTS_mc.bin radeon/BARTS_me.bin radeon/BARTS_pfp.bin radeon/SUMO_uvd.bin radeon/BTC_rlc.bin rtl_nic/rtl8168f-1.fw rtl_nic/rtl8168f-2.fw"
+CONFIG_EXTRA_FIRMWARE_DIR="/usr/src/linux/linux-firmware"
+CONFIG_FW_LOADER_USER_HELPER=y
+CONFIG_DMA_SHARED_BUFFER=y
+CONFIG_PNP=y
+CONFIG_PNPACPI=y
+CONFIG_BLK_DEV=y
+CONFIG_BLK_DEV_LOOP=y
+CONFIG_BLK_DEV_LOOP_MIN_COUNT=8
+CONFIG_BLK_DEV_CRYPTOLOOP=m
+CONFIG_BLK_DEV_NBD=m
+CONFIG_CDROM_PKTCDVD=y
+CONFIG_CDROM_PKTCDVD_BUFFERS=16
+CONFIG_HAVE_IDE=y
+CONFIG_SCSI_MOD=y
+CONFIG_SCSI=y
+CONFIG_SCSI_DMA=y
+CONFIG_BLK_DEV_SD=y
+CONFIG_BLK_DEV_SR=y
+CONFIG_SCSI_MULTI_LUN=y
+CONFIG_SCSI_SCAN_ASYNC=y
+CONFIG_ATA=y
+CONFIG_ATA_VERBOSE_ERROR=y
+CONFIG_ATA_ACPI=y
+CONFIG_SATA_ZPODD=y
+CONFIG_SATA_AHCI=y
+CONFIG_MD=y
+CONFIG_BLK_DEV_MD=y
+CONFIG_MD_RAID1=y
+CONFIG_BLK_DEV_DM=y
+CONFIG_DM_SNAPSHOT=y
+CONFIG_DM_MIRROR=y
+CONFIG_DM_ZERO=y
+CONFIG_NETDEVICES=y
+CONFIG_NET_CORE=y
+CONFIG_DUMMY=m
+CONFIG_MII=y
+CONFIG_NETCONSOLE=y
+CONFIG_NETCONSOLE_DYNAMIC=y
+CONFIG_NETPOLL=y
+CONFIG_NET_POLL_CONTROLLER=y
+CONFIG_TUN=y
+CONFIG_VHOST_NET=y
+CONFIG_VHOST_RING=y
+CONFIG_ETHERNET=y
+CONFIG_NET_VENDOR_REALTEK=y
+CONFIG_R8169=y
+CONFIG_USB_USBNET=m
+CONFIG_USB_NET_CDCETHER=m
+CONFIG_INPUT=y
+CONFIG_INPUT_POLLDEV=y
+CONFIG_INPUT_MOUSEDEV=y
+CONFIG_INPUT_MOUSEDEV_SCREEN_X=1680
+CONFIG_INPUT_MOUSEDEV_SCREEN_Y=1050
+CONFIG_INPUT_JOYDEV=y
+CONFIG_INPUT_EVDEV=y
+CONFIG_INPUT_KEYBOARD=y
+CONFIG_KEYBOARD_ATKBD=y
+CONFIG_INPUT_MOUSE=y
+CONFIG_MOUSE_PS2=y
+CONFIG_MOUSE_PS2_ALPS=y
+CONFIG_MOUSE_PS2_LOGIPS2PP=y
+CONFIG_MOUSE_PS2_SYNAPTICS=y
+CONFIG_MOUSE_PS2_CYPRESS=y
+CONFIG_MOUSE_PS2_LIFEBOOK=y
+CONFIG_MOUSE_PS2_TRACKPOINT=y
+CONFIG_SERIO=y
+CONFIG_SERIO_I8042=y
+CONFIG_SERIO_LIBPS2=y
+CONFIG_TTY=y
+CONFIG_VT=y
+CONFIG_CONSOLE_TRANSLATIONS=y
+CONFIG_VT_CONSOLE=y
+CONFIG_VT_CONSOLE_SLEEP=y
+CONFIG_HW_CONSOLE=y
+CONFIG_UNIX98_PTYS=y
+CONFIG_SERIAL_8250=y
+CONFIG_SERIAL_8250_PNP=y
+CONFIG_FIX_EARLYCON_MEM=y
+CONFIG_SERIAL_8250_PCI=y
+CONFIG_SERIAL_8250_NR_UARTS=4
+CONFIG_SERIAL_8250_RUNTIME_UARTS=4
+CONFIG_SERIAL_CORE=y
+CONFIG_HW_RANDOM=y
+CONFIG_HW_RANDOM_INTEL=y
+CONFIG_NVRAM=m
+CONFIG_HPET=y
+CONFIG_HPET_MMAP=y
+CONFIG_DEVPORT=y
+CONFIG_I2C=y
+CONFIG_I2C_BOARDINFO=y
+CONFIG_I2C_CHARDEV=y
+CONFIG_I2C_HELPER_AUTO=y
+CONFIG_I2C_ALGOBIT=y
+CONFIG_I2C_I801=y
+CONFIG_ARCH_WANT_OPTIONAL_GPIOLIB=y
+CONFIG_GPIO_DEVRES=y
+CONFIG_POWER_SUPPLY=y
+CONFIG_HWMON=y
+CONFIG_HWMON_VID=m
+CONFIG_SENSORS_CORETEMP=y
+CONFIG_SENSORS_IT87=m
+CONFIG_SENSORS_W83627EHF=m
+CONFIG_THERMAL=y
+CONFIG_THERMAL_HWMON=y
+CONFIG_THERMAL_DEFAULT_GOV_STEP_WISE=y
+CONFIG_THERMAL_GOV_STEP_WISE=y
+CONFIG_SSB_POSSIBLE=y
+CONFIG_BCMA_POSSIBLE=y
+CONFIG_MFD_CORE=y
+CONFIG_LPC_ICH=y
+CONFIG_MEDIA_SUPPORT=y
+CONFIG_MEDIA_CAMERA_SUPPORT=y
+CONFIG_VIDEO_DEV=y
+CONFIG_VIDEO_V4L2=y
+CONFIG_VIDEOBUF2_CORE=y
+CONFIG_VIDEOBUF2_MEMOPS=y
+CONFIG_VIDEOBUF2_VMALLOC=y
+CONFIG_MEDIA_USB_SUPPORT=y
+CONFIG_USB_VIDEO_CLASS=y
+CONFIG_USB_VIDEO_CLASS_INPUT_EVDEV=y
+CONFIG_MEDIA_SUBDRV_AUTOSELECT=y
+CONFIG_AGP=y
+CONFIG_VGA_ARB=y
+CONFIG_VGA_ARB_MAX_GPUS=2
+CONFIG_DRM=y
+CONFIG_DRM_KMS_HELPER=y
+CONFIG_DRM_TTM=y
+CONFIG_DRM_RADEON=y
+CONFIG_HDMI=y
+CONFIG_FB=y
+CONFIG_FB_CFB_FILLRECT=y
+CONFIG_FB_CFB_COPYAREA=y
+CONFIG_FB_CFB_IMAGEBLIT=y
+CONFIG_BACKLIGHT_LCD_SUPPORT=y
+CONFIG_BACKLIGHT_CLASS_DEVICE=y
+CONFIG_VGA_CONSOLE=y
+CONFIG_VGACON_SOFT_SCROLLBACK=y
+CONFIG_VGACON_SOFT_SCROLLBACK_SIZE=512
+CONFIG_DUMMY_CONSOLE=y
+CONFIG_FRAMEBUFFER_CONSOLE=y
+CONFIG_FRAMEBUFFER_CONSOLE_DETECT_PRIMARY=y
+CONFIG_FONT_8x8=y
+CONFIG_FONT_8x16=y
+CONFIG_SOUND=y
+CONFIG_SOUND_OSS_CORE=y
+CONFIG_SND=y
+CONFIG_SND_TIMER=y
+CONFIG_SND_PCM=y
+CONFIG_SND_JACK=y
+CONFIG_SND_SEQUENCER=y
+CONFIG_SND_SEQ_DUMMY=m
+CONFIG_SND_OSSEMUL=y
+CONFIG_SND_MIXER_OSS=y
+CONFIG_SND_PCM_OSS=y
+CONFIG_SND_PCM_OSS_PLUGINS=y
+CONFIG_SND_SEQUENCER_OSS=y
+CONFIG_SND_HRTIMER=y
+CONFIG_SND_SEQ_HRTIMER_DEFAULT=y
+CONFIG_SND_DYNAMIC_MINORS=y
+CONFIG_SND_VERBOSE_PROCFS=y
+CONFIG_SND_VMASTER=y
+CONFIG_SND_KCTL_JACK=y
+CONFIG_SND_DMA_SGBUF=y
+CONFIG_SND_PCI=y
+CONFIG_SND_HDA_INTEL=y
+CONFIG_SND_HDA_PREALLOC_SIZE=2048
+CONFIG_SND_HDA_INPUT_JACK=y
+CONFIG_SND_HDA_GENERIC=y
+CONFIG_SND_HDA_POWER_SAVE_DEFAULT=0
+CONFIG_HID=y
+CONFIG_HID_GENERIC=y
+CONFIG_HID_A4TECH=y
+CONFIG_HID_APPLE=y
+CONFIG_HID_BELKIN=y
+CONFIG_HID_CHERRY=y
+CONFIG_HID_CHICONY=y
+CONFIG_HID_CYPRESS=y
+CONFIG_HID_EZKEY=y
+CONFIG_HID_KENSINGTON=y
+CONFIG_HID_LOGITECH=y
+CONFIG_HID_MICROSOFT=y
+CONFIG_HID_MONTEREY=y
+CONFIG_USB_HID=y
+CONFIG_USB_ARCH_HAS_OHCI=y
+CONFIG_USB_ARCH_HAS_EHCI=y
+CONFIG_USB_ARCH_HAS_XHCI=y
+CONFIG_USB_SUPPORT=y
+CONFIG_USB_COMMON=y
+CONFIG_USB_ARCH_HAS_HCD=y
+CONFIG_USB=y
+CONFIG_USB_DEFAULT_PERSIST=y
+CONFIG_USB_DYNAMIC_MINORS=y
+CONFIG_USB_XHCI_HCD=y
+CONFIG_USB_EHCI_HCD=y
+CONFIG_USB_EHCI_PCI=y
+CONFIG_USB_STORAGE=y
+CONFIG_NEW_LEDS=y
+CONFIG_LEDS_CLASS=y
+CONFIG_RTC_LIB=y
+CONFIG_RTC_CLASS=y
+CONFIG_RTC_HCTOSYS=y
+CONFIG_RTC_SYSTOHC=y
+CONFIG_RTC_HCTOSYS_DEVICE="rtc0"
+CONFIG_RTC_INTF_SYSFS=y
+CONFIG_RTC_INTF_PROC=y
+CONFIG_RTC_INTF_DEV=y
+CONFIG_RTC_DRV_CMOS=y
+CONFIG_CLKEVT_I8253=y
+CONFIG_I8253_LOCK=y
+CONFIG_CLKBLD_I8253=y
+CONFIG_IOMMU_API=y
+CONFIG_IOMMU_SUPPORT=y
+CONFIG_DMAR_TABLE=y
+CONFIG_INTEL_IOMMU=y
+CONFIG_INTEL_IOMMU_DEFAULT_ON=y
+CONFIG_INTEL_IOMMU_FLOPPY_WA=y
+CONFIG_IRQ_REMAP=y
+CONFIG_FIRMWARE_MEMMAP=y
+CONFIG_DMIID=y
+CONFIG_EFI_VARS=y
+CONFIG_EFI_VARS_PSTORE=y
+CONFIG_DCACHE_WORD_ACCESS=y
+CONFIG_EXT4_FS=y
+CONFIG_EXT4_USE_FOR_EXT23=y
+CONFIG_EXT4_FS_POSIX_ACL=y
+CONFIG_JBD2=y
+CONFIG_FS_MBCACHE=y
+CONFIG_FS_POSIX_ACL=y
+CONFIG_EXPORTFS=y
+CONFIG_FILE_LOCKING=y
+CONFIG_FSNOTIFY=y
+CONFIG_DNOTIFY=y
+CONFIG_INOTIFY_USER=y
+CONFIG_FANOTIFY=y
+CONFIG_QUOTA=y
+CONFIG_QUOTA_NETLINK_INTERFACE=y
+CONFIG_PRINT_QUOTA_WARNING=y
+CONFIG_QUOTA_TREE=y
+CONFIG_QFMT_V2=y
+CONFIG_QUOTACTL=y
+CONFIG_QUOTACTL_COMPAT=y
+CONFIG_FUSE_FS=y
+CONFIG_CUSE=y
+CONFIG_GENERIC_ACL=y
+CONFIG_ISO9660_FS=y
+CONFIG_JOLIET=y
+CONFIG_UDF_FS=y
+CONFIG_UDF_NLS=y
+CONFIG_FAT_FS=m
+CONFIG_MSDOS_FS=m
+CONFIG_VFAT_FS=m
+CONFIG_FAT_DEFAULT_CODEPAGE=437
+CONFIG_FAT_DEFAULT_IOCHARSET="iso8859-1"
+CONFIG_PROC_FS=y
+CONFIG_PROC_SYSCTL=y
+CONFIG_PROC_PAGE_MONITOR=y
+CONFIG_SYSFS=y
+CONFIG_TMPFS=y
+CONFIG_TMPFS_POSIX_ACL=y
+CONFIG_TMPFS_XATTR=y
+CONFIG_HUGETLBFS=y
+CONFIG_HUGETLB_PAGE=y
+CONFIG_CONFIGFS_FS=y
+CONFIG_MISC_FILESYSTEMS=y
+CONFIG_PSTORE=y
+CONFIG_NETWORK_FILESYSTEMS=y
+CONFIG_NFS_FS=y
+CONFIG_NFS_V3=y
+CONFIG_NFS_V3_ACL=y
+CONFIG_NFS_V4=y
+CONFIG_NFS_USE_KERNEL_DNS=y
+CONFIG_NFSD=y
+CONFIG_NFSD_V2_ACL=y
+CONFIG_NFSD_V3=y
+CONFIG_NFSD_V3_ACL=y
+CONFIG_LOCKD=y
+CONFIG_LOCKD_V4=y
+CONFIG_NFS_ACL_SUPPORT=y
+CONFIG_NFS_COMMON=y
+CONFIG_SUNRPC=y
+CONFIG_SUNRPC_GSS=y
+CONFIG_NLS=y
+CONFIG_NLS_DEFAULT="iso8859-1"
+CONFIG_NLS_CODEPAGE_437=y
+CONFIG_NLS_ASCII=m
+CONFIG_NLS_ISO8859_1=y
+CONFIG_NLS_ISO8859_15=m
+CONFIG_NLS_UTF8=m
+CONFIG_TRACE_IRQFLAGS_SUPPORT=y
+CONFIG_PRINTK_TIME=y
+CONFIG_DEFAULT_MESSAGE_LOGLEVEL=4
+CONFIG_ENABLE_WARN_DEPRECATED=y
+CONFIG_ENABLE_MUST_CHECK=y
+CONFIG_FRAME_WARN=1024
+CONFIG_STRIP_ASM_SYMS=y
+CONFIG_DEBUG_FS=y
+CONFIG_DEBUG_KERNEL=y
+CONFIG_LOCKUP_DETECTOR=y
+CONFIG_HARDLOCKUP_DETECTOR=y
+CONFIG_BOOTPARAM_HARDLOCKUP_PANIC_VALUE=0
+CONFIG_BOOTPARAM_SOFTLOCKUP_PANIC_VALUE=0
+CONFIG_PANIC_ON_OOPS_VALUE=0
+CONFIG_DETECT_HUNG_TASK=y
+CONFIG_DEFAULT_HUNG_TASK_TIMEOUT=120
+CONFIG_BOOTPARAM_HUNG_TASK_PANIC_VALUE=0
+CONFIG_SCHED_DEBUG=y
+CONFIG_SCHEDSTATS=y
+CONFIG_TIMER_STATS=y
+CONFIG_HAVE_DEBUG_KMEMLEAK=y
+CONFIG_STACKTRACE=y
+CONFIG_DEBUG_BUGVERBOSE=y
+CONFIG_DEBUG_MEMORY_INIT=y
+CONFIG_ARCH_WANT_FRAME_POINTERS=y
+CONFIG_FRAME_POINTER=y
+CONFIG_RCU_CPU_STALL_TIMEOUT=60
+CONFIG_RCU_CPU_STALL_VERBOSE=y
+CONFIG_LATENCYTOP=y
+CONFIG_ARCH_HAS_DEBUG_STRICT_USER_COPY_CHECKS=y
+CONFIG_DEBUG_STRICT_USER_COPY_CHECKS=y
+CONFIG_USER_STACKTRACE_SUPPORT=y
+CONFIG_NOP_TRACER=y
+CONFIG_HAVE_FUNCTION_TRACER=y
+CONFIG_HAVE_FUNCTION_GRAPH_TRACER=y
+CONFIG_HAVE_FUNCTION_GRAPH_FP_TEST=y
+CONFIG_HAVE_FUNCTION_TRACE_MCOUNT_TEST=y
+CONFIG_HAVE_DYNAMIC_FTRACE=y
+CONFIG_HAVE_DYNAMIC_FTRACE_WITH_REGS=y
+CONFIG_HAVE_FTRACE_MCOUNT_RECORD=y
+CONFIG_HAVE_SYSCALL_TRACEPOINTS=y
+CONFIG_HAVE_FENTRY=y
+CONFIG_HAVE_C_RECORDMCOUNT=y
+CONFIG_TRACE_CLOCK=y
+CONFIG_RING_BUFFER=y
+CONFIG_EVENT_TRACING=y
+CONFIG_CONTEXT_SWITCH_TRACER=y
+CONFIG_TRACING=y
+CONFIG_GENERIC_TRACER=y
+CONFIG_TRACING_SUPPORT=y
+CONFIG_FTRACE=y
+CONFIG_FUNCTION_TRACER=y
+CONFIG_BRANCH_PROFILE_NONE=y
+CONFIG_BLK_DEV_IO_TRACE=y
+CONFIG_DYNAMIC_FTRACE=y
+CONFIG_DYNAMIC_FTRACE_WITH_REGS=y
+CONFIG_FTRACE_MCOUNT_RECORD=y
+CONFIG_HAVE_ARCH_KGDB=y
+CONFIG_HAVE_ARCH_KMEMCHECK=y
+CONFIG_STRICT_DEVMEM=y
+CONFIG_X86_VERBOSE_BOOTUP=y
+CONFIG_EARLY_PRINTK=y
+CONFIG_DEBUG_RODATA=y
+CONFIG_HAVE_MMIOTRACE_SUPPORT=y
+CONFIG_IO_DELAY_TYPE_0X80=0
+CONFIG_IO_DELAY_TYPE_0XED=1
+CONFIG_IO_DELAY_TYPE_UDELAY=2
+CONFIG_IO_DELAY_TYPE_NONE=3
+CONFIG_IO_DELAY_0X80=y
+CONFIG_DEFAULT_IO_DELAY_TYPE=0
+CONFIG_KEYS=y
+CONFIG_SECURITY=y
+CONFIG_SECURITYFS=y
+CONFIG_SECURITY_NETWORK=y
+CONFIG_SECURITY_PATH=y
+CONFIG_SECURITY_APPARMOR=y
+CONFIG_SECURITY_APPARMOR_BOOTPARAM_VALUE=0
+CONFIG_DEFAULT_SECURITY_DAC=y
+CONFIG_DEFAULT_SECURITY=""
+CONFIG_CRYPTO=y
+CONFIG_CRYPTO_ALGAPI=y
+CONFIG_CRYPTO_ALGAPI2=y
+CONFIG_CRYPTO_AEAD2=y
+CONFIG_CRYPTO_BLKCIPHER=y
+CONFIG_CRYPTO_BLKCIPHER2=y
+CONFIG_CRYPTO_HASH=y
+CONFIG_CRYPTO_HASH2=y
+CONFIG_CRYPTO_RNG2=y
+CONFIG_CRYPTO_PCOMP2=y
+CONFIG_CRYPTO_MANAGER=y
+CONFIG_CRYPTO_MANAGER2=y
+CONFIG_CRYPTO_MANAGER_DISABLE_TESTS=y
+CONFIG_CRYPTO_GF128MUL=y
+CONFIG_CRYPTO_WORKQUEUE=y
+CONFIG_CRYPTO_CRYPTD=y
+CONFIG_CRYPTO_ABLK_HELPER_X86=y
+CONFIG_CRYPTO_GLUE_HELPER_X86=y
+CONFIG_CRYPTO_CBC=y
+CONFIG_CRYPTO_ECB=y
+CONFIG_CRYPTO_LRW=y
+CONFIG_CRYPTO_XTS=y
+CONFIG_CRYPTO_CRC32C=y
+CONFIG_CRYPTO_CRC32C_INTEL=y
+CONFIG_CRYPTO_CRC32_PCLMUL=y
+CONFIG_CRYPTO_MD4=y
+CONFIG_CRYPTO_SHA256=y
+CONFIG_CRYPTO_AES=y
+CONFIG_CRYPTO_SERPENT=y
+CONFIG_CRYPTO_SERPENT_AVX_X86_64=y
+CONFIG_CRYPTO_TWOFISH_COMMON=y
+CONFIG_CRYPTO_TWOFISH_X86_64=y
+CONFIG_CRYPTO_TWOFISH_X86_64_3WAY=y
+CONFIG_CRYPTO_TWOFISH_AVX_X86_64=y
+CONFIG_CRYPTO_LZO=y
+CONFIG_HAVE_KVM=y
+CONFIG_HAVE_KVM_IRQCHIP=y
+CONFIG_HAVE_KVM_IRQ_ROUTING=y
+CONFIG_HAVE_KVM_EVENTFD=y
+CONFIG_KVM_APIC_ARCHITECTURE=y
+CONFIG_KVM_MMIO=y
+CONFIG_KVM_ASYNC_PF=y
+CONFIG_HAVE_KVM_MSI=y
+CONFIG_HAVE_KVM_CPU_RELAX_INTERCEPT=y
+CONFIG_VIRTUALIZATION=y
+CONFIG_KVM=y
+CONFIG_KVM_INTEL=y
+CONFIG_KVM_DEVICE_ASSIGNMENT=y
+CONFIG_BINARY_PRINTF=y
+CONFIG_BITREVERSE=y
+CONFIG_GENERIC_STRNCPY_FROM_USER=y
+CONFIG_GENERIC_STRNLEN_USER=y
+CONFIG_GENERIC_FIND_FIRST_BIT=y
+CONFIG_GENERIC_PCI_IOMAP=y
+CONFIG_GENERIC_IOMAP=y
+CONFIG_GENERIC_IO=y
+CONFIG_CRC16=y
+CONFIG_CRC_ITU_T=y
+CONFIG_CRC32=y
+CONFIG_CRC32_SLICEBY8=y
+CONFIG_ZLIB_INFLATE=y
+CONFIG_LZO_COMPRESS=y
+CONFIG_LZO_DECOMPRESS=y
+CONFIG_XZ_DEC=y
+CONFIG_XZ_DEC_X86=y
+CONFIG_XZ_DEC_POWERPC=y
+CONFIG_XZ_DEC_IA64=y
+CONFIG_XZ_DEC_ARM=y
+CONFIG_XZ_DEC_ARMTHUMB=y
+CONFIG_XZ_DEC_SPARC=y
+CONFIG_XZ_DEC_BCJ=y
+CONFIG_DECOMPRESS_GZIP=y
+CONFIG_DECOMPRESS_BZIP2=y
+CONFIG_DECOMPRESS_LZMA=y
+CONFIG_DECOMPRESS_XZ=y
+CONFIG_DECOMPRESS_LZO=y
+CONFIG_GENERIC_ALLOCATOR=y
+CONFIG_HAS_IOMEM=y
+CONFIG_HAS_IOPORT=y
+CONFIG_HAS_DMA=y
+CONFIG_CHECK_SIGNATURE=y
+CONFIG_CPU_RMAP=y
+CONFIG_DQL=y
+CONFIG_NLATTR=y
+CONFIG_ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE=y
+CONFIG_OID_REGISTRY=y
+CONFIG_UCS2_STRING=y
