@@ -1,321 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754973Ab3HEU2P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 16:28:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38927 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754721Ab3HEU2N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 16:28:13 -0400
-Date: Mon, 05 Aug 2013 16:27:45 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: linux-mm@kvack.org
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, Hillf Danton <dhillf@gmail.com>,
-        Michal Hocko <mhocko@suse.cz>, Rik van Riel <riel@redhat.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        Naoya Horiguchi <nao.horiguchi@gmail.com>
-Message-ID: <1375734465-scgr8g4z-mutt-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1375302249-scfvftrh-mutt-n-horiguchi@ah.jp.nec.com>
-Subject: [PATCH 9/8] hugetlb: add pmd_huge_support() to migrate only pmd-based
- hugepage
+	id S1754949Ab3HEUbF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 16:31:05 -0400
+Received: from www17.your-server.de ([213.133.104.17]:38622 "EHLO
+	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754721Ab3HEUbC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 16:31:02 -0400
+Message-ID: <1375734656.2159.1.camel@localhost.localdomain>
+Subject: i915_gem_unmap_dma_buf: BUG: unable to handle kernel NULL pointer
+ dereference
+From: Thomas Meyer <thomas@m3y3r.de>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Mon, 05 Aug 2013 22:30:56 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.4 (3.8.4-2.fc19) 
 Mime-Version: 1.0
-Content-Type: text/plain;
- charset=iso-2022-jp
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-X-Mutt-Fcc: ~/Maildir/sent/
-User-Agent: Mutt 1.5.21 (2010-09-15)
+X-Authenticated-Sender: thomas@m3y3r.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch is motivated by the discussion with Aneesh about "extend
-hugepage migration" patchset.
-  http://thread.gmane.org/gmane.linux.kernel.mm/103933/focus=104391
-I'll append this to the patchset in the next post, but before that
-I want this patch to be reviewed (I don't want to repeat posting the
-whole set for just minor changes.)
+[165517.046291] [drm] wait for urb interrupted: ffffffc2 available: 4
+[165517.046454] BUG: unable to handle kernel NULL pointer dereference at 0000000000000941
+[165517.047217] IP: [<ffffffffa00ddfbf>] i915_gem_unmap_dma_buf+0x2f/0x60 [i915]
+[165517.047217] PGD 0 
+[165517.047217] Oops: 0000 [#1] SMP 
+[165517.047217] Modules linked in: nf_conntrack_netbios_ns nf_conntrack_broadcast ipt_MASQUERADE ip6table_nat nf_nat_ipv6 ip6table_mangle ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 iptable_nat nf_nat_ipv4 nf_nat iptable_mangle nf_conntrack_ipv4 nf_defrag_ipv4 xt_conntrack nf_conntrack ebtable_filter ebtables ip6table_filter ip6_tables fuse rfcomm bnep acpi_cpufreq mperf iTCO_wdt coretemp iTCO_vendor_support snd_hda_codec_hdmi acer_wmi uvcvideo kvm_intel sparse_keymap snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_usb_audio kvm snd_usbmidi_lib snd_rawmidi arc4 snd_hwdep snd_seq snd_seq_device iwldvm snd_pcm acerhdf microcode serio_raw i2c_i801 btusb snd_page_alloc bluetooth mac80211 videobuf2_vmalloc videobuf2_memops videobuf2_core videodev media asix snd_timer lpc_ich usbnet mfd_core iwlwifi
+[165517.047217]  mii snd soundcore cfg80211 rfkill atl1c wmi nfsd uinput auth_rpcgss nfs_acl lockd sunrpc binfmt_misc dm_crypt udl drm_usb i915 i2c_algo_bit drm_kms_helper usb_storage drm i2c_core video [last unloaded: iptable_mangle]
+[165517.047217] CPU: 0 PID: 710 Comm: Xorg Tainted: G          I  3.10.3-300.fc19.x86_64 #1
+[165517.047217] Hardware name: Acer Aspire 1810T/JM11-MS, BIOS v1.3310 03/25/2010
+[165517.047217] task: ffff8801211c16e0 ti: ffff88011ae8c000 task.ti: ffff88011ae8c000
+[165517.047217] RIP: 0010:[<ffffffffa00ddfbf>]  [<ffffffffa00ddfbf>] i915_gem_unmap_dma_buf+0x2f/0x60 [i915]
+[165517.047217] RSP: 0018:ffff88011ae8dca8  EFLAGS: 00010293
+[165517.047217] RAX: 0000000000000909 RBX: ffff880139755290 RCX: 0000000000000000
+[165517.047217] RDX: 0000000000000300 RSI: ffff88010a074000 RDI: ffff880137bcf030
+[165517.047217] RBP: ffff88011ae8dcb0 R08: 0000000000000000 R09: 0000000000000000
+[165517.047217] R10: ffffffff81ce9e10 R11: ffff88011ae8d90e R12: ffff880139755290
+[165517.047217] R13: 0000000000000000 R14: 0000000000000003 R15: ffff88011ae8dd70
+[165517.047217] FS:  00007fcd480e9980(0000) GS:ffff88013fc00000(0000) knlGS:0000000000000000
+[165517.047217] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[165517.047217] CR2: 0000000000000941 CR3: 0000000001c0c000 CR4: 00000000000407f0
+[165517.047217] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[165517.047217] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[165517.047217] Stack:
+[165517.047217]  ffff880138c8bd40 ffff88011ae8dcd8 ffffffff813e93fe ffff880138c8bd40
+[165517.047217]  ffff880137094020 ffff880137094000 ffff88011ae8dcf8 ffffffffa0036592
+[165517.047217]  ffff88012133ee40 ffff880137094020 ffff88011ae8dd10 ffffffffa013a985
+[165517.047217] Call Trace:
+[165517.047217]  [<ffffffff813e93fe>] dma_buf_unmap_attachment+0x3e/0x60
+[165517.047217]  [<ffffffffa0036592>] drm_prime_gem_destroy+0x22/0x40 [drm]
+[165517.047217]  [<ffffffffa013a985>] udl_gem_free_object+0x35/0x60 [udl]
+[165517.047217]  [<ffffffffa002085a>] drm_gem_object_free+0x2a/0x30 [drm]
+[165517.047217]  [<ffffffffa0020d6e>] drm_gem_object_release_handle+0xae/0xd0 [drm]
+[165517.047217]  [<ffffffff812e5f94>] idr_for_each+0xa4/0xf0
+[165517.047217]  [<ffffffffa0020cc0>] ? drm_gem_handle_delete+0x150/0x150 [drm]
+[165517.047217]  [<ffffffffa0021550>] drm_gem_release+0x20/0x30 [drm]
+[165517.047217]  [<ffffffffa001fc91>] drm_release+0x551/0x5d0 [drm]
+[165517.047217]  [<ffffffff81199101>] __fput+0xe1/0x230
+[165517.047217]  [<ffffffff8119930e>] ____fput+0xe/0x10
+[165517.047217]  [<ffffffff8107d77c>] task_work_run+0xbc/0xe0
+[165517.047217]  [<ffffffff81061bbc>] do_exit+0x2bc/0xa20
+[165517.047217]  [<ffffffff8119930e>] ? ____fput+0xe/0x10
+[165517.047217]  [<ffffffff8107d764>] ? task_work_run+0xa4/0xe0
+[165517.047217]  [<ffffffff8106239f>] do_group_exit+0x3f/0xa0
+[165517.047217]  [<ffffffff81062414>] SyS_exit_group+0x14/0x20
+[165517.047217]  [<ffffffff81651819>] system_call_fastpath+0x16/0x1b
+[165517.047217] Code: 90 55 89 d1 48 89 e5 53 48 8b 7f 08 48 89 f3 8b 56 08 48 8b 36 48 85 ff 74 32 48 8b 87 08 02 00 00 48 85 c0 74 26 83 f9 02 77 2a <48> 8b 40 38 48 85 c0 74 05 45 31 c0 ff d0 48 89 df e8 8b 7b 21 
+[165517.047217] RIP  [<ffffffffa00ddfbf>] i915_gem_unmap_dma_buf+0x2f/0x60 [i915]
+[165517.047217]  RSP <ffff88011ae8dca8>
+[165517.047217] CR2: 0000000000000941
+[165517.272860] ---[ end trace f4c350a8f34ab706 ]---
+[165517.276318] Fixing recursive fault but reboot is needed!
 
-Any comments?
-
-Thanks,
-Naoya Horiguchi
----
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Date: Mon, 5 Aug 2013 13:33:02 -0400
-Subject: [PATCH] hugetlb: add pmd_huge_support() to migrate only pmd-based
- hugepage
-
-Currently hugepage migration works well only for pmd-based hugepages,
-because core routines of hugepage migration use pmd specific internal
-functions like huge_pte_offset(). So we should not enable the migration
-of other levels of hugepages until we are ready for it.
-
-Some users of hugepage migration (mbind, move_pages, and migrate_pages)
-do page table walk and check pud/pmd_huge() there, so they are safe.
-But the other users (softoffline and memory hotremove) don't do this,
-so they can try to migrate unexpected types of hugepages.
-
-To prevent this, we introduce an architecture dependent check of whether
-hugepage are implemented on a pmd basis or not. It returns 0 if pmd_huge()
-returns always 0, and 1 otherwise.
-
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
----
- arch/arm/mm/hugetlbpage.c     |  5 +++++
- arch/arm64/mm/hugetlbpage.c   |  5 +++++
- arch/ia64/mm/hugetlbpage.c    |  5 +++++
- arch/metag/mm/hugetlbpage.c   |  5 +++++
- arch/mips/mm/hugetlbpage.c    |  5 +++++
- arch/powerpc/mm/hugetlbpage.c | 10 ++++++++++
- arch/s390/mm/hugetlbpage.c    |  5 +++++
- arch/sh/mm/hugetlbpage.c      |  5 +++++
- arch/sparc/mm/hugetlbpage.c   |  5 +++++
- arch/tile/mm/hugetlbpage.c    |  5 +++++
- arch/x86/mm/hugetlbpage.c     |  8 ++++++++
- include/linux/hugetlb.h       |  2 ++
- mm/migrate.c                  | 11 +++++++++++
- 13 files changed, 76 insertions(+)
-
-diff --git a/arch/arm/mm/hugetlbpage.c b/arch/arm/mm/hugetlbpage.c
-index 3d1e4a2..3f3b6a7 100644
---- a/arch/arm/mm/hugetlbpage.c
-+++ b/arch/arm/mm/hugetlbpage.c
-@@ -99,3 +99,8 @@ int pmd_huge(pmd_t pmd)
- {
- 	return pmd_val(pmd) && !(pmd_val(pmd) & PMD_TABLE_BIT);
- }
-+
-+int pmd_huge_support(void)
-+{
-+	return 1;
-+}
-diff --git a/arch/arm64/mm/hugetlbpage.c b/arch/arm64/mm/hugetlbpage.c
-index 2fc8258..5e9aec3 100644
---- a/arch/arm64/mm/hugetlbpage.c
-+++ b/arch/arm64/mm/hugetlbpage.c
-@@ -54,6 +54,11 @@ int pud_huge(pud_t pud)
- 	return !(pud_val(pud) & PUD_TABLE_BIT);
- }
- 
-+int pmd_huge_support(void)
-+{
-+	return 1;
-+}
-+
- static __init int setup_hugepagesz(char *opt)
- {
- 	unsigned long ps = memparse(opt, &opt);
-diff --git a/arch/ia64/mm/hugetlbpage.c b/arch/ia64/mm/hugetlbpage.c
-index 76069c1..68232db 100644
---- a/arch/ia64/mm/hugetlbpage.c
-+++ b/arch/ia64/mm/hugetlbpage.c
-@@ -114,6 +114,11 @@ int pud_huge(pud_t pud)
- 	return 0;
- }
- 
-+int pmd_huge_support(void)
-+{
-+	return 0;
-+}
-+
- struct page *
- follow_huge_pmd(struct mm_struct *mm, unsigned long address, pmd_t *pmd, int write)
- {
-diff --git a/arch/metag/mm/hugetlbpage.c b/arch/metag/mm/hugetlbpage.c
-index 3c52fa6..0424315 100644
---- a/arch/metag/mm/hugetlbpage.c
-+++ b/arch/metag/mm/hugetlbpage.c
-@@ -110,6 +110,11 @@ int pud_huge(pud_t pud)
- 	return 0;
- }
- 
-+int pmd_huge_support(void)
-+{
-+	return 1;
-+}
-+
- struct page *follow_huge_pmd(struct mm_struct *mm, unsigned long address,
- 			     pmd_t *pmd, int write)
- {
-diff --git a/arch/mips/mm/hugetlbpage.c b/arch/mips/mm/hugetlbpage.c
-index a7fee0d..01fda44 100644
---- a/arch/mips/mm/hugetlbpage.c
-+++ b/arch/mips/mm/hugetlbpage.c
-@@ -85,6 +85,11 @@ int pud_huge(pud_t pud)
- 	return (pud_val(pud) & _PAGE_HUGE) != 0;
- }
- 
-+int pmd_huge_support(void)
-+{
-+	return 1;
-+}
-+
- struct page *
- follow_huge_pmd(struct mm_struct *mm, unsigned long address,
- 		pmd_t *pmd, int write)
-diff --git a/arch/powerpc/mm/hugetlbpage.c b/arch/powerpc/mm/hugetlbpage.c
-index 834ca8e..d67db4b 100644
---- a/arch/powerpc/mm/hugetlbpage.c
-+++ b/arch/powerpc/mm/hugetlbpage.c
-@@ -86,6 +86,11 @@ int pgd_huge(pgd_t pgd)
- 	 */
- 	return ((pgd_val(pgd) & 0x3) != 0x0);
- }
-+
-+int pmd_huge_support(void)
-+{
-+	return 1;
-+}
- #else
- int pmd_huge(pmd_t pmd)
- {
-@@ -101,6 +106,11 @@ int pgd_huge(pgd_t pgd)
- {
- 	return 0;
- }
-+
-+int pmd_huge_support(void)
-+{
-+	return 0;
-+}
- #endif
- 
- pte_t *huge_pte_offset(struct mm_struct *mm, unsigned long addr)
-diff --git a/arch/s390/mm/hugetlbpage.c b/arch/s390/mm/hugetlbpage.c
-index 121089d..951ee25 100644
---- a/arch/s390/mm/hugetlbpage.c
-+++ b/arch/s390/mm/hugetlbpage.c
-@@ -117,6 +117,11 @@ int pud_huge(pud_t pud)
- 	return 0;
- }
- 
-+int pmd_huge_support(void)
-+{
-+	return 1;
-+}
-+
- struct page *follow_huge_pmd(struct mm_struct *mm, unsigned long address,
- 			     pmd_t *pmdp, int write)
- {
-diff --git a/arch/sh/mm/hugetlbpage.c b/arch/sh/mm/hugetlbpage.c
-index d776234..0d676a4 100644
---- a/arch/sh/mm/hugetlbpage.c
-+++ b/arch/sh/mm/hugetlbpage.c
-@@ -83,6 +83,11 @@ int pud_huge(pud_t pud)
- 	return 0;
- }
- 
-+int pmd_huge_support(void)
-+{
-+	return 0;
-+}
-+
- struct page *follow_huge_pmd(struct mm_struct *mm, unsigned long address,
- 			     pmd_t *pmd, int write)
- {
-diff --git a/arch/sparc/mm/hugetlbpage.c b/arch/sparc/mm/hugetlbpage.c
-index d2b5944..9639964 100644
---- a/arch/sparc/mm/hugetlbpage.c
-+++ b/arch/sparc/mm/hugetlbpage.c
-@@ -234,6 +234,11 @@ int pud_huge(pud_t pud)
- 	return 0;
- }
- 
-+int pmd_huge_support(void)
-+{
-+	return 0;
-+}
-+
- struct page *follow_huge_pmd(struct mm_struct *mm, unsigned long address,
- 			     pmd_t *pmd, int write)
- {
-diff --git a/arch/tile/mm/hugetlbpage.c b/arch/tile/mm/hugetlbpage.c
-index 650ccff..0ac3599 100644
---- a/arch/tile/mm/hugetlbpage.c
-+++ b/arch/tile/mm/hugetlbpage.c
-@@ -198,6 +198,11 @@ int pud_huge(pud_t pud)
- 	return !!(pud_val(pud) & _PAGE_HUGE_PAGE);
- }
- 
-+int pmd_huge_support(void)
-+{
-+	return 1;
-+}
-+
- struct page *follow_huge_pmd(struct mm_struct *mm, unsigned long address,
- 			     pmd_t *pmd, int write)
- {
-diff --git a/arch/x86/mm/hugetlbpage.c b/arch/x86/mm/hugetlbpage.c
-index 7e73e8c..9d980d8 100644
---- a/arch/x86/mm/hugetlbpage.c
-+++ b/arch/x86/mm/hugetlbpage.c
-@@ -59,6 +59,10 @@ follow_huge_pmd(struct mm_struct *mm, unsigned long address,
- 	return NULL;
- }
- 
-+int pmd_huge_support(void)
-+{
-+	return 0;
-+}
- #else
- 
- struct page *
-@@ -77,6 +81,10 @@ int pud_huge(pud_t pud)
- 	return !!(pud_val(pud) & _PAGE_PSE);
- }
- 
-+int pmd_huge_support(void)
-+{
-+	return 1;
-+}
- #endif
- 
- /* x86_64 also uses this file */
-diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
-index 2e02c4e..115b553 100644
---- a/include/linux/hugetlb.h
-+++ b/include/linux/hugetlb.h
-@@ -94,6 +94,7 @@ struct page *follow_huge_pud(struct mm_struct *mm, unsigned long address,
- 				pud_t *pud, int write);
- int pmd_huge(pmd_t pmd);
- int pud_huge(pud_t pmd);
-+int pmd_huge_support(void);
- unsigned long hugetlb_change_protection(struct vm_area_struct *vma,
- 		unsigned long address, unsigned long end, pgprot_t newprot);
- 
-@@ -128,6 +129,7 @@ static inline void hugetlb_show_meminfo(void)
- #define prepare_hugepage_range(file, addr, len)	(-EINVAL)
- #define pmd_huge(x)	0
- #define pud_huge(x)	0
-+#define pmd_huge_support()	0
- #define is_hugepage_only_range(mm, addr, len)	0
- #define hugetlb_free_pgd_range(tlb, addr, end, floor, ceiling) ({BUG(); 0; })
- #define hugetlb_fault(mm, vma, addr, flags)	({ BUG(); 0; })
-diff --git a/mm/migrate.c b/mm/migrate.c
-index d313737..7082e30 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -949,6 +949,17 @@ static int unmap_and_move_huge_page(new_page_t get_new_page,
- 	struct page *new_hpage = get_new_page(hpage, private, &result);
- 	struct anon_vma *anon_vma = NULL;
- 
-+	/*
-+	 * This restriction ensures that only pmd-based hugepages can migrate,
-+	 * because migration of other types of hugepages are not completely
-+	 * implemented nor tested. Some callers of hugepage migration like
-+	 * soft offline and memory hotremove don't walk through page tables
-+	 * before kicking migration, so we need this check to prevent hugepage
-+	 * migration in the architectures with non-pmd-based hugepage.
-+	 */
-+	if (!pmd_huge_support())
-+		return -ENOSYS;
-+
- 	if (!new_hpage)
- 		return -ENOMEM;
- 
--- 
-1.8.3.1
