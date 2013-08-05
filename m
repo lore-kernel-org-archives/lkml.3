@@ -1,84 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754178Ab3HEKXr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 06:23:47 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:58840 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752909Ab3HEKXp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 06:23:45 -0400
-Message-ID: <51FF7D2C.1090107@ti.com>
-Date: Mon, 5 Aug 2013 13:23:40 +0300
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1753983Ab3HEKcY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 06:32:24 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:51630 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752112Ab3HEKcW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 06:32:22 -0400
+Date: Mon, 5 Aug 2013 12:32:14 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Jingchang Lu <b35083@freescale.com>
+Cc: vinod.koul@intel.com, shawn.guo@linaro.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, djbw@fb.com
+Subject: Re: [PATCH v2 2/3] ARM: dts: vf610: Add eDMA node
+Message-ID: <20130805103214.GA30913@pengutronix.de>
+References: <1375682824-11443-1-git-send-email-b35083@freescale.com>
 MIME-Version: 1.0
-To: George Cherian <george.cherian@ti.com>
-CC: <tony@atomide.com>, <rnayak@ti.com>, <benoit.cousson@linaro.org>,
-        <balbi@ti.com>, <kishon@ti.com>, <dmurphy@ti.com>, <t-kristo@ti.com>,
-        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/4] dts: dra7-evm: add USB support
-References: <1375369134-26398-1-git-send-email-rogerq@ti.com> <1375369134-26398-4-git-send-email-rogerq@ti.com> <51FBCA6F.9030503@ti.com> <51FF5A69.7040604@ti.com> <51FF6A45.3060702@ti.com>
-In-Reply-To: <51FF6A45.3060702@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1375682824-11443-1-git-send-email-b35083@freescale.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 12:30:26 up 5 days, 19:34, 20 users,  load average: 0.02, 0.03,
+ 0.05
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/05/2013 12:03 PM, George Cherian wrote:
-> On 8/5/2013 1:25 PM, Roger Quadros wrote:
->> On 08/02/2013 06:04 PM, George Cherian wrote:
->>> On 8/1/2013 8:28 PM, Roger Quadros wrote:
->>>> Add USB drv_vbus pinctrl information and USB mode
->>>> for the USB controller.
->>>>
->>>> Signed-off-by: Roger Quadros <rogerq@ti.com>
->>>> ---
->>>>    arch/arm/boot/dts/dra7-evm.dts |   22 ++++++++++++++++++++++
->>>>    1 files changed, 22 insertions(+), 0 deletions(-)
->>>>
->>>> diff --git a/arch/arm/boot/dts/dra7-evm.dts b/arch/arm/boot/dts/dra7-evm.dts
->>>> index cb0703c..acd3c09 100644
->>>> --- a/arch/arm/boot/dts/dra7-evm.dts
->>>> +++ b/arch/arm/boot/dts/dra7-evm.dts
->>>> @@ -18,3 +18,25 @@
->>>>            reg = <0x80000000 0x60000000>; /* 1536 MB */
->>>>        };
->>>>    };
->>>> +
->>>> +&dra7_pmx_core {
->>>> +        pinctrl-names = "default";
->>>> +        pinctrl-0 = <
->>>> +        &usb_pins
->>>> +    >;
->>>> +
->>>> +    usb_pins: pinmux_usb_pins {
->>>> +                pinctrl-single,pins = <
->>>> +            0x280    0xc0000    /* usb1_drvvbus, SLOW_SLEW | PULLUPEN | MODE0 */
->>>> +            0x284    0xc0000 /* usb2_drvvbus, SLOW_SLEW | PULLUPEN | MODE0 */
->>>> +                >;
->>>> +        };
->>>> +};
->>>> +
->>>> +&dwc3_1 {
->>>> +    dr_mode = "otg";
->>> otg???
->> What's wrong there?
->> please see
->> Documentation/devicetree/bindings/usb/generic.txt
->>
->> we want it to operate in dual role mode and hence "otg"
+On Mon, Aug 05, 2013 at 02:07:03PM +0800, Jingchang Lu wrote:
+> Signed-off-by: Jingchang Lu <b35083@freescale.com>
+> ---
+> changes in v2:
+>   using generic dma-channels property instead of fsl,dma-channels.
 > 
-> Am sorry for not being clear with my earlier comment.
-> I meant whether we have otg/ DRD working. Till then shouldnt we put either peripheral/host?
+> diff --git a/include/dt-bindings/dma/vf610-edma.h b/include/dt-bindings/dma/vf610-edma.h
+> new file mode 100644
+> index 0000000..3ae481c
+> --- /dev/null
+> +++ b/include/dt-bindings/dma/vf610-edma.h
+> @@ -0,0 +1,103 @@
+> +/*
+> + * Copyright 2013 Freescale Semiconductor, Inc.
+> + *
+> + * This program is free software; you can redistribute  it and/or modify it
+> + * under  the terms of  the GNU General  Public License as published by the
+> + * Free Software Foundation;  either version 2 of the  License, or (at your
+> + * option) any later version.
+> + *
+> + */
+> +
+> +#ifndef __DT_BINDINGS_DMA_VF610_H__
+> +#define __DT_BINDINGS_DMA_VF610_H__
+> +
+> +/* DMAMUX0,3 reqeust slot number */
+> +#define DMA_MUXID0_UART0_RX	2
 
-Setting it to peripheral did not work and I don't think it is meant to be used as host port at all
-so no point in setting it has host. Users needing host support can always use usb2 port.
-The kit comes supplied with host adapter only for the usb2 (mini) port.
+Never add defines without a proper namespace. I suggest VF610_ here.
 
-So I think we should just leave usb1 port OTG, and get it to work somehow, at least in peripheral mode
-first.
+Sascha
 
-cheers,
--roger
-
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
