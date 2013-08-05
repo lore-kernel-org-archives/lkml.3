@@ -1,62 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754008Ab3HERIJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 13:08:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16392 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753165Ab3HERIH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 13:08:07 -0400
-Message-ID: <51FFDC4E.20001@redhat.com>
-Date: Mon, 05 Aug 2013 19:09:34 +0200
-From: Laszlo Ersek <lersek@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130621 Thunderbird/17.0.7
+	id S1754095Ab3HERIl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 13:08:41 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:46679 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753550Ab3HERIj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 13:08:39 -0400
+Date: Mon, 5 Aug 2013 13:08:34 -0400
+From: Tejun Heo <tj@kernel.org>
+To: lizefan@huawei.com, hannes@cmpxchg.org, mhocko@suse.cz,
+        bsingharora@gmail.com, kamezawa.hiroyu@jp.fujitsu.com
+Cc: cgroups@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 2/5] cgroup: make __cgroup_from_dentry() and
+ __cgroup_dput() global
+Message-ID: <20130805170834.GA23751@mtj.dyndns.org>
+References: <1375632446-2581-1-git-send-email-tj@kernel.org>
+ <1375632446-2581-3-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: edk2-devel@lists.sourceforge.net, David Woodhouse <dwmw2@infradead.org>,
-        linux-efi@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
-        Gleb Natapov <gleb@redhat.com>, Matthew Garrett <mjg59@srcf.ucam.org>
-Subject: Re: [edk2] Corrupted EFI region
-References: <20130801164927.GA7445@pd.tnic> <51FF8C14.2070405@redhat.com> <20130805130258.GB31845@pd.tnic> <51FFAB13.4090603@redhat.com> <20130805140306.GD31845@pd.tnic> <51FFB660.4060400@redhat.com> <20130805144010.GE31845@pd.tnic> <51FFC19A.1020204@redhat.com> <20130805161247.GF31845@pd.tnic> <51FFD5B0.9080000@redhat.com> <20130805164731.GG31845@pd.tnic>
-In-Reply-To: <20130805164731.GG31845@pd.tnic>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1375632446-2581-3-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/05/13 18:47, Borislav Petkov wrote:
-> On Mon, Aug 05, 2013 at 06:41:20PM +0200, Laszlo Ersek wrote:
->> I didn't realize the timestamps survive kexec. (As far as I remember
->> the kernels I played with kexec on didn't have the automatic
->> timestamps yet in dmesg, but I might have messed up just as well...)
-> 
-> No, no, no, kexec is not involved at all.
+>From eb06a03636eb8477ea034780c37463a086112115 Mon Sep 17 00:00:00 2001
+From: Tejun Heo <tj@kernel.org>
+Date: Mon, 5 Aug 2013 12:00:23 -0400
 
-I understand. I just explained why I could not derive that fact from the
-timestamps. You said,
+cgroup_event will no longer be supported as cgroup generic mechanism
+and be moved to memcg.  To enable the relocation, implement and expose
+__cgroup_from_dentry() which combines cgroup file dentry -> croup
+mapping and cft discovery, and prefix cgroup_dput() with __ and make
+it global.
 
-> No, kexec is not even involved yet. If you look at the timestamps,
-> there's 0.005 seconds between the two dumps during the *same* kernel
-> booting on the machine, baremetal, straight from grub.
+These functions exist and are exported only to enable moving
+cgroup_event implementation to memcg and shouldn't grow any new users
+and thus the __ prefix.
 
-There are four memmap dumps:
+This patch is pure reorganization and doesn't introduce any functional
+difference.
 
-(1) first boot, initial dump,
-(2) first boot, dump when entering virtual mode,
-(3) kexec boot, initial dump,
-(4) kexec boot, dump when entering virtual mode.
+v2: The original patch had EXPORT_SYMBOL_GPL() for the two functions
+    because I for some reason thought that memcg could be built as
+    module.  Removed as suggested by Li Zefan.
 
-I was aware that we were discussing a problem either between (1) and
-(2), *or* between (3) and (4); I just didn't know inside "which pair".
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Li Zefan <lizefan@huawei.com>
+---
+ include/linux/cgroup.h |  4 ++++
+ kernel/cgroup.c        | 29 +++++++++++++++--------------
+ 2 files changed, 19 insertions(+), 14 deletions(-)
 
-I misunderstood your reply and thought that you were implying the
-(1)+(2) pair by the low absolute timestamps. I assumed that (3)+(4)
-would print low timestamps as well (due to the time offset starting from
-zero in the kexec kernel too) and took your message as a correction to
-that idea. But, you didn't say anything about the magnitude of the
-timestamps, only about the differences between them.
+diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+index 30d6ec4..2ac1021 100644
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -923,6 +923,10 @@ bool css_is_ancestor(struct cgroup_subsys_state *cg,
+ unsigned short css_id(struct cgroup_subsys_state *css);
+ struct cgroup_subsys_state *cgroup_css_from_dir(struct file *f, int id);
+ 
++/* do not add new users of the following two functions */
++struct cgroup *__cgroup_from_dentry(struct dentry *dentry, struct cftype **cftp);
++void __cgroup_dput(struct cgroup *cgrp);
++
+ #else /* !CONFIG_CGROUPS */
+ 
+ static inline int cgroup_init_early(void) { return 0; }
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 1b87e2b..568d031 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -2661,14 +2661,16 @@ static struct dentry *cgroup_lookup(struct inode *dir, struct dentry *dentry, un
+ 	return NULL;
+ }
+ 
+-/*
+- * Check if a file is a control file
+- */
+-static inline struct cftype *__file_cft(struct file *file)
++/* do not add new users */
++struct cgroup *__cgroup_from_dentry(struct dentry *dentry, struct cftype **cftp)
+ {
+-	if (file_inode(file)->i_fop != &cgroup_file_operations)
+-		return ERR_PTR(-EINVAL);
+-	return __d_cft(file->f_dentry);
++	if (!dentry->d_inode ||
++	    dentry->d_inode->i_op != &cgroup_file_inode_operations)
++		return NULL;
++
++	if (cftp)
++		*cftp = __d_cft(dentry);
++	return __d_cgrp(dentry->d_parent);
+ }
+ 
+ static int cgroup_create_file(struct dentry *dentry, umode_t mode,
+@@ -3953,7 +3955,7 @@ static int cgroup_write_notify_on_release(struct cgroup_subsys_state *css,
+  *
+  * That's why we hold a reference before dput() and drop it right after.
+  */
+-static void cgroup_dput(struct cgroup *cgrp)
++void __cgroup_dput(struct cgroup *cgrp)
+ {
+ 	struct super_block *sb = cgrp->root->sb;
+ 
+@@ -3983,7 +3985,7 @@ static void cgroup_event_remove(struct work_struct *work)
+ 
+ 	eventfd_ctx_put(event->eventfd);
+ 	kfree(event);
+-	cgroup_dput(cgrp);
++	__cgroup_dput(cgrp);
+ }
+ 
+ /*
+@@ -4095,9 +4097,9 @@ static int cgroup_write_event_control(struct cgroup_subsys_state *css,
+ 	if (ret < 0)
+ 		goto out_put_cfile;
+ 
+-	event->cft = __file_cft(cfile);
+-	if (IS_ERR(event->cft)) {
+-		ret = PTR_ERR(event->cft);
++	cgrp_cfile = __cgroup_from_dentry(cfile->f_dentry, &event->cft);
++	if (!cgrp_cfile) {
++		ret = -EINVAL;
+ 		goto out_put_cfile;
+ 	}
+ 
+@@ -4105,7 +4107,6 @@ static int cgroup_write_event_control(struct cgroup_subsys_state *css,
+ 	 * The file to be monitored must be in the same cgroup as
+ 	 * cgroup.event_control is.
+ 	 */
+-	cgrp_cfile = __d_cgrp(cfile->f_dentry->d_parent);
+ 	if (cgrp_cfile != cgrp) {
+ 		ret = -EINVAL;
+ 		goto out_put_cfile;
+@@ -4272,7 +4273,7 @@ static void css_dput_fn(struct work_struct *work)
+ 	struct cgroup_subsys_state *css =
+ 		container_of(work, struct cgroup_subsys_state, dput_work);
+ 
+-	cgroup_dput(css->cgroup);
++	__cgroup_dput(css->cgroup);
+ }
+ 
+ static void css_release(struct percpu_ref *ref)
+-- 
+1.8.3.1
 
-Sorry for the noise, it's clear now that we're looking at (1)->(2).
-
-Thanks
-Laszlo
