@@ -1,76 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755729Ab3HEWg5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 18:36:57 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:57153 "EHLO hydra.sisk.pl"
+	id S1755762Ab3HEWlK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 18:41:10 -0400
+Received: from mout.web.de ([212.227.15.4]:50166 "EHLO mout.web.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755130Ab3HEWgz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 18:36:55 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: Re: [PATCH] ACPI: Do not fail acpi_bind_one() if device is already bound correctly
-Date: Tue, 06 Aug 2013 00:47:11 +0200
-Message-ID: <14340982.ePfLp2GYsD@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.11.0-rc4+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1375741219.10300.172.camel@misato.fc.hp.com>
-References: <1888947.F5IBMfDKlY@vostro.rjw.lan> <1981183.omDzKl0aqK@vostro.rjw.lan> <1375741219.10300.172.camel@misato.fc.hp.com>
+	id S1755685Ab3HEWlJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 18:41:09 -0400
+Date: Tue, 6 Aug 2013 00:40:59 +0200
+From: Linus =?utf-8?Q?L=C3=BCssing?= <linus.luessing@web.de>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: David Miller <davem@davemloft.net>, bridge@lists.linux-foundation.org,
+        stephen@networkplumber.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, herbert@gondor.hengli.com.au,
+        amwang@redhat.com, linux@baker-net.org.uk, linus.luessing@web.de
+Subject: Re: [PATCHv3] bridge: disable snooping if there is no querier
+Message-ID: <20130805224059.GG25436@Linus-Debian>
+References: <20130730.161035.1646022729333223847.davem@davemloft.net>
+ <1375311980-25575-1-git-send-email-linus.luessing@web.de>
+ <20130731.174037.1794753574143053874.davem@davemloft.net>
+ <1375692066.25148.14.camel@x61.thuisdomein>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1375692066.25148.14.camel@x61.thuisdomein>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V03:K0:rwkTRBzDOC6URNrX0rO0Y/SMr3MpkRlW5JLCowAYfXSQTiEPSIz
+ LNWaLO0Q3vF2q85ZrwQE91SOGd6VreNPqLOyhHu4LQ2RquY74tHbER+7Tm3xlQd0177Ca+B
+ BHT428ZyF4uGDcrDH0rd2G6xyGsHm6tAHSA32jPJ2/djnlyp7oPiDx/mLzR1CcA3DZIqlyi
+ v5bs/kYNH2OrawtRDGYzw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, August 05, 2013 04:20:19 PM Toshi Kani wrote:
-> On Sun, 2013-08-04 at 16:03 +0200, Rafael J. Wysocki wrote:
-> > On Saturday, August 03, 2013 06:32:02 PM Toshi Kani wrote:
-> > > On Sat, 2013-08-03 at 02:47 +0200, Rafael J. Wysocki wrote:
-> > > > On Friday, August 02, 2013 04:38:38 PM Toshi Kani wrote:
-> > > > > On Fri, 2013-08-02 at 00:33 +0200, Rafael J. Wysocki wrote:
-> > > > > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > > > > > 
-> > > > > > Modify acpi_bind_one() so that it doesn't fail if the device
-> > > > > > represented by its first argument has already been bound to the
-> > > > > > given ACPI handle (second argument), because that is not a good
-> > > > > > enough reason for returning an error code.
-> > > > > 
-> > > > > While it seems reasonable to allow such case, I do not think we will hit
-> > > > > this case under the normal scenarios.  So, I do not think we need to
-> > > > > make this change now unless it actually solves Yasuaki's issue (which I
-> > > > > am guessing not).
-> > > > 
-> > > > In theory it should be possible to call acpi_bind_one() twice in a row
-> > > > for the same dev and the same handle without failure, that simply is
-> > > > logical.  The patch may not fix any problems visible now, but returning an
-> > > > error code in such a case is simply incorrect.
+Thanks for the very quick reporting! Looks like my gcc was and still
+isn't as supportive... You and the lists should have received a patch
+to fix that.
+
+Cheers, Linus
+
+
+On Mon, Aug 05, 2013 at 10:41:06AM +0200, Paul Bolle wrote:
+> On Wed, 2013-07-31 at 17:40 -0700, David Miller wrote:
+> > > If there is no querier on a link then we won't get periodic reports and
+> > > therefore won't be able to learn about multicast listeners behind ports,
+> > > potentially leading to lost multicast packets, especially for multicast
+> > > listeners that joined before the creation of the bridge.
 > > > 
-> > > We changed acpi_bus_device_attach() to not call the handler or driver
-> > > again if it is already bound.  So, I was under impression that we
-> > > prevent from attaching a same device twice.  But I may be missing
-> > > something...
+> > > These lost multicast packets can appear since c5c23260594
+> > > ("bridge: Add multicast_querier toggle and disable queries by default")
+> > > in particular.
+> > > 
+> > > With this patch we are flooding multicast packets if our querier is
+> > > disabled and if we didn't detect any other querier.
+> > > 
+> > > A grace period of the Maximum Response Delay of the querier is added to
+> > > give multicast responses enough time to arrive and to be learned from
+> > > before disabling the flooding behaviour again.
+> > > 
+> > > Signed-off-by: Linus Lüssing <linus.luessing@web.de>
 > > 
-> > acpi_bind_one() may be called in code paths that don't start from
-> > acpi_bus_device_attach(), like acpi_platform_notify(), where the result
-> > depends on how .find_device() is implemented by the the given bus type,
-> > for example.
+> > Looks good, applied, thanks Linus.
 > 
-> acpi_bind_one() always returns with 0 when it sets a handle to the
-> device.  So, acpi_platform_notify() should not call .find_device() in
-> this case.  acpi_bus_check_add() is also protected from adding a same
-> device twice.  But I see your point that the callers of acpi_bind_one()
-> could be changed / implementation dependent.  So, I agree that it would
-> be prudent to have this change. 
+> 0) This patch is part of v3.11-rc4 as commit b00589af3b0. It introduced
+> a GCC warning:
+>     net/bridge/br_multicast.c: In function ‘br_multicast_rcv’:
+>     net/bridge/br_multicast.c:1081:36: warning: ‘max_delay’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+>     net/bridge/br_multicast.c:1178:16: note: ‘max_delay’ was declared here
 > 
-> Acked-by: Toshi Kani <toshi.kani@hp.com>
-
-Thanks!
-
-I wonder what you think about this patch:
-
-https://patchwork.kernel.org/patch/2838675/
-
-Rafael
-
+> 1) Summarized, the code reads:
+> 
+>         unsigned long max_delay;
+> 
+>         if (skb->len == sizeof(*mld))
+>                 max_delay = msecs_to_jiffies(ntohs(mld->mld_maxdelay));
+>         else if (skb->len >= sizeof(*mld2q))
+>                 max_delay = mld2q->mld2q_mrc ? MLDV2_MRC(ntohs(mld2q->mld2q_mrc)) : 1;
+> 
+>         br_multicast_query_received(br, port, !ipv6_addr_any(&ip6h->saddr),
+>                                     max_delay);
+>  
+> So GCC notices that max_delay is still uninitialized if skb->len is
+> neither equal to sizeof(*mld) nor equal or bigger than sizeof(*mld2q).
+> To me it looks GCC is right here. At least, it is not obvious that
+> max_delay will actually not be used in br_multicast_query_received() if
+> it still is uninitialized.
+> 
+> 2) I'm entirely unfamiliar to this code. So I can't say how this warning
+> might be silenced.
+> 
+> 
+> Paul Bolle
+> 
