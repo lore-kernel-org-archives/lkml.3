@@ -1,63 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754557Ab3HEJ7t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 05:59:49 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:64863 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754068Ab3HEJ6u (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 05:58:50 -0400
-From: Iker Pedrosa <ikerpedrosam@gmail.com>
-To: pavel@ucw.cz
-Cc: gregkh@linuxfoundation.org, justinmattock@gmail.com,
-        ikerpedrosam@gmail.com, mujeeb.adil@gmail.com, harsh1kumar@gmail.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/6] Staging: winbond: wb35reg: avoided use of extern function
-Date: Mon,  5 Aug 2013 11:58:29 +0200
-Message-Id: <1375696712-5276-4-git-send-email-ikerpedrosam@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1375696712-5276-1-git-send-email-ikerpedrosam@gmail.com>
-References: <1375696712-5276-1-git-send-email-ikerpedrosam@gmail.com>
+	id S1753977Ab3HEKCe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 06:02:34 -0400
+Received: from sauhun.de ([89.238.76.85]:49442 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751345Ab3HEKCd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 06:02:33 -0400
+Date: Mon, 5 Aug 2013 12:02:26 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Christian Ruppert <christian.ruppert@abilis.com>
+Cc: Shinya Kuribayashi <skuribay@pobox.com>, mika.westerberg@linux.intel.com,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] i2c-designware: make *CNT values configurable
+Message-ID: <20130805100225.GA9694@katana>
+References: <20130711073600.GG4898@intel.com>
+ <20130711101330.GP4898@intel.com>
+ <51DFB6C1.4040001@pobox.com>
+ <20130712085140.GY4898@intel.com>
+ <51E0E76B.1040304@pobox.com>
+ <20130716111616.GA25835@ab42.lan>
+ <51E6ACBE.7000509@pobox.com>
+ <20130722131706.GA24081@ab42.lan>
+ <51EFE550.1000507@pobox.com>
+ <20130805093126.GE20936@ab42.lan>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="0F1p//8PRICkK4MW"
+Content-Disposition: inline
+In-Reply-To: <20130805093126.GE20936@ab42.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Prototype of a function added to the header to avoid the use of extern.
 
-Signed-off-by: Iker Pedrosa <ikerpedrosam@gmail.com>
----
- drivers/staging/winbond/phy_calibration.h | 1 +
- drivers/staging/winbond/wb35reg.c         | 3 +--
- 2 files changed, 2 insertions(+), 2 deletions(-)
+--0F1p//8PRICkK4MW
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/drivers/staging/winbond/phy_calibration.h b/drivers/staging/winbond/phy_calibration.h
-index 84f6e84..78fc680 100644
---- a/drivers/staging/winbond/phy_calibration.h
-+++ b/drivers/staging/winbond/phy_calibration.h
-@@ -79,6 +79,7 @@
- #define SHIFT_IQCAL_TONE_Q(x)	((x) >> 13)
- 
- void phy_set_rf_data(struct hw_data *pHwData, u32 index, u32 value);
-+void phy_calibration_winbond(struct hw_data *phw_data, u32 frequency);
- #define phy_init_rf(_A)		/* RFSynthesizer_initial(_A) */
- 
- #endif
-diff --git a/drivers/staging/winbond/wb35reg.c b/drivers/staging/winbond/wb35reg.c
-index 1314f93..a500904 100644
---- a/drivers/staging/winbond/wb35reg.c
-+++ b/drivers/staging/winbond/wb35reg.c
-@@ -1,10 +1,9 @@
- #include "wb35reg_f.h"
-+#include "phy_calibration.h"
- 
- #include <linux/usb.h>
- #include <linux/slab.h>
- 
--extern void phy_calibration_winbond(struct hw_data *phw_data, u32 frequency);
--
- /*
-  * true  : read command process successfully
-  * false : register not support
--- 
-1.8.1.2
 
+> > >Would it make sense to add generic I2C device tree properties for those
+> > >parameters? These parameters are independent of the actual bus driver,
+> > >rather a PCB property... And as such the correct place would be device
+> > >tree or ACPI or similar.
+> >=20
+> > If there are other bus drivers that make use of tr/tf transition
+> > times, I think it makes sense.
+>=20
+> Wolfram, what's your opinion on this?
+
+If it is a PCB property, it makes sense to have generic bindings for
+it. Can they have very-safe defaults and thus be optional?
+
+
+--0F1p//8PRICkK4MW
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR/3gxAAoJEBQN5MwUoCm2kKgP/2DdjnYoBtaKUBiX1V9vl9ht
+kxWfLqQ6/jcP9PAZZFh/sPt1wNzPdmzxVKI3Hsk/+CSvXpp30MYrmdfe2DmSiH0m
+d9ObcAgQ/yGfLvw4NfYBlpWDOaGQ/cGhu0Oli/QEt5Etmi2qxWyVBMgkYntm3L9r
+08DCpLXt1YizeFEUy29jgNYj9wvYVSLit0r8c7QvEDZ12DcqK0IItbbwu9Jv4iif
+Q1byVnwm6hCoBPzehxXS0+crmr9/zsYpJCSk2q7E8lTA+JVmSx6Q4MMQA22EnxFT
+SMTQYZ5TOHXV5LGEgKAO4Grk3HWy49gZ6n2iiZiq+Rn8LkJd2RJSYInHCxWotiHo
+Ee9RNwWMEk+c4Rvg3f3wekaDZyag64K9i/sowy9hmLlL2Fmf06TroVdcG36zMpiU
+OIrnrGFoJ6FNI6bNQKeQ8xJNZFroiGif8TnIyIFPklVTI7onNTur47dP3HVfEyJ9
+Z7qNubR6T9jNjKz6UUqvt0uHkFhbLheKd1AWBPZjTfN17cgWYtGYOT310V3/tVk3
+Dkm46E8g7qbuQ1ThHNNeWXhiYmxBu3KwDmGTBD86bNCUG3j1X/YF0DVrWV4RNw+I
+VdOLHbrElQthcSQBPJkxLXyPldW6FV0JD7l+UO7Cc8gme9fBiOUjJFel5hGvhiWa
+ihNywMA6U8WVcf/s6coE
+=Nyxg
+-----END PGP SIGNATURE-----
+
+--0F1p//8PRICkK4MW--
