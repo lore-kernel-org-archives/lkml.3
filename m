@@ -1,74 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754849Ab3HEUXq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 16:23:46 -0400
-Received: from gateway.crfreenet.org ([81.92.146.254]:36693 "EHLO
-	mail.crfreenet.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754649Ab3HEUXp (ORCPT
+	id S1754924Ab3HEUXz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 16:23:55 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:35673 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754649Ab3HEUXw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 16:23:45 -0400
-X-Greylist: delayed 1582 seconds by postgrey-1.27 at vger.kernel.org; Mon, 05 Aug 2013 16:23:44 EDT
-Date: Mon, 5 Aug 2013 22:29:55 +0200
-From: Ondrej Zajicek <santiago@crfreenet.org>
-To: David Miller <davem@davemloft.net>
-Cc: hpa@zytor.com, dh.herrmann@gmail.com, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, plagnioj@jcrosoft.com,
-        tomi.valkeinen@ti.com, Ondrej Zary <linux@rainbow-software.org>
-Subject: Re: [PATCH] fbdev: suppress warning when assigning
-	vga-save/restore base
-Message-ID: <20130805202955.GH22789@localhost>
-References: <1375637141-2878-1-git-send-email-dh.herrmann@gmail.com> <51FE907A.2090201@zytor.com> <20130804.185146.1621476659301936865.davem@davemloft.net>
+	Mon, 5 Aug 2013 16:23:52 -0400
+Date: Mon, 5 Aug 2013 23:23:38 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Rupesh Gujare <rupesh.gujare@atmel.com>
+Cc: devel@linuxdriverproject.org, gregkh@linuxfoundation.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/4] staging: ozwpan: Increment port number for new
+ device.
+Message-ID: <20130805202338.GO5051@mwanda>
+References: <1375724415-10801-1-git-send-email-rupesh.gujare@atmel.com>
+ <1375724415-10801-3-git-send-email-rupesh.gujare@atmel.com>
+ <20130805175302.GJ5051@mwanda>
+ <51FFF244.9000604@atmel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130804.185146.1621476659301936865.davem@davemloft.net>
-X-Operating-System: Debian GNU/Linux
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <51FFF244.9000604@atmel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 04, 2013 at 06:51:46PM -0700, David Miller wrote:
-> From: "H. Peter Anvin" <hpa@zytor.com>
-> Date: Sun, 04 Aug 2013 10:33:46 -0700
+On Mon, Aug 05, 2013 at 07:43:16PM +0100, Rupesh Gujare wrote:
+> On 05/08/13 18:53, Dan Carpenter wrote:
+> >On Mon, Aug 05, 2013 at 06:40:13PM +0100, Rupesh Gujare wrote:
+> >>This patch fixes crash issue when there is quick cycle of
+> >>de-enumeration & enumeration due to loss of wireless link.
+> >>
+> >>It is found that sometimes new device (or coming back device)
+> >>returns very fast, even before USB core read out hub status,
+> >>resulting in allocation of same port, which results in unstable
+> >>system & crash.
+> >>
+> >>Above issue is resolved by making sure that we always assign
+> >>new port to new device, making sure that USB core reads correct
+> >>hub status.
+> >>
+> >This feels like papering over the problem.  Surely the real fix
+> >would be to improve the reference counting.
+> >
+> >This patch is probably effective but it makes the code more subtle
+> >and it shows that we don't really understand what we are doing with
+> >regards to reference counting.
+> >
+> >
 > 
-> > Anyone who can dig backwards and summarize?  In other words:
-> > 
-> > Where in the current code do we stuff a physical address in a pointer,
-> > or a virtual address into a non-pointer?
-> 
-> The VGA register accessors try to accomodate iomem and ioport
-> accesses.
-> 
-> If they are given a non-NULL iomem pointer 'regbase' they use
-> iomem accesses, otherwise they do direct ISA port poking.
-> 
-> And yes the drivers in question are making some brash assumptions.
-> I suspect they should be using ioremap() or similar.
+> Probably this is easier way to fix issue, since we don't have
+> reference count for ports & we rely on flags to check port status.
+> Any suggestions are appreciated.
 
-Well, these drivers were written without MMIO (port IO only with NULL
-instead of 'vgabase' for VGA register accessors). They were converted in
-patches 94c322c30bd14ae6cdd369cb4a1f94c5c3809ac9,
-f8645933513c65ac55f23c63b2649097289795c6 and a few others (from David
-Miller) to potentially use MMIO by using 'vgabase' instead of NULL:
+To be honest, I wish someone would just go through and make this
+look more like kernel style.  It's very ugly to look at.  Even a
+very cursory patch series would make a big difference:
 
- pcibios_bus_to_resource(dev, &vga_res, &bus_reg);
- par->state.vgabase = (void __iomem *) vga_res.start;
+[patch 1/6] Add a blank line between declaractions and code.
+[patch 2/6] Add a blank line between functions
+[patch 3/6] Make oz_hcd_pd_arrived() return a struct pointer (instead of a void pointer)
+[patch 4/6] Make oz_hcd_pd_departed() take a struct pointer
+[patch 5/6] Swap arguments of oz_ep_alloc() to match kmalloc()
+[patch 6/6] Remove unneeded initializers
 
-How this could even work? AFAIK these cards have to be explicitly programmed
-to enable MMIO (which was not done in the patches). These patches claim that
-it is for multi-domain PCI. I would guess that vgabase is NULL in common
-configurations but if it is non-NULL, it probably wouldn't work, unless
-there is some hardware magic that transparently converts MMIO (from CPU PoV)
-to port IO (from card/PCI PoV).
+Also it's better to separate the success path from the failure path
+because it means fewer intend levels.  The way oz_hcd_pd_arrived()
+looks now it's easy to think we free "ep" but actually we do this
+spaghetti thing of setting it to NULL on success.  This function
+should just be:
 
-Note that there are some later patches (86c0f043a737dadf034a4e6f29aefb074f4a1146)
-from Ondrej Zary that independently enable MMIO, but they use par->mmio
-field instead of par->state.vgabase .
+	frob();
+	frob();
+	ret = frob();
+	if (ret)
+		goto err_put;
+	frob();
+	frob();
+	ret = frob();
+	if (ret)
+		goto err_free_ep;
+	frob();
+	frob();
+	put();
+	return hport;
 
--- 
-Elen sila lumenn' omentielvo
+err_free_ep:
+	free_ep();
+err_put:
+	put();
+	return NULL;
 
-Ondrej 'SanTiago' Zajicek (email: santiago@crfreenet.org)
-OpenPGP encrypted e-mails preferred (KeyID 0x11DEADC3, wwwkeys.pgp.net)
-"To err is human -- to blame it on a computer is even more so."
+But instead it is:
+
+	frob();
+	ret = frob();
+	if (ret) {
+		unlock();
+		goto out;
+	}
+	frob();
+	ret = frob();
+	if (ret success) {
+		frob();
+		frob();
+		ep = NULL;
+		frob();
+		unlock();
+		frob();
+	} else {
+		unlock();
+	}
+out:
+	if (ep)
+		free_ep();
+	put();
+	return something;
+
+In the second example most of the code is indented.  It's so hard
+to read because there are unlocks scattered throughout.  Meanwhile,
+if you separate success and failure then there are only two unlocks,
+one for success and one for failure.
+
+In the current code you have to set "ep" to NULL on the success path
+and then test it and or free it.  If you separate them out then it's
+obvious that "ep" is not freed on success.
+
+If you separate them out then it's clear that we return NULL on
+failure.  In the current code you have to scroll back to the start
+of the function.
+
+Obviously it's not an emergency to fix any of these style issues but
+it will need to be addressed eventually before it moves out of
+staging.  I think as well that just cleaning things up helps to
+fix bugs.
+
+regards,
+dan carpenter
