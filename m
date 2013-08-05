@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754690Ab3HEQST (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 12:18:19 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:39298 "EHLO arroyo.ext.ti.com"
+	id S1754708Ab3HEQSv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 12:18:51 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:39240 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754362Ab3HEQQG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 12:16:06 -0400
+	id S1754465Ab3HEQP5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 12:15:57 -0400
 From: Joel Fernandes <joelf@ti.com>
 To: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
         Santosh Shilimkar <santosh.shilimkar@ti.com>,
@@ -27,9 +27,9 @@ CC: Linux OMAP List <linux-omap@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Linux MMC List <linux-mmc@vger.kernel.org>,
         Joel Fernandes <joelf@ti.com>
-Subject: [PATCH v3 01/12] dma: edma: Setup parameters to DMA MAX_NR_SG at a time
-Date: Mon, 5 Aug 2013 11:14:46 -0500
-Message-ID: <1375719297-12871-2-git-send-email-joelf@ti.com>
+Subject: [PATCH v3 02/12] ARM: edma: Don't clear EMR of channel in edma_stop
+Date: Mon, 5 Aug 2013 11:14:47 -0500
+Message-ID: <1375719297-12871-3-git-send-email-joelf@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1375719297-12871-1-git-send-email-joelf@ti.com>
 References: <1375719297-12871-1-git-send-email-joelf@ti.com>
@@ -39,67 +39,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changes are made here for configuring existing parameters to support
-DMA'ing them out in batches as needed.
+We certainly don't want error conditions to be cleared any other
+place but the EDMA error handler, as this will make us 'forget'
+about missed events we might need to know errors have occurred.
 
-Also allocate as many as slots as needed by the SG list, but not more
-than MAX_NR_SG. Then these slots will be reused accordingly.
-For ex, if MAX_NR_SG=10, and number of SG entries is 40, still only
-10 slots will be allocated to DMA the entire SG list of size 40.
+This fixes a race condition where the EMR was being cleared
+by the transfer completion interrupt handler.
+
+Basically, what was happening was:
+
+            Missed event
+             |
+             |
+             V
+SG1-SG2-SG3-Null
+         \
+          \__TC Interrupt (Almost same time as ARM is executing
+TC interrupt handler, an event got missed and also forgotten
+by clearing the EMR).
+
+This causes the following  problems:
+
+1.
+If error interrupt is also pending and TC interrupt clears the EMR
+by calling edma_stop as has been observed in the edma_callback function,
+the ARM will execute the error interrupt even though the EMR is clear.
+As a result, the  dma_ccerr_handler returns IRQ_NONE. If this happens
+enough number of times, IRQ subsystem disables the interrupt thinking
+its spurious which makes error handler never execute again.
+
+2.
+Also even if error handler doesn't return IRQ_NONE, the removing of EMR
+removes the knowledge about which channel had a missed event, and thus
+a manual trigger on such channels cannot be performed.
+
+The EMR is ultimately being cleared by the Error interrupt handler
+once it is handled so we remove code that does it in edma_stop and
+allow it to happen there.
 
 Signed-off-by: Joel Fernandes <joelf@ti.com>
 ---
- drivers/dma/edma.c |   14 +++++++++++---
- 1 file changed, 11 insertions(+), 3 deletions(-)
+ arch/arm/common/edma.c |    1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/drivers/dma/edma.c b/drivers/dma/edma.c
-index 5f3e532..7b0853c 100644
---- a/drivers/dma/edma.c
-+++ b/drivers/dma/edma.c
-@@ -222,9 +222,9 @@ static struct dma_async_tx_descriptor *edma_prep_slave_sg(
- 	enum dma_slave_buswidth dev_width;
- 	u32 burst;
- 	struct scatterlist *sg;
--	int i;
- 	int acnt, bcnt, ccnt, src, dst, cidx;
- 	int src_bidx, dst_bidx, src_cidx, dst_cidx;
-+	int i, num_slots_needed;
+diff --git a/arch/arm/common/edma.c b/arch/arm/common/edma.c
+index 3567ba1..6433b6c 100644
+--- a/arch/arm/common/edma.c
++++ b/arch/arm/common/edma.c
+@@ -1307,7 +1307,6 @@ void edma_stop(unsigned channel)
+ 		edma_shadow0_write_array(ctlr, SH_EECR, j, mask);
+ 		edma_shadow0_write_array(ctlr, SH_ECR, j, mask);
+ 		edma_shadow0_write_array(ctlr, SH_SECR, j, mask);
+-		edma_write_array(ctlr, EDMA_EMCR, j, mask);
  
- 	if (unlikely(!echan || !sgl || !sg_len))
- 		return NULL;
-@@ -262,8 +262,11 @@ static struct dma_async_tx_descriptor *edma_prep_slave_sg(
- 
- 	edesc->pset_nr = sg_len;
- 
--	for_each_sg(sgl, sg, sg_len, i) {
--		/* Allocate a PaRAM slot, if needed */
-+	/* Allocate a PaRAM slot, if needed */
-+
-+	num_slots_needed = sg_len > MAX_NR_SG ? MAX_NR_SG : sg_len;
-+
-+	for (i = 0; i < num_slots_needed; i++) {
- 		if (echan->slot[i] < 0) {
- 			echan->slot[i] =
- 				edma_alloc_slot(EDMA_CTLR(echan->ch_num),
-@@ -273,6 +276,10 @@ static struct dma_async_tx_descriptor *edma_prep_slave_sg(
- 				return NULL;
- 			}
- 		}
-+	}
-+
-+	/* Configure PaRAM sets for each SG */
-+	for_each_sg(sgl, sg, sg_len, i) {
- 
- 		acnt = dev_width;
- 
-@@ -330,6 +337,7 @@ static struct dma_async_tx_descriptor *edma_prep_slave_sg(
- 		/* Configure A or AB synchronized transfers */
- 		if (edesc->absync)
- 			edesc->pset[i].opt |= SYNCDIM;
-+
- 		/* If this is the last set, enable completion interrupt flag */
- 		if (i == sg_len - 1)
- 			edesc->pset[i].opt |= TCINTEN;
+ 		pr_debug("EDMA: EER%d %08x\n", j,
+ 				edma_shadow0_read_array(ctlr, SH_EER, j));
 -- 
 1.7.9.5
 
