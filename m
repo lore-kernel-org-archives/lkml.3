@@ -1,99 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754608Ab3HETBP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 15:01:15 -0400
-Received: from mail-we0-f181.google.com ([74.125.82.181]:36401 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754518Ab3HETBM (ORCPT
+	id S1754410Ab3HETBE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 15:01:04 -0400
+Received: from mail-ve0-f180.google.com ([209.85.128.180]:57160 "EHLO
+	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752968Ab3HETBB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 15:01:12 -0400
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+	Mon, 5 Aug 2013 15:01:01 -0400
+MIME-Version: 1.0
+In-Reply-To: <51FFF430.1060701@linux.intel.com>
+References: <1375721715.22073.80.camel@gandalf.local.home>
+	<CA+55aFw_o=D-j_SRn=Y4LhHm-tEyuP1Je5ZHVTYxbVyLyDcLEg@mail.gmail.com>
+	<1375725328.22073.101.camel@gandalf.local.home>
+	<51FFEC56.6040206@linux.intel.com>
+	<1375727010.22073.110.camel@gandalf.local.home>
+	<51FFEEEC.5060902@linux.intel.com>
+	<1375728583.22073.118.camel@gandalf.local.home>
+	<51FFF430.1060701@linux.intel.com>
+Date: Mon, 5 Aug 2013 12:01:01 -0700
+X-Google-Sender-Auth: qqlx7b2eEBvniYNhlVOV75_MHsE
+Message-ID: <CA+55aFwz6cpsaWZ-19h91_CNGB5C3d1bNOv7woxetXOTyJ_CRw@mail.gmail.com>
+Subject: Re: [RFC] gcc feature request: Moving blocks into sections
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+        gcc <gcc@gcc.gnu.org>, Ingo Molnar <mingo@kernel.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>, Borislav Petkov <bp@alien8.de>,
-        Li Zhong <zhong@linux.vnet.ibm.com>, Mike Galbraith <efault@gmx.de>,
-        Kevin Hilman <khilman@linaro.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Alex Shi <alex.shi@intel.com>, Paul Turner <pjt@google.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>
-Subject: [GIT PULL] timers/nohz updates for 3.12
-Date: Mon,  5 Aug 2013 21:01:04 +0200
-Message-Id: <1375729264-19845-1-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
+        David Daney <ddaney.cavm@gmail.com>,
+        Behan Webster <behanw@converseincode.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Herbert Xu <herbert@gondor.hengli.com.au>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ingo,
+On Mon, Aug 5, 2013 at 11:51 AM, H. Peter Anvin <hpa@linux.intel.com> wrote:
+>>
+>> Also, how would you pass the parameters? Every tracepoint has its own
+>> parameters to pass to it. How would a trap know what where to get "prev"
+>> and "next"?
+>
+> How do you do that now?
+>
+> You have to do an IP lookup to find out what you are doing.
 
-Please pull the timers/nohz branch that can be found at:
+No, he just generates the code for the call and then uses a static_key
+to jump to it. So normally it's all out-of-line, and the only thing in
+the hot-path is that 5-byte nop (which gets turned into a 5-byte jump
+when the tracing key is enabled)
 
-git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
-	timers/nohz
+Works fine, but the normally unused stubs end up mixing in the normal
+code segment. Which I actually think is fine, but right now we don't
+get the short-jump advantage from it (and there is likely some I$
+disadvantage from just fragmentation of the code).
 
-It mostly contains fixes and full dynticks off-case optimizations. I believe that
-distros want to enable this feature so it seems important to optimize the case
-where the "nohz_full=" parameter is empty. ie: I'm trying to remove any performance
-regression that comes with NO_HZ_FULL=y when the feature is not used.
+With two-byte jumps, you'd still get the I$ fragmentation (the
+argument generation and the call and the branch back would all be in
+the same code segment as the hot code), but that would be offset by
+the fact that at least the hot code itself could use a short jump when
+possible (ie a 2-byte nop rather than a 5-byte one).
 
-This patchset improves the current situation a lot (off-case appears to be around 11% faster
-with hackbench, although I guess it may vary depending on the configuration but it should be
-significantly faster in any case) now there is still some work to do: I can still observe a
-remaining loss of 1.6% throughput seen with hackbench compared to CONFIG_NO_HZ_FULL=n
+Don't know which way it would go performance-wise. But it shouldn't
+need gcc changes, it just needs the static key branch/nop rewriting to
+be able to handle both sizes. I couldn't tell why Steven's series to
+do that was so complex, though - I only glanced through the patches.
 
-Thanks,
-	Frederic
----
-
-Frederic Weisbecker (23):
-      sched: Consolidate open coded preemptible() checks
-      context_tracing: Fix guest accounting with native vtime
-      vtime: Update a few comments
-      context_tracking: Fix runtime CPU off-case
-      nohz: Only enable context tracking on full dynticks CPUs
-      context_tracking: Remove full dynticks' hacky dependency on wide context tracking
-      context_tracking: Ground setup for static key use
-      context_tracking: Optimize main APIs off case with static key
-      context_tracking: Optimize guest APIs off case with static key
-      context_tracking: Optimize context switch off case with static keys
-      context_tracking: User/kernel broundary cross trace events
-      vtime: Remove a few unneeded generic vtime state checks
-      vtime: Fix racy cputime delta update
-      context_tracking: Split low level state headers
-      hardirq: Split preempt count mask definitions
-      m68k: hardirq_count() only need preempt_mask.h
-      vtime: Describe overriden functions in dedicated arch headers
-      vtime: Optimize full dynticks accounting off case with static keys
-      vtime: Always scale generic vtime accounting results
-      vtime: Always debug check snapshot source _before_ updating it
-      nohz: Rename a few state variables
-      nohz: Optimize full dynticks state checks with static keys
-      nohz: Optimize full dynticks's sched hooks with static keys
-
-
- arch/ia64/include/asm/Kbuild            |    1 +
- arch/m68k/include/asm/irqflags.h        |    2 +-
- arch/powerpc/include/asm/Kbuild         |    1 +
- arch/s390/include/asm/cputime.h         |    3 -
- arch/s390/include/asm/vtime.h           |    7 ++
- arch/s390/kernel/vtime.c                |    1 +
- include/linux/context_tracking.h        |  120 +++++++++++++++--------------
- include/linux/context_tracking_state.h  |   39 +++++++++
- include/linux/hardirq.h                 |  117 +----------------------------
- include/linux/preempt_mask.h            |  122 +++++++++++++++++++++++++++++
- include/linux/tick.h                    |   45 +++++++++--
- include/linux/vtime.h                   |   74 ++++++++++++++++--
- include/trace/events/context_tracking.h |   58 ++++++++++++++
- init/Kconfig                            |   28 +++++--
- kernel/context_tracking.c               |  128 ++++++++++++++++++-------------
- kernel/sched/core.c                     |    4 +-
- kernel/sched/cputime.c                  |   53 ++++---------
- kernel/time/Kconfig                     |    1 -
- kernel/time/tick-sched.c                |   56 ++++++--------
- 19 files changed, 534 insertions(+), 326 deletions(-)
+            Linus
