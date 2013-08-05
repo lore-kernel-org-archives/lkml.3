@@ -1,53 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754523Ab3HERxT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 13:53:19 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:38030 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754497Ab3HERxQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 13:53:16 -0400
-Date: Mon, 5 Aug 2013 20:53:02 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Rupesh Gujare <rupesh.gujare@atmel.com>
-Cc: devel@linuxdriverproject.org, gregkh@linuxfoundation.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4] staging: ozwpan: Increment port number for new
- device.
-Message-ID: <20130805175302.GJ5051@mwanda>
-References: <1375724415-10801-1-git-send-email-rupesh.gujare@atmel.com>
- <1375724415-10801-3-git-send-email-rupesh.gujare@atmel.com>
+	id S1754415Ab3HERwv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 13:52:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43138 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754215Ab3HERwh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 13:52:37 -0400
+Date: Mon, 5 Aug 2013 19:47:12 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Felipe Contreras <felipe.contreras@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 3.11-rc4
+Message-ID: <20130805174712.GA8461@redhat.com>
+References: <CA+55aFwTX47vLvZckozZub0rUEo-aCBe7weqe=4mfQGfrW7NUA@mail.gmail.com> <CAMP44s2bOniz4qx5y9h4ppHRUjiPVGL+igSwO5NUJd4zpObxFw@mail.gmail.com> <20130805132948.GA14942@redhat.com> <CA+55aFy61PbNZda8f+42T9e7TioWd+W1s70UA6h+xnARjX3usA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1375724415-10801-3-git-send-email-rupesh.gujare@atmel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+In-Reply-To: <CA+55aFy61PbNZda8f+42T9e7TioWd+W1s70UA6h+xnARjX3usA@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 05, 2013 at 06:40:13PM +0100, Rupesh Gujare wrote:
-> This patch fixes crash issue when there is quick cycle of
-> de-enumeration & enumeration due to loss of wireless link.
-> 
-> It is found that sometimes new device (or coming back device)
-> returns very fast, even before USB core read out hub status,
-> resulting in allocation of same port, which results in unstable
-> system & crash.
-> 
-> Above issue is resolved by making sure that we always assign
-> new port to new device, making sure that USB core reads correct
-> hub status.
-> 
+On 08/05, Linus Torvalds wrote:
+>
+> On Mon, Aug 5, 2013 at 6:29 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> >
+> > I never used wine, but I am puzzled anyway. This patch really looks
+> > like a simple and minor bugfix.
+>
+> The patch is indeed trivial, but.. What's the locking here?
+>
+> Afaik, ptrace_detach() by the parent can race with do_exit() by the
+> child, and they now _both_ do flush_ptrace_hw_breakpoint().
 
-This feels like papering over the problem.  Surely the real fix
-would be to improve the reference counting.
+That would be bad. And that is why exit_ptrace() doesn't do this.
 
-This patch is probably effective but it makes the code more subtle
-and it shows that we don't really understand what we are doing with
-regards to reference counting.
+But we rely on ptrace_freeze_traced(). If the child can exit (or
+even run), we have other problems which were hopefully fixed by
+9899d11f "ensure arch_ptrace/ptrace_request can never race with
+SIGKILL"
 
-regards,
-dan carpenter
+> We have that whole "get tasklist_lock for writing and then
+> check child->ptrace" logic there exactly due to that race, no?
+
+Exactly. But note that this code is very old. We can remove the
+"This child can be already killed" logic, and we can do more
+simplifications in ptrace paths.
+
+In fact, some recent changes already rely on the fact the tracee
+can't go away, say ptrace_peek_siginfo()->spin_lock_irq(siglock)
+is not safe without ptrace_freeze_traced().
+
+Oleg.
 
