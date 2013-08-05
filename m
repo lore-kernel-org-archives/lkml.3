@@ -1,149 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753836Ab3HEQZn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 12:25:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19739 "EHLO mx1.redhat.com"
+	id S1754038Ab3HEQ0R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 12:26:17 -0400
+Received: from mga03.intel.com ([143.182.124.21]:2158 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752924Ab3HEQZk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 12:25:40 -0400
-Message-ID: <51FFD267.6080500@redhat.com>
-Date: Mon, 05 Aug 2013 18:27:19 +0200
-From: Laszlo Ersek <lersek@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130621 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: Borislav Petkov <bp@alien8.de>, edk2-devel@lists.sourceforge.net,
-        David Woodhouse <dwmw2@infradead.org>, linux-efi@vger.kernel.org,
-        lkml <linux-kernel@vger.kernel.org>, Gleb Natapov <gleb@redhat.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>
-Subject: Re: [edk2] Corrupted EFI region
-References: <20130731205431.GG4724@pd.tnic>  <1375307727.22084.103.camel@shinybook.infradead.org>  <20130801164927.GA7445@pd.tnic> <51FF8C14.2070405@redhat.com>  <20130805130258.GB31845@pd.tnic> <51FFAB13.4090603@redhat.com>  <20130805140306.GD31845@pd.tnic> <51FFB660.4060400@redhat.com>  <20130805144010.GE31845@pd.tnic> <51FFC19A.1020204@redhat.com> <1375716889.2163.12.camel@dabdike.int.hansenpartnership.com>
-In-Reply-To: <1375716889.2163.12.camel@dabdike.int.hansenpartnership.com>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+	id S1751821Ab3HEQUr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 12:20:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,819,1367996400"; 
+   d="scan'208";a="277956562"
+From: Adrian Hunter <adrian.hunter@intel.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH V9 00/14] perf tools: some fixes and tweaks
+Date: Mon,  5 Aug 2013 19:26:20 +0300
+Message-Id: <1375719994-26482-1-git-send-email-adrian.hunter@intel.com>
+X-Mailer: git-send-email 1.7.11.7
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Apologies in advance for my response because it diverges from the
-technical stuff.
+Hi
 
-On 08/05/13 17:34, James Bottomley wrote:
-> On Mon, 2013-08-05 at 17:15 +0200, Laszlo Ersek wrote:
->> On 08/05/13 16:40, Borislav Petkov wrote:
->>> On Mon, Aug 05, 2013 at 04:27:44PM +0200, Laszlo Ersek wrote:
->>>> I wouldn't call the design of SetVirtualAddressMap() braindead.
->>>
->>> Ok, I've always wondered and you could probably shed some light on the
->>> matter: why is SetVirtualAddressMap() a call-once only? Why can't I
->>> simply call it again and update the mappings?
->>
->> The current implementation (how pointers are converted) probably doesn't
->> accommodate a second call.
-> 
-> Having actually looked at the code (trying to find why we were getting
-> an unconverted pointer), I second that.
+Here are some fixes and tweaks to perf tools (version 9).
 
-I have also "actually" looked at the code, just not right now.
+Changes in V9:
+	perf: Update perf_event_type documentation
+		Dropped since its been applied
+	perf tools: tidy up sample parsing overflow checking
+		Changed to use a single overflow function
+		Updated for PERF_SAMPLE_READ
+	perf: make events stream always parsable
+		Added more about sample parsing to the commit message
+	perf tools: add support for PERF_SAMPLE_IDENTFIER
+		When selecting PERF_SAMPLE_IDENTFIER, ensure PERF_SAMPLE_ID
+		is deselected
+	perf tools: expand perf_event__synthesize_sample()
+		Updated for PERF_SAMPLE_READ
+	perf tools: add a function to calculate sample event size
+		Updated for PERF_SAMPLE_READ
+	perf tools: add a sample parsing test
+		Updated for PERF_SAMPLE_READ
 
-> However, the ugliness of the
-> massive pointer chase should have been an indication that something was
-> not quite right architecturally (or implementation wise) with
-> SetVirtualAddressMap().
-> 
->> Of course you want to know why SetVirtualAddressMap() was designed like
->> that... I didn't participate in the design so I don't know :)
->>
->> But, as I said, a kernel directly executing another kernel is an
->> unexpected idea. IMHO the second kernel in question doesn't fit the UEFI
->> phases at all. The OS booted like that (ie. the OS whose kernel is the
->> 2nd (=kexec) kernel) never goes through SEC, PEI, DXE, BDS.
-> 
-> That thinking is a bit last century (not that I'm blaming you for it, it
-> seems to be ingrained in the way UEFI sometimes goes about things) ...
+Changes in V8:
+	perf tools: add debug prints
+		Fixed Python link errors
+	perf tools: move perf_evlist__config() to a new source file
+		New Patch to avoid Python link errors
+	perf tools: add support for PERF_SAMPLE_IDENTFIER
+		Adjustments due to patch above
 
-It is not *my* thinking. (This is a recurrent pattern and it drives me mad.)
+Changes in V7:
+	perf: Update perf_event_type documentation
+		Proposed new patch from Peter Zijlstra
+	perf: make events stream always parsable
+		Adjustments due to patch above
+	perf tools: tidy up sample parsing overflow checking
+		Change to a single overflow function
+		Amend comment
+	perf tools: add a function to calculate sample event size
+		New patch
+	perf tools: add a sample parsing test
+		Amended to use sample event size calculation
 
-I just tried to come up with a plausible explanation for why things have
-come to be like this. edk2-devel is CC'd; the above was an invitation
-for others who *have* participated in the design phase to chime in.
+Changes in V6:
+	Some checkpatch fixes
 
-I put on the UEFI hat for the sake of argument.
+	perf: make events stream always parsable
+		Add sample format comments
 
-What many people don't seem to understand (and I have honestly no idea
-if this includes you) is that in order to write edk2 code, in order to
-post bugfixes with a straight face and with a clear conscience, a person
-with a FLOSS / Linux / UNIX background has to *brainwash*
-himself/herself into edk2. You must force yourself to identify with the
-code to some extent in order to be able to track it, to follow the
-original author's train of thought. You can't afford to reject edk2 100%
-if you want to effect gradual improvements.
+Changes in V5:
+	Re-based to Arnaldo's tree and dropped already applied patches:
+		perf tools: remove unused parameter
+		perf tools: fix missing tool parameter
+		perf tools: fix missing 'finished_round'
+		perf tools: fix parse_events_terms() segfault on error path
+		perf tools: fix new_term() missing free on error path
+		perf tools: add const specifier to perf_pmu__find name parameter
+		perf tools: tidy duplicated munmap code
+		perf tools: validate perf event header size
 
-When I got the assignment, this brainwashing I forced upon myself took
-me months. The reward for it now is that "my thinking is last century".
+	perf tools: add debug prints
+		Changed to perf_event_attr__fprintf()
+	perf tools: add pid to struct thread
+		Always set the pid, even if a pid is already set
+	perf tools: change machine__findnew_thread() to set thread pid
+		Replaces: perf tools: change "machine" functions to set thread pid
+	perf tools: add support for PERF_SAMPLE_IDENTFIER
+		Only use PERF_SAMPLE_IDENTFIER if sample types are different
+	perf tools: expand perf_event__synthesize_sample()
+		New patch in preparation of a sample parsing test
+	perf tools: add a sample parsing test
+		New patch
 
-Again, I *did not* participate in the design of UEFI. I must simply
-accept its main design ideas, sometimes even make (hopefully plausible)
-guesses at them, to be able to reason about it.
+Changes in V4:
+	I added kernel support for matching sample types via
+	PERF_SAMPLE_IDENTIFIER.  perf tools support for that required
+	first fixing some other things.
 
-> in the old days, DOS was bootstrapped by the 512 byte jump code in a
-> well known sector.  In the current century, almost every OS is
-> bootstrapped by a sophisticated loader, which is effectively another OS
-> (if you don't believe this, try looking at the grub source code one
-> day);
+	perf tools: fix parse_events_terms() freeing local variable on error path
+		Dropped - covered by David Ahern
+	perf tools: struct thread has a tid not a pid
+		Added ack by David Ahern
+	perf tools: add pid to struct thread
+		Remove unused function
+	perf tools: fix missing increment in sample parsing
+		New patch
+	perf tools: tidy up sample parsing overflow checking
+		New patch
+	perf tools: remove unnecessary callchain validation
+		New patch
+	perf tools: remove references to struct ip_event
+		New patch
+	perf tools: move struct ip_event
+		New patch
+	perf: make events stream always parsable
+		New patch
+	perf tools: add support for PERF_SAMPLE_IDENTFIER
+		New patch
 
-I've debugged grub and written patches for it. I believe it.
+Changes in V3:
+	perf tools: add pid to struct thread
+		Split into 2 patches
+	perf tools: fix ppid in thread__fork()
+		Dropped for now
 
-> it's a short step from this to one OS booting another, and that's
-> really what kexec is.  The utility of kexec has proven itself over the
-> past couple of decades or so by allowing us to dump (kexec to a dump
-> kernel),
+Changes in V2:
+	perf tools: fix missing tool parameter
+		Fixed one extra occurrence
+	perf tools: fix parse_events_terms() freeing local variable on error path
+		Made "freeing" code into a new function
+	perf tools: validate perf event header size
+		Corrected byte-swapping
+	perf tools: allow non-matching sample types
+		Added comments
+		Fixed id_pos calculation
+		id_pos/is_pos updated whenever sample_type changes
+		Removed perf_evlist__sample_type()
+		Added __perf_evlist__combined_sample_type()
+		Added perf_evlist__combined_sample_type()
+		Added perf_evlist__make_sample_types_compatible()
+	Added ack's to patches acked by Jiri Olsa
 
-I've debugged and tested kdump / kexec several times, mainly during my
-RHEL-5 Xen days at RH. There's no need to convince me about it.
 
-> short circuit the boot process (simply re-kexec the kernel on
-> crash) and now do rebootless upgrades (checkpoint the userspace and
-> kexec to the new kernel).  It's not even unique to Linux: Solaris used a
-> hidden kexec system call to do live upgrades as well and I believe
-> several other UNIXs have this feature.
+Adrian Hunter (14):
+      perf tools: add debug prints
+      perf tools: allow non-matching sample types
+      perf tools: add pid to struct thread
+      perf tools: change machine__findnew_thread() to set thread pid
+      perf tools: tidy up sample parsing overflow checking
+      perf tools: remove unnecessary callchain validation
+      perf tools: remove references to struct ip_event
+      perf tools: move struct ip_event
+      perf: make events stream always parsable
+      perf tools: move perf_evlist__config() to a new source file
+      perf tools: add support for PERF_SAMPLE_IDENTFIER
+      perf tools: expand perf_event__synthesize_sample()
+      perf tools: add a function to calculate sample event size
+      perf tools: add a sample parsing test
 
-I was in fact missing this bit about Solaris and other UNIXen.
+ include/uapi/linux/perf_event.h   |  27 ++-
+ kernel/events/core.c              |  11 +-
+ tools/perf/Makefile               |   2 +
+ tools/perf/builtin-inject.c       |   8 +-
+ tools/perf/builtin-kmem.c         |   3 +-
+ tools/perf/builtin-kvm.c          |   3 +-
+ tools/perf/builtin-lock.c         |   3 +-
+ tools/perf/builtin-mem.c          |   2 +-
+ tools/perf/builtin-report.c       |   2 +-
+ tools/perf/builtin-sched.c        |  17 +-
+ tools/perf/builtin-script.c       |   3 +-
+ tools/perf/builtin-top.c          |  11 +-
+ tools/perf/builtin-trace.c        |  12 +-
+ tools/perf/tests/builtin-test.c   |   4 +
+ tools/perf/tests/hists_link.c     |  30 ++-
+ tools/perf/tests/mmap-basic.c     |   2 +-
+ tools/perf/tests/sample-parsing.c | 294 ++++++++++++++++++++++++
+ tools/perf/tests/tests.h          |   1 +
+ tools/perf/util/build-id.c        |  11 +-
+ tools/perf/util/callchain.c       |   8 -
+ tools/perf/util/callchain.h       |   5 -
+ tools/perf/util/event.c           |   5 +-
+ tools/perf/util/event.h           |  33 ++-
+ tools/perf/util/evlist.c          | 146 ++++++++++--
+ tools/perf/util/evlist.h          |  10 +-
+ tools/perf/util/evsel.c           | 461 ++++++++++++++++++++++++++++++++++----
+ tools/perf/util/evsel.h           |  13 +-
+ tools/perf/util/machine.c         |  37 ++-
+ tools/perf/util/machine.h         |   3 +-
+ tools/perf/util/python.c          |  20 ++
+ tools/perf/util/record.c          | 111 +++++++++
+ tools/perf/util/session.c         |  36 +--
+ tools/perf/util/thread.c          |   3 +-
+ tools/perf/util/thread.h          |   3 +-
+ 34 files changed, 1160 insertions(+), 180 deletions(-)
+ create mode 100644 tools/perf/tests/sample-parsing.c
+ create mode 100644 tools/perf/util/record.c
 
-In any case, by calling kexec "unique/unexpected", I meant that Windows
-probably doesn't have it, which was likely the reason the UEFI designers
-didn't consider it.
 
-I did not spell out this windows-based argument and went for the polite
-route instead because I know where justifying anything with "windows
-market dominance / mindshare" leads: more application of the adjective
-"braindead".
-
-I'm aware of the love for "management by perkele" on lkml. I oppose it.
-(At least on edk2-devel, and I'm not subscribed to lkml partially
-because of it.) My OVMF work depends on the goodwill of people on
-edk2-devel, and I won't ignite flames that endanger that.
-
-So, my unwashed *guess* is that SetVirtualAddressMap() was designed like
-this because Windows doesn't have a need or use for a second
-SetVirtualAddressMap() call. (Not sure about non-Linux kernels on Itanium.)
-
-In any case, calling this status quo "last century", "braindead" or
-worse won't make you many friends on edk2-devel. The practice of
-attacking people whose input you want doesn't look very efficient. And I
-certainly do not count myself among those people -- I'm just trying to
-help with my limited skills & experience. You want the input of people
-*much smarter* than I am. As I gather, many of them don't give a rat's
-ass about Linux. (Notice the lack of tumultus in this thread?) Don't
-start by alienating them.
-
-"UEFI is an abomination, now help me work with it" is an attitude that
-lkml people need to dispense with, in their own best interest.
-edk2-devel doesn't appear to be the place where people put up with the
-abuse just to get their patches into Linux.
-
-(FWIW I'll help with the issue at hand as much as I can. It may not be
-much, apologies.)
-
-Cheers,
-Laszlo
+Regards
+Adrian
