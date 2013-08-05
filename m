@@ -1,70 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754153Ab3HEBVm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Aug 2013 21:21:42 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:60969 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754100Ab3HEBVl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Aug 2013 21:21:41 -0400
-Message-ID: <1375665700.3133.19.camel@joe-AO722>
-Subject: Re: [PATCH trivial] include/linux/coda.h: remove useless '#else'
-From: Joe Perches <joe@perches.com>
-To: Chen Gang <gang.chen@asianux.com>
-Cc: Chen Gang F T <chen.gang.flying.transformer@gmail.com>,
-        "'Jiri Kosina'" <trivial@kernel.org>, jaharkes@cs.cmu.edu,
-        coda@cs.cmu.edu, codalist@TELEMANN.coda.cs.cmu.edu,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Sun, 04 Aug 2013 18:21:40 -0700
-In-Reply-To: <51FEF0AC.8040804@asianux.com>
-References: <51F76B7D.2090602@asianux.com>
-	 <1375187380.2075.111.camel@joe-AO722> <51F86C08.3080805@asianux.com>
-	 <51F86E1A.60404@asianux.com> <51F8818C.7030703@gmail.com>
-	 <51FEF0AC.8040804@asianux.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754159Ab3HEB0b (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Aug 2013 21:26:31 -0400
+Received: from mail-wg0-f53.google.com ([74.125.82.53]:48597 "EHLO
+	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754099Ab3HEB0a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Aug 2013 21:26:30 -0400
+Date: Mon, 5 Aug 2013 03:26:26 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
+        sbw@mit.edu
+Subject: Re: [PATCH RFC nohz_full 2/7] nohz_full: Add rcu_dyntick data for
+ scalable detection of all-idle state
+Message-ID: <20130805012624.GC6894@somewhere>
+References: <20130726231848.GA12967@linux.vnet.ibm.com>
+ <1374880764-14248-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1374880764-14248-2-git-send-email-paulmck@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1374880764-14248-2-git-send-email-paulmck@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-08-05 at 08:24 +0800, Chen Gang wrote:
-> On 07/31/2013 11:16 AM, Chen Gang F T wrote:
-> > On 07/31/2013 09:53 AM, Chen Gang wrote:
-> >> On 07/31/2013 09:44 AM, Chen Gang wrote:
-> >>> On 07/30/2013 08:29 PM, Joe Perches wrote:
-> >>>> On Tue, 2013-07-30 at 15:30 +0800, Chen Gang wrote:
-> >>>>> '#else' is useless, need remove.
-> >>>>>
-> >>>>> Signed-off-by: Chen Gang <gang.chen@asianux.com>
-> >>>>> ---
-> >>>>>  include/linux/coda.h |    1 -
-> >>>>>  1 files changed, 0 insertions(+), 1 deletions(-)
-> >>>>>
-> >>>>> diff --git a/include/linux/coda.h b/include/linux/coda.h
-> >>>>> index cff544f..d30209b 100644
-> >>>>> --- a/include/linux/cod
-> >>>>> +++ b/include/linux/coda.h
-> >>>>> @@ -60,7 +60,6 @@ Mellon the rights to redistribute these changes without encumbrance.
-> >>>>>  
-> >>>>>  #if defined(__linux__)
-> >>>>>  typedef unsigned long long u_quad_t;
-> >>>>> -#else
-> >>>>>  #endif
-> >>>>>  #include <uapi/linux/coda.h>
-> >>>>>  #endif 
-> >>>>
-> >>>> Why have the #if at all?
-> >>>>
+On Fri, Jul 26, 2013 at 04:19:19PM -0700, Paul E. McKenney wrote:
+> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 > 
-> Hmm... if any members have some questions about the fix, commonly it
-> means the related fix need additional improvement.
+> This commit adds fields to the rcu_dyntick structure that are used to
+> detect idle CPUs.  These new fields differ from the existing ones in
+> that the existing ones consider a CPU executing in user mode to be idle,
+> where the new ones consider CPUs executing in user mode to be busy.
+> The handling of these new fields is otherwise quite similar to that for
+> the exiting fields.  This commit also adds the initialization required
+> for these fields.
 > 
-> Is it better to use BUILD_BUG() for the fix ?
+> So, why is usermode execution treated differently, with RCU considering
+> it a quiescent state equivalent to idle, while in contrast the new
+> full-system idle state detection considers usermode execution to be
+> non-idle?
+> 
+> It turns out that although one of RCU's quiescent states is usermode
+> execution, it is not a full-system idle state.  This is because the
+> purpose of the full-system idle state is not RCU, but rather determining
+> when accurate timekeeping can safely be disabled.  Whenever accurate
+> timekeeping is required in a CONFIG_NO_HZ_FULL kernel, at least one
+> CPU must keep the scheduling-clock tick going.  If even one CPU is
+> executing in user mode, accurate timekeeping is requires, particularly for
+> architectures where gettimeofday() and friends do not enter the kernel.
+> Only when all CPUs are really and truly idle can accurate timekeeping be
+> disabled, allowing all CPUs to turn off the scheduling clock interrupt,
+> thus greatly improving energy efficiency.
+> 
+> This naturally raises the question "Why is this code in RCU rather than in
+> timekeeping?", and the answer is that RCU has the data and infrastructure
+> to efficiently make this determination.
 
-Probably not.  __linux__ is predefined by gcc.
+Right, and it's somehow disturbing that this code is in RCU but yeah the
+infrastructure is there.
 
-Using an #ifdef __linux__ might make some sense in
-in include/uapi, but not in include/linux.
+It would be perhaps more neat to have a specific RCU flavour for which the
+only quiescent state is when the system is fully idle. But like you said
+that's some overhead to iterate another RCU flavor, while we can reuse rcu
+traditional flavour as an opportunity since it often handle callbacks
+around. Too bad.
 
+Anyway, Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
 
+Thanks.
