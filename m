@@ -1,197 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754520Ab3HETM7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 15:12:59 -0400
-Received: from mx11.netapp.com ([216.240.18.76]:10356 "EHLO mx11.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753673Ab3HETM5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 15:12:57 -0400
-X-IronPort-AV: E=Sophos;i="4.89,820,1367996400"; 
-   d="scan'208,223";a="39234062"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Nix <nix@esperi.org.uk>
-CC: =?utf-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>,
-        Oleg Nesterov <oleg@redhat.com>, Jeff Layton <jlayton@redhat.com>,
-        NFS list <linux-nfs@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "dhowells@redhat.com" <dhowells@redhat.com>
-Subject: Re: [3.10.4] NFS locking panic, plus persisting NFS shutdown panic
- from 3.9.*
-Thread-Topic: [3.10.4] NFS locking panic, plus persisting NFS shutdown panic
- from 3.9.*
-Thread-Index: AQHOkgo74gcyFEImq0mWTcGQZbqon5mHcNiA
-Date: Mon, 5 Aug 2013 19:12:55 +0000
-Message-ID: <1375729975.7337.39.camel@leira.trondhjem.org>
-References: <8761vlv4z9.fsf@spindle.srvr.nix>
-	 <20130805084436.69ee4415@corrin.poochiereds.net>
-	 <87siyotcri.fsf@spindle.srvr.nix>
-	 <20130805110427.509db424@tlielax.poochiereds.net>
-	 <20130805111106.73d6ab90@tlielax.poochiereds.net>
-	 <87zjswrvaq.fsf@spindle.srvr.nix>
-	 <1375719301.7337.14.camel@leira.trondhjem.org>
-	 <87txj4rnru.fsf@spindle.srvr.nix>
-In-Reply-To: <87txj4rnru.fsf@spindle.srvr.nix>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.106.53.51]
-Content-Type: multipart/mixed;
-	boundary="_002_1375729975733739camelleiratrondhjemorg_"
+	id S1754590Ab3HETPX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 15:15:23 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:59362 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754122Ab3HETPV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 15:15:21 -0400
+Date: Mon, 5 Aug 2013 12:15:17 -0700
+From: Kent Overstreet <kent.overstreet@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Sasha Levin <sasha.levin@oracle.com>, LKML <linux-kernel@vger.kernel.org>,
+        trinity@vger.kernel.org
+Subject: Re: percpu: kernel BUG at mm/percpu.c:579!
+Message-ID: <20130805191517.GA9198@kmo-pixel>
+References: <51FFBB7D.70608@oracle.com>
+ <20130805145736.GB19631@mtj.dyndns.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130805145736.GB19631@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---_002_1375729975733739camelleiratrondhjemorg_
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <4A833216273DE745A45D5834A65329DA@hq.netapp.com>
-Content-Transfer-Encoding: base64
+On Mon, Aug 05, 2013 at 10:57:36AM -0400, Tejun Heo wrote:
+> (cc'ing Kent, hi!)
+> 
+> On Mon, Aug 05, 2013 at 10:49:33AM -0400, Sasha Levin wrote:
+> > Hi all,
+> > 
+> > While fuzzing with trinity inside a KVM tools guest running latest -next kernel,
+> > I've stumbled on the following spew:
+> > 
+> > [  274.820724] ------------[ cut here ]------------
+> > [  274.821320] kernel BUG at mm/percpu.c:579!
+> 
+> Looks like double free.
+> 
+> > [  274.821848] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+> > [  274.822467] Modules linked in:
+> > [  274.823240] CPU: 13 PID: 58 Comm: rcuos/13 Tainted: G        W
+> > 3.11.0-rc4-next-20130805-sasha-00002-gf6cc217 #3975
+> > [  274.824464] task: ffff880220cb3000 ti: ffff880220cba000 task.ti: ffff880220cba000
+> > [  274.825442] RIP: 0010:[<ffffffff812417b8>]  [<ffffffff812417b8>] pcpu_free_area+0xd8/0x1e0
+> > [  274.826470] RSP: 0018:ffff880220cbbc58  EFLAGS: 00010002
+> > [  274.827316] RAX: ffff8800c9e3abd4 RBX: 00000000000002f5 RCX: 00000000000002f5
+> > [  274.828162] RDX: 0000000000000004 RSI: 000000000000ede0 RDI: 000000000000ede0
+> > [  274.829270] RBP: ffff880220cbbc78 R08: 0000000000000324 R09: ffff8800c9e3a000
+> > [  274.830102] R10: ffff8800c9e3a000 R11: 0000000000000000 R12: ffff88022049ff80
+> > [  274.830102] R13: 0000000000000bd4 R14: 0000000000000012 R15: ffffffff86612060
+> > [  274.831367] FS:  0000000000000000(0000) GS:ffff880226000000(0000) knlGS:0000000000000000
+> > [  274.831367] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> > [  274.831367] CR2: 0000000001253028 CR3: 0000000214aff000 CR4: 00000000000006e0
+> > [  274.831367] Stack:
+> > [  274.831367]  0000000000000282 000000000000ede0 ffff88022049ff80 000060fdd980ede0
+> > [  274.831367]  ffff880220cbbca8 ffffffff81241c7e ffff880220cbbca8 ffff8800b80f83e0
+> > [  274.831367]  0000000000000000 ffff8800b80f83c0 ffff880220cbbd18 ffffffff81a14ea6
+> > [  274.831367] Call Trace:
+> > [  274.831367]  [<ffffffff81241c7e>] free_percpu+0x9e/0x160
+> > [  274.831367]  [<ffffffff81a14ea6>] percpu_ref_kill_rcu+0xb6/0x1b0
+> 
+> From percpu_ref release path.  Kent?
 
-T24gTW9uLCAyMDEzLTA4LTA1IGF0IDE5OjMzICswMTAwLCBOaXggd3JvdGU6DQo+IE9uIDUgQXVn
-IDIwMTMsIFRyb25kIE15a2xlYnVzdCB0b2xkIHRoaXM6DQo+ID4gRG9lcyB0aGUgYXR0YWNoZWQg
-cGF0Y2ggZml4IHRoZSBwcm9ibGVtPw0KPiANCj4gPiBGcm9tIDNjNTBiYTgwMTA1NDY0YTI4ZDQ1
-NmQ5YTFlMGYxZDgxZDRhZjkyYTggTW9uIFNlcCAxNyAwMDowMDowMCAyMDAxDQo+ID4gRnJvbTog
-VHJvbmQgTXlrbGVidXN0IDxUcm9uZC5NeWtsZWJ1c3RAbmV0YXBwLmNvbT4NCj4gPiBEYXRlOiBN
-b24sIDUgQXVnIDIwMTMgMTI6MDY6MTIgLTA0MDANCj4gPiBTdWJqZWN0OiBbUEFUQ0hdIExPQ0tE
-OiBEb24ndCBjYWxsIHV0c25hbWUoKS0+bm9kZW5hbWUgZnJvbQ0KPiA+ICBubG1jbG50X3NldGxv
-Y2thcmdzDQo+ID4gTUlNRS1WZXJzaW9uOiAxLjANCj4gPiBDb250ZW50LVR5cGU6IHRleHQvcGxh
-aW47IGNoYXJzZXQ9VVRGLTgNCj4gPiBDb250ZW50LVRyYW5zZmVyLUVuY29kaW5nOiA4Yml0DQo+
-IA0KPiBJdCBtYWtlcyBpdCB3b3JzZS4gTXVjaCwgbXVjaCB3b3JzZS4gRnJvbSBhIGNyYXNoIGV2
-ZXJ5IHNvIG9mdGVuIHdoZW4NCj4gSSdtIGRvaW5nIGNvbXBpbGF0aW9ucyBvdmVyIE5GUywgSSBn
-ZXQgYW4gaW1tZWRpYXRlIHBhbmljIG9uIHN0YXJ0eCwNCj4gbG9uZyBsb25nIGJlZm9yZSBJIGV2
-ZW4gdHJ5IHRvIHJlcGxpY2F0ZSB0aGUgZWFybGllciBwYW5pYzoNCj4gDQo+IFsgICA4My40MzIz
-NThdIHRhc2s6IGZmZmY4ODA0MWFhYTVhYzAgdGk6IGZmZmY4ODA0MTk5ZTIwMDAgdGFzay50aTog
-ZmZmZjg4MDQxOTllMjAwMA0KPiBbICAgODMuNDMyNDI4XSBSSVA6IDAwMTA6WzxmZmZmZmZmZjgx
-MjRhZjY5Pl0gWzxmZmZmZmZmZjgxMjRhZjY5Pl0gZW5jb2RlX25sbTRfbG9jaysweDI2LzB4YmUN
-Cj4gWyAgIDgzLjQzMjUxMl0gUlNQOiAwMDE4OmZmZmY4ODA0MTk5ZTNhNzggIEVGTEFHUzogMDAw
-MTAyODYNCj4gWyAgIDgzLjQzMjU2NF0gUkFYOiAwMDAwMDAwMDAwMDAwMDAwIFJCWDogZmZmZjg4
-MDQxYTU3NzAzOCBSQ1g6IGZmZmZmZmZmZmZmZmZmZmYNCj4gWyAgIDgzLjQzMjYzMF0gUkRYOiBm
-ZmZmODgwNDE5M2IzMDk4IFJTSTogZmZmZjg4MDQxYTU3NzAzOCBSREk6IDAwMDAwMDAwMDAwMDAw
-OGMNCj4gWyAgIDgzLjQzMjY5N10gUkJQOiBmZmZmODgwNDE5OWUzYWE4IFIwODogZmZmZjg4MDQx
-OTNiMzA5OCBSMDk6IDAwMDAwMDAwMDAwMDAwMDENCj4gWyAgIDgzLjQzMjc2M10gUjEwOiBmZmZm
-ODgwNDJmYTEyOTgwIFIxMTogZmZmZjg4MDQyZmExMjk4MCBSMTI6IGZmZmY4ODA0MTk5ZTNhZTgN
-Cj4gWyAgIDgzLjQzMjgzMF0gUjEzOiAwMDAwMDAwMDAwMDAwMDhjIFIxNDogZmZmZjg4MDQxOTll
-M2ZkOCBSMTU6IGZmZmZmZmZmODE1ZGU4MGUNCj4gWyAgIDgzLjQzMjg5OF0gRlM6ICAwMDAwN2Y1
-OTRiNDBjNzQwKDAwMDApIEdTOmZmZmY4ODA0MmZhMDAwMDAoMDAwMCkga25sR1M6MDAwMDAwMDAw
-MDAwMDAwMA0KPiBbICAgODMuNDMyOTc0XSBDUzogIDAwMTAgRFM6IDAwMDAgRVM6IDAwMDAgQ1Iw
-OiAwMDAwMDAwMDgwMDUwMDMzDQo+IFsgICA4My40MzMwMjhdIENSMjogMDAwMDAwMDAwMDAwMDA4
-YyBDUjM6IDAwMDAwMDA0MWFiM2QwMDAgQ1I0OiAwMDAwMDAwMDAwMTQwN2YwDQo+IFsgICA4My40
-MzMwOTVdIERSMDogMDAwMDAwMDAwMDAwMDAwMCBEUjE6IDAwMDAwMDAwMDAwMDAwMDAgRFIyOiAw
-MDAwMDAwMDAwMDAwMDAwDQo+IFsgICA4My40MzMxNzZdIERSMzogMDAwMDAwMDAwMDAwMDAwMCBE
-UjY6IDAwMDAwMDAwZmZmZjBmZjAgRFI3OiAwMDAwMDAwMDAwMDAwNDAwDQo+IFsgICA4My40MzMy
-NTVdIFN0YWNrOg0KPiBbICAgODMuNDMzMjc2XSAgZmZmZjg4MDQxYTQ0ZmI3MCBmZmZmODgwNDAw
-MDAwMDA0IGZmZmY4ODA0MTk5ZTNhZTggZmZmZjg4MDQxYTU3NzAxMCANCj4gWyAgIDgzLjQzMzM2
-MF0gIGZmZmY4ODA0MTg4ZTBlMDAgZmZmZjg4MDQxOTllM2ZkOCBmZmZmODgwNDE5OWUzYWM4IGZm
-ZmZmZmZmODEyNGIwZDcgDQo+IFsgICA4My40MzM0NDNdICBmZmZmODgwNDE4OGUwZTAwIGZmZmZm
-ZmZmODEyNGIwODYgZmZmZjg4MDQxOTllM2IzOCBmZmZmZmZmZjgxNWU2MDMyIA0KPiBbICAgODMu
-NDMzNjE2XSBDYWxsIFRyYWNlOg0KPiBbICAgODMuNDMzNjQ2XSAgWzxmZmZmZmZmZjgxMjRiMGQ3
-Pl0gbmxtNF94ZHJfZW5jX2xvY2thcmdzKzB4NTEvMHg3Ng0KPiBbICAgODMuNDMzNzA3XSAgWzxm
-ZmZmZmZmZjgxMjRiMDg2Pl0gPyBubG00X3hkcl9lbmNfY2FuY2FyZ3MrMHg1Ni8weDU2DQo+IFsg
-ICA4My40MzM3NjldICBbPGZmZmZmZmZmODE1ZTYwMzI+XSBycGNhdXRoX3dyYXBfcmVxKzB4NTcv
-MHg2Mg0KPiBbICAgODMuNDMzODI2XSAgWzxmZmZmZmZmZjgxNWRlOThhPl0gY2FsbF90cmFuc21p
-dCsweDE3Yy8weDFmOQ0KPiBbICAgODMuNDMzODgwXSAgWzxmZmZmZmZmZjgxNWU0ZTU4Pl0gX19y
-cGNfZXhlY3V0ZSsweGU4LzB4MmNhDQo+IFsgICA4My40MzM5MzVdICBbPGZmZmZmZmZmODE1ZTUw
-Zjk+XSBycGNfZXhlY3V0ZSsweDc2LzB4OWQNCj4gWyAgIDgzLjQzMzk4Nl0gIFs8ZmZmZmZmZmY4
-MTVkZWJjMT5dIHJwY19ydW5fdGFzaysweDc4LzB4ODANCj4gWyAgIDgzLjQzNDAzOV0gIFs8ZmZm
-ZmZmZmY4MTVkZWNmZj5dIHJwY19jYWxsX3N5bmMrMHg4OC8weDllDQo+IFsgICA4My40MzQwOTJd
-ICBbPGZmZmZmZmZmODEyNDRiM2M+XSBubG1jbG50X2NhbGwrMHhiNS8weDI0MA0KPiBbICAgODMu
-NDM0MTQ2XSAgWzxmZmZmZmZmZjgxMjQ1NGYwPl0gbmxtY2xudF9wcm9jKzB4MjI2LzB4NWZiDQo+
-IFsgICA4My40MzQyMjZdICBbPGZmZmZmZmZmODEyMjA5YTI+XSBuZnMzX3Byb2NfbG9jaysweDIx
-LzB4MjMNCj4gWyAgIDgzLjQzNDI4MF0gIFs8ZmZmZmZmZmY4MTIxNGE1ZT5dIGRvX3NldGxrKzB4
-NjUvMHhlZQ0KPiBbICAgODMuNDM0MzI5XSAgWzxmZmZmZmZmZjgxMjE0Y2E2Pl0gbmZzX2xvY2sr
-MHgxNGUvMHgxNjINCj4gWyAgIDgzLjQzNDM4Ml0gIFs8ZmZmZmZmZmY4MTE5OTY2MT5dIHZmc19s
-b2NrX2ZpbGUrMHgyOS8weDM1DQo+IFsgICA4My40MzQ0MzVdICBbPGZmZmZmZmZmODExOWE1MWQ+
-XSBmY250bF9zZXRsaysweDEzOS8weDJjNQ0KPiBbICAgODMuNDM0NDkwXSAgWzxmZmZmZmZmZjgx
-MTY5NjIxPl0gU3lTX2ZjbnRsKzB4MmI2LzB4NDdkDQo+IFsgICA4My40MzQ1NDNdICBbPGZmZmZm
-ZmZmODE2MTNlOTI+XSBzeXN0ZW1fY2FsbF9mYXN0cGF0aCsweDE2LzB4MWINCj4gWyAgIDgzLjQz
-NDYwMF0gQ29kZTogNWIgNDEgNWMgNWQgYzMgMGYgMWYgNDQgMDAgMDAgNTUgMzEgYzAgNDggODMg
-YzkgZmYgNDggODkgZTUgNDEgNTYgNDEgNTUgNDEgNTQgNDkgODkgZmMgNTMgNDggODkgZjMgNDgg
-ODMgZWMgMTAgNGMgOGIgMmUgNGMgODkgZWYgPGYyPiBhZSA0YyA4OSBlNyA0OCBmNyBkMSA0YyA4
-ZCA3MSBmZiA0MSA4ZCA3NiAwNCBlOCA5ZiAxNiAzYSAwMCANCj4gWyAgIDgzLjQzNTA3N10gUklQ
-IFs8ZmZmZmZmZmY4MTI0YWY2OT5dIGVuY29kZV9ubG00X2xvY2srMHgyNi8weGJlDQo+IFsgICA4
-My40MzUxNDBdICBSU1AgPGZmZmY4ODA0MTk5ZTNhNzg+DQo+IFsgICA4My40MzUxOTddIENSMjog
-MDAwMDAwMDAwMDAwMDA4Yw0KPiANCj4gVGhhdCdzIGhlcmU6DQo+IA0KPiAoZ2RiKSBsaXN0ICoo
-ZW5jb2RlX25sbTRfbG9jaysweDI2KQ0KPiAweGZmZmZmZmZmODEyNGFmNjkgaXMgaW4gZW5jb2Rl
-X25sbTRfbG9jayAoZnMvbG9ja2QvY2xudDR4ZHIuYzozMjkpLg0KPiAzMjQgICAgICAqICAgICAg
-c3RyaW5nIGNhbGxlcl9uYW1lPExNX01BWFNUUkxFTj47DQo+IDMyNSAgICAgICovDQo+IDMyNiAg
-ICAgc3RhdGljIHZvaWQgZW5jb2RlX2NhbGxlcl9uYW1lKHN0cnVjdCB4ZHJfc3RyZWFtICp4ZHIs
-IGNvbnN0IGNoYXIgKm5hbWUpDQo+IDMyNyAgICAgew0KPiAzMjggICAgICAgICAgICAgLyogTkI6
-IGNsaWVudC1zaWRlIGRvZXMgbm90IHNldCBsb2NrLT5sZW4gKi8NCj4gMzI5ICAgICAgICAgICAg
-IHUzMiBsZW5ndGggPSBzdHJsZW4obmFtZSk7DQo+IDMzMCAgICAgICAgICAgICBfX2JlMzIgKnA7
-DQo+IDMzMQ0KPiAzMzIgICAgICAgICAgICAgcCA9IHhkcl9yZXNlcnZlX3NwYWNlKHhkciwgNCAr
-IGxlbmd0aCk7DQo+IDMzMyAgICAgICAgICAgICB4ZHJfZW5jb2RlX29wYXF1ZShwLCBuYW1lLCBs
-ZW5ndGgpOw0KPiANCj4gICAgMHhmZmZmZmZmZjgxMjRhZjY5IDwrMzg+OiAgICByZXBueiBzY2Fz
-ICVlczooJXJkaSksJWFsDQo+IA0KPiBQcmV0dHkgY2xlYXJseSwgIm5hbWUiIGNhbiBiZSBOVUxM
-IGFmdGVyIHRoaXMgcGF0Y2guLi4NCj4gDQpZZXMuIFRoaXMgc2NoZW1lIHdpbGwgb25seSB3b3Jr
-IGlmIHdlIG1ha2Ugc3VyZSB0aGF0IGhvc3QtPmhfcnBjY2xudCBpcw0KaW5pdGlhbGlzZWQgYXQg
-bW91bnQgdGltZS4gSGVyZSBpcyBhIHYyIHBhdGNoIHRoYXQgc2hvdWxkIGRvIHRoZSByaWdodA0K
-dGhpbmcuDQotLSANClRyb25kIE15a2xlYnVzdA0KTGludXggTkZTIGNsaWVudCBtYWludGFpbmVy
-DQoNCk5ldEFwcA0KVHJvbmQuTXlrbGVidXN0QG5ldGFwcC5jb20NCnd3dy5uZXRhcHAuY29tDQo=
+>From the backtrace I have no idea if this was from the aio code using it
+or the cgroup code - Sasha, any idea?
 
---_002_1375729975733739camelleiratrondhjemorg_
-Content-Type: text/x-patch;
-	name="0001-LOCKD-Don-t-call-utsname-nodename-from-nlmclnt_setlo.patch"
-Content-Description: 0001-LOCKD-Don-t-call-utsname-nodename-from-nlmclnt_setlo.patch
-Content-Disposition: attachment;
-	filename="0001-LOCKD-Don-t-call-utsname-nodename-from-nlmclnt_setlo.patch";
-	size=2991; creation-date="Mon, 05 Aug 2013 19:12:55 GMT";
-	modification-date="Mon, 05 Aug 2013 19:12:55 GMT"
-Content-ID: <5379AA22A36AE14E8AE667C602636155@hq.netapp.com>
-Content-Transfer-Encoding: base64
-
-RnJvbSA5YTFiNmJmODE4ZTc0YmI3YWFiYWVjYjU5NDkyYjczOWYyZjRkNzQyIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQ0KRnJvbTogVHJvbmQgTXlrbGVidXN0IDxUcm9uZC5NeWtsZWJ1c3RAbmV0
-YXBwLmNvbT4NCkRhdGU6IE1vbiwgNSBBdWcgMjAxMyAxMjowNjoxMiAtMDQwMA0KU3ViamVjdDog
-W1BBVENIIHYyXSBMT0NLRDogRG9uJ3QgY2FsbCB1dHNuYW1lKCktPm5vZGVuYW1lIGZyb20NCiBu
-bG1jbG50X3NldGxvY2thcmdzDQpNSU1FLVZlcnNpb246IDEuMA0KQ29udGVudC1UeXBlOiB0ZXh0
-L3BsYWluOyBjaGFyc2V0PVVURi04DQpDb250ZW50LVRyYW5zZmVyLUVuY29kaW5nOiA4Yml0DQoN
-CkZpcnN0bHksIG5sbWNsbnRfc2V0bG9ja2FyZ3MgY2FuIGJlIGNhbGxlZCBmcm9tIGEgcmVjbGFp
-bWVyIHRocmVhZCwgaW4NCndoaWNoIGNhc2Ugd2UncmUgaW4gZW50aXJlbHkgdGhlIHdyb25nIG5h
-bWVzcGFjZS4NCg0KU2Vjb25kbHksIGNvbW1pdCA4YWFjNjI3MDZhZGFhZjBmYWIwMmM0MzI3NzYx
-NTYxYzhiZGE5NDQ4IChtb3ZlDQpleGl0X3Rhc2tfbmFtZXNwYWNlcygpIG91dHNpZGUgb2YgZXhp
-dF9ub3RpZnkoKSkgbm93IG1lYW5zIHRoYXQNCmV4aXRfdGFza193b3JrKCkgaXMgY2FsbGVkIGFm
-dGVyIGV4aXRfdGFza19uYW1lc3BhY2VzKCksIHdoaWNoDQp0cmlnZ2VycyBhbiBPb3BzIHdoZW4g
-d2UncmUgZnJlZWluZyB1cCB0aGUgbG9ja3MuDQoNCkZpeCB0aGlzIGJ5IGVuc3VyaW5nIHRoYXQg
-d2UgaW5pdGlhbGlzZSB0aGUgbmxtX2hvc3QncyBycGNfY2xpZW50IGF0IG1vdW50DQp0aW1lLCBz
-byB0aGF0IHRoZSBjbF9ub2RlbmFtZSBmaWVsZCBpcyBpbml0aWFsaXNlZCB0byB0aGUgdmFsdWUg
-b2YNCnV0c25hbWUoKS0+bm9kZW5hbWUgdGhhdCB0aGUgbmV0IG5hbWVzcGFjZSB1c2VzLiBUaGVu
-IHJlcGxhY2UgdGhlDQpsb2NrZCBjYWxsZXJzIG9mIHV0c25hbWUoKS0+bm9kZW5hbWUuDQoNClNp
-Z25lZC1vZmYtYnk6IFRyb25kIE15a2xlYnVzdCA8VHJvbmQuTXlrbGVidXN0QG5ldGFwcC5jb20+
-DQpDYzogVG9yYWxmIEbDtnJzdGVyIDx0b3JhbGYuZm9lcnN0ZXJAZ214LmRlPg0KQ2M6IE9sZWcg
-TmVzdGVyb3YgPG9sZWdAcmVkaGF0LmNvbT4NCkNjOiBOaXggPG5peEBlc3Blcmkub3JnLnVrPg0K
-Q2M6IEplZmYgTGF5dG9uIDxqbGF5dG9uQHJlZGhhdC5jb20+DQpDYzogc3RhYmxlQHZnZXIua2Vy
-bmVsLm9yZyAjIDMuMTAueA0KLS0tDQogZnMvbG9ja2QvY2xudGxvY2suYyB8IDEzICsrKysrKysr
-Ky0tLS0NCiBmcy9sb2NrZC9jbG50cHJvYy5jIHwgIDUgKysrLS0NCiAyIGZpbGVzIGNoYW5nZWQs
-IDEyIGluc2VydGlvbnMoKyksIDYgZGVsZXRpb25zKC0pDQoNCmRpZmYgLS1naXQgYS9mcy9sb2Nr
-ZC9jbG50bG9jay5jIGIvZnMvbG9ja2QvY2xudGxvY2suYw0KaW5kZXggMDFiZmU3Ni4uNDFlNDkx
-YiAxMDA2NDQNCi0tLSBhL2ZzL2xvY2tkL2NsbnRsb2NrLmMNCisrKyBiL2ZzL2xvY2tkL2NsbnRs
-b2NrLmMNCkBAIC02NCwxMiArNjQsMTcgQEAgc3RydWN0IG5sbV9ob3N0ICpubG1jbG50X2luaXQo
-Y29uc3Qgc3RydWN0IG5sbWNsbnRfaW5pdGRhdGEgKm5sbV9pbml0KQ0KIAkJCQkgICBubG1faW5p
-dC0+cHJvdG9jb2wsIG5sbV92ZXJzaW9uLA0KIAkJCQkgICBubG1faW5pdC0+aG9zdG5hbWUsIG5s
-bV9pbml0LT5ub3Jlc3Zwb3J0LA0KIAkJCQkgICBubG1faW5pdC0+bmV0KTsNCi0JaWYgKGhvc3Qg
-PT0gTlVMTCkgew0KLQkJbG9ja2RfZG93bihubG1faW5pdC0+bmV0KTsNCi0JCXJldHVybiBFUlJf
-UFRSKC1FTk9MQ0spOw0KLQl9DQorCWlmIChob3N0ID09IE5VTEwpDQorCQlnb3RvIG91dF9ub2hv
-c3Q7DQorCWlmIChob3N0LT5oX3JwY2NsbnQgPT0gTlVMTCAmJiBubG1fYmluZF9ob3N0KGhvc3Qp
-ID09IE5VTEwpDQorCQlnb3RvIG91dF9ub2JpbmQ7DQogDQogCXJldHVybiBob3N0Ow0KK291dF9u
-b2JpbmQ6DQorCW5sbWNsbnRfcmVsZWFzZV9ob3N0KGhvc3QpOw0KK291dF9ub2hvc3Q6DQorCWxv
-Y2tkX2Rvd24obmxtX2luaXQtPm5ldCk7DQorCXJldHVybiBFUlJfUFRSKC1FTk9MQ0spOw0KIH0N
-CiBFWFBPUlRfU1lNQk9MX0dQTChubG1jbG50X2luaXQpOw0KIA0KZGlmZiAtLWdpdCBhL2ZzL2xv
-Y2tkL2NsbnRwcm9jLmMgYi9mcy9sb2NrZC9jbG50cHJvYy5jDQppbmRleCA5NzYwZWNiLi5hY2Qz
-OTQ3IDEwMDY0NA0KLS0tIGEvZnMvbG9ja2QvY2xudHByb2MuYw0KKysrIGIvZnMvbG9ja2QvY2xu
-dHByb2MuYw0KQEAgLTEyNSwxNCArMTI1LDE1IEBAIHN0YXRpYyB2b2lkIG5sbWNsbnRfc2V0bG9j
-a2FyZ3Moc3RydWN0IG5sbV9ycXN0ICpyZXEsIHN0cnVjdCBmaWxlX2xvY2sgKmZsKQ0KIHsNCiAJ
-c3RydWN0IG5sbV9hcmdzCSphcmdwID0gJnJlcS0+YV9hcmdzOw0KIAlzdHJ1Y3QgbmxtX2xvY2sJ
-KmxvY2sgPSAmYXJncC0+bG9jazsNCisJY2hhciAqbm9kZW5hbWUgPSByZXEtPmFfaG9zdC0+aF9y
-cGNjbG50LT5jbF9ub2RlbmFtZTsNCiANCiAJbmxtY2xudF9uZXh0X2Nvb2tpZSgmYXJncC0+Y29v
-a2llKTsNCiAJbWVtY3B5KCZsb2NrLT5maCwgTkZTX0ZIKGZpbGVfaW5vZGUoZmwtPmZsX2ZpbGUp
-KSwgc2l6ZW9mKHN0cnVjdCBuZnNfZmgpKTsNCi0JbG9jay0+Y2FsbGVyICA9IHV0c25hbWUoKS0+
-bm9kZW5hbWU7DQorCWxvY2stPmNhbGxlciAgPSBub2RlbmFtZTsNCiAJbG9jay0+b2guZGF0YSA9
-IHJlcS0+YV9vd25lcjsNCiAJbG9jay0+b2gubGVuICA9IHNucHJpbnRmKHJlcS0+YV9vd25lciwg
-c2l6ZW9mKHJlcS0+YV9vd25lciksICIldUAlcyIsDQogCQkJCSh1bnNpZ25lZCBpbnQpZmwtPmZs
-X3UubmZzX2ZsLm93bmVyLT5waWQsDQotCQkJCXV0c25hbWUoKS0+bm9kZW5hbWUpOw0KKwkJCQlu
-b2RlbmFtZSk7DQogCWxvY2stPnN2aWQgPSBmbC0+ZmxfdS5uZnNfZmwub3duZXItPnBpZDsNCiAJ
-bG9jay0+ZmwuZmxfc3RhcnQgPSBmbC0+Zmxfc3RhcnQ7DQogCWxvY2stPmZsLmZsX2VuZCA9IGZs
-LT5mbF9lbmQ7DQotLSANCjEuOC4zLjENCg0K
-
---_002_1375729975733739camelleiratrondhjemorg_--
+AIO is probably more likely, I'm going to look to see if I can find
+anything...
