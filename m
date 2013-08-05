@@ -1,76 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755025Ab3HEHVi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 03:21:38 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:59025 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754936Ab3HEHVf (ORCPT
+	id S1755040Ab3HEHVr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 03:21:47 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:51109 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754933Ab3HEHVo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 03:21:35 -0400
-X-AuditID: 9c93017e-b7b62ae000000eeb-5e-51ff527df0ed
-Date: Mon, 5 Aug 2013 16:21:44 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, "'Ingo Molnar'" <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org, "'Mike Galbraith'" <efault@gmx.de>,
-        "'Paul Turner'" <pjt@google.com>, "'Alex Shi'" <alex.shi@intel.com>,
-        "'Vincent Guittot'" <vincent.guittot@linaro.org>,
-        "'Morten Rasmussen'" <morten.rasmussen@arm.com>,
-        "'Namhyung Kim'" <namhyung@kernel.org>
-Subject: Re: [PATCH v2 2/3] sched: factor out code to should_we_balance()
-Message-ID: <20130805072144.GA27240@lge.com>
-References: <1375408223-10934-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1375408223-10934-3-git-send-email-iamjoonsoo.kim@lge.com>
- <51FB341B.7060104@linux.vnet.ibm.com>
- <001601ce8f5f$7cbe1460$763a3d20$@lge.com>
- <51FB7B36.8030909@linux.vnet.ibm.com>
- <20130802103247.GL27162@twins.programming.kicks-ass.net>
- <51FF2884.4000802@linux.vnet.ibm.com>
+	Mon, 5 Aug 2013 03:21:44 -0400
+Message-ID: <51FF527F.7080904@oracle.com>
+Date: Mon, 05 Aug 2013 15:21:35 +0800
+From: Zhenzhong Duan <zhenzhong.duan@oracle.com>
+Reply-To: zhenzhong.duan@oracle.com
+Organization: oracle
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51FF2884.4000802@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+To: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        xen-devel <xen-devel@lists.xen.org>
+CC: Bjorn Helgaas <bhelgaas@google.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Feng Jin <joe.jin@oracle.com>,
+        Sucheta Chakraborty <sucheta.chakraborty@qlogic.com>
+Subject: [PATCH 2/3 v2] Refactor msi/msix restore code Part2
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 05, 2013 at 09:52:28AM +0530, Preeti U Murthy wrote:
-> On 08/02/2013 04:02 PM, Peter Zijlstra wrote:
-> > On Fri, Aug 02, 2013 at 02:56:14PM +0530, Preeti U Murthy wrote:
-> >>>> You need to iterate over all the groups of the sched domain env->sd and
-> >>>> not just the first group of env->sd like you are doing above. This is to
-> >>>
-> >>> I don't think so.
-> >>> IIRC, env->sd->groups always means local group,
-> >>> so we don't need to find our group by iterating over all the groups.
-> >>
-> >> Take a look at update_sd_lb_stats(). That should clarify this. There is
-> >> an exclusive
-> >> local_group check there.
-> >>
-> >> sd->groups points to the first group in the list of groups under this sd.
-> > 
-> > Take a look at: 88b8dac0a
-> > 
-> Ah ok! Thanks for this pointer.
-> 
-> Apologies for having overlooked the fact that the sd->groups always
-> points to the group to which the balance_cpu belongs. And subsequent
-> dst_cpus for retries of load balancing also belong to the same group as
-> the balance_cpu.
-> 
-> This patch thus looks fine to me.
+xen_initdom_restore_msi_irqs trigger a hypercall to restore addr/data/mask
+in dom0. It's better to do the same in default_restore_msi_irqs for baremetal.
 
-Okay!
+Move restore of mask in default_restore_msi_irqs, this could avoid mask
+restored twice in dom0, and the logic for baremetal keep same.
 
-> 
-> Regards
-> Preeti U Murthy
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+First mask restore is in xen_initdom_restore_msi_irqs->PHYSDEVOP_restore_msi,
+Second restore is __pci_restore_msix_state->msix_mask_irq.
+
+Mask bits are under full control of xen, and the entry->masked in dom0 kernel
+is invalid. restore an invalid value to mask register could mask the msix
+interrupt.
+
+Without fix, qlcnic driver calling pci_reset_function will lost interrupt
+in dom0.
+
+Tested-by: Sucheta Chakraborty <sucheta.chakraborty@qlogic.com>
+Signed-off-by: Zhenzhong Duan <zhenzhong.duan@oracle.com>
+---
+ drivers/pci/msi.c |   17 ++++++++++++++---
+ 1 files changed, 14 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
+index 87223ae..922fb49 100644
+--- a/drivers/pci/msi.c
++++ b/drivers/pci/msi.c
+@@ -216,6 +216,8 @@ void unmask_msi_irq(struct irq_data *data)
+ #ifdef HAVE_DEFAULT_MSI_RESTORE_IRQS
+ void default_restore_msi_irqs(struct pci_dev *dev, int irq)
+ {
++	int pos;
++	u16 control;
+ 	struct msi_desc *entry;
+ 
+ 	entry = NULL;
+@@ -228,8 +230,19 @@ void default_restore_msi_irqs(struct pci_dev *dev, int irq)
+ 		entry = irq_get_msi_desc(irq);
+ 	}
+ 
+-	if (entry)
++	if (entry) {
+ 		write_msi_msg(irq, &entry->msg);
++		if (dev->msix_enabled) {
++			msix_mask_irq(entry, entry->masked);
++			readl(entry->mask_base);
++		} else {
++			pos = entry->msi_attrib.pos;
++			pci_read_config_word(dev, pos + PCI_MSI_FLAGS,
++					     &control);
++			msi_mask_irq(entry, msi_capable_mask(control),
++				     entry->masked);
++		}
++	}
+ }
+ #endif
+ 
+@@ -406,7 +419,6 @@ static void __pci_restore_msi_state(struct pci_dev *dev)
+ 	arch_restore_msi_irqs(dev, dev->irq);
+ 
+ 	pci_read_config_word(dev, dev->msi_cap + PCI_MSI_FLAGS, &control);
+-	msi_mask_irq(entry, msi_capable_mask(control), entry->masked);
+ 	control &= ~PCI_MSI_FLAGS_QSIZE;
+ 	control |= (entry->msi_attrib.multiple << 4) | PCI_MSI_FLAGS_ENABLE;
+ 	pci_write_config_word(dev, dev->msi_cap + PCI_MSI_FLAGS, control);
+@@ -430,7 +442,6 @@ static void __pci_restore_msix_state(struct pci_dev *dev)
+ 
+ 	list_for_each_entry(entry, &dev->msi_list, list) {
+ 		arch_restore_msi_irqs(dev, entry->irq);
+-		msix_mask_irq(entry, entry->masked);
+ 	}
+ 
+ 	control &= ~PCI_MSIX_FLAGS_MASKALL;
+-- 
+1.7.3
+
