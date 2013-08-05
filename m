@@ -1,89 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754666Ab3HEGhC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 02:37:02 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:28987 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753593Ab3HEGhA (ORCPT
+	id S1754721Ab3HEGjG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 02:39:06 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:16882 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753923Ab3HEGjD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 02:37:00 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+I/elBQROU+t12VuNspCux
-Date: Sun, 4 Aug 2013 23:36:55 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: Greg KH <greg@kroah.com>, ksummit-2013-discuss@lists.linuxfoundation.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [Ksummit-2013-discuss] [ATTEND] [ARM ATTEND] kernel data bloat
- and how to avoid it
-Message-ID: <20130805063654.GM7656@atomide.com>
-References: <20130731073802.GT7656@atomide.com>
- <20130731123351.GA30474@kroah.com>
- <20130802075352.GY7656@atomide.com>
- <20130802195730.6450.84988@quantum>
+	Mon, 5 Aug 2013 02:39:03 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Sun, 04 Aug 2013 23:39:03 -0700
+Message-ID: <51FF487F.6000007@nvidia.com>
+Date: Mon, 5 Aug 2013 12:08:55 +0530
+From: Prashant Gaikwad <pgaikwad@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130802195730.6450.84988@quantum>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Tuomas Tynkkynen <ttynkkynen@nvidia.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        "mturquette@linaro.org" <mturquette@linaro.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH] clk: tegra30: Don't wait for PLL_U lock bit
+References: <1375292551-7933-1-git-send-email-ttynkkynen@nvidia.com> <1375292551-7933-2-git-send-email-ttynkkynen@nvidia.com> <51F97BEA.7040006@wwwdotorg.org>
+In-Reply-To: <51F97BEA.7040006@wwwdotorg.org>
+X-NVConfidentiality: public
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Mike Turquette <mturquette@linaro.org> [130802 13:04]:
-> Quoting Tony Lindgren (2013-08-02 00:53:53)
-> > People are unnecessarily defining registers in kernel for similar devices
-> > over and over again for each new SoC at the arch level and now more and
-> > more at the driver level.
-> > 
-> > One example of that are device tree based drivers that don't describe
-> > the actual hardware, but instead have a binding that points to an index
-> > of defined registers in the driver.
-> 
-> Apologies for possibly hijacking this thread, but this issue keeps me up
-> at night. People use DT for different things and have different ideas
-> about its Purpose In The World.
-> 
-> Tony wants to move data out of the kernel, which was the impetus behind
-> the OMAP DT clock patches that describes every single clock in a DT node
-> (around 250 clocks). This create very large dts, but reduces the clock
-> drivers to pure logic, no data.
+On Thursday 01 August 2013 02:34 AM, Stephen Warren wrote:
+> On 07/31/2013 11:42 AM, Tuomas Tynkkynen wrote:
+>> The lock bit on PLL_U does not seem to be working correctly and
+>> sometimes never gets set when waiting for the PLL to come up.
+>> Remove the TEGRA_PLL_USE_LOCK flag to use a constant delay.
+> Peter, Prashant,
+>
+> I think you said that the lock bits should work on Tegra30 (albeit they
+> don't on Tegra20)? Can you remind me if the do/don't?
+>
+> If Peter and Prashant are OK with this patch, feel free to take my ack.
 
-Yes that should eventually allow "booting new hardware with old
-kernels".. But ideally with clocks we should support any combination of
-DT defined clocks and /lib/firmware defined clocks should be allowed to
-avoid bloating the DT files. We should be able to boot to user space
-with a pretty minimal set of clocks, and deal with the PM related settings
-based on SoC specific data from /lib/firmware.
- 
-> Other folks are motivated only to get rid of board files and platform
-> data hacks. They keep all of the clock data in the clock driver and
-> instead use DT only as a way to hook up clocks to devices via a simple
-> mapping, thus describing how individual boards or SoC variants are set
-> up outside of the kernel source. dts remains small, essentially just an
-> array to map bindings but all of the clock data remains in the kernel.
+Hi Tuomas,
 
-Right, that just moves the real problem to drivers and then it will
-eventually suck up all your maintainer time with constant churn to patch
-that data for various SoC revisions :)
- 
-> Both approaches have their merits and drawbacks. Is it possible to
-> gather consensus on selecting a single approach? For the clock subsystem
-> I've accepted drivers and DT bindings which do either. I simply do not
-> have the DT experience or sensibilities to draw a line in the sand...
-> and maybe I should not draw a line in the sand and just let people pick
-> whichever approach they prefer (which maintains the status quo).
-> 
-> If the ARM Summit figures out all the answers then please let me know
-> what they are :-)
+Sorry for the delayed response. Please make sure that avdd_usb_pll 
+regulator is enabled before enabling PLLU and utmip parameters are 
+configured properly.
+If this this regulator is not enabled then you will get this kind of 
+timeout when enabling PLLU.
 
-Well I think it's been discussed many times earlier and it should be
-clear that Linus wants this kind of data out of the kernel. So maybe
-we could establish some kind of set of standards for the maintainers
-to follow.
+Thanks,
+Prashant
 
-Regards,
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-tegra" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Tony
