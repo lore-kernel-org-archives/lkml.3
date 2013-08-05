@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755486Ab3HEWPK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 18:15:10 -0400
-Received: from mga14.intel.com ([143.182.124.37]:7353 "EHLO mga14.intel.com"
+	id S1755511Ab3HEWQ7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 18:16:59 -0400
+Received: from mga09.intel.com ([134.134.136.24]:21609 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755280Ab3HEWPJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 18:15:09 -0400
+	id S1755357Ab3HEWQ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 18:16:57 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.89,821,1367996400"; 
-   d="scan'208";a="376603922"
+   d="scan'208";a="376604381"
 From: Andi Kleen <andi@firstfloor.org>
-To: dhowells@redhat.com
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH] Fix init const for module signing code
-Date: Mon,  5 Aug 2013 15:15:04 -0700
-Message-Id: <1375740904-8046-1-git-send-email-andi@firstfloor.org>
+To: linux-kernel@vger.kernel.org
+Cc: Andi Kleen <ak@linux.intel.com>, wim@iguana.be
+Subject: [PATCH] lto, watchdog/hpwdt.c: Make assembler label global
+Date: Mon,  5 Aug 2013 15:16:39 -0700
+Message-Id: <1375740999-8097-1-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -22,35 +22,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-const has to use __initconst, not __initdata
+We cannot assume that the inline assembler code always ends up
+in the same file as the original C file. So make any assembler labels
+that are called with "extern" by C global
 
+Cc: wim@iguana.be
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- kernel/modsign_pubkey.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/watchdog/hpwdt.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/modsign_pubkey.c b/kernel/modsign_pubkey.c
-index 2b6e699..7cbd450 100644
---- a/kernel/modsign_pubkey.c
-+++ b/kernel/modsign_pubkey.c
-@@ -18,14 +18,14 @@
+diff --git a/drivers/watchdog/hpwdt.c b/drivers/watchdog/hpwdt.c
+index de7e4f4..5be5e3d 100644
+--- a/drivers/watchdog/hpwdt.c
++++ b/drivers/watchdog/hpwdt.c
+@@ -162,7 +162,8 @@ extern asmlinkage void asminline_call(struct cmn_registers *pi86Regs,
+ #define HPWDT_ARCH	32
  
- struct key *modsign_keyring;
+ asm(".text                          \n\t"
+-    ".align 4                       \n"
++    ".align 4                       \n\t"
++    ".globl asminline_call	    \n"
+     "asminline_call:                \n\t"
+     "pushl       %ebp               \n\t"
+     "movl        %esp, %ebp         \n\t"
+@@ -352,7 +353,8 @@ static int detect_cru_service(void)
+ #define HPWDT_ARCH	64
  
--extern __initdata const u8 modsign_certificate_list[];
--extern __initdata const u8 modsign_certificate_list_end[];
-+extern __initconst const u8 modsign_certificate_list[];
-+extern __initconst const u8 modsign_certificate_list_end[];
- 
- /*
-  * We need to make sure ccache doesn't cache the .o file as it doesn't notice
-  * if modsign.pub changes.
-  */
--static __initdata const char annoy_ccache[] = __TIME__ "foo";
-+static __initconst const char annoy_ccache[] = __TIME__ "foo";
- 
- /*
-  * Load the compiled-in keys
+ asm(".text                      \n\t"
+-    ".align 4                   \n"
++    ".align 4                   \n\t"
++    ".globl asminline_call	\n"
+     "asminline_call:            \n\t"
+     "pushq      %rbp            \n\t"
+     "movq       %rsp, %rbp      \n\t"
 -- 
 1.8.3.1
 
