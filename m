@@ -1,223 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752776Ab3HEJ5H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 05:57:07 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:53517 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751345Ab3HEJ5F (ORCPT
+	id S1753284Ab3HEJ6R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 05:58:17 -0400
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:35808 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751445Ab3HEJ6Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 05:57:05 -0400
-Date: Mon, 5 Aug 2013 10:53:41 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Jason Cooper <jason@lakedaemon.net>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Andrew Lunn <andrew@lunn.ch>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH 1/2] ARM: remove dmacap,memset from Device tree binding
-Message-ID: <20130805095341.GA7594@e106331-lin.cambridge.arm.com>
-References: <1372762453-12018-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1372762453-12018-2-git-send-email-sebastian.hesselbarth@gmail.com>
- <20130725153104.GH23879@titan.lakedaemon.net>
- <20130804010904.GB19280@titan.lakedaemon.net>
+	Mon, 5 Aug 2013 05:58:16 -0400
+Date: Mon, 5 Aug 2013 11:58:12 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Nathan Zimmer <nzimmer@sgi.com>
+Cc: hpa@zytor.com, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        holt@sgi.com, rob@landley.net, travis@sgi.com,
+        daniel@numascale-asia.com, akpm@linux-foundation.org,
+        gregkh@linuxfoundation.org, yinghai@kernel.org, mgorman@suse.de
+Subject: Re: [RFC v2 0/5] Transparent on-demand struct page initialization
+ embedded in the buddy allocator
+Message-ID: <20130805095812.GA29404@gmail.com>
+References: <1373594635-131067-1-git-send-email-holt@sgi.com>
+ <1375465467-40488-1-git-send-email-nzimmer@sgi.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130804010904.GB19280@titan.lakedaemon.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1375465467-40488-1-git-send-email-nzimmer@sgi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 04, 2013 at 02:09:04AM +0100, Jason Cooper wrote:
-> DT Maintainers,
+
+* Nathan Zimmer <nzimmer@sgi.com> wrote:
+
+> We are still restricting ourselves ourselves to 2MiB initialization to 
+> keep the patch set a little smaller and more clear.
 > 
-> It's been a week with no comment.  Shall I assume it's ok to apply
-> this?
+> We are still struggling with the expand().  Nearly always the first 
+> reference to a struct page which is in the middle of the 2MiB region.  
+> We were unable to find a good solution.  Also, given the strong warning 
+> at the head of expand(), we did not feel experienced enough to refactor 
+> it to make things always reference the 2MiB page first. The only other 
+> fastpath impact left is the expansion in prep_new_page.
 
-Apologies for the delay, still catching up on binding review.
+I suppose it's about this chunk:
 
-I'm not entirely sure on this. The property described is still true for
-the device, even if the kernel's not using that information now. My
-feeling would be to keep them, unless there's a plan to better describe
-the properties of the XOR channels.
+@@ -860,6 +917,7 @@ static inline void expand(struct zone *zone, struct page *page,
+                area--;
+                high--;
+                size >>= 1;
++               ensure_page_is_initialized(page);
+                VM_BUG_ON(bad_range(zone, &page[size]));
 
-It shouldn't harm the kernel to have some properties we don't use at
-this point in time. If we want to reorganise the binding, the first step
-would be to make the properties as deprecated, rather than removing them
-outright.
+where ensure_page_is_initialized() does, in essence:
+
++       while (aligned_start_pfn < aligned_end_pfn) {
++               if (pfn_valid(aligned_start_pfn)) {
++                       page = pfn_to_page(aligned_start_pfn);
++
++                       if (PageUninitialized2m(page))
++                               expand_page_initialization(page);
++               }
++
++               aligned_start_pfn += PTRS_PER_PMD;
++       }
+
+where aligned_start_pfn is 2MB rounded down.
+
+which looks like an expensive loop to execute for a single page: there are 
+512 pages in a 2MB range, so on average this iterates 256 times, for every 
+single page of allocation. Right?
+
+I might be missing something, but why not just represent the 
+initialization state in 2MB chunks: it is either fully uninitialized, or 
+fully initialized. If any page in the 'middle' gets allocated, all page 
+heads have to get initialized.
+
+That should make the fast path test fairly cheap, basically just 
+PageUninitialized2m(page) has to be tested - and that will fail in the 
+post-initialization fastpath.
 
 Thanks,
-Mark.
 
-> 
-> thx,
-> 
-> Jason.
-> 
-> On Thu, Jul 25, 2013 at 11:31:04AM -0400, Jason Cooper wrote:
-> > On Tue, Jul 02, 2013 at 12:54:12PM +0200, Sebastian Hesselbarth wrote:
-> > > DMA_MEMSET support has been removed, so update the device tree files
-> > > and corresponding binding documentation for Marvell SoCs.
-> > > 
-> > > Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> > > ---
-> > > Cc: Russell King <linux@arm.linux.org.uk> 
-> > > Cc: Jason Cooper <jason@lakedaemon.net>
-> > > Cc: Andrew Lunn <andrew@lunn.ch>
-> > > Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-> > > Cc: Gregory CLEMENT <gregory.clement@free-electrons.com> 
-> > > Cc: devicetree-discuss@lists.ozlabs.org 
-> > > Cc: linux-kernel@vger.kernel.org 
-> > > Cc: linux-arm-kernel@lists.infradead.org 
-> > > ---
-> > >  Documentation/devicetree/bindings/dma/mv-xor.txt |    2 --
-> > >  arch/arm/boot/dts/armada-370.dtsi                |    2 --
-> > >  arch/arm/boot/dts/armada-xp.dtsi                 |    2 --
-> > >  arch/arm/boot/dts/dove.dtsi                      |    2 --
-> > >  arch/arm/boot/dts/kirkwood.dtsi                  |    2 --
-> > >  arch/arm/boot/dts/orion5x.dtsi                   |    1 -
-> > >  6 files changed, 0 insertions(+), 11 deletions(-)
-> > 
-> > Adding the new devicetree ml to the Cc:
-> > 
-> > I'm fine with the changes to the dts{i} files, but I think the binding
-> > document should be handled differently.
-> > 
-> > thx,
-> > 
-> > Jason.
-> > 
-> > > 
-> > > diff --git a/Documentation/devicetree/bindings/dma/mv-xor.txt b/Documentation/devicetree/bindings/dma/mv-xor.txt
-> > > index 7c6cb7f..68f7004 100644
-> > > --- a/Documentation/devicetree/bindings/dma/mv-xor.txt
-> > > +++ b/Documentation/devicetree/bindings/dma/mv-xor.txt
-> > > @@ -14,7 +14,6 @@ properties:
-> > >  
-> > >  And the following optional properties:
-> > >  - dmacap,memcpy to indicate that the XOR channel is capable of memcpy operations
-> > > -- dmacap,memset to indicate that the XOR channel is capable of memset operations
-> > >  - dmacap,xor to indicate that the XOR channel is capable of xor operations
-> > >  
-> > >  Example:
-> > > @@ -35,6 +34,5 @@ xor@d0060900 {
-> > >  	      interrupts = <52>;
-> > >  	      dmacap,memcpy;
-> > >  	      dmacap,xor;
-> > > -	      dmacap,memset;
-> > >  	};
-> > >  };
-> > > diff --git a/arch/arm/boot/dts/armada-370.dtsi b/arch/arm/boot/dts/armada-370.dtsi
-> > > index fa3dfc6..a315ad1 100644
-> > > --- a/arch/arm/boot/dts/armada-370.dtsi
-> > > +++ b/arch/arm/boot/dts/armada-370.dtsi
-> > > @@ -132,7 +132,6 @@
-> > >  					interrupts = <52>;
-> > >  					dmacap,memcpy;
-> > >  					dmacap,xor;
-> > > -					dmacap,memset;
-> > >  				};
-> > >  			};
-> > >  
-> > > @@ -151,7 +150,6 @@
-> > >  					interrupts = <95>;
-> > >  					dmacap,memcpy;
-> > >  					dmacap,xor;
-> > > -					dmacap,memset;
-> > >  				};
-> > >  			};
-> > >  
-> > > diff --git a/arch/arm/boot/dts/armada-xp.dtsi b/arch/arm/boot/dts/armada-xp.dtsi
-> > > index 416eb94..4b3dd56 100644
-> > > --- a/arch/arm/boot/dts/armada-xp.dtsi
-> > > +++ b/arch/arm/boot/dts/armada-xp.dtsi
-> > > @@ -114,7 +114,6 @@
-> > >  					interrupts = <52>;
-> > >  					dmacap,memcpy;
-> > >  					dmacap,xor;
-> > > -					dmacap,memset;
-> > >  				};
-> > >  			};
-> > >  
-> > > @@ -134,7 +133,6 @@
-> > >  					interrupts = <95>;
-> > >  					dmacap,memcpy;
-> > >  					dmacap,xor;
-> > > -					dmacap,memset;
-> > >  				};
-> > >  			};
-> > >  
-> > > diff --git a/arch/arm/boot/dts/dove.dtsi b/arch/arm/boot/dts/dove.dtsi
-> > > index 6cab468..2cef34f 100644
-> > > --- a/arch/arm/boot/dts/dove.dtsi
-> > > +++ b/arch/arm/boot/dts/dove.dtsi
-> > > @@ -232,7 +232,6 @@
-> > >  
-> > >  			channel1 {
-> > >  				interrupts = <40>;
-> > > -				dmacap,memset;
-> > >  				dmacap,memcpy;
-> > >  				dmacap,xor;
-> > >  			};
-> > > @@ -253,7 +252,6 @@
-> > >  
-> > >  			channel1 {
-> > >  				interrupts = <43>;
-> > > -				dmacap,memset;
-> > >  				dmacap,memcpy;
-> > >  				dmacap,xor;
-> > >  			};
-> > > diff --git a/arch/arm/boot/dts/kirkwood.dtsi b/arch/arm/boot/dts/kirkwood.dtsi
-> > > index 9809fc1..078637c 100644
-> > > --- a/arch/arm/boot/dts/kirkwood.dtsi
-> > > +++ b/arch/arm/boot/dts/kirkwood.dtsi
-> > > @@ -126,7 +126,6 @@
-> > >  			      interrupts = <6>;
-> > >  			      dmacap,memcpy;
-> > >  			      dmacap,xor;
-> > > -			      dmacap,memset;
-> > >  			};
-> > >  		};
-> > >  
-> > > @@ -146,7 +145,6 @@
-> > >  			      interrupts = <8>;
-> > >  			      dmacap,memcpy;
-> > >  			      dmacap,xor;
-> > > -			      dmacap,memset;
-> > >  			};
-> > >  		};
-> > >  
-> > > diff --git a/arch/arm/boot/dts/orion5x.dtsi b/arch/arm/boot/dts/orion5x.dtsi
-> > > index 892c64e..f82ece7 100644
-> > > --- a/arch/arm/boot/dts/orion5x.dtsi
-> > > +++ b/arch/arm/boot/dts/orion5x.dtsi
-> > > @@ -120,7 +120,6 @@
-> > >  			      interrupts = <31>;
-> > >  			      dmacap,memcpy;
-> > >  			      dmacap,xor;
-> > > -			      dmacap,memset;
-> > >  			};
-> > >  		};
-> > >  
-> > > -- 
-> > > 1.7.2.5
-> > > 
-> > > 
-> > > _______________________________________________
-> > > linux-arm-kernel mailing list
-> > > linux-arm-kernel@lists.infradead.org
-> > > http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe devicetree" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-> 
+	Ingo
