@@ -1,115 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753883Ab3HEQaJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 12:30:09 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:23077 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752928Ab3HEQaG (ORCPT
+	id S1753568Ab3HEQbO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 12:31:14 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:35227 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751846Ab3HEQbM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 12:30:06 -0400
-X-IronPort-AV: E=Sophos;i="4.89,819,1367971200"; 
-   d="scan'208";a="39429212"
-Date: Mon, 5 Aug 2013 17:29:48 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: <xen-devel@lists.xensource.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>
-Subject: [PATCH v3 0/10] enable swiotlb-xen on arm and arm64
-Message-ID: <alpine.DEB.2.02.1308051503190.4893@kaball.uk.xensource.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Mon, 5 Aug 2013 12:31:12 -0400
+Date: Mon, 5 Aug 2013 19:30:54 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Joe Perches <joe@perches.com>
+Cc: Julia Lawall <Julia.Lawall@lip6.fr>, trivial@kernel.org,
+        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] trivial: adjust code alignment
+Message-ID: <20130805163054.GN5102@mwanda>
+References: <1375714059-29567-1-git-send-email-Julia.Lawall@lip6.fr>
+ <1375714059-29567-5-git-send-email-Julia.Lawall@lip6.fr>
+ <20130805160645.GI5051@mwanda>
+ <1375719427.3133.31.camel@joe-AO722>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1375719427.3133.31.camel@joe-AO722>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
-this patch series enables xen-swiotlb on arm and arm64.
+On Mon, Aug 05, 2013 at 09:17:07AM -0700, Joe Perches wrote:
+> On Mon, 2013-08-05 at 19:06 +0300, Dan Carpenter wrote:
+> > On Mon, Aug 05, 2013 at 04:47:39PM +0200, Julia Lawall wrote:
+> > > diff --git a/drivers/media/i2c/ov7670.c b/drivers/media/i2c/ov7670.c
+> []
+> > > @@ -1369,8 +1369,8 @@ static int ov7670_s_exp(struct v4l2_subdev *sd, int value)
+> > >  	unsigned char com1, com8, aech, aechh;
+> > >  
+> > >  	ret = ov7670_read(sd, REG_COM1, &com1) +
+> > > -		ov7670_read(sd, REG_COM8, &com8);
+> > > -		ov7670_read(sd, REG_AECHH, &aechh);
+> > > +	ov7670_read(sd, REG_COM8, &com8);
+> > > +	ov7670_read(sd, REG_AECHH, &aechh);
+> > >  	if (ret)
+> > >  		return ret;
+> > >  
+> > 
+> > The new indenting isn't correct here and anyway the intent was to
+> > combine all the error codes together and return them as an error
+> > code jumble.  I'm not a fan of error code jumbles, probably the
+> > right thing is to check each function call or, barring that, to
+> > return -EIO.
+> 
+> ov7670_read via i2c_transfer can return a positive # too.
+> Perhaps all of these should be individually tested for "< 0".
 
-Considering that all guests, including dom0, run on xen on arm with
-second stage translation enabled, it follows that without an IOMMU no
-guests could actually drive the hardware.
+You're misreading something.  ov7670_read_i2c() only returns zero
+and negative error codes.
 
-The solution for platforms without an IOMMU is to use swiotlb-xen,
-adapted to autotranslate guests. swiotlb-xen provides a set of dma_ops
-that can be used by Linux to setup a contiguous buffer in stage-2
-addresses and use it for dma operations.
-Basically Linux asks Xen to make a buffer contiguous and gets the
-machine address for it. This buffer is going to be used by lib/swiotlb.c
-to allocate bounce buffers.
+regards,
+dan carpenter
 
-
-The first 5 patches lay the groundwork on arm and arm64 to have
-alternative dma_ops and swiotlb.
-
-The sixth patch moves Xen initialization earlier so that we already know
-whether we are running on Xen at the time of initializing dma_ops on the
-platform.
-
-The following patches adapt swiotlb-xen to autotranslate guests (guest
-with second stage translation in hardware) and provide an arm
-implementation of xen_create_contiguous_region.
-
-
-Feedback is very welcome.
-Cheers,
-
-Stefano
-
-
-Changes in v3:
-- add a patch to compile SWIOTLB without CONFIG_NEED_SG_DMA_LENGTH;
-- add a patch to compile SWIOTLB_XEN without CONFIG_NEED_SG_DMA_LENGTH;
-- arm/dma_capable: do not treat dma_mask as a limit;
-- arm/dmabounce: keep using arm_dma_ops;
-- add missing __init in xen_early_init declaration;
-- many code style and name changes in swiotlb-xen.c;
-- improve error checks in xen_dma_add_entry;
-- warn on XENMEM_put_dma_buf failures.
-
-Changes in v2:
-- fixed a couple of errors in xen_bus_to_phys, xen_phys_to_bus and
-xen_swiotlb_fixup.
-
-
-
-EUNBONG SONG (1):
-      swiotlb: replace dma_length with sg_dma_len() macro
-
-Stefano Stabellini (9):
-      swiotlb-xen: replace dma_length with sg_dma_len() macro
-      arm: make SWIOTLB available
-      arm: introduce a global dma_ops pointer
-      arm64: do not initialize arm64_swiotlb if dma_ops is already set
-      xen/arm,arm64: move Xen initialization earlier
-      xen: introduce XENMEM_get_dma_buf and xen_put_dma_buf
-      xen: make xen_create_contiguous_region return the dma address
-      swiotlb-xen: support autotranslate guests
-      xen/arm,arm64: enable SWIOTLB_XEN
-
- arch/arm/Kconfig                      |    7 ++
- arch/arm/include/asm/dma-mapping.h    |   33 ++++++-
- arch/arm/include/asm/xen/hypervisor.h |    8 ++
- arch/arm/include/asm/xen/page.h       |    2 +
- arch/arm/kernel/setup.c               |    2 +
- arch/arm/mm/dma-mapping.c             |    3 +
- arch/arm/xen/Makefile                 |    2 +-
- arch/arm/xen/enlighten.c              |   24 +++--
- arch/arm/xen/mm.c                     |  117 ++++++++++++++++++++
- arch/arm64/Kconfig                    |    1 +
- arch/arm64/kernel/setup.c             |    2 +
- arch/arm64/mm/dma-mapping.c           |    2 +
- arch/arm64/xen/Makefile               |    2 +-
- arch/x86/xen/mmu.c                    |    4 +-
- drivers/xen/Kconfig                   |    1 -
- drivers/xen/swiotlb-xen.c             |  188 +++++++++++++++++++++++++++++----
- include/xen/interface/memory.h        |   62 +++++++++++
- include/xen/xen-ops.h                 |    3 +-
- lib/swiotlb.c                         |    8 +-
- 19 files changed, 433 insertions(+), 38 deletions(-)
- create mode 100644 arch/arm/xen/mm.c
-
-git://git.kernel.org/pub/scm/linux/kernel/git/sstabellini/xen.git swiotlb-xen-3
