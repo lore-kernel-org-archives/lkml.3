@@ -1,149 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754585Ab3HELRr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 07:17:47 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49203 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754074Ab3HELRp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 07:17:45 -0400
-Date: Mon, 5 Aug 2013 13:17:39 +0200
-From: Jan Kara <jack@suse.cz>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
-        Ning Qu <quning@google.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 01/23] radix-tree: implement preload for multiple
- contiguous elements
-Message-ID: <20130805111739.GA25691@quack.suse.cz>
-References: <1375582645-29274-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1375582645-29274-2-git-send-email-kirill.shutemov@linux.intel.com>
+	id S1754647Ab3HELSj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 07:18:39 -0400
+Received: from mail-we0-f177.google.com ([74.125.82.177]:59050 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754374Ab3HELSg convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 07:18:36 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1375582645-29274-2-git-send-email-kirill.shutemov@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130802162850.GL32474@in.waw.pl>
+References: <CALCETrU+C+sO8tJ0X5G4RDVLV=kHQQHurOnEQCoqbAouh60dng@mail.gmail.com>
+ <20130802162850.GL32474@in.waw.pl>
+From: Kay Sievers <kay@vrfy.org>
+Date: Mon, 5 Aug 2013 13:18:15 +0200
+Message-ID: <CAPXgP13_WRX-asL=MwCM9ERDDMq_7PLkXLr9hwTG-xCg7cm6_A@mail.gmail.com>
+Subject: Re: [systemd-devel] Slow firmware timeouts again (Re: [3.11
+ regression?] iwlwifi firmware takes two minutes to load)
+To: =?UTF-8?Q?Zbigniew_J=C4=99drzejewski=2DSzmek?= <zbyszek@in.waw.pl>
+Cc: Andy Lutomirski <luto@amacapital.net>, systemd-devel@lists.freedesktop.org,
+        Linux Wireless List <linux-wireless@vger.kernel.org>,
+        linux-hotplug@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Intel Linux Wireless <ilw@linux.intel.com>,
+        Johannes Berg <johannes@sipsolutions.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun 04-08-13 05:17:03, Kirill A. Shutemov wrote:
-> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-> 
-> The radix tree is variable-height, so an insert operation not only has
-> to build the branch to its corresponding item, it also has to build the
-> branch to existing items if the size has to be increased (by
-> radix_tree_extend).
-> 
-> The worst case is a zero height tree with just a single item at index 0,
-> and then inserting an item at index ULONG_MAX. This requires 2 new branches
-> of RADIX_TREE_MAX_PATH size to be created, with only the root node shared.
-> 
-> Radix tree is usually protected by spin lock. It means we want to
-> pre-allocate required memory before taking the lock.
-> 
-> Currently radix_tree_preload() only guarantees enough nodes to insert
-> one element. It's a hard limit. For transparent huge page cache we want
-> to insert HPAGE_PMD_NR (512 on x86-64) entries to address_space at once.
-> 
-> This patch introduces radix_tree_preload_count(). It allows to
-> preallocate nodes enough to insert a number of *contiguous* elements.
-> The feature costs about 5KiB per-CPU, details below.
-> 
-> Worst case for adding N contiguous items is adding entries at indexes
-> (ULONG_MAX - N) to ULONG_MAX. It requires nodes to insert single worst-case
-> item plus extra nodes if you cross the boundary from one node to the next.
-> 
-> Preload uses per-CPU array to store nodes. The total cost of preload is
-> "array size" * sizeof(void*) * NR_CPUS. We want to increase array size
-> to be able to handle 512 entries at once.
-> 
-> Size of array depends on system bitness and on RADIX_TREE_MAP_SHIFT.
-> 
-> We have three possible RADIX_TREE_MAP_SHIFT:
-> 
->  #ifdef __KERNEL__
->  #define RADIX_TREE_MAP_SHIFT	(CONFIG_BASE_SMALL ? 4 : 6)
->  #else
->  #define RADIX_TREE_MAP_SHIFT	3	/* For more stressful testing */
->  #endif
-> 
-> On 64-bit system:
-> For RADIX_TREE_MAP_SHIFT=3, old array size is 43, new is 107.
-> For RADIX_TREE_MAP_SHIFT=4, old array size is 31, new is 63.
-> For RADIX_TREE_MAP_SHIFT=6, old array size is 21, new is 30.
-> 
-> On 32-bit system:
-> For RADIX_TREE_MAP_SHIFT=3, old array size is 21, new is 84.
-> For RADIX_TREE_MAP_SHIFT=4, old array size is 15, new is 46.
-> For RADIX_TREE_MAP_SHIFT=6, old array size is 11, new is 19.
-> 
-> On most machines we will have RADIX_TREE_MAP_SHIFT=6. In this case,
-> on 64-bit system the per-CPU feature overhead is
->  for preload array:
->    (30 - 21) * sizeof(void*) = 72 bytes
->  plus, if the preload array is full
->    (30 - 21) * sizeof(struct radix_tree_node) = 9 * 560 = 5040 bytes
->  total: 5112 bytes
-> 
-> on 32-bit system the per-CPU feature overhead is
->  for preload array:
->    (19 - 11) * sizeof(void*) = 32 bytes
->  plus, if the preload array is full
->    (19 - 11) * sizeof(struct radix_tree_node) = 8 * 296 = 2368 bytes
->  total: 2400 bytes
-> 
-> Since only THP uses batched preload at the moment, we disable (set max
-> preload to 1) it if !CONFIG_TRANSPARENT_HUGEPAGE_PAGECACHE. This can be
-> changed in the future.
-> 
-> Signed-off-by: Matthew Wilcox <willy@linux.intel.com>
-> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> Acked-by: Dave Hansen <dave.hansen@linux.intel.com>
-> ---
->  include/linux/radix-tree.h | 11 +++++++++++
->  lib/radix-tree.c           | 41 ++++++++++++++++++++++++++++++++---------
->  2 files changed, 43 insertions(+), 9 deletions(-)
-...
-> diff --git a/lib/radix-tree.c b/lib/radix-tree.c
-> index 7811ed3..99ab73c 100644
-> --- a/lib/radix-tree.c
-> +++ b/lib/radix-tree.c
-> @@ -82,16 +82,24 @@ static struct kmem_cache *radix_tree_node_cachep;
->   * The worst case is a zero height tree with just a single item at index 0,
->   * and then inserting an item at index ULONG_MAX. This requires 2 new branches
->   * of RADIX_TREE_MAX_PATH size to be created, with only the root node shared.
-> + *
-> + * Worst case for adding N contiguous items is adding entries at indexes
-> + * (ULONG_MAX - N) to ULONG_MAX. It requires nodes to insert single worst-case
-> + * item plus extra nodes if you cross the boundary from one node to the next.
-> + *
->   * Hence:
->   */
-> -#define RADIX_TREE_PRELOAD_SIZE (RADIX_TREE_MAX_PATH * 2 - 1)
-> +#define RADIX_TREE_PRELOAD_MIN (RADIX_TREE_MAX_PATH * 2 - 1)
-> +#define RADIX_TREE_PRELOAD_MAX \
-> +	(RADIX_TREE_PRELOAD_MIN + \
-> +	 DIV_ROUND_UP(RADIX_TREE_PRELOAD_NR - 1, RADIX_TREE_MAP_SIZE))
-  Umm, is this really correct? I see two problems:
-1) You may need internal tree nodes at various levels but you seem to
-account only for the level 1.
-2) The rounding doesn't seem right because RADIX_TREE_MAP_SIZE+2 nodes may
-require 3 nodes at level 1 if the indexes are like:
-i_0 | i_1 .. i_{RADIX_TREE_MAP_SIZE} | i_{RADIX_TREE_MAP_SIZE+1}
-    ^                                ^
-    node boundary                    node boundary
+On Fri, Aug 2, 2013 at 6:28 PM, Zbigniew Jędrzejewski-Szmek
+<zbyszek@in.waw.pl> wrote:
+> On Fri, Aug 02, 2013 at 09:04:44AM -0700, Andy Lutomirski wrote:
+>> CONFIG_FW_LOADER_USER_HELPER=y
+> Do you need this? Unsetting this should help.
+>
+> """This option enables / disables the invocation of user-helper
+> (e.g. udev) for loading firmware files as a fallback after the
+> direct file loading in kernel fails. The user-mode helper is
+> no longer required unless you have a special firmware file that
+> resides in a non-standard path."""
 
-  Otherwise the patch looks good.
+On recent systems, if the kernel configures
+CONFIG_FW_LOADER_USER_HELPER=y and a firmware is not found by the
+kernel, the kernel will issue a request which is ignored by userspace
+and will block in that for 60 seconds.
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Udev is no longer in the game of firmware loading, not even as a
+fallback, it will just completely ignore all kernel firmware class
+events.
+
+The source code in udev to handle firmware requests is disabled by
+default, currently still kept around for old kernels without the
+in-kernel firmware loader, but it will be deleted in the near future.
+
+Any issues with firmware timeouts should be addressed in the kernel by
+disabling CONFIG_FW_LOADER_USER_HELPER or by removing the fallback
+code from the in-kernel loader.
+
+Kay
