@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755522Ab3HEWHq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 18:07:46 -0400
-Received: from mga09.intel.com ([134.134.136.24]:48791 "EHLO mga09.intel.com"
+	id S1755472Ab3HEWHo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 18:07:44 -0400
+Received: from mga02.intel.com ([134.134.136.20]:64992 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755029Ab3HEWDA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755041Ab3HEWDA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 5 Aug 2013 18:03:00 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.89,821,1367996400"; 
-   d="scan'208";a="357994047"
+   d="scan'208";a="382341520"
 From: Andi Kleen <andi@firstfloor.org>
 To: x86@kernel.org
 Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 03/16] x86, asmlinkage: Make all interrupt handlers asmlinkage / __visible
-Date: Mon,  5 Aug 2013 15:02:37 -0700
-Message-Id: <1375740170-7446-4-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 14/16] x86, asmlinkage: Make dump_stack visible
+Date: Mon,  5 Aug 2013 15:02:48 -0700
+Message-Id: <1375740170-7446-15-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1375740170-7446-1-git-send-email-andi@firstfloor.org>
 References: <1375740170-7446-1-git-send-email-andi@firstfloor.org>
@@ -24,353 +24,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-These handlers are all referenced from assembler stubs, so need
-to be visible.
-
-The handlers without arguments become asmlinkage, the others __visible
-to not force regparms(0) on x86-32.
-
-I put it all into a single patch, please let me know if you want
-it it split up.
+dump_stack is used from assembler code, so make it visible.
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/include/asm/hw_irq.h | 120 ++++++++++++++++++++----------------------
- arch/x86/include/asm/irq.h    |   2 +-
- arch/x86/kernel/apic/apic.c   |  12 ++---
- arch/x86/kernel/irq.c         |   8 +--
- arch/x86/kernel/irq_work.c    |   4 +-
- arch/x86/kernel/smp.c         |  12 ++---
- 6 files changed, 77 insertions(+), 81 deletions(-)
+ include/linux/printk.h | 2 +-
+ lib/dump_stack.c       | 4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/include/asm/hw_irq.h b/arch/x86/include/asm/hw_irq.h
-index e4ac559..92b3bae 100644
---- a/arch/x86/include/asm/hw_irq.h
-+++ b/arch/x86/include/asm/hw_irq.h
-@@ -26,56 +26,56 @@
- #include <asm/sections.h>
- 
- /* Interrupt handlers registered during init_IRQ */
--extern void apic_timer_interrupt(void);
--extern void x86_platform_ipi(void);
--extern void kvm_posted_intr_ipi(void);
--extern void error_interrupt(void);
--extern void irq_work_interrupt(void);
--
--extern void spurious_interrupt(void);
--extern void thermal_interrupt(void);
--extern void reschedule_interrupt(void);
--
--extern void invalidate_interrupt(void);
--extern void invalidate_interrupt0(void);
--extern void invalidate_interrupt1(void);
--extern void invalidate_interrupt2(void);
--extern void invalidate_interrupt3(void);
--extern void invalidate_interrupt4(void);
--extern void invalidate_interrupt5(void);
--extern void invalidate_interrupt6(void);
--extern void invalidate_interrupt7(void);
--extern void invalidate_interrupt8(void);
--extern void invalidate_interrupt9(void);
--extern void invalidate_interrupt10(void);
--extern void invalidate_interrupt11(void);
--extern void invalidate_interrupt12(void);
--extern void invalidate_interrupt13(void);
--extern void invalidate_interrupt14(void);
--extern void invalidate_interrupt15(void);
--extern void invalidate_interrupt16(void);
--extern void invalidate_interrupt17(void);
--extern void invalidate_interrupt18(void);
--extern void invalidate_interrupt19(void);
--extern void invalidate_interrupt20(void);
--extern void invalidate_interrupt21(void);
--extern void invalidate_interrupt22(void);
--extern void invalidate_interrupt23(void);
--extern void invalidate_interrupt24(void);
--extern void invalidate_interrupt25(void);
--extern void invalidate_interrupt26(void);
--extern void invalidate_interrupt27(void);
--extern void invalidate_interrupt28(void);
--extern void invalidate_interrupt29(void);
--extern void invalidate_interrupt30(void);
--extern void invalidate_interrupt31(void);
--
--extern void irq_move_cleanup_interrupt(void);
--extern void reboot_interrupt(void);
--extern void threshold_interrupt(void);
--
--extern void call_function_interrupt(void);
--extern void call_function_single_interrupt(void);
-+extern asmlinkage void apic_timer_interrupt(void);
-+extern asmlinkage void x86_platform_ipi(void);
-+extern asmlinkage void kvm_posted_intr_ipi(void);
-+extern asmlinkage void error_interrupt(void);
-+extern asmlinkage void irq_work_interrupt(void);
-+
-+extern asmlinkage void spurious_interrupt(void);
-+extern asmlinkage void thermal_interrupt(void);
-+extern asmlinkage void reschedule_interrupt(void);
-+
-+extern asmlinkage void invalidate_interrupt(void);
-+extern asmlinkage void invalidate_interrupt0(void);
-+extern asmlinkage void invalidate_interrupt1(void);
-+extern asmlinkage void invalidate_interrupt2(void);
-+extern asmlinkage void invalidate_interrupt3(void);
-+extern asmlinkage void invalidate_interrupt4(void);
-+extern asmlinkage void invalidate_interrupt5(void);
-+extern asmlinkage void invalidate_interrupt6(void);
-+extern asmlinkage void invalidate_interrupt7(void);
-+extern asmlinkage void invalidate_interrupt8(void);
-+extern asmlinkage void invalidate_interrupt9(void);
-+extern asmlinkage void invalidate_interrupt10(void);
-+extern asmlinkage void invalidate_interrupt11(void);
-+extern asmlinkage void invalidate_interrupt12(void);
-+extern asmlinkage void invalidate_interrupt13(void);
-+extern asmlinkage void invalidate_interrupt14(void);
-+extern asmlinkage void invalidate_interrupt15(void);
-+extern asmlinkage void invalidate_interrupt16(void);
-+extern asmlinkage void invalidate_interrupt17(void);
-+extern asmlinkage void invalidate_interrupt18(void);
-+extern asmlinkage void invalidate_interrupt19(void);
-+extern asmlinkage void invalidate_interrupt20(void);
-+extern asmlinkage void invalidate_interrupt21(void);
-+extern asmlinkage void invalidate_interrupt22(void);
-+extern asmlinkage void invalidate_interrupt23(void);
-+extern asmlinkage void invalidate_interrupt24(void);
-+extern asmlinkage void invalidate_interrupt25(void);
-+extern asmlinkage void invalidate_interrupt26(void);
-+extern asmlinkage void invalidate_interrupt27(void);
-+extern asmlinkage void invalidate_interrupt28(void);
-+extern asmlinkage void invalidate_interrupt29(void);
-+extern asmlinkage void invalidate_interrupt30(void);
-+extern asmlinkage void invalidate_interrupt31(void);
-+
-+extern asmlinkage void irq_move_cleanup_interrupt(void);
-+extern asmlinkage void reboot_interrupt(void);
-+extern asmlinkage void threshold_interrupt(void);
-+
-+extern asmlinkage void call_function_interrupt(void);
-+extern asmlinkage void call_function_single_interrupt(void);
- 
- #ifdef CONFIG_TRACING
- /* Interrupt handlers registered during init_IRQ */
-@@ -172,22 +172,18 @@ extern atomic_t irq_mis_count;
- extern void eisa_set_level_irq(unsigned int irq);
- 
- /* SMP */
--extern void smp_apic_timer_interrupt(struct pt_regs *);
--extern void smp_spurious_interrupt(struct pt_regs *);
--extern void smp_x86_platform_ipi(struct pt_regs *);
--extern void smp_error_interrupt(struct pt_regs *);
-+extern __visible void smp_apic_timer_interrupt(struct pt_regs *);
-+extern __visible void smp_spurious_interrupt(struct pt_regs *);
-+extern __visible void smp_x86_platform_ipi(struct pt_regs *);
-+extern __visible void smp_error_interrupt(struct pt_regs *);
- #ifdef CONFIG_X86_IO_APIC
- extern asmlinkage void smp_irq_move_cleanup_interrupt(void);
+diff --git a/include/linux/printk.h b/include/linux/printk.h
+index 22c7052..e6131a78 100644
+--- a/include/linux/printk.h
++++ b/include/linux/printk.h
+@@ -200,7 +200,7 @@ static inline void show_regs_print_info(const char *log_lvl)
+ }
  #endif
+ 
+-extern void dump_stack(void) __cold;
++extern asmlinkage void dump_stack(void) __cold;
+ 
+ #ifndef pr_fmt
+ #define pr_fmt(fmt) fmt
+diff --git a/lib/dump_stack.c b/lib/dump_stack.c
+index c031541..f23b63f 100644
+--- a/lib/dump_stack.c
++++ b/lib/dump_stack.c
+@@ -23,7 +23,7 @@ static void __dump_stack(void)
  #ifdef CONFIG_SMP
--extern void smp_reschedule_interrupt(struct pt_regs *);
--extern void smp_call_function_interrupt(struct pt_regs *);
--extern void smp_call_function_single_interrupt(struct pt_regs *);
--#ifdef CONFIG_X86_32
--extern void smp_invalidate_interrupt(struct pt_regs *);
--#else
--extern asmlinkage void smp_invalidate_interrupt(struct pt_regs *);
--#endif
-+extern __visible void smp_reschedule_interrupt(struct pt_regs *);
-+extern __visible void smp_call_function_interrupt(struct pt_regs *);
-+extern __visible void smp_call_function_single_interrupt(struct pt_regs *);
-+extern __visible void smp_invalidate_interrupt(struct pt_regs *);
- #endif
+ static atomic_t dump_lock = ATOMIC_INIT(-1);
  
- extern void (*__initconst interrupt[NR_VECTORS-FIRST_EXTERNAL_VECTOR])(void);
-diff --git a/arch/x86/include/asm/irq.h b/arch/x86/include/asm/irq.h
-index 57873be..0ea10f27 100644
---- a/arch/x86/include/asm/irq.h
-+++ b/arch/x86/include/asm/irq.h
-@@ -33,7 +33,7 @@ extern void (*x86_platform_ipi_callback)(void);
- extern void native_init_IRQ(void);
- extern bool handle_irq(unsigned irq, struct pt_regs *regs);
- 
--extern unsigned int do_IRQ(struct pt_regs *regs);
-+extern __visible unsigned int do_IRQ(struct pt_regs *regs);
- 
- /* Interrupt vector management */
- extern DECLARE_BITMAP(used_vectors, NR_VECTORS);
-diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-index eca89c5..a7eb82d 100644
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -913,7 +913,7 @@ static void local_apic_timer_interrupt(void)
-  * [ if a single-CPU system runs an SMP kernel then we call the local
-  *   interrupt as well. Thus we cannot inline the local irq ... ]
-  */
--void __irq_entry smp_apic_timer_interrupt(struct pt_regs *regs)
-+__visible void __irq_entry smp_apic_timer_interrupt(struct pt_regs *regs)
+-void dump_stack(void)
++asmlinkage void dump_stack(void)
  {
- 	struct pt_regs *old_regs = set_irq_regs(regs);
- 
-@@ -932,7 +932,7 @@ void __irq_entry smp_apic_timer_interrupt(struct pt_regs *regs)
- 	set_irq_regs(old_regs);
+ 	int was_locked;
+ 	int old;
+@@ -55,7 +55,7 @@ retry:
+ 	preempt_enable();
  }
- 
--void __irq_entry smp_trace_apic_timer_interrupt(struct pt_regs *regs)
-+__visible void __irq_entry smp_trace_apic_timer_interrupt(struct pt_regs *regs)
+ #else
+-void dump_stack(void)
++asmlinkage void dump_stack(void)
  {
- 	struct pt_regs *old_regs = set_irq_regs(regs);
- 
-@@ -1946,14 +1946,14 @@ static inline void __smp_spurious_interrupt(void)
- 		"should never happen.\n", smp_processor_id());
+ 	__dump_stack();
  }
- 
--void smp_spurious_interrupt(struct pt_regs *regs)
-+__visible void smp_spurious_interrupt(struct pt_regs *regs)
- {
- 	entering_irq();
- 	__smp_spurious_interrupt();
- 	exiting_irq();
- }
- 
--void smp_trace_spurious_interrupt(struct pt_regs *regs)
-+__visible void smp_trace_spurious_interrupt(struct pt_regs *regs)
- {
- 	entering_irq();
- 	trace_spurious_apic_entry(SPURIOUS_APIC_VECTOR);
-@@ -2002,14 +2002,14 @@ static inline void __smp_error_interrupt(struct pt_regs *regs)
- 
- }
- 
--void smp_error_interrupt(struct pt_regs *regs)
-+__visible void smp_error_interrupt(struct pt_regs *regs)
- {
- 	entering_irq();
- 	__smp_error_interrupt(regs);
- 	exiting_irq();
- }
- 
--void smp_trace_error_interrupt(struct pt_regs *regs)
-+__visible void smp_trace_error_interrupt(struct pt_regs *regs)
- {
- 	entering_irq();
- 	trace_error_apic_entry(ERROR_APIC_VECTOR);
-diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
-index 3a8185c..22d0687 100644
---- a/arch/x86/kernel/irq.c
-+++ b/arch/x86/kernel/irq.c
-@@ -177,7 +177,7 @@ u64 arch_irq_stat(void)
-  * SMP cross-CPU interrupts have their own specific
-  * handlers).
-  */
--unsigned int __irq_entry do_IRQ(struct pt_regs *regs)
-+__visible unsigned int __irq_entry do_IRQ(struct pt_regs *regs)
- {
- 	struct pt_regs *old_regs = set_irq_regs(regs);
- 
-@@ -215,7 +215,7 @@ void __smp_x86_platform_ipi(void)
- 		x86_platform_ipi_callback();
- }
- 
--void smp_x86_platform_ipi(struct pt_regs *regs)
-+__visible void smp_x86_platform_ipi(struct pt_regs *regs)
- {
- 	struct pt_regs *old_regs = set_irq_regs(regs);
- 
-@@ -229,7 +229,7 @@ void smp_x86_platform_ipi(struct pt_regs *regs)
- /*
-  * Handler for POSTED_INTERRUPT_VECTOR.
-  */
--void smp_kvm_posted_intr_ipi(struct pt_regs *regs)
-+__visible void smp_kvm_posted_intr_ipi(struct pt_regs *regs)
- {
- 	struct pt_regs *old_regs = set_irq_regs(regs);
- 
-@@ -247,7 +247,7 @@ void smp_kvm_posted_intr_ipi(struct pt_regs *regs)
- }
- #endif
- 
--void smp_trace_x86_platform_ipi(struct pt_regs *regs)
-+__visible void smp_trace_x86_platform_ipi(struct pt_regs *regs)
- {
- 	struct pt_regs *old_regs = set_irq_regs(regs);
- 
-diff --git a/arch/x86/kernel/irq_work.c b/arch/x86/kernel/irq_work.c
-index 636a55e..1de84e3 100644
---- a/arch/x86/kernel/irq_work.c
-+++ b/arch/x86/kernel/irq_work.c
-@@ -22,14 +22,14 @@ static inline void __smp_irq_work_interrupt(void)
- 	irq_work_run();
- }
- 
--void smp_irq_work_interrupt(struct pt_regs *regs)
-+__visible void smp_irq_work_interrupt(struct pt_regs *regs)
- {
- 	irq_work_entering_irq();
- 	__smp_irq_work_interrupt();
- 	exiting_irq();
- }
- 
--void smp_trace_irq_work_interrupt(struct pt_regs *regs)
-+__visible void smp_trace_irq_work_interrupt(struct pt_regs *regs)
- {
- 	irq_work_entering_irq();
- 	trace_irq_work_entry(IRQ_WORK_VECTOR);
-diff --git a/arch/x86/kernel/smp.c b/arch/x86/kernel/smp.c
-index cdaa347..7c3a5a6 100644
---- a/arch/x86/kernel/smp.c
-+++ b/arch/x86/kernel/smp.c
-@@ -256,7 +256,7 @@ static inline void __smp_reschedule_interrupt(void)
- 	scheduler_ipi();
- }
- 
--void smp_reschedule_interrupt(struct pt_regs *regs)
-+__visible void smp_reschedule_interrupt(struct pt_regs *regs)
- {
- 	ack_APIC_irq();
- 	__smp_reschedule_interrupt();
-@@ -271,7 +271,7 @@ static inline void smp_entering_irq(void)
- 	irq_enter();
- }
- 
--void smp_trace_reschedule_interrupt(struct pt_regs *regs)
-+__visible void smp_trace_reschedule_interrupt(struct pt_regs *regs)
- {
- 	/*
- 	 * Need to call irq_enter() before calling the trace point.
-@@ -295,14 +295,14 @@ static inline void __smp_call_function_interrupt(void)
- 	inc_irq_stat(irq_call_count);
- }
- 
--void smp_call_function_interrupt(struct pt_regs *regs)
-+__visible void smp_call_function_interrupt(struct pt_regs *regs)
- {
- 	smp_entering_irq();
- 	__smp_call_function_interrupt();
- 	exiting_irq();
- }
- 
--void smp_trace_call_function_interrupt(struct pt_regs *regs)
-+__visible void smp_trace_call_function_interrupt(struct pt_regs *regs)
- {
- 	smp_entering_irq();
- 	trace_call_function_entry(CALL_FUNCTION_VECTOR);
-@@ -317,14 +317,14 @@ static inline void __smp_call_function_single_interrupt(void)
- 	inc_irq_stat(irq_call_count);
- }
- 
--void smp_call_function_single_interrupt(struct pt_regs *regs)
-+__visible void smp_call_function_single_interrupt(struct pt_regs *regs)
- {
- 	smp_entering_irq();
- 	__smp_call_function_single_interrupt();
- 	exiting_irq();
- }
- 
--void smp_trace_call_function_single_interrupt(struct pt_regs *regs)
-+__visible void smp_trace_call_function_single_interrupt(struct pt_regs *regs)
- {
- 	smp_entering_irq();
- 	trace_call_function_single_entry(CALL_FUNCTION_SINGLE_VECTOR);
 -- 
 1.8.3.1
 
