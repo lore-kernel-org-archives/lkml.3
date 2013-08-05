@@ -1,116 +1,286 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752709Ab3HENDE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 09:03:04 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:51253 "EHLO mail.skyhub.de"
+	id S1752834Ab3HENDr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 09:03:47 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:56498 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751788Ab3HENDB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 09:03:01 -0400
-Date: Mon, 5 Aug 2013 15:02:59 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Laszlo Ersek <lersek@redhat.com>
-Cc: edk2-devel@lists.sourceforge.net, David Woodhouse <dwmw2@infradead.org>,
-        linux-efi@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
-        Gleb Natapov <gleb@redhat.com>, Matthew Garrett <mjg59@srcf.ucam.org>
-Subject: Re: [edk2] Corrupted EFI region
-Message-ID: <20130805130258.GB31845@pd.tnic>
-References: <20130731205431.GG4724@pd.tnic>
- <1375307727.22084.103.camel@shinybook.infradead.org>
- <20130801164927.GA7445@pd.tnic>
- <51FF8C14.2070405@redhat.com>
+	id S1752438Ab3HENDp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 09:03:45 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: Toshi Kani <toshi.kani@hp.com>, rafael.j.wysocki@intel.com,
+        vasilis.liaskovitis@profitbricks.com, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, tangchen@cn.fujitsu.com,
+        wency@cn.fujitsu.com
+Subject: Re: Cannot hot remove a memory device (patch)
+Date: Mon, 05 Aug 2013 15:14 +0200
+Message-ID: <1456797.BR6oLAipWK@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.11.0-rc4+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <51FF5B58.7050701@jp.fujitsu.com>
+References: <51FA1E41.20304@jp.fujitsu.com> <51FF2368.9060206@jp.fujitsu.com> <51FF5B58.7050701@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <51FF8C14.2070405@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 05, 2013 at 01:27:16PM +0200, Laszlo Ersek wrote:
-> > --- before      2013-07-31 22:20:52.316039492 +0200
-> > +++ after       2013-07-31 22:21:30.960731706 +0200
-> > @@ -9,7 +9,7 @@ efi: mem07: type=2, attr=0xf, range=[0x0
-> >  efi: mem08: type=7, attr=0xf, range=[0x0000000040000000-0x000000007c000000) (960MB)
-> >  efi: mem09: type=4, attr=0xf, range=[0x000000007c000000-0x000000007c020000) (0MB)
-> >  efi: mem10: type=7, attr=0xf, range=[0x000000007c020000-0x000000007e0ad000) (32MB)
-> > -efi: mem11: type=4, attr=0xf, range=[0x000000007e0ad000-0x000000007e0cc000) (0MB)
-> > +efi: mem11: type=4, attr=0xf, range=[0x000000007e0ad000-0x000000007e0ad000) (0MB)
+On Monday, August 05, 2013 04:59:20 PM Yasuaki Ishimatsu wrote:
+> (2013/08/05 13:00), Yasuaki Ishimatsu wrote:
+> > (2013/08/04 9:37), Toshi Kani wrote:
+> >> On Sat, 2013-08-03 at 03:01 +0200, Rafael J. Wysocki wrote:
+> >>> On Friday, August 02, 2013 06:04:40 PM Toshi Kani wrote:
+> >>>> On Sat, 2013-08-03 at 01:43 +0200, Rafael J. Wysocki wrote:
+> >>>>> On Friday, August 02, 2013 03:46:15 PM Toshi Kani wrote:
+> >>>>>> On Thu, 2013-08-01 at 23:43 +0200, Rafael J. Wysocki wrote:
+> >>>>>>> Hi,
+> >>>>>>>
+> >>>>>>> Thanks for your report.
+> >>>>>>>
+> >>>>>>> On Thursday, August 01, 2013 05:37:21 PM Yasuaki Ishimatsu wrote:
+> >>>>>>>> By following commit, I cannot hot remove a memory device.
+> >>>>>>>>
+> >>>>>>>> ACPI / memhotplug: Bind removable memory blocks to ACPI device nodes
+> >>>>>>>> commit e2ff39400d81233374e780b133496a2296643d7d
+> >>>>>>>>
+> >>>>>>>> Details are follows:
+> >>>>>>>> When I add a memory device, acpi_memory_enable_device() always fails
+> >>>>>>>> as follows:
+> >>>>>>>>
+> >>>>>>>> ...
+> >>>>>>>> [ 1271.114116]  [ffffea121c400000-ffffea121c7fffff] PMD -> [ffff880813c00000-ffff880813ffffff] on node 3
+> >>>>>>>> [ 1271.128682]  [ffffea121c800000-ffffea121cbfffff] PMD -> [ffff880813800000-ffff880813bfffff] on node 3
+> >>>>>>>> [ 1271.143298]  [ffffea121cc00000-ffffea121cffffff] PMD -> [ffff880813000000-ffff8808133fffff] on node 3
+> >>>>>>>> [ 1271.157799]  [ffffea121d000000-ffffea121d3fffff] PMD -> [ffff880812c00000-ffff880812ffffff] on node 3
+> >>>>>>>> [ 1271.172341]  [ffffea121d400000-ffffea121d7fffff] PMD -> [ffff880812800000-ffff880812bfffff] on node 3
+> >>>>>>>> [ 1271.186872]  [ffffea121d800000-ffffea121dbfffff] PMD -> [ffff880812400000-ffff8808127fffff] on node 3
+> >>>>>>>> [ 1271.201481]  [ffffea121dc00000-ffffea121dffffff] PMD -> [ffff880812000000-ffff8808123fffff] on node 3
+> >>>>>>>> [ 1271.216041]  [ffffea121e000000-ffffea121e3fffff] PMD -> [ffff880811c00000-ffff880811ffffff] on node 3
+> >>>>>>>> [ 1271.230623]  [ffffea121e400000-ffffea121e7fffff] PMD -> [ffff880811800000-ffff880811bfffff] on node 3
+> >>>>>>>> [ 1271.245148]  [ffffea121e800000-ffffea121ebfffff] PMD -> [ffff880811400000-ffff8808117fffff] on node 3
+> >>>>>>>> [ 1271.259683]  [ffffea121ec00000-ffffea121effffff] PMD -> [ffff880811000000-ffff8808113fffff] on node 3
+> >>>>>>>> [ 1271.274194]  [ffffea121f000000-ffffea121f3fffff] PMD -> [ffff880810c00000-ffff880810ffffff] on node 3
+> >>>>>>>> [ 1271.288764]  [ffffea121f400000-ffffea121f7fffff] PMD -> [ffff880810800000-ffff880810bfffff] on node 3
+> >>>>>>
+> >>>>>> It appears that each memory object only has 64MB of memory.  This is
+> >>>>>> less than the memory block size, which is 128MB.  This means that a
+> >>>>>> single memory block associates with two ACPI memory device objects.
+> >>>>>
+> >>>>> That'd be bad.
+> >>>>>
+> >>>>> How did that work before if that indeed is the case?
+> >>>>
+> >>>> Well, it looks to me that it has never worked before...
+> >>>>
+> >>>>>>>> ...
+> >>>>>>>> [ 1271.325841] acpi PNP0C80:03: acpi_memory_enable_device() error
+> >>>>>>>
+> >>>>>>> Well, the only new way acpi_memory_enable_device() can fail after that commit
+> >>>>>>> is a failure in acpi_bind_memory_blocks().
+> >>>>>>
+> >>>>>> Agreed.
+> >>>>>>
+> >>>>>>> This means that either handle is NULL, which I think we can exclude, because
+> >>>>>>> acpi_memory_enable_device() wouldn't be called at all if that were the case, or
+> >>>>>>> there's a more subtle error in acpi_bind_one().
+> >>>>>>>
+> >>>>>>> One that comes to mind is that we may be calling acpi_bind_one() twice for the
+> >>>>>>> same memory region, in which it will trigger -EINVAL from the sanity check in
+> >>>>>>> there.
+> >>>>>>
+> >>>>>> I think it fails with -EINVAL at the place with dev_warn(dev, "ACPI
+> >>>>>> handle is already set\n").  When two ACPI memory objects associate with
+> >>>>>> a same memory block, the bind procedure of the 2nd ACPI memory object
+> >>>>>> sees that ACPI_HANDLE(dev) is already set to the 1st ACPI memory object.
+> >>>>>
+> >>>>> That sound's plausible, but I wonder how we can fix that?
+> >>>>>
+> >>>>> There's no way for a single physical device to have two different ACPI
+> >>>>> "companions".  It looks like the memory blocks should be 64 M each in that
+> >>>>> case.  Or we need to create two child devices for each memory block and
+> >>>>> associate each of them with an ACPI object.  That would lead to complications
+> >>>>> in the user space interface, though.
+> >>>>
+> >>>> Right.  Even bigger issue is that I do not think __add_pages() and
+> >>>> __remove_pages() can add / delete a memory chunk that is less than
+> >>>> 128MB.  128MB is the granularity of them.  So, we may just have to fail
+> >>>> this case gracefully.
+> >>>
+> >>> Sigh.
+> >>>
+> >>> BTW, why do you think they are 64 M each (it's late and I'm obviously tired)?
+> >>
+> >> Oops!  Sorry, I had confused the above messages with the one in
+> >> init_memory_mapping(), which shows a memory range being added, i.e. the
+> >> size of an ACPI memory device object.  But the above messages actually
+> >> came from vmemmap_populate_hugepages(), which was called during boot-up.
+> >> So, these messages have nothing to do with ACPI memory device objects.
+> >> And even worse, I do not seem to be able to count a number of zeros...
+> >> In the above messages, each memory range is 4MB (0x400000), not 64MB
+> >> (0x4000000)...  My bad. :-(
+> >>
+> >> So, while we may still need to do something for the less-than-128MB
+> >> issue, Yasuaki may be hitting a different one.  Let's wait for Yasuaki
+> >> to give us more info.
+> >
+> > acpi_bind_memory_blocks() failed with -ENOSPC.
+> >
+> > int acpi_bind_one(struct device *dev, acpi_handle handle)
+> > {
+> > ...
+> >      /* allocate physical node id according to physical_node_id_bitmap */
+> >      physical_node->node_id =
+> >          find_first_zero_bit(acpi_dev->physical_node_id_bitmap,
+> >          ACPI_MAX_PHYSICAL_NODE);
+> >      if (physical_node->node_id >= ACPI_MAX_PHYSICAL_NODE) {
+> >          retval = -ENOSPC; => here
+> >          goto err_free;
+> >      }
+> >
+> > When adding memory device, acpi_bind_memroy_blocks() calls acpi_bind_one()
+> > "memory device size / 128MiB" times. So ACPI_MAX_PHYSICAL_NODE need to
+> > be set "memory device size / 128MiB" or more. But ACPI_MAX_PHYSICAL_NODE is 32.
+> > So acpi_bind_memory_blocks() always failed with -ENOSPC.
+> >
 > 
-> (type 4 is EfiBootServicesData)
-
-Yes.
-
-> >  efi: mem12: type=7, attr=0xf, range=[0x000000007e0cc000-0x000000007e0cd000) (0MB)
-> >  efi: mem13: type=4, attr=0xf, range=[0x000000007e0cd000-0x000000007e55d000) (4MB)
-> >  efi: mem14: type=3, attr=0xf, range=[0x000000007e55d000-0x000000007e59c000) (0MB)
-> > 
-> > That second boundary of region mem11 suddenly changes *before* we merge
-> > the regions. edk2 bug?
+> > I'll test again after increasing ACPI_MAX_PHYSICAL_NODE to enough size.
 > 
-> I take it you mean this change (ie. appearance of the zero-sized range)
-> occurs when you enable KVM acceleration in qemu?
+> Additional info:
+> When I increased ACPI_MAX_PHYSICAL_NODE to 1024 and change size of
+> acpi_device_physical_node->node_it into u32, I could hot remove memory
+> device. But even if ACPI_MAX_PHYSICAL_NODE is set to 1024, same problem
+> will occurs since it just supports 124GiB memory. So we need a way to change
+> ACPI_MAX_PHYSICAL_NODE dynamically.
 
-Right. And I'm booting with qemu -enable-kvm so KVM acceleration is
-enabled?? Or do you mean something else.
+Can you please test the appended patch?  I tested it somewhat, but since the
+greatest number of physical nodes per ACPI device object I can get on my test
+machines is 2 (and even that after hacking the kernel somewhat), that was kind
+of unconclusive.
 
-> If so, please locate "gEfiMdePkgTokenSpaceGuid.PcdDebugPrintErrorLevel"
-> in OvmfPkg/OvmfPkgX64.dsc, and set the following bit in its value:
-> 
->   # DEBUG_GCD      0x00100000 Global Coherency Database changes
-> 
-> Then please rebuild OVMF, and capture the debug port output of qemu
-> ("-debugcon file:debug.log -global isa-debugcon.iobase=0x402") both with
-> and without KVM.
-> 
-> DEBUG_GCD should produce messages related to CoreAllocateSpace(), and
-> might help us find the spot the difference is introduced.
+Thanks,
+Rafael
 
-Ok, I'll try to get this thing done before my vacation. If not, we'll
-deal with it afterwards but I won't forget, I promise! :-)
 
-> BTW does this have anything to do with the NX bit report of yours, or
-> have you noticed this independently?
+---
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Subject: ACPI: Drop physical_node_id_bitmap from struct acpi_device
 
-Independently, while testing my runtime services mapping patchset. I was
-getting an empty region and was wondering whether to discard it from the
-mapping or not and then I looked at why I get it in the first place.
+The physical_node_id_bitmap in struct acpi_device is only used for
+looking up the first currently unused phyiscal dependent node ID
+by acpi_bind_one().  It is not really necessary, however, because
+acpi_bind_one() walks the entire physical_node_list of the given
+device object for sanity checking anyway and if that list is always
+sorted by node_id, it is straightforward to find the first gap
+between the currently used node IDs and use that number as the ID
+of the new list node.
 
-Basically, I get this empty region which appears at some point. It is
-there when we enter efi_enter_virtual_mode in the kernel to setup the
-runtime mappings:
+This also removes the artificial limit of the maximum number of
+dependent physical devices per ACPI device object, which now depends
+only on the capacity of unsigend int.
 
-[    0.005012] efi: efi_enter_virtual_mode: enter
-[    0.006004] efi: mem00: type=7, attr=0xf, range=[0x0000000000000000-0x000000000009f000) (0MB)
-[    0.007004] efi: mem01: type=2, attr=0xf, range=[0x000000000009f000-0x00000000000a0000) (0MB)
-[    0.008003] efi: mem02: type=7, attr=0xf, range=[0x0000000000100000-0x0000000000800000) (7MB)
-[    0.009004] efi: mem03: type=4, attr=0xf, range=[0x0000000000800000-0x0000000001000000) (8MB)
-[    0.010004] efi: mem04: type=7, attr=0xf, range=[0x0000000001000000-0x0000000002000000) (16MB)
-[    0.011004] efi: mem05: type=2, attr=0xf, range=[0x0000000002000000-0x00000000036e3000) (22MB)
-[    0.012004] efi: mem06: type=7, attr=0xf, range=[0x00000000036e3000-0x000000003fffb000) (969MB)
-[    0.013003] efi: mem07: type=2, attr=0xf, range=[0x000000003fffb000-0x0000000040000000) (0MB)
-[    0.014004] efi: mem08: type=7, attr=0xf, range=[0x0000000040000000-0x000000007c000000) (960MB)
-[    0.015004] efi: mem09: type=4, attr=0xf, range=[0x000000007c000000-0x000000007c020000) (0MB)
-[    0.016004] efi: mem10: type=7, attr=0xf, range=[0x000000007c020000-0x000000007e0ad000) (32MB)
-[    0.017004] efi: mem11: type=4, attr=0xf, range=[0x000000007e0ad000-0x000000007e0ad000) (0MB)
-							^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ drivers/acpi/glue.c     |   31 +++++++++++++++++--------------
+ include/acpi/acpi_bus.h |    8 ++------
+ 2 files changed, 19 insertions(+), 20 deletions(-)
 
-[    0.018003] efi: mem12: type=7, attr=0xf, range=[0x000000007e0cc000-0x000000007e0cd000) (0MB)
+Index: linux-pm/drivers/acpi/glue.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/glue.c
++++ linux-pm/drivers/acpi/glue.c
+@@ -112,7 +112,9 @@ int acpi_bind_one(struct device *dev, ac
+ 	struct acpi_device *acpi_dev;
+ 	acpi_status status;
+ 	struct acpi_device_physical_node *physical_node, *pn;
+-	char physical_node_name[sizeof(PHYSICAL_NODE_STRING) + 2];
++	struct list_head *physnode_list;
++	unsigned int node_id;
++	char physical_node_name[sizeof(PHYSICAL_NODE_STRING) + 10];
+ 	int retval = -EINVAL;
+ 
+ 	if (ACPI_HANDLE(dev)) {
+@@ -139,8 +141,14 @@ int acpi_bind_one(struct device *dev, ac
+ 
+ 	mutex_lock(&acpi_dev->physical_node_lock);
+ 
+-	/* Sanity check. */
+-	list_for_each_entry(pn, &acpi_dev->physical_node_list, node)
++	/*
++	 * Keep the list sorted by node_id so that node_ids of removed nodes can be
++	 * recycled.
++	 */
++	physnode_list = &acpi_dev->physical_node_list;
++	node_id = 0;
++	list_for_each_entry(pn, &acpi_dev->physical_node_list, node) {
++		/* Sanity check. */
+ 		if (pn->dev == dev) {
+ 			dev_warn(dev, "Already associated with ACPI node\n");
+ 			if (ACPI_HANDLE(dev) == handle)
+@@ -148,19 +156,15 @@ int acpi_bind_one(struct device *dev, ac
+ 
+ 			goto out_free;
+ 		}
+-
+-	/* allocate physical node id according to physical_node_id_bitmap */
+-	physical_node->node_id =
+-		find_first_zero_bit(acpi_dev->physical_node_id_bitmap,
+-		ACPI_MAX_PHYSICAL_NODE);
+-	if (physical_node->node_id >= ACPI_MAX_PHYSICAL_NODE) {
+-		retval = -ENOSPC;
+-		goto out_free;
++		if (pn->node_id == node_id) {
++			physnode_list = &pn->node;
++			node_id++;
++		}
+ 	}
+ 
+-	set_bit(physical_node->node_id, acpi_dev->physical_node_id_bitmap);
++	physical_node->node_id = node_id;
+ 	physical_node->dev = dev;
+-	list_add_tail(&physical_node->node, &acpi_dev->physical_node_list);
++	list_add(&physical_node->node, physnode_list);
+ 	acpi_dev->physical_node_count++;
+ 
+ 	mutex_unlock(&acpi_dev->physical_node_lock);
+@@ -223,7 +227,6 @@ int acpi_unbind_one(struct device *dev)
+ 			continue;
+ 
+ 		list_del(node);
+-		clear_bit(entry->node_id, acpi_dev->physical_node_id_bitmap);
+ 
+ 		acpi_dev->physical_node_count--;
+ 
+Index: linux-pm/include/acpi/acpi_bus.h
+===================================================================
+--- linux-pm.orig/include/acpi/acpi_bus.h
++++ linux-pm/include/acpi/acpi_bus.h
+@@ -284,15 +284,12 @@ struct acpi_device_wakeup {
+ };
+ 
+ struct acpi_device_physical_node {
+-	u8 node_id;
++	unsigned int node_id;
+ 	struct list_head node;
+ 	struct device *dev;
+ 	bool put_online:1;
+ };
+ 
+-/* set maximum of physical nodes to 32 for expansibility */
+-#define ACPI_MAX_PHYSICAL_NODE	32
+-
+ /* Device */
+ struct acpi_device {
+ 	int device_type;
+@@ -312,10 +309,9 @@ struct acpi_device {
+ 	struct acpi_driver *driver;
+ 	void *driver_data;
+ 	struct device dev;
+-	u8 physical_node_count;
++	unsigned int physical_node_count;
+ 	struct list_head physical_node_list;
+ 	struct mutex physical_node_lock;
+-	DECLARE_BITMAP(physical_node_id_bitmap, ACPI_MAX_PHYSICAL_NODE);
+ 	struct list_head power_dependent;
+ 	void (*remove)(struct acpi_device *);
+ };
 
-When we dump the EFI regions initially, it is ok.
-
-[    0.000000] efi: mem10: type=7, attr=0xf, range=[0x000000007c020000-0x000000007e0ad000) (32MB)
-[    0.000000] efi: mem11: type=4, attr=0xf, range=[0x000000007e0ad000-0x000000007e0cc000) (0MB)
-[    0.000000] efi: mem12: type=7, attr=0xf, range=[0x000000007e0cc000-0x000000007e0cd000) (0MB)
-
-So what basically happens is the end boundary of the region becomes the
-start, practically turning it into a 0-size one.
-
-Thanks for looking into it.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
