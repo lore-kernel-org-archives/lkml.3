@@ -1,135 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752922Ab3HENht (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 09:37:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48108 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751860Ab3HENhs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 09:37:48 -0400
-Message-ID: <51FFAB13.4090603@redhat.com>
-Date: Mon, 05 Aug 2013 15:39:31 +0200
-From: Laszlo Ersek <lersek@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130621 Thunderbird/17.0.7
+	id S1752927Ab3HENjz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 09:39:55 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:48715 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752386Ab3HENjw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 09:39:52 -0400
+X-IronPort-AV: E=Sophos;i="4.89,818,1367942400"; 
+   d="scan'208";a="8123219"
+Message-ID: <51FFAAD1.9040405@cn.fujitsu.com>
+Date: Mon, 05 Aug 2013 21:38:25 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: edk2-devel@lists.sourceforge.net, David Woodhouse <dwmw2@infradead.org>,
-        linux-efi@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
-        Gleb Natapov <gleb@redhat.com>, Matthew Garrett <mjg59@srcf.ucam.org>
-Subject: Re: [edk2] Corrupted EFI region
-References: <20130731205431.GG4724@pd.tnic> <1375307727.22084.103.camel@shinybook.infradead.org> <20130801164927.GA7445@pd.tnic> <51FF8C14.2070405@redhat.com> <20130805130258.GB31845@pd.tnic>
-In-Reply-To: <20130805130258.GB31845@pd.tnic>
-Content-Type: text/plain; charset=UTF-8
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu,
+        akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
+        mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
+        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com, x86@kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH v2 00/18] Arrange hotpluggable memory as ZONE_MOVABLE.
+References: <1375340800-19332-1-git-send-email-tangchen@cn.fujitsu.com> <51FFA393.2080301@zytor.com>
+In-Reply-To: <51FFA393.2080301@zytor.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/05 21:38:28,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/05 21:38:30,
+	Serialize complete at 2013/08/05 21:38:30
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/05/13 15:02, Borislav Petkov wrote:
-> On Mon, Aug 05, 2013 at 01:27:16PM +0200, Laszlo Ersek wrote:
->>> --- before      2013-07-31 22:20:52.316039492 +0200
->>> +++ after       2013-07-31 22:21:30.960731706 +0200
->>> @@ -9,7 +9,7 @@ efi: mem07: type=2, attr=0xf, range=[0x0
->>>  efi: mem08: type=7, attr=0xf, range=[0x0000000040000000-0x000000007c000000) (960MB)
->>>  efi: mem09: type=4, attr=0xf, range=[0x000000007c000000-0x000000007c020000) (0MB)
->>>  efi: mem10: type=7, attr=0xf, range=[0x000000007c020000-0x000000007e0ad000) (32MB)
->>> -efi: mem11: type=4, attr=0xf, range=[0x000000007e0ad000-0x000000007e0cc000) (0MB)
->>> +efi: mem11: type=4, attr=0xf, range=[0x000000007e0ad000-0x000000007e0ad000) (0MB)
+
+Hi hpa,
+
+I'm sorry but I don't quite following it.
+
+On 08/05/2013 09:07 PM, H. Peter Anvin wrote:
+> On 08/01/2013 12:06 AM, Tang Chen wrote:
+>> This patch-set aims to solve some problems at system boot time
+>> to enhance memory hotplug functionality.
 >>
->> (type 4 is EfiBootServicesData)
-> 
-> Yes.
-> 
->>>  efi: mem12: type=7, attr=0xf, range=[0x000000007e0cc000-0x000000007e0cd000) (0MB)
->>>  efi: mem13: type=4, attr=0xf, range=[0x000000007e0cd000-0x000000007e55d000) (4MB)
->>>  efi: mem14: type=3, attr=0xf, range=[0x000000007e55d000-0x000000007e59c000) (0MB)
->>>
->>> That second boundary of region mem11 suddenly changes *before* we merge
->>> the regions. edk2 bug?
+>> [Background]
 >>
->> I take it you mean this change (ie. appearance of the zero-sized range)
->> occurs when you enable KVM acceleration in qemu?
-> 
-> Right. And I'm booting with qemu -enable-kvm so KVM acceleration is
-> enabled?? Or do you mean something else.
-
-My question was: is my understanding correct that you only see this
-problem with "-enable-kvm"? Because,
-
-On 08/01/13 18:49, Borislav Petkov wrote:
-> so I'm seeing this funny thing where an EFI region changes when we
-> enter efi_enter_virtual_mode when booting with edk2 on kvm. Here's
-> the diff:
-
-You said "on kvm", and provided a diff. I think (hope) I understand the
-environment you've denoted with "after", but what's your "before"? The
-absence of "-enable-kvm", or something else?
-
-> 
->> If so, please locate "gEfiMdePkgTokenSpaceGuid.PcdDebugPrintErrorLevel"
->> in OvmfPkg/OvmfPkgX64.dsc, and set the following bit in its value:
+>> The Linux kernel cannot migrate pages used by the kernel because
+>> of the kernel direct mapping. Since va = pa + PAGE_OFFSET, if the
+>> physical address is changed, we cannot simply update the kernel
+>> pagetable. On the contrary, we have to update all the pointers
+>> pointing to the virtual address, which is very difficult to do.
 >>
->>   # DEBUG_GCD      0x00100000 Global Coherency Database changes
->>
->> Then please rebuild OVMF, and capture the debug port output of qemu
->> ("-debugcon file:debug.log -global isa-debugcon.iobase=0x402") both with
->> and without KVM.
->>
->> DEBUG_GCD should produce messages related to CoreAllocateSpace(), and
->> might help us find the spot the difference is introduced.
-> 
-> Ok, I'll try to get this thing done before my vacation. If not, we'll
-> deal with it afterwards but I won't forget, I promise! :-)
-> 
->> BTW does this have anything to do with the NX bit report of yours, or
->> have you noticed this independently?
-> 
-> Independently, while testing my runtime services mapping patchset.
+>
+> It does beg the question if that "since" statement should be changed ...
 
-What's the purpose of that series? Can you please provide a link (if you
-posted versions of it already)?
+Do you mean we are going to do kernel page migration in the future ?
 
-> I was
-> getting an empty region and was wondering whether to discard it from the
-> mapping or not and then I looked at why I get it in the first place.
-> 
-> Basically, I get this empty region which appears at some point. It is
-> there when we enter efi_enter_virtual_mode in the kernel to setup the
-> runtime mappings:
-> 
-> [    0.005012] efi: efi_enter_virtual_mode: enter
-> [    0.006004] efi: mem00: type=7, attr=0xf, range=[0x0000000000000000-0x000000000009f000) (0MB)
-> [    0.007004] efi: mem01: type=2, attr=0xf, range=[0x000000000009f000-0x00000000000a0000) (0MB)
-> [    0.008003] efi: mem02: type=7, attr=0xf, range=[0x0000000000100000-0x0000000000800000) (7MB)
-> [    0.009004] efi: mem03: type=4, attr=0xf, range=[0x0000000000800000-0x0000000001000000) (8MB)
-> [    0.010004] efi: mem04: type=7, attr=0xf, range=[0x0000000001000000-0x0000000002000000) (16MB)
-> [    0.011004] efi: mem05: type=2, attr=0xf, range=[0x0000000002000000-0x00000000036e3000) (22MB)
-> [    0.012004] efi: mem06: type=7, attr=0xf, range=[0x00000000036e3000-0x000000003fffb000) (969MB)
-> [    0.013003] efi: mem07: type=2, attr=0xf, range=[0x000000003fffb000-0x0000000040000000) (0MB)
-> [    0.014004] efi: mem08: type=7, attr=0xf, range=[0x0000000040000000-0x000000007c000000) (960MB)
-> [    0.015004] efi: mem09: type=4, attr=0xf, range=[0x000000007c000000-0x000000007c020000) (0MB)
-> [    0.016004] efi: mem10: type=7, attr=0xf, range=[0x000000007c020000-0x000000007e0ad000) (32MB)
-> [    0.017004] efi: mem11: type=4, attr=0xf, range=[0x000000007e0ad000-0x000000007e0ad000) (0MB)
-> 							^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-> 
-> [    0.018003] efi: mem12: type=7, attr=0xf, range=[0x000000007e0cc000-0x000000007e0cd000) (0MB)
-> 
-> When we dump the EFI regions initially, it is ok.
-> 
-> [    0.000000] efi: mem10: type=7, attr=0xf, range=[0x000000007c020000-0x000000007e0ad000) (32MB)
-> [    0.000000] efi: mem11: type=4, attr=0xf, range=[0x000000007e0ad000-0x000000007e0cc000) (0MB)
-> [    0.000000] efi: mem12: type=7, attr=0xf, range=[0x000000007e0cc000-0x000000007e0cd000) (0MB)
-> 
-> So what basically happens is the end boundary of the region becomes the
-> start, practically turning it into a 0-size one.
+> we already have it handled differently on Xen PV, but that is kind of
+> "special".  There are a whole bunch of other issues with moving kernel
+> memory around: you have to worry what might have a physical address
+> cached somewhere and what might be in active use and so on...
 
-... and you guys suspect that some firmware code is responsible, code
-that runs between the initial memory map dump, and efi_enter_virtual_mode():
+The current solution is to hotplug ZONE_MOVABLE, which the kernel won't
+use. So do you mean if I want to do kernel page migration (which I'm not
+doing), I need to worry about what you said above ?
 
-https://lkml.org/lkml/2013/7/31/550
+>I am not
+> really suggesting it as anything but food for thought at this time.
 
-> Thanks for looking into it.
+Sorry for my poor English, and I really cannot understand this one.
 
-Hopefully DEBUG_GCD will tell us something.
-
-Thanks
-Laszlo
+Thanks.
