@@ -1,74 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753983Ab3HEKcY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 06:32:24 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:51630 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752112Ab3HEKcW (ORCPT
+	id S1754067Ab3HEKdP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 06:33:15 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:45760 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752112Ab3HEKdO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 06:32:22 -0400
-Date: Mon, 5 Aug 2013 12:32:14 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Jingchang Lu <b35083@freescale.com>
-Cc: vinod.koul@intel.com, shawn.guo@linaro.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, djbw@fb.com
-Subject: Re: [PATCH v2 2/3] ARM: dts: vf610: Add eDMA node
-Message-ID: <20130805103214.GA30913@pengutronix.de>
-References: <1375682824-11443-1-git-send-email-b35083@freescale.com>
+	Mon, 5 Aug 2013 06:33:14 -0400
+Date: Mon, 5 Aug 2013 11:33:07 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
+Cc: lgirdwood@gmail.com, tiwai@suse.de, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <20130805103307.GW9858@sirena.org.uk>
+References: <20130731131627.GA32631@opensource.wolfsonmicro.com>
+ <20130802105156.GA20577@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="8l0epyP1oK4ZrwYy"
 Content-Disposition: inline
-In-Reply-To: <1375682824-11443-1-git-send-email-b35083@freescale.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 12:30:26 up 5 days, 19:34, 20 users,  load average: 0.02, 0.03,
- 0.05
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <20130802105156.GA20577@opensource.wolfsonmicro.com>
+X-Cookie: You will be awarded some great honor.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [alsa-devel] [PATCH v3] ASoC: core: init delayed_work for
+ codec-codec links
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 05, 2013 at 02:07:03PM +0800, Jingchang Lu wrote:
-> Signed-off-by: Jingchang Lu <b35083@freescale.com>
-> ---
-> changes in v2:
->   using generic dma-channels property instead of fsl,dma-channels.
-> 
-> diff --git a/include/dt-bindings/dma/vf610-edma.h b/include/dt-bindings/dma/vf610-edma.h
-> new file mode 100644
-> index 0000000..3ae481c
-> --- /dev/null
-> +++ b/include/dt-bindings/dma/vf610-edma.h
-> @@ -0,0 +1,103 @@
-> +/*
-> + * Copyright 2013 Freescale Semiconductor, Inc.
-> + *
-> + * This program is free software; you can redistribute  it and/or modify it
-> + * under  the terms of  the GNU General  Public License as published by the
-> + * Free Software Foundation;  either version 2 of the  License, or (at your
-> + * option) any later version.
-> + *
-> + */
+
+--8l0epyP1oK4ZrwYy
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+On Fri, Aug 02, 2013 at 11:51:56AM +0100, Richard Fitzgerald wrote:
+
+> +static void codec2codec_close_delayed_work(struct work_struct *work)
+> +{
+> +}
 > +
-> +#ifndef __DT_BINDINGS_DMA_VF610_H__
-> +#define __DT_BINDINGS_DMA_VF610_H__
-> +
-> +/* DMAMUX0,3 reqeust slot number */
-> +#define DMA_MUXID0_UART0_RX	2
 
-Never add defines without a proper namespace. I suggest VF610_ here.
+Having a commment here was a really good idea since this is the sort of
+thing I'd expect someone to come along and try to clean up otherwise.
+I'd also expect just passing NULL to INIT_DELAYED_WORK() (with a big
+comment attached) to do the right thing, though perhaps it doesn't.
 
-Sascha
+--8l0epyP1oK4ZrwYy
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR/39gAAoJELSic+t+oim9XTYP/iYabC+/qgKHpA4n52P0m7ri
+4HVGeTK3A+6Ecfm5IUUyRwEZplZmsLXyfefXwDX6S1vilM39VmXvLJyDwV0/YMOB
+AWXncqXfijqTtcVtsB6L4I4s9rAHFxlI7Dt6TjRnbwGfeWFJPKxGkYwG/ndSAWXW
+gtNfekQIyLdEPQ/JBndoyZf5hcEm/+Kw1aeAZkoc9XgFrq7VEOs3tsKo5nN8rJaR
+JNBF/tai/BFK14SDFkj2kiGIID1wnSOR1BqBxfrNeU6TLQzNjstfKRY/J3XRGkAF
+SUxWWkacQllYaUsLD1vV8kfIKgA9A7j/4iovBsvMIBiJDNrMCsKZkXlTKeUIDdq2
+VrsHeB+idGeetWUCxd/FUQzhniwB3+MniztN9JJTPkSMF+adQMx8VQZvnPRluRnd
+5cWLZwByUTrwjHrctwV3FWAuXVM/HCcPnr+xytgRU2s5X0ZlCyDKv1Bj50/S4Lpx
+o9RFwf4cyCm19SPprNq5AhQWTWv0zzWj2xW1PdlTofmWhDnzIz0bHjiJyhHaLz0b
+0LV27GXnmGjnt6kPXyJKux1aEkZ/MbN5WLD5b7amIYu/iMIKDk/xFDrm0Z0NTtl1
+Dh4wBC3Wqv7QdkcIeVaijmo0B7hSbj8WrsldgdVJqng/ClwDdGAtoQ82pBXYheKn
+TDmcR8/7YLVYqq2kmuO8
+=AGmS
+-----END PGP SIGNATURE-----
+
+--8l0epyP1oK4ZrwYy--
