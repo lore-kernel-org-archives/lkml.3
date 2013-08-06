@@ -1,480 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756938Ab3HFXK2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 19:10:28 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:60431 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756839Ab3HFXK0 convert rfc822-to-8bit (ORCPT
+	id S1756924Ab3HFXPh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 19:15:37 -0400
+Received: from mail-bk0-f52.google.com ([209.85.214.52]:35865 "EHLO
+	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755342Ab3HFXPf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 19:10:26 -0400
-MIME-Version: 1.0
-In-Reply-To: <1375793820.22638.25.camel@kjgkr>
-References: <1375625380-2801-1-git-send-email-linkinjeon@gmail.com>
-	<1375793820.22638.25.camel@kjgkr>
-Date: Wed, 7 Aug 2013 08:10:24 +0900
-Message-ID: <CAKYAXd8Hd5A91NvkRORV0=D+QRSjMxqJA3N8oA1dSADZuijqmA@mail.gmail.com>
-Subject: Re: [PATCH 1/3] f2fs: add sysfs support for controlling the gc_thread
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: jaegeuk.kim@samsung.com
-Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Gu Zheng <guz.fnst@cn.fujitsu.com>,
-        Pankaj Kumar <pankaj.km@samsung.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 6 Aug 2013 19:15:35 -0400
+From: James Bates <james.h.bates@gmail.com>
+Content-Type: multipart/signed; boundary="Apple-Mail=_5C5E50CA-5674-4358-9E4F-3C21F49A260E"; protocol="application/pkcs7-signature"; micalg=sha1
+Subject: [PATCH] efifb: prevent null dereferences by removing unused array  indices from dmi_list
+Message-Id: <C9C6655E-4974-4C04-8CEE-CA16563F4CC5@gmail.com>
+Date: Wed, 7 Aug 2013 01:15:29 +0200
+To: Peter Jones <pjones@redhat.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Mime-Version: 1.0 (Mac OS X Mail 6.3 \(1503\))
+X-Mailer: Apple Mail (2.1503)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/8/6, Jaegeuk Kim <jaegeuk.kim@samsung.com>:
-> Hi, Namjae,
-Hi Jaeguek.
->
-> I found and fixed a bug as follows.
->
-> In f2fs_put_super, we should call kobject_del & kobject_put.
-> And, IMO, we'd better give -EINVAL instead of -EFAULT to users when
-> there is no background gc thread.
-Yes, Agree. Sorry to bother.
->
-> If you agree to them, I'll merge the final patch into the tree.
-> Thanks,
-Thank you! :)
->
-> 2013-08-04 (일), 23:09 +0900, Namjae Jeon:
->> From: Namjae Jeon <namjae.jeon@samsung.com>
->>
->> Add sysfs entries to control the timing parameters for
->> f2fs gc thread.
->>
->> Various Sysfs options introduced are:
->> gc_min_sleep_time: Min Sleep time for GC in ms
->> gc_max_sleep_time: Max Sleep time for GC in ms
->> gc_no_gc_sleep_time: Default Sleep time for GC in ms
->>
->> Cc: Gu Zheng <guz.fnst@cn.fujitsu.com>
->> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
->> Signed-off-by: Pankaj Kumar <pankaj.km@samsung.com>
->> ---
->>  Documentation/ABI/testing/sysfs-fs-f2fs |   22 ++++++
->>  Documentation/filesystems/f2fs.txt      |   26 +++++++
->>  fs/f2fs/f2fs.h                          |    4 +
->>  fs/f2fs/gc.c                            |   17 +++--
->>  fs/f2fs/gc.h                            |   33 +++++----
->>  fs/f2fs/super.c                         |  122
->> +++++++++++++++++++++++++++++++
->>  6 files changed, 204 insertions(+), 20 deletions(-)
->>  create mode 100644 Documentation/ABI/testing/sysfs-fs-f2fs
->>
->> diff --git a/Documentation/ABI/testing/sysfs-fs-f2fs
->> b/Documentation/ABI/testing/sysfs-fs-f2fs
->> new file mode 100644
->> index 0000000..5f44095
->> --- /dev/null
->> +++ b/Documentation/ABI/testing/sysfs-fs-f2fs
->> @@ -0,0 +1,22 @@
->> +What:		/sys/fs/f2fs/<disk>/gc_max_sleep_time
->> +Date:		July 2013
->> +Contact:	"Namjae Jeon" <namjae.jeon@samsung.com>
->> +Description:
->> +		 Controls the maximun sleep time for gc_thread. Time
->> +		 is in milliseconds.
->> +
->> +What:		/sys/fs/f2fs/<disk>/gc_min_sleep_time
->> +Date:		July 2013
->> +Contact:	"Namjae Jeon" <namjae.jeon@samsung.com>
->> +Description:
->> +		 Controls the minimum sleep time for gc_thread. Time
->> +		 is in milliseconds.
->> +
->> +What:		/sys/fs/f2fs/<disk>/gc_no_gc_sleep_time
->> +Date:		July 2013
->> +Contact:	"Namjae Jeon" <namjae.jeon@samsung.com>
->> +Description:
->> +		 Controls the default sleep time for gc_thread. Time
->> +		 is in milliseconds.
->> +
->> +
->> diff --git a/Documentation/filesystems/f2fs.txt
->> b/Documentation/filesystems/f2fs.txt
->> index 0500c19..5daf3bb 100644
->> --- a/Documentation/filesystems/f2fs.txt
->> +++ b/Documentation/filesystems/f2fs.txt
->> @@ -133,6 +133,32 @@ f2fs. Each file shows the whole f2fs information.
->>   - current memory footprint consumed by f2fs.
->>
->>
->> ================================================================================
->> +SYSFS ENTRIES
->> +================================================================================
->> +
->> +Information about mounted f2f2 file systems can be found in
->> +/sys/fs/f2fs.  Each mounted filesystem will have a directory in
->> +/sys/fs/f2fs based on its device name (i.e., /sys/fs/f2fs/sda).
->> +The files in each per-device directory are shown in table below.
->> +
->> +Files in /sys/fs/f2fs/<devname>
->> +(see also Documentation/ABI/testing/sysfs-fs-f2fs)
->> +..............................................................................
->> + File                         Content
->> +
->> + gc_max_sleep_time            This tuning parameter controls the maximum
->> sleep
->> +                              time for the garbage collection thread.
->> Time is
->> +                              in milliseconds.
->> +
->> + gc_min_sleep_time            This tuning parameter controls the minimum
->> sleep
->> +                              time for the garbage collection thread.
->> Time is
->> +                              in milliseconds.
->> +
->> + gc_no_gc_sleep_time          This tuning parameter controls the default
->> sleep
->> +                              time for the garbage collection thread.
->> Time is
->> +                              in milliseconds.
->> +
->> +================================================================================
->>  USAGE
->>
->> ================================================================================
->>
->> diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
->> index 78777cd..63813be 100644
->> --- a/fs/f2fs/f2fs.h
->> +++ b/fs/f2fs/f2fs.h
->> @@ -430,6 +430,10 @@ struct f2fs_sb_info {
->>  #endif
->>  	unsigned int last_victim[2];		/* last victim segment # */
->>  	spinlock_t stat_lock;			/* lock for stat operations */
->> +
->> +	/* For sysfs suppport */
->> +	struct kobject s_kobj;
->> +	struct completion s_kobj_unregister;
->>  };
->>
->>  /*
->> diff --git a/fs/f2fs/gc.c b/fs/f2fs/gc.c
->> index 35f9b1a..60d4f67 100644
->> --- a/fs/f2fs/gc.c
->> +++ b/fs/f2fs/gc.c
->> @@ -29,10 +29,11 @@ static struct kmem_cache *winode_slab;
->>  static int gc_thread_func(void *data)
->>  {
->>  	struct f2fs_sb_info *sbi = data;
->> +	struct f2fs_gc_kthread *gc_th = sbi->gc_thread;
->>  	wait_queue_head_t *wq = &sbi->gc_thread->gc_wait_queue_head;
->>  	long wait_ms;
->>
->> -	wait_ms = GC_THREAD_MIN_SLEEP_TIME;
->> +	wait_ms = gc_th->min_sleep_time;
->>
->>  	do {
->>  		if (try_to_freeze())
->> @@ -45,7 +46,7 @@ static int gc_thread_func(void *data)
->>  			break;
->>
->>  		if (sbi->sb->s_writers.frozen >= SB_FREEZE_WRITE) {
->> -			wait_ms = GC_THREAD_MAX_SLEEP_TIME;
->> +			wait_ms = increase_sleep_time(gc_th, wait_ms);
->>  			continue;
->>  		}
->>
->> @@ -66,15 +67,15 @@ static int gc_thread_func(void *data)
->>  			continue;
->>
->>  		if (!is_idle(sbi)) {
->> -			wait_ms = increase_sleep_time(wait_ms);
->> +			wait_ms = increase_sleep_time(gc_th, wait_ms);
->>  			mutex_unlock(&sbi->gc_mutex);
->>  			continue;
->>  		}
->>
->>  		if (has_enough_invalid_blocks(sbi))
->> -			wait_ms = decrease_sleep_time(wait_ms);
->> +			wait_ms = decrease_sleep_time(gc_th, wait_ms);
->>  		else
->> -			wait_ms = increase_sleep_time(wait_ms);
->> +			wait_ms = increase_sleep_time(gc_th, wait_ms);
->>
->>  #ifdef CONFIG_F2FS_STAT_FS
->>  		sbi->bg_gc++;
->> @@ -82,7 +83,7 @@ static int gc_thread_func(void *data)
->>
->>  		/* if return value is not zero, no victim was selected */
->>  		if (f2fs_gc(sbi))
->> -			wait_ms = GC_THREAD_NOGC_SLEEP_TIME;
->> +			wait_ms = gc_th->no_gc_sleep_time;
->>  	} while (!kthread_should_stop());
->>  	return 0;
->>  }
->> @@ -101,6 +102,10 @@ int start_gc_thread(struct f2fs_sb_info *sbi)
->>  		goto out;
->>  	}
->>
->> +	gc_th->min_sleep_time = DEF_GC_THREAD_MIN_SLEEP_TIME;
->> +	gc_th->max_sleep_time = DEF_GC_THREAD_MAX_SLEEP_TIME;
->> +	gc_th->no_gc_sleep_time = DEF_GC_THREAD_NOGC_SLEEP_TIME;
->> +
->>  	sbi->gc_thread = gc_th;
->>  	init_waitqueue_head(&sbi->gc_thread->gc_wait_queue_head);
->>  	sbi->gc_thread->f2fs_gc_task = kthread_run(gc_thread_func, sbi,
->> diff --git a/fs/f2fs/gc.h b/fs/f2fs/gc.h
->> index 2c6a6bd..f4bf44c 100644
->> --- a/fs/f2fs/gc.h
->> +++ b/fs/f2fs/gc.h
->> @@ -13,9 +13,9 @@
->>  						 * whether IO subsystem is idle
->>  						 * or not
->>  						 */
->> -#define GC_THREAD_MIN_SLEEP_TIME	30000	/* milliseconds */
->> -#define GC_THREAD_MAX_SLEEP_TIME	60000
->> -#define GC_THREAD_NOGC_SLEEP_TIME	300000	/* wait 5 min */
->> +#define DEF_GC_THREAD_MIN_SLEEP_TIME	30000	/* milliseconds */
->> +#define DEF_GC_THREAD_MAX_SLEEP_TIME	60000
->> +#define DEF_GC_THREAD_NOGC_SLEEP_TIME	300000	/* wait 5 min */
->>  #define LIMIT_INVALID_BLOCK	40 /* percentage over total user space */
->>  #define LIMIT_FREE_BLOCK	40 /* percentage over invalid + free space */
->>
->> @@ -25,6 +25,11 @@
->>  struct f2fs_gc_kthread {
->>  	struct task_struct *f2fs_gc_task;
->>  	wait_queue_head_t gc_wait_queue_head;
->> +
->> +	/* for gc sleep time */
->> +	unsigned int min_sleep_time;
->> +	unsigned int max_sleep_time;
->> +	unsigned int no_gc_sleep_time;
->>  };
->>
->>  struct inode_entry {
->> @@ -56,25 +61,25 @@ static inline block_t limit_free_user_blocks(struct
->> f2fs_sb_info *sbi)
->>  	return (long)(reclaimable_user_blocks * LIMIT_FREE_BLOCK) / 100;
->>  }
->>
->> -static inline long increase_sleep_time(long wait)
->> +static inline long increase_sleep_time(struct f2fs_gc_kthread *gc_th,
->> long wait)
->>  {
->> -	if (wait == GC_THREAD_NOGC_SLEEP_TIME)
->> +	if (wait == gc_th->no_gc_sleep_time)
->>  		return wait;
->>
->> -	wait += GC_THREAD_MIN_SLEEP_TIME;
->> -	if (wait > GC_THREAD_MAX_SLEEP_TIME)
->> -		wait = GC_THREAD_MAX_SLEEP_TIME;
->> +	wait += gc_th->min_sleep_time;
->> +	if (wait > gc_th->max_sleep_time)
->> +		wait = gc_th->max_sleep_time;
->>  	return wait;
->>  }
->>
->> -static inline long decrease_sleep_time(long wait)
->> +static inline long decrease_sleep_time(struct f2fs_gc_kthread *gc_th,
->> long wait)
->>  {
->> -	if (wait == GC_THREAD_NOGC_SLEEP_TIME)
->> -		wait = GC_THREAD_MAX_SLEEP_TIME;
->> +	if (wait == gc_th->no_gc_sleep_time)
->> +		wait = gc_th->max_sleep_time;
->>
->> -	wait -= GC_THREAD_MIN_SLEEP_TIME;
->> -	if (wait <= GC_THREAD_MIN_SLEEP_TIME)
->> -		wait = GC_THREAD_MIN_SLEEP_TIME;
->> +	wait -= gc_th->min_sleep_time;
->> +	if (wait <= gc_th->min_sleep_time)
->> +		wait = gc_th->min_sleep_time;
->>  	return wait;
->>  }
->>
->> diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
->> index 70dbb31..0a3e88f 100644
->> --- a/fs/f2fs/super.c
->> +++ b/fs/f2fs/super.c
->> @@ -23,17 +23,21 @@
->>  #include <linux/exportfs.h>
->>  #include <linux/blkdev.h>
->>  #include <linux/f2fs_fs.h>
->> +#include <linux/kobject.h>
->> +#include <linux/sysfs.h>
->>
->>  #include "f2fs.h"
->>  #include "node.h"
->>  #include "segment.h"
->>  #include "xattr.h"
->> +#include "gc.h"
->>
->>  #define CREATE_TRACE_POINTS
->>  #include <trace/events/f2fs.h>
->>
->>  static struct proc_dir_entry *f2fs_proc_root;
->>  static struct kmem_cache *f2fs_inode_cachep;
->> +static struct kset *f2fs_kset;
->>
->>  enum {
->>  	Opt_gc_background,
->> @@ -59,6 +63,111 @@ static match_table_t f2fs_tokens = {
->>  	{Opt_err, NULL},
->>  };
->>
->> +/*Sysfs support for F2fs */
->> +struct f2fs_attr {
->> +	struct attribute attr;
->> +	ssize_t (*show)(struct f2fs_attr *, struct f2fs_sb_info *, char *);
->> +	ssize_t (*store)(struct f2fs_attr *, struct f2fs_sb_info *,
->> +			 const char *, size_t);
->> +	int offset;
->> +};
->> +
->> +static ssize_t f2fs_sbi_show(struct f2fs_attr *a,
->> +			   struct f2fs_sb_info *sbi, char *buf)
->> +{
->> +	struct f2fs_gc_kthread *gc_kth = sbi->gc_thread;
->> +	unsigned int *ui;
->> +
->> +	if (!gc_kth)
->> +		return -EFAULT;
->> +
->> +	ui = (unsigned int *) (((char *)gc_kth) + a->offset);
->> +
->> +	return snprintf(buf, PAGE_SIZE, "%u\n", *ui);
->> +}
->> +
->> +static ssize_t f2fs_sbi_store(struct f2fs_attr *a,
->> +			    struct f2fs_sb_info *sbi,
->> +			    const char *buf, size_t count)
->> +{
->> +	struct f2fs_gc_kthread *gc_kth = sbi->gc_thread;
->> +	unsigned long t;
->> +	unsigned int *ui;
->> +	ssize_t ret;
->> +
->> +	if (!gc_kth)
->> +		return -EFAULT;
->> +
->> +	ui = (unsigned int *) (((char *)gc_kth) + a->offset);
->> +
->> +	ret = kstrtoul(skip_spaces(buf), 0, &t);
->> +	if (ret < 0)
->> +		return ret;
->> +	*ui = t;
->> +	return count;
->> +}
->> +
->> +static ssize_t f2fs_attr_show(struct kobject *kobj,
->> +				struct attribute *attr, char *buf)
->> +{
->> +	struct f2fs_sb_info *sbi = container_of(kobj, struct f2fs_sb_info,
->> +								s_kobj);
->> +	struct f2fs_attr *a = container_of(attr, struct f2fs_attr, attr);
->> +
->> +	return a->show ? a->show(a, sbi, buf) : 0;
->> +}
->> +
->> +static ssize_t f2fs_attr_store(struct kobject *kobj, struct attribute
->> *attr,
->> +						const char *buf, size_t len)
->> +{
->> +	struct f2fs_sb_info *sbi = container_of(kobj, struct f2fs_sb_info,
->> +									s_kobj);
->> +	struct f2fs_attr *a = container_of(attr, struct f2fs_attr, attr);
->> +
->> +	return a->store ? a->store(a, sbi, buf, len) : 0;
->> +}
->> +
->> +static void f2fs_sb_release(struct kobject *kobj)
->> +{
->> +	struct f2fs_sb_info *sbi = container_of(kobj, struct f2fs_sb_info,
->> +								s_kobj);
->> +	complete(&sbi->s_kobj_unregister);
->> +}
->> +
->> +#define F2FS_ATTR_OFFSET(_name, _mode, _show, _store, _elname) \
->> +static struct f2fs_attr f2fs_attr_##_name = {			\
->> +	.attr = {.name = __stringify(_name), .mode = _mode },	\
->> +	.show	= _show,					\
->> +	.store	= _store,					\
->> +	.offset = offsetof(struct f2fs_gc_kthread, _elname),	\
->> +}
->> +
->> +#define F2FS_RW_ATTR(name, elname)	\
->> +	F2FS_ATTR_OFFSET(name, 0644, f2fs_sbi_show, f2fs_sbi_store, elname)
->> +
->> +F2FS_RW_ATTR(gc_min_sleep_time, min_sleep_time);
->> +F2FS_RW_ATTR(gc_max_sleep_time, max_sleep_time);
->> +F2FS_RW_ATTR(gc_no_gc_sleep_time, no_gc_sleep_time);
->> +
->> +#define ATTR_LIST(name) (&f2fs_attr_##name.attr)
->> +static struct attribute *f2fs_attrs[] = {
->> +	ATTR_LIST(gc_min_sleep_time),
->> +	ATTR_LIST(gc_max_sleep_time),
->> +	ATTR_LIST(gc_no_gc_sleep_time),
->> +	NULL,
->> +};
->> +
->> +static const struct sysfs_ops f2fs_attr_ops = {
->> +	.show   = f2fs_attr_show,
->> +	.store  = f2fs_attr_store,
->> +};
->> +
->> +static struct kobj_type f2fs_ktype = {
->> +	.default_attrs  = f2fs_attrs,
->> +	.sysfs_ops      = &f2fs_attr_ops,
->> +	.release        = f2fs_sb_release,
->> +};
->> +
->>  void f2fs_msg(struct super_block *sb, const char *level, const char *fmt,
->> ...)
->>  {
->>  	struct va_format vaf;
->> @@ -243,6 +352,8 @@ static void f2fs_put_super(struct super_block *sb)
->>  	destroy_segment_manager(sbi);
->>
->>  	kfree(sbi->ckpt);
->> +	kobject_del(&sbi->s_kobj);
->> +	wait_for_completion(&sbi->s_kobj_unregister);
->>
->>  	sb->s_fs_info = NULL;
->>  	brelse(sbi->raw_super_buf);
->> @@ -818,6 +929,13 @@ static int f2fs_fill_super(struct super_block *sb,
->> void *data, int silent)
->>  					"the device does not support discard");
->>  	}
->>
->> +	sbi->s_kobj.kset = f2fs_kset;
->> +	init_completion(&sbi->s_kobj_unregister);
->> +	err = kobject_init_and_add(&sbi->s_kobj, &f2fs_ktype, NULL,
->> +							"%s", sb->s_id);
->> +	if (err)
->> +		goto fail;
->> +
->>  	return 0;
->>  fail:
->>  	stop_gc_thread(sbi);
->> @@ -892,6 +1010,9 @@ static int __init init_f2fs_fs(void)
->>  	err = create_checkpoint_caches();
->>  	if (err)
->>  		goto fail;
->> +	f2fs_kset = kset_create_and_add("f2fs", NULL, fs_kobj);
->> +	if (!f2fs_kset)
->> +		goto fail;
->>  	err = register_filesystem(&f2fs_fs_type);
->>  	if (err)
->>  		goto fail;
->> @@ -910,6 +1031,7 @@ static void __exit exit_f2fs_fs(void)
->>  	destroy_gc_caches();
->>  	destroy_node_manager_caches();
->>  	destroy_inodecache();
->> +	kset_unregister(f2fs_kset);
->>  }
->>
->>  module_init(init_f2fs_fs)
->
-> --
-> Jaegeuk Kim
-> Samsung
->
->
+
+--Apple-Mail=_5C5E50CA-5674-4358-9E4F-3C21F49A260E
+Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain;
+	charset=us-ascii
+
+Hi all,
+
+The dmi_list array is initialized using gnu designated initializers, and =
+therefore
+contains fewer explicitly defined entries as there are elements in it. =
+This
+is because the enum above with M_blabla constants contains more items =
+than the designated
+initializer. Those elements not explicitly initialized are implicitly =
+set to 0.
+
+Now efifb_setup(), L.322 & L.323, loops through all these array =
+elements, and performs
+a strcmp o a field (optname) in each item. For non explicitly =
+initialized elements this
+will be a null pointer:
+
+                        for (i =3D 0; i < M_UNKNOWN; i++) {
+                                if (!strcmp(this_opt, =
+dmi_list[i].optname) &&
+
+On my macbook6,1 the predefined values are for some reason incorrect, =
+and most parameters
+are preset correctly by my efi bootloader (elilo). but =
+stride/line_length is not detected
+correctly and so I wish to set it explicitly using a =
+"video=3Defifb:stride:2048" command-line
+argument. Because of the above null dereference, an exception =
+(presumably) occurs before
+the parsing code (L.333) is ever reached. I say presumably since the mac =
+hangs on boot
+without a console, and I can therefore not see any output.
+
+By removing the unused values from the enum, and thus preventing =
+implicitly initialized items
+in the dmi_list array, the null dereference does not occur, my customer =
+command-line arg is
+parsed correctly, and my console displays correctly.
+
+Signed-off-by: James Bates <james.h.bates@gmail.com>
+---
+ drivers/video/efifb.c | 3 ---
+ 1 file changed, 3 deletions(-)
+
+diff --git a/drivers/video/efifb.c b/drivers/video/efifb.c
+index 50fe668..52d1d88 100644
+--- a/drivers/video/efifb.c
++++ b/drivers/video/efifb.c
+@@ -50,12 +50,9 @@ enum {
+        M_MINI_3_1,     /* Mac Mini, 3,1th gen */
+        M_MINI_4_1,     /* Mac Mini, 4,1th gen */
+        M_MB,           /* MacBook */
+-       M_MB_2,         /* MacBook, 2nd rev. */
+-       M_MB_3,         /* MacBook, 3rd rev. */
+        M_MB_5_1,       /* MacBook, 5th rev. */
+        M_MB_6_1,       /* MacBook, 6th rev. */
+        M_MB_7_1,       /* MacBook, 7th rev. */
+-       M_MB_SR,        /* MacBook, 2nd gen, (Santa Rosa) */
+        M_MBA,          /* MacBook Air */
+        M_MBA_3,        /* Macbook Air, 3rd rev */
+        M_MBP,          /* MacBook Pro */
+--
+1.7.12.4 (Apple Git-37)
+
+
+--Apple-Mail=_5C5E50CA-5674-4358-9E4F-3C21F49A260E
+Content-Disposition: attachment;
+	filename=smime.p7s
+Content-Type: application/pkcs7-signature;
+	name=smime.p7s
+Content-Transfer-Encoding: base64
+
+MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIMijCCBjQw
+ggQcoAMCAQICAR4wDQYJKoZIhvcNAQEFBQAwfTELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0
+Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxKTAn
+BgNVBAMTIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTA3MTAyNDIxMDE1NVoX
+DTE3MTAyNDIxMDE1NVowgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQuMSsw
+KQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQDEy9TdGFy
+dENvbSBDbGFzcyAxIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQTCCASIwDQYJKoZIhvcN
+AQEBBQADggEPADCCAQoCggEBAMcJg8zOLdgasSmkLhOrlr6KMoOMpohBllVHrdRvEg/q6r8jR+EK
+75xCGhR8ToREoqe7zM9/UnC6TS2y9UKTpT1v7RSMzR0t6ndl0TWBuUr/UXBhPk+Kmy7bI4yW4urC
++y7P3/1/X7U8ocb8VpH/Clt+4iq7nirMcNh6qJR+xjOhV+VHzQMALuGYn5KZmc1NbJQYclsGkDxD
+z2UbFqE2+6vIZoL+jb9x4Pa5gNf1TwSDkOkikZB1xtB4ZqtXThaABSONdfmv/Z1pua3FYxnCFmdr
+/+N2JLKutIxMYqQOJebr/f/h5t95m4JgrM3Y/w7YX9d7YAL9jvN4SydHsU6n65cCAwEAAaOCAa0w
+ggGpMA8GA1UdEwEB/wQFMAMBAf8wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBRTcu2SnODaywFc
+fH6WNU7y1LhRgjAfBgNVHSMEGDAWgBROC+8apEBbpRdphzDKNGhD0EGu8jBmBggrBgEFBQcBAQRa
+MFgwJwYIKwYBBQUHMAGGG2h0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9jYTAtBggrBgEFBQcwAoYh
+aHR0cDovL3d3dy5zdGFydHNzbC5jb20vc2ZzY2EuY3J0MFsGA1UdHwRUMFIwJ6AloCOGIWh0dHA6
+Ly93d3cuc3RhcnRzc2wuY29tL3Nmc2NhLmNybDAnoCWgI4YhaHR0cDovL2NybC5zdGFydHNzbC5j
+b20vc2ZzY2EuY3JsMIGABgNVHSAEeTB3MHUGCysGAQQBgbU3AQIBMGYwLgYIKwYBBQUHAgEWImh0
+dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93d3cu
+c3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwDQYJKoZIhvcNAQEFBQADggIBAAqDCH14qywG
+XLhjjF6uHLkjd02hcdh9hrw+VUsv+q1eeQWB21jWj3kJ96AUlPCoEGZ/ynJNScWy6QMVQjbbMXlt
+UfO4n4bGGdKo3awPWp61tjAFgraLJgDk+DsSvUD6EowjMTNx25GQgyYJ5RPIzKKR9tQW8gGK+2+R
+HxkUCTbYFnL6kl8Ch507rUdPPipJ9CgJFws3kDS3gOS5WFMxcjO5DwKfKSETEPrHh7p5shuuNktv
+sv6hxHTLhiMKX893gxdT3XLS9OKmCv87vkINQcNEcIIoFWbP9HORz9v3vQwR4e3ksLc2JZOAFK+s
+sS5XMEoznzpihEP0PLc4dCBYjbvSD7kxgDwZ+Aj8Q9PkbvE9sIPP7ON0fz095HdThKjiVJe6vofq
++n6b1NBc8XdrQvBmunwxD5nvtTW4vtN6VY7mUCmxsCieuoBJ9OlqmsVWQvifIYf40dJPZkk9YgGT
+zWLpXDSfLSplbY2LL9C9U0ptvjcDjefLTvqSFc7tw1sEhF0n/qpA2r0GpvkLRDmcSwVyPvmjFBGq
+Up/pNy8ZuPGQmHwFi2/14+xeSUDG2bwnsYJQG2EdJCB6luQ57GEnTA/yKZSTKI8dDQa8Sd3zfXb1
+9mOgSF0bBdXbuKhEpuP9wirslFe6fQ1t5j5R0xi72MZ8ikMu1RQZKCyDbMwazlHiMIIGTjCCBTag
+AwIBAgIDBes+MA0GCSqGSIb3DQEBBQUAMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRD
+b20gTHRkLjErMCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYG
+A1UEAxMvU3RhcnRDb20gQ2xhc3MgMSBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0EwHhcN
+MTMwMjExMTAyMjA3WhcNMTQwMjExMjAwMTUzWjBlMRkwFwYDVQQNExA5aDNPOHBoSjg4U0Z3ZHkx
+MSAwHgYDVQQDDBdqYW1lcy5oLmJhdGVzQGdtYWlsLmNvbTEmMCQGCSqGSIb3DQEJARYXamFtZXMu
+aC5iYXRlc0BnbWFpbC5jb20wggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCoZT6ntgtK
+I0mry4E+i3v+zK3I/y4g72Am+f+yX3Co1ksd6fhVRVO9wNfuxgHmLOfc+yDSIRls+OwPts/ESSS1
+2MDlSLcptEGZ9bP5CcS8VQalyo+p78dM++k3krZ8VoT+osUaBk9/RT8wTb+Au9oSIYH/JswQySIY
+RS37z7vdT+yM2B6t9AkKz8j/u/KxFGqdZ0GczvDIboqRrnJB0d9owK2bSSddbv6iBbxsnsiRc6sE
+Peyib4MSJY4Vaecu9c9wJI9gbrc9l2QJ7nvLWHON97KsLI9UfXlskPqpw3cWSd6YA2OUUoMfacOs
+wZmzamkWQm/Ngqo7QseFYxlwWa8fAgMBAAGjggLdMIIC2TAJBgNVHRMEAjAAMAsGA1UdDwQEAwIE
+sDAdBgNVHSUEFjAUBggrBgEFBQcDAgYIKwYBBQUHAwQwHQYDVR0OBBYEFEt6dZNacpHlQ1r+DMJR
+3vqnbz2JMB8GA1UdIwQYMBaAFFNy7ZKc4NrLAVx8fpY1TvLUuFGCMCIGA1UdEQQbMBmBF2phbWVz
+LmguYmF0ZXNAZ21haWwuY29tMIIBTAYDVR0gBIIBQzCCAT8wggE7BgsrBgEEAYG1NwECAzCCASow
+LgYIKwYBBQUHAgEWImh0dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwgfcGCCsGAQUF
+BwICMIHqMCcWIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MAMCAQEagb5UaGlzIGNl
+cnRpZmljYXRlIHdhcyBpc3N1ZWQgYWNjb3JkaW5nIHRvIHRoZSBDbGFzcyAxIFZhbGlkYXRpb24g
+cmVxdWlyZW1lbnRzIG9mIHRoZSBTdGFydENvbSBDQSBwb2xpY3ksIHJlbGlhbmNlIG9ubHkgZm9y
+IHRoZSBpbnRlbmRlZCBwdXJwb3NlIGluIGNvbXBsaWFuY2Ugb2YgdGhlIHJlbHlpbmcgcGFydHkg
+b2JsaWdhdGlvbnMuMDYGA1UdHwQvMC0wK6ApoCeGJWh0dHA6Ly9jcmwuc3RhcnRzc2wuY29tL2Ny
+dHUxLWNybC5jcmwwgY4GCCsGAQUFBwEBBIGBMH8wOQYIKwYBBQUHMAGGLWh0dHA6Ly9vY3NwLnN0
+YXJ0c3NsLmNvbS9zdWIvY2xhc3MxL2NsaWVudC9jYTBCBggrBgEFBQcwAoY2aHR0cDovL2FpYS5z
+dGFydHNzbC5jb20vY2VydHMvc3ViLmNsYXNzMS5jbGllbnQuY2EuY3J0MCMGA1UdEgQcMBqGGGh0
+dHA6Ly93d3cuc3RhcnRzc2wuY29tLzANBgkqhkiG9w0BAQUFAAOCAQEACLG4XLN5hVe4cbS+sHWW
+3euuKT9gGEBRLoZihCRu6WbvSlMsTlaF7ihPtTg9WCe4Rv8at+YQng09XaMAThzKU9YR7mH50zAS
+k1UN+9msgTyrQwF9vj/wautTQ7UXCQf5lfWMF8TF/REH3pkmEb4wu+HzEoaIJm40lfSHyB50RNBy
+Z+4xPbgOaH8IVkpg2YLLHKkaPl1KwhO6TEs2G/YclPXjB0/VUMo46eFwcLSV9178ID4NQBXU2Yrx
+blzbRD+915afD6FPW1SYe9nErcJYtrwi10BReuHzn+moSdgerlRJXRx5DwsVdR+31wcpZ0y/XLQJ
+yMROlTeCva7VqZDMbTGCA28wggNrAgEBMIGUMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3Rh
+cnRDb20gTHRkLjErMCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4
+MDYGA1UEAxMvU3RhcnRDb20gQ2xhc3MgMSBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0EC
+AwXrPjAJBgUrDgMCGgUAoIIBrzAYBgkqhkiG9w0BCQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJ
+BTEPFw0xMzA4MDYyMzE1MjlaMCMGCSqGSIb3DQEJBDEWBBSGnQpJGnJmOjy01ObCPNjgvEflAjCB
+pQYJKwYBBAGCNxAEMYGXMIGUMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRDb20gTHRk
+LjErMCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYGA1UEAxMv
+U3RhcnRDb20gQ2xhc3MgMSBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0ECAwXrPjCBpwYL
+KoZIhvcNAQkQAgsxgZeggZQwgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQu
+MSswKQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQDEy9T
+dGFydENvbSBDbGFzcyAxIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQQIDBes+MA0GCSqG
+SIb3DQEBAQUABIIBAB2zZOUpRWorhbJu5ZjnlzsXDzrDV9ec50cbwjEL3y3CJ7Z8SNH8cZdEvNLt
+lV2ykzTgLxpA9tTXBjjXZ2c0eNE3o9z/3LdBq6yQrbg2kpqTU+ULRwK/cLBP7LlzxvjldWK2Zcfx
+LT4MT+wf5dd+lg556Zyv3nF3R7wo3ZCdDAsJXz05o+sfzkWfbzPIZpJbTLaQtH8SJ+1vdC9BbLlw
+YtRcENTYiPfXTm3MCFU8fP4iHZYf7yrOgX8GjxIpZwCLj8iwNT3z3IStjk7FefgCbfEDo8F7AF5W
+1Wzg/pD/0Z+4u8R9qY5e39NAvWd6fbm3k1EYSYBQsUVQMtmvEd3Vh5IAAAAAAAA=
+
+--Apple-Mail=_5C5E50CA-5674-4358-9E4F-3C21F49A260E--
