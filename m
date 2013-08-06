@@ -1,113 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753449Ab3HFFes (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 01:34:48 -0400
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:40949 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752211Ab3HFFeq (ORCPT
+	id S1753309Ab3HFFpd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 01:45:33 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:43960 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752484Ab3HFFpb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 01:34:46 -0400
-Message-ID: <52008AEF.2050601@linux.vnet.ibm.com>
-Date: Tue, 06 Aug 2013 13:34:39 +0800
-From: yun wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Miles Lane <miles.lane@gmail.com>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: 3.11.0-rc4 (Linus GIT) -- WARNING: CPU: 1 PID: 1 at kernel/time/tick-sched.c:185
- can_stop_full_tick+0x7e/0x89()
-References: <CAHFgRy8V7Zp=CRipj+zVq2O+exxnpMuN0BdKwZXmJ1BeReQFYA@mail.gmail.com>
-In-Reply-To: <CAHFgRy8V7Zp=CRipj+zVq2O+exxnpMuN0BdKwZXmJ1BeReQFYA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13080605-3864-0000-0000-0000096FE2A7
+	Tue, 6 Aug 2013 01:45:31 -0400
+Date: Tue, 6 Aug 2013 15:45:18 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ben Widawsky <ben@bwidawsk.net>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        <intel-gfx@lists.freedesktop.org>, <dri-devel@lists.freedesktop.org>,
+        Dave Chinner <dchinner@redhat.com>, Glauber Costa <glommer@openvz.org>
+Subject: linux-next: manual merge of the akpm tree with the drm-intel tree
+Message-Id: <20130806154518.2b3c86349b167312a2a7a8a7@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__6_Aug_2013_15_45_18_+1000_5ujK6iodcSL8_suY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Miles
+--Signature=_Tue__6_Aug_2013_15_45_18_+1000_5ujK6iodcSL8_suY
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On 08/06/2013 12:30 PM, Miles Lane wrote:
-> I am not seeing any problems in the behavior of the computer, but
-> wonder if this indicates something that needs fixing.
->
-> [    1.969109] WARNING: CPU: 1 PID: 1 at kernel/time/tick-sched.c:185
-> can_stop_full_tick+0x7e/0x89()
+Hi Andrew,
 
-According to the comments:
+Today's linux-next merge of the akpm tree got a conflict in
+drivers/gpu/drm/i915/i915_gem.c between commit a70a3148b0c6 ("drm/i915:
+Make proper functions for VMs") from the drm-intel tree and commit
+e6950216e0af ("drivers: convert shrinkers to new count/scan API") from
+the akpm tree.
 
-                 /*
-                  * Don't allow the user to think they can get
-                  * full NO_HZ with this machine.
-                  */
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-I guess this WARN is just supposed to notify user that two feature are 
-conflict.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-I'm not sure whether this is the right way, may be declaim while making 
-config will be better, but consider that nohz could also be enabled by 
-boot option, may be this is a good way...
+diff --cc drivers/gpu/drm/i915/i915_gem.c
+index d31e15d,49db617..0000000
+--- a/drivers/gpu/drm/i915/i915_gem.c
++++ b/drivers/gpu/drm/i915/i915_gem.c
+@@@ -4642,10 -4626,10 +4650,9 @@@ i915_gem_inactive_count(struct shrinke
+  			     struct drm_i915_private,
+  			     mm.inactive_shrinker);
+  	struct drm_device *dev =3D dev_priv->dev;
+ -	struct i915_address_space *vm =3D &dev_priv->gtt.base;
+  	struct drm_i915_gem_object *obj;
+- 	int nr_to_scan =3D sc->nr_to_scan;
+  	bool unlock =3D true;
+- 	int cnt;
++ 	long cnt;
+ =20
+  	if (!mutex_trylock(&dev->struct_mutex)) {
+  		if (!mutex_is_locked_by(&dev->struct_mutex, current))
+@@@ -4683,75 -4653,36 +4681,109 @@@
+  		mutex_unlock(&dev->struct_mutex);
+  	return cnt;
+  }
+ +
++ static long
++ i915_gem_inactive_scan(struct shrinker *shrinker, struct shrink_control *=
+sc)
++ {
++ 	struct drm_i915_private *dev_priv =3D
++ 		container_of(shrinker,
++ 			     struct drm_i915_private,
++ 			     mm.inactive_shrinker);
++ 	struct drm_device *dev =3D dev_priv->dev;
++ 	int nr_to_scan =3D sc->nr_to_scan;
++ 	long freed;
++ 	bool unlock =3D true;
++=20
++ 	if (!mutex_trylock(&dev->struct_mutex)) {
++ 		if (!mutex_is_locked_by(&dev->struct_mutex, current))
++ 			return 0;
++=20
++ 		if (dev_priv->mm.shrinker_no_lock_stealing)
++ 			return 0;
++=20
++ 		unlock =3D false;
++ 	}
++=20
++ 	freed =3D i915_gem_purge(dev_priv, nr_to_scan);
++ 	if (freed < nr_to_scan)
++ 		freed +=3D __i915_gem_shrink(dev_priv, nr_to_scan,
++ 							false);
++ 	if (freed < nr_to_scan)
++ 		freed +=3D i915_gem_shrink_all(dev_priv);
++=20
++ 	if (unlock)
++ 		mutex_unlock(&dev->struct_mutex);
++ 	return freed;
++ }
+++
+ +/* All the new VM stuff */
+ +unsigned long i915_gem_obj_offset(struct drm_i915_gem_object *o,
+ +				  struct i915_address_space *vm)
+ +{
+ +	struct drm_i915_private *dev_priv =3D o->base.dev->dev_private;
+ +	struct i915_vma *vma;
+ +
+ +	if (vm =3D=3D &dev_priv->mm.aliasing_ppgtt->base)
+ +		vm =3D &dev_priv->gtt.base;
+ +
+ +	BUG_ON(list_empty(&o->vma_list));
+ +	list_for_each_entry(vma, &o->vma_list, vma_link) {
+ +		if (vma->vm =3D=3D vm)
+ +			return vma->node.start;
+ +
+ +	}
+ +	return -1;
+ +}
+ +
+ +bool i915_gem_obj_bound(struct drm_i915_gem_object *o,
+ +			struct i915_address_space *vm)
+ +{
+ +	struct i915_vma *vma;
+ +
+ +	list_for_each_entry(vma, &o->vma_list, vma_link)
+ +		if (vma->vm =3D=3D vm)
+ +			return true;
+ +
+ +	return false;
+ +}
+ +
+ +bool i915_gem_obj_bound_any(struct drm_i915_gem_object *o)
+ +{
+ +	struct drm_i915_private *dev_priv =3D o->base.dev->dev_private;
+ +	struct i915_address_space *vm;
+ +
+ +	list_for_each_entry(vm, &dev_priv->vm_list, global_link)
+ +		if (i915_gem_obj_bound(o, vm))
+ +			return true;
+ +
+ +	return false;
+ +}
+ +
+ +unsigned long i915_gem_obj_size(struct drm_i915_gem_object *o,
+ +				struct i915_address_space *vm)
+ +{
+ +	struct drm_i915_private *dev_priv =3D o->base.dev->dev_private;
+ +	struct i915_vma *vma;
+ +
+ +	if (vm =3D=3D &dev_priv->mm.aliasing_ppgtt->base)
+ +		vm =3D &dev_priv->gtt.base;
+ +
+ +	BUG_ON(list_empty(&o->vma_list));
+ +
+ +	list_for_each_entry(vma, &o->vma_list, vma_link)
+ +		if (vma->vm =3D=3D vm)
+ +			return vma->node.size;
+ +
+ +	return 0;
+ +}
+ +
+ +struct i915_vma *i915_gem_obj_to_vma(struct drm_i915_gem_object *obj,
+ +				     struct i915_address_space *vm)
+ +{
+ +	struct i915_vma *vma;
+ +	list_for_each_entry(vma, &obj->vma_list, vma_link)
+ +		if (vma->vm =3D=3D vm)
+ +			return vma;
+ +
+ +	return NULL;
+ +}
 
-Regards,
-Michael Wang
+--Signature=_Tue__6_Aug_2013_15_45_18_+1000_5ujK6iodcSL8_suY
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
-> [    1.969121] NO_HZ FULL will not work with unstable sched clock
-> [    1.969129] Modules linked in:
-> [    1.969142] CPU: 1 PID: 1 Comm: swapper/0 Not tainted 3.11.0-rc4 #150
-> [    1.969152] Hardware name: ASUSTeK Computer Inc.         UL50VT
->           /UL50VT    , BIOS 217     03/01/2010
-> [    1.969166]  0000000000000000 ffff88013f303eb0 ffffffff8138347b
-> ffff88013f303ef8
-> [    1.969183]  ffff88013f303ee8 ffffffff8103454f ffffffff81079bbf
-> ffff88013f30d7b0
-> [    1.969199]  0000000000000001 ffff88013a801dc0 ffff88013a802240
-> ffff88013f303f48
-> [    1.969216] Call Trace:
-> [    1.969222]  <IRQ>  [<ffffffff8138347b>] dump_stack+0x4e/0x82
-> [    1.969241]  [<ffffffff8103454f>] warn_slowpath_common+0x75/0x8e
-> [    1.969253]  [<ffffffff81079bbf>] ? can_stop_full_tick+0x7e/0x89
-> [    1.969265]  [<ffffffff810345af>] warn_slowpath_fmt+0x47/0x49
-> [    1.969278]  [<ffffffff81079bbf>] can_stop_full_tick+0x7e/0x89
-> [    1.969290]  [<ffffffff8107a046>] tick_nohz_irq_exit+0x63/0x7f
-> [    1.969302]  [<ffffffff810384ec>] irq_exit+0xa4/0xac
-> [    1.969314]  [<ffffffff810239e8>] smp_apic_timer_interrupt+0x30/0x3c
-> [    1.969327]  [<ffffffff8138ef6f>] apic_timer_interrupt+0x6f/0x80
-> [    1.969336]  <EOI>  [<ffffffff8100c676>] ? save_stack_trace+0x26/0x41
-> [    1.969355]  [<ffffffff813893cd>] ? _raw_spin_unlock_irqrestore+0x3c/0x69
-> [    1.969369]  [<ffffffff813810fb>] __slab_free+0x53/0x317
-> [    1.969382]  [<ffffffff811f08c6>] ? debug_check_no_obj_freed+0x103/0x153
-> [    1.969397]  [<ffffffff810eb271>] kfree+0x102/0x111
-> [    1.969410]  [<ffffffff81237171>] ? acpi_ns_get_node+0xb6/0xc6
-> [    1.969422]  [<ffffffff81237171>] acpi_ns_get_node+0xb6/0xc6
-> [    1.969434]  [<ffffffff813893ec>] ? _raw_spin_unlock_irqrestore+0x5b/0x69
-> [    1.969447]  [<ffffffff81053a3a>] ? up+0x34/0x39
-> [    1.969459]  [<ffffffff812198d2>] ? acpi_os_signal_semaphore+0x1c/0x28
-> [    1.969472]  [<ffffffff81237aa0>] acpi_get_handle+0x7e/0x92
-> [    1.969486]  [<ffffffff816aa050>] pnpacpi_add_device_handler+0x57/0x217
-> [    1.969499]  [<ffffffff812378ca>] acpi_ns_get_device_callback+0x135/0x14b
-> [    1.969511]  [<ffffffff81053a3a>] ? up+0x34/0x39
-> [    1.969523]  [<ffffffff8123728f>] acpi_ns_walk_namespace+0xc3/0x17a
-> [    1.969535]  [<ffffffff81237795>] ? acpi_walk_namespace+0xc0/0xc0
-> [    1.969547]  [<ffffffff812376c0>] acpi_get_devices+0x5d/0x72
-> [    1.969560]  [<ffffffff816a9ff9>] ? ispnpidacpi+0x84/0x84
-> [    1.969571]  [<ffffffff816aa210>] ? pnpacpi_add_device_handler+0x217/0x217
-> [    1.969584]  [<ffffffff816aa26e>] pnpacpi_init+0x5e/0x8c
-> [    1.969596]  [<ffffffff81000276>] do_one_initcall+0x8e/0x12b
-> [    1.969608]  [<ffffffff8104d796>] ? parameq+0x1d/0x1f
-> [    1.969619]  [<ffffffff8104d924>] ? parse_args+0x18c/0x23f
-> [    1.969632]  [<ffffffff81684dd4>] kernel_init_freeable+0x115/0x196
-> [    1.969643]  [<ffffffff816846b4>] ? do_early_param+0x88/0x88
-> [    1.969654]  [<ffffffff81379a6d>] ? rest_init+0x131/0x131
-> [    1.969665]  [<ffffffff81379a76>] kernel_init+0x9/0xd1
-> [    1.969676]  [<ffffffff8138e26c>] ret_from_fork+0x7c/0xb0
-> [    1.969687]  [<ffffffff81379a6d>] ? rest_init+0x131/0x131
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+iQIcBAEBCAAGBQJSAI1zAAoJEECxmPOUX5FEWiIQAJSy6dAtfDZrxdFIEuXD4QhG
+Pf5/UD2NgS9DELVn2Aqyqt51vcvyAgqA1nTb5Padd7QgTP/hNb+jfJrpz8oK7riZ
+EV2E2mtbpqlxjHWXZ2xdYkdRVaz67YYRMB5Mh2vFkE+trch9DdxlJQn//xI+MSkS
+Szp/9dMC6GaKJsN7bS2aIZIEFP3I3VONWsv1dD6Shs9jVj7bRk7V1XMB2Sbo804R
+Siqu3zskaYID1RIOryLsRVPQgHjB+tcYkRRjORiGJN0TejG7HDptGYOGNRwHRa+w
+N2gKk51pPrLGmK2JMMdZljw4TKBY/E/K/umo+cfnz8eqFGS72gnlb42XXTtdEWun
+i39kdcqzkiRiNY5mDQFP/9vqnT62u0UfLezRoS/Q5RUa/iPaSPZJn9Z33NlZ/IaQ
+GiaVIHsArEJsAOnC9j6whemWzde29NVcTUiH3po7PrrqNmMXC5gCb78DpCk7CWZ3
+AjgNOtHrFNReq5TgpafmELWHGy34nc3Ysf8uK49ATR9U1ianKpny5exa2zBMzM6Z
+YcOxpKJtVS5pIoZHh1L78WLyq8MuOVL2moeGp0mItOYEMofBgzddyHoQn6bqMRgG
+C9kVhLmMIv6VJkQrS1A8mOWN1ICjsUfd4ctZ8XwG7DIcnAA7RO5r3Cd8QVHJfd3n
+Dg5TE/uLqtPrejjGHbrO
+=m8IC
+-----END PGP SIGNATURE-----
 
+--Signature=_Tue__6_Aug_2013_15_45_18_+1000_5ujK6iodcSL8_suY--
