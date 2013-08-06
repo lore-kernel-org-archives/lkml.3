@@ -1,82 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756224Ab3HFQkp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 12:40:45 -0400
-Received: from nlpi176.sbcis.sbc.com ([207.115.36.48]:36059 "EHLO
-	nlpi176.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755992Ab3HFQk3 (ORCPT
+	id S1756055Ab3HFQsK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 12:48:10 -0400
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:38535 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755431Ab3HFQsH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 12:40:29 -0400
-X-Greylist: delayed 468 seconds by postgrey-1.27 at vger.kernel.org; Tue, 06 Aug 2013 12:40:29 EDT
-Date: Tue, 6 Aug 2013 09:31:58 -0700
-From: Bryan Kadzban <bryan@kadzban.is-a-geek.net>
-To: Tom Gundersen <teg@jklm.no>
-Cc: Maarten Lankhorst <m.b.lankhorst@gmail.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        systemd-devel@lists.freedesktop.org, linux-hotplug@vger.kernel.org,
-        Linux Wireless List <linux-wireless@vger.kernel.org>,
-        linux-kernel@vger.kernel.org,
-        Intel Linux Wireless <ilw@linux.intel.com>, Kay Sievers <kay@vrfy.org>,
-        Johannes Berg <johannes@sipsolutions.net>
-Subject: Re: [systemd-devel] [PATCH] Change CONFIG_FW_LOADER_USER_HELPER to default n and don't select it
-Message-ID: <20130806163158.GA23093@kadzban.is-a-geek.net>
-References: <CALCETrXSnFPFVPkXHwz+FFA3=+pmz9V=cMHWwtN+jG1QJALWSQ@mail.gmail.com> <325b19bb936d7ebae11edad86aac8f0931e8abd9.1375719828.git.luto@amacapital.net> <5200B1BD.7030307@gmail.com> <CAG-2HqXEj06JbUOWee=NfuRXxL75uRf=55FZcXRLHroDzYUthQ@mail.gmail.com> <CAG-2HqVvoQK8ggErGGinO9i8Pbu-O-X=eYFW445ce24dpt7HyA@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAG-2HqVvoQK8ggErGGinO9i8Pbu-O-X=eYFW445ce24dpt7HyA@mail.gmail.com>
-User-Agent: Mutt/1.4.2.1i
+	Tue, 6 Aug 2013 12:48:07 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAK9yfHwxVtJFZMQNoh-RepaF53L_TruPBSUt3YH_XY+8iXjffA@mail.gmail.com>
+References: <1375726723-20862-1-git-send-email-tobetter@gmail.com>
+	<CAK9yfHwxVtJFZMQNoh-RepaF53L_TruPBSUt3YH_XY+8iXjffA@mail.gmail.com>
+Date: Wed, 7 Aug 2013 01:48:05 +0900
+Message-ID: <CADoNuNdOV4uwnCdtnYGzDGb=j-Qqnhx9fRrif5c=f-X=-gRoGw@mail.gmail.com>
+Subject: Re: [PATCH RESEND] ARM: dts: Add USBPHY nodes to Exynos4x12
+From: Dongjin Kim <tobetter@gmail.com>
+To: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Kukjin Kim <kgene.kim@samsung.com>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 06, 2013 at 11:17:17AM +0200, Tom Gundersen wrote:
-> On Tue, Aug 6, 2013 at 11:11 AM, Tom Gundersen <teg@jklm.no> wrote:
-> > On Tue, Aug 6, 2013 at 10:20 AM, Maarten Lankhorst
-> > <m.b.lankhorst@gmail.com> wrote:
-> >> Op 05-08-13 18:29, Andy Lutomirski schreef:
-> >>> The systemd commit below can delay firmware loading by multiple
-> >>> minutes if CONFIG_FW_LOADER_USER_HELPER=y.  Unfortunately no one
-> >>> noticed that the systemd-udev change would break new kernels as well
-> >>> as old kernels.
-> >>>
-> >>> Since the kernel apparently can't count on reasonable userspace
-> >>> support, turn this thing off by default.
-> >>>
-> >>> commit a3bd8447be4ea2ce230eb8ae0e815c04d85fa15a
-> >>> Author: Tom Gundersen <teg@jklm.no>
-> >>> Date:   Mon Mar 18 15:12:18 2013 +0100
-> >>>
-> >>>     udev: make firmware loading optional and disable by default
-> >>>
-> >>>     Distros that whish to support old kernels should set
-> >>>       --with-firmware-dirs="/usr/lib/firmware/updates:/usr/lib/firmware"
-> >>>     to retain the old behaviour.
-> >>>
-> >> methinks this patch should be reverted then,
-> >
-> > Well, all the code is still there, so it can be enabled if anyone wants it.
-> >
-> >> or a stub should be added to udev to always fail firmware loading so timeouts don't occur.
-> >
-> > I think the only use (if any) of a userspace firmware loader would be
-> > for anyone who wants a custom one (i.e., not udev), so we shouldn't
-> > just fail the loading from udev unconditionally.
-> >
-> > How about we just improve the udev documentation a bit, similar to
-> > Andy's kernel patch?
-> 
-> Sorry, I should first have checked. We already document this in the README:
-> 
-> >        Userspace firmware loading is deprecated, will go away, and
-> >        sometimes causes problems:
-> >          CONFIG_FW_LOADER_USER_HELPER=n
+Aha, yes...my misunderstanding.
+This node is not only for OTG or HSIC, could miss USB HOST transceiver
+if certain board file does not set "okay".
 
-...And this patch is making the kernel default to the correct behavior,
-instead of the now-broken-by-udev behavior.
+Thanks,
+Dongjin.
 
-I'm not sure I see the issue with it?  :-)
-
-(Add me to the list of people that think udev is broken too, fwiw.  But
-let's at least not leave *both* sides in a broken-by-default state.)
-
+On Tue, Aug 6, 2013 at 3:09 PM, Sachin Kamat <sachin.kamat@linaro.org> wrote:
+> Hi Dongjin,
+>
+> On 5 August 2013 23:48, Dongjin Kim <tobetter@gmail.com> wrote:
+>> This patch adds device nodes for USBPHY to Exynos4x12.
+>>
+>> CC: Sachin Kamat <sachin.kamat@linaro.org>
+>> Signed-off-by: Dongjin Kim <tobetter@gmail.com>
+>> ---
+>>  arch/arm/boot/dts/exynos4x12.dtsi |   18 ++++++++++++++++++
+>>  1 file changed, 18 insertions(+)
+>>
+>> diff --git a/arch/arm/boot/dts/exynos4x12.dtsi b/arch/arm/boot/dts/exynos4x12.dtsi
+>> index 01da194..9c3335b 100644
+>> --- a/arch/arm/boot/dts/exynos4x12.dtsi
+>> +++ b/arch/arm/boot/dts/exynos4x12.dtsi
+>> @@ -73,4 +73,22 @@
+>>                 clock-names = "sclk_fimg2d", "fimg2d";
+>>                 status = "disabled";
+>>         };
+>> +
+>> +       usbphy@125B00000 {
+>> +               #address-cells = <1>;
+>> +               #size-cells = <1>;
+>> +               compatible = "samsung,exynos4x12-usb2phy";
+>> +               reg = <0x125B0000 0x100>;
+>> +               ranges;
+>> +
+>> +               clocks = <&clock 2>, <&clock 305>;
+>> +               clock-names = "xusbxti", "otg";
+>> +               status = "disabled";
+>
+> I don't think this node has any other board specific dependencies. In
+> that case you don't need to disable this.
+>
+>> +
+>> +               usbphy-sys {
+>> +                       /* USB device and host PHY_CONTROL registers */
+>> +                       reg = <0x10020704 0xc>,
+>> +                             <0x1001021c 0x4>;
+>> +               };
+>> +       };
+>>  };
+>> --
+>> 1.7.9.5
+>>
+>
+>
+>
+> --
+> With warm regards,
+> Sachin
