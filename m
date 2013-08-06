@@ -1,122 +1,264 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756987Ab3HFWrk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 18:47:40 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:52307 "EHLO zene.cmpxchg.org"
+	id S1756836Ab3HFWui (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 18:50:38 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:58510 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756814Ab3HFWo7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 18:44:59 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: linux-mm@kvack.org
-Cc: Andi Kleen <andi@firstfloor.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>,
-        Christoph Hellwig <hch@infradead.org>, Hugh Dickins <hughd@google.com>,
-        Jan Kara <jack@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        Michel Lespinasse <walken@google.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Roman Gushchin <klamm@yandex-team.ru>,
-        Ozgun Erdogan <ozgun@citusdata.com>, Metin Doslu <metin@citusdata.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [patch 1/9] lib: radix-tree: radix_tree_delete_item()
-Date: Tue,  6 Aug 2013 18:44:02 -0400
-Message-Id: <1375829050-12654-2-git-send-email-hannes@cmpxchg.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1375829050-12654-1-git-send-email-hannes@cmpxchg.org>
-References: <1375829050-12654-1-git-send-email-hannes@cmpxchg.org>
+	id S1756630Ab3HFWuf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Aug 2013 18:50:35 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Cc: Linux PCI <linux-pci@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Lan Tianyu <tianyu.lan@intel.com>, Peter Wu <lekensteyn@gmail.com>,
+        Vladimir Lalov <mail@vlalov.com>
+Subject: [PATCH] ACPI: Try harder to resolve _ADR collisions for bridges
+Date: Wed, 07 Aug 2013 01:00:52 +0200
+Message-ID: <7877671.J2kQMTu2H0@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.11.0-rc4+; KDE/4.9.5; x86_64; ; )
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide a function that does not just delete an entry at a given
-index, but also allows passing in an expected item.  Delete only if
-that item is still located at the specified index.
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-This is handy when lockless tree traversals want to delete entries as
-well because they don't have to do an second, locked lookup to verify
-the slot has not changed under them before deleting the entry.
+In theory, under a given ACPI namespace node there should be only
+one child device object with _ADR whose value matches a given bus
+address exactly.  In practice, however, there are systems in which
+multiple child device objects under a given parent have _ADR matching
+exactly the same address.  In those cases we use _STA to determine
+which of the multiple matching devices is enabled, since some systems
+are known to indicate which ACPI device object to associate with the
+given physical (usually PCI) device this way.
 
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Unfortunately, as it turns out, there are systems in which many
+device objects under the same parent have _ADR matching exactly the
+same bus address and none of them has _STA, in which case they all
+should be regarded as enabled according to the spec.  Still, if
+those device objects are supposed to represent bridges (e.g. this
+is the case for device objects corresponding to PCIe ports), we can
+try harder and skip the ones that have no child device objects in the
+ACPI namespace.  With luck, we can avoid using device objects that we
+are not expected to use this way.
+
+Although this only works for bridges whose children also have ACPI
+namespace representation, it is sufficient to address graphics
+adapter detection issues on some systems, so rework the code finding
+a matching device ACPI handle for a given bus address to implement
+this idea.
+
+Introduce a new function, acpi_find_child(), taking three arguments:
+the ACPI handle of the device's parent, a bus address suitable for
+the device's bus type and a bool indicating if the device is a
+bridge and make it work as outlined above.  Reimplement the function
+currently used for this purpose, acpi_get_child(), as a call to
+acpi_find_child() with the last argument set to 'false' and make
+the PCI subsystem use acpi_find_child() with the bridge information
+passed as the last argument to it.  [Lan Tianyu notices that it is
+not sufficient to use pci_is_bridge() for that, because the device's
+subordinate pointer hasn't been set yet at this point, so use
+hdr_type instead.]
+
+This change fixes a regression introduced inadvertently by commit
+33f767d (ACPI: Rework acpi_get_child() to be more efficient) which
+overlooked the fact that for acpi_walk_namespace() "post-order" means
+"after all children have been visited" rather than "on the way back",
+so for device objects without children and for namespace walks of
+depth 1, as in the acpi_get_child() case, the "post-order" callbacks
+ordering is actually the same as the ordering of "pre-order" ones.
+Since that commit changed the namespace walk in acpi_get_child() to
+terminate after finding the first matching object instead of going
+through all of them and returning the last one, it effectively
+changed the result returned by that function in some rare cases and
+that led to problems (the switch from a "pre-order" to a "post-order"
+callback was supposed to prevent that from happening, but it was
+ineffective).
+
+As it turns out, the systems where the change made by commit
+33f767d actually matters are those where there are multiple ACPI
+device objects representing the same PCIe port (which effectively
+is a bridge).  Moreover, only one of them, and the one we are
+expected to use, has child device objects in the ACPI namespace,
+so the regression can be addressed as described above.
+
+References: https://bugzilla.kernel.org/show_bug.cgi?id=60561
+Reported-by: Peter Wu <lekensteyn@gmail.com>
+Tested-by: Vladimir Lalov <mail@vlalov.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Cc: 3.9+ <stable@vger.kernel.org> # 3.9+
 ---
- include/linux/radix-tree.h |  1 +
- lib/radix-tree.c           | 30 ++++++++++++++++++++++++++----
- 2 files changed, 27 insertions(+), 4 deletions(-)
+ drivers/acpi/glue.c     |   99 +++++++++++++++++++++++++++++++++++++++---------
+ drivers/pci/pci-acpi.c  |   14 ++++--
+ include/acpi/acpi_bus.h |    6 ++
+ 3 files changed, 97 insertions(+), 22 deletions(-)
 
-diff --git a/include/linux/radix-tree.h b/include/linux/radix-tree.h
-index 4039407..1bf0a9c 100644
---- a/include/linux/radix-tree.h
-+++ b/include/linux/radix-tree.h
-@@ -219,6 +219,7 @@ static inline void radix_tree_replace_slot(void **pslot, void *item)
- int radix_tree_insert(struct radix_tree_root *, unsigned long, void *);
- void *radix_tree_lookup(struct radix_tree_root *, unsigned long);
- void **radix_tree_lookup_slot(struct radix_tree_root *, unsigned long);
-+void *radix_tree_delete_item(struct radix_tree_root *, unsigned long, void *);
- void *radix_tree_delete(struct radix_tree_root *, unsigned long);
- unsigned int
- radix_tree_gang_lookup(struct radix_tree_root *root, void **results,
-diff --git a/lib/radix-tree.c b/lib/radix-tree.c
-index 7811ed3..60b202b 100644
---- a/lib/radix-tree.c
-+++ b/lib/radix-tree.c
-@@ -1335,15 +1335,18 @@ static inline void radix_tree_shrink(struct radix_tree_root *root)
+Index: linux-pm/drivers/acpi/glue.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/glue.c
++++ linux-pm/drivers/acpi/glue.c
+@@ -79,34 +79,99 @@ static struct acpi_bus_type *acpi_get_bu
+ 	return ret;
  }
  
- /**
-- *	radix_tree_delete    -    delete an item from a radix tree
-+ *	radix_tree_delete_item    -    delete an item from a radix tree
-  *	@root:		radix tree root
-  *	@index:		index key
-+ *	@item:		expected item
-  *
-- *	Remove the item at @index from the radix tree rooted at @root.
-+ *	Remove @item at @index from the radix tree rooted at @root.
-  *
-- *	Returns the address of the deleted item, or NULL if it was not present.
-+ *	Returns the address of the deleted item, or NULL if it was not present
-+ *	or the entry at the given @index was not @item.
-  */
--void *radix_tree_delete(struct radix_tree_root *root, unsigned long index)
-+void *radix_tree_delete_item(struct radix_tree_root *root,
-+			     unsigned long index, void *item)
+-static acpi_status do_acpi_find_child(acpi_handle handle, u32 lvl_not_used,
+-				      void *addr_p, void **ret_p)
++static acpi_status acpi_dev_check(acpi_handle handle, u32 lvl_not_used,
++				  void *not_used, void **ret_p)
  {
- 	struct radix_tree_node *node = NULL;
- 	struct radix_tree_node *slot = NULL;
-@@ -1378,6 +1381,11 @@ void *radix_tree_delete(struct radix_tree_root *root, unsigned long index)
- 	if (slot == NULL)
- 		goto out;
+-	unsigned long long addr, sta;
+-	acpi_status status;
++	struct acpi_device *adev = NULL;
  
-+	if (item && slot != item) {
-+		slot = NULL;
-+		goto out;
-+	}
-+
- 	/*
- 	 * Clear all tags associated with the item to be deleted.
- 	 * This way of doing it would be inefficient, but seldom is any set.
-@@ -1422,6 +1430,20 @@ void *radix_tree_delete(struct radix_tree_root *root, unsigned long index)
- out:
- 	return slot;
+-	status = acpi_evaluate_integer(handle, METHOD_NAME__ADR, NULL, &addr);
+-	if (ACPI_SUCCESS(status) && addr == *((u64 *)addr_p)) {
++	acpi_bus_get_device(handle, &adev);
++	if (adev) {
+ 		*ret_p = handle;
+-		status = acpi_bus_get_status_handle(handle, &sta);
+-		if (ACPI_SUCCESS(status) && (sta & ACPI_STA_DEVICE_ENABLED))
+-			return AE_CTRL_TERMINATE;
++		return AE_CTRL_TERMINATE;
+ 	}
+ 	return AE_OK;
  }
-+
-+/**
-+ *	radix_tree_delete    -    delete an item from a radix tree
-+ *	@root:		radix tree root
-+ *	@index:		index key
-+ *
-+ *	Remove the item at @index from the radix tree rooted at @root.
-+ *
-+ *	Returns the address of the deleted item, or NULL if it was not present.
-+ */
-+void *radix_tree_delete(struct radix_tree_root *root, unsigned long index)
-+{
-+	return radix_tree_delete_item(root, index, NULL);
-+}
- EXPORT_SYMBOL(radix_tree_delete);
  
- /**
--- 
-1.8.3.2
+-acpi_handle acpi_get_child(acpi_handle parent, u64 address)
++static bool acpi_dev_suitable(acpi_handle handle, bool is_bridge)
+ {
+-	void *ret = NULL;
++	unsigned long long sta;
++	acpi_status status;
+ 
+-	if (!parent)
+-		return NULL;
++	status = acpi_bus_get_status_handle(handle, &sta);
++	if (ACPI_FAILURE(status) || !(sta & ACPI_STA_DEVICE_ENABLED))
++		return false;
++
++	if (is_bridge) {
++		void *test = NULL;
++
++		/* Check if this object has at least one child device. */
++		acpi_walk_namespace(ACPI_TYPE_DEVICE, handle, 1, acpi_dev_check,
++				    NULL, NULL, &test);
++		return !!test;
++	}
++	return true;
++}
+ 
+-	acpi_walk_namespace(ACPI_TYPE_DEVICE, parent, 1, NULL,
+-			    do_acpi_find_child, &address, &ret);
+-	return (acpi_handle)ret;
++struct find_child_context {
++	u64 addr;
++	bool is_bridge;
++	acpi_handle ret;
++	bool ret_checked;
++};
++
++static acpi_status do_find_child(acpi_handle handle, u32 lvl_not_used,
++				 void *data, void **not_used)
++{
++	struct find_child_context *context = data;
++	unsigned long long addr;
++	acpi_status status;
++
++	status = acpi_evaluate_integer(handle, METHOD_NAME__ADR, NULL, &addr);
++	if (ACPI_FAILURE(status) || addr != context->addr)
++		return AE_OK;
++
++	if (!context->ret) {
++		/* This is the first matching object.  Save its handle. */
++		context->ret = handle;
++		return AE_OK;
++	}
++	/*
++	 * There is one more matching object with the same _ADR value.  That
++	 * really shouldn't happen, so we are kind of beyond the scope of the
++	 * spec here.  We have to choose which one to return, though.
++	 *
++	 * First, check if the previously found object is good enough and return
++	 * its handle if so.  Second, check the same for the object that we've
++	 * just found.
++	 */
++	if (!context->ret_checked) {
++		if (acpi_dev_suitable(context->ret, context->is_bridge))
++			return AE_CTRL_TERMINATE;
++		else
++			context->ret_checked = true;
++	}
++	if (acpi_dev_suitable(handle, context->is_bridge)) {
++		context->ret = handle;
++		return AE_CTRL_TERMINATE;
++	}
++	return AE_OK;
++}
++
++acpi_handle acpi_find_child(acpi_handle parent, u64 addr, bool is_bridge)
++{
++	if (parent) {
++		struct find_child_context context = {
++			.addr = addr,
++			.is_bridge = is_bridge,
++		};
++
++		acpi_walk_namespace(ACPI_TYPE_DEVICE, parent, 1, do_find_child,
++				    NULL, &context, NULL);
++		return context.ret;
++	}
++	return NULL;
+ }
+-EXPORT_SYMBOL(acpi_get_child);
++EXPORT_SYMBOL_GPL(acpi_find_child);
+ 
+ int acpi_bind_one(struct device *dev, acpi_handle handle)
+ {
+Index: linux-pm/include/acpi/acpi_bus.h
+===================================================================
+--- linux-pm.orig/include/acpi/acpi_bus.h
++++ linux-pm/include/acpi/acpi_bus.h
+@@ -439,7 +439,11 @@ struct acpi_pci_root {
+ };
+ 
+ /* helper */
+-acpi_handle acpi_get_child(acpi_handle, u64);
++acpi_handle acpi_find_child(acpi_handle, u64, bool);
++static inline acpi_handle acpi_get_child(acpi_handle handle, u64 addr)
++{
++	return acpi_find_child(handle, addr, false);
++}
+ int acpi_is_root_bridge(acpi_handle);
+ struct acpi_pci_root *acpi_pci_find_root(acpi_handle handle);
+ #define DEVICE_ACPI_HANDLE(dev) ((acpi_handle)ACPI_HANDLE(dev))
+Index: linux-pm/drivers/pci/pci-acpi.c
+===================================================================
+--- linux-pm.orig/drivers/pci/pci-acpi.c
++++ linux-pm/drivers/pci/pci-acpi.c
+@@ -309,13 +309,19 @@ void acpi_pci_remove_bus(struct pci_bus
+ /* ACPI bus type */
+ static int acpi_pci_find_device(struct device *dev, acpi_handle *handle)
+ {
+-	struct pci_dev * pci_dev;
+-	u64	addr;
++	struct pci_dev *pci_dev = to_pci_dev(dev);
++	/*
++	 * pci_is_bridge() is not suitable here, because pci_dev->subordinate
++	 * is set only after acpi_pci_find_device() has been called for the
++	 * given device.
++	 */
++	bool is_bridge = pci_dev->hdr_type == PCI_HEADER_TYPE_BRIDGE
++			|| pci_dev->hdr_type == PCI_HEADER_TYPE_CARDBUS;
++	u64 addr;
+ 
+-	pci_dev = to_pci_dev(dev);
+ 	/* Please ref to ACPI spec for the syntax of _ADR */
+ 	addr = (PCI_SLOT(pci_dev->devfn) << 16) | PCI_FUNC(pci_dev->devfn);
+-	*handle = acpi_get_child(DEVICE_ACPI_HANDLE(dev->parent), addr);
++	*handle = acpi_find_child(ACPI_HANDLE(dev->parent), addr, is_bridge);
+ 	if (!*handle)
+ 		return -ENODEV;
+ 	return 0;
 
