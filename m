@@ -1,64 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756349Ab3HFR6J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 13:58:09 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:27039 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756133Ab3HFR6H (ORCPT
+	id S1756541Ab3HFSAK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 14:00:10 -0400
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:58258 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755861Ab3HFSAH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 13:58:07 -0400
-X-Authority-Analysis: v=2.0 cv=KJ7Y/S5o c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=pFOAptgLnqcA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=pvQ05lsfB1wA:10 a=2pTKvNz8ocyA7Tma9CcA:9 a=QEXdDO2ut3YA:10 a=Xau-knwm0hUA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-ID: <1375811885.25420.44.camel@gandalf.local.home>
-Subject: Re: [RFC] gcc feature request: Moving blocks into sections
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, gcc <gcc@gcc.gnu.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        David Daney <ddaney.cavm@gmail.com>,
-        Behan Webster <behanw@converseincode.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Herbert Xu <herbert@gondor.hengli.com.au>
-Date: Tue, 06 Aug 2013 13:58:05 -0400
-In-Reply-To: <CA+55aFwKYSwytooG50fyryWpVdGEk_v=vdB=L-kAyLmmSW=bkQ@mail.gmail.com>
-References: <1375721715.22073.80.camel@gandalf.local.home>
-	 <CA+55aFw_o=D-j_SRn=Y4LhHm-tEyuP1Je5ZHVTYxbVyLyDcLEg@mail.gmail.com>
-	 <1375725328.22073.101.camel@gandalf.local.home>
-	 <CA+55aFwRHpL-3YObZfw6NxxDxMqQbiwp0=NnpotGj2RHDNF3iw@mail.gmail.com>
-	 <1375727977.22073.112.camel@gandalf.local.home>
-	 <CA+55aFyfvifCu=jDBH8LPmEHtvooVyo25dvJ+T6SQLhVidBBdQ@mail.gmail.com>
-	 <1375798783.25420.30.camel@gandalf.local.home>
-	 <CA+55aFwKYSwytooG50fyryWpVdGEk_v=vdB=L-kAyLmmSW=bkQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 6 Aug 2013 14:00:07 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130802075122.GK24465@radagast>
+References: <1375404726-26264-1-git-send-email-jwerner@chromium.org>
+	<1375404726-26264-2-git-send-email-jwerner@chromium.org>
+	<20130802075122.GK24465@radagast>
+Date: Tue, 6 Aug 2013 11:00:05 -0700
+X-Google-Sender-Auth: VlE8VGl2EtsmNHlEH1YaMLgkBZk
+Message-ID: <CAODwPW8+Lcgomh6ij+AwqVOMrUnOsnSc4w_BwTkZgB72MgpQvQ@mail.gmail.com>
+Subject: Re: [PATCH 1/3] usb: phy-samsung-usb: Simplify PMU register handling
+From: Julius Werner <jwerner@chromium.org>
+To: Felipe Balbi <balbi@ti.com>, Rob Herring <rob.herring@calxeda.com>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Kukjin Kim <kgene.kim@samsung.com>
+Cc: Julius Werner <jwerner@chromium.org>, LKML <linux-kernel@vger.kernel.org>,
+        linux-usb@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        Tomasz Figa <t.figa@samsung.com>,
+        Vivek Gautam <gautam.vivek@samsung.com>, devicetree@vger.kernel.org,
+        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-08-06 at 10:48 -0700, Linus Torvalds wrote:
+On Fri, Aug 2, 2013 at 12:51 AM, Felipe Balbi <balbi@ti.com> wrote:
+> Hi,
+>
+> I need an Acked-by for the dtsi part. Ideally from Exynos 5 maintainer
+> and at least one of the DT maintainers.
+>
+> --
+> balbi
 
-> So I wonder if this is a "ok, let's not bother, it's not worth the
-> pain" issue. 128 bytes of offset is very small, so there probably
-> aren't all that many cases that would use it.
-
-OK, I'll forward port the original patches for the hell of it anyway,
-and post it as an RFC. Let people play with it if they want, and if it
-seems like it would benefit the kernel perhaps we can reconsider.
-
-It shouldn't be too hard to do the forward port, and if we don't ever
-take it, it would be a fun exercise regardless ;-)
-
-Actually, the first three patches should be added as they are clean ups
-and safety checks. Nothing to do with the actual 2-5 byte jumps. They
-were lost due to their association with the complex patches. :-/
-
--- Steve
-
-
+Okay, I think I forgot to update the DT bindings documentation
+anyway... so I will resubmit this and address some more DT people
+directly to get that ACK.
