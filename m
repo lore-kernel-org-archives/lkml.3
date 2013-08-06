@@ -1,71 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756806Ab3HFWo1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 18:44:27 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:58504 "EHLO hydra.sisk.pl"
+	id S1756855Ab3HFWpF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 18:45:05 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:52326 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756728Ab3HFWo0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 18:44:26 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Kevin Hilman <khilman@linaro.org>
-Cc: Anton Vorontsov <anton@enomsg.org>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
-        Nishanth Menon <nm@ti.com>
-Subject: Re: [PATCH] MAINTAINERS: drivers/power: add entry for SmartReflex AVS drivers
-Date: Wed, 07 Aug 2013 00:54:43 +0200
-Message-ID: <2468244.h36esXYJ6h@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.11.0-rc4+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1375720159-13684-1-git-send-email-khilman@linaro.org>
-References: <1375720159-13684-1-git-send-email-khilman@linaro.org>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1756780Ab3HFWpC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Aug 2013 18:45:02 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: linux-mm@kvack.org
+Cc: Andi Kleen <andi@firstfloor.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Thelen <gthelen@google.com>,
+        Christoph Hellwig <hch@infradead.org>, Hugh Dickins <hughd@google.com>,
+        Jan Kara <jack@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Michel Lespinasse <walken@google.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Roman Gushchin <klamm@yandex-team.ru>,
+        Ozgun Erdogan <ozgun@citusdata.com>, Metin Doslu <metin@citusdata.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [patch 2/9] mm: shmem: save one radix tree lookup when truncating swapped pages
+Date: Tue,  6 Aug 2013 18:44:03 -0400
+Message-Id: <1375829050-12654-3-git-send-email-hannes@cmpxchg.org>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1375829050-12654-1-git-send-email-hannes@cmpxchg.org>
+References: <1375829050-12654-1-git-send-email-hannes@cmpxchg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, August 05, 2013 09:29:19 AM Kevin Hilman wrote:
-> The SmartReflex AVS driver evolved out of the OMAP kernel and now
-> lives under drivers/power/avs.
-> 
-> I've historically been maintainer of this but Nishanth Menon is doing
-> most of the heavy lifting now.  Add us both as co-maintainers.
-> 
-> Cc: Anton Vorontsov <anton@enomsg.org>
-> Cc: David Woodhouse <dwmw2@infradead.org>
-> Cc: Rafael J. Wysocki <rjw@sisk.pl>
-> Cc: Nishanth Menon <nm@ti.com>
-> Signed-off-by: Kevin Hilman <khilman@linaro.org>
+Page cache radix tree slots are usually stabilized by the page lock,
+but shmem's swap cookies have no such thing.  Because the overall
+truncation loop is lockless, the swap entry is currently confirmed by
+a tree lookup and then deleted by another tree lookup under the same
+tree lock region.
 
-Who's supposed to take this patch?
+Use radix_tree_delete_item() instead, which does the verification and
+deletion with only one lookup.  This also allows removing the
+delete-only special case from shmem_radix_tree_replace().
 
-Rafael
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+---
+ mm/shmem.c | 25 ++++++++++++-------------
+ 1 file changed, 12 insertions(+), 13 deletions(-)
 
-
-> ---
->  MAINTAINERS | 8 ++++++++
->  1 file changed, 8 insertions(+)
-> 
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index defc053..466ca61 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -6450,6 +6450,14 @@ S:	Maintained
->  F:	include/linux/power_supply.h
->  F:	drivers/power/
->  
-> +SMARTREFLEX DRIVERS FOR ADAPTIVE VOLTAGE SCALING (AVS)
-> +M:	Kevin Hilman <khilman@kernel.org>
-> +M:	Nishanth Menon <nm@ti.com>
-> +S:	Maintained
-> +F:	drivers/power/avs/smartreflex.c
-> +F:      include/linux/power/smartreflex.h
-> +L:	linux-pm@vger.kernel.org
-> +
->  PNP SUPPORT
->  M:	Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->  M:	Bjorn Helgaas <bhelgaas@google.com>
-> 
+diff --git a/mm/shmem.c b/mm/shmem.c
+index c93dcd6..8510534 100644
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -242,19 +242,17 @@ static int shmem_radix_tree_replace(struct address_space *mapping,
+ 			pgoff_t index, void *expected, void *replacement)
+ {
+ 	void **pslot;
+-	void *item = NULL;
++	void *item;
+ 
+ 	VM_BUG_ON(!expected);
++	VM_BUG_ON(!replacement);
+ 	pslot = radix_tree_lookup_slot(&mapping->page_tree, index);
+-	if (pslot)
+-		item = radix_tree_deref_slot_protected(pslot,
+-							&mapping->tree_lock);
++	if (!pslot)
++		return -ENOENT;
++	item = radix_tree_deref_slot_protected(pslot, &mapping->tree_lock);
+ 	if (item != expected)
+ 		return -ENOENT;
+-	if (replacement)
+-		radix_tree_replace_slot(pslot, replacement);
+-	else
+-		radix_tree_delete(&mapping->page_tree, index);
++	radix_tree_replace_slot(pslot, replacement);
+ 	return 0;
+ }
+ 
+@@ -386,14 +384,15 @@ export:
+ static int shmem_free_swap(struct address_space *mapping,
+ 			   pgoff_t index, void *radswap)
+ {
+-	int error;
++	void *old;
+ 
+ 	spin_lock_irq(&mapping->tree_lock);
+-	error = shmem_radix_tree_replace(mapping, index, radswap, NULL);
++	old = radix_tree_delete_item(&mapping->page_tree, index, radswap);
+ 	spin_unlock_irq(&mapping->tree_lock);
+-	if (!error)
+-		free_swap_and_cache(radix_to_swp_entry(radswap));
+-	return error;
++	if (old != radswap)
++		return -ENOENT;
++	free_swap_and_cache(radix_to_swp_entry(radswap));
++	return 0;
+ }
+ 
+ /*
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.8.3.2
+
