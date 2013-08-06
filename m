@@ -1,45 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755863Ab3HFKTj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 06:19:39 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:40585 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755099Ab3HFKTi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 06:19:38 -0400
-Date: Tue, 6 Aug 2013 11:19:14 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Pantelis Antoniou <panto@antoniou-consulting.com>,
-        Tony Lindgren <tony@atomide.com>,
-        =?iso-8859-1?Q?Beno=EEt?= Coussno <b-cousson@ti.com>,
-        Paul Walmsley <paul@pwsan.com>, Sourav Poddar <sourav.poddar@ti.com>,
-        Russ Dill <Russ.Dill@ti.com>, Felipe Balbi <balbi@ti.com>,
-        Koen Kooi <koen@circuitco.com>, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/5] pdev: Fix platform device resource linking
-Message-ID: <20130806101914.GH23053@n2100.arm.linux.org.uk>
-References: <1375775624-12250-1-git-send-email-panto@antoniou-consulting.com> <1375775624-12250-2-git-send-email-panto@antoniou-consulting.com> <20130806093601.GB27889@kroah.com> <311C42C3-6544-4058-ABE9-F9FAE72DD5CA@antoniou-consulting.com> <20130806101527.GB29283@kroah.com>
+	id S1755949Ab3HFKX0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 06:23:26 -0400
+Received: from mga03.intel.com ([143.182.124.21]:43186 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753414Ab3HFKXY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Aug 2013 06:23:24 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,825,1367996400"; 
+   d="scan'208";a="278313597"
+Message-ID: <5200CE8A.1090707@linux.intel.com>
+Date: Tue, 06 Aug 2013 13:23:06 +0300
+From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130806101527.GB29283@kroah.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: David Miller <davem@davemloft.net>, Shawn Bohrer <sbohrer@rgmadvisors.com>,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Eliezer Tamir <eliezer@tamir.org.il>
+Subject: Re: [PATCH net] net: rename and move busy poll mib counter
+References: <20130806095207.5887.2196.stgit@ladj378.jer.intel.com> <1375784088.4457.74.camel@edumazet-glaptop>
+In-Reply-To: <1375784088.4457.74.camel@edumazet-glaptop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 06, 2013 at 06:15:27PM +0800, Greg Kroah-Hartman wrote:
-> On Tue, Aug 06, 2013 at 12:45:42PM +0300, Pantelis Antoniou wrote:
-> > What would it take to move all this into driver core?
+On 06/08/2013 13:14, Eric Dumazet wrote:
+> On Tue, 2013-08-06 at 12:52 +0300, Eliezer Tamir wrote:
+>> Move the low latency mib counter to the ip section.
+>> Rename it from low latency to busy poll.
+>>
+>> Reported-by: Shawn Bohrer <sbohrer@rgmadvisors.com>
+>> Signed-off-by: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+>> ---
 > 
-> What specifically would you move into there?
+> Well, it should not be part of IP mib, but a socket one (not existing so
+> far)
+> 
+> Linux MIB already contains few non TCP counters :
+> 
+> LINUX_MIB_ARPFILTER
+> LINUX_MIB_IPRPFILTER
+> 
+> Its mostly populated by TCP counters, sure.
 
-A variable to hold the streaming dma_mask, so that its in struct device
-rather than having to be separate.  Yes, we can keep the pointer in there
-too, because that appears to convey meaning in the kernel today - whether
-the device can do DMA or not.
-
-A NULL dma_mask pointer already means it can't and dma_set_mask() always
-fails.  A non-NULL dma_mask pointer means the driver can use
-dma_set_mask() to set an appropriate mask.
+So, just rename it to busy poll?
+Or maybe just drop the whole patch?
