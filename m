@@ -1,62 +1,261 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755880Ab3HFNFU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 09:05:20 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:56482 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754845Ab3HFNFS (ORCPT
+	id S1756045Ab3HFNIc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 09:08:32 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:57192 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755063Ab3HFNIb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 09:05:18 -0400
-X-AuditID: cbfec7f5-b7f5f6d00000105f-45-5200f48c0710
-Message-id: <1375794314.13955.6.camel@AMDC1943>
-Subject: Re: [RFC PATCH 0/4] mm: reclaim zbud pages on migration and compaction
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Bob Liu <bob.liu@oracle.com>
-Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Date: Tue, 06 Aug 2013 15:05:14 +0200
-In-reply-to: <5200BEEF.7060904@oracle.com>
-References: <1375771361-8388-1-git-send-email-k.kozlowski@samsung.com>
- <5200BEEF.7060904@oracle.com>
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.2.3-0ubuntu6
-Content-transfer-encoding: 7bit
-MIME-version: 1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrALMWRmVeSWpSXmKPExsVy+t/xy7o9XxiCDL638VvMWb+GzWLjjPWs
-	Fl2nprJYnG16w25xedccNot7a/6zWqw9cpfdYvK7Z4wWh/atYnfg9Nj0aRK7x4kZv1k8Hhza
-	zOLx8ektFo++LasYPTafrvb4vEkugD2KyyYlNSezLLVI3y6BK+PmsYtsBatZKz716zYwLmDp
-	YuTkkBAwkWjuvQRli0lcuLeerYuRi0NIYCmjxKXL01ghnM+MEt/uHmIHqeIV0JfY9fI6K4gt
-	LOAvsfHoXkYQm03AWGLz8iVsILaIgILE60/nmUBsZoFDTBIrb3KB2CwCqhJb//aB1XAKaEmc
-	W7QAzBYSSJN49PMzI0S9usSkeYuYIS5Sktjd3skOEZeX2LzmLTPEDYISPybfY5nAKDALScss
-	JGWzkJQtYGRexSiaWppcUJyUnmukV5yYW1yal66XnJ+7iRESC193MC49ZnWIUYCDUYmHd8f1
-	/4FCrIllxZW5hxglOJiVRHjLXzAECfGmJFZWpRblxxeV5qQWH2Jk4uCUamDsP36geurnonmZ
-	ZYt43/830PTb5GLWFSZ4jrvqlM3GDyd/NvxhtBbwu/Fqjup12Su73Tkv/963av0cDpXZL9fp
-	7OTW8H1p7FLktvLH8bYVElZf2XIfz79bKlG5aGbnlTq5ZWmbVnobb//mIZZocDlUmnMLp/bM
-	7NW38uR2PRJ8Yl+8+HbwnmxnJZbijERDLeai4kQA1HKvkWMCAAA=
+	Tue, 6 Aug 2013 09:08:31 -0400
+Message-ID: <5200F553.6000200@linaro.org>
+Date: Tue, 06 Aug 2013 15:08:35 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Michal Simek <michal.simek@xilinx.com>
+CC: =?UTF-8?B?U8O2cmVuIEJyaW5rbWFubg==?= <soren.brinkmann@xilinx.com>,
+        Stuart Menefy <stuart.menefy@st.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: Enable arm_global_timer for Zynq brakes boot
+References: <51F77D93.4030505@linaro.org> <51F97842.6050200@linaro.org> <068436c6-ff98-428f-8875-bb1c6f86466b@TX2EHSMHS008.ehs.local> <51F97CE3.9030306@linaro.org> <15e19315-ce88-4d3c-bad9-0a37d9e52f6b@CO1EHSMHS007.ehs.local> <51F99747.4060901@linaro.org> <a48f159a-e88c-42fa-b76b-662302d3a585@AM1EHSMHS003.ehs.local> <51FA9AE8.1060004@linaro.org> <1c83c081-60c6-49e3-a85c-f64dd5be0e60@CH1EHSMHS030.ehs.local> <51FA9F54.3060704@linaro.org> <712d31e9-3584-48e1-aa9f-55bc94fa62c9@DB9EHSMHS001.ehs.local> <5200B7FE.4000306@linaro.org> <e43ebbd7-f520-4c66-bc8c-71a1122226ad@CO9EHSMHS020.ehs.local> <5200EC4C.5090202@linaro.org> <07cc684f-1d5c-44d7-b25c-6314efea4c58@CO9EHSMHS022.ehs.local>
+In-Reply-To: <07cc684f-1d5c-44d7-b25c-6314efea4c58@CO9EHSMHS022.ehs.local>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On wto, 2013-08-06 at 17:16 +0800, Bob Liu wrote:
-> On 08/06/2013 02:42 PM, Krzysztof Kozlowski wrote:
-> > This reclaim process is different than zbud_reclaim_page(). It acts more
-> > like swapoff() by trying to unuse pages stored in zbud page and bring
-> > them back to memory. The standard zbud_reclaim_page() on the other hand
-> > tries to write them back.
+On 08/06/2013 02:41 PM, Michal Simek wrote:
+> On 08/06/2013 02:30 PM, Daniel Lezcano wrote:
+>> On 08/06/2013 11:18 AM, Michal Simek wrote:
+>>> On 08/06/2013 10:46 AM, Daniel Lezcano wrote:
+>>>> On 08/06/2013 03:28 AM, Sören Brinkmann wrote:
+>>>>> Hi Daniel,
+>>>>>
+>>>>> On Thu, Aug 01, 2013 at 07:48:04PM +0200, Daniel Lezcano wrote:
+>>>>>> On 08/01/2013 07:43 PM, Sören Brinkmann wrote:
+>>>>>>> On Thu, Aug 01, 2013 at 07:29:12PM +0200, Daniel Lezcano wrote:
+>>>>>>>> On 08/01/2013 01:38 AM, Sören Brinkmann wrote:
+>>>>>>>>> On Thu, Aug 01, 2013 at 01:01:27AM +0200, Daniel Lezcano wrote:
+>>>>>>>>>> On 08/01/2013 12:18 AM, Sören Brinkmann wrote:
+>>>>>>>>>>> On Wed, Jul 31, 2013 at 11:08:51PM +0200, Daniel Lezcano wrote:
+>>>>>>>>>>>> On 07/31/2013 10:58 PM, Sören Brinkmann wrote:
+>>>>>>>>>>>>> On Wed, Jul 31, 2013 at 10:49:06PM +0200, Daniel Lezcano wrote:
+>>>>>>>>>>>>>> On 07/31/2013 12:34 AM, Sören Brinkmann wrote:
+>>>>>>>>>>>>>>> On Tue, Jul 30, 2013 at 10:47:15AM +0200, Daniel Lezcano wrote:
+>>>>>>>>>>>>>>>> On 07/30/2013 02:03 AM, Sören Brinkmann wrote:
+>>>>>>>>>>>>>>>>> Hi Daniel,
+>>>>>>>>>>>>>>>>>
+>>>>>>>>>>>>>>>>> On Mon, Jul 29, 2013 at 02:51:49PM +0200, Daniel Lezcano wrote:
+>>>>>>>>>>>>>>>>> (snip)
+>>>>>>>>>>>>>>>>>>
+>>>>>>>>>>>>>>>>>> the CPUIDLE_FLAG_TIMER_STOP flag tells the cpuidle framework the local
+>>>>>>>>>>>>>>>>>> timer will be stopped when entering to the idle state. In this case, the
+>>>>>>>>>>>>>>>>>> cpuidle framework will call clockevents_notify(ENTER) and switches to a
+>>>>>>>>>>>>>>>>>> broadcast timer and will call clockevents_notify(EXIT) when exiting the
+>>>>>>>>>>>>>>>>>> idle state, switching the local timer back in use.
+>>>>>>>>>>>>>>>>>
+>>>>>>>>>>>>>>>>> I've been thinking about this, trying to understand how this makes my
+>>>>>>>>>>>>>>>>> boot attempts on Zynq hang. IIUC, the wrongly provided TIMER_STOP flag
+>>>>>>>>>>>>>>>>> would make the timer core switch to a broadcast device even though it
+>>>>>>>>>>>>>>>>> wouldn't be necessary. But shouldn't it still work? It sounds like we do
+>>>>>>>>>>>>>>>>> something useless, but nothing wrong in a sense that it should result in
+>>>>>>>>>>>>>>>>> breakage. I guess I'm missing something obvious. This timer system will
+>>>>>>>>>>>>>>>>> always remain a mystery to me.
+>>>>>>>>>>>>>>>>>
+>>>>>>>>>>>>>>>>> Actually this more or less leads to the question: What is this
+>>>>>>>>>>>>>>>>> 'broadcast timer'. I guess that is some clockevent device which is
+>>>>>>>>>>>>>>>>> common to all cores? (that would be the cadence_ttc for Zynq). Is the
+>>>>>>>>>>>>>>>>> hang pointing to some issue with that driver?
+>>>>>>>>>>>>>>>>
+>>>>>>>>>>>>>>>> If you look at the /proc/timer_list, which timer is used for broadcasting ?
+>>>>>>>>>>>>>>>
+>>>>>>>>>>>>>>> So, the correct run results (full output attached).
+>>>>>>>>>>>>>>>
+>>>>>>>>>>>>>>> The vanilla kernel uses the twd timers as local timers and the TTC as
+>>>>>>>>>>>>>>> broadcast device:
+>>>>>>>>>>>>>>> 	Tick Device: mode:     1                                                         
+>>>>>>>>>>>>>>> 	Broadcast device  
+>>>>>>>>>>>>>>> 	Clock Event Device: ttc_clockevent
+>>>>>>>>>>>>>>>
+>>>>>>>>>>>>>>> When I remove the offending CPUIDLE flag and add the DT fragment to
+>>>>>>>>>>>>>>> enable the global timer, the twd timers are still used as local timers
+>>>>>>>>>>>>>>> and the broadcast device is the global timer:
+>>>>>>>>>>>>>>> 	Tick Device: mode:     1                                                         
+>>>>>>>>>>>>>>> 	Broadcast device                                                                 
+>>>>>>>>>>>>>>> 	Clock Event Device: arm_global_timer
+>>>>>>>>>>>>>>>
+>>>>>>>>>>>>>>> Again, since boot hangs in the actually broken case, I don't see way to
+>>>>>>>>>>>>>>> obtain this information for that case.
+>>>>>>>>>>>>>>
+>>>>>>>>>>>>>> Can't you use the maxcpus=1 option to ensure the system to boot up ?
+>>>>>>>>>>>>>
+>>>>>>>>>>>>> Right, that works. I forgot about that option after you mentioned, that
+>>>>>>>>>>>>> it is most likely not that useful.
+>>>>>>>>>>>>>
+>>>>>>>>>>>>> Anyway, this are those sysfs files with an unmodified cpuidle driver and
+>>>>>>>>>>>>> the gt enabled and having maxcpus=1 set.
+>>>>>>>>>>>>>
+>>>>>>>>>>>>> /proc/timer_list:
+>>>>>>>>>>>>> 	Tick Device: mode:     1
+>>>>>>>>>>>>> 	Broadcast device
+>>>>>>>>>>>>> 	Clock Event Device: arm_global_timer
+>>>>>>>>>>>>> 	 max_delta_ns:   12884902005
+>>>>>>>>>>>>> 	 min_delta_ns:   1000
+>>>>>>>>>>>>> 	 mult:           715827876
+>>>>>>>>>>>>> 	 shift:          31
+>>>>>>>>>>>>> 	 mode:           3
+>>>>>>>>>>>>
+>>>>>>>>>>>> Here the mode is 3 (CLOCK_EVT_MODE_ONESHOT)
+>>>>>>>>>>>>
+>>>>>>>>>>>> The previous timer_list output you gave me when removing the offending
+>>>>>>>>>>>> cpuidle flag, it was 1 (CLOCK_EVT_MODE_SHUTDOWN).
+>>>>>>>>>>>>
+>>>>>>>>>>>> Is it possible you try to get this output again right after onlining the
+>>>>>>>>>>>> cpu1 in order to check if the broadcast device switches to SHUTDOWN ?
+>>>>>>>>>>>
+>>>>>>>>>>> How do I do that? I tried to online CPU1 after booting with maxcpus=1
+>>>>>>>>>>> and that didn't end well:
+>>>>>>>>>>> 	# echo 1 > online && cat /proc/timer_list 
+>>>>>>>>>>
+>>>>>>>>>> Hmm, I was hoping to have a small delay before the kernel hangs but
+>>>>>>>>>> apparently this is not the case... :(
+>>>>>>>>>>
+>>>>>>>>>> I suspect the global timer is shutdown at one moment but I don't
+>>>>>>>>>> understand why and when.
+>>>>>>>>>>
+>>>>>>>>>> Can you add a stack trace in the "clockevents_shutdown" function with
+>>>>>>>>>> the clockevent device name ? Perhaps, we may see at boot time an
+>>>>>>>>>> interesting trace when it hangs.
+>>>>>>>>>
+>>>>>>>>> I did this change:
+>>>>>>>>> 	diff --git a/kernel/time/clockevents.c b/kernel/time/clockevents.c
+>>>>>>>>> 	index 38959c8..3ab11c1 100644
+>>>>>>>>> 	--- a/kernel/time/clockevents.c
+>>>>>>>>> 	+++ b/kernel/time/clockevents.c
+>>>>>>>>> 	@@ -92,6 +92,8 @@ void clockevents_set_mode(struct clock_event_device *dev,
+>>>>>>>>> 	  */
+>>>>>>>>> 	 void clockevents_shutdown(struct clock_event_device *dev)
+>>>>>>>>> 	 {
+>>>>>>>>> 	+       pr_info("ce->name:%s\n", dev->name);
+>>>>>>>>> 	+       dump_stack();
+>>>>>>>>> 	        clockevents_set_mode(dev, CLOCK_EVT_MODE_SHUTDOWN);
+>>>>>>>>> 	        dev->next_event.tv64 = KTIME_MAX;
+>>>>>>>>> 	 }
+>>>>>>>>>
+>>>>>>>>> It is hit a few times during boot, so I attach a full boot log. I really
+>>>>>>>>> don't know what to look for, but I hope you can spot something in it. I
+>>>>>>>>> really appreciate you taking the time.
+>>>>>>>>
+>>>>>>>> Thanks for the traces.
+>>>>>>>
+>>>>>>> Sure.
+>>>>>>>
+>>>>>>>>
+>>>>>>>> If you try without the ttc_clockevent configured in the kernel (but with
+>>>>>>>> twd and gt), does it boot ?
+>>>>>>>
+>>>>>>> Absence of the TTC doesn't seem to make any difference. It hangs at the
+>>>>>>> same location.
+>>>>>>
+>>>>>> Ok, IMO there is a problem with the broadcast device registration (may
+>>>>>> be vs twd).
+>>>>>>
+>>>>>> I will check later (kid duty) :)
+>>>>>
+>>>>> I was actually waiting for an update from your side and did something
+>>>>> else, but I seem to have run into this again. I was overhauling the
+>>>>> cadence_ttc (patch attached, based on tip/timers/core). And it seems to
+>>>>> show the same behavior as enabling the global_timer. With cpuidle off, it
+>>>>> works. With cpuidle, on it hangs. Removing the TIMER_STOP flag from the
+>>>>> C2 state makes it boot again.
+>>>>> It works just fine on our 3.10 kernel.
+>>>>
+>>>> This is not necessary related to the bug. If the patch you sent broke
+>>>> the cadence_ttc driver, when you use it (with the TIMER_STOP), you will
+>>>> be stuck. Removing the flag, may signifies you don't use the broadcast
+>>>> timer, hence the bug is not surfacing.
+>>>>
+>>>> Going back to the bug with the arm_global_timer, what is observed is the
+>>>> broadcast timer is *shutdown* when the second cpu is online.
+>>>>
+>>>> I have to dig into the kernel/time/clockevents.c|tick-*.c because IMO
+>>>> the issue is coming from there but before I have to reproduce the bug,
+>>>> so find a board I have where I can add the arm_global_timer.
+>>>>
+>>>>> Another thing I noticed - probably unrelated but hard to tell: On
+>>>>> 3.11-rc1 and later my system stops for quite some time at the hand off
+>>>>> to userspace. I.e. I see the 'freeing unused kernel memory...' line and
+>>>>> sometimes the following 'Welcome to Buildroot...' and then it stops and
+>>>>> on good kernels it continues after a while and boots through and on bad
+>>>>> ones it just hangs there.
+>>>>
+>>>> did you try to dump the stacks with magic-sysrq ? Or git bisect ?
+>>>
+>>> Soren: Are you able to replicate this issue on QEMU?
+>>> If yes, it should be the best if you can provide Qemu, kernel .config/
+>>> rootfs and simple manual to Daniel how to reach that fault.
+>>
+>> I tried to download qemu for zynq but it fails:
+>>
+>> git clone git://git.xilinx.com/qemu-xarm.git
+>> Cloning into 'qemu-xarm'...
+>> fatal: The remote end hung up unexpectedly
 > 
-> I prefer to migrate zbud pages directly if it's possible than reclaiming
-> them during compaction.
+> Not sure which site have you found but
+> it should be just qemu.git
+> https://github.com/Xilinx/qemu
+> 
+> or github clone.
 
-I think it is possible however it would be definitely more complex. In
-case of migration the zswap handles should be updated as they are just
-virtual addresses. Am I right?
+Ok, cool I was able to clone it.
 
-Best regards,
-Krzysztof
+>> I am also looking for the option specified for the kernel:
+>>
+>> "The kernel needs to be built with this feature turned on (in
+>> menuconfig, System Type->Xilinx Specific Features -> Device Tree At
+>> Fixed Address)."
 
+Ok.
+
+> This also sound like a very ancient tree.
+> This is the latest kernel tree - master-next is the latest devel branch.
+> https://github.com/Xilinx/linux-xlnx
+
+Ok, cool. I have the right one.
+
+> Or there should be an option to use the latest kernel from kernel.org.
+> (I think Soren is using it)
+> 
+> Zynq is the part of multiplatfrom kernel and cadence ttc is there,
+> dts is also in the mainline kernel.
+> 
+>> ps : apart that, well documented website !
+> 
+> Can you send me the link to it?
+
+http://xilinx.wikidot.com/zynq-qemu
+http://xilinx.wikidot.com/zynq-linux
+
+
+> This should be the main page for it.
+> http://www.wiki.xilinx.com/
+
+Thanks Michal !
+
+  -- Daniel
+
+
+
+
+-- 
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
