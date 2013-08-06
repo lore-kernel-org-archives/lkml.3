@@ -1,72 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756170Ab3HFQka (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 12:40:30 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:38659 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755925Ab3HFQk2 (ORCPT
+	id S1756224Ab3HFQkp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 12:40:45 -0400
+Received: from nlpi176.sbcis.sbc.com ([207.115.36.48]:36059 "EHLO
+	nlpi176.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755992Ab3HFQk3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 12:40:28 -0400
-Date: Tue, 6 Aug 2013 17:40:19 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Steve Twiss <stwiss.opensource@diasemi.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>,
-        David Dajun Chen <david.chen@diasemi.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        LKML <linux-kernel@vger.kernel.org>
-Message-ID: <20130806164019.GC6427@sirena.org.uk>
-References: <201308061437.r76EblmA010507@swsrvapps-01.diasemi.com>
- <6ED8E3B22081A4459DAC7699F3695FB71D7237EC@SW-EX-MBX02.diasemi.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="JgQwtEuHJzHdouWu"
+	Tue, 6 Aug 2013 12:40:29 -0400
+X-Greylist: delayed 468 seconds by postgrey-1.27 at vger.kernel.org; Tue, 06 Aug 2013 12:40:29 EDT
+Date: Tue, 6 Aug 2013 09:31:58 -0700
+From: Bryan Kadzban <bryan@kadzban.is-a-geek.net>
+To: Tom Gundersen <teg@jklm.no>
+Cc: Maarten Lankhorst <m.b.lankhorst@gmail.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        systemd-devel@lists.freedesktop.org, linux-hotplug@vger.kernel.org,
+        Linux Wireless List <linux-wireless@vger.kernel.org>,
+        linux-kernel@vger.kernel.org,
+        Intel Linux Wireless <ilw@linux.intel.com>, Kay Sievers <kay@vrfy.org>,
+        Johannes Berg <johannes@sipsolutions.net>
+Subject: Re: [systemd-devel] [PATCH] Change CONFIG_FW_LOADER_USER_HELPER to default n and don't select it
+Message-ID: <20130806163158.GA23093@kadzban.is-a-geek.net>
+References: <CALCETrXSnFPFVPkXHwz+FFA3=+pmz9V=cMHWwtN+jG1QJALWSQ@mail.gmail.com> <325b19bb936d7ebae11edad86aac8f0931e8abd9.1375719828.git.luto@amacapital.net> <5200B1BD.7030307@gmail.com> <CAG-2HqXEj06JbUOWee=NfuRXxL75uRf=55FZcXRLHroDzYUthQ@mail.gmail.com> <CAG-2HqVvoQK8ggErGGinO9i8Pbu-O-X=eYFW445ce24dpt7HyA@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <6ED8E3B22081A4459DAC7699F3695FB71D7237EC@SW-EX-MBX02.diasemi.com>
-X-Cookie: Many pages make a thick book.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH V4] DA9210 new driver files
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+In-Reply-To: <CAG-2HqVvoQK8ggErGGinO9i8Pbu-O-X=eYFW445ce24dpt7HyA@mail.gmail.com>
+User-Agent: Mutt/1.4.2.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Aug 06, 2013 at 11:17:17AM +0200, Tom Gundersen wrote:
+> On Tue, Aug 6, 2013 at 11:11 AM, Tom Gundersen <teg@jklm.no> wrote:
+> > On Tue, Aug 6, 2013 at 10:20 AM, Maarten Lankhorst
+> > <m.b.lankhorst@gmail.com> wrote:
+> >> Op 05-08-13 18:29, Andy Lutomirski schreef:
+> >>> The systemd commit below can delay firmware loading by multiple
+> >>> minutes if CONFIG_FW_LOADER_USER_HELPER=y.  Unfortunately no one
+> >>> noticed that the systemd-udev change would break new kernels as well
+> >>> as old kernels.
+> >>>
+> >>> Since the kernel apparently can't count on reasonable userspace
+> >>> support, turn this thing off by default.
+> >>>
+> >>> commit a3bd8447be4ea2ce230eb8ae0e815c04d85fa15a
+> >>> Author: Tom Gundersen <teg@jklm.no>
+> >>> Date:   Mon Mar 18 15:12:18 2013 +0100
+> >>>
+> >>>     udev: make firmware loading optional and disable by default
+> >>>
+> >>>     Distros that whish to support old kernels should set
+> >>>       --with-firmware-dirs="/usr/lib/firmware/updates:/usr/lib/firmware"
+> >>>     to retain the old behaviour.
+> >>>
+> >> methinks this patch should be reverted then,
+> >
+> > Well, all the code is still there, so it can be enabled if anyone wants it.
+> >
+> >> or a stub should be added to udev to always fail firmware loading so timeouts don't occur.
+> >
+> > I think the only use (if any) of a userspace firmware loader would be
+> > for anyone who wants a custom one (i.e., not udev), so we shouldn't
+> > just fail the loading from udev unconditionally.
+> >
+> > How about we just improve the udev documentation a bit, similar to
+> > Andy's kernel patch?
+> 
+> Sorry, I should first have checked. We already document this in the README:
+> 
+> >        Userspace firmware loading is deprecated, will go away, and
+> >        sometimes causes problems:
+> >          CONFIG_FW_LOADER_USER_HELPER=n
 
---JgQwtEuHJzHdouWu
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+...And this patch is making the kernel default to the correct behavior,
+instead of the now-broken-by-udev behavior.
 
-On Tue, Aug 06, 2013 at 03:30:51PM +0000, Steve Twiss wrote:
+I'm not sure I see the issue with it?  :-)
 
-> I thought that my previous submission attempts were drawing comments
-> because of the body content of the e-mail was wrong and the details should have
-> been placed after the --- marker, not because of the subject line.
+(Add me to the list of people that think udev is broken too, fwiw.  But
+let's at least not leave *both* sides in a broken-by-default state.)
 
-Actually it was both things - in any case it's mostly fine now, I've not
-had time to read the actual patch yet, will let you know when I do.
-
---JgQwtEuHJzHdouWu
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSASbvAAoJELSic+t+oim9uOAP+wYZ+ROQh3va+mgv9T0hmg0g
-t7kBAFb3BrecR3hkaZihhyv7vr5cLMtZC+0YyiN6+wfhg2XDb0UYeV4+MocWL8ll
-GVpATZ0UXdv/GjdOBsG48E+T0//fWV+SNAJnsudx9Q+hiVQKmKb2y/lExYjFARsr
-NATgVAUxnu+3y2y/cY6LsgJMnw+8tzxbIZEpAi6BgKn8zCGkFnhMoadFKPYMeqkh
-FVy7MJOX+tC6HMJmZEKiTlqRReUvAZMrtKc9tBpreJGl72+COyV/VnrPv/XmrwDV
-Kg1B9uZEnE3g0nuRF4QeQbr928fQ/sAAC9y78PRPLBdW611gLSR5xnep+1nQJlhH
-/c35QRBl99OgFX5lVVyUFRI13T1nwc53WCEl4v7d62sCzAGYncQlVB2xjWn0PQ0s
-whLcAL0sakgp7XHEWkZ6/GQCAmr0tGL4DqHKKUu4PfiVT+94uTtNcVcVz3QL75eL
-CXmuZgF3QOXjo48wQf1+qlVRUNdndgRuB+HCb56m8RBaFeO4mnXj0GUY1Kw6RJtO
-v/Hrnj51XSvRnXsr+I+gW42F0eVWamWblvZsRYiVPvlYqk9H2xmhuIbXo+3qZC+U
-/UiosXLXyyBrPF8xSUKJ2LDTvgZUiZKztqsEFgB0FztNN4aIu5DSIk2fnDgdHNA+
-MRfFViJ7tLld8+jseNvE
-=wvm1
------END PGP SIGNATURE-----
-
---JgQwtEuHJzHdouWu--
