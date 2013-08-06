@@ -1,50 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756894Ab3HGPui (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 11:50:38 -0400
-Received: from na3sys010aog106.obsmtp.com ([74.125.245.80]:53622 "HELO
-	na3sys010aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753806Ab3HGPuf (ORCPT
+	id S1757015Ab3HGPvf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 11:51:35 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:63734 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753806Ab3HGPve (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 11:50:35 -0400
+	Wed, 7 Aug 2013 11:51:34 -0400
+Message-ID: <201308071551.r77FpWTf022475@farm-0012.internal.tilera.com>
+In-Reply-To: <201308071458.r77EwuJV013106@farm-0012.internal.tilera.com>
+References: <201308071458.r77EwuJV013106@farm-0012.internal.tilera.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
+Date: Tue, 6 Aug 2013 16:22:39 -0400
+Subject: [PATCH v2] mm: make lru_add_drain_all() selective
+To: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        Tejun Heo <tj@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <52025BE3.5020002@redhat.com>
-References: <1375746189.18481.23.camel@dabdike.int.hansenpartnership.com>
- <1375750501-21902-1-git-send-email-roland@kernel.org> <52025BE3.5020002@redhat.com>
-From: Roland Dreier <roland@kernel.org>
-Date: Wed, 7 Aug 2013 08:50:13 -0700
-X-Google-Sender-Auth: ZVdnoUfcZrpUsI3YiKIFxYdZ2Zc
-Message-ID: <CAL1RGDW_nPZPBH=X-fOM4sddhVNkojEp4gUQseSJJaJAxfNqqQ@mail.gmail.com>
-Subject: Re: [PATCH v2] [SCSI] sg: Fix user memory corruption when SG_IO is
- interrupted by a signal
-To: David Milburn <dmilburn@redhat.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Doug Gilbert <dgilbert@interlog.com>,
-        James Bottomley <JBottomley@parallels.com>,
-        Costa Sapuntzakis <costa@purestorage.com>,
-        =?ISO-8859-1?Q?J=F6rn_Engel?= <joern@purestorage.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        David Jeffery <djeffery@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 7, 2013 at 7:38 AM, David Milburn <dmilburn@redhat.com> wrote:
-> I was able to succesfully test this patch overnight, I had been experimenting with the
-> sg driver setting the BIO_NULL_MAPPED flag in sg_rq_end_io_usercontext for a orphan process
-> which prevented the corruption, but your solution seems much better.
+This change makes lru_add_drain_all() only selectively interrupt
+the cpus that have per-cpu free pages that can be drained.
 
-Very cool, thanks for the testing.
+This is important in nohz mode where calling mlockall(), for
+example, otherwise will interrupt every core unnecessarily.
 
-I actually looked at using BIO_NULL_MAPPED as well, but it seemed a
-bit too fragile to me -- it had the right effect of skipping
-__bio_copy_iov(), and skipping the __free_pages() stuff in there is OK
-because sg owns its pages rather than the bio layer, but all that
-seemed vulnerable to being broken by an unrelated change.
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+---
+Oops! In the previous version of this change I had just blindly patched
+it forward from a slightly older version of mm/swap.c.  This version is
+now properly against a version of mm/swap.c that includes all the latest
+changes to lru_add_drain_all().
 
-Out of curiousity, were you already working on this bug?  Because if
-you had fixed it a few weeks earlier we might not have spent so long
-wondering WTF was stomping on the memory of one of our processes :)
+ include/linux/workqueue.h |  3 +++
+ kernel/workqueue.c        | 35 ++++++++++++++++++++++++++---------
+ mm/swap.c                 | 37 ++++++++++++++++++++++++++++++++++++-
+ 3 files changed, 65 insertions(+), 10 deletions(-)
 
- - R.
+diff --git a/include/linux/workqueue.h b/include/linux/workqueue.h
+index a0ed78a..71a3fe7 100644
+--- a/include/linux/workqueue.h
++++ b/include/linux/workqueue.h
+@@ -13,6 +13,8 @@
+ #include <linux/atomic.h>
+ #include <linux/cpumask.h>
+ 
++struct cpumask;
++
+ struct workqueue_struct;
+ 
+ struct work_struct;
+@@ -470,6 +472,7 @@ extern void flush_workqueue(struct workqueue_struct *wq);
+ extern void drain_workqueue(struct workqueue_struct *wq);
+ extern void flush_scheduled_work(void);
+ 
++extern int schedule_on_cpu_mask(work_func_t func, const struct cpumask *mask);
+ extern int schedule_on_each_cpu(work_func_t func);
+ 
+ int execute_in_process_context(work_func_t fn, struct execute_work *);
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index f02c4a4..a6d1809 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -2962,17 +2962,18 @@ bool cancel_delayed_work_sync(struct delayed_work *dwork)
+ EXPORT_SYMBOL(cancel_delayed_work_sync);
+ 
+ /**
+- * schedule_on_each_cpu - execute a function synchronously on each online CPU
++ * schedule_on_cpu_mask - execute a function synchronously on each listed CPU
+  * @func: the function to call
++ * @mask: the cpumask to invoke the function on
+  *
+- * schedule_on_each_cpu() executes @func on each online CPU using the
++ * schedule_on_cpu_mask() executes @func on each listed CPU using the
+  * system workqueue and blocks until all CPUs have completed.
+- * schedule_on_each_cpu() is very slow.
++ * schedule_on_cpu_mask() is very slow.
+  *
+  * RETURNS:
+  * 0 on success, -errno on failure.
+  */
+-int schedule_on_each_cpu(work_func_t func)
++int schedule_on_cpu_mask(work_func_t func, const struct cpumask *mask)
+ {
+ 	int cpu;
+ 	struct work_struct __percpu *works;
+@@ -2981,24 +2982,40 @@ int schedule_on_each_cpu(work_func_t func)
+ 	if (!works)
+ 		return -ENOMEM;
+ 
+-	get_online_cpus();
+-
+-	for_each_online_cpu(cpu) {
++	for_each_cpu(cpu, mask) {
+ 		struct work_struct *work = per_cpu_ptr(works, cpu);
+ 
+ 		INIT_WORK(work, func);
+ 		schedule_work_on(cpu, work);
+ 	}
+ 
+-	for_each_online_cpu(cpu)
++	for_each_cpu(cpu, mask)
+ 		flush_work(per_cpu_ptr(works, cpu));
+ 
+-	put_online_cpus();
+ 	free_percpu(works);
+ 	return 0;
+ }
+ 
+ /**
++ * schedule_on_each_cpu - execute a function synchronously on each online CPU
++ * @func: the function to call
++ *
++ * schedule_on_each_cpu() executes @func on each online CPU using the
++ * system workqueue and blocks until all CPUs have completed.
++ * schedule_on_each_cpu() is very slow.
++ *
++ * RETURNS:
++ * 0 on success, -errno on failure.
++ */
++int schedule_on_each_cpu(work_func_t func)
++{
++	get_online_cpus();
++	schedule_on_cpu_mask(func, cpu_online_mask);
++	put_online_cpus();
++	return 0;
++}
++
++/**
+  * flush_scheduled_work - ensure that any scheduled work has run to completion.
+  *
+  * Forces execution of the kernel-global workqueue and blocks until its
+diff --git a/mm/swap.c b/mm/swap.c
+index 4a1d0d2..d4a862b 100644
+--- a/mm/swap.c
++++ b/mm/swap.c
+@@ -405,6 +405,11 @@ static void activate_page_drain(int cpu)
+ 		pagevec_lru_move_fn(pvec, __activate_page, NULL);
+ }
+ 
++static bool need_activate_page_drain(int cpu)
++{
++	return pagevec_count(&per_cpu(activate_page_pvecs, cpu)) != 0;
++}
++
+ void activate_page(struct page *page)
+ {
+ 	if (PageLRU(page) && !PageActive(page) && !PageUnevictable(page)) {
+@@ -422,6 +427,11 @@ static inline void activate_page_drain(int cpu)
+ {
+ }
+ 
++static bool need_activate_page_drain(int cpu)
++{
++	return false;
++}
++
+ void activate_page(struct page *page)
+ {
+ 	struct zone *zone = page_zone(page);
+@@ -683,7 +693,32 @@ static void lru_add_drain_per_cpu(struct work_struct *dummy)
+  */
+ int lru_add_drain_all(void)
+ {
+-	return schedule_on_each_cpu(lru_add_drain_per_cpu);
++	cpumask_var_t mask;
++	int cpu, rc;
++
++	if (!alloc_cpumask_var(&mask, GFP_KERNEL))
++		return -ENOMEM;
++	cpumask_clear(mask);
++
++	/*
++	 * Figure out which cpus need flushing.  It's OK if we race
++	 * with changes to the per-cpu lru pvecs, since it's no worse
++	 * than if we flushed all cpus, since a cpu could still end
++	 * up putting pages back on its pvec before we returned.
++	 * And this avoids interrupting other cpus unnecessarily.
++	 */
++	for_each_online_cpu(cpu) {
++		if (pagevec_count(&per_cpu(lru_add_pvec, cpu)) ||
++		    pagevec_count(&per_cpu(lru_rotate_pvecs, cpu)) ||
++		    pagevec_count(&per_cpu(lru_deactivate_pvecs, cpu)) ||
++		    need_activate_page_drain(cpu))
++			cpumask_set_cpu(cpu, mask);
++	}
++
++	rc = schedule_on_cpu_mask(lru_add_drain_per_cpu, mask);
++
++	free_cpumask_var(mask);
++	return rc;
+ }
+ 
+ /*
+-- 
+1.8.3.1
+
