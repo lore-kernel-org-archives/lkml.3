@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753478Ab3HFFPX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 01:15:23 -0400
+	id S1753197Ab3HFFPV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 01:15:21 -0400
 Received: from lgeamrelo02.lge.com ([156.147.1.126]:60494 "EHLO
 	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751706Ab3HFFOp (ORCPT
+	with ESMTP id S1751574Ab3HFFOr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 01:14:45 -0400
-X-AuditID: 9c93017e-b7b62ae000000eeb-cd-5200864242a4
+	Tue, 6 Aug 2013 01:14:47 -0400
+X-AuditID: 9c93017e-b7b62ae000000eeb-d2-520086424dd5
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
@@ -15,9 +15,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
         Christoph Hellwig <hch@infradead.org>, Andi Kleen <ak@linux.intel.com>,
         Pekka Enberg <penberg@kernel.org>
-Subject: [PATCH 2/4] perf tools: Separate out GTK codes to libperf-gtk.so
-Date: Tue,  6 Aug 2013 14:14:14 +0900
-Message-Id: <1375766056-19377-3-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 4/4] perf tools: Run dynamic loaded GTK browser
+Date: Tue,  6 Aug 2013 14:14:16 +0900
+Message-Id: <1375766056-19377-5-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1375766056-19377-1-git-send-email-namhyung@kernel.org>
 References: <1375766056-19377-1-git-send-email-namhyung@kernel.org>
@@ -26,142 +26,233 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Separate out GTK codes to a shared object called libperf-gtk.so.  This
-time only GTK codes are built with -fPIC and libperf remains as is.
+Run GTK hist and annotation browser using libdl.
 
 Cc: Andi Kleen <ak@linux.intel.com>
 Cc: Pekka Enberg <penberg@kernel.org>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/Makefile        | 39 ++++++++++++++++++++++++++++-----------
- tools/perf/config/Makefile | 14 ++++++++++----
- 2 files changed, 38 insertions(+), 15 deletions(-)
+ tools/perf/builtin-annotate.c | 26 +++++++++++++++++++++++---
+ tools/perf/builtin-report.c   | 16 ++++++++++++++--
+ tools/perf/config/Makefile    |  2 +-
+ tools/perf/ui/gtk/annotate.c  | 13 ++++++++++---
+ tools/perf/ui/gtk/gtk.h       | 13 +++++++++++++
+ tools/perf/util/annotate.h    | 24 ------------------------
+ tools/perf/util/hist.h        | 15 ---------------
+ 7 files changed, 61 insertions(+), 48 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index bfd12d02a304..17f0509e0eb0 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -113,6 +113,7 @@ SPARSE_FLAGS = -D__BIG_ENDIAN__ -D__powerpc__
- BUILTIN_OBJS =
- LIB_H =
- LIB_OBJS =
-+GTK_OBJS =
- PYRF_OBJS =
- SCRIPT_SH =
+diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
+index db491e9a812b..82469b3ead07 100644
+--- a/tools/perf/builtin-annotate.c
++++ b/tools/perf/builtin-annotate.c
+@@ -30,6 +30,7 @@
+ #include "util/tool.h"
+ #include "arch/common.h"
  
-@@ -484,13 +485,19 @@ ifndef NO_SLANG
- endif
++#include <dlfcn.h>
+ #include <linux/bitmap.h>
  
- ifndef NO_GTK2
--  LIB_OBJS += $(OUTPUT)ui/gtk/browser.o
--  LIB_OBJS += $(OUTPUT)ui/gtk/hists.o
--  LIB_OBJS += $(OUTPUT)ui/gtk/setup.o
--  LIB_OBJS += $(OUTPUT)ui/gtk/util.o
--  LIB_OBJS += $(OUTPUT)ui/gtk/helpline.o
--  LIB_OBJS += $(OUTPUT)ui/gtk/progress.o
--  LIB_OBJS += $(OUTPUT)ui/gtk/annotate.o
-+  ALL_PROGRAMS += $(OUTPUT)libperf-gtk.so
+ struct perf_annotate {
+@@ -143,8 +144,18 @@ find_next:
+ 
+ 		if (use_browser == 2) {
+ 			int ret;
++			int (*annotate)(struct hist_entry *he,
++					struct perf_evsel *evsel,
++					struct hist_browser_timer *hbt);
 +
-+  GTK_OBJS += $(OUTPUT)ui/gtk/browser.o
-+  GTK_OBJS += $(OUTPUT)ui/gtk/hists.o
-+  GTK_OBJS += $(OUTPUT)ui/gtk/setup.o
-+  GTK_OBJS += $(OUTPUT)ui/gtk/util.o
-+  GTK_OBJS += $(OUTPUT)ui/gtk/helpline.o
-+  GTK_OBJS += $(OUTPUT)ui/gtk/progress.o
-+  GTK_OBJS += $(OUTPUT)ui/gtk/annotate.o
++			annotate = dlsym(perf_gtk_handle,
++					 "hist_entry__gtk_annotate");
++			if (annotate == NULL) {
++				ui__error("GTK browser not found!\n");
++				return;
++			}
+ 
+-			ret = hist_entry__gtk_annotate(he, evsel, NULL);
++			ret = annotate(he, evsel, NULL);
+ 			if (!ret || !ann->skip_missing)
+ 				return;
+ 
+@@ -246,8 +257,17 @@ static int __cmd_annotate(struct perf_annotate *ann)
+ 		goto out_delete;
+ 	}
+ 
+-	if (use_browser == 2)
+-		perf_gtk__show_annotations();
++	if (use_browser == 2) {
++		void (*show_annotations)(void);
 +
-+install-gtk: $(OUTPUT)libperf-gtk.so
-+	$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(libdir_SQ)'
-+	$(INSTALL) $(OUTPUT)libperf-gtk.so '$(DESTDIR_SQ)$(libdir_SQ)'
- endif
++		show_annotations = dlsym(perf_gtk_handle,
++					 "perf_gtk__show_annotations");
++		if (show_annotations == NULL) {
++			ui__error("GTK browser not found!\n");
++			goto out_delete;
++		}
++		show_annotations();
++	}
  
- ifndef NO_LIBPERL
-@@ -544,6 +551,12 @@ $(OUTPUT)perf: $(OUTPUT)perf.o $(BUILTIN_OBJS) $(PERFLIBS)
- 	$(QUIET_LINK)$(CC) $(CFLAGS) $(LDFLAGS) $(OUTPUT)perf.o \
-                $(BUILTIN_OBJS) $(LIBS) -o $@
+ out_delete:
+ 	/*
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index d785d89ed226..05c0e80c8ae4 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -35,6 +35,7 @@
+ #include "util/hist.h"
+ #include "arch/common.h"
  
-+$(GTK_OBJS): %.o: %.c $(LIB_H)
-+	$(QUIET_CC)$(CC) -o $@ -c -fPIC $(CFLAGS) $(GTK_CFLAGS) $<
++#include <dlfcn.h>
+ #include <linux/bitmap.h>
+ 
+ struct perf_report {
+@@ -592,8 +593,19 @@ static int __cmd_report(struct perf_report *rep)
+ 				ret = 0;
+ 
+ 		} else if (use_browser == 2) {
+-			perf_evlist__gtk_browse_hists(session->evlist, help,
+-						      NULL, rep->min_percent);
++			int (*hist_browser)(struct perf_evlist *,
++					    const char *,
++					    struct hist_browser_timer *,
++					    float min_pcnt);
 +
-+$(OUTPUT)libperf-gtk.so: $(GTK_OBJS) $(PERFLIBS)
-+	$(QUIET_LINK)$(CC) -o $@ -shared $(ALL_LDFLAGS) $(filter %.o,$^) $(GTK_LIBS)
-+
- $(OUTPUT)builtin-help.o: builtin-help.c $(OUTPUT)common-cmds.h $(OUTPUT)PERF-CFLAGS
- 	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) \
- 		'-DPERF_HTML_PATH="$(htmldir_SQ)"' \
-@@ -762,7 +775,9 @@ check: $(OUTPUT)common-cmds.h
- 
- ### Installation rules
- 
--install-bin: all
-+install-gtk:
-+
-+install-bin: all install-gtk
- 	$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(bindir_SQ)'
- 	$(INSTALL) $(OUTPUT)perf '$(DESTDIR_SQ)$(bindir_SQ)'
- 	$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/scripts/perl/Perf-Trace-Util/lib/Perf/Trace'
-@@ -795,15 +810,17 @@ $(INSTALL_DOC_TARGETS):
- ### Cleaning rules
- 
- clean: $(LIBTRACEEVENT)-clean $(LIBLK)-clean
--	$(RM) $(LIB_OBJS) $(BUILTIN_OBJS) $(LIB_FILE) $(OUTPUT)perf-archive $(OUTPUT)perf.o $(LANG_BINDINGS)
-+	$(RM) $(LIB_OBJS) $(BUILTIN_OBJS) $(LIB_FILE) $(GTK_OBJS)
-+	$(RM) $(OUTPUT)perf-archive $(OUTPUT)perf.o $(LANG_BINDINGS)
- 	$(RM) $(ALL_PROGRAMS) perf
--	$(RM) *.spec *.pyc *.pyo */*.pyc */*.pyo $(OUTPUT)common-cmds.h TAGS tags cscope*
-+	$(RM) *.spec *.pyc *.pyo */*.pyc */*.pyo
-+	$(RM) $(OUTPUT)common-cmds.h TAGS tags cscope*
- 	$(QUIET_SUBDIR0)Documentation $(QUIET_SUBDIR1) clean
- 	$(RM) $(OUTPUT)PERF-VERSION-FILE $(OUTPUT)PERF-CFLAGS
- 	$(RM) $(OUTPUT)util/*-bison*
- 	$(RM) $(OUTPUT)util/*-flex*
- 	$(python-clean)
- 
--.PHONY: all install clean strip $(LIBTRACEEVENT) $(LIBLK)
-+.PHONY: all install clean strip $(LIBTRACEEVENT) $(LIBLK) install-gtk
- .PHONY: shell_compatibility_test please_set_SHELL_PATH_to_a_more_modern_shell
- .PHONY: .FORCE-PERF-VERSION-FILE TAGS tags cscope .FORCE-PERF-CFLAGS
++			hist_browser = dlsym(perf_gtk_handle,
++					     "perf_evlist__gtk_browse_hists");
++			if (hist_browser == NULL) {
++				ui__error("GTK browser not found!\n");
++				return ret;
++			}
++			hist_browser(session->evlist, help, NULL,
++				     rep->min_percent);
+ 		}
+ 	} else
+ 		perf_evlist__tty_browse_hists(session->evlist, rep, help);
 diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 214e17e97e5c..6bdfd0302c4e 100644
+index 6bdfd0302c4e..1b6ccb242609 100644
 --- a/tools/perf/config/Makefile
 +++ b/tools/perf/config/Makefile
-@@ -267,11 +267,11 @@ ifndef NO_GTK2
-     NO_GTK2 := 1
-   else
+@@ -269,7 +269,7 @@ ifndef NO_GTK2
      ifeq ($(call try-cc,$(SOURCE_GTK2_INFOBAR),$(FLAGS_GTK2),-DHAVE_GTK_INFO_BAR),y)
--      CFLAGS += -DHAVE_GTK_INFO_BAR
-+      GTK_CFLAGS := -DHAVE_GTK_INFO_BAR
+       GTK_CFLAGS := -DHAVE_GTK_INFO_BAR
      endif
--    CFLAGS += -DGTK2_SUPPORT
--    CFLAGS += $(shell pkg-config --cflags gtk+-2.0 2>/dev/null)
--    EXTLIBS += $(shell pkg-config --libs gtk+-2.0 2>/dev/null)
-+    GTK_CFLAGS += -DGTK2_SUPPORT
-+    GTK_CFLAGS += $(shell pkg-config --cflags gtk+-2.0 2>/dev/null)
-+    GTK_LIBS := $(shell pkg-config --libs gtk+-2.0 2>/dev/null)
+-    GTK_CFLAGS += -DGTK2_SUPPORT
++    CFLAGS += -DGTK2_SUPPORT
+     GTK_CFLAGS += $(shell pkg-config --cflags gtk+-2.0 2>/dev/null)
+     GTK_LIBS := $(shell pkg-config --libs gtk+-2.0 2>/dev/null)
    endif
- endif
+diff --git a/tools/perf/ui/gtk/annotate.c b/tools/perf/ui/gtk/annotate.c
+index f538794615db..9c7ff8d31b27 100644
+--- a/tools/perf/ui/gtk/annotate.c
++++ b/tools/perf/ui/gtk/annotate.c
+@@ -154,9 +154,9 @@ static int perf_gtk__annotate_symbol(GtkWidget *window, struct symbol *sym,
+ 	return 0;
+ }
  
-@@ -456,7 +456,12 @@ else
- sysconfdir = $(prefix)/etc
- ETC_PERFCONFIG = etc/perfconfig
- endif
-+ifeq ($(IS_X86_64),1)
-+lib = lib64
-+else
- lib = lib
-+endif
-+libdir = $(prefix)/$(lib)
+-int symbol__gtk_annotate(struct symbol *sym, struct map *map,
+-			 struct perf_evsel *evsel,
+-			 struct hist_browser_timer *hbt)
++static int symbol__gtk_annotate(struct symbol *sym, struct map *map,
++				struct perf_evsel *evsel,
++				struct hist_browser_timer *hbt)
+ {
+ 	GtkWidget *window;
+ 	GtkWidget *notebook;
+@@ -226,6 +226,13 @@ int symbol__gtk_annotate(struct symbol *sym, struct map *map,
+ 	return 0;
+ }
  
- # Shell quote (do not use $(call) to accommodate ancient setups);
- ETC_PERFCONFIG_SQ = $(subst ','\'',$(ETC_PERFCONFIG))
-@@ -469,6 +474,7 @@ template_dir_SQ = $(subst ','\'',$(template_dir))
- htmldir_SQ = $(subst ','\'',$(htmldir))
- prefix_SQ = $(subst ','\'',$(prefix))
- sysconfdir_SQ = $(subst ','\'',$(sysconfdir))
-+libdir_SQ = $(subst ','\'',$(libdir))
++int hist_entry__gtk_annotate(struct hist_entry *he,
++			     struct perf_evsel *evsel,
++			     struct hist_browser_timer *hbt)
++{
++	return symbol__gtk_annotate(he->ms.sym, he->ms.map, evsel, hbt);
++}
++
+ void perf_gtk__show_annotations(void)
+ {
+ 	GtkWidget *window;
+diff --git a/tools/perf/ui/gtk/gtk.h b/tools/perf/ui/gtk/gtk.h
+index 09b7a062fd48..62922d284bca 100644
+--- a/tools/perf/ui/gtk/gtk.h
++++ b/tools/perf/ui/gtk/gtk.h
+@@ -51,4 +51,17 @@ static inline GtkWidget *perf_gtk__setup_info_bar(void)
+ }
+ #endif
  
- ifneq ($(filter /%,$(firstword $(perfexecdir))),)
- perfexec_instdir = $(perfexecdir)
++struct perf_evsel;
++struct perf_evlist;
++struct hist_entry;
++struct hist_browser_timer;
++
++int perf_evlist__gtk_browse_hists(struct perf_evlist *evlist, const char *help,
++				  struct hist_browser_timer *hbt,
++				  float min_pcnt);
++int hist_entry__gtk_annotate(struct hist_entry *he,
++			     struct perf_evsel *evsel,
++			     struct hist_browser_timer *hbt);
++void perf_gtk__show_annotations(void);
++
+ #endif /* _PERF_GTK_H_ */
+diff --git a/tools/perf/util/annotate.h b/tools/perf/util/annotate.h
+index af755156d278..31b898312c3f 100644
+--- a/tools/perf/util/annotate.h
++++ b/tools/perf/util/annotate.h
+@@ -165,30 +165,6 @@ static inline int symbol__tui_annotate(struct symbol *sym __maybe_unused,
+ }
+ #endif
+ 
+-#ifdef GTK2_SUPPORT
+-int symbol__gtk_annotate(struct symbol *sym, struct map *map,
+-			 struct perf_evsel *evsel,
+-			 struct hist_browser_timer *hbt);
+-
+-static inline int hist_entry__gtk_annotate(struct hist_entry *he,
+-					   struct perf_evsel *evsel,
+-					   struct hist_browser_timer *hbt)
+-{
+-	return symbol__gtk_annotate(he->ms.sym, he->ms.map, evsel, hbt);
+-}
+-
+-void perf_gtk__show_annotations(void);
+-#else
+-static inline int hist_entry__gtk_annotate(struct hist_entry *he __maybe_unused,
+-				struct perf_evsel *evsel __maybe_unused,
+-				struct hist_browser_timer *hbt __maybe_unused)
+-{
+-	return 0;
+-}
+-
+-static inline void perf_gtk__show_annotations(void) {}
+-#endif
+-
+ extern const char	*disassembler_style;
+ 
+ #endif	/* __PERF_ANNOTATE_H */
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index 1329b6b6ffe6..7f29792efc58 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -224,20 +224,5 @@ static inline int script_browse(const char *script_opt __maybe_unused)
+ #define K_SWITCH_INPUT_DATA -3000
+ #endif
+ 
+-#ifdef GTK2_SUPPORT
+-int perf_evlist__gtk_browse_hists(struct perf_evlist *evlist, const char *help,
+-				  struct hist_browser_timer *hbt __maybe_unused,
+-				  float min_pcnt);
+-#else
+-static inline
+-int perf_evlist__gtk_browse_hists(struct perf_evlist *evlist __maybe_unused,
+-				  const char *help __maybe_unused,
+-				  struct hist_browser_timer *hbt __maybe_unused,
+-				  float min_pcnt __maybe_unused)
+-{
+-	return 0;
+-}
+-#endif
+-
+ unsigned int hists__sort_list_width(struct hists *self);
+ #endif	/* __PERF_HIST_H */
 -- 
 1.7.11.7
 
