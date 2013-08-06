@@ -1,99 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756806Ab3HFSdG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 14:33:06 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:52442 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756541Ab3HFSdD convert rfc822-to-8bit (ORCPT
+	id S1756779Ab3HFSfd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 14:35:33 -0400
+Received: from mail-la0-f41.google.com ([209.85.215.41]:42948 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756594Ab3HFSfb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 14:33:03 -0400
-Subject: Re: [PATCH 1/2] ARM: msm: Add support for MSM8974 Dragonboard
-Mime-Version: 1.0 (Apple Message framework v1283)
-Content-Type: text/plain; charset=US-ASCII
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <52014031.7000202@codeaurora.org>
-Date: Tue, 6 Aug 2013 13:33:06 -0500
-Cc: David Brown <davidb@codeaurora.org>, Rob Herring <rob.herring@calxeda.com>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Content-Transfer-Encoding: 7BIT
-Message-Id: <633DB2E9-8043-4C38-94EE-1A1FA25722C5@codeaurora.org>
-References: <1375743779-24993-1-git-send-email-rvaswani@codeaurora.org> <76477E73-B68A-4025-875E-4BA30F5E175A@codeaurora.org> <52014031.7000202@codeaurora.org>
-To: Rohit Vaswani <rvaswani@codeaurora.org>
-X-Mailer: Apple Mail (2.1283)
+	Tue, 6 Aug 2013 14:35:31 -0400
+Message-ID: <520141F2.4060907@cogentembedded.com>
+Date: Tue, 06 Aug 2013 22:35:30 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+CC: balbi@ti.com, linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org, swarren@wwwdotorg.org,
+        gregkh@linuxfoundation.org, stern@rowland.harvard.edu
+Subject: Re: [PATCH v2 6/6] usb: host: tegra: Tegra30 support
+References: <1375812518-3847-1-git-send-email-ttynkkynen@nvidia.com> <1375812518-3847-7-git-send-email-ttynkkynen@nvidia.com>
+In-Reply-To: <1375812518-3847-7-git-send-email-ttynkkynen@nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello.
 
-On Aug 6, 2013, at 1:28 PM, Rohit Vaswani wrote:
+On 08/06/2013 10:08 PM, Tuomas Tynkkynen wrote:
 
-> On 8/6/2013 8:47 AM, Kumar Gala wrote:
->> On Aug 5, 2013, at 6:02 PM, Rohit Vaswani wrote:
->> 
->>> This patch adds basic board support for MSM8974 Dragonboard
->>> which belongs to the Snapdragon 800 family.
->>> For now, just support a basic machine with device tree.
->> I think the board is APQ8074 and not MSM8974.
->> 
->>> Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
->>> ---
->>> arch/arm/boot/dts/Makefile        |  3 ++-
->>> arch/arm/boot/dts/msm8974-db.dts  | 26 ++++++++++++++++++++++++++
->>> arch/arm/mach-msm/Kconfig         | 21 ++++++++++++++++++---
->>> arch/arm/mach-msm/Makefile        |  1 +
->>> arch/arm/mach-msm/board-dt-8974.c | 23 +++++++++++++++++++++++
->>> 5 files changed, 70 insertions(+), 4 deletions(-)
->>> create mode 100644 arch/arm/boot/dts/msm8974-db.dts
->>> create mode 100644 arch/arm/mach-msm/board-dt-8974.c
->>> 
->>> diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
->>> index 641b3c9a..62cea36 100644
->>> --- a/arch/arm/boot/dts/Makefile
->>> +++ b/arch/arm/boot/dts/Makefile
->>> @@ -97,7 +97,8 @@ dtb-$(CONFIG_ARCH_KIRKWOOD) += kirkwood-cloudbox.dtb \
->>> 	kirkwood-openblocks_a6.dtb
->>> dtb-$(CONFIG_ARCH_MARCO) += marco-evb.dtb
->>> dtb-$(CONFIG_ARCH_MSM) += msm8660-surf.dtb \
->>> -	msm8960-cdp.dtb
->>> +	msm8960-cdp.dtb \
->>> +	msm8974-db.dtb
->>> dtb-$(CONFIG_ARCH_MVEBU) += armada-370-db.dtb \
->>> 	armada-370-mirabox.dtb \
->>> 	armada-370-rd.dtb \
->>> diff --git a/arch/arm/boot/dts/msm8974-db.dts b/arch/arm/boot/dts/msm8974-db.dts
->>> new file mode 100644
->>> index 0000000..badfc61
->>> --- /dev/null
->>> +++ b/arch/arm/boot/dts/msm8974-db.dts
->>> @@ -0,0 +1,26 @@
->>> +/dts-v1/;
->>> +
->>> +/include/ "skeleton.dtsi"
->> We should change msm8974.dts to msm8974.dtsi and include it for the board.
-> 
-> We can do that once we have something separate/new to add to the dtsi file.
+> The Tegra30 EHCI controller is mostly compatible with the Tegra20
+> controller, except Tegra30 includes the HOSTPC register extension.
+> The has_hostpc capability bit must be set in the ehci_hcd structure if
+> the controller has such extensions. The new tegra_ehci_soc_config
+> structure is added to describe the differences between the SoCs.
 
-Why wait, we should just do this to start with.  Even if the msm8974-db.dts is just:
+> Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+> ---
+>   drivers/usb/host/ehci-tegra.c | 34 +++++++++++++++++++++++++++++-----
+>   1 file changed, 29 insertions(+), 5 deletions(-)
 
-/include/ "msm8974.dtsi"
+> diff --git a/drivers/usb/host/ehci-tegra.c b/drivers/usb/host/ehci-tegra.c
+> index db8031f..c0d1f27 100644
+> --- a/drivers/usb/host/ehci-tegra.c
+> +++ b/drivers/usb/host/ehci-tegra.c
+[...]
+>   static int tegra_ehci_probe(struct platform_device *pdev)
+>   {
+> +	const struct of_device_id *match;
+> +	const struct tegra_ehci_soc_config *soc_config;
+>   	struct resource *res;
+>   	struct usb_hcd *hcd;
+>   	struct ehci_hcd *ehci;
+> @@ -330,6 +351,13 @@ static int tegra_ehci_probe(struct platform_device *pdev)
+>   	int irq;
+>   	struct usb_phy *u_phy;
+>
+> +	match = of_match_device(tegra_ehci_of_match, &pdev->dev);
+> +	if (!match) {
+> +		dev_err(&pdev->dev, "Error: No device match found\n");
+> +		return -ENODEV;
+> +	}
+> +	soc_config = (struct tegra_ehci_soc_config *)match->data;
 
-{
-	model = "Qualcomm MSM8974 Dragonboard";
-	compatible = "qcom,msm8974-db", "qcom,msm8974";
-}
+    Aren't casts from 'const void *' automatic?
 
-Plus, we can do things like "disable" additional cores or such in the board.dts and have the SoC one have all 4 cores, etc in it.
-
-- k
-
---
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+WBR, Sergei
 
