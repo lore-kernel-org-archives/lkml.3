@@ -1,112 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756049Ab3HFP6L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 11:58:11 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48731 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755558Ab3HFP6J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 11:58:09 -0400
-Date: Tue, 6 Aug 2013 17:58:04 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: lizefan@huawei.com, hannes@cmpxchg.org, bsingharora@gmail.com,
-        kamezawa.hiroyu@jp.fujitsu.com, cgroups@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHSET cgroup/for-3.12] cgroup: make cgroup_event specific to
- memcg
-Message-ID: <20130806155804.GC31138@dhcp22.suse.cz>
-References: <1375632446-2581-1-git-send-email-tj@kernel.org>
- <20130805160107.GM10146@dhcp22.suse.cz>
- <20130805162958.GF19631@mtj.dyndns.org>
- <20130805191641.GA24003@dhcp22.suse.cz>
- <20130805194431.GD23751@mtj.dyndns.org>
+	id S1756103Ab3HFP6a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 11:58:30 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:61889 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756051Ab3HFP61 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Aug 2013 11:58:27 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130805194431.GD23751@mtj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CA+icZUW6P9Z_7z+o+z=qBWSFzyU8tgtY0ou+rmLcEzWbn94OXA@mail.gmail.com>
+References: <CA+icZUX8OcTSOABO6Nbz5R6_5-m39rsYOpDqYBA7hf8LFvJLLA@mail.gmail.com>
+	<1375797260.8219.21.camel@jlt4.sipsolutions.net>
+	<CA+icZUUAJ25QybqHvxz7eubSLH6YuNjcc5zyU2O5Xi9vevMGkw@mail.gmail.com>
+	<1375800617.8219.23.camel@jlt4.sipsolutions.net>
+	<CA+icZUVbKpyuke6PRg3-60gOggsTb=3cNRz3Sy0RmvcZSuPaNw@mail.gmail.com>
+	<1375801059.8219.24.camel@jlt4.sipsolutions.net>
+	<CA+icZUXrRsXfeW9hqxTMkKW4TdNSBH-zE8-zX2Rd7HTAx5MvqQ@mail.gmail.com>
+	<CA+icZUWijPJmNoqE22Msqcn7tRot3SB3e=KujMM7JNd-Om-oOw@mail.gmail.com>
+	<1375802297.8219.25.camel@jlt4.sipsolutions.net>
+	<CA+icZUVCFOS6SHonEqzaJyWCGCU4nqqGjBN0VbmV-=OoM+deZg@mail.gmail.com>
+	<CA+icZUVuOqdZUGy2ALAF1CehOqYdr7rtEsXhqNvDtYEns2BuRQ@mail.gmail.com>
+	<1375802993.8219.26.camel@jlt4.sipsolutions.net>
+	<CA+icZUW6P9Z_7z+o+z=qBWSFzyU8tgtY0ou+rmLcEzWbn94OXA@mail.gmail.com>
+Date: Tue, 6 Aug 2013 17:58:25 +0200
+Message-ID: <CA+icZUW7LVzg7sM3O-w5oQpeaj=CT6MS6Q7cRZ1qK0h-Z4wZuw@mail.gmail.com>
+Subject: Re: linux-next: Tree for Aug 6 [ wireless | iwlwifi | mac80211 ? ]
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        wireless <linux-wireless@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 05-08-13 15:44:31, Tejun Heo wrote:
-> Hey, Michal.
-> 
-> On Mon, Aug 05, 2013 at 09:16:41PM +0200, Michal Hocko wrote:
-[...]
-> > Besides that, is fsnotify really an interface to be used under memory
-> > pressure? I might be wrong but from a quick look fsnotify depends on
-> > GFP_KERNEL allocation which would be no-go for oom_control at least.
-> 
-> Yeap, I'm pretty sure you're wrong.  I didn't follow the development
-> but this is wrapper to combine inotify and dnotify and kernel's main
-> FS event mechanism and none of the two mechanisms required memory
-> allocation during delivery.
+On Tue, Aug 6, 2013 at 5:43 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+> On Tue, Aug 6, 2013 at 5:29 PM, Johannes Berg <johannes@sipsolutions.net> wrote:
+>> On Tue, 2013-08-06 at 17:27 +0200, Sedat Dilek wrote:
+>>> On Tue, Aug 6, 2013 at 5:20 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>>> > On Tue, Aug 6, 2013 at 5:18 PM, Johannes Berg <johannes@sipsolutions.net> wrote:
+>>> >>
+>>> >>
+>>> >>> I have sent you a v2 of my logs (with -d and rsyslog-7.x).
+>>> >>
+>>> >> Hmm, that looks different? There no longer is anything about "PSK might
+>>> >> be wrong", but now just disconnections by the AP, which unfortunately
+>>> >> indicate no reason.
+>>> >>
+>>> >> When was it working last?
+>>> >>
+>>> >
+>>> > next-20130801 was OK here.
+>>> >
+>>>
+>>> What about these lines?
+>>>
+>>> Aug  6 17:03:37 fambox kernel: [  134.575120] wlan0: deauthenticated
+>>> from 00:04:0e:e4:00:3d (Reason: 1)
+>>> Aug  6 17:03:37 fambox wpa_supplicant[2424]: wlan0: Event DEAUTH (12) received
+>>> Aug  6 17:03:37 fambox wpa_supplicant[2424]: wlan0: Deauthentication
+>>> notification
+>>> Aug  6 17:03:37 fambox wpa_supplicant[2424]: Deauthentication frame
+>>> IE(s) - hexdump(len=0): [NULL]
+>>> Aug  6 17:03:37 fambox wpa_supplicant[2424]: wlan0: WPA: 4-Way
+>>> Handshake failed - pre-shared key may be incorrect
+>>> Aug  6 17:03:37 fambox NetworkManager[2431]: <info> (wlan0):
+>>> supplicant interface state: 4-way handshake -> disconnected
+>>
+>> Yeah but before you had a local deauth request, this time it's the AP
+>> kicking you off.
+>>
+>> I really don't know. Can you try something like wireless-testing maybe?
+>> -next could have any kind of breakage I guess ...
+>>
+>
+> I pulled in master-2013-08-05 tag on top of Linux v3.11-rc4... Building...
+>
 
-I might be really wrong here (I see memory allocations down the
-fsnotify_modify callpath) but this is totally irrelevant to the
-patchset.
+$ cat /proc/version
+Linux version 3.11.0-rc4-1-wl-20130805 (sedat.dilek@gmail.com@fambox)
+(gcc version 4.6.3 (Ubuntu/Linaro 4.6.3-1ubuntu5) ) #1 SMP Tue Aug 6
+17:52:45 CEST 2013
 
-If there is a better interface in the future then I have no objection
-to move to it and keep the old one just for legacy usage for certain
-amount of time. I am definitely not arguing for eventfd being the best
-interface.
+This kernel boots fine and has no WiFi problems.
 
-I am objecting to moving the generic part of that code into memcg. The
-memcg part and the additional complexity (all the parsing and conditions
-for signalling) is already in the memcg code.
- 
-> > How does the reclaim context gets to struct file to notify? I am pretty
-> > sure we would get to more and more questions when digging further.
-> 
-> The file is optional and probably just to extract path for dnotify, I
-> think.  Not sure about namespace implications but I'll build cgroup
-> level interface for it so that controllers won't have to deal with it
-> directly.  ie. there'll be css_notify_file(css, cfe) interface.
+> You assume a breakage in a different area than wireless or network in general?
+>
 
-Such an interface would be really welcome but I would also ask how
-it would implement/allow context passing. E.g. how do we know which
-treshold has been reached? How do we find out the vmpressure level? Is
-the consumer supposed to do an additional action after it gets
-notification?
-Etc.
+Any wild guess?
 
-> > I am all for simplifications, but removing interfaces just because you
-> > feel they are "over-done" is not a way to go IMHO. In this particular
-> 
-> We can keep it around but it's a pretty good time to gradually move
-> towards something saner as we're essentially doing v2 of the
-> interface.  Note that there's no reason for the interface to disappear
-> immediately.  You can keep it and there won't be any problem for it to
-> co-exist with simpler mechanism.
-
-Yes that is an expectation of the users...
-
-> > case you are removing an interface from cgroup core which has users,
-> > and will have to support them for very long time. "It is just memcg
-> > so move it there" is not a way that different subsystems should work
-> > together and I am _not_ going to ack such a move. All the flexibility that
-> > you are so complaining about is hidden from the cgroup core in register
-> > callbacks and the rest is only the core infrastructure (registration and
-> > unregistration).
-> 
-> memcg is the only user and will stay that way.  If you wanna keep it
-> around, be my guest.
-
-OK, so why do you move the generic part to the memcg then?
-
-> Also, cftype is planned to be simplified so that
-> it just provides seq_file interface and the types become helper
-> routines like a normal file callback interface.  There'll be nothing
-> tying the event file handling to cgroup core and it surely won't be
-> used by anyone else.  memcg is and will be the only user.  It's the
-> natural place for the code.
-
-Really that natural? So memcg should touch internals like cgroup dentry
-reference counting. You seem have forgotten all the hassles with
-cgroup_mutex, haven't you?
-No that part doesn't belong to memcg! You can discourage from new usage
-of this interface of course.
--- 
-Michal Hocko
-SUSE Labs
+- Sedat -
