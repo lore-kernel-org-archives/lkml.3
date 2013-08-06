@@ -1,110 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754661Ab3HFIUa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 04:20:30 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58829 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754480Ab3HFIUY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 04:20:24 -0400
-Message-ID: <5200B1BF.2060009@suse.cz>
-Date: Tue, 06 Aug 2013 10:20:15 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1754446Ab3HFIgY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 04:36:24 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:57177 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753781Ab3HFIgV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Aug 2013 04:36:21 -0400
+Message-ID: <5200B534.7000202@huawei.com>
+Date: Tue, 6 Aug 2013 16:35:00 +0800
+From: Xishi Qiu <qiuxishi@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: "Yann E. MORIN" <yann.morin.1998@free.fr>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>
-Subject: Re: Warnings from silentoldconfig (Re: [GIT PULL] PCI updates for
- v3.11)
-References: <20130802181740.GA27100@google.com> <CA+55aFzSG8ny=79_MFik5xP99c7eb-LMKh0JzTKpbiEB8Wt=5Q@mail.gmail.com> <20130805083943.GA14782@sepie.suse.cz> <20130805225830.GA29411@free.fr>
-In-Reply-To: <20130805225830.GA29411@free.fr>
-Content-Type: text/plain; charset=UTF-8
+To: <zhangyanfei@cn.fujitsu.com>, <ebiederm@xmission.com>
+CC: <kexec@lists.infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        Xishi Qiu <qiuxishi@huawei.com>
+Subject: [PATCH V2] kexec: remove unnecessary return
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.74.196]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6.8.2013 00:58, Yann E. MORIN wrote:
-> On 2013-08-05 10:39 +0200, Michal Marek spake thusly:
->> Added Yann and the linux-kbuild list to CC. Reproducer:
->>
->>   git checkout 1fe0135
->>   make mrproper
->>   make allmodconfig
->>   make silentoldconfig
->>   git checkout aa8032b
->>   make allmodconfig
->>   make silentoldconfig
->>
->> conf_write_autoconf() first calls conf_split_config() to generate the
->> include/config/**.h hierarchy, then generates include/config/auto.conf.
->> For some reason, conf_split_config() reads include/config/auto.conf,
->> which may not exist yet or may be out of date. Yann, can anything break
->> if we simply do not read that file from conf_split_config(), like this?
->>
->> diff --git a/scripts/kconfig/confdata.c b/scripts/kconfig/confdata.c
->> index c55c227..8c90835 100644
->> --- a/scripts/kconfig/confdata.c
->> +++ b/scripts/kconfig/confdata.c
->> @@ -829,16 +829,12 @@ next:
->>  
->>  static int conf_split_config(void)
->>  {
->> -	const char *name;
->>  	char path[PATH_MAX+1];
->>  	char *s, *d, c;
->>  	struct symbol *sym;
->>  	struct stat sb;
->>  	int res, i, fd;
->>  
->> -	name = conf_get_autoconfig_name();
->> -	conf_read_simple(name, S_DEF_AUTO);
->> -
->>  	if (chdir("include/config"))
->>  		return 1;
-[...]
-> 
-> What I understand of the code is that, we're reading auto.conf with
-> the S_DEF_AUTO flag, which is expected to set the SYMBOL_DEF_AUTO flags
-> to symbols read from auto.conf.
-> 
-> This is then used by conf_split_config to detect symbols that have
-> changed.
+Code can not run here forever, so remove the unnecessary return.
 
-Ah, _that_ is why it's there.
+Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
+Suggested-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+---
+ kernel/kexec.c |    5 +----
+ 1 files changed, 1 insertions(+), 4 deletions(-)
 
-[...]
-> The two following tests do not invlolve the HOTPLUG_PCI_.* symbols
-> on purpose, and involve a pristine master c095ba7:
-> 
->     $ make allmodconfig
->     $ make silentoldconfig
->     $ make silentoldconfig
->     $ make silentoldconfig
-> 
->   - Without Michal's proposed change, unaffected symbols are not
->     touched. For example, mtime and ctime for zswap.h are not changed
->     after the second and third silentoldconfig.
-> 
->   - With Michal's proposed change, then mtime and ctime for zswap.h are
->     changed after each silentoldconfig, even though CONFIG_ZSWAP was not
->     changed.
+diff --git a/kernel/kexec.c b/kernel/kexec.c
+index 59f7b55..2a74f30 100644
+--- a/kernel/kexec.c
++++ b/kernel/kexec.c
+@@ -1474,11 +1474,8 @@ static int __init __parse_crashkernel(char *cmdline,
+ 	if (first_colon && (!first_space || first_colon < first_space))
+ 		return parse_crashkernel_mem(ck_cmdline, system_ram,
+ 				crash_size, crash_base);
+-	else
+-		return parse_crashkernel_simple(ck_cmdline, crash_size,
+-				crash_base);
+ 
+-	return 0;
++	return parse_crashkernel_simple(ck_cmdline, crash_size, crash_base);
+ }
+ 
+ /*
+-- 
+1.7.1
 
-Yes, I only did a simple diff -rq between two generated include/config
-directories and did not think about mtimes.
-
-
-> One solution would be to read auto.conf *before* we fuzz around symbols,
-> not after. We should probably read auto.conf just after we read .config.
-
-Maybe the safest solution would be to silence the warning if def ==
-S_DEF_AUTO. Because auto.conf is only read by kconfig in
-conf_split_config(), when it is expected to be out of date.
-
-Michal
