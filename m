@@ -1,101 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755452Ab3HFO4u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 10:56:50 -0400
-Received: from smtp.infotech.no ([82.134.31.41]:36657 "EHLO smtp.infotech.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753847Ab3HFO4t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 10:56:49 -0400
-Message-ID: <52010E82.9050801@interlog.com>
-Date: Tue, 06 Aug 2013 10:56:02 -0400
-From: Douglas Gilbert <dgilbert@interlog.com>
-Reply-To: dgilbert@interlog.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Peter Chang <dpf@google.com>
-CC: Roland Dreier <roland@kernel.org>, Jens Axboe <axboe@kernel.dk>,
-        James Bottomley <JBottomley@parallels.com>,
-        Costa Sapuntzakis <costa@purestorage.com>,
-        =?ISO-8859-1?Q?J=F6rn_Engel?= <joern@purestorage.com>,
+	id S1755467Ab3HFO5q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 10:57:46 -0400
+Received: from s3.sipsolutions.net ([144.76.43.152]:55482 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754385Ab3HFO5p (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Aug 2013 10:57:45 -0400
+Message-ID: <1375801059.8219.24.camel@jlt4.sipsolutions.net>
+Subject: Re: linux-next: Tree for Aug 6 [ wireless | iwlwifi | mac80211 ? ]
+From: Johannes Berg <johannes@sipsolutions.net>
+To: sedat.dilek@gmail.com
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
         linux-kernel@vger.kernel.org,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-Subject: Re: [PATCH] [SCSI] sg: Fix user memory corruption when SG_IO is interrupted
- by a signal
-References: <1375740121-23350-1-git-send-email-roland@kernel.org> <CAF2xp_Fwav3ZZCiuQ5738r4p-TMVRBZzHdYgoNg4EfO3_0C+tg@mail.gmail.com>
-In-Reply-To: <CAF2xp_Fwav3ZZCiuQ5738r4p-TMVRBZzHdYgoNg4EfO3_0C+tg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+        wireless <linux-wireless@vger.kernel.org>
+Date: Tue, 06 Aug 2013 16:57:39 +0200
+In-Reply-To: <CA+icZUVbKpyuke6PRg3-60gOggsTb=3cNRz3Sy0RmvcZSuPaNw@mail.gmail.com> (sfid-20130806_165609_226807_76ACA1EA)
+References: <CA+icZUX8OcTSOABO6Nbz5R6_5-m39rsYOpDqYBA7hf8LFvJLLA@mail.gmail.com>
+	 <1375797260.8219.21.camel@jlt4.sipsolutions.net>
+	 <CA+icZUUAJ25QybqHvxz7eubSLH6YuNjcc5zyU2O5Xi9vevMGkw@mail.gmail.com>
+	 <1375800617.8219.23.camel@jlt4.sipsolutions.net>
+	 <CA+icZUVbKpyuke6PRg3-60gOggsTb=3cNRz3Sy0RmvcZSuPaNw@mail.gmail.com>
+	 (sfid-20130806_165609_226807_76ACA1EA)
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.3-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13-08-05 11:54 PM, Peter Chang wrote:
-> 2013/8/5 Roland Dreier <roland@kernel.org>:
->> From: Roland Dreier <roland@purestorage.com>
->>
->> There is a nasty bug in the SCSI SG_IO ioctl that in some circumstances
->> leads to one process writing data into the address space of some other
->> random unrelated process if the ioctl is interrupted by a signal.
->> What happens is the following:
->>
->>   - A process issues an SG_IO ioctl with direction DXFER_FROM_DEV (ie the
->>     underlying SCSI command will transfer data from the SCSI device to
->>     the buffer provided in the ioctl)
->>
->>   - Before the command finishes, a signal is sent to the process waiting
->>     in the ioctl.  This will end up waking up the sg_ioctl() code:
->>
->>                  result = wait_event_interruptible(sfp->read_wait,
->>                          (srp_done(sfp, srp) || sdp->detached));
->>
->>     but neither srp_done() nor sdp->detached is true, so we end up just
->>     setting srp->orphan and returning to userspace:
->>
->>                  srp->orphan = 1;
->>                  write_unlock_irq(&sfp->rq_list_lock);
->>                  return result;  /* -ERESTARTSYS because signal hit process */
->>
->>     At this point the original process is done with the ioctl and
->>     blithely goes ahead handling the signal, reissuing the ioctl, etc.
->
-> i think that an additional issue here is that part of reissuing the
-> ioctl is re-queueing the command. since the re-queue is at the front
-> of the block queue there are issues if the command is non-idempotent.
+On Tue, 2013-08-06 at 16:56 +0200, Sedat Dilek wrote:
+> On Tue, Aug 6, 2013 at 4:50 PM, Johannes Berg <johannes@sipsolutions.net> wrote:
+> > On Tue, 2013-08-06 at 16:46 +0200, Sedat Dilek wrote:
+> >
+> > Heh, the interesting messages are always cut out of the log:
+> >
+> > Aug  6 16:30:34 fambox wpa_supplicant[2533]: wlan0: WPA: RX message 1 of 4-Way Handshake from 00:04:0e:e4:00:3d (ver=2)
+> > Aug  6 16:30:34 fambox wpa_supplicant[2533]: RSN: msg 1/4 key data - hexdump(len=0):
+> > Aug  6 16:30:34 fambox wpa_supplicant[2533]: Get randomness: len=32 entropy=4
+> > Aug  6 16:30:34 fambox wpa_supplicant[2533]: random from os_get_random - hexdump(len=32): [REMOVED]
+> > Aug  6 16:30:34 fambox wpa_supplicant[2533]: random_mix_pool - hexdump(len=20): [REMOVED]
+> > Aug  6 16:30:34 fambox wpa_supplicant[2533]: random from internal pool - hexdump(len=16): [REMOVED]
+> > Aug  6 16:30:34 fambox wpa_supplicant[2533]: random_mix_pool - hexdump(len=20): [REMOVED]
+> > Aug  6 16:30:34 fambox rsyslogd-2177: imuxsock begins to drop messages from pid 2533 due to rate-limiting
+> > [...]
+> >
+> 
+> Do you know how I can workaround the rsyslogd rate-limiting?
 
-Re-issuing a SG_IO ioctl is wrong. More and more SCSI commands (even
-in SBC-3) are non-idempotent (e.g. COMPARE AND WRITE). And the st
-driver gets to use the block layer as well and many of its important
-SCSI commands (SSC) are non-idempotent.
+Me? no.
 
-> we have a local fix that gets rid of most of the orphan stuff and
-> re-waiting if a non-fatal signal was waiting. simpler than unmapping
-> but maybe we're missing some other interesting case?
-
-Like to share that fix with us?
-
-Also I'm interested in how you know from within a kernel driver
-whether a signal sent to the controlling process is fatal or
-not? For example SIGIO's default action is terminate but sg
-assumes if the controlling process requests SIGIO generation
-then it will at least override that default action and
-handle it sensibly. Is there a way to check that assumption?
-
-Looked at bsg in the situation where a signal interrupts a
-SG_IO ioctl. It seems broken; anyone like to comment on this
-snippet from bsg if a signal hits the first call:
-     blk_execute_rq(bd->queue, NULL, rq, at_head);
-     ret = blk_complete_sgv4_hdr_rq(rq, &hdr, bio, bidi_bio);
-     if (copy_to_user(uarg, &hdr, sizeof(hdr)))
-         return -EFAULT;
-
-
-As an aside, I got tired of handling signals during SCSI commands
-in the ddpt utility, especially after adding tape support. So
-it now masks all the usual suspects during the IO then checks
-for signals in a small window between IOs. Non maskable signals
-will still terminate but of course the user gets no guarantees,
-but it would be still reasonable in the termination case that
-the interrupted SCSI command was _not_ resubmitted.
-
-Doug Gilbert
+johannes
 
