@@ -1,83 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756152Ab3HFL7i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 07:59:38 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:46567 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753947Ab3HFL7h (ORCPT
+	id S1756364Ab3HFMIK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 08:08:10 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:52937 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756083Ab3HFMII (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 07:59:37 -0400
-Date: Tue, 6 Aug 2013 12:59:21 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: Vince Weaver <vincent.weaver@maine.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        "trinity@vger.kernel.org" <trinity@vger.kernel.org>
-Subject: Re: perf,arm -- oops in validate_event
-Message-ID: <20130806115921.GA14798@mudshark.cambridge.arm.com>
-References: <alpine.DEB.2.10.1308051622270.28589@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.10.1308051711080.31327@vincent-weaver-1.um.maine.edu>
- <20130806111932.GA25383@e106331-lin.cambridge.arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130806111932.GA25383@e106331-lin.cambridge.arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 6 Aug 2013 08:08:08 -0400
+From: Xiaotian Feng <xtfeng@gmail.com>
+Cc: Xiaotian Feng <xtfeng@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: [PATCH] cpumask: fix cpumask leak in partition_sched_domains
+Date: Tue,  6 Aug 2013 20:06:42 +0800
+Message-Id: <1375790802-11857-1-git-send-email-xtfeng@gmail.com>
+X-Mailer: git-send-email 1.7.9.6 (Apple Git-31.1)
+In-Reply-To: <87d2prqvse.fsf@rustcorp.com.au>
+References: <87d2prqvse.fsf@rustcorp.com.au>
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 06, 2013 at 12:19:32PM +0100, Mark Rutland wrote:
-> On Mon, Aug 05, 2013 at 10:17:37PM +0100, Vince Weaver wrote:
-> > It looks like in validate_event() we do
-> > 
-> >         struct arm_pmu *armpmu = to_arm_pmu(event->pmu);
-> >         ...
-> >         return armpmu->get_event_idx(hw_events, event) >= 0;
-> > 
-> > armpmu is read into r3, and somehow the value at the offset of
-> > armpmu->get_event_idx is either -1 or 0, so when it does a "blx" 
-> > branch to the address at this offset we get the ooops.
-> > 
-> >   c001bf8c:       e3120010        tst     r2, #16
-> >   c001bf90:       0a000004        beq     c001bfa8 <validate_event+0x48>
-> >   c001bf94:       e5933070        ldr     r3, [r3, #112]  ; 0x70
-> > * c001bf98:       e12fff33        blx     r3
-> >   c001bf9c:       e1e00000        mvn     r0, r0
-> > 
-> > I'm having trouble tracing the code back past that, and I don't have time
-> > to start adding printk's and recompiling right now.
-> > 
-> > Vince
-> 
-> I think I can save you the effort :)
-> 
-> From the looks of the test case and the kernel code in question, it
-> looks like the following happens:
-> 
-> * We create a software event, which becomes its own group leader.
-> * We create a hardware event, with the software event as its group
->   leader.
-> * When we try to schedule the hardware event, we try to validate all
->   events in its event group (the leader + siblings), but in doing so we
->   treat the software event as a hardware event, and erroneously try to
->   get its (non-existent) arm_pmu container, and call some garbage value
->   as get_event_idx(...).
-> 
-> This could also happen if we tried to add events from different hardware
-> PMUs to the same groups. I'm not sure if that's valid, but I couldn't
-> see any code preventing that, and it seems the x86 validation logic is
-> wired to allow this. If it's not valid, we could skip validation of
-> software events by checking with is_software_event.
+If doms_new is NULL, partition_sched_domains() will reset ndoms_cur
+to 0, and free old sched domains with free_sched_domains(doms_cur, ndoms_cur).
+As ndoms_cur is 0, the cpumask will not be freed.
 
-But we already check `event->pmu != leader_pmu' in validate_event, so we
-shouldn't get anywhere nearer calling get_event_idx in the case you
-describe. It sounds more like we have an inconsistency with one of the
-events.
+Signed-off-by: Xiaotian Feng <xtfeng@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org
+---
+ kernel/sched/core.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-Can you dump the events as they're processed in validate_group please?
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index b7c32cb..3d6c57b 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -6184,8 +6184,9 @@ match1:
+ 		;
+ 	}
+ 
++	n = ndoms_cur;
+ 	if (doms_new == NULL) {
+-		ndoms_cur = 0;
++		n = 0;
+ 		doms_new = &fallback_doms;
+ 		cpumask_andnot(doms_new[0], cpu_active_mask, cpu_isolated_map);
+ 		WARN_ON_ONCE(dattr_new);
+@@ -6193,7 +6194,7 @@ match1:
+ 
+ 	/* Build new domains */
+ 	for (i = 0; i < ndoms_new; i++) {
+-		for (j = 0; j < ndoms_cur && !new_topology; j++) {
++		for (j = 0; j < n && !new_topology; j++) {
+ 			if (cpumask_equal(doms_new[i], doms_cur[j])
+ 			    && dattrs_equal(dattr_new, i, dattr_cur, j))
+ 				goto match2;
+-- 
+1.7.9.6 (Apple Git-31.1)
 
-Will
