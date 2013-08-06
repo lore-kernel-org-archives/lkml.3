@@ -1,76 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755823Ab3HFAGT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 20:06:19 -0400
-Received: from mail-vb0-f47.google.com ([209.85.212.47]:56755 "EHLO
-	mail-vb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751218Ab3HFAGS (ORCPT
+	id S1755844Ab3HFAQI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 20:16:08 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:50181 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755636Ab3HFAQH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 20:06:18 -0400
+	Mon, 5 Aug 2013 20:16:07 -0400
+Message-ID: <5200403B.3000206@ozlabs.ru>
+Date: Tue, 06 Aug 2013 10:15:55 +1000
+From: Alexey Kardashevskiy <aik@ozlabs.ru>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <20130805153318.GL18151@rocoto.smurfnet.nu>
-References: <1375478948-22562-1-git-send-email-roy.franz@linaro.org>
-	<1375478948-22562-7-git-send-email-roy.franz@linaro.org>
-	<20130805141149.GB2755@localhost.localdomain>
-	<20130805153318.GL18151@rocoto.smurfnet.nu>
-Date: Mon, 5 Aug 2013 17:06:17 -0700
-Message-ID: <CAFECyb-WciwMu0MBmZ8LzkaM=VxnaOH5e9V5f_AP3ZbLA9CW9A@mail.gmail.com>
-Subject: Re: [PATCH 6/7] Add EFI stub for ARM
-From: Roy Franz <roy.franz@linaro.org>
-To: Leif Lindholm <leif.lindholm@linaro.org>
-Cc: Dave Martin <Dave.Martin@arm.com>, linux-kernel@vger.kernel.org,
-        linux-efi@vger.kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        matt.fleming@intel.com,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-Content-Type: text/plain; charset=UTF-8
+To: Jay Fenlason <fenlason@redhat.com>
+CC: Santosh Rastapur <santosh@chelsio.com>, Divy Le Ray <divy@chelsio.com>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: BUG cxgb3: Check and handle the dma mapping errors
+References: <51FF14F8.7000204@ozlabs.ru> <20130805184107.GA2998@redhat.com>
+In-Reply-To: <20130805184107.GA2998@redhat.com>
+Content-Type: text/plain; charset=KOI8-R
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 5, 2013 at 8:33 AM, Leif Lindholm <leif.lindholm@linaro.org> wrote:
-> On Mon, Aug 05, 2013 at 03:11:49PM +0100, Dave Martin wrote:
->> > diff --git a/arch/arm/boot/compressed/head.S b/arch/arm/boot/compressed/head.S
->> > index 75189f1..4c70b9e 100644
->> > --- a/arch/arm/boot/compressed/head.S
->> > +++ b/arch/arm/boot/compressed/head.S
->> > @@ -122,19 +122,106 @@
->> >             .arm                            @ Always enter in ARM state
->> >  start:
->> >             .type   start,#function
->> > -           .rept   7
->> > +#ifdef CONFIG_EFI_STUB
->> > +           @ Magic MSDOS signature for PE/COFF + ADD opcode
->> > +           .word   0x62805a4d
+On 08/06/2013 04:41 AM, Jay Fenlason wrote:
+> On Mon, Aug 05, 2013 at 12:59:04PM +1000, Alexey Kardashevskiy wrote:
+>> Hi!
 >>
->> What about BE32?
->
-> The ARM bindings for UEFI specify that the processor must be in
-> little-endian mode.
->
->> In that case, the instruction is a coprocessor load, that loads from a
->> random address to a coprocessor that almost certainly doesn't exist.
->> This will probably fault.
+>> Recently I started getting multiple errors like this:
 >>
->> Since BE32 is only for older platforms (<v6) and this is not easily
->> solvable, it might be sensible to make the EFI stub support depend on
->> !CPU_ENDIAN_BE32.
->
-> Well, it would make more sense to make EFI_STUB depend on EFI and
-> EFI depend on !CPU_ENDIAN_BE32. Which is something I can add to
-> my next set of general ARM UEFI patches. Thanks.
-> /
->     Leif
+>> cxgb3 0006:01:00.0: iommu_alloc failed, tbl c000000003067980 vaddr
+>> c000001fbdaaa882 npages 1
+>> cxgb3 0006:01:00.0: iommu_alloc failed, tbl c000000003067980 vaddr
+>> c000001fbdaaa882 npages 1
+>> cxgb3 0006:01:00.0: iommu_alloc failed, tbl c000000003067980 vaddr
+>> c000001fbdaaa882 npages 1
+>> cxgb3 0006:01:00.0: iommu_alloc failed, tbl c000000003067980 vaddr
+>> c000001fbdaaa882 npages 1
+>> cxgb3 0006:01:00.0: iommu_alloc failed, tbl c000000003067980 vaddr
+>> c000001fbdaaa882 npages 1
+>> cxgb3 0006:01:00.0: iommu_alloc failed, tbl c000000003067980 vaddr
+>> c000001fbdaaa882 npages 1
+>> cxgb3 0006:01:00.0: iommu_alloc failed, tbl c000000003067980 vaddr
+>> c000001fbdaaa882 npages 1
+>> ... and so on
+>>
+>> This is all happening on a PPC64 "powernv" platform machine. To trigger the
+>> error state, it is enough to _flood_ ping CXGB3 card from another machine
+>> (which has Emulex 10Gb NIC + Cisco switch). Just do "ping -f 172.20.1.2"
+>> and wait 10-15 seconds.
+>>
+>>
+>> The messages are coming from arch/powerpc/kernel/iommu.c and basically
+>> mean that the driver requested more pages than the DMA window has which is
+>> normally 1GB (there could be another possible source of errors -
+>> ppc_md.tce_build callback - but on powernv platform it always succeeds).
+>>
+>>
+>> The patch after which it broke is:
+>> commit f83331bab149e29fa2c49cf102c0cd8c3f1ce9f9
+>> Author: Santosh Rastapur <santosh@chelsio.com>
+>> Date:   Tue May 21 04:21:29 2013 +0000
+>> cxgb3: Check and handle the dma mapping errors
+>>
+>> Any quick ideas? Thanks!
+> 
+> That patch adds error checking to detect failed dma mapping requests.
+> Before it, the code always assumed that dma mapping requests succeded,
+> whether they actually do or not, so the fact that the older kernel
+> does not log errors only means that the failures are being ignored,
+> and any appearance of working is through pure luck.  The machine could
+> have just crashed at that point.
 
-I had EFI_STUB depend on EFI at one point during my development, but took
-it out because there was no actual dependency (the stub will work fine without
-other EFI features.)  The features will most likely be used together,
-but I wasn't
-sure if we would want to enforce this with a config dependency.  I
-don't care one
-way or the other, I'd just like the dependencies to be correct and
-follow best practices.
+>From what I see, the patch adds map_skb() function which is called in two
+new places, so the patch does not just mechanically replace
+skb_frag_dma_map() to map_skb() or something like that.
 
-Thanks,
-Roy
+> What is the observed behavior of the system by the machine initiating
+> the ping flood?  Do the older and newer kernels differ in the
+> percentage of pings that do not receive replies? 
+
+The other machine stops receiving replies. It is using different adapter,
+not Chelsio and the kernel version does not really matter.
+
+> O the newer kernel,
+> when the mapping errors are detected, the packet that it is trying to
+> transmit is dropped, but I'm not at all sure what happens on the older
+> kernel after the dma mapping fails.  As I mentioned earlier, I'm
+> surprised it does not crash.  Perhaps the folks from Chelsio have a
+> better idea what happens after a dma mapping error is ignored?
+
+Any kernel cannot avoid platform's iommu_alloc() on ppc64/powernv so if
+there was a problem, we would have seen messages (and yes, kernel would
+have crashed).
+
+
+
+-- 
+Alexey
