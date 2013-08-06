@@ -1,264 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756836Ab3HFWui (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 18:50:38 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:58510 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756630Ab3HFWuf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 18:50:35 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Cc: Linux PCI <linux-pci@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Lan Tianyu <tianyu.lan@intel.com>, Peter Wu <lekensteyn@gmail.com>,
-        Vladimir Lalov <mail@vlalov.com>
-Subject: [PATCH] ACPI: Try harder to resolve _ADR collisions for bridges
-Date: Wed, 07 Aug 2013 01:00:52 +0200
-Message-ID: <7877671.J2kQMTu2H0@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.11.0-rc4+; KDE/4.9.5; x86_64; ; )
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1756842Ab3HFWwG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 18:52:06 -0400
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:57389 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756693Ab3HFWwD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Aug 2013 18:52:03 -0400
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: linux-pm@vger.kernel.org
+Cc: Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>,
+        linux-kernel@vger.kernel.org,
+        Felipe Contreras <felipe.contreras@gmail.com>
+Subject: [PATCH] thermal: new asus driver
+Date: Tue,  6 Aug 2013 17:48:20 -0500
+Message-Id: <1375829300-14081-1-git-send-email-felipe.contreras@gmail.com>
+X-Mailer: git-send-email 1.8.3.267.gbb4989f
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Simple driver to enable control of the fan in ASUS laptops. So far this
+has only been tested in ASUS Zenbook Prime UX31A, but according to some
+online reference [1], it should work in other models as well.
 
-In theory, under a given ACPI namespace node there should be only
-one child device object with _ADR whose value matches a given bus
-address exactly.  In practice, however, there are systems in which
-multiple child device objects under a given parent have _ADR matching
-exactly the same address.  In those cases we use _STA to determine
-which of the multiple matching devices is enabled, since some systems
-are known to indicate which ACPI device object to associate with the
-given physical (usually PCI) device this way.
+Another source was a patch acpi4asus-user's mailing list [2].
 
-Unfortunately, as it turns out, there are systems in which many
-device objects under the same parent have _ADR matching exactly the
-same bus address and none of them has _STA, in which case they all
-should be regarded as enabled according to the spec.  Still, if
-those device objects are supposed to represent bridges (e.g. this
-is the case for device objects corresponding to PCIe ports), we can
-try harder and skip the ones that have no child device objects in the
-ACPI namespace.  With luck, we can avoid using device objects that we
-are not expected to use this way.
+[1]
+http://forum.notebookreview.com/asus/705656-fan-control-asus-prime-ux31-ux31a-ux32a-ux32vd.html
+[2]
+http://www.mail-archive.com/acpi4asus-user@lists.sourceforge.net/msg00065.html
 
-Although this only works for bridges whose children also have ACPI
-namespace representation, it is sufficient to address graphics
-adapter detection issues on some systems, so rework the code finding
-a matching device ACPI handle for a given bus address to implement
-this idea.
-
-Introduce a new function, acpi_find_child(), taking three arguments:
-the ACPI handle of the device's parent, a bus address suitable for
-the device's bus type and a bool indicating if the device is a
-bridge and make it work as outlined above.  Reimplement the function
-currently used for this purpose, acpi_get_child(), as a call to
-acpi_find_child() with the last argument set to 'false' and make
-the PCI subsystem use acpi_find_child() with the bridge information
-passed as the last argument to it.  [Lan Tianyu notices that it is
-not sufficient to use pci_is_bridge() for that, because the device's
-subordinate pointer hasn't been set yet at this point, so use
-hdr_type instead.]
-
-This change fixes a regression introduced inadvertently by commit
-33f767d (ACPI: Rework acpi_get_child() to be more efficient) which
-overlooked the fact that for acpi_walk_namespace() "post-order" means
-"after all children have been visited" rather than "on the way back",
-so for device objects without children and for namespace walks of
-depth 1, as in the acpi_get_child() case, the "post-order" callbacks
-ordering is actually the same as the ordering of "pre-order" ones.
-Since that commit changed the namespace walk in acpi_get_child() to
-terminate after finding the first matching object instead of going
-through all of them and returning the last one, it effectively
-changed the result returned by that function in some rare cases and
-that led to problems (the switch from a "pre-order" to a "post-order"
-callback was supposed to prevent that from happening, but it was
-ineffective).
-
-As it turns out, the systems where the change made by commit
-33f767d actually matters are those where there are multiple ACPI
-device objects representing the same PCIe port (which effectively
-is a bridge).  Moreover, only one of them, and the one we are
-expected to use, has child device objects in the ACPI namespace,
-so the regression can be addressed as described above.
-
-References: https://bugzilla.kernel.org/show_bug.cgi?id=60561
-Reported-by: Peter Wu <lekensteyn@gmail.com>
-Tested-by: Vladimir Lalov <mail@vlalov.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Cc: 3.9+ <stable@vger.kernel.org> # 3.9+
+Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
 ---
- drivers/acpi/glue.c     |   99 +++++++++++++++++++++++++++++++++++++++---------
- drivers/pci/pci-acpi.c  |   14 ++++--
- include/acpi/acpi_bus.h |    6 ++
- 3 files changed, 97 insertions(+), 22 deletions(-)
 
-Index: linux-pm/drivers/acpi/glue.c
-===================================================================
---- linux-pm.orig/drivers/acpi/glue.c
-+++ linux-pm/drivers/acpi/glue.c
-@@ -79,34 +79,99 @@ static struct acpi_bus_type *acpi_get_bu
- 	return ret;
- }
+I've never implemented a driver like this, so I've no idea if this is the right way to do it.
+
+ drivers/thermal/Kconfig        |  7 ++++
+ drivers/thermal/Makefile       |  1 +
+ drivers/thermal/asus_thermal.c | 94 ++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 102 insertions(+)
+ create mode 100644 drivers/thermal/asus_thermal.c
+
+diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
+index e988c81..0c5b624 100644
+--- a/drivers/thermal/Kconfig
++++ b/drivers/thermal/Kconfig
+@@ -184,4 +184,11 @@ menu "Texas Instruments thermal drivers"
+ source "drivers/thermal/ti-soc-thermal/Kconfig"
+ endmenu
  
--static acpi_status do_acpi_find_child(acpi_handle handle, u32 lvl_not_used,
--				      void *addr_p, void **ret_p)
-+static acpi_status acpi_dev_check(acpi_handle handle, u32 lvl_not_used,
-+				  void *not_used, void **ret_p)
- {
--	unsigned long long addr, sta;
--	acpi_status status;
-+	struct acpi_device *adev = NULL;
- 
--	status = acpi_evaluate_integer(handle, METHOD_NAME__ADR, NULL, &addr);
--	if (ACPI_SUCCESS(status) && addr == *((u64 *)addr_p)) {
-+	acpi_bus_get_device(handle, &adev);
-+	if (adev) {
- 		*ret_p = handle;
--		status = acpi_bus_get_status_handle(handle, &sta);
--		if (ACPI_SUCCESS(status) && (sta & ACPI_STA_DEVICE_ENABLED))
--			return AE_CTRL_TERMINATE;
-+		return AE_CTRL_TERMINATE;
- 	}
- 	return AE_OK;
- }
- 
--acpi_handle acpi_get_child(acpi_handle parent, u64 address)
-+static bool acpi_dev_suitable(acpi_handle handle, bool is_bridge)
- {
--	void *ret = NULL;
-+	unsigned long long sta;
-+	acpi_status status;
- 
--	if (!parent)
--		return NULL;
-+	status = acpi_bus_get_status_handle(handle, &sta);
-+	if (ACPI_FAILURE(status) || !(sta & ACPI_STA_DEVICE_ENABLED))
-+		return false;
++config ASUS_THERMAL
++	tristate "ASUS thermal driver"
++	depends on THERMAL
++	depends on X86
++	help
++	  Enables control of the fan in ASUS laptops.
 +
-+	if (is_bridge) {
-+		void *test = NULL;
+ endif
+diff --git a/drivers/thermal/Makefile b/drivers/thermal/Makefile
+index 67184a2..ab4ea6f 100644
+--- a/drivers/thermal/Makefile
++++ b/drivers/thermal/Makefile
+@@ -25,3 +25,4 @@ obj-$(CONFIG_DB8500_CPUFREQ_COOLING)	+= db8500_cpufreq_cooling.o
+ obj-$(CONFIG_INTEL_POWERCLAMP)	+= intel_powerclamp.o
+ obj-$(CONFIG_X86_PKG_TEMP_THERMAL)	+= x86_pkg_temp_thermal.o
+ obj-$(CONFIG_TI_SOC_THERMAL)	+= ti-soc-thermal/
++obj-$(CONFIG_ASUS_THERMAL)	+= asus_thermal.o
+diff --git a/drivers/thermal/asus_thermal.c b/drivers/thermal/asus_thermal.c
+new file mode 100644
+index 0000000..eceeee3
+--- /dev/null
++++ b/drivers/thermal/asus_thermal.c
+@@ -0,0 +1,94 @@
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/init.h>
++#include <linux/acpi.h>
++#include <linux/thermal.h>
++#include <linux/dmi.h>
 +
-+		/* Check if this object has at least one child device. */
-+		acpi_walk_namespace(ACPI_TYPE_DEVICE, handle, 1, acpi_dev_check,
-+				    NULL, NULL, &test);
-+		return !!test;
-+	}
-+	return true;
++MODULE_AUTHOR("Felipe Contreras <felipe.contreras@gmail.com>");
++MODULE_DESCRIPTION("ASUS fan driver");
++MODULE_LICENSE("GPL");
++
++static struct thermal_cooling_device *cdev;
++
++static int fan_get_max_state(struct thermal_cooling_device *cdev,
++		unsigned long *state)
++{
++	*state = 0xff;
++	return 0;
 +}
- 
--	acpi_walk_namespace(ACPI_TYPE_DEVICE, parent, 1, NULL,
--			    do_acpi_find_child, &address, &ret);
--	return (acpi_handle)ret;
-+struct find_child_context {
-+	u64 addr;
-+	bool is_bridge;
-+	acpi_handle ret;
-+	bool ret_checked;
++
++static int fan_get_cur_state(struct thermal_cooling_device *cdev,
++		unsigned long *state)
++{
++	struct acpi_object_list params;
++	union acpi_object in_objs[1];
++	unsigned long long value;
++	acpi_status r;
++
++	params.count = ARRAY_SIZE(in_objs);
++	params.pointer = in_objs;
++	in_objs[0].type = ACPI_TYPE_INTEGER;
++	in_objs[0].integer.value = 0;
++
++	r = acpi_evaluate_integer(NULL, "\\_TZ.RFAN", &params, &value);
++	if (r != AE_OK)
++		return r;
++
++	*state = value;
++
++	return 0;
++}
++
++static int fan_set(struct thermal_cooling_device *cdev, int fan, int speed)
++{
++	struct acpi_object_list params;
++	union acpi_object in_objs[2];
++	unsigned long long value;
++
++	params.count = ARRAY_SIZE(in_objs);
++	params.pointer = in_objs;
++	in_objs[0].type = ACPI_TYPE_INTEGER;
++	in_objs[0].integer.value = fan;
++	in_objs[1].type = ACPI_TYPE_INTEGER;
++	in_objs[1].integer.value = speed;
++
++	return acpi_evaluate_integer(NULL, "\\_SB.PCI0.LPCB.EC0.SFNV", &params, &value);
++}
++
++static int fan_set_cur_state(struct thermal_cooling_device *cdev,
++		unsigned long state)
++{
++	return fan_set(cdev, 1, state);
++}
++
++static int fan_set_auto(struct thermal_cooling_device *cdev)
++{
++	return fan_set(cdev, 0, 0);
++}
++
++static const struct thermal_cooling_device_ops fan_cooling_ops = {
++	.get_max_state = fan_get_max_state,
++	.get_cur_state = fan_get_cur_state,
++	.set_cur_state = fan_set_cur_state,
 +};
 +
-+static acpi_status do_find_child(acpi_handle handle, u32 lvl_not_used,
-+				 void *data, void **not_used)
++static int __init fan_init(void)
 +{
-+	struct find_child_context *context = data;
-+	unsigned long long addr;
-+	acpi_status status;
-+
-+	status = acpi_evaluate_integer(handle, METHOD_NAME__ADR, NULL, &addr);
-+	if (ACPI_FAILURE(status) || addr != context->addr)
-+		return AE_OK;
-+
-+	if (!context->ret) {
-+		/* This is the first matching object.  Save its handle. */
-+		context->ret = handle;
-+		return AE_OK;
-+	}
-+	/*
-+	 * There is one more matching object with the same _ADR value.  That
-+	 * really shouldn't happen, so we are kind of beyond the scope of the
-+	 * spec here.  We have to choose which one to return, though.
-+	 *
-+	 * First, check if the previously found object is good enough and return
-+	 * its handle if so.  Second, check the same for the object that we've
-+	 * just found.
-+	 */
-+	if (!context->ret_checked) {
-+		if (acpi_dev_suitable(context->ret, context->is_bridge))
-+			return AE_CTRL_TERMINATE;
-+		else
-+			context->ret_checked = true;
-+	}
-+	if (acpi_dev_suitable(handle, context->is_bridge)) {
-+		context->ret = handle;
-+		return AE_CTRL_TERMINATE;
-+	}
-+	return AE_OK;
++	if (strcmp(dmi_get_system_info(DMI_SYS_VENDOR), "ASUSTeK COMPUTER INC."))
++		return -ENODEV;
++	cdev = thermal_cooling_device_register("Fan", NULL, &fan_cooling_ops);
++	if (IS_ERR(cdev))
++		return PTR_ERR(cdev);
++	fan_set_auto(cdev);
++	return 0;
 +}
 +
-+acpi_handle acpi_find_child(acpi_handle parent, u64 addr, bool is_bridge)
++static void __exit fan_exit(void)
 +{
-+	if (parent) {
-+		struct find_child_context context = {
-+			.addr = addr,
-+			.is_bridge = is_bridge,
-+		};
-+
-+		acpi_walk_namespace(ACPI_TYPE_DEVICE, parent, 1, do_find_child,
-+				    NULL, &context, NULL);
-+		return context.ret;
-+	}
-+	return NULL;
- }
--EXPORT_SYMBOL(acpi_get_child);
-+EXPORT_SYMBOL_GPL(acpi_find_child);
- 
- int acpi_bind_one(struct device *dev, acpi_handle handle)
- {
-Index: linux-pm/include/acpi/acpi_bus.h
-===================================================================
---- linux-pm.orig/include/acpi/acpi_bus.h
-+++ linux-pm/include/acpi/acpi_bus.h
-@@ -439,7 +439,11 @@ struct acpi_pci_root {
- };
- 
- /* helper */
--acpi_handle acpi_get_child(acpi_handle, u64);
-+acpi_handle acpi_find_child(acpi_handle, u64, bool);
-+static inline acpi_handle acpi_get_child(acpi_handle handle, u64 addr)
-+{
-+	return acpi_find_child(handle, addr, false);
++	fan_set_auto(cdev);
++	thermal_cooling_device_unregister(cdev);
 +}
- int acpi_is_root_bridge(acpi_handle);
- struct acpi_pci_root *acpi_pci_find_root(acpi_handle handle);
- #define DEVICE_ACPI_HANDLE(dev) ((acpi_handle)ACPI_HANDLE(dev))
-Index: linux-pm/drivers/pci/pci-acpi.c
-===================================================================
---- linux-pm.orig/drivers/pci/pci-acpi.c
-+++ linux-pm/drivers/pci/pci-acpi.c
-@@ -309,13 +309,19 @@ void acpi_pci_remove_bus(struct pci_bus
- /* ACPI bus type */
- static int acpi_pci_find_device(struct device *dev, acpi_handle *handle)
- {
--	struct pci_dev * pci_dev;
--	u64	addr;
-+	struct pci_dev *pci_dev = to_pci_dev(dev);
-+	/*
-+	 * pci_is_bridge() is not suitable here, because pci_dev->subordinate
-+	 * is set only after acpi_pci_find_device() has been called for the
-+	 * given device.
-+	 */
-+	bool is_bridge = pci_dev->hdr_type == PCI_HEADER_TYPE_BRIDGE
-+			|| pci_dev->hdr_type == PCI_HEADER_TYPE_CARDBUS;
-+	u64 addr;
- 
--	pci_dev = to_pci_dev(dev);
- 	/* Please ref to ACPI spec for the syntax of _ADR */
- 	addr = (PCI_SLOT(pci_dev->devfn) << 16) | PCI_FUNC(pci_dev->devfn);
--	*handle = acpi_get_child(DEVICE_ACPI_HANDLE(dev->parent), addr);
-+	*handle = acpi_find_child(ACPI_HANDLE(dev->parent), addr, is_bridge);
- 	if (!*handle)
- 		return -ENODEV;
- 	return 0;
++
++module_init(fan_init);
++module_exit(fan_exit);
+-- 
+1.8.3.267.gbb4989f
 
