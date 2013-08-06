@@ -1,105 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755256Ab3HFIia (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 04:38:30 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:47889 "EHLO
-	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754918Ab3HFIhj (ORCPT
+	id S1754838Ab3HFIjK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 04:39:10 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:57619 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754741Ab3HFIgs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 04:37:39 -0400
-X-AuditID: 9c93017d-b7b45ae000000e34-9e-5200b5cf2eec
+	Tue, 6 Aug 2013 04:36:48 -0400
+X-AuditID: 9c930179-b7c53ae000000457-a5-5200b59c3041
 From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Joonsoo Kim <js1304@gmail.com>, Minchan Kim <minchan@kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH v2 mmotm 2/3] mm: move pgtable related functions to right place
-Date: Tue,  6 Aug 2013 17:37:34 +0900
-Message-Id: <1375778255-31398-2-git-send-email-iamjoonsoo.kim@lge.com>
+To: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Mike Galbraith <efault@gmx.de>,
+        Paul Turner <pjt@google.com>, Alex Shi <alex.shi@intel.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Namhyung Kim <namhyung@kernel.org>, Joonsoo Kim <js1304@gmail.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: [PATCH v3 1/3] sched: remove one division operation in find_buiest_queue()
+Date: Tue,  6 Aug 2013 17:36:41 +0900
+Message-Id: <1375778203-31343-2-git-send-email-iamjoonsoo.kim@lge.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1375778255-31398-1-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1375778255-31398-1-git-send-email-iamjoonsoo.kim@lge.com>
+In-Reply-To: <1375778203-31343-1-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1375778203-31343-1-git-send-email-iamjoonsoo.kim@lge.com>
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-pgtable related functions are mostly in pgtable-generic.c.
-So move remaining functions from memory.c to pgtable-generic.c.
+Remove one division operation in find_buiest_queue().
 
 Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
-diff --git a/mm/memory.c b/mm/memory.c
-index f2ab2a8..8fd4d42 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -374,30 +374,6 @@ void tlb_remove_table(struct mmu_gather *tlb, void *table)
- #endif /* CONFIG_HAVE_RCU_TABLE_FREE */
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 9565645..52898dc 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -4968,7 +4968,7 @@ static struct rq *find_busiest_queue(struct lb_env *env,
+ 				     struct sched_group *group)
+ {
+ 	struct rq *busiest = NULL, *rq;
+-	unsigned long max_load = 0;
++	unsigned long busiest_load = 0, busiest_power = SCHED_POWER_SCALE;
+ 	int i;
  
- /*
-- * If a p?d_bad entry is found while walking page tables, report
-- * the error, before resetting entry to p?d_none.  Usually (but
-- * very seldom) called out from the p?d_none_or_clear_bad macros.
-- */
+ 	for_each_cpu(i, sched_group_cpus(group)) {
+@@ -4999,10 +4999,9 @@ static struct rq *find_busiest_queue(struct lb_env *env,
+ 		 * the load can be moved away from the cpu that is potentially
+ 		 * running at a lower capacity.
+ 		 */
+-		wl = (wl * SCHED_POWER_SCALE) / power;
 -
--void pgd_clear_bad(pgd_t *pgd)
--{
--	pgd_ERROR(*pgd);
--	pgd_clear(pgd);
--}
--
--void pud_clear_bad(pud_t *pud)
--{
--	pud_ERROR(*pud);
--	pud_clear(pud);
--}
--
--void pmd_clear_bad(pmd_t *pmd)
--{
--	pmd_ERROR(*pmd);
--	pmd_clear(pmd);
--}
--
--/*
-  * Note: this doesn't free the actual pages themselves. That
-  * has been handled earlier when unmapping all the memory regions.
-  */
-diff --git a/mm/pgtable-generic.c b/mm/pgtable-generic.c
-index e1a6e4f..3929a40 100644
---- a/mm/pgtable-generic.c
-+++ b/mm/pgtable-generic.c
-@@ -10,6 +10,30 @@
- #include <asm/tlb.h>
- #include <asm-generic/pgtable.h>
- 
-+/*
-+ * If a p?d_bad entry is found while walking page tables, report
-+ * the error, before resetting entry to p?d_none.  Usually (but
-+ * very seldom) called out from the p?d_none_or_clear_bad macros.
-+ */
-+
-+void pgd_clear_bad(pgd_t *pgd)
-+{
-+	pgd_ERROR(*pgd);
-+	pgd_clear(pgd);
-+}
-+
-+void pud_clear_bad(pud_t *pud)
-+{
-+	pud_ERROR(*pud);
-+	pud_clear(pud);
-+}
-+
-+void pmd_clear_bad(pmd_t *pmd)
-+{
-+	pmd_ERROR(*pmd);
-+	pmd_clear(pmd);
-+}
-+
- #ifndef __HAVE_ARCH_PTEP_SET_ACCESS_FLAGS
- /*
-  * Only sets the access flags (dirty, accessed), as well as write 
+-		if (wl > max_load) {
+-			max_load = wl;
++		if (wl * busiest_power > busiest_load * power) {
++			busiest_load = wl;
++			busiest_power = power;
+ 			busiest = rq;
+ 		}
+ 	}
 -- 
 1.7.9.5
 
