@@ -1,134 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751838Ab3HFEsm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 00:48:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33970 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751682Ab3HFEsj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 00:48:39 -0400
-Date: Tue, 06 Aug 2013 00:48:13 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, Hillf Danton <dhillf@gmail.com>,
-        Michal Hocko <mhocko@suse.cz>, Rik van Riel <riel@redhat.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        Naoya Horiguchi <nao.horiguchi@gmail.com>
-Message-ID: <1375764493-7m92dted-mutt-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <87eha7oa4l.fsf@linux.vnet.ibm.com>
-References: <1375734465-scgr8g4z-mutt-n-horiguchi@ah.jp.nec.com>
- <87eha7oa4l.fsf@linux.vnet.ibm.com>
-Subject: Re: [PATCH 9/8] hugetlb: add pmd_huge_support() to migrate only
- pmd-based hugepage
-Mime-Version: 1.0
-Content-Type: text/plain;
- charset=iso-2022-jp
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-X-Mutt-References: <87eha7oa4l.fsf@linux.vnet.ibm.com>
-X-Mutt-Fcc: ~/Maildir/sent/
-User-Agent: Mutt 1.5.21 (2010-09-15)
+	id S1751706Ab3HFEvn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 00:51:43 -0400
+Received: from mail-qc0-f175.google.com ([209.85.216.175]:60220 "EHLO
+	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751370Ab3HFEvm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Aug 2013 00:51:42 -0400
+From: kpark3469@gmail.com
+To: rostedt@goodmis.org
+Cc: keun-o.park@windriver.com, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] PM / QoS: use __print_symbolic with more convenient way
+Date: Tue,  6 Aug 2013 13:51:20 +0900
+Message-Id: <1375764681-4618-1-git-send-email-kpark3469@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 06, 2013 at 07:26:10AM +0530, Aneesh Kumar K.V wrote:
-> Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> writes:
-> 
-> > This patch is motivated by the discussion with Aneesh about "extend
-> > hugepage migration" patchset.
-> >   http://thread.gmane.org/gmane.linux.kernel.mm/103933/focus=104391
-> > I'll append this to the patchset in the next post, but before that
-> > I want this patch to be reviewed (I don't want to repeat posting the
-> > whole set for just minor changes.)
-> >
-> > Any comments?
-> >
-> > Thanks,
-> > Naoya Horiguchi
-> > ---
-> > From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> > Date: Mon, 5 Aug 2013 13:33:02 -0400
-> > Subject: [PATCH] hugetlb: add pmd_huge_support() to migrate only pmd-based
-> >  hugepage
-> >
-> > Currently hugepage migration works well only for pmd-based hugepages,
-> > because core routines of hugepage migration use pmd specific internal
-> > functions like huge_pte_offset(). So we should not enable the migration
-> > of other levels of hugepages until we are ready for it.
-> 
-> I guess huge_pte_offset may not be the right reason because archs do
-> implement huge_pte_offsets even if they are not pmd-based hugepages
-> 
-> pte_t *huge_pte_offset(struct mm_struct *mm, unsigned long addr)
-> {
-> 	/* Only called for hugetlbfs pages, hence can ignore THP */
-> 	return find_linux_pte_or_hugepte(mm->pgd, addr, NULL);
-> }
+From: Sahara <keun-o.park@windriver.com>
 
-You're right, sorry.
-Honestly saying, I tested only on x86 and my testing on pud-based hugepage
-is not enough (I experienced undissolved bugs,) so I want to restrict the
-target for now.
+This patch is to prevent the same __print_symbolic functions from
+being used repeatedly.
 
-> >
-> > Some users of hugepage migration (mbind, move_pages, and migrate_pages)
-> > do page table walk and check pud/pmd_huge() there, so they are safe.
-> > But the other users (softoffline and memory hotremove) don't do this,
-> > so they can try to migrate unexpected types of hugepages.
-> >
-> > To prevent this, we introduce an architecture dependent check of whether
-> > hugepage are implemented on a pmd basis or not. It returns 0 if pmd_huge()
-> > returns always 0, and 1 otherwise.
-> >
-> 
-> so why not #define pmd_huge_support pmd_huge or use pmd_huge directly ?
+Signed-off-by: Sahara <keun-o.park@windriver.com>
+---
+ include/trace/events/power.h |   43 +++++++++++++++++++++--------------------
+ 1 files changed, 22 insertions(+), 21 deletions(-)
 
-The caller (unmap_and_move_huge_page) doesn't have pmd, so we need do
-rmap to get the pmd associated with the source hugepage. Maybe the patch
-becomes smaller with this, but maybe it's slower.
+diff --git a/include/trace/events/power.h b/include/trace/events/power.h
+index 8e42410..34efacc 100644
+--- a/include/trace/events/power.h
++++ b/include/trace/events/power.h
+@@ -182,6 +182,23 @@ DEFINE_EVENT(power_domain, power_domain_target,
+ /*
+  * The pm qos events are used for pm qos update
+  */
++#define show_pm_qos_class(val)						\
++	__print_symbolic(val,						\
++		{ PM_QOS_CPU_DMA_LATENCY,	"CPU_DMA_LATENCY" },	\
++		{ PM_QOS_NETWORK_LATENCY,	"NETWORK_LATENCY" },	\
++		{ PM_QOS_NETWORK_THROUGHPUT,	"NETWORK_THROUGHPUT" })
++
++#define show_pm_qos_req_action(val)					\
++	__print_symbolic(val,						\
++		{ PM_QOS_ADD_REQ,	"ADD_REQ" },			\
++		{ PM_QOS_UPDATE_REQ,	"UPDATE_REQ" },			\
++		{ PM_QOS_REMOVE_REQ,	"REMOVE_REQ" })
++
++#define show_dev_pm_qos_req_type(val)					\
++	__print_symbolic(val,						\
++		{ DEV_PM_QOS_LATENCY,	"DEV_PM_QOS_LATENCY" },		\
++		{ DEV_PM_QOS_FLAGS,	"DEV_PM_QOS_FLAGS" })
++
+ DECLARE_EVENT_CLASS(pm_qos_request,
+ 
+ 	TP_PROTO(int pm_qos_class, s32 value),
+@@ -199,11 +216,7 @@ DECLARE_EVENT_CLASS(pm_qos_request,
+ 	),
+ 
+ 	TP_printk("pm_qos_class=%s value=%d",
+-		  __print_symbolic(__entry->pm_qos_class,
+-			{ PM_QOS_CPU_DMA_LATENCY,	"CPU_DMA_LATENCY" },
+-			{ PM_QOS_NETWORK_LATENCY,	"NETWORK_LATENCY" },
+-			{ PM_QOS_NETWORK_THROUGHPUT,	"NETWORK_THROUGHPUT" }),
+-		  __entry->value)
++		  show_pm_qos_class(__entry->pm_qos_class), __entry->value)
+ );
+ 
+ DEFINE_EVENT(pm_qos_request, pm_qos_add_request,
+@@ -246,10 +259,7 @@ TRACE_EVENT(pm_qos_update_request_timeout,
+ 	),
+ 
+ 	TP_printk("pm_qos_class=%s value=%d, timeout_us=%ld",
+-		  __print_symbolic(__entry->pm_qos_class,
+-			{ PM_QOS_CPU_DMA_LATENCY,	"CPU_DMA_LATENCY" },
+-			{ PM_QOS_NETWORK_LATENCY,	"NETWORK_LATENCY" },
+-			{ PM_QOS_NETWORK_THROUGHPUT,	"NETWORK_THROUGHPUT" }),
++		  show_pm_qos_class(__entry->pm_qos_class),
+ 		  __entry->value, __entry->timeout_us)
+ );
+ 
+@@ -272,10 +282,7 @@ DECLARE_EVENT_CLASS(pm_qos_update,
+ 	),
+ 
+ 	TP_printk("action=%s prev_value=%d curr_value=%d",
+-		  __print_symbolic(__entry->action,
+-			{ PM_QOS_ADD_REQ,	"ADD_REQ" },
+-			{ PM_QOS_UPDATE_REQ,	"UPDATE_REQ" },
+-			{ PM_QOS_REMOVE_REQ,	"REMOVE_REQ" }),
++		  show_pm_qos_req_action(__entry->action),
+ 		  __entry->prev_value, __entry->curr_value)
+ );
+ 
+@@ -293,10 +300,7 @@ DEFINE_EVENT_PRINT(pm_qos_update, pm_qos_update_flags,
+ 	TP_ARGS(action, prev_value, curr_value),
+ 
+ 	TP_printk("action=%s prev_value=0x%x curr_value=0x%x",
+-		  __print_symbolic(__entry->action,
+-			{ PM_QOS_ADD_REQ,	"ADD_REQ" },
+-			{ PM_QOS_UPDATE_REQ,	"UPDATE_REQ" },
+-			{ PM_QOS_REMOVE_REQ,	"REMOVE_REQ" }),
++		  show_pm_qos_req_action(__entry->action),
+ 		  __entry->prev_value, __entry->curr_value)
+ );
+ 
+@@ -321,10 +325,7 @@ DECLARE_EVENT_CLASS(dev_pm_qos_request,
+ 
+ 	TP_printk("device=%s type=%s new_value=%d",
+ 		  __get_str(name),
+-		  __print_symbolic(__entry->type,
+-			{ DEV_PM_QOS_LATENCY,	"DEV_PM_QOS_LATENCY" },
+-			{ DEV_PM_QOS_FLAGS,	"DEV_PM_QOS_FLAGS" }),
+-		  __entry->new_value)
++		  show_dev_pm_qos_req_type(__entry->type), __entry->new_value)
+ );
+ 
+ DEFINE_EVENT(dev_pm_qos_request, dev_pm_qos_add_request,
+-- 
+1.7.1
 
-Thanks,
-Naoya Horiguchi
-
-> > Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> > ---
-> >  arch/arm/mm/hugetlbpage.c     |  5 +++++
-> >  arch/arm64/mm/hugetlbpage.c   |  5 +++++
-> >  arch/ia64/mm/hugetlbpage.c    |  5 +++++
-> >  arch/metag/mm/hugetlbpage.c   |  5 +++++
-> >  arch/mips/mm/hugetlbpage.c    |  5 +++++
-> >  arch/powerpc/mm/hugetlbpage.c | 10 ++++++++++
-> >  arch/s390/mm/hugetlbpage.c    |  5 +++++
-> >  arch/sh/mm/hugetlbpage.c      |  5 +++++
-> >  arch/sparc/mm/hugetlbpage.c   |  5 +++++
-> >  arch/tile/mm/hugetlbpage.c    |  5 +++++
-> >  arch/x86/mm/hugetlbpage.c     |  8 ++++++++
-> >  include/linux/hugetlb.h       |  2 ++
-> >  mm/migrate.c                  | 11 +++++++++++
-> >  13 files changed, 76 insertions(+)
-> >
-> > diff --git a/arch/arm/mm/hugetlbpage.c b/arch/arm/mm/hugetlbpage.c
-> > index 3d1e4a2..3f3b6a7 100644
-> > --- a/arch/arm/mm/hugetlbpage.c
-> > +++ b/arch/arm/mm/hugetlbpage.c
-> > @@ -99,3 +99,8 @@ int pmd_huge(pmd_t pmd)
-> >  {
-> >  	return pmd_val(pmd) && !(pmd_val(pmd) & PMD_TABLE_BIT);
-> >  }
-> > +
-> > +int pmd_huge_support(void)
-> > +{
-> > +	return 1;
-> > +}
-> 
-> -aneesh
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->
