@@ -1,85 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755954Ab3HFPna (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 11:43:30 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:39145 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755826Ab3HFPn2 (ORCPT
+	id S1755935Ab3HFPp6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 11:45:58 -0400
+Received: from mail-vb0-f68.google.com ([209.85.212.68]:36465 "EHLO
+	mail-vb0-f68.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755157Ab3HFPp5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 11:43:28 -0400
+	Tue, 6 Aug 2013 11:45:57 -0400
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <1375802993.8219.26.camel@jlt4.sipsolutions.net>
-References: <CA+icZUX8OcTSOABO6Nbz5R6_5-m39rsYOpDqYBA7hf8LFvJLLA@mail.gmail.com>
-	<1375797260.8219.21.camel@jlt4.sipsolutions.net>
-	<CA+icZUUAJ25QybqHvxz7eubSLH6YuNjcc5zyU2O5Xi9vevMGkw@mail.gmail.com>
-	<1375800617.8219.23.camel@jlt4.sipsolutions.net>
-	<CA+icZUVbKpyuke6PRg3-60gOggsTb=3cNRz3Sy0RmvcZSuPaNw@mail.gmail.com>
-	<1375801059.8219.24.camel@jlt4.sipsolutions.net>
-	<CA+icZUXrRsXfeW9hqxTMkKW4TdNSBH-zE8-zX2Rd7HTAx5MvqQ@mail.gmail.com>
-	<CA+icZUWijPJmNoqE22Msqcn7tRot3SB3e=KujMM7JNd-Om-oOw@mail.gmail.com>
-	<1375802297.8219.25.camel@jlt4.sipsolutions.net>
-	<CA+icZUVCFOS6SHonEqzaJyWCGCU4nqqGjBN0VbmV-=OoM+deZg@mail.gmail.com>
-	<CA+icZUVuOqdZUGy2ALAF1CehOqYdr7rtEsXhqNvDtYEns2BuRQ@mail.gmail.com>
-	<1375802993.8219.26.camel@jlt4.sipsolutions.net>
-Date: Tue, 6 Aug 2013 17:43:27 +0200
-Message-ID: <CA+icZUW6P9Z_7z+o+z=qBWSFzyU8tgtY0ou+rmLcEzWbn94OXA@mail.gmail.com>
-Subject: Re: linux-next: Tree for Aug 6 [ wireless | iwlwifi | mac80211 ? ]
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Johannes Berg <johannes@sipsolutions.net>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        wireless <linux-wireless@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Date: Tue, 6 Aug 2013 08:45:56 -0700
+X-Google-Sender-Auth: XcBkH0oWnYCno5MIMFpjb9rStXQ
+Message-ID: <CAEYSrJK_s_nioaxpgfTg84kANRM9q-_ccTP7LoQqCZ-bMiv_mA@mail.gmail.com>
+Subject: Order Needed
+From: Jerry Palmer <jerrypalmer2013@yahoo.com>
+To: scfe@vsnl.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 6, 2013 at 5:29 PM, Johannes Berg <johannes@sipsolutions.net> wrote:
-> On Tue, 2013-08-06 at 17:27 +0200, Sedat Dilek wrote:
->> On Tue, Aug 6, 2013 at 5:20 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->> > On Tue, Aug 6, 2013 at 5:18 PM, Johannes Berg <johannes@sipsolutions.net> wrote:
->> >>
->> >>
->> >>> I have sent you a v2 of my logs (with -d and rsyslog-7.x).
->> >>
->> >> Hmm, that looks different? There no longer is anything about "PSK might
->> >> be wrong", but now just disconnections by the AP, which unfortunately
->> >> indicate no reason.
->> >>
->> >> When was it working last?
->> >>
->> >
->> > next-20130801 was OK here.
->> >
->>
->> What about these lines?
->>
->> Aug  6 17:03:37 fambox kernel: [  134.575120] wlan0: deauthenticated
->> from 00:04:0e:e4:00:3d (Reason: 1)
->> Aug  6 17:03:37 fambox wpa_supplicant[2424]: wlan0: Event DEAUTH (12) received
->> Aug  6 17:03:37 fambox wpa_supplicant[2424]: wlan0: Deauthentication
->> notification
->> Aug  6 17:03:37 fambox wpa_supplicant[2424]: Deauthentication frame
->> IE(s) - hexdump(len=0): [NULL]
->> Aug  6 17:03:37 fambox wpa_supplicant[2424]: wlan0: WPA: 4-Way
->> Handshake failed - pre-shared key may be incorrect
->> Aug  6 17:03:37 fambox NetworkManager[2431]: <info> (wlan0):
->> supplicant interface state: 4-way handshake -> disconnected
->
-> Yeah but before you had a local deauth request, this time it's the AP
-> kicking you off.
->
-> I really don't know. Can you try something like wireless-testing maybe?
-> -next could have any kind of breakage I guess ...
->
-
-I pulled in master-2013-08-05 tag on top of Linux v3.11-rc4... Building...
-
-You assume a breakage in a different area than wireless or network in general?
-
-- Sedat -
-
-
-> johannes
->
+Hello,
+          My name is Jerry Palmer and I am sending this email to your
+company regarding to purchase some Water Extractors  from your
+company, I would like you to email me with types and  their price
+ranges of of it so that i can determine which i was to purchase and
+the quantity also and i hope you do accept Credit Card as form of
+payment .
+Thank you
+Regards
