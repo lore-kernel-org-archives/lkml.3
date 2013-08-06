@@ -1,61 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753599Ab3HFCoQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 22:44:16 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:41363 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753149Ab3HFCoO (ORCPT
+	id S1753657Ab3HFCvs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 22:51:48 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:31396 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753363Ab3HFCvr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 22:44:14 -0400
-Message-ID: <52006474.6010109@linux.vnet.ibm.com>
-Date: Tue, 06 Aug 2013 08:20:28 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Mon, 5 Aug 2013 22:51:47 -0400
+X-IronPort-AV: E=Sophos;i="4.89,823,1367942400"; 
+   d="scan'208";a="8128281"
+From: Tang Chen <tangchen@cn.fujitsu.com>
+To: tj@kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: [PATCH v2 RESEND 13/18] x86, numa, mem_hotplug: Skip all the regions the kernel resides in.
+Date: Tue, 6 Aug 2013 10:50:21 +0800
+Message-Id: <1375757421-354-1-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.10.1
+In-Reply-To: <20130805145212.GA19631@mtj.dyndns.org>
+References: <20130805145212.GA19631@mtj.dyndns.org>
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: gleb@redhat.com, mingo@redhat.com, jeremy@goop.org, x86@kernel.org,
-        konrad.wilk@oracle.com, pbonzini@redhat.com, linux-doc@vger.kernel.org,
-        habanero@linux.vnet.ibm.com, xen-devel@lists.xensource.com,
-        peterz@infradead.org, mtosatti@redhat.com,
-        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
-        attilio.rao@citrix.com, ouyang@cs.pitt.edu, gregkh@suse.de,
-        agraf@suse.de, chegu_vinod@hp.com, torvalds@linux-foundation.org,
-        avi.kivity@gmail.com, tglx@linutronix.de, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, riel@redhat.com, drjones@redhat.com,
-        virtualization@lists.linux-foundation.org,
-        srivatsa.vaddagiri@gmail.com
-Subject: Re: [PATCH RFC V11 0/18] Paravirtualized ticket spinlocks
-References: <20130722061631.24737.75508.sendpatchset@codeblue> <52002C49.1060201@zytor.com>
-In-Reply-To: <52002C49.1060201@zytor.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13080602-8256-0000-0000-000008AAD74D
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/06 10:50:23,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/06 10:50:24
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/06/2013 04:20 AM, H. Peter Anvin wrote:
-> So, having read through the entire thread I *think* this is what the
-> status of this patchset is:
->
-> 1. Patches 1-17 are noncontroversial, Raghavendra is going to send an
->     update split into two patchsets;
+At early time, memblock will reserve some memory for the kernel,
+such as the kernel code and data segments, initrd file, and so on，
+which means the kernel resides in these memory regions.
 
-Yes.  Only one patch would be common to both host and guest which will
-be sent as a separate patch.
-I 'll rebase first patchset to -next and second patchset to kvm tree as
-needed.
+Even if these memory regions are hotpluggable, we should not
+mark them as hotpluggable. Otherwise the kernel won't have enough
+memory to boot.
 
-> 2. There are at least two versions of patch 15; I think the "PATCH
->     RESEND RFC" is the right one.
+This patch finds out which memory regions the kernel resides in,
+and skip them when finding all hotpluggable memory regions.
 
-True.
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+---
+ mm/memory_hotplug.c |   45 +++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 45 insertions(+), 0 deletions(-)
 
-> 3. Patch 18 is controversial but there are performance numbers; these
->     should be integrated in the patch description.
-
-Current plan is to drop for patch 18 for now.
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+index ef9ccf8..10a30ef 100644
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -31,6 +31,7 @@
+ #include <linux/firmware-map.h>
+ #include <linux/stop_machine.h>
+ #include <linux/acpi.h>
++#include <linux/memblock.h>
+ 
+ #include <asm/tlbflush.h>
+ 
+@@ -93,6 +94,40 @@ static void release_memory_resource(struct resource *res)
+ 
+ #ifdef CONFIG_ACPI_NUMA
+ /**
++ * kernel_resides_in_range - Check if kernel resides in a memory region.
++ * @base: The base address of the memory region.
++ * @length: The length of the memory region.
++ *
++ * This function is used at early time. It iterates memblock.reserved and check
++ * if the kernel has used any memory in [@base, @base + @length).
++ *
++ * Return true if the kernel resides in the memory region, false otherwise.
++ */
++static bool __init kernel_resides_in_region(phys_addr_t base, u64 length)
++{
++	int i;
++	phys_addr_t start, end;
++	struct memblock_region *region;
++	struct memblock_type *reserved = &memblock.reserved;
++
++	for (i = 0; i < reserved->cnt; i++) {
++		region = &reserved->regions[i];
++
++		if (region->flags != MEMBLOCK_HOTPLUG)
++			continue;
++
++		start = region->base;
++		end = region->base + region->size;
++		if (end <= base || start >= base + length)
++			continue;
++
++		return true;
++	}
++
++	return false;
++}
++
++/**
+  * find_hotpluggable_memory - Find out hotpluggable memory from ACPI SRAT.
+  *
+  * This function did the following:
+@@ -129,6 +164,16 @@ void __init find_hotpluggable_memory(void)
+ 
+ 	while (ACPI_SUCCESS(acpi_hotplug_mem_affinity(srat_vaddr, &base,
+ 						      &size, &offset))) {
++		/*
++		 * At early time, memblock will reserve some memory for the
++		 * kernel, such as the kernel code and data segments, initrd
++		 * file, and so on，which means the kernel resides in these
++		 * memory regions. These regions should not be hotpluggable.
++		 * So do not mark them as hotpluggable.
++		 */
++		if (kernel_resides_in_region(base, size))
++			continue;
++
+ 		/* Will mark hotpluggable memory regions here */
+ 	}
+ 
+-- 
+1.7.1
 
