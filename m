@@ -1,53 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756722Ab3HFSgq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 14:36:46 -0400
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:58750 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756515Ab3HFSgp (ORCPT
+	id S1756775Ab3HFSir (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 14:38:47 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:42411 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756515Ab3HFSiq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 14:36:45 -0400
-MIME-Version: 1.0
-In-Reply-To: <5200AD26.8070701@asianux.com>
-References: <5200AD26.8070701@asianux.com>
-Date: Tue, 6 Aug 2013 11:36:44 -0700
-X-Google-Sender-Auth: 0zWWFzygfqzbyijerUrjyQH6VGE
-Message-ID: <CAGXu5j+J=y-+wnkXV_wLJnoCOupFGk8GwvHjJz2oWCiZt_oQGQ@mail.gmail.com>
-Subject: Re: [PATCH 0/2] kernel/sys.c: for setfsgid(), return the current gid
- when error occurs
-From: Kees Cook <keescook@chromium.org>
-To: Chen Gang <gang.chen@asianux.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Oleg Nesterov <oleg@redhat.com>,
-        Robin Holt <holt@sgi.com>, Andrew Morton <akpm@linux-foundation.org>,
+	Tue, 6 Aug 2013 14:38:46 -0400
+Date: Tue, 6 Aug 2013 14:38:45 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Shuah Khan <shuah.kh@samsung.com>
+cc: "rjw@sisk.pl" <rjw@sisk.pl>, "pavel@ucw.cz" <pavel@ucw.cz>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Subject: Re: sl811h_suspend() and PM_EVENT_PRETHAW state handling
+In-Reply-To: <B8EFE96D1287C24090BAD9D858E15E6175A08F@sisaex02sj>
+Message-ID: <Pine.LNX.4.44L0.1308061433000.1154-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 6, 2013 at 1:00 AM, Chen Gang <gang.chen@asianux.com> wrote:
-> They are 2 related patches for setfsgid().
->
-> Patch 1 for bug fix: return the current gid when error occurs.
-> Patch 2 for cleaning code: remove useless variable 'old_fsgid'.
->
-> Signed-off-by: Chen Gang <gang.chen@asianux.com>
-> --
->  kernel/sys.c |   15 +++++----------
->  1 files changed, 5 insertions(+), 10 deletions(-)
+On Tue, 6 Aug 2013, Shuah Khan wrote:
 
-Making a change like this might have dramatic effects. So, a few
-questions, to help better understand:
+> sl811h_suspend() seems to be the odd routine in the way it handles the 
+> PM_EVENT_PRETHAW state. It treats it same as PM_EVENT_SUSPEND and 
+> PM_EVENT_HIBERNATE. All other uses I could find treat it same as 
+> PM_EVENT_FREEZE and PM_EVENT_QUIESCE. Makes sense since PM_EVENT_PRETHAW 
+> is PM_EVENT_QUIESCE.
+> 
+> #define PM_EVENT_PRETHAW PM_EVENT_QUIESCE
+> 
+> Reference: Commit 185849991d592497e43bcd264c6152af1261ffe2 introduced 
+> PM_EVENT_PRETHAW state to sl811h_suspend().
+> 
+> Couple of questions?
+> 
+> - Why does sl811h_suspend() treat PM_EVENT_PRETHAW different from 
+> PM_EVENT_FREEZE?
 
-How long as the behavior been this way on Linux?
-What is the origin of the documentation that states it differently?
-Do existing userspace tools already depend on the current behavior?
-What specific problem will be solved by changing this?
+Because with FREEZE, the driver wants to retain the current bus state.  
+With PRETHAW, it doesn't care about retaining the bus state.
 
-Thanks,
+At least, that's how it looks to me.  The original author of this 
+driver died a couple of years ago.  I don't know if anyone is using it 
+any more.
 
--Kees
+> There is no problem with this code as such, since state is passed in. 
+> However, this usage conflicts with the rest of the usages and the way 
+> pm_op() routine maps PM_EVENT_PRETHAW/PM_EVENT_QUIESCE to freeze() pm_ops.
+> 
+>          case PM_EVENT_FREEZE:
+>          case PM_EVENT_QUIESCE:
+>                  return ops->freeze;
+> 
+> Assuming the handling PM_EVENT_PRETHAW is correct in this routine, what 
+> would be the right mapping for this legacy handling to dev_pm_ops?
 
--- 
-Kees Cook
-Chrome OS Security
+It depends on the driver; there is no one answer.
+
+Alan Stern
+
