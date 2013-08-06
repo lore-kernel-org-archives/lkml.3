@@ -1,71 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756426Ab3HFLy6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 07:54:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9101 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756310Ab3HFLyz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 07:54:55 -0400
-Date: Tue, 6 Aug 2013 13:54:40 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+	id S1756152Ab3HFL7i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 07:59:38 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:46567 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753947Ab3HFL7h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Aug 2013 07:59:37 -0400
+Date: Tue, 6 Aug 2013 12:59:21 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Vince Weaver <vincent.weaver@maine.edu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/9] perf tools: Enhance and correct srcline behavior
-Message-ID: <20130806115440.GA1068@krava.brq.redhat.com>
-References: <1375325744-26613-1-git-send-email-namhyung@kernel.org>
+        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        "trinity@vger.kernel.org" <trinity@vger.kernel.org>
+Subject: Re: perf,arm -- oops in validate_event
+Message-ID: <20130806115921.GA14798@mudshark.cambridge.arm.com>
+References: <alpine.DEB.2.10.1308051622270.28589@vincent-weaver-1.um.maine.edu>
+ <alpine.DEB.2.10.1308051711080.31327@vincent-weaver-1.um.maine.edu>
+ <20130806111932.GA25383@e106331-lin.cambridge.arm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1375325744-26613-1-git-send-email-namhyung@kernel.org>
+In-Reply-To: <20130806111932.GA25383@e106331-lin.cambridge.arm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 01, 2013 at 11:55:35AM +0900, Namhyung Kim wrote:
-> Hello,
+On Tue, Aug 06, 2013 at 12:19:32PM +0100, Mark Rutland wrote:
+> On Mon, Aug 05, 2013 at 10:17:37PM +0100, Vince Weaver wrote:
+> > It looks like in validate_event() we do
+> > 
+> >         struct arm_pmu *armpmu = to_arm_pmu(event->pmu);
+> >         ...
+> >         return armpmu->get_event_idx(hw_events, event) >= 0;
+> > 
+> > armpmu is read into r3, and somehow the value at the offset of
+> > armpmu->get_event_idx is either -1 or 0, so when it does a "blx" 
+> > branch to the address at this offset we get the ooops.
+> > 
+> >   c001bf8c:       e3120010        tst     r2, #16
+> >   c001bf90:       0a000004        beq     c001bfa8 <validate_event+0x48>
+> >   c001bf94:       e5933070        ldr     r3, [r3, #112]  ; 0x70
+> > * c001bf98:       e12fff33        blx     r3
+> >   c001bf9c:       e1e00000        mvn     r0, r0
+> > 
+> > I'm having trouble tracing the code back past that, and I don't have time
+> > to start adding printk's and recompiling right now.
+> > 
+> > Vince
 > 
-> This patchset tries to fix and enhance current srcline behavior.
+> I think I can save you the effort :)
 > 
-> Firstly it doesn't actually sort by srcline info but by ip.  I suspect
-> it was because of a performance reason to run external addr2line
-> utility.  It showed the srcline info after hist entries were
-> collapsed.  Thanks to Roberto, we now have internal implementation of
-> addr2line using libbfd so can sort/compare by srcline of entries.
+> From the looks of the test case and the kernel code in question, it
+> looks like the following happens:
 > 
-> Second problem for me was it sometimes printed "??:0" and sometimes
-> printed a raw ip value for unknown srcline info.  I changed to print
-> the former consistently.
+> * We create a software event, which becomes its own group leader.
+> * We create a hardware event, with the software event as its group
+>   leader.
+> * When we try to schedule the hardware event, we try to validate all
+>   events in its event group (the leader + siblings), but in doing so we
+>   treat the software event as a hardware event, and erroneously try to
+>   get its (non-existent) arm_pmu container, and call some garbage value
+>   as get_event_idx(...).
 > 
-> While at it, I found some bugs/leaks in srcline handling.  Patch 1-3
-> are fixes for those and can be merged separately.
-> 
-> You can get this series on my 'perf/srcline-v1' branch in my tree at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
-> 
-> Any comments are welcome, thanks.
-> Namhyung
-> 
-> 
-> Namhyung Kim (8):
->   perf sort: Fix a memory leak on srcline
->   perf annotate: Reuse path from the result of addr2line
->   perf hists: Free srcline when freeing hist_entry
->   perf tools: Factor out get/free_srcline()
->   perf tools: Do not try to call addr2line for non-binary files
->   perf tools: Pass dso instead of dso_name to get_srcline()
->   perf tools: Save failed result of get_srcline()
->   perf tools: Fix srcline sort key behavior
-> 
-> Roberto Vitillo (1):
->   perf tools: Implement addr2line directly using libbfd
-> 
+> This could also happen if we tried to add events from different hardware
+> PMUs to the same groups. I'm not sure if that's valid, but I couldn't
+> see any code preventing that, and it seems the x86 validation logic is
+> wired to allow this. If it's not valid, we could skip validation of
+> software events by checking with is_software_event.
 
-nice..
+But we already check `event->pmu != leader_pmu' in validate_event, so we
+shouldn't get anywhere nearer calling get_event_idx in the case you
+describe. It sounds more like we have an inconsistency with one of the
+events.
 
-Reviewed-by: Jiri Olsa <jolsa@redhat.com>
+Can you dump the events as they're processed in validate_group please?
+
+Will
