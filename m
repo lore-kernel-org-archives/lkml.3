@@ -1,128 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755723Ab3HFQZU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 12:25:20 -0400
-Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:25304
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754997Ab3HFQZT convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 12:25:19 -0400
-X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VPS-3(zzbb2dI98dI9371Ic89bh1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de096h8275bh1de097hz2fh95h668h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dh906i1155h192ch)
-Date: Tue, 6 Aug 2013 09:25:05 -0700
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-CC: <monstr@monstr.eu>, Michal Simek <michal.simek@xilinx.com>,
-        Stuart Menefy <stuart.menefy@st.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <linux@arm.linux.org.uk>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: Enable arm_global_timer for Zynq brakes boot
-References: <1c83c081-60c6-49e3-a85c-f64dd5be0e60@CH1EHSMHS030.ehs.local>
- <51FA9F54.3060704@linaro.org>
- <712d31e9-3584-48e1-aa9f-55bc94fa62c9@DB9EHSMHS001.ehs.local>
- <5200B7FE.4000306@linaro.org>
- <e43ebbd7-f520-4c66-bc8c-71a1122226ad@CO9EHSMHS020.ehs.local>
- <5200EC4C.5090202@linaro.org>
- <07cc684f-1d5c-44d7-b25c-6314efea4c58@CO9EHSMHS022.ehs.local>
- <5200F553.6000200@linaro.org>
- <5200F7C2.8090802@monstr.eu>
- <52011FA5.9000406@linaro.org>
+	id S1756063Ab3HFQZh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 12:25:37 -0400
+Received: from mail-qe0-f52.google.com ([209.85.128.52]:53427 "EHLO
+	mail-qe0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755730Ab3HFQZY convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Aug 2013 12:25:24 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-In-Reply-To: <52011FA5.9000406@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-Message-ID: <a32b1270-0d09-46f7-8cb2-4c109582f1b5@VA3EHSMHS022.ehs.local>
+X-Originating-IP: [86.59.245.170]
+In-Reply-To: <51FBD2DF.50506@parallels.com>
+References: <20130629172211.20175.70154.stgit@maximpc.sw.ru>
+	<20130629174525.20175.18987.stgit@maximpc.sw.ru>
+	<20130719165037.GA18358@tucsk.piliscsaba.szeredi.hu>
+	<51FBD2DF.50506@parallels.com>
+Date: Tue, 6 Aug 2013 18:25:22 +0200
+Message-ID: <CAJfpegtr4+vv_ZzuM7EE7MkHPqNi4brQamg4ZOWb2Me+iG87JQ@mail.gmail.com>
+Subject: Re: [PATCH 10/16] fuse: Implement writepages callback
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Maxim Patlasov <mpatlasov@parallels.com>
+Cc: riel@redhat.com, Kirill Korotaev <dev@parallels.com>,
+        Pavel Emelianov <xemul@parallels.com>,
+        fuse-devel <fuse-devel@lists.sourceforge.net>,
+        Brian Foster <bfoster@redhat.com>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        James Bottomley <jbottomley@parallels.com>, linux-mm@kvack.org,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, fengguang.wu@intel.com,
+        devel@openvz.org, Mel Gorman <mgorman@suse.de>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: xilinx.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 06, 2013 at 06:09:09PM +0200, Daniel Lezcano wrote:
-> On 08/06/2013 03:18 PM, Michal Simek wrote:
-> 
-> [ ... ]
-> 
-> >>>>> Soren: Are you able to replicate this issue on QEMU?
-> >>>>> If yes, it should be the best if you can provide Qemu, kernel .config/
-> >>>>> rootfs and simple manual to Daniel how to reach that fault.
-> >>>>
-> >>>> I tried to download qemu for zynq but it fails:
-> >>>>
-> >>>> git clone git://git.xilinx.com/qemu-xarm.git
-> >>>> Cloning into 'qemu-xarm'...
-> >>>> fatal: The remote end hung up unexpectedly
-> >>>
-> >>> Not sure which site have you found but
-> >>> it should be just qemu.git
-> >>> https://github.com/Xilinx/qemu
-> >>>
-> >>> or github clone.
-> >>
-> >> Ok, cool I was able to clone it.
-> >>
-> >>>> I am also looking for the option specified for the kernel:
-> >>>>
-> >>>> "The kernel needs to be built with this feature turned on (in
-> >>>> menuconfig, System Type->Xilinx Specific Features -> Device Tree At
-> >>>> Fixed Address)."
-> >>
-> >> Ok.
-> >>
-> >>> This also sound like a very ancient tree.
-> >>> This is the latest kernel tree - master-next is the latest devel branch.
-> >>> https://github.com/Xilinx/linux-xlnx
-> >>
-> >> Ok, cool. I have the right one.
-> 
-> Following the documentation, I was able to boot a kernel with qemu for
-> the linux-xlnx and qemu-xilinx.
-> 
-> But this kernel is outdated regarding the upstream one, so I tried to
-> boot a 3.11-rc4 kernel without success, I did the following:
-> 
-> I used the default config file from linux-xlnx for the upstream kernel.
-> 
-> I compiled the kernel with:
-> 
-> make -j 5 ARCH=arm CROSS_COMPILE=arm-linux-gnueabi-
-> UIMAGE_LOADADDR=0x8000 uImage
-> 
-> I generated the dtb with:
-> 
-> make -j 5 ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- dtbs
-> 
-> For qemu, I started qemu with:
-> 
-> ./arm-softmmu/qemu-system-arm -M arm-generic-fdt -nographic -smp 2
-> -machine linux=on -serial mon:stdio -dtb zynq-zed.dtb -kernel
-> kernel/zImage -initrd filesystem/ramdisk.img
-> 
-> I tried with the dtb available for the upstream kernel:
-> 
-> zynq-zc706.dtb, zynq-zc702.dtb and zynq-zed.dtb
-> 
-> Did I miss something ?
+On Fri, Aug 2, 2013 at 5:40 PM, Maxim Patlasov <mpatlasov@parallels.com> wrote:
+> 07/19/2013 08:50 PM, Miklos Szeredi пишет:
+>
+>> On Sat, Jun 29, 2013 at 09:45:29PM +0400, Maxim Patlasov wrote:
+>>>
+>>> From: Pavel Emelyanov <xemul@openvz.org>
+>>>
+>>> The .writepages one is required to make each writeback request carry more
+>>> than
+>>> one page on it. The patch enables optimized behaviour unconditionally,
+>>> i.e. mmap-ed writes will benefit from the patch even if
+>>> fc->writeback_cache=0.
+>>
+>> I rewrote this a bit, so we won't have to do the thing in two passes,
+>> which
+>> makes it simpler and more robust.  Waiting for page writeback here is
+>> wrong
+>> anyway, see comment above fuse_page_mkwrite().  BTW we had a race there
+>> because
+>> fuse_page_mkwrite() didn't take the page lock.  I've also fixed that up
+>> and
+>> pushed a series containing these patches up to implementing ->writepages()
+>> to
+>>
+>>    git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/fuse.git
+>> writepages
+>>
+>> Passed some trivial testing but more is needed.
+>
+>
+> Thanks a lot for efforts. The approach you implemented looks promising, but
+> it introduces the following assumption: a page cannot become dirty before we
+> have a chance to wait on fuse writeback holding the page locked. This is
+> already true for mmap-ed writes (due to your fixes) and it seems doable for
+> cached writes as well (like we do in fuse_perform_write). But the assumption
+> seems to be broken in case of direct read from local fs (e.g. ext4) to a
+> memory region mmap-ed to a file on fuse fs. See how dio_bio_submit() marks
+> pages dirty by bio_set_pages_dirty(). I can't see any solution for this
+> use-case. Do you?
 
-Some debugging hints in case you wanna go through this.
-Add this additional option to configure:
- --extra-cflags="-DFDT_GENERIC_UTIL_ERR_DEBUG=1
+Hmm.  Direct IO on an mmaped file will do get_user_pages() which will
+do the necessary page fault magic and ->page_mkwrite() will be called.
+At least AFAICS.
 
-That'll print out a lot of messages when the dtb is parsed. It's likely
-that QEMU invalidates some vital node due to its compatible string being
-unknown. In that case you can simply add it to the list of known devices
-in 
-	hw/core/fdt_generic_devices.c
-The list is pretty much at the end of that file. I try to get it running
-here and might be able to send you a patch.
+The page cannot become dirty through a memory mapping without first
+switching the pte from read-only to read-write first.  Page accounting
+logic relies on this too.  The other way the page can become dirty is
+through write(2) on the fs.  But we do get notified about that too.
 
-	Sören
-
-
+Thanks,
+Miklos
