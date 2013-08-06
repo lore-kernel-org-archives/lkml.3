@@ -1,146 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753286Ab3HFN2R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 09:28:17 -0400
-Received: from ozlabs.org ([203.10.76.45]:47130 "EHLO ozlabs.org"
+	id S1753150Ab3HFNbo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 09:31:44 -0400
+Received: from ns.mm-sol.com ([212.124.72.66]:35507 "EHLO extserv.mm-sol.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752421Ab3HFN2O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 09:28:14 -0400
-From: Michael Ellerman <michael@ellerman.id.au>
-To: <linux-kernel@vger.kernel.org>
-Cc: acme@ghostprotocols.net, a.p.zijlstra@chello.nl, jolsa@redhat.com
-Subject: [PATCH v2 1/2] perf tools: Add support for pinned modifier
-Date: Tue,  6 Aug 2013 23:28:05 +1000
-Message-Id: <1375795686-4226-1-git-send-email-michael@ellerman.id.au>
-X-Mailer: git-send-email 1.8.1.2
+	id S1751542Ab3HFNbm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Aug 2013 09:31:42 -0400
+Message-ID: <1375795832.2027.11.camel@iivanov-dev.int.mm-sol.com>
+Subject: Re: [RFC 1/2] usb: phy: Add Qualcomm SS-USB and HS-USB drivers for
+ DWC3 core
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Pawel Moll <pawel.moll@arm.com>
+Cc: "balbi@ti.com" <balbi@ti.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
+        "rob@landley.net" <rob@landley.net>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Date: Tue, 06 Aug 2013 16:30:32 +0300
+In-Reply-To: <1375791145.12043.47.camel@hornet>
+References: <1375789991-30041-1-git-send-email-iivanov@mm-sol.com>
+	 <1375789991-30041-2-git-send-email-iivanov@mm-sol.com>
+	 <1375791145.12043.47.camel@hornet>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit adds support for a new modifier "D", which requests that the
-event, or group of events, be pinned to the PMU.
+Hi, 
 
-The "p" modifier is already taken for precise, and "P" may be used in
-future to mean "fully precise".
+On Tue, 2013-08-06 at 13:12 +0100, Pawel Moll wrote:
+> On Tue, 2013-08-06 at 12:53 +0100, Ivan T. Ivanov wrote:
+> > From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+> > 
+> > Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+> 
+> I am sure that the information in the subject is more than enough for
+> you, but would you care to give some more background for the commit log?
+> Where can we find such controllers? What is DWC3 core? Is it
+> Qualcomm-specific block, or does it come from one of the IP providers
+> like Synopsys or Cadence?
+> 
 
-So we use "D", which stands for pinneD - and looks like a padlock, or if
-you're using the ":D" syntax perf smiles at you.
+You are right, I have to add more info here. DesignWare USB Core could 
+also be found in TI OMAP's and Samasung SoC's, at least. And it is
+IP from Synopsys. Usually SoC vendors wrap it with additional logic, 
+which provides required clocks and power supplies. 
 
-This is an oft-requested feature from our HW folks, who want to be able
-to run a large number of events, but also want 100% accurate results for
-instructions per cycle.
 
-Comparison of results with and without pinning:
 
-$ perf stat -e '{cycles,instructions}:D' -e cycles,instructions,...
+> >  .../devicetree/bindings/usb/msm-ssusb.txt          |   49 +++
+> >  drivers/usb/phy/Kconfig                            |   11 +
+> >  drivers/usb/phy/Makefile                           |    2 +
+> >  drivers/usb/phy/phy-msm-dwc3-usb2.c                |  342 +++++++++++++++++
+> >  drivers/usb/phy/phy-msm-dwc3-usb3.c                |  389 ++++++++++++++++++++
+> >  5 files changed, 793 insertions(+)
+> >  create mode 100644 Documentation/devicetree/bindings/usb/msm-ssusb.txt
+> >  create mode 100644 drivers/usb/phy/phy-msm-dwc3-usb2.c
+> >  create mode 100644 drivers/usb/phy/phy-msm-dwc3-usb3.c
+> > 
+> > diff --git a/Documentation/devicetree/bindings/usb/msm-ssusb.txt b/Documentation/devicetree/bindings/usb/msm-ssusb.txt
+> > new file mode 100644
+> > index 0000000..550b496
+> > --- /dev/null
+> > +++ b/Documentation/devicetree/bindings/usb/msm-ssusb.txt
+> > @@ -0,0 +1,49 @@
+> > +MSM SuperSpeed USB3.0 SoC controllers
+> 
+> I understand that the device always come in doublets? As in: are nodes
+> for both USB2 and 3 always required?
 
-  79,590,480,683 cycles         #  0.000 GHz
- 166,123,716,524 instructions   #  2.09  insns per cycle
-                                #  0.11  stalled cycles per insn
+The core dwc3 driver expects 2 USB PHY interfaces, so both nodes
+are mandatory.
 
-  79,352,134,463 cycles         #  0.000 GHz                     [11.11%]
- 165,178,301,818 instructions   #  2.08  insns per cycle
-                                #  0.11  stalled cycles per insn [11.13%]
+> 
+> > +Required properities :
+> > +- compatible sould be "qcom,dwc3-usb2";
+> > +- reg : offset and length of the register set in the memory map
+> > +- clocks: <&cxo>, <&usb2a_phy_sleep_cxc>;
+> > +- clock-names: "xo", "sleep_a_clk";
+> > +<supply-name>-supply: phandle to the regulator device tree node
+> > +Required "supply-name" examples are:
+> 
+> So required or examples? ;-)
 
-As you can see although perf does a very good job of scaling the values
-in the non-pinned case, there is some small discrepancy.
 
-The patch is fairly straight forward, the one detail is that we need to
-make sure we only request pinning for the group leader when we have a
-group.
+It should be Required, will fix this.
 
-Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
----
-v2: Use "D" instead of "P" as discussed on the list.
+> 
+> > +       "v1p8" : 1.8v supply for HSPHY
+> > +       "v3p3" : 3.3v supply for HSPHY
+> > +       "vbus" : vbus supply for host mode
+> > +       "vddcx" : vdd supply for HS-PHY digital circuit operation
+> >
+> > +Required properities :
+> > +- compatible sould be "qcom,dwc3-usb3";
+> > +- reg : offset and length of the register set in the memory map
+> > +- clocks: <&cxo>, <&usb30_mock_utmi_cxc>;
+> > +- clock-names: "xo", "ref_clk";
+> > +<supply-name>-supply: phandle to the regulator device tree node
+> > +Required "supply-name" examples are:
+> > +       "v1p8" : 1.8v supply for SS-PHY
+> > +       "vddcx" : vdd supply for SS-PHY digital circuit operation
+> > +
+> > +Example device nodes:
+> > +
+> > +       dwc3_usb2: phy@f92f8800 {
+> > +               compatible = "qcom,dwc3-usb2";
+> > +               reg = <0xf92f8800 0x30>;
+> > +
+> > +               clocks = <&cxo>, <&usb2a_phy_sleep_cxc>;
+> > +               clock-names = "xo", "sleep_a_clk";
+> > +
+> > +               vbus-supply = <&supply>;
+> > +               vddcx-supply = <&supply>;
+> > +               v1p8-supply = <&supply>;
+> > +               v3p3-supply = <&supply>;
+> > +       };
+> > +
+> > +       dwc3_usb3: phy@f92f8830 {
+> > +               compatible = "qcom,dwc3-usb3";
+> > +               reg = <0xf92f8830 0x30>;
+> > +
+> > +               clocks = <&cxo>, <&usb30_mock_utmi_cxc>;
+> > +               clock-names = "xo", "ref_clk";
+> > +
+> > +               vddcx-supply = <&supply>;
+> > +               v1p8-supply = <&supply>;
+> > +       };
+> 
+> Note that I had a look at the bindings only - I don't feel competent to
+> review the drivers/usb part of the patch...
 
- tools/perf/Documentation/perf-list.txt |  1 +
- tools/perf/util/parse-events.c         | 11 ++++++++++-
- tools/perf/util/parse-events.l         |  3 ++-
- 3 files changed, 13 insertions(+), 2 deletions(-)
+Sure, thank you.
+Ivan
 
-diff --git a/tools/perf/Documentation/perf-list.txt b/tools/perf/Documentation/perf-list.txt
-index eb03f06..6fce6a6 100644
---- a/tools/perf/Documentation/perf-list.txt
-+++ b/tools/perf/Documentation/perf-list.txt
-@@ -30,6 +30,7 @@ counted. The following modifiers exist:
-  H - host counting (not in KVM guests)
-  p - precise level
-  S - read sample value (PERF_SAMPLE_READ)
-+ D - pin the event to the PMU
- 
- The 'p' modifier can be used for specifying how precise the instruction
- address should be. The 'p' modifier can be specified multiple times:
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index dba877d..178c998 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -688,6 +688,7 @@ struct event_modifier {
- 	int precise;
- 	int exclude_GH;
- 	int sample_read;
-+	int pinned;
- };
- 
- static int get_event_modifier(struct event_modifier *mod, char *str,
-@@ -700,6 +701,7 @@ static int get_event_modifier(struct event_modifier *mod, char *str,
- 	int eG = evsel ? evsel->attr.exclude_guest : 0;
- 	int precise = evsel ? evsel->attr.precise_ip : 0;
- 	int sample_read = 0;
-+	int pinned = evsel ? evsel->attr.pinned : 0;
- 
- 	int exclude = eu | ek | eh;
- 	int exclude_GH = evsel ? evsel->exclude_GH : 0;
-@@ -734,6 +736,8 @@ static int get_event_modifier(struct event_modifier *mod, char *str,
- 				eG = 1;
- 		} else if (*str == 'S') {
- 			sample_read = 1;
-+		} else if (*str == 'D') {
-+			pinned = 1;
- 		} else
- 			break;
- 
-@@ -761,6 +765,8 @@ static int get_event_modifier(struct event_modifier *mod, char *str,
- 	mod->precise = precise;
- 	mod->exclude_GH = exclude_GH;
- 	mod->sample_read = sample_read;
-+	mod->pinned = pinned;
-+
- 	return 0;
- }
- 
-@@ -773,7 +779,7 @@ static int check_modifier(char *str)
- 	char *p = str;
- 
- 	/* The sizeof includes 0 byte as well. */
--	if (strlen(str) > (sizeof("ukhGHpppS") - 1))
-+	if (strlen(str) > (sizeof("ukhGHpppSD") - 1))
- 		return -1;
- 
- 	while (*p) {
-@@ -812,6 +818,9 @@ int parse_events__modifier_event(struct list_head *list, char *str, bool add)
- 		evsel->attr.exclude_guest  = mod.eG;
- 		evsel->exclude_GH          = mod.exclude_GH;
- 		evsel->sample_read         = mod.sample_read;
-+
-+		if (evsel->leader == evsel)
-+			evsel->attr.pinned = mod.pinned;
- 	}
- 
- 	return 0;
-diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
-index b36115f..0790452 100644
---- a/tools/perf/util/parse-events.l
-+++ b/tools/perf/util/parse-events.l
-@@ -82,7 +82,8 @@ num_hex		0x[a-fA-F0-9]+
- num_raw_hex	[a-fA-F0-9]+
- name		[a-zA-Z_*?][a-zA-Z0-9_*?]*
- name_minus	[a-zA-Z_*?][a-zA-Z0-9\-_*?]*
--modifier_event	[ukhpGHS]+
-+/* If you add a modifier you need to update check_modifier() */
-+modifier_event	[ukhpGHSD]+
- modifier_bp	[rwx]{1,3}
- 
- %%
--- 
-1.8.1.2
+> 
+> Thanks!
+> 
+> Pawel
+
 
