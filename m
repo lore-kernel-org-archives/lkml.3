@@ -1,53 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756323Ab3HFXj5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 19:39:57 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:48261 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753740Ab3HFXj4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 19:39:56 -0400
-Message-ID: <1375832393.2424.47.camel@joe-AO722>
-Subject: Re: [PATCH 1/1] module: fix sprintf format specifier in
- param_get_byte()
-From: Joe Perches <joe@perches.com>
-To: Christoph Jaeger <christophjaeger@linux.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org
-Date: Tue, 06 Aug 2013 16:39:53 -0700
-In-Reply-To: <1375823532-24153-1-git-send-email-christophjaeger@linux.com>
-References: <1375823532-24153-1-git-send-email-christophjaeger@linux.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1756511Ab3HFXlT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 19:41:19 -0400
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:46777 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752352Ab3HFXlR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Aug 2013 19:41:17 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VS-3(zz98dI936eI1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzzz2dh2a8h668h839h93fhd24hf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1155h)
+Message-ID: <1375832471.5600.41.camel@snotra.buserror.net>
+Subject: Re: [PATCH V2 5/6] cpuidle/powerpc: Backend-powerpc idle driver for
+ powernv and pseries.
+From: Scott Wood <scottwood@freescale.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>, <daniel.lezcano@linaro.org>,
+        <linux-kernel@vger.kernel.org>, <michael@ellerman.id.au>,
+        <srivatsa.bhat@linux.vnet.ibm.com>, <preeti@linux.vnet.ibm.com>,
+        <svaidy@linux.vnet.ibm.com>, <linuxppc-dev@lists.ozlabs.org>,
+        <rjw@sisk.pl>, <dongsheng.wang@freescale.com>,
+        <linux-pm@vger.kernel.org>
+Date: Tue, 6 Aug 2013 18:41:11 -0500
+In-Reply-To: <1375831851.12557.74.camel@pasglop>
+References: <20130731025840.19448.24468.stgit@deepthi>
+	 <20130731025934.19448.16658.stgit@deepthi>
+	 <1375830520.5600.23.camel@snotra.buserror.net>
+	 <1375831851.12557.74.camel@pasglop>
+Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
+MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-08-06 at 23:12 +0200, Christoph Jaeger wrote:
-> In param_get_byte(), to which the macro STANDARD_PARAM_DEF(byte, ...) expands,
-> "%c" is used to print an unsigned char. So it gets printed as a character what
-> is not intended here. Use "%hhu" instead.
+On Wed, 2013-08-07 at 09:30 +1000, Benjamin Herrenschmidt wrote:
+> On Tue, 2013-08-06 at 18:08 -0500, Scott Wood wrote:
+> > Here's another example.  get_lppaca() will only build on book3s -- and
+> > yet we get requests for e500 code to use this file.
 > 
-> Signed-off-by: Christoph Jaeger <christophjaeger@linux.com>
-> ---
->  kernel/params.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/kernel/params.c b/kernel/params.c
-> index 440e65d..59f7ac7 100644
-> --- a/kernel/params.c
-> +++ b/kernel/params.c
-> @@ -252,7 +252,7 @@ int parse_args(const char *doing,
->  	EXPORT_SYMBOL(param_ops_##name)
->  
-> 
-> -STANDARD_PARAM_DEF(byte, unsigned char, "%c", unsigned long, strict_strtoul);
-> +STANDARD_PARAM_DEF(byte, unsigned char, "%hhu", unsigned long, strict_strtoul);
->  STANDARD_PARAM_DEF(short, short, "%hi", long, strict_strtol);
->  STANDARD_PARAM_DEF(ushort, unsigned short, "%hu", unsigned long, strict_strtoul);
+> Indeed, Besides there is already accessors afaik for lppaca that compile
+> to nothing on E (and if not they would be trivial to add).
 
-I don't see the point of using "%hh[ui]" and "%h[ui]".
-These are promoted to int/unsigned int for the sprintf anyway.
-I'd just use %d and %u instead.
+I don't see such an accessor, but if there were, what would happen when
+the caller goes on to dereference that nothing?
+
+There is an accessor for shared_proc specifically (in the spinlock code)
+-- not that it would be much help on booke to just compile away that
+check and always select one of the pseries state tables over the other.
+
+-Scott
+
 
 
