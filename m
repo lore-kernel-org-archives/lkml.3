@@ -1,64 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754838Ab3HFIjK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 04:39:10 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:57619 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754741Ab3HFIgs (ORCPT
+	id S1754930Ab3HFIjW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 04:39:22 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:52716 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754828Ab3HFIjS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 04:36:48 -0400
-X-AuditID: 9c930179-b7c53ae000000457-a5-5200b59c3041
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Mike Galbraith <efault@gmx.de>,
-        Paul Turner <pjt@google.com>, Alex Shi <alex.shi@intel.com>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Namhyung Kim <namhyung@kernel.org>, Joonsoo Kim <js1304@gmail.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH v3 1/3] sched: remove one division operation in find_buiest_queue()
-Date: Tue,  6 Aug 2013 17:36:41 +0900
-Message-Id: <1375778203-31343-2-git-send-email-iamjoonsoo.kim@lge.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1375778203-31343-1-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1375778203-31343-1-git-send-email-iamjoonsoo.kim@lge.com>
-X-Brightmail-Tracker: AAAAAA==
+	Tue, 6 Aug 2013 04:39:18 -0400
+Date: Tue, 6 Aug 2013 17:39:16 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Xishi Qiu <qiuxishi@huawei.com>
+Cc: zhangyanfei@cn.fujitsu.com, ebiederm@xmission.com,
+        kexec@lists.infradead.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V2] kexec: remove unnecessary return
+Message-ID: <20130806083915.GC28493@verge.net.au>
+References: <5200B534.7000202@huawei.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5200B534.7000202@huawei.com>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove one division operation in find_buiest_queue().
+On Tue, Aug 06, 2013 at 04:35:00PM +0800, Xishi Qiu wrote:
+> Code can not run here forever, so remove the unnecessary return.
+> 
+> Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
+> Suggested-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
 
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Reviewed-by: Simon Horman <horms@verge.net.au>
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 9565645..52898dc 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -4968,7 +4968,7 @@ static struct rq *find_busiest_queue(struct lb_env *env,
- 				     struct sched_group *group)
- {
- 	struct rq *busiest = NULL, *rq;
--	unsigned long max_load = 0;
-+	unsigned long busiest_load = 0, busiest_power = SCHED_POWER_SCALE;
- 	int i;
- 
- 	for_each_cpu(i, sched_group_cpus(group)) {
-@@ -4999,10 +4999,9 @@ static struct rq *find_busiest_queue(struct lb_env *env,
- 		 * the load can be moved away from the cpu that is potentially
- 		 * running at a lower capacity.
- 		 */
--		wl = (wl * SCHED_POWER_SCALE) / power;
--
--		if (wl > max_load) {
--			max_load = wl;
-+		if (wl * busiest_power > busiest_load * power) {
-+			busiest_load = wl;
-+			busiest_power = power;
- 			busiest = rq;
- 		}
- 	}
--- 
-1.7.9.5
-
+> ---
+>  kernel/kexec.c |    5 +----
+>  1 files changed, 1 insertions(+), 4 deletions(-)
+> 
+> diff --git a/kernel/kexec.c b/kernel/kexec.c
+> index 59f7b55..2a74f30 100644
+> --- a/kernel/kexec.c
+> +++ b/kernel/kexec.c
+> @@ -1474,11 +1474,8 @@ static int __init __parse_crashkernel(char *cmdline,
+>  	if (first_colon && (!first_space || first_colon < first_space))
+>  		return parse_crashkernel_mem(ck_cmdline, system_ram,
+>  				crash_size, crash_base);
+> -	else
+> -		return parse_crashkernel_simple(ck_cmdline, crash_size,
+> -				crash_base);
+>  
+> -	return 0;
+> +	return parse_crashkernel_simple(ck_cmdline, crash_size, crash_base);
+>  }
+>  
+>  /*
+> -- 
+> 1.7.1
+> 
+> 
+> _______________________________________________
+> kexec mailing list
+> kexec@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/kexec
+> 
