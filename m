@@ -1,87 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756153Ab3HFLrw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 07:47:52 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:35320 "EHLO bear.ext.ti.com"
+	id S1756165Ab3HFLsB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 07:48:01 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:39420 "EHLO e8.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753982Ab3HFLrt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 07:47:49 -0400
-Message-ID: <5200E260.3030205@ti.com>
-Date: Tue, 6 Aug 2013 17:17:44 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Roger Quadros <rogerq@ti.com>
-CC: <balbi@ti.com>, <tony@atomide.com>, <george.cherian@ti.com>,
-        <dmurphy@ti.com>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/7] usb: phy: omap-usb2: Don't use omap_get_control_dev()
-References: <1375365915-21380-1-git-send-email-rogerq@ti.com> <1375365915-21380-3-git-send-email-rogerq@ti.com>
-In-Reply-To: <1375365915-21380-3-git-send-email-rogerq@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1756134Ab3HFLrw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Aug 2013 07:47:52 -0400
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+To: <gleb@redhat.com>, <mingo@redhat.com>, <jeremy@goop.org>, <x86@kernel.org>,
+        <konrad.wilk@oracle.com>, <hpa@zytor.com>, <pbonzini@redhat.com>
+Cc: linux-doc@vger.kernel.org, <habanero@linux.vnet.ibm.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        <xen-devel@lists.xensource.com>, <peterz@infradead.org>,
+        <mtosatti@redhat.com>, <stefano.stabellini@eu.citrix.com>,
+        <andi@firstfloor.org>, <attilio.rao@citrix.com>, <ouyang@cs.pitt.edu>,
+        <gregkh@suse.de>, <agraf@suse.de>, <chegu_vinod@hp.com>,
+        <torvalds@linux-foundation.org>, <avi.kivity@gmail.com>,
+        <tglx@linutronix.de>, <kvm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <riel@redhat.com>,
+        <drjones@redhat.com>, <virtualization@lists.linux-foundation.org>,
+        <srivatsa.vaddagiri@gmail.com>
+Date: Tue, 06 Aug 2013 17:11:01 +0530
+Message-Id: <20130806114101.20643.46837.sendpatchset@codeblue.in.ibm.com>
+In-Reply-To: <20130806114020.20643.57235.sendpatchset@codeblue.in.ibm.com>
+References: <20130806114020.20643.57235.sendpatchset@codeblue.in.ibm.com>
+Subject: [PATCH  V12 2/14] x86/ticketlock: Don't inline _spin_unlock when using paravirt spinlocks
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13080611-0320-0000-0000-0000008FBC71
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 01 August 2013 07:35 PM, Roger Quadros wrote:
-> omap_get_control_dev() is being deprecated as it doesn't support
-> multiple instances. As control device is present only from OMAP4
-> onwards which supports DT only, we use phandles to get the
-> reference to the control device.
->
-> As we don't support non-DT boot, we just bail out on probe
-> if device node is not present.
->
-> Signed-off-by: Roger Quadros <rogerq@ti.com>
-Tested-by: Kishon Vijay Abraham I <kishon@ti.com>
-> ---
->   drivers/usb/phy/phy-omap-usb2.c |   16 +++++++++++++---
->   1 files changed, 13 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/usb/phy/phy-omap-usb2.c b/drivers/usb/phy/phy-omap-usb2.c
-> index 376b367..77e0cf4 100644
-> --- a/drivers/usb/phy/phy-omap-usb2.c
-> +++ b/drivers/usb/phy/phy-omap-usb2.c
-> @@ -28,6 +28,7 @@
->   #include <linux/pm_runtime.h>
->   #include <linux/delay.h>
->   #include <linux/usb/omap_control_usb.h>
-> +#include <linux/of_platform.h>
->
->   /**
->    * omap_usb2_set_comparator - links the comparator present in the sytem with
-> @@ -124,6 +125,8 @@ static int omap_usb2_probe(struct platform_device *pdev)
->   	struct omap_usb			*phy;
->   	struct usb_otg			*otg;
->   	struct device_node *node = pdev->dev.of_node;
-> +	struct device_node *control_node;
-> +	struct platform_device *control_pdev;
->
->   	if (!node)
->   		return -ENODEV;
-> @@ -148,11 +151,18 @@ static int omap_usb2_probe(struct platform_device *pdev)
->   	phy->phy.otg		= otg;
->   	phy->phy.type		= USB_PHY_TYPE_USB2;
->
-> -	phy->control_dev = omap_get_control_dev();
-> -	if (IS_ERR(phy->control_dev)) {
-> -		dev_dbg(&pdev->dev, "Failed to get control device\n");
-> +	control_node = of_parse_phandle(node, "ctrl-module", 0);
-> +	if (!control_node) {
-> +		dev_err(&pdev->dev, "Failed to get control device phandle\n");
->   		return -ENODEV;
->   	}
-> +	control_pdev = of_find_device_by_node(control_node);
-> +	if (!control_pdev) {
-> +		dev_err(&pdev->dev, "Failed to get control device\n");
-> +		return -ENODEV;
-> +	}
-> +
-> +	phy->control_dev = &control_pdev->dev;
->
->   	phy->is_suspended	= 1;
->   	omap_control_usb_phy_power(phy->control_dev, 0);
->
+x86/ticketlock: Don't inline _spin_unlock when using paravirt spinlocks
+
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+
+The code size expands somewhat, and its better to just call
+a function rather than inline it.
+
+Thanks Jeremy for original version of ARCH_NOINLINE_SPIN_UNLOCK config patch,
+which is simplified.
+
+Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Acked-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 7f3867c..724ce55 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -663,6 +663,7 @@ config PARAVIRT_DEBUG
+ config PARAVIRT_SPINLOCKS
+ 	bool "Paravirtualization layer for spinlocks"
+ 	depends on PARAVIRT && SMP
++	select UNINLINE_SPIN_UNLOCK
+ 	---help---
+ 	  Paravirtualized spinlocks allow a pvops backend to replace the
+ 	  spinlock implementation with something virtualization-friendly
 
