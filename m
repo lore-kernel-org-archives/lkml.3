@@ -1,60 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755125Ab3HFX1k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 19:27:40 -0400
-Received: from mga14.intel.com ([143.182.124.37]:9649 "EHLO mga14.intel.com"
+	id S1755132Ab3HFXb0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 19:31:26 -0400
+Received: from gate.crashing.org ([63.228.1.57]:40951 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751305Ab3HFX1i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 19:27:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,828,1367996400"; 
-   d="scan'208";a="278620939"
-Message-ID: <52018664.1080103@intel.com>
-Date: Tue, 06 Aug 2013 16:27:32 -0700
-From: Alexander Duyck <alexander.h.duyck@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Alex Williamson <alex.williamson@redhat.com>
-CC: bhelgaas@google.com, linux-pci@vger.kernel.org, ddutile@redhat.com,
-        indou.takao@jp.fujitsu.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 8/9] pci: Tune secondary bus reset timing
-References: <20130805193200.9260.38729.stgit@bling.home> <20130805193753.9260.35206.stgit@bling.home>
-In-Reply-To: <20130805193753.9260.35206.stgit@bling.home>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
+	id S1751305Ab3HFXbY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Aug 2013 19:31:24 -0400
+Message-ID: <1375831851.12557.74.camel@pasglop>
+Subject: Re: [PATCH V2 5/6] cpuidle/powerpc: Backend-powerpc idle driver for
+ powernv and pseries.
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Scott Wood <scottwood@freescale.com>
+Cc: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>, daniel.lezcano@linaro.org,
+        linux-kernel@vger.kernel.org, michael@ellerman.id.au,
+        srivatsa.bhat@linux.vnet.ibm.com, preeti@linux.vnet.ibm.com,
+        svaidy@linux.vnet.ibm.com, linuxppc-dev@lists.ozlabs.org, rjw@sisk.pl,
+        dongsheng.wang@freescale.com, linux-pm@vger.kernel.org
+Date: Wed, 07 Aug 2013 09:30:51 +1000
+In-Reply-To: <1375830520.5600.23.camel@snotra.buserror.net>
+References: <20130731025840.19448.24468.stgit@deepthi>
+	 <20130731025934.19448.16658.stgit@deepthi>
+	 <1375830520.5600.23.camel@snotra.buserror.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/05/2013 12:37 PM, Alex Williamson wrote:
-> The PCI spec indicates that with stable power, reset needs to be
-> asserted for a minimum of 1ms (Trst).  Seems like we should be able
-> to assume power is stable for a runtime secondary bus reset.  The
-> current code has always used 100ms with no explanation where that
-> came from.  The aer_do_secondary_bus_reset() function uses 2ms, but
-> that seems to be a misinterpretation of the PCIe spec, where hot
-> reset is implemented by TS1 ordered sets containing the hot reset
-> command.  After a 2ms delay the state machine enters the detect state,
-> but to generate a link down, only two consecutive TS1 hot reset
-> ordered sets are requred.  1ms should be plenty for that.
+On Tue, 2013-08-06 at 18:08 -0500, Scott Wood wrote:
+> Here's another example.  get_lppaca() will only build on book3s -- and
+> yet we get requests for e500 code to use this file.
 
-The reason for doing a 2ms sleep is because the are supposed to be
-sending the Hot Reset TS1 Ordered-Sets continuously for 2ms per all of
-the documents I have read.  The 1ms number you quote is the minimum time
-for a conventional PCI bus.  I'm not completely sure of that applies as
-well to PCIe, nor does it represent the maximum recommended value.
+Indeed, Besides there is already accessors afaik for lppaca that compile
+to nothing on E (and if not they would be trivial to add).
 
-If we stop early we risk not resetting the full device tree on the
-secondary bus which is the bug I was resolving by adding the 2ms delay. 
-Previously we saw that some devices were only getting their PCIe link
-retrained without performing a hot reset when the bit was not held for
-long enough.  I would prefer to keep this at 2 ms in order to account
-for the fact that PCIe has to go though link recovery states before it
-can perform the hot reset.
-
-Thanks,
-
-Alex
+Cheers,
+Ben.
 
 
