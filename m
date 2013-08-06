@@ -1,99 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756595Ab3HFV5t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 17:57:49 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:33917 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756146Ab3HFV5r (ORCPT
+	id S1756578Ab3HFV6X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 17:58:23 -0400
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:59145 "EHLO
+	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754940Ab3HFV6U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 17:57:47 -0400
-Message-ID: <5201714C.8000100@oracle.com>
-Date: Tue, 06 Aug 2013 17:57:32 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Tue, 6 Aug 2013 17:58:20 -0400
+From: Tomasz Figa <tomasz.figa@gmail.com>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Chris Ball <cjb@laptop.org>, Olof Johansson <olof@lixom.net>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        James Hogan <james.hogan@imgtec.com>,
+        Grant Grundler <grundler@chromium.org>,
+        Alim Akhtar <alim.akhtar@samsung.com>,
+        Abhilash Kesavan <a.kesavan@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, linux-mmc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 2/4] mmc: dw_mmc: Add exynos resume_noirq callback to clear WAKEUP_INT
+Date: Tue, 06 Aug 2013 23:58:13 +0200
+Message-ID: <19655139.gpQFe0oLNI@flatron>
+User-Agent: KMail/4.10.5 (Linux/3.10.4-gentoo; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <1375825071-20922-3-git-send-email-dianders@chromium.org>
+References: <1373470926-19314-1-git-send-email-dianders@chromium.org> <1375825071-20922-1-git-send-email-dianders@chromium.org> <1375825071-20922-3-git-send-email-dianders@chromium.org>
 MIME-Version: 1.0
-To: Benjamin LaHaise <bcrl@kvack.org>
-CC: Kent Overstreet <kmo@daterainc.com>, axboe@kernel.dk,
-        Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, LKML <linux-kernel@vger.kernel.org>,
-        linux-aio@kvack.org, trinity@vger.kernel.org
-Subject: Re: [PATCH aio-next] aio: fix error handling and rcu usage in "convert
- the ioctx list to table lookup v3"
-References: <51FFAF34.20200@oracle.com> <20130805160828.GH31864@kvack.org> <20130805172032.GI31864@kvack.org>
-In-Reply-To: <20130805172032.GI31864@kvack.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/05/2013 01:20 PM, Benjamin LaHaise wrote:
-> On Mon, Aug 05, 2013 at 12:08:28PM -0400, Benjamin LaHaise wrote:
->> Hi Sasha,
->>
->> On Mon, Aug 05, 2013 at 09:57:08AM -0400, Sasha Levin wrote:
->>> Hi all,
->>>
->>> While fuzzing with trinity inside a KVM tools guest running latest -next
->>> kernel,
->>> I've stumbled on the following spew caused by a new BUG() added in "aio: fix
->>> io_destroy() regression by using call_rcu()".
->>
->> I did some investigating, and it looks like there is a problem with
->> db446a08c23d5475e6b08c87acca79ebb20f283c (aio: convert the ioctx list to
->> table lookup v3).  Can you confirm if reverting this patch eliminates
->> the BUG() you're hitting?  In my testing, I wasn't able to trigger the
->> BUG(), but I was able to trip up slab corruption with debugging on.
->
-> And here is a patch that should fix the problems introduced in the table
-> lookup patch without reverting.  I will add this to the aio-next.git tree.
-> This bug is not present in Linus' tree.
+Hi Doug,
 
-[snip]
+See my comment inline.
 
-Old error is gone, but now seeing this, which seems related.
+On Tuesday 06 of August 2013 14:37:49 Doug Anderson wrote:
+> If the WAKEUP_INT is asserted at wakeup and not cleared, we'll end up
+> looping around forever.  This has been seen to happen on exynos5420
+> silicon despite the fact that we haven't enabled any wakeup events due
+> to a silicon errata.  It is safe to do on all exynos variants.
+> 
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> ---
+> Changes in v4:
+> - Take Seungwon's suggestion and don't add any dw_mmc-pltfm code.
+> 
+> Changes in v3:
+> - Add freeze/thaw and poweroff/restore noirq entries.
+> 
+> Changes in v2:
+> - Use suspend_noirq as per James Hogan.
+> 
+>  drivers/mmc/host/dw_mmc-exynos.c | 51
+> ++++++++++++++++++++++++++++++++++++++-- 1 file changed, 49
+> insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/mmc/host/dw_mmc-exynos.c
+> b/drivers/mmc/host/dw_mmc-exynos.c index 866edef..0c1f192 100644
+> --- a/drivers/mmc/host/dw_mmc-exynos.c
+> +++ b/drivers/mmc/host/dw_mmc-exynos.c
+> @@ -30,6 +30,7 @@
+>  #define SDMMC_CLKSEL_TIMING(x, y, z)	(SDMMC_CLKSEL_CCLK_SAMPLE(x) |	\
+>  					SDMMC_CLKSEL_CCLK_DRIVE(y) |	\
+>  					SDMMC_CLKSEL_CCLK_DIVIDER(z))
+> +#define SDMMC_CLKSEL_WAKEUP_INT		BIT(11)
+> 
+>  #define EXYNOS4210_FIXED_CIU_CLK_DIV	2
+>  #define EXYNOS4412_FIXED_CIU_CLK_DIV	4
+> @@ -100,6 +101,30 @@ static int dw_mci_exynos_setup_clock(struct dw_mci
+> *host) return 0;
+>  }
+> 
+> +/**
+> + * dw_mci_exynos_resume_noirq - Exynos-specific resume code
+> + *
+> + * On exynos5420 there is a silicon errata that will sometimes leave
+> the + * WAKEUP_INT bit in the CLKSEL register asserted.  This bit is 1
+> to indicate + * that it fired and we can clear it by writing a 1 back. 
+> Clear it to prevent + * interrupts from going off constantly.
+> + *
+> + * We run this code on all exynos variants because it doesn't hurt and
+> the bug + * may be more widespread than just exynos5420.
+> + */
+> +
+> +static int dw_mci_exynos_resume_noirq(struct device *dev)
+> +{
+> +	struct dw_mci *host = dev_get_drvdata(dev);
+> +	u32 clksel;
+> +
+> +	clksel = mci_readl(host, CLKSEL);
+> +	if (clksel & SDMMC_CLKSEL_WAKEUP_INT)
+> +		mci_writel(host, CLKSEL, clksel);
 
-         ctx = table->table[id];
-         if (ctx->user_id == ctx_id) { <--- here
-                 percpu_ref_get(&ctx->users);
-                 ret = ctx;
-         }
+What about clock gating? Will the clock used for clocking this register be 
+always enabled when this gets called?
 
-[  542.182026] BUG: unable to handle kernel NULL pointer dereference at 0000000000000038
-[  542.183221] IP: [<ffffffff812ef78d>] lookup_ioctx+0x8d/0xe0
-[  542.183956] PGD 1b6e69067 PUD 1b6e6a067 PMD 0
-[  542.184593] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[  542.185394] Modules linked in:
-[  542.185866] CPU: 2 PID: 22471 Comm: trinity-child36 Tainted: G        W 
-3.11.0-rc4-next-20130806-sasha-00002-gb144a3f #3977
-[  542.187428] task: ffff88020bc40000 ti: ffff8801b6e7e000 task.ti: ffff8801b6e7e000
-[  542.188384] RIP: 0010:[<ffffffff812ef78d>]  [<ffffffff812ef78d>] lookup_ioctx+0x8d/0xe0
-[  542.189408] RSP: 0018:ffff8801b6e7ff18  EFLAGS: 00010297
-[  542.190015] RAX: ffff88020a64a1b0 RBX: 00000000007f866d RCX: 0000000000000000
-[  542.190015] RDX: 0000000000000000 RSI: ffff88020bc40950 RDI: 0000000000000282
-[  542.190015] RBP: ffff8801b6e7ff48 R08: 0000000000000000 R09: 0000000000000000
-[  542.190015] R10: 0000000000000001 R11: 0000000000000000 R12: ffff88020bffc000
-[  542.190015] R13: 0000000000000000 R14: 0000000000000000 R15: 8000000000008000
-[  542.190015] FS:  00007fa96f2b8700(0000) GS:ffff880224a00000(0000) knlGS:0000000000000000
-[  542.190015] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[  542.190015] CR2: 0000000000000001 CR3: 00000001b6e68000 CR4: 00000000000006e0
-[  542.190015] Stack:
-[  542.190015]  ffffffff812ef747 ffffffff81074268 00000000007f866d 0000000000000678
-[  542.190015]  00007fa96f2b86a8 00007fff70fb7170 ffff8801b6e7ff78 ffffffff812f1103
-[  542.190015]  8000000000008000 00007fff70fb7170 00007fa96f2b86a8 00000000007f866d
-[  542.190015] Call Trace:
-[  542.190015]  [<ffffffff812ef747>] ? lookup_ioctx+0x47/0xe0
-[  542.202270]  [<ffffffff81074268>] ? syscall_trace_enter+0x28/0x230
-[  542.202270]  [<ffffffff812f1103>] SyS_io_destroy+0x13/0x110
-[  542.202270]  [<ffffffff840a3e2c>] tracesys+0xdd/0xe2
-[  542.202270] Code: 02 00 00 00 48 c7 c7 e0 65 a6 85 e8 7e 7c ea ff 49 8b 84 24 80 04 00 00 48 85 
-c0 74 21 44 3b 68 10 73 1b 45 89 ed 4e 8b 74 e8 18 <49> 39 5e 38 75 0d 4c 89 f7 e8 c5 fe ff ff eb 06 
-0f 1f 00 45 31
-[  542.202270] RIP  [<ffffffff812ef78d>] lookup_ioctx+0x8d/0xe0
-[  542.202270]  RSP <ffff8801b6e7ff18>
-[  542.202270] CR2: 0000000000000038
+Best regards,
+Tomasz
 
-
-Thanks,
-Sasha
+> +	return 0;
+> +}
+> +
+>  static void dw_mci_exynos_prepare_command(struct dw_mci *host, u32
+> *cmdr) {
+>  	/*
+> @@ -187,17 +212,39 @@ static int dw_mci_exynos_probe(struct
+> platform_device *pdev) return dw_mci_pltfm_register(pdev, drv_data);
+>  }
+> 
+> +static struct dev_pm_ops dw_mci_exynos_pmops;
+> +
+>  static struct platform_driver dw_mci_exynos_pltfm_driver = {
+>  	.probe		= dw_mci_exynos_probe,
+>  	.remove		= __exit_p(dw_mci_pltfm_remove),
+>  	.driver		= {
+>  		.name		= "dwmmc_exynos",
+>  		.of_match_table	= dw_mci_exynos_match,
+> -		.pm		= &dw_mci_pltfm_pmops,
+> +		.pm		= &dw_mci_exynos_pmops,
+>  	},
+>  };
+> 
+> -module_platform_driver(dw_mci_exynos_pltfm_driver);
+> +static int __init dw_mci_exynos_init(void)
+> +{
+> +	/* Add a "noirq" resume to platform pmops */
+> +	memcpy(&dw_mci_exynos_pmops, &dw_mci_pltfm_pmops,
+> +	       sizeof(dw_mci_exynos_pmops));
+> +	WARN_ON(dw_mci_exynos_pmops.resume_noirq ||
+> +		dw_mci_exynos_pmops.thaw_noirq ||
+> +		dw_mci_exynos_pmops.restore_noirq);
+> +	dw_mci_exynos_pmops.resume_noirq = dw_mci_exynos_resume_noirq;
+> +	dw_mci_exynos_pmops.thaw_noirq = dw_mci_exynos_resume_noirq;
+> +	dw_mci_exynos_pmops.restore_noirq = dw_mci_exynos_resume_noirq;
+> +
+> +	return platform_driver_register(&dw_mci_exynos_pltfm_driver);
+> +}
+> +module_init(dw_mci_exynos_init);
+> +
+> +static void __exit dw_mci_exynos_exit(void)
+> +{
+> +	platform_driver_unregister(&dw_mci_exynos_pltfm_driver);
+> +}
+> +module_exit(dw_mci_exynos_exit);
+> 
+>  MODULE_DESCRIPTION("Samsung Specific DW-MSHC Driver Extension");
+>  MODULE_AUTHOR("Thomas Abraham <thomas.ab@samsung.com");
