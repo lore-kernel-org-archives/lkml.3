@@ -1,132 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756113Ab3HFQIP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 12:08:15 -0400
-Received: from mail-we0-f181.google.com ([74.125.82.181]:52719 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755917Ab3HFQIN (ORCPT
+	id S1756133Ab3HFQIw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 12:08:52 -0400
+Received: from mail-vb0-f44.google.com ([209.85.212.44]:61947 "EHLO
+	mail-vb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755933Ab3HFQIu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 12:08:13 -0400
-Date: Tue, 6 Aug 2013 18:08:15 +0200
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: rwheeler@redhat.com, avati@redhat.com, viro@ZenIV.linux.org.uk
-Cc: bfoster@redhat.com, dhowells@redhat.com, eparis@redhat.com,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, Trond.Myklebust@netapp.com,
-        swhiteho@redhat.com, mszeredi@suse.cz
-Subject: Re: [PATCH 2/4] vfs: check unlinked ancestors before mount
-Message-ID: <20130806160815.GA29888@tucsk.piliscsaba.szeredi.hu>
-References: <1375799403-28544-1-git-send-email-miklos@szeredi.hu>
- <1375799403-28544-3-git-send-email-miklos@szeredi.hu>
+	Tue, 6 Aug 2013 12:08:50 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1375799403-28544-3-git-send-email-miklos@szeredi.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAG-2HqVvoQK8ggErGGinO9i8Pbu-O-X=eYFW445ce24dpt7HyA@mail.gmail.com>
+References: <CALCETrXSnFPFVPkXHwz+FFA3=+pmz9V=cMHWwtN+jG1QJALWSQ@mail.gmail.com>
+ <325b19bb936d7ebae11edad86aac8f0931e8abd9.1375719828.git.luto@amacapital.net>
+ <5200B1BD.7030307@gmail.com> <CAG-2HqXEj06JbUOWee=NfuRXxL75uRf=55FZcXRLHroDzYUthQ@mail.gmail.com>
+ <CAG-2HqVvoQK8ggErGGinO9i8Pbu-O-X=eYFW445ce24dpt7HyA@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 6 Aug 2013 09:08:29 -0700
+Message-ID: <CALCETrX7aGpLAferwTbS3wQWwyw_v_DHh6se6c76fpfi6tJu=A@mail.gmail.com>
+Subject: Re: [systemd-devel] [PATCH] Change CONFIG_FW_LOADER_USER_HELPER to
+ default n and don't select it
+To: Tom Gundersen <teg@jklm.no>
+Cc: Maarten Lankhorst <m.b.lankhorst@gmail.com>,
+        systemd-devel@lists.freedesktop.org, linux-hotplug@vger.kernel.org,
+        Linux Wireless List <linux-wireless@vger.kernel.org>,
+        linux-kernel@vger.kernel.org,
+        Intel Linux Wireless <ilw@linux.intel.com>, Kay Sievers <kay@vrfy.org>,
+        Johannes Berg <johannes@sipsolutions.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 06, 2013 at 04:30:01PM +0200, Miklos Szeredi wrote:
-> From: Miklos Szeredi <mszeredi@suse.cz>
-> 
-> We check submounts before doing d_drop() on a non-empty directory dentry in
-> NFS (have_submounts()).  But we do not exclude a racing mount.  Nor do we
-> prevent mounts to be added to the disconnected subtree using relative paths
-> after the d_drop().
-> 
-> This patch fixes these issues by checking for unlinked (unhashed, non-root)
-> ancestors before proceeding with the mount.  This is done after setting
-> DCACHE_MOUNTED on the soon-to-be mountpoint and with the rename seqlock
-> taken for write.  This ensures that the only one of have_submounts() or
-> has_unlinked_ancestor() can succeed.
-> 
-> Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-> ---
->  fs/dcache.c    | 28 ++++++++++++++++++++++++++++
->  fs/internal.h  |  1 +
->  fs/namespace.c |  9 +++++++++
->  3 files changed, 38 insertions(+)
-> 
-> diff --git a/fs/dcache.c b/fs/dcache.c
-> index ba429d9..eae7cc1 100644
-> --- a/fs/dcache.c
-> +++ b/fs/dcache.c
-> @@ -1103,6 +1103,34 @@ rename_retry:
->  }
->  EXPORT_SYMBOL(have_submounts);
->  
-> +static bool __has_unlinked_ancestor(struct dentry *dentry)
-> +{
-> +	struct dentry *this;
-> +
-> +	for (this = dentry; !IS_ROOT(this); this = this->d_parent) {
-> +		if (d_unhashed(this))
+On Tue, Aug 6, 2013 at 2:17 AM, Tom Gundersen <teg@jklm.no> wrote:
+> On Tue, Aug 6, 2013 at 11:11 AM, Tom Gundersen <teg@jklm.no> wrote:
+>> On Tue, Aug 6, 2013 at 10:20 AM, Maarten Lankhorst
+>> <m.b.lankhorst@gmail.com> wrote:
+>>> Op 05-08-13 18:29, Andy Lutomirski schreef:
+>>>> The systemd commit below can delay firmware loading by multiple
+>>>> minutes if CONFIG_FW_LOADER_USER_HELPER=y.  Unfortunately no one
+>>>> noticed that the systemd-udev change would break new kernels as well
+>>>> as old kernels.
+>>>>
+>>>> Since the kernel apparently can't count on reasonable userspace
+>>>> support, turn this thing off by default.
+>>>>
+>>>> commit a3bd8447be4ea2ce230eb8ae0e815c04d85fa15a
+>>>> Author: Tom Gundersen <teg@jklm.no>
+>>>> Date:   Mon Mar 18 15:12:18 2013 +0100
+>>>>
+>>>>     udev: make firmware loading optional and disable by default
+>>>>
+>>>>     Distros that whish to support old kernels should set
+>>>>       --with-firmware-dirs="/usr/lib/firmware/updates:/usr/lib/firmware"
+>>>>     to retain the old behaviour.
+>>>>
+>>> methinks this patch should be reverted then,
+>>
+>> Well, all the code is still there, so it can be enabled if anyone wants it.
+>>
+>>> or a stub should be added to udev to always fail firmware loading so timeouts don't occur.
+>>
+>> I think the only use (if any) of a userspace firmware loader would be
+>> for anyone who wants a custom one (i.e., not udev), so we shouldn't
+>> just fail the loading from udev unconditionally.
+>>
+>> How about we just improve the udev documentation a bit, similar to
+>> Andy's kernel patch?
+>
+> Sorry, I should first have checked. We already document this in the README:
+>
+>>        Userspace firmware loading is deprecated, will go away, and
+>>        sometimes causes problems:
+>>          CONFIG_FW_LOADER_USER_HELPER=n
 
-Actually we need to take ->d_lock around this d_unhashed() since the __d_drop()
-is done outside the read read_seqbegin/read_seqretry() region but with d_lock
-held.
+TBH, the udev README is the last thing I'm going to check to figure
+out why I don't have wifi for a couple minutes after boot.  Also, the
+message is missing the point.  It's not that it's deprecated and
+sometimes causes problems -- it's that udev *changed behavior* and
+breaks your system if you have CONFIG_FW_LOADER_USER_HELPER=y.
 
-Thanks,
-Miklos
+If udev logged something (for a couple of years), that would be a
+different story.
 
-> +			return true;
-> +	}
-> +	return false;
-> +}
-> +
-> +/*
-> + * Called by mount code to check if the mountpoint is reachable (e.g. NFS can
-> + * unhash a directory dentry and then the complete subtree can become
-> + * unreachable).
-> + */
-> +bool has_unlinked_ancestor(struct dentry *dentry)
-> +{
-> +	bool found;
-> +
-> +	/* Need exclusion wrt. check_submounts_and_drop() */
-> +	write_seqlock(&rename_lock);
-> +	found = __has_unlinked_ancestor(dentry);
-> +	write_sequnlock(&rename_lock);
-> +
-> +	return found;
-> +}
-> +
->  /*
->   * Search the dentry child list of the specified parent,
->   * and move any unused dentries to the end of the unused
-> diff --git a/fs/internal.h b/fs/internal.h
-> index 7c5f01c..d232355 100644
-> --- a/fs/internal.h
-> +++ b/fs/internal.h
-> @@ -126,6 +126,7 @@ extern int invalidate_inodes(struct super_block *, bool);
->   * dcache.c
->   */
->  extern struct dentry *__d_alloc(struct super_block *, const struct qstr *);
-> +extern bool has_unlinked_ancestor(struct dentry *dentry);
->  
->  /*
->   * read_write.c
-> diff --git a/fs/namespace.c b/fs/namespace.c
-> index 7b1ca9b..bb92a9c 100644
-> --- a/fs/namespace.c
-> +++ b/fs/namespace.c
-> @@ -634,6 +634,15 @@ static struct mountpoint *new_mountpoint(struct dentry *dentry)
->  	}
->  	dentry->d_flags |= DCACHE_MOUNTED;
->  	spin_unlock(&dentry->d_lock);
-> +
-> +	if (has_unlinked_ancestor(dentry)) {
-> +		spin_lock(&dentry->d_lock);
-> +		dentry->d_flags &= ~DCACHE_MOUNTED;
-> +		spin_unlock(&dentry->d_lock);
-> +		kfree(mp);
-> +		return ERR_PTR(-ENOENT);
-> +	}
-> +
->  	mp->m_dentry = dentry;
->  	mp->m_count = 1;
->  	list_add(&mp->m_hash, chain);
-> -- 
-> 1.8.1.4
-> 
+--Andy
