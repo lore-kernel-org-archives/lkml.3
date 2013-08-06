@@ -1,76 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755022Ab3HFJEv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 05:04:51 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:52863 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754615Ab3HFJEu (ORCPT
+	id S1755177Ab3HFJFi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 05:05:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48539 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754817Ab3HFJFg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 05:04:50 -0400
-Message-ID: <5200BC2D.6050200@free-electrons.com>
-Date: Tue, 06 Aug 2013 11:04:45 +0200
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Tue, 6 Aug 2013 05:05:36 -0400
+Date: Tue, 6 Aug 2013 17:06:54 +0800
+From: "'gregkh@linuxfoundation.org'" <gregkh@linuxfoundation.org>
+To: "Du, ChangbinX" <changbinx.du@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "balbi@ti.com" <balbi@ti.com>,
+        "sarah.a.sharp@linuxfoundation.org" 
+	<sarah.a.sharp@linuxfoundation.org>,
+        "Wu, Hao" <hao.wu@intel.com>,
+        "Tang, Jianqiang" <jianqiang.tang@intel.com>,
+        "Zhuang, Jin Can" <jin.can.zhuang@intel.com>,
+        "Huang, Xiaochao" <xiaochao.huang@intel.com>
+Subject: Re: About TRB_TO_EP_INDEX() macro using
+Message-ID: <20130806090654.GA27268@kroah.com>
+References: <0C18FE92A7765D4EB9EE5D38D86A563A01966F92@SHSMSX103.ccr.corp.intel.com>
 MIME-Version: 1.0
-To: Stephen Boyd <sboyd@codeaurora.org>
-CC: John Stultz <john.stultz@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
-        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
-        Christopher Covington <cov@codeaurora.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v4 14/17] clocksource: time-armada-370-xp: Switch to sched_clock_register()
-References: <1374189690-10810-1-git-send-email-sboyd@codeaurora.org> <1374189690-10810-15-git-send-email-sboyd@codeaurora.org>
-In-Reply-To: <1374189690-10810-15-git-send-email-sboyd@codeaurora.org>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <0C18FE92A7765D4EB9EE5D38D86A563A01966F92@SHSMSX103.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19/07/2013 01:21, Stephen Boyd wrote:
-> The 32 bit sched_clock interface now supports 64 bits. Upgrade to
-> the 64 bit function to allow us to remove the 32 bit registration
-> interface.
-
-Acked-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-
+On Tue, Aug 06, 2013 at 08:59:32AM +0000, Du, ChangbinX wrote:
+> > On Mon, Aug 05, 2013 at 08:07:25AM +0000, Du, ChangbinX wrote:
+> > > Recently when I check xHCI code, find that some functions try to get EP index
+> > > from a Command Completion Event TRB via TRB_TO_EP_INDEX() macro.
+> > >
+> > > This is totally wrong. The macro definition is:
+> > >
+> > > 	#define TRB_TO_EP_INDEX(p)		((((p) & (0x1f << 16)) >> 16) - 1)
+> > >
+> > > TRB_TO_EP_INDEX only applies to Transfer Event TRB. But for Command
+> > > Completion Event TRB, there is no Endpoint ID field. So, we cannot directly
+> > > get EP index from these TRBs, but we can find it by the TRB Pointer.
+> > >
+> > > Here list two functions for you to check:
+> > > 	handle_stopped_endpoint()
+> > > 	handle_reset_ep_completion()
+> > 
+> > Care to send a patch showing how you would change this if it is
+> > incorrect?
+> > 
+> > thanks,
+> > 
+> > greg k-h
+> > --
 > 
-> Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> ---
->  drivers/clocksource/time-armada-370-xp.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/clocksource/time-armada-370-xp.c b/drivers/clocksource/time-armada-370-xp.c
-> index efdca32..2bec8dc 100644
-> --- a/drivers/clocksource/time-armada-370-xp.c
-> +++ b/drivers/clocksource/time-armada-370-xp.c
-> @@ -71,7 +71,7 @@ static u32 ticks_per_jiffy;
->  
->  static struct clock_event_device __percpu **percpu_armada_370_xp_evt;
->  
-> -static u32 notrace armada_370_xp_read_sched_clock(void)
-> +static u64 notrace armada_370_xp_read_sched_clock(void)
->  {
->  	return ~readl(timer_base + TIMER0_VAL_OFF);
->  }
-> @@ -258,7 +258,7 @@ void __init armada_370_xp_timer_init(void)
->  	/*
->  	 * Set scale and timer for sched_clock.
->  	 */
-> -	setup_sched_clock(armada_370_xp_read_sched_clock, 32, timer_clk);
-> +	sched_clock_register(armada_370_xp_read_sched_clock, 32, timer_clk);
->  
->  	/*
->  	 * Setup free-running clocksource timer (interrupts
-> 
+> Hello, Greg k-h. I am not very sure about this issue. If this is true, kernel will panic when 
+> invoking above functions. I want someone help to confirm if I miss something. If it's really 
+> a bug, I will work out a patch to fix it.
 
+That's not how kernel development works, sorry.  If you think this is an
+issue, try to reproduce it and then create a patch.
 
--- 
-Gregory Clement, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+thanks,
+
+greg k-h
