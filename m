@@ -1,89 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754860Ab3HFGMX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 02:12:23 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:55554 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753930Ab3HFGMU (ORCPT
+	id S1754931Ab3HFGTw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 02:19:52 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:36349 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754802Ab3HFGTv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 02:12:20 -0400
-Date: Tue, 6 Aug 2013 15:12:17 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Dragos Foianu <dragos.foianu@gmail.com>
-Cc: wensong@linux-vs.org, linux-kernel@vger.kernel.org, coreteam@netfilter.org,
-        netfilter@vger.kernel.org, netfilter-devel@vger.kernel.org,
-        lvs-devel@vger.kernel.org, netdev@vger.kernel.org, davem@davemloft.net,
-        kadlec@blackhole.kfki.hu, kaber@trash.net, pablo@netfilter.org,
-        ja@ssi.bg
-Subject: Re: [PATCH] ipvs: fixed spacing at for statements
-Message-ID: <20130806061217.GD18246@verge.net.au>
-References: <1373525142-9099-1-git-send-email-dragos.foianu@gmail.com>
+	Tue, 6 Aug 2013 02:19:51 -0400
+Date: Mon, 5 Aug 2013 23:19:32 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Christoph Hellwig <hch@infradead.org>, Andi Kleen <andi@firstfloor.org>,
+        linux-kernel@vger.kernel.org, acme@infradead.org,
+        Andi Kleen <ak@linux.intel.com>, Namhyung Kim <namhyung.kim@lge.com>,
+        peterz@infradead.org
+Subject: Re: [PATCH] RFC: perf, tools: Move gtk browser into separate perfgtk
+ executable
+Message-ID: <20130806061932.GA20485@infradead.org>
+References: <1375669364-13838-1-git-send-email-andi@firstfloor.org>
+ <20130805081641.GA24808@gmail.com>
+ <20130805082320.GA9562@infradead.org>
+ <20130805083132.GE26746@gmail.com>
+ <20130805083434.GA20606@infradead.org>
+ <20130805090857.GA26940@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1373525142-9099-1-git-send-email-dragos.foianu@gmail.com>
-Organisation: Horms Solutions Ltd.
+In-Reply-To: <20130805090857.GA26940@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 11, 2013 at 09:45:42AM +0300, Dragos Foianu wrote:
-> found using checkpatch.pl
+On Mon, Aug 05, 2013 at 11:08:57AM +0200, Ingo Molnar wrote:
+> You never replied to the original counter-arguments, such as this one from 
+> Linus:
+> 
+>   http://article.gmane.org/gmane.linux.kernel/849965
 
-This seems reasonable to me. I will queue it up in the ipvs-next tree.
+The only thing Linus sais is that it's trivial to generate a subpackage,
+and that opofile is a desaster.  Both of them are 100% correct but at
+the same time entirely miss the point.
 
-> 
-> Signed-off-by: Dragos Foianu <dragos.foianu@gmail.com>
-> ---
->  net/netfilter/ipvs/ip_vs_lblcr.c |    8 ++++----
->  1 file changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/net/netfilter/ipvs/ip_vs_lblcr.c b/net/netfilter/ipvs/ip_vs_lblcr.c
-> index 3cd85b2..5199448 100644
-> --- a/net/netfilter/ipvs/ip_vs_lblcr.c
-> +++ b/net/netfilter/ipvs/ip_vs_lblcr.c
-> @@ -414,7 +414,7 @@ static void ip_vs_lblcr_flush(struct ip_vs_service *svc)
->  
->  	spin_lock_bh(&svc->sched_lock);
->  	tbl->dead = 1;
-> -	for (i=0; i<IP_VS_LBLCR_TAB_SIZE; i++) {
-> +	for (i = 0; i < IP_VS_LBLCR_TAB_SIZE; i++) {
->  		hlist_for_each_entry_safe(en, next, &tbl->bucket[i], list) {
->  			ip_vs_lblcr_free(en);
->  		}
-> @@ -440,7 +440,7 @@ static inline void ip_vs_lblcr_full_check(struct ip_vs_service *svc)
->  	struct ip_vs_lblcr_entry *en;
->  	struct hlist_node *next;
->  
-> -	for (i=0, j=tbl->rover; i<IP_VS_LBLCR_TAB_SIZE; i++) {
-> +	for (i = 0, j = tbl->rover; i < IP_VS_LBLCR_TAB_SIZE; i++) {
->  		j = (j + 1) & IP_VS_LBLCR_TAB_MASK;
->  
->  		spin_lock(&svc->sched_lock);
-> @@ -495,7 +495,7 @@ static void ip_vs_lblcr_check_expire(unsigned long data)
->  	if (goal > tbl->max_size/2)
->  		goal = tbl->max_size/2;
->  
-> -	for (i=0, j=tbl->rover; i<IP_VS_LBLCR_TAB_SIZE; i++) {
-> +	for (i = 0, j = tbl->rover; i < IP_VS_LBLCR_TAB_SIZE; i++) {
->  		j = (j + 1) & IP_VS_LBLCR_TAB_MASK;
->  
->  		spin_lock(&svc->sched_lock);
-> @@ -536,7 +536,7 @@ static int ip_vs_lblcr_init_svc(struct ip_vs_service *svc)
->  	/*
->  	 *    Initialize the hash buckets
->  	 */
-> -	for (i=0; i<IP_VS_LBLCR_TAB_SIZE; i++) {
-> +	for (i = 0; i < IP_VS_LBLCR_TAB_SIZE; i++) {
->  		INIT_HLIST_HEAD(&tbl->bucket[i]);
->  	}
->  	tbl->max_size = IP_VS_LBLCR_TAB_SIZE*16;
-> -- 
-> 1.7.10.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe lvs-devel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+Yes, oprofile was and is a desaster, but that has aboslutely nothing to
+do with where the code lives.
+
+And yes, it's easy to generate a subpackage, but you still need all the
+source tree first.  There's a reason why things like X.org got split up
+(too fine grained in my opinion, but that's another story).
+
+As said I very much disagree with having the userspace perf tree in the
+kernel still, but I've also given up on the fight as I have more
+important things to do.
+
+And as said before it has nothing to do with the issue discussed here
+right now.
