@@ -1,102 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756781Ab3HFVnn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 17:43:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56402 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755835Ab3HFVnl (ORCPT
+	id S1756793Ab3HFVnv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 17:43:51 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:43503 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756687Ab3HFVnn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 17:43:41 -0400
-Date: Tue, 6 Aug 2013 14:43:39 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Chen Gang <gang.chen@asianux.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, xi.wang@gmail.com,
-        nicolas.dichtel@6wind.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kernel/sysctl_binary.c: improve the usage of return
- value 'result'
-Message-Id: <20130806144339.182beb0a2abddc0782015487@linux-foundation.org>
-In-Reply-To: <5200A5E6.9020803@asianux.com>
-References: <5200A5E6.9020803@asianux.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 6 Aug 2013 17:43:43 -0400
+Date: Tue, 6 Aug 2013 14:43:32 -0700
+From: tip-bot for Andi Kleen <tipbot@zytor.com>
+Message-ID: <tip-ff49103fdba59aa3f845ad2dcac0c26a9e4c5404@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        ak@linux.intel.com, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        ak@linux.intel.com, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <1375740170-7446-7-git-send-email-andi@firstfloor.org>
+References: <1375740170-7446-7-git-send-email-andi@firstfloor.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/asmlinkage] x86, asmlinkage:
+  Make various syscalls asmlinkage
+Git-Commit-ID: ff49103fdba59aa3f845ad2dcac0c26a9e4c5404
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 06 Aug 2013 14:43:38 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 06 Aug 2013 15:29:42 +0800 Chen Gang <gang.chen@asianux.com> wrote:
+Commit-ID:  ff49103fdba59aa3f845ad2dcac0c26a9e4c5404
+Gitweb:     http://git.kernel.org/tip/ff49103fdba59aa3f845ad2dcac0c26a9e4c5404
+Author:     Andi Kleen <ak@linux.intel.com>
+AuthorDate: Mon, 5 Aug 2013 15:02:40 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Tue, 6 Aug 2013 14:18:33 -0700
 
-> Improve the usage of return value 'result', so not only can make code
-> clearer to readers, but also can improve the performance.
+x86, asmlinkage: Make various syscalls asmlinkage
 
-It used to be pervasive kernel style do to
+FWIW I suspect sys_rt_sigreturn/sys_sigreturn should use
+standard SYSCALL wrappers.  But I didn't do that change in this
+patch.
 
-	ret = -ENOMEM;
-	foo = alloc(...);
-	if (!foo)
-		goto out;
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Link: http://lkml.kernel.org/r/1375740170-7446-7-git-send-email-andi@firstfloor.org
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/include/asm/syscalls.h | 6 +++---
+ arch/x86/kernel/signal.c        | 4 ++--
+ 2 files changed, 5 insertions(+), 5 deletions(-)
 
-whereas nowadays people usually do the more straightforward
-
-	foo = alloc(...);
-	if (!foo) {
-		ret = -ENOMEM;
-		goto out;
-	}
-
-The thinking was that the old style generated better code, but for the
-life of me I can't remember why :(
-
-Your patch switches from old-style to new-style.  And it appears to
-have increased the text size.  I did this, to switch three sites back
-to old-style:
-
---- a/kernel/sysctl_binary.c~kernel-sysctl_binaryc-improve-the-usage-of-return-value-result-fix
-+++ a/kernel/sysctl_binary.c
-@@ -941,17 +941,15 @@ static ssize_t bin_string(struct file *f
- 		copied = result;
- 		lastp = oldval + copied - 1;
+diff --git a/arch/x86/include/asm/syscalls.h b/arch/x86/include/asm/syscalls.h
+index 2917a64..592a6a6 100644
+--- a/arch/x86/include/asm/syscalls.h
++++ b/arch/x86/include/asm/syscalls.h
+@@ -24,7 +24,7 @@ asmlinkage long sys_iopl(unsigned int);
+ asmlinkage int sys_modify_ldt(int, void __user *, unsigned long);
  
--		if (get_user(ch, lastp)) {
--			result = -EFAULT;
-+		result = -EFAULT;
-+		if (get_user(ch, lastp))
- 			goto out;
--		}
+ /* kernel/signal.c */
+-long sys_rt_sigreturn(void);
++asmlinkage long sys_rt_sigreturn(void);
  
- 		/* Trim off the trailing newline */
- 		if (ch == '\n') {
--			if (put_user('\0', lastp)) {
--				result = -EFAULT;
-+			result = -EFAULT;
-+			if (put_user('\0', lastp))
- 				goto out;
--			}
- 			copied -= 1;
- 		}
- 	}
-@@ -976,11 +974,10 @@ static ssize_t bin_intvec(struct file *f
- 	char *buffer;
- 	ssize_t result;
+ /* kernel/tls.c */
+ asmlinkage long sys_set_thread_area(struct user_desc __user *);
+@@ -34,7 +34,7 @@ asmlinkage long sys_get_thread_area(struct user_desc __user *);
+ #ifdef CONFIG_X86_32
  
-+	result = -ENOMEM;
- 	buffer = kmalloc(BUFSZ, GFP_KERNEL);
--	if (!buffer) {
--		result = -ENOMEM;
-+	if (!buffer)
- 		goto out;
--	}
+ /* kernel/signal.c */
+-unsigned long sys_sigreturn(void);
++asmlinkage unsigned long sys_sigreturn(void);
  
- 	if (oldval && oldlen) {
- 		unsigned __user *vec = oldval;
-_
-
-and kernel/sysctl_binary.o's .text got six bytes smaller.
-
-Now, smaller text doesn't mean faster code.  But it probably means
-larger cache footprint, which can mean slower code.
-
-IOW, it isn't obvious that this was an improvement.
+ /* kernel/vm86_32.c */
+ asmlinkage long sys_vm86old(struct vm86_struct __user *);
+@@ -44,7 +44,7 @@ asmlinkage long sys_vm86(unsigned long, unsigned long);
+ 
+ /* X86_64 only */
+ /* kernel/process_64.c */
+-long sys_arch_prctl(int, unsigned long);
++asmlinkage long sys_arch_prctl(int, unsigned long);
+ 
+ /* kernel/sys_x86_64.c */
+ asmlinkage long sys_mmap(unsigned long, unsigned long, unsigned long,
+diff --git a/arch/x86/kernel/signal.c b/arch/x86/kernel/signal.c
+index cf91358..1dba45d 100644
+--- a/arch/x86/kernel/signal.c
++++ b/arch/x86/kernel/signal.c
+@@ -533,7 +533,7 @@ static int x32_setup_rt_frame(struct ksignal *ksig,
+  * Do a signal return; undo the signal stack.
+  */
+ #ifdef CONFIG_X86_32
+-unsigned long sys_sigreturn(void)
++asmlinkage unsigned long sys_sigreturn(void)
+ {
+ 	struct pt_regs *regs = current_pt_regs();
+ 	struct sigframe __user *frame;
+@@ -562,7 +562,7 @@ badframe:
+ }
+ #endif /* CONFIG_X86_32 */
+ 
+-long sys_rt_sigreturn(void)
++asmlinkage long sys_rt_sigreturn(void)
+ {
+ 	struct pt_regs *regs = current_pt_regs();
+ 	struct rt_sigframe __user *frame;
