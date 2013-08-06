@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756994Ab3HFWrJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 18:47:09 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:52334 "EHLO zene.cmpxchg.org"
+	id S1756827Ab3HFWpB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 18:45:01 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:52296 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756833Ab3HFWpE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 18:45:04 -0400
+	id S1756780Ab3HFWo5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Aug 2013 18:44:57 -0400
 From: Johannes Weiner <hannes@cmpxchg.org>
 To: linux-mm@kvack.org
 Cc: Andi Kleen <andi@firstfloor.org>, Andrea Arcangeli <aarcange@redhat.com>,
@@ -21,242 +21,124 @@ Cc: Andi Kleen <andi@firstfloor.org>, Andrea Arcangeli <aarcange@redhat.com>,
         Roman Gushchin <klamm@yandex-team.ru>,
         Ozgun Erdogan <ozgun@citusdata.com>, Metin Doslu <metin@citusdata.com>,
         linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [patch 5/9] mm + fs: store shadow entries in page cache
-Date: Tue,  6 Aug 2013 18:44:06 -0400
-Message-Id: <1375829050-12654-6-git-send-email-hannes@cmpxchg.org>
+Subject: [patch 0/9] mm: thrash detection-based file cache sizing v3
+Date: Tue,  6 Aug 2013 18:44:01 -0400
+Message-Id: <1375829050-12654-1-git-send-email-hannes@cmpxchg.org>
 X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1375829050-12654-1-git-send-email-hannes@cmpxchg.org>
-References: <1375829050-12654-1-git-send-email-hannes@cmpxchg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reclaim will be leaving shadow entries in the page cache radix tree
-upon evicting the real page.  As those pages are found from the LRU,
-an iput() can lead to the inode being freed concurrently.  At this
-point, reclaim must no longer install shadow pages because the inode
-freeing code needs to ensure the page tree is really empty.
+[ My apologies for the double send, I screwed up one of the recipient
+  addresses the first time around and it got dropped by some MTAs. ]
 
-Add an address_space flag, AS_EXITING, that the inode freeing code
-sets under the tree lock before doing the final truncate.  Reclaim
-will check for this flag before installing shadow pages.
+Changes in version 3:
 
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+o Lazily remove inodes without shadow entries from the global list to
+  reduce modifications of said list to an absolute minimum.  Global
+  list operations are now reduced to when an inode has its first cache
+  page reclaimed (rare) and when a linked inode is destroyed (rare) or
+  when the inode's shadows are shrunk (rare) to zero (rare).  These
+  events should be even rarer than the per-sb inode list operations,
+  which take a global lock.  Based on feedback from Peter Zijlstra.
+
+o Drop global working set time, store zone ID in addition to
+  zone-specific timestamp in radix tree instead.  Balance zones based
+  on their own refaults only.  This allows the refault detecting side
+  to be much sleaker too and removes a lot of changes to the page
+  allocator interface.  Based on feedback from Peter Zijlstra.
+
+o Document all interfaces properly
+
+o Split out fair allocator patches (in -mmotm)
+
 ---
- fs/block_dev.c          |  2 +-
- fs/inode.c              |  7 ++++++-
- fs/nilfs2/inode.c       |  4 ++--
- include/linux/fs.h      |  1 +
- include/linux/pagemap.h | 13 ++++++++++++-
- mm/filemap.c            | 16 ++++++++++++----
- mm/truncate.c           |  5 +++--
- mm/vmscan.c             |  2 +-
- 8 files changed, 38 insertions(+), 12 deletions(-)
 
-diff --git a/fs/block_dev.c b/fs/block_dev.c
-index c7bda5c..26b992d14 100644
---- a/fs/block_dev.c
-+++ b/fs/block_dev.c
-@@ -83,7 +83,7 @@ void kill_bdev(struct block_device *bdev)
- {
- 	struct address_space *mapping = bdev->bd_inode->i_mapping;
- 
--	if (mapping->nrpages == 0)
-+	if (mapping->nrpages == 0 && mapping->nrshadows == 0)
- 		return;
- 
- 	invalidate_bh_lrus();
-diff --git a/fs/inode.c b/fs/inode.c
-index e315c0a..8862b1b 100644
---- a/fs/inode.c
-+++ b/fs/inode.c
-@@ -503,6 +503,7 @@ void clear_inode(struct inode *inode)
- 	 */
- 	spin_lock_irq(&inode->i_data.tree_lock);
- 	BUG_ON(inode->i_data.nrpages);
-+	BUG_ON(inode->i_data.nrshadows);
- 	spin_unlock_irq(&inode->i_data.tree_lock);
- 	BUG_ON(!list_empty(&inode->i_data.private_list));
- 	BUG_ON(!(inode->i_state & I_FREEING));
-@@ -545,10 +546,14 @@ static void evict(struct inode *inode)
- 	 */
- 	inode_wait_for_writeback(inode);
- 
-+	spin_lock_irq(&inode->i_data.tree_lock);
-+	mapping_set_exiting(&inode->i_data);
-+	spin_unlock_irq(&inode->i_data.tree_lock);
-+
- 	if (op->evict_inode) {
- 		op->evict_inode(inode);
- 	} else {
--		if (inode->i_data.nrpages)
-+		if (inode->i_data.nrpages || inode->i_data.nrshadows)
- 			truncate_inode_pages(&inode->i_data, 0);
- 		clear_inode(inode);
- 	}
-diff --git a/fs/nilfs2/inode.c b/fs/nilfs2/inode.c
-index b1a5277..047bafb 100644
---- a/fs/nilfs2/inode.c
-+++ b/fs/nilfs2/inode.c
-@@ -783,7 +783,7 @@ void nilfs_evict_inode(struct inode *inode)
- 	int ret;
- 
- 	if (inode->i_nlink || !ii->i_root || unlikely(is_bad_inode(inode))) {
--		if (inode->i_data.nrpages)
-+		if (inode->i_data.nrpages || inode->i_data.nrshadows)
- 			truncate_inode_pages(&inode->i_data, 0);
- 		clear_inode(inode);
- 		nilfs_clear_inode(inode);
-@@ -791,7 +791,7 @@ void nilfs_evict_inode(struct inode *inode)
- 	}
- 	nilfs_transaction_begin(sb, &ti, 0); /* never fails */
- 
--	if (inode->i_data.nrpages)
-+	if (inode->i_data.nrpages || inode->i_data.nrshadows)
- 		truncate_inode_pages(&inode->i_data, 0);
- 
- 	/* TODO: some of the following operations may fail.  */
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index b09ddc0..ac5d84e 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -416,6 +416,7 @@ struct address_space {
- 	struct mutex		i_mmap_mutex;	/* protect tree, count, list */
- 	/* Protected by tree_lock together with the radix tree */
- 	unsigned long		nrpages;	/* number of total pages */
-+	unsigned long		nrshadows;	/* number of shadow entries */
- 	pgoff_t			writeback_index;/* writeback starts here */
- 	const struct address_space_operations *a_ops;	/* methods */
- 	unsigned long		flags;		/* error bits/gfp mask */
-diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
-index b6854b7..db3a78b 100644
---- a/include/linux/pagemap.h
-+++ b/include/linux/pagemap.h
-@@ -25,6 +25,7 @@ enum mapping_flags {
- 	AS_MM_ALL_LOCKS	= __GFP_BITS_SHIFT + 2,	/* under mm_take_all_locks() */
- 	AS_UNEVICTABLE	= __GFP_BITS_SHIFT + 3,	/* e.g., ramdisk, SHM_LOCK */
- 	AS_BALLOON_MAP  = __GFP_BITS_SHIFT + 4, /* balloon page special map */
-+	AS_EXITING	= __GFP_BITS_SHIFT + 5, /* inode is being evicted */
- };
- 
- static inline void mapping_set_error(struct address_space *mapping, int error)
-@@ -69,6 +70,16 @@ static inline int mapping_balloon(struct address_space *mapping)
- 	return mapping && test_bit(AS_BALLOON_MAP, &mapping->flags);
- }
- 
-+static inline void mapping_set_exiting(struct address_space *mapping)
-+{
-+	set_bit(AS_EXITING, &mapping->flags);
-+}
-+
-+static inline int mapping_exiting(struct address_space *mapping)
-+{
-+	return test_bit(AS_EXITING, &mapping->flags);
-+}
-+
- static inline gfp_t mapping_gfp_mask(struct address_space * mapping)
- {
- 	return (__force gfp_t)mapping->flags & __GFP_BITS_MASK;
-@@ -547,7 +558,7 @@ int add_to_page_cache_locked(struct page *page, struct address_space *mapping,
- int add_to_page_cache_lru(struct page *page, struct address_space *mapping,
- 				pgoff_t index, gfp_t gfp_mask);
- extern void delete_from_page_cache(struct page *page);
--extern void __delete_from_page_cache(struct page *page);
-+extern void __delete_from_page_cache(struct page *page, void *shadow);
- int replace_page_cache_page(struct page *old, struct page *new, gfp_t gfp_mask);
- 
- /*
-diff --git a/mm/filemap.c b/mm/filemap.c
-index 254eb16..34b2f0b 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -112,7 +112,7 @@
-  * sure the page is locked and that nobody else uses it - or that usage
-  * is safe.  The caller must hold the mapping's tree_lock.
-  */
--void __delete_from_page_cache(struct page *page)
-+void __delete_from_page_cache(struct page *page, void *shadow)
- {
- 	struct address_space *mapping = page->mapping;
- 
-@@ -127,7 +127,14 @@ void __delete_from_page_cache(struct page *page)
- 	else
- 		cleancache_invalidate_page(mapping, page);
- 
--	radix_tree_delete(&mapping->page_tree, page->index);
-+	if (shadow) {
-+		void **slot;
-+
-+		slot = radix_tree_lookup_slot(&mapping->page_tree, page->index);
-+		radix_tree_replace_slot(slot, shadow);
-+		mapping->nrshadows++;
-+	} else
-+		radix_tree_delete(&mapping->page_tree, page->index);
- 	page->mapping = NULL;
- 	/* Leave page->index set: truncation lookup relies upon it */
- 	mapping->nrpages--;
-@@ -166,7 +173,7 @@ void delete_from_page_cache(struct page *page)
- 
- 	freepage = mapping->a_ops->freepage;
- 	spin_lock_irq(&mapping->tree_lock);
--	__delete_from_page_cache(page);
-+	__delete_from_page_cache(page, NULL);
- 	spin_unlock_irq(&mapping->tree_lock);
- 	mem_cgroup_uncharge_cache_page(page);
- 
-@@ -426,7 +433,7 @@ int replace_page_cache_page(struct page *old, struct page *new, gfp_t gfp_mask)
- 		new->index = offset;
- 
- 		spin_lock_irq(&mapping->tree_lock);
--		__delete_from_page_cache(old);
-+		__delete_from_page_cache(old, NULL);
- 		error = radix_tree_insert(&mapping->page_tree, offset, new);
- 		BUG_ON(error);
- 		mapping->nrpages++;
-@@ -459,6 +466,7 @@ static int page_cache_insert(struct address_space *mapping, pgoff_t offset,
- 		if (!radix_tree_exceptional_entry(p))
- 			return -EEXIST;
- 		radix_tree_replace_slot(slot, page);
-+		mapping->nrshadows--;
- 		return 0;
- 	}
- 	return radix_tree_insert(&mapping->page_tree, offset, page);
-diff --git a/mm/truncate.c b/mm/truncate.c
-index 21e4851..5c85dd4 100644
---- a/mm/truncate.c
-+++ b/mm/truncate.c
-@@ -35,7 +35,8 @@ static void clear_exceptional_entry(struct address_space *mapping,
- 	 * without the tree itself locked.  These unlocked entries
- 	 * need verification under the tree lock.
- 	 */
--	radix_tree_delete_item(&mapping->page_tree, index, page);
-+	if (radix_tree_delete_item(&mapping->page_tree, index, page) == page)
-+		mapping->nrshadows--;
- 	spin_unlock_irq(&mapping->tree_lock);
- }
- 
-@@ -481,7 +482,7 @@ invalidate_complete_page2(struct address_space *mapping, struct page *page)
- 		goto failed;
- 
- 	BUG_ON(page_has_private(page));
--	__delete_from_page_cache(page);
-+	__delete_from_page_cache(page, NULL);
- 	spin_unlock_irq(&mapping->tree_lock);
- 	mem_cgroup_uncharge_cache_page(page);
- 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index a3bf7fd..dd5f67c 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -545,7 +545,7 @@ static int __remove_mapping(struct address_space *mapping, struct page *page)
- 
- 		freepage = mapping->a_ops->freepage;
- 
--		__delete_from_page_cache(page);
-+		__delete_from_page_cache(page, NULL);
- 		spin_unlock_irq(&mapping->tree_lock);
- 		mem_cgroup_uncharge_cache_page(page);
- 
--- 
-1.8.3.2
+The VM maintains cached filesystem pages on two types of lists.  One
+list holds the pages recently faulted into the cache, the other list
+holds pages that have been referenced repeatedly on that first list.
+The idea is to prefer reclaiming young pages over those that have
+shown to benefit from caching in the past.  We call the recently used
+list "inactive list" and the frequently used list "active list".
+
+The tricky part of this model is finding the right balance between
+them.  A big inactive list may not leave enough room for the active
+list to protect all the frequently used pages.  A big active list may
+not leave enough room for the inactive list for a new set of
+frequently used pages, "working set", to establish itself because the
+young pages get pushed out of memory before having a chance to get
+promoted.
+
+Historically, every reclaim scan of the inactive list also took a
+smaller number of pages from the tail of the active list and moved
+them to the head of the inactive list.  This model gave established
+working sets more gracetime in the face of temporary use once streams,
+but was not satisfactory when use once streaming persisted over longer
+periods of time and the established working set was temporarily
+suspended, like a nightly backup evicting all the interactive user
+program data.
+    
+Subsequently, the rules were changed to only age active pages when
+they exceeded the amount of inactive pages, i.e. leave the working set
+alone as long as the other half of memory is easy to reclaim use once
+pages.  This works well until working set transitions exceed the size
+of half of memory and the average access distance between the pages of
+the new working set is bigger than the inactive list.  The VM will
+mistake the thrashing new working set for use once streaming, while
+the unused old working set pages are stuck on the active list.
+
+This happens on file servers and media streaming servers, where the
+popular set of files changes over time.  Even though the individual
+files might be smaller than half of memory, concurrent access to many
+of them may still result in their inter-reference distance being
+greater than half of memory.  It's also been reported as a problem on
+database workloads that switch back and forth between tables that are
+bigger than half of memory.  In these cases the VM never recognizes
+the new working set and will for the remainder of the workload thrash
+disk data which could easily live in memory.
+
+This series solves the problem by maintaining a history of pages
+evicted from the inactive list, enabling the VM to tell streaming IO
+from thrashing and rebalance the page cache lists when appropriate.
+
+ drivers/staging/lustre/lustre/llite/dir.c |   2 +-
+ fs/block_dev.c                            |   2 +-
+ fs/btrfs/compression.c                    |   4 +-
+ fs/cachefiles/rdwr.c                      |  13 +-
+ fs/ceph/xattr.c                           |   2 +-
+ fs/inode.c                                |   6 +-
+ fs/logfs/readwrite.c                      |   6 +-
+ fs/nfs/blocklayout/blocklayout.c          |   2 +-
+ fs/nilfs2/inode.c                         |   4 +-
+ fs/ntfs/file.c                            |   7 +-
+ fs/splice.c                               |   6 +-
+ include/linux/fs.h                        |   3 +
+ include/linux/mm.h                        |   8 +
+ include/linux/mmzone.h                    |   7 +
+ include/linux/pagemap.h                   |  55 +++-
+ include/linux/pagevec.h                   |   3 +
+ include/linux/radix-tree.h                |   5 +-
+ include/linux/shmem_fs.h                  |   1 +
+ include/linux/swap.h                      |  10 +
+ include/linux/writeback.h                 |   1 +
+ lib/radix-tree.c                          | 105 ++-----
+ mm/Makefile                               |   2 +-
+ mm/filemap.c                              | 265 +++++++++++++---
+ mm/mincore.c                              |  20 +-
+ mm/page-writeback.c                       |   2 +-
+ mm/readahead.c                            |   8 +-
+ mm/shmem.c                                | 122 ++------
+ mm/swap.c                                 |  22 ++
+ mm/truncate.c                             |  78 ++++-
+ mm/vmscan.c                               |  62 +++-
+ mm/vmstat.c                               |   4 +
+ mm/workingset.c                           | 461 ++++++++++++++++++++++++++++
+ net/ceph/pagelist.c                       |   4 +-
+ net/ceph/pagevec.c                        |   2 +-
+ 34 files changed, 1005 insertions(+), 299 deletions(-)
+
+Based on the latest -mmotm, which includes the required page allocator
+fairness patches.  All that: http://git.cmpxchg.org/cgit/linux-jw.git/
+
+Thanks!
 
