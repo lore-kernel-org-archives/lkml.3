@@ -1,81 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754846Ab3HFGJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 02:09:59 -0400
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:51911 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754597Ab3HFGJ5 (ORCPT
+	id S1754860Ab3HFGMX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 02:12:23 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:55554 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753930Ab3HFGMU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 02:09:57 -0400
+	Tue, 6 Aug 2013 02:12:20 -0400
+Date: Tue, 6 Aug 2013 15:12:17 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Dragos Foianu <dragos.foianu@gmail.com>
+Cc: wensong@linux-vs.org, linux-kernel@vger.kernel.org, coreteam@netfilter.org,
+        netfilter@vger.kernel.org, netfilter-devel@vger.kernel.org,
+        lvs-devel@vger.kernel.org, netdev@vger.kernel.org, davem@davemloft.net,
+        kadlec@blackhole.kfki.hu, kaber@trash.net, pablo@netfilter.org,
+        ja@ssi.bg
+Subject: Re: [PATCH] ipvs: fixed spacing at for statements
+Message-ID: <20130806061217.GD18246@verge.net.au>
+References: <1373525142-9099-1-git-send-email-dragos.foianu@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1375726723-20862-1-git-send-email-tobetter@gmail.com>
-References: <1375726723-20862-1-git-send-email-tobetter@gmail.com>
-Date: Tue, 6 Aug 2013 11:39:57 +0530
-Message-ID: <CAK9yfHwxVtJFZMQNoh-RepaF53L_TruPBSUt3YH_XY+8iXjffA@mail.gmail.com>
-Subject: Re: [PATCH RESEND] ARM: dts: Add USBPHY nodes to Exynos4x12
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: Dongjin Kim <tobetter@gmail.com>
-Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Kukjin Kim <kgene.kim@samsung.com>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1373525142-9099-1-git-send-email-dragos.foianu@gmail.com>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dongjin,
+On Thu, Jul 11, 2013 at 09:45:42AM +0300, Dragos Foianu wrote:
+> found using checkpatch.pl
 
-On 5 August 2013 23:48, Dongjin Kim <tobetter@gmail.com> wrote:
-> This patch adds device nodes for USBPHY to Exynos4x12.
->
-> CC: Sachin Kamat <sachin.kamat@linaro.org>
-> Signed-off-by: Dongjin Kim <tobetter@gmail.com>
+This seems reasonable to me. I will queue it up in the ipvs-next tree.
+
+> 
+> Signed-off-by: Dragos Foianu <dragos.foianu@gmail.com>
 > ---
->  arch/arm/boot/dts/exynos4x12.dtsi |   18 ++++++++++++++++++
->  1 file changed, 18 insertions(+)
->
-> diff --git a/arch/arm/boot/dts/exynos4x12.dtsi b/arch/arm/boot/dts/exynos4x12.dtsi
-> index 01da194..9c3335b 100644
-> --- a/arch/arm/boot/dts/exynos4x12.dtsi
-> +++ b/arch/arm/boot/dts/exynos4x12.dtsi
-> @@ -73,4 +73,22 @@
->                 clock-names = "sclk_fimg2d", "fimg2d";
->                 status = "disabled";
->         };
-> +
-> +       usbphy@125B00000 {
-> +               #address-cells = <1>;
-> +               #size-cells = <1>;
-> +               compatible = "samsung,exynos4x12-usb2phy";
-> +               reg = <0x125B0000 0x100>;
-> +               ranges;
-> +
-> +               clocks = <&clock 2>, <&clock 305>;
-> +               clock-names = "xusbxti", "otg";
-> +               status = "disabled";
-
-I don't think this node has any other board specific dependencies. In
-that case you don't need to disable this.
-
-> +
-> +               usbphy-sys {
-> +                       /* USB device and host PHY_CONTROL registers */
-> +                       reg = <0x10020704 0xc>,
-> +                             <0x1001021c 0x4>;
-> +               };
-> +       };
->  };
+>  net/netfilter/ipvs/ip_vs_lblcr.c |    8 ++++----
+>  1 file changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/net/netfilter/ipvs/ip_vs_lblcr.c b/net/netfilter/ipvs/ip_vs_lblcr.c
+> index 3cd85b2..5199448 100644
+> --- a/net/netfilter/ipvs/ip_vs_lblcr.c
+> +++ b/net/netfilter/ipvs/ip_vs_lblcr.c
+> @@ -414,7 +414,7 @@ static void ip_vs_lblcr_flush(struct ip_vs_service *svc)
+>  
+>  	spin_lock_bh(&svc->sched_lock);
+>  	tbl->dead = 1;
+> -	for (i=0; i<IP_VS_LBLCR_TAB_SIZE; i++) {
+> +	for (i = 0; i < IP_VS_LBLCR_TAB_SIZE; i++) {
+>  		hlist_for_each_entry_safe(en, next, &tbl->bucket[i], list) {
+>  			ip_vs_lblcr_free(en);
+>  		}
+> @@ -440,7 +440,7 @@ static inline void ip_vs_lblcr_full_check(struct ip_vs_service *svc)
+>  	struct ip_vs_lblcr_entry *en;
+>  	struct hlist_node *next;
+>  
+> -	for (i=0, j=tbl->rover; i<IP_VS_LBLCR_TAB_SIZE; i++) {
+> +	for (i = 0, j = tbl->rover; i < IP_VS_LBLCR_TAB_SIZE; i++) {
+>  		j = (j + 1) & IP_VS_LBLCR_TAB_MASK;
+>  
+>  		spin_lock(&svc->sched_lock);
+> @@ -495,7 +495,7 @@ static void ip_vs_lblcr_check_expire(unsigned long data)
+>  	if (goal > tbl->max_size/2)
+>  		goal = tbl->max_size/2;
+>  
+> -	for (i=0, j=tbl->rover; i<IP_VS_LBLCR_TAB_SIZE; i++) {
+> +	for (i = 0, j = tbl->rover; i < IP_VS_LBLCR_TAB_SIZE; i++) {
+>  		j = (j + 1) & IP_VS_LBLCR_TAB_MASK;
+>  
+>  		spin_lock(&svc->sched_lock);
+> @@ -536,7 +536,7 @@ static int ip_vs_lblcr_init_svc(struct ip_vs_service *svc)
+>  	/*
+>  	 *    Initialize the hash buckets
+>  	 */
+> -	for (i=0; i<IP_VS_LBLCR_TAB_SIZE; i++) {
+> +	for (i = 0; i < IP_VS_LBLCR_TAB_SIZE; i++) {
+>  		INIT_HLIST_HEAD(&tbl->bucket[i]);
+>  	}
+>  	tbl->max_size = IP_VS_LBLCR_TAB_SIZE*16;
+> -- 
+> 1.7.10.4
+> 
 > --
-> 1.7.9.5
->
-
-
-
--- 
-With warm regards,
-Sachin
+> To unsubscribe from this list: send the line "unsubscribe lvs-devel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
