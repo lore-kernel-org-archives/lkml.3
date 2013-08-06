@@ -1,46 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756401Ab3HFROa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 13:14:30 -0400
-Received: from a9-92.smtp-out.amazonses.com ([54.240.9.92]:40069 "EHLO
-	a9-92.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756321Ab3HFRO3 (ORCPT
+	id S1756415Ab3HFRXi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 13:23:38 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:54589 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756380Ab3HFRXg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 13:14:29 -0400
-X-Greylist: delayed 757 seconds by postgrey-1.27 at vger.kernel.org; Tue, 06 Aug 2013 13:14:29 EDT
-Date: Tue, 6 Aug 2013 17:01:50 +0000
-From: Christoph Lameter <cl@gentwo.org>
-To: rostedt@goodmis.org
-cc: linux-kernel@vger.kernel.org
-Subject: x86: use this_cpu for debug_stack_usage
-Message-ID: <000001405493dacb-4d662921-2531-400a-a426-4f76c8066ede-000000@email.amazonses.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.08.06-54.240.9.92
+	Tue, 6 Aug 2013 13:23:36 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@sisk.pl
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH V2 00/11] CPUFreq: Fixes & Cleanups for 3.12
+Date: Tue,  6 Aug 2013 22:53:02 +0530
+Message-Id: <cover.1375809311.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reduces overhead a bit and frees up a couple of registers.
+Hi Rafael,
 
-Signed-off-by: Christoph Lameter <cl@linux.com>
+This is V2 of the patch series which was posted here earlier:
 
-Index: linux/arch/x86/include/asm/debugreg.h
-===================================================================
---- linux.orig/arch/x86/include/asm/debugreg.h	2013-07-30 14:00:30.000000000 -0500
-+++ linux/arch/x86/include/asm/debugreg.h	2013-07-30 14:00:57.503076270 -0500
-@@ -97,11 +97,11 @@ extern void hw_breakpoint_restore(void);
- DECLARE_PER_CPU(int, debug_stack_usage);
- static inline void debug_stack_usage_inc(void)
- {
--	__get_cpu_var(debug_stack_usage)++;
-+	__this_cpu_inc(debug_stack_usage);
- }
- static inline void debug_stack_usage_dec(void)
- {
--	__get_cpu_var(debug_stack_usage)--;
-+	__this_cpu_dec(debug_stack_usage);
- }
- int is_debug_stack(unsigned long addr);
- void debug_stack_set_zero(void);
+http://www.gossamer-threads.com/lists/linux/kernel/1759514
+
+This patchset tries to fix & cleanup many existing cpufreq core issues. First
+four patches tries to cleanup basic problems in cpufreq core. Its first patch
+was earlier sent separately but now is part of this series.
+
+Fifth patch was also sent earlier as reply to your patches and was reviewed by
+Srivatsa. Sixth patch was picked from Lukasz's patchset on introducing software
+"boost" feature in core. It will be used by this patchset.
+
+And 7-10 are are the most significant part of this set. They try to make many
+things simple and robust.
+
+Last patch in the series is new and wasn't part of V1.
+
+This is rebased of your bleeding-edge branch + two patches from you:
+18a6b03 cpufreq: Avoid double kobject_put() for the same kobject in error code path
+d0cde63 cpufreq: Do not hold driver module references for additional policy CPUs
+abe513f Merge branch 'acpi-sleep-next' into linux-next
+
+They are also pushed in my cpufreq-next branch.
+
+They are tested fairly well on ARM Vexpress TC2 board (big LITTLE).
+
+Lukasz Majewski (1):
+  cpufreq: Store cpufreq policies in a list
+
+Viresh Kumar (10):
+  cpufreq: Cleanup header files included in core
+  cpufreq: Re-arrange declarations in cpufreq.h
+  cpufreq: Give consistent names for struct cpufreq_policy *
+  cpufreq: Use sizeof(*ptr) form for finding size of a struct
+  cpufreq: Pass policy to cpufreq_add_policy_cpu()
+  cpufreq: Use cpufreq_policy_list for iterating over policies
+  cpufreq: Fix broken usage of governor->owner's refcount
+  cpufreq: Don't use cpufreq_driver->owner's refcount to protect
+    critical sections
+  cpufreq: Remove struct cpufreq_driver's owner field
+  cpufreq: improve error checking on return values of
+    __cpufreq_governor()
+
+ Documentation/cpu-freq/cpu-drivers.txt |   2 -
+ drivers/cpufreq/acpi-cpufreq.c         |   5 +-
+ drivers/cpufreq/at32ap-cpufreq.c       |   1 -
+ drivers/cpufreq/blackfin-cpufreq.c     |   1 -
+ drivers/cpufreq/cpufreq-nforce2.c      |   1 -
+ drivers/cpufreq/cpufreq.c              | 426 ++++++++++++++++-----------------
+ drivers/cpufreq/cpufreq_conservative.c |  14 +-
+ drivers/cpufreq/cpufreq_governor.c     |   6 -
+ drivers/cpufreq/cpufreq_governor.h     |   7 +-
+ drivers/cpufreq/cpufreq_ondemand.c     |  24 +-
+ drivers/cpufreq/cpufreq_performance.c  |   3 +-
+ drivers/cpufreq/cpufreq_powersave.c    |   3 +-
+ drivers/cpufreq/cpufreq_stats.c        |  23 +-
+ drivers/cpufreq/cris-artpec3-cpufreq.c |   1 -
+ drivers/cpufreq/cris-etraxfs-cpufreq.c |   1 -
+ drivers/cpufreq/e_powersaver.c         |   5 +-
+ drivers/cpufreq/elanfreq.c             |   1 -
+ drivers/cpufreq/exynos-cpufreq.c       |   2 +-
+ drivers/cpufreq/freq_table.c           |   4 +-
+ drivers/cpufreq/gx-suspmod.c           |   3 +-
+ drivers/cpufreq/ia64-acpi-cpufreq.c    |   5 +-
+ drivers/cpufreq/intel_pstate.c         |   1 -
+ drivers/cpufreq/kirkwood-cpufreq.c     |   1 -
+ drivers/cpufreq/longhaul.c             |   1 -
+ drivers/cpufreq/longrun.c              |   1 -
+ drivers/cpufreq/loongson2_cpufreq.c    |   1 -
+ drivers/cpufreq/maple-cpufreq.c        |   1 -
+ drivers/cpufreq/p4-clockmod.c          |   1 -
+ drivers/cpufreq/pasemi-cpufreq.c       |   1 -
+ drivers/cpufreq/pcc-cpufreq.c          |   1 -
+ drivers/cpufreq/pmac32-cpufreq.c       |   1 -
+ drivers/cpufreq/pmac64-cpufreq.c       |   6 +-
+ drivers/cpufreq/powernow-k6.c          |   1 -
+ drivers/cpufreq/powernow-k7.c          |  14 +-
+ drivers/cpufreq/powernow-k8.c          |   7 +-
+ drivers/cpufreq/ppc-corenet-cpufreq.c  |   1 -
+ drivers/cpufreq/ppc_cbe_cpufreq.c      |   1 -
+ drivers/cpufreq/s3c2416-cpufreq.c      |   1 -
+ drivers/cpufreq/s3c24xx-cpufreq.c      |   6 +-
+ drivers/cpufreq/s3c64xx-cpufreq.c      |   1 -
+ drivers/cpufreq/sc520_freq.c           |   1 -
+ drivers/cpufreq/sh-cpufreq.c           |   1 -
+ drivers/cpufreq/sparc-us2e-cpufreq.c   |   6 +-
+ drivers/cpufreq/sparc-us3-cpufreq.c    |   6 +-
+ drivers/cpufreq/speedstep-centrino.c   |   1 -
+ drivers/cpufreq/speedstep-ich.c        |   1 -
+ drivers/cpufreq/speedstep-smi.c        |   1 -
+ include/linux/cpufreq.h                | 386 ++++++++++++++---------------
+ 48 files changed, 442 insertions(+), 547 deletions(-)
+
+-- 
+1.7.12.rc2.18.g61b472e
+
