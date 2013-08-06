@@ -1,94 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756103Ab3HFP6a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 11:58:30 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:61889 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756051Ab3HFP61 (ORCPT
+	id S1756032Ab3HFQDF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 12:03:05 -0400
+Received: from mail-vb0-f50.google.com ([209.85.212.50]:43314 "EHLO
+	mail-vb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755728Ab3HFQDD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 11:58:27 -0400
+	Tue, 6 Aug 2013 12:03:03 -0400
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CA+icZUW6P9Z_7z+o+z=qBWSFzyU8tgtY0ou+rmLcEzWbn94OXA@mail.gmail.com>
-References: <CA+icZUX8OcTSOABO6Nbz5R6_5-m39rsYOpDqYBA7hf8LFvJLLA@mail.gmail.com>
-	<1375797260.8219.21.camel@jlt4.sipsolutions.net>
-	<CA+icZUUAJ25QybqHvxz7eubSLH6YuNjcc5zyU2O5Xi9vevMGkw@mail.gmail.com>
-	<1375800617.8219.23.camel@jlt4.sipsolutions.net>
-	<CA+icZUVbKpyuke6PRg3-60gOggsTb=3cNRz3Sy0RmvcZSuPaNw@mail.gmail.com>
-	<1375801059.8219.24.camel@jlt4.sipsolutions.net>
-	<CA+icZUXrRsXfeW9hqxTMkKW4TdNSBH-zE8-zX2Rd7HTAx5MvqQ@mail.gmail.com>
-	<CA+icZUWijPJmNoqE22Msqcn7tRot3SB3e=KujMM7JNd-Om-oOw@mail.gmail.com>
-	<1375802297.8219.25.camel@jlt4.sipsolutions.net>
-	<CA+icZUVCFOS6SHonEqzaJyWCGCU4nqqGjBN0VbmV-=OoM+deZg@mail.gmail.com>
-	<CA+icZUVuOqdZUGy2ALAF1CehOqYdr7rtEsXhqNvDtYEns2BuRQ@mail.gmail.com>
-	<1375802993.8219.26.camel@jlt4.sipsolutions.net>
-	<CA+icZUW6P9Z_7z+o+z=qBWSFzyU8tgtY0ou+rmLcEzWbn94OXA@mail.gmail.com>
-Date: Tue, 6 Aug 2013 17:58:25 +0200
-Message-ID: <CA+icZUW7LVzg7sM3O-w5oQpeaj=CT6MS6Q7cRZ1qK0h-Z4wZuw@mail.gmail.com>
-Subject: Re: linux-next: Tree for Aug 6 [ wireless | iwlwifi | mac80211 ? ]
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Johannes Berg <johannes@sipsolutions.net>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        wireless <linux-wireless@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20130806140904.GA9814@mtj.dyndns.org>
+References: <1375632446-2581-1-git-send-email-tj@kernel.org>
+	<1375632446-2581-4-git-send-email-tj@kernel.org>
+	<CAKTCnz=DdG6QD0yPJ1poRZk0NYrYHdkmabvCXY-AR2qC1GSzYA@mail.gmail.com>
+	<20130806140904.GA9814@mtj.dyndns.org>
+Date: Tue, 6 Aug 2013 21:33:01 +0530
+Message-ID: <CAKTCnzm+wXebh1SAvRq0MkqAWtLvTyhsafa7-U6B84P1zj9bRg@mail.gmail.com>
+Subject: Re: [PATCH 3/5] cgroup, memcg: move cgroup_event implementation to memcg
+From: Balbir Singh <bsingharora@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: lizefan@huawei.com, Johannes Weiner <hannes@cmpxchg.org>,
+        Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 6, 2013 at 5:43 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> On Tue, Aug 6, 2013 at 5:29 PM, Johannes Berg <johannes@sipsolutions.net> wrote:
->> On Tue, 2013-08-06 at 17:27 +0200, Sedat Dilek wrote:
->>> On Tue, Aug 6, 2013 at 5:20 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->>> > On Tue, Aug 6, 2013 at 5:18 PM, Johannes Berg <johannes@sipsolutions.net> wrote:
->>> >>
->>> >>
->>> >>> I have sent you a v2 of my logs (with -d and rsyslog-7.x).
->>> >>
->>> >> Hmm, that looks different? There no longer is anything about "PSK might
->>> >> be wrong", but now just disconnections by the AP, which unfortunately
->>> >> indicate no reason.
->>> >>
->>> >> When was it working last?
->>> >>
->>> >
->>> > next-20130801 was OK here.
->>> >
->>>
->>> What about these lines?
->>>
->>> Aug  6 17:03:37 fambox kernel: [  134.575120] wlan0: deauthenticated
->>> from 00:04:0e:e4:00:3d (Reason: 1)
->>> Aug  6 17:03:37 fambox wpa_supplicant[2424]: wlan0: Event DEAUTH (12) received
->>> Aug  6 17:03:37 fambox wpa_supplicant[2424]: wlan0: Deauthentication
->>> notification
->>> Aug  6 17:03:37 fambox wpa_supplicant[2424]: Deauthentication frame
->>> IE(s) - hexdump(len=0): [NULL]
->>> Aug  6 17:03:37 fambox wpa_supplicant[2424]: wlan0: WPA: 4-Way
->>> Handshake failed - pre-shared key may be incorrect
->>> Aug  6 17:03:37 fambox NetworkManager[2431]: <info> (wlan0):
->>> supplicant interface state: 4-way handshake -> disconnected
->>
->> Yeah but before you had a local deauth request, this time it's the AP
->> kicking you off.
->>
->> I really don't know. Can you try something like wireless-testing maybe?
->> -next could have any kind of breakage I guess ...
->>
+On Tue, Aug 6, 2013 at 7:39 PM, Tejun Heo <tj@kernel.org> wrote:
+> Hello, Balbir.
 >
-> I pulled in master-2013-08-05 tag on top of Linux v3.11-rc4... Building...
+> On Tue, Aug 06, 2013 at 08:56:34AM +0530, Balbir Singh wrote:
+>> [off-topic] Has the unified hierarchy been agreed upon? I did not
+>> follow that thread
+>
+> I consider it agreed upon enough.  There of course are objections but
+> I feel fairly comfortable with the amount of existing consensus and
+> considering the current state of cgroup in general, especially the API
+> leaks, I don't think we have many other choices.  The devil is always
+> in the details but unless we meet a major technical barrier, I'm
+> pretty sure it's happening.
 >
 
-$ cat /proc/version
-Linux version 3.11.0-rc4-1-wl-20130805 (sedat.dilek@gmail.com@fambox)
-(gcc version 4.6.3 (Ubuntu/Linaro 4.6.3-1ubuntu5) ) #1 SMP Tue Aug 6
-17:52:45 CEST 2013
+I guess we'll need to see what the details look like :)
 
-This kernel boots fine and has no WiFi problems.
-
-> You assume a breakage in a different area than wireless or network in general?
+>> > events at fixed points, or if that's too restrictive, configureable
+>> > cadence or single set of configureable points should be enough.
+>>
+>> Nit-pick: typo on the spelling of configurable
+>
+> Will update.
+>
+>> Tejun, I think the framework was designed to be flexible. Do you see
+>> cgroup subsystems never using this?
+>
+> I can't be a hundred percent sure that we won't need events which are
+> configureable per-listener but it's highly unlikely given that we're
+> moving onto single agent model and the nature of event delivery -
+> spurious events are unlikely to be noticeable unless the frequency is
+> very high.  In general, as anything, aiming for extremes isn't a
+> healthy design practice.  Maximum flexibility sounds good in isolation
+> but nothing is free and it entails unneeded complexity both in
+> implementation and usage.  Note that even for memcg, both oom and
+> vmpressure don't benefit in any way from all the added complexity at
+> all.  The only other place that I can see event being useful at the
+> moment is freezer state change notification and that also would only
+> require unconditional file modified notification.
 >
 
-Any wild guess?
+Hmm.. I think it would be interesting to set thresholds on other
+resources instead of pure monitoring. One might want to set thresholds
+for CPUACCT usage for example. Freezer is another example like you
+mentioned.
 
-- Sedat -
+>> > +static int cgroup_write_event_control(struct cgroup_subsys_state *css,
+>> > +                                     struct cftype *cft, const char *buffer)
+>> > +{
+>> > +       struct cgroup *cgrp = css->cgroup;
+>> > +       struct cgroup_event *event;
+>> > +       struct cgroup *cgrp_cfile;
+>> > +       unsigned int efd, cfd;
+>> > +       struct file *efile;
+>> > +       struct file *cfile;
+>> > +       char *endp;
+>> > +       int ret;
+>> > +
+>>
+>> Can we assert that buffer is NOT NULL here?
+>
+> The patch moves the code as-is as things become difficult to review
+> otherwise.  After the patchset, it belongs to memcg, please feel free
+> to modify as memcg people see fit.
+
+OK, Thanks
+
+Balbir Singh
