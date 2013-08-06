@@ -1,46 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755924Ab3HFKOw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 06:14:52 -0400
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:48126 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755643Ab3HFKOu (ORCPT
+	id S1755928Ab3HFKPa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 06:15:30 -0400
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:64101 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755752Ab3HFKP3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 06:14:50 -0400
-Message-ID: <1375784088.4457.74.camel@edumazet-glaptop>
-Subject: Re: [PATCH net] net: rename and move busy poll mib counter
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-Cc: David Miller <davem@davemloft.net>, Shawn Bohrer <sbohrer@rgmadvisors.com>,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Eliezer Tamir <eliezer@tamir.org.il>
-Date: Tue, 06 Aug 2013 03:14:48 -0700
-In-Reply-To: <20130806095207.5887.2196.stgit@ladj378.jer.intel.com>
-References: <20130806095207.5887.2196.stgit@ladj378.jer.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 6 Aug 2013 06:15:29 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAPgLHd9cUJtF7WXmY4Sy+53MxjKJRe8RVNNtbfdYLzh6OwbNzg@mail.gmail.com>
+References: <CAPgLHd9cUJtF7WXmY4Sy+53MxjKJRe8RVNNtbfdYLzh6OwbNzg@mail.gmail.com>
+Date: Tue, 6 Aug 2013 12:15:28 +0200
+Message-ID: <CACRpkdZ9VBjPVOB9t4E6MJ80m_Mb78Fvp5sPk2Y0hOTQqu1wBA@mail.gmail.com>
+Subject: Re: [PATCH] ARM: u300: fix return value check in __u300_init_boardpower()
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Wei Yongjun <weiyj.lk@gmail.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-08-06 at 12:52 +0300, Eliezer Tamir wrote:
-> Move the low latency mib counter to the ip section.
-> Rename it from low latency to busy poll.
-> 
-> Reported-by: Shawn Bohrer <sbohrer@rgmadvisors.com>
-> Signed-off-by: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-> ---
+On Thu, Jul 4, 2013 at 3:51 PM, Wei Yongjun <weiyj.lk@gmail.com> wrote:
 
-Well, it should not be part of IP mib, but a socket one (not existing so
-far)
+> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+>
+> In case of error, the function syscon_node_to_regmap() returns ERR_PTR()
+> and never returns NULL. The NULL test in the return value check should
+> be replaced with IS_ERR().
+>
+> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-Linux MIB already contains few non TCP counters :
+Patch applied.
 
-LINUX_MIB_ARPFILTER
-LINUX_MIB_IPRPFILTER
-
-Its mostly populated by TCP counters, sure.
-
-
+Yours,
+Linus Walleij
