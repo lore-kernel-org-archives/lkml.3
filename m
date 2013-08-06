@@ -1,132 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756169Ab3HFLsV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 07:48:21 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:55431 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753715Ab3HFLsR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 07:48:17 -0400
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-To: <gleb@redhat.com>, <mingo@redhat.com>, <jeremy@goop.org>, <x86@kernel.org>,
-        <konrad.wilk@oracle.com>, <hpa@zytor.com>, <pbonzini@redhat.com>
-Cc: linux-doc@vger.kernel.org, <habanero@linux.vnet.ibm.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        <xen-devel@lists.xensource.com>, <peterz@infradead.org>,
-        <mtosatti@redhat.com>, <stefano.stabellini@eu.citrix.com>,
-        <andi@firstfloor.org>, <attilio.rao@citrix.com>, <ouyang@cs.pitt.edu>,
-        <gregkh@suse.de>, <agraf@suse.de>, <chegu_vinod@hp.com>,
-        <torvalds@linux-foundation.org>, <avi.kivity@gmail.com>,
-        <tglx@linutronix.de>, <kvm@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <riel@redhat.com>,
-        <drjones@redhat.com>, <virtualization@lists.linux-foundation.org>,
-        <srivatsa.vaddagiri@gmail.com>
-Date: Tue, 06 Aug 2013 17:11:20 +0530
-Message-Id: <20130806114120.20643.87847.sendpatchset@codeblue.in.ibm.com>
-In-Reply-To: <20130806114020.20643.57235.sendpatchset@codeblue.in.ibm.com>
-References: <20130806114020.20643.57235.sendpatchset@codeblue.in.ibm.com>
-Subject: [PATCH  V12 3/14] x86/ticketlock: Collapse a layer of functions
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13080611-7182-0000-0000-000007FAA5E4
+	id S1756185Ab3HFLsc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 07:48:32 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:33257 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753715Ab3HFLs1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Aug 2013 07:48:27 -0400
+Message-ID: <5200E286.8050303@ti.com>
+Date: Tue, 6 Aug 2013 17:18:22 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Roger Quadros <rogerq@ti.com>
+CC: <balbi@ti.com>, <tony@atomide.com>, <george.cherian@ti.com>,
+        <dmurphy@ti.com>, <linux-usb@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/7] usb: phy: omap-usb3: Don't use omap_get_control_dev()
+References: <1375365915-21380-1-git-send-email-rogerq@ti.com> <1375365915-21380-4-git-send-email-rogerq@ti.com>
+In-Reply-To: <1375365915-21380-4-git-send-email-rogerq@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-x86/ticketlock: Collapse a layer of functions
+On Thursday 01 August 2013 07:35 PM, Roger Quadros wrote:
+> omap_get_control_dev() is being deprecated as it doesn't support
+> multiple instances. As control device is present only from OMAP4
+> onwards which supports DT only, we use phandles to get the
+> reference to the control device.
+>
+> As we don't support non-DT boot, we just bail out on probe
+> if device node is not present.
+>
+> Signed-off-by: Roger Quadros <rogerq@ti.com>
 
-From: Jeremy Fitzhardinge <jeremy@goop.org>
+Tested-by: Kishon Vijay Abraham I <kishon@ti.com>
 
-Now that the paravirtualization layer doesn't exist at the spinlock
-level any more, we can collapse the __ticket_ functions into the arch_
-functions.
 
-Signed-off-by: Jeremy Fitzhardinge <jeremy@goop.org>
-Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Tested-by: Attilio Rao <attilio.rao@citrix.com>
-Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Acked-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/include/asm/spinlock.h |   35 +++++------------------------------
- 1 file changed, 5 insertions(+), 30 deletions(-)
-
-diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
-index 4d54244..7442410 100644
---- a/arch/x86/include/asm/spinlock.h
-+++ b/arch/x86/include/asm/spinlock.h
-@@ -76,7 +76,7 @@ static __always_inline void __ticket_unlock_kick(struct arch_spinlock *lock,
-  * in the high part, because a wide xadd increment of the low part would carry
-  * up and contaminate the high part.
-  */
--static __always_inline void __ticket_spin_lock(struct arch_spinlock *lock)
-+static __always_inline void arch_spin_lock(struct arch_spinlock *lock)
- {
- 	register struct __raw_tickets inc = { .tail = 1 };
- 
-@@ -96,7 +96,7 @@ static __always_inline void __ticket_spin_lock(struct arch_spinlock *lock)
- out:	barrier();	/* make sure nothing creeps before the lock is taken */
- }
- 
--static __always_inline int __ticket_spin_trylock(arch_spinlock_t *lock)
-+static __always_inline int arch_spin_trylock(arch_spinlock_t *lock)
- {
- 	arch_spinlock_t old, new;
- 
-@@ -110,7 +110,7 @@ static __always_inline int __ticket_spin_trylock(arch_spinlock_t *lock)
- 	return cmpxchg(&lock->head_tail, old.head_tail, new.head_tail) == old.head_tail;
- }
- 
--static __always_inline void __ticket_spin_unlock(arch_spinlock_t *lock)
-+static __always_inline void arch_spin_unlock(arch_spinlock_t *lock)
- {
- 	__ticket_t next = lock->tickets.head + 1;
- 
-@@ -118,46 +118,21 @@ static __always_inline void __ticket_spin_unlock(arch_spinlock_t *lock)
- 	__ticket_unlock_kick(lock, next);
- }
- 
--static inline int __ticket_spin_is_locked(arch_spinlock_t *lock)
-+static inline int arch_spin_is_locked(arch_spinlock_t *lock)
- {
- 	struct __raw_tickets tmp = ACCESS_ONCE(lock->tickets);
- 
- 	return tmp.tail != tmp.head;
- }
- 
--static inline int __ticket_spin_is_contended(arch_spinlock_t *lock)
-+static inline int arch_spin_is_contended(arch_spinlock_t *lock)
- {
- 	struct __raw_tickets tmp = ACCESS_ONCE(lock->tickets);
- 
- 	return (__ticket_t)(tmp.tail - tmp.head) > 1;
- }
--
--static inline int arch_spin_is_locked(arch_spinlock_t *lock)
--{
--	return __ticket_spin_is_locked(lock);
--}
--
--static inline int arch_spin_is_contended(arch_spinlock_t *lock)
--{
--	return __ticket_spin_is_contended(lock);
--}
- #define arch_spin_is_contended	arch_spin_is_contended
- 
--static __always_inline void arch_spin_lock(arch_spinlock_t *lock)
--{
--	__ticket_spin_lock(lock);
--}
--
--static __always_inline int arch_spin_trylock(arch_spinlock_t *lock)
--{
--	return __ticket_spin_trylock(lock);
--}
--
--static __always_inline void arch_spin_unlock(arch_spinlock_t *lock)
--{
--	__ticket_spin_unlock(lock);
--}
--
- static __always_inline void arch_spin_lock_flags(arch_spinlock_t *lock,
- 						  unsigned long flags)
- {
+> ---
+>   drivers/usb/phy/phy-omap-usb3.c |   20 +++++++++++++++++---
+>   1 files changed, 17 insertions(+), 3 deletions(-)
+>
+> diff --git a/drivers/usb/phy/phy-omap-usb3.c b/drivers/usb/phy/phy-omap-usb3.c
+> index 4a7f27c..bad032e 100644
+> --- a/drivers/usb/phy/phy-omap-usb3.c
+> +++ b/drivers/usb/phy/phy-omap-usb3.c
+> @@ -26,6 +26,7 @@
+>   #include <linux/pm_runtime.h>
+>   #include <linux/delay.h>
+>   #include <linux/usb/omap_control_usb.h>
+> +#include <linux/of_platform.h>
+>
+>   #define	PLL_STATUS		0x00000004
+>   #define	PLL_GO			0x00000008
+> @@ -198,6 +199,12 @@ static int omap_usb3_probe(struct platform_device *pdev)
+>   {
+>   	struct omap_usb			*phy;
+>   	struct resource			*res;
+> +	struct device_node *node = pdev->dev.of_node;
+> +	struct device_node *control_node;
+> +	struct platform_device *control_pdev;
+> +
+> +	if (!node)
+> +		return -ENODEV;
+>
+>   	phy = devm_kzalloc(&pdev->dev, sizeof(*phy), GFP_KERNEL);
+>   	if (!phy) {
+> @@ -239,11 +246,18 @@ static int omap_usb3_probe(struct platform_device *pdev)
+>   		return -EINVAL;
+>   	}
+>
+> -	phy->control_dev = omap_get_control_dev();
+> -	if (IS_ERR(phy->control_dev)) {
+> -		dev_dbg(&pdev->dev, "Failed to get control device\n");
+> +	control_node = of_parse_phandle(node, "ctrl-module", 0);
+> +	if (!control_node) {
+> +		dev_err(&pdev->dev, "Failed to get control device phandle\n");
+>   		return -ENODEV;
+>   	}
+> +	control_pdev = of_find_device_by_node(control_node);
+> +	if (!control_pdev) {
+> +		dev_err(&pdev->dev, "Failed to get control device\n");
+> +		return -ENODEV;
+> +	}
+> +
+> +	phy->control_dev = &control_pdev->dev;
+>
+>   	omap_control_usb_phy_power(phy->control_dev, 0);
+>   	usb_add_phy_dev(&phy->phy);
+>
 
