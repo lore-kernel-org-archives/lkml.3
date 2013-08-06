@@ -1,304 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756084Ab3HFKni (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 06:43:38 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:1854 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755965Ab3HFKng (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 06:43:36 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 06 Aug 2013 03:41:56 -0700
-Message-ID: <5200D354.2080102@nvidia.com>
-Date: Tue, 6 Aug 2013 18:43:32 +0800
-From: Wei Ni <wni@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S1756104Ab3HFKxH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 06:53:07 -0400
+Received: from tundra.namei.org ([65.99.196.166]:50601 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755954Ab3HFKxF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Aug 2013 06:53:05 -0400
+Date: Tue, 6 Aug 2013 20:52:07 +1000 (EST)
+From: James Morris <jmorris@namei.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Casey Schaufler <casey@schaufler-ca.com>,
+        LKLM <linux-kernel@vger.kernel.org>,
+        LSM <linux-security-module@vger.kernel.org>
+Subject: Re: [PATCH] Smack: IPv6 casting error fix for 3.11
+In-Reply-To: <CA+55aFyii4yLORxxXKME6DgtmBsFbh8yN5SZjvDHLNOpj2+PqA@mail.gmail.com>
+Message-ID: <alpine.LRH.2.02.1308062051070.13931@tundra.namei.org>
+References: <52000942.9010702@schaufler-ca.com> <CA+55aFyii4yLORxxXKME6DgtmBsFbh8yN5SZjvDHLNOpj2+PqA@mail.gmail.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-To: "khali@linux-fr.org" <khali@linux-fr.org>
-CC: Wei Ni <wni@nvidia.com>, "linux@roeck-us.net" <linux@roeck-us.net>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH RESEND v4] hwmon: (lm90) split set&show temp as common
- codes
-References: <1375785417-13650-1-git-send-email-wni@nvidia.com>
-In-Reply-To: <1375785417-13650-1-git-send-email-wni@nvidia.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch is separated from my previous v3 series, which is in
-http://www.mail-archive.com/linux-kernel@vger.kernel.org/msg466772.html
+On Mon, 5 Aug 2013, Linus Torvalds wrote:
 
-Changes from v3:
-1. Add error handler for lm90_select_remote_channel(), set_temp8(), and
-set_temp11().
+> Why does this have the (largely same) commit message twice?
 
-Wei.
+I don't know exactly, but here it is in pullable form, with the shorter of 
+the two messages.
 
-On 08/06/2013 06:36 PM, Wei Ni wrote:
-> Split set&show temp codes as common functions, so we can use it
-> directly when implement linux thermal framework.
-> And handle error return value for the lm90_select_remote_channel
-> and write_tempx, then set_temp8 and set_temp11 could return it
-> to user-space.
-> 
-> Signed-off-by: Wei Ni <wni@nvidia.com>
-> ---
->  drivers/hwmon/lm90.c |  150 +++++++++++++++++++++++++++++++++-----------------
->  1 file changed, 99 insertions(+), 51 deletions(-)
-> 
-> diff --git a/drivers/hwmon/lm90.c b/drivers/hwmon/lm90.c
-> index cdff742..6de8e01 100644
-> --- a/drivers/hwmon/lm90.c
-> +++ b/drivers/hwmon/lm90.c
-> @@ -422,20 +422,29 @@ static int lm90_read16(struct i2c_client *client, u8 regh, u8 regl, u16 *value)
->   * various registers have different meanings as a result of selecting a
->   * non-default remote channel.
->   */
-> -static inline void lm90_select_remote_channel(struct i2c_client *client,
-> +static inline int lm90_select_remote_channel(struct i2c_client *client,
->  					      struct lm90_data *data,
->  					      int channel)
->  {
->  	u8 config;
-> +	int err = 0;
->  
->  	if (data->kind == max6696) {
->  		lm90_read_reg(client, LM90_REG_R_CONFIG1, &config);
->  		config &= ~0x08;
->  		if (channel)
->  			config |= 0x08;
-> -		i2c_smbus_write_byte_data(client, LM90_REG_W_CONFIG1,
-> -					  config);
-> +		err = i2c_smbus_write_byte_data(client, LM90_REG_W_CONFIG1,
-> +						config);
-> +		if (err < 0) {
-> +			dev_err(&client->dev,
-> +				"Failed to select remote channel %d, err %d\n",
-> +				channel, err);
-> +			return err;
-> +		}
->  	}
-> +
-> +	return err;
->  }
->  
->  /*
-> @@ -702,29 +711,34 @@ static u16 temp_to_u16_adt7461(struct lm90_data *data, long val)
->   * Sysfs stuff
->   */
->  
-> -static ssize_t show_temp8(struct device *dev, struct device_attribute *devattr,
-> -			  char *buf)
-> +static int read_temp8(struct device *dev, int index)
->  {
-> -	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
->  	struct lm90_data *data = lm90_update_device(dev);
->  	int temp;
->  
->  	if (data->kind == adt7461)
-> -		temp = temp_from_u8_adt7461(data, data->temp8[attr->index]);
-> +		temp = temp_from_u8_adt7461(data, data->temp8[index]);
->  	else if (data->kind == max6646)
-> -		temp = temp_from_u8(data->temp8[attr->index]);
-> +		temp = temp_from_u8(data->temp8[index]);
->  	else
-> -		temp = temp_from_s8(data->temp8[attr->index]);
-> +		temp = temp_from_s8(data->temp8[index]);
->  
->  	/* +16 degrees offset for temp2 for the LM99 */
-> -	if (data->kind == lm99 && attr->index == 3)
-> +	if (data->kind == lm99 && index == 3)
->  		temp += 16000;
->  
-> -	return sprintf(buf, "%d\n", temp);
-> +	return temp;
->  }
->  
-> -static ssize_t set_temp8(struct device *dev, struct device_attribute *devattr,
-> -			 const char *buf, size_t count)
-> +static ssize_t show_temp8(struct device *dev, struct device_attribute *devattr,
-> +			  char *buf)
-> +{
-> +	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
-> +
-> +	return sprintf(buf, "%d\n", read_temp8(dev, attr->index));
-> +}
-> +
-> +static int write_temp8(struct device *dev, int index, long val)
->  {
->  	static const u8 reg[8] = {
->  		LM90_REG_W_LOCAL_LOW,
-> @@ -737,60 +751,79 @@ static ssize_t set_temp8(struct device *dev, struct device_attribute *devattr,
->  		MAX6659_REG_W_REMOTE_EMERG,
->  	};
->  
-> -	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
->  	struct i2c_client *client = to_i2c_client(dev);
->  	struct lm90_data *data = i2c_get_clientdata(client);
-> -	int nr = attr->index;
-> -	long val;
->  	int err;
->  
-> -	err = kstrtol(buf, 10, &val);
-> -	if (err < 0)
-> -		return err;
-> -
->  	/* +16 degrees offset for temp2 for the LM99 */
-> -	if (data->kind == lm99 && attr->index == 3)
-> +	if (data->kind == lm99 && index == 3)
->  		val -= 16000;
->  
->  	mutex_lock(&data->update_lock);
->  	if (data->kind == adt7461)
-> -		data->temp8[nr] = temp_to_u8_adt7461(data, val);
-> +		data->temp8[index] = temp_to_u8_adt7461(data, val);
->  	else if (data->kind == max6646)
-> -		data->temp8[nr] = temp_to_u8(val);
-> +		data->temp8[index] = temp_to_u8(val);
->  	else
-> -		data->temp8[nr] = temp_to_s8(val);
-> -
-> -	lm90_select_remote_channel(client, data, nr >= 6);
-> -	i2c_smbus_write_byte_data(client, reg[nr], data->temp8[nr]);
-> -	lm90_select_remote_channel(client, data, 0);
-> +		data->temp8[index] = temp_to_s8(val);
->  
-> +	err = lm90_select_remote_channel(client, data, index >= 6);
-> +	err |= i2c_smbus_write_byte_data(client, reg[index], data->temp8[index]);
-> +	err |= lm90_select_remote_channel(client, data, 0);
-> +	if (err)
-> +		dev_err(dev, "write_temp8 failed!\n");
->  	mutex_unlock(&data->update_lock);
-> +
-> +	return err;
-> +}
-> +
-> +static ssize_t set_temp8(struct device *dev, struct device_attribute *devattr,
-> +			 const char *buf, size_t count)
-> +{
-> +	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
-> +	int index = attr->index;
-> +	long val;
-> +	int err;
-> +
-> +	err = kstrtol(buf, 10, &val);
-> +	if (err < 0)
-> +		return err;
-> +
-> +	err = write_temp8(dev, index, val);
-> +	if (err < 0)
-> +		return err;
-> +
->  	return count;
->  }
->  
-> -static ssize_t show_temp11(struct device *dev, struct device_attribute *devattr,
-> -			   char *buf)
-> +static int read_temp11(struct device *dev, int index)
->  {
-> -	struct sensor_device_attribute_2 *attr = to_sensor_dev_attr_2(devattr);
->  	struct lm90_data *data = lm90_update_device(dev);
->  	int temp;
->  
->  	if (data->kind == adt7461)
-> -		temp = temp_from_u16_adt7461(data, data->temp11[attr->index]);
-> +		temp = temp_from_u16_adt7461(data, data->temp11[index]);
->  	else if (data->kind == max6646)
-> -		temp = temp_from_u16(data->temp11[attr->index]);
-> +		temp = temp_from_u16(data->temp11[index]);
->  	else
-> -		temp = temp_from_s16(data->temp11[attr->index]);
-> +		temp = temp_from_s16(data->temp11[index]);
->  
->  	/* +16 degrees offset for temp2 for the LM99 */
-> -	if (data->kind == lm99 &&  attr->index <= 2)
-> +	if (data->kind == lm99 && index <= 2)
->  		temp += 16000;
->  
-> -	return sprintf(buf, "%d\n", temp);
-> +	return temp;
->  }
->  
-> -static ssize_t set_temp11(struct device *dev, struct device_attribute *devattr,
-> -			  const char *buf, size_t count)
-> +static ssize_t show_temp11(struct device *dev, struct device_attribute *devattr,
-> +			   char *buf)
-> +{
-> +	struct sensor_device_attribute_2 *attr = to_sensor_dev_attr_2(devattr);
-> +
-> +	return sprintf(buf, "%d\n", read_temp11(dev, attr->index));
-> +}
-> +
-> +static int write_temp11(struct device *dev, int nr, int index, long val)
->  {
->  	struct {
->  		u8 high;
-> @@ -804,18 +837,10 @@ static ssize_t set_temp11(struct device *dev, struct device_attribute *devattr,
->  		{ LM90_REG_W_REMOTE_HIGHH, LM90_REG_W_REMOTE_HIGHL, 1 }
->  	};
->  
-> -	struct sensor_device_attribute_2 *attr = to_sensor_dev_attr_2(devattr);
->  	struct i2c_client *client = to_i2c_client(dev);
->  	struct lm90_data *data = i2c_get_clientdata(client);
-> -	int nr = attr->nr;
-> -	int index = attr->index;
-> -	long val;
->  	int err;
->  
-> -	err = kstrtol(buf, 10, &val);
-> -	if (err < 0)
-> -		return err;
-> -
->  	/* +16 degrees offset for temp2 for the LM99 */
->  	if (data->kind == lm99 && index <= 2)
->  		val -= 16000;
-> @@ -830,15 +855,38 @@ static ssize_t set_temp11(struct device *dev, struct device_attribute *devattr,
->  	else
->  		data->temp11[index] = temp_to_s8(val) << 8;
->  
-> -	lm90_select_remote_channel(client, data, reg[nr].channel);
-> -	i2c_smbus_write_byte_data(client, reg[nr].high,
-> +	err = lm90_select_remote_channel(client, data, reg[nr].channel);
-> +	err |= i2c_smbus_write_byte_data(client, reg[nr].high,
->  				  data->temp11[index] >> 8);
->  	if (data->flags & LM90_HAVE_REM_LIMIT_EXT)
-> -		i2c_smbus_write_byte_data(client, reg[nr].low,
-> -					  data->temp11[index] & 0xff);
-> -	lm90_select_remote_channel(client, data, 0);
-> +		err |= i2c_smbus_write_byte_data(client, reg[nr].low,
-> +						data->temp11[index] & 0xff);
-> +	err |= lm90_select_remote_channel(client, data, 0);
-> +	if (err)
-> +		dev_err(dev, "write_temp11 failed !\n");
->  
->  	mutex_unlock(&data->update_lock);
-> +
-> +	return err;
-> +}
-> +
-> +static ssize_t set_temp11(struct device *dev, struct device_attribute *devattr,
-> +			  const char *buf, size_t count)
-> +{
-> +	struct sensor_device_attribute_2 *attr = to_sensor_dev_attr_2(devattr);
-> +	int nr = attr->nr;
-> +	int index = attr->index;
-> +	long val;
-> +	int err;
-> +
-> +	err = kstrtol(buf, 10, &val);
-> +	if (err < 0)
-> +		return err;
-> +
-> +	err = write_temp11(dev, nr, index, val);
-> +	if (err < 0)
-> +		return err;
-> +
->  	return count;
->  }
->  
-> 
 
+The following changes since commit c095ba7224d8edc71dcef0d655911399a8bd4a3f:
+
+  Linux 3.11-rc4 (2013-08-04 13:46:46 -0700)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git for-linus
+
+Casey Schaufler (1):
+      Smack: IPv6 casting error fix for 3.11
+
+ security/smack/smack_lsm.c |   24 +++++++++++-------------
+ 1 files changed, 11 insertions(+), 13 deletions(-)
+
+
+---
+
+commit 6ea062475a9a2ea6e1394487fa0e51b3459957d1
+Author: Casey Schaufler <casey@schaufler-ca.com>
+Date:   Mon Aug 5 13:21:22 2013 -0700
+
+    Smack: IPv6 casting error fix for 3.11
+    
+    The original implementation of the Smack IPv6 port based
+    local controls works most of the time using a sockaddr as
+    a temporary variable, but not always as it overflows in
+    some circumstances. The correct data is a sockaddr_in6.
+    A struct sockaddr isn't as large as a struct sockaddr_in6.
+    There would need to be casting one way or the other. This
+    patch gets it the right way.
+    
+    Signed-off-by: Casey Schaufler <casey@schaufler-ca.com>
+    Signed-off-by: James Morris <james.l.morris@oracle.com>
+
+diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
+index 3f7682a..eefbd10 100644
+--- a/security/smack/smack_lsm.c
++++ b/security/smack/smack_lsm.c
+@@ -1998,12 +1998,11 @@ static void smk_ipv6_port_label(struct socket *sock, struct sockaddr *address)
+  *
+  * Create or update the port list entry
+  */
+-static int smk_ipv6_port_check(struct sock *sk, struct sockaddr *address,
++static int smk_ipv6_port_check(struct sock *sk, struct sockaddr_in6 *address,
+ 				int act)
+ {
+ 	__be16 *bep;
+ 	__be32 *be32p;
+-	struct sockaddr_in6 *addr6;
+ 	struct smk_port_label *spp;
+ 	struct socket_smack *ssp = sk->sk_security;
+ 	struct smack_known *skp;
+@@ -2025,10 +2024,9 @@ static int smk_ipv6_port_check(struct sock *sk, struct sockaddr *address,
+ 	/*
+ 	 * Get the IP address and port from the address.
+ 	 */
+-	addr6 = (struct sockaddr_in6 *)address;
+-	port = ntohs(addr6->sin6_port);
+-	bep = (__be16 *)(&addr6->sin6_addr);
+-	be32p = (__be32 *)(&addr6->sin6_addr);
++	port = ntohs(address->sin6_port);
++	bep = (__be16 *)(&address->sin6_addr);
++	be32p = (__be32 *)(&address->sin6_addr);
+ 
+ 	/*
+ 	 * It's remote, so port lookup does no good.
+@@ -2060,9 +2058,9 @@ auditout:
+ 	ad.a.u.net->family = sk->sk_family;
+ 	ad.a.u.net->dport = port;
+ 	if (act == SMK_RECEIVING)
+-		ad.a.u.net->v6info.saddr = addr6->sin6_addr;
++		ad.a.u.net->v6info.saddr = address->sin6_addr;
+ 	else
+-		ad.a.u.net->v6info.daddr = addr6->sin6_addr;
++		ad.a.u.net->v6info.daddr = address->sin6_addr;
+ #endif
+ 	return smk_access(skp, object, MAY_WRITE, &ad);
+ }
+@@ -2201,7 +2199,8 @@ static int smack_socket_connect(struct socket *sock, struct sockaddr *sap,
+ 	case PF_INET6:
+ 		if (addrlen < sizeof(struct sockaddr_in6))
+ 			return -EINVAL;
+-		rc = smk_ipv6_port_check(sock->sk, sap, SMK_CONNECTING);
++		rc = smk_ipv6_port_check(sock->sk, (struct sockaddr_in6 *)sap,
++						SMK_CONNECTING);
+ 		break;
+ 	}
+ 	return rc;
+@@ -3034,7 +3033,7 @@ static int smack_socket_sendmsg(struct socket *sock, struct msghdr *msg,
+ 				int size)
+ {
+ 	struct sockaddr_in *sip = (struct sockaddr_in *) msg->msg_name;
+-	struct sockaddr *sap = (struct sockaddr *) msg->msg_name;
++	struct sockaddr_in6 *sap = (struct sockaddr_in6 *) msg->msg_name;
+ 	int rc = 0;
+ 
+ 	/*
+@@ -3121,9 +3120,8 @@ static struct smack_known *smack_from_secattr(struct netlbl_lsm_secattr *sap,
+ 	return smack_net_ambient;
+ }
+ 
+-static int smk_skb_to_addr_ipv6(struct sk_buff *skb, struct sockaddr *sap)
++static int smk_skb_to_addr_ipv6(struct sk_buff *skb, struct sockaddr_in6 *sip)
+ {
+-	struct sockaddr_in6 *sip = (struct sockaddr_in6 *)sap;
+ 	u8 nexthdr;
+ 	int offset;
+ 	int proto = -EINVAL;
+@@ -3181,7 +3179,7 @@ static int smack_socket_sock_rcv_skb(struct sock *sk, struct sk_buff *skb)
+ 	struct netlbl_lsm_secattr secattr;
+ 	struct socket_smack *ssp = sk->sk_security;
+ 	struct smack_known *skp;
+-	struct sockaddr sadd;
++	struct sockaddr_in6 sadd;
+ 	int rc = 0;
+ 	struct smk_audit_info ad;
+ #ifdef CONFIG_AUDIT
