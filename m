@@ -1,54 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756603Ab3HFUYJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 16:24:09 -0400
-Received: from www.sr71.net ([198.145.64.142]:56243 "EHLO blackbird.sr71.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756204Ab3HFUYH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 16:24:07 -0400
-Message-ID: <52015B54.5010605@sr71.net>
-Date: Tue, 06 Aug 2013 13:23:48 -0700
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-CC: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Hillf Danton <dhillf@gmail.com>, Ning Qu <quning@google.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 19/23] truncate: support huge pages
-References: <1375582645-29274-1-git-send-email-kirill.shutemov@linux.intel.com> <1375582645-29274-20-git-send-email-kirill.shutemov@linux.intel.com>
-In-Reply-To: <1375582645-29274-20-git-send-email-kirill.shutemov@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1753315Ab3HFUb2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 16:31:28 -0400
+Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:57702 "EHLO
+	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751824Ab3HFUb1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Aug 2013 16:31:27 -0400
+Message-ID: <1375821085.7303.33.camel@x61.thuisdomein>
+Subject: Re: Can we drop __must_check from driver_for_each_device()?
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org
+Date: Tue, 06 Aug 2013 22:31:25 +0200
+In-Reply-To: <20130802003157.GA11584@kroah.com>
+References: <1375306513.8170.33.camel@x61.thuisdomein>
+	 <20130802003157.GA11584@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
+X-OriginalArrivalTime: 06 Aug 2013 20:31:25.0930 (UTC) FILETIME=[EC41F4A0:01CE92E3]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/03/2013 07:17 PM, Kirill A. Shutemov wrote:
-> +			if (PageTransTailCache(page)) {
-> +				/* part of already handled huge page */
-> +				if (!page->mapping)
-> +					continue;
-> +				/* the range starts in middle of huge page */
-> +				partial_thp_start = true;
-> +				start = index & ~HPAGE_CACHE_INDEX_MASK;
-> +				continue;
-> +			}
-> +			/* the range ends on huge page */
-> +			if (PageTransHugeCache(page) &&
-> +				index == (end & ~HPAGE_CACHE_INDEX_MASK)) {
-> +				partial_thp_end = true;
-> +				end = index;
-> +				break;
-> +			}
+On Fri, 2013-08-02 at 08:31 +0800, Greg Kroah-Hartman wrote:
+> On Wed, Jul 31, 2013 at 11:35:13PM +0200, Paul Bolle wrote:
+> > 2) Please note that if the callback always returns zero,
+> > driver_for_each_device() can still return -EINVAL, but only if it was
+> > provided a NULL "drv" (a struct device_driver). It sure seems odd to do
+> > so. Can that actually happen?
+> 
+> Possibly.
 
-Still reading through the code, but that "index ==" line's indentation
-is screwed up.  It makes it look like "index == " is a line of code
-instead of part of the if() condition.
+So driver_for_each_device() really should be NULL "drv" safe. But
+wouldn't it therefor be better to make sure the callback functions do
+not return -EINVAL themselves, so -EINVAL will always only indicate the
+NULL "drv" case?
+
+> > 3) So to me it looks the __must_check attribute of
+> > driver_for_each_device() can be dropped. Do you agree?
+> 
+> Nope, it should be making people think about the return value of the
+> function.  If they use it or not might be a problem, but I would argue
+> that those call-sites must be fixed, as you point out above.
+
+I see. I guess I should try to submit patches that do just that.
+
+> Is this somehow causing a problem that removing the marking would solve
+> for you?
+
+The, rather trivial, issue I'd like to fix is this (long standing)
+warning:
+    drivers/isdn/hardware/mISDN/hfcpci.c:2298:2: warning: \
+    ignoring return value of ‘driver_for_each_device’, \
+    declared with attribute warn_unused_result [-Wunused-result]
+
+I've submitted a patch to silence that warning about a year ago (see
+https://lkml.org/lkml/2012/9/21/138 ). Dave Miller was pretty clear that
+that approach wouldn't do. (I've added Dave to the CC, just because I
+mentioned him here.)
+
+So, since this warning is still there, I'm looking for another way to
+get rid of it.
+
+Thanks!
+
+
+Paul Bolle
+
