@@ -1,291 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756028Ab3HFKhF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 06:37:05 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:1613 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755848Ab3HFKhD (ORCPT
+	id S1756054Ab3HFKhQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 06:37:16 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:34162 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755848Ab3HFKhK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 06:37:03 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 06 Aug 2013 03:37:01 -0700
-From: Wei Ni <wni@nvidia.com>
-To: <khali@linux-fr.org>
-CC: <linux@roeck-us.net>, <lm-sensors@lm-sensors.org>,
-        <linux-kernel@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
-        Wei Ni <wni@nvidia.com>
-Subject: [PATCH RESEND v4] hwmon: (lm90) split set&show temp as common codes
-Date: Tue, 6 Aug 2013 18:36:57 +0800
-Message-ID: <1375785417-13650-1-git-send-email-wni@nvidia.com>
-X-Mailer: git-send-email 1.7.9.5
-X-NVConfidentiality: public
-MIME-Version: 1.0
-Content-Type: text/plain
+	Tue, 6 Aug 2013 06:37:10 -0400
+X-AuditID: cbfee68d-b7f096d0000043fc-68-5200d1d52048
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Vinod Koul'" <vinod.koul@intel.com>
+Cc: "'Dan Williams'" <djbw@fb.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        linux-kernel@vger.kernel.org, Jingoo Han <jg1.han@samsung.com>
+Subject: [PATCH 2/3] dma: mv_xor: use NULL instead of 0
+Date: Tue, 06 Aug 2013 19:37:08 +0900
+Message-id: <000201ce9290$e6f0f4e0$b4d2dea0$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: Ac6SkMfLKTO6jP1URJGycH6YY43hLA==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrAIsWRmVeSWpSXmKPExsVy+t8zY92rFxmCDO5/YbfY3P+AzeLywkus
+	Fpd3zWGzePqgicniZd9+FgdWj4nN79g9nmy6yOixeM9LJo++LasYPT5vkgtgjeKySUnNySxL
+	LdK3S+DKOHDtFGvBTraKP8vOsDYwLmXtYuTkkBAwkWjqOsgGYYtJXLi3HswWEljGKHHxuyJM
+	zfu2N0xdjFxA8emMEh+m7YFyfjFKnP7wlRGkik1ATeLLl8PsXYwcHCIC6hJLr8uA1DALzGGU
+	OPz8NRNIjbCAucTrt1PB6lkEVCV+NRwGi/MKWEpsWNwAZQtK/Jh8jwXEZhbQkli/8zgThC0v
+	sXnNW2aIixQkdpx9DTZHREBPYvKNd1D1IhL7XrxjBFksIXCMXaJ3yWo2iGUCEt8mH2IBOU5C
+	QFZi0wGoOZISB1fcYJnAKDYLyepZSFbPQrJ6FpIVCxhZVjGKphYkFxQnpRcZ6hUn5haX5qXr
+	JefnbmKExF7vDsbbB6wPMSYDrZ/ILCWanA+M3bySeENjMyMLUxNTYyNzSzPShJXEedVarAOF
+	BNITS1KzU1MLUovii0pzUosPMTJxcEo1MLK3MHRvjg9+uai39qG62WW3xTwN739K1dZs3HLr
+	r9bVP+veHz/bnsigx9q/wUzouDenihc783/xWOEDTxqrJeMq8n1eruS/Eau873X2Q+tZWzQ/
+	zrV8t25/e2bQ0t+KfFvl1H7I6q7z5/VwKmgQ82ovF7/nptDt4XlY69iutuIlwYv/2p1boMRS
+	nJFoqMVcVJwIAIk/mHTTAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprHKsWRmVeSWpSXmKPExsVy+t9jQd2rFxmCDP51s1hs7n/AZnF54SVW
+	i8u75rBZPH3QxGTxsm8/iwOrx8Tmd+weTzZdZPRYvOclk0ffllWMHp83yQWwRjUw2mSkJqak
+	Fimk5iXnp2TmpdsqeQfHO8ebmhkY6hpaWpgrKeQl5qbaKrn4BOi6ZeYAbVdSKEvMKQUKBSQW
+	Fyvp22GaEBripmsB0xih6xsSBNdjZIAGEtYxZhy4doq1YCdbxZ9lZ1gbGJeydjFyckgImEi8
+	b3vDBGGLSVy4t56ti5GLQ0hgOqPEh2l7mCCcX4wSpz98ZQSpYhNQk/jy5TB7FyMHh4iAusTS
+	6zIgNcwCcxglDj9/DTZJWMBc4vXbqWD1LAKqEr8aDoPFeQUsJTYsboCyBSV+TL7HAmIzC2hJ
+	rN95nAnClpfYvOYtM8RFChI7zr4GmyMioCcx+cY7qHoRiX0v3jFOYBSYhWTULCSjZiEZNQtJ
+	ywJGllWMoqkFyQXFSem5hnrFibnFpXnpesn5uZsYwbH9TGoH48oGi0OMAhyMSjy8iVf/Bwqx
+	JpYVV+YeYpTgYFYS4VXZyRAkxJuSWFmVWpQfX1Sak1p8iDEZ6NOJzFKiyfnAtJNXEm9obGJm
+	ZGlkZmFkYm5OmrCSOO+BVutAIYH0xJLU7NTUgtQimC1MHJxSDYzqlutKLDarrK7ceevx5M0f
+	eVoLuza7JV+6ei3y10wZtdoavzaG/f/uP/RsUfHQ1+qanZfBpD/1RJr3nqU/j9tdiDljzviX
+	z1Hqdamk4A0hTdmysuRJ6wQktLrSKnc3FMQJMh6LX21YlGdpxbnbq4Dz0uWJWV993p6a67Dy
+	c/+BtVkcJe2XHyqxFGckGmoxFxUnAgBgQe3bMQMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Split set&show temp codes as common functions, so we can use it
-directly when implement linux thermal framework.
-And handle error return value for the lm90_select_remote_channel
-and write_tempx, then set_temp8 and set_temp11 could return it
-to user-space.
+%p is used, thus NULL should be used instead of 0
+in order to fix the following sparse warning:
 
-Signed-off-by: Wei Ni <wni@nvidia.com>
+drivers/dma/mv_xor.c:648:9: warning: Using plain integer as NULL pointer
+
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/hwmon/lm90.c |  150 +++++++++++++++++++++++++++++++++-----------------
- 1 file changed, 99 insertions(+), 51 deletions(-)
+ drivers/dma/mv_xor.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/hwmon/lm90.c b/drivers/hwmon/lm90.c
-index cdff742..6de8e01 100644
---- a/drivers/hwmon/lm90.c
-+++ b/drivers/hwmon/lm90.c
-@@ -422,20 +422,29 @@ static int lm90_read16(struct i2c_client *client, u8 regh, u8 regl, u16 *value)
-  * various registers have different meanings as a result of selecting a
-  * non-default remote channel.
-  */
--static inline void lm90_select_remote_channel(struct i2c_client *client,
-+static inline int lm90_select_remote_channel(struct i2c_client *client,
- 					      struct lm90_data *data,
- 					      int channel)
- {
- 	u8 config;
-+	int err = 0;
+diff --git a/drivers/dma/mv_xor.c b/drivers/dma/mv_xor.c
+index 200f1a3..534e2fe 100644
+--- a/drivers/dma/mv_xor.c
++++ b/drivers/dma/mv_xor.c
+@@ -647,7 +647,7 @@ mv_xor_prep_dma_memcpy(struct dma_chan *chan, dma_addr_t dest, dma_addr_t src,
  
- 	if (data->kind == max6696) {
- 		lm90_read_reg(client, LM90_REG_R_CONFIG1, &config);
- 		config &= ~0x08;
- 		if (channel)
- 			config |= 0x08;
--		i2c_smbus_write_byte_data(client, LM90_REG_W_CONFIG1,
--					  config);
-+		err = i2c_smbus_write_byte_data(client, LM90_REG_W_CONFIG1,
-+						config);
-+		if (err < 0) {
-+			dev_err(&client->dev,
-+				"Failed to select remote channel %d, err %d\n",
-+				channel, err);
-+			return err;
-+		}
- 	}
-+
-+	return err;
+ 	dev_dbg(mv_chan_to_devp(mv_chan),
+ 		"%s sw_desc %p async_tx %p\n",
+-		__func__, sw_desc, sw_desc ? &sw_desc->async_tx : 0);
++		__func__, sw_desc, sw_desc ? &sw_desc->async_tx : NULL);
+ 
+ 	return sw_desc ? &sw_desc->async_tx : NULL;
  }
- 
- /*
-@@ -702,29 +711,34 @@ static u16 temp_to_u16_adt7461(struct lm90_data *data, long val)
-  * Sysfs stuff
-  */
- 
--static ssize_t show_temp8(struct device *dev, struct device_attribute *devattr,
--			  char *buf)
-+static int read_temp8(struct device *dev, int index)
- {
--	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
- 	struct lm90_data *data = lm90_update_device(dev);
- 	int temp;
- 
- 	if (data->kind == adt7461)
--		temp = temp_from_u8_adt7461(data, data->temp8[attr->index]);
-+		temp = temp_from_u8_adt7461(data, data->temp8[index]);
- 	else if (data->kind == max6646)
--		temp = temp_from_u8(data->temp8[attr->index]);
-+		temp = temp_from_u8(data->temp8[index]);
- 	else
--		temp = temp_from_s8(data->temp8[attr->index]);
-+		temp = temp_from_s8(data->temp8[index]);
- 
- 	/* +16 degrees offset for temp2 for the LM99 */
--	if (data->kind == lm99 && attr->index == 3)
-+	if (data->kind == lm99 && index == 3)
- 		temp += 16000;
- 
--	return sprintf(buf, "%d\n", temp);
-+	return temp;
- }
- 
--static ssize_t set_temp8(struct device *dev, struct device_attribute *devattr,
--			 const char *buf, size_t count)
-+static ssize_t show_temp8(struct device *dev, struct device_attribute *devattr,
-+			  char *buf)
-+{
-+	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
-+
-+	return sprintf(buf, "%d\n", read_temp8(dev, attr->index));
-+}
-+
-+static int write_temp8(struct device *dev, int index, long val)
- {
- 	static const u8 reg[8] = {
- 		LM90_REG_W_LOCAL_LOW,
-@@ -737,60 +751,79 @@ static ssize_t set_temp8(struct device *dev, struct device_attribute *devattr,
- 		MAX6659_REG_W_REMOTE_EMERG,
- 	};
- 
--	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
- 	struct i2c_client *client = to_i2c_client(dev);
- 	struct lm90_data *data = i2c_get_clientdata(client);
--	int nr = attr->index;
--	long val;
- 	int err;
- 
--	err = kstrtol(buf, 10, &val);
--	if (err < 0)
--		return err;
--
- 	/* +16 degrees offset for temp2 for the LM99 */
--	if (data->kind == lm99 && attr->index == 3)
-+	if (data->kind == lm99 && index == 3)
- 		val -= 16000;
- 
- 	mutex_lock(&data->update_lock);
- 	if (data->kind == adt7461)
--		data->temp8[nr] = temp_to_u8_adt7461(data, val);
-+		data->temp8[index] = temp_to_u8_adt7461(data, val);
- 	else if (data->kind == max6646)
--		data->temp8[nr] = temp_to_u8(val);
-+		data->temp8[index] = temp_to_u8(val);
- 	else
--		data->temp8[nr] = temp_to_s8(val);
--
--	lm90_select_remote_channel(client, data, nr >= 6);
--	i2c_smbus_write_byte_data(client, reg[nr], data->temp8[nr]);
--	lm90_select_remote_channel(client, data, 0);
-+		data->temp8[index] = temp_to_s8(val);
- 
-+	err = lm90_select_remote_channel(client, data, index >= 6);
-+	err |= i2c_smbus_write_byte_data(client, reg[index], data->temp8[index]);
-+	err |= lm90_select_remote_channel(client, data, 0);
-+	if (err)
-+		dev_err(dev, "write_temp8 failed!\n");
- 	mutex_unlock(&data->update_lock);
-+
-+	return err;
-+}
-+
-+static ssize_t set_temp8(struct device *dev, struct device_attribute *devattr,
-+			 const char *buf, size_t count)
-+{
-+	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
-+	int index = attr->index;
-+	long val;
-+	int err;
-+
-+	err = kstrtol(buf, 10, &val);
-+	if (err < 0)
-+		return err;
-+
-+	err = write_temp8(dev, index, val);
-+	if (err < 0)
-+		return err;
-+
- 	return count;
- }
- 
--static ssize_t show_temp11(struct device *dev, struct device_attribute *devattr,
--			   char *buf)
-+static int read_temp11(struct device *dev, int index)
- {
--	struct sensor_device_attribute_2 *attr = to_sensor_dev_attr_2(devattr);
- 	struct lm90_data *data = lm90_update_device(dev);
- 	int temp;
- 
- 	if (data->kind == adt7461)
--		temp = temp_from_u16_adt7461(data, data->temp11[attr->index]);
-+		temp = temp_from_u16_adt7461(data, data->temp11[index]);
- 	else if (data->kind == max6646)
--		temp = temp_from_u16(data->temp11[attr->index]);
-+		temp = temp_from_u16(data->temp11[index]);
- 	else
--		temp = temp_from_s16(data->temp11[attr->index]);
-+		temp = temp_from_s16(data->temp11[index]);
- 
- 	/* +16 degrees offset for temp2 for the LM99 */
--	if (data->kind == lm99 &&  attr->index <= 2)
-+	if (data->kind == lm99 && index <= 2)
- 		temp += 16000;
- 
--	return sprintf(buf, "%d\n", temp);
-+	return temp;
- }
- 
--static ssize_t set_temp11(struct device *dev, struct device_attribute *devattr,
--			  const char *buf, size_t count)
-+static ssize_t show_temp11(struct device *dev, struct device_attribute *devattr,
-+			   char *buf)
-+{
-+	struct sensor_device_attribute_2 *attr = to_sensor_dev_attr_2(devattr);
-+
-+	return sprintf(buf, "%d\n", read_temp11(dev, attr->index));
-+}
-+
-+static int write_temp11(struct device *dev, int nr, int index, long val)
- {
- 	struct {
- 		u8 high;
-@@ -804,18 +837,10 @@ static ssize_t set_temp11(struct device *dev, struct device_attribute *devattr,
- 		{ LM90_REG_W_REMOTE_HIGHH, LM90_REG_W_REMOTE_HIGHL, 1 }
- 	};
- 
--	struct sensor_device_attribute_2 *attr = to_sensor_dev_attr_2(devattr);
- 	struct i2c_client *client = to_i2c_client(dev);
- 	struct lm90_data *data = i2c_get_clientdata(client);
--	int nr = attr->nr;
--	int index = attr->index;
--	long val;
- 	int err;
- 
--	err = kstrtol(buf, 10, &val);
--	if (err < 0)
--		return err;
--
- 	/* +16 degrees offset for temp2 for the LM99 */
- 	if (data->kind == lm99 && index <= 2)
- 		val -= 16000;
-@@ -830,15 +855,38 @@ static ssize_t set_temp11(struct device *dev, struct device_attribute *devattr,
- 	else
- 		data->temp11[index] = temp_to_s8(val) << 8;
- 
--	lm90_select_remote_channel(client, data, reg[nr].channel);
--	i2c_smbus_write_byte_data(client, reg[nr].high,
-+	err = lm90_select_remote_channel(client, data, reg[nr].channel);
-+	err |= i2c_smbus_write_byte_data(client, reg[nr].high,
- 				  data->temp11[index] >> 8);
- 	if (data->flags & LM90_HAVE_REM_LIMIT_EXT)
--		i2c_smbus_write_byte_data(client, reg[nr].low,
--					  data->temp11[index] & 0xff);
--	lm90_select_remote_channel(client, data, 0);
-+		err |= i2c_smbus_write_byte_data(client, reg[nr].low,
-+						data->temp11[index] & 0xff);
-+	err |= lm90_select_remote_channel(client, data, 0);
-+	if (err)
-+		dev_err(dev, "write_temp11 failed !\n");
- 
- 	mutex_unlock(&data->update_lock);
-+
-+	return err;
-+}
-+
-+static ssize_t set_temp11(struct device *dev, struct device_attribute *devattr,
-+			  const char *buf, size_t count)
-+{
-+	struct sensor_device_attribute_2 *attr = to_sensor_dev_attr_2(devattr);
-+	int nr = attr->nr;
-+	int index = attr->index;
-+	long val;
-+	int err;
-+
-+	err = kstrtol(buf, 10, &val);
-+	if (err < 0)
-+		return err;
-+
-+	err = write_temp11(dev, nr, index, val);
-+	if (err < 0)
-+		return err;
-+
- 	return count;
- }
- 
 -- 
-1.7.9.5
+1.7.10.4
+
 
