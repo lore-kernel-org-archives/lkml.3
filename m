@@ -1,295 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755554Ab3HFObX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 10:31:23 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:54212 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753106Ab3HFOaW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 10:30:22 -0400
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: rwheeler@redhat.com, avati@redhat.com, viro@ZenIV.linux.org.uk
-Cc: bfoster@redhat.com, dhowells@redhat.com, eparis@redhat.com,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, Trond.Myklebust@netapp.com,
-        swhiteho@redhat.com, mszeredi@suse.cz
-Subject: [PATCH 1/4] vfs: check submounts and drop atomically
-Date: Tue,  6 Aug 2013 16:30:00 +0200
-Message-Id: <1375799403-28544-2-git-send-email-miklos@szeredi.hu>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1375799403-28544-1-git-send-email-miklos@szeredi.hu>
-References: <1375799403-28544-1-git-send-email-miklos@szeredi.hu>
+	id S1754997Ab3HFOhu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 10:37:50 -0400
+Received: from ns.mm-sol.com ([212.124.72.66]:39634 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752653Ab3HFOhm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Aug 2013 10:37:42 -0400
+Message-ID: <1375799793.2027.30.camel@iivanov-dev.int.mm-sol.com>
+Subject: Re: [RFC 1/2] usb: phy: Add Qualcomm SS-USB and HS-USB drivers for
+ DWC3 core
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: "balbi@ti.com" <balbi@ti.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
+        "rob@landley.net" <rob@landley.net>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Date: Tue, 06 Aug 2013 17:36:33 +0300
+In-Reply-To: <20130806140301.GE25383@e106331-lin.cambridge.arm.com>
+References: <1375789991-30041-1-git-send-email-iivanov@mm-sol.com>
+	 <1375789991-30041-2-git-send-email-iivanov@mm-sol.com>
+	 <20130806140301.GE25383@e106331-lin.cambridge.arm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+Hi,
 
-We check submounts before doing d_drop() on a non-empty directory dentry in
-NFS (have_submounts()), but we do not exclude a racing mount.
+On Tue, 2013-08-06 at 15:03 +0100, Mark Rutland wrote:
+> On Tue, Aug 06, 2013 at 12:53:10PM +0100, Ivan T. Ivanov wrote:
+> > From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+> >
+> > Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+> > ---
+> >  .../devicetree/bindings/usb/msm-ssusb.txt          |   49 +++
+> >  drivers/usb/phy/Kconfig                            |   11 +
+> >  drivers/usb/phy/Makefile                           |    2 +
+> >  drivers/usb/phy/phy-msm-dwc3-usb2.c                |  342 +++++++++++++++++
+> >  drivers/usb/phy/phy-msm-dwc3-usb3.c                |  389 ++++++++++++++++++++
+> >  5 files changed, 793 insertions(+)
+> >  create mode 100644 Documentation/devicetree/bindings/usb/msm-ssusb.txt
+> >  create mode 100644 drivers/usb/phy/phy-msm-dwc3-usb2.c
+> >  create mode 100644 drivers/usb/phy/phy-msm-dwc3-usb3.c
+> >
+> > diff --git a/Documentation/devicetree/bindings/usb/msm-ssusb.txt b/Documentation/devicetree/bindings/usb/msm-ssusb.txt
+> > new file mode 100644
+> > index 0000000..550b496
+> > --- /dev/null
+> > +++ b/Documentation/devicetree/bindings/usb/msm-ssusb.txt
+> > @@ -0,0 +1,49 @@
+> > +MSM SuperSpeed USB3.0 SoC controllers
+> > +
+> > +Required properities :
+> > +- compatible sould be "qcom,dwc3-usb2";
+> > +- reg : offset and length of the register set in the memory map
+> > +- clocks: <&cxo>, <&usb2a_phy_sleep_cxc>;
+> 
+> Huh? That doesn't describe what these are. These would be better
+> explained with a reference to clock-names and a basic description as to
+> what the input's called, what it drives, etc, as you've done done for
+> the *-supply properties.
 
- Process A: have_submounts() -> returns false
- Process B: mount() -> success
- Process A: d_drop()
+Ok, I will fix this.
 
-This patch prepares the ground for the fix by doing the following
-operations all under the same rename lock:
+> 
+> > +- clock-names: "xo", "sleep_a_clk";
+> > +<supply-name>-supply: phandle to the regulator device tree node
+> > +Required "supply-name" examples are:
+> > +       "v1p8" : 1.8v supply for HSPHY
+> > +       "v3p3" : 3.3v supply for HSPHY
+> > +       "vbus" : vbus supply for host mode
+> > +       "vddcx" : vdd supply for HS-PHY digital circuit operation
+> > +
+> > +Required properities :
+> > +- compatible sould be "qcom,dwc3-usb3";
+> > +- reg : offset and length of the register set in the memory map
+> > +- clocks: <&cxo>, <&usb30_mock_utmi_cxc>;
+> 
+> Similarly, this doesn't describe what the clocks are.
 
-  have_submounts()
-  shrink_dcache_parent()
-  d_drop()
+Understood.
 
-This is actually an optimization since have_submounts() and
-shrink_dcache_parent() both traverse the same dentry tree separately.
+> 
+> > +- clock-names: "xo", "ref_clk";
+> > +<supply-name>-supply: phandle to the regulator device tree node
+> > +Required "supply-name" examples are:
+> > +       "v1p8" : 1.8v supply for SS-PHY
+> > +       "vddcx" : vdd supply for SS-PHY digital circuit operation
+> > +
+> > +Example device nodes:
+> > +
+> > +       dwc3_usb2: phy@f92f8800 {
+> > +               compatible = "qcom,dwc3-usb2";
+> > +               reg = <0xf92f8800 0x30>;
+> > +
+> > +               clocks = <&cxo>, <&usb2a_phy_sleep_cxc>;
+> > +               clock-names = "xo", "sleep_a_clk";
+> > +
+> > +               vbus-supply = <&supply>;
+> > +               vddcx-supply = <&supply>;
+> > +               v1p8-supply = <&supply>;
+> > +               v3p3-supply = <&supply>;
+> > +       };
+> > +
+> > +       dwc3_usb3: phy@f92f8830 {
+> > +               compatible = "qcom,dwc3-usb3";
+> > +               reg = <0xf92f8830 0x30>;
+> > +
+> > +               clocks = <&cxo>, <&usb30_mock_utmi_cxc>;
+> > +               clock-names = "xo", "ref_clk";
+> > +
+> > +               vddcx-supply = <&supply>;
+> > +               v1p8-supply = <&supply>;
+> > +       };
+> 
+> 
+> Those regster banks look suspiciously close. Are these the same IP
+> block? Can they ever appear separately?
+> 
 
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
----
- fs/afs/dir.c           |   6 +--
- fs/dcache.c            | 131 +++++++++++++++++++++++++++++++++++++++++++++++++
- fs/gfs2/dentry.c       |   6 +--
- fs/nfs/dir.c           |  10 ++--
- fs/sysfs/dir.c         |   6 +--
- include/linux/dcache.h |   1 +
- 6 files changed, 146 insertions(+), 14 deletions(-)
+They are part of the wrapper Qualcomm logic around Synopsys USB3 core.
+In this sense they are part of the one IP, I believe. Manage them from
+separate drivers simplify code.
 
-diff --git a/fs/afs/dir.c b/fs/afs/dir.c
-index 34494fb..968f50d 100644
---- a/fs/afs/dir.c
-+++ b/fs/afs/dir.c
-@@ -687,14 +687,14 @@ not_found:
- out_bad:
- 	if (dentry->d_inode) {
- 		/* don't unhash if we have submounts */
--		if (have_submounts(dentry))
-+		if (check_submounts_and_drop(dentry) != 0)
- 			goto out_skip;
-+	} else {
-+		d_drop(dentry);
- 	}
- 
- 	_debug("dropping dentry %s/%s",
- 	       parent->d_name.name, dentry->d_name.name);
--	shrink_dcache_parent(dentry);
--	d_drop(dentry);
- 	dput(parent);
- 	key_put(key);
- 
-diff --git a/fs/dcache.c b/fs/dcache.c
-index 87bdb53..ba429d9 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -1224,6 +1224,137 @@ void shrink_dcache_parent(struct dentry * parent)
- }
- EXPORT_SYMBOL(shrink_dcache_parent);
- 
-+static int __check_submounts_and_drop(struct dentry *parent,
-+					     struct list_head *dispose)
-+{
-+	struct dentry *this_parent;
-+	struct list_head *next;
-+	unsigned seq;
-+	int found = 0;
-+	int locked = 0;
-+
-+	seq = read_seqbegin(&rename_lock);
-+again:
-+	this_parent = parent;
-+	spin_lock(&this_parent->d_lock);
-+repeat:
-+	next = this_parent->d_subdirs.next;
-+resume:
-+	while (next != &this_parent->d_subdirs) {
-+		struct list_head *tmp = next;
-+		struct dentry *dentry;
-+
-+		dentry = list_entry(tmp, struct dentry, d_u.d_child);
-+		next = tmp->next;
-+
-+		spin_lock_nested(&dentry->d_lock, DENTRY_D_LOCK_NESTED);
-+		if (d_mountpoint(dentry)) {
-+			spin_unlock(&dentry->d_lock);
-+			found = -EBUSY;
-+			goto out;
-+		}
-+
-+		/*
-+		 * move only zero ref count dentries to the dispose list.
-+		 *
-+		 * Those which are presently on the shrink list, being processed
-+		 * by shrink_dentry_list(), shouldn't be moved.  Otherwise the
-+		 * loop in shrink_dcache_parent() might not make any progress
-+		 * and loop forever.
-+		 */
-+		if (dentry->d_count) {
-+			dentry_lru_del(dentry);
-+		} else if (!(dentry->d_flags & DCACHE_SHRINK_LIST)) {
-+			dentry_lru_move_list(dentry, dispose);
-+			dentry->d_flags |= DCACHE_SHRINK_LIST;
-+			found++;
-+		}
-+		/*
-+		 * We can return to the caller if we have found some (this
-+		 * ensures forward progress). We'll be coming back to find
-+		 * the rest.
-+		 */
-+		if (found && need_resched()) {
-+			spin_unlock(&dentry->d_lock);
-+			goto out;
-+		}
-+
-+		/*
-+		 * Descend a level if the d_subdirs list is non-empty.
-+		 */
-+		if (!list_empty(&dentry->d_subdirs)) {
-+			spin_unlock(&this_parent->d_lock);
-+			spin_release(&dentry->d_lock.dep_map, 1, _RET_IP_);
-+			this_parent = dentry;
-+			spin_acquire(&this_parent->d_lock.dep_map, 0, 1, _RET_IP_);
-+			goto repeat;
-+		}
-+
-+		spin_unlock(&dentry->d_lock);
-+	}
-+	/*
-+	 * All done at this level ... ascend and resume the search.
-+	 */
-+	if (this_parent != parent) {
-+		struct dentry *child = this_parent;
-+		this_parent = try_to_ascend(this_parent, locked, seq);
-+		if (!this_parent)
-+			goto rename_retry;
-+		next = child->d_u.d_child.next;
-+		goto resume;
-+	}
-+out:
-+	if (!locked && read_seqretry(&rename_lock, seq)) {
-+		spin_unlock(&this_parent->d_lock);
-+		goto rename_retry;
-+	}
-+	__d_drop(this_parent);
-+	spin_unlock(&this_parent->d_lock);
-+
-+	if (locked)
-+		write_sequnlock(&rename_lock);
-+	return found;
-+
-+
-+rename_retry:
-+	if (found)
-+		return found;
-+	if (locked)
-+		goto again;
-+	locked = 1;
-+	write_seqlock(&rename_lock);
-+	goto again;
-+}
-+
-+/**
-+ * check_submounts_and_drop - prune dcache, check for submounts and drop
-+ *
-+ * All done as a single atomic operation relative to has_unlinked_ancestor().
-+ * Returns 0 if successfully unhashed @parent.  If there were submounts then
-+ * return -EBUSY.
-+ *
-+ * @dentry: dentry to prune and drop
-+ */
-+int check_submounts_and_drop(struct dentry *dentry)
-+{
-+	int found;
-+
-+	for (;;) {
-+		LIST_HEAD(dispose);
-+		found = __check_submounts_and_drop(dentry, &dispose);
-+		if (!list_empty(&dispose))
-+			shrink_dentry_list(&dispose);
-+
-+		if (found <= 0)
-+			break;
-+
-+		cond_resched();
-+	}
-+
-+	return found;
-+}
-+EXPORT_SYMBOL(check_submounts_and_drop);
-+
- /**
-  * __d_alloc	-	allocate a dcache entry
-  * @sb: filesystem it will belong to
-diff --git a/fs/gfs2/dentry.c b/fs/gfs2/dentry.c
-index f2448ab..6964725 100644
---- a/fs/gfs2/dentry.c
-+++ b/fs/gfs2/dentry.c
-@@ -94,11 +94,11 @@ invalid_gunlock:
- 		gfs2_glock_dq_uninit(&d_gh);
- invalid:
- 	if (inode && S_ISDIR(inode->i_mode)) {
--		if (have_submounts(dentry))
-+		if (check_submounts_and_drop(dentry) != 0)
- 			goto valid;
--		shrink_dcache_parent(dentry);
-+	} else {
-+		d_drop(dentry);
- 	}
--	d_drop(dentry);
- 	dput(parent);
- 	return 0;
- 
-diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
-index e474ca2b..a2fd681 100644
---- a/fs/nfs/dir.c
-+++ b/fs/nfs/dir.c
-@@ -1135,14 +1135,14 @@ out_zap_parent:
- 	if (inode && S_ISDIR(inode->i_mode)) {
- 		/* Purge readdir caches. */
- 		nfs_zap_caches(inode);
--		/* If we have submounts, don't unhash ! */
--		if (have_submounts(dentry))
--			goto out_valid;
- 		if (dentry->d_flags & DCACHE_DISCONNECTED)
- 			goto out_valid;
--		shrink_dcache_parent(dentry);
-+		/* If we have submounts, don't unhash ! */
-+		if (check_submounts_and_drop(dentry) != 0)
-+			goto out_valid;
-+	} else {
-+		d_drop(dentry);
- 	}
--	d_drop(dentry);
- 	dput(parent);
- 	dfprintk(LOOKUPCACHE, "NFS: %s(%s/%s) is invalid\n",
- 			__func__, dentry->d_parent->d_name.name,
-diff --git a/fs/sysfs/dir.c b/fs/sysfs/dir.c
-index e068e74..1778320 100644
---- a/fs/sysfs/dir.c
-+++ b/fs/sysfs/dir.c
-@@ -348,11 +348,11 @@ out_bad:
- 		 * to lie about the state of the filesystem to prevent
- 		 * leaks and other nasty things.
- 		 */
--		if (have_submounts(dentry))
-+		if (check_submounts_and_drop(dentry) != 0)
- 			goto out_valid;
--		shrink_dcache_parent(dentry);
-+	} else {
-+		d_drop(dentry);
- 	}
--	d_drop(dentry);
- 	return 0;
- }
- 
-diff --git a/include/linux/dcache.h b/include/linux/dcache.h
-index b90337c..41b21ca 100644
---- a/include/linux/dcache.h
-+++ b/include/linux/dcache.h
-@@ -251,6 +251,7 @@ extern void d_prune_aliases(struct inode *);
- 
- /* test whether we have any submounts in a subdir tree */
- extern int have_submounts(struct dentry *);
-+extern int check_submounts_and_drop(struct dentry *);
- 
- /*
-  * This adds the entry to the hash queues.
--- 
-1.8.1.4
+> Do the drivers not trample each other when messing with shared clocks
+> and regulators?
+> 
+
+Regulators and clocks have reference counting, right?, so this should
+be safe. Even if they are part of the one driver, clocks and regulators
+could be switched off only if both PHY's do not use them.
+
+Thanks, 
+Ivan
+
+
+> Thanks,
+> Mark.
+
 
