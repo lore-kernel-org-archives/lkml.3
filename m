@@ -1,82 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755066Ab3HFI5g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 04:57:36 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:2589 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754901Ab3HFI5e (ORCPT
+	id S1755060Ab3HFI7h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 04:59:37 -0400
+Received: from mga09.intel.com ([134.134.136.24]:33032 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753196Ab3HFI7f convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 04:57:34 -0400
-X-Spam-Score: -100.8
-Message-ID: <5200BA3F.3090809@asianux.com>
-Date: Tue, 06 Aug 2013 16:56:31 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Tue, 6 Aug 2013 04:59:35 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,825,1367996400"; 
+   d="scan'208";a="376823273"
+From: "Du, ChangbinX" <changbinx.du@intel.com>
+To: "'gregkh@linuxfoundation.org'" <gregkh@linuxfoundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "balbi@ti.com" <balbi@ti.com>,
+        "sarah.a.sharp@linuxfoundation.org" 
+	<sarah.a.sharp@linuxfoundation.org>,
+        "Wu, Hao" <hao.wu@intel.com>,
+        "Tang, Jianqiang" <jianqiang.tang@intel.com>,
+        "Zhuang, Jin Can" <jin.can.zhuang@intel.com>,
+        "Huang, Xiaochao" <xiaochao.huang@intel.com>
+Subject: RE: About TRB_TO_EP_INDEX() macro using
+Thread-Topic: About TRB_TO_EP_INDEX() macro using
+Thread-Index: Ac6Sg0GZ085UJTe5Qx+1GaQBy5LScg==
+Date: Tue, 6 Aug 2013 08:59:32 +0000
+Message-ID: <0C18FE92A7765D4EB9EE5D38D86A563A01966F92@SHSMSX103.ccr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Kees Cook <keescook@chromium.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Oleg Nesterov <oleg@redhat.com>, holt@sgi.com
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] kernel/sys.c: remove useless variable 'old_fsgid'
- for setfsgid()
-References: <5200AD26.8070701@asianux.com> <5200ADB0.7020206@asianux.com>
-In-Reply-To: <5200ADB0.7020206@asianux.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/06/2013 04:02 PM, Chen Gang wrote:
-> Remove useless variable 'old_fsgid' to make code clearer for readers.
+> On Mon, Aug 05, 2013 at 08:07:25AM +0000, Du, ChangbinX wrote:
+> > Recently when I check xHCI code, find that some functions try to get EP index
+> > from a Command Completion Event TRB via TRB_TO_EP_INDEX() macro.
+> >
+> > This is totally wrong. The macro definition is:
+> >
+> > 	#define TRB_TO_EP_INDEX(p)		((((p) & (0x1f << 16)) >> 16) - 1)
+> >
+> > TRB_TO_EP_INDEX only applies to Transfer Event TRB. But for Command
+> > Completion Event TRB, there is no Endpoint ID field. So, we cannot directly
+> > get EP index from these TRBs, but we can find it by the TRB Pointer.
+> >
+> > Here list two functions for you to check:
+> > 	handle_stopped_endpoint()
+> > 	handle_reset_ep_completion()
 > 
-> Signed-off-by: Chen Gang <gang.chen@asianux.com>
-> ---
->  kernel/sys.c |    9 ++-------
->  1 files changed, 2 insertions(+), 7 deletions(-)
+> Care to send a patch showing how you would change this if it is
+> incorrect?
 > 
-> diff --git a/kernel/sys.c b/kernel/sys.c
-> index 9356dc8..fc169d8 100644
-> --- a/kernel/sys.c
-> +++ b/kernel/sys.c
-> @@ -767,11 +767,9 @@ SYSCALL_DEFINE1(setfsgid, gid_t, gid)
->  {
->  	const struct cred *old;
->  	struct cred *new;
-> -	gid_t old_fsgid;
->  	kgid_t kgid;
->  
->  	old = current_cred();
-> -	old_fsgid = from_kgid_munged(old->user_ns, old->fsgid);
->  
->  	kgid = make_kgid(old->user_ns, gid);
->  	if (!gid_valid(kgid))
-> @@ -786,16 +784,13 @@ SYSCALL_DEFINE1(setfsgid, gid_t, gid)
->  	    nsown_capable(CAP_SETGID)) {
->  		if (!gid_eq(kgid, old->fsgid)) {
->  			new->fsgid = kgid;
-> -			goto change_okay;
-> +			commit_creds(new);
-> +			return from_kgid_munged(old->user_ns, old->fsgid);
-
-The same, should old_fsgid be get before commit_creds() or prepare_creds() ?
-
-Thanks.
-
->  		}
->  	}
->  
->  	abort_creds(new);
->  	return gid;
-> -
-> -change_okay:
-> -	commit_creds(new);
-> -	return old_fsgid;
->  }
->  
->  /**
+> thanks,
 > 
+> greg k-h
+> --
 
-
--- 
-Chen Gang
+Hello, Greg k-h. I am not very sure about this issue. If this is true, kernel will panic when 
+invoking above functions. I want someone help to confirm if I miss something. If it's really 
+a bug, I will work out a patch to fix it.
