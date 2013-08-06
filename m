@@ -1,143 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755535Ab3HFLOQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 07:14:16 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:54105 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755102Ab3HFLOO convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 07:14:14 -0400
-Message-ID: <1375787649.12043.34.camel@hornet>
-Subject: Re: RFC: device thermal limits represented in device tree nodes
-From: Pawel Moll <pawel.moll@arm.com>
-To: Eduardo Valentin <eduardo.valentin@ti.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Durgadoss R <durgadoss.r@intel.com>,
-        "Zhang, Rui" <rui.zhang@intel.com>, Wei Ni <wni@nvidia.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 06 Aug 2013 12:14:09 +0100
-In-Reply-To: <51F2D443.6040909@ti.com>
-References: <51ED40E3.5020703@ti.com> <51EF3186.9060001@wwwdotorg.org>
-	 <1374664745.25700.118.camel@hornet> <51EFED19.5090900@ti.com>
-	 <1374768928.3213.31.camel@hornet> <51F15E42.1060409@ti.com>
-	 <1374773611.3213.44.camel@hornet> <51F2D443.6040909@ti.com>
-X-Mailer: Evolution 3.8.2-0ubuntu1~raring1
-Mime-Version: 1.0
-X-OriginalArrivalTime: 06 Aug 2013 11:14:09.0584 (UTC) FILETIME=[12A47300:01CE9296]
-X-MC-Unique: 113080612141103401
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1755575Ab3HFLQA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 07:16:00 -0400
+Received: from mx4.wp.pl ([212.77.101.8]:10374 "EHLO mx4.wp.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754910Ab3HFLP7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Aug 2013 07:15:59 -0400
+Date: Tue, 06 Aug 2013 13:15:57 +0200
+From: "Dawid Stawiarski" <neeo@xl.wp.pl>
+To: linux-kernel@vger.kernel.org
+Subject: net: tcp retransmissions happens to fast
+Message-ID: <5200daed82de58.30644291@wp.pl>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="part5200daed82c254.49443009"
+X-Mailer: Interfejs WWW nowej poczty Wirtualnej Polski
+X-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:22.0) Gecko/20100101 Firefox/22.0
+Organization: Poznaj Poczte WP http://poczta.wp.pl/info-start.html
+X-WP-IP: 85.128.131.1
+X-WP-AV: skaner antywirusowy poczty Wirtualnej Polski S. A.
+X-WP-SPAM: NO 0000000 [0cNU]                               
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Apologies about the delay, I was "otherwise engaged" for a week...
+This is a multi-part message in MIME format.
 
-I hope you haven't lost all motivation to work on this subject, as it's
-really worth the while!
+--part5200daed82c254.49443009
+Content-Type: text/plain; charset=iso-8859-2
+Content-Transfer-Encoding: 8bit
+Content-Disposition: inline
 
-On Fri, 2013-07-26 at 20:55 +0100, Eduardo Valentin wrote:
-> On 25-07-2013 13:33, Pawel Moll wrote:
-> > On Thu, 2013-07-25 at 18:20 +0100, Eduardo Valentin wrote:
-> >>>> 	thermal_zone {
-> >>>> 		type = "CPU";
-> >>>
-> >>> So what does this exactly mean? What is so special about CPU? What other
-> >>> types you've got there? (Am I just lazy not looking at the numerous
-> >>> links you provided? ;-)
-> >>
-> >> Hehehe. OK. Type is supposed to describe what your zone is representing.
-> > 
-> > As in "a name"? So, for example "The board", "PSU"? What I meant to ask
-> > was: does the string carry any meaning?
+Hi,
 
-You haven't commended on this...
+during tracking problem with NFS shares, we've found something weard happening to TCP connection.
+We're using Ubuntu 12.04 with kernel 3.8.0-27-generic. We've managed to capture network traffic on client side, when the problem starts. After sending the pcap to linux-nfs group, we were sugested to send here (the thead on linux-nfs: http://thread.gmane.org/gmane.linux.nfs/57923 ).
+Dump of traffic attached shows that:
+0. operation SETATTR before problem starts works as charm (attached for reference)
+1. retransmission happens very fast after sending 3 packets for WRITE operation
+1a. linux is not using jumbo frame (3 packets of ~1K size instead of one)
+2. linux ignores the ACK received after retransmission (actually it's cumulative ACK for the third packet)
 
-> >>>> 		trips {
-> >>>> 			alert@100000{
-> >>>> 				temperature = <100000>; /* milliCelsius
-> >>>> 				hysteresis = <2000>; /* milliCelsius */
-> >>>> 				type = <THERMAL_TRIP_PASSIVE>;
-> >>>> 			};
-> >>>> 			crit@125000{
-> >>>> 				temperature = <125000>; /* milliCelsius
-> >>>> 				hysteresis = <2000>; /* milliCelsius */
-> >>>> 				type = <THERMAL_TRIP_CRITICAL>;
-> >>>> 			};
-> >>>> 		};
-> >>>> 		bind_params {
-> >>>> 			action@0{
-> >>>> 				cooling_device = "thermal-cpufreq";
-> >>>
-> >>> Why is it a string? It seems very Linux-y... (cpufreq) Is there any
-> >>> particular reason not to have phandles to the fans that have any impact
-> >>> on the zone? 
-> >>
-> >> Because fans are not the only way to cool your system, specially those
-> >> systems that don't feature fans. Managing the speed of your CPU is one
-> >> example of lowering temperature without fans. Managing the load on your
-> >> system is another way. These are obviously, virtual concepts. And
-> >> because we have physical ways and logical ways to cool the zone, then I
-> >> didnt put a phandle to a device there.
-> > 
-> > "virtual concepts"... This is where my problem lies... It's not hardware
-> > so it doesn't seem to belong in the tree at the first sight. Shouldn't
->
-> Yeah, in fact, this is exactly the point that creates most of the
-> disagreement. You may check Guenter's arguments against this proposal
-> (in my original RFC email, there is a link to it).
-> 
-> Well, if one don't want to see this as a 'virtual concept' it could say
-> the cooling device is the cpu itself:
-> 		cooling_device = <&cpu0>;
+netstats shows that data is in queue and the retransmissions are happening (however things start to work normally after NEW connection is established):
+tcp        0 132902 10.254.39.74:719        10.254.38.115:2049      ESTABLISHED -                on (43.21/3/0)
 
-Would this create any particular problem at the driver/framework side?
+cheers,
+Dawid
 
-> > it focus on "physical data" instead? As in: point at devices that have
-> > some impact on the conditions? For example, you can say "please, do the
-> > right thing to cool your environment down" to both CPU and fan, can't
-> > you? The "cooling driver" for the CPU would know that it has to slow
-> > down, while a driver for the fan would know that it has to speed up ;-)
-> > 
-> > What I'm trying to say is that in my opinion the tree should simply link
-> > the object, the sensor and the actuator. Nothing more, nothing less.
-> 
-> OK. I think it would be a little unfair to have only links, without
-> describing what this link is supposed to be or how it is supposed to be
-> used. In previous discussions, I have mentioned two similar examples
-> already existing in DT. Here are they: regulator bindings, one does not
-> describe only which device connects to which regulator, but also needs
-> to describe, voltage limits, current limits, offsets, and other
-> properties. And an existing 'virtual concept' would be predefined CPU
-> OPPs, that feed the opp layer. Those are configurations of the hardware
-> that define a 'virtual' concept of operating point.
-> 
-> So, saying we need to describe only physical connections or touchable
-> things would be a little unfair, IMO. Besides, thermal is still physical
-> :-).
+--part5200daed82c254.49443009
+Content-Type: application/vnd.tcpdump.pcap; name="=?iso-8859-2?B?bjI4LXBhcnQucGNhcA==?="
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="=?iso-8859-2?B?bjI4LXBhcnQucGNhcA==?="
 
-Believe me, I'm trying to be as fair as possible :-) and I see a lot of
-value in describing the thermal properties of the platforms in the tree.
-It's just that we really want to focus on describing the hardware, not
-policies. And as you have already spent so much time on the matter, you
-are in the best position to find the best set of *physical* properties
-that would allow to make the right decision in the code. Could you,
-please, try to make one step back and have another look at the problem?
-What input data (as in: numbers :-) would you need to get what you want?
-Are those numbers characteristic to the specific device (they probably
-should live in the driver than) or to the board/platform (tree without a
-doubt).
+1MOyoQIABAAAAAAAAAAAAP//AAABAAAAYWb7UYi1BQDGAAAAxgAAAJDiujoJZZCxHOr8EAgARQAA
+uAmVQABABs0WCv4nJgr+JnMDwggBVtkkTXyGi8hQGCCbZD8AAIAAAIxWCXttAAAAAAAAAAIAAYaj
+AAAAAwAAAAIAAAABAAAAHAEI/pwAAAADbjI4AAACXo8AAb4+AAAAAQAAAAAAAAAAAAAAAAAAACBd
+UM9JCMyHtwoAz81iBAAAWaQIAAoABAAAAAAAfioAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAA
+AAAAAAABAAAAAGFm+1E3uwUAygAAAMoAAACQsRzq/BCQ4ro6CWUIAEUAALwRyEAAQAbE3wr+JnMK
+/icmCAEDwnyGi8hW2STdUBiAB015AACAAACQVgl7bQAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAEAAAAAAAAN11H7UvcZwbWjUftS9xnBtaMAAAABAAAAAQAAAaAAAAABAAJejwABvj4AAAAAAAAA
+AAAAAAAAABAA//////////8AAAC2AAEAGAAAAAAEYs3PUcKdggAAAABR+2ZhFlwEP1H7ZmEWXRNg
+YWb7UbW7BQAAAgAANgQAAJDiujoJZZCxHOr8EAgARQAEKAmWQABABsmlCv4nJgr+JnMDwggBVtkk
+3XyGjFxQECCbZ68AAIAADlRXCXttAAAAAAAAAAIAAYajAAAAAwAAAAcAAAABAAAAHAEI/pwAAAAD
+bjI4AAACXo8AAb4+AAAAAQAAAAAAAAAAAAAAAAAAACBdUM9JCMyHtwoAz81iBAAAWaQIAAoABAAA
+AAAAfioAAAAAAAAAAAAAAAAN1QAAAAIAAA3VTzo4OiJBbm5vdW5jZSI6NjY6e3M6MTE6ImlkX2Fu
+bm91bmNlIjtzOjQ6IjYxMjUiO3M6Njoic3RhdHVzIjtzOjE6IjEiO3M6NzoiaWRfdXNlciI7czo0
+OiIxMDg4IjtzOjEwOiJzdGFydF9kYXRlIjtzOjEwOiIyMDEwLTA4LTEzIjtzOjg6ImVuZF9kYXRl
+IjtzOjEwOiIyMDEzLTA5LTI1IjtzOjg6InZpZXdfY250IjtzOjU6IjE2NTM1IjtzOjEwOiJvZmZl
+cl90eXBlIjtzOjE6IjEiO3M6MTM6InByb3BlcnR5X3R5cGUiO3M6MToiMyI7czo1OiJwcmljZSI7
+czo2OiIzNzU2OTAiO3M6MTE6Im5vdGFyeV9jb3N0IjtzOjU6Ii0xLjAwIjtzOjIxOiJvZmZpY2lh
+bF9tYXJrZXRfcHJpY2UiYWb7Ubu7BQAAAgAANgQAAJDiujoJZZCxHOr8EAgARQAEKAmXQABABsmk
+Cv4nJgr+JnMDwggBVtko3XyGjFxQECCbZ68AAGFjamEgbmllcnVjaG9tb8WbY2kgZ3J1bnRvd2Vq
+IG8gcG93LiAzNzI3IG0yIHdyYXogeiBidWR5bmtpZW0gYW1nYXp5bm93by1iaXVyb3d5bSwgZHd1
+a29uZHlnbmFjeWpueW0geiBwb2RkYXN6ZW0gbyBwb3cuIDY0NiwiO3M6MTE6ImRlc2NyaXB0aW9u
+IjtzOjYwMDoiVyBkbml1IDA4LjA5LjIwMTAgci4gbyBnb2R6LiAxMC4wMCB3IGJ1ZHlua3UgU8SF
+ZHUgUmVqb25vd2VnbyB3IFdhxYJicnp5Y2h1IHByenkgdWwuIFPFgm93YWNraWVnbyAxMCB3IHNh
+bGkgbnIgMzA0IG9kYsSZZHppZSBzacSZIEkgbGljeXRhY2phIG5pZXJ1Y2hvbW/Fm2NpIGdydW50
+b3dlaiBvIHBvdy4gMzcyNyBtMiB3cmF6IHogYnVkeW5raWVtIG1nYXp5bm93by1iaXVyb3d5bSwg
+ZHd1a29uZHlnbmFjeWpueW0geiBwb2RkYXN6ZW0gbyBwb3cuIDY0NiwyNiBtMiwgcG/Fgm/FvG9u
+ZWogdyBXYcWCYnJ6eWNodSBwcnp5IHVsLiBXcm9jYWb7Uby7BQAAAgAANgQAAJDiujoJZZCxHOr8
+EAgARQAEKAmYQABABsmjCv4nJgr+JnMDwggBVtks3XyGjFxQECCbZ68AACJoYXNfYmF0aCI7czoy
+OiItMSI7czoxMDoiaGFzX3Nob3dlciI7czoyOiItMSI7czoxNzoiaGFzX3N3aW1taW5nX3Bvb2wi
+O3M6MjoiLTEiO3M6Njoic2V3YWdlIjtzOjA6IiI7czo3OiJoZWF0aW5nIjtzOjA6IiI7czo1OiJt
+ZWRpYSI7czowOiIiO3M6OToiZGlzdF9jaXR5IjtzOjI6Ii0xIjtzOjEyOiJkaXN0X3ZpbGxhZ2Ui
+O3M6MjoiLTEiO3M6MTY6ImRpc3Rfc3VwZXJtYXJrZXQiO3M6MjoiLTEiO3M6MTE6ImRpc3Rfc2No
+b29sIjtzOjI6Ii0xIjtzOjE1OiJkaXN0X2hpZ2hzY2hvb2wiO3M6MjoiLTEiO3M6MTI6ImRpc3Rf
+bWVkaWNhbCI7czoyOiItMSI7czoyNToiZGlzdF9wdWJsaWNfc21pbW1pbmdfcG9vbCI7czoyOiIt
+MSI7czoxNjoiZGlzdF9wb3N0X29mZmljZSI7czoyOiItMSI7czoxMjoiZGlzdF9maXRuZXNzIjtz
+OjI6Ii0xIjtzOjExOiJkaXN0X3BvbGljZSI7czoyOiItMSI7czoxMToiZGlzYWb7Ucy7BQAAAgAA
+NgQAAJDiujoJZZCxHOr8EAgARQAEKAmZQABABsmiCv4nJgr+JnMDwggBVtkk3XyGjFxQECCbZ68A
+AIAADlRXCXttAAAAAAAAAAIAAYajAAAAAwAAAAcAAAABAAAAHAEI/pwAAAADbjI4AAACXo8AAb4+
+AAAAAQAAAAAAAAAAAAAAAAAAACBdUM9JCMyHtwoAz81iBAAAWaQIAAoABAAAAAAAfioAAAAAAAAA
+AAAAAAAN1QAAAAIAAA3VTzo4OiJBbm5vdW5jZSI6NjY6e3M6MTE6ImlkX2Fubm91bmNlIjtzOjQ6
+IjYxMjUiO3M6Njoic3RhdHVzIjtzOjE6IjEiO3M6NzoiaWRfdXNlciI7czo0OiIxMDg4IjtzOjEw
+OiJzdGFydF9kYXRlIjtzOjEwOiIyMDEwLTA4LTEzIjtzOjg6ImVuZF9kYXRlIjtzOjEwOiIyMDEz
+LTA5LTI1IjtzOjg6InZpZXdfY250IjtzOjU6IjE2NTM1IjtzOjEwOiJvZmZlcl90eXBlIjtzOjE6
+IjEiO3M6MTM6InByb3BlcnR5X3R5cGUiO3M6MToiMyI7czo1OiJwcmljZSI7czo2OiIzNzU2OTAi
+O3M6MTE6Im5vdGFyeV9jb3N0IjtzOjU6Ii0xLjAwIjtzOjIxOiJvZmZpY2lhbF9tYXJrZXRfcHJp
+Y2UiYWb7UbO8BQA8AAAAPAAAAJCxHOr8EJDiujoJZQgARQAAKBHJQABABsVyCv4mcwr+JyYIAQPC
+fIaMXFbZLN1QEH/HNBwAAAAAAAAAAGFm+1GUAgkAAAIAADYEAACQ4ro6CWWQsRzq/BAIAEUABCgJ
+nEAAQAbJnwr+JyYK/iZzA8IIAVbZJN18hoxcUBggm2evAACAAA5UVwl7bQAAAAAAAAACAAGGowAA
+AAMAAAAHAAAAAQAAABwBCP6cAAAAA24yOAAAAl6PAAG+PgAAAAEAAAAAAAAAAAAAAAAAAAAgXVDP
+SQjMh7cKAM/NYgQAAFmkCAAKAAQAAAAAAH4qAAAAAAAAAAAAAAAADdUAAAACAAAN1U86ODoiQW5u
+b3VuY2UiOjY2OntzOjExOiJpZF9hbm5vdW5jZSI7czo0OiI2MTI1IjtzOjY6InN0YXR1cyI7czox
+OiIxIjtzOjc6ImlkX3VzZXIiO3M6NDoiMTA4OCI7czoxMDoic3RhcnRfZGF0ZSI7czoxMDoiMjAx
+MC0wOC0xMyI7czo4OiJlbmRfZGF0ZSI7czoxMDoiMjAxMy0wOS0yNSI7czo4OiJ2aWV3X2NudCI7
+czo1OiIxNjUzNSI7czoxMDoib2ZmZXJfdHlwZSI7czoxOiIxIjtzOjEzOiJwcm9wZXJ0eV90eXBl
+IjtzOjE6IjMiO3M6NToicHJpY2UiO3M6NjoiMzc1NjkwIjtzOjExOiJub3RhcnlfY29zdCI7czo1
+OiItMS4wMCI7czoyMToib2ZmaWNpYWxfbWFya2V0X3ByaWNlImFm+1EJAwkAPAAAADwAAACQsRzq
+/BCQ4ro6CWUIAEUAACgSHEAAQAbFHwr+JnMK/icmCAEDwnyGjFxW2SzdUBCBEDLTAAAAAAAAAABh
+ZvtRUE4MAAACAAA2BAAAkOK6OgllkLEc6vwQCABFAAQoCZ1AAEAGyZ4K/icmCv4mcwPCCAFW2STd
+fIaMXFAYIJtnrwAAgAAOVFcJe20AAAAAAAAAAgABhqMAAAADAAAABwAAAAEAAAAcAQj+nAAAAANu
+MjgAAAJejwABvj4AAAABAAAAAAAAAAAAAAAAAAAAIF1Qz0kIzIe3CgDPzWIEAABZpAgACgAEAAAA
+AAB+KgAAAAAAAAAAAAAAAA3VAAAAAgAADdVPOjg6IkFubm91bmNlIjo2Njp7czoxMToiaWRfYW5u
+b3VuY2UiO3M6NDoiNjEyNSI7czo2OiJzdGF0dXMiO3M6MToiMSI7czo3OiJpZF91c2VyIjtzOjQ6
+IjEwODgiO3M6MTA6InN0YXJ0X2RhdGUiO3M6MTA6IjIwMTAtMDgtMTMiO3M6ODoiZW5kX2RhdGUi
+O3M6MTA6IjIwMTMtMDktMjUiO3M6ODoidmlld19jbnQiO3M6NToiMTY1MzUiO3M6MTA6Im9mZmVy
+X3R5cGUiO3M6MToiMSI7czoxMzoicHJvcGVydHlfdHlwZSI7czoxOiIzIjtzOjU6InByaWNlIjtz
+OjY6IjM3NTY5MCI7czoxMToibm90YXJ5X2Nvc3QiO3M6NToiLTEuMDAiO3M6MjE6Im9mZmljaWFs
+X21hcmtldF9wcmljZSJhZvtR3E4MADwAAAA8AAAAkLEc6vwQkOK6OgllCABFAAAoEltAAEAGxOAK
+/iZzCv4nJggBA8J8hoxcVtks3VAQgRAy0wAAAAAAAAAAYmb7UZKjAwAAAgAANgQAAJDiujoJZZCx
+HOr8EAgARQAEKAmeQABABsmdCv4nJgr+JnMDwggBVtkk3XyGjFxQGCCbZ68AAIAADlRXCXttAAAA
+AAAAAAIAAYajAAAAAwAAAAcAAAABAAAAHAEI/pwAAAADbjI4AAACXo8AAb4+AAAAAQAAAAAAAAAA
+AAAAAAAAACBdUM9JCMyHtwoAz81iBAAAWaQIAAoABAAAAAAAfioAAAAAAAAAAAAAAAAN1QAAAAIA
+AA3VTzo4OiJBbm5vdW5jZSI6NjY6e3M6MTE6ImlkX2Fubm91bmNlIjtzOjQ6IjYxMjUiO3M6Njoi
+c3RhdHVzIjtzOjE6IjEiO3M6NzoiaWRfdXNlciI7czo0OiIxMDg4IjtzOjEwOiJzdGFydF9kYXRl
+IjtzOjEwOiIyMDEwLTA4LTEzIjtzOjg6ImVuZF9kYXRlIjtzOjEwOiIyMDEzLTA5LTI1IjtzOjg6
+InZpZXdfY250IjtzOjU6IjE2NTM1IjtzOjEwOiJvZmZlcl90eXBlIjtzOjE6IjEiO3M6MTM6InBy
+b3BlcnR5X3R5cGUiO3M6MToiMyI7czo1OiJwcmljZSI7czo2OiIzNzU2OTAiO3M6MTE6Im5vdGFy
+eV9jb3N0IjtzOjU6Ii0xLjAwIjtzOjIxOiJvZmZpY2lhbF9tYXJrZXRfcHJpY2UiYmb7UQikAwA8
+AAAAPAAAAJCxHOr8EJDiujoJZQgARQAAKBLfQABABsRcCv4mcwr+JyYIAQPCfIaMXFbZLN1QEIEQ
+MtMAAAAAAAAAAGNm+1E9kAEAAAIAADYEAACQ4ro6CWWQsRzq/BAIAEUABCgJn0AAQAbJnAr+JyYK
+/iZzA8IIAVbZJN18hoxcUBggm2evAACAAA5UVwl7bQAAAAAAAAACAAGGowAAAAMAAAAHAAAAAQAA
+ABwBCP6cAAAAA24yOAAAAl6PAAG+PgAAAAEAAAAAAAAAAAAAAAAAAAAgXVDPSQjMh7cKAM/NYgQA
+AFmkCAAKAAQAAAAAAH4qAAAAAAAAAAAAAAAADdUAAAACAAAN1U86ODoiQW5ub3VuY2UiOjY2Ontz
+OjExOiJpZF9hbm5vdW5jZSI7czo0OiI2MTI1IjtzOjY6InN0YXR1cyI7czoxOiIxIjtzOjc6Imlk
+X3VzZXIiO3M6NDoiMTA4OCI7czoxMDoic3RhcnRfZGF0ZSI7czoxMDoiMjAxMC0wOC0xMyI7czo4
+OiJlbmRfZGF0ZSI7czoxMDoiMjAxMy0wOS0yNSI7czo4OiJ2aWV3X2NudCI7czo1OiIxNjUzNSI7
+czoxMDoib2ZmZXJfdHlwZSI7czoxOiIxIjtzOjEzOiJwcm9wZXJ0eV90eXBlIjtzOjE6IjMiO3M6
+NToicHJpY2UiO3M6NjoiMzc1NjkwIjtzOjExOiJub3RhcnlfY29zdCI7czo1OiItMS4wMCI7czoy
+MToib2ZmaWNpYWxfbWFya2V0X3ByaWNlImNm+1GukAEAPAAAADwAAACQsRzq/BCQ4ro6CWUIAEUA
+ACgU1EAAQAbCZwr+JnMK/icmCAEDwnyGjFxW2SzdUBCBEDLTAAAAAAAAAABkZvtRnbsMAAACAAA2
+AgAAkOK6OgllkLEc6vwQCABFAAIoCaBAAEAGy5sK/icmCv4mcwPCCAFW2STdfIaMXFAQIJtlrwAA
+gAAOVFcJe20AAAAAAAAAAgABhqMAAAADAAAABwAAAAEAAAAcAQj+nAAAAANuMjgAAAJejwABvj4A
+AAABAAAAAAAAAAAAAAAAAAAAIF1Qz0kIzIe3CgDPzWIEAABZpAgACgAEAAAAAAB+KgAAAAAAAAAA
+AAAAAA3VAAAAAgAADdVPOjg6IkFubm91bmNlIjo2Njp7czoxMToiaWRfYW5ub3VuY2UiO3M6NDoi
+NjEyNSI7czo2OiJzdGF0dXMiO3M6MToiMSI7czo3OiJpZF91c2VyIjtzOjQ6IjEwODgiO3M6MTA6
+InN0YXJ0X2RhdGUiO3M6MTA6IjIwMTAtMDgtMTMiO3M6ODoiZW5kX2RhdGUiO3M6MTA6IjIwMTMt
+MDktMjUiO3M6ODoidmlld19jbnQiO3M6NToiMTY1MzUiO3M6MTA6Im9mZmVyX3R5cGUiO3M6MToi
+MSI7czoxMzoicHJvcGVydHlfdHlwZSI7czoxOiIzIjtzOjU6InByaWNlIjtzOjY6IjM3NTY5MCI7
+czoxMToibm90YXJ5X2Nvc3QiO3M6NToiLTEuMDAiO3M6MjE6Im9mZmljaWFsX21hcmtldF9wcmlj
+ZSJkZvtR+LsMADwAAAA8AAAAkLEc6vwQkOK6OgllCABFAAAoGRJAAEAGvikK/iZzCv4nJggBA8J8
+hoxcVtks3VAQgRAy0wAAAAAAAAAAaGb7UaSdBAA2AQAANgEAAJDiujoJZZCxHOr8EAgARQABKAmh
+QABABsyaCv4nJgr+JnMDwggBVtkk3XyGjFxQECCbZK8AAIAADlRXCXttAAAAAAAAAAIAAYajAAAA
+AwAAAAcAAAABAAAAHAEI/pwAAAADbjI4AAACXo8AAb4+AAAAAQAAAAAAAAAAAAAAAAAAACBdUM9J
+CMyHtwoAz81iBAAAWaQIAAoABAAAAAAAfioAAAAAAAAAAAAAAAAN1QAAAAIAAA3VTzo4OiJBbm5v
+dW5jZSI6NjY6e3M6MTE6ImlkX2Fubm91bmNlIjtzOjQ6IjYxMjUiO3M6Njoic3RhdHVzIjtzOjE6
+IjEiO3M6NzoiaWRfdXNlciI7czo0OiIxMDg4IjtzOjEwOiJzdGFydF9kYXRlIjtzOjEwOiIyMDEw
+LTA4LTFoZvtRHJ4EADwAAAA8AAAAkLEc6vwQkOK6OgllCABFAAAoH65AAEAGt40K/iZzCv4nJggB
+A8J8hoxcVtks3VAQgRAy0wAAAAAAAAAAb2b7UUGEAwC2AAAAtgAAAJDiujoJZZCxHOr8EAgARQAA
+qAmiQABABs0ZCv4nJgr+JnMDwggBVtkk3XyGjFxQECCbZC8AAIAADlRXCXttAAAAAAAAAAIAAYaj
+AAAAAwAAAAcAAAABAAAAHAEI/pwAAAADbjI4AAACXo8AAb4+AAAAAQAAAAAAAAAAAAAAAAAAACBd
+UM9JCMyHtwoAz81iBAAAWaQIAAoABAAAAAAAfioAAAAAAAAAAAAAAAAN1QAAAAIAAA3Vb2b7UZiE
+AwA8AAAAPAAAAJCxHOr8EJDiujoJZQgARQAAKDETQABABqYoCv4mcwr+JyYIAQPCfIaMXFbZLN1Q
+EIEQMtMAAAAAAAAAAH1m+1FmkAEAdgAAAHYAAACQ4ro6CWWQsRzq/BAIAEUAAGgJo0AAQAbNWAr+
+JyYK/iZzA8IIAVbZJN18hoxcUBAgm2PvAACAAA5UVwl7bQAAAAAAAAACAAGGowAAAAMAAAAHAAAA
+AQAAABwBCP6cAAAAA24yOAAAAl6PAAG+PgAAAAEAAAAAfWb7Ub+QAQA8AAAAPAAAAJCxHOr8EJDi
+ujoJZQgARQAAKEVFQABABpH2Cv4mcwr+JyYIAQPCfIaMXFbZLN1QEIEQMtMAAAAAAAAAAJhm+1GA
+bQwAZgAAAGYAAACQ4ro6CWWQsRzq/BAIAEUAAFgJpEAAQAbNZwr+JyYK/iZzA8IIAVbZJN18hoxc
+UBAgm2PfAACAAA5UVwl7bQAAAAAAAAACAAGGowAAAAMAAAAHAAAAAQAAABwBCP6cAAAAA24yOACY
+ZvtR120MADwAAAA8AAAAkLEc6vwQkOK6OgllCABFAAAocwdAAEAGZDQK/iZzCv4nJggBA8J8hoxc
+Vtks3VAQgRAy0wAAAAAAAAAA0Gb7US2qAgBmAAAAZgAAAJDiujoJZZCxHOr8EAgARQAAWAmlQABA
+Bs1mCv4nJgr+JnMDwggBVtkk3XyGjFxQECCbY98AAIAADlRXCXttAAAAAAAAAAIAAYajAAAAAwAA
+AAcAAAABAAAAHAEI/pwAAAADbjI4ANBm+1GSqgIAPAAAADwAAACQsRzq/BCQ4ro6CWUIAEUAACjf
+rEAAQAb3jgr+JnMK/icmCAEDwnyGjFxW2SzdUBCBEDLTAAAAAAAAAAA=
 
-Thanks!
-
-Pawel
+--part5200daed82c254.49443009--
 
 
