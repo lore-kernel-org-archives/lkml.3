@@ -1,54 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753774Ab3HFNif (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 09:38:35 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:40259 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753492Ab3HFNib (ORCPT
+	id S1753462Ab3HFNi1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 09:38:27 -0400
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:57004 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752858Ab3HFNiZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 09:38:31 -0400
-Message-ID: <5200FC09.7080108@ahsoftware.de>
-Date: Tue, 06 Aug 2013 15:37:13 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130712 Thunderbird/17.0.7
+	Tue, 6 Aug 2013 09:38:25 -0400
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Pantelis Antoniou <panto@antoniou-consulting.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        =?UTF-8?B?QmVub8OudCBDb3Vzc25v?= <b-cousson@ti.com>,
-        Paul Walmsley <paul@pwsan.com>, Sourav Poddar <sourav.poddar@ti.com>,
-        Russ Dill <Russ.Dill@ti.com>, Felipe Balbi <balbi@ti.com>,
-        Koen Kooi <koen@circuitco.com>, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/5] arm: omap: Proper cleanups for omap_device
-References: <1375775624-12250-1-git-send-email-panto@antoniou-consulting.com> <1375775624-12250-6-git-send-email-panto@antoniou-consulting.com> <20130806093356.GA27889@kroah.com> <8C31ED90-E9EF-4264-858A-17CC2536B552@antoniou-consulting.com> <20130806101421.GA29283@kroah.com>
-In-Reply-To: <20130806101421.GA29283@kroah.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <fce918e3511ffbe508dd95d77e943b9e30b711ee.1375530162.git.viresh.kumar@linaro.org>
+References: <cover.1375530162.git.viresh.kumar@linaro.org>
+	<fce918e3511ffbe508dd95d77e943b9e30b711ee.1375530162.git.viresh.kumar@linaro.org>
+Date: Tue, 6 Aug 2013 19:08:24 +0530
+Message-ID: <CAKohpon5mUOTt+4Mh5V4+abq0dJQH0MQyc2dAR4kKMjbuytRvw@mail.gmail.com>
+Subject: Re: [PATCH 03/10] cpufreq: Give consistent names for struct
+ cpufreq_policy *
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@sisk.pl
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com,
+        l.majewski@samsung.com, Viresh Kumar <viresh.kumar@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 06.08.2013 12:14, schrieb Greg Kroah-Hartman:
+On 3 August 2013 17:19, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> They are named as policy, cur_policy, new_policy, data, etc.. Just name them
+> poicy wherever possible.
+>
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> ---
+>  drivers/cpufreq/cpufreq.c          | 200 ++++++++++++++++++-------------------
+>  drivers/cpufreq/cpufreq_governor.h |   2 +-
+>  drivers/cpufreq/cpufreq_ondemand.c |  10 +-
+>  drivers/cpufreq/cpufreq_stats.c    |  14 +--
+>  include/linux/cpufreq.h            |   2 +-
+>  5 files changed, 111 insertions(+), 117 deletions(-)
 
->> What exactly is a platform device anyway?
-> 
-> Originally it was a "something that wasn't connected to a bus, but just
-> had memory-mapped i/o."  Like the PS2 keyboard controller.
-> 
-> Embedded systems got ahold of this and went to town, and made everything
-> a platform device because they could, and no one was paying attention.
-> 
-> Then OF came along and used it as well, and you know the rest...
-> 
-> I think we need to get the ACPI and OF people, and me, in a room
-> together at the kernel summit and not let us out until we have this all
-> worked out.
+Another Fixup :)
 
-MFD uses platform devices too.
+@Rafael: Apart from that I found things to be pretty stable now and
+so I can go ahead with the V2 of this patchset.. And then maybe we
+can get in linux-next so it receives some testing before 3.12.
 
-Regards,
+diff --git a/drivers/cpufreq/cpufreq_stats.c b/drivers/cpufreq/cpufreq_stats.c
+index 1e630d0..7461a88 100644
+--- a/drivers/cpufreq/cpufreq_stats.c
++++ b/drivers/cpufreq/cpufreq_stats.c
+@@ -194,7 +194,7 @@ static int cpufreq_stats_create_table(struct
+cpufreq_policy *policy,
+ {
+        unsigned int i, j, count = 0, ret = 0;
+        struct cpufreq_stats *stat;
+-       struct cpufreq_policy *data;
++       struct cpufreq_policy *current_policy;
+        unsigned int alloc_size;
+        unsigned int cpu = policy->cpu;
+        if (per_cpu(cpufreq_stats_table, cpu))
+@@ -203,13 +203,13 @@ static int cpufreq_stats_create_table(struct
+cpufreq_policy *policy,
+        if ((stat) == NULL)
+                return -ENOMEM;
 
-Alexander Holler
+-       data = cpufreq_cpu_get(cpu);
+-       if (data == NULL) {
++       current_policy = cpufreq_cpu_get(cpu);
++       if (current_policy == NULL) {
+                ret = -EINVAL;
+                goto error_get_fail;
+        }
 
+-       ret = sysfs_create_group(&data->kobj, &stats_attr_group);
++       ret = sysfs_create_group(&current_policy->kobj, &stats_attr_group);
+        if (ret)
+                goto error_out;
+
+@@ -252,10 +252,10 @@ static int cpufreq_stats_create_table(struct
+cpufreq_policy *policy,
+        stat->last_time = get_jiffies_64();
+        stat->last_index = freq_table_get_index(stat, policy->cur);
+        spin_unlock(&cpufreq_stats_lock);
+-       cpufreq_cpu_put(data);
++       cpufreq_cpu_put(current_policy);
+        return 0;
+ error_out:
+-       cpufreq_cpu_put(data);
++       cpufreq_cpu_put(current_policy);
+ error_get_fail:
+        kfree(stat);
+        per_cpu(cpufreq_stats_table, cpu) = NULL;
