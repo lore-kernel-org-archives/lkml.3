@@ -1,96 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756352Ab3HFQPk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 12:15:40 -0400
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:58519 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756300Ab3HFQPR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 12:15:17 -0400
-Date: Tue, 6 Aug 2013 12:15:09 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: lizefan@huawei.com, hannes@cmpxchg.org, bsingharora@gmail.com,
-        kamezawa.hiroyu@jp.fujitsu.com, cgroups@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHSET cgroup/for-3.12] cgroup: make cgroup_event specific to
- memcg
-Message-ID: <20130806161509.GB10779@mtj.dyndns.org>
-References: <1375632446-2581-1-git-send-email-tj@kernel.org>
- <20130805160107.GM10146@dhcp22.suse.cz>
- <20130805162958.GF19631@mtj.dyndns.org>
- <20130805191641.GA24003@dhcp22.suse.cz>
- <20130805194431.GD23751@mtj.dyndns.org>
- <20130806155804.GC31138@dhcp22.suse.cz>
+	id S1756229Ab3HFQOy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 12:14:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36830 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756149Ab3HFQOi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Aug 2013 12:14:38 -0400
+Date: Tue, 6 Aug 2013 18:08:44 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, David Ahern <dsahern@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 2/3] tracing/perf: Reimplement TP_perf_assign() logic
+Message-ID: <20130806160844.GA2739@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130806155804.GC31138@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130806160826.GA2717@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Michal.
+The next patch tries to avoid the costly perf_trace_buf_* calls
+when possible but there is a problem. We can only do this if
+__task == NULL, perf_tp_event(task != NULL) has the additional
+code for this case.
 
-On Tue, Aug 06, 2013 at 05:58:04PM +0200, Michal Hocko wrote:
-> I am objecting to moving the generic part of that code into memcg. The
-> memcg part and the additional complexity (all the parsing and conditions
-> for signalling) is already in the memcg code.
+Unfortunately, TP_perf_assign/__perf_xxx which changes the default
+values of __count/__task variables for perf_trace_buf_submit() is
+called "too late", after we already did perf_trace_buf_prepare(),
+and the optimization above can't work.
 
-But how is it generic if it's specific to memcg?  The practical
-purpose here is making it clear that the interface is only used by
-memcg and preventing any new usages from sprining up and the best way
-to achieve that is making the code actually memcg-specific.  It also
-helps cleaning up cftype in general.  I'm not sure what you're
-objecting to here.
+So this patch simply embeds __perf_xxx() into TP_ARGS(), this way
+DECLARE_EVENT_CLASS() can use the result of assignments hidden in
+"args" right after ftrace_get_offsets_##call() which is mostly
+trivial. This allows us to have the fast-path "__task != NULL"
+check at the start, see the next patch.
 
-> Such an interface would be really welcome but I would also ask how
-> it would implement/allow context passing. E.g. how do we know which
-> treshold has been reached? How do we find out the vmpressure level? Is
-> the consumer supposed to do an additional action after it gets
-> notification?
-> Etc.
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Tested-by: David Ahern <dsahern@gmail.com>
+Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ include/trace/events/sched.h |   16 +++-------------
+ include/trace/ftrace.h       |   19 +++++++++++--------
+ 2 files changed, 14 insertions(+), 21 deletions(-)
 
-Yeap, exactly and that's how it should have been from the beginning.
-Attaching information to notification itself isn't a particularly good
-design (anyone remembers rtsig?) if there's polling mechanism to
-report the current state.  It essentially amounts to duplicate
-delivery mechanisms for the same information, which you usually don't
-want.  Here, the inconvenience / performance implications are
-negligible or even net-positive.  Plain file modified notification is
-way more familiar / conventional and the overhead of an extra read
-call, which is highly unlikely to be relevant given the expected
-frequency of the events we're talking about, is small compared to the
-action of event delivery and context switch.
-
-> Really that natural? So memcg should touch internals like cgroup dentry
-
-Functionally, it is completely specific to memcg at this point.  It's
-the only user and will stay the only user.
-
-> reference counting. You seem have forgotten all the hassles with
-> cgroup_mutex, haven't you?
-
-Was the above sentence necessary?
-
-> No that part doesn't belong to memcg! You can discourage from new usage
-> of this interface of course.
-
-Oh, if you're objecting to the details of the implementation, we of
-course can clean it up.  It should conceptually and functionally be
-part of memcg and that is the guiding line we follow.  Implementations
-follow the concepts and functions, not the other way around.  The
-refcnt of course can be replaced with memcg css refcnting and we can
-of course factor out dentry comparison in a prettier form.
-
-Compare it to the other way around - having event callbacks in cftype
-and clearing code embedded in cgroup core destruction path when both
-of which are completely irrelevant to all other controllers.  Let's
-clean up the implementation details and put things where they belong.
-What's the excuse for not doing so when it's almost trivially doable?
-
-Thanks.
-
+diff --git a/include/trace/events/sched.h b/include/trace/events/sched.h
+index 249c024..2e7d994 100644
+--- a/include/trace/events/sched.h
++++ b/include/trace/events/sched.h
+@@ -57,7 +57,7 @@ DECLARE_EVENT_CLASS(sched_wakeup_template,
+ 
+ 	TP_PROTO(struct task_struct *p, int success),
+ 
+-	TP_ARGS(p, success),
++	TP_ARGS(__perf_task(p), success),
+ 
+ 	TP_STRUCT__entry(
+ 		__array(	char,	comm,	TASK_COMM_LEN	)
+@@ -73,9 +73,6 @@ DECLARE_EVENT_CLASS(sched_wakeup_template,
+ 		__entry->prio		= p->prio;
+ 		__entry->success	= success;
+ 		__entry->target_cpu	= task_cpu(p);
+-	)
+-	TP_perf_assign(
+-		__perf_task(p);
+ 	),
+ 
+ 	TP_printk("comm=%s pid=%d prio=%d success=%d target_cpu=%03d",
+@@ -313,7 +310,7 @@ DECLARE_EVENT_CLASS(sched_stat_template,
+ 
+ 	TP_PROTO(struct task_struct *tsk, u64 delay),
+ 
+-	TP_ARGS(tsk, delay),
++	TP_ARGS(__perf_task(tsk), __perf_count(delay)),
+ 
+ 	TP_STRUCT__entry(
+ 		__array( char,	comm,	TASK_COMM_LEN	)
+@@ -325,10 +322,6 @@ DECLARE_EVENT_CLASS(sched_stat_template,
+ 		memcpy(__entry->comm, tsk->comm, TASK_COMM_LEN);
+ 		__entry->pid	= tsk->pid;
+ 		__entry->delay	= delay;
+-	)
+-	TP_perf_assign(
+-		__perf_count(delay);
+-		__perf_task(tsk);
+ 	),
+ 
+ 	TP_printk("comm=%s pid=%d delay=%Lu [ns]",
+@@ -376,7 +369,7 @@ DECLARE_EVENT_CLASS(sched_stat_runtime,
+ 
+ 	TP_PROTO(struct task_struct *tsk, u64 runtime, u64 vruntime),
+ 
+-	TP_ARGS(tsk, runtime, vruntime),
++	TP_ARGS(tsk, __perf_count(runtime), vruntime),
+ 
+ 	TP_STRUCT__entry(
+ 		__array( char,	comm,	TASK_COMM_LEN	)
+@@ -390,9 +383,6 @@ DECLARE_EVENT_CLASS(sched_stat_runtime,
+ 		__entry->pid		= tsk->pid;
+ 		__entry->runtime	= runtime;
+ 		__entry->vruntime	= vruntime;
+-	)
+-	TP_perf_assign(
+-		__perf_count(runtime);
+ 	),
+ 
+ 	TP_printk("comm=%s pid=%d runtime=%Lu [ns] vruntime=%Lu [ns]",
+diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
+index 618af05..4163d93 100644
+--- a/include/trace/ftrace.h
++++ b/include/trace/ftrace.h
+@@ -507,8 +507,14 @@ static inline notrace int ftrace_get_offsets_##call(			\
+ #undef TP_fast_assign
+ #define TP_fast_assign(args...) args
+ 
+-#undef TP_perf_assign
+-#define TP_perf_assign(args...)
++#undef __perf_addr
++#define __perf_addr(a)	(a)
++
++#undef __perf_count
++#define __perf_count(c)	(c)
++
++#undef __perf_task
++#define __perf_task(t)	(t)
+ 
+ #undef DECLARE_EVENT_CLASS
+ #define DECLARE_EVENT_CLASS(call, proto, args, tstruct, assign, print)	\
+@@ -636,16 +642,13 @@ __attribute__((section("_ftrace_events"))) *__event_##call = &event_##call
+ #define __get_str(field) (char *)__get_dynamic_array(field)
+ 
+ #undef __perf_addr
+-#define __perf_addr(a) __addr = (a)
++#define __perf_addr(a)	(__addr = (a))
+ 
+ #undef __perf_count
+-#define __perf_count(c) __count = (c)
++#define __perf_count(c)	(__count = (c))
+ 
+ #undef __perf_task
+-#define __perf_task(t) __task = (t)
+-
+-#undef TP_perf_assign
+-#define TP_perf_assign(args...) args
++#define __perf_task(t)	(__task = (t))
+ 
+ #undef DECLARE_EVENT_CLASS
+ #define DECLARE_EVENT_CLASS(call, proto, args, tstruct, assign, print)	\
 -- 
-tejun
+1.5.5.1
+
