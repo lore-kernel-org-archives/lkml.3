@@ -1,102 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756328Ab3HFU5A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 16:57:00 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:36565 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755132Ab3HFU47 (ORCPT
+	id S1756222Ab3HFU6c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 16:58:32 -0400
+Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:22529 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751837Ab3HFU6a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 16:56:59 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: security@kernel.org, oss-security@lists.openwall.com,
-        Petr Matousek <pmatouse@redhat.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        David Howells <dhowells@redhat.com>, linux-kernel@vger.kernel.org
-References: <20130806143148.GG15178@dhcp-25-225.brq.redhat.com>
-	<20130806164745.GA17343@redhat.com>
-	<20130806173827.GA24908@redhat.com>
-	<20130806173855.GB24908@redhat.com>
-Date: Tue, 06 Aug 2013 13:56:41 -0700
-In-Reply-To: <20130806173855.GB24908@redhat.com> (Oleg Nesterov's message of
-	"Tue, 6 Aug 2013 19:38:55 +0200")
-Message-ID: <8738qmilme.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Tue, 6 Aug 2013 16:58:30 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -1
+X-BigFish: VPS-1(zzbb2dI98dI9371I103dK1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh668h839h93fhe5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h19ceh1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1889i783m1155h)
+X-WSS-ID: 0MR4NLD-01-9CV-02
+X-M-MSG: 
+Message-ID: <52016370.1000502@amd.com>
+Date: Tue, 6 Aug 2013 15:58:24 -0500
+From: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX19aTp0p8sdI30qdWtSYM7lfxw1hO1LDK0s=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.7 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.0 BAYES_40 BODY: Bayes spam probability is 20 to 40%
-	*      [score: 0.3500]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.0 T_TooManySym_03 6+ unique symbols in subject
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: *;Oleg Nesterov <oleg@redhat.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH 1/1] userns: unshare_userns(&cred) should not populate cred on failure
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+To: Borislav Petkov <bp@alien8.de>
+CC: <tglx@linutronix.de>, <mingo@redhat.com>, <hpa@zytor.com>,
+        <dougthompson@xmission.com>, <bhelgaas@google.com>,
+        <jbeulich@suse.com>, <linux-kernel@vger.kernel.org>,
+        <linux-edac@vger.kernel.org>, <linux-pci@vger.kernel.org>
+Subject: Re: [PATCH 2/3 V2] EDAC, AMD64_EDAC: Add relevant condition checks
+ as F15h M30h does not support GART or L3.
+References: <1375483384-2302-1-git-send-email-Aravind.Gopalakrishnan@amd.com> <1375483384-2302-3-git-send-email-Aravind.Gopalakrishnan@amd.com> <20130806201925.GG14891@pd.tnic>
+In-Reply-To: <20130806201925.GG14891@pd.tnic>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [163.181.55.254]
+X-OriginatorOrg: amd.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oleg Nesterov <oleg@redhat.com> writes:
-
-> unshare_userns(new_cred) does *new_cred = prepare_creds() before
-> create_user_ns() which can fail. However, the caller expects that
-> it doesn't need to take care of new_cred if unshare_userns() fails.
+On 8/6/2013 3:19 PM, Borislav Petkov wrote:
+> On Fri, Aug 02, 2013 at 05:43:03PM -0500, Aravind Gopalakrishnan wrote:
+>> Adding code to check for specific model (F15h, M30h) and if yes,
+>> do not add flag AMD_NB_GART. Also check cpuid_edx(0x80000006) for
+>> prescence of L3. If no L3, do not add any L3 flags.
+>>
+>> Signed-off-by: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
+>>
+>> diff --git a/arch/x86/kernel/amd_nb.c b/arch/x86/kernel/amd_nb.c
+>> index 3048ded..3ee7a4d 100644
+>> --- a/arch/x86/kernel/amd_nb.c
+>> +++ b/arch/x86/kernel/amd_nb.c
+>> @@ -20,6 +20,7 @@ const struct pci_device_id amd_nb_misc_ids[] = {
+>>   	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_10H_NB_MISC) },
+>>   	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_15H_NB_F3) },
+>>   	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_15H_M10H_F3) },
+>> +	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_15H_M30H_NB_F3) },
+>>   	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_16H_NB_F3) },
+>>   	{}
+>>   };
+>> @@ -27,6 +28,7 @@ EXPORT_SYMBOL(amd_nb_misc_ids);
+>>   
+>>   static const struct pci_device_id amd_nb_link_ids[] = {
+>>   	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_15H_NB_F4) },
+>> +	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_15H_M30H_NB_F4) },
+>>   	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_16H_NB_F4) },
+>>   	{}
+>>   };
+>> @@ -81,13 +83,21 @@ int amd_cache_northbridges(void)
+>>   			next_northbridge(misc, amd_nb_misc_ids);
+>>   		node_to_amd_nb(i)->link = link =
+>>   			next_northbridge(link, amd_nb_link_ids);
+>> -        }
+>> +	}
+>>   
+>> +	/* GART present only on Fam15h upto model 0fh */
+>>   	if (boot_cpu_data.x86 == 0xf || boot_cpu_data.x86 == 0x10 ||
+>> -	    boot_cpu_data.x86 == 0x15)
+>> +	    (boot_cpu_data.x86 == 0x15 && boot_cpu_data.x86_model < 0x10))
+>>   		amd_northbridges.flags |= AMD_NB_GART;
+>>   
+>>   	/*
+>> +	 * Check CPUID Fn8000_0006_EDX: L3 Cache Identifiers.
+>> +	 * If == 0, then no need to proceed as there is no L3.
+> This comment explains the code. Just sit down and think about it: does
+> it make any sense to have that in a comment?
+>> +	 */
+>> +	if (cpuid_edx(0x80000006) == 0)
+>> +		return 0;
+>> +
+>> +	/*
+>>   	 * Some CPU families support L3 Cache Index Disable. There are some
+>>   	 * limitations because of E382 and E388 on family 0x10.
+>>   	 */
+>> --
+> I fixed it up like this:
 >
-> We could change the single caller, sys_unshare(), but I think it
-> would be more clean to avoid the side effects on failure, so with
-> this patch unshare_userns() does put_cred() itself and initializes
-> *new_cred only if create_user_ns() succeeeds.
-
-Doh!
-
-Reviewed-by: "Eric W. Biederman" <ebiederm@xmission.com>
-
-> Cc: stable@vger.kernel.org
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> ---
->  kernel/user_namespace.c |   13 +++++++++----
->  1 files changed, 9 insertions(+), 4 deletions(-)
+> commit a0cb1bab68823648def0fda19bf307ad08eb25d2
+> Author: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
+> Date:   Fri Aug 2 17:43:03 2013 -0500
 >
-> diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
-> index d8c30db..6e50a44 100644
-> --- a/kernel/user_namespace.c
-> +++ b/kernel/user_namespace.c
-> @@ -105,16 +105,21 @@ int create_user_ns(struct cred *new)
->  int unshare_userns(unsigned long unshare_flags, struct cred **new_cred)
->  {
->  	struct cred *cred;
-> +	int err = -ENOMEM;
->  
->  	if (!(unshare_flags & CLONE_NEWUSER))
->  		return 0;
->  
->  	cred = prepare_creds();
-> -	if (!cred)
-> -		return -ENOMEM;
-> +	if (cred) {
-> +		err = create_user_ns(cred);
-> +		if (err)
-> +			put_cred(cred);
-> +		else
-> +			*new_cred = cred;
+>      x86, amd_nb: Clarify F15h, model 30h GART and L3 support
+>      
+>      F15h, models 0x30 and later don't have a GART. Note that. Also check
+>      cpuid_edx(0x80000006) for prescence of L3 because there are models which
+>      don't sport an L3.
+>      
+>      Signed-off-by: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
+>      [ Boris: rewrite commit message, cleanup comments. ]
+>      Signed-off-by: Borislav Petkov <bp@suse.de>
+
+Okay, Thanks!
+> diff --git a/arch/x86/kernel/amd_nb.c b/arch/x86/kernel/amd_nb.c
+> index 3048ded1b598..59554dca96ec 100644
+> --- a/arch/x86/kernel/amd_nb.c
+> +++ b/arch/x86/kernel/amd_nb.c
+> @@ -20,6 +20,7 @@ const struct pci_device_id amd_nb_misc_ids[] = {
+>   	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_10H_NB_MISC) },
+>   	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_15H_NB_F3) },
+>   	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_15H_M10H_F3) },
+> +	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_15H_M30H_NB_F3) },
+>   	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_16H_NB_F3) },
+>   	{}
+>   };
+> @@ -27,6 +28,7 @@ EXPORT_SYMBOL(amd_nb_misc_ids);
+>   
+>   static const struct pci_device_id amd_nb_link_ids[] = {
+>   	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_15H_NB_F4) },
+> +	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_15H_M30H_NB_F4) },
+>   	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_16H_NB_F4) },
+>   	{}
+>   };
+> @@ -81,13 +83,20 @@ int amd_cache_northbridges(void)
+>   			next_northbridge(misc, amd_nb_misc_ids);
+>   		node_to_amd_nb(i)->link = link =
+>   			next_northbridge(link, amd_nb_link_ids);
+> -        }
 > +	}
->  
-> -	*new_cred = cred;
-> -	return create_user_ns(cred);
-> +	return err;
->  }
->  
->  void free_user_ns(struct user_namespace *ns)
+>   
+> +	/* GART present only on Fam15h upto model 0fh */
+>   	if (boot_cpu_data.x86 == 0xf || boot_cpu_data.x86 == 0x10 ||
+> -	    boot_cpu_data.x86 == 0x15)
+> +	    (boot_cpu_data.x86 == 0x15 && boot_cpu_data.x86_model < 0x10))
+>   		amd_northbridges.flags |= AMD_NB_GART;
+>   
+>   	/*
+> +	 * Check for L3 cache presence.
+> +	 */
+> +	if (!cpuid_edx(0x80000006))
+> +		return 0;
+> +
+> +	/*
+>   	 * Some CPU families support L3 Cache Index Disable. There are some
+>   	 * limitations because of E382 and E388 on family 0x10.
+>   	 */
+>
+>
+>
+
+
