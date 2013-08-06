@@ -1,368 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755350Ab3HFHas (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 03:30:48 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:4796 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753826Ab3HFHaq (ORCPT
+	id S1755482Ab3HFHh7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 03:37:59 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:55181 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755211Ab3HFHh6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 03:30:46 -0400
-X-Spam-Score: -100.8
-Message-ID: <5200A5E6.9020803@asianux.com>
-Date: Tue, 06 Aug 2013 15:29:42 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Tue, 6 Aug 2013 03:37:58 -0400
+X-AuditID: 85900ec0-d1ac5b900000151e-ad-5200a7d3bd17
+Subject: [PATCH -tip ] x86/insn: Add Haswell-introduced opcodes
+To: Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@redhat.com>
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
+        lkml <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
+Date: Tue, 06 Aug 2013 16:37:50 +0900
+Message-ID: <20130806073750.4049.12365.stgit@udc4-manage.rcp.hitachi.co.jp>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-To: Al Viro <viro@zeniv.linux.org.uk>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, xi.wang@gmail.com,
-        nicolas.dichtel@6wind.com
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] kernel/sysctl_binary.c: improve the usage of return value
- 'result'
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Improve the usage of return value 'result', so not only can make code
-clearer to readers, but also can improve the performance.
+Add TSX-NI related instructions and new instructions to
+x86-opcode-map.txt according to the Intel(R) 64 and IA-32
+Architectures Software Developer's Manual Vol2C (June, 2013).
+This also includes below updates.
+ - Fix a typo of MWAIT (the lack of (11B)).
+ - Change NOP Ev to prefetchw Ev
+ - Add CRC32 new prefix style (66&F2)
+ - Add ADCX, ADOX, RDSEED, CLAC and STAC instructions
 
-Assign the return error code only when error occurs, so can save some
-instructions (some of them are inside looping).
-
-Rewrite the sysctl_getname() to make code clearer to readers, and also
-can save some instructions (it is mainly related with the usage of the
-variable 'result').
-
-Remove useless variable 'result' for sysctl() and compat sysctl(), when
-do_sysctl() fails, it is meaningless to assign 'oldlenp ' with original
-same value.
-
-Also modify the related code to pass "./scripts/checkpatch.pl" checking.
-
-
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
 ---
- kernel/sysctl_binary.c |  142 ++++++++++++++++++++++++------------------------
- 1 files changed, 72 insertions(+), 70 deletions(-)
+ arch/x86/lib/x86-opcode-map.txt      |   42 +++++++++++++++++++---------------
+ arch/x86/tools/gen-insn-attr-x86.awk |    4 ++-
+ 2 files changed, 27 insertions(+), 19 deletions(-)
 
-diff --git a/kernel/sysctl_binary.c b/kernel/sysctl_binary.c
-index b609213..26d7fc0 100644
---- a/kernel/sysctl_binary.c
-+++ b/kernel/sysctl_binary.c
-@@ -941,15 +941,17 @@ static ssize_t bin_string(struct file *file,
- 		copied = result;
- 		lastp = oldval + copied - 1;
+diff --git a/arch/x86/lib/x86-opcode-map.txt b/arch/x86/lib/x86-opcode-map.txt
+index 5d7e51f..533a85e 100644
+--- a/arch/x86/lib/x86-opcode-map.txt
++++ b/arch/x86/lib/x86-opcode-map.txt
+@@ -1,10 +1,8 @@
+ # x86 Opcode Maps
+ #
+ # This is (mostly) based on following documentations.
+-# - Intel(R) 64 and IA-32 Architectures Software Developer's Manual Vol.2
+-#   (#325383-040US, October 2011)
+-# - Intel(R) Advanced Vector Extensions Programming Reference
+-#   (#319433-011,JUNE 2011).
++# - Intel(R) 64 and IA-32 Architectures Software Developer's Manual Vol.2C
++#   (#326018-047US, June 2013)
+ #
+ #<Opcode maps>
+ # Table: table-name
+@@ -29,6 +27,7 @@
+ #  - (F3): the last prefix is 0xF3
+ #  - (F2): the last prefix is 0xF2
+ #  - (!F3) : the last prefix is not 0xF3 (including non-last prefix case)
++#  - (66&F2): Both 0x66 and 0xF2 prefixes are specified.
  
--		result = -EFAULT;
--		if (get_user(ch, lastp))
-+		if (get_user(ch, lastp)) {
-+			result = -EFAULT;
- 			goto out;
-+		}
+ Table: one byte opcode
+ Referrer:
+@@ -246,8 +245,8 @@ c2: RETN Iw (f64)
+ c3: RETN
+ c4: LES Gz,Mp (i64) | VEX+2byte (Prefix)
+ c5: LDS Gz,Mp (i64) | VEX+1byte (Prefix)
+-c6: Grp11 Eb,Ib (1A)
+-c7: Grp11 Ev,Iz (1A)
++c6: Grp11A Eb,Ib (1A)
++c7: Grp11B Ev,Iz (1A)
+ c8: ENTER Iw,Ib
+ c9: LEAVE (d64)
+ ca: RETF Iw
+@@ -293,8 +292,8 @@ ef: OUT DX,eAX
+ # 0xf0 - 0xff
+ f0: LOCK (Prefix)
+ f1:
+-f2: REPNE (Prefix)
+-f3: REP/REPE (Prefix)
++f2: REPNE (Prefix) | XACQUIRE (Prefix)
++f3: REP/REPE (Prefix) | XRELEASE (Prefix)
+ f4: HLT
+ f5: CMC
+ f6: Grp3_1 Eb (1A)
+@@ -326,7 +325,8 @@ AVXcode: 1
+ 0a:
+ 0b: UD2 (1B)
+ 0c:
+-0d: NOP Ev | GrpP
++# AMD's prefetch group. Intel supports prefetchw(/1) only.
++0d: GrpP
+ 0e: FEMMS
+ # 3DNow! uses the last imm byte as opcode extension.
+ 0f: 3DNow! Pq,Qq,Ib
+@@ -729,12 +729,12 @@ dc: VAESENC Vdq,Hdq,Wdq (66),(v1)
+ dd: VAESENCLAST Vdq,Hdq,Wdq (66),(v1)
+ de: VAESDEC Vdq,Hdq,Wdq (66),(v1)
+ df: VAESDECLAST Vdq,Hdq,Wdq (66),(v1)
+-f0: MOVBE Gy,My | MOVBE Gw,Mw (66) | CRC32 Gd,Eb (F2)
+-f1: MOVBE My,Gy | MOVBE Mw,Gw (66) | CRC32 Gd,Ey (F2)
++f0: MOVBE Gy,My | MOVBE Gw,Mw (66) | CRC32 Gd,Eb (F2) | CRC32 Gd,Eb (66&F2)
++f1: MOVBE My,Gy | MOVBE Mw,Gw (66) | CRC32 Gd,Ey (F2) | CRC32 Gd,Ew (66&F2)
+ f2: ANDN Gy,By,Ey (v)
+ f3: Grp17 (1A)
+ f5: BZHI Gy,Ey,By (v) | PEXT Gy,By,Ey (F3),(v) | PDEP Gy,By,Ey (F2),(v)
+-f6: MULX By,Gy,rDX,Ey (F2),(v)
++f6: ADCX Gy,Ey (66) | ADOX Gy,Ey (F3) | MULX By,Gy,rDX,Ey (F2),(v)
+ f7: BEXTR Gy,Ey,By (v) | SHLX Gy,Ey,By (66),(v) | SARX Gy,Ey,By (F3),(v) | SHRX Gy,Ey,By (F2),(v)
+ EndTable
  
- 		/* Trim off the trailing newline */
- 		if (ch == '\n') {
--			result = -EFAULT;
--			if (put_user('\0', lastp))
-+			if (put_user('\0', lastp)) {
-+				result = -EFAULT;
- 				goto out;
-+			}
- 			copied -= 1;
- 		}
- 	}
-@@ -974,10 +976,11 @@ static ssize_t bin_intvec(struct file *file,
- 	char *buffer;
- 	ssize_t result;
+@@ -861,8 +861,8 @@ EndTable
  
--	result = -ENOMEM;
- 	buffer = kmalloc(BUFSZ, GFP_KERNEL);
--	if (!buffer)
-+	if (!buffer) {
-+		result = -ENOMEM;
- 		goto out;
-+	}
+ GrpTable: Grp7
+ 0: SGDT Ms | VMCALL (001),(11B) | VMLAUNCH (010),(11B) | VMRESUME (011),(11B) | VMXOFF (100),(11B)
+-1: SIDT Ms | MONITOR (000),(11B) | MWAIT (001)
+-2: LGDT Ms | XGETBV (000),(11B) | XSETBV (001),(11B) | VMFUNC (100),(11B)
++1: SIDT Ms | MONITOR (000),(11B) | MWAIT (001),(11B) | CLAC (010),(11B) | STAC (011),(11B)
++2: LGDT Ms | XGETBV (000),(11B) | XSETBV (001),(11B) | VMFUNC (100),(11B) | XEND (101)(11B) | XTEST (110)(11B)
+ 3: LIDT Ms
+ 4: SMSW Mw/Rv
+ 5:
+@@ -880,15 +880,21 @@ EndTable
+ GrpTable: Grp9
+ 1: CMPXCHG8B/16B Mq/Mdq
+ 6: VMPTRLD Mq | VMCLEAR Mq (66) | VMXON Mq (F3) | RDRAND Rv (11B)
+-7: VMPTRST Mq | VMPTRST Mq (F3)
++7: VMPTRST Mq | VMPTRST Mq (F3) | RDSEED Rv (11B)
+ EndTable
  
- 	if (oldval && oldlen) {
- 		unsigned __user *vec = oldval;
-@@ -999,9 +1002,10 @@ static ssize_t bin_intvec(struct file *file,
- 			while (isspace(*str))
- 				str++;
- 			
--			result = -EFAULT;
--			if (put_user(value, vec + i))
-+			if (put_user(value, vec + i)) {
-+				result = -EFAULT;
- 				goto out_kfree;
-+			}
+ GrpTable: Grp10
+ EndTable
  
- 			copied += sizeof(*vec);
- 			if (!isdigit(*str))
-@@ -1020,10 +1024,10 @@ static ssize_t bin_intvec(struct file *file,
- 		for (i = 0; i < length; i++) {
- 			unsigned long value;
- 
--			result = -EFAULT;
--			if (get_user(value, vec + i))
-+			if (get_user(value, vec + i)) {
-+				result = -EFAULT;
- 				goto out_kfree;
--
-+			}
- 			str += snprintf(str, end - str, "%lu\t", value);
- 		}
- 
-@@ -1045,10 +1049,11 @@ static ssize_t bin_ulongvec(struct file *file,
- 	char *buffer;
- 	ssize_t result;
- 
--	result = -ENOMEM;
- 	buffer = kmalloc(BUFSZ, GFP_KERNEL);
--	if (!buffer)
-+	if (!buffer) {
-+		result = -ENOMEM;
- 		goto out;
-+	}
- 
- 	if (oldval && oldlen) {
- 		unsigned long __user *vec = oldval;
-@@ -1070,9 +1075,10 @@ static ssize_t bin_ulongvec(struct file *file,
- 			while (isspace(*str))
- 				str++;
- 			
--			result = -EFAULT;
--			if (put_user(value, vec + i))
-+			if (put_user(value, vec + i)) {
-+				result = -EFAULT;
- 				goto out_kfree;
-+			}
- 
- 			copied += sizeof(*vec);
- 			if (!isdigit(*str))
-@@ -1091,10 +1097,10 @@ static ssize_t bin_ulongvec(struct file *file,
- 		for (i = 0; i < length; i++) {
- 			unsigned long value;
- 
--			result = -EFAULT;
--			if (get_user(value, vec + i))
-+			if (get_user(value, vec + i)) {
-+				result = -EFAULT;
- 				goto out_kfree;
--
-+			}
- 			str += snprintf(str, end - str, "%lu\t", value);
- 		}
- 
-@@ -1128,10 +1134,10 @@ static ssize_t bin_uuid(struct file *file,
- 
- 		/* Convert the uuid to from a string to binary */
- 		for (i = 0; i < 16; i++) {
--			result = -EIO;
--			if (!isxdigit(str[0]) || !isxdigit(str[1]))
-+			if (!isxdigit(str[0]) || !isxdigit(str[1])) {
-+				result = -EIO;
- 				goto out;
--
-+			}
- 			uuid[i] = (hex_to_bin(str[0]) << 4) |
- 					hex_to_bin(str[1]);
- 			str += 2;
-@@ -1142,10 +1148,10 @@ static ssize_t bin_uuid(struct file *file,
- 		if (oldlen > 16)
- 			oldlen = 16;
- 
--		result = -EFAULT;
--		if (copy_to_user(oldval, uuid, oldlen))
-+		if (copy_to_user(oldval, uuid, oldlen)) {
-+			result = -EFAULT;
- 			goto out;
--
-+		}
- 		copied = oldlen;
- 	}
- 	result = copied;
-@@ -1170,25 +1176,25 @@ static ssize_t bin_dn_node_address(struct file *file,
- 		buf[result] = '\0';
- 
- 		/* Convert the decnet address to binary */
--		result = -EIO;
- 		nodep = strchr(buf, '.');
--		if (!nodep)
-+		if (!nodep) {
-+			result = -EIO;
- 			goto out;
-+		}
- 		++nodep;
- 
- 		area = simple_strtoul(buf, NULL, 10);
- 		node = simple_strtoul(nodep, NULL, 10);
--
--		result = -EIO;
--		if ((area > 63)||(node > 1023))
-+		if ((area > 63) || (node > 1023)) {
-+			result = -EIO;
- 			goto out;
--
-+		}
- 		dnaddr = cpu_to_le16((area << 10) | node);
- 
--		result = -EFAULT;
--		if (put_user(dnaddr, (__le16 __user *)oldval))
-+		if (put_user(dnaddr, (__le16 __user *)oldval)) {
-+			result = -EFAULT;
- 			goto out;
--
-+		}
- 		copied = sizeof(dnaddr);
- 	}
- 
-@@ -1197,14 +1203,14 @@ static ssize_t bin_dn_node_address(struct file *file,
- 		char buf[15];
- 		int len;
- 
--		result = -EINVAL;
--		if (newlen != sizeof(dnaddr))
-+		if (newlen != sizeof(dnaddr)) {
-+			result = -EINVAL;
- 			goto out;
--
--		result = -EFAULT;
--		if (get_user(dnaddr, (__le16 __user *)newval))
-+		}
-+		if (get_user(dnaddr, (__le16 __user *)newval)) {
-+			result = -EFAULT;
- 			goto out;
--
-+		}
- 		len = snprintf(buf, sizeof(buf), "%hu.%hu",
- 				le16_to_cpu(dnaddr) >> 10,
- 				le16_to_cpu(dnaddr) & 0x3ff);
-@@ -1276,19 +1282,20 @@ repeat:
- 
- static char *sysctl_getname(const int *name, int nlen, const struct bin_table **tablep)
- {
--	char *tmp, *result;
--
--	result = ERR_PTR(-ENOMEM);
--	tmp = __getname();
--	if (tmp) {
--		const struct bin_table *table = get_sysctl(name, nlen, tmp);
--		result = tmp;
--		*tablep = table;
--		if (IS_ERR(table)) {
--			__putname(tmp);
--			result = ERR_CAST(table);
--		}
-+	char *result;
-+	const struct bin_table *table;
+-GrpTable: Grp11
+-# Note: the operands are given by group opcode
+-0: MOV
++# Grp11A and Grp11B are expressed as Grp11 in Intel SDM
++GrpTable: Grp11A
++0: MOV Eb,Ib
++7: XABORT Ib (000),(11B)
++EndTable
 +
-+	result = __getname();
-+	if (!result)
-+		return ERR_PTR(-ENOMEM);
-+
-+	table = get_sysctl(name, nlen, result);
-+	if (IS_ERR(table)) {
-+		__putname(result);
-+		return ERR_CAST(table);
- 	}
-+	*tablep = table;
-+
- 	return result;
- }
++GrpTable: Grp11B
++0: MOV Eb,Iz
++7: XBEGIN Jz (000),(11B)
+ EndTable
  
-@@ -1303,9 +1310,10 @@ static ssize_t binary_sysctl(const int *name, int nlen,
- 	int flags;
+ GrpTable: Grp12
+diff --git a/arch/x86/tools/gen-insn-attr-x86.awk b/arch/x86/tools/gen-insn-attr-x86.awk
+index e6773dc..093a892 100644
+--- a/arch/x86/tools/gen-insn-attr-x86.awk
++++ b/arch/x86/tools/gen-insn-attr-x86.awk
+@@ -68,7 +68,7 @@ BEGIN {
  
- 	pathname = sysctl_getname(name, nlen, &table);
--	result = PTR_ERR(pathname);
--	if (IS_ERR(pathname))
-+	if (IS_ERR(pathname)) {
-+		result = PTR_ERR(pathname);
- 		goto out;
-+	}
+ 	lprefix1_expr = "\\((66|!F3)\\)"
+ 	lprefix2_expr = "\\(F3\\)"
+-	lprefix3_expr = "\\((F2|!F3)\\)"
++	lprefix3_expr = "\\((F2|!F3|66\\&F2)\\)"
+ 	lprefix_expr = "\\((66|F2|F3)\\)"
+ 	max_lprefix = 4
  
- 	/* How should the sysctl be accessed? */
- 	if (oldval && oldlen && newval && newlen) {
-@@ -1321,10 +1329,10 @@ static ssize_t binary_sysctl(const int *name, int nlen,
- 
- 	mnt = task_active_pid_ns(current)->proc_mnt;
- 	file = file_open_root(mnt->mnt_root, mnt, pathname, flags);
--	result = PTR_ERR(file);
--	if (IS_ERR(file))
-+	if (IS_ERR(file)) {
-+		result = PTR_ERR(file);
- 		goto out_putname;
--
-+	}
- 	result = table->convert(file, oldval, oldlen, newval, newlen);
- 
- 	fput(file);
-@@ -1420,7 +1428,6 @@ SYSCALL_DEFINE1(sysctl, struct __sysctl_args __user *, args)
- {
- 	struct __sysctl_args tmp;
- 	size_t oldlen = 0;
--	ssize_t result;
- 
- 	if (copy_from_user(&tmp, args, sizeof(tmp)))
- 		return -EFAULT;
-@@ -1431,18 +1438,16 @@ SYSCALL_DEFINE1(sysctl, struct __sysctl_args __user *, args)
- 	if (tmp.oldlenp && get_user(oldlen, tmp.oldlenp))
- 		return -EFAULT;
- 
--	result = do_sysctl(tmp.name, tmp.nlen, tmp.oldval, oldlen,
-+	oldlen = do_sysctl(tmp.name, tmp.nlen, tmp.oldval, oldlen,
- 			   tmp.newval, tmp.newlen);
- 
--	if (result >= 0) {
--		oldlen = result;
--		result = 0;
--	}
-+	if ((ssize_t)oldlen < 0)
-+		return (ssize_t)oldlen;
- 
- 	if (tmp.oldlenp && put_user(oldlen, tmp.oldlenp))
- 		return -EFAULT;
- 
--	return result;
-+	return 0;
- }
- 
- 
-@@ -1463,7 +1468,6 @@ COMPAT_SYSCALL_DEFINE1(sysctl, struct compat_sysctl_args __user *, args)
- 	struct compat_sysctl_args tmp;
- 	compat_size_t __user *compat_oldlenp;
- 	size_t oldlen = 0;
--	ssize_t result;
- 
- 	if (copy_from_user(&tmp, args, sizeof(tmp)))
- 		return -EFAULT;
-@@ -1475,19 +1479,17 @@ COMPAT_SYSCALL_DEFINE1(sysctl, struct compat_sysctl_args __user *, args)
- 	if (compat_oldlenp && get_user(oldlen, compat_oldlenp))
- 		return -EFAULT;
- 
--	result = do_sysctl(compat_ptr(tmp.name), tmp.nlen,
-+	oldlen = do_sysctl(compat_ptr(tmp.name), tmp.nlen,
- 			   compat_ptr(tmp.oldval), oldlen,
- 			   compat_ptr(tmp.newval), tmp.newlen);
- 
--	if (result >= 0) {
--		oldlen = result;
--		result = 0;
--	}
-+	if ((ssize_t)oldlen < 0)
-+		return (ssize_t)oldlen;
- 
- 	if (compat_oldlenp && put_user(oldlen, compat_oldlenp))
- 		return -EFAULT;
- 
--	return result;
-+	return 0;
- }
- 
- #endif /* CONFIG_COMPAT */
--- 
-1.7.7.6
+@@ -83,6 +83,8 @@ BEGIN {
+ 	prefix_num["Operand-Size"] = "INAT_PFX_OPNDSZ"
+ 	prefix_num["REPNE"] = "INAT_PFX_REPNE"
+ 	prefix_num["REP/REPE"] = "INAT_PFX_REPE"
++	prefix_num["XACQUIRE"] = "INAT_PFX_REPNE"
++	prefix_num["XRELEASE"] = "INAT_PFX_REPE"
+ 	prefix_num["LOCK"] = "INAT_PFX_LOCK"
+ 	prefix_num["SEG=CS"] = "INAT_PFX_CS"
+ 	prefix_num["SEG=DS"] = "INAT_PFX_DS"
 
