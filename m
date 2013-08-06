@@ -1,70 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751940Ab3HFEa7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 00:30:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52427 "EHLO mx1.redhat.com"
+	id S1751416Ab3HFEkr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 00:40:47 -0400
+Received: from ozlabs.org ([203.10.76.45]:41653 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751562Ab3HFEa5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 00:30:57 -0400
-Date: Tue, 06 Aug 2013 00:30:03 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, Hillf Danton <dhillf@gmail.com>,
-        Michal Hocko <mhocko@suse.cz>, Rik van Riel <riel@redhat.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        Naoya Horiguchi <nao.horiguchi@gmail.com>
-Message-ID: <1375763403-g7t50glu-mutt-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <87haf3oabh.fsf@linux.vnet.ibm.com>
-References: <1374728103-17468-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1374728103-17468-9-git-send-email-n-horiguchi@ah.jp.nec.com>
- <87k3k7q4ox.fsf@linux.vnet.ibm.com>
- <1375302249-scfvftrh-mutt-n-horiguchi@ah.jp.nec.com>
- <87vc3qvtmc.fsf@linux.vnet.ibm.com>
- <1375411396-bw4cbhso-mutt-n-horiguchi@ah.jp.nec.com>
- <87haf3oabh.fsf@linux.vnet.ibm.com>
-Subject: Re: [PATCH 8/8] prepare to remove
- /proc/sys/vm/hugepages_treat_as_movable
-Mime-Version: 1.0
-Content-Type: text/plain;
- charset=iso-2022-jp
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-X-Mutt-References: <87haf3oabh.fsf@linux.vnet.ibm.com>
-X-Mutt-Fcc: ~/Maildir/sent/
-User-Agent: Mutt 1.5.21 (2010-09-15)
+	id S1751111Ab3HFEkq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Aug 2013 00:40:46 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Xiaotian Feng <xtfeng@gmail.com>, Peter Zijlstra <peterz@infradead.org>
+Cc: Xiaotian Feng <xtfeng@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] cpumask: fix cpumask leak in partition_sched_domains
+In-Reply-To: <CAJn8CcF4E6JiRrU6gaawQSnzR9GsQaOy+1yo=+dFmSoy=hSodQ@mail.gmail.com>
+References: <1374910011-72985-1-git-send-email-xtfeng@gmail.com> <CAJn8CcF4E6JiRrU6gaawQSnzR9GsQaOy+1yo=+dFmSoy=hSodQ@mail.gmail.com>
+User-Agent: Notmuch/0.15.2+81~gd2c8818 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Tue, 06 Aug 2013 14:07:37 +0930
+Message-ID: <87d2prqvse.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 06, 2013 at 07:22:02AM +0530, Aneesh Kumar K.V wrote:
-> Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> writes:
-> >> 
-> >> Considering that we have architectures that won't support migrating
-> >> explicit hugepages with this patch series, is it ok to use
-> >> GFP_HIGHUSER_MOVABLE for hugepage allocation ?
-> >
-> > Originally this parameter was introduced to make hugepage pool on ZONE_MOVABLE.
-> > The benefit is that we can extend the hugepage pool more easily,
-> > because external fragmentation less likely happens than other zone type
-> > by rearranging fragmented pages with page migration/reclaim.
-> >
-> > So I think using ZONE_MOVABLE for hugepage allocation by default makes sense
-> > even on the architectures which don't support hugepage migration.
-> 
-> But allocating hugepages from ZONE_MOVABLE means we have pages in that
-> zone which we can't migrate. Doesn't that impact other features like
-> hotplug ?
+Xiaotian Feng <xtfeng@gmail.com> writes:
+> On Sat, Jul 27, 2013 at 3:26 PM, Xiaotian Feng <xtfeng@gmail.com> wrote:
+>> If doms_new is NULL, partition_sched_domains() will reset ndoms_cur
+>> to 0, and free old sched domains with free_sched_domains(doms_cur, ndoms_cur).
+>> As ndoms_cur is 0, the cpumask will not be freed.
+>>
+>> Signed-off-by: Xiaotian Feng <xtfeng@gmail.com>
+>> Cc: Ingo Molnar <mingo@redhat.com>
+>> Cc: Peter Zijlstra <peterz@infradead.org>
+>> Cc: linux-kernel@vger.kernel.org
+>
+> Any comments? Cc'ed Rusty.
 
-Memory blocks occupied by hugepages are not removable before this patchset,
-whether they are from ZONE_MOVABLE or not, and the hugepage users accepted
-it for now. So I think this change doesn't make things worse than now. 
+The code is a little convoluted, but your fix is logical.
 
-It can be more preferable to switch on/off __GFP_MOVABLE flag depending on
-archs without using the tunable parameter. I'm ok for this direction, but
-I want to do it as a separate work.
+>> ---
+>>  kernel/sched/core.c |    5 +++--
+>>  1 file changed, 3 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+>> index b7c32cb..3d6c57b 100644
+>> --- a/kernel/sched/core.c
+>> +++ b/kernel/sched/core.c
+>> @@ -6184,8 +6184,9 @@ match1:
+>>                 ;
+>>         }
+>>
+>> +       n= ndoms_cur;
 
-Thanks,
-Naoya Horiguchi
+You're missing a ' ' here:
+        n = ndoms_cur;
+
+>>         if (doms_new == NULL) {
+>> -               ndoms_cur = 0;
+>> +               n = 0;
+>>                 doms_new = &fallback_doms;
+>>                 cpumask_andnot(doms_new[0], cpu_active_mask, cpu_isolated_map);
+>>                 WARN_ON_ONCE(dattr_new);
+>> @@ -6193,7 +6194,7 @@ match1:
+>>
+>>         /* Build new domains */
+>>         for (i = 0; i < ndoms_new; i++) {
+>> -               for (j = 0; j < ndoms_cur && !new_topology; j++) {
+>> +               for (j = 0; j < n && !new_topology; j++) {
+>>                         if (cpumask_equal(doms_new[i], doms_cur[j])
+>>                             && dattrs_equal(dattr_new, i, dattr_cur, j))
+>>                                 goto match2;
+>> --
+>> 1.7.9.6 (Apple Git-31.1)
+>>
+
+Cheers,
+Rusty.
