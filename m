@@ -1,76 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755843Ab3HFP3V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 11:29:21 -0400
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:26652 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752867Ab3HFP3T (ORCPT
+	id S1755897Ab3HFP37 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 11:29:59 -0400
+Received: from s3.sipsolutions.net ([144.76.43.152]:55572 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755045Ab3HFP36 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 11:29:19 -0400
-Message-ID: <1375802890.10300.179.camel@misato.fc.hp.com>
-Subject: Re: Cannot hot remove a memory device (patch, updated)
-From: Toshi Kani <toshi.kani@hp.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        rafael.j.wysocki@intel.com, vasilis.liaskovitis@profitbricks.com,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        tangchen@cn.fujitsu.com, wency@cn.fujitsu.com
-Date: Tue, 06 Aug 2013 09:28:10 -0600
-In-Reply-To: <4117925.f4JeZH8kGN@vostro.rjw.lan>
-References: <51FA1E41.20304@jp.fujitsu.com>
-	 <1456797.BR6oLAipWK@vostro.rjw.lan>
-	 <1375744796.10300.175.camel@misato.fc.hp.com>
-	 <4117925.f4JeZH8kGN@vostro.rjw.lan>
+	Tue, 6 Aug 2013 11:29:58 -0400
+Message-ID: <1375802993.8219.26.camel@jlt4.sipsolutions.net>
+Subject: Re: linux-next: Tree for Aug 6 [ wireless | iwlwifi | mac80211 ? ]
+From: Johannes Berg <johannes@sipsolutions.net>
+To: sedat.dilek@gmail.com
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        wireless <linux-wireless@vger.kernel.org>
+Date: Tue, 06 Aug 2013 17:29:53 +0200
+In-Reply-To: <CA+icZUVuOqdZUGy2ALAF1CehOqYdr7rtEsXhqNvDtYEns2BuRQ@mail.gmail.com> (sfid-20130806_172725_033196_729FC01D)
+References: <CA+icZUX8OcTSOABO6Nbz5R6_5-m39rsYOpDqYBA7hf8LFvJLLA@mail.gmail.com>
+	 <1375797260.8219.21.camel@jlt4.sipsolutions.net>
+	 <CA+icZUUAJ25QybqHvxz7eubSLH6YuNjcc5zyU2O5Xi9vevMGkw@mail.gmail.com>
+	 <1375800617.8219.23.camel@jlt4.sipsolutions.net>
+	 <CA+icZUVbKpyuke6PRg3-60gOggsTb=3cNRz3Sy0RmvcZSuPaNw@mail.gmail.com>
+	 <1375801059.8219.24.camel@jlt4.sipsolutions.net>
+	 <CA+icZUXrRsXfeW9hqxTMkKW4TdNSBH-zE8-zX2Rd7HTAx5MvqQ@mail.gmail.com>
+	 <CA+icZUWijPJmNoqE22Msqcn7tRot3SB3e=KujMM7JNd-Om-oOw@mail.gmail.com>
+	 <1375802297.8219.25.camel@jlt4.sipsolutions.net>
+	 <CA+icZUVCFOS6SHonEqzaJyWCGCU4nqqGjBN0VbmV-=OoM+deZg@mail.gmail.com>
+	 <CA+icZUVuOqdZUGy2ALAF1CehOqYdr7rtEsXhqNvDtYEns2BuRQ@mail.gmail.com>
+	 (sfid-20130806_172725_033196_729FC01D)
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+X-Mailer: Evolution 3.6.3-1 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-08-06 at 02:15 +0200, Rafael J. Wysocki wrote:
-> On Monday, August 05, 2013 05:19:56 PM Toshi Kani wrote:
-> > On Mon, 2013-08-05 at 15:14 +0200, Rafael J. Wysocki wrote:
-> >   :
-> > > Can you please test the appended patch?  I tested it somewhat, but since the
-> > > greatest number of physical nodes per ACPI device object I can get on my test
-> > > machines is 2 (and even that after hacking the kernel somewhat), that was kind
-> > > of unconclusive.
-> > > 
-> > > Thanks,
-> > > Rafael
-> > > 
-> > > 
-> > > ---
-> > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > > Subject: ACPI: Drop physical_node_id_bitmap from struct acpi_device
-> > > 
-> > > The physical_node_id_bitmap in struct acpi_device is only used for
-> > > looking up the first currently unused phyiscal dependent node ID
-> > > by acpi_bind_one().  It is not really necessary, however, because
-> > > acpi_bind_one() walks the entire physical_node_list of the given
-> > > device object for sanity checking anyway and if that list is always
-> > > sorted by node_id, it is straightforward to find the first gap
-> > > between the currently used node IDs and use that number as the ID
-> > > of the new list node.
-> > > 
-> > > This also removes the artificial limit of the maximum number of
-> > > dependent physical devices per ACPI device object, which now depends
-> > > only on the capacity of unsigend int.
-> > > 
-> > > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > 
-> > I like the change. Much better :-)
-> > 
-> > Acked-by: Toshi Kani <toshi.kani@hp.com>
+On Tue, 2013-08-06 at 17:27 +0200, Sedat Dilek wrote:
+> On Tue, Aug 6, 2013 at 5:20 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+> > On Tue, Aug 6, 2013 at 5:18 PM, Johannes Berg <johannes@sipsolutions.net> wrote:
+> >>
+> >>
+> >>> I have sent you a v2 of my logs (with -d and rsyslog-7.x).
+> >>
+> >> Hmm, that looks different? There no longer is anything about "PSK might
+> >> be wrong", but now just disconnections by the AP, which unfortunately
+> >> indicate no reason.
+> >>
+> >> When was it working last?
+> >>
+> >
+> > next-20130801 was OK here.
+> >
 > 
-> However, it introduces a bug in acpi_unbind_one(), because the size of the name
-> array in there has to be increased too.  Updated patch follows.
+> What about these lines?
+> 
+> Aug  6 17:03:37 fambox kernel: [  134.575120] wlan0: deauthenticated
+> from 00:04:0e:e4:00:3d (Reason: 1)
+> Aug  6 17:03:37 fambox wpa_supplicant[2424]: wlan0: Event DEAUTH (12) received
+> Aug  6 17:03:37 fambox wpa_supplicant[2424]: wlan0: Deauthentication
+> notification
+> Aug  6 17:03:37 fambox wpa_supplicant[2424]: Deauthentication frame
+> IE(s) - hexdump(len=0): [NULL]
+> Aug  6 17:03:37 fambox wpa_supplicant[2424]: wlan0: WPA: 4-Way
+> Handshake failed - pre-shared key may be incorrect
+> Aug  6 17:03:37 fambox NetworkManager[2431]: <info> (wlan0):
+> supplicant interface state: 4-way handshake -> disconnected
 
-Right.  Sorry, I overlooked this one.  Please apply my ask to this new
-version. 
+Yeah but before you had a local deauth request, this time it's the AP
+kicking you off.
 
-Thanks,
--Toshi
+I really don't know. Can you try something like wireless-testing maybe?
+-next could have any kind of breakage I guess ...
+
+johannes
 
