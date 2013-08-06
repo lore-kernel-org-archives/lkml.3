@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756696Ab3HFSKA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 14:10:00 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:7472 "EHLO
+	id S1756693Ab3HFSKh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 14:10:37 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:7464 "EHLO
 	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756633Ab3HFSJC (ORCPT
+	with ESMTP id S1756370Ab3HFSI5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 14:09:02 -0400
+	Tue, 6 Aug 2013 14:08:57 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 06 Aug 2013 11:09:01 -0700
+	by hqnvupgp08.nvidia.com on Tue, 06 Aug 2013 11:07:16 -0700
 From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
 To: <balbi@ti.com>
 CC: <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-usb@vger.kernel.org>, <swarren@wwwdotorg.org>,
         <gregkh@linuxfoundation.org>, <stern@rowland.harvard.edu>,
         Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-Subject: [PATCH v2 4/6] Documentation: New DT parameters for tegra30-usb-phy
-Date: Tue, 6 Aug 2013 21:08:36 +0300
-Message-ID: <1375812518-3847-5-git-send-email-ttynkkynen@nvidia.com>
+Subject: [PATCH v2 2/6] usb: phy: tegra: Fix wrong PHY parameters
+Date: Tue, 6 Aug 2013 21:08:34 +0300
+Message-ID: <1375812518-3847-3-git-send-email-ttynkkynen@nvidia.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1375812518-3847-1-git-send-email-ttynkkynen@nvidia.com>
 References: <1375812518-3847-1-git-send-email-ttynkkynen@nvidia.com>
@@ -28,55 +28,86 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Document the new device tree parameters for Tegra30 USB PHY.
+Some of the PHY parameters are not set according to the TRMs:
+
+- UTMIP_FS_PREABMLE_J should be set, not cleared
+- UTMIP_XCVR_LSBIAS_SEL should be cleared, not set
+- UTMIP_PD_CHRG should be set in host mode and cleared in device mode
+- UTMIP_XCVR_SETUP is a two-part field; the upper bits were not set
+  properly
 
 Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
 ---
- .../devicetree/bindings/usb/nvidia,tegra20-usb-phy.txt    | 15 ++++++++++++---
- 1 file changed, 12 insertions(+), 3 deletions(-)
+v2: Change register bitmasks to not contain shifted-out bits
+ drivers/usb/phy/phy-tegra-usb.c | 20 ++++++++++++++------
+ 1 file changed, 14 insertions(+), 6 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/usb/nvidia,tegra20-usb-phy.txt b/Documentation/devicetree/bindings/usb/nvidia,tegra20-usb-phy.txt
-index 4c8ade8..ba797d3 100644
---- a/Documentation/devicetree/bindings/usb/nvidia,tegra20-usb-phy.txt
-+++ b/Documentation/devicetree/bindings/usb/nvidia,tegra20-usb-phy.txt
-@@ -3,7 +3,7 @@ Tegra SOC USB PHY
- The device node for Tegra SOC USB PHY:
+diff --git a/drivers/usb/phy/phy-tegra-usb.c b/drivers/usb/phy/phy-tegra-usb.c
+index 49fa2da..ebbf85f 100644
+--- a/drivers/usb/phy/phy-tegra-usb.c
++++ b/drivers/usb/phy/phy-tegra-usb.c
+@@ -86,11 +86,13 @@
  
- Required properties :
-- - compatible : Should be "nvidia,tegra20-usb-phy".
-+ - compatible : Should be "nvidia,tegra<chip>-usb-phy".
-  - reg : Defines the following set of registers, in the order listed:
-    - The PHY's own register set.
-      Always present.
-@@ -24,17 +24,26 @@ Required properties :
- Required properties for phy_type == ulpi:
-   - nvidia,phy-reset-gpio : The GPIO used to reset the PHY.
+ #define UTMIP_XCVR_CFG0		0x808
+ #define   UTMIP_XCVR_SETUP(x)			(((x) & 0xf) << 0)
++#define   UTMIP_XCVR_SETUP_MSB(x)		((((x) & 0x70) >> 4) << 22)
+ #define   UTMIP_XCVR_LSRSLEW(x)			(((x) & 0x3) << 8)
+ #define   UTMIP_XCVR_LSFSLEW(x)			(((x) & 0x3) << 10)
+ #define   UTMIP_FORCE_PD_POWERDOWN		(1 << 14)
+ #define   UTMIP_FORCE_PD2_POWERDOWN		(1 << 16)
+ #define   UTMIP_FORCE_PDZI_POWERDOWN		(1 << 18)
++#define   UTMIP_XCVR_LSBIAS_SEL			(1 << 21)
+ #define   UTMIP_XCVR_HSSLEW_MSB(x)		(((x) & 0x7f) << 25)
  
--Required PHY timing params for utmi phy:
-+Required PHY timing params for utmi phy, for all chips:
-   - nvidia,hssync-start-delay : Number of 480 Mhz clock cycles to wait before
-     start of sync launches RxActive
-   - nvidia,elastic-limit : Variable FIFO Depth of elastic input store
-   - nvidia,idle-wait-delay : Number of 480 Mhz clock cycles of idle to wait
-     before declare IDLE.
-   - nvidia,term-range-adj : Range adjusment on terminations
--  - nvidia,xcvr-setup : HS driver output control
-+  - Either one of the following for HS driver output control:
-+    - nvidia,xcvr-setup : integer, uses the provided value.
-+    - nvidia,xcvr-setup-use-fuses : boolean, indicates that the value is read
-+      from the on-chip fuses
-+    If both are provided, nvidia,xcvr-setup-use-fuses takes precedence.
-   - nvidia,xcvr-lsfslew : LS falling slew rate control.
-   - nvidia,xcvr-lsrslew :  LS rising slew rate control.
+ #define UTMIP_BIAS_CFG0		0x80c
+@@ -342,7 +344,7 @@ static int utmi_phy_power_on(struct tegra_usb_phy *phy)
+ 	}
  
-+Required PHY timing params for utmi phy, only on Tegra30 and above:
-+  - nvidia,xcvr-hsslew : HS slew rate control.
-+  - nvidia,hssquelch-level : HS squelch detector level.
-+  - nvidia,hsdiscon-level : HS disconnect detector level.
+ 	val = readl(base + UTMIP_TX_CFG0);
+-	val &= ~UTMIP_FS_PREABMLE_J;
++	val |= UTMIP_FS_PREABMLE_J;
+ 	writel(val, base + UTMIP_TX_CFG0);
+ 
+ 	val = readl(base + UTMIP_HSRX_CFG0);
+@@ -381,16 +383,26 @@ static int utmi_phy_power_on(struct tegra_usb_phy *phy)
+ 		val = readl(base + USB_SUSP_CTRL);
+ 		val &= ~(USB_WAKE_ON_CNNT_EN_DEV | USB_WAKE_ON_DISCON_EN_DEV);
+ 		writel(val, base + USB_SUSP_CTRL);
 +
- Optional properties:
-   - nvidia,has-legacy-mode : boolean indicates whether this controller can
-     operate in legacy mode (as APX 2500 / 2600). In legacy mode some
++		val = readl(base + UTMIP_BAT_CHRG_CFG0);
++		val &= ~UTMIP_PD_CHRG;
++		writel(val, base + UTMIP_BAT_CHRG_CFG0);
++	} else {
++		val = readl(base + UTMIP_BAT_CHRG_CFG0);
++		val |= UTMIP_PD_CHRG;
++		writel(val, base + UTMIP_BAT_CHRG_CFG0);
+ 	}
+ 
+ 	utmip_pad_power_on(phy);
+ 
+ 	val = readl(base + UTMIP_XCVR_CFG0);
+ 	val &= ~(UTMIP_FORCE_PD_POWERDOWN | UTMIP_FORCE_PD2_POWERDOWN |
+-		 UTMIP_FORCE_PDZI_POWERDOWN | UTMIP_XCVR_SETUP(~0) |
++		 UTMIP_FORCE_PDZI_POWERDOWN | UTMIP_XCVR_LSBIAS_SEL |
++		 UTMIP_XCVR_SETUP(~0) | UTMIP_XCVR_SETUP_MSB(~0) |
+ 		 UTMIP_XCVR_LSFSLEW(~0) | UTMIP_XCVR_LSRSLEW(~0) |
+ 		 UTMIP_XCVR_HSSLEW_MSB(~0));
+ 	val |= UTMIP_XCVR_SETUP(config->xcvr_setup);
++	val |= UTMIP_XCVR_SETUP_MSB(config->xcvr_setup);
+ 	val |= UTMIP_XCVR_LSFSLEW(config->xcvr_lsfslew);
+ 	val |= UTMIP_XCVR_LSRSLEW(config->xcvr_lsrslew);
+ 	writel(val, base + UTMIP_XCVR_CFG0);
+@@ -401,10 +413,6 @@ static int utmi_phy_power_on(struct tegra_usb_phy *phy)
+ 	val |= UTMIP_XCVR_TERM_RANGE_ADJ(config->term_range_adj);
+ 	writel(val, base + UTMIP_XCVR_CFG1);
+ 
+-	val = readl(base + UTMIP_BAT_CHRG_CFG0);
+-	val &= ~UTMIP_PD_CHRG;
+-	writel(val, base + UTMIP_BAT_CHRG_CFG0);
+-
+ 	val = readl(base + UTMIP_BIAS_CFG1);
+ 	val &= ~UTMIP_BIAS_PDTRK_COUNT(~0);
+ 	val |= UTMIP_BIAS_PDTRK_COUNT(0x5);
 -- 
 1.8.1.5
 
