@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755465Ab3HFGnQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 02:43:16 -0400
+	id S1755412Ab3HFGnN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 02:43:13 -0400
 Received: from mailout3.w1.samsung.com ([210.118.77.13]:34479 "EHLO
 	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755253Ab3HFGnK (ORCPT
+	with ESMTP id S1755333Ab3HFGnL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 02:43:10 -0400
-X-AuditID: cbfec7f4-b7f5f6d000000ff6-d1-52009afd8a76
+	Tue, 6 Aug 2013 02:43:11 -0400
+X-AuditID: cbfec7f4-b7f5f6d000000ff6-da-52009afe30e7
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Seth Jennings <sjenning@linux.vnet.ibm.com>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org,
@@ -17,429 +17,103 @@ Cc: Mel Gorman <mgorman@suse.de>,
         Marek Szyprowski <m.szyprowski@samsung.com>,
         Kyungmin Park <kyungmin.park@samsung.com>,
         Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [RFC PATCH 2/4] mm: split code for unusing swap entries from
- try_to_unuse
-Date: Tue, 06 Aug 2013 08:42:39 +0200
-Message-id: <1375771361-8388-3-git-send-email-k.kozlowski@samsung.com>
+Subject: [RFC PATCH 3/4] mm: add zbud flag to page flags
+Date: Tue, 06 Aug 2013 08:42:40 +0200
+Message-id: <1375771361-8388-4-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1375771361-8388-1-git-send-email-k.kozlowski@samsung.com>
 References: <1375771361-8388-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrHJMWRmVeSWpSXmKPExsVy+t/xa7p/ZzEEGVy5x2wxZ/0aNouNM9az
-	Wrx+YWhxtukNu8XlXXPYLO6t+c9qsfbIXXaLye+eMVoc2reK3YHTY9OnSeweJ2b8ZvF4cGgz
-	i0ffllWMHptPV3t83iQXwBbFZZOSmpNZllqkb5fAlfH9pFTB8uSKG7/vsDUwnvHpYuTkkBAw
-	kdj/sZMFwhaTuHBvPRuILSSwlFHi15u0LkYuILuPSeL54smMIAk2AWOJzcuXgBWJCPQxSky6
-	bAFiMws8ZZTY9d2pi5GDQ1ggRGLiF2YQk0VAVWLBPQeQCl4BN4mtH5axgIQlBBQk5kyyAQlz
-	CrhLLN17mx1iq5vErwuzWCYw8i5gZFjFKJpamlxQnJSea6hXnJhbXJqXrpecn7uJERJmX3Yw
-	Lj5mdYhRgINRiYc34er/QCHWxLLiytxDjBIczEoivIxVDEFCvCmJlVWpRfnxRaU5qcWHGJk4
-	OKUaGIsnfuGtWFV3/Gj4t4mfX3/qmlvlUTb168wKGdPHWy59iTrn8PJRe9Sb+YeO7dg13+Pr
-	z1+K92+LHfj6y95A0T/G9qjBNo9vu3aVeidny9/X4v11zy/GRCtGOSrV4njAx4gNaSeelj19
-	uTvMukRDUilPT9pyq4pk8P+lurvcG/34qk+8+CR30k6JpTgj0VCLuag4EQCP5mZuEQIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpiluLIzCtJLcpLzFFi42I5/e/4Nd1/sxiCDP6v07aYs34Nm8XGGetZ
+	LV6/MLQ42/SG3eLyrjlsFvfW/Ge1WHvkLrvF5HfPGC0O7VvF7sDpsenTJHaPEzN+s3g8OLSZ
+	xaNvyypGj82nqz0+b5ILYIvisklJzcksSy3St0vgyti68hZjwQLBiu/bDrA1MH7j7WLk5JAQ
+	MJFY+aCfHcIWk7hwbz1bFyMXh5DAUkaJwy+eMUI4fUwSRyfcZgapYhMwlti8fAkbiC0i0Mco
+	MemyBYjNLPCUUWLXdycQW1jAQuLO5GcsIDaLgKrEr11PWEFsXgE3ieW3bgNt4wDapiAxZ5IN
+	SJhTwF1i6d7bYEcIAZX8ujCLZQIj7wJGhlWMoqmlyQXFSem5hnrFibnFpXnpesn5uZsYIeH2
+	ZQfj4mNWhxgFOBiVeHgTrv4PFGJNLCuuzD3EKMHBrCTCy1jFECTEm5JYWZValB9fVJqTWnyI
+	kYmDU6qB0fRswSLj9R9TlGY+YDy6P5XRaHr3TTudqr1L7P13bLab5y34eMmb5ZasLB15pRyc
+	2j8YH7xZ0sL+Yt97i88a3j+ysiVOrj/kd2LZnAn1kVlmhxoOad/46i4j+rLAqkdB6gn7Eh6H
+	vvn6AT+1fzpsdudZb7pQawuj3PuUx+YSq36a7+g9ptxwVomlOCPRUIu5qDgRAK+/NbIVAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move out the code for unusing swap entries from loop in try_to_unuse()
-to separate function: try_to_unuse_swp_entry(). Export this new function
-in swapfile.h just like try_to_unuse() is exported.
+Add PageZbud flag to page flags to distinguish pages allocated in zbud.
+Currently these pages do not have any flags set.
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 ---
- include/linux/swapfile.h |    2 +
- mm/swapfile.c            |  354 ++++++++++++++++++++++++----------------------
- 2 files changed, 187 insertions(+), 169 deletions(-)
+ include/linux/page-flags.h |   12 ++++++++++++
+ mm/page_alloc.c            |    3 +++
+ mm/zbud.c                  |    4 ++++
+ 3 files changed, 19 insertions(+)
 
-diff --git a/include/linux/swapfile.h b/include/linux/swapfile.h
-index e282624..68c24a7 100644
---- a/include/linux/swapfile.h
-+++ b/include/linux/swapfile.h
-@@ -9,5 +9,7 @@ extern spinlock_t swap_lock;
- extern struct swap_list_t swap_list;
- extern struct swap_info_struct *swap_info[];
- extern int try_to_unuse(unsigned int, bool, unsigned long);
-+extern int try_to_unuse_swp_entry(struct mm_struct **start_mm,
-+		struct swap_info_struct *si, swp_entry_t entry);
+diff --git a/include/linux/page-flags.h b/include/linux/page-flags.h
+index 6d53675..5b8b61a6 100644
+--- a/include/linux/page-flags.h
++++ b/include/linux/page-flags.h
+@@ -109,6 +109,12 @@ enum pageflags {
+ #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+ 	PG_compound_lock,
+ #endif
++#ifdef CONFIG_ZBUD
++	/* Allocated by zbud. Flag is necessary to find zbud pages to unuse
++	 * during migration/compaction.
++	 */
++	PG_zbud,
++#endif
+ 	__NR_PAGEFLAGS,
  
- #endif /* _LINUX_SWAPFILE_H */
-diff --git a/mm/swapfile.c b/mm/swapfile.c
-index 36af6ee..331d0b8 100644
---- a/mm/swapfile.c
-+++ b/mm/swapfile.c
-@@ -1100,6 +1100,189 @@ static unsigned int find_next_to_unuse(struct swap_info_struct *si,
- }
+ 	/* Filesystems */
+@@ -275,6 +281,12 @@ PAGEFLAG_FALSE(HWPoison)
+ #define __PG_HWPOISON 0
+ #endif
  
- /*
-+ * Returns:
-+ *  - negative on error,
-+ *  - 0 on success (entry unused)
-+ */
-+int try_to_unuse_swp_entry(struct mm_struct **start_mm,
-+		struct swap_info_struct *si, swp_entry_t entry)
-+{
-+	pgoff_t offset = swp_offset(entry);
-+	unsigned char *swap_map;
-+	unsigned char swcount;
-+	struct page *page;
-+	int retval = 0;
++#ifdef CONFIG_ZBUD
++PAGEFLAG(Zbud, zbud)
++#else
++PAGEFLAG_FALSE(Zbud)
++#endif
 +
-+	if (signal_pending(current)) {
-+		retval = -EINTR;
-+		goto out;
-+	}
-+
-+	/*
-+	 * Get a page for the entry, using the existing swap
-+	 * cache page if there is one.  Otherwise, get a clean
-+	 * page and read the swap into it.
-+	 */
-+	swap_map = &si->swap_map[offset];
-+	page = read_swap_cache_async(entry,
-+				GFP_HIGHUSER_MOVABLE, NULL, 0);
-+	if (!page) {
-+		/*
-+		 * Either swap_duplicate() failed because entry
-+		 * has been freed independently, and will not be
-+		 * reused since sys_swapoff() already disabled
-+		 * allocation from here, or alloc_page() failed.
-+		 */
-+		if (!*swap_map)
-+			retval = 0;
-+		else
-+			retval = -ENOMEM;
-+		goto out;
-+	}
-+
-+	/*
-+	 * Don't hold on to start_mm if it looks like exiting.
-+	 */
-+	if (atomic_read(&(*start_mm)->mm_users) == 1) {
-+		mmput(*start_mm);
-+		*start_mm = &init_mm;
-+		atomic_inc(&init_mm.mm_users);
-+	}
-+
-+	/*
-+	 * Wait for and lock page.  When do_swap_page races with
-+	 * try_to_unuse, do_swap_page can handle the fault much
-+	 * faster than try_to_unuse can locate the entry.  This
-+	 * apparently redundant "wait_on_page_locked" lets try_to_unuse
-+	 * defer to do_swap_page in such a case - in some tests,
-+	 * do_swap_page and try_to_unuse repeatedly compete.
-+	 */
-+	wait_on_page_locked(page);
-+	wait_on_page_writeback(page);
-+	lock_page(page);
-+	wait_on_page_writeback(page);
-+
-+	/*
-+	 * Remove all references to entry.
-+	 */
-+	swcount = *swap_map;
-+	if (swap_count(swcount) == SWAP_MAP_SHMEM) {
-+		retval = shmem_unuse(entry, page);
-+		VM_BUG_ON(retval > 0);
-+		/* page has already been unlocked and released */
-+		goto out;
-+	}
-+	if (swap_count(swcount) && *start_mm != &init_mm)
-+		retval = unuse_mm(*start_mm, entry, page);
-+
-+	if (swap_count(*swap_map)) {
-+		int set_start_mm = (*swap_map >= swcount);
-+		struct list_head *p = &(*start_mm)->mmlist;
-+		struct mm_struct *new_start_mm = *start_mm;
-+		struct mm_struct *prev_mm = *start_mm;
-+		struct mm_struct *mm;
-+
-+		atomic_inc(&new_start_mm->mm_users);
-+		atomic_inc(&prev_mm->mm_users);
-+		spin_lock(&mmlist_lock);
-+		while (swap_count(*swap_map) && !retval &&
-+				(p = p->next) != &(*start_mm)->mmlist) {
-+			mm = list_entry(p, struct mm_struct, mmlist);
-+			if (!atomic_inc_not_zero(&mm->mm_users))
-+				continue;
-+			spin_unlock(&mmlist_lock);
-+			mmput(prev_mm);
-+			prev_mm = mm;
-+
-+			cond_resched();
-+
-+			swcount = *swap_map;
-+			if (!swap_count(swcount)) /* any usage ? */
-+				;
-+			else if (mm == &init_mm)
-+				set_start_mm = 1;
-+			else
-+				retval = unuse_mm(mm, entry, page);
-+
-+			if (set_start_mm && *swap_map < swcount) {
-+				mmput(new_start_mm);
-+				atomic_inc(&mm->mm_users);
-+				new_start_mm = mm;
-+				set_start_mm = 0;
-+			}
-+			spin_lock(&mmlist_lock);
-+		}
-+		spin_unlock(&mmlist_lock);
-+		mmput(prev_mm);
-+		mmput(*start_mm);
-+		*start_mm = new_start_mm;
-+	}
-+	if (retval) {
-+		unlock_page(page);
-+		page_cache_release(page);
-+		goto out;
-+	}
-+
-+	/*
-+	 * If a reference remains (rare), we would like to leave
-+	 * the page in the swap cache; but try_to_unmap could
-+	 * then re-duplicate the entry once we drop page lock,
-+	 * so we might loop indefinitely; also, that page could
-+	 * not be swapped out to other storage meanwhile.  So:
-+	 * delete from cache even if there's another reference,
-+	 * after ensuring that the data has been saved to disk -
-+	 * since if the reference remains (rarer), it will be
-+	 * read from disk into another page.  Splitting into two
-+	 * pages would be incorrect if swap supported "shared
-+	 * private" pages, but they are handled by tmpfs files.
-+	 *
-+	 * Given how unuse_vma() targets one particular offset
-+	 * in an anon_vma, once the anon_vma has been determined,
-+	 * this splitting happens to be just what is needed to
-+	 * handle where KSM pages have been swapped out: re-reading
-+	 * is unnecessarily slow, but we can fix that later on.
-+	 */
-+	if (swap_count(*swap_map) &&
-+	     PageDirty(page) && PageSwapCache(page)) {
-+		struct writeback_control wbc = {
-+			.sync_mode = WB_SYNC_NONE,
-+		};
-+
-+		swap_writepage(page, &wbc);
-+		lock_page(page);
-+		wait_on_page_writeback(page);
-+	}
-+
-+	/*
-+	 * It is conceivable that a racing task removed this page from
-+	 * swap cache just before we acquired the page lock at the top,
-+	 * or while we dropped it in unuse_mm().  The page might even
-+	 * be back in swap cache on another swap area: that we must not
-+	 * delete, since it may not have been written out to swap yet.
-+	 */
-+	if (PageSwapCache(page) &&
-+	    likely(page_private(page) == entry.val))
-+		delete_from_swap_cache(page);
-+
-+	/*
-+	 * So we could skip searching mms once swap count went
-+	 * to 1, we did not mark any present ptes as dirty: must
-+	 * mark page dirty so shrink_page_list will preserve it.
-+	 */
-+	SetPageDirty(page);
-+	unlock_page(page);
-+	page_cache_release(page);
-+
-+	/*
-+	 * Make sure that we aren't completely killing
-+	 * interactive performance.
-+	 */
-+	cond_resched();
-+out:
-+	return retval;
-+}
-+
-+/*
-  * We completely avoid races by reading each swap page in advance,
-  * and then search for the process using it.  All the necessary
-  * page table adjustments can then be made atomically.
-@@ -1112,10 +1295,6 @@ int try_to_unuse(unsigned int type, bool frontswap,
+ u64 stable_page_flags(struct page *page);
+ 
+ static inline int PageUptodate(struct page *page)
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index b100255..1a120fb 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -6345,6 +6345,9 @@ static const struct trace_print_flags pageflag_names[] = {
+ #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+ 	{1UL << PG_compound_lock,	"compound_lock"	},
+ #endif
++#ifdef CONFIG_ZBUD
++	{1UL << PG_zbud,		"zbud"		},
++#endif
+ };
+ 
+ static void dump_page_flags(unsigned long flags)
+diff --git a/mm/zbud.c b/mm/zbud.c
+index a8e986f..a452949 100644
+--- a/mm/zbud.c
++++ b/mm/zbud.c
+@@ -230,7 +230,10 @@ static void get_zbud_page(struct zbud_header *zhdr)
+ static int put_zbud_page(struct zbud_pool *pool, struct zbud_header *zhdr)
  {
- 	struct swap_info_struct *si = swap_info[type];
- 	struct mm_struct *start_mm;
--	unsigned char *swap_map;
--	unsigned char swcount;
--	struct page *page;
--	swp_entry_t entry;
- 	unsigned int i = 0;
- 	int retval = 0;
- 
-@@ -1142,172 +1321,9 @@ int try_to_unuse(unsigned int type, bool frontswap,
- 	 * there are races when an instance of an entry might be missed.
+ 	struct page *page = virt_to_page(zhdr);
++	BUG_ON(!PageZbud(page));
++
+ 	if (put_page_testzero(page)) {
++		ClearPageZbud(page);
+ 		free_hot_cold_page(page, 0);
+ 		pool->pages_nr--;
+ 		return 1;
+@@ -341,6 +344,7 @@ int zbud_alloc(struct zbud_pool *pool, int size, gfp_t gfp,
+ 	 * don't increase the page count.
  	 */
- 	while ((i = find_next_to_unuse(si, i, frontswap)) != 0) {
--		if (signal_pending(current)) {
--			retval = -EINTR;
--			break;
--		}
--
--		/*
--		 * Get a page for the entry, using the existing swap
--		 * cache page if there is one.  Otherwise, get a clean
--		 * page and read the swap into it.
--		 */
--		swap_map = &si->swap_map[i];
--		entry = swp_entry(type, i);
--		page = read_swap_cache_async(entry,
--					GFP_HIGHUSER_MOVABLE, NULL, 0);
--		if (!page) {
--			/*
--			 * Either swap_duplicate() failed because entry
--			 * has been freed independently, and will not be
--			 * reused since sys_swapoff() already disabled
--			 * allocation from here, or alloc_page() failed.
--			 */
--			if (!*swap_map)
--				continue;
--			retval = -ENOMEM;
--			break;
--		}
--
--		/*
--		 * Don't hold on to start_mm if it looks like exiting.
--		 */
--		if (atomic_read(&start_mm->mm_users) == 1) {
--			mmput(start_mm);
--			start_mm = &init_mm;
--			atomic_inc(&init_mm.mm_users);
--		}
--
--		/*
--		 * Wait for and lock page.  When do_swap_page races with
--		 * try_to_unuse, do_swap_page can handle the fault much
--		 * faster than try_to_unuse can locate the entry.  This
--		 * apparently redundant "wait_on_page_locked" lets try_to_unuse
--		 * defer to do_swap_page in such a case - in some tests,
--		 * do_swap_page and try_to_unuse repeatedly compete.
--		 */
--		wait_on_page_locked(page);
--		wait_on_page_writeback(page);
--		lock_page(page);
--		wait_on_page_writeback(page);
--
--		/*
--		 * Remove all references to entry.
--		 */
--		swcount = *swap_map;
--		if (swap_count(swcount) == SWAP_MAP_SHMEM) {
--			retval = shmem_unuse(entry, page);
--			/* page has already been unlocked and released */
--			if (retval < 0)
--				break;
--			continue;
--		}
--		if (swap_count(swcount) && start_mm != &init_mm)
--			retval = unuse_mm(start_mm, entry, page);
--
--		if (swap_count(*swap_map)) {
--			int set_start_mm = (*swap_map >= swcount);
--			struct list_head *p = &start_mm->mmlist;
--			struct mm_struct *new_start_mm = start_mm;
--			struct mm_struct *prev_mm = start_mm;
--			struct mm_struct *mm;
--
--			atomic_inc(&new_start_mm->mm_users);
--			atomic_inc(&prev_mm->mm_users);
--			spin_lock(&mmlist_lock);
--			while (swap_count(*swap_map) && !retval &&
--					(p = p->next) != &start_mm->mmlist) {
--				mm = list_entry(p, struct mm_struct, mmlist);
--				if (!atomic_inc_not_zero(&mm->mm_users))
--					continue;
--				spin_unlock(&mmlist_lock);
--				mmput(prev_mm);
--				prev_mm = mm;
--
--				cond_resched();
--
--				swcount = *swap_map;
--				if (!swap_count(swcount)) /* any usage ? */
--					;
--				else if (mm == &init_mm)
--					set_start_mm = 1;
--				else
--					retval = unuse_mm(mm, entry, page);
--
--				if (set_start_mm && *swap_map < swcount) {
--					mmput(new_start_mm);
--					atomic_inc(&mm->mm_users);
--					new_start_mm = mm;
--					set_start_mm = 0;
--				}
--				spin_lock(&mmlist_lock);
--			}
--			spin_unlock(&mmlist_lock);
--			mmput(prev_mm);
--			mmput(start_mm);
--			start_mm = new_start_mm;
--		}
--		if (retval) {
--			unlock_page(page);
--			page_cache_release(page);
-+		if (try_to_unuse_swp_entry(&start_mm, si,
-+					swp_entry(type, i)) != 0)
- 			break;
--		}
--
--		/*
--		 * If a reference remains (rare), we would like to leave
--		 * the page in the swap cache; but try_to_unmap could
--		 * then re-duplicate the entry once we drop page lock,
--		 * so we might loop indefinitely; also, that page could
--		 * not be swapped out to other storage meanwhile.  So:
--		 * delete from cache even if there's another reference,
--		 * after ensuring that the data has been saved to disk -
--		 * since if the reference remains (rarer), it will be
--		 * read from disk into another page.  Splitting into two
--		 * pages would be incorrect if swap supported "shared
--		 * private" pages, but they are handled by tmpfs files.
--		 *
--		 * Given how unuse_vma() targets one particular offset
--		 * in an anon_vma, once the anon_vma has been determined,
--		 * this splitting happens to be just what is needed to
--		 * handle where KSM pages have been swapped out: re-reading
--		 * is unnecessarily slow, but we can fix that later on.
--		 */
--		if (swap_count(*swap_map) &&
--		     PageDirty(page) && PageSwapCache(page)) {
--			struct writeback_control wbc = {
--				.sync_mode = WB_SYNC_NONE,
--			};
--
--			swap_writepage(page, &wbc);
--			lock_page(page);
--			wait_on_page_writeback(page);
--		}
--
--		/*
--		 * It is conceivable that a racing task removed this page from
--		 * swap cache just before we acquired the page lock at the top,
--		 * or while we dropped it in unuse_mm().  The page might even
--		 * be back in swap cache on another swap area: that we must not
--		 * delete, since it may not have been written out to swap yet.
--		 */
--		if (PageSwapCache(page) &&
--		    likely(page_private(page) == entry.val))
--			delete_from_swap_cache(page);
--
--		/*
--		 * So we could skip searching mms once swap count went
--		 * to 1, we did not mark any present ptes as dirty: must
--		 * mark page dirty so shrink_page_list will preserve it.
--		 */
--		SetPageDirty(page);
--		unlock_page(page);
--		page_cache_release(page);
--
--		/*
--		 * Make sure that we aren't completely killing
--		 * interactive performance.
--		 */
--		cond_resched();
- 		if (frontswap && pages_to_unuse > 0) {
- 			if (!--pages_to_unuse)
- 				break;
+ 	zhdr = init_zbud_page(page);
++	SetPageZbud(page);
+ 	bud = FIRST;
+ 
+ found:
 -- 
 1.7.9.5
 
