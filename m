@@ -1,439 +1,238 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755820Ab3HFHnH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 03:43:07 -0400
-Received: from ozlabs.org ([203.10.76.45]:44807 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755211Ab3HFHms (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 03:42:48 -0400
-From: Michael Ellerman <michael@ellerman.id.au>
-To: <linuxppc-dev@ozlabs.org>
-Cc: <linux-kernel@vger.kernel.org>, Anton Blanchard <anton@samba.org>,
-        Jeremy Kerr <jk@ozlabs.org>, Michael Neuling <mikey@neuling.org>,
-        Andrew Morton <akpm@osdl.org>
-Subject: [PATCH v3 3/3] selftests: Add test of PMU instruction counting on powerpc
-Date: Tue,  6 Aug 2013 17:42:37 +1000
-Message-Id: <1375774957-30052-3-git-send-email-michael@ellerman.id.au>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1375774957-30052-1-git-send-email-michael@ellerman.id.au>
-References: <1375774957-30052-1-git-send-email-michael@ellerman.id.au>
+	id S1752795Ab3HFHrD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 03:47:03 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:53519 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751981Ab3HFHrA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Aug 2013 03:47:00 -0400
+Message-ID: <1375775172.5412.14.camel@marge.simpson.net>
+Subject: Re: [PATCH V3]hrtimer: Fix a performance regression by disable
+ reprogramming in remove_hrtimer
+From: Mike Galbraith <bitbucket@online.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ethan Zhao <ethan.kernel@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        johlstei@codeaurora.org, Yinghai Lu <yinghai@kernel.org>,
+        Jin Feng <joe.jin@oracle.com>, Youquan Song <youquan.song@intel.com>,
+        LenBrown <len.brown@intel.com>
+Date: Tue, 06 Aug 2013 09:46:12 +0200
+In-Reply-To: <1375774140.5412.9.camel@marge.simpson.net>
+References: <1374955447-5051-1-git-send-email-ethan.kernel@gmail.com>
+	 <alpine.DEB.2.02.1307291146060.4089@ionos.tec.linutronix.de>
+	 <CABawtvP4oLuvHOS3prbbgPShXVziV_wTo7i6KCqJ9KkoVdz0ag@mail.gmail.com>
+	 <20130730093519.GP3008@twins.programming.kicks-ass.net>
+	 <1375774140.5412.9.camel@marge.simpson.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Provags-ID: V02:K0:h8ynmWzvg/EFTJEYoAG1Obedg1tVnD/VxbXnbOjyAvn
+ k1SS6eouHWQRgjLa5eF9ga4W0D1kHvSStuKGCdJaOJpB+wsWBF
+ mhLzh2mPrn6KboxTHQA82xYmO3wro7TODPiUQSsxkAYTuC99M3
+ TrayJzHd9dn1t9ZQ509gPQTMY3khPOZGsmjSEmoH1c0jFjWd/X
+ 5aZJasjrgYFBvLPuoG6s9FDg+vyuUJejctrvbAoFh190P9JgHM
+ V0+E7psm15jTeIuiCgyKk+X3YcXKaJuvnTYOTbRtTKlkJa1rEt
+ G/ZMvQG8CoIEnc15UOM23rLtv2vzM0l5NqtHPohKMW3pCiaZiT
+ Ecghj8bnrAbWRu/CRDjpoLpI8ofT+mSEa1FTc+7FeKjWFYZBaI
+ /hPIiJHTYE5pw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit adds a test of instruction counting using the PMU on powerpc.
+(CCs Intel folks)
 
-Although the bulk of the code is architecture agnostic, the code needs to
-run a precisely sized loop which is implemented in assembler.
+On Tue, 2013-08-06 at 09:29 +0200, Mike Galbraith wrote: 
+> On Tue, 2013-07-30 at 11:35 +0200, Peter Zijlstra wrote:
+> 
+> > It would be good if you could do what Thomas suggested and look at which
+> > timer is actually active during your workload.
+> 
+> Rebuilding regression test trees, some pipe-test results...
+> 
+> I'm missing mwait_idle() rather a lot on Q6600, and at 3.8, E5620 took a
+> severe NOHZ drubbing from the menu governor. 
+> 
+> pipe-test, scheduling cross core
+> 
+> NOTE: nohz is throttled here (patchlet below), as to not eat horrible
+> microidle cost, see E5620 v3.7.10-nothrottle below.
+> 
+> Q6600
+> v3.8.13                  500.6 KHz     1.000
+> v3.9.11                  422.4 KHz      .843
+> v3.10.4                  420.2 KHz      .839
+> v3.11-rc3-4-g36f571e     404.7 KHz      .808
+> 
+> Q6600 3.9 regression:
+> guilty party is 69fb3676 x86 idle: remove mwait_idle() and "idle=mwait" cmdline param
+> halt sucks, HTH does one activate mwait_idle_with_hints() [processor_idle()] for core2 boxen?
+> 
+> E5620                                            +write 0 -> /dev/cpu_dma_latency, hold open
+> v3.7.10                  578.5 KHz     1.000     675.4 KHz     1.000
+> v3.7.10-nothrottle       366.7 KHz      .633     395.0 KHz      .584
+> v3.8.13                  468.3 KHz      .809     690.0 KHz     1.021
+> v3.8.13 idle=mwait       595.1 KHz     1.028     NA
+> v3.9.11                  462.0 KHz      .798     691.1 KHz     1.023
+> v3.10.4                  419.4 KHz      .724     570.8 KHz      .845
+> v3.11-rc3-4-g36f571e     400.1 KHz      .691     538.5 KHz      .797
+> 
+> E5620 3.8 regression:
+> guilty party: 69a37bea cpuidle: Quickly notice prediction failure for repeat mode
+> 
+> 
+> Q6600 (2.4 GHz core2 quad)
+>      v3.11-rc3-4-g36f571e                       v3.8.13
+>      7.97%  [k] reschedule_interrupt            8.63%  [k] __schedule
+>      6.27%  [k] __schedule                      6.07%  [k] native_sched_clock
+>      4.74%  [k] native_sched_clock              4.96%  [k] system_call
+>      4.23%  [k] _raw_spin_lock_irqsave          4.30%  [k] _raw_spin_lock_irqsave
+>      3.39%  [k] system_call                     4.06%  [k] resched_task
+>      2.89%  [k] sched_clock_local               3.44%  [k] sched_clock_local
+>      2.79%  [k] mutex_lock                      3.39%  [k] pipe_read
+>      2.57%  [k] pipe_read                       3.21%  [k] mutex_lock
+>      2.55%  [k] __switch_to                     2.98%  [k] read_tsc
+>      2.24%  [k] read_tsc                        2.87%  [k] __switch_to
+> 
+> 
+> E5620 (2.4 GHz Westmere quad)
+>     v3.7.10                                     v3.7.10-nothrottle                       v3.7.10-nothrottle
+>     8.01%  [k] __schedule                      25.80%  [k] _raw_spin_unlock_irqrestore   21.80%  [k] _raw_spin_unlock_irqrestore
+>     4.49%  [k] resched_tas                      4.64%  [k] __hrtimer_start_range_ns      - _raw_spin_unlock_irqrestore
+>     3.94%  [k] mutex_lock                       4.62%  [k] timerqueue_add                   + 37.94% __hrtimer_start_range_ns
+>     3.44%  [k] __switch_to                      4.54%  [k] __schedule                         19.69% hrtimer_cancel
+>     3.18%  [k] menu_select                      2.84%  [k] enqueue_hrtimer                       tick_nohz_restart
+>     3.05%  [k] copy_user_generic_string         2.64%  [k] resched_task                          tick_nohz_idle_exit
+>     3.02%  [k] task_waking_fair                 2.29%  [k] _raw_spin_lock_irqsave                cpu_idle
+>     2.91%  [k] mutex_unlock                     2.28%  [k] mutex_lock                            start_secondary
+>     2.82%  [k] pipe_read                        1.96%  [k] __switch_to                      + 16.05% hrtimer_start_range_ns
+>     2.32%  [k] ktime_get_real                   1.73%  [k] menu_select                        15.46% hrtimer_start
+>                                                                                                  tick_nohz_stop_sched_tick
+>                                                                                                  __tick_nohz_idle_enter
+>                                                                                                  tick_nohz_idle_enter
+>                                                                                                  cpu_idle
+>                                                                                                  start_secondary
+>                                                                                               6.37% hrtimer_try_to_cancel
+>                                                                                                  hrtimer_cancel
+>                                                                                                  tick_nohz_restart
+>                                                                                                  tick_nohz_idle_exit
+>                                                                                                  cpu_idle
+>                                                                                                  start_secondary
+> 
+>     v3.8.13                                    v3.8.13 idle=mwait                        v3.8.13 (throttled, but menu gov bites.. HARD)
+>     23.16%  [k] _raw_spin_unlock_irqrestore    8.35%  [k] __schedule                     -  22.91%  [k] _raw_spin_unlock_irqrestore
+>      4.93%  [k] __schedule                     6.49%  [k] __switch_to                       - _raw_spin_unlock_irqrestore
+>      3.42%  [k] resched_task                   5.71%  [k] resched_task                         - 47.26% hrtimer_try_to_cancel
+>      3.27%  [k] __switch_to                    4.64%  [k] mutex_lock                                hrtimer_cancel
+>      3.05%  [k] mutex_lock                     3.48%  [k] copy_user_generic_string                  menu_hrtimer_cancel
+>      2.32%  [k] copy_user_generic_string       3.15%  [k] task_waking_fair                          tick_nohz_idle_exit
+>      2.30%  [k] _raw_spin_lock_irqsave         3.13%  [k] pipe_read                                 cpu_idle
+>      2.15%  [k] pipe_read                      2.61%  [k] mutex_unlock                              start_secondary
+>      2.15%  [k] task_waking_fair               2.54%  [k] finish_task_switch                   - 40.01% __hrtimer_start_range_ns
+>      2.08%  [k] ktime_get                      2.29%  [k] _raw_spin_lock_irqsave                    hrtimer_start
+>      1.87%  [k] mutex_unlock                   1.91%  [k] idle_cpu                                  menu_select
+>      1.76%  [k] finish_task_switch             1.84%  [k] __wake_up_common                          cpuidle_idle_call
+>                                                                                                     cpu_idle
+>                                                                                                     start_secondary
+> 
+>     v3.9.11
+>     18.67%  [k] _raw_spin_unlock_irqrestore
+>      4.36%  [k] __schedule
+>      3.66%  [k] __switch_to
+>      3.13%  [k] mutex_lock
+>      2.97%  [k] __hrtimer_start_range_ns
+>      2.69%  [k] _raw_spin_lock_irqsave
+>      2.38%  [k] copy_user_generic_string
+>      2.34%  [k] hrtimer_reprogram.isra.32
+>      2.34%  [k] task_waking_fair
+>      2.25%  [k] ktime_get
+>      2.14%  [k] pipe_read
+>      1.98%  [k] menu_select
+> 
+>     v3.10.4
+>     20.42%  [k] _raw_spin_unlock_irqrestore
+>      4.75%  [k] __schedule
+>      4.42%  [k] reschedule_interrupt  <== appears in 3.10, guilty party as yet unknown
+>      3.52%  [k] __switch_to
+>      3.27%  [k] resched_task
+>      2.64%  [k] cpuidle_enter_state
+>      2.63%  [k] _raw_spin_lock_irqsave
+>      2.04%  [k] copy_user_generic_string
+>      2.00%  [k] cpu_idle_loop
+>      1.97%  [k] mutex_lock
+>      1.90%  [k] ktime_get
+>      1.75%  [k] task_waking_fair
+> 
+>    v3.11-rc3-4-g36f571e
+>    18.96%  [k] _raw_spin_unlock_irqrestore
+>     4.84%  [k] __schedule
+>     4.69%  [k] reschedule_interrupt
+>     3.75%  [k] __switch_to
+>     2.62%  [k] _raw_spin_lock_irqsave
+>     2.43%  [k] cpuidle_enter_state
+>     2.28%  [k] resched_task
+>     2.20%  [k] cpu_idle_loop
+>     1.97%  [k] copy_user_generic_string
+>     1.88%  [k] ktime_get
+>     1.81%  [k] task_waking_fair
+>     1.75%  [k] mutex_lock
+> 
+> sched: ratelimit nohz
+> 
+> Entering nohz code on every micro-idle is too expensive to bear.
+> 
+> Signed-off-by: Mike Galbraith <efault@gmx.de>
+> 
+> ---
+>  include/linux/sched.h    |    5 +++++
+>  kernel/sched/core.c      |    5 +++++
+>  kernel/time/tick-sched.c |    2 +-
+>  3 files changed, 11 insertions(+), 1 deletion(-)
+> 
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -235,9 +235,14 @@ extern int runqueue_is_locked(int cpu);
+>  extern void nohz_balance_enter_idle(int cpu);
+>  extern void set_cpu_sd_state_idle(void);
+>  extern int get_nohz_timer_target(void);
+> +extern int sched_needs_cpu(int cpu);
+>  #else
+>  static inline void nohz_balance_enter_idle(int cpu) { }
+>  static inline void set_cpu_sd_state_idle(void) { }
+> +static inline int sched_needs_cpu(int cpu)
+> +{
+> +	return 0;
+> +}
+>  #endif
+>  
+>  /*
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -650,6 +650,11 @@ static inline bool got_nohz_idle_kick(vo
+>  	return false;
+>  }
+>  
+> +int sched_needs_cpu(int cpu)
+> +{
+> +	return  cpu_rq(cpu)->avg_idle < sysctl_sched_migration_cost;
+> +}
+> +
+>  #else /* CONFIG_NO_HZ_COMMON */
+>  
+>  static inline bool got_nohz_idle_kick(void)
+> --- a/kernel/time/tick-sched.c
+> +++ b/kernel/time/tick-sched.c
+> @@ -548,7 +548,7 @@ static ktime_t tick_nohz_stop_sched_tick
+>  		time_delta = timekeeping_max_deferment();
+>  	} while (read_seqretry(&jiffies_lock, seq));
+>  
+> -	if (rcu_needs_cpu(cpu, &rcu_delta_jiffies) ||
+> +	if (sched_needs_cpu(cpu) || rcu_needs_cpu(cpu, &rcu_delta_jiffies) ||
+>  	    arch_needs_cpu(cpu) || irq_work_needs_cpu()) {
+>  		next_jiffies = last_jiffies + 1;
+>  		delta_jiffies = 1;
+> 
+> 
 
-Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
----
-v2,3: No change
-
- tools/testing/selftests/powerpc/Makefile           |   2 +-
- tools/testing/selftests/powerpc/pmu/Makefile       |  23 ++++
- .../selftests/powerpc/pmu/count_instructions.c     | 135 +++++++++++++++++++++
- tools/testing/selftests/powerpc/pmu/event.c        | 105 ++++++++++++++++
- tools/testing/selftests/powerpc/pmu/event.h        |  39 ++++++
- tools/testing/selftests/powerpc/pmu/loop.S         |  46 +++++++
- 6 files changed, 349 insertions(+), 1 deletion(-)
- create mode 100644 tools/testing/selftests/powerpc/pmu/Makefile
- create mode 100644 tools/testing/selftests/powerpc/pmu/count_instructions.c
- create mode 100644 tools/testing/selftests/powerpc/pmu/event.c
- create mode 100644 tools/testing/selftests/powerpc/pmu/event.h
- create mode 100644 tools/testing/selftests/powerpc/pmu/loop.S
-
-diff --git a/tools/testing/selftests/powerpc/Makefile b/tools/testing/selftests/powerpc/Makefile
-index b315740..bd24ae5 100644
---- a/tools/testing/selftests/powerpc/Makefile
-+++ b/tools/testing/selftests/powerpc/Makefile
-@@ -13,7 +13,7 @@ CFLAGS := -Wall -O2 -flto -Wall -Werror -DGIT_VERSION='"$(GIT_VERSION)"' -I$(CUR
- 
- export CC CFLAGS
- 
--TARGETS =
-+TARGETS = pmu
- 
- endif
- 
-diff --git a/tools/testing/selftests/powerpc/pmu/Makefile b/tools/testing/selftests/powerpc/pmu/Makefile
-new file mode 100644
-index 0000000..7216f00
---- /dev/null
-+++ b/tools/testing/selftests/powerpc/pmu/Makefile
-@@ -0,0 +1,23 @@
-+noarg:
-+	$(MAKE) -C ../
-+
-+PROGS := count_instructions
-+EXTRA_SOURCES := ../harness.c event.c
-+
-+all: $(PROGS)
-+
-+$(PROGS): $(EXTRA_SOURCES)
-+
-+# loop.S can only be built 64-bit
-+count_instructions: loop.S count_instructions.c $(EXTRA_SOURCES)
-+	$(CC) $(CFLAGS) -m64 -o $@ $^
-+
-+run_tests: all
-+	@-for PROG in $(PROGS); do \
-+		./$$PROG; \
-+	done;
-+
-+clean:
-+	rm -f $(PROGS) loop.o
-+
-+.PHONY: all run_tests clean
-diff --git a/tools/testing/selftests/powerpc/pmu/count_instructions.c b/tools/testing/selftests/powerpc/pmu/count_instructions.c
-new file mode 100644
-index 0000000..312b4f0
---- /dev/null
-+++ b/tools/testing/selftests/powerpc/pmu/count_instructions.c
-@@ -0,0 +1,135 @@
-+/*
-+ * Copyright 2013, Michael Ellerman, IBM Corp.
-+ * Licensed under GPLv2.
-+ */
-+
-+#define _GNU_SOURCE
-+
-+#include <stdio.h>
-+#include <stdbool.h>
-+#include <string.h>
-+#include <sys/prctl.h>
-+
-+#include "event.h"
-+#include "utils.h"
-+
-+extern void thirty_two_instruction_loop(u64 loops);
-+
-+static void setup_event(struct event *e, u64 config, char *name)
-+{
-+	event_init_opts(e, config, PERF_TYPE_HARDWARE, name);
-+
-+	e->attr.disabled = 1;
-+	e->attr.exclude_kernel = 1;
-+	e->attr.exclude_hv = 1;
-+	e->attr.exclude_idle = 1;
-+}
-+
-+static int do_count_loop(struct event *events, u64 instructions,
-+			 u64 overhead, bool report)
-+{
-+	s64 difference, expected;
-+	double percentage;
-+
-+	prctl(PR_TASK_PERF_EVENTS_ENABLE);
-+
-+	/* Run for 1M instructions */
-+	thirty_two_instruction_loop(instructions >> 5);
-+
-+	prctl(PR_TASK_PERF_EVENTS_DISABLE);
-+
-+	event_read(&events[0]);
-+	event_read(&events[1]);
-+
-+	expected = instructions + overhead;
-+	difference = events[0].result.value - expected;
-+	percentage = (double)difference / events[0].result.value * 100;
-+
-+	if (report) {
-+		event_report(&events[0]);
-+		event_report(&events[1]);
-+
-+		printf("Looped for %llu instructions, overhead %llu\n", instructions, overhead);
-+		printf("Expected %llu\n", expected);
-+		printf("Actual   %llu\n", events[0].result.value);
-+		printf("Delta    %lld, %f%%\n", difference, percentage);
-+	}
-+
-+	event_reset(&events[0]);
-+	event_reset(&events[1]);
-+
-+	if (difference < 0)
-+		difference = -difference;
-+
-+	/* Tolerate a difference below 0.0001 % */
-+	difference *= 10000 * 100;
-+	if (difference / events[0].result.value)
-+		return -1;
-+
-+	return 0;
-+}
-+
-+/* Count how many instructions it takes to do a null loop */
-+static u64 determine_overhead(struct event *events)
-+{
-+	u64 current, overhead;
-+	int i;
-+
-+	do_count_loop(events, 0, 0, false);
-+	overhead = events[0].result.value;
-+
-+	for (i = 0; i < 100; i++) {
-+		do_count_loop(events, 0, 0, false);
-+		current = events[0].result.value;
-+		if (current < overhead) {
-+			printf("Replacing overhead %llu with %llu\n", overhead, current);
-+			overhead = current;
-+		}
-+	}
-+
-+	return overhead;
-+}
-+
-+static int count_instructions(void)
-+{
-+	struct event events[2];
-+	u64 overhead;
-+
-+	setup_event(&events[0], PERF_COUNT_HW_INSTRUCTIONS, "instructions");
-+	setup_event(&events[1], PERF_COUNT_HW_CPU_CYCLES, "cycles");
-+
-+	if (event_open(&events[0])) {
-+		perror("perf_event_open");
-+		return -1;
-+	}
-+
-+	if (event_open_with_group(&events[1], events[0].fd)) {
-+		perror("perf_event_open");
-+		return -1;
-+	}
-+
-+	overhead = determine_overhead(events);
-+	printf("Overhead of null loop: %llu instructions\n", overhead);
-+
-+	/* Run for 1M instructions */
-+	FAIL_IF(do_count_loop(events, 0x100000, overhead, true));
-+
-+	/* Run for 10M instructions */
-+	FAIL_IF(do_count_loop(events, 0xa00000, overhead, true));
-+
-+	/* Run for 100M instructions */
-+	FAIL_IF(do_count_loop(events, 0x6400000, overhead, true));
-+
-+	/* Run for 1G instructions */
-+	FAIL_IF(do_count_loop(events, 0x40000000, overhead, true));
-+
-+	event_close(&events[0]);
-+	event_close(&events[1]);
-+
-+	return 0;
-+}
-+
-+int main(void)
-+{
-+	return test_harness(count_instructions, "count_instructions");
-+}
-diff --git a/tools/testing/selftests/powerpc/pmu/event.c b/tools/testing/selftests/powerpc/pmu/event.c
-new file mode 100644
-index 0000000..2b2d11d
---- /dev/null
-+++ b/tools/testing/selftests/powerpc/pmu/event.c
-@@ -0,0 +1,105 @@
-+/*
-+ * Copyright 2013, Michael Ellerman, IBM Corp.
-+ * Licensed under GPLv2.
-+ */
-+
-+#define _GNU_SOURCE
-+#include <unistd.h>
-+#include <sys/syscall.h>
-+#include <string.h>
-+#include <stdio.h>
-+#include <sys/ioctl.h>
-+
-+#include "event.h"
-+
-+
-+int perf_event_open(struct perf_event_attr *attr, pid_t pid, int cpu,
-+		int group_fd, unsigned long flags)
-+{
-+	return syscall(__NR_perf_event_open, attr, pid, cpu,
-+			   group_fd, flags);
-+}
-+
-+void event_init_opts(struct event *e, u64 config, int type, char *name)
-+{
-+	memset(e, 0, sizeof(*e));
-+
-+	e->name = name;
-+
-+	e->attr.type = type;
-+	e->attr.config = config;
-+	e->attr.size = sizeof(e->attr);
-+	/* This has to match the structure layout in the header */
-+	e->attr.read_format = PERF_FORMAT_TOTAL_TIME_ENABLED | \
-+				  PERF_FORMAT_TOTAL_TIME_RUNNING;
-+}
-+
-+void event_init_named(struct event *e, u64 config, char *name)
-+{
-+	event_init_opts(e, config, PERF_TYPE_RAW, name);
-+}
-+
-+#define PERF_CURRENT_PID	0
-+#define PERF_NO_CPU		-1
-+#define PERF_NO_GROUP		-1
-+
-+int event_open_with_options(struct event *e, pid_t pid, int cpu, int group_fd)
-+{
-+	e->fd = perf_event_open(&e->attr, pid, cpu, group_fd, 0);
-+	if (e->fd == -1) {
-+		perror("perf_event_open");
-+		return -1;
-+	}
-+
-+	return 0;
-+}
-+
-+int event_open_with_group(struct event *e, int group_fd)
-+{
-+	return event_open_with_options(e, PERF_CURRENT_PID, PERF_NO_CPU, group_fd);
-+}
-+
-+int event_open(struct event *e)
-+{
-+	return event_open_with_options(e, PERF_CURRENT_PID, PERF_NO_CPU, PERF_NO_GROUP);
-+}
-+
-+void event_close(struct event *e)
-+{
-+	close(e->fd);
-+}
-+
-+int event_reset(struct event *e)
-+{
-+	return ioctl(e->fd, PERF_EVENT_IOC_RESET);
-+}
-+
-+int event_read(struct event *e)
-+{
-+	int rc;
-+
-+	rc = read(e->fd, &e->result, sizeof(e->result));
-+	if (rc != sizeof(e->result)) {
-+		fprintf(stderr, "read error on event %p!\n", e);
-+		return -1;
-+	}
-+
-+	return 0;
-+}
-+
-+void event_report_justified(struct event *e, int name_width, int result_width)
-+{
-+	printf("%*s: result %*llu ", name_width, e->name, result_width,
-+	       e->result.value);
-+
-+	if (e->result.running == e->result.enabled)
-+		printf("running/enabled %llu\n", e->result.running);
-+	else
-+		printf("running %llu enabled %llu\n", e->result.running,
-+			e->result.enabled);
-+}
-+
-+void event_report(struct event *e)
-+{
-+	event_report_justified(e, 0, 0);
-+}
-diff --git a/tools/testing/selftests/powerpc/pmu/event.h b/tools/testing/selftests/powerpc/pmu/event.h
-new file mode 100644
-index 0000000..e699319
---- /dev/null
-+++ b/tools/testing/selftests/powerpc/pmu/event.h
-@@ -0,0 +1,39 @@
-+/*
-+ * Copyright 2013, Michael Ellerman, IBM Corp.
-+ * Licensed under GPLv2.
-+ */
-+
-+#ifndef _SELFTESTS_POWERPC_PMU_EVENT_H
-+#define _SELFTESTS_POWERPC_PMU_EVENT_H
-+
-+#include <unistd.h>
-+#include <linux/perf_event.h>
-+
-+#include "utils.h"
-+
-+
-+struct event {
-+	struct perf_event_attr attr;
-+	char *name;
-+	int fd;
-+	/* This must match the read_format we use */
-+	struct {
-+		u64 value;
-+		u64 running;
-+		u64 enabled;
-+	} result;
-+};
-+
-+void event_init(struct event *e, u64 config);
-+void event_init_named(struct event *e, u64 config, char *name);
-+void event_init_opts(struct event *e, u64 config, int type, char *name);
-+int event_open_with_options(struct event *e, pid_t pid, int cpu, int group_fd);
-+int event_open_with_group(struct event *e, int group_fd);
-+int event_open(struct event *e);
-+void event_close(struct event *e);
-+int event_reset(struct event *e);
-+int event_read(struct event *e);
-+void event_report_justified(struct event *e, int name_width, int result_width);
-+void event_report(struct event *e);
-+
-+#endif /* _SELFTESTS_POWERPC_PMU_EVENT_H */
-diff --git a/tools/testing/selftests/powerpc/pmu/loop.S b/tools/testing/selftests/powerpc/pmu/loop.S
-new file mode 100644
-index 0000000..8820e3d
---- /dev/null
-+++ b/tools/testing/selftests/powerpc/pmu/loop.S
-@@ -0,0 +1,46 @@
-+/*
-+ * Copyright 2013, Michael Ellerman, IBM Corp.
-+ * Licensed under GPLv2.
-+ */
-+
-+	.text
-+
-+	.global thirty_two_instruction_loop
-+	.type .thirty_two_instruction_loop,@function
-+	.section ".opd","aw",@progbits
-+thirty_two_instruction_loop:
-+	.quad .thirty_two_instruction_loop, .TOC.@tocbase, 0
-+	.previous
-+.thirty_two_instruction_loop:
-+	cmpwi	%r3,0
-+	beqlr
-+	addi	%r4,%r3,1
-+	addi	%r4,%r4,1
-+	addi	%r4,%r4,1
-+	addi	%r4,%r4,1
-+	addi	%r4,%r4,1
-+	addi	%r4,%r4,1
-+	addi	%r4,%r4,1
-+	addi	%r4,%r4,1
-+	addi	%r4,%r4,1
-+	addi	%r4,%r4,1
-+	addi	%r4,%r4,1
-+	addi	%r4,%r4,1
-+	addi	%r4,%r4,1
-+	addi	%r4,%r4,1
-+	addi	%r4,%r4,1
-+	addi	%r4,%r4,1
-+	addi	%r4,%r4,1
-+	addi	%r4,%r4,1
-+	addi	%r4,%r4,1
-+	addi	%r4,%r4,1
-+	addi	%r4,%r4,1
-+	addi	%r4,%r4,1
-+	addi	%r4,%r4,1
-+	addi	%r4,%r4,1
-+	addi	%r4,%r4,1
-+	addi	%r4,%r4,1
-+	addi	%r4,%r4,1
-+	addi	%r4,%r4,1	# 28 addi's
-+	subi	%r3,%r3,1
-+	b	.thirty_two_instruction_loop
--- 
-1.8.1.2
 
