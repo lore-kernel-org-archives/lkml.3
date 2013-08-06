@@ -1,153 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753150Ab3HFNbo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 09:31:44 -0400
-Received: from ns.mm-sol.com ([212.124.72.66]:35507 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751542Ab3HFNbm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 09:31:42 -0400
-Message-ID: <1375795832.2027.11.camel@iivanov-dev.int.mm-sol.com>
-Subject: Re: [RFC 1/2] usb: phy: Add Qualcomm SS-USB and HS-USB drivers for
- DWC3 core
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Pawel Moll <pawel.moll@arm.com>
-Cc: "balbi@ti.com" <balbi@ti.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Date: Tue, 06 Aug 2013 16:30:32 +0300
-In-Reply-To: <1375791145.12043.47.camel@hornet>
-References: <1375789991-30041-1-git-send-email-iivanov@mm-sol.com>
-	 <1375789991-30041-2-git-send-email-iivanov@mm-sol.com>
-	 <1375791145.12043.47.camel@hornet>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
+	id S1753250Ab3HFNeG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 09:34:06 -0400
+Received: from rrzmta2.uni-regensburg.de ([194.94.155.52]:56767 "EHLO
+	rrzmta2.uni-regensburg.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751915Ab3HFNeE convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:2:1>);
+	Tue, 6 Aug 2013 09:34:04 -0400
+Message-Id: <52011762020000A1000122AD@gwsmtp1.uni-regensburg.de>
+X-Mailer: Novell GroupWise Internet Agent 12.0.2 
+Date: Tue, 06 Aug 2013 15:33:54 +0200
+From: "Ulrich Windl" <Ulrich.Windl@rz.uni-regensburg.de>
+To: <linux-kernel@vger.kernel.org>
+Cc: "Ulrich Windl" <Ulrich.Windl@rz.uni-regensburg.de>
+Subject: message (3.0.80) "kernel: [440682.559851] blk_rq_check_limits:
+ over max size limit."
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, 
+Hi!
 
-On Tue, 2013-08-06 at 13:12 +0100, Pawel Moll wrote:
-> On Tue, 2013-08-06 at 12:53 +0100, Ivan T. Ivanov wrote:
-> > From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-> > 
-> > Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
-> 
-> I am sure that the information in the subject is more than enough for
-> you, but would you care to give some more background for the commit log?
-> Where can we find such controllers? What is DWC3 core? Is it
-> Qualcomm-specific block, or does it come from one of the IP providers
-> like Synopsys or Cadence?
-> 
+I just did some block device tuning according to some expert's advice which resulted in multipath failures. I'm not going to discuss this as I'll have to investigate further, but I'd like to point out that the messages like "[440682.559851] blk_rq_check_limits: over max size limit." lack the affected device!
 
-You are right, I have to add more info here. DesignWare USB Core could 
-also be found in TI OMAP's and Samasung SoC's, at least. And it is
-IP from Synopsys. Usually SoC vendors wrap it with additional logic, 
-which provides required clocks and power supplies. 
+It's quite hard to debug if you have more than 90 disks attached:
+Aug  6 14:58:08 h06 multipathd: 65:240: mark as failed
+Aug  6 14:58:08 h06 multipathd: SAP_T11_I03-E3: remaining active paths: 4
+Aug  6 14:58:08 h06 multipathd: 68:48: mark as failed
+Aug  6 14:58:08 h06 multipathd: SAP_T11_I03-E3: remaining active paths: 3
+Aug  6 14:58:08 h06 multipathd: 8:208: mark as failed
+Aug  6 14:58:08 h06 multipathd: SAP_T11_I03-E4: remaining active paths: 3
+Aug  6 14:58:08 h06 multipathd: 67:80: mark as failed
+Aug  6 14:58:08 h06 multipathd: SAP_T11_I03-E4: remaining active paths: 2
+Aug  6 14:58:08 h06 kernel: [440682.559851] blk_rq_check_limits: over max size limit.
+Aug  6 14:58:08 h06 kernel: [440682.559891] blk_rq_check_limits: over max size limit.
+Aug  6 14:58:08 h06 kernel: [440682.559916] blk_rq_check_limits: over max size limit.
+Aug  6 14:58:08 h06 kernel: [440682.559928] blk_rq_check_limits: over max size limit.
+Aug  6 14:58:08 h06 kernel: [440682.559966] blk_rq_check_limits: over max size limit.
+Aug  6 14:58:08 h06 kernel: [440682.559996] blk_rq_check_limits: over max size limit.
+Aug  6 14:58:08 h06 kernel: [440682.560016] blk_rq_check_limits: over max size limit.
+Aug  6 14:58:08 h06 kernel: [440682.560037] blk_rq_check_limits: over max size limit.
+Aug  6 14:58:08 h06 kernel: [440682.560058] blk_rq_check_limits: over max size limit.
+Aug  6 14:58:08 h06 kernel: [440682.560106] blk_rq_check_limits: over max size limit.
+Aug  6 14:58:08 h06 kernel: [440682.560149] blk_rq_check_limits: over max size limit.
+Aug  6 14:58:08 h06 kernel: [440682.560176] blk_rq_check_limits: over max size limit.
+Aug  6 14:58:08 h06 kernel: [440682.560189] blk_rq_check_limits: over max size limit.
+Aug  6 14:58:08 h06 kernel: [440682.560223] blk_rq_check_limits: over max size limit.
+Aug  6 14:58:08 h06 kernel: [440682.560257] blk_rq_check_limits: over max size limit.
+Aug  6 14:58:08 h06 kernel: [440682.560277] blk_rq_check_limits: over max size limit.
+Aug  6 14:58:08 h06 kernel: [440682.560296] blk_rq_check_limits: over max size limit.
+Aug  6 14:58:08 h06 kernel: [440682.560319] blk_rq_check_limits: over max size limit.
+Aug  6 14:58:08 h06 kernel: [440682.560333] device-mapper: multipath: Failing path 65:240.
+Aug  6 14:58:08 h06 kernel: [440682.560346] device-mapper: multipath: Failing path 68:48.
+Aug  6 14:58:08 h06 kernel: [440682.560429] device-mapper: multipath: Failing path 67:80.
+Aug  6 14:58:08 h06 kernel: [440682.560436] device-mapper: multipath: Failing path 8:208.
+Aug  6 14:58:08 h06 kernel: [440682.561345] sd 2:0:0:7: alua: port group 01 state N non-preferred supports tolusNA
+Aug  6 14:58:08 h06 kernel: [440682.561500] sd 3:0:2:7: alua: port group 01 state N non-preferred supports tolusNA
+Aug  6 14:58:08 h06 kernel: [440682.562075] sd 2:0:4:7: alua: port group 01 state N non-preferred supports tolusNA
+Aug  6 14:58:08 h06 kernel: [440682.562257] sd 3:0:4:7: alua: port group 01 state N non-preferred supports tolusNA
+Aug  6 14:58:08 h06 kernel: [440682.562393] sd 3:0:8:7: alua: port group 01 state N non-preferred supports tolusNA
+Aug  6 14:58:08 h06 kernel: [440682.676078] sd 3:0:2:7: alua: port group 01 switched to state A
+Aug  6 14:58:08 h06 kernel: [440682.676091] sd 2:0:0:7: alua: port group 01 switched to state A
+Aug  6 14:58:08 h06 kernel: [440682.676108] blk_rq_check_limits: over max size limit.
+Aug  6 14:58:08 h06 kernel: [440682.676112] blk_rq_check_limits: over max size limit.
+Aug  6 14:58:08 h06 kernel: [440682.676115] blk_rq_check_limits: over max size limit.
 
+Is this problem fixed in a newer kernel?
 
+For the curious: I tuned queue/max_sectors_kb for the paths in a multipath device, but didn't tune the multipath device itself...
 
-> >  .../devicetree/bindings/usb/msm-ssusb.txt          |   49 +++
-> >  drivers/usb/phy/Kconfig                            |   11 +
-> >  drivers/usb/phy/Makefile                           |    2 +
-> >  drivers/usb/phy/phy-msm-dwc3-usb2.c                |  342 +++++++++++++++++
-> >  drivers/usb/phy/phy-msm-dwc3-usb3.c                |  389 ++++++++++++++++++++
-> >  5 files changed, 793 insertions(+)
-> >  create mode 100644 Documentation/devicetree/bindings/usb/msm-ssusb.txt
-> >  create mode 100644 drivers/usb/phy/phy-msm-dwc3-usb2.c
-> >  create mode 100644 drivers/usb/phy/phy-msm-dwc3-usb3.c
-> > 
-> > diff --git a/Documentation/devicetree/bindings/usb/msm-ssusb.txt b/Documentation/devicetree/bindings/usb/msm-ssusb.txt
-> > new file mode 100644
-> > index 0000000..550b496
-> > --- /dev/null
-> > +++ b/Documentation/devicetree/bindings/usb/msm-ssusb.txt
-> > @@ -0,0 +1,49 @@
-> > +MSM SuperSpeed USB3.0 SoC controllers
-> 
-> I understand that the device always come in doublets? As in: are nodes
-> for both USB2 and 3 always required?
-
-The core dwc3 driver expects 2 USB PHY interfaces, so both nodes
-are mandatory.
-
-> 
-> > +Required properities :
-> > +- compatible sould be "qcom,dwc3-usb2";
-> > +- reg : offset and length of the register set in the memory map
-> > +- clocks: <&cxo>, <&usb2a_phy_sleep_cxc>;
-> > +- clock-names: "xo", "sleep_a_clk";
-> > +<supply-name>-supply: phandle to the regulator device tree node
-> > +Required "supply-name" examples are:
-> 
-> So required or examples? ;-)
-
-
-It should be Required, will fix this.
-
-> 
-> > +       "v1p8" : 1.8v supply for HSPHY
-> > +       "v3p3" : 3.3v supply for HSPHY
-> > +       "vbus" : vbus supply for host mode
-> > +       "vddcx" : vdd supply for HS-PHY digital circuit operation
-> >
-> > +Required properities :
-> > +- compatible sould be "qcom,dwc3-usb3";
-> > +- reg : offset and length of the register set in the memory map
-> > +- clocks: <&cxo>, <&usb30_mock_utmi_cxc>;
-> > +- clock-names: "xo", "ref_clk";
-> > +<supply-name>-supply: phandle to the regulator device tree node
-> > +Required "supply-name" examples are:
-> > +       "v1p8" : 1.8v supply for SS-PHY
-> > +       "vddcx" : vdd supply for SS-PHY digital circuit operation
-> > +
-> > +Example device nodes:
-> > +
-> > +       dwc3_usb2: phy@f92f8800 {
-> > +               compatible = "qcom,dwc3-usb2";
-> > +               reg = <0xf92f8800 0x30>;
-> > +
-> > +               clocks = <&cxo>, <&usb2a_phy_sleep_cxc>;
-> > +               clock-names = "xo", "sleep_a_clk";
-> > +
-> > +               vbus-supply = <&supply>;
-> > +               vddcx-supply = <&supply>;
-> > +               v1p8-supply = <&supply>;
-> > +               v3p3-supply = <&supply>;
-> > +       };
-> > +
-> > +       dwc3_usb3: phy@f92f8830 {
-> > +               compatible = "qcom,dwc3-usb3";
-> > +               reg = <0xf92f8830 0x30>;
-> > +
-> > +               clocks = <&cxo>, <&usb30_mock_utmi_cxc>;
-> > +               clock-names = "xo", "ref_clk";
-> > +
-> > +               vddcx-supply = <&supply>;
-> > +               v1p8-supply = <&supply>;
-> > +       };
-> 
-> Note that I had a look at the bindings only - I don't feel competent to
-> review the drivers/usb part of the patch...
-
-Sure, thank you.
-Ivan
-
-> 
-> Thanks!
-> 
-> Pawel
-
+Regards,
+Ulrich
+P.S.: Plese keep CC: as I'm not subscribed to the list
 
