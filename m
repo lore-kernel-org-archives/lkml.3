@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753444Ab3HFBm0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 21:42:26 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:54537 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752948Ab3HFBl6 (ORCPT
+	id S1753300Ab3HFBmY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 21:42:24 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:44560 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752922Ab3HFBlz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 21:41:58 -0400
+	Mon, 5 Aug 2013 21:41:55 -0400
 From: David Ahern <dsahern@gmail.com>
 To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
 Cc: xiaoguangrong@linux.vnet.ibm.com, David Ahern <dsahern@gmail.com>,
@@ -15,9 +15,9 @@ Cc: xiaoguangrong@linux.vnet.ibm.com, David Ahern <dsahern@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>, Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@kernel.org>,
         Runzhen Wang <runzhen@linux.vnet.ibm.com>
-Subject: [PATCH 5/5] perf kvm stat report: Add option to analyze specific VM
-Date: Mon,  5 Aug 2013 21:41:37 -0400
-Message-Id: <1375753297-69645-6-git-send-email-dsahern@gmail.com>
+Subject: [PATCH 4/5] perf kvm: option to print events that exceed a threshold
+Date: Mon,  5 Aug 2013 21:41:36 -0400
+Message-Id: <1375753297-69645-5-git-send-email-dsahern@gmail.com>
 X-Mailer: git-send-email 1.7.10.1
 In-Reply-To: <1375753297-69645-1-git-send-email-dsahern@gmail.com>
 References: <1375753297-69645-1-git-send-email-dsahern@gmail.com>
@@ -25,9 +25,9 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add an option to analyze a specific VM within a data file. This
-allows the collection of kvm events for all VMs and then analyze
-data for each VM (or set of VMs) individually.
+This is useful to spot high latency blips. It is normal for HLT
+reasons to have long exit times, so strip those from the threshold
+check.
 
 Signed-off-by: David Ahern <dsahern@gmail.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
@@ -39,100 +39,99 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 Cc: Runzhen Wang <runzhen@linux.vnet.ibm.com>
 ---
- tools/perf/builtin-kvm.c |   38 ++++++++++++++++++++++++++++++++++++--
- 1 file changed, 36 insertions(+), 2 deletions(-)
+ tools/perf/builtin-kvm.c |   25 +++++++++++++++++++++----
+ tools/perf/perf.h        |    3 +++
+ 2 files changed, 24 insertions(+), 4 deletions(-)
 
 diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
-index 5edbd3b..16a672f 100644
+index b6595e9..5edbd3b 100644
 --- a/tools/perf/builtin-kvm.c
 +++ b/tools/perf/builtin-kvm.c
-@@ -9,7 +9,7 @@
- #include "util/thread.h"
- #include "util/header.h"
- #include "util/session.h"
--
-+#include "util/intlist.h"
- #include "util/parse-options.h"
- #include "util/trace-event.h"
- #include "util/debug.h"
-@@ -108,6 +108,9 @@ struct perf_kvm_stat {
+@@ -106,6 +106,7 @@ struct perf_kvm_stat {
+ 	u64 total_time;
+ 	u64 total_count;
  	u64 lost_events;
- 	u64 threshold;
++	u64 threshold;
  
-+	const char *pid_str;
-+	struct intlist *pid_list;
-+
  	struct rb_root result;
  
- 	int timerfd;
-@@ -790,16 +793,29 @@ static int process_lost_event(struct perf_tool *tool,
- 	return 0;
- }
- 
-+static bool skip_sample(struct perf_kvm_stat *kvm,
-+			struct perf_sample *sample)
-+{
-+	if (kvm->pid_list && intlist__find(kvm->pid_list, sample->pid) == NULL)
-+		return true;
-+
-+	return false;
-+}
-+
- static int process_sample_event(struct perf_tool *tool,
- 				union perf_event *event,
- 				struct perf_sample *sample,
- 				struct perf_evsel *evsel,
- 				struct machine *machine)
+@@ -470,7 +471,7 @@ static bool update_kvm_event(struct kvm_event *event, int vcpu_id,
+ static bool handle_end_event(struct perf_kvm_stat *kvm,
+ 			     struct vcpu_event_record *vcpu_record,
+ 			     struct event_key *key,
+-			     u64 timestamp)
++			     struct perf_sample *sample)
  {
--	struct thread *thread = machine__findnew_thread(machine, sample->tid);
-+	struct thread *thread;
- 	struct perf_kvm_stat *kvm = container_of(tool, struct perf_kvm_stat,
- 						 tool);
+ 	struct kvm_event *event;
+ 	u64 time_begin, time_diff;
+@@ -507,12 +508,24 @@ static bool handle_end_event(struct perf_kvm_stat *kvm,
+ 	vcpu_record->start_time = 0;
  
-+	if (skip_sample(kvm, sample))
-+		return 0;
+ 	/* seems to happen once in a while during live mode */
+-	if (timestamp < time_begin) {
++	if (sample->time < time_begin) {
+ 		pr_debug("End time before begin time; skipping event.\n");
+ 		return true;
+ 	}
+ 
+-	time_diff = timestamp - time_begin;
++	time_diff = sample->time - time_begin;
 +
-+	thread = machine__findnew_thread(machine, sample->tid);
- 	if (thread == NULL) {
- 		pr_debug("problem processing %d event, skipping it.\n",
- 			event->header.type);
-@@ -1222,11 +1238,27 @@ static int read_events(struct perf_kvm_stat *kvm)
- 	return perf_session__process_events(kvm->session, &kvm->tool);
- }
- 
-+static int parse_target_str(struct perf_kvm_stat *kvm)
-+{
-+	if (kvm->pid_str) {
-+		kvm->pid_list = intlist__new(kvm->pid_str);
-+		if (kvm->pid_list == NULL) {
-+			pr_err("Error parsing process id string\n");
-+			return -EINVAL;
++	if (kvm->threshold && time_diff > kvm->threshold) {
++		char decode[32];
++
++		kvm->events_ops->decode_key(kvm, &event->key, decode);
++		if (strcmp(decode, "HLT")) {
++			pr_info("%" PRIu64 " VM %d, vcpu %d: %s event took %" PRIu64 "usec\n",
++				 sample->time, sample->pid, vcpu_record->vcpu_id,
++				 decode, time_diff/1000);
 +		}
 +	}
 +
-+	return 0;
-+}
-+
- static int kvm_events_report_vcpu(struct perf_kvm_stat *kvm)
- {
- 	int ret = -EINVAL;
- 	int vcpu = kvm->trace_vcpu;
+ 	return update_kvm_event(event, vcpu, time_diff);
+ }
  
-+	if (parse_target_str(kvm) != 0)
-+		goto exit;
-+
- 	if (!verify_vcpu(vcpu))
- 		goto exit;
+@@ -559,7 +572,7 @@ static bool handle_kvm_event(struct perf_kvm_stat *kvm,
+ 		return handle_begin_event(kvm, vcpu_record, &key, sample->time);
  
-@@ -1313,6 +1345,8 @@ kvm_events_report(struct perf_kvm_stat *kvm, int argc, const char **argv)
+ 	if (kvm->events_ops->is_end_event(evsel, sample, &key))
+-		return handle_end_event(kvm, vcpu_record, &key, sample->time);
++		return handle_end_event(kvm, vcpu_record, &key, sample);
+ 
+ 	return true;
+ }
+@@ -1395,6 +1408,8 @@ static int kvm_events_live(struct perf_kvm_stat *kvm,
  		OPT_STRING('k', "key", &kvm->sort_key, "sort-key",
- 			    "key for sorting: sample(sort by samples number)"
- 			    " time (sort by avg time)"),
-+		OPT_STRING('p', "pid", &kvm->pid_str, "pid",
-+			   "analyze events only for given process id(s)"),
+ 			"key for sorting: sample(sort by samples number)"
+ 			" time (sort by avg time)"),
++		OPT_U64('T', "threshold", &kvm->threshold,
++		    "show events other than HALT that take longer than threshold usecs"),
  		OPT_END()
  	};
+ 	const char * const live_usage[] = {
+@@ -1433,6 +1448,8 @@ static int kvm_events_live(struct perf_kvm_stat *kvm,
+ 			usage_with_options(live_usage, live_options);
+ 	}
  
++	kvm->threshold *= NSEC_PER_USEC;   /* convert usec to nsec */
++
+ 	/*
+ 	 * target related setups
+ 	 */
+diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+index 32bd102..cf20187 100644
+--- a/tools/perf/perf.h
++++ b/tools/perf/perf.h
+@@ -125,6 +125,9 @@
+ #ifndef NSEC_PER_SEC
+ # define NSEC_PER_SEC			1000000000ULL
+ #endif
++#ifndef NSEC_PER_USEC
++# define NSEC_PER_USEC			1000ULL
++#endif
+ 
+ static inline unsigned long long rdclock(void)
+ {
 -- 
 1.7.10.1
 
