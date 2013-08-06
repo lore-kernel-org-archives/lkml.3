@@ -1,132 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755439Ab3HFJYU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 05:24:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11628 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755217Ab3HFJYS convert rfc822-to-8bit (ORCPT
+	id S1755455Ab3HFJYw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 05:24:52 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:58390 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755217Ab3HFJYv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 05:24:18 -0400
-Date: Tue, 6 Aug 2013 05:24:06 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-Cc: Nix <nix@esperi.org.uk>,
-        Toralf =?ISO-8859-1?B?RvZyc3Rlcg==?= <toralf.foerster@gmx.de>,
-        Oleg Nesterov <oleg@redhat.com>, NFS list <linux-nfs@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "dhowells@redhat.com" <dhowells@redhat.com>
-Subject: Re: [3.10.4] NFS locking panic, plus persisting NFS shutdown panic
- from 3.9.*
-Message-ID: <20130806052406.40f7852f@tlielax.poochiereds.net>
-In-Reply-To: <1375755693.7337.42.camel@leira.trondhjem.org>
-References: <8761vlv4z9.fsf@spindle.srvr.nix>
-	<20130805084436.69ee4415@corrin.poochiereds.net>
-	<87siyotcri.fsf@spindle.srvr.nix>
-	<20130805110427.509db424@tlielax.poochiereds.net>
-	<20130805111106.73d6ab90@tlielax.poochiereds.net>
-	<87zjswrvaq.fsf@spindle.srvr.nix>
-	<1375719301.7337.14.camel@leira.trondhjem.org>
-	<20130805133739.21654ecb@tlielax.poochiereds.net>
-	<1375726682.7337.29.camel@leira.trondhjem.org>
-	<20130805143311.4ae59067@tlielax.poochiereds.net>
-	<1375755693.7337.42.camel@leira.trondhjem.org>
-Mime-Version: 1.0
+	Tue, 6 Aug 2013 05:24:51 -0400
+Message-ID: <5200C04B.8030507@linux.vnet.ibm.com>
+Date: Tue, 06 Aug 2013 14:52:19 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+CC: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel@vger.kernel.org, Mike Galbraith <efault@gmx.de>,
+        Paul Turner <pjt@google.com>, Alex Shi <alex.shi@intel.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: Re: [PATCH v2 3/3] sched: clean-up struct sd_lb_stat
+References: <1375408223-10934-1-git-send-email-iamjoonsoo.kim@lge.com> <1375408223-10934-4-git-send-email-iamjoonsoo.kim@lge.com> <51FB382B.80209@linux.vnet.ibm.com> <20130805073248.GC27240@lge.com>
+In-Reply-To: <20130805073248.GC27240@lge.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13080609-7014-0000-0000-0000036DC87A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 6 Aug 2013 02:21:35 +0000
-"Myklebust, Trond" <Trond.Myklebust@netapp.com> wrote:
+Hi Joonsoo,
 
-> On Mon, 2013-08-05 at 14:33 -0400, Jeff Layton wrote:
-> > On Mon, 5 Aug 2013 18:18:03 +0000
-> > "Myklebust, Trond" <Trond.Myklebust@netapp.com> wrote:
-> > 
-> > > On Mon, 2013-08-05 at 13:37 -0400, Jeff Layton wrote:
-> > > > On Mon, 5 Aug 2013 16:15:01 +0000
-> > > > "Myklebust, Trond" <Trond.Myklebust@netapp.com> wrote:
-> > > > 
-> > > > > From 3c50ba80105464a28d456d9a1e0f1d81d4af92a8 Mon Sep 17 00:00:00 2001
-> > > > > From: Trond Myklebust <Trond.Myklebust@netapp.com>
-> > > > > Date: Mon, 5 Aug 2013 12:06:12 -0400
-> > > > > Subject: [PATCH] LOCKD: Don't call utsname()->nodename from
-> > > > >  nlmclnt_setlockargs
-> > > > > MIME-Version: 1.0
-> > > > > Content-Type: text/plain; charset=UTF-8
-> > > > > Content-Transfer-Encoding: 8bit
-> > > > > 
-> > > > > Firstly, nlmclnt_setlockargs can be called from a reclaimer thread, in
-> > > > > which case we're in entirely the wrong namespace.
-> > > > > Secondly, commit 8aac62706adaaf0fab02c4327761561c8bda9448 (move
-> > > > > exit_task_namespaces() outside of exit_notify()) now means that
-> > > > > exit_task_work() is called after exit_task_namespaces(), which
-> > > > > triggers an Oops when we're freeing up the locks.
-> > > > > 
-> > > > > Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-> > > > > Cc: Toralf Förster <toralf.foerster@gmx.de>
-> > > > > Cc: Oleg Nesterov <oleg@redhat.com>
-> > > > > Cc: Nix <nix@esperi.org.uk>
-> > > > > Cc: Jeff Layton <jlayton@redhat.com>
-> > > > > ---
-> > > > >  fs/lockd/clntproc.c | 5 +++--
-> > > > >  1 file changed, 3 insertions(+), 2 deletions(-)
-> > > > > 
-> > > > > diff --git a/fs/lockd/clntproc.c b/fs/lockd/clntproc.c
-> > > > > index 9760ecb..acd3947 100644
-> > > > > --- a/fs/lockd/clntproc.c
-> > > > > +++ b/fs/lockd/clntproc.c
-> > > > > @@ -125,14 +125,15 @@ static void nlmclnt_setlockargs(struct nlm_rqst *req, struct file_lock *fl)
-> > > > >  {
-> > > > >  	struct nlm_args	*argp = &req->a_args;
-> > > > >  	struct nlm_lock	*lock = &argp->lock;
-> > > > > +	char *nodename = req->a_host->h_rpcclnt->cl_nodename;
-> > > > >  
-> > > > >  	nlmclnt_next_cookie(&argp->cookie);
-> > > > >  	memcpy(&lock->fh, NFS_FH(file_inode(fl->fl_file)), sizeof(struct nfs_fh));
-> > > > > -	lock->caller  = utsname()->nodename;
-> > > > > +	lock->caller  = nodename;
-> > > > >  	lock->oh.data = req->a_owner;
-> > > > >  	lock->oh.len  = snprintf(req->a_owner, sizeof(req->a_owner), "%u@%s",
-> > > > >  				(unsigned int)fl->fl_u.nfs_fl.owner->pid,
-> > > > > -				utsname()->nodename);
-> > > > > +				nodename);
-> > > > >  	lock->svid = fl->fl_u.nfs_fl.owner->pid;
-> > > > >  	lock->fl.fl_start = fl->fl_start;
-> > > > >  	lock->fl.fl_end = fl->fl_end;
-> > > > 
-> > > > Looks good to me...
-> > > > 
-> > > > Reviewed-by: Jeff Layton <jlayton@redhat.com>
-> > > > 
-> > > > Trond, any thoughts on the other oops that Nix posted? The issue there
-> > > > seems to be that we're trying to do the pathwalk to the rpcbind unix
-> > > > socket from exit_task_work(), but that's happening after we've already
-> > > > called exit_fs().
-> > > > 
-> > > > The trivial answer seems to be to simply call exit_task_work() before
-> > > > exit_fs() there, but it seems like we ought to be doing the upcall to
-> > > > rpcbind in a mount namespace from which we know we can reach the
-> > > > socket...
-> > > 
-> > > Isn't it enough to just do the same thing as we did for gss proxy? i.e.
-> > > set the RPC_CLNT_CREATE_NO_IDLE_TIMEOUT flag.
-> > > 
-> > > See attachment.
-> > 
-> > Yeah, that looks like a reasonable thing to do...
-> > 
-> > OTOH, Is there any other way for a unix socket to end up disconnected
-> > other than if we were to close it? Maybe if rpcbind stopped, the socket
-> > unlinked and recreated and then started again?
-> > 
-> > If so then you still could potentially end up in this situation even if
-> > you didn't autoclose it.
+On 08/05/2013 01:02 PM, Joonsoo Kim wrote:
+>>> +	if (busiest->group_imb) {
+>>> +		busiest->sum_weighted_load =
+>>> +			min(busiest->sum_weighted_load, sds->sd_avg_load);
+>>
+>> Right here we get confused as to why the total load is being compared
+>> against load per task (although you are changing it to load per task above).
 > 
-> True. How about something like the following instead. Note the change to
-> the original patch...
+> Yes, you are right. I will add load_per_task to struct sg_lb_stats.
+> 
+> 
+>>> @@ -4771,12 +4763,13 @@ static inline void calculate_imbalance(struct lb_env *env, struct sd_lb_stats *s
+>>>  	 * Be careful of negative numbers as they'll appear as very large values
+>>>  	 * with unsigned longs.
+>>>  	 */
+>>> -	max_pull = min(sds->max_load - sds->avg_load, load_above_capacity);
+>>> +	max_pull = min(busiest->avg_load - sds->sd_avg_load,
+>>> +						load_above_capacity);
+>>
+>> This is ok, but readability wise max_load is much better. max_load
+>> signifies the maximum load per task on a group in this sd, and avg_load
+>> signifies the total load per task across the sd. You are checking if
+>> there is imbalance in the total load in the sd and try to even it out
+>> across the sd.  Here "busiest" does not convey this immediately.
+> 
+> You may be confused. max_load doesn't means the maximum load per task.
+> It means that the busiest group's load per cpu power. And here max doesn't
+> mean maximum load in this sd, instead, load of busiest sg. IMO,
+> busiest->avg_load convey proper meaning.
 
-Looks good to me.
+Yes sorry about that. It is load per cpu power. My point was that 
+max_load helped in readability. Look at the these two lines in your patch.
 
-Acked-by: Jeff Layton <jlayton@redhat.com>
+-	max_pull = min(sds->max_load - sds->avg_load, load_above_capacity);
++	max_pull = min(busiest->avg_load - sds->sd_avg_load,
+>>> +						load_above_capacity);
+
+The deleted line says that there is an imbalance in the load/cpu in some 
+part of the sd(max_load), which is above the average load of the sd, which
+we are trying to even out. Something like the below diagram for the sd load.
+
+  max_load
+_/\________ avg_load.
+
+I believe the line you have added makes it hard to understand this.
+
+Anyway this is a minor issue, you can ignore it.
+
+Regards
+Preeti U Murthy
+
