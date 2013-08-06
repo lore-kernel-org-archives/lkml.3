@@ -1,109 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756278Ab3HFQPJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 12:15:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37602 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756009Ab3HFQPG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 12:15:06 -0400
-Date: Tue, 6 Aug 2013 18:08:41 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, David Ahern <dsahern@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 1/3] tracing/perf: Expand TRACE_EVENT(sched_stat_runtime)
-Message-ID: <20130806160841.GA2736@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130806160826.GA2717@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1756321Ab3HFQPS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 12:15:18 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:14643 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756289Ab3HFQPO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Aug 2013 12:15:14 -0400
+X-Authority-Analysis: v=2.0 cv=e9yEuNV/ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=pFOAptgLnqcA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=pvQ05lsfB1wA:10 a=InIu05jss1b0TZa58xIA:9 a=QEXdDO2ut3YA:10 a=q_p8DFHK6VYA:10 a=6npnGG9fHNkA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-ID: <1375805711.25420.34.camel@gandalf.local.home>
+Subject: Re: [RFC] gcc feature request: Moving blocks into sections
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, gcc <gcc@gcc.gnu.org>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        David Daney <ddaney.cavm@gmail.com>,
+        Behan Webster <behanw@converseincode.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Herbert Xu <herbert@gondor.hengli.com.au>
+Date: Tue, 06 Aug 2013 12:15:11 -0400
+In-Reply-To: <52001C92.3070209@linux.intel.com>
+References: <CA+55aFw_o=D-j_SRn=Y4LhHm-tEyuP1Je5ZHVTYxbVyLyDcLEg@mail.gmail.com>
+	 <1375725328.22073.101.camel@gandalf.local.home>
+	 <51FFEC56.6040206@linux.intel.com>
+	 <1375727010.22073.110.camel@gandalf.local.home>
+	 <51FFEEEC.5060902@linux.intel.com>
+	 <1375728583.22073.118.camel@gandalf.local.home>
+	 <51FFF430.1060701@linux.intel.com>
+	 <CA+55aFwz6cpsaWZ-19h91_CNGB5C3d1bNOv7woxetXOTyJ_CRw@mail.gmail.com>
+	 <20130805195446.GA22359@Krystal>
+	 <CA+55aFwrxRr4+kN8t8HCRnnVQyur5EGzQ_bRdYK3T-KW9Zp0aw@mail.gmail.com>
+	 <20130805212855.GA23044@Krystal> <52001C92.3070209@linux.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To simplify the review of the next patches:
+On Mon, 2013-08-05 at 14:43 -0700, H. Peter Anvin wrote:
 
-1. We are going to reimplent __perf_task/counter and embedd them
-   into TP_ARGS(). expand TRACE_EVENT(sched_stat_runtime) into
-   DECLARE_EVENT_CLASS() + DEFINE_EVENT(), this way they can use
-   different TP_ARGS's.
+> For unconditional jmp that should be pretty safe barring any fundamental
+> changes to the instruction set, in which case we can enable it as
+> needed, but for extra robustness it probably should skip prefix bytes.
 
-2. Change perf_trace_##call() macro to do perf_fetch_caller_regs()
-   right before perf_trace_buf_prepare().
+Would the assembler add prefix bytes to:
 
-   This way it evaluates TP_ARGS() asap, the next patch explores
-   this fact.
+	jmp 1f
 
-   Note: after 87f44bbc perf_trace_buf_prepare() doesn't need
-   "struct pt_regs *regs", perhaps it makes sense to remove this
-   argument. And perhaps we can teach perf_trace_buf_submit()
-   to accept regs == NULL and do fetch_caller_regs(CALLER_ADDR1)
-   in this case.
+1:
 
-3. Cosmetic, but the typecast from "void*" buys nothing. It just
-   adds the noise, remove it.
+??
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Tested-by: David Ahern <dsahern@gmail.com>
-Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
----
- include/trace/events/sched.h |    6 +++++-
- include/trace/ftrace.h       |    7 +++----
- 2 files changed, 8 insertions(+), 5 deletions(-)
+-- Steve
 
-diff --git a/include/trace/events/sched.h b/include/trace/events/sched.h
-index e5586ca..249c024 100644
---- a/include/trace/events/sched.h
-+++ b/include/trace/events/sched.h
-@@ -372,7 +372,7 @@ DEFINE_EVENT(sched_stat_template, sched_stat_blocked,
-  * Tracepoint for accounting runtime (time the task is executing
-  * on a CPU).
-  */
--TRACE_EVENT(sched_stat_runtime,
-+DECLARE_EVENT_CLASS(sched_stat_runtime,
- 
- 	TP_PROTO(struct task_struct *tsk, u64 runtime, u64 vruntime),
- 
-@@ -401,6 +401,10 @@ TRACE_EVENT(sched_stat_runtime,
- 			(unsigned long long)__entry->vruntime)
- );
- 
-+DEFINE_EVENT(sched_stat_runtime, sched_stat_runtime,
-+	     TP_PROTO(struct task_struct *tsk, u64 runtime, u64 vruntime),
-+	     TP_ARGS(tsk, runtime, vruntime));
-+
- /*
-  * Tracepoint for showing priority inheritance modifying a tasks
-  * priority.
-diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
-index 41a6643..618af05 100644
---- a/include/trace/ftrace.h
-+++ b/include/trace/ftrace.h
-@@ -663,15 +663,14 @@ perf_trace_##call(void *__data, proto)					\
- 	int __data_size;						\
- 	int rctx;							\
- 									\
--	perf_fetch_caller_regs(&__regs);				\
--									\
- 	__data_size = ftrace_get_offsets_##call(&__data_offsets, args); \
- 	__entry_size = ALIGN(__data_size + sizeof(*entry) + sizeof(u32),\
- 			     sizeof(u64));				\
- 	__entry_size -= sizeof(u32);					\
- 									\
--	entry = (struct ftrace_raw_##call *)perf_trace_buf_prepare(	\
--		__entry_size, event_call->event.type, &__regs, &rctx);	\
-+	perf_fetch_caller_regs(&__regs);				\
-+	entry = perf_trace_buf_prepare(__entry_size,			\
-+			event_call->event.type, &__regs, &rctx);	\
- 	if (!entry)							\
- 		return;							\
- 									\
--- 
-1.5.5.1
 
