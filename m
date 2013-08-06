@@ -1,71 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755709Ab3HFKJH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 06:09:07 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:41858 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755558Ab3HFKJF (ORCPT
+	id S1755807Ab3HFKLe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 06:11:34 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:41610 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755618Ab3HFKLb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 06:09:05 -0400
-Date: Tue, 6 Aug 2013 12:09:00 +0200
-From: Iker Pedrosa <ikerpedrosam@gmail.com>
-To: justin mattock <justin.mattock@hotmail.com>
-Cc: Pavel Machek <pavel@ucw.cz>, Greg KH <gregkh@linuxfoundation.org>,
-        Justin Mattock <justinmattock@gmail.com>,
-        "mujeeb.adil@gmail.com" <mujeeb.adil@gmail.com>,
-        "harsh1kumar@gmail.com" <harsh1kumar@gmail.com>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Linux List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/6] Staging: winbond: Fixed some coding style issues
-Message-Id: <20130806120900.9af9bfd4a9822515c12f625d@gmail.com>
-In-Reply-To: <BLU404-EAS29314E6ABCC44081AB2429955C0@phx.gbl>
-References: <BLU404-EAS29314E6ABCC44081AB2429955C0@phx.gbl>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.17; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Tue, 6 Aug 2013 06:11:31 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
+Message-ID: <5200CBBF.1090904@jp.fujitsu.com>
+Date: Tue, 6 Aug 2013 19:11:11 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: <rafael.j.wysocki@intel.com>, <toshi.kani@hp.com>
+CC: <linux-acpi@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] ACPI, cpu hotplug: move try_offline_node() after acpi_unmap_lsapic()
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
+X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I send it. If you haven't received it, maybe you have misplaced it, you can look at it in the following archive: http://www.mail-archive.com/linux-kernel@vger.kernel.org/msg480978.html
+try_offline_node() checks that all cpus related with removed node have been
+removed by using cpu_present_bits. If all cpus related with removed node have
+been removed, try_offline_node() clears the node information.
 
-On Mon, 5 Aug 2013 18:22:48 +0000
-justin mattock <justin.mattock@hotmail.com> wrote:
+But try_offline_node() called from acpi_processor_remove() never clears
+the node information. For disabling cpu_present_bits, acpi_unmap_lsapic()
+need be called. But acpi_unmap_lsapic() is called after try_offline_node()
+runs. So when try_offline_node() runs, the cpu's cpu_present_bits is always
+set.
 
-> where patch #2?
-> 
-> 
-> 
-> Justin P. Mattock
-> 
-> 
-> 
-> From: Iker Pedrosa
-> Sent: ‎Monday‎, ‎August‎ ‎5‎, ‎2013 ‎2‎:‎58‎ ‎AM
-> To: pavel@ucw.cz
-> Cc: gregkh@linuxfoundation.org, justinmattock@gmail.com, ikerpedrosam@gmail.com, mujeeb.adil@gmail.com, harsh1kumar@gmail.com, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-> 
-> 
-> Fixes some coding style issues from drivers/staging/winbond
-> 
-> Iker Pedrosa (6):
->   Staging: winbond: wb35reg: changed sleep function from msleep to
->     usleep
->   Staging: winbond: wb35reg: white space deleted
->   Staging: winbond: wb35reg: avoided use of extern function
->   Staging: winbond: mds: fixed some lines over 80 characters
->   Staging: winbond: mds_f: fixed lines over 80 characters
->   Staging: winbond: mds_f: deleted extern function
-> 
->  drivers/staging/winbond/mds.c             | 56 ++++++++++++++++++-------------
->  drivers/staging/winbond/mds_f.h           | 13 ++++---
->  drivers/staging/winbond/phy_calibration.h |  1 +
->  drivers/staging/winbond/wb35reg.c         | 13 ++++---
->  4 files changed, 48 insertions(+), 35 deletions(-)
-> 
-> -- 
-> 1.8.1.2
+This patch moves try_offline_node() after acpi_unmap_lsapic().
 
--- 
-Iker Pedrosa <ikerpedrosam@gmail.com>
+Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+---
+ drivers/acpi/acpi_processor.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/acpi/acpi_processor.c b/drivers/acpi/acpi_processor.c
+index fd6c51c..5a74a9c 100644
+--- a/drivers/acpi/acpi_processor.c
++++ b/drivers/acpi/acpi_processor.c
+@@ -451,7 +451,6 @@ static void acpi_processor_remove(struct acpi_device *device)
+ 	/* Clean up. */
+ 	per_cpu(processor_device_array, pr->id) = NULL;
+ 	per_cpu(processors, pr->id) = NULL;
+-	try_offline_node(cpu_to_node(pr->id));
+
+ 	/* Remove the CPU. */
+ 	get_online_cpus();
+@@ -459,6 +458,8 @@ static void acpi_processor_remove(struct acpi_device *device)
+ 	acpi_unmap_lsapic(pr->id);
+ 	put_online_cpus();
+
++	try_offline_node(cpu_to_node(pr->id));
++
+  out:
+ 	free_cpumask_var(pr->throttling.shared_cpu_map);
+ 	kfree(pr);
+
