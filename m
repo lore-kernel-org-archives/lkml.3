@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756666Ab3HFViI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 17:38:08 -0400
-Received: from mail-ye0-f201.google.com ([209.85.213.201]:55281 "EHLO
-	mail-ye0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756222Ab3HFViD (ORCPT
+	id S1756650Ab3HFViH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 17:38:07 -0400
+Received: from mail-ve0-f202.google.com ([209.85.128.202]:49326 "EHLO
+	mail-ve0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756190Ab3HFViC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 17:38:03 -0400
+	Tue, 6 Aug 2013 17:38:02 -0400
 From: Doug Anderson <dianders@chromium.org>
 To: Chris Ball <cjb@laptop.org>
 Cc: Olof Johansson <olof@lixom.net>, Jaehoon Chung <jh80.chung@samsung.com>,
@@ -18,9 +18,9 @@ Cc: Olof Johansson <olof@lixom.net>, Jaehoon Chung <jh80.chung@samsung.com>,
         Tomasz Figa <tomasz.figa@gmail.com>,
         Doug Anderson <dianders@chromium.org>, linux-mmc@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v4 3/4] mmc: dw_mmc: Always setup the bus after suspend/resume
-Date: Tue,  6 Aug 2013 14:37:50 -0700
-Message-Id: <1375825071-20922-4-git-send-email-dianders@chromium.org>
+Subject: [PATCH v4 1/4] mmc: dw_mmc: Invalidate cache of current_speed after suspend/resume
+Date: Tue,  6 Aug 2013 14:37:48 -0700
+Message-Id: <1375825071-20922-2-git-send-email-dianders@chromium.org>
 X-Mailer: git-send-email 1.8.3
 In-Reply-To: <1375825071-20922-1-git-send-email-dianders@chromium.org>
 References: <1373470926-19314-1-git-send-email-dianders@chromium.org>
@@ -29,55 +29,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After suspend/resume all of the dw_mmc registers are reset to
-defaults.  We restore most of them, but specifically don't setup the
-clock registers after resume unless we've got a powered card.  Things
-still work because the core will eventually call set_ios() and we'll
-set things up.
+The dw_mmc driver keeps a cache of the current slot->clock in order to
+avoid doing a whole lot of work every time set_ios() is called.
+However, after suspend/resume the register values are bogus so we need
+to ensure that the cached value is invalidated.
 
-There doesn't seem to be any reason that I can see _not_ to set things
-up after resume.  Restoring this state makes the code easier to reason
-about and should help prevent bugs.  It also allows us to do a
-register dump before and after suspend/resume to confirm that we've
-set things up OK.
+In many cases we got by without this since the core mmc code fiddles
+with the clock a lot.  If we've got a card present we're probably
+running it at something like 50MHz and the core will temporarily
+switch us to 400kHz after resume.  One case that didn't work (for me)
+is the case of having no card in the slot.  The slot is initted to
+400kHz at boot time.  After suspend/resume the slot thinks it's still
+at 400kHz (due to the cache) so doesn't adjust timing.  When it tries
+to send the command at probe time it just times out and gets left in a
+bad state.
 
-I examined the state of the dw_mmc instance before and after suspend
-after this patch.  I had no card inserted in an SD card slot.
-
-Before this patch, differences were:
-* CLKDIV (0x08)
-* CLKENA (0x10)
-* TMOUT (0x14)
-* CMD (0x2C) - difference is not important
-* CLKSEL (0x9C - exynos specific)
-
-After this patch, only TMOUT was different.  I have a separate patch
-for that.
+Invalidating the current_speed also means that we don't need to call:
+  dw_mci_setup_bus(slot, true);
+...to force an update of the clock in the case when the slot was left
+powered.
 
 Signed-off-by: Doug Anderson <dianders@chromium.org>
 ---
 Changes in v4: None
 Changes in v3: None
-Changes in v2: None
+Changes in v2:
+- Fix typo (some -> come)
+- Use ~0 instead of 0xFFFFFFFF; add comment about value
 
- drivers/mmc/host/dw_mmc.c | 4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ drivers/mmc/host/dw_mmc.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-index 13a363c..0fa3135 100644
+index ee5f167..13a363c 100644
 --- a/drivers/mmc/host/dw_mmc.c
 +++ b/drivers/mmc/host/dw_mmc.c
-@@ -2522,9 +2522,7 @@ int dw_mci_resume(struct dw_mci *host)
+@@ -2511,13 +2511,19 @@ int dw_mci_resume(struct dw_mci *host)
+ 		   DW_MCI_ERROR_FLAGS | SDMMC_INT_CD);
+ 	mci_writel(host, CTRL, SDMMC_CTRL_INT_ENABLE);
+ 
++	/*
++	 * Invalidate the 'current_speed' value since CLKDIV has come up in
++	 * default state and our cache is incorrect; set to something we know
++	 * slot->clock won't be.
++	 */
++	host->current_speed = ~0;
++
+ 	for (i = 0; i < host->num_slots; i++) {
  		struct dw_mci_slot *slot = host->slot[i];
  		if (!slot)
  			continue;
--		if (slot->mmc->pm_flags & MMC_PM_KEEP_POWER) {
--			dw_mci_set_ios(slot->mmc, &slot->mmc->ios);
--		}
-+		dw_mci_set_ios(slot->mmc, &slot->mmc->ios);
+ 		if (slot->mmc->pm_flags & MMC_PM_KEEP_POWER) {
+ 			dw_mci_set_ios(slot->mmc, &slot->mmc->ios);
+-			dw_mci_setup_bus(slot, true);
+ 		}
  
  		ret = mmc_resume_host(host->slot[i]->mmc);
- 		if (ret < 0)
 -- 
 1.8.3
 
