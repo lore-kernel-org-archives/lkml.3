@@ -1,89 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756057Ab3HFQeV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 12:34:21 -0400
-Received: from mga14.intel.com ([143.182.124.37]:6405 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755491Ab3HFQeT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 12:34:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,827,1367996400"; 
-   d="scan'208";a="342496392"
-Date: Tue, 6 Aug 2013 12:34:14 -0400
-From: Matthew Wilcox <willy@linux.intel.com>
-To: Jan Kara <jack@suse.cz>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Mel Gorman <mgorman@suse.de>,
-        linux-mm@kvack.org, Andi Kleen <ak@linux.intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
-        Ning Qu <quning@google.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 01/23] radix-tree: implement preload for multiple
- contiguous elements
-Message-ID: <20130806163414.GA4707@linux.intel.com>
-References: <1375582645-29274-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1375582645-29274-2-git-send-email-kirill.shutemov@linux.intel.com>
- <20130805111739.GA25691@quack.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130805111739.GA25691@quack.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756167Ab3HFQfE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 12:35:04 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:10703 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755706Ab3HFQfC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Aug 2013 12:35:02 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfee61b-b7efe6d000007b11-f5-520125b451ab
+Content-transfer-encoding: 8BIT
+From: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
+To: broonie@kernel.org
+Cc: linux-kernel@vger.kernel.org, t.figa@samsung.com, s.nawrocki@samsung.com,
+        Mateusz Krawczuk <m.krawczuk@partner.samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: [PATCH] Regmap: Add missing header
+Date: Tue, 06 Aug 2013 18:34:40 +0200
+Message-id: <1375806880-13068-1-git-send-email-m.krawczuk@partner.samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrOLMWRmVeSWpSXmKPExsVy+t9jAd0tqoxBBm871CymPnzCZnG26Q27
+	xeVdc9gsTq85xWxx+E07q8X6Ga9ZHNg8Nq3qZPM4+G4Pk0ffllWMHp83yQWwRHHZpKTmZJal
+	FunbJXBlzNk9m6ngAXvFjNM32BsYL7B1MXJySAiYSCxs/g5li0lcuLcezBYSWMQocb29FMTm
+	FRCU+DH5HksXIwcHs4C8xJFL2SBhZgF1iUnzFjF3MXIBlbczSVxe8BKsl03AXGLis00sILYI
+	0MzbczrBipgF1jFKTPreDZYQFtCWWPL+EJjNIqAq8fzfFyaIZX4S02/MZQRZJiGgIDFnks0E
+	Rr5ZSM6YhXDGLCRnLGBkXsUomlqQXFCclJ5rpFecmFtcmpeul5yfu4kRHJzPpHcwrmqwOMQo
+	wMGoxMNbIcYYJMSaWFZcmXuIUYKDWUmE10cCKMSbklhZlVqUH19UmpNafIhRmoNFSZz3YKt1
+	oJBAemJJanZqakFqEUyWiYNTqoHRxGui4iH5HYlptzWje2tOJS7eLWwiwNu/+NajnasYLypf
+	TzvwsP3zZzHJuWvtm+JkgpW+fTVhcno512arvUrADLW33Z5/fr7pFfrrEh7ia5AUHXLB8oBy
+	6JUSNfPTUZU5G8urGoLiTZwsN3LL3zWp/j0zSsLkq+XsU8ctS+fVuV5baM7PvVuJpTgj0VCL
+	uag4EQBL2O/+SgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 05, 2013 at 01:17:39PM +0200, Jan Kara wrote:
-> On Sun 04-08-13 05:17:03, Kirill A. Shutemov wrote:
-> > From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-> > The radix tree is variable-height, so an insert operation not only has
-> > to build the branch to its corresponding item, it also has to build the
-> > branch to existing items if the size has to be increased (by
-> > radix_tree_extend).
-> > @@ -82,16 +82,24 @@ static struct kmem_cache *radix_tree_node_cachep;
-> >   * The worst case is a zero height tree with just a single item at index 0,
-> >   * and then inserting an item at index ULONG_MAX. This requires 2 new branches
-> >   * of RADIX_TREE_MAX_PATH size to be created, with only the root node shared.
-> > + *
-> > + * Worst case for adding N contiguous items is adding entries at indexes
-> > + * (ULONG_MAX - N) to ULONG_MAX. It requires nodes to insert single worst-case
-> > + * item plus extra nodes if you cross the boundary from one node to the next.
-> > + *
-> >   * Hence:
-> >   */
-> > -#define RADIX_TREE_PRELOAD_SIZE (RADIX_TREE_MAX_PATH * 2 - 1)
-> > +#define RADIX_TREE_PRELOAD_MIN (RADIX_TREE_MAX_PATH * 2 - 1)
-> > +#define RADIX_TREE_PRELOAD_MAX \
-> > +	(RADIX_TREE_PRELOAD_MIN + \
-> > +	 DIV_ROUND_UP(RADIX_TREE_PRELOAD_NR - 1, RADIX_TREE_MAP_SIZE))
->
->   Umm, is this really correct? I see two problems:
-> 1) You may need internal tree nodes at various levels but you seem to
-> account only for the level 1.
-> 2) The rounding doesn't seem right because RADIX_TREE_MAP_SIZE+2 nodes may
-> require 3 nodes at level 1 if the indexes are like:
-> i_0 | i_1 .. i_{RADIX_TREE_MAP_SIZE} | i_{RADIX_TREE_MAP_SIZE+1}
->     ^                                ^
->     node boundary                    node boundary
-> 
->   Otherwise the patch looks good.
+regmap.h requires linux/err.h if CONFIG_REGMAP is not defined. Without it I get
+error.
+CC      drivers/media/platform/exynos4-is/fimc-reg.o
+In file included from drivers/media/platform/exynos4-is/fimc-reg.c:14:0:
+include/linux/regmap.h: In function ‘regmap_write’:
+include/linux/regmap.h:525:10: error: ‘EINVAL’ undeclared (first use in this function)
+include/linux/regmap.h:525:10: note: each undeclared identifier is reported only once for each function it appears in
 
-You are correct that in the fully general case, these things are needed,
-and the patch undercounts the number of nodes needed.  However, in the
-specific case of THP pagecache, insertions are naturally aligned, and
-we end up needing very few internal nodes (so few that we've never hit
-the end of this array in some fairly heavy testing).
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+Signed-off-by: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
+---
+ include/linux/regmap.h |    1 +
+ 1 file changed, 1 insertion(+)
 
-There are two penalties for getting the general case correct.  One is
-that the calculation becomes harder to understand, and the other is
-that we consume more per-CPU memory.  I think we should document that
-the current code requires "natural alignment", and include a note about
-what things will need to change in order to support arbitrary alignment
-in case anybody needs to do it in the future, but not include support
-for arbitrary alignment in this patchset.
+diff --git a/include/linux/regmap.h b/include/linux/regmap.h
+index a3c68aa..bafda87 100644
+--- a/include/linux/regmap.h
++++ b/include/linux/regmap.h
+@@ -15,6 +15,7 @@
+ 
+ #include <linux/list.h>
+ #include <linux/rbtree.h>
++#include <linux/err.h>
+ 
+ struct module;
+ struct device;
+-- 
+1.7.9.5
 
-What do you think?
