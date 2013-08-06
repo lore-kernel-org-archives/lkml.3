@@ -1,227 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755747Ab3HFKGv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 06:06:51 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:18744 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754854Ab3HFKGu (ORCPT
+	id S1755861Ab3HFKHK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 06:07:10 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:39255 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755808Ab3HFKHG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 06:06:50 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 06 Aug 2013 03:05:10 -0700
-From: Wei Ni <wni@nvidia.com>
-To: <khali@linux-fr.org>
-CC: <linux@roeck-us.net>, <lm-sensors@lm-sensors.org>,
-        <linux-kernel@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
-        Wei Ni <wni@nvidia.com>
-Subject: [PATCH v4] hwmon: (lm90) split set&show temp as common codes
-Date: Tue, 6 Aug 2013 18:06:43 +0800
-Message-ID: <1375783603-16747-1-git-send-email-wni@nvidia.com>
-X-Mailer: git-send-email 1.7.9.5
-X-NVConfidentiality: public
+	Tue, 6 Aug 2013 06:07:06 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
+Message-ID: <5200CAAD.5080102@jp.fujitsu.com>
+Date: Tue, 6 Aug 2013 19:06:37 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain
+To: <rafael.j.wysocki@intel.com>, <yinghai@kernel.org>, <toshi.kani@hp.com>
+CC: <linux-acpi@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: acpi_bus_trim does not detach devices in post order
+References: <52006888.5030203@jp.fujitsu.com>
+In-Reply-To: <52006888.5030203@jp.fujitsu.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
+X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Split set&show temp codes as common functions, so we can use it directly when
-implement linux thermal framework.
+(2013/08/06 12:07), Yasuaki Ishimatsu wrote:
+> 
+> I acked the following commit but I hit a problem by the commit.
+> So I report it.
+> 
+> commit cecdb193c8d91a42d9489d00618cc3dfff92e55a
+> Author: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> Date:   Tue Jan 15 13:24:02 2013 +0100
+> 
+>      ACPI / scan: Change the implementation of acpi_bus_trim()
+> 
+> Before applying the commit, acpi_bus_trim() detachs devices in post order.
+> 
+> When I hot add memory devices and processor devices by container device
+> in my x86 box, memory devices are added first and processor devices are added
+> second. So I expect that processor devices are removed first and memory
+> devices are removed second when I remove them. And before applying the
+> commit, acpi_bus_trim() did so.
+> 
+> But after appling the commit, acpi_bus_trim() does not detach devices in
+> post order. So when I remove them, memory devices are removed first and
+> processor devices are removed second.
+> 
+> By this, I hit a problem.
+> 
+> In Linux on x86 arch, NUMA node is depend on memory devices. So new NUMA
+> node is created at memory hot adding. Thus when I hot add memory devices and
+> processor devices, we must hot add memory device first. Otherwise, processor
+> devices are not set to correct NUMA node number.
+> 
+> And Linux expects that when removing them, processor devices are removed
+> first before removing memory devices. But acpi_bus_trim() does not do so.
+> By this, NUMA node is not cleared in my x86 box when hot removing memory device
+> and processor devices. When removing memory devices, NUMA node is cleared.
+> But if there are processor devices related with the NUMA node, NUMA node is
+> not be cleared at memory hot removing.
+> 
+> So when I remove them, NUMA node's sysfs file remained as follows:
 
-Signed-off-by: Wei Ni <wni@nvidia.com>
----
- drivers/hwmon/lm90.c |  112 +++++++++++++++++++++++++++++++-------------------
- 1 file changed, 69 insertions(+), 43 deletions(-)
+I had little mistake. CPU also tries to clear NUMA node.
+But current implementation has bug. So I'll fix it.
 
-diff --git a/drivers/hwmon/lm90.c b/drivers/hwmon/lm90.c
-index cdff742..8153b36 100644
---- a/drivers/hwmon/lm90.c
-+++ b/drivers/hwmon/lm90.c
-@@ -702,29 +702,34 @@ static u16 temp_to_u16_adt7461(struct lm90_data *data, long val)
-  * Sysfs stuff
-  */
- 
--static ssize_t show_temp8(struct device *dev, struct device_attribute *devattr,
--			  char *buf)
-+static int read_temp8(struct device *dev, int index)
- {
--	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
- 	struct lm90_data *data = lm90_update_device(dev);
- 	int temp;
- 
- 	if (data->kind == adt7461)
--		temp = temp_from_u8_adt7461(data, data->temp8[attr->index]);
-+		temp = temp_from_u8_adt7461(data, data->temp8[index]);
- 	else if (data->kind == max6646)
--		temp = temp_from_u8(data->temp8[attr->index]);
-+		temp = temp_from_u8(data->temp8[index]);
- 	else
--		temp = temp_from_s8(data->temp8[attr->index]);
-+		temp = temp_from_s8(data->temp8[index]);
- 
- 	/* +16 degrees offset for temp2 for the LM99 */
--	if (data->kind == lm99 && attr->index == 3)
-+	if (data->kind == lm99 && index == 3)
- 		temp += 16000;
- 
--	return sprintf(buf, "%d\n", temp);
-+	return temp;
- }
- 
--static ssize_t set_temp8(struct device *dev, struct device_attribute *devattr,
--			 const char *buf, size_t count)
-+static ssize_t show_temp8(struct device *dev, struct device_attribute *devattr,
-+			  char *buf)
-+{
-+	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
-+
-+	return sprintf(buf, "%d\n", read_temp8(dev, attr->index));
-+}
-+
-+static void write_temp8(struct device *dev, int index, long val)
- {
- 	static const u8 reg[8] = {
- 		LM90_REG_W_LOCAL_LOW,
-@@ -737,60 +742,73 @@ static ssize_t set_temp8(struct device *dev, struct device_attribute *devattr,
- 		MAX6659_REG_W_REMOTE_EMERG,
- 	};
- 
--	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
- 	struct i2c_client *client = to_i2c_client(dev);
- 	struct lm90_data *data = i2c_get_clientdata(client);
--	int nr = attr->index;
--	long val;
--	int err;
--
--	err = kstrtol(buf, 10, &val);
--	if (err < 0)
--		return err;
- 
- 	/* +16 degrees offset for temp2 for the LM99 */
--	if (data->kind == lm99 && attr->index == 3)
-+	if (data->kind == lm99 && index == 3)
- 		val -= 16000;
- 
- 	mutex_lock(&data->update_lock);
- 	if (data->kind == adt7461)
--		data->temp8[nr] = temp_to_u8_adt7461(data, val);
-+		data->temp8[index] = temp_to_u8_adt7461(data, val);
- 	else if (data->kind == max6646)
--		data->temp8[nr] = temp_to_u8(val);
-+		data->temp8[index] = temp_to_u8(val);
- 	else
--		data->temp8[nr] = temp_to_s8(val);
-+		data->temp8[index] = temp_to_s8(val);
- 
--	lm90_select_remote_channel(client, data, nr >= 6);
--	i2c_smbus_write_byte_data(client, reg[nr], data->temp8[nr]);
-+	lm90_select_remote_channel(client, data, index >= 6);
-+	i2c_smbus_write_byte_data(client, reg[index], data->temp8[index]);
- 	lm90_select_remote_channel(client, data, 0);
- 
- 	mutex_unlock(&data->update_lock);
-+}
-+
-+static ssize_t set_temp8(struct device *dev, struct device_attribute *devattr,
-+			 const char *buf, size_t count)
-+{
-+	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
-+	int index = attr->index;
-+	long val;
-+	int err;
-+
-+	err = kstrtol(buf, 10, &val);
-+	if (err < 0)
-+		return err;
-+
-+	write_temp8(dev, index, val);
-+
- 	return count;
- }
- 
--static ssize_t show_temp11(struct device *dev, struct device_attribute *devattr,
--			   char *buf)
-+static int read_temp11(struct device *dev, int index)
- {
--	struct sensor_device_attribute_2 *attr = to_sensor_dev_attr_2(devattr);
- 	struct lm90_data *data = lm90_update_device(dev);
- 	int temp;
- 
- 	if (data->kind == adt7461)
--		temp = temp_from_u16_adt7461(data, data->temp11[attr->index]);
-+		temp = temp_from_u16_adt7461(data, data->temp11[index]);
- 	else if (data->kind == max6646)
--		temp = temp_from_u16(data->temp11[attr->index]);
-+		temp = temp_from_u16(data->temp11[index]);
- 	else
--		temp = temp_from_s16(data->temp11[attr->index]);
-+		temp = temp_from_s16(data->temp11[index]);
- 
- 	/* +16 degrees offset for temp2 for the LM99 */
--	if (data->kind == lm99 &&  attr->index <= 2)
-+	if (data->kind == lm99 &&  index <= 2)
- 		temp += 16000;
- 
--	return sprintf(buf, "%d\n", temp);
-+	return temp;
- }
- 
--static ssize_t set_temp11(struct device *dev, struct device_attribute *devattr,
--			  const char *buf, size_t count)
-+static ssize_t show_temp11(struct device *dev, struct device_attribute *devattr,
-+			   char *buf)
-+{
-+	struct sensor_device_attribute_2 *attr = to_sensor_dev_attr_2(devattr);
-+
-+	return sprintf(buf, "%d\n", read_temp11(dev, attr->index));
-+}
-+
-+static void write_temp11(struct device *dev, int nr, int index, long val)
- {
- 	struct {
- 		u8 high;
-@@ -804,17 +822,8 @@ static ssize_t set_temp11(struct device *dev, struct device_attribute *devattr,
- 		{ LM90_REG_W_REMOTE_HIGHH, LM90_REG_W_REMOTE_HIGHL, 1 }
- 	};
- 
--	struct sensor_device_attribute_2 *attr = to_sensor_dev_attr_2(devattr);
- 	struct i2c_client *client = to_i2c_client(dev);
- 	struct lm90_data *data = i2c_get_clientdata(client);
--	int nr = attr->nr;
--	int index = attr->index;
--	long val;
--	int err;
--
--	err = kstrtol(buf, 10, &val);
--	if (err < 0)
--		return err;
- 
- 	/* +16 degrees offset for temp2 for the LM99 */
- 	if (data->kind == lm99 && index <= 2)
-@@ -839,6 +848,23 @@ static ssize_t set_temp11(struct device *dev, struct device_attribute *devattr,
- 	lm90_select_remote_channel(client, data, 0);
- 
- 	mutex_unlock(&data->update_lock);
-+}
-+
-+static ssize_t set_temp11(struct device *dev, struct device_attribute *devattr,
-+			  const char *buf, size_t count)
-+{
-+	struct sensor_device_attribute_2 *attr = to_sensor_dev_attr_2(devattr);
-+	int nr = attr->nr;
-+	int index = attr->index;
-+	long val;
-+	int err;
-+
-+	err = kstrtol(buf, 10, &val);
-+	if (err < 0)
-+		return err;
-+
-+	write_temp11(dev, nr, index, val);
-+
- 	return count;
- }
- 
--- 
-1.7.9.5
+Thanks,
+Yasuaki Ishimatsu
+
+> 
+> # ls /sys/devices/system/node/node1/
+> compact  cpumap    meminfo   power                   subsystem  vmstat
+> cpulist  distance  numastat  scan_unevictable_pages  uevent
+> 
+> CPU and memory sysfs files are removed correctly. But node1 sysfs file
+> remained.
+> 
+> Thanks,
+> Yasuaki Ishimatsu
+> 
+> 
+> 
+> 
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+
 
