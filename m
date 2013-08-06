@@ -1,89 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755372Ab3HFJOP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 05:14:15 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:25866 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754864Ab3HFJON (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 05:14:13 -0400
-X-AuditID: cbfee691-b7fef6d000002d62-32-5200be65ef5f
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Linus Walleij'" <linus.walleij@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Barry Song <baohua.song@csr.com>,
-        Jingoo Han <jg1.han@samsung.com>
-Subject: [PATCH 3/3] pinctrl: sirf: add missing __iomem annotation
-Date: Tue, 06 Aug 2013 18:14:12 +0900
-Message-id: <000301ce9285$510a2c90$f31e85b0$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac6ShTPJlpGZ7VWgRm6CTcuDhH1cVg==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrGIsWRmVeSWpSXmKPExsVy+t8zI93UfQxBBhsvM1m8nHmV1eLywkus
-	FlP+LGeyuLxrDpsDi8eunXNYPe5c28Pm0bdlFaPH501yASxRXDYpqTmZZalF+nYJXBn9DSfZ
-	Cw5xV8xcc42tgfEbZxcjJ4eEgInE1q6HLBC2mMSFe+vZuhi5OIQEljFKbJ59hxmmqO/KGajE
-	IkaJa1u+gXUICfxilPh5Tx3EZhNQk/jy5TA7iC0ioCfx5msLmM0skCbxt3URI4gtLOAk8brz
-	JFicRUBVYvHur2ALeAUsJQ7f7meEsAUlfky+xwLRqyWxfudxJghbXmLzmrdQBylI7Dj7mhFm
-	17P/TawQNSIS+168YwQ5VEJgHbvE741zWSGWCUh8m3wIaCgHUEJWYtMBqDmSEgdX3GCZwCg2
-	C8nqWUhWz0KyehaSFQsYWVYxiqYWJBcUJ6UXmeoVJ+YWl+al6yXn525ihMTZxB2M9w9YH2JM
-	Blo/kVlKNDkfGKd5JfGGxmZGFqYmpsZG5pZmpAkrifOqt1gHCgmkJ5akZqemFqQWxReV5qQW
-	H2Jk4uCUamCcs+eFp5dhiXH/yvSgo+8Uq5MlE8/OsF4kHb6jdlIVw6mVuv4+FZqnrr9JPHPi
-	+vIkw9Pqs3QeL5aXTzs8TWzKRtUtoV9f/y6+KKNsxKt68HvD3bYVHOcCn8U9nvpy4Z0J3jvz
-	4vqXXN2br6Fz1U1tmrNg2MQoI/+ERev9cvQm19frbORwSk1XYinOSDTUYi4qTgQAUwJ/0ckC	AAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprMKsWRmVeSWpSXmKPExsVy+t9jAd2UfQxBBqd+WFu8nHmV1eLywkus
-	FlP+LGeyuLxrDpsDi8eunXNYPe5c28Pm0bdlFaPH501yASxRDYw2GamJKalFCql5yfkpmXnp
-	tkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUA7lRTKEnNKgUIBicXFSvp2mCaEhrjp
-	WsA0Ruj6hgTB9RgZoIGEdYwZ/Q0n2QsOcVfMXHONrYHxG2cXIyeHhICJRN+VM2wQtpjEhXvr
-	gWwuDiGBRYwS17Z8YwFJCAn8YpT4eU8dxGYTUJP48uUwO4gtIqAn8eZrC5jNLJAm8bd1ESOI
-	LSzgJPG68yRYnEVAVWLx7q/MIDavgKXE4dv9jBC2oMSPyfdYIHq1JNbvPM4EYctLbF7zlhni
-	IAWJHWdfM8Lseva/iRWiRkRi34t3jBMYBWYhGTULyahZSEbNQtKygJFlFaNoakFyQXFSeq6h
-	XnFibnFpXrpecn7uJkZwFD+T2sG4ssHiEKMAB6MSD2/i1f+BQqyJZcWVuYcYJTiYlUR4VXYy
-	BAnxpiRWVqUW5ccXleakFh9iTAb6dCKzlGhyPjDB5JXEGxqbmBlZGplZGJmYm5MmrCTOe6DV
-	OlBIID2xJDU7NbUgtQhmCxMHp1QD49rtZvovP23o2JjLE6vwcFXmqskZgh/Vsw/NY9kSqhQR
-	8uH2y9VvDfVEPAX4bqrcmrtH1Y3zyZMm9TNWDyxj4pwDjlyL//haPspBxlIzdUeT+FUOP6F7
-	B3NdP/7lD36/ZXXS34sPuldGH5RU/disHbH6x6nbSq5XKw4fFD5oEsX0d7mG2b3n15RYijMS
-	DbWYi4oTAQBe7mEmAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1755387Ab3HFJPj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 05:15:39 -0400
+Received: from ns.mm-sol.com ([212.124.72.66]:45122 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755146Ab3HFJPh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Aug 2013 05:15:37 -0400
+Message-ID: <1375780486.2725.7.camel@iivanov-dev.int.mm-sol.com>
+Subject: Re: [PATCH 1/2] ARM: msm: Add support for MSM8974 Dragonboard
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Rohit Vaswani <rvaswani@codeaurora.org>
+Cc: David Brown <davidb@codeaurora.org>, Mark Rutland <mark.rutland@arm.com>,
+        devicetree@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>, linux-arm-msm@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        linux-arm-kernel@lists.infradead.org
+Date: Tue, 06 Aug 2013 12:14:46 +0300
+In-Reply-To: <1375743779-24993-1-git-send-email-rvaswani@codeaurora.org>
+References: <1375743779-24993-1-git-send-email-rvaswani@codeaurora.org>
+Content-Type: multipart/mixed; boundary="=-NwRlKioaeMfCTiOP8AFT"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added missing __iomem annotation in order to fix the following
-sparse warnings:
 
-drivers/pinctrl/sirf/pinctrl-sirf.c:846:14: warning: incorrect type in assignment (different address spaces)
-drivers/pinctrl/sirf/pinctrl-sirf.c:846:14:    expected void *regs
-drivers/pinctrl/sirf/pinctrl-sirf.c:846:14:    got void [noderef] <asn:2>*
-drivers/pinctrl/sirf/pinctrl-sirf.c:869:33: warning: incorrect type in assignment (different address spaces)
-drivers/pinctrl/sirf/pinctrl-sirf.c:869:33:    expected void [noderef] <asn:2>*regs
-drivers/pinctrl/sirf/pinctrl-sirf.c:869:33:    got void *regs
-drivers/pinctrl/sirf/pinctrl-sirf.c:909:17: warning: incorrect type in argument 1 (different address spaces)
-drivers/pinctrl/sirf/pinctrl-sirf.c:909:17:    expected void volatile [noderef] <asn:2>*addr
-drivers/pinctrl/sirf/pinctrl-sirf.c:909:17:    got void *regs
+--=-NwRlKioaeMfCTiOP8AFT
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+On Mon, 2013-08-05 at 16:02 -0700, Rohit Vaswani wrote:
+> This patch adds basic board support for MSM8974 Dragonboard
+> which belongs to the Snapdragon 800 family.
+> For now, just support a basic machine with device tree.
+> 
+> Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
+> ---
+>  arch/arm/boot/dts/Makefile        |  3 ++-
+>  arch/arm/boot/dts/msm8974-db.dts  | 26 ++++++++++++++++++++++++++
+>  arch/arm/mach-msm/Kconfig         | 21 ++++++++++++++++++---
+>  arch/arm/mach-msm/Makefile        |  1 +
+>  arch/arm/mach-msm/board-dt-8974.c | 23 +++++++++++++++++++++++
+>  5 files changed, 70 insertions(+), 4 deletions(-)
+>  create mode 100644 arch/arm/boot/dts/msm8974-db.dts
+>  create mode 100644 arch/arm/mach-msm/board-dt-8974.c
+
+Thanks. 
+
+Tested-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+
+Attached patch enables earlyprink for this board.
+
+[920] booting linux @ 0x8000, ramdisk @ 0x2000000 (1067699), tags/device tree @ 0x1e00000
+Uncompressing Linux... done, booting the kernel.
+[    0.000000] Booting Linux on physical CPU 0x0
+[    0.000000] Linux version 3.11.0-rc4-00003-g7c8394e (iivanov@dev) (gcc version 4.6.3 (GCC) ) #502 SMP PREEMPT Tue Aug 6 12:09:07 EEST3
+[    0.000000] CPU: ARMv7 Processor [512f06f0] revision 0 (ARMv7), cr=10c5387d
+[    0.000000] CPU: PIPT / VIPT nonaliasing data cache, PIPT instruction cache
+[    0.000000] Machine: Qualcomm MSM (Flattened Device Tree), model: Qualcomm MSM8974 Dragonboard
+....
+
+
+--=-NwRlKioaeMfCTiOP8AFT
+Content-Disposition: attachment;
+	filename="0001-msm-Add-low-level-debugging-via-MSM-8974-UART.patch"
+Content-Type: text/x-patch;
+	name="0001-msm-Add-low-level-debugging-via-MSM-8974-UART.patch";
+	charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+
+>From 7c8394ea8d926cc90c90c76aa48c5cee88f2f149 Mon Sep 17 00:00:00 2001
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+Date: Wed, 5 Jun 2013 17:35:40 +0300
+Subject: [PATCH] msm: Add low-level debugging via MSM 8974 UART
+
+Enable low-level debug print routines to direct their
+output to the serial port on MSM 8974 devices.
+
+Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
 ---
- drivers/pinctrl/sirf/pinctrl-sirf.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/Kconfig.debug                     |    8 ++++++++
+ arch/arm/mach-msm/board-dt-8974.c          |    2 ++
+ arch/arm/mach-msm/include/mach/msm_iomap.h |    4 ++++
+ 3 files changed, 14 insertions(+)
 
-diff --git a/drivers/pinctrl/sirf/pinctrl-sirf.c b/drivers/pinctrl/sirf/pinctrl-sirf.c
-index 0792e8d..26f946a 100644
---- a/drivers/pinctrl/sirf/pinctrl-sirf.c
-+++ b/drivers/pinctrl/sirf/pinctrl-sirf.c
-@@ -833,7 +833,7 @@ static int sirfsoc_gpio_probe(struct device_node *np)
- {
- 	int i, err = 0;
- 	struct sirfsoc_gpio_bank *bank;
--	void *regs;
-+	void __iomem *regs;
- 	struct platform_device *pdev;
- 	bool is_marco = false;
+diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
+index 583f4a0..4a8584f 100644
+--- a/arch/arm/Kconfig.debug
++++ b/arch/arm/Kconfig.debug
+@@ -323,6 +323,14 @@ choice
+ 		  Say Y here if you want the debug print routines to direct
+ 		  their output to the serial port on MSM 8960 devices.
  
++	config DEBUG_MSM8974_UART
++		bool "Kernel low-level debugging messages via MSM 8974 UART"
++		depends on ARCH_MSM8974
++		select MSM_HAS_DEBUG_UART_HS
++		help
++		  Say Y here if you want the debug print routines to direct
++		  their output to the serial port on MSM 8974 devices.
++
+ 	config DEBUG_MVEBU_UART
+ 		bool "Kernel low-level debugging messages via MVEBU UART (old bootloaders)"
+ 		depends on ARCH_MVEBU
+diff --git a/arch/arm/mach-msm/board-dt-8974.c b/arch/arm/mach-msm/board-dt-8974.c
+index 697623e..0ce016a 100644
+--- a/arch/arm/mach-msm/board-dt-8974.c
++++ b/arch/arm/mach-msm/board-dt-8974.c
+@@ -12,6 +12,7 @@
+ 
+ #include <linux/of_platform.h>
+ #include <asm/mach/arch.h>
++#include <asm/mach/map.h>
+ 
+ static const char * const msm8974_dt_match[] __initconst = {
+ 	"qcom,msm8974-db",
+@@ -20,4 +21,5 @@ static const char * const msm8974_dt_match[] __initconst = {
+ 
+ DT_MACHINE_START(MSM8974_DT, "Qualcomm MSM (Flattened Device Tree)")
+ 	.dt_compat = msm8974_dt_match,
++	.map_io = debug_ll_io_init,
+ MACHINE_END
+diff --git a/arch/arm/mach-msm/include/mach/msm_iomap.h b/arch/arm/mach-msm/include/mach/msm_iomap.h
+index c56e81f..7e08189 100644
+--- a/arch/arm/mach-msm/include/mach/msm_iomap.h
++++ b/arch/arm/mach-msm/include/mach/msm_iomap.h
+@@ -59,6 +59,10 @@
+ #define MSM_DEBUG_UART_BASE	0xE1000000
+ #define MSM_DEBUG_UART_PHYS	MSM_UART3_PHYS
+ #endif
++#ifdef CONFIG_DEBUG_MSM8974_UART
++#define MSM_DEBUG_UART_BASE	0xfa71e000
++#define MSM_DEBUG_UART_PHYS	0xf991e000
++#endif
+ 
+ /* Virtual addresses shared across all MSM targets. */
+ #define MSM_CSR_BASE		IOMEM(0xE0001000)
 -- 
-1.7.10.4
+1.7.9.5
 
+
+--=-NwRlKioaeMfCTiOP8AFT--
 
