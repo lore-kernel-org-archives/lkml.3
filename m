@@ -1,60 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755449Ab3HFJZh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 05:25:37 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:41264 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755343Ab3HFJZg (ORCPT
+	id S1755492Ab3HFJbh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 05:31:37 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:53020 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755346Ab3HFJbg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 05:25:36 -0400
-X-AuditID: cbfec7f5-b7f5f6d00000105f-5b-5200c10dda25
-Message-id: <1375781132.2003.4.camel@AMDC1943>
-Subject: Re: [RFC PATCH 1/4] zbud: use page ref counter for zbud pages
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Bob Liu <bob.liu@oracle.com>
-Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Tomasz Stanislawski <t.stanislaws@samsung.com>
-Date: Tue, 06 Aug 2013 11:25:32 +0200
-In-reply-to: <5200BB18.9010105@oracle.com>
-References: <1375771361-8388-1-git-send-email-k.kozlowski@samsung.com>
- <1375771361-8388-2-git-send-email-k.kozlowski@samsung.com>
- <5200BB18.9010105@oracle.com>
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.2.3-0ubuntu6
-Content-transfer-encoding: 7bit
-MIME-version: 1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrOLMWRmVeSWpSXmKPExsVy+t/xa7p8BxmCDM5aW8xZv4bNYuOM9awW
-	XaemslicbXrDbnF51xw2i3tr/rNarD1yl91i8rtnjBaH9q1it5jX/pLVgctj06dJ7B4nZvxm
-	8XhwaDOLx8ent1g8+rasYvTYfLra4/MmuQD2KC6blNSczLLUIn27BK6Mrdt+sxZ0MFX83zWZ
-	pYHxJGMXIyeHhICJxOt/k5ggbDGJC/fWs3UxcnEICSxllHj8dTYzhPOZUWLToylsIFW8AnoS
-	y75sYAWxhQXcJF6dmc0OYrMJGEtsXr4ErEZEQEHi9afzTCDNzAJfmCQ6Fy8EW8cioCrxd9k7
-	MJtTQEtizc8NLBAbFjNKvO98xAKSYBZQl5g0bxEzxE1KErvbO9kh4vISm9e8ZYa4QlDix+R7
-	LBMYBWYhaZmFpGwWkrIFjMyrGEVTS5MLipPSc430ihNzi0vz0vWS83M3MUIi4+sOxqXHrA4x
-	CnAwKvHw7rj+P1CINbGsuDL3EKMEB7OSCK/KToYgId6UxMqq1KL8+KLSnNTiQ4xMHJxSDYw1
-	WhuaFp6SmCqu8I5DhWOJiPzRjWaJ6XJvnuZsKcneMaFPQHXTym2Oyxdo6t1JELt56nOykafx
-	/EMfijPmiJ+Y9WPRl4NhzRx9U4RfeaRoK/yJKYp8+/LNm9lRrbo/fh8LFYvY2FfT5cosfuDr
-	T5PLV9zCFPU/B8/+e+V+QqSbxCSdV1mbevuUWIozEg21mIuKEwFbc30TagIAAA==
+	Tue, 6 Aug 2013 05:31:36 -0400
+X-IronPort-AV: E=Sophos;i="4.89,825,1367971200"; 
+   d="scan'208";a="39639084"
+Message-ID: <5200C270.7070904@citrix.com>
+Date: Tue, 6 Aug 2013 10:31:28 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
+MIME-Version: 1.0
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: <xen-devel@lists.xenproject.org>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH 3/3] MAINTAINERS: Add in two extra	co-maintainers
+ of the Xen tree.
+References: <1375725937-22930-1-git-send-email-konrad.wilk@oracle.com> <1375725937-22930-4-git-send-email-konrad.wilk@oracle.com>
+In-Reply-To: <1375725937-22930-4-git-send-email-konrad.wilk@oracle.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.76]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bob,
+On 05/08/13 19:05, Konrad Rzeszutek Wilk wrote:
+> Both Boris and David have graciously volunteered to help in
+> maintaining the Xen subsystem tree. Cementing this in the
+> MAINTAINERS file so they are copied on Xen related patches.
 
-Thank you for review.
+Acked-by: David Vrabel <david.vrabel@citrix.com>
 
-On wto, 2013-08-06 at 17:00 +0800, Bob Liu wrote:
-> Nit picker, how about change the name to adjust_lists() or something
-> like this because we don't do any rebalancing.
-
-OK, I'll change it.
-
-Best regards,
-Krzysztof
-
+> ---
+>  MAINTAINERS | 2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 785f56a..0161dad 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -9237,6 +9237,8 @@ F:	drivers/media/tuners/tuner-xc2028.*
+>  
+>  XEN HYPERVISOR INTERFACE
+>  M:	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> +M:	Boris Ostrovsky <boris.ostrovsky@oracle.com>
+> +M:	David Vrabel <david.vrabel@citrix.com>
+>  L:	xen-devel@lists.xenproject.org (moderated for non-subscribers)
+>  S:	Supported
+>  F:	arch/x86/xen/
 
