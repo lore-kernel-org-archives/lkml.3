@@ -1,73 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756356Ab3HFRNN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 13:13:13 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:33145 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756189Ab3HFRNL (ORCPT
+	id S1756350Ab3HFROF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 13:14:05 -0400
+Received: from mailout2.w2.samsung.com ([211.189.100.12]:60452 "EHLO
+	usmailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756189Ab3HFROD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 13:13:11 -0400
-Date: Tue, 6 Aug 2013 18:12:25 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Richard Genoud <richard.genoud@gmail.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>, Bo Shen <voice.shen@atmel.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org, devicetree@vger.kernel.org,
-        patches@opensource.wolfsonmicro.com
-Message-ID: <20130806171225.GO6427@sirena.org.uk>
-References: <1375180329-4860-1-git-send-email-richard.genoud@gmail.com>
- <1375180329-4860-4-git-send-email-richard.genoud@gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="NT59pYSnj1ZLVgEN"
-Content-Disposition: inline
-In-Reply-To: <1375180329-4860-4-git-send-email-richard.genoud@gmail.com>
-X-Cookie: Many pages make a thick book.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v6 3/8] Documentation: DT: update atmel SSC with DMA
- binding
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	Tue, 6 Aug 2013 13:14:03 -0400
+X-AuditID: cbfec37d-b7f036d000004805-f8-52012ed90a13
+From: Shuah Khan <shuah.kh@samsung.com>
+To: "david-b@pacbell.net" <david-b@pacbell.net>,
+        "dbrownell@users.sourceforge.net" <dbrownell@users.sourceforge.net>,
+        "rjw@sisk.pl" <rjw@sisk.pl>, "pavel@ucw.cz" <pavel@ucw.cz>,
+        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: sl811h_suspend() and PM_EVENT_PRETHAW state handling
+Thread-topic: sl811h_suspend() and PM_EVENT_PRETHAW state handling
+Thread-index: Ac6SyFcWUhE6FBeWT/iSf5cAZjp8ng==
+Date: Tue, 06 Aug 2013 17:14:00 +0000
+Message-id: <B8EFE96D1287C24090BAD9D858E15E6175A08F@sisaex02sj>
+Accept-Language: en-US
+Content-language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+X-Originating-IP: [105.144.21.63]
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 8BIT
+MIME-version: 1.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpjkeLIzCtJLcpLzFFi42I5/e+wn+5NPcYgg5W3xSxmLP/MZPFrz0cm
+	i8u75rBZ3D11lM2if2Evk8WE3xfYHNg8Ps7awO4x++4PRo9Hi1sYPVas/s7u0XSqndXj8ya5
+	ALYoLpuU1JzMstQifbsErozzfSIF27gqvvx6ydbAeJqji5GTQ0LARKJx/xFWCFtM4sK99Wxd
+	jFwcQgLLGCW+nvzHDuH0Mkm0nvrABOHMZ5T4dGYOC0gLm4C6xOfXO8CqRATeM0p87P/KCJJg
+	FnCUeHT5DjOILSxgK9HXvRfMFhFwknh48DQ7hK0n8XjWFKBBHBwsAqoSl47wg4R5Bewlunf9
+	YwOxGYFO+n5qDRPESHGJ5tabLBCnCkgs2XOeGcIWlXj5+B8ryBgJAUWJ7autIMq1JNbvPA7V
+	qi3x5N0FVojxghI/Jt9jmcAoOgvJ1FlIWmYhaZmFpGUBI8sqRrHS4uSC4qT01AoTveLE3OLS
+	vHS95PzcTYyQuKvdwXj/q80hRgEORiUe3gsSjEFCrIllxZW5hxglOJiVRHh9QEK8KYmVValF
+	+fFFpTmpxYcYmTg4pRoYj/LNiDt1ZMP8f9+ESnf93CPdee1Wcx/rjsAsw8ONLoeOOe5RSle+
+	J3bkS80qM2XNe2JdV3ZHzNVKj/ga0GyhtaXkbu2sWQlTNvUcqOdUkTnDU3PE+nbFf67sl83+
+	6oa7Vk1mmTK9n6fK58KT6eqbNP+b/JLKVVzS+WYu2/n7Z/81pRyuDAmoUmIpzkg01GIuKk4E
+	AF6XGMyZAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+sl811h_suspend() seems to be the odd routine in the way it handles the 
+PM_EVENT_PRETHAW state. It treats it same as PM_EVENT_SUSPEND and 
+PM_EVENT_HIBERNATE. All other uses I could find treat it same as 
+PM_EVENT_FREEZE and PM_EVENT_QUIESCE. Makes sense since PM_EVENT_PRETHAW 
+is PM_EVENT_QUIESCE.
 
---NT59pYSnj1ZLVgEN
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+#define PM_EVENT_PRETHAW PM_EVENT_QUIESCE
 
-On Tue, Jul 30, 2013 at 12:32:04PM +0200, Richard Genoud wrote:
-> As atmel-ssc can be used with DMA, the documentation should be updated.
-> Also, a configuration DMA example is given.
+Reference: Commit 185849991d592497e43bcd264c6152af1261ffe2 introduced 
+PM_EVENT_PRETHAW state to sl811h_suspend().
 
-Applied, thanks.
+Couple of questions?
 
---NT59pYSnj1ZLVgEN
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+- Why does sl811h_suspend() treat PM_EVENT_PRETHAW different from 
+PM_EVENT_FREEZE?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+There is no problem with this code as such, since state is passed in. 
+However, this usage conflicts with the rest of the usages and the way 
+pm_op() routine maps PM_EVENT_PRETHAW/PM_EVENT_QUIESCE to freeze() pm_ops.
 
-iQIcBAEBAgAGBQJSAS52AAoJELSic+t+oim9o7IP/2l5DpHxEiREhyWrhzMgiZGR
-bu1ekyn9KFV6YIhhjn7xyVAFHsunFkrDeuV//mWvViaUJ2p0/3M5TOcLi/8nwX4I
-KODjZfuoY445OPahqa7qmzbnJu06PIiEIAFxlxnY7aPiSi3Px4LxQEF+gDXd0cNJ
-p61ImLuuGv7IAr3G86fMUjib90vZJkcnS5M9weRYx35+v2eyZxKJA9R7BL02YMAa
-XpXvGDMRSHkARtqh/sOoUnEzqmfolFKlQ78UPvRO3pjCe6kYiuHCZG5WVOegcfHc
-jB1qP8DGodEoI8Oy9KdEiXX3jsNmLJkq9CjPfywTq022mTv/imK4SrGeJppita8z
-rXHa4bWfVDXhQE3XP4alKvoCpp3Duk7ZBgFGBGZM2aMBFw5WbEa3vuPYzhVIUAMF
-dVxq5nyw8sJR8D67FmMoQJS68iVydL3cpI6OAmNeEtY4PkWtXda2SSKcL/JBueoA
-HGUDTdVfuZB/jRui7rxTABUbS7QDIdmQWN5Jg5GdsugXC+ATAbsTp+YXwHauPDRp
-jsJucGE9+IHExxJ4iL9HEsQxBRrgzEJMhtwYDIXfN/hcfN9GZYrOKr7+h6hZBnIF
-DSJIHW9QyDMWLGzrY9Z5Hy3YXdQvrWsJ/XcuaKYVWvqn+00EH7ekivUTVgFcRomH
-touF61WdERxnUFO533PQ
-=N+0/
------END PGP SIGNATURE-----
+         case PM_EVENT_FREEZE:
+         case PM_EVENT_QUIESCE:
+                 return ops->freeze;
 
---NT59pYSnj1ZLVgEN--
+Assuming the handling PM_EVENT_PRETHAW is correct in this routine, what 
+would be the right mapping for this legacy handling to dev_pm_ops?
+
+-- Shuah
+
+Shuah Khan, Linux Kernel Developer - Open Source Group Samsung Research 
+America (Silicon Valley) shuah.kh@samsung.com | (970) 672-0658
