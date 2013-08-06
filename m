@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752147Ab3HFFOp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 01:14:45 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:60494 "EHLO
+	id S1752484Ab3HFFOr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 01:14:47 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:56815 "EHLO
 	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751574Ab3HFFOo (ORCPT
+	with ESMTP id S1751681Ab3HFFOo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 6 Aug 2013 01:14:44 -0400
-X-AuditID: 9c93017e-b7b62ae000000eeb-cb-520086429d23
+X-AuditID: 9c93017e-b7b62ae000000eeb-cc-52008642c0e2
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
@@ -15,61 +15,52 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
         Christoph Hellwig <hch@infradead.org>,
         Pekka Enberg <penberg@kernel.org>, Andi Kleen <andi@firstfloor.org>
-Subject: [PATCH/RFC 0/4] perf ui/gtk: Separate out GTK code to a shared object (v2)
-Date: Tue,  6 Aug 2013 14:14:12 +0900
-Message-Id: <1375766056-19377-1-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 1/4] perf ui/gtk: Fix segmentation fault on perf_hpp__for_each_format loop
+Date: Tue,  6 Aug 2013 14:14:13 +0900
+Message-Id: <1375766056-19377-2-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1375766056-19377-1-git-send-email-namhyung@kernel.org>
+References: <1375766056-19377-1-git-send-email-namhyung@kernel.org>
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-This is v2 of gtk code separation patchset to reduce library
-dependencies of the perf executable.
+The commit 2b8bfa6bb8a7 ("perf tools: Centralize default columns init
+in perf_hpp__init") moves initialization of common overhead column to
+perf_hpp__init() but forgot about the gtk code.
 
-I only built libperf-gtk.so with -fPIC, and it's not linked to libperf
-at build time.  All unresolved symbols used for perf should be
-resolved at runtime via perf executable (so libperf.a) - I didn't know
-that the linker permits unresolved symbols in a shared library at
-build time.
+So the gtk code added the same column to the list twice causing
+infinite loop when iterating it by perf_hpp__for_each_format loop.
+When I run perf report --gtk, I can see following messages
+indefinitely.
 
-Tested on my x86-64 machine only.  It seems work well for me.
+  (perf:11687): Gtk-CRITICAL **: IA__gtk_main_quit: assertion 'main_loops != NULL' failed
+  perf: Segmentation fault
 
-The patch 1 is a bug fix and can be applied independently.
-
-You can find it on my 'perf/separate-v2' branch in my tree at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
-
-
-Any comments are welcome, thanks
-Namhyung
-
-
+Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Pekka Enberg <penberg@kernel.org>
 Cc: Andi Kleen <andi@firstfloor.org>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/ui/gtk/hists.c | 2 --
+ 1 file changed, 2 deletions(-)
 
-Namhyung Kim (4):
-  perf ui/gtk: Fix segmentation fault on perf_hpp__for_each_format loop
-  perf tools: Separate out GTK codes to libperf-gtk.so
-  perf tools: Setup GTK browser dynamically
-  perf tools: Run dynamic loaded GTK browser
-
- tools/perf/Makefile           | 39 +++++++++++++++++++++++----------
- tools/perf/builtin-annotate.c | 26 +++++++++++++++++++---
- tools/perf/builtin-report.c   | 16 ++++++++++++--
- tools/perf/config/Makefile    | 12 +++++++---
- tools/perf/ui/gtk/annotate.c  | 13 ++++++++---
- tools/perf/ui/gtk/gtk.h       | 16 ++++++++++++++
- tools/perf/ui/gtk/hists.c     |  2 --
- tools/perf/ui/setup.c         | 51 +++++++++++++++++++++++++++++++++++++++++--
- tools/perf/ui/ui.h            | 12 +---------
- tools/perf/util/annotate.h    | 24 --------------------
- tools/perf/util/hist.h        | 15 -------------
- 11 files changed, 150 insertions(+), 76 deletions(-)
-
+diff --git a/tools/perf/ui/gtk/hists.c b/tools/perf/ui/gtk/hists.c
+index cb2ed1980147..2ca66cc1160f 100644
+--- a/tools/perf/ui/gtk/hists.c
++++ b/tools/perf/ui/gtk/hists.c
+@@ -109,8 +109,6 @@ __HPP_COLOR_PERCENT_FN(overhead_guest_us, period_guest_us)
+ 
+ void perf_gtk__init_hpp(void)
+ {
+-	perf_hpp__column_enable(PERF_HPP__OVERHEAD);
+-
+ 	perf_hpp__init();
+ 
+ 	perf_hpp__format[PERF_HPP__OVERHEAD].color =
 -- 
 1.7.11.7
 
