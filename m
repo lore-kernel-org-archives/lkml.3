@@ -1,48 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756977Ab3HFXPl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 19:15:41 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:36159 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755342Ab3HFXPi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 19:15:38 -0400
-Message-ID: <1375830937.2424.41.camel@joe-AO722>
-Subject: Re: kernel mailing list permalinks
-From: Joe Perches <joe@perches.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Anders Larsen <al@alarsen.net>, Bjorn Helgaas <bhelgaas@google.com>,
-        Shuah Khan <shuahkhan@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        postmaster@vger.kernel.org, Konstantin Ryabitsev <mricon@kernel.org>
-Date: Tue, 06 Aug 2013 16:15:37 -0700
-In-Reply-To: <5201813F.1070102@zytor.com>
-References: <1375826105.22552.0@oscar> <5201813F.1070102@zytor.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
+	id S1755125Ab3HFX1k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 19:27:40 -0400
+Received: from mga14.intel.com ([143.182.124.37]:9649 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751305Ab3HFX1i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Aug 2013 19:27:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,828,1367996400"; 
+   d="scan'208";a="278620939"
+Message-ID: <52018664.1080103@intel.com>
+Date: Tue, 06 Aug 2013 16:27:32 -0700
+From: Alexander Duyck <alexander.h.duyck@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Alex Williamson <alex.williamson@redhat.com>
+CC: bhelgaas@google.com, linux-pci@vger.kernel.org, ddutile@redhat.com,
+        indou.takao@jp.fujitsu.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 8/9] pci: Tune secondary bus reset timing
+References: <20130805193200.9260.38729.stgit@bling.home> <20130805193753.9260.35206.stgit@bling.home>
+In-Reply-To: <20130805193753.9260.35206.stgit@bling.home>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-08-06 at 16:05 -0700, H. Peter Anvin wrote:
-> On 08/06/2013 02:55 PM, Anders Larsen wrote:
-> > On 2013-08-06 23:23, H. Peter Anvin wrote:
-> >> On 08/06/2013 02:11 PM, Bjorn Helgaas wrote:
-> >> >>
-> >> >> The above link is also a good example of subtleness: + in a URL
-> >> means a
-> >> >> space character, it has to be escaped as %2B.  Particularly a
-> >> problem in
-> >> >> gmail message-ids.
-> > 
-> > the link in question works just fine without escaping the +; the + only
-> > has to be escaped in then query component of a URL, not in the path
-> > component where it is just another valid character - and the link in
-> > question did not contain any query component.
-> > 
-> > (see RFC 3986 sections 3.3 and 3.4)
+On 08/05/2013 12:37 PM, Alex Williamson wrote:
+> The PCI spec indicates that with stable power, reset needs to be
+> asserted for a minimum of 1ms (Trst).  Seems like we should be able
+> to assume power is stable for a runtime secondary bus reset.  The
+> current code has always used 100ms with no explanation where that
+> came from.  The aer_do_secondary_bus_reset() function uses 2ms, but
+> that seems to be a misinterpretation of the PCIe spec, where hot
+> reset is implemented by TS1 ordered sets containing the hot reset
+> command.  After a 2ms delay the state machine enters the detect state,
+> but to generate a link down, only two consecutive TS1 hot reset
+> ordered sets are requred.  1ms should be plenty for that.
 
-Rather than relying on third party links,
-it'd be nice if vger was the archive too.
+The reason for doing a 2ms sleep is because the are supposed to be
+sending the Hot Reset TS1 Ordered-Sets continuously for 2ms per all of
+the documents I have read.  The 1ms number you quote is the minimum time
+for a conventional PCI bus.  I'm not completely sure of that applies as
+well to PCIe, nor does it represent the maximum recommended value.
+
+If we stop early we risk not resetting the full device tree on the
+secondary bus which is the bug I was resolving by adding the 2ms delay. 
+Previously we saw that some devices were only getting their PCIe link
+retrained without performing a hot reset when the bit was not held for
+long enough.  I would prefer to keep this at 2 ms in order to account
+for the fact that PCIe has to go though link recovery states before it
+can perform the hot reset.
+
+Thanks,
+
+Alex
+
 
