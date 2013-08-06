@@ -1,231 +1,368 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755375Ab3HFH3N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 03:29:13 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:58230 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755117Ab3HFH3M (ORCPT
+	id S1755350Ab3HFHas (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 03:30:48 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:4796 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753826Ab3HFHaq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 03:29:12 -0400
-Message-ID: <1375774140.5412.9.camel@marge.simpson.net>
-Subject: Re: [PATCH V3]hrtimer: Fix a performance regression by disable
- reprogramming in remove_hrtimer
-From: Mike Galbraith <bitbucket@online.de>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ethan Zhao <ethan.kernel@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        johlstei@codeaurora.org, Yinghai Lu <yinghai@kernel.org>,
-        Jin Feng <joe.jin@oracle.com>
-Date: Tue, 06 Aug 2013 09:29:00 +0200
-In-Reply-To: <20130730093519.GP3008@twins.programming.kicks-ass.net>
-References: <1374955447-5051-1-git-send-email-ethan.kernel@gmail.com>
-	 <alpine.DEB.2.02.1307291146060.4089@ionos.tec.linutronix.de>
-	 <CABawtvP4oLuvHOS3prbbgPShXVziV_wTo7i6KCqJ9KkoVdz0ag@mail.gmail.com>
-	 <20130730093519.GP3008@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
+	Tue, 6 Aug 2013 03:30:46 -0400
+X-Spam-Score: -100.8
+Message-ID: <5200A5E6.9020803@asianux.com>
+Date: Tue, 06 Aug 2013 15:29:42 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Al Viro <viro@zeniv.linux.org.uk>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, xi.wang@gmail.com,
+        nicolas.dichtel@6wind.com
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] kernel/sysctl_binary.c: improve the usage of return value
+ 'result'
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:tvurB2paAj01TEirdcvPHNZC61whNopqs38HLlp34Hq
- QToVz/LFDlghU/C58NeU+22sHGTYnSHuIOBkKxYSyscZPefYEE
- 2yZRnESUs6xhtl39CD1svJvguSDr3a1YMgEJAJWMy4qr2ThBZm
- 7ijHrGhKHdHizC0dfy3XPIMHjxCYJXSD0zICHuqqV7Ky4Lh+Zt
- kHvuzhbdPPW85GXwS/qvShH6Nxv+XWRRzDJt+dQHs8HHI1/+EB
- fJxoz4xcarWYNTzssVVBfR3hN/DzwbI504HKRJ65atqVu40DFx
- 87s3tcNWnFRuBog0OzG7mI7dMMoKRmW7ianhGnDFs/SvztOHkU
- evR0fQKCOEpmr6ruYFJtb3gX6GJxeACdIH9GVi2lealfm+8r0p
- UccBhaJOJMXog==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-07-30 at 11:35 +0200, Peter Zijlstra wrote:
+Improve the usage of return value 'result', so not only can make code
+clearer to readers, but also can improve the performance.
 
-> It would be good if you could do what Thomas suggested and look at which
-> timer is actually active during your workload.
+Assign the return error code only when error occurs, so can save some
+instructions (some of them are inside looping).
 
-Rebuilding regression test trees, some pipe-test results...
+Rewrite the sysctl_getname() to make code clearer to readers, and also
+can save some instructions (it is mainly related with the usage of the
+variable 'result').
 
-I'm missing mwait_idle() rather a lot on Q6600, and at 3.8, E5620 took a
-severe NOHZ drubbing from the menu governor. 
+Remove useless variable 'result' for sysctl() and compat sysctl(), when
+do_sysctl() fails, it is meaningless to assign 'oldlenp ' with original
+same value.
 
-pipe-test, scheduling cross core
-
-NOTE: nohz is throttled here (patchlet below), as to not eat horrible
-microidle cost, see E5620 v3.7.10-nothrottle below.
-
-Q6600
-v3.8.13                  500.6 KHz     1.000
-v3.9.11                  422.4 KHz      .843
-v3.10.4                  420.2 KHz      .839
-v3.11-rc3-4-g36f571e     404.7 KHz      .808
-
-Q6600 3.9 regression:
-guilty party is 69fb3676 x86 idle: remove mwait_idle() and "idle=mwait" cmdline param
-halt sucks, HTH does one activate mwait_idle_with_hints() [processor_idle()] for core2 boxen?
-
-E5620                                            +write 0 -> /dev/cpu_dma_latency, hold open
-v3.7.10                  578.5 KHz     1.000     675.4 KHz     1.000
-v3.7.10-nothrottle       366.7 KHz      .633     395.0 KHz      .584
-v3.8.13                  468.3 KHz      .809     690.0 KHz     1.021
-v3.8.13 idle=mwait       595.1 KHz     1.028     NA
-v3.9.11                  462.0 KHz      .798     691.1 KHz     1.023
-v3.10.4                  419.4 KHz      .724     570.8 KHz      .845
-v3.11-rc3-4-g36f571e     400.1 KHz      .691     538.5 KHz      .797
-
-E5620 3.8 regression:
-guilty party: 69a37bea cpuidle: Quickly notice prediction failure for repeat mode
+Also modify the related code to pass "./scripts/checkpatch.pl" checking.
 
 
-Q6600 (2.4 GHz core2 quad)
-     v3.11-rc3-4-g36f571e                       v3.8.13
-     7.97%  [k] reschedule_interrupt            8.63%  [k] __schedule
-     6.27%  [k] __schedule                      6.07%  [k] native_sched_clock
-     4.74%  [k] native_sched_clock              4.96%  [k] system_call
-     4.23%  [k] _raw_spin_lock_irqsave          4.30%  [k] _raw_spin_lock_irqsave
-     3.39%  [k] system_call                     4.06%  [k] resched_task
-     2.89%  [k] sched_clock_local               3.44%  [k] sched_clock_local
-     2.79%  [k] mutex_lock                      3.39%  [k] pipe_read
-     2.57%  [k] pipe_read                       3.21%  [k] mutex_lock
-     2.55%  [k] __switch_to                     2.98%  [k] read_tsc
-     2.24%  [k] read_tsc                        2.87%  [k] __switch_to
-
-
-E5620 (2.4 GHz Westmere quad)
-    v3.7.10                                     v3.7.10-nothrottle                       v3.7.10-nothrottle
-    8.01%  [k] __schedule                      25.80%  [k] _raw_spin_unlock_irqrestore   21.80%  [k] _raw_spin_unlock_irqrestore
-    4.49%  [k] resched_tas                      4.64%  [k] __hrtimer_start_range_ns      - _raw_spin_unlock_irqrestore
-    3.94%  [k] mutex_lock                       4.62%  [k] timerqueue_add                   + 37.94% __hrtimer_start_range_ns
-    3.44%  [k] __switch_to                      4.54%  [k] __schedule                         19.69% hrtimer_cancel
-    3.18%  [k] menu_select                      2.84%  [k] enqueue_hrtimer                       tick_nohz_restart
-    3.05%  [k] copy_user_generic_string         2.64%  [k] resched_task                          tick_nohz_idle_exit
-    3.02%  [k] task_waking_fair                 2.29%  [k] _raw_spin_lock_irqsave                cpu_idle
-    2.91%  [k] mutex_unlock                     2.28%  [k] mutex_lock                            start_secondary
-    2.82%  [k] pipe_read                        1.96%  [k] __switch_to                      + 16.05% hrtimer_start_range_ns
-    2.32%  [k] ktime_get_real                   1.73%  [k] menu_select                        15.46% hrtimer_start
-                                                                                                 tick_nohz_stop_sched_tick
-                                                                                                 __tick_nohz_idle_enter
-                                                                                                 tick_nohz_idle_enter
-                                                                                                 cpu_idle
-                                                                                                 start_secondary
-                                                                                              6.37% hrtimer_try_to_cancel
-                                                                                                 hrtimer_cancel
-                                                                                                 tick_nohz_restart
-                                                                                                 tick_nohz_idle_exit
-                                                                                                 cpu_idle
-                                                                                                 start_secondary
-
-    v3.8.13                                    v3.8.13 idle=mwait                        v3.8.13 (throttled, but menu gov bites.. HARD)
-    23.16%  [k] _raw_spin_unlock_irqrestore    8.35%  [k] __schedule                     -  22.91%  [k] _raw_spin_unlock_irqrestore
-     4.93%  [k] __schedule                     6.49%  [k] __switch_to                       - _raw_spin_unlock_irqrestore
-     3.42%  [k] resched_task                   5.71%  [k] resched_task                         - 47.26% hrtimer_try_to_cancel
-     3.27%  [k] __switch_to                    4.64%  [k] mutex_lock                                hrtimer_cancel
-     3.05%  [k] mutex_lock                     3.48%  [k] copy_user_generic_string                  menu_hrtimer_cancel
-     2.32%  [k] copy_user_generic_string       3.15%  [k] task_waking_fair                          tick_nohz_idle_exit
-     2.30%  [k] _raw_spin_lock_irqsave         3.13%  [k] pipe_read                                 cpu_idle
-     2.15%  [k] pipe_read                      2.61%  [k] mutex_unlock                              start_secondary
-     2.15%  [k] task_waking_fair               2.54%  [k] finish_task_switch                   - 40.01% __hrtimer_start_range_ns
-     2.08%  [k] ktime_get                      2.29%  [k] _raw_spin_lock_irqsave                    hrtimer_start
-     1.87%  [k] mutex_unlock                   1.91%  [k] idle_cpu                                  menu_select
-     1.76%  [k] finish_task_switch             1.84%  [k] __wake_up_common                          cpuidle_idle_call
-                                                                                                    cpu_idle
-                                                                                                    start_secondary
-
-    v3.9.11
-    18.67%  [k] _raw_spin_unlock_irqrestore
-     4.36%  [k] __schedule
-     3.66%  [k] __switch_to
-     3.13%  [k] mutex_lock
-     2.97%  [k] __hrtimer_start_range_ns
-     2.69%  [k] _raw_spin_lock_irqsave
-     2.38%  [k] copy_user_generic_string
-     2.34%  [k] hrtimer_reprogram.isra.32
-     2.34%  [k] task_waking_fair
-     2.25%  [k] ktime_get
-     2.14%  [k] pipe_read
-     1.98%  [k] menu_select
-
-    v3.10.4
-    20.42%  [k] _raw_spin_unlock_irqrestore
-     4.75%  [k] __schedule
-     4.42%  [k] reschedule_interrupt  <== appears in 3.10, guilty party as yet unknown
-     3.52%  [k] __switch_to
-     3.27%  [k] resched_task
-     2.64%  [k] cpuidle_enter_state
-     2.63%  [k] _raw_spin_lock_irqsave
-     2.04%  [k] copy_user_generic_string
-     2.00%  [k] cpu_idle_loop
-     1.97%  [k] mutex_lock
-     1.90%  [k] ktime_get
-     1.75%  [k] task_waking_fair
-
-   v3.11-rc3-4-g36f571e
-   18.96%  [k] _raw_spin_unlock_irqrestore
-    4.84%  [k] __schedule
-    4.69%  [k] reschedule_interrupt
-    3.75%  [k] __switch_to
-    2.62%  [k] _raw_spin_lock_irqsave
-    2.43%  [k] cpuidle_enter_state
-    2.28%  [k] resched_task
-    2.20%  [k] cpu_idle_loop
-    1.97%  [k] copy_user_generic_string
-    1.88%  [k] ktime_get
-    1.81%  [k] task_waking_fair
-    1.75%  [k] mutex_lock
-
-sched: ratelimit nohz
-
-Entering nohz code on every micro-idle is too expensive to bear.
-
-Signed-off-by: Mike Galbraith <efault@gmx.de>
-
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
 ---
- include/linux/sched.h    |    5 +++++
- kernel/sched/core.c      |    5 +++++
- kernel/time/tick-sched.c |    2 +-
- 3 files changed, 11 insertions(+), 1 deletion(-)
+ kernel/sysctl_binary.c |  142 ++++++++++++++++++++++++------------------------
+ 1 files changed, 72 insertions(+), 70 deletions(-)
 
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -235,9 +235,14 @@ extern int runqueue_is_locked(int cpu);
- extern void nohz_balance_enter_idle(int cpu);
- extern void set_cpu_sd_state_idle(void);
- extern int get_nohz_timer_target(void);
-+extern int sched_needs_cpu(int cpu);
- #else
- static inline void nohz_balance_enter_idle(int cpu) { }
- static inline void set_cpu_sd_state_idle(void) { }
-+static inline int sched_needs_cpu(int cpu)
-+{
-+	return 0;
-+}
- #endif
+diff --git a/kernel/sysctl_binary.c b/kernel/sysctl_binary.c
+index b609213..26d7fc0 100644
+--- a/kernel/sysctl_binary.c
++++ b/kernel/sysctl_binary.c
+@@ -941,15 +941,17 @@ static ssize_t bin_string(struct file *file,
+ 		copied = result;
+ 		lastp = oldval + copied - 1;
  
- /*
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -650,6 +650,11 @@ static inline bool got_nohz_idle_kick(vo
- 	return false;
+-		result = -EFAULT;
+-		if (get_user(ch, lastp))
++		if (get_user(ch, lastp)) {
++			result = -EFAULT;
+ 			goto out;
++		}
+ 
+ 		/* Trim off the trailing newline */
+ 		if (ch == '\n') {
+-			result = -EFAULT;
+-			if (put_user('\0', lastp))
++			if (put_user('\0', lastp)) {
++				result = -EFAULT;
+ 				goto out;
++			}
+ 			copied -= 1;
+ 		}
+ 	}
+@@ -974,10 +976,11 @@ static ssize_t bin_intvec(struct file *file,
+ 	char *buffer;
+ 	ssize_t result;
+ 
+-	result = -ENOMEM;
+ 	buffer = kmalloc(BUFSZ, GFP_KERNEL);
+-	if (!buffer)
++	if (!buffer) {
++		result = -ENOMEM;
+ 		goto out;
++	}
+ 
+ 	if (oldval && oldlen) {
+ 		unsigned __user *vec = oldval;
+@@ -999,9 +1002,10 @@ static ssize_t bin_intvec(struct file *file,
+ 			while (isspace(*str))
+ 				str++;
+ 			
+-			result = -EFAULT;
+-			if (put_user(value, vec + i))
++			if (put_user(value, vec + i)) {
++				result = -EFAULT;
+ 				goto out_kfree;
++			}
+ 
+ 			copied += sizeof(*vec);
+ 			if (!isdigit(*str))
+@@ -1020,10 +1024,10 @@ static ssize_t bin_intvec(struct file *file,
+ 		for (i = 0; i < length; i++) {
+ 			unsigned long value;
+ 
+-			result = -EFAULT;
+-			if (get_user(value, vec + i))
++			if (get_user(value, vec + i)) {
++				result = -EFAULT;
+ 				goto out_kfree;
+-
++			}
+ 			str += snprintf(str, end - str, "%lu\t", value);
+ 		}
+ 
+@@ -1045,10 +1049,11 @@ static ssize_t bin_ulongvec(struct file *file,
+ 	char *buffer;
+ 	ssize_t result;
+ 
+-	result = -ENOMEM;
+ 	buffer = kmalloc(BUFSZ, GFP_KERNEL);
+-	if (!buffer)
++	if (!buffer) {
++		result = -ENOMEM;
+ 		goto out;
++	}
+ 
+ 	if (oldval && oldlen) {
+ 		unsigned long __user *vec = oldval;
+@@ -1070,9 +1075,10 @@ static ssize_t bin_ulongvec(struct file *file,
+ 			while (isspace(*str))
+ 				str++;
+ 			
+-			result = -EFAULT;
+-			if (put_user(value, vec + i))
++			if (put_user(value, vec + i)) {
++				result = -EFAULT;
+ 				goto out_kfree;
++			}
+ 
+ 			copied += sizeof(*vec);
+ 			if (!isdigit(*str))
+@@ -1091,10 +1097,10 @@ static ssize_t bin_ulongvec(struct file *file,
+ 		for (i = 0; i < length; i++) {
+ 			unsigned long value;
+ 
+-			result = -EFAULT;
+-			if (get_user(value, vec + i))
++			if (get_user(value, vec + i)) {
++				result = -EFAULT;
+ 				goto out_kfree;
+-
++			}
+ 			str += snprintf(str, end - str, "%lu\t", value);
+ 		}
+ 
+@@ -1128,10 +1134,10 @@ static ssize_t bin_uuid(struct file *file,
+ 
+ 		/* Convert the uuid to from a string to binary */
+ 		for (i = 0; i < 16; i++) {
+-			result = -EIO;
+-			if (!isxdigit(str[0]) || !isxdigit(str[1]))
++			if (!isxdigit(str[0]) || !isxdigit(str[1])) {
++				result = -EIO;
+ 				goto out;
+-
++			}
+ 			uuid[i] = (hex_to_bin(str[0]) << 4) |
+ 					hex_to_bin(str[1]);
+ 			str += 2;
+@@ -1142,10 +1148,10 @@ static ssize_t bin_uuid(struct file *file,
+ 		if (oldlen > 16)
+ 			oldlen = 16;
+ 
+-		result = -EFAULT;
+-		if (copy_to_user(oldval, uuid, oldlen))
++		if (copy_to_user(oldval, uuid, oldlen)) {
++			result = -EFAULT;
+ 			goto out;
+-
++		}
+ 		copied = oldlen;
+ 	}
+ 	result = copied;
+@@ -1170,25 +1176,25 @@ static ssize_t bin_dn_node_address(struct file *file,
+ 		buf[result] = '\0';
+ 
+ 		/* Convert the decnet address to binary */
+-		result = -EIO;
+ 		nodep = strchr(buf, '.');
+-		if (!nodep)
++		if (!nodep) {
++			result = -EIO;
+ 			goto out;
++		}
+ 		++nodep;
+ 
+ 		area = simple_strtoul(buf, NULL, 10);
+ 		node = simple_strtoul(nodep, NULL, 10);
+-
+-		result = -EIO;
+-		if ((area > 63)||(node > 1023))
++		if ((area > 63) || (node > 1023)) {
++			result = -EIO;
+ 			goto out;
+-
++		}
+ 		dnaddr = cpu_to_le16((area << 10) | node);
+ 
+-		result = -EFAULT;
+-		if (put_user(dnaddr, (__le16 __user *)oldval))
++		if (put_user(dnaddr, (__le16 __user *)oldval)) {
++			result = -EFAULT;
+ 			goto out;
+-
++		}
+ 		copied = sizeof(dnaddr);
+ 	}
+ 
+@@ -1197,14 +1203,14 @@ static ssize_t bin_dn_node_address(struct file *file,
+ 		char buf[15];
+ 		int len;
+ 
+-		result = -EINVAL;
+-		if (newlen != sizeof(dnaddr))
++		if (newlen != sizeof(dnaddr)) {
++			result = -EINVAL;
+ 			goto out;
+-
+-		result = -EFAULT;
+-		if (get_user(dnaddr, (__le16 __user *)newval))
++		}
++		if (get_user(dnaddr, (__le16 __user *)newval)) {
++			result = -EFAULT;
+ 			goto out;
+-
++		}
+ 		len = snprintf(buf, sizeof(buf), "%hu.%hu",
+ 				le16_to_cpu(dnaddr) >> 10,
+ 				le16_to_cpu(dnaddr) & 0x3ff);
+@@ -1276,19 +1282,20 @@ repeat:
+ 
+ static char *sysctl_getname(const int *name, int nlen, const struct bin_table **tablep)
+ {
+-	char *tmp, *result;
+-
+-	result = ERR_PTR(-ENOMEM);
+-	tmp = __getname();
+-	if (tmp) {
+-		const struct bin_table *table = get_sysctl(name, nlen, tmp);
+-		result = tmp;
+-		*tablep = table;
+-		if (IS_ERR(table)) {
+-			__putname(tmp);
+-			result = ERR_CAST(table);
+-		}
++	char *result;
++	const struct bin_table *table;
++
++	result = __getname();
++	if (!result)
++		return ERR_PTR(-ENOMEM);
++
++	table = get_sysctl(name, nlen, result);
++	if (IS_ERR(table)) {
++		__putname(result);
++		return ERR_CAST(table);
+ 	}
++	*tablep = table;
++
+ 	return result;
  }
  
-+int sched_needs_cpu(int cpu)
-+{
-+	return  cpu_rq(cpu)->avg_idle < sysctl_sched_migration_cost;
-+}
-+
- #else /* CONFIG_NO_HZ_COMMON */
+@@ -1303,9 +1310,10 @@ static ssize_t binary_sysctl(const int *name, int nlen,
+ 	int flags;
  
- static inline bool got_nohz_idle_kick(void)
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -548,7 +548,7 @@ static ktime_t tick_nohz_stop_sched_tick
- 		time_delta = timekeeping_max_deferment();
- 	} while (read_seqretry(&jiffies_lock, seq));
+ 	pathname = sysctl_getname(name, nlen, &table);
+-	result = PTR_ERR(pathname);
+-	if (IS_ERR(pathname))
++	if (IS_ERR(pathname)) {
++		result = PTR_ERR(pathname);
+ 		goto out;
++	}
  
--	if (rcu_needs_cpu(cpu, &rcu_delta_jiffies) ||
-+	if (sched_needs_cpu(cpu) || rcu_needs_cpu(cpu, &rcu_delta_jiffies) ||
- 	    arch_needs_cpu(cpu) || irq_work_needs_cpu()) {
- 		next_jiffies = last_jiffies + 1;
- 		delta_jiffies = 1;
-
+ 	/* How should the sysctl be accessed? */
+ 	if (oldval && oldlen && newval && newlen) {
+@@ -1321,10 +1329,10 @@ static ssize_t binary_sysctl(const int *name, int nlen,
+ 
+ 	mnt = task_active_pid_ns(current)->proc_mnt;
+ 	file = file_open_root(mnt->mnt_root, mnt, pathname, flags);
+-	result = PTR_ERR(file);
+-	if (IS_ERR(file))
++	if (IS_ERR(file)) {
++		result = PTR_ERR(file);
+ 		goto out_putname;
+-
++	}
+ 	result = table->convert(file, oldval, oldlen, newval, newlen);
+ 
+ 	fput(file);
+@@ -1420,7 +1428,6 @@ SYSCALL_DEFINE1(sysctl, struct __sysctl_args __user *, args)
+ {
+ 	struct __sysctl_args tmp;
+ 	size_t oldlen = 0;
+-	ssize_t result;
+ 
+ 	if (copy_from_user(&tmp, args, sizeof(tmp)))
+ 		return -EFAULT;
+@@ -1431,18 +1438,16 @@ SYSCALL_DEFINE1(sysctl, struct __sysctl_args __user *, args)
+ 	if (tmp.oldlenp && get_user(oldlen, tmp.oldlenp))
+ 		return -EFAULT;
+ 
+-	result = do_sysctl(tmp.name, tmp.nlen, tmp.oldval, oldlen,
++	oldlen = do_sysctl(tmp.name, tmp.nlen, tmp.oldval, oldlen,
+ 			   tmp.newval, tmp.newlen);
+ 
+-	if (result >= 0) {
+-		oldlen = result;
+-		result = 0;
+-	}
++	if ((ssize_t)oldlen < 0)
++		return (ssize_t)oldlen;
+ 
+ 	if (tmp.oldlenp && put_user(oldlen, tmp.oldlenp))
+ 		return -EFAULT;
+ 
+-	return result;
++	return 0;
+ }
+ 
+ 
+@@ -1463,7 +1468,6 @@ COMPAT_SYSCALL_DEFINE1(sysctl, struct compat_sysctl_args __user *, args)
+ 	struct compat_sysctl_args tmp;
+ 	compat_size_t __user *compat_oldlenp;
+ 	size_t oldlen = 0;
+-	ssize_t result;
+ 
+ 	if (copy_from_user(&tmp, args, sizeof(tmp)))
+ 		return -EFAULT;
+@@ -1475,19 +1479,17 @@ COMPAT_SYSCALL_DEFINE1(sysctl, struct compat_sysctl_args __user *, args)
+ 	if (compat_oldlenp && get_user(oldlen, compat_oldlenp))
+ 		return -EFAULT;
+ 
+-	result = do_sysctl(compat_ptr(tmp.name), tmp.nlen,
++	oldlen = do_sysctl(compat_ptr(tmp.name), tmp.nlen,
+ 			   compat_ptr(tmp.oldval), oldlen,
+ 			   compat_ptr(tmp.newval), tmp.newlen);
+ 
+-	if (result >= 0) {
+-		oldlen = result;
+-		result = 0;
+-	}
++	if ((ssize_t)oldlen < 0)
++		return (ssize_t)oldlen;
+ 
+ 	if (compat_oldlenp && put_user(oldlen, compat_oldlenp))
+ 		return -EFAULT;
+ 
+-	return result;
++	return 0;
+ }
+ 
+ #endif /* CONFIG_COMPAT */
+-- 
+1.7.7.6
 
