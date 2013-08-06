@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755872Ab3HFAVV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 20:21:21 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:57229 "EHLO hydra.sisk.pl"
+	id S1755906Ab3HFAWi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 20:22:38 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:57234 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755639Ab3HFAVT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 20:21:19 -0400
+	id S1755835Ab3HFAVU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Aug 2013 20:21:20 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>, Toshi Kani <toshi.kani@hp.com>
-Subject: [PATCH 5/5] ACPI: Clean up error code path in acpi_unbind_one()
-Date: Tue, 06 Aug 2013 02:28:36 +0200
-Message-ID: <7329028.7Z1dZAAkTZ@vostro.rjw.lan>
+Subject: [PATCH 3/5] ACPI: acpi_bind_one()/acpi_unbind_one() whitespace cleanups
+Date: Tue, 06 Aug 2013 02:27:24 +0200
+Message-ID: <1410756.IOZGpZQa04@vostro.rjw.lan>
 User-Agent: KMail/4.9.5 (Linux/3.11.0-rc4+; KDE/4.9.5; x86_64; ; )
 In-Reply-To: <3015032.qfOqgEVZKP@vostro.rjw.lan>
 References: <3015032.qfOqgEVZKP@vostro.rjw.lan>
@@ -24,44 +24,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-The error code path in acpi_unbind_one() is unnecessarily complicated
-(in particular, the err label is not really necessary) and the error
-message printed by it is inaccurate (there's nothing called
-'acpi_handle' in that function), so clean up those things.
+Clean up some inconsistent use of whitespace in acpi_bind_one() and
+acpi_unbind_one().
 
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 ---
- drivers/acpi/glue.c |   11 ++++-------
- 1 file changed, 4 insertions(+), 7 deletions(-)
+ drivers/acpi/glue.c |    7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
 Index: linux-pm/drivers/acpi/glue.c
 ===================================================================
 --- linux-pm.orig/drivers/acpi/glue.c
 +++ linux-pm/drivers/acpi/glue.c
-@@ -219,8 +219,10 @@ int acpi_unbind_one(struct device *dev)
- 		return 0;
+@@ -182,9 +182,9 @@ int acpi_bind_one(struct device *dev, ac
  
- 	status = acpi_bus_get_device(ACPI_HANDLE(dev), &acpi_dev);
--	if (ACPI_FAILURE(status))
--		goto err;
-+	if (ACPI_FAILURE(status)) {
-+		dev_err(dev, "Oops, ACPI handle corrupt in %s()\n", __func__);
-+		return -EINVAL;
-+	}
- 
- 	mutex_lock(&acpi_dev->physical_node_lock);
- 
-@@ -242,12 +244,7 @@ int acpi_unbind_one(struct device *dev)
- 		}
+ 	acpi_bind_physnode_name(physical_node_name, node_id);
+ 	retval = sysfs_create_link(&acpi_dev->dev.kobj, &dev->kobj,
+-			physical_node_name);
++				   physical_node_name);
+ 	retval = sysfs_create_link(&dev->kobj, &acpi_dev->dev.kobj,
+-		"firmware_node");
++				   "firmware_node");
  
  	mutex_unlock(&acpi_dev->physical_node_lock);
--
- 	return 0;
--
--err:
--	dev_err(dev, "Oops, 'acpi_handle' corrupt\n");
--	return -EINVAL;
- }
- EXPORT_SYMBOL_GPL(acpi_unbind_one);
  
+@@ -228,12 +228,11 @@ int acpi_unbind_one(struct device *dev)
+ 		char physical_node_name[PHYSICAL_NODE_NAME_SIZE];
+ 
+ 		entry = list_entry(node, struct acpi_device_physical_node,
+-			node);
++				   node);
+ 		if (entry->dev != dev)
+ 			continue;
+ 
+ 		list_del(node);
+-
+ 		acpi_dev->physical_node_count--;
+ 
+ 		acpi_bind_physnode_name(physical_node_name, entry->node_id);
 
