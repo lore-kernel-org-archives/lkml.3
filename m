@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753499Ab3HFFP0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 01:15:26 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:56815 "EHLO
+	id S1753478Ab3HFFPX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 01:15:23 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:60494 "EHLO
 	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751816Ab3HFFOp (ORCPT
+	with ESMTP id S1751706Ab3HFFOp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 6 Aug 2013 01:14:45 -0400
-X-AuditID: 9c93017e-b7b62ae000000eeb-cf-520086426f37
+X-AuditID: 9c93017e-b7b62ae000000eeb-cd-5200864242a4
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
@@ -15,9 +15,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
         Christoph Hellwig <hch@infradead.org>, Andi Kleen <ak@linux.intel.com>,
         Pekka Enberg <penberg@kernel.org>
-Subject: [PATCH 3/4] perf tools: Setup GTK browser dynamically
-Date: Tue,  6 Aug 2013 14:14:15 +0900
-Message-Id: <1375766056-19377-4-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 2/4] perf tools: Separate out GTK codes to libperf-gtk.so
+Date: Tue,  6 Aug 2013 14:14:14 +0900
+Message-Id: <1375766056-19377-3-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1375766056-19377-1-git-send-email-namhyung@kernel.org>
 References: <1375766056-19377-1-git-send-email-namhyung@kernel.org>
@@ -26,142 +26,142 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Call setup/exit GTK browser function using libdl.
+Separate out GTK codes to a shared object called libperf-gtk.so.  This
+time only GTK codes are built with -fPIC and libperf remains as is.
 
 Cc: Andi Kleen <ak@linux.intel.com>
 Cc: Pekka Enberg <penberg@kernel.org>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/ui/gtk/gtk.h |  3 +++
- tools/perf/ui/setup.c   | 51 +++++++++++++++++++++++++++++++++++++++++++++++--
- tools/perf/ui/ui.h      | 12 +-----------
- 3 files changed, 53 insertions(+), 13 deletions(-)
+ tools/perf/Makefile        | 39 ++++++++++++++++++++++++++++-----------
+ tools/perf/config/Makefile | 14 ++++++++++----
+ 2 files changed, 38 insertions(+), 15 deletions(-)
 
-diff --git a/tools/perf/ui/gtk/gtk.h b/tools/perf/ui/gtk/gtk.h
-index 3d96785ef155..09b7a062fd48 100644
---- a/tools/perf/ui/gtk/gtk.h
-+++ b/tools/perf/ui/gtk/gtk.h
-@@ -20,6 +20,9 @@ struct perf_gtk_context {
- 	guint statbar_ctx_id;
- };
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index bfd12d02a304..17f0509e0eb0 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -113,6 +113,7 @@ SPARSE_FLAGS = -D__BIG_ENDIAN__ -D__powerpc__
+ BUILTIN_OBJS =
+ LIB_H =
+ LIB_OBJS =
++GTK_OBJS =
+ PYRF_OBJS =
+ SCRIPT_SH =
  
-+int perf_gtk__init(void);
-+void perf_gtk__exit(bool wait_for_ok);
-+
- extern struct perf_gtk_context *pgctx;
+@@ -484,13 +485,19 @@ ifndef NO_SLANG
+ endif
  
- static inline bool perf_gtk__is_active_context(struct perf_gtk_context *ctx)
-diff --git a/tools/perf/ui/setup.c b/tools/perf/ui/setup.c
-index 47d9a571f261..51a7f7357371 100644
---- a/tools/perf/ui/setup.c
-+++ b/tools/perf/ui/setup.c
-@@ -1,4 +1,5 @@
- #include <pthread.h>
-+#include <dlfcn.h>
+ ifndef NO_GTK2
+-  LIB_OBJS += $(OUTPUT)ui/gtk/browser.o
+-  LIB_OBJS += $(OUTPUT)ui/gtk/hists.o
+-  LIB_OBJS += $(OUTPUT)ui/gtk/setup.o
+-  LIB_OBJS += $(OUTPUT)ui/gtk/util.o
+-  LIB_OBJS += $(OUTPUT)ui/gtk/helpline.o
+-  LIB_OBJS += $(OUTPUT)ui/gtk/progress.o
+-  LIB_OBJS += $(OUTPUT)ui/gtk/annotate.o
++  ALL_PROGRAMS += $(OUTPUT)libperf-gtk.so
++
++  GTK_OBJS += $(OUTPUT)ui/gtk/browser.o
++  GTK_OBJS += $(OUTPUT)ui/gtk/hists.o
++  GTK_OBJS += $(OUTPUT)ui/gtk/setup.o
++  GTK_OBJS += $(OUTPUT)ui/gtk/util.o
++  GTK_OBJS += $(OUTPUT)ui/gtk/helpline.o
++  GTK_OBJS += $(OUTPUT)ui/gtk/progress.o
++  GTK_OBJS += $(OUTPUT)ui/gtk/annotate.o
++
++install-gtk: $(OUTPUT)libperf-gtk.so
++	$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(libdir_SQ)'
++	$(INSTALL) $(OUTPUT)libperf-gtk.so '$(DESTDIR_SQ)$(libdir_SQ)'
+ endif
  
- #include "../util/cache.h"
- #include "../util/debug.h"
-@@ -6,6 +7,52 @@
+ ifndef NO_LIBPERL
+@@ -544,6 +551,12 @@ $(OUTPUT)perf: $(OUTPUT)perf.o $(BUILTIN_OBJS) $(PERFLIBS)
+ 	$(QUIET_LINK)$(CC) $(CFLAGS) $(LDFLAGS) $(OUTPUT)perf.o \
+                $(BUILTIN_OBJS) $(LIBS) -o $@
  
- pthread_mutex_t ui__lock = PTHREAD_MUTEX_INITIALIZER;
++$(GTK_OBJS): %.o: %.c $(LIB_H)
++	$(QUIET_CC)$(CC) -o $@ -c -fPIC $(CFLAGS) $(GTK_CFLAGS) $<
++
++$(OUTPUT)libperf-gtk.so: $(GTK_OBJS) $(PERFLIBS)
++	$(QUIET_LINK)$(CC) -o $@ -shared $(ALL_LDFLAGS) $(filter %.o,$^) $(GTK_LIBS)
++
+ $(OUTPUT)builtin-help.o: builtin-help.c $(OUTPUT)common-cmds.h $(OUTPUT)PERF-CFLAGS
+ 	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) \
+ 		'-DPERF_HTML_PATH="$(htmldir_SQ)"' \
+@@ -762,7 +775,9 @@ check: $(OUTPUT)common-cmds.h
  
-+#ifdef GTK2_SUPPORT
-+void *perf_gtk_handle;
-+
-+static int setup_gtk_browser(void)
-+{
-+	int (*perf_ui_init)(void);
-+
-+	perf_gtk_handle = dlopen("libperf-gtk.so", RTLD_LAZY);
-+	if (perf_gtk_handle == NULL)
-+		return -1;
-+
-+	perf_ui_init = dlsym(perf_gtk_handle, "perf_gtk__init");
-+	if (perf_ui_init == NULL)
-+		goto out_close;
-+
-+	if (perf_ui_init() == 0)
-+		return 0;
-+
-+out_close:
-+	dlclose(perf_gtk_handle);
-+	return -1;
-+}
-+
-+static void exit_gtk_browser(bool wait_for_ok)
-+{
-+	void (*perf_ui_exit)(bool);
-+
-+	if (perf_gtk_handle == NULL)
-+		return;
-+
-+	perf_ui_exit = dlsym(perf_gtk_handle, "perf_gtk__exit");
-+	if (perf_ui_exit == NULL)
-+		goto out_close;
-+
-+	perf_ui_exit(wait_for_ok);
-+
-+out_close:
-+	dlclose(perf_gtk_handle);
-+
-+	perf_gtk_handle = NULL;
-+}
-+#else
-+static inline int setup_gtk_browser(void) { return -1; }
-+static inline void exit_gtk_browser(bool wait_for_ok __maybe_unused) {}
-+#endif
-+
- void setup_browser(bool fallback_to_pager)
- {
- 	if (use_browser < 2 && (!isatty(1) || dump_trace))
-@@ -17,7 +64,7 @@ void setup_browser(bool fallback_to_pager)
+ ### Installation rules
  
- 	switch (use_browser) {
- 	case 2:
--		if (perf_gtk__init() == 0)
-+		if (setup_gtk_browser() == 0)
- 			break;
- 		/* fall through */
- 	case 1:
-@@ -39,7 +86,7 @@ void exit_browser(bool wait_for_ok)
- {
- 	switch (use_browser) {
- 	case 2:
--		perf_gtk__exit(wait_for_ok);
-+		exit_gtk_browser(wait_for_ok);
- 		break;
+-install-bin: all
++install-gtk:
++
++install-bin: all install-gtk
+ 	$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(bindir_SQ)'
+ 	$(INSTALL) $(OUTPUT)perf '$(DESTDIR_SQ)$(bindir_SQ)'
+ 	$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/scripts/perl/Perf-Trace-Util/lib/Perf/Trace'
+@@ -795,15 +810,17 @@ $(INSTALL_DOC_TARGETS):
+ ### Cleaning rules
  
- 	case 1:
-diff --git a/tools/perf/ui/ui.h b/tools/perf/ui/ui.h
-index 70cb0d4eb8aa..4f7cbe6a2608 100644
---- a/tools/perf/ui/ui.h
-+++ b/tools/perf/ui/ui.h
-@@ -6,6 +6,7 @@
- #include <linux/compiler.h>
+ clean: $(LIBTRACEEVENT)-clean $(LIBLK)-clean
+-	$(RM) $(LIB_OBJS) $(BUILTIN_OBJS) $(LIB_FILE) $(OUTPUT)perf-archive $(OUTPUT)perf.o $(LANG_BINDINGS)
++	$(RM) $(LIB_OBJS) $(BUILTIN_OBJS) $(LIB_FILE) $(GTK_OBJS)
++	$(RM) $(OUTPUT)perf-archive $(OUTPUT)perf.o $(LANG_BINDINGS)
+ 	$(RM) $(ALL_PROGRAMS) perf
+-	$(RM) *.spec *.pyc *.pyo */*.pyc */*.pyo $(OUTPUT)common-cmds.h TAGS tags cscope*
++	$(RM) *.spec *.pyc *.pyo */*.pyc */*.pyo
++	$(RM) $(OUTPUT)common-cmds.h TAGS tags cscope*
+ 	$(QUIET_SUBDIR0)Documentation $(QUIET_SUBDIR1) clean
+ 	$(RM) $(OUTPUT)PERF-VERSION-FILE $(OUTPUT)PERF-CFLAGS
+ 	$(RM) $(OUTPUT)util/*-bison*
+ 	$(RM) $(OUTPUT)util/*-flex*
+ 	$(python-clean)
  
- extern pthread_mutex_t ui__lock;
-+extern void *perf_gtk_handle;
+-.PHONY: all install clean strip $(LIBTRACEEVENT) $(LIBLK)
++.PHONY: all install clean strip $(LIBTRACEEVENT) $(LIBLK) install-gtk
+ .PHONY: shell_compatibility_test please_set_SHELL_PATH_to_a_more_modern_shell
+ .PHONY: .FORCE-PERF-VERSION-FILE TAGS tags cscope .FORCE-PERF-CFLAGS
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index 214e17e97e5c..6bdfd0302c4e 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -267,11 +267,11 @@ ifndef NO_GTK2
+     NO_GTK2 := 1
+   else
+     ifeq ($(call try-cc,$(SOURCE_GTK2_INFOBAR),$(FLAGS_GTK2),-DHAVE_GTK_INFO_BAR),y)
+-      CFLAGS += -DHAVE_GTK_INFO_BAR
++      GTK_CFLAGS := -DHAVE_GTK_INFO_BAR
+     endif
+-    CFLAGS += -DGTK2_SUPPORT
+-    CFLAGS += $(shell pkg-config --cflags gtk+-2.0 2>/dev/null)
+-    EXTLIBS += $(shell pkg-config --libs gtk+-2.0 2>/dev/null)
++    GTK_CFLAGS += -DGTK2_SUPPORT
++    GTK_CFLAGS += $(shell pkg-config --cflags gtk+-2.0 2>/dev/null)
++    GTK_LIBS := $(shell pkg-config --libs gtk+-2.0 2>/dev/null)
+   endif
+ endif
  
- extern int use_browser;
+@@ -456,7 +456,12 @@ else
+ sysconfdir = $(prefix)/etc
+ ETC_PERFCONFIG = etc/perfconfig
+ endif
++ifeq ($(IS_X86_64),1)
++lib = lib64
++else
+ lib = lib
++endif
++libdir = $(prefix)/$(lib)
  
-@@ -23,17 +24,6 @@ static inline int ui__init(void)
- static inline void ui__exit(bool wait_for_ok __maybe_unused) {}
- #endif
+ # Shell quote (do not use $(call) to accommodate ancient setups);
+ ETC_PERFCONFIG_SQ = $(subst ','\'',$(ETC_PERFCONFIG))
+@@ -469,6 +474,7 @@ template_dir_SQ = $(subst ','\'',$(template_dir))
+ htmldir_SQ = $(subst ','\'',$(htmldir))
+ prefix_SQ = $(subst ','\'',$(prefix))
+ sysconfdir_SQ = $(subst ','\'',$(sysconfdir))
++libdir_SQ = $(subst ','\'',$(libdir))
  
--#ifdef GTK2_SUPPORT
--int perf_gtk__init(void);
--void perf_gtk__exit(bool wait_for_ok);
--#else
--static inline int perf_gtk__init(void)
--{
--	return -1;
--}
--static inline void perf_gtk__exit(bool wait_for_ok __maybe_unused) {}
--#endif
--
- void ui__refresh_dimensions(bool force);
- 
- #endif /* _PERF_UI_H_ */
+ ifneq ($(filter /%,$(firstword $(perfexecdir))),)
+ perfexec_instdir = $(perfexecdir)
 -- 
 1.7.11.7
 
