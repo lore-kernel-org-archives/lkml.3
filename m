@@ -1,45 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755846Ab3HFVQH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 17:16:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56264 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753268Ab3HFVQE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 17:16:04 -0400
-Date: Tue, 6 Aug 2013 14:16:03 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Matt Domsch <Matt_Domsch@dell.com>,
-        Jim Hull <jim.hull@hp.com>, Karel Zak <kzak@redhat.com>,
-        Peter Jones <pjones@redhat.com>, Chegu Vinod <chegu_vinod@hp.com>,
-        Aswin Chandramouleeswaran <aswin@hp.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/8] partitions/efi: detect hybrid mbrs
-Message-Id: <20130806141603.948961cecfc9426aeee7c083@linux-foundation.org>
-In-Reply-To: <1375766476-4204-1-git-send-email-davidlohr@hp.com>
-References: <1375766476-4204-1-git-send-email-davidlohr@hp.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1756424Ab3HFVQM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 17:16:12 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:43253 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755937Ab3HFVQJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Aug 2013 17:16:09 -0400
+Message-ID: <5201678F.1070705@zytor.com>
+Date: Tue, 06 Aug 2013 14:15:59 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: Shuah Khan <shuahkhan@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        postmaster@vger.kernel.org
+Subject: Re: kernel mailing list permalinks
+References: <CAErSpo7eHXC-SXFYuAkkoDdhLoHzsRGh7_36wgc8=j2+qz2btA@mail.gmail.com> <CAKocOOMCsuLBsvg3npugW3EK5+UBzvQVvjeVBgTLrGrsp7o9rw@mail.gmail.com> <51FC26C7.8060108@zytor.com> <CAErSpo7z7b-i7qENa9q+8jLmsV=EFiykBy5wU1AE3eAMG1MKUA@mail.gmail.com>
+In-Reply-To: <CAErSpo7z7b-i7qENa9q+8jLmsV=EFiykBy5wU1AE3eAMG1MKUA@mail.gmail.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon,  5 Aug 2013 22:21:08 -0700 Davidlohr Bueso <davidlohr@hp.com> wrote:
+On 08/06/2013 02:11 PM, Bjorn Helgaas wrote:
+> 
+> I don't know what it would take to implement this.  Escaping special
+> characters makes it not quite as trivial as I thought it might be.
+> 
 
-> This patchset teaches the kernel about hybrid master boot records (MBRs), one of
-> the most common issues with GUID partition tables, as a workaround to layout
-> disk partitions to be compatible with both EFI and legacy MBR based systems.
-> Except for adding more pmbr checks, to better comply with the UEFI/GPT specs, the
-> functionality is left unchanged - we only inform (through debug) the user about
-> the used MBR scheme. While it is true that these restrictions can be bypassed when
-> forcing gpt, this is not the correct or default way of doing things, complicating
-> users furthermore. More details are in the individual patches.
+It depends mostly on what machinery is available on vger.
 
-Patches look nice, although I'll cheerily admit to not having a clue
-what they do.  What is a "hybrid MBR" anyway?
+	-hpa
 
-Someone's editor seems to replace tabs with spaces so the patches
-generate quite a checkpatch storm.  Please use checkpatch.
 
