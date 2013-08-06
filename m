@@ -1,69 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756320Ab3HFLv5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 07:51:57 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:41580 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756281Ab3HFLvw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 07:51:52 -0400
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-To: <gleb@redhat.com>, <mingo@redhat.com>, <jeremy@goop.org>, <x86@kernel.org>,
-        <konrad.wilk@oracle.com>, <hpa@zytor.com>, <pbonzini@redhat.com>
-Cc: linux-doc@vger.kernel.org, <habanero@linux.vnet.ibm.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        <xen-devel@lists.xensource.com>, <peterz@infradead.org>,
-        <mtosatti@redhat.com>, <stefano.stabellini@eu.citrix.com>,
-        <andi@firstfloor.org>, <attilio.rao@citrix.com>, <ouyang@cs.pitt.edu>,
-        <gregkh@suse.de>, <agraf@suse.de>, <chegu_vinod@hp.com>,
-        <torvalds@linux-foundation.org>, <avi.kivity@gmail.com>,
-        <tglx@linutronix.de>, <kvm@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <riel@redhat.com>,
-        <drjones@redhat.com>, <virtualization@lists.linux-foundation.org>,
-        <srivatsa.vaddagiri@gmail.com>
-Date: Tue, 06 Aug 2013 17:15:01 +0530
-Message-Id: <20130806114501.20643.5734.sendpatchset@codeblue.in.ibm.com>
-In-Reply-To: <20130806114020.20643.57235.sendpatchset@codeblue.in.ibm.com>
-References: <20130806114020.20643.57235.sendpatchset@codeblue.in.ibm.com>
-Subject: [PATCH  V12 13/14] kvm guest : Add configuration support to enable debug information for KVM Guests
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13080611-4834-0000-0000-000009D83269
+	id S1756341Ab3HFLwB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 07:52:01 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:32993 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756281Ab3HFLv6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Aug 2013 07:51:58 -0400
+Message-ID: <5200E358.9010505@ti.com>
+Date: Tue, 6 Aug 2013 17:21:52 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Roger Quadros <rogerq@ti.com>
+CC: <balbi@ti.com>, <tony@atomide.com>, <george.cherian@ti.com>,
+        <dmurphy@ti.com>, <linux-usb@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/7] usb: musb: omap2430: Don't use omap_get_control_dev()
+References: <1375365915-21380-1-git-send-email-rogerq@ti.com> <1375365915-21380-5-git-send-email-rogerq@ti.com>
+In-Reply-To: <1375365915-21380-5-git-send-email-rogerq@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kvm guest : Add configuration support to enable debug information for KVM Guests
+Hi,
 
-From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+On Thursday 01 August 2013 07:35 PM, Roger Quadros wrote:
+> omap_get_control_dev() is being deprecated as it doesn't support
+> multiple instances. As control device is present only from OMAP4
+> onwards which supports DT only, we use phandles to get the
+> reference to the control device.
+>
+> Signed-off-by: Roger Quadros <rogerq@ti.com>
+> ---
+>   drivers/usb/musb/omap2430.c |   22 ++++++++++++++++++----
+>   1 files changed, 18 insertions(+), 4 deletions(-)
+>
+> diff --git a/drivers/usb/musb/omap2430.c b/drivers/usb/musb/omap2430.c
+> index ebb46ec..1db9588 100644
+> --- a/drivers/usb/musb/omap2430.c
+> +++ b/drivers/usb/musb/omap2430.c
+> @@ -38,6 +38,7 @@
+>   #include <linux/delay.h>
+>   #include <linux/usb/musb-omap.h>
+>   #include <linux/usb/omap_control_usb.h>
+> +#include <linux/of_platform.h>
+>
+>   #include "musb_core.h"
+>   #include "omap2430.h"
+> @@ -547,12 +548,25 @@ static int omap2430_probe(struct platform_device *pdev)
+>   	}
+>
+>   	if (pdata->has_mailbox) {
 
-Signed-off-by: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-Signed-off-by: Suzuki Poulose <suzuki@in.ibm.com>
-Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Acked-by: Gleb Natapov <gleb@redhat.com>
-Acked-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/Kconfig |    9 +++++++++
- 1 file changed, 9 insertions(+)
+I think you can remove this this check all together. Mailbox is present 
+only from OMAP4 so it can be dt only.
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 724ce55..f108f00 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -688,6 +688,15 @@ config KVM_GUEST
- 	  underlying device model, the host provides the guest with
- 	  timing infrastructure such as time of day, and system time
- 
-+config KVM_DEBUG_FS
-+	bool "Enable debug information for KVM Guests in debugfs"
-+	depends on KVM_GUEST && DEBUG_FS
-+	default n
-+	---help---
-+	  This option enables collection of various statistics for KVM guest.
-+	  Statistics are displayed in debugfs filesystem. Enabling this option
-+	  may incur significant overhead.
-+
- source "arch/x86/lguest/Kconfig"
- 
- config PARAVIRT_TIME_ACCOUNTING
-
+Thanks
+Kishon
