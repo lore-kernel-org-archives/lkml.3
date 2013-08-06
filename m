@@ -1,139 +1,550 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756267Ab3HFXpV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 19:45:21 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:47036 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754340Ab3HFXpT (ORCPT
+	id S1756328Ab3HFXzd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 19:55:33 -0400
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:3356 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755132Ab3HFXzc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 19:45:19 -0400
-Message-ID: <52018A8D.70608@codeaurora.org>
-Date: Tue, 06 Aug 2013 16:45:17 -0700
-From: Hanumant Singh <hanumant@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Bjorn Andersson <Bjorn.Andersson@sonymobile.com>,
-        "Bird, Tim" <Tim.Bird@sonymobile.com>,
-        ext Tony Lindgren <tony@atomide.com>
-Subject: Re: [PATCH] pinctrl: msm: Add support for MSM TLMM pinmux
-References: <1374702089-2832-1-git-send-email-hanumant@codeaurora.org> <CACRpkdZLFD-KAvZdUUvQKje3vAH1D0EJMW9PSK8VSp3Xs4eiGA@mail.gmail.com> <51F82BCC.1080409@codeaurora.org> <51F82E9F.9010309@wwwdotorg.org> <51F853BF.9040007@codeaurora.org> <51F8556A.1010300@wwwdotorg.org> <51F85690.9060701@codeaurora.org> <51F88BAC.2020001@wwwdotorg.org> <51F969A5.5020405@codeaurora.org> <51F97C47.5020202@wwwdotorg.org> <51F9A934.404@codeaurora.org>
-In-Reply-To: <51F9A934.404@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Tue, 6 Aug 2013 19:55:32 -0400
+Message-ID: <1375833325.2134.36.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: Performance regression from switching lock to rw-sem for
+ anon-vma tree
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Tim Chen <tim.c.chen@linux.intel.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@elte.hu>, Andrea Arcangeli <aarcange@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, "Shi, Alex" <alex.shi@intel.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        "Wilcox, Matthew R" <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-mm <linux-mm@kvack.org>
+Date: Tue, 06 Aug 2013 16:55:25 -0700
+In-Reply-To: <1375143209.22432.419.camel@schen9-DESK>
+References: <1372366385.22432.185.camel@schen9-DESK>
+	 <1372375873.22432.200.camel@schen9-DESK> <20130628093809.GB29205@gmail.com>
+	 <1372453461.22432.216.camel@schen9-DESK> <20130629071245.GA5084@gmail.com>
+	 <1372710497.22432.224.camel@schen9-DESK> <20130702064538.GB3143@gmail.com>
+	 <1373997195.22432.297.camel@schen9-DESK> <20130723094513.GA24522@gmail.com>
+	 <20130723095124.GW27075@twins.programming.kicks-ass.net>
+	 <20130723095306.GA26174@gmail.com> <1375143209.22432.419.camel@schen9-DESK>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/31/2013 5:17 PM, Hanumant Singh wrote:
-> On 7/31/2013 2:06 PM, Stephen Warren wrote:
->> On 07/31/2013 01:46 PM, Hanumant Singh wrote:
->>> On 7/30/2013 8:59 PM, Stephen Warren wrote:
->>>> On 07/30/2013 06:13 PM, Hanumant Singh wrote:
->>>>> On 7/30/2013 5:08 PM, Stephen Warren wrote:
->>>>>> On 07/30/2013 06:01 PM, Hanumant Singh wrote:
->>>>>>> On 7/30/2013 2:22 PM, Stephen Warren wrote:
->>>>>>>> On 07/30/2013 03:10 PM, hanumant wrote:
->>>>>>>> ...
->>>>>>>>> We actually have the same TLMM pinmux used by several socs of a
->>>>>>>>> family.
->>>>>>>>> The number of pins on each soc may vary.
->>>>>>>>> Also a given soc gets used in a number of boards.
->>>>>>>>> The device tree for a given soc is split into the different boards
->>>>>>>>> that
->>>>>>>>> its in ie the boards inherit a common soc.dtsi but have separate
->>>>>>>>> dts.
->>>>>>>>> The boards for the same soc may use different pin groups for
->>>>>>>>> accomplishing a function, since we have multiple i2c, spi uart etc
->>>>>>>>> peripheral instances on a soc. A different instance of each of the
->>>>>>>>> above
->>>>>>>>> peripherals, can be used in different boards, utilizing different
->>>>>>>>> or subset of same pin groups.
->>>>>>>>> Thus I would need to have multiple C files for one soc, based
->>>>>>>>> on the
->>>>>>>>> boards that it goes into.
->>>>>>>>
->>>>>>>> The pinctrl driver should be exposing the raw capabilities of
->>>>>>>> the HW.
->>>>>>>> All the board-specific configuration should be expressed in DT.
->>>>>>>> So, the
->>>>>>>> driver shouldn't have to know anything about different boards at
->>>>>>>> compile-time.
->>>>>>>>
->>>>>>> I agree, so I wanted to keep the pin grouping information in DT, we
->>>>>>> already have a board based differentiation of dts files in DT,
->>>>>>> for the
->>>>>>> same soc.
->>>>>>
->>>>>> That's the opposite of what I was saying. Pin groups are a feature of
->>>>>> the SoC design, not the board.
->>>>>>
->>>>> Sorry I guess I wasn't clear.
->>>>> Right now I have a soc-pinctrl.dtsi containing pin groupings.
->>>>> This will be "inherited" by soc-boardtype.dts.
->>>>> The pinctrl client device nodes in soc-boardtype.dts will point to pin
->>>>> groupings in soc-pinctrl.dtsi that are valid for that particular
->>>>> boardtype.
->>>>> Is this a valid design?
->>>>
->>>> OK, so you have two types of child node inside the pinctrl DT node;
->>>> some
->>>> define the pin groups the SoC has (in soc.dtsi) and some define pinctrl
->>>> states that reference the pin group nodes and are referenced by the
->>>> client nodes.
->>>>
->>>> That's probably fine. However, I'd still question putting the pin group
->>>> nodes in DT at all; I'm not convinced it's better than just putting
->>>> those into the driver itself. You end up with the same data tables
->>>> after
->>>> parsing the DT anyway.
->>>>
->>>
->>> Any feedback for the rest of the patch?
->>
->> I'm certainly waiting for this aspect of the patch to be resolved; I
->> think it will impact the rest of the patch so much that it's not worth
->> reviewing until we decide on where to represent the pin groups (some DT
->> parsing could would be removed if we put the pin group definitions into
->> the driver, hence wouldn't need to be reviewed, and likewise there's be
->> some new tables to review).
->>
->
-> I am trying to look at examples of what you are suggesting.
-> I was looking at the exynos implementation, and just from a brief glance
-> it seems like there too the pin grouping is being specified in the
-> device tree, using what looks like labels of the pins.
-> The labels are matched to group structures in soc specific files?
->
-> By having the pin groupings in DT I am able to reuse the driver without
-> any SOC based code bloat.
-> As I mentioned earlier, we have entire families of SOCs using the same
-> TLMM hardware.
-> Its not a guarantee that for a given TLMM version,
-> the pin groupings on that hardware are the same for every SOC that its
-> in. Its infact most likely that I wont be able to use the pin groupings
-> from one SOC to the next even if they both use the same TLMM.
-> It will very quickly lead to a bloat of
-> pinctrl-<msm_soc>.c (containing the pin groupings replicated for each soc)
-> which use TLMM version specific register programming implementation
-> pinctrl-tlmm-<version>.c
-> and the DT parsing and interface to framework (which remains unchanged).
-> pinctrl-msm.c.
->
-> Thanks
-> Hanumant
->
+On Mon, 2013-07-29 at 17:13 -0700, Tim Chen wrote:
+> On Tue, 2013-07-23 at 11:53 +0200, Ingo Molnar wrote:
+> > * Peter Zijlstra <peterz@infradead.org> wrote:
+> > 
+> > > On Tue, Jul 23, 2013 at 11:45:13AM +0200, Ingo Molnar wrote:
+> > >
+> > > > Why not just try the delayed addition approach first? The spinning is 
+> > > > time limited AFAICS, so we don't _have to_ recognize those as writers 
+> > > > per se, only if the spinning fails and it wants to go on the waitlist. 
+> > > > Am I missing something?
+> > > > 
+> > > > It will change patterns, it might even change the fairness balance - 
+> > > > but is a legit change otherwise, especially if it helps performance.
+> > > 
+> > > Be very careful here. Some people (XFS) have very specific needs. Walken 
+> > > and dchinner had a longish discussion on this a while back.
+> > 
+> > Agreed - yet it's worth at least trying it out the quick way, to see the 
+> > main effect and to see whether that explains the performance assymetry and 
+> > invest more effort into it.
+> > 
+> 
+> Ingo & Peter,
+> 
+> Here's a patch that moved optimistic spinning of the writer lock
+> acquisition before putting the writer on the wait list.  It did give me
+> a 5% performance boost on my exim mail server workload. 
+> It recovered a good portion of the 8% performance regression from 
+> mutex implementation.
+> 
+> I think we are on the right track. Let me know if there's anything
+> in the patch that may cause grief to XFS. 
+> 
+> There is some further optimization possible.  We went
+> to the failed path within __down_write if the count field is non
+> zero. But in fact if the old count field was RWSEM_WAITING_BIAS, 
+> there's no one active and we could have stolen the
+> lock when we perform our atomic op on the count field
+> in __down_write. Yet we go to the failed path in the current
+> code.
+> 
+> I will combine this change and also Alex's patches on rwsem together
+> in a patchset later.
+> 
+> Your comments and thoughts are most welcomed.
 
-Any comments on this?
+I got good numbers, recovering the performance drop I noticed with the
+i_mmap_mutex to rwsem patches. Looking forward to a more upstreamable
+patchset that deals with this work, including the previous patches.
 
-Thanks
-Hanumant
+One thing that's bugging me about this series though is the huge amount
+of duplicated code being introduced to rwsems from mutexes. We can share
+common functionality such as mcs locking (perhaps in a new file under
+lib/), can_spin_on_owner() and owner_running(), perhaps moving those
+functions into sheduler code, were AFAIK they were originally.
+
+Thanks,
+Davidlohr
+
+> 
+> Tim
+> 
+> Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
+> ---
+> diff --git a/include/linux/rwsem.h b/include/linux/rwsem.h
+> index 0616ffe..58a4acb 100644
+> --- a/include/linux/rwsem.h
+> +++ b/include/linux/rwsem.h
+> @@ -29,6 +29,10 @@ struct rw_semaphore {
+>  #ifdef CONFIG_DEBUG_LOCK_ALLOC
+>  	struct lockdep_map	dep_map;
+>  #endif
+> +#ifdef CONFIG_RWSEM_SPIN_ON_WRITE_OWNER
+> +	struct task_struct	*owner;
+> +	void			*spin_mlock;
+> +#endif
+>  };
+>  
+>  extern struct rw_semaphore *rwsem_down_read_failed(struct rw_semaphore *sem);
+> @@ -55,11 +59,21 @@ static inline int rwsem_is_locked(struct rw_semaphore *sem)
+>  # define __RWSEM_DEP_MAP_INIT(lockname)
+>  #endif
+>  
+> +#ifdef CONFIG_RWSEM_SPIN_ON_WRITE_OWNER
+> +#define __RWSEM_INITIALIZER(name)			\
+> +	{ RWSEM_UNLOCKED_VALUE,				\
+> +	  __RAW_SPIN_LOCK_UNLOCKED(name.wait_lock),	\
+> +	  LIST_HEAD_INIT((name).wait_list),		\
+> +	  __RWSEM_DEP_MAP_INIT(name)			\
+> +	  NULL,						\
+> +	  NULL }
+> +#else
+>  #define __RWSEM_INITIALIZER(name)			\
+>  	{ RWSEM_UNLOCKED_VALUE,				\
+>  	  __RAW_SPIN_LOCK_UNLOCKED(name.wait_lock),	\
+>  	  LIST_HEAD_INIT((name).wait_list)		\
+>  	  __RWSEM_DEP_MAP_INIT(name) }
+> +#endif
+>  
+>  #define DECLARE_RWSEM(name) \
+>  	struct rw_semaphore name = __RWSEM_INITIALIZER(name)
+> diff --git a/init/Kconfig b/init/Kconfig
+> index 9d3a788..d97225f 100644
+> --- a/init/Kconfig
+> +++ b/init/Kconfig
+> @@ -1595,6 +1595,16 @@ config TRACEPOINTS
+>  
+>  source "arch/Kconfig"
+>  
+> +config RWSEM_SPIN_ON_WRITE_OWNER
+> +	bool "Optimistic spin write acquisition for writer owned rw-sem"
+> +	default n
+> +	depends on SMP
+> +	help
+> +	  Allows a writer to perform optimistic spinning if another writer own
+> +	  the read write semaphore.  If the lock owner is running, it is likely
+> +	  to release the lock soon. Spinning gives a greater chance for writer to
+> +	  acquire a semaphore before putting it to sleep.
+> +
+>  endmenu		# General setup
+>  
+>  config HAVE_GENERIC_DMA_COHERENT
+> diff --git a/kernel/rwsem.c b/kernel/rwsem.c
+> index cfff143..a32990a 100644
+> --- a/kernel/rwsem.c
+> +++ b/kernel/rwsem.c
+> @@ -12,6 +12,26 @@
+>  
+>  #include <linux/atomic.h>
+>  
+> +#ifdef CONFIG_RWSEM_SPIN_ON_WRITE_OWNER
+> +static inline void rwsem_set_owner(struct rw_semaphore *sem)
+> +{
+> +	sem->owner = current;
+> +}
+> +
+> +static inline void rwsem_clear_owner(struct rw_semaphore *sem)
+> +{
+> +	sem->owner = NULL;
+> +}
+> +#else
+> +static inline void rwsem_set_owner(struct rw_semaphore *sem)
+> +{
+> +}
+> +
+> +static inline void rwsem_clear_owner(struct rw_semaphore *sem)
+> +{
+> +}
+> +#endif
+> +
+>  /*
+>   * lock for reading
+>   */
+> @@ -48,6 +68,7 @@ void __sched down_write(struct rw_semaphore *sem)
+>  	rwsem_acquire(&sem->dep_map, 0, 0, _RET_IP_);
+>  
+>  	LOCK_CONTENDED(sem, __down_write_trylock, __down_write);
+> +	rwsem_set_owner(sem);
+>  }
+>  
+>  EXPORT_SYMBOL(down_write);
+> @@ -59,8 +80,10 @@ int down_write_trylock(struct rw_semaphore *sem)
+>  {
+>  	int ret = __down_write_trylock(sem);
+>  
+> -	if (ret == 1)
+> +	if (ret == 1) {
+>  		rwsem_acquire(&sem->dep_map, 0, 1, _RET_IP_);
+> +		rwsem_set_owner(sem);
+> +	}
+>  	return ret;
+>  }
+>  
+> @@ -86,6 +109,7 @@ void up_write(struct rw_semaphore *sem)
+>  	rwsem_release(&sem->dep_map, 1, _RET_IP_);
+>  
+>  	__up_write(sem);
+> +	rwsem_clear_owner(sem);
+>  }
+>  
+>  EXPORT_SYMBOL(up_write);
+> @@ -100,6 +124,7 @@ void downgrade_write(struct rw_semaphore *sem)
+>  	 * dependency.
+>  	 */
+>  	__downgrade_write(sem);
+> +	rwsem_clear_owner(sem);
+>  }
+>  
+>  EXPORT_SYMBOL(downgrade_write);
+> @@ -122,6 +147,7 @@ void _down_write_nest_lock(struct rw_semaphore *sem, struct lockdep_map *nest)
+>  	rwsem_acquire_nest(&sem->dep_map, 0, 0, nest, _RET_IP_);
+>  
+>  	LOCK_CONTENDED(sem, __down_write_trylock, __down_write);
+> +	rwsem_set_owner(sem);
+>  }
+>  
+>  EXPORT_SYMBOL(_down_write_nest_lock);
+> @@ -141,6 +167,7 @@ void down_write_nested(struct rw_semaphore *sem, int subclass)
+>  	rwsem_acquire(&sem->dep_map, subclass, 0, _RET_IP_);
+>  
+>  	LOCK_CONTENDED(sem, __down_write_trylock, __down_write);
+> +	rwsem_set_owner(sem);
+>  }
+>  
+>  EXPORT_SYMBOL(down_write_nested);
+> diff --git a/lib/rwsem.c b/lib/rwsem.c
+> index 1d6e6e8..1472ff3 100644
+> --- a/lib/rwsem.c
+> +++ b/lib/rwsem.c
+> @@ -8,6 +8,7 @@
+>   */
+>  #include <linux/rwsem.h>
+>  #include <linux/sched.h>
+> +#include <linux/sched/rt.h>
+>  #include <linux/init.h>
+>  #include <linux/export.h>
+>  
+> @@ -27,6 +28,10 @@ void __init_rwsem(struct rw_semaphore *sem, const char *name,
+>  	sem->count = RWSEM_UNLOCKED_VALUE;
+>  	raw_spin_lock_init(&sem->wait_lock);
+>  	INIT_LIST_HEAD(&sem->wait_list);
+> +#ifdef CONFIG_RWSEM_SPIN_ON_WRITE_OWNER
+> +	sem->owner = NULL;
+> +	sem->spin_mlock = NULL;
+> +#endif
+>  }
+>  
+>  EXPORT_SYMBOL(__init_rwsem);
+> @@ -194,48 +199,252 @@ struct rw_semaphore __sched *rwsem_down_read_failed(struct rw_semaphore *sem)
+>  	return sem;
+>  }
+>  
+> +static inline int rwsem_try_write_lock(long count, struct rw_semaphore *sem)
+> +{
+> +	if (!(count & RWSEM_ACTIVE_MASK)) {
+> +		/* Try acquiring the write lock. */
+> +		if (sem->count == RWSEM_WAITING_BIAS &&
+> +		    cmpxchg(&sem->count, RWSEM_WAITING_BIAS,
+> +			    RWSEM_ACTIVE_WRITE_BIAS) == RWSEM_WAITING_BIAS) {
+> +			if (!list_is_singular(&sem->wait_list))
+> +				rwsem_atomic_update(RWSEM_WAITING_BIAS, sem);
+> +			return 1;
+> +		}
+> +	}
+> +	return 0;
+> +}
+> +
+> +#ifdef CONFIG_RWSEM_SPIN_ON_WRITE_OWNER
+> +
+> +struct mspin_node {
+> +       struct mspin_node *next ;
+> +       int               locked;       /* 1 if lock acquired */
+> +};
+> +#define        MLOCK(rwsem)    ((struct mspin_node **)&((rwsem)->spin_mlock))
+> +
+> +static noinline
+> +void mspin_lock(struct mspin_node **lock, struct mspin_node *node)
+> +{
+> +       struct mspin_node *prev;
+> +
+> +       /* Init node */
+> +       node->locked = 0;
+> +       node->next   = NULL;
+> +
+> +       prev = xchg(lock, node);
+> +       if (likely(prev == NULL)) {
+> +               /* Lock acquired */
+> +               node->locked = 1;
+> +               return;
+> +       }
+> +       ACCESS_ONCE(prev->next) = node;
+> +       smp_wmb();
+> +       /* Wait until the lock holder passes the lock down */
+> +       while (!ACCESS_ONCE(node->locked))
+> +               arch_mutex_cpu_relax();
+> +}
+> +
+> +static void mspin_unlock(struct mspin_node **lock, struct mspin_node *node)
+> +{
+> +       struct mspin_node *next = ACCESS_ONCE(node->next);
+> +
+> +       if (likely(!next)) {
+> +               /*
+> +                * Release the lock by setting it to NULL
+> +                */
+> +               if (cmpxchg(lock, node, NULL) == node)
+> +                       return;
+> +               /* Wait until the next pointer is set */
+> +               while (!(next = ACCESS_ONCE(node->next)))
+> +                       arch_mutex_cpu_relax();
+> +       }
+> +       ACCESS_ONCE(next->locked) = 1;
+> +       smp_wmb();
+> +}
+> +
+> +static inline int rwsem_try_write_lock_unqueued(struct rw_semaphore *sem)
+> +{
+> +	long count;
+> +
+> +	count = ACCESS_ONCE(sem->count);
+> +retry:
+> +	if (count == RWSEM_WAITING_BIAS) {
+> +		count = cmpxchg(&sem->count, RWSEM_WAITING_BIAS,
+> +			    RWSEM_ACTIVE_WRITE_BIAS + RWSEM_WAITING_BIAS);
+> +		/* allow write lock stealing, try acquiring the write lock. */
+> +		if (count == RWSEM_WAITING_BIAS)
+> +			goto acquired;
+> +		else if (count == 0)
+> +			goto retry;
+> +	} else if (count == 0) {
+> +		count = cmpxchg(&sem->count, 0,
+> +			    RWSEM_ACTIVE_WRITE_BIAS);
+> +		if (count == 0)
+> +			goto acquired;
+> +		else if (count == RWSEM_WAITING_BIAS)
+> +			goto retry;
+> +	}
+> +	return 0;
+> +
+> +acquired:
+> +	return 1;
+> +}
+> +
+> +
+> +static inline bool rwsem_can_spin_on_owner(struct rw_semaphore *sem)
+> +{
+> +	int retval;
+> +	struct task_struct *owner;
+> +
+> +	rcu_read_lock();
+> +	owner = ACCESS_ONCE(sem->owner);
+> +
+> +	/* Spin only if active writer running */
+> +	if (owner)
+> +		retval = owner->on_cpu;
+> +	else
+> +		retval = false;
+> +
+> +	rcu_read_unlock();
+> +	/*
+> +	 * if lock->owner is not set, the sem owner may have just acquired
+> +	 * it and not set the owner yet, or the sem has been released, or
+> +	 * reader active.
+> +	 */
+> +	return retval;
+> +}
+> +
+> +static inline bool owner_running(struct rw_semaphore *lock,
+> +				struct task_struct *owner)
+> +{
+> +	if (lock->owner != owner)
+> +		return false;
+> +
+> +	/*
+> +	 * Ensure we emit the owner->on_cpu, dereference _after_ checking
+> +	 * lock->owner still matches owner, if that fails, owner might
+> +	 * point to free()d memory, if it still matches, the rcu_read_lock()
+> +	 * ensures the memory stays valid.
+> +	 */
+> +	barrier();
+> +
+> +	return owner->on_cpu;
+> +}
+> +
+> +static noinline
+> +int rwsem_spin_on_owner(struct rw_semaphore *lock, struct task_struct *owner)
+> +{
+> +	rcu_read_lock();
+> +	while (owner_running(lock, owner)) {
+> +		if (need_resched())
+> +			break;
+> +
+> +		arch_mutex_cpu_relax();
+> +	}
+> +	rcu_read_unlock();
+> +
+> +	/*
+> +	 * We break out the loop above on need_resched() and when the
+> +	 * owner changed, which is a sign for heavy contention. Return
+> +	 * success only when lock->owner is NULL.
+> +	 */
+> +	return lock->owner == NULL;
+> +}
+> +
+> +int rwsem_optimistic_spin(struct rw_semaphore *sem)
+> +{
+> +	struct	task_struct	*owner;
+> +	int	ret = 0;
+> +
+> +	/* sem->wait_lock should not be held when doing optimistic spinning */
+> +	if (!rwsem_can_spin_on_owner(sem))
+> +		return ret;
+> +
+> +	preempt_disable();
+> +	for (;;) {
+> +		struct mspin_node node;
+> +
+> +		mspin_lock(MLOCK(sem), &node);
+> +		owner = ACCESS_ONCE(sem->owner);
+> +		if (owner && !rwsem_spin_on_owner(sem, owner)) {
+> +			mspin_unlock(MLOCK(sem), &node);
+> +			break;
+> +		}
+> +
+> +		/* wait_lock will be acquired if write_lock is obtained */
+> +		if (rwsem_try_write_lock_unqueued(sem)) {
+> +			mspin_unlock(MLOCK(sem), &node);
+> +			ret = 1;
+> +			break;
+> +		}
+> +		mspin_unlock(MLOCK(sem), &node);
+> +
+> +		/*
+> +		 * When there's no owner, we might have preempted between the
+> +		 * owner acquiring the lock and setting the owner field. If
+> +		 * we're an RT task that will live-lock because we won't let
+> +		 * the owner complete.
+> +		 */
+> +		if (!owner && (need_resched() || rt_task(current)))
+> +			break;
+> +
+> +		/*
+> +		 * The cpu_relax() call is a compiler barrier which forces
+> +		 * everything in this loop to be re-loaded. We don't need
+> +		 * memory barriers as we'll eventually observe the right
+> +		 * values at the cost of a few extra spins.
+> +		 */
+> +		arch_mutex_cpu_relax();
+> +
+> +	}
+> +
+> +	preempt_enable();
+> +	return ret;
+> +}
+> +#endif
+> +
+>  /*
+>   * wait until we successfully acquire the write lock
+>   */
+>  struct rw_semaphore __sched *rwsem_down_write_failed(struct rw_semaphore *sem)
+>  {
+> -	long count, adjustment = -RWSEM_ACTIVE_WRITE_BIAS;
+> +	long count;
+>  	struct rwsem_waiter waiter;
+>  	struct task_struct *tsk = current;
+> +	bool waiting = true;
+>  
+> +	count = rwsem_atomic_update(-RWSEM_ACTIVE_WRITE_BIAS, sem);
+> +#ifdef CONFIG_RWSEM_SPIN_ON_WRITE_OWNER
+> +	/* do optimistic spinning */
+> +	if (rwsem_optimistic_spin(sem))
+> +		goto done;
+> +#endif
+>  	/* set up my own style of waitqueue */
+>  	waiter.task = tsk;
+>  	waiter.type = RWSEM_WAITING_FOR_WRITE;
+>  
+>  	raw_spin_lock_irq(&sem->wait_lock);
+>  	if (list_empty(&sem->wait_list))
+> -		adjustment += RWSEM_WAITING_BIAS;
+> +		waiting = false;
+>  	list_add_tail(&waiter.list, &sem->wait_list);
+>  
+>  	/* we're now waiting on the lock, but no longer actively locking */
+> -	count = rwsem_atomic_update(adjustment, sem);
+> +	if (waiting)
+> +		count = ACCESS_ONCE(sem->count);
+> +	else
+> +		count = rwsem_atomic_update(RWSEM_WAITING_BIAS, sem);
+>  
+>  	/* If there were already threads queued before us and there are no
+>  	 * active writers, the lock must be read owned; so we try to wake
+>  	 * any read locks that were queued ahead of us. */
+> -	if (count > RWSEM_WAITING_BIAS &&
+> -	    adjustment == -RWSEM_ACTIVE_WRITE_BIAS)
+> +	if ((count > RWSEM_WAITING_BIAS) && waiting)
+>  		sem = __rwsem_do_wake(sem, RWSEM_WAKE_READERS);
+>  
+>  	/* wait until we successfully acquire the lock */
+>  	set_task_state(tsk, TASK_UNINTERRUPTIBLE);
+>  	while (true) {
+> -		if (!(count & RWSEM_ACTIVE_MASK)) {
+> -			/* Try acquiring the write lock. */
+> -			count = RWSEM_ACTIVE_WRITE_BIAS;
+> -			if (!list_is_singular(&sem->wait_list))
+> -				count += RWSEM_WAITING_BIAS;
+> -
+> -			if (sem->count == RWSEM_WAITING_BIAS &&
+> -			    cmpxchg(&sem->count, RWSEM_WAITING_BIAS, count) ==
+> -							RWSEM_WAITING_BIAS)
+> -				break;
+> -		}
+> +		if (rwsem_try_write_lock(count, sem))
+> +			break;
+>  
+>  		raw_spin_unlock_irq(&sem->wait_lock);
+>  
+> @@ -250,6 +459,7 @@ struct rw_semaphore __sched *rwsem_down_write_failed(struct rw_semaphore *sem)
+>  
+>  	list_del(&waiter.list);
+>  	raw_spin_unlock_irq(&sem->wait_lock);
+> +done:
+>  	tsk->state = TASK_RUNNING;
+>  
+>  	return sem;
+> 
+> 
 
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
--- 
