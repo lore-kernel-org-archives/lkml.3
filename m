@@ -1,76 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756157Ab3HFVKb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 17:10:31 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:37517 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754119Ab3HFVKa (ORCPT
+	id S1756401Ab3HFVL3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 17:11:29 -0400
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:50560 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755428Ab3HFVL2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 17:10:30 -0400
-Date: Tue, 6 Aug 2013 16:09:56 -0500
-From: "Philip J. Kelleher" <pjk1939@linux.vnet.ibm.com>
-To: axboe@kernel.dk
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 1/4] rsxx: Adapter name change.
-Message-ID: <20130806210956.GB4939@oc6784271780.ibm.com>
+	Tue, 6 Aug 2013 17:11:28 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13080621-5406-0000-0000-00000B346AC1
+In-Reply-To: <51FC26C7.8060108@zytor.com>
+References: <CAErSpo7eHXC-SXFYuAkkoDdhLoHzsRGh7_36wgc8=j2+qz2btA@mail.gmail.com>
+ <CAKocOOMCsuLBsvg3npugW3EK5+UBzvQVvjeVBgTLrGrsp7o9rw@mail.gmail.com> <51FC26C7.8060108@zytor.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 6 Aug 2013 15:11:05 -0600
+Message-ID: <CAErSpo7z7b-i7qENa9q+8jLmsV=EFiykBy5wU1AE3eAMG1MKUA@mail.gmail.com>
+Subject: Re: kernel mailing list permalinks
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Shuah Khan <shuahkhan@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        postmaster@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Philip J Kelleher <pjk1939@linux.vnet.ibm.com>
+[+cc vger postmaster]
 
-Changed the device name to IBM Flash Adapter 90 (PCIe2 0.9TB).
+On Fri, Aug 2, 2013 at 3:38 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 08/02/2013 02:36 PM, Shuah Khan wrote:
+>> On Fri, Aug 2, 2013 at 3:04 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>>> vger already adds a "to unsubscribe from this list" footer to messages
+>>> to LKML and other lists.  What if it also added the lkml.kernel.org
+>>> permalink for the message, e.g.,
+>>> "http://lkml.kernel.org/r/CA+55aFxb3NT3_04ZLKiCFrtTXSdi4bfQFf0HJviRRYPTW4ymXA@mail.gmail.com"?
+>>>
+>>> I often use the permalink to cite an email in bugzilla reports,
+>>> changelogs, other conversations, etc., and I currently dig out the
+>>> message-ID and construct the link by hand, so having the link directly
+>>> in the footer would be handy for me.  Would anybody else find this
+>>> useful?
+>>>
+>>> Bjorn
+>>
+>> +1
+>> It would be awesome and very useful to me. I often look for lkml link
+>> for messages.
+>>
+>
+> The above link is also a good example of subtleness: + in a URL means a
+> space character, it has to be escaped as %2B.  Particularly a problem in
+> gmail message-ids.
 
-Signed-off-by: Philip J Kelleher <pjk1939@linux.vnet.ibm.com>
--------------------------------------------------------------------------------
+Ooh, thanks.  I wasn't aware of that, and I've certainly constructed
+links that are semi-broken because of this issue.  Having the
+permalink in the message footer would avoid that problem.
 
+I don't know what it would take to implement this.  Escaping special
+characters makes it not quite as trivial as I thought it might be.
 
-diff -uprN -X linux-block-vanilla/Documentation/dontdiff linux-block-vanilla/drivers/block/Kconfig linux-block/drivers/block/Kconfig
---- linux-block-vanilla/drivers/block/Kconfig	2013-06-19 09:04:09.973166155 -0500
-+++ linux-block/drivers/block/Kconfig	2013-07-23 10:06:27.077463409 -0500
-@@ -532,11 +532,11 @@ config BLK_DEV_RBD
- 	  If unsure, say N.
- 
- config BLK_DEV_RSXX
--	tristate "IBM Flash Adapter 900GB Full Height PCIe Device Driver"
-+	tristate "IBM Flash Adapter 90 (PCIe2 0.9TB)"
- 	depends on PCI
- 	help
- 	  Device driver for IBM's high speed PCIe SSD
--	  storage device: Flash Adapter 900GB Full Height.
-+	  storage device: Flash Adapter 90 (PCIe2 0.9TB).
- 
- 	  To compile this driver as a module, choose M here: the
- 	  module will be called rsxx.
-diff -uprN -X linux-block-vanilla/Documentation/dontdiff linux-block-vanilla/drivers/block/rsxx/core.c linux-block/drivers/block/rsxx/core.c
---- linux-block-vanilla/drivers/block/rsxx/core.c	2013-06-19 09:04:09.979153127 -0500
-+++ linux-block/drivers/block/rsxx/core.c	2013-07-23 10:10:01.395462358 -0500
-@@ -43,7 +43,7 @@
- #define NO_LEGACY 0
- #define SYNC_START_TIMEOUT (10 * 60) /* 10 minutes */
- 
--MODULE_DESCRIPTION("IBM Flash Adapter 900GB Full Height Device Driver");
-+MODULE_DESCRIPTION("IBM Flash Adapter 90 (PCIe2 0.9TB)");
- MODULE_AUTHOR("Joshua Morris/Philip Kelleher, IBM");
- MODULE_LICENSE("GPL");
- MODULE_VERSION(DRIVER_VERSION);
-diff -uprN -X linux-block-vanilla/Documentation/dontdiff linux-block-vanilla/MAINTAINERS linux-block/MAINTAINERS
---- linux-block-vanilla/MAINTAINERS	2013-07-23 09:45:47.552459564 -0500
-+++ linux-block/MAINTAINERS	2013-07-23 10:05:01.493460798 -0500
-@@ -3355,7 +3355,7 @@ F:	Documentation/firmware_class/
- F:	drivers/base/firmware*.c
- F:	include/linux/firmware.h
- 
--FLASH ADAPTER DRIVER (IBM Flash Adapter 900GB Full Height PCI Flash Card)
-+FLASH ADAPTER DRIVER (IBM Flash Adapter 90 (PCIe2 0.9TB))
- M:	Joshua Morris <josh.h.morris@us.ibm.com>
- M:	Philip Kelleher <pjk1939@linux.vnet.ibm.com>
- S:	Maintained
-
+Bjorn
