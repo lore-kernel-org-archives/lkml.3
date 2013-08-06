@@ -1,84 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756133Ab3HFQIw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 12:08:52 -0400
-Received: from mail-vb0-f44.google.com ([209.85.212.44]:61947 "EHLO
-	mail-vb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755933Ab3HFQIu (ORCPT
+	id S1756157Ab3HFQJI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 12:09:08 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:53142 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755933Ab3HFQJG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 12:08:50 -0400
+	Tue, 6 Aug 2013 12:09:06 -0400
+Message-ID: <52011FA5.9000406@linaro.org>
+Date: Tue, 06 Aug 2013 18:09:09 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <CAG-2HqVvoQK8ggErGGinO9i8Pbu-O-X=eYFW445ce24dpt7HyA@mail.gmail.com>
-References: <CALCETrXSnFPFVPkXHwz+FFA3=+pmz9V=cMHWwtN+jG1QJALWSQ@mail.gmail.com>
- <325b19bb936d7ebae11edad86aac8f0931e8abd9.1375719828.git.luto@amacapital.net>
- <5200B1BD.7030307@gmail.com> <CAG-2HqXEj06JbUOWee=NfuRXxL75uRf=55FZcXRLHroDzYUthQ@mail.gmail.com>
- <CAG-2HqVvoQK8ggErGGinO9i8Pbu-O-X=eYFW445ce24dpt7HyA@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 6 Aug 2013 09:08:29 -0700
-Message-ID: <CALCETrX7aGpLAferwTbS3wQWwyw_v_DHh6se6c76fpfi6tJu=A@mail.gmail.com>
-Subject: Re: [systemd-devel] [PATCH] Change CONFIG_FW_LOADER_USER_HELPER to
- default n and don't select it
-To: Tom Gundersen <teg@jklm.no>
-Cc: Maarten Lankhorst <m.b.lankhorst@gmail.com>,
-        systemd-devel@lists.freedesktop.org, linux-hotplug@vger.kernel.org,
-        Linux Wireless List <linux-wireless@vger.kernel.org>,
-        linux-kernel@vger.kernel.org,
-        Intel Linux Wireless <ilw@linux.intel.com>, Kay Sievers <kay@vrfy.org>,
-        Johannes Berg <johannes@sipsolutions.net>
-Content-Type: text/plain; charset=ISO-8859-1
+To: monstr@monstr.eu
+CC: Michal Simek <michal.simek@xilinx.com>,
+        =?UTF-8?B?U8O2cmVuIEJyaW5rbWFu?= =?UTF-8?B?bg==?= 
+	<soren.brinkmann@xilinx.com>,
+        Stuart Menefy <stuart.menefy@st.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: Enable arm_global_timer for Zynq brakes boot
+References: <51F77D93.4030505@linaro.org> <51F97842.6050200@linaro.org> <068436c6-ff98-428f-8875-bb1c6f86466b@TX2EHSMHS008.ehs.local> <51F97CE3.9030306@linaro.org> <15e19315-ce88-4d3c-bad9-0a37d9e52f6b@CO1EHSMHS007.ehs.local> <51F99747.4060901@linaro.org> <a48f159a-e88c-42fa-b76b-662302d3a585@AM1EHSMHS003.ehs.local> <51FA9AE8.1060004@linaro.org> <1c83c081-60c6-49e3-a85c-f64dd5be0e60@CH1EHSMHS030.ehs.local> <51FA9F54.3060704@linaro.org> <712d31e9-3584-48e1-aa9f-55bc94fa62c9@DB9EHSMHS001.ehs.local> <5200B7FE.4000306@linaro.org> <e43ebbd7-f520-4c66-bc8c-71a1122226ad@CO9EHSMHS020.ehs.local> <5200EC4C.5090202@linaro.org> <07cc684f-1d5c-44d7-b25c-6314efea4c58@CO9EHSMHS022.ehs.local> <5200F553.6000200@linaro.org> <5200F7C2.8090802@monstr.eu>
+In-Reply-To: <5200F7C2.8090802@monstr.eu>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 6, 2013 at 2:17 AM, Tom Gundersen <teg@jklm.no> wrote:
-> On Tue, Aug 6, 2013 at 11:11 AM, Tom Gundersen <teg@jklm.no> wrote:
->> On Tue, Aug 6, 2013 at 10:20 AM, Maarten Lankhorst
->> <m.b.lankhorst@gmail.com> wrote:
->>> Op 05-08-13 18:29, Andy Lutomirski schreef:
->>>> The systemd commit below can delay firmware loading by multiple
->>>> minutes if CONFIG_FW_LOADER_USER_HELPER=y.  Unfortunately no one
->>>> noticed that the systemd-udev change would break new kernels as well
->>>> as old kernels.
->>>>
->>>> Since the kernel apparently can't count on reasonable userspace
->>>> support, turn this thing off by default.
->>>>
->>>> commit a3bd8447be4ea2ce230eb8ae0e815c04d85fa15a
->>>> Author: Tom Gundersen <teg@jklm.no>
->>>> Date:   Mon Mar 18 15:12:18 2013 +0100
->>>>
->>>>     udev: make firmware loading optional and disable by default
->>>>
->>>>     Distros that whish to support old kernels should set
->>>>       --with-firmware-dirs="/usr/lib/firmware/updates:/usr/lib/firmware"
->>>>     to retain the old behaviour.
->>>>
->>> methinks this patch should be reverted then,
->>
->> Well, all the code is still there, so it can be enabled if anyone wants it.
->>
->>> or a stub should be added to udev to always fail firmware loading so timeouts don't occur.
->>
->> I think the only use (if any) of a userspace firmware loader would be
->> for anyone who wants a custom one (i.e., not udev), so we shouldn't
->> just fail the loading from udev unconditionally.
->>
->> How about we just improve the udev documentation a bit, similar to
->> Andy's kernel patch?
->
-> Sorry, I should first have checked. We already document this in the README:
->
->>        Userspace firmware loading is deprecated, will go away, and
->>        sometimes causes problems:
->>          CONFIG_FW_LOADER_USER_HELPER=n
+On 08/06/2013 03:18 PM, Michal Simek wrote:
 
-TBH, the udev README is the last thing I'm going to check to figure
-out why I don't have wifi for a couple minutes after boot.  Also, the
-message is missing the point.  It's not that it's deprecated and
-sometimes causes problems -- it's that udev *changed behavior* and
-breaks your system if you have CONFIG_FW_LOADER_USER_HELPER=y.
+[ ... ]
 
-If udev logged something (for a couple of years), that would be a
-different story.
+>>>>> Soren: Are you able to replicate this issue on QEMU?
+>>>>> If yes, it should be the best if you can provide Qemu, kernel .config/
+>>>>> rootfs and simple manual to Daniel how to reach that fault.
+>>>>
+>>>> I tried to download qemu for zynq but it fails:
+>>>>
+>>>> git clone git://git.xilinx.com/qemu-xarm.git
+>>>> Cloning into 'qemu-xarm'...
+>>>> fatal: The remote end hung up unexpectedly
+>>>
+>>> Not sure which site have you found but
+>>> it should be just qemu.git
+>>> https://github.com/Xilinx/qemu
+>>>
+>>> or github clone.
+>>
+>> Ok, cool I was able to clone it.
+>>
+>>>> I am also looking for the option specified for the kernel:
+>>>>
+>>>> "The kernel needs to be built with this feature turned on (in
+>>>> menuconfig, System Type->Xilinx Specific Features -> Device Tree At
+>>>> Fixed Address)."
+>>
+>> Ok.
+>>
+>>> This also sound like a very ancient tree.
+>>> This is the latest kernel tree - master-next is the latest devel branch.
+>>> https://github.com/Xilinx/linux-xlnx
+>>
+>> Ok, cool. I have the right one.
 
---Andy
+Following the documentation, I was able to boot a kernel with qemu for
+the linux-xlnx and qemu-xilinx.
+
+But this kernel is outdated regarding the upstream one, so I tried to
+boot a 3.11-rc4 kernel without success, I did the following:
+
+I used the default config file from linux-xlnx for the upstream kernel.
+
+I compiled the kernel with:
+
+make -j 5 ARCH=arm CROSS_COMPILE=arm-linux-gnueabi-
+UIMAGE_LOADADDR=0x8000 uImage
+
+I generated the dtb with:
+
+make -j 5 ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- dtbs
+
+For qemu, I started qemu with:
+
+./arm-softmmu/qemu-system-arm -M arm-generic-fdt -nographic -smp 2
+-machine linux=on -serial mon:stdio -dtb zynq-zed.dtb -kernel
+kernel/zImage -initrd filesystem/ramdisk.img
+
+I tried with the dtb available for the upstream kernel:
+
+zynq-zc706.dtb, zynq-zc702.dtb and zynq-zed.dtb
+
+Did I miss something ?
+
+Thanks
+  -- Daniel
+
+
+
+>>
+>>> Or there should be an option to use the latest kernel from kernel.org.
+>>> (I think Soren is using it)
+>>>
+>>> Zynq is the part of multiplatfrom kernel and cadence ttc is there,
+>>> dts is also in the mainline kernel.
+>>>
+>>>> ps : apart that, well documented website !
+>>>
+>>> Can you send me the link to it?
+>>
+>> http://xilinx.wikidot.com/zynq-qemu
+>> http://xilinx.wikidot.com/zynq-linux
+> 
+> I will find out information why it is still there.
+> I think it was moved to the new location.
+> 
+>>
+>>> This should be the main page for it.
+>>> http://www.wiki.xilinx.com/
+
+
+-- 
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
