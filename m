@@ -1,36 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755586Ab3HFJiZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 05:38:25 -0400
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:50305 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755485Ab3HFJiY (ORCPT
+	id S1755610Ab3HFJj1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 05:39:27 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:52498 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755452Ab3HFJj0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 05:38:24 -0400
+	Tue, 6 Aug 2013 05:39:26 -0400
+X-Sasl-enc: zBJQ5dHZ/L1ziCYBa262iwQrEdwROcCaXdI9GzoqOmiS 1375781961
+Date: Tue, 6 Aug 2013 17:40:40 +0800
+From: Greg KH <greg@kroah.com>
+To: Andy Green <andy.green@linaro.org>
+Cc: linux-kernel@vger.kernel.org, John Stultz <john.stultz@linaro.org>,
+        Mark Brown <broonie@linaro.org>
+Subject: Re: [PATCH] warning-elimination: android: binder
+Message-ID: <20130806094040.GD27889@kroah.com>
+References: <CAAfg0W4jCXqfthyQi3X+hvznrnksDeJfSpKoymnc53fE=dRN9w@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1374490361-25769-2-git-send-email-lee.jones@linaro.org>
-References: <1374490361-25769-1-git-send-email-lee.jones@linaro.org>
-	<1374490361-25769-2-git-send-email-lee.jones@linaro.org>
-Date: Tue, 6 Aug 2013 11:38:23 +0200
-Message-ID: <CACRpkdYt-r3Wq3ijKWB4iqz89Gq+0Tv2=vb-dTznLAwEewn5gQ@mail.gmail.com>
-Subject: Re: [PATCH 02/22] ARM: nomadik: Remove '0x's from nomadik stn8815 DTS file
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAAfg0W4jCXqfthyQi3X+hvznrnksDeJfSpKoymnc53fE=dRN9w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 22, 2013 at 12:52 PM, Lee Jones <lee.jones@linaro.org> wrote:
+On Tue, Aug 06, 2013 at 11:36:19AM +0800, Andy Green wrote:
+> From: Andy Green <andy.green@linaro.org>
+> 
+> warning-elimination: android: binder
+> 
+> This commit in mainline (now) causes a couple of warnings
 
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+What specifically are those warnings?  I don't see any here, so I'm
+guessing your patch isn't really needed :)
 
-Applied.
+(hint, hint, hint...)
 
-Yours,
-Linus Walleij
+greg k-h
