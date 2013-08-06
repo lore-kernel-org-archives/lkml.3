@@ -1,52 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756054Ab3HFKhQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 06:37:16 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:34162 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755848Ab3HFKhK (ORCPT
+	id S1756049Ab3HFKiA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 06:38:00 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:54917 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755848Ab3HFKh6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 06:37:10 -0400
-X-AuditID: cbfee68d-b7f096d0000043fc-68-5200d1d52048
+	Tue, 6 Aug 2013 06:37:58 -0400
+X-AuditID: cbfee68d-b7f096d0000043fc-ed-5200d2051bcd
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Vinod Koul'" <vinod.koul@intel.com>
-Cc: "'Dan Williams'" <djbw@fb.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        linux-kernel@vger.kernel.org, Jingoo Han <jg1.han@samsung.com>
-Subject: [PATCH 2/3] dma: mv_xor: use NULL instead of 0
-Date: Tue, 06 Aug 2013 19:37:08 +0900
-Message-id: <000201ce9290$e6f0f4e0$b4d2dea0$@samsung.com>
+Cc: "'Dan Williams'" <djbw@fb.com>, Barry Song <baohua.song@csr.com>,
+        "'Rongjun Ying'" <Rongjun.Ying@csr.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH 3/3] dma: sirf: use NULL instead of 0
+Date: Tue, 06 Aug 2013 19:37:56 +0900
+Message-id: <000301ce9291$039da7a0$0ad8f6e0$@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac6SkMfLKTO6jP1URJGycH6YY43hLA==
+Thread-index: Ac6SkO5BZNM7OHWLTQuwx/gOfObyzw==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrAIsWRmVeSWpSXmKPExsVy+t8zY92rFxmCDO5/YbfY3P+AzeLywkus
-	Fpd3zWGzePqgicniZd9+FgdWj4nN79g9nmy6yOixeM9LJo++LasYPT5vkgtgjeKySUnNySxL
-	LdK3S+DKOHDtFGvBTraKP8vOsDYwLmXtYuTkkBAwkWjqOsgGYYtJXLi3HswWEljGKHHxuyJM
-	zfu2N0xdjFxA8emMEh+m7YFyfjFKnP7wlRGkik1ATeLLl8PsXYwcHCIC6hJLr8uA1DALzGGU
-	OPz8NRNIjbCAucTrt1PB6lkEVCV+NRwGi/MKWEpsWNwAZQtK/Jh8jwXEZhbQkli/8zgThC0v
-	sXnNW2aIixQkdpx9DTZHREBPYvKNd1D1IhL7XrxjBFksIXCMXaJ3yWo2iGUCEt8mH2IBOU5C
-	QFZi0wGoOZISB1fcYJnAKDYLyepZSFbPQrJ6FpIVCxhZVjGKphYkFxQnpRcZ6hUn5haX5qXr
-	JefnbmKExF7vDsbbB6wPMSYDrZ/ILCWanA+M3bySeENjMyMLUxNTYyNzSzPShJXEedVarAOF
-	BNITS1KzU1MLUovii0pzUosPMTJxcEo1MLK3MHRvjg9+uai39qG62WW3xTwN739K1dZs3HLr
-	r9bVP+veHz/bnsigx9q/wUzouDenihc783/xWOEDTxqrJeMq8n1eruS/Eau873X2Q+tZWzQ/
-	zrV8t25/e2bQ0t+KfFvl1H7I6q7z5/VwKmgQ82ovF7/nptDt4XlY69iutuIlwYv/2p1boMRS
-	nJFoqMVcVJwIAIk/mHTTAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprHKsWRmVeSWpSXmKPExsVy+t9jQd2rFxmCDP51s1hs7n/AZnF54SVW
-	i8u75rBZPH3QxGTxsm8/iwOrx8Tmd+weTzZdZPRYvOclk0ffllWMHp83yQWwRjUw2mSkJqak
-	Fimk5iXnp2TmpdsqeQfHO8ebmhkY6hpaWpgrKeQl5qbaKrn4BOi6ZeYAbVdSKEvMKQUKBSQW
-	Fyvp22GaEBripmsB0xih6xsSBNdjZIAGEtYxZhy4doq1YCdbxZ9lZ1gbGJeydjFyckgImEi8
-	b3vDBGGLSVy4t56ti5GLQ0hgOqPEh2l7mCCcX4wSpz98ZQSpYhNQk/jy5TB7FyMHh4iAusTS
-	6zIgNcwCcxglDj9/DTZJWMBc4vXbqWD1LAKqEr8aDoPFeQUsJTYsboCyBSV+TL7HAmIzC2hJ
-	rN95nAnClpfYvOYtM8RFChI7zr4GmyMioCcx+cY7qHoRiX0v3jFOYBSYhWTULCSjZiEZNQtJ
-	ywJGllWMoqkFyQXFSem5hnrFibnFpXnpesn5uZsYwbH9TGoH48oGi0OMAhyMSjy8iVf/Bwqx
-	JpYVV+YeYpTgYFYS4VXZyRAkxJuSWFmVWpQfX1Sak1p8iDEZ6NOJzFKiyfnAtJNXEm9obGJm
-	ZGlkZmFkYm5OmrCSOO+BVutAIYH0xJLU7NTUgtQimC1MHJxSDYzqlutKLDarrK7ceevx5M0f
-	eVoLuza7JV+6ei3y10wZtdoavzaG/f/uP/RsUfHQ1+qanZfBpD/1RJr3nqU/j9tdiDljzviX
-	z1Hqdamk4A0hTdmysuRJ6wQktLrSKnc3FMQJMh6LX21YlGdpxbnbq4Dz0uWJWV993p6a67Dy
-	c/+BtVkcJe2XHyqxFGckGmoxFxUnAgBgQe3bMQMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrOIsWRmVeSWpSXmKPExsVy+t8zQ13WSwxBBo1NYhYvZ15ltdjc/4DN
+	4vKuOWwW+y78YbV42befxYHVY9fOOaweE5vfsXss3vOSyePzJrkAligum5TUnMyy1CJ9uwSu
+	jJPHkgtmsVVsvCjQwDiJtYuRk0NCwETi0/fTLBC2mMSFe+vZQGwhgWWMEhdmm3YxcoDV/Hur
+	3MXIBRSezigx//MqZgjnF6NE+4RmdpAGNgE1iS9fDrODNIgIqEssvS4DUsMs0Mko8XXBA7Ch
+	wgKmErePzwFbzCKgKnFg+Q5mEJtXwFKic+4fFghbUOLH5HtgNrOAlsT6nceZIGx5ic1r3jJD
+	HKogsePsa0YQW0RAT2LdxT52iBoRiX0v3jFC1Bxil7i6Mwdil4DEt8mHWCCekZXYdABqjKTE
+	wRU3WCYwis1CsnkWks2zkGyehWTDAkaWVYyiqQXJBcVJ6UWGesWJucWleel6yfm5mxghkda7
+	g/H2AetDjMlA6ycyS4km5wMjNa8k3tDYzMjC1MTU2Mjc0ow0YSVxXrUW60AhgfTEktTs1NSC
+	1KL4otKc1OJDjEwcnFINjDx2kSZrlPn2fGsSyj1eLfVvYo31kfDwQzWC/azCq7wyZLXrkprX
+	yOg629dpmDDftIt0dEvP/DlfI+PUROFv/MWXffsi+vUT3fssjewUtij7pIQeZfpzYVeq9eN/
+	5dsa5nJaLdu7bDdHRWDCpb3dl+TrZn8z0XW01Im/vv7skrUCn+3sI44qsRRnJBpqMRcVJwIA
+	VVUaIcoCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprGKsWRmVeSWpSXmKPExsVy+t9jQV3WSwxBBo/bhSxezrzKarG5/wGb
+	xeVdc9gs9l34w2rxsm8/iwOrx66dc1g9Jja/Y/dYvOclk8fnTXIBLFENjDYZqYkpqUUKqXnJ
+	+SmZeem2St7B8c7xpmYGhrqGlhbmSgp5ibmptkouPgG6bpk5QIuVFMoSc0qBQgGJxcVK+naY
+	JoSGuOlawDRG6PqGBMH1GBmggYR1jBknjyUXzGKr2HhRoIFxEmsXIweHhICJxL+3yl2MnECm
+	mMSFe+vZuhi5OIQEpjNKzP+8ihnC+cUo0T6hmR2kik1ATeLLl8PsIM0iAuoSS6/LgNQwC3Qy
+	Snxd8IANpEZYwFTi9vE5rCA2i4CqxIHlO5hBbF4BS4nOuX9YIGxBiR+T74HZzAJaEut3HmeC
+	sOUlNq95ywxxkYLEjrOvGUFsEQE9iXUX+9ghakQk9r14xziBUWAWklGzkIyahWTULCQtCxhZ
+	VjGKphYkFxQnpeca6RUn5haX5qXrJefnbmIEx/Iz6R2MqxosDjEKcDAq8fAmXP0fKMSaWFZc
+	mXuIUYKDWUmEV2UnQ5AQb0piZVVqUX58UWlOavEhxmSgTycyS4km5wPTTF5JvKGxiZmRpZGZ
+	hZGJuTlpwkrivAdbrQOFBNITS1KzU1MLUotgtjBxcEo1MK5R+MfwVXfdMsl+/jV9e36q/hGu
+	XzPRR2nF5MJC+aS9kyYnc2hYCSrt3rrmeuyUtICVeodDVjDbrJ2UN0P5v9YTU+2PKtcZ3Zn9
+	GbivBn/VmXNgUm7yBb+LDKYvhZ2/Cp5Iy9PYtbb9RdHtYvZvqUIJ5xPS1x4Q5pwovf649i2D
+	af8OFa72SVNiKc5INNRiLipOBAA8vbfCKQMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -54,29 +53,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-%p is used, thus NULL should be used instead of 0
-in order to fix the following sparse warning:
+sirfsoc_dma_prep_cyclic() returns pointer, thus NULL should be
+used instead of 0 in order to fix the following sparse warning:
 
-drivers/dma/mv_xor.c:648:9: warning: Using plain integer as NULL pointer
+drivers/dma/sirf-dma.c:598:24: warning: Using plain integer as NULL pointer
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/dma/mv_xor.c |    2 +-
+ drivers/dma/sirf-dma.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/dma/mv_xor.c b/drivers/dma/mv_xor.c
-index 200f1a3..534e2fe 100644
---- a/drivers/dma/mv_xor.c
-+++ b/drivers/dma/mv_xor.c
-@@ -647,7 +647,7 @@ mv_xor_prep_dma_memcpy(struct dma_chan *chan, dma_addr_t dest, dma_addr_t src,
+diff --git a/drivers/dma/sirf-dma.c b/drivers/dma/sirf-dma.c
+index 716b23e..973ecd0 100644
+--- a/drivers/dma/sirf-dma.c
++++ b/drivers/dma/sirf-dma.c
+@@ -595,7 +595,7 @@ sirfsoc_dma_prep_cyclic(struct dma_chan *chan, dma_addr_t addr,
+ 	spin_unlock_irqrestore(&schan->lock, iflags);
  
- 	dev_dbg(mv_chan_to_devp(mv_chan),
- 		"%s sw_desc %p async_tx %p\n",
--		__func__, sw_desc, sw_desc ? &sw_desc->async_tx : 0);
-+		__func__, sw_desc, sw_desc ? &sw_desc->async_tx : NULL);
+ 	if (!sdesc)
+-		return 0;
++		return NULL;
  
- 	return sw_desc ? &sw_desc->async_tx : NULL;
- }
+ 	/* Place descriptor in prepared list */
+ 	spin_lock_irqsave(&schan->lock, iflags);
 -- 
 1.7.10.4
 
