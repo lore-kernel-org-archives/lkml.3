@@ -1,79 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753250Ab3HFNeG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 09:34:06 -0400
-Received: from rrzmta2.uni-regensburg.de ([194.94.155.52]:56767 "EHLO
-	rrzmta2.uni-regensburg.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751915Ab3HFNeE convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:2:1>);
-	Tue, 6 Aug 2013 09:34:04 -0400
-Message-Id: <52011762020000A1000122AD@gwsmtp1.uni-regensburg.de>
-X-Mailer: Novell GroupWise Internet Agent 12.0.2 
-Date: Tue, 06 Aug 2013 15:33:54 +0200
-From: "Ulrich Windl" <Ulrich.Windl@rz.uni-regensburg.de>
-To: <linux-kernel@vger.kernel.org>
-Cc: "Ulrich Windl" <Ulrich.Windl@rz.uni-regensburg.de>
-Subject: message (3.0.80) "kernel: [440682.559851] blk_rq_check_limits:
- over max size limit."
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1753774Ab3HFNif (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 09:38:35 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:40259 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753492Ab3HFNib (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Aug 2013 09:38:31 -0400
+Message-ID: <5200FC09.7080108@ahsoftware.de>
+Date: Tue, 06 Aug 2013 15:37:13 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130712 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Pantelis Antoniou <panto@antoniou-consulting.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        =?UTF-8?B?QmVub8OudCBDb3Vzc25v?= <b-cousson@ti.com>,
+        Paul Walmsley <paul@pwsan.com>, Sourav Poddar <sourav.poddar@ti.com>,
+        Russ Dill <Russ.Dill@ti.com>, Felipe Balbi <balbi@ti.com>,
+        Koen Kooi <koen@circuitco.com>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/5] arm: omap: Proper cleanups for omap_device
+References: <1375775624-12250-1-git-send-email-panto@antoniou-consulting.com> <1375775624-12250-6-git-send-email-panto@antoniou-consulting.com> <20130806093356.GA27889@kroah.com> <8C31ED90-E9EF-4264-858A-17CC2536B552@antoniou-consulting.com> <20130806101421.GA29283@kroah.com>
+In-Reply-To: <20130806101421.GA29283@kroah.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Am 06.08.2013 12:14, schrieb Greg Kroah-Hartman:
 
-I just did some block device tuning according to some expert's advice which resulted in multipath failures. I'm not going to discuss this as I'll have to investigate further, but I'd like to point out that the messages like "[440682.559851] blk_rq_check_limits: over max size limit." lack the affected device!
+>> What exactly is a platform device anyway?
+> 
+> Originally it was a "something that wasn't connected to a bus, but just
+> had memory-mapped i/o."  Like the PS2 keyboard controller.
+> 
+> Embedded systems got ahold of this and went to town, and made everything
+> a platform device because they could, and no one was paying attention.
+> 
+> Then OF came along and used it as well, and you know the rest...
+> 
+> I think we need to get the ACPI and OF people, and me, in a room
+> together at the kernel summit and not let us out until we have this all
+> worked out.
 
-It's quite hard to debug if you have more than 90 disks attached:
-Aug  6 14:58:08 h06 multipathd: 65:240: mark as failed
-Aug  6 14:58:08 h06 multipathd: SAP_T11_I03-E3: remaining active paths: 4
-Aug  6 14:58:08 h06 multipathd: 68:48: mark as failed
-Aug  6 14:58:08 h06 multipathd: SAP_T11_I03-E3: remaining active paths: 3
-Aug  6 14:58:08 h06 multipathd: 8:208: mark as failed
-Aug  6 14:58:08 h06 multipathd: SAP_T11_I03-E4: remaining active paths: 3
-Aug  6 14:58:08 h06 multipathd: 67:80: mark as failed
-Aug  6 14:58:08 h06 multipathd: SAP_T11_I03-E4: remaining active paths: 2
-Aug  6 14:58:08 h06 kernel: [440682.559851] blk_rq_check_limits: over max size limit.
-Aug  6 14:58:08 h06 kernel: [440682.559891] blk_rq_check_limits: over max size limit.
-Aug  6 14:58:08 h06 kernel: [440682.559916] blk_rq_check_limits: over max size limit.
-Aug  6 14:58:08 h06 kernel: [440682.559928] blk_rq_check_limits: over max size limit.
-Aug  6 14:58:08 h06 kernel: [440682.559966] blk_rq_check_limits: over max size limit.
-Aug  6 14:58:08 h06 kernel: [440682.559996] blk_rq_check_limits: over max size limit.
-Aug  6 14:58:08 h06 kernel: [440682.560016] blk_rq_check_limits: over max size limit.
-Aug  6 14:58:08 h06 kernel: [440682.560037] blk_rq_check_limits: over max size limit.
-Aug  6 14:58:08 h06 kernel: [440682.560058] blk_rq_check_limits: over max size limit.
-Aug  6 14:58:08 h06 kernel: [440682.560106] blk_rq_check_limits: over max size limit.
-Aug  6 14:58:08 h06 kernel: [440682.560149] blk_rq_check_limits: over max size limit.
-Aug  6 14:58:08 h06 kernel: [440682.560176] blk_rq_check_limits: over max size limit.
-Aug  6 14:58:08 h06 kernel: [440682.560189] blk_rq_check_limits: over max size limit.
-Aug  6 14:58:08 h06 kernel: [440682.560223] blk_rq_check_limits: over max size limit.
-Aug  6 14:58:08 h06 kernel: [440682.560257] blk_rq_check_limits: over max size limit.
-Aug  6 14:58:08 h06 kernel: [440682.560277] blk_rq_check_limits: over max size limit.
-Aug  6 14:58:08 h06 kernel: [440682.560296] blk_rq_check_limits: over max size limit.
-Aug  6 14:58:08 h06 kernel: [440682.560319] blk_rq_check_limits: over max size limit.
-Aug  6 14:58:08 h06 kernel: [440682.560333] device-mapper: multipath: Failing path 65:240.
-Aug  6 14:58:08 h06 kernel: [440682.560346] device-mapper: multipath: Failing path 68:48.
-Aug  6 14:58:08 h06 kernel: [440682.560429] device-mapper: multipath: Failing path 67:80.
-Aug  6 14:58:08 h06 kernel: [440682.560436] device-mapper: multipath: Failing path 8:208.
-Aug  6 14:58:08 h06 kernel: [440682.561345] sd 2:0:0:7: alua: port group 01 state N non-preferred supports tolusNA
-Aug  6 14:58:08 h06 kernel: [440682.561500] sd 3:0:2:7: alua: port group 01 state N non-preferred supports tolusNA
-Aug  6 14:58:08 h06 kernel: [440682.562075] sd 2:0:4:7: alua: port group 01 state N non-preferred supports tolusNA
-Aug  6 14:58:08 h06 kernel: [440682.562257] sd 3:0:4:7: alua: port group 01 state N non-preferred supports tolusNA
-Aug  6 14:58:08 h06 kernel: [440682.562393] sd 3:0:8:7: alua: port group 01 state N non-preferred supports tolusNA
-Aug  6 14:58:08 h06 kernel: [440682.676078] sd 3:0:2:7: alua: port group 01 switched to state A
-Aug  6 14:58:08 h06 kernel: [440682.676091] sd 2:0:0:7: alua: port group 01 switched to state A
-Aug  6 14:58:08 h06 kernel: [440682.676108] blk_rq_check_limits: over max size limit.
-Aug  6 14:58:08 h06 kernel: [440682.676112] blk_rq_check_limits: over max size limit.
-Aug  6 14:58:08 h06 kernel: [440682.676115] blk_rq_check_limits: over max size limit.
-
-Is this problem fixed in a newer kernel?
-
-For the curious: I tuned queue/max_sectors_kb for the paths in a multipath device, but didn't tune the multipath device itself...
+MFD uses platform devices too.
 
 Regards,
-Ulrich
-P.S.: Plese keep CC: as I'm not subscribed to the list
+
+Alexander Holler
 
