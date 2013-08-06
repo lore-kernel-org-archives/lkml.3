@@ -1,124 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756262Ab3HFQO4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 12:14:56 -0400
-Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:36769
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756151Ab3HFQOr convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 12:14:47 -0400
-X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VPS-3(zzbb2dI98dI9371Ic89bh1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de096h8275bh1de097hz2fh95h668h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dh906i1155h192ch)
-Date: Tue, 6 Aug 2013 09:13:32 -0700
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-CC: <monstr@monstr.eu>, Michal Simek <michal.simek@xilinx.com>,
-        Stuart Menefy <stuart.menefy@st.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <linux@arm.linux.org.uk>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: Enable arm_global_timer for Zynq brakes boot
-References: <1c83c081-60c6-49e3-a85c-f64dd5be0e60@CH1EHSMHS030.ehs.local>
- <51FA9F54.3060704@linaro.org>
- <712d31e9-3584-48e1-aa9f-55bc94fa62c9@DB9EHSMHS001.ehs.local>
- <5200B7FE.4000306@linaro.org>
- <e43ebbd7-f520-4c66-bc8c-71a1122226ad@CO9EHSMHS020.ehs.local>
- <5200EC4C.5090202@linaro.org>
- <07cc684f-1d5c-44d7-b25c-6314efea4c58@CO9EHSMHS022.ehs.local>
- <5200F553.6000200@linaro.org>
- <5200F7C2.8090802@monstr.eu>
- <52011FA5.9000406@linaro.org>
+	id S1756278Ab3HFQPJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 12:15:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37602 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756009Ab3HFQPG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Aug 2013 12:15:06 -0400
+Date: Tue, 6 Aug 2013 18:08:41 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, David Ahern <dsahern@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 1/3] tracing/perf: Expand TRACE_EVENT(sched_stat_runtime)
+Message-ID: <20130806160841.GA2736@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52011FA5.9000406@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-Message-ID: <fe6d6c61-3460-4f41-830d-f42891f29d1e@VA3EHSMHS022.ehs.local>
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: xilinx.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+In-Reply-To: <20130806160826.GA2717@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 06, 2013 at 06:09:09PM +0200, Daniel Lezcano wrote:
-> On 08/06/2013 03:18 PM, Michal Simek wrote:
-> 
-> [ ... ]
-> 
-> >>>>> Soren: Are you able to replicate this issue on QEMU?
-> >>>>> If yes, it should be the best if you can provide Qemu, kernel .config/
-> >>>>> rootfs and simple manual to Daniel how to reach that fault.
-> >>>>
-> >>>> I tried to download qemu for zynq but it fails:
-> >>>>
-> >>>> git clone git://git.xilinx.com/qemu-xarm.git
-> >>>> Cloning into 'qemu-xarm'...
-> >>>> fatal: The remote end hung up unexpectedly
-> >>>
-> >>> Not sure which site have you found but
-> >>> it should be just qemu.git
-> >>> https://github.com/Xilinx/qemu
-> >>>
-> >>> or github clone.
-> >>
-> >> Ok, cool I was able to clone it.
-> >>
-> >>>> I am also looking for the option specified for the kernel:
-> >>>>
-> >>>> "The kernel needs to be built with this feature turned on (in
-> >>>> menuconfig, System Type->Xilinx Specific Features -> Device Tree At
-> >>>> Fixed Address)."
-> >>
-> >> Ok.
-> >>
-> >>> This also sound like a very ancient tree.
-> >>> This is the latest kernel tree - master-next is the latest devel branch.
-> >>> https://github.com/Xilinx/linux-xlnx
-> >>
-> >> Ok, cool. I have the right one.
-> 
-> Following the documentation, I was able to boot a kernel with qemu for
-> the linux-xlnx and qemu-xilinx.
-> 
-> But this kernel is outdated regarding the upstream one, so I tried to
-> boot a 3.11-rc4 kernel without success, I did the following:
-> 
-> I used the default config file from linux-xlnx for the upstream kernel.
-> 
-> I compiled the kernel with:
-> 
-> make -j 5 ARCH=arm CROSS_COMPILE=arm-linux-gnueabi-
-> UIMAGE_LOADADDR=0x8000 uImage
-> 
-> I generated the dtb with:
-> 
-> make -j 5 ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- dtbs
-> 
-> For qemu, I started qemu with:
-> 
-> ./arm-softmmu/qemu-system-arm -M arm-generic-fdt -nographic -smp 2
-> -machine linux=on -serial mon:stdio -dtb zynq-zed.dtb -kernel
-> kernel/zImage -initrd filesystem/ramdisk.img
-> 
-> I tried with the dtb available for the upstream kernel:
-> 
-> zynq-zc706.dtb, zynq-zc702.dtb and zynq-zed.dtb
-> 
-> Did I miss something ?
+To simplify the review of the next patches:
 
-Unfortunately the public github QEMU is behind our internal development.
-IIRC, there were a couple of DT compatible strings QEMU didn't know.
-Those are sometimes removed making boot fail/hang.
+1. We are going to reimplent __perf_task/counter and embedd them
+   into TP_ARGS(). expand TRACE_EVENT(sched_stat_runtime) into
+   DECLARE_EVENT_CLASS() + DEFINE_EVENT(), this way they can use
+   different TP_ARGS's.
 
-Are you on IRC? It's probably easier to resolve this in a more direct
-way (I'm 'sorenb' on freenode). Otherwise I could give you a few more
-instructions for debugging this per mail?
+2. Change perf_trace_##call() macro to do perf_fetch_caller_regs()
+   right before perf_trace_buf_prepare().
 
-	Sören
+   This way it evaluates TP_ARGS() asap, the next patch explores
+   this fact.
 
+   Note: after 87f44bbc perf_trace_buf_prepare() doesn't need
+   "struct pt_regs *regs", perhaps it makes sense to remove this
+   argument. And perhaps we can teach perf_trace_buf_submit()
+   to accept regs == NULL and do fetch_caller_regs(CALLER_ADDR1)
+   in this case.
+
+3. Cosmetic, but the typecast from "void*" buys nothing. It just
+   adds the noise, remove it.
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Tested-by: David Ahern <dsahern@gmail.com>
+Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ include/trace/events/sched.h |    6 +++++-
+ include/trace/ftrace.h       |    7 +++----
+ 2 files changed, 8 insertions(+), 5 deletions(-)
+
+diff --git a/include/trace/events/sched.h b/include/trace/events/sched.h
+index e5586ca..249c024 100644
+--- a/include/trace/events/sched.h
++++ b/include/trace/events/sched.h
+@@ -372,7 +372,7 @@ DEFINE_EVENT(sched_stat_template, sched_stat_blocked,
+  * Tracepoint for accounting runtime (time the task is executing
+  * on a CPU).
+  */
+-TRACE_EVENT(sched_stat_runtime,
++DECLARE_EVENT_CLASS(sched_stat_runtime,
+ 
+ 	TP_PROTO(struct task_struct *tsk, u64 runtime, u64 vruntime),
+ 
+@@ -401,6 +401,10 @@ TRACE_EVENT(sched_stat_runtime,
+ 			(unsigned long long)__entry->vruntime)
+ );
+ 
++DEFINE_EVENT(sched_stat_runtime, sched_stat_runtime,
++	     TP_PROTO(struct task_struct *tsk, u64 runtime, u64 vruntime),
++	     TP_ARGS(tsk, runtime, vruntime));
++
+ /*
+  * Tracepoint for showing priority inheritance modifying a tasks
+  * priority.
+diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
+index 41a6643..618af05 100644
+--- a/include/trace/ftrace.h
++++ b/include/trace/ftrace.h
+@@ -663,15 +663,14 @@ perf_trace_##call(void *__data, proto)					\
+ 	int __data_size;						\
+ 	int rctx;							\
+ 									\
+-	perf_fetch_caller_regs(&__regs);				\
+-									\
+ 	__data_size = ftrace_get_offsets_##call(&__data_offsets, args); \
+ 	__entry_size = ALIGN(__data_size + sizeof(*entry) + sizeof(u32),\
+ 			     sizeof(u64));				\
+ 	__entry_size -= sizeof(u32);					\
+ 									\
+-	entry = (struct ftrace_raw_##call *)perf_trace_buf_prepare(	\
+-		__entry_size, event_call->event.type, &__regs, &rctx);	\
++	perf_fetch_caller_regs(&__regs);				\
++	entry = perf_trace_buf_prepare(__entry_size,			\
++			event_call->event.type, &__regs, &rctx);	\
+ 	if (!entry)							\
+ 		return;							\
+ 									\
+-- 
+1.5.5.1
 
