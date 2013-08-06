@@ -1,86 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756901Ab3HFXDs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 19:03:48 -0400
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:35923 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756800Ab3HFXDq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 19:03:46 -0400
-Message-ID: <1375830154.10300.200.camel@misato.fc.hp.com>
-Subject: Re: [PATCH v2 RESEND 04/18] acpi: Introduce acpi_verify_initrd() to
- check if a table is invalid.
-From: Toshi Kani <toshi.kani@hp.com>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl, lenb@kernel.org,
-        tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
-        akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
-        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
-        mina86@mina86.com, gong.chen@linux.intel.com,
-        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
-        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
-        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com, x86@kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Date: Tue, 06 Aug 2013 17:02:34 -0600
-In-Reply-To: <1375434877-20704-5-git-send-email-tangchen@cn.fujitsu.com>
-References: <1375434877-20704-1-git-send-email-tangchen@cn.fujitsu.com>
-	 <1375434877-20704-5-git-send-email-tangchen@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
+	id S1756862Ab3HFXGV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 19:06:21 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:44198 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756800Ab3HFXGU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Aug 2013 19:06:20 -0400
+Message-ID: <5201813F.1070102@zytor.com>
+Date: Tue, 06 Aug 2013 16:05:35 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Anders Larsen <al@alarsen.net>
+CC: Bjorn Helgaas <bhelgaas@google.com>, Shuah Khan <shuahkhan@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        postmaster@vger.kernel.org, Konstantin Ryabitsev <mricon@kernel.org>
+Subject: Re: kernel mailing list permalinks
+References: <1375826105.22552.0@oscar>
+In-Reply-To: <1375826105.22552.0@oscar>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-08-02 at 17:14 +0800, Tang Chen wrote:
-> In acpi_initrd_override(), it checks several things to ensure the
-> table it found is valid. In later patches, we need to do these check
-> somewhere else. So this patch introduces a common function
-> acpi_verify_initrd() to do all these checks, and reuse it in different
-
-Typo: acpi_verify_initrd() -> acpi_verify_table()
-
--Toshi
-
-
-> places. The function will be used in the subsequent patches.
+On 08/06/2013 02:55 PM, Anders Larsen wrote:
+> On 2013-08-06 23:23, H. Peter Anvin wrote:
+>> On 08/06/2013 02:11 PM, Bjorn Helgaas wrote:
+>> >>
+>> >> The above link is also a good example of subtleness: + in a URL
+>> means a
+>> >> space character, it has to be escaped as %2B.  Particularly a
+>> problem in
+>> >> gmail message-ids.
 > 
-> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-> Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-> Acked-by: Toshi Kani <toshi.kani@hp.com>
-> Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> ---
->  drivers/acpi/osl.c |   86 +++++++++++++++++++++++++++++++++++++---------------
->  1 files changed, 61 insertions(+), 25 deletions(-)
+> the link in question works just fine without escaping the +; the + only
+> has to be escaped in then query component of a URL, not in the path
+> component where it is just another valid character - and the link in
+> question did not contain any query component.
 > 
-> diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-> index 3b8bab2..0043e9f 100644
-> --- a/drivers/acpi/osl.c
-> +++ b/drivers/acpi/osl.c
-> @@ -572,9 +572,68 @@ static const char * const table_sigs[] = {
->  /* Must not increase 10 or needs code modification below */
->  #define ACPI_OVERRIDE_TABLES 10
->  
-> +/*******************************************************************************
-> + *
-> + * FUNCTION:    acpi_verify_table
-> + *
-> + * PARAMETERS:  File               - The initrd file
-> + *              Path               - Path to acpi overriding tables in cpio file
-> + *              Signature          - Signature of the table
-> + *
-> + * RETURN:      0 if it passes all the checks, -EINVAL if any check fails.
-> + *
-> + * DESCRIPTION: Check if an acpi table found in initrd is invalid.
-> + *              @signature can be NULL. If it is NULL, the function will check
-> + *              if the table signature matches any signature in table_sigs[].
-> + *
-> + ******************************************************************************/
-> +int __init acpi_verify_table(struct cpio_data *file,
- :
+> (see RFC 3986 sections 3.3 and 3.4)
+> 
 
+Well, the backend does unescape, so regardless of what is legal by URL
+syntax, the current implementation and therefore existing link tags
+expect it to be escaped (this is a consequence of the bouncer turning
+the link into a query URL in a redirect.)  So they will need to be
+escaped no matter what RFC 3986 says.  Consider a part of the
+specification for lkml.kernel.org links.
+
+That being said, we could definitely choose to interpret + as a + rather
+than space.  I don't know if we can easily distinguish between "%20",
+"+" and " ", though, without dramatically change the implementation.
+
+>> A quoted Message-ID might be weird as heck, but one rarely if ever see
+>> them, I don't know if they are even legal.
+> 
+> I don't think they are even possible, as the percent-sign is just another
+> valid character in a Message-ID - but so is the '+' sign, so it seems
+> you're trying to solve a non-existent problem...
+> 
+> (see RFC 5322 section 3.2.3)
+> 
+
+I'm referring to message-id's with a obs-id-left production.
+
+	-hpa
 
