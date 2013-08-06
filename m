@@ -1,108 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756262Ab3HFRJY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 13:09:24 -0400
-Received: from mail-we0-f180.google.com ([74.125.82.180]:34487 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756191Ab3HFRJW (ORCPT
+	id S1756301Ab3HFRKk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 13:10:40 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:38315 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756082Ab3HFRKi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 13:09:22 -0400
-From: "Yann E. MORIN" <yann.morin.1998@free.fr>
-To: linux-kbuild@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, "Yann E. MORIN" <yann.morin.1998@free.fr>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Michal Marek <mmarek@suse.cz>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH] kconfig: silence warning when parsing auto.conf when a symbol has changed type
-Date: Tue,  6 Aug 2013 19:09:14 +0200
-Message-Id: <1375808954-7221-1-git-send-email-yann.morin.1998@free.fr>
-X-Mailer: git-send-email 1.8.1.2
+	Tue, 6 Aug 2013 13:10:38 -0400
+From: Stephen Warren <swarren@wwwdotorg.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Pawel Moll <pawel.moll@arm.com>, Rob Herring <rob.herring@calxeda.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Laxman Dewangan <ldewangan@nvidia.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
+Subject: [PATCH V2 1/2] pinctrl: clean up pinconfig-generic documentation
+Date: Tue,  6 Aug 2013 11:10:31 -0600
+Message-Id: <1375809032-21477-1-git-send-email-swarren@wwwdotorg.org>
+X-Mailer: git-send-email 1.8.1.5
+X-NVConfidentiality: public
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Yann E. MORIN" <yann.morin.1998@free.fr>
+From: Stephen Warren <swarren@nvidia.com>
 
-When a symbol changes type from tristate to bool, and was previously set to
-'m', a subsequent silentoldconfig would warn about inconsistency, such as:
+Reword the section of pinctrl-bindings.txt that describes generic
+properties that pinctrl bindings may use. The aim is to make the text
+clearer, and more explicitly call out the responsibility of individual
+bindings that use the generic properties to define which of the
+properties are used, and how.
 
-    include/config/auto.conf:3014:warning: symbol value 'm' invalid for
-    HOTPLUG_PCI_PCIE
-
-Seen by Linus with the merge in aa8032b (sequence to reproduce by Michal):
-    git checkout 1fe0135
-    make mrproper
-    make allmodconfig
-    make silentoldconfig
-    git checkout aa8032b
-    make allmodconfig
-    make silentoldconfig
-
-Since HOTPLUG_PCI_PCIE changed from tristate to bool in aa8032b, it was
-previously set to 'm' in auto.conf by the first allmodconfig+silentoldconfig,
-but then was set to 'y' by the second allmodconfig. Then the second
-silentoldconfig prints the warning.
-
-The warning in this case is a spurious warning, which happens at the time
-kconfig tries to detect symbols that have changed, to touch the empty
-header files in include/config used for dependency-tracking by make.
-
-Silence the warning when we read the old auto.conf file, since it is
-perfectly legit that a symbol changed type since the previous call.
-
-Thread in:
-    http://marc.info/?l=linux-pci&m=137569198904000&w=2
-
-Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Michal Marek <mmarek@suse.cz>
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
 ---
- scripts/kconfig/confdata.c | 11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+ .../bindings/pinctrl/pinctrl-bindings.txt          | 25 +++++++++-------------
+ 1 file changed, 10 insertions(+), 15 deletions(-)
 
-diff --git a/scripts/kconfig/confdata.c b/scripts/kconfig/confdata.c
-index c55c227..87f7238 100644
---- a/scripts/kconfig/confdata.c
-+++ b/scripts/kconfig/confdata.c
-@@ -140,7 +140,9 @@ static int conf_set_sym_val(struct symbol *sym, int def, int def_flags, char *p)
- 			sym->flags |= def_flags;
- 			break;
- 		}
--		conf_warning("symbol value '%s' invalid for %s", p, sym->name);
-+		if (def != S_DEF_AUTO)
-+			conf_warning("symbol value '%s' invalid for %s",
-+				     p, sym->name);
- 		return 1;
- 	case S_OTHER:
- 		if (*p != '"') {
-@@ -161,7 +163,8 @@ static int conf_set_sym_val(struct symbol *sym, int def, int def_flags, char *p)
- 			memmove(p2, p2 + 1, strlen(p2));
- 		}
- 		if (!p2) {
--			conf_warning("invalid string found");
-+			if (def != S_DEF_AUTO)
-+				conf_warning("invalid string found");
- 			return 1;
- 		}
- 		/* fall through */
-@@ -172,7 +175,9 @@ static int conf_set_sym_val(struct symbol *sym, int def, int def_flags, char *p)
- 			sym->def[def].val = strdup(p);
- 			sym->flags |= def_flags;
- 		} else {
--			conf_warning("symbol value '%s' invalid for %s", p, sym->name);
-+			if (def != S_DEF_AUTO)
-+				conf_warning("symbol value '%s' invalid for %s",
-+					     p, sym->name);
- 			return 1;
- 		}
- 		break;
+diff --git a/Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt b/Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt
+index aeb3c99..31b0cb9 100644
+--- a/Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt
++++ b/Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt
+@@ -127,20 +127,16 @@ whether there is any interaction between the child and intermediate parent
+ nodes, is again defined entirely by the binding for the individual pin
+ controller device.
+ 
+-== Using generic pinconfig options ==
++== Generic pin configuration node content ==
+ 
+-Generic pinconfig parameters can be used by defining a separate node containing
+-the applicable parameters (and optional values), like:
++Many data items that are represented in a pin configuration node are common
++and generic. Pin control bindings should use the properties defined below
++where they are applicable; not all of these properties are relevant or useful
++for all hardware or binding structures. Each individual binding document
++should state which of these generic properties, if any, are used, and the
++structure of the DT nodes that contain these properties.
+ 
+-pcfg_pull_up: pcfg_pull_up {
+-	bias-pull-up;
+-	drive-strength = <20>;
+-};
+-
+-This node should then be referenced in the appropriate pinctrl node as a phandle
+-and parsed in the driver using the pinconf_generic_parse_dt_config function.
+-
+-Supported configuration parameters are:
++Supported generic properties are:
+ 
+ bias-disable		- disable any pin bias
+ bias-high-impedance	- high impedance mode ("third-state", "floating")
+@@ -160,7 +156,8 @@ low-power-disable	- disable low power mode
+ output-low		- set the pin to output mode with low level
+ output-high		- set the pin to output mode with high level
+ 
+-Arguments for parameters:
++Some of the generic properties take arguments. For those that do, the
++arguments are described below.
+ 
+ - bias-pull-up, -down and -pin-default take as optional argument on hardware
+   supporting it the pull strength in Ohm. bias-disable will disable the pull.
+@@ -170,7 +167,5 @@ Arguments for parameters:
+ - input-debounce takes the debounce time in usec as argument
+   or 0 to disable debouncing
+ 
+-All parameters not listed here, do not take an argument.
+-
+ More in-depth documentation on these parameters can be found in
+ <include/linux/pinctrl/pinconfig-generic.h>
 -- 
-1.8.1.2
+1.8.1.5
 
