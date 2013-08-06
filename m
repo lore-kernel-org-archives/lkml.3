@@ -1,54 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756138Ab3HFQ1N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 12:27:13 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:50688 "EHLO comal.ext.ti.com"
+	id S1755916Ab3HFQaF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 12:30:05 -0400
+Received: from mga09.intel.com ([134.134.136.24]:62600 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755524Ab3HFQ1M convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 12:27:12 -0400
-From: "Etheridge, Darren" <detheridge@ti.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-CC: David Airlie <airlied@linux.ie>, Rob Clark <robdclark@gmail.com>,
-        "Russell King" <rmk+kernel@arm.linux.org.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 0/8] Several NXP TDA998x patches
-Thread-Topic: [PATCH 0/8] Several NXP TDA998x patches
-Thread-Index: AQHOkin/dIbfL8p72k2t8pqNwP/bNJmIXgDQ
-Date: Tue, 6 Aug 2013 16:26:52 +0000
-Message-ID: <1A80A2FD7F34484786E5DF71F3968B6940F54581@DLEE10.ent.ti.com>
-References: <1375741218-10225-1-git-send-email-sebastian.hesselbarth@gmail.com>
-In-Reply-To: <1375741218-10225-1-git-send-email-sebastian.hesselbarth@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [128.247.5.50]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752224Ab3HFQaD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Aug 2013 12:30:03 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,827,1367996400"; 
+   d="scan'208";a="358463077"
+Message-ID: <52012481.2050207@linux.intel.com>
+Date: Tue, 06 Aug 2013 09:29:53 -0700
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, gcc <gcc@gcc.gnu.org>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        David Daney <ddaney.cavm@gmail.com>,
+        Behan Webster <behanw@converseincode.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: Re: [RFC] gcc feature request: Moving blocks into sections
+References: <CA+55aFw_o=D-j_SRn=Y4LhHm-tEyuP1Je5ZHVTYxbVyLyDcLEg@mail.gmail.com>   <1375725328.22073.101.camel@gandalf.local.home>   <51FFEC56.6040206@linux.intel.com>   <1375727010.22073.110.camel@gandalf.local.home>   <51FFEEEC.5060902@linux.intel.com>   <1375728583.22073.118.camel@gandalf.local.home>   <51FFF430.1060701@linux.intel.com>   <CA+55aFwz6cpsaWZ-19h91_CNGB5C3d1bNOv7woxetXOTyJ_CRw@mail.gmail.com>   <20130805195446.GA22359@Krystal>   <CA+55aFwrxRr4+kN8t8HCRnnVQyur5EGzQ_bRdYK3T-KW9Zp0aw@mail.gmail.com>   <20130805212855.GA23044@Krystal> <52001C92.3070209@linux.intel.com>  <1375805711.25420.34.camel@gandalf.local.home>  <52012229.2020707@linux.intel.com> <1375806413.25420.36.camel@gandalf.local.home>
+In-Reply-To: <1375806413.25420.36.camel@gandalf.local.home>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sebastian Hesselbarth [mailto:sebastian.hesselbarth@gmail.com]
-> Subject: [PATCH 0/8] Several NXP TDA998x patches
+On 08/06/2013 09:26 AM, Steven Rostedt wrote:
+>>
+>> No, but if we ever end up doing MPX in the kernel, for example, we would
+>> have to put an MPX prefix on the jmp.
 > 
-> This patch set picks up several patches sent during the past months related
-> with NXP TDA998x HDMI transmitter driver. The patches have been tested
-> on Marvell Dove (Armada DRM) on several HDMI modes with audio playing
-> on S/PDIF. I have also quickly tested on Beaglebone Black (tilcdc) for one DVI
-> mode.
+> Well then we just have to update the rest of the jump label code :-)
 > 
-> As I squashed some patches and fixed some audio issues, it would be great
-> to have a formal Tested-by or Acked-by from Russell and Darren for the
-> whole patch set.
-> 
-Sebastian,
 
-Thanks for consolidating all of these patches into a final series.  I am going to take them for a test drive on  BeagleBone Black and will follow up with my findings/tested-by.  Likely to be a couple of days because I am in the process of moving all my equipment into a new office.
+For MPX in the kernel, this would be a small part of the work...!
 
+	-hpa
 
-Darren
