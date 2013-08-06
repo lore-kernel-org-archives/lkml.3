@@ -1,148 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755984Ab3HFK0V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 06:26:21 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:19310 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755772Ab3HFK0T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 06:26:19 -0400
-Message-ID: <5200CF46.1070703@atmel.com>
-Date: Tue, 6 Aug 2013 11:26:14 +0100
-From: Rupesh Gujare <rupesh.gujare@atmel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: <devel@linuxdriverproject.org>, <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/4] staging: ozwpan: Increment port number for new device.
-References: <1375724415-10801-1-git-send-email-rupesh.gujare@atmel.com> <1375724415-10801-3-git-send-email-rupesh.gujare@atmel.com> <20130805175302.GJ5051@mwanda> <51FFF244.9000604@atmel.com> <20130805202338.GO5051@mwanda>
-In-Reply-To: <20130805202338.GO5051@mwanda>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+	id S1755997Ab3HFK1n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 06:27:43 -0400
+Received: from li42-95.members.linode.com ([209.123.162.95]:52611 "EHLO
+	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755772Ab3HFK1m convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Aug 2013 06:27:42 -0400
+Subject: Re: [PATCH 1/5] pdev: Fix platform device resource linking
+Mime-Version: 1.0 (Apple Message framework v1085)
+Content-Type: text/plain; charset=us-ascii
+From: Pantelis Antoniou <panto@antoniou-consulting.com>
+In-Reply-To: <20130806101527.GB29283@kroah.com>
+Date: Tue, 6 Aug 2013 13:27:35 +0300
+Cc: Tony Lindgren <tony@atomide.com>, Russell King <linux@arm.linux.org.uk>,
+        =?iso-8859-1?Q?Beno=EEt_Coussno?= <b-cousson@ti.com>,
+        Paul Walmsley <paul@pwsan.com>, Sourav Poddar <sourav.poddar@ti.com>,
+        Russ Dill <Russ.Dill@ti.com>, Felipe Balbi <balbi@ti.com>,
+        Koen Kooi <koen@circuitco.com>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Matt Porter <mporter@ti.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <A7E5F769-6238-430C-AEE5-94598C334D5E@antoniou-consulting.com>
+References: <1375775624-12250-1-git-send-email-panto@antoniou-consulting.com> <1375775624-12250-2-git-send-email-panto@antoniou-consulting.com> <20130806093601.GB27889@kroah.com> <311C42C3-6544-4058-ABE9-F9FAE72DD5CA@antoniou-consulting.com> <20130806101527.GB29283@kroah.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+X-Mailer: Apple Mail (2.1085)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/08/13 21:23, Dan Carpenter wrote:
-> On Mon, Aug 05, 2013 at 07:43:16PM +0100, Rupesh Gujare wrote:
->> On 05/08/13 18:53, Dan Carpenter wrote:
->>> On Mon, Aug 05, 2013 at 06:40:13PM +0100, Rupesh Gujare wrote:
->>>> This patch fixes crash issue when there is quick cycle of
->>>> de-enumeration & enumeration due to loss of wireless link.
->>>>
->>>> It is found that sometimes new device (or coming back device)
->>>> returns very fast, even before USB core read out hub status,
->>>> resulting in allocation of same port, which results in unstable
->>>> system & crash.
->>>>
->>>> Above issue is resolved by making sure that we always assign
->>>> new port to new device, making sure that USB core reads correct
->>>> hub status.
->>>>
->>> This feels like papering over the problem.  Surely the real fix
->>> would be to improve the reference counting.
->>>
->>> This patch is probably effective but it makes the code more subtle
->>> and it shows that we don't really understand what we are doing with
->>> regards to reference counting.
->>>
->>>
->> Probably this is easier way to fix issue, since we don't have
->> reference count for ports & we rely on flags to check port status.
->> Any suggestions are appreciated.
-> To be honest, I wish someone would just go through and make this
-> look more like kernel style.  It's very ugly to look at.  Even a
-> very cursory patch series would make a big difference:
->
-> [patch 1/6] Add a blank line between declaractions and code.
-> [patch 2/6] Add a blank line between functions
-> [patch 3/6] Make oz_hcd_pd_arrived() return a struct pointer (instead of a void pointer)
-> [patch 4/6] Make oz_hcd_pd_departed() take a struct pointer
-> [patch 5/6] Swap arguments of oz_ep_alloc() to match kmalloc()
-> [patch 6/6] Remove unneeded initializers
->
-> Also it's better to separate the success path from the failure path
-> because it means fewer intend levels.  The way oz_hcd_pd_arrived()
-> looks now it's easy to think we free "ep" but actually we do this
-> spaghetti thing of setting it to NULL on success.  This function
-> should just be:
->
-> 	frob();
-> 	frob();
-> 	ret = frob();
-> 	if (ret)
-> 		goto err_put;
-> 	frob();
-> 	frob();
-> 	ret = frob();
-> 	if (ret)
-> 		goto err_free_ep;
-> 	frob();
-> 	frob();
-> 	put();
-> 	return hport;
->
-> err_free_ep:
-> 	free_ep();
-> err_put:
-> 	put();
-> 	return NULL;
->
-> But instead it is:
->
-> 	frob();
-> 	ret = frob();
-> 	if (ret) {
-> 		unlock();
-> 		goto out;
-> 	}
-> 	frob();
-> 	ret = frob();
-> 	if (ret success) {
-> 		frob();
-> 		frob();
-> 		ep = NULL;
-> 		frob();
-> 		unlock();
-> 		frob();
-> 	} else {
-> 		unlock();
-> 	}
-> out:
-> 	if (ep)
-> 		free_ep();
-> 	put();
-> 	return something;
->
-> In the second example most of the code is indented.  It's so hard
-> to read because there are unlocks scattered throughout.  Meanwhile,
-> if you separate success and failure then there are only two unlocks,
-> one for success and one for failure.
->
-> In the current code you have to set "ep" to NULL on the success path
-> and then test it and or free it.  If you separate them out then it's
-> obvious that "ep" is not freed on success.
->
-> If you separate them out then it's clear that we return NULL on
-> failure.  In the current code you have to scroll back to the start
-> of the function.
->
-> Obviously it's not an emergency to fix any of these style issues but
-> it will need to be addressed eventually before it moves out of
-> staging.  I think as well that just cleaning things up helps to
-> fix bugs.
->
+Hi Greg,
 
-Thank you Dan, really appreciate your comments. Your suggestions sounds 
-perfectly well.
-I will work on it, once this patch series is applied to staging tree.
+On Aug 6, 2013, at 1:15 PM, Greg Kroah-Hartman wrote:
 
-I am assuming that you have no objection for it, & I will follow up with 
-above style nits in follow on patches.
+> On Tue, Aug 06, 2013 at 12:45:42PM +0300, Pantelis Antoniou wrote:
+>> Hi Greg,
+>> 
+>> On Aug 6, 2013, at 12:36 PM, Greg Kroah-Hartman wrote:
+>> 
+>>> On Tue, Aug 06, 2013 at 10:53:40AM +0300, Pantelis Antoniou wrote:
+>>>> Platform device removal uncovered a number of problems with
+>>>> the way resources are handled in the core platform code.
+>>>> 
+>>>> Resources now form child/parent linkages and this requires
+>>>> proper linking of the resources. On top of that the OF core
+>>>> directly creates it's own platform devices. Simplify things
+>>>> by providing helper functions that manage the linking properly.
+>>> 
+>>> Ugh, the OF core shouldn't be creating platform devices.  Well, yes, I
+>>> know it does that today, but ick, ick, ick.
+>>> 
+>> 
+>> Yep, ick, ick, ick is the correct form.
+>> 
+>>>> Two functions are provided:
+>>>> 
+>>>> platform_device_link_resources(), which links all the
+>>>> linkable resources (if not already linked).
+>>>> 
+>>>> and platform_device_unlink_resources(), which unlinks all the
+>>>> resources.
+>>> 
+>>> Why would anyone need to call this?  I'm getting the feeling that OF
+>>> should just have it's own bus of devices to handle this type of mess.
+>>> ACPI is going through the same rewrite for this same type of problem
+>>> (they did things differently.)  I suggest you work with the ACPI
+>>> developers to so the same thing they are, to solve it correctly for
+>>> everyone.
+>>> 
+>> 
+>> It's the same problem really. Another bus type might not fly well.
+>> The same device driver should be (in theory) be made to work unchanged
+>> either on an OF/ACPI/Fex( :) ) setup.
+> 
+> No, that's not quite true, a driver needs to know how to talk to the
+> bus, as that is how it communicates to the hardware.  It can be done for
+> different types of busses (see the OHCI USB controller for one example
+> of this), but a driver will have to know what type of bus it is on in
+> order to work properly.
+> 
 
--- 
-Regards,
-Rupesh Gujare
+In the case of OF & ACPI there is no 'bus'. The device is probably integrated
+in the SoC's silicon, but there is absolutely no way to 'probe' for it's existence;
+you have to use a-priori knowledge of the SoC's topology in order to configure it
+(along with any per-board specific information if there is any kind of shared 
+resource configuration - i.e. pinmuxing or something else).
+
+There are the 3 well known methods to do so in the Linux kernel right now:
+
+1) Board files in which the configuration information is stored in the per-board
+platform file encoded in platform data structures.
+
+2) OF, in which case the information is provided via the flat device tree blob
+the bootloader provides.
+
+3) ACPI in which case the information is provided via the firmware's ACPI tables
+(I'm not overly familiar with ACPI, so there might be some more nuance here).
+
+The device driver for all these cases is absolutely the same; the only place where
+it differs it's in the way it uses to retrieve that configuration information.
+
+The board file method is pretty much no-go due to the need to support multiple
+boards from a single kernel; that leaves OF and ACPI.
+
+>From what I can tell what ACPI supports is a very small subset of what OF can support right now;
+that is both number of device drivers, as well as what you can do with device driver
+functionality (see things like gpios etc, how much easier is to use with OF).
+
+Since we're in the let's make a wish stage, what I wish for is a board-file & ACPI
+translator stage to OF data, and depreciating everything else gradually.
+That would kill platform_device and ACPI specific data and move everything
+to a common device structure supporting OF for configuration.
+ 
+>> What would it take to move all this into driver core?
+> 
+> What specifically would you move into there?
+> 
+
+Pretty much everything that's in the union of platform_device & whatever 
+acpi uses to hold it's configuration info.
+
+> thanks,
+> 
+> greg k-h
+
+Regards
+
+-- Pantelis
 
