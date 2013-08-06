@@ -1,59 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754931Ab3HFGTw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 02:19:52 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:36349 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754802Ab3HFGTv (ORCPT
+	id S1755021Ab3HFGUi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 02:20:38 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:35526 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754825Ab3HFGUg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 02:19:51 -0400
-Date: Mon, 5 Aug 2013 23:19:32 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Christoph Hellwig <hch@infradead.org>, Andi Kleen <andi@firstfloor.org>,
-        linux-kernel@vger.kernel.org, acme@infradead.org,
-        Andi Kleen <ak@linux.intel.com>, Namhyung Kim <namhyung.kim@lge.com>,
-        peterz@infradead.org
-Subject: Re: [PATCH] RFC: perf, tools: Move gtk browser into separate perfgtk
- executable
-Message-ID: <20130806061932.GA20485@infradead.org>
-References: <1375669364-13838-1-git-send-email-andi@firstfloor.org>
- <20130805081641.GA24808@gmail.com>
- <20130805082320.GA9562@infradead.org>
- <20130805083132.GE26746@gmail.com>
- <20130805083434.GA20606@infradead.org>
- <20130805090857.GA26940@gmail.com>
+	Tue, 6 Aug 2013 02:20:36 -0400
+Date: Tue, 6 Aug 2013 15:20:33 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Dragos Foianu <dragos.foianu@gmail.com>
+Cc: wensong@linux-vs.org, ja@ssi.bg, pablo@netfilter.org, kaber@trash.net,
+        kadlec@blackhole.kfki.hu, davem@davemloft.net, netdev@vger.kernel.org,
+        lvs-devel@vger.kernel.org, netfilter-devel@vger.kernel.org,
+        netfilter@vger.kernel.org, coreteam@netfilter.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ipvs: fixed style errors in ip_vs_dh
+Message-ID: <20130806062033.GE18246@verge.net.au>
+References: <1373570144-4785-1-git-send-email-dragos.foianu@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130805090857.GA26940@gmail.com>
+In-Reply-To: <1373570144-4785-1-git-send-email-dragos.foianu@gmail.com>
+Organisation: Horms Solutions Ltd.
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 05, 2013 at 11:08:57AM +0200, Ingo Molnar wrote:
-> You never replied to the original counter-arguments, such as this one from 
-> Linus:
+On Thu, Jul 11, 2013 at 10:15:44PM +0300, Dragos Foianu wrote:
+> found with the help of checkpatch.pl
+
+Thanks for your contribution and sorry for taking so long to look at it.
+
+While in principle I have no problem with these changes.
+I would like them to be be accompanied by more descriptive changelogs.
+
+In the case of this patch there seem to be two fixes.
+
+1. Fix whitespace associated with for statements.
+2. Place opening '{' of structure initialiser on its won line.
+
+I'm sure that the wording above can be improved, but as a minimum
+I would like something like that included in the changelog.
+
+I think that I would also prefer each of the two changes in their own
+patch, rather than grouping them together because they happen to be in the
+same file.
+
+Likewise for the following patches that you also submitted:
+
+* [PATCH] ipvs: fixed style error in ip_vs_sched
+* [PATCH] ipvs: fixed style errors and warnings in ip_vs_conn
+
+I would not object if you grouped together the same change in multiple
+files into a single patch.
+
+> Signed-off-by: Dragos Foianu <dragos.foianu@gmail.com>
+> ---
+>  net/netfilter/ipvs/ip_vs_dh.c |    7 +++----
+>  1 file changed, 3 insertions(+), 4 deletions(-)
 > 
->   http://article.gmane.org/gmane.linux.kernel/849965
-
-The only thing Linus sais is that it's trivial to generate a subpackage,
-and that opofile is a desaster.  Both of them are 100% correct but at
-the same time entirely miss the point.
-
-Yes, oprofile was and is a desaster, but that has aboslutely nothing to
-do with where the code lives.
-
-And yes, it's easy to generate a subpackage, but you still need all the
-source tree first.  There's a reason why things like X.org got split up
-(too fine grained in my opinion, but that's another story).
-
-As said I very much disagree with having the userspace perf tree in the
-kernel still, but I've also given up on the fight as I have more
-important things to do.
-
-And as said before it has nothing to do with the issue discussed here
-right now.
+> diff --git a/net/netfilter/ipvs/ip_vs_dh.c b/net/netfilter/ipvs/ip_vs_dh.c
+> index c3b8454..8ab2fc8 100644
+> --- a/net/netfilter/ipvs/ip_vs_dh.c
+> +++ b/net/netfilter/ipvs/ip_vs_dh.c
+> @@ -110,7 +110,7 @@ ip_vs_dh_reassign(struct ip_vs_dh_state *s, struct ip_vs_service *svc)
+>  	b = &s->buckets[0];
+>  	p = &svc->destinations;
+>  	empty = list_empty(p);
+> -	for (i=0; i<IP_VS_DH_TAB_SIZE; i++) {
+> +	for (i = 0; i < IP_VS_DH_TAB_SIZE; i++) {
+>  		dest = rcu_dereference_protected(b->dest, 1);
+>  		if (dest)
+>  			ip_vs_dest_put(dest);
+> @@ -142,7 +142,7 @@ static void ip_vs_dh_flush(struct ip_vs_dh_state *s)
+>  	struct ip_vs_dest *dest;
+>  
+>  	b = &s->buckets[0];
+> -	for (i=0; i<IP_VS_DH_TAB_SIZE; i++) {
+> +	for (i = 0; i < IP_VS_DH_TAB_SIZE; i++) {
+>  		dest = rcu_dereference_protected(b->dest, 1);
+>  		if (dest) {
+>  			ip_vs_dest_put(dest);
+> @@ -244,8 +244,7 @@ ip_vs_dh_schedule(struct ip_vs_service *svc, const struct sk_buff *skb,
+>  /*
+>   *      IPVS DH Scheduler structure
+>   */
+> -static struct ip_vs_scheduler ip_vs_dh_scheduler =
+> -{
+> +static struct ip_vs_scheduler ip_vs_dh_scheduler = {
+>  	.name =			"dh",
+>  	.refcnt =		ATOMIC_INIT(0),
+>  	.module =		THIS_MODULE,
+> -- 
+> 1.7.10.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
