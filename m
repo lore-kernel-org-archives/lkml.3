@@ -1,52 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756182Ab3HFQT5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 12:19:57 -0400
-Received: from mga09.intel.com ([134.134.136.24]:48159 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755863Ab3HFQTz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 12:19:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,827,1367996400"; 
-   d="scan'208";a="382740898"
-Message-ID: <52012229.2020707@linux.intel.com>
-Date: Tue, 06 Aug 2013 09:19:53 -0700
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1755723Ab3HFQZU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 12:25:20 -0400
+Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:25304
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754997Ab3HFQZT convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Aug 2013 12:25:19 -0400
+X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VPS-3(zzbb2dI98dI9371Ic89bh1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de096h8275bh1de097hz2fh95h668h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dh906i1155h192ch)
+Date: Tue, 6 Aug 2013 09:25:05 -0700
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+CC: <monstr@monstr.eu>, Michal Simek <michal.simek@xilinx.com>,
+        Stuart Menefy <stuart.menefy@st.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Russell King <linux@arm.linux.org.uk>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: Enable arm_global_timer for Zynq brakes boot
+References: <1c83c081-60c6-49e3-a85c-f64dd5be0e60@CH1EHSMHS030.ehs.local>
+ <51FA9F54.3060704@linaro.org>
+ <712d31e9-3584-48e1-aa9f-55bc94fa62c9@DB9EHSMHS001.ehs.local>
+ <5200B7FE.4000306@linaro.org>
+ <e43ebbd7-f520-4c66-bc8c-71a1122226ad@CO9EHSMHS020.ehs.local>
+ <5200EC4C.5090202@linaro.org>
+ <07cc684f-1d5c-44d7-b25c-6314efea4c58@CO9EHSMHS022.ehs.local>
+ <5200F553.6000200@linaro.org>
+ <5200F7C2.8090802@monstr.eu>
+ <52011FA5.9000406@linaro.org>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, gcc <gcc@gcc.gnu.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        David Daney <ddaney.cavm@gmail.com>,
-        Behan Webster <behanw@converseincode.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: Re: [RFC] gcc feature request: Moving blocks into sections
-References: <CA+55aFw_o=D-j_SRn=Y4LhHm-tEyuP1Je5ZHVTYxbVyLyDcLEg@mail.gmail.com>  <1375725328.22073.101.camel@gandalf.local.home>  <51FFEC56.6040206@linux.intel.com>  <1375727010.22073.110.camel@gandalf.local.home>  <51FFEEEC.5060902@linux.intel.com>  <1375728583.22073.118.camel@gandalf.local.home>  <51FFF430.1060701@linux.intel.com>  <CA+55aFwz6cpsaWZ-19h91_CNGB5C3d1bNOv7woxetXOTyJ_CRw@mail.gmail.com>  <20130805195446.GA22359@Krystal>  <CA+55aFwrxRr4+kN8t8HCRnnVQyur5EGzQ_bRdYK3T-KW9Zp0aw@mail.gmail.com>  <20130805212855.GA23044@Krystal> <52001C92.3070209@linux.intel.com> <1375805711.25420.34.camel@gandalf.local.home>
-In-Reply-To: <1375805711.25420.34.camel@gandalf.local.home>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+In-Reply-To: <52011FA5.9000406@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+Message-ID: <a32b1270-0d09-46f7-8cb2-4c109582f1b5@VA3EHSMHS022.ehs.local>
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: xilinx.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/06/2013 09:15 AM, Steven Rostedt wrote:
-> On Mon, 2013-08-05 at 14:43 -0700, H. Peter Anvin wrote:
+On Tue, Aug 06, 2013 at 06:09:09PM +0200, Daniel Lezcano wrote:
+> On 08/06/2013 03:18 PM, Michal Simek wrote:
 > 
->> For unconditional jmp that should be pretty safe barring any fundamental
->> changes to the instruction set, in which case we can enable it as
->> needed, but for extra robustness it probably should skip prefix bytes.
+> [ ... ]
 > 
-> Would the assembler add prefix bytes to:
+> >>>>> Soren: Are you able to replicate this issue on QEMU?
+> >>>>> If yes, it should be the best if you can provide Qemu, kernel .config/
+> >>>>> rootfs and simple manual to Daniel how to reach that fault.
+> >>>>
+> >>>> I tried to download qemu for zynq but it fails:
+> >>>>
+> >>>> git clone git://git.xilinx.com/qemu-xarm.git
+> >>>> Cloning into 'qemu-xarm'...
+> >>>> fatal: The remote end hung up unexpectedly
+> >>>
+> >>> Not sure which site have you found but
+> >>> it should be just qemu.git
+> >>> https://github.com/Xilinx/qemu
+> >>>
+> >>> or github clone.
+> >>
+> >> Ok, cool I was able to clone it.
+> >>
+> >>>> I am also looking for the option specified for the kernel:
+> >>>>
+> >>>> "The kernel needs to be built with this feature turned on (in
+> >>>> menuconfig, System Type->Xilinx Specific Features -> Device Tree At
+> >>>> Fixed Address)."
+> >>
+> >> Ok.
+> >>
+> >>> This also sound like a very ancient tree.
+> >>> This is the latest kernel tree - master-next is the latest devel branch.
+> >>> https://github.com/Xilinx/linux-xlnx
+> >>
+> >> Ok, cool. I have the right one.
 > 
-> 	jmp 1f
+> Following the documentation, I was able to boot a kernel with qemu for
+> the linux-xlnx and qemu-xilinx.
 > 
+> But this kernel is outdated regarding the upstream one, so I tried to
+> boot a 3.11-rc4 kernel without success, I did the following:
+> 
+> I used the default config file from linux-xlnx for the upstream kernel.
+> 
+> I compiled the kernel with:
+> 
+> make -j 5 ARCH=arm CROSS_COMPILE=arm-linux-gnueabi-
+> UIMAGE_LOADADDR=0x8000 uImage
+> 
+> I generated the dtb with:
+> 
+> make -j 5 ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- dtbs
+> 
+> For qemu, I started qemu with:
+> 
+> ./arm-softmmu/qemu-system-arm -M arm-generic-fdt -nographic -smp 2
+> -machine linux=on -serial mon:stdio -dtb zynq-zed.dtb -kernel
+> kernel/zImage -initrd filesystem/ramdisk.img
+> 
+> I tried with the dtb available for the upstream kernel:
+> 
+> zynq-zc706.dtb, zynq-zc702.dtb and zynq-zed.dtb
+> 
+> Did I miss something ?
 
-No, but if we ever end up doing MPX in the kernel, for example, we would
-have to put an MPX prefix on the jmp.
+Some debugging hints in case you wanna go through this.
+Add this additional option to configure:
+ --extra-cflags="-DFDT_GENERIC_UTIL_ERR_DEBUG=1
 
-	-hpa
+That'll print out a lot of messages when the dtb is parsed. It's likely
+that QEMU invalidates some vital node due to its compatible string being
+unknown. In that case you can simply add it to the list of known devices
+in 
+	hw/core/fdt_generic_devices.c
+The list is pretty much at the end of that file. I try to get it running
+here and might be able to send you a patch.
+
+	Sören
 
 
