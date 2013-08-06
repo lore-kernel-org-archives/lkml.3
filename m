@@ -1,121 +1,270 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756415Ab3HFRXi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 13:23:38 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:54589 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756380Ab3HFRXg (ORCPT
+	id S1756455Ab3HFRXq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 13:23:46 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:33582 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756422Ab3HFRXn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 13:23:36 -0400
+	Tue, 6 Aug 2013 13:23:43 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com,
         Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH V2 00/11] CPUFreq: Fixes & Cleanups for 3.12
-Date: Tue,  6 Aug 2013 22:53:02 +0530
-Message-Id: <cover.1375809311.git.viresh.kumar@linaro.org>
+Subject: [PATCH V2 01/11] cpufreq: Cleanup header files included in core
+Date: Tue,  6 Aug 2013 22:53:03 +0530
+Message-Id: <8aa6f799442fa100bee905952706f65eee66360d.1375809311.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+In-Reply-To: <cover.1375809311.git.viresh.kumar@linaro.org>
+References: <cover.1375809311.git.viresh.kumar@linaro.org>
+In-Reply-To: <cover.1375809311.git.viresh.kumar@linaro.org>
+References: <cover.1375809311.git.viresh.kumar@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rafael,
+This patch intends to cleanup following issues in the header files included in
+cpufreq core layers:
+- Include headers in ascending order, so that we don't add same multiple times
+  by mistake.
+- <asm/> must be included after <linux/>, so that they override whatever they
+  need.
+- Remove unnecessary header files
+- Don't include files already included by cpufreq.h or cpufreq_governor.h
 
-This is V2 of the patch series which was posted here earlier:
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ drivers/cpufreq/cpufreq.c              | 19 ++++++-------------
+ drivers/cpufreq/cpufreq_conservative.c | 12 ------------
+ drivers/cpufreq/cpufreq_governor.c     |  6 ------
+ drivers/cpufreq/cpufreq_governor.h     |  5 ++---
+ drivers/cpufreq/cpufreq_ondemand.c     | 12 +-----------
+ drivers/cpufreq/cpufreq_performance.c  |  3 +--
+ drivers/cpufreq/cpufreq_powersave.c    |  3 +--
+ drivers/cpufreq/cpufreq_stats.c        |  9 +--------
+ drivers/cpufreq/freq_table.c           |  4 +---
+ include/linux/cpufreq.h                | 11 +++--------
+ 10 files changed, 16 insertions(+), 68 deletions(-)
 
-http://www.gossamer-threads.com/lists/linux/kernel/1759514
-
-This patchset tries to fix & cleanup many existing cpufreq core issues. First
-four patches tries to cleanup basic problems in cpufreq core. Its first patch
-was earlier sent separately but now is part of this series.
-
-Fifth patch was also sent earlier as reply to your patches and was reviewed by
-Srivatsa. Sixth patch was picked from Lukasz's patchset on introducing software
-"boost" feature in core. It will be used by this patchset.
-
-And 7-10 are are the most significant part of this set. They try to make many
-things simple and robust.
-
-Last patch in the series is new and wasn't part of V1.
-
-This is rebased of your bleeding-edge branch + two patches from you:
-18a6b03 cpufreq: Avoid double kobject_put() for the same kobject in error code path
-d0cde63 cpufreq: Do not hold driver module references for additional policy CPUs
-abe513f Merge branch 'acpi-sleep-next' into linux-next
-
-They are also pushed in my cpufreq-next branch.
-
-They are tested fairly well on ARM Vexpress TC2 board (big LITTLE).
-
-Lukasz Majewski (1):
-  cpufreq: Store cpufreq policies in a list
-
-Viresh Kumar (10):
-  cpufreq: Cleanup header files included in core
-  cpufreq: Re-arrange declarations in cpufreq.h
-  cpufreq: Give consistent names for struct cpufreq_policy *
-  cpufreq: Use sizeof(*ptr) form for finding size of a struct
-  cpufreq: Pass policy to cpufreq_add_policy_cpu()
-  cpufreq: Use cpufreq_policy_list for iterating over policies
-  cpufreq: Fix broken usage of governor->owner's refcount
-  cpufreq: Don't use cpufreq_driver->owner's refcount to protect
-    critical sections
-  cpufreq: Remove struct cpufreq_driver's owner field
-  cpufreq: improve error checking on return values of
-    __cpufreq_governor()
-
- Documentation/cpu-freq/cpu-drivers.txt |   2 -
- drivers/cpufreq/acpi-cpufreq.c         |   5 +-
- drivers/cpufreq/at32ap-cpufreq.c       |   1 -
- drivers/cpufreq/blackfin-cpufreq.c     |   1 -
- drivers/cpufreq/cpufreq-nforce2.c      |   1 -
- drivers/cpufreq/cpufreq.c              | 426 ++++++++++++++++-----------------
- drivers/cpufreq/cpufreq_conservative.c |  14 +-
- drivers/cpufreq/cpufreq_governor.c     |   6 -
- drivers/cpufreq/cpufreq_governor.h     |   7 +-
- drivers/cpufreq/cpufreq_ondemand.c     |  24 +-
- drivers/cpufreq/cpufreq_performance.c  |   3 +-
- drivers/cpufreq/cpufreq_powersave.c    |   3 +-
- drivers/cpufreq/cpufreq_stats.c        |  23 +-
- drivers/cpufreq/cris-artpec3-cpufreq.c |   1 -
- drivers/cpufreq/cris-etraxfs-cpufreq.c |   1 -
- drivers/cpufreq/e_powersaver.c         |   5 +-
- drivers/cpufreq/elanfreq.c             |   1 -
- drivers/cpufreq/exynos-cpufreq.c       |   2 +-
- drivers/cpufreq/freq_table.c           |   4 +-
- drivers/cpufreq/gx-suspmod.c           |   3 +-
- drivers/cpufreq/ia64-acpi-cpufreq.c    |   5 +-
- drivers/cpufreq/intel_pstate.c         |   1 -
- drivers/cpufreq/kirkwood-cpufreq.c     |   1 -
- drivers/cpufreq/longhaul.c             |   1 -
- drivers/cpufreq/longrun.c              |   1 -
- drivers/cpufreq/loongson2_cpufreq.c    |   1 -
- drivers/cpufreq/maple-cpufreq.c        |   1 -
- drivers/cpufreq/p4-clockmod.c          |   1 -
- drivers/cpufreq/pasemi-cpufreq.c       |   1 -
- drivers/cpufreq/pcc-cpufreq.c          |   1 -
- drivers/cpufreq/pmac32-cpufreq.c       |   1 -
- drivers/cpufreq/pmac64-cpufreq.c       |   6 +-
- drivers/cpufreq/powernow-k6.c          |   1 -
- drivers/cpufreq/powernow-k7.c          |  14 +-
- drivers/cpufreq/powernow-k8.c          |   7 +-
- drivers/cpufreq/ppc-corenet-cpufreq.c  |   1 -
- drivers/cpufreq/ppc_cbe_cpufreq.c      |   1 -
- drivers/cpufreq/s3c2416-cpufreq.c      |   1 -
- drivers/cpufreq/s3c24xx-cpufreq.c      |   6 +-
- drivers/cpufreq/s3c64xx-cpufreq.c      |   1 -
- drivers/cpufreq/sc520_freq.c           |   1 -
- drivers/cpufreq/sh-cpufreq.c           |   1 -
- drivers/cpufreq/sparc-us2e-cpufreq.c   |   6 +-
- drivers/cpufreq/sparc-us3-cpufreq.c    |   6 +-
- drivers/cpufreq/speedstep-centrino.c   |   1 -
- drivers/cpufreq/speedstep-ich.c        |   1 -
- drivers/cpufreq/speedstep-smi.c        |   1 -
- include/linux/cpufreq.h                | 386 ++++++++++++++---------------
- 48 files changed, 442 insertions(+), 547 deletions(-)
-
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index a7c5aa7..aaccfa0 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -17,24 +17,17 @@
+ 
+ #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+ 
+-#include <asm/cputime.h>
+-#include <linux/kernel.h>
+-#include <linux/kernel_stat.h>
+-#include <linux/module.h>
+-#include <linux/init.h>
+-#include <linux/notifier.h>
++#include <linux/cpu.h>
+ #include <linux/cpufreq.h>
+ #include <linux/delay.h>
+-#include <linux/interrupt.h>
+-#include <linux/spinlock.h>
+-#include <linux/tick.h>
+ #include <linux/device.h>
+-#include <linux/slab.h>
+-#include <linux/cpu.h>
+-#include <linux/completion.h>
++#include <linux/init.h>
++#include <linux/kernel_stat.h>
++#include <linux/module.h>
+ #include <linux/mutex.h>
++#include <linux/slab.h>
+ #include <linux/syscore_ops.h>
+-
++#include <linux/tick.h>
+ #include <trace/events/power.h>
+ 
+ /**
+diff --git a/drivers/cpufreq/cpufreq_conservative.c b/drivers/cpufreq/cpufreq_conservative.c
+index f97cb3d..d2bd9ef 100644
+--- a/drivers/cpufreq/cpufreq_conservative.c
++++ b/drivers/cpufreq/cpufreq_conservative.c
+@@ -11,19 +11,7 @@
+  * published by the Free Software Foundation.
+  */
+ 
+-#include <linux/cpufreq.h>
+-#include <linux/init.h>
+-#include <linux/kernel.h>
+-#include <linux/kernel_stat.h>
+-#include <linux/kobject.h>
+-#include <linux/module.h>
+-#include <linux/mutex.h>
+-#include <linux/notifier.h>
+-#include <linux/percpu-defs.h>
+ #include <linux/slab.h>
+-#include <linux/sysfs.h>
+-#include <linux/types.h>
+-
+ #include "cpufreq_governor.h"
+ 
+ /* Conservative governor macros */
+diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
+index cd4b5f7..8742736 100644
+--- a/drivers/cpufreq/cpufreq_governor.c
++++ b/drivers/cpufreq/cpufreq_governor.c
+@@ -16,15 +16,9 @@
+ 
+ #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+ 
+-#include <asm/cputime.h>
+-#include <linux/cpufreq.h>
+-#include <linux/cpumask.h>
+ #include <linux/export.h>
+ #include <linux/kernel_stat.h>
+-#include <linux/mutex.h>
+ #include <linux/slab.h>
+-#include <linux/types.h>
+-#include <linux/workqueue.h>
+ 
+ #include "cpufreq_governor.h"
+ 
+diff --git a/drivers/cpufreq/cpufreq_governor.h b/drivers/cpufreq/cpufreq_governor.h
+index 0fe69f2..7db4373 100644
+--- a/drivers/cpufreq/cpufreq_governor.h
++++ b/drivers/cpufreq/cpufreq_governor.h
+@@ -18,10 +18,9 @@
+ #define _CPUFREQ_GOVERNOR_H
+ 
+ #include <linux/cpufreq.h>
+-#include <linux/kobject.h>
++#include <linux/kernel_stat.h>
++#include <linux/module.h>
+ #include <linux/mutex.h>
+-#include <linux/workqueue.h>
+-#include <linux/sysfs.h>
+ 
+ /*
+  * The polling frequency depends on the capability of the processor. Default
+diff --git a/drivers/cpufreq/cpufreq_ondemand.c b/drivers/cpufreq/cpufreq_ondemand.c
+index 25438bb..232de60 100644
+--- a/drivers/cpufreq/cpufreq_ondemand.c
++++ b/drivers/cpufreq/cpufreq_ondemand.c
+@@ -12,20 +12,10 @@
+ 
+ #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+ 
+-#include <linux/cpufreq.h>
+-#include <linux/init.h>
+-#include <linux/kernel.h>
+-#include <linux/kernel_stat.h>
+-#include <linux/kobject.h>
+-#include <linux/module.h>
+-#include <linux/mutex.h>
++#include <linux/cpu.h>
+ #include <linux/percpu-defs.h>
+ #include <linux/slab.h>
+-#include <linux/sysfs.h>
+ #include <linux/tick.h>
+-#include <linux/types.h>
+-#include <linux/cpu.h>
+-
+ #include "cpufreq_governor.h"
+ 
+ /* On-demand governor macros */
+diff --git a/drivers/cpufreq/cpufreq_performance.c b/drivers/cpufreq/cpufreq_performance.c
+index 9fef7d6..cf117de 100644
+--- a/drivers/cpufreq/cpufreq_performance.c
++++ b/drivers/cpufreq/cpufreq_performance.c
+@@ -12,10 +12,9 @@
+ 
+ #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+ 
+-#include <linux/kernel.h>
+-#include <linux/module.h>
+ #include <linux/cpufreq.h>
+ #include <linux/init.h>
++#include <linux/module.h>
+ 
+ static int cpufreq_governor_performance(struct cpufreq_policy *policy,
+ 					unsigned int event)
+diff --git a/drivers/cpufreq/cpufreq_powersave.c b/drivers/cpufreq/cpufreq_powersave.c
+index 32109a1..e3b874c 100644
+--- a/drivers/cpufreq/cpufreq_powersave.c
++++ b/drivers/cpufreq/cpufreq_powersave.c
+@@ -12,10 +12,9 @@
+ 
+ #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+ 
+-#include <linux/kernel.h>
+-#include <linux/module.h>
+ #include <linux/cpufreq.h>
+ #include <linux/init.h>
++#include <linux/module.h>
+ 
+ static int cpufreq_governor_powersave(struct cpufreq_policy *policy,
+ 					unsigned int event)
+diff --git a/drivers/cpufreq/cpufreq_stats.c b/drivers/cpufreq/cpufreq_stats.c
+index cb38413..a7143b0 100644
+--- a/drivers/cpufreq/cpufreq_stats.c
++++ b/drivers/cpufreq/cpufreq_stats.c
+@@ -9,17 +9,10 @@
+  * published by the Free Software Foundation.
+  */
+ 
+-#include <linux/kernel.h>
+-#include <linux/slab.h>
+ #include <linux/cpu.h>
+-#include <linux/sysfs.h>
+ #include <linux/cpufreq.h>
+ #include <linux/module.h>
+-#include <linux/jiffies.h>
+-#include <linux/percpu.h>
+-#include <linux/kobject.h>
+-#include <linux/spinlock.h>
+-#include <linux/notifier.h>
++#include <linux/slab.h>
+ #include <asm/cputime.h>
+ 
+ static spinlock_t cpufreq_stats_lock;
+diff --git a/drivers/cpufreq/freq_table.c b/drivers/cpufreq/freq_table.c
+index f0d8741..f111454a 100644
+--- a/drivers/cpufreq/freq_table.c
++++ b/drivers/cpufreq/freq_table.c
+@@ -11,10 +11,8 @@
+ 
+ #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+ 
+-#include <linux/kernel.h>
+-#include <linux/module.h>
+-#include <linux/init.h>
+ #include <linux/cpufreq.h>
++#include <linux/module.h>
+ 
+ /*********************************************************************
+  *                     FREQUENCY TABLE HELPERS                       *
+diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
+index e1fd215..97627bb 100644
+--- a/include/linux/cpufreq.h
++++ b/include/linux/cpufreq.h
+@@ -11,16 +11,11 @@
+ #ifndef _LINUX_CPUFREQ_H
+ #define _LINUX_CPUFREQ_H
+ 
+-#include <asm/cputime.h>
+-#include <linux/mutex.h>
+-#include <linux/notifier.h>
+-#include <linux/threads.h>
++#include <linux/cpumask.h>
++#include <linux/completion.h>
+ #include <linux/kobject.h>
++#include <linux/notifier.h>
+ #include <linux/sysfs.h>
+-#include <linux/completion.h>
+-#include <linux/workqueue.h>
+-#include <linux/cpumask.h>
+-#include <asm/div64.h>
+ 
+ #define CPUFREQ_NAME_LEN 16
+ /* Print length for names. Extra 1 space for accomodating '\n' in prints */
 -- 
 1.7.12.rc2.18.g61b472e
 
