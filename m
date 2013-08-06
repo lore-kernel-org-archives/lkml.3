@@ -1,67 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755060Ab3HFI7h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 04:59:37 -0400
-Received: from mga09.intel.com ([134.134.136.24]:33032 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753196Ab3HFI7f convert rfc822-to-8bit (ORCPT
+	id S1755188Ab3HFJAd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 05:00:33 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:19865 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754416Ab3HFJAb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 04:59:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,825,1367996400"; 
-   d="scan'208";a="376823273"
-From: "Du, ChangbinX" <changbinx.du@intel.com>
-To: "'gregkh@linuxfoundation.org'" <gregkh@linuxfoundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "balbi@ti.com" <balbi@ti.com>,
-        "sarah.a.sharp@linuxfoundation.org" 
-	<sarah.a.sharp@linuxfoundation.org>,
-        "Wu, Hao" <hao.wu@intel.com>,
-        "Tang, Jianqiang" <jianqiang.tang@intel.com>,
-        "Zhuang, Jin Can" <jin.can.zhuang@intel.com>,
-        "Huang, Xiaochao" <xiaochao.huang@intel.com>
-Subject: RE: About TRB_TO_EP_INDEX() macro using
-Thread-Topic: About TRB_TO_EP_INDEX() macro using
-Thread-Index: Ac6Sg0GZ085UJTe5Qx+1GaQBy5LScg==
-Date: Tue, 6 Aug 2013 08:59:32 +0000
-Message-ID: <0C18FE92A7765D4EB9EE5D38D86A563A01966F92@SHSMSX103.ccr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 6 Aug 2013 05:00:31 -0400
+Message-ID: <5200BB18.9010105@oracle.com>
+Date: Tue, 06 Aug 2013 17:00:08 +0800
+From: Bob Liu <bob.liu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
 MIME-Version: 1.0
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+CC: Seth Jennings <sjenning@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Tomasz Stanislawski <t.stanislaws@samsung.com>
+Subject: Re: [RFC PATCH 1/4] zbud: use page ref counter for zbud pages
+References: <1375771361-8388-1-git-send-email-k.kozlowski@samsung.com> <1375771361-8388-2-git-send-email-k.kozlowski@samsung.com>
+In-Reply-To: <1375771361-8388-2-git-send-email-k.kozlowski@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Mon, Aug 05, 2013 at 08:07:25AM +0000, Du, ChangbinX wrote:
-> > Recently when I check xHCI code, find that some functions try to get EP index
-> > from a Command Completion Event TRB via TRB_TO_EP_INDEX() macro.
-> >
-> > This is totally wrong. The macro definition is:
-> >
-> > 	#define TRB_TO_EP_INDEX(p)		((((p) & (0x1f << 16)) >> 16) - 1)
-> >
-> > TRB_TO_EP_INDEX only applies to Transfer Event TRB. But for Command
-> > Completion Event TRB, there is no Endpoint ID field. So, we cannot directly
-> > get EP index from these TRBs, but we can find it by the TRB Pointer.
-> >
-> > Here list two functions for you to check:
-> > 	handle_stopped_endpoint()
-> > 	handle_reset_ep_completion()
-> 
-> Care to send a patch showing how you would change this if it is
-> incorrect?
-> 
-> thanks,
-> 
-> greg k-h
-> --
+Hi Krzysztof,
 
-Hello, Greg k-h. I am not very sure about this issue. If this is true, kernel will panic when 
-invoking above functions. I want someone help to confirm if I miss something. If it's really 
-a bug, I will work out a patch to fix it.
+On 08/06/2013 02:42 PM, Krzysztof Kozlowski wrote:
+> Use page reference counter for zbud pages. The ref counter replaces
+> zbud_header.under_reclaim flag and ensures that zbud page won't be freed
+> when zbud_free() is called during reclaim. It allows implementation of
+> additional reclaim paths.
+> 
+> The page count is incremented when:
+>  - a handle is created and passed to zswap (in zbud_alloc()),
+>  - user-supplied eviction callback is called (in zbud_reclaim_page()).
+> 
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> Signed-off-by: Tomasz Stanislawski <t.stanislaws@samsung.com>
+
+Looks good to me.
+Reviewed-by: Bob Liu <bob.liu@oracle.com>
+
+> ---
+>  mm/zbud.c |  150 +++++++++++++++++++++++++++++++++++--------------------------
+>  1 file changed, 86 insertions(+), 64 deletions(-)
+> 
+> diff --git a/mm/zbud.c b/mm/zbud.c
+> index ad1e781..a8e986f 100644
+> --- a/mm/zbud.c
+> +++ b/mm/zbud.c
+> @@ -109,7 +109,6 @@ struct zbud_header {
+>  	struct list_head lru;
+>  	unsigned int first_chunks;
+>  	unsigned int last_chunks;
+> -	bool under_reclaim;
+>  };
+>  
+>  /*****************
+> @@ -138,16 +137,9 @@ static struct zbud_header *init_zbud_page(struct page *page)
+>  	zhdr->last_chunks = 0;
+>  	INIT_LIST_HEAD(&zhdr->buddy);
+>  	INIT_LIST_HEAD(&zhdr->lru);
+> -	zhdr->under_reclaim = 0;
+>  	return zhdr;
+>  }
+>  
+> -/* Resets the struct page fields and frees the page */
+> -static void free_zbud_page(struct zbud_header *zhdr)
+> -{
+> -	__free_page(virt_to_page(zhdr));
+> -}
+> -
+>  /*
+>   * Encodes the handle of a particular buddy within a zbud page
+>   * Pool lock should be held as this function accesses first|last_chunks
+> @@ -188,6 +180,65 @@ static int num_free_chunks(struct zbud_header *zhdr)
+>  	return NCHUNKS - zhdr->first_chunks - zhdr->last_chunks - 1;
+>  }
+>  
+> +/*
+> + * Called after zbud_free() or zbud_alloc().
+> + * Checks whether given zbud page has to be:
+> + *  - removed from buddied/unbuddied/LRU lists completetely (zbud_free).
+> + *  - moved from buddied to unbuddied list
+> + *    and to beginning of LRU (zbud_alloc, zbud_free),
+> + *  - added to buddied list and LRU (zbud_alloc),
+> + *
+> + * The page must be already removed from buddied/unbuddied lists.
+> + * Must be called under pool->lock.
+> + */
+> +static void rebalance_lists(struct zbud_pool *pool, struct zbud_header *zhdr)
+> +{
+
+Nit picker, how about change the name to adjust_lists() or something
+like this because we don't do any rebalancing.
+
+-- 
+Regards,
+-Bob
