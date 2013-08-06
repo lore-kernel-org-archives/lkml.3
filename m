@@ -1,66 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755713Ab3HFP11 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 11:27:27 -0400
-Received: from mail-we0-f177.google.com ([74.125.82.177]:37059 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755127Ab3HFP1Z (ORCPT
+	id S1755773Ab3HFP2n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 11:28:43 -0400
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:38678 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753590Ab3HFP2l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 11:27:25 -0400
+	Tue, 6 Aug 2013 11:28:41 -0400
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CA+icZUVCFOS6SHonEqzaJyWCGCU4nqqGjBN0VbmV-=OoM+deZg@mail.gmail.com>
-References: <CA+icZUX8OcTSOABO6Nbz5R6_5-m39rsYOpDqYBA7hf8LFvJLLA@mail.gmail.com>
-	<1375797260.8219.21.camel@jlt4.sipsolutions.net>
-	<CA+icZUUAJ25QybqHvxz7eubSLH6YuNjcc5zyU2O5Xi9vevMGkw@mail.gmail.com>
-	<1375800617.8219.23.camel@jlt4.sipsolutions.net>
-	<CA+icZUVbKpyuke6PRg3-60gOggsTb=3cNRz3Sy0RmvcZSuPaNw@mail.gmail.com>
-	<1375801059.8219.24.camel@jlt4.sipsolutions.net>
-	<CA+icZUXrRsXfeW9hqxTMkKW4TdNSBH-zE8-zX2Rd7HTAx5MvqQ@mail.gmail.com>
-	<CA+icZUWijPJmNoqE22Msqcn7tRot3SB3e=KujMM7JNd-Om-oOw@mail.gmail.com>
-	<1375802297.8219.25.camel@jlt4.sipsolutions.net>
-	<CA+icZUVCFOS6SHonEqzaJyWCGCU4nqqGjBN0VbmV-=OoM+deZg@mail.gmail.com>
-Date: Tue, 6 Aug 2013 17:27:24 +0200
-Message-ID: <CA+icZUVuOqdZUGy2ALAF1CehOqYdr7rtEsXhqNvDtYEns2BuRQ@mail.gmail.com>
-Subject: Re: linux-next: Tree for Aug 6 [ wireless | iwlwifi | mac80211 ? ]
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Johannes Berg <johannes@sipsolutions.net>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        wireless <linux-wireless@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+X-Originating-IP: [178.83.130.250]
+In-Reply-To: <1375791502.4276.38.camel@weser.hi.pengutronix.de>
+References: <1374772648-19151-1-git-send-email-tom.cooksey@arm.com>
+	<CAF6AEGtspnhSGNM4_QQubVfOkZ1Gh1-Z3iyHOLBPVWuqRy81ew@mail.gmail.com>
+	<51f29ccd.f014b40a.34cc.ffffca2aSMTPIN_ADDED_BROKEN@mx.google.com>
+	<CAF6AEGvFPGueM_LHVij9KFzM6NJySHCzmaLstuzZkK5GwP+6gQ@mail.gmail.com>
+	<51ffdc7e.06b8b40a.2cc8.0fe0SMTPIN_ADDED_BROKEN@mx.google.com>
+	<CAF6AEGsyKk_G-R-OX_YcgYFDgTEmCy9Vf2LV1pAOV0452QKSww@mail.gmail.com>
+	<1375791502.4276.38.camel@weser.hi.pengutronix.de>
+Date: Tue, 6 Aug 2013 17:28:40 +0200
+X-Google-Sender-Auth: brnB2gPkPaSBqw162ZcBIJ5Kdso
+Message-ID: <CAKMK7uFwRfJkkAV6VpC+7RgYJ1niQOb6kHMK=pepy-zGi3aa-g@mail.gmail.com>
+Subject: Re: [Linaro-mm-sig] [RFC 0/1] drm/pl111: Initial drm/kms driver for pl111
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Lucas Stach <l.stach@pengutronix.de>
+Cc: Tom Cooksey <tom.cooksey@arm.com>,
+        Linux Fbdev development list <linux-fbdev@vger.kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 6, 2013 at 5:20 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> On Tue, Aug 6, 2013 at 5:18 PM, Johannes Berg <johannes@sipsolutions.net> wrote:
->>
->>
->>> I have sent you a v2 of my logs (with -d and rsyslog-7.x).
->>
->> Hmm, that looks different? There no longer is anything about "PSK might
->> be wrong", but now just disconnections by the AP, which unfortunately
->> indicate no reason.
->>
->> When was it working last?
->>
+On Tue, Aug 6, 2013 at 2:18 PM, Lucas Stach <l.stach@pengutronix.de> wrote:
+> I strongly disagree with exposing low-level hardware details like tiling
+> to userspace. If we have to do the negotiation of those things in
+> userspace we will end up with having to pipe those information through
+> things like the wayland protocol. I don't see how this could ever be
+> considered a good idea.
 >
-> next-20130801 was OK here.
->
+> I would rather see kernel drivers negotiating those things at dmabuf
+> attach time in way invisible to userspace. I agree that this negotiation
+> thing isn't easy to get right for the plethora of different hardware
+> constraints we see today, but I would rather see this in-kernel, where
+> we have the chance to fix things up if needed, than in a fixed userspace
+> interface.
 
-What about these lines?
-
-Aug  6 17:03:37 fambox kernel: [  134.575120] wlan0: deauthenticated
-from 00:04:0e:e4:00:3d (Reason: 1)
-Aug  6 17:03:37 fambox wpa_supplicant[2424]: wlan0: Event DEAUTH (12) received
-Aug  6 17:03:37 fambox wpa_supplicant[2424]: wlan0: Deauthentication
-notification
-Aug  6 17:03:37 fambox wpa_supplicant[2424]: Deauthentication frame
-IE(s) - hexdump(len=0): [NULL]
-Aug  6 17:03:37 fambox wpa_supplicant[2424]: wlan0: WPA: 4-Way
-Handshake failed - pre-shared key may be incorrect
-Aug  6 17:03:37 fambox NetworkManager[2431]: <info> (wlan0):
-supplicant interface state: 4-way handshake -> disconnected
-
-- Sedat -
+The problem with negotiating tiling in the kernel for at least
+drm/i915 is that userspace needs to know the tiling and for allocating
+actually be in charge of it. The approach used by prime thus far is to
+simply use linear buffers between different gpus. If you want
+something better I guess you need to have a fairly tightly integrate
+userspace driver, so I don't see how passing around the tiling
+information should be an issue for those cases.
+-Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
