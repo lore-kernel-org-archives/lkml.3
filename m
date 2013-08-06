@@ -1,201 +1,349 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755293Ab3HFG07 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 02:26:59 -0400
-Received: from mail.sigma-star.at ([95.130.255.111]:62408 "EHLO
-	mail.sigma-star.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755221Ab3HFG06 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 02:26:58 -0400
-From: Richard Weinberger <richard@nod.at>
-To: linux-mtd@lists.infradead.org
-Cc: dedekind1@gmail.com, dwmw2@infradead.org, linux-kernel@vger.kernel.org,
-        Thomas Weber <thomas@tomweber.eu>, wang bo <wang.bo116@zte.com.cn>,
-        Richard Weinberger <richard@nod.at>
-Subject: [PATCH] UBI: Fastmap: Fix memory leak
-Date: Tue,  6 Aug 2013 08:26:43 +0200
-Message-Id: <1375770403-32762-1-git-send-email-richard@nod.at>
-X-Mailer: git-send-email 1.8.3.1
+	id S1755182Ab3HFGa3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 02:30:29 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:54145 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755047Ab3HFGaZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Aug 2013 02:30:25 -0400
+Date: Mon, 5 Aug 2013 23:30:02 -0700
+From: Kees Cook <keescook@chromium.org>
+To: Casey Schaufler <casey@schaufler-ca.com>
+Cc: LKLM <linux-kernel@vger.kernel.org>,
+        LSM <linux-security-module@vger.kernel.org>,
+        SE Linux <selinux@tycho.nsa.gov>, James Morris <jmorris@namei.org>,
+        John Johansen <john.johansen@canonical.com>,
+        Eric Paris <eparis@redhat.com>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Kees Cook <keescook@chromium.org>
+Subject: Re: [PATCH v14 0/6] LSM: Multiple concurrent LSMs
+Message-ID: <20130806063002.GF2280@outflux.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51F16CFB.6040603@schaufler-ca.com>
+Organization: Chrome OS
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Weber <thomas@tomweber.eu>
+On Thu, Jul 25, 2013 at 11:52 PM, Casey Schaufler <casey@schaufler-ca.com> wrote:
+> The /proc/*/attr interfaces are given to one LSM. This can be
+> done by setting CONFIG_SECURITY_PRESENT. Additional interfaces
+> have been created in /proc/*/attr so that each LSM has its own
+> named interfaces. The name of the presenting LSM can be read from
 
-Tested with linux-v3.10-rc3 on Devkit8000.
+For me, this is one problem that was bothering me, but it was a cosmetic
+one that I'd mentioned before: I really disliked the /proc/$pid/attr
+interface being named "$lsm.$file". I feel it's important to build
+directories in attr/ for each LSM. So, I spent time to figure out a way to
+do this. This patch changes the interface to /proc/$pid/attr/$lsm/$file
+instead, which I feel has a much more appealing organizational structure.
 
-The discussion about this patch can be found:
-https://lkml.org/lkml/2013/5/2/118
+-Kees
 
-This patches fixes the following bug for me:
-When CONFIG_DEBUG_VM is active and making
-ubiattach ... ; ubidetach...; ubiattach ...
-the second ubiattach stops with:
+---
+Subject: [PATCH] LSM: use subdirectories for LSM attr files
 
-[   37.918304] UBI: default fastmap pool size: 95
-[   37.923004] UBI: default fastmap WL pool size: 25
-[   37.928741] UBI: attaching mtd4 to ubi0
-[   37.933197] kmem_cache_sanity_check (ubi_aeb_slab_cache): Cache name already exists.
-[   37.941864] CPU: 0 PID: 757 Comm: ubiattach Not tainted 3.10.0-rc3 #66
-[   37.949066] [<c0013d90>] (unwind_backtrace+0x0/0xec) from [<c0011660>] (show_stack+0x20/0x24)
-[   37.958343] [<c0011660>] (show_stack+0x20/0x24) from [<c041527c>] (dump_stack+0x20/0x28)
-[   37.967163] [<c041527c>] (dump_stack+0x20/0x28) from [<c00d70b4>] (kmem_cache_create_memcg+0x120/0x2a4)
-[   37.977478] [<c00d70b4>] (kmem_cache_create_memcg+0x120/0x2a4) from [<c00d7280>] (kmem_cache_create+0x48/0x50)
-[   37.988281] [<c00d7280>] (kmem_cache_create+0x48/0x50) from [<c02fa090>] (alloc_ai+0x84/0xb0)
-[   37.997528] [<c02fa090>] (alloc_ai+0x84/0xb0) from [<c02fbde4>] (ubi_attach+0x28/0x34c)
-[   38.006225] [<c02fbde4>] (ubi_attach+0x28/0x34c) from [<c02f07c8>] (ubi_attach_mtd_dev+0x69c/0xca4)
-[   38.016021] [<c02f07c8>] (ubi_attach_mtd_dev+0x69c/0xca4) from [<c02f1078>] (ctrl_cdev_ioctl+0xe4/0x190)
-[   38.026275] [<c02f1078>] (ctrl_cdev_ioctl+0xe4/0x190) from [<c00fee00>] (do_vfs_ioctl+0x554/0x5c4)
-[   38.035980] [<c00fee00>] (do_vfs_ioctl+0x554/0x5c4) from [<c00feebc>] (SyS_ioctl+0x4c/0x6c)
-[   38.045043] [<c00feebc>] (SyS_ioctl+0x4c/0x6c) from [<c000dca0>] (ret_fast_syscall+0x0/0x48)
-[   38.054168] UBI error: ubi_attach_mtd_dev: failed to attach mtd4, error -12
-ubiattach: error!: cannot attach "/dev/mtd4"
-           error 12 (Cannot allocate memory)
+Instead of filling the /proc/$pid/attr/ directory with every LSM's needed
+attr files, insert a directory entry for each LSM which contains the
+needed files.
 
-Signed-off-by: wang bo <wang.bo116@zte.com.cn>
-Signed-off-by: Thomas Weber <thomas@tomweber.eu>
-[Thomas: fix whitespace errors]
-Signed-off-by: Richard Weinberger <richard@nod.at>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+ fs/proc/base.c           |   95 ++++++++++++++++++++++++++++++++++++----------
+ fs/proc/internal.h       |    1 +
+ include/linux/security.h |   11 +++---
+ security/security.c      |   67 ++++++++++++++------------------
+ 4 files changed, 112 insertions(+), 62 deletions(-)
 
-diff --git a/drivers/mtd/ubi/attach.c b/drivers/mtd/ubi/attach.c
-index c071d41..e9f64bc 100644
---- a/drivers/mtd/ubi/attach.c
-+++ b/drivers/mtd/ubi/attach.c
-@@ -1212,6 +1212,30 @@ static void destroy_ai(struct ubi_attach_info *ai)
- 	kfree(ai);
- }
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+index 941fe83..4c80ffd 100644
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -138,6 +138,10 @@ struct pid_entry {
+ 	NOD(NAME, (S_IFREG|(MODE)),			\
+ 		NULL, &proc_single_file_operations,	\
+ 		{ .proc_show = show } )
++#define ATTR(LSM, NAME, MODE)				\
++	NOD(NAME, (S_IFREG|(MODE)),			\
++		NULL, &proc_pid_attr_operations,	\
++		{ .lsm = LSM } )
  
-+static struct ubi_attach_info *alloc_ai(const char *slab_name)
-+{
-+	struct ubi_attach_info *ai;
+ /*
+  * Count the number of hardlinks for the pid_entry table, excluding the .
+@@ -2292,7 +2296,7 @@ static ssize_t proc_pid_attr_read(struct file * file, char __user * buf,
+ 	if (!task)
+ 		return -ESRCH;
+ 
+-	length = security_getprocattr(task,
++	length = security_getprocattr(task, PROC_I(inode)->op.lsm,
+ 				      (char*)file->f_path.dentry->d_name.name,
+ 				      &p);
+ 	put_task_struct(task);
+@@ -2335,7 +2339,7 @@ static ssize_t proc_pid_attr_write(struct file * file, const char __user * buf,
+ 	if (length < 0)
+ 		goto out_free;
+ 
+-	length = security_setprocattr(task,
++	length = security_setprocattr(task, PROC_I(inode)->op.lsm,
+ 				      (char*)file->f_path.dentry->d_name.name,
+ 				      (void*)page, count);
+ 	mutex_unlock(&task->signal->cred_guard_mutex);
+@@ -2353,29 +2357,82 @@ static const struct file_operations proc_pid_attr_operations = {
+ 	.llseek		= generic_file_llseek,
+ };
+ 
++#define LSM_DIR_OPS(LSM) \
++static int proc_##LSM##_attr_dir_readdir(struct file * filp, \
++			     void * dirent, filldir_t filldir) \
++{ \
++	return proc_pident_readdir(filp, dirent, filldir, \
++				   LSM##_attr_dir_stuff, \
++				   ARRAY_SIZE(LSM##_attr_dir_stuff)); \
++} \
++\
++static const struct file_operations proc_##LSM##_attr_dir_ops = { \
++	.read		= generic_read_dir, \
++	.readdir	= proc_##LSM##_attr_dir_readdir, \
++	.llseek		= default_llseek, \
++}; \
++\
++static struct dentry *proc_##LSM##_attr_dir_lookup(struct inode *dir, \
++				struct dentry *dentry, unsigned int flags) \
++{ \
++	return proc_pident_lookup(dir, dentry, \
++				  LSM##_attr_dir_stuff, \
++				  ARRAY_SIZE(LSM##_attr_dir_stuff)); \
++} \
++\
++static const struct inode_operations proc_##LSM##_attr_dir_inode_ops = { \
++	.lookup		= proc_##LSM##_attr_dir_lookup, \
++	.getattr	= pid_getattr, \
++	.setattr	= proc_setattr, \
++};
 +
-+	ai = kzalloc(sizeof(struct ubi_attach_info), GFP_KERNEL);
-+	if (!ai)
-+		return ai;
++#ifdef CONFIG_SECURITY_SELINUX
++static const struct pid_entry selinux_attr_dir_stuff[] = {
++	ATTR("selinux", "current",	S_IRUGO|S_IWUGO),
++	ATTR("selinux", "prev",		S_IRUGO),
++	ATTR("selinux", "exec",		S_IRUGO|S_IWUGO),
++	ATTR("selinux", "fscreate",	S_IRUGO|S_IWUGO),
++	ATTR("selinux", "keycreate",	S_IRUGO|S_IWUGO),
++	ATTR("selinux", "sockcreate",	S_IRUGO|S_IWUGO),
++};
++LSM_DIR_OPS(selinux);
++#endif
 +
-+	INIT_LIST_HEAD(&ai->corr);
-+	INIT_LIST_HEAD(&ai->free);
-+	INIT_LIST_HEAD(&ai->erase);
-+	INIT_LIST_HEAD(&ai->alien);
-+	ai->volumes = RB_ROOT;
-+	ai->aeb_slab_cache = kmem_cache_create(slab_name,
-+					       sizeof(struct ubi_ainf_peb),
-+					       0, 0, NULL);
-+	if (!ai->aeb_slab_cache) {
-+		kfree(ai);
-+		ai = NULL;
-+	}
++#ifdef CONFIG_SECURITY_SMACK
++static const struct pid_entry smack_attr_dir_stuff[] = {
++	ATTR("smack", "current",	S_IRUGO|S_IWUGO),
++};
++LSM_DIR_OPS(smack);
++#endif
 +
-+	return ai;
-+}
++#ifdef CONFIG_SECURITY_APPARMOR
++static const struct pid_entry apparmor_attr_dir_stuff[] = {
++	ATTR("apparmor", "current",	S_IRUGO|S_IWUGO),
++	ATTR("apparmor", "prev",	S_IRUGO),
++	ATTR("apparmor", "exec",	S_IRUGO|S_IWUGO),
++};
++LSM_DIR_OPS(apparmor);
++#endif
 +
- /**
-  * scan_all - scan entire MTD device.
-  * @ubi: UBI device description object
-@@ -1315,8 +1339,13 @@ static int scan_fast(struct ubi_device *ubi, struct ubi_attach_info *ai)
- 	int err, pnum, fm_anchor = -1;
- 	unsigned long long max_sqnum = 0;
- 
-+	struct ubi_attach_info *fm_temp_ai = NULL;
- 	err = -ENOMEM;
- 
-+	fm_temp_ai = alloc_ai("ubi_scan_fastmap_slab_cache");
-+	if (!fm_temp_ai)
-+		goto out;
-+
- 	ech = kzalloc(ubi->ec_hdr_alsize, GFP_KERNEL);
- 	if (!ech)
- 		goto out;
-@@ -1331,7 +1360,7 @@ static int scan_fast(struct ubi_device *ubi, struct ubi_attach_info *ai)
- 		cond_resched();
- 
- 		dbg_gen("process PEB %d", pnum);
--		err = scan_peb(ubi, ai, pnum, &vol_id, &sqnum);
-+		err = scan_peb(ubi, fm_temp_ai, pnum, &vol_id, &sqnum);
- 		if (err < 0)
- 			goto out_vidh;
- 
-@@ -1343,6 +1372,7 @@ static int scan_fast(struct ubi_device *ubi, struct ubi_attach_info *ai)
- 
- 	ubi_free_vid_hdr(ubi, vidh);
- 	kfree(ech);
-+	destroy_ai(fm_temp_ai);
- 
- 	if (fm_anchor < 0)
- 		return UBI_NO_FASTMAP;
-@@ -1351,6 +1381,7 @@ static int scan_fast(struct ubi_device *ubi, struct ubi_attach_info *ai)
- 
- out_vidh:
- 	ubi_free_vid_hdr(ubi, vidh);
-+	destroy_ai(fm_temp_ai);
- out_ech:
- 	kfree(ech);
- out:
-@@ -1359,29 +1390,6 @@ out:
- 
+ static const struct pid_entry attr_dir_stuff[] = {
+-	REG("current",            S_IRUGO|S_IWUGO, proc_pid_attr_operations),
+-	REG("prev",               S_IRUGO,	   proc_pid_attr_operations),
+-	REG("exec",               S_IRUGO|S_IWUGO, proc_pid_attr_operations),
+-	REG("fscreate",           S_IRUGO|S_IWUGO, proc_pid_attr_operations),
+-	REG("keycreate",          S_IRUGO|S_IWUGO, proc_pid_attr_operations),
+-	REG("sockcreate",         S_IRUGO|S_IWUGO, proc_pid_attr_operations),
+-	REG("context",            S_IRUGO|S_IWUGO, proc_pid_attr_operations),
++	ATTR(NULL, "current",		S_IRUGO|S_IWUGO),
++	ATTR(NULL, "prev",		S_IRUGO),
++	ATTR(NULL, "exec",		S_IRUGO|S_IWUGO),
++	ATTR(NULL, "fscreate",		S_IRUGO|S_IWUGO),
++	ATTR(NULL, "keycreate",		S_IRUGO|S_IWUGO),
++	ATTR(NULL, "sockcreate",	S_IRUGO|S_IWUGO),
++	ATTR(NULL, "context",		S_IRUGO|S_IWUGO),
+ #ifdef CONFIG_SECURITY_SELINUX
+-	REG("selinux.current",    S_IRUGO|S_IWUGO, proc_pid_attr_operations),
+-	REG("selinux.prev",       S_IRUGO,         proc_pid_attr_operations),
+-	REG("selinux.exec",       S_IRUGO|S_IWUGO, proc_pid_attr_operations),
+-	REG("selinux.fscreate",   S_IRUGO|S_IWUGO, proc_pid_attr_operations),
+-	REG("selinux.keycreate",  S_IRUGO|S_IWUGO, proc_pid_attr_operations),
+-	REG("selinux.sockcreate", S_IRUGO|S_IWUGO, proc_pid_attr_operations),
++	DIR("selinux",			S_IRUGO|S_IXUGO,
++	    proc_selinux_attr_dir_inode_ops, proc_selinux_attr_dir_ops),
+ #endif
+ #ifdef CONFIG_SECURITY_SMACK
+-	REG("smack.current",      S_IRUGO|S_IWUGO, proc_pid_attr_operations),
++	DIR("smack",			S_IRUGO|S_IXUGO,
++	    proc_smack_attr_dir_inode_ops, proc_smack_attr_dir_ops),
+ #endif
+ #ifdef CONFIG_SECURITY_APPARMOR
+-	REG("apparmor.current",   S_IRUGO|S_IWUGO, proc_pid_attr_operations),
+-	REG("apparmor.prev",      S_IRUGO,         proc_pid_attr_operations),
+-	REG("apparmor.exec",      S_IRUGO|S_IWUGO, proc_pid_attr_operations),
++	DIR("apparmor",			S_IRUGO|S_IXUGO,
++	    proc_apparmor_attr_dir_inode_ops, proc_apparmor_attr_dir_ops),
  #endif
  
--static struct ubi_attach_info *alloc_ai(const char *slab_name)
--{
--	struct ubi_attach_info *ai;
--
--	ai = kzalloc(sizeof(struct ubi_attach_info), GFP_KERNEL);
--	if (!ai)
--		return ai;
--
--	INIT_LIST_HEAD(&ai->corr);
--	INIT_LIST_HEAD(&ai->free);
--	INIT_LIST_HEAD(&ai->erase);
--	INIT_LIST_HEAD(&ai->alien);
--	ai->volumes = RB_ROOT;
--	ai->aeb_slab_cache = kmem_cache_create(slab_name,
--					       sizeof(struct ubi_ainf_peb),
--					       0, 0, NULL);
--	if (!ai->aeb_slab_cache) {
--		kfree(ai);
--		ai = NULL;
--	}
--
--	return ai;
--}
+ };
+diff --git a/fs/proc/internal.h b/fs/proc/internal.h
+index d600fb0..795f649 100644
+--- a/fs/proc/internal.h
++++ b/fs/proc/internal.h
+@@ -56,6 +56,7 @@ union proc_op {
+ 	int (*proc_show)(struct seq_file *m,
+ 		struct pid_namespace *ns, struct pid *pid,
+ 		struct task_struct *task);
++	const char *lsm;
+ };
  
- /**
-  * ubi_attach - attach an MTD device.
-@@ -1419,7 +1427,7 @@ int ubi_attach(struct ubi_device *ubi, int force_scan)
- 					return -ENOMEM;
- 			}
+ struct proc_inode {
+diff --git a/include/linux/security.h b/include/linux/security.h
+index d60e21c..fa89618 100644
+--- a/include/linux/security.h
++++ b/include/linux/security.h
+@@ -2115,9 +2115,10 @@ int security_sem_semctl(struct sem_array *sma, int cmd);
+ int security_sem_semop(struct sem_array *sma, struct sembuf *sops,
+ 			unsigned nsops, int alter);
+ void security_d_instantiate(struct dentry *dentry, struct inode *inode);
+-int security_getprocattr(struct task_struct *p, char *name, char **value);
+-int security_setprocattr(struct task_struct *p, char *name, void *value,
+-			 size_t size);
++int security_getprocattr(struct task_struct *p, const char *lsm, char *name,
++                         char **value);
++int security_setprocattr(struct task_struct *p, const char *lsm, char *name,
++                         void *value, size_t size);
+ int security_netlink_send(struct sock *sk, struct sk_buff *skb);
+ int security_secid_to_secctx(struct secids *secid, char **secdata, u32 *seclen,
+ 			     struct security_operations **secops);
+@@ -2801,8 +2802,8 @@ static inline void security_d_instantiate(struct dentry *dentry,
+ 					  struct inode *inode)
+ { }
  
--			err = scan_all(ubi, ai, UBI_FM_MAX_START);
-+			err = scan_all(ubi, ai, 0);
+-static inline int security_getprocattr(struct task_struct *p, char *name,
+-				       char **value)
++static inline int security_getprocattr(struct task_struct *p, char *lsm,
++                       char *name, char **value)
+ {
+ 	return -EINVAL;
+ }
+diff --git a/security/security.c b/security/security.c
+index 119a377..499af30 100644
+--- a/security/security.c
++++ b/security/security.c
+@@ -1897,74 +1897,65 @@ void security_d_instantiate(struct dentry *dentry, struct inode *inode)
+ }
+ EXPORT_SYMBOL(security_d_instantiate);
+ 
+-int security_getprocattr(struct task_struct *p, char *name, char **value)
++int security_getprocattr(struct task_struct *p, const char *lsm, char *name,
++			 char **value)
+ {
+ 	struct security_operations *sop = NULL;
+ 	struct secids secid;
+-	char *lsm;
+-	int lsmlen;
+ 	int ret;
+ 
+ 	/*
+-	 * Names will either be in the legacy form containing
+-	 * no periods (".") or they will be the LSM name followed
+-	 * by the legacy suffix. "current" or "selinux.current"
+-	 * The exception is "context", which gets all of the LSMs.
+-	 *
+-	 * Legacy names are handled by the presenting LSM.
+-	 * Suffixed names are handled by the named LSM.
++	 * Target LSM will be either NULL or looked up by name. Names with
++	 * a NULL LSM (legacy) are handled by the presenting LSM. The
++	 * exception is "context", which gets all of the LSMs.
+ 	 */
+ 	if (strcmp(name, "context") == 0) {
++		char *lsmname;
++		int lsmlen;
++
+ 		security_task_getsecid(p, &secid);
+-		ret = security_secid_to_secctx(&secid, &lsm, &lsmlen, &sop);
++		ret = security_secid_to_secctx(&secid, &lsmname, &lsmlen, &sop);
+ 		if (ret == 0) {
+-			*value = kstrdup(lsm, GFP_KERNEL);
++			*value = kstrdup(lsmname, GFP_KERNEL);
+ 			if (*value == NULL)
+ 				ret = -ENOMEM;
+ 			else
+ 				ret = strlen(*value);
+-			security_release_secctx(lsm, lsmlen, sop);
++			security_release_secctx(lsmname, lsmlen, sop);
  		}
+ 		return ret;
  	}
- #else
-diff --git a/drivers/mtd/ubi/fastmap.c b/drivers/mtd/ubi/fastmap.c
-index 1542751..6935f0c 100644
---- a/drivers/mtd/ubi/fastmap.c
-+++ b/drivers/mtd/ubi/fastmap.c
-@@ -552,21 +552,8 @@ static int ubi_attach_fastmap(struct ubi_device *ubi,
- 	INIT_LIST_HEAD(&used);
- 	INIT_LIST_HEAD(&free);
- 	INIT_LIST_HEAD(&eba_orphans);
--	INIT_LIST_HEAD(&ai->corr);
--	INIT_LIST_HEAD(&ai->free);
--	INIT_LIST_HEAD(&ai->erase);
--	INIT_LIST_HEAD(&ai->alien);
--	ai->volumes = RB_ROOT;
- 	ai->min_ec = UBI_MAX_ERASECOUNTER;
  
--	ai->aeb_slab_cache = kmem_cache_create("ubi_ainf_peb_slab",
--					       sizeof(struct ubi_ainf_peb),
--					       0, 0, NULL);
--	if (!ai->aeb_slab_cache) {
--		ret = -ENOMEM;
--		goto fail;
--	}
+-	if (present_ops && !strchr(name, '.'))
+-		return present_getprocattr(p, name, value);
 -
- 	fmsb = (struct ubi_fm_sb *)(fm_raw);
- 	ai->max_sqnum = fmsb->sqnum;
- 	fm_pos += sizeof(struct ubi_fm_sb);
+-	for_each_hook(sop, getprocattr) {
+-		lsm = sop->name;
+-		lsmlen = strlen(lsm);
+-		if (!strncmp(name, lsm, lsmlen) && name[lsmlen] == '.')
+-			return sop->getprocattr(p, name + lsmlen + 1, value);
++	if (!lsm) {
++		if (present_ops)
++			return present_getprocattr(p, name, value);
++	} else {
++		for_each_hook(sop, getprocattr) {
++			if (!strcmp(lsm, sop->name))
++				return sop->getprocattr(p, name, value);
++		}
+ 	}
+ 	return -EINVAL;
+ }
+ 
+-int security_setprocattr(struct task_struct *p, char *name, void *value,
+-			 size_t size)
++int security_setprocattr(struct task_struct *p, const char *lsm, char *name,
++			 void *value, size_t size)
+ {
+ 	struct security_operations *sop;
+-	char *lsm;
+-	int lsmlen;
+ 
+ 	/*
+-	 * Names will either be in the legacy form containing
+-	 * no periods (".") or they will be the LSM name followed
+-	 * by the legacy suffix.
+-	 * "current" or "selinux.current"
+-	 *
+-	 * Legacy names are handled by the presenting LSM.
+-	 * Suffixed names are handled by the named LSM.
++	 * Target LSM will be either NULL or looked up by name. Names with
++	 * a NULL LSM (legacy) are handled by the presenting LSM. The
+ 	 */
+ 	if (present_ops && !strchr(name, '.'))
+ 		return present_setprocattr(p, name, value, size);
+ 
+-	for_each_hook(sop, setprocattr) {
+-		lsm = sop->name;
+-		lsmlen = strlen(lsm);
+-		if (!strncmp(name, lsm, lsmlen) && name[lsmlen] == '.')
+-			return sop->setprocattr(p, name + lsmlen + 1, value,
+-						size);
++	if (lsm) {
++		for_each_hook(sop, setprocattr) {
++			if (!strcmp(lsm, sop->name))
++				return sop->setprocattr(p, name, value,
++							size);
++		}
+ 	}
+ 	return -EINVAL;
+ }
 -- 
-1.8.3.1
+1.7.9.5
 
+
+-- 
+Kees Cook
+Chrome OS Security
