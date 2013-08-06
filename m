@@ -1,75 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752992Ab3HFBrb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 21:47:31 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:20746 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752703Ab3HFBr3 (ORCPT
+	id S1753091Ab3HFBvx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 21:51:53 -0400
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:64679 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752831Ab3HFBvw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 21:47:29 -0400
-X-Spam-Score: -100.8
-Message-ID: <52005571.4080704@asianux.com>
-Date: Tue, 06 Aug 2013 09:46:25 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Mon, 5 Aug 2013 21:51:52 -0400
+Date: Mon, 5 Aug 2013 18:51:48 -0700
+From: Anton Vorontsov <anton@enomsg.org>
+To: Kevin Hilman <khilman@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
+        Nishanth Menon <nm@ti.com>
+Subject: Re: [PATCH] MAINTAINERS: drivers/power: add entry for SmartReflex
+ AVS drivers
+Message-ID: <20130806015147.GA16668@teo>
+References: <1375720177-20063-1-git-send-email-khilman@linaro.org>
 MIME-Version: 1.0
-To: "'Jiri Kosina'" <trivial@kernel.org>
-CC: Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        "dhowells@redhat.com" <dhowells@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, davej@redhat.com,
-        Arnd Bergmann <arnd@arndb.de>, David Miller <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH trivial] UAPI: Kbuild: add/modify comments for "uapi/Kbuild"
- and "uapi/linux/Kbuild"
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1375720177-20063-1-git-send-email-khilman@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"include/uapi/" is the whole Linux kernel API, it is important enough
-to get more global explanations by comments.
+On Mon, Aug 05, 2013 at 09:29:37AM -0700, Kevin Hilman wrote:
+> The SmartReflex AVS driver evolved out of the OMAP kernel and now
+> lives under drivers/power/avs.
+> 
+> I've historically been maintainer of this but Nishanth Menon is doing
+> most of the heavy lifting now.  Add us both as co-maintainers.
+> 
+...
+> +M:	Kevin Hilman <khilman@kernel.org>
+> +M:	Nishanth Menon <nm@ti.com>
+> +S:	Maintained
+> +F:	drivers/power/avs/smartreflex.c
+> +F:      include/linux/power/smartreflex.h
 
-In "include/uapi/Kbuild", "Makefile..." and "non-arch..." comments are
-meaningless for current 'Kbuild', so delete them.
+This line is borken (whitespaces).
 
-And add more explanations for "include/uapi/" in "include/uapi/Kbuild",
-also add more explanations for "include/uapi/linux/" in "include/uapi
-/linux/Kbuild".
-
-
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
----
- include/uapi/Kbuild       |    5 ++---
- include/uapi/linux/Kbuild |    2 ++
- 2 files changed, 4 insertions(+), 3 deletions(-)
-
-diff --git a/include/uapi/Kbuild b/include/uapi/Kbuild
-index 81d2106..c682891 100644
---- a/include/uapi/Kbuild
-+++ b/include/uapi/Kbuild
-@@ -1,7 +1,6 @@
- # UAPI Header export list
--# Top-level Makefile calls into asm-$(ARCH)
--# List only non-arch directories below
--
-+# Except "linux/", UAPI means Universal API.
-+# For "linux/", UAPI means User API which can be used by user mode.
- 
- header-y += asm-generic/
- header-y += linux/
-diff --git a/include/uapi/linux/Kbuild b/include/uapi/linux/Kbuild
-index 997f9f2..0025e07 100644
---- a/include/uapi/linux/Kbuild
-+++ b/include/uapi/linux/Kbuild
-@@ -1,4 +1,6 @@
- # UAPI Header export list
-+# UAPI is User API which can be used by user mode.
-+
- header-y += byteorder/
- header-y += can/
- header-y += caif/
--- 
-1.7.7.6
-
-
+> +L:	linux-pm@vger.kernel.org
+> +
+>  PNP SUPPORT
+>  M:	Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>  M:	Bjorn Helgaas <bhelgaas@google.com>
+> -- 
+> 1.8.3
