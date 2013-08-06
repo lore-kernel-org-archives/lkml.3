@@ -1,76 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756051Ab3HFKjw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 06:39:52 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:53394 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755965Ab3HFKju (ORCPT
+	id S1756058Ab3HFKkz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 06:40:55 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:47606 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755945Ab3HFKkx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 06:39:50 -0400
-Date: Tue, 6 Aug 2013 12:39:33 +0200
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Tushar Behera <tushar.behera@linaro.org>,
+	Tue, 6 Aug 2013 06:40:53 -0400
+Date: Tue, 6 Aug 2013 11:40:24 +0100
+From: Dave P Martin <Dave.Martin@arm.com>
+To: Roy Franz <roy.franz@linaro.org>
+Cc: Leif Lindholm <leif.lindholm@linaro.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thierry Reding <thierry.reding@gmail.com>, patches@linaro.org,
-        sachin.kamat@linaro.org,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Gregory =?UTF-8?B?Q2zDqW1lbnQ=?= 
-	<gregory.clement@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Subject: Re: [PATCH V2 6/6] pci: mvebu: Convert to use devm_ioremap_resource
-Message-ID: <20130806123933.2f33828b@skate>
-In-Reply-To: <CAErSpo7hHSmO6euUtJABLB-xeK9u+J2h6z905e5DrcZv5gZoEA@mail.gmail.com>
-References: <1370864113-17895-14-git-send-email-tushar.behera@linaro.org>
-	<1371460573-30004-1-git-send-email-tushar.behera@linaro.org>
-	<CAErSpo7hHSmO6euUtJABLB-xeK9u+J2h6z905e5DrcZv5gZoEA@mail.gmail.com>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.9.1 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "matt.fleming@intel.com" <matt.fleming@intel.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+Subject: Re: [PATCH 6/7] Add EFI stub for ARM
+Message-ID: <20130806104023.GE2791@e103592.cambridge.arm.com>
+References: <1375478948-22562-1-git-send-email-roy.franz@linaro.org>
+ <1375478948-22562-7-git-send-email-roy.franz@linaro.org>
+ <20130805141149.GB2755@localhost.localdomain>
+ <20130805153318.GL18151@rocoto.smurfnet.nu>
+ <CAFECyb-WciwMu0MBmZ8LzkaM=VxnaOH5e9V5f_AP3ZbLA9CW9A@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFECyb-WciwMu0MBmZ8LzkaM=VxnaOH5e9V5f_AP3ZbLA9CW9A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Bjorn Helgaas,
+On Tue, Aug 06, 2013 at 01:06:17AM +0100, Roy Franz wrote:
+> On Mon, Aug 5, 2013 at 8:33 AM, Leif Lindholm <leif.lindholm@linaro.org> wrote:
+> > On Mon, Aug 05, 2013 at 03:11:49PM +0100, Dave Martin wrote:
+> >> > diff --git a/arch/arm/boot/compressed/head.S b/arch/arm/boot/compressed/head.S
+> >> > index 75189f1..4c70b9e 100644
+> >> > --- a/arch/arm/boot/compressed/head.S
+> >> > +++ b/arch/arm/boot/compressed/head.S
+> >> > @@ -122,19 +122,106 @@
+> >> >             .arm                            @ Always enter in ARM state
+> >> >  start:
+> >> >             .type   start,#function
+> >> > -           .rept   7
+> >> > +#ifdef CONFIG_EFI_STUB
+> >> > +           @ Magic MSDOS signature for PE/COFF + ADD opcode
+> >> > +           .word   0x62805a4d
 
-[+cc Jason Cooper, Gregory Clement and Ezequiel Garcia]
+Is BE8 supported?  If so, this would put the bytes
 
-On Tue, 23 Jul 2013 12:38:28 -0600, Bjorn Helgaas wrote:
-> [+cc Thomas]
-> 
-> On Mon, Jun 17, 2013 at 3:16 AM, Tushar Behera <tushar.behera@linaro.org> wrote:
-> > Commit 75096579c3ac ("lib: devres: Introduce devm_ioremap_resource()")
-> > introduced devm_ioremap_resource() and deprecated the use of
-> > devm_request_and_ioremap().
+	62 80 5A 4D
+
+in the binary, which is not the right magic.
+
+For this magic, you could use .byte instead.
+
+
+To help future maintainers, I suggest noting in a comment that
+executing through this magic relies on little-endian instruction byte
+order (so, LE or BE8), and the ARM instruction set.
+
+What about the endianness of the other PE/COFF header fields?  Are they
+always little-endian, or are some fields native-endian (and if so, how
+is the endianness of the header determined by the loader)?
+
+> >>
+> >> What about BE32?
 > >
-> > While at it, modify mvebu_pcie_map_registers() to propagate error code.
+> > The ARM bindings for UEFI specify that the processor must be in
+> > little-endian mode.
 > >
-> > Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
-> > CC: linux-pci@vger.kernel.org
-> > CC: Bjorn Helgaas <bhelgaas@google.com>
+> >> In that case, the instruction is a coprocessor load, that loads from a
+> >> random address to a coprocessor that almost certainly doesn't exist.
+> >> This will probably fault.
+> >>
+> >> Since BE32 is only for older platforms (<v6) and this is not easily
+> >> solvable, it might be sensible to make the EFI stub support depend on
+> >> !CPU_ENDIAN_BE32.
+> >
+> > Well, it would make more sense to make EFI_STUB depend on EFI and
+> > EFI depend on !CPU_ENDIAN_BE32. Which is something I can add to
+> > my next set of general ARM UEFI patches. Thanks.
+> > /
+> >     Leif
 > 
-> Acked-by: Bjorn Helgaas <bhelgaas@google.com>
-> 
-> Thomas has a bunch of mvebu patches in the pipeline, so I assume he
-> will incorporate this if appropriate.  I don't want to put it in my
-> tree and cause conflicts with his changes.  Let me know if I should do
-> something else here.
+> I had EFI_STUB depend on EFI at one point during my development, but took
+> it out because there was no actual dependency (the stub will work fine without
+> other EFI features.)  The features will most likely be used together,
+> but I wasn't
+> sure if we would want to enforce this with a config dependency.  I
+> don't care one
+> way or the other, I'd just like the dependencies to be correct and
+> follow best practices.
 
-I don't really have that many pci-mvebu.c patches in the pipeline
-actually. The only one I have is to enable MSI support, and it's a
-fairly light one that should not conflict too badly with this one.
+I guess it's up to you, so long as the constraint is expressed in Kconfig
+somehow.
 
-Therefore, Bjorn, I believe this patch could go through your tree,
-either for 3.11 or 3.12 as you prefer.
-
-Best regards,
-
-Thomas Petazzoni
--- 
-Thomas Petazzoni, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+Cheers
+---Dave
