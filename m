@@ -1,117 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932766Ab3HGMSl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 08:18:41 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57018 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756710Ab3HGMSj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 08:18:39 -0400
-Date: Wed, 7 Aug 2013 14:18:36 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: lizefan@huawei.com, hannes@cmpxchg.org, bsingharora@gmail.com,
-        kamezawa.hiroyu@jp.fujitsu.com, cgroups@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHSET cgroup/for-3.12] cgroup: make cgroup_event specific to
- memcg
-Message-ID: <20130807121836.GF8184@dhcp22.suse.cz>
-References: <1375632446-2581-1-git-send-email-tj@kernel.org>
- <20130805160107.GM10146@dhcp22.suse.cz>
- <20130805162958.GF19631@mtj.dyndns.org>
- <20130805191641.GA24003@dhcp22.suse.cz>
- <20130805194431.GD23751@mtj.dyndns.org>
- <20130806155804.GC31138@dhcp22.suse.cz>
- <20130806161509.GB10779@mtj.dyndns.org>
+	id S932809Ab3HGM0l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 08:26:41 -0400
+Received: from smtpfreer110.163vip.net ([211.100.40.201]:31929 "HELO
+	smtp.tom.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1757407Ab3HGM0k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 08:26:40 -0400
+Authentication-Results: bjsd-antispam2 smtp.user=gdgzyiyao@tom.com; auth=pass (LOGIN)
+Date: Tue, 6 Aug 2013 14:56:17 +0800
+From: "Numberone Biotech Inc." <gdgzyiyao@tom.com>
+Reply-To: cnrocket020@126.com
+To: "linux-kernel" <linux-kernel@vger.kernel.org>
+Subject: Looking for product agents
+Message-ID: <201308061456175000135@tom.com>
+X-Priority: 3
+X-Has-Attach: no
+X-Mailer: Microsoft Outlook Express 6.00.2462.0000
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130806161509.GB10779@mtj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+	charset="GB2312"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r77CQq1P026278
 
-On Tue 06-08-13 12:15:09, Tejun Heo wrote:
-> Hello, Michal.
-> 
-> On Tue, Aug 06, 2013 at 05:58:04PM +0200, Michal Hocko wrote:
-> > I am objecting to moving the generic part of that code into memcg. The
-> > memcg part and the additional complexity (all the parsing and conditions
-> > for signalling) is already in the memcg code.
-> 
-> But how is it generic if it's specific to memcg?
+Dear,
+Our company manufactures a range of injectable and oral steroids products that are used successfully in over 10 countries.
+We are considering expanding our products to new markets and we would appreciate you assistance.
+In particular, we would like to look for product agents. We will quote the lowest prices as possible.
+Payment type: Western Union, Bank transfer
+Shipping term: express mail by air (with registered tracking number, door delivery).
+Delivery time: within 15 days after get payment.
+Supplying ability: 5000 vials per week.
+If the goods are damaged or confiscated at customs. We will delivery the goods again or return your money as your request.
+You can learn the details of our products on our web: <numberone-cn.com>.
+If you are interested in our products, we are pleased to send you our price quote for them.
+If you have any questions, please feel free to contact us at cnnumberone@gmail.com
 
-How is it specific to memcg? The fact only memcg uses the interface
-doesn't imply it is memcg specific.
+Sincerely,
 
-> The practical
-> purpose here is making it clear that the interface is only used by
-> memcg and preventing any new usages from sprining up and the best way
-> to achieve that is making the code actually memcg-specific. 
-
-There are other ways to achieve the same. E.g. not ack new usage of
-register callback users. We have done similar with other things like
-use_hierarchy...
-
-> It also helps cleaning up cftype in general.  I'm not sure what you're
-> objecting to here.
-
-The cleanup is removing 2 callbacks with a cost of moving non-memcg
-specific code inside memcg. That is what I am objecting to.
- 
-> > Such an interface would be really welcome but I would also ask how
-> > it would implement/allow context passing. E.g. how do we know which
-> > treshold has been reached? How do we find out the vmpressure level? Is
-> > the consumer supposed to do an additional action after it gets
-> > notification?
-> > Etc.
-> 
-> Yeap, exactly and that's how it should have been from the beginning.
-> Attaching information to notification itself isn't a particularly good
-> design (anyone remembers rtsig?) if there's polling mechanism to
-> report the current state. 
-
-There are pros and cons for both approaches and it should be discussed
-in a separate thread with a code to back all the claims.
-
-> It essentially amounts to duplicate delivery mechanisms for the same
-> information, which you usually don't want.  Here, the inconvenience /
-> performance implications are negligible or even net-positive.  Plain
-> file modified notification is way more familiar / conventional and
-> the overhead of an extra read call, which is highly unlikely to be
-> relevant given the expected frequency of the events we're talking
-> about, is small compared to the action of event delivery and context
-> switch.
-> 
-> > Really that natural? So memcg should touch internals like cgroup dentry
-> 
-> Functionally, it is completely specific to memcg at this point.  It's
-> the only user and will stay the only user.
-> 
-> > reference counting. You seem have forgotten all the hassles with
-> > cgroup_mutex, haven't you?
-> 
-> Was the above sentence necessary?
-> 
-> > No that part doesn't belong to memcg! You can discourage from new usage
-> > of this interface of course.
-> 
-> Oh, if you're objecting to the details of the implementation, we of
-> course can clean it up.  It should conceptually and functionally be
-> part of memcg and that is the guiding line we follow.  Implementations
-> follow the concepts and functions, not the other way around.  The
-> refcnt of course can be replaced with memcg css refcnting and we can
-> of course factor out dentry comparison in a prettier form.
-> 
-> Compare it to the other way around - having event callbacks in cftype
-> and clearing code embedded in cgroup core destruction path when both
-> of which are completely irrelevant to all other controllers.  Let's
-> clean up the implementation details and put things where they belong.
-> What's the excuse for not doing so when it's almost trivially doable?
-
-I will not repeat myself. We seem to disagree on where the code belongs.
-As I've said I will not ack this code, try to find somebody else who
-think it is a good idea. I do not see any added value.
--- 
-Michal Hocko
-SUSE Labs
+Overseas Sales Division
+Numberone Biotech Co., Ltd.ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
