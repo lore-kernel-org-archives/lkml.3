@@ -1,40 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755610Ab3HFJj1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 05:39:27 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:52498 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755452Ab3HFJj0 (ORCPT
+	id S1755623Ab3HFJnT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 05:43:19 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:38634 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755339Ab3HFJnS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 05:39:26 -0400
-X-Sasl-enc: zBJQ5dHZ/L1ziCYBa262iwQrEdwROcCaXdI9GzoqOmiS 1375781961
-Date: Tue, 6 Aug 2013 17:40:40 +0800
-From: Greg KH <greg@kroah.com>
-To: Andy Green <andy.green@linaro.org>
-Cc: linux-kernel@vger.kernel.org, John Stultz <john.stultz@linaro.org>,
-        Mark Brown <broonie@linaro.org>
-Subject: Re: [PATCH] warning-elimination: android: binder
-Message-ID: <20130806094040.GD27889@kroah.com>
-References: <CAAfg0W4jCXqfthyQi3X+hvznrnksDeJfSpKoymnc53fE=dRN9w@mail.gmail.com>
+	Tue, 6 Aug 2013 05:43:18 -0400
+Message-ID: <5200C527.5030006@oracle.com>
+Date: Tue, 06 Aug 2013 17:43:03 +0800
+From: Bob Liu <bob.liu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAAfg0W4jCXqfthyQi3X+hvznrnksDeJfSpKoymnc53fE=dRN9w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Piotr Sarna <p.sarna@partner.samsung.com>
+CC: b.zolnierkie@samsung.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: [PATCH] mm: zcache: zcache_cleancache_flush_fs fix
+References: <1375781762-15344-1-git-send-email-p.sarna@partner.samsung.com>
+In-Reply-To: <1375781762-15344-1-git-send-email-p.sarna@partner.samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 06, 2013 at 11:36:19AM +0800, Andy Green wrote:
-> From: Andy Green <andy.green@linaro.org>
+Hi Piotr,
+
+On 08/06/2013 05:36 PM, Piotr Sarna wrote:
+> This patch fixes "mm: zcache: core functions added" patch,
+> available at https://lkml.org/lkml/2013/7/20/90.
+> It regards incorrect implementation of zcache_cleancache_flush_fs().
 > 
-> warning-elimination: android: binder
+> Function above should be effective only if cleancache pool referred
+> by pool_id is valid. This issue is checked by testing whether zpool
+> points to NULL.
 > 
-> This commit in mainline (now) causes a couple of warnings
+> Unfortunately, if filesystem mount fails, such pool is never created
+> and fs/super.c calls cleancache_invalidate_fs() function with pool_id
+> parameter set to -1. This results in assigning zpool with pools[-1],
+> which causes zpool to be not NULL and thus whole function hangs on
+> uninitialized read-write lock.
+> 
+> To prevent that behaviour, pool_id should be checked for being positive
+> before assigning zpool variable with pools[pool_id].
+> 
+> Signed-off-by: Piotr Sarna <p.sarna@partner.samsung.com>
+> Acked-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 
-What specifically are those warnings?  I don't see any here, so I'm
-guessing your patch isn't really needed :)
+Yes, that's a problem. Thank you very much!
+I'm so glad you are also interesting in zcache. I'm preparing a update
+version of zcache which is still under testing currently.
 
-(hint, hint, hint...)
+> ---
+>  mm/zcache.c |    6 +++++-
+>  1 file changed, 5 insertions(+), 1 deletion(-)
+> 
+> diff --git a/mm/zcache.c b/mm/zcache.c
+> index a2408e8..7e6d2e7 100644
+> --- a/mm/zcache.c
+> +++ b/mm/zcache.c
+> @@ -600,8 +600,12 @@ static void zcache_cleancache_flush_fs(int pool_id)
+>  	struct zcache_rb_entry *entry = NULL;
+>  	struct rb_node *node;
+>  	unsigned long flags1, flags2;
+> -	struct zcache_pool *zpool = zcache.pools[pool_id];
+> +	struct zcache_pool *zpool;
+> +
+> +	if (pool_id < 0)
+> +		return;
+>  
+> +	zpool = zcache.pools[pool_id];
+>  	if (!zpool)
+>  		return;
+>  
+> 
 
-greg k-h
+-- 
+Regards,
+-Bob
