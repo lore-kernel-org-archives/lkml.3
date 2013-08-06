@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756628Ab3HFSI6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 14:08:58 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:15930 "EHLO
+	id S1756671Ab3HFSJK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 14:09:10 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:15944 "EHLO
 	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756599Ab3HFSIz (ORCPT
+	with ESMTP id S1756599Ab3HFSJG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 14:08:55 -0400
+	Tue, 6 Aug 2013 14:09:06 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 06 Aug 2013 11:07:14 -0700
+	by hqnvupgp08.nvidia.com on Tue, 06 Aug 2013 11:07:26 -0700
 From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
 To: <balbi@ti.com>
 CC: <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-usb@vger.kernel.org>, <swarren@wwwdotorg.org>,
         <gregkh@linuxfoundation.org>, <stern@rowland.harvard.edu>,
-        Tuomas Tynkkynen <ttynkkynen@nvidia.com>,
-        Matthieu CASTET <matthieu.castet@parrot.com>,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Subject: [PATCH v2 1/6] usb: host: add has_tdi_phy_lpm capability bit
-Date: Tue, 6 Aug 2013 21:08:33 +0300
-Message-ID: <1375812518-3847-2-git-send-email-ttynkkynen@nvidia.com>
+        Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+Subject: [PATCH v2 6/6] usb: host: tegra: Tegra30 support
+Date: Tue, 6 Aug 2013 21:08:38 +0300
+Message-ID: <1375812518-3847-7-git-send-email-ttynkkynen@nvidia.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1375812518-3847-1-git-send-email-ttynkkynen@nvidia.com>
 References: <1375812518-3847-1-git-send-email-ttynkkynen@nvidia.com>
@@ -30,117 +28,99 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The has_hostpc capability bit indicates that the host controller has the
-HOSTPC register extensions, but at the same time enables clock disabling
-power saving features with the PHY Low Power Clock Disable (PHCD) bit.
+The Tegra30 EHCI controller is mostly compatible with the Tegra20
+controller, except Tegra30 includes the HOSTPC register extension.
+The has_hostpc capability bit must be set in the ehci_hcd structure if
+the controller has such extensions. The new tegra_ehci_soc_config
+structure is added to describe the differences between the SoCs.
 
-However, some host controllers have the HOSTPC extensions but don't
-support the low-power feature, so the PHCD bit must not be set on those
-controllers. Add a separate capability bit for the low-power feature
-instead, and change all existing users of has_hostpc to use this new
-capability bit.
-
-The idea for this commit is taken from an old 2012 commit that never got
-merged ("disociate chipidea PHY low power suspend control from hostpc")
-
-Inspired-by: Matthieu CASTET <matthieu.castet@parrot.com>
 Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
 ---
-v2: Add Alan's ack
- drivers/usb/chipidea/host.c |  1 +
- drivers/usb/host/ehci-hub.c | 14 +++++++-------
- drivers/usb/host/ehci.h     |  1 +
- 3 files changed, 9 insertions(+), 7 deletions(-)
+ drivers/usb/host/ehci-tegra.c | 34 +++++++++++++++++++++++++++++-----
+ 1 file changed, 29 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/usb/chipidea/host.c b/drivers/usb/chipidea/host.c
-index 40d0fda..9b3aaf1 100644
---- a/drivers/usb/chipidea/host.c
-+++ b/drivers/usb/chipidea/host.c
-@@ -63,6 +63,7 @@ static int host_start(struct ci_hdrc *ci)
- 	ehci = hcd_to_ehci(hcd);
- 	ehci->caps = ci->hw_bank.cap;
- 	ehci->has_hostpc = ci->hw_bank.lpm;
-+	ehci->has_tdi_phy_lpm = ci->hw_bank.lpm;
+diff --git a/drivers/usb/host/ehci-tegra.c b/drivers/usb/host/ehci-tegra.c
+index db8031f..c0d1f27 100644
+--- a/drivers/usb/host/ehci-tegra.c
++++ b/drivers/usb/host/ehci-tegra.c
+@@ -25,6 +25,7 @@
+ #include <linux/irq.h>
+ #include <linux/module.h>
+ #include <linux/of.h>
++#include <linux/of_device.h>
+ #include <linux/of_gpio.h>
+ #include <linux/platform_device.h>
+ #include <linux/pm_runtime.h>
+@@ -50,6 +51,10 @@
  
- 	ret = usb_add_hcd(hcd, 0, 0);
- 	if (ret)
-diff --git a/drivers/usb/host/ehci-hub.c b/drivers/usb/host/ehci-hub.c
-index 6e69ee1..6d5ad37 100644
---- a/drivers/usb/host/ehci-hub.c
-+++ b/drivers/usb/host/ehci-hub.c
-@@ -183,7 +183,7 @@ static void ehci_adjust_port_wakeup_flags(struct ehci_hcd *ehci,
- 	spin_lock_irq(&ehci->lock);
+ static struct hc_driver __read_mostly tegra_ehci_hc_driver;
  
- 	/* clear phy low-power mode before changing wakeup flags */
--	if (ehci->has_hostpc) {
-+	if (ehci->has_tdi_phy_lpm) {
- 		port = HCS_N_PORTS(ehci->hcs_params);
- 		while (port--) {
- 			u32 __iomem	*hostpc_reg = &ehci->regs->hostpc[port];
-@@ -217,7 +217,7 @@ static void ehci_adjust_port_wakeup_flags(struct ehci_hcd *ehci,
++struct tegra_ehci_soc_config {
++	bool has_hostpc;
++};
++
+ static int (*orig_hub_control)(struct usb_hcd *hcd,
+ 				u16 typeReq, u16 wValue, u16 wIndex,
+ 				char *buf, u16 wLength);
+@@ -320,8 +325,24 @@ static void tegra_ehci_unmap_urb_for_dma(struct usb_hcd *hcd, struct urb *urb)
+ 	free_dma_aligned_buffer(urb);
+ }
+ 
++static const struct tegra_ehci_soc_config tegra30_soc_config = {
++	.has_hostpc = true,
++};
++
++static const struct tegra_ehci_soc_config tegra20_soc_config = {
++	.has_hostpc = false,
++};
++
++static struct of_device_id tegra_ehci_of_match[] = {
++	{ .compatible = "nvidia,tegra30-ehci", .data = &tegra30_soc_config },
++	{ .compatible = "nvidia,tegra20-ehci", .data = &tegra20_soc_config },
++	{ },
++};
++
+ static int tegra_ehci_probe(struct platform_device *pdev)
+ {
++	const struct of_device_id *match;
++	const struct tegra_ehci_soc_config *soc_config;
+ 	struct resource *res;
+ 	struct usb_hcd *hcd;
+ 	struct ehci_hcd *ehci;
+@@ -330,6 +351,13 @@ static int tegra_ehci_probe(struct platform_device *pdev)
+ 	int irq;
+ 	struct usb_phy *u_phy;
+ 
++	match = of_match_device(tegra_ehci_of_match, &pdev->dev);
++	if (!match) {
++		dev_err(&pdev->dev, "Error: No device match found\n");
++		return -ENODEV;
++	}
++	soc_config = (struct tegra_ehci_soc_config *)match->data;
++
+ 	/* Right now device-tree probed devices don't get dma_mask set.
+ 	 * Since shared usb code relies on it, set it here for now.
+ 	 * Once we have dma capability bindings this can go away.
+@@ -391,6 +419,7 @@ static int tegra_ehci_probe(struct platform_device *pdev)
+ 		goto cleanup_clk_en;
  	}
+ 	ehci->caps = hcd->regs + 0x100;
++	ehci->has_hostpc = soc_config->has_hostpc;
  
- 	/* enter phy low-power mode again */
--	if (ehci->has_hostpc) {
-+	if (ehci->has_tdi_phy_lpm) {
- 		port = HCS_N_PORTS(ehci->hcs_params);
- 		while (port--) {
- 			u32 __iomem	*hostpc_reg = &ehci->regs->hostpc[port];
-@@ -309,7 +309,7 @@ static int ehci_bus_suspend (struct usb_hcd *hcd)
- 		}
- 	}
+ 	err = usb_phy_init(hcd->phy);
+ 	if (err) {
+@@ -468,11 +497,6 @@ static void tegra_ehci_hcd_shutdown(struct platform_device *pdev)
+ 		hcd->driver->shutdown(hcd);
+ }
  
--	if (changed && ehci->has_hostpc) {
-+	if (changed && ehci->has_tdi_phy_lpm) {
- 		spin_unlock_irq(&ehci->lock);
- 		msleep(5);	/* 5 ms for HCD to enter low-power mode */
- 		spin_lock_irq(&ehci->lock);
-@@ -435,7 +435,7 @@ static int ehci_bus_resume (struct usb_hcd *hcd)
- 		goto shutdown;
- 
- 	/* clear phy low-power mode before resume */
--	if (ehci->bus_suspended && ehci->has_hostpc) {
-+	if (ehci->bus_suspended && ehci->has_tdi_phy_lpm) {
- 		i = HCS_N_PORTS(ehci->hcs_params);
- 		while (i--) {
- 			if (test_bit(i, &ehci->bus_suspended)) {
-@@ -788,7 +788,7 @@ static int ehci_hub_control (
- 				goto error;
- 
- 			/* clear phy low-power mode before resume */
--			if (ehci->has_hostpc) {
-+			if (ehci->has_tdi_phy_lpm) {
- 				temp1 = ehci_readl(ehci, hostpc_reg);
- 				ehci_writel(ehci, temp1 & ~HOSTPC_PHCD,
- 						hostpc_reg);
-@@ -1025,12 +1025,12 @@ static int ehci_hub_control (
- 
- 			/* After above check the port must be connected.
- 			 * Set appropriate bit thus could put phy into low power
--			 * mode if we have hostpc feature
-+			 * mode if we have tdi_phy_lpm feature
- 			 */
- 			temp &= ~PORT_WKCONN_E;
- 			temp |= PORT_WKDISC_E | PORT_WKOC_E;
- 			ehci_writel(ehci, temp | PORT_SUSPEND, status_reg);
--			if (ehci->has_hostpc) {
-+			if (ehci->has_tdi_phy_lpm) {
- 				spin_unlock_irqrestore(&ehci->lock, flags);
- 				msleep(5);/* 5ms for HCD enter low pwr mode */
- 				spin_lock_irqsave(&ehci->lock, flags);
-diff --git a/drivers/usb/host/ehci.h b/drivers/usb/host/ehci.h
-index 64f9a08..d034d94 100644
---- a/drivers/usb/host/ehci.h
-+++ b/drivers/usb/host/ehci.h
-@@ -210,6 +210,7 @@ struct ehci_hcd {			/* one per controller */
- 	#define OHCI_HCCTRL_LEN         0x4
- 	__hc32			*ohci_hcctrl_reg;
- 	unsigned		has_hostpc:1;
-+	unsigned		has_tdi_phy_lpm:1;
- 	unsigned		has_ppcd:1; /* support per-port change bits */
- 	u8			sbrn;		/* packed release number */
- 
+-static struct of_device_id tegra_ehci_of_match[] = {
+-	{ .compatible = "nvidia,tegra20-ehci", },
+-	{ },
+-};
+-
+ static struct platform_driver tegra_ehci_driver = {
+ 	.probe		= tegra_ehci_probe,
+ 	.remove		= tegra_ehci_remove,
 -- 
 1.8.1.5
 
