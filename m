@@ -1,80 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754384Ab3HFITX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 04:19:23 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:44348 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753315Ab3HFITV convert rfc822-to-8bit (ORCPT
+	id S1754458Ab3HFIUU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 04:20:20 -0400
+Received: from mail-we0-f176.google.com ([74.125.82.176]:57431 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753526Ab3HFIUR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 04:19:21 -0400
-X-IronPort-AV: E=Sophos;i="4.89,825,1367942400"; 
-   d="scan'208";a="8131747"
-Message-ID: <5200B185.9010402@cn.fujitsu.com>
-Date: Tue, 06 Aug 2013 16:19:17 +0800
-From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Tue, 6 Aug 2013 04:20:17 -0400
+Message-ID: <5200B1BD.7030307@gmail.com>
+Date: Tue, 06 Aug 2013 10:20:13 +0200
+From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Xishi Qiu <qiuxishi@huawei.com>
-CC: ebiederm@xmission.com, kexec@lists.infradead.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kexec: remove unnecessary return
-References: <5200AE50.2010108@huawei.com>
-In-Reply-To: <5200AE50.2010108@huawei.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/06 16:17:56,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/06 16:17:56
+To: Andy Lutomirski <luto@amacapital.net>
+CC: linux-kernel@vger.kernel.org, Kay Sievers <kay@vrfy.org>,
+        =?UTF-8?B?WmJpZ25pZXcgSsSZZHJ6ZWpld3NraS1Tem1law==?= 
+	<zbyszek@in.waw.pl>,
+        systemd-devel@lists.freedesktop.org,
+        Linux Wireless List <linux-wireless@vger.kernel.org>,
+        linux-hotplug@vger.kernel.org,
+        Intel Linux Wireless <ilw@linux.intel.com>,
+        Johannes Berg <johannes@sipsolutions.net>
+Subject: Re: [PATCH] Change CONFIG_FW_LOADER_USER_HELPER to default n and
+ don't select it
+References: <CALCETrXSnFPFVPkXHwz+FFA3=+pmz9V=cMHWwtN+jG1QJALWSQ@mail.gmail.com> <325b19bb936d7ebae11edad86aac8f0931e8abd9.1375719828.git.luto@amacapital.net>
+In-Reply-To: <325b19bb936d7ebae11edad86aac8f0931e8abd9.1375719828.git.luto@amacapital.net>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2013/8/6 16:05, Xishi Qiu 写道:
-> Code can not run here forever, so remove the unnecessary return.
-> 
-> Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
-> ---
->  kernel/kexec.c |    2 --
->  1 files changed, 0 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/kexec.c b/kernel/kexec.c
-> index 59f7b55..c14e3ea 100644
-> --- a/kernel/kexec.c
-> +++ b/kernel/kexec.c
-> @@ -1477,8 +1477,6 @@ static int __init __parse_crashkernel(char *cmdline,
->  	else
->  		return parse_crashkernel_simple(ck_cmdline, crash_size,
->  				crash_base);
-> -
-> -	return 0;
->  }
->  
->  /*
-> 
+Op 05-08-13 18:29, Andy Lutomirski schreef:
+> The systemd commit below can delay firmware loading by multiple
+> minutes if CONFIG_FW_LOADER_USER_HELPER=y.  Unfortunately no one
+> noticed that the systemd-udev change would break new kernels as well
+> as old kernels.
+>
+> Since the kernel apparently can't count on reasonable userspace
+> support, turn this thing off by default.
+>
+> commit a3bd8447be4ea2ce230eb8ae0e815c04d85fa15a
+> Author: Tom Gundersen <teg@jklm.no>
+> Date:   Mon Mar 18 15:12:18 2013 +0100
+>
+>     udev: make firmware loading optional and disable by default
+>
+>     Distros that whish to support old kernels should set
+>       --with-firmware-dirs="/usr/lib/firmware/updates:/usr/lib/firmware"
+>     to retain the old behaviour.
+>
+methinks this patch should be reverted then, or a stub should be added to udev to always fail firmware loading so timeouts don't occur.
 
-Hi Xishi,
-
-change
-
-1474         if (first_colon && (!first_space || first_colon < first_space))
-1475                 return parse_crashkernel_mem(ck_cmdline, system_ram,
-1476                                 crash_size, crash_base);
-1477         else
-1478                 return parse_crashkernel_simple(ck_cmdline, crash_size,
-1479                                 crash_base);
-1480 
-1481         return 0;
-
-to
-
-1474         if (first_colon && (!first_space || first_colon < first_space))
-1475                 return parse_crashkernel_mem(ck_cmdline, system_ram,
-1476                                 crash_size, crash_base);
-
-1478         return parse_crashkernel_simple(ck_cmdline, crash_size, crash_base);
-
-seems better.
--- 
-Thanks.
-Zhang Yanfei
+~Maarten
