@@ -1,63 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755778Ab3HFPPS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 11:15:18 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:56740 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753976Ab3HFPPP convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 11:15:15 -0400
-Message-ID: <1375802112.12043.62.camel@hornet>
-Subject: Re: [RFC 2/2] usb: dwc3: Add Qualcomm DWC3 glue layer driver
-From: Pawel Moll <pawel.moll@arm.com>
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-Cc: "balbi@ti.com" <balbi@ti.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Date: Tue, 06 Aug 2013 16:15:12 +0100
-In-Reply-To: <1375796793.2027.20.camel@iivanov-dev.int.mm-sol.com>
-References: <1375789991-30041-1-git-send-email-iivanov@mm-sol.com>
-	 <1375789991-30041-3-git-send-email-iivanov@mm-sol.com>
-	 <1375791698.12043.53.camel@hornet>
-	 <1375796793.2027.20.camel@iivanov-dev.int.mm-sol.com>
-X-Mailer: Evolution 3.8.2-0ubuntu1~raring1
-Mime-Version: 1.0
-X-OriginalArrivalTime: 06 Aug 2013 15:15:12.0487 (UTC) FILETIME=[BF344F70:01CE92B7]
-X-MC-Unique: 113080616151303701
+	id S1755605Ab3HFPRs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 11:17:48 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:39694 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753847Ab3HFPRr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Aug 2013 11:17:47 -0400
+Message-ID: <52011361.6060606@zytor.com>
+Date: Tue, 06 Aug 2013 08:16:49 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+CC: Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -tip ] x86/insn: Add Haswell-introduced opcodes
+References: <20130806073750.4049.12365.stgit@udc4-manage.rcp.hitachi.co.jp>
+In-Reply-To: <20130806073750.4049.12365.stgit@udc4-manage.rcp.hitachi.co.jp>
+X-Enigmail-Version: 1.5.2
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-08-06 at 14:46 +0100, Ivan T. Ivanov wrote:
-> > > +			reg = <0xf9200000 0xcd00>;
-> > > +			interrupts = <0 131 0>;
-> > > +			interrupt-names = "irq";
-> > > +			usb-phy = <&dwc3_usb2>, <&dwc3_usb3>;
-> > > +			tx-fifo-resize;
-> > > +		};
-> > > +	};
-> > 
-> > And now I'm really confused... Maybe it's just lack of documentation...
-> > 
-> > How does the "qcom,dwc-usb3-msm" relate to "qcom,dwc-usb3"?
+On 08/06/2013 12:37 AM, Masami Hiramatsu wrote:
+> Add TSX-NI related instructions and new instructions to
+> x86-opcode-map.txt according to the Intel(R) 64 and IA-32
+> Architectures Software Developer's Manual Vol2C (June, 2013).
+> This also includes below updates.
+>  - Fix a typo of MWAIT (the lack of (11B)).
+>  - Change NOP Ev to prefetchw Ev
+>  - Add CRC32 new prefix style (66&F2)
+>  - Add ADCX, ADOX, RDSEED, CLAC and STAC instructions
 > 
-> Not sure from where you get this "qcom,dwc-usb3", but now I think
-> that "qcom,dwc-usb3" should be enough for compatible.  
+> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: "H. Peter Anvin" <hpa@zytor.com>
 
-The other patch introduces "qcom,dwc3-usb3" compatible value...
+Thanks, applied!
 
-Paweł
+You may want to also look at:
 
+http://software.intel.com/en-us/intel-isa-extensions
+
+... specifically ...
+
+http://software.intel.com/sites/default/files/319433-015.pdf
+
+For a *lot* of new instructions coming down the pipe.
+
+	-hpa
 
