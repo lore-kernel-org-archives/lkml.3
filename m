@@ -1,78 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756234Ab3HFRGc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 13:06:32 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:18572 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756187Ab3HFRGa (ORCPT
+	id S1756262Ab3HFRJY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 13:09:24 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:34487 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756191Ab3HFRJW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 13:06:30 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 72.84.113.162
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19wElgYUrBh5toKtpUvVDTgz4brIHaVPMk=
-Date: Tue, 6 Aug 2013 13:06:12 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 0/5] ARM: dove: switch to DT MBus
-Message-ID: <20130806170612.GW19280@titan.lakedaemon.net>
-References: <1375101114-28858-1-git-send-email-sebastian.hesselbarth@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1375101114-28858-1-git-send-email-sebastian.hesselbarth@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 6 Aug 2013 13:09:22 -0400
+From: "Yann E. MORIN" <yann.morin.1998@free.fr>
+To: linux-kbuild@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, "Yann E. MORIN" <yann.morin.1998@free.fr>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Michal Marek <mmarek@suse.cz>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH] kconfig: silence warning when parsing auto.conf when a symbol has changed type
+Date: Tue,  6 Aug 2013 19:09:14 +0200
+Message-Id: <1375808954-7221-1-git-send-email-yann.morin.1998@free.fr>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 29, 2013 at 02:31:49PM +0200, Sebastian Hesselbarth wrote:
-> This patch set converts DT based Dove boards to DT probed MBus to be
-> introduced with v3.12.
-> 
-> The first two patches prepare Dove DT nodes for MBus ID remapping by using
-> preprocessor includes and adding the MBUS_ID macro. The third patch adds a
-> MBus DT node to Dove SoC dtsi with required ranges for internal MBus and
-> AXI registers, and PCIe mem and I/O apertures. The forth patch relocates
-> the nodes for the internal devices to the new MBus node. Also, internal-regs
-> ranges are updated to allow proper translation of MBus children's reg
-> properties. Finally, legacy MBus init is replaced by DT based MBus init
-> for DT based Dove.
-> 
-> The patch set depends on the MBus device tree patches that should appear
-> in v3.12. Currently, it is based on v3.11-rc2 with Dove DT cleanup patches
-> and MBus patch set v8 applied.
+From: "Yann E. MORIN" <yann.morin.1998@free.fr>
 
-Grrr.  It also depends on the mv643xx_eth and irqchip/clocksource
-changes.  I caught it, so no big deal.  In the future, please try to
-make each series stand alone unless absolutely necessary.
+When a symbol changes type from tristate to bool, and was previously set to
+'m', a subsequent silentoldconfig would warn about inconsistency, such as:
 
-> The patch set is _not_ sent to devicetree mainling list, because the MBus
-> binding will be discussed there on the MBus patches itself.
-> 
-> Sebastian Hesselbarth (5):
->   ARM: dove: use preprocessor on device tree files
->   ARM: dove: add MBUS_ID macro to Dove DT
->   ARM: dove: add MBus DT node
->   ARM: dove: relocate internal registers device nodes
->   ARM: dove: switch to DT probed mbus address windows
-> 
->  arch/arm/boot/dts/dove-cm-a510.dts |    2 +-
->  arch/arm/boot/dts/dove-cubox.dts   |    2 +-
->  arch/arm/boot/dts/dove-d2plug.dts  |    2 +-
->  arch/arm/boot/dts/dove-dove-db.dts |    2 +-
->  arch/arm/boot/dts/dove.dtsi        |  958 ++++++++++++++++++------------------
->  arch/arm/mach-dove/board-dt.c      |   10 +-
->  6 files changed, 491 insertions(+), 485 deletions(-)
+    include/config/auto.conf:3014:warning: symbol value 'm' invalid for
+    HOTPLUG_PCI_PCIE
 
-whole series applied to mvebu/dove_mbus with dependencies on
-mvebu/dove_dt, mvebu/mbus_dt, and mvebu/boards.  I may redo this to
-merge mvebu/dove_dt back into mvebu/boards.  I haven't decided yet.
+Seen by Linus with the merge in aa8032b (sequence to reproduce by Michal):
+    git checkout 1fe0135
+    make mrproper
+    make allmodconfig
+    make silentoldconfig
+    git checkout aa8032b
+    make allmodconfig
+    make silentoldconfig
 
-thx,
+Since HOTPLUG_PCI_PCIE changed from tristate to bool in aa8032b, it was
+previously set to 'm' in auto.conf by the first allmodconfig+silentoldconfig,
+but then was set to 'y' by the second allmodconfig. Then the second
+silentoldconfig prints the warning.
 
-Jason.
+The warning in this case is a spurious warning, which happens at the time
+kconfig tries to detect symbols that have changed, to touch the empty
+header files in include/config used for dependency-tracking by make.
+
+Silence the warning when we read the old auto.conf file, since it is
+perfectly legit that a symbol changed type since the previous call.
+
+Thread in:
+    http://marc.info/?l=linux-pci&m=137569198904000&w=2
+
+Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Michal Marek <mmarek@suse.cz>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+---
+ scripts/kconfig/confdata.c | 11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
+
+diff --git a/scripts/kconfig/confdata.c b/scripts/kconfig/confdata.c
+index c55c227..87f7238 100644
+--- a/scripts/kconfig/confdata.c
++++ b/scripts/kconfig/confdata.c
+@@ -140,7 +140,9 @@ static int conf_set_sym_val(struct symbol *sym, int def, int def_flags, char *p)
+ 			sym->flags |= def_flags;
+ 			break;
+ 		}
+-		conf_warning("symbol value '%s' invalid for %s", p, sym->name);
++		if (def != S_DEF_AUTO)
++			conf_warning("symbol value '%s' invalid for %s",
++				     p, sym->name);
+ 		return 1;
+ 	case S_OTHER:
+ 		if (*p != '"') {
+@@ -161,7 +163,8 @@ static int conf_set_sym_val(struct symbol *sym, int def, int def_flags, char *p)
+ 			memmove(p2, p2 + 1, strlen(p2));
+ 		}
+ 		if (!p2) {
+-			conf_warning("invalid string found");
++			if (def != S_DEF_AUTO)
++				conf_warning("invalid string found");
+ 			return 1;
+ 		}
+ 		/* fall through */
+@@ -172,7 +175,9 @@ static int conf_set_sym_val(struct symbol *sym, int def, int def_flags, char *p)
+ 			sym->def[def].val = strdup(p);
+ 			sym->flags |= def_flags;
+ 		} else {
+-			conf_warning("symbol value '%s' invalid for %s", p, sym->name);
++			if (def != S_DEF_AUTO)
++				conf_warning("symbol value '%s' invalid for %s",
++					     p, sym->name);
+ 			return 1;
+ 		}
+ 		break;
+-- 
+1.8.1.2
+
