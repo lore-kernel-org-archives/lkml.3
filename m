@@ -1,133 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755627Ab3HFLUP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 07:20:15 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:45807 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755188Ab3HFLUN (ORCPT
+	id S1756003Ab3HFLZk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 07:25:40 -0400
+Received: from omr-d02.mx.aol.com ([205.188.109.194]:54875 "EHLO
+	omr-d02.mx.aol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755350Ab3HFLZj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 07:20:13 -0400
-Date: Tue, 6 Aug 2013 12:19:32 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Vince Weaver <vincent.weaver@maine.edu>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        "trinity@vger.kernel.org" <trinity@vger.kernel.org>
-Subject: Re: perf,arm -- oops in validate_event
-Message-ID: <20130806111932.GA25383@e106331-lin.cambridge.arm.com>
-References: <alpine.DEB.2.10.1308051622270.28589@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.10.1308051711080.31327@vincent-weaver-1.um.maine.edu>
+	Tue, 6 Aug 2013 07:25:39 -0400
+X-MB-Message-Source: WebUI
+Content-Transfer-Encoding: 8BIT
+Subject: Employment Opportunity
+X-MB-Message-Type: User
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.10.1308051711080.31327@vincent-weaver-1.um.maine.edu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+From: WebRecruit <rosborne@switched.com>
+Content-Type: text/plain; charset="us-ascii"; format=flowed
+X-Mailer: AOL Webmail 37953-STANDARD
+Message-Id: <8D060AECF4B03D3-189C-6CF@webmail-d160.sysops.aol.com>
+X-Originating-IP: [65.49.14.152]
+Date: Tue, 6 Aug 2013 07:25:37 -0400 (EDT)
+x-aol-global-disposition: G
+x-aol-sid: 3039ac1d29485200dd31272d
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vince,
+Dear Expatriate,
 
-Thanks for the report.
+Falkland Oil & Gas has vacancies in London and intends to recruit 
+experienced individuals capable of rendering expertise services. These 
+career driven people are to apply for the various engineering, 
+construction, administrative, executive and many more positions 
+depending on your field of specialization in the oil & gas sector.
 
-On Mon, Aug 05, 2013 at 10:17:37PM +0100, Vince Weaver wrote:
-> On Mon, 5 Aug 2013, Vince Weaver wrote:
-> 
-> > My perf_fuzzer quickly triggers this oops on my ARM Cortex A9 pandaboard
-> > running Linux 3.11-rc4.
-> > 
-> > Below is the oops, I've attached a simple C test case that triggers the 
-> > bug.
-> 
-> Also, if it helps, the disassembled code in question.
-> 
-> It looks like in validate_event() we do
-> 
->         struct arm_pmu *armpmu = to_arm_pmu(event->pmu);
->         ...
->         return armpmu->get_event_idx(hw_events, event) >= 0;
-> 
-> armpmu is read into r3, and somehow the value at the offset of
-> armpmu->get_event_idx is either -1 or 0, so when it does a "blx" 
-> branch to the address at this offset we get the ooops.
-> 
->   c001bf8c:       e3120010        tst     r2, #16
->   c001bf90:       0a000004        beq     c001bfa8 <validate_event+0x48>
->   c001bf94:       e5933070        ldr     r3, [r3, #112]  ; 0x70
-> * c001bf98:       e12fff33        blx     r3
->   c001bf9c:       e1e00000        mvn     r0, r0
-> 
-> I'm having trouble tracing the code back past that, and I don't have time
-> to start adding printk's and recompiling right now.
-> 
-> Vince
+To apply, simply reply us with your CV/resume for our consideration.
 
-I think I can save you the effort :)
+Regards,
 
->From the looks of the test case and the kernel code in question, it
-looks like the following happens:
-
-* We create a software event, which becomes its own group leader.
-* We create a hardware event, with the software event as its group
-  leader.
-* When we try to schedule the hardware event, we try to validate all
-  events in its event group (the leader + siblings), but in doing so we
-  treat the software event as a hardware event, and erroneously try to
-  get its (non-existent) arm_pmu container, and call some garbage value
-  as get_event_idx(...).
-
-This could also happen if we tried to add events from different hardware
-PMUs to the same groups. I'm not sure if that's valid, but I couldn't
-see any code preventing that, and it seems the x86 validation logic is
-wired to allow this. If it's not valid, we could skip validation of
-software events by checking with is_software_event.
-
-Either way, I believe the patch below should solve the issue.
-
-Thanks,
-Mark.
-
----->8----
-
-diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
-index d9f5cd4..a7609a0 100644
---- a/arch/arm/kernel/perf_event.c
-+++ b/arch/arm/kernel/perf_event.c
-@@ -262,9 +262,15 @@ validate_event(struct pmu_hw_events *hw_events,
- 	return armpmu->get_event_idx(hw_events, event) >= 0;
- }
- 
-+static bool is_pmu_event(struct pmu *pmu, struct perf_event *event)
-+{
-+	return pmu == event->pmu;
-+}
-+
- static int
- validate_group(struct perf_event *event)
- {
-+	struct pmu *pmu = event->pmu;
- 	struct perf_event *sibling, *leader = event->group_leader;
- 	struct pmu_hw_events fake_pmu;
- 	DECLARE_BITMAP(fake_used_mask, ARMPMU_MAX_HWEVENTS);
-@@ -276,10 +282,17 @@ validate_group(struct perf_event *event)
- 	memset(fake_used_mask, 0, sizeof(fake_used_mask));
- 	fake_pmu.used_mask = fake_used_mask;
- 
--	if (!validate_event(&fake_pmu, leader))
-+	if (is_pmu_event(pmu, leader) && !validate_event(&fake_pmu, leader))
- 		return -EINVAL;
- 
- 	list_for_each_entry(sibling, &leader->sibling_list, group_entry) {
-+		/*
-+		 * We do not validate events for other PMUs (e.g. software
-+		 * events). Software events are always schedulable, and other
-+		 * PMU events must be validated elsewhere.
-+		 */
-+		if (!is_pmu_event(pmu, sibling))
-+			continue;
- 		if (!validate_event(&fake_pmu, sibling))
- 			return -EINVAL;
- 	}
+Robert Osborne
+Recruitment Team
+WebRecruit
