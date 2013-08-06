@@ -1,63 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756321Ab3HFQPS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 12:15:18 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:14643 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756289Ab3HFQPO (ORCPT
+	id S1756352Ab3HFQPk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 12:15:40 -0400
+Received: from mail-qc0-f175.google.com ([209.85.216.175]:58519 "EHLO
+	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756300Ab3HFQPR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 12:15:14 -0400
-X-Authority-Analysis: v=2.0 cv=e9yEuNV/ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=pFOAptgLnqcA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=pvQ05lsfB1wA:10 a=InIu05jss1b0TZa58xIA:9 a=QEXdDO2ut3YA:10 a=q_p8DFHK6VYA:10 a=6npnGG9fHNkA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-ID: <1375805711.25420.34.camel@gandalf.local.home>
-Subject: Re: [RFC] gcc feature request: Moving blocks into sections
-From: Steven Rostedt <rostedt@goodmis.org>
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, gcc <gcc@gcc.gnu.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        David Daney <ddaney.cavm@gmail.com>,
-        Behan Webster <behanw@converseincode.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Herbert Xu <herbert@gondor.hengli.com.au>
-Date: Tue, 06 Aug 2013 12:15:11 -0400
-In-Reply-To: <52001C92.3070209@linux.intel.com>
-References: <CA+55aFw_o=D-j_SRn=Y4LhHm-tEyuP1Je5ZHVTYxbVyLyDcLEg@mail.gmail.com>
-	 <1375725328.22073.101.camel@gandalf.local.home>
-	 <51FFEC56.6040206@linux.intel.com>
-	 <1375727010.22073.110.camel@gandalf.local.home>
-	 <51FFEEEC.5060902@linux.intel.com>
-	 <1375728583.22073.118.camel@gandalf.local.home>
-	 <51FFF430.1060701@linux.intel.com>
-	 <CA+55aFwz6cpsaWZ-19h91_CNGB5C3d1bNOv7woxetXOTyJ_CRw@mail.gmail.com>
-	 <20130805195446.GA22359@Krystal>
-	 <CA+55aFwrxRr4+kN8t8HCRnnVQyur5EGzQ_bRdYK3T-KW9Zp0aw@mail.gmail.com>
-	 <20130805212855.GA23044@Krystal> <52001C92.3070209@linux.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 6 Aug 2013 12:15:17 -0400
+Date: Tue, 6 Aug 2013 12:15:09 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: lizefan@huawei.com, hannes@cmpxchg.org, bsingharora@gmail.com,
+        kamezawa.hiroyu@jp.fujitsu.com, cgroups@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHSET cgroup/for-3.12] cgroup: make cgroup_event specific to
+ memcg
+Message-ID: <20130806161509.GB10779@mtj.dyndns.org>
+References: <1375632446-2581-1-git-send-email-tj@kernel.org>
+ <20130805160107.GM10146@dhcp22.suse.cz>
+ <20130805162958.GF19631@mtj.dyndns.org>
+ <20130805191641.GA24003@dhcp22.suse.cz>
+ <20130805194431.GD23751@mtj.dyndns.org>
+ <20130806155804.GC31138@dhcp22.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130806155804.GC31138@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-08-05 at 14:43 -0700, H. Peter Anvin wrote:
+Hello, Michal.
 
-> For unconditional jmp that should be pretty safe barring any fundamental
-> changes to the instruction set, in which case we can enable it as
-> needed, but for extra robustness it probably should skip prefix bytes.
+On Tue, Aug 06, 2013 at 05:58:04PM +0200, Michal Hocko wrote:
+> I am objecting to moving the generic part of that code into memcg. The
+> memcg part and the additional complexity (all the parsing and conditions
+> for signalling) is already in the memcg code.
 
-Would the assembler add prefix bytes to:
+But how is it generic if it's specific to memcg?  The practical
+purpose here is making it clear that the interface is only used by
+memcg and preventing any new usages from sprining up and the best way
+to achieve that is making the code actually memcg-specific.  It also
+helps cleaning up cftype in general.  I'm not sure what you're
+objecting to here.
 
-	jmp 1f
+> Such an interface would be really welcome but I would also ask how
+> it would implement/allow context passing. E.g. how do we know which
+> treshold has been reached? How do we find out the vmpressure level? Is
+> the consumer supposed to do an additional action after it gets
+> notification?
+> Etc.
 
-1:
+Yeap, exactly and that's how it should have been from the beginning.
+Attaching information to notification itself isn't a particularly good
+design (anyone remembers rtsig?) if there's polling mechanism to
+report the current state.  It essentially amounts to duplicate
+delivery mechanisms for the same information, which you usually don't
+want.  Here, the inconvenience / performance implications are
+negligible or even net-positive.  Plain file modified notification is
+way more familiar / conventional and the overhead of an extra read
+call, which is highly unlikely to be relevant given the expected
+frequency of the events we're talking about, is small compared to the
+action of event delivery and context switch.
 
-??
+> Really that natural? So memcg should touch internals like cgroup dentry
 
--- Steve
+Functionally, it is completely specific to memcg at this point.  It's
+the only user and will stay the only user.
 
+> reference counting. You seem have forgotten all the hassles with
+> cgroup_mutex, haven't you?
 
+Was the above sentence necessary?
+
+> No that part doesn't belong to memcg! You can discourage from new usage
+> of this interface of course.
+
+Oh, if you're objecting to the details of the implementation, we of
+course can clean it up.  It should conceptually and functionally be
+part of memcg and that is the guiding line we follow.  Implementations
+follow the concepts and functions, not the other way around.  The
+refcnt of course can be replaced with memcg css refcnting and we can
+of course factor out dentry comparison in a prettier form.
+
+Compare it to the other way around - having event callbacks in cftype
+and clearing code embedded in cgroup core destruction path when both
+of which are completely irrelevant to all other controllers.  Let's
+clean up the implementation details and put things where they belong.
+What's the excuse for not doing so when it's almost trivially doable?
+
+Thanks.
+
+-- 
+tejun
