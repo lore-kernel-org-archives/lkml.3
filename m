@@ -1,46 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755916Ab3HFQaF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 12:30:05 -0400
-Received: from mga09.intel.com ([134.134.136.24]:62600 "EHLO mga09.intel.com"
+	id S1756057Ab3HFQeV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 12:34:21 -0400
+Received: from mga14.intel.com ([143.182.124.37]:6405 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752224Ab3HFQaD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 12:30:03 -0400
+	id S1755491Ab3HFQeT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Aug 2013 12:34:19 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.89,827,1367996400"; 
-   d="scan'208";a="358463077"
-Message-ID: <52012481.2050207@linux.intel.com>
-Date: Tue, 06 Aug 2013 09:29:53 -0700
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+   d="scan'208";a="342496392"
+Date: Tue, 6 Aug 2013 12:34:14 -0400
+From: Matthew Wilcox <willy@linux.intel.com>
+To: Jan Kara <jack@suse.cz>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Mel Gorman <mgorman@suse.de>,
+        linux-mm@kvack.org, Andi Kleen <ak@linux.intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
+        Ning Qu <quning@google.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 01/23] radix-tree: implement preload for multiple
+ contiguous elements
+Message-ID: <20130806163414.GA4707@linux.intel.com>
+References: <1375582645-29274-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <1375582645-29274-2-git-send-email-kirill.shutemov@linux.intel.com>
+ <20130805111739.GA25691@quack.suse.cz>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, gcc <gcc@gcc.gnu.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        David Daney <ddaney.cavm@gmail.com>,
-        Behan Webster <behanw@converseincode.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: Re: [RFC] gcc feature request: Moving blocks into sections
-References: <CA+55aFw_o=D-j_SRn=Y4LhHm-tEyuP1Je5ZHVTYxbVyLyDcLEg@mail.gmail.com>   <1375725328.22073.101.camel@gandalf.local.home>   <51FFEC56.6040206@linux.intel.com>   <1375727010.22073.110.camel@gandalf.local.home>   <51FFEEEC.5060902@linux.intel.com>   <1375728583.22073.118.camel@gandalf.local.home>   <51FFF430.1060701@linux.intel.com>   <CA+55aFwz6cpsaWZ-19h91_CNGB5C3d1bNOv7woxetXOTyJ_CRw@mail.gmail.com>   <20130805195446.GA22359@Krystal>   <CA+55aFwrxRr4+kN8t8HCRnnVQyur5EGzQ_bRdYK3T-KW9Zp0aw@mail.gmail.com>   <20130805212855.GA23044@Krystal> <52001C92.3070209@linux.intel.com>  <1375805711.25420.34.camel@gandalf.local.home>  <52012229.2020707@linux.intel.com> <1375806413.25420.36.camel@gandalf.local.home>
-In-Reply-To: <1375806413.25420.36.camel@gandalf.local.home>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130805111739.GA25691@quack.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/06/2013 09:26 AM, Steven Rostedt wrote:
->>
->> No, but if we ever end up doing MPX in the kernel, for example, we would
->> have to put an MPX prefix on the jmp.
+On Mon, Aug 05, 2013 at 01:17:39PM +0200, Jan Kara wrote:
+> On Sun 04-08-13 05:17:03, Kirill A. Shutemov wrote:
+> > From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+> > The radix tree is variable-height, so an insert operation not only has
+> > to build the branch to its corresponding item, it also has to build the
+> > branch to existing items if the size has to be increased (by
+> > radix_tree_extend).
+> > @@ -82,16 +82,24 @@ static struct kmem_cache *radix_tree_node_cachep;
+> >   * The worst case is a zero height tree with just a single item at index 0,
+> >   * and then inserting an item at index ULONG_MAX. This requires 2 new branches
+> >   * of RADIX_TREE_MAX_PATH size to be created, with only the root node shared.
+> > + *
+> > + * Worst case for adding N contiguous items is adding entries at indexes
+> > + * (ULONG_MAX - N) to ULONG_MAX. It requires nodes to insert single worst-case
+> > + * item plus extra nodes if you cross the boundary from one node to the next.
+> > + *
+> >   * Hence:
+> >   */
+> > -#define RADIX_TREE_PRELOAD_SIZE (RADIX_TREE_MAX_PATH * 2 - 1)
+> > +#define RADIX_TREE_PRELOAD_MIN (RADIX_TREE_MAX_PATH * 2 - 1)
+> > +#define RADIX_TREE_PRELOAD_MAX \
+> > +	(RADIX_TREE_PRELOAD_MIN + \
+> > +	 DIV_ROUND_UP(RADIX_TREE_PRELOAD_NR - 1, RADIX_TREE_MAP_SIZE))
+>
+>   Umm, is this really correct? I see two problems:
+> 1) You may need internal tree nodes at various levels but you seem to
+> account only for the level 1.
+> 2) The rounding doesn't seem right because RADIX_TREE_MAP_SIZE+2 nodes may
+> require 3 nodes at level 1 if the indexes are like:
+> i_0 | i_1 .. i_{RADIX_TREE_MAP_SIZE} | i_{RADIX_TREE_MAP_SIZE+1}
+>     ^                                ^
+>     node boundary                    node boundary
 > 
-> Well then we just have to update the rest of the jump label code :-)
-> 
+>   Otherwise the patch looks good.
 
-For MPX in the kernel, this would be a small part of the work...!
+You are correct that in the fully general case, these things are needed,
+and the patch undercounts the number of nodes needed.  However, in the
+specific case of THP pagecache, insertions are naturally aligned, and
+we end up needing very few internal nodes (so few that we've never hit
+the end of this array in some fairly heavy testing).
 
-	-hpa
+There are two penalties for getting the general case correct.  One is
+that the calculation becomes harder to understand, and the other is
+that we consume more per-CPU memory.  I think we should document that
+the current code requires "natural alignment", and include a note about
+what things will need to change in order to support arbitrary alignment
+in case anybody needs to do it in the future, but not include support
+for arbitrary alignment in this patchset.
 
+What do you think?
