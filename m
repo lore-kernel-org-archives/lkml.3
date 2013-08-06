@@ -1,62 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754506Ab3HFDgX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Aug 2013 23:36:23 -0400
-Received: from mail-qa0-f43.google.com ([209.85.216.43]:52359 "EHLO
-	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754390Ab3HFDgU convert rfc822-to-8bit (ORCPT
+	id S1754676Ab3HFDzL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Aug 2013 23:55:11 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:53025 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754442Ab3HFDzJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Aug 2013 23:36:20 -0400
+	Mon, 5 Aug 2013 23:55:09 -0400
 MIME-Version: 1.0
-Date: Tue, 6 Aug 2013 11:36:19 +0800
-Message-ID: <CAAfg0W4jCXqfthyQi3X+hvznrnksDeJfSpKoymnc53fE=dRN9w@mail.gmail.com>
-Subject: [PATCH] warning-elimination: android: binder
-From: Andy Green <andy.green@linaro.org>
-To: linux-kernel@vger.kernel.org, Greg KH <greg@kroah.com>
-Cc: John Stultz <john.stultz@linaro.org>, Mark Brown <broonie@linaro.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <1375740121-23350-1-git-send-email-roland@kernel.org>
+References: <1375740121-23350-1-git-send-email-roland@kernel.org>
+From: Peter Chang <dpf@google.com>
+Date: Mon, 5 Aug 2013 20:54:48 -0700
+Message-ID: <CAF2xp_Fwav3ZZCiuQ5738r4p-TMVRBZzHdYgoNg4EfO3_0C+tg@mail.gmail.com>
+Subject: Re: [PATCH] [SCSI] sg: Fix user memory corruption when SG_IO is
+ interrupted by a signal
+To: Roland Dreier <roland@kernel.org>
+Cc: Jens Axboe <axboe@kernel.dk>, Doug Gilbert <dgilbert@interlog.com>,
+        James Bottomley <JBottomley@parallels.com>,
+        Costa Sapuntzakis <costa@purestorage.com>,
+        =?ISO-8859-1?Q?J=F6rn_Engel?= <joern@purestorage.com>,
+        linux-kernel@vger.kernel.org,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andy Green <andy.green@linaro.org>
+2013/8/5 Roland Dreier <roland@kernel.org>:
+> From: Roland Dreier <roland@purestorage.com>
+>
+> There is a nasty bug in the SCSI SG_IO ioctl that in some circumstances
+> leads to one process writing data into the address space of some other
+> random unrelated process if the ioctl is interrupted by a signal.
+> What happens is the following:
+>
+>  - A process issues an SG_IO ioctl with direction DXFER_FROM_DEV (ie the
+>    underlying SCSI command will transfer data from the SCSI device to
+>    the buffer provided in the ioctl)
+>
+>  - Before the command finishes, a signal is sent to the process waiting
+>    in the ioctl.  This will end up waking up the sg_ioctl() code:
+>
+>                 result = wait_event_interruptible(sfp->read_wait,
+>                         (srp_done(sfp, srp) || sdp->detached));
+>
+>    but neither srp_done() nor sdp->detached is true, so we end up just
+>    setting srp->orphan and returning to userspace:
+>
+>                 srp->orphan = 1;
+>                 write_unlock_irq(&sfp->rq_list_lock);
+>                 return result;  /* -ERESTARTSYS because signal hit process */
+>
+>    At this point the original process is done with the ioctl and
+>    blithely goes ahead handling the signal, reissuing the ioctl, etc.
 
-warning-elimination: android: binder
+i think that an additional issue here is that part of reissuing the
+ioctl is re-queueing the command. since the re-queue is at the front
+of the block queue there are issues if the command is non-idempotent.
 
-This commit in mainline (now) causes a couple of warnings
+we have a local fix that gets rid of most of the orphan stuff and
+re-waiting if a non-fatal signal was waiting. simpler than unmapping
+but maybe we're missing some other interesting case?
 
-commit 975a1ac9a9fe65d66ee1726c0db6dc58e53d232a
-Author: Arve Hjønnevåg <arve@android.com>
-Date:   Tue Oct 16 15:29:53 2012 -0700
-
-    Staging: android: binder: Add some tracepoints
-
-This patch fixes them
-
-Signed-off-by: Andy Green <andy.green@linaro.org>
----
-
-diff --git a/drivers/staging/android/binder_trace.h
-b/drivers/staging/android/binder_trace.h
-index 82a567c..c661e37 100644
---- a/drivers/staging/android/binder_trace.h
-+++ b/drivers/staging/android/binder_trace.h
-@@ -159,7 +159,7 @@ TRACE_EVENT(binder_transaction_node_to_ref,
-  TP_fast_assign(
-  __entry->debug_id = t->debug_id;
-  __entry->node_debug_id = node->debug_id;
-- __entry->node_ptr = node->ptr;
-+ __entry->node_ptr = (void __user *)node->ptr;
-  __entry->ref_debug_id = ref->debug_id;
-  __entry->ref_desc = ref->desc;
-  ),
-@@ -184,7 +184,7 @@ TRACE_EVENT(binder_transaction_ref_to_node,
-  __entry->ref_debug_id = ref->debug_id;
-  __entry->ref_desc = ref->desc;
-  __entry->node_debug_id = ref->node->debug_id;
-- __entry->node_ptr = ref->node->ptr;
-+ __entry->node_ptr = (void __user *)ref->node->ptr;
-  ),
-  TP_printk("transaction=%d node=%d src_ref=%d src_desc=%d ==> dest_ptr=0x%p",
-   __entry->debug_id, __entry->node_debug_id,
+\p
