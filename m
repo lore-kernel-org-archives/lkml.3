@@ -1,74 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756636Ab3HFWDA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 18:03:00 -0400
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:39026 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755559Ab3HFWC7 (ORCPT
+	id S1756655Ab3HFWF1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 18:05:27 -0400
+Received: from jesper.alarsen.net ([144.76.18.233]:52746 "EHLO
+	mail.alarsen.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754940Ab3HFWF1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 18:02:59 -0400
-From: Tomasz Figa <tomasz.figa@gmail.com>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Chris Ball <cjb@laptop.org>, Olof Johansson <olof@lixom.net>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        James Hogan <james.hogan@imgtec.com>,
-        Grant Grundler <grundler@chromium.org>,
-        Alim Akhtar <alim.akhtar@samsung.com>,
-        Abhilash Kesavan <a.kesavan@samsung.com>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 4/4] mmc: dw_mmc: Set timeout to max upon resume
-Date: Wed, 07 Aug 2013 00:02:53 +0200
-Message-ID: <1598418.IPSQVP644x@flatron>
-User-Agent: KMail/4.10.5 (Linux/3.10.4-gentoo; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <1375825071-20922-5-git-send-email-dianders@chromium.org>
-References: <1373470926-19314-1-git-send-email-dianders@chromium.org> <1375825071-20922-1-git-send-email-dianders@chromium.org> <1375825071-20922-5-git-send-email-dianders@chromium.org>
+	Tue, 6 Aug 2013 18:05:27 -0400
+X-Greylist: delayed 616 seconds by postgrey-1.27 at vger.kernel.org; Tue, 06 Aug 2013 18:05:26 EDT
+Date: Tue, 06 Aug 2013 23:55:05 +0200
+From: Anders Larsen <al@alarsen.net>
+Subject: Re: kernel mailing list permalinks
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Shuah Khan <shuahkhan@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        postmaster@vger.kernel.org
+In-Reply-To: <52016958.70005@zytor.com> (from hpa@zytor.com on Tue Aug  6
+	23:23:36 2013)
+X-Mailer: Balsa 2.4.1
+Message-Id: <1375826105.22552.0@oscar>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 06 of August 2013 14:37:51 Doug Anderson wrote:
-> The TMOUT register is initted to 0xffffffff at probe time but isn't
-> initted after suspend/resume.  Add an init of this value.
-> 
-> No problems were observed without this (it will also get initted in
-> __dw_mci_start_request if there is data to send), but it makes the
-> register dump before and after suspend clean.
-> 
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> Acked-by: Seungwon Jeon <tgih.jun@samsung.com>
-> ---
-> Changes in v4: None
-> Changes in v3: None
-> Changes in v2: None
-> 
->  drivers/mmc/host/dw_mmc.c | 3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-> index 0fa3135..1abcb36 100644
-> --- a/drivers/mmc/host/dw_mmc.c
-> +++ b/drivers/mmc/host/dw_mmc.c
-> @@ -2505,6 +2505,9 @@ int dw_mci_resume(struct dw_mci *host)
->  	/* Restore the old value at FIFOTH register */
->  	mci_writel(host, FIFOTH, host->fifoth_val);
-> 
-> +	/* Put in max timeout */
-> +	mci_writel(host, TMOUT, 0xFFFFFFFF);
-> +
->  	mci_writel(host, RINTSTS, 0xFFFFFFFF);
->  	mci_writel(host, INTMASK, SDMMC_INT_CMD_DONE | SDMMC_INT_DATA_OVER 
-|
->  		   SDMMC_INT_TXDR | SDMMC_INT_RXDR |
+On 2013-08-06 23:23, H. Peter Anvin wrote:
+> On 08/06/2013 02:11 PM, Bjorn Helgaas wrote:
+> >>
+> >> The above link is also a good example of subtleness: + in a URL  
+> means a
+> >> space character, it has to be escaped as %2B.  Particularly a  
+> problem in
+> >> gmail message-ids.
 
-Not sure if we really care about register dumps, but if it gets 
-initialized in probe as well, then this is fine.
+the link in question works just fine without escaping the +; the + only
+has to be escaped in then query component of a URL, not in the path
+component where it is just another valid character - and the link in
+question did not contain any query component.
 
-Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+(see RFC 3986 sections 3.3 and 3.4)
 
-Best regards,
-Tomasz
+> A quoted Message-ID might be weird as heck, but one rarely if ever see
+> them, I don't know if they are even legal.
 
+I don't think they are even possible, as the percent-sign is just  
+another
+valid character in a Message-ID - but so is the '+' sign, so it seems
+you're trying to solve a non-existent problem...
+
+(see RFC 5322 section 3.2.3)
+
+Cheers
+Anders
