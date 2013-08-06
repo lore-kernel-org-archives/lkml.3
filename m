@@ -1,88 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756904Ab3HFVqk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 17:46:40 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:60248 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756731Ab3HFVqh (ORCPT
+	id S1756899Ab3HFVrg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 17:47:36 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:43520 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756735Ab3HFVoG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 17:46:37 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Chen Gang <gang.chen@asianux.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, xi.wang@gmail.com,
-        nicolas.dichtel@6wind.com, Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <5200A5E6.9020803@asianux.com>
-Date: Tue, 06 Aug 2013 14:46:03 -0700
-In-Reply-To: <5200A5E6.9020803@asianux.com> (Chen Gang's message of "Tue, 06
-	Aug 2013 15:29:42 +0800")
-Message-ID: <8761vibihw.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Tue, 6 Aug 2013 17:44:06 -0400
+Date: Tue, 6 Aug 2013 14:43:42 -0700
+From: tip-bot for Andi Kleen <tipbot@zytor.com>
+Message-ID: <tip-04bb591ca74fb8ea06d5ab7fadfb7bf5b11fb28e@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        davem@davemloft.net, anil.s.keshavamurthy@intel.com, ananth@in.ibm.com,
+        masami.hiramatsu.pt@hitachi.com, ak@linux.intel.com,
+        tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        anil.s.keshavamurthy@intel.com, davem@davemloft.net, ananth@in.ibm.com,
+        masami.hiramatsu.pt@hitachi.com, ak@linux.intel.com,
+        tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <1375740170-7446-8-git-send-email-andi@firstfloor.org>
+References: <1375740170-7446-8-git-send-email-andi@firstfloor.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/asmlinkage] x86, asmlinkage:
+  Make kprobes code visible and fix assembler code
+Git-Commit-ID: 04bb591ca74fb8ea06d5ab7fadfb7bf5b11fb28e
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1/vKsYY1CXBUV/BHBkm5udcqaw4mKDdiLg=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.7 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.0 T_TooManySym_03 6+ unique symbols in subject
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Chen Gang <gang.chen@asianux.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH] kernel/sysctl_binary.c: improve the usage of return value 'result'
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 06 Aug 2013 14:43:49 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chen Gang <gang.chen@asianux.com> writes:
+Commit-ID:  04bb591ca74fb8ea06d5ab7fadfb7bf5b11fb28e
+Gitweb:     http://git.kernel.org/tip/04bb591ca74fb8ea06d5ab7fadfb7bf5b11fb28e
+Author:     Andi Kleen <ak@linux.intel.com>
+AuthorDate: Mon, 5 Aug 2013 15:02:41 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Tue, 6 Aug 2013 14:19:48 -0700
 
-Have you tested this code?  Do you have anything that actually the
-uses sysctl binary interface?
+x86, asmlinkage: Make kprobes code visible and fix assembler code
 
-If you do have code that actually uses this interface please fix it not
-to use it.  This code is fundamentally a stop gap measure and will
-bit-rot in time and then we will remove it.
+- Make all the external assembler template symbols __visible
+- Move the templates inline assembler code into a top level
+  assembler statement, not inside a function. This avoids it being
+  optimized away or cloned.
 
-> Improve the usage of return value 'result', so not only can make code
-> clearer to readers, but also can improve the performance.
->
-> Assign the return error code only when error occurs, so can save some
-> instructions (some of them are inside looping).
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Cc: Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Link: http://lkml.kernel.org/r/1375740170-7446-8-git-send-email-andi@firstfloor.org
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/include/asm/kprobes.h | 10 +++++-----
+ arch/x86/kernel/kprobes/core.c |  2 +-
+ arch/x86/kernel/kprobes/opt.c  |  5 +----
+ 3 files changed, 7 insertions(+), 10 deletions(-)
 
-That actually is a code pessimization, not an optimization.  As are most
-of your proposed changes.  Only assigning the error code simply can not
-generate better assembly code.
-
-> Rewrite the sysctl_getname() to make code clearer to readers, and also
-> can save some instructions (it is mainly related with the usage of the
-> variable 'result').
-
-Again you are introducing branches and pessimizing the code in the name
-of optimization.
-
-> Remove useless variable 'result' for sysctl() and compat sysctl(), when
-> do_sysctl() fails, it is meaningless to assign 'oldlenp ' with original
-> same value.
-
-> Also modify the related code to pass "./scripts/checkpatch.pl" checking.
-
-I really don't care about checpatch.pl at this point.
-
-The right answer to the code is to config it out and then you don't have
-to worry about it one way or another.
-
-The sysctl binary path has never been properly maintained and I don't
-intend to start.   But I will spend 5 minutes to say this patch seems to
-make the code worse not better.
-
-Eric
+diff --git a/arch/x86/include/asm/kprobes.h b/arch/x86/include/asm/kprobes.h
+index 5a6d287..9454c16 100644
+--- a/arch/x86/include/asm/kprobes.h
++++ b/arch/x86/include/asm/kprobes.h
+@@ -49,10 +49,10 @@ typedef u8 kprobe_opcode_t;
+ #define flush_insn_slot(p)	do { } while (0)
+ 
+ /* optinsn template addresses */
+-extern kprobe_opcode_t optprobe_template_entry;
+-extern kprobe_opcode_t optprobe_template_val;
+-extern kprobe_opcode_t optprobe_template_call;
+-extern kprobe_opcode_t optprobe_template_end;
++extern __visible kprobe_opcode_t optprobe_template_entry;
++extern __visible kprobe_opcode_t optprobe_template_val;
++extern __visible kprobe_opcode_t optprobe_template_call;
++extern __visible kprobe_opcode_t optprobe_template_end;
+ #define MAX_OPTIMIZED_LENGTH (MAX_INSN_SIZE + RELATIVE_ADDR_SIZE)
+ #define MAX_OPTINSN_SIZE 				\
+ 	(((unsigned long)&optprobe_template_end -	\
+@@ -62,7 +62,7 @@ extern kprobe_opcode_t optprobe_template_end;
+ extern const int kretprobe_blacklist_size;
+ 
+ void arch_remove_kprobe(struct kprobe *p);
+-void kretprobe_trampoline(void);
++asmlinkage void kretprobe_trampoline(void);
+ 
+ /* Architecture specific copy of original instruction*/
+ struct arch_specific_insn {
+diff --git a/arch/x86/kernel/kprobes/core.c b/arch/x86/kernel/kprobes/core.c
+index 211bce4..048852d 100644
+--- a/arch/x86/kernel/kprobes/core.c
++++ b/arch/x86/kernel/kprobes/core.c
+@@ -661,7 +661,7 @@ static void __used __kprobes kretprobe_trampoline_holder(void)
+ /*
+  * Called from kretprobe_trampoline
+  */
+-static __used __kprobes void *trampoline_handler(struct pt_regs *regs)
++__visible __used __kprobes void *trampoline_handler(struct pt_regs *regs)
+ {
+ 	struct kretprobe_instance *ri = NULL;
+ 	struct hlist_head *head, empty_rp;
+diff --git a/arch/x86/kernel/kprobes/opt.c b/arch/x86/kernel/kprobes/opt.c
+index 76dc6f0..2c1ac28 100644
+--- a/arch/x86/kernel/kprobes/opt.c
++++ b/arch/x86/kernel/kprobes/opt.c
+@@ -88,9 +88,7 @@ static void __kprobes synthesize_set_arg1(kprobe_opcode_t *addr, unsigned long v
+ 	*(unsigned long *)addr = val;
+ }
+ 
+-static void __used __kprobes kprobes_optinsn_template_holder(void)
+-{
+-	asm volatile (
++asm (
+ 			".global optprobe_template_entry\n"
+ 			"optprobe_template_entry:\n"
+ #ifdef CONFIG_X86_64
+@@ -129,7 +127,6 @@ static void __used __kprobes kprobes_optinsn_template_holder(void)
+ #endif
+ 			".global optprobe_template_end\n"
+ 			"optprobe_template_end:\n");
+-}
+ 
+ #define TMPL_MOVE_IDX \
+ 	((long)&optprobe_template_val - (long)&optprobe_template_entry)
