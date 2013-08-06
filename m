@@ -1,47 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755467Ab3HFOCa (ORCPT <rfc822;w@1wt.eu>);
+	id S1755525Ab3HFOCl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 10:02:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24074 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755351Ab3HFOCa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 6 Aug 2013 10:02:30 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:46250 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753655Ab3HFOC2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 10:02:28 -0400
+Date: Tue, 6 Aug 2013 16:02:21 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Michael Ellerman <michael@ellerman.id.au>
+Cc: linux-kernel@vger.kernel.org, acme@ghostprotocols.net,
+        a.p.zijlstra@chello.nl
+Subject: Re: [PATCH v2 1/2] perf tools: Add support for pinned modifier
+Message-ID: <20130806140221.GD1068@krava.brq.redhat.com>
+References: <1375795686-4226-1-git-send-email-michael@ellerman.id.au>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <1375797260.8219.21.camel@jlt4.sipsolutions.net>
-References: <CA+icZUX8OcTSOABO6Nbz5R6_5-m39rsYOpDqYBA7hf8LFvJLLA@mail.gmail.com>
-	<1375797260.8219.21.camel@jlt4.sipsolutions.net>
-Date: Tue, 6 Aug 2013 16:02:27 +0200
-Message-ID: <CA+icZUWuLWY9w8wAP1SU9A7ibrbM=fMDN58DS7BQO6Xg66_A0w@mail.gmail.com>
-Subject: Re: linux-next: Tree for Aug 6 [ wireless | iwlwifi | mac80211 ? ]
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Johannes Berg <johannes@sipsolutions.net>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        wireless <linux-wireless@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1375795686-4226-1-git-send-email-michael@ellerman.id.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 6, 2013 at 3:54 PM, Johannes Berg <johannes@sipsolutions.net> wrote:
-> On Tue, 2013-08-06 at 15:51 +0200, Sedat Dilek wrote:
->> OK, I did not try with debugging enabled and/or w/o Network-Manager.
->>
->> If you know of an issue, please let me know.
->
-> No, but the dmesg looks like security problems - check wpa_supplicant
-> log
->
+On Tue, Aug 06, 2013 at 11:28:05PM +1000, Michael Ellerman wrote:
+> This commit adds support for a new modifier "D", which requests that the
+> event, or group of events, be pinned to the PMU.
+> 
+> The "p" modifier is already taken for precise, and "P" may be used in
+> future to mean "fully precise".
+> 
+> So we use "D", which stands for pinneD - and looks like a padlock, or if
+> you're using the ":D" syntax perf smiles at you.
+> 
+> This is an oft-requested feature from our HW folks, who want to be able
+> to run a large number of events, but also want 100% accurate results for
+> instructions per cycle.
+> 
+> Comparison of results with and without pinning:
+> 
+> $ perf stat -e '{cycles,instructions}:D' -e cycles,instructions,...
+> 
+>   79,590,480,683 cycles         #  0.000 GHz
+>  166,123,716,524 instructions   #  2.09  insns per cycle
+>                                 #  0.11  stalled cycles per insn
+> 
+>   79,352,134,463 cycles         #  0.000 GHz                     [11.11%]
+>  165,178,301,818 instructions   #  2.08  insns per cycle
+>                                 #  0.11  stalled cycles per insn [11.13%]
+> 
+> As you can see although perf does a very good job of scaling the values
+> in the non-pinned case, there is some small discrepancy.
+> 
+> The patch is fairly straight forward, the one detail is that we need to
+> make sure we only request pinning for the group leader when we have a
+> group.
+> 
+> Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
 
-Which line is this?
+Tested-by/Acked-by: Jiri Olsa <jolsa@redhat.com>
 
-This one:
-
-[   27.992248] wlan0: deauthenticated from 00:04:0e:e4:00:3d (Reason: 1)
-
-- Sedat -
-
-> johannes
->
+thanks,
+jirka
