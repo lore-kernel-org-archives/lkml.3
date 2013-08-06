@@ -1,96 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756761Ab3HFVng (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 17:43:36 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:43498 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755835Ab3HFVne (ORCPT
+	id S1756781Ab3HFVnn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 17:43:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56402 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755835Ab3HFVnl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 17:43:34 -0400
-Date: Tue, 6 Aug 2013 14:43:23 -0700
-From: tip-bot for Andi Kleen <tipbot@zytor.com>
-Message-ID: <tip-35ea7903b8a97162e38da9da3b560df74713321d@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        ak@linux.intel.com, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        ak@linux.intel.com, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1375740170-7446-6-git-send-email-andi@firstfloor.org>
-References: <1375740170-7446-6-git-send-email-andi@firstfloor.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/asmlinkage] x86, asmlinkage: Make 32bit/
- 64bit __switch_to visible
-Git-Commit-ID: 35ea7903b8a97162e38da9da3b560df74713321d
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 06 Aug 2013 14:43:28 -0700 (PDT)
+	Tue, 6 Aug 2013 17:43:41 -0400
+Date: Tue, 6 Aug 2013 14:43:39 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, xi.wang@gmail.com,
+        nicolas.dichtel@6wind.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kernel/sysctl_binary.c: improve the usage of return
+ value 'result'
+Message-Id: <20130806144339.182beb0a2abddc0782015487@linux-foundation.org>
+In-Reply-To: <5200A5E6.9020803@asianux.com>
+References: <5200A5E6.9020803@asianux.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  35ea7903b8a97162e38da9da3b560df74713321d
-Gitweb:     http://git.kernel.org/tip/35ea7903b8a97162e38da9da3b560df74713321d
-Author:     Andi Kleen <ak@linux.intel.com>
-AuthorDate: Mon, 5 Aug 2013 15:02:39 -0700
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Tue, 6 Aug 2013 14:18:30 -0700
+On Tue, 06 Aug 2013 15:29:42 +0800 Chen Gang <gang.chen@asianux.com> wrote:
 
-x86, asmlinkage: Make 32bit/64bit __switch_to visible
+> Improve the usage of return value 'result', so not only can make code
+> clearer to readers, but also can improve the performance.
 
-This function is called from inline assembler, so has to be visible.
+It used to be pervasive kernel style do to
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Link: http://lkml.kernel.org/r/1375740170-7446-6-git-send-email-andi@firstfloor.org
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/include/asm/switch_to.h | 4 ++--
- arch/x86/kernel/process_32.c     | 2 +-
- arch/x86/kernel/process_64.c     | 2 +-
- 3 files changed, 4 insertions(+), 4 deletions(-)
+	ret = -ENOMEM;
+	foo = alloc(...);
+	if (!foo)
+		goto out;
 
-diff --git a/arch/x86/include/asm/switch_to.h b/arch/x86/include/asm/switch_to.h
-index 4ec45b3..d7f3b3b 100644
---- a/arch/x86/include/asm/switch_to.h
-+++ b/arch/x86/include/asm/switch_to.h
-@@ -2,8 +2,8 @@
- #define _ASM_X86_SWITCH_TO_H
+whereas nowadays people usually do the more straightforward
+
+	foo = alloc(...);
+	if (!foo) {
+		ret = -ENOMEM;
+		goto out;
+	}
+
+The thinking was that the old style generated better code, but for the
+life of me I can't remember why :(
+
+Your patch switches from old-style to new-style.  And it appears to
+have increased the text size.  I did this, to switch three sites back
+to old-style:
+
+--- a/kernel/sysctl_binary.c~kernel-sysctl_binaryc-improve-the-usage-of-return-value-result-fix
++++ a/kernel/sysctl_binary.c
+@@ -941,17 +941,15 @@ static ssize_t bin_string(struct file *f
+ 		copied = result;
+ 		lastp = oldval + copied - 1;
  
- struct task_struct; /* one of the stranger aspects of C forward declarations */
--struct task_struct *__switch_to(struct task_struct *prev,
--				struct task_struct *next);
-+__visible struct task_struct *__switch_to(struct task_struct *prev,
-+					   struct task_struct *next);
- struct tss_struct;
- void __switch_to_xtra(struct task_struct *prev_p, struct task_struct *next_p,
- 		      struct tss_struct *tss);
-diff --git a/arch/x86/kernel/process_32.c b/arch/x86/kernel/process_32.c
-index f8adefc..884f98f 100644
---- a/arch/x86/kernel/process_32.c
-+++ b/arch/x86/kernel/process_32.c
-@@ -247,7 +247,7 @@ EXPORT_SYMBOL_GPL(start_thread);
-  * the task-switch, and shows up in ret_from_fork in entry.S,
-  * for example.
-  */
--__notrace_funcgraph struct task_struct *
-+__visible __notrace_funcgraph struct task_struct *
- __switch_to(struct task_struct *prev_p, struct task_struct *next_p)
- {
- 	struct thread_struct *prev = &prev_p->thread,
-diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
-index 05646ba..6e8c1d0 100644
---- a/arch/x86/kernel/process_64.c
-+++ b/arch/x86/kernel/process_64.c
-@@ -274,7 +274,7 @@ void start_thread_ia32(struct pt_regs *regs, u32 new_ip, u32 new_sp)
-  * Kprobes not supported here. Set the probe on schedule instead.
-  * Function graph tracer not supported too.
-  */
--__notrace_funcgraph struct task_struct *
-+__visible __notrace_funcgraph struct task_struct *
- __switch_to(struct task_struct *prev_p, struct task_struct *next_p)
- {
- 	struct thread_struct *prev = &prev_p->thread;
+-		if (get_user(ch, lastp)) {
+-			result = -EFAULT;
++		result = -EFAULT;
++		if (get_user(ch, lastp))
+ 			goto out;
+-		}
+ 
+ 		/* Trim off the trailing newline */
+ 		if (ch == '\n') {
+-			if (put_user('\0', lastp)) {
+-				result = -EFAULT;
++			result = -EFAULT;
++			if (put_user('\0', lastp))
+ 				goto out;
+-			}
+ 			copied -= 1;
+ 		}
+ 	}
+@@ -976,11 +974,10 @@ static ssize_t bin_intvec(struct file *f
+ 	char *buffer;
+ 	ssize_t result;
+ 
++	result = -ENOMEM;
+ 	buffer = kmalloc(BUFSZ, GFP_KERNEL);
+-	if (!buffer) {
+-		result = -ENOMEM;
++	if (!buffer)
+ 		goto out;
+-	}
+ 
+ 	if (oldval && oldlen) {
+ 		unsigned __user *vec = oldval;
+_
+
+and kernel/sysctl_binary.o's .text got six bytes smaller.
+
+Now, smaller text doesn't mean faster code.  But it probably means
+larger cache footprint, which can mean slower code.
+
+IOW, it isn't obvious that this was an improvement.
