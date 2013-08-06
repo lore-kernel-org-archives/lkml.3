@@ -1,56 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755918Ab3HFPhW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 11:37:22 -0400
-Received: from mail1.bemta5.messagelabs.com ([195.245.231.152]:28985 "EHLO
-	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755506Ab3HFPhV convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 11:37:21 -0400
-X-Greylist: delayed 383 seconds by postgrey-1.27 at vger.kernel.org; Tue, 06 Aug 2013 11:37:21 EDT
-X-Env-Sender: stwiss.opensource@diasemi.com
-X-Msg-Ref: server-3.tower-178.messagelabs.com!1375803052!23368953!1
-X-Originating-IP: [94.185.165.51]
-X-StarScan-Received: 
-X-StarScan-Version: 6.9.11; banners=-,-,-
-X-VirusChecked: Checked
-From: Steve Twiss <stwiss.opensource@diasemi.com>
-To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>
-CC: David Dajun Chen <david.chen@diasemi.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH V4] DA9210 new driver files
-Thread-Topic: [PATCH V4] DA9210 new driver files
-Thread-Index: AQHOkrKHFXnxb0oTX0qm8YSLyXGAuZmITBsw
-Date: Tue, 6 Aug 2013 15:30:51 +0000
-Message-ID: <6ED8E3B22081A4459DAC7699F3695FB71D7237EC@SW-EX-MBX02.diasemi.com>
-References: <201308061437.r76EblmA010507@swsrvapps-01.diasemi.com>
-In-Reply-To: <201308061437.r76EblmA010507@swsrvapps-01.diasemi.com>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.20.27.23]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755954Ab3HFPna (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 11:43:30 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:39145 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755826Ab3HFPn2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Aug 2013 11:43:28 -0400
 MIME-Version: 1.0
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <1375802993.8219.26.camel@jlt4.sipsolutions.net>
+References: <CA+icZUX8OcTSOABO6Nbz5R6_5-m39rsYOpDqYBA7hf8LFvJLLA@mail.gmail.com>
+	<1375797260.8219.21.camel@jlt4.sipsolutions.net>
+	<CA+icZUUAJ25QybqHvxz7eubSLH6YuNjcc5zyU2O5Xi9vevMGkw@mail.gmail.com>
+	<1375800617.8219.23.camel@jlt4.sipsolutions.net>
+	<CA+icZUVbKpyuke6PRg3-60gOggsTb=3cNRz3Sy0RmvcZSuPaNw@mail.gmail.com>
+	<1375801059.8219.24.camel@jlt4.sipsolutions.net>
+	<CA+icZUXrRsXfeW9hqxTMkKW4TdNSBH-zE8-zX2Rd7HTAx5MvqQ@mail.gmail.com>
+	<CA+icZUWijPJmNoqE22Msqcn7tRot3SB3e=KujMM7JNd-Om-oOw@mail.gmail.com>
+	<1375802297.8219.25.camel@jlt4.sipsolutions.net>
+	<CA+icZUVCFOS6SHonEqzaJyWCGCU4nqqGjBN0VbmV-=OoM+deZg@mail.gmail.com>
+	<CA+icZUVuOqdZUGy2ALAF1CehOqYdr7rtEsXhqNvDtYEns2BuRQ@mail.gmail.com>
+	<1375802993.8219.26.camel@jlt4.sipsolutions.net>
+Date: Tue, 6 Aug 2013 17:43:27 +0200
+Message-ID: <CA+icZUW6P9Z_7z+o+z=qBWSFzyU8tgtY0ou+rmLcEzWbn94OXA@mail.gmail.com>
+Subject: Re: linux-next: Tree for Aug 6 [ wireless | iwlwifi | mac80211 ? ]
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        wireless <linux-wireless@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 06 August 2013 15:31 Steve Twiss wrote:
->Subject: [PATCH V4] DA9210 new driver files
-...
+On Tue, Aug 6, 2013 at 5:29 PM, Johannes Berg <johannes@sipsolutions.net> wrote:
+> On Tue, 2013-08-06 at 17:27 +0200, Sedat Dilek wrote:
+>> On Tue, Aug 6, 2013 at 5:20 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>> > On Tue, Aug 6, 2013 at 5:18 PM, Johannes Berg <johannes@sipsolutions.net> wrote:
+>> >>
+>> >>
+>> >>> I have sent you a v2 of my logs (with -d and rsyslog-7.x).
+>> >>
+>> >> Hmm, that looks different? There no longer is anything about "PSK might
+>> >> be wrong", but now just disconnections by the AP, which unfortunately
+>> >> indicate no reason.
+>> >>
+>> >> When was it working last?
+>> >>
+>> >
+>> > next-20130801 was OK here.
+>> >
+>>
+>> What about these lines?
+>>
+>> Aug  6 17:03:37 fambox kernel: [  134.575120] wlan0: deauthenticated
+>> from 00:04:0e:e4:00:3d (Reason: 1)
+>> Aug  6 17:03:37 fambox wpa_supplicant[2424]: wlan0: Event DEAUTH (12) received
+>> Aug  6 17:03:37 fambox wpa_supplicant[2424]: wlan0: Deauthentication
+>> notification
+>> Aug  6 17:03:37 fambox wpa_supplicant[2424]: Deauthentication frame
+>> IE(s) - hexdump(len=0): [NULL]
+>> Aug  6 17:03:37 fambox wpa_supplicant[2424]: wlan0: WPA: 4-Way
+>> Handshake failed - pre-shared key may be incorrect
+>> Aug  6 17:03:37 fambox NetworkManager[2431]: <info> (wlan0):
+>> supplicant interface state: 4-way handshake -> disconnected
+>
+> Yeah but before you had a local deauth request, this time it's the AP
+> kicking you off.
+>
+> I really don't know. Can you try something like wireless-testing maybe?
+> -next could have any kind of breakage I guess ...
+>
 
-It has already been pointed out that I have put the wrong subject line into
-this patch.
+I pulled in master-2013-08-05 tag on top of Linux v3.11-rc4... Building...
 
-I thought that my previous submission attempts were drawing comments
-because of the body content of the e-mail was wrong and the details should have
-been placed after the --- marker, not because of the subject line.
+You assume a breakage in a different area than wireless or network in general?
 
-I will wait for any further comments to PATCH V4, then I'll resubmit a V5...
+- Sedat -
 
-Regards,
-Steve
 
+> johannes
+>
