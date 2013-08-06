@@ -1,85 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756515Ab3HFSOq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 14:14:46 -0400
-Received: from mail-vb0-f52.google.com ([209.85.212.52]:63699 "EHLO
-	mail-vb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756298Ab3HFSOp (ORCPT
+	id S1756668Ab3HFSQR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 14:16:17 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:34244 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756383Ab3HFSQM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 14:14:45 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130806173855.GB24908@redhat.com>
-References: <20130806143148.GG15178@dhcp-25-225.brq.redhat.com>
- <20130806164745.GA17343@redhat.com> <20130806173827.GA24908@redhat.com> <20130806173855.GB24908@redhat.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 6 Aug 2013 11:14:24 -0700
-Message-ID: <CALCETrWbsT+HGvVQMV_fUEDa1otG+er0gU3H4v-_9FdWgYpY1g@mail.gmail.com>
-Subject: Re: [PATCH 1/1] userns: unshare_userns(&cred) should not populate
- cred on failure
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: security@kernel.org, oss-security@lists.openwall.com,
-        Petr Matousek <pmatouse@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        David Howells <dhowells@redhat.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 6 Aug 2013 14:16:12 -0400
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+To: <gleb@redhat.com>, <mingo@redhat.com>, <jeremy@goop.org>, <x86@kernel.org>,
+        <konrad.wilk@oracle.com>, <hpa@zytor.com>, <pbonzini@redhat.com>
+Cc: <agraf@suse.de>, linux-doc@vger.kernel.org, <habanero@linux.vnet.ibm.com>,
+        <riel@redhat.com>, Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        <drjones@redhat.com>, <avi.kivity@gmail.com>, <peterz@infradead.org>,
+        <chegu_vinod@hp.com>, <virtualization@lists.linux-foundation.org>,
+        <torvalds@linux-foundation.org>, <tglx@linutronix.de>,
+        <mtosatti@redhat.com>, <kvm@vger.kernel.org>,
+        <srivatsa.vaddagiri@gmail.com>, <ouyang@cs.pitt.edu>,
+        <andi@firstfloor.org>, <linux-kernel@vger.kernel.org>
+Date: Tue, 06 Aug 2013 23:52:16 +0530
+Message-Id: <20130806182216.2386.39541.sendpatchset@codeblue.in.ibm.com>
+In-Reply-To: <20130806182150.2386.95104.sendpatchset@codeblue.in.ibm.com>
+References: <20130806182150.2386.95104.sendpatchset@codeblue.in.ibm.com>
+Subject: [PATCH V12 1/5] kvm uapi: Add KICK_CPU and PV_UNHALT definition to uapi
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13080618-7408-0000-0000-000012B87DB3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 6, 2013 at 10:38 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> unshare_userns(new_cred) does *new_cred = prepare_creds() before
-> create_user_ns() which can fail. However, the caller expects that
-> it doesn't need to take care of new_cred if unshare_userns() fails.
->
-> We could change the single caller, sys_unshare(), but I think it
-> would be more clean to avoid the side effects on failure, so with
-> this patch unshare_userns() does put_cred() itself and initializes
-> *new_cred only if create_user_ns() succeeeds.
->
-> Cc: stable@vger.kernel.org
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> ---
->  kernel/user_namespace.c |   13 +++++++++----
->  1 files changed, 9 insertions(+), 4 deletions(-)
->
-> diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
-> index d8c30db..6e50a44 100644
-> --- a/kernel/user_namespace.c
-> +++ b/kernel/user_namespace.c
-> @@ -105,16 +105,21 @@ int create_user_ns(struct cred *new)
->  int unshare_userns(unsigned long unshare_flags, struct cred **new_cred)
->  {
->         struct cred *cred;
-> +       int err = -ENOMEM;
->
->         if (!(unshare_flags & CLONE_NEWUSER))
->                 return 0;
->
->         cred = prepare_creds();
-> -       if (!cred)
-> -               return -ENOMEM;
-> +       if (cred) {
-> +               err = create_user_ns(cred);
-> +               if (err)
-> +                       put_cred(cred);
-> +               else
-> +                       *new_cred = cred;
-> +       }
->
-> -       *new_cred = cred;
-> -       return create_user_ns(cred);
-> +       return err;
->  }
->
->  void free_user_ns(struct user_namespace *ns)
-> --
-> 1.5.5.1
->
->
+kvm uapi: Add KICK_CPU and PV_UNHALT definition to uapi
 
-Reviewed-by: Andy Lutomirski <luto@amacapital.net>
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
 
+this is needed by both guest and host.
 
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+Originally-from: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Acked-by: Gleb Natapov <gleb@redhat.com>
+Acked-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/include/uapi/asm/kvm_para.h |    1 +
+ include/uapi/linux/kvm_para.h        |    1 +
+ 2 files changed, 2 insertions(+)
+
+diff --git a/arch/x86/include/uapi/asm/kvm_para.h b/arch/x86/include/uapi/asm/kvm_para.h
+index 06fdbd9..94dc8ca 100644
+--- a/arch/x86/include/uapi/asm/kvm_para.h
++++ b/arch/x86/include/uapi/asm/kvm_para.h
+@@ -23,6 +23,7 @@
+ #define KVM_FEATURE_ASYNC_PF		4
+ #define KVM_FEATURE_STEAL_TIME		5
+ #define KVM_FEATURE_PV_EOI		6
++#define KVM_FEATURE_PV_UNHALT		7
+ 
+ /* The last 8 bits are used to indicate how to interpret the flags field
+  * in pvclock structure. If no bits are set, all flags are ignored.
+diff --git a/include/uapi/linux/kvm_para.h b/include/uapi/linux/kvm_para.h
+index cea2c5c..2841f86 100644
+--- a/include/uapi/linux/kvm_para.h
++++ b/include/uapi/linux/kvm_para.h
+@@ -19,6 +19,7 @@
+ #define KVM_HC_MMU_OP			2
+ #define KVM_HC_FEATURES			3
+ #define KVM_HC_PPC_MAP_MAGIC_PAGE	4
++#define KVM_HC_KICK_CPU			5
+ 
+ /*
+  * hypercalls use architecture specific
+
