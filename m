@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933009Ab3HGNYe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 09:24:34 -0400
+	id S933034Ab3HGNYg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 09:24:36 -0400
 Received: from mga02.intel.com ([134.134.136.20]:37973 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932921Ab3HGNYc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 09:24:32 -0400
+	id S932921Ab3HGNYe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 09:24:34 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.89,833,1367996400"; 
-   d="scan'208";a="377485343"
+   d="scan'208";a="377485384"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
@@ -17,44 +17,45 @@ Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
         Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 0/3] perf: add a dummy software event to keep tracking
-Date: Wed,  7 Aug 2013 16:30:28 +0300
-Message-Id: <1375882231-18339-1-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH 1/3] perf: add a dummy software event to keep tracking
+Date: Wed,  7 Aug 2013 16:30:29 +0300
+Message-Id: <1375882231-18339-2-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1375882231-18339-1-git-send-email-adrian.hunter@intel.com>
+References: <1375882231-18339-1-git-send-email-adrian.hunter@intel.com>
 Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+When an event is disabled the "tracking" events
+selected by the 'mmap', 'comm' and 'task' bits of
+struct perf_event_attr, are also disabled.  However,
+the information those events provide is necessary to
+resolve symbols for when the main event is re-enabled.
 
-This is an alternative to the 'keep tracking' flag patch
-which is here:
+The "tracking" events can be kept enabled by putting
+them on another event, but that requires an event
+that otherwise does nothing.  A new software event
+PERF_COUNT_SW_DUMMY is added for that purpose.
 
-	http://marc.info/?l=linux-kernel&m=137242545521246&w=2
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+---
+ include/uapi/linux/perf_event.h | 1 +
+ 1 file changed, 1 insertion(+)
 
-perf tools is updated and a test added to demonstrate the
-new event.
-
-
-Adrian Hunter (3):
-      perf: add a dummy software event to keep tracking
-      perf tools: add support for PERF_COUNT_SW_DUMMY
-      perf tools: add 'keep tracking' test
-
- include/uapi/linux/perf_event.h  |   1 +
- tools/perf/Makefile              |   1 +
- tools/perf/tests/builtin-test.c  |   4 ++
- tools/perf/tests/keep-tracking.c | 150 +++++++++++++++++++++++++++++++++++++++
- tools/perf/tests/tests.h         |   1 +
- tools/perf/util/evlist.c         |  42 ++++++++++-
- tools/perf/util/evlist.h         |   5 ++
- tools/perf/util/parse-events.c   |   4 ++
- tools/perf/util/parse-events.l   |   1 +
- tools/perf/util/python.c         |   1 +
- 10 files changed, 208 insertions(+), 2 deletions(-)
- create mode 100644 tools/perf/tests/keep-tracking.c
-
-Regards
-Adrian
+diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+index 62c25a2..9e28422 100644
+--- a/include/uapi/linux/perf_event.h
++++ b/include/uapi/linux/perf_event.h
+@@ -109,6 +109,7 @@ enum perf_sw_ids {
+ 	PERF_COUNT_SW_PAGE_FAULTS_MAJ		= 6,
+ 	PERF_COUNT_SW_ALIGNMENT_FAULTS		= 7,
+ 	PERF_COUNT_SW_EMULATION_FAULTS		= 8,
++	PERF_COUNT_SW_DUMMY			= 9,
+ 
+ 	PERF_COUNT_SW_MAX,			/* non-ABI */
+ };
+-- 
+1.7.11.7
 
