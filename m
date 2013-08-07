@@ -1,61 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757582Ab3HGXd5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 19:33:57 -0400
-Received: from ozlabs.org ([203.10.76.45]:53315 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757214Ab3HGXd4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 19:33:56 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: "Linus Torvalds" <torvalds@linux-foundation.org>
-Cc: "lkml" <linux-kernel@vger.kernel.org>
-Cc: Amit Shah <amit.shah@redhat.com>
-Cc: Asias He <asias@redhat.com>
-Cc: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-Subject: [PLEASE PULL] virtio fixes (again!)
-User-Agent: Notmuch/0.15.2+81~gd2c8818 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Thu, 08 Aug 2013 09:02:54 +0930
-Message-ID: <87siyloz4p.fsf@rustcorp.com.au>
+	id S933006Ab3HGXeN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 19:34:13 -0400
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:64663 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757214Ab3HGXeJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 19:34:09 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <CA+icZUVCBdFARueFRzAWT6Ax19s83ds5LFvqpQ-tOO96-ZhStA@mail.gmail.com>
+References: <CA+icZUW990rWKdQmppjkGTJzFBtTnW-tb0dRu2AbTYB8KSDN4w@mail.gmail.com>
+	<2146168.3J7W6RtiZr@vostro.rjw.lan>
+	<CAMbhsRSaJWUL2yBnEJ83TCjMJRSZNP0-XM3-mVYf7FuPtUYnUQ@mail.gmail.com>
+	<CA+icZUVCBdFARueFRzAWT6Ax19s83ds5LFvqpQ-tOO96-ZhStA@mail.gmail.com>
+Date: Wed, 7 Aug 2013 16:34:08 -0700
+X-Google-Sender-Auth: IwXmKQmxyj-U2JbhYrEHYi4_1Po
+Message-ID: <CAMbhsRT6eki+oY4D-iRJz2iqS+N3YBmnC0eP4bMN69cbgj=UsQ@mail.gmail.com>
+Subject: Re: linux-next: Tree for Aug 7 [ call-trace on suspend: ext4 | pm
+ related ? ]
+From: Colin Cross <ccross@android.com>
+To: sedat.dilek@gmail.com
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
+        Ext4 Developers List <linux-ext4@vger.kernel.org>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        Linux PM List <linux-pm@lists.linux-foundation.org>,
+        Tejun Heo <tj@kernel.org>
+Content-Type: multipart/mixed; boundary=e89a8ff242a363808d04e363faa7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 3b2f64d00c46e1e4e9bd0bb9bb12619adac27a4b:
+--e89a8ff242a363808d04e363faa7
+Content-Type: text/plain; charset=ISO-8859-1
 
-  Linux 3.11-rc2 (2013-07-21 12:05:29 -0700)
+On Wed, Aug 7, 2013 at 4:15 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+> On Thu, Aug 8, 2013 at 12:58 AM, Colin Cross <ccross@android.com> wrote:
+>> Can you try add a call to show_state_filter(TASK_UNINTERRUPTIBLE) in
+>> the error path of try_to_freeze_tasks(), where it prints the "refusing
+>> to freeze" message?  It will print the stack trace of every thread
+>> since they are all in the freezer, so the output will be very long.
+>>
+>
+> If you provide a patch, I will give it a try.
 
-are available in the git repository at:
+Try the attached patch.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rusty/linux.git tags/fixes-for-linus
+--e89a8ff242a363808d04e363faa7
+Content-Type: application/octet-stream; 
+	name="0001-HACK-print-stack-trace-for-all-tasks-when-freezing-f.patch"
+Content-Disposition: attachment; 
+	filename="0001-HACK-print-stack-trace-for-all-tasks-when-freezing-f.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hk36b8390
 
-for you to fetch changes up to aa52aeea2725839bdd3dcce394486e9a043065e0:
-
-  virtio-scsi: Fix virtqueue affinity setup (2013-08-01 11:37:19 +0930)
-
-----------------------------------------------------------------
-More virtio console fixes than I'm happy with, but all real issues,
-and all CC:stable..
-
-Thanks,
-Rusty.
-
-----------------------------------------------------------------
-Amit Shah (5):
-      virtio: console: fix race with port unplug and open/close
-      virtio: console: fix race in port_fops_open() and port unplug
-      virtio: console: clean up port data immediately at time of unplug
-      virtio: console: fix raising SIGIO after port unplug
-      virtio: console: return -ENODEV on all read operations after unplug
-
-Asias He (1):
-      virtio-scsi: Fix virtqueue affinity setup
-
-Yoshihiro YUNOMAE (2):
-      virtio/console: Quit from splice_write if pipe->nrbufs is 0
-      virtio/console: Add pipe_lock/unlock for splice_write
-
- drivers/char/virtio_console.c | 70 +++++++++++++++++++++++++++++--------------
- drivers/scsi/virtio_scsi.c    |  2 +-
- 2 files changed, 49 insertions(+), 23 deletions(-)
+RnJvbSBjMTZmMmEyYzM5ZTI5MWU4ZDRmYjM1ZjM0N2M0ZjVmNjNlZWExYzM2IE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBDb2xpbiBDcm9zcyA8Y2Nyb3NzQGFuZHJvaWQuY29tPgpEYXRl
+OiBXZWQsIDcgQXVnIDIwMTMgMTY6MzI6MTkgLTA3MDAKU3ViamVjdDogW1BBVENIXSBIQUNLOiBw
+cmludCBzdGFjayB0cmFjZSBmb3IgYWxsIHRhc2tzIHdoZW4gZnJlZXppbmcgZmFpbHMKCkNoYW5n
+ZS1JZDogSTk4YTU5ZmFhMjU4MDQ1OGVjMGZhODZlNDA0N2YyNzk0MzBjYzgxZjAKLS0tCiBrZXJu
+ZWwvcG93ZXIvcHJvY2Vzcy5jIHwgMyArKysKIDEgZmlsZSBjaGFuZ2VkLCAzIGluc2VydGlvbnMo
+KykKCmRpZmYgLS1naXQgYS9rZXJuZWwvcG93ZXIvcHJvY2Vzcy5jIGIva2VybmVsL3Bvd2VyL3By
+b2Nlc3MuYwppbmRleCAwNmVjODg2Li41ZDE3NGRmIDEwMDY0NAotLS0gYS9rZXJuZWwvcG93ZXIv
+cHJvY2Vzcy5jCisrKyBiL2tlcm5lbC9wb3dlci9wcm9jZXNzLmMKQEAgLTkwLDYgKzkwLDkgQEAg
+c3RhdGljIGludCB0cnlfdG9fZnJlZXplX3Rhc2tzKGJvb2wgdXNlcl9vbmx5KQogCQkgICAgICAg
+ZWxhcHNlZF9tc2VjcyAvIDEwMDAsIGVsYXBzZWRfbXNlY3MgJSAxMDAwLAogCQkgICAgICAgdG9k
+byAtIHdxX2J1c3ksIHdxX2J1c3kpOwogCisJCXByX2Vycigic2hvd2luZyBhbGwgYmxvY2tlZCB0
+YXNrc1xuIik7CisJCXNob3dfc3RhdGVfZmlsdGVyKFRBU0tfVU5JTlRFUlJVUFRJQkxFKTsKKwog
+CQlpZiAoIXdha2V1cCkgewogCQkJcmVhZF9sb2NrKCZ0YXNrbGlzdF9sb2NrKTsKIAkJCWRvX2Vh
+Y2hfdGhyZWFkKGcsIHApIHsKLS0gCjEuOC4zCgo=
+--e89a8ff242a363808d04e363faa7--
