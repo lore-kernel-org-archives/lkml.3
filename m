@@ -1,51 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932776Ab3HGKyM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 06:54:12 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:55670 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932689Ab3HGKyK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 06:54:10 -0400
-Date: Wed, 7 Aug 2013 12:54:08 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Akinobu Mita <mita@miraclelinux.com>
-Subject: Re: [PATCH] bitops: move BITS() macro to the bitops file
-Message-ID: <20130807105408.GB18272@pd.tnic>
-References: <1375866379-27504-1-git-send-email-linus.walleij@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1375866379-27504-1-git-send-email-linus.walleij@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932737Ab3HGKyG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 06:54:06 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:24966 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S932693Ab3HGKxy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 06:53:54 -0400
+X-IronPort-AV: E=Sophos;i="4.89,832,1367942400"; 
+   d="scan'208";a="8144161"
+From: Tang Chen <tangchen@cn.fujitsu.com>
+To: robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl, lenb@kernel.org,
+        tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
+        mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
+        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com
+Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-acpi@vger.kernel.org
+Subject: [PATCH v3 24/25] mem-hotplug: Introduce movablenode boot option to {en|dis}able using SRAT.
+Date: Wed, 7 Aug 2013 18:52:15 +0800
+Message-Id: <1375872736-4822-25-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1375872736-4822-1-git-send-email-tangchen@cn.fujitsu.com>
+References: <1375872736-4822-1-git-send-email-tangchen@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/07 18:52:17,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/07 18:52:20,
+	Serialize complete at 2013/08/07 18:52:20
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 07, 2013 at 11:06:19AM +0200, Linus Walleij wrote:
-> This macro was invented by Mattias Nilsson for the usecase
-> where you want to set a sequence of bits inside a n-bit
-> word, while leaving the head and tail of the sequence all
-> zeroes. For example:
-> 
->   #include <linux/bitops.h>
-> 
->   u16 mask = BITS(4, 12);
-> 
-> Yields a mask like this:
-> 
->   0001111111110000
-> 
-> This patch moves the construct out of the MFD PRCMU driver
-> and make it available for common use, after noticing in a
-> review or two that it would be useful for others.
+The Hot-Pluggable fired in SRAT specifies which memory is hotpluggable.
+As we mentioned before, if hotpluggable memory is used by the kernel,
+it cannot be hot-removed. So memory hotplug users may want to set all
+hotpluggable memory in ZONE_MOVABLE so that the kernel won't use it.
 
-Well, we have similar GEN_MASK and GENMASK macros around the tree. Maybe
-we could unify them all?
+Memory hotplug users may also set a node as movable node, which has
+ZONE_MOVABLE only, so that the whole node can be hot-removed.
 
+But the kernel cannot use memory in ZONE_MOVABLE. By doing this, the
+kernel cannot use memory in movable nodes. This will cause NUMA
+performance down. And other users may be unhappy.
+
+So we need a way to allow users to enable and disable this functionality.
+In this patch, we introduce movablenode boot option to allow users to
+choose to reserve hotpluggable memory and set it as ZONE_MOVABLE or not.
+
+Users can specify "movablenode" in kernel commandline to enable this
+functionality. For those who don't use memory hotplug or who don't want
+to lose their NUMA performance, just don't specify anything. The kernel
+will work as before.
+
+Suggested-by: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+---
+ Documentation/kernel-parameters.txt |   15 +++++++++++++++
+ arch/x86/kernel/setup.c             |   10 ++++++++--
+ include/linux/memory_hotplug.h      |    3 +++
+ mm/memory_hotplug.c                 |   11 +++++++++++
+ 4 files changed, 37 insertions(+), 2 deletions(-)
+
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 15356ac..7349d1f 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -1718,6 +1718,21 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 			that the amount of memory usable for all allocations
+ 			is not too small.
+ 
++	movablenode		[KNL,X86] This parameter enables/disables the
++			kernel to arrange hotpluggable memory ranges recorded
++			in ACPI SRAT(System Resource Affinity Table) as
++			ZONE_MOVABLE. And these memory can be hot-removed when
++			the system is up.
++			By specifying this option, all the hotpluggable memory
++			will be in ZONE_MOVABLE, which the kernel cannot use.
++			This will cause NUMA performance down. For users who
++			care about NUMA performance, just don't use it.
++			If all the memory ranges in the system are hotpluggable,
++			then the ones used by the kernel at early time, such as
++			kernel code and data segments, initrd file and so on,
++			won't be set as ZONE_MOVABLE, and won't be hotpluggable.
++			Otherwise the kernel won't have enough memory to boot.
++
+ 	MTD_Partition=	[MTD]
+ 			Format: <name>,<region-number>,<size>,<offset>
+ 
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index 36d7fe8..abdfed7 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -1061,14 +1061,20 @@ void __init setup_arch(char **cmdline_p)
+ 	 */
+ 	early_acpi_boot_table_init();
+ 
+-#ifdef CONFIG_ACPI_NUMA
++#if defined(CONFIG_ACPI_NUMA) && defined(CONFIG_MOVABLE_NODE)
+ 	/*
+ 	 * Linux kernel cannot migrate kernel pages, as a result, memory used
+ 	 * by the kernel cannot be hot-removed. Find and mark hotpluggable
+ 	 * memory in memblock to prevent memblock from allocating hotpluggable
+ 	 * memory for the kernel.
++	 *
++	 * If all the memory in a node is hotpluggable, then the kernel won't
++	 * be able to use memory on that node. This will cause NUMA performance
++	 * down. So by default, we don't reserve any hotpluggable memory. Users
++	 * may use "movablenode" boot option to enable this functionality.
+ 	 */
+-	find_hotpluggable_memory();
++	if (movablenode_enable_srat)
++		find_hotpluggable_memory();
+ #endif
+ 
+ 	/*
+diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
+index 463efa9..43eb373 100644
+--- a/include/linux/memory_hotplug.h
++++ b/include/linux/memory_hotplug.h
+@@ -33,6 +33,9 @@ enum {
+ 	ONLINE_MOVABLE,
+ };
+ 
++/* Enable/disable SRAT in movablenode boot option */
++extern bool movablenode_enable_srat;
++
+ /*
+  * pgdat resizing functions
+  */
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+index 0a69ceb..64e9f7e 100644
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -93,6 +93,17 @@ static void release_memory_resource(struct resource *res)
+ }
+ 
+ #ifdef CONFIG_ACPI_NUMA
++#ifdef CONFIG_MOVABLE_NODE
++bool __initdata movablenode_enable_srat;
++
++static int __init cmdline_parse_movablenode(char *p)
++{
++	movablenode_enable_srat = true;
++	return 0;
++}
++early_param("movablenode", cmdline_parse_movablenode);
++#endif	/* CONFIG_MOVABLE_NODE */
++
+ /**
+  * kernel_resides_in_range - Check if kernel resides in a memory region.
+  * @base: The base address of the memory region.
 -- 
-Regards/Gruss,
-    Boris.
+1.7.1
 
-Sent from a fat crate under my desk. Formatting is fine.
---
