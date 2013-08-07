@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933689Ab3HGVrp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 17:47:45 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:36385 "EHLO smtp.gentoo.org"
+	id S933715Ab3HGVrq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 17:47:46 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:36390 "EHLO smtp.gentoo.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933208Ab3HGVrX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 17:47:23 -0400
+	id S933210Ab3HGVrZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 17:47:25 -0400
 From: Sergei Trofimovich <slyich@gmail.com>
 To: linux-btrfs@vger.kernel.org, Chris Mason <chris.mason@fusionio.com>,
         Josef Bacik <jbacik@fusionio.com>
 Cc: linux-kernel@vger.kernel.org, Sergei Trofimovich <slyfox@gentoo.org>
-Subject: [PATCH 6/7] btrfs: cleanup: removed unused 'btrfs_reada_detach'
-Date: Thu,  8 Aug 2013 00:43:22 +0300
-Message-Id: <1375911803-17318-7-git-send-email-slyich@gmail.com>
+Subject: [PATCH 7/7] btrfs: cleanup: removed unused 'btrfs_get_inode_ref_index'
+Date: Thu,  8 Aug 2013 00:43:23 +0300
+Message-Id: <1375911803-17318-8-git-send-email-slyich@gmail.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1375911803-17318-1-git-send-email-slyich@gmail.com>
 References: <1375911803-17318-1-git-send-email-slyich@gmail.com>
@@ -23,50 +23,114 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 From: Sergei Trofimovich <slyfox@gentoo.org>
 
 Found by uselex.rb:
-> btrfs_reada_detach: [R]: exported from: fs/btrfs/btrfs.o fs/btrfs/built-in.o fs/btrfs/reada.o
+> btrfs_get_inode_ref_index: [R]: exported from: fs/btrfs/inode-item.o fs/btrfs/btrfs.o fs/btrfs/built-in.o
 
 Signed-off-by: Sergei Trofimovich <slyfox@gentoo.org>
 ---
- fs/btrfs/ctree.h | 1 -
- fs/btrfs/reada.c | 9 +--------
- 2 files changed, 1 insertion(+), 9 deletions(-)
+ fs/btrfs/ctree.h      |  6 -----
+ fs/btrfs/inode-item.c | 65 ---------------------------------------------------
+ 2 files changed, 71 deletions(-)
 
 diff --git a/fs/btrfs/ctree.h b/fs/btrfs/ctree.h
-index e91ab9e..f35e086 100644
+index f35e086..4822c84 100644
 --- a/fs/btrfs/ctree.h
 +++ b/fs/btrfs/ctree.h
-@@ -3861,7 +3861,6 @@ struct reada_control {
- struct reada_control *btrfs_reada_add(struct btrfs_root *root,
- 			      struct btrfs_key *start, struct btrfs_key *end);
- int btrfs_reada_wait(void *handle);
--void btrfs_reada_detach(void *handle);
- int btree_readahead_hook(struct btrfs_root *root, struct extent_buffer *eb,
- 			 u64 start, int err);
- 
-diff --git a/fs/btrfs/reada.c b/fs/btrfs/reada.c
-index 1031b69..c41d470 100644
---- a/fs/btrfs/reada.c
-+++ b/fs/btrfs/reada.c
-@@ -37,7 +37,7 @@
-  * To trigger a readahead, btrfs_reada_add must be called. It will start
-  * a read ahead for the given range [start, end) on tree root. The returned
-  * handle can either be used to wait on the readahead to finish
-- * (btrfs_reada_wait), or to send it to the background (btrfs_reada_detach).
-+ * (btrfs_reada_wait).
-  *
-  * The read ahead works as follows:
-  * On btrfs_reada_add, the root of the tree is inserted into a radix_tree.
-@@ -979,10 +979,3 @@ int btrfs_reada_wait(void *handle)
+@@ -3480,12 +3480,6 @@ int btrfs_del_inode_ref(struct btrfs_trans_handle *trans,
+ 			   struct btrfs_root *root,
+ 			   const char *name, int name_len,
+ 			   u64 inode_objectid, u64 ref_objectid, u64 *index);
+-int btrfs_get_inode_ref_index(struct btrfs_trans_handle *trans,
+-			      struct btrfs_root *root,
+-			      struct btrfs_path *path,
+-			      const char *name, int name_len,
+-			      u64 inode_objectid, u64 ref_objectid, int mod,
+-			      u64 *ret_index);
+ int btrfs_insert_empty_inode(struct btrfs_trans_handle *trans,
+ 			     struct btrfs_root *root,
+ 			     struct btrfs_path *path, u64 objectid);
+diff --git a/fs/btrfs/inode-item.c b/fs/btrfs/inode-item.c
+index e0b7034..d07e982 100644
+--- a/fs/btrfs/inode-item.c
++++ b/fs/btrfs/inode-item.c
+@@ -91,32 +91,6 @@ int btrfs_find_name_in_ext_backref(struct btrfs_path *path, u64 ref_objectid,
  	return 0;
  }
- #endif
--
--void btrfs_reada_detach(void *handle)
+ 
+-static struct btrfs_inode_ref *
+-btrfs_lookup_inode_ref(struct btrfs_trans_handle *trans,
+-		       struct btrfs_root *root,
+-		       struct btrfs_path *path,
+-		       const char *name, int name_len,
+-		       u64 inode_objectid, u64 ref_objectid, int ins_len,
+-		       int cow)
 -{
--	struct reada_control *rc = handle;
+-	int ret;
+-	struct btrfs_key key;
+-	struct btrfs_inode_ref *ref;
 -
--	kref_put(&rc->refcnt, reada_control_release);
+-	key.objectid = inode_objectid;
+-	key.type = BTRFS_INODE_REF_KEY;
+-	key.offset = ref_objectid;
+-
+-	ret = btrfs_search_slot(trans, root, &key, path, ins_len, cow);
+-	if (ret < 0)
+-		return ERR_PTR(ret);
+-	if (ret > 0)
+-		return NULL;
+-	if (!find_name_in_backref(path, name, name_len, &ref))
+-		return NULL;
+-	return ref;
 -}
+-
+ /* Returns NULL if no extref found */
+ struct btrfs_inode_extref *
+ btrfs_lookup_inode_extref(struct btrfs_trans_handle *trans,
+@@ -144,45 +118,6 @@ btrfs_lookup_inode_extref(struct btrfs_trans_handle *trans,
+ 	return extref;
+ }
+ 
+-int btrfs_get_inode_ref_index(struct btrfs_trans_handle *trans,
+-			      struct btrfs_root *root,
+-			      struct btrfs_path *path,
+-			      const char *name, int name_len,
+-			      u64 inode_objectid, u64 ref_objectid, int mod,
+-			      u64 *ret_index)
+-{
+-	struct btrfs_inode_ref *ref;
+-	struct btrfs_inode_extref *extref;
+-	int ins_len = mod < 0 ? -1 : 0;
+-	int cow = mod != 0;
+-
+-	ref = btrfs_lookup_inode_ref(trans, root, path, name, name_len,
+-				     inode_objectid, ref_objectid, ins_len,
+-				     cow);
+-	if (IS_ERR(ref))
+-		return PTR_ERR(ref);
+-
+-	if (ref != NULL) {
+-		*ret_index = btrfs_inode_ref_index(path->nodes[0], ref);
+-		return 0;
+-	}
+-
+-	btrfs_release_path(path);
+-
+-	extref = btrfs_lookup_inode_extref(trans, root, path, name,
+-					   name_len, inode_objectid,
+-					   ref_objectid, ins_len, cow);
+-	if (IS_ERR(extref))
+-		return PTR_ERR(extref);
+-
+-	if (extref) {
+-		*ret_index = btrfs_inode_extref_index(path->nodes[0], extref);
+-		return 0;
+-	}
+-
+-	return -ENOENT;
+-}
+-
+ static int btrfs_del_inode_extref(struct btrfs_trans_handle *trans,
+ 				  struct btrfs_root *root,
+ 				  const char *name, int name_len,
 -- 
 1.8.3.2
 
