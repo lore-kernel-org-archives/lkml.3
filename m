@@ -1,59 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756293Ab3HGPtG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 11:49:06 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:59909 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753797Ab3HGPtE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 11:49:04 -0400
-Message-ID: <52026C66.2080509@ti.com>
-Date: Wed, 7 Aug 2013 10:48:54 -0500
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S1756894Ab3HGPui (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 11:50:38 -0400
+Received: from na3sys010aog106.obsmtp.com ([74.125.245.80]:53622 "HELO
+	na3sys010aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753806Ab3HGPuf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 11:50:35 -0400
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: <linaro-kernel@lists.linaro.org>, <patches@linaro.org>,
-        <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: OPP: rename functions? (was [PATCH] OPP: Export opp_add())
-References: <58acb4a8a4e98089078de3ed71999730b6d97b4b.1375521724.git.viresh.kumar@linaro.org> <5200F1B4.6050004@infradead.org> <20130806130820.GA6035@kahuna> <1611420.5h2rr9N0mt@vostro.rjw.lan>
-In-Reply-To: <1611420.5h2rr9N0mt@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <52025BE3.5020002@redhat.com>
+References: <1375746189.18481.23.camel@dabdike.int.hansenpartnership.com>
+ <1375750501-21902-1-git-send-email-roland@kernel.org> <52025BE3.5020002@redhat.com>
+From: Roland Dreier <roland@kernel.org>
+Date: Wed, 7 Aug 2013 08:50:13 -0700
+X-Google-Sender-Auth: ZVdnoUfcZrpUsI3YiKIFxYdZ2Zc
+Message-ID: <CAL1RGDW_nPZPBH=X-fOM4sddhVNkojEp4gUQseSJJaJAxfNqqQ@mail.gmail.com>
+Subject: Re: [PATCH v2] [SCSI] sg: Fix user memory corruption when SG_IO is
+ interrupted by a signal
+To: David Milburn <dmilburn@redhat.com>
+Cc: Jens Axboe <axboe@kernel.dk>, Doug Gilbert <dgilbert@interlog.com>,
+        James Bottomley <JBottomley@parallels.com>,
+        Costa Sapuntzakis <costa@purestorage.com>,
+        =?ISO-8859-1?Q?J=F6rn_Engel?= <joern@purestorage.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        David Jeffery <djeffery@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rafael,
-offline question:
+On Wed, Aug 7, 2013 at 7:38 AM, David Milburn <dmilburn@redhat.com> wrote:
+> I was able to succesfully test this patch overnight, I had been experimenting with the
+> sg driver setting the BIO_NULL_MAPPED flag in sg_rq_end_io_usercontext for a orphan process
+> which prevented the corruption, but your solution seems much better.
 
-On 08/06/2013 09:15 AM, Rafael J. Wysocki wrote:
-> On Tuesday, August 06, 2013 08:08:20 AM Nishanth Menon wrote:
->> change in subject to reflect new discussion.
->>
->> On 05:53-20130806, Randy Dunlap wrote:
->>> On 08/03/2013 02:25 AM, Viresh Kumar wrote:
+Very cool, thanks for the testing.
 
->>>> +EXPORT_SYMBOL_GPL(opp_add);
->>>
->>> Could it be renamed to pm_opp_add() or power_opp_add() ?
->>> The name is a bit too unspecific IMO.
->> Though this has nothing specific with this patch, an interesting point.
->>
->> git grep -w opp . showed drivers/tty/n_tty.c,
->> drivers/sbus/char/openprom.c and arch/powerpc/kvm/mpic.c using
->> variables named opp to mean what ever they had in context. rest(around
->> 40 odd files) seem to use opp as in Documentation/power/opp.txt..
->>
->> We could go with a pm_ prefix or even dev_pm_opp_ prefix to be more
->> specific, though I prefer just pm_. If Rafael and others are ok, I can
->> post a series out.
->
-> Yup, that would be useful.  I'm for dev_pm_opp_ if that matters.
+I actually looked at using BIO_NULL_MAPPED as well, but it seemed a
+bit too fragile to me -- it had the right effect of skipping
+__bio_copy_iov(), and skipping the __free_pages() stuff in there is OK
+because sg owns its pages rather than the bio layer, but all that
+seemed vulnerable to being broken by an unrelated change.
 
-Given that there would be quiet a few conflicts, do you have a 
-suggestion around what baseline I should submit this?
+Out of curiousity, were you already working on this bug?  Because if
+you had fixed it a few weeks earlier we might not have spent so long
+wondering WTF was stomping on the memory of one of our processes :)
 
-
--- 
-Regards,
-Nishanth Menon
+ - R.
