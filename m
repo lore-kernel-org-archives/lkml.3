@@ -1,54 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932370Ab3HGQR3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 12:17:29 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:56206 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932109Ab3HGQR1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 12:17:27 -0400
-Message-ID: <1375892245.4004.31.camel@edumazet-glaptop>
-Subject: Re: linux-next: Tree for Aug 7
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Johannes Berg <johannes@sipsolutions.net>
-Cc: Phil Sutter <phil@nwl.cc>, Sedat Dilek <sedat.dilek@gmail.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        David Miller <davem@davemloft.net>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        wireless <linux-wireless@vger.kernel.org>,
-        John Linville <linville@tuxdriver.com>
-Date: Wed, 07 Aug 2013 09:17:25 -0700
-In-Reply-To: <1375891974.8154.1.camel@jlt4.sipsolutions.net>
-References: <20130807155443.a0355d0429f3e0b4ccbed261@canb.auug.org.au>
-	 <CA+icZUW+uxCsvPYcY2RRvMxRVzaBLuH9u8M4ziQNWXv=nk4b2w@mail.gmail.com>
-	 <20130807155918.GA16263@orbit.nwl.cc>
-	 <1375891974.8154.1.camel@jlt4.sipsolutions.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	id S932415Ab3HGQRf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 12:17:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:65391 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932115Ab3HGQRc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 12:17:32 -0400
+Message-ID: <52027311.9060904@redhat.com>
+Date: Wed, 07 Aug 2013 11:17:21 -0500
+From: David Milburn <dmilburn@redhat.com>
+User-Agent: Thunderbird 1.5.0.12 (X11/20081113)
+MIME-Version: 1.0
+To: Roland Dreier <roland@kernel.org>
+CC: Jens Axboe <axboe@kernel.dk>, Doug Gilbert <dgilbert@interlog.com>,
+        James Bottomley <JBottomley@parallels.com>,
+        Costa Sapuntzakis <costa@purestorage.com>,
+        =?ISO-8859-1?Q?J=F6rn_Engel?= <joern@purestorage.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        David Jeffery <djeffery@redhat.com>
+Subject: Re: [PATCH v2] [SCSI] sg: Fix user memory corruption when SG_IO is
+ interrupted by a signal
+References: <1375746189.18481.23.camel@dabdike.int.hansenpartnership.com> <1375750501-21902-1-git-send-email-roland@kernel.org> <52025BE3.5020002@redhat.com> <CAL1RGDW_nPZPBH=X-fOM4sddhVNkojEp4gUQseSJJaJAxfNqqQ@mail.gmail.com>
+In-Reply-To: <CAL1RGDW_nPZPBH=X-fOM4sddhVNkojEp4gUQseSJJaJAxfNqqQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-08-07 at 18:12 +0200, Johannes Berg wrote:
-> On Wed, 2013-08-07 at 17:59 +0200, Phil Sutter wrote:
+Roland Dreier wrote:
+> On Wed, Aug 7, 2013 at 7:38 AM, David Milburn <dmilburn@redhat.com> wrote:
+>> I was able to succesfully test this patch overnight, I had been experimenting with the
+>> sg driver setting the BIO_NULL_MAPPED flag in sg_rq_end_io_usercontext for a orphan process
+>> which prevented the corruption, but your solution seems much better.
 > 
-> > The idea behind this patch is that users setting the protocol to
-> > something else probably do know better and so should be left alone.
+> Very cool, thanks for the testing.
 > 
-> Regardless of that, I think that still the skb pointers would be changed
-> by this patch which would confuse the receiver of the SKB (device
-> driver), no? Has anyone verified that theory? :)
+> I actually looked at using BIO_NULL_MAPPED as well, but it seemed a
+> bit too fragile to me -- it had the right effect of skipping
+> __bio_copy_iov(), and skipping the __free_pages() stuff in there is OK
+> because sg owns its pages rather than the bio layer, but all that
+> seemed vulnerable to being broken by an unrelated change.
+> 
+> Out of curiousity, were you already working on this bug?  Because if
+> you had fixed it a few weeks earlier we might not have spent so long
+> wondering WTF was stomping on the memory of one of our processes :)
+> 
 
-Maybe receivers made wrong assumptions about some headers being set or
-not set ?
+Hi Roland,
 
-A patch can uncover prior bugs.
+Actually, I was waiting for confirmation from the field which I
+recently received, I was getting ready to bring this up on linux-scsi,
+sorry I should have brought it up sooner. I wasn't positive that setting
+BIO_NULL_MAPPED flag from sg driver was the fix. David Jeffery
+came up with a reproducer which I ran overnight on the latest
+upstream kernel with your patch.
 
-commit 76fe45812a3b134c3917 is an example of a fix we had to do because
-of another fix ;)
+Thanks,
+David
 
 
 
