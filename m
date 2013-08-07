@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757188Ab3HGDqG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 23:46:06 -0400
-Received: from mail-yh0-f48.google.com ([209.85.213.48]:36406 "EHLO
-	mail-yh0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757153Ab3HGDpn (ORCPT
+	id S1757204Ab3HGDqd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 23:46:33 -0400
+Received: from mail-ye0-f182.google.com ([209.85.213.182]:59768 "EHLO
+	mail-ye0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757146Ab3HGDpl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 23:45:43 -0400
+	Tue, 6 Aug 2013 23:45:41 -0400
 From: Roy Franz <roy.franz@linaro.org>
 To: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, matt.fleming@intel.com,
         linux@arm.linux.org.uk
 Cc: leif.lindholm@linaro.org, dave.martin@arm.com,
         Roy Franz <roy.franz@linaro.org>
-Subject: [PATCH 15/17] Add strstr to compressed string.c for ARM.
-Date: Tue,  6 Aug 2013 20:45:11 -0700
-Message-Id: <1375847113-24884-16-git-send-email-roy.franz@linaro.org>
+Subject: [PATCH 14/17] resolve warnings found on ARM compile
+Date: Tue,  6 Aug 2013 20:45:10 -0700
+Message-Id: <1375847113-24884-15-git-send-email-roy.franz@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1375847113-24884-1-git-send-email-roy.franz@linaro.org>
 References: <1375847113-24884-1-git-send-email-roy.franz@linaro.org>
@@ -23,47 +23,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The shared efi-stub-helper.c functions require a strstr
-implementation.
-Implementation copied from arch/x86/boot/string.c
+2 unused labels
+1 "value computed is not used"
+
 
 Signed-off-by: Roy Franz <roy.franz@linaro.org>
 ---
- arch/arm/boot/compressed/string.c |   21 +++++++++++++++++++++
- 1 file changed, 21 insertions(+)
+ drivers/firmware/efi/efi-stub-helper.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/arch/arm/boot/compressed/string.c b/arch/arm/boot/compressed/string.c
-index 36e53ef..5397792 100644
---- a/arch/arm/boot/compressed/string.c
-+++ b/arch/arm/boot/compressed/string.c
-@@ -111,6 +111,27 @@ char *strchr(const char *s, int c)
- 	return (char *)s;
- }
+diff --git a/drivers/firmware/efi/efi-stub-helper.c b/drivers/firmware/efi/efi-stub-helper.c
+index bbe02fd..3515c3a 100644
+--- a/drivers/firmware/efi/efi-stub-helper.c
++++ b/drivers/firmware/efi/efi-stub-helper.c
+@@ -166,7 +166,6 @@ again:
+ 		*addr = max_addr;
+ 	}
  
-+/**
-+ * strstr - Find the first substring in a %NUL terminated string
-+ * @s1: The string to be searched
-+ * @s2: The string to search for
-+ */
-+char *strstr(const char *s1, const char *s2)
-+{
-+	size_t l1, l2;
-+
-+	l2 = strlen(s2);
-+	if (!l2)
-+		return (char *)s1;
-+	l1 = strlen(s1);
-+	while (l1 >= l2) {
-+		l1--;
-+		if (!memcmp(s1, s2, l2))
-+			return (char *)s1;
-+		s1++;
-+	}
-+	return NULL;
-+}
- #undef memset
+-free_pool:
+ 	efi_call_phys1(sys_table_arg->boottime->free_pool, map);
  
- void *memset(void *s, int c, size_t count)
+ fail:
+@@ -242,7 +241,6 @@ static efi_status_t efi_low_alloc(efi_system_table_t *sys_table_arg,
+ 	if (i == map_size / desc_size)
+ 		status = EFI_NOT_FOUND;
+ 
+-free_pool:
+ 	efi_call_phys1(sys_table_arg->boottime->free_pool, map);
+ fail:
+ 	return status;
+@@ -357,7 +355,7 @@ static efi_status_t handle_cmdline_files(efi_system_table_t *sys_table_arg,
+ 
+ 			if (*str == '/') {
+ 				*p++ = '\\';
+-				*str++;
++				str++;
+ 			} else {
+ 				*p++ = *str++;
+ 			}
 -- 
 1.7.10.4
 
