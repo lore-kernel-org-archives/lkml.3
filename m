@@ -1,59 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756743Ab3HGAwJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 20:52:09 -0400
-Received: from kanga.kvack.org ([205.233.56.17]:55157 "EHLO kanga.kvack.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756631Ab3HGAwI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 20:52:08 -0400
-Date: Tue, 6 Aug 2013 20:52:04 -0400
-From: Benjamin LaHaise <bcrl@kvack.org>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Kent Overstreet <kmo@daterainc.com>, axboe@kernel.dk,
-        Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, LKML <linux-kernel@vger.kernel.org>,
-        linux-aio@kvack.org, trinity@vger.kernel.org
-Subject: Re: [PATCH aio-next] aio: fix error handling and rcu usage in "convert the ioctx list to table lookup v3"
-Message-ID: <20130807005204.GF8043@kvack.org>
-References: <51FFAF34.20200@oracle.com> <20130805160828.GH31864@kvack.org> <20130805172032.GI31864@kvack.org> <5201714C.8000100@oracle.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5201714C.8000100@oracle.com>
-User-Agent: Mutt/1.4.2.2i
+	id S1756748Ab3HGAzN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 20:55:13 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:52021 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756651Ab3HGAzM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Aug 2013 20:55:12 -0400
+Message-ID: <52019ACF.1020006@huawei.com>
+Date: Wed, 7 Aug 2013 08:54:39 +0800
+From: Jianguo Wu <wujianguo@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Mel Gorman <mgorman@suse.de>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
+        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        Hanjun Guo <guohanjun@huawei.com>
+Subject: Re: [PATCH] mm/mempolicy: return NULL if node is NUMA_NO_NODE in
+ get_task_policy
+References: <52007660.7070907@huawei.com> <20130806140326.1d0d75874e6be221a432c3bc@linux-foundation.org>
+In-Reply-To: <20130806140326.1d0d75874e6be221a432c3bc@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.74.216]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 06, 2013 at 05:57:32PM -0400, Sasha Levin wrote:
-> Old error is gone, but now seeing this, which seems related.
+Hi Andrew,
+
+On 2013/8/7 5:03, Andrew Morton wrote:
+
+> On Tue, 6 Aug 2013 12:06:56 +0800 Jianguo Wu <wujianguo@huawei.com> wrote:
 > 
->         ctx = table->table[id];
->         if (ctx->user_id == ctx_id) { <--- here
->                 percpu_ref_get(&ctx->users);
->                 ret = ctx;
->         }
-...
+>> If node == NUMA_NO_NODE, pol is NULL, we should return NULL instead of
+>> do "if (!pol->mode)" check.
+>>
+>> Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
+>> ---
+>>  mm/mempolicy.c | 2 ++
+>>  1 file changed, 2 insertions(+)
+>>
+>> diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+>> index 4baf12e..e0e3398 100644
+>> --- a/mm/mempolicy.c
+>> +++ b/mm/mempolicy.c
+>> @@ -129,6 +129,8 @@ static struct mempolicy *get_task_policy(struct task_struct *p)
+>>  		node = numa_node_id();
+>>  		if (node != NUMA_NO_NODE)
+>>  			pol = &preferred_node_policy[node];
+>> +		else
+>> +			return NULL;
+>>  
+>>  		/* preferred_node_policy is not initialised early in boot */
+>>  		if (!pol->mode)
+> 
+> Well yes, it'll dereference a null pointer
+> 
+> This is neater, I think:
+> 
 
-Why am I not surprised.  That should be fixed with the patch below.  I'll 
-post some patches for the libaio test suite tomorrow to check these cases 
-explicitly and scan for any others that need to be added.  Thanks again, 
-Sasha.
+Yes, this is more readable, Thanks.
 
-		-ben
--- 
-"Thought is the essence of where you are now."
+> --- a/mm/mempolicy.c~mm-mempolicy-return-null-if-node-is-numa_no_node-in-get_task_policy
+> +++ a/mm/mempolicy.c
+> @@ -123,16 +123,19 @@ static struct mempolicy preferred_node_p
+>  static struct mempolicy *get_task_policy(struct task_struct *p)
+>  {
+>  	struct mempolicy *pol = p->mempolicy;
+> -	int node;
+>  
+>  	if (!pol) {
+> -		node = numa_node_id();
+> -		if (node != NUMA_NO_NODE)
+> -			pol = &preferred_node_policy[node];
+> +		int node = numa_node_id();
+>  
+> -		/* preferred_node_policy is not initialised early in boot */
+> -		if (!pol->mode)
+> -			pol = NULL;
+> +		if (node != NUMA_NO_NODE) {
+> +			pol = &preferred_node_policy[node];
+> +			/*
+> +			 * preferred_node_policy is not initialised early in
+> +			 * boot
+> +			 */
+> +			if (!pol->mode)
+> +				pol = NULL;
+> +		}
+>  	}
+>  
+>  	return pol;
+> _
+> 
+> 
+> .
+> 
 
-diff --git a/fs/aio.c b/fs/aio.c
-index 3bc068c..c3f005d 100644
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -812,7 +812,7 @@ static struct kioctx *lookup_ioctx(unsigned long ctx_id)
- 		goto out;
- 
- 	ctx = table->table[id];
--	if (ctx->user_id == ctx_id) {
-+	if (ctx && ctx->user_id == ctx_id) {
- 		percpu_ref_get(&ctx->users);
- 		ret = ctx;
- 	}
+
+
