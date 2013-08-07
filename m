@@ -1,104 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756631Ab3HGA02 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 20:26:28 -0400
-Received: from mail-vb0-f54.google.com ([209.85.212.54]:41766 "EHLO
-	mail-vb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756326Ab3HGA00 (ORCPT
+	id S1756660Ab3HGAgb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 20:36:31 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:57879 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756331Ab3HGAg2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 20:26:26 -0400
+	Tue, 6 Aug 2013 20:36:28 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
+Message-ID: <52019667.3010405@jp.fujitsu.com>
+Date: Wed, 7 Aug 2013 09:35:51 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <CAG-2HqU=yyxomNTg9-2+bxMKP=e5_pdVT7bhB_CHhFzB-ac_mQ@mail.gmail.com>
-References: <CALCETrXSnFPFVPkXHwz+FFA3=+pmz9V=cMHWwtN+jG1QJALWSQ@mail.gmail.com>
- <325b19bb936d7ebae11edad86aac8f0931e8abd9.1375719828.git.luto@amacapital.net>
- <5200B1BD.7030307@gmail.com> <CAG-2HqXEj06JbUOWee=NfuRXxL75uRf=55FZcXRLHroDzYUthQ@mail.gmail.com>
- <CAG-2HqVvoQK8ggErGGinO9i8Pbu-O-X=eYFW445ce24dpt7HyA@mail.gmail.com>
- <20130806163158.GA23093@kadzban.is-a-geek.net> <CAG-2HqU=yyxomNTg9-2+bxMKP=e5_pdVT7bhB_CHhFzB-ac_mQ@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 6 Aug 2013 17:26:03 -0700
-Message-ID: <CALCETrU-CWuefE5XUpC=xFuCXaL56Cox95nL35Bm9jMi_B+6_A@mail.gmail.com>
-Subject: Re: [systemd-devel] [PATCH] Change CONFIG_FW_LOADER_USER_HELPER to
- default n and don't select it
-To: Tom Gundersen <teg@jklm.no>
-Cc: Bryan Kadzban <bryan@kadzban.is-a-geek.net>,
-        systemd Mailing List <systemd-devel@lists.freedesktop.org>,
-        Linux Wireless List <linux-wireless@vger.kernel.org>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Intel Linux Wireless <ilw@linux.intel.com>,
-        linux-hotplug@vger.kernel.org,
-        Maarten Lankhorst <m.b.lankhorst@gmail.com>,
-        Kay Sievers <kay@vrfy.org>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: <rafael.j.wysocki@intel.com>, <yinghai@kernel.org>, <toshi.kani@hp.com>,
+        <linux-acpi@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: acpi_bus_trim does not detach devices in post order
+References: <52006888.5030203@jp.fujitsu.com> <5200CAAD.5080102@jp.fujitsu.com> <8453998.khIH1RyxM0@vostro.rjw.lan>
+In-Reply-To: <8453998.khIH1RyxM0@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 6, 2013 at 5:24 PM, Tom Gundersen <teg@jklm.no> wrote:
->
-> On 6 Aug 2013 18:32, "Bryan Kadzban" <bryan@kadzban.is-a-geek.net> wrote:
+(2013/08/06 23:26), Rafael J. Wysocki wrote:
+> On Tuesday, August 06, 2013 07:06:37 PM Yasuaki Ishimatsu wrote:
+>> (2013/08/06 12:07), Yasuaki Ishimatsu wrote:
+>>>
+>>> I acked the following commit but I hit a problem by the commit.
+>>> So I report it.
+>>>
+>>> commit cecdb193c8d91a42d9489d00618cc3dfff92e55a
+>>> Author: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>>> Date:   Tue Jan 15 13:24:02 2013 +0100
+>>>
+>>>       ACPI / scan: Change the implementation of acpi_bus_trim()
+>>>
+>>> Before applying the commit, acpi_bus_trim() detachs devices in post order.
+>>>
+>>> When I hot add memory devices and processor devices by container device
+>>> in my x86 box, memory devices are added first and processor devices are added
+>>> second. So I expect that processor devices are removed first and memory
+>>> devices are removed second when I remove them. And before applying the
+>>> commit, acpi_bus_trim() did so.
+>>>
+>>> But after appling the commit, acpi_bus_trim() does not detach devices in
+>>> post order. So when I remove them, memory devices are removed first and
+>>> processor devices are removed second.
+>>>
+>>> By this, I hit a problem.
+>>>
+>>> In Linux on x86 arch, NUMA node is depend on memory devices. So new NUMA
+>>> node is created at memory hot adding. Thus when I hot add memory devices and
+>>> processor devices, we must hot add memory device first. Otherwise, processor
+>>> devices are not set to correct NUMA node number.
+>>>
+>>> And Linux expects that when removing them, processor devices are removed
+>>> first before removing memory devices. But acpi_bus_trim() does not do so.
+>>> By this, NUMA node is not cleared in my x86 box when hot removing memory device
+>>> and processor devices. When removing memory devices, NUMA node is cleared.
+>>> But if there are processor devices related with the NUMA node, NUMA node is
+>>> not be cleared at memory hot removing.
+>>>
+>>> So when I remove them, NUMA node's sysfs file remained as follows:
 >>
->> On Tue, Aug 06, 2013 at 11:17:17AM +0200, Tom Gundersen wrote:
->> > On Tue, Aug 6, 2013 at 11:11 AM, Tom Gundersen <teg@jklm.no> wrote:
->> > > On Tue, Aug 6, 2013 at 10:20 AM, Maarten Lankhorst
->> > > <m.b.lankhorst@gmail.com> wrote:
->> > >> Op 05-08-13 18:29, Andy Lutomirski schreef:
->> > >>> The systemd commit below can delay firmware loading by multiple
->> > >>> minutes if CONFIG_FW_LOADER_USER_HELPER=y.  Unfortunately no one
->> > >>> noticed that the systemd-udev change would break new kernels as well
->> > >>> as old kernels.
->> > >>>
->> > >>> Since the kernel apparently can't count on reasonable userspace
->> > >>> support, turn this thing off by default.
->> > >>>
->> > >>> commit a3bd8447be4ea2ce230eb8ae0e815c04d85fa15a
->> > >>> Author: Tom Gundersen <teg@jklm.no>
->> > >>> Date:   Mon Mar 18 15:12:18 2013 +0100
->> > >>>
->> > >>>     udev: make firmware loading optional and disable by default
->> > >>>
->> > >>>     Distros that whish to support old kernels should set
->> > >>>
->> > >>> --with-firmware-dirs="/usr/lib/firmware/updates:/usr/lib/firmware"
->> > >>>     to retain the old behaviour.
->> > >>>
->> > >> methinks this patch should be reverted then,
->> > >
->> > > Well, all the code is still there, so it can be enabled if anyone
->> > > wants it.
->> > >
->> > >> or a stub should be added to udev to always fail firmware loading so
->> > >> timeouts don't occur.
->> > >
->> > > I think the only use (if any) of a userspace firmware loader would be
->> > > for anyone who wants a custom one (i.e., not udev), so we shouldn't
->> > > just fail the loading from udev unconditionally.
->> > >
->> > > How about we just improve the udev documentation a bit, similar to
->> > > Andy's kernel patch?
->> >
->> > Sorry, I should first have checked. We already document this in the
->> > README:
->> >
->> > >        Userspace firmware loading is deprecated, will go away, and
->> > >        sometimes causes problems:
->> > >          CONFIG_FW_LOADER_USER_HELPER=n
->>
->> ...And this patch is making the kernel default to the correct behavior,
->> instead of the now-broken-by-udev behavior.
->>
->> I'm not sure I see the issue with it?  :-)
+>> I had little mistake. CPU also tries to clear NUMA node.
+>> But current implementation has bug. So I'll fix it.
 >
-> Oh yeah this patch is totally the right thing to do, I was just arguing that
-> there is nothing to be done on the udev side.
->
->> (Add me to the list of people that think udev is broken too, fwiw.  But
->> let's at least not leave *both* sides in a broken-by-default state.)
->
-> Well I don't think it is too much to ask that the kernel and udev should be
-> configured in a consistent way. Especially as thing still work even if you
-> get it wrong, albeit with a delay.
 
-Except that the current defaults are inconsistent and there is no
-explanation anywhere in the logs when this is screwed up.
+> Do I understand correctly that with your fix at
+>
+> https://patchwork.kernel.org/patch/2839298/
+>
+> the current acpi_bus_trim() implementation will be sufficient?
 
---Andy
+No. The patch just fixed implementation of CPU hotplug.
+
+A problem I think is that acpi_bus_trim() does not detach devices in
+post-order. And my patch does not fix it. So if some device has dependency
+of other device, similar problem will occur.
+
+Thanks,
+Yasuaki Ishimatsu
+
+>
+> Rafael
+>
+>
+
+
