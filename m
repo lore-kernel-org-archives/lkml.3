@@ -1,59 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932194Ab3HGQ3x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 12:29:53 -0400
-Received: from 15.mo1.mail-out.ovh.net ([188.165.38.232]:39131 "EHLO
-	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756951Ab3HGQ3w (ORCPT
+	id S1757204Ab3HGQac (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 12:30:32 -0400
+Received: from www.linutronix.de ([62.245.132.108]:53036 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757007Ab3HGQab (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 12:29:52 -0400
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Andrew Victor <linux@maxim.org.za>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Douglas Gilbert <dgilbert@interlog.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Boris BREZILLON <b.brezillon@overkiz.com>
-X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
-Subject: [PATCH] ARM: at91: add missing uart clocks DT entries
-Date: Wed,  7 Aug 2013 18:29:44 +0200
-Message-Id: <1375892984-2835-1-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Ovh-Tracer-Id: 8559091093439412300
-X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrtdegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrtdegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Wed, 7 Aug 2013 12:30:31 -0400
+Message-ID: <52027623.20807@linutronix.de>
+Date: Wed, 07 Aug 2013 18:30:27 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130630 Icedove/17.0.7
+MIME-Version: 1.0
+To: John Stultz <john.stultz@linaro.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Mattias Wallin <mattias.wallin@stericsson.com>,
+        Fabio Baltieri <fabio.baltieri@linaro.org>
+Subject: Re: [PATCH] clocksource: add an "menu" item to Kconfig
+References: <1375873017-30625-1-git-send-email-bigeasy@linutronix.de> <520273FB.3030103@linaro.org>
+In-Reply-To: <520273FB.3030103@linaro.org>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add clocks to clock lookup table for uart DT entries.
+On 08/07/2013 06:21 PM, John Stultz wrote:
+> On 08/07/2013 03:56 AM, Sebastian Andrzej Siewior wrote:
+>> This patch adds a menu item to clocksource' Kconfig file. Without it the
+>> changeable items look somehow lost in the main drivers' menu
+> 
+> So I'd like to push back on this a bit and ask why we need user-visible
+> clocksource config options?
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
----
- arch/arm/mach-at91/at91sam9x5.c |    2 ++
- 1 file changed, 2 insertions(+)
+There was one visible Option if I remember correctly. I added two and
+was wondering once I found them. I do have a PCI card which provides a
+clock source and clock events device. So I assumed select <m|y> would
+be doable.
 
-diff --git a/arch/arm/mach-at91/at91sam9x5.c b/arch/arm/mach-at91/at91sam9x5.c
-index 2abee66..916e5a1 100644
---- a/arch/arm/mach-at91/at91sam9x5.c
-+++ b/arch/arm/mach-at91/at91sam9x5.c
-@@ -227,6 +227,8 @@ static struct clk_lookup periph_clocks_lookups[] = {
- 	CLKDEV_CON_DEV_ID("usart", "f8020000.serial", &usart1_clk),
- 	CLKDEV_CON_DEV_ID("usart", "f8024000.serial", &usart2_clk),
- 	CLKDEV_CON_DEV_ID("usart", "f8028000.serial", &usart3_clk),
-+	CLKDEV_CON_DEV_ID("usart", "f8040000.serial", &uart0_clk),
-+	CLKDEV_CON_DEV_ID("usart", "f8044000.serial", &uart1_clk),
- 	CLKDEV_CON_DEV_ID("t0_clk", "f8008000.timer", &tcb0_clk),
- 	CLKDEV_CON_DEV_ID("t0_clk", "f800c000.timer", &tcb0_clk),
- 	CLKDEV_CON_DEV_ID("mci_clk", "f0008000.mmc", &mmc0_clk),
--- 
-1.7.9.5
+> I'm much prefer the platform options select the needed clocksources, and
+> not leave it up to the user (who really doesn't want to go digging
+> around to find the clocksource sub-menu under drivers, and scan a list
+> of 100 options that aren't possible on their hardware).
+> 
+> For an example of what I consider bad behavior here, see the RTC driver
+> directory - at a certain point they just become hashes: "Oh no.. you
+> selected rtc-387aae6fd, on your hardware, you need rtc-adfb8e5".
+> 
+> It really just seems like it forces more unnecessary options on the user
+> and more ways to build a kernel that won't boot.
+> 
+> I do get you're trying to fix up the bad situation, caused by
+> user-prompts slipping into the Kconfig.
+
+Yes, that is fine. That PCI device is divided into multiple devices so
+once it is enabled I could use "select" for required clock source.
+
+> But I might prefer a patch closer to whats below.
+
+Okay.
+
+> 
+> thanks
+> -john
+
+
+Sebastian
 
