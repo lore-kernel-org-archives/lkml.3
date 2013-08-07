@@ -1,86 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933433Ab3HGVMp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 17:12:45 -0400
-Received: from server506b.appriver.com ([50.56.144.14]:51367 "EHLO
-	server506.appriver.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933227Ab3HGVMk convert rfc822-to-8bit (ORCPT
+	id S933503Ab3HGVMu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 17:12:50 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:56586 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933352Ab3HGVMp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 17:12:40 -0400
-X-Note-AR-ScanTimeLocal: 8/7/2013 4:12:38 PM
-X-Policy: GLOBAL - coraid.com
-X-Policy: GLOBAL - coraid.com
-X-Policy: GLOBAL - coraid.com
-X-Primary: ecashin@coraid.com
-X-Note: This Email was scanned by AppRiver SecureTide
-X-Virus-Scan: V-
-X-Note-SnifferID: 0
-X-Note: TCH-CT/SI:0-82/SG:2 8/7/2013 4:12:37 PM
-X-GBUdb-Analysis: 0, 10.242.229.139, Ugly c=1 p=-0.977602 Source White
-X-Signature-Violations: 0-0-0-4229-c
-X-Note-419: 15.6008 ms. Fail:0 Chk:1343 of 1343 total
-X-Note: SCH-CT/SI:0-1343/SG:1 8/7/2013 4:12:19 PM
-X-Note: Spam Tests Failed: 
-X-Country-Path: PRIVATE->PRIVATE->UNITED STATES
-X-Note-Sending-IP: 10.242.229.139
-X-Note-Reverse-DNS: 
-X-Note-Return-Path: ecashin@coraid.com
-X-Note: User Rule Hits: 
-X-Note: Global Rule Hits: G319 G320 G321 G322 G326 G327 G434 
-X-Note: Encrypt Rule Hits: 
-X-Note: Mail Class: VALID
-X-Note: Headers Injected
-Subject: Re: [PATCH] aoe: adjust ref of head for compound page tails
-MIME-Version: 1.0 (Apple Message framework v1085)
-Content-Type: text/plain; charset="us-ascii"
-From: Ed Cashin <ecashin@coraid.com>
-In-Reply-To: <20130807135804.e62b75f6986e9568ab787562@linux-foundation.org>
-Date: Wed, 7 Aug 2013 17:12:36 -0400
-CC: <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@infradead.org>
-Content-Transfer-Encoding: 8BIT
-Message-ID: <8DFEA276-4EE1-44B4-9669-5634631D7BBC@coraid.com>
-References: <cover.1375320764.git.ecashin@coraid.com> <0c8aff39249c1da6b9cc3356650149d065c3ebd2.1375320764.git.ecashin@coraid.com> <20130807135804.e62b75f6986e9568ab787562@linux-foundation.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-X-Mailer: Apple Mail (2.1085)
-X-Rerouted-By-Exchange: 
-X-Rerouted-By-Exchange: 
-X-Rerouted-By-Exchange: 
+	Wed, 7 Aug 2013 17:12:45 -0400
+Date: Wed, 7 Aug 2013 23:12:37 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Kent Overstreet <kmo@daterainc.com>
+Cc: Ben Hutchings <ben@decadent.org.uk>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: PREEMPT_RT vs bcache
+Message-ID: <20130807211237.GM6104@pengutronix.de>
+References: <1375907298.27403.35.camel@deadeye.wl.decadent.org.uk>
+ <20130807205357.GD11612@kmo-pixel>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130807205357.GD11612@kmo-pixel>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Aug 7, 2013, at 4:58 PM, Andrew Morton wrote:
-
-> On Thu, 1 Aug 2013 21:29:59 -0400 Ed Cashin <ecashin@coraid.com> wrote:
+On Wed, Aug 07, 2013 at 01:53:57PM -0700, Kent Overstreet wrote:
+> On Wed, Aug 07, 2013 at 10:28:18PM +0200, Ben Hutchings wrote:
+> > As Kent said back in 2011 (commit 84759c6d18c5), bcache needs
+> > {down,up}_read_non_owner().  But these are not implemented by the -rt
+> > patchset when PREEMPT_RT_FULL is enabled.  Can they be added, or is
+> > there a fundamental conflict here?
 > 
->> As discussed previously,
-> 
-> I think I missed that.
-> 
->> the fact that some users of the block
->> layer provide bios that point to pages with a zero _count means
->> that it is not OK for the network layer to do a put_page on the
->> skb frags during an skb_linearize, so the aoe driver gets a
->> reference to pages in bios and puts the reference before ending
->> the bio.  And because it cannot use get_page on a page with a
->> zero _count, it manipulates the value directly.
-> 
-> Eh?  What code is putting count==0 pages into bios?  That sounds very
-> weird and broken.
+> You should be able to cherry pick
+> 84759c6d18c5144432781ddca037d929ee9db8a5 (Revert "rw_semaphore: remove
+> up/down_read_non_owner") - that went in when bcache was merged.
+That doesn't help with PREEMPT_RT_FULL because include/linux/rwsem.h
+looks like:
 
-I thought so in 2007 but couldn't solicit a clear "this is wrong" consensus from the discussion.
+	[ ... some includes ... ]
+	#ifdef CONFIG_PREEMPT_RT_FULL
+	#include <linux/rwsem_rt.h>
+	#else /* PREEMPT_RT_FULL */
+	[ ... vanilla content including definitions of {down,up}_read_non_owner]
+	#endif
 
-  http://article.gmane.org/gmane.linux.kernel/499197
-  https://lkml.org/lkml/2007/1/19/56
-  https://lkml.org/lkml/2006/12/18/230
+So Ben's question was how (if at all) we should implement
+{down,up}_read_non_owner for PREEMPT_RT_FULL.
+Is it save to just use the vanilla implementation on RT?
 
-We were seeing zero-count pages in bios from XFS, but Christoph Hellwig pointed out that kmalloced pages can also come from ext3 when it's doing log recovery, and they'll have zero page counts.
-
-I don't have a counter in the driver to track how often zero-count pages show up in bios, so I don't know how common it is these days.  I would have been motivated to look if I had gotten the impression that there was any interest in identifying and eliminating cases where zero-count pages were being used in bios.
+Best regards
+Uwe
 
 -- 
-  Ed Cashin
-  ecashin@coraid.com
-
-
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
