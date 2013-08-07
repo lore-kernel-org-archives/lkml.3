@@ -1,70 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932962Ab3HGR5e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 13:57:34 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:29463 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932684Ab3HGR5d (ORCPT
+	id S932975Ab3HGR7N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 13:59:13 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:60423 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932684Ab3HGR7K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 13:57:33 -0400
-X-Authority-Analysis: v=2.0 cv=aqMw+FlV c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=-1M68SHTH6AA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=it5azkMwFzEA:10 a=20KFwNOVAAAA:8 a=GiknQDDqni5NxQtWNKQA:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-ID: <1375898252.6848.19.camel@gandalf.local.home>
-Subject: Re: [RFC][PATCH 2/2] x86/jump labels: Use etiher 5 byte or 2 byte
- jumps
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>, Jason Baron <jbaron@akamai.com>
-Date: Wed, 07 Aug 2013 13:57:32 -0400
-In-Reply-To: <20130807174121.001163270@goodmis.org>
-References: <20130807173606.872055511@goodmis.org>
-	 <20130807174121.001163270@goodmis.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 7 Aug 2013 13:59:10 -0400
+MIME-Version: 1.0
+In-Reply-To: <5202898A.6050006@wwwdotorg.org>
+References: <cover.1375886595.git.viresh.kumar@linaro.org>
+	<6610c86618b781b00eba446ca19035e077d99691.1375886595.git.viresh.kumar@linaro.org>
+	<520287EA.5060508@wwwdotorg.org>
+	<CAKohpokOn4-RZE5mfoM+2p8jszWoGfOErrLShZmv86OgCMv+JA@mail.gmail.com>
+	<5202898A.6050006@wwwdotorg.org>
+Date: Wed, 7 Aug 2013 23:29:10 +0530
+Message-ID: <CAKohpom3o1y+xXof3iKCn6SWxYKNAE=aBGO2P3JF+Y0Ce4GmQQ@mail.gmail.com>
+Subject: Re: [PATCH 5/6] ARM: Tegra: start using cpufreq-cpu0 driver
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: rjw@sisk.pl, swarren@nvidia.com, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mturquette@linaro.org,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-08-07 at 13:36 -0400, Steven Rostedt wrote:
-> plain text document attachment
-> (0002-x86-jump-labels-Use-etiher-5-byte-or-2-byte-jumps.patch)
-> From: Steven Rostedt <srostedt@redhat.com>
-> 
-> Have the jump labels add a "jmp" in the assembly instead
-> of a default nop. This will cause the assembler to put in
-> either a 2 byte or 5 byte jmp depending on where the target
-> lable is.
-> 
-> Then at compile time, the update_jump_label code will replace
-> the jmps with either 2 or 5 byte nops.
-> 
-> On boot up, the code can be examined to see if the jump label
-> uses either a 2 or 5 byte nop and replace it.
-> 
-> By allowing the jump labels to be 2 bytes, it speeds up the
-> nops, not only 2 byte nops are faster than 5 byte nops, but also
-> because it saves on cache foot print.
-> 
->    text    data     bss     dec     hex filename
-> 13403667 3666856 2998272 20068795 13239bb ../nobackup/mxtest/vmlinux-old
-> 13398536 3666856 2998272 20063664 13225b0 ../nobackup/mxtest/vmlinux-new
-> 
-> Converting the current v3.2 trace points saved 5,131 bytes.
-> As more places use jump labels, this will have a bigger savings.
-> 
+On 7 August 2013 23:23, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> That link only describes why we shouldn't have a dedicated compatible
+> value for cpufreq. I certainly agree with that. However, I think it's
+> reasonable that whatever code binds to:
+>
+>         compatible = "arm,cortex-a9";
+>
+> ... should instantiate any virtual devices that relate to the CPU.
 
-FYI, I didn't bother changing the change logs, so these numbers may be
-totally bogus now.
+But how would we know here if platform really wants us to probe
+cpufreq-cpu0 driver? On multiplatform kernel there can be multiple
+cpufreq drivers available and there has to be some sort of code
+in DT or platform code that reflects which driver we want to use.
 
--- Steve
+We never required a device node for cpufreq, platform device was
+added just to solve this issue.
 
+> Doing so would be similar to how the Tegra I2S driver instantiates the
+> internal struct device that ASoC needs for the PCM/DMA device, rather
+> than having board-dt-tegra20.c do it, like it would have done in
+> board-file days.
 
+I haven't gone through it yet though :)
