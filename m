@@ -1,38 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754880Ab3HGIL6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 04:11:58 -0400
-Received: from mail.phy.syr.edu ([128.230.72.46]:64561 "EHLO mail.phy.syr.edu"
+	id S1755297Ab3HGINg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 04:13:36 -0400
+Received: from mga01.intel.com ([192.55.52.88]:53989 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750889Ab3HGIL4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 04:11:56 -0400
-X-Greylist: delayed 3523 seconds by postgrey-1.27 at vger.kernel.org; Wed, 07 Aug 2013 04:11:56 EDT
-From: "ADMIN" <keny@physics.syr.edu>
-Reply-To: upgrade1@dgoh.org
-Subject: Dear user
-Date: Wed, 7 Aug 2013 02:04:09 -0500
-Message-Id: <20130807070442.M23966@physics.syr.edu>
-X-Mailer: OpenWebMail 2.53 20090308 336
-X-OriginatingIP: 41.203.67.55 (wali)
+	id S1751139Ab3HGINd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 04:13:33 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,831,1367996400"; 
+   d="scan'208";a="382524424"
+Message-ID: <52020314.7080708@intel.com>
+Date: Wed, 07 Aug 2013 11:19:32 +0300
+From: Adrian Hunter <adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
+ Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=utf-8
-To: unlisted-recipients:; (no To-header on input)
+To: Namhyung Kim <namhyung@kernel.org>
+CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH V9 05/14] perf tools: tidy up sample parsing overflow
+ checking
+References: <1375719994-26482-1-git-send-email-adrian.hunter@intel.com> <1375719994-26482-6-git-send-email-adrian.hunter@intel.com> <87txj1ylb7.fsf@sejong.aot.lge.com>
+In-Reply-To: <87txj1ylb7.fsf@sejong.aot.lge.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear user
-Your e-mail exceeds 2 GB, which is created by our webmaster, you are
-currently at 2.30GB, you can not send or receive new messages until you
-check your account. Fill out the form to confirm your account.
+On 07/08/13 11:09, Namhyung Kim wrote:
+> On Mon,  5 Aug 2013 19:26:25 +0300, Adrian Hunter wrote:
+>> The size of data retrieved from a sample event must be
+>> validated to ensure it does not go past the end of the
+>> event.  That was being done sporadically and without
+>> considering integer overflows.
+> 
+> Wouldn't it be great if the macro (or something) can do all three things
+> together - checking overflow, getting current value (pointer) and
+> advancing the array to the size?  Is that possible?
 
-Complete the form below to confirm your e-mail address:
+Macros are not the answer to everything.
 
-(1) E-mail:
-(2) Username:
-(3) Password:
-(4) Confirm Password:
-
-thanks
-system administrator
