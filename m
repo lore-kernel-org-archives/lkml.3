@@ -1,53 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933809Ab3HGXGa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 19:06:30 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:36635 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933540Ab3HGXG3 (ORCPT
+	id S933894Ab3HGXGs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 19:06:48 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:39920 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933540Ab3HGXGq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 19:06:29 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130807164509.GO6427@sirena.org.uk>
-References: <1375430365-13232-1-git-send-email-eu@felipetonello.com>
-	<1375430365-13232-2-git-send-email-eu@felipetonello.com>
-	<20130807164509.GO6427@sirena.org.uk>
-Date: Wed, 7 Aug 2013 16:06:27 -0700
-Message-ID: <CAGrhNMxTu6R07Wgp8TY4Aw5a2wA83L5-f7rYF5XbT=sE886SXA@mail.gmail.com>
-Subject: Re: [PATCH v2 1/2] ALSA: Added jack detection KControl support
-From: Felipe Tonello <eu@felipetonello.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: alsa-devel@alsa-project.org, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 7 Aug 2013 19:06:46 -0400
+From: David Brown <davidb@codeaurora.org>
+To: arm@kernel.org
+Cc: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Russell King <rmk@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Rohit Vaswani <rvaswani@codeaurora.org>
+Subject: [GIT PULL v2] msm cleanups for v3.12
+Date: Wed,  7 Aug 2013 16:06:32 -0700
+Message-Id: <1375916792-24408-1-git-send-email-davidb@codeaurora.org>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1375909096-22088-1-git-send-email-davidb@codeaurora.org>
+References: <1375909096-22088-1-git-send-email-davidb@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+The following changes since commit 3b2f64d00c46e1e4e9bd0bb9bb12619adac27a4b:
 
-On Wed, Aug 7, 2013 at 9:45 AM, Mark Brown <broonie@kernel.org> wrote:
-> On Fri, Aug 02, 2013 at 12:59:24AM -0700, Felipe F. Tonello wrote:
->
->> +int jack_ctl_integer_info(struct snd_kcontrol *kcontrol,
->> +                          struct snd_ctl_elem_info *uinfo)
->> +{
->> +     uinfo->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
->> +     uinfo->count = 0x10000U;
->> +     uinfo->value.integer.min = 0;
->> +     uinfo->value.integer.max = 0xffff;
->> +     return 0;
->> +}
->
-> I'd expected to see us creating multiple boolean controls here.  I don't
-> have a great problem with doing things this way but it's surprising and
-> I worry about confusing existing userspace, Takashi?
+  Linux 3.11-rc2 (2013-07-21 12:05:29 -0700)
 
-Yes, it makes more sense. I got confused with another talk we had
-previously, that's why I end up doing as an int.
+are available in the git repository at:
 
-I will wait for more comments about these patches and will submit a v3.
+  git://git.kernel.org/pub/scm/linux/kernel/git/davidb/linux-msm.git tags/msm-cleanup3-for-3.12
 
-Thanks,
+for you to fetch changes up to 3294a7e7c3a55bb4eb9d98b0af5643a7ea44afe1:
 
-Felipe Tonello
+  ARM: msm: Only compile io.c on platforms that use it (2013-08-06 11:18:04 -0700)
+
+----------------------------------------------------------------
+General cleanups for MSM for 3.12
+
+This is a series of cleanups to the MSM code.  These are a healthy
+start to bringing the MSM code closer to the state of current ARM code
+and getting more of it ready for conversion to devicetree.
+
+----------------------------------------------------------------
+
+Otherwise, same as last pull with head commit dropped.
+
+Rohit Vaswani (1):
+      ARM: msm: Remove unused and unmapped MSM_TLMM_BASE for 8x60
+
+Stephen Boyd (8):
+      ARM: msm: Don't compile __msm_ioremap_caller() unless used
+      ARM: msm: Move debug-macro.S to include/debug
+      ARM: msm: Remove TMR and TMR0 static mappings
+      ARM: msm: Migrate msm_timer to CLOCKSOURCE_OF_DECLARE
+      ARM: msm: Move mach/board.h contents to common.h
+      ARM: msm: Remove devices-iommu.c
+      iommu/msm: Move mach includes to iommu directory
+      ARM: msm: Only compile io.c on platforms that use it
+
+ arch/arm/Kconfig                                   |   1 +
+ arch/arm/Kconfig.debug                             |   9 +-
+ .../mach/debug-macro.S => include/debug/msm.S}     |  32 +-
+ arch/arm/mach-msm/Makefile                         |   9 +-
+ arch/arm/mach-msm/board-dt-8660.c                  |   4 +-
+ arch/arm/mach-msm/board-dt-8960.c                  |   3 +-
+ arch/arm/mach-msm/board-halibut.c                  |   1 -
+ arch/arm/mach-msm/board-mahimahi.c                 |   2 +-
+ arch/arm/mach-msm/board-msm7x30.c                  |   1 -
+ arch/arm/mach-msm/board-qsd8x50.c                  |   1 -
+ arch/arm/mach-msm/board-sapphire.c                 |   2 +-
+ arch/arm/mach-msm/board-trout.c                    |   1 -
+ arch/arm/mach-msm/board-trout.h                    |   2 +-
+ arch/arm/mach-msm/common.h                         |  18 +-
+ arch/arm/mach-msm/devices-iommu.c                  | 912 ---------------------
+ arch/arm/mach-msm/devices-msm7x30.c                |   2 +-
+ arch/arm/mach-msm/devices-qsd8x50.c                |   2 +-
+ arch/arm/mach-msm/include/mach/board.h             |  38 -
+ arch/arm/mach-msm/include/mach/msm_iomap-8960.h    |  46 --
+ arch/arm/mach-msm/include/mach/msm_iomap-8x60.h    |  53 --
+ arch/arm/mach-msm/include/mach/msm_iomap.h         |  17 -
+ arch/arm/mach-msm/include/mach/uncompress.h        |  63 --
+ arch/arm/mach-msm/io.c                             |  67 +-
+ arch/arm/mach-msm/timer.c                          |  17 +-
+ drivers/iommu/msm_iommu.c                          |   4 +-
+ .../mach/iommu.h => drivers/iommu/msm_iommu.h      |   0
+ drivers/iommu/msm_iommu_dev.c                      |   4 +-
+ .../iommu/msm_iommu_hw-8xxx.h                      |   0
+ drivers/video/msm/msm_fb.c                         |   1 -
+ 29 files changed, 93 insertions(+), 1219 deletions(-)
+ rename arch/arm/{mach-msm/include/mach/debug-macro.S => include/debug/msm.S} (61%)
+ delete mode 100644 arch/arm/mach-msm/devices-iommu.c
+ delete mode 100644 arch/arm/mach-msm/include/mach/board.h
+ delete mode 100644 arch/arm/mach-msm/include/mach/msm_iomap-8960.h
+ delete mode 100644 arch/arm/mach-msm/include/mach/msm_iomap-8x60.h
+ delete mode 100644 arch/arm/mach-msm/include/mach/uncompress.h
+ rename arch/arm/mach-msm/include/mach/iommu.h => drivers/iommu/msm_iommu.h (100%)
+ rename arch/arm/mach-msm/include/mach/iommu_hw-8xxx.h => drivers/iommu/msm_iommu_hw-8xxx.h (100%)
