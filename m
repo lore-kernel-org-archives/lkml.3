@@ -1,55 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757227Ab3HGGpI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 02:45:08 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:27135 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755805Ab3HGGpG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 02:45:06 -0400
-Message-ID: <5201EC56.8010203@huawei.com>
-Date: Wed, 7 Aug 2013 14:42:30 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S1757215Ab3HGGve (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 02:51:34 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:38216 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757134Ab3HGGvd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 02:51:33 -0400
+Date: Wed, 7 Aug 2013 08:51:19 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Torsten Kaiser <just.for.lkml@googlemail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
+        Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] x86, AMD: Make cpu_has_amd_erratum() use the correct
+ struct cpuinfo_x86
+Message-ID: <20130807065119.GA17920@pd.tnic>
+References: <20130723194049.59ee11bb@googlemail.com>
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Chen Gang <gang.chen@asianux.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, <xi.wang@gmail.com>,
-        <nicolas.dichtel@6wind.com>, Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kernel/sysctl_binary.c: improve the usage of return value
- 'result'
-References: <5200A5E6.9020803@asianux.com> <8761vibihw.fsf@xmission.com>  <5201D62B.6080905@asianux.com> <5201E192.7060108@huawei.com> <1375855849.2424.82.camel@joe-AO722>
-In-Reply-To: <1375855849.2424.82.camel@joe-AO722>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130723194049.59ee11bb@googlemail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/8/7 14:10, Joe Perches wrote:
-> On Wed, 2013-08-07 at 13:56 +0800, Li Zefan wrote:
->>>> The right answer to the code is to config it out and then you don't have
->>>> to worry about it one way or another.
-> []
->>> Hmm... do you mean you spend 5 minutes to get a conclusion ? if so,
->>> better not use word 'seems' which is not a suitable word appeared in
->>> the results, proofs or conclusions.
-> []
->> You are too bad in english to do kernel development. You don't seem to
->> know how to communicate in english...
+On Tue, Jul 23, 2013 at 07:40:49PM +0200, Torsten Kaiser wrote:
+> cpu_has_amd_erratum() is buggy, because it uses the per-cpu cpu_info
+> before it is filled by smp_store_boot_cpu_info() / smp_store_cpu_info().
 > 
-> I don't think that's true.
+> If early microcode loading is enabled its collect_cpu_info_amd_early() will
+> fill ->x86 and so the fallback to boot_cpu_data is not used.
+> But ->x86_vendor was not filled and is still 0 == X86_VENDOR_INTEL resulting in 
+> no errata fixes getting applied and my system hangs on boot.
 > 
-> For instance, pessimization is a pretty
-> obscure word.  Most native English speakers
-> could probably guess what it meant, but I
-> couldn't hold any low opinion of non-native
-> speaker that asked "what does that mean".
+> Using cpu_info in cpu_has_amd_erratum() is wrong anyway: Its only caller
+> init_amd() will have a struct cpuinfo_x86 as parameter and the set_cpu_bug()
+> that is controlled by cpu_has_amd_erratum() also only uses that struct.
 > 
+> So pass the struct cpuinfo_x86 from init_amd() to cpu_has_amd_erratum() and
+> the broken fallback can be dropped.
+> 
+> I also added an WARN_ON() into the vendor check because init_amd() can only
+> be used by AMD CPUs and if the current failure hadn't been silent this bug
+> would have been much more obvious.
+> 
+> V2: At request of Borislav Petkov: BUG_ON -> WARN_ON and subject change
+> 
+> Signed-off-by: Torsten Kaiser <just.for.lkml@googlemail.com>
 
-I know, and that's why I didn't quota that part.
+Acked-by: Borislav Petkov <bp@suse.de>
 
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
