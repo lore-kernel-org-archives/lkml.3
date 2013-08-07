@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932614Ab3HGKxs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 06:53:48 -0400
+	id S932575Ab3HGKxp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 06:53:45 -0400
 Received: from cn.fujitsu.com ([222.73.24.84]:24966 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S932576Ab3HGKxq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 06:53:46 -0400
+	id S932443Ab3HGKxn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 06:53:43 -0400
 X-IronPort-AV: E=Sophos;i="4.89,832,1367942400"; 
-   d="scan'208";a="8144148"
+   d="scan'208";a="8144143"
 From: Tang Chen <tangchen@cn.fujitsu.com>
 To: robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl, lenb@kernel.org,
         tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
@@ -21,9 +21,9 @@ To: robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl, lenb@kernel.org,
         zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com
 Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Subject: [PATCH v3 10/25] x86, acpi: Call two new functions instead of acpi_initialize_tables() in acpi_table_init().
-Date: Wed, 7 Aug 2013 18:52:01 +0800
-Message-Id: <1375872736-4822-11-git-send-email-tangchen@cn.fujitsu.com>
+Subject: [PATCH v3 06/25] acpi, acpica: Call two new functions instead of acpi_tb_install_table() in acpi_tb_parse_root_table().
+Date: Wed, 7 Aug 2013 18:51:57 +0800
+Message-Id: <1375872736-4822-7-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1375872736-4822-1-git-send-email-tangchen@cn.fujitsu.com>
 References: <1375872736-4822-1-git-send-email-tangchen@cn.fujitsu.com>
@@ -36,56 +36,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The previous patch introduces two new functions:
-    acpi_initialize_tables_firmware() and acpi_initialize_tables_override(),
-which work just the same as acpi_initialize_tables() if they are called
-in sequence.
+The previous patch introduced two new functions:
+    acpi_tb_install_table_firmware() and acpi_tb_install_table_override().
 
-In order to split acpi_table_init() on acpi side, call these two functions
-in acpi_table_init().
+They are the same as acpi_tb_install_table() if they are called in sequence.
 
-Since acpi_table_init() is also used in ia64, we keep it works as before.
+In order to split acpi_tb_parse_root_table(), we call these two functions
+instead of acpi_tb_install_table() in acpi_tb_parse_root_table(). This will
+keep acpi_tb_parse_root_table() works as before.
 
 Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
 Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
 ---
- drivers/acpi/tables.c |    5 ++++-
- include/acpi/acpixf.h |    4 ++++
- 2 files changed, 8 insertions(+), 1 deletions(-)
+ drivers/acpi/acpica/tbutils.c |    9 +++++++--
+ 1 files changed, 7 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/acpi/tables.c b/drivers/acpi/tables.c
-index d67a1fe..c8f2d01 100644
---- a/drivers/acpi/tables.c
-+++ b/drivers/acpi/tables.c
-@@ -349,10 +349,13 @@ int __init acpi_table_init(void)
- {
- 	acpi_status status;
- 
--	status = acpi_initialize_tables(initial_tables, ACPI_MAX_TABLES, 0);
-+	status = acpi_initialize_tables_firmware(initial_tables,
-+						 ACPI_MAX_TABLES, 0);
- 	if (ACPI_FAILURE(status))
- 		return 1;
- 
-+	acpi_initialize_tables_override();
+diff --git a/drivers/acpi/acpica/tbutils.c b/drivers/acpi/acpica/tbutils.c
+index 2db068c..9bef44b 100644
+--- a/drivers/acpi/acpica/tbutils.c
++++ b/drivers/acpi/acpica/tbutils.c
+@@ -670,8 +670,13 @@ acpi_tb_parse_root_table(acpi_physical_address rsdp_address)
+ 	 * the header of each table
+ 	 */
+ 	for (i = 2; i < acpi_gbl_root_table_list.current_table_count; i++) {
+-		acpi_tb_install_table(acpi_gbl_root_table_list.tables[i].
+-				      address, NULL, i);
++		/* Install tables in firmware into acpi_gbl_root_table_list */
++		acpi_tb_install_table_firmware(acpi_gbl_root_table_list.
++					       tables[i].address, NULL, i);
 +
- 	check_multiple_madt();
- 	return 0;
- }
-diff --git a/include/acpi/acpixf.h b/include/acpi/acpixf.h
-index 22d497e..99c9d7b 100644
---- a/include/acpi/acpixf.h
-+++ b/include/acpi/acpixf.h
-@@ -115,6 +115,10 @@ extern u32 acpi_rsdt_forced;
-  * Initialization
-  */
- acpi_status
-+acpi_initialize_tables_firmware(struct acpi_table_desc *initial_storage,
-+				u32 initial_table_count, u8 allow_resize);
-+void acpi_initialize_tables_override(void);
-+acpi_status
- acpi_initialize_tables(struct acpi_table_desc *initial_storage,
- 		       u32 initial_table_count, u8 allow_resize);
++		/* Override the installed tables if any */
++		acpi_tb_install_table_override(acpi_gbl_root_table_list.
++					       tables[i].address, NULL, i);
+ 
+ 		/* Special case for FADT - get the DSDT and FACS */
  
 -- 
 1.7.1
