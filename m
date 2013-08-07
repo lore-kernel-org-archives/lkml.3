@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932784Ab3HGK12 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 06:27:28 -0400
-Received: from mail2.gnudd.com ([213.203.150.91]:56437 "EHLO mail.gnudd.com"
+	id S932799Ab3HGK1i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 06:27:38 -0400
+Received: from mail2.gnudd.com ([213.203.150.91]:56442 "EHLO mail.gnudd.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932662Ab3HGK1Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 06:27:25 -0400
-Date: Wed, 7 Aug 2013 12:20:48 +0200
+	id S932662Ab3HGK1g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 06:27:36 -0400
+Date: Wed, 7 Aug 2013 12:20:58 +0200
 From: Davide Ciminaghi <ciminaghi@gnudd.com>
 To: linux-kernel@vger.kernel.org
 Cc: rubini@gnudd.com, Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
         x86@kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
         Ingo Molnar <mingo@redhat.com>, Russell King <linux@arm.linux.org.uk>,
         Thomas Gleixner <tglx@linutronix.de>, devicetree@vger.kernel.org
-Subject: [PATCH 19/26] x86 STA2X11 platform: create sta2x11-clock-regs
- device
-Message-ID: <a018fe226244e4dec7eaa64911a957089d499edc.1375867291.git.rubini@gnudd.com>
+Subject: [PATCH 20/26] x86 STA2X11 platform: remove useless pr_info()'s
+Message-ID: <714a6e4773977fb716ddde077b6f574e1ed7f8b6.1375867291.git.rubini@gnudd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -26,67 +25,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch creates a virtual platform device each time the apb-soc-regs
-and sctl devices have been probed for a given sta2x11 instance.
-This will trigger clock registration for such instance.
-
 Signed-off-by: Davide Ciminaghi <ciminaghi@gnudd.com>
 Acked-by: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
 ---
- arch/x86/include/asm/sta2x11.h      |    1 +
- arch/x86/platform/sta2x11/sta2x11.c |   21 +++++++++++++++++++++
- 2 files changed, 22 insertions(+), 0 deletions(-)
+ arch/x86/platform/sta2x11/sta2x11.c |    4 ----
+ 1 files changed, 0 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/include/asm/sta2x11.h b/arch/x86/include/asm/sta2x11.h
-index 31fc648..3c5dee4 100644
---- a/arch/x86/include/asm/sta2x11.h
-+++ b/arch/x86/include/asm/sta2x11.h
-@@ -78,6 +78,7 @@ struct sta2x11_instance_data *sta2x11_dev_to_instance(struct device *dev)
- #define STA2X11_APBREG_NAME		"sta2x11-apbreg"
- #define STA2X11_APB_SOC_REGS_NAME	"sta2x11-apb-soc-regs"
- #define STA2X11_VIC_NAME		"sta2x11-vic"
-+#define STA2X11_CLOCK_REGS_NAME		"sta2x11-clock-regs"
- 
- /* CAN and MLB */
- #define APBREG_BSR	0x00	/* Bridge Status Reg */
 diff --git a/arch/x86/platform/sta2x11/sta2x11.c b/arch/x86/platform/sta2x11/sta2x11.c
-index 1f1d1af..57ed10d 100644
+index 57ed10d..b3e9cec 100644
 --- a/arch/x86/platform/sta2x11/sta2x11.c
 +++ b/arch/x86/platform/sta2x11/sta2x11.c
-@@ -243,6 +243,20 @@ struct sta2x11_instance_data *sta2x11_node_to_instance(struct device_node *n)
+@@ -374,7 +374,6 @@ static struct platform_driver sta2x11_sctl_platform_driver = {
+ 
+ static int __init sta2x11_sctl_init(void)
+ {
+-	pr_info("%s\n", __func__);
+ 	return platform_driver_register(&sta2x11_sctl_platform_driver);
  }
- EXPORT_SYMBOL(sta2x11_node_to_instance);
  
-+static int create_clk_dev(struct sta2x11_instance_data *instance)
-+{
-+	int stat;
-+	struct platform_device *cpd =
-+		platform_device_alloc(STA2X11_CLOCK_REGS_NAME, instance->id);
-+	if (!cpd)
-+		return -ENOMEM;
-+
-+	cpd->dev.platform_data = instance;
-+	stat = platform_device_add(cpd);
-+	if (stat < 0)
-+		platform_device_put(cpd);
-+	return stat;
-+}
+@@ -394,7 +393,6 @@ static struct platform_driver sta2x11_apbreg_platform_driver = {
  
- /* Common probe for the four platform devices */
- static int sta2x11_platform_probe(struct platform_device *dev,
-@@ -312,6 +326,13 @@ static int sta2x11_platform_probe(struct platform_device *dev,
- 	}
- 	*dst = platform_drv_data;
- 
-+	/*
-+	 * When both sctl and apb_soc_regs have been probed, we're ready for
-+	 * creating the "sta2x11-clock-regs" platform device
-+	 */
-+	if (instance->sctl && instance->apb_soc_regs)
-+		create_clk_dev(instance);
-+
- 	platform_set_drvdata(dev, platform_drv_data);
- 	return 0;
+ static int __init sta2x11_apbreg_init(void)
+ {
+-	pr_info("%s\n", __func__);
+ 	return platform_driver_register(&sta2x11_apbreg_platform_driver);
  }
+ 
+@@ -414,7 +412,6 @@ static struct platform_driver sta2x11_apb_soc_regs_platform_driver = {
+ 
+ static int __init sta2x11_apb_soc_regs_init(void)
+ {
+-	pr_info("%s\n", __func__);
+ 	return platform_driver_register(&sta2x11_apb_soc_regs_platform_driver);
+ }
+ 
+@@ -434,7 +431,6 @@ static struct platform_driver sta2x11_scr_platform_driver = {
+ 
+ static int __init sta2x11_scr_init(void)
+ {
+-	pr_info("%s\n", __func__);
+ 	return platform_driver_register(&sta2x11_scr_platform_driver);
+ }
+ 
 -- 
 1.7.7.2
