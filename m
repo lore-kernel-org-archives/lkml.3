@@ -1,77 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754116Ab3HGPUz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 11:20:55 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35520 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751412Ab3HGPUx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 11:20:53 -0400
-Date: Wed, 7 Aug 2013 17:20:50 +0200
-From: Jan Kara <jack@suse.cz>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Jan Kara <jack@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>,
-        Guenter Roeck <linux@roeck-us.net>,
-        LKML <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org
-Subject: Re: WARNING: CPU: 26 PID: 93793 at fs/ext4/inode.c:230
- ext4_evict_inode+0x4c9/0x500 [ext4]() still in 3.11-rc3
-Message-ID: <20130807152050.GA26516@quack.suse.cz>
-References: <1375388059.2097.10.camel@buesod1.americas.hpqcorp.net>
- <20130801203320.GB31857@quack.suse.cz>
- <1375415926.2269.1.camel@buesod1.americas.hpqcorp.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1375415926.2269.1.camel@buesod1.americas.hpqcorp.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754293Ab3HGPYO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 11:24:14 -0400
+Received: from atlantis.wh2.tu-dresden.de ([141.30.228.39]:34345 "EHLO
+	atlantis.wh2.tu-dresden.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752416Ab3HGPYN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 11:24:13 -0400
+From: Lars Poeschel <larsi@wh2.tu-dresden.de>
+To: poeschel@lemonage.de, grant.likely@linaro.org, linus.walleij@linaro.org,
+        linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: thierry.reding@gmail.com
+Subject: [PATCH] gpio: adnp: Fix segfault if request_threaded_irq fails
+Date: Wed,  7 Aug 2013 17:23:58 +0200
+Message-Id: <1375889038-7953-1-git-send-email-larsi@wh2.tu-dresden.de>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 01-08-13 20:58:46, Davidlohr Bueso wrote:
-> On Thu, 2013-08-01 at 22:33 +0200, Jan Kara wrote:
-> >   Hi,
-> > 
-> > On Thu 01-08-13 13:14:19, Davidlohr Bueso wrote:
-> > > FYI I'm seeing loads of the following messages with Linus' latest
-> > > 3.11-rc3 (which includes 822dbba33458cd6ad)
-> >   Thanks for notice. I see you are running reaim to trigger this. What
-> > workload?
-> 
-> After re-running the workloads one by one, I finally hit the issue again
-> with 'dbase'. FWIW I'm using ramdisks + ext4.
-  Hum, I'm not able to reproduce this with current Linus' kernel - commit
-e4ef108fcde0b97ed38923ba1ea06c7a152bab9e - I've tried with ramdisk but no
-luck. Are you using some special mount options?
+From: Lars Poeschel <poeschel@lemonage.de>
 
-								Honza
+In case request_threaded_irq inside adnp_irq_setup fails, the driver
+segfaults. This is because irq_domain_remove is called twice with
+the same pointer. First time in adnp_irq_setup and then a second time
+after leaving adnp_irq_setup in the error path of adnp_i2c_probe
+inside adnp_teardown.
+This fixes this by removing the call to irq_domain_remove from
+adnp_irq_setup.
 
-> > 
-> > > ------------[ cut here ]------------
-> > > WARNING: CPU: 26 PID: 93793 at fs/ext4/inode.c:230 ext4_evict_inode+0x4c9/0x500 [ext4]()
-> > > Modules linked in: autofs4 cpufreq_ondemand freq_table sunrpc 8021q garp stp llc pcc_cpufreq ipt_REJECT nf_conntrack_ipv4 nf_defrag_ipv4 iptable_filter ip_tables ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables ipv6 dm_mirror dm_region_hash dm_log dm_mod uinput iTCO_wdt iTCO_vendor_support coretemp kvm_intel kvm crc32c_intel ghash_clmulni_intel microcode pcspkr sg lpc_ich mfd_core hpilo hpwdt i7core_edac edac_core netxen_nic mperf ext4 jbd2 mbcache sd_mod crc_t10dif aesni_intel ablk_helper cryptd lrw gf128mul glue_helper aes_x86_64 hpsa radeon ttm drm_kms_helper drm i2c_algo_bit i2c_core [last unloaded: freq_table]
-> > > CPU: 26 PID: 93793 Comm: reaim Tainted: G        W    3.11.0-rc3+ #1
-> > > Hardware name: HP ProLiant DL980 G7, BIOS P66 06/24/2011
-> > >  00000000000000e6 ffff8985db603d78 ffffffff8153ce4d 00000000000000e6
-> > >  0000000000000000 ffff8985db603db8 ffffffff8104cf1c ffff8985db603dc8
-> > >  ffff8b05c485b8b0 ffff8b05c485b9b8 ffff8b05c485b800 00000000ffffff9c
-> > > Call Trace:
-> > >  [<ffffffff8153ce4d>] dump_stack+0x49/0x5c
-> > >  [<ffffffff8104cf1c>] warn_slowpath_common+0x8c/0xc0
-> > >  [<ffffffff8104cf6a>] warn_slowpath_null+0x1a/0x20
-> > >  [<ffffffffa02a0179>] ext4_evict_inode+0x4c9/0x500 [ext4]
-> > >  [<ffffffff811915e7>] evict+0xa7/0x1c0
-> > >  [<ffffffff811917e3>] iput_final+0xe3/0x170
-> > >  [<ffffffff811918ae>] iput+0x3e/0x50
-> > >  [<ffffffff81187aa6>] do_unlinkat+0x1c6/0x280
-> > >  [<ffffffff8106f3e4>] ? task_work_run+0x94/0xf0
-> > >  [<ffffffff81003a44>] ? do_notify_resume+0x84/0x90
-> > >  [<ffffffff81187b76>] SyS_unlink+0x16/0x20
-> > >  [<ffffffff81549a02>] system_call_fastpath+0x16/0x1b
-> > > ---[ end trace 15e812809616488b ]---
-> > > 
-> > > 
-> 
-> 
+Signed-off-by: Lars Poeschel <poeschel@lemonage.de>
+---
+ drivers/gpio/gpio-adnp.c |    6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
+
+diff --git a/drivers/gpio/gpio-adnp.c b/drivers/gpio/gpio-adnp.c
+index e60567f..c0f3fc4 100644
+--- a/drivers/gpio/gpio-adnp.c
++++ b/drivers/gpio/gpio-adnp.c
+@@ -490,15 +490,11 @@ static int adnp_irq_setup(struct adnp *adnp)
+ 	if (err != 0) {
+ 		dev_err(chip->dev, "can't request IRQ#%d: %d\n",
+ 			adnp->client->irq, err);
+-		goto error;
++		return err;
+ 	}
+ 
+ 	chip->to_irq = adnp_gpio_to_irq;
+ 	return 0;
+-
+-error:
+-	irq_domain_remove(adnp->domain);
+-	return err;
+ }
+ 
+ static void adnp_irq_teardown(struct adnp *adnp)
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.7.10.4
+
