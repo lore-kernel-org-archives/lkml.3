@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757135Ab3HGDph (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 23:45:37 -0400
-Received: from mail-yh0-f50.google.com ([209.85.213.50]:37973 "EHLO
-	mail-yh0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757080Ab3HGDp3 (ORCPT
+	id S1757164Ab3HGDpn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 23:45:43 -0400
+Received: from mail-ye0-f180.google.com ([209.85.213.180]:44783 "EHLO
+	mail-ye0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757138Ab3HGDpk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 23:45:29 -0400
+	Tue, 6 Aug 2013 23:45:40 -0400
 From: Roy Franz <roy.franz@linaro.org>
 To: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, matt.fleming@intel.com,
         linux@arm.linux.org.uk
 Cc: leif.lindholm@linaro.org, dave.martin@arm.com,
         Roy Franz <roy.franz@linaro.org>
-Subject: [PATCH 06/17] rename __get_map() to efi_get_memory_map(), add parameter to optionally return mmap key. The mmap key is required to exit EFI boot services, and allows efi_get_memory_map() to be used for getting final memory map.
-Date: Tue,  6 Aug 2013 20:45:02 -0700
-Message-Id: <1375847113-24884-7-git-send-email-roy.franz@linaro.org>
+Subject: [PATCH 13/17] Fix types in EFI calls to match EFI function definitions.
+Date: Tue,  6 Aug 2013 20:45:09 -0700
+Message-Id: <1375847113-24884-14-git-send-email-roy.franz@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1375847113-24884-1-git-send-email-roy.franz@linaro.org>
 References: <1375847113-24884-1-git-send-email-roy.franz@linaro.org>
@@ -23,60 +23,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+EFI calls can made directly on ARM, so the function pointers
+are directly invoked.  This allows types to be checked at
+compile time, so here we ensure that the parameters match
+the function signature.
+
 Signed-off-by: Roy Franz <roy.franz@linaro.org>
 ---
- drivers/firmware/efi/efi-stub-helper.c |   17 +++++++++++------
- 1 file changed, 11 insertions(+), 6 deletions(-)
+ drivers/firmware/efi/efi-stub-helper.c |   15 +++++++++------
+ 1 file changed, 9 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/firmware/efi/efi-stub-helper.c b/drivers/firmware/efi/efi-stub-helper.c
-index 63e3556..cd7701f 100644
+index 521a4c4..bbe02fd 100644
 --- a/drivers/firmware/efi/efi-stub-helper.c
 +++ b/drivers/firmware/efi/efi-stub-helper.c
-@@ -46,10 +46,11 @@ static void efi_printk(efi_system_table_t *sys_table_arg, char *str)
- }
- 
- 
--static efi_status_t __get_map(efi_system_table_t *sys_table_arg,
--			      efi_memory_desc_t **map,
--			      unsigned long *map_size,
--			      unsigned long *desc_size)
-+static efi_status_t efi_get_memory_map(efi_system_table_t *sys_table_arg,
-+				       efi_memory_desc_t **map,
-+				       unsigned long *map_size,
-+				       unsigned long *desc_size,
-+				       unsigned long *key_ptr)
- {
- 	efi_memory_desc_t *m = NULL;
- 	efi_status_t status;
-@@ -77,6 +78,8 @@ again:
- 
- 	if (status != EFI_SUCCESS)
- 		efi_call_phys1(sys_table_arg->boottime->free_pool, m);
-+	if (key_ptr && status == EFI_SUCCESS)
-+		*key_ptr = key;
- 
- fail:
- 	*map = m;
-@@ -97,7 +100,8 @@ static efi_status_t efi_high_alloc(efi_system_table_t *sys_table_arg,
- 	u64 max_addr = 0;
- 	int i;
- 
--	status = __get_map(sys_table_arg, &map, &map_size, &desc_size);
-+	status = efi_get_memory_map(sys_table_arg, &map, &map_size, &desc_size,
-+				    NULL);
- 	if (status != EFI_SUCCESS)
+@@ -321,7 +321,7 @@ static efi_status_t handle_cmdline_files(efi_system_table_t *sys_table_arg,
+ 	status = efi_call_phys3(sys_table_arg->boottime->allocate_pool,
+ 				EFI_LOADER_DATA,
+ 				nr_files * sizeof(*files),
+-				&files);
++				(void **)&files);
+ 	if (status != EFI_SUCCESS) {
+ 		efi_printk(sys_table_arg, "Failed to alloc mem for file handle list\n");
  		goto fail;
+@@ -372,7 +372,8 @@ static efi_status_t handle_cmdline_files(efi_system_table_t *sys_table_arg,
+ 			boottime = sys_table_arg->boottime;
  
-@@ -175,7 +179,8 @@ static efi_status_t efi_low_alloc(efi_system_table_t *sys_table_arg,
- 	unsigned long nr_pages;
- 	int i;
+ 			status = efi_call_phys3(boottime->handle_protocol,
+-					image->device_handle, &fs_proto, &io);
++					image->device_handle, &fs_proto,
++						(void **)&io);
+ 			if (status != EFI_SUCCESS) {
+ 				efi_printk(sys_table_arg, "Failed to handle fs_proto\n");
+ 				goto free_files;
+@@ -406,7 +407,8 @@ static efi_status_t handle_cmdline_files(efi_system_table_t *sys_table_arg,
  
--	status = __get_map(sys_table_arg, &map, &map_size, &desc_size);
-+	status = efi_get_memory_map(sys_table_arg, &map, &map_size, &desc_size,
-+				    NULL);
- 	if (status != EFI_SUCCESS)
- 		goto fail;
+ grow:
+ 		status = efi_call_phys3(sys_table_arg->boottime->allocate_pool,
+-					EFI_LOADER_DATA, info_sz, &info);
++					EFI_LOADER_DATA, info_sz,
++					(void **)&info);
+ 		if (status != EFI_SUCCESS) {
+ 			efi_printk(sys_table_arg, "Failed to alloc mem for file info\n");
+ 			goto close_handles;
+@@ -456,18 +458,19 @@ grow:
  
+ 		addr = file_addr;
+ 		for (j = 0; j < nr_files; j++) {
+-			u64 size;
++			unsigned long size;
+ 
+ 			size = files[j].size;
+ 			while (size) {
+-				u64 chunksize;
++				unsigned long chunksize;
+ 				if (size > EFI_READ_CHUNK_SIZE)
+ 					chunksize = EFI_READ_CHUNK_SIZE;
+ 				else
+ 					chunksize = size;
+ 				status = efi_call_phys3(fh->read,
+ 							files[j].handle,
+-							&chunksize, addr);
++							&chunksize,
++							(void *)addr);
+ 				if (status != EFI_SUCCESS) {
+ 					efi_printk(sys_table_arg, "Failed to read file\n");
+ 					goto free_file_total;
 -- 
 1.7.10.4
 
