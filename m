@@ -1,128 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933513Ab3HGVNB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 17:13:01 -0400
-Received: from mail2.gnudd.com ([213.203.150.91]:57602 "EHLO mail.gnudd.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933309Ab3HGVM6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 17:12:58 -0400
-Date: Wed, 7 Aug 2013 23:12:35 +0200
-From: Alessandro Rubini <rubini@gnudd.com>
-To: hpa@zytor.com
-Cc: linux-kernel@vger.kernel.org, ciminaghi@gnudd.com,
-        giancarlo.asnaghi@st.com, x86@kernel.org, mingo@redhat.com,
-        linux@arm.linux.org.uk, tglx@linutronix.de, devicetree@vger.kernel.org
-Subject: Re: [PATCH 00/26] STA2X11 devicetree support for amba/pci
-Message-ID: <20130807211235.GA17863@mail.gnudd.com>
+	id S933456Ab3HGVMA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 17:12:00 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:47129 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933286Ab3HGVLk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 17:11:40 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Jiri Olsa <jolsa@redhat.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Pekka Enberg <penberg@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Runzhen Wang <runzhen@linux.vnet.ibm.com>,
+        Stephane Eranian <eranian@google.com>,
+        Thiago Peixoto <thiagolcpeixoto@gmail.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [GIT PULL 00/47] perf/core improvements and fixes
+Date: Wed,  7 Aug 2013 18:10:27 -0300
+Message-Id: <1375909874-22073-1-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.8.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Organization: GnuDD, Device Drivers, Embedded Systems, Courses
-In-Reply-To: <52026AB5.80009@zytor.com>
-References: <52026AB5.80009@zytor.com>
-  <cover.1375867291.git.rubini@gnudd.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[stripped list of issues from my original message follows]
->> Some of the problems he found are:
->> 
->>      * Passing a dtb to the kernel: we use a modified kexec at present
->>      * Passing correct irq numbers to the AMBA drivers
->>      * Switching to a new gpio driver with devicetree support
->>      * Writing a suitable dts: at present, a dts only exists for one
->>        of the STA2X11 based boards (Intel Northville).
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 
-> OK, so we have a real corner case here... which is a plugin board beyond
-> which sits a bus normally used by fixed devices.  You are definitely
-> correct that this is something that stresses current means of
-> description to the breaking point.
+Hi Ingo,
 
-Basically, it's an ARM chip with a PCI interface. So it offers USB, SATA,
-Eth, i2c, spi, gpio, can etc to the x86 CPU.
+	Please consider pulling,
 
-> *Note there are some questions below that I would perfectly understand
-> if you can't talk about publicly, if so, please contact me privately at
-> my corporate address.*
+- Arnaldo
 
-Thanks. I'm not aware of any such issues at this point, though.
- 
-> However, the plugin board is very different from it being the main
-> chipset, in no small part because you can boot without it.  I think this
-> is the first time I have ever heard of a chip which can act both as a
-> system chipset and a plugin card.
+The following changes since commit 93786a5f6aeb9c032c1c240246c5aabcf457b38f:
 
-The main CPU in the Northville is an Atom, which IIUC has its own
-memory controller -- and definitely a PCIe controller.  The Sta2x11
-chip is connected to the PCIe bus, as both a slave and a master. It's
-a busmaster for SATA, USB and something else, and equipped with a
-PrimeCell PL080 as DMA engine for UART, I2C, SPI, MMC.
+  watchdog: Make it work under full dynticks (2013-07-30 22:29:15 +0200)
 
-I'm aware it might be the first time this happens, but I also suspect
-it will be common pretty soon: the industrial world wants I2C, UART,
-SPI and GPIO, and bridging overt PCI to an external SoC is the right
-approach, in my opinion.
+are available in the git repository at:
 
-> The mainboard case is relatively straightforward -- we should use ACPI 5
-> (preferred for x86) or device tree to describe it.  My understanding
-> from what you describe so far is that the only existing case is the
-> Northville which is a mainboard.
+  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-core-for-mingo
 
-There are a pair of such mainboards around, but what we developers
-only have the Northville at this time.
+for you to fetch changes up to cecb977e24da1465cdb0ff2d10d22e5891dc3e6c:
 
-And the evaluation board, which is a PCIe card. With the previous
-platform_data-based approach I could plug two of them and access all
-devices (2 * 4 UART, 2 * 3 I2C etc).
+  Revert "tools lib lk: Fix for cross build" (2013-08-07 17:35:41 -0300)
 
-> For the plugin case, my thinking is that we probably do need a driver of
-> some kind which at least contains the description of the board, as I
-> assume one is not present in any kind of firmware on the board itself
-> (*do any such boards or plans for them actually exist at this point?*)
+----------------------------------------------------------------
+perf/core improvements and fixes:
 
-The board exists as an evaluation board. But I see nothing against an
-industrial-grade commercial offering, to give SPI, CAN and all the
-rest to PC users that need them, as a single do-it-all cheap board.
+. Do annotation using /proc/kcore and /proc/kallsyms, removing the
+  need for a vmlinux file kernel assembly annotation. This also improves
+  this use case because vmlinux has just the initial kernel image, not
+  what is actually in use after various code patchings by things like
+  alternatives, etc. From Adrian Hunter.
 
-> Ideally that driver should be (primarily?) a data object (an ACPI 5 SSDT
-> or a DTB file) rather than open coded C.
+. Various improvements and fixes to the "vmlinux matches kallsyms" 'perf test'
+  entry, related to the /proc/kcore annotation feature.
 
-Mostly so. It used to be platform data, to register devices for
-drivers that already exist. Like we did for Ether and CAN: just
-add the vendor/device pair and PCI support where missing.
- 
-> I believe ACPI 5 unlike device tree should be able to specify the
-> dynamic properties that you are rightfully concerned with.
+. Add --initial-delay option to 'perf stat' to skip measuring for
+  the startup phase, from Andi Kleen.
 
-We'll try to get acquainted with that, but my wild guess is that
-platform data is still simpler. I'm aware of the issues, and I'm not
-insisting, though.
- 
-> Sorry if this feels like a wild goose chase to you.  Some of this
-> problem domain is not very well handled by the current code, but we
-> really have to draw a hard line to make sure it doesn't descend into
-> unmaintainable chaos.
+. perf kvm stat live mode, that combines aspects of 'perf kvm stat' record and
+  report, from David Ahern.
 
-I understand. My impression of devicetree is exactly like that, I must
-say.  What we have here is a very clean PCI enumeration of it all: we
-only need to specify the mapping of GPIO pins (i.e. card-detect for
-mmc) and DMA channels, as all the rest works by itself.
+. Add option to analyze specific VM in perf kvm stat report, from David Ahern.
 
-> We have similar issues with MinnowBoard and are trying to use that as a
-> platform to figure out how a lot of these things need to be handled.
+. Do not require /lib/modules/* on a guest, fix from Jason Wessel.
 
-Interesting. I'll take a look. We were looking for a simple PC today
-and found that very thing as a viable option.
+. Group leader sampling, that allows just one event in a group to sample while
+  the other events have just its values read, from Jiri Olsa.
 
-Thank you for your feedback.  May I ask three more questions (this is
-the 1st)?
+. Add support for a new modifier "D", which requests that the event, or group
+  of events, be pinned to the PMU, from Michael Ellerman.
 
-Is the patch-set a viable approach for mainline, modulo serious evaluation
-of the hairy IRQ details and the other bits?
+. Fix segmentation fault on the gtk browser, from Namhyung Kim.
 
-Would it make sense to work on devicetree support in x86 bootloaders
-(especially yours, let's ignore grub)?
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-thank you again
-/alessandro
+----------------------------------------------------------------
+Adrian Hunter (13):
+      perf symbols: avoid SyS kernel syscall aliases
+      perf tests: Add test for reading object code
+      perf symbols: Load kernel maps before using
+      perf tools: Make it possible to read object code from vmlinux
+      perf tests: Adjust the vmlinux symtab matches kallsyms test
+      perf tools: Make it possible to read object code from kernel modules
+      perf symbols: Add support for reading from /proc/kcore
+      perf tests: Adjust the vmlinux symtab matches kallsyms test again
+      perf tests: Add kcore to the object code reading test
+      perf annotate: Allow disassembly using /proc/kcore
+      perf annotate: Put dso name in symbol annotation title
+      perf annotate: Remove nop at end of annotation
+      perf annotate: Add call target name if it is missing
+
+Andi Kleen (4):
+      perf evlist: Remove obsolete dummy execve
+      perf evsel: Add support for enabling counters
+      perf stat: Add support for --initial-delay option
+      perf stat: Flush output after each line in interval mode
+
+Arnaldo Carvalho de Melo (3):
+      perf trace: Beautify 'connect' result
+      perf python: Remove duplicate TID bit from mask
+      perf annotate browser: Improve description of '?' hotkey
+
+David Ahern (10):
+      perf evsel: Actually show symbol offset in stack trace when requested
+      perf tools: Fix compile of util/tsc.c
+      perf top: move CONSOLE_CLEAR to header file
+      perf stats: Add max and min stats
+      perf session: Export a few functions for event processing
+      perf kvm: Split out tracepoints from record args
+      perf session: Export queue_event function
+      perf kvm: Add live mode
+      perf kvm: Add min and max stats to display
+      perf kvm stat report: Add option to analyze specific VM
+
+Ingo Molnar (1):
+      perf annotate browser: Fix typo
+
+Jason Wessel (1):
+      perf machine: Do not require /lib/modules/* on a guest
+
+Jiri Olsa (10):
+      perf: Add PERF_EVENT_IOC_ID ioctl to return event ID
+      perf: Do not get values from disabled counters in group format read
+      perf evlist: Use PERF_EVENT_IOC_ID perf ioctl to read event id
+      perf tools: Add support for parsing PERF_SAMPLE_READ sample type
+      perf evlist: Fix event ID retrieval for group format read case
+      perf evlist: Add perf_evlist__id2sid method to get event ID related data
+      perf evsel: Add PERF_SAMPLE_READ sample related processing
+      perf tools: Add 'S' event/group modifier to read sample value
+      perf tests: Add attr record group sampling test
+      perf tests: Add parse events tests for leader sampling
+
+Joonsoo Kim (1):
+      Revert "tools lib lk: Fix for cross build"
+
+Michael Ellerman (2):
+      perf tools: Add support for pinned modifier
+      perf tests: Add tests of new pinned modifier
+
+Namhyung Kim (2):
+      perf util: Add parse_nsec_time() function
+      perf ui/gtk: Fix segmentation fault on perf_hpp__for_each_format loop
+
+ include/uapi/linux/perf_event.h                  |   1 +
+ kernel/events/core.c                             |  12 +-
+ tools/lib/lk/Makefile                            |  15 -
+ tools/perf/Documentation/perf-list.txt           |   2 +
+ tools/perf/Documentation/perf-stat.txt           |   5 +
+ tools/perf/Makefile                              |   1 +
+ tools/perf/arch/x86/util/tsc.c                   |   8 +-
+ tools/perf/builtin-inject.c                      |   2 +-
+ tools/perf/builtin-kvm.c                         | 732 +++++++++++++++++++++--
+ tools/perf/builtin-script.c                      |   4 +-
+ tools/perf/builtin-stat.c                        |  24 +-
+ tools/perf/builtin-top.c                         |   5 +-
+ tools/perf/builtin-trace.c                       |   1 +
+ tools/perf/python/twatch.py                      |   2 +-
+ tools/perf/tests/attr/test-record-group-sampling |  36 ++
+ tools/perf/tests/builtin-test.c                  |   4 +
+ tools/perf/tests/code-reading.c                  | 573 ++++++++++++++++++
+ tools/perf/tests/parse-events.c                  | 168 ++++++
+ tools/perf/tests/tests.h                         |   1 +
+ tools/perf/tests/vmlinux-kallsyms.c              |  36 +-
+ tools/perf/ui/browsers/annotate.c                |  20 +-
+ tools/perf/ui/gtk/hists.c                        |   2 -
+ tools/perf/util/annotate.c                       |  60 +-
+ tools/perf/util/build-id.c                       |   2 +-
+ tools/perf/util/dso.c                            |  10 +-
+ tools/perf/util/dso.h                            |  17 +
+ tools/perf/util/event.c                          |  18 +-
+ tools/perf/util/event.h                          |  18 +
+ tools/perf/util/evlist.c                         |  77 ++-
+ tools/perf/util/evlist.h                         |   4 +
+ tools/perf/util/evsel.c                          |  80 ++-
+ tools/perf/util/evsel.h                          |   5 +
+ tools/perf/util/machine.c                        |  25 +-
+ tools/perf/util/map.c                            |  67 +--
+ tools/perf/util/map.h                            |  13 +
+ tools/perf/util/parse-events.c                   |  17 +-
+ tools/perf/util/parse-events.l                   |   3 +-
+ tools/perf/util/session.c                        | 123 +++-
+ tools/perf/util/session.h                        |   5 +
+ tools/perf/util/stat.c                           |   6 +
+ tools/perf/util/stat.h                           |   9 +
+ tools/perf/util/symbol-elf.c                     | 174 +++++-
+ tools/perf/util/symbol-minimal.c                 |   7 +
+ tools/perf/util/symbol.c                         | 273 ++++++++-
+ tools/perf/util/symbol.h                         |   5 +
+ tools/perf/util/thread.h                         |   2 +-
+ tools/perf/util/top.h                            |   2 +
+ tools/perf/util/unwind.c                         |   4 +-
+ tools/perf/util/util.c                           |  33 +
+ tools/perf/util/util.h                           |   2 +
+ 50 files changed, 2523 insertions(+), 192 deletions(-)
+ create mode 100644 tools/perf/tests/attr/test-record-group-sampling
+ create mode 100644 tools/perf/tests/code-reading.c
