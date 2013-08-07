@@ -1,65 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933865Ab3HGXOv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 19:14:51 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:59814 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933540Ab3HGXOt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 19:14:49 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
-Subject: Re: [PATCH] cpufreq: exynos5440: Fix to skip when new frequency same as current
-Date: Thu, 08 Aug 2013 01:25:08 +0200
-Message-ID: <2331427.ybQdfvflPh@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.11.0-rc4+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAKohpom0gPk9BXRP2eEuX_HBXDut=wynrZfvOH1tcEQY6CMLNQ@mail.gmail.com>
-References: <1375874171-16951-1-git-send-email-amit.daniel@samsung.com> <52022FC2.2010109@arm.com> <CAKohpom0gPk9BXRP2eEuX_HBXDut=wynrZfvOH1tcEQY6CMLNQ@mail.gmail.com>
+	id S933920Ab3HGXPs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 19:15:48 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:58421 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933724Ab3HGXPp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 19:15:45 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CAMbhsRSaJWUL2yBnEJ83TCjMJRSZNP0-XM3-mVYf7FuPtUYnUQ@mail.gmail.com>
+References: <CA+icZUW990rWKdQmppjkGTJzFBtTnW-tb0dRu2AbTYB8KSDN4w@mail.gmail.com>
+	<2146168.3J7W6RtiZr@vostro.rjw.lan>
+	<CAMbhsRSaJWUL2yBnEJ83TCjMJRSZNP0-XM3-mVYf7FuPtUYnUQ@mail.gmail.com>
+Date: Thu, 8 Aug 2013 01:15:44 +0200
+Message-ID: <CA+icZUVCBdFARueFRzAWT6Ax19s83ds5LFvqpQ-tOO96-ZhStA@mail.gmail.com>
+Subject: Re: linux-next: Tree for Aug 7 [ call-trace on suspend: ext4 | pm
+ related ? ]
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Colin Cross <ccross@android.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
+        Ext4 Developers List <linux-ext4@vger.kernel.org>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        Linux PM List <linux-pm@lists.linux-foundation.org>,
+        Tejun Heo <tj@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, August 07, 2013 05:03:59 PM Viresh Kumar wrote:
-> On 7 August 2013 17:00, Sudeep KarkadaNagesha
-> <Sudeep.KarkadaNagesha@arm.com> wrote:
-> > Any particular reason we need this check in all drivers after your
-> > commit: 5a1c0228 "cpufreq: Avoid calling cpufreq driver's target()
-> > routine if target_freq == policy->cur"
-> >
-> > I think it can removed from all drivers, am I missing something ?
-> 
-> Yeah.. Just a bit though :)
-> 
-> So, cpufreq core checks this when we call target for any frequency.
-> Now, cpufreq driver actually does a cpufreq_frequency_table_target()
-> and so the frequency may vary than what is requested, in case
-> requested frequency isn't picked from the table.
-> 
-> In such cases we check it again to be sure that we aren't at this
-> frequency already..
-> 
-> Earlier I thought of calling cpufreq_frequency_table_target() in the
-> core before calling target but dropped the idea as I wasn't sure of
-> the side effects.
-> 
-> @Rafael: Do you see why we shouldn't/can't call
-> cpufreq_frequency_table_target() from the core itself and so drivers
-> never need to do it?
+On Thu, Aug 8, 2013 at 12:58 AM, Colin Cross <ccross@android.com> wrote:
+> Can you try add a call to show_state_filter(TASK_UNINTERRUPTIBLE) in
+> the error path of try_to_freeze_tasks(), where it prints the "refusing
+> to freeze" message?  It will print the stack trace of every thread
+> since they are all in the freezer, so the output will be very long.
+>
 
-It looks like it would require us to redefine .target() to take next_state
-instead of target_freq (at least in the acpi-cpufreq case), wouldn't it?
+If you provide a patch, I will give it a try.
 
-Rafael
+- Sedat -
 
+> On Wed, Aug 7, 2013 at 4:02 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> On Wednesday, August 07, 2013 04:25:14 PM Sedat Dilek wrote:
+>>> On Wed, Aug 7, 2013 at 7:54 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>>> > Hi all,
+>>> >
+>>> > Changes since 20130806:
+>>> >
+>>> > The ext4 tree lost its build failure.
+>>> >
+>>> > The mvebu tree gained a build failure so I used the version from
+>>> > next-20130806.
+>>> >
+>>> > The akpm tree gained conflicts against the ext4 tree.
+>>> >
+>>> > ----------------------------------------------------------------------------
+>>> >
+>>>
+>>> [ CC ext4 and pm folks ]
+>>>
+>>> I saw this on my 1st suspend which was not successful (2nd and 3rd try
+>>> I could suspend and resume):
+>>>
+>>> [ 5467.724074] PM: Syncing filesystems ... done.
+>>> [ 5467.973575] PM: Preparing system for mem sleep
+>>> [ 5467.974121] Freezing user space processes ...
+>>> [ 5487.970574] Freezing of tasks failed after 20.010 seconds (1 tasks
+>>> refusing to freeze, wq_busy=0):
+>>> [ 5487.970591] DOM Worker      D ffffffff81811820     0  2437      1 0x00000004
+>>> [ 5487.970595]  ffff880056ca3ca8 0000000000000002 00000000002d627f
+>>> 000009af00000002
+>>> [ 5487.970598]  ffff880066ede640 ffff880056ca3fd8 ffff880056ca3fd8
+>>> ffff880056ca3fd8
+>>> [ 5487.970601]  ffff880119f98340 ffff880066ede640 ffff880056ca3ca8
+>>> ffff88011fad5118
+>>> [ 5487.970604] Call Trace:
+>>> [ 5487.970612]  [<ffffffff81144360>] ? __lock_page+0x70/0x70
+>>> [ 5487.970615]  [<ffffffff816e8179>] schedule+0x29/0x70
+>>> [ 5487.970618]  [<ffffffff816e824f>] io_schedule+0x8f/0xd0
+>>> [ 5487.970621]  [<ffffffff8114436e>] sleep_on_page+0xe/0x20
+>>> [ 5487.970624]  [<ffffffff816e4be2>] __wait_on_bit+0x62/0x90
+>>> [ 5487.970627]  [<ffffffff81144f9b>] ? find_get_pages_tag+0xcb/0x170
+>>> [ 5487.970630]  [<ffffffff811444d0>] wait_on_page_bit+0x80/0x90
+>>> [ 5487.970633]  [<ffffffff8108a0e0>] ? wake_atomic_t_function+0x40/0x40
+>>> [ 5487.970636]  [<ffffffff811445ec>] filemap_fdatawait_range+0x10c/0x190
+>>> [ 5487.970640]  [<ffffffff81145ce0>] filemap_write_and_wait_range+0x50/0x80
+>>> [ 5487.970644]  [<ffffffff81246c3d>] ext4_sync_file+0x15d/0x340
+>>> [ 5487.970648]  [<ffffffff811db8dd>] do_fsync+0x5d/0x90
+>>> [ 5487.970651]  [<ffffffff811dbcc0>] SyS_fsync+0x10/0x20
+>>> [ 5487.970655]  [<ffffffff816f25ef>] tracesys+0xe1/0xe6
+>>> [ 5487.970658]
+>>> [ 5487.970659] Restarting tasks ... done.
+>>>
+>>> With yesterday's -next I did not have issues like this.
+>>
+>> It looks like ext4 was doing fsync, so it scheduled a write a waited for it
+>> to complete, but that never happened (most likely whoever was supposed to do
+>> the write had been already frozen then).
+>>
+>> Thanks,
+>> Rafael
+>>
