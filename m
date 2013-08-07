@@ -1,78 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932364Ab3HGSls (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 14:41:48 -0400
-Received: from webmail.solarflare.com ([12.187.104.25]:62746 "EHLO
-	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753323Ab3HGSlq (ORCPT
+	id S932405Ab3HGSnA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 14:43:00 -0400
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:34756 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757129Ab3HGSm7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 14:41:46 -0400
-Message-ID: <1375900885.2644.76.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH v3 05/11] syslog_ns: make permisiion check per user
- namespace
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Rui Xiang <rui.xiang@huawei.com>
-CC: <containers@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        <netdev@vger.kernel.org>, <netfilter-devel@vger.kernel.org>,
-        <serge.hallyn@ubuntu.com>, <ebiederm@xmission.com>,
-        <akpm@linux-foundation.org>, <gaofeng@cn.fujitsu.com>,
-        <guz.fnst@cn.fujitsu.com>, <libo.chen@huawei.com>
-Date: Wed, 7 Aug 2013 20:41:25 +0200
-In-Reply-To: <1375861035-24320-6-git-send-email-rui.xiang@huawei.com>
-References: <1375861035-24320-1-git-send-email-rui.xiang@huawei.com>
-	 <1375861035-24320-6-git-send-email-rui.xiang@huawei.com>
-Organization: Solarflare Communications
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
+	Wed, 7 Aug 2013 14:42:59 -0400
+Date: Wed, 7 Aug 2013 11:42:54 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Andrey Moiseev <o2g.org.ru@gmail.com>
+Cc: linux-input@vger.kernel.org, arnoques@gmail.com, russianneuromancer@ya.ru,
+        ike.pan@canonical.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/1] input: ideapad_slidebar: new input driver
+Message-ID: <20130807184254.GA830@core.coreip.homeip.net>
+References: <52022EAE.5040000@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [80.83.48.229]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-20062.005
-X-TM-AS-Result: No--7.183100-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52022EAE.5040000@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-08-07 at 15:37 +0800, Rui Xiang wrote:
-> Use ns_capable to check capability in user ns,
-> instead of capable function. The user ns is the
-> owner of current syslog ns.
-> 
-> Signed-off-by: Rui Xiang <rui.xiang@huawei.com>
-> ---
->  kernel/printk.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/printk.c b/kernel/printk.c
-> index e508ab2..ca951e7 100644
-> --- a/kernel/printk.c
-> +++ b/kernel/printk.c
-> @@ -374,13 +374,13 @@ static int check_syslog_permissions(int type, bool from_file,
->  		return 0;
->  
->  	if (syslog_action_restricted(type, ns)) {
-> -		if (capable(CAP_SYSLOG))
-> +		if (ns_capable(ns->owner, CAP_SYSLOG))
->  			return 0;
->  		/*
->  		 * For historical reasons, accept CAP_SYS_ADMIN too, with
->  		 * a warning.
->  		 */
-> -		if (capable(CAP_SYS_ADMIN)) {
-> +		if (ns_capable(ns->owner, CAP_SYS_ADMIN)) {
->  			pr_warn_once("%s (%d): Attempt to access syslog with "
->  				     "CAP_SYS_ADMIN but no CAP_SYSLOG "
->  				     "(deprecated).\n",
+Hi Andrey,
 
-Since CAP_SYS_ADMIN is only accepted for backward compatibility, is it
-really necessary to accept it as a per-namespace capability too?
+On Wed, Aug 07, 2013 at 03:25:34PM +0400, Andrey Moiseev wrote:
+> +/* Keyboard handler */
+> +static irq_handler_t kbd_irq_handler(int irq, void *dev_id,
+> +                    struct pt_regs *regs)
+> +{
+> +    /* Scancodes: e03b on move, bb on release */
+> +    int scancode = inb(0x60);
 
-Ben.
+No, you should not just read KBC data without regard to what other
+parts of kernel are doing (i8042 might be accessing it at the same time
+because AUX IRQ was raised).
+
+This driver has to be implemented as i8042 filter.
+
+Thanks.
 
 -- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
-
+Dmitry
