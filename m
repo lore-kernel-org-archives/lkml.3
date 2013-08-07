@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932489Ab3HGKVM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 06:21:12 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:19416 "EHLO song.cn.fujitsu.com"
+	id S932498Ab3HGKVe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 06:21:34 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:55306 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S932456Ab3HGKVE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 06:21:04 -0400
+	id S932455Ab3HGKVD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 06:21:03 -0400
 X-IronPort-AV: E=Sophos;i="4.89,832,1367942400"; 
-   d="scan'208";a="8143911"
+   d="scan'208";a="8143910"
 From: Lai Jiangshan <laijs@cn.fujitsu.com>
 To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Steven Rostedt <rostedt@goodmis.org>,
         Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org
 Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, Dipankar Sarma <dipankar@in.ibm.com>
-Subject: [PATCH 8/8] rcu: remove irq work for rsp_wakeup()
-Date: Wed, 7 Aug 2013 18:25:04 +0800
-Message-Id: <1375871104-10688-9-git-send-email-laijs@cn.fujitsu.com>
+Subject: [PATCH 7/8] rcu: add # of deferred _special() statistics
+Date: Wed, 7 Aug 2013 18:25:03 +0800
+Message-Id: <1375871104-10688-8-git-send-email-laijs@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1375871104-10688-1-git-send-email-laijs@cn.fujitsu.com>
 References: <1375871104-10688-1-git-send-email-laijs@cn.fujitsu.com>
@@ -28,71 +28,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is safe to aquire scheduler lock in rnp->lock since the rcu read lock is
-always deadlock-immunity(rnp->lock is always can't be nested in scheduler lock)
-
-it partial revert patch 016a8d5b.
-
 Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 ---
- kernel/rcutree.c |   17 ++---------------
- kernel/rcutree.h |    1 -
- 2 files changed, 2 insertions(+), 16 deletions(-)
+ kernel/rcutree.h        |    1 +
+ kernel/rcutree_plugin.h |    1 +
+ kernel/rcutree_trace.c  |    1 +
+ 3 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index e08abb9..6c91edc 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -1524,14 +1524,6 @@ static int __noreturn rcu_gp_kthread(void *arg)
- 	}
- }
- 
--static void rsp_wakeup(struct irq_work *work)
--{
--	struct rcu_state *rsp = container_of(work, struct rcu_state, wakeup_work);
--
--	/* Wake up rcu_gp_kthread() to start the grace period. */
--	wake_up(&rsp->gp_wq);
--}
--
- /*
-  * Start a new RCU grace period if warranted, re-initializing the hierarchy
-  * in preparation for detecting the next grace period.  The caller must hold
-@@ -1556,12 +1548,8 @@ rcu_start_gp_advanced(struct rcu_state *rsp, struct rcu_node *rnp,
- 	}
- 	rsp->gp_flags = RCU_GP_FLAG_INIT;
- 
--	/*
--	 * We can't do wakeups while holding the rnp->lock, as that
--	 * could cause possible deadlocks with the rq->lock. Deter
--	 * the wakeup to interrupt context.
--	 */
--	irq_work_queue(&rsp->wakeup_work);
-+	/* Wake up rcu_gp_kthread() to start the grace period. */
-+	wake_up(&rsp->gp_wq);
- }
- 
- /*
-@@ -3153,7 +3141,6 @@ static void __init rcu_init_one(struct rcu_state *rsp,
- 
- 	rsp->rda = rda;
- 	init_waitqueue_head(&rsp->gp_wq);
--	init_irq_work(&rsp->wakeup_work, rsp_wakeup);
- 	rnp = rsp->level[rcu_num_lvls - 1];
- 	for_each_possible_cpu(i) {
- 		while (i > rnp->grphi)
 diff --git a/kernel/rcutree.h b/kernel/rcutree.h
-index a5e9643..5892a43 100644
+index 4a39d36..a5e9643 100644
 --- a/kernel/rcutree.h
 +++ b/kernel/rcutree.h
-@@ -449,7 +449,6 @@ struct rcu_state {
- 	char *name;				/* Name of structure. */
- 	char abbr;				/* Abbreviated name. */
- 	struct list_head flavors;		/* List of RCU flavors. */
--	struct irq_work wakeup_work;		/* Postponed wakeups */
- };
+@@ -290,6 +290,7 @@ struct rcu_data {
+ 	unsigned long	n_force_qs_snap;
+ 					/* did other CPU force QS recently? */
+ 	long		blimit;		/* Upper limit on a processed batch */
++	unsigned long	n_defer_special;/* # of deferred _special() */
  
- /* Values for rcu_state structure's gp_flags field. */
+ 	/* 3) dynticks interface. */
+ 	struct rcu_dynticks *dynticks;	/* Shared per-CPU dynticks state. */
+diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+index c9ff9f1..d828eec 100644
+--- a/kernel/rcutree_plugin.h
++++ b/kernel/rcutree_plugin.h
+@@ -396,6 +396,7 @@ void rcu_read_unlock_special(struct task_struct *t, bool unlock)
+ 		 * is still unlikey to be true.
+ 		 */
+ 		if (unlikely(unlock && irqs_disabled_flags(flags))) {
++			this_cpu_ptr(&rcu_preempt_data)->n_defer_special++;
+ 			set_need_resched();
+ 			local_irq_restore(flags);
+ 			return;
+diff --git a/kernel/rcutree_trace.c b/kernel/rcutree_trace.c
+index cf6c174..17d8b2c 100644
+--- a/kernel/rcutree_trace.c
++++ b/kernel/rcutree_trace.c
+@@ -149,6 +149,7 @@ static void print_one_rcu_data(struct seq_file *m, struct rcu_data *rdp)
+ 	seq_printf(m, " ci=%lu nci=%lu co=%lu ca=%lu\n",
+ 		   rdp->n_cbs_invoked, rdp->n_nocbs_invoked,
+ 		   rdp->n_cbs_orphaned, rdp->n_cbs_adopted);
++	seq_printf(m, " ds=%lu\n", rdp->n_defer_special);
+ }
+ 
+ static int show_rcudata(struct seq_file *m, void *v)
 -- 
 1.7.4.4
 
