@@ -1,144 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933159Ab3HGXeb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 19:34:31 -0400
-Received: from mga02.intel.com ([134.134.136.20]:17523 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933035Ab3HGXe3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 19:34:29 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,835,1367996400"; 
-   d="scan'208";a="359297451"
-From: "Yu, Fenghua" <fenghua.yu@intel.com>
-To: Borislav Petkov <bp@alien8.de>,
-        Torsten Kaiser <just.for.lkml@googlemail.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
-        Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 3/5] x86, AMD: cleanup: merge common code in early
- microcode loading
-Thread-Topic: [PATCH 3/5] x86, AMD: cleanup: merge common code in early
- microcode loading
-Thread-Index: AQHOiHJi+cm++MPa80WiAzcLiv5LH5mKbKhAgAANp+A=
-Date: Wed, 7 Aug 2013 23:34:01 +0000
-Message-ID: <3E5A0FA7E9CA944F9D5414FEC6C712205A53B73A@ORSMSX106.amr.corp.intel.com>
-References: <20130723230026.394a5ee1@googlemail.com>
- <20130724133254.GE30777@pd.tnic> 
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.139]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S933172Ab3HGXfK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 19:35:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41100 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752651Ab3HGXfJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 19:35:09 -0400
+Date: Wed, 7 Aug 2013 16:35:07 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Ed Cashin <ecashin@coraid.com>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] aoe: adjust ref of head for compound page tails
+Message-Id: <20130807163507.954590c479a07886a8ae6cb1@linux-foundation.org>
+In-Reply-To: <782613DB-4C38-450C-BBC2-E14FA64D44AC@coraid.com>
+References: <cover.1375320764.git.ecashin@coraid.com>
+	<0c8aff39249c1da6b9cc3356650149d065c3ebd2.1375320764.git.ecashin@coraid.com>
+	<20130807140021.57a40fb31807f16b525f6ff3@linux-foundation.org>
+	<EB4C2185-3868-42A3-A88D-F9642962D336@coraid.com>
+	<20130807142647.6614d3ec88a7af12cba4505a@linux-foundation.org>
+	<782613DB-4C38-450C-BBC2-E14FA64D44AC@coraid.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r77NYb3D030361
 
-> From: Yu, Fenghua
-> Sent: Wednesday, August 07, 2013 3:46 PM
+On Wed, 7 Aug 2013 19:27:40 -0400 Ed Cashin <ecashin@coraid.com> wrote:
+
+> On Aug 7, 2013, at 5:26 PM, Andrew Morton wrote:
 > 
-> > From: Borislav Petkov [mailto:bp@alien8.de]
-> > Sent: Wednesday, July 24, 2013 6:33 AM
-> > On Tue, Jul 23, 2013 at 11:00:26PM +0200, Torsten Kaiser wrote:
-> > > Extract common checks and initialisations from load_ucode_ap() and
-> > > save_microcode_in_initrd_amd() to load_microcode_amd_early().
-> > > load_ucode_ap() gets a quick exit for !cpu, because for the BSP
-> there
-> > is
-> > > already a different function dealing with its update.
-> > >
-> > > The original code already didn't anything, because without
-> > load_microcode_amd()
-> > > getting called apply_microcode_amd() could not do anything.
-> > >
-> > > Signed-off-by: Torsten Kaiser <just.for.lkml@googlemail.com>
-> > >
-> > > --- a/arch/x86/kernel/microcode_amd_early.c	2013-07-22
-> > 06:22:32.000000000 +0200
-> > > +++ b/arch/x86/kernel/microcode_amd_early.c	2013-07-23
-> > 20:00:04.889508712 +0200
-> > > @@ -196,6 +196,23 @@ void __init load_ucode_amd_bsp(void)
-> > >  	apply_ucode_in_initrd(cd.data, cd.size);
-> > >  }
-> > >
-> > > +static int load_microcode_amd_early(void)
-> > > +{
-> > > +	enum ucode_state ret;
-> > > +	void *ucode;
-> > > +
-> > > +	if (ucode_loaded || !ucode_size || !initrd_start)
-> > > +		return 0;
-> > > +
-> > > +	ucode = (void *)(initrd_start + ucode_offset);
-> > > +	ret = load_microcode_amd(0, ucode, ucode_size);
-> > > +	if (ret != UCODE_OK)
-> > > +		return -EINVAL;
-> > > +
-> > > +	ucode_loaded = true;
-> > > +	return 0;
-> > > +}
-> > > +
-> > >  #ifdef CONFIG_X86_32
-> > >  u8 amd_bsp_mpb[MPB_MAX_SIZE];
-> > >
-> > > @@ -258,17 +275,13 @@ void load_ucode_amd_ap(void)
-> > >
-> > >  	collect_cpu_info_amd_early(&cpu_data(cpu), ucode_cpu_info + cpu);
-> > >
-> > > -	if (cpu && !ucode_loaded) {
-> > > -		void *ucode;
-> > > -
-> > > -		if (!ucode_size || !initrd_start)
-> > > -			return;
-> > > +	/* BSP via load_ucode_amd_bsp() */
-> > > +	if (!cpu)
-> > > +		return;
-> >
-> > Ok, this is really misleading. Fenghua, what's the reason for calling
-> > load_ucode_ap() on the BSP too?
-> >
-> > We have on the one hand:
-> >
-> > x86_64_start_kernel
-> > |->load_ucode_bsp
-> >
-> > and on the other:
-> >
-> > x86_64_start_kernel
-> > |-> x86_64_start_reservations
-> >     |-> start_kernel
-> >         |-> trap_init
-> > 	    |-> cpu_init
-> > 	        |-> load_ucode_ap()
-> >
-> > so we attempt to load the ucode twice on the BSP.
-> >
+> > On Wed, 7 Aug 2013 17:21:32 -0400 Ed Cashin <ecashin@coraid.com> wrote:
+> ...
+> >> Sorry.  I tried to cover that but maybe should have separated it more clearly from the running text.
+> >> 
+> >> The patch changes the current behavior encountered with direct I/O and aoe:
+> >> 
+> >>  aoe can BUG when direct I/O used
+> >> 
+> >> ... to a new behavior:
+> >> 
+> >>  aoe does not BUG when direct I/O is used
+> >> 
+> >> And the user will never know that instead aoe is manipulating the _count of the head page, even though that's what's happening with this patch applied.
+> >> 
+> >> (The user-visible effects that motivated the older patch that added the BUG to aoe when page tails are used for block I/O was a VM_BUG_ON that occurred when the aoe driver manipulated the _count of a compound page tail.)
+> > 
+> > OK, I added "Fix a BUG which can trigger when direct-IO is used with
+> > AOE".  Which kernel versions are affected?
 > 
-> You are right. Though the second time loading attempt will not find a
-> valid/newer ucode patch to update. So this won't cause a real/serious
-> problem. But we had better to fix this anyway.
 > 
-> > IMO, we should do this in cpu_init:
-> >
-> > 	if (cpu)
-> > 		load_ucode_ap();
-> >
-> > no?
+> That BUG was added to the aoe driver in a commit that first appears in v3.7.  It persists until this patch adds the code that handles the situation that the BUG was intended to detect.
 > 
-> This check won't work when CPU0 is hot added. So we need to find a
-> better way to fix this.
+> [ecashin@marino linux]$ git describe --contains --match 'v*' 69cf2d85de773d998798e47e3335b85e5645d157
+> v3.7-rc1~110^2~22
+> [ecashin@marino linux]$ 
 > 
 
-Maybe need to change the check as follows to take care of CPU0 hot add case?
+ah, is it this?
 
-if ((cpu && system_state == SYSTEM_BOOTING) || (system_state == SYSTEM_RUNNING))
-	load_ucode_ap();
++bio_pageinc(struct bio *bio)
++{
++       struct bio_vec *bv;
++       struct page *page;
++       int i;
++
++       bio_for_each_segment(bv, bio, i) {
++               page = bv->bv_page;
++               /* Non-zero page count for non-head members of
++                * compound pages is no longer allowed by the kernel,
++                * but this has never been seen here.
++                */
++               if (unlikely(PageCompound(page)))
++                       if (compound_trans_head(page) != page) {
++                               pr_crit("page tail used for block I/O\n");
++                               BUG();
++                       }
 
-Thanks.
+But get_page/put_page against a tail page of a compound page should
+Just Work.  The core MM will hunt down the head page and manipulate its
+refcount.  
 
--Fenghua
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Perhaps the problem here is that AOE is diving under the covers and is
+using low-level page refcount alterations:
+
++               atomic_inc(&page->_count);
+
+Why does AOE do this?  It would be better if it were to use the
+official published MM interfaces.  If those interfaces need
+alteration/augmentation then we can do that.
+
+
+
