@@ -1,76 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932194Ab3HGQAb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 12:00:31 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:30325 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757074Ab3HGQA2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 12:00:28 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 72.84.113.162
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19/6k4Pj7rWGfsp/EyiyGty6vfuwofc9+U=
-Date: Wed, 7 Aug 2013 12:00:19 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Cc: Stepan Moskovchenko <stepanm@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Lior Amsalem <alior@marvell.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        sboyd@codeaurora.org
-Subject: Re: [PATCH] ARM: dts: Fix memory node in skeleton64.dtsi
-Message-ID: <20130807160019.GF19280@titan.lakedaemon.net>
-References: <1375839186-1904-1-git-send-email-stepanm@codeaurora.org>
- <5201E7CA.4050601@free-electrons.com>
+	id S932071Ab3HGQDl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 12:03:41 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:35436 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753077Ab3HGQDk convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 12:03:40 -0400
+Date: Wed, 7 Aug 2013 12:03:36 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: =?utf-8?B?T25kxZllaiBCw61sa2E=?= <neleai@seznam.cz>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, gcc <gcc@gcc.gnu.org>,
+        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        David Daney <ddaney.cavm@gmail.com>,
+        Behan Webster <behanw@converseincode.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: Re: [RFC] gcc feature request: Moving blocks into sections
+Message-ID: <20130807160336.GA1336@Krystal>
+References: <CA+55aFyfvifCu=jDBH8LPmEHtvooVyo25dvJ+T6SQLhVidBBdQ@mail.gmail.com> <1375798783.25420.30.camel@gandalf.local.home> <CA+55aFwKYSwytooG50fyryWpVdGEk_v=vdB=L-kAyLmmSW=bkQ@mail.gmail.com> <1375811885.25420.44.camel@gandalf.local.home> <20130806203319.GA16170@Krystal> <1375821817.25420.50.camel@gandalf.local.home> <1375836304.25420.76.camel@gandalf.local.home> <1375836960.25420.80.camel@gandalf.local.home> <20130807050601.GA5385@domone.kolej.mff.cuni.cz> <1375887730.6848.7.camel@gandalf.local.home>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <5201E7CA.4050601@free-electrons.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <1375887730.6848.7.camel@gandalf.local.home>
+X-Editor: vi
+X-Info: http://www.efficios.com
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 07, 2013 at 08:23:06AM +0200, Gregory CLEMENT wrote:
-> On 07/08/2013 03:33, Stepan Moskovchenko wrote:
-> > Update the reg property of the memory node in
-> > skeleton64.dtsi to reflect the fact that the root node uses
-> > address-cells=2 and size-cells=2.
+* Steven Rostedt (rostedt@goodmis.org) wrote:
+> On Wed, 2013-08-07 at 07:06 +0200, Ondřej Bílka wrote:
 > 
-> Good catch
+> > Add short_counter,long_counter and before increment counter before each
+> > jump. That way we will know how many short/long jumps were taken. 
 > 
-> Acked-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+> That's not trivial at all. The jump is a single location (in an asm
+> goto() statement) that happens to be inlined through out the kernel. The
+> assembler decides if it will be a short or long jump. How do you add a
+> counter to count the difference?
 
-Since we introduced the file, and I can't think of any other tree that
-should take it, so I'll go ahead and take it.
+You might want to try creating a global array of counters (accessible
+both from C for printout and assembly for update).
 
-thx,
+Index the array from assembly using:   (2f - 1f)
 
-Jason.
+1:
+        jmp ...;
+2:
 
-> > Change-Id: Ie9b61166143969e020ceebc51e9a384405d8c0f2
-> > Signed-off-by: Stepan Moskovchenko <stepanm@codeaurora.org>
-> > ---
-> >  arch/arm/boot/dts/skeleton64.dtsi |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/arch/arm/boot/dts/skeleton64.dtsi b/arch/arm/boot/dts/skeleton64.dtsi
-> > index 1599415..b5d7f36 100644
-> > --- a/arch/arm/boot/dts/skeleton64.dtsi
-> > +++ b/arch/arm/boot/dts/skeleton64.dtsi
-> > @@ -9,5 +9,5 @@
-> >  	#size-cells = <2>;
-> >  	chosen { };
-> >  	aliases { };
-> > -	memory { device_type = "memory"; reg = <0 0>; };
-> > +	memory { device_type = "memory"; reg = <0 0 0 0>; };
-> >  };
-> > 
+And put an atomic increment of the counter. This increment instruction
+should be located prior to the jmp for obvious reasons.
+
+You'll end up with the sums you're looking for at indexes 2 and 5 of the
+array.
+
+Thanks,
+
+Mathieu
+
+> 
+> The output I gave is from the boot up code that converts the jmp back to
+> a nop (or in this case, the default nop to the ideal nop). It knows the
+> size by reading the op code. This is a static analysis, not a running
+> one. It's no trivial task to have a counter for each jump.
+> 
+> There is a way though. If we enable all the jumps (all tracepoints, and
+> other users of jumplabel), record the trace and then compare the trace
+> to the output that shows which ones were short jumps, and all others are
+> long jumps.
+> 
+> I'll post the patches soon and you can have fun doing the compare :-)
+> 
+> Actually, I'm working on the 4 patches of the series that is more about
+> clean ups and safety checks than the jmp conversion. That is not
+> controversial, and I'll be posting them for 3.12 soon.
+> 
+> After that, I'll post the updated patches that have the conversion as
+> well as the counter, for RFC and for others to play with.
+> 
+> -- Steve
 > 
 > 
-> -- 
-> Gregory Clement, Free Electrons
-> Kernel, drivers, real-time and embedded Linux
-> development, consulting, training and support.
-> http://free-electrons.com
+
+-- 
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
