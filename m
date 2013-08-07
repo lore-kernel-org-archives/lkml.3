@@ -1,78 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933139Ab3HGNfu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 09:35:50 -0400
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:55858 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933040Ab3HGNft (ORCPT
+	id S933147Ab3HGNgv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 09:36:51 -0400
+Received: from mail-ve0-f170.google.com ([209.85.128.170]:61198 "EHLO
+	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933040Ab3HGNgu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 09:35:49 -0400
+	Wed, 7 Aug 2013 09:36:50 -0400
+Date: Wed, 7 Aug 2013 09:36:45 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: lizefan@huawei.com, hannes@cmpxchg.org, bsingharora@gmail.com,
+        kamezawa.hiroyu@jp.fujitsu.com, cgroups@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHSET cgroup/for-3.12] cgroup: make cgroup_event specific to
+ memcg
+Message-ID: <20130807133645.GE27006@htj.dyndns.org>
+References: <1375632446-2581-1-git-send-email-tj@kernel.org>
+ <20130805160107.GM10146@dhcp22.suse.cz>
+ <20130805162958.GF19631@mtj.dyndns.org>
+ <20130805191641.GA24003@dhcp22.suse.cz>
+ <20130805194431.GD23751@mtj.dyndns.org>
+ <20130806155804.GC31138@dhcp22.suse.cz>
+ <20130806161509.GB10779@mtj.dyndns.org>
+ <20130807121836.GF8184@dhcp22.suse.cz>
+ <20130807124321.GA27006@htj.dyndns.org>
+ <20130807132613.GH8184@dhcp22.suse.cz>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 6.5 \(1508\))
-Subject: Re: [PATCH] ARM: fix wrong address when loading PRM_FRAC_INCREMENTOR_DENUMERATOR_RELOAD
-From: Chen Baozi <baozich@gmail.com>
-In-Reply-To: <20130807110945.GL7656@atomide.com>
-Date: Wed, 7 Aug 2013 21:35:43 +0800
-Cc: linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 7bit
-Message-Id: <4F20F648-FED2-4877-8896-EF6F12295615@gmail.com>
-References: <1375356474-24203-1-git-send-email-baozich@gmail.com> <C635EF21-CD18-4633-AA39-16209F8EE231@gmail.com> <20130807110945.GL7656@atomide.com>
-To: Tony Lindgren <tony@atomide.com>
-X-Mailer: Apple Mail (2.1508)
+Content-Disposition: inline
+In-Reply-To: <20130807132613.GH8184@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello, Michal.
 
-On Aug 7, 2013, at 7:09 PM, Tony Lindgren <tony@atomide.com> wrote:
+On Wed, Aug 07, 2013 at 03:26:13PM +0200, Michal Hocko wrote:
+> I would rather see it not changed unless it really is a big win in the
+> cgroup core. So far I do not see anything like that (just look at
+> __cgroup_from_dentry which needs to be exported to allow for the move).
 
-> * Chen Baozi <baozich@gmail.com> [130805 08:33]:
->> ping?
->> 
->> On Aug 1, 2013, at 7:27 PM, Chen Baozi <baozich@gmail.com> wrote:
->> 
->>> The denominator should be load from INCREMENTOR_DENUMERATOR_RELOAD_OFFSET
->>> rather than INCREMENTER_NUMERATOR_OFFSET.
-> 
-> Maybe describe what exactly happens without this fix?
+The end goal is cleaning up cftype so that it becomes a thin wrapper
+around seq_file and I'd really like to keep the interface minimal so
+that it's difficult to misunderstand.
 
-I think it is more likely a typo, since 
-INCREMENTER_DENUMERATOR_RELOAD[23:17] is reserved. It seems
-that it won't make much trouble without this fix because
-the useful [11:0] bit is mask and set the right value later.
+> You reduce the amount of code in cgroup.c, alright, but the code
+> doesn't go away really. It just moves out of your sight and moves the
+> same burden on somebody else without providing a new generic interface.
 
-Cheers,
+If the implementation details are all that you're objecting, I'll be
+happy to restructure it.  I just didn't pay too much attention to it
+because I considered it to be mostly deprecated.  I don't think it'll
+be too much work and strongly think it'll be worth the effort.  Our
+code base is extremely nasty is and I'll try to get any ounce of
+cleanup I can get.
 
-Baozi
+> If somebody needs a notification interface (and there is no one available
+> right now) then you cannot prevent from such a pointless work anyway...
 
-> 
-> Also we should get few acks for this for the -rc series.
-> 
-> Regards,
-> 
-> Tony
-> 
->>> Signed-off-by: Chen Baozi <baozich@gmail.com>
->>> ---
->>> arch/arm/mach-omap2/timer.c | 2 +-
->>> 1 file changed, 1 insertion(+), 1 deletion(-)
->>> 
->>> diff --git a/arch/arm/mach-omap2/timer.c b/arch/arm/mach-omap2/timer.c
->>> index b37e1fc..9265e03 100644
->>> --- a/arch/arm/mach-omap2/timer.c
->>> +++ b/arch/arm/mach-omap2/timer.c
->>> @@ -537,7 +537,7 @@ static void __init realtime_counter_init(void)
->>> 	reg |= num;
->>> 	__raw_writel(reg, base + INCREMENTER_NUMERATOR_OFFSET);
->>> 
->>> -	reg = __raw_readl(base + INCREMENTER_NUMERATOR_OFFSET) &
->>> +	reg = __raw_readl(base + INCREMENTER_DENUMERATOR_RELOAD_OFFSET) &
->>> 			NUMERATOR_DENUMERATOR_MASK;
->>> 	reg |= den;
->>> 	__raw_writel(reg, base + INCREMENTER_DENUMERATOR_RELOAD_OFFSET);
->>> -- 
->>> 1.8.1.4
->>> 
->> 
+I'm gonna add one for freezer state transitions.  It'll be simple
+"this file changed" thing and will probably apply that to at least oom
+and vmpressure.  I'm relatively confident that it's gonna be pretty
+simple and that's gonna be the cgroup event mechanism.
 
+> cgroup_event_* don't sound memcg specific at all. They are playing with
+> cgroup dentry reference counting and do a generic functionality which
+> memcg doesn't need to know about.
+
+Sure, I'll try to clean it up so that it doesn't meddle with cgroup
+internals directly.
+
+> I wouldn't object to having non-cgroup internals playing variant. I just
+> do not think it makes sense to invest time to something that should go
+> away long term.
+
+I suppose it's priority thing.  To me, cleaning up cgroup core API is
+quite important and I'd be happy to sink time and effort into it and
+it's not like we can drop the event thing in a release cycle or two.
+We'd have to carry it for years, so I think the effort is justified.
+
+Thanks.
+
+-- 
+tejun
