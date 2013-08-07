@@ -1,164 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932801Ab3HGK70 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 06:59:26 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:24966 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S932504Ab3HGKxo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 06:53:44 -0400
-X-IronPort-AV: E=Sophos;i="4.89,832,1367942400"; 
-   d="scan'208";a="8144144"
-From: Tang Chen <tangchen@cn.fujitsu.com>
-To: robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl, lenb@kernel.org,
-        tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
-        akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
-        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
-        mina86@mina86.com, gong.chen@linux.intel.com,
-        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
-        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
-        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com
-Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Subject: [PATCH v3 04/25] acpi: Introduce acpi_verify_initrd() to check if a table is invalid.
-Date: Wed, 7 Aug 2013 18:51:55 +0800
-Message-Id: <1375872736-4822-5-git-send-email-tangchen@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1375872736-4822-1-git-send-email-tangchen@cn.fujitsu.com>
-References: <1375872736-4822-1-git-send-email-tangchen@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/07 18:52:16,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/07 18:52:17,
-	Serialize complete at 2013/08/07 18:52:17
+	id S932621Ab3HGLDc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 07:03:32 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:51739 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932530Ab3HGLDb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 07:03:31 -0400
+From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "Hans J. Koch" <hjk@hansjkoch.de>, linux-kernel@vger.kernel.org,
+        kernel@pengutronix.de
+Subject: [PATCH v3 2/3] uio: provide vm access to UIO_MEM_PHYS maps
+Date: Wed,  7 Aug 2013 13:02:53 +0200
+Message-Id: <1375873374-12601-2-git-send-email-u.kleine-koenig@pengutronix.de>
+X-Mailer: git-send-email 1.8.4.rc1
+In-Reply-To: <1375873374-12601-1-git-send-email-u.kleine-koenig@pengutronix.de>
+References: <1375873374-12601-1-git-send-email-u.kleine-koenig@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In acpi_initrd_override(), it checks several things to ensure the
-table it found is valid. In later patches, we need to do these check
-somewhere else. So this patch introduces a common function
-acpi_verify_initrd() to do all these checks, and reuse it in different
-places. The function will be used in the subsequent patches.
+This makes it possible to let gdb access mappings of the process that is
+being debugged.
 
-Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Acked-by: Toshi Kani <toshi.kani@hp.com>
-Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+uio_mmap_logical was moved and uio_vm_ops renamed to group related code
+and differentiate to new stuff.
+
+Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 ---
- drivers/acpi/osl.c |   86 +++++++++++++++++++++++++++++++++++++---------------
- 1 files changed, 61 insertions(+), 25 deletions(-)
+ drivers/uio/uio.c | 26 +++++++++++++++++---------
+ 1 file changed, 17 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-index 3b8bab2..0043e9f 100644
---- a/drivers/acpi/osl.c
-+++ b/drivers/acpi/osl.c
-@@ -572,9 +572,68 @@ static const char * const table_sigs[] = {
- /* Must not increase 10 or needs code modification below */
- #define ACPI_OVERRIDE_TABLES 10
+diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
+index 3b96f18..c4279b2 100644
+--- a/drivers/uio/uio.c
++++ b/drivers/uio/uio.c
+@@ -630,12 +630,26 @@ static int uio_vma_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
+ 	return 0;
+ }
  
-+/*******************************************************************************
-+ *
-+ * FUNCTION:    acpi_verify_table
-+ *
-+ * PARAMETERS:  File               - The initrd file
-+ *              Path               - Path to acpi overriding tables in cpio file
-+ *              Signature          - Signature of the table
-+ *
-+ * RETURN:      0 if it passes all the checks, -EINVAL if any check fails.
-+ *
-+ * DESCRIPTION: Check if an acpi table found in initrd is invalid.
-+ *              @signature can be NULL. If it is NULL, the function will check
-+ *              if the table signature matches any signature in table_sigs[].
-+ *
-+ ******************************************************************************/
-+int __init acpi_verify_table(struct cpio_data *file,
-+			      const char *path, const char *signature)
+-static const struct vm_operations_struct uio_vm_ops = {
++static const struct vm_operations_struct uio_logical_vm_ops = {
+ 	.open = uio_vma_open,
+ 	.close = uio_vma_close,
+ 	.fault = uio_vma_fault,
+ };
+ 
++static int uio_mmap_logical(struct vm_area_struct *vma)
 +{
-+	int idx;
-+	struct acpi_table_header *table = file->data;
-+
-+	if (file->size < sizeof(struct acpi_table_header)) {
-+		ACPI_INVALID_TABLE("Table smaller than ACPI header",
-+			      path, file->name);
-+		return -EINVAL;
-+	}
-+
-+	if (signature) {
-+		if (memcmp(table->signature, signature, 4)) {
-+			ACPI_INVALID_TABLE("Table signature does not match",
-+				      path, file->name);
-+			return -EINVAL;
-+		}
-+	} else {
-+		for (idx = 0; table_sigs[idx]; idx++)
-+			if (!memcmp(table->signature, table_sigs[idx], 4))
-+				break;
-+
-+		if (!table_sigs[idx]) {
-+			ACPI_INVALID_TABLE("Unknown signature", path, file->name);
-+			return -EINVAL;
-+		}
-+	}
-+
-+	if (file->size != table->length) {
-+		ACPI_INVALID_TABLE("File length does not match table length",
-+			      path, file->name);
-+		return -EINVAL;
-+	}
-+
-+	if (acpi_table_checksum(file->data, table->length)) {
-+		ACPI_INVALID_TABLE("Bad table checksum",
-+			      path, file->name);
-+		return -EINVAL;
-+	}
-+
++	vma->vm_flags |= VM_DONTEXPAND | VM_DONTDUMP;
++	vma->vm_ops = &uio_logical_vm_ops;
++	uio_vma_open(vma);
 +	return 0;
 +}
 +
- void __init acpi_initrd_override(void *data, size_t size)
++static const struct vm_operations_struct uio_physical_vm_ops = {
++#ifdef CONFIG_HAVE_IOREMAP_PROT
++	.access = generic_access_phys,
++#endif
++};
++
+ static int uio_mmap_physical(struct vm_area_struct *vma)
  {
--	int sig, no, table_nr = 0, total_offset = 0;
-+	int no, table_nr = 0, total_offset = 0;
- 	long offset = 0;
- 	struct acpi_table_header *table;
- 	char cpio_path[32] = "kernel/firmware/acpi/";
-@@ -593,33 +652,10 @@ void __init acpi_initrd_override(void *data, size_t size)
- 		data += offset;
- 		size -= offset;
+ 	struct uio_device *idev = vma->vm_private_data;
+@@ -643,6 +657,8 @@ static int uio_mmap_physical(struct vm_area_struct *vma)
+ 	if (mi < 0)
+ 		return -EINVAL;
  
--		if (file.size < sizeof(struct acpi_table_header)) {
--			ACPI_INVALID_TABLE("Table smaller than ACPI header",
--				      cpio_path, file.name);
--			continue;
--		}
++	vma->vm_ops = &uio_physical_vm_ops;
++
+ 	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
+ 
+ 	return remap_pfn_range(vma,
+@@ -652,14 +668,6 @@ static int uio_mmap_physical(struct vm_area_struct *vma)
+ 			       vma->vm_page_prot);
+ }
+ 
+-static int uio_mmap_logical(struct vm_area_struct *vma)
+-{
+-	vma->vm_flags |= VM_DONTEXPAND | VM_DONTDUMP;
+-	vma->vm_ops = &uio_vm_ops;
+-	uio_vma_open(vma);
+-	return 0;
+-}
 -
- 		table = file.data;
- 
--		for (sig = 0; table_sigs[sig]; sig++)
--			if (!memcmp(table->signature, table_sigs[sig], 4))
--				break;
--
--		if (!table_sigs[sig]) {
--			ACPI_INVALID_TABLE("Unknown signature",
--				      cpio_path, file.name);
-+		if (acpi_verify_table(&file, cpio_path, NULL))
- 			continue;
--		}
--		if (file.size != table->length) {
--			ACPI_INVALID_TABLE("File length does not match table length",
--				      cpio_path, file.name);
--			continue;
--		}
--		if (acpi_table_checksum(file.data, table->length)) {
--			ACPI_INVALID_TABLE("Bad table checksum",
--				      cpio_path, file.name);
--			continue;
--		}
- 
- 		pr_info("%4.4s ACPI table found in initrd [%s%s][0x%x]\n",
- 			table->signature, cpio_path, file.name, table->length);
+ static int uio_mmap(struct file *filep, struct vm_area_struct *vma)
+ {
+ 	struct uio_listener *listener = filep->private_data;
 -- 
-1.7.1
+1.8.4.rc1
 
