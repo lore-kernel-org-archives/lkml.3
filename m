@@ -1,53 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932529Ab3HGKa1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 06:30:27 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:2456 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S932223Ab3HGKVB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 06:21:01 -0400
-X-IronPort-AV: E=Sophos;i="4.89,832,1367942400"; 
-   d="scan'208";a="8143904"
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, Dipankar Sarma <dipankar@in.ibm.com>
-Subject: [PATCH 1/8] rcu: add a warn to rcu_preempt_note_context_switch()
-Date: Wed, 7 Aug 2013 18:24:57 +0800
-Message-Id: <1375871104-10688-2-git-send-email-laijs@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1375871104-10688-1-git-send-email-laijs@cn.fujitsu.com>
-References: <1375871104-10688-1-git-send-email-laijs@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/07 18:19:35,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/07 18:19:35,
-	Serialize complete at 2013/08/07 18:19:35
+	id S932442Ab3HGKdg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 06:33:36 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:43120 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757269Ab3HGKdf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 06:33:35 -0400
+Message-ID: <1375871614.2424.103.camel@joe-AO722>
+Subject: Re: [PATCH] bitops: move BITS() macro to the bitops file
+From: Joe Perches <joe@perches.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-kernel@vger.kernel.org, Akinobu Mita <mita@miraclelinux.com>
+Date: Wed, 07 Aug 2013 03:33:34 -0700
+In-Reply-To: <1375866379-27504-1-git-send-email-linus.walleij@linaro.org>
+References: <1375866379-27504-1-git-send-email-linus.walleij@linaro.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is expected that _nesting == INT_MIN if _nesting < 0.
-Add a warning to it if something unexpected happen.
+On Wed, 2013-08-07 at 11:06 +0200, Linus Walleij wrote:
+> This macro was invented by Mattias Nilsson for the usecase
+> where you want to set a sequence of bits inside a n-bit
+> word, while leaving the head and tail of the sequence all
+> zeroes. For example:
+> 
+>   #include <linux/bitops.h>
 
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
----
- kernel/rcutree_plugin.h |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+BITS is a name that's not easily reused because it's
+already in use in a few other places.
 
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index 63098a5..8fd947e 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -243,6 +243,7 @@ static void rcu_preempt_note_context_switch(int cpu)
- 				       : rnp->gpnum + 1);
- 		raw_spin_unlock_irqrestore(&rnp->lock, flags);
- 	} else if (t->rcu_read_lock_nesting < 0 &&
-+		   !WARN_ON_ONCE(t->rcu_read_lock_nesting != INT_MIN) &&
- 		   t->rcu_read_unlock_special) {
- 
- 		/*
--- 
-1.7.4.4
+There are a few conflicts.
+
+$ git grep -E "^\s*#\s*define\s+\bBITS\b"
+arch/arc/include/asm/disasm.h:#define BITS(word, s, e)  (((word) >> (s)) & (~((-2) << ((e) - (s)))))
+drivers/input/keyboard/tnetv107x-keypad.c:#define BITS(x)                       (BIT(x) - 1)
+drivers/mfd/dbx500-prcmu-regs.h:#define BITS(_start, _end) ((BIT(_end) - BIT(_start)) + BIT(_end))
+drivers/net/wireless/iwlwifi/mvm/fw-api-bt-coex.h:#define BITS(nb) (BIT(nb) - 1)
+fs/select.c:#define BITS(fds, n)        (*FDS_IN(fds, n)|*FDS_OUT(fds, n)|*FDS_EX(fds, n))
+lib/zlib_inflate/inflate.c:#define BITS(n) \
+sound/core/oss/rate.c:#define BITS      (1<<SHIFT)
+
+>   u16 mask = BITS(4, 12);
+> 
+> Yields a mask like this:
+> 
+>   0001111111110000
+[]
+> diff --git a/drivers/mfd/dbx500-prcmu-regs.h b/drivers/mfd/dbx500-prcmu-regs.h
+[]
+> @@ -13,8 +13,6 @@
+[]
+> -#define BITS(_start, _end) ((BIT(_end) - BIT(_start)) + BIT(_end))
+
+> diff --git a/include/linux/bitops.h b/include/linux/bitops.h
+[]
+> @@ -6,6 +6,7 @@
+[]
+> +#define BITS(_start, _end)	((BIT(_end) - BIT(_start)) + BIT(_end))
+
+Maybe use a statement expression to make sure
+the start and end accesses are done only once.
+
+#define BITS(start, end)				\
+({							\
+	unsigned long high = BIT(end);			\
+	unsigned long low = BIT(start);			\
+	unsigned long rtn = high + (high - low);	\
+	rtn;						\
+})
+
+I suggest | instead of + too.
+
+Maybe add a WARN when low > high too.
+Maybe make it a function to consolidate
+any WARN instead of inline expansion.
+
 
