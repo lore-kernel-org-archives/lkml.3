@@ -1,45 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932973Ab3HGTx7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 15:53:59 -0400
-Received: from smtpout013-vf.aruba.it ([62.149.179.212]:41641 "HELO
-	smtp01-vf.aruba.it" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with SMTP id S932301Ab3HGTx6 convert rfc822-to-8bit (ORCPT
+	id S933021Ab3HGTyz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 15:54:55 -0400
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:60967 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932348Ab3HGTyy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 15:53:58 -0400
-X-Greylist: delayed 4834 seconds by postgrey-1.27 at vger.kernel.org; Wed, 07 Aug 2013 15:53:58 EDT
+	Wed, 7 Aug 2013 15:54:54 -0400
 MIME-Version: 1.0
-X-Mailer: AtMail PHP 5.1
-Message-ID: <46179.1375895367@admin.lt>
-Reply-To: "Web Admin and IT center" <noreply@admin.lt>
-Content-Type: text/plain; charset="utf-8"
-X-Origin: 41.66.207.144
-Date: Wed, 7 Aug 2013 19:09:27 +0200
-Subject: Re-validate Your  mailbox !
-From: "Web Admin and IT center" <noreply@admin.lt>
-Content-Transfer-Encoding: 8BIT
-To: unlisted-recipients:; (no To-header on input)
+In-Reply-To: <5202A2EC.2070907@wwwdotorg.org>
+References: <1375739760-18833-1-git-send-email-swarren@wwwdotorg.org>
+	<CACRpkdb1qSO2OhFebgAPESAzRySaCyQcBH97s4E7+F-3wmXZpw@mail.gmail.com>
+	<5202A2EC.2070907@wwwdotorg.org>
+Date: Wed, 7 Aug 2013 21:54:53 +0200
+Message-ID: <CACRpkdb2sORvPW+wy3BO-+ZXnMOk2Vsw13VL7Kp4_WKS3yxhDA@mail.gmail.com>
+Subject: Re: [PATCH 1/2] pinctrl: clean up pinconfig-generic documentation
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Pawel Moll <pawel.moll@arm.com>, Rob Herring <rob.herring@calxeda.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stephen Warren <swarren@nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Aug 7, 2013 at 9:41 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 08/07/2013 01:32 PM, Linus Walleij wrote:
+>> On Mon, Aug 5, 2013 at 11:55 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+>>
+>>> From: Stephen Warren <swarren@nvidia.com>
+>>>
+>>> Reword the section of pinctrl-bindings.txt that describes generic
+>>> properties that pinctrl bindings may use. The aim is to make the text
+>>> clearer, and more explicitly call out the responsibility of individual
+>>> bindings that use the generic properties to define which of the
+>>> properties are used, and how.
+>>>
+>>> Signed-off-by: Stephen Warren <swarren@nvidia.com>
+>>> ---
+>>> LinusW, Laxman, this is the binding doc cleanup I mentioned I was going
+>>> to send when reviewing Laxman's Palmas pinctrl driver.
+>>
+>> Looks good to me.
+>> Patch applied.
+>
+> I assume just patch 1? There was a v2 of patch 2.
 
-Re-validate Your  mailbox !
+Yes ... I haven't found that v2 of patch 2 yet.
 
-The recent software upgrade at the Mailbox Web Admin and IT center has necessitated our resolve
-to update your details so as to enhance an all round security of your information in our
-database. Hence we implore you to follow the link below and update your information immediately
-to enable us serve you better Kindly confirm all details accurately as contained in our database
-
-Click the link below to confirm your details you can also copy and past in your web broswer:
-
-http://feliz.co.in/PMS/verification/use/webtech/form1.html
-
-Thanks for your understanding
-Web Admin and IT center
-All Rights Reserved .
-
-
-
-
-
+Yours,
+Linus Walleij
