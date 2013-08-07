@@ -1,68 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933704Ab3HGViu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 17:38:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40162 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933374Ab3HGVit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 17:38:49 -0400
-Date: Wed, 7 Aug 2013 14:40:10 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Bob Smith <bsmith@linuxtoys.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 001/001] CHAR DRIVERS: a simple device to give daemons a
- /sys-like interface
-Message-ID: <20130807214010.GA5902@kroah.com>
-References: <20130803223828.GA14611@kroah.com>
- <51FECDA6.5070001@linuxtoys.org>
- <20130804231958.GA25418@kroah.com>
- <52003958.7080103@linuxtoys.org>
- <20130806094604.GE27889@kroah.com>
- <520299AB.1020607@linuxtoys.org>
- <20130807192714.GC2708@kroah.com>
- <5202A284.7010106@linuxtoys.org>
- <20130807195427.GB4121@kroah.com>
- <5202BC11.6040605@linuxtoys.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5202BC11.6040605@linuxtoys.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933182Ab3HGVq4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 17:46:56 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:36340 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932518Ab3HGVqy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 17:46:54 -0400
+From: Sergei Trofimovich <slyich@gmail.com>
+To: linux-btrfs@vger.kernel.org, Chris Mason <chris.mason@fusionio.com>,
+        Josef Bacik <jbacik@fusionio.com>
+Cc: linux-kernel@vger.kernel.org, Sergei Trofimovich <slyfox@gentoo.org>
+Subject: [PATCH 0/7] uselex.rb as a tiny tool to find dead code
+Date: Thu,  8 Aug 2013 00:43:16 +0300
+Message-Id: <1375911803-17318-1-git-send-email-slyich@gmail.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 07, 2013 at 02:28:49PM -0700, Bob Smith wrote:
-> Greg Kroah-Hartman wrote:
-> > You ignored my mknod comment.
-> Yes, proxy is a type of IPC.  It's closest counterpart in the
-> kernel now is a named pipe.   The kernel does not try to create
-> named pipes automatically.  Named pipes are created deliberately
-> by users with the mkfifo command or system call. Same with proxy.
-> The proxy device nodes are application specific and need to be
-> created as needed by applications.
+From: Sergei Trofimovich <slyfox@gentoo.org>
 
-But applications do not have the permissions in a system to create
-device nodes.  Nor should they need that permission.
+Hi guys!
 
-> Allocation of minor numbers is an issue but that is an issue that
-> is separate from the proxy module itself.
+TL;DR:
 
-How is it separate, it seems tied directly to it as something that must
-be handled properly.
+the patches remove (currently or already) dead code
+and localize symbol visibility used only in one module.
 
-> > Also, no, setting the permissions like this is not ok for a real system,
-> > what is going to be in charge of setting the permissions on these random
-> > device nodes?
-> Again, compare proxy to a named pipe.  It is up the application
-> writer to decide who gets read and write access to its proxy
-> nodes.
+Thanks!
 
-Ok, but to do so, you have to have root permissions to start with, which
-is generally not going to happen on sane systems.  Only allowing root
-access to this seems like a huge limitation.
+The Story:
 
-thanks,
+Once upon a time I've got very simple idea to find dead code
+in large C/C++ mixed project at work.
 
-greg k-h
+The things of my primary interest were things of too large
+visibility scope, like:
+ - externally visible global variables used only in module
+   defining the variable
+ - and functions of the same property
+
+Once you identify those functions and mark as 'static' you
+achieve two goals:
+
+ - minor: give compiler possibility to inline code a bit better
+   (especially for one-caller case)
+ - more interesting: possibility to spot that the symbol is no
+   longer used at all
+
+Hence the project idea:
+1. scan all intermediate object (.o) files for exported symbols
+2. find such symbols that are not imported into any .o files
+
+Meet uselex.rb: one-file script to parse 'nm' output:
+
+    https://github.com/trofi/uselex/blob/master/uselex.rb
+
+For linux's kernel it's use is as simple as:
+
+    $ make $config && make
+    $ uselex.rb `find -name '*.o'`
+
+and you've got material to look at!
+
+It outputs 3000 symbols thus I've started small:
+
+    $ uselex.rb `find fs/btrfs -name '*.o'
+
+To get an impression it reports such things:
+
+    set_state_private: [R]: exported from: fs/btrfs/built-in.o fs/btrfs/btrfs.o fs/btrfs/extent_io.o
+    btrfs_get_inode_ref_index: [R]: exported from: fs/btrfs/built-in.o fs/btrfs/inode-item.o fs/btrfs/btrfs.o
+    btrfs_print_tree: [R]: exported from: fs/btrfs/built-in.o fs/btrfs/print-tree.o fs/btrfs/btrfs.o
+    btrfs_reada_detach: [R]: exported from: fs/btrfs/built-in.o fs/btrfs/reada.o fs/btrfs/btrfs.o
+    __btrfs_getxattr: [R]: exported from: fs/btrfs/built-in.o fs/btrfs/xattr.o fs/btrfs/btrfs.o
+    __btrfs_setxattr: [R]: exported from: fs/btrfs/built-in.o fs/btrfs/xattr.o fs/btrfs/btrfs.o
+    btrfs_read_root_item: [R]: exported from: fs/btrfs/root-tree.o fs/btrfs/built-in.o fs/btrfs/btrfs.o
+    __tracepoint_btrfs_sync_fs: [R]: exported from: fs/btrfs/super.o fs/btrfs/built-in.o fs/btrfs/btrfs.o
+    btrfs_start_transaction_lflush: [R]: exported from: fs/btrfs/transaction.o fs/btrfs/built-in.o fs/btrfs/btrfs.o
+    btrfs_write_and_wait_marked_extents: [R]: exported from: fs/btrfs/transaction.o fs/btrfs/built-in.o fs/btrfs/btrfs.o
+    ulist_fini: [R]: exported from: fs/btrfs/ulist.o fs/btrfs/built-in.o fs/btrfs/btrfs.o
+    ulist_init: [R]: exported from: fs/btrfs/ulist.o fs/btrfs/built-in.o fs/btrfs/btrfs.o
+
+You just need to make sure it does not lie too much.
+
+For example '__btrfs_getxattr' needs to be brought under '#ifdef CONFIG_BTRFS_FS_POSIX_ACL'
+and not removed entirely.
+
+Thanks for your patience!
