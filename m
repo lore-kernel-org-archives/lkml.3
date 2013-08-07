@@ -1,139 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932793Ab3HGMHG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 08:07:06 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:56983 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932544Ab3HGMHD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 08:07:03 -0400
-X-AuditID: cbfee691-b7fef6d000002d62-44-520238654d44
-From: Cho KyongHo <pullip.cho@samsung.com>
-To: "'Grant Grundler'" <grundler@chromium.org>,
-        "'Marek Szyprowski'" <m.szyprowski@samsung.com>
-Cc: "'Bartlomiej Zolnierkiewicz'" <b.zolnierkie@samsung.com>,
-        "'Linux ARM Kernel'" <linux-arm-kernel@lists.infradead.org>,
-        "'Linux IOMMU'" <iommu@lists.linux-foundation.org>,
-        "'Linux Kernel'" <linux-kernel@vger.kernel.org>,
-        "'Linux Samsung SOC'" <linux-samsung-soc@vger.kernel.org>,
-        "'Hyunwoong Kim'" <khw0178.kim@samsung.com>,
-        "'Joerg Roedel'" <joro@8bytes.org>,
-        "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        "'Prathyush'" <prathyush.k@samsung.com>,
-        "'Rahul Sharma'" <rahul.sharma@samsung.com>,
-        "'Subash Patel'" <supash.ramaswamy@linaro.org>,
-        "'Keyyoung Park'" <keyyoung.park@samsung.com>,
-        "'Antonios Motakis'" <a.motakis@virtualopensystems.com>,
-        kvmarm@lists.cs.columbia.edu,
-        "'Sachin Kamat'" <sachin.kamat@linaro.org>
-References: <003c01ce89f3$3abc4bc0$b034e340$@samsung.com>
- <27536111.odlCO093Zi@amdc1032> <003c01ce91cd$427fad70$c77f0850$@samsung.com>
- <1429191.3FDem6vW0S@amdc1032> <002001ce928a$f5a7f390$e0f7dab0$@samsung.com>
- <5200F781.9020300@samsung.com>
- <CANEJEGtQuKG5err-R7SxD6m+aJWVmn47X9NJLx7UzaRkKhUMoQ@mail.gmail.com>
-In-reply-to: <CANEJEGtQuKG5err-R7SxD6m+aJWVmn47X9NJLx7UzaRkKhUMoQ@mail.gmail.com>
-Subject: RE: [PATCH v8 06/12] ARM: dts: Add description of System MMU of Exynos
- SoCs
-Date: Wed, 07 Aug 2013 21:07:01 +0900
-Message-id: <001b01ce9366$9f7427a0$de5c76e0$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQJ8iaVttThmxHyrdfHNT5d6MXLI1gK7Hr4aAXxZKSACSySRwwGGYx0KAmwki5cDEVjaZpfBg0ew
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrJKsWRmVeSWpSXmKPExsVy+t8zY91UC6Ygg6kXVS3u3D3HarFxxnpW
-	i1dHfjBZLNhvbdE5ewO7xeaD61gsehdcZbNovDeBzeLjqePsFpseX2O1uLxrDpvFjPP7mCzW
-	HrnLbnFhxUZ2iymLDrNanPzTy2jRcr2XyUHQ48nBeUwesxsusnjcubaHzeP8pjXMHpuX1HtM
-	vrGc0aNvyypGj8+b5DyuHD3DFMAZxWWTkpqTWZZapG+XwJWx7t8utoJOoYrTN0+yNjDO5eti
-	5OSQEDCRmPboPwuELSZx4d56ti5GLg4hgWWMEmu+nmaCKfp9+gETRGIRo8S+N6ehnL+MEjs3
-	/2EDqWIT0JJYPfc4I4gtIhArsX3eAbAiZoEjrBL75r2E6tjHJDFlxk6wuZwCwRJnX18F6xYW
-	CJPYe2M9mM0ioCrR+GsHWA2vgKXEjmttzBC2oMSPyffAjmUWUJeYNG8RM4QtL7F5zVtmiFsV
-	JHacfQ11RYzEui1ToepFJPa9eMcIcoSEwBkOiZefNzJBLBOQ+Db5EFARB1BCVmLTAag5khIH
-	V9xgmcAoMQvJ6llIVs9CsnoWkhULGFlWMYqmFiQXFCelF5nqFSfmFpfmpesl5+duYoQkk4k7
-	GO8fsD7EmAy0fiKzlGhyPjAZ5ZXEGxqbGVmYmpgaG5lbmpEmrCTOq95iHSgkkJ5YkpqdmlqQ
-	WhRfVJqTWnyIkYmDU6qBkfniTmELE5Ennly521jOXV7zIC/9e2tjwO0Fp0TlF/MsZ+vz+3ij
-	4kbAxbkLFpW0X/io+vJPS4SdXu2JdTf77+oqTryy2/ftlY3BgWdvWXCnKNwu+Sam18hpWWDL
-	1vZ42teZL8KDY/IzvN/Mb68/P1XP/0fYk6cXjl54zjQlXZ3x354dK5YeZVZiKc5INNRiLipO
-	BAAQS/8OPAMAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpjk+LIzCtJLcpLzFFi42I5/e+xgG6qBVOQQcceeYs7d8+xWmycsZ7V
-	4tWRH0wWC/ZbW3TO3sBusfngOhaL3gVX2Swa701gs/h46ji7xabH11gtLu+aw2Yx4/w+Jou1
-	R+6yW1xYsZHdYsqiw6wWJ//0Mlq0XO9lchD0eHJwHpPH7IaLLB53ru1h8zi/aQ2zx+Yl9R6T
-	byxn9OjbsorR4/MmOY8rR88wBXBGNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpa
-	mCsp5CXmptoqufgE6Lpl5gD9oqRQlphTChQKSCwuVtK3wzQhNMRN1wKmMULXNyQIrsfIAA0k
-	rGPMWPdvF1tBp1DF6ZsnWRsY5/J1MXJySAiYSPw+/YAJwhaTuHBvPVsXIxeHkMAiRol9b04z
-	QTh/GSV2bv7DBlLFJqAlsXrucUYQW0QgVmL7vANgRcwCR1gl9s17CdWxj0liyoydYHM5BYIl
-	zr6+CtYtLBAmsffGejCbRUBVovHXDrAaXgFLiR3X2pghbEGJH5PvsYDYzALqEpPmLWKGsOUl
-	Nq95ywxxq4LEjrOvoa6IkVi3ZSpUvYjEvhfvGCcwCs1CMmoWklGzkIyahaRlASPLKkbR1ILk
-	guKk9FwjveLE3OLSvHS95PzcTYzgVPVMegfjqgaLQ4wCHIxKPLwVYoxBQqyJZcWVuYcYJTiY
-	lUR4c42ZgoR4UxIrq1KL8uOLSnNSiw8xJgN9OpFZSjQ5H5hG80riDY1NzIwsjcwsjEzMzUkT
-	VhLnPdhqHSgkkJ5YkpqdmlqQWgSzhYmDU6qB0V3iyJN7cTwaTCqL7af93f7Lvd7oYu+0J79m
-	Sr7cs962wi0idV7IIjXNC781eov7AoPVH51I+jp9UlrmTUOVDosCm/b9LTazkhT5LXStFKb/
-	ufmhf+2GlROP7Fr67kxO8Nwi42MPQt9s5nZYfoufZ8XR788OBKtse8NfZs/W9Dj8yapLHU47
-	GpRYijMSDbWYi4oTARwyWBqZAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S932766Ab3HGMSl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 08:18:41 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57018 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756710Ab3HGMSj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 08:18:39 -0400
+Date: Wed, 7 Aug 2013 14:18:36 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: lizefan@huawei.com, hannes@cmpxchg.org, bsingharora@gmail.com,
+        kamezawa.hiroyu@jp.fujitsu.com, cgroups@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHSET cgroup/for-3.12] cgroup: make cgroup_event specific to
+ memcg
+Message-ID: <20130807121836.GF8184@dhcp22.suse.cz>
+References: <1375632446-2581-1-git-send-email-tj@kernel.org>
+ <20130805160107.GM10146@dhcp22.suse.cz>
+ <20130805162958.GF19631@mtj.dyndns.org>
+ <20130805191641.GA24003@dhcp22.suse.cz>
+ <20130805194431.GD23751@mtj.dyndns.org>
+ <20130806155804.GC31138@dhcp22.suse.cz>
+ <20130806161509.GB10779@mtj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130806161509.GB10779@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: grundler@google.com [mailto:grundler@google.com] On Behalf Of Grant Grundler
-> Sent: Wednesday, August 07, 2013 1:07 AM
-> To: Marek Szyprowski
+On Tue 06-08-13 12:15:09, Tejun Heo wrote:
+> Hello, Michal.
 > 
-> Hi Marek,
+> On Tue, Aug 06, 2013 at 05:58:04PM +0200, Michal Hocko wrote:
+> > I am objecting to moving the generic part of that code into memcg. The
+> > memcg part and the additional complexity (all the parsing and conditions
+> > for signalling) is already in the memcg code.
 > 
-> On Tue, Aug 6, 2013 at 6:17 AM, Marek Szyprowski
-> <m.szyprowski@samsung.com> wrote:
-> ...
-> > IMHO it is much better to have a simple driver, which binds to a single
-> > IOMMU controller and leave it to the driver whether to have a same virtual address
-> > space for all parts of FIMC-IS or MFC submodules/memory ports or not.
-> 
-> I understand this part. I having written the IOMMU support for 4
-> different IOMMUs, all of which had exactly one IO Page Table and one
-> IOMMU shared by many devices.
-> 
-> > Just make sure that it will be possible to attach more than one sysmmu
-> > controller to one iommu domain.
-> 
-> I don't understand how this is possible. Can someone explain this
-> better in the IOMMU documentation please?
+> But how is it generic if it's specific to memcg?
 
-System MMU is dedicated to a master H/W such as FIMD and FIMC.
-Thus, attaching a master H/W to an iommu domain can be thought as
-attaching a System MMU to an iommu domain even though such thinking
-is not correct view of the relationship between iommu domain and
-System MMU.
+How is it specific to memcg? The fact only memcg uses the interface
+doesn't imply it is memcg specific.
 
+> The practical
+> purpose here is making it clear that the interface is only used by
+> memcg and preventing any new usages from sprining up and the best way
+> to achieve that is making the code actually memcg-specific. 
+
+There are other ways to achieve the same. E.g. not ack new usage of
+register callback users. We have done similar with other things like
+use_hierarchy...
+
+> It also helps cleaning up cftype in general.  I'm not sure what you're
+> objecting to here.
+
+The cleanup is removing 2 callbacks with a cost of moving non-memcg
+specific code inside memcg. That is what I am objecting to.
+ 
+> > Such an interface would be really welcome but I would also ask how
+> > it would implement/allow context passing. E.g. how do we know which
+> > treshold has been reached? How do we find out the vmpressure level? Is
+> > the consumer supposed to do an additional action after it gets
+> > notification?
+> > Etc.
 > 
-> "iommu domain" to me means one virtual IO address space for attached
-> devices that can master DMA transactions. The IOMMU then uses it's IO
-> Page Table to translate the DMA address to the system physical address
-> space and forwards the transaction.
+> Yeap, exactly and that's how it should have been from the beginning.
+> Attaching information to notification itself isn't a particularly good
+> design (anyone remembers rtsig?) if there's polling mechanism to
+> report the current state. 
+
+There are pros and cons for both approaches and it should be discussed
+in a separate thread with a code to back all the claims.
+
+> It essentially amounts to duplicate delivery mechanisms for the same
+> information, which you usually don't want.  Here, the inconvenience /
+> performance implications are negligible or even net-positive.  Plain
+> file modified notification is way more familiar / conventional and
+> the overhead of an extra read call, which is highly unlikely to be
+> relevant given the expected frequency of the events we're talking
+> about, is small compared to the action of event delivery and context
+> switch.
 > 
-> What is the role of the sysmmu in all of this?
-> Is the sysmmu just the MMU (or collection of MMU) for host DRAM?
-> Or is sysmmu responsible for "other stuff"? (clocks, power domains, MMU, etc)
+> > Really that natural? So memcg should touch internals like cgroup dentry
 > 
-System MMU is responsible for address translation of traffic from a
-master H/W which the System MMU is dedicated to.
-
-> I can understand we might have multiple MMUs in a system...e.g. every
-> range of memory might have it's own MMU. But they share the same
-> physical address space and generally live under one page table.
-> Because of "one page table" I would consider them one entity from the
-> the IOMMUs perspective.
-
-Sorry, I don't understand.
-Do you mean you are thinking that it is better to share one page table
-by all IOMMUs in a system?
-
-Thank you,
-KyongHo
+> Functionally, it is completely specific to memcg at this point.  It's
+> the only user and will stay the only user.
 > 
-> thanks,
-> grant
+> > reference counting. You seem have forgotten all the hassles with
+> > cgroup_mutex, haven't you?
+> 
+> Was the above sentence necessary?
+> 
+> > No that part doesn't belong to memcg! You can discourage from new usage
+> > of this interface of course.
+> 
+> Oh, if you're objecting to the details of the implementation, we of
+> course can clean it up.  It should conceptually and functionally be
+> part of memcg and that is the guiding line we follow.  Implementations
+> follow the concepts and functions, not the other way around.  The
+> refcnt of course can be replaced with memcg css refcnting and we can
+> of course factor out dentry comparison in a prettier form.
+> 
+> Compare it to the other way around - having event callbacks in cftype
+> and clearing code embedded in cgroup core destruction path when both
+> of which are completely irrelevant to all other controllers.  Let's
+> clean up the implementation details and put things where they belong.
+> What's the excuse for not doing so when it's almost trivially doable?
 
+I will not repeat myself. We seem to disagree on where the code belongs.
+As I've said I will not ack this code, try to find somebody else who
+think it is a good idea. I do not see any added value.
+-- 
+Michal Hocko
+SUSE Labs
