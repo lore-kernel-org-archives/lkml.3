@@ -1,74 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933663Ab3HGVho (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 17:37:44 -0400
-Received: from prod-mail-xrelay07.akamai.com ([72.246.2.115]:59097 "EHLO
-	prod-mail-xrelay07.akamai.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933374Ab3HGVhn (ORCPT
+	id S933677Ab3HGViZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 17:38:25 -0400
+Received: from 70-36-212-23.dsl.static.sonic.net ([70.36.212.23]:41142 "EHLO
+	mail.linuxtoys.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933374Ab3HGViY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 17:37:43 -0400
-Message-ID: <5202BE17.9010408@akamai.com>
-Date: Wed, 07 Aug 2013 17:37:27 -0400
-From: Jason Baron <jbaron@akamai.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Wed, 7 Aug 2013 17:38:24 -0400
+Message-ID: <5202BE4E.6010908@linuxtoys.org>
+Date: Wed, 07 Aug 2013 14:38:22 -0700
+From: Bob Smith <bsmith@linuxtoys.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20100101 Firefox/19.0 SeaMonkey/2.16
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Steven Rostedt <rostedt@goodmis.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [RFC][PATCH 3/2] x86/jump labels: Count and display the short
- jumps used
-References: <20130807173606.872055511@goodmis.org> <1375898048.6848.18.camel@gandalf.local.home> <CA+55aFwo4iFk4_6cSoK=NjCWjVgdPgKy0YfKpZd2zSGn_RXHYg@mail.gmail.com> <5202ABEF.10107@akamai.com> <CA+55aFyu+3fRrsGUZkH6y5yND3oV9K+jCzrJyCWqwHQreFELOw@mail.gmail.com>
-In-Reply-To: <CA+55aFyu+3fRrsGUZkH6y5yND3oV9K+jCzrJyCWqwHQreFELOw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 001/001] CHAR DRIVERS: a simple device to give daemons
+ a /sys-like interface
+References: <51FC5478.40500@linuxtoys.org> <51FC5A97.1090102@linuxtoys.org> <20130803223828.GA14611@kroah.com> <51FECDA6.5070001@linuxtoys.org> <20130804231958.GA25418@kroah.com> <52003958.7080103@linuxtoys.org> <20130806094604.GE27889@kroah.com>
+In-Reply-To: <20130806094604.GE27889@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/07/2013 04:47 PM, Linus Torvalds wrote:
-> On Wed, Aug 7, 2013 at 1:19 PM, Jason Baron <jbaron@akamai.com> wrote:
->> The whole point of the thread started with wanting to move the default
->> 'disabled' branch further out-of-line.
-> Yeah, but I always disagreed with that.
->
-> Putting the unusual code out-of-line (as in "at the end of the
-> function") is a good idea, but putting it *far* out of line (as in "in
-> a different section") likely makes little sense.
->
-> Now, the tracing code is admittedly specialized enough that we could
-> have some "really cold" attribute and move it to that kind of "even
-> further away" model, but most of the other uses of the static keys are
-> not necessarily of the kind where the non-default case is completely
-> or utterly unlikely - they want to use the static keys not because
-> some codepath is basically never taken, but because the code-path is
-> so critical that loading and testing a value from memory is considered
-> to be excessive for when the feature is turned off (ie scheduler
-> statistics etc).
->
-> So the code may not even be all that cold - some people may well run
-> with statistics enabled all the time - it's just that the non-enabled
-> case really *really* doesn't want to have the overhead of even
-> bothering to test for this event.
->
->
+Greg Kroah-Hartman wrote:
+ >> 	echo 1 > /proc/sys/net/ipv4/ip_forward  # procfs
+ >> 	echo 75 > /dev/motors/left/speed        # proxy
+ >> 	echo 5 > /dev/wpa_supplicant/use_channel # proxy
+ > No it shouldn't, that is userspace talking to the kernel, you aren't
+ > doing that at all.
 
-ok - I can see 2 variants here as you mentioned:
+You are correct. But it's not _what_ is being done, it's _how_.
+Procfs clients have a really simple way of sending data to the kernel
+	open(ip_forward)
+	write("1\n")
+	close
+I want the same thing for my user space daemon
+	open(speed)
+	write("75\n")
+	close
 
-1) 'Unbiased' - we want to treat both branches equally but don't want
-the load/test/jmp sequence. For things like the scheduler stats.
+ >
+ >> new IPC must have the following characteristics:
+ >> 	- bidirectional
+ >> 	- writer blocks until reader is present
+ >> 	- a writer can cause the reader to close
+ >> 	- works with 'echo' and 'cat'
+ > Who is saying "must" here?  Why are those requirements at all?
 
-2) 'Biased' - where the unlikely path is moved completely out-of-line.
-And we have a strong 'bias' to optimize the default path.
+I could be wrong but to accomplish an open/write/close interface
+sort of like sysfs or procfs, I think we need an IPC that is
+	- visible as a file name
+	- bidirectional
+	- both ends much be connected to communicate
+	- a writer can effectively send EOF through the device
 
-If we can get the completely out-of-line thing working, we could make
-this distinction.
+ >
+ > Specifically how would someone would use this to write a userspace
+ > driver?  I'm totally not seeing it at all, and possibly, that's why I am
+ > so confused.
 
-Thanks,
+Hopefully the sample program I sent earlier makes sense.
+The source of data in the sample program was time of day
+but it could have as easily been date from a USB serial
+device or from a generic i2c device.
 
--Jason
+ >
+ >>    Finally, some device drivers that are not possible today
+ >> would become possible.  In my case I have a USB-serial link
+ >> to a robot controller and so need a user space daemon to
+ >> terminate the serial line.  It is only with proxy that I
+ >> can hide the details of this and give users a nice /dev
+ >> view of the robot.
+ > How specifically would you do this with such a usb-serial device?
+
+Again, I hope the sample program makes this easier to see.
+
+ >
+ >> USE CASE #2:  End the madness of per-language bindings
+ > The kernel doesn't deal with language bindings, it provides a syscall
+ > interface that any language can call, or not, it's up to them.  So this
+ > really isn't relevant at all.
+
+Agreed.  But isn't every IPC or other feature in the kernel
+there because someone in user space needed it?  I hope so.
+
+ >
+ > ASCII isn't all that its cracked up to be, you should know better than
+ > that :)
+ > And why ASCII?  Why not XML?  :)
+
+You are entirely correct here.
 
 
+thanks
+Bob Smith
