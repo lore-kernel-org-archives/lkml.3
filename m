@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933518Ab3HGVNx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 17:13:53 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:47109 "EHLO
+	id S933492Ab3HGVNw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 17:13:52 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:47110 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933420Ab3HGVLc (ORCPT
+	with ESMTP id S933421Ab3HGVLc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 7 Aug 2013 17:11:32 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>,
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung@kernel.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
+        Runzhen Wang <runzhen@linux.vnet.ibm.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 27/47] perf tools: Make it possible to read object code from vmlinux
-Date: Wed,  7 Aug 2013 18:10:54 -0300
-Message-Id: <1375909874-22073-28-git-send-email-acme@infradead.org>
+Subject: [PATCH 40/47] perf kvm: Add live mode
+Date: Wed,  7 Aug 2013 18:11:07 -0300
+Message-Id: <1375909874-22073-41-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1375909874-22073-1-git-send-email-acme@infradead.org>
 References: <1375909874-22073-1-git-send-email-acme@infradead.org>
@@ -29,393 +28,851 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Adrian Hunter <adrian.hunter@intel.com>
+From: David Ahern <dsahern@gmail.com>
 
-The new "object code reading" test shows that it is not possible to read
-object code from vmlinux.  That is because the mappings do not map to
-the dso.  This patch fixes that.
+perf kvm stat currently requires back to back record and report commands
+to see stats. e.g,.
 
-A side-effect of changing the kernel map is that the "reloc" offset must
-be taken into account.  As a result of that separate map functions for
-relocation are no longer needed.
+  perf kvm stat record -p $pid -- sleep 1
+  perf kvm stat report
 
-Also fixing up the maps to match the symbols no longer makes sense and
-so is not done.
+This is inconvenvient for on box monitoring of a VM. This patch
+introduces a 'live' mode that in effect combines the record plus report
+into one command. e.g., to monitor a single VM:
 
-The vmlinux dso data_type is now set to either DSO_BINARY_TYPE__VMLINUX
-or DSO_BINARY_TYPE__GUEST_VMLINUX as approprite, which enables the
-correct file name to be determined by dso__binary_type_file().
+  perf kvm stat live -p $pid
 
-This patch breaks the "vmlinux symtab matches kallsyms" test.  That is
-fixed in a following patch.
+or all VMs:
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
+  perf kvm stat live
+
+Same stats options for the record+report path work with the live mode.
+Display rate defaults to 1 second and can be changed using the -d
+option.
+
+v4:
+- address comments from Xiao -- verify_vcpu check should not look at
+  processors on line for the host, prune configurable options.
+- set attr->{mmap,comm,task} to 0 - don't need task events so trim events
+  we have to deal with
+- better control of time for queue event flushing to reduce frequency of
+  "Timestamp below last timeslice flush" failures.
+
+v3:
+updated to use existing tracepoint parsing code
+
+v2:
+removed ABSTIME arg from timerfd_settime as mentioned by Namhyung
+only call perf_kvm__handle_stdin when poll returns activity.
+
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Reviewed-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
+Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1375875537-4509-4-git-send-email-adrian.hunter@intel.com
+Cc: Runzhen Wang <runzhen@linux.vnet.ibm.com>
+Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Link: http://lkml.kernel.org/r/1375753297-69645-3-git-send-email-dsahern@gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/dso.c        |   4 +-
- tools/perf/util/dso.h        |   8 ++++
- tools/perf/util/machine.c    |   4 +-
- tools/perf/util/map.c        |  35 ---------------
- tools/perf/util/symbol-elf.c | 100 +++++++++++++++++++++++++++++++++++++++----
- tools/perf/util/symbol.c     |  22 +++++-----
- 6 files changed, 112 insertions(+), 61 deletions(-)
+ tools/perf/builtin-kvm.c | 659 +++++++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 633 insertions(+), 26 deletions(-)
 
-diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
-index c4374f0..121583d 100644
---- a/tools/perf/util/dso.c
-+++ b/tools/perf/util/dso.c
-@@ -78,6 +78,8 @@ int dso__binary_type_file(struct dso *dso, enum dso_binary_type type,
- 			 symbol_conf.symfs, build_id_hex, build_id_hex + 2);
- 		break;
+diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
+index 7d14a3a..29bfca7 100644
+--- a/tools/perf/builtin-kvm.c
++++ b/tools/perf/builtin-kvm.c
+@@ -2,6 +2,7 @@
+ #include "perf.h"
  
-+	case DSO_BINARY_TYPE__VMLINUX:
-+	case DSO_BINARY_TYPE__GUEST_VMLINUX:
- 	case DSO_BINARY_TYPE__SYSTEM_PATH_DSO:
- 		snprintf(file, size, "%s%s",
- 			 symbol_conf.symfs, dso->long_name);
-@@ -95,9 +97,7 @@ int dso__binary_type_file(struct dso *dso, enum dso_binary_type type,
+ #include "util/evsel.h"
++#include "util/evlist.h"
+ #include "util/util.h"
+ #include "util/cache.h"
+ #include "util/symbol.h"
+@@ -15,9 +16,12 @@
+ #include <lk/debugfs.h>
+ #include "util/tool.h"
+ #include "util/stat.h"
++#include "util/top.h"
  
- 	default:
- 	case DSO_BINARY_TYPE__KALLSYMS:
--	case DSO_BINARY_TYPE__VMLINUX:
- 	case DSO_BINARY_TYPE__GUEST_KALLSYMS:
--	case DSO_BINARY_TYPE__GUEST_VMLINUX:
- 	case DSO_BINARY_TYPE__JAVA_JIT:
- 	case DSO_BINARY_TYPE__NOT_FOUND:
- 		ret = -1;
-diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
-index d51aaf2..02aadaf 100644
---- a/tools/perf/util/dso.h
-+++ b/tools/perf/util/dso.h
-@@ -3,6 +3,7 @@
+ #include <sys/prctl.h>
++#include <sys/timerfd.h>
  
- #include <linux/types.h>
- #include <linux/rbtree.h>
-+#include <stdbool.h>
- #include "types.h"
- #include "map.h"
++#include <termios.h>
+ #include <semaphore.h>
+ #include <pthread.h>
+ #include <math.h>
+@@ -82,6 +86,8 @@ struct exit_reasons_table {
  
-@@ -146,4 +147,11 @@ size_t dso__fprintf_buildid(struct dso *dso, FILE *fp);
- size_t dso__fprintf_symbols_by_name(struct dso *dso,
- 				    enum map_type type, FILE *fp);
- size_t dso__fprintf(struct dso *dso, enum map_type type, FILE *fp);
+ struct perf_kvm_stat {
+ 	struct perf_tool    tool;
++	struct perf_record_opts opts;
++	struct perf_evlist  *evlist;
+ 	struct perf_session *session;
+ 
+ 	const char *file_name;
+@@ -96,10 +102,16 @@ struct perf_kvm_stat {
+ 	struct kvm_events_ops *events_ops;
+ 	key_cmp_fun compare;
+ 	struct list_head kvm_events_cache[EVENTS_CACHE_SIZE];
 +
-+static inline bool dso__is_vmlinux(struct dso *dso)
+ 	u64 total_time;
+ 	u64 total_count;
++	u64 lost_events;
+ 
+ 	struct rb_root result;
++
++	int timerfd;
++	unsigned int display_time;
++	bool live;
+ };
+ 
+ 
+@@ -320,6 +332,23 @@ static void init_kvm_event_record(struct perf_kvm_stat *kvm)
+ 		INIT_LIST_HEAD(&kvm->kvm_events_cache[i]);
+ }
+ 
++static void clear_events_cache_stats(struct list_head *kvm_events_cache)
 +{
-+	return dso->data_type == DSO_BINARY_TYPE__VMLINUX ||
-+	       dso->data_type == DSO_BINARY_TYPE__GUEST_VMLINUX;
++	struct list_head *head;
++	struct kvm_event *event;
++	unsigned int i;
++
++	for (i = 0; i < EVENTS_CACHE_SIZE; i++) {
++		head = &kvm_events_cache[i];
++		list_for_each_entry(event, head, hash_entry) {
++			/* reset stats for event */
++			memset(&event->total, 0, sizeof(event->total));
++			memset(event->vcpu, 0,
++			       event->max_vcpu * sizeof(*event->vcpu));
++		}
++	}
 +}
 +
- #endif /* __PERF_DSO */
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index f9f9d63..dc35dcf 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -628,10 +628,8 @@ int machine__load_vmlinux_path(struct machine *machine, enum map_type type,
- 	struct map *map = machine->vmlinux_maps[type];
- 	int ret = dso__load_vmlinux_path(map->dso, map, filter);
- 
--	if (ret > 0) {
-+	if (ret > 0)
- 		dso__set_loaded(map->dso, type);
--		map__reloc_vmlinux(map);
--	}
- 
- 	return ret;
- }
-diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
-index 8bcdf9e..5f662a3 100644
---- a/tools/perf/util/map.c
-+++ b/tools/perf/util/map.c
-@@ -182,12 +182,6 @@ int map__load(struct map *map, symbol_filter_t filter)
- #endif
- 		return -1;
- 	}
--	/*
--	 * Only applies to the kernel, as its symtabs aren't relative like the
--	 * module ones.
--	 */
--	if (map->dso->kernel)
--		map__reloc_vmlinux(map);
- 
- 	return 0;
- }
-@@ -513,35 +507,6 @@ int map_groups__clone(struct map_groups *mg,
- 	return 0;
- }
- 
--static u64 map__reloc_map_ip(struct map *map, u64 ip)
--{
--	return ip + (s64)map->pgoff;
--}
--
--static u64 map__reloc_unmap_ip(struct map *map, u64 ip)
--{
--	return ip - (s64)map->pgoff;
--}
--
--void map__reloc_vmlinux(struct map *map)
--{
--	struct kmap *kmap = map__kmap(map);
--	s64 reloc;
--
--	if (!kmap->ref_reloc_sym || !kmap->ref_reloc_sym->unrelocated_addr)
--		return;
--
--	reloc = (kmap->ref_reloc_sym->unrelocated_addr -
--		 kmap->ref_reloc_sym->addr);
--
--	if (!reloc)
--		return;
--
--	map->map_ip   = map__reloc_map_ip;
--	map->unmap_ip = map__reloc_unmap_ip;
--	map->pgoff    = reloc;
--}
--
- void maps__insert(struct rb_root *maps, struct map *map)
+ static int kvm_events_hash_fn(u64 key)
  {
- 	struct rb_node **p = &maps->rb_node;
-diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
-index 4b12bf8..ed6f443 100644
---- a/tools/perf/util/symbol-elf.c
-+++ b/tools/perf/util/symbol-elf.c
-@@ -603,7 +603,7 @@ int symsrc__init(struct symsrc *ss, struct dso *dso, const char *name,
- 						     ".gnu.prelink_undo",
- 						     NULL) != NULL);
- 	} else {
--		ss->adjust_symbols = 0;
-+		ss->adjust_symbols = ehdr.e_type == ET_EXEC;
- 	}
+ 	return key & (EVENTS_CACHE_SIZE - 1);
+@@ -472,7 +501,11 @@ static bool handle_end_event(struct perf_kvm_stat *kvm,
+ 	vcpu_record->last_event = NULL;
+ 	vcpu_record->start_time = 0;
  
- 	ss->name   = strdup(name);
-@@ -624,6 +624,37 @@ out_close:
- 	return err;
+-	BUG_ON(timestamp < time_begin);
++	/* seems to happen once in a while during live mode */
++	if (timestamp < time_begin) {
++		pr_debug("End time before begin time; skipping event.\n");
++		return true;
++	}
+ 
+ 	time_diff = timestamp - time_begin;
+ 	return update_kvm_event(event, vcpu, time_diff);
+@@ -639,24 +672,56 @@ static struct kvm_event *pop_from_result(struct rb_root *result)
+ 	return container_of(node, struct kvm_event, rb);
  }
  
-+/**
-+ * ref_reloc_sym_not_found - has kernel relocation symbol been found.
-+ * @kmap: kernel maps and relocation reference symbol
-+ *
-+ * This function returns %true if we are dealing with the kernel maps and the
-+ * relocation reference symbol has not yet been found.  Otherwise %false is
-+ * returned.
-+ */
-+static bool ref_reloc_sym_not_found(struct kmap *kmap)
+-static void print_vcpu_info(int vcpu)
++static void print_vcpu_info(struct perf_kvm_stat *kvm)
+ {
++	int vcpu = kvm->trace_vcpu;
++
+ 	pr_info("Analyze events for ");
+ 
++	if (kvm->live) {
++		if (kvm->opts.target.system_wide)
++			pr_info("all VMs, ");
++		else if (kvm->opts.target.pid)
++			pr_info("pid(s) %s, ", kvm->opts.target.pid);
++		else
++			pr_info("dazed and confused on what is monitored, ");
++	}
++
+ 	if (vcpu == -1)
+ 		pr_info("all VCPUs:\n\n");
+ 	else
+ 		pr_info("VCPU %d:\n\n", vcpu);
+ }
+ 
++static void show_timeofday(void)
 +{
-+	return kmap && kmap->ref_reloc_sym && kmap->ref_reloc_sym->name &&
-+	       !kmap->ref_reloc_sym->unrelocated_addr;
++	char date[64];
++	struct timeval tv;
++	struct tm ltime;
++
++	gettimeofday(&tv, NULL);
++	if (localtime_r(&tv.tv_sec, &ltime)) {
++		strftime(date, sizeof(date), "%H:%M:%S", &ltime);
++		pr_info("%s.%06ld", date, tv.tv_usec);
++	} else
++		pr_info("00:00:00.000000");
++
++	return;
 +}
 +
-+/**
-+ * ref_reloc - kernel relocation offset.
-+ * @kmap: kernel maps and relocation reference symbol
-+ *
-+ * This function returns the offset of kernel addresses as determined by using
-+ * the relocation reference symbol i.e. if the kernel has not been relocated
-+ * then the return value is zero.
-+ */
-+static u64 ref_reloc(struct kmap *kmap)
+ static void print_result(struct perf_kvm_stat *kvm)
+ {
+ 	char decode[20];
+ 	struct kvm_event *event;
+ 	int vcpu = kvm->trace_vcpu;
+ 
++	if (kvm->live) {
++		puts(CONSOLE_CLEAR);
++		show_timeofday();
++	}
++
+ 	pr_info("\n\n");
+-	print_vcpu_info(vcpu);
++	print_vcpu_info(kvm);
+ 	pr_info("%20s ", kvm->events_ops->name);
+ 	pr_info("%10s ", "Samples");
+ 	pr_info("%9s ", "Samples%");
+@@ -683,6 +748,20 @@ static void print_result(struct perf_kvm_stat *kvm)
+ 
+ 	pr_info("\nTotal Samples:%" PRIu64 ", Total events handled time:%.2fus.\n\n",
+ 		kvm->total_count, kvm->total_time / 1e3);
++
++	if (kvm->lost_events)
++		pr_info("\nLost events: %" PRIu64 "\n\n", kvm->lost_events);
++}
++
++static int process_lost_event(struct perf_tool *tool,
++			      union perf_event *event __maybe_unused,
++			      struct perf_sample *sample __maybe_unused,
++			      struct machine *machine __maybe_unused)
 +{
-+	if (kmap && kmap->ref_reloc_sym &&
-+	    kmap->ref_reloc_sym->unrelocated_addr)
-+		return kmap->ref_reloc_sym->addr -
-+		       kmap->ref_reloc_sym->unrelocated_addr;
++	struct perf_kvm_stat *kvm = container_of(tool, struct perf_kvm_stat, tool);
++
++	kvm->lost_events++;
++	return 0;
+ }
+ 
+ static int process_sample_event(struct perf_tool *tool,
+@@ -707,10 +786,20 @@ static int process_sample_event(struct perf_tool *tool,
+ 	return 0;
+ }
+ 
+-static int get_cpu_isa(struct perf_session *session)
++static int cpu_isa_config(struct perf_kvm_stat *kvm)
+ {
+-	char *cpuid = session->header.env.cpuid;
+-	int isa;
++	char buf[64], *cpuid;
++	int err, isa;
++
++	if (kvm->live) {
++		err = get_cpuid(buf, sizeof(buf));
++		if (err != 0) {
++			pr_err("Failed to look up CPU type (Intel or AMD)\n");
++			return err;
++		}
++		cpuid = buf;
++	} else
++		cpuid = kvm->session->header.env.cpuid;
+ 
+ 	if (strstr(cpuid, "Intel"))
+ 		isa = 1;
+@@ -718,10 +807,361 @@ static int get_cpu_isa(struct perf_session *session)
+ 		isa = 0;
+ 	else {
+ 		pr_err("CPU %s is not supported.\n", cpuid);
+-		isa = -ENOTSUP;
++		return -ENOTSUP;
++	}
++
++	if (isa == 1) {
++		kvm->exit_reasons = vmx_exit_reasons;
++		kvm->exit_reasons_size = ARRAY_SIZE(vmx_exit_reasons);
++		kvm->exit_reasons_isa = "VMX";
++	}
++
 +	return 0;
 +}
 +
- int dso__load_sym(struct dso *dso, struct map *map,
- 		  struct symsrc *syms_ss, struct symsrc *runtime_ss,
- 		  symbol_filter_t filter, int kmodule)
-@@ -642,6 +673,7 @@ int dso__load_sym(struct dso *dso, struct map *map,
- 	Elf_Scn *sec, *sec_strndx;
- 	Elf *elf;
- 	int nr = 0;
-+	bool remap_kernel = false, adjust_kernel_syms = false;
- 
- 	dso->symtab_type = syms_ss->type;
- 
-@@ -681,7 +713,31 @@ int dso__load_sym(struct dso *dso, struct map *map,
- 	nr_syms = shdr.sh_size / shdr.sh_entsize;
- 
- 	memset(&sym, 0, sizeof(sym));
--	dso->adjust_symbols = runtime_ss->adjust_symbols;
++static bool verify_vcpu(int vcpu)
++{
++	if (vcpu != -1 && vcpu < 0) {
++		pr_err("Invalid vcpu:%d.\n", vcpu);
++		return false;
++	}
 +
-+	/*
-+	 * The kernel relocation symbol is needed in advance in order to adjust
-+	 * kernel maps correctly.
-+	 */
-+	if (ref_reloc_sym_not_found(kmap)) {
-+		elf_symtab__for_each_symbol(syms, nr_syms, idx, sym) {
-+			const char *elf_name = elf_sym__name(&sym, symstrs);
++	return true;
++}
 +
-+			if (strcmp(elf_name, kmap->ref_reloc_sym->name))
-+				continue;
-+			kmap->ref_reloc_sym->unrelocated_addr = sym.st_value;
++/* keeping the max events to a modest level to keep
++ * the processing of samples per mmap smooth.
++ */
++#define PERF_KVM__MAX_EVENTS_PER_MMAP  25
++
++static s64 perf_kvm__mmap_read_idx(struct perf_kvm_stat *kvm, int idx,
++				   u64 *mmap_time)
++{
++	union perf_event *event;
++	struct perf_sample sample;
++	s64 n = 0;
++	int err;
++
++	*mmap_time = ULLONG_MAX;
++	while ((event = perf_evlist__mmap_read(kvm->evlist, idx)) != NULL) {
++		err = perf_evlist__parse_sample(kvm->evlist, event, &sample);
++		if (err) {
++			pr_err("Failed to parse sample\n");
++			return -1;
++		}
++
++		err = perf_session_queue_event(kvm->session, event, &sample, 0);
++		if (err) {
++			pr_err("Failed to enqueue sample: %d\n", err);
++			return -1;
++		}
++
++		/* save time stamp of our first sample for this mmap */
++		if (n == 0)
++			*mmap_time = sample.time;
++
++		/* limit events per mmap handled all at once */
++		n++;
++		if (n == PERF_KVM__MAX_EVENTS_PER_MMAP)
 +			break;
++	}
++
++	return n;
++}
++
++static int perf_kvm__mmap_read(struct perf_kvm_stat *kvm)
++{
++	int i, err, throttled = 0;
++	s64 n, ntotal = 0;
++	u64 flush_time = ULLONG_MAX, mmap_time;
++
++	for (i = 0; i < kvm->evlist->nr_mmaps; i++) {
++		n = perf_kvm__mmap_read_idx(kvm, i, &mmap_time);
++		if (n < 0)
++			return -1;
++
++		/* flush time is going to be the minimum of all the individual
++		 * mmap times. Essentially, we flush all the samples queued up
++		 * from the last pass under our minimal start time -- that leaves
++		 * a very small race for samples to come in with a lower timestamp.
++		 * The ioctl to return the perf_clock timestamp should close the
++		 * race entirely.
++		 */
++		if (mmap_time < flush_time)
++			flush_time = mmap_time;
++
++		ntotal += n;
++		if (n == PERF_KVM__MAX_EVENTS_PER_MMAP)
++			throttled = 1;
++	}
++
++	/* flush queue after each round in which we processed events */
++	if (ntotal) {
++		kvm->session->ordered_samples.next_flush = flush_time;
++		err = kvm->tool.finished_round(&kvm->tool, NULL, kvm->session);
++		if (err) {
++			if (kvm->lost_events)
++				pr_info("\nLost events: %" PRIu64 "\n\n",
++					kvm->lost_events);
++			return err;
 +		}
 +	}
 +
-+	dso->adjust_symbols = runtime_ss->adjust_symbols || ref_reloc(kmap);
-+	/*
-+	 * Initial kernel and module mappings do not map to the dso.  For
-+	 * function mappings, flag the fixups.
-+	 */
-+	if (map->type == MAP__FUNCTION && (dso->kernel || kmodule)) {
-+		remap_kernel = true;
-+		adjust_kernel_syms = dso->adjust_symbols;
++	return throttled;
++}
++
++static volatile int done;
++
++static void sig_handler(int sig __maybe_unused)
++{
++	done = 1;
++}
++
++static int perf_kvm__timerfd_create(struct perf_kvm_stat *kvm)
++{
++	struct itimerspec new_value;
++	int rc = -1;
++
++	kvm->timerfd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK);
++	if (kvm->timerfd < 0) {
++		pr_err("timerfd_create failed\n");
++		goto out;
 +	}
- 	elf_symtab__for_each_symbol(syms, nr_syms, idx, sym) {
- 		struct symbol *f;
- 		const char *elf_name = elf_sym__name(&sym, symstrs);
-@@ -690,10 +746,6 @@ int dso__load_sym(struct dso *dso, struct map *map,
- 		const char *section_name;
- 		bool used_opd = false;
- 
--		if (kmap && kmap->ref_reloc_sym && kmap->ref_reloc_sym->name &&
--		    strcmp(elf_name, kmap->ref_reloc_sym->name) == 0)
--			kmap->ref_reloc_sym->unrelocated_addr = sym.st_value;
--
- 		if (!is_label && !elf_sym__is_a(&sym, map->type))
- 			continue;
- 
-@@ -745,15 +797,37 @@ int dso__load_sym(struct dso *dso, struct map *map,
- 		    (sym.st_value & 1))
- 			--sym.st_value;
- 
--		if (dso->kernel != DSO_TYPE_USER || kmodule) {
-+		if (dso->kernel || kmodule) {
- 			char dso_name[PATH_MAX];
- 
-+			/* Adjust symbol to map to file offset */
-+			if (adjust_kernel_syms)
-+				sym.st_value -= shdr.sh_addr - shdr.sh_offset;
 +
- 			if (strcmp(section_name,
- 				   (curr_dso->short_name +
- 				    dso->short_name_len)) == 0)
- 				goto new_symbol;
- 
- 			if (strcmp(section_name, ".text") == 0) {
-+				/*
-+				 * The initial kernel mapping is based on
-+				 * kallsyms and identity maps.  Overwrite it to
-+				 * map to the kernel dso.
-+				 */
-+				if (remap_kernel && dso->kernel) {
-+					remap_kernel = false;
-+					map->start = shdr.sh_addr +
-+						     ref_reloc(kmap);
-+					map->end = map->start + shdr.sh_size;
-+					map->pgoff = shdr.sh_offset;
-+					map->map_ip = map__map_ip;
-+					map->unmap_ip = map__unmap_ip;
-+					/* Ensure maps are correctly ordered */
-+					map_groups__remove(kmap->kmaps, map);
-+					map_groups__insert(kmap->kmaps, map);
-+				}
++	new_value.it_value.tv_sec = kvm->display_time;
++	new_value.it_value.tv_nsec = 0;
++	new_value.it_interval.tv_sec = kvm->display_time;
++	new_value.it_interval.tv_nsec = 0;
 +
- 				curr_map = map;
- 				curr_dso = dso;
- 				goto new_symbol;
-@@ -781,8 +855,16 @@ int dso__load_sym(struct dso *dso, struct map *map,
- 					dso__delete(curr_dso);
- 					goto out_elf_end;
- 				}
--				curr_map->map_ip = identity__map_ip;
--				curr_map->unmap_ip = identity__map_ip;
-+				if (adjust_kernel_syms) {
-+					curr_map->start = shdr.sh_addr +
-+							  ref_reloc(kmap);
-+					curr_map->end = curr_map->start +
-+							shdr.sh_size;
-+					curr_map->pgoff = shdr.sh_offset;
-+				} else {
-+					curr_map->map_ip = identity__map_ip;
-+					curr_map->unmap_ip = identity__map_ip;
-+				}
- 				curr_dso->symtab_type = dso->symtab_type;
- 				map_groups__insert(kmap->kmaps, curr_map);
- 				dsos__add(&dso->node, curr_dso);
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index ea62ecd..04300dd 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -917,6 +917,10 @@ int dso__load_vmlinux(struct dso *dso, struct map *map,
- 	symsrc__destroy(&ss);
- 
- 	if (err > 0) {
-+		if (dso->kernel == DSO_TYPE_GUEST_KERNEL)
-+			dso->data_type = DSO_BINARY_TYPE__GUEST_VMLINUX;
-+		else
-+			dso->data_type = DSO_BINARY_TYPE__VMLINUX;
- 		dso__set_long_name(dso, (char *)vmlinux);
- 		dso__set_loaded(dso, map->type);
- 		pr_debug("Using %s for symbols\n", symfs_vmlinux);
-@@ -989,7 +993,7 @@ static int dso__load_kernel_sym(struct dso *dso, struct map *map,
- 			dso__set_long_name(dso,
- 					   strdup(symbol_conf.vmlinux_name));
- 			dso->lname_alloc = 1;
--			goto out_fixup;
-+			return err;
- 		}
- 		return err;
++	if (timerfd_settime(kvm->timerfd, 0, &new_value, NULL) != 0) {
++		pr_err("timerfd_settime failed: %d\n", errno);
++		close(kvm->timerfd);
++		goto out;
++	}
++
++	rc = 0;
++out:
++	return rc;
++}
++
++static int perf_kvm__handle_timerfd(struct perf_kvm_stat *kvm)
++{
++	uint64_t c;
++	int rc;
++
++	rc = read(kvm->timerfd, &c, sizeof(uint64_t));
++	if (rc < 0) {
++		if (errno == EAGAIN)
++			return 0;
++
++		pr_err("Failed to read timer fd: %d\n", errno);
++		return -1;
++	}
++
++	if (rc != sizeof(uint64_t)) {
++		pr_err("Error reading timer fd - invalid size returned\n");
++		return -1;
++	}
++
++	if (c != 1)
++		pr_debug("Missed timer beats: %" PRIu64 "\n", c-1);
++
++	/* update display */
++	sort_result(kvm);
++	print_result(kvm);
++
++	/* reset counts */
++	clear_events_cache_stats(kvm->kvm_events_cache);
++	kvm->total_count = 0;
++	kvm->total_time = 0;
++	kvm->lost_events = 0;
++
++	return 0;
++}
++
++static int fd_set_nonblock(int fd)
++{
++	long arg = 0;
++
++	arg = fcntl(fd, F_GETFL);
++	if (arg < 0) {
++		pr_err("Failed to get current flags for fd %d\n", fd);
++		return -1;
++	}
++
++	if (fcntl(fd, F_SETFL, arg | O_NONBLOCK) < 0) {
++		pr_err("Failed to set non-block option on fd %d\n", fd);
++		return -1;
++	}
++
++	return 0;
++}
++
++static
++int perf_kvm__handle_stdin(struct termios *tc_now, struct termios *tc_save)
++{
++	int c;
++
++	tcsetattr(0, TCSANOW, tc_now);
++	c = getc(stdin);
++	tcsetattr(0, TCSAFLUSH, tc_save);
++
++	if (c == 'q')
++		return 1;
++
++	return 0;
++}
++
++static int kvm_events_live_report(struct perf_kvm_stat *kvm)
++{
++	struct pollfd *pollfds = NULL;
++	int nr_fds, nr_stdin, ret, err = -EINVAL;
++	struct termios tc, save;
++
++	/* live flag must be set first */
++	kvm->live = true;
++
++	ret = cpu_isa_config(kvm);
++	if (ret < 0)
++		return ret;
++
++	if (!verify_vcpu(kvm->trace_vcpu) ||
++	    !select_key(kvm) ||
++	    !register_kvm_events_ops(kvm)) {
++		goto out;
++	}
++
++	init_kvm_event_record(kvm);
++
++	tcgetattr(0, &save);
++	tc = save;
++	tc.c_lflag &= ~(ICANON | ECHO);
++	tc.c_cc[VMIN] = 0;
++	tc.c_cc[VTIME] = 0;
++
++	signal(SIGINT, sig_handler);
++	signal(SIGTERM, sig_handler);
++
++	/* copy pollfds -- need to add timerfd and stdin */
++	nr_fds = kvm->evlist->nr_fds;
++	pollfds = zalloc(sizeof(struct pollfd) * (nr_fds + 2));
++	if (!pollfds) {
++		err = -ENOMEM;
++		goto out;
++	}
++	memcpy(pollfds, kvm->evlist->pollfd,
++		sizeof(struct pollfd) * kvm->evlist->nr_fds);
++
++	/* add timer fd */
++	if (perf_kvm__timerfd_create(kvm) < 0) {
++		err = -1;
++		goto out;
++	}
++
++	pollfds[nr_fds].fd = kvm->timerfd;
++	pollfds[nr_fds].events = POLLIN;
++	nr_fds++;
++
++	pollfds[nr_fds].fd = fileno(stdin);
++	pollfds[nr_fds].events = POLLIN;
++	nr_stdin = nr_fds;
++	nr_fds++;
++	if (fd_set_nonblock(fileno(stdin)) != 0)
++		goto out;
++
++	/* everything is good - enable the events and process */
++	perf_evlist__enable(kvm->evlist);
++
++	while (!done) {
++		int rc;
++
++		rc = perf_kvm__mmap_read(kvm);
++		if (rc < 0)
++			break;
++
++		err = perf_kvm__handle_timerfd(kvm);
++		if (err)
++			goto out;
++
++		if (pollfds[nr_stdin].revents & POLLIN)
++			done = perf_kvm__handle_stdin(&tc, &save);
++
++		if (!rc && !done)
++			err = poll(pollfds, nr_fds, 100);
++	}
++
++	perf_evlist__disable(kvm->evlist);
++
++	if (err == 0) {
++		sort_result(kvm);
++		print_result(kvm);
++	}
++
++out:
++	if (kvm->timerfd >= 0)
++		close(kvm->timerfd);
++
++	if (pollfds)
++		free(pollfds);
++
++	return err;
++}
++
++static int kvm_live_open_events(struct perf_kvm_stat *kvm)
++{
++	int err, rc = -1;
++	struct perf_evsel *pos;
++	struct perf_evlist *evlist = kvm->evlist;
++
++	perf_evlist__config(evlist, &kvm->opts);
++
++	/*
++	 * Note: exclude_{guest,host} do not apply here.
++	 *       This command processes KVM tracepoints from host only
++	 */
++	list_for_each_entry(pos, &evlist->entries, node) {
++		struct perf_event_attr *attr = &pos->attr;
++
++		/* make sure these *are* set */
++		attr->sample_type |= PERF_SAMPLE_TID;
++		attr->sample_type |= PERF_SAMPLE_TIME;
++		attr->sample_type |= PERF_SAMPLE_CPU;
++		attr->sample_type |= PERF_SAMPLE_RAW;
++		/* make sure these are *not*; want as small a sample as possible */
++		attr->sample_type &= ~PERF_SAMPLE_PERIOD;
++		attr->sample_type &= ~PERF_SAMPLE_IP;
++		attr->sample_type &= ~PERF_SAMPLE_CALLCHAIN;
++		attr->sample_type &= ~PERF_SAMPLE_ADDR;
++		attr->sample_type &= ~PERF_SAMPLE_READ;
++		attr->mmap = 0;
++		attr->comm = 0;
++		attr->task = 0;
++
++		attr->sample_period = 1;
++
++		attr->watermark = 0;
++		attr->wakeup_events = 1000;
++
++		/* will enable all once we are ready */
++		attr->disabled = 1;
++	}
++
++	err = perf_evlist__open(evlist);
++	if (err < 0) {
++		printf("Couldn't create the events: %s\n", strerror(errno));
++		goto out;
  	}
-@@ -997,7 +1001,7 @@ static int dso__load_kernel_sym(struct dso *dso, struct map *map,
- 	if (vmlinux_path != NULL) {
- 		err = dso__load_vmlinux_path(dso, map, filter);
- 		if (err > 0)
--			goto out_fixup;
-+			return err;
- 	}
  
- 	/* do not try local files if a symfs was given */
-@@ -1058,7 +1062,6 @@ do_kallsyms:
+-	return isa;
++	if (perf_evlist__mmap(evlist, kvm->opts.mmap_pages, false) < 0) {
++		ui__error("Failed to mmap the events: %s\n", strerror(errno));
++		perf_evlist__close(evlist);
++		goto out;
++	}
++
++	rc = 0;
++
++out:
++	return rc;
+ }
  
- 	if (err > 0) {
- 		dso__set_long_name(dso, strdup("[kernel.kallsyms]"));
--out_fixup:
- 		map__fixup_start(map);
- 		map__fixup_end(map);
- 	}
-@@ -1089,7 +1092,7 @@ static int dso__load_guest_kernel_sym(struct dso *dso, struct map *map,
- 		if (symbol_conf.default_guest_vmlinux_name != NULL) {
- 			err = dso__load_vmlinux(dso, map,
- 				symbol_conf.default_guest_vmlinux_name, filter);
--			goto out_try_fixup;
-+			return err;
- 		}
- 
- 		kallsyms_filename = symbol_conf.default_guest_kallsyms;
-@@ -1101,15 +1104,10 @@ static int dso__load_guest_kernel_sym(struct dso *dso, struct map *map,
- 	}
- 
- 	err = dso__load_kallsyms(dso, kallsyms_filename, map, filter);
--	if (err > 0)
--		pr_debug("Using %s for symbols\n", kallsyms_filename);
+ static int read_events(struct perf_kvm_stat *kvm)
+@@ -749,30 +1189,13 @@ static int read_events(struct perf_kvm_stat *kvm)
+ 	 * Do not use 'isa' recorded in kvm_exit tracepoint since it is not
+ 	 * traced in the old kernel.
+ 	 */
+-	ret = get_cpu_isa(kvm->session);
 -
--out_try_fixup:
- 	if (err > 0) {
--		if (kallsyms_filename != NULL) {
--			machine__mmap_name(machine, path, sizeof(path));
--			dso__set_long_name(dso, strdup(path));
--		}
-+		pr_debug("Using %s for symbols\n", kallsyms_filename);
-+		machine__mmap_name(machine, path, sizeof(path));
-+		dso__set_long_name(dso, strdup(path));
- 		map__fixup_start(map);
- 		map__fixup_end(map);
- 	}
++	ret = cpu_isa_config(kvm);
+ 	if (ret < 0)
+ 		return ret;
+ 
+-	if (ret == 1) {
+-		kvm->exit_reasons = vmx_exit_reasons;
+-		kvm->exit_reasons_size = ARRAY_SIZE(vmx_exit_reasons);
+-		kvm->exit_reasons_isa = "VMX";
+-	}
+-
+ 	return perf_session__process_events(kvm->session, &kvm->tool);
+ }
+ 
+-static bool verify_vcpu(int vcpu)
+-{
+-	if (vcpu != -1 && vcpu < 0) {
+-		pr_err("Invalid vcpu:%d.\n", vcpu);
+-		return false;
+-	}
+-
+-	return true;
+-}
+-
+ static int kvm_events_report_vcpu(struct perf_kvm_stat *kvm)
+ {
+ 	int ret = -EINVAL;
+@@ -886,6 +1309,186 @@ kvm_events_report(struct perf_kvm_stat *kvm, int argc, const char **argv)
+ 	return kvm_events_report_vcpu(kvm);
+ }
+ 
++static struct perf_evlist *kvm_live_event_list(void)
++{
++	struct perf_evlist *evlist;
++	char *tp, *name, *sys;
++	unsigned int j;
++	int err = -1;
++
++	evlist = perf_evlist__new();
++	if (evlist == NULL)
++		return NULL;
++
++	for (j = 0; j < ARRAY_SIZE(kvm_events_tp); j++) {
++
++		tp = strdup(kvm_events_tp[j]);
++		if (tp == NULL)
++			goto out;
++
++		/* split tracepoint into subsystem and name */
++		sys = tp;
++		name = strchr(tp, ':');
++		if (name == NULL) {
++			pr_err("Error parsing %s tracepoint: subsystem delimiter not found\n",
++				kvm_events_tp[j]);
++			free(tp);
++			goto out;
++		}
++		*name = '\0';
++		name++;
++
++		if (perf_evlist__add_newtp(evlist, sys, name, NULL)) {
++			pr_err("Failed to add %s tracepoint to the list\n", kvm_events_tp[j]);
++			free(tp);
++			goto out;
++		}
++
++		free(tp);
++	}
++
++	err = 0;
++
++out:
++	if (err) {
++		perf_evlist__delete(evlist);
++		evlist = NULL;
++	}
++
++	return evlist;
++}
++
++static int kvm_events_live(struct perf_kvm_stat *kvm,
++			   int argc, const char **argv)
++{
++	char errbuf[BUFSIZ];
++	int err;
++
++	const struct option live_options[] = {
++		OPT_STRING('p', "pid", &kvm->opts.target.pid, "pid",
++			"record events on existing process id"),
++		OPT_UINTEGER('m', "mmap-pages", &kvm->opts.mmap_pages,
++			"number of mmap data pages"),
++		OPT_INCR('v', "verbose", &verbose,
++			"be more verbose (show counter open errors, etc)"),
++		OPT_BOOLEAN('a', "all-cpus", &kvm->opts.target.system_wide,
++			"system-wide collection from all CPUs"),
++		OPT_UINTEGER('d', "display", &kvm->display_time,
++			"time in seconds between display updates"),
++		OPT_STRING(0, "event", &kvm->report_event, "report event",
++			"event for reporting: vmexit, mmio, ioport"),
++		OPT_INTEGER(0, "vcpu", &kvm->trace_vcpu,
++			"vcpu id to report"),
++		OPT_STRING('k', "key", &kvm->sort_key, "sort-key",
++			"key for sorting: sample(sort by samples number)"
++			" time (sort by avg time)"),
++		OPT_END()
++	};
++	const char * const live_usage[] = {
++		"perf kvm stat live [<options>]",
++		NULL
++	};
++
++
++	/* event handling */
++	kvm->tool.sample = process_sample_event;
++	kvm->tool.comm   = perf_event__process_comm;
++	kvm->tool.exit   = perf_event__process_exit;
++	kvm->tool.fork   = perf_event__process_fork;
++	kvm->tool.lost   = process_lost_event;
++	kvm->tool.ordered_samples = true;
++	perf_tool__fill_defaults(&kvm->tool);
++
++	/* set defaults */
++	kvm->display_time = 1;
++	kvm->opts.user_interval = 1;
++	kvm->opts.mmap_pages = 512;
++	kvm->opts.target.uses_mmap = false;
++	kvm->opts.target.uid_str = NULL;
++	kvm->opts.target.uid = UINT_MAX;
++
++	symbol__init();
++	disable_buildid_cache();
++
++	use_browser = 0;
++	setup_browser(false);
++
++	if (argc) {
++		argc = parse_options(argc, argv, live_options,
++				     live_usage, 0);
++		if (argc)
++			usage_with_options(live_usage, live_options);
++	}
++
++	/*
++	 * target related setups
++	 */
++	err = perf_target__validate(&kvm->opts.target);
++	if (err) {
++		perf_target__strerror(&kvm->opts.target, err, errbuf, BUFSIZ);
++		ui__warning("%s", errbuf);
++	}
++
++	if (perf_target__none(&kvm->opts.target))
++		kvm->opts.target.system_wide = true;
++
++
++	/*
++	 * generate the event list
++	 */
++	kvm->evlist = kvm_live_event_list();
++	if (kvm->evlist == NULL) {
++		err = -1;
++		goto out;
++	}
++
++	symbol_conf.nr_events = kvm->evlist->nr_entries;
++
++	if (perf_evlist__create_maps(kvm->evlist, &kvm->opts.target) < 0)
++		usage_with_options(live_usage, live_options);
++
++	/*
++	 * perf session
++	 */
++	kvm->session = perf_session__new(NULL, O_WRONLY, false, false, &kvm->tool);
++	if (kvm->session == NULL) {
++		err = -ENOMEM;
++		goto out;
++	}
++	kvm->session->evlist = kvm->evlist;
++	perf_session__set_id_hdr_size(kvm->session);
++
++
++	if (perf_target__has_task(&kvm->opts.target))
++		perf_event__synthesize_thread_map(&kvm->tool,
++						  kvm->evlist->threads,
++						  perf_event__process,
++						  &kvm->session->machines.host);
++	else
++		perf_event__synthesize_threads(&kvm->tool, perf_event__process,
++					       &kvm->session->machines.host);
++
++
++	err = kvm_live_open_events(kvm);
++	if (err)
++		goto out;
++
++	err = kvm_events_live_report(kvm);
++
++out:
++	exit_browser(0);
++
++	if (kvm->session)
++		perf_session__delete(kvm->session);
++	kvm->session = NULL;
++	if (kvm->evlist) {
++		perf_evlist__delete_maps(kvm->evlist);
++		perf_evlist__delete(kvm->evlist);
++	}
++
++	return err;
++}
++
+ static void print_kvm_stat_usage(void)
+ {
+ 	printf("Usage: perf kvm stat <command>\n\n");
+@@ -893,6 +1496,7 @@ static void print_kvm_stat_usage(void)
+ 	printf("# Available commands:\n");
+ 	printf("\trecord: record kvm events\n");
+ 	printf("\treport: report statistical data of kvm events\n");
++	printf("\tlive:   live reporting of statistical data of kvm events\n");
+ 
+ 	printf("\nOtherwise, it is the alias of 'perf stat':\n");
+ }
+@@ -922,6 +1526,9 @@ static int kvm_cmd_stat(const char *file_name, int argc, const char **argv)
+ 	if (!strncmp(argv[1], "rep", 3))
+ 		return kvm_events_report(&kvm, argc - 1 , argv + 1);
+ 
++	if (!strncmp(argv[1], "live", 4))
++		return kvm_events_live(&kvm, argc - 1 , argv + 1);
++
+ perf_stat:
+ 	return cmd_stat(argc, argv, NULL);
+ }
 -- 
 1.8.1.4
 
