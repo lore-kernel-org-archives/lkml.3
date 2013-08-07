@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757176Ab3HGDwb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 23:52:31 -0400
-Received: from mail-yh0-f49.google.com ([209.85.213.49]:52528 "EHLO
-	mail-yh0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757107Ab3HGDw3 (ORCPT
+	id S1757155Ab3HGDxW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 23:53:22 -0400
+Received: from mail-gh0-f177.google.com ([209.85.160.177]:41679 "EHLO
+	mail-gh0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757034Ab3HGDxV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 23:52:29 -0400
+	Tue, 6 Aug 2013 23:53:21 -0400
+X-Greylist: delayed 472 seconds by postgrey-1.27 at vger.kernel.org; Tue, 06 Aug 2013 23:53:21 EDT
 From: Roy Franz <roy.franz@linaro.org>
 To: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, matt.fleming@intel.com,
         linux@arm.linux.org.uk
 Cc: leif.lindholm@linaro.org, dave.martin@arm.com,
         Roy Franz <roy.franz@linaro.org>
-Subject: [PATCH 12/17] Add proper definitions for some EFI function pointers.
-Date: Tue,  6 Aug 2013 20:45:08 -0700
-Message-Id: <1375847113-24884-13-git-send-email-roy.franz@linaro.org>
+Subject: [PATCH 03/17] Add system pointer argument to shared EFI stub related functions so they no longer use global system table pointer as they did when part of eboot.c.
+Date: Tue,  6 Aug 2013 20:44:59 -0700
+Message-Id: <1375847113-24884-4-git-send-email-roy.franz@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1375847113-24884-1-git-send-email-roy.franz@linaro.org>
 References: <1375847113-24884-1-git-send-email-roy.franz@linaro.org>
@@ -23,128 +24,447 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The x86/AMD64 EFI stubs must us a call wrapper to convert between
-the Linux and EFI ABIs, so void pointers are sufficient.  For ARM,
-the ABIs are compatible, so we can directly invoke the function
-pointers.  The functions that are used by the ARM stub are updated
-to match the EFI definitions.
-
 Signed-off-by: Roy Franz <roy.franz@linaro.org>
 ---
- include/linux/efi.h |   42 +++++++++++++++++++++++++-----------------
- 1 file changed, 25 insertions(+), 17 deletions(-)
+ arch/x86/boot/compressed/eboot.c       |   38 +++++++------
+ drivers/firmware/efi/efi-stub-helper.c |   96 +++++++++++++++++---------------
+ 2 files changed, 72 insertions(+), 62 deletions(-)
 
-diff --git a/include/linux/efi.h b/include/linux/efi.h
-index 51f5641..96bb866 100644
---- a/include/linux/efi.h
-+++ b/include/linux/efi.h
-@@ -39,6 +39,8 @@
- typedef unsigned long efi_status_t;
- typedef u8 efi_bool_t;
- typedef u16 efi_char16_t;		/* UNICODE character */
-+typedef u64 efi_physical_addr_t;
-+typedef void *efi_handle_t;
+diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
+index ab0eefc..65b6a34 100644
+--- a/arch/x86/boot/compressed/eboot.c
++++ b/arch/x86/boot/compressed/eboot.c
+@@ -453,13 +453,13 @@ struct boot_params *make_boot_params(void *handle, efi_system_table_t *_table)
+ 	status = efi_call_phys3(sys_table->boottime->handle_protocol,
+ 				handle, &proto, (void *)&image);
+ 	if (status != EFI_SUCCESS) {
+-		efi_printk("Failed to get handle for LOADED_IMAGE_PROTOCOL\n");
++		efi_printk(sys_table, "Failed to get handle for LOADED_IMAGE_PROTOCOL\n");
+ 		return NULL;
+ 	}
+ 
+-	status = low_alloc(0x4000, 1, (unsigned long *)&boot_params);
++	status = low_alloc(sys_table, 0x4000, 1, (unsigned long *)&boot_params);
+ 	if (status != EFI_SUCCESS) {
+-		efi_printk("Failed to alloc lowmem for boot params\n");
++		efi_printk(sys_table, "Failed to alloc lowmem for boot params\n");
+ 		return NULL;
+ 	}
+ 
+@@ -503,9 +503,10 @@ struct boot_params *make_boot_params(void *handle, efi_system_table_t *_table)
+ 
+ 			options_size++;	/* NUL termination */
+ 
+-			status = low_alloc(options_size, 1, &cmdline);
++			status = low_alloc(sys_table, options_size, 1,
++					   &cmdline);
+ 			if (status != EFI_SUCCESS) {
+-				efi_printk("Failed to alloc mem for cmdline\n");
++				efi_printk(sys_table, "Failed to alloc mem for cmdline\n");
+ 				goto fail;
+ 			}
+ 
+@@ -529,16 +530,16 @@ struct boot_params *make_boot_params(void *handle, efi_system_table_t *_table)
+ 
+ 	memset(sdt, 0, sizeof(*sdt));
+ 
+-	status = handle_ramdisks(image, hdr);
++	status = handle_ramdisks(sys_table, image, hdr);
+ 	if (status != EFI_SUCCESS)
+ 		goto fail2;
+ 
+ 	return boot_params;
+ fail2:
+ 	if (options_size)
+-		low_free(options_size, hdr->cmd_line_ptr);
++		low_free(sys_table, options_size, hdr->cmd_line_ptr);
+ fail:
+-	low_free(0x4000, (unsigned long)boot_params);
++	low_free(sys_table, 0x4000, (unsigned long)boot_params);
+ 	return NULL;
+ }
+ 
+@@ -561,7 +562,7 @@ static efi_status_t exit_boot(struct boot_params *boot_params,
+ again:
+ 	size += sizeof(*mem_map) * 2;
+ 	_size = size;
+-	status = low_alloc(size, 1, (unsigned long *)&mem_map);
++	status = low_alloc(sys_table, size, 1, (unsigned long *)&mem_map);
+ 	if (status != EFI_SUCCESS)
+ 		return status;
+ 
+@@ -569,7 +570,7 @@ get_map:
+ 	status = efi_call_phys5(sys_table->boottime->get_memory_map, &size,
+ 				mem_map, &key, &desc_size, &desc_version);
+ 	if (status == EFI_BUFFER_TOO_SMALL) {
+-		low_free(_size, (unsigned long)mem_map);
++		low_free(sys_table, _size, (unsigned long)mem_map);
+ 		goto again;
+ 	}
+ 
+@@ -671,7 +672,7 @@ get_map:
+ 	return EFI_SUCCESS;
+ 
+ free_mem_map:
+-	low_free(_size, (unsigned long)mem_map);
++	low_free(sys_table, _size, (unsigned long)mem_map);
+ 	return status;
+ }
+ 
+@@ -694,10 +695,10 @@ static efi_status_t relocate_kernel(struct setup_header *hdr)
+ 				EFI_ALLOCATE_ADDRESS, EFI_LOADER_DATA,
+ 				nr_pages, &start);
+ 	if (status != EFI_SUCCESS) {
+-		status = low_alloc(hdr->init_size, hdr->kernel_alignment,
+-				   &start);
++		status = low_alloc(sys_table, hdr->init_size,
++				   hdr->kernel_alignment, &start);
+ 		if (status != EFI_SUCCESS)
+-			efi_printk("Failed to alloc mem for kernel\n");
++			efi_printk(sys_table, "Failed to alloc mem for kernel\n");
+ 	}
+ 
+ 	if (status == EFI_SUCCESS)
+@@ -737,14 +738,15 @@ struct boot_params *efi_main(void *handle, efi_system_table_t *_table,
+ 				EFI_LOADER_DATA, sizeof(*gdt),
+ 				(void **)&gdt);
+ 	if (status != EFI_SUCCESS) {
+-		efi_printk("Failed to alloc mem for gdt structure\n");
++		efi_printk(sys_table, "Failed to alloc mem for gdt structure\n");
+ 		goto fail;
+ 	}
+ 
+ 	gdt->size = 0x800;
+-	status = low_alloc(gdt->size, 8, (unsigned long *)&gdt->address);
++	status = low_alloc(sys_table, gdt->size, 8,
++			   (unsigned long *)&gdt->address);
+ 	if (status != EFI_SUCCESS) {
+-		efi_printk("Failed to alloc mem for gdt\n");
++		efi_printk(sys_table, "Failed to alloc mem for gdt\n");
+ 		goto fail;
+ 	}
+ 
+@@ -752,7 +754,7 @@ struct boot_params *efi_main(void *handle, efi_system_table_t *_table,
+ 				EFI_LOADER_DATA, sizeof(*idt),
+ 				(void **)&idt);
+ 	if (status != EFI_SUCCESS) {
+-		efi_printk("Failed to alloc mem for idt structure\n");
++		efi_printk(sys_table, "Failed to alloc mem for idt structure\n");
+ 		goto fail;
+ 	}
+ 
+diff --git a/drivers/firmware/efi/efi-stub-helper.c b/drivers/firmware/efi/efi-stub-helper.c
+index 47891bd..bd6c1a2 100644
+--- a/drivers/firmware/efi/efi-stub-helper.c
++++ b/drivers/firmware/efi/efi-stub-helper.c
+@@ -19,15 +19,16 @@ struct initrd {
  
  
- typedef struct {
-@@ -96,6 +98,7 @@ typedef	struct {
- #define EFI_MEMORY_DESCRIPTOR_VERSION	1
  
- #define EFI_PAGE_SHIFT		12
-+#define EFI_PAGE_SIZE		(1UL << EFI_PAGE_SHIFT)
+-static void efi_char16_printk(efi_char16_t *str)
++static void efi_char16_printk(efi_system_table_t *sys_table_arg,
++			      efi_char16_t *str)
+ {
+ 	struct efi_simple_text_output_protocol *out;
  
- typedef struct {
- 	u32 type;
-@@ -157,11 +160,12 @@ typedef struct {
- 	efi_table_hdr_t hdr;
- 	void *raise_tpl;
- 	void *restore_tpl;
--	void *allocate_pages;
--	void *free_pages;
--	void *get_memory_map;
--	void *allocate_pool;
--	void *free_pool;
-+	int (*allocate_pages)(int, int, unsigned long, efi_physical_addr_t *);
-+	int (*free_pages)(efi_physical_addr_t, unsigned long);
-+	int (*get_memory_map)(unsigned long *, void *, unsigned long *,
-+			      unsigned long *, u32 *);
-+	int (*allocate_pool)(int, unsigned long, void **);
-+	int (*free_pool)(void *);
- 	void *create_event;
- 	void *set_timer;
- 	void *wait_for_event;
-@@ -171,7 +175,7 @@ typedef struct {
- 	void *install_protocol_interface;
- 	void *reinstall_protocol_interface;
- 	void *uninstall_protocol_interface;
--	void *handle_protocol;
-+	int (*handle_protocol)(efi_handle_t, efi_guid_t *, void **);
- 	void *__reserved;
- 	void *register_protocol_notify;
- 	void *locate_handle;
-@@ -181,7 +185,7 @@ typedef struct {
- 	void *start_image;
- 	void *exit;
- 	void *unload_image;
--	void *exit_boot_services;
-+	int (*exit_boot_services)(efi_handle_t, unsigned long);
- 	void *get_next_monotonic_count;
- 	void *stall;
- 	void *set_watchdog_timer;
-@@ -488,10 +492,6 @@ typedef struct {
- 	unsigned long unload;
- } efi_loaded_image_t;
+-	out = (struct efi_simple_text_output_protocol *)sys_table->con_out;
++	out = (struct efi_simple_text_output_protocol *)sys_table_arg->con_out;
+ 	efi_call_phys2(out->output_string, out, str);
+ }
  
--typedef struct {
--	u64 revision;
--	void *open_volume;
--} efi_file_io_interface_t;
+-static void efi_printk(char *str)
++static void efi_printk(efi_system_table_t *sys_table_arg, char *str)
+ {
+ 	char *s8;
  
- typedef struct {
- 	u64 size;
-@@ -504,20 +504,28 @@ typedef struct {
- 	efi_char16_t filename[1];
- } efi_file_info_t;
+@@ -37,15 +38,17 @@ static void efi_printk(char *str)
+ 		ch[0] = *s8;
+ 		if (*s8 == '\n') {
+ 			efi_char16_t nl[2] = { '\r', 0 };
+-			efi_char16_printk(nl);
++			efi_char16_printk(sys_table_arg, nl);
+ 		}
  
--typedef struct {
-+typedef struct _efi_file_handle {
- 	u64 revision;
--	void *open;
--	void *close;
-+	int (*open)(struct _efi_file_handle *, struct _efi_file_handle **,
-+		    efi_char16_t *, u64, u64);
-+	int (*close)(struct _efi_file_handle *);
- 	void *delete;
--	void *read;
-+	int (*read)(struct _efi_file_handle *, unsigned long *, void *);
- 	void *write;
- 	void *get_position;
- 	void *set_position;
--	void *get_info;
-+	int (*get_info)(struct _efi_file_handle *, efi_guid_t *,
-+			unsigned long *, void *);
- 	void *set_info;
- 	void *flush;
- } efi_file_handle_t;
+-		efi_char16_printk(ch);
++		efi_char16_printk(sys_table_arg, ch);
+ 	}
+ }
  
-+typedef struct _efi_file_io_interface {
-+	u64 revision;
-+	int (*open_volume)(struct _efi_file_io_interface *,
-+			   efi_file_handle_t **);
-+} efi_file_io_interface_t;
-+
- #define EFI_FILE_MODE_READ	0x0000000000000001
- #define EFI_FILE_MODE_WRITE	0x0000000000000002
- #define EFI_FILE_MODE_CREATE	0x8000000000000000
-@@ -787,7 +795,7 @@ struct efivar_entry {
  
- struct efi_simple_text_output_protocol {
- 	void *reset;
--	void *output_string;
-+	int (*output_string)(void *, void *);
- 	void *test_string;
- };
+-static efi_status_t __get_map(efi_memory_desc_t **map, unsigned long *map_size,
++static efi_status_t __get_map(efi_system_table_t *sys_table_arg,
++			      efi_memory_desc_t **map,
++			      unsigned long *map_size,
+ 			      unsigned long *desc_size)
+ {
+ 	efi_memory_desc_t *m = NULL;
+@@ -60,20 +63,20 @@ again:
+ 	 * allocation which may be in a new descriptor region.
+ 	 */
+ 	*map_size += sizeof(*m);
+-	status = efi_call_phys3(sys_table->boottime->allocate_pool,
++	status = efi_call_phys3(sys_table_arg->boottime->allocate_pool,
+ 				EFI_LOADER_DATA, *map_size, (void **)&m);
+ 	if (status != EFI_SUCCESS)
+ 		goto fail;
  
+-	status = efi_call_phys5(sys_table->boottime->get_memory_map, map_size,
+-				m, &key, desc_size, &desc_version);
++	status = efi_call_phys5(sys_table_arg->boottime->get_memory_map,
++				map_size, m, &key, desc_size, &desc_version);
+ 	if (status == EFI_BUFFER_TOO_SMALL) {
+-		efi_call_phys1(sys_table->boottime->free_pool, m);
++		efi_call_phys1(sys_table_arg->boottime->free_pool, m);
+ 		goto again;
+ 	}
+ 
+ 	if (status != EFI_SUCCESS)
+-		efi_call_phys1(sys_table->boottime->free_pool, m);
++		efi_call_phys1(sys_table_arg->boottime->free_pool, m);
+ 
+ fail:
+ 	*map = m;
+@@ -83,8 +86,9 @@ fail:
+ /*
+  * Allocate at the highest possible address that is not above 'max'.
+  */
+-static efi_status_t high_alloc(unsigned long size, unsigned long align,
+-			      unsigned long *addr, unsigned long max)
++static efi_status_t high_alloc(efi_system_table_t *sys_table_arg,
++			       unsigned long size, unsigned long align,
++			       unsigned long *addr, unsigned long max)
+ {
+ 	unsigned long map_size, desc_size;
+ 	efi_memory_desc_t *map;
+@@ -93,7 +97,7 @@ static efi_status_t high_alloc(unsigned long size, unsigned long align,
+ 	u64 max_addr = 0;
+ 	int i;
+ 
+-	status = __get_map(&map, &map_size, &desc_size);
++	status = __get_map(sys_table_arg, &map, &map_size, &desc_size);
+ 	if (status != EFI_SUCCESS)
+ 		goto fail;
+ 
+@@ -139,7 +143,7 @@ again:
+ 	if (!max_addr)
+ 		status = EFI_NOT_FOUND;
+ 	else {
+-		status = efi_call_phys4(sys_table->boottime->allocate_pages,
++		status = efi_call_phys4(sys_table_arg->boottime->allocate_pages,
+ 					EFI_ALLOCATE_ADDRESS, EFI_LOADER_DATA,
+ 					nr_pages, &max_addr);
+ 		if (status != EFI_SUCCESS) {
+@@ -152,7 +156,7 @@ again:
+ 	}
+ 
+ free_pool:
+-	efi_call_phys1(sys_table->boottime->free_pool, map);
++	efi_call_phys1(sys_table_arg->boottime->free_pool, map);
+ 
+ fail:
+ 	return status;
+@@ -161,7 +165,8 @@ fail:
+ /*
+  * Allocate at the lowest possible address.
+  */
+-static efi_status_t low_alloc(unsigned long size, unsigned long align,
++static efi_status_t low_alloc(efi_system_table_t *sys_table_arg,
++		unsigned long size, unsigned long align,
+ 			      unsigned long *addr)
+ {
+ 	unsigned long map_size, desc_size;
+@@ -170,7 +175,7 @@ static efi_status_t low_alloc(unsigned long size, unsigned long align,
+ 	unsigned long nr_pages;
+ 	int i;
+ 
+-	status = __get_map(&map, &map_size, &desc_size);
++	status = __get_map(sys_table_arg, &map, &map_size, &desc_size);
+ 	if (status != EFI_SUCCESS)
+ 		goto fail;
+ 
+@@ -203,7 +208,7 @@ static efi_status_t low_alloc(unsigned long size, unsigned long align,
+ 		if ((start + size) > end)
+ 			continue;
+ 
+-		status = efi_call_phys4(sys_table->boottime->allocate_pages,
++		status = efi_call_phys4(sys_table_arg->boottime->allocate_pages,
+ 					EFI_ALLOCATE_ADDRESS, EFI_LOADER_DATA,
+ 					nr_pages, &start);
+ 		if (status == EFI_SUCCESS) {
+@@ -216,17 +221,18 @@ static efi_status_t low_alloc(unsigned long size, unsigned long align,
+ 		status = EFI_NOT_FOUND;
+ 
+ free_pool:
+-	efi_call_phys1(sys_table->boottime->free_pool, map);
++	efi_call_phys1(sys_table_arg->boottime->free_pool, map);
+ fail:
+ 	return status;
+ }
+ 
+-static void low_free(unsigned long size, unsigned long addr)
++static void low_free(efi_system_table_t *sys_table_arg, unsigned long size,
++		     unsigned long addr)
+ {
+ 	unsigned long nr_pages;
+ 
+ 	nr_pages = round_up(size, EFI_PAGE_SIZE) / EFI_PAGE_SIZE;
+-	efi_call_phys2(sys_table->boottime->free_pages, addr, nr_pages);
++	efi_call_phys2(sys_table_arg->boottime->free_pages, addr, nr_pages);
+ }
+ 
+ 
+@@ -236,7 +242,8 @@ static void low_free(unsigned long size, unsigned long addr)
+  * We only support loading an initrd from the same filesystem as the
+  * kernel image.
+  */
+-static efi_status_t handle_ramdisks(efi_loaded_image_t *image,
++static efi_status_t handle_ramdisks(efi_system_table_t *sys_table_arg,
++				    efi_loaded_image_t *image,
+ 				    struct setup_header *hdr)
+ {
+ 	struct initrd *initrds;
+@@ -278,12 +285,12 @@ static efi_status_t handle_ramdisks(efi_loaded_image_t *image,
+ 	if (!nr_initrds)
+ 		return EFI_SUCCESS;
+ 
+-	status = efi_call_phys3(sys_table->boottime->allocate_pool,
++	status = efi_call_phys3(sys_table_arg->boottime->allocate_pool,
+ 				EFI_LOADER_DATA,
+ 				nr_initrds * sizeof(*initrds),
+ 				&initrds);
+ 	if (status != EFI_SUCCESS) {
+-		efi_printk("Failed to alloc mem for initrds\n");
++		efi_printk(sys_table_arg, "Failed to alloc mem for initrds\n");
+ 		goto fail;
+ 	}
+ 
+@@ -329,18 +336,18 @@ static efi_status_t handle_ramdisks(efi_loaded_image_t *image,
+ 		if (!i) {
+ 			efi_boot_services_t *boottime;
+ 
+-			boottime = sys_table->boottime;
++			boottime = sys_table_arg->boottime;
+ 
+ 			status = efi_call_phys3(boottime->handle_protocol,
+ 					image->device_handle, &fs_proto, &io);
+ 			if (status != EFI_SUCCESS) {
+-				efi_printk("Failed to handle fs_proto\n");
++				efi_printk(sys_table_arg, "Failed to handle fs_proto\n");
+ 				goto free_initrds;
+ 			}
+ 
+ 			status = efi_call_phys2(io->open_volume, io, &fh);
+ 			if (status != EFI_SUCCESS) {
+-				efi_printk("Failed to open volume\n");
++				efi_printk(sys_table_arg, "Failed to open volume\n");
+ 				goto free_initrds;
+ 			}
+ 		}
+@@ -348,9 +355,9 @@ static efi_status_t handle_ramdisks(efi_loaded_image_t *image,
+ 		status = efi_call_phys5(fh->open, fh, &h, filename_16,
+ 					EFI_FILE_MODE_READ, (u64)0);
+ 		if (status != EFI_SUCCESS) {
+-			efi_printk("Failed to open initrd file: ");
+-			efi_char16_printk(filename_16);
+-			efi_printk("\n");
++			efi_printk(sys_table_arg, "Failed to open initrd file: ");
++			efi_char16_printk(sys_table_arg, filename_16);
++			efi_printk(sys_table_arg, "\n");
+ 			goto close_handles;
+ 		}
+ 
+@@ -360,30 +367,31 @@ static efi_status_t handle_ramdisks(efi_loaded_image_t *image,
+ 		status = efi_call_phys4(h->get_info, h, &info_guid,
+ 					&info_sz, NULL);
+ 		if (status != EFI_BUFFER_TOO_SMALL) {
+-			efi_printk("Failed to get initrd info size\n");
++			efi_printk(sys_table_arg, "Failed to get initrd info size\n");
+ 			goto close_handles;
+ 		}
+ 
+ grow:
+-		status = efi_call_phys3(sys_table->boottime->allocate_pool,
++		status = efi_call_phys3(sys_table_arg->boottime->allocate_pool,
+ 					EFI_LOADER_DATA, info_sz, &info);
+ 		if (status != EFI_SUCCESS) {
+-			efi_printk("Failed to alloc mem for initrd info\n");
++			efi_printk(sys_table_arg, "Failed to alloc mem for initrd info\n");
+ 			goto close_handles;
+ 		}
+ 
+ 		status = efi_call_phys4(h->get_info, h, &info_guid,
+ 					&info_sz, info);
+ 		if (status == EFI_BUFFER_TOO_SMALL) {
+-			efi_call_phys1(sys_table->boottime->free_pool, info);
++			efi_call_phys1(sys_table_arg->boottime->free_pool,
++				       info);
+ 			goto grow;
+ 		}
+ 
+ 		file_sz = info->file_size;
+-		efi_call_phys1(sys_table->boottime->free_pool, info);
++		efi_call_phys1(sys_table_arg->boottime->free_pool, info);
+ 
+ 		if (status != EFI_SUCCESS) {
+-			efi_printk("Failed to get initrd info\n");
++			efi_printk(sys_table_arg, "Failed to get initrd info\n");
+ 			goto close_handles;
+ 		}
+ 
+@@ -399,16 +407,16 @@ grow:
+ 		 * addresses in memory, so allocate enough memory for
+ 		 * all the initrd's.
+ 		 */
+-		status = high_alloc(initrd_total, 0x1000,
++		status = high_alloc(sys_table_arg, initrd_total, 0x1000,
+ 				   &initrd_addr, hdr->initrd_addr_max);
+ 		if (status != EFI_SUCCESS) {
+-			efi_printk("Failed to alloc highmem for initrds\n");
++			efi_printk(sys_table_arg, "Failed to alloc highmem for initrds\n");
+ 			goto close_handles;
+ 		}
+ 
+ 		/* We've run out of free low memory. */
+ 		if (initrd_addr > hdr->initrd_addr_max) {
+-			efi_printk("We've run out of free low memory\n");
++			efi_printk(sys_table_arg, "We've run out of free low memory\n");
+ 			status = EFI_INVALID_PARAMETER;
+ 			goto free_initrd_total;
+ 		}
+@@ -428,7 +436,7 @@ grow:
+ 							initrds[j].handle,
+ 							&chunksize, addr);
+ 				if (status != EFI_SUCCESS) {
+-					efi_printk("Failed to read initrd\n");
++					efi_printk(sys_table_arg, "Failed to read initrd\n");
+ 					goto free_initrd_total;
+ 				}
+ 				addr += chunksize;
+@@ -440,7 +448,7 @@ grow:
+ 
+ 	}
+ 
+-	efi_call_phys1(sys_table->boottime->free_pool, initrds);
++	efi_call_phys1(sys_table_arg->boottime->free_pool, initrds);
+ 
+ 	hdr->ramdisk_image = initrd_addr;
+ 	hdr->ramdisk_size = initrd_total;
+@@ -448,13 +456,13 @@ grow:
+ 	return status;
+ 
+ free_initrd_total:
+-	low_free(initrd_total, initrd_addr);
++	low_free(sys_table_arg, initrd_total, initrd_addr);
+ 
+ close_handles:
+ 	for (k = j; k < i; k++)
+ 		efi_call_phys1(fh->close, initrds[k].handle);
+ free_initrds:
+-	efi_call_phys1(sys_table->boottime->free_pool, initrds);
++	efi_call_phys1(sys_table_arg->boottime->free_pool, initrds);
+ fail:
+ 	hdr->ramdisk_image = 0;
+ 	hdr->ramdisk_size = 0;
 -- 
 1.7.10.4
 
