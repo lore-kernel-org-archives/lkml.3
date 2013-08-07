@@ -1,184 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932156Ab3HGQ3X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 12:29:23 -0400
-Received: from mga14.intel.com ([143.182.124.37]:36675 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756793Ab3HGQ3V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 12:29:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,834,1367996400"; 
-   d="scan'208";a="278979095"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Jan Kara <jack@suse.cz>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
-        Ning Qu <quning@google.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20130805111739.GA25691@quack.suse.cz>
-References: <1375582645-29274-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1375582645-29274-2-git-send-email-kirill.shutemov@linux.intel.com>
- <20130805111739.GA25691@quack.suse.cz>
-Subject: Re: [PATCH 01/23] radix-tree: implement preload for multiple
- contiguous elements
-Content-Transfer-Encoding: 7bit
-Message-Id: <20130807163236.0F17DE0090@blue.fi.intel.com>
-Date: Wed,  7 Aug 2013 19:32:36 +0300 (EEST)
+	id S932194Ab3HGQ3x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 12:29:53 -0400
+Received: from 15.mo1.mail-out.ovh.net ([188.165.38.232]:39131 "EHLO
+	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756951Ab3HGQ3w (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 12:29:52 -0400
+From: Boris BREZILLON <b.brezillon@overkiz.com>
+To: Andrew Victor <linux@maxim.org.za>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Douglas Gilbert <dgilbert@interlog.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Boris BREZILLON <b.brezillon@overkiz.com>
+X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
+Subject: [PATCH] ARM: at91: add missing uart clocks DT entries
+Date: Wed,  7 Aug 2013 18:29:44 +0200
+Message-Id: <1375892984-2835-1-git-send-email-b.brezillon@overkiz.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Ovh-Tracer-Id: 8559091093439412300
+X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrtdegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrtdegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jan Kara wrote:
-> On Sun 04-08-13 05:17:03, Kirill A. Shutemov wrote:
-> > From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-> > 
-> > The radix tree is variable-height, so an insert operation not only has
-> > to build the branch to its corresponding item, it also has to build the
-> > branch to existing items if the size has to be increased (by
-> > radix_tree_extend).
-> > 
-> > The worst case is a zero height tree with just a single item at index 0,
-> > and then inserting an item at index ULONG_MAX. This requires 2 new branches
-> > of RADIX_TREE_MAX_PATH size to be created, with only the root node shared.
-> > 
-> > Radix tree is usually protected by spin lock. It means we want to
-> > pre-allocate required memory before taking the lock.
-> > 
-> > Currently radix_tree_preload() only guarantees enough nodes to insert
-> > one element. It's a hard limit. For transparent huge page cache we want
-> > to insert HPAGE_PMD_NR (512 on x86-64) entries to address_space at once.
-> > 
-> > This patch introduces radix_tree_preload_count(). It allows to
-> > preallocate nodes enough to insert a number of *contiguous* elements.
-> > The feature costs about 5KiB per-CPU, details below.
-> > 
-> > Worst case for adding N contiguous items is adding entries at indexes
-> > (ULONG_MAX - N) to ULONG_MAX. It requires nodes to insert single worst-case
-> > item plus extra nodes if you cross the boundary from one node to the next.
-> > 
-> > Preload uses per-CPU array to store nodes. The total cost of preload is
-> > "array size" * sizeof(void*) * NR_CPUS. We want to increase array size
-> > to be able to handle 512 entries at once.
-> > 
-> > Size of array depends on system bitness and on RADIX_TREE_MAP_SHIFT.
-> > 
-> > We have three possible RADIX_TREE_MAP_SHIFT:
-> > 
-> >  #ifdef __KERNEL__
-> >  #define RADIX_TREE_MAP_SHIFT	(CONFIG_BASE_SMALL ? 4 : 6)
-> >  #else
-> >  #define RADIX_TREE_MAP_SHIFT	3	/* For more stressful testing */
-> >  #endif
-> > 
-> > On 64-bit system:
-> > For RADIX_TREE_MAP_SHIFT=3, old array size is 43, new is 107.
-> > For RADIX_TREE_MAP_SHIFT=4, old array size is 31, new is 63.
-> > For RADIX_TREE_MAP_SHIFT=6, old array size is 21, new is 30.
-> > 
-> > On 32-bit system:
-> > For RADIX_TREE_MAP_SHIFT=3, old array size is 21, new is 84.
-> > For RADIX_TREE_MAP_SHIFT=4, old array size is 15, new is 46.
-> > For RADIX_TREE_MAP_SHIFT=6, old array size is 11, new is 19.
-> > 
-> > On most machines we will have RADIX_TREE_MAP_SHIFT=6. In this case,
-> > on 64-bit system the per-CPU feature overhead is
-> >  for preload array:
-> >    (30 - 21) * sizeof(void*) = 72 bytes
-> >  plus, if the preload array is full
-> >    (30 - 21) * sizeof(struct radix_tree_node) = 9 * 560 = 5040 bytes
-> >  total: 5112 bytes
-> > 
-> > on 32-bit system the per-CPU feature overhead is
-> >  for preload array:
-> >    (19 - 11) * sizeof(void*) = 32 bytes
-> >  plus, if the preload array is full
-> >    (19 - 11) * sizeof(struct radix_tree_node) = 8 * 296 = 2368 bytes
-> >  total: 2400 bytes
-> > 
-> > Since only THP uses batched preload at the moment, we disable (set max
-> > preload to 1) it if !CONFIG_TRANSPARENT_HUGEPAGE_PAGECACHE. This can be
-> > changed in the future.
-> > 
-> > Signed-off-by: Matthew Wilcox <willy@linux.intel.com>
-> > Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> > Acked-by: Dave Hansen <dave.hansen@linux.intel.com>
-> > ---
-> >  include/linux/radix-tree.h | 11 +++++++++++
-> >  lib/radix-tree.c           | 41 ++++++++++++++++++++++++++++++++---------
-> >  2 files changed, 43 insertions(+), 9 deletions(-)
-> ...
-> > diff --git a/lib/radix-tree.c b/lib/radix-tree.c
-> > index 7811ed3..99ab73c 100644
-> > --- a/lib/radix-tree.c
-> > +++ b/lib/radix-tree.c
-> > @@ -82,16 +82,24 @@ static struct kmem_cache *radix_tree_node_cachep;
-> >   * The worst case is a zero height tree with just a single item at index 0,
-> >   * and then inserting an item at index ULONG_MAX. This requires 2 new branches
-> >   * of RADIX_TREE_MAX_PATH size to be created, with only the root node shared.
-> > + *
-> > + * Worst case for adding N contiguous items is adding entries at indexes
-> > + * (ULONG_MAX - N) to ULONG_MAX. It requires nodes to insert single worst-case
-> > + * item plus extra nodes if you cross the boundary from one node to the next.
-> > + *
-> >   * Hence:
-> >   */
-> > -#define RADIX_TREE_PRELOAD_SIZE (RADIX_TREE_MAX_PATH * 2 - 1)
-> > +#define RADIX_TREE_PRELOAD_MIN (RADIX_TREE_MAX_PATH * 2 - 1)
-> > +#define RADIX_TREE_PRELOAD_MAX \
-> > +	(RADIX_TREE_PRELOAD_MIN + \
-> > +	 DIV_ROUND_UP(RADIX_TREE_PRELOAD_NR - 1, RADIX_TREE_MAP_SIZE))
->   Umm, is this really correct? I see two problems:
-> 1) You may need internal tree nodes at various levels but you seem to
-> account only for the level 1.
-> 2) The rounding doesn't seem right because RADIX_TREE_MAP_SIZE+2 nodes may
-> require 3 nodes at level 1 if the indexes are like:
-> i_0 | i_1 .. i_{RADIX_TREE_MAP_SIZE} | i_{RADIX_TREE_MAP_SIZE+1}
->     ^                                ^
->     node boundary                    node boundary
+Add clocks to clock lookup table for uart DT entries.
 
-My bad. Let's try to calculate once again.
+Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+---
+ arch/arm/mach-at91/at91sam9x5.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-We want to insert N contiguous items without restriction on alignment.
-
-Let's limit N <= 1UL << (2 * RADIX_TREE_MAP_SHIFT), without
-CONFIG_BASE_SMALL it's 4096. It will simplify calculation a bit.
-
-Worst case scenario, I can imagine, is tree with only one element at index
-0 and we add N items where at least one index requires max tree high and
-we cross boundary between items in root node.
-
-Basically, at least one index is less then
-
-1UL << ((RADIX_TREE_MAX_PATH - 1) * RADIX_TREE_MAP_SHIFT)
-
-and one equal or more.
-
-In this case we need:
-
-- RADIX_TREE_MAX_PATH nodes to build new path to item with index 0;
-- DIV_ROUND_UP(N, RADIX_TREE_MAP_SIZE) nodes for last level nodes for new
-  items;
-- 2 * (RADIX_TREE_MAX_PATH - 2) nodes to build path to last level nodes.
-  (-2, because root node and last level nodes are already accounted).
-
-The macro:
-
-#define RADIX_TREE_PRELOAD_MAX \
-	( RADIX_TREE_MAX_PATH + \
-	  DIV_ROUND_UP(RADIX_TREE_PRELOAD_NR, RADIX_TREE_MAP_SIZE) + \
-	  2 * (RADIX_TREE_MAX_PATH - 2) )
-
-For 64-bit system and N=512, RADIX_TREE_PRELOAD_MAX is 37.
-
-Does it sound correct? Any thoughts?
-
+diff --git a/arch/arm/mach-at91/at91sam9x5.c b/arch/arm/mach-at91/at91sam9x5.c
+index 2abee66..916e5a1 100644
+--- a/arch/arm/mach-at91/at91sam9x5.c
++++ b/arch/arm/mach-at91/at91sam9x5.c
+@@ -227,6 +227,8 @@ static struct clk_lookup periph_clocks_lookups[] = {
+ 	CLKDEV_CON_DEV_ID("usart", "f8020000.serial", &usart1_clk),
+ 	CLKDEV_CON_DEV_ID("usart", "f8024000.serial", &usart2_clk),
+ 	CLKDEV_CON_DEV_ID("usart", "f8028000.serial", &usart3_clk),
++	CLKDEV_CON_DEV_ID("usart", "f8040000.serial", &uart0_clk),
++	CLKDEV_CON_DEV_ID("usart", "f8044000.serial", &uart1_clk),
+ 	CLKDEV_CON_DEV_ID("t0_clk", "f8008000.timer", &tcb0_clk),
+ 	CLKDEV_CON_DEV_ID("t0_clk", "f800c000.timer", &tcb0_clk),
+ 	CLKDEV_CON_DEV_ID("mci_clk", "f0008000.mmc", &mmc0_clk),
 -- 
- Kirill A. Shutemov
+1.7.9.5
+
