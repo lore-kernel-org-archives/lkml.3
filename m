@@ -1,176 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754456Ab3HGFF0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 01:05:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47987 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753482Ab3HGFFY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 01:05:24 -0400
-Date: Wed, 7 Aug 2013 01:05:11 -0400
-From: Dave Jones <davej@redhat.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: rcu stall warning, again.
-Message-ID: <20130807050511.GA26942@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>, paulmck@linux.vnet.ibm.com,
-	Linux Kernel <linux-kernel@vger.kernel.org>
+	id S1754682Ab3HGFJA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 01:09:00 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:48590 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754138Ab3HGFI7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 01:08:59 -0400
+X-Spam-Score: -100.8
+Message-ID: <5201D62B.6080905@asianux.com>
+Date: Wed, 07 Aug 2013 13:07:55 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: Al Viro <viro@zeniv.linux.org.uk>, xi.wang@gmail.com,
+        nicolas.dichtel@6wind.com, Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kernel/sysctl_binary.c: improve the usage of return value
+ 'result'
+References: <5200A5E6.9020803@asianux.com> <8761vibihw.fsf@xmission.com>
+In-Reply-To: <8761vibihw.fsf@xmission.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Still seeing these (though not as frequently)
+On 08/07/2013 05:46 AM, Eric W. Biederman wrote:
+> Chen Gang <gang.chen@asianux.com> writes:
+> 
+> Have you tested this code?  Do you have anything that actually the
+> uses sysctl binary interface?
+> 
+
+No, I only compile about it, not give a test. It is really better to
+give a test, but it seems not quite necessary to must give a test
+(since it is a simple change).
 
 
-INFO: rcu_preempt self-detected stall on CPU { 2}  (t=6500 jiffies g=4433279 c=4433278 q=0)
-sending NMI to all CPUs:
-NMI backtrace for cpu 0
-CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.11.0-rc4+ #1
-task: ffffffff81c10440 ti: ffffffff81c00000 task.ti: ffffffff81c00000
-RIP: 0010:[<ffffffff8159085a>]  [<ffffffff8159085a>] poll_idle+0x3a/0x80
-RSP: 0018:ffffffff81c01e70  EFLAGS: 00000246
-RAX: 0000000000080000 RBX: 0000000000000000 RCX: 0000000000000000
-RDX: 0000000000000000 RSI: ffffffff81c01fd8 RDI: ffffffff81c10440
-RBP: ffffffff81c01e88 R08: ffff8802449d0740 R09: 0000000000000000
-R10: 7fffffffffffffff R11: 0000000000000001 R12: ffffe8ffff604518
-R13: 0000562edf050df9 R14: 0000562edf050de9 R15: ffffffff81c9a938
-FS:  0000000000000000(0000) GS:ffff880244800000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 00007f32dc0e2000 CR3: 0000000235b43000 CR4: 00000000001407f0
-DR0: 0000000003ca6e60 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000600
-Stack:
- ffffe8ffff604518 ffffffff81c9a920 0000000000000000 ffffffff81c01ec0
- ffffffff81590ff0 0000000000000000 ffffe8ffff604518 ffffffff81c9a920
- 0000000000000000 0000000000000000 ffffffff81c01f00 ffffffff81591135
-Call Trace:
- [<ffffffff81590ff0>] cpuidle_enter_state+0x40/0xc0
- [<ffffffff81591135>] cpuidle_idle_call+0xc5/0x3f0
- [<ffffffff8100c9ae>] arch_cpu_idle+0xe/0x30
- [<ffffffff810b09e7>] cpu_startup_entry+0xd7/0x460
- [<ffffffff81093e4d>] ? get_parent_ip+0xd/0x50
- [<ffffffff816f6cb7>] rest_init+0x137/0x140
- [<ffffffff816f6b85>] ? rest_init+0x5/0x140
- [<ffffffff81edbe44>] start_kernel+0x3f1/0x3fe
- [<ffffffff81edb85b>] ? repair_env_string+0x5c/0x5c
- [<ffffffff81edb56f>] x86_64_start_reservations+0x2a/0x2c
- [<ffffffff81edb662>] x86_64_start_kernel+0xf1/0xf4
-Code: fc 53 89 d3 e8 f8 2a b2 ff 49 89 c5 e8 30 16 b3 ff fb 65 48 8b 34 25 f0 b9 00 00 48 8b 86 38 e0 ff ff a8 08 75 11 0f 1f 00 f3 90 <48> 8b 8e 38 e0 ff ff 83 e1 08 74 f2 e8 c5 2a b2 ff 4c 29 e8 48 
-INFO: NMI handler (arch_trigger_all_cpu_backtrace_handler) took too long to run: 25.513 msecs
-NMI backtrace for cpu 2
-CPU: 2 PID: 14291 Comm: trinity-child3 Not tainted 3.11.0-rc4+ #1
-task: ffff8801e2a36a40 ti: ffff8801a95e6000 task.ti: ffff8801a95e6000
-RIP: 0010:[<ffffffff81033c88>]  [<ffffffff81033c88>] __x2apic_send_IPI_mask+0x188/0x1c0
-RSP: 0000:ffff880244c03b10  EFLAGS: 00000046
-RAX: 0000000000000004 RBX: 0000000000000001 RCX: 000000000000003c
-RDX: 000000000000000f RSI: 0000000000000004 RDI: 0000000000000000
-RBP: ffff880244c03b60 R08: ffff880243289650 R09: 0000000000000001
-R10: 0000000000000000 R11: 0000000000000001 R12: ffff880243289650
-R13: ffff8802437eda40 R14: 0000000000080000 R15: 000000000000d010
-FS:  00007fe84a890740(0000) GS:ffff880244c00000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 0000000005b255b8 CR3: 00000001b4871000 CR4: 00000000001407e0
-DR0: 00000000013ae000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000600
-Stack:
- 0000000000000082 000000000000d008 0000000200000002 0000000000000004
- 0000000000000002 0000000000002710 ffffffff81c50940 ffffffff81c50940
- ffff880244dcde00 0000000000000000 ffff880244c03b70 ffffffff81033cdc
-Call Trace:
- <IRQ> 
- [<ffffffff81033cdc>] x2apic_send_IPI_all+0x1c/0x20
- [<ffffffff81030115>] arch_trigger_all_cpu_backtrace+0x65/0xa0
- [<ffffffff81111ce1>] rcu_check_callbacks+0x331/0x8e0
- [<ffffffff81064f97>] update_process_times+0x47/0x80
- [<ffffffff810bbf25>] tick_sched_handle.isra.16+0x25/0x60
- [<ffffffff810bc041>] tick_sched_timer+0x41/0x60
- [<ffffffff81085f71>] __run_hrtimer+0x81/0x4e0
- [<ffffffff810bc000>] ? tick_sched_do_timer+0x60/0x60
- [<ffffffff81086bcf>] hrtimer_interrupt+0xff/0x240
- [<ffffffff8102de84>] local_apic_timer_interrupt+0x34/0x60
- [<ffffffff81715c0a>] smp_trace_apic_timer_interrupt+0x4a/0x2be
- [<ffffffff817148af>] trace_apic_timer_interrupt+0x6f/0x80
- [<ffffffff8170b9a0>] ? retint_restore_args+0xe/0xe
- [<ffffffff810b5b89>] ? clocksource_watchdog+0xa9/0x2e0
- [<ffffffff810b5b84>] ? clocksource_watchdog+0xa4/0x2e0
- [<ffffffff810b5ae0>] ? clocksource_watchdog_kthread+0x40/0x40
- [<ffffffff81063b3a>] call_timer_fn+0x8a/0x370
- [<ffffffff81063ab5>] ? call_timer_fn+0x5/0x370
- [<ffffffff810b5ae0>] ? clocksource_watchdog_kthread+0x40/0x40
- [<ffffffff8106405c>] run_timer_softirq+0x23c/0x390
- [<ffffffff8105ac1f>] __do_softirq+0xff/0x440
- [<ffffffff8105b11d>] irq_exit+0xcd/0xe0
- [<ffffffff81715c1a>] smp_trace_apic_timer_interrupt+0x5a/0x2be
- [<ffffffff817148af>] trace_apic_timer_interrupt+0x6f/0x80
- <EOI> 
- [<ffffffff81153a67>] ? user_enter+0x87/0xd0
- [<ffffffff8170f2a5>] do_page_fault+0x45/0x50
- [<ffffffff8170bbe2>] page_fault+0x22/0x30
-Code: 27 ff ff ff 39 c6 0f 87 1f ff ff ff e8 62 fe ff ff 48 63 35 b3 74 cc 00 e9 0e ff ff ff 66 0f 1f 44 00 00 48 f7 45 b0 00 02 00 00 <74> 18 e8 e1 e1 08 00 ff 75 b0 9d 48 83 c4 28 5b 41 5c 41 5d 41 
-INFO: NMI handler (arch_trigger_all_cpu_backtrace_handler) took too long to run: 25.605 msecs
-NMI backtrace for cpu 3
-CPU: 3 PID: 0 Comm: swapper/3 Not tainted 3.11.0-rc4+ #1
-task: ffff880243291540 ti: ffff88024329a000 task.ti: ffff88024329a000
-RIP: 0010:[<ffffffff81376d95>]  [<ffffffff81376d95>] intel_idle+0xa5/0x100
-RSP: 0018:ffff88024329be18  EFLAGS: 00000046
-RAX: 0000000000000032 RBX: 0000000000000010 RCX: 0000000000000001
-RDX: 0000000000000000 RSI: ffffffff81c9a920 RDI: 0000000000000003
-RBP: ffff88024329be40 R08: ffff880244fd0758 R09: 0000000000000000
-R10: 7fffffffffffffff R11: 0000000000000001 R12: 0000000000000005
-R13: 0000000000000032 R14: 0000000000000004 R15: ffffffff81c9aaf0
-FS:  0000000000000000(0000) GS:ffff880244e00000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 00007f32dc0e2000 CR3: 0000000001c0b000 CR4: 00000000001407e0
-DR0: 0000000000aec000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000600
-Stack:
- 000000034329be40 ffffe8ffffc04518 ffffffff81c9a920 0000000000000005
- 0000562edf05cd3b ffff88024329be78 ffffffff81590ff0 0000000000000005
- ffffe8ffffc04518 ffffffff81c9a920 0000000000000000 0000000000000005
-Call Trace:
- [<ffffffff81590ff0>] cpuidle_enter_state+0x40/0xc0
- [<ffffffff81591135>] cpuidle_idle_call+0xc5/0x3f0
- [<ffffffff8100c9ae>] arch_cpu_idle+0xe/0x30
- [<ffffffff810b09e7>] cpu_startup_entry+0xd7/0x460
- [<ffffffff810b9748>] ? clockevents_config_and_register+0x28/0x30
- [<ffffffff8102c274>] start_secondary+0x244/0x340
-Code: 31 d2 48 83 c0 10 48 89 d1 0f 01 c8 0f ae f0 65 48 8b 04 25 f0 b9 00 00 48 8b 80 38 e0 ff ff a8 08 75 08 b1 01 4c 89 e8 0f 01 c9 <85> 1d 75 3b 92 00 75 0e 48 8d 75 dc bf 05 00 00 00 e8 d5 2a d4 
-INFO: NMI handler (arch_trigger_all_cpu_backtrace_handler) took too long to run: 25.641 msecs
-NMI backtrace for cpu 1
-CPU: 1 PID: 0 Comm: swapper/1 Not tainted 3.11.0-rc4+ #1
-task: ffff880243290000 ti: ffff88024328c000 task.ti: ffff88024328c000
-RIP: 0010:[<ffffffff81376d95>]  [<ffffffff81376d95>] intel_idle+0xa5/0x100
-RSP: 0018:ffff88024328de18  EFLAGS: 00000046
-RAX: 0000000000000032 RBX: 0000000000000010 RCX: 0000000000000001
-RDX: 0000000000000000 RSI: ffffffff81c9a920 RDI: 0000000000000001
-RBP: ffff88024328de40 R08: ffff880244bd0768 R09: 0000000000000000
-R10: 7fffffffffffffff R11: 0000000000000001 R12: 0000000000000005
-R13: 0000000000000032 R14: 0000000000000004 R15: ffffffff81c9aaf0
-FS:  0000000000000000(0000) GS:ffff880244a00000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 00007f32dc0e2000 CR3: 0000000001c0b000 CR4: 00000000001407e0
-DR0: 0000000000e8e000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000600
-Stack:
- 000000014328de40 ffffe8ffff804518 ffffffff81c9a920 0000000000000005
- 0000562edf065306 ffff88024328de78 ffffffff81590ff0 0000000000000005
- ffffe8ffff804518 ffffffff81c9a920 0000000000000000 0000000000000005
-Call Trace:
- [<ffffffff81590ff0>] cpuidle_enter_state+0x40/0xc0
- [<ffffffff81591135>] cpuidle_idle_call+0xc5/0x3f0
- [<ffffffff8100c9ae>] arch_cpu_idle+0xe/0x30
- [<ffffffff810b09e7>] cpu_startup_entry+0xd7/0x460
- [<ffffffff810b9748>] ? clockevents_config_and_register+0x28/0x30
- [<ffffffff8102c274>] start_secondary+0x244/0x340
-Code: 31 d2 48 83 c0 10 48 89 d1 0f 01 c8 0f ae f0 65 48 8b 04 25 f0 b9 00 00 48 8b 80 38 e0 ff ff a8 08 75 08 b1 01 4c 89 e8 0f 01 c9 <85> 1d 75 3b 92 00 75 0e 48 8d 75 dc bf 05 00 00 00 e8 d5 2a d4 
-INFO: NMI handler (arch_trigger_all_cpu_backtrace_handler) took too long to run: 25.688 msecs
-INFO: rcu_preempt detected stalls on CPUs/tasks: { 2} (detected by 1, t=6502 jiffies, g=4433279, c=4433278, q=0)
-INFO: rcu_preempt self-detected stall on CPU { 2}  (t=6500 jiffies g=4433283 c=4433282 q=0)
+> If you do have code that actually uses this interface please fix it not
+> to use it.  This code is fundamentally a stop gap measure and will
+> bit-rot in time and then we will remove it.
+> 
 
-and then it repeats... (though 'too long' is now 60 msecs)
+OK, since these code will be removed, and this patch is not for bug
+fixing, so at least, this patch is useless.
 
-	Dave
+The next reply below is only for current discussing, it has no effect
+with the global result above (it is a useless patch).
 
+
+>> Improve the usage of return value 'result', so not only can make code
+>> clearer to readers, but also can improve the performance.
+>>
+>> Assign the return error code only when error occurs, so can save some
+>> instructions (some of them are inside looping).
+> 
+> That actually is a code pessimization, not an optimization.  As are most
+> of your proposed changes.  Only assigning the error code simply can not
+> generate better assembly code.
+> 
+
+Excuse me, my English is not quite well, I don't know about the meaning
+of 'pessimization' (I can not find it in my English-Chinese dictionary,
+in Thunderbird Spell Check, it is not a correct word either).
+
+But it seems it doesn't matter, what you want to say is only "it is not
+an optimization", is it correct ?
+
+And after check the assembly code, really it is (it is only for 2
+styles which both are commonly used, not for optimization).
+
+
+>> Rewrite the sysctl_getname() to make code clearer to readers, and also
+>> can save some instructions (it is mainly related with the usage of the
+>> variable 'result').
+> 
+> Again you are introducing branches and pessimizing the code in the name
+> of optimization.
+> 
+
+Hmm... it is useless for optimization.
+
+But in my opinion, at least, it can make code more clearer for C code
+readers, although it may make performance a litter lower.
+
+Please see the 2 implementations below, I feel 2nd is clearer than 1st,
+how about your feeling ?
+
+static char *sysctl_getname(const int *name, int nlen, const struct bin_table **tablep)
+{
+        char *tmp, *result;
+
+        result = ERR_PTR(-ENOMEM);
+        tmp = __getname();
+        if (tmp) {
+                const struct bin_table *table = get_sysctl(name, nlen, tmp);
+                result = tmp; 
+                *tablep = table;
+                if (IS_ERR(table)) {
+                        __putname(tmp);
+                        result = ERR_CAST(table);
+                }    
+        }    
+        return result;
+}
+
+static char *sysctl_getname(const int *name, int nlen, const struct bin_table **tablep)
+{
+        char *result;
+        const struct bin_table *table;
+
+        result = __getname();
+        if (!result)
+                return ERR_PTR(-ENOMEM);
+
+        table = get_sysctl(name, nlen, result);
+        if (IS_ERR(table)) {
+                __putname(result);
+                return ERR_CAST(table);
+        }    
+        *tablep = table;	/* If error occurs, need not set this value */
+
+        return result;
+}
+
+
+>> Remove useless variable 'result' for sysctl() and compat sysctl(), when
+>> do_sysctl() fails, it is meaningless to assign 'oldlenp ' with original
+>> same value.
+> 
+>> Also modify the related code to pass "./scripts/checkpatch.pl" checking.
+> 
+> I really don't care about checpatch.pl at this point.
+> 
+
+Do you mean: you don't care about "checkpatch.pl", because some of
+another reasons which in fact not related with "checkpatch.pl" though ?
+
+
+> The right answer to the code is to config it out and then you don't have
+> to worry about it one way or another.
+> 
+
+Pardon?
+
+Excuse me, my English is not quite well, I don't quite understand your
+meaning, could you please repeat again in details or say more clearly ?
+
+
+> The sysctl binary path has never been properly maintained and I don't
+> intend to start.   But I will spend 5 minutes to say this patch seems to
+> make the code worse not better.
+>
+
+I guess no one ever invited you to maintain this file (for just as you
+said, this file will be removed), so don't worry about it.
+
+Hmm... do you mean you spend 5 minutes to get a conclusion ? if so,
+better not use word 'seems' which is not a suitable word appeared in
+the results, proofs or conclusions.
+
+At least, one conclusion is: this patch switches from old-style to
+new-style, not for optimization.
+
+But for sysctl_getname() and "checkpatch.pl" of this patch, better to
+get more discussion.
+
+Is it OK ?
+
+> Eric
+> 
+> 
+
+Thanks.
+-- 
+Chen Gang
