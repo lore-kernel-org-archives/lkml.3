@@ -1,73 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757293Ab3HGRUp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 13:20:45 -0400
-Received: from mail-ve0-f169.google.com ([209.85.128.169]:56321 "EHLO
-	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756464Ab3HGRUn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 13:20:43 -0400
+	id S1757343Ab3HGRUx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 13:20:53 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:58987 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757261Ab3HGRUq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 13:20:46 -0400
+Date: Wed, 7 Aug 2013 19:20:44 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>, Jason Baron <jbaron@akamai.com>
+Subject: Re: [PATCH 4/4] x86/jump-label: Show where and what was wrong on
+ errors
+Message-ID: <20130807172044.GC18272@pd.tnic>
+References: <20130807164934.149920591@goodmis.org>
+ <20130807165114.147890467@goodmis.org>
 MIME-Version: 1.0
-In-Reply-To: <20130807130950.GF2515@console-pimps.org>
-References: <1375847113-24884-1-git-send-email-roy.franz@linaro.org>
-	<1375847113-24884-13-git-send-email-roy.franz@linaro.org>
-	<20130807130950.GF2515@console-pimps.org>
-Date: Wed, 7 Aug 2013 10:20:42 -0700
-Message-ID: <CAFECyb_ZoCCMs75FLtGewfFQy1m5aVw6s5Jv1H1vaxg976qFNA@mail.gmail.com>
-Subject: Re: [PATCH 12/17] Add proper definitions for some EFI function pointers.
-From: Roy Franz <roy.franz@linaro.org>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        matt.fleming@intel.com,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        Dave Martin <dave.martin@arm.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130807165114.147890467@goodmis.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 7, 2013 at 6:09 AM, Matt Fleming <matt@console-pimps.org> wrote:
-> On Tue, 06 Aug, at 08:45:08PM, Roy Franz wrote:
->> The x86/AMD64 EFI stubs must us a call wrapper to convert between
->> the Linux and EFI ABIs, so void pointers are sufficient.  For ARM,
->> the ABIs are compatible, so we can directly invoke the function
->> pointers.  The functions that are used by the ARM stub are updated
->> to match the EFI definitions.
->>
->> Signed-off-by: Roy Franz <roy.franz@linaro.org>
->> ---
->>  include/linux/efi.h |   42 +++++++++++++++++++++++++-----------------
->>  1 file changed, 25 insertions(+), 17 deletions(-)
->>
->> diff --git a/include/linux/efi.h b/include/linux/efi.h
->> index 51f5641..96bb866 100644
->> --- a/include/linux/efi.h
->> +++ b/include/linux/efi.h
->> @@ -39,6 +39,8 @@
->>  typedef unsigned long efi_status_t;
->>  typedef u8 efi_bool_t;
->>  typedef u16 efi_char16_t;            /* UNICODE character */
->> +typedef u64 efi_physical_addr_t;
->> +typedef void *efi_handle_t;
->>
->>
->>  typedef struct {
->> @@ -96,6 +98,7 @@ typedef     struct {
->>  #define EFI_MEMORY_DESCRIPTOR_VERSION        1
->>
->>  #define EFI_PAGE_SHIFT               12
->> +#define EFI_PAGE_SIZE                (1UL << EFI_PAGE_SHIFT)
->
-> It would be worth getting rid of the EFI_PAGE_SIZE definition in
-> arch/x86/boot/compressed/eboot.h now that we have one here.
->
-> --
-> Matt Fleming, Intel Open Source Technology Center
+On Wed, Aug 07, 2013 at 12:49:38PM -0400, Steven Rostedt wrote:
+> From: Steven Rostedt <srostedt@redhat.com>
+> 
+> When modifying text sections for jump labels, a paranoid check is
+> performed. If the check fails, the system "bugs". But why it failed
+> is not shown.
+> 
+> The BUG_ON()s in the jump label update code is replaced with bug_at(ip).
+> This is a function that will show what pointer failed, and what was
+> at the location of the failure that made jump label panic.
+> 
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> ---
+>  arch/x86/kernel/jump_label.c |   21 ++++++++++++++++++---
+>  1 file changed, 18 insertions(+), 3 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/jump_label.c b/arch/x86/kernel/jump_label.c
+> index 24cf2b2..912a528 100644
+> --- a/arch/x86/kernel/jump_label.c
+> +++ b/arch/x86/kernel/jump_label.c
+> @@ -24,6 +24,18 @@ union jump_code_union {
+>  	} __attribute__((packed));
+>  };
+>  
+> +static void bug_at(unsigned char *ip, int line)
+> +{
+> +	/*
+> +	 * The location is not an op that we were expecting.
+> +	 * Something went wrong. Crash the box, as something could be
+> +	 * corrupting the kernel.
+> +	 */
+> +	pr_warning("Unexpected op at %pS [%p] (%02x %02x %02x %02x %02x) %s:%d\n",
+> +	       ip, ip, ip[0], ip[1], ip[2], ip[3], ip[4], __FILE__, line);
+> +	BUG();
 
-I'll get this in the next version.
+Why not simply
 
-Thanks,
-Roy
+	panic("Unexpected...")
+
+?
+
+Besides, BUG can be disabled in CONFIG_EXPERT.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
