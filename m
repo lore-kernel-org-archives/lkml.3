@@ -1,70 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933292Ab3HGVBh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 17:01:37 -0400
-Received: from icebox.esperi.org.uk ([81.187.191.129]:36753 "EHLO
-	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932387Ab3HGVBg (ORCPT
+	id S933309Ab3HGVEz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 17:04:55 -0400
+Received: from 70-36-212-23.dsl.static.sonic.net ([70.36.212.23]:39684 "EHLO
+	mail.linuxtoys.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933100Ab3HGVEy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 17:01:36 -0400
-From: Nix <nix@esperi.org.uk>
-To: "Myklebust\, Trond" <Trond.Myklebust@netapp.com>
-Cc: Jeff Layton <jlayton@redhat.com>,
-        Toralf =?utf-8?Q?F=C3=B6rster?= <toralf.foerster@gmx.de>,
-        Oleg Nesterov <oleg@redhat.com>, NFS list <linux-nfs@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "dhowells\@redhat.com" <dhowells@redhat.com>
-Subject: Re: [3.10.4] NFS locking panic, plus persisting NFS shutdown panic from 3.9.*
-References: <8761vlv4z9.fsf@spindle.srvr.nix>
-	<20130805084436.69ee4415@corrin.poochiereds.net>
-	<87siyotcri.fsf@spindle.srvr.nix>
-	<20130805110427.509db424@tlielax.poochiereds.net>
-	<20130805111106.73d6ab90@tlielax.poochiereds.net>
-	<87zjswrvaq.fsf@spindle.srvr.nix>
-	<1375719301.7337.14.camel@leira.trondhjem.org>
-	<20130805133739.21654ecb@tlielax.poochiereds.net>
-	<1375726682.7337.29.camel@leira.trondhjem.org>
-	<20130805143311.4ae59067@tlielax.poochiereds.net>
-	<1375755693.7337.42.camel@leira.trondhjem.org>
-	<87iozhst0s.fsf@spindle.srvr.nix>
-	<1375889252.6488.1.camel@leira.trondhjem.org>
-Emacs: if it payed rent for disk space, you'd be rich.
-Date: Wed, 07 Aug 2013 22:01:25 +0100
-In-Reply-To: <1375889252.6488.1.camel@leira.trondhjem.org> (Trond Myklebust's
-	message of "Wed, 7 Aug 2013 15:27:31 +0000")
-Message-ID: <87iozhmd0a.fsf@spindle.srvr.nix>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
+	Wed, 7 Aug 2013 17:04:54 -0400
+Message-ID: <5202B674.7060005@linuxtoys.org>
+Date: Wed, 07 Aug 2013 14:04:52 -0700
+From: Bob Smith <bsmith@linuxtoys.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20100101 Firefox/19.0 SeaMonkey/2.16
 MIME-Version: 1.0
-Content-Type: text/plain
-X-DCC-dcc1-Metrics: spindle 1182; Body=7 Fuz1=7 Fuz2=7
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 001/001] CHAR DRIVERS: a simple device to give daemons
+ a /sys-like interface
+References: <51FC5478.40500@linuxtoys.org> <51FC5A97.1090102@linuxtoys.org> <20130803223828.GA14611@kroah.com> <51FECDA6.5070001@linuxtoys.org> <20130804231958.GA25418@kroah.com> <52003958.7080103@linuxtoys.org> <20130806094604.GE27889@kroah.com> <520299AB.1020607@linuxtoys.org> <20130807192714.GC2708@kroah.com> <5202A284.7010106@linuxtoys.org> <20130807195427.GB4121@kroah.com>
+In-Reply-To: <20130807195427.GB4121@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7 Aug 2013, Trond Myklebust said:
-
-> On Wed, 2013-08-07 at 11:18 +0100, Nix wrote:
->> On 6 Aug 2013, Trond Myklebust verbalised:
->> > True. How about something like the following instead. Note the change to
->> > the original patch...
->> 
->> Well, with those applied I could reboot without a panic for the first
->> time since 3.8.x: looking good. I'll give it a reboot or two with a
->> system that's not hot from booting though.
+Greg Kroah-Hartman wrote:
+>> 	cat /dev/proxyctrl   # what is the offset?
+>> 	echo 2 > /dev/proxyctrl  # set offset to 2
 >
-> Could you please also try applying only the 1/2 patch, to see if that
-> suffices to quell the shutdown panic?
+> You have language bindings right there in bash for this api, what you
+> are saying is that you don't want to write new syscall bindings for new
+> languages, which is fine, don't do that, use the ones we already have
+> for the vast number of different IPC types.
 
-It doesn't suffice. I see this severely truncated oops:
+You are correct.  There very much is a protocol in use.  Just as
+there is for setting ip_forward in /proc.  And from your previous
+comment, it doesn't have to be ASCII.  It could be binary or XML.
 
-[  115.799092] BUG: unable to handle kernel NULL pointer dereference at 0000000000000008
-[  115.800284] IP: [<ffffffff81165ec6>] path_init+0x11c/0x36f
-[  115.801463] PGD 0 
-[  115.802625] Oops: 0000 [#1] PREEMPT SMP 
-[  115.803805] Modules linked in: [last unloaded: microcode] 
-[  115.804995] CPU: 3 PID: 1191 Comm: sleep Not tainted 3.10.5-05317-g3c9f6fa-dirty #2
-[  115.806207] Hardware name: System manufacturer System Product Name/P8H61-MX USB3, BIOS 0506 08/10/2012
-[  115.807453] task: ffff8804189a0000 ti: ffff8803f74d6000 task.ti: ffff8803f74d6000
+>
+> What is your specific requirements, I see you couch them in terms of
+> what you have created, but none in terms of actual requirements with no
+> specific implementation.
 
--- 
-NULL && (void)
+You are correct.  I have been giving them in terms of my goal. The
+title still captures it: "a simple device to give daemons a /sys-like
+interface".
+
+I am not a kernel programmer.  I am an Electrical Engineer trying to
+control a robot. So I don't know what you mean by "actual requirements"
+or a "specific implementation".   If you point me at a working example
+I'll be happy to try to provide these.
+
+>
+> And all of my other outstanding questions still remain, please address
+> those as well.
+Yes, understood.
+
+
+Greg, once again let me thank you for your patience while dealing
+with an EE (who probably needs more adult supervision).
+
+thanks
+Bob Smith
+
