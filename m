@@ -1,70 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757574Ab3HGO2x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 10:28:53 -0400
-Received: from sauhun.de ([89.238.76.85]:40905 "EHLO pokefinder.org"
+	id S1757603Ab3HGOhe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 10:37:34 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33851 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752279Ab3HGO2v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 10:28:51 -0400
-Date: Wed, 7 Aug 2013 16:28:47 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Chew Chiau Ee <chiaue.ee.chew@intel.com>
-Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] i2c-designware: Manually set RESTART bit between messages
-Message-ID: <20130807142847.GC2978@katana>
-References: <1371798328-31931-1-git-send-email-chiaue.ee.chew@intel.com>
+	id S1757571Ab3HGOhd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 10:37:33 -0400
+Date: Wed, 7 Aug 2013 16:37:27 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>
+Subject: Re: [PATCH 1/3] memcg: limit the number of thresholds per-memcg
+Message-ID: <20130807143727.GA13279@dhcp22.suse.cz>
+References: <1375874907-22013-1-git-send-email-mhocko@suse.cz>
+ <20130807132210.GD27006@htj.dyndns.org>
+ <20130807134654.GJ8184@dhcp22.suse.cz>
+ <20130807135818.GG27006@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="UFHRwCdBEJvubb2X"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1371798328-31931-1-git-send-email-chiaue.ee.chew@intel.com>
+In-Reply-To: <20130807135818.GG27006@htj.dyndns.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed 07-08-13 09:58:18, Tejun Heo wrote:
+> Hello,
+> 
+> On Wed, Aug 07, 2013 at 03:46:54PM +0200, Michal Hocko wrote:
+> > OK, I have obviously misunderstood your concern mentioned in the other
+> > email. Could you be more specific what is the DoS scenario which was
+> > your concern, then?
+> 
+> So, let's say the file is write-accessible to !priv user which is
+> under reasonable resource limits.  Normally this shouldn't affect priv
+> system tools which are monitoring the same event as it shouldn't be
+> able to deplete resources as long as the resource control mechanisms
+> are configured and functioning properly; however, the memory usage
+> event puts all event listeners into a single contiguous table which a
+> !priv user can easily expand to a size where the table can no longer
+> be enlarged and if a priv system tool or another user tries to
+> register event afterwards, it'll fail.  IOW, it creates a shared
+> resource which isn't properly provisioned and can be trivially filled
+> up making it an easy DoS target.
 
---UFHRwCdBEJvubb2X
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+OK, got your point. You are right and I haven't considered the size of
+the table and the size restrictions of kmalloc. Thanks for pointing this
+out!
+---
+>From cde8a3333296eddd288780e78803610127401b6a Mon Sep 17 00:00:00 2001
+From: Michal Hocko <mhocko@suse.cz>
+Date: Wed, 7 Aug 2013 11:11:22 +0200
+Subject: [PATCH] memcg: limit the number of thresholds per-memcg
 
-On Fri, Jun 21, 2013 at 03:05:28PM +0800, Chew Chiau Ee wrote:
-> From: Chew, Chiau Ee <chiau.ee.chew@intel.com>
->=20
-> If both IC_EMPTYFIFO_HOLD_MASTER_EN and IC_RESTART_EN are set to 1, the
-> Designware I2C controller doesn't generate RESTART unless user specifical=
-ly
-> requests it by setting RESTART bit in IC_DATA_CMD register.
->=20
-> Since IC_EMPTYFIFO_HOLD_MASTER_EN setting can't be detected from hardware
-> register, we must always manually set the restart bit between messages.
->=20
-> Signed-off-by: Chew, Chiau Ee <chiau.ee.chew@intel.com>
+There is no limit for the maximum number of threshold events registered
+per memcg. It is even worse that all the events are stored in a
+per-memcg table which is enlarged when a new event is registered. This
+can lead to the following issue mentioned by Tejun:
+"
+So, let's say the file is write-accessible to !priv user which is
+under reasonable resource limits.  Normally this shouldn't affect priv
+system tools which are monitoring the same event as it shouldn't be
+able to deplete resources as long as the resource control mechanisms
+are configured and functioning properly; however, the memory usage
+event puts all event listeners into a single contiguous table which a
+!priv user can easily expand to a size where the table can no longer
+be enlarged and if a priv system tool or another user tries to
+register event afterwards, it'll fail.  IOW, it creates a shared
+resource which isn't properly provisioned and can be trivially filled
+up making it an easy DoS target.
+"
 
-Applied to for-next, thanks!
+Let's be more strict and cap the number of events that might be
+registered. MAX_THRESHOLD_EVENTS value is more or less random. The
+expectation is that it should be high enough to cover reasonable
+usecases while not too high to allow excessive resources consumption.
+1024 events consume something like 16KB which shouldn't be a big deal
+and it should be good enough.
 
+Reported-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+---
+ mm/memcontrol.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---UFHRwCdBEJvubb2X
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index e4330cd..8247db3 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -5401,6 +5401,9 @@ static void mem_cgroup_oom_notify(struct mem_cgroup *memcg)
+ 		mem_cgroup_oom_notify_cb(iter);
+ }
+ 
++/* Maximum number of treshold events registered per memcg. */
++#define MAX_THRESHOLD_EVENTS	1024
++
+ static int mem_cgroup_usage_register_event(struct cgroup *cgrp,
+ 	struct cftype *cft, struct eventfd_ctx *eventfd, const char *args)
+ {
+@@ -5424,6 +5427,11 @@ static int mem_cgroup_usage_register_event(struct cgroup *cgrp,
+ 	else
+ 		BUG();
+ 
++	if (thresholds->primary->size == MAX_THRESHOLD_EVENTS) {
++		ret = -ENOSPC;
++		goto unlock;
++	}
++
+ 	usage = mem_cgroup_usage(memcg, type == _MEMSWAP);
+ 
+ 	/* Check if a threshold crossed before adding a new one */
+-- 
+1.7.10.4
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSAlmfAAoJEBQN5MwUoCm2VD4P/1WNmrgJ9RqvcZu0RC1ywyw9
-ipBaT8CluIEtTBza02a32/52FnTR1wzIphc/+CK7qgv8OQtrqPBWDsu97vvtSoav
-z043GFsm087eF0yYHwJAh8s59vfdGJKq5khh/BFbkrvyEko7xeOfTdFyXfKnD0wr
-/G9MATLHoL3X/cLtY4qMkFUvGfgk2yOudyda1k+/eaEpXIp4wtQBnIsuVbqekZZh
-rL5NvjBrZFWDmeoQqNmvCZYHQBqbIB+TCNezkEpryxn6H+IyHSgVUWz3LGB5QHJ9
-KoQCVQ5giO9mf3J1AaNHRxjgGWBWYdL1ur2FtsxmvO87Na7ShK7iILkVFAEfAlSN
-oagyVgy7nzmtXe1TCXftG89R5gXgRQilC0p0R2dNrmQVqONrfDueW+5weCZVNqED
-WQtayIeHukUuBJ8fMJ+EYsJ9283WoBdBLIxP7JwBAU3ImK2jTrZQqh+S75qiPR/C
-FAm8b57CiXGMaVBq62r9mUJlyyGAnT5jIsgBjIe3aNnba0I62D28QIAOPT03/OVM
-mKNaFCOWnvlplpZgosjCJMo81/NV+tdvTwfNrH35ds3iXK34JWfz4s+1DCeQV530
-nTgmajCbiIrnyd6Y6BERmjHUdJh5GA2gs8QoD2zDriU78QJtN1e149dzdChr7KLo
-KKyyTemXS3jsxPGe5BVa
-=1orb
------END PGP SIGNATURE-----
-
---UFHRwCdBEJvubb2X--
+-- 
+Michal Hocko
+SUSE Labs
