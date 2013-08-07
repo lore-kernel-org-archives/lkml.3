@@ -1,57 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757267Ab3HGIpu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 04:45:50 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:55788 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756301Ab3HGIpp (ORCPT
+	id S1756823Ab3HGIqf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 04:46:35 -0400
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:52921 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755222Ab3HGIqd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 04:45:45 -0400
-From: Simon Horman <horms@verge.net.au>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Xishi Qiu <qiuxishi@huawei.com>, Simon Horman <horms@verge.net.au>
-Subject: [PATCH] kexec: remove unnecessary return
-Date: Wed,  7 Aug 2013 17:45:36 +0900
-Message-Id: <1375865136-21006-1-git-send-email-horms@verge.net.au>
-X-Mailer: git-send-email 1.8.3.2
+	Wed, 7 Aug 2013 04:46:33 -0400
+MIME-Version: 1.0
+In-Reply-To: <fc5e7c01499407d31060a705f51d82ab2655e6a6.1374451988.git.joe@perches.com>
+References: <cover.1374451988.git.joe@perches.com>
+	<fc5e7c01499407d31060a705f51d82ab2655e6a6.1374451988.git.joe@perches.com>
+Date: Wed, 7 Aug 2013 10:46:32 +0200
+Message-ID: <CACRpkdYCfNpchtAuZZcjYGjTeQG+qrgdm2ojYBpGObAO1xBnhg@mail.gmail.com>
+Subject: Re: [PATCH 06/18] MAINTAINERS: ARM: plat-nomadik: Update patterns
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Joe Perches <joe@perches.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Xishi Qiu <qiuxishi@huawei.com>
+On Mon, Jul 22, 2013 at 2:15 AM, Joe Perches <joe@perches.com> wrote:
 
-Code can not run here forever, so remove the unnecessary return.
+> commit 694e33a7f4 ("ARM: plat-nomadik: move MTU, kill plat-nomadik")
+> moved the files, update the patterns.
+>
+> Signed-off-by: Joe Perches <joe@perches.com>
+> cc: Linus Walleij <linus.walleij@linaro.org>
 
-Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
-Suggested-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Signed-off-by: Simon Horman <horms@verge.net.au>
----
- kernel/kexec.c | 5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
+I applied this to my Nomadik tree, yell if you will push it some
+other path.
 
-Andrew, could you consider picking up this patch?
-
-diff --git a/kernel/kexec.c b/kernel/kexec.c
-index 59f7b55..2a74f30 100644
---- a/kernel/kexec.c
-+++ b/kernel/kexec.c
-@@ -1474,11 +1474,8 @@ static int __init __parse_crashkernel(char *cmdline,
- 	if (first_colon && (!first_space || first_colon < first_space))
- 		return parse_crashkernel_mem(ck_cmdline, system_ram,
- 				crash_size, crash_base);
--	else
--		return parse_crashkernel_simple(ck_cmdline, crash_size,
--				crash_base);
- 
--	return 0;
-+	return parse_crashkernel_simple(ck_cmdline, crash_size, crash_base);
- }
- 
- /*
--- 
-1.8.3.2
-
+Thanks,
+Linus Walleij
