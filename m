@@ -1,74 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932298Ab3HGHlj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 03:41:39 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:45468 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932222Ab3HGHhd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 03:37:33 -0400
-From: Rui Xiang <rui.xiang@huawei.com>
-To: <containers@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>
-CC: <netdev@vger.kernel.org>, <netfilter-devel@vger.kernel.org>,
-        <serge.hallyn@ubuntu.com>, <ebiederm@xmission.com>,
-        <akpm@linux-foundation.org>, <gaofeng@cn.fujitsu.com>,
-        <guz.fnst@cn.fujitsu.com>, <libo.chen@huawei.com>,
-        Rui Xiang <rui.xiang@huawei.com>
-Subject: [PATCH v3 02/11] syslog_ns: add syslog_ns into user_namespace
-Date: Wed, 7 Aug 2013 15:37:06 +0800
-Message-ID: <1375861035-24320-3-git-send-email-rui.xiang@huawei.com>
-X-Mailer: git-send-email 1.8.1.msysgit.1
-In-Reply-To: <1375861035-24320-1-git-send-email-rui.xiang@huawei.com>
-References: <1375861035-24320-1-git-send-email-rui.xiang@huawei.com>
+	id S932276Ab3HGHoJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 03:44:09 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:51567 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932188Ab3HGHoI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 03:44:08 -0400
+Date: Wed, 7 Aug 2013 09:44:05 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Matthew Garrett <matthew.garrett@nebula.com>
+Cc: linux-acpi@vger.kernel.org, seth.forshee@canonical.com,
+        joeyli.kernel@gmail.com, daniel.vetter@ffwll.ch,
+        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, lenb@kernel.org, rjw@sisk.pl,
+        Aaron Lu <aaron.lu@intel.com>
+Subject: Backlight control only in the kernel?
+Message-ID: <20130807074405.GA18272@pd.tnic>
+References: <1370818899-8595-1-git-send-email-matthew.garrett@nebula.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.135.72.188]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1370818899-8595-1-git-send-email-matthew.garrett@nebula.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a syslog_ns pointer to user_namespace, and make
-syslog_ns per user_namespace, not global.
+On Sun, Jun 09, 2013 at 07:01:36PM -0400, Matthew Garrett wrote:
+> Windows 8 introduced new policy for backlight control by pushing it out to
+> graphics drivers. This appears to have coincided with a range of vendors
+> adding Windows 8 checks to their backlight control code which trigger either
+> awkward behaviour (Lenovo) or complete brokenness (some Dells). The simplest
+> thing to do would be to just disable ACPI backlight control entirely if the
+> firmware indicates Windows 8 support, but it's entirely possible that
+> individual graphics drivers might still make use of the ACPI functionality in
+> preference to native control.
 
-Since syslog_ns is assigned to user_ns, we can have
-full capabilities in new user_ns to create a new syslog_ns.
+Maybe tangential, so Aaron and I were wondering on
+https://bugzilla.kernel.org/show_bug.cgi?id=60680 whether it would make
+sense to handle the backlight control strictly in the kernel, without
+going to userspace and back?
 
-Signed-off-by: Rui Xiang <rui.xiang@huawei.com>
----
- include/linux/syslog.h         | 5 +++++
- include/linux/user_namespace.h | 1 +
- 2 files changed, 6 insertions(+)
+Background is that on my x230, I needed to connect the
+Fn-Fx backlight hotkey presses to a script to write to
+/sys/class/backlight/intel_backlight/brightness because Fluxbox doesn't
+do that (and maybe doesn't have to).
 
-diff --git a/include/linux/syslog.h b/include/linux/syslog.h
-index 425fafe..62ce47f 100644
---- a/include/linux/syslog.h
-+++ b/include/linux/syslog.h
-@@ -90,6 +90,11 @@ struct syslog_namespace {
- 	size_t syslog_partial;
- 
- 	int dmesg_restrict;
-+
-+	/*
-+	 * user namespace which owns this syslog ns.
-+	 */
-+	struct user_namespace *owner;
- };
- 
- static inline struct syslog_namespace *get_syslog_ns(
-diff --git a/include/linux/user_namespace.h b/include/linux/user_namespace.h
-index b6b215f..ce2de5b 100644
---- a/include/linux/user_namespace.h
-+++ b/include/linux/user_namespace.h
-@@ -28,6 +28,7 @@ struct user_namespace {
- 	unsigned int		proc_inum;
- 	bool			may_mount_sysfs;
- 	bool			may_mount_proc;
-+	struct syslog_namespace *syslog_ns;
- };
- 
- extern struct user_namespace init_user_ns;
+So, without presuming any ACPI or backlight knowledge, can we make the
+backlight control work only in the kernel by connecting the hotkey
+presses to some backlight controlling interface which backlight-capable
+devices implement so that it works regardless of userspace environment?
+Even if the machine is not running X?
+
+Hmmm.
+
+Thanks.
+
 -- 
-1.8.2.2
+Regards/Gruss,
+    Boris.
 
-
+Sent from a fat crate under my desk. Formatting is fine.
+--
