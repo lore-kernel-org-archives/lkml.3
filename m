@@ -1,154 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757274Ab3HGHDS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 03:03:18 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:51133 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757242Ab3HGHDQ (ORCPT
+	id S1757032Ab3HGHEJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 03:04:09 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:16517 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751493Ab3HGHEH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 03:03:16 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <5201F138.3080906@roeck-us.net>
-Date: Wed, 07 Aug 2013 00:03:20 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Wei Ni <wni@nvidia.com>
-CC: khali@linux-fr.org, swarren@wwwdotorg.org, MLongnecker@nvidia.com,
-        linux-arm-kernel@lists.infradead.org, lm-sensors@lm-sensors.org,
-        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org
-Subject: Re: [PATCH 1/2] hwmon: (lm90) Add power control
-References: <1375858358-15070-1-git-send-email-wni@nvidia.com> <1375858358-15070-2-git-send-email-wni@nvidia.com>
-In-Reply-To: <1375858358-15070-2-git-send-email-wni@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 7 Aug 2013 03:04:07 -0400
+X-AuditID: cbfec7f5-b7f5f6d00000105f-88-5201f16316ed
+Message-id: <1375859042.17079.1.camel@AMDC1943>
+Subject: Re: [RFC PATCH 3/4] mm: add zbud flag to page flags
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Dave Hansen <dave.hansen@intel.com>
+Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Date: Wed, 07 Aug 2013 09:04:02 +0200
+In-reply-to: <52012B35.90801@intel.com>
+References: <1375771361-8388-1-git-send-email-k.kozlowski@samsung.com>
+ <1375771361-8388-4-git-send-email-k.kozlowski@samsung.com>
+ <52012B35.90801@intel.com>
+Content-type: text/plain; charset=UTF-8
+X-Mailer: Evolution 3.2.3-0ubuntu6
+Content-transfer-encoding: 7bit
+MIME-version: 1.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrALMWRmVeSWpSXmKPExsVy+t/xy7rJHxmDDJa+tLSYs34Nm8XGGetZ
+	LT69fMBocbbpDbvF5V1z2CzurfnParH2yF12i8nvnjFaHNq3it2B02PxnpdMHps+TWL3ODHj
+	N4vHg0ObWTz6tqxi9Nh8utrj8ya5APYoLpuU1JzMstQifbsErowFzdkFl1gr2hd8YGlg3MzS
+	xcjJISFgIrHhxAVGCFtM4sK99WxdjFwcQgJLGSUeHVjOAuF8ZpRo2XyeGaSKV0Bfou3uF6AE
+	B4ewgI3Eo/N8IGE2AWOJzcuXsIHYIgLqEqdWLmcHsZkFDjFJrLzJBWKzCKhK7DxyEayGE6jm
+	YMcpdoj5Cxgl/m+5ygjRoC4xad4iZoiLlCR2t3dCDZKX2LzmLdQNghI/Jt9jmcAoMAtJyywk
+	ZbOQlC1gZF7FKJpamlxQnJSea6RXnJhbXJqXrpecn7uJERILX3cwLj1mdYhRgINRiYe3Qowx
+	SIg1say4MvcQowQHs5IIr8h7oBBvSmJlVWpRfnxRaU5q8SFGJg5OqQZGv28FSzcp1uQuCF/7
+	Zm0mb7SY0SruvLkKqp9O123ZE9r99ewXdcEY31vvzmrEXTze/NlcklfwIVdPVvS5AkZzBVMx
+	3msN3UuO3b2t4XRoXmTM6V5hSdPjWw5lZSX/3f9pdqRxMAM7341XvIF3+2qO/VFUPPJqycKX
+	B6LXfNxdk8PgGjvjs/4eJZbijERDLeai4kQAzIj//GMCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/06/2013 11:52 PM, Wei Ni wrote:
-> The device lm90 can be controlled by the vdd rail.
-> Adding the power control support to power on/off the vdd rail.
-> And make sure that power is enabled before accessing the device.
->
-> Signed-off-by: Wei Ni <wni@nvidia.com>
-> ---
->   drivers/hwmon/lm90.c |   52 ++++++++++++++++++++++++++++++++++++++++++++++++++
->   1 file changed, 52 insertions(+)
->
-> diff --git a/drivers/hwmon/lm90.c b/drivers/hwmon/lm90.c
-> index cdff742..eeb0115 100644
-> --- a/drivers/hwmon/lm90.c
-> +++ b/drivers/hwmon/lm90.c
-> @@ -89,6 +89,8 @@
->   #include <linux/err.h>
->   #include <linux/mutex.h>
->   #include <linux/sysfs.h>
-> +#include <linux/delay.h>
-> +#include <linux/regulator/consumer.h>
->
->   /*
->    * Addresses to scan
-> @@ -179,6 +181,8 @@ enum chips { lm90, adm1032, lm99, lm86, max6657, max6659, adt7461, max6680,
->   #define LM90_HAVE_TEMP3		(1 << 6) /* 3rd temperature sensor	*/
->   #define LM90_HAVE_BROKEN_ALERT	(1 << 7) /* Broken alert		*/
->
-> +#define POWER_ON_DELAY 20 /*ms*/
-> +
->   /*
->    * Driver data (common to all clients)
->    */
-> @@ -302,6 +306,7 @@ static const struct lm90_params lm90_params[] = {
->   struct lm90_data {
->   	struct device *hwmon_dev;
->   	struct mutex update_lock;
-> +	struct regulator *lm90_reg;
->   	char valid; /* zero until following fields are valid */
->   	unsigned long last_updated; /* in jiffies */
->   	int kind;
-> @@ -1391,6 +1396,48 @@ static void lm90_init_client(struct i2c_client *client)
->   		i2c_smbus_write_byte_data(client, LM90_REG_W_CONFIG1, config);
->   }
->
-> +static int lm90_power_control(struct i2c_client *client, bool is_enable)
-> +{
-> +	struct lm90_data *data = i2c_get_clientdata(client);
-> +	int ret;
-> +
-> +	mutex_lock(&data->update_lock);
-> +
-> +	if (!data->lm90_reg) {
-> +		data->lm90_reg = regulator_get(&client->dev, "vdd");
-> +		if (IS_ERR_OR_NULL(data->lm90_reg)) {
-> +			if (PTR_ERR(data->lm90_reg) == -ENODEV)
-> +				dev_info(&client->dev,
-> +					 "No regulator found for vdd. Assuming vdd is always powered.");
-> +			else
-> +				dev_warn(&client->dev,
-> +					 "Error [%ld] in getting the regulator handle for vdd.\n",
-> +					 PTR_ERR(data->lm90_reg));
-> +			data->lm90_reg = NULL;
-> +			mutex_unlock(&data->update_lock);
-> +			return -ENODEV;
+On wto, 2013-08-06 at 09:58 -0700, Dave Hansen wrote:
+> On 08/05/2013 11:42 PM, Krzysztof Kozlowski wrote:
+> > +#ifdef CONFIG_ZBUD
+> > +	/* Allocated by zbud. Flag is necessary to find zbud pages to unuse
+> > +	 * during migration/compaction.
+> > +	 */
+> > +	PG_zbud,
+> > +#endif
+> 
+> Do you _really_ need an absolutely new, unshared page flag?
+> The zbud code doesn't really look like it uses any of the space in
+> 'struct page'.
+> 
+> I think you could pretty easily alias PG_zbud=PG_slab, then use the
+> page->{private,slab_cache} (or some other unused field) in 'struct page'
+> to store a cookie to differentiate slab and zbud pages.
 
-I don't think it is acceptable to have the driver fail on pretty much all PCs.
+Thanks for idea, I will try that.
 
-Also, I dislike that - even if the calling code doesn't fail - the above message would be displayed on unload as well.
+Best regards,
+Krzysztof
 
-In general, the 'unload' flag seems unnecessary. You could just call
-
-	if (data->lm90_reg)
-		regulator_disable();
-
-in the remove function. In addition to that, shouldn't you call regulator_put() on exit ?
-Also, I am missing error handling in the probe function; if something else fails,
-the regulator is neither disabled nor released.
-
-Guenter
-
-> +		}
-> +	}
-> +	if (is_enable) {
-> +		ret = regulator_enable(data->lm90_reg);
-> +		msleep(POWER_ON_DELAY);
-> +	} else {
-> +		ret = regulator_disable(data->lm90_reg);
-> +	}
-> +
-> +	if (ret < 0)
-> +		dev_err(&client->dev,
-> +			"Error in %s rail vdd, error %d\n",
-> +			(is_enable) ? "enabling" : "disabling", ret);
-> +	else
-> +		dev_info(&client->dev, "success in %s rail vdd\n",
-> +			 (is_enable) ? "enabling" : "disabling");
-> +
-> +	mutex_unlock(&data->update_lock);
-> +
-> +	return ret;
-> +}
-> +
->   static int lm90_probe(struct i2c_client *client,
->   		      const struct i2c_device_id *id)
->   {
-> @@ -1406,6 +1453,10 @@ static int lm90_probe(struct i2c_client *client,
->   	i2c_set_clientdata(client, data);
->   	mutex_init(&data->update_lock);
->
-> +	err = lm90_power_control(client, true);
-> +	if (err < 0)
-> +		return err;
-> +
->   	/* Set the device type */
->   	data->kind = id->driver_data;
->   	if (data->kind == adm1032) {
-> @@ -1483,6 +1534,7 @@ static int lm90_remove(struct i2c_client *client)
->   	hwmon_device_unregister(data->hwmon_dev);
->   	lm90_remove_files(client, data);
->   	lm90_restore_conf(client, data);
-> +	lm90_power_control(client, false);
->
->   	return 0;
->   }
->
 
