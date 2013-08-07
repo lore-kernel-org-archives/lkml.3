@@ -1,45 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757373Ab3HGJRd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 05:17:33 -0400
-Received: from mail.us.es ([193.147.175.20]:56521 "EHLO mail.us.es"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756689Ab3HGJRb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 05:17:31 -0400
-X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus2 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
- (clamdscan: 0.97.8/17637. spamassassin: 3.3.2.  
- Clear:RC:1(127.0.0.1):SA:0(-97.8/7.5):. 
- Processed in 1.645487 secs); 07 Aug 2013 09:17:28 -0000
-X-Envelope-From: pneira@us.es
-Date: Wed, 7 Aug 2013 11:17:22 +0200
-From: Pablo Neira Ayuso <pablo@netfilter.org>
-To: Rui Xiang <rui.xiang@huawei.com>
-Cc: containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, netfilter-devel@vger.kernel.org,
-        serge.hallyn@ubuntu.com, ebiederm@xmission.com,
-        akpm@linux-foundation.org, gaofeng@cn.fujitsu.com,
-        guz.fnst@cn.fujitsu.com, libo.chen@huawei.com
-Subject: Re: [PATCH v3 11/11] netfilter: use ns_printk in iptable context
-Message-ID: <20130807091722.GA9470@localhost>
-References: <1375861035-24320-1-git-send-email-rui.xiang@huawei.com>
- <1375861035-24320-12-git-send-email-rui.xiang@huawei.com>
+	id S932254Ab3HGJSb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 05:18:31 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:56029 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756689Ab3HGJS3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 05:18:29 -0400
+X-AuditID: 9c93017d-b7b45ae000000e34-87-520210e3d9c2
+Date: Wed, 7 Aug 2013 18:18:32 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: David Gibson <david@gibson.dropbear.id.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Michal Hocko <mhocko@suse.cz>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Hillf Danton <dhillf@gmail.com>
+Subject: Re: [PATCH 17/18] mm, hugetlb: retry if we fail to allocate a
+ hugepage with use_reserve
+Message-ID: <20130807091832.GD32449@lge.com>
+References: <1375075929-6119-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1375075929-6119-18-git-send-email-iamjoonsoo.kim@lge.com>
+ <20130729072823.GD29970@voom.fritz.box>
+ <20130731053753.GM2548@lge.com>
+ <20130803104302.GC19115@voom.redhat.com>
+ <20130805073647.GD27240@lge.com>
+ <1375834724.2134.49.camel@buesod1.americas.hpqcorp.net>
+ <20130807010312.GA17110@voom.redhat.com>
+ <1375839529.2134.50.camel@buesod1.americas.hpqcorp.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1375861035-24320-12-git-send-email-rui.xiang@huawei.com>
+In-Reply-To: <1375839529.2134.50.camel@buesod1.americas.hpqcorp.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, Aug 06, 2013 at 06:38:49PM -0700, Davidlohr Bueso wrote:
+> On Wed, 2013-08-07 at 11:03 +1000, David Gibson wrote:
+> > On Tue, Aug 06, 2013 at 05:18:44PM -0700, Davidlohr Bueso wrote:
+> > > On Mon, 2013-08-05 at 16:36 +0900, Joonsoo Kim wrote:
+> > > > > Any mapping that doesn't use the reserved pool, not just
+> > > > > MAP_NORESERVE.  For example, if a process makes a MAP_PRIVATE mapping,
+> > > > > then fork()s then the mapping is instantiated in the child, that will
+> > > > > not draw from the reserved pool.
+> > > > > 
+> > > > > > Should we ensure them to allocate the last hugepage?
+> > > > > > They map a region with MAP_NORESERVE, so don't assume that their requests
+> > > > > > always succeed.
+> > > > > 
+> > > > > If the pages are available, people get cranky if it fails for no
+> > > > > apparent reason, MAP_NORESERVE or not.  They get especially cranky if
+> > > > > it sometimes fails and sometimes doesn't due to a race condition.
+> > > > 
+> > > > Hello,
+> > > > 
+> > > > Hmm... Okay. I will try to implement another way to protect race condition.
+> > > > Maybe it is the best to use a table mutex :)
+> > > > Anyway, please give me a time, guys.
+> > > 
+> > > So another option is to take the mutex table patchset for now as it
+> > > *does* improve things a great deal, then, when ready, get rid of the
+> > > instantiation lock all together.
+> > 
+> > We still don't have a solid proposal for doing that. Joonsoo Kim's
+> > patchset misses cases (non reserved mappings).  I'm also not certain
+> > there aren't a few edge cases which can lead to even reserved mappings
+> > failing, and if that happens the patches will lead to livelock.
+> > 
+> 
+> Exactly, which is why I suggest minimizing the lock contention until we
+> do have such a proposal.
 
-On Wed, Aug 07, 2013 at 03:37:15PM +0800, Rui Xiang wrote:
-> To containerise iptables log, use ns_printk
-> to report individual logs to container as
-> getting syslog_ns from net->user_ns.
+Okay. my proposal is not complete and maybe much time is needed.
+And I'm not sure that my *retry* approach can eventually cover all
+the race situations, currently.
 
-This patch is missing the removal of a couple of LOC at the very
-beginning of ipt_log_packet and ip6t_log_packet to get this working.
+If you have to hurry, I don't have strong objection to your patches,
+but, IMHO, we should go slow, because it is not just trivial change.
+Hugetlb code is too subtle, so it is hard to confirm it's solidness.
+Following is the race problem what I found with those patches.
 
-Please, revamp it. Thanks.
+I assume that nr_free_hugepage is 2.
+
+1. parent process map an 1 hugepage sizeid region with MAP_PRIVATE
+2. parent process write something to this region, so fault occur.
+3. fault handling.
+4. fork
+5. parent process write something to this hugepage, so cow-fault occur.
+6. while parent allocate a new page and do copy_user_huge_page()
+	in fault handler, child process write something to this hugepage,
+	so cow-fault occur. This access is not protected by table mutex,
+	because mm is different.
+7. child process die, because there is no free hugepage.
+
+If we have no race, child process would not die,
+because all we needed is only 2 hugepages, one for parent,
+and the other for child.
+
+Thanks.
