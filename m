@@ -1,90 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933382Ab3HGVKA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 17:10:00 -0400
-Received: from mx12.netapp.com ([216.240.18.77]:54131 "EHLO mx12.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933197Ab3HGVJ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 17:09:57 -0400
-X-IronPort-AV: E=Sophos;i="4.89,835,1367996400"; 
-   d="scan'208";a="79425490"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Nix <nix@esperi.org.uk>
-CC: Jeff Layton <jlayton@redhat.com>,
-        =?utf-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>,
-        Oleg Nesterov <oleg@redhat.com>, NFS list <linux-nfs@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "dhowells@redhat.com" <dhowells@redhat.com>
-Subject: Re: [3.10.4] NFS locking panic, plus persisting NFS shutdown panic
- from 3.9.*
-Thread-Topic: [3.10.4] NFS locking panic, plus persisting NFS shutdown panic
- from 3.9.*
-Thread-Index: AQHOk7FH4gcyFEImq0mWTcGQZbqon5mKsuSA
-Date: Wed, 7 Aug 2013 21:09:55 +0000
-Message-ID: <1375909795.7280.58.camel@leira.trondhjem.org>
-References: <8761vlv4z9.fsf@spindle.srvr.nix>
-	 <20130805084436.69ee4415@corrin.poochiereds.net>
-	 <87siyotcri.fsf@spindle.srvr.nix>
-	 <20130805110427.509db424@tlielax.poochiereds.net>
-	 <20130805111106.73d6ab90@tlielax.poochiereds.net>
-	 <87zjswrvaq.fsf@spindle.srvr.nix>
-	 <1375719301.7337.14.camel@leira.trondhjem.org>
-	 <20130805133739.21654ecb@tlielax.poochiereds.net>
-	 <1375726682.7337.29.camel@leira.trondhjem.org>
-	 <20130805143311.4ae59067@tlielax.poochiereds.net>
-	 <1375755693.7337.42.camel@leira.trondhjem.org>
-	 <87iozhst0s.fsf@spindle.srvr.nix>
-	 <1375889252.6488.1.camel@leira.trondhjem.org>
-	 <87iozhmd0a.fsf@spindle.srvr.nix>
-In-Reply-To: <87iozhmd0a.fsf@spindle.srvr.nix>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.106.53.51]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <7EB5FAA5D457F844A01DD8C3D63EB233@hq.netapp.com>
-MIME-Version: 1.0
+	id S933385Ab3HGVKd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 17:10:33 -0400
+Received: from crispin.apple.com ([17.151.62.50]:62796 "EHLO
+	mail-out.apple.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933227Ab3HGVKb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 17:10:31 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: text/plain; CHARSET=US-ASCII
+X-AuditID: 11807153-b7fd26d000007d21-29-5202b7c4f0a9
+Subject: Re: [edk2] Corrupted EFI region
+From: Andrew Fish <afish@apple.com>
+In-reply-to: <20130807201908.GG2515@console-pimps.org>
+Date: Wed, 07 Aug 2013 14:10:28 -0700
+Cc: edk2-devel@lists.sourceforge.net, Laszlo Ersek <lersek@redhat.com>,
+        linux-efi@vger.kernel.org, Gleb Natapov <gleb@redhat.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        David Woodhouse <dwmw2@infradead.org>
+Message-id: <D5982201-6DC4-469F-812A-74A8402ADEE9@apple.com>
+References: <51FFC19A.1020204@redhat.com> <20130805161247.GF31845@pd.tnic>
+ <51FFD5B0.9080000@redhat.com> <20130805164731.GG31845@pd.tnic>
+ <52001896.1030509@redhat.com> <20130805220808.GC14067@pd.tnic>
+ <20130806141036.GD14891@pd.tnic> <520116D1.2010000@redhat.com>
+ <20130807151935.GJ17920@pd.tnic>
+ <CCFD3CBD-62B0-4046-B96D-18CB1A815F72@apple.com>
+ <20130807201908.GG2515@console-pimps.org>
+To: Matt Fleming <matt@console-pimps.org>
+X-Mailer: Apple Mail (2.1508)
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrJLMWRmVeSWpSXmKPExsUieE6oQffIdqYggzv/zC0mrpzMbPH3z39m
+	i1UHOlgtlh3bwWLR9vAWo8XlXXPYLL5dncbkwO5xpvENo8fmFVoeuxd8ZvJ4v+8qm8fnTXIB
+	rFFcNimpOZllqUX6dglcGUePnGQs2CJWMf3be7YGxgeCXYycHBICJhLX371jh7DFJC7cW8/W
+	xcjFISSwiEli2bu7rCAJZgEtiRv/XjKB2LwCehJL/81hBLGFBTQkFt35xgxiswkoS6yY/wFs
+	EKeAmcTHyQ9Yuhg5OFgEVCSe7ACbySxwnVHi2Y4fbBAztSWWLXzNDDHTRuLerhXMEIubmSXe
+	NtwFS4gIaErMmb2MFWSQhICsxM7fSRMY+WchOWkWkpNmIRm7gJF5FaNAUWpOYqWxXmJBQU6q
+	XnJ+7iZGUAA3FAbvYPyzzOoQowAHoxIP74MgpiAh1sSy4srcQ4wSHMxKIrwXi4FCvCmJlVWp
+	RfnxRaU5qcWHGKU5WJTEeSM2AKUE0hNLUrNTUwtSi2CyTBycUg2MDed7Y8LtWy/41hhwvvr2
+	ZDP3m/j/e3Xehuz+t+/a0nPlYf57jdn6JNwWbBfZvqb7ocmJNVwiSZxNP1evOhlU0OazK2b3
+	lHnq91hmBfhfWLpL6B73payZwR4fd/3ySd/yhO/kgey4GS8vKVV8rXNoCpST7lb9fnuuBqum
+	woa9B3b9ePtw6yWOBUosxRmJhlrMRcWJAIFS2MFcAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r77LA6gv029527
 
-On Wed, 2013-08-07 at 22:01 +0100, Nix wrote:
-> On 7 Aug 2013, Trond Myklebust said:
-> 
-> > On Wed, 2013-08-07 at 11:18 +0100, Nix wrote:
-> >> On 6 Aug 2013, Trond Myklebust verbalised:
-> >> > True. How about something like the following instead. Note the change to
-> >> > the original patch...
-> >> 
-> >> Well, with those applied I could reboot without a panic for the first
-> >> time since 3.8.x: looking good. I'll give it a reboot or two with a
-> >> system that's not hot from booting though.
-> >
-> > Could you please also try applying only the 1/2 patch, to see if that
-> > suffices to quell the shutdown panic?
-> 
-> It doesn't suffice. I see this severely truncated oops:
-> 
-> [  115.799092] BUG: unable to handle kernel NULL pointer dereference at 0000000000000008
-> [  115.800284] IP: [<ffffffff81165ec6>] path_init+0x11c/0x36f
-> [  115.801463] PGD 0 
-> [  115.802625] Oops: 0000 [#1] PREEMPT SMP 
-> [  115.803805] Modules linked in: [last unloaded: microcode] 
-> [  115.804995] CPU: 3 PID: 1191 Comm: sleep Not tainted 3.10.5-05317-g3c9f6fa-dirty #2
-> [  115.806207] Hardware name: System manufacturer System Product Name/P8H61-MX USB3, BIOS 0506 08/10/2012
-> [  115.807453] task: ffff8804189a0000 ti: ffff8803f74d6000 task.ti: ffff8803f74d6000
-> 
-OK. Then I'll mark them both for stable inclusion in 3.9+.
 
-Thanks for testing!
--- 
-Trond Myklebust
-Linux NFS client maintainer
+On Aug 7, 2013, at 1:19 PM, Matt Fleming <matt@console-pimps.org> wrote:
 
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> [ Readding Matthew Garrett to the Cc list, seeing as we both got removed
+>  for some unknown reason ]
+> 
+> On Wed, 07 Aug, at 10:23:56AM, Andrew Fish wrote:
+> 
+>> OK so I think I need some Cliff Notes here to help me understand what
+>> is going on...
+>> 
+>> type 4 is EfiBootServicesData and attr 0x0f is cache attributes with
+>> no request for a runtime mapping. This is not runtime memory so to the
+>> OS loader it is just memory EFI has used that will get freed back to
+>> the OS after ExitBootServices(), along with EfiBootServicesCode,
+>> EfiLoaderCode, and EfiLoaderData. The EfiLoaderCode and EfiLoaderData
+>> also get freed back to the OS and they just exist for the convenience
+>> of the OS loader. 
+>> 
+>> So I can't figure out why this maters? Given:
+> 
+> We've seen a bunch of systems that make calls into EfiBootServicesCode
+> after ExitBootServices(). There were some Apple machines in that list,
+> though I don't have the details but Matthew should.
+> 
+
+I think there was some very old EDK (pre edk2) bug that caused some SMM code to grab EfiBootServicesCode at runtime. In some older Apple machines I remember working with Mathew to track down a bug in the WiFi driver not shutting down its DMA at ExitBootServices() time. I'm guessing in general that pre-Windows 8 systems may tend to be buggy. 
+
+> So we map these regions unconditionally and in their original state,
+> otherwise the firmware will generate fatal page faults when trying to
+> access those memory regions.
+> 
+
+Well the issue I see is I don't think OS X or Windows are doing this. So I'm guessing there is some unique thing beings done on the Linux side and we don't have good tests to catch bugs in the EFI implementations. If the Linux loader hides the bugs and we don't hit them with other operating systems they are never going to get fixed. It would be good if we could track down some of these issues and make a request for some tests that can help catch these issues. The tests would be part of UEFI.org, but since some of us play in both worlds we can forward the known issues to the UEFI test work group. 
+
+Is it possible to have a switch to turn off the not required behavior (hiding EFI implementation bugs) so that bad platforms could be detected? This would be a good thing to try on platforms at the upcoming UEFI Plugfest hosted by the Linux Foundation and the UEFI Forum, so the bad behavior can be detected and the vendors can fix the issue. 
+
+Thanks,
+
+Andrew Fish
+
+PS Also maybe it would be possible to key this work around behavior on the EFI/UEFI version. So for example no work-around after UEFI v2.3.1?
+
+> -- 
+> Matt Fleming, Intel Open Source Technology Center
+
