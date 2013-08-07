@@ -1,69 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932213Ab3HGQLj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 12:11:39 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:29742 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756520Ab3HGQLi (ORCPT
+	id S932237Ab3HGQM7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 12:12:59 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:34242 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756973Ab3HGQM5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 12:11:38 -0400
-X-Authority-Analysis: v=2.0 cv=KJ7Y/S5o c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=pFOAptgLnqcA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=pvQ05lsfB1wA:10 a=xEhx641PCuwcu81QBx4A:9 a=QEXdDO2ut3YA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-ID: <1375891895.6848.9.camel@gandalf.local.home>
-Subject: Re: [RFC] gcc feature request: Moving blocks into sections
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: =?UTF-8?Q?Ond=C5=99ej_B=C3=ADlka?= <neleai@seznam.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, gcc <gcc@gcc.gnu.org>,
-        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        David Daney <ddaney.cavm@gmail.com>,
-        Behan Webster <behanw@converseincode.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Herbert Xu <herbert@gondor.hengli.com.au>
-Date: Wed, 07 Aug 2013 12:11:35 -0400
-In-Reply-To: <20130807160336.GA1336@Krystal>
-References: <CA+55aFyfvifCu=jDBH8LPmEHtvooVyo25dvJ+T6SQLhVidBBdQ@mail.gmail.com>
-	 <1375798783.25420.30.camel@gandalf.local.home>
-	 <CA+55aFwKYSwytooG50fyryWpVdGEk_v=vdB=L-kAyLmmSW=bkQ@mail.gmail.com>
-	 <1375811885.25420.44.camel@gandalf.local.home>
-	 <20130806203319.GA16170@Krystal>
-	 <1375821817.25420.50.camel@gandalf.local.home>
-	 <1375836304.25420.76.camel@gandalf.local.home>
-	 <1375836960.25420.80.camel@gandalf.local.home>
-	 <20130807050601.GA5385@domone.kolej.mff.cuni.cz>
-	 <1375887730.6848.7.camel@gandalf.local.home>
-	 <20130807160336.GA1336@Krystal>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 7 Aug 2013 12:12:57 -0400
+Subject: Re: [PATCH v3 3/5] devicetree: create a separate binding description for sata_highbank
+Mime-Version: 1.0 (Apple Message framework v1283)
+Content-Type: text/plain; charset=us-ascii
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <1375890758-30265-3-git-send-email-mark.langsdorf@calxeda.com>
+Date: Wed, 7 Aug 2013 11:13:04 -0500
+Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org, tj@kernel.org,
+        devicetree@vger.kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        swarren@wwwdotorg.org, ian.campbell@citrix.com,
+        rob.herring@calxeda.com, sergei.shtylyov@cogentembedded.com
+Content-Transfer-Encoding: 8BIT
+Message-Id: <75318AE8-35C9-453A-AC56-824C8FADD635@codeaurora.org>
+References: <1375890758-30265-1-git-send-email-mark.langsdorf@calxeda.com> <1375890758-30265-3-git-send-email-mark.langsdorf@calxeda.com>
+To: Mark Langsdorf <mark.langsdorf@calxeda.com>
+X-Mailer: Apple Mail (2.1283)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-08-07 at 12:03 -0400, Mathieu Desnoyers wrote:
 
-> You might want to try creating a global array of counters (accessible
-> both from C for printout and assembly for update).
-> 
-> Index the array from assembly using:   (2f - 1f)
-> 
-> 1:
->         jmp ...;
-> 2:
-> 
-> And put an atomic increment of the counter. This increment instruction
-> should be located prior to the jmp for obvious reasons.
-> 
-> You'll end up with the sums you're looking for at indexes 2 and 5 of the
-> array.
+On Aug 7, 2013, at 10:52 AM, Mark Langsdorf wrote:
 
-After I post the patches, feel free to knock yourself out.
+> The Calxeda sata_highbank driver has been adding its descriptions to the
+> ahci driver. Separate them properly.
+> 
+> Signed-off-by: Mark Langsdorf <mark.langsdorf@calxeda.com>
+> Acked-by: Rob Herring <rob.herring@calxeda.com>
+> ---
+> Changes from v2
+> 	Fixed some indenting.
+> Changes from v1
+> 	None.
+> 
+> .../devicetree/bindings/ata/ahci-platform.txt      | 18 +++---------
+> .../devicetree/bindings/ata/sata_highbank.txt      | 32 ++++++++++++++++++++++
+> 2 files changed, 36 insertions(+), 14 deletions(-)
+> create mode 100644 Documentation/devicetree/bindings/ata/sata_highbank.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/ata/ahci-platform.txt b/Documentation/devicetree/bindings/ata/ahci-platform.txt
+> index 3ec0c5c..89de156 100644
+> --- a/Documentation/devicetree/bindings/ata/ahci-platform.txt
+> +++ b/Documentation/devicetree/bindings/ata/ahci-platform.txt
+> @@ -4,27 +4,17 @@ SATA nodes are defined to describe on-chip Serial ATA controllers.
+> Each SATA controller should have its own node.
+> 
+> Required properties:
+> -- compatible        : compatible list, contains "calxeda,hb-ahci" or "snps,spear-ahci"
+> +- compatible        : compatible list, contains "snps,spear-ahci"
+> - interrupts        : <interrupt mapping for SATA IRQ>
+> - reg               : <registers mapping>
+> 
+> Optional properties:
+> -- calxeda,port-phys: phandle-combophy and lane assignment, which maps each
+> -			SATA port to a combophy and a lane within that
+> -			combophy
+> -- calxeda,sgpio-gpio: phandle-gpio bank, bit offset, and default on or off,
+> -			which indicates that the driver supports SGPIO
+> -			indicator lights using the indicated GPIOs
+> -- calxeda,led-order : a u32 array that map port numbers to offsets within the
+> -			SGPIO bitstream.
+> - dma-coherent      : Present if dma operations are coherent
+> 
+> Example:
+>         sata@ffe08000 {
+> -		compatible = "calxeda,hb-ahci";
+> -                reg = <0xffe08000 0x1000>;
+> -                interrupts = <115>;
+> -		calxeda,port-phys = <&combophy5 0 &combophy0 0 &combophy0 1
+> -					&combophy0 2 &combophy0 3>;
+> +		compatible = "snps,spear-ahci";
+> +		reg = <0xffe08000 0x1000>;
+> +		interrupts = <115>;
+> 
+>         };
+> diff --git a/Documentation/devicetree/bindings/ata/sata_highbank.txt b/Documentation/devicetree/bindings/ata/sata_highbank.txt
+> new file mode 100644
+> index 0000000..1ac6d3d
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/ata/sata_highbank.txt
+> @@ -0,0 +1,32 @@
+> +* Calxeda AHCI SATA Controller
+> +
+> +SATA nodes are defined to describe on-chip Serial ATA controllers.
+> +The Calxeda SATA controller mostly conforms to the AHCI interface
+> +with some special extensions to add functionality.
+> +Each SATA controller should have its own node.
+> +
+> +Required properties:
+> +- compatible        : compatible list, contains "calxeda,hb-ahci"
+> +- interrupts        : <interrupt mapping for SATA IRQ>
+> +- reg               : <registers mapping>
+> +
+> +Optional properties:
+> +- dma-coherent      : Present if dma operations are coherent
+> +- calxeda,port-phys: phandle-combophy and lane assignment, which maps each
+> +			SATA port to a combophy and a lane within that
+> +			combophy
+> +- calxeda,sgpio-gpio: phandle-gpio bank, bit offset, and default on or off,
+> +			which indicates that the driver supports SGPIO
+> +			indicator lights using the indicated GPIOs
+> +- calxeda,led-order : a u32 array that map port numbers to offsets within the
+> +			SGPIO bitstream.
 
--- Steve
+nit: whitespace after :
 
+> +
+> +Example:
+> +        sata@ffe08000 {
+> +		compatible = "calxeda,hb-ahci";
+> +		reg = <0xffe08000 0x1000>;
+> +		interrupts = <115>;
+> +		calxeda,port-phys = <&combophy5 0 &combophy0 0 &combophy0 1
+> +					&combophy0 2 &combophy0 3>;
+> +
+
+Its probably good to show all optional props (dma-coherent, calxeda,sgpio-gpios, & calxeda,led-order) in the example.
+
+> +        };
+> -- 
+> 1.8.1.2
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe devicetree" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+--
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
 
