@@ -1,46 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933042Ab3HGSvl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 14:51:41 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:46514 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932563Ab3HGSvh (ORCPT
+	id S932908Ab3HGSva (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 14:51:30 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:57223 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932680Ab3HGSuK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 14:51:37 -0400
-Message-ID: <52029736.8040007@wwwdotorg.org>
-Date: Wed, 07 Aug 2013 12:51:34 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: rjw@sisk.pl, swarren@nvidia.com, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mturquette@linaro.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 5/6] ARM: Tegra: start using cpufreq-cpu0 driver
-References: <cover.1375886595.git.viresh.kumar@linaro.org> <6610c86618b781b00eba446ca19035e077d99691.1375886595.git.viresh.kumar@linaro.org> <520287EA.5060508@wwwdotorg.org> <CAKohpokOn4-RZE5mfoM+2p8jszWoGfOErrLShZmv86OgCMv+JA@mail.gmail.com> <5202898A.6050006@wwwdotorg.org> <CAKohpom3o1y+xXof3iKCn6SWxYKNAE=aBGO2P3JF+Y0Ce4GmQQ@mail.gmail.com>
-In-Reply-To: <CAKohpom3o1y+xXof3iKCn6SWxYKNAE=aBGO2P3JF+Y0Ce4GmQQ@mail.gmail.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 7 Aug 2013 14:50:10 -0400
+From: Leif Lindholm <leif.lindholm@linaro.org>
+To: linux-efi@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-ia64@vger.kernel.org,
+        matt.fleming@intel.com, tony.luck@gmail.com, grant.likely@secretlab.ca,
+        Leif Lindholm <leif.lindholm@linaro.org>
+Subject: [PATCH v3 4/5] efi: ia64: use common code for (U)EFI configuration scanning
+Date: Wed,  7 Aug 2013 19:54:19 +0100
+Message-Id: <1375901660-23541-5-git-send-email-leif.lindholm@linaro.org>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1375901660-23541-1-git-send-email-leif.lindholm@linaro.org>
+References: <1375901660-23541-1-git-send-email-leif.lindholm@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/07/2013 11:59 AM, Viresh Kumar wrote:
-> On 7 August 2013 23:23, Stephen Warren <swarren@wwwdotorg.org> wrote:
->> That link only describes why we shouldn't have a dedicated compatible
->> value for cpufreq. I certainly agree with that. However, I think it's
->> reasonable that whatever code binds to:
->>
->>         compatible = "arm,cortex-a9";
->>
->> ... should instantiate any virtual devices that relate to the CPU.
-> 
-> But how would we know here if platform really wants us to probe
-> cpufreq-cpu0 driver? On multiplatform kernel there can be multiple
-> cpufreq drivers available and there has to be some sort of code
-> in DT or platform code that reflects which driver we want to use.
+This patch makes ia64 use the new common code for configuration table
+scanning. It also removes the local definition of the global "efi"
+data structure.
 
-Presumably the code would look at the top-level DT node's compatible
-value (e.g. "nvidia,tegra20").
+Signed-off-by: Leif Lindholm <leif.lindholm@linaro.org>
+Acked-by: Tony Luck <tony.luck@intel.com>
+---
+ arch/ia64/kernel/efi.c |   54 ++++++++++--------------------------------------
+ 1 file changed, 11 insertions(+), 43 deletions(-)
+
+diff --git a/arch/ia64/kernel/efi.c b/arch/ia64/kernel/efi.c
+index 51bce59..da5b462 100644
+--- a/arch/ia64/kernel/efi.c
++++ b/arch/ia64/kernel/efi.c
+@@ -44,10 +44,15 @@
+ 
+ #define EFI_DEBUG	0
+ 
++static __initdata unsigned long palo_phys;
++
++static __initdata efi_config_table_type_t arch_tables[] = {
++	{PROCESSOR_ABSTRACTION_LAYER_OVERWRITE_GUID, "PALO", &palo_phys},
++	{NULL_GUID, NULL, 0},
++};
++
+ extern efi_status_t efi_call_phys (void *, ...);
+ 
+-struct efi efi;
+-EXPORT_SYMBOL(efi);
+ static efi_runtime_services_t *runtime;
+ static u64 mem_limit = ~0UL, max_addr = ~0UL, min_addr = 0UL;
+ 
+@@ -423,9 +428,9 @@ static u8 __init palo_checksum(u8 *buffer, u32 length)
+  * Parse and handle PALO table which is published at:
+  * http://www.dig64.org/home/DIG64_PALO_R1_0.pdf
+  */
+-static void __init handle_palo(unsigned long palo_phys)
++static void __init handle_palo(unsigned long phys_addr)
+ {
+-	struct palo_table *palo = __va(palo_phys);
++	struct palo_table *palo = __va(phys_addr);
+ 	u8  checksum;
+ 
+ 	if (strncmp(palo->signature, PALO_SIG, sizeof(PALO_SIG) - 1)) {
+@@ -467,12 +472,10 @@ void __init
+ efi_init (void)
+ {
+ 	void *efi_map_start, *efi_map_end;
+-	efi_config_table_t *config_tables;
+ 	efi_char16_t *c16;
+ 	u64 efi_desc_size;
+ 	char *cp, vendor[100] = "unknown";
+ 	int i;
+-	unsigned long palo_phys;
+ 
+ 	/*
+ 	 * It's too early to be able to use the standard kernel command line
+@@ -514,8 +517,6 @@ efi_init (void)
+ 		       efi.systab->hdr.revision >> 16,
+ 		       efi.systab->hdr.revision & 0xffff);
+ 
+-	config_tables = __va(efi.systab->tables);
+-
+ 	/* Show what we know for posterity */
+ 	c16 = __va(efi.systab->fw_vendor);
+ 	if (c16) {
+@@ -528,43 +529,10 @@ efi_init (void)
+ 	       efi.systab->hdr.revision >> 16,
+ 	       efi.systab->hdr.revision & 0xffff, vendor);
+ 
+-	efi.mps        = EFI_INVALID_TABLE_ADDR;
+-	efi.acpi       = EFI_INVALID_TABLE_ADDR;
+-	efi.acpi20     = EFI_INVALID_TABLE_ADDR;
+-	efi.smbios     = EFI_INVALID_TABLE_ADDR;
+-	efi.sal_systab = EFI_INVALID_TABLE_ADDR;
+-	efi.boot_info  = EFI_INVALID_TABLE_ADDR;
+-	efi.hcdp       = EFI_INVALID_TABLE_ADDR;
+-	efi.uga        = EFI_INVALID_TABLE_ADDR;
+-
+ 	palo_phys      = EFI_INVALID_TABLE_ADDR;
+ 
+-	for (i = 0; i < (int) efi.systab->nr_tables; i++) {
+-		if (efi_guidcmp(config_tables[i].guid, MPS_TABLE_GUID) == 0) {
+-			efi.mps = config_tables[i].table;
+-			printk(" MPS=0x%lx", config_tables[i].table);
+-		} else if (efi_guidcmp(config_tables[i].guid, ACPI_20_TABLE_GUID) == 0) {
+-			efi.acpi20 = config_tables[i].table;
+-			printk(" ACPI 2.0=0x%lx", config_tables[i].table);
+-		} else if (efi_guidcmp(config_tables[i].guid, ACPI_TABLE_GUID) == 0) {
+-			efi.acpi = config_tables[i].table;
+-			printk(" ACPI=0x%lx", config_tables[i].table);
+-		} else if (efi_guidcmp(config_tables[i].guid, SMBIOS_TABLE_GUID) == 0) {
+-			efi.smbios = config_tables[i].table;
+-			printk(" SMBIOS=0x%lx", config_tables[i].table);
+-		} else if (efi_guidcmp(config_tables[i].guid, SAL_SYSTEM_TABLE_GUID) == 0) {
+-			efi.sal_systab = config_tables[i].table;
+-			printk(" SALsystab=0x%lx", config_tables[i].table);
+-		} else if (efi_guidcmp(config_tables[i].guid, HCDP_TABLE_GUID) == 0) {
+-			efi.hcdp = config_tables[i].table;
+-			printk(" HCDP=0x%lx", config_tables[i].table);
+-		} else if (efi_guidcmp(config_tables[i].guid,
+-			 PROCESSOR_ABSTRACTION_LAYER_OVERWRITE_GUID) == 0) {
+-			palo_phys = config_tables[i].table;
+-			printk(" PALO=0x%lx", config_tables[i].table);
+-		}
+-	}
+-	printk("\n");
++	if (efi_config_init(arch_tables) != 0)
++		return;
+ 
+ 	if (palo_phys != EFI_INVALID_TABLE_ADDR)
+ 		handle_palo(palo_phys);
+-- 
+1.7.10.4
+
