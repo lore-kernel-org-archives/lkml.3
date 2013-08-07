@@ -1,55 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932993Ab3HGNUJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 09:20:09 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:33850 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932942Ab3HGNUH (ORCPT
+	id S933014Ab3HGNVh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 09:21:37 -0400
+Received: from eastrmfepo101.cox.net ([68.230.241.213]:52357 "EHLO
+	eastrmfepo101.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932996Ab3HGNVf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 09:20:07 -0400
-Message-ID: <52024979.1040201@linux.vnet.ibm.com>
-Date: Wed, 07 Aug 2013 21:19:53 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Wed, 7 Aug 2013 09:21:35 -0400
+X-CT-Class: Bulk
+X-CT-Score: 5.00
+X-CT-RefID: str=0001.0A020205.52023133.0105,ss=3,sh,re=0.000,fgs=0
+X-CT-Spam: 0
+X-Authority-Analysis: v=2.0 cv=NeA4IR/4 c=1 sm=1
+ a=3immOglDUKvSbURahGlO+A==:17 a=Dyoqhi_TatcA:10 a=G8Uczd0VNMoA:10
+ a=q-265TRH6woA:10 a=Cfj4BQAnxiAA:10 a=kviXuzpPAAAA:8 a=pIi8AmG9AAAA:8
+ a=Q4A3pOqg3MQA:10 a=jY0yAZhwxB1xFijOHCAA:9 a=Ft8UYL4EG9YA:10
+ a=dbbqoLSKjS4A:10 a=uB_ycOQkSIMA:10 a=3immOglDUKvSbURahGlO+A==:117
+X-CM-Score: 0.00
+Authentication-Results: cox.net; auth=pass (LOGIN) smtp.auth=bqzxas5@cox.net
+Reply-To: <latidesk@mail2Judge.com>
+From: "JMW SOLICITORS LLP" <court@cox.net>
+Subject: Legal Notice: Private Message
+Date: Wed, 7 Aug 2013 14:21:34 +0100
 MIME-Version: 1.0
-To: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
-CC: gleb@redhat.com, avi.kivity@gmail.com, mtosatti@redhat.com,
-        pbonzini@redhat.com, linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH 10/12] KVM: MMU: allow locklessly access shadow page table
- out of vcpu thread
-References: <1375189330-24066-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <1375189330-24066-11-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20130807220927.bc16decbc7171f6fa5be8f84@gmail.com>
-In-Reply-To: <20130807220927.bc16decbc7171f6fa5be8f84@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain;
+	charset="Windows-1251"
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13080713-5816-0000-0000-000009506C40
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+X-Antivirus: avast! (VPS 130806-1, 08/06/2013), Outbound message
+X-Antivirus-Status: Clean
+Message-Id: <20130807132134.BYFB3872.eastrmfepo101.cox.net@eastrmimpo110>
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/07/2013 09:09 PM, Takuya Yoshikawa wrote:
-> On Tue, 30 Jul 2013 21:02:08 +0800
-> Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com> wrote:
-> 
->> @@ -2342,6 +2358,13 @@ static void kvm_mmu_commit_zap_page(struct kvm *kvm,
->>  	 */
->>  	kvm_flush_remote_tlbs(kvm);
->>  
->> +	if (kvm->arch.rcu_free_shadow_page) {
->> +		sp = list_first_entry(invalid_list, struct kvm_mmu_page, link);
->> +		list_del_init(invalid_list);
->> +		call_rcu(&sp->rcu, free_pages_rcu);
->> +		return;
->> +	}
->> +
->>  	list_for_each_entry_safe(sp, nsp, invalid_list, link) {
->>  		WARN_ON(!sp->role.invalid || sp->root_count);
->>  		kvm_mmu_free_page(sp);
-> 
-> Shouldn't we avoid calling call_rcu() when we are holding mmu_lock?
+Greetings
+You are a beneficiary to my late clients Will and Testament, late James Jampbell made his inheritance in your favour. i need your attention on this issue.
+Barr Colin Lee.
 
-Using call_rcu() to free pages is a rare case that happen only between
-lockless write-protection and zapping shadow pages, so i think we do
-not need to care this case too much.
 
