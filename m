@@ -1,83 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932843Ab3HGSxK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 14:53:10 -0400
-Received: from webmail.solarflare.com ([12.187.104.25]:31836 "EHLO
-	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932260Ab3HGSwz (ORCPT
+	id S933028Ab3HGSx6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 14:53:58 -0400
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:58866 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932333Ab3HGSxv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 14:52:55 -0400
-Message-ID: <1375901563.2644.84.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH v3 04/11] syslog_ns: make syslog handling per namespace
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Rui Xiang <rui.xiang@huawei.com>
-CC: <containers@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        <netdev@vger.kernel.org>, <netfilter-devel@vger.kernel.org>,
-        <serge.hallyn@ubuntu.com>, <ebiederm@xmission.com>,
-        <akpm@linux-foundation.org>, <gaofeng@cn.fujitsu.com>,
-        <guz.fnst@cn.fujitsu.com>, <libo.chen@huawei.com>
-Date: Wed, 7 Aug 2013 20:52:43 +0200
-In-Reply-To: <1375861035-24320-5-git-send-email-rui.xiang@huawei.com>
-References: <1375861035-24320-1-git-send-email-rui.xiang@huawei.com>
-	 <1375861035-24320-5-git-send-email-rui.xiang@huawei.com>
-Organization: Solarflare Communications
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
+	Wed, 7 Aug 2013 14:53:51 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [80.83.48.229]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-20062.005
-X-TM-AS-Result: No--18.361500-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+In-Reply-To: <20130807180553.GA4920@redhat.com>
+References: <20130807180530.GA4916@redhat.com>
+	<20130807180553.GA4920@redhat.com>
+Date: Wed, 7 Aug 2013 11:53:50 -0700
+X-Google-Sender-Auth: dDLvx3YNg3APTVk_XhOyeTvXxx0
+Message-ID: <CAGXu5jKuSp=c94xAQzdG4QenXnWs0X2n+jCyQb0b1Ncp6tbRMg@mail.gmail.com>
+Subject: Re: [PATCH 1/1] audit_alloc: clear TIF_SYSCALL_AUDIT if !audit_context
+From: Kees Cook <keescook@chromium.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Zach Levis <zml@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-08-07 at 15:37 +0800, Rui Xiang wrote:
-> This patch makes syslog buf and other fields per
-> namespace.
-> 
-> Here use ns->log_buf(log_buf_len, logbuf_lock,
-> log_first_seq, logbuf_lock, and so on) fields
-> instead of global ones to handle syslog.
-[...]
-> --- a/kernel/printk.c
-> +++ b/kernel/printk.c
-[...]
->  }
->  
-> -#ifdef CONFIG_SECURITY_DMESG_RESTRICT
-> -int dmesg_restrict = 1;
-> -#else
-> -int dmesg_restrict;
-> -#endif
-> -
-> -static int syslog_action_restricted(int type)
-> +static int syslog_action_restricted(int type,
-> +			struct syslog_namespace *ns)
->  {
-> -	if (dmesg_restrict)
-> +	if (ns->dmesg_restrict)
->  		return 1;
->  	/*
->  	 * Unless restricted, we allow "read all" and "get buffer size"
-[...]
+On Wed, Aug 7, 2013 at 11:05 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> If audit_filter_task() nacks the new thread it makes sense
+> to clear TIF_SYSCALL_AUDIT which can be copied from parent
+> by dup_task_struct().
+>
+> A wrong TIF_SYSCALL_AUDIT is not really bad, but it triggers
+> the "slow" audit paths in entry.S.
+>
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> ---
+>  kernel/auditsc.c |    4 +++-
+>  1 files changed, 3 insertions(+), 1 deletions(-)
+>
+> diff --git a/kernel/auditsc.c b/kernel/auditsc.c
+> index 9845cb3..95293ab 100644
+> --- a/kernel/auditsc.c
+> +++ b/kernel/auditsc.c
+> @@ -943,8 +943,10 @@ int audit_alloc(struct task_struct *tsk)
+>                 return 0; /* Return if not auditing. */
+>
+>         state = audit_filter_task(tsk, &key);
+> -       if (state == AUDIT_DISABLED)
+> +       if (state == AUDIT_DISABLED) {
+> +               clear_tsk_thread_flag(tsk, TIF_SYSCALL_AUDIT);
+>                 return 0;
+> +       }
+>
+>         if (!(context = audit_alloc_context(state))) {
+>                 kfree(key);
+> --
+> 1.5.5.1
+>
+>
 
-I don't think this should be a per-namespace setting.  And it certainly
-should not be possible for child namespaces to disable dmesg_restrict if
-it is enabled by a parent namespace.
+Interestingly, I see no other callers of "clear_tsk_thread_flag(tsk,
+TIF_SYSCALL_AUDIT)" :)
 
-In later patches, it appears to be copied into child namespaces but not
-made visible or controllable there.  So if an administrator enables
-dmesg_restrict in the initial syslog namespace after another syslog
-namespace has been created, she won't be able to tell that it is still
-disabled in that other namespace.
+This patch seems right, since TIF_SYSCALL_AUDIT is set only when
+audit_filter_task != AUDIT_DISABLED. Though maybe this should be
+explicitly handled in dup_task_struct()?
 
-Ben.
+-Kees
 
 -- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
-
+Kees Cook
+Chrome OS Security
