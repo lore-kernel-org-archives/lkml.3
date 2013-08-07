@@ -1,63 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933583Ab3HGWsS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 18:48:18 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:37362 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933320Ab3HGWsR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 18:48:17 -0400
-Message-ID: <5202CEAA.9040204@linux.vnet.ibm.com>
-Date: Wed, 07 Aug 2013 15:48:10 -0700
-From: Cody P Schafer <cody@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S933663Ab3HGWwd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 18:52:33 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:59773 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933320Ab3HGWwc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 18:52:32 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: sedat.dilek@gmail.com
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Ext4 Developers List <linux-ext4@vger.kernel.org>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        Linux PM List <linux-pm@lists.linux-foundation.org>,
+        Tejun Heo <tj@kernel.org>, Colin Cross <ccross@android.com>
+Subject: Re: linux-next: Tree for Aug 7 [ call-trace on suspend: ext4 | pm related ? ]
+Date: Thu, 08 Aug 2013 01:02:50 +0200
+Message-ID: <2146168.3J7W6RtiZr@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.11.0-rc4+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CA+icZUW990rWKdQmppjkGTJzFBtTnW-tb0dRu2AbTYB8KSDN4w@mail.gmail.com>
+References: <CA+icZUW990rWKdQmppjkGTJzFBtTnW-tb0dRu2AbTYB8KSDN4w@mail.gmail.com>
 MIME-Version: 1.0
-To: Chris Metcalf <cmetcalf@tilera.com>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Tejun Heo <tj@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH v2] mm: make lru_add_drain_all() selective
-References: <201308071458.r77EwuJV013106@farm-0012.internal.tilera.com> <201308071551.r77FpWTf022475@farm-0012.internal.tilera.com>
-In-Reply-To: <201308071551.r77FpWTf022475@farm-0012.internal.tilera.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13080722-3620-0000-0000-000003DB1F59
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/06/2013 01:22 PM, Chris Metcalf wrote:
-[...]
+On Wednesday, August 07, 2013 04:25:14 PM Sedat Dilek wrote:
+> On Wed, Aug 7, 2013 at 7:54 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> > Hi all,
+> >
+> > Changes since 20130806:
+> >
+> > The ext4 tree lost its build failure.
+> >
+> > The mvebu tree gained a build failure so I used the version from
+> > next-20130806.
+> >
+> > The akpm tree gained conflicts against the ext4 tree.
+> >
+> > ----------------------------------------------------------------------------
+> >
+> 
+> [ CC ext4 and pm folks ]
+> 
+> I saw this on my 1st suspend which was not successful (2nd and 3rd try
+> I could suspend and resume):
+> 
+> [ 5467.724074] PM: Syncing filesystems ... done.
+> [ 5467.973575] PM: Preparing system for mem sleep
+> [ 5467.974121] Freezing user space processes ...
+> [ 5487.970574] Freezing of tasks failed after 20.010 seconds (1 tasks
+> refusing to freeze, wq_busy=0):
+> [ 5487.970591] DOM Worker      D ffffffff81811820     0  2437      1 0x00000004
+> [ 5487.970595]  ffff880056ca3ca8 0000000000000002 00000000002d627f
+> 000009af00000002
+> [ 5487.970598]  ffff880066ede640 ffff880056ca3fd8 ffff880056ca3fd8
+> ffff880056ca3fd8
+> [ 5487.970601]  ffff880119f98340 ffff880066ede640 ffff880056ca3ca8
+> ffff88011fad5118
+> [ 5487.970604] Call Trace:
+> [ 5487.970612]  [<ffffffff81144360>] ? __lock_page+0x70/0x70
+> [ 5487.970615]  [<ffffffff816e8179>] schedule+0x29/0x70
+> [ 5487.970618]  [<ffffffff816e824f>] io_schedule+0x8f/0xd0
+> [ 5487.970621]  [<ffffffff8114436e>] sleep_on_page+0xe/0x20
+> [ 5487.970624]  [<ffffffff816e4be2>] __wait_on_bit+0x62/0x90
+> [ 5487.970627]  [<ffffffff81144f9b>] ? find_get_pages_tag+0xcb/0x170
+> [ 5487.970630]  [<ffffffff811444d0>] wait_on_page_bit+0x80/0x90
+> [ 5487.970633]  [<ffffffff8108a0e0>] ? wake_atomic_t_function+0x40/0x40
+> [ 5487.970636]  [<ffffffff811445ec>] filemap_fdatawait_range+0x10c/0x190
+> [ 5487.970640]  [<ffffffff81145ce0>] filemap_write_and_wait_range+0x50/0x80
+> [ 5487.970644]  [<ffffffff81246c3d>] ext4_sync_file+0x15d/0x340
+> [ 5487.970648]  [<ffffffff811db8dd>] do_fsync+0x5d/0x90
+> [ 5487.970651]  [<ffffffff811dbcc0>] SyS_fsync+0x10/0x20
+> [ 5487.970655]  [<ffffffff816f25ef>] tracesys+0xe1/0xe6
+> [ 5487.970658]
+> [ 5487.970659] Restarting tasks ... done.
+> 
+> With yesterday's -next I did not have issues like this.
 
->
->   /**
-> + * schedule_on_each_cpu - execute a function synchronously on each online CPU
-> + * @func: the function to call
-> + *
-> + * schedule_on_each_cpu() executes @func on each online CPU using the
-> + * system workqueue and blocks until all CPUs have completed.
-> + * schedule_on_each_cpu() is very slow.
-> + *
-> + * RETURNS:
-> + * 0 on success, -errno on failure.
-> + */
-> +int schedule_on_each_cpu(work_func_t func)
-> +{
-> +	get_online_cpus();
-> +	schedule_on_cpu_mask(func, cpu_online_mask);
+It looks like ext4 was doing fsync, so it scheduled a write a waited for it
+to complete, but that never happened (most likely whoever was supposed to do
+the write had been already frozen then).
 
-Looks like the return value gets lost here.
-
-> +	put_online_cpus();
-> +	return 0;
-> +}
-> +
-> +/**
->    * flush_scheduled_work - ensure that any scheduled work has run to completion.
->    *
->    * Forces execution of the kernel-global workqueue and blocks until its
-
-[...]
+Thanks,
+Rafael
 
