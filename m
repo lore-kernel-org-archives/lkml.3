@@ -1,148 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757306Ab3HGJDH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 05:03:07 -0400
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:35528 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757248Ab3HGJDD (ORCPT
+	id S1757350Ab3HGJG3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 05:06:29 -0400
+Received: from mail-la0-f50.google.com ([209.85.215.50]:52002 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757292Ab3HGJG2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 05:03:03 -0400
-From: Dan Aloni <alonid@postram.com>
+	Wed, 7 Aug 2013 05:06:28 -0400
+From: Linus Walleij <linus.walleij@linaro.org>
 To: linux-kernel@vger.kernel.org
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Neil Horman <nhorman@tuxdriver.com>
-Subject: [PATCH] netconsole: avoid a crash with multiple sysfs writers
-Date: Wed,  7 Aug 2013 12:02:44 +0300
-Message-Id: <1375866164-21933-1-git-send-email-alonid@postram.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Akinobu Mita <mita@miraclelinux.com>
+Subject: [PATCH] bitops: move BITS() macro to the bitops file
+Date: Wed,  7 Aug 2013 11:06:19 +0200
+Message-Id: <1375866379-27504-1-git-send-email-linus.walleij@linaro.org>
 X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When my 'ifup eth' script was fired multiple times and ran concurrent on
-my laptop, for some obscure /etc scripting reason, it was revealed
-that the store_enabled() function in netconsole doesn't handle it nicely,
-as recorded by the Oops below (a syslog paste, but not mangled too much
-to prevent from discerning the traceback).
+This macro was invented by Mattias Nilsson for the usecase
+where you want to set a sequence of bits inside a n-bit
+word, while leaving the head and tail of the sequence all
+zeroes. For example:
 
-On Linux 3.10.4, this patch seeks to remedy the problem, and it has been
-running stable on my laptop for a few days.
+  #include <linux/bitops.h>
 
-[52608.609325] BUG: unable to handle kernel NULL pointer dereference at 00000000000003e0
-[52608.609331] IP: [<ffffffff81532a17>] __netpoll_cleanup+0x27/0xe0
-[52608.609339] PGD 15e51a067 PUD 15433e067 PMD 0
-[52608.609343] Oops: 0000 [#1] SMP re firewire_ohci firewire_core crc_itu_t [last unloaded: kvm_intel]
-[52608.609347] Modules linked in: kvm_intel tun vfat fat ppdev parport_pc parport fuse ipt_MASQUERADE usb_storage nf_conntrack_netbios_ns nf_connAug  5 09:39:28 inception kernel: [52608.609419] CPU: 1 PID: 13467 Comm: netconsole-osir Tainted: PF          O 3.10.4-alonid #15ntrack_ipv4 bridge nf_defrag_ipv4 xt_conntrack nf_Aug  5 09:39:28 inception kernel: [52608.609422] Hardware name: LENOVO 24474KG/24474KG, BIOS G5ET90WW (2.50 ) 12/21/2012vm snd_hda_codec_hdmi mac80211 snd_hda_codec_realtek vsock Aug  5 09:39:28 inception kernel: [52608.609424] task: ffff88015a4397a0 ti: ffff8801ba446000 task.ti: ffff8801ba446000lloc nvidia(POF) videobuf2_memops snd_hwdep snd_seq videobuf2Aug  5 09:39:28 inception kernel: [52608.609426] RIP: 0010:[<ffffffff81532a17>]  [<ffffffff81532a17>] __netpoll_cleanup+0x27/0xe0imer media snd i2c_i801 ptp lpc_ich mfd_core pps_cAug  5 09:39:28 inception kernel: [52608.609430] RSP: 0018:ffff8801ba447de8  EFLAGS: 00010286e_core crc_itu_t [last unloaded: kvm_intel]
-[52608.609433] RAX: 0000000000000000 RBX: ffff880210bbcc68 RCX: 0000000000000000
-[52608.609435] RDX: 0000000000000000 RSI: ffff8801ba447da0 RDI: ffff880210bbcc68
-[52608.609437] RBP: ffff8801ba447e18 R08: 0000000000000000 R09: 0000000000000001
-[52608.609439] R10: 000000000000000a R11: f000000000000000 R12: ffff880210bbcc68
-[52608.609441] R13: ffff88020bc41000 R14: 0000000000000002 R15: 000000000000000200000000000
-[52608.609443] FS:  00007f38d7bff740(0000) GS:ffff88021dc40000(0000) knlGS:0000000000000000
-[52608.609446] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003300000000001427e0
-[52608.609448] CR2: 00000000000003e0 CR3: 0000000154103000 CR4: 00000000001427e0
-[52608.609450] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[52608.609452] netpoll: netconsole: local port 6665ess 10.0.0.27
-[52608.609454] netpoll: netconsole: local IPv4 address 10.0.0.27
-[52608.609456] netpoll: netconsole: interface 'em1'
-[52608.609457] netpoll: netconsole: remote port 514ress 10.0.0.15
-[52608.609459] netpoll: netconsole: remote IPv4 address 10.0.0.15:65:a8:9a:c7
-[52608.609461] netpoll: netconsole: remote ethernet address 1c:6f:65:a8:9a:c7400
-[52608.609463] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[52608.609464] Stack:801ba447e08 ffff880210bbcc68 ffffffffffffffea ffff88020bc41000
-[52608.609466]  ffff8801ba447e08 ffff880210bbcc68 ffffffffffffffea ffff88020bc41000
-[52608.609471]  0000000000000002 0000000000000002 ffff8801ba447e38 ffffffff81532af4
-[52608.609475]  0000000000000000 ffff880210bbcc00 ffff8801ba447e78 ffffffff81420e7c
-[52608.609479] Call Trace:
-[52608.609484]  [<ffffffff81532af4>] netpoll_cleanup+0x24/0x50
-[52608.609489]  [<ffffffff81420e7c>] store_enabled+0x5c/0xe0store+0x2e/0x40
-[52608.609492]  [<ffffffff81420abe>] netconsole_target_attr_store+0x2e/0x40
-[52608.609498]  [<ffffffff811ff2a2>] configfs_write_file+0xd2/0x130
-[52608.609503]  [<ffffffff81188f95>] vfs_write+0xc5/0x1f0
-[52608.609506]  [<ffffffff81189482>] SyS_write+0x52/0xa0/0x10
-[52608.609511]  [<ffffffff81628c2e>] ? do_page_fault+0xe/0x10
-[52608.609516]  [<ffffffff8162d402>] system_call_fastpath+0x16/0x1b
-[52608.609517] Code: 1f 44 00 00 0f 1f 44 00 00 55 48 89 e5 48 83 ec 30 4c 89 65 e0 48 89 5d d8 49 89 fc 4c 89 6d e8 4c 89 75 f0 4c 89 7d f8 48 8
-[52608.609559] RIP  [<ffffffff81532a17>] __netpoll_cleanup+0x27/0xe0
-[52608.609563]  RSP <ffff8801ba447de8>
-[52608.609564] CR2: 00000000000003e0
-[52608.609567] ---[ end trace d25ec343349b61d2 ]---
+  u16 mask = BITS(4, 12);
 
-Signed-off-by: Dan Aloni <alonid@postram.com>
-CC: David S. Miller <davem@davemloft.net>
-CC: Neil Horman <nhorman@tuxdriver.com>
+Yields a mask like this:
+
+  0001111111110000
+
+This patch moves the construct out of the MFD PRCMU driver
+and make it available for common use, after noticing in a
+review or two that it would be useful for others.
+
+Cc: Akinobu Mita <mita@miraclelinux.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- drivers/net/netconsole.c | 13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
+ drivers/mfd/dbx500-prcmu-regs.h | 2 --
+ include/linux/bitops.h          | 1 +
+ 2 files changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/drivers/net/netconsole.c b/drivers/net/netconsole.c
-index 4822aaf..dcb2134 100644
---- a/drivers/net/netconsole.c
-+++ b/drivers/net/netconsole.c
-@@ -102,6 +102,7 @@ struct netconsole_target {
- 	struct config_item	item;
+diff --git a/drivers/mfd/dbx500-prcmu-regs.h b/drivers/mfd/dbx500-prcmu-regs.h
+index 4f6f0fa..906e75e 100644
+--- a/drivers/mfd/dbx500-prcmu-regs.h
++++ b/drivers/mfd/dbx500-prcmu-regs.h
+@@ -13,8 +13,6 @@
+ #ifndef __DB8500_PRCMU_REGS_H
+ #define __DB8500_PRCMU_REGS_H
+ 
+-#define BITS(_start, _end) ((BIT(_end) - BIT(_start)) + BIT(_end))
+-
+ #define PRCM_ACLK_MGT		(0x004)
+ #define PRCM_SVAMMCSPCLK_MGT	(0x008)
+ #define PRCM_SIAMMDSPCLK_MGT	(0x00C)
+diff --git a/include/linux/bitops.h b/include/linux/bitops.h
+index a3b6b82..1f9d78b 100644
+--- a/include/linux/bitops.h
++++ b/include/linux/bitops.h
+@@ -6,6 +6,7 @@
+ #define BIT(nr)			(1UL << (nr))
+ #define BIT_MASK(nr)		(1UL << ((nr) % BITS_PER_LONG))
+ #define BIT_WORD(nr)		((nr) / BITS_PER_LONG)
++#define BITS(_start, _end)	((BIT(_end) - BIT(_start)) + BIT(_end))
+ #define BITS_PER_BYTE		8
+ #define BITS_TO_LONGS(nr)	DIV_ROUND_UP(nr, BITS_PER_BYTE * sizeof(long))
  #endif
- 	int			enabled;
-+	struct mutex		mutex;
- 	struct netpoll		np;
- };
- 
-@@ -181,6 +182,7 @@ static struct netconsole_target *alloc_param_target(char *target_config)
- 	strlcpy(nt->np.dev_name, "eth0", IFNAMSIZ);
- 	nt->np.local_port = 6665;
- 	nt->np.remote_port = 6666;
-+	mutex_init(&nt->mutex);
- 	memset(nt->np.remote_mac, 0xff, ETH_ALEN);
- 
- 	/* Parse parameters and setup netpoll */
-@@ -322,6 +324,7 @@ static ssize_t store_enabled(struct netconsole_target *nt,
- 		return -EINVAL;
- 	}
- 
-+	mutex_lock(&nt->mutex);
- 	if (enabled) {	/* 1 */
- 
- 		/*
-@@ -331,8 +334,10 @@ static ssize_t store_enabled(struct netconsole_target *nt,
- 		netpoll_print_options(&nt->np);
- 
- 		err = netpoll_setup(&nt->np);
--		if (err)
-+		if (err) {
-+			mutex_unlock(&nt->mutex);
- 			return err;
-+		}
- 
- 		printk(KERN_INFO "netconsole: network logging started\n");
- 
-@@ -341,6 +346,7 @@ static ssize_t store_enabled(struct netconsole_target *nt,
- 	}
- 
- 	nt->enabled = enabled;
-+	mutex_unlock(&nt->mutex);
- 
- 	return strnlen(buf, count);
- }
-@@ -597,6 +603,7 @@ static struct config_item *make_netconsole_target(struct config_group *group,
- 	strlcpy(nt->np.dev_name, "eth0", IFNAMSIZ);
- 	nt->np.local_port = 6665;
- 	nt->np.remote_port = 6666;
-+	mutex_init(&nt->mutex);
- 	memset(nt->np.remote_mac, 0xff, ETH_ALEN);
- 
- 	/* Initialize the config_item member */
-@@ -682,7 +689,11 @@ restart:
- 				 * we might sleep in __netpoll_cleanup()
- 				 */
- 				spin_unlock_irqrestore(&target_list_lock, flags);
-+
-+				mutex_lock(&nt->mutex);
- 				__netpoll_cleanup(&nt->np);
-+				mutex_unlock(&nt->mutex);
-+
- 				spin_lock_irqsave(&target_list_lock, flags);
- 				dev_put(nt->np.dev);
- 				nt->np.dev = NULL;
 -- 
 1.8.1.4
 
