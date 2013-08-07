@@ -1,44 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933199Ab3HGNo1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 09:44:27 -0400
-Received: from mail-vb0-f52.google.com ([209.85.212.52]:47058 "EHLO
-	mail-vb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933163Ab3HGNo0 (ORCPT
+	id S933187Ab3HGNpT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 09:45:19 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.161]:10466 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933046Ab3HGNpR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 09:44:26 -0400
-Message-ID: <52024F38.4080808@gmail.com>
-Date: Wed, 07 Aug 2013 09:44:24 -0400
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Namhyung Kim <namhyung@kernel.org>
-CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Stephane Eranian <eranian@google.com>, Jeremy Eder <jeder@redhat.com>
-Subject: Re: [PATCH 01/17] perf util: Save pid-cmdline mapping into tracing
- header
-References: <1375175954-798-1-git-send-email-namhyung@kernel.org> <1375175954-798-2-git-send-email-namhyung@kernel.org> <20130730132839.GA2607@ghostprotocols.net> <51F85FAA.2090400@lge.com> <20130731140746.GA3614@ghostprotocols.net> <87r4e81u8w.fsf@sejong.aot.lge.com>
-In-Reply-To: <87r4e81u8w.fsf@sejong.aot.lge.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 7 Aug 2013 09:45:17 -0400
+X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+yackYocTD1iAi8x+OWJ8KkvZ5r/UwZ9ieg==
+X-RZG-CLASS-ID: mo00
+From: Olaf Hering <olaf@aepfle.de>
+To: kys@microsoft.com, gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org, Olaf Hering <olaf@aepfle.de>
+Subject: [PATCH] Tools: hv: use full nlmsghdr in netlink_send
+Date: Wed,  7 Aug 2013 15:45:12 +0200
+Message-Id: <1375883112-20279-1-git-send-email-olaf@aepfle.de>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/5/13 3:17 AM, Namhyung Kim wrote:
->> I don't think this is a problem, its in line with Ingo's suggestion of a
->> new perf ioctl to ask the kernel to generate PERF_RECORD_MMAP events for
->> existing threads.
->
-> Hmm.. could you please give me a link of the thread?
+There is no need to have a nlmsghdr pointer to another temporary buffer.
+Instead use a full struct nlmsghdr.
 
-I believe this is the thread being referred to:
-https://lkml.org/lkml/2013/6/25/180
+Signed-off-by: Olaf Hering <olaf@aepfle.de>
+---
+ tools/hv/hv_kvp_daemon.c | 15 +++++----------
+ tools/hv/hv_vss_daemon.c | 15 +++++----------
+ 2 files changed, 10 insertions(+), 20 deletions(-)
 
-David
+diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
+index 1bd1ad1..7c05f55 100644
+--- a/tools/hv/hv_kvp_daemon.c
++++ b/tools/hv/hv_kvp_daemon.c
+@@ -1393,23 +1393,18 @@ kvp_get_domain_name(char *buffer, int length)
+ static int
+ netlink_send(int fd, struct cn_msg *msg)
+ {
+-	struct nlmsghdr *nlh;
++	struct nlmsghdr nlh = { .nlmsg_type = NLMSG_DONE };
+ 	unsigned int size;
+ 	struct msghdr message;
+-	char buffer[64];
+ 	struct iovec iov[2];
+ 
+ 	size = sizeof(struct cn_msg) + msg->len;
+ 
+-	nlh = (struct nlmsghdr *)buffer;
+-	nlh->nlmsg_seq = 0;
+-	nlh->nlmsg_pid = getpid();
+-	nlh->nlmsg_type = NLMSG_DONE;
+-	nlh->nlmsg_len = NLMSG_LENGTH(size - sizeof(*nlh));
+-	nlh->nlmsg_flags = 0;
++	nlh.nlmsg_pid = getpid();
++	nlh.nlmsg_len = NLMSG_LENGTH(size);
+ 
+-	iov[0].iov_base = nlh;
+-	iov[0].iov_len = sizeof(*nlh);
++	iov[0].iov_base = &nlh;
++	iov[0].iov_len = sizeof(nlh);
+ 
+ 	iov[1].iov_base = msg;
+ 	iov[1].iov_len = size;
+diff --git a/tools/hv/hv_vss_daemon.c b/tools/hv/hv_vss_daemon.c
+index 2f1f53f..8ac0ee7 100644
+--- a/tools/hv/hv_vss_daemon.c
++++ b/tools/hv/hv_vss_daemon.c
+@@ -105,23 +105,18 @@ static int vss_operate(int operation)
+ 
+ static int netlink_send(int fd, struct cn_msg *msg)
+ {
+-	struct nlmsghdr *nlh;
++	struct nlmsghdr nlh = { .nlmsg_type = NLMSG_DONE };
+ 	unsigned int size;
+ 	struct msghdr message;
+-	char buffer[64];
+ 	struct iovec iov[2];
+ 
+ 	size = sizeof(struct cn_msg) + msg->len;
+ 
+-	nlh = (struct nlmsghdr *)buffer;
+-	nlh->nlmsg_seq = 0;
+-	nlh->nlmsg_pid = getpid();
+-	nlh->nlmsg_type = NLMSG_DONE;
+-	nlh->nlmsg_len = NLMSG_LENGTH(size - sizeof(*nlh));
+-	nlh->nlmsg_flags = 0;
++	nlh.nlmsg_pid = getpid();
++	nlh.nlmsg_len = NLMSG_LENGTH(size);
+ 
+-	iov[0].iov_base = nlh;
+-	iov[0].iov_len = sizeof(*nlh);
++	iov[0].iov_base = &nlh;
++	iov[0].iov_len = sizeof(nlh);
+ 
+ 	iov[1].iov_base = msg;
+ 	iov[1].iov_len = size;
