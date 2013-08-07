@@ -1,71 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756692Ab3HGPap (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 11:30:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41998 "EHLO mx1.redhat.com"
+	id S1756775Ab3HGPdi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 11:33:38 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35982 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752079Ab3HGPao (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 11:30:44 -0400
-Date: Wed, 7 Aug 2013 11:30:30 -0400
-From: Dave Jones <davej@redhat.com>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: linux-mm@kvack.org, Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: unused swap offset / bad page map.
-Message-ID: <20130807153030.GA25515@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Hillf Danton <dhillf@gmail.com>, linux-mm@kvack.org,
-	Linux Kernel <linux-kernel@vger.kernel.org>
-References: <20130807055157.GA32278@redhat.com>
- <CAJd=RBCJv7=Qj6dPW2Ha=nq6JctnK3r7wYCAZTm=REVOZUNowg@mail.gmail.com>
+	id S1756366Ab3HGPdg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 11:33:36 -0400
+Date: Wed, 7 Aug 2013 17:33:34 +0200
+From: Jan Kara <jack@suse.cz>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Jan Kara <jack@suse.cz>, Davidlohr Bueso <davidlohr@hp.com>,
+        "Theodore Ts'o" <tytso@mit.edu>, LKML <linux-kernel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org
+Subject: Re: WARNING: CPU: 26 PID: 93793 at fs/ext4/inode.c:230
+ ext4_evict_inode+0x4c9/0x500 [ext4]() still in 3.11-rc3
+Message-ID: <20130807153334.GC26516@quack.suse.cz>
+References: <1375388059.2097.10.camel@buesod1.americas.hpqcorp.net>
+ <20130801203320.GB31857@quack.suse.cz>
+ <1375415926.2269.1.camel@buesod1.americas.hpqcorp.net>
+ <20130807152050.GA26516@quack.suse.cz>
+ <52026764.3090305@roeck-us.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAJd=RBCJv7=Qj6dPW2Ha=nq6JctnK3r7wYCAZTm=REVOZUNowg@mail.gmail.com>
+In-Reply-To: <52026764.3090305@roeck-us.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 07, 2013 at 06:04:20PM +0800, Hillf Danton wrote:
- > > There were a slew of these. same trace, different addr/anon_vma/index.
- > > mapping always null.
- > >
- > Would you please run again with the debug info added?
- > ---
- > --- a/mm/swapfile.c	Wed Aug  7 17:27:22 2013
- > +++ b/mm/swapfile.c	Wed Aug  7 17:57:20 2013
- > @@ -509,6 +509,7 @@ static struct swap_info_struct *swap_inf
- >  {
- >  	struct swap_info_struct *p;
- >  	unsigned long offset, type;
- > +	int race = 0;
- > 
- >  	if (!entry.val)
- >  		goto out;
- > @@ -524,10 +525,17 @@ static struct swap_info_struct *swap_inf
- >  	if (!p->swap_map[offset])
- >  		goto bad_free;
- >  	spin_lock(&p->lock);
- > +	if (!p->swap_map[offset]) {
- > +		race = 1;
- > +		spin_unlock(&p->lock);
- > +		goto bad_free;
- > +	}
- >  	return p;
- > 
- >  bad_free:
- >  	printk(KERN_ERR "swap_free: %s%08lx\n", Unused_offset, entry.val);
- > +	if (race)
- > +		printk(KERN_ERR "but due to race\n");
- >  	goto out;
- >  bad_offset:
- >  	printk(KERN_ERR "swap_free: %s%08lx\n", Bad_offset, entry.val);
- > --
+On Wed 07-08-13 08:27:32, Guenter Roeck wrote:
+> On 08/07/2013 08:20 AM, Jan Kara wrote:
+> >On Thu 01-08-13 20:58:46, Davidlohr Bueso wrote:
+> >>On Thu, 2013-08-01 at 22:33 +0200, Jan Kara wrote:
+> >>>   Hi,
+> >>>
+> >>>On Thu 01-08-13 13:14:19, Davidlohr Bueso wrote:
+> >>>>FYI I'm seeing loads of the following messages with Linus' latest
+> >>>>3.11-rc3 (which includes 822dbba33458cd6ad)
+> >>>   Thanks for notice. I see you are running reaim to trigger this. What
+> >>>workload?
+> >>
+> >>After re-running the workloads one by one, I finally hit the issue again
+> >>with 'dbase'. FWIW I'm using ramdisks + ext4.
+> >   Hum, I'm not able to reproduce this with current Linus' kernel - commit
+> >e4ef108fcde0b97ed38923ba1ea06c7a152bab9e - I've tried with ramdisk but no
+> >luck. Are you using some special mount options?
+> >
+> I don't see this commit in the upstream kernel ?
+  It is Linus's merge of Tejun's libata fix from Tuesday...
 
-printk didn't trigger.
-This time around the oom killer was going off the same time.
-I'm wondering if we have some allocations somewhere in the swap code that
-don't handle failure correctly.
+> I tried reproducing the problem on the same system I had seen 822dbba33458cd6ad on,
+> with the same workload. It has now been running since last Friday, but I have
+> not seen any problems.
+  Ah, OK, so it may be fixed after all. If you happen to see it again,
+please let me know. Thanks!
 
-	Dave
+								Honza
 
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
