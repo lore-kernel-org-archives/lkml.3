@@ -1,118 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757265Ab3HGR24 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 13:28:56 -0400
-Received: from 6.mo1.mail-out.ovh.net ([46.105.43.205]:46295 "EHLO
-	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752064Ab3HGR2z (ORCPT
+	id S1757308Ab3HGRaM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 13:30:12 -0400
+Received: from mail-ve0-f181.google.com ([209.85.128.181]:65071 "EHLO
+	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752064Ab3HGRaL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 13:28:55 -0400
-Message-ID: <520283BD.9060002@overkiz.com>
-Date: Wed, 07 Aug 2013 19:28:29 +0200
-From: boris brezillon <b.brezillon@overkiz.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Wed, 7 Aug 2013 13:30:11 -0400
 MIME-Version: 1.0
-To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-CC: Russell King <linux@arm.linux.org.uk>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Richard Genoud <richard.genoud@gmail.com>,
-        Mark Brown <broonie@kernel.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
-Subject: Re: [PATCH] ARM: at91/dt: split sam9x5 peripheral definitions
-References: <1375870466-1093-1-git-send-email-b.brezillon@overkiz.com> <20130807180854.41b4bedb@skate>
-In-Reply-To: <20130807180854.41b4bedb@skate>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Ovh-Tracer-Id: 9550445961596205162
-X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrtdegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrtdegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+In-Reply-To: <CA+8MBb+pkKpaEDs6J_XbzM3wzady2MjdU+jcDP+jH1f1VBxG5w@mail.gmail.com>
+References: <20130715164844.1520.27771.stgit@aruna-ThinkPad-T420>
+	<51FA3B02.7060004@linux.vnet.ibm.com>
+	<3908561D78D1C84285E8C5FCA982C28F31CAA167@ORSMSX106.amr.corp.intel.com>
+	<CA+8MBbLuhVDCb26ag3AH0vXrP4MXHLxS5aVn8pTi4=qL1NdR5w@mail.gmail.com>
+	<CA+8MBbJ7x46FGC7dPSdNzf8z=fZz20w1kiNgnZr4QQB6SUELhg@mail.gmail.com>
+	<51FFDC8B.7010909@linux.vnet.ibm.com>
+	<CA+8MBb+1LpR+Cx=84WZT98U5eqZcm1KriUP75aCg+uSrXrb3Yw@mail.gmail.com>
+	<51FFFFEB.3030907@linux.vnet.ibm.com>
+	<CA+8MBbK9oZJO+RJGC-7riO=Kz=UbRcAvQ-nDi=2GLyvEDpoc7g@mail.gmail.com>
+	<CA+8MBbKA+P4vs3utSKQ-LPMW3ybrWOp=f3FH6ahv1YtwnMm5KA@mail.gmail.com>
+	<5201A9BD.4090503@linux.vnet.ibm.com>
+	<CA+8MBbJS0Dymn4OABi-rW9M5Bw-ZZ6DaEjQOW-oki+4ge4BDtg@mail.gmail.com>
+	<5201D777.8060303@linux.vnet.ibm.com>
+	<CA+8MBb+pkKpaEDs6J_XbzM3wzady2MjdU+jcDP+jH1f1VBxG5w@mail.gmail.com>
+Date: Wed, 7 Aug 2013 10:30:09 -0700
+Message-ID: <CA+8MBb+dNkT_xpqL6oy=D3UqCtEwAci5fatw-0crCFLMAGE1nA@mail.gmail.com>
+Subject: Re: [PATCH 00/11] Add compression support to pstore
+From: Tony Luck <tony.luck@gmail.com>
+To: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+Cc: "linuxppc-dev@ozlabs.org" <linuxppc-dev@ozlabs.org>,
+        "paulus@samba.org" <paulus@samba.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
+        "keescook@chromium.org" <keescook@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Thomas,
+Oh - one more thing - and my apologies for not spotting this before:
 
-Sorry for the noise, this mail was filtered by LKML and LAKML beacause 
-thunderbird
-added HTML contents.
+                dst = allocate_buf_for_compression(big_buf_sz);
 
-On 07/08/2013 18:08, Thomas Petazzoni wrote:
-> Dear Boris BREZILLON,
->
-> On Wed,  7 Aug 2013 12:14:26 +0200, Boris BREZILLON wrote:
->> This patch splits the sam9x5 peripheral definitions into:
->> - a common base for all sam9x5 SoCs (at91sam9x5.dtsi)
->> - several optional peripheral definitions which will be included by specific
->>    sam9x5 SoCs (at91sam9x5_'periph name'.dtsi)
->>
->> This provides a better representation of the real hardware (drop unneeded
->> dt nodes) and avoids future peripheral id conflict (lcdc and isi both use
->> peripheral id 25).
->>
->> Signed-off-by: Boris BREZILLON<b.brezillon@overkiz.com>
->> ---
->>   arch/arm/boot/dts/at91sam9g25.dtsi       |    2 +
->>   arch/arm/boot/dts/at91sam9g35.dtsi       |    1 +
->>   arch/arm/boot/dts/at91sam9x25.dtsi       |   24 ++---------
->>   arch/arm/boot/dts/at91sam9x35.dtsi       |    1 +
->>   arch/arm/boot/dts/at91sam9x5.dtsi        |   67 ------------------------------
->>   arch/arm/boot/dts/at91sam9x5_macb0.dtsi  |   56 +++++++++++++++++++++++++
->>   arch/arm/boot/dts/at91sam9x5_macb1.dtsi  |   44 ++++++++++++++++++++
->>   arch/arm/boot/dts/at91sam9x5_usart3.dtsi |   51 +++++++++++++++++++++++
->>   8 files changed, 158 insertions(+), 88 deletions(-)
->>   create mode 100644 arch/arm/boot/dts/at91sam9x5_macb0.dtsi
->>   create mode 100644 arch/arm/boot/dts/at91sam9x5_macb1.dtsi
->>   create mode 100644 arch/arm/boot/dts/at91sam9x5_usart3.dtsi
-> Hum, do we really want to have .dtsi files per peripheral? I might have
-> overlooked this, but I think it's the first time we would have this in
-> arch/arm/boot/dts.
-It's not one .dtsi file for each available peripheral but for each 
-**optional**
-peripheral (those which are not available for all sam9x5 SoCs).
+No - you may not call kmalloc() in oops/panic context.  Please pre-allocate
+everything you need in some initialization code to make sure that we don't
+fail in the panic path because we can't get the memory we need.
 
-For example:
-
-macb0 is available in this SoCs:
-- 9g25
-- 9g35
-- 9x25
-- 9x35
-and not available in 9g15 SoC.
-
-And we have different combinatory for each of the optional devices.
-
-IMHO, defining the unneeded dt nodes in the common sam9x5.dtsi is a bad 
-idea, because
-the dtb footprint will be bigger for SoC which does not have the 
-optional peripherals
-and the dt hardware representation will be false.
-
-I see two options to solve this issue:
-  1) define a .dtsi file describing the optional peripherals and include 
-these .dtsi in the SoC.dtsi file
-      (as I proposed, but maybe the names  are not appropriate)
-  2) copy the peripheral definitions in each SoC .dtsi file
-
-I prefer option 1) as it's safer than copying the definition (update of 
-dtsi is easier and there is no
-risk to introduce a new bug when copying definitions).
-
-Please, tell me if you see other options, or if you think this "issue" 
-should not be solved.
-
-Best Regards,
-
-Boris
-> Thomas
-
+-Tony
