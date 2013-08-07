@@ -1,164 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933014Ab3HGSvc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 14:51:32 -0400
-Received: from mail-we0-f176.google.com ([74.125.82.176]:57350 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932563Ab3HGSuJ (ORCPT
+	id S933042Ab3HGSvl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 14:51:41 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:46514 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932563Ab3HGSvh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 14:50:09 -0400
-From: Leif Lindholm <leif.lindholm@linaro.org>
-To: linux-efi@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-ia64@vger.kernel.org,
-        matt.fleming@intel.com, tony.luck@gmail.com, grant.likely@secretlab.ca,
-        Leif Lindholm <leif.lindholm@linaro.org>
-Subject: [PATCH v3 3/5] efi: x86: use common code for (U)EFI configuration scanning
-Date: Wed,  7 Aug 2013 19:54:18 +0100
-Message-Id: <1375901660-23541-4-git-send-email-leif.lindholm@linaro.org>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1375901660-23541-1-git-send-email-leif.lindholm@linaro.org>
-References: <1375901660-23541-1-git-send-email-leif.lindholm@linaro.org>
+	Wed, 7 Aug 2013 14:51:37 -0400
+Message-ID: <52029736.8040007@wwwdotorg.org>
+Date: Wed, 07 Aug 2013 12:51:34 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: rjw@sisk.pl, swarren@nvidia.com, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mturquette@linaro.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 5/6] ARM: Tegra: start using cpufreq-cpu0 driver
+References: <cover.1375886595.git.viresh.kumar@linaro.org> <6610c86618b781b00eba446ca19035e077d99691.1375886595.git.viresh.kumar@linaro.org> <520287EA.5060508@wwwdotorg.org> <CAKohpokOn4-RZE5mfoM+2p8jszWoGfOErrLShZmv86OgCMv+JA@mail.gmail.com> <5202898A.6050006@wwwdotorg.org> <CAKohpom3o1y+xXof3iKCn6SWxYKNAE=aBGO2P3JF+Y0Ce4GmQQ@mail.gmail.com>
+In-Reply-To: <CAKohpom3o1y+xXof3iKCn6SWxYKNAE=aBGO2P3JF+Y0Ce4GmQQ@mail.gmail.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch makes x86 use the new common code for configuration table
-scanning. It also removes the local definition of the global "efi"
-data structure.
+On 08/07/2013 11:59 AM, Viresh Kumar wrote:
+> On 7 August 2013 23:23, Stephen Warren <swarren@wwwdotorg.org> wrote:
+>> That link only describes why we shouldn't have a dedicated compatible
+>> value for cpufreq. I certainly agree with that. However, I think it's
+>> reasonable that whatever code binds to:
+>>
+>>         compatible = "arm,cortex-a9";
+>>
+>> ... should instantiate any virtual devices that relate to the CPU.
+> 
+> But how would we know here if platform really wants us to probe
+> cpufreq-cpu0 driver? On multiplatform kernel there can be multiple
+> cpufreq drivers available and there has to be some sort of code
+> in DT or platform code that reflects which driver we want to use.
 
-Signed-off-by: Leif Lindholm <leif.lindholm@linaro.org>
----
- arch/x86/platform/efi/efi.c |   96 ++++---------------------------------------
- 1 file changed, 8 insertions(+), 88 deletions(-)
-
-diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-index 90f6ed1..ed2be58 100644
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -60,19 +60,6 @@
- 
- static efi_char16_t efi_dummy_name[6] = { 'D', 'U', 'M', 'M', 'Y', 0 };
- 
--struct efi __read_mostly efi = {
--	.mps        = EFI_INVALID_TABLE_ADDR,
--	.acpi       = EFI_INVALID_TABLE_ADDR,
--	.acpi20     = EFI_INVALID_TABLE_ADDR,
--	.smbios     = EFI_INVALID_TABLE_ADDR,
--	.sal_systab = EFI_INVALID_TABLE_ADDR,
--	.boot_info  = EFI_INVALID_TABLE_ADDR,
--	.hcdp       = EFI_INVALID_TABLE_ADDR,
--	.uga        = EFI_INVALID_TABLE_ADDR,
--	.uv_systab  = EFI_INVALID_TABLE_ADDR,
--};
--EXPORT_SYMBOL(efi);
--
- struct efi_memory_map memmap;
- 
- static struct efi efi_phys __initdata;
-@@ -80,6 +67,13 @@ static efi_system_table_t efi_systab __initdata;
- 
- unsigned long x86_efi_facility;
- 
-+static __initdata efi_config_table_type_t arch_tables[] = {
-+#ifdef CONFIG_X86_UV
-+	{UV_SYSTEM_TABLE_GUID, "UVsystab", &efi.uv_systab},
-+#endif
-+	{NULL_GUID, NULL, 0},
-+};
-+
- /*
-  * Returns 1 if 'facility' is enabled, 0 otherwise.
-  */
-@@ -578,80 +572,6 @@ static int __init efi_systab_init(void *phys)
- 	return 0;
- }
- 
--static int __init efi_config_init(u64 tables, int nr_tables)
--{
--	void *config_tables, *tablep;
--	int i, sz;
--
--	if (efi_enabled(EFI_64BIT))
--		sz = sizeof(efi_config_table_64_t);
--	else
--		sz = sizeof(efi_config_table_32_t);
--
--	/*
--	 * Let's see what config tables the firmware passed to us.
--	 */
--	config_tables = early_ioremap(tables, nr_tables * sz);
--	if (config_tables == NULL) {
--		pr_err("Could not map Configuration table!\n");
--		return -ENOMEM;
--	}
--
--	tablep = config_tables;
--	pr_info("");
--	for (i = 0; i < efi.systab->nr_tables; i++) {
--		efi_guid_t guid;
--		unsigned long table;
--
--		if (efi_enabled(EFI_64BIT)) {
--			u64 table64;
--			guid = ((efi_config_table_64_t *)tablep)->guid;
--			table64 = ((efi_config_table_64_t *)tablep)->table;
--			table = table64;
--#ifdef CONFIG_X86_32
--			if (table64 >> 32) {
--				pr_cont("\n");
--				pr_err("Table located above 4GB, disabling EFI.\n");
--				early_iounmap(config_tables,
--					      efi.systab->nr_tables * sz);
--				return -EINVAL;
--			}
--#endif
--		} else {
--			guid = ((efi_config_table_32_t *)tablep)->guid;
--			table = ((efi_config_table_32_t *)tablep)->table;
--		}
--		if (!efi_guidcmp(guid, MPS_TABLE_GUID)) {
--			efi.mps = table;
--			pr_cont(" MPS=0x%lx ", table);
--		} else if (!efi_guidcmp(guid, ACPI_20_TABLE_GUID)) {
--			efi.acpi20 = table;
--			pr_cont(" ACPI 2.0=0x%lx ", table);
--		} else if (!efi_guidcmp(guid, ACPI_TABLE_GUID)) {
--			efi.acpi = table;
--			pr_cont(" ACPI=0x%lx ", table);
--		} else if (!efi_guidcmp(guid, SMBIOS_TABLE_GUID)) {
--			efi.smbios = table;
--			pr_cont(" SMBIOS=0x%lx ", table);
--#ifdef CONFIG_X86_UV
--		} else if (!efi_guidcmp(guid, UV_SYSTEM_TABLE_GUID)) {
--			efi.uv_systab = table;
--			pr_cont(" UVsystab=0x%lx ", table);
--#endif
--		} else if (!efi_guidcmp(guid, HCDP_TABLE_GUID)) {
--			efi.hcdp = table;
--			pr_cont(" HCDP=0x%lx ", table);
--		} else if (!efi_guidcmp(guid, UGA_IO_PROTOCOL_GUID)) {
--			efi.uga = table;
--			pr_cont(" UGA=0x%lx ", table);
--		}
--		tablep += sz;
--	}
--	pr_cont("\n");
--	early_iounmap(config_tables, efi.systab->nr_tables * sz);
--	return 0;
--}
--
- static int __init efi_runtime_init(void)
- {
- 	efi_runtime_services_t *runtime;
-@@ -745,7 +665,7 @@ void __init efi_init(void)
- 		efi.systab->hdr.revision >> 16,
- 		efi.systab->hdr.revision & 0xffff, vendor);
- 
--	if (efi_config_init(efi.systab->tables, efi.systab->nr_tables))
-+	if (efi_config_init(arch_tables))
- 		return;
- 
- 	set_bit(EFI_CONFIG_TABLES, &x86_efi_facility);
--- 
-1.7.10.4
-
+Presumably the code would look at the top-level DT node's compatible
+value (e.g. "nvidia,tegra20").
