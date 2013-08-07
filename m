@@ -1,70 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932111Ab3HGF6T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 01:58:19 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:15899 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756836Ab3HGF6S (ORCPT
+	id S1757098Ab3HGF7U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 01:59:20 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:51968 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756995Ab3HGF7T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 01:58:18 -0400
-Message-ID: <5201E192.7060108@huawei.com>
-Date: Wed, 7 Aug 2013 13:56:34 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Chen Gang <gang.chen@asianux.com>
-CC: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, <xi.wang@gmail.com>,
-        <nicolas.dichtel@6wind.com>, Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kernel/sysctl_binary.c: improve the usage of return value
- 'result'
-References: <5200A5E6.9020803@asianux.com> <8761vibihw.fsf@xmission.com> <5201D62B.6080905@asianux.com>
-In-Reply-To: <5201D62B.6080905@asianux.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+	Wed, 7 Aug 2013 01:59:19 -0400
+Date: Wed, 7 Aug 2013 15:59:17 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: sedat.dilek@gmail.com
+Cc: "Theodore Ts'o" <tytso@mit.edu>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the ext4 tree
+Message-Id: <20130807155917.506c1f7b67002b3c6728d779@canb.auug.org.au>
+In-Reply-To: <CA+icZUX-gyFK4kNwnbqwOUzM9_T9hhj+AKufUfg8yJb4kQ-pfA@mail.gmail.com>
+References: <20130729110816.12958c3a26400f444a9a5012@canb.auug.org.au>
+	<CA+icZUUt4domktYZZn0Qp3BZoSFqmKic4qSnVP4cuTKwUww_=A@mail.gmail.com>
+	<20130807153840.4f2997b603397c07aca98b2d@canb.auug.org.au>
+	<CA+icZUX-gyFK4kNwnbqwOUzM9_T9hhj+AKufUfg8yJb4kQ-pfA@mail.gmail.com>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__7_Aug_2013_15_59_17_+1000_fIsYcV1+_yR=jSus"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> The right answer to the code is to config it out and then you don't have
->> to worry about it one way or another.
->>
-> 
-> Pardon?
-> 
-> Excuse me, my English is not quite well, I don't quite understand your
-> meaning, could you please repeat again in details or say more clearly ?
-> 
-> 
->> The sysctl binary path has never been properly maintained and I don't
->> intend to start.   But I will spend 5 minutes to say this patch seems to
->> make the code worse not better.
->>
-> 
-> I guess no one ever invited you to maintain this file (for just as you
-> said, this file will be removed), so don't worry about it.
-> 
-> Hmm... do you mean you spend 5 minutes to get a conclusion ? if so,
-> better not use word 'seems' which is not a suitable word appeared in
-> the results, proofs or conclusions.
-> 
+--Signature=_Wed__7_Aug_2013_15_59_17_+1000_fIsYcV1+_yR=jSus
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-To be honest...
+Hi Sedat,
 
-You are too bad in english to do kernel development. You don't seem to
-know how to communicate in english...
+On Wed, 7 Aug 2013 07:43:59 +0200 Sedat Dilek
+<sedat.dilek@gmail.com> wrote:
+>
+> The refreshed patch is from 02-Aug-2013.
+> So why did next-20130805 and next-20130806 did not have it?
+> I was reading for these Linux-next releases the same: "I have used the
+> ext4 tree from next-20130726 for today.".
+> I am wondering what went wrong.
 
-And people easily get frustrated or even pissed off when discussing with
-you. That's why tglx descided to put your emails into /dev/null...
+Ted did not update the branch of his tree that is included in linux-next
+until now.  Presumably he was doing some testing - there were other
+changes in it as well.
 
-> At least, one conclusion is: this patch switches from old-style to
-> new-style, not for optimization.
-> 
-> But for sysctl_getname() and "checkpatch.pl" of this patch, better to
-> get more discussion.
-> 
-> Is it OK ?
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+--Signature=_Wed__7_Aug_2013_15_59_17_+1000_fIsYcV1+_yR=jSus
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSAeI1AAoJEECxmPOUX5FEWKwP/0f7g8CM1cJNNZsfg136XrWQ
+Xdv6UNsIVhz40sS5TIOEa2nzWrtFBy/BFAwWsv01gXEpdI0fvAd154Ii47OMGXSX
+Px8TJ2BUIFKkovz6dJXsAtUNkUvDkwdutfbzti2Fern2pygTlcUh6FoCcBeKErzA
+/AswYXAx+JGNkYfk9wzOXToVqfPBjHShZ+Ho+w+qNshhc4fSLhVmJWjyhUxD/cf2
+WcTvPxCspueJjcsBQ7NNARaJaNQbHzNzGRAwVOeNf8Xfshy63BpMx7tXPKLTTIY9
+HkJx9hOa0NEvfUpO6/gC9kTEFGRB7CFIWfpQZEG77ZcVgUyfzu4zTiJ0A/+uRMjR
+auGKL5IyCTarlbPX26bqjKbYPWAvBkdCePRpxbzxeSySh7Dd9eRfOz0TOuiSn14E
+m5X3ksZhYspVSRzwB8FJp9QW4PQWh/3Waz2zqWlH5Pe4mFnbb+3ID0sNi8wG+fsq
+rWVrywrpXNFOtjaa6FwRg3xzAxJ0miW0xqlVEG1P/UaFm7QsMdBAGNxO9pvVpln0
+kHDMSC37DfVOicX+qOO/062C9Woopb6kXe8L7IfigIju60PVp5Vn6PlDHwpNfNDG
+TxE/bSiWj+T1yp5mY3+hsCNqxAY4droXJX4Ebfavoqa8ykeDa++6PmsL6b8D7RJl
+fvu9f41HJBXP1g/E3cyF
+=A/JN
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__7_Aug_2013_15_59_17_+1000_fIsYcV1+_yR=jSus--
