@@ -1,73 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757127Ab3HGIkU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 04:40:20 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:47652 "EHLO
-	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756520Ab3HGIkR (ORCPT
+	id S1757235Ab3HGIlE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 04:41:04 -0400
+Received: from mail-ea0-f180.google.com ([209.85.215.180]:48525 "EHLO
+	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757186Ab3HGIlA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 04:40:17 -0400
-X-AuditID: 9c93017d-b7b45ae000000e34-22-520207f04f9b
-From: Namhyung Kim <namhyung@kernel.org>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH V9 04/14] perf tools: change machine__findnew_thread() to set thread pid
-References: <1375719994-26482-1-git-send-email-adrian.hunter@intel.com>
-	<1375719994-26482-5-git-send-email-adrian.hunter@intel.com>
-	<87y58ex7k5.fsf@sejong.aot.lge.com> <5202068F.4000501@intel.com>
-Date: Wed, 07 Aug 2013 17:40:15 +0900
-In-Reply-To: <5202068F.4000501@intel.com> (Adrian Hunter's message of "Wed, 07
-	Aug 2013 11:34:23 +0300")
-Message-ID: <87li4dyjv4.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Wed, 7 Aug 2013 04:41:00 -0400
+Date: Wed, 7 Aug 2013 09:40:54 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Zubair Lutfullah <zubair.lutfullah@gmail.com>
+Cc: sameo@linux.intel.com, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org, bigeasy@linutronix.de
+Subject: Re: [PATCH] mfd: ti_am335x_tscadc: fix spin lock and reg_cache
+Message-ID: <20130807084054.GA18668@lee--X1>
+References: <1375729845-6992-1-git-send-email-zubair.lutfullah@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1375729845-6992-1-git-send-email-zubair.lutfullah@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 07 Aug 2013 11:34:23 +0300, Adrian Hunter wrote:
-> On 07/08/13 10:51, Namhyung Kim wrote:
->> On Mon,  5 Aug 2013 19:26:24 +0300, Adrian Hunter wrote:
->>> Add a new parameter for 'pid' to machine__findnew_thread().
->>> Change callers to pass 'pid' when it is known.
->>>
->> [SNIP]
->> 
->>> @@ -198,7 +198,7 @@ static int perf_event__inject_buildid(struct perf_tool *tool,
->>>  
->>>  	cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
->>>  
->>> -	thread = machine__findnew_thread(machine, event->ip.pid);
->>> +	thread = machine__findnew_thread(machine, event->ip.pid, event->ip.pid);
->> 
->> Maybe I'm missing something.  Why not use event->ip.tid here?
->
-> That is covered here:
->
-> 	http://marc.info/?l=linux-kernel&m=137513636309689&w=2
+On Mon, 05 Aug 2013, Zubair Lutfullah wrote:
 
-Oh, I missed the thread..
+> Reg_cache variable is used to lock step enable register
+> from being accessed and written by both TSC and ADC
+> at the same time.
+> However, it isn't updated anywhere in the code at all.
+> 
+> If both TSC and ADC are used, eventually 1FFFF is always
+> written enabling all 16 steps uselessly causing a mess.
+> 
+> Patch fixes it by correcting the locks and updates the
+> variable by reading the step enable register
+> 
+> Signed-off-by: Zubair Lutfullah <zubair.lutfullah@gmail.com>
+> ---
+>  drivers/mfd/ti_am335x_tscadc.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
 
-Btw, it'd be better if you keep David's (and possbily other's too)
-Acked- or Reviewed-by tags in the changelog unless things changed
-wildly.
+Better that it comes from somewhere.
 
-[SNIP]
->> 
->> Hmm.. now I'm thinking that it's related to sharing map_groups between
->> threads within a process.  To do that, IMHO we need more sophisticated
->> handling rather than passing either pid or tid depending on contexts?
->
-> Yes there is always more that could be done.
+Applied, thanks.
 
-:)
-
-Thanks,
-Namhyung
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
