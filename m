@@ -1,87 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756857Ab3HGB6f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 21:58:35 -0400
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:37117 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753277Ab3HGB6e (ORCPT
+	id S1756853Ab3HGCFD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 22:05:03 -0400
+Received: from countercultured.net ([209.51.175.25]:45173 "HELO
+	countercultured.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756527Ab3HGCFA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 21:58:34 -0400
-Message-ID: <5201A9BD.4090503@linux.vnet.ibm.com>
-Date: Wed, 07 Aug 2013 07:28:21 +0530
-From: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Tue, 6 Aug 2013 22:05:00 -0400
+Message-ID: <5201A9B7.1010605@davequigley.com>
+Date: Tue, 06 Aug 2013 21:58:15 -0400
+From: Dave Quigley <dpquigl@davequigley.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Tony Luck <tony.luck@gmail.com>
-CC: "linuxppc-dev@ozlabs.org" <linuxppc-dev@ozlabs.org>,
-        "paulus@samba.org" <paulus@samba.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "keescook@chromium.org" <keescook@chromium.org>
-Subject: Re: [PATCH 00/11] Add compression support to pstore
-References: <20130715164844.1520.27771.stgit@aruna-ThinkPad-T420> <51FA3B02.7060004@linux.vnet.ibm.com> <3908561D78D1C84285E8C5FCA982C28F31CAA167@ORSMSX106.amr.corp.intel.com> <CA+8MBbLuhVDCb26ag3AH0vXrP4MXHLxS5aVn8pTi4=qL1NdR5w@mail.gmail.com> <CA+8MBbJ7x46FGC7dPSdNzf8z=fZz20w1kiNgnZr4QQB6SUELhg@mail.gmail.com> <51FFDC8B.7010909@linux.vnet.ibm.com> <CA+8MBb+1LpR+Cx=84WZT98U5eqZcm1KriUP75aCg+uSrXrb3Yw@mail.gmail.com> <51FFFFEB.3030907@linux.vnet.ibm.com> <CA+8MBbK9oZJO+RJGC-7riO=Kz=UbRcAvQ-nDi=2GLyvEDpoc7g@mail.gmail.com> <CA+8MBbKA+P4vs3utSKQ-LPMW3ybrWOp=f3FH6ahv1YtwnMm5KA@mail.gmail.com>
-In-Reply-To: <CA+8MBbKA+P4vs3utSKQ-LPMW3ybrWOp=f3FH6ahv1YtwnMm5KA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Steve Dickson <SteveD@redhat.com>
+CC: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        Julia Lawall <Julia.Lawall@lip6.fr>,
+        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] fs/nfs/inode.c: adjust code alignment
+References: <1375714059-29567-1-git-send-email-Julia.Lawall@lip6.fr>  <1375714059-29567-2-git-send-email-Julia.Lawall@lip6.fr> <1375714793.7337.12.camel@leira.trondhjem.org> <52013A9D.4010905@RedHat.com>
+In-Reply-To: <52013A9D.4010905@RedHat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13080701-2674-0000-0000-00000A224699
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 07 August 2013 05:06 AM, Tony Luck wrote:
-> On Mon, Aug 5, 2013 at 2:20 PM, Tony Luck <tony.luck@gmail.com> wrote:
->> Still have problems booting if there are any compressed images in ERST
->> to be inflated.
-> So I took another look at this part of the code ... and saw a couple of issues:
+On 8/6/2013 2:04 PM, Steve Dickson wrote:
+> Hello,
 >
->          while ((size = psi->read(&id, &type, &count, &time, &buf, &compressed,
->                                  psi)) > 0) {
->                  if (compressed && (type == PSTORE_TYPE_DMESG)) {
->                          big_buf_sz = (psinfo->bufsize * 100) / 45;
->                          big_buf = allocate_buf_for_decompression(big_buf_sz);
+> On 05/08/13 10:59, Myklebust, Trond wrote:
+>> On Mon, 2013-08-05 at 16:47 +0200, Julia Lawall wrote:
+>>> From: Julia Lawall <Julia.Lawall@lip6.fr>
+>>>
+>>> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+>>>
+>>> ---
+>>>
+>>> This patch adjusts the code so that the alignment matches the current
+>>> semantics.  I have no idea if it is the intended semantics, though.  Should
+>>> the call to nfs_setsecurity also be under the else?
+>>>
+>>
+>>>   fs/nfs/inode.c |    2 +-
+>>>   1 file changed, 1 insertion(+), 1 deletion(-)
+>>>
+>>> diff --git a/fs/nfs/inode.c b/fs/nfs/inode.c
+>>> index af6e806..d8ad685 100644
+>>> --- a/fs/nfs/inode.c
+>>> +++ b/fs/nfs/inode.c
+>>> @@ -463,7 +463,7 @@ nfs_fhget(struct super_block *sb, struct nfs_fh
+>>> *fh, struct nfs_fattr *fattr, st
+>>>                  unlock_new_inode(inode);
+>>>          } else
+>>>                  nfs_refresh_inode(inode, fattr);
+>>> -               nfs_setsecurity(inode, fattr, label);
+>>> +       nfs_setsecurity(inode, fattr, label);
+> This call to nfs_setsecurity() is not needed. The security only needs
+> to be set when the i-node is created...
 >
->                          if (big_buf || stream.workspace)
->>>> Did you mean "&&" here rather that "||"?
-
-Yes right, it should be &&.
-
->                                  unzipped_len = pstore_decompress(buf, big_buf,
->                                                          size, big_buf_sz);
->>>> Need an "else" here to set unzipped_len to -1 (or set it to -1 down
->>>> at the bottom of the loop ready for next time around.
->                          if (unzipped_len > 0) {
->                                  buf = big_buf;
->>>> This sets us up for problems.  First, you just overwrote the address
->>>> of the buffer that psi->read allocated - so we have a memory leak. But
->>>> worse than that we now double free the same buffer below when we
->>>> kfree(buf) and then kfree(big_buf)
->                                  size = unzipped_len;
->                                  compressed = false;
->                          } else {
->                                  pr_err("pstore: decompression failed;"
->                                          "returned %d\n", unzipped_len);
->                                  compressed = true;
->                          }
->                  }
->                  rc = pstore_mkfile(type, psi->name, id, count, buf,
->                                    compressed, (size_t)size, time, psi);
->                  kfree(buf);
->                  kfree(stream.workspace);
->                  kfree(big_buf);
->                  buf = NULL;
->                  stream.workspace = NULL;
->                  big_buf = NULL;
->                  if (rc && (rc != -EEXIST || !quiet))
->                          failed++;
->          }
+> steved.
 >
+>>>          dprintk("NFS: nfs_fhget(%s/%Ld fh_crc=0x%08x ct=%d)\n",
+>>>                  inode->i_sb->s_id,
+>>>                  (long long)NFS_FILEID(inode),
+>>
+>> Hi Julia,
+>>
+>> Thanks for pointing this out! Given that the 'then' clause of the if
+>> statement already calls nfs_setsecurity before unlocking the inode, I
+>> suspect that the above _should_ really be part of the 'else' clause.
+>>
+>> That said, I can't see that calling nfs_setsecurity twice on the inode
+>> can cause any unintended side-effects, so I suggest that we rather queue
+>> the patch up for inclusion in 3.12.
+>> Steve and Dave, any comments?
+>>
 >
-> See attached patch that fixes these - but the code still looks like it
-> could be cleaned up a bit more.
 
-The patch looks right. I will clean it up. Does the issue still persist after this?
+I can't see why it would be needed either. I agree with Steve. We can 
+get rid of it.
 
-> -Tony
-
+Dave
