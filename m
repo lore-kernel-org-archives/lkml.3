@@ -1,64 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756229Ab3HGPYZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 11:24:25 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:49553 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754843Ab3HGPYT (ORCPT
+	id S1754861Ab3HGP13 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 11:27:29 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:54536 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751139Ab3HGP11 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 11:24:19 -0400
-Message-ID: <52026635.1010602@ahsoftware.de>
-Date: Wed, 07 Aug 2013 17:22:29 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Wed, 7 Aug 2013 11:27:27 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <52026764.3090305@roeck-us.net>
+Date: Wed, 07 Aug 2013 08:27:32 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Pantelis Antoniou <panto@antoniou-consulting.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        =?UTF-8?B?QmVub8OudCBDb3Vzc25v?= <b-cousson@ti.com>,
-        Paul Walmsley <paul@pwsan.com>, Sourav Poddar <sourav.poddar@ti.com>,
-        Russ Dill <Russ.Dill@ti.com>, Felipe Balbi <balbi@ti.com>,
-        Koen Kooi <koen@circuitco.com>, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/5] arm: omap: Proper cleanups for omap_device
-References: <1375775624-12250-1-git-send-email-panto@antoniou-consulting.com> <1375775624-12250-6-git-send-email-panto@antoniou-consulting.com> <20130806093356.GA27889@kroah.com> <8C31ED90-E9EF-4264-858A-17CC2536B552@antoniou-consulting.com> <20130806101421.GA29283@kroah.com> <5200FC09.7080108@ahsoftware.de> <20130807055227.GB5304@kroah.com>
-In-Reply-To: <20130807055227.GB5304@kroah.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Jan Kara <jack@suse.cz>
+CC: Davidlohr Bueso <davidlohr@hp.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        LKML <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org
+Subject: Re: WARNING: CPU: 26 PID: 93793 at fs/ext4/inode.c:230 ext4_evict_inode+0x4c9/0x500
+ [ext4]() still in 3.11-rc3
+References: <1375388059.2097.10.camel@buesod1.americas.hpqcorp.net> <20130801203320.GB31857@quack.suse.cz> <1375415926.2269.1.camel@buesod1.americas.hpqcorp.net> <20130807152050.GA26516@quack.suse.cz>
+In-Reply-To: <20130807152050.GA26516@quack.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 07.08.2013 07:52, schrieb Greg Kroah-Hartman:
-> On Tue, Aug 06, 2013 at 03:37:13PM +0200, Alexander Holler wrote:
->> Am 06.08.2013 12:14, schrieb Greg Kroah-Hartman:
+On 08/07/2013 08:20 AM, Jan Kara wrote:
+> On Thu 01-08-13 20:58:46, Davidlohr Bueso wrote:
+>> On Thu, 2013-08-01 at 22:33 +0200, Jan Kara wrote:
+>>>    Hi,
+>>>
+>>> On Thu 01-08-13 13:14:19, Davidlohr Bueso wrote:
+>>>> FYI I'm seeing loads of the following messages with Linus' latest
+>>>> 3.11-rc3 (which includes 822dbba33458cd6ad)
+>>>    Thanks for notice. I see you are running reaim to trigger this. What
+>>> workload?
 >>
->>>> What exactly is a platform device anyway?
+>> After re-running the workloads one by one, I finally hit the issue again
+>> with 'dbase'. FWIW I'm using ramdisks + ext4.
+>    Hum, I'm not able to reproduce this with current Linus' kernel - commit
+> e4ef108fcde0b97ed38923ba1ea06c7a152bab9e - I've tried with ramdisk but no
+> luck. Are you using some special mount options?
+>
+I don't see this commit in the upstream kernel ?
+
+I tried reproducing the problem on the same system I had seen 822dbba33458cd6ad on,
+with the same workload. It has now been running since last Friday, but I have
+not seen any problems.
+
+Guenter
+
+> 								Honza
+>
 >>>
->>> Originally it was a "something that wasn't connected to a bus, but just
->>> had memory-mapped i/o."  Like the PS2 keyboard controller.
->>>
->>> Embedded systems got ahold of this and went to town, and made everything
->>> a platform device because they could, and no one was paying attention.
->>>
->>> Then OF came along and used it as well, and you know the rest...
->>>
->>> I think we need to get the ACPI and OF people, and me, in a room
->>> together at the kernel summit and not let us out until we have this all
->>> worked out.
+>>>> ------------[ cut here ]------------
+>>>> WARNING: CPU: 26 PID: 93793 at fs/ext4/inode.c:230 ext4_evict_inode+0x4c9/0x500 [ext4]()
+>>>> Modules linked in: autofs4 cpufreq_ondemand freq_table sunrpc 8021q garp stp llc pcc_cpufreq ipt_REJECT nf_conntrack_ipv4 nf_defrag_ipv4 iptable_filter ip_tables ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables ipv6 dm_mirror dm_region_hash dm_log dm_mod uinput iTCO_wdt iTCO_vendor_support coretemp kvm_intel kvm crc32c_intel ghash_clmulni_intel microcode pcspkr sg lpc_ich mfd_core hpilo hpwdt i7core_edac edac_core netxen_nic mperf ext4 jbd2 mbcache sd_mod crc_t10dif aesni_intel ablk_helper cryptd lrw gf128mul glue_helper aes_x86_64 hpsa radeon ttm drm_kms_helper drm i2c_algo_bit i2c_core [last unloaded: freq_table]
+>>>> CPU: 26 PID: 93793 Comm: reaim Tainted: G        W    3.11.0-rc3+ #1
+>>>> Hardware name: HP ProLiant DL980 G7, BIOS P66 06/24/2011
+>>>>   00000000000000e6 ffff8985db603d78 ffffffff8153ce4d 00000000000000e6
+>>>>   0000000000000000 ffff8985db603db8 ffffffff8104cf1c ffff8985db603dc8
+>>>>   ffff8b05c485b8b0 ffff8b05c485b9b8 ffff8b05c485b800 00000000ffffff9c
+>>>> Call Trace:
+>>>>   [<ffffffff8153ce4d>] dump_stack+0x49/0x5c
+>>>>   [<ffffffff8104cf1c>] warn_slowpath_common+0x8c/0xc0
+>>>>   [<ffffffff8104cf6a>] warn_slowpath_null+0x1a/0x20
+>>>>   [<ffffffffa02a0179>] ext4_evict_inode+0x4c9/0x500 [ext4]
+>>>>   [<ffffffff811915e7>] evict+0xa7/0x1c0
+>>>>   [<ffffffff811917e3>] iput_final+0xe3/0x170
+>>>>   [<ffffffff811918ae>] iput+0x3e/0x50
+>>>>   [<ffffffff81187aa6>] do_unlinkat+0x1c6/0x280
+>>>>   [<ffffffff8106f3e4>] ? task_work_run+0x94/0xf0
+>>>>   [<ffffffff81003a44>] ? do_notify_resume+0x84/0x90
+>>>>   [<ffffffff81187b76>] SyS_unlink+0x16/0x20
+>>>>   [<ffffffff81549a02>] system_call_fastpath+0x16/0x1b
+>>>> ---[ end trace 15e812809616488b ]---
+>>>>
+>>>>
 >>
->> MFD uses platform devices too.
->
-> Ugh, I've been avoiding looking at mfd for a long time now, and really
-> don't want to start now...
->
-
-I've just mentioned it to suggest that platform devices seem to be used 
-all over the kernel as the generic (minimal) form of a device driver. At 
-least that is the impression I've got.
-
-Regards,
-
-Alexander Holler
+>>
 
