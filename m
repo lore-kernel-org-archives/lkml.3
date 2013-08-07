@@ -1,102 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757459Ab3HGL3D (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 07:29:03 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54740 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757254Ab3HGL2i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 07:28:38 -0400
-From: Michal Hocko <mhocko@suse.cz>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>
-Subject: [PATCH 2/3] memcg: Limit the number of events registered on oom_control
-Date: Wed,  7 Aug 2013 13:28:26 +0200
-Message-Id: <1375874907-22013-2-git-send-email-mhocko@suse.cz>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1375874907-22013-1-git-send-email-mhocko@suse.cz>
-References: <1375874907-22013-1-git-send-email-mhocko@suse.cz>
+	id S1757442Ab3HGL37 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 07:29:59 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:60155 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757418Ab3HGL35 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 07:29:57 -0400
+Message-ID: <52022FC2.2010109@arm.com>
+Date: Wed, 07 Aug 2013 12:30:10 +0100
+From: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: Amit Daniel Kachhap <amit.daniel@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Sudeep.KarkadaNagesha@arm.com
+Subject: Re: [PATCH] cpufreq: exynos5440: Fix to skip when new frequency same
+ as current
+References: <1375874171-16951-1-git-send-email-amit.daniel@samsung.com> <CAKohpokp04HXau1fOA6w9K675LwRw6uCCZZKyFAJtF1_pkcC=Q@mail.gmail.com>
+In-Reply-To: <CAKohpokp04HXau1fOA6w9K675LwRw6uCCZZKyFAJtF1_pkcC=Q@mail.gmail.com>
+X-OriginalArrivalTime: 07 Aug 2013 11:29:53.0736 (UTC) FILETIME=[6FD05C80:01CE9361]
+X-MC-Unique: 113080712295403601
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no limit for the maximum number of oom_control events
-registered per memcg. This might lead to an user triggered memory
-depletion if a regular user is allowed to register events.
+On 07/08/13 12:22, Viresh Kumar wrote:
+> On 7 August 2013 16:46, Amit Daniel Kachhap <amit.daniel@samsung.com> wrote:
+>> This patch fixes the issue of un-necessary setting the clock controller
+>> when the new target frequency is same as the current one. This case usually
+>> occurs with governors like ondemand which passes the target frequency as the
+>> percentage of average frequency. This check is present in most of the cpufreq
+>> driver.
+>>
+>> Cc: Viresh Kumar <viresh.kumar@linaro.org>
+>> Cc: Rafael J. Wysocki <rjw@sisk.pl>
+>> Cc: Kukjin Kim <kgene.kim@samsung.com>
+>> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+>> ---
+>>  drivers/cpufreq/exynos5440-cpufreq.c |    3 +++
+>>  1 files changed, 3 insertions(+), 0 deletions(-)
+> 
+> Applied.
+Hi Viresh,
 
-Let's be more strict and cap the number of events that might be
-registered. MAX_OOM_NOTIFY_EVENTS value is more or less random. The
-expectation is that it should be high enough to cover reasonable
-usecases while not too high to allow excessive resources consumption.
-1024 events consume something like 24KB which shouldn't be a big deal
-and it should be good enough (even 1024 oom notification events sounds
-crazy).
+Any particular reason we need this check in all drivers after your
+commit: 5a1c0228 "cpufreq: Avoid calling cpufreq driver's target()
+routine if target_freq == policy->cur"
 
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
----
- mm/memcontrol.c |   21 ++++++++++++++++++++-
- 1 file changed, 20 insertions(+), 1 deletion(-)
+I think it can removed from all drivers, am I missing something ?
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 8247db3..233317a 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -273,6 +273,7 @@ struct mem_cgroup {
- 	struct mem_cgroup_thresholds memsw_thresholds;
- 
- 	/* For oom notifier event fd */
-+	unsigned int oom_notify_count;
- 	struct list_head oom_notify;
- 
- 	/*
-@@ -5571,6 +5572,8 @@ unlock:
- 	mutex_unlock(&memcg->thresholds_lock);
- }
- 
-+/* Maximum number of oom notify events per memcg */
-+#define MAX_OOM_NOTIFY_EVENTS 1024
- static int mem_cgroup_oom_register_event(struct cgroup *cgrp,
- 	struct cftype *cft, struct eventfd_ctx *eventfd, const char *args)
- {
-@@ -5578,10 +5581,25 @@ static int mem_cgroup_oom_register_event(struct cgroup *cgrp,
- 	struct mem_cgroup_eventfd_list *event;
- 	enum res_type type = MEMFILE_TYPE(cft->private);
- 
-+	spin_lock(&memcg_oom_lock);
-+	if (memcg->oom_notify_count == MAX_OOM_NOTIFY_EVENTS) {
-+		spin_unlock(&memcg_oom_lock);
-+		return -ENOSPC;
-+	}
-+	/*
-+	 * Be optimistic that the allocation succeds and increase the count
-+	 * now. This all is done because we have to drop the memcg_oom_lock
-+	 * while allocating.
-+	 */
-+	memcg->oom_notify_count++;
-+	spin_unlock(&memcg_oom_lock);
-+
- 	BUG_ON(type != _OOM_TYPE);
- 	event = kmalloc(sizeof(*event),	GFP_KERNEL);
--	if (!event)
-+	if (!event) {
-+		memcg->oom_notify_count--;
- 		return -ENOMEM;
-+	}
- 
- 	spin_lock(&memcg_oom_lock);
- 
-@@ -5611,6 +5629,7 @@ static void mem_cgroup_oom_unregister_event(struct cgroup *cgrp,
- 		if (ev->eventfd == eventfd) {
- 			list_del(&ev->list);
- 			kfree(ev);
-+			memcg->oom_notify_count--;
- 		}
- 	}
- 
--- 
-1.7.10.4
+Regards,
+Sudeep
+
 
