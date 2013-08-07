@@ -1,82 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933173Ab3HGUaX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 16:30:23 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:25565 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932818Ab3HGUaW (ORCPT
+	id S933176Ab3HGUbJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 16:31:09 -0400
+Received: from mail-la0-f52.google.com ([209.85.215.52]:51701 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933014Ab3HGUbH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 16:30:22 -0400
-X-Authority-Analysis: v=2.0 cv=P6i4d18u c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=8WDeNtya6e4A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=FBSalxFJak0A:10 a=oGMlB6cnAAAA:8 a=K7hpe1EHq2gghiSB1okA:9 a=QEXdDO2ut3YA:10 a=CY6gl2JlH4YA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-ID: <1375907419.6848.27.camel@gandalf.local.home>
-Subject: Re: [RFC][PATCH 3/2] x86/jump labels: Count and display the short
- jumps used
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>, Jason Baron <jbaron@akamai.com>
-Date: Wed, 07 Aug 2013 16:30:19 -0400
-In-Reply-To: <CA+55aFwNWsd4eSA_wZzz9L1q=ROkdBf_SBE5gYGSZksg-Kv2Jg@mail.gmail.com>
-References: <20130807173606.872055511@goodmis.org>
-	 <1375898048.6848.18.camel@gandalf.local.home>
-	 <CA+55aFwo4iFk4_6cSoK=NjCWjVgdPgKy0YfKpZd2zSGn_RXHYg@mail.gmail.com>
-	 <2e3a4a90-2915-4b75-b807-b0e802e4955f@email.android.com>
-	 <CA+55aFwNWsd4eSA_wZzz9L1q=ROkdBf_SBE5gYGSZksg-Kv2Jg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 7 Aug 2013 16:31:07 -0400
+Date: Thu, 8 Aug 2013 00:31:03 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, luto@amacapital.net,
+        xemul@parallels.com, mpm@selenic.com, xiaoguangrong@linux.vnet.ibm.com,
+        mtosatti@redhat.com, kosaki.motohiro@gmail.com, sfr@canb.auug.org.au,
+        peterz@infradead.org, aneesh.kumar@linux.vnet.ibm.com
+Subject: Re: [patch 2/2] [PATCH] mm: Save soft-dirty bits on file pages
+Message-ID: <20130807203103.GP7999@moon>
+References: <20130730204154.407090410@gmail.com>
+ <20130730204654.966378702@gmail.com>
+ <20130807132812.60ad4bfe85127794094d385e@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130807132812.60ad4bfe85127794094d385e@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-08-07 at 12:49 -0700, Linus Torvalds wrote:
-> On Wed, Aug 7, 2013 at 12:27 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> > Well we do... both to extract relocations and to sort the exception table.  Perhaps we need to merge those kinds of postprocessing tools?
+On Wed, Aug 07, 2013 at 01:28:12PM -0700, Andrew Morton wrote:
 > 
-> If we can do this generically and without adding 500 lines of
-> specialized code, my argument obviously goes away.
+> Good god.
+> 
+> I wonder if these can be turned into out-of-line functions in some form
+> which humans can understand.
+> 
+> or
+> 
+> #define pte_to_pgoff(pte)
+> 	frob(pte, PTE_FILE_SHIFT1, PTE_FILE_BITS1) +
+> 	frob(PTE_FILE_SHIFT2, PTE_FILE_BITS2) +
+> 	frob(PTE_FILE_SHIFT3, PTE_FILE_BITS3) +
+> 	frob(PTE_FILE_SHIFT4, PTE_FILE_BITS1 + PTE_FILE_BITS2 + PTE_FILE_BITS3)
 
-And the code that does this work is actually in the kernel today,
-although, seldom used.
-
-The recordmount.[ch] can do this modification. It's main purpose was to
-create a table of mcount call locations that ftrace can use to convert
-to nops on boot. As it only converts white-listed sections (doesn't
-convert things like .init or .exit, as there exists no way today to
-generically know when they are removed), it only creates the pointers to
-those sections that ftrace will touch.
-
-Those sections that do not get converted, can have a call to mcount that
-is not changed to a nop. Most places this is not the case, because
-things like __init have "notrace" defined to keep those functions from
-being profiled. But if another section is added that ftrace does not
-know about, it will get a call to mcount and cause a bit of a slow down.
-Note, mcount itself looks like:
-
-mcount:
-	retq
-
-To handle these missed cases, the recordmcount.c was modified to convert
-the call to mcount into a nop. There's a flag you can set to have this
-warn on locations that it converts:
-
-make RECORDMCOUNT_WARN=1
-
-It will give a warning at the locations that it converted, which should
-then be white-listed or have notrace added to it.
-
-This is the code I based the update_jump_labels from. With a bit of
-work, all these ELF parsers could probably be consolidated, and this
-addition may not be that hard or complex to add.
-
--- Steve
-
-
+I copied this code from existing one, not mine invention ;)
+I'll clean it up on top.
