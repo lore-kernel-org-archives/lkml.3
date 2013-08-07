@@ -1,53 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932491Ab3HGTlh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 15:41:37 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:45373 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753323Ab3HGTlg (ORCPT
+	id S932616Ab3HGTrU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 15:47:20 -0400
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:65024 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756335Ab3HGTrS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 15:41:36 -0400
-Message-ID: <5202A2EC.2070907@wwwdotorg.org>
-Date: Wed, 07 Aug 2013 13:41:32 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Wed, 7 Aug 2013 15:47:18 -0400
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Pawel Moll <pawel.moll@arm.com>, Rob Herring <rob.herring@calxeda.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH 1/2] pinctrl: clean up pinconfig-generic documentation
-References: <1375739760-18833-1-git-send-email-swarren@wwwdotorg.org> <CACRpkdb1qSO2OhFebgAPESAzRySaCyQcBH97s4E7+F-3wmXZpw@mail.gmail.com>
-In-Reply-To: <CACRpkdb1qSO2OhFebgAPESAzRySaCyQcBH97s4E7+F-3wmXZpw@mail.gmail.com>
-X-Enigmail-Version: 1.4.6
+In-Reply-To: <b719237403781b77732bb59078ca6f1eb3d76639.1375867291.git.rubini@gnudd.com>
+References: <cover.1375867291.git.rubini@gnudd.com>
+	<b719237403781b77732bb59078ca6f1eb3d76639.1375867291.git.rubini@gnudd.com>
+Date: Wed, 7 Aug 2013 21:47:18 +0200
+Message-ID: <CACRpkdbSYzQn2U6yijnrNQ0QhnzhUmQz1W=C8NHGhsK6VzRFpA@mail.gmail.com>
+Subject: Re: [PATCH 26/26] pinctrl: add support for sta2x11 (via pinctrl-nomadik)
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Davide Ciminaghi <ciminaghi@gnudd.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alessandro Rubini <rubini@gnudd.com>,
+        Giancarlo Asnaghi <giancarlo.asnaghi@st.com>, x86@kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/07/2013 01:32 PM, Linus Walleij wrote:
-> On Mon, Aug 5, 2013 at 11:55 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> 
->> From: Stephen Warren <swarren@nvidia.com>
->>
->> Reword the section of pinctrl-bindings.txt that describes generic
->> properties that pinctrl bindings may use. The aim is to make the text
->> clearer, and more explicitly call out the responsibility of individual
->> bindings that use the generic properties to define which of the
->> properties are used, and how.
->>
->> Signed-off-by: Stephen Warren <swarren@nvidia.com>
->> ---
->> LinusW, Laxman, this is the binding doc cleanup I mentioned I was going
->> to send when reviewing Laxman's Palmas pinctrl driver.
-> 
-> Looks good to me.
-> Patch applied.
+On Wed, Aug 7, 2013 at 12:22 PM, Davide Ciminaghi <ciminaghi@gnudd.com> wrote:
 
-I assume just patch 1? There was a v2 of patch 2.
+> Signed-off-by: Davide Ciminaghi <ciminaghi@gnudd.com>
+> Acked-by: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
 
+Maybe you could add a commit message?
+
+Apart from that it looks like a straight-forward plug-in to the
+Nomadik pin controller, so I'd happily apply it, but I guess it
+will go in through the x86 tree?
+
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+
+Yours,
+Linus Walleij
