@@ -1,120 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757334Ab3HGRa7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 13:30:59 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40051 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756581Ab3HGRa5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 13:30:57 -0400
-Date: Wed, 7 Aug 2013 19:30:51 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+	id S932258Ab3HGRdL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 13:33:11 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:20603 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755416Ab3HGRdJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 13:33:09 -0400
+X-Authority-Analysis: v=2.0 cv=aqMw+FlV c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=FLRpW3-vdtQA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=dQA8RuyDQUMA:10 a=dPOkUoMoAfER8-GTxYwA:9 a=QEXdDO2ut3YA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-ID: <1375896786.6848.14.camel@gandalf.local.home>
+Subject: Re: [PATCH 4/4] x86/jump-label: Show where and what was wrong on
+ errors
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>
-Subject: Re: [PATCH 2/3] memcg: Limit the number of events registered on
- oom_control
-Message-ID: <20130807173051.GD16343@dhcp22.suse.cz>
-References: <1375874907-22013-1-git-send-email-mhocko@suse.cz>
- <1375874907-22013-2-git-send-email-mhocko@suse.cz>
- <20130807130836.GB27006@htj.dyndns.org>
- <20130807133746.GI8184@dhcp22.suse.cz>
- <20130807134741.GF27006@htj.dyndns.org>
- <20130807135734.GK8184@dhcp22.suse.cz>
- <20130807144730.GB13279@dhcp22.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130807144730.GB13279@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>, Jason Baron <jbaron@akamai.com>
+Date: Wed, 07 Aug 2013 13:33:06 -0400
+In-Reply-To: <20130807172044.GC18272@pd.tnic>
+References: <20130807164934.149920591@goodmis.org>
+	 <20130807165114.147890467@goodmis.org> <20130807172044.GC18272@pd.tnic>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 07-08-13 16:47:30, Michal Hocko wrote:
-> On Wed 07-08-13 15:57:34, Michal Hocko wrote:
-> [...]
-> > Hmm, OK so you think that the fd limit is sufficient already?
+On Wed, 2013-08-07 at 19:20 +0200, Borislav Petkov wrote:
+>   
+> > +static void bug_at(unsigned char *ip, int line)
+> > +{
+> > +	/*
+> > +	 * The location is not an op that we were expecting.
+> > +	 * Something went wrong. Crash the box, as something could be
+> > +	 * corrupting the kernel.
+> > +	 */
+> > +	pr_warning("Unexpected op at %pS [%p] (%02x %02x %02x %02x %02x) %s:%d\n",
+> > +	       ip, ip, ip[0], ip[1], ip[2], ip[3], ip[4], __FILE__, line);
+> > +	BUG();
 > 
-> Hmm, that would need to touch the code as well (the register callback
-> would need to make sure only one event is registered per cfile). But yes
-> this way would be better. I will send a new patch once I have an idle
-> moment.
+> Why not simply
+> 
+> 	panic("Unexpected...")
+> 
+> ?
 
-What do you think about the following? I am not sure about EINVAL maybe
-there is a better way to tell userspace it is doing something wrong. I
-would appreciate any suggestions. If this looks good I will post a
-similar patch for vmpressure.
----
->From 180614714348300836701bec618608059438efc2 Mon Sep 17 00:00:00 2001
-From: Michal Hocko <mhocko@suse.cz>
-Date: Wed, 7 Aug 2013 18:51:40 +0200
-Subject: [PATCH] memcg: Limit the number of events registered on oom_control
+Because the patch replaced BUG().
 
-There is no limit for the maximum number of oom_control events
-registered per memcg. This might lead to an user triggered memory
-depletion if a regular user is allowed to register events because one
-file descriptor might be used for arbitrary number of registrations.
+> 
+> Besides, BUG can be disabled in CONFIG_EXPERT.
+> 
 
-Let's be more strict and cap the number of events to the number of
-open file descriptors. Teach mem_cgroup_oom_register_event to check
-the registered events and fail if the given cftype (target file file
-descriptor) has been already registered. This will cap the number of
-events to the maximum number of allowed open files so no user who is
-allowed to register event can runaway the an existing limit.
+Right, and this code keeps the same logic as it was before. If it was
+disabled by CONFIG_EXPERT, it stays disabled, but at least you get to
+see a warning that your kernel may be corrupt now :-)
 
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
----
- mm/memcontrol.c |   15 +++++++++++++++
- 1 file changed, 15 insertions(+)
+-- Steve
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 8247db3..f893a39 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -212,6 +212,7 @@ struct mem_cgroup_thresholds {
- struct mem_cgroup_eventfd_list {
- 	struct list_head list;
- 	struct eventfd_ctx *eventfd;
-+	struct cftype *cft;
- };
- 
- static void mem_cgroup_threshold(struct mem_cgroup *memcg);
-@@ -5577,6 +5578,7 @@ static int mem_cgroup_oom_register_event(struct cgroup *cgrp,
- 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cgrp);
- 	struct mem_cgroup_eventfd_list *event;
- 	enum res_type type = MEMFILE_TYPE(cft->private);
-+	struct mem_cgroup_eventfd_list *ev, *tmp;
- 
- 	BUG_ON(type != _OOM_TYPE);
- 	event = kmalloc(sizeof(*event),	GFP_KERNEL);
-@@ -5585,7 +5587,20 @@ static int mem_cgroup_oom_register_event(struct cgroup *cgrp,
- 
- 	spin_lock(&memcg_oom_lock);
- 
-+	/*
-+	 * Make sure that only one event is registered for the given
-+	 * cftype - aka file descriptor. This caps the number of events
-+	 * to number of file descriptors per process so the userspace doesn't
-+	 * escape and depleate the memory.
-+	 */
-+	list_for_each_entry_safe(ev, tmp, &memcg->oom_notify, list) {
-+		if (ev->cft == cft) {
-+			kfree(event);
-+			return -EINVAL;
-+		}
-+	}
- 	event->eventfd = eventfd;
-+	event->cft = cft;
- 	list_add(&event->list, &memcg->oom_notify);
- 
- 	/* already in OOM ? */
--- 
-1.7.10.4
 
--- 
-Michal Hocko
-SUSE Labs
