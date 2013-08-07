@@ -1,67 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757159Ab3HGGSM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 02:18:12 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:57372 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757121Ab3HGGSJ (ORCPT
+	id S932167Ab3HGGSi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 02:18:38 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:9344 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932081Ab3HGGSa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 02:18:09 -0400
-X-AuditID: 9c93017e-b7b62ae000000eeb-df-5201e69ebba7
-From: Namhyung Kim <namhyung@kernel.org>
-To: Michael Ellerman <michael@ellerman.id.au>
-Cc: <linux-kernel@vger.kernel.org>, acme@ghostprotocols.net,
-        a.p.zijlstra@chello.nl, jolsa@redhat.com
-Subject: Re: [PATCH v2 1/2] perf tools: Add support for pinned modifier
-References: <1375795686-4226-1-git-send-email-michael@ellerman.id.au>
-Date: Wed, 07 Aug 2013 15:18:06 +0900
-In-Reply-To: <1375795686-4226-1-git-send-email-michael@ellerman.id.au>
-	(Michael Ellerman's message of "Tue, 6 Aug 2013 23:28:05 +1000")
-Message-ID: <87bo5ayqg1.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Wed, 7 Aug 2013 02:18:30 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 06 Aug 2013 23:18:29 -0700
+From: Wei Ni <wni@nvidia.com>
+To: <khali@linux-fr.org>
+CC: <linux@roeck-us.net>, <lm-sensors@lm-sensors.org>,
+        <linux-kernel@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
+        Wei Ni <wni@nvidia.com>
+Subject: [PATCH v4 0/3] Lm90 Enhancements
+Date: Wed, 7 Aug 2013 14:18:23 +0800
+Message-ID: <1375856306-14415-1-git-send-email-wni@nvidia.com>
+X-Mailer: git-send-email 1.7.9.5
+X-NVConfidentiality: public
 MIME-Version: 1.0
 Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michael,
+This patch set enhance the lm90 driver,
+it make the driver more readable and easier to use thermal framework.
 
-On Tue,  6 Aug 2013 23:28:05 +1000, Michael Ellerman wrote:
-> This commit adds support for a new modifier "D", which requests that the
-> event, or group of events, be pinned to the PMU.
->
-> The "p" modifier is already taken for precise, and "P" may be used in
-> future to mean "fully precise".
->
-> So we use "D", which stands for pinneD - and looks like a padlock, or if
-> you're using the ":D" syntax perf smiles at you.
->
-> This is an oft-requested feature from our HW folks, who want to be able
-> to run a large number of events, but also want 100% accurate results for
-> instructions per cycle.
->
-> Comparison of results with and without pinning:
->
-> $ perf stat -e '{cycles,instructions}:D' -e cycles,instructions,...
->
->   79,590,480,683 cycles         #  0.000 GHz
->  166,123,716,524 instructions   #  2.09  insns per cycle
->                                 #  0.11  stalled cycles per insn
->
->   79,352,134,463 cycles         #  0.000 GHz                     [11.11%]
->  165,178,301,818 instructions   #  2.08  insns per cycle
->                                 #  0.11  stalled cycles per insn [11.13%]
->
-> As you can see although perf does a very good job of scaling the values
-> in the non-pinned case, there is some small discrepancy.
->
-> The patch is fairly straight forward, the one detail is that we need to
-> make sure we only request pinning for the group leader when we have a
-> group.
+This series is v4, previous version patches:
+[RFC]: http://thread.gmane.org/gmane.linux.power-management.general/31056
+[v1]: http://thread.gmane.org/gmane.linux.ports.tegra/11710/
+[v2]: http://www.mail-archive.com/linux-kernel@vger.kernel.org/msg465555.html
+[v3]: http://www.mail-archive.com/linux-kernel@vger.kernel.org/msg466772.html
 
-Acked-by: Namhyung Kim <namhyung@kernel.org>
+Changes from v3:
+1. remove the patch "hwmon: (lm90) split set&show temp as common codes",
+and sent it as a separated one.
+2. fix the bug of second read on STATUS register.
+3. fix some code style issue according to Jean's comments.
 
-Thanks,
-Namhyung
+Changes from v2:
+1. update the defines for status bit, and go into a separate patch.
+2. introduce the new lm90_is_tripped() for lm90_irq_thread and lm90_alert.
+
+Changes from v1:
+1. change the string "irq" to "IRQ"
+2. add macro defines for the alarm status
+3. consider the shared IRQ.
+
+Changes from RFC:
+1. change _show_temp() to read_temp(), _set_temp() to write_temp().
+2. simply return value for the read_temp(), not use pointer.
+3. use devm_request_threaded_irq() to request irq and set flag IRQF_ONESHOT.
+
+Wei Ni (3):
+  hwmon: (lm90) Define status bits
+  hwmon: (lm90) add support to handle IRQ
+  hwmon: (lm90) use enums for the indexes of temp8 and temp11
+
+ drivers/hwmon/lm90.c |  252 ++++++++++++++++++++++++++++++++------------------
+ 1 file changed, 163 insertions(+), 89 deletions(-)
+
+-- 
+1.7.9.5
+
