@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932715Ab3HGLDf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 07:03:35 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:51742 "EHLO
+	id S932829Ab3HGLDh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 07:03:37 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:51746 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932530Ab3HGLDd (ORCPT
+	with ESMTP id S932530Ab3HGLDg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 07:03:33 -0400
+	Wed, 7 Aug 2013 07:03:36 -0400
 From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
 	<u.kleine-koenig@pengutronix.de>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
         "Hans J. Koch" <hjk@hansjkoch.de>, linux-kernel@vger.kernel.org,
-        kernel@pengutronix.de, Mel Gorman <mgorman@suse.de>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org
-Subject: [PATCH v3 1/3] mm: make generic_access_phys available for modules
-Date: Wed,  7 Aug 2013 13:02:52 +0200
-Message-Id: <1375873374-12601-1-git-send-email-u.kleine-koenig@pengutronix.de>
+        kernel@pengutronix.de
+Subject: [PATCH v3 3/3] uio: drop unused vma_count member in uio_device struct
+Date: Wed,  7 Aug 2013 13:02:54 +0200
+Message-Id: <1375873374-12601-3-git-send-email-u.kleine-koenig@pengutronix.de>
 X-Mailer: git-send-email 1.8.4.rc1
+In-Reply-To: <1375873374-12601-1-git-send-email-u.kleine-koenig@pengutronix.de>
+References: <1375873374-12601-1-git-send-email-u.kleine-koenig@pengutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -30,33 +30,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the next commit this function will be used in the uio subsystem
+vma_count is used write-only and so fails to be useful. So remove it.
 
 Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 ---
-Hello,
+ drivers/uio/uio.c | 16 ----------------
+ 1 file changed, 16 deletions(-)
 
-Greg suggested to take this patch together with the next one via his uio
-tree with the appropriate acks.
-
-Best regards
-Uwe
-
- mm/memory.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/mm/memory.c b/mm/memory.c
-index 1ce2e2a..8d9255b 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -4066,6 +4066,7 @@ int generic_access_phys(struct vm_area_struct *vma, unsigned long addr,
- 
- 	return len;
+diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
+index c4279b2..8abe78c 100644
+--- a/drivers/uio/uio.c
++++ b/drivers/uio/uio.c
+@@ -35,7 +35,6 @@ struct uio_device {
+ 	atomic_t		event;
+ 	struct fasync_struct	*async_queue;
+ 	wait_queue_head_t	wait;
+-	int			vma_count;
+ 	struct uio_info		*info;
+ 	struct kobject		*map_dir;
+ 	struct kobject		*portio_dir;
+@@ -593,18 +592,6 @@ static int uio_find_mem_index(struct vm_area_struct *vma)
+ 	return -1;
  }
-+EXPORT_SYMBOL_GPL(generic_access_phys);
- #endif
  
- /*
+-static void uio_vma_open(struct vm_area_struct *vma)
+-{
+-	struct uio_device *idev = vma->vm_private_data;
+-	idev->vma_count++;
+-}
+-
+-static void uio_vma_close(struct vm_area_struct *vma)
+-{
+-	struct uio_device *idev = vma->vm_private_data;
+-	idev->vma_count--;
+-}
+-
+ static int uio_vma_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
+ {
+ 	struct uio_device *idev = vma->vm_private_data;
+@@ -631,8 +618,6 @@ static int uio_vma_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
+ }
+ 
+ static const struct vm_operations_struct uio_logical_vm_ops = {
+-	.open = uio_vma_open,
+-	.close = uio_vma_close,
+ 	.fault = uio_vma_fault,
+ };
+ 
+@@ -640,7 +625,6 @@ static int uio_mmap_logical(struct vm_area_struct *vma)
+ {
+ 	vma->vm_flags |= VM_DONTEXPAND | VM_DONTDUMP;
+ 	vma->vm_ops = &uio_logical_vm_ops;
+-	uio_vma_open(vma);
+ 	return 0;
+ }
+ 
 -- 
 1.8.4.rc1
 
